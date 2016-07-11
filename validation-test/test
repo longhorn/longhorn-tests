@@ -1,0 +1,26 @@
+#!/bin/bash
+
+set -e
+set -x
+
+: ${CATTLE_TEST_AGENT_IMAGE:='docker:cattle/test-agent:v7'}
+: ${PHANTOMJS_BIN:='/usr/local/bin/phantomjs'}
+: ${VALIDATION_JUNIT_XML_FILE:='validationTestsJunit.xml'}
+
+export CATTLE_TEST_AGENT_IMAGE PHANTOMJS_BIN
+
+
+if [ -d '/scratch' ]; then
+    rm -rf /scratch/*
+    rsync -a --delete ./ /scratch
+    cd /scratch
+fi
+
+run_tests()
+{
+    pushd .
+    tox
+
+}
+
+run_tests
