@@ -7,5 +7,4 @@ setup(
         'storagetest.core',
     ],
     license='ASL 2.0',
-    long_description=open('README.txt').read(),
 )

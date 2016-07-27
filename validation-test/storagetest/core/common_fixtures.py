@@ -69,7 +69,8 @@ VOLUME_DRIVER = "longhorn"
 DATA_DISK = "data"
 ROOT_DISK = "root"
 ENV_NAME_SUFFIX = "volume-"
-DEFAULT_LONGHORN_CATALOG_URL = "https://github.com/rancher/longhorn.git"
+DEFAULT_LONGHORN_CATALOG_URL = \
+    "https://github.com/rancher/longhorn-catalog.git"
 TIME_TO_BOOT_IN_SEC = 300
 
 
@@ -471,8 +472,8 @@ def deploy_longhorn(client, super_client):
     template = json.loads(r.content)
     r.close()
 
-    dockerCompose = template["dockerCompose"]
-    rancherCompose = template["rancherCompose"]
+    dockerCompose = template["files"]["docker-compose.yml"]
+    rancherCompose = template["files"]["rancher-compose.yml"]
     environment = {}
     env = client.create_environment(name="longhorn",
                                     dockerCompose=dockerCompose,
@@ -3077,3 +3078,32 @@ def revert_volume_to_snapshot_for_vm_service(super_client, client, port,
             for i in range(snapshot_revert_index, len(snapshots)):
                 file = snapshots[i]["filename"]
                 assert not check_if_file_exists(vm_host, port, dir+"/"+file)
+
+
+@pytest.fixture(scope='session', autouse=True)
+def setup_longhorn(client, super_client, admin_client):
+
+    longhorn_catalog_url = \
+        os.environ.get('LONGHORN_CATALOG_URL', DEFAULT_LONGHORN_CATALOG_URL)
+    setting = admin_client.by_id_setting("catalog.url")
+    if "longhorn=" not in setting.value:
+        catalog_url = setting.value
+        catalog_url = catalog_url + ",longhorn=" + longhorn_catalog_url
+        print catalog_url
+        admin_client.create_setting(name="catalog.url", value=catalog_url)
+        time.sleep(60)
+        deploy_longhorn(client, super_client)
+
+    # enable VM in environment resource
+    project = admin_client.list_project(uuid="adminProject")[0]
+    if not project.virtualMachine:
+        project = admin_client.update(
+            project, virtualMachine=True)
+        project = wait_success(admin_client, project)
+
+        # wait for VirtualMachine environment/stack to be active
+        envs = client.list_environment(name="VirtualMachine",
+                                       removed_null=True)
+        assert len(envs) == 1
+        env = client.wait_success(envs[0], 300)
+        assert env.state == "active"

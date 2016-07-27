@@ -2,22 +2,6 @@ from common_fixtures import *  # NOQA
 import datetime
 
 
-@pytest.fixture(scope='session', autouse=True)
-def setup_longhorn(client, super_client, admin_client):
-
-    longhorn_catalog_url = \
-        os.environ.get('LONGHORN_CATALOG_URL', DEFAULT_LONGHORN_CATALOG_URL)
-    setting = admin_client.by_id_setting("catalog.url")
-    if "longhorn=" not in setting.value:
-        catalog_url = setting.value
-        catalog_url = catalog_url + ",longhorn=" + longhorn_catalog_url
-        print catalog_url
-        admin_client.create_setting(name="catalog.url", value=catalog_url)
-        admin_client.create_setting(name="vm.enabled", value="true")
-        time.sleep(60)
-        deploy_longhorn(client, super_client)
-
-
 def test_createVM_with_root_on_longhorn(client):
     port = 8880
     # Create VM with ROOT disk using longhorn driver
