@@ -28,6 +28,9 @@ SSH_HOST_IMAGE_UUID = os.environ.get('CATTLE_SSH_HOST_IMAGE',
 SOCAT_IMAGE_UUID = os.environ.get('CATTLE_CLUSTER_SOCAT_IMAGE',
                                   'docker:rancher/socat-docker:v0.2.0')
 
+DEFAULT_BACKUP_SERVER_IP = os.environ.get('LONGHORN_BACKUP_SERVER_IP')
+DEFAULT_BACKUP_SERVER_SHARE = os.environ.get('LONGHORN_BACKUP_SERVER_SHARE')
+
 WEB_IMAGE_UUID = "docker:sangeetha/testlbsd:latest"
 SSH_IMAGE_UUID = "docker:sangeetha/testclient:latest"
 LB_HOST_ROUTING_IMAGE_UUID = "docker:sangeetha/testnewhostrouting:latest"
@@ -3093,7 +3096,8 @@ def setup_longhorn(client, super_client, admin_client):
         admin_client.create_setting(name="catalog.url", value=catalog_url)
         time.sleep(60)
         deploy_longhorn(client, super_client)
-
+        # Add Backup Target
+        add_backup(client)
     # enable VM in environment resource
     project = admin_client.list_project(uuid="adminProject")[0]
     if not project.virtualMachine:
@@ -3107,3 +3111,16 @@ def setup_longhorn(client, super_client, admin_client):
         assert len(envs) == 1
         env = client.wait_success(envs[0], 300)
         assert env.state == "active"
+
+
+# Add Backup Target
+def add_backup(client, nfs_server=DEFAULT_BACKUP_SERVER_IP,
+               share=DEFAULT_BACKUP_SERVER_SHARE):
+    nfs_config = {"server": nfs_server,
+                  "share": share}
+    name = random_str()
+    backup_target = client.create_backupTarget(name=name,
+                                               nfsConfig=nfs_config)
+    backup_target = client.wait_success(backup_target, 300)
+    assert backup_target.state == "created"
+    return backup_target
