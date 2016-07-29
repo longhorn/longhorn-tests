@@ -31,7 +31,7 @@ SOCAT_IMAGE_UUID = os.environ.get('CATTLE_CLUSTER_SOCAT_IMAGE',
 DEFAULT_BACKUP_SERVER_IP = \
     os.environ.get('LONGHORN_BACKUP_SERVER_IP', None)
 DEFAULT_BACKUP_SERVER_SHARE = \
-    os.environ.get('LONGHORN_BACKUP_SERVER_SHARE', "/data")
+    os.environ.get('LONGHORN_BACKUP_SERVER_SHARE', "/var/nfs")
 
 WEB_IMAGE_UUID = "docker:sangeetha/testlbsd:latest"
 SSH_IMAGE_UUID = "docker:sangeetha/testclient:latest"
@@ -2901,6 +2901,7 @@ def createVMService(super_client, client, vm_name, port, root_disk=True,
 def get_volume_list_for_vm(client, service, vm, root_disk=True):
     volume_name = get_volume_name_for_vm_service(
         service, vm, root_disk=root_disk)
+    print "volume name " + volume_name
     volumes = client.list_volume(
         name=volume_name)
     assert len(volumes) == 1
@@ -3139,16 +3140,23 @@ def add_backup(client, nfs_server=DEFAULT_BACKUP_SERVER_IP,
 
 # Delete Inactive volumes relating to Vms
 def delete_vm_volumes(client, vm, service):
-    wait_for_condition(client, vm,
-                       lambda x: x.state == "removed",
-                       lambda x: 'State is: ' + x.state)
+    vm = wait_for_condition(client, vm,
+                            lambda x: x.state == "removed",
+                            lambda x: 'State is: ' + x.state)
     if vm.state == "removed":
         vm = client.wait_success(vm.purge())
     vols = []
-    volumes = get_volume_list_for_vm(client, service, vm, root_disk=True)
-    vols.append(volumes[0])
-    volumes = get_volume_list_for_vm(client, service, vm, root_disk=False)
-    vols.append(volumes[0])
+    # ROOT volume in Longhorn
+    volume_name = get_volume_name_for_vm_service(service, vm, root_disk=True)
+    volumes = client.list_volume(name=volume_name)
+    if len(volumes) == 1:
+        vols.append(volumes[0])
+    # DATA volume in Longhorn
+    volume_name = get_volume_name_for_vm_service(service, vm, root_disk=False)
+    volumes = client.list_volume(name=volume_name)
+    if len(volumes) == 1:
+        vols.append(volumes[0])
+
     for volume in vols:
         if volume.state == "inactive" or volume.state == "requested":
             volume = client.wait_success(client.delete(volume))
@@ -3160,9 +3168,9 @@ def delete_vm_volumes(client, vm, service):
 # Delete Inactive volumes relating to stand alone Vms
 def delete_standalone_vm_volumes(client, vm):
     print vm.state
-    wait_for_condition(client, vm,
-                       lambda x: x.state == "removed",
-                       lambda x: 'State is: ' + x.state)
+    vm = wait_for_condition(client, vm,
+                            lambda x: x.state == "removed",
+                            lambda x: 'State is: ' + x.state)
     if vm.state == "removed":
         vm = client.wait_success(vm.purge())
     vols = []
