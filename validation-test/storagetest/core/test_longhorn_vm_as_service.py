@@ -13,6 +13,7 @@ def test_createVMService_with_root_on_longhorn(super_client, client):
         assert vm.state == "running"
         validate_writes(vm_host, port, is_root=True)
     delete_all(client, [env])
+    delete_vm_volumes(client, con[0], service)
 
 
 def test_createVM_with_root_on_longhorn_stop(super_client, client):
@@ -89,6 +90,7 @@ def test_createVM_with_root_on_longhorn_delete(super_client, client):
         validate_writes(vm_host, port, is_root=True)
 
     delete_all(client, [env])
+    delete_vm_volumes(client, con[0], service)
 
 
 def test_createVM_with_root_and_data_on_longhorn(super_client, client):
@@ -105,6 +107,7 @@ def test_createVM_with_root_and_data_on_longhorn(super_client, client):
         validate_writes(vm_host, port, is_root=True)
         validate_writes(vm_host, port, is_root=False)
     delete_all(client, [env])
+    delete_vm_volumes(client, con[0], service)
 
 
 def test_createVM_with_root_and_data_on_longhorn_stop_start(
@@ -143,6 +146,7 @@ def test_createVM_with_root_and_data_on_longhorn_stop_start(
         validate_writes(vm_host, port, is_root=False)
 
     delete_all(client, [env])
+    delete_vm_volumes(client, con[0], service)
 
 
 def test_createVM_with_root_and_data_on_longhorn_delete(super_client, client):
@@ -186,6 +190,7 @@ def test_createVM_with_root_and_data_on_longhorn_delete(super_client, client):
         validate_writes(vm_host, port, is_root=True)
         validate_writes(vm_host, port, is_root=False)
     delete_all(client, [env])
+    delete_vm_volumes(client, con[0], service)
 
 
 def test_createVM_with_root_and_data_on_longhorn_ha(super_client, client):
@@ -240,6 +245,7 @@ def test_createVM_with_root_and_data_on_longhorn_ha(super_client, client):
         assert vm_host.state == 'active'
 
     delete_all(client, [env])
+    delete_vm_volumes(client, con[0], service)
 
 
 def test_createVM_with_root_and_data_on_longhorn_multiple(
@@ -261,3 +267,4 @@ def test_createVM_with_root_and_data_on_longhorn_multiple(
             validate_writes(vm_host, port, is_root=True)
             validate_writes(vm_host, port, is_root=False)
         delete_all(client, [service])
+        delete_vm_volumes(client, vm, service)
