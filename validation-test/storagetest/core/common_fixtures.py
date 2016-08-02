@@ -496,13 +496,21 @@ def deploy_longhorn(client, super_client):
             lambda x: 'State is: ' + x.state,
             timeout=600)
 
-    # Verify that storage pool is created
+    # wait for storage pool to be created
     storagepools = client.list_storage_pool(removed_null=True,
                                             include="hosts",
                                             kind="storagePool",
                                             name="longhorn")
-    print storagepools
-    assert len(storagepools) == 1
+    start = time.time()
+    while len(storagepools) != 1:
+        time.sleep(.5)
+        storagepools = client.list_storage_pool(removed_null=True,
+                                                include="hosts",
+                                                kind="storagePool",
+                                                name="longhorn")
+        if time.time() - start > 30:
+            raise \
+                Exception('Timed out waiting for VM stack to get created')
 
 
 @pytest.fixture(scope='session')
@@ -3118,10 +3126,18 @@ def setup_longhorn(client, super_client, admin_client):
         project = wait_success(admin_client, project)
 
         # wait for VirtualMachine environment/stack to be active
-        envs = client.list_environment(name="VirtualMachine",
-                                       removed_null=True)
-        assert len(envs) == 1
-        env = client.wait_success(envs[0], 300)
+        vm_envs = client.list_environment(name="VirtualMachine",
+                                          removed_null=True)
+        start = time.time()
+        while len(vm_envs) != 1:
+            time.sleep(.5)
+            vm_envs = client.list_environment(name="VirtualMachine",
+                                              removed_null=True)
+            if time.time() - start > 30:
+                raise \
+                    Exception('Timed out waiting for VM stack to get created')
+
+        env = client.wait_success(vm_envs[0], 300)
         assert env.state == "active"
 
 
