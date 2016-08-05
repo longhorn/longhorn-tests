@@ -1,5 +1,6 @@
 Steps to run the setupRancher.py and teardownRancher.py to setup and teardown machines for longhorn tests
 
+```
 # first create a properties file to retrieve machine build results from container
 # it will contain CATTLE_TEST_URL and LONGHORN_BACKUP_SERVER_IP
 touch $PROPERTY_FILE_NAME
@@ -36,9 +37,10 @@ docker run --rm \
     -e PACKET_RANCHER_AUTH_TOKEN="$PACKET_RANCHER_AUTH_TOKEN" \
     -e PACKET_RANCHER_PROJECT_ID="$PACKET_RANCHER_PROJECT_ID" \
     rancher/longhorn-env-setup teardownRancher.py 
+```
 
-
-where environment variables are:
+Environment variables are:
+```
 PROPERTY_FILE_NAME:         result from running setupRancher.py, contains CATTLE_TEST_URL and LONGHORN_BACKUP_SERVER_IP
 GCE_SERVICE_KEY_JSON:       a GCE service account secrete key
 GCE_RANCHER_PROJECT_NAME:   rancher project name on GCE
@@ -55,3 +57,4 @@ PACKET_RANCHER_PROJECT_ID:  rancher project on Packet
 PACKET_HOST_MACHINE_TYPE:   host machine type on Packet, such as baremetal_1
 PACKET_HOST_OS_IMG:         host OS image on Packet, such as ubuntu_14_04
 PACKET_HOST_CLOUD_CONFIG:   host startup script run by Packet during boot
+```
