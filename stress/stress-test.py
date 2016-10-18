@@ -45,16 +45,16 @@ def create_testdata():
 
 def rebuild_replicas(controller, iterations):
   for iteration in xrange(iterations):
-#    if iteration % 1 == 0:
-#      subprocess.call("./bin/longhorn snapshots | tail -n +3 | xargs ./bin/longhorn snapshot rm", shell = True)
+    if iteration % 1 == 0:
+      subprocess.call("docker exec " + controller + " launch snapshots | tail -n +3 | xargs docker exec " + controller + " launch snapshot rm", shell = True)
     time.sleep(SIZE / 1024 / 1024 / 256)
     if random.random() > 0.5:
       replica_host = "172.18.0.2:9502"
     else:
       replica_host = "172.18.0.3:9502"
     print "Rebuild " + replica_host
-#    subprocess.call(("./bin/longhorn rm tcp://" + replica_host).split())
-#    subprocess.call(("./bin/longhorn add tcp://" + replica_host).split())
+    subprocess.call(("docker exec " + controller + " launch rm tcp://" + replica_host).split())
+    subprocess.call(("docker exec " + controller + " launch add tcp://" + replica_host).split())
     print "Rebuild " + replica_host + " complete"
 
 
@@ -125,14 +125,16 @@ def read_and_check(snapshots, testdata, iterations):
   fd.close()
     
 
+subprocess.call("sudo iscsiadm -m node --logout", shell=True)
+subprocess.call("sudo rm /dev/longhorn/vol1", shell=True)
 subprocess.call("docker rm -fv `docker ps -a | grep rancher/longhorn | awk '{print $1}'`", shell=True)
 subprocess.call("docker network create --subnet=172.18.0.0/16 longhorn-net", shell=True)
 subprocess.call(("docker run -d --net longhorn-net --ip 172.18.0.2 --expose 9502-9504 -v /volume rancher/longhorn launch replica --listen 172.18.0.2:9502 --size " + SIZE_STR + " /volume").split())
-time.sleep(2)
 subprocess.call(("docker run -d --net longhorn-net --ip 172.18.0.3 --expose 9502-9504 -v /volume rancher/longhorn launch replica --listen 172.18.0.3:9502 --size " + SIZE_STR + " /volume").split())
+time.sleep(3)
+controller = subprocess.Popen(("docker run -d --net longhorn-net --privileged -v /dev:/host/dev -v /proc:/host/proc rancher/longhorn launch controller --frontend tgt --replica tcp://172.18.0.2:9502 --replica tcp://172.18.0.3:9502 vol1").split(), stdout=subprocess.PIPE).communicate()[0].rstrip()
+print "controller = " + str(controller)
 time.sleep(2)
-controller = subprocess.Popen(("docker run -d --net longhorn-net --privileged -v /dev:/host/dev -v /proc:/host/proc rancher/longhorn launch controller --frontend tgt --replica tcp://172.18.0.2:9502 --replica tcp://172.18.0.3:9502 vol1").split(), stdout=subprocess.PIPE).communicate()[0]
-time.sleep(5)
 
 manager = Manager()
 testdata = create_testdata()
