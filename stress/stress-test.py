@@ -29,7 +29,7 @@ MAX_BLOCKS = SIZE / BLOCK_SIZE
 
 def gen_blockdata(blockoffset, nblocks, pattern):
   d = bytearray(nblocks * BLOCK_SIZE)
-  for i in range(nblocks):
+  for i in xrange(nblocks):
     d[i * BLOCK_SIZE + 0] = (blockoffset + i) & 0xFF
     d[i * BLOCK_SIZE + 1] = ((blockoffset + i) >> 8) & 0xFF
     d[i * BLOCK_SIZE + 2] = ((blockoffset + i) >> 16) & 0xFF
@@ -43,18 +43,18 @@ def gen_blockdata(blockoffset, nblocks, pattern):
 def create_testdata():
   return Array('i', MAX_BLOCKS * (MAX_SNAPSHOTS + 1))
 
-def rebuild_replicas(iterations):
-  for iteration in range(iterations):
-    if iteration % 1 == 0:
-      subprocess.call("./bin/longhorn snapshots | tail -n +3 | xargs ./bin/longhorn snapshot rm", shell = True)
+def rebuild_replicas(controller, iterations):
+  for iteration in xrange(iterations):
+#    if iteration % 1 == 0:
+#      subprocess.call("./bin/longhorn snapshots | tail -n +3 | xargs ./bin/longhorn snapshot rm", shell = True)
     time.sleep(SIZE / 1024 / 1024 / 256)
     if random.random() > 0.5:
-      replica_host = "localhost:9502"
+      replica_host = "172.18.0.2:9502"
     else:
-      replica_host = "localhost:9505"
+      replica_host = "172.18.0.3:9502"
     print "Rebuild " + replica_host
-    subprocess.call(("./bin/longhorn rm tcp://" + replica_host).split())
-    subprocess.call(("./bin/longhorn add tcp://" + replica_host).split())
+#    subprocess.call(("./bin/longhorn rm tcp://" + replica_host).split())
+#    subprocess.call(("./bin/longhorn add tcp://" + replica_host).split())
     print "Rebuild " + replica_host + " complete"
 
 
@@ -64,9 +64,9 @@ def gen_pattern():
 def random_write(snapshots, testdata, iterations):
   proc = current_process()
   print "Starting random write in " + str(proc) + " pid = " + str(proc.pid)
-  fd = open("/dev/longhorn/foo", "r+")
+  fd = open("/dev/longhorn/vol1", "r+")
   base = snapshots["livedata"]
-  for iteration in range(iterations):
+  for iteration in xrange(iterations):
     if iteration % 1000 == 0:
       print "Iteration " + str(iteration) + " random write in " + str(proc) + " pid = " + str(proc.pid)
     blockoffset = int(MAX_BLOCKS * random.random())
@@ -74,7 +74,7 @@ def random_write(snapshots, testdata, iterations):
     if nblocks + blockoffset > MAX_BLOCKS:
       nblocks = MAX_BLOCKS - blockoffset
     pattern = gen_pattern()
-    for i in range(nblocks):
+    for i in xrange(nblocks):
       testdata[base + blockoffset + i] = pattern
     fd.seek(blockoffset * BLOCK_SIZE)
     fd.write(gen_blockdata(blockoffset, nblocks, pattern))
@@ -87,9 +87,9 @@ def read_and_check(snapshots, testdata, iterations):
   hole_blocks = 0
   proc = current_process()
   print "Starting read and check in " + str(proc) + " pid = " + str(proc.pid)
-  fd = open("/dev/longhorn/foo", "r")
+  fd = open("/dev/longhorn/vol1", "r")
   base = snapshots["livedata"]
-  for iteration in range(iterations):
+  for iteration in xrange(iterations):
     if iteration % 1000 == 0:
       print "Iteration " + str(iteration) + " read and check in " + str(proc) + " pid = " + str(proc.pid)
     blockoffset = int(MAX_BLOCKS * random.random())
@@ -102,7 +102,7 @@ def read_and_check(snapshots, testdata, iterations):
       time.sleep(1)
       subprocess.call(["killall", "python"])
     current_pattern = gen_pattern()
-    for i in range(nblocks):
+    for i in xrange(nblocks):
       stored_blockoffset = ord(d[BLOCK_SIZE * i + 0]) + (ord(d[BLOCK_SIZE * i + 1]) << 8) + (ord(d[BLOCK_SIZE * i + 2]) << 16) + (ord(d[BLOCK_SIZE * i + 3]) << 24)
       stored_pattern = ord(d[BLOCK_SIZE * i + 4]) + (ord(d[BLOCK_SIZE * i + 5]) << 8) + (ord(d[BLOCK_SIZE * i + 6]) << 16) + (ord(d[BLOCK_SIZE * i + 7]) << 24)
       pattern = testdata[base + blockoffset + i]
@@ -125,17 +125,14 @@ def read_and_check(snapshots, testdata, iterations):
   fd.close()
     
 
-subprocess.call("modprobe target_core_user", shell=True)
-subprocess.call("mount -t configfs none /sys/kernel/config", shell=True)
-
-subprocess.call(["killall", "longhorn", "ssync"])
-subprocess.call("rm -rf /opt/*", shell=True)
-subprocess.call("nohup ./bin/longhorn replica --listen localhost:9502 --size " + SIZE_STR + " /opt/volume > replica.out &", shell=True)
-subprocess.call("nohup ./bin/longhorn replica --listen localhost:9505 --size " + SIZE_STR + " /opt/volume2 > replica2.out &", shell=True)
-time.sleep(3)
-subprocess.call("nohup ./bin/longhorn controller --frontend tcmu --replica tcp://localhost:9502 --replica tcp://localhost:9505 foo > controller.out &", shell=True)
-
-time.sleep(20)
+subprocess.call("docker rm -fv `docker ps -a | grep rancher/longhorn | awk '{print $1}'`", shell=True)
+subprocess.call("docker network create --subnet=172.18.0.0/16 longhorn-net", shell=True)
+subprocess.call(("docker run -d --net longhorn-net --ip 172.18.0.2 --expose 9502-9504 -v /volume rancher/longhorn launch replica --listen 172.18.0.2:9502 --size " + SIZE_STR + " /volume").split())
+time.sleep(2)
+subprocess.call(("docker run -d --net longhorn-net --ip 172.18.0.3 --expose 9502-9504 -v /volume rancher/longhorn launch replica --listen 172.18.0.3:9502 --size " + SIZE_STR + " /volume").split())
+time.sleep(2)
+controller = subprocess.Popen(("docker run -d --net longhorn-net --privileged -v /dev:/host/dev -v /proc:/host/proc rancher/longhorn launch controller --frontend tgt --replica tcp://172.18.0.2:9502 --replica tcp://172.18.0.3:9502 vol1").split(), stdout=subprocess.PIPE).communicate()[0]
+time.sleep(5)
 
 manager = Manager()
 testdata = create_testdata()
@@ -144,17 +141,17 @@ snapshots["livedata"] = 0
 
 workers = []
 
-for i in range(10):
+for i in xrange(10):
   p = Process(target = random_write, args = (snapshots, testdata, 2000000))
   workers.append(p)
   p.start()
 
-for i in range(10):
+for i in xrange(10):
   p = Process(target = read_and_check, args = (snapshots, testdata, 2000000))
   workers.append(p)
   p.start()
 
-p = Process(target = rebuild_replicas, args = (1000,))
+p = Process(target = rebuild_replicas, args = (controller, 1000))
 workers.append(p)
 p.start()
 
