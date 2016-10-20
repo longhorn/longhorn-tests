@@ -34,7 +34,6 @@ def revert_snapshot(snap, controller):
 
 def run_test(i, iterations):
   for iteration in xrange(iterations):
-    print "i = " + str(i)
     replica1 = subprocess.Popen(("docker run -d --net longhorn-net --ip 172.18.1." + str(i) + \
       " --expose 9502-9504 -v /volume rancher/longhorn launch replica --listen 172.18.1." + str(i) + \
       ":9502 --size " + str(DATA_LEN) + " /volume").split(), stdout=subprocess.PIPE).communicate()[0].rstrip()
@@ -45,9 +44,9 @@ def run_test(i, iterations):
       " -v /proc:/host/proc rancher/longhorn launch controller --frontend tgt" + \
       " --replica tcp://172.18.1." + str(i) + ":9502 --replica tcp://172.18.2." + str(i) + \
       ":9502 vol" + str(i)).split(), stdout=subprocess.PIPE).communicate()[0].rstrip()
-    print "replica1 = " + str(replica1)
-    print "replica2 = " + str(replica2)
-    print "controller = " + str(controller)
+    print "i = " + str(i) + " replica1 = " + str(replica1)
+    print "i = " + str(i) + " replica2 = " + str(replica2)
+    print "i = " + str(i) + " controller = " + str(controller)
     time.sleep(3)
     pattern1 = int(255 * random.random())
     write_data(i, pattern1)
@@ -58,7 +57,7 @@ def run_test(i, iterations):
     check_data(i, pattern2)
     revert_snapshot(snap, controller)
     check_data(i, pattern1)
-    subprocess.call("docker kill " + controller + " " + replica1 + " " + replica2, shell=True)
+    subprocess.call("docker stop " + controller + " " + replica1 + " " + replica2, shell=True)
 
 workers = []
 
