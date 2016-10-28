@@ -69,10 +69,10 @@ def run_test(thread, iterations, lock):
         " -v /proc:/host/proc rancher/longhorn launch controller --frontend tgt" + \
         " --replica tcp://172.18.1." + str(thread) + ":9502 --replica tcp://172.18.2." + str(thread) + \
         ":9502 vol" + str(thread)).split(), stdout=subprocess.PIPE).communicate()[0].rstrip()
-      print "iteration = " + str(iteration) + " thread = " + str(thread) + " controller = " + str(controller)
-      wait_for_dev_ready(thread, iteration)
     finally:
       lock.release()
+    print "iteration = " + str(iteration) + " thread = " + str(thread) + " controller = " + str(controller)
+    wait_for_dev_ready(thread, iteration)
     pattern1 = int(255 * random.random())
     write_data(thread, pattern1)
     check_data(thread, pattern1)
@@ -83,9 +83,9 @@ def run_test(thread, iterations, lock):
     lock.acquire()
     try:
       revert_snapshot(snap, controller)
-      wait_for_dev_ready(thread, iteration)
     finally:
       lock.release()
+    wait_for_dev_ready(thread, iteration)
     check_data(thread, pattern1)
     subprocess.call("docker stop " + controller + " " + replica1 + " " + replica2, shell=True)
     subprocess.call("docker rm -fv " + controller + " " + replica1 + " " + replica2, shell=True)
