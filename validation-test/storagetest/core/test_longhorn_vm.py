@@ -2,22 +2,6 @@ from common_fixtures import *  # NOQA
 import datetime
 
 
-@pytest.fixture(scope='session', autouse=True)
-def setup_longhorn(client, super_client, admin_client):
-
-    longhorn_catalog_url = \
-        os.environ.get('LONGHORN_CATALOG_URL', DEFAULT_LONGHORN_CATALOG_URL)
-    setting = admin_client.by_id_setting("catalog.url")
-    if "longhorn=" not in setting.value:
-        catalog_url = setting.value
-        catalog_url = catalog_url + ",longhorn=" + longhorn_catalog_url
-        print catalog_url
-        admin_client.create_setting(name="catalog.url", value=catalog_url)
-        admin_client.create_setting(name="vm.enabled", value="true")
-        time.sleep(60)
-        deploy_longhorn(client, super_client)
-
-
 def test_createVM_with_root_on_longhorn(client):
     port = 8880
     # Create VM with ROOT disk using longhorn driver
@@ -29,6 +13,7 @@ def test_createVM_with_root_on_longhorn(client):
     # Validate reads/writes to ROOT disk
     validate_writes(vm_host, port, is_root=True)
     delete_all(client, [vm])
+    delete_standalone_vm_volumes(client, vm)
 
 
 def test_createVM_with_root_on_longhorn_stop_start(client):
@@ -57,6 +42,7 @@ def test_createVM_with_root_on_longhorn_stop_start(client):
     validate_writes(vm_host, port, is_root=True)
 
     delete_all(client, [vm])
+    delete_standalone_vm_volumes(client, vm)
 
 
 def test_createVM_with_root_on_longhorn_restart(client):
@@ -82,6 +68,7 @@ def test_createVM_with_root_on_longhorn_restart(client):
     validate_writes(vm_host, port, is_root=True)
 
     delete_all(client, [vm])
+    delete_standalone_vm_volumes(client, vm)
 
 
 def test_createVM_with_data_on_longhorn(client):
@@ -95,6 +82,7 @@ def test_createVM_with_data_on_longhorn(client):
     # Validate reads/writes to DATA disk
     validate_writes(vm_host, port, is_root=False)
     delete_all(client, [vm])
+    delete_standalone_vm_volumes(client, vm)
 
 
 def test_createVM_with_data_on_longhorn_stop_start(client):
@@ -118,6 +106,7 @@ def test_createVM_with_data_on_longhorn_stop_start(client):
     validate_writes(vm_host, port, is_root=False)
 
     delete_all(client, [vm])
+    delete_standalone_vm_volumes(client, vm)
 
 
 def test_createVM_with_data_on_longhorn_restart(client):
@@ -140,6 +129,7 @@ def test_createVM_with_data_on_longhorn_restart(client):
 
     validate_writes(vm_host, port, is_root=False)
     delete_all(client, [vm])
+    delete_standalone_vm_volumes(client, vm)
 
 
 def test_createVM_with_root_and_data_on_longhorn(client):
@@ -150,6 +140,7 @@ def test_createVM_with_root_and_data_on_longhorn(client):
     vm_host = get_host_for_vm(client, vm)
     validate_writes(vm_host, port, is_root=True)
     delete_all(client, [vm])
+    delete_standalone_vm_volumes(client, vm)
 
 
 def test_createVM_with_root_and_data_on_longhorn_stop_start(client):
@@ -176,6 +167,7 @@ def test_createVM_with_root_and_data_on_longhorn_stop_start(client):
     validate_writes(vm_host, port, is_root=True)
 
     delete_all(client, [vm])
+    delete_standalone_vm_volumes(client, vm)
 
 
 def test_createVM_with_root_and_data_on_longhorn_restart(client):
@@ -200,6 +192,7 @@ def test_createVM_with_root_and_data_on_longhorn_restart(client):
     validate_writes(vm_host, port, is_root=True)
 
     delete_all(client, [vm])
+    delete_standalone_vm_volumes(client, vm)
 
 
 def test_createVM_rootdisk_replica_delete(super_client, client):
@@ -234,6 +227,7 @@ def test_createVM_rootdisk_replica_delete(super_client, client):
             # wait for replica to get to RW mode
             wait_for_replica_rebuild(controller[0], new_replica_containers)
     delete_all(client, [vm])
+    delete_standalone_vm_volumes(client, vm)
 
 
 def test_createVM_datadisk_replica_delete(super_client, client):
@@ -269,6 +263,7 @@ def test_createVM_datadisk_replica_delete(super_client, client):
             # wait for replica to get to RW mode
             wait_for_replica_rebuild(controller[0], new_replica_containers)
     delete_all(client, [vm])
+    delete_standalone_vm_volumes(client, vm)
 
 
 def test_startVM_with_existing_data_on_longhorn(client):
@@ -299,6 +294,7 @@ def test_startVM_with_existing_data_on_longhorn(client):
     mount_data_dir_check_file(host, port, file_name, content)
 
     delete_all(client, [vm, new_vm])
+    delete_standalone_vm_volumes(client, vm)
 
 
 def test_createVM_with_data_using_dd(client):
@@ -313,6 +309,7 @@ def test_createVM_with_data_using_dd(client):
     writes_with_dd(vm_host, port, is_root=False,
                    in_bg=False, gb_count=7)
     delete_all(client, [vm])
+    delete_standalone_vm_volumes(client, vm)
 
 
 def test_createVM_with_data_using_dd_in_bg(super_client, client,
@@ -369,6 +366,7 @@ def test_createVM_with_data_using_dd_in_bg(super_client, client,
         wait_for_replica_rebuild(controller_containers[0], replica_containers)
 
     delete_all(client, [vm])
+    delete_standalone_vm_volumes(client, vm)
 
 
 def createVM(client, port, host=None, root_disk=True, data_disk=True,

@@ -28,6 +28,11 @@ SSH_HOST_IMAGE_UUID = os.environ.get('CATTLE_SSH_HOST_IMAGE',
 SOCAT_IMAGE_UUID = os.environ.get('CATTLE_CLUSTER_SOCAT_IMAGE',
                                   'docker:rancher/socat-docker:v0.2.0')
 
+DEFAULT_BACKUP_SERVER_IP = \
+    os.environ.get('LONGHORN_BACKUP_SERVER_IP', None)
+DEFAULT_BACKUP_SERVER_SHARE = \
+    os.environ.get('LONGHORN_BACKUP_SERVER_SHARE', "/var/nfs")
+
 WEB_IMAGE_UUID = "docker:sangeetha/testlbsd:latest"
 SSH_IMAGE_UUID = "docker:sangeetha/testclient:latest"
 LB_HOST_ROUTING_IMAGE_UUID = "docker:sangeetha/testnewhostrouting:latest"
@@ -50,6 +55,7 @@ rancher_compose_con = {"container": None, "host": None, "port": "7878"}
 CONTAINER_STATES = ["running", "stopped", "stopping"]
 
 cert_list = {}
+default_backup_target = {"id": None}
 
 MANAGED_NETWORK = "managed"
 UNMANAGED_NETWORK = "bridge"
@@ -69,8 +75,9 @@ VOLUME_DRIVER = "longhorn"
 DATA_DISK = "data"
 ROOT_DISK = "root"
 ENV_NAME_SUFFIX = "volume-"
-DEFAULT_LONGHORN_CATALOG_URL = "https://github.com/rancher/longhorn.git"
-TIME_TO_BOOT_IN_SEC = 300
+DEFAULT_LONGHORN_CATALOG_URL = \
+    "https://github.com/rancher/longhorn-catalog.git"
+TIME_TO_BOOT_IN_SEC = 60
 
 
 @pytest.fixture(scope='session')
@@ -471,8 +478,8 @@ def deploy_longhorn(client, super_client):
     template = json.loads(r.content)
     r.close()
 
-    dockerCompose = template["dockerCompose"]
-    rancherCompose = template["rancherCompose"]
+    dockerCompose = template["files"]["docker-compose.yml"]
+    rancherCompose = template["files"]["rancher-compose.yml"]
     environment = {}
     env = client.create_environment(name="longhorn",
                                     dockerCompose=dockerCompose,
@@ -489,13 +496,21 @@ def deploy_longhorn(client, super_client):
             lambda x: 'State is: ' + x.state,
             timeout=600)
 
-    # Verify that storage pool is created
+    # wait for storage pool to be created
     storagepools = client.list_storage_pool(removed_null=True,
                                             include="hosts",
                                             kind="storagePool",
                                             name="longhorn")
-    print storagepools
-    assert len(storagepools) == 1
+    start = time.time()
+    while len(storagepools) != 1:
+        time.sleep(.5)
+        storagepools = client.list_storage_pool(removed_null=True,
+                                                include="hosts",
+                                                kind="storagePool",
+                                                name="longhorn")
+        if time.time() - start > 30:
+            raise \
+                Exception('Timed out waiting for VM stack to get created')
 
 
 @pytest.fixture(scope='session')
@@ -2894,6 +2909,7 @@ def createVMService(super_client, client, vm_name, port, root_disk=True,
 def get_volume_list_for_vm(client, service, vm, root_disk=True):
     volume_name = get_volume_name_for_vm_service(
         service, vm, root_disk=root_disk)
+    print "volume name " + volume_name
     volumes = client.list_volume(
         name=volume_name)
     assert len(volumes) == 1
@@ -2954,8 +2970,9 @@ def restore_volume_from_backup_for_vm_service(super_client, client, port,
                                               is_root=True):
     snapshot_backup = snapshots[snapshot_backup_index-1]["snapshot"]
     backup = \
-        client.wait_success(snapshot_backup.backup(backupTargetId="1bt1"),
-                            timeout=300)
+        client.wait_success(
+            snapshot_backup.backup(backupTargetId=default_backup_target["id"]),
+            timeout=300)
     assert backup.state == "created"
     restore_volume_from_backup(super_client, client, port,
                                service, snapshots,
@@ -3077,3 +3094,117 @@ def revert_volume_to_snapshot_for_vm_service(super_client, client, port,
             for i in range(snapshot_revert_index, len(snapshots)):
                 file = snapshots[i]["filename"]
                 assert not check_if_file_exists(vm_host, port, dir+"/"+file)
+
+
+@pytest.fixture(scope='session', autouse=True)
+def setup_longhorn(client, super_client, admin_client):
+
+    longhorn_catalog_url = \
+        os.environ.get('LONGHORN_CATALOG_URL', DEFAULT_LONGHORN_CATALOG_URL)
+    setting = admin_client.by_id_setting("catalog.url")
+    if "longhorn=" not in setting.value:
+        catalog_url = setting.value
+        catalog_url = catalog_url + ",longhorn=" + longhorn_catalog_url
+        print catalog_url
+        admin_client.create_setting(name="catalog.url", value=catalog_url)
+        time.sleep(60)
+        deploy_longhorn(client, super_client)
+    if DEFAULT_BACKUP_SERVER_IP is not None:
+        # Add Backup Target
+        backup_target = add_backup(client)
+        default_backup_target["id"] = backup_target.id
+    else:
+        # Use one of the existing Backups
+        backups = client.list_backup_target(removed_null=True)
+        assert len(backups) > 0
+        default_backup_target["id"] = backups[0].id
+    # enable VM in environment resource
+    project = admin_client.list_project(uuid="adminProject")[0]
+    if not project.virtualMachine:
+        project = admin_client.update(
+            project, virtualMachine=True)
+        project = wait_success(admin_client, project)
+
+        # wait for VirtualMachine environment/stack to be active
+        vm_envs = client.list_environment(name="VirtualMachine",
+                                          removed_null=True)
+        start = time.time()
+        while len(vm_envs) != 1:
+            time.sleep(.5)
+            vm_envs = client.list_environment(name="VirtualMachine",
+                                              removed_null=True)
+            if time.time() - start > 30:
+                raise \
+                    Exception('Timed out waiting for VM stack to get created')
+
+        env = client.wait_success(vm_envs[0], 300)
+        assert env.state == "active"
+
+
+# Add Backup Target
+def add_backup(client, nfs_server=DEFAULT_BACKUP_SERVER_IP,
+               share=DEFAULT_BACKUP_SERVER_SHARE):
+    nfs_config = {"server": nfs_server,
+                  "share": share}
+    name = random_str()
+    backup_target = client.create_backupTarget(name=name,
+                                               nfsConfig=nfs_config)
+    backup_target = client.wait_success(backup_target, 300)
+    assert backup_target.state == "created"
+    return backup_target
+
+
+# Delete Inactive volumes relating to Vms
+def delete_vm_volumes(client, vm, service):
+    vm = wait_for_condition(client, vm,
+                            lambda x: x.state == "removed",
+                            lambda x: 'State is: ' + x.state)
+    if vm.state == "removed":
+        vm = client.wait_success(vm.purge())
+    vols = []
+    # ROOT volume in Longhorn
+    volume_name = get_volume_name_for_vm_service(service, vm, root_disk=True)
+    volumes = client.list_volume(name=volume_name)
+    if len(volumes) == 1:
+        vols.append(volumes[0])
+    # DATA volume in Longhorn
+    volume_name = get_volume_name_for_vm_service(service, vm, root_disk=False)
+    volumes = client.list_volume(name=volume_name)
+    if len(volumes) == 1:
+        vols.append(volumes[0])
+
+    for volume in vols:
+        if volume.state == "inactive" or volume.state == "requested":
+            volume = client.wait_success(client.delete(volume))
+            assert volume.state == "removed"
+            volume = client.wait_success(volume.purge())
+            assert volume.state == "purged"
+
+
+# Delete Inactive volumes relating to stand alone Vms
+def delete_standalone_vm_volumes(client, vm):
+    print vm.state
+    vm = wait_for_condition(client, vm,
+                            lambda x: x.state == "removed",
+                            lambda x: 'State is: ' + x.state)
+    if vm.state == "removed":
+        vm = client.wait_success(vm.purge())
+    vols = []
+    # ROOT volume in Longhorn
+    volume_name = get_volume_name(vm, True)
+    volumes = client.list_volume(name=volume_name)
+    if len(volumes) == 1:
+        vols.append(volumes[0])
+
+    # DATA volume in Longhorn
+    volume_name = get_volume_name(vm, False)
+    volumes = client.list_volume(name=volume_name)
+    if len(volumes) == 1:
+        vols.append(volumes[0])
+    print vols
+    for volume in vols:
+        if volume.state == "inactive" or volume.state == "requested":
+            volume = client.wait_success(client.delete(volume))
+            assert volume.state == "removed"
+            volume = client.wait_success(volume.purge())
+            assert volume.state == "purged"

@@ -1,22 +1,6 @@
 from common_fixtures import *  # NOQA
 
 
-@pytest.fixture(scope='session', autouse=True)
-def setup_longhorn(client, super_client, admin_client):
-
-    longhorn_catalog_url = \
-        os.environ.get('LONGHORN_CATALOG_URL', DEFAULT_LONGHORN_CATALOG_URL)
-    setting = admin_client.by_id_setting("catalog.url")
-    if "longhorn=" not in setting.value:
-        catalog_url = setting.value
-        catalog_url = catalog_url + ",longhorn=" + longhorn_catalog_url
-        print catalog_url
-        admin_client.create_setting(name="catalog.url", value=catalog_url)
-        admin_client.create_setting(name="vm.enabled", value="true")
-        time.sleep(60)
-        deploy_longhorn(client, super_client)
-
-
 def test_snapshot_with_root_on_longhorn_1(super_client, client):
     port = 6091
     snapshot_count = 5
@@ -26,6 +10,7 @@ def test_snapshot_with_root_on_longhorn_1(super_client, client):
         "root-snap5-revert3", port, snapshot_count, snapshot_revert_index,
         is_root=True)
     delete_all(client, [env])
+    delete_vm_volumes(client, con[0], service)
 
 
 def test_snapshot_with_root_and_data_on_longhorn_1(super_client, client):
@@ -37,6 +22,7 @@ def test_snapshot_with_root_and_data_on_longhorn_1(super_client, client):
         "data-snap5-revert3", port, snapshot_count, snapshot_revert_index,
         is_root=False)
     delete_all(client, [env])
+    delete_vm_volumes(client, con[0], service)
 
 
 def test_snapshot_with_root_on_longhorn_2(super_client, client):
@@ -48,6 +34,7 @@ def test_snapshot_with_root_on_longhorn_2(super_client, client):
         "root-snap5-revert1", port, snapshot_count, snapshot_revert_index,
         is_root=True)
     delete_all(client, [env])
+    delete_vm_volumes(client, con[0], service)
 
 
 def test_snapshot_with_root_and_data_on_longhorn_2(super_client, client):
@@ -59,6 +46,7 @@ def test_snapshot_with_root_and_data_on_longhorn_2(super_client, client):
         "data-snap5-revert1", port, snapshot_count, snapshot_revert_index,
         is_root=False)
     delete_all(client, [env])
+    delete_vm_volumes(client, con[0], service)
 
 
 def test_snapshot_with_root_on_longhorn_4(super_client, client):
@@ -92,6 +80,7 @@ def test_snapshot_with_root_on_longhorn_4(super_client, client):
                                              is_root=True)
     validate_writes(vm_host, port, is_root=True)
     delete_all(client, [env])
+    delete_vm_volumes(client, vms[0], service)
 
 
 def test_snapshot_with_root_and_data_on_longhorn_4(super_client, client):
@@ -126,6 +115,7 @@ def test_snapshot_with_root_and_data_on_longhorn_4(super_client, client):
                                              is_root=False)
     validate_writes(vm_host, port, is_root=False)
     delete_all(client, [env])
+    delete_vm_volumes(client, vms[0], service)
 
 
 def test_snapshot_with_root_on_longhorn_with_deletes_1(super_client, client):
@@ -141,6 +131,7 @@ def test_snapshot_with_root_on_longhorn_with_deletes_1(super_client, client):
         snapshot_revert_index,
         is_root=True)
     delete_all(client, [env])
+    delete_vm_volumes(client, vms[0], service)
 
 
 def test_snapshot_with_root_on_longhorn_with_deletes_2(super_client, client):
@@ -156,6 +147,7 @@ def test_snapshot_with_root_on_longhorn_with_deletes_2(super_client, client):
         snapshot_revert_index,
         is_root=True)
     delete_all(client, [env])
+    delete_vm_volumes(client, vms[0], service)
 
 
 def test_snapshot_with_root_on_longhorn_with_deletes_3(super_client, client):
@@ -173,6 +165,7 @@ def test_snapshot_with_root_on_longhorn_with_deletes_3(super_client, client):
         is_root=True)
 
     delete_all(client, [env])
+    delete_vm_volumes(client, vms[0], service)
 
 
 def test_snapshot_with_root_on_longhorn_with_deletes_4(super_client, client):
@@ -190,6 +183,7 @@ def test_snapshot_with_root_on_longhorn_with_deletes_4(super_client, client):
         is_root=True)
 
     delete_all(client, [env])
+    delete_vm_volumes(client, vms[0], service)
 
 
 def test_snapshot_with_root_on_longhorn_with_deletes_5(super_client, client):
@@ -207,6 +201,7 @@ def test_snapshot_with_root_on_longhorn_with_deletes_5(super_client, client):
         is_root=True)
 
     delete_all(client, [env])
+    delete_vm_volumes(client, vms[0], service)
 
 
 def test_snapshot_with_data_on_longhorn_with_deletes_1(super_client, client):
@@ -222,6 +217,7 @@ def test_snapshot_with_data_on_longhorn_with_deletes_1(super_client, client):
         snapshot_revert_index,
         is_root=False)
     delete_all(client, [env])
+    delete_vm_volumes(client, vms[0], service)
 
 
 def test_snapshot_with_data_on_longhorn_with_deletes_2(super_client, client):
@@ -237,6 +233,7 @@ def test_snapshot_with_data_on_longhorn_with_deletes_2(super_client, client):
         snapshot_revert_index,
         is_root=False)
     delete_all(client, [env])
+    delete_vm_volumes(client, vms[0], service)
 
 
 def test_snapshot_with_data_on_longhorn_with_deletes_3(super_client, client):
@@ -254,6 +251,7 @@ def test_snapshot_with_data_on_longhorn_with_deletes_3(super_client, client):
         is_root=False)
 
     delete_all(client, [env])
+    delete_vm_volumes(client, vms[0], service)
 
 
 def test_snapshot_with_data_on_longhorn_with_deletes_4(super_client, client):
@@ -271,6 +269,7 @@ def test_snapshot_with_data_on_longhorn_with_deletes_4(super_client, client):
         is_root=False)
 
     delete_all(client, [env])
+    delete_vm_volumes(client, vms[0], service)
 
 
 def test_snapshot_with_data_on_longhorn_with_deletes_5(super_client, client):
@@ -288,6 +287,7 @@ def test_snapshot_with_data_on_longhorn_with_deletes_5(super_client, client):
         is_root=False)
 
     delete_all(client, [env])
+    delete_vm_volumes(client, vms[0], service)
 
 
 def test_snapshot_with_data_on_longhorn_with_deletes_6(super_client, client):
@@ -305,6 +305,7 @@ def test_snapshot_with_data_on_longhorn_with_deletes_6(super_client, client):
         is_root=False)
 
     delete_all(client, [env])
+    delete_vm_volumes(client, vms[0], service)
 
 
 def test_backup_with_root_on_longhorn_1(super_client, client):
@@ -318,6 +319,7 @@ def test_backup_with_root_on_longhorn_1(super_client, client):
         is_root=True)
 
     delete_all(client, [env])
+    delete_vm_volumes(client, vms[0], service)
 
 
 def test_backup_with_data_on_longhorn_1(super_client, client):
@@ -331,6 +333,7 @@ def test_backup_with_data_on_longhorn_1(super_client, client):
         is_root=False)
 
     delete_all(client, [env])
+    delete_vm_volumes(client, vms[0], service)
 
 
 def test_backup_with_root_on_longhorn_2(super_client, client):
@@ -344,6 +347,7 @@ def test_backup_with_root_on_longhorn_2(super_client, client):
         is_root=True)
 
     delete_all(client, [env])
+    delete_vm_volumes(client, vms[0], service)
 
 
 def test_backup_with_data_on_longhorn_2(super_client, client):
@@ -357,6 +361,7 @@ def test_backup_with_data_on_longhorn_2(super_client, client):
         is_root=False)
 
     delete_all(client, [env])
+    delete_vm_volumes(client, vms[0], service)
 
 
 def test_backup_with_root_on_longhorn_with_deletes_1(super_client, client):
@@ -374,6 +379,7 @@ def test_backup_with_root_on_longhorn_with_deletes_1(super_client, client):
         is_root=True)
 
     delete_all(client, [env])
+    delete_vm_volumes(client, vms[0], service)
 
 
 def test_backup_with_root_on_longhorn_with_deletes_2(super_client, client):
@@ -389,6 +395,7 @@ def test_backup_with_root_on_longhorn_with_deletes_2(super_client, client):
         snapshot_revert_index,
         is_root=True)
     delete_all(client, [env])
+    delete_vm_volumes(client, vms[0], service)
 
 
 def test_backup_with_data_on_longhorn_with_deletes_1(super_client, client):
@@ -406,6 +413,7 @@ def test_backup_with_data_on_longhorn_with_deletes_1(super_client, client):
         is_root=False)
 
     delete_all(client, [env])
+    delete_vm_volumes(client, vms[0], service)
 
 
 def test_backup_with_data_on_longhorn_with_deletes_2(super_client, client):
@@ -421,6 +429,7 @@ def test_backup_with_data_on_longhorn_with_deletes_2(super_client, client):
         snapshot_revert_index,
         is_root=False)
     delete_all(client, [env])
+    delete_vm_volumes(client, vms[0], service)
 
 
 def test_root_restore_from_backup_after_backup_deletes(super_client, client):
@@ -438,6 +447,7 @@ def test_root_restore_from_backup_after_backup_deletes(super_client, client):
         snapshot_count_2, snapshot_backup_index_2,
         is_root=True)
     delete_all(client, [env])
+    delete_vm_volumes(client, vms[0], service)
 
 
 def test_data_restore_from_backup_after_backup_deletes(super_client, client):
@@ -455,6 +465,7 @@ def test_data_restore_from_backup_after_backup_deletes(super_client, client):
         snapshot_count_2, snapshot_backup_index_2,
         is_root=False)
     delete_all(client, [env])
+    delete_vm_volumes(client, vms[0], service)
 
 
 def revert_to_snapshot(super_client, client, vm_name, port, snapshot_count,
@@ -574,8 +585,9 @@ def restore_from_backup_after_backup_deletes(super_client, client,
     # Create a backup
     snapshot_backup = snapshots2[snapshot_backup_index_2 - 1]["snapshot"]
     backup2 = \
-        client.wait_success(snapshot_backup.backup(backupTargetId="1bt1"),
-                            timeout=120)
+        client.wait_success(
+            snapshot_backup.backup(backupTargetId=default_backup_target["id"]),
+            timeout=120)
     assert backup2.state == "created"
 
     # Take snapshots of root/data disk
@@ -641,7 +653,8 @@ def test_createVM_with_root_and_data_on_longhorn_with_iops(
         validate_writes(vm_host, port, is_root=True)
         validate_writes(vm_host, port, is_root=False)
 
-    system_envname = get_system_env_name_for_vm_service(vms[0], root_disk=True)
+    system_envname = \
+        get_system_env_name_for_vm_service(service, vms[0], root_disk=True)
     replica_containers = get_service_containers_with_name(
         super_client, service, system_envname + "_" + REPLICA)
     assert len(replica_containers) == 2
@@ -657,6 +670,7 @@ def test_createVM_with_root_and_data_on_longhorn_with_iops(
         ["HostConfig"]["BlkioDeviceWriteIOps"][0]["Rate"] == writeiops
 
     delete_all(client, [env])
+    delete_vm_volumes(client, vms[0], service)
 
 
 def test_multiple_service_deployment(client):
