@@ -9,6 +9,7 @@ import directio
 import mmap
 from os import path
 import stat
+import datetime
 
 from multiprocessing import Process, Manager, Array, current_process, Lock
 
@@ -71,49 +72,56 @@ def write_data(i, pattern):
 def check_data(i, pattern):
   data = readat_direct("/dev/longhorn/vol" + str(i), 0, PAGE_SIZE)
   assert ord(data[0]) == pattern
- 
+
 def create_snapshot(controller):
   return subprocess.Popen(("docker exec " + controller + " launch snapshot create").split(), stdout=subprocess.PIPE).communicate()[0].rstrip()
 
 def revert_snapshot(snap, controller):
   subprocess.call("docker exec " + controller + " launch snapshot revert " + snap, shell = True)
 
-def wait_for_dev_ready(i, iteration):
+def wait_for_dev_ready(i, iteration, controller):
   dev = "/dev/longhorn/vol" + str(i)
   init_time = time.time()
   while time.time() - init_time < 20:
     if os.path.exists(dev):
       mode = os.stat(dev).st_mode
       if stat.S_ISBLK(mode):
-        print "iteration = " + str(iteration) + " thread = " + str(i) + " Device ready after " + str(time.time() - init_time) + " seconds"
+        print "%s: iteration = %d thread = %d : Device ready after %.3f seconds" \
+                % (datetime.datetime.now(), iteration, i, time.time() - init_time)
         return
     time.sleep(0.02)
-  print("FAIL TO WAIT FOR DEVICE READY")
+  print "%s: iteration = %d thread = %d : FAIL TO WAIT FOR DEVICE READY, docker logs:" \
+          % (datetime.datetime.now(), iteration, i)
+  subprocess.call("docker logs " + controller, shell=True)
   return
 
 def run_test(thread, iterations, lock):
   for iteration in xrange(iterations):
-    replica1 = subprocess.Popen(("docker run -d --name r1-" + str(iteration) + "-" + str(thread) + \
-      " --net longhorn-net --ip 172.18.1." + str(thread) + \
-      " --expose 9502-9504 -v /volume rancher/longhorn launch replica --listen 172.18.1." + str(thread) + \
-      ":9502 --size " + str(DATA_LEN) + " /volume").split(), stdout=subprocess.PIPE).communicate()[0].rstrip()
-    replica2 = subprocess.Popen(("docker run -d --name r2-" + str(iteration) + "-" + str(thread) + \
-      " --net longhorn-net --ip 172.18.2." + str(thread) + \
-      " --expose 9502-9504 -v /volume rancher/longhorn launch replica --listen 172.18.2." + str(thread) + \
-      ":9502 --size " + str(DATA_LEN) + " /volume").split(), stdout=subprocess.PIPE).communicate()[0].rstrip()
-    print "iteration = " + str(iteration) + " thread = " + str(thread) + " replica1 = " + str(replica1)
-    print "iteration = " + str(iteration) + " thread = " + str(thread) + " replica2 = " + str(replica2)
+    replica1 = subprocess.Popen(("docker run -d --name r1-%d-%d" % (iteration, thread) + \
+        " --net longhorn-net --ip 172.18.1.%d --expose 9502-9504 -v /volume" % (thread) + \
+        " rancher/longhorn launch replica --listen 172.18.1.%d:9502 --size %d /volume" \
+        % (thread, DATA_LEN)).split(), stdout=subprocess.PIPE).communicate()[0].rstrip()
+    print "%s: iteration = %d thread = %d replica1 = %s" \
+            % (datetime.datetime.now(), iteration, thread, replica1)
+    replica2 = subprocess.Popen(("docker run -d --name r2-%d-%d" % (iteration, thread) + \
+        " --net longhorn-net --ip 172.18.2.%d --expose 9502-9504 -v /volume" % (thread) + \
+        " rancher/longhorn launch replica --listen 172.18.2.%d:9502 --size %d /volume" \
+        % (thread, DATA_LEN)).split(), stdout=subprocess.PIPE).communicate()[0].rstrip()
+    print "%s: iteration = %d thread = %d replica2 = %s" \
+            % (datetime.datetime.now(), iteration, thread, replica2)
     lock.acquire()
     try:
-      controller = subprocess.Popen(("docker run -d --name c-" + str(iteration) + "-" + str(thread) + \
+      controller = subprocess.Popen(("docker run -d --name c-%d-%d" % (iteration, thread) + \
         " --net longhorn-net --privileged -v /dev:/host/dev" + \
         " -v /proc:/host/proc rancher/longhorn launch controller --frontend tgt" + \
-        " --replica tcp://172.18.1." + str(thread) + ":9502 --replica tcp://172.18.2." + str(thread) + \
-        ":9502 vol" + str(thread)).split(), stdout=subprocess.PIPE).communicate()[0].rstrip()
+        " --replica tcp://172.18.1.%d:9502 --replica tcp://172.18.2.%d:9502 vol%d" \
+        % (thread, thread, thread)).split(), \
+        stdout=subprocess.PIPE).communicate()[0].rstrip()
     finally:
       lock.release()
-    print "iteration = " + str(iteration) + " thread = " + str(thread) + " controller = " + str(controller)
-    wait_for_dev_ready(thread, iteration)
+    print "%s: iteration = %d thread = %d controller = %s" \
+            % (datetime.datetime.now(), iteration, thread, controller)
+    wait_for_dev_ready(thread, iteration, controller)
     pattern1 = int(255 * random.random())
     write_data(thread, pattern1)
     check_data(thread, pattern1)
@@ -126,10 +134,10 @@ def run_test(thread, iterations, lock):
       revert_snapshot(snap, controller)
     finally:
       lock.release()
-    wait_for_dev_ready(thread, iteration)
+    wait_for_dev_ready(thread, iteration, controller)
     check_data(thread, pattern1)
-    subprocess.call("docker stop " + controller + " " + replica1 + " " + replica2, shell=True)
-    subprocess.call("docker rm -fv " + controller + " " + replica1 + " " + replica2, shell=True)
+    subprocess.call("docker stop %s %s %s" % (controller, replica1, replica2), shell=True)
+    subprocess.call("docker rm -fv %s %s %s" % (controller, replica1, replica2), shell=True)
 
 workers = []
 
