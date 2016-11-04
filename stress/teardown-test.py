@@ -136,7 +136,12 @@ def run_test(thread, iterations, lock):
       lock.release()
     wait_for_dev_ready(thread, iteration, controller)
     check_data(thread, pattern1)
-    subprocess.call("docker stop %s %s %s" % (controller, replica1, replica2), shell=True)
+    lock.acquire()
+    try:
+      subprocess.call("docker stop %s" % (controller), shell=True)
+    finally:
+      lock.release()
+    subprocess.call("docker stop %s %s" % (replica1, replica2), shell=True)
     subprocess.call("docker rm -fv %s %s %s" % (controller, replica1, replica2), shell=True)
 
 workers = []
