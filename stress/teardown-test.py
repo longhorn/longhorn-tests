@@ -85,14 +85,14 @@ def revert_snapshot(snap, controller):
 def wait_for_dev_ready(i, iteration, controller):
   dev = "/dev/longhorn/vol" + str(i)
   init_time = time.time()
-  while time.time() - init_time < 20:
+  while time.time() - init_time < 60:
     if os.path.exists(dev):
       mode = os.stat(dev).st_mode
       if stat.S_ISBLK(mode):
         print "%s: iteration = %d thread = %d : Device ready after %.3f seconds" \
                 % (datetime.datetime.now(), iteration, i, time.time() - init_time)
         return
-    time.sleep(0.02)
+    time.sleep(0.05)
   print "%s: iteration = %d thread = %d : FAIL TO WAIT FOR DEVICE READY, docker logs:" \
           % (datetime.datetime.now(), iteration, i)
   subprocess.call("docker logs " + controller, shell=True)
@@ -101,12 +101,12 @@ def wait_for_dev_ready(i, iteration, controller):
 def wait_for_dev_deleted(i, iteration, controller):
   dev = "/dev/longhorn/vol" + str(i)
   init_time = time.time()
-  while time.time() - init_time < 20:
+  while time.time() - init_time < 60:
     if not os.path.exists(dev):
         print "%s: iteration = %d thread = %d : Device deleted after %.3f seconds" \
                 % (datetime.datetime.now(), iteration, i, time.time() - init_time)
         return
-    time.sleep(0.02)
+    time.sleep(0.05)
   print "%s: iteration = %d thread = %d : FAIL TO WAIT FOR DEVICE DELETED, docker logs:" \
           % (datetime.datetime.now(), iteration, i)
   subprocess.call("docker logs " + controller, shell=True)
