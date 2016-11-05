@@ -20,10 +20,11 @@ subprocess.call("docker rm -fv `docker ps -qa`", shell=True)
 subprocess.call("docker network rm longhorn-net", shell=True)
 subprocess.call("docker network create --subnet=172.18.0.0/16 longhorn-net", shell=True)
 
-
-DATA_LEN = 100 * 1024
+NUM_PAGES = 16
 
 PAGE_SIZE = 4096
+
+DATA_LEN = NUM_PAGES * PAGE_SIZE
 
 def readat_direct(dev, offset, length):
     pg = offset / PAGE_SIZE
@@ -67,11 +68,13 @@ def writeat_direct(dev, offset, data):
     return ret
 
 def write_data(i, pattern):
-  writeat_direct("/dev/longhorn/vol" + str(i), 0, str(chr(pattern))*PAGE_SIZE)
+  for page in xrange(0, NUM_PAGES):
+    writeat_direct("/dev/longhorn/vol" + str(i), page * PAGE_SIZE, str(chr(pattern))*PAGE_SIZE)
 
 def check_data(i, pattern):
-  data = readat_direct("/dev/longhorn/vol" + str(i), 0, PAGE_SIZE)
-  assert ord(data[0]) == pattern
+  for page in xrange(0, NUM_PAGES):
+    data = readat_direct("/dev/longhorn/vol" + str(i), page * PAGE_SIZE, PAGE_SIZE)
+    assert ord(data[0]) == pattern
 
 def create_snapshot(controller):
   return subprocess.Popen(("docker exec " + controller + " launch snapshot create").split(), stdout=subprocess.PIPE).communicate()[0].rstrip()
@@ -95,6 +98,21 @@ def wait_for_dev_ready(i, iteration, controller):
   subprocess.call("docker logs " + controller, shell=True)
   return
 
+def wait_for_dev_deleted(i, iteration, controller):
+  dev = "/dev/longhorn/vol" + str(i)
+  init_time = time.time()
+  while time.time() - init_time < 20:
+    if not os.path.exists(dev):
+        print "%s: iteration = %d thread = %d : Device deleted after %.3f seconds" \
+                % (datetime.datetime.now(), iteration, i, time.time() - init_time)
+        return
+    time.sleep(0.02)
+  print "%s: iteration = %d thread = %d : FAIL TO WAIT FOR DEVICE DELETED, docker logs:" \
+          % (datetime.datetime.now(), iteration, i)
+  subprocess.call("docker logs " + controller, shell=True)
+  return
+
+
 def run_test(thread, iterations, lock):
   for iteration in xrange(iterations):
     replica1 = subprocess.Popen(("docker run -d --name r1-%d-%d" % (iteration, thread) + \
@@ -117,11 +135,12 @@ def run_test(thread, iterations, lock):
         " --replica tcp://172.18.1.%d:9502 --replica tcp://172.18.2.%d:9502 vol%d" \
         % (thread, thread, thread)).split(), \
         stdout=subprocess.PIPE).communicate()[0].rstrip()
+      wait_for_dev_ready(thread, iteration, controller)
     finally:
       lock.release()
     print "%s: iteration = %d thread = %d controller = %s" \
             % (datetime.datetime.now(), iteration, thread, controller)
-    wait_for_dev_ready(thread, iteration, controller)
+#    wait_for_dev_ready(thread, iteration, controller)
     pattern1 = int(255 * random.random())
     write_data(thread, pattern1)
     check_data(thread, pattern1)
@@ -129,16 +148,22 @@ def run_test(thread, iterations, lock):
     pattern2 = int(255 * random.random())
     write_data(thread, pattern2)
     check_data(thread, pattern2)
+    if random.random() < 0.1:
+      print "%s: iteration = %d thread = %d sleep 30 seconds" \
+            % (datetime.datetime.now(), iteration, thread)
+      time.sleep(30)
     lock.acquire()
     try:
       revert_snapshot(snap, controller)
+      wait_for_dev_ready(thread, iteration, controller)
     finally:
       lock.release()
-    wait_for_dev_ready(thread, iteration, controller)
+#    wait_for_dev_ready(thread, iteration, controller)
     check_data(thread, pattern1)
     lock.acquire()
     try:
       subprocess.call("docker stop %s" % (controller), shell=True)
+      wait_for_dev_deleted(thread, iteration, controller)
     finally:
       lock.release()
     subprocess.call("docker stop %s %s" % (replica1, replica2), shell=True)
