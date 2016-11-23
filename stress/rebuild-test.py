@@ -74,10 +74,10 @@ def check_data(thread, index, pattern):
     assert ord(data[0]) == pattern
 
 def create_snapshot(controller):
-  return subprocess.Popen(("docker exec " + controller + " launch snapshot create").split(), stdout=subprocess.PIPE).communicate()[0].rstrip()
+  return subprocess.Popen(("docker exec " + controller + " longhorn snapshot create").split(), stdout=subprocess.PIPE).communicate()[0].rstrip()
 
 def revert_snapshot(snap, controller):
-  proc = subprocess.Popen(("docker exec " + controller + " launch snapshot revert " + snap).split(), stdout=subprocess.PIPE)
+  proc = subprocess.Popen(("docker exec " + controller + " longhorn snapshot revert " + snap).split(), stdout=subprocess.PIPE)
   proc.communicate()[0]
   return proc.returncode
 
@@ -111,19 +111,30 @@ def rebuild_replica(thread, controller, replica_num, replica):
         % (replica_host_port, DATA_LEN)).split(), stdout=subprocess.PIPE).communicate()[0].rstrip()
   print "%s: thread = %d new replica%d = %s" % (datetime.datetime.now(), thread, replica_num, newreplica)
 
-  subprocess.call(("docker exec " + controller + " launch rm tcp://" + replica_host_port).split())
-  subprocess.call(("docker exec " + controller + " launch add tcp://" + replica_host_port).split())
+  subprocess.call(("docker exec " + controller + " longhorn rm tcp://" + replica_host_port).split())
+  subprocess.call(("docker exec " + controller + " longhorn add tcp://" + replica_host_port).split())
   subprocess.call("docker rm -fv %s" % (replica), shell=True)
-  subprocess.call("docker exec " + controller + " launch snapshots | tail -n +3 | xargs docker exec " + controller + " launch snapshot rm", shell = True)
   return newreplica
+
+
+def get_snapshot_list(controller):
+    snapshots = subprocess.check_output("docker exec " + controller +
+                " longhorn snapshots | tail -n +3", shell=True)
+    return snapshots.split()
 
 def rebuild_replicas(thread, controller, replica1, replica2):
   while True:
+    print "%s: thread = %d rebuild replica test start" \
+              % (datetime.datetime.now(), thread)
     if random.random() < 0.5:
       replica1 = rebuild_replica(thread, controller, 1, replica1)
     else:
       replica2 = rebuild_replica(thread, controller, 2, replica2)
-
+    for snapshot in get_snapshot_list(controller):
+        snapshots = subprocess.check_output("docker exec " + controller +
+                " longhorn snapshots rm " + snapshot, shell=True)
+    print "%s: thread = %d rebuild replica test ends and snapshot cleaned up" \
+              % (datetime.datetime.now(), thread)
 
 def read_write(thread, iterations, lock):
   replica1 = subprocess.Popen(("docker run -d --name r1-%d" % (thread) + \
@@ -150,9 +161,11 @@ def read_write(thread, iterations, lock):
 
   rebuild_proc = Process(target = rebuild_replicas, args = (thread, controller, replica1, replica2))
   rebuild_proc.start()
- 
+
   try:
     for iteration in xrange(iterations):
+      print "%s: thread = %d iteration = %d started" \
+                % (datetime.datetime.now(), thread, iteration)
       pattern1 = int(255 * random.random())
       index = int(NUM_PAGES * random.random())
       index2 = int(NUM_PAGES * random.random())
@@ -160,8 +173,14 @@ def read_write(thread, iterations, lock):
       write_data(thread, index2, pattern1)
       check_data(thread, index, pattern1)
       check_data(thread, index2, pattern1)
-      # Skip snapshot tests for now as we cannot take snapshots for volumes being rebuilt.
-      continue
+      snapshot_count = len(get_snapshot_list(controller))
+      print "%s: thread = %d iteration = %d current snapshot counts %d" \
+                  % (datetime.datetime.now(), thread, iteration, snapshot_count)
+      # We cannot take more snapshots, just wait util they got removed
+      if snapshot_count > 100:
+          print "%s: thread = %d iteration = %d skip snapshot, waiting for removal" \
+                  % (datetime.datetime.now(), thread, iteration)
+          continue
       snap = create_snapshot(controller)
       if not snap:
         continue
@@ -170,6 +189,10 @@ def read_write(thread, iterations, lock):
       check_data(thread, index, pattern2)
       if index2 != index:
         check_data(thread, index2, pattern1)
+      print "%s: thread = %d iteration = %d snapshot created %s and verified" \
+                % (datetime.datetime.now(), thread, iteration, snap)
+      # Skip snapshot tests for now as we cannot revert snapshots for volumes being rebuilt.
+      continue
       lock.acquire()
       try:
         if revert_snapshot(snap, controller) != 0:
