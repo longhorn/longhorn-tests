@@ -145,6 +145,7 @@ def run_test(thread, iterations, lock):
     write_data(thread, pattern1)
     check_data(thread, pattern1)
     snap = create_snapshot(controller)
+    assert snap != ""
     pattern2 = int(255 * random.random())
     write_data(thread, pattern2)
     check_data(thread, pattern2)
