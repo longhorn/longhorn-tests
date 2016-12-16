@@ -136,7 +136,7 @@ def rebuild_replicas(thread, controller, replica1, replica2):
     print "%s: thread = %d rebuild replica test ends and snapshot cleaned up" \
               % (datetime.datetime.now(), thread)
 
-def read_write(thread, iterations, lock):
+def read_write(thread, iterations):
   replica1 = subprocess.Popen(("docker run -d --name r1-%d" % (thread) + \
         " --net longhorn-net --ip 172.18.1.%d --expose 9502-9504 -v /volume" % (thread) + \
         " rancher/longhorn launch replica --listen 172.18.1.%d:9502 --size %d /volume" \
@@ -147,17 +147,13 @@ def read_write(thread, iterations, lock):
         " rancher/longhorn launch replica --listen 172.18.2.%d:9502 --size %d /volume" \
         % (thread, DATA_LEN)).split(), stdout=subprocess.PIPE).communicate()[0].rstrip()
   print "%s: thread = %d replica2 = %s" % (datetime.datetime.now(), thread, replica2)
-  lock.acquire()
-  try:
-    controller = subprocess.Popen(("docker run -d --name c-%d" % (thread)+ \
+  controller = subprocess.Popen(("docker run -d --name c-%d" % (thread)+ \
         " --net longhorn-net --privileged -v /dev:/host/dev" + \
         " -v /proc:/host/proc rancher/longhorn launch controller --frontend tgt" + \
         " --replica tcp://172.18.1.%d:9502 --replica tcp://172.18.2.%d:9502 vol%d" \
         % (thread, thread, thread)).split(), stdout=subprocess.PIPE).communicate()[0].rstrip()
-    print "%s: controller = %s" % (datetime.datetime.now(), controller)
-    wait_for_dev_ready(thread, -1, controller)
-  finally:
-    lock.release()
+  print "%s: controller = %s" % (datetime.datetime.now(), controller)
+  wait_for_dev_ready(thread, -1, controller)
 
   rebuild_proc = Process(target = rebuild_replicas, args = (thread, controller, replica1, replica2))
   rebuild_proc.start()
@@ -193,13 +189,9 @@ def read_write(thread, iterations, lock):
                 % (datetime.datetime.now(), thread, iteration, snap)
       # Skip snapshot tests for now as we cannot revert snapshots for volumes being rebuilt.
       continue
-      lock.acquire()
-      try:
-        if revert_snapshot(snap, controller) != 0:
+      if revert_snapshot(snap, controller) != 0:
           continue
-        wait_for_dev_ready(thread, iteration, controller)
-      finally:
-        lock.release()
+      wait_for_dev_ready(thread, iteration, controller)
       check_data(thread, index, pattern1)
       if index2 != index:
         check_data(thread, index2, pattern1)
@@ -208,12 +200,10 @@ def read_write(thread, iterations, lock):
 
 workers = []
 
-lock = Lock()
-
 nthreads = 1
 
 for thread in xrange(nthreads):
-  p = Process(target = read_write, args = (thread + 1, 100000, lock))
+  p = Process(target = read_write, args = (thread + 1, 100000))
   workers.append(p)
   p.start()
 

@@ -113,7 +113,7 @@ def wait_for_dev_deleted(i, iteration, controller):
   return
 
 
-def run_test(thread, iterations, lock):
+def run_test(thread, iterations):
   for iteration in xrange(iterations):
     replica1 = subprocess.Popen(("docker run -d --name r1-%d-%d" % (iteration, thread) + \
         " --net longhorn-net --ip 172.18.1.%d --expose 9502-9504 -v /volume" % (thread) + \
@@ -127,20 +127,15 @@ def run_test(thread, iterations, lock):
         % (thread, DATA_LEN)).split(), stdout=subprocess.PIPE).communicate()[0].rstrip()
     print "%s: iteration = %d thread = %d replica2 = %s" \
             % (datetime.datetime.now(), iteration, thread, replica2)
-    lock.acquire()
-    try:
-      controller = subprocess.Popen(("docker run -d --name c-%d-%d" % (iteration, thread) + \
-        " --net longhorn-net --privileged -v /dev:/host/dev" + \
-        " -v /proc:/host/proc rancher/longhorn launch controller --frontend tgt" + \
-        " --replica tcp://172.18.1.%d:9502 --replica tcp://172.18.2.%d:9502 vol%d" \
-        % (thread, thread, thread)).split(), \
-        stdout=subprocess.PIPE).communicate()[0].rstrip()
-      wait_for_dev_ready(thread, iteration, controller)
-    finally:
-      lock.release()
+    controller = subprocess.Popen(("docker run -d --name c-%d-%d" % (iteration, thread) + \
+      " --net longhorn-net --privileged -v /dev:/host/dev" + \
+      " -v /proc:/host/proc rancher/longhorn launch controller --frontend tgt" + \
+      " --replica tcp://172.18.1.%d:9502 --replica tcp://172.18.2.%d:9502 vol%d" \
+      % (thread, thread, thread)).split(), \
+      stdout=subprocess.PIPE).communicate()[0].rstrip()
+    wait_for_dev_ready(thread, iteration, controller)
     print "%s: iteration = %d thread = %d controller = %s" \
             % (datetime.datetime.now(), iteration, thread, controller)
-#    wait_for_dev_ready(thread, iteration, controller)
     pattern1 = int(255 * random.random())
     write_data(thread, pattern1)
     check_data(thread, pattern1)
@@ -153,29 +148,18 @@ def run_test(thread, iterations, lock):
       print "%s: iteration = %d thread = %d sleep 30 seconds" \
             % (datetime.datetime.now(), iteration, thread)
       time.sleep(30)
-    lock.acquire()
-    try:
-      revert_snapshot(snap, controller)
-      wait_for_dev_ready(thread, iteration, controller)
-    finally:
-      lock.release()
-#    wait_for_dev_ready(thread, iteration, controller)
+    revert_snapshot(snap, controller)
+    wait_for_dev_ready(thread, iteration, controller)
     check_data(thread, pattern1)
-    lock.acquire()
-    try:
-      subprocess.call("docker stop %s" % (controller), shell=True)
-      wait_for_dev_deleted(thread, iteration, controller)
-    finally:
-      lock.release()
+    subprocess.call("docker stop %s" % (controller), shell=True)
+    wait_for_dev_deleted(thread, iteration, controller)
     subprocess.call("docker stop %s %s" % (replica1, replica2), shell=True)
     subprocess.call("docker rm -fv %s %s %s" % (controller, replica1, replica2), shell=True)
 
 workers = []
 
-lock = Lock()
-
 for thread in xrange(20):
-  p = Process(target = run_test, args = (thread + 1, 1000, lock))
+  p = Process(target = run_test, args = (thread + 1, 1000))
   workers.append(p)
   p.start()
 
