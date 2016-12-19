@@ -200,7 +200,7 @@ def read_write(thread, iterations):
 
 workers = []
 
-nthreads = 1
+nthreads = 10
 
 for thread in xrange(nthreads):
   p = Process(target = read_write, args = (thread + 1, 100000))
