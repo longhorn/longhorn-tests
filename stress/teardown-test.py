@@ -119,14 +119,14 @@ def run_test(thread, iterations):
         " --net longhorn-net --ip 172.18.1.%d --expose 9502-9504 -v /volume" % (thread) + \
         " rancher/longhorn launch replica --listen 172.18.1.%d:9502 --size %d /volume" \
         % (thread, DATA_LEN)).split(), stdout=subprocess.PIPE).communicate()[0].rstrip()
-    print "%s: iteration = %d thread = %d replica1 = %s" \
-            % (datetime.datetime.now(), iteration, thread, replica1)
+    print "%s: iteration = %d thread = %d name = r1-%d-%d replica1 = %s" \
+            % (datetime.datetime.now(), iteration, thread, iteration, thread, replica1)
     replica2 = subprocess.Popen(("docker run -d --name r2-%d-%d" % (iteration, thread) + \
         " --net longhorn-net --ip 172.18.2.%d --expose 9502-9504 -v /volume" % (thread) + \
         " rancher/longhorn launch replica --listen 172.18.2.%d:9502 --size %d /volume" \
         % (thread, DATA_LEN)).split(), stdout=subprocess.PIPE).communicate()[0].rstrip()
-    print "%s: iteration = %d thread = %d replica2 = %s" \
-            % (datetime.datetime.now(), iteration, thread, replica2)
+    print "%s: iteration = %d thread = %d name = r2-%d-%d replica2 = %s" \
+            % (datetime.datetime.now(), iteration, thread, iteration, thread, replica2)
     controller = subprocess.Popen(("docker run -d --name c-%d-%d" % (iteration, thread) + \
       " --net longhorn-net --privileged -v /dev:/host/dev" + \
       " -v /proc:/host/proc rancher/longhorn launch controller --frontend tgt" + \
@@ -134,8 +134,8 @@ def run_test(thread, iterations):
       % (thread, thread, thread)).split(), \
       stdout=subprocess.PIPE).communicate()[0].rstrip()
     wait_for_dev_ready(thread, iteration, controller)
-    print "%s: iteration = %d thread = %d controller = %s" \
-            % (datetime.datetime.now(), iteration, thread, controller)
+    print "%s: iteration = %d thread = %d name = c-%d-%d controller = %s " \
+            % (datetime.datetime.now(), iteration, thread, iteration, thread, controller)
     pattern1 = int(255 * random.random())
     write_data(thread, pattern1)
     check_data(thread, pattern1)
