@@ -41,6 +41,10 @@ def readat_direct(dev, offset, length):
     try:
         os.lseek(f, pg_offset, os.SEEK_SET)
         ret = directio.read(f, to_read)
+    except OSError as e:
+        print "%s: encounter error in readat_direct for %s" \
+                % (datetime.datetime.now(), dev)
+        raise
     finally:
         os.close(f)
     return ret[in_page_offset: in_page_offset + length]
@@ -61,6 +65,10 @@ def writeat_direct(dev, offset, data):
         m.seek(offset % PAGE_SIZE)
         m.write(data)
         ret = directio.write(f, m)
+    except OSError as e:
+        print "%s: encounter error in writeat_direct for %s" \
+                % (datetime.datetime.now(), dev)
+        raise
     finally:
         m.close()
         os.close(f)
