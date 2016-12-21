@@ -85,7 +85,7 @@ def check_data(i, pattern):
     assert ord(data[0]) == pattern
 
 def create_snapshot(controller):
-  return subprocess.Popen(("docker exec " + controller + " launch snapshot create").split(), stdout=subprocess.PIPE).communicate()[0].rstrip()
+  return subprocess.check_output(("docker exec " + controller + " launch snapshot create").split()).rstrip()
 
 def revert_snapshot(snap, controller):
   subprocess.call("docker exec " + controller + " launch snapshot revert " + snap, shell = True)
@@ -123,24 +123,23 @@ def wait_for_dev_deleted(i, iteration, controller):
 
 def run_test(thread, iterations):
   for iteration in xrange(iterations):
-    replica1 = subprocess.Popen(("docker run -d --name r1-%d-%d" % (iteration, thread) + \
+    replica1 = subprocess.check_output(("docker run -d --name r1-%d-%d" % (iteration, thread) + \
         " --net longhorn-net --ip 172.18.1.%d --expose 9502-9504 -v /volume" % (thread) + \
         " rancher/longhorn launch replica --listen 172.18.1.%d:9502 --size %d /volume" \
-        % (thread, DATA_LEN)).split(), stdout=subprocess.PIPE).communicate()[0].rstrip()
+        % (thread, DATA_LEN)).split()).rstrip()
     print "%s: iteration = %d thread = %d name = r1-%d-%d replica1 = %s" \
             % (datetime.datetime.now(), iteration, thread, iteration, thread, replica1)
-    replica2 = subprocess.Popen(("docker run -d --name r2-%d-%d" % (iteration, thread) + \
+    replica2 = subprocess.check_output(("docker run -d --name r2-%d-%d" % (iteration, thread) + \
         " --net longhorn-net --ip 172.18.2.%d --expose 9502-9504 -v /volume" % (thread) + \
         " rancher/longhorn launch replica --listen 172.18.2.%d:9502 --size %d /volume" \
-        % (thread, DATA_LEN)).split(), stdout=subprocess.PIPE).communicate()[0].rstrip()
+        % (thread, DATA_LEN)).split()).rstrip()
     print "%s: iteration = %d thread = %d name = r2-%d-%d replica2 = %s" \
             % (datetime.datetime.now(), iteration, thread, iteration, thread, replica2)
-    controller = subprocess.Popen(("docker run -d --name c-%d-%d" % (iteration, thread) + \
+    controller = subprocess.check_output(("docker run -d --name c-%d-%d" % (iteration, thread) + \
       " --net longhorn-net --privileged -v /dev:/host/dev" + \
       " -v /proc:/host/proc rancher/longhorn launch controller --frontend tgt" + \
       " --replica tcp://172.18.1.%d:9502 --replica tcp://172.18.2.%d:9502 vol%d" \
-      % (thread, thread, thread)).split(), \
-      stdout=subprocess.PIPE).communicate()[0].rstrip()
+      % (thread, thread, thread)).split()).rstrip()
     wait_for_dev_ready(thread, iteration, controller)
     print "%s: iteration = %d thread = %d name = c-%d-%d controller = %s " \
             % (datetime.datetime.now(), iteration, thread, iteration, thread, controller)

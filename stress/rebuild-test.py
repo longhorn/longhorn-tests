@@ -82,12 +82,10 @@ def check_data(thread, index, pattern):
     assert ord(data[0]) == pattern
 
 def create_snapshot(controller):
-  return subprocess.Popen(("docker exec " + controller + " longhorn snapshot create").split(), stdout=subprocess.PIPE).communicate()[0].rstrip()
+  return subprocess.check_output(("docker exec " + controller + " longhorn snapshot create").split()).rstrip()
 
 def revert_snapshot(snap, controller):
-  proc = subprocess.Popen(("docker exec " + controller + " longhorn snapshot revert " + snap).split(), stdout=subprocess.PIPE)
-  proc.communicate()[0]
-  return proc.returncode
+  subprocess.check_call(("docker exec " + controller + " longhorn snapshot revert " + snap).split())
 
 def wait_for_dev_ready(thread, iteration, controller):
   dev = "/dev/longhorn/vol%d" % (thread)
@@ -113,15 +111,15 @@ def rebuild_replica(thread, controller, replica_num, replica):
   replica_host_port = replica_host + ":9502"
   subprocess.call("docker kill %s" % (replica), shell=True)
   count = count + 1
-  newreplica = subprocess.Popen(("docker run -d --name r%d-%d-%d" % (replica_num, thread, count) + \
+  newreplica = subprocess.check_output(("docker run -d --name r%d-%d-%d" % (replica_num, thread, count) + \
         " --net longhorn-net --ip %s --expose 9502-9504 -v /volume" % (replica_host) + \
         " rancher/longhorn launch replica --listen %s --size %d /volume" \
-        % (replica_host_port, DATA_LEN)).split(), stdout=subprocess.PIPE).communicate()[0].rstrip()
+        % (replica_host_port, DATA_LEN)).split()).rstrip()
   print "%s: thread = %d new replica%d = %s" % (datetime.datetime.now(), thread, replica_num, newreplica)
 
-  subprocess.call(("docker exec " + controller + " longhorn rm tcp://" + replica_host_port).split())
-  subprocess.call(("docker exec " + controller + " longhorn add tcp://" + replica_host_port).split())
-  subprocess.call("docker rm -fv %s" % (replica), shell=True)
+  subprocess.check_output(("docker exec " + controller + " longhorn rm tcp://" + replica_host_port).split())
+  subprocess.check_output(("docker exec " + controller + " longhorn add tcp://" + replica_host_port).split())
+  subprocess.check_output("docker rm -fv %s" % (replica), shell=True)
   return newreplica
 
 
@@ -145,21 +143,21 @@ def rebuild_replicas(thread, controller, replica1, replica2):
               % (datetime.datetime.now(), thread)
 
 def read_write(thread, iterations):
-  replica1 = subprocess.Popen(("docker run -d --name r1-%d" % (thread) + \
+  replica1 = subprocess.check_output(("docker run -d --name r1-%d" % (thread) + \
         " --net longhorn-net --ip 172.18.1.%d --expose 9502-9504 -v /volume" % (thread) + \
         " rancher/longhorn launch replica --listen 172.18.1.%d:9502 --size %d /volume" \
-        % (thread, DATA_LEN)).split(), stdout=subprocess.PIPE).communicate()[0].rstrip()
+        % (thread, DATA_LEN)).split()).rstrip()
   print "%s: thread = %d replica1 = %s" % (datetime.datetime.now(), thread, replica1)
-  replica2 = subprocess.Popen(("docker run -d --name r2-%d" % (thread) + \
+  replica2 = subprocess.check_output(("docker run -d --name r2-%d" % (thread) + \
         " --net longhorn-net --ip 172.18.2.%d --expose 9502-9504 -v /volume" % (thread) + \
         " rancher/longhorn launch replica --listen 172.18.2.%d:9502 --size %d /volume" \
-        % (thread, DATA_LEN)).split(), stdout=subprocess.PIPE).communicate()[0].rstrip()
+        % (thread, DATA_LEN)).split()).rstrip()
   print "%s: thread = %d replica2 = %s" % (datetime.datetime.now(), thread, replica2)
-  controller = subprocess.Popen(("docker run -d --name c-%d" % (thread)+ \
+  controller = subprocess.check_output(("docker run -d --name c-%d" % (thread)+ \
         " --net longhorn-net --privileged -v /dev:/host/dev" + \
         " -v /proc:/host/proc rancher/longhorn launch controller --frontend tgt" + \
         " --replica tcp://172.18.1.%d:9502 --replica tcp://172.18.2.%d:9502 vol%d" \
-        % (thread, thread, thread)).split(), stdout=subprocess.PIPE).communicate()[0].rstrip()
+        % (thread, thread, thread)).split()).rstrip()
   print "%s: controller = %s" % (datetime.datetime.now(), controller)
   wait_for_dev_ready(thread, -1, controller)
 
