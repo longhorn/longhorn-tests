@@ -147,18 +147,21 @@ def read_write(thread, iterations):
         " --net longhorn-net --ip 172.18.1.%d --expose 9502-9504 -v /volume" % (thread) + \
         " rancher/longhorn launch replica --listen 172.18.1.%d:9502 --size %d /volume" \
         % (thread, DATA_LEN)).split()).rstrip()
-  print "%s: thread = %d replica1 = %s" % (datetime.datetime.now(), thread, replica1)
+  print "%s: thread = %d name = r1-%d replica1 = %s" \
+          % (datetime.datetime.now(), thread, thread, replica1)
   replica2 = subprocess.check_output(("docker run -d --name r2-%d" % (thread) + \
         " --net longhorn-net --ip 172.18.2.%d --expose 9502-9504 -v /volume" % (thread) + \
         " rancher/longhorn launch replica --listen 172.18.2.%d:9502 --size %d /volume" \
         % (thread, DATA_LEN)).split()).rstrip()
-  print "%s: thread = %d replica2 = %s" % (datetime.datetime.now(), thread, replica2)
+  print "%s: thread = %d name = r2-%d replica2 = %s" \
+          % (datetime.datetime.now(), thread, thread, replica2)
   controller = subprocess.check_output(("docker run -d --name c-%d" % (thread)+ \
         " --net longhorn-net --privileged -v /dev:/host/dev" + \
         " -v /proc:/host/proc rancher/longhorn launch controller --frontend tgt" + \
         " --replica tcp://172.18.1.%d:9502 --replica tcp://172.18.2.%d:9502 vol%d" \
         % (thread, thread, thread)).split()).rstrip()
-  print "%s: controller = %s" % (datetime.datetime.now(), controller)
+  print "%s: thread = %d name = c-%d controller = %s" \
+          % (datetime.datetime.now(), thread, thread, controller)
   wait_for_dev_ready(thread, -1, controller)
 
   rebuild_proc = Process(target = rebuild_replicas, args = (thread, controller, replica1, replica2))
