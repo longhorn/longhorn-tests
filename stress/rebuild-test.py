@@ -117,9 +117,9 @@ def rebuild_replica(thread, controller, replica_num, replica):
         % (replica_host_port, DATA_LEN)).split()).rstrip()
   print "%s: thread = %d new replica%d = %s" % (datetime.datetime.now(), thread, replica_num, newreplica)
 
-  subprocess.check_output(("docker exec " + controller + " longhorn rm tcp://" + replica_host_port).split())
-  subprocess.check_output(("docker exec " + controller + " longhorn add tcp://" + replica_host_port).split())
-  subprocess.check_output("docker rm -fv %s" % (replica), shell=True)
+  subprocess.check_call(("docker exec " + controller + " longhorn rm tcp://" + replica_host_port).split())
+  subprocess.check_call(("docker exec " + controller + " longhorn add tcp://" + replica_host_port).split())
+  subprocess.check_call("docker rm -fv %s" % (replica), shell=True)
   return newreplica
 
 

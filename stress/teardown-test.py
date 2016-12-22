@@ -88,7 +88,7 @@ def create_snapshot(controller):
   return subprocess.check_output(("docker exec " + controller + " launch snapshot create").split()).rstrip()
 
 def revert_snapshot(snap, controller):
-  subprocess.call("docker exec " + controller + " launch snapshot revert " + snap, shell = True)
+  subprocess.check_call("docker exec " + controller + " launch snapshot revert " + snap, shell = True)
 
 def wait_for_dev_ready(i, iteration, controller):
   dev = "/dev/longhorn/vol" + str(i)

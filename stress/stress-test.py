@@ -46,15 +46,15 @@ def create_testdata():
 def rebuild_replicas(controller, iterations):
   for iteration in xrange(iterations):
     if iteration % 1 == 0:
-      subprocess.call("docker exec " + controller + " launch snapshots | tail -n +3 | xargs docker exec " + controller + " launch snapshot rm", shell = True)
+      subprocess.check_call("docker exec " + controller + " launch snapshots | tail -n +3 | xargs docker exec " + controller + " launch snapshot rm", shell = True)
     time.sleep(SIZE / 1024 / 1024 / 256)
     if random.random() > 0.5:
       replica_host = "172.18.0.2:9502"
     else:
       replica_host = "172.18.0.3:9502"
     print "Rebuild " + replica_host
-    subprocess.call(("docker exec " + controller + " launch rm tcp://" + replica_host).split())
-    subprocess.call(("docker exec " + controller + " launch add tcp://" + replica_host).split())
+    subprocess.check_call(("docker exec " + controller + " launch rm tcp://" + replica_host).split())
+    subprocess.check_call(("docker exec " + controller + " launch add tcp://" + replica_host).split())
     print "Rebuild " + replica_host + " complete"
 
 
