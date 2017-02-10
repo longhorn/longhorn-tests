@@ -1,6 +1,6 @@
 flake8==2.5.1
 paramiko
-pytest==2.7.1
+pytest==2.9.2
 pytest-xdist
 requests==2.6.0
 cattle==0.5.1
