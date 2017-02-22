@@ -15,6 +15,7 @@ import random
 import sys
 import threading
 import time
+import datetime
 from multiprocessing import Process, Manager, Array, current_process
 
 SIZE = 20 * 1024 * 1024 * 1024
@@ -52,10 +53,12 @@ def rebuild_replicas(controller, iterations):
       replica_host = "172.18.0.2:9502"
     else:
       replica_host = "172.18.0.3:9502"
-    print "Rebuild " + replica_host
+    print "%s Rebuild: %s " \
+            % (datetime.datetime.now(), replica_host)
     subprocess.check_call(("docker exec " + controller + " launch rm tcp://" + replica_host).split())
     subprocess.check_call(("docker exec " + controller + " launch add tcp://" + replica_host).split())
-    print "Rebuild " + replica_host + " complete"
+    print "%s Rebuild %s complete" \
+            % (datetime.datetime.now(), replica_host)
 
 
 def gen_pattern():
@@ -63,12 +66,14 @@ def gen_pattern():
 
 def random_write(snapshots, testdata, iterations):
   proc = current_process()
-  print "Starting random write in " + str(proc) + " pid = " + str(proc.pid)
+  print "%s Starting random write in %s pid = %d" \
+            % (datetime.datetime.now(), str(proc), proc.pid)
   fd = open("/dev/longhorn/vol1", "r+")
   base = snapshots["livedata"]
   for iteration in xrange(iterations):
     if iteration % 1000 == 0:
-      print "Iteration " + str(iteration) + " random write in " + str(proc) + " pid = " + str(proc.pid)
+      print "%s: Iteration %d random write in %s pid = %d" \
+            % (datetime.datetime.now(), iteration, str(proc), proc.pid)
     blockoffset = int(MAX_BLOCKS * random.random())
     nblocks = int(BATCH_SIZE * random.random())
     if nblocks + blockoffset > MAX_BLOCKS:
@@ -79,19 +84,22 @@ def random_write(snapshots, testdata, iterations):
     fd.seek(blockoffset * BLOCK_SIZE)
     fd.write(gen_blockdata(blockoffset, nblocks, pattern))
     fd.flush()
-  print "Completed random write in " + str(proc) + " pid = " + str(proc.pid)
+  print "%s: Completed random write in %s pid = %d" \
+        % (datetime.datetime.now(), str(proc), proc.pid)
   fd.close()
 
 def read_and_check(snapshots, testdata, iterations):
   data_blocks = 0
   hole_blocks = 0
   proc = current_process()
-  print "Starting read and check in " + str(proc) + " pid = " + str(proc.pid)
+  print "%s: Starting read and check in %s pid = %d" \
+        % (datetime.datetime.now(), str(proc), proc.pid)
   fd = open("/dev/longhorn/vol1", "r")
   base = snapshots["livedata"]
   for iteration in xrange(iterations):
     if iteration % 1000 == 0:
-      print "Iteration " + str(iteration) + " read and check in " + str(proc) + " pid = " + str(proc.pid)
+      print "%s: Iteration %d read and check in %s pid = %d" \
+            % (datetime.datetime.now(), iteration, str(proc), proc.pid)
     blockoffset = int(MAX_BLOCKS * random.random())
     nblocks = int(BATCH_SIZE * random.random())
     if nblocks + blockoffset > MAX_BLOCKS:
@@ -119,11 +127,16 @@ def read_and_check(snapshots, testdata, iterations):
           assert stored_pattern == 0
           hole_blocks = hole_blocks + 1
       except AssertionError:
-        print "current_pattern = " + str(current_pattern) + " nblocks = " + str(nblocks) + " blockoffset = " + str(blockoffset) + " i = " + str(i) + " stored_blockoffset = " + str(stored_blockoffset) + " pattern = " + str(pattern) + " stored_pattern = " + str(stored_pattern)
-  print "data_blocks: " + str(data_blocks) + " hole_blocks: " + str(hole_blocks)
-  print "Completed read and check in " + str(proc) + " pid = " + str(proc.pid)
+        print ("%s: current_pattern = %d nblocks = %d blockoffset = %d " + \
+            "i = %d stored_blockoffset = %d pattern = %d stored_pattern = %d") \
+            % (datetime.datetime.now(), current_pattern, nblocks, blockoffset,
+                    i, stored_blockoffset, pattern, stored_pattern)
+  print "%s: data_blocks: %d hole_blocks: %d" \
+        % (datetime.datetime.now(), data_blocks, hole_blocks)
+  print "%s: Completed read and check in %s pid = %d" \
+        % (datetime.datetime.now(), str(proc), proc.pid)
   fd.close()
-    
+
 
 subprocess.call("sudo iscsiadm -m node --logout", shell=True)
 subprocess.call("sudo rm /dev/longhorn/vol1", shell=True)
