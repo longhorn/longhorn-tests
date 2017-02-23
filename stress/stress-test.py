@@ -16,6 +16,8 @@ import sys
 import threading
 import time
 import datetime
+import os
+import stat
 from multiprocessing import Process, Manager, Array, current_process
 
 SIZE = 20 * 1024 * 1024 * 1024
@@ -27,6 +29,22 @@ INIT_TIME = time.time()
 MAX_SNAPSHOTS = 16
 MAX_TIME_SLACK = 1000
 MAX_BLOCKS = SIZE / BLOCK_SIZE
+
+def wait_for_dev_ready(i, controller):
+  dev = "/dev/longhorn/vol" + str(i)
+  init_time = time.time()
+  while time.time() - init_time < 60:
+    if os.path.exists(dev):
+      mode = os.stat(dev).st_mode
+      if stat.S_ISBLK(mode):
+        print "%s: Device ready after %.3f seconds" \
+                % (datetime.datetime.now(), time.time() - init_time)
+        return
+    time.sleep(0.05)
+  print "%s: FAIL TO WAIT FOR DEVICE READY, docker logs:" \
+          % (datetime.datetime.now())
+  subprocess.call("docker logs " + controller, shell=True)
+  assert False
 
 def gen_blockdata(blockoffset, nblocks, pattern):
   d = bytearray(nblocks * BLOCK_SIZE)
@@ -149,8 +167,8 @@ controller = subprocess.check_output("docker run -d --net longhorn-net " +
         "--privileged -v /dev:/host/dev -v /proc:/host/proc rancher/longhorn " +
         "launch controller --frontend tgt --replica tcp://172.18.0.2:9502 " +
         "--replica tcp://172.18.0.3:9502 vol1", shell=True).rstrip()
-print "controller = " + str(controller)
-time.sleep(2)
+print "controller = " + controller
+wait_for_dev_ready(1, controller)
 
 manager = Manager()
 testdata = create_testdata()
