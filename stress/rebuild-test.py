@@ -103,24 +103,39 @@ def wait_for_dev_ready(thread, iteration, controller):
   subprocess.call("docker logs " + controller, shell=True)
   return
 
+def get_new_ip(thread, ip1, ip2):
+  while True:
+      # avoid controller ip
+      subnet = int(252 * random.random()) + 2
+      ip = "172.18.%s.%s" % (subnet, thread)
+      if ip != ip1 and ip != ip2:
+          break
+  return ip
+
 count = 0
 
-def rebuild_replica(thread, controller, replica_num, replica):
+
+def rebuild_replica(thread, controller, replica_num, replica, rebuild_ip, remain_ip):
   global count
-  replica_host = "172.18.%d.%d" % (replica_num, thread)
+  replica_host = get_new_ip(thread, rebuild_ip, remain_ip)
   replica_host_port = replica_host + ":9502"
+  rebuild_host_port = rebuild_ip + ":9502"
   subprocess.call("docker kill %s" % (replica), shell=True)
   count = count + 1
   newreplica = subprocess.check_output(("docker run -d --name r%d-%d-%d" % (replica_num, thread, count) + \
         " --net longhorn-net --ip %s --expose 9502-9504 -v /volume" % (replica_host) + \
         " rancher/longhorn launch replica --listen %s --size %d /volume" \
         % (replica_host_port, DATA_LEN)).split()).rstrip()
-  print "%s: thread = %d new replica%d = %s" % (datetime.datetime.now(), thread, replica_num, newreplica)
 
-  subprocess.check_call(("docker exec " + controller + " longhorn rm tcp://" + replica_host_port).split())
+  print "%s: thread = %d remove old replica%d = %s ip = %s" % (datetime.datetime.now(),
+          thread, replica_num, replica, rebuild_ip)
+  subprocess.check_call(("docker exec " + controller + " longhorn rm tcp://" + rebuild_host_port).split())
+
+  print "%s: thread = %d create new replica%d = %s ip = %s" % (datetime.datetime.now(),
+          thread, replica_num, newreplica, replica_host)
   subprocess.check_call(("docker exec " + controller + " longhorn add tcp://" + replica_host_port).split())
   subprocess.check_call("docker rm -fv %s" % (replica), shell=True)
-  return newreplica
+  return newreplica, replica_host
 
 
 def get_snapshot_list(controller):
@@ -128,14 +143,16 @@ def get_snapshot_list(controller):
                 " longhorn snapshots | tail -n +3", shell=True)
     return snapshots.split()
 
-def rebuild_replicas(thread, controller, replica1, replica2):
+def rebuild_replicas(thread, controller, replica1, replica1_ip, replica2, replica2_ip):
   while True:
     print "%s: thread = %d rebuild replica test start" \
               % (datetime.datetime.now(), thread)
     if random.random() < 0.5:
-      replica1 = rebuild_replica(thread, controller, 1, replica1)
+      replica1, replica1_ip = rebuild_replica(thread, controller, 1, replica1,
+              replica1_ip, replica2_ip)
     else:
-      replica2 = rebuild_replica(thread, controller, 2, replica2)
+      replica2, replica2_ip = rebuild_replica(thread, controller, 2, replica2,
+              replica2_ip, replica1_ip)
     for snapshot in get_snapshot_list(controller):
         snapshots = subprocess.check_output("docker exec " + controller +
                 " longhorn snapshots rm " + snapshot, shell=True)
@@ -143,28 +160,32 @@ def rebuild_replicas(thread, controller, replica1, replica2):
               % (datetime.datetime.now(), thread)
 
 def read_write(thread, iterations):
+  replica1_ip = "172.18.2.%d" % (thread)
   replica1 = subprocess.check_output(("docker run -d --name r1-%d" % (thread) + \
-        " --net longhorn-net --ip 172.18.1.%d --expose 9502-9504 -v /volume" % (thread) + \
-        " rancher/longhorn launch replica --listen 172.18.1.%d:9502 --size %d /volume" \
-        % (thread, DATA_LEN)).split()).rstrip()
-  print "%s: thread = %d name = r1-%d replica1 = %s" \
-          % (datetime.datetime.now(), thread, thread, replica1)
+        " --net longhorn-net --ip %s --expose 9502-9504 -v /volume" % (replica1_ip) + \
+        " rancher/longhorn launch replica --listen %s:9502 --size %d /volume" \
+        % (replica1_ip, DATA_LEN)).split()).rstrip()
+  print "%s: thread = %d name = r1-%d replica1 = %s ip = %s" \
+          % (datetime.datetime.now(), thread, thread, replica1, replica1_ip)
+  replica2_ip = "172.18.3.%d" % (thread)
   replica2 = subprocess.check_output(("docker run -d --name r2-%d" % (thread) + \
-        " --net longhorn-net --ip 172.18.2.%d --expose 9502-9504 -v /volume" % (thread) + \
-        " rancher/longhorn launch replica --listen 172.18.2.%d:9502 --size %d /volume" \
-        % (thread, DATA_LEN)).split()).rstrip()
-  print "%s: thread = %d name = r2-%d replica2 = %s" \
-          % (datetime.datetime.now(), thread, thread, replica2)
+        " --net longhorn-net --ip %s --expose 9502-9504 -v /volume" % (replica2_ip) + \
+	" rancher/longhorn launch replica --listen %s:9502 --size %d /volume" \
+        % (replica2_ip, DATA_LEN)).split()).rstrip()
+  print "%s: thread = %d name = r2-%d replica2 = %s ip = %s" \
+          % (datetime.datetime.now(), thread, thread, replica2, replica2_ip)
+  controller_ip = "172.18.1.%d" % (thread)
   controller = subprocess.check_output(("docker run -d --name c-%d" % (thread)+ \
-        " --net longhorn-net --privileged -v /dev:/host/dev" + \
+        " --net longhorn-net --ip %s --privileged -v /dev:/host/dev" % (controller_ip) + \
         " -v /proc:/host/proc rancher/longhorn launch controller --frontend tgt" + \
-        " --replica tcp://172.18.1.%d:9502 --replica tcp://172.18.2.%d:9502 vol%d" \
-        % (thread, thread, thread)).split()).rstrip()
-  print "%s: thread = %d name = c-%d controller = %s" \
-          % (datetime.datetime.now(), thread, thread, controller)
+        " --replica tcp://%s:9502 --replica tcp://%s:9502 vol%d" \
+        % (replica1_ip, replica2_ip, thread)).split()).rstrip()
+  print "%s: thread = %d name = c-%d controller = %s ip = %s" \
+          % (datetime.datetime.now(), thread, thread, controller, controller_ip)
   wait_for_dev_ready(thread, -1, controller)
 
-  rebuild_proc = Process(target = rebuild_replicas, args = (thread, controller, replica1, replica2))
+  rebuild_proc = Process(target = rebuild_replicas, args = (thread, controller,\
+          replica1, replica1_ip, replica2, replica2_ip))
   rebuild_proc.start()
 
   try:
