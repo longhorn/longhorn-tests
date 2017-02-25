@@ -79,6 +79,9 @@ def write_data(thread, index, pattern):
 
 def check_data(thread, index, pattern):
     data = readat_direct("/dev/longhorn/vol%d" % (thread), index * PAGE_SIZE, PAGE_SIZE)
+    if ord(data[0]) != pattern:
+        print "Expected %s but get %s at index %d for vol%d" % (pattern,
+                data[0], index, thread)
     assert ord(data[0]) == pattern
 
 def create_snapshot(controller):
