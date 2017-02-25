@@ -123,26 +123,32 @@ def wait_for_dev_deleted(i, iteration, controller):
 
 def run_test(thread, iterations):
   for iteration in xrange(iterations):
+    replica1_ip = "172.18.%d.%d" % (iteration % 80 + 1, thread)
     replica1 = subprocess.check_output(("docker run -d --name r1-%d-%d" % (iteration, thread) + \
-        " --net longhorn-net --ip 172.18.1.%d --expose 9502-9504 -v /volume" % (thread) + \
-        " rancher/longhorn launch replica --listen 172.18.1.%d:9502 --size %d /volume" \
-        % (thread, DATA_LEN)).split()).rstrip()
-    print "%s: iteration = %d thread = %d name = r1-%d-%d replica1 = %s" \
-            % (datetime.datetime.now(), iteration, thread, iteration, thread, replica1)
+        " --net longhorn-net --ip %s --expose 9502-9504 -v /volume" % (replica1_ip) + \
+        " rancher/longhorn launch replica --listen %s:9502 --size %d /volume" \
+        % (replica1_ip, DATA_LEN)).split()).rstrip()
+    print "%s: iteration = %d thread = %d name = r1-%d-%d replica1 = %s ip = %s" \
+            % (datetime.datetime.now(), iteration, thread, iteration, thread,
+                    replica1, replica1_ip)
+    replica2_ip = "172.18.%d.%d" % (iteration % 80 + 81, thread)
     replica2 = subprocess.check_output(("docker run -d --name r2-%d-%d" % (iteration, thread) + \
-        " --net longhorn-net --ip 172.18.2.%d --expose 9502-9504 -v /volume" % (thread) + \
-        " rancher/longhorn launch replica --listen 172.18.2.%d:9502 --size %d /volume" \
-        % (thread, DATA_LEN)).split()).rstrip()
-    print "%s: iteration = %d thread = %d name = r2-%d-%d replica2 = %s" \
-            % (datetime.datetime.now(), iteration, thread, iteration, thread, replica2)
+        " --net longhorn-net --ip %s --expose 9502-9504 -v /volume" % (replica2_ip) + \
+        " rancher/longhorn launch replica --listen %s:9502 --size %d /volume" \
+        % (replica2_ip, DATA_LEN)).split()).rstrip()
+    print "%s: iteration = %d thread = %d name = r2-%d-%d replica2 = %s ip = %s" \
+            % (datetime.datetime.now(), iteration, thread, iteration, thread,
+                    replica2, replica2_ip)
+    controller_ip = "172.18.%d.%d" % (iteration % 80 + 161, thread)
     controller = subprocess.check_output(("docker run -d --name c-%d-%d" % (iteration, thread) + \
-      " --net longhorn-net --privileged -v /dev:/host/dev" + \
+      " --net longhorn-net --ip %s --privileged -v /dev:/host/dev" % (controller_ip) + \
       " -v /proc:/host/proc rancher/longhorn launch controller --frontend tgt" + \
-      " --replica tcp://172.18.1.%d:9502 --replica tcp://172.18.2.%d:9502 vol%d" \
-      % (thread, thread, thread)).split()).rstrip()
+      " --replica tcp://%s:9502 --replica tcp://%s:9502 vol%d" \
+      % (replica1_ip, replica2_ip, thread)).split()).rstrip()
     wait_for_dev_ready(thread, iteration, controller)
-    print "%s: iteration = %d thread = %d name = c-%d-%d controller = %s " \
-            % (datetime.datetime.now(), iteration, thread, iteration, thread, controller)
+    print "%s: iteration = %d thread = %d name = c-%d-%d controller = %s ip = %s" \
+            % (datetime.datetime.now(), iteration, thread, iteration, thread,
+                    controller, controller_ip)
     pattern1 = int(255 * random.random())
     write_data(thread, pattern1)
     check_data(thread, pattern1)
