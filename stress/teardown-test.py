@@ -26,6 +26,10 @@ PAGE_SIZE = 4096
 
 DATA_LEN = NUM_PAGES * PAGE_SIZE
 
+MAX_RETRY = 5
+
+WAIT_TIMEOUT = 300
+
 def readat_direct(dev, offset, length):
     pg = offset / PAGE_SIZE
     in_page_offset = offset % PAGE_SIZE
@@ -93,7 +97,7 @@ def revert_snapshot(snap, controller):
 def wait_for_dev_ready(i, iteration, controller):
   dev = "/dev/longhorn/vol" + str(i)
   init_time = time.time()
-  while time.time() - init_time < 60:
+  while time.time() - init_time < WAIT_TIMEOUT:
     if os.path.exists(dev):
       mode = os.stat(dev).st_mode
       if stat.S_ISBLK(mode):
@@ -109,7 +113,7 @@ def wait_for_dev_ready(i, iteration, controller):
 def wait_for_dev_deleted(i, iteration, controller):
   dev = "/dev/longhorn/vol" + str(i)
   init_time = time.time()
-  while time.time() - init_time < 60:
+  while time.time() - init_time < WAIT_TIMEOUT:
     if not os.path.exists(dev):
         print "%s: iteration = %d thread = %d : Device deleted after %.3f seconds" \
                 % (datetime.datetime.now(), iteration, i, time.time() - init_time)
@@ -140,11 +144,33 @@ def run_test(thread, iterations):
             % (datetime.datetime.now(), iteration, thread, iteration, thread,
                     replica2, replica2_ip)
     controller_ip = "172.18.%d.%d" % (iteration % 80 + 161, thread)
-    controller = subprocess.check_output(("docker run -d --name c-%d-%d" % (iteration, thread) + \
-      " --net longhorn-net --ip %s --privileged -v /dev:/host/dev" % (controller_ip) + \
-      " -v /proc:/host/proc rancher/longhorn launch controller --frontend tgt" + \
-      " --replica tcp://%s:9502 --replica tcp://%s:9502 vol%d" \
-      % (replica1_ip, replica2_ip, thread)).split()).rstrip()
+    controller_name = "c-%d-%d" % (iteration, thread)
+    started = False
+    count = 0
+    print "About to create controller for " + controller_name
+    while not started and count < MAX_RETRY:
+        try:
+            controller = subprocess.check_output(("docker run -d --name %s" % (controller_name) + \
+                    " --net longhorn-net --ip %s --privileged -v /dev:/host/dev" % (controller_ip) + \
+                    " -v /proc:/host/proc rancher/longhorn launch controller --frontend tgt" + \
+                    " --replica tcp://%s:9502 --replica tcp://%s:9502 vol%d" \
+                    % (replica1_ip, replica2_ip, thread)).split()).rstrip()
+            print "controller %s created as %s" % (controller_name, controller)
+            started = True
+        except subprocess.CalledProcessError as ex:
+            status = subprocess.check_output(
+                "docker ps -a -f NAME=%s --format {{.Status}}" \
+                % (controller_name), shell=True)
+            if status != "" and status.strip() != "Created":
+                raise ex
+            # Now we know it's the Docker race bug
+            print "Docker's bug result in failed to start controller, retrying: " + str(ex)
+            subprocess.call("docker rm -fv " + controller_name, shell=True)
+            time.sleep(1)
+            count += 1
+
+    assert started
+
     wait_for_dev_ready(thread, iteration, controller)
     print "%s: iteration = %d thread = %d name = c-%d-%d controller = %s ip = %s" \
             % (datetime.datetime.now(), iteration, thread, iteration, thread,
