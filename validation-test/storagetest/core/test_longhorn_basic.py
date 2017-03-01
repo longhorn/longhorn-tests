@@ -288,19 +288,11 @@ def get_system_stack_name(volume_name):
 
 def get_replica_containers(admin_client, client, volume_name):
     stack_name = get_system_stack_name(volume_name)
-    stack, replica_service = get_env_service_by_name(
-                    client, stack_name, REPLICA)
-    return get_service_containers_with_name(
-                    admin_client,
-                    replica_service,
-                    stack_name + "-" + REPLICA)
+    stack, service = get_env_service_by_name(client, stack_name, REPLICA)
+    return get_service_containers(admin_client, service)
 
 
 def get_controller_container(admin_client, client, volume_name):
     stack_name = get_system_stack_name(volume_name)
-    stack, replica_service = get_env_service_by_name(
-                    client, stack_name, CONTROLLER)
-    return get_service_containers_with_name(
-                    admin_client,
-                    replica_service,
-                    stack_name + "-" + CONTROLLER)[0]
+    stack, service = get_env_service_by_name(client, stack_name, CONTROLLER)
+    return get_service_containers(admin_client, service)[0]

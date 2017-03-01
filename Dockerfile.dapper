@@ -1,0 +1,23 @@
+FROM ubuntu:16.04
+# FROM arm=armhf/ubuntu:16.04
+
+ARG DAPPER_HOST_ARCH=amd64
+ENV HOST_ARCH=${DAPPER_HOST_ARCH} ARCH=${DAPPER_HOST_ARCH}
+
+RUN apt-get update && \
+    apt-get install -y gcc ca-certificates git wget curl vim less file libssl-dev python-pip && \
+    pip install --upgrade pip && pip install tox && \
+    rm -f /bin/sh && ln -s /bin/bash /bin/sh
+
+ENV DOCKER_URL_amd64=https://get.docker.com/builds/Linux/x86_64/docker-1.10.3 \
+    DOCKER_URL_arm=https://github.com/rancher/docker/releases/download/v1.10.3-ros1/docker-1.10.3_arm \
+    DOCKER_URL=DOCKER_URL_${ARCH}
+
+RUN wget -O - ${!DOCKER_URL} > /usr/bin/docker && chmod +x /usr/bin/docker
+
+ENV DAPPER_SOURCE /usr/local/src/longhorn-tests/
+ENV DAPPER_OUTPUT ./bin
+ENV DAPPER_DOCKER_SOCKET true
+ENV DAPPER_ENV IMAGE REPO VERSION TAG CATTLE_TEST_URL CATTLE_ACCESS_KEY CATTLE_SECRET_KEY
+ENV HOME ${DAPPER_SOURCE}
+WORKDIR ${DAPPER_SOURCE}

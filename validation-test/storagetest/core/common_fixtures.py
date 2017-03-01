@@ -1942,6 +1942,36 @@ def get_service_containers_with_name(
     return container
 
 
+def get_service_containers(
+        admin_client, service, managed=None):
+
+    instance_list = []
+
+    if managed is not None:
+        all_instance_maps = \
+            admin_client.list_serviceExposeMap(serviceId=service.id,
+                                               managed=managed)
+    else:
+        all_instance_maps = \
+            admin_client.list_serviceExposeMap(serviceId=service.id)
+    for instance_map in all_instance_maps:
+        if instance_map.state == "active":
+            c = admin_client.by_id('container', instance_map.instanceId)
+            if c.state in ("running", "stopped"):
+                instance_list.append(c)
+                print c.name
+
+    container = []
+    for instance in instance_list:
+        assert instance.externalId is not None
+        containers = admin_client.list_container(
+            externalId=instance.externalId,
+            include="hosts")
+        assert len(containers) == 1
+        container.append(containers[0])
+    return container
+
+
 def wait_until_instances_get_stopped_for_service_with_sec_launch_configs(
         admin_client, service, timeout=60):
     stopped_count = 0
