@@ -2,20 +2,25 @@
 ------------------------------
 ### Pre-reqs
 
-A running Rancher Environment.
+A running Rancher Environment, with `rancher-longhorn` driver available.
 
 
 ### Running
 
 set `CATTLE_TEST_URL` environment variable to rancher-server
 
+````
+export CATTLE_TEST_URL=http://1.2.3.4:8080/
+```
+
 To run:
 
 ```
 git https://github.com/rancher/longhorn-tests.git
 cd validation-tests
-.test
+tox
 ```
+
 ## Contact
 For bugs, questions, comments, corrections, suggestions, etc., open an issue in
  [rancher/rancher](//github.com/rancherlabs/converged-infra/issues) with a title starting with `[Validation-Tests] `.
