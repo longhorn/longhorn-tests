@@ -1,0 +1,7 @@
+.tox
+.cache
+__pycache__
+*.pyc
+MANIFEST
+validationTestsJunit.xml
+.bash_history

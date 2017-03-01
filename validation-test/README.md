@@ -1,5 +1,5 @@
 # Validation tests for Rancher
-------------------------------
+
 ### Pre-reqs
 
 A running Rancher Environment, with `rancher-longhorn` driver available.
@@ -7,19 +7,42 @@ A running Rancher Environment, with `rancher-longhorn` driver available.
 
 ### Running
 
-set `CATTLE_TEST_URL` environment variable to rancher-server
+Export `CATTLE_TEST_URL`, `CATTLE_ACCESS_KEY`, `CATTLE_SECRET_KEY` environment variables
 
-````
-export CATTLE_TEST_URL=http://1.2.3.4:8080/
+```bash
+export CATTLE_TEST_URL='http://1.2.3.4:8080'
+export CATTLE_ACCESS_KEY='ABCDEF1234567890'
+export CATTLE_SECRET_KEY='ABCDEF1234567890ABCDEF1234567890'
+```
+
+Clone this repo:
+
+```bash
+git https://github.com/rancher/longhorn-tests.git
 ```
 
 To run:
 
-```
-git https://github.com/rancher/longhorn-tests.git
+```bash
 cd validation-tests
 tox
 ```
+
+### Running in a container
+
+You can use [dapper](https://github.com/rancher/dapper) to run the tests in a container. To drop into the container, run:
+
+```bash
+dapper -s
+```
+
+In the container shell run:
+
+```bash
+cd validation-tests
+tox
+```
+
 
 ## Contact
 For bugs, questions, comments, corrections, suggestions, etc., open an issue in
