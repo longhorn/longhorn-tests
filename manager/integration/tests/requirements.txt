@@ -1,0 +1,6 @@
+flake8
+
+cattle==0.5.1
+directio==1.2
+pytest==2.3.5
+kubernetes==4.0.0
