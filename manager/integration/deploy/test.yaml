@@ -1,18 +1,13 @@
-apiVersion: batch/v1
-kind: Job
+apiVersion: v1
+kind: Pod
 metadata:
   name: longhorn-test
   labels:
     longhorn-test: test-job
 spec:
-  template:
-    metadata:
-      name: longhorn-test
-    spec:
-      containers:
-      - name: longhorn-test-pod
-        image: yasker/test
-        imagePullPolicy: Always
-        #args: ["-x", "-s"]
-      restartPolicy: Never
-  backoffLimit: 1
+  containers:
+  - name: longhorn-test-pod
+    image: yasker/test
+    imagePullPolicy: Always
+    #args: ["-x", "-s", "-k", "test_ha"]
+  restartPolicy: Never

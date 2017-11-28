@@ -1,4 +1,5 @@
 import common
+import pytest
 
 from common import clients  # NOQA
 from common import SIZE, VOLUME_NAME
@@ -57,6 +58,7 @@ def test_ha_simple_recovery(clients):  # NOQA
     assert len(volumes) == 0
 
 
+@pytest.mark.skip(reason="salvage won't work for k8s for now")  # NOQA
 def test_ha_salvage(clients):  # NOQA
     # get a random client
     for host_id, client in clients.iteritems():

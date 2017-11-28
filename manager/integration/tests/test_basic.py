@@ -322,14 +322,6 @@ def backup_test(client, host_id):  # NOQA
 
     volume.snapshotBackup(name=snap2["name"])
 
-    jobs = volume.jobList()
-    found = False
-    for job in jobs:
-        if job["state"] == "ongoing" and job["jobType"] == "snapshot-backup":
-            found = True
-            break
-    assert found
-
     found = False
     for i in range(100):
         bvs = client.list_backupVolume()
