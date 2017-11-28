@@ -1,3 +1,4 @@
+import pytest
 import time
 import common
 
@@ -58,6 +59,12 @@ def test_volume_basic(clients):  # NOQA
     # get a random client
     for host_id, client in clients.iteritems():
         break
+
+    with pytest.raises(Exception):
+        volume = client.create_volume(name="wrong_volume-name-1.0", size=SIZE,
+                                      numberOfReplicas=2)
+        volume = client.create_volume(name="wrong_volume-name", size=SIZE,
+                                      numberOfReplicas=2)
 
     volume = client.create_volume(name=VOLUME_NAME, size=SIZE,
                                   numberOfReplicas=2)
