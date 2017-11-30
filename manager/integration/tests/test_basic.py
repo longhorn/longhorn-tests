@@ -14,20 +14,21 @@ def test_hosts_and_settings(clients):  # NOQA
         assert host["uuid"] is not None
         assert host["address"] is not None
 
-    host0_id = hosts[0]["uuid"]
-    host1_id = hosts[1]["uuid"]
-    host2_id = hosts[2]["uuid"]
-    host0_from0 = clients[host0_id].by_id_host(host0_id)
-    host0_from1 = clients[host1_id].by_id_host(host0_id)
-    host0_from2 = clients[host2_id].by_id_host(host0_id)
-    assert host0_from0["uuid"] == \
-        host0_from1["uuid"] == \
-        host0_from2["uuid"]
-    assert host0_from0["address"] == \
-        host0_from1["address"] == \
-        host0_from2["address"]
+    host_id = []
+    for i in range(0, len(hosts)):
+        host_id.append(hosts[i]["uuid"])
 
-    client = clients[host0_id]
+    host0_from_i = {}
+    for i in range(0, len(hosts)):
+        if len(host0_from_i) == 0:
+            host0_from_i = clients[host_id[0]].by_id_host(host_id[0])
+        else:
+            assert host0_from_i["uuid"] == \
+                clients[host_id[i]].by_id_host(host_id[0])["uuid"]
+            assert host0_from_i["address"] == \
+                clients[host_id[i]].by_id_host(host_id[0])["address"]
+
+    client = clients[host_id[0]]
 
     setting_names = ["backupTarget"]
     settings = client.list_setting()
@@ -391,33 +392,42 @@ def backup_test(client, host_id):  # NOQA
     assert not found
 
 
+def get_random_client(clients): # NOQA
+    for host_id, client in clients.iteritems():
+        break
+    return client
+
+
 def test_volume_multinode(clients):  # NOQA
     hosts = clients.keys()
 
-    volume = clients[hosts[0]].create_volume(name=VOLUME_NAME, size=SIZE,
-                                             numberOfReplicas=2)
-    volume = wait_for_volume_state(clients[hosts[0]], VOLUME_NAME, "detached")
+    volume = get_random_client(clients).create_volume(name=VOLUME_NAME,
+                                                      size=SIZE,
+                                                      numberOfReplicas=2)
+    volume = wait_for_volume_state(get_random_client(clients),
+                                   VOLUME_NAME, "detached")
 
     for host_id in hosts:
         volume = volume.attach(hostId=host_id)
-        volume = wait_for_volume_state(clients[hosts[1]],
+        volume = wait_for_volume_state(get_random_client(clients),
                                        VOLUME_NAME, "healthy")
         assert volume["state"] == "healthy"
         assert volume["controller"]["hostId"] == host_id
         volume = volume.detach()
-        volume = wait_for_volume_state(clients[hosts[2]],
+        volume = wait_for_volume_state(get_random_client(clients),
                                        VOLUME_NAME, "detached")
 
     volume = volume.attach(hostId=hosts[0])
-    volume = wait_for_volume_state(clients[hosts[1]], VOLUME_NAME, "healthy")
+    volume = wait_for_volume_state(get_random_client(clients),
+                                   VOLUME_NAME, "healthy")
     assert volume["state"] == "healthy"
     assert volume["controller"]["hostId"] == hosts[0]
 
-    snapshot_test(clients[hosts[1]])
-    backup_test(clients[hosts[2]], hosts[2])
+    snapshot_test(get_random_client(clients))
+    backup_test(get_random_client(clients), hosts[0])
 
-    clients[hosts[0]].delete(volume)
-    wait_for_volume_delete(clients[hosts[1]], VOLUME_NAME)
+    get_random_client(clients).delete(volume)
+    wait_for_volume_delete(get_random_client(clients), VOLUME_NAME)
 
-    volumes = clients[hosts[2]].list_volume()
+    volumes = get_random_client(clients).list_volume()
     assert len(volumes) == 0
