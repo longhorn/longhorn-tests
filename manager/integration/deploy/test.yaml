@@ -7,7 +7,7 @@ metadata:
 spec:
   containers:
   - name: longhorn-test-pod
-    image: rancher/longhorn-manager-test:215cc88
+    image: rancher/longhorn-manager-test:fde3bb2
     imagePullPolicy: Always
     #args: ["-x", "-s", "-k", "test_ha"]
   restartPolicy: Never
