@@ -25,7 +25,7 @@ spec:
     spec:
       containers:
       - name: longhorn-test-pod
-        image: rancher/longhorn-manager-test:fde3bb2
+        image: rancher/longhorn-manager-test:c4c4b17
         imagePullPolicy: Always
       restartPolicy: Never
   backoffLimit: 1
