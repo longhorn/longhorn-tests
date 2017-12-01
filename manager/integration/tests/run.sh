@@ -3,4 +3,4 @@
 set -x
 
 flake8 .
-py.test . $@
+py.test -v . $@
