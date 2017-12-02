@@ -15,7 +15,7 @@ DEV_PATH = "/dev/longhorn/"
 PORT = ":9500"
 
 RETRY_COUNTS = 100
-RETRY_ITERVAL = 0.1
+RETRY_ITERVAL = 0.5
 
 
 @pytest.fixture

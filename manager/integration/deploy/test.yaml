@@ -9,5 +9,5 @@ spec:
   - name: longhorn-test-pod
     image: rancher/longhorn-manager-test:c4c4b17
     imagePullPolicy: Always
-    #args: ["-x", "-s", "-k", "test_ha"]
+    #args: ["-x", "-s", "-k", "test_volume_multinode"]
   restartPolicy: Never
