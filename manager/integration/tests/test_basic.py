@@ -3,7 +3,7 @@ import time
 import common
 
 from common import clients  # NOQA
-from common import SIZE, VOLUME_NAME, VOLUME_RESTORE_NAME
+from common import SIZE, VOLUME_NAME, VOLUME_RESTORE_NAME, DEV_PATH
 from common import wait_for_volume_state, wait_for_volume_delete
 from common import wait_for_snapshot_purge
 
@@ -112,10 +112,10 @@ def test_volume_basic(clients):  # NOQA
     assert volumes[0]["numberOfReplicas"] == volume["numberOfReplicas"]
     assert volumes[0]["state"] == volume["state"]
     assert volumes[0]["created"] == volume["created"]
-#    assert volumes[0]["endpoint"] == DEV_PATH + VOLUME_NAME
+    assert volumes[0]["endpoint"] == DEV_PATH + VOLUME_NAME
 
-#    volume = client.by_id_volume(VOLUME_NAME)
-#    assert volume["endpoint"] == DEV_PATH + VOLUME_NAME
+    volume = client.by_id_volume(VOLUME_NAME)
+    assert volume["endpoint"] == DEV_PATH + VOLUME_NAME
 
     volume = volume.detach()
 

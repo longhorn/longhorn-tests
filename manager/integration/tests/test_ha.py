@@ -2,7 +2,7 @@ import common
 import pytest
 
 from common import clients  # NOQA
-from common import SIZE, VOLUME_NAME
+from common import SIZE, VOLUME_NAME, DEV_PATH
 from common import wait_for_volume_state, wait_for_volume_delete
 
 def test_ha_simple_recovery(clients):  # NOQA
@@ -23,7 +23,7 @@ def test_ha_simple_recovery(clients):  # NOQA
     volume = wait_for_volume_state(client, VOLUME_NAME, "healthy")
 
     volume = client.by_id_volume(VOLUME_NAME)
-#    assert volume["endpoint"] == DEV_PATH + VOLUME_NAME
+    assert volume["endpoint"] == DEV_PATH + VOLUME_NAME
 
     assert len(volume["replicas"]) == 2
     replica0 = volume["replicas"][0]
