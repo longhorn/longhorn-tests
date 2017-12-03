@@ -2,7 +2,7 @@
 
 import time
 
-from common import clients
+from common import clients  # NOQA
 from common import wait_for_volume_delete, wait_for_volume_state
 
 from kubernetes import client as k8sclient, config as k8sconfig
@@ -55,7 +55,6 @@ def create_pod(api, pod_name, volume):
 
 
 def wait_pod_ready(api, pod_name):
-
     while True:
         pod = api.read_namespaced_pod(
             name=pod_name,
@@ -67,14 +66,12 @@ def wait_pod_ready(api, pod_name):
 
 
 def delete_pod(api, pod_name):
-
     api.delete_namespaced_pod(
         name=pod_name,
         namespace='default', body=k8sclient.V1DeleteOptions())
 
 
-def test_volume_mount(clients):
-
+def test_volume_mount(clients): # NOQA
     c = Configuration()
     c.assert_hostname = False
     Configuration.set_default(c)
@@ -105,8 +102,7 @@ def test_volume_mount(clients):
     wait_for_volume_delete(client, volume["name"])
 
 
-def test_volume_io(clients):
- 
+def test_volume_io(clients):  # NOQA
     c = Configuration()
     c.assert_hostname = False
     Configuration.set_default(c)
