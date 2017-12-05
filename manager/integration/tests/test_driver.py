@@ -135,6 +135,7 @@ def test_volume_io(clients):  # NOQA
 
     wait_for_volume_state(client, volume["name"], "detached")
 
+    pod_name = 'volume-driver-io-test-2'
     create_pod(api, pod_name, volume)
     wait_pod_ready(api, pod_name)
 
