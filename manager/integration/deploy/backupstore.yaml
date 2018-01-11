@@ -7,7 +7,16 @@ metadata:
 spec:
   containers:
   - name: longhorn-test-backupstore-pod
-    image: docker.io/erezhorev/dockerized_nfs_server
+    image: janeczku/nfs-ganesha:latest
+    imagePullPolicy: Always
+    env:
+    - name: EXPORT_ID
+      value: "14"
+    - name: EXPORT_PATH
+      value: /opt/backupstore
+    - name: PSEUDO_PATH
+      value: /opt/backupstore
+    command: ["bash", "-c", "mkdir -p /opt/backupstore && /opt/start_nfs.sh"]
     securityContext:
-      privileged: true
-    args: ["/opt/backupstore"]
+      capabilities:
+        add: ["SYS_ADMIN", "DAC_READ_SEARCH"]
