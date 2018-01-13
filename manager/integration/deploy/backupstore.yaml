@@ -1,12 +1,12 @@
 apiVersion: v1
 kind: Pod
 metadata:
-  name: longhorn-test-backupstore
+  name: longhorn-test-nfs
   labels:
-    longhorn-test: backupstore
+    app: longhorn-test-nfs
 spec:
   containers:
-  - name: longhorn-test-backupstore-pod
+  - name: longhorn-test-nfs-container
     image: janeczku/nfs-ganesha:latest
     imagePullPolicy: Always
     env:
@@ -20,3 +20,16 @@ spec:
     securityContext:
       capabilities:
         add: ["SYS_ADMIN", "DAC_READ_SEARCH"]
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: longhorn-test-nfs-svc
+spec:
+  selector:
+    app: longhorn-test-nfs
+  clusterIP: None
+  ports:
+  - name: notnecessary
+    port: 1234
+    targetPort: 1234

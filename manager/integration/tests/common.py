@@ -1,5 +1,6 @@
 import time
 import subprocess
+import os
 
 import pytest
 
@@ -8,8 +9,8 @@ import cattle
 from kubernetes import client as k8sclient, config as k8sconfig
 
 SIZE = str(16 * 1024 * 1024)
-VOLUME_NAME = "longhorn-manager-testvol"
-VOLUME_RESTORE_NAME = "longhorn-manager-testvol-restore"
+VOLUME_NAME = "longhorn-testvol"
+VOLUME_RESTORE_NAME = "longhorn-testvol-restore"
 DEV_PATH = "/dev/longhorn/"
 
 PORT = ":9500"
@@ -55,11 +56,9 @@ def get_mgr_ips():
 
 
 def get_backupstore_url():
-    ret = k8sclient.CoreV1Api().list_pod_for_all_namespaces(
-            label_selector="longhorn-test=backupstore",
-            watch=False)
-    assert len(ret.items) == 1
-    return "nfs://" + ret.items[0].status.pod_ip + ":/opt/backupstore"
+    backupstore = os.environ['LONGHORN_BACKUPSTORE']
+    assert backupstore != ""
+    return backupstore
 
 
 def get_clients(hosts):
