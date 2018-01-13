@@ -11,6 +11,9 @@ from kubernetes.client import Configuration
 
 Gi = (1 * 1024 * 1024 * 1024)
 
+WAIT_POD_RETRY_COUNTS = 100
+WAIT_POD_RETRY_INTERVAL = 1
+
 
 def create_pod(api, pod_name, volume):
     pod_manifest = {
@@ -55,13 +58,13 @@ def create_pod(api, pod_name, volume):
 
 
 def wait_pod_ready(api, pod_name):
-    while True:
+    for i in range(WAIT_POD_RETRY_COUNTS):
         pod = api.read_namespaced_pod(
             name=pod_name,
             namespace='default')
         if pod.status.phase != 'Pending':
             break
-        time.sleep(1)
+        time.sleep(WAIT_POD_RETRY_INTERVAL)
     assert pod.status.phase == 'Running'
 
 
