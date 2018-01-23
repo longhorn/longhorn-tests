@@ -68,21 +68,13 @@ def test_volume_basic(clients):  # NOQA
                                       numberOfReplicas=2)
 
     volume = client.create_volume(name=VOLUME_NAME, size=SIZE,
-                                  numberOfReplicas=2)
+                                  numberOfReplicas=3)
     assert volume["name"] == VOLUME_NAME
     assert volume["size"] == SIZE
-    assert volume["numberOfReplicas"] == 2
+    assert volume["numberOfReplicas"] == 3
 
     volume = wait_for_volume_state(client, VOLUME_NAME, "detached")
-    # soft anti-affinity should work, and we have 3 nodes
-    assert len(volume["replicas"]) == 2
-    hosts = {}
-    for replica in volume["replicas"]:
-        id = replica["hostId"]
-        assert id != ""
-        assert id not in hosts
-        hosts[id] = True
-    assert len(hosts) == 2
+    assert len(volume["replicas"]) == 3
 
     assert volume["state"] == "detached"
     assert volume["created"] != ""
@@ -104,6 +96,15 @@ def test_volume_basic(clients):  # NOQA
 
     volume.attach(hostId=host_id)
     volume = wait_for_volume_state(client, VOLUME_NAME, "healthy")
+
+    # soft anti-affinity should work, assume we have 3 nodes or more
+    hosts = {}
+    for replica in volume["replicas"]:
+        id = replica["hostId"]
+        assert id != ""
+        assert id not in hosts
+        hosts[id] = True
+    assert len(hosts) == 3
 
     volumes = client.list_volume()
     assert len(volumes) == 1
