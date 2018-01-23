@@ -35,8 +35,8 @@ spec:
   containers:
   - name: longhorn-test-pod
     image: rancher/longhorn-manager-test:e5f0b2c
-    #imagePullPolicy: Always
     #args: ["-x", "-s", "-k", "test_volume_multinode"]
+    imagePullPolicy: Always
     env:
     - name: LONGHORN_BACKUPSTORE
       value: "nfs://longhorn-test-nfs-svc.default:/opt/backupstore"
