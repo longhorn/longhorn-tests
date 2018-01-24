@@ -418,15 +418,6 @@ def test_volume_multinode(clients):  # NOQA
         volume = wait_for_volume_state(get_random_client(clients),
                                        VOLUME_NAME, "detached")
 
-    volume = volume.attach(hostId=hosts[0])
-    volume = wait_for_volume_state(get_random_client(clients),
-                                   VOLUME_NAME, "healthy")
-    assert volume["state"] == "healthy"
-    assert volume["controller"]["hostId"] == hosts[0]
-
-    snapshot_test(get_random_client(clients))
-    backup_test(get_random_client(clients), hosts[0])
-
     get_random_client(clients).delete(volume)
     wait_for_volume_delete(get_random_client(clients), VOLUME_NAME)
 
