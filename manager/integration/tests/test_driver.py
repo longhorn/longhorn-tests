@@ -1,6 +1,7 @@
 #!/usr/sbin/python
 
 import time
+import pytest
 
 from common import clients, volume_name  # NOQA
 from common import wait_for_volume_delete, wait_for_volume_state
@@ -74,6 +75,7 @@ def delete_pod(api, pod_name):
         namespace='default', body=k8sclient.V1DeleteOptions())
 
 
+@pytest.mark.skip(reason="driver will be rewritten")  # NOQA
 def test_volume_mount(clients, volume_name): # NOQA
     c = Configuration()
     c.assert_hostname = False
@@ -105,6 +107,7 @@ def test_volume_mount(clients, volume_name): # NOQA
     wait_for_volume_delete(client, volume["name"])
 
 
+@pytest.mark.skip(reason="driver will be rewritten")  # NOQA
 def test_volume_io(clients, volume_name):  # NOQA
     c = Configuration()
     c.assert_hostname = False
