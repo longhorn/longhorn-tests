@@ -2,7 +2,7 @@
 
 import time
 
-from common import clients  # NOQA
+from common import clients, volume_name  # NOQA
 from common import wait_for_volume_delete, wait_for_volume_state
 
 from kubernetes import client as k8sclient, config as k8sconfig
@@ -74,7 +74,7 @@ def delete_pod(api, pod_name):
         namespace='default', body=k8sclient.V1DeleteOptions())
 
 
-def test_volume_mount(clients): # NOQA
+def test_volume_mount(clients, volume_name): # NOQA
     c = Configuration()
     c.assert_hostname = False
     Configuration.set_default(c)
@@ -86,7 +86,7 @@ def test_volume_mount(clients): # NOQA
     pod_name = 'volume-driver-mount-test'
     volume_size = 1 * Gi
     volume = {
-        'name': "volume-mount", 'size': str(volume_size >> 30) + 'G',
+        'name': volume_name, 'size': str(volume_size >> 30) + 'G',
         'numberOfReplicas': '2', 'staleReplicaTimeout': '20'}
 
     create_pod(api, pod_name, volume)
@@ -105,7 +105,7 @@ def test_volume_mount(clients): # NOQA
     wait_for_volume_delete(client, volume["name"])
 
 
-def test_volume_io(clients):  # NOQA
+def test_volume_io(clients, volume_name):  # NOQA
     c = Configuration()
     c.assert_hostname = False
     Configuration.set_default(c)
@@ -117,7 +117,7 @@ def test_volume_io(clients):  # NOQA
     pod_name = 'volume-driver-io-test'
     volume_size = 1 * Gi
     volume = {
-        'name': "volume-io", 'size': str(volume_size >> 30) + 'G',
+        'name': volume_name, 'size': str(volume_size >> 30) + 'G',
         'numberOfReplicas': '2', 'staleReplicaTimeout': '20'}
 
     create_pod(api, pod_name, volume)
