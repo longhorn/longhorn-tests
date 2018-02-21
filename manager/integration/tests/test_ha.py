@@ -1,9 +1,12 @@
 import common
 import pytest
+import time
 
 from common import clients, volume_name  # NOQA
 from common import SIZE, DEV_PATH
 from common import wait_for_volume_state, wait_for_volume_delete
+from common import RETRY_COUNTS, RETRY_ITERVAL
+
 
 def test_ha_simple_recovery(clients, volume_name):  # NOQA
     # get a random client
@@ -33,20 +36,33 @@ def test_ha_simple_recovery(clients, volume_name):  # NOQA
     assert replica1["name"] != ""
 
     volume = volume.replicaRemove(name=replica0["name"])
-    assert len(volume["replicas"]) == 1
-    volume = wait_for_volume_state(client, volume_name, "degraded")
+
+    # wait until we saw a replica starts rebuilding
+    new_replica_found = False
+    for i in range(RETRY_COUNTS):
+        v = client.by_id_volume(volume_name)
+        for r in v["replicas"]:
+            if r["name"] != replica0["name"] and \
+                    r["name"] != replica1["name"]:
+                new_replica_found = True
+                break
+        if new_replica_found:
+            break
+        time.sleep(RETRY_ITERVAL)
+    assert new_replica_found
 
     volume = wait_for_volume_state(client, volume_name, "healthy")
 
     volume = client.by_id_volume(volume_name)
     assert volume["state"] == "healthy"
-    assert len(volume["replicas"]) == 2
+    assert len(volume["replicas"]) >= 2
 
-    new_replica0 = volume["replicas"][0]
-    new_replica1 = volume["replicas"][1]
-
-    assert (replica1["name"] == new_replica0["name"] or
-            replica1["name"] == new_replica1["name"])
+    found = False
+    for replica in volume["replicas"]:
+        if replica["name"] == replica1["name"]:
+            found = True
+            break
+    assert found
 
     volume = volume.detach()
     volume = wait_for_volume_state(client, volume_name, "detached")
