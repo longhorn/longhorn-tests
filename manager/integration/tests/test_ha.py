@@ -1,5 +1,4 @@
 import common
-import pytest
 import time
 
 from common import clients, volume_name  # NOQA
@@ -74,7 +73,6 @@ def test_ha_simple_recovery(clients, volume_name):  # NOQA
     assert len(volumes) == 0
 
 
-@pytest.mark.skip(reason="salvage won't work for k8s for now")  # NOQA
 def test_ha_salvage(clients, volume_name):  # NOQA
     # get a random client
     for host_id, client in clients.iteritems():
@@ -95,9 +93,10 @@ def test_ha_salvage(clients, volume_name):  # NOQA
     assert len(volume["replicas"]) == 2
     replica0_name = volume["replicas"][0]["name"]
     replica1_name = volume["replicas"][1]["name"]
-    common.docker_stop(replica0_name, replica1_name)
 
-    volume = wait_for_volume_state(client, volume_name, "fault")
+    common.k8s_delete_replica_pods_for_volume(volume_name)
+
+    volume = wait_for_volume_state(client, volume_name, "faulted")
     assert len(volume["replicas"]) == 2
     assert volume["replicas"][0]["badTimestamp"] != ""
     assert volume["replicas"][1]["badTimestamp"] != ""

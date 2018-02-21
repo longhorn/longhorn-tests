@@ -1,5 +1,4 @@
 import time
-import subprocess
 import os
 import random
 import string
@@ -18,6 +17,8 @@ PORT = ":9500"
 
 RETRY_COUNTS = 300
 RETRY_ITERVAL = 0.5
+
+LONGHORN_NAMESPACE = "longhorn-system"
 
 
 @pytest.fixture
@@ -111,11 +112,11 @@ def wait_for_snapshot_purge(volume, *snaps):
     assert not found
 
 
-def docker_stop(*containers):
-    cmd = ["docker", "stop"]
-    for c in containers:
-        cmd.append(c)
-    return subprocess.check_call(cmd)
+def k8s_delete_replica_pods_for_volume(volname):
+    k8sclient.CoreV1Api().delete_collection_namespaced_pod(
+        label_selector="longhorn-volume-replica="+volname,
+        namespace=LONGHORN_NAMESPACE,
+        watch=False)
 
 
 @pytest.fixture
