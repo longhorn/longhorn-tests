@@ -1,6 +1,8 @@
 import time
 import subprocess
 import os
+import random
+import string
 
 import pytest
 
@@ -10,7 +12,6 @@ from kubernetes import client as k8sclient, config as k8sconfig
 
 SIZE = str(16 * 1024 * 1024)
 VOLUME_NAME = "longhorn-testvol"
-VOLUME_RESTORE_NAME = "longhorn-testvol-restore"
 DEV_PATH = "/dev/longhorn/"
 
 PORT = ":9500"
@@ -95,7 +96,7 @@ def wait_for_volume_delete(client, name):
 
 def wait_for_snapshot_purge(volume, *snaps):
     for i in range(RETRY_COUNTS):
-        snapshots = volume.snapshotList(volume=VOLUME_NAME)
+        snapshots = volume.snapshotList(volume=volume["name"])
         snapMap = {}
         for snap in snapshots:
             snapMap[snap["name"]] = snap
@@ -115,3 +116,14 @@ def docker_stop(*containers):
     for c in containers:
         cmd.append(c)
     return subprocess.check_call(cmd)
+
+
+@pytest.fixture
+def volume_name(request):
+    return generate_volume_name()
+
+
+def generate_volume_name():
+    return VOLUME_NAME + "-" + \
+        ''.join(random.choice(string.ascii_lowercase + string.digits)
+                for _ in range(6))
