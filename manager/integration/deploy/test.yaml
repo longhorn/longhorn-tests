@@ -34,7 +34,7 @@ metadata:
 spec:
   containers:
   - name: longhorn-test-pod
-    image: rancher/longhorn-manager-test:27b8ce2
+    image: rancher/longhorn-manager-test:0ec4aab
     #args: ["-x", "-s", "-k", "test_volume_multinode"]
     imagePullPolicy: Always
     env:
