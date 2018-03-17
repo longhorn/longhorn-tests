@@ -84,9 +84,9 @@ def test_volume_mount(clients, volume_name): # NOQA
     for _, client in clients.iteritems():
         break
     pod_name = 'volume-driver-mount-test'
-    volume_size = 1 * Gi
+    volume_size = 3 * Gi
     volume = {
-        'name': volume_name, 'size': str(volume_size >> 30) + 'G',
+        'name': volume_name, 'size': str(volume_size >> 30) + 'Gi',
         'numberOfReplicas': '2', 'staleReplicaTimeout': '20'}
 
     create_pod(api, pod_name, volume)
@@ -115,9 +115,9 @@ def test_volume_io(clients, volume_name):  # NOQA
     for _, client in clients.iteritems():
         break
     pod_name = 'volume-driver-io-test'
-    volume_size = 1 * Gi
+    volume_size = 3 * Gi
     volume = {
-        'name': volume_name, 'size': str(volume_size >> 30) + 'G',
+        'name': volume_name, 'size': str(volume_size >> 30) + 'Gi',
         'numberOfReplicas': '2', 'staleReplicaTimeout': '20'}
 
     create_pod(api, pod_name, volume)
