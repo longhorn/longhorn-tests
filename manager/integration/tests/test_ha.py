@@ -98,15 +98,15 @@ def test_ha_salvage(clients, volume_name):  # NOQA
 
     volume = wait_for_volume_state(client, volume_name, "faulted")
     assert len(volume["replicas"]) == 2
-    assert volume["replicas"][0]["badTimestamp"] != ""
-    assert volume["replicas"][1]["badTimestamp"] != ""
+    assert volume["replicas"][0]["failedAt"] != ""
+    assert volume["replicas"][1]["failedAt"] != ""
 
     volume.salvage(names=[replica0_name, replica1_name])
 
     volume = wait_for_volume_state(client, volume_name, "detached")
     assert len(volume["replicas"]) == 2
-    assert volume["replicas"][0]["badTimestamp"] == ""
-    assert volume["replicas"][1]["badTimestamp"] == ""
+    assert volume["replicas"][0]["failedAt"] == ""
+    assert volume["replicas"][1]["failedAt"] == ""
 
     volume = volume.attach(hostId=host_id)
     volume = wait_for_volume_state(client, volume_name, "healthy")
