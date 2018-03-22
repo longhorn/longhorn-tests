@@ -246,13 +246,17 @@ def snapshot_test(client, volname):
     assert snapMap[snap2["name"]]["removed"] is False
     assert snapMap[snap3["name"]]["name"] == snap3["name"]
     assert snapMap[snap3["name"]]["parent"] == snap2["name"]
-    assert snapMap[snap3["name"]]["children"] == ["volume-head"]
+    assert len(snapMap[snap3["name"]]["children"]) == 1
+    assert "volume-head" in snapMap[snap3["name"]]["children"]
     assert snapMap[snap3["name"]]["removed"] is True
 
     snap = volume.snapshotGet(name=snap3["name"])
     assert snap["name"] == snap3["name"]
     assert snap["parent"] == snap3["parent"]
-    assert snap["children"] == snap3["children"]
+    assert len(snap3["children"]) == 1
+    assert len(snap["children"]) == 1
+    assert "volume-head" in snap3["children"]
+    assert "volume-head" in snap["children"]
     assert snap["removed"] is True
 
     volume.snapshotRevert(name=snap2["name"])
@@ -271,7 +275,7 @@ def snapshot_test(client, volname):
     assert snapMap[snap2["name"]]["removed"] is False
     assert snapMap[snap3["name"]]["name"] == snap3["name"]
     assert snapMap[snap3["name"]]["parent"] == snap2["name"]
-    assert snapMap[snap3["name"]]["children"] == []
+    assert len(snapMap[snap3["name"]]["children"]) == 0
     assert snapMap[snap3["name"]]["removed"] is True
 
     volume.snapshotDelete(name=snap1["name"])
