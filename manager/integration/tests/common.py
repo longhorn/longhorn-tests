@@ -95,6 +95,16 @@ def wait_for_volume_delete(client, name):
     assert not found
 
 
+def wait_for_volume_engine_image(client, name, image):
+    for i in range(RETRY_COUNTS):
+        volume = client.by_id_volume(name)
+        if volume["engineImage"] == image:
+            break
+        time.sleep(RETRY_ITERVAL)
+    assert volume["engineImage"] == image
+    return volume
+
+
 def wait_for_snapshot_purge(volume, *snaps):
     for i in range(RETRY_COUNTS):
         snapshots = volume.snapshotList(volume=volume["name"])
