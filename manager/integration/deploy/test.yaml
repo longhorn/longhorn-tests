@@ -34,8 +34,8 @@ metadata:
 spec:
   containers:
   - name: longhorn-test-pod
-    image: rancher/longhorn-manager-test:2eea48b
-    #args: ["-x", "-s", "-k", "test_volume_multinode"]
+    image: rancher/longhorn-manager-test:48a0b74
+    #args: ["-x", "-s", "-k", "test_engine_upgrade", "--engine-upgrade-image", "yasker/longhorn-engine:91aa784"]
     imagePullPolicy: Always
     env:
     - name: LONGHORN_BACKUPSTORE
