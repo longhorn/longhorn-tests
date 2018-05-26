@@ -34,8 +34,12 @@ metadata:
 spec:
   containers:
   - name: longhorn-test-pod
-    image: rancher/longhorn-manager-test:e8297b6
-    #args: ["-x", "-s", "-k", "test_engine_upgrade", "--engine-upgrade-image", "yasker/longhorn-engine:91aa784"]
+    image: rancher/longhorn-manager-test:cf2c2df
+#    args: ["-x", "-s",
+#           "-k", "test_recurring_job",
+#           "--enable-recurring-job-test",
+#           "--engine-upgrade-image", "yasker/longhorn-engine:91aa784",
+#           ]
     imagePullPolicy: Always
     env:
     - name: LONGHORN_BACKUPSTORE
