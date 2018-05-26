@@ -133,59 +133,6 @@ def test_volume_basic(clients, volume_name):  # NOQA
     assert len(volumes) == 0
 
 
-@pytest.mark.skip(reason="will rewrite later")  # NOQA
-def test_recurring_snapshot(clients, volume_name):  # NOQA
-    for host_id, client in clients.iteritems():
-        break
-
-    volume = client.create_volume(name=volume_name, size=SIZE,
-                                  numberOfReplicas=2)
-    volume = wait_for_volume_state(client, volume_name, "detached")
-
-    snap2s = {"name": "snap2s", "cron": "@every 2s",
-              "task": "snapshot", "retain": 3}
-    snap3s = {"name": "snap3s", "cron": "@every 3s",
-              "task": "snapshot", "retain": 2}
-    volume.recurringUpdate(jobs=[snap2s, snap3s])
-
-    time.sleep(0.1)
-    volume = volume.attach(hostId=host_id)
-    volume = wait_for_volume_state(client, volume_name, "healthy")
-
-    time.sleep(10)
-
-    snapshots = volume.snapshotList()
-    count = 0
-    for snapshot in snapshots:
-        if snapshot["removed"] is False:
-            count += 1
-    assert count == 5
-
-    snap4s = {"name": "snap4s", "cron": "@every 4s",
-              "task": "snapshot", "retain": 2}
-    volume.recurringUpdate(jobs=[snap2s, snap4s])
-
-    time.sleep(10)
-
-    snapshots = volume.snapshotList()
-    count = 0
-    for snapshot in snapshots:
-        if snapshot["removed"] is False:
-            count += 1
-    assert count == 7
-
-    volume = volume.detach()
-
-    wait_for_volume_state(client, volume_name, "detached")
-
-    client.delete(volume)
-
-    wait_for_volume_delete(client, volume_name)
-
-    volumes = client.list_volume()
-    assert len(volumes) == 0
-
-
 def test_snapshot(clients, volume_name):  # NOQA
     for host_id, client in clients.iteritems():
         break
