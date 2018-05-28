@@ -143,3 +143,9 @@ def generate_volume_name():
     return VOLUME_NAME + "-" + \
         ''.join(random.choice(string.ascii_lowercase + string.digits)
                 for _ in range(6))
+
+
+def get_backupstore_credential():
+    backupcredential = os.environ['LONGHORN_BACKUPSTORE_CREDENTIAL_SECRET']
+    assert backupcredential != ""
+    return backupcredential
