@@ -31,7 +31,7 @@ def test_hosts_and_settings(clients):  # NOQA
 
     client = clients[host_id[0]]
 
-    setting_names = ["backupTarget"]
+    setting_names = ["backupTarget", "backupTargetCredentialSecret"]
     settings = client.list_setting()
     # Skip DefaultEngineImage option
     # since they have side affect
@@ -280,6 +280,12 @@ def backup_test(client, host_id, volname):
     setting = client.update(setting, value=common.get_backupstore_url())
     assert setting["value"] == common.get_backupstore_url()
 
+    if is_backupTarget_s3(setting["value"]):
+        credential = client.by_id_setting("backupTargetCredentialSecret")
+        credential = client.update(credential,
+                                   value=common.get_backupstore_credential())
+        assert credential["value"] == common.get_backupstore_credential()
+
     volume.snapshotCreate()
     snap2 = volume.snapshotCreate()
     volume.snapshotCreate()
@@ -379,3 +385,7 @@ def test_volume_multinode(clients, volume_name):  # NOQA
 
     volumes = get_random_client(clients).list_volume()
     assert len(volumes) == 0
+
+
+def is_backupTarget_s3(s):
+    return s.startswith("s3://")

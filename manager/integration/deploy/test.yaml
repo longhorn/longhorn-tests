@@ -9,7 +9,7 @@ metadata:
   name: longhorn-test-role
 rules:
 - apiGroups: [""]
-  resources: ["pods", "pods/exec", "persistentvolumeclaims"]
+  resources: ["pods", "pods/exec", "persistentvolumeclaims", "secrets"]
   verbs: ["*"]
 - apiGroups: ["storage.k8s.io"]
   resources: ["storageclasses"]
@@ -46,6 +46,9 @@ spec:
     imagePullPolicy: Always
     env:
     - name: LONGHORN_BACKUPSTORE
-      value: "nfs://longhorn-test-nfs-svc.default:/opt/backupstore"
+      #value: "nfs://longhorn-test-nfs-svc.default:/opt/backupstore"
+      value: "s3://backupbucket@us-east-1/backupstore"
+    - name: LONGHORN_BACKUPSTORE_CREDENTIAL_SECRET
+      value: "minio-secret"
   restartPolicy: Never
   serviceAccountName: longhorn-test-service-account
