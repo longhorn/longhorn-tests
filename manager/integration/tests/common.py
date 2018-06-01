@@ -134,6 +134,11 @@ def volume_name(request):
     return generate_volume_name()
 
 
+@pytest.fixture
+def csi_pvc_name(request):
+    return generate_volume_name()
+
+
 def generate_volume_name():
     return VOLUME_NAME + "-" + \
         ''.join(random.choice(string.ascii_lowercase + string.digits)
