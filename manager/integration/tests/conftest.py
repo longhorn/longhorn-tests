@@ -9,7 +9,7 @@ def pytest_addoption(parser):
     parser.addoption(ENGINE_UPGRADE_IMAGE_OPT, action="store", default="",
                      help="specify the image of engine upgrade test")
     parser.addoption(ENABLE_RECURRING_JOB_OPT, action="store_true",
-                     default="False",
+                     default=False,
                      help="enable recurring job test or not")
 
 
