@@ -1,4 +1,5 @@
 import time
+import pytest
 
 from common import clients, csi_pvc_name  # NOQA
 from common import wait_for_volume_delete, wait_for_volume_state
@@ -131,7 +132,8 @@ def delete_pvc_and_sc(pvc_name):
         body=k8sclient.V1DeleteOptions())
 
 
-def test_volume_mount(clients, csi_pvc_name): # NOQA
+@pytest.mark.csi  # NOQA
+def test_csi_volume_mount(clients, csi_pvc_name): # NOQA
     c = Configuration()
     c.assert_hostname = False
     Configuration.set_default(c)
@@ -163,7 +165,8 @@ def test_volume_mount(clients, csi_pvc_name): # NOQA
     wait_for_volume_delete(client, volume_name)
 
 
-def test_volume_io(clients, csi_pvc_name):  # NOQA
+@pytest.mark.csi  # NOQA
+def test_csi_volume_io(clients, csi_pvc_name):  # NOQA
     c = Configuration()
     c.assert_hostname = False
     Configuration.set_default(c)
