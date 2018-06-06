@@ -33,9 +33,9 @@ def test_hosts_and_settings(clients):  # NOQA
 
     setting_names = ["backupTarget"]
     settings = client.list_setting()
-    # Skip EngineUpgradeImage, DefaultEngineImage option
+    # Skip DefaultEngineImage option
     # since they have side affect
-    assert len(settings) == len(setting_names) + 2
+    assert len(settings) == len(setting_names) + 1
 
     settingMap = {}
     for setting in settings:
