@@ -69,12 +69,16 @@ def test_volume_basic(clients, volume_name):  # NOQA
                                       numberOfReplicas=2)
         volume = client.create_volume(name="wrong_volume-name", size=SIZE,
                                       numberOfReplicas=2)
+        volume = client.create_volume(name="wrong_volume-name", size=SIZE,
+                                      numberOfReplicas=2,
+                                      frontend="invalid_frontend")
 
     volume = client.create_volume(name=volume_name, size=SIZE,
                                   numberOfReplicas=3)
     assert volume["name"] == volume_name
     assert volume["size"] == SIZE
     assert volume["numberOfReplicas"] == 3
+    assert volume["frontend"] == "blockdev"
 
     volume = wait_for_volume_state(client, volume_name, "detached")
     assert len(volume["replicas"]) == 3
@@ -120,6 +124,49 @@ def test_volume_basic(clients, volume_name):  # NOQA
 
     volume = client.by_id_volume(volume_name)
     assert volume["endpoint"] == DEV_PATH + volume_name
+
+    volume = volume.detach()
+
+    wait_for_volume_state(client, volume_name, "detached")
+
+    client.delete(volume)
+
+    wait_for_volume_delete(client, volume_name)
+
+    volumes = client.list_volume()
+    assert len(volumes) == 0
+
+
+def test_volume_iscsi_basic(clients, volume_name):  # NOQA
+    # get a random client
+    for host_id, client in clients.iteritems():
+        break
+
+    volume = client.create_volume(name=volume_name, size=SIZE,
+                                  numberOfReplicas=3, frontend="iscsi")
+    assert volume["name"] == volume_name
+    assert volume["size"] == SIZE
+    assert volume["numberOfReplicas"] == 3
+    assert volume["frontend"] == "iscsi"
+
+    volume = wait_for_volume_state(client, volume_name, "detached")
+    assert len(volume["replicas"]) == 3
+
+    assert volume["state"] == "detached"
+    assert volume["created"] != ""
+
+    volume.attach(hostId=host_id)
+    volume = wait_for_volume_state(client, volume_name, "healthy")
+
+    volumes = client.list_volume()
+    assert len(volumes) == 1
+    assert volumes[0]["name"] == volume["name"]
+    assert volumes[0]["size"] == volume["size"]
+    assert volumes[0]["numberOfReplicas"] == volume["numberOfReplicas"]
+    assert volumes[0]["state"] == volume["state"]
+    assert volumes[0]["created"] == volume["created"]
+    assert volumes[0]["frontend"] == "iscsi"
+    assert volumes[0]["endpoint"].startswith("iscsi://")
 
     volume = volume.detach()
 
