@@ -122,6 +122,16 @@ def wait_for_snapshot_purge(volume, *snaps):
     assert not found
 
 
+def wait_for_engine_image(client, image_name):
+    for i in range(RETRY_COUNTS):
+        image = client.by_id_engine_image(image_name)
+        if image["state"] == "ready":
+            break
+        time.sleep(RETRY_ITERVAL)
+    assert image["state"] == "ready"
+    return image
+
+
 def k8s_delete_replica_pods_for_volume(volname):
     k8sclient.CoreV1Api().delete_collection_namespaced_pod(
         label_selector="longhorn-volume-replica="+volname,
