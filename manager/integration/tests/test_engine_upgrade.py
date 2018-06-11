@@ -1,20 +1,15 @@
 import pytest
 
+import common
 from common import clients, volume_name  # NOQA
 from common import SIZE
 from common import wait_for_volume_state, wait_for_volume_delete
 from common import wait_for_volume_engine_image, wait_for_engine_image
 
-from conftest import engine_upgrade_image  # NOQA
-
-
 REPLICA_COUNT = 2
 
 
-@pytest.mark.engine_upgrade  # NOQA
-def test_engine_image(clients, volume_name, engine_upgrade_image):  # NOQA
-    assert engine_upgrade_image != ""
-
+def test_engine_image(clients, volume_name):  # NOQA
     # get a random client
     for host_id, client in clients.iteritems():
         break
@@ -43,6 +38,9 @@ def test_engine_image(clients, volume_name, engine_upgrade_image):  # NOQA
     with pytest.raises(Exception) as e:
         client.create_engine_image(image=default_img)
 
+    engine_upgrade_image = common.get_engine_upgrade_image(client)
+    assert engine_upgrade_image != ""
+
     new_img = client.create_engine_image(image=engine_upgrade_image)
     new_img_name = new_img["name"]
     new_img = wait_for_engine_image(client, new_img_name)
@@ -61,14 +59,17 @@ def test_engine_image(clients, volume_name, engine_upgrade_image):  # NOQA
     client.delete(new_img)
 
 
-@pytest.mark.engine_upgrade  # NOQA
-def test_engine_offline_upgrade(clients, volume_name,   # NOQA
-                                engine_upgrade_image):  # NOQA
-    assert engine_upgrade_image != ""
-
+def test_engine_offline_upgrade(clients, volume_name):  # NOQA
     # get a random client
     for host_id, client in clients.iteritems():
         break
+
+    engine_upgrade_image = common.get_engine_upgrade_image(client)
+    assert engine_upgrade_image != ""
+
+    new_img = client.create_engine_image(image=engine_upgrade_image)
+    new_img_name = new_img["name"]
+    new_img = wait_for_engine_image(client, new_img_name)
 
     volume = client.create_volume(name=volume_name, size=SIZE,
                                   numberOfReplicas=REPLICA_COUNT)
@@ -109,15 +110,20 @@ def test_engine_offline_upgrade(clients, volume_name,   # NOQA
     client.delete(volume)
     wait_for_volume_delete(client, volume_name)
 
+    client.delete(new_img)
 
-@pytest.mark.engine_upgrade  # NOQA
-def test_engine_live_upgrade(clients, volume_name,   # NOQA
-                             engine_upgrade_image):  # NOQA
-    assert engine_upgrade_image != ""
 
+def test_engine_live_upgrade(clients, volume_name):  # NOQA
     # get a random client
     for host_id, client in clients.iteritems():
         break
+
+    engine_upgrade_image = common.get_engine_upgrade_image(client)
+    assert engine_upgrade_image != ""
+
+    new_img = client.create_engine_image(image=engine_upgrade_image)
+    new_img_name = new_img["name"]
+    new_img = wait_for_engine_image(client, new_img_name)
 
     volume = client.create_volume(name=volume_name, size=SIZE,
                                   numberOfReplicas=2)
@@ -170,3 +176,5 @@ def test_engine_live_upgrade(clients, volume_name,   # NOQA
 
     client.delete(volume)
     wait_for_volume_delete(client, volume_name)
+
+    client.delete(new_img)

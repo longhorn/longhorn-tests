@@ -39,6 +39,10 @@ def cleanup_clients(clis):
     volumes = client.list_volume()
     for v in volumes:
         client.delete(v)
+    images = client.list_engine_image()
+    for img in images:
+        if not img["default"]:
+            client.delete(img)
 
 
 def get_client(address):
@@ -159,3 +163,11 @@ def get_backupstore_credential():
     backupcredential = os.environ['LONGHORN_BACKUPSTORE_CREDENTIAL_SECRET']
     assert backupcredential != ""
     return backupcredential
+
+
+def get_engine_upgrade_image(client):
+    images = client.list_engine_image()
+    for img in images:
+        if img["default"]:
+            return "docker.io/" + img["image"]
+    return ""

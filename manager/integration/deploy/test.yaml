@@ -41,7 +41,6 @@ spec:
 #    args: ["-x", "-s",
 #           "-k", "test_recurring_job",
 #           "--enable-recurring-job-test",
-#           "--engine-upgrade-image", "yasker/longhorn-engine:91aa784",
 #           ]
     imagePullPolicy: Always
     env:
