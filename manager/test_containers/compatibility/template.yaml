@@ -1,0 +1,11 @@
+{
+	"Version": ${Version},
+	"CLIAPIVersion": ${CLIAPIVersion},
+	"CLIAPIMinVersion": ${CLIAPIMinVersion},
+	"ControllerAPIVersion": ${ControllerAPIVersion},
+	"ControllerAPIMinVersion": ${ControllerAPIMinVersion},
+	"DataFormatVersion": ${DataFormatVersion},
+	"DataFormatMinVersion": ${DataFormatMinVersion},
+	"GitCommit": "onlytestnogitcommit",
+	"BuildDate": "2018-06-11T00:00:00+00:00"
+}

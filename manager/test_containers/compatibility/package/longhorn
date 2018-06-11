@@ -1,0 +1,12 @@
+#!/bin/sh
+echo '{
+	"Version": "version-test.1-1.0-0.1-1",
+	"CLIAPIVersion": 1,
+	"CLIAPIMinVersion": 1,
+	"ControllerAPIVersion": 0,
+	"ControllerAPIMinVersion": 0,
+	"DataFormatVersion": 1,
+	"DataFormatMinVersion": 1,
+	"GitCommit": "onlytestnogitcommit",
+	"BuildDate": "2018-06-11T00:00:00+00:00"
+}'
