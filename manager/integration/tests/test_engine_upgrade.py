@@ -5,6 +5,7 @@ from common import clients, volume_name  # NOQA
 from common import SIZE
 from common import wait_for_volume_state, wait_for_volume_delete
 from common import wait_for_volume_engine_image, wait_for_engine_image_state
+from common import wait_for_engine_image_ref_count
 
 REPLICA_COUNT = 2
 
@@ -70,19 +71,31 @@ def test_engine_offline_upgrade(clients, volume_name):  # NOQA
     new_img = client.create_engine_image(image=engine_upgrade_image)
     new_img_name = new_img["name"]
     new_img = wait_for_engine_image_state(client, new_img_name, "ready")
+    assert new_img["refCount"] == 0
+    assert new_img["noRefSince"] != ""
+
+    default_img = common.get_default_engine_image(client)
+    default_img_name = default_img["name"]
 
     volume = client.create_volume(name=volume_name, size=SIZE,
                                   numberOfReplicas=REPLICA_COUNT)
     volume = wait_for_volume_state(client, volume_name, "detached")
+    default_img = wait_for_engine_image_ref_count(client, default_img_name, 1)
+
+    original_engine_image = default_img["image"]
 
     assert volume["name"] == volume_name
 
-    original_engine_image = volume["engineImage"]
-    assert original_engine_image != engine_upgrade_image
-
-    volume.engineUpgrade(image=engine_upgrade_image)
+    volume.engineUpgrade(image=new_img["image"])
     volume = wait_for_volume_engine_image(client, volume_name,
-                                          engine_upgrade_image)
+                                          new_img["image"])
+    default_img = wait_for_engine_image_ref_count(client, default_img_name, 0)
+    new_img = wait_for_engine_image_ref_count(client, new_img_name, 1)
+
+    # cannot delete a image in use
+    with pytest.raises(Exception) as e:
+        client.delete(new_img)
+    assert "while being used" in str(e.value)
 
     volume = volume.attach(hostId=host_id)
     volume = wait_for_volume_state(client, volume_name, "healthy")
@@ -97,8 +110,10 @@ def test_engine_offline_upgrade(clients, volume_name):  # NOQA
     volume.engineUpgrade(image=original_engine_image)
     volume = wait_for_volume_engine_image(client, volume_name,
                                           original_engine_image)
-
     assert volume["engineImage"] == original_engine_image
+
+    default_img = wait_for_engine_image_ref_count(client, default_img_name, 1)
+    new_img = wait_for_engine_image_ref_count(client, new_img_name, 0)
 
     volume = volume.attach(hostId=host_id)
     volume = wait_for_volume_state(client, volume_name, "healthy")
@@ -124,10 +139,16 @@ def test_engine_live_upgrade(clients, volume_name):  # NOQA
     new_img = client.create_engine_image(image=engine_upgrade_image)
     new_img_name = new_img["name"]
     new_img = wait_for_engine_image_state(client, new_img_name, "ready")
+    assert new_img["refCount"] == 0
+    assert new_img["noRefSince"] != ""
+
+    default_img = common.get_default_engine_image(client)
+    default_img_name = default_img["name"]
 
     volume = client.create_volume(name=volume_name, size=SIZE,
                                   numberOfReplicas=2)
     volume = wait_for_volume_state(client, volume_name, "detached")
+    default_img = wait_for_engine_image_ref_count(client, default_img_name, 1)
 
     assert volume["name"] == volume_name
 
@@ -142,6 +163,9 @@ def test_engine_live_upgrade(clients, volume_name):  # NOQA
                                           engine_upgrade_image)
 
     assert volume["controller"]["engineImage"] == engine_upgrade_image
+    default_img = wait_for_engine_image_ref_count(client, default_img_name, 0)
+    new_img = wait_for_engine_image_ref_count(client, new_img_name, 1)
+
     count = 0
     # old replica may be in deletion process
     for replica in volume["replicas"]:
@@ -159,6 +183,8 @@ def test_engine_live_upgrade(clients, volume_name):  # NOQA
     volume.engineUpgrade(image=original_engine_image)
     volume = wait_for_volume_engine_image(client, volume_name,
                                           original_engine_image)
+    default_img = wait_for_engine_image_ref_count(client, default_img_name, 1)
+    new_img = wait_for_engine_image_ref_count(client, new_img_name, 0)
 
     assert volume["engineImage"] == original_engine_image
 

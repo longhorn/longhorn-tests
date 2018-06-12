@@ -138,6 +138,18 @@ def wait_for_engine_image_state(client, image_name, state):
     return image
 
 
+def wait_for_engine_image_ref_count(client, image_name, count):
+    for i in range(RETRY_COUNTS):
+        image = client.by_id_engine_image(image_name)
+        if image["refCount"] == count:
+            break
+        time.sleep(RETRY_ITERVAL)
+    assert image["refCount"] == count
+    if count == 0:
+        assert image["noRefSince"] != ""
+    return image
+
+
 def k8s_delete_replica_pods_for_volume(volname):
     k8sclient.CoreV1Api().delete_collection_namespaced_pod(
         label_selector="longhorn-volume-replica="+volname,
@@ -168,11 +180,16 @@ def get_backupstore_credential():
 
 
 def get_engine_upgrade_image(client):
+    default_img = get_default_engine_image(client)
+    return "docker.io/" + default_img["image"]
+
+
+def get_default_engine_image(client):
     images = client.list_engine_image()
     for img in images:
         if img["default"]:
-            return "docker.io/" + img["image"]
-    return ""
+            return img
+    assert False
 
 
 def get_compatibility_test_image(cli_v, cli_minv,
