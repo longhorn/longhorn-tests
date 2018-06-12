@@ -15,6 +15,11 @@ def test_engine_image(clients, volume_name):  # NOQA
     for host_id, client in clients.iteritems():
         break
 
+    # can be leftover
+    default_img = common.get_default_engine_image(client)
+    default_img_name = default_img["name"]
+    default_img = wait_for_engine_image_ref_count(client, default_img_name, 0)
+
     images = client.list_engine_image()
     assert len(images) == 1
     assert images[0]["default"]

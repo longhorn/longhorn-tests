@@ -40,11 +40,19 @@ def cleanup_clients(clis):
     client = clis.itervalues().next()
     volumes = client.list_volume()
     for v in volumes:
-        client.delete(v)
+        # ignore the error when clean up
+        try:
+            client.delete(v)
+        except Exception:
+            pass
     images = client.list_engine_image()
     for img in images:
         if not img["default"]:
-            client.delete(img)
+            # ignore the error when clean up
+            try:
+                client.delete(img)
+            except Exception:
+                pass
 
 
 def get_client(address):
