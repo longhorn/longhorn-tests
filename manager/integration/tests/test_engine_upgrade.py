@@ -4,7 +4,7 @@ import common
 from common import clients, volume_name  # NOQA
 from common import SIZE
 from common import wait_for_volume_state, wait_for_volume_delete
-from common import wait_for_volume_engine_image, wait_for_engine_image
+from common import wait_for_volume_engine_image, wait_for_engine_image_state
 
 REPLICA_COUNT = 2
 
@@ -43,7 +43,7 @@ def test_engine_image(clients, volume_name):  # NOQA
 
     new_img = client.create_engine_image(image=engine_upgrade_image)
     new_img_name = new_img["name"]
-    new_img = wait_for_engine_image(client, new_img_name)
+    new_img = wait_for_engine_image_state(client, new_img_name, "ready")
     assert not new_img["default"]
     assert new_img["state"] == "ready"
     assert new_img["refCount"] == 0
@@ -69,7 +69,7 @@ def test_engine_offline_upgrade(clients, volume_name):  # NOQA
 
     new_img = client.create_engine_image(image=engine_upgrade_image)
     new_img_name = new_img["name"]
-    new_img = wait_for_engine_image(client, new_img_name)
+    new_img = wait_for_engine_image_state(client, new_img_name, "ready")
 
     volume = client.create_volume(name=volume_name, size=SIZE,
                                   numberOfReplicas=REPLICA_COUNT)
@@ -123,7 +123,7 @@ def test_engine_live_upgrade(clients, volume_name):  # NOQA
 
     new_img = client.create_engine_image(image=engine_upgrade_image)
     new_img_name = new_img["name"]
-    new_img = wait_for_engine_image(client, new_img_name)
+    new_img = wait_for_engine_image_state(client, new_img_name, "ready")
 
     volume = client.create_volume(name=volume_name, size=SIZE,
                                   numberOfReplicas=2)
@@ -178,3 +178,45 @@ def test_engine_live_upgrade(clients, volume_name):  # NOQA
     wait_for_volume_delete(client, volume_name)
 
     client.delete(new_img)
+
+
+def test_engine_image_incompatible(clients, volume_name):  # NOQA
+    # get a random client
+    for host_id, client in clients.iteritems():
+        break
+
+    images = client.list_engine_image()
+    assert len(images) == 1
+    assert images[0]["default"]
+    assert images[0]["state"] == "ready"
+
+    cli_v = images[0]["cliVersion"]
+    # cli_minv = images[0]["cliMinVersion"]
+    ctl_v = images[0]["controllerVersion"]
+    ctl_minv = images[0]["controllerMinVersion"]
+    data_v = images[0]["dataFormatVersion"]
+    data_minv = images[0]["dataFormatMinVersion"]
+
+    fail_cli_v_image = common.get_compatibility_test_image(
+            cli_v - 1, cli_v - 1,
+            ctl_v, ctl_minv,
+            data_v, data_minv)
+    img = client.create_engine_image(image=fail_cli_v_image)
+    img_name = img["name"]
+    img = wait_for_engine_image_state(client, img_name, "incompatible")
+    assert img["state"] == "incompatible"
+    assert img["cliVersion"] == cli_v - 1
+    assert img["cliMinVersion"] == cli_v - 1
+    client.delete(img)
+
+    fail_cli_minv_image = common.get_compatibility_test_image(
+            cli_v + 1, cli_v + 1,
+            ctl_v, ctl_minv,
+            data_v, data_minv)
+    img = client.create_engine_image(image=fail_cli_minv_image)
+    img_name = img["name"]
+    img = wait_for_engine_image_state(client, img_name, "incompatible")
+    assert img["state"] == "incompatible"
+    assert img["cliVersion"] == cli_v + 1
+    assert img["cliMinVersion"] == cli_v + 1
+    client.delete(img)

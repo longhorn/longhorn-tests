@@ -20,6 +20,8 @@ RETRY_ITERVAL = 0.5
 
 LONGHORN_NAMESPACE = "longhorn-system"
 
+COMPATIBILTY_TEST_IMAGE_PREFIX = "rancher/longhorn-test:version-test"
+
 
 @pytest.fixture
 def clients(request):
@@ -126,13 +128,13 @@ def wait_for_snapshot_purge(volume, *snaps):
     assert not found
 
 
-def wait_for_engine_image(client, image_name):
+def wait_for_engine_image_state(client, image_name, state):
     for i in range(RETRY_COUNTS):
         image = client.by_id_engine_image(image_name)
-        if image["state"] == "ready":
+        if image["state"] == state:
             break
         time.sleep(RETRY_ITERVAL)
-    assert image["state"] == "ready"
+    assert image["state"] == state
     return image
 
 
@@ -171,3 +173,12 @@ def get_engine_upgrade_image(client):
         if img["default"]:
             return "docker.io/" + img["image"]
     return ""
+
+
+def get_compatibility_test_image(cli_v, cli_minv,
+                                 ctl_v, ctl_minv,
+                                 data_v, data_minv):
+    return "%s.%d-%d.%d-%d.%d-%d" % (COMPATIBILTY_TEST_IMAGE_PREFIX,
+                                     cli_v, cli_minv,
+                                     ctl_v, ctl_minv,
+                                     data_v, data_minv)
