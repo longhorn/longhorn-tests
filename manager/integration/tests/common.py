@@ -21,6 +21,7 @@ RETRY_ITERVAL = 0.5
 LONGHORN_NAMESPACE = "longhorn-system"
 
 COMPATIBILTY_TEST_IMAGE_PREFIX = "rancher/longhorn-test:version-test"
+UPGRADE_TEST_IMAGE_PREFIX = "rancher/longhorn-test:upgrade-test"
 
 
 @pytest.fixture
@@ -187,11 +188,6 @@ def get_backupstore_credential():
     return backupcredential
 
 
-def get_engine_upgrade_image(client):
-    default_img = get_default_engine_image(client)
-    return "docker.io/" + default_img["image"]
-
-
 def get_default_engine_image(client):
     images = client.list_engine_image()
     for img in images:
@@ -204,6 +200,15 @@ def get_compatibility_test_image(cli_v, cli_minv,
                                  ctl_v, ctl_minv,
                                  data_v, data_minv):
     return "%s.%d-%d.%d-%d.%d-%d" % (COMPATIBILTY_TEST_IMAGE_PREFIX,
+                                     cli_v, cli_minv,
+                                     ctl_v, ctl_minv,
+                                     data_v, data_minv)
+
+
+def get_upgrade_test_image(cli_v, cli_minv,
+                           ctl_v, ctl_minv,
+                           data_v, data_minv):
+    return "%s.%d-%d.%d-%d.%d-%d" % (UPGRADE_TEST_IMAGE_PREFIX,
                                      cli_v, cli_minv,
                                      ctl_v, ctl_minv,
                                      data_v, data_minv)
