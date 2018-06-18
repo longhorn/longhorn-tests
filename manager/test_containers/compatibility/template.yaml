@@ -1,11 +1,24 @@
 {
-	"Version": ${Version},
-	"CLIAPIVersion": ${CLIAPIVersion},
-	"CLIAPIMinVersion": ${CLIAPIMinVersion},
-	"ControllerAPIVersion": ${ControllerAPIVersion},
-	"ControllerAPIMinVersion": ${ControllerAPIMinVersion},
-	"DataFormatVersion": ${DataFormatVersion},
-	"DataFormatMinVersion": ${DataFormatMinVersion},
-	"GitCommit": "onlytestnogitcommit",
-	"BuildDate": "2018-06-11T00:00:00+00:00"
+	"clientVersion": {
+		"version": ${Version},
+		"gitCommit": "onlytestnogitcommit",
+		"buildDate": "2018-06-11T00:00:00+00:00",
+		"cliAPIVersion": ${CLIAPIVersion},
+		"cliAPIMinVersion": ${CLIAPIMinVersion},
+		"controllerAPIVersion": ${ControllerAPIVersion},
+		"controllerAPIMinVersion": ${ControllerAPIMinVersion},
+		"dataFormatVersion": ${DataFormatVersion},
+		"dataFormatMinVersion": ${DataFormatMinVersion}
+	},
+	"serverVersion": {
+		"version": ${Version},
+		"gitCommit": "onlytestnogitcommit",
+		"buildDate": "2018-06-11T00:00:00+00:00",
+		"cliAPIVersion": ${CLIAPIVersion},
+		"cliAPIMinVersion": ${CLIAPIMinVersion},
+		"controllerAPIVersion": ${ControllerAPIVersion},
+		"controllerAPIMinVersion": ${ControllerAPIMinVersion},
+		"dataFormatVersion": ${DataFormatVersion},
+		"dataFormatMinVersion": ${DataFormatMinVersion}
+	}
 }
