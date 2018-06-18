@@ -25,15 +25,22 @@ def test_engine_image(clients, volume_name):  # NOQA
     assert images[0]["default"]
     assert images[0]["state"] == "ready"
     assert images[0]["refCount"] == 0
-    assert images[0]["cliVersion"] != 0
-    assert images[0]["cliMinVersion"] != 0
-    assert images[0]["controllerVersion"] != 0
-    assert images[0]["controllerMinVersion"] != 0
-    assert images[0]["dataFormatVersion"] != 0
-    assert images[0]["dataFormatMinVersion"] != 0
     assert images[0]["gitCommit"] != ""
     assert images[0]["buildDate"] != ""
-    default_img = images[0]["image"]
+
+    cli_v = default_img["cliAPIVersion"]
+    cli_minv = default_img["cliAPIMinVersion"]
+    ctl_v = default_img["controllerAPIVersion"]
+    ctl_minv = default_img["controllerAPIMinVersion"]
+    data_v = default_img["dataFormatVersion"]
+    data_minv = default_img["dataFormatMinVersion"]
+
+    assert cli_v != 0
+    assert cli_minv != 0
+    assert ctl_v != 0
+    assert ctl_minv != 0
+    assert data_v != 0
+    assert data_minv != 0
 
     # delete default image is not allowed
     with pytest.raises(Exception) as e:
@@ -42,10 +49,11 @@ def test_engine_image(clients, volume_name):  # NOQA
 
     # duplicate images
     with pytest.raises(Exception) as e:
-        client.create_engine_image(image=default_img)
+        client.create_engine_image(image=default_img["image"])
 
-    engine_upgrade_image = common.get_engine_upgrade_image(client)
-    assert engine_upgrade_image != ""
+    engine_upgrade_image = common.get_upgrade_test_image(cli_v, cli_minv,
+                                                         ctl_v, ctl_minv,
+                                                         data_v, data_minv)
 
     new_img = client.create_engine_image(image=engine_upgrade_image)
     new_img_name = new_img["name"]
@@ -53,10 +61,10 @@ def test_engine_image(clients, volume_name):  # NOQA
     assert not new_img["default"]
     assert new_img["state"] == "ready"
     assert new_img["refCount"] == 0
-    assert new_img["cliVersion"] != 0
-    assert new_img["cliMinVersion"] != 0
-    assert new_img["controllerVersion"] != 0
-    assert new_img["controllerMinVersion"] != 0
+    assert new_img["cliAPIVersion"] != 0
+    assert new_img["cliAPIMinVersion"] != 0
+    assert new_img["controllerAPIVersion"] != 0
+    assert new_img["controllerAPIMinVersion"] != 0
     assert new_img["dataFormatVersion"] != 0
     assert new_img["dataFormatMinVersion"] != 0
     assert new_img["gitCommit"] != ""
@@ -70,8 +78,18 @@ def test_engine_offline_upgrade(clients, volume_name):  # NOQA
     for host_id, client in clients.iteritems():
         break
 
-    engine_upgrade_image = common.get_engine_upgrade_image(client)
-    assert engine_upgrade_image != ""
+    default_img = common.get_default_engine_image(client)
+    default_img_name = default_img["name"]
+    default_img = wait_for_engine_image_ref_count(client, default_img_name, 0)
+    cli_v = default_img["cliAPIVersion"]
+    cli_minv = default_img["cliAPIMinVersion"]
+    ctl_v = default_img["controllerAPIVersion"]
+    ctl_minv = default_img["controllerAPIMinVersion"]
+    data_v = default_img["dataFormatVersion"]
+    data_minv = default_img["dataFormatMinVersion"]
+    engine_upgrade_image = common.get_upgrade_test_image(cli_v, cli_minv,
+                                                         ctl_v, ctl_minv,
+                                                         data_v, data_minv)
 
     new_img = client.create_engine_image(image=engine_upgrade_image)
     new_img_name = new_img["name"]
@@ -138,8 +156,18 @@ def test_engine_live_upgrade(clients, volume_name):  # NOQA
     for host_id, client in clients.iteritems():
         break
 
-    engine_upgrade_image = common.get_engine_upgrade_image(client)
-    assert engine_upgrade_image != ""
+    default_img = common.get_default_engine_image(client)
+    default_img_name = default_img["name"]
+    default_img = wait_for_engine_image_ref_count(client, default_img_name, 0)
+    cli_v = default_img["cliAPIVersion"]
+    cli_minv = default_img["cliAPIMinVersion"]
+    ctl_v = default_img["controllerAPIVersion"]
+    ctl_minv = default_img["controllerAPIMinVersion"]
+    data_v = default_img["dataFormatVersion"]
+    data_minv = default_img["dataFormatMinVersion"]
+    engine_upgrade_image = common.get_upgrade_test_image(cli_v, cli_minv,
+                                                         ctl_v, ctl_minv,
+                                                         data_v, data_minv)
 
     new_img = client.create_engine_image(image=engine_upgrade_image)
     new_img_name = new_img["name"]
@@ -221,10 +249,10 @@ def test_engine_image_incompatible(clients, volume_name):  # NOQA
     assert images[0]["default"]
     assert images[0]["state"] == "ready"
 
-    cli_v = images[0]["cliVersion"]
-    # cli_minv = images[0]["cliMinVersion"]
-    ctl_v = images[0]["controllerVersion"]
-    ctl_minv = images[0]["controllerMinVersion"]
+    cli_v = images[0]["cliAPIVersion"]
+    # cli_minv = images[0]["cliAPIMinVersion"]
+    ctl_v = images[0]["controllerAPIVersion"]
+    ctl_minv = images[0]["controllerAPIMinVersion"]
     data_v = images[0]["dataFormatVersion"]
     data_minv = images[0]["dataFormatMinVersion"]
 
@@ -236,8 +264,8 @@ def test_engine_image_incompatible(clients, volume_name):  # NOQA
     img_name = img["name"]
     img = wait_for_engine_image_state(client, img_name, "incompatible")
     assert img["state"] == "incompatible"
-    assert img["cliVersion"] == cli_v - 1
-    assert img["cliMinVersion"] == cli_v - 1
+    assert img["cliAPIVersion"] == cli_v - 1
+    assert img["cliAPIMinVersion"] == cli_v - 1
     client.delete(img)
 
     fail_cli_minv_image = common.get_compatibility_test_image(
@@ -248,6 +276,6 @@ def test_engine_image_incompatible(clients, volume_name):  # NOQA
     img_name = img["name"]
     img = wait_for_engine_image_state(client, img_name, "incompatible")
     assert img["state"] == "incompatible"
-    assert img["cliVersion"] == cli_v + 1
-    assert img["cliMinVersion"] == cli_v + 1
+    assert img["cliAPIVersion"] == cli_v + 1
+    assert img["cliAPIMinVersion"] == cli_v + 1
     client.delete(img)
