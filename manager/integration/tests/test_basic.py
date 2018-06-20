@@ -496,3 +496,70 @@ def test_volume_multinode(clients, volume_name):  # NOQA
 
 def is_backupTarget_s3(s):
     return s.startswith("s3://")
+
+
+def test_replica_scheduler(clients, volume_name):  # NOQA
+    # get a random client
+    for host_id, client in clients.iteritems():
+        break
+
+    hosts = clients.itervalues().next().list_host()
+    nodes = client.list_node()
+    assert len(nodes) == len(hosts)
+
+    # test anti-affinity replica
+    nodeHosts = []
+    # set random host to unscheduled
+    for node in nodes:
+        if node["name"] == host_id:
+            client.update(node, allowScheduling=False)
+        else:
+            node = client.update(node, allowScheduling=True)
+            nodeHosts.append(node["name"])
+
+    assert len(nodeHosts) == len(hosts) - 1
+
+    volume = client.create_volume(name=volume_name, size=SIZE,
+                                  numberOfReplicas=(len(hosts)-1))
+    assert volume["numberOfReplicas"] == len(hosts)-1
+    assert volume["frontend"] == "blockdev"
+
+    volume = wait_for_volume_state(client, volume_name, "detached")
+    assert len(volume["replicas"]) == len(hosts)-1
+
+    assert volume["state"] == "detached"
+    assert volume["created"] != ""
+
+    volumeByName = client.by_id_volume(volume_name)
+    assert volumeByName["name"] == volume["name"]
+    assert volumeByName["size"] == volume["size"]
+    assert volumeByName["numberOfReplicas"] == volume["numberOfReplicas"]
+    assert volumeByName["state"] == volume["state"]
+    assert volumeByName["created"] == volume["created"]
+
+    lht_hostId = get_self_host_id()
+    volume.attach(hostId=lht_hostId)
+    volume = wait_for_volume_state(client, volume_name, "healthy")
+
+    for replica in volume["replicas"]:
+        id = replica["hostId"]
+        assert id != ""
+        assert replica["running"]
+        nodeHosts = filter(lambda x: x != id, nodeHosts)
+
+    assert len(nodeHosts) == 0
+
+    volume = volume.detach()
+    volume = wait_for_volume_state(client, volume_name, "detached")
+    client.delete(volume)
+
+    wait_for_volume_delete(client, volume_name)
+
+    volumes = client.list_volume()
+    assert len(volumes) == 0
+
+    for node in nodes:
+        node = client.update(node, allowScheduling=True)
+        assert node["allowScheduling"]
+        node = client.by_id_node(node["name"])
+        assert node["allowScheduling"]
