@@ -73,9 +73,12 @@ def get_mgr_ips():
 
 
 def get_backupstore_url():
-    backupstore = os.environ['LONGHORN_BACKUPSTORE']
-    assert backupstore != ""
-    return backupstore
+    backupstore = os.environ['LONGHORN_BACKUPSTORES']
+    backupstore = backupstore.replace(" ", "")
+    backupstores = backupstore.split(",")
+
+    assert len(backupstores) != 0
+    return backupstores
 
 
 def get_clients(hosts):
@@ -190,12 +193,6 @@ def generate_volume_name():
     return VOLUME_NAME + "-" + \
         ''.join(random.choice(string.ascii_lowercase + string.digits)
                 for _ in range(6))
-
-
-def get_backupstore_credential():
-    backupcredential = os.environ['LONGHORN_BACKUPSTORE_CREDENTIAL_SECRET']
-    assert backupcredential != ""
-    return backupcredential
 
 
 def get_default_engine_image(client):

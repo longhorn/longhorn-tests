@@ -44,10 +44,7 @@ spec:
 #           ]
     imagePullPolicy: Always
     env:
-    - name: LONGHORN_BACKUPSTORE
-      #value: "nfs://longhorn-test-nfs-svc.default:/opt/backupstore"
-      value: "s3://backupbucket@us-east-1/backupstore"
-    - name: LONGHORN_BACKUPSTORE_CREDENTIAL_SECRET
-      value: "minio-secret"
+    - name: LONGHORN_BACKUPSTORES
+      value: "s3://backupbucket@us-east-1/backupstore$minio-secret, nfs://longhorn-test-nfs-svc.default:/opt/backupstore"
   restartPolicy: Never
   serviceAccountName: longhorn-test-service-account
