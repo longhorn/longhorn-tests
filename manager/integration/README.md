@@ -8,13 +8,9 @@ Requirement:
 3. No volume exists in the Longhorn system.
 
 Run the test:
-1. Deploy the [Minio](https://docs.minio.io) server for s3 test purpose, acting as the s3 backupstore.
+1. Deploy all backupstore servers(including `NFS` server and `Minio` as s3 server) for test purpose.
 ```
-kubectl create -f integration/deploy/minio-backupstore.yaml
-```
-If you want to test nfs backup, Deploy the nfs server.
-```
-kubectl create -f integration/deploy/nfs-backupstore.yaml
+kubectl create -Rf integration/deploy/backupstore
 ```
 2. Deploy the test script to the Kubernetes cluster.
 ```

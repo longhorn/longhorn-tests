@@ -5,6 +5,9 @@ metadata:
   labels:
     app: longhorn-test-nfs
 spec:
+  volumes:
+  - name: nfs-volume
+    emptyDir: {}
   containers:
   - name: longhorn-test-nfs-container
     image: janeczku/nfs-ganesha:latest
@@ -16,10 +19,14 @@ spec:
       value: /opt/backupstore
     - name: PSEUDO_PATH
       value: /opt/backupstore
-    command: ["bash", "-c", "mkdir -p /opt/backupstore && /opt/start_nfs.sh"]
+    command: ["bash", "-c", "chmod 700 /opt/backupstore && /opt/start_nfs.sh"]
     securityContext:
+      privileged: true
       capabilities:
         add: ["SYS_ADMIN", "DAC_READ_SEARCH"]
+    volumeMounts:
+    - name: nfs-volume
+      mountPath: "/opt/backupstore"
 ---
 kind: Service
 apiVersion: v1

@@ -309,7 +309,27 @@ def test_backup(clients, volume_name):  # NOQA
     volume = volume.attach(hostId=host_id)
     volume = wait_for_volume_state(client, volume_name, "healthy")
 
-    backup_test(client, host_id, volume_name)
+    setting = client.by_id_setting("backupTarget")
+    # test backupTarget for multiple settings
+    backupstores = common.get_backupstore_url()
+    for backupstore in backupstores:
+        if is_backupTarget_s3(backupstore):
+            backupsettings = backupstore.split("$")
+            setting = client.update(setting, value=backupsettings[0])
+            assert setting["value"] == backupsettings[0]
+
+            credential = client.by_id_setting("backupTargetCredentialSecret")
+            credential = client.update(credential, value=backupsettings[1])
+            assert credential["value"] == backupsettings[1]
+        else:
+            setting = client.update(setting, value=backupstore)
+            assert setting["value"] == backupstore
+            credential = client.by_id_setting("backupTargetCredentialSecret")
+            credential = client.update(credential, value="")
+            assert credential["value"] == ""
+
+        backup_test(client, host_id, volume_name)
+
     volume = volume.detach()
     volume = wait_for_volume_state(client, volume_name, "detached")
 
@@ -322,17 +342,6 @@ def test_backup(clients, volume_name):  # NOQA
 
 def backup_test(client, host_id, volname):
     volume = client.by_id_volume(volname)
-
-    setting = client.by_id_setting("backupTarget")
-    setting = client.update(setting, value=common.get_backupstore_url())
-    assert setting["value"] == common.get_backupstore_url()
-
-    if is_backupTarget_s3(setting["value"]):
-        credential = client.by_id_setting("backupTargetCredentialSecret")
-        credential = client.update(credential,
-                                   value=common.get_backupstore_credential())
-        assert credential["value"] == common.get_backupstore_credential()
-
     volume.snapshotCreate()
     snap2 = volume.snapshotCreate()
     volume.snapshotCreate()
