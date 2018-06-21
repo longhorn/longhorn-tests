@@ -120,6 +120,16 @@ def wait_for_volume_engine_image(client, name, image):
     return volume
 
 
+def wait_for_volume_replica_count(client, name, count):
+    for i in range(RETRY_COUNTS):
+        volume = client.by_id_volume(name)
+        if len(volume["replicas"]) == count:
+            break
+        time.sleep(RETRY_ITERVAL)
+    assert len(volume["replicas"]) == count
+    return volume
+
+
 def wait_for_snapshot_purge(volume, *snaps):
     for i in range(RETRY_COUNTS):
         snapshots = volume.snapshotList(volume=volume["name"])

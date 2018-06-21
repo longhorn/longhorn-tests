@@ -279,3 +279,62 @@ def test_engine_image_incompatible(clients, volume_name):  # NOQA
     assert img["cliAPIVersion"] == cli_v + 1
     assert img["cliAPIMinVersion"] == cli_v + 1
     client.delete(img)
+
+
+def test_engine_live_upgrade_rollback(clients, volume_name):  # NOQA
+    # get a random client
+    for host_id, client in clients.iteritems():
+        break
+
+    default_img = common.get_default_engine_image(client)
+    default_img_name = default_img["name"]
+    default_img = wait_for_engine_image_ref_count(client, default_img_name, 0)
+    cli_v = default_img["cliAPIVersion"]
+    cli_minv = default_img["cliAPIMinVersion"]
+    ctl_v = default_img["controllerAPIVersion"]
+    ctl_minv = default_img["controllerAPIMinVersion"]
+    data_v = default_img["dataFormatVersion"]
+    data_minv = default_img["dataFormatMinVersion"]
+    wrong_engine_upgrade_image = common.get_compatibility_test_image(
+            cli_v, cli_minv,
+            ctl_v, ctl_minv,
+            data_v, data_minv)
+    new_img = client.create_engine_image(image=wrong_engine_upgrade_image)
+    new_img_name = new_img["name"]
+    new_img = wait_for_engine_image_state(client, new_img_name, "ready")
+    assert new_img["refCount"] == 0
+    assert new_img["noRefSince"] != ""
+
+    default_img = common.get_default_engine_image(client)
+    default_img_name = default_img["name"]
+
+    volume = client.create_volume(name=volume_name, size=SIZE,
+                                  numberOfReplicas=2)
+    volume = wait_for_volume_state(client, volume_name, "detached")
+    default_img = wait_for_engine_image_ref_count(client, default_img_name, 1)
+
+    original_engine_image = volume["engineImage"]
+    assert original_engine_image != wrong_engine_upgrade_image
+
+    volume = volume.attach(hostId=host_id)
+    volume = wait_for_volume_state(client, volume_name, "healthy")
+
+    volume.engineUpgrade(image=wrong_engine_upgrade_image)
+    with pytest.raises(Exception):
+        # this will timeout
+        wait_for_volume_engine_image(client, volume_name,
+                                     wrong_engine_upgrade_image)
+
+    # rollback
+    volume.engineUpgrade(image=original_engine_image)
+    wait_for_volume_engine_image(client, volume_name,
+                                 original_engine_image)
+
+    volume = common.wait_for_volume_replica_count(client, volume_name,
+                                                  REPLICA_COUNT)
+    assert volume["state"] == "healthy"
+
+    client.delete(volume)
+    wait_for_volume_delete(client, volume_name)
+
+    client.delete(new_img)
