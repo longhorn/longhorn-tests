@@ -19,7 +19,7 @@ spec:
       value: /opt/backupstore
     - name: PSEUDO_PATH
       value: /opt/backupstore
-    command: ["bash", "-c", "chmod 700 /opt/backupstore && /opt/start_nfs.sh"]
+    command: ["bash", "-c", "chmod 700 /opt/backupstore && /opt/start_nfs.sh | tee /var/log/ganesha.log"]
     securityContext:
       privileged: true
       capabilities:
@@ -27,6 +27,11 @@ spec:
     volumeMounts:
     - name: nfs-volume
       mountPath: "/opt/backupstore"
+    livenessProbe:
+      exec:
+        command: ["bash", "-c", "grep \"No export entries found\" /var/log/ganesha.log > /dev/null 2>&1 ; [ $? -ne 0 ]"]
+      initialDelaySeconds: 5
+      periodSeconds: 5
 ---
 kind: Service
 apiVersion: v1
