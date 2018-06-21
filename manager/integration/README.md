@@ -10,7 +10,7 @@ Requirement:
 Run the test:
 1. Deploy all backupstore servers(including `NFS` server and `Minio` as s3 server) for test purpose.
 ```
-kubectl create -Rf integration/deploy/backupstore
+kubectl create -Rf integration/deploy/backupstores
 ```
 2. Deploy the test script to the Kubernetes cluster.
 ```
