@@ -3,7 +3,7 @@
 ## Integration test
 
 Requirement:
-1. A Kubernetes cluster
+1. A Kubernetes cluster with at least 3 nodes
 2. Longhorn system has already been successfully deployed in the cluster.
 3. No volume exists in the Longhorn system.
 
