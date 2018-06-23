@@ -3,10 +3,16 @@ import time
 import common
 
 from common import clients, volume_name  # NOQA
-from common import SIZE, DEV_PATH
+from common import SIZE, DEV_PATH, VOLUME_RWTEST_SIZE
+from common import get_self_host_id
+from common import volume_read, volume_write
+from common import volume_valid
+from common import iscsi_login, iscsi_logout
 from common import wait_for_volume_state, wait_for_volume_delete
 from common import wait_for_snapshot_purge
 from common import generate_volume_name
+from common import generate_random_data
+from common import generate_random_pos
 
 
 def test_hosts_and_settings(clients):  # NOQA
@@ -59,6 +65,16 @@ def test_hosts_and_settings(clients):  # NOQA
         assert setting["value"] == old_value
 
 
+def volume_rw_test(dev):
+    assert volume_valid(dev)
+    w_data = generate_random_data(VOLUME_RWTEST_SIZE)
+    l_data = len(w_data)
+    spos_data = generate_random_pos(VOLUME_RWTEST_SIZE)
+    volume_write(dev, spos_data, w_data)
+    r_data = volume_read(dev, spos_data, l_data)
+    assert r_data == w_data
+
+
 def test_volume_basic(clients, volume_name):  # NOQA
     # get a random client
     for host_id, client in clients.iteritems():
@@ -101,7 +117,8 @@ def test_volume_basic(clients, volume_name):  # NOQA
     assert volumeByName["state"] == volume["state"]
     assert volumeByName["created"] == volume["created"]
 
-    volume.attach(hostId=host_id)
+    lht_hostId = get_self_host_id()
+    volume.attach(hostId=lht_hostId)
     volume = wait_for_volume_state(client, volume_name, "healthy")
 
     # soft anti-affinity should work, assume we have 3 nodes or more
@@ -124,6 +141,8 @@ def test_volume_basic(clients, volume_name):  # NOQA
 
     volume = client.by_id_volume(volume_name)
     assert volume["endpoint"] == DEV_PATH + volume_name
+
+    volume_rw_test(volume["endpoint"])
 
     volume = volume.detach()
 
@@ -168,6 +187,12 @@ def test_volume_iscsi_basic(clients, volume_name):  # NOQA
     assert volumes[0]["frontend"] == "iscsi"
     assert volumes[0]["endpoint"].startswith("iscsi://")
 
+    try:
+        dev = iscsi_login(volumes[0]["endpoint"])
+        volume_rw_test(dev)
+    finally:
+        iscsi_logout(volumes[0]["endpoint"])
+
     volume = volume.detach()
 
     wait_for_volume_state(client, volume_name, "detached")
@@ -193,7 +218,8 @@ def test_snapshot(clients, volume_name):  # NOQA
     assert volume["numberOfReplicas"] == 2
     assert volume["state"] == "detached"
 
-    volume = volume.attach(hostId=host_id)
+    lht_hostId = get_self_host_id()
+    volume = volume.attach(hostId=lht_hostId)
     volume = wait_for_volume_state(client, volume_name, "healthy")
 
     snapshot_test(client, volume_name)
@@ -209,9 +235,19 @@ def test_snapshot(clients, volume_name):  # NOQA
 
 def snapshot_test(client, volname):
     volume = client.by_id_volume(volname)
+    vol_rwsize = VOLUME_RWTEST_SIZE
+    positions = {}
 
     snap1 = volume.snapshotCreate()
+
+    snap2_pos = generate_random_pos(vol_rwsize, positions)
+    snap2_wdata = generate_random_data(vol_rwsize)
+    volume_write(volume["endpoint"], snap2_pos, snap2_wdata)
     snap2 = volume.snapshotCreate()
+
+    snap3_pos = generate_random_pos(vol_rwsize, positions)
+    snap3_wdata = generate_random_data(vol_rwsize)
+    volume_write(volume["endpoint"], snap3_pos, snap3_wdata)
     snap3 = volume.snapshotCreate()
 
     snapshots = volume.snapshotList()
@@ -229,6 +265,9 @@ def snapshot_test(client, volname):
     assert snapMap[snap3["name"]]["removed"] is False
 
     volume.snapshotDelete(name=snap3["name"])
+    snap3_rdata = volume_read(volume["endpoint"], snap3_pos,
+                              len(snap3_wdata))
+    assert snap3_rdata == snap3_wdata
 
     snapshots = volume.snapshotList(volume=volname)
     snapMap = {}
@@ -256,6 +295,9 @@ def snapshot_test(client, volname):
     assert snap["removed"] is True
 
     volume.snapshotRevert(name=snap2["name"])
+    snap2_rdata = volume_read(volume["endpoint"], snap2_pos,
+                              len(snap2_wdata))
+    assert snap2_rdata == snap2_wdata
 
     snapshots = volume.snapshotList(volume=volname)
     snapMap = {}
@@ -292,6 +334,9 @@ def snapshot_test(client, volname):
     assert snapMap[snap2["name"]]["parent"] == ""
     assert "volume-head" in snapMap[snap2["name"]]["children"]
     assert snapMap[snap2["name"]]["removed"] is True
+    snap2_rdata = volume_read(volume["endpoint"], snap2_pos,
+                              len(snap2_wdata))
+    assert snap2_rdata == snap2_wdata
 
 
 def test_backup(clients, volume_name):  # NOQA
@@ -306,7 +351,8 @@ def test_backup(clients, volume_name):  # NOQA
     assert volume["numberOfReplicas"] == 2
     assert volume["state"] == "detached"
 
-    volume = volume.attach(hostId=host_id)
+    lht_hostId = get_self_host_id()
+    volume = volume.attach(hostId=lht_hostId)
     volume = wait_for_volume_state(client, volume_name, "healthy")
 
     setting = client.by_id_setting("backupTarget")
@@ -328,7 +374,7 @@ def test_backup(clients, volume_name):  # NOQA
             credential = client.update(credential, value="")
             assert credential["value"] == ""
 
-        backup_test(client, host_id, volume_name)
+        backup_test(client, lht_hostId, volume_name)
 
     volume = volume.detach()
     volume = wait_for_volume_state(client, volume_name, "detached")
@@ -343,6 +389,9 @@ def test_backup(clients, volume_name):  # NOQA
 def backup_test(client, host_id, volname):
     volume = client.by_id_volume(volname)
     volume.snapshotCreate()
+    w_data = generate_random_data(VOLUME_RWTEST_SIZE)
+    start_pos = generate_random_pos(VOLUME_RWTEST_SIZE)
+    l_data = volume_write(volume["endpoint"], start_pos, w_data)
     snap2 = volume.snapshotCreate()
     volume.snapshotCreate()
 
@@ -394,6 +443,8 @@ def backup_test(client, host_id, volname):
     assert volume["state"] == "detached"
     volume = volume.attach(hostId=host_id)
     volume = wait_for_volume_state(client, restoreName, "healthy")
+    r_data = volume_read(volume["endpoint"], start_pos, l_data)
+    assert r_data == w_data
     volume = volume.detach()
     volume = wait_for_volume_state(client, restoreName, "detached")
     client.delete(volume)

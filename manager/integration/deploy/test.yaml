@@ -43,8 +43,26 @@ spec:
 #           "--enable-recurring-job-test",
 #           ]
     imagePullPolicy: Always
+    securityContext:
+      privileged: true
     env:
     - name: LONGHORN_BACKUPSTORES
       value: "s3://backupbucket@us-east-1/backupstore$minio-secret, nfs://longhorn-test-nfs-svc.default:/opt/backupstore"
+    - name: NODE_NAME
+      valueFrom:
+        fieldRef:
+          fieldPath: spec.nodeName
+    volumeMounts:
+    - name: dev
+      mountPath: /dev
+    - name: proc
+      mountPath: /host/proc
+  volumes:
+  - name: dev
+    hostPath:
+      path: /dev/
+  - name: proc
+    hostPath:
+      path: /proc/
   restartPolicy: Never
   serviceAccountName: longhorn-test-service-account
