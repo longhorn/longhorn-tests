@@ -1,5 +1,6 @@
 import time
 import os
+import stat
 import random
 import string
 
@@ -12,7 +13,8 @@ from kubernetes import client as k8sclient, config as k8sconfig
 SIZE = str(16 * 1024 * 1024)
 VOLUME_NAME = "longhorn-testvol"
 DEV_PATH = "/dev/longhorn/"
-
+VOLUME_RWTEST_SIZE = 512
+VOLUME_INVALID_POS = -1
 PORT = ":9500"
 
 RETRY_COUNTS = 300
@@ -22,6 +24,8 @@ LONGHORN_NAMESPACE = "longhorn-system"
 
 COMPATIBILTY_TEST_IMAGE_PREFIX = "rancher/longhorn-test:version-test"
 UPGRADE_TEST_IMAGE_PREFIX = "rancher/longhorn-test:upgrade-test"
+
+ISCSI_DEV_PATH = "/dev/disk/by-path"
 
 
 @pytest.fixture
@@ -72,6 +76,11 @@ def get_mgr_ips():
     return mgr_ips
 
 
+def get_self_host_id():
+    envs = os.environ
+    return envs["NODE_NAME"]
+
+
 def get_backupstore_url():
     backupstore = os.environ['LONGHORN_BACKUPSTORES']
     backupstore = backupstore.replace(" ", "")
@@ -88,6 +97,18 @@ def get_clients(hosts):
         assert host["address"] is not None
         clients[host["uuid"]] = get_client(host["address"] + PORT)
     return clients
+
+
+def wait_for_device_login(dest_path, name):
+    dev = ""
+    for i in range(RETRY_COUNTS):
+        files = os.listdir(dest_path)
+        if name in files:
+            dev = name
+            break
+        time.sleep(RETRY_ITERVAL)
+    assert dev == name
+    return dev
 
 
 def wait_for_volume_state(client, name, state):
@@ -210,6 +231,117 @@ def get_compatibility_test_image(cli_v, cli_minv,
                                      cli_v, cli_minv,
                                      ctl_v, ctl_minv,
                                      data_v, data_minv)
+
+
+def generate_random_data(count):
+    return ''.join(random.choice(string.ascii_lowercase + string.digits)
+                   for _ in range(count))
+
+
+def volume_read(dev, start, count):
+    r_data = ""
+    fdev = open(dev, 'rb')
+    if fdev is not None:
+        fdev.seek(start)
+        r_data = fdev.read(count)
+        fdev.close()
+    return r_data
+
+
+def volume_write(dev, start, data):
+    w_length = 0
+    fdev = open(dev, 'rb+')
+    if fdev is not None:
+        fdev.seek(start)
+        fdev.write(data)
+        fdev.close()
+        w_length = len(data)
+    return w_length
+
+
+def volume_valid(dev):
+    return stat.S_ISBLK(os.stat(dev).st_mode)
+
+
+def parse_iscsi_endpoint(iscsi):
+    iscsi_endpoint = iscsi[8:]
+    return iscsi_endpoint.split('/')
+
+
+def get_iscsi_ip(iscsi):
+    iscsi_endpoint = parse_iscsi_endpoint(iscsi)
+    ip = iscsi_endpoint[0].split(':')
+    return ip[0]
+
+
+def get_iscsi_port(iscsi):
+    iscsi_endpoint = parse_iscsi_endpoint(iscsi)
+    ip = iscsi_endpoint[0].split(':')
+    return ip[1]
+
+
+def get_iscsi_target(iscsi):
+    iscsi_endpoint = parse_iscsi_endpoint(iscsi)
+    return iscsi_endpoint[1]
+
+
+def get_iscsi_lun(iscsi):
+    iscsi_endpoint = parse_iscsi_endpoint(iscsi)
+    return iscsi_endpoint[2]
+
+
+def exec_nsenter(cmd):
+    exec_cmd = "nsenter --mount=/host/proc/1/ns/mnt \
+               --net=/host/proc/1/ns/net bash -c \"" + cmd + "\""
+    fp = os.popen(exec_cmd)
+    ret = fp.read()
+    fp.close()
+    return ret
+
+
+def iscsi_login(iscsi_ep):
+    ip = get_iscsi_ip(iscsi_ep)
+    port = get_iscsi_port(iscsi_ep)
+    target = get_iscsi_target(iscsi_ep)
+    lun = get_iscsi_lun(iscsi_ep)
+    # discovery
+    cmd_discovery = "iscsiadm -m discovery -t st -p " + ip
+    exec_nsenter(cmd_discovery)
+    # login
+    cmd_login = "iscsiadm -m node -T " + target + " -p " + ip + " --login"
+    exec_nsenter(cmd_login)
+    blk_name = "ip-%s:%s-iscsi-%s-lun-%s" % (ip, port, target, lun)
+    wait_for_device_login(ISCSI_DEV_PATH, blk_name)
+    dev = os.path.realpath(ISCSI_DEV_PATH + "/" + blk_name)
+    return dev
+
+
+def iscsi_logout(iscsi_ep):
+    ip = get_iscsi_ip(iscsi_ep)
+    target = get_iscsi_target(iscsi_ep)
+    cmd_logout = "iscsiadm -m node -T " + target + " -p " + ip + " --logout"
+    exec_nsenter(cmd_logout)
+    cmd_rm_discovery = "iscsiadm -m discovery -p " + ip + " -o delete"
+    exec_nsenter(cmd_rm_discovery)
+
+
+def generate_random_pos(size, used={}):
+    for i in range(RETRY_COUNTS):
+        pos = 0
+        if int(SIZE) != size:
+            pos = random.randrange(0, int(SIZE)-size, 1)
+        collided = False
+        # it's [start, end) vs [pos, pos + size)
+        for start, end in used.items():
+            if pos + size <= start or pos >= end:
+                continue
+            collided = True
+            break
+        if not collided:
+            break
+    assert not collided
+    used[pos] = pos + size
+    return pos
 
 
 def get_upgrade_test_image(cli_v, cli_minv,
