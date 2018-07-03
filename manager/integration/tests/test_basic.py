@@ -89,6 +89,9 @@ def volume_rw_test(dev):
 
 @pytest.mark.coretest   # NOQA
 def test_volume_basic(clients, volume_name):  # NOQA
+    num_hosts = len(clients)
+    num_replicas = 3
+
     # get a random client
     for host_id, client in clients.iteritems():
         break
@@ -103,14 +106,14 @@ def test_volume_basic(clients, volume_name):  # NOQA
                                       frontend="invalid_frontend")
 
     volume = client.create_volume(name=volume_name, size=SIZE,
-                                  numberOfReplicas=3)
+                                  numberOfReplicas=num_replicas)
     assert volume["name"] == volume_name
     assert volume["size"] == SIZE
-    assert volume["numberOfReplicas"] == 3
+    assert volume["numberOfReplicas"] == num_replicas
     assert volume["frontend"] == "blockdev"
 
     volume = common.wait_for_volume_detached(client, volume_name)
-    assert len(volume["replicas"]) == 3
+    assert len(volume["replicas"]) == num_replicas
 
     assert volume["state"] == "detached"
     assert volume["created"] != ""
@@ -134,14 +137,16 @@ def test_volume_basic(clients, volume_name):  # NOQA
     volume.attach(hostId=lht_hostId)
     volume = common.wait_for_volume_healthy(client, volume_name)
 
-    # soft anti-affinity should work, assume we have 3 nodes or more
+    # validate soft anti-affinity
     hosts = {}
     for replica in volume["replicas"]:
         id = replica["hostId"]
         assert id != ""
-        assert id not in hosts
         hosts[id] = True
-    assert len(hosts) == 3
+    if num_hosts >= num_replicas:
+        assert len(hosts) == num_replicas
+    else:
+        assert len(hosts) == num_hosts
 
     volumes = client.list_volume()
     assert len(volumes) == 1
