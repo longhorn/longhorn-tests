@@ -4,7 +4,7 @@ import common
 from common import clients, volume_name  # NOQA
 from common import SIZE
 from common import wait_for_volume_state, wait_for_volume_delete
-from common import wait_for_volume_engine_image, wait_for_engine_image_state
+from common import wait_for_volume_current_image, wait_for_engine_image_state
 from common import wait_for_engine_image_ref_count
 
 REPLICA_COUNT = 2
@@ -108,10 +108,12 @@ def test_engine_offline_upgrade(clients, volume_name):  # NOQA
     original_engine_image = default_img["image"]
 
     assert volume["name"] == volume_name
+    assert volume["engineImage"] == original_engine_image
+    assert volume["currentImage"] == original_engine_image
 
-    volume.engineUpgrade(image=new_img["image"])
-    volume = wait_for_volume_engine_image(client, volume_name,
-                                          new_img["image"])
+    volume.engineUpgrade(image=engine_upgrade_image)
+    volume = wait_for_volume_current_image(client, volume_name,
+                                           engine_upgrade_image)
     default_img = wait_for_engine_image_ref_count(client, default_img_name, 0)
     new_img = wait_for_engine_image_ref_count(client, new_img_name, 1)
 
@@ -124,16 +126,21 @@ def test_engine_offline_upgrade(clients, volume_name):  # NOQA
     volume = wait_for_volume_state(client, volume_name, "healthy")
 
     assert volume["controller"]["engineImage"] == engine_upgrade_image
+    assert volume["controller"]["currentImage"] == engine_upgrade_image
     for replica in volume["replicas"]:
         assert replica["engineImage"] == engine_upgrade_image
+        assert replica["currentImage"] == engine_upgrade_image
 
     volume = volume.detach()
     volume = wait_for_volume_state(client, volume_name, "detached")
 
     volume.engineUpgrade(image=original_engine_image)
-    volume = wait_for_volume_engine_image(client, volume_name,
-                                          original_engine_image)
+    volume = wait_for_volume_current_image(client, volume_name,
+                                           original_engine_image)
     assert volume["engineImage"] == original_engine_image
+    assert volume["controller"]["engineImage"] == original_engine_image
+    for replica in volume["replicas"]:
+        assert replica["engineImage"] == original_engine_image
 
     default_img = wait_for_engine_image_ref_count(client, default_img_name, 1)
     new_img = wait_for_engine_image_ref_count(client, new_img_name, 0)
@@ -142,8 +149,10 @@ def test_engine_offline_upgrade(clients, volume_name):  # NOQA
     volume = wait_for_volume_state(client, volume_name, "healthy")
 
     assert volume["controller"]["engineImage"] == original_engine_image
+    assert volume["controller"]["currentImage"] == original_engine_image
     for replica in volume["replicas"]:
         assert replica["engineImage"] == original_engine_image
+        assert replica["currentImage"] == original_engine_image
 
     client.delete(volume)
     wait_for_volume_delete(client, volume_name)
@@ -190,32 +199,53 @@ def test_engine_live_upgrade(clients, volume_name):  # NOQA
 
     volume = volume.attach(hostId=host_id)
     volume = wait_for_volume_state(client, volume_name, "healthy")
+    assert volume["engineImage"] == original_engine_image
+    assert volume["currentImage"] == original_engine_image
+    assert volume["controller"]["engineImage"] == original_engine_image
+    assert volume["controller"]["currentImage"] == original_engine_image
+    for replica in volume["replicas"]:
+        assert replica["engineImage"] == original_engine_image
+        assert replica["currentImage"] == original_engine_image
 
     volume.engineUpgrade(image=engine_upgrade_image)
-    volume = wait_for_volume_engine_image(client, volume_name,
-                                          engine_upgrade_image)
+    volume = wait_for_volume_current_image(client, volume_name,
+                                           engine_upgrade_image)
 
     assert volume["controller"]["engineImage"] == engine_upgrade_image
+
     default_img = wait_for_engine_image_ref_count(client, default_img_name, 0)
     new_img = wait_for_engine_image_ref_count(client, new_img_name, 1)
 
     count = 0
     # old replica may be in deletion process
     for replica in volume["replicas"]:
-        if replica["engineImage"] == engine_upgrade_image:
+        if replica["currentImage"] == engine_upgrade_image:
             count += 1
     assert count == REPLICA_COUNT
 
     volume = volume.detach()
     volume = wait_for_volume_state(client, volume_name, "detached")
     assert len(volume["replicas"]) == REPLICA_COUNT
+    assert volume["engineImage"] == engine_upgrade_image
+    assert volume["controller"]["engineImage"] == engine_upgrade_image
+    for replica in volume["replicas"]:
+        assert replica["engineImage"] == engine_upgrade_image
 
     volume = volume.attach(hostId=host_id)
     volume = wait_for_volume_state(client, volume_name, "healthy")
+    assert volume["engineImage"] == engine_upgrade_image
+    assert volume["currentImage"] == engine_upgrade_image
+    assert volume["controller"]["engineImage"] == engine_upgrade_image
+    assert volume["controller"]["currentImage"] == engine_upgrade_image
+    for replica in volume["replicas"]:
+        assert replica["engineImage"] == engine_upgrade_image
+        assert replica["currentImage"] == engine_upgrade_image
 
     volume.engineUpgrade(image=original_engine_image)
-    volume = wait_for_volume_engine_image(client, volume_name,
-                                          original_engine_image)
+    volume = wait_for_volume_current_image(client, volume_name,
+                                           original_engine_image)
+    assert volume["controller"]["engineImage"] == original_engine_image
+
     default_img = wait_for_engine_image_ref_count(client, default_img_name, 1)
     new_img = wait_for_engine_image_ref_count(client, new_img_name, 0)
 
@@ -232,6 +262,11 @@ def test_engine_live_upgrade(clients, volume_name):  # NOQA
     volume = volume.detach()
     volume = wait_for_volume_state(client, volume_name, "detached")
     assert len(volume["replicas"]) == REPLICA_COUNT
+
+    assert volume["engineImage"] == original_engine_image
+    assert volume["controller"]["engineImage"] == original_engine_image
+    for replica in volume["replicas"]:
+        assert replica["engineImage"] == original_engine_image
 
     client.delete(volume)
     wait_for_volume_delete(client, volume_name)
@@ -320,15 +355,23 @@ def test_engine_live_upgrade_rollback(clients, volume_name):  # NOQA
     volume = wait_for_volume_state(client, volume_name, "healthy")
 
     volume.engineUpgrade(image=wrong_engine_upgrade_image)
+    volume = client.by_id_volume(volume["name"])
+    assert volume["engineImage"] == wrong_engine_upgrade_image
+    assert volume["currentImage"] == original_engine_image
+
     with pytest.raises(Exception):
         # this will timeout
-        wait_for_volume_engine_image(client, volume_name,
-                                     wrong_engine_upgrade_image)
+        wait_for_volume_current_image(client, volume_name,
+                                      wrong_engine_upgrade_image)
 
     # rollback
     volume.engineUpgrade(image=original_engine_image)
-    wait_for_volume_engine_image(client, volume_name,
-                                 original_engine_image)
+    volume = wait_for_volume_current_image(client, volume_name,
+                                           original_engine_image)
+    assert volume["engineImage"] == original_engine_image
+    assert volume["currentImage"] == original_engine_image
+    assert volume["controller"]["engineImage"] == original_engine_image
+    assert volume["controller"]["currentImage"] == original_engine_image
 
     volume = common.wait_for_volume_replica_count(client, volume_name,
                                                   REPLICA_COUNT)
