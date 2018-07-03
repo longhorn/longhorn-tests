@@ -1,7 +1,9 @@
 #!/bin/bash
 
+REPO=${REPO:-rancher}
+
 version=$(./scripts/version)
-image="rancher/longhorn-manager-test:${version}"
+image="$REPO/longhorn-manager-test:${version}"
 docker build -t ${image} .
 mkdir -p bin
 echo ${image} > bin/latest_image
