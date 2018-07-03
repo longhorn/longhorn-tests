@@ -16,24 +16,24 @@ from common import generate_random_pos
 
 
 def test_hosts_and_settings(clients):  # NOQA
-    hosts = clients.itervalues().next().list_host()
+    hosts = clients.itervalues().next().list_node()
     for host in hosts:
-        assert host["uuid"] is not None
+        assert host["name"] is not None
         assert host["address"] is not None
 
     host_id = []
     for i in range(0, len(hosts)):
-        host_id.append(hosts[i]["uuid"])
+        host_id.append(hosts[i]["name"])
 
     host0_from_i = {}
     for i in range(0, len(hosts)):
         if len(host0_from_i) == 0:
-            host0_from_i = clients[host_id[0]].by_id_host(host_id[0])
+            host0_from_i = clients[host_id[0]].by_id_node(host_id[0])
         else:
-            assert host0_from_i["uuid"] == \
-                clients[host_id[i]].by_id_host(host_id[0])["uuid"]
+            assert host0_from_i["name"] == \
+                clients[host_id[i]].by_id_node(host_id[0])["name"]
             assert host0_from_i["address"] == \
-                clients[host_id[i]].by_id_host(host_id[0])["address"]
+                clients[host_id[i]].by_id_node(host_id[0])["address"]
 
     client = clients[host_id[0]]
 
@@ -503,9 +503,7 @@ def test_replica_scheduler(clients, volume_name):  # NOQA
     for host_id, client in clients.iteritems():
         break
 
-    hosts = clients.itervalues().next().list_host()
     nodes = client.list_node()
-    assert len(nodes) == len(hosts)
 
     # test anti-affinity replica
     nodeHosts = []
@@ -517,15 +515,15 @@ def test_replica_scheduler(clients, volume_name):  # NOQA
             node = client.update(node, allowScheduling=True)
             nodeHosts.append(node["name"])
 
-    assert len(nodeHosts) == len(hosts) - 1
+    assert len(nodeHosts) == len(nodes) - 1
 
     volume = client.create_volume(name=volume_name, size=SIZE,
-                                  numberOfReplicas=(len(hosts)-1))
-    assert volume["numberOfReplicas"] == len(hosts)-1
+                                  numberOfReplicas=(len(nodes)-1))
+    assert volume["numberOfReplicas"] == len(nodes)-1
     assert volume["frontend"] == "blockdev"
 
     volume = wait_for_volume_state(client, volume_name, "detached")
-    assert len(volume["replicas"]) == len(hosts)-1
+    assert len(volume["replicas"]) == len(nodes)-1
 
     assert volume["state"] == "detached"
     assert volume["created"] != ""

@@ -33,7 +33,7 @@ def clients(request):
     k8sconfig.load_incluster_config()
     ips = get_mgr_ips()
     client = get_client(ips[0] + PORT)
-    hosts = client.list_host()
+    hosts = client.list_node()
     assert len(hosts) == len(ips)
     clis = get_clients(hosts)
     request.addfinalizer(lambda: cleanup_clients(clis))
@@ -93,9 +93,9 @@ def get_backupstore_url():
 def get_clients(hosts):
     clients = {}
     for host in hosts:
-        assert host["uuid"] is not None
+        assert host["name"] is not None
         assert host["address"] is not None
-        clients[host["uuid"]] = get_client(host["address"] + PORT)
+        clients[host["name"]] = get_client(host["address"] + PORT)
     return clients
 
 
