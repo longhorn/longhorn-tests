@@ -111,7 +111,21 @@ def wait_for_device_login(dest_path, name):
     return dev
 
 
+def wait_for_volume_creation(client, name):
+    for i in range(RETRY_COUNTS):
+        volumes = client.list_volume()
+        found = False
+        for volume in volumes:
+            if volume["name"] == name:
+                found = True
+                break
+        if found:
+            break
+    assert found
+
+
 def wait_for_volume_state(client, name, state):
+    wait_for_volume_creation(client, name)
     for i in range(RETRY_COUNTS):
         volume = client.by_id_volume(name)
         if volume["state"] == state:
@@ -135,6 +149,7 @@ def wait_for_volume_delete(client, name):
 
 
 def wait_for_volume_current_image(client, name, image):
+    wait_for_volume_creation(client, name)
     for i in range(RETRY_COUNTS):
         volume = client.by_id_volume(name)
         if volume["currentImage"] == image:
@@ -145,6 +160,7 @@ def wait_for_volume_current_image(client, name, image):
 
 
 def wait_for_volume_replica_count(client, name, count):
+    wait_for_volume_creation(client, name)
     for i in range(RETRY_COUNTS):
         volume = client.by_id_volume(name)
         if len(volume["replicas"]) == count:
@@ -171,7 +187,21 @@ def wait_for_snapshot_purge(volume, *snaps):
     assert not found
 
 
+def wait_for_engine_image_creation(client, image_name):
+    for i in range(RETRY_COUNTS):
+        images = client.list_engine_image()
+        found = False
+        for img in images:
+            if img["name"] == image_name:
+                found = True
+                break
+        if found:
+            break
+    assert found
+
+
 def wait_for_engine_image_state(client, image_name, state):
+    wait_for_engine_image_creation(client, image_name)
     for i in range(RETRY_COUNTS):
         image = client.by_id_engine_image(image_name)
         if image["state"] == state:
@@ -182,6 +212,7 @@ def wait_for_engine_image_state(client, image_name, state):
 
 
 def wait_for_engine_image_ref_count(client, image_name, count):
+    wait_for_engine_image_creation(client, image_name)
     for i in range(RETRY_COUNTS):
         image = client.by_id_engine_image(image_name)
         if image["refCount"] == count:
