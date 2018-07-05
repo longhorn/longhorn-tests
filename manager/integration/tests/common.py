@@ -252,6 +252,11 @@ def volume_name(request):
 
 
 @pytest.fixture
+def pvc_name(request):
+    return generate_volume_name()
+
+
+@pytest.fixture
 def csi_pvc_name(request):
     return generate_volume_name()
 
