@@ -1,6 +1,6 @@
+import common
 import pytest
 import time
-import common
 
 from common import clients, volume_name  # NOQA
 from common import SIZE, DEV_PATH, VOLUME_RWTEST_SIZE
@@ -89,6 +89,10 @@ def volume_rw_test(dev):
 
 @pytest.mark.coretest   # NOQA
 def test_volume_basic(clients, volume_name):  # NOQA
+    volume_basic_test(clients, volume_name)
+
+
+def volume_basic_test(clients, volume_name, base_image=""):  # NOQA
     num_hosts = len(clients)
     num_replicas = 3
 
@@ -106,11 +110,14 @@ def test_volume_basic(clients, volume_name):  # NOQA
                                       frontend="invalid_frontend")
 
     volume = client.create_volume(name=volume_name, size=SIZE,
-                                  numberOfReplicas=num_replicas)
+                                  numberOfReplicas=num_replicas,
+                                  baseImage=base_image)
+
     assert volume["name"] == volume_name
     assert volume["size"] == SIZE
     assert volume["numberOfReplicas"] == num_replicas
     assert volume["frontend"] == "blockdev"
+    assert volume["baseImage"] == base_image
 
     volume = common.wait_for_volume_detached(client, volume_name)
     assert len(volume["replicas"]) == num_replicas
@@ -118,24 +125,29 @@ def test_volume_basic(clients, volume_name):  # NOQA
     assert volume["state"] == "detached"
     assert volume["created"] != ""
 
+    def validate_volume_basic(expected, actual):
+        assert actual["name"] == expected["name"]
+        assert actual["size"] == expected["size"]
+        assert actual["numberOfReplicas"] == expected["numberOfReplicas"]
+        assert actual["frontend"] == "blockdev"
+        assert actual["baseImage"] == base_image
+        assert actual["state"] == expected["state"]
+        assert actual["created"] == expected["created"]
+
     volumes = client.list_volume()
     assert len(volumes) == 1
-    assert volumes[0]["name"] == volume["name"]
-    assert volumes[0]["size"] == volume["size"]
-    assert volumes[0]["numberOfReplicas"] == volume["numberOfReplicas"]
-    assert volumes[0]["state"] == volume["state"]
-    assert volumes[0]["created"] == volume["created"]
+    validate_volume_basic(volume, volumes[0])
 
     volumeByName = client.by_id_volume(volume_name)
-    assert volumeByName["name"] == volume["name"]
-    assert volumeByName["size"] == volume["size"]
-    assert volumeByName["numberOfReplicas"] == volume["numberOfReplicas"]
-    assert volumeByName["state"] == volume["state"]
-    assert volumeByName["created"] == volume["created"]
+    validate_volume_basic(volume, volumeByName)
 
     lht_hostId = get_self_host_id()
     volume.attach(hostId=lht_hostId)
     volume = common.wait_for_volume_healthy(client, volume_name)
+
+    volumeByName = client.by_id_volume(volume_name)
+    validate_volume_basic(volume, volumeByName)
+    assert volumeByName["endpoint"] == DEV_PATH + volume_name
 
     # validate soft anti-affinity
     hosts = {}
@@ -167,7 +179,6 @@ def test_volume_basic(clients, volume_name):  # NOQA
     common.wait_for_volume_detached(client, volume_name)
 
     client.delete(volume)
-
     wait_for_volume_delete(client, volume_name)
 
     volumes = client.list_volume()
@@ -175,16 +186,22 @@ def test_volume_basic(clients, volume_name):  # NOQA
 
 
 def test_volume_iscsi_basic(clients, volume_name):  # NOQA
+    volume_iscsi_basic_test(clients, volume_name)
+
+
+def volume_iscsi_basic_test(clients, volume_name, base_image=""):  # NOQA
     # get a random client
     for host_id, client in clients.iteritems():
         break
 
     volume = client.create_volume(name=volume_name, size=SIZE,
-                                  numberOfReplicas=3, frontend="iscsi")
+                                  numberOfReplicas=3, frontend="iscsi",
+                                  baseImage=base_image)
     assert volume["name"] == volume_name
     assert volume["size"] == SIZE
     assert volume["numberOfReplicas"] == 3
     assert volume["frontend"] == "iscsi"
+    assert volume["baseImage"] == base_image
 
     volume = common.wait_for_volume_detached(client, volume_name)
     assert len(volume["replicas"]) == 3
@@ -225,36 +242,29 @@ def test_volume_iscsi_basic(clients, volume_name):  # NOQA
 
 
 @pytest.mark.coretest   # NOQA
-def test_snapshot(clients, volume_name):  # NOQA
+def test_snapshot(clients, volume_name, base_image=""):  # NOQA
+    snapshot_test(clients, volume_name, base_image)
+
+
+def snapshot_test(clients, volume_name, base_image):  # NOQA
     for host_id, client in clients.iteritems():
         break
 
     volume = client.create_volume(name=volume_name, size=SIZE,
-                                  numberOfReplicas=2)
+                                  numberOfReplicas=2, baseImage=base_image)
 
     volume = common.wait_for_volume_detached(client, volume_name)
     assert volume["name"] == volume_name
     assert volume["size"] == SIZE
     assert volume["numberOfReplicas"] == 2
     assert volume["state"] == "detached"
+    assert volume["baseImage"] == base_image
 
     lht_hostId = get_self_host_id()
     volume = volume.attach(hostId=lht_hostId)
     volume = common.wait_for_volume_healthy(client, volume_name)
 
-    snapshot_test(client, volume_name)
-    volume = volume.detach()
-    volume = common.wait_for_volume_detached(client, volume_name)
-
-    client.delete(volume)
-    volume = wait_for_volume_delete(client, volume_name)
-
-    volumes = client.list_volume()
-    assert len(volumes) == 0
-
-
-def snapshot_test(client, volname):
-    volume = client.by_id_volume(volname)
+    volume = client.by_id_volume(volume_name)
     vol_rwsize = VOLUME_RWTEST_SIZE
     positions = {}
 
@@ -289,7 +299,7 @@ def snapshot_test(client, volname):
                               len(snap3_wdata))
     assert snap3_rdata == snap3_wdata
 
-    snapshots = volume.snapshotList(volume=volname)
+    snapshots = volume.snapshotList(volume=volume_name)
     snapMap = {}
     for snap in snapshots:
         snapMap[snap["name"]] = snap
@@ -319,7 +329,7 @@ def snapshot_test(client, volname):
                               len(snap2_wdata))
     assert snap2_rdata == snap2_wdata
 
-    snapshots = volume.snapshotList(volume=volname)
+    snapshots = volume.snapshotList(volume=volume_name)
     snapMap = {}
     for snap in snapshots:
         snapMap[snap["name"]] = snap
@@ -342,7 +352,7 @@ def snapshot_test(client, volname):
     volume.snapshotPurge()
     wait_for_snapshot_purge(volume, snap1["name"], snap3["name"])
 
-    snapshots = volume.snapshotList(volume=volname)
+    snapshots = volume.snapshotList(volume=volume_name)
     snapMap = {}
     for snap in snapshots:
         snapMap[snap["name"]] = snap
@@ -358,19 +368,33 @@ def snapshot_test(client, volname):
                               len(snap2_wdata))
     assert snap2_rdata == snap2_wdata
 
+    volume = volume.detach()
+    volume = common.wait_for_volume_detached(client, volume_name)
+
+    client.delete(volume)
+    volume = wait_for_volume_delete(client, volume_name)
+
+    volumes = client.list_volume()
+    assert len(volumes) == 0
+
 
 @pytest.mark.coretest   # NOQA
 def test_backup(clients, volume_name):  # NOQA
+    backup_test(clients, volume_name)
+
+
+def backup_test(clients, volume_name, base_image=""):  # NOQA
     for host_id, client in clients.iteritems():
         break
 
     volume = client.create_volume(name=volume_name, size=SIZE,
-                                  numberOfReplicas=2)
+                                  numberOfReplicas=2, baseImage=base_image)
     volume = common.wait_for_volume_detached(client, volume_name)
     assert volume["name"] == volume_name
     assert volume["size"] == SIZE
     assert volume["numberOfReplicas"] == 2
     assert volume["state"] == "detached"
+    assert volume["baseImage"] == base_image
 
     lht_hostId = get_self_host_id()
     volume = volume.attach(hostId=lht_hostId)
@@ -397,7 +421,7 @@ def test_backup(clients, volume_name):  # NOQA
             credential = client.update(credential, value="")
             assert credential["value"] == ""
 
-        backup_test(client, lht_hostId, volume_name)
+        backupstore_test(client, lht_hostId, volume_name)
 
     volume = volume.detach()
     volume = common.wait_for_volume_detached(client, volume_name)
@@ -409,7 +433,7 @@ def test_backup(clients, volume_name):  # NOQA
     assert len(volumes) == 0
 
 
-def backup_test(client, host_id, volname):
+def backupstore_test(client, host_id, volname):
     volume = client.by_id_volume(volname)
     volume.snapshotCreate()
     w_data = generate_random_data(VOLUME_RWTEST_SIZE)

@@ -19,6 +19,8 @@ VOLUME_NAME = "longhorn-testvol"
 DEV_PATH = "/dev/longhorn/"
 VOLUME_RWTEST_SIZE = 512
 VOLUME_INVALID_POS = -1
+BASE_IMAGE = "rancher/longhorn-test-baseimage"
+
 PORT = ":9500"
 
 RETRY_COUNTS = 300
