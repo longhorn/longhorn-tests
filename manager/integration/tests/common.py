@@ -9,6 +9,7 @@ import pytest
 import cattle
 
 from kubernetes import client as k8sclient, config as k8sconfig
+from kubernetes.client import Configuration
 
 SIZE = str(16 * 1024 * 1024)
 VOLUME_NAME = "longhorn-testvol"
@@ -26,6 +27,20 @@ COMPATIBILTY_TEST_IMAGE_PREFIX = "rancher/longhorn-test:version-test"
 UPGRADE_TEST_IMAGE_PREFIX = "rancher/longhorn-test:upgrade-test"
 
 ISCSI_DEV_PATH = "/dev/disk/by-path"
+
+
+@pytest.fixture
+def core_api(request):
+    """
+    Create a new CoreV1API instance.
+    Returns:
+        A new CoreV1API Instance.
+    """
+    c = Configuration()
+    c.assert_hostname = False
+    Configuration.set_default(c)
+    k8sconfig.load_incluster_config()
+    return k8sclient.CoreV1Api()
 
 
 @pytest.fixture
