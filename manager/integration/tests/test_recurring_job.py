@@ -1,8 +1,9 @@
 import pytest
 import time
 
+import common
 from common import clients, volume_name  # NOQA
-from common import wait_for_volume_state, wait_for_volume_delete
+from common import wait_for_volume_delete
 from common import SIZE
 
 @pytest.mark.recurring_job  # NOQA
@@ -12,7 +13,7 @@ def test_recurring_job(clients, volume_name):  # NOQA
 
     volume = client.create_volume(name=volume_name, size=SIZE,
                                   numberOfReplicas=2)
-    volume = wait_for_volume_state(client, volume_name, "detached")
+    volume = common.wait_for_volume_detached(client, volume_name)
 
     # snapshot every one minute
     job_snap = {"name": "snap", "cron": "* * * * *",
@@ -23,7 +24,7 @@ def test_recurring_job(clients, volume_name):  # NOQA
     volume.recurringUpdate(jobs=[job_snap, job_backup])
 
     volume = volume.attach(hostId=host_id)
-    volume = wait_for_volume_state(client, volume_name, "healthy")
+    volume = common.wait_for_volume_healthy(client, volume_name)
 
     # 5 minutes
     time.sleep(300)
@@ -53,7 +54,7 @@ def test_recurring_job(clients, volume_name):  # NOQA
 
     volume = volume.detach()
 
-    wait_for_volume_state(client, volume_name, "detached")
+    common.wait_for_volume_detached(client, volume_name)
 
     client.delete(volume)
 

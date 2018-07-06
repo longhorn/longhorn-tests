@@ -1,10 +1,11 @@
 #!/usr/sbin/python
 import time
 
+import common
 from common import clients, core_api, pvc_name, volume_name  # NOQA
 from common import VOLUME_RWTEST_SIZE
 from common import generate_random_data
-from common import wait_for_volume_delete, wait_for_volume_state
+from common import wait_for_volume_delete
 
 from kubernetes import client as k8sclient
 from kubernetes.stream import stream
@@ -284,7 +285,7 @@ def test_dynamic_volume_mount(clients, core_api, pvc_name):  # NOQA
     assert volumes[0]["size"] == str(volume_size)
     assert volumes[0]["numberOfReplicas"] == \
         int(DEFAULT_STORAGECLASS_SPEC["numberOfReplicas"])
-    assert volumes[0]["state"] == "healthy"
+    assert volumes[0]["state"] == "attached"
 
     delete_pod(core_api, pod_name)
     delete_and_wait_storage(client, pvc, pvc_volume_name)
@@ -322,7 +323,7 @@ def test_dynamic_volume_params(clients, core_api, pvc_name):  # NOQA
     assert volumes[0]["size"] == str(volume_size)
     assert volumes[0]["numberOfReplicas"] == \
         int(storage_class["numberOfReplicas"])
-    assert volumes[0]["state"] == "healthy"
+    assert volumes[0]["state"] == "attached"
 
     delete_pod(core_api, pod_name)
     delete_and_wait_storage(client, pvc, pvc_volume_name)
@@ -352,7 +353,7 @@ def test_dynamic_volume_io(clients, core_api, pvc_name):  # NOQA
     write_volume_data(core_api, pod_name, test_data)
     delete_pod(core_api, pod_name)
 
-    wait_for_volume_state(client, pvc_volume_name, "detached")
+    common.wait_for_volume_detached(client, pvc_volume_name)
 
     pod_name = 'flexvolume-provisioner-io-test-2'
     create_and_wait_pod(core_api, pod_name, volume)
@@ -387,10 +388,10 @@ def test_static_volume_mount(clients, core_api, volume_name): # NOQA
     assert volumes[0]["size"] == str(volume_size)
     assert volumes[0]["numberOfReplicas"] == int(
         volume["flexVolume"]["options"]["numberOfReplicas"])
-    assert volumes[0]["state"] == "healthy"
+    assert volumes[0]["state"] == "attached"
 
     delete_pod(core_api, pod_name)
-    v = wait_for_volume_state(client, volume["name"], "detached")
+    v = common.wait_for_volume_detached(client, volume["name"])
     client.delete(v)
     wait_for_volume_delete(client, volume["name"])
 
@@ -417,7 +418,7 @@ def test_static_volume_io(clients, core_api, volume_name):  # NOQA
     test_data = generate_random_data(VOLUME_RWTEST_SIZE)
     write_volume_data(core_api, pod_name, test_data)
     delete_pod(core_api, pod_name)
-    wait_for_volume_state(client, volume["name"], "detached")
+    common.wait_for_volume_detached(client, volume["name"])
 
     pod_name = 'volume-driver-io-test-2'
     create_and_wait_pod(core_api, pod_name, volume)
@@ -426,6 +427,6 @@ def test_static_volume_io(clients, core_api, volume_name):  # NOQA
 
     assert resp == test_data
     delete_pod(core_api, pod_name)
-    v = wait_for_volume_state(client, volume["name"], "detached")
+    v = common.wait_for_volume_detached(client, volume["name"])
     client.delete(v)
     wait_for_volume_delete(client, volume["name"])

@@ -3,8 +3,8 @@ import time
 
 from common import clients, volume_name  # NOQA
 from common import SIZE, DEV_PATH
-from common import check_data, get_self_host_id, wait_for_volume_delete
-from common import wait_for_volume_state, write_random_data
+from common import check_data, get_self_host_id
+from common import write_random_data
 from common import RETRY_COUNTS, RETRY_ITERVAL
 
 
@@ -15,7 +15,7 @@ def test_ha_simple_recovery(clients, volume_name):  # NOQA
 
     volume = client.create_volume(name=volume_name, size=SIZE,
                                   numberOfReplicas=2)
-    volume = wait_for_volume_state(client, volume_name, "detached")
+    volume = common.wait_for_volume_detached(client, volume_name)
     assert volume["name"] == volume_name
     assert volume["size"] == SIZE
     assert volume["numberOfReplicas"] == 2
@@ -24,7 +24,7 @@ def test_ha_simple_recovery(clients, volume_name):  # NOQA
 
     host_id = get_self_host_id()
     volume = volume.attach(hostId=host_id)
-    volume = wait_for_volume_state(client, volume_name, "healthy")
+    volume = common.wait_for_volume_healthy(client, volume_name)
 
     volume = client.by_id_volume(volume_name)
     assert volume["endpoint"] == DEV_PATH + volume_name
@@ -54,10 +54,11 @@ def test_ha_simple_recovery(clients, volume_name):  # NOQA
         time.sleep(RETRY_ITERVAL)
     assert new_replica_found
 
-    volume = wait_for_volume_state(client, volume_name, "healthy")
+    volume = common.wait_for_volume_healthy(client, volume_name)
 
     volume = client.by_id_volume(volume_name)
-    assert volume["state"] == "healthy"
+    assert volume["state"] == common.VOLUME_STATE_ATTACHED
+    assert volume["robustness"] == common.VOLUME_ROBUSTNESS_HEALTHY
     assert len(volume["replicas"]) >= 2
 
     found = False
@@ -70,10 +71,10 @@ def test_ha_simple_recovery(clients, volume_name):  # NOQA
     check_data(volume['endpoint'], data)
 
     volume = volume.detach()
-    volume = wait_for_volume_state(client, volume_name, "detached")
+    volume = common.wait_for_volume_detached(client, volume_name)
 
     client.delete(volume)
-    wait_for_volume_delete(client, volume_name)
+    common.wait_for_volume_delete(client, volume_name)
 
     volumes = client.list_volume()
     assert len(volumes) == 0
@@ -86,7 +87,7 @@ def test_ha_salvage(clients, volume_name):  # NOQA
 
     volume = client.create_volume(name=volume_name, size=SIZE,
                                   numberOfReplicas=2)
-    volume = wait_for_volume_state(client, volume_name, "detached")
+    volume = common.wait_for_volume_detached(client, volume_name)
     assert volume["name"] == volume_name
     assert volume["size"] == SIZE
     assert volume["numberOfReplicas"] == 2
@@ -95,7 +96,7 @@ def test_ha_salvage(clients, volume_name):  # NOQA
 
     host_id = get_self_host_id()
     volume = volume.attach(hostId=host_id)
-    volume = wait_for_volume_state(client, volume_name, "healthy")
+    volume = common.wait_for_volume_healthy(client, volume_name)
 
     assert len(volume["replicas"]) == 2
     replica0_name = volume["replicas"][0]["name"]
@@ -105,28 +106,28 @@ def test_ha_salvage(clients, volume_name):  # NOQA
 
     common.k8s_delete_replica_pods_for_volume(volume_name)
 
-    volume = wait_for_volume_state(client, volume_name, "faulted")
+    volume = common.wait_for_volume_faulted(client, volume_name)
     assert len(volume["replicas"]) == 2
     assert volume["replicas"][0]["failedAt"] != ""
     assert volume["replicas"][1]["failedAt"] != ""
 
     volume.salvage(names=[replica0_name, replica1_name])
 
-    volume = wait_for_volume_state(client, volume_name, "detached")
+    volume = common.wait_for_volume_detached(client, volume_name)
     assert len(volume["replicas"]) == 2
     assert volume["replicas"][0]["failedAt"] == ""
     assert volume["replicas"][1]["failedAt"] == ""
 
     volume = volume.attach(hostId=host_id)
-    volume = wait_for_volume_state(client, volume_name, "healthy")
+    volume = common.wait_for_volume_healthy(client, volume_name)
 
     check_data(volume["endpoint"], data)
 
     volume = volume.detach()
-    volume = wait_for_volume_state(client, volume_name, "detached")
+    volume = common.wait_for_volume_detached(client, volume_name)
 
     client.delete(volume)
-    wait_for_volume_delete(client, volume_name)
+    common.wait_for_volume_delete(client, volume_name)
 
     volumes = client.list_volume()
     assert len(volumes) == 0
