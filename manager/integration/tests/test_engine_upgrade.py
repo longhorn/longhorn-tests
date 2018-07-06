@@ -408,6 +408,45 @@ def test_engine_live_upgrade_rollback(clients, volume_name):  # NOQA
 
     assert volume["state"] == "healthy"
 
+    # try again, this time let's try detach
+    volume.engineUpgrade(image=wrong_engine_upgrade_image)
+    volume = client.by_id_volume(volume["name"])
+    assert volume["engineImage"] == wrong_engine_upgrade_image
+    assert volume["currentImage"] == original_engine_image
+
+    with pytest.raises(Exception):
+        # this will timeout
+        wait_for_volume_current_image(client, volume_name,
+                                      wrong_engine_upgrade_image)
+
+    volume = volume.detach()
+    volume = wait_for_volume_current_image(client, volume_name,
+                                           wrong_engine_upgrade_image)
+    # all the images would be updated
+    assert volume["engineImage"] == wrong_engine_upgrade_image
+    assert volume["controller"]["engineImage"] == wrong_engine_upgrade_image
+    volume = common.wait_for_volume_replica_count(client, volume_name,
+                                                  REPLICA_COUNT)
+    for replica in volume["replicas"]:
+        assert replica["engineImage"] == wrong_engine_upgrade_image
+
+    # upgrade to the correct image when offline
+    volume.engineUpgrade(image=original_engine_image)
+    volume = client.by_id_volume(volume["name"])
+    assert volume["engineImage"] == original_engine_image
+
+    volume = volume.attach(hostId=host_id)
+    volume = wait_for_volume_state(client, volume_name, "healthy")
+    assert volume["engineImage"] == original_engine_image
+    assert volume["currentImage"] == original_engine_image
+    assert volume["controller"]["engineImage"] == original_engine_image
+    assert volume["controller"]["currentImage"] == original_engine_image
+    for replica in volume["replicas"]:
+        assert replica["engineImage"] == original_engine_image
+        assert replica["currentImage"] == original_engine_image
+
+    check_data(volume["endpoint"], data)
+
     client.delete(volume)
     wait_for_volume_delete(client, volume_name)
 
