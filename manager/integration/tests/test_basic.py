@@ -8,7 +8,7 @@ from common import get_self_host_id
 from common import volume_read, volume_write
 from common import volume_valid
 from common import iscsi_login, iscsi_logout
-from common import wait_for_volume_state, wait_for_volume_delete
+from common import wait_for_volume_delete
 from common import wait_for_snapshot_purge
 from common import generate_volume_name
 from common import generate_random_data
@@ -96,7 +96,7 @@ def test_volume_basic(clients, volume_name):  # NOQA
     assert volume["numberOfReplicas"] == 3
     assert volume["frontend"] == "blockdev"
 
-    volume = wait_for_volume_state(client, volume_name, "detached")
+    volume = common.wait_for_volume_detached(client, volume_name)
     assert len(volume["replicas"]) == 3
 
     assert volume["state"] == "detached"
@@ -119,7 +119,7 @@ def test_volume_basic(clients, volume_name):  # NOQA
 
     lht_hostId = get_self_host_id()
     volume.attach(hostId=lht_hostId)
-    volume = wait_for_volume_state(client, volume_name, "healthy")
+    volume = common.wait_for_volume_healthy(client, volume_name)
 
     # soft anti-affinity should work, assume we have 3 nodes or more
     hosts = {}
@@ -146,7 +146,7 @@ def test_volume_basic(clients, volume_name):  # NOQA
 
     volume = volume.detach()
 
-    wait_for_volume_state(client, volume_name, "detached")
+    common.wait_for_volume_detached(client, volume_name)
 
     client.delete(volume)
 
@@ -168,14 +168,14 @@ def test_volume_iscsi_basic(clients, volume_name):  # NOQA
     assert volume["numberOfReplicas"] == 3
     assert volume["frontend"] == "iscsi"
 
-    volume = wait_for_volume_state(client, volume_name, "detached")
+    volume = common.wait_for_volume_detached(client, volume_name)
     assert len(volume["replicas"]) == 3
 
     assert volume["state"] == "detached"
     assert volume["created"] != ""
 
     volume.attach(hostId=host_id)
-    volume = wait_for_volume_state(client, volume_name, "healthy")
+    volume = common.wait_for_volume_healthy(client, volume_name)
 
     volumes = client.list_volume()
     assert len(volumes) == 1
@@ -195,7 +195,7 @@ def test_volume_iscsi_basic(clients, volume_name):  # NOQA
 
     volume = volume.detach()
 
-    wait_for_volume_state(client, volume_name, "detached")
+    common.wait_for_volume_detached(client, volume_name)
 
     client.delete(volume)
 
@@ -212,7 +212,7 @@ def test_snapshot(clients, volume_name):  # NOQA
     volume = client.create_volume(name=volume_name, size=SIZE,
                                   numberOfReplicas=2)
 
-    volume = wait_for_volume_state(client, volume_name, "detached")
+    volume = common.wait_for_volume_detached(client, volume_name)
     assert volume["name"] == volume_name
     assert volume["size"] == SIZE
     assert volume["numberOfReplicas"] == 2
@@ -220,11 +220,11 @@ def test_snapshot(clients, volume_name):  # NOQA
 
     lht_hostId = get_self_host_id()
     volume = volume.attach(hostId=lht_hostId)
-    volume = wait_for_volume_state(client, volume_name, "healthy")
+    volume = common.wait_for_volume_healthy(client, volume_name)
 
     snapshot_test(client, volume_name)
     volume = volume.detach()
-    volume = wait_for_volume_state(client, volume_name, "detached")
+    volume = common.wait_for_volume_detached(client, volume_name)
 
     client.delete(volume)
     volume = wait_for_volume_delete(client, volume_name)
@@ -345,7 +345,7 @@ def test_backup(clients, volume_name):  # NOQA
 
     volume = client.create_volume(name=volume_name, size=SIZE,
                                   numberOfReplicas=2)
-    volume = wait_for_volume_state(client, volume_name, "detached")
+    volume = common.wait_for_volume_detached(client, volume_name)
     assert volume["name"] == volume_name
     assert volume["size"] == SIZE
     assert volume["numberOfReplicas"] == 2
@@ -353,7 +353,7 @@ def test_backup(clients, volume_name):  # NOQA
 
     lht_hostId = get_self_host_id()
     volume = volume.attach(hostId=lht_hostId)
-    volume = wait_for_volume_state(client, volume_name, "healthy")
+    volume = common.wait_for_volume_healthy(client, volume_name)
 
     setting = client.by_id_setting("backupTarget")
     # test backupTarget for multiple settings
@@ -377,7 +377,7 @@ def test_backup(clients, volume_name):  # NOQA
         backup_test(client, lht_hostId, volume_name)
 
     volume = volume.detach()
-    volume = wait_for_volume_state(client, volume_name, "detached")
+    volume = common.wait_for_volume_detached(client, volume_name)
 
     client.delete(volume)
     volume = wait_for_volume_delete(client, volume_name)
@@ -436,17 +436,17 @@ def backup_test(client, host_id, volname):
     volume = client.create_volume(name=restoreName, size=SIZE,
                                   numberOfReplicas=2,
                                   fromBackup=b["url"])
-    volume = wait_for_volume_state(client, restoreName, "detached")
+    volume = common.wait_for_volume_detached(client, restoreName)
     assert volume["name"] == restoreName
     assert volume["size"] == SIZE
     assert volume["numberOfReplicas"] == 2
     assert volume["state"] == "detached"
     volume = volume.attach(hostId=host_id)
-    volume = wait_for_volume_state(client, restoreName, "healthy")
+    volume = common.wait_for_volume_healthy(client, restoreName)
     r_data = volume_read(volume["endpoint"], start_pos, l_data)
     assert r_data == w_data
     volume = volume.detach()
-    volume = wait_for_volume_state(client, restoreName, "detached")
+    volume = common.wait_for_volume_detached(client, restoreName)
     client.delete(volume)
 
     volume = wait_for_volume_delete(client, restoreName)
@@ -474,18 +474,17 @@ def test_volume_multinode(clients, volume_name):  # NOQA
     volume = get_random_client(clients).create_volume(name=volume_name,
                                                       size=SIZE,
                                                       numberOfReplicas=2)
-    volume = wait_for_volume_state(get_random_client(clients),
-                                   volume_name, "detached")
+    volume = common.wait_for_volume_detached(get_random_client(clients),
+                                             volume_name)
 
     for host_id in hosts:
         volume = volume.attach(hostId=host_id)
-        volume = wait_for_volume_state(get_random_client(clients),
-                                       volume_name, "healthy")
-        assert volume["state"] == "healthy"
+        volume = common.wait_for_volume_healthy(get_random_client(clients),
+                                                volume_name)
         assert volume["controller"]["hostId"] == host_id
         volume = volume.detach()
-        volume = wait_for_volume_state(get_random_client(clients),
-                                       volume_name, "detached")
+        volume = common.wait_for_volume_detached(get_random_client(clients),
+                                                 volume_name)
 
     get_random_client(clients).delete(volume)
     wait_for_volume_delete(get_random_client(clients), volume_name)
@@ -522,7 +521,7 @@ def test_replica_scheduler(clients, volume_name):  # NOQA
     assert volume["numberOfReplicas"] == len(nodes)-1
     assert volume["frontend"] == "blockdev"
 
-    volume = wait_for_volume_state(client, volume_name, "detached")
+    volume = common.wait_for_volume_detached(client, volume_name)
     assert len(volume["replicas"]) == len(nodes)-1
 
     assert volume["state"] == "detached"
@@ -537,7 +536,7 @@ def test_replica_scheduler(clients, volume_name):  # NOQA
 
     lht_hostId = get_self_host_id()
     volume.attach(hostId=lht_hostId)
-    volume = wait_for_volume_state(client, volume_name, "healthy")
+    volume = common.wait_for_volume_healthy(client, volume_name)
 
     for replica in volume["replicas"]:
         id = replica["hostId"]
@@ -548,7 +547,7 @@ def test_replica_scheduler(clients, volume_name):  # NOQA
     assert len(nodeHosts) == 0
 
     volume = volume.detach()
-    volume = wait_for_volume_state(client, volume_name, "detached")
+    volume = common.wait_for_volume_detached(client, volume_name)
     client.delete(volume)
 
     wait_for_volume_delete(client, volume_name)

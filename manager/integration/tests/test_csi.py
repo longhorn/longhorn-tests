@@ -1,8 +1,9 @@
 import time
 import pytest
 
+import common
 from common import clients, csi_pvc_name  # NOQA
-from common import wait_for_volume_delete, wait_for_volume_state
+from common import wait_for_volume_delete
 
 from kubernetes import client as k8sclient, config as k8sconfig
 from kubernetes.stream import stream
@@ -158,7 +159,7 @@ def test_csi_volume_mount(clients, csi_pvc_name): # NOQA
     assert volumes[0]["name"] == volume_name
     assert volumes[0]["size"] == str(volume_size)
     assert volumes[0]["numberOfReplicas"] == int(volume["numberOfReplicas"])
-    assert volumes[0]["state"] == "healthy"
+    assert volumes[0]["state"] == "attached"
 
     delete_pod(api, pod_name)
     delete_pvc_and_sc(csi_pvc_name)
@@ -198,7 +199,7 @@ def test_csi_volume_io(clients, csi_pvc_name):  # NOQA
         stdout=True, tty=False)
     delete_pod(api, pod_name)
 
-    wait_for_volume_state(client, get_volume_name(csi_pvc_name), "detached")
+    common.wait_for_volume_detached(client, get_volume_name(csi_pvc_name))
 
     pod_name = 'volume-csi-io-test-2'
     create_pod(api, pod_name, volume, csi_pvc_name)

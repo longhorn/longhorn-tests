@@ -28,6 +28,14 @@ UPGRADE_TEST_IMAGE_PREFIX = "rancher/longhorn-test:upgrade-test"
 
 ISCSI_DEV_PATH = "/dev/disk/by-path"
 
+VOLUME_FIELD_STATE = "state"
+VOLUME_STATE_ATTACHED = "attached"
+VOLUME_STATE_DETACHED = "detached"
+
+VOLUME_FIELD_ROBUSTNESS = "robustness"
+VOLUME_ROBUSTNESS_HEALTHY = "healthy"
+VOLUME_ROBUSTNESS_FAULTED = "faulted"
+
 
 @pytest.fixture
 def core_api(request):
@@ -139,14 +147,38 @@ def wait_for_volume_creation(client, name):
     assert found
 
 
-def wait_for_volume_state(client, name, state):
+def wait_for_volume_detached(client, name):
+    return wait_for_volume_status(client, name,
+                                  VOLUME_FIELD_STATE,
+                                  VOLUME_STATE_DETACHED)
+
+
+def wait_for_volume_healthy(client, name):
+    wait_for_volume_status(client, name,
+                           VOLUME_FIELD_STATE,
+                           VOLUME_STATE_ATTACHED)
+    return wait_for_volume_status(client, name,
+                                  VOLUME_FIELD_ROBUSTNESS,
+                                  VOLUME_ROBUSTNESS_HEALTHY)
+
+
+def wait_for_volume_faulted(client, name):
+    wait_for_volume_status(client, name,
+                           VOLUME_FIELD_STATE,
+                           VOLUME_STATE_DETACHED)
+    return wait_for_volume_status(client, name,
+                                  VOLUME_FIELD_ROBUSTNESS,
+                                  VOLUME_ROBUSTNESS_FAULTED)
+
+
+def wait_for_volume_status(client, name, key, value):
     wait_for_volume_creation(client, name)
     for i in range(RETRY_COUNTS):
         volume = client.by_id_volume(name)
-        if volume["state"] == state:
+        if volume[key] == value:
             break
         time.sleep(RETRY_ITERVAL)
-    assert volume["state"] == state
+    assert volume[key] == value
     return volume
 
 
