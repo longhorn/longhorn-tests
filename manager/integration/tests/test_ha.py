@@ -3,13 +3,14 @@ import time
 
 from common import clients, volume_name  # NOQA
 from common import SIZE, DEV_PATH
-from common import wait_for_volume_state, wait_for_volume_delete
+from common import check_data, get_self_host_id, wait_for_volume_delete
+from common import wait_for_volume_state, write_random_data
 from common import RETRY_COUNTS, RETRY_ITERVAL
 
 
 def test_ha_simple_recovery(clients, volume_name):  # NOQA
     # get a random client
-    for host_id, client in clients.iteritems():
+    for _, client in clients.iteritems():
         break
 
     volume = client.create_volume(name=volume_name, size=SIZE,
@@ -21,6 +22,7 @@ def test_ha_simple_recovery(clients, volume_name):  # NOQA
     assert volume["state"] == "detached"
     assert volume["created"] != ""
 
+    host_id = get_self_host_id()
     volume = volume.attach(hostId=host_id)
     volume = wait_for_volume_state(client, volume_name, "healthy")
 
@@ -33,6 +35,8 @@ def test_ha_simple_recovery(clients, volume_name):  # NOQA
 
     replica1 = volume["replicas"][1]
     assert replica1["name"] != ""
+
+    data = write_random_data(volume["endpoint"])
 
     volume = volume.replicaRemove(name=replica0["name"])
 
@@ -63,6 +67,8 @@ def test_ha_simple_recovery(clients, volume_name):  # NOQA
             break
     assert found
 
+    check_data(volume['endpoint'], data)
+
     volume = volume.detach()
     volume = wait_for_volume_state(client, volume_name, "detached")
 
@@ -75,7 +81,7 @@ def test_ha_simple_recovery(clients, volume_name):  # NOQA
 
 def test_ha_salvage(clients, volume_name):  # NOQA
     # get a random client
-    for host_id, client in clients.iteritems():
+    for _, client in clients.iteritems():
         break
 
     volume = client.create_volume(name=volume_name, size=SIZE,
@@ -87,12 +93,15 @@ def test_ha_salvage(clients, volume_name):  # NOQA
     assert volume["state"] == "detached"
     assert volume["created"] != ""
 
+    host_id = get_self_host_id()
     volume = volume.attach(hostId=host_id)
     volume = wait_for_volume_state(client, volume_name, "healthy")
 
     assert len(volume["replicas"]) == 2
     replica0_name = volume["replicas"][0]["name"]
     replica1_name = volume["replicas"][1]["name"]
+
+    data = write_random_data(volume["endpoint"])
 
     common.k8s_delete_replica_pods_for_volume(volume_name)
 
@@ -110,6 +119,8 @@ def test_ha_salvage(clients, volume_name):  # NOQA
 
     volume = volume.attach(hostId=host_id)
     volume = wait_for_volume_state(client, volume_name, "healthy")
+
+    check_data(volume["endpoint"], data)
 
     volume = volume.detach()
     volume = wait_for_volume_state(client, volume_name, "detached")
