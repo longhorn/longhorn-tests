@@ -37,7 +37,7 @@ metadata:
 spec:
   containers:
   - name: longhorn-test-pod
-    image: rancher/longhorn-manager-test:a96f5e9
+    image: rancher/longhorn-manager-test:3810afb
 #    args: ["-x", "-s",
 #           "-k", "test_recurring_job",
 #           "--enable-recurring-job-test",
