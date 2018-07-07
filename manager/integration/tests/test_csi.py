@@ -33,7 +33,7 @@ def create_sc_and_pvc(volume, pvc_name):
                     'storage': volume['size']
                 },
             },
-            'storageClassName': 'longhorn-csi'
+            'storageClassName': DEFAULT_SC_NAME
         }
     }
 
@@ -43,7 +43,7 @@ def create_sc_and_pvc(volume, pvc_name):
         'metadata': {
             'name': DEFAULT_SC_NAME
         },
-        'provisioner': 'longhorn-csi-plugin',
+        'provisioner': 'rancher.io/longhorn',
         'parameters': {
             'numberOfReplicas': volume['numberOfReplicas'],
             'staleReplicaTimeout': volume['staleReplicaTimeout']
@@ -61,7 +61,7 @@ def create_sc_and_pvc(volume, pvc_name):
         body=sc_manifest)
 
 
-def create_pod(api, pod_name, volume, pvc_name):
+def create_pod(api, pod_name, pvc_name):
     pod_manifest = {
         'apiVersion': 'v1',
         'kind': 'Pod',
@@ -150,7 +150,7 @@ def test_csi_volume_mount(clients, csi_pvc_name): # NOQA
         'numberOfReplicas': '3', 'staleReplicaTimeout': '20'}
 
     create_sc_and_pvc(volume, csi_pvc_name)
-    create_pod(api, pod_name, volume, csi_pvc_name)
+    create_pod(api, pod_name, csi_pvc_name)
     wait_pod_ready(api, pod_name)
     volume_name = get_volume_name(csi_pvc_name)
 
@@ -183,7 +183,7 @@ def test_csi_volume_io(clients, csi_pvc_name):  # NOQA
         'numberOfReplicas': '3', 'staleReplicaTimeout': '20'}
 
     create_sc_and_pvc(volume, csi_pvc_name)
-    create_pod(api, pod_name, volume, csi_pvc_name)
+    create_pod(api, pod_name, csi_pvc_name)
     wait_pod_ready(api, pod_name)
 
     test_content = "longhorn"
@@ -202,7 +202,7 @@ def test_csi_volume_io(clients, csi_pvc_name):  # NOQA
     common.wait_for_volume_detached(client, get_volume_name(csi_pvc_name))
 
     pod_name = 'volume-csi-io-test-2'
-    create_pod(api, pod_name, volume, csi_pvc_name)
+    create_pod(api, pod_name, csi_pvc_name)
     wait_pod_ready(api, pod_name)
 
     read_command = [
