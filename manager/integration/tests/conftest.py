@@ -2,7 +2,7 @@ import pytest
 
 
 ENABLE_RECURRING_JOB_OPT = "--enable-recurring-job-test"
-ENABLE_CSI_OPT = "--enable-csi-test"
+ENABLE_FLEXVOLUME_OPT = "--enable-flexvolume-test"
 
 
 def pytest_addoption(parser):
@@ -23,10 +23,10 @@ def pytest_collection_modifyitems(config, items):
             if "recurring_job" in item.keywords:
                 item.add_marker(skip_upgrade)
 
-    if not config.getoption(ENABLE_CSI_OPT):
+    if not config.getoption(ENABLE_FLEXVOLUME_OPT):
         skip_upgrade = pytest.mark.skip(reason="need " +
-                                        ENABLE_CSI_OPT +
+                                        ENABLE_FLEXVOLUME_OPT +
                                         " option to run")
         for item in items:
-            if "csi" in item.keywords:
+            if "flexvolume" in item.keywords:
                 item.add_marker(skip_upgrade)

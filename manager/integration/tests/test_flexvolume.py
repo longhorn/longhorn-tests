@@ -257,6 +257,7 @@ def write_volume_data(api, pod_name, test_data):
         tty=False)
 
 
+@pytest.mark.flexvolume  # NOQA
 def test_dynamic_volume_mount(clients, core_api, pvc_name):  # NOQA
     """
     Test that a StorageClass provisioned volume can be created, mounted,
@@ -291,6 +292,7 @@ def test_dynamic_volume_mount(clients, core_api, pvc_name):  # NOQA
     delete_and_wait_storage(client, pvc, pvc_volume_name)
 
 
+@pytest.mark.flexvolume  # NOQA
 def test_dynamic_volume_params(clients, core_api, pvc_name):  # NOQA
     """
     Test that substituting different StorageClass parameters is reflected in
@@ -329,6 +331,7 @@ def test_dynamic_volume_params(clients, core_api, pvc_name):  # NOQA
     delete_and_wait_storage(client, pvc, pvc_volume_name)
 
 
+@pytest.mark.flexvolume  # NOQA
 def test_dynamic_volume_io(clients, core_api, pvc_name):  # NOQA
     """
     Test that input and output on a StorageClass provisioned
@@ -364,6 +367,7 @@ def test_dynamic_volume_io(clients, core_api, pvc_name):  # NOQA
     delete_and_wait_storage(client, pvc, pvc_volume_name)
 
 
+@pytest.mark.flexvolume  # NOQA
 def test_static_volume_mount(clients, core_api, volume_name): # NOQA
     """
     Test that a statically defined volume can be created, mounted, unmounted,
@@ -396,6 +400,7 @@ def test_static_volume_mount(clients, core_api, volume_name): # NOQA
     wait_for_volume_delete(client, volume["name"])
 
 
+@pytest.mark.flexvolume  # NOQA
 def test_static_volume_io(clients, core_api, volume_name):  # NOQA
     """
     Test that input and output on a statically defined volume works as
