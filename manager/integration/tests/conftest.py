@@ -9,9 +9,9 @@ def pytest_addoption(parser):
     parser.addoption(ENABLE_RECURRING_JOB_OPT, action="store_true",
                      default=False,
                      help="enable recurring job test or not")
-    parser.addoption(ENABLE_CSI_OPT, action="store_true",
+    parser.addoption(ENABLE_FLEXVOLUME_OPT, action="store_true",
                      default=False,
-                     help="enable CSI test or not")
+                     help="enable Flexvolume test or not")
 
 
 def pytest_collection_modifyitems(config, items):
