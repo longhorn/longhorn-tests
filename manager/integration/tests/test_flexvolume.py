@@ -1,5 +1,6 @@
 #!/usr/sbin/python
 import time
+import pytest
 
 import common
 from common import clients, core_api, pvc_name, volume_name  # NOQA
