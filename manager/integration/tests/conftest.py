@@ -1,8 +1,12 @@
 import pytest
 
+from kubernetes import client as k8sclient, config as k8sconfig
+from kubernetes.client import Configuration
+from kubernetes.client.rest import ApiException
 
 ENABLE_RECURRING_JOB_OPT = "--enable-recurring-job-test"
 ENABLE_FLEXVOLUME_OPT = "--enable-flexvolume-test"
+ENABLE_CSI_OPT = "--enable-csi-test"
 
 
 def pytest_addoption(parser):
@@ -23,10 +27,26 @@ def pytest_collection_modifyitems(config, items):
             if "recurring_job" in item.keywords:
                 item.add_marker(skip_upgrade)
 
-    if not config.getoption(ENABLE_FLEXVOLUME_OPT):
-        skip_upgrade = pytest.mark.skip(reason="need " +
-                                        ENABLE_FLEXVOLUME_OPT +
-                                        " option to run")
+    c = Configuration()
+    c.assert_hostname = False
+    Configuration.set_default(c)
+    k8sconfig.load_incluster_config()
+    api = k8sclient.CoreV1Api()
+
+    try:
+        api.read_namespaced_pod(
+            name='csi-provisioner-0', namespace='longhorn-system')
+        skip_upgrade = pytest.mark.skip(reason="environment is not using " +
+                                               "flexvolume")
+
         for item in items:
             if "flexvolume" in item.keywords:
                 item.add_marker(skip_upgrade)
+    except ApiException as e:
+        if (e.status == 404):
+            skip_upgrade = pytest.mark.skip(reason="environment is not " +
+                                                   "using csi")
+
+            for item in items:
+                if "csi" in item.keywords:
+                    item.add_marker(skip_upgrade)
