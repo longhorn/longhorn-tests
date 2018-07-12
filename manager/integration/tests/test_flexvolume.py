@@ -1,15 +1,14 @@
 #!/usr/sbin/python
-import time
 import pytest
 
 import common
 from common import clients, core_api, pvc_name, volume_name  # NOQA
 from common import VOLUME_RWTEST_SIZE
-from common import generate_random_data
-from common import wait_for_volume_delete
+from common import create_and_wait_pod, delete_pod, generate_random_data
+from common import read_volume_data, size_to_string, wait_for_volume_delete
+from common import write_volume_data
 
 from kubernetes import client as k8sclient
-from kubernetes.stream import stream
 
 Gi = (1 * 1024 * 1024 * 1024)
 
@@ -25,56 +24,6 @@ DEFAULT_STORAGECLASS_SPEC = {
     'numberOfReplicas': '3',
     'staleReplicaTimeout': '30'
 }
-
-
-def create_and_wait_pod(api, pod_name, volume):
-    """
-    Creates a new Pod attached to a PersistentVolumeClaim for testing.
-
-    The function will block until the Pod is online or until it times out,
-    whichever occurs first. The volume created by the manifest passed in will
-    be mounted to '/data'.
-
-    Args:
-        api: An instance of CoreV1API.
-        pod_name: The name of the Pod.
-        volume: The volume manifest.
-    """
-    pod_manifest = {
-        'apiVersion': 'v1',
-        'kind': 'Pod',
-        'metadata': {
-            'name': pod_name
-        },
-        'spec': {
-            'containers': [{
-                'image': 'busybox',
-                'imagePullPolicy': 'IfNotPresent',
-                'name': 'sleep',
-                "args": [
-                    "/bin/sh",
-                    "-c",
-                    "while true;do date;sleep 5; done"
-                ],
-                "volumeMounts": [{
-                    'name': volume['name'],
-                    'mountPath': '/data'
-                }],
-            }],
-            'volumes': [volume]
-        }
-    }
-    api.create_namespaced_pod(
-        body=pod_manifest,
-        namespace='default')
-    for i in range(DEFAULT_POD_TIMEOUT):
-        pod = api.read_namespaced_pod(
-            name=pod_name,
-            namespace='default')
-        if pod.status.phase != 'Pending':
-            break
-        time.sleep(DEFAULT_POD_INTERVAL)
-    assert pod.status.phase == 'Running'
 
 
 def create_dynamic_volume_spec(name):
@@ -185,77 +134,6 @@ def get_volume_name(volume):
     pvc = api.read_namespaced_persistent_volume_claim(
         name=volume['pvc_name'], namespace='default')
     return pvc.spec.volume_name
-
-
-def delete_pod(api, pod_name):
-    """
-    Delete a specified Pod from the "default" namespace.
-
-    This function does not check if the Pod does exist and will throw an error
-    if a nonexistent Pod is specified.
-
-    Args:
-        api: An instance of CoreV1API.
-        pod_name: The name of the Pod.
-    """
-    api.delete_namespaced_pod(
-        name=pod_name,
-        namespace='default',
-        body=k8sclient.V1DeleteOptions())
-
-
-def read_volume_data(api, pod_name):
-    """
-    Retrieve data from a Pod's volume.
-
-    Args:
-        api: An instance of CoreV1API.
-        pod_name: The name of the Pod.
-
-    Returns:
-        The data contained within the volume.
-    """
-    read_command = [
-        '/bin/sh',
-        '-c',
-        'cat /data/test'
-    ]
-    return stream(
-        api.connect_get_namespaced_pod_exec, pod_name, 'default',
-        command=read_command, stderr=True, stdin=False, stdout=True,
-        tty=False)
-
-
-def size_to_string(volume_size):
-    # type: (int) -> str
-    """
-    Convert a volume size to string format to pass into Kubernetes.
-    Args:
-        volume_size: The size of the volume in bytes.
-    Returns:
-        The size of the volume in gigabytes as a passable string to Kubernetes.
-    """
-    return str(volume_size >> 30) + 'Gi'
-
-
-def write_volume_data(api, pod_name, test_data):
-    """
-    Write data into a Pod's volume.
-
-    Args:
-        api: An instance of CoreV1API.
-        pod_name: The name of the Pod.
-        test_data: The data to be written.
-    """
-    write_command = [
-        '/bin/sh',
-        '-c',
-        'echo -ne ' + test_data + ' > /data/test; sync'
-    ]
-    stream(
-        api.connect_get_namespaced_pod_exec, pod_name, 'default',
-        command=write_command, stderr=True, stdin=False, stdout=True,
-        tty=False)
 
 
 @pytest.mark.flexvolume  # NOQA
