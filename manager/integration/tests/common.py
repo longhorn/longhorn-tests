@@ -37,8 +37,15 @@ VOLUME_FIELD_ROBUSTNESS = "robustness"
 VOLUME_ROBUSTNESS_HEALTHY = "healthy"
 VOLUME_ROBUSTNESS_FAULTED = "faulted"
 
+DEFAULT_LONGHORN_PARAMS = {
+    'numberOfReplicas': '3',
+    'staleReplicaTimeout': '30'
+}
+
 DEFAULT_POD_INTERVAL = 1
 DEFAULT_POD_TIMEOUT = 180
+
+DEFAULT_VOLUME_SIZE = 3  # In Gi
 
 Gi = (1 * 1024 * 1024 * 1024)
 
@@ -93,6 +100,23 @@ def create_and_wait_pod(api, pod_name, volume):
     assert pod.status.phase == 'Running'
 
 
+def create_pvc_spec(name):
+    # type: (str) -> dict
+    """
+    Generate a volume manifest using the given name for the PVC.
+
+    This spec is used to test dynamically provisioned PersistentVolumes (those
+    created using a storage class).
+    """
+    return {
+        'name': 'pod-data',
+        'persistentVolumeClaim': {
+            'claimName': name,
+            'readOnly': False
+        }
+    }
+
+
 def delete_pod(api, pod_name):
     """
     Delete a specified Pod from the "default" namespace.
@@ -108,6 +132,15 @@ def delete_pod(api, pod_name):
         name=pod_name,
         namespace='default',
         body=k8sclient.V1DeleteOptions())
+
+
+def delete_and_wait_longhorn(client, name):
+    """
+    Delete a volume from Longhorn.
+    """
+    v = wait_for_volume_detached(client, name)
+    client.delete(v)
+    wait_for_volume_delete(client, name)
 
 
 def read_volume_data(api, pod_name):

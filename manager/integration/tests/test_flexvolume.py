@@ -4,9 +4,9 @@ import pytest
 import common
 from common import clients, core_api, volume_name  # NOQA
 from common import Gi, VOLUME_RWTEST_SIZE
-from common import create_and_wait_pod, delete_pod, generate_random_data
-from common import read_volume_data, size_to_string, write_volume_data
-from common import wait_for_volume_delete
+from common import create_and_wait_pod, delete_pod, delete_and_wait_longhorn
+from common import generate_random_data, read_volume_data, size_to_string
+from common import write_volume_data
 
 
 def create_flexvolume_spec(name, options):
@@ -55,9 +55,7 @@ def test_flexvolume_mount(clients, core_api, volume_name): # NOQA
     assert volumes[0]["state"] == "attached"
 
     delete_pod(core_api, pod_name)
-    v = common.wait_for_volume_detached(client, volume["name"])
-    client.delete(v)
-    wait_for_volume_delete(client, volume["name"])
+    delete_and_wait_longhorn(client, volume['name'])
 
 
 @pytest.mark.flexvolume  # NOQA
@@ -92,6 +90,4 @@ def test_flexvolume_io(clients, core_api, volume_name):  # NOQA
 
     assert resp == test_data
     delete_pod(core_api, pod_name)
-    v = common.wait_for_volume_detached(client, volume["name"])
-    client.delete(v)
-    wait_for_volume_delete(client, volume["name"])
+    delete_and_wait_longhorn(client, volume['name'])
