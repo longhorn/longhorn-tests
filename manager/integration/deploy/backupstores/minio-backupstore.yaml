@@ -56,10 +56,10 @@ kind: Service
 metadata:
   name: minio-service
 spec:
-  type: LoadBalancer
+  selector:
+    app: longhorn-test-minio
   ports:
     - port: 9000
       targetPort: 9000
       protocol: TCP
-  selector:
-    app: longhorn-test-minio
+  sessionAffinity: ClientIP
