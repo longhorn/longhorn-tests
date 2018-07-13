@@ -1,42 +1,18 @@
 #!/usr/sbin/python
 import common
 from common import clients, core_api, pvc_name, volume_name  # NOQA
-from common import Gi, VOLUME_RWTEST_SIZE
-from common import create_and_wait_pod, delete_pod, generate_random_data
-from common import read_volume_data, size_to_string, wait_for_volume_delete
-from common import write_volume_data
+from common import DEFAULT_LONGHORN_PARAMS
+from common import DEFAULT_VOLUME_SIZE, Gi, VOLUME_RWTEST_SIZE
+from common import create_and_wait_pod, create_pvc_spec, delete_pod
+from common import generate_random_data, read_volume_data, size_to_string
+from common import wait_for_volume_delete, write_volume_data
 
 from kubernetes import client as k8sclient
 
 DEFAULT_POD_INTERVAL = 1
 DEFAULT_POD_TIMEOUT = 180
 
-
 DEFAULT_STORAGECLASS_NAME = "longhorn-provisioner"
-DEFAULT_VOLUME_SIZE = 3  # In Gi
-
-
-DEFAULT_STORAGECLASS_SPEC = {
-    'numberOfReplicas': '3',
-    'staleReplicaTimeout': '30'
-}
-
-
-def create_provisioned_spec(name):
-    # type: (str) -> dict
-    """
-    Generate a volume manifest using the given name for the PVC.
-
-    This spec is used to test dynamically provisioned PersistentVolumes (those
-    created using a storage class).
-    """
-    return {
-        'name': 'pod-data',
-        'persistentVolumeClaim': {
-            'claimName': name,
-            'readOnly': False
-        }
-    }
 
 
 def create_storage(storage_class, volume):
@@ -129,9 +105,9 @@ def test_provisioner_mount(clients, core_api, pvc_name):  # NOQA
         'pvc_name': pvc_name,
         'size': size_to_string(volume_size)
     }
-    volume = create_provisioned_spec(pvc_name)
+    volume = create_pvc_spec(pvc_name)
 
-    create_storage(DEFAULT_STORAGECLASS_SPEC, pvc)
+    create_storage(DEFAULT_LONGHORN_PARAMS, pvc)
     create_and_wait_pod(core_api, pod_name, volume)
     pvc_volume_name = get_volume_name(pvc)
 
@@ -141,7 +117,7 @@ def test_provisioner_mount(clients, core_api, pvc_name):  # NOQA
     assert volumes[0]["name"] == pvc_volume_name
     assert volumes[0]["size"] == str(volume_size)
     assert volumes[0]["numberOfReplicas"] == \
-        int(DEFAULT_STORAGECLASS_SPEC["numberOfReplicas"])
+        int(DEFAULT_LONGHORN_PARAMS["numberOfReplicas"])
     assert volumes[0]["state"] == "attached"
 
     delete_pod(core_api, pod_name)
@@ -167,7 +143,7 @@ def test_provisioner_params(clients, core_api, pvc_name):  # NOQA
         'pvc_name': pvc_name,
         'size': size_to_string(volume_size)
     }
-    volume = create_provisioned_spec(pvc_name)
+    volume = create_pvc_spec(pvc_name)
 
     create_storage(storage_class, pvc)
     create_and_wait_pod(core_api, pod_name, volume)
@@ -201,10 +177,10 @@ def test_provisioner_io(clients, core_api, pvc_name):  # NOQA
         'pvc_name': pvc_name,
         'size': size_to_string(volume_size)
     }
-    volume = create_provisioned_spec(pvc_name)
+    volume = create_pvc_spec(pvc_name)
     test_data = generate_random_data(VOLUME_RWTEST_SIZE)
 
-    create_storage(DEFAULT_STORAGECLASS_SPEC, pvc)
+    create_storage(DEFAULT_LONGHORN_PARAMS, pvc)
     create_and_wait_pod(core_api, pod_name, volume)
     pvc_volume_name = get_volume_name(pvc)
     write_volume_data(core_api, pod_name, test_data)
