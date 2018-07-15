@@ -3,7 +3,7 @@ import common
 from common import clients, core_api, pvc_name, volume_name  # NOQA
 from common import DEFAULT_LONGHORN_PARAMS
 from common import DEFAULT_VOLUME_SIZE, Gi, VOLUME_RWTEST_SIZE
-from common import create_and_wait_pod, create_pvc_spec, delete_pod
+from common import create_and_wait_pod, create_pvc_spec, delete_and_wait_pod
 from common import generate_random_data, read_volume_data, size_to_string
 from common import wait_for_volume_delete, write_volume_data
 
@@ -120,7 +120,7 @@ def test_provisioner_mount(clients, core_api, pvc_name):  # NOQA
         int(DEFAULT_LONGHORN_PARAMS["numberOfReplicas"])
     assert volumes[0]["state"] == "attached"
 
-    delete_pod(core_api, pod_name)
+    delete_and_wait_pod(core_api, pod_name)
     delete_and_wait_storage(client, pvc, pvc_volume_name)
 
 
@@ -158,7 +158,7 @@ def test_provisioner_params(clients, core_api, pvc_name):  # NOQA
         int(storage_class["numberOfReplicas"])
     assert volumes[0]["state"] == "attached"
 
-    delete_pod(core_api, pod_name)
+    delete_and_wait_pod(core_api, pod_name)
     delete_and_wait_storage(client, pvc, pvc_volume_name)
 
 
@@ -184,7 +184,7 @@ def test_provisioner_io(clients, core_api, pvc_name):  # NOQA
     create_and_wait_pod(core_api, pod_name, volume)
     pvc_volume_name = get_volume_name(pvc)
     write_volume_data(core_api, pod_name, test_data)
-    delete_pod(core_api, pod_name)
+    delete_and_wait_pod(core_api, pod_name)
 
     common.wait_for_volume_detached(client, pvc_volume_name)
 
@@ -193,5 +193,5 @@ def test_provisioner_io(clients, core_api, pvc_name):  # NOQA
     resp = read_volume_data(core_api, pod_name)
 
     assert resp == test_data
-    delete_pod(core_api, pod_name)
+    delete_and_wait_pod(core_api, pod_name)
     delete_and_wait_storage(client, pvc, pvc_volume_name)

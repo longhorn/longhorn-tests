@@ -6,7 +6,7 @@ from common import clients, core_api, volume_name  # NOQA
 from common import DEFAULT_LONGHORN_PARAMS, DEFAULT_VOLUME_SIZE, Gi
 from common import VOLUME_RWTEST_SIZE
 from common import create_and_wait_pod, create_pvc_spec
-from common import delete_and_wait_longhorn, delete_pod
+from common import delete_and_wait_longhorn, delete_and_wait_pod
 from common import generate_random_data, read_volume_data, size_to_string
 from common import write_volume_data
 
@@ -107,7 +107,7 @@ def test_csi_mount(clients, core_api, volume_name): # NOQA
         int(DEFAULT_LONGHORN_PARAMS["numberOfReplicas"])
     assert volumes[0]["state"] == "attached"
 
-    delete_pod(core_api, pod_name)
+    delete_and_wait_pod(core_api, pod_name)
     delete_and_wait_pv(core_api, client, pvc)
 
 
@@ -132,7 +132,7 @@ def test_csi_io(clients, core_api, volume_name):  # NOQA
 
     test_data = generate_random_data(VOLUME_RWTEST_SIZE)
     write_volume_data(core_api, pod_name, test_data)
-    delete_pod(core_api, pod_name)
+    delete_and_wait_pod(core_api, pod_name)
     common.wait_for_volume_detached(client, volume_name)
 
     pod_name = 'csi-io-test-2'
@@ -142,5 +142,5 @@ def test_csi_io(clients, core_api, volume_name):  # NOQA
 
     assert resp == test_data
 
-    delete_pod(core_api, pod_name)
+    delete_and_wait_pod(core_api, pod_name)
     delete_and_wait_pv(core_api, client, pvc)
