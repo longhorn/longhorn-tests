@@ -117,7 +117,7 @@ def create_pvc_spec(name):
     }
 
 
-def delete_pod(api, pod_name):
+def delete_and_wait_pod(api, pod_name):
     """
     Delete a specified Pod from the "default" namespace.
 
@@ -132,6 +132,17 @@ def delete_pod(api, pod_name):
         name=pod_name,
         namespace='default',
         body=k8sclient.V1DeleteOptions())
+    for i in range(DEFAULT_POD_TIMEOUT):
+        ret = api.list_namespaced_pod(namespace='default')
+        found = False
+        for item in ret.items:
+            if item.metadata.name == pod_name:
+                found = True
+            break
+        if not found:
+            break
+        time.sleep(DEFAULT_POD_INTERVAL)
+    assert not found
 
 
 def delete_and_wait_longhorn(client, name):
