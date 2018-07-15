@@ -14,6 +14,8 @@ from common import generate_volume_name
 from common import generate_random_data
 from common import generate_random_pos
 
+SETTING_BACKUP_TARGET = "backup-target"
+SETTING_BACKUP_TARGET_CREDENTIAL_SECRET = "backup-target-credential-secret"
 
 def test_hosts_and_settings(clients):  # NOQA
     hosts = clients.itervalues().next().list_node()
@@ -37,7 +39,8 @@ def test_hosts_and_settings(clients):  # NOQA
 
     client = clients[host_id[0]]
 
-    setting_names = ["backupTarget", "backupTargetCredentialSecret"]
+    setting_names = [SETTING_BACKUP_TARGET,
+                     SETTING_BACKUP_TARGET_CREDENTIAL_SECRET]
     settings = client.list_setting()
     # Skip DefaultEngineImage option
     # since they have side affect
@@ -49,6 +52,7 @@ def test_hosts_and_settings(clients):  # NOQA
 
     for name in setting_names:
         assert settingMap[name] is not None
+        assert settingMap[name]["description"] is not None
 
     for name in setting_names:
         setting = client.by_id_setting(name)
@@ -355,7 +359,7 @@ def test_backup(clients, volume_name):  # NOQA
     volume = volume.attach(hostId=lht_hostId)
     volume = common.wait_for_volume_healthy(client, volume_name)
 
-    setting = client.by_id_setting("backupTarget")
+    setting = client.by_id_setting(SETTING_BACKUP_TARGET)
     # test backupTarget for multiple settings
     backupstores = common.get_backupstore_url()
     for backupstore in backupstores:
@@ -364,13 +368,15 @@ def test_backup(clients, volume_name):  # NOQA
             setting = client.update(setting, value=backupsettings[0])
             assert setting["value"] == backupsettings[0]
 
-            credential = client.by_id_setting("backupTargetCredentialSecret")
+            credential = client.by_id_setting(
+                    SETTING_BACKUP_TARGET_CREDENTIAL_SECRET)
             credential = client.update(credential, value=backupsettings[1])
             assert credential["value"] == backupsettings[1]
         else:
             setting = client.update(setting, value=backupstore)
             assert setting["value"] == backupstore
-            credential = client.by_id_setting("backupTargetCredentialSecret")
+            credential = client.by_id_setting(
+                    SETTING_BACKUP_TARGET_CREDENTIAL_SECRET)
             credential = client.update(credential, value="")
             assert credential["value"] == ""
 
