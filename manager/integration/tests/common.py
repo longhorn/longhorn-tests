@@ -138,7 +138,7 @@ def delete_and_wait_pod(api, pod_name):
         for item in ret.items:
             if item.metadata.name == pod_name:
                 found = True
-            break
+                break
         if not found:
             break
         time.sleep(DEFAULT_POD_INTERVAL)
@@ -360,6 +360,7 @@ def wait_for_volume_delete(client, name):
         for volume in volumes:
             if volume["name"] == name:
                 found = True
+                break
         if not found:
             break
         time.sleep(RETRY_ITERVAL)
