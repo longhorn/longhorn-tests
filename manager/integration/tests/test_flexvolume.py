@@ -4,7 +4,8 @@ import pytest
 import common
 from common import clients, core_api, volume_name  # NOQA
 from common import Gi, VOLUME_RWTEST_SIZE
-from common import create_and_wait_pod, delete_and_wait_pod, delete_and_wait_longhorn
+from common import create_and_wait_pod, delete_and_wait_pod
+from common import delete_and_wait_longhorn
 from common import generate_random_data, read_volume_data, size_to_string
 from common import write_volume_data
 
