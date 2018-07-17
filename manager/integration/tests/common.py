@@ -37,6 +37,8 @@ VOLUME_FIELD_ROBUSTNESS = "robustness"
 VOLUME_ROBUSTNESS_HEALTHY = "healthy"
 VOLUME_ROBUSTNESS_FAULTED = "faulted"
 
+DEFAULT_STORAGECLASS_NAME = 'longhorn-test'
+
 DEFAULT_LONGHORN_PARAMS = {
     'numberOfReplicas': '3',
     'staleReplicaTimeout': '30'
@@ -48,6 +50,29 @@ DEFAULT_POD_TIMEOUT = 180
 DEFAULT_VOLUME_SIZE = 3  # In Gi
 
 Gi = (1 * 1024 * 1024 * 1024)
+
+
+def get_core_api_client():
+    c = Configuration()
+    c.assert_hostname = False
+    Configuration.set_default(c)
+    k8sconfig.load_incluster_config()
+    return k8sclient.CoreV1Api()
+
+
+def get_storage_api_client():
+    c = Configuration()
+    c.assert_hostname = False
+    Configuration.set_default(c)
+    k8sconfig.load_incluster_config()
+    return k8sclient.StorageV1Api()
+
+
+def get_longhorn_api_client():
+    k8sconfig.load_incluster_config()
+    ips = get_mgr_ips()
+    client = get_client(ips[0] + PORT)
+    return client
 
 
 def create_and_wait_pod(api, pod_name, volume):
@@ -209,6 +234,69 @@ def size_to_string(volume_size):
 
 
 @pytest.fixture
+def flexvolume(request):
+    flexvolume_manifest = {
+        'name': generate_volume_name(),
+        'flexVolume': {
+            'driver': 'rancher.io/longhorn',
+            'fsType': 'ext4',
+            'options': {
+                'size': size_to_string(DEFAULT_VOLUME_SIZE * Gi),
+                'numberOfReplicas':
+                    DEFAULT_LONGHORN_PARAMS['numberOfReplicas'],
+                'staleReplicaTimeout':
+                    DEFAULT_LONGHORN_PARAMS['staleReplicaTimeout'],
+                'fromBackup': ''
+            }
+        }
+    }
+
+    def finalizer():
+        client = get_longhorn_api_client()
+        delete_and_wait_longhorn(client, flexvolume_manifest['name'])
+
+    request.addfinalizer(finalizer)
+
+    return flexvolume_manifest
+
+
+@pytest.fixture
+def pod(request):
+    pod_manifest = {
+        'apiVersion': 'v1',
+        'kind': 'Pod',
+        'metadata': {
+            'name': 'test-pod'
+        },
+        'spec': {
+            'containers': [{
+                'image': 'busybox',
+                'imagePullPolicy': 'IfNotPresent',
+                'name': 'sleep',
+                "args": [
+                    "/bin/sh",
+                    "-c",
+                    "while true;do date;sleep 5; done"
+                ],
+                "volumeMounts": [{
+                    'name': 'pod-data',
+                    'mountPath': '/data'
+                }],
+            }],
+            'volumes': []
+        }
+    }
+
+    def finalizer():
+        api = get_core_api_client()
+        delete_and_wait_pod(api, pod_manifest['metadata']['name'])
+
+    request.addfinalizer(finalizer)
+
+    return pod_manifest
+
+
+@pytest.fixture
 def core_api(request):
     """
     Create a new CoreV1API instance.
@@ -219,7 +307,121 @@ def core_api(request):
     c.assert_hostname = False
     Configuration.set_default(c)
     k8sconfig.load_incluster_config()
-    return k8sclient.CoreV1Api()
+    core_api = k8sclient.CoreV1Api()
+
+    return core_api
+
+
+@pytest.fixture
+def csi_pv(request):
+    volume_name = generate_volume_name()
+    pv_manifest = {
+        'apiVersion': 'v1',
+        'kind': 'PersistentVolume',
+        'metadata': {
+            'name': volume_name
+        },
+        'spec': {
+            'capacity': {
+                'storage': size_to_string(DEFAULT_VOLUME_SIZE * Gi)
+            },
+            'volumeMode': 'Filesystem',
+            'accessModes': ['ReadWriteOnce'],
+            'persistentVolumeReclaimPolicy': 'Delete',
+            'csi': {
+                'driver': 'io.rancher.longhorn',
+                'fsType': 'ext4',
+                'volumeAttributes': {
+                    'numberOfReplicas':
+                        DEFAULT_LONGHORN_PARAMS['numberOfReplicas'],
+                    'staleReplicaTimeout':
+                        DEFAULT_LONGHORN_PARAMS['staleReplicaTimeout']
+                },
+                'volumeHandle': volume_name
+            }
+        }
+    }
+
+    def finalizer():
+        api = get_core_api_client()
+        api.delete_persistent_volume(name=pv_manifest['metadata']['name'],
+                                     body=k8sclient.V1DeleteOptions())
+
+        client = get_longhorn_api_client()
+        delete_and_wait_longhorn(client, pv_manifest['metadata']['name'])
+
+    request.addfinalizer(finalizer)
+
+    return pv_manifest
+
+
+@pytest.fixture
+def pvc(request):
+    pvc_manifest = {
+        'apiVersion': 'v1',
+        'kind': 'PersistentVolumeClaim',
+        'metadata': {
+            'name': generate_volume_name()
+        },
+        'spec': {
+            'accessModes': [
+                'ReadWriteOnce'
+            ],
+            'resources': {
+                'requests': {
+                    'storage': size_to_string(DEFAULT_VOLUME_SIZE * Gi)
+                }
+            }
+        }
+    }
+
+    def finalizer():
+        api = k8sclient.CoreV1Api()
+        claim = api.read_namespaced_persistent_volume_claim(
+            name=pvc_manifest['metadata']['name'], namespace='default')
+        volume_name = claim.spec.volume_name
+
+        api = get_core_api_client()
+        api.delete_namespaced_persistent_volume_claim(
+            name=pvc_manifest['metadata']['name'], namespace='default',
+            body=k8sclient.V1DeleteOptions())
+
+        # If not using StorageClass (such as in CSI test), the Longhorn volume
+        # will not be automatically deleted, causing this to throw an error.
+        if 'storageClassName' in pvc_manifest['spec']:
+            client = get_longhorn_api_client()
+            wait_for_volume_delete(client, volume_name)
+
+    request.addfinalizer(finalizer)
+
+    return pvc_manifest
+
+
+@pytest.fixture
+def storage_class(request):
+    sc_manifest = {
+        'apiVersion': 'storage.k8s.io/v1',
+        'kind': 'StorageClass',
+        'metadata': {
+            'name': DEFAULT_STORAGECLASS_NAME
+        },
+        'provisioner': 'rancher.io/longhorn',
+        'parameters': {
+            'numberOfReplicas': DEFAULT_LONGHORN_PARAMS['numberOfReplicas'],
+            'staleReplicaTimeout':
+                DEFAULT_LONGHORN_PARAMS['staleReplicaTimeout']
+        },
+        'reclaimPolicy': 'Delete'
+    }
+
+    def finalizer():
+        api = get_storage_api_client()
+        api.delete_storage_class(name=sc_manifest['metadata']['name'],
+                                 body=k8sclient.V1DeleteOptions())
+
+    request.addfinalizer(finalizer)
+
+    return sc_manifest
 
 
 @pytest.fixture
