@@ -75,7 +75,7 @@ def get_longhorn_api_client():
     return client
 
 
-def create_and_wait_pod(api, pod_name, volume):
+def create_and_wait_pod(api, pod_manifest):
     """
     Creates a new Pod attached to a PersistentVolumeClaim for testing.
 
@@ -88,36 +88,12 @@ def create_and_wait_pod(api, pod_name, volume):
         pod_name: The name of the Pod.
         volume: The volume manifest.
     """
-    pod_manifest = {
-        'apiVersion': 'v1',
-        'kind': 'Pod',
-        'metadata': {
-            'name': pod_name
-        },
-        'spec': {
-            'containers': [{
-                'image': 'busybox',
-                'imagePullPolicy': 'IfNotPresent',
-                'name': 'sleep',
-                "args": [
-                    "/bin/sh",
-                    "-c",
-                    "while true;do date;sleep 5; done"
-                ],
-                "volumeMounts": [{
-                    'name': volume['name'],
-                    'mountPath': '/data'
-                }],
-            }],
-            'volumes': [volume]
-        }
-    }
     api.create_namespaced_pod(
         body=pod_manifest,
         namespace='default')
     for i in range(DEFAULT_POD_TIMEOUT):
         pod = api.read_namespaced_pod(
-            name=pod_name,
+            name=pod_manifest['metadata']['name'],
             namespace='default')
         if pod.status.phase != 'Pending':
             break
