@@ -2,93 +2,76 @@
 import pytest
 
 import common
-from common import clients, core_api, volume_name  # NOQA
-from common import Gi, VOLUME_RWTEST_SIZE
+from common import clients, core_api, flexvolume, pod  # NOQA
+from common import Gi, DEFAULT_VOLUME_SIZE, VOLUME_RWTEST_SIZE
 from common import create_and_wait_pod, delete_and_wait_pod
-from common import delete_and_wait_longhorn
-from common import generate_random_data, read_volume_data, size_to_string
-from common import write_volume_data
-
-
-def create_flexvolume_spec(name, options):
-    # type: (str, dict) -> dict
-    """
-    Generate a volume manifest using the volume name and various options.
-
-    This spec is used to test statically defined PersistentVolumes (those not
-    created using a storage class).
-    """
-    return {
-        'name': name,
-        'flexVolume': {
-            'driver': 'rancher.io/longhorn',
-            'fsType': 'ext4',
-            'options': options
-        }
-    }
+from common import generate_random_data, read_volume_data
+from common import wait_for_volume_detached
 
 
 @pytest.mark.flexvolume  # NOQA
-def test_flexvolume_mount(clients, core_api, volume_name): # NOQA
+def test_flexvolume_mount(clients, core_api, flexvolume, pod): # NOQA
     """
     Test that a statically defined volume can be created, mounted, unmounted,
     and deleted properly on the Kubernetes cluster.
+
+    Fixtures are torn down here in reverse order that they are specified as a
+    parameter. Take caution when reordering test fixtures.
     """
     for _, client in clients.iteritems():
         break
+
     pod_name = 'flexvolume-mount-test'
-    volume_size = 3 * Gi
-    options = {
-        'size': size_to_string(volume_size),
-        'numberOfReplicas': '2',
-        'staleReplicaTimeout': '20',
-        'fromBackup': ''
-    }
-    volume = create_flexvolume_spec(volume_name, options)
-    create_and_wait_pod(core_api, pod_name, volume)
+    pod['metadata']['name'] = pod_name
+    pod['spec']['containers'][0]['volumeMounts'][0]['name'] = \
+        flexvolume['name']
+    pod['spec']['volumes'] = [
+        flexvolume
+    ]
+    volume_size = DEFAULT_VOLUME_SIZE * Gi
+
+    create_and_wait_pod(core_api, pod)
 
     volumes = client.list_volume()
     assert len(volumes) == 1
-    assert volumes[0]["name"] == volume["name"]
+    assert volumes[0]["name"] == flexvolume['name']
     assert volumes[0]["size"] == str(volume_size)
     assert volumes[0]["numberOfReplicas"] == int(
-        volume["flexVolume"]["options"]["numberOfReplicas"])
+        flexvolume["flexVolume"]["options"]["numberOfReplicas"])
     assert volumes[0]["state"] == "attached"
-
-    delete_and_wait_pod(core_api, pod_name)
-    delete_and_wait_longhorn(client, volume['name'])
 
 
 @pytest.mark.flexvolume  # NOQA
-def test_flexvolume_io(clients, core_api, volume_name):  # NOQA
+def test_flexvolume_io(clients, core_api, flexvolume, pod):  # NOQA
     """
     Test that input and output on a statically defined volume works as
     expected.
+
+    Fixtures are torn down here in reverse order that they are specified as a
+    parameter. Take caution when reordering test fixtures.
     """
     for _, client in clients.iteritems():
         break
+
     pod_name = 'flexvolume-io-test'
-    volume_size = 3 * Gi
-    options = {
-        'size': size_to_string(volume_size),
-        'numberOfReplicas': '2',
-        'staleReplicaTimeout': '20',
-        'fromBackup': ''
-    }
-    volume = create_flexvolume_spec(volume_name, options)
-
-    create_and_wait_pod(core_api, pod_name, volume)
-
+    pod['metadata']['name'] = pod_name
+    pod['spec']['containers'][0]['volumeMounts'][0]['name'] = \
+        flexvolume['name']
+    pod['spec']['volumes'] = [
+        flexvolume
+    ]
     test_data = generate_random_data(VOLUME_RWTEST_SIZE)
-    write_volume_data(core_api, pod_name, test_data)
+
+    create_and_wait_pod(core_api, pod)
+
+    common.write_volume_data(core_api, pod_name, test_data)
     delete_and_wait_pod(core_api, pod_name)
-    common.wait_for_volume_detached(client, volume["name"])
+    wait_for_volume_detached(client, flexvolume["name"])
 
     pod_name = 'volume-driver-io-test-2'
-    create_and_wait_pod(core_api, pod_name, volume)
+    pod['metadata']['name'] = pod_name
+    create_and_wait_pod(core_api, pod)
 
     resp = read_volume_data(core_api, pod_name)
 
     assert resp == test_data
-    delete_and_wait_pod(core_api, pod_name)
-    delete_and_wait_longhorn(client, volume['name'])
