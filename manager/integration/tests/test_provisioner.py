@@ -5,10 +5,8 @@ from common import clients, core_api, pod, pvc, storage_class  # NOQA
 from common import DEFAULT_VOLUME_SIZE, Gi, VOLUME_RWTEST_SIZE
 from common import create_and_wait_pod, create_pvc_spec, delete_and_wait_pod
 from common import generate_random_data, get_storage_api_client
-from common import read_volume_data, size_to_string, write_volume_data
-
-DEFAULT_POD_INTERVAL = 1
-DEFAULT_POD_TIMEOUT = 180
+from common import get_volume_name, read_volume_data, size_to_string
+from common import write_volume_data
 
 DEFAULT_STORAGECLASS_NAME = "longhorn-provisioner"
 
@@ -24,16 +22,6 @@ def create_storage(api, sc_manifest, pvc_manifest):
     api.create_namespaced_persistent_volume_claim(
         body=pvc_manifest,
         namespace='default')
-
-
-def get_volume_name(api, pvc_name):
-    # type: (dict) -> str
-    """
-    Given a PersistentVolumeClaim, return the name of the associated volume.
-    """
-    claim = api.read_namespaced_persistent_volume_claim(
-        name=pvc_name, namespace='default')
-    return claim.spec.volume_name
 
 
 def test_provisioner_mount(clients, core_api, storage_class, pvc, pod):  # NOQA
