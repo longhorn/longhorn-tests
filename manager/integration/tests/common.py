@@ -52,19 +52,25 @@ DEFAULT_VOLUME_SIZE = 3  # In Gi
 Gi = (1 * 1024 * 1024 * 1024)
 
 
-def get_core_api_client():
+def load_k8s_config():
     c = Configuration()
     c.assert_hostname = False
     Configuration.set_default(c)
     k8sconfig.load_incluster_config()
+
+
+def get_apps_api_client():
+    load_k8s_config()
+    return k8sclient.AppsV1Api()
+
+
+def get_core_api_client():
+    load_k8s_config()
     return k8sclient.CoreV1Api()
 
 
 def get_storage_api_client():
-    c = Configuration()
-    c.assert_hostname = False
-    Configuration.set_default(c)
-    k8sconfig.load_incluster_config()
+    load_k8s_config()
     return k8sclient.StorageV1Api()
 
 
@@ -154,6 +160,21 @@ def get_volume_name(api, pvc_name):
     claim = api.read_namespaced_persistent_volume_claim(
         name=pvc_name, namespace='default')
     return claim.spec.volume_name
+
+
+def get_statefulset_pod_info(api, s_set):
+    pod_info = []
+    for i in range(s_set['spec']['replicas']):
+        pod_name = s_set['metadata']['name'] + '-' + str(i)
+        pod = api.read_namespaced_pod(name=pod_name, namespace='default')
+        pvc_name = pod.spec.volumes[0].persistent_volume_claim.claim_name
+        pv_name = get_volume_name(api, pvc_name)
+        pod_info.append({
+            'pod_name': pod_name,
+            'pv_name': pv_name,
+            'pvc_name': pvc_name,
+        })
+    return pod_info
 
 
 def delete_and_wait_longhorn(client, name):
@@ -381,6 +402,102 @@ def pvc(request):
     request.addfinalizer(finalizer)
 
     return pvc_manifest
+
+
+@pytest.fixture
+def statefulset(request):
+    statefulset_manifest = {
+        'apiVersion': 'apps/v1',
+        'kind': 'StatefulSet',
+        'metadata': {
+            'name': 'test-statefulset'
+        },
+        'spec': {
+            'selector': {
+                'matchLabels': {
+                    'app': 'test-statefulset'
+                }
+            },
+            'serviceName': 'test-statefulset',
+            'replicas': 2,
+            'template': {
+                'metadata': {
+                    'labels': {
+                        'app': 'test-statefulset'
+                    }
+                },
+                'spec': {
+                    'terminationGracePeriodSeconds': 10,
+                    'containers': [{
+                        'image': 'busybox',
+                        'imagePullPolicy': 'IfNotPresent',
+                        'name': 'sleep',
+                        'args': [
+                            '/bin/sh',
+                            '-c',
+                            'while true;do date;sleep 5; done'
+                        ],
+                        'volumeMounts': [{
+                            'name': 'pod-data',
+                            'mountPath': '/data'
+                        }]
+                    }]
+                }
+            },
+            'volumeClaimTemplates': [{
+                'metadata': {
+                    'name': 'pod-data'
+                },
+                'spec': {
+                    'accessModes': [
+                        'ReadWriteOnce'
+                    ],
+                    'storageClassName': DEFAULT_STORAGECLASS_NAME,
+                    'resources': {
+                        'requests': {
+                            'storage': size_to_string(
+                                           DEFAULT_VOLUME_SIZE * Gi)
+                        }
+                    }
+                }
+            }]
+        }
+    }
+
+    def finalizer():
+        api = get_core_api_client()
+        pod_data = get_statefulset_pod_info(api, statefulset_manifest)
+
+        apps_api = get_apps_api_client()
+        apps_api.delete_namespaced_stateful_set(
+            name=statefulset_manifest['metadata']['name'],
+            namespace='default', body=k8sclient.V1DeleteOptions())
+
+        for i in range(DEFAULT_POD_TIMEOUT):
+            ret = apps_api.list_namespaced_stateful_set(namespace='default')
+            found = False
+            for item in ret.items:
+                if item.metadata.name == \
+                  statefulset_manifest['metadata']['name']:
+                    found = True
+                    break
+            if not found:
+                break
+            time.sleep(DEFAULT_POD_INTERVAL)
+        assert not found
+
+        # We need to generate the names for the PVCs on our own so we can
+        # delete them.
+        client = get_longhorn_api_client()
+        for pod in pod_data:
+            api.delete_namespaced_persistent_volume_claim(
+                name=pod['pvc_name'], namespace='default',
+                body=k8sclient.V1DeleteOptions())
+            wait_for_volume_delete(client, pod['pv_name'])
+
+    request.addfinalizer(finalizer)
+
+    return statefulset_manifest
 
 
 @pytest.fixture
