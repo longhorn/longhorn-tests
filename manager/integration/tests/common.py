@@ -146,6 +146,16 @@ def delete_and_wait_pod(api, pod_name):
     assert not found
 
 
+def get_volume_name(api, pvc_name):
+    # type: (dict) -> str
+    """
+    Given a PersistentVolumeClaim, return the name of the associated PV.
+    """
+    claim = api.read_namespaced_persistent_volume_claim(
+        name=pvc_name, namespace='default')
+    return claim.spec.volume_name
+
+
 def delete_and_wait_longhorn(client, name):
     """
     Delete a volume from Longhorn.
