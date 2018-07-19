@@ -528,6 +528,25 @@ def storage_class(request):
 
 
 @pytest.fixture
+def client(request):
+    """
+    Return an individual Longhorn API client for testing.
+    """
+    k8sconfig.load_incluster_config()
+    # Make sure nodes and managers are all online.
+    ips = get_mgr_ips()
+    client = get_client(ips[0] + PORT)
+    hosts = client.list_node()
+    assert len(hosts) == len(ips)
+
+    request.addfinalizer(lambda: cleanup_client(client))
+
+    cleanup_client(client)
+
+    return client
+
+
+@pytest.fixture
 def clients(request):
     k8sconfig.load_incluster_config()
     ips = get_mgr_ips()
@@ -535,13 +554,20 @@ def clients(request):
     hosts = client.list_node()
     assert len(hosts) == len(ips)
     clis = get_clients(hosts)
-    request.addfinalizer(lambda: cleanup_clients(clis))
-    cleanup_clients(clis)
+
+    def finalizer():
+        client = clis.itervalues().next()
+        cleanup_client(client)
+
+    request.addfinalizer(finalizer)
+
+    client = clis.itervalues().next()
+    cleanup_client(client)
+
     return clis
 
 
-def cleanup_clients(clis):
-    client = clis.itervalues().next()
+def cleanup_client(client):
     volumes = client.list_volume()
     for v in volumes:
         # ignore the error when clean up
