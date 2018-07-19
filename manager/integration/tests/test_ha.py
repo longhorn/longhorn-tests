@@ -1,17 +1,15 @@
 import common
 import time
 
-from common import clients, volume_name  # NOQA
+from common import client, volume_name  # NOQA
 from common import SIZE, DEV_PATH
 from common import check_data, get_self_host_id
 from common import write_random_data
 from common import RETRY_COUNTS, RETRY_ITERVAL
 
 
-def test_ha_simple_recovery(clients, volume_name):  # NOQA
+def test_ha_simple_recovery(client, volume_name):  # NOQA
     # get a random client
-    for _, client in clients.iteritems():
-        break
 
     volume = client.create_volume(name=volume_name, size=SIZE,
                                   numberOfReplicas=2)
@@ -80,10 +78,8 @@ def test_ha_simple_recovery(clients, volume_name):  # NOQA
     assert len(volumes) == 0
 
 
-def test_ha_salvage(clients, volume_name):  # NOQA
+def test_ha_salvage(client, volume_name):  # NOQA
     # get a random client
-    for _, client in clients.iteritems():
-        break
 
     volume = client.create_volume(name=volume_name, size=SIZE,
                                   numberOfReplicas=2)

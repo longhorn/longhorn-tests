@@ -1,7 +1,7 @@
 #!/usr/sbin/python
 import common
 
-from common import clients, core_api, pod, pvc, storage_class  # NOQA
+from common import client, core_api, pod, pvc, storage_class  # NOQA
 from common import DEFAULT_VOLUME_SIZE, Gi, VOLUME_RWTEST_SIZE
 from common import create_and_wait_pod, create_pvc_spec, delete_and_wait_pod
 from common import generate_random_data, get_storage_api_client
@@ -24,7 +24,7 @@ def create_storage(api, sc_manifest, pvc_manifest):
         namespace='default')
 
 
-def test_provisioner_mount(clients, core_api, storage_class, pvc, pod):  # NOQA
+def test_provisioner_mount(client, core_api, storage_class, pvc, pod):  # NOQA
     """
     Test that a StorageClass provisioned volume can be created, mounted,
     unmounted, and deleted properly on the Kubernetes cluster.
@@ -32,8 +32,6 @@ def test_provisioner_mount(clients, core_api, storage_class, pvc, pod):  # NOQA
     Fixtures are torn down here in reverse order that they are specified as a
     parameter. Take caution when reordering test fixtures.
     """
-    for _, client in clients.iteritems():
-        break
 
     # Prepare pod and volume specs.
     pod_name = 'provisioner-mount-test'
@@ -59,7 +57,7 @@ def test_provisioner_mount(clients, core_api, storage_class, pvc, pod):  # NOQA
     assert volumes[0]["state"] == "attached"
 
 
-def test_provisioner_params(clients, core_api, storage_class, pvc, pod):  # NOQA
+def test_provisioner_params(client, core_api, storage_class, pvc, pod):  # NOQA
     """
     Test that substituting different StorageClass parameters is reflected in
     the resulting PersistentVolumeClaim.
@@ -67,8 +65,6 @@ def test_provisioner_params(clients, core_api, storage_class, pvc, pod):  # NOQA
     Fixtures are torn down here in reverse order that they are specified as a
     parameter. Take caution when reordering test fixtures.
     """
-    for _, client in clients.iteritems():
-        break
 
     # Prepare pod and volume specs.
     pod_name = 'provisioner-params-test'
@@ -100,7 +96,7 @@ def test_provisioner_params(clients, core_api, storage_class, pvc, pod):  # NOQA
     assert volumes[0]["state"] == "attached"
 
 
-def test_provisioner_io(clients, core_api, storage_class, pvc, pod):  # NOQA
+def test_provisioner_io(client, core_api, storage_class, pvc, pod):  # NOQA
     """
     Test that input and output on a StorageClass provisioned
     PersistentVolumeClaim works as expected.
@@ -108,8 +104,6 @@ def test_provisioner_io(clients, core_api, storage_class, pvc, pod):  # NOQA
     Fixtures are torn down here in reverse order that they are specified as a
     parameter. Take caution when reordering test fixtures.
     """
-    for _, client in clients.iteritems():
-        break
 
     # Prepare pod and volume specs.
     pod_name = 'provisioner-io-test'

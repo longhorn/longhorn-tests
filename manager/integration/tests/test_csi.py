@@ -2,21 +2,21 @@
 import pytest
 
 import common
-from common import clients, core_api, csi_pv, pod, pvc  # NOQA
+from common import client, core_api, csi_pv, pod, pvc  # NOQA
 from common import Gi, DEFAULT_VOLUME_SIZE, VOLUME_RWTEST_SIZE
 from common import create_and_wait_pod, create_pvc_spec, delete_and_wait_pod
 from common import generate_random_data, read_volume_data, write_volume_data
 
 
-def create_pv_storage(api, client, pv, claim):
+def create_pv_storage(api, cli, pv, claim):
     """
     Manually create a new PV and PVC for testing.
     """
-    client.create_volume(
+    cli.create_volume(
         name=pv['metadata']['name'], size=pv['spec']['capacity']['storage'],
         numberOfReplicas=int(pv['spec']['csi']['volumeAttributes']
                              ['numberOfReplicas']))
-    common.wait_for_volume_detached(client, pv['metadata']['name'])
+    common.wait_for_volume_detached(cli, pv['metadata']['name'])
 
     api.create_persistent_volume(pv)
     api.create_namespaced_persistent_volume_claim(
@@ -25,7 +25,7 @@ def create_pv_storage(api, client, pv, claim):
 
 
 @pytest.mark.csi  # NOQA
-def test_csi_mount(clients, core_api, csi_pv, pvc, pod): # NOQA
+def test_csi_mount(client, core_api, csi_pv, pvc, pod): # NOQA
     """
     Test that a statically defined CSI volume can be created, mounted,
     unmounted, and deleted properly on the Kubernetes cluster.
@@ -33,8 +33,6 @@ def test_csi_mount(clients, core_api, csi_pv, pvc, pod): # NOQA
     Fixtures are torn down here in reverse order that they are specified as a
     parameter. Take caution when reordering test fixtures.
     """
-    for _, client in clients.iteritems():
-        break
 
     pod_name = 'csi-mount-test'
     pod['metadata']['name'] = pod_name
@@ -57,7 +55,7 @@ def test_csi_mount(clients, core_api, csi_pv, pvc, pod): # NOQA
 
 
 @pytest.mark.csi  # NOQA
-def test_csi_io(clients, core_api, csi_pv, pvc, pod):  # NOQA
+def test_csi_io(client, core_api, csi_pv, pvc, pod):  # NOQA
     """
     Test that input and output on a statically defined CSI volume works as
     expected.
@@ -65,8 +63,6 @@ def test_csi_io(clients, core_api, csi_pv, pvc, pod):  # NOQA
     Fixtures are torn down here in reverse order that they are specified as a
     parameter. Take caution when reordering test fixtures.
     """
-    for _, client in clients.iteritems():
-        break
     pod_name = 'csi-io-test'
     pod['metadata']['name'] = pod_name
     pod['spec']['volumes'] = [

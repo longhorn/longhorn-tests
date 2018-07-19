@@ -1,7 +1,7 @@
 import pytest
 
 import common
-from common import clients, volume_name  # NOQA
+from common import client, volume_name  # NOQA
 from common import SIZE
 from common import check_data, get_self_host_id
 from common import wait_for_volume_current_image, wait_for_volume_delete
@@ -11,11 +11,7 @@ from common import write_random_data
 REPLICA_COUNT = 2
 
 
-def test_engine_image(clients, volume_name):  # NOQA
-    # get a random client
-    for _, client in clients.iteritems():
-        break
-
+def test_engine_image(client, volume_name):  # NOQA
     # can be leftover
     default_img = common.get_default_engine_image(client)
     default_img_name = default_img["name"]
@@ -74,11 +70,7 @@ def test_engine_image(clients, volume_name):  # NOQA
     client.delete(new_img)
 
 
-def test_engine_offline_upgrade(clients, volume_name):  # NOQA
-    # get a random client
-    for _, client in clients.iteritems():
-        break
-
+def test_engine_offline_upgrade(client, volume_name):  # NOQA
     default_img = common.get_default_engine_image(client)
     default_img_name = default_img["name"]
     default_img = wait_for_engine_image_ref_count(client, default_img_name, 0)
@@ -175,11 +167,7 @@ def test_engine_offline_upgrade(clients, volume_name):  # NOQA
     client.delete(new_img)
 
 
-def test_engine_live_upgrade(clients, volume_name):  # NOQA
-    # get a random client
-    for _, client in clients.iteritems():
-        break
-
+def test_engine_live_upgrade(client, volume_name):  # NOQA
     default_img = common.get_default_engine_image(client)
     default_img_name = default_img["name"]
     default_img = wait_for_engine_image_ref_count(client, default_img_name, 0)
@@ -299,11 +287,7 @@ def test_engine_live_upgrade(clients, volume_name):  # NOQA
     client.delete(new_img)
 
 
-def test_engine_image_incompatible(clients, volume_name):  # NOQA
-    # get a random client
-    for _, client in clients.iteritems():
-        break
-
+def test_engine_image_incompatible(client, volume_name):  # NOQA
     images = client.list_engine_image()
     assert len(images) == 1
     assert images[0]["default"]
@@ -341,11 +325,7 @@ def test_engine_image_incompatible(clients, volume_name):  # NOQA
     client.delete(img)
 
 
-def test_engine_live_upgrade_rollback(clients, volume_name):  # NOQA
-    # get a random client
-    for _, client in clients.iteritems():
-        break
-
+def test_engine_live_upgrade_rollback(client, volume_name):  # NOQA
     default_img = common.get_default_engine_image(client)
     default_img_name = default_img["name"]
     default_img = wait_for_engine_image_ref_count(client, default_img_name, 0)
