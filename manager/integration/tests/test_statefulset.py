@@ -4,7 +4,7 @@ import time
 
 from random import randrange
 
-from common import clients, core_api, statefulset, storage_class  # NOQA
+from common import client, core_api, statefulset, storage_class  # NOQA
 from common import DEFAULT_POD_INTERVAL, DEFAULT_POD_TIMEOUT
 from common import VOLUME_RWTEST_SIZE
 from common import generate_random_data, get_apps_api_client
@@ -66,13 +66,11 @@ def update_test_manifests(statefulset_manifest, sc_manifest, name):
     sc_manifest['metadata']['name'] = DEFAULT_STORAGECLASS_NAME
 
 
-def test_statefulset_mount(clients, core_api, storage_class, statefulset):  # NOQA
+def test_statefulset_mount(client, core_api, storage_class, statefulset):  # NOQA
     """
     Tests that volumes provisioned for a StatefulSet can be properly created,
     mounted, unmounted, and deleted on the Kubernetes cluster.
     """
-    for _, client in clients.iteritems():
-        break
 
     statefulset_name = 'statefulset-mount-test'
     update_test_manifests(statefulset, storage_class, statefulset_name)
@@ -102,12 +100,10 @@ def test_statefulset_mount(clients, core_api, storage_class, statefulset):  # NO
     assert len(pod_info) == 0
 
 
-def test_statefulset_scaling(clients, core_api, storage_class, statefulset):  # NOQA
+def test_statefulset_scaling(client, core_api, storage_class, statefulset):  # NOQA
     """
     Test that scaling up a StatefulSet successfully provisions new volumes.
     """
-    for _, client in clients.iteritems():
-        break
 
     statefulset_name = 'statefulset-scaling-test'
     update_test_manifests(statefulset, storage_class, statefulset_name)
@@ -204,12 +200,10 @@ def test_statefulset_pod_deletion(core_api, storage_class, statefulset):  # NOQA
     assert resp == test_data
 
 
-def test_statefulset_backup(clients, core_api, storage_class, statefulset):  # NOQA
+def test_statefulset_backup(client, core_api, storage_class, statefulset):  # NOQA
     """
     Test that backups on StatefulSet volumes work properly.
     """
-    for _, client in clients.iteritems():
-        break
 
     statefulset_name = 'statefulset-backup-test'
     update_test_manifests(statefulset, storage_class, statefulset_name)
@@ -269,13 +263,11 @@ def test_statefulset_backup(clients, core_api, storage_class, statefulset):  # N
 
 
 @pytest.mark.recurring_job  # NOQA
-def test_statefulset_recurring_backup(clients, core_api, storage_class,  # NOQA
+def test_statefulset_recurring_backup(client, core_api, storage_class,  # NOQA
                                       statefulset):  # NOQA
     """
     Test that recurring backups on StatefulSets work properly.
     """
-    for _, client in clients.iteritems():
-        break
 
     statefulset_name = 'statefulset-backup-test'
     update_test_manifests(statefulset, storage_class, statefulset_name)
