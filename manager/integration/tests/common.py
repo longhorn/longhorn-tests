@@ -3,6 +3,8 @@ import os
 import stat
 import random
 import string
+import subprocess
+import json
 
 import pytest
 
@@ -50,6 +52,15 @@ DEFAULT_POD_TIMEOUT = 180
 DEFAULT_VOLUME_SIZE = 3  # In Gi
 
 Gi = (1 * 1024 * 1024 * 1024)
+
+DIRECTORY_PATH = '/tmp/longhorn-test/'
+
+VOLUME_CONDITION_SCHEDULED = "scheduled"
+VOLUME_CONDITION_STATUS = "status"
+
+CONDITION_STATUS_TRUE = "True"
+CONDITION_STATUS_FALSE = "False"
+CONDITION_STATUS_UNKNOWN = "Unknown"
 
 
 def load_k8s_config():
@@ -584,6 +595,14 @@ def cleanup_client(client):
             except Exception:
                 pass
 
+    # cleanup multiple disks
+    del_dirs = os.listdir(DIRECTORY_PATH)
+    for del_dir in del_dirs:
+        try:
+            cleanup_host_disk(del_dir)
+        except Exception:
+            pass
+
 
 def get_client(address):
     url = 'http://' + address + '/v1/schemas'
@@ -960,3 +979,89 @@ def get_upgrade_test_image(cli_v, cli_minv,
                                      cli_v, cli_minv,
                                      ctl_v, ctl_minv,
                                      data_v, data_minv)
+
+
+def prepare_host_disk(dev, vol_name):
+    cmd = ['mkfs.ext4', dev]
+    subprocess.check_call(cmd)
+
+    mount_path = os.path.join(DIRECTORY_PATH, vol_name)
+    # create directory before mount
+    cmd = ['mkdir', '-p', mount_path]
+    subprocess.check_call(cmd)
+
+    cmd = ['mount', dev, mount_path]
+    subprocess.check_call(cmd)
+    return mount_path
+
+
+def cleanup_host_disk(vol_name):
+    mount_path = os.path.join(DIRECTORY_PATH, vol_name)
+    cmd = ['umount', mount_path]
+    subprocess.check_call(cmd)
+
+    cmd = ['rm', '-r', mount_path]
+    subprocess.check_call(cmd)
+
+
+def wait_for_volume_condition_scheduled(client, name, key, value):
+    wait_for_volume_creation(client, name)
+    for i in range(RETRY_COUNTS):
+        volume = client.by_id_volume(name)
+        conditions = volume["conditions"]
+        if conditions is not None and \
+                conditions != {} and \
+                conditions[VOLUME_CONDITION_SCHEDULED] and \
+                conditions[VOLUME_CONDITION_SCHEDULED][key] and \
+                conditions[VOLUME_CONDITION_SCHEDULED][key] == value:
+            break
+        time.sleep(RETRY_ITERVAL)
+    conditions = volume["conditions"]
+    assert conditions[VOLUME_CONDITION_SCHEDULED][key] == value
+    return volume
+
+
+def get_host_disk_size(disk):
+    cmd = ['stat', '-fc',
+           '{"path":"%n","fsid":"%i","type":"%T","freeBlock":%f,'
+           '"totalBlock":%b,"blockSize":%S}',
+           disk]
+    output = subprocess.check_output(cmd)
+    disk_info = json.loads(output)
+    block_size = disk_info["blockSize"]
+    free_blk = disk_info["freeBlock"]
+    total_blk = disk_info["totalBlock"]
+    free = (free_blk * block_size)
+    total = (total_blk * block_size)
+    return free, total
+
+
+def wait_for_disk_status(client, name, fsid, key, value):
+    for i in range(RETRY_COUNTS):
+        node = client.by_id_node(name)
+        disks = node["disks"]
+        disk = disks[fsid]
+        if str(disk[key]) == str(value):
+            break
+        time.sleep(RETRY_ITERVAL)
+    return node
+
+
+def wait_for_node_update(client, name, key, value):
+    for i in range(RETRY_COUNTS):
+        node = client.by_id_node(name)
+        if str(node[key]) == str(value):
+            break
+        time.sleep(RETRY_ITERVAL)
+    assert str(node[key]) == str(value)
+    return node
+
+
+def wait_for_disk_update(client, name, disk_num):
+    for i in range(RETRY_COUNTS):
+        node = client.by_id_node(name)
+        if len(node["disks"]) == disk_num:
+            break
+        time.sleep(RETRY_ITERVAL)
+    assert len(node["disks"]) == disk_num
+    return node

@@ -60,6 +60,9 @@ spec:
       mountPath: /dev
     - name: proc
       mountPath: /host/proc
+    - name: disk-directory
+      mountPath: /tmp/longhorn-test
+      mountPropagation: Bidirectional
   volumes:
   - name: dev
     hostPath:
@@ -67,5 +70,8 @@ spec:
   - name: proc
     hostPath:
       path: /proc/
+  - name: disk-directory
+    hostPath:
+      path: /tmp/longhorn-test/
   restartPolicy: Never
   serviceAccountName: longhorn-test-service-account
