@@ -7,6 +7,7 @@ from kubernetes.client.rest import ApiException
 ENABLE_RECURRING_JOB_OPT = "--enable-recurring-job-test"
 ENABLE_FLEXVOLUME_OPT = "--enable-flexvolume-test"
 ENABLE_CSI_OPT = "--enable-csi-test"
+ENABLE_NODE_OPT = "--enable-node-test"
 
 
 def pytest_addoption(parser):
@@ -16,6 +17,9 @@ def pytest_addoption(parser):
     parser.addoption(ENABLE_FLEXVOLUME_OPT, action="store_true",
                      default=False,
                      help="enable Flexvolume test or not")
+    parser.addoption(ENABLE_NODE_OPT, action="store_true",
+                     default=False,
+                     help="enable node test or not")
 
 
 def pytest_collection_modifyitems(config, items):
@@ -26,6 +30,13 @@ def pytest_collection_modifyitems(config, items):
         for item in items:
             if "recurring_job" in item.keywords:
                 item.add_marker(skip_upgrade)
+    if not config.getoption(ENABLE_NODE_OPT):
+        skip_node = pytest.mark.skip(reason="need " +
+                                     ENABLE_NODE_OPT +
+                                     " option to run")
+        for item in items:
+            if "node" in item.keywords:
+                item.add_marker(skip_node)
 
     c = Configuration()
     c.assert_hostname = False
