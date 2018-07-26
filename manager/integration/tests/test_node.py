@@ -37,6 +37,7 @@ def get_update_disks(disks):
     return update_disk
 
 
+@pytest.mark.node  # NOQA
 def test_node(client):  # NOQA
     # test node update
     nodes = client.list_node()
@@ -182,6 +183,7 @@ def cleanup_volume(client, vol_name):  # NOQA
     common.wait_for_volume_delete(client, vol_name)
 
 
+@pytest.mark.node  # NOQA
 def test_replica_scheduler(client):  # NOQA
     nodes = client.list_node()
     # delete all disks on each node
@@ -336,6 +338,7 @@ def test_replica_scheduler(client):  # NOQA
     cleanup_host_disk(client, 'vol-small')
 
 
+@pytest.mark.node  # NOQA
 def test_node_controller(client):  # NOQA
     lht_hostId = get_self_host_id()
     nodes = client.list_node()
