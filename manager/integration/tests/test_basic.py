@@ -52,7 +52,7 @@ def test_hosts_and_settings(clients):  # NOQA
 
     for name in setting_names:
         assert settingMap[name] is not None
-        assert settingMap[name]["description"] is not None
+        assert settingMap[name]["definition"]["description"] is not None
 
     for name in setting_names:
         setting = client.by_id_setting(name)
