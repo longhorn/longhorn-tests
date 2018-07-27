@@ -64,6 +64,11 @@ CONDITION_STATUS_TRUE = "True"
 CONDITION_STATUS_FALSE = "False"
 CONDITION_STATUS_UNKNOWN = "Unknown"
 
+SETTING_STORAGE_OVER_PROVISIONING_PERCENTAGE = \
+    "storage-over-provisioning-percentage"
+SETTING_STORAGE_MINIMAL_AVAILABLE_PERCENTAGE = \
+    "storage-minimal-available-percentage"
+
 
 def load_k8s_config():
     c = Configuration()
