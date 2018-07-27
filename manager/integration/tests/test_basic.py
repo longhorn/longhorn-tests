@@ -13,6 +13,8 @@ from common import wait_for_snapshot_purge
 from common import generate_volume_name
 from common import generate_random_data
 from common import generate_random_pos
+from common import SETTING_STORAGE_OVER_PROVISIONING_PERCENTAGE, \
+    SETTING_STORAGE_MINIMAL_AVAILABLE_PERCENTAGE
 
 SETTING_BACKUP_TARGET = "backup-target"
 SETTING_BACKUP_TARGET_CREDENTIAL_SECRET = "backup-target-credential-secret"
@@ -40,7 +42,9 @@ def test_hosts_and_settings(clients):  # NOQA
     client = clients[host_id[0]]
 
     setting_names = [SETTING_BACKUP_TARGET,
-                     SETTING_BACKUP_TARGET_CREDENTIAL_SECRET]
+                     SETTING_BACKUP_TARGET_CREDENTIAL_SECRET,
+                     SETTING_STORAGE_OVER_PROVISIONING_PERCENTAGE,
+                     SETTING_STORAGE_MINIMAL_AVAILABLE_PERCENTAGE]
     settings = client.list_setting()
     # Skip DefaultEngineImage option
     # since they have side affect
