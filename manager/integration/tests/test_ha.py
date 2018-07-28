@@ -34,7 +34,7 @@ def test_ha_simple_recovery(client, volume_name):  # NOQA
     replica1 = volume["replicas"][1]
     assert replica1["name"] != ""
 
-    data = write_random_data(volume["endpoint"])
+    data = write_random_data(volume)
 
     volume = volume.replicaRemove(name=replica0["name"])
 
@@ -66,7 +66,7 @@ def test_ha_simple_recovery(client, volume_name):  # NOQA
             break
     assert found
 
-    check_data(volume['endpoint'], data)
+    check_data(volume, data)
 
     volume = volume.detach()
     volume = common.wait_for_volume_detached(client, volume_name)
@@ -98,7 +98,7 @@ def test_ha_salvage(client, volume_name):  # NOQA
     replica0_name = volume["replicas"][0]["name"]
     replica1_name = volume["replicas"][1]["name"]
 
-    data = write_random_data(volume["endpoint"])
+    data = write_random_data(volume)
 
     common.k8s_delete_replica_pods_for_volume(volume_name)
 
@@ -117,7 +117,7 @@ def test_ha_salvage(client, volume_name):  # NOQA
     volume = volume.attach(hostId=host_id)
     volume = common.wait_for_volume_healthy(client, volume_name)
 
-    check_data(volume["endpoint"], data)
+    check_data(volume, data)
 
     volume = volume.detach()
     volume = common.wait_for_volume_detached(client, volume_name)

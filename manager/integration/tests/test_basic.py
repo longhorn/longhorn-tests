@@ -78,8 +78,8 @@ def volume_rw_test(dev):
     w_data = generate_random_data(VOLUME_RWTEST_SIZE)
     l_data = len(w_data)
     spos_data = generate_random_pos(VOLUME_RWTEST_SIZE)
-    volume_write(dev, spos_data, w_data)
-    r_data = volume_read(dev, spos_data, l_data)
+    common.dev_write(dev, spos_data, w_data)
+    r_data = common.dev_read(dev, spos_data, l_data)
     assert r_data == w_data
 
 
@@ -250,12 +250,12 @@ def snapshot_test(client, volname):
 
     snap2_pos = generate_random_pos(vol_rwsize, positions)
     snap2_wdata = generate_random_data(vol_rwsize)
-    volume_write(volume["endpoint"], snap2_pos, snap2_wdata)
+    volume_write(volume, snap2_pos, snap2_wdata)
     snap2 = volume.snapshotCreate()
 
     snap3_pos = generate_random_pos(vol_rwsize, positions)
     snap3_wdata = generate_random_data(vol_rwsize)
-    volume_write(volume["endpoint"], snap3_pos, snap3_wdata)
+    volume_write(volume, snap3_pos, snap3_wdata)
     snap3 = volume.snapshotCreate()
 
     snapshots = volume.snapshotList()
@@ -273,7 +273,7 @@ def snapshot_test(client, volname):
     assert snapMap[snap3["name"]]["removed"] is False
 
     volume.snapshotDelete(name=snap3["name"])
-    snap3_rdata = volume_read(volume["endpoint"], snap3_pos,
+    snap3_rdata = volume_read(volume, snap3_pos,
                               len(snap3_wdata))
     assert snap3_rdata == snap3_wdata
 
@@ -303,7 +303,7 @@ def snapshot_test(client, volname):
     assert snap["removed"] is True
 
     volume.snapshotRevert(name=snap2["name"])
-    snap2_rdata = volume_read(volume["endpoint"], snap2_pos,
+    snap2_rdata = volume_read(volume, snap2_pos,
                               len(snap2_wdata))
     assert snap2_rdata == snap2_wdata
 
@@ -342,7 +342,7 @@ def snapshot_test(client, volname):
     assert snapMap[snap2["name"]]["parent"] == ""
     assert "volume-head" in snapMap[snap2["name"]]["children"]
     assert snapMap[snap2["name"]]["removed"] is True
-    snap2_rdata = volume_read(volume["endpoint"], snap2_pos,
+    snap2_rdata = volume_read(volume, snap2_pos,
                               len(snap2_wdata))
     assert snap2_rdata == snap2_wdata
 
@@ -401,7 +401,7 @@ def backup_test(client, host_id, volname):
     volume.snapshotCreate()
     w_data = generate_random_data(VOLUME_RWTEST_SIZE)
     start_pos = generate_random_pos(VOLUME_RWTEST_SIZE)
-    l_data = volume_write(volume["endpoint"], start_pos, w_data)
+    l_data = volume_write(volume, start_pos, w_data)
     snap2 = volume.snapshotCreate()
     volume.snapshotCreate()
 
@@ -453,7 +453,7 @@ def backup_test(client, host_id, volname):
     assert volume["state"] == "detached"
     volume = volume.attach(hostId=host_id)
     volume = common.wait_for_volume_healthy(client, restoreName)
-    r_data = volume_read(volume["endpoint"], start_pos, l_data)
+    r_data = volume_read(volume, start_pos, l_data)
     assert r_data == w_data
     volume = volume.detach()
     volume = common.wait_for_volume_detached(client, restoreName)

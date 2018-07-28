@@ -883,21 +883,21 @@ def generate_random_data(count):
                    for _ in range(count))
 
 
-def check_data(dev, data):
+def check_data(v, data):
     """
     Checks if the data written on the block device matches the inputted data.
     """
-    resp = volume_read(dev, data['pos'], data['len'])
+    resp = volume_read(v, data['pos'], data['len'])
     assert resp == data['content']
 
 
-def write_random_data(dev):
+def write_random_data(v):
     """
     Generate random data and write it to the specified block device.
     """
     data = generate_random_data(VOLUME_RWTEST_SIZE)
     data_pos = generate_random_pos(VOLUME_RWTEST_SIZE)
-    data_len = volume_write(dev, data_pos, data)
+    data_len = volume_write(v, data_pos, data)
 
     return {
         'content': data,
@@ -906,7 +906,12 @@ def write_random_data(dev):
     }
 
 
-def volume_read(dev, start, count):
+def volume_read(v, start, count):
+    dev = v["endpoint"]
+    return dev_read(dev, start, count)
+
+
+def dev_read(dev, start, count):
     r_data = ""
     fdev = open(dev, 'rb')
     if fdev is not None:
@@ -916,7 +921,12 @@ def volume_read(dev, start, count):
     return r_data
 
 
-def volume_write(dev, start, data):
+def volume_write(v, start, data):
+    dev = v["endpoint"]
+    return dev_write(dev, start, data)
+
+
+def dev_write(dev, start, data):
     w_length = 0
     fdev = open(dev, 'rb+')
     if fdev is not None:
