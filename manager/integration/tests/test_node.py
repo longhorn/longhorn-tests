@@ -8,6 +8,7 @@ from common import Gi, SIZE, CONDITION_STATUS_FALSE, CONDITION_STATUS_TRUE
 from common import get_self_host_id
 from common import SETTING_STORAGE_OVER_PROVISIONING_PERCENTAGE, \
     SETTING_STORAGE_MINIMAL_AVAILABLE_PERCENTAGE
+from common import get_volume_endpoint
 
 SMALL_DISK_SIZE = (1 * 1024 * 1024)
 DEFAULT_DISK_PATH = '/var/lib/rancher/longhorn/'
@@ -23,7 +24,8 @@ def create_host_disk(client, vol_name, size, node_id):  # NOQA
     volume = create_volume(client, vol_name, size, node_id, 1)
 
     # prepare the disk in the host filesystem
-    disk_path = common.prepare_host_disk(volume["endpoint"], volume["name"])
+    disk_path = common.prepare_host_disk(get_volume_endpoint(volume),
+                                         volume["name"])
     return disk_path
 
 
