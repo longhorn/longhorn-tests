@@ -24,6 +24,7 @@ def create_pv_storage(api, cli, pv, claim):
         namespace='default')
 
 
+@pytest.mark.coretest   # NOQA
 @pytest.mark.csi  # NOQA
 def test_csi_mount(client, core_api, csi_pv, pvc, pod): # NOQA
     """

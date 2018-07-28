@@ -19,6 +19,7 @@ from common import SETTING_STORAGE_OVER_PROVISIONING_PERCENTAGE, \
 SETTING_BACKUP_TARGET = "backup-target"
 SETTING_BACKUP_TARGET_CREDENTIAL_SECRET = "backup-target-credential-secret"
 
+@pytest.mark.coretest   # NOQA
 def test_hosts_and_settings(clients):  # NOQA
     hosts = clients.itervalues().next().list_node()
     for host in hosts:
@@ -83,6 +84,7 @@ def volume_rw_test(dev):
     assert r_data == w_data
 
 
+@pytest.mark.coretest   # NOQA
 def test_volume_basic(clients, volume_name):  # NOQA
     # get a random client
     for host_id, client in clients.iteritems():
@@ -213,6 +215,7 @@ def test_volume_iscsi_basic(clients, volume_name):  # NOQA
     assert len(volumes) == 0
 
 
+@pytest.mark.coretest   # NOQA
 def test_snapshot(clients, volume_name):  # NOQA
     for host_id, client in clients.iteritems():
         break
@@ -347,6 +350,7 @@ def snapshot_test(client, volname):
     assert snap2_rdata == snap2_wdata
 
 
+@pytest.mark.coretest   # NOQA
 def test_backup(clients, volume_name):  # NOQA
     for host_id, client in clients.iteritems():
         break
@@ -478,6 +482,7 @@ def get_random_client(clients): # NOQA
     return client
 
 
+@pytest.mark.coretest   # NOQA
 def test_volume_multinode(clients, volume_name):  # NOQA
     hosts = clients.keys()
 

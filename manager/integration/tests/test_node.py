@@ -189,6 +189,7 @@ def cleanup_volume(client, vol_name):  # NOQA
     common.wait_for_volume_delete(client, vol_name)
 
 
+@pytest.mark.coretest   # NOQA
 @pytest.mark.node  # NOQA
 def test_replica_scheduler(client):  # NOQA
     nodes = client.list_node()

@@ -70,6 +70,7 @@ def test_engine_image(client, volume_name):  # NOQA
     client.delete(new_img)
 
 
+@pytest.mark.coretest   # NOQA
 def test_engine_offline_upgrade(client, volume_name):  # NOQA
     default_img = common.get_default_engine_image(client)
     default_img_name = default_img["name"]
@@ -167,6 +168,7 @@ def test_engine_offline_upgrade(client, volume_name):  # NOQA
     client.delete(new_img)
 
 
+@pytest.mark.coretest   # NOQA
 def test_engine_live_upgrade(client, volume_name):  # NOQA
     default_img = common.get_default_engine_image(client)
     default_img_name = default_img["name"]
