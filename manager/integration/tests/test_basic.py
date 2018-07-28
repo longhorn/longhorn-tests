@@ -17,6 +17,7 @@ from common import SETTING_STORAGE_OVER_PROVISIONING_PERCENTAGE, \
     SETTING_STORAGE_MINIMAL_AVAILABLE_PERCENTAGE
 from common import get_volume_endpoint, get_volume_engine
 from common import get_random_client
+from common import CONDITION_STATUS_FALSE, CONDITION_STATUS_TRUE
 
 SETTING_BACKUP_TARGET = "backup-target"
 SETTING_BACKUP_TARGET_CREDENTIAL_SECRET = "backup-target-credential-secret"
@@ -508,3 +509,52 @@ def test_volume_multinode(clients, volume_name):  # NOQA
 
 def is_backupTarget_s3(s):
     return s.startswith("s3://")
+
+
+@pytest.mark.coretest  # NOQA
+def test_volume_scheduling_failure(clients, volume_name):  # NOQA
+    '''
+    Test fail to schedule by disable scheduling for all the nodes
+    Also test cannot attach a scheduling failed volume
+    '''
+    client = get_random_client(clients)
+    nodes = client.list_node()
+    assert len(nodes) > 0
+
+    for node in nodes:
+        node = client.update(node, allowScheduling=False)
+        node = common.wait_for_node_update(client, node["id"],
+                                           "allowScheduling", False)
+
+    volume = client.create_volume(name=volume_name, size=SIZE,
+                                  numberOfReplicas=3)
+
+    volume = common.wait_for_volume_condition_scheduled(client, volume_name,
+                                                        "status",
+                                                        CONDITION_STATUS_FALSE)
+    volume = common.wait_for_volume_detached(client, volume_name)
+    self_node = get_self_host_id()
+    with pytest.raises(Exception) as e:
+        volume.attach(hostId=self_node)
+    assert "not scheduled" in str(e.value)
+
+    for node in nodes:
+        node = client.update(node, allowScheduling=True)
+        node = common.wait_for_node_update(client, node["id"],
+                                           "allowScheduling", True)
+
+    volume = common.wait_for_volume_condition_scheduled(client, volume_name,
+                                                        "status",
+                                                        CONDITION_STATUS_TRUE)
+    volume = common.wait_for_volume_detached(client, volume_name)
+    volume = volume.attach(hostId=self_node)
+    volume = common.wait_for_volume_healthy(client, volume_name)
+    endpoint = get_volume_endpoint(volume)
+    assert endpoint != ""
+    volume_rw_test(endpoint)
+
+    volume = volume.detach()
+    volume = common.wait_for_volume_detached(client, volume_name)
+
+    client.delete(volume)
+    wait_for_volume_delete(client, volume_name)
