@@ -624,7 +624,8 @@ def cleanup_client(client):
         # ignore the error when clean up
         try:
             client.delete(v)
-        except Exception:
+        except Exception as e:
+            print "Exception when cleanup volume ", v, e
             pass
     images = client.list_engine_image()
     for img in images:
@@ -632,7 +633,8 @@ def cleanup_client(client):
             # ignore the error when clean up
             try:
                 client.delete(img)
-            except Exception:
+            except Exception as e:
+                print "Exception when cleanup image", img, e
                 pass
 
     # cleanup multiple disks
@@ -640,7 +642,19 @@ def cleanup_client(client):
     for del_dir in del_dirs:
         try:
             cleanup_host_disk(del_dir)
-        except Exception:
+        except Exception as e:
+            print "Exception when cleanup host disk", del_dir, e
+            pass
+
+    # enable nodes scheduling
+    nodes = client.list_node()
+    for node in nodes:
+        try:
+            node = client.update(node, allowScheduling=True)
+            wait_for_node_update(client, node["id"],
+                                 "allowScheduling", True)
+        except Exception as e:
+            print "Exception when reset node schedulding", node, e
             pass
 
 
