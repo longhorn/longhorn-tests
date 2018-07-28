@@ -42,6 +42,7 @@ spec:
   - name: longhorn-test-pod
     image: rancher/longhorn-manager-test:e006699
 #    args: ["-x", "-s",
+#           "-m", "coretest",
 #           "-k", "test_recurring_job",
 #           "--enable-recurring-job-test",
 #           ]

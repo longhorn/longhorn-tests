@@ -1,3 +1,4 @@
+import pytest
 import common
 import time
 
@@ -8,6 +9,7 @@ from common import write_random_data
 from common import RETRY_COUNTS, RETRY_ITERVAL
 
 
+@pytest.mark.coretest   # NOQA
 def test_ha_simple_recovery(client, volume_name):  # NOQA
     # get a random client
 
@@ -78,6 +80,7 @@ def test_ha_simple_recovery(client, volume_name):  # NOQA
     assert len(volumes) == 0
 
 
+@pytest.mark.coretest   # NOQA
 def test_ha_salvage(client, volume_name):  # NOQA
     # get a random client
 

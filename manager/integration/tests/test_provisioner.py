@@ -1,4 +1,5 @@
 #!/usr/sbin/python
+import pytest
 import common
 
 from common import client, core_api, pod, pvc, storage_class  # NOQA
@@ -23,7 +24,7 @@ def create_storage(api, sc_manifest, pvc_manifest):
         body=pvc_manifest,
         namespace='default')
 
-
+@pytest.mark.coretest   # NOQA
 def test_provisioner_mount(client, core_api, storage_class, pvc, pod):  # NOQA
     """
     Test that a StorageClass provisioned volume can be created, mounted,

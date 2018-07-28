@@ -166,6 +166,7 @@ def test_statefulset_mount(client, core_api, storage_class, statefulset):  # NOQ
     assert len(pod_info) == 0
 
 
+@pytest.mark.coretest   # NOQA
 def test_statefulset_scaling(client, core_api, storage_class, statefulset):  # NOQA
     """
     Test that scaling up a StatefulSet successfully provisions new volumes.

@@ -9,6 +9,7 @@ from common import generate_random_data, read_volume_data
 from common import wait_for_volume_detached
 
 
+@pytest.mark.coretest   # NOQA
 @pytest.mark.flexvolume  # NOQA
 def test_flexvolume_mount(client, core_api, flexvolume, pod): # NOQA
     """
