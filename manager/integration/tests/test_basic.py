@@ -16,6 +16,7 @@ from common import generate_random_pos
 from common import SETTING_STORAGE_OVER_PROVISIONING_PERCENTAGE, \
     SETTING_STORAGE_MINIMAL_AVAILABLE_PERCENTAGE
 from common import get_volume_endpoint, get_volume_engine
+from common import get_random_client
 
 SETTING_BACKUP_TARGET = "backup-target"
 SETTING_BACKUP_TARGET_CREDENTIAL_SECRET = "backup-target-credential-secret"
@@ -476,12 +477,6 @@ def backup_test(client, host_id, volname):
             found = True
             break
     assert not found
-
-
-def get_random_client(clients): # NOQA
-    for host_id, client in clients.iteritems():
-        break
-    return client
 
 
 @pytest.mark.coretest   # NOQA
