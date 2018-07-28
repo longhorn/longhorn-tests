@@ -7,6 +7,7 @@ from common import SIZE, DEV_PATH
 from common import check_data, get_self_host_id
 from common import write_random_data
 from common import RETRY_COUNTS, RETRY_ITERVAL
+from common import get_volume_endpoint
 
 
 @pytest.mark.coretest   # NOQA
@@ -27,7 +28,7 @@ def test_ha_simple_recovery(client, volume_name):  # NOQA
     volume = common.wait_for_volume_healthy(client, volume_name)
 
     volume = client.by_id_volume(volume_name)
-    assert volume["endpoint"] == DEV_PATH + volume_name
+    assert get_volume_endpoint(volume) == DEV_PATH + volume_name
 
     assert len(volume["replicas"]) == 2
     replica0 = volume["replicas"][0]

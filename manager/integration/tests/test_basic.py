@@ -15,6 +15,7 @@ from common import generate_random_data
 from common import generate_random_pos
 from common import SETTING_STORAGE_OVER_PROVISIONING_PERCENTAGE, \
     SETTING_STORAGE_MINIMAL_AVAILABLE_PERCENTAGE
+from common import get_volume_endpoint, get_volume_engine
 
 SETTING_BACKUP_TARGET = "backup-target"
 SETTING_BACKUP_TARGET_CREDENTIAL_SECRET = "backup-target-credential-secret"
@@ -147,12 +148,12 @@ def test_volume_basic(clients, volume_name):  # NOQA
     assert volumes[0]["numberOfReplicas"] == volume["numberOfReplicas"]
     assert volumes[0]["state"] == volume["state"]
     assert volumes[0]["created"] == volume["created"]
-    assert volumes[0]["endpoint"] == DEV_PATH + volume_name
+    assert get_volume_endpoint(volumes[0]) == DEV_PATH + volume_name
 
     volume = client.by_id_volume(volume_name)
-    assert volume["endpoint"] == DEV_PATH + volume_name
+    assert get_volume_endpoint(volume) == DEV_PATH + volume_name
 
-    volume_rw_test(volume["endpoint"])
+    volume_rw_test(get_volume_endpoint(volume))
 
     volume = volume.detach()
 
@@ -195,13 +196,14 @@ def test_volume_iscsi_basic(clients, volume_name):  # NOQA
     assert volumes[0]["state"] == volume["state"]
     assert volumes[0]["created"] == volume["created"]
     assert volumes[0]["frontend"] == "iscsi"
-    assert volumes[0]["endpoint"].startswith("iscsi://")
+    endpoint = get_volume_endpoint(volumes[0])
+    assert endpoint.startswith("iscsi://")
 
     try:
-        dev = iscsi_login(volumes[0]["endpoint"])
+        dev = iscsi_login(endpoint)
         volume_rw_test(dev)
     finally:
-        iscsi_logout(volumes[0]["endpoint"])
+        iscsi_logout(endpoint)
 
     volume = volume.detach()
 
@@ -496,7 +498,8 @@ def test_volume_multinode(clients, volume_name):  # NOQA
         volume = volume.attach(hostId=host_id)
         volume = common.wait_for_volume_healthy(get_random_client(clients),
                                                 volume_name)
-        assert volume["controller"]["hostId"] == host_id
+        engine = get_volume_engine(volume)
+        assert engine["hostId"] == host_id
         volume = volume.detach()
         volume = common.wait_for_volume_detached(get_random_client(clients),
                                                  volume_name)

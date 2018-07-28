@@ -907,7 +907,7 @@ def write_random_data(v):
 
 
 def volume_read(v, start, count):
-    dev = v["endpoint"]
+    dev = get_volume_endpoint(v)
     return dev_read(dev, start, count)
 
 
@@ -922,7 +922,7 @@ def dev_read(dev, start, count):
 
 
 def volume_write(v, start, data):
-    dev = v["endpoint"]
+    dev = get_volume_endpoint(v)
     return dev_write(dev, start, data)
 
 
@@ -1115,3 +1115,16 @@ def wait_for_disk_update(client, name, disk_num):
         time.sleep(RETRY_ITERVAL)
     assert len(node["disks"]) == disk_num
     return node
+
+
+def get_volume_engine(v):
+    engines = v["controllers"]
+    assert len(engines) != 0
+    return engines[0]
+
+
+def get_volume_endpoint(v):
+    engine = get_volume_engine(v)
+    endpoint = engine["endpoint"]
+    assert endpoint != ""
+    return endpoint
