@@ -73,6 +73,10 @@ def test_engine_image(client, volume_name):  # NOQA
 
 @pytest.mark.coretest   # NOQA
 def test_engine_offline_upgrade(client, volume_name):  # NOQA
+    engine_offline_upgrade_test(client, volume_name)
+
+
+def engine_offline_upgrade_test(client, volume_name, base_image=""):  # NOQA
     default_img = common.get_default_engine_image(client)
     default_img_name = default_img["name"]
     default_img = wait_for_engine_image_ref_count(client, default_img_name, 0)
@@ -96,7 +100,8 @@ def test_engine_offline_upgrade(client, volume_name):  # NOQA
     default_img_name = default_img["name"]
 
     volume = client.create_volume(name=volume_name, size=SIZE,
-                                  numberOfReplicas=REPLICA_COUNT)
+                                  numberOfReplicas=REPLICA_COUNT,
+                                  baseImage=base_image)
     volume = common.wait_for_volume_detached(client, volume_name)
     default_img = wait_for_engine_image_ref_count(client, default_img_name, 1)
 
@@ -105,6 +110,7 @@ def test_engine_offline_upgrade(client, volume_name):  # NOQA
     assert volume["name"] == volume_name
     assert volume["engineImage"] == original_engine_image
     assert volume["currentImage"] == original_engine_image
+    assert volume["baseImage"] == base_image
 
     # Before our upgrade, write data to the volume first.
     host_id = get_self_host_id()
@@ -174,6 +180,10 @@ def test_engine_offline_upgrade(client, volume_name):  # NOQA
 
 @pytest.mark.coretest   # NOQA
 def test_engine_live_upgrade(client, volume_name):  # NOQA
+    engine_live_upgrade_test(client, volume_name)
+
+
+def engine_live_upgrade_test(client, volume_name, base_image=""):  # NOQA
     default_img = common.get_default_engine_image(client)
     default_img_name = default_img["name"]
     default_img = wait_for_engine_image_ref_count(client, default_img_name, 0)
@@ -197,11 +207,12 @@ def test_engine_live_upgrade(client, volume_name):  # NOQA
     default_img_name = default_img["name"]
 
     volume = client.create_volume(name=volume_name, size=SIZE,
-                                  numberOfReplicas=2)
+                                  numberOfReplicas=2, baseImage=base_image)
     volume = common.wait_for_volume_detached(client, volume_name)
     default_img = wait_for_engine_image_ref_count(client, default_img_name, 1)
 
     assert volume["name"] == volume_name
+    assert volume["baseImage"] == base_image
 
     original_engine_image = volume["engineImage"]
     assert original_engine_image != engine_upgrade_image
@@ -339,6 +350,10 @@ def test_engine_image_incompatible(client, volume_name):  # NOQA
 
 
 def test_engine_live_upgrade_rollback(client, volume_name):  # NOQA
+    engine_live_upgrade_rollback_test(client, volume_name)
+
+
+def engine_live_upgrade_rollback_test(client, volume_name, base_image=""):  # NOQA
     default_img = common.get_default_engine_image(client)
     default_img_name = default_img["name"]
     default_img = wait_for_engine_image_ref_count(client, default_img_name, 0)
@@ -362,9 +377,10 @@ def test_engine_live_upgrade_rollback(client, volume_name):  # NOQA
     default_img_name = default_img["name"]
 
     volume = client.create_volume(name=volume_name, size=SIZE,
-                                  numberOfReplicas=2)
+                                  numberOfReplicas=2, baseImage=base_image)
     volume = common.wait_for_volume_detached(client, volume_name)
     default_img = wait_for_engine_image_ref_count(client, default_img_name, 1)
+    assert volume["baseImage"] == base_image
 
     original_engine_image = volume["engineImage"]
     assert original_engine_image != wrong_engine_upgrade_image
