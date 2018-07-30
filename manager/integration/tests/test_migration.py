@@ -12,13 +12,18 @@ REPLICA_COUNT = 2
 
 @pytest.mark.coretest  # NOQA
 def test_migration_confirm(clients, volume_name):  # NOQA
+    migration_confirm_test(clients, volume_name)
+
+
+def migration_confirm_test(clients, volume_name, base_image=""):  # NOQA
     client = get_random_client(clients)
     hosts = clients.keys()
     host1 = hosts[0]
     host2 = hosts[1]
 
     volume = client.create_volume(name=volume_name, size=SIZE,
-                                  numberOfReplicas=REPLICA_COUNT)
+                                  numberOfReplicas=REPLICA_COUNT,
+                                  baseImage=base_image)
     volume = common.wait_for_volume_detached(client, volume_name)
 
     volume.attach(hostId=host1)
@@ -48,13 +53,18 @@ def test_migration_confirm(clients, volume_name):  # NOQA
 
 @pytest.mark.coretest  # NOQA
 def test_migration_rollback(clients, volume_name):  # NOQA
+    migration_rollback_test(clients, volume_name)
+
+
+def migration_rollback_test(clients, volume_name, base_image=""):  # NOQA
     client = get_random_client(clients)
     hosts = clients.keys()
     host1 = hosts[0]
     host2 = hosts[1]
 
     volume = client.create_volume(name=volume_name, size=SIZE,
-                                  numberOfReplicas=REPLICA_COUNT)
+                                  numberOfReplicas=REPLICA_COUNT,
+                                  baseImage=base_image)
     volume = common.wait_for_volume_detached(client, volume_name)
 
     volume.attach(hostId=host1)
