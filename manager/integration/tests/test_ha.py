@@ -12,16 +12,19 @@ from common import get_volume_endpoint
 
 @pytest.mark.coretest   # NOQA
 def test_ha_simple_recovery(client, volume_name):  # NOQA
-    # get a random client
+    ha_simple_recovery_test(client, volume_name)
 
+
+def ha_simple_recovery_test(client, volume_name, base_image=""):  # NOQA
     volume = client.create_volume(name=volume_name, size=SIZE,
-                                  numberOfReplicas=2)
+                                  numberOfReplicas=2, baseImage=base_image)
     volume = common.wait_for_volume_detached(client, volume_name)
     assert volume["name"] == volume_name
     assert volume["size"] == SIZE
     assert volume["numberOfReplicas"] == 2
     assert volume["state"] == "detached"
     assert volume["created"] != ""
+    assert volume["baseImage"] == base_image
 
     host_id = get_self_host_id()
     volume = volume.attach(hostId=host_id)
@@ -83,16 +86,19 @@ def test_ha_simple_recovery(client, volume_name):  # NOQA
 
 @pytest.mark.coretest   # NOQA
 def test_ha_salvage(client, volume_name):  # NOQA
-    # get a random client
+    ha_salvage_test(client, volume_name)
 
+
+def ha_salvage_test(client, volume_name, base_image=""):  # NOQA
     volume = client.create_volume(name=volume_name, size=SIZE,
-                                  numberOfReplicas=2)
+                                  numberOfReplicas=2, baseImage=base_image)
     volume = common.wait_for_volume_detached(client, volume_name)
     assert volume["name"] == volume_name
     assert volume["size"] == SIZE
     assert volume["numberOfReplicas"] == 2
     assert volume["state"] == "detached"
     assert volume["created"] != ""
+    assert volume["baseImage"] == base_image
 
     host_id = get_self_host_id()
     volume = volume.attach(hostId=host_id)
