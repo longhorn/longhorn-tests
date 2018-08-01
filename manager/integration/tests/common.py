@@ -347,6 +347,14 @@ def flexvolume(request):
 
 
 @pytest.fixture
+def flexvolume_baseimage(request):
+    flexvolume_manifest = flexvolume(request)
+    flexvolume_manifest['flexVolume']['options']['size'] = '16Mi'
+    flexvolume_manifest['flexVolume']['options']['baseImage'] = BASE_IMAGE
+    return flexvolume_manifest
+
+
+@pytest.fixture
 def pod(request):
     pod_manifest = {
         'apiVersion': 'v1',
