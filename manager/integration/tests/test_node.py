@@ -594,8 +594,9 @@ def test_node_controller(client):  # NOQA
     test_file_path = os.path.join(test_disk_path, TEST_FILE)
     if os.path.exists(test_file_path):
         os.remove(test_file_path)
+    FNULL = open('py.stdout', 'w', 0)
     cmd = ['dd', 'if=/dev/zero', 'of=' + test_file_path, 'bs=1M', 'count=1']
-    subprocess.check_call(cmd)
+    subprocess.check_call(cmd, stdout=FNULL, stderr=subprocess.STDOUT)
     node = client.by_id_node(lht_hostId)
     disks = node["disks"]
     # wait for node controller update disk status
