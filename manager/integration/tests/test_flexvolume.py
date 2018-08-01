@@ -20,6 +20,11 @@ def test_flexvolume_mount(client, core_api, flexvolume, pod): # NOQA
     parameter. Take caution when reordering test fixtures.
     """
 
+    volume_size = DEFAULT_VOLUME_SIZE * Gi
+    flexvolume_mount_test(client, core_api, flexvolume, pod, volume_size)
+
+
+def flexvolume_mount_test(client, core_api, flexvolume, pod, volume_size): # NOQA
     pod_name = 'flexvolume-mount-test'
     pod['metadata']['name'] = pod_name
     pod['spec']['containers'][0]['volumeMounts'][0]['name'] = \
@@ -27,7 +32,6 @@ def test_flexvolume_mount(client, core_api, flexvolume, pod): # NOQA
     pod['spec']['volumes'] = [
         flexvolume
     ]
-    volume_size = DEFAULT_VOLUME_SIZE * Gi
 
     create_and_wait_pod(core_api, pod)
 
@@ -50,6 +54,10 @@ def test_flexvolume_io(client, core_api, flexvolume, pod):  # NOQA
     parameter. Take caution when reordering test fixtures.
     """
 
+    flexvolume_io_test(client, core_api, flexvolume, pod)
+
+
+def flexvolume_io_test(client, core_api, flexvolume, pod):  # NOQA
     pod_name = 'flexvolume-io-test'
     pod['metadata']['name'] = pod_name
     pod['spec']['containers'][0]['volumeMounts'][0]['name'] = \
