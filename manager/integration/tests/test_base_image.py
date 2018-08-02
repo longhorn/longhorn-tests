@@ -66,7 +66,7 @@ def test_flexvolume_io_with_base_image(client, core_api, flexvolume_baseimage, p
 
 def test_csi_mount_with_base_image(client, core_api, csi_pv_baseimage, pvc, pod):  # NOQA
     csi_mount_test(client, core_api, csi_pv_baseimage, pvc, pod,
-            BASE_IMAGE_SIZE, BASE_IMAGE)
+                   BASE_IMAGE_SIZE, BASE_IMAGE)
 
 
 def test_csi_io_with_base_image(client, core_api, csi_pv_baseimage, pvc, pod):  # NOQA
