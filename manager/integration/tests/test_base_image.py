@@ -1,3 +1,5 @@
+import pytest
+
 from common import client, clients, volume_name, core_api  # NOQA
 from common import flexvolume_baseimage, csi_pv_baseimage, pvc, pod  # NOQA
 from common import BASE_IMAGE, SIZE, BASE_IMAGE_SIZE
@@ -56,18 +58,22 @@ def test_migration_rollback_with_base_image(clients, volume_name):  # NOQA
     migration_rollback_test(clients, volume_name, BASE_IMAGE)
 
 
+@pytest.mark.flexvolume  # NOQA
 def test_flexvolume_mount_with_base_image(client, core_api, flexvolume_baseimage, pod):  # NOQA
     flexvolume_mount_test(client, core_api, flexvolume_baseimage, pod, SIZE)
 
 
+@pytest.mark.flexvolume  # NOQA
 def test_flexvolume_io_with_base_image(client, core_api, flexvolume_baseimage, pod):  # NOQA
     flexvolume_io_test(client, core_api, flexvolume_baseimage, pod)
 
 
+@pytest.mark.csi  # NOQA
 def test_csi_mount_with_base_image(client, core_api, csi_pv_baseimage, pvc, pod):  # NOQA
     csi_mount_test(client, core_api, csi_pv_baseimage, pvc, pod,
                    BASE_IMAGE_SIZE, BASE_IMAGE)
 
 
+@pytest.mark.csi  # NOQA
 def test_csi_io_with_base_image(client, core_api, csi_pv_baseimage, pvc, pod):  # NOQA
     csi_io_test(client, core_api, csi_pv_baseimage, pvc, pod)
