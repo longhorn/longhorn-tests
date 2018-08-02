@@ -14,15 +14,17 @@ from kubernetes import client as k8sclient, config as k8sconfig
 from kubernetes.client import Configuration
 from kubernetes.stream import stream
 
-Gi = (1 * 1024 * 1024 * 1024)
+Mi = (1024 * 1024)
+Gi = (1024 * Mi)
 
-SIZE = str(16 * 1024 * 1024)
+SIZE = str(16 * Mi)
 VOLUME_NAME = "longhorn-testvol"
 DEV_PATH = "/dev/longhorn/"
 VOLUME_RWTEST_SIZE = 512
 VOLUME_INVALID_POS = -1
-BASE_IMAGE = "rancher/vm-centos:7-x86_64-minimal-1708"
-BASE_IMAGE_SIZE = 8 * Gi
+
+BASE_IMAGE_EXT4 = "rancher/longhorn-test:baseimage-ext4"
+BASE_IMAGE_EXT4_SIZE = 32 * Mi
 
 PORT = ":9500"
 
@@ -350,8 +352,10 @@ def flexvolume(request):
 @pytest.fixture
 def flexvolume_baseimage(request):
     flexvolume_manifest = flexvolume(request)
-    flexvolume_manifest['flexVolume']['options']['size'] = '16Mi'
-    flexvolume_manifest['flexVolume']['options']['baseImage'] = BASE_IMAGE
+    flexvolume_manifest['flexVolume']['options']['size'] = \
+        size_to_string(BASE_IMAGE_EXT4_SIZE)
+    flexvolume_manifest['flexVolume']['fsType'] = ''
+    flexvolume_manifest['flexVolume']['options']['baseImage'] = BASE_IMAGE_EXT4
     return flexvolume_manifest
 
 
@@ -454,8 +458,9 @@ def csi_pv(request):
 def csi_pv_baseimage(request):
     pv_manifest = csi_pv(request)
     pv_manifest['spec']['capacity']['storage'] = \
-        size_to_string(BASE_IMAGE_SIZE)
-    pv_manifest['spec']['csi']['volumeAttributes']['baseImage'] = BASE_IMAGE
+        size_to_string(BASE_IMAGE_EXT4_SIZE)
+    pv_manifest['spec']['csi']['volumeAttributes']['baseImage'] = \
+        BASE_IMAGE_EXT4
     return pv_manifest
 
 
