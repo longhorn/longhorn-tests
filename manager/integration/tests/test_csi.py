@@ -8,14 +8,14 @@ from common import create_and_wait_pod, create_pvc_spec, delete_and_wait_pod
 from common import generate_random_data, read_volume_data, write_volume_data
 
 
-def create_pv_storage(api, cli, pv, claim):
+def create_pv_storage(api, cli, pv, claim, base_image):
     """
     Manually create a new PV and PVC for testing.
     """
     cli.create_volume(
         name=pv['metadata']['name'], size=pv['spec']['capacity']['storage'],
         numberOfReplicas=int(pv['spec']['csi']['volumeAttributes']
-                             ['numberOfReplicas']))
+                ['numberOfReplicas']), baseImage=base_image)
     common.wait_for_volume_detached(cli, pv['metadata']['name'])
 
     api.create_persistent_volume(pv)
@@ -34,16 +34,19 @@ def test_csi_mount(client, core_api, csi_pv, pvc, pod): # NOQA
     Fixtures are torn down here in reverse order that they are specified as a
     parameter. Take caution when reordering test fixtures.
     """
+    volume_size = DEFAULT_VOLUME_SIZE * Gi
+    csi_mount_test(client, core_api, csi_pv, pvc, pod, volume_size)
 
+
+def csi_mount_test(client, core_api, csi_pv, pvc, pod, volume_size, base_image=""): # NOQA
     pod_name = 'csi-mount-test'
     pod['metadata']['name'] = pod_name
     pod['spec']['volumes'] = [
         create_pvc_spec(pvc['metadata']['name'])
     ]
     pvc['spec']['volumeName'] = csi_pv['metadata']['name']
-    volume_size = DEFAULT_VOLUME_SIZE * Gi
 
-    create_pv_storage(core_api, client, csi_pv, pvc)
+    create_pv_storage(core_api, client, csi_pv, pvc, base_image)
     create_and_wait_pod(core_api, pod)
 
     volumes = client.list_volume()
@@ -64,6 +67,10 @@ def test_csi_io(client, core_api, csi_pv, pvc, pod):  # NOQA
     Fixtures are torn down here in reverse order that they are specified as a
     parameter. Take caution when reordering test fixtures.
     """
+    csi_io_test(client, core_api, csi_pv, pvc, pod)
+
+
+def csi_io_test(client, core_api, csi_pv, pvc, pod):  # NOQA
     pod_name = 'csi-io-test'
     pod['metadata']['name'] = pod_name
     pod['spec']['volumes'] = [
