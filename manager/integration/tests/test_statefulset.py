@@ -311,7 +311,7 @@ def test_statefulset_recurring_backup(client, core_api, storage_class,  # NOQA
     time.sleep(300)
 
     for pod in pod_data:
-        volume = client.by_id_volume(pod['volume_name'])
+        volume = client.by_id_volume(pod['pv_name'])
         snapshots = volume.snapshotList()
         count = 0
         for snapshot in snapshots:
