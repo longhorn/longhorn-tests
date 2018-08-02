@@ -15,7 +15,7 @@ def create_pv_storage(api, cli, pv, claim, base_image):
     cli.create_volume(
         name=pv['metadata']['name'], size=pv['spec']['capacity']['storage'],
         numberOfReplicas=int(pv['spec']['csi']['volumeAttributes']
-                ['numberOfReplicas']), baseImage=base_image)
+                             ['numberOfReplicas']), baseImage=base_image)
     common.wait_for_volume_detached(cli, pv['metadata']['name'])
 
     api.create_persistent_volume(pv)

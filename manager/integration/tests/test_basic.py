@@ -147,7 +147,7 @@ def volume_basic_test(clients, volume_name, base_image=""):  # NOQA
 
     volumeByName = client.by_id_volume(volume_name)
     validate_volume_basic(volume, volumeByName)
-    assert volumeByName["endpoint"] == DEV_PATH + volume_name
+    assert get_volume_endpoint(volumeByName) == DEV_PATH + volume_name
 
     # validate soft anti-affinity
     hosts = {}
