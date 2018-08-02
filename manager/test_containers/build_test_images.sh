@@ -21,3 +21,7 @@ echo docker push $img3
 echo docker push $img4
 echo docker push $img5
 echo docker push $live_upgrade_image
+
+pushd baseimage &>/dev/null
+./generate.sh
+popd &>/dev/null
