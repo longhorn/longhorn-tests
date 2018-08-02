@@ -639,6 +639,9 @@ def clients(request):
 
 
 def cleanup_client(client):
+    # cleanup test disks
+    cleanup_test_disks(client)
+
     volumes = client.list_volume()
     for v in volumes:
         # ignore the error when clean up
@@ -657,25 +660,8 @@ def cleanup_client(client):
                 print "Exception when cleanup image", img, e
                 pass
 
-    # cleanup multiple disks
-    del_dirs = os.listdir(DIRECTORY_PATH)
-    for del_dir in del_dirs:
-        try:
-            cleanup_host_disk(del_dir)
-        except Exception as e:
-            print "Exception when cleanup host disk", del_dir, e
-            pass
-
     # enable nodes scheduling
-    nodes = client.list_node()
-    for node in nodes:
-        try:
-            node = client.update(node, allowScheduling=True)
-            wait_for_node_update(client, node["id"],
-                                 "allowScheduling", True)
-        except Exception as e:
-            print "Exception when reset node schedulding", node, e
-            pass
+    reset_node(client)
 
 
 def get_client(address):
@@ -1212,3 +1198,67 @@ def get_random_client(clients):
     for _, client in clients.iteritems():
         break
     return client
+
+
+def get_update_disks(disks):
+    update_disk = []
+    for key, disk in disks.iteritems():
+        update_disk.append(disk)
+    return update_disk
+
+
+def reset_node(client):
+    nodes = client.list_node()
+    for node in nodes:
+        try:
+            node = client.update(node, allowScheduling=True)
+            wait_for_node_update(client, node["id"],
+                                 "allowScheduling", True)
+        except Exception as e:
+            print "Exception when reset node schedulding", node, e
+            pass
+
+
+def cleanup_test_disks(client):
+    del_dirs = os.listdir(DIRECTORY_PATH)
+    host_id = get_self_host_id()
+    node = client.by_id_node(host_id)
+    disks = node["disks"]
+    for fsid, disk in disks.iteritems():
+        for del_dir in del_dirs:
+            dir_path = os.path.join(DIRECTORY_PATH, del_dir)
+            if dir_path == disk["path"]:
+                disk["allowScheduling"] = False
+    update_disks = get_update_disks(disks)
+    try:
+        node = node.diskUpdate(disks=update_disks)
+        disks = node["disks"]
+        for fsid, disk in disks.iteritems():
+            for del_dir in del_dirs:
+                dir_path = os.path.join(DIRECTORY_PATH, del_dir)
+                if dir_path == disk["path"]:
+                    wait_for_disk_status(client, host_id, fsid,
+                                         "allowScheduling", False)
+    except Exception as e:
+        print "Exception when update node disks", node, e
+        pass
+
+    # delete test disks
+    disks = node["disks"]
+    update_disks = []
+    for fsid, disk in disks.iteritems():
+        if disk["allowScheduling"]:
+            update_disks.append(disk)
+    try:
+        node.diskUpdate(disks=update_disks)
+        wait_for_disk_update(client, host_id, len(update_disks))
+    except Exception as e:
+        print "Exception when delete node test disks", node, e
+        pass
+    # cleanup host disks
+    for del_dir in del_dirs:
+        try:
+            cleanup_host_disk(del_dir)
+        except Exception as e:
+            print "Exception when cleanup host disk", del_dir, e
+            pass
