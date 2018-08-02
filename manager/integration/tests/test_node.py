@@ -4,14 +4,16 @@ import os
 import subprocess
 
 from common import client  # NOQA
-from common import Gi, SIZE, CONDITION_STATUS_FALSE, CONDITION_STATUS_TRUE
+from common import Gi, SIZE, CONDITION_STATUS_FALSE, \
+    CONDITION_STATUS_TRUE, DEFAULT_DISK_PATH
 from common import get_self_host_id
 from common import SETTING_STORAGE_OVER_PROVISIONING_PERCENTAGE, \
     SETTING_STORAGE_MINIMAL_AVAILABLE_PERCENTAGE
 from common import get_volume_endpoint
+from common import get_update_disks
+from common import wait_for_disk_status, wait_for_disk_update
 
 SMALL_DISK_SIZE = (1 * 1024 * 1024)
-DEFAULT_DISK_PATH = '/var/lib/rancher/longhorn/'
 TEST_FILE = 'test'
 
 DISK_STATE = "state"
@@ -38,15 +40,9 @@ def cleanup_host_disk(client, *args):  # NOQA
         cleanup_volume(client, vol_name)
 
 
-def get_update_disks(disks):
-    update_disk = []
-    for key, disk in disks.iteritems():
-        update_disk.append(disk)
-    return update_disk
-
-
+@pytest.mark.coretest   # NOQA
 @pytest.mark.node  # NOQA
-def test_node(client):  # NOQA
+def test_update_node(client):  # NOQA
     # test node update
     nodes = client.list_node()
     assert len(nodes) > 0
@@ -67,6 +63,12 @@ def test_node(client):  # NOQA
     node = client.by_id_node(lht_hostId)
     assert node["allowScheduling"]
 
+
+@pytest.mark.coretest   # NOQA
+@pytest.mark.node  # NOQA
+def test_node_disk_update(client):  # NOQA
+    lht_hostId = get_self_host_id()
+    node = client.by_id_node(lht_hostId)
     disks = node["disks"]
     # test add same disk by different mount path exception
     with pytest.raises(Exception) as e:
@@ -119,13 +121,13 @@ def test_node(client):  # NOQA
     # wait for node controller to update disk status
     for fsid, disk in disks.iteritems():
         if disk["path"] == disk_path1 or disk["path"] == disk_path2:
-            common.wait_for_disk_status(client, lht_hostId, fsid,
-                                        "allowScheduling", False)
-            common.wait_for_disk_status(client, lht_hostId, fsid,
-                                        "storageReserved", Gi)
+            wait_for_disk_status(client, lht_hostId, fsid,
+                                 "allowScheduling", False)
+            wait_for_disk_status(client, lht_hostId, fsid,
+                                 "storageReserved", Gi)
             free, total = common.get_host_disk_size(disk_path1)
-            common.wait_for_disk_status(client, lht_hostId, fsid,
-                                        "storageAvailable", free)
+            wait_for_disk_status(client, lht_hostId, fsid,
+                                 "storageAvailable", free)
 
     node = client.by_id_node(lht_hostId)
     disks = node["disks"]
@@ -152,8 +154,8 @@ def test_node(client):  # NOQA
         if disk["path"] != disk_path1 and disk["path"] != disk_path2:
             remain_disk.append(disk)
     node = node.diskUpdate(disks=remain_disk)
-    node = common.wait_for_disk_update(client, lht_hostId,
-                                       len(remain_disk))
+    node = wait_for_disk_update(client, lht_hostId,
+                                len(remain_disk))
     assert len(node["disks"]) == len(remain_disk)
     # cleanup disks
     cleanup_host_disk(client, 'vol-disk-1', 'vol-disk-2')
@@ -193,7 +195,7 @@ def cleanup_volume(client, vol_name):  # NOQA
 
 @pytest.mark.coretest   # NOQA
 @pytest.mark.node  # NOQA
-def test_replica_scheduler(client):  # NOQA
+def test_replica_scheduler_no_disks(client):  # NOQA
     nodes = client.list_node()
     # delete all disks on each node
     for node in nodes:
@@ -206,10 +208,10 @@ def test_replica_scheduler(client):  # NOQA
         node = node.diskUpdate(disks=update_disks)
         for fsid, disk in node["disks"].iteritems():
             # wait for node controller update disk status
-            common.wait_for_disk_status(client, name, fsid,
-                                        "allowScheduling", False)
-            common.wait_for_disk_status(client, name, fsid,
-                                        "storageScheduled", 0)
+            wait_for_disk_status(client, name, fsid,
+                                 "allowScheduling", False)
+            wait_for_disk_status(client, name, fsid,
+                                 "storageScheduled", 0)
 
         node = client.by_id_node(name)
         for fsid, disk in node["disks"].iteritems():
@@ -228,16 +230,10 @@ def test_replica_scheduler(client):  # NOQA
     client.delete(volume)
     common.wait_for_volume_delete(client, vol_name)
 
-    # create default disk for each node
-    expect_node_disk = {}
-    nodes = client.list_node()
-    for node in nodes:
-        default_disk = {"path": DEFAULT_DISK_PATH, "allowScheduling": True}
-        node = node.diskUpdate(disks=[default_disk])
-        node = common.wait_for_disk_update(client, node["name"], 1)
-        assert(len(node["disks"])) == 1
-        expect_node_disk[node["name"]] = node["disks"]
 
+@pytest.mark.node  # NOQA
+def test_replica_scheduler_large_volume_fit_small_disk(client):  # NOQA
+    nodes = client.list_node()
     # create a small size disk on current node
     lht_hostId = get_self_host_id()
     node = client.by_id_node(lht_hostId)
@@ -281,10 +277,37 @@ def test_replica_scheduler(client):  # NOQA
 
     cleanup_volume(client, vol_name)
 
+    # cleanup test disks
+    node = client.by_id_node(lht_hostId)
+    disks = node["disks"]
+    disk = disks[unexpected_disk["fsid"]]
+    disk["allowScheduling"] = False
+    update_disks = get_update_disks(disks)
+    node = node.diskUpdate(disks=update_disks)
+    node = wait_for_disk_status(client, lht_hostId,
+                                unexpected_disk["fsid"],
+                                "allowScheduling", False)
+    disks = node["disks"]
+    disk = disks[unexpected_disk["fsid"]]
+    assert not disk["allowScheduling"]
+    disks.pop(unexpected_disk["fsid"])
+    update_disks = get_update_disks(disks)
+    node.diskUpdate(disks=update_disks)
+    cleanup_host_disk(client, 'vol-small')
+
+
+@pytest.mark.node  # NOQA
+def test_replica_scheduler_too_large_volume_fit_any_disks(client):  # NOQA
     nodes = client.list_node()
+    lht_hostId = get_self_host_id()
+    expect_node_disk = {}
     for node in nodes:
         disks = node["disks"]
         for fsid, disk in disks.iteritems():
+            if disk["path"] == DEFAULT_DISK_PATH:
+                expect_disk = disk
+                expect_disk["fsid"] = fsid
+                expect_node_disk[node["name"]] = expect_disk
             disk["storageReserved"] = disk["storageMaximum"]
         update_disks = get_update_disks(disks)
         node.diskUpdate(disks=update_disks)
@@ -307,8 +330,8 @@ def test_replica_scheduler(client):  # NOQA
         node = node.diskUpdate(disks=update_disks)
         disks = node["disks"]
         for fsid, disk in disks.iteritems():
-            common.wait_for_disk_status(client, node["name"],
-                                        fsid, "storageReserved", 0)
+            wait_for_disk_status(client, node["name"],
+                                 fsid, "storageReserved", 0)
 
     # check volume status
     volume = common.wait_for_volume_condition_scheduled(client, vol_name,
@@ -330,49 +353,31 @@ def test_replica_scheduler(client):  # NOQA
         assert id != ""
         assert replica["running"]
         expect_disk = expect_node_disk[id]
-        for key, disk in expect_disk.iteritems():
-            assert replica["diskID"] == key
-            assert disk["path"] in replica["dataPath"]
-            break
+        assert replica["diskID"] == expect_disk["fsid"]
+        assert expect_disk["path"] in replica["dataPath"]
         node_hosts = filter(lambda x: x != id, node_hosts)
     assert len(node_hosts) == 0
 
     # clean volume and disk
     cleanup_volume(client, vol_name)
 
-    node = client.by_id_node(lht_hostId)
-    disks = node["disks"]
-    disk = disks[unexpected_disk["fsid"]]
-    disk["allowScheduling"] = False
-    update_disks = get_update_disks(disks)
-    node = node.diskUpdate(disks=update_disks)
-    node = common.wait_for_disk_status(client, lht_hostId,
-                                       unexpected_disk["fsid"],
-                                       "allowScheduling", False)
-    disks = node["disks"]
-    disk = disks[unexpected_disk["fsid"]]
-    assert not disk["allowScheduling"]
-    disks.pop(unexpected_disk["fsid"])
-    update_disks = get_update_disks(disks)
-    node.diskUpdate(disks=update_disks)
-    cleanup_host_disk(client, 'vol-small')
 
-    # wait for disks status to clean
-    node = client.by_id_node(lht_hostId)
-    disks = node["disks"]
-    for fsid, disk in disks.iteritems():
-        common.wait_for_disk_status(client, lht_hostId, fsid,
-                                    "storageScheduled", 0)
+@pytest.mark.node  # NOQA
+def test_replica_scheduler_update_over_provisioning(client):  # NOQA
+    nodes = client.list_node()
+    lht_hostId = get_self_host_id()
+    expect_node_disk = {}
+    for node in nodes:
+        disks = node["disks"]
+        for fsid, disk in disks.iteritems():
+            if disk["path"] == DEFAULT_DISK_PATH:
+                expect_disk = disk
+                expect_disk["fsid"] = fsid
+                expect_node_disk[node["name"]] = expect_disk
 
-    # change StorageOverProvisioningPercentage and
-    # StorageMinimalAvailablePercentage to test replica result
     over_provisioning_setting = client.by_id_setting(
         SETTING_STORAGE_OVER_PROVISIONING_PERCENTAGE)
     old_provisioning_setting = over_provisioning_setting["value"]
-
-    minimal_available_setting = client.by_id_setting(
-        SETTING_STORAGE_MINIMAL_AVAILABLE_PERCENTAGE)
-    old_minimal_setting = minimal_available_setting["value"]
 
     # set storage over provisioning percentage to 0
     # to test all replica couldn't be scheduled
@@ -399,7 +404,7 @@ def test_replica_scheduler(client):  # NOQA
 
     volume.attach(hostId=lht_hostId)
     volume = common.wait_for_volume_healthy(client, vol_name)
-    nodes = client.list_node()
+
     node_hosts = []
     for node in nodes:
         node_hosts.append(node["name"])
@@ -409,15 +414,25 @@ def test_replica_scheduler(client):  # NOQA
         assert id != ""
         assert replica["running"]
         expect_disk = expect_node_disk[id]
-        for key, disk in expect_disk.iteritems():
-            assert replica["diskID"] == key
-            assert disk["path"] in replica["dataPath"]
-            break
+        assert replica["diskID"] == expect_disk["fsid"]
+        assert expect_disk["path"] in replica["dataPath"]
         node_hosts = filter(lambda x: x != id, node_hosts)
     assert len(node_hosts) == 0
 
     # clean volume and disk
     cleanup_volume(client, vol_name)
+    client.update(over_provisioning_setting,
+                  value=old_provisioning_setting)
+
+
+@pytest.mark.node  # NOQA
+def test_replica_scheduler_exceed_over_provisioning(client):  # NOQA
+    over_provisioning_setting = client.by_id_setting(
+        SETTING_STORAGE_OVER_PROVISIONING_PERCENTAGE)
+    old_provisioning_setting = over_provisioning_setting["value"]
+    # set storage over provisioning percentage to 100
+    over_provisioning_setting = client.update(over_provisioning_setting,
+                                              value="100")
 
     # test exceed over provisioning limit couldn't be scheduled
     nodes = client.list_node()
@@ -430,9 +445,9 @@ def test_replica_scheduler(client):  # NOQA
         node = node.diskUpdate(disks=update_disks)
         disks = node["disks"]
         for fsid, disk in disks.iteritems():
-            common.wait_for_disk_status(client, node["name"],
-                                        fsid, "storageReserved",
-                                        disk["storageMaximum"] - 1*Gi)
+            wait_for_disk_status(client, node["name"],
+                                 fsid, "storageReserved",
+                                 disk["storageMaximum"] - 1*Gi)
 
     vol_name = common.generate_volume_name()
     volume = client.create_volume(name=vol_name,
@@ -442,6 +457,37 @@ def test_replica_scheduler(client):  # NOQA
                                                         CONDITION_STATUS_FALSE)
     client.delete(volume)
     common.wait_for_volume_delete(client, vol_name)
+    client.update(over_provisioning_setting, value=old_provisioning_setting)
+
+
+@pytest.mark.node  # NOQA
+def test_replica_scheduler_just_under_over_provisioning(client):  # NOQA
+    over_provisioning_setting = client.by_id_setting(
+        SETTING_STORAGE_OVER_PROVISIONING_PERCENTAGE)
+    old_provisioning_setting = over_provisioning_setting["value"]
+    # set storage over provisioning percentage to 100
+    over_provisioning_setting = client.update(over_provisioning_setting,
+                                              value="100")
+
+    lht_hostId = get_self_host_id()
+    nodes = client.list_node()
+    expect_node_disk = {}
+    for node in nodes:
+        disks = node["disks"]
+        for fsid, disk in disks.iteritems():
+            if disk["path"] == DEFAULT_DISK_PATH:
+                expect_disk = disk
+                expect_disk["fsid"] = fsid
+                expect_node_disk[node["name"]] = expect_disk
+            disk["storageReserved"] = \
+                disk["storageMaximum"] - 1*Gi
+        update_disks = get_update_disks(disks)
+        node = node.diskUpdate(disks=update_disks)
+        disks = node["disks"]
+        for fsid, disk in disks.iteritems():
+            wait_for_disk_status(client, node["name"],
+                                 fsid, "storageReserved",
+                                 disk["storageMaximum"] - 1*Gi)
 
     # test just under over provisioning limit could be scheduled
     vol_name = common.generate_volume_name()
@@ -466,17 +512,31 @@ def test_replica_scheduler(client):  # NOQA
         assert id != ""
         assert replica["running"]
         expect_disk = expect_node_disk[id]
-        for key, disk in expect_disk.iteritems():
-            assert replica["diskID"] == key
-            assert disk["path"] in replica["dataPath"]
-            break
+        assert replica["diskID"] == expect_disk["fsid"]
+        assert expect_disk["path"] in replica["dataPath"]
         node_hosts = filter(lambda x: x != id, node_hosts)
     assert len(node_hosts) == 0
 
     # clean volume and disk
     cleanup_volume(client, vol_name)
-    over_provisioning_setting = client.update(over_provisioning_setting,
-                                              value=old_provisioning_setting)
+    client.update(over_provisioning_setting, value=old_provisioning_setting)
+
+
+@pytest.mark.node  # NOQA
+def test_replica_scheduler_update_minimal_available(client):  # NOQA
+    minimal_available_setting = client.by_id_setting(
+        SETTING_STORAGE_MINIMAL_AVAILABLE_PERCENTAGE)
+    old_minimal_setting = minimal_available_setting["value"]
+
+    nodes = client.list_node()
+    expect_node_disk = {}
+    for node in nodes:
+        disks = node["disks"]
+        for fsid, disk in disks.iteritems():
+            if disk["path"] == DEFAULT_DISK_PATH:
+                expect_disk = disk
+                expect_disk["fsid"] = fsid
+                expect_node_disk[node["name"]] = expect_disk
 
     # set storage minimal available percentage to 100
     # to test all replica couldn't be scheduled
@@ -487,10 +547,11 @@ def test_replica_scheduler(client):  # NOQA
     for node in nodes:
         disks = node["disks"]
         for fsid, disk in disks.iteritems():
-            common.wait_for_disk_status(client, node["name"],
-                                        fsid, DISK_STATE,
-                                        DISK_STATE_UNSCHEDULABLE)
+            wait_for_disk_status(client, node["name"],
+                                 fsid, DISK_STATE,
+                                 DISK_STATE_UNSCHEDULABLE)
 
+    lht_hostId = get_self_host_id()
     vol_name = common.generate_volume_name()
     volume = client.create_volume(name=vol_name,
                                   size=SIZE, numberOfReplicas=len(nodes))
@@ -506,9 +567,9 @@ def test_replica_scheduler(client):  # NOQA
     for node in nodes:
         disks = node["disks"]
         for fsid, disk in disks.iteritems():
-            common.wait_for_disk_status(client, node["name"],
-                                        fsid, DISK_STATE,
-                                        DISK_STATE_SCHEDULABLE)
+            wait_for_disk_status(client, node["name"],
+                                 fsid, DISK_STATE,
+                                 DISK_STATE_SCHEDULABLE)
     # check volume status
     volume = common.wait_for_volume_condition_scheduled(client, vol_name,
                                                         "status",
@@ -529,10 +590,8 @@ def test_replica_scheduler(client):  # NOQA
         assert id != ""
         assert replica["running"]
         expect_disk = expect_node_disk[id]
-        for key, disk in expect_disk.iteritems():
-            assert replica["diskID"] == key
-            assert disk["path"] in replica["dataPath"]
-            break
+        assert replica["diskID"] == expect_disk["fsid"]
+        assert expect_disk["path"] in replica["dataPath"]
         node_hosts = filter(lambda x: x != id, node_hosts)
     assert len(node_hosts) == 0
 
@@ -541,14 +600,14 @@ def test_replica_scheduler(client):  # NOQA
 
 
 @pytest.mark.node  # NOQA
-def test_node_controller(client):  # NOQA
+def test_node_controller_sync_storage_scheduled(client):  # NOQA
     lht_hostId = get_self_host_id()
     nodes = client.list_node()
     for node in nodes:
         for fsid, disk in node["disks"].iteritems():
             # wait for node controller update disk status
-            common.wait_for_disk_status(client, node["name"], fsid,
-                                        "storageScheduled", 0)
+            wait_for_disk_status(client, node["name"], fsid,
+                                 "storageScheduled", 0)
 
     # create a volume and test update StorageScheduled of each node
     vol_name = common.generate_volume_name()
@@ -564,8 +623,8 @@ def test_node_controller(client):  # NOQA
     for node in nodes:
         disks = node["disks"]
         for fsid, disk in disks.iteritems():
-            common.wait_for_disk_status(client, node["name"], fsid,
-                                        "storageScheduled", SMALL_DISK_SIZE)
+            wait_for_disk_status(client, node["name"], fsid,
+                                 "storageScheduled", SMALL_DISK_SIZE)
 
     nodes = client.list_node()
     for node in nodes:
@@ -580,6 +639,11 @@ def test_node_controller(client):  # NOQA
     # clean volumes
     cleanup_volume(client, vol_name)
 
+
+@pytest.mark.coretest   # NOQA
+@pytest.mark.node  # NOQA
+def test_node_controller_sync_storage_available(client):  # NOQA
+    lht_hostId = get_self_host_id()
     # create a disk to test storageAvailable
     node = client.by_id_node(lht_hostId)
     test_disk_path = create_host_disk(client, "vol-test", SIZE, lht_hostId)
@@ -603,8 +667,8 @@ def test_node_controller(client):  # NOQA
     free, total = common.get_host_disk_size(test_disk_path)
     for fsid, disk in disks.iteritems():
         if disk["path"] == test_disk_path:
-            node = common.wait_for_disk_status(client, lht_hostId, fsid,
-                                               "storageAvailable", free)
+            node = wait_for_disk_status(client, lht_hostId, fsid,
+                                        "storageAvailable", free)
             expect_disk = node["disks"][fsid]
             break
 
@@ -622,8 +686,8 @@ def test_node_controller(client):  # NOQA
 
     update_disks = get_update_disks(disks)
     node = node.diskUpdate(disks=update_disks)
-    node = common.wait_for_disk_status(client, lht_hostId, wait_fsid,
-                                       "allowScheduling", False)
+    node = wait_for_disk_status(client, lht_hostId, wait_fsid,
+                                "allowScheduling", False)
     disks = node["disks"]
     for fsid, disk in disks.iteritems():
         if disk["path"] == test_disk_path:
@@ -631,10 +695,14 @@ def test_node_controller(client):  # NOQA
             break
     update_disks = get_update_disks(disks)
     node = node.diskUpdate(disks=update_disks)
-    node = common.wait_for_disk_update(client, lht_hostId, len(update_disks))
+    node = wait_for_disk_update(client, lht_hostId, len(update_disks))
     assert len(node["disks"]) == len(update_disks)
     cleanup_host_disk(client, 'vol-test')
 
+
+@pytest.mark.coretest   # NOQA
+@pytest.mark.node  # NOQA
+def test_node_controller_sync_disk_state(client):  # NOQA
     # update StorageMinimalAvailablePercentage to test Disk State
     setting = client.by_id_setting(
         SETTING_STORAGE_MINIMAL_AVAILABLE_PERCENTAGE)
@@ -646,9 +714,9 @@ def test_node_controller(client):  # NOQA
     for node in nodes:
         disks = node["disks"]
         for fsid, disk in disks.iteritems():
-            common.wait_for_disk_status(client, node["name"],
-                                        fsid, DISK_STATE,
-                                        DISK_STATE_UNSCHEDULABLE)
+            wait_for_disk_status(client, node["name"],
+                                 fsid, DISK_STATE,
+                                 DISK_STATE_UNSCHEDULABLE)
 
     nodes = client.list_node()
     for node in nodes:
@@ -663,9 +731,9 @@ def test_node_controller(client):  # NOQA
     for node in nodes:
         disks = node["disks"]
         for fsid, disk in disks.iteritems():
-            common.wait_for_disk_status(client, node["name"],
-                                        fsid, DISK_STATE,
-                                        DISK_STATE_SCHEDULABLE)
+            wait_for_disk_status(client, node["name"],
+                                 fsid, DISK_STATE,
+                                 DISK_STATE_SCHEDULABLE)
 
     nodes = client.list_node()
     for node in nodes:
