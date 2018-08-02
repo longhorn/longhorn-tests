@@ -1,6 +1,6 @@
-from common import client, clients, volume_name  # NOQA
-from common import core_api, flexvolume_baseimage, pod  # NOQA
-from common import BASE_IMAGE, SIZE
+from common import client, clients, volume_name, core_api  # NOQA
+from common import flexvolume_baseimage, csi_pv_baseimage, pvc, pod  # NOQA
+from common import BASE_IMAGE, SIZE, BASE_IMAGE_SIZE
 from test_basic import volume_basic_test, volume_iscsi_basic_test
 from test_basic import snapshot_test, backup_test
 from test_ha import ha_simple_recovery_test, ha_salvage_test
@@ -9,6 +9,7 @@ from test_engine_upgrade import engine_live_upgrade_test
 from test_engine_upgrade import engine_live_upgrade_rollback_test
 from test_migration import migration_confirm_test, migration_rollback_test
 from test_flexvolume import flexvolume_mount_test, flexvolume_io_test
+from test_csi import csi_mount_test, csi_io_test
 
 
 def test_volume_basic_with_base_image(clients, volume_name):  # NOQA
@@ -62,3 +63,11 @@ def test_flexvolume_mount_with_base_image(client, core_api, flexvolume_baseimage
 def test_flexvolume_io_with_base_image(client, core_api, flexvolume_baseimage, pod):  # NOQA
     flexvolume_io_test(client, core_api, flexvolume_baseimage, pod)
 
+
+def test_csi_mount_with_base_image(client, core_api, csi_pv_baseimage, pvc, pod):  # NOQA
+    csi_mount_test(client, core_api, csi_pv_baseimage, pvc, pod,
+            BASE_IMAGE_SIZE, BASE_IMAGE)
+
+
+def test_csi_io_with_base_image(client, core_api, csi_pv_baseimage, pvc, pod):  # NOQA
+    csi_io_test(client, core_api, csi_pv_baseimage, pvc, pod)

@@ -14,12 +14,15 @@ from kubernetes import client as k8sclient, config as k8sconfig
 from kubernetes.client import Configuration
 from kubernetes.stream import stream
 
+Gi = (1 * 1024 * 1024 * 1024)
+
 SIZE = str(16 * 1024 * 1024)
 VOLUME_NAME = "longhorn-testvol"
 DEV_PATH = "/dev/longhorn/"
 VOLUME_RWTEST_SIZE = 512
 VOLUME_INVALID_POS = -1
-BASE_IMAGE = "rancher/longhorn-test-baseimage"
+BASE_IMAGE = "rancher/vm-centos:7-x86_64-minimal-1708"
+BASE_IMAGE_SIZE = 8 * Gi
 
 PORT = ":9500"
 
@@ -54,8 +57,6 @@ DEFAULT_POD_INTERVAL = 1
 DEFAULT_POD_TIMEOUT = 180
 
 DEFAULT_VOLUME_SIZE = 3  # In Gi
-
-Gi = (1 * 1024 * 1024 * 1024)
 
 DIRECTORY_PATH = '/tmp/longhorn-test/'
 
@@ -446,6 +447,15 @@ def csi_pv(request):
 
     request.addfinalizer(finalizer)
 
+    return pv_manifest
+
+
+@pytest.fixture
+def csi_pv_baseimage(request):
+    pv_manifest = csi_pv(request)
+    pv_manifest['spec']['capacity']['storage'] = \
+        size_to_string(BASE_IMAGE_SIZE)
+    pv_manifest['spec']['csi']['volumeAttributes']['baseImage'] = BASE_IMAGE
     return pv_manifest
 
 
