@@ -308,7 +308,12 @@ def size_to_string(volume_size):
     Returns:
         The size of the volume in gigabytes as a passable string to Kubernetes.
     """
-    return str(volume_size >> 30) + 'Gi'
+    if volume_size >= Gi:
+        return str(volume_size >> 30) + 'Gi'
+    elif volume_size >= Mi:
+        return str(volume_size >> 20) + 'Mi'
+    else:
+        return str(volume_size >> 10) + 'Ki'
 
 
 def wait_delete_pod(api, pod_name):
@@ -506,6 +511,14 @@ def pvc(request):
 
     request.addfinalizer(finalizer)
 
+    return pvc_manifest
+
+
+@pytest.fixture
+def pvc_baseimage(request):
+    pvc_manifest = pvc(request)
+    pvc_manifest['spec']['resources']['requests']['storage'] = \
+        size_to_string(BASE_IMAGE_EXT4_SIZE)
     return pvc_manifest
 
 
