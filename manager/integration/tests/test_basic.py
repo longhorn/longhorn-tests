@@ -3,16 +3,14 @@ import pytest
 import time
 
 from common import clients, volume_name  # NOQA
-from common import SIZE, DEV_PATH, VOLUME_RWTEST_SIZE
-from common import get_self_host_id
-from common import volume_read, volume_write
-from common import volume_valid
+from common import SIZE, DEV_PATH
+from common import check_device_data, write_device_random_data
+from common import check_volume_data, write_volume_random_data
+from common import get_self_host_id, volume_valid
 from common import iscsi_login, iscsi_logout
 from common import wait_for_volume_delete
 from common import wait_for_snapshot_purge
 from common import generate_volume_name
-from common import generate_random_data
-from common import generate_random_pos
 from common import SETTING_STORAGE_OVER_PROVISIONING_PERCENTAGE, \
     SETTING_STORAGE_MINIMAL_AVAILABLE_PERCENTAGE
 from common import get_volume_endpoint, get_volume_engine
@@ -79,12 +77,8 @@ def test_hosts_and_settings(clients):  # NOQA
 
 def volume_rw_test(dev):
     assert volume_valid(dev)
-    w_data = generate_random_data(VOLUME_RWTEST_SIZE)
-    l_data = len(w_data)
-    spos_data = generate_random_pos(VOLUME_RWTEST_SIZE)
-    common.dev_write(dev, spos_data, w_data)
-    r_data = common.dev_read(dev, spos_data, l_data)
-    assert r_data == w_data
+    data = write_device_random_data(dev)
+    check_device_data(dev, data)
 
 
 @pytest.mark.coretest   # NOQA
@@ -265,19 +259,14 @@ def snapshot_test(clients, volume_name, base_image):  # NOQA
     volume = common.wait_for_volume_healthy(client, volume_name)
 
     volume = client.by_id_volume(volume_name)
-    vol_rwsize = VOLUME_RWTEST_SIZE
     positions = {}
 
     snap1 = volume.snapshotCreate()
 
-    snap2_pos = generate_random_pos(vol_rwsize, positions)
-    snap2_wdata = generate_random_data(vol_rwsize)
-    volume_write(volume, snap2_pos, snap2_wdata)
+    snap2_data = write_volume_random_data(volume, positions)
     snap2 = volume.snapshotCreate()
 
-    snap3_pos = generate_random_pos(vol_rwsize, positions)
-    snap3_wdata = generate_random_data(vol_rwsize)
-    volume_write(volume, snap3_pos, snap3_wdata)
+    snap3_data = write_volume_random_data(volume, positions)
     snap3 = volume.snapshotCreate()
 
     snapshots = volume.snapshotList()
@@ -295,9 +284,7 @@ def snapshot_test(clients, volume_name, base_image):  # NOQA
     assert snapMap[snap3["name"]]["removed"] is False
 
     volume.snapshotDelete(name=snap3["name"])
-    snap3_rdata = volume_read(volume, snap3_pos,
-                              len(snap3_wdata))
-    assert snap3_rdata == snap3_wdata
+    check_volume_data(volume, snap3_data)
 
     snapshots = volume.snapshotList(volume=volume_name)
     snapMap = {}
@@ -325,9 +312,7 @@ def snapshot_test(clients, volume_name, base_image):  # NOQA
     assert snap["removed"] is True
 
     volume.snapshotRevert(name=snap2["name"])
-    snap2_rdata = volume_read(volume, snap2_pos,
-                              len(snap2_wdata))
-    assert snap2_rdata == snap2_wdata
+    check_volume_data(volume, snap2_data)
 
     snapshots = volume.snapshotList(volume=volume_name)
     snapMap = {}
@@ -364,9 +349,7 @@ def snapshot_test(clients, volume_name, base_image):  # NOQA
     assert snapMap[snap2["name"]]["parent"] == ""
     assert "volume-head" in snapMap[snap2["name"]]["children"]
     assert snapMap[snap2["name"]]["removed"] is True
-    snap2_rdata = volume_read(volume, snap2_pos,
-                              len(snap2_wdata))
-    assert snap2_rdata == snap2_wdata
+    check_volume_data(volume, snap2_data)
 
     volume = volume.detach()
     volume = common.wait_for_volume_detached(client, volume_name)
@@ -436,9 +419,7 @@ def backup_test(clients, volume_name, size, base_image=""):  # NOQA
 def backupstore_test(client, host_id, volname, size):
     volume = client.by_id_volume(volname)
     volume.snapshotCreate()
-    w_data = generate_random_data(VOLUME_RWTEST_SIZE)
-    start_pos = generate_random_pos(VOLUME_RWTEST_SIZE)
-    l_data = volume_write(volume, start_pos, w_data)
+    data = write_volume_random_data(volume)
     snap2 = volume.snapshotCreate()
     volume.snapshotCreate()
 
@@ -490,8 +471,7 @@ def backupstore_test(client, host_id, volname, size):
     assert volume["state"] == "detached"
     volume = volume.attach(hostId=host_id)
     volume = common.wait_for_volume_healthy(client, restoreName)
-    r_data = volume_read(volume, start_pos, l_data)
-    assert r_data == w_data
+    check_volume_data(volume, data)
     volume = volume.detach()
     volume = common.wait_for_volume_detached(client, restoreName)
     client.delete(volume)
