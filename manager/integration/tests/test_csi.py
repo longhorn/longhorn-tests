@@ -56,6 +56,7 @@ def csi_mount_test(client, core_api, csi_pv, pvc, pod, volume_size, base_image="
     assert volumes[0]["numberOfReplicas"] == \
         int(csi_pv['spec']['csi']['volumeAttributes']["numberOfReplicas"])
     assert volumes[0]["state"] == "attached"
+    assert volumes[0]["baseImage"] == base_image
 
 
 @pytest.mark.csi  # NOQA
@@ -70,7 +71,7 @@ def test_csi_io(client, core_api, csi_pv, pvc, pod):  # NOQA
     csi_io_test(client, core_api, csi_pv, pvc, pod)
 
 
-def csi_io_test(client, core_api, csi_pv, pvc, pod):  # NOQA
+def csi_io_test(client, core_api, csi_pv, pvc, pod, base_image=""):  # NOQA
     pod_name = 'csi-io-test'
     pod['metadata']['name'] = pod_name
     pod['spec']['volumes'] = [
@@ -79,7 +80,7 @@ def csi_io_test(client, core_api, csi_pv, pvc, pod):  # NOQA
     pvc['spec']['volumeName'] = csi_pv['metadata']['name']
     test_data = generate_random_data(VOLUME_RWTEST_SIZE)
 
-    create_pv_storage(core_api, client, csi_pv, pvc)
+    create_pv_storage(core_api, client, csi_pv, pvc, base_image)
     create_and_wait_pod(core_api, pod)
 
     write_volume_data(core_api, pod_name, test_data)
