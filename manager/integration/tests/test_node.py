@@ -14,7 +14,7 @@ SMALL_DISK_SIZE = (1 * 1024 * 1024)
 DEFAULT_DISK_PATH = '/var/lib/rancher/longhorn/'
 TEST_FILE = 'test'
 
-DISK_STATE = "State"
+DISK_STATE = "state"
 DISK_STATE_SCHEDULABLE = "schedulable"
 DISK_STATE_UNSCHEDULABLE = "unschedulable"
 
