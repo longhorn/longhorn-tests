@@ -1057,26 +1057,28 @@ def get_upgrade_test_image(cli_v, cli_minv,
 
 
 def prepare_host_disk(dev, vol_name):
+    FNULL = open('py.stdout', 'w', 0)
     cmd = ['mkfs.ext4', dev]
-    subprocess.check_call(cmd)
+    subprocess.check_call(cmd, stdout=FNULL, stderr=subprocess.STDOUT)
 
     mount_path = os.path.join(DIRECTORY_PATH, vol_name)
     # create directory before mount
     cmd = ['mkdir', '-p', mount_path]
-    subprocess.check_call(cmd)
+    subprocess.check_call(cmd, stdout=FNULL, stderr=subprocess.STDOUT)
 
     cmd = ['mount', dev, mount_path]
-    subprocess.check_call(cmd)
+    subprocess.check_call(cmd, stdout=FNULL, stderr=subprocess.STDOUT)
     return mount_path
 
 
 def cleanup_host_disk(vol_name):
+    FNULL = open('py.stdout', 'w', 0)
     mount_path = os.path.join(DIRECTORY_PATH, vol_name)
     cmd = ['umount', mount_path]
-    subprocess.check_call(cmd)
+    subprocess.check_call(cmd, stdout=FNULL, stderr=subprocess.STDOUT)
 
     cmd = ['rm', '-r', mount_path]
-    subprocess.check_call(cmd)
+    subprocess.check_call(cmd, stdout=FNULL, stderr=subprocess.STDOUT)
 
 
 def wait_for_volume_condition_scheduled(client, name, key, value):
