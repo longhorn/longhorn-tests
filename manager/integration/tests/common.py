@@ -5,6 +5,7 @@ import random
 import string
 import subprocess
 import json
+import hashlib
 
 import pytest
 
@@ -947,6 +948,48 @@ def write_random_data(v):
         'pos': data_pos,
         'len': data_len
     }
+
+
+def check_volume_data(volume, data):
+    dev = get_volume_endpoint(volume)
+    check_device_data(dev, data)
+
+
+def write_volume_random_data(volume, position={}):
+    dev = get_volume_endpoint(volume)
+    return write_device_random_data(dev, position={})
+
+
+def check_device_data(dev, data):
+    r_data = dev_read(dev, data['pos'], data['len'])
+    assert r_data == data['content']
+    r_checksum = get_device_checksum(dev)
+    assert r_checksum == data['checksum']
+
+
+def write_device_random_data(dev, position={}):
+    data = generate_random_data(VOLUME_RWTEST_SIZE)
+    data_pos = generate_random_pos(VOLUME_RWTEST_SIZE, position)
+    data_len = dev_write(dev, data_pos, data)
+    checksum = get_device_checksum(dev)
+
+    return {
+        'content': data,
+        'pos': data_pos,
+        'len': data_len,
+        'checksum': checksum
+    }
+
+
+def get_device_checksum(dev):
+    hash = hashlib.sha512()
+
+    with open(dev, 'rb') as fdev:
+        if fdev is not None:
+            for chunk in iter(lambda: fdev.read(4096), b""):
+                hash.update(chunk)
+
+    return hash.digest()
 
 
 def volume_read(v, start, count):
