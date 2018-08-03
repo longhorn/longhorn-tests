@@ -380,18 +380,18 @@ def snapshot_test(clients, volume_name, base_image):  # NOQA
 
 @pytest.mark.coretest   # NOQA
 def test_backup(clients, volume_name):  # NOQA
-    backup_test(clients, volume_name)
+    backup_test(clients, volume_name, SIZE)
 
 
-def backup_test(clients, volume_name, base_image=""):  # NOQA
+def backup_test(clients, volume_name, size, base_image=""):  # NOQA
     for host_id, client in clients.iteritems():
         break
 
-    volume = client.create_volume(name=volume_name, size=SIZE,
+    volume = client.create_volume(name=volume_name, size=size,
                                   numberOfReplicas=2, baseImage=base_image)
     volume = common.wait_for_volume_detached(client, volume_name)
     assert volume["name"] == volume_name
-    assert volume["size"] == SIZE
+    assert volume["size"] == size
     assert volume["numberOfReplicas"] == 2
     assert volume["state"] == "detached"
     assert volume["baseImage"] == base_image
@@ -421,7 +421,7 @@ def backup_test(clients, volume_name, base_image=""):  # NOQA
             credential = client.update(credential, value="")
             assert credential["value"] == ""
 
-        backupstore_test(client, lht_hostId, volume_name)
+        backupstore_test(client, lht_hostId, volume_name, size)
 
     volume = volume.detach()
     volume = common.wait_for_volume_detached(client, volume_name)
@@ -433,7 +433,7 @@ def backup_test(clients, volume_name, base_image=""):  # NOQA
     assert len(volumes) == 0
 
 
-def backupstore_test(client, host_id, volname):
+def backupstore_test(client, host_id, volname, size):
     volume = client.by_id_volume(volname)
     volume.snapshotCreate()
     w_data = generate_random_data(VOLUME_RWTEST_SIZE)
@@ -480,12 +480,12 @@ def backupstore_test(client, host_id, volname):
 
     # test restore
     restoreName = generate_volume_name()
-    volume = client.create_volume(name=restoreName, size=SIZE,
+    volume = client.create_volume(name=restoreName, size=size,
                                   numberOfReplicas=2,
                                   fromBackup=b["url"])
     volume = common.wait_for_volume_detached(client, restoreName)
     assert volume["name"] == restoreName
-    assert volume["size"] == SIZE
+    assert volume["size"] == size
     assert volume["numberOfReplicas"] == 2
     assert volume["state"] == "detached"
     volume = volume.attach(hostId=host_id)
