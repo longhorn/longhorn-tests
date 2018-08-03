@@ -12,15 +12,15 @@ from common import get_volume_endpoint
 
 @pytest.mark.coretest   # NOQA
 def test_ha_simple_recovery(client, volume_name):  # NOQA
-    ha_simple_recovery_test(client, volume_name)
+    ha_simple_recovery_test(client, volume_name, SIZE)
 
 
-def ha_simple_recovery_test(client, volume_name, base_image=""):  # NOQA
-    volume = client.create_volume(name=volume_name, size=SIZE,
+def ha_simple_recovery_test(client, volume_name, size, base_image=""):  # NOQA
+    volume = client.create_volume(name=volume_name, size=size,
                                   numberOfReplicas=2, baseImage=base_image)
     volume = common.wait_for_volume_detached(client, volume_name)
     assert volume["name"] == volume_name
-    assert volume["size"] == SIZE
+    assert volume["size"] == size
     assert volume["numberOfReplicas"] == 2
     assert volume["state"] == "detached"
     assert volume["created"] != ""

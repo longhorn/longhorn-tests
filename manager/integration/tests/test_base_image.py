@@ -28,11 +28,13 @@ def test_snapshot_with_base_image(clients, volume_name):  # NOQA
 
 
 def test_backup_with_base_image(clients, volume_name):  # NOQA
-    backup_test(clients, volume_name, BASE_IMAGE_EXT4)
+    backup_test(clients, volume_name, str(BASE_IMAGE_EXT4_SIZE),
+                BASE_IMAGE_EXT4)
 
 
 def test_ha_simple_recovery_with_base_image(client, volume_name):  # NOQA
-    ha_simple_recovery_test(client, volume_name, BASE_IMAGE_EXT4)
+    ha_simple_recovery_test(client, volume_name, str(BASE_IMAGE_EXT4_SIZE),
+                            BASE_IMAGE_EXT4)
 
 
 def test_ha_salvage_with_base_image(client, volume_name):  # NOQA
