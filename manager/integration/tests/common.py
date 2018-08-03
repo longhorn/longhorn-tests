@@ -71,6 +71,9 @@ SETTING_STORAGE_OVER_PROVISIONING_PERCENTAGE = \
     "storage-over-provisioning-percentage"
 SETTING_STORAGE_MINIMAL_AVAILABLE_PERCENTAGE = \
     "storage-minimal-available-percentage"
+DEFAULT_DISK_PATH = "/var/lib/rancher/longhorn"
+DEFAULT_STORAGE_OVER_PROVISIONING_PERCENTAGE = "500"
+DEFAULT_STORAGE_MINIMAL_AVAILABLE_PERCENTAGE = "10"
 
 
 def load_k8s_config():
@@ -662,6 +665,8 @@ def cleanup_client(client):
 
     # enable nodes scheduling
     reset_node(client)
+    reset_disks_for_all_nodes(client)
+    reset_settings(client)
 
 
 def get_client(address):
@@ -1262,3 +1267,53 @@ def cleanup_test_disks(client):
         except Exception as e:
             print "Exception when cleanup host disk", del_dir, e
             pass
+
+
+def reset_disks_for_all_nodes(client):  # NOQA
+    nodes = client.list_node()
+    for node in nodes:
+        if len(node["disks"]) == 0:
+            default_disk = {"path": DEFAULT_DISK_PATH, "allowScheduling": True}
+            node = node.diskUpdate(disks=[default_disk])
+            node = wait_for_disk_update(client, node["name"], 1)
+            assert(len(node["disks"])) == 1
+        # wait for node controller to update disk status
+        disks = node["disks"]
+        update_disks = []
+        for fsid, disk in disks.iteritems():
+            update_disk = disk
+            update_disk["allowScheduling"] = True
+            update_disk["storageReserved"] = 0
+            update_disks.append(update_disk)
+        node = node.diskUpdate(disks=update_disks)
+        for fsid, disk in node["disks"].iteritems():
+            # wait for node controller update disk status
+            wait_for_disk_status(client, node["name"], fsid,
+                                 "allowScheduling", True)
+            wait_for_disk_status(client, node["name"], fsid,
+                                 "storageScheduled", 0)
+            wait_for_disk_status(client, node["name"], fsid,
+                                 "storageReserved", 0)
+
+
+def reset_settings(client):
+    minimal_setting = client.by_id_setting(
+        SETTING_STORAGE_MINIMAL_AVAILABLE_PERCENTAGE)
+    try:
+        client.update(minimal_setting,
+                      value=DEFAULT_STORAGE_MINIMAL_AVAILABLE_PERCENTAGE)
+    except Exception as e:
+        print "Exception when update " \
+              "storage minimal available percentage settings", \
+            minimal_setting, e
+        pass
+
+    over_provisioning_setting = client.by_id_setting(
+        SETTING_STORAGE_OVER_PROVISIONING_PERCENTAGE)
+    try:
+        client.update(over_provisioning_setting,
+                      value=DEFAULT_STORAGE_OVER_PROVISIONING_PERCENTAGE)
+    except Exception as e:
+        print "Exception when update " \
+              "storage over provisioning percentage settings", \
+            over_provisioning_setting, e
