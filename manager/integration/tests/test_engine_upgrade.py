@@ -3,11 +3,10 @@ import pytest
 import common
 from common import client, volume_name  # NOQA
 from common import SIZE
-from common import check_data, get_self_host_id
+from common import check_volume_data, get_self_host_id
 from common import wait_for_volume_current_image, wait_for_volume_delete
 from common import wait_for_engine_image_ref_count, wait_for_engine_image_state
-from common import write_random_data
-from common import get_volume_engine
+from common import get_volume_engine, write_volume_random_data
 
 REPLICA_COUNT = 2
 
@@ -117,7 +116,7 @@ def engine_offline_upgrade_test(client, volume_name, base_image=""):  # NOQA
     volume = volume.attach(hostId=host_id)
     volume = common.wait_for_volume_healthy(client, volume_name)
 
-    data = write_random_data(volume)
+    data = write_volume_random_data(volume)
 
     volume = volume.detach()
     volume = common.wait_for_volume_detached(client, volume_name)
@@ -143,7 +142,7 @@ def engine_offline_upgrade_test(client, volume_name, base_image=""):  # NOQA
         assert replica["engineImage"] == engine_upgrade_image
         assert replica["currentImage"] == engine_upgrade_image
 
-    check_data(volume, data)
+    check_volume_data(volume, data)
 
     volume = volume.detach()
     volume = common.wait_for_volume_detached(client, volume_name)
@@ -170,7 +169,7 @@ def engine_offline_upgrade_test(client, volume_name, base_image=""):  # NOQA
         assert replica["engineImage"] == original_engine_image
         assert replica["currentImage"] == original_engine_image
 
-    check_data(volume, data)
+    check_volume_data(volume, data)
 
     client.delete(volume)
     wait_for_volume_delete(client, volume_name)
@@ -229,7 +228,7 @@ def engine_live_upgrade_test(client, volume_name, base_image=""):  # NOQA
         assert replica["engineImage"] == original_engine_image
         assert replica["currentImage"] == original_engine_image
 
-    data = write_random_data(volume)
+    data = write_volume_random_data(volume)
 
     volume.engineUpgrade(image=engine_upgrade_image)
     volume = wait_for_volume_current_image(client, volume_name,
@@ -248,7 +247,7 @@ def engine_live_upgrade_test(client, volume_name, base_image=""):  # NOQA
             count += 1
     assert count == REPLICA_COUNT
 
-    check_data(volume, data)
+    check_volume_data(volume, data)
 
     volume = volume.detach()
     volume = common.wait_for_volume_detached(client, volume_name)
@@ -271,7 +270,7 @@ def engine_live_upgrade_test(client, volume_name, base_image=""):  # NOQA
         assert replica["currentImage"] == engine_upgrade_image
 
     # Make sure detaching didn't somehow interfere with the data.
-    check_data(volume, data)
+    check_volume_data(volume, data)
 
     volume.engineUpgrade(image=original_engine_image)
     volume = wait_for_volume_current_image(client, volume_name,
@@ -293,7 +292,7 @@ def engine_live_upgrade_test(client, volume_name, base_image=""):  # NOQA
             count += 1
     assert count == REPLICA_COUNT
 
-    check_data(volume, data)
+    check_volume_data(volume, data)
 
     volume = volume.detach()
     volume = common.wait_for_volume_detached(client, volume_name)
@@ -389,7 +388,7 @@ def engine_live_upgrade_rollback_test(client, volume_name, base_image=""):  # NO
     volume = volume.attach(hostId=host_id)
     volume = common.wait_for_volume_healthy(client, volume_name)
 
-    data = write_random_data(volume)
+    data = write_volume_random_data(volume)
 
     volume.engineUpgrade(image=wrong_engine_upgrade_image)
     volume = client.by_id_volume(volume["name"])
@@ -414,7 +413,7 @@ def engine_live_upgrade_rollback_test(client, volume_name, base_image=""):  # NO
     volume = common.wait_for_volume_replica_count(client, volume_name,
                                                   REPLICA_COUNT)
 
-    check_data(volume, data)
+    check_volume_data(volume, data)
 
     assert volume["state"] == common.VOLUME_STATE_ATTACHED
     assert volume["robustness"] == common.VOLUME_ROBUSTNESS_HEALTHY
@@ -458,7 +457,7 @@ def engine_live_upgrade_rollback_test(client, volume_name, base_image=""):  # NO
         assert replica["engineImage"] == original_engine_image
         assert replica["currentImage"] == original_engine_image
 
-    check_data(volume, data)
+    check_volume_data(volume, data)
 
     client.delete(volume)
     wait_for_volume_delete(client, volume_name)

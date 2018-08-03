@@ -927,29 +927,6 @@ def generate_random_data(count):
                    for _ in range(count))
 
 
-def check_data(v, data):
-    """
-    Checks if the data written on the block device matches the inputted data.
-    """
-    resp = volume_read(v, data['pos'], data['len'])
-    assert resp == data['content']
-
-
-def write_random_data(v):
-    """
-    Generate random data and write it to the specified block device.
-    """
-    data = generate_random_data(VOLUME_RWTEST_SIZE)
-    data_pos = generate_random_pos(VOLUME_RWTEST_SIZE)
-    data_len = volume_write(v, data_pos, data)
-
-    return {
-        'content': data,
-        'pos': data_pos,
-        'len': data_len
-    }
-
-
 def check_volume_data(volume, data):
     dev = get_volume_endpoint(volume)
     check_device_data(dev, data)
