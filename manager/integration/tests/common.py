@@ -966,7 +966,7 @@ def get_device_checksum(dev):
             for chunk in iter(lambda: fdev.read(4096), b""):
                 hash.update(chunk)
 
-    return hash.digest()
+    return hash.hexdigest()
 
 
 def volume_read(v, start, count):
