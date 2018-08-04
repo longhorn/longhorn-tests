@@ -41,7 +41,8 @@ spec:
   containers:
   - name: longhorn-test-pod
     image: rancher/longhorn-manager-test:1b8c791
-#    args: ["-x", "-s",
+#    args: [
+#           "-x", "-s",
 #           "-m", "coretest",
 #           "-k", "test_recurring_job",
 #           "--enable-recurring-job-test",

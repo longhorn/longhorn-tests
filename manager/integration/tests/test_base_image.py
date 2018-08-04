@@ -15,27 +15,32 @@ from test_flexvolume import flexvolume_mount_test, flexvolume_io_test
 from test_csi import csi_mount_test, csi_io_test
 
 
+@pytest.mark.coretest   # NOQA
 @pytest.mark.baseimage  # NOQA
 def test_volume_basic_with_base_image(clients, volume_name):  # NOQA
     volume_basic_test(clients, volume_name, BASE_IMAGE_EXT4)
 
 
+@pytest.mark.coretest   # NOQA
 @pytest.mark.baseimage  # NOQA
 def test_volume_iscsi_basic_with_base_image(clients, volume_name):  # NOQA
     volume_iscsi_basic_test(clients, volume_name, BASE_IMAGE_EXT4)
 
 
+@pytest.mark.coretest   # NOQA
 @pytest.mark.baseimage  # NOQA
 def test_snapshot_with_base_image(clients, volume_name):  # NOQA
     snapshot_test(clients, volume_name, BASE_IMAGE_EXT4)
 
 
+@pytest.mark.coretest   # NOQA
 @pytest.mark.baseimage  # NOQA
 def test_backup_with_base_image(clients, volume_name):  # NOQA
     backup_test(clients, volume_name, str(BASE_IMAGE_EXT4_SIZE),
                 BASE_IMAGE_EXT4)
 
 
+@pytest.mark.coretest   # NOQA
 @pytest.mark.baseimage  # NOQA
 def test_ha_simple_recovery_with_base_image(client, volume_name):  # NOQA
     ha_simple_recovery_test(client, volume_name, str(BASE_IMAGE_EXT4_SIZE),
@@ -52,6 +57,7 @@ def test_engine_offline_upgrade_with_base_image(client, volume_name):  # NOQA
     engine_offline_upgrade_test(client, volume_name, BASE_IMAGE_EXT4)
 
 
+@pytest.mark.coretest   # NOQA
 @pytest.mark.baseimage  # NOQA
 def test_engine_live_upgrade_with_base_image(client, volume_name):  # NOQA
     engine_live_upgrade_test(client, volume_name, BASE_IMAGE_EXT4)
@@ -79,6 +85,7 @@ def test_flexvolume_mount_with_base_image(client, core_api, flexvolume_baseimage
                           BASE_IMAGE_EXT4_SIZE)
 
 
+@pytest.mark.coretest   # NOQA
 @pytest.mark.baseimage  # NOQA
 @pytest.mark.flexvolume  # NOQA
 def test_flexvolume_io_with_base_image(client, core_api, flexvolume_baseimage, pod):  # NOQA
@@ -92,6 +99,7 @@ def test_csi_mount_with_base_image(client, core_api, csi_pv_baseimage, pvc_basei
                    BASE_IMAGE_EXT4_SIZE, BASE_IMAGE_EXT4)
 
 
+@pytest.mark.coretest   # NOQA
 @pytest.mark.baseimage  # NOQA
 @pytest.mark.csi  # NOQA
 def test_csi_io_with_base_image(client, core_api, csi_pv_baseimage, pvc_baseimage, pod):  # NOQA
