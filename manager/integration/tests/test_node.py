@@ -5,7 +5,7 @@ import subprocess
 
 from common import client  # NOQA
 from common import Gi, SIZE, CONDITION_STATUS_FALSE, \
-    CONDITION_STATUS_TRUE, DEFAULT_DISK_PATH
+    CONDITION_STATUS_TRUE, DEFAULT_DISK_PATH, DIRECTORY_PATH
 from common import get_self_host_id
 from common import SETTING_STORAGE_OVER_PROVISIONING_PERCENTAGE, \
     SETTING_STORAGE_MINIMAL_AVAILABLE_PERCENTAGE
@@ -740,3 +740,153 @@ def test_node_controller_sync_disk_state(client):  # NOQA
         disks = node["disks"]
         for fsid, disk in disks.iteritems():
             assert disk[DISK_STATE] == DISK_STATE_SCHEDULABLE
+
+
+@pytest.mark.node  # NOQA
+def test_node_delete_umount_disks(client):  # NOQA
+    # create test disks for node
+    disk_volume_name = 'vol-disk-1'
+    lht_hostId = get_self_host_id()
+    node = client.by_id_node(lht_hostId)
+    disks = node["disks"]
+    disk_path1 = create_host_disk(client, disk_volume_name,
+                                  str(1*Gi), lht_hostId)
+    disk1 = {"path": disk_path1, "allowScheduling": True,
+             "storageMaximum": 5*Gi, "storageReserved": 0}
+
+    update_disk = get_update_disks(disks)
+    for disk in update_disk:
+        disk["allowScheduling"] = False
+    # add new disk for node
+    update_disk.append(disk1)
+    # save disks to node
+    node = node.diskUpdate(disks=update_disk)
+    node = common.wait_for_disk_update(client, lht_hostId,
+                                       len(update_disk))
+    assert len(node["disks"]) == len(update_disk)
+    node = client.by_id_node(lht_hostId)
+    assert len(node["disks"]) == len(update_disk)
+
+    disks = node["disks"]
+    for key, disk in disks.iteritems():
+        if disk["path"] == disk_path1:
+            assert disk["allowScheduling"]
+            assert disk["storageReserved"] == 0
+            assert disk["storageScheduled"] == 0
+            assert disk["storageMaximum"] == 5*Gi
+        else:
+            assert not disk["allowScheduling"]
+
+    # create a volume
+    nodes = client.list_node()
+    vol_name = common.generate_volume_name()
+    volume = create_volume(client, vol_name, str(SMALL_DISK_SIZE),
+                           lht_hostId, len(nodes))
+    replicas = volume["replicas"]
+    for replica in replicas:
+        id = replica["hostId"]
+        assert id != ""
+        assert replica["running"]
+        if id == lht_hostId:
+            assert replica["dataPath"].startswith(disk_path1)
+
+    # umount the disk
+    mount_path = os.path.join(DIRECTORY_PATH, disk_volume_name)
+    common.umount_disk(mount_path)
+
+    # wait for update node status
+    node = client.by_id_node(lht_hostId)
+    disks = node["disks"]
+    for fsid, disk in disks.iteritems():
+        if disk["path"] == disk_path1:
+            wait_for_disk_status(client, lht_hostId,
+                                 fsid, "allowScheduling", False)
+            wait_for_disk_status(client, lht_hostId,
+                                 fsid, "storageMaximum", 0)
+
+    # check result
+    node = client.by_id_node(lht_hostId)
+    disks = node["disks"]
+    update_disks = []
+    for fsid, disk in disks.iteritems():
+        if disk["path"] == disk_path1:
+            assert not disk["allowScheduling"]
+            assert disk["storageMaximum"] == 0
+            assert disk["storageAvailable"] == 0
+            assert disk["storageReserved"] == 0
+            assert disk["storageScheduled"] == SMALL_DISK_SIZE
+        else:
+            update_disks.append(disk)
+
+    # delete umount disk exception
+    with pytest.raises(Exception) as e:
+        node.diskUpdate(disks=update_disks)
+    assert "disable the disk" in str(e.value)
+
+    # update other disks
+    disks = node["disks"]
+    for fsid, disk in disks.iteritems():
+        if disk["path"] != disk_path1:
+            disk["allowScheduling"] = True
+    test_update = get_update_disks(disks)
+    node = node.diskUpdate(disks=test_update)
+    disks = node["disks"]
+    for fsid, disk in disks.iteritems():
+        if disk["path"] != disk_path1:
+            wait_for_disk_status(client, lht_hostId,
+                                 fsid, "allowScheduling", True)
+    node = client.by_id_node(lht_hostId)
+    disks = node["disks"]
+    for fsid, disk in disks.iteritems():
+        if disk["path"] != disk_path1:
+            assert disk["allowScheduling"]
+
+    # mount the disk back
+    mount_path = os.path.join(DIRECTORY_PATH, disk_volume_name)
+    disk_volume = client.by_id_volume(disk_volume_name)
+    dev = get_volume_endpoint(disk_volume)
+    common.mount_disk(dev, mount_path)
+
+    # wait for update node status
+    node = client.by_id_node(lht_hostId)
+    disks = node["disks"]
+    for fsid, disk in disks.iteritems():
+        if disk["path"] == disk_path1:
+            wait_for_disk_status(client, lht_hostId,
+                                 fsid, "allowScheduling", False)
+            wait_for_disk_status(client, lht_hostId,
+                                 fsid, "storageMaximum", 1*Gi)
+
+    # check result
+    node = client.by_id_node(lht_hostId)
+    disks = node["disks"]
+    for fsid, disk in disks.iteritems():
+        if disk["path"] == disk_path1:
+            free, total = common.get_host_disk_size(disk_path1)
+            assert not disk["allowScheduling"]
+            assert disk["storageMaximum"] == total
+            assert disk["storageAvailable"] == free
+            assert disk["storageReserved"] == 0
+            assert disk["storageScheduled"] == SMALL_DISK_SIZE
+
+    # delete volume and umount disk
+    cleanup_volume(client, vol_name)
+    mount_path = os.path.join(DIRECTORY_PATH, disk_volume_name)
+    common.umount_disk(mount_path)
+
+    # wait for update node status
+    node = client.by_id_node(lht_hostId)
+    disks = node["disks"]
+    for fsid, disk in disks.iteritems():
+        if disk["path"] == disk_path1:
+            wait_for_disk_status(client, lht_hostId,
+                                 fsid, "allowScheduling", False)
+            wait_for_disk_status(client, lht_hostId,
+                                 fsid, "storageMaximum", 0)
+
+    # test delete the umount disk
+    node = client.by_id_node(lht_hostId)
+    node.diskUpdate(disks=update_disks)
+    node = common.wait_for_disk_update(client, lht_hostId,
+                                       len(update_disks))
+    assert len(node["disks"]) == len(update_disks)
