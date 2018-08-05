@@ -1103,15 +1103,23 @@ def prepare_host_disk(dev, vol_name):
     cmd = ['mkdir', '-p', mount_path]
     subprocess.check_call(cmd)
 
+    mount_disk(dev, mount_path)
+    return mount_path
+
+
+def mount_disk(dev, mount_path):
     cmd = ['mount', dev, mount_path]
     subprocess.check_call(cmd)
-    return mount_path
+
+
+def umount_disk(mount_path):
+    cmd = ['umount', mount_path]
+    subprocess.check_call(cmd)
 
 
 def cleanup_host_disk(vol_name):
     mount_path = os.path.join(DIRECTORY_PATH, vol_name)
-    cmd = ['umount', mount_path]
-    subprocess.check_call(cmd)
+    umount_disk(mount_path)
 
     cmd = ['rm', '-r', mount_path]
     subprocess.check_call(cmd)
