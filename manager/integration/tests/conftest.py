@@ -3,6 +3,7 @@ import pytest
 from kubernetes import client as k8sclient, config as k8sconfig
 from kubernetes.client import Configuration
 from kubernetes.client.rest import ApiException
+from common import get_longhorn_api_client
 
 ENABLE_RECURRING_JOB_OPT = "--enable-recurring-job-test"
 ENABLE_FLEXVOLUME_OPT = "--enable-flexvolume-test"
@@ -50,3 +51,15 @@ def pytest_collection_modifyitems(config, items):
             for item in items:
                 if "csi" in item.keywords:
                     item.add_marker(skip_upgrade)
+
+    all_nodes_support_mount_propagation = True
+    for node in get_longhorn_api_client().list_node():
+        all_nodes_support_mount_propagation &= node.mountPropagation
+
+    if not all_nodes_support_mount_propagation:
+        skip_upgrade = pytest.mark.skip(reason="environment does not " +
+                                               "support base image")
+
+        for item in items:
+            if "baseimage" in item.keywords:
+                item.add_marker(skip_upgrade)
