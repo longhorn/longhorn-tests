@@ -6,17 +6,12 @@ from kubernetes.client.rest import ApiException
 from common import get_longhorn_api_client
 
 ENABLE_RECURRING_JOB_OPT = "--enable-recurring-job-test"
-ENABLE_FLEXVOLUME_OPT = "--enable-flexvolume-test"
-ENABLE_CSI_OPT = "--enable-csi-test"
 
 
 def pytest_addoption(parser):
     parser.addoption(ENABLE_RECURRING_JOB_OPT, action="store_true",
                      default=False,
                      help="enable recurring job test or not")
-    parser.addoption(ENABLE_FLEXVOLUME_OPT, action="store_true",
-                     default=False,
-                     help="enable Flexvolume test or not")
 
 
 def pytest_collection_modifyitems(config, items):
