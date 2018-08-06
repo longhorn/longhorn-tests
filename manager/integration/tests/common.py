@@ -504,9 +504,11 @@ def pvc(request):
             name=pvc_manifest['metadata']['name'], namespace='default',
             body=k8sclient.V1DeleteOptions())
 
+        # Working around line break issue.
+        key = 'volume.beta.kubernetes.io/storage-provisioner'
         # If not using StorageClass (such as in CSI test), the Longhorn volume
         # will not be automatically deleted, causing this to throw an error.
-        if 'storageClassName' in pvc_manifest['spec']:
+        if (key in claim.metadata.annotations):
             client = get_longhorn_api_client()
             wait_for_volume_delete(client, volume_name)
 

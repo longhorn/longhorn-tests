@@ -7,6 +7,10 @@ from common import Gi, DEFAULT_VOLUME_SIZE, VOLUME_RWTEST_SIZE
 from common import create_and_wait_pod, create_pvc_spec, delete_and_wait_pod
 from common import generate_random_data, read_volume_data, write_volume_data
 
+# Using a StorageClass because GKE is using the default StorageClass if not
+# specified. Volumes are still being manually created and not provisioned.
+CSI_PV_TEST_STORAGE_NAME = 'longhorn-csi-pv-test'
+
 
 def create_pv_storage(api, cli, pv, claim, base_image):
     """
@@ -24,6 +28,14 @@ def create_pv_storage(api, cli, pv, claim, base_image):
         namespace='default')
 
 
+def update_storageclass_references(name, pv, claim):
+    """
+    Rename all references to a StorageClass to a specified name.
+    """
+    pv['spec']['storageClassName'] = name
+    claim['spec']['storageClassName'] = name
+
+
 @pytest.mark.coretest   # NOQA
 @pytest.mark.csi  # NOQA
 def test_csi_mount(client, core_api, csi_pv, pvc, pod): # NOQA
@@ -35,16 +47,19 @@ def test_csi_mount(client, core_api, csi_pv, pvc, pod): # NOQA
     parameter. Take caution when reordering test fixtures.
     """
     volume_size = DEFAULT_VOLUME_SIZE * Gi
-    csi_mount_test(client, core_api, csi_pv, pvc, pod, volume_size)
+    csi_mount_test(client, core_api,
+                   csi_pv, pvc, pod, volume_size)
 
 
-def csi_mount_test(client, core_api, csi_pv, pvc, pod, volume_size, base_image=""): # NOQA
+def csi_mount_test(client, core_api, csi_pv, pvc, pod,  # NOQA
+                   volume_size, base_image=""): # NOQA
     pod_name = 'csi-mount-test'
     pod['metadata']['name'] = pod_name
     pod['spec']['volumes'] = [
         create_pvc_spec(pvc['metadata']['name'])
     ]
     pvc['spec']['volumeName'] = csi_pv['metadata']['name']
+    update_storageclass_references(CSI_PV_TEST_STORAGE_NAME, csi_pv, pvc)
 
     create_pv_storage(core_api, client, csi_pv, pvc, base_image)
     create_and_wait_pod(core_api, pod)
@@ -78,6 +93,7 @@ def csi_io_test(client, core_api, csi_pv, pvc, pod, base_image=""):  # NOQA
         create_pvc_spec(pvc['metadata']['name'])
     ]
     pvc['spec']['volumeName'] = csi_pv['metadata']['name']
+    update_storageclass_references(CSI_PV_TEST_STORAGE_NAME, csi_pv, pvc)
     test_data = generate_random_data(VOLUME_RWTEST_SIZE)
 
     create_pv_storage(core_api, client, csi_pv, pvc, base_image)
