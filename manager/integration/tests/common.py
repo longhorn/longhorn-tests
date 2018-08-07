@@ -78,6 +78,9 @@ DEFAULT_DISK_PATH = "/var/lib/rancher/longhorn"
 DEFAULT_STORAGE_OVER_PROVISIONING_PERCENTAGE = "500"
 DEFAULT_STORAGE_MINIMAL_AVAILABLE_PERCENTAGE = "10"
 
+NODE_CONDITION_MOUNTPROPAGATION = "MountPropagation"
+DISK_CONDITION_SCHEDULABLE = "Schedulable"
+
 
 def load_k8s_config():
     c = Configuration()
@@ -1170,6 +1173,19 @@ def wait_for_disk_status(client, name, fsid, key, value):
     return node
 
 
+def wait_for_disk_conditions(client, name, fsid, key, value):
+    for i in range(RETRY_COUNTS):
+        node = client.by_id_node(name)
+        disks = node["disks"]
+        disk = disks[fsid]
+        conditions = disk["conditions"]
+        if conditions[key]["status"] == value:
+            break
+        time.sleep(RETRY_ITERVAL)
+    assert conditions[key]["status"] == value
+    return node
+
+
 def wait_for_node_update(client, name, key, value):
     for i in range(RETRY_COUNTS):
         node = client.by_id_node(name)
@@ -1365,3 +1381,15 @@ def reset_settings(client):
         print "Exception when update " \
               "storage over provisioning percentage settings", \
             over_provisioning_setting, e
+
+
+def wait_for_node_mountpropagation_condition(client, name):
+    for i in range(RETRY_COUNTS):
+        node = client.by_id_node(name)
+        conditions = node["conditions"]
+        if conditions[NODE_CONDITION_MOUNTPROPAGATION] \
+                and conditions[NODE_CONDITION_MOUNTPROPAGATION]["status"] != \
+                CONDITION_STATUS_UNKNOWN:
+            break
+        time.sleep(RETRY_ITERVAL)
+    return node

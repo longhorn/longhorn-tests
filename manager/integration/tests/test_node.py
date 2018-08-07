@@ -5,20 +5,18 @@ import subprocess
 
 from common import client  # NOQA
 from common import Gi, SIZE, CONDITION_STATUS_FALSE, \
-    CONDITION_STATUS_TRUE, DEFAULT_DISK_PATH, DIRECTORY_PATH
+    CONDITION_STATUS_TRUE, DEFAULT_DISK_PATH, DIRECTORY_PATH, \
+    DISK_CONDITION_SCHEDULABLE
 from common import get_self_host_id
 from common import SETTING_STORAGE_OVER_PROVISIONING_PERCENTAGE, \
     SETTING_STORAGE_MINIMAL_AVAILABLE_PERCENTAGE
 from common import get_volume_endpoint
 from common import get_update_disks
-from common import wait_for_disk_status, wait_for_disk_update
+from common import wait_for_disk_status, wait_for_disk_update, \
+    wait_for_disk_conditions
 
 SMALL_DISK_SIZE = (1 * 1024 * 1024)
 TEST_FILE = 'test'
-
-DISK_STATE = "state"
-DISK_STATE_SCHEDULABLE = "schedulable"
-DISK_STATE_UNSCHEDULABLE = "unschedulable"
 
 
 def create_host_disk(client, vol_name, size, node_id):  # NOQA
@@ -547,9 +545,9 @@ def test_replica_scheduler_update_minimal_available(client):  # NOQA
     for node in nodes:
         disks = node["disks"]
         for fsid, disk in disks.iteritems():
-            wait_for_disk_status(client, node["name"],
-                                 fsid, DISK_STATE,
-                                 DISK_STATE_UNSCHEDULABLE)
+            wait_for_disk_conditions(client, node["name"],
+                                     fsid, DISK_CONDITION_SCHEDULABLE,
+                                     CONDITION_STATUS_FALSE)
 
     lht_hostId = get_self_host_id()
     vol_name = common.generate_volume_name()
@@ -567,9 +565,9 @@ def test_replica_scheduler_update_minimal_available(client):  # NOQA
     for node in nodes:
         disks = node["disks"]
         for fsid, disk in disks.iteritems():
-            wait_for_disk_status(client, node["name"],
-                                 fsid, DISK_STATE,
-                                 DISK_STATE_SCHEDULABLE)
+            wait_for_disk_conditions(client, node["name"],
+                                     fsid, DISK_CONDITION_SCHEDULABLE,
+                                     CONDITION_STATUS_TRUE)
     # check volume status
     volume = common.wait_for_volume_condition_scheduled(client, vol_name,
                                                         "status",
@@ -632,8 +630,10 @@ def test_node_controller_sync_storage_scheduled(client):  # NOQA
         for replica in replicas:
             if replica["hostId"] == node["name"]:
                 disk = disks[replica["diskID"]]
+                conditions = disk["conditions"]
                 assert disk["storageScheduled"] == SMALL_DISK_SIZE
-                assert disk[DISK_STATE] == DISK_STATE_SCHEDULABLE
+                assert conditions[DISK_CONDITION_SCHEDULABLE]["status"] == \
+                    CONDITION_STATUS_TRUE
                 break
 
     # clean volumes
@@ -714,15 +714,17 @@ def test_node_controller_sync_disk_state(client):  # NOQA
     for node in nodes:
         disks = node["disks"]
         for fsid, disk in disks.iteritems():
-            wait_for_disk_status(client, node["name"],
-                                 fsid, DISK_STATE,
-                                 DISK_STATE_UNSCHEDULABLE)
+            wait_for_disk_conditions(client, node["name"],
+                                     fsid, DISK_CONDITION_SCHEDULABLE,
+                                     CONDITION_STATUS_FALSE)
 
     nodes = client.list_node()
     for node in nodes:
         disks = node["disks"]
         for fsid, disk in disks.iteritems():
-            assert disk[DISK_STATE] == DISK_STATE_UNSCHEDULABLE
+            conditions = disk["conditions"]
+            assert conditions[DISK_CONDITION_SCHEDULABLE]["status"] == \
+                CONDITION_STATUS_FALSE
 
     setting = client.update(setting, value=old_minimal_available_percentage)
     assert setting["value"] == old_minimal_available_percentage
@@ -731,15 +733,17 @@ def test_node_controller_sync_disk_state(client):  # NOQA
     for node in nodes:
         disks = node["disks"]
         for fsid, disk in disks.iteritems():
-            wait_for_disk_status(client, node["name"],
-                                 fsid, DISK_STATE,
-                                 DISK_STATE_SCHEDULABLE)
+            wait_for_disk_conditions(client, node["name"],
+                                     fsid, DISK_CONDITION_SCHEDULABLE,
+                                     CONDITION_STATUS_TRUE)
 
     nodes = client.list_node()
     for node in nodes:
         disks = node["disks"]
         for fsid, disk in disks.iteritems():
-            assert disk[DISK_STATE] == DISK_STATE_SCHEDULABLE
+            conditions = disk["conditions"]
+            assert conditions[DISK_CONDITION_SCHEDULABLE]["status"] == \
+                CONDITION_STATUS_TRUE
 
 
 @pytest.mark.node  # NOQA
