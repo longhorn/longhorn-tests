@@ -3,7 +3,9 @@ import pytest
 from kubernetes import client as k8sclient, config as k8sconfig
 from kubernetes.client import Configuration
 from kubernetes.client.rest import ApiException
-from common import get_longhorn_api_client
+from common import get_longhorn_api_client, \
+    NODE_CONDITION_MOUNTPROPAGATION, CONDITION_STATUS_TRUE
+from common import wait_for_node_mountpropagation_condition
 
 ENABLE_RECURRING_JOB_OPT = "--enable-recurring-job-test"
 
@@ -49,7 +51,16 @@ def pytest_collection_modifyitems(config, items):
 
     all_nodes_support_mount_propagation = True
     for node in get_longhorn_api_client().list_node():
-        all_nodes_support_mount_propagation &= node.mountPropagation
+        node = wait_for_node_mountpropagation_condition(
+            get_longhorn_api_client(), node["name"])
+        conditions = node["conditions"]
+        for key, condition in conditions.iteritems():
+            if key == NODE_CONDITION_MOUNTPROPAGATION and \
+                    condition["status"] != CONDITION_STATUS_TRUE:
+                all_nodes_support_mount_propagation = False
+                break
+        if not all_nodes_support_mount_propagation:
+            break
 
     if not all_nodes_support_mount_propagation:
         skip_upgrade = pytest.mark.skip(reason="environment does not " +
