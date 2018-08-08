@@ -744,6 +744,32 @@ def test_node_controller_sync_disk_state(client):  # NOQA
             conditions = disk["conditions"]
             assert conditions[DISK_CONDITION_SCHEDULABLE]["status"] == \
                 CONDITION_STATUS_TRUE
+    # set storageReserved too much
+    lht_hostId = get_self_host_id()
+    node = client.by_id_node(lht_hostId)
+    disks = node["disks"]
+    for fsid, disk in disks.iteritems():
+        disk["storageReserved"] = disk["storageMaximum"] + 1*Gi
+    update_disks = get_update_disks(disks)
+    node = node.diskUpdate(disks=update_disks)
+    disks = node["disks"]
+    for fsid, disk in disks.iteritems():
+        wait_for_disk_status(client, lht_hostId,
+                             fsid, "storageReserved",
+                             disk["storageMaximum"] + 1*Gi)
+        wait_for_disk_conditions(client, lht_hostId,
+                                 fsid, DISK_CONDITION_SCHEDULABLE,
+                                 CONDITION_STATUS_FALSE)
+    # check condition
+    node = client.by_id_node(lht_hostId)
+    disks = node["disks"]
+    for fsid, disk in disks.iteritems():
+        conditions = disk["conditions"]
+        assert conditions[DISK_CONDITION_SCHEDULABLE]["status"] \
+            == CONDITION_STATUS_FALSE
+        disk["storageReserved"] = 0
+    update_disks = get_update_disks(disks)
+    node = node.diskUpdate(disks=update_disks)
 
 
 @pytest.mark.node  # NOQA
