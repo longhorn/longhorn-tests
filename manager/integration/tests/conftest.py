@@ -53,12 +53,15 @@ def pytest_collection_modifyitems(config, items):
     for node in get_longhorn_api_client().list_node():
         node = wait_for_node_mountpropagation_condition(
             get_longhorn_api_client(), node["name"])
-        conditions = node["conditions"]
-        for key, condition in conditions.iteritems():
-            if key == NODE_CONDITION_MOUNTPROPAGATION and \
-                    condition["status"] != CONDITION_STATUS_TRUE:
-                all_nodes_support_mount_propagation = False
-                break
+        if "conditions" not in node.keys():
+            all_nodes_support_mount_propagation = False
+        else:
+            conditions = node["conditions"]
+            for key, condition in conditions.iteritems():
+                if key == NODE_CONDITION_MOUNTPROPAGATION and \
+                        condition["status"] != CONDITION_STATUS_TRUE:
+                    all_nodes_support_mount_propagation = False
+                    break
         if not all_nodes_support_mount_propagation:
             break
 

@@ -1386,8 +1386,13 @@ def reset_settings(client):
 def wait_for_node_mountpropagation_condition(client, name):
     for i in range(RETRY_COUNTS):
         node = client.by_id_node(name)
-        conditions = node["conditions"]
-        if conditions[NODE_CONDITION_MOUNTPROPAGATION] \
+        conditions = {}
+        if "conditions" in node.keys():
+            conditions = node["conditions"]
+        if NODE_CONDITION_MOUNTPROPAGATION in \
+                conditions.keys() and \
+                "status" in \
+                conditions[NODE_CONDITION_MOUNTPROPAGATION].keys() \
                 and conditions[NODE_CONDITION_MOUNTPROPAGATION]["status"] != \
                 CONDITION_STATUS_UNKNOWN:
             break
