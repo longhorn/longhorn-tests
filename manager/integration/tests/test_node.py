@@ -920,3 +920,5 @@ def test_node_delete_umount_disks(client):  # NOQA
     node = common.wait_for_disk_update(client, lht_hostId,
                                        len(update_disks))
     assert len(node["disks"]) == len(update_disks)
+    cmd = ['rm', '-r', mount_path]
+    subprocess.check_call(cmd)
