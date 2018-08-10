@@ -6,7 +6,7 @@ import subprocess
 from common import client  # NOQA
 from common import Gi, SIZE, CONDITION_STATUS_FALSE, \
     CONDITION_STATUS_TRUE, DEFAULT_DISK_PATH, DIRECTORY_PATH, \
-    DISK_CONDITION_SCHEDULABLE
+    DISK_CONDITION_SCHEDULABLE, DISK_CONDITION_READY
 from common import get_self_host_id
 from common import SETTING_STORAGE_OVER_PROVISIONING_PERCENTAGE, \
     SETTING_STORAGE_MINIMAL_AVAILABLE_PERCENTAGE
@@ -833,6 +833,9 @@ def test_node_delete_umount_disks(client):  # NOQA
                                  fsid, "allowScheduling", False)
             wait_for_disk_status(client, lht_hostId,
                                  fsid, "storageMaximum", 0)
+            wait_for_disk_conditions(client, lht_hostId, fsid,
+                                     DISK_CONDITION_READY,
+                                     CONDITION_STATUS_FALSE)
 
     # check result
     node = client.by_id_node(lht_hostId)
@@ -845,7 +848,17 @@ def test_node_delete_umount_disks(client):  # NOQA
             assert disk["storageAvailable"] == 0
             assert disk["storageReserved"] == 0
             assert disk["storageScheduled"] == SMALL_DISK_SIZE
+            conditions = disk["conditions"]
+            assert conditions[DISK_CONDITION_READY]["status"] == \
+                CONDITION_STATUS_FALSE
+            assert conditions[DISK_CONDITION_SCHEDULABLE]["status"] == \
+                CONDITION_STATUS_FALSE
         else:
+            conditions = disk["conditions"]
+            assert conditions[DISK_CONDITION_READY]["status"] == \
+                CONDITION_STATUS_TRUE
+            assert conditions[DISK_CONDITION_SCHEDULABLE]["status"] == \
+                CONDITION_STATUS_TRUE
             update_disks.append(disk)
 
     # delete umount disk exception
@@ -886,6 +899,9 @@ def test_node_delete_umount_disks(client):  # NOQA
                                  fsid, "allowScheduling", False)
             wait_for_disk_status(client, lht_hostId,
                                  fsid, "storageMaximum", 1*Gi)
+            wait_for_disk_conditions(client, lht_hostId, fsid,
+                                     DISK_CONDITION_READY,
+                                     CONDITION_STATUS_TRUE)
 
     # check result
     node = client.by_id_node(lht_hostId)
@@ -898,6 +914,17 @@ def test_node_delete_umount_disks(client):  # NOQA
             assert disk["storageAvailable"] == free
             assert disk["storageReserved"] == 0
             assert disk["storageScheduled"] == SMALL_DISK_SIZE
+            conditions = disk["conditions"]
+            assert conditions[DISK_CONDITION_READY]["status"] == \
+                CONDITION_STATUS_TRUE
+            assert conditions[DISK_CONDITION_SCHEDULABLE]["status"] == \
+                CONDITION_STATUS_TRUE
+        else:
+            conditions = disk["conditions"]
+            assert conditions[DISK_CONDITION_READY]["status"] == \
+                CONDITION_STATUS_TRUE
+            assert conditions[DISK_CONDITION_SCHEDULABLE]["status"] == \
+                CONDITION_STATUS_TRUE
 
     # delete volume and umount disk
     cleanup_volume(client, vol_name)
