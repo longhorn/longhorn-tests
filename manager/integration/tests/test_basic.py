@@ -66,10 +66,50 @@ def test_hosts_and_settings(clients):  # NOQA
 
         old_value = setting["value"]
 
-        setting = client.update(setting, value="testvalue")
-        assert setting["value"] == "testvalue"
-        setting = client.by_id_setting(name)
-        assert setting["value"] == "testvalue"
+        if name == SETTING_STORAGE_OVER_PROVISIONING_PERCENTAGE:
+            with pytest.raises(Exception) as e:
+                client.update(setting, value="-100")
+            assert "with invalid StorageOverProvisioningPercentag" in \
+                   str(e.value)
+            with pytest.raises(Exception) as e:
+                client.update(setting, value="testvalue")
+            assert "with invalid StorageOverProvisioningPercentag" in \
+                   str(e.value)
+            setting = client.update(setting, value="200")
+            assert setting["value"] == "200"
+            setting = client.by_id_setting(name)
+            assert setting["value"] == "200"
+        elif name == SETTING_STORAGE_MINIMAL_AVAILABLE_PERCENTAGE:
+            with pytest.raises(Exception) as e:
+                client.update(setting, value="300")
+            assert "with invalid StorageMinimalAvailablePercentage" in \
+                   str(e.value)
+            with pytest.raises(Exception) as e:
+                client.update(setting, value="-30")
+            assert "with invalid StorageMinimalAvailablePercentage" in \
+                   str(e.value)
+            with pytest.raises(Exception) as e:
+                client.update(setting, value="testvalue")
+            assert "with invalid StorageMinimalAvailablePercentage" in \
+                   str(e.value)
+            setting = client.update(setting, value="30")
+            assert setting["value"] == "30"
+            setting = client.by_id_setting(name)
+            assert setting["value"] == "30"
+        elif name == SETTING_BACKUP_TARGET:
+            with pytest.raises(Exception) as e:
+                client.update(setting, value="testvalue$test")
+            assert "with invalid BackupTarget" in \
+                   str(e.value)
+            setting = client.update(setting, value="nfs://test")
+            assert setting["value"] == "nfs://test"
+            setting = client.by_id_setting(name)
+            assert setting["value"] == "nfs://test"
+        else:
+            setting = client.update(setting, value="testvalue")
+            assert setting["value"] == "testvalue"
+            setting = client.by_id_setting(name)
+            assert setting["value"] == "testvalue"
 
         setting = client.update(setting, value=old_value)
         assert setting["value"] == old_value

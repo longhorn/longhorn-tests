@@ -82,6 +82,14 @@ def test_node_disk_update(client):  # NOQA
         node.diskUpdate(disks=[])
     assert "disable the disk" in str(e.value)
 
+    # test storageReserved invalid exception
+    with pytest.raises(Exception) as e:
+        for fsid, disk in disks.iteritems():
+            disk["storageReserved"] = disk["storageMaximum"] + 1*Gi
+        update_disk = get_update_disks(disks)
+        node.diskUpdate(disks=update_disk)
+    assert "storageReserved setting of disk" in str(e.value)
+
     # create multiple disks for node
     node = client.by_id_node(lht_hostId)
     disks = node["disks"]
@@ -91,7 +99,8 @@ def test_node_disk_update(client):  # NOQA
              "storageMaximum": 5*Gi, "storageReserved": 2*Gi}
     disk_path2 = create_host_disk(client, 'vol-disk-2',
                                   SIZE, lht_hostId)
-    disk2 = {"path": disk_path2, "allowScheduling": True}
+    disk2 = {"path": disk_path2, "allowScheduling": True,
+             "storageMaximum": SMALL_DISK_SIZE}
 
     update_disk = get_update_disks(disks)
     # add new disk for node
@@ -142,7 +151,7 @@ def test_node_disk_update(client):  # NOQA
             assert disk["storageReserved"] == Gi
             assert disk["storageScheduled"] == 0
             free, total = common.get_host_disk_size(disk_path2)
-            assert disk["storageMaximum"] == total
+            assert disk["storageMaximum"] == SMALL_DISK_SIZE
             assert disk["storageAvailable"] == free
 
     # delete other disks, just remain default disk
@@ -744,32 +753,6 @@ def test_node_controller_sync_disk_state(client):  # NOQA
             conditions = disk["conditions"]
             assert conditions[DISK_CONDITION_SCHEDULABLE]["status"] == \
                 CONDITION_STATUS_TRUE
-    # set storageReserved too much
-    lht_hostId = get_self_host_id()
-    node = client.by_id_node(lht_hostId)
-    disks = node["disks"]
-    for fsid, disk in disks.iteritems():
-        disk["storageReserved"] = disk["storageMaximum"] + 1*Gi
-    update_disks = get_update_disks(disks)
-    node = node.diskUpdate(disks=update_disks)
-    disks = node["disks"]
-    for fsid, disk in disks.iteritems():
-        wait_for_disk_status(client, lht_hostId,
-                             fsid, "storageReserved",
-                             disk["storageMaximum"] + 1*Gi)
-        wait_for_disk_conditions(client, lht_hostId,
-                                 fsid, DISK_CONDITION_SCHEDULABLE,
-                                 CONDITION_STATUS_FALSE)
-    # check condition
-    node = client.by_id_node(lht_hostId)
-    disks = node["disks"]
-    for fsid, disk in disks.iteritems():
-        conditions = disk["conditions"]
-        assert conditions[DISK_CONDITION_SCHEDULABLE]["status"] \
-            == CONDITION_STATUS_FALSE
-        disk["storageReserved"] = 0
-    update_disks = get_update_disks(disks)
-    node = node.diskUpdate(disks=update_disks)
 
 
 @pytest.mark.node  # NOQA
