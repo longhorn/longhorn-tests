@@ -939,6 +939,8 @@ def test_node_delete_umount_disks(client):  # NOQA
             wait_for_disk_status(client, lht_hostId,
                                  fsid, "allowScheduling", False)
             wait_for_disk_status(client, lht_hostId,
+                                 fsid, "storageScheduled", 0)
+            wait_for_disk_status(client, lht_hostId,
                                  fsid, "storageMaximum", 0)
 
     # test delete the umount disk
