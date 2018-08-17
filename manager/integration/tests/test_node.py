@@ -71,7 +71,7 @@ def test_node_disk_update(client):  # NOQA
     # test add same disk by different mount path exception
     with pytest.raises(Exception) as e:
         disk = {"path": "/var/lib", "allowScheduling": True,
-                "storageMaximum": 5*Gi, "storageReserved": 2*Gi}
+                "storageReserved": 2 * Gi}
         update_disk = get_update_disks(disks)
         update_disk.append(disk)
         node = node.diskUpdate(disks=update_disk)
@@ -94,13 +94,11 @@ def test_node_disk_update(client):  # NOQA
     node = client.by_id_node(lht_hostId)
     disks = node["disks"]
     disk_path1 = create_host_disk(client, 'vol-disk-1',
-                                  SIZE, lht_hostId)
-    disk1 = {"path": disk_path1, "allowScheduling": True,
-             "storageMaximum": 5*Gi, "storageReserved": 2*Gi}
+                                  str(Gi), lht_hostId)
+    disk1 = {"path": disk_path1, "allowScheduling": True}
     disk_path2 = create_host_disk(client, 'vol-disk-2',
-                                  SIZE, lht_hostId)
-    disk2 = {"path": disk_path2, "allowScheduling": True,
-             "storageMaximum": SMALL_DISK_SIZE}
+                                  str(Gi), lht_hostId)
+    disk2 = {"path": disk_path2, "allowScheduling": True}
 
     update_disk = get_update_disks(disks)
     # add new disk for node
@@ -122,7 +120,7 @@ def test_node_disk_update(client):  # NOQA
         # keep default disk for other tests
         if disk["path"] == disk_path1 or disk["path"] == disk_path2:
             disk["allowScheduling"] = False
-            disk["storageReserved"] = Gi
+            disk["storageReserved"] = SMALL_DISK_SIZE
     node = node.diskUpdate(disks=update_disk)
     disks = node["disks"]
     # wait for node controller to update disk status
@@ -131,7 +129,7 @@ def test_node_disk_update(client):  # NOQA
             wait_for_disk_status(client, lht_hostId, fsid,
                                  "allowScheduling", False)
             wait_for_disk_status(client, lht_hostId, fsid,
-                                 "storageReserved", Gi)
+                                 "storageReserved", SMALL_DISK_SIZE)
             free, total = common.get_host_disk_size(disk_path1)
             wait_for_disk_status(client, lht_hostId, fsid,
                                  "storageAvailable", free)
@@ -141,17 +139,17 @@ def test_node_disk_update(client):  # NOQA
     for key, disk in disks.iteritems():
         if disk["path"] == disk_path1:
             assert not disk["allowScheduling"]
-            assert disk["storageReserved"] == Gi
+            assert disk["storageReserved"] == SMALL_DISK_SIZE
             assert disk["storageScheduled"] == 0
-            assert disk["storageMaximum"] == 5*Gi
             free, total = common.get_host_disk_size(disk_path1)
+            assert disk["storageMaximum"] == total
             assert disk["storageAvailable"] == free
         elif disk["path"] == disk_path2:
             assert not disk["allowScheduling"]
-            assert disk["storageReserved"] == Gi
+            assert disk["storageReserved"] == SMALL_DISK_SIZE
             assert disk["storageScheduled"] == 0
             free, total = common.get_host_disk_size(disk_path2)
-            assert disk["storageMaximum"] == SMALL_DISK_SIZE
+            assert disk["storageMaximum"] == total
             assert disk["storageAvailable"] == free
 
     # delete other disks, just remain default disk
@@ -246,8 +244,7 @@ def test_replica_scheduler_large_volume_fit_small_disk(client):  # NOQA
     node = client.by_id_node(lht_hostId)
     small_disk_path = create_host_disk(client, "vol-small",
                                        SIZE, lht_hostId)
-    small_disk = {"path": small_disk_path, "allowScheduling": True,
-                  "storageMaximum": SMALL_DISK_SIZE}
+    small_disk = {"path": small_disk_path, "allowScheduling": True}
     update_disks = get_update_disks(node["disks"])
     update_disks.append(small_disk)
     node = node.diskUpdate(disks=update_disks)
@@ -264,7 +261,7 @@ def test_replica_scheduler_large_volume_fit_small_disk(client):  # NOQA
 
     # volume is too large to fill into small size disk on current node
     vol_name = common.generate_volume_name()
-    volume = create_volume(client, vol_name, SIZE, lht_hostId, len(nodes))
+    volume = create_volume(client, vol_name, str(Gi), lht_hostId, len(nodes))
 
     nodes = client.list_node()
     node_hosts = []
@@ -499,7 +496,7 @@ def test_replica_scheduler_just_under_over_provisioning(client):  # NOQA
     # test just under over provisioning limit could be scheduled
     vol_name = common.generate_volume_name()
     volume = client.create_volume(name=vol_name,
-                                  size=str(1*Gi), numberOfReplicas=len(nodes))
+                                  size=str(Gi), numberOfReplicas=len(nodes))
     volume = common.wait_for_volume_condition_scheduled(client, vol_name,
                                                         "status",
                                                         CONDITION_STATUS_TRUE)
@@ -763,9 +760,9 @@ def test_node_delete_umount_disks(client):  # NOQA
     node = client.by_id_node(lht_hostId)
     disks = node["disks"]
     disk_path1 = create_host_disk(client, disk_volume_name,
-                                  str(1*Gi), lht_hostId)
+                                  str(Gi), lht_hostId)
     disk1 = {"path": disk_path1, "allowScheduling": True,
-             "storageMaximum": 5*Gi, "storageReserved": 0}
+             "storageReserved": SMALL_DISK_SIZE}
 
     update_disk = get_update_disks(disks)
     for disk in update_disk:
@@ -781,12 +778,34 @@ def test_node_delete_umount_disks(client):  # NOQA
     assert len(node["disks"]) == len(update_disk)
 
     disks = node["disks"]
+    # wait for node controller to update disk status
+    for fsid, disk in disks.iteritems():
+        if disk["path"] == disk_path1:
+            wait_for_disk_status(client, lht_hostId, fsid,
+                                 "allowScheduling", True)
+            wait_for_disk_status(client, lht_hostId, fsid,
+                                 "storageReserved", SMALL_DISK_SIZE)
+            free, total = common.get_host_disk_size(disk_path1)
+            wait_for_disk_status(client, lht_hostId, fsid,
+                                 "storageAvailable", free)
+            wait_for_disk_status(client, lht_hostId, fsid,
+                                 "storageMaximum", total)
+
+    node = client.by_id_node(lht_hostId)
+    disks = node["disks"]
     for key, disk in disks.iteritems():
         if disk["path"] == disk_path1:
             assert disk["allowScheduling"]
-            assert disk["storageReserved"] == 0
+            assert disk["storageReserved"] == SMALL_DISK_SIZE
             assert disk["storageScheduled"] == 0
-            assert disk["storageMaximum"] == 5*Gi
+            free, total = common.get_host_disk_size(disk_path1)
+            assert disk["storageMaximum"] == total
+            assert disk["storageAvailable"] == free
+            conditions = disk["conditions"]
+            assert conditions[DISK_CONDITION_READY]["status"] == \
+                CONDITION_STATUS_TRUE
+            assert conditions[DISK_CONDITION_SCHEDULABLE]["status"] == \
+                CONDITION_STATUS_TRUE
         else:
             assert not disk["allowScheduling"]
 
@@ -829,7 +848,7 @@ def test_node_delete_umount_disks(client):  # NOQA
             assert not disk["allowScheduling"]
             assert disk["storageMaximum"] == 0
             assert disk["storageAvailable"] == 0
-            assert disk["storageReserved"] == 0
+            assert disk["storageReserved"] == SMALL_DISK_SIZE
             assert disk["storageScheduled"] == SMALL_DISK_SIZE
             conditions = disk["conditions"]
             assert conditions[DISK_CONDITION_READY]["status"] == \
@@ -880,8 +899,6 @@ def test_node_delete_umount_disks(client):  # NOQA
         if disk["path"] == disk_path1:
             wait_for_disk_status(client, lht_hostId,
                                  fsid, "allowScheduling", False)
-            wait_for_disk_status(client, lht_hostId,
-                                 fsid, "storageMaximum", 1*Gi)
             wait_for_disk_conditions(client, lht_hostId, fsid,
                                      DISK_CONDITION_READY,
                                      CONDITION_STATUS_TRUE)
@@ -895,7 +912,7 @@ def test_node_delete_umount_disks(client):  # NOQA
             assert not disk["allowScheduling"]
             assert disk["storageMaximum"] == total
             assert disk["storageAvailable"] == free
-            assert disk["storageReserved"] == 0
+            assert disk["storageReserved"] == SMALL_DISK_SIZE
             assert disk["storageScheduled"] == SMALL_DISK_SIZE
             conditions = disk["conditions"]
             assert conditions[DISK_CONDITION_READY]["status"] == \
