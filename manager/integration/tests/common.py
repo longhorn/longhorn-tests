@@ -1348,7 +1348,8 @@ def reset_disks_for_all_nodes(client):  # NOQA
         for fsid, disk in disks.iteritems():
             update_disk = disk
             update_disk["allowScheduling"] = True
-            update_disk["storageReserved"] = 0
+            update_disk["storageReserved"] = \
+                update_disk["storageMaximum"] * 30 / 100
             update_disks.append(update_disk)
         node = node.diskUpdate(disks=update_disks)
         for fsid, disk in node["disks"].iteritems():
@@ -1358,7 +1359,8 @@ def reset_disks_for_all_nodes(client):  # NOQA
             wait_for_disk_status(client, node["name"], fsid,
                                  "storageScheduled", 0)
             wait_for_disk_status(client, node["name"], fsid,
-                                 "storageReserved", 0)
+                                 "storageReserved",
+                                 update_disk["storageMaximum"] * 30 / 100)
 
 
 def reset_settings(client):
