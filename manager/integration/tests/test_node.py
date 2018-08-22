@@ -476,6 +476,7 @@ def test_replica_scheduler_just_under_over_provisioning(client):  # NOQA
     lht_hostId = get_self_host_id()
     nodes = client.list_node()
     expect_node_disk = {}
+    max_size_array = []
     for node in nodes:
         disks = node["disks"]
         for fsid, disk in disks.iteritems():
@@ -483,20 +484,21 @@ def test_replica_scheduler_just_under_over_provisioning(client):  # NOQA
                 expect_disk = disk
                 expect_disk["fsid"] = fsid
                 expect_node_disk[node["name"]] = expect_disk
-            disk["storageReserved"] = \
-                disk["storageMaximum"] - 1*Gi
-        update_disks = get_update_disks(disks)
-        node = node.diskUpdate(disks=update_disks)
-        disks = node["disks"]
-        for fsid, disk in disks.iteritems():
-            wait_for_disk_status(client, node["name"],
-                                 fsid, "storageReserved",
-                                 disk["storageMaximum"] - 1*Gi)
+                max_size_array.append(disk["storageMaximum"])
+            disk["storageReserved"] = 0
+            update_disks = get_update_disks(disks)
+            node = node.diskUpdate(disks=update_disks)
+            disks = node["disks"]
+            for fsid, disk in disks.iteritems():
+                wait_for_disk_status(client, node["name"],
+                                     fsid, "storageReserved", 0)
 
+    max_size = min(max_size_array)
     # test just under over provisioning limit could be scheduled
     vol_name = common.generate_volume_name()
     volume = client.create_volume(name=vol_name,
-                                  size=str(Gi), numberOfReplicas=len(nodes))
+                                  size=str(max_size),
+                                  numberOfReplicas=len(nodes))
     volume = common.wait_for_volume_condition_scheduled(client, vol_name,
                                                         "status",
                                                         CONDITION_STATUS_TRUE)
