@@ -6,6 +6,7 @@ from random import randrange
 
 from common import client, core_api, statefulset, storage_class  # NOQA
 from common import DEFAULT_BACKUP_TIMEOUT, DEFAULT_POD_INTERVAL
+from common import DEFAULT_STATEFULSET_TIMEOUT, DEFAULT_STATEFULSET_INTERVAL
 from common import DEFAULT_POD_TIMEOUT, VOLUME_RWTEST_SIZE
 from common import delete_and_wait_statefulset, generate_random_data
 from common import get_apps_api_client, get_statefulset_pod_info
@@ -102,13 +103,13 @@ def create_and_test_backups(api, cli, pod_info):
 def wait_statefulset(statefulset_manifest):
     api = get_apps_api_client()
     replicas = statefulset_manifest['spec']['replicas']
-    for i in range(DEFAULT_POD_TIMEOUT):
+    for i in range(DEFAULT_STATEFULSET_TIMEOUT):
         s_set = api.read_namespaced_stateful_set(
             name=statefulset_manifest['metadata']['name'],
             namespace='default')
         if s_set.status.ready_replicas == replicas:
             break
-        time.sleep(DEFAULT_POD_INTERVAL)
+        time.sleep(DEFAULT_STATEFULSET_INTERVAL)
     assert s_set.status.ready_replicas == replicas
 
 
