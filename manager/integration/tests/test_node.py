@@ -64,6 +64,7 @@ def test_update_node(client):  # NOQA
 
 @pytest.mark.coretest   # NOQA
 @pytest.mark.node  # NOQA
+@pytest.mark.mountdisk # NOQA
 def test_node_disk_update(client):  # NOQA
     lht_hostId = get_self_host_id()
     node = client.by_id_node(lht_hostId)
@@ -237,6 +238,7 @@ def test_replica_scheduler_no_disks(client):  # NOQA
 
 
 @pytest.mark.node  # NOQA
+@pytest.mark.mountdisk # NOQA
 def test_replica_scheduler_large_volume_fit_small_disk(client):  # NOQA
     nodes = client.list_node()
     # create a small size disk on current node
@@ -650,6 +652,7 @@ def test_node_controller_sync_storage_scheduled(client):  # NOQA
 
 @pytest.mark.coretest   # NOQA
 @pytest.mark.node  # NOQA
+@pytest.mark.mountdisk # NOQA
 def test_node_controller_sync_storage_available(client):  # NOQA
     lht_hostId = get_self_host_id()
     # create a disk to test storageAvailable
@@ -755,6 +758,7 @@ def test_node_controller_sync_disk_state(client):  # NOQA
 
 
 @pytest.mark.node  # NOQA
+@pytest.mark.mountdisk # NOQA
 def test_node_delete_umount_disks(client):  # NOQA
     # create test disks for node
     disk_volume_name = 'vol-disk-1'
