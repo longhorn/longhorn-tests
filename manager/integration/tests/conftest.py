@@ -68,7 +68,11 @@ def pytest_collection_modifyitems(config, items):
     if not all_nodes_support_mount_propagation:
         skip_upgrade = pytest.mark.skip(reason="environment does not " +
                                                "support base image")
+        skip_node = pytest.mark.skip(reason="environment does not " +
+                                            "support mount disk")
 
         for item in items:
             if "baseimage" in item.keywords:
                 item.add_marker(skip_upgrade)
+            elif "mountdisk" in item.keywords:
+                item.add_marker(skip_node)
