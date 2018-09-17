@@ -456,20 +456,12 @@ def backup_test(clients, volume_name, size, base_image=""):  # NOQA
     assert len(volumes) == 0
 
 
-def backupstore_test(client, host_id, volname, size):
-    volume = client.by_id_volume(volname)
-    volume.snapshotCreate()
-    data = write_volume_random_data(volume)
-    snap2 = volume.snapshotCreate()
-    volume.snapshotCreate()
-
-    volume.snapshotBackup(name=snap2["name"])
-
+def find_backup(client, vol_name, snap_name):
     found = False
     for i in range(100):
         bvs = client.list_backupVolume()
         for bv in bvs:
-            if bv["name"] == volname:
+            if bv["name"] == vol_name:
                 found = True
                 break
         if found:
@@ -481,13 +473,27 @@ def backupstore_test(client, host_id, volname, size):
     for i in range(20):
         backups = bv.backupList()
         for b in backups:
-            if b["snapshotName"] == snap2["name"]:
+            if b["snapshotName"] == snap_name:
                 found = True
                 break
         if found:
             break
         time.sleep(1)
     assert found
+
+    return bv, b
+
+
+def backupstore_test(client, host_id, volname, size):
+    volume = client.by_id_volume(volname)
+    volume.snapshotCreate()
+    data = write_volume_random_data(volume)
+    snap2 = volume.snapshotCreate()
+    volume.snapshotCreate()
+
+    volume.snapshotBackup(name=snap2["name"])
+
+    bv, b = find_backup(client, volname, snap2["name"])
 
     new_b = bv.backupGet(name=b["name"])
     assert new_b["name"] == b["name"]

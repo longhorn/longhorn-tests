@@ -376,6 +376,47 @@ def flexvolume_baseimage(request):
 
 
 @pytest.fixture
+def pod_make(request):
+    def make_pod(name='test-pod'):
+        pod_manifest = {
+            'apiVersion': 'v1',
+            'kind': 'Pod',
+            'metadata': {
+                'name': name
+            },
+            'spec': {
+                'containers': [{
+                    'image': 'busybox',
+                    'imagePullPolicy': 'IfNotPresent',
+                    'name': 'sleep',
+                    "args": [
+                        "/bin/sh",
+                        "-c",
+                        "while true; do date; sleep 5; done"
+                    ],
+                    "volumeMounts": [{
+                        'name': 'pod-data',
+                        'mountPath': '/data'
+                    }],
+                }],
+                'volumes': []
+            }
+        }
+
+        def finalizer():
+            api = get_core_api_client()
+            try:
+                delete_and_wait_pod(api, pod_manifest['metadata']['name'])
+            except Exception:
+                return
+
+        request.addfinalizer(finalizer)
+        return pod_manifest
+
+    return make_pod
+
+
+@pytest.fixture
 def pod(request):
     pod_manifest = {
         'apiVersion': 'v1',
