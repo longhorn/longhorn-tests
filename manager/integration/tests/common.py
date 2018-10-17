@@ -6,6 +6,7 @@ import string
 import subprocess
 import json
 import hashlib
+import signal
 
 import pytest
 
@@ -84,6 +85,8 @@ DEFAULT_STORAGE_MINIMAL_AVAILABLE_PERCENTAGE = "10"
 NODE_CONDITION_MOUNTPROPAGATION = "MountPropagation"
 DISK_CONDITION_SCHEDULABLE = "Schedulable"
 DISK_CONDITION_READY = "Ready"
+
+STREAM_EXEC_TIMEOUT = 60
 
 
 def load_k8s_config():
@@ -281,10 +284,12 @@ def read_volume_data(api, pod_name):
         '-c',
         'cat /data/test'
     ]
-    return stream(
-        api.connect_get_namespaced_pod_exec, pod_name, 'default',
-        command=read_command, stderr=True, stdin=False, stdout=True,
-        tty=False)
+    with timeout(seconds=STREAM_EXEC_TIMEOUT,
+                 error_message='Timeout on executing stream read'):
+        return stream(
+            api.connect_get_namespaced_pod_exec, pod_name, 'default',
+            command=read_command, stderr=True, stdin=False, stdout=True,
+            tty=False)
 
 
 def write_volume_data(api, pod_name, test_data):
@@ -301,10 +306,12 @@ def write_volume_data(api, pod_name, test_data):
         '-c',
         'echo -ne ' + test_data + ' > /data/test; sync'
     ]
-    stream(
-        api.connect_get_namespaced_pod_exec, pod_name, 'default',
-        command=write_command, stderr=True, stdin=False, stdout=True,
-        tty=False)
+    with timeout(seconds=STREAM_EXEC_TIMEOUT,
+                 error_message='Timeout on executing stream write'):
+        return stream(
+            api.connect_get_namespaced_pod_exec, pod_name, 'default',
+            command=write_command, stderr=True, stdin=False, stdout=True,
+            tty=False)
 
 
 def size_to_string(volume_size):
@@ -407,7 +414,8 @@ def pod_make(request):
             api = get_core_api_client()
             try:
                 delete_and_wait_pod(api, pod_manifest['metadata']['name'])
-            except Exception:
+            except Exception as e:
+                print "Exception when waiting for pod deletion", e
                 return
 
         request.addfinalizer(finalizer)
@@ -1445,3 +1453,20 @@ def wait_for_node_mountpropagation_condition(client, name):
             break
         time.sleep(RETRY_ITERVAL)
     return node
+
+
+class timeout:
+
+    def __init__(self, seconds=1, error_message='Timeout'):
+        self.seconds = seconds
+        self.error_message = error_message
+
+    def handle_timeout(self, signum, frame):
+        raise Exception(self.error_message)
+
+    def __enter__(self):
+        signal.signal(signal.SIGALRM, self.handle_timeout)
+        signal.alarm(self.seconds)
+
+    def __exit__(self, type, value, traceback):
+        signal.alarm(0)
