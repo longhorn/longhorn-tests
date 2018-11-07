@@ -48,9 +48,9 @@ def test_hosts_and_settings(clients):  # NOQA
                      SETTING_STORAGE_OVER_PROVISIONING_PERCENTAGE,
                      SETTING_STORAGE_MINIMAL_AVAILABLE_PERCENTAGE]
     settings = client.list_setting()
-    # Skip DefaultEngineImage option
+    # Skip DefaultEngineImage, UpgradeChecker, LatestLonghornVersion option
     # since they have side affect
-    assert len(settings) == len(setting_names) + 1
+    assert len(settings) == len(setting_names) + 3
 
     settingMap = {}
     for setting in settings:
