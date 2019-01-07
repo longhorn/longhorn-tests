@@ -649,3 +649,42 @@ def test_setting_default_replica_count(clients, volume_name):  # NOQA
     wait_for_volume_delete(client, volume_name)
 
     setting = client.update(setting, value=old_value)
+
+
+@pytest.mark.coretest   # NOQA
+def test_volume_update_replica_count(clients, volume_name):  # NOQA
+    for host_id, client in clients.iteritems():
+        break
+
+    replica_count = 3
+    volume = client.create_volume(name=volume_name,
+                                  size=SIZE, numberOfReplicas=replica_count)
+    volume = common.wait_for_volume_detached(client, volume_name)
+    assert len(volume["replicas"]) == replica_count
+
+    volume.attach(hostId=host_id)
+    volume = common.wait_for_volume_healthy(client, volume_name)
+
+    replica_count = 5
+    volume = volume.updateReplicaCount(replicaCount=replica_count)
+    volume = common.wait_for_volume_degraded(client, volume_name)
+    volume = common.wait_for_volume_healthy(client, volume_name)
+    assert len(volume["replicas"]) == replica_count
+
+    old_replica_count = replica_count
+    replica_count = 2
+    volume = volume.updateReplicaCount(replicaCount=replica_count)
+    volume = common.wait_for_volume_healthy(client, volume_name)
+    assert len(volume["replicas"]) == old_replica_count
+
+    volume.replicaRemove(name=volume["replicas"][0]["name"])
+    volume.replicaRemove(name=volume["replicas"][1]["name"])
+    volume.replicaRemove(name=volume["replicas"][2]["name"])
+
+    volume = common.wait_for_volume_replica_count(client,
+                                                  volume_name, replica_count)
+    volume = common.wait_for_volume_healthy(client, volume_name)
+    assert len(volume["replicas"]) == replica_count
+
+    client.delete(volume)
+    wait_for_volume_delete(client, volume_name)

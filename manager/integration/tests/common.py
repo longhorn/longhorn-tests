@@ -46,6 +46,7 @@ VOLUME_STATE_DETACHED = "detached"
 
 VOLUME_FIELD_ROBUSTNESS = "robustness"
 VOLUME_ROBUSTNESS_HEALTHY = "healthy"
+VOLUME_ROBUSTNESS_DEGRADED = "degraded"
 VOLUME_ROBUSTNESS_FAULTED = "faulted"
 
 DEFAULT_STORAGECLASS_NAME = 'longhorn-test'
@@ -823,6 +824,15 @@ def wait_for_volume_healthy(client, name):
     return wait_for_volume_status(client, name,
                                   VOLUME_FIELD_ROBUSTNESS,
                                   VOLUME_ROBUSTNESS_HEALTHY)
+
+
+def wait_for_volume_degraded(client, name):
+    wait_for_volume_status(client, name,
+                           VOLUME_FIELD_STATE,
+                           VOLUME_STATE_ATTACHED)
+    return wait_for_volume_status(client, name,
+                                  VOLUME_FIELD_ROBUSTNESS,
+                                  VOLUME_ROBUSTNESS_DEGRADED)
 
 
 def wait_for_volume_faulted(client, name):
