@@ -2,7 +2,7 @@ import common
 import pytest
 import time
 
-from common import clients, volume_name  # NOQA
+from common import clients, volume_name     # NOQA
 from common import SIZE, DEV_PATH
 from common import check_device_data, write_device_random_data
 from common import check_volume_data, write_volume_random_data
@@ -19,9 +19,10 @@ from common import CONDITION_STATUS_FALSE, CONDITION_STATUS_TRUE
 
 SETTING_BACKUP_TARGET = "backup-target"
 SETTING_BACKUP_TARGET_CREDENTIAL_SECRET = "backup-target-credential-secret"
+SETTING_DEFAULT_REPLICA_COUNT = "default-replica-count"
 
 @pytest.mark.coretest   # NOQA
-def test_hosts_and_settings(clients):  # NOQA
+def test_hosts(clients):  # NOQA
     hosts = clients.itervalues().next().list_node()
     for host in hosts:
         assert host["name"] is not None
@@ -41,16 +42,17 @@ def test_hosts_and_settings(clients):  # NOQA
             assert host0_from_i["address"] == \
                 clients[host_id[i]].by_id_node(host_id[0])["address"]
 
-    client = clients[host_id[0]]
+
+@pytest.mark.coretest   # NOQA
+def test_settings(clients):  # NOQA
+    client = get_random_client(clients)
 
     setting_names = [SETTING_BACKUP_TARGET,
                      SETTING_BACKUP_TARGET_CREDENTIAL_SECRET,
                      SETTING_STORAGE_OVER_PROVISIONING_PERCENTAGE,
-                     SETTING_STORAGE_MINIMAL_AVAILABLE_PERCENTAGE]
+                     SETTING_STORAGE_MINIMAL_AVAILABLE_PERCENTAGE,
+                     SETTING_DEFAULT_REPLICA_COUNT]
     settings = client.list_setting()
-    # Skip DefaultEngineImage, UpgradeChecker, LatestLonghornVersion option
-    # since they have side affect
-    assert len(settings) == len(setting_names) + 3
 
     settingMap = {}
     for setting in settings:
@@ -69,11 +71,11 @@ def test_hosts_and_settings(clients):  # NOQA
         if name == SETTING_STORAGE_OVER_PROVISIONING_PERCENTAGE:
             with pytest.raises(Exception) as e:
                 client.update(setting, value="-100")
-            assert "with invalid StorageOverProvisioningPercentag" in \
+            assert "with invalid "+name in \
                    str(e.value)
             with pytest.raises(Exception) as e:
                 client.update(setting, value="testvalue")
-            assert "with invalid StorageOverProvisioningPercentag" in \
+            assert "with invalid "+name in \
                    str(e.value)
             setting = client.update(setting, value="200")
             assert setting["value"] == "200"
@@ -82,15 +84,15 @@ def test_hosts_and_settings(clients):  # NOQA
         elif name == SETTING_STORAGE_MINIMAL_AVAILABLE_PERCENTAGE:
             with pytest.raises(Exception) as e:
                 client.update(setting, value="300")
-            assert "with invalid StorageMinimalAvailablePercentage" in \
+            assert "with invalid "+name in \
                    str(e.value)
             with pytest.raises(Exception) as e:
                 client.update(setting, value="-30")
-            assert "with invalid StorageMinimalAvailablePercentage" in \
+            assert "with invalid "+name in \
                    str(e.value)
             with pytest.raises(Exception) as e:
                 client.update(setting, value="testvalue")
-            assert "with invalid StorageMinimalAvailablePercentage" in \
+            assert "with invalid "+name in \
                    str(e.value)
             setting = client.update(setting, value="30")
             assert setting["value"] == "30"
@@ -99,17 +101,34 @@ def test_hosts_and_settings(clients):  # NOQA
         elif name == SETTING_BACKUP_TARGET:
             with pytest.raises(Exception) as e:
                 client.update(setting, value="testvalue$test")
-            assert "with invalid BackupTarget" in \
+            assert "with invalid "+name in \
                    str(e.value)
             setting = client.update(setting, value="nfs://test")
             assert setting["value"] == "nfs://test"
             setting = client.by_id_setting(name)
             assert setting["value"] == "nfs://test"
-        else:
+        elif name == SETTING_BACKUP_TARGET_CREDENTIAL_SECRET:
             setting = client.update(setting, value="testvalue")
             assert setting["value"] == "testvalue"
             setting = client.by_id_setting(name)
             assert setting["value"] == "testvalue"
+        elif name == SETTING_DEFAULT_REPLICA_COUNT:
+            with pytest.raises(Exception) as e:
+                client.update(setting, value="-1")
+            assert "with invalid "+name in \
+                   str(e.value)
+            with pytest.raises(Exception) as e:
+                client.update(setting, value="testvalue")
+            assert "with invalid "+name in \
+                   str(e.value)
+            with pytest.raises(Exception) as e:
+                client.update(setting, value="21")
+            assert "with invalid "+name in \
+                   str(e.value)
+            setting = client.update(setting, value="2")
+            assert setting["value"] == "2"
+            setting = client.by_id_setting(name)
+            assert setting["value"] == "2"
 
         setting = client.update(setting, value=old_value)
         assert setting["value"] == old_value
@@ -613,3 +632,20 @@ def test_volume_scheduling_failure(clients, volume_name):  # NOQA
 
     client.delete(volume)
     wait_for_volume_delete(client, volume_name)
+
+
+@pytest.mark.coretest   # NOQA
+def test_setting_default_replica_count(clients, volume_name):  # NOQA
+    client = get_random_client(clients)
+    setting = client.by_id_setting(SETTING_DEFAULT_REPLICA_COUNT)
+    old_value = setting["value"]
+    setting = client.update(setting, value="5")
+
+    volume = client.create_volume(name=volume_name, size=SIZE)
+    volume = common.wait_for_volume_detached(client, volume_name)
+    assert len(volume["replicas"]) == int(setting.value)
+
+    client.delete(volume)
+    wait_for_volume_delete(client, volume_name)
+
+    setting = client.update(setting, value=old_value)
