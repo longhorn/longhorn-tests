@@ -89,6 +89,10 @@ DISK_CONDITION_READY = "Ready"
 
 STREAM_EXEC_TIMEOUT = 60
 
+SETTING_BACKUP_TARGET = "backup-target"
+SETTING_BACKUP_TARGET_CREDENTIAL_SECRET = "backup-target-credential-secret"
+SETTING_DEFAULT_REPLICA_COUNT = "default-replica-count"
+
 
 def load_k8s_config():
     c = Configuration()
@@ -1480,3 +1484,35 @@ class timeout:
 
     def __exit__(self, type, value, traceback):
         signal.alarm(0)
+
+
+def is_backupTarget_s3(s):
+    return s.startswith("s3://")
+
+
+def find_backup(client, vol_name, snap_name):
+    found = False
+    for i in range(100):
+        bvs = client.list_backupVolume()
+        for bv in bvs:
+            if bv["name"] == vol_name:
+                found = True
+                break
+        if found:
+            break
+        time.sleep(1)
+    assert found
+
+    found = False
+    for i in range(20):
+        backups = bv.backupList()
+        for b in backups:
+            if b["snapshotName"] == snap_name:
+                found = True
+                break
+        if found:
+            break
+        time.sleep(1)
+    assert found
+
+    return bv, b

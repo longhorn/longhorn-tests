@@ -1,6 +1,5 @@
 import common
 import pytest
-import time
 
 from common import clients, volume_name     # NOQA
 from common import SIZE, DEV_PATH
@@ -11,15 +10,9 @@ from common import iscsi_login, iscsi_logout
 from common import wait_for_volume_delete
 from common import wait_for_snapshot_purge
 from common import generate_volume_name
-from common import SETTING_STORAGE_OVER_PROVISIONING_PERCENTAGE, \
-    SETTING_STORAGE_MINIMAL_AVAILABLE_PERCENTAGE
 from common import get_volume_endpoint, get_volume_engine
 from common import get_random_client
 from common import CONDITION_STATUS_FALSE, CONDITION_STATUS_TRUE
-
-SETTING_BACKUP_TARGET = "backup-target"
-SETTING_BACKUP_TARGET_CREDENTIAL_SECRET = "backup-target-credential-secret"
-SETTING_DEFAULT_REPLICA_COUNT = "default-replica-count"
 
 @pytest.mark.coretest   # NOQA
 def test_hosts(clients):  # NOQA
@@ -47,11 +40,11 @@ def test_hosts(clients):  # NOQA
 def test_settings(clients):  # NOQA
     client = get_random_client(clients)
 
-    setting_names = [SETTING_BACKUP_TARGET,
-                     SETTING_BACKUP_TARGET_CREDENTIAL_SECRET,
-                     SETTING_STORAGE_OVER_PROVISIONING_PERCENTAGE,
-                     SETTING_STORAGE_MINIMAL_AVAILABLE_PERCENTAGE,
-                     SETTING_DEFAULT_REPLICA_COUNT]
+    setting_names = [common.SETTING_BACKUP_TARGET,
+                     common.SETTING_BACKUP_TARGET_CREDENTIAL_SECRET,
+                     common.SETTING_STORAGE_OVER_PROVISIONING_PERCENTAGE,
+                     common.SETTING_STORAGE_MINIMAL_AVAILABLE_PERCENTAGE,
+                     common.SETTING_DEFAULT_REPLICA_COUNT]
     settings = client.list_setting()
 
     settingMap = {}
@@ -68,7 +61,7 @@ def test_settings(clients):  # NOQA
 
         old_value = setting["value"]
 
-        if name == SETTING_STORAGE_OVER_PROVISIONING_PERCENTAGE:
+        if name == common.SETTING_STORAGE_OVER_PROVISIONING_PERCENTAGE:
             with pytest.raises(Exception) as e:
                 client.update(setting, value="-100")
             assert "with invalid "+name in \
@@ -81,7 +74,7 @@ def test_settings(clients):  # NOQA
             assert setting["value"] == "200"
             setting = client.by_id_setting(name)
             assert setting["value"] == "200"
-        elif name == SETTING_STORAGE_MINIMAL_AVAILABLE_PERCENTAGE:
+        elif name == common.SETTING_STORAGE_MINIMAL_AVAILABLE_PERCENTAGE:
             with pytest.raises(Exception) as e:
                 client.update(setting, value="300")
             assert "with invalid "+name in \
@@ -98,7 +91,7 @@ def test_settings(clients):  # NOQA
             assert setting["value"] == "30"
             setting = client.by_id_setting(name)
             assert setting["value"] == "30"
-        elif name == SETTING_BACKUP_TARGET:
+        elif name == common.SETTING_BACKUP_TARGET:
             with pytest.raises(Exception) as e:
                 client.update(setting, value="testvalue$test")
             assert "with invalid "+name in \
@@ -107,12 +100,12 @@ def test_settings(clients):  # NOQA
             assert setting["value"] == "nfs://test"
             setting = client.by_id_setting(name)
             assert setting["value"] == "nfs://test"
-        elif name == SETTING_BACKUP_TARGET_CREDENTIAL_SECRET:
+        elif name == common.SETTING_BACKUP_TARGET_CREDENTIAL_SECRET:
             setting = client.update(setting, value="testvalue")
             assert setting["value"] == "testvalue"
             setting = client.by_id_setting(name)
             assert setting["value"] == "testvalue"
-        elif name == SETTING_DEFAULT_REPLICA_COUNT:
+        elif name == common.SETTING_DEFAULT_REPLICA_COUNT:
             with pytest.raises(Exception) as e:
                 client.update(setting, value="-1")
             assert "with invalid "+name in \
@@ -442,24 +435,24 @@ def backup_test(clients, volume_name, size, base_image=""):  # NOQA
     volume = volume.attach(hostId=lht_hostId)
     volume = common.wait_for_volume_healthy(client, volume_name)
 
-    setting = client.by_id_setting(SETTING_BACKUP_TARGET)
+    setting = client.by_id_setting(common.SETTING_BACKUP_TARGET)
     # test backupTarget for multiple settings
     backupstores = common.get_backupstore_url()
     for backupstore in backupstores:
-        if is_backupTarget_s3(backupstore):
+        if common.is_backupTarget_s3(backupstore):
             backupsettings = backupstore.split("$")
             setting = client.update(setting, value=backupsettings[0])
             assert setting["value"] == backupsettings[0]
 
             credential = client.by_id_setting(
-                    SETTING_BACKUP_TARGET_CREDENTIAL_SECRET)
+                    common.SETTING_BACKUP_TARGET_CREDENTIAL_SECRET)
             credential = client.update(credential, value=backupsettings[1])
             assert credential["value"] == backupsettings[1]
         else:
             setting = client.update(setting, value=backupstore)
             assert setting["value"] == backupstore
             credential = client.by_id_setting(
-                    SETTING_BACKUP_TARGET_CREDENTIAL_SECRET)
+                    common.SETTING_BACKUP_TARGET_CREDENTIAL_SECRET)
             credential = client.update(credential, value="")
             assert credential["value"] == ""
 
@@ -475,34 +468,6 @@ def backup_test(clients, volume_name, size, base_image=""):  # NOQA
     assert len(volumes) == 0
 
 
-def find_backup(client, vol_name, snap_name):
-    found = False
-    for i in range(100):
-        bvs = client.list_backupVolume()
-        for bv in bvs:
-            if bv["name"] == vol_name:
-                found = True
-                break
-        if found:
-            break
-        time.sleep(1)
-    assert found
-
-    found = False
-    for i in range(20):
-        backups = bv.backupList()
-        for b in backups:
-            if b["snapshotName"] == snap_name:
-                found = True
-                break
-        if found:
-            break
-        time.sleep(1)
-    assert found
-
-    return bv, b
-
-
 def backupstore_test(client, host_id, volname, size):
     volume = client.by_id_volume(volname)
     volume.snapshotCreate()
@@ -512,7 +477,7 @@ def backupstore_test(client, host_id, volname, size):
 
     volume.snapshotBackup(name=snap2["name"])
 
-    bv, b = find_backup(client, volname, snap2["name"])
+    bv, b = common.find_backup(client, volname, snap2["name"])
 
     new_b = bv.backupGet(name=b["name"])
     assert new_b["name"] == b["name"]
@@ -581,10 +546,6 @@ def test_volume_multinode(clients, volume_name):  # NOQA
     assert len(volumes) == 0
 
 
-def is_backupTarget_s3(s):
-    return s.startswith("s3://")
-
-
 @pytest.mark.coretest  # NOQA
 def test_volume_scheduling_failure(clients, volume_name):  # NOQA
     '''
@@ -637,7 +598,7 @@ def test_volume_scheduling_failure(clients, volume_name):  # NOQA
 @pytest.mark.coretest   # NOQA
 def test_setting_default_replica_count(clients, volume_name):  # NOQA
     client = get_random_client(clients)
-    setting = client.by_id_setting(SETTING_DEFAULT_REPLICA_COUNT)
+    setting = client.by_id_setting(common.SETTING_DEFAULT_REPLICA_COUNT)
     old_value = setting["value"]
     setting = client.update(setting, value="5")
 

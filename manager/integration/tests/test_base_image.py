@@ -1,12 +1,13 @@
 import pytest
 
+import test_ha
+
 from common import client, clients, volume_name, core_api  # NOQA
 from common import flexvolume, csi_pv_baseimage, pvc_baseimage, pod  # NOQA
 from common import flexvolume_baseimage, csi_pv, pvc, pod_make  # NOQA
 from common import BASE_IMAGE_EXT4, BASE_IMAGE_EXT4_SIZE
 from test_basic import volume_basic_test, volume_iscsi_basic_test
 from test_basic import snapshot_test, backup_test
-from test_ha import ha_simple_recovery_test, ha_salvage_test
 from test_engine_upgrade import engine_offline_upgrade_test
 from test_engine_upgrade import engine_live_upgrade_test
 from test_engine_upgrade import engine_live_upgrade_rollback_test
@@ -43,13 +44,21 @@ def test_backup_with_base_image(clients, volume_name):  # NOQA
 @pytest.mark.coretest   # NOQA
 @pytest.mark.baseimage  # NOQA
 def test_ha_simple_recovery_with_base_image(client, volume_name):  # NOQA
-    ha_simple_recovery_test(client, volume_name, str(BASE_IMAGE_EXT4_SIZE),
-                            BASE_IMAGE_EXT4)
+    test_ha.ha_simple_recovery_test(client, volume_name,
+                                    str(BASE_IMAGE_EXT4_SIZE),
+                                    BASE_IMAGE_EXT4)
 
 
 @pytest.mark.baseimage  # NOQA
 def test_ha_salvage_with_base_image(client, volume_name):  # NOQA
-    ha_salvage_test(client, volume_name, BASE_IMAGE_EXT4)
+    test_ha.ha_salvage_test(client, volume_name, BASE_IMAGE_EXT4)
+
+
+@pytest.mark.baseimage  # NOQA
+def test_ha_backup_deletion_recovery(client, volume_name):  # NOQA
+    test_ha.ha_backup_deletion_recovery_test(client, volume_name,
+                                             str(BASE_IMAGE_EXT4_SIZE),
+                                             BASE_IMAGE_EXT4)
 
 
 @pytest.mark.baseimage  # NOQA
