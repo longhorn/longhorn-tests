@@ -7,9 +7,6 @@ from common import Gi, DEFAULT_VOLUME_SIZE, VOLUME_RWTEST_SIZE
 from common import create_and_wait_pod, create_pvc_spec, delete_and_wait_pod
 from common import generate_random_data, read_volume_data, write_volume_data
 from common import generate_volume_name
-from test_basic import SETTING_BACKUP_TARGET
-from test_basic import SETTING_BACKUP_TARGET_CREDENTIAL_SECRET
-from test_basic import find_backup, is_backupTarget_s3
 
 # Using a StorageClass because GKE is using the default StorageClass if not
 # specified. Volumes are still being manually created and not provisioned.
@@ -148,25 +145,25 @@ def csi_backup_test(client, core_api, csi_pv, pvc, pod_make, base_image=""):  # 
                             base_image, "")
     test_data = generate_random_data(VOLUME_RWTEST_SIZE)
 
-    setting = client.by_id_setting(SETTING_BACKUP_TARGET)
+    setting = client.by_id_setting(common.SETTING_BACKUP_TARGET)
     # test backupTarget for multiple settings
     backupstores = common.get_backupstore_url()
     i = 1
     for backupstore in backupstores:
-        if is_backupTarget_s3(backupstore):
+        if common.is_backupTarget_s3(backupstore):
             backupsettings = backupstore.split("$")
             setting = client.update(setting, value=backupsettings[0])
             assert setting["value"] == backupsettings[0]
 
             credential = client.by_id_setting(
-                    SETTING_BACKUP_TARGET_CREDENTIAL_SECRET)
+                    common.SETTING_BACKUP_TARGET_CREDENTIAL_SECRET)
             credential = client.update(credential, value=backupsettings[1])
             assert credential["value"] == backupsettings[1]
         else:
             setting = client.update(setting, value=backupstore)
             assert setting["value"] == backupstore
             credential = client.by_id_setting(
-                    SETTING_BACKUP_TARGET_CREDENTIAL_SECRET)
+                    common.SETTING_BACKUP_TARGET_CREDENTIAL_SECRET)
             credential = client.update(credential, value="")
             assert credential["value"] == ""
 
@@ -183,7 +180,7 @@ def backupstore_test(client, core_api, csi_pv, pvc, pod_make, pod_name, base_ima
     snap = volume.snapshotCreate()
     volume.snapshotBackup(name=snap["name"])
 
-    bv, b = find_backup(client, vol_name, snap["name"])
+    bv, b = common.find_backup(client, vol_name, snap["name"])
 
     pod2_name = 'csi-backup-test-' + str(i)
     create_and_wait_csi_pod(pod2_name, client, core_api, csi_pv, pvc, pod_make,
