@@ -45,7 +45,7 @@ spec:
 #           "-x", "-s",
 #           "-m", "coretest",
 #           "-k", "test_recurring_job",
-#           "--enable-recurring-job-test",
+#           "--skip-recurring-job-test",
 #           ]
     imagePullPolicy: Always
     securityContext:

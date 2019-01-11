@@ -7,19 +7,19 @@ from common import get_longhorn_api_client, \
     NODE_CONDITION_MOUNTPROPAGATION, CONDITION_STATUS_TRUE
 from common import wait_for_node_mountpropagation_condition
 
-ENABLE_RECURRING_JOB_OPT = "--enable-recurring-job-test"
+SKIP_RECURRING_JOB_OPT = "--skip-recurring-job-test"
 
 
 def pytest_addoption(parser):
-    parser.addoption(ENABLE_RECURRING_JOB_OPT, action="store_true",
+    parser.addoption(SKIP_RECURRING_JOB_OPT, action="store_true",
                      default=False,
-                     help="enable recurring job test or not")
+                     help="skip recurring job test or not")
 
 
 def pytest_collection_modifyitems(config, items):
-    if not config.getoption(ENABLE_RECURRING_JOB_OPT):
-        skip_upgrade = pytest.mark.skip(reason="need " +
-                                        ENABLE_RECURRING_JOB_OPT +
+    if config.getoption(SKIP_RECURRING_JOB_OPT):
+        skip_upgrade = pytest.mark.skip(reason="remove " +
+                                        SKIP_RECURRING_JOB_OPT +
                                         " option to run")
         for item in items:
             if "recurring_job" in item.keywords:
