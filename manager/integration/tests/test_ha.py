@@ -197,7 +197,11 @@ def ha_backup_deletion_recovery_test(client, volume_name, size, base_image=""): 
         snapshots = res_volume.snapshotList()
         # only the backup snapshot + volume-head
         assert len(snapshots) == 2
-        backup_snapshot = snapshots[0]["name"]
+        backup_snapshot = ""
+        for snap in snapshots:
+            if snap["name"] != "volume-head":
+                backup_snapshot = snap["name"]
+        assert backup_snapshot != ""
 
         res_volume.snapshotCreate()
         snapshots = res_volume.snapshotList()
