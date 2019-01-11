@@ -957,3 +957,87 @@ def test_node_delete_umount_disks(client):  # NOQA
     assert len(node["disks"]) == len(update_disks)
     cmd = ['rm', '-r', mount_path]
     subprocess.check_call(cmd)
+
+
+@pytest.mark.coretest   # NOQA
+@pytest.mark.node  # NOQA
+@pytest.mark.mountdisk # NOQA
+def test_replica_cleanup(client):  # NOQA
+    nodes = client.list_node()
+    lht_hostId = get_self_host_id()
+
+    node = client.by_id_node(lht_hostId)
+    extra_disk_path = create_host_disk(client, "extra-disk",
+                                       "10G", lht_hostId)
+    extra_disk = {"path": extra_disk_path, "allowScheduling": True}
+    update_disks = get_update_disks(node["disks"])
+    update_disks.append(extra_disk)
+    node = node.diskUpdate(disks=update_disks)
+    node = common.wait_for_disk_update(client, lht_hostId,
+                                       len(update_disks))
+    assert len(node["disks"]) == len(update_disks)
+
+    extra_disk_fsid = ""
+    for fsid, disk in node["disks"].iteritems():
+        if disk["path"] == extra_disk_path:
+            extra_disk_fsid = fsid
+            break
+
+    for node in nodes:
+        # disable all the disks except the ones on the current node
+        if node["name"] == lht_hostId:
+            continue
+        for fsid, disk in node["disks"].iteritems():
+            break
+        disk["allowScheduling"] = False
+        update_disks = get_update_disks(node["disks"])
+        node.diskUpdate(disks=update_disks)
+        node = wait_for_disk_status(client, node["name"],
+                                    fsid,
+                                    "allowScheduling", False)
+
+    vol_name = common.generate_volume_name()
+    # more replicas, make sure both default and extra disk will get one
+    volume = create_volume(client, vol_name, str(Gi), lht_hostId, 5)
+    data_paths = []
+    for replica in volume["replicas"]:
+        data_paths.append(replica["dataPath"])
+
+    # data path should exist now
+    for data_path in data_paths:
+        assert subprocess.call(["nsenter",
+                                "--mount=/host/proc/1/ns/mnt",
+                                "--net=/host/proc/1/ns/net",
+                                "bash", "-c", "ls " + data_path]) == 0
+
+    cleanup_volume(client, vol_name)
+
+    # data path should be gone due to the cleanup of replica
+    for data_path in data_paths:
+        assert subprocess.call(["nsenter",
+                                "--mount=/host/proc/1/ns/mnt",
+                                "--net=/host/proc/1/ns/net",
+                                "bash", "-c", "ls " + data_path]) != 0
+
+    node = client.by_id_node(lht_hostId)
+    disks = node["disks"]
+    disk = disks[extra_disk_fsid]
+    disk["allowScheduling"] = False
+    update_disks = get_update_disks(disks)
+    node = node.diskUpdate(disks=update_disks)
+    node = wait_for_disk_status(client, lht_hostId,
+                                extra_disk_fsid,
+                                "allowScheduling", False)
+    wait_for_disk_status(client, lht_hostId, extra_disk_fsid,
+                         "storageScheduled", 0)
+
+    disks = node["disks"]
+    disk = disks[extra_disk_fsid]
+    assert not disk["allowScheduling"]
+    disks.pop(extra_disk_fsid)
+    update_disks = get_update_disks(disks)
+    node.diskUpdate(disks=update_disks)
+    node = common.wait_for_disk_update(client, lht_hostId,
+                                       len(update_disks))
+
+    cleanup_host_disk(client, 'extra-disk')
