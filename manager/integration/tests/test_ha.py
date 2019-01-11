@@ -195,18 +195,18 @@ def ha_backup_deletion_recovery_test(client, volume_name, size, base_image=""): 
         check_volume_data(res_volume, data)
 
         snapshots = res_volume.snapshotList()
-        # only the backup snapshot
-        assert len(snapshots) == 1
+        # only the backup snapshot + volume-head
+        assert len(snapshots) == 2
         backup_snapshot = snapshots[0]["name"]
 
         res_volume.snapshotCreate()
         snapshots = res_volume.snapshotList()
-        assert len(snapshots) == 2
+        assert len(snapshots) == 3
 
         res_volume.snapshotDelete(name=backup_snapshot)
         res_volume.snapshotPurge()
         snapshots = res_volume.snapshotList()
-        assert len(snapshots) == 1
+        assert len(snapshots) == 2
 
         ha_rebuild_replica_test(client, res_name)
 

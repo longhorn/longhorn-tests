@@ -34,8 +34,8 @@ def test_recurring_job(clients, volume_name):  # NOQA
     for snapshot in snapshots:
         if snapshot["removed"] is False:
             count += 1
-    # 2 snapshots, 1 backup
-    assert count == 3
+    # 2 snapshots, 1 backup, 1 volume-head
+    assert count == 4
 
     job_backup2 = {"name": "backup2", "cron": "* * * * *",
                    "task": "backup", "retain": 2}
@@ -49,8 +49,8 @@ def test_recurring_job(clients, volume_name):  # NOQA
     for snapshot in snapshots:
         if snapshot["removed"] is False:
             count += 1
-    # 2 from job_snap, 1 from job_backup, 2 from job_backup2
-    assert count == 5
+    # 2 from job_snap, 1 from job_backup, 2 from job_backup2, 1 volume-head
+    assert count == 6
 
     volume = volume.detach()
 
