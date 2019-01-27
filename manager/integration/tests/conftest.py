@@ -29,11 +29,11 @@ def pytest_collection_modifyitems(config, items):
     c.assert_hostname = False
     Configuration.set_default(c)
     k8sconfig.load_incluster_config()
-    api = k8sclient.CoreV1Api()
+    api = k8sclient.AppsV1Api()
 
     try:
-        api.read_namespaced_pod(
-            name='csi-provisioner-0', namespace='longhorn-system')
+        api.read_namespaced_deployment(
+            name='csi-attacher', namespace='longhorn-system')
         skip_upgrade = pytest.mark.skip(reason="environment is not using " +
                                                "flexvolume")
 
@@ -48,6 +48,8 @@ def pytest_collection_modifyitems(config, items):
             for item in items:
                 if "csi" in item.keywords:
                     item.add_marker(skip_upgrade)
+        else:
+            assert "unknown status error" == ""
 
     all_nodes_support_mount_propagation = True
     for node in get_longhorn_api_client().list_node():
