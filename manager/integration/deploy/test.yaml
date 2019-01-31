@@ -40,7 +40,7 @@ metadata:
 spec:
   containers:
   - name: longhorn-test-pod
-    image: rancher/longhorn-manager-test:v0.3.3
+    image: rancher/longhorn-manager-test:fe2acc3
 #    args: [
 #           "-x", "-s",
 #           "-m", "coretest",
