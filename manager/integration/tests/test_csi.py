@@ -132,7 +132,7 @@ def csi_io_test(client, core_api, csi_pv, pvc, pod_make, base_image=""):  # NOQA
 
 
 @pytest.mark.csi  # NOQA
-def test_csi_backup(client, core_api, csi_pv, pvc, pod_make):
+def test_csi_backup(client, core_api, csi_pv, pvc, pod_make):  # NOQA
     """
     Test that backup/restore works with volumes created by CSI driver.
     """

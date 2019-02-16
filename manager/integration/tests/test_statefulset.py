@@ -12,9 +12,9 @@ from common import delete_and_wait_statefulset, generate_random_data
 from common import get_apps_api_client, get_statefulset_pod_info
 from common import get_storage_api_client, read_volume_data, size_to_string
 from common import wait_for_volume_detached, write_volume_data
+from common import check_csi
 
 from kubernetes import client as k8sclient
-from kubernetes.client.rest import ApiException
 
 Gi = (1 * 1024 * 1024 * 1024)
 
@@ -328,6 +328,7 @@ def test_statefulset_restore(client, core_api, storage_class,  # NOQA
     """
     Test that data can be restored into volumes usable by a StatefulSet.
     """
+
     statefulset_name = 'statefulset-restore-test'
     update_test_manifests(statefulset, storage_class, statefulset_name)
 
@@ -339,13 +340,7 @@ def test_statefulset_restore(client, core_api, storage_class,  # NOQA
 
     delete_and_wait_statefulset(core_api, client, statefulset)
 
-    csi = True
-    try:
-        core_api.read_namespaced_pod(
-            name='csi-provisioner-0', namespace='longhorn-system')
-    except ApiException as e:
-        if (e.status == 404):
-            csi = False
+    csi = check_csi(core_api)
 
     # StatefulSet fixture already cleans these up, use the manifests instead of
     # the fixtures to avoid issues during teardown.

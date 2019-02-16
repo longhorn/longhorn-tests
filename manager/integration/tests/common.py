@@ -16,6 +16,9 @@ from kubernetes import client as k8sclient, config as k8sconfig
 from kubernetes.client import Configuration
 from kubernetes.stream import stream
 
+from kubernetes.client.rest import ApiException
+
+
 Mi = (1024 * 1024)
 Gi = (1024 * Mi)
 
@@ -92,6 +95,10 @@ STREAM_EXEC_TIMEOUT = 60
 SETTING_BACKUP_TARGET = "backup-target"
 SETTING_BACKUP_TARGET_CREDENTIAL_SECRET = "backup-target-credential-secret"
 SETTING_DEFAULT_REPLICA_COUNT = "default-replica-count"
+
+CSI_UNKNOWN = 0
+CSI_TRUE = 1
+CSI_FALSE = 2
 
 
 def load_k8s_config():
@@ -1516,3 +1523,72 @@ def find_backup(client, vol_name, snap_name):
     assert found
 
     return bv, b
+
+
+def check_longhorn(core_api):
+    ready = False
+
+    has_engine_image = False
+    has_driver_deployer = False
+    has_manager = False
+    has_ui = False
+
+    try:
+        longhorn_pod_list = core_api.list_namespaced_pod(
+            'longhorn-system', include_uninitialized=False)
+        for item in longhorn_pod_list.items:
+            labels = item.metadata.labels
+            if not labels:
+                pass
+            elif labels.get('longhorn', '') == 'engine-image':
+                has_engine_image = True
+            elif labels.get('app', '') == 'longhorn-driver-deployer':
+                has_driver_deployer = True
+            elif labels.get('app', '') == 'longhorn-manager':
+                has_manager = True
+            elif labels.get('app', '') == 'longhorn-ui':
+                has_ui = True
+
+        if has_engine_image and has_driver_deployer and has_manager and has_ui:
+            ready = True
+
+    except ApiException as e:
+        if (e.status == 404):
+            ready = False
+
+    assert ready
+
+
+def check_csi(core_api):
+    using_csi = CSI_UNKNOWN
+
+    has_attacher = False
+    has_provisioner = False
+    has_csi_plugin = False
+
+    try:
+        longhorn_pod_list = core_api.list_namespaced_pod(
+            'longhorn-system', include_uninitialized=False)
+        for item in longhorn_pod_list.items:
+            labels = item.metadata.labels
+            if not labels:
+                pass
+            elif labels.get('app', '') == 'csi-attacher':
+                has_attacher = True
+            elif labels.get('app', '') == 'csi-provisioner':
+                has_provisioner = True
+            elif labels.get('app', '') == 'longhorn-csi-plugin':
+                has_csi_plugin = True
+
+        if has_attacher and has_provisioner and has_csi_plugin:
+            using_csi = CSI_TRUE
+        elif not has_attacher and not has_provisioner and not has_csi_plugin:
+            using_csi = CSI_FALSE
+
+    except ApiException as e:
+        if (e.status == 404):
+            using_csi = CSI_FALSE
+
+    assert using_csi != CSI_UNKNOWN
+
+    return True if using_csi == CSI_TRUE else False
