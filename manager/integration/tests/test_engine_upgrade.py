@@ -443,6 +443,8 @@ def engine_live_upgrade_rollback_test(client, volume_name, base_image=""):  # NO
 
     # upgrade to the correct image when offline
     volume.engineUpgrade(image=original_engine_image)
+    volume = wait_for_volume_current_image(client, volume_name,
+                                           original_engine_image)
     volume = client.by_id_volume(volume["name"])
     assert volume["engineImage"] == original_engine_image
 
