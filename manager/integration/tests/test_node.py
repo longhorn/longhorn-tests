@@ -14,6 +14,7 @@ from common import get_volume_endpoint
 from common import get_update_disks
 from common import wait_for_disk_status, wait_for_disk_update, \
     wait_for_disk_conditions
+from common import exec_nsenter
 
 SMALL_DISK_SIZE = (1 * 1024 * 1024)
 TEST_FILE = 'test'
@@ -1005,19 +1006,14 @@ def test_replica_cleanup(client):  # NOQA
 
     # data path should exist now
     for data_path in data_paths:
-        assert subprocess.call(["nsenter",
-                                "--mount=/host/proc/1/ns/mnt",
-                                "--net=/host/proc/1/ns/net",
-                                "bash", "-c", "ls " + data_path]) == 0
+        assert exec_nsenter("ls {}".format(data_path))
 
     cleanup_volume(client, vol_name)
 
     # data path should be gone due to the cleanup of replica
     for data_path in data_paths:
-        assert subprocess.call(["nsenter",
-                                "--mount=/host/proc/1/ns/mnt",
-                                "--net=/host/proc/1/ns/net",
-                                "bash", "-c", "ls " + data_path]) != 0
+        with pytest.raises(subprocess.CalledProcessError):
+            exec_nsenter("ls {}".format(data_path))
 
     node = client.by_id_node(lht_hostId)
     disks = node["disks"]
