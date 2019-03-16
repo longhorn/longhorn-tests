@@ -33,6 +33,7 @@ BASE_IMAGE_EXT4_SIZE = 32 * Mi
 
 PORT = ":9500"
 
+RETRY_LIST_DIR = 3
 RETRY_COUNTS = 300
 RETRY_ITERVAL = 0.5
 
@@ -800,7 +801,14 @@ def get_clients(hosts):
 def wait_for_device_login(dest_path, name):
     dev = ""
     for i in range(RETRY_COUNTS):
-        files = os.listdir(dest_path)
+        for j in range(RETRY_LIST_DIR):
+            files = []
+            try:
+                files = os.listdir(dest_path)
+                break
+            except Exception:
+                time.sleep(1)
+        assert files
         if name in files:
             dev = name
             break
@@ -1111,12 +1119,11 @@ def get_iscsi_lun(iscsi):
 
 
 def exec_nsenter(cmd):
-    exec_cmd = "nsenter --mount=/host/proc/1/ns/mnt \
-               --net=/host/proc/1/ns/net bash -c \"" + cmd + "\""
-    fp = os.popen(exec_cmd)
-    ret = fp.read()
-    fp.close()
-    return ret
+    dockerd_pid = find_dockerd_pid() or "1"
+    exec_cmd = ["nsenter", "--mount=/host/proc/{}/ns/mnt".format(dockerd_pid),
+                "--net=/host/proc/{}/ns/net".format(dockerd_pid),
+                "bash", "-c", cmd]
+    return subprocess.check_output(exec_cmd)
 
 
 def iscsi_login(iscsi_ep):
@@ -1143,6 +1150,40 @@ def iscsi_logout(iscsi_ep):
     exec_nsenter(cmd_logout)
     cmd_rm_discovery = "iscsiadm -m discovery -p " + ip + " -o delete"
     exec_nsenter(cmd_rm_discovery)
+
+
+def get_process_info(p_path):
+    info = {}
+    with open(p_path) as file:
+        for line in file.readlines():
+            if 'Name:\t' == line[0:len('Name:\t')]:
+                info["Name"] = line[len("Name:"):].strip()
+            if 'Pid:\t' == line[0:len('Pid:\t')]:
+                info["Pid"] = line[len("Pid:"):].strip()
+            if 'PPid:\t' == line[0:len('PPid:\t')]:
+                info["PPid"] = line[len("PPid:"):].strip()
+    if "Name" not in info or "Pid" not in info or "PPid" not in info:
+        return
+    return info
+
+
+def find_self():
+    return get_process_info("/host/proc/self/status")
+
+
+def find_ancestor_process_by_name(ancestor_name):
+    p = find_self()
+    while True:
+        if not p or p["Pid"] == "1":
+            break
+        if p["Name"] == ancestor_name:
+            return p["Pid"]
+        p = get_process_info("/host/proc/{}/status".format(p["PPid"]))
+    return
+
+
+def find_dockerd_pid():
+    return find_ancestor_process_by_name("dockerd")
 
 
 def generate_random_pos(size, used={}):
