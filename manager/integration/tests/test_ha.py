@@ -228,3 +228,35 @@ def ha_backup_deletion_recovery_test(client, volume_name, size, base_image=""): 
 
     volumes = client.list_volume()
     assert len(volumes) == 0
+
+
+# https://github.com/rancher/longhorn/issues/415
+def test_ha_prohibit_deleting_last_replica(client, volume_name):  # NOQA
+    volume = client.create_volume(name=volume_name, size=SIZE,
+                                  numberOfReplicas=1)
+    volume = common.wait_for_volume_detached(client, volume_name)
+    assert volume["name"] == volume_name
+    assert volume["size"] == SIZE
+    assert volume["numberOfReplicas"] == 1
+    assert volume["state"] == "detached"
+    assert volume["created"] != ""
+
+    host_id = get_self_host_id()
+    volume = volume.attach(hostId=host_id)
+    volume = common.wait_for_volume_healthy(client, volume_name)
+
+    assert len(volume["replicas"]) == 1
+    replica0 = volume["replicas"][0]
+
+    with pytest.raises(Exception) as e:
+        volume.replicaRemove(name=replica0["name"])
+    assert "no other healthy replica available" in str(e.value)
+
+    volume = volume.detach()
+    volume = common.wait_for_volume_detached(client, volume_name)
+
+    client.delete(volume)
+    common.wait_for_volume_delete(client, volume_name)
+
+    volumes = client.list_volume()
+    assert len(volumes) == 0
