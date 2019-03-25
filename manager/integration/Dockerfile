@@ -1,7 +1,7 @@
 FROM python:2.7.14-stretch
 
 RUN apt-get update && \
-    apt-get install -y vim-tiny
+    apt-get install -y vim-tiny nfs-common
 
 ADD tests/requirements.txt .
 RUN pip install -r requirements.txt
