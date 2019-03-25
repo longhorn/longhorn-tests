@@ -1,4 +1,6 @@
+import time
 import common
+import subprocess
 import pytest
 
 from common import clients, volume_name     # NOQA
@@ -13,6 +15,47 @@ from common import generate_volume_name
 from common import get_volume_endpoint, get_volume_engine
 from common import get_random_client
 from common import CONDITION_STATUS_FALSE, CONDITION_STATUS_TRUE
+from common import RETRY_COUNTS, RETRY_ITERVAL, RETRY_COMMAND_COUNT
+
+
+def create_volume(client, vol_name, num_of_replicas=2,
+                  size=SIZE, base_image="", frontend="blockdev"):
+    client.create_volume(name=vol_name, size=size,
+                         numberOfReplicas=num_of_replicas,
+                         frontend=frontend, baseImage=base_image)
+    volume = common.wait_for_volume_detached(client, vol_name)
+    assert volume["name"] == vol_name
+    assert volume["size"] == size
+    assert volume["numberOfReplicas"] == num_of_replicas
+    assert volume["state"] == "detached"
+    assert volume["baseImage"] == base_image
+    assert volume["frontend"] == frontend
+    assert volume["created"] != ""
+    return volume
+
+
+def create_backup(client, volname):
+    volume = client.by_id_volume(volname)
+    volume.snapshotCreate()
+    data = write_volume_random_data(volume)
+    snap = volume.snapshotCreate()
+    volume.snapshotCreate()
+    volume.snapshotBackup(name=snap["name"])
+
+    bv, b = common.find_backup(client, volname, snap["name"])
+
+    new_b = bv.backupGet(name=b["name"])
+    assert new_b["name"] == b["name"]
+    assert new_b["url"] == b["url"]
+    assert new_b["snapshotName"] == b["snapshotName"]
+    assert new_b["snapshotCreated"] == b["snapshotCreated"]
+    assert new_b["created"] == b["created"]
+    assert new_b["volumeName"] == b["volumeName"]
+    assert new_b["volumeSize"] == b["volumeSize"]
+    assert new_b["volumeCreated"] == b["volumeCreated"]
+
+    return bv, b, snap, data
+
 
 @pytest.mark.coretest   # NOQA
 def test_hosts(clients):  # NOQA
@@ -155,21 +198,7 @@ def volume_basic_test(clients, volume_name, base_image=""):  # NOQA
                                       numberOfReplicas=2,
                                       frontend="invalid_frontend")
 
-    volume = client.create_volume(name=volume_name, size=SIZE,
-                                  numberOfReplicas=num_replicas,
-                                  baseImage=base_image)
-
-    assert volume["name"] == volume_name
-    assert volume["size"] == SIZE
-    assert volume["numberOfReplicas"] == num_replicas
-    assert volume["frontend"] == "blockdev"
-    assert volume["baseImage"] == base_image
-
-    volume = common.wait_for_volume_detached(client, volume_name)
-    assert len(volume["replicas"]) == num_replicas
-
-    assert volume["state"] == "detached"
-    assert volume["created"] != ""
+    volume = create_volume(client, volume_name, num_replicas, SIZE, base_image)
 
     def validate_volume_basic(expected, actual):
         assert actual["name"] == expected["name"]
@@ -240,21 +269,7 @@ def volume_iscsi_basic_test(clients, volume_name, base_image=""):  # NOQA
     for host_id, client in clients.iteritems():
         break
 
-    volume = client.create_volume(name=volume_name, size=SIZE,
-                                  numberOfReplicas=3, frontend="iscsi",
-                                  baseImage=base_image)
-    assert volume["name"] == volume_name
-    assert volume["size"] == SIZE
-    assert volume["numberOfReplicas"] == 3
-    assert volume["frontend"] == "iscsi"
-    assert volume["baseImage"] == base_image
-
-    volume = common.wait_for_volume_detached(client, volume_name)
-    assert len(volume["replicas"]) == 3
-
-    assert volume["state"] == "detached"
-    assert volume["created"] != ""
-
+    volume = create_volume(client, volume_name, 3, SIZE, base_image, "iscsi")
     volume.attach(hostId=host_id)
     volume = common.wait_for_volume_healthy(client, volume_name)
 
@@ -296,15 +311,7 @@ def snapshot_test(clients, volume_name, base_image):  # NOQA
     for host_id, client in clients.iteritems():
         break
 
-    volume = client.create_volume(name=volume_name, size=SIZE,
-                                  numberOfReplicas=2, baseImage=base_image)
-
-    volume = common.wait_for_volume_detached(client, volume_name)
-    assert volume["name"] == volume_name
-    assert volume["size"] == SIZE
-    assert volume["numberOfReplicas"] == 2
-    assert volume["state"] == "detached"
-    assert volume["baseImage"] == base_image
+    volume = create_volume(client, volume_name, base_image=base_image)
 
     lht_hostId = get_self_host_id()
     volume = volume.attach(hostId=lht_hostId)
@@ -422,14 +429,7 @@ def backup_test(clients, volume_name, size, base_image=""):  # NOQA
     for host_id, client in clients.iteritems():
         break
 
-    volume = client.create_volume(name=volume_name, size=size,
-                                  numberOfReplicas=2, baseImage=base_image)
-    volume = common.wait_for_volume_detached(client, volume_name)
-    assert volume["name"] == volume_name
-    assert volume["size"] == size
-    assert volume["numberOfReplicas"] == 2
-    assert volume["state"] == "detached"
-    assert volume["baseImage"] == base_image
+    volume = create_volume(client, volume_name, 2, size, base_image)
 
     lht_hostId = get_self_host_id()
     volume = volume.attach(hostId=lht_hostId)
@@ -469,25 +469,7 @@ def backup_test(clients, volume_name, size, base_image=""):  # NOQA
 
 
 def backupstore_test(client, host_id, volname, size):
-    volume = client.by_id_volume(volname)
-    volume.snapshotCreate()
-    data = write_volume_random_data(volume)
-    snap2 = volume.snapshotCreate()
-    volume.snapshotCreate()
-
-    volume.snapshotBackup(name=snap2["name"])
-
-    bv, b = common.find_backup(client, volname, snap2["name"])
-
-    new_b = bv.backupGet(name=b["name"])
-    assert new_b["name"] == b["name"]
-    assert new_b["url"] == b["url"]
-    assert new_b["snapshotName"] == b["snapshotName"]
-    assert new_b["snapshotCreated"] == b["snapshotCreated"]
-    assert new_b["created"] == b["created"]
-    assert new_b["volumeName"] == b["volumeName"]
-    assert new_b["volumeSize"] == b["volumeSize"]
-    assert new_b["volumeCreated"] == b["volumeCreated"]
+    bv, b, snap2, data = create_backup(client, volname)
 
     # test restore
     restoreName = generate_volume_name()
@@ -517,6 +499,148 @@ def backupstore_test(client, host_id, volname, size):
             found = True
             break
     assert not found
+
+
+@pytest.mark.coretest   # NOQA
+def test_listing_backup_volume(clients, base_image=""):   # NOQA
+    for host_id, client in clients.iteritems():
+        break
+    lht_hostId = get_self_host_id()
+
+    # create 3 volumes.
+    volume1_name = generate_volume_name()
+    volume2_name = generate_volume_name()
+    volume3_name = generate_volume_name()
+
+    volume1 = create_volume(client, volume1_name)
+    volume2 = create_volume(client, volume2_name)
+    volume3 = create_volume(client, volume3_name)
+
+    volume1.attach(hostId=lht_hostId)
+    volume1 = common.wait_for_volume_healthy(client, volume1_name)
+    volume2.attach(hostId=lht_hostId)
+    volume2 = common.wait_for_volume_healthy(client, volume2_name)
+    volume3.attach(hostId=lht_hostId)
+    volume3 = common.wait_for_volume_healthy(client, volume3_name)
+
+    # we only test NFS here.
+    # Since it is difficult to directly remove volume.cfg from s3 buckets
+    setting = client.by_id_setting(common.SETTING_BACKUP_TARGET)
+    backupstores = common.get_backupstore_url()
+    for backupstore in backupstores:
+        if common.is_backupTarget_nfs(backupstore):
+            updated = False
+            for i in range(RETRY_COMMAND_COUNT):
+                nfs_url = backupstore.strip("nfs://")
+                setting = client.update(setting, value=backupstore)
+                assert setting["value"] == backupstore
+                setting = client.by_id_setting(common.SETTING_BACKUP_TARGET)
+                if "nfs" in setting["value"]:
+                    updated = True
+                    break
+            assert updated
+
+    _, _, snap1, _ = create_backup(client, volume1_name)
+    _, _, snap2, _ = create_backup(client, volume2_name)
+    _, _, snap3, _ = create_backup(client, volume3_name)
+
+    # invalidate backup volume 1 by renaming volume.cfg to volume.cfg.tmp
+    cmd = ["mkdir", "-p", "/mnt/nfs"]
+    subprocess.check_output(cmd)
+    cmd = ["mount", "-t", "nfs4", nfs_url, "/mnt/nfs"]
+    subprocess.check_output(cmd)
+    cmd = ["find", "/mnt/nfs", "-type", "d", "-name", volume1_name]
+    volume1_backup_volume_path = subprocess.check_output(cmd).strip()
+
+    cmd = ["find", volume1_backup_volume_path, "-name", "volume.cfg"]
+    volume1_backup_volume_cfg_path = subprocess.check_output(cmd).strip()
+    cmd = ["mv", volume1_backup_volume_cfg_path,
+           volume1_backup_volume_cfg_path + ".tmp"]
+    subprocess.check_output(cmd)
+    subprocess.check_output(["sync"])
+
+    found1 = found2 = found3 = False
+    for i in range(RETRY_COUNTS):
+        bvs = client.list_backupVolume()
+        for bv in bvs:
+            if bv["name"] == volume1_name:
+                if "error" in bv.messages:
+                    assert "volume.cfg" in bv.messages["error"].lower()
+                    found1 = True
+            elif bv["name"] == volume2_name:
+                assert not bv.messages
+                found2 = True
+            elif bv["name"] == volume3_name:
+                assert not bv.messages
+                found3 = True
+        if found1 & found2 & found3:
+            break
+        time.sleep(RETRY_ITERVAL)
+    assert found1 & found2 & found3
+
+    cmd = ["mv", volume1_backup_volume_cfg_path + ".tmp",
+           volume1_backup_volume_cfg_path]
+    subprocess.check_output(cmd)
+    subprocess.check_output(["sync"])
+
+    found = False
+    for i in range(RETRY_COMMAND_COUNT):
+        try:
+            bv1, b1 = common.find_backup(client, volume1_name, snap1["name"])
+            found = True
+            break
+        except Exception:
+            time.sleep(1)
+    assert found
+    bv1.backupDelete(name=b1["name"])
+    for i in range(RETRY_COMMAND_COUNT):
+        found = False
+        backups1 = bv1.backupList()
+        for b in backups1:
+            if b["snapshotName"] == snap1["name"]:
+                found = True
+                break
+    assert not found
+
+    bv2, b2 = common.find_backup(client, volume2_name, snap2["name"])
+    bv2.backupDelete(name=b2["name"])
+    for i in range(RETRY_COMMAND_COUNT):
+        found = False
+        backups2 = bv2.backupList()
+        for b in backups2:
+            if b["snapshotName"] == snap2["name"]:
+                found = True
+                break
+    assert not found
+
+    bv3, b3 = common.find_backup(client, volume3_name, snap3["name"])
+    bv3.backupDelete(name=b3["name"])
+    for i in range(RETRY_COMMAND_COUNT):
+        found = False
+        backups3 = bv3.backupList()
+        for b in backups3:
+            if b["snapshotName"] == snap3["name"]:
+                found = True
+                break
+    assert not found
+
+    volume1.detach()
+    volume1 = common.wait_for_volume_detached(client, volume1_name)
+    client.delete(volume1)
+    wait_for_volume_delete(client, volume1_name)
+
+    volume2.detach()
+    volume2 = common.wait_for_volume_detached(client, volume2_name)
+    client.delete(volume2)
+    wait_for_volume_delete(client, volume2_name)
+
+    volume3.detach()
+    volume3 = common.wait_for_volume_detached(client, volume3_name)
+    client.delete(volume3)
+    wait_for_volume_delete(client, volume3_name)
+
+    volumes = client.list_volume()
+    assert len(volumes) == 0
 
 
 @pytest.mark.coretest   # NOQA
@@ -618,10 +742,7 @@ def test_volume_update_replica_count(clients, volume_name):  # NOQA
         break
 
     replica_count = 3
-    volume = client.create_volume(name=volume_name,
-                                  size=SIZE, numberOfReplicas=replica_count)
-    volume = common.wait_for_volume_detached(client, volume_name)
-    assert len(volume["replicas"]) == replica_count
+    volume = create_volume(client, volume_name, replica_count)
 
     volume.attach(hostId=host_id)
     volume = common.wait_for_volume_healthy(client, volume_name)

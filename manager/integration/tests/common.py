@@ -33,7 +33,7 @@ BASE_IMAGE_EXT4_SIZE = 32 * Mi
 
 PORT = ":9500"
 
-RETRY_LIST_DIR = 3
+RETRY_COMMAND_COUNT = 3
 RETRY_COUNTS = 300
 RETRY_ITERVAL = 0.5
 
@@ -801,7 +801,7 @@ def get_clients(hosts):
 def wait_for_device_login(dest_path, name):
     dev = ""
     for i in range(RETRY_COUNTS):
-        for j in range(RETRY_LIST_DIR):
+        for j in range(RETRY_COMMAND_COUNT):
             files = []
             try:
                 files = os.listdir(dest_path)
@@ -1536,6 +1536,10 @@ class timeout:
 
 def is_backupTarget_s3(s):
     return s.startswith("s3://")
+
+
+def is_backupTarget_nfs(s):
+    return s.startswith("nfs://")
 
 
 def find_backup(client, vol_name, snap_name):
