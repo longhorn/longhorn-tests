@@ -185,6 +185,8 @@ def delete_and_wait_pod(api, pod_name):
         api: An instance of CoreV1API.
         pod_name: The name of the Pod.
     """
+    if not check_pod_existence(api, pod_name):
+        return
     api.delete_namespaced_pod(
         name=pod_name,
         namespace='default',
@@ -193,9 +195,11 @@ def delete_and_wait_pod(api, pod_name):
 
 
 def delete_and_wait_statefulset(api, client, statefulset):
-    pod_data = get_statefulset_pod_info(api, statefulset)
-
     apps_api = get_apps_api_client()
+    if not check_statefulset_existence(apps_api,
+                                       statefulset['metadata']['name']):
+        return
+
     apps_api.delete_namespaced_stateful_set(
         name=statefulset['metadata']['name'],
         namespace='default', body=k8sclient.V1DeleteOptions())
@@ -204,8 +208,7 @@ def delete_and_wait_statefulset(api, client, statefulset):
         ret = apps_api.list_namespaced_stateful_set(namespace='default')
         found = False
         for item in ret.items:
-            if item.metadata.name == \
-              statefulset['metadata']['name']:
+            if item.metadata.name == statefulset['metadata']['name']:
                 found = True
                 break
         if not found:
@@ -214,6 +217,7 @@ def delete_and_wait_statefulset(api, client, statefulset):
     assert not found
     # We need to generate the names for the PVCs on our own so we can
     # delete them.
+    pod_data = get_statefulset_pod_info(api, statefulset)
     client = get_longhorn_api_client()
     for pod in pod_data:
         # Wait on Pods too, we apparently had timeout issues with them.
@@ -237,6 +241,10 @@ def delete_and_wait_statefulset(api, client, statefulset):
                             body=k8sclient.V1DeleteOptions())
 
                         delete_and_wait_longhorn(client, pod['pv_name'])
+                    elif item.status.phase == 'Released':
+                        api.delete_persistent_volume(
+                            name=pod['pv_name'],
+                            body=k8sclient.V1DeleteOptions())
                     else:
                         found = True
                         break
@@ -276,6 +284,8 @@ def delete_and_wait_longhorn(client, name):
     """
     Delete a volume from Longhorn.
     """
+    if not check_volume_existence(client, name):
+        return
     v = wait_for_volume_detached(client, name)
     client.delete(v)
     wait_for_volume_delete(client, name)
@@ -521,6 +531,10 @@ def csi_pv(request):
 
     def finalizer():
         api = get_core_api_client()
+
+        if not check_pv_existence(api, pv_manifest['metadata']['name']):
+            return
+
         api.delete_persistent_volume(name=pv_manifest['metadata']['name'],
                                      body=k8sclient.V1DeleteOptions())
 
@@ -564,6 +578,10 @@ def pvc(request):
 
     def finalizer():
         api = k8sclient.CoreV1Api()
+
+        if not check_pvc_existence(api, pvc_manifest['metadata']['name']):
+            return
+
         claim = api.read_namespaced_persistent_volume_claim(
             name=pvc_manifest['metadata']['name'], namespace='default')
         volume_name = claim.spec.volume_name
@@ -1637,3 +1655,149 @@ def check_csi(core_api):
     assert using_csi != CSI_UNKNOWN
 
     return True if using_csi == CSI_TRUE else False
+
+
+def create_and_wait_statefulset(statefulset_manifest):
+    """
+    Create a new StatefulSet for testing.
+
+    This function will block until all replicas in the StatefulSet are online
+    or it times out, whichever occurs first.
+    """
+    api = get_apps_api_client()
+    api.create_namespaced_stateful_set(
+        body=statefulset_manifest,
+        namespace='default')
+    wait_statefulset(statefulset_manifest)
+
+
+def wait_statefulset(statefulset_manifest):
+    api = get_apps_api_client()
+    replicas = statefulset_manifest['spec']['replicas']
+    for i in range(DEFAULT_STATEFULSET_TIMEOUT):
+        s_set = api.read_namespaced_stateful_set(
+            name=statefulset_manifest['metadata']['name'],
+            namespace='default')
+        if s_set.status.ready_replicas == replicas:
+            break
+        time.sleep(DEFAULT_STATEFULSET_INTERVAL)
+    assert s_set.status.ready_replicas == replicas
+
+
+def create_storage_class(sc_manifest):
+    api = get_storage_api_client()
+    api.create_storage_class(
+        body=sc_manifest)
+
+
+def delete_storage_class(sc_name):
+    api = get_storage_api_client()
+    api.delete_storage_class(sc_name, body=k8sclient.V1DeleteOptions())
+
+
+def update_statefulset_manifests(ss_manifest, sc_manifest, name):
+    """
+    Write in a new StatefulSet name and the proper StorageClass name for tests.
+    """
+    ss_manifest['metadata']['name'] = \
+        ss_manifest['spec']['selector']['matchLabels']['app'] = \
+        ss_manifest['spec']['serviceName'] = \
+        ss_manifest['spec']['template']['metadata']['labels']['app'] = \
+        name
+    ss_manifest['spec']['volumeClaimTemplates'][0]['spec']['storageClassName']\
+        = DEFAULT_STORAGECLASS_NAME
+    sc_manifest['metadata']['name'] = DEFAULT_STORAGECLASS_NAME
+
+
+def check_volume_existence(client, volume_name):
+    volumes = client.list_volume()
+    for volume in volumes:
+        if volume["name"] == volume_name:
+            return True
+    return False
+
+
+def check_pod_existence(api, pod_name, namespace="default"):
+    pods = api.list_namespaced_pod(namespace)
+    for pod in pods.items:
+        if pod.metadata.name == pod_name and \
+                not pod.metadata.deletion_timestamp:
+            return True
+    return False
+
+
+def check_pvc_existence(api, pvc_name, namespace="default"):
+    pvcs = api.list_namespaced_persistent_volume_claim(namespace)
+    for pvc in pvcs.items:
+        if pvc.metadata.name == pvc_name and not \
+                pvc.metadata.deletion_timestamp:
+            return True
+    return False
+
+
+def check_pv_existence(api, pv_name):
+    pvs = api.list_persistent_volume()
+    for pv in pvs.items:
+        if pv.metadata.name == pv_name and not pv.metadata.deletion_timestamp:
+            return True
+    return False
+
+
+def check_statefulset_existence(api, ss_name, namespace="default"):
+    ss_list = api.list_namespaced_stateful_set(namespace)
+    for ss in ss_list.items:
+        if ss.metadata.name == ss_name and not ss.metadata.deletion_timestamp:
+            return True
+    return False
+
+
+def delete_and_wait_pvc(api, pvc_name):
+    if not check_pvc_existence(api, pvc_name):
+        return
+    api.delete_namespaced_persistent_volume_claim(
+        name=pvc_name, namespace='default',
+        body=k8sclient.V1DeleteOptions())
+
+    wait_delete_pvc(api, pvc_name)
+
+
+def wait_delete_pvc(api, pvc_name):
+    for i in range(RETRY_COUNTS):
+        found = False
+        ret = api.list_namespaced_persistent_volume_claim(namespace='default')
+        for item in ret.items:
+            if item.metadata.name == pvc_name:
+                found = True
+                break
+        if not found:
+            break
+        time.sleep(RETRY_INTERVAL)
+    assert not found
+
+
+def delete_and_wait_pv(api, pv_name):
+    if not check_pv_existence(api, pv_name):
+        return
+    for i in range(RETRY_COUNTS):
+        api.delete_persistent_volume(
+            name=pv_name, body=k8sclient.V1DeleteOptions())
+
+    wait_delete_pv(api, pv_name)
+
+
+def wait_delete_pv(api, pv_name):
+    for i in range(RETRY_COUNTS):
+        found = False
+        pvs = api.list_persistent_volume()
+        for item in pvs.items:
+            if item.metadata.name == pv_name:
+                if item.status.phase == 'Failed':
+                    api.delete_persistent_volume(
+                        name=pv_name, body=k8sclient.V1DeleteOptions())
+                else:
+                    found = True
+                    break
+        if not found:
+            break
+        time.sleep(RETRY_INTERVAL)
+    assert not found
