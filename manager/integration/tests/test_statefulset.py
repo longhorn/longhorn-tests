@@ -6,13 +6,14 @@ from random import randrange
 
 from common import client, core_api, statefulset, storage_class  # NOQA
 from common import DEFAULT_BACKUP_TIMEOUT, DEFAULT_POD_INTERVAL
-from common import DEFAULT_STATEFULSET_TIMEOUT, DEFAULT_STATEFULSET_INTERVAL
 from common import DEFAULT_POD_TIMEOUT, VOLUME_RWTEST_SIZE
 from common import delete_and_wait_statefulset, generate_random_data
 from common import get_apps_api_client, get_statefulset_pod_info
-from common import get_storage_api_client, read_volume_data, size_to_string
+from common import read_volume_data, size_to_string
 from common import wait_for_volume_detached, write_volume_data
 from common import check_csi
+from common import create_and_wait_statefulset, wait_statefulset
+from common import update_statefulset_manifests, create_storage_class
 
 from kubernetes import client as k8sclient
 
@@ -20,20 +21,6 @@ Gi = (1 * 1024 * 1024 * 1024)
 
 DEFAULT_STORAGECLASS_NAME = "longhorn-statefulset"
 DEFAULT_VOLUME_SIZE = 3  # In Gi
-
-
-def create_and_wait_statefulset(statefulset_manifest):
-    """
-    Create a new StatefulSet for testing.
-
-    This function will block until all replicas in the StatefulSet are online
-    or it times out, whichever occurs first.
-    """
-    api = get_apps_api_client()
-    api.create_namespaced_stateful_set(
-        body=statefulset_manifest,
-        namespace='default')
-    wait_statefulset(statefulset_manifest)
 
 
 def create_and_test_backups(api, cli, pod_info):
@@ -100,39 +87,6 @@ def create_and_test_backups(api, cli, pod_info):
         pod['backup_snapshot'] = b
 
 
-def wait_statefulset(statefulset_manifest):
-    api = get_apps_api_client()
-    replicas = statefulset_manifest['spec']['replicas']
-    for i in range(DEFAULT_STATEFULSET_TIMEOUT):
-        s_set = api.read_namespaced_stateful_set(
-            name=statefulset_manifest['metadata']['name'],
-            namespace='default')
-        if s_set.status.ready_replicas == replicas:
-            break
-        time.sleep(DEFAULT_STATEFULSET_INTERVAL)
-    assert s_set.status.ready_replicas == replicas
-
-
-def create_storage_class(sc_manifest):
-    api = get_storage_api_client()
-    api.create_storage_class(
-        body=sc_manifest)
-
-
-def update_test_manifests(statefulset_manifest, sc_manifest, name):
-    """
-    Write in a new StatefulSet name and the proper StorageClass name for tests.
-    """
-    statefulset_manifest['metadata']['name'] = \
-        statefulset_manifest['spec']['selector']['matchLabels']['app'] = \
-        statefulset_manifest['spec']['serviceName'] = \
-        (statefulset_manifest['spec']['template']['metadata']['labels']
-            ['app']) = name
-    (statefulset_manifest['spec']['volumeClaimTemplates'][0]['spec']
-        ['storageClassName']) = DEFAULT_STORAGECLASS_NAME
-    sc_manifest['metadata']['name'] = DEFAULT_STORAGECLASS_NAME
-
-
 def test_statefulset_mount(client, core_api, storage_class, statefulset):  # NOQA
     """
     Tests that volumes provisioned for a StatefulSet can be properly created,
@@ -140,7 +94,7 @@ def test_statefulset_mount(client, core_api, storage_class, statefulset):  # NOQ
     """
 
     statefulset_name = 'statefulset-mount-test'
-    update_test_manifests(statefulset, storage_class, statefulset_name)
+    update_statefulset_manifests(statefulset, storage_class, statefulset_name)
 
     create_storage_class(storage_class)
     create_and_wait_statefulset(statefulset)
@@ -174,7 +128,7 @@ def test_statefulset_scaling(client, core_api, storage_class, statefulset):  # N
     """
 
     statefulset_name = 'statefulset-scaling-test'
-    update_test_manifests(statefulset, storage_class, statefulset_name)
+    update_statefulset_manifests(statefulset, storage_class, statefulset_name)
 
     create_storage_class(storage_class)
     create_and_wait_statefulset(statefulset)
@@ -248,7 +202,7 @@ def test_statefulset_pod_deletion(core_api, storage_class, statefulset):  # NOQA
     """
 
     statefulset_name = 'statefulset-pod-deletion-test'
-    update_test_manifests(statefulset, storage_class, statefulset_name)
+    update_statefulset_manifests(statefulset, storage_class, statefulset_name)
     test_pod_name = statefulset_name + '-' + \
         str(randrange(statefulset['spec']['replicas']))
     test_data = generate_random_data(VOLUME_RWTEST_SIZE)
@@ -274,7 +228,7 @@ def test_statefulset_backup(client, core_api, storage_class, statefulset):  # NO
     """
 
     statefulset_name = 'statefulset-backup-test'
-    update_test_manifests(statefulset, storage_class, statefulset_name)
+    update_statefulset_manifests(statefulset, storage_class, statefulset_name)
 
     create_storage_class(storage_class)
     create_and_wait_statefulset(statefulset)
@@ -291,7 +245,7 @@ def test_statefulset_recurring_backup(client, core_api, storage_class,  # NOQA
     """
 
     statefulset_name = 'statefulset-backup-test'
-    update_test_manifests(statefulset, storage_class, statefulset_name)
+    update_statefulset_manifests(statefulset, storage_class, statefulset_name)
 
     create_storage_class(storage_class)
     create_and_wait_statefulset(statefulset)
@@ -330,7 +284,7 @@ def test_statefulset_restore(client, core_api, storage_class,  # NOQA
     """
 
     statefulset_name = 'statefulset-restore-test'
-    update_test_manifests(statefulset, storage_class, statefulset_name)
+    update_statefulset_manifests(statefulset, storage_class, statefulset_name)
 
     create_storage_class(storage_class)
     create_and_wait_statefulset(statefulset)
@@ -438,7 +392,7 @@ def test_statefulset_restore(client, core_api, storage_class,  # NOQA
             namespace='default')
 
     statefulset_name = 'statefulset-restore-test-2'
-    update_test_manifests(statefulset, storage_class, statefulset_name)
+    update_statefulset_manifests(statefulset, storage_class, statefulset_name)
     create_and_wait_statefulset(statefulset)
 
     for pod in pod_info:
