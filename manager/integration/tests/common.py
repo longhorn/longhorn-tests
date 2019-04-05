@@ -1778,9 +1778,8 @@ def wait_delete_pvc(api, pvc_name):
 def delete_and_wait_pv(api, pv_name):
     if not check_pv_existence(api, pv_name):
         return
-    for i in range(RETRY_COUNTS):
-        api.delete_persistent_volume(
-            name=pv_name, body=k8sclient.V1DeleteOptions())
+    api.delete_persistent_volume(
+        name=pv_name, body=k8sclient.V1DeleteOptions())
 
     wait_delete_pv(api, pv_name)
 
