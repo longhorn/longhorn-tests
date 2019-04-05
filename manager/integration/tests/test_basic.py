@@ -15,7 +15,7 @@ from common import generate_volume_name
 from common import get_volume_endpoint, get_volume_engine
 from common import get_random_client
 from common import CONDITION_STATUS_FALSE, CONDITION_STATUS_TRUE
-from common import RETRY_COUNTS, RETRY_ITERVAL, RETRY_COMMAND_COUNT
+from common import RETRY_COUNTS, RETRY_INTERVAL, RETRY_COMMAND_COUNT
 
 
 def create_volume(client, vol_name, num_of_replicas=2,
@@ -575,7 +575,7 @@ def test_listing_backup_volume(clients, base_image=""):   # NOQA
                 found3 = True
         if found1 & found2 & found3:
             break
-        time.sleep(RETRY_ITERVAL)
+        time.sleep(RETRY_INTERVAL)
     assert found1 & found2 & found3
 
     cmd = ["mv", volume1_backup_volume_cfg_path + ".tmp",

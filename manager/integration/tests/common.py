@@ -35,7 +35,7 @@ PORT = ":9500"
 
 RETRY_COMMAND_COUNT = 3
 RETRY_COUNTS = 300
-RETRY_ITERVAL = 0.5
+RETRY_INTERVAL = 0.5
 
 LONGHORN_NAMESPACE = "longhorn-system"
 
@@ -812,7 +812,7 @@ def wait_for_device_login(dest_path, name):
         if name in files:
             dev = name
             break
-        time.sleep(RETRY_ITERVAL)
+        time.sleep(RETRY_INTERVAL)
     assert dev == name
     return dev
 
@@ -869,7 +869,7 @@ def wait_for_volume_status(client, name, key, value):
         volume = client.by_id_volume(name)
         if volume[key] == value:
             break
-        time.sleep(RETRY_ITERVAL)
+        time.sleep(RETRY_INTERVAL)
     assert volume[key] == value
     return volume
 
@@ -884,7 +884,7 @@ def wait_for_volume_delete(client, name):
                 break
         if not found:
             break
-        time.sleep(RETRY_ITERVAL)
+        time.sleep(RETRY_INTERVAL)
     assert not found
 
 
@@ -894,7 +894,7 @@ def wait_for_volume_current_image(client, name, image):
         volume = client.by_id_volume(name)
         if volume["currentImage"] == image:
             break
-        time.sleep(RETRY_ITERVAL)
+        time.sleep(RETRY_INTERVAL)
     assert volume["currentImage"] == image
     return volume
 
@@ -905,7 +905,7 @@ def wait_for_volume_replica_count(client, name, count):
         volume = client.by_id_volume(name)
         if len(volume["replicas"]) == count:
             break
-        time.sleep(RETRY_ITERVAL)
+        time.sleep(RETRY_INTERVAL)
     assert len(volume["replicas"]) == count
     return volume
 
@@ -923,7 +923,7 @@ def wait_for_snapshot_purge(volume, *snaps):
                 break
         if not found:
             break
-        time.sleep(RETRY_ITERVAL)
+        time.sleep(RETRY_INTERVAL)
     assert not found
 
 
@@ -946,7 +946,7 @@ def wait_for_engine_image_state(client, image_name, state):
         image = client.by_id_engine_image(image_name)
         if image["state"] == state:
             break
-        time.sleep(RETRY_ITERVAL)
+        time.sleep(RETRY_INTERVAL)
     assert image["state"] == state
     return image
 
@@ -957,7 +957,7 @@ def wait_for_engine_image_ref_count(client, image_name, count):
         image = client.by_id_engine_image(image_name)
         if image["refCount"] == count:
             break
-        time.sleep(RETRY_ITERVAL)
+        time.sleep(RETRY_INTERVAL)
     assert image["refCount"] == count
     if count == 0:
         assert image["noRefSince"] != ""
@@ -1256,7 +1256,7 @@ def wait_for_volume_condition_scheduled(client, name, key, value):
                 conditions[VOLUME_CONDITION_SCHEDULED][key] and \
                 conditions[VOLUME_CONDITION_SCHEDULED][key] == value:
             break
-        time.sleep(RETRY_ITERVAL)
+        time.sleep(RETRY_INTERVAL)
     conditions = volume["conditions"]
     assert conditions[VOLUME_CONDITION_SCHEDULED][key] == value
     return volume
@@ -1284,7 +1284,7 @@ def wait_for_disk_status(client, name, fsid, key, value):
         disk = disks[fsid]
         if str(disk[key]) == str(value):
             break
-        time.sleep(RETRY_ITERVAL)
+        time.sleep(RETRY_INTERVAL)
     return node
 
 
@@ -1296,7 +1296,7 @@ def wait_for_disk_conditions(client, name, fsid, key, value):
         conditions = disk["conditions"]
         if conditions[key]["status"] == value:
             break
-        time.sleep(RETRY_ITERVAL)
+        time.sleep(RETRY_INTERVAL)
     assert conditions[key]["status"] == value
     return node
 
@@ -1306,7 +1306,7 @@ def wait_for_node_update(client, name, key, value):
         node = client.by_id_node(name)
         if str(node[key]) == str(value):
             break
-        time.sleep(RETRY_ITERVAL)
+        time.sleep(RETRY_INTERVAL)
     assert str(node[key]) == str(value)
     return node
 
@@ -1316,7 +1316,7 @@ def wait_for_disk_update(client, name, disk_num):
         node = client.by_id_node(name)
         if len(node["disks"]) == disk_num:
             break
-        time.sleep(RETRY_ITERVAL)
+        time.sleep(RETRY_INTERVAL)
     assert len(node["disks"]) == disk_num
     return node
 
@@ -1358,7 +1358,7 @@ def wait_for_volume_migration_ready(client, volume_name):
             ready = False
         if ready:
             break
-        time.sleep(RETRY_ITERVAL)
+        time.sleep(RETRY_INTERVAL)
     assert ready
     return v
 
@@ -1372,7 +1372,7 @@ def wait_for_volume_migration_node(client, volume_name, node_id):
             e = engines[0]
             if e["endpoint"] != "":
                 break
-        time.sleep(RETRY_ITERVAL)
+        time.sleep(RETRY_INTERVAL)
     assert e["hostId"] == node_id
     assert e["endpoint"] != ""
     return v
@@ -1513,7 +1513,7 @@ def wait_for_node_mountpropagation_condition(client, name):
                 and conditions[NODE_CONDITION_MOUNTPROPAGATION]["status"] != \
                 CONDITION_STATUS_UNKNOWN:
             break
-        time.sleep(RETRY_ITERVAL)
+        time.sleep(RETRY_INTERVAL)
     return node
 
 
