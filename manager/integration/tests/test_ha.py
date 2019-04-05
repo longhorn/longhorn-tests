@@ -6,7 +6,7 @@ from common import client, volume_name  # NOQA
 from common import SIZE, DEV_PATH
 from common import check_volume_data, get_self_host_id, get_volume_endpoint
 from common import write_volume_random_data
-from common import RETRY_COUNTS, RETRY_ITERVAL
+from common import RETRY_COUNTS, RETRY_INTERVAL
 
 
 @pytest.mark.coretest   # NOQA
@@ -67,7 +67,7 @@ def ha_rebuild_replica_test(client, volname):   # NOQA
                 break
         if new_replica_found:
             break
-        time.sleep(RETRY_ITERVAL)
+        time.sleep(RETRY_INTERVAL)
     assert new_replica_found
 
     volume = common.wait_for_volume_healthy(client, volname)
