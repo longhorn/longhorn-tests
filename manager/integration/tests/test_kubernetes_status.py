@@ -64,69 +64,69 @@ def test_kubernetes_status(client, core_api, storage_class,  # NOQA
         volume = client.by_id_volume(volume_name)
         k_status = volume["kubernetesStatus"]
         for i in range(RETRY_COUNTS):
-            if k_status['PodStatus'] == 'Running':
+            if k_status['podStatus'] == 'Running':
                 break
             time.sleep(RETRY_INTERVAL)
             volume = client.by_id_volume(volume_name)
             k_status = volume["kubernetesStatus"]
-        assert k_status['PodStatus'] == 'Running'
-        assert k_status['PVName'] == p['pv_name']
-        assert k_status['PVStatus'] == 'Bound'
-        assert k_status['Namespace'] == 'default'
-        assert k_status['PVCName'] == p['pvc_name']
-        assert k_status['PodName'] == p['pod_name']
-        assert k_status['WorkloadName'] == statefulset_name
-        assert k_status['WorkloadType'] == 'StatefulSet'
-        assert not k_status['LastPVCRefAt']
-        assert not k_status['LastPodRefAt']
+        assert k_status['podStatus'] == 'Running'
+        assert k_status['pvName'] == p['pv_name']
+        assert k_status['pvStatus'] == 'Bound'
+        assert k_status['namespace'] == 'default'
+        assert k_status['pvcName'] == p['pvc_name']
+        assert k_status['podName'] == p['pod_name']
+        assert k_status['workloadName'] == statefulset_name
+        assert k_status['workloadType'] == 'StatefulSet'
+        assert not k_status['lastPVCRefAt']
+        assert not k_status['lastPodRefAt']
 
     delete_and_wait_statefulset_only(core_api, statefulset)
     for p, volume_name in zip(pod_info, volume_info):
         volume = client.by_id_volume(volume_name)
         k_status = volume["kubernetesStatus"]
-        assert k_status['PVName'] == p['pv_name']
-        assert k_status['PVStatus'] == 'Bound'
-        assert k_status['Namespace'] == 'default'
-        assert k_status['PVCName'] == p['pvc_name']
-        assert k_status['PodName'] == p['pod_name']
-        assert k_status['WorkloadName'] == statefulset_name
-        assert k_status['WorkloadType'] == 'StatefulSet'
-        assert not k_status['LastPVCRefAt']
-        assert k_status['LastPodRefAt']
+        assert k_status['pvName'] == p['pv_name']
+        assert k_status['pvStatus'] == 'Bound'
+        assert k_status['namespace'] == 'default'
+        assert k_status['pvcName'] == p['pvc_name']
+        assert k_status['podName'] == p['pod_name']
+        assert k_status['workloadName'] == statefulset_name
+        assert k_status['workloadType'] == 'StatefulSet'
+        assert not k_status['lastPVCRefAt']
+        assert k_status['lastPodRefAt']
 
     for p, volume_name in zip(pod_info, volume_info):
         delete_and_wait_pvc(core_api, p['pvc_name'])
         volume = client.by_id_volume(volume_name)
         k_status = volume["kubernetesStatus"]
         for i in range(RETRY_COUNTS):
-            if k_status['PVStatus'] == 'Released':
+            if k_status['pvStatus'] == 'Released':
                 break
             time.sleep(RETRY_INTERVAL)
             volume = client.by_id_volume(volume_name)
             k_status = volume["kubernetesStatus"]
-        assert k_status['PVStatus'] == 'Released'
-        assert k_status['PVName'] == p['pv_name']
-        assert k_status['Namespace'] == 'default'
-        assert k_status['PVCName'] == p['pvc_name']
-        assert k_status['PodName'] == p['pod_name']
-        assert k_status['WorkloadName'] == statefulset_name
-        assert k_status['WorkloadType'] == 'StatefulSet'
-        assert k_status['LastPVCRefAt']
-        assert k_status['LastPodRefAt']
+        assert k_status['pvStatus'] == 'Released'
+        assert k_status['pvName'] == p['pv_name']
+        assert k_status['namespace'] == 'default'
+        assert k_status['pvcName'] == p['pvc_name']
+        assert k_status['podName'] == p['pod_name']
+        assert k_status['workloadName'] == statefulset_name
+        assert k_status['workloadType'] == 'StatefulSet'
+        assert k_status['lastPVCRefAt']
+        assert k_status['lastPodRefAt']
 
     for p, volume_name in zip(pod_info, volume_info):
         delete_and_wait_pv(core_api, p['pv_name'])
         volume = client.by_id_volume(volume_name)
         k_status = volume["kubernetesStatus"]
-        assert k_status['PVName'] == ''
-        assert k_status['PVStatus'] == ''
-        assert k_status['Namespace'] == 'default'
-        assert k_status['PVCName'] == p['pvc_name']
-        assert k_status['PodName'] == p['pod_name']
-        assert k_status['WorkloadName'] == statefulset_name
-        assert k_status['WorkloadType'] == 'StatefulSet'
-        assert k_status['LastPVCRefAt']
-        assert k_status['LastPodRefAt']
+        assert k_status['pvName'] == ''
+        assert k_status['pvStatus'] == ''
+        assert k_status['namespace'] == 'default'
+        assert k_status['pvcName'] == p['pvc_name']
+        assert k_status['podName'] == p['pod_name']
+        assert k_status['workloadName'] == statefulset_name
+        assert k_status['workloadType'] == 'StatefulSet'
+        assert k_status['lastPVCRefAt']
+        assert k_status['lastPodRefAt']
 
     # reuse that volume
     for p, volume_name in zip(pod_info, volume_info):
@@ -156,28 +156,28 @@ def test_kubernetes_status(client, core_api, storage_class,  # NOQA
 
         volume = client.by_id_volume(volume_name)
         k_status = volume["kubernetesStatus"]
-        assert k_status['PVName'] == p['pv_name']
+        assert k_status['pvName'] == p['pv_name']
         for i in range(RETRY_COUNTS):
-            if k_status['PVStatus'] == 'Bound':
+            if k_status['pvStatus'] == 'Bound':
                 break
             time.sleep(RETRY_INTERVAL)
             volume = client.by_id_volume(volume_name)
             k_status = volume["kubernetesStatus"]
-        assert k_status['PVStatus'] == 'Bound'
+        assert k_status['pvStatus'] == 'Bound'
         for i in range(RETRY_COUNTS):
-            if k_status['PodStatus'] == 'Running':
+            if k_status['podStatus'] == 'Running':
                 break
             time.sleep(RETRY_INTERVAL)
             volume = client.by_id_volume(volume_name)
             k_status = volume["kubernetesStatus"]
-        assert k_status['PodStatus'] == 'Running'
-        assert k_status['Namespace'] == 'default'
-        assert k_status['PVCName'] == p['pvc_name']
-        assert k_status['PodName'] == p['pod_name']
-        assert not k_status['WorkloadName']
-        assert not k_status['WorkloadType']
-        assert not k_status['LastPVCRefAt']
-        assert not k_status['LastPodRefAt']
+        assert k_status['podStatus'] == 'Running'
+        assert k_status['namespace'] == 'default'
+        assert k_status['pvcName'] == p['pvc_name']
+        assert k_status['podName'] == p['pod_name']
+        assert not k_status['workloadName']
+        assert not k_status['workloadType']
+        assert not k_status['lastPVCRefAt']
+        assert not k_status['lastPodRefAt']
 
         delete_and_wait_pod(core_api, p['pod_name'])
         # Since persistentVolumeReclaimPolicy of csi_pv is `Delete`,
@@ -202,21 +202,21 @@ def test_kubernetes_status_pod_deletion(client, core_api, storage_class,  # NOQA
         volume = client.by_id_volume(volume_name)
         k_status = volume["kubernetesStatus"]
         for i in range(RETRY_COUNTS):
-            if k_status['PodStatus'] == 'Running':
+            if k_status['podStatus'] == 'Running':
                 break
             time.sleep(RETRY_INTERVAL)
             volume = client.by_id_volume(volume_name)
             k_status = volume["kubernetesStatus"]
-        assert k_status['PodStatus'] == 'Running'
-        assert k_status['PVName'] == p['pv_name']
-        assert k_status['PVStatus'] == 'Bound'
-        assert k_status['Namespace'] == 'default'
-        assert k_status['PVCName'] == p['pvc_name']
-        assert k_status['PodName'] == p['pod_name']
-        assert k_status['WorkloadName'] == statefulset_name
-        assert k_status['WorkloadType'] == 'StatefulSet'
-        assert not k_status['LastPVCRefAt']
-        assert not k_status['LastPodRefAt']
+        assert k_status['podStatus'] == 'Running'
+        assert k_status['pvName'] == p['pv_name']
+        assert k_status['pvStatus'] == 'Bound'
+        assert k_status['namespace'] == 'default'
+        assert k_status['pvcName'] == p['pvc_name']
+        assert k_status['podName'] == p['pod_name']
+        assert k_status['workloadName'] == statefulset_name
+        assert k_status['workloadType'] == 'StatefulSet'
+        assert not k_status['lastPVCRefAt']
+        assert not k_status['lastPodRefAt']
 
     for p in pod_info:
         core_api.delete_namespaced_pod(name=p['pod_name'], namespace='default',
@@ -237,21 +237,21 @@ def test_kubernetes_status_pod_deletion(client, core_api, storage_class,  # NOQA
         volume = client.by_id_volume(volume_name)
         k_status = volume["kubernetesStatus"]
         for i in range(RETRY_COUNTS):
-            if k_status['PodStatus'] == 'Pending':
-                assert not k_status['LastPVCRefAt']
-                assert not k_status['LastPodRefAt']
-            if k_status['PodStatus'] == 'Running':
+            if k_status['podStatus'] == 'Pending':
+                assert not k_status['lastPVCRefAt']
+                assert not k_status['lastPodRefAt']
+            if k_status['podStatus'] == 'Running':
                 break
             time.sleep(RETRY_INTERVAL)
             volume = client.by_id_volume(volume_name)
             k_status = volume["kubernetesStatus"]
-        assert k_status['PodStatus'] == 'Running'
-        assert k_status['PodName'] == p['pod_name']
-        assert not k_status['LastPVCRefAt']
-        assert not k_status['LastPodRefAt']
-        assert k_status['PVName'] == p['pv_name']
-        assert k_status['PVStatus'] == 'Bound'
-        assert k_status['Namespace'] == 'default'
-        assert k_status['PVCName'] == p['pvc_name']
-        assert k_status['WorkloadName'] == statefulset_name
-        assert k_status['WorkloadType'] == 'StatefulSet'
+        assert k_status['podStatus'] == 'Running'
+        assert k_status['podName'] == p['pod_name']
+        assert not k_status['lastPVCRefAt']
+        assert not k_status['lastPodRefAt']
+        assert k_status['pvName'] == p['pv_name']
+        assert k_status['pvStatus'] == 'Bound'
+        assert k_status['namespace'] == 'default'
+        assert k_status['pvcName'] == p['pvc_name']
+        assert k_status['workloadName'] == statefulset_name
+        assert k_status['workloadType'] == 'StatefulSet'
