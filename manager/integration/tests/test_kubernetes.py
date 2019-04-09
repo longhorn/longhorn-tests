@@ -19,6 +19,7 @@ from common import RETRY_COUNTS, RETRY_INTERVAL
 from common import SIZE
 
 from kubernetes import client as k8sclient
+from kubernetes.client.rest import ApiException
 
 Gi = (1 * 1024 * 1024 * 1024)
 
@@ -30,9 +31,12 @@ def delete_and_wait_statefulset_only(api, ss):
     pod_data = get_statefulset_pod_info(api, ss)
 
     apps_api = get_apps_api_client()
-    apps_api.delete_namespaced_stateful_set(
-        name=ss['metadata']['name'],
-        namespace='default', body=k8sclient.V1DeleteOptions())
+    try:
+        apps_api.delete_namespaced_stateful_set(
+            name=ss['metadata']['name'],
+            namespace='default', body=k8sclient.V1DeleteOptions())
+    except ApiException as e:
+        assert e.status == 404
 
     for i in range(RETRY_COUNTS):
         ret = apps_api.list_namespaced_stateful_set(namespace='default')

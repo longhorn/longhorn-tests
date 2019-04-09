@@ -185,12 +185,13 @@ def delete_and_wait_pod(api, pod_name):
         api: An instance of CoreV1API.
         pod_name: The name of the Pod.
     """
-    if not check_pod_existence(api, pod_name):
-        return
-    api.delete_namespaced_pod(
-        name=pod_name,
-        namespace='default',
-        body=k8sclient.V1DeleteOptions())
+    try:
+        api.delete_namespaced_pod(
+            name=pod_name, namespace='default',
+            body=k8sclient.V1DeleteOptions())
+    except ApiException as e:
+        assert e.status == 404
+
     wait_delete_pod(api, pod_name)
 
 
@@ -200,9 +201,16 @@ def delete_and_wait_statefulset(api, client, statefulset):
                                        statefulset['metadata']['name']):
         return
 
-    apps_api.delete_namespaced_stateful_set(
-        name=statefulset['metadata']['name'],
-        namespace='default', body=k8sclient.V1DeleteOptions())
+    # We need to generate the names for the PVCs on our own so we can
+    # delete them.
+    pod_data = get_statefulset_pod_info(api, statefulset)
+
+    try:
+        apps_api.delete_namespaced_stateful_set(
+            name=statefulset['metadata']['name'],
+            namespace='default', body=k8sclient.V1DeleteOptions())
+    except ApiException as e:
+        assert e.status == 404
 
     for i in range(DEFAULT_POD_TIMEOUT):
         ret = apps_api.list_namespaced_stateful_set(namespace='default')
@@ -215,16 +223,11 @@ def delete_and_wait_statefulset(api, client, statefulset):
             break
         time.sleep(DEFAULT_POD_INTERVAL)
     assert not found
-    # We need to generate the names for the PVCs on our own so we can
-    # delete them.
-    pod_data = get_statefulset_pod_info(api, statefulset)
     client = get_longhorn_api_client()
     for pod in pod_data:
         # Wait on Pods too, we apparently had timeout issues with them.
         wait_delete_pod(api, pod['pod_name'])
-        api.delete_namespaced_persistent_volume_claim(
-            name=pod['pvc_name'], namespace='default',
-            body=k8sclient.V1DeleteOptions())
+        delete_and_wait_pvc(api, pod['pvc_name'])
         # The StatefulSet tests involve both StorageClass provisioned volumes
         # and our manually created PVs. This checks the status of our PV once
         # the PVC is deleted. If it is Failed, we know it is a PV and we must
@@ -235,16 +238,9 @@ def delete_and_wait_statefulset(api, client, statefulset):
             found = False
             for item in ret.items:
                 if item.metadata.name == pod['pv_name']:
-                    if item.status.phase == 'Failed':
-                        api.delete_persistent_volume(
-                            name=pod['pv_name'],
-                            body=k8sclient.V1DeleteOptions())
-
+                    if item.status.phase in ('Failed', 'Released'):
+                        delete_and_wait_pv(api, pod['pv_name'])
                         delete_and_wait_longhorn(client, pod['pv_name'])
-                    elif item.status.phase == 'Released':
-                        api.delete_persistent_volume(
-                            name=pod['pv_name'],
-                            body=k8sclient.V1DeleteOptions())
                     else:
                         found = True
                         break
@@ -284,10 +280,16 @@ def delete_and_wait_longhorn(client, name):
     """
     Delete a volume from Longhorn.
     """
-    if not check_volume_existence(client, name):
-        return
-    v = wait_for_volume_detached(client, name)
-    client.delete(v)
+    try:
+        v = client.by_id_volume(name)
+        client.delete(v)
+    except ApiException as ex:
+        assert ex.status == 404
+    except longhorn.ApiError as err:
+        # for deleting a non-existing volume,
+        # the status_code is 500 Server Error.
+        assert err.error.code == 500
+
     wait_for_volume_delete(client, name)
 
 
@@ -531,12 +533,7 @@ def csi_pv(request):
 
     def finalizer():
         api = get_core_api_client()
-
-        if not check_pv_existence(api, pv_manifest['metadata']['name']):
-            return
-
-        api.delete_persistent_volume(name=pv_manifest['metadata']['name'],
-                                     body=k8sclient.V1DeleteOptions())
+        delete_and_wait_pv(api, pv_manifest['metadata']['name'])
 
         client = get_longhorn_api_client()
         delete_and_wait_longhorn(client, pv_manifest['metadata']['name'])
@@ -587,9 +584,7 @@ def pvc(request):
         volume_name = claim.spec.volume_name
 
         api = get_core_api_client()
-        api.delete_namespaced_persistent_volume_claim(
-            name=pvc_manifest['metadata']['name'], namespace='default',
-            body=k8sclient.V1DeleteOptions())
+        delete_and_wait_pvc(api, pvc_manifest['metadata']['name'])
 
         # Working around line break issue.
         key = 'volume.beta.kubernetes.io/storage-provisioner'
@@ -701,8 +696,11 @@ def storage_class(request):
 
     def finalizer():
         api = get_storage_api_client()
-        api.delete_storage_class(name=sc_manifest['metadata']['name'],
-                                 body=k8sclient.V1DeleteOptions())
+        try:
+            api.delete_storage_class(name=sc_manifest['metadata']['name'],
+                                     body=k8sclient.V1DeleteOptions())
+        except ApiException as e:
+            assert e.status == 404
 
     request.addfinalizer(finalizer)
 
@@ -1692,7 +1690,10 @@ def create_storage_class(sc_manifest):
 
 def delete_storage_class(sc_name):
     api = get_storage_api_client()
-    api.delete_storage_class(sc_name, body=k8sclient.V1DeleteOptions())
+    try:
+        api.delete_storage_class(sc_name, body=k8sclient.V1DeleteOptions())
+    except ApiException as e:
+        assert e.status == 404
 
 
 def update_statefulset_manifests(ss_manifest, sc_manifest, name):
@@ -1752,11 +1753,12 @@ def check_statefulset_existence(api, ss_name, namespace="default"):
 
 
 def delete_and_wait_pvc(api, pvc_name):
-    if not check_pvc_existence(api, pvc_name):
-        return
-    api.delete_namespaced_persistent_volume_claim(
-        name=pvc_name, namespace='default',
-        body=k8sclient.V1DeleteOptions())
+    try:
+        api.delete_namespaced_persistent_volume_claim(
+            name=pvc_name, namespace='default',
+            body=k8sclient.V1DeleteOptions())
+    except ApiException as e:
+        assert e.status == 404
 
     wait_delete_pvc(api, pvc_name)
 
@@ -1776,10 +1778,11 @@ def wait_delete_pvc(api, pvc_name):
 
 
 def delete_and_wait_pv(api, pv_name):
-    if not check_pv_existence(api, pv_name):
-        return
-    api.delete_persistent_volume(
-        name=pv_name, body=k8sclient.V1DeleteOptions())
+    try:
+        api.delete_persistent_volume(
+            name=pv_name, body=k8sclient.V1DeleteOptions())
+    except ApiException as e:
+        assert e.status == 404
 
     wait_delete_pv(api, pv_name)
 
@@ -1791,8 +1794,11 @@ def wait_delete_pv(api, pv_name):
         for item in pvs.items:
             if item.metadata.name == pv_name:
                 if item.status.phase == 'Failed':
-                    api.delete_persistent_volume(
-                        name=pv_name, body=k8sclient.V1DeleteOptions())
+                    try:
+                        api.delete_persistent_volume(
+                            name=pv_name, body=k8sclient.V1DeleteOptions())
+                    except ApiException as e:
+                        assert e.status == 404
                 else:
                     found = True
                     break
