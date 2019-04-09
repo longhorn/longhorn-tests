@@ -13,7 +13,10 @@ from common import check_pod_existence, create_and_wait_pod
 from common import delete_and_wait_pod, wait_delete_pod
 from common import delete_and_wait_pvc
 from common import delete_and_wait_pv, wait_delete_pv
+from common import check_pv_existence, check_pvc_existence
+from common import wait_for_volume_detached
 from common import RETRY_COUNTS, RETRY_INTERVAL
+from common import SIZE
 
 from kubernetes import client as k8sclient
 
@@ -255,3 +258,159 @@ def test_kubernetes_status_pod_deletion(client, core_api, storage_class,  # NOQA
         assert k_status['pvcName'] == p['pvc_name']
         assert k_status['workloadName'] == statefulset_name
         assert k_status['workloadType'] == 'StatefulSet'
+
+
+@pytest.mark.csi  # NOQA
+def test_pv_creation(client, core_api):  # NOQA
+    volume_name = "test-pv-creation"
+    client.create_volume(name=volume_name, size=SIZE,
+                         numberOfReplicas=2)
+    volume = wait_for_volume_detached(client, volume_name)
+
+    pv_name = "pv-" + volume_name
+
+    volume.pvCreate(pvName=pv_name)
+    for i in range(RETRY_COUNTS):
+        if check_pv_existence(core_api, pv_name):
+            break
+        time.sleep(RETRY_INTERVAL)
+    assert check_pv_existence(core_api, pv_name)
+
+    volume = client.by_id_volume(volume_name)
+    k_status = volume["kubernetesStatus"]
+    for i in range(RETRY_COUNTS):
+        if k_status['pvName'] and k_status['pvStatus'] == 'Available':
+            break
+        time.sleep(RETRY_INTERVAL)
+        volume = client.by_id_volume(volume_name)
+        k_status = volume["kubernetesStatus"]
+    assert k_status['pvName'] == pv_name
+    assert k_status['pvStatus'] == 'Available'
+    assert not k_status['namespace']
+    assert not k_status['pvcName']
+    assert not k_status['lastPVCRefAt']
+    assert not k_status['podName']
+    assert not k_status['podStatus']
+    assert not k_status['workloadName']
+    assert not k_status['workloadType']
+    assert not k_status['lastPodRefAt']
+
+    # try to create one more pv for the volume
+    pv_name_2 = "pv2-" + volume_name
+    with pytest.raises(Exception) as e:
+        volume.pvCreate(pvName=pv_name_2)
+        assert "already exist" in str(e.value)
+
+    assert k_status['pvName'] == pv_name
+    assert k_status['pvStatus'] == 'Available'
+    assert not k_status['namespace']
+    assert not k_status['pvcName']
+    assert not k_status['lastPVCRefAt']
+    assert not k_status['podName']
+    assert not k_status['podStatus']
+    assert not k_status['workloadName']
+    assert not k_status['workloadType']
+    assert not k_status['lastPodRefAt']
+
+    delete_and_wait_pv(core_api, pv_name)
+
+
+@pytest.mark.csi  # NOQA
+def test_pvc_creation(client, core_api, pod):  # NOQA
+    volume_name = "test-pvc-creation"
+    client.create_volume(name=volume_name, size=SIZE,
+                         numberOfReplicas=2)
+    volume = wait_for_volume_detached(client, volume_name)
+
+    pv_name = "pv-" + volume_name
+    pvc_name = "pvc-" + volume_name
+    pod_name = "pod-" + volume_name
+
+    # try to create pvc without pv for the volume
+    with pytest.raises(Exception) as e:
+        volume.pvcCreate(namespace="default", pvcName=pvc_name)
+        assert "connot find existing PV for volume" in str(e.value)
+
+    volume.pvCreate(pvName=pv_name)
+    for i in range(RETRY_COUNTS):
+        if check_pv_existence(core_api, pv_name):
+            break
+        time.sleep(RETRY_INTERVAL)
+    assert check_pv_existence(core_api, pv_name)
+
+    volume = client.by_id_volume(volume_name)
+    k_status = volume["kubernetesStatus"]
+    for i in range(RETRY_COUNTS):
+        if k_status['pvName'] and k_status['pvStatus'] == 'Available':
+            break
+        time.sleep(RETRY_INTERVAL)
+        volume = client.by_id_volume(volume_name)
+        k_status = volume["kubernetesStatus"]
+    assert k_status['pvName'] == pv_name
+    assert k_status['pvStatus'] == 'Available'
+    assert not k_status['namespace']
+    assert not k_status['pvcName']
+    assert not k_status['lastPVCRefAt']
+    assert not k_status['podName']
+    assert not k_status['podStatus']
+    assert not k_status['workloadName']
+    assert not k_status['workloadType']
+    assert not k_status['lastPodRefAt']
+
+    volume.pvcCreate(namespace="default", pvcName=pvc_name)
+    for i in range(RETRY_COUNTS):
+        if check_pvc_existence(core_api, pvc_name):
+            break
+        time.sleep(RETRY_INTERVAL)
+    assert check_pvc_existence(core_api, pvc_name)
+
+    volume = client.by_id_volume(volume_name)
+    k_status = volume["kubernetesStatus"]
+    for i in range(RETRY_COUNTS):
+        if k_status['pvcName'] and k_status['namespace']:
+            break
+        time.sleep(RETRY_INTERVAL)
+        volume = client.by_id_volume(volume_name)
+        k_status = volume["kubernetesStatus"]
+    assert k_status['pvName'] == pv_name
+    assert k_status['pvStatus'] == 'Bound'
+    assert k_status['namespace'] == "default"
+    assert k_status['pvcName'] == pvc_name
+    assert not k_status['lastPVCRefAt']
+    assert not k_status['podName']
+    assert not k_status['podStatus']
+    assert not k_status['workloadName']
+    assert not k_status['workloadType']
+    assert not k_status['lastPodRefAt']
+
+    pod['metadata']['name'] = pod_name
+    pod['spec']['volumes'] = [{
+        'name': pod['spec']['containers'][0]['volumeMounts'][0]['name'],
+        'persistentVolumeClaim': {
+            'claimName': pvc_name,
+        },
+    }]
+    create_and_wait_pod(core_api, pod)
+
+    volume = client.by_id_volume(volume_name)
+    k_status = volume["kubernetesStatus"]
+    assert k_status['pvName'] == pv_name
+    assert k_status['pvStatus'] == 'Bound'
+    for i in range(RETRY_COUNTS):
+        if k_status['podStatus'] == 'Running':
+            break
+        time.sleep(RETRY_INTERVAL)
+        volume = client.by_id_volume(volume_name)
+        k_status = volume["kubernetesStatus"]
+    assert k_status['podName'] == pod_name
+    assert k_status['podStatus'] == 'Running'
+    assert k_status['namespace'] == 'default'
+    assert k_status['pvcName'] == pvc_name
+    assert not k_status['workloadName']
+    assert not k_status['workloadType']
+    assert not k_status['lastPVCRefAt']
+    assert not k_status['lastPodRefAt']
+
+    delete_and_wait_pod(core_api, pod_name)
+    delete_and_wait_pvc(core_api, pvc_name)
+    wait_delete_pv(core_api, pv_name)
