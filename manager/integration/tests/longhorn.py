@@ -172,12 +172,16 @@ class Schema(object):
 
 
 class ApiError(Exception):
-    def __init__(self, obj):
+    def __init__(self, obj, status_code):
+        if not obj:
+            obj = RestObject()
+            obj.message = ""
+        obj.code = status_code
         self.error = obj
         try:
             msg = '{} : {}\n{}'.format(obj.code, obj.message, obj)
             super(ApiError, self).__init__(self, msg)
-        except:
+        except Exception:
             super(ApiError, self).__init__(self, 'API Error')
 
 
@@ -260,8 +264,8 @@ class GdapiClient(object):
     def _get(self, url, data=None):
         return self._unmarshall(self._get_raw(url, data=data))
 
-    def _error(self, text):
-        raise ApiError(self._unmarshall(text))
+    def _error(self, text, status_code):
+        raise ApiError(self._unmarshall(text), status_code)
 
     @timed_url
     def _get_raw(self, url, data=None):
@@ -272,7 +276,7 @@ class GdapiClient(object):
         r = self._session.get(url, auth=self._auth, params=data,
                               headers=self._headers)
         if r.status_code < 200 or r.status_code >= 300:
-            self._error(r.text)
+            self._error(r.text, r.status_code)
 
         return r
 
@@ -281,7 +285,7 @@ class GdapiClient(object):
         r = self._session.post(url, auth=self._auth, data=self._marshall(data),
                                headers=self._headers)
         if r.status_code < 200 or r.status_code >= 300:
-            self._error(r.text)
+            self._error(r.text, r.status_code)
 
         return self._unmarshall(r.text)
 
@@ -290,7 +294,7 @@ class GdapiClient(object):
         r = self._session.put(url, auth=self._auth, data=self._marshall(data),
                               headers=self._headers)
         if r.status_code < 200 or r.status_code >= 300:
-            self._error(r.text)
+            self._error(r.text, r.status_code)
 
         return self._unmarshall(r.text)
 
@@ -298,7 +302,7 @@ class GdapiClient(object):
     def _delete(self, url):
         r = self._session.delete(url, auth=self._auth, headers=self._headers)
         if r.status_code < 200 or r.status_code >= 300:
-            self._error(r.text)
+            self._error(r.text, r.status_code)
 
         return self._unmarshall(r.text)
 
@@ -350,7 +354,7 @@ class GdapiClient(object):
         try:
             return self._get(url, self._to_dict(**kw))
         except ApiError as e:
-            if e.error.status == 404:
+            if e.error.code == 404:
                 return None
             else:
                 raise e
@@ -375,7 +379,7 @@ class GdapiClient(object):
             try:
                 return self._put(url, data=self._to_dict(*args, **kw))
             except ApiError as e:
-                if e.error.status == 409:
+                if e.error.code == 409:
                     last_error = e
                     time.sleep(.1)
                 else:
@@ -389,7 +393,7 @@ class GdapiClient(object):
             try:
                 return self._post(url, data=self._to_dict(*args, **kw))
             except ApiError as e:
-                if e.error.status == 409:
+                if e.error.code == 409:
                     last_error = e
                     time.sleep(.1)
                 else:
@@ -823,7 +827,7 @@ def _run_cli(client, namespace):
         import sys
 
         sys.stderr.write('Error : {}\n'.format(e.error))
-        status = int(e.status) - 400
+        status = int(e.error.code) - 400
         if status > 0 and status < 255:
             sys.exit(status)
         else:
