@@ -10,7 +10,7 @@ import signal
 
 import pytest
 
-import cattle
+import longhorn
 
 from kubernetes import client as k8sclient, config as k8sconfig
 from kubernetes.client import Configuration
@@ -779,7 +779,7 @@ def cleanup_client(client):
 
 def get_client(address):
     url = 'http://' + address + '/v1/schemas'
-    c = cattle.from_env(url=url)
+    c = longhorn.from_env(url=url)
     return c
 
 
