@@ -9,6 +9,7 @@ from common import check_device_data, write_device_random_data
 from common import check_volume_data, write_volume_random_data
 from common import get_self_host_id, volume_valid
 from common import iscsi_login, iscsi_logout
+from common import wait_for_volume_status
 from common import wait_for_volume_delete
 from common import wait_for_snapshot_purge
 from common import generate_volume_name
@@ -54,6 +55,10 @@ def create_backup(client, volname):
     assert new_b["volumeSize"] == b["volumeSize"]
     assert new_b["volumeCreated"] == b["volumeCreated"]
 
+    volume = wait_for_volume_status(client, volname,
+                                    "lastBackup",
+                                    b["name"])
+    assert volume["lastBackupAt"] != ""
     return bv, b, snap, data
 
 
@@ -486,9 +491,6 @@ def backupstore_test(client, host_id, volname, size):
     check_volume_data(volume, data)
     volume = volume.detach()
     volume = common.wait_for_volume_detached(client, restoreName)
-    client.delete(volume)
-
-    volume = wait_for_volume_delete(client, restoreName)
 
     bv.backupDelete(name=b["name"])
 
@@ -499,6 +501,14 @@ def backupstore_test(client, host_id, volname, size):
             found = True
             break
     assert not found
+
+    volume = wait_for_volume_status(client, volume["name"],
+                                    "lastBackup", "")
+    assert volume["lastBackupAt"] == ""
+
+    client.delete(volume)
+
+    volume = wait_for_volume_delete(client, restoreName)
 
 
 @pytest.mark.coretest   # NOQA
