@@ -3,10 +3,12 @@ import common
 import subprocess
 import pytest
 
-from common import clients, volume_name     # NOQA
+from common import clients, volume_name  # NOQA
+from common import core_api, pod   # NOQA
 from common import SIZE, DEV_PATH
 from common import check_device_data, write_device_random_data
 from common import check_volume_data, write_volume_random_data
+from common import write_volume_data
 from common import get_self_host_id, volume_valid
 from common import iscsi_login, iscsi_logout
 from common import wait_for_volume_status
@@ -15,6 +17,10 @@ from common import wait_for_snapshot_purge
 from common import generate_volume_name
 from common import get_volume_endpoint, get_volume_engine
 from common import get_random_client
+from common import activate_standby_volume, check_volume_last_backup
+from common import create_pv_for_volume, create_pvc_for_volume
+from common import create_and_wait_pod, delete_and_wait_pod
+from common import delete_and_wait_pvc, delete_and_wait_pv
 from common import CONDITION_STATUS_FALSE, CONDITION_STATUS_TRUE
 from common import RETRY_COUNTS, RETRY_INTERVAL, RETRY_COMMAND_COUNT
 
@@ -35,10 +41,13 @@ def create_volume(client, vol_name, num_of_replicas=2,
     return volume
 
 
-def create_backup(client, volname):
+def create_backup(client, volname, data={}):
     volume = client.by_id_volume(volname)
     volume.snapshotCreate()
-    data = write_volume_random_data(volume)
+    if not data:
+        data = write_volume_random_data(volume)
+    else:
+        data = write_volume_data(volume, data)
     snap = volume.snapshotCreate()
     volume.snapshotCreate()
     volume.snapshotBackup(name=snap["name"])
@@ -509,6 +518,229 @@ def backupstore_test(client, host_id, volname, size):
     client.delete(volume)
 
     volume = wait_for_volume_delete(client, restoreName)
+
+
+@pytest.mark.coretest   # NOQA
+def test_restore_inc(clients, core_api, volume_name, pod):  # NOQA
+    for _, client in clients.iteritems():
+        break
+
+    setting = client.by_id_setting(common.SETTING_BACKUP_TARGET)
+    # test backupTarget for multiple settings
+    backupstores = common.get_backupstore_url()
+    for backupstore in backupstores:
+        if common.is_backupTarget_s3(backupstore):
+            backupsettings = backupstore.split("$")
+            setting = client.update(setting, value=backupsettings[0])
+            assert setting["value"] == backupsettings[0]
+
+            credential = client.by_id_setting(
+                common.SETTING_BACKUP_TARGET_CREDENTIAL_SECRET)
+            credential = client.update(credential, value=backupsettings[1])
+            assert credential["value"] == backupsettings[1]
+        else:
+            setting = client.update(setting, value=backupstore)
+            assert setting["value"] == backupstore
+            credential = client.by_id_setting(
+                common.SETTING_BACKUP_TARGET_CREDENTIAL_SECRET)
+            credential = client.update(credential, value="")
+            assert credential["value"] == ""
+
+        restore_inc_test(client, core_api, volume_name, pod)
+
+
+def restore_inc_test(client, core_api, volume_name, pod):  # NOQA
+    std_volume = create_volume(client, volume_name, 2, SIZE)
+    lht_host_id = get_self_host_id()
+    std_volume.attach(hostId=lht_host_id)
+    std_volume = common.wait_for_volume_healthy(client, volume_name)
+
+    with pytest.raises(Exception) as e:
+        std_volume.activate(frontend="blockdev")
+        assert "already in active mode" in str(e.value)
+
+    data0 = {'len': 4 * 1024, 'pos': 0}
+    data0['content'] = common.generate_random_data(data0['len'])
+    bv, backup0, _, data0 = create_backup(
+        client, volume_name, data0)
+
+    sb_volume0_name = "sb-0-" + volume_name
+    sb_volume1_name = "sb-1-" + volume_name
+    sb_volume2_name = "sb-2-" + volume_name
+    client.create_volume(name=sb_volume0_name, size=SIZE,
+                         numberOfReplicas=2, fromBackup=backup0['url'],
+                         frontend="", standby=True)
+    client.create_volume(name=sb_volume1_name, size=SIZE,
+                         numberOfReplicas=2, fromBackup=backup0['url'],
+                         frontend="", standby=True)
+    client.create_volume(name=sb_volume2_name, size=SIZE,
+                         numberOfReplicas=2, fromBackup=backup0['url'],
+                         frontend="", standby=True)
+    sb_volume0 = common.wait_for_volume_detached(client, sb_volume0_name)
+    sb_volume1 = common.wait_for_volume_detached(client, sb_volume1_name)
+    sb_volume2 = common.wait_for_volume_detached(client, sb_volume2_name)
+
+    sb_volume0.attach(hostId=lht_host_id)
+    sb_volume1.attach(hostId=lht_host_id)
+    sb_volume2.attach(hostId=lht_host_id)
+    sb_volume0 = common.wait_for_volume_healthy(client, sb_volume0_name)
+    sb_volume1 = common.wait_for_volume_healthy(client, sb_volume1_name)
+    sb_volume2 = common.wait_for_volume_healthy(client, sb_volume2_name)
+
+    for i in range(RETRY_COUNTS):
+        sb_volume0 = client.by_id_volume(sb_volume0_name)
+        sb_volume1 = client.by_id_volume(sb_volume1_name)
+        sb_volume2 = client.by_id_volume(sb_volume2_name)
+        if sb_volume0["lastBackup"] != backup0["name"] or \
+                sb_volume1["lastBackup"] != backup0["name"] or \
+                sb_volume2["lastBackup"] != backup0["name"]:
+            time.sleep(RETRY_INTERVAL)
+        else:
+            break
+    assert sb_volume0["standby"] is True
+    assert sb_volume0["lastBackup"] == backup0["name"]
+    assert sb_volume0["frontend"] == ""
+    assert sb_volume1["standby"] is True
+    assert sb_volume1["lastBackup"] == backup0["name"]
+    assert sb_volume1["frontend"] == ""
+    assert sb_volume2["standby"] is True
+    assert sb_volume2["lastBackup"] == backup0["name"]
+    assert sb_volume2["frontend"] == ""
+
+    sb0_snaps = sb_volume0.snapshotList()
+    assert len(sb0_snaps) == 2
+    for s in sb0_snaps:
+        if s['name'] != "volume-head":
+            sb0_snap = s
+    assert sb0_snaps
+    with pytest.raises(Exception) as e:
+        sb_volume0.snapshotCreate()
+        assert "cannot create snapshot for standby volume" in str(e.value)
+    with pytest.raises(Exception) as e:
+        sb_volume0.snapshotRevert(name=sb0_snap["name"])
+        assert "cannot revert snapshot for standby volume" in str(e.value)
+    with pytest.raises(Exception) as e:
+        sb_volume0.snapshotDelete(name=sb0_snap["name"])
+        assert "cannot delete snapshot for standby volume" in str(e.value)
+    with pytest.raises(Exception) as e:
+        sb_volume0.snapshotBackup(name=sb0_snap["name"])
+        assert "cannot create backup for standby volume" in str(e.value)
+    with pytest.raises(Exception) as e:
+        sb_volume0.pvCreate(pvName=sb_volume0_name)
+        assert "cannot create PV for standby volume" in str(e.value)
+    with pytest.raises(Exception) as e:
+        sb_volume0.pvcCreate(pvcName=sb_volume0_name)
+        assert "cannot create PVC for standby volume" in str(e.value)
+    setting = client.by_id_setting(common.SETTING_BACKUP_TARGET)
+    with pytest.raises(Exception) as e:
+        client.update(setting, value="random.backup.target")
+        assert "cannot modify BackupTarget " \
+               "since there are existing standby volumes" in str(e.value)
+    with pytest.raises(Exception) as e:
+        sb_volume0.activate(frontend="wrong_frontend")
+        assert "invalid frontend" in str(e.value)
+
+    activate_standby_volume(client, sb_volume0_name)
+    sb_volume0 = client.by_id_volume(sb_volume0_name)
+    sb_volume0.attach(hostId=lht_host_id)
+    sb_volume0 = common.wait_for_volume_healthy(client, sb_volume0_name)
+    check_volume_data(sb_volume0, data0, False)
+
+    zero_string = b'\x00'.decode('utf-8')
+    _, backup1, _, data1 = create_backup(
+        client, volume_name,
+        {'len': 2 * 1024, 'pos': 0, 'content': zero_string * 2 * 1024})
+    check_volume_last_backup(client, sb_volume1_name, backup1['name'])
+    activate_standby_volume(client, sb_volume1_name)
+    sb_volume1 = client.by_id_volume(sb_volume1_name)
+    sb_volume1.attach(hostId=lht_host_id)
+    sb_volume1 = common.wait_for_volume_healthy(client, sb_volume1_name)
+    data0_modified = {}
+    data0_modified['len'] = data0['len'] - data1['len']
+    data0_modified['pos'] = data1['len']
+    data0_modified['content'] = data0['content'][data1['len']:]
+    check_volume_data(sb_volume1, data0_modified, False)
+    check_volume_data(sb_volume1, data1)
+
+    data2 = {'len': 1 * 1024 * 1024, 'pos': 0}
+    data2['content'] = common.generate_random_data(data2['len'])
+    _, backup2, _, data2 = create_backup(client, volume_name, data2)
+    check_volume_last_backup(client, sb_volume2_name, backup2['name'])
+    activate_standby_volume(client, sb_volume2_name)
+    sb_volume2 = client.by_id_volume(sb_volume2_name)
+    sb_volume2.attach(hostId=lht_host_id)
+    sb_volume2 = common.wait_for_volume_healthy(client, sb_volume2_name)
+    check_volume_data(sb_volume2, data2)
+
+    # allocated this active volume to a pod
+    sb_volume2.detach()
+    sb_volume2 = common.wait_for_volume_detached(client, sb_volume2_name)
+
+    create_pv_for_volume(client, core_api, sb_volume2, sb_volume2_name)
+    create_pvc_for_volume(client, core_api, sb_volume2, sb_volume2_name)
+
+    sb_volume2_pod_name = "pod-" + sb_volume2_name
+    pod['metadata']['name'] = sb_volume2_pod_name
+    pod['spec']['volumes'] = [{
+        'name': pod['spec']['containers'][0]['volumeMounts'][0]['name'],
+        'persistentVolumeClaim': {
+            'claimName': sb_volume2_name,
+        },
+    }]
+    create_and_wait_pod(core_api, pod)
+
+    sb_volume2 = client.by_id_volume(sb_volume2_name)
+    k_status = sb_volume2["kubernetesStatus"]
+    workloads = k_status['workloadsStatus']
+    assert k_status['pvName'] == sb_volume2_name
+    assert k_status['pvStatus'] == 'Bound'
+    assert len(workloads) == 1
+    for i in range(RETRY_COUNTS):
+        if workloads[0]['podStatus'] == 'Running':
+            break
+        time.sleep(RETRY_INTERVAL)
+        sb_volume2 = client.by_id_volume(sb_volume2_name)
+        k_status = sb_volume2["kubernetesStatus"]
+        workloads = k_status['workloadsStatus']
+        assert len(workloads) == 1
+    assert workloads[0]['podName'] == sb_volume2_pod_name
+    assert workloads[0]['podStatus'] == 'Running'
+    assert not workloads[0]['workloadName']
+    assert not workloads[0]['workloadType']
+    assert k_status['namespace'] == 'default'
+    assert k_status['pvcName'] == sb_volume2_name
+    assert not k_status['lastPVCRefAt']
+    assert not k_status['lastPodRefAt']
+
+    delete_and_wait_pod(core_api, sb_volume2_pod_name)
+    delete_and_wait_pvc(core_api, sb_volume2_name)
+    delete_and_wait_pv(core_api, sb_volume2_name)
+
+    # cleanup
+    std_volume.detach()
+    sb_volume0.detach()
+    sb_volume1.detach()
+    std_volume = common.wait_for_volume_detached(client, volume_name)
+    sb_volume0 = common.wait_for_volume_detached(client, sb_volume0_name)
+    sb_volume1 = common.wait_for_volume_detached(client, sb_volume1_name)
+    sb_volume2 = common.wait_for_volume_detached(client, sb_volume2_name)
+
+    bv.backupDelete(name=backup2["name"])
+    bv.backupDelete(name=backup1["name"])
+    bv.backupDelete(name=backup0["name"])
+
+    client.delete(std_volume)
+    client.delete(sb_volume0)
+    client.delete(sb_volume1)
+    client.delete(sb_volume2)
+
+    wait_for_volume_delete(client, volume_name)
+    wait_for_volume_delete(client, sb_volume0_name)
+    wait_for_volume_delete(client, sb_volume1_name)
+    wait_for_volume_delete(client, sb_volume2_name)
+
+    volumes = client.list_volume()
+    assert len(volumes) == 0
 
 
 @pytest.mark.coretest   # NOQA
