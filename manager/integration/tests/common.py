@@ -1806,3 +1806,54 @@ def wait_delete_pv(api, pv_name):
             break
         time.sleep(RETRY_INTERVAL)
     assert not found
+
+
+def create_pv_for_volume(client, core_api, volume, pv_name):
+    volume.pvCreate(pvName=pv_name)
+    for i in range(RETRY_COUNTS):
+        if check_pv_existence(core_api, pv_name):
+            break
+        time.sleep(RETRY_INTERVAL)
+    assert check_pv_existence(core_api, pv_name)
+
+    volume = client.by_id_volume(volume['name'])
+    k_status = volume["kubernetesStatus"]
+    workloads = k_status['workloadsStatus']
+    for i in range(RETRY_COUNTS):
+        if k_status['pvName'] and k_status['pvStatus'] == 'Available':
+            break
+        time.sleep(RETRY_INTERVAL)
+        volume = client.by_id_volume(volume['name'])
+        k_status = volume["kubernetesStatus"]
+        workloads = k_status['workloadsStatus']
+    assert k_status['pvName'] == pv_name
+    assert k_status['pvStatus'] == 'Available'
+    assert not k_status['namespace']
+    assert not k_status['pvcName']
+    assert not workloads
+    assert not k_status['lastPVCRefAt']
+    assert not k_status['lastPodRefAt']
+
+
+def create_pvc_for_volume(client, core_api, volume, pvc_name):
+    volume.pvcCreate(namespace="default", pvcName=pvc_name)
+    for i in range(RETRY_COUNTS):
+        if check_pvc_existence(core_api, pvc_name):
+            break
+        time.sleep(RETRY_INTERVAL)
+    assert check_pvc_existence(core_api, pvc_name)
+
+    volume = client.by_id_volume(volume['name'])
+    k_status = volume["kubernetesStatus"]
+    for i in range(RETRY_COUNTS):
+        if k_status['pvcName'] and k_status['namespace']:
+            break
+        time.sleep(RETRY_INTERVAL)
+        volume = client.by_id_volume(volume['name'])
+        k_status = volume["kubernetesStatus"]
+    assert k_status['pvStatus'] == 'Bound'
+    assert k_status['namespace'] == "default"
+    assert k_status['pvcName'] == pvc_name
+    assert not k_status['workloadsStatus']
+    assert not k_status['lastPVCRefAt']
+    assert not k_status['lastPodRefAt']
