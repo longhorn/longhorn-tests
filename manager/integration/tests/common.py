@@ -1030,9 +1030,9 @@ def generate_random_data(count):
                    for _ in range(count))
 
 
-def check_volume_data(volume, data):
+def check_volume_data(volume, data, check_checksum=True):
     dev = get_volume_endpoint(volume)
-    check_device_data(dev, data)
+    check_device_data(dev, data, check_checksum)
 
 
 def write_volume_random_data(volume, position={}):
@@ -1040,11 +1040,12 @@ def write_volume_random_data(volume, position={}):
     return write_device_random_data(dev, position={})
 
 
-def check_device_data(dev, data):
+def check_device_data(dev, data, check_checksum=True):
     r_data = dev_read(dev, data['pos'], data['len'])
     assert r_data == data['content']
-    r_checksum = get_device_checksum(dev)
-    assert r_checksum == data['checksum']
+    if check_checksum:
+        r_checksum = get_device_checksum(dev)
+        assert r_checksum == data['checksum']
 
 
 def write_device_random_data(dev, position={}):
@@ -1056,6 +1057,19 @@ def write_device_random_data(dev, position={}):
     return {
         'content': data,
         'pos': data_pos,
+        'len': data_len,
+        'checksum': checksum
+    }
+
+
+def write_volume_data(volume, data):
+    dev = get_volume_endpoint(volume)
+    data_len = dev_write(dev, data['pos'], data['content'])
+    checksum = get_device_checksum(dev)
+
+    return {
+        'content': data['content'],
+        'pos': data['pos'],
         'len': data_len,
         'checksum': checksum
     }
@@ -1857,3 +1871,37 @@ def create_pvc_for_volume(client, core_api, volume, pvc_name):
     assert not k_status['workloadsStatus']
     assert not k_status['lastPVCRefAt']
     assert not k_status['lastPodRefAt']
+
+
+def activate_standby_volume(client, volume_name, frontend="blockdev"):
+    volume = client.by_id_volume(volume_name)
+    assert volume['standby'] is True
+    for i in range(RETRY_COUNTS):
+        volume = client.by_id_volume(volume_name)
+        engines = volume["controllers"]
+        if len(engines) != 1 or \
+                engines[0]["lastRestoredBackup"] != volume['lastBackup']:
+            time.sleep(RETRY_INTERVAL)
+            continue
+        try:
+            volume.activate(frontend=frontend)
+            break
+        except Exception as e:
+            assert "hasn't finished incremental restored" \
+                   in str(e.error.message)
+            time.sleep(RETRY_INTERVAL)
+    volume = client.by_id_volume(volume_name)
+    assert volume['standby'] is False
+    assert volume['frontend'] == "blockdev"
+
+    wait_for_volume_detached(client, volume_name)
+
+
+def check_volume_last_backup(client, volume_name, last_backup):
+    for i in range(RETRY_COUNTS):
+        volume = client.by_id_volume(volume_name)
+        if volume['lastBackup'] == last_backup:
+            break
+        time.sleep(RETRY_INTERVAL)
+    volume = client.by_id_volume(volume_name)
+    assert volume['lastBackup'] == last_backup
