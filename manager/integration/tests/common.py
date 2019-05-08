@@ -392,7 +392,7 @@ def write_pod_volume_data(api, pod_name, test_data):
     write_command = [
         '/bin/sh',
         '-c',
-        'echo -ne ' + test_data + ' > /data/test; sync'
+        'echo -ne ' + test_data + ' > /data/test'
     ]
     with timeout(seconds=STREAM_EXEC_TIMEOUT,
                  error_message='Timeout on executing stream write'):
