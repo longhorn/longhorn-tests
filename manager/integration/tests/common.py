@@ -317,7 +317,7 @@ def read_volume_data(api, pod_name):
             tty=False)
 
 
-def write_volume_data(api, pod_name, test_data):
+def write_pod_volume_data(api, pod_name, test_data):
     """
     Write data into a Pod's volume.
 

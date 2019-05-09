@@ -7,7 +7,7 @@ from common import DEFAULT_VOLUME_SIZE, Gi, VOLUME_RWTEST_SIZE
 from common import create_and_wait_pod, create_pvc_spec, delete_and_wait_pod
 from common import generate_random_data, get_storage_api_client
 from common import get_volume_name, read_volume_data, size_to_string
-from common import write_volume_data
+from common import write_pod_volume_data
 
 DEFAULT_STORAGECLASS_NAME = "longhorn-provisioner"
 
@@ -119,7 +119,7 @@ def test_provisioner_io(client, core_api, storage_class, pvc, pod):  # NOQA
     create_storage(core_api, storage_class, pvc)
     create_and_wait_pod(core_api, pod)
     pvc_volume_name = get_volume_name(core_api, pvc['metadata']['name'])
-    write_volume_data(core_api, pod_name, test_data)
+    write_pod_volume_data(core_api, pod_name, test_data)
     delete_and_wait_pod(core_api, pod_name)
 
     common.wait_for_volume_detached(client, pvc_volume_name)

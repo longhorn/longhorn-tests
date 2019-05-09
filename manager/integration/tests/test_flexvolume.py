@@ -69,7 +69,7 @@ def flexvolume_io_test(client, core_api, flexvolume, pod):  # NOQA
 
     create_and_wait_pod(core_api, pod)
 
-    common.write_volume_data(core_api, pod_name, test_data)
+    common.write_pod_volume_data(core_api, pod_name, test_data)
     delete_and_wait_pod(core_api, pod_name)
     wait_for_volume_detached(client, flexvolume["name"])
 
