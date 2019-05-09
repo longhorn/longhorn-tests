@@ -5,7 +5,8 @@ import common
 from common import client, core_api, csi_pv, pod_make, pvc  # NOQA
 from common import Gi, DEFAULT_VOLUME_SIZE, VOLUME_RWTEST_SIZE
 from common import create_and_wait_pod, create_pvc_spec, delete_and_wait_pod
-from common import generate_random_data, read_volume_data, write_volume_data
+from common import generate_random_data, read_volume_data
+from common import write_pod_volume_data
 from common import generate_volume_name
 
 # Using a StorageClass because GKE is using the default StorageClass if not
@@ -110,7 +111,7 @@ def csi_io_test(client, core_api, csi_pv, pvc, pod_make, base_image=""):  # NOQA
                                      csi_pv, pvc, pod_make, base_image, "")
 
     test_data = generate_random_data(VOLUME_RWTEST_SIZE)
-    write_volume_data(core_api, pod_name, test_data)
+    write_pod_volume_data(core_api, pod_name, test_data)
     delete_and_wait_pod(core_api, pod_name)
     common.wait_for_volume_detached(client, csi_pv['metadata']['name'])
 
@@ -174,7 +175,7 @@ def csi_backup_test(client, core_api, csi_pv, pvc, pod_make, base_image=""):  # 
 
 def backupstore_test(client, core_api, csi_pv, pvc, pod_make, pod_name, base_image, test_data, i):  # NOQA
     vol_name = csi_pv['metadata']['name']
-    write_volume_data(core_api, pod_name, test_data)
+    write_pod_volume_data(core_api, pod_name, test_data)
 
     volume = client.by_id_volume(vol_name)
     snap = volume.snapshotCreate()

@@ -10,7 +10,7 @@ from common import DEFAULT_POD_TIMEOUT, VOLUME_RWTEST_SIZE
 from common import delete_and_wait_statefulset, generate_random_data
 from common import get_apps_api_client, get_statefulset_pod_info
 from common import read_volume_data, size_to_string
-from common import wait_for_volume_detached, write_volume_data
+from common import wait_for_volume_detached, write_pod_volume_data
 from common import check_csi
 from common import create_and_wait_statefulset, wait_statefulset
 from common import update_statefulset_manifests, create_storage_class
@@ -42,7 +42,7 @@ def create_and_test_backups(api, cli, pod_info):
         # Create backup.
         volume = cli.by_id_volume(pod['pv_name'])
         volume.snapshotCreate()
-        write_volume_data(api, pod['pod_name'], pod['data'])
+        write_pod_volume_data(api, pod['pod_name'], pod['data'])
         pod['backup_snapshot'] = volume.snapshotCreate()
         volume.snapshotCreate()
         volume.snapshotBackup(name=pod['backup_snapshot']['name'])
@@ -210,7 +210,7 @@ def test_statefulset_pod_deletion(core_api, storage_class, statefulset):  # NOQA
     create_storage_class(storage_class)
     create_and_wait_statefulset(statefulset)
 
-    write_volume_data(core_api, test_pod_name, test_data)
+    write_pod_volume_data(core_api, test_pod_name, test_data)
     # Not using delete_and_wait_pod here because there is the small chance the
     # StatefulSet recreates the Pod quickly enough where the function won't
     # detect that the Pod was deleted, which will time out and throw an error.
@@ -260,7 +260,7 @@ def test_statefulset_recurring_backup(client, core_api, storage_class,  # NOQA
 
     for pod in pod_data:
         volume = client.by_id_volume(pod['pv_name'])
-        write_volume_data(core_api, pod['pod_name'], pod['data'])
+        write_pod_volume_data(core_api, pod['pod_name'], pod['data'])
         volume.recurringUpdate(jobs=[job_backup])
 
     time.sleep(300)
