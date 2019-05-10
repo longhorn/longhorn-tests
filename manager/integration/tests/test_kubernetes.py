@@ -7,7 +7,7 @@ from common import csi_pv, pvc, pod  # NOQA
 from common import get_apps_api_client
 from common import create_and_wait_statefulset
 from common import update_statefulset_manifests
-from common import create_storage_class
+from common import create_storage_class, delete_storage_class
 from common import get_statefulset_pod_info
 from common import create_and_wait_pod
 from common import delete_and_wait_pod, wait_delete_pod
@@ -17,6 +17,7 @@ from common import create_pv_for_volume, create_pvc_for_volume
 from common import wait_for_volume_detached
 from common import RETRY_COUNTS, RETRY_INTERVAL
 from common import SIZE
+from common import SETTING_DEFAULT_LONGHORN_STATIC_SC
 
 from kubernetes import client as k8sclient
 from kubernetes.client.rest import ApiException
@@ -322,6 +323,61 @@ def test_pv_creation(client, core_api):  # NOQA
     assert not k_status['lastPVCRefAt']
     assert not k_status['lastPodRefAt']
 
+    delete_and_wait_pv(core_api, pv_name)
+
+
+@pytest.mark.csi  # NOQA
+def test_pvc_creation_with_default_sc_set(
+        client, core_api, storage_class):  # NOQA
+    # set default storage class
+    storage_class['metadata']['annotations'] = \
+        {"storageclass.kubernetes.io/is-default-class": "true"}
+    create_storage_class(storage_class)
+
+    static_sc_name = "longhorn-static-test"
+    setting = client.by_id_setting(SETTING_DEFAULT_LONGHORN_STATIC_SC)
+    setting = client.update(setting, value=static_sc_name)
+    assert setting["value"] == static_sc_name
+
+    volume_name = "test-pvc-creation-with-sc"
+    client.create_volume(name=volume_name, size=SIZE,
+                         numberOfReplicas=2)
+    volume = wait_for_volume_detached(client, volume_name)
+
+    pv_name = "pv-" + volume_name
+    pvc_name = "pvc-" + volume_name
+
+    create_pv_for_volume(client, core_api, volume, pv_name)
+    create_pvc_for_volume(client, core_api, volume, pvc_name)
+
+    ret = core_api.list_namespaced_persistent_volume_claim(
+        namespace='default')
+    for item in ret.items:
+        if item.metadata.name == pvc_name:
+            pvc1 = item
+            break
+    assert pvc1
+    assert pvc1.spec.storage_class_name == static_sc_name
+
+    delete_and_wait_pvc(core_api, pvc_name)
+    delete_and_wait_pv(core_api, pv_name)
+
+    # without default storage class
+    delete_storage_class(storage_class['metadata']['name'])
+
+    create_pv_for_volume(client, core_api, volume, pv_name)
+    create_pvc_for_volume(client, core_api, volume, pvc_name)
+
+    ret = core_api.list_namespaced_persistent_volume_claim(
+        namespace='default')
+    for item in ret.items:
+        if item.metadata.name == pvc_name:
+            pvc2 = item
+            break
+    assert pvc2
+    assert pvc2.spec.storage_class_name == static_sc_name
+
+    delete_and_wait_pvc(core_api, pvc_name)
     delete_and_wait_pv(core_api, pv_name)
 
 
