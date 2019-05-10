@@ -1823,6 +1823,26 @@ def wait_delete_pv(api, pv_name):
     assert not found
 
 
+def wait_volume_kubernetes_status(client, volume_name, expect_ks):
+    for i in range(RETRY_COUNTS):
+        expected = True
+        volume = client.by_id_volume(volume_name)
+        ks = volume["kubernetesStatus"]
+        for k, v in expect_ks.items():
+            if k in ('lastPVCRefAt', 'lastPodRefAt'):
+                if (v != '' and ks[k] == '') or (v == '' and ks[k] != ''):
+                    expected = False
+                    break
+            else:
+                if ks[k] != v:
+                    expected = False
+                    break
+        if expected:
+            break
+        time.sleep(RETRY_INTERVAL)
+    assert expected
+
+
 def create_pv_for_volume(client, core_api, volume, pv_name):
     volume.pvCreate(pvName=pv_name)
     for i in range(RETRY_COUNTS):
@@ -1831,23 +1851,14 @@ def create_pv_for_volume(client, core_api, volume, pv_name):
         time.sleep(RETRY_INTERVAL)
     assert check_pv_existence(core_api, pv_name)
 
-    volume = client.by_id_volume(volume['name'])
-    k_status = volume["kubernetesStatus"]
-    workloads = k_status['workloadsStatus']
-    for i in range(RETRY_COUNTS):
-        if k_status['pvName'] and k_status['pvStatus'] == 'Available':
-            break
-        time.sleep(RETRY_INTERVAL)
-        volume = client.by_id_volume(volume['name'])
-        k_status = volume["kubernetesStatus"]
-        workloads = k_status['workloadsStatus']
-    assert k_status['pvName'] == pv_name
-    assert k_status['pvStatus'] == 'Available'
-    assert not k_status['namespace']
-    assert not k_status['pvcName']
-    assert not workloads
-    assert not k_status['lastPVCRefAt']
-    assert not k_status['lastPodRefAt']
+    ks = {
+        'pvName': pv_name,
+        'pvStatus': 'Available',
+        'namespace': '',
+        'lastPVCRefAt': '',
+        'lastPodRefAt': '',
+    }
+    wait_volume_kubernetes_status(client, volume['name'], ks)
 
 
 def create_pvc_for_volume(client, core_api, volume, pvc_name):
@@ -1858,20 +1869,12 @@ def create_pvc_for_volume(client, core_api, volume, pvc_name):
         time.sleep(RETRY_INTERVAL)
     assert check_pvc_existence(core_api, pvc_name)
 
-    volume = client.by_id_volume(volume['name'])
-    k_status = volume["kubernetesStatus"]
-    for i in range(RETRY_COUNTS):
-        if k_status['pvcName'] and k_status['namespace']:
-            break
-        time.sleep(RETRY_INTERVAL)
-        volume = client.by_id_volume(volume['name'])
-        k_status = volume["kubernetesStatus"]
-    assert k_status['pvStatus'] == 'Bound'
-    assert k_status['namespace'] == "default"
-    assert k_status['pvcName'] == pvc_name
-    assert not k_status['workloadsStatus']
-    assert not k_status['lastPVCRefAt']
-    assert not k_status['lastPodRefAt']
+    ks = {
+        'pvStatus': 'Bound',
+        'namespace': 'default',
+        'lastPVCRefAt': '',
+    }
+    wait_volume_kubernetes_status(client, volume['name'], ks)
 
 
 def activate_standby_volume(client, volume_name, frontend="blockdev"):
