@@ -96,6 +96,7 @@ STREAM_EXEC_TIMEOUT = 60
 SETTING_BACKUP_TARGET = "backup-target"
 SETTING_BACKUP_TARGET_CREDENTIAL_SECRET = "backup-target-credential-secret"
 SETTING_DEFAULT_REPLICA_COUNT = "default-replica-count"
+SETTING_DEFAULT_LONGHORN_STATIC_SC = "default-longhorn-static-storage-class"
 
 CSI_UNKNOWN = 0
 CSI_TRUE = 1
