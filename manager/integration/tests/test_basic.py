@@ -650,6 +650,8 @@ def restore_inc_test(client, core_api, volume_name, pod):  # NOQA
     _, backup1, _, data1 = create_backup(
         client, volume_name,
         {'len': 2 * 1024, 'pos': 0, 'content': zero_string * 2 * 1024})
+    # use this api to update field `last backup`
+    client.list_backupVolume()
     check_volume_last_backup(client, sb_volume1_name, backup1['name'])
     activate_standby_volume(client, sb_volume1_name)
     sb_volume1 = client.by_id_volume(sb_volume1_name)
@@ -666,6 +668,7 @@ def restore_inc_test(client, core_api, volume_name, pod):  # NOQA
     data2 = {'len': 1 * 1024 * 1024, 'pos': 0}
     data2['content'] = common.generate_random_data(data2['len'])
     _, backup2, _, data2 = create_backup(client, volume_name, data2)
+    client.list_backupVolume()
     check_volume_last_backup(client, sb_volume2_name, backup2['name'])
     activate_standby_volume(client, sb_volume2_name)
     sb_volume2 = client.by_id_volume(sb_volume2_name)
