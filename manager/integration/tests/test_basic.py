@@ -655,10 +655,11 @@ def restore_inc_test(client, core_api, volume_name, pod):  # NOQA
     sb_volume1 = client.by_id_volume(sb_volume1_name)
     sb_volume1.attach(hostId=lht_host_id)
     sb_volume1 = common.wait_for_volume_healthy(client, sb_volume1_name)
-    data0_modified = {}
-    data0_modified['len'] = data0['len'] - data1['len']
-    data0_modified['pos'] = data1['len']
-    data0_modified['content'] = data0['content'][data1['len']:]
+    data0_modified = {
+        'len': data0['len'] - data1['len'],
+        'pos': data1['len'],
+        'content': data0['content'][data1['len']:],
+    }
     check_volume_data(sb_volume1, data0_modified, False)
     check_volume_data(sb_volume1, data1)
 
