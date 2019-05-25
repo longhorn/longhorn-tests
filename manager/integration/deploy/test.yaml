@@ -48,6 +48,7 @@ spec:
 #           "-k", "test_recurring_job",
 #           "--skip-recurring-job-test",
 #           ]
+    #TEST_FRAMEWORK_ARGS_PLACEHOLDER
     imagePullPolicy: Always
     securityContext:
       privileged: true
