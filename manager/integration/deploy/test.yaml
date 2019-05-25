@@ -40,7 +40,8 @@ metadata:
 spec:
   containers:
   - name: longhorn-test-pod
-    image: rancher/longhorn-manager-test:v0.5.0
+    image: rancher/longhorn-manager-test:fcd7a9e
+    args: [ "-s" , "--junitxml=${LONGHORN_JUNIT_REPORT_PATH}" ]
 #    args: [
 #           "-x", "-s",
 #           "-m", "coretest",
@@ -51,6 +52,8 @@ spec:
     securityContext:
       privileged: true
     env:
+    - name: LONGHORN_JUNIT_REPORT_PATH
+      value: /integration/tests/longhorn-test-junit-report.xml
     - name: LONGHORN_BACKUPSTORES
       value: "s3://backupbucket@us-east-1/backupstore$minio-secret, nfs://longhorn-test-nfs-svc.default:/opt/backupstore"
     - name: NODE_NAME
