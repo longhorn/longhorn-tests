@@ -83,7 +83,7 @@ SETTING_STORAGE_OVER_PROVISIONING_PERCENTAGE = \
     "storage-over-provisioning-percentage"
 SETTING_STORAGE_MINIMAL_AVAILABLE_PERCENTAGE = \
     "storage-minimal-available-percentage"
-DEFAULT_DISK_PATH = "/var/lib/rancher/longhorn"
+DEFAULT_DISK_PATH = "/var/lib/rancher/longhorn/"
 DEFAULT_STORAGE_OVER_PROVISIONING_PERCENTAGE = "500"
 DEFAULT_STORAGE_MINIMAL_AVAILABLE_PERCENTAGE = "10"
 
