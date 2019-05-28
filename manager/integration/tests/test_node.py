@@ -9,7 +9,8 @@ from common import Gi, SIZE, CONDITION_STATUS_FALSE, \
     DISK_CONDITION_SCHEDULABLE, DISK_CONDITION_READY
 from common import get_self_host_id
 from common import SETTING_STORAGE_OVER_PROVISIONING_PERCENTAGE, \
-    SETTING_STORAGE_MINIMAL_AVAILABLE_PERCENTAGE
+    SETTING_STORAGE_MINIMAL_AVAILABLE_PERCENTAGE, \
+    DEFAULT_STORAGE_OVER_PROVISIONING_PERCENTAGE
 from common import get_volume_endpoint
 from common import get_update_disks
 from common import wait_for_disk_status, wait_for_disk_update, \
@@ -320,25 +321,31 @@ def test_replica_scheduler_too_large_volume_fit_any_disks(client):  # NOQA
         node.diskUpdate(disks=update_disks)
 
     # volume is too large to fill into any disks
+    volume_size = 4 * Gi
     vol_name = common.generate_volume_name()
-    volume = client.create_volume(name=vol_name,
-                                  size=str(4*Gi), numberOfReplicas=len(nodes))
+    client.create_volume(name=vol_name, size=str(volume_size),
+                         numberOfReplicas=len(nodes))
     volume = common.wait_for_volume_condition_scheduled(client, vol_name,
                                                         "status",
                                                         CONDITION_STATUS_FALSE)
 
-    # reduce StorageReserved of each default disk
+    # Reduce StorageReserved of each default disk so that each node can fit
+    # only one replica.
+    needed_for_scheduling = int(
+        volume_size * 1.5 * 100 / DEFAULT_STORAGE_OVER_PROVISIONING_PERCENTAGE)
     nodes = client.list_node()
     for node in nodes:
         disks = node["disks"]
         update_disks = get_update_disks(disks)
         for disk in update_disks:
-            disk["storageReserved"] = 0
+            disk["storageReserved"] = \
+                disk["storageMaximum"] - needed_for_scheduling
         node = node.diskUpdate(disks=update_disks)
         disks = node["disks"]
         for fsid, disk in disks.iteritems():
             wait_for_disk_status(client, node["name"],
-                                 fsid, "storageReserved", 0)
+                                 fsid, "storageReserved",
+                                 disk["storageMaximum"]-needed_for_scheduling)
 
     # check volume status
     volume = common.wait_for_volume_condition_scheduled(client, vol_name,
