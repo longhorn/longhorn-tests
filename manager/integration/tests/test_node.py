@@ -332,7 +332,8 @@ def test_replica_scheduler_too_large_volume_fit_any_disks(client):  # NOQA
     # Reduce StorageReserved of each default disk so that each node can fit
     # only one replica.
     needed_for_scheduling = int(
-        volume_size * 1.5 * 100 / DEFAULT_STORAGE_OVER_PROVISIONING_PERCENTAGE)
+        volume_size * 1.5 * 100 /
+        int(DEFAULT_STORAGE_OVER_PROVISIONING_PERCENTAGE))
     nodes = client.list_node()
     for node in nodes:
         disks = node["disks"]
