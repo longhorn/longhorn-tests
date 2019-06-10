@@ -16,7 +16,7 @@ resource "digitalocean_droplet" "longhorn-tests-controller" {
   region   = "nyc3"
   size     = "s-2vcpu-4gb"
   ssh_keys = ["${digitalocean_ssh_key.do-ssh-key.fingerprint}"]
-  tags     = ["longhorn-tests", "DoNotDelete", "k8s-controller"]
+  tags     = ["longhorn-tests", "k8s-controller"]
 
   provisioner "remote-exec" {
     connection {
@@ -39,7 +39,7 @@ resource "digitalocean_droplet" "longhorn-tests-worker-1" {
   region   = "nyc3"
   size     = "s-2vcpu-4gb"
   ssh_keys = ["${digitalocean_ssh_key.do-ssh-key.fingerprint}"]
-  tags     = ["longhorn-tests", "DoNotDelete", "k8s-worker"]
+  tags     = ["longhorn-tests", "k8s-worker"]
 
   provisioner "remote-exec" {
     connection {
@@ -62,7 +62,7 @@ resource "digitalocean_droplet" "longhorn-tests-worker-2" {
   region   = "nyc3"
   size     = "s-2vcpu-4gb"
   ssh_keys = ["${digitalocean_ssh_key.do-ssh-key.fingerprint}"]
-  tags     = ["longhorn-tests", "DoNotDelete", "k8s-worker"]
+  tags     = ["longhorn-tests", "k8s-worker"]
 
   provisioner "remote-exec" {
     connection {
