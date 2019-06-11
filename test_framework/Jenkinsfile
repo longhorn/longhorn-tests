@@ -2,14 +2,10 @@ def imageName = "${JOB_NAME}${env.BUILD_NUMBER}"
 
 node {
 
-    checkout(
-       [$class: 'GitSCM',
-        //branches: [[name: 'longhorn-56']],
-        userRemoteConfigs: [[url: 'https://github.com/rancher/longhorn-tests.git']]]
-    )
+    checkout scm
 
     stage('build') {
-        sh "./scripts/build.sh"
+        sh "test_framework/scripts/build.sh"
         sh "docker run -itd --name ${JOB_NAME}${BUILD_NUMBER} --env TF_VAR_do_token=${TF_VAR_do_token} --env TF_VAR_tf_workspace=${TF_VAR_tf_workspace} ${imageName}"
     }
 
