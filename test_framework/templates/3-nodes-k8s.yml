@@ -1,0 +1,10 @@
+nodes:
+  - address: K8S_CONTROLLER_IP
+    user: root
+    role: [controlplane,etcd]
+  - address: K8S_WORKER_1_IP
+    user: root
+    role: [worker]
+  - address: K8S_WORKER_2_IP
+    user: root
+    role: [worker]

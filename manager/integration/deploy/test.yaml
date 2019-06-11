@@ -47,10 +47,13 @@ spec:
 #           "-k", "test_recurring_job",
 #           "--skip-recurring-job-test",
 #           ]
+    #TEST_FRAMEWORK_ARGS_PLACEHOLDER
     imagePullPolicy: Always
     securityContext:
       privileged: true
     env:
+    - name: LONGHORN_JUNIT_REPORT_PATH
+      value: /integration/tests/longhorn-test-junit-report.xml
     - name: LONGHORN_BACKUPSTORES
       value: "s3://backupbucket@us-east-1/backupstore$minio-secret, nfs://longhorn-test-nfs-svc.default:/opt/backupstore"
     - name: NODE_NAME
