@@ -439,6 +439,31 @@ def backup_test(clients, volume_name, size, base_image=""):  # NOQA
     cleanup_volume(client, volume)
 
 
+# test normally created volume's "RestorationRequired" field
+def test_restoration_required_field(clients):
+    for host_id, client in clients.iteritems():
+        break
+
+    volname = generate_volume_name()
+    volume = client.create_volume(name=volname, size=SIZE, numberOfReplicas=3)
+    volume = common.wait_for_volume_detached(client, volname)
+    assert volume["restorationRequired"] is False
+
+    volume = volume.attach(hostId=host_id)
+    volume = common.wait_for_volume_healthy(client, volname)
+    assert volume["restorationRequired"] is False
+
+    volume = volume.detach()
+    volume = common.wait_for_volume_detached(client, volname)
+    assert volume["restorationRequired"] is False
+
+    client.delete(volume)
+    volume = wait_for_volume_delete(client, volname)
+
+    volumes = client.list_volume()
+    assert len(volumes) == 0
+
+
 def backupstore_test(client, host_id, volname, size):
     bv, b, snap2, data = create_backup(client, volname)
 
@@ -447,11 +472,15 @@ def backupstore_test(client, host_id, volname, size):
     volume = client.create_volume(name=restoreName, size=size,
                                   numberOfReplicas=2,
                                   fromBackup=b["url"])
+
+    volume = common.wait_for_volume_restoration_completed(client, restoreName)
     volume = common.wait_for_volume_detached(client, restoreName)
     assert volume["name"] == restoreName
     assert volume["size"] == size
     assert volume["numberOfReplicas"] == 2
     assert volume["state"] == "detached"
+    assert volume["restorationRequired"] is False
+
     volume = volume.attach(hostId=host_id)
     volume = common.wait_for_volume_healthy(client, restoreName)
     check_volume_data(volume, data)
