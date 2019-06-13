@@ -132,6 +132,49 @@ def get_longhorn_api_client():
     return client
 
 
+def cleanup_volume(client, volume):
+    """
+    Clean up the volume after the test.
+    :param client: The Longhorn client to use in the request.
+    :param volume: The volume to clean up.
+    """
+    volume.detach()
+    volume = wait_for_volume_detached(client, volume["name"])
+    client.delete(volume)
+    wait_for_volume_delete(client, volume["name"])
+    volumes = client.list_volume()
+    assert len(volumes) == 0
+
+
+def create_and_check_volume(client, volume_name, num_of_replicas=3, size=SIZE,
+                            base_image="", frontend="blockdev"):
+    """
+    Create a new volume with the specified parameters. Assert that the new
+    volume is detached and that all of the requested parameters match.
+
+    :param client: The Longhorn client to use in the request.
+    :param volume_name: The name of the volume.
+    :param num_of_replicas: The number of replicas the volume should have.
+    :param size: The size of the volume, as a string representing the number
+    of bytes.
+    :param base_image: The base image to use for the volume.
+    :param frontend: The frontend to use for the volume.
+    :return: The volume instance created.
+    """
+    client.create_volume(name=volume_name, size=size,
+                         numberOfReplicas=num_of_replicas,
+                         baseImage=base_image, frontend=frontend)
+    volume = wait_for_volume_detached(client, volume_name)
+    assert volume["name"] == volume_name
+    assert volume["size"] == size
+    assert volume["numberOfReplicas"] == num_of_replicas
+    assert volume["state"] == "detached"
+    assert volume["baseImage"] == base_image
+    assert volume["frontend"] == frontend
+    assert volume["created"] != ""
+    return volume
+
+
 def create_and_wait_pod(api, pod_manifest):
     """
     Creates a new Pod attached to a PersistentVolumeClaim for testing.

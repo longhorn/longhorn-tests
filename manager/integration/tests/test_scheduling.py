@@ -1,11 +1,11 @@
 import pytest
 
-from common import RETRY_COUNTS, RETRY_INTERVAL, SIZE
+from common import RETRY_COUNTS, RETRY_INTERVAL
 from common import client, volume_name  # NOQA
-from common import check_volume_data, get_longhorn_api_client, \
-    get_self_host_id, wait_for_volume_delete, wait_for_volume_detached, \
-    wait_for_volume_degraded, wait_for_volume_healthy, \
-    write_volume_random_data
+from common import check_volume_data, cleanup_volume, \
+    create_and_check_volume, get_longhorn_api_client, get_self_host_id, \
+    wait_for_volume_detached, wait_for_volume_degraded, \
+    wait_for_volume_healthy, write_volume_random_data
 from time import sleep
 
 SETTING_REPLICA_HARD_ANTI_AFFINITY = "replica-hard-anti-affinity"
@@ -20,43 +20,6 @@ def reset_settings():
     client.update(node, allowScheduling=True)
     setting = client.by_id_setting(SETTING_REPLICA_HARD_ANTI_AFFINITY)
     client.update(setting, value="false")
-
-
-def create_and_check_volume(client, volume_name, num_of_replicas=3,  # NOQA
-                            size=SIZE):  # NOQA
-    """
-    Create a new volume with the specified parameters. Assert that the new
-    volume is detached and that all of the requested parameters match.
-
-    :param client: The Longhorn client to use in the request.
-    :param volume_name: The name of the volume.
-    :param num_of_replicas: The number of replicas the volume should have.
-    :param size: The size of the volume, as a string representing the number
-    of bytes.
-    :return: The volume instance created.
-    """
-    client.create_volume(name=volume_name, size=size,
-                         numberOfReplicas=num_of_replicas)
-    volume = wait_for_volume_detached(client, volume_name)
-    assert volume["name"] == volume_name
-    assert volume["size"] == size
-    assert volume["numberOfReplicas"] == num_of_replicas
-    assert volume["created"] != ""
-    return volume
-
-
-def cleanup(client, volume):  # NOQA
-    """
-    Clean up the volume after the test.
-    :param client: The Longhorn client to use in the request.
-    :param volume: The volume to clean up.
-    """
-    volume.detach()
-    volume = wait_for_volume_detached(client, volume["name"])
-    client.delete(volume)
-    wait_for_volume_delete(client, volume["name"])
-    volumes = client.list_volume()
-    assert len(volumes) == 0
 
 
 def get_host_replica(volume, host_id):
@@ -148,7 +111,7 @@ def test_soft_anti_affinity_scheduling(client, volume_name):  # NOQA
     assert len(volume["replicas"]) == 3
     check_volume_data(volume, data)
 
-    cleanup(client, volume)
+    cleanup_volume(client, volume)
 
 
 def test_soft_anti_affinity_detach(client, volume_name):  # NOQA
@@ -182,7 +145,7 @@ def test_soft_anti_affinity_detach(client, volume_name):  # NOQA
     assert len(volume["replicas"]) == 3
     check_volume_data(volume, data)
 
-    cleanup(client, volume)
+    cleanup_volume(client, volume)
 
 
 def test_hard_anti_affinity_scheduling(client, volume_name):  # NOQA
@@ -225,7 +188,7 @@ def test_hard_anti_affinity_scheduling(client, volume_name):  # NOQA
     assert 2 <= len(volume["replicas"]) <= 4
     check_volume_data(volume, data)
 
-    cleanup(client, volume)
+    cleanup_volume(client, volume)
 
 
 def test_hard_anti_affinity_detach(client, volume_name):  # NOQA
@@ -262,7 +225,7 @@ def test_hard_anti_affinity_detach(client, volume_name):  # NOQA
     assert 2 <= len(volume["replicas"]) <= 4
     check_volume_data(volume, data)
 
-    cleanup(client, volume)
+    cleanup_volume(client, volume)
 
 
 def test_hard_anti_affinity_live_rebuild(client, volume_name):  # NOQA
@@ -299,7 +262,7 @@ def test_hard_anti_affinity_live_rebuild(client, volume_name):  # NOQA
     assert len(volume["replicas"]) == 3
     check_volume_data(volume, data)
 
-    cleanup(client, volume)
+    cleanup_volume(client, volume)
 
 
 def test_hard_anti_affinity_offline_rebuild(client, volume_name):  # NOQA
@@ -336,4 +299,4 @@ def test_hard_anti_affinity_offline_rebuild(client, volume_name):  # NOQA
     assert len(volume["replicas"]) == 3
     check_volume_data(volume, data)
 
-    cleanup(client, volume)
+    cleanup_volume(client, volume)
