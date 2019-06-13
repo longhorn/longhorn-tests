@@ -23,22 +23,7 @@ from common import create_and_wait_pod, delete_and_wait_pod
 from common import delete_and_wait_pvc, delete_and_wait_pv
 from common import CONDITION_STATUS_FALSE, CONDITION_STATUS_TRUE
 from common import RETRY_COUNTS, RETRY_INTERVAL, RETRY_COMMAND_COUNT
-
-
-def create_volume(client, vol_name, num_of_replicas=2,
-                  size=SIZE, base_image="", frontend="blockdev"):
-    client.create_volume(name=vol_name, size=size,
-                         numberOfReplicas=num_of_replicas,
-                         frontend=frontend, baseImage=base_image)
-    volume = common.wait_for_volume_detached(client, vol_name)
-    assert volume["name"] == vol_name
-    assert volume["size"] == size
-    assert volume["numberOfReplicas"] == num_of_replicas
-    assert volume["state"] == "detached"
-    assert volume["baseImage"] == base_image
-    assert volume["frontend"] == frontend
-    assert volume["created"] != ""
-    return volume
+from common import cleanup_volume, create_and_check_volume
 
 
 def create_backup(client, volname, data={}):
@@ -212,7 +197,8 @@ def volume_basic_test(clients, volume_name, base_image=""):  # NOQA
                                       numberOfReplicas=2,
                                       frontend="invalid_frontend")
 
-    volume = create_volume(client, volume_name, num_replicas, SIZE, base_image)
+    volume = create_and_check_volume(client, volume_name, num_replicas, SIZE,
+                                     base_image)
 
     def validate_volume_basic(expected, actual):
         assert actual["name"] == expected["name"]
@@ -263,15 +249,7 @@ def volume_basic_test(clients, volume_name, base_image=""):  # NOQA
 
     volume_rw_test(get_volume_endpoint(volume))
 
-    volume = volume.detach()
-
-    common.wait_for_volume_detached(client, volume_name)
-
-    client.delete(volume)
-    wait_for_volume_delete(client, volume_name)
-
-    volumes = client.list_volume()
-    assert len(volumes) == 0
+    cleanup_volume(client, volume)
 
 
 def test_volume_iscsi_basic(clients, volume_name):  # NOQA
@@ -283,7 +261,8 @@ def volume_iscsi_basic_test(clients, volume_name, base_image=""):  # NOQA
     for host_id, client in clients.iteritems():
         break
 
-    volume = create_volume(client, volume_name, 3, SIZE, base_image, "iscsi")
+    volume = create_and_check_volume(client, volume_name, 3, SIZE, base_image,
+                                     "iscsi")
     volume.attach(hostId=host_id)
     volume = common.wait_for_volume_healthy(client, volume_name)
 
@@ -304,16 +283,7 @@ def volume_iscsi_basic_test(clients, volume_name, base_image=""):  # NOQA
     finally:
         iscsi_logout(endpoint)
 
-    volume = volume.detach()
-
-    common.wait_for_volume_detached(client, volume_name)
-
-    client.delete(volume)
-
-    wait_for_volume_delete(client, volume_name)
-
-    volumes = client.list_volume()
-    assert len(volumes) == 0
+    cleanup_volume(client, volume)
 
 
 @pytest.mark.coretest   # NOQA
@@ -325,7 +295,8 @@ def snapshot_test(clients, volume_name, base_image):  # NOQA
     for host_id, client in clients.iteritems():
         break
 
-    volume = create_volume(client, volume_name, base_image=base_image)
+    volume = create_and_check_volume(client, volume_name,
+                                     base_image=base_image)
 
     lht_hostId = get_self_host_id()
     volume = volume.attach(hostId=lht_hostId)
@@ -424,14 +395,7 @@ def snapshot_test(clients, volume_name, base_image):  # NOQA
     assert snapMap[snap2["name"]]["removed"] is True
     check_volume_data(volume, snap2_data)
 
-    volume = volume.detach()
-    volume = common.wait_for_volume_detached(client, volume_name)
-
-    client.delete(volume)
-    volume = wait_for_volume_delete(client, volume_name)
-
-    volumes = client.list_volume()
-    assert len(volumes) == 0
+    cleanup_volume(client, volume)
 
 
 @pytest.mark.coretest   # NOQA
@@ -443,7 +407,7 @@ def backup_test(clients, volume_name, size, base_image=""):  # NOQA
     for host_id, client in clients.iteritems():
         break
 
-    volume = create_volume(client, volume_name, 2, size, base_image)
+    volume = create_and_check_volume(client, volume_name, 2, size, base_image)
 
     lht_hostId = get_self_host_id()
     volume = volume.attach(hostId=lht_hostId)
@@ -472,14 +436,7 @@ def backup_test(clients, volume_name, size, base_image=""):  # NOQA
 
         backupstore_test(client, lht_hostId, volume_name, size)
 
-    volume = volume.detach()
-    volume = common.wait_for_volume_detached(client, volume_name)
-
-    client.delete(volume)
-    volume = wait_for_volume_delete(client, volume_name)
-
-    volumes = client.list_volume()
-    assert len(volumes) == 0
+    cleanup_volume(client, volume)
 
 
 def backupstore_test(client, host_id, volname, size):
@@ -550,7 +507,7 @@ def test_restore_inc(clients, core_api, volume_name, pod):  # NOQA
 
 
 def restore_inc_test(client, core_api, volume_name, pod):  # NOQA
-    std_volume = create_volume(client, volume_name, 2, SIZE)
+    std_volume = create_and_check_volume(client, volume_name, 2, SIZE)
     lht_host_id = get_self_host_id()
     std_volume.attach(hostId=lht_host_id)
     std_volume = common.wait_for_volume_healthy(client, volume_name)
@@ -758,9 +715,9 @@ def test_listing_backup_volume(clients, base_image=""):   # NOQA
     volume2_name = generate_volume_name()
     volume3_name = generate_volume_name()
 
-    volume1 = create_volume(client, volume1_name)
-    volume2 = create_volume(client, volume2_name)
-    volume3 = create_volume(client, volume3_name)
+    volume1 = create_and_check_volume(client, volume1_name)
+    volume2 = create_and_check_volume(client, volume2_name)
+    volume3 = create_and_check_volume(client, volume3_name)
 
     volume1.attach(hostId=lht_hostId)
     volume1 = common.wait_for_volume_healthy(client, volume1_name)
@@ -988,7 +945,7 @@ def test_volume_update_replica_count(clients, volume_name):  # NOQA
         break
 
     replica_count = 3
-    volume = create_volume(client, volume_name, replica_count)
+    volume = create_and_check_volume(client, volume_name, replica_count)
 
     volume.attach(hostId=host_id)
     volume = common.wait_for_volume_healthy(client, volume_name)

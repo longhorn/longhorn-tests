@@ -4,7 +4,8 @@ import time
 
 from common import client, volume_name  # NOQA
 from common import SIZE, DEV_PATH
-from common import check_volume_data, get_self_host_id, get_volume_endpoint
+from common import check_volume_data, cleanup_volume, create_and_check_volume
+from common import get_self_host_id, get_volume_endpoint
 from common import write_volume_random_data
 from common import RETRY_COUNTS, RETRY_INTERVAL
 
@@ -15,15 +16,7 @@ def test_ha_simple_recovery(client, volume_name):  # NOQA
 
 
 def ha_simple_recovery_test(client, volume_name, size, base_image=""):  # NOQA
-    volume = client.create_volume(name=volume_name, size=size,
-                                  numberOfReplicas=2, baseImage=base_image)
-    volume = common.wait_for_volume_detached(client, volume_name)
-    assert volume["name"] == volume_name
-    assert volume["size"] == size
-    assert volume["numberOfReplicas"] == 2
-    assert volume["state"] == "detached"
-    assert volume["created"] != ""
-    assert volume["baseImage"] == base_image
+    volume = create_and_check_volume(client, volume_name, 2, size, base_image)
 
     host_id = get_self_host_id()
     volume = volume.attach(hostId=host_id)
@@ -31,14 +24,7 @@ def ha_simple_recovery_test(client, volume_name, size, base_image=""):  # NOQA
 
     ha_rebuild_replica_test(client, volume_name)
 
-    volume = volume.detach()
-    volume = common.wait_for_volume_detached(client, volume_name)
-
-    client.delete(volume)
-    common.wait_for_volume_delete(client, volume_name)
-
-    volumes = client.list_volume()
-    assert len(volumes) == 0
+    cleanup_volume(client, volume)
 
 
 def ha_rebuild_replica_test(client, volname):   # NOQA
@@ -93,15 +79,8 @@ def test_ha_salvage(client, volume_name):  # NOQA
 
 
 def ha_salvage_test(client, volume_name, base_image=""):  # NOQA
-    volume = client.create_volume(name=volume_name, size=SIZE,
-                                  numberOfReplicas=2, baseImage=base_image)
-    volume = common.wait_for_volume_detached(client, volume_name)
-    assert volume["name"] == volume_name
-    assert volume["size"] == SIZE
-    assert volume["numberOfReplicas"] == 2
-    assert volume["state"] == "detached"
-    assert volume["created"] != ""
-    assert volume["baseImage"] == base_image
+    volume = create_and_check_volume(client, volume_name, 2,
+                                     base_image=base_image)
 
     host_id = get_self_host_id()
     volume = volume.attach(hostId=host_id)
@@ -132,14 +111,7 @@ def ha_salvage_test(client, volume_name, base_image=""):  # NOQA
 
     check_volume_data(volume, data)
 
-    volume = volume.detach()
-    volume = common.wait_for_volume_detached(client, volume_name)
-
-    client.delete(volume)
-    common.wait_for_volume_delete(client, volume_name)
-
-    volumes = client.list_volume()
-    assert len(volumes) == 0
+    cleanup_volume(client, volume)
 
 
 # https://github.com/rancher/longhorn/issues/253
@@ -220,26 +192,12 @@ def ha_backup_deletion_recovery_test(client, volume_name, size, base_image=""): 
         client.delete(res_volume)
         common.wait_for_volume_delete(client, res_name)
 
-    volume = volume.detach()
-    volume = common.wait_for_volume_detached(client, volume_name)
-
-    client.delete(volume)
-    common.wait_for_volume_delete(client, volume_name)
-
-    volumes = client.list_volume()
-    assert len(volumes) == 0
+    cleanup_volume(client, volume)
 
 
 # https://github.com/rancher/longhorn/issues/415
 def test_ha_prohibit_deleting_last_replica(client, volume_name):  # NOQA
-    volume = client.create_volume(name=volume_name, size=SIZE,
-                                  numberOfReplicas=1)
-    volume = common.wait_for_volume_detached(client, volume_name)
-    assert volume["name"] == volume_name
-    assert volume["size"] == SIZE
-    assert volume["numberOfReplicas"] == 1
-    assert volume["state"] == "detached"
-    assert volume["created"] != ""
+    volume = create_and_check_volume(client, volume_name, 1)
 
     host_id = get_self_host_id()
     volume = volume.attach(hostId=host_id)
@@ -252,11 +210,4 @@ def test_ha_prohibit_deleting_last_replica(client, volume_name):  # NOQA
         volume.replicaRemove(name=replica0["name"])
     assert "no other healthy replica available" in str(e.value)
 
-    volume = volume.detach()
-    volume = common.wait_for_volume_detached(client, volume_name)
-
-    client.delete(volume)
-    common.wait_for_volume_delete(client, volume_name)
-
-    volumes = client.list_volume()
-    assert len(volumes) == 0
+    cleanup_volume(client, volume)
