@@ -535,6 +535,69 @@ def test_restore_inc(clients, core_api, volume_name, pod):  # NOQA
         restore_inc_test(client, core_api, volume_name, pod)
 
 
+def test_standby_volume_activation(clients):
+    for _, client in clients.iteritems():
+        break
+
+    interval = client.by_id_setting("backupstore-poll-interval")
+    interval = client.update(interval, value="0")
+    assert interval["value"] == "0"
+
+    volname = generate_volume_name()
+    volume = client.create_volume(name=volname, size=SIZE, numberOfReplicas=3)
+    lht_host_id = get_self_host_id()
+    volume = common.wait_for_volume_detached(client, volname)
+    assert volume["name"] == volname
+    assert volume["size"] == SIZE
+    assert volume["numberOfReplicas"] == 3
+    assert volume["state"] == "detached"
+
+    volume.attach(hostId=lht_host_id)
+    volume = common.wait_for_volume_healthy(client, volname)
+    bv, b, snap, data = create_backup(client, volname)
+
+    sb_volume_name = "sb-" + volname
+    client.create_volume(name=sb_volume_name, size=SIZE,
+                         numberOfReplicas=2, fromBackup=b['url'],
+                         frontend="", standby=True)
+    sb_volume = common.wait_for_volume_detached(client, sb_volume_name)
+    sb_volume.attach(hostId=lht_host_id)
+    sb_volume = common.wait_for_volume_healthy(client, sb_volume_name)
+    for i in range(RETRY_COUNTS):
+        if sb_volume["lastBackup"] != b["name"]:
+            time.sleep(RETRY_INTERVAL)
+        else:
+            break
+    assert sb_volume["standby"] is True
+    assert sb_volume["lastBackup"] == b["name"]
+
+    _, b2, _, data2 = create_backup(client, volname)
+    time.sleep(10)
+    assert sb_volume["lastBackup"] == b["name"]
+    activate_standby_volume(client, sb_volume_name)
+    sb_volume = common.wait_for_volume_detached(client, sb_volume_name)
+    sb_volume.attach(hostId=lht_host_id)
+    sb_volume = common.wait_for_volume_healthy(client, sb_volume_name)
+    check_volume_data(sb_volume, data2)
+
+    # clean up
+    volume.detach()
+    sb_volume.detach()
+    volume = common.wait_for_volume_detached(client, volname)
+    sb_volume = common.wait_for_volume_detached(client, sb_volume_name)
+
+    bv.backupDelete(name=b["name"])
+    bv.backupDelete(name=b2["name"])
+
+    client.delete(volume)
+    client.delete(sb_volume)
+    wait_for_volume_delete(client, volname)
+    wait_for_volume_delete(client, sb_volume_name)
+
+    volumes = client.list_volume()
+    assert len(volumes) == 0
+
+
 def restore_inc_test(client, core_api, volume_name, pod):  # NOQA
     std_volume = create_and_check_volume(client, volume_name, 2, SIZE)
     lht_host_id = get_self_host_id()
