@@ -8,8 +8,8 @@ LONGHORN_MANAGER_IMAGE_TAG=`grep -io "rancher\/longhorn-manager:.*$" longhorn.ya
 LONGHORN_ENGINE_IMAGE_TAG=`grep -io "rancher\/longhorn-engine:.*$" longhorn.yaml | head -1 | awk -F ":" '{print $2}'`
 
 
-sed -i 's/rancher\/longhorn-manager:'${LONGHORN_MANAGER_IMAGE_TAG}'/rancher\/longhorn-manager:v0.5.0/' longhorn.yaml
-sed -i 's/rancher\/longhorn-engine:'${LONGHORN_ENGINE_IMAGE_TAG}'/rancher\/longhorn-engine:v0.5.0/' longhorn.yaml
+sed -i 's/rancher\/longhorn-manager:'${LONGHORN_MANAGER_IMAGE_TAG}'/longhornio\/longhorn-manager:master/' longhorn.yaml
+sed -i 's/rancher\/longhorn-engine:'${LONGHORN_ENGINE_IMAGE_TAG}'/longhornio\/longhorn-engine:master/' longhorn.yaml
 
 export KUBECONFIG="${TF_VAR_tf_workspace}/templates/kube_config_3-nodes-k8s.yml"
 
