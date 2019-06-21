@@ -104,6 +104,23 @@ CSI_UNKNOWN = 0
 CSI_TRUE = 1
 CSI_FALSE = 2
 
+# Default Tag test case set up to fulfill as many test inputs as
+# possible.
+DEFAULT_TAGS = [
+    {
+        "disk": ["nvme", "ssd"],
+        "node": ["main", "storage"]
+    },
+    {
+        "disk": ["nvme", "ssd"],
+        "node": ["fallback", "storage"]
+    },
+    {
+        "disk": ["m2", "nvme"],
+        "node": ["main", "storage"]
+    }
+]
+
 
 def load_k8s_config():
     c = Configuration()
@@ -414,6 +431,44 @@ def wait_delete_pod(api, pod_name):
             break
         time.sleep(DEFAULT_POD_INTERVAL)
     assert not found
+
+
+def check_volume_replicas(volume, spec, tag_mapping):
+    """
+    Check the replicas on the volume to ensure that they were scheduled
+    properly.
+    :param volume: The Volume to check.
+    :param spec: The spec to validate the Tag against.
+    :param tag_mapping: The mapping of Nodes to the Tags they have.
+    :raise AssertionError: If the Volume doesn't match all the conditions.
+    """
+    found_hosts = {}
+    # Make sure that all the Tags the Volume requested were fulfilled.
+    for replica in volume["replicas"]:
+        found_hosts[replica["hostId"]] = {}
+        assert not len(set(spec["disk"]) -
+                       set(tag_mapping[replica["hostId"]]["disk"]))
+        assert not len(set(spec["node"]) -
+                       set(tag_mapping[replica["hostId"]]["node"]))
+
+    # The Volume should have replicas on as many nodes as matched
+    # the requirements (specified by "expected" in the spec variable).
+    assert len(found_hosts) == spec["expected"]
+
+
+# Default argument is mutable on this function, but it's fine since we're only
+# using it as an empty tag list to pass to the server and will never actually
+# modify it.
+def set_node_tags(client, node, tags=[]):  # NOQA
+    """
+    Set the tags on a node without modifying its scheduling status.
+    :param client: The Longhorn client to use in the request.
+    :param node: The Node to update.
+    :param tags: The tags to set on the node.
+    :return: The updated Node.
+    """
+    return client.update(node, allowScheduling=node["allowScheduling"],
+                         tags=tags)
 
 
 @pytest.fixture
@@ -751,6 +806,46 @@ def storage_class(request):
     request.addfinalizer(finalizer)
 
     return sc_manifest
+
+
+@pytest.yield_fixture
+def node_default_tags():
+    """
+    Assign the Tags under DEFAULT_TAGS to the Longhorn client's Nodes to
+    provide a base set of Tags to work with in the tests.
+    :return: A dictionary mapping a Node's ID to the Tags it has.
+    """
+    client = get_longhorn_api_client()  # NOQA
+    nodes = client.list_node()
+    assert len(nodes) == 3
+
+    tag_mappings = {}
+    for tags, node in zip(DEFAULT_TAGS, nodes):
+        assert len(node["disks"]) == 1
+
+        update_disks = get_update_disks(node["disks"])
+        update_disks[0]["tags"] = tags["disk"]
+        new_node = node.diskUpdate(disks=update_disks)
+        disks = get_update_disks(new_node["disks"])
+        assert disks[0]["tags"] == tags["disk"]
+
+        new_node = set_node_tags(client, node, tags["node"])
+        assert new_node["tags"] == tags["node"]
+
+        tag_mappings[node["id"]] = tags
+    yield tag_mappings
+
+    client = get_longhorn_api_client()  # NOQA
+    nodes = client.list_node()
+    for node in nodes:
+        update_disks = get_update_disks(node["disks"])
+        update_disks[0]["tags"] = []
+        new_node = node.diskUpdate(disks=update_disks)
+        disks = get_update_disks(new_node["disks"])
+        assert disks[0]["tags"] is None
+
+        new_node = set_node_tags(client, node)
+        assert new_node["tags"] is None
 
 
 @pytest.fixture
