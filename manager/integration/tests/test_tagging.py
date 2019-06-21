@@ -6,7 +6,8 @@ from common import client, node_default_tags, volume_name # NOQA
 from common import RETRY_COUNTS, RETRY_INTERVAL, SIZE
 from common import check_volume_replicas, cleanup_volume, \
     generate_volume_name, get_self_host_id, get_update_disks, set_node_tags, \
-    wait_for_volume_delete, wait_for_volume_detached, wait_for_volume_healthy
+    wait_for_volume_delete, wait_for_volume_detached, \
+    wait_for_volume_healthy, wait_scheduling_failure
 from time import sleep
 
 
@@ -169,18 +170,7 @@ def test_tag_scheduling_failure(client, node_default_tags):  # NOQA
         volume = wait_for_volume_detached(client, volume_name)
         assert volume["diskSelector"] == tags["disk"]
         assert volume["nodeSelector"] == tags["node"]
-
-        scheduling_failure = False
-        for i in range(RETRY_COUNTS):
-            v = client.by_id_volume(volume_name)
-            if v["conditions"]["scheduled"]["status"] == "False" and \
-                    v["conditions"]["scheduled"]["reason"] == \
-                    "ReplicaSchedulingFailure":
-                scheduling_failure = True
-            if scheduling_failure:
-                break
-            sleep(RETRY_INTERVAL)
-        assert scheduling_failure
+        wait_scheduling_failure(client, volume_name)
 
         client.delete(volume)
         wait_for_volume_delete(client, volume["name"])
@@ -205,17 +195,7 @@ def test_tag_scheduling_on_update(client, node_default_tags, volume_name):  # NO
     assert volume["diskSelector"] == tag_spec["disk"]
     assert volume["nodeSelector"] == tag_spec["node"]
 
-    scheduling_failure = False
-    for i in range(RETRY_COUNTS):
-        v = client.by_id_volume(volume_name)
-        if v["conditions"]["scheduled"]["status"] == "False" and \
-                v["conditions"]["scheduled"]["reason"] == \
-                "ReplicaSchedulingFailure":
-            scheduling_failure = True
-        if scheduling_failure:
-            break
-        sleep(RETRY_INTERVAL)
-    assert scheduling_failure
+    wait_scheduling_failure(client, volume_name)
 
     host_id = get_self_host_id()
     node = client.by_id_node(host_id)

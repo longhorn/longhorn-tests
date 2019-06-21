@@ -5,7 +5,7 @@ from common import client, volume_name  # NOQA
 from common import check_volume_data, cleanup_volume, \
     create_and_check_volume, get_longhorn_api_client, get_self_host_id, \
     wait_for_volume_detached, wait_for_volume_degraded, \
-    wait_for_volume_healthy, write_volume_random_data
+    wait_for_volume_healthy, wait_scheduling_failure, write_volume_random_data
 from time import sleep
 
 SETTING_REPLICA_HARD_ANTI_AFFINITY = "replica-hard-anti-affinity"
@@ -61,26 +61,6 @@ def wait_new_replica_ready(client, volume_name, replica_names):  # NOQA
             break
         sleep(RETRY_INTERVAL)
     assert new_replica_ready
-
-
-def wait_scheduling_failure(client, volume_name):  # NOQA
-    """
-    Wait and make sure no new replicas are running on the specified
-    volume. Trigger a failed assertion of one is detected.
-    :param client: The Longhorn client to use in the request.
-    :param volume_name: The name of the volume.
-    """
-    scheduling_failure = False
-    for i in range(RETRY_COUNTS):
-        v = client.by_id_volume(volume_name)
-        if v["conditions"]["scheduled"]["status"] == "False" and \
-                v["conditions"]["scheduled"]["reason"] == \
-                "ReplicaSchedulingFailure":
-            scheduling_failure = True
-        if scheduling_failure:
-            break
-        sleep(RETRY_INTERVAL)
-    assert scheduling_failure
 
 
 def test_soft_anti_affinity_scheduling(client, volume_name):  # NOQA
