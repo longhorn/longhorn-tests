@@ -955,6 +955,26 @@ def get_clients(hosts):
     return clients
 
 
+def wait_scheduling_failure(client, volume_name):
+    """
+    Wait and make sure no new replicas are running on the specified
+    volume. Trigger a failed assertion of one is detected.
+    :param client: The Longhorn client to use in the request.
+    :param volume_name: The name of the volume.
+    """
+    scheduling_failure = False
+    for i in range(RETRY_COUNTS):
+        v = client.by_id_volume(volume_name)
+        if v["conditions"]["scheduled"]["status"] == "False" and \
+                v["conditions"]["scheduled"]["reason"] == \
+                "ReplicaSchedulingFailure":
+            scheduling_failure = True
+        if scheduling_failure:
+            break
+        time.sleep(RETRY_INTERVAL)
+    assert scheduling_failure
+
+
 def wait_for_device_login(dest_path, name):
     dev = ""
     for i in range(RETRY_COUNTS):
