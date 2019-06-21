@@ -2,11 +2,11 @@
 import pytest
 
 import common
-from common import client, core_api, flexvolume, pod  # NOQA
+from common import client, core_api, flexvolume, node_default_tags, pod  # NOQA
 from common import Gi, DEFAULT_VOLUME_SIZE, VOLUME_RWTEST_SIZE
 from common import create_and_wait_pod, delete_and_wait_pod
 from common import generate_random_data, read_volume_data
-from common import wait_for_volume_detached
+from common import wait_for_volume_detached, check_volume_replicas
 
 
 @pytest.mark.coretest   # NOQA
@@ -80,3 +80,37 @@ def flexvolume_io_test(client, core_api, flexvolume, pod):  # NOQA
     resp = read_volume_data(core_api, pod_name)
 
     assert resp == test_data
+
+
+@pytest.mark.flexvolume
+def test_flexvolume_tags(client, core_api, node_default_tags, flexvolume, pod):  # NOQA
+    """
+    Test that the FlexVolume provisioner is able to handle diskSelectors and
+    nodeSelectors properly.
+    """
+    pod_name = 'flexvolume-tag-test'
+    tag_spec = {
+        "disk": ["ssd", "nvme"],
+        "expected": 1,
+        "node": ["storage", "main"]
+    }
+    volume_size = DEFAULT_VOLUME_SIZE * Gi
+
+    flexvolume["flexvolume"]["options"]["diskSelector"] = "ssd,nvme"
+    flexvolume["flexvolume"]["options"]["nodeSelector"] = "storage,main"
+    pod['metadata']['name'] = pod_name
+    pod['spec']['containers'][0]['volumeMounts'][0]['name'] = \
+        flexvolume['name']
+    pod['spec']['volumes'] = [
+        flexvolume
+    ]
+    create_and_wait_pod(core_api, pod)
+
+    volumes = client.list_volume()
+    assert len(volumes) == 1
+    assert volumes[0]["name"] == flexvolume['name']
+    assert volumes[0]["size"] == str(volume_size)
+    assert volumes[0]["numberOfReplicas"] == int(
+        flexvolume["flexVolume"]["options"]["numberOfReplicas"])
+    assert volumes[0]["state"] == "attached"
+    check_volume_replicas(volumes[0], tag_spec, node_default_tags)
