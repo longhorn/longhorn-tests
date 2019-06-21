@@ -2,12 +2,12 @@
 import pytest
 import common
 
-from common import client, core_api, pod, pvc, storage_class  # NOQA
+from common import client, core_api, node_default_tags, pod, pvc, storage_class  # NOQA
 from common import DEFAULT_VOLUME_SIZE, Gi, VOLUME_RWTEST_SIZE
 from common import create_and_wait_pod, create_pvc_spec, delete_and_wait_pod
 from common import generate_random_data, get_storage_api_client
 from common import get_volume_name, read_volume_data, size_to_string
-from common import write_pod_volume_data
+from common import write_pod_volume_data, check_volume_replicas
 
 DEFAULT_STORAGECLASS_NAME = "longhorn-provisioner"
 
@@ -130,3 +130,42 @@ def test_provisioner_io(client, core_api, storage_class, pvc, pod):  # NOQA
     resp = read_volume_data(core_api, pod_name)
 
     assert resp == test_data
+
+
+def test_provisioner_tags(client, core_api, node_default_tags, storage_class, pvc, pod):  # NOQA
+    """
+    Test that a StorageClass can properly provision a volume with requested
+    Tags.
+    """
+
+    # Prepare pod and volume specs.
+    pod_name = 'provisioner-tags-test'
+    tag_spec = {
+        "disk": ["ssd", "nvme"],
+        "expected": 1,
+        "node": ["storage", "main"]
+    }
+
+    pod['metadata']['name'] = pod_name
+    pod['spec']['volumes'] = [
+        create_pvc_spec(pvc['metadata']['name'])
+    ]
+    pvc['spec']['storageClassName'] = DEFAULT_STORAGECLASS_NAME
+    storage_class['metadata']['name'] = DEFAULT_STORAGECLASS_NAME
+    storage_class['parameters']['diskSelector'] = 'ssd,nvme'
+    storage_class['parameters']['nodeSelector'] = 'storage,main'
+    volume_size = DEFAULT_VOLUME_SIZE * Gi
+
+    create_storage(core_api, storage_class, pvc)
+    create_and_wait_pod(core_api, pod)
+    pvc_volume_name = get_volume_name(core_api, pvc['metadata']['name'])
+
+    # Confirm that the volume has all the correct parameters we gave it.
+    volumes = client.list_volume()
+    assert len(volumes) == 1
+    assert volumes[0]["name"] == pvc_volume_name
+    assert volumes[0]["size"] == str(volume_size)
+    assert volumes[0]["numberOfReplicas"] == \
+        int(storage_class['parameters']['numberOfReplicas'])
+    assert volumes[0]["state"] == "attached"
+    check_volume_replicas(volumes[0], tag_spec, node_default_tags)
