@@ -562,13 +562,7 @@ def restore_inc_test(client, core_api, volume_name, pod):  # NOQA
     client.create_volume(name=sb_volume2_name, size=SIZE,
                          numberOfReplicas=2, fromBackup=backup0['url'],
                          frontend="", standby=True)
-    sb_volume0 = common.wait_for_volume_detached(client, sb_volume0_name)
-    sb_volume1 = common.wait_for_volume_detached(client, sb_volume1_name)
-    sb_volume2 = common.wait_for_volume_detached(client, sb_volume2_name)
 
-    sb_volume0.attach(hostId=lht_host_id)
-    sb_volume1.attach(hostId=lht_host_id)
-    sb_volume2.attach(hostId=lht_host_id)
     sb_volume0 = common.wait_for_volume_healthy(client, sb_volume0_name)
     sb_volume1 = common.wait_for_volume_healthy(client, sb_volume1_name)
     sb_volume2 = common.wait_for_volume_healthy(client, sb_volume2_name)
@@ -586,12 +580,15 @@ def restore_inc_test(client, core_api, volume_name, pod):  # NOQA
     assert sb_volume0["standby"] is True
     assert sb_volume0["lastBackup"] == backup0["name"]
     assert sb_volume0["frontend"] == ""
+    assert sb_volume0["restorationRequired"] is False
     assert sb_volume1["standby"] is True
     assert sb_volume1["lastBackup"] == backup0["name"]
     assert sb_volume1["frontend"] == ""
+    assert sb_volume1["restorationRequired"] is False
     assert sb_volume2["standby"] is True
     assert sb_volume2["lastBackup"] == backup0["name"]
     assert sb_volume2["frontend"] == ""
+    assert sb_volume2["restorationRequired"] is False
 
     sb0_snaps = sb_volume0.snapshotList()
     assert len(sb0_snaps) == 2
