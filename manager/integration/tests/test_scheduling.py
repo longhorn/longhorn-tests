@@ -154,18 +154,15 @@ def test_hard_anti_affinity_scheduling(client, volume_name):  # NOQA
     # volume becomes Degraded and reports a scheduling error.
     volume = wait_for_volume_degraded(client, volume_name)
     wait_scheduling_failure(client, volume_name)
-    # We can't just count the replicas since there may be more than two due to
-    # the manager attempting to schedule more. We need to make sure there are
-    # the correct number of Healthy replicas instead.
+    # While there are three replicas that should exist to meet the Volume's
+    # request, only two of those volumes should actually be Healthy.
     assert sum([1 for replica in volume["replicas"] if replica["running"] and
-                replica["mode"] == "RW"])
-    # The volume should only have anywhere from two to four replicas. There
-    # are at least two Healthy replicas, there may be one new replica that is
-    # attempting to be scheduled, and there may be one failed replica that is
-    # getting deleted from the previous scheduling attempt (note that failing
-    # replicas are not counted when longhorn-manager decides to schedule a new
-    # replica, so the new and failed replica may exist simultaneously).
-    assert 2 <= len(volume["replicas"]) <= 4
+                replica["mode"] == "RW"]) == 2
+    # Confirm that the final volume is an unscheduled volume.
+    assert sum([1 for replica in volume["replicas"] if
+                not replica["hostId"]]) == 1
+    # Three replicas in total should still exist.
+    assert len(volume["replicas"]) == 3
     check_volume_data(volume, data)
 
     cleanup_volume(client, volume)
@@ -201,8 +198,10 @@ def test_hard_anti_affinity_detach(client, volume_name):  # NOQA
     volume = wait_for_volume_degraded(client, volume_name)
     wait_scheduling_failure(client, volume_name)
     assert sum([1 for replica in volume["replicas"] if replica["running"] and
-                replica["mode"] == "RW"])
-    assert 2 <= len(volume["replicas"]) <= 4
+                replica["mode"] == "RW"]) == 2
+    assert sum([1 for replica in volume["replicas"] if
+                not replica["hostId"]]) == 1
+    assert len(volume["replicas"]) == 3
     check_volume_data(volume, data)
 
     cleanup_volume(client, volume)
