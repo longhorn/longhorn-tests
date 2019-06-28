@@ -161,7 +161,8 @@ def ha_backup_deletion_recovery_test(client, volume_name, size, base_image=""): 
         res_volume = client.create_volume(name=res_name, size=size,
                                           numberOfReplicas=2,
                                           fromBackup=b["url"])
-        res_volume = common.wait_for_volume_restoration_completed(client, res_name)
+        res_volume = common.wait_for_volume_restoration_completed(
+            client, res_name)
         res_volume = common.wait_for_volume_detached(client, res_name)
         res_volume = res_volume.attach(hostId=host_id)
         res_volume = common.wait_for_volume_healthy(client, res_name)

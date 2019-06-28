@@ -440,7 +440,7 @@ def backup_test(clients, volume_name, size, base_image=""):  # NOQA
 
 
 # test normally created volume's "RestorationRequired" field
-def test_restoration_required_field(clients):
+def test_restoration_required_field(clients):  # NOQA
     for host_id, client in clients.iteritems():
         break
 
