@@ -21,6 +21,7 @@ steps:
   image: plugins/docker
   settings:
     custom_dns: 1.1.1.1
+    context: manager/integration
     dockerfile: manager/integration/Dockerfile
     password:
       from_secret: docker_password
