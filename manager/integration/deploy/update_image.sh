@@ -5,7 +5,7 @@ set -e
 cd $(dirname $0)/..
 
 files=`find ./deploy/ |grep yaml |sort`
-project="rancher\/longhorn-manager-test"
+project="longhornio\/longhorn-manager-test"
 
 latest=`cat bin/latest_image`
 echo latest image ${latest}

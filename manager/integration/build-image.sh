@@ -1,6 +1,6 @@
 #!/bin/bash
 
-REPO=${REPO:-rancher}
+REPO=${REPO:-longhornio}
 
 version=$(./scripts/version)
 image="$REPO/longhorn-manager-test:${version}"
