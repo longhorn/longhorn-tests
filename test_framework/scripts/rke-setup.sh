@@ -11,5 +11,7 @@ sed -i 's/K8S_WORKER_1_IP/'${K8S_WORKER_1_IP}'/' "${TF_VAR_tf_workspace}/templat
 K8S_WORKER_2_IP=`grep worker-2 "${TF_VAR_tf_workspace}/terraform.output"  | awk '{print $3}'`
 sed -i 's/K8S_WORKER_2_IP/'${K8S_WORKER_2_IP}'/' "${TF_VAR_tf_workspace}/templates/3-nodes-k8s.yml"
 
-rke up --config "${TF_VAR_tf_workspace}/templates/3-nodes-k8s.yml"
+K8S_WORKER_3_IP=`grep worker-3 "${TF_VAR_tf_workspace}/terraform.output"  | awk '{print $3}'`
+sed -i 's/K8S_WORKER_3_IP/'${K8S_WORKER_3_IP}'/' "${TF_VAR_tf_workspace}/templates/3-nodes-k8s.yml"
 
+rke up --config "${TF_VAR_tf_workspace}/templates/3-nodes-k8s.yml"
