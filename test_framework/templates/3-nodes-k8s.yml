@@ -8,3 +8,6 @@ nodes:
   - address: K8S_WORKER_2_IP
     user: root
     role: [worker]
+  - address: K8S_WORKER_3_IP
+    user: root
+    role: [worker]
