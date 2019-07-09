@@ -24,6 +24,8 @@ kubectl create -Rf "${WORKSPACE}/manager/integration/deploy/backupstores"
 
 sed -i 's/#TEST_FRAMEWORK_ARGS_PLACEHOLDER/args:\ \[\ \"\-s\"\ ,\ \"\-\-junitxml=\$\{LONGHORN_JUNIT_REPORT_PATH\}" \]/' "${WORKSPACE}/manager/integration/deploy/test.yaml"
 
+sed  -i 's/longhornio\/longhorn-manager-test:.*$/longhornio\/longhorn-manager-test:master/' "${WORKSPACE}/manager/integration/deploy/test.yaml"
+
 kubectl create -f "${WORKSPACE}/manager/integration/deploy/test.yaml"
 
 echo "Waiting for test pod to be in Running state"
