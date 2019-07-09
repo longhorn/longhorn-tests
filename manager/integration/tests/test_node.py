@@ -3,11 +3,15 @@ import pytest
 import os
 import subprocess
 
-from common import client  # NOQA
+from random import choice
+from string import ascii_lowercase, digits
+
+from common import core_api, client  # NOQA
 from common import Gi, SIZE, CONDITION_STATUS_FALSE, \
     CONDITION_STATUS_TRUE, DEFAULT_DISK_PATH, DIRECTORY_PATH, \
     DISK_CONDITION_SCHEDULABLE, DISK_CONDITION_READY
-from common import get_self_host_id
+from common import get_core_api_client, get_longhorn_api_client, \
+    get_self_host_id
 from common import SETTING_STORAGE_OVER_PROVISIONING_PERCENTAGE, \
     SETTING_STORAGE_MINIMAL_AVAILABLE_PERCENTAGE, \
     DEFAULT_STORAGE_OVER_PROVISIONING_PERCENTAGE
@@ -17,8 +21,43 @@ from common import wait_for_disk_status, wait_for_disk_update, \
     wait_for_disk_conditions
 from common import exec_nsenter
 
+CREATE_DEFAULT_DISK_LABEL = "node.longhorn.io/create-default-disk"
+CREATE_DEFAULT_DISK_SETTING = "create-default-disk-labeled-nodes"
+DEFAULT_DATA_PATH_SETTING = "default-data-path"
 SMALL_DISK_SIZE = (1 * 1024 * 1024)
 TEST_FILE = 'test'
+
+
+@pytest.fixture
+def random_disk_path():
+    return "/var/lib/longhorn-" + "".join(choice(ascii_lowercase + digits)
+                                          for _ in range(6))
+
+
+@pytest.yield_fixture
+def reset_default_disk_label():
+    yield
+    k8sapi = get_core_api_client()
+    lhapi = get_longhorn_api_client()
+    nodes = lhapi.list_node()
+    for node in nodes:
+        k8sapi.patch_node(node["id"], {
+            "metadata": {
+                "labels": {
+                    CREATE_DEFAULT_DISK_LABEL: None
+                }
+            }
+        })
+
+
+@pytest.yield_fixture
+def reset_disk_settings():
+    yield
+    api = get_longhorn_api_client()
+    setting = api.by_id_setting(CREATE_DEFAULT_DISK_SETTING)
+    api.update(setting, value="false")
+    setting = api.by_id_setting(DEFAULT_DATA_PATH_SETTING)
+    api.update(setting, value=DEFAULT_DISK_PATH)
 
 
 def create_host_disk(client, vol_name, size, node_id):  # NOQA
@@ -1045,3 +1084,79 @@ def test_replica_cleanup(client):  # NOQA
                                        len(update_disks))
 
     cleanup_host_disk(client, 'extra-disk')
+
+
+@pytest.mark.node
+def test_node_default_disk_labeled(client, core_api, random_disk_path,  reset_default_disk_label,  # NOQA
+                                   reset_disk_settings):  # NOQA
+    """
+    Test that only Nodes with the proper label applied get a default Disk
+    created on them when one doesn't already exist. Makes sure the created
+    Disk matches the Default Data Path Setting.
+    """
+    # Set up cases.
+    cases = {
+        "disk_exists": None,
+        "labeled": None,
+        "unlabeled": None
+    }
+    nodes = client.list_node()
+    assert len(nodes) >= 3
+
+    node = nodes[0]
+    cases["disk_exists"] = node["id"]
+    core_api.patch_node(node["id"], {
+        "metadata": {
+            "labels": {
+                CREATE_DEFAULT_DISK_LABEL: "true"
+            }
+        }
+    })
+
+    node = nodes[1]
+    cases["labeled"] = node["id"]
+    core_api.patch_node(node["id"], {
+        "metadata": {
+            "labels": {
+                CREATE_DEFAULT_DISK_LABEL: "true"
+            }
+        }
+    })
+    disks = node["disks"]
+    for _, disk in disks.iteritems():
+        disk["allowScheduling"] = False
+    update_disks = get_update_disks(disks)
+    node = node.diskUpdate(disks=update_disks)
+    node = node.diskUpdate(disks=[])
+    wait_for_disk_update(client, node["id"], 0)
+
+    node = nodes[2]
+    cases["unlabeled"] = node["id"]
+    disks = node["disks"]
+    for _, disk in disks.iteritems():
+        disk["allowScheduling"] = False
+    update_disks = get_update_disks(disks)
+    node = node.diskUpdate(disks=update_disks)
+    node = node.diskUpdate(disks=[])
+    wait_for_disk_update(client, node["id"], 0)
+
+    # Set disk creation and path Settings.
+    setting = client.by_id_setting(DEFAULT_DATA_PATH_SETTING)
+    client.update(setting, value=random_disk_path)
+    setting = client.by_id_setting(CREATE_DEFAULT_DISK_SETTING)
+    client.update(setting, value="true")
+    wait_for_disk_update(client, cases["labeled"], 1)
+
+    # Check each case.
+    node = client.by_id_node(cases["disk_exists"])
+    assert len(node["disks"]) == 1
+    assert get_update_disks(node["disks"])[0]["path"] == \
+        DEFAULT_DISK_PATH
+
+    node = client.by_id_node(cases["labeled"])
+    assert len(node["disks"]) == 1
+    assert get_update_disks(node["disks"])[0]["path"] == \
+        random_disk_path
+
+    node = client.by_id_node(cases["unlabeled"])
+    assert len(node["disks"]) == 0
