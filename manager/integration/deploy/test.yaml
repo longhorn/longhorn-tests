@@ -9,7 +9,7 @@ metadata:
   name: longhorn-test-role
 rules:
 - apiGroups: [""]
-  resources: ["pods", "pods/exec", "persistentvolumes", "persistentvolumeclaims", "secrets"]
+  resources: ["nodes", "pods", "pods/exec", "persistentvolumes", "persistentvolumeclaims", "secrets"]
   verbs: ["*"]
 - apiGroups: ["storage.k8s.io"]
   resources: ["storageclasses"]
