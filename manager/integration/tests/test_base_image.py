@@ -2,18 +2,19 @@ import pytest
 
 import test_ha
 
-from common import client, clients, volume_name, core_api  # NOQA
+from common import client, clients, random_labels, volume_name, core_api  # NOQA
 from common import flexvolume, csi_pv_baseimage, pvc_baseimage, pod  # NOQA
 from common import flexvolume_baseimage, csi_pv, pvc, pod_make  # NOQA
 from common import BASE_IMAGE_EXT4, BASE_IMAGE_EXT4_SIZE
 from test_basic import volume_basic_test, volume_iscsi_basic_test
-from test_basic import snapshot_test, backup_test
+from test_basic import snapshot_test, backup_test, backup_labels_test
 from test_engine_upgrade import engine_offline_upgrade_test
 from test_engine_upgrade import engine_live_upgrade_test
 from test_engine_upgrade import engine_live_upgrade_rollback_test
 from test_migration import migration_confirm_test, migration_rollback_test
 from test_flexvolume import flexvolume_mount_test, flexvolume_io_test
 from test_csi import csi_mount_test, csi_io_test, csi_backup_test
+from test_recurring_job import recurring_job_labels_test
 
 
 @pytest.mark.coretest   # NOQA
@@ -39,6 +40,13 @@ def test_snapshot_with_base_image(clients, volume_name):  # NOQA
 def test_backup_with_base_image(clients, volume_name):  # NOQA
     backup_test(clients, volume_name, str(BASE_IMAGE_EXT4_SIZE),
                 BASE_IMAGE_EXT4)
+
+
+@pytest.mark.coretest   # NOQA
+@pytest.mark.baseimage  # NOQA
+def test_backup_labels_with_base_image(clients, random_labels, volume_name):  # NOQA
+    backup_labels_test(clients, random_labels, volume_name,
+                       str(BASE_IMAGE_EXT4_SIZE), BASE_IMAGE_EXT4)
 
 
 @pytest.mark.coretest   # NOQA
@@ -120,3 +128,10 @@ def test_csi_io_with_base_image(client, core_api, csi_pv_baseimage, pvc_baseimag
 @pytest.mark.csi  # NOQA
 def test_csi_backup_with_base_image(client, core_api, csi_pv, pvc, pod_make):  # NOQA
     csi_backup_test(client, core_api, csi_pv, pvc, pod_make, BASE_IMAGE_EXT4)
+
+
+@pytest.mark.baseimage
+@pytest.mark.recurring_job
+def test_recurring_job_labels_with_base_image(client, random_labels, volume_name):  # NOQA
+    recurring_job_labels_test(client, random_labels, volume_name,
+                              str(BASE_IMAGE_EXT4_SIZE), BASE_IMAGE_EXT4)

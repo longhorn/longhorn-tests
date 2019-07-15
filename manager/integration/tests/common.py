@@ -104,6 +104,9 @@ CSI_UNKNOWN = 0
 CSI_TRUE = 1
 CSI_FALSE = 2
 
+BASE_IMAGE_LABEL = "ranchervm-base-image"
+KUBERNETES_STATUS_LABEL = "KubernetesStatus"
+
 # Default Tag test case set up to fulfill as many test inputs as
 # possible.
 DEFAULT_TAGS = [
@@ -163,6 +166,40 @@ def cleanup_volume(client, volume):
     wait_for_volume_delete(client, volume["name"])
     volumes = client.list_volume()
     assert len(volumes) == 0
+
+
+def create_backup(client, volname, data={}, labels={}):
+    volume = client.by_id_volume(volname)
+    volume.snapshotCreate()
+    if not data:
+        data = write_volume_random_data(volume)
+    else:
+        data = write_volume_data(volume, data)
+    snap = volume.snapshotCreate()
+    volume.snapshotCreate()
+    volume.snapshotBackup(name=snap["name"], labels=labels)
+
+    bv, b = find_backup(client, volname, snap["name"])
+
+    new_b = bv.backupGet(name=b["name"])
+    assert new_b["name"] == b["name"]
+    assert new_b["url"] == b["url"]
+    assert new_b["snapshotName"] == b["snapshotName"]
+    assert new_b["snapshotCreated"] == b["snapshotCreated"]
+    assert new_b["created"] == b["created"]
+    assert new_b["volumeName"] == b["volumeName"]
+    assert new_b["volumeSize"] == b["volumeSize"]
+    assert new_b["volumeCreated"] == b["volumeCreated"]
+    # Don't directly compare the Label dictionaries, since the server could
+    # have added extra Labels (for things like BaseImage).
+    for key, val in labels.iteritems():
+        assert new_b["labels"].get(key) == val
+    volume = wait_for_volume_status(client, volname,
+                                    "lastBackup",
+                                    b["name"])
+    assert volume["lastBackupAt"] != ""
+
+    return bv, b, snap, data
 
 
 def create_and_check_volume(client, volume_name, num_of_replicas=3, size=SIZE,
@@ -846,6 +883,20 @@ def node_default_tags():
 
         new_node = set_node_tags(client, node)
         assert new_node["tags"] is None
+
+
+@pytest.fixture
+def random_labels():
+    labels = {}
+    i = 0
+    while i < 3:
+        key = "label/" + "".join(random.choice(string.ascii_lowercase +
+                                               string.digits)
+                                 for _ in range(6))
+        if not labels.get(key):
+            labels[key] = generate_random_data(VOLUME_RWTEST_SIZE)
+            i += 1
+    return labels
 
 
 @pytest.fixture

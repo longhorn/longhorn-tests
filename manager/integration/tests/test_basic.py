@@ -3,7 +3,7 @@ import common
 import subprocess
 import pytest
 
-from common import clients, volume_name  # NOQA
+from common import clients, random_labels, volume_name  # NOQA
 from common import core_api, pod   # NOQA
 from common import SIZE, DEV_PATH
 from common import check_device_data, write_device_random_data
@@ -24,6 +24,7 @@ from common import delete_and_wait_pvc, delete_and_wait_pv
 from common import CONDITION_STATUS_FALSE, CONDITION_STATUS_TRUE
 from common import RETRY_COUNTS, RETRY_INTERVAL, RETRY_COMMAND_COUNT
 from common import cleanup_volume, create_and_check_volume
+from common import create_backup as create_backup_with_labels
 
 
 def create_backup(client, volname, data={}):
@@ -435,6 +436,60 @@ def backup_test(clients, volume_name, size, base_image=""):  # NOQA
             assert credential["value"] == ""
 
         backupstore_test(client, lht_hostId, volume_name, size)
+
+    cleanup_volume(client, volume)
+
+
+@pytest.mark.coretest
+def test_backup_labels(clients, random_labels, volume_name):  # NOQA
+    """
+    Test that the proper Labels are applied when creating a Backup manually.
+    """
+    backup_labels_test(clients, random_labels, volume_name)
+
+
+def backup_labels_test(clients, random_labels, volume_name, size=SIZE, base_image=""):  # NOQA
+    for _, client in clients.iteritems():
+        break
+    host_id = get_self_host_id()
+
+    volume = create_and_check_volume(client, volume_name, 2, size, base_image)
+
+    volume.attach(hostId=host_id)
+    volume = common.wait_for_volume_healthy(client, volume_name)
+
+    setting = client.by_id_setting(common.SETTING_BACKUP_TARGET)
+    # test backupTarget for multiple settings
+    backupstores = common.get_backupstore_url()
+    for backupstore in backupstores:
+        if common.is_backupTarget_s3(backupstore):
+            backupsettings = backupstore.split("$")
+            setting = client.update(setting, value=backupsettings[0])
+            assert setting["value"] == backupsettings[0]
+
+            credential = client.by_id_setting(
+                common.SETTING_BACKUP_TARGET_CREDENTIAL_SECRET)
+            credential = client.update(credential, value=backupsettings[1])
+            assert credential["value"] == backupsettings[1]
+        else:
+            setting = client.update(setting, value=backupstore)
+            assert setting["value"] == backupstore
+            credential = client.by_id_setting(
+                common.SETTING_BACKUP_TARGET_CREDENTIAL_SECRET)
+            credential = client.update(credential, value="")
+            assert credential["value"] == ""
+
+        bv, b, _, _ = create_backup_with_labels(client, volume_name,
+                                                labels=random_labels)
+        # If we're running the test with a BaseImage, check that this Label is
+        # set properly.
+        backup = bv.backupGet(name=b["name"])
+        if base_image:
+            assert backup["labels"].get(common.BASE_IMAGE_LABEL) == base_image
+            # One extra Label from the BaseImage being set.
+            assert len(backup["labels"]) == len(random_labels) + 1
+        else:
+            assert len(backup["labels"]) == len(random_labels)
 
     cleanup_volume(client, volume)
 
