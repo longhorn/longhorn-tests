@@ -8,7 +8,6 @@ from common import core_api, pod   # NOQA
 from common import SIZE, DEV_PATH
 from common import check_device_data, write_device_random_data
 from common import check_volume_data, write_volume_random_data
-from common import write_volume_data
 from common import get_self_host_id, volume_valid
 from common import iscsi_login, iscsi_logout
 from common import wait_for_volume_status
@@ -23,38 +22,7 @@ from common import create_and_wait_pod, delete_and_wait_pod
 from common import delete_and_wait_pvc, delete_and_wait_pv
 from common import CONDITION_STATUS_FALSE, CONDITION_STATUS_TRUE
 from common import RETRY_COUNTS, RETRY_INTERVAL, RETRY_COMMAND_COUNT
-from common import cleanup_volume, create_and_check_volume
-from common import create_backup as create_backup_with_labels
-
-
-def create_backup(client, volname, data={}):
-    volume = client.by_id_volume(volname)
-    volume.snapshotCreate()
-    if not data:
-        data = write_volume_random_data(volume)
-    else:
-        data = write_volume_data(volume, data)
-    snap = volume.snapshotCreate()
-    volume.snapshotCreate()
-    volume.snapshotBackup(name=snap["name"])
-
-    bv, b = common.find_backup(client, volname, snap["name"])
-
-    new_b = bv.backupGet(name=b["name"])
-    assert new_b["name"] == b["name"]
-    assert new_b["url"] == b["url"]
-    assert new_b["snapshotName"] == b["snapshotName"]
-    assert new_b["snapshotCreated"] == b["snapshotCreated"]
-    assert new_b["created"] == b["created"]
-    assert new_b["volumeName"] == b["volumeName"]
-    assert new_b["volumeSize"] == b["volumeSize"]
-    assert new_b["volumeCreated"] == b["volumeCreated"]
-
-    volume = wait_for_volume_status(client, volname,
-                                    "lastBackup",
-                                    b["name"])
-    assert volume["lastBackupAt"] != ""
-    return bv, b, snap, data
+from common import cleanup_volume, create_and_check_volume, create_backup
 
 
 @pytest.mark.coretest   # NOQA
@@ -479,8 +447,7 @@ def backup_labels_test(clients, random_labels, volume_name, size=SIZE, base_imag
             credential = client.update(credential, value="")
             assert credential["value"] == ""
 
-        bv, b, _, _ = create_backup_with_labels(client, volume_name,
-                                                labels=random_labels)
+        bv, b, _, _ = create_backup(client, volume_name, labels=random_labels)
         # If we're running the test with a BaseImage, check that this Label is
         # set properly.
         backup = bv.backupGet(name=b["name"])
