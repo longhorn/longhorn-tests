@@ -4,24 +4,29 @@ import time
 
 from common import client, core_api, statefulset, storage_class  # NOQA
 from common import csi_pv, pvc, pod  # NOQA
-from common import get_apps_api_client
+from common import generate_volume_name, get_apps_api_client
 from common import create_and_wait_statefulset
 from common import update_statefulset_manifests
-from common import create_storage_class, delete_storage_class
-from common import get_statefulset_pod_info
+from common import create_backup, create_storage_class, \
+    delete_storage_class, find_backup
+from common import get_self_host_id, get_statefulset_pod_info
 from common import create_and_wait_pod
 from common import delete_and_wait_pod, wait_delete_pod
 from common import delete_and_wait_pvc
 from common import delete_and_wait_pv, wait_delete_pv
-from common import create_pv_for_volume, create_pvc_for_volume
-from common import wait_for_volume_detached
-from common import wait_volume_kubernetes_status
+from common import cleanup_volume, create_pv_for_volume, create_pvc_for_volume
+from common import wait_for_volume_delete, wait_for_volume_detached, \
+    wait_for_volume_healthy
+from common import wait_volume_kubernetes_status, \
+    wait_for_volume_restoration_completed
 from common import RETRY_COUNTS, RETRY_INTERVAL
 from common import SIZE
-from common import SETTING_DEFAULT_LONGHORN_STATIC_SC
+from common import KUBERNETES_STATUS_LABEL, SETTING_DEFAULT_LONGHORN_STATIC_SC
 
 from kubernetes import client as k8sclient
 from kubernetes.client.rest import ApiException
+
+from json import loads
 
 Gi = (1 * 1024 * 1024 * 1024)
 
@@ -360,3 +365,249 @@ def test_pvc_creation_with_default_sc_set(
 
     delete_and_wait_pvc(core_api, pvc_name)
     delete_and_wait_pv(core_api, pv_name)
+
+
+@pytest.mark.csi
+def test_backup_kubernetes_status_pv(client, core_api):  # NOQA
+    """
+    Test that Backups have KubernetesStatus stored properly when there is an
+    associated PersistentVolume.
+    """
+    host_id = get_self_host_id()
+    volume_name = "test-backup-kubernetes-status-pv"
+    client.create_volume(name=volume_name, size=SIZE,
+                         numberOfReplicas=2)
+    volume = wait_for_volume_detached(client, volume_name)
+
+    pv_name = "pv-" + volume_name
+    create_pv_for_volume(client, core_api, volume, pv_name)
+    ks = {
+        'lastPVCRefAt': '',
+        'lastPodRefAt': '',
+        'namespace': '',
+        'pvcName': '',
+        'pvName': pv_name,
+        'pvStatus': 'Available',
+    }
+    wait_volume_kubernetes_status(client, volume_name, ks)
+
+    volume.attach(hostId=host_id)
+    volume = wait_for_volume_healthy(client, volume_name)
+    bv, b, snap2, _ = create_backup(client, volume_name)
+    new_b = bv.backupGet(name=b["name"])
+    status = loads(new_b["labels"].get(KUBERNETES_STATUS_LABEL))
+    assert status == {
+        'lastPodRefAt': '',
+        'lastPVCRefAt': '',
+        'namespace': '',
+        'pvcName': '',
+        'pvName': pv_name,
+        'pvStatus': 'Available',
+        'workloadsStatus': None
+    }
+
+    restore_name = generate_volume_name()
+    client.create_volume(name=restore_name, size=SIZE,
+                         numberOfReplicas=2,
+                         fromBackup=b["url"])
+    wait_for_volume_restoration_completed(client, restore_name)
+    restore = wait_for_volume_detached(client, restore_name)
+    restore_ks = {
+        'lastPodRefAt': '',
+        'lastPVCRefAt': '',
+        'namespace': '',
+        'pvcName': '',
+        'pvName': pv_name,
+        'pvStatus': 'Available',
+        'workloadsStatus': None
+    }
+    wait_volume_kubernetes_status(client, restore_name, restore_ks)
+
+    bv.backupDelete(name=b["name"])
+    backups = bv.backupList()
+    found = False
+    for b in backups:
+        if b["snapshotName"] == snap2["name"]:
+            found = True
+            break
+    assert not found
+
+    client.delete(restore)
+    wait_for_volume_delete(client, restore_name)
+    delete_and_wait_pv(core_api, pv_name)
+    cleanup_volume(client, volume)
+
+
+@pytest.mark.csi
+def test_backup_kubernetes_status_pod(client, core_api, pod):  # NOQA
+    """
+    Test that Backups have KubernetesStatus stored properly when there is an
+    associated PersistentVolumeClaim and Pod.
+    """
+    host_id = get_self_host_id()
+    static_sc_name = "longhorn-static-test"
+    setting = client.by_id_setting(SETTING_DEFAULT_LONGHORN_STATIC_SC)
+    setting = client.update(setting, value=static_sc_name)
+    assert setting["value"] == static_sc_name
+
+    volume_name = "test-backup-kubernetes-status-pod"
+    client.create_volume(name=volume_name, size=SIZE,
+                         numberOfReplicas=2)
+    volume = wait_for_volume_detached(client, volume_name)
+
+    pod_name = "pod-" + volume_name
+    pv_name = "pv-" + volume_name
+    pvc_name = "pvc-" + volume_name
+    create_pv_for_volume(client, core_api, volume, pv_name)
+    create_pvc_for_volume(client, core_api, volume, pvc_name)
+    ret = core_api.list_namespaced_persistent_volume_claim(
+        namespace='default')
+    pvc_found = False
+    for item in ret.items:
+        if item.metadata.name == pvc_name:
+            pvc_found = item
+            break
+    assert pvc_found
+    assert pvc_found.spec.storage_class_name == static_sc_name
+
+    pod['metadata']['name'] = pod_name
+    pod['spec']['volumes'] = [{
+        'name': pod['spec']['containers'][0]['volumeMounts'][0]['name'],
+        'persistentVolumeClaim': {
+            'claimName': pvc_name,
+        },
+    }]
+    create_and_wait_pod(core_api, pod)
+
+    ks = {
+        'lastPodRefAt': '',
+        'lastPVCRefAt': '',
+        'namespace': 'default',
+        'pvcName': pvc_name,
+        'pvName': pv_name,
+        'pvStatus': 'Bound',
+        'workloadsStatus': [{
+            'podName': pod_name,
+            'podStatus': 'Running',
+            'workloadName': '',
+            'workloadType': ''
+        }]
+    }
+    wait_volume_kubernetes_status(client, volume_name, ks)
+    volume = wait_for_volume_healthy(client, volume_name)
+
+    # Create Backup manually instead of calling create_backup since Kubernetes
+    # is not guaranteed to mount our Volume to the test host.
+    snap = volume.snapshotCreate()
+    volume.snapshotBackup(name=snap["name"])
+    bv, b = find_backup(client, volume_name, snap["name"])
+    new_b = bv.backupGet(name=b["name"])
+    status = loads(new_b["labels"].get(KUBERNETES_STATUS_LABEL))
+    assert status == ks
+
+    restore_name = generate_volume_name()
+    client.create_volume(name=restore_name, size=SIZE,
+                         numberOfReplicas=2,
+                         fromBackup=b["url"])
+    wait_for_volume_restoration_completed(client, restore_name)
+    wait_for_volume_detached(client, restore_name)
+
+    snapshot_created = b["snapshotCreated"]
+    ks = {
+        'lastPodRefAt': b["snapshotCreated"],
+        'lastPVCRefAt': b["snapshotCreated"],
+        'namespace': 'default',
+        'pvcName': pvc_name,
+        'pvName': pv_name,
+        'pvStatus': 'Bound',
+        'workloadsStatus': [{
+            'podName': pod_name,
+            'podStatus': 'Running',
+            'workloadName': '',
+            'workloadType': ''
+        }]
+    }
+    restore = wait_volume_kubernetes_status(client, restore_name, ks)
+    # We need to compare LastPodRefAt and LastPVCRefAt manually since
+    # wait_volume_kubernetes_status only checks for empty or non-empty state.
+    assert restore["kubernetesStatus"]["lastPodRefAt"] == ks["lastPodRefAt"]
+    assert restore["kubernetesStatus"]["lastPVCRefAt"] == ks["lastPVCRefAt"]
+
+    bv.backupDelete(name=b["name"])
+    client.delete(restore)
+    wait_for_volume_delete(client, restore_name)
+    delete_and_wait_pod(core_api, pod_name)
+    delete_and_wait_pvc(core_api, pvc_name)
+    delete_and_wait_pv(core_api, pv_name)
+
+    # With the Pod, PVC, and PV deleted, the Volume should have both Ref
+    # fields set. Check that a new Backup and Restore will use this instead of
+    # manually populating the Ref fields.
+    ks = {
+        'lastPodRefAt': 'NOT NULL',
+        'lastPVCRefAt': 'NOT NULL',
+        'namespace': 'default',
+        'pvcName': pvc_name,
+        'pvName': '',
+        'pvStatus': '',
+        'workloadsStatus': [{
+            'podName': pod_name,
+            'podStatus': 'Running',
+            'workloadName': '',
+            'workloadType': ''
+        }]
+    }
+    wait_volume_kubernetes_status(client, volume_name, ks)
+    volume = wait_for_volume_detached(client, volume_name)
+
+    volume.attach(hostId=host_id)
+    volume = wait_for_volume_healthy(client, volume_name)
+
+    snap = volume.snapshotCreate()
+    volume.snapshotBackup(name=snap["name"])
+    bv, b = find_backup(client, volume_name, snap["name"])
+    new_b = bv.backupGet(name=b["name"])
+    status = loads(new_b["labels"].get(KUBERNETES_STATUS_LABEL))
+    # Check each field manually, we have no idea what the LastPodRefAt or the
+    # LastPVCRefAt will be. We just know it shouldn't be SnapshotCreated.
+    assert status["lastPodRefAt"] != snapshot_created
+    assert status["lastPVCRefAt"] != snapshot_created
+    assert status["namespace"] == "default"
+    assert status["pvcName"] == pvc_name
+    assert status["pvName"] == ""
+    assert status["pvStatus"] == ""
+    assert status["workloadsStatus"] == [{
+        'podName': pod_name,
+        'podStatus': 'Running',
+        'workloadName': '',
+        'workloadType': ''
+    }]
+
+    restore_name = generate_volume_name()
+    client.create_volume(name=restore_name, size=SIZE,
+                         numberOfReplicas=2,
+                         fromBackup=b["url"])
+    wait_for_volume_restoration_completed(client, restore_name)
+    wait_for_volume_detached(client, restore_name)
+
+    ks = {
+        'lastPodRefAt': status["lastPodRefAt"],
+        'lastPVCRefAt': status["lastPVCRefAt"],
+        'namespace': 'default',
+        'pvcName': pvc_name,
+        'pvName': '',
+        'pvStatus': '',
+        'workloadsStatus': [{
+            'podName': pod_name,
+            'podStatus': 'Running',
+            'workloadName': '',
+            'workloadType': ''
+        }]
+    }
+    restore = wait_volume_kubernetes_status(client, restore_name, ks)
+    assert restore["kubernetesStatus"]["lastPodRefAt"] == ks["lastPodRefAt"]
+    assert restore["kubernetesStatus"]["lastPVCRefAt"] == ks["lastPVCRefAt"]
+
+    bv.backupDelete(name=b["name"])
+    client.delete(restore)
+    cleanup_volume(client, volume)

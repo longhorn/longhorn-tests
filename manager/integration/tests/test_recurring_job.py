@@ -3,12 +3,18 @@ import time
 import json
 
 import common
-from common import client, clients, core_api, volume_name  # NOQA
+from common import client, clients, core_api, random_labels, volume_name  # NOQA
 from common import storage_class, statefulset  # NOQA
-from common import wait_for_volume_delete
-from common import create_storage_class, create_and_wait_statefulset
-from common import update_statefulset_manifests, get_statefulset_pod_info
-from common import SIZE
+from common import cleanup_volume, wait_for_volume_delete
+from common import create_pv_for_volume, create_storage_class, \
+    create_and_wait_statefulset, delete_and_wait_pv
+from common import update_statefulset_manifests, get_self_host_id, \
+    get_statefulset_pod_info, wait_volume_kubernetes_status
+from common import BASE_IMAGE_LABEL, KUBERNETES_STATUS_LABEL, SIZE
+
+
+RECURRING_JOB_LABEL = "RecurringJob"
+RECURRING_JOB_NAME = "backup"
 
 
 def create_jobs1():
@@ -127,3 +133,133 @@ def test_recurring_job_in_storageclass(client, core_api, storage_class, stateful
     for volume_name in volume_info:  # NOQA
         volume = client.by_id_volume(volume_name)
         check_jobs1_result(volume)
+
+
+@pytest.mark.recurring_job
+def test_recurring_job_labels(client, random_labels, volume_name):  # NOQA
+    """
+    Test that a RecurringJob properly applies the correct Labels to the
+    produced Backups.
+    """
+    recurring_job_labels_test(client, random_labels, volume_name)
+
+
+def recurring_job_labels_test(client, labels, volume_name, size=SIZE, base_image=""):  # NOQA
+    host_id = get_self_host_id()
+    client.create_volume(name=volume_name, size=size,
+                         numberOfReplicas=2)
+    volume = common.wait_for_volume_detached(client, volume_name)
+
+    # Simple Backup Job that runs every 2 minutes, retains 1.
+    jobs = [
+        {
+            "name": RECURRING_JOB_NAME,
+            "cron": "*/2 * * * *",
+            "task": "backup",
+            "retain": 1,
+            "labels": labels
+        }
+    ]
+    volume.recurringUpdate(jobs=jobs)
+    volume.attach(hostId=host_id)
+    volume = common.wait_for_volume_healthy(client, volume_name)
+
+    # 5 minutes
+    time.sleep(300)
+    snapshots = volume.snapshotList()
+    count = 0
+    for snapshot in snapshots:
+        if snapshot["removed"] is False:
+            count += 1
+    # 1 from Backup, 1 from Volume Head.
+    assert count == 2
+
+    # Verify the Labels on the actual Backup.
+    bv = client.by_id_backupVolume(volume_name)
+    backups = bv.backupList()
+    assert len(backups) == 1
+
+    b = bv.backupGet(name=backups[0]["name"])
+    for key, val in labels.iteritems():
+        assert b["labels"].get(key) == val
+    assert b["labels"].get(RECURRING_JOB_LABEL) == RECURRING_JOB_NAME
+    if base_image:
+        assert b["labels"].get(BASE_IMAGE_LABEL) == base_image
+        # One extra Label from the BaseImage being set.
+        assert len(b["labels"]) == len(labels) + 2
+    else:
+        # At least one extra Label from RecurringJob.
+        assert len(b["labels"]) == len(labels) + 1
+
+    cleanup_volume(client, volume)
+
+
+@pytest.mark.csi
+@pytest.mark.recurring_job
+def test_recurring_job_kubernetes_status(client, core_api, volume_name):  # NOQA
+    """
+    Test that a RecurringJob properly backs up the KubernetesStatus of a
+    Volume.
+    """
+    host_id = get_self_host_id()
+    client.create_volume(name=volume_name, size=SIZE,
+                         numberOfReplicas=2)
+    volume = common.wait_for_volume_detached(client, volume_name)
+
+    pv_name = "pv-" + volume_name
+    create_pv_for_volume(client, core_api, volume, pv_name)
+    ks = {
+        'pvName': pv_name,
+        'pvStatus': 'Available',
+        'namespace': '',
+        'pvcName': '',
+        'lastPVCRefAt': '',
+        'lastPodRefAt': '',
+    }
+    wait_volume_kubernetes_status(client, volume_name, ks)
+
+    # Simple Backup Job that runs every 2 minutes, retains 1.
+    jobs = [
+        {
+            "name": RECURRING_JOB_NAME,
+            "cron": "*/2 * * * *",
+            "task": "backup",
+            "retain": 1
+        }
+    ]
+    volume.recurringUpdate(jobs=jobs)
+    volume.attach(hostId=host_id)
+    volume = common.wait_for_volume_healthy(client, volume_name)
+
+    # 5 minutes
+    time.sleep(300)
+    snapshots = volume.snapshotList()
+    count = 0
+    for snapshot in snapshots:
+        if snapshot["removed"] is False:
+            count += 1
+    # 1 from Backup, 1 from Volume Head.
+    assert count == 2
+
+    # Verify the Labels on the actual Backup.
+    bv = client.by_id_backupVolume(volume_name)
+    backups = bv.backupList()
+    assert len(backups) == 1
+
+    b = bv.backupGet(name=backups[0]["name"])
+    status = json.loads(b["labels"].get(KUBERNETES_STATUS_LABEL))
+    assert b["labels"].get(RECURRING_JOB_LABEL) == RECURRING_JOB_NAME
+    assert status == {
+        'lastPodRefAt': '',
+        'lastPVCRefAt': '',
+        'namespace': '',
+        'pvcName': '',
+        'pvName': pv_name,
+        'pvStatus': 'Available',
+        'workloadsStatus': None
+    }
+    # Two Labels: KubernetesStatus and RecurringJob.
+    assert len(b["labels"]) == 2
+
+    cleanup_volume(client, volume)
+    delete_and_wait_pv(core_api, pv_name)
