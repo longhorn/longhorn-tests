@@ -1,3 +1,4 @@
+kubernetes_version: v1.13.5-rancher1-2
 nodes:
   - address: K8S_CONTROLLER_IP
     user: root
