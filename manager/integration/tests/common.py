@@ -2118,6 +2118,11 @@ def activate_standby_volume(client, volume_name, frontend="blockdev"):
 
     wait_for_volume_detached(client, volume_name)
 
+    volume = client.by_id_volume(volume_name)
+    engine = get_volume_engine(volume)
+    assert engine["lastRestoredBackup"] == ""
+    assert engine["requestedBackupRestore"] == ""
+
 
 def check_volume_last_backup(client, volume_name, last_backup):
     for i in range(RETRY_COUNTS):
