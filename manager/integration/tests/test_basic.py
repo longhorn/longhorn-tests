@@ -593,15 +593,9 @@ def restore_inc_test(client, core_api, volume_name, pod):  # NOQA
         sb_volume0 = client.by_id_volume(sb_volume0_name)
         sb_volume1 = client.by_id_volume(sb_volume1_name)
         sb_volume2 = client.by_id_volume(sb_volume2_name)
-        sb_engine0 = get_volume_engine(sb_volume0)
-        sb_engine1 = get_volume_engine(sb_volume1)
-        sb_engine2 = get_volume_engine(sb_volume2)
         if sb_volume0["lastBackup"] != backup0["name"] or \
                 sb_volume1["lastBackup"] != backup0["name"] or \
-                sb_volume2["lastBackup"] != backup0["name"] or \
-                sb_engine0["lastRestoredBackup"] != backup0["name"] or \
-                sb_engine1["lastRestoredBackup"] != backup0["name"] or \
-                sb_engine2["lastRestoredBackup"] != backup0["name"]:
+                sb_volume2["lastBackup"] != backup0["name"]:
             time.sleep(RETRY_INTERVAL)
         else:
             break
@@ -609,23 +603,14 @@ def restore_inc_test(client, core_api, volume_name, pod):  # NOQA
     assert sb_volume0["lastBackup"] == backup0["name"]
     assert sb_volume0["frontend"] == ""
     assert sb_volume0["restorationRequired"] is False
-    sb_engine0 = get_volume_engine(sb_volume0)
-    assert sb_engine0["lastRestoredBackup"] == backup0["name"]
-    assert sb_engine0["requestedBackupRestore"] == backup0["name"]
     assert sb_volume1["standby"] is True
     assert sb_volume1["lastBackup"] == backup0["name"]
     assert sb_volume1["frontend"] == ""
     assert sb_volume1["restorationRequired"] is False
-    sb_engine1 = get_volume_engine(sb_volume1)
-    assert sb_engine1["lastRestoredBackup"] == backup0["name"]
-    assert sb_engine1["requestedBackupRestore"] == backup0["name"]
     assert sb_volume2["standby"] is True
     assert sb_volume2["lastBackup"] == backup0["name"]
     assert sb_volume2["frontend"] == ""
     assert sb_volume2["restorationRequired"] is False
-    sb_engine2 = get_volume_engine(sb_volume2)
-    assert sb_engine2["lastRestoredBackup"] == backup0["name"]
-    assert sb_engine2["requestedBackupRestore"] == backup0["name"]
 
     sb0_snaps = sb_volume0.snapshotList()
     assert len(sb0_snaps) == 2
