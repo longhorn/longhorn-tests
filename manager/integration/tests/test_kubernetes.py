@@ -604,8 +604,7 @@ def test_backup_kubernetes_status_pod(client, core_api, pod):  # NOQA
             'workloadType': ''
         }]
     }
-    wait_volume_kubernetes_status(client, restore_name, ks)
-    restore = client.by_id_volume(restore_name)
+    restore = wait_volume_kubernetes_status(client, restore_name, ks)
     assert restore["kubernetesStatus"]["lastPodRefAt"] == ks["lastPodRefAt"]
     assert restore["kubernetesStatus"]["lastPVCRefAt"] == ks["lastPVCRefAt"]
 
