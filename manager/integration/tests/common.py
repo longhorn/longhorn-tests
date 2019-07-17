@@ -2059,6 +2059,7 @@ def wait_volume_kubernetes_status(client, volume_name, expect_ks):
             break
         time.sleep(RETRY_INTERVAL)
     assert expected
+    return volume
 
 
 def create_pv_for_volume(client, core_api, volume, pv_name):
