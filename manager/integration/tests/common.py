@@ -194,6 +194,8 @@ def create_backup(client, volname, data={}, labels={}):
     # have added extra Labels (for things like BaseImage).
     for key, val in labels.iteritems():
         assert new_b["labels"].get(key) == val
+
+    volume = wait_for_backup_completion(client, volname, snap["name"])
     volume = wait_for_volume_status(client, volname,
                                     "lastBackup",
                                     b["name"])
@@ -1591,6 +1593,21 @@ def get_volume_attached_nodes(v):
         if node != "":
             nodes.append(node)
     return nodes
+
+
+def wait_for_backup_completion(client, volume_name, snapshot_name):
+    completed = False
+    for i in range(RETRY_COUNTS):
+        v = client.by_id_volume(volume_name)
+        for b in v["backupStatus"]:
+            if b["snapshot"] == snapshot_name and b["progress"] == 100:
+                completed = True
+                break
+        if completed:
+            break
+        time.sleep(RETRY_INTERVAL)
+    assert completed is True
+    return v
 
 
 def wait_for_volume_migration_ready(client, volume_name):
