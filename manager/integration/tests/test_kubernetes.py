@@ -7,8 +7,8 @@ from common import csi_pv, pvc, pod  # NOQA
 from common import generate_volume_name, get_apps_api_client
 from common import create_and_wait_statefulset
 from common import update_statefulset_manifests
-from common import create_backup, create_storage_class, \
-    delete_storage_class, find_backup
+from common import create_storage_class, delete_storage_class, \
+    find_backup
 from common import get_self_host_id, get_statefulset_pod_info
 from common import create_and_wait_pod
 from common import delete_and_wait_pod, wait_delete_pod
@@ -368,78 +368,7 @@ def test_pvc_creation_with_default_sc_set(
 
 
 @pytest.mark.csi
-def test_backup_kubernetes_status_pv(client, core_api):  # NOQA
-    """
-    Test that Backups have KubernetesStatus stored properly when there is an
-    associated PersistentVolume.
-    """
-    host_id = get_self_host_id()
-    volume_name = "test-backup-kubernetes-status-pv"
-    client.create_volume(name=volume_name, size=SIZE,
-                         numberOfReplicas=2)
-    volume = wait_for_volume_detached(client, volume_name)
-
-    pv_name = "pv-" + volume_name
-    create_pv_for_volume(client, core_api, volume, pv_name)
-    ks = {
-        'lastPVCRefAt': '',
-        'lastPodRefAt': '',
-        'namespace': '',
-        'pvcName': '',
-        'pvName': pv_name,
-        'pvStatus': 'Available',
-    }
-    wait_volume_kubernetes_status(client, volume_name, ks)
-
-    volume.attach(hostId=host_id)
-    volume = wait_for_volume_healthy(client, volume_name)
-    bv, b, snap2, _ = create_backup(client, volume_name)
-    new_b = bv.backupGet(name=b["name"])
-    status = loads(new_b["labels"].get(KUBERNETES_STATUS_LABEL))
-    assert status == {
-        'lastPodRefAt': '',
-        'lastPVCRefAt': '',
-        'namespace': '',
-        'pvcName': '',
-        'pvName': pv_name,
-        'pvStatus': 'Available',
-        'workloadsStatus': None
-    }
-
-    restore_name = generate_volume_name()
-    client.create_volume(name=restore_name, size=SIZE,
-                         numberOfReplicas=2,
-                         fromBackup=b["url"])
-    wait_for_volume_restoration_completed(client, restore_name)
-    restore = wait_for_volume_detached(client, restore_name)
-    restore_ks = {
-        'lastPodRefAt': '',
-        'lastPVCRefAt': '',
-        'namespace': '',
-        'pvcName': '',
-        'pvName': pv_name,
-        'pvStatus': 'Available',
-        'workloadsStatus': None
-    }
-    wait_volume_kubernetes_status(client, restore_name, restore_ks)
-
-    bv.backupDelete(name=b["name"])
-    backups = bv.backupList()
-    found = False
-    for b in backups:
-        if b["snapshotName"] == snap2["name"]:
-            found = True
-            break
-    assert not found
-
-    client.delete(restore)
-    wait_for_volume_delete(client, restore_name)
-    delete_and_wait_pv(core_api, pv_name)
-    cleanup_volume(client, volume)
-
-
-@pytest.mark.csi
-def test_backup_kubernetes_status_pod(client, core_api, pod):  # NOQA
+def test_backup_kubernetes_status(client, core_api, pod):  # NOQA
     """
     Test that Backups have KubernetesStatus stored properly when there is an
     associated PersistentVolumeClaim and Pod.
@@ -518,8 +447,9 @@ def test_backup_kubernetes_status_pod(client, core_api, pod):  # NOQA
         'lastPVCRefAt': b["snapshotCreated"],
         'namespace': 'default',
         'pvcName': pvc_name,
-        'pvName': pv_name,
-        'pvStatus': 'Bound',
+        # Restoration should not apply PersistentVolume data.
+        'pvName': '',
+        'pvStatus': '',
         'workloadsStatus': [{
             'podName': pod_name,
             'podStatus': 'Running',
