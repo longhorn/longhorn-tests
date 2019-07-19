@@ -461,7 +461,7 @@ def backup_labels_test(clients, random_labels, volume_name, size=SIZE, base_imag
     cleanup_volume(client, volume)
 
 
-# test normally created volume's "RestorationRequired" field
+# test normally created volume's "InitialRestorationRequired" field
 def test_restoration_required_field(clients):  # NOQA
     for host_id, client in clients.iteritems():
         break
@@ -469,15 +469,15 @@ def test_restoration_required_field(clients):  # NOQA
     volname = generate_volume_name()
     volume = client.create_volume(name=volname, size=SIZE, numberOfReplicas=3)
     volume = common.wait_for_volume_detached(client, volname)
-    assert volume["restorationRequired"] is False
+    assert volume["initialRestorationRequired"] is False
 
     volume = volume.attach(hostId=host_id)
     volume = common.wait_for_volume_healthy(client, volname)
-    assert volume["restorationRequired"] is False
+    assert volume["initialRestorationRequired"] is False
 
     volume = volume.detach()
     volume = common.wait_for_volume_detached(client, volname)
-    assert volume["restorationRequired"] is False
+    assert volume["initialRestorationRequired"] is False
 
     client.delete(volume)
     volume = wait_for_volume_delete(client, volname)
@@ -501,7 +501,7 @@ def backupstore_test(client, host_id, volname, size):
     assert volume["size"] == size
     assert volume["numberOfReplicas"] == 2
     assert volume["state"] == "detached"
-    assert volume["restorationRequired"] is False
+    assert volume["initialRestorationRequired"] is False
 
     volume = volume.attach(hostId=host_id)
     volume = common.wait_for_volume_healthy(client, restoreName)
@@ -608,21 +608,21 @@ def restore_inc_test(client, core_api, volume_name, pod):  # NOQA
     assert sb_volume0["standby"] is True
     assert sb_volume0["lastBackup"] == backup0["name"]
     assert sb_volume0["frontend"] == ""
-    assert sb_volume0["restorationRequired"] is False
+    assert sb_volume0["initialRestorationRequired"] is False
     sb_engine0 = get_volume_engine(sb_volume0)
     assert sb_engine0["lastRestoredBackup"] == backup0["name"]
     assert sb_engine0["requestedBackupRestore"] == backup0["name"]
     assert sb_volume1["standby"] is True
     assert sb_volume1["lastBackup"] == backup0["name"]
     assert sb_volume1["frontend"] == ""
-    assert sb_volume1["restorationRequired"] is False
+    assert sb_volume1["initialRestorationRequired"] is False
     sb_engine1 = get_volume_engine(sb_volume1)
     assert sb_engine1["lastRestoredBackup"] == backup0["name"]
     assert sb_engine1["requestedBackupRestore"] == backup0["name"]
     assert sb_volume2["standby"] is True
     assert sb_volume2["lastBackup"] == backup0["name"]
     assert sb_volume2["frontend"] == ""
-    assert sb_volume2["restorationRequired"] is False
+    assert sb_volume2["initialRestorationRequired"] is False
     sb_engine2 = get_volume_engine(sb_volume2)
     assert sb_engine2["lastRestoredBackup"] == backup0["name"]
     assert sb_engine2["requestedBackupRestore"] == backup0["name"]

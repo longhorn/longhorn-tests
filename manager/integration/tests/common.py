@@ -53,7 +53,7 @@ VOLUME_ROBUSTNESS_HEALTHY = "healthy"
 VOLUME_ROBUSTNESS_DEGRADED = "degraded"
 VOLUME_ROBUSTNESS_FAULTED = "faulted"
 
-VOLUME_FIELD_RESTORATIONREQUIRED = "restorationRequired"
+VOLUME_FIELD_INITIALRESTORATIONREQUIRED = "initialRestorationRequired"
 
 DEFAULT_STORAGECLASS_NAME = 'longhorn-test'
 
@@ -1076,7 +1076,7 @@ def wait_for_volume_healthy(client, name):
 def wait_for_volume_restoration_completed(client, name):
     wait_for_volume_creation(client, name)
     return wait_for_volume_status(client, name,
-                                  VOLUME_FIELD_RESTORATIONREQUIRED,
+                                  VOLUME_FIELD_INITIALRESTORATIONREQUIRED,
                                   False)
 
 
