@@ -767,6 +767,26 @@ def restore_inc_test(client, core_api, volume_name, pod):  # NOQA
     assert len(volumes) == 0
 
 
+def test_deleting_backup_volume(clients):  # NOQA
+    for host_id, client in clients.iteritems():
+        break
+    lht_hostId = get_self_host_id()
+
+    volName = generate_volume_name()
+    volume = create_and_check_volume(client, volName)
+
+    volume.attach(hostId=lht_hostId)
+    volume = common.wait_for_volume_healthy(client, volName)
+
+    bv, _, snap1, _ = create_backup(client, volName)
+    _, _, snap2, _ = create_backup(client, volName)
+
+    bv = client.by_id_backupVolume(volName)
+    client.delete(bv)
+    common.wait_for_backup_volume_delete(client, volName)
+    cleanup_volume(client, volume)
+
+
 @pytest.mark.coretest   # NOQA
 def test_listing_backup_volume(clients, base_image=""):   # NOQA
     for host_id, client in clients.iteritems():
