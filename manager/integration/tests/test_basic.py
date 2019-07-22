@@ -1059,3 +1059,54 @@ def test_volume_update_replica_count(clients, volume_name):  # NOQA
 
     client.delete(volume)
     wait_for_volume_delete(client, volume_name)
+
+
+@pytest.mark.coretest   # NOQA
+def test_attach_without_frontend(clients, volume_name):  # NOQA
+    for host_id, client in clients.iteritems():
+        break
+
+    volume = create_and_check_volume(client, volume_name)
+
+    lht_hostId = get_self_host_id()
+    volume.attach(hostId=lht_hostId, disableFrontend=False)
+    common.wait_for_volume_healthy(client, volume_name)
+
+    volume = client.by_id_volume(volume_name)
+    assert volume["disableFrontend"] is False
+    assert volume["frontend"] == "blockdev"
+
+    snap1_data = write_volume_random_data(volume)
+    snap1 = volume.snapshotCreate()
+
+    write_volume_random_data(volume)
+    volume.snapshotCreate()
+
+    volume.detach()
+    volume = common.wait_for_volume_detached(client, volume_name)
+
+    volume.attach(hostId=lht_hostId, disableFrontend=True)
+    common.wait_for_volume_healthy(client, volume_name)
+
+    volume = client.by_id_volume(volume_name)
+    engine = get_volume_engine(volume)
+    assert volume["disableFrontend"] is True
+    assert volume["frontend"] == "blockdev"
+    assert engine["endpoint"] == ""
+
+    volume.snapshotRevert(name=snap1["name"])
+
+    volume.detach()
+    volume = common.wait_for_volume_detached(client, volume_name)
+
+    volume.attach(hostId=lht_hostId, disableFrontend=False)
+    common.wait_for_volume_healthy(client, volume_name)
+
+    volume = client.by_id_volume(volume_name)
+    assert volume["disableFrontend"] is False
+    assert volume["frontend"] == "blockdev"
+
+    check_volume_data(volume, snap1_data)
+
+    client.delete(volume)
+    wait_for_volume_delete(client, volume_name)
