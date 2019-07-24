@@ -324,7 +324,30 @@ def snapshot_test(clients, volume_name, base_image):  # NOQA
     assert "volume-head" in snap["children"]
     assert snap["removed"] is True
 
+    volume.detach()
+    volume = common.wait_for_volume_detached(client, volume_name)
+
+    volume.attach(hostId=lht_hostId, disableFrontend=True)
+    common.wait_for_volume_healthy(client, volume_name)
+
+    volume = client.by_id_volume(volume_name)
+    engine = get_volume_engine(volume)
+    assert volume["disableFrontend"] is True
+    assert volume["frontend"] == "blockdev"
+    assert engine["endpoint"] == ""
+
     volume.snapshotRevert(name=snap2["name"])
+
+    volume.detach()
+    volume = common.wait_for_volume_detached(client, volume_name)
+
+    volume.attach(hostId=lht_hostId, disableFrontend=False)
+    common.wait_for_volume_healthy(client, volume_name)
+
+    volume = client.by_id_volume(volume_name)
+    assert volume["disableFrontend"] is False
+    assert volume["frontend"] == "blockdev"
+
     check_volume_data(volume, snap2_data)
 
     snapshots = volume.snapshotList(volume=volume_name)
