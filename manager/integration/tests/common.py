@@ -1077,6 +1077,7 @@ def wait_for_volume_healthy(client, name):
 
 def wait_for_volume_restoration_completed(client, name):
     wait_for_volume_creation(client, name)
+    monitor_restore_progress(client, name)
     return wait_for_volume_status(client, name,
                                   VOLUME_FIELD_INITIALRESTORATIONREQUIRED,
                                   False)
@@ -1614,13 +1615,33 @@ def wait_for_backup_completion(client, volume_name, snapshot_name):
     for i in range(RETRY_COUNTS):
         v = client.by_id_volume(volume_name)
         for b in v["backupStatus"]:
-            if b["snapshot"] == snapshot_name and b["progress"] == 100:
+            assert b["error"] == ""
+            if b["snapshot"] == snapshot_name and b["state"] == "complete":
+                assert b["progress"] == 100
                 completed = True
                 break
         if completed:
             break
         time.sleep(RETRY_INTERVAL)
     assert completed is True
+    return v
+
+
+def monitor_restore_progress(client, volume_name):
+    completed = 0
+    rs = {}
+    for i in range(RETRY_COUNTS):
+        v = client.by_id_volume(volume_name)
+        rs = v["restoreStatus"]
+        for r in rs:
+            assert r["error"] == ""
+            if r["state"] == "complete":
+                assert r["progress"] == 100
+                completed += 1
+        if completed == len(rs):
+            break
+        time.sleep(RETRY_INTERVAL)
+    assert completed == len(rs)
     return v
 
 
