@@ -584,6 +584,9 @@ def restore_inc_test(client, core_api, volume_name, pod):  # NOQA
     client.create_volume(name=sb_volume2_name, size=SIZE,
                          numberOfReplicas=2, fromBackup=backup0['url'],
                          frontend="", standby=True)
+    common.wait_for_volume_restoration_completed(client, sb_volume0_name)
+    common.wait_for_volume_restoration_completed(client, sb_volume1_name)
+    common.wait_for_volume_restoration_completed(client, sb_volume2_name)
 
     sb_volume0 = common.wait_for_volume_healthy(client, sb_volume0_name)
     sb_volume1 = common.wait_for_volume_healthy(client, sb_volume1_name)
