@@ -8,10 +8,14 @@ from common import get_longhorn_api_client, \
 from common import wait_for_node_mountpropagation_condition
 from common import check_longhorn, check_csi
 
+
+INCLUDE_BASE_IMAGE_OPT = "--include-base-image-test"
 SKIP_RECURRING_JOB_OPT = "--skip-recurring-job-test"
 
 
 def pytest_addoption(parser):
+    parser.addoption(INCLUDE_BASE_IMAGE_OPT, action="store_true",
+                     default=False, help="include base image tests")
     parser.addoption(SKIP_RECURRING_JOB_OPT, action="store_true",
                      default=False,
                      help="skip recurring job test or not")
@@ -25,6 +29,15 @@ def pytest_collection_modifyitems(config, items):
     core_api = k8sclient.CoreV1Api()
 
     check_longhorn(core_api)
+
+    include_base_image = config.getoption(INCLUDE_BASE_IMAGE_OPT)
+    if not include_base_image:
+        skip_base_image = pytest.mark.skip(reason="set " +
+                                                  INCLUDE_BASE_IMAGE_OPT +
+                                                  " option to run")
+        for item in items:
+            if "baseimage" in item.keywords:
+                item.add_marker(skip_base_image)
 
     if config.getoption(SKIP_RECURRING_JOB_OPT):
         skip_upgrade = pytest.mark.skip(reason="remove " +
@@ -72,7 +85,8 @@ def pytest_collection_modifyitems(config, items):
                                             "support mount disk")
 
         for item in items:
-            if "baseimage" in item.keywords:
+            # Don't need to add skip marker for Base Image twice.
+            if include_base_image and "baseimage" in item.keywords:
                 item.add_marker(skip_upgrade)
             elif "mountdisk" in item.keywords:
                 item.add_marker(skip_node)
