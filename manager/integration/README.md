@@ -1,4 +1,5 @@
 # Longhorn Manager tests
+[![Build Status](http://drone-publish.rancher.io/api/badges/longhorn/longhorn-tests/status.svg)](http://drone-publish.rancher.io/longhorn/longhorn-tests)
 
 ## Integration test
 
