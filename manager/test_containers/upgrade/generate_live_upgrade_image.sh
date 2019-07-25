@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # make sure IMAGE wasn't used by any releases
-IMAGE="rancher/longhorn-engine:a6c2ea9"
+IMAGE="longhornio/longhorn-engine:99933a2"
 
 version=`docker run $IMAGE longhorn version --client-only`
 echo Image version output: $version
@@ -13,7 +13,7 @@ ControllerAPIMinVersion=`echo $version|jq -r ".clientVersion.controllerAPIMinVer
 DataFormatVersion=`echo $version|jq -r ".clientVersion.dataFormatVersion"`
 DataFormatMinVersion=`echo $version|jq -r ".clientVersion.dataFormatMinVersion"`
 
-test_image="rancher/longhorn-test:upgrade-test.${CLIAPIVersion}-${CLIAPIMinVersion}"\
+test_image="longhornio/longhorn-test:upgrade-test.${CLIAPIVersion}-${CLIAPIMinVersion}"\
 ".${ControllerAPIVersion}-${ControllerAPIMinVersion}"\
 ".${DataFormatVersion}-${DataFormatMinVersion}"
 

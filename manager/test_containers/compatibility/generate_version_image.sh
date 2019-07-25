@@ -23,6 +23,6 @@ yaml=`envsubst < template.yaml`
 echo -e "#!/bin/sh\necho '$yaml'" > package/longhorn
 chmod a+x package/longhorn
 
-docker build -t rancher/longhorn-test:${version_tag} package/
+docker build -t longhornio/longhorn-test:${version_tag} package/
 echo
-echo rancher/longhorn-test:${version_tag}
+echo longhornio/longhorn-test:${version_tag}
