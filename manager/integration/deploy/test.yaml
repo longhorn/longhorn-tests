@@ -10,7 +10,7 @@ metadata:
   name: longhorn-test-role
 rules:
 - apiGroups: [""]
-  resources: ["nodes", "pods", "pods/exec", "persistentvolumes", "persistentvolumeclaims", "secrets"]
+  resources: ["nodes", "nodes/status", "pods", "pods/exec", "persistentvolumes", "persistentvolumeclaims", "secrets"]
   verbs: ["*"]
 - apiGroups: ["storage.k8s.io"]
   resources: ["storageclasses"]
@@ -62,6 +62,10 @@ spec:
       valueFrom:
         fieldRef:
           fieldPath: spec.nodeName
+    - name: ENV_DO_API_TOKEN 
+      value: DO_API_TOKEN_VALUE
+    - name: CLOUDPROVIDER
+      value: CLOUDPROVIDER_NAME
     volumeMounts:
     - name: dev
       mountPath: /dev
