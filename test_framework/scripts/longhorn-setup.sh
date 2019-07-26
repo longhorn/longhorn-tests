@@ -2,14 +2,27 @@
 
 set  -x
 
-wget https://raw.githubusercontent.com/rancher/longhorn/master/deploy/longhorn.yaml 
+LONGHORN_MANAGER_REPO_URI="https://github.com/longhorn/longhorn-manager.git"
+LONGHORN_MANAGER_BRANCH="master"
+LONGHORN_MANAGER_TMPDIR="/tmp/longhorn-manager"
 
-LONGHORN_MANAGER_IMAGE_TAG=`grep -io "rancher\/longhorn-manager:.*$" longhorn.yaml | head -1 | awk -F ":" '{print $2}'`
-LONGHORN_ENGINE_IMAGE_TAG=`grep -io "rancher\/longhorn-engine:.*$" longhorn.yaml | head -1 | awk -F ":" '{print $2}'`
+mkdir -p ${LONGHORN_MANAGER_TMPDIR}
+
+git clone --single-branch --branch ${LONGHORN_MANAGER_BRANCH} ${LONGHORN_MANAGER_REPO_URI} ${LONGHORN_MANAGER_TMPDIR}
+
+for FILE in `find "${LONGHORN_MANAGER_TMPDIR}/deploy/install" -type f -name "*\.yaml" | sort`; do 
+  cat ${FILE} >> longhorn.yaml
+  echo "---"  >> longhorn.yaml
+done
 
 
-sed -i 's/rancher\/longhorn-manager:'${LONGHORN_MANAGER_IMAGE_TAG}'/longhornio\/longhorn-manager:master/' longhorn.yaml
-sed -i 's/rancher\/longhorn-engine:'${LONGHORN_ENGINE_IMAGE_TAG}'/longhornio\/longhorn-engine:master/' longhorn.yaml
+LONGHORN_MANAGER_IMAGE_TAG=`grep -io "longhornio\/longhorn-manager:.*$" longhorn.yaml | head -1 | awk -F ":" '{print $2}'`
+LONGHORN_ENGINE_IMAGE_TAG=`grep -io "longhornio\/longhorn-engine:.*$" longhorn.yaml | head -1 | awk -F ":" '{print $2}'`
+
+
+sed -i 's/longhornio\/longhorn-manager:'${LONGHORN_MANAGER_IMAGE_TAG}'/longhornio\/longhorn-manager:master/' longhorn.yaml
+sed -i 's/longhornio\/longhorn-engine:'${LONGHORN_ENGINE_IMAGE_TAG}'/longhornio\/longhorn-engine:master/' longhorn.yaml
+
 
 export KUBECONFIG="${TF_VAR_tf_workspace}/templates/kube_config_3-nodes-k8s.yml"
 
