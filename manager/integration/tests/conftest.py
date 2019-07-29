@@ -11,6 +11,7 @@ from common import check_longhorn, check_csi
 
 INCLUDE_BASE_IMAGE_OPT = "--include-base-image-test"
 SKIP_RECURRING_JOB_OPT = "--skip-recurring-job-test"
+INCLUDE_INFRA_OPT = "--include-infra-test"
 
 
 def pytest_addoption(parser):
@@ -19,6 +20,10 @@ def pytest_addoption(parser):
     parser.addoption(SKIP_RECURRING_JOB_OPT, action="store_true",
                      default=False,
                      help="skip recurring job test or not")
+
+    parser.addoption(INCLUDE_INFRA_OPT, action="store_true",
+                     default=False,
+                     help="include infra tests (default: False)")
 
 
 def pytest_collection_modifyitems(config, items):
@@ -90,3 +95,12 @@ def pytest_collection_modifyitems(config, items):
                 item.add_marker(skip_upgrade)
             elif "mountdisk" in item.keywords:
                 item.add_marker(skip_node)
+
+    if not config.getoption(INCLUDE_INFRA_OPT):
+        skip_infra = pytest.mark.skip(reason="include " +
+                                      INCLUDE_INFRA_OPT +
+                                      " option to run")
+
+        for item in items:
+            if "infra" in item.keywords:
+                item.add_marker(skip_infra)
