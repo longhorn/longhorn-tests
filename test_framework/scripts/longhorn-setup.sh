@@ -28,7 +28,7 @@ export KUBECONFIG="${TF_VAR_tf_workspace}/templates/kube_config_3-nodes-k8s.yml"
 
 kubectl apply -f longhorn.yaml
 
-while [[ -n "`kubectl get pods -n longhorn-system  | grep "longhorn-\(manager\|driver\)\|engine-image-.*" | awk '{print $3}' | grep -v Running`"  ]]; do
+while [[ -n "`kubectl get pods -n longhorn-system  | grep "instance-manager-.*\|longhorn-\(manager\|driver\|csi\)\|engine-image-.*" | awk '{print $3}' | grep -v Running`"  ]]; do
   echo "Longhorn is being inatalled ... rechecking in 1m"
   sleep 1m
 done
