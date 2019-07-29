@@ -1158,5 +1158,15 @@ def test_node_default_disk_labeled(client, core_api, random_disk_path,  reset_de
     assert get_update_disks(node["disks"])[0]["path"] == \
         random_disk_path
 
+    # Remove the Disk from the Node used for this test case so we can have the
+    # fixtures clean up after.
+    disks = node["disks"]
+    for _, disk in disks.iteritems():
+        disk["allowScheduling"] = False
+    update_disks = get_update_disks(disks)
+    node = node.diskUpdate(disks=update_disks)
+    node = node.diskUpdate(disks=[])
+    wait_for_disk_update(client, node["id"], 0)
+
     node = client.by_id_node(cases["unlabeled"])
     assert len(node["disks"]) == 0
