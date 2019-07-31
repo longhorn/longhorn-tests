@@ -32,7 +32,7 @@ kubectl apply -f longhorn.yaml
 
 RETRIES=0
 while [[ -n "`kubectl get pods -n longhorn-system  | grep "instance-manager-.*\|longhorn-\(manager\|driver\|csi\)\|engine-image-.*" | awk '{print $3}' | grep -v Running`"  ]]; do
-  echo "Longhorn is being inatalled ... rechecking in 1m"
+  echo "Longhorn is being installed ... rechecking in 1m"
   sleep 1m
   RETRIES=$((RETRIES+1))
 
