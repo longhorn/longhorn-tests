@@ -2,6 +2,8 @@
 
 set  -x
 
+RETRY_COUNTS=10
+
 LONGHORN_MANAGER_REPO_URI="https://github.com/longhorn/longhorn-manager.git"
 LONGHORN_MANAGER_BRANCH="master"
 LONGHORN_MANAGER_TMPDIR="/tmp/longhorn-manager"
@@ -28,9 +30,13 @@ export KUBECONFIG="${TF_VAR_tf_workspace}/templates/kube_config_3-nodes-k8s.yml"
 
 kubectl apply -f longhorn.yaml
 
+RETRIES=0
 while [[ -n "`kubectl get pods -n longhorn-system  | grep "instance-manager-.*\|longhorn-\(manager\|driver\|csi\)\|engine-image-.*" | awk '{print $3}' | grep -v Running`"  ]]; do
   echo "Longhorn is being inatalled ... rechecking in 1m"
   sleep 1m
+  RETRIES=$((RETRIES+1))
+
+  if [[ ${RETRIES} -eq ${RETRY_COUNTS} ]]; then echo "Error: longhorn installation timeout"; exit 1 ; fi
 done
 
 kubectl create -Rf "${WORKSPACE}/manager/integration/deploy/backupstores"
