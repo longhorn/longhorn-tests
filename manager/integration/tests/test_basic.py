@@ -816,6 +816,36 @@ def test_deleting_backup_volume(clients):  # NOQA
     cleanup_volume(client, volume)
 
 
+def test_empty_backup_volume(clients):  # NOQA
+    for host_id, client in clients.iteritems():
+        break
+    lht_hostId = get_self_host_id()
+
+    volName = generate_volume_name()
+    volume = create_and_check_volume(client, volName)
+
+    volume.attach(hostId=lht_hostId)
+    volume = common.wait_for_volume_healthy(client, volName)
+
+    bv, b1, snap1, _ = create_backup(client, volName)
+    bv.backupDelete(name=b1["name"])
+    common.wait_for_backup_delete(b1["name"], bv)
+
+    backup_list = bv.backupList()
+    assert len(backup_list) == 0
+
+    # test the empty backup volume can recreate backup
+    _, b2, snap2, _ = create_backup(client, volName)
+
+    # test the empty backup volume is still deletable
+    bv.backupDelete(name=b2["name"])
+    common.wait_for_backup_delete(b1["name"], bv)
+    bv = client.by_id_backupVolume(volName)
+    client.delete(bv)
+    common.wait_for_backup_volume_delete(client, volName)
+    cleanup_volume(client, volume)
+
+
 @pytest.mark.coretest   # NOQA
 def test_listing_backup_volume(clients, base_image=""):   # NOQA
     for host_id, client in clients.iteritems():

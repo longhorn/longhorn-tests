@@ -1140,6 +1140,20 @@ def wait_for_backup_volume_delete(client, name):
     assert not found
 
 
+def wait_for_backup_delete(backup_name, bv):
+    for i in range(RETRY_COUNTS):
+        backups = bv.backupList()
+        found = False
+        for b in backups:
+            if b["name"] == backup_name:
+                found = True
+                break
+        if not found:
+            break
+        time.sleep(RETRY_INTERVAL)
+    assert not found
+
+
 def wait_for_volume_current_image(client, name, image):
     wait_for_volume_creation(client, name)
     for i in range(RETRY_COUNTS):
