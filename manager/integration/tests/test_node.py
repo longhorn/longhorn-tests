@@ -878,7 +878,12 @@ def test_node_delete_umount_disks(client):  # NOQA
 
     # umount the disk
     mount_path = os.path.join(DIRECTORY_PATH, disk_volume_name)
-    common.umount_disk(mount_path)
+    # After longhorn refactor, umount_disk will fail with
+    # `target is busy` error from Linux as replica is using
+    # this mount path for storing it's files.
+    # As a work around, we are using `-l` flag that does the
+    # unmount for active mount destinations.
+    common.lazy_umount_disk(mount_path)
 
     # wait for update node status
     node = client.by_id_node(lht_hostId)
