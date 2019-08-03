@@ -1503,6 +1503,11 @@ def umount_disk(mount_path):
     subprocess.check_call(cmd)
 
 
+def lazy_umount_disk(mount_path):
+    cmd = ['umount', '-l', mount_path]
+    subprocess.check_call(cmd)
+
+
 def cleanup_host_disk(vol_name):
     mount_path = os.path.join(DIRECTORY_PATH, vol_name)
     umount_disk(mount_path)
