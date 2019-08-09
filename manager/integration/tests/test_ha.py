@@ -6,7 +6,7 @@ from common import client, volume_name  # NOQA
 from common import SIZE, DEV_PATH
 from common import check_volume_data, cleanup_volume, create_and_check_volume
 from common import get_self_host_id, get_volume_endpoint
-from common import write_volume_random_data
+from common import wait_for_snapshot_purge, write_volume_random_data
 from common import RETRY_COUNTS, RETRY_INTERVAL
 
 
@@ -183,6 +183,9 @@ def ha_backup_deletion_recovery_test(client, volume_name, size, base_image=""): 
 
         res_volume.snapshotDelete(name=backup_snapshot)
         res_volume.snapshotPurge()
+        res_volume = wait_for_snapshot_purge(client, res_name,
+                                             backup_snapshot)
+
         snapshots = res_volume.snapshotList()
         assert len(snapshots) == 2
 
