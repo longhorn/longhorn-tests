@@ -1162,21 +1162,44 @@ def wait_for_volume_replica_count(client, name, count):
     return volume
 
 
-def wait_for_snapshot_purge(volume, *snaps):
+def wait_for_snapshot_purge(client, volume_name, *snaps):
+    completed = 0
+    last_purge_progress = {}
+    purge_status = {}
     for i in range(RETRY_COUNTS):
-        snapshots = volume.snapshotList(volume=volume["name"])
-        snapMap = {}
-        for snap in snapshots:
-            snapMap[snap["name"]] = snap
-        found = False
-        for snap in snaps:
-            if snap in snapMap:
-                found = True
-                break
-        if not found:
+        completed = 0
+        v = client.by_id_volume(volume_name)
+        purge_status = v["purgeStatus"]
+        for status in purge_status:
+            assert status["error"] == ""
+
+            progress = status["progress"]
+            replica = status["replica"]
+            last = last_purge_progress.get(status["replica"])
+            assert last is None or last <= status["progress"]
+            last_purge_progress[replica] = progress
+
+            if status["state"] == "complete":
+                assert progress == 100
+                completed += 1
+        if completed == len(purge_status):
             break
         time.sleep(RETRY_INTERVAL)
+    assert completed == len(purge_status)
+
+    # Now that the purge has been reported to be completed, the Snapshots
+    # should be gone.
+    found = False
+    snapshots = v.snapshotList(volume=volume_name)
+    snap_list = []
+    for snap in snapshots:
+        snap_list.append(snap["name"])
+    for snap in snaps:
+        if snap in snap_list:
+            found = True
+            break
     assert not found
+    return v
 
 
 def wait_for_engine_image_creation(client, image_name):

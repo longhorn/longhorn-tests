@@ -371,7 +371,8 @@ def snapshot_test(clients, volume_name, base_image):  # NOQA
     volume.snapshotDelete(name=snap2["name"])
 
     volume.snapshotPurge()
-    wait_for_snapshot_purge(volume, snap1["name"], snap3["name"])
+    volume = wait_for_snapshot_purge(client, volume_name, snap1["name"],
+                                     snap3["name"])
 
     snapshots = volume.snapshotList(volume=volume_name)
     snapMap = {}
