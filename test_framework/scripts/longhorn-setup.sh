@@ -5,7 +5,7 @@ set  -x
 RETRY_COUNTS=10
 
 LONGHORN_MANAGER_REPO_URI="https://github.com/longhorn/longhorn-manager.git"
-LONGHORN_MANAGER_BRANCH="master"
+LONGHORN_MANAGER_BRANCH="staging"
 LONGHORN_MANAGER_TMPDIR="/tmp/longhorn-manager"
 
 mkdir -p ${LONGHORN_MANAGER_TMPDIR}
@@ -22,8 +22,8 @@ LONGHORN_MANAGER_IMAGE_TAG=`grep -io "longhornio\/longhorn-manager:.*$" longhorn
 LONGHORN_ENGINE_IMAGE_TAG=`grep -io "longhornio\/longhorn-engine:.*$" longhorn.yaml | head -1 | awk -F ":" '{print $2}'`
 
 
-sed -i 's/longhornio\/longhorn-manager:'${LONGHORN_MANAGER_IMAGE_TAG}'/longhornio\/longhorn-manager:master/' longhorn.yaml
-sed -i 's/longhornio\/longhorn-engine:'${LONGHORN_ENGINE_IMAGE_TAG}'/longhornio\/longhorn-engine:master/' longhorn.yaml
+sed -i 's/longhornio\/longhorn-manager:'${LONGHORN_MANAGER_IMAGE_TAG}'/longhornio\/longhorn-manager:staging/' longhorn.yaml
+sed -i 's/longhornio\/longhorn-engine:'${LONGHORN_ENGINE_IMAGE_TAG}'/longhornio\/longhorn-engine:staging/' longhorn.yaml
 
 
 export KUBECONFIG="${TF_VAR_tf_workspace}/templates/kube_config_3-nodes-k8s.yml"
@@ -43,7 +43,7 @@ kubectl create -Rf "${WORKSPACE}/manager/integration/deploy/backupstores"
 
 sed -i 's/#TEST_FRAMEWORK_ARGS_PLACEHOLDER/args:\ \[\ \"\-s\"\ ,\ \"\-\-junitxml=\$\{LONGHORN_JUNIT_REPORT_PATH\}" \]/' "${WORKSPACE}/manager/integration/deploy/test.yaml"
 
-sed  -i 's/longhornio\/longhorn-manager-test:.*$/longhornio\/longhorn-manager-test:master/' "${WORKSPACE}/manager/integration/deploy/test.yaml"
+sed  -i 's/longhornio\/longhorn-manager-test:.*$/longhornio\/longhorn-manager-test:staging/' "${WORKSPACE}/manager/integration/deploy/test.yaml"
 
 kubectl create -f "${WORKSPACE}/manager/integration/deploy/test.yaml"
 
