@@ -36,6 +36,7 @@ PORT = ":9500"
 RETRY_COMMAND_COUNT = 3
 RETRY_COUNTS = 300
 RETRY_INTERVAL = 0.5
+RETRY_INTERVAL_LONG = 2
 
 LONGHORN_NAMESPACE = "longhorn-system"
 
@@ -99,6 +100,7 @@ SETTING_BACKUP_TARGET = "backup-target"
 SETTING_BACKUP_TARGET_CREDENTIAL_SECRET = "backup-target-credential-secret"
 SETTING_DEFAULT_REPLICA_COUNT = "default-replica-count"
 SETTING_DEFAULT_LONGHORN_STATIC_SC = "default-longhorn-static-storage-class"
+SETTING_TAINT_TOLERATION = "taint-toleration"
 
 CSI_UNKNOWN = 0
 CSI_TRUE = 1
