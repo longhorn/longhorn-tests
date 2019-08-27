@@ -193,7 +193,7 @@ def backupstore_test(client, core_api, csi_pv, pvc, pod_make, pod_name, base_ima
 
     bv.backupDelete(name=b["name"])
 
-    backups = bv.backupList()
+    backups = bv.backupList().data
     found = False
     for b in backups:
         if b["snapshotName"] == snap["name"]:

@@ -62,7 +62,7 @@ def create_and_test_backups(api, cli, pod_info):
 
         found = False
         for i in range(DEFAULT_BACKUP_TIMEOUT):
-            backups = bv.backupList()
+            backups = bv.backupList().data
             for b in backups:
                 if b['snapshotName'] == pod['backup_snapshot']['name']:
                     found = True
