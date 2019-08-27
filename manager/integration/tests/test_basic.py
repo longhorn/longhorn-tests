@@ -535,7 +535,7 @@ def backupstore_test(client, host_id, volname, size):
 
     bv.backupDelete(name=b["name"])
 
-    backups = bv.backupList()
+    backups = bv.backupList().data
     found = False
     for b in backups:
         if b["snapshotName"] == snap2["name"]:
@@ -911,7 +911,7 @@ def test_listing_backup_volume(clients, base_image=""):   # NOQA
     bv1.backupDelete(name=b1["name"])
     for i in range(RETRY_COMMAND_COUNT):
         found = False
-        backups1 = bv1.backupList()
+        backups1 = bv1.backupList().data
         for b in backups1:
             if b["snapshotName"] == snap1["name"]:
                 found = True
@@ -922,7 +922,7 @@ def test_listing_backup_volume(clients, base_image=""):   # NOQA
     bv2.backupDelete(name=b2["name"])
     for i in range(RETRY_COMMAND_COUNT):
         found = False
-        backups2 = bv2.backupList()
+        backups2 = bv2.backupList().data
         for b in backups2:
             if b["snapshotName"] == snap2["name"]:
                 found = True
@@ -933,7 +933,7 @@ def test_listing_backup_volume(clients, base_image=""):   # NOQA
     bv3.backupDelete(name=b3["name"])
     for i in range(RETRY_COMMAND_COUNT):
         found = False
-        backups3 = bv3.backupList()
+        backups3 = bv3.backupList().data
         for b in backups3:
             if b["snapshotName"] == snap3["name"]:
                 found = True
