@@ -176,7 +176,7 @@ def recurring_job_labels_test(client, labels, volume_name, size=SIZE, base_image
 
     # Verify the Labels on the actual Backup.
     bv = client.by_id_backupVolume(volume_name)
-    backups = bv.backupList()
+    backups = bv.backupList().data
     assert len(backups) == 1
 
     b = bv.backupGet(name=backups[0]["name"])
@@ -243,7 +243,7 @@ def test_recurring_job_kubernetes_status(client, core_api, volume_name):  # NOQA
 
     # Verify the Labels on the actual Backup.
     bv = client.by_id_backupVolume(volume_name)
-    backups = bv.backupList()
+    backups = bv.backupList().data
     assert len(backups) == 1
 
     b = bv.backupGet(name=backups[0]["name"])

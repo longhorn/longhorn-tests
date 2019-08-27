@@ -1888,7 +1888,7 @@ def find_backup(client, vol_name, snap_name):
 
     found = False
     for i in range(20):
-        backups = bv.backupList()
+        backups = bv.backupList().data
         for b in backups:
             if b["snapshotName"] == snap_name:
                 found = True
