@@ -58,8 +58,8 @@ def test_ha_simple_recovery_with_base_image(client, volume_name):  # NOQA
 
 
 @pytest.mark.baseimage  # NOQA
-def test_ha_salvage_with_base_image(client, volume_name):  # NOQA
-    test_ha.ha_salvage_test(client, volume_name, BASE_IMAGE_EXT4)
+def test_ha_salvage_with_base_image(client, core_api, volume_name):  # NOQA
+    test_ha.ha_salvage_test(client, core_api, volume_name, BASE_IMAGE_EXT4)
 
 
 @pytest.mark.baseimage  # NOQA

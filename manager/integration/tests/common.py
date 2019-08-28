@@ -1239,11 +1239,45 @@ def wait_for_engine_image_ref_count(client, image_name, count):
     return image
 
 
-def k8s_delete_replica_pods_for_volume(volname):
-    k8sclient.CoreV1Api().delete_collection_namespaced_pod(
-        label_selector="longhorn-volume-replica="+volname,
-        namespace=LONGHORN_NAMESPACE,
-        watch=False)
+def json_string_go_to_python(str):
+    return str.replace("u\'", "\"").replace("\'", "\""). \
+        replace("True", "true").replace("False", "false")
+
+
+def delete_replica_processes(client, api, volname):
+    replica_managers = []
+
+    volume = client.by_id_volume(volname)
+    for r in volume["replicas"]:
+        replica_managers.append(r["instanceManagerName"])
+
+    list_command = [
+        '/bin/sh', '-c',
+        'longhorn-instance-manager process ls'
+    ]
+    for rm_name in replica_managers:
+        with timeout(seconds=STREAM_EXEC_TIMEOUT,
+                     error_message='Timeout on executing stream read'):
+            ps_str = stream(
+                api.connect_get_namespaced_pod_exec, rm_name,
+                LONGHORN_NAMESPACE, command=list_command,
+                stderr=True, stdin=False, stdout=True, tty=False)
+            ps = json.loads(json_string_go_to_python(ps_str))
+            deleted = False
+            for name in ps:
+                if volname in name:
+                    delete_command = [
+                        '/bin/sh', '-c',
+                        'longhorn-instance-manager process delete ' +
+                        '--name ' + name
+                    ]
+                    stream(api.connect_get_namespaced_pod_exec, rm_name,
+                           LONGHORN_NAMESPACE, command=delete_command,
+                           stderr=True, stdin=False, stdout=True,
+                           tty=False)
+                    deleted = True
+                    break
+            assert deleted
 
 
 @pytest.fixture

@@ -2,9 +2,10 @@ import pytest
 import common
 import time
 
-from common import client, volume_name  # NOQA
+from common import client, core_api, volume_name  # NOQA
 from common import SIZE, DEV_PATH
 from common import check_volume_data, cleanup_volume, create_and_check_volume
+from common import delete_replica_processes
 from common import get_self_host_id, get_volume_endpoint
 from common import wait_for_snapshot_purge, write_volume_random_data
 from common import RETRY_COUNTS, RETRY_INTERVAL
@@ -74,11 +75,12 @@ def ha_rebuild_replica_test(client, volname):   # NOQA
 
 
 @pytest.mark.coretest   # NOQA
-def test_ha_salvage(client, volume_name):  # NOQA
-    ha_salvage_test(client, volume_name)
+def test_ha_salvage(client, core_api, volume_name):  # NOQA
+    ha_salvage_test(client, core_api, volume_name)
 
 
-def ha_salvage_test(client, volume_name, base_image=""):  # NOQA
+def ha_salvage_test(client, core_api,  # NOQA
+                    volume_name, base_image=""):  # NOQA
     volume = create_and_check_volume(client, volume_name, 2,
                                      base_image=base_image)
 
@@ -92,7 +94,7 @@ def ha_salvage_test(client, volume_name, base_image=""):  # NOQA
 
     data = write_volume_random_data(volume)
 
-    common.k8s_delete_replica_pods_for_volume(volume_name)
+    delete_replica_processes(client, core_api, volume_name)
 
     volume = common.wait_for_volume_faulted(client, volume_name)
     assert len(volume["replicas"]) == 2
