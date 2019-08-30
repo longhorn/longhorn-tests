@@ -23,10 +23,16 @@ node {
             stage ('longhorn setup & tests') {
                 sh  " docker exec ${JOB_NAME}${BUILD_NUMBER} ${TF_VAR_tf_workspace}/scripts/longhorn-setup.sh"
             }
+
             stage ('report generation') {
                 sh "docker cp ${JOB_NAME}${BUILD_NUMBER}:${TF_VAR_tf_workspace}/longhorn-test-junit-report.xml ."
                 junit 'longhorn-test-junit-report.xml'
             }
+
+            stage ('longhorn stress tests') {
+                sh  " docker exec ${JOB_NAME}${BUILD_NUMBER} ${TF_VAR_tf_workspace}/scripts/longhorn-stress-test.sh"
+            }
+
         } catch(e) {
             currentBuild.result = "FAILED"
             throw e

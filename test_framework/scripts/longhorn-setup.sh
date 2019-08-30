@@ -41,6 +41,8 @@ done
 
 kubectl create -Rf "${WORKSPACE}/manager/integration/deploy/backupstores"
 
+cp "${WORKSPACE}/manager/integration/deploy/test.yaml" "${WORKSPACE}/manager/integration/deploy/test.yaml.orig"
+
 sed -i 's/#TEST_FRAMEWORK_ARGS_PLACEHOLDER/args:\ \[\ \"\-s\"\ ,\ \"\-\-junitxml=\$\{LONGHORN_JUNIT_REPORT_PATH\}" \]/' "${WORKSPACE}/manager/integration/deploy/test.yaml"
 
 sed  -i 's/longhornio\/longhorn-manager-test:.*$/longhornio\/longhorn-manager-test:staging/' "${WORKSPACE}/manager/integration/deploy/test.yaml"
@@ -56,3 +58,5 @@ while [[ -z "`kubectl get pods longhorn-test --no-headers=true | awk '{print $3}
 done
 
 kubectl logs longhorn-test  > "${TF_VAR_tf_workspace}/longhorn-test-junit-report.xml"
+
+kubectl delete -f "${WORKSPACE}/manager/integration/deploy/test.yaml"
