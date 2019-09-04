@@ -23,6 +23,7 @@ from common import delete_and_wait_pvc, delete_and_wait_pv
 from common import CONDITION_STATUS_FALSE, CONDITION_STATUS_TRUE
 from common import RETRY_COUNTS, RETRY_INTERVAL, RETRY_COMMAND_COUNT
 from common import cleanup_volume, create_and_check_volume, create_backup
+from common import delete_backup
 
 
 @pytest.mark.coretest   # NOQA
@@ -533,15 +534,7 @@ def backupstore_test(client, host_id, volname, size):
     volume = volume.detach()
     volume = common.wait_for_volume_detached(client, restoreName)
 
-    bv.backupDelete(name=b["name"])
-
-    backups = bv.backupList().data
-    found = False
-    for b in backups:
-        if b["snapshotName"] == snap2["name"]:
-            found = True
-            break
-    assert not found
+    delete_backup(bv, b["name"])
 
     volume = wait_for_volume_status(client, volume["name"],
                                     "lastBackup", "")
