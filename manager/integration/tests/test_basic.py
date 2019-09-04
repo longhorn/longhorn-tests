@@ -36,6 +36,7 @@ from common import create_storage_class
 from common import wait_for_volume_healthy
 from common import wait_for_volume_restoration_completed
 from common import read_volume_data
+from common import delete_backup
 
 
 @pytest.mark.coretest   # NOQA
@@ -546,15 +547,7 @@ def backupstore_test(client, host_id, volname, size):
     volume = volume.detach()
     volume = common.wait_for_volume_detached(client, restoreName)
 
-    bv.backupDelete(name=b["name"])
-
-    backups = bv.backupList().data
-    found = False
-    for b in backups:
-        if b["snapshotName"] == snap2["name"]:
-            found = True
-            break
-    assert not found
+    delete_backup(bv, b["name"])
 
     volume = wait_for_volume_status(client, volume["name"],
                                     "lastBackup", "")
