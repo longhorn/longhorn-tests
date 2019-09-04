@@ -8,6 +8,7 @@ from common import create_and_wait_pod, create_pvc_spec, delete_and_wait_pod
 from common import generate_random_data, read_volume_data
 from common import write_pod_volume_data
 from common import generate_volume_name
+from common import delete_backup
 
 # Using a StorageClass because GKE is using the default StorageClass if not
 # specified. Volumes are still being manually created and not provisioned.
@@ -191,12 +192,4 @@ def backupstore_test(client, core_api, csi_pv, pvc, pod_make, pod_name, base_ima
     resp = read_volume_data(core_api, pod2_name)
     assert resp == test_data
 
-    bv.backupDelete(name=b["name"])
-
-    backups = bv.backupList().data
-    found = False
-    for b in backups:
-        if b["snapshotName"] == snap["name"]:
-            found = True
-            break
-    assert not found
+    delete_backup(bv, b["name"])
