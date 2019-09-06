@@ -23,6 +23,19 @@ from common import delete_and_wait_pvc, delete_and_wait_pv
 from common import CONDITION_STATUS_FALSE, CONDITION_STATUS_TRUE
 from common import RETRY_COUNTS, RETRY_INTERVAL, RETRY_COMMAND_COUNT
 from common import cleanup_volume, create_and_check_volume, create_backup
+from common import DEFAULT_VOLUME_SIZE
+from common import Gi
+from common import wait_for_volume_detached
+from common import create_pvc_spec
+from common import generate_random_data
+from common import VOLUME_RWTEST_SIZE
+from common import write_pod_volume_data
+from common import find_backup
+from common import wait_for_backup_completion
+from common import create_storage_class
+from common import wait_for_volume_healthy
+from common import wait_for_volume_restoration_completed
+from common import read_volume_data
 
 
 @pytest.mark.coretest   # NOQA
@@ -1137,3 +1150,131 @@ def test_attach_without_frontend(clients, volume_name):  # NOQA
 
     client.delete(volume)
     wait_for_volume_delete(client, volume_name)
+
+
+@pytest.mark.coretest
+def test_storage_class_from_backup(volume_name, pvc_name, storage_class, client, core_api, pod_make): # NOQA
+
+    VOLUME_SIZE = str(DEFAULT_VOLUME_SIZE * Gi)
+
+    pv_name = pvc_name
+
+    volume = create_and_check_volume(
+        client,
+        volume_name,
+        size=VOLUME_SIZE
+    )
+
+    wait_for_volume_detached(client, volume_name)
+
+    create_pv_for_volume(client,
+                         core_api,
+                         volume,
+                         pv_name)
+
+    create_pvc_for_volume(client,
+                          core_api,
+                          volume,
+                          pvc_name)
+
+    pvc_spec = create_pvc_spec(pvc_name)
+
+    pod = pod_make() # NOQA
+
+    pod['spec']['volumes'] = [pvc_spec]
+    pod_name = pod['metadata']['name']
+
+    create_and_wait_pod(core_api, pod)
+
+    test_data = generate_random_data(VOLUME_RWTEST_SIZE)
+    write_pod_volume_data(core_api, pod_name, test_data)
+
+    volume_id = client.by_id_volume(volume_name)
+    snapshot = volume_id.snapshotCreate()
+
+    volume_id.snapshotBackup(name=snapshot['name'])
+
+    bv, b = find_backup(client, volume_name, snapshot['name'])
+
+    wait_for_backup_completion(client, volume_name, snapshot['name'])
+
+    backup_url = b['url']
+
+    storage_class['metadata']['name'] = "longhorn-from-backup"
+    storage_class['parameters']['fromBackup'] = backup_url
+
+    create_storage_class(storage_class)
+
+    backup_pvc_name = generate_volume_name()
+
+    backup_pvc_spec = {
+        "apiVersion": "v1",
+        "kind": "PersistentVolumeClaim",
+        "metadata": {
+                "name": backup_pvc_name,
+        },
+        "spec": {
+                "accessModes": [
+                        "ReadWriteOnce"
+                ],
+                "storageClassName": storage_class['metadata']['name'],
+                "resources": {
+                        "requests": {
+                                "storage": VOLUME_SIZE
+                        }
+                }
+        }
+    }
+
+    volume_count = len(client.list_volume())
+
+    core_api.create_namespaced_persistent_volume_claim(
+        'default',
+        backup_pvc_spec
+    )
+
+    backup_volume_created = False
+
+    for i in range(RETRY_COUNTS):
+        if len(client.list_volume()) == volume_count + 1:
+            backup_volume_created = True
+            break
+        time.sleep(RETRY_INTERVAL)
+
+    assert backup_volume_created
+
+    for i in range(RETRY_COUNTS):
+        pvc_status = core_api.read_namespaced_persistent_volume_claim_status(
+            name=backup_pvc_name,
+            namespace='default'
+        )
+
+        if pvc_status.status.phase == 'Bound':
+            break
+        time.sleep(RETRY_INTERVAL)
+
+    volumes = client.list_volume()
+
+    for volume in volumes:
+        if volume.kubernetesStatus.pvcName == backup_pvc_name:
+            backup_volume_name = volume.name
+            break
+
+    wait_for_volume_healthy(client, backup_volume_name)
+    wait_for_volume_restoration_completed(client, backup_volume_name)
+    wait_for_volume_detached(client, backup_volume_name)
+
+    backup_pod_pvc_spec = create_pvc_spec(backup_pvc_name)
+
+    backup_pod = pod_make(name="backup-pod")
+
+    backup_pod['spec']['volumes'] = [backup_pod_pvc_spec]
+    backup_pod_name = backup_pod['metadata']['name']
+    create_and_wait_pod(core_api, backup_pod)
+    restored_data = read_volume_data(core_api, backup_pod_name)
+
+    assert test_data == restored_data
+
+    delete_and_wait_pvc(core_api, pvc_name)
+    delete_and_wait_pvc(core_api, backup_pvc_name)
+    delete_and_wait_pv(core_api, pv_name)
