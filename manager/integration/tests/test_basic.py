@@ -37,6 +37,9 @@ from common import wait_for_volume_healthy
 from common import wait_for_volume_restoration_completed
 from common import read_volume_data
 from common import delete_backup
+from common import pvc_name # NOQA
+from common import storage_class # NOQA
+from common import pod_make # NOQA
 
 
 @pytest.mark.coretest   # NOQA
@@ -1146,9 +1149,12 @@ def test_attach_without_frontend(clients, volume_name):  # NOQA
 
 
 @pytest.mark.coretest
-def test_storage_class_from_backup(volume_name, pvc_name, storage_class, client, core_api, pod_make): # NOQA
+def test_storage_class_from_backup(volume_name, pvc_name, storage_class, clients, core_api, pod_make): # NOQA
 
     VOLUME_SIZE = str(DEFAULT_VOLUME_SIZE * Gi)
+
+    for _, client in clients.iteritems():
+        break
 
     pv_name = pvc_name
 
@@ -1267,7 +1273,3 @@ def test_storage_class_from_backup(volume_name, pvc_name, storage_class, client,
     restored_data = read_volume_data(core_api, backup_pod_name)
 
     assert test_data == restored_data
-
-    delete_and_wait_pvc(core_api, pvc_name)
-    delete_and_wait_pvc(core_api, backup_pvc_name)
-    delete_and_wait_pv(core_api, pv_name)
