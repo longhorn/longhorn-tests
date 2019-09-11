@@ -10,6 +10,7 @@ from common import create_pv_for_volume, create_storage_class, \
     create_and_wait_statefulset, delete_and_wait_pv
 from common import update_statefulset_manifests, get_self_host_id, \
     get_statefulset_pod_info, wait_volume_kubernetes_status
+from common import set_random_backupstore
 from common import BASE_IMAGE_LABEL, KUBERNETES_STATUS_LABEL, SIZE
 
 
@@ -41,6 +42,8 @@ def check_jobs1_result(volume):
 def test_recurring_job(clients, volume_name):  # NOQA
     for host_id, client in clients.iteritems():  # NOQA
         break
+
+    set_random_backupstore(client)
 
     volume = client.create_volume(name=volume_name, size=SIZE,
                                   numberOfReplicas=2)
@@ -88,6 +91,8 @@ def test_recurring_job_in_volume_creation(clients, volume_name):  # NOQA
     for host_id, client in clients.iteritems():  # NOQA
         break
 
+    set_random_backupstore(client)
+
     # error when creating volume with duplicate jobs
     with pytest.raises(Exception) as e:
         client.create_volume(name=volume_name, size=SIZE,
@@ -118,6 +123,7 @@ def test_recurring_job_in_volume_creation(clients, volume_name):  # NOQA
 
 @pytest.mark.recurring_job  # NOQA
 def test_recurring_job_in_storageclass(client, core_api, storage_class, statefulset):  # NOQA
+    set_random_backupstore(client)
     statefulset_name = 'recurring-job-in-storageclass-test'
     update_statefulset_manifests(statefulset, storage_class, statefulset_name)
     storage_class['parameters']['recurringJobs'] = json.dumps(create_jobs1())
@@ -145,6 +151,7 @@ def test_recurring_job_labels(client, random_labels, volume_name):  # NOQA
 
 
 def recurring_job_labels_test(client, labels, volume_name, size=SIZE, base_image=""):  # NOQA
+    set_random_backupstore(client)
     host_id = get_self_host_id()
     client.create_volume(name=volume_name, size=size,
                          numberOfReplicas=2)
@@ -201,6 +208,7 @@ def test_recurring_job_kubernetes_status(client, core_api, volume_name):  # NOQA
     Test that a RecurringJob properly backs up the KubernetesStatus of a
     Volume.
     """
+    set_random_backupstore(client)
     host_id = get_self_host_id()
     client.create_volume(name=volume_name, size=SIZE,
                          numberOfReplicas=2)
