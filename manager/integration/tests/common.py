@@ -2270,3 +2270,26 @@ def check_volume_last_backup(client, volume_name, last_backup):
         time.sleep(RETRY_INTERVAL)
     volume = client.by_id_volume(volume_name)
     assert volume['lastBackup'] == last_backup
+
+
+def set_random_backupstore(client):
+    setting = client.by_id_setting(SETTING_BACKUP_TARGET)
+    backupstores = get_backupstore_url()
+    for backupstore in backupstores:
+        if is_backupTarget_s3(backupstore):
+            backupsettings = backupstore.split("$")
+            setting = client.update(setting, value=backupsettings[0])
+            assert setting["value"] == backupsettings[0]
+
+            credential = client.by_id_setting(
+                SETTING_BACKUP_TARGET_CREDENTIAL_SECRET)
+            credential = client.update(credential, value=backupsettings[1])
+            assert credential["value"] == backupsettings[1]
+        else:
+            setting = client.update(setting, value=backupstore)
+            assert setting["value"] == backupstore
+            credential = client.by_id_setting(
+                SETTING_BACKUP_TARGET_CREDENTIAL_SECRET)
+            credential = client.update(credential, value="")
+            assert credential["value"] == ""
+        break
