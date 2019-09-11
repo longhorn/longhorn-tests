@@ -152,10 +152,11 @@ def test_hard_anti_affinity_scheduling(client, volume_name):  # NOQA
     # Instead of waiting for timeout and lengthening the tests a significant
     # amount we can make sure the scheduling isn't working by making sure the
     # volume becomes Degraded and reports a scheduling error.
-    volume = wait_for_volume_degraded(client, volume_name)
+    wait_for_volume_degraded(client, volume_name)
     wait_scheduling_failure(client, volume_name)
     # While there are three replicas that should exist to meet the Volume's
     # request, only two of those volumes should actually be Healthy.
+    volume = client.by_id_volume(volume_name)
     assert sum([1 for replica in volume["replicas"] if replica["running"] and
                 replica["mode"] == "RW"]) == 2
     # Confirm that the final volume is an unscheduled volume.
