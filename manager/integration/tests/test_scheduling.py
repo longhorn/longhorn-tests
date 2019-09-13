@@ -5,7 +5,8 @@ from common import client, volume_name  # NOQA
 from common import check_volume_data, cleanup_volume, \
     create_and_check_volume, get_longhorn_api_client, get_self_host_id, \
     wait_for_volume_detached, wait_for_volume_degraded, \
-    wait_for_volume_healthy, wait_scheduling_failure, write_volume_random_data
+    wait_for_volume_healthy, wait_scheduling_failure, \
+    write_volume_random_data, monitor_rebuild_progress
 from time import sleep
 
 SETTING_REPLICA_SOFT_ANTI_AFFINITY = "replica-soft-anti-affinity"
@@ -240,6 +241,7 @@ def test_hard_anti_affinity_live_rebuild(client, volume_name):  # NOQA
     wait_new_replica_ready(client, volume_name, replica_names)
     volume = wait_for_volume_healthy(client, volume_name)
     assert len(volume["replicas"]) == 3
+    monitor_rebuild_progress(client, volume_name)
     check_volume_data(volume, data)
 
     cleanup_volume(client, volume)
@@ -277,6 +279,7 @@ def test_hard_anti_affinity_offline_rebuild(client, volume_name):  # NOQA
     wait_new_replica_ready(client, volume_name, replica_names)
     volume = wait_for_volume_healthy(client, volume_name)
     assert len(volume["replicas"]) == 3
+    monitor_rebuild_progress(client, volume_name)
     check_volume_data(volume, data)
 
     cleanup_volume(client, volume)

@@ -9,6 +9,7 @@ from common import delete_replica_processes
 from common import get_self_host_id, get_volume_endpoint
 from common import wait_for_snapshot_purge, write_volume_random_data
 from common import RETRY_COUNTS, RETRY_INTERVAL
+from common import monitor_rebuild_progress
 
 
 @pytest.mark.coretest   # NOQA
@@ -57,6 +58,7 @@ def ha_rebuild_replica_test(client, volname):   # NOQA
         time.sleep(RETRY_INTERVAL)
     assert new_replica_found
 
+    monitor_rebuild_progress(client, volname)
     volume = common.wait_for_volume_healthy(client, volname)
 
     volume = client.by_id_volume(volname)

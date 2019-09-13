@@ -1731,6 +1731,20 @@ def monitor_restore_progress(client, volume_name):
     return v
 
 
+def monitor_rebuild_progress(client, volume_name):
+    completed = False
+    for i in range(RETRY_COUNTS):
+        v = client.by_id_volume(volume_name)
+        rs = v["rebuildStatus"]
+        for r in rs:
+            assert r["error"] == ""
+            if r["state"] == "complete":
+                assert r["progress"] == 100
+                completed = True
+        time.sleep(RETRY_INTERVAL)
+    assert completed
+
+
 def wait_for_volume_migration_ready(client, volume_name):
     for i in range(RETRY_COUNTS):
         v = client.by_id_volume(volume_name)
