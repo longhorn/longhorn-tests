@@ -105,7 +105,8 @@ def wait_for_toleration_update(core_api, apps_api, count, set_tolerations):  # N
                 continue
 
         im_pod_list = core_api.list_namespaced_pod(
-            LONGHORN_NAMESPACE, label_selector="app=instance-manager").items
+            LONGHORN_NAMESPACE,
+            label_selector="longhorn.io/component=instance-manager").items
         if len(im_pod_list) != 2 * count:
             time.sleep(RETRY_INTERVAL_LONG)
             continue
