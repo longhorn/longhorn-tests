@@ -1964,6 +1964,7 @@ def check_longhorn(core_api):
     has_driver_deployer = False
     has_manager = False
     has_ui = False
+    has_instance_manager = False
 
     try:
         longhorn_pod_list = core_api.list_namespaced_pod(
@@ -1972,7 +1973,7 @@ def check_longhorn(core_api):
             labels = item.metadata.labels
             if not labels:
                 pass
-            elif labels.get('longhorn', '') == 'engine-image':
+            elif labels.get('longhorn.io/component', '') == 'engine-image':
                 has_engine_image = True
             elif labels.get('app', '') == 'longhorn-driver-deployer':
                 has_driver_deployer = True
@@ -1980,8 +1981,11 @@ def check_longhorn(core_api):
                 has_manager = True
             elif labels.get('app', '') == 'longhorn-ui':
                 has_ui = True
+            elif labels.get('longhorn.io/component', '') == 'instance-manager':
+                has_instance_manager = True
 
-        if has_engine_image and has_driver_deployer and has_manager and has_ui:
+        if has_engine_image and has_driver_deployer and has_manager and has_ui\
+                and has_instance_manager:
             ready = True
 
     except ApiException as e:
