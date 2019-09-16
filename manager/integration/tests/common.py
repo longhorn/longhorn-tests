@@ -423,7 +423,7 @@ def delete_and_wait_longhorn(client, name):
     wait_for_volume_delete(client, name)
 
 
-def read_volume_data(api, pod_name):
+def read_volume_data(api, pod_name, filename='test'):
     """
     Retrieve data from a Pod's volume.
 
@@ -437,7 +437,7 @@ def read_volume_data(api, pod_name):
     read_command = [
         '/bin/sh',
         '-c',
-        'cat /data/test'
+        'cat /data/' + filename
     ]
     with timeout(seconds=STREAM_EXEC_TIMEOUT,
                  error_message='Timeout on executing stream read'):
@@ -447,7 +447,7 @@ def read_volume_data(api, pod_name):
             tty=False)
 
 
-def write_pod_volume_data(api, pod_name, test_data):
+def write_pod_volume_data(api, pod_name, test_data, filename='test'):
     """
     Write data into a Pod's volume.
 
@@ -459,7 +459,7 @@ def write_pod_volume_data(api, pod_name, test_data):
     write_command = [
         '/bin/sh',
         '-c',
-        'echo -ne ' + test_data + ' > /data/test'
+        'echo -ne ' + test_data + ' > /data/' + filename
     ]
     with timeout(seconds=STREAM_EXEC_TIMEOUT,
                  error_message='Timeout on executing stream write'):
@@ -2301,3 +2301,69 @@ def set_random_backupstore(client):
             credential = client.update(credential, value="")
             assert credential["value"] == ""
         break
+
+
+def generate_pod_with_pvc_manifest(pod_name, pvc_name):
+    pod_manifest = {
+        "apiVersion": "v1",
+        "kind": "Pod",
+        "metadata": {
+           "name": pod_name,
+           "namespace": "default"
+        },
+        "spec": {
+           "containers": [
+              {
+                 "name": "volume-test",
+                 "image": "nginx:stable-alpine",
+                 "imagePullPolicy": "IfNotPresent",
+                 "volumeMounts": [
+                    {
+                       "name": "volv",
+                       "mountPath": "/data"
+                    }
+                 ],
+                 "ports": [
+                    {
+                       "containerPort": 80
+                    }
+                 ]
+              }
+           ],
+           "volumes": [
+              {
+                 "name": "volv",
+                 "persistentVolumeClaim": {
+                    "claimName": pvc_name
+                 }
+              }
+           ]
+        }
+    }
+
+    return pod_manifest
+
+
+def delete_and_wait_volume_attachment(storage_api, volume_attachment_name):
+    try:
+        storage_api.delete_volume_attachment(
+            name=volume_attachment_name
+        )
+    except ApiException as e:
+        assert e.status == 404
+
+    wait_delete_volume_attachment(storage_api, volume_attachment_name)
+
+
+def wait_delete_volume_attachment(storage_api, volume_attachment_name):
+    for i in range(RETRY_COUNTS):
+        found = False
+        ret = storage_api.list_volume_attachment()
+        for item in ret.items:
+            if item.metadata.name == volume_attachment_name:
+                found = True
+                break
+        if not found:
+            break
+        time.sleep(RETRY_INTERVAL)
+    assert not found
