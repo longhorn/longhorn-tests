@@ -1,0 +1,53 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: longhorn-test-service-account
+  namespace: default
+---
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: ClusterRole
+metadata:
+  name: longhorn-test-role
+rules:
+- apiGroups: [""]
+  resources: ["nodes", "nodes/status", "pods", "pods/exec", "persistentvolumes", "persistentvolumeclaims", "secrets"]
+  verbs: ["*"]
+- apiGroups: ["storage.k8s.io"]
+  resources: ["storageclasses"]
+  verbs: ["*"]
+- apiGroups: ["apps"]
+  resources: ["statefulsets", "deployments"]
+  verbs: ["*"]
+---
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: ClusterRoleBinding
+metadata:
+  name: longhorn-test-bind
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: longhorn-test-role
+subjects:
+- kind: ServiceAccount
+  name: longhorn-test-service-account
+  namespace: default
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: longhorn-stress-jobs
+spec:
+  parallelism: 10
+  completions: 10
+  backoffLimit: 0
+  template:
+    spec:
+      containers:
+      - name: longhorn-test-pod
+        image: longhornio/longhorn-manager-test:master
+        command: ["/bin/sh", "-c", "while py.test --include-stress-test -s test_stress.py::test_stress; do :; done"]
+        imagePullPolicy: Always
+        securityContext:
+          privileged: true
+      restartPolicy: Never
+      serviceAccountName: longhorn-test-service-account
