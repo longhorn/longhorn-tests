@@ -150,10 +150,14 @@ def get_storage_api_client():
 
 
 def get_longhorn_api_client():
-    k8sconfig.load_incluster_config()
-    ips = get_mgr_ips()
-    client = get_client(ips[0] + PORT)
-    return client
+    for i in range(RETRY_COUNTS):
+        try:
+            k8sconfig.load_incluster_config()
+            ips = get_mgr_ips()
+            client = get_client(ips[0] + PORT)
+            return client
+        except Exception:
+            time.sleep(RETRY_INTERVAL)
 
 
 def cleanup_volume(client, volume):
