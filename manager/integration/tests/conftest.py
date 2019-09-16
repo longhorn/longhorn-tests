@@ -12,6 +12,7 @@ from common import check_longhorn, check_csi
 INCLUDE_BASE_IMAGE_OPT = "--include-base-image-test"
 SKIP_RECURRING_JOB_OPT = "--skip-recurring-job-test"
 INCLUDE_INFRA_OPT = "--include-infra-test"
+INCLUDE_STRESS_OPT = "--include-stress-test"
 
 
 def pytest_addoption(parser):
@@ -24,6 +25,10 @@ def pytest_addoption(parser):
     parser.addoption(INCLUDE_INFRA_OPT, action="store_true",
                      default=False,
                      help="include infra tests (default: False)")
+
+    parser.addoption(INCLUDE_STRESS_OPT, action="store_true",
+                     default=False,
+                     help="include stress tests (default: False)")
 
 
 def pytest_collection_modifyitems(config, items):
@@ -104,3 +109,12 @@ def pytest_collection_modifyitems(config, items):
         for item in items:
             if "infra" in item.keywords:
                 item.add_marker(skip_infra)
+
+    if not config.getoption(INCLUDE_STRESS_OPT):
+        skip_stress = pytest.mark.skip(reason="include " +
+                                       INCLUDE_STRESS_OPT +
+                                       " option to run")
+
+        for item in items:
+            if "stress" in item.keywords:
+                item.add_marker(skip_stress)
