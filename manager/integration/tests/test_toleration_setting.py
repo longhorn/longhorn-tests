@@ -30,10 +30,10 @@ def test_toleration_setting():
            in str(e.value)
     with pytest.raises(Exception) as e:
         client.update(setting,
-                      value="key1=value1:NoSchedule, key2:InvalidEffect")
+                      value="key1=value1:NoSchedule; key2:InvalidEffect")
     assert 'invalid effect' in str(e.value)
 
-    setting_value_str = "key1=value1:NoSchedule, key2:NoExecute"
+    setting_value_str = "key1=value1:NoSchedule; key2:NoExecute"
     setting_value_dict = \
         {"key1": {"key": "key1", "value": "value1",
                   "operator": "Equal", "effect": "NoSchedule"},
