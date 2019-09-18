@@ -33,13 +33,13 @@ from common import write_pod_volume_data
 from common import find_backup
 from common import wait_for_backup_completion
 from common import create_storage_class
-from common import wait_for_volume_healthy
 from common import wait_for_volume_restoration_completed
 from common import read_volume_data
 from common import delete_backup
 from common import pvc_name # NOQA
 from common import storage_class # NOQA
 from common import pod_make # NOQA
+from common import set_random_backupstore
 
 
 @pytest.mark.coretest   # NOQA
@@ -1150,11 +1150,12 @@ def test_attach_without_frontend(clients, volume_name):  # NOQA
 
 @pytest.mark.coretest
 def test_storage_class_from_backup(volume_name, pvc_name, storage_class, clients, core_api, pod_make): # NOQA
-
     VOLUME_SIZE = str(DEFAULT_VOLUME_SIZE * Gi)
 
     for _, client in clients.iteritems():
         break
+
+    set_random_backupstore(client)
 
     pv_name = pvc_name
 
@@ -1166,24 +1167,13 @@ def test_storage_class_from_backup(volume_name, pvc_name, storage_class, clients
 
     wait_for_volume_detached(client, volume_name)
 
-    create_pv_for_volume(client,
-                         core_api,
-                         volume,
-                         pv_name)
+    create_pv_for_volume(client, core_api, volume, pv_name)
+    create_pvc_for_volume(client, core_api, volume, pvc_name)
 
-    create_pvc_for_volume(client,
-                          core_api,
-                          volume,
-                          pvc_name)
-
-    pvc_spec = create_pvc_spec(pvc_name)
-
-    pod = pod_make() # NOQA
-
-    pod['spec']['volumes'] = [pvc_spec]
-    pod_name = pod['metadata']['name']
-
-    create_and_wait_pod(core_api, pod)
+    pod_manifest = pod_make()
+    pod_manifest['spec']['volumes'] = [create_pvc_spec(pvc_name)]
+    pod_name = pod_manifest['metadata']['name']
+    create_and_wait_pod(core_api, pod_manifest)
 
     test_data = generate_random_data(VOLUME_RWTEST_SIZE)
     write_pod_volume_data(core_api, pod_name, test_data)
@@ -1254,22 +1244,22 @@ def test_storage_class_from_backup(volume_name, pvc_name, storage_class, clients
 
     volumes = client.list_volume()
 
+    found = False
     for volume in volumes:
         if volume.kubernetesStatus.pvcName == backup_pvc_name:
             backup_volume_name = volume.name
+            found = True
             break
+    assert found
 
-    wait_for_volume_healthy(client, backup_volume_name)
     wait_for_volume_restoration_completed(client, backup_volume_name)
     wait_for_volume_detached(client, backup_volume_name)
 
-    backup_pod_pvc_spec = create_pvc_spec(backup_pvc_name)
+    backup_pod_manifest = pod_make(name="backup-pod")
+    backup_pod_manifest['spec']['volumes'] = \
+        [create_pvc_spec(backup_pvc_name)]
+    backup_pod_name = backup_pod_manifest['metadata']['name']
+    create_and_wait_pod(core_api, backup_pod_manifest)
 
-    backup_pod = pod_make(name="backup-pod")
-
-    backup_pod['spec']['volumes'] = [backup_pod_pvc_spec]
-    backup_pod_name = backup_pod['metadata']['name']
-    create_and_wait_pod(core_api, backup_pod)
     restored_data = read_volume_data(core_api, backup_pod_name)
-
     assert test_data == restored_data
