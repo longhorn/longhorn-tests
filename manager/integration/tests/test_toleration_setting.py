@@ -127,6 +127,14 @@ def wait_for_toleration_update(core_api, apps_api, count, set_tolerations):  # N
             time.sleep(RETRY_INTERVAL_LONG)
             continue
 
+        client = get_longhorn_api_client()
+        images = client.list_engine_image()
+        assert len(images) == 1
+        if images[0]["state"] != "ready":
+            updated = False
+            time.sleep(RETRY_INTERVAL_LONG)
+            continue
+
         break
 
     assert updated
