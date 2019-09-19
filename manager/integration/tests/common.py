@@ -1722,6 +1722,7 @@ def monitor_restore_progress(client, volume_name):
     completed = 0
     rs = {}
     for i in range(RETRY_COUNTS):
+        completed = 0
         v = client.by_id_volume(volume_name)
         rs = v["restoreStatus"]
         for r in rs:
