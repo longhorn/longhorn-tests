@@ -70,19 +70,20 @@ def test_ha_backup_deletion_recovery(client, volume_name):  # NOQA
 
 
 @pytest.mark.baseimage  # NOQA
-def test_engine_offline_upgrade_with_base_image(client, volume_name):  # NOQA
-    engine_offline_upgrade_test(client, volume_name, BASE_IMAGE_EXT4)
+def test_engine_offline_upgrade_with_base_image(client, core_api, volume_name):  # NOQA
+    engine_offline_upgrade_test(client, core_api, volume_name, BASE_IMAGE_EXT4)
 
 
 @pytest.mark.coretest   # NOQA
 @pytest.mark.baseimage  # NOQA
-def test_engine_live_upgrade_with_base_image(client, volume_name):  # NOQA
-    engine_live_upgrade_test(client, volume_name, BASE_IMAGE_EXT4)
+def test_engine_live_upgrade_with_base_image(client, core_api, volume_name):  # NOQA
+    engine_live_upgrade_test(client, core_api, volume_name, BASE_IMAGE_EXT4)
 
 
 @pytest.mark.baseimage  # NOQA
-def test_engine_live_upgrade_rollback_with_base_image(client, volume_name):  # NOQA
-    engine_live_upgrade_rollback_test(client, volume_name, BASE_IMAGE_EXT4)
+def test_engine_live_upgrade_rollback_with_base_image(client, core_api, volume_name):  # NOQA
+    engine_live_upgrade_rollback_test(client, core_api,
+                                      volume_name, BASE_IMAGE_EXT4)
 
 
 @pytest.mark.baseimage  # NOQA

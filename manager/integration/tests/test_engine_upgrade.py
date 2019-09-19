@@ -1,17 +1,18 @@
 import pytest
 
 import common
-from common import client, volume_name  # NOQA
+from common import client, core_api, volume_name  # NOQA
 from common import SIZE
 from common import check_volume_data, get_self_host_id
 from common import wait_for_volume_current_image, wait_for_volume_delete
+from common import wait_for_engine_image_deletion
 from common import wait_for_engine_image_ref_count, wait_for_engine_image_state
 from common import get_volume_engine, write_volume_random_data
 
 REPLICA_COUNT = 2
 
 
-def test_engine_image(client, volume_name):  # NOQA
+def test_engine_image(client, core_api, volume_name):  # NOQA
     # can be leftover
     default_img = common.get_default_engine_image(client)
     default_img_name = default_img["name"]
@@ -68,14 +69,15 @@ def test_engine_image(client, volume_name):  # NOQA
     assert new_img["buildDate"] != ""
 
     client.delete(new_img)
+    wait_for_engine_image_deletion(client, core_api, new_img['name'])
 
 
 @pytest.mark.coretest   # NOQA
-def test_engine_offline_upgrade(client, volume_name):  # NOQA
-    engine_offline_upgrade_test(client, volume_name)
+def test_engine_offline_upgrade(client, core_api, volume_name):  # NOQA
+    engine_offline_upgrade_test(client, core_api, volume_name)
 
 
-def engine_offline_upgrade_test(client, volume_name, base_image=""):  # NOQA
+def engine_offline_upgrade_test(client, core_api, volume_name, base_image=""):  # NOQA
     default_img = common.get_default_engine_image(client)
     default_img_name = default_img["name"]
     default_img = wait_for_engine_image_ref_count(client, default_img_name, 0)
@@ -175,14 +177,15 @@ def engine_offline_upgrade_test(client, volume_name, base_image=""):  # NOQA
     wait_for_volume_delete(client, volume_name)
 
     client.delete(new_img)
+    wait_for_engine_image_deletion(client, core_api, new_img['name'])
 
 
 @pytest.mark.coretest   # NOQA
-def test_engine_live_upgrade(client, volume_name):  # NOQA
-    engine_live_upgrade_test(client, volume_name)
+def test_engine_live_upgrade(client, core_api, volume_name):  # NOQA
+    engine_live_upgrade_test(client, core_api, volume_name)
 
 
-def engine_live_upgrade_test(client, volume_name, base_image=""):  # NOQA
+def engine_live_upgrade_test(client, core_api, volume_name, base_image=""):  # NOQA
     default_img = common.get_default_engine_image(client)
     default_img_name = default_img["name"]
     default_img = wait_for_engine_image_ref_count(client, default_img_name, 0)
@@ -308,9 +311,10 @@ def engine_live_upgrade_test(client, volume_name, base_image=""):  # NOQA
     wait_for_volume_delete(client, volume_name)
 
     client.delete(new_img)
+    wait_for_engine_image_deletion(client, core_api, new_img['name'])
 
 
-def test_engine_image_incompatible(client, volume_name):  # NOQA
+def test_engine_image_incompatible(client, core_api, volume_name):  # NOQA
     images = client.list_engine_image()
     assert len(images) == 1
     assert images[0]["default"]
@@ -334,6 +338,7 @@ def test_engine_image_incompatible(client, volume_name):  # NOQA
     assert img["cliAPIVersion"] == cli_v - 1
     assert img["cliAPIMinVersion"] == cli_v - 1
     client.delete(img)
+    wait_for_engine_image_deletion(client, core_api, img['name'])
 
     fail_cli_minv_image = common.get_compatibility_test_image(
             cli_v + 1, cli_v + 1,
@@ -346,13 +351,14 @@ def test_engine_image_incompatible(client, volume_name):  # NOQA
     assert img["cliAPIVersion"] == cli_v + 1
     assert img["cliAPIMinVersion"] == cli_v + 1
     client.delete(img)
+    wait_for_engine_image_deletion(client, core_api, img['name'])
 
 
-def test_engine_live_upgrade_rollback(client, volume_name):  # NOQA
-    engine_live_upgrade_rollback_test(client, volume_name)
+def test_engine_live_upgrade_rollback(client, core_api, volume_name):  # NOQA
+    engine_live_upgrade_rollback_test(client, core_api, volume_name)
 
 
-def engine_live_upgrade_rollback_test(client, volume_name, base_image=""):  # NOQA
+def engine_live_upgrade_rollback_test(client, core_api, volume_name, base_image=""):  # NOQA
     default_img = common.get_default_engine_image(client)
     default_img_name = default_img["name"]
     default_img = wait_for_engine_image_ref_count(client, default_img_name, 0)
@@ -465,3 +471,4 @@ def engine_live_upgrade_rollback_test(client, volume_name, base_image=""):  # NO
     wait_for_volume_delete(client, volume_name)
 
     client.delete(new_img)
+    wait_for_engine_image_deletion(client, core_api, new_img['name'])
