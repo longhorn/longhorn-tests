@@ -2367,3 +2367,46 @@ def wait_delete_volume_attachment(storage_api, volume_attachment_name):
             break
         time.sleep(RETRY_INTERVAL)
     assert not found
+
+
+def wait_for_engine_image_deletion(client, core_api, engine_image_name):
+    deleted = False
+
+    for i in range(RETRY_COUNTS):
+        time.sleep(RETRY_INTERVAL)
+        deleted = True
+
+        ei_list = client.list_engine_image().data
+        for ei in ei_list:
+            if ei['name'] == engine_image_name:
+                deleted = False
+                break
+        if not deleted:
+            continue
+
+        labels = "longhorn.io/component=engine-image," \
+                 "longhorn.io/engine-image="+engine_image_name
+        ei_pod_list = core_api.list_namespaced_pod(
+            LONGHORN_NAMESPACE, label_selector=labels).items
+        if len(ei_pod_list) != 0:
+            deleted = False
+            continue
+
+        labels = "longhorn.io/component=instance-manager," \
+                 "longhorn.io/engine-image="+engine_image_name
+        im_pod_list = core_api.list_namespaced_pod(
+            LONGHORN_NAMESPACE, label_selector=labels).items
+        if len(im_pod_list) != 0:
+            deleted = False
+            continue
+
+        im_list = client.list_instance_manager().data
+        for im in im_list:
+            if im['engineImage'] == engine_image_name:
+                deleted = False
+                break
+        if not deleted:
+            continue
+        break
+
+    assert deleted
