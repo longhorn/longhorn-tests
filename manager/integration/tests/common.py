@@ -995,6 +995,7 @@ def cleanup_client(client):
     reset_node(client)
     reset_disks_for_all_nodes(client)
     reset_settings(client)
+    reset_engine_image(client)
 
 
 def get_client(address):
@@ -1889,6 +1890,27 @@ def reset_settings(client):
         print "Exception when update " \
               "storage over provisioning percentage settings", \
             over_provisioning_setting, e
+
+
+def reset_engine_image(client):
+    core_api = get_core_api_client
+    ready = False
+
+    for i in range(RETRY_COUNTS):
+        ready = True
+        ei_list = client.list_engine_image().data
+        for ei in ei_list:
+            if ei['default']:
+                if ei['state'] != 'ready':
+                    ready = False
+            else:
+                client.delete(ei)
+                wait_for_engine_image_deletion(ei['name'], core_api, client)
+        if ready:
+            break
+        time.sleep(RETRY_INTERVAL)
+
+    assert ready
 
 
 def wait_for_node_mountpropagation_condition(client, name):
