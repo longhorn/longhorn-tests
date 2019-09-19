@@ -10,6 +10,7 @@ from common import wait_for_engine_image_ref_count, wait_for_engine_image_state
 from common import get_volume_engine, write_volume_random_data
 
 REPLICA_COUNT = 2
+ENGINE_IMAGE_TEST_REPEAT_COUNT = 5
 
 
 def test_engine_image(client, core_api, volume_name):  # NOQA
@@ -53,23 +54,25 @@ def test_engine_image(client, core_api, volume_name):  # NOQA
                                                          ctl_v, ctl_minv,
                                                          data_v, data_minv)
 
-    new_img = client.create_engine_image(image=engine_upgrade_image)
-    new_img_name = new_img["name"]
-    new_img = wait_for_engine_image_state(client, new_img_name, "ready")
-    assert not new_img["default"]
-    assert new_img["state"] == "ready"
-    assert new_img["refCount"] == 0
-    assert new_img["cliAPIVersion"] != 0
-    assert new_img["cliAPIMinVersion"] != 0
-    assert new_img["controllerAPIVersion"] != 0
-    assert new_img["controllerAPIMinVersion"] != 0
-    assert new_img["dataFormatVersion"] != 0
-    assert new_img["dataFormatMinVersion"] != 0
-    assert new_img["gitCommit"] != ""
-    assert new_img["buildDate"] != ""
+    # test if engine image can be created and cleaned up successfully
+    for i in range(ENGINE_IMAGE_TEST_REPEAT_COUNT):
+        new_img = client.create_engine_image(image=engine_upgrade_image)
+        new_img_name = new_img["name"]
+        new_img = wait_for_engine_image_state(client, new_img_name, "ready")
+        assert not new_img["default"]
+        assert new_img["state"] == "ready"
+        assert new_img["refCount"] == 0
+        assert new_img["cliAPIVersion"] != 0
+        assert new_img["cliAPIMinVersion"] != 0
+        assert new_img["controllerAPIVersion"] != 0
+        assert new_img["controllerAPIMinVersion"] != 0
+        assert new_img["dataFormatVersion"] != 0
+        assert new_img["dataFormatMinVersion"] != 0
+        assert new_img["gitCommit"] != ""
+        assert new_img["buildDate"] != ""
 
-    client.delete(new_img)
-    wait_for_engine_image_deletion(client, core_api, new_img['name'])
+        client.delete(new_img)
+        wait_for_engine_image_deletion(client, core_api, new_img['name'])
 
 
 @pytest.mark.coretest   # NOQA
