@@ -1089,6 +1089,16 @@ def wait_for_volume_creation(client, name):
     assert found
 
 
+def wait_for_volume_endpoint(client, name):
+    for i in range(RETRY_COUNTS):
+        v = client.by_id_volume(name)
+        engine = get_volume_engine(v)
+        if engine["endpoint"] != "":
+            break
+        time.sleep(RETRY_INTERVAL)
+    return v
+
+
 def wait_for_volume_detached(client, name):
     return wait_for_volume_status(client, name,
                                   VOLUME_FIELD_STATE,
@@ -1099,9 +1109,10 @@ def wait_for_volume_healthy(client, name):
     wait_for_volume_status(client, name,
                            VOLUME_FIELD_STATE,
                            VOLUME_STATE_ATTACHED)
-    return wait_for_volume_status(client, name,
-                                  VOLUME_FIELD_ROBUSTNESS,
-                                  VOLUME_ROBUSTNESS_HEALTHY)
+    wait_for_volume_status(client, name,
+                           VOLUME_FIELD_ROBUSTNESS,
+                           VOLUME_ROBUSTNESS_HEALTHY)
+    return wait_for_volume_endpoint(client, name)
 
 
 def wait_for_volume_restoration_completed(client, name):
