@@ -86,6 +86,8 @@ SETTING_STORAGE_OVER_PROVISIONING_PERCENTAGE = \
     "storage-over-provisioning-percentage"
 SETTING_STORAGE_MINIMAL_AVAILABLE_PERCENTAGE = \
     "storage-minimal-available-percentage"
+SETTING_CREATE_DEFAULT_DISK_LABELED_NODES = "create-default-disk-labeled-nodes"
+SETTING_DEFAULT_DATA_PATH = "default-data-path"
 DEFAULT_DISK_PATH = "/var/lib/rancher/longhorn/"
 DEFAULT_STORAGE_OVER_PROVISIONING_PERCENTAGE = "500"
 DEFAULT_STORAGE_MINIMAL_AVAILABLE_PERCENTAGE = "10"
@@ -993,8 +995,8 @@ def cleanup_client(client):
 
     # enable nodes scheduling
     reset_node(client)
-    reset_disks_for_all_nodes(client)
     reset_settings(client)
+    reset_disks_for_all_nodes(client)
     reset_engine_image(client)
 
 
@@ -1902,6 +1904,26 @@ def reset_settings(client):
         print "Exception when update " \
               "storage over provisioning percentage settings", \
             over_provisioning_setting, e
+
+    default_data_path_setting = client.by_id_setting(
+        SETTING_DEFAULT_DATA_PATH)
+    try:
+        client.update(default_data_path_setting,
+                      value=DEFAULT_DISK_PATH)
+    except Exception as e:
+        print "Exception when update " \
+              "default data path setting", \
+            default_data_path_setting, e
+
+    create_default_disk_labeled_nodes_setting = client.by_id_setting(
+        SETTING_CREATE_DEFAULT_DISK_LABELED_NODES)
+    try:
+        client.update(create_default_disk_labeled_nodes_setting,
+                      value="false")
+    except Exception as e:
+        print "Exception when update " \
+              "create default disk labeled nodes setting", \
+            create_default_disk_labeled_nodes_setting, e
 
 
 def reset_engine_image(client):
