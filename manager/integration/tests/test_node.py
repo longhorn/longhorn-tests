@@ -14,6 +14,8 @@ from common import get_core_api_client, get_longhorn_api_client, \
     get_self_host_id
 from common import SETTING_STORAGE_OVER_PROVISIONING_PERCENTAGE, \
     SETTING_STORAGE_MINIMAL_AVAILABLE_PERCENTAGE, \
+    SETTING_DEFAULT_DATA_PATH, \
+    SETTING_CREATE_DEFAULT_DISK_LABELED_NODES, \
     DEFAULT_STORAGE_OVER_PROVISIONING_PERCENTAGE
 from common import get_volume_endpoint
 from common import get_update_disks
@@ -22,8 +24,6 @@ from common import wait_for_disk_status, wait_for_disk_update, \
 from common import exec_nsenter
 
 CREATE_DEFAULT_DISK_LABEL = "node.longhorn.io/create-default-disk"
-CREATE_DEFAULT_DISK_SETTING = "create-default-disk-labeled-nodes"
-DEFAULT_DATA_PATH_SETTING = "default-data-path"
 SMALL_DISK_SIZE = (1 * 1024 * 1024)
 TEST_FILE = 'test'
 
@@ -54,9 +54,9 @@ def reset_default_disk_label():
 def reset_disk_settings():
     yield
     api = get_longhorn_api_client()
-    setting = api.by_id_setting(CREATE_DEFAULT_DISK_SETTING)
+    setting = api.by_id_setting(SETTING_CREATE_DEFAULT_DISK_LABELED_NODES)
     api.update(setting, value="false")
-    setting = api.by_id_setting(DEFAULT_DATA_PATH_SETTING)
+    setting = api.by_id_setting(SETTING_DEFAULT_DATA_PATH)
     api.update(setting, value=DEFAULT_DISK_PATH)
 
 
@@ -1146,9 +1146,9 @@ def test_node_default_disk_labeled(client, core_api, random_disk_path,  reset_de
     wait_for_disk_update(client, node["id"], 0)
 
     # Set disk creation and path Settings.
-    setting = client.by_id_setting(DEFAULT_DATA_PATH_SETTING)
+    setting = client.by_id_setting(SETTING_DEFAULT_DATA_PATH)
     client.update(setting, value=random_disk_path)
-    setting = client.by_id_setting(CREATE_DEFAULT_DISK_SETTING)
+    setting = client.by_id_setting(SETTING_CREATE_DEFAULT_DISK_LABELED_NODES)
     client.update(setting, value="true")
     wait_for_disk_update(client, cases["labeled"], 1)
 
