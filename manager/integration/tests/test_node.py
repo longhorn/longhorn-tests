@@ -1165,6 +1165,8 @@ def test_node_default_disk_labeled(client, core_api, random_disk_path,  reset_de
 
     # Remove the Disk from the Node used for this test case so we can have the
     # fixtures clean up after.
+    setting = client.by_id_setting(SETTING_CREATE_DEFAULT_DISK_LABELED_NODES)
+    client.update(setting, value="false")
     disks = node["disks"]
     for _, disk in disks.iteritems():
         disk["allowScheduling"] = False
