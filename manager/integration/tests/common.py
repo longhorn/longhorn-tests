@@ -1326,16 +1326,21 @@ def wait_for_snapshot_purge(client, volume_name, *snaps):
     assert completed == len(purge_status)
 
     # Now that the purge has been reported to be completed, the Snapshots
-    # should be gone.
+    # should should be removed or "marked as removed" in the case of
+    # the latest snapshot.
     found = False
     snapshots = v.snapshotList(volume=volume_name)
-    snap_list = []
-    for snap in snapshots:
-        snap_list.append(snap.name)
+
     for snap in snaps:
-        if snap in snap_list:
-            found = True
-            break
+        for vs in snapshots.data:
+            if snap == vs["name"]:
+                if vs["removed"] is False:
+                    found = True
+                    break
+
+                if "volume-head" not in vs["children"]:
+                    found = True
+                    break
     assert not found
     return v
 
