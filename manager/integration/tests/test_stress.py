@@ -76,7 +76,7 @@ STRESS_DEST_DIR = '/data/'
 VOLUME_SIZE = str(2 * Gi)
 TEST_DATA_BYTES = 1 * Gi
 
-READ_MD5SUM_TIMEOUT = 60
+READ_MD5SUM_TIMEOUT = 120
 
 
 class snapshot_data:
