@@ -10,6 +10,7 @@ from common import create_and_check_volume
 from common import create_and_wait_pod
 from common import create_pvc_for_volume
 from common import create_pv_for_volume
+from common import create_snapshot
 from common import delete_and_wait_longhorn
 from common import delete_and_wait_pod
 from common import delete_and_wait_pv
@@ -108,19 +109,6 @@ def delete_data(k8s_api_client, pod_name):
                                    filename=file_name)
 
     assert volume_data == ""
-
-
-def create_snapshot(longhorn_api_client, volume_name):
-    volume = longhorn_api_client.by_id_volume(volume_name)
-
-    snapshots = volume.snapshotList(volume=volume_name)
-    snapshots_count = len(snapshots.data)
-
-    volume.snapshotCreate()
-
-    snapshots = volume.snapshotList(volume=volume_name)
-
-    assert len(snapshots) == snapshots_count + 1
 
 
 def purge_random_snapshot(longhorn_api_client, volume_name, snapshot_name):
