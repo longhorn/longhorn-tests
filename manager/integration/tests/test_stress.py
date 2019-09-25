@@ -45,6 +45,11 @@ STRESS_PVC_NAME_PREFIX = "stress-test-pvc-"
 STRESS_PV_NAME_PREFIX = "stress-test-pv-"
 STRESS_VOLUME_NAME_PREFIX = "stress-test-volume-"
 
+
+STRESS_RANDOM_DATA_DIR = "/tmp/"
+STRESS_DATAFILE_NAME_PREFIX = "data-"
+STRESS_DATAFILE_NAME_SUFFIX = ".bin"
+
 VOLUME_SIZE = str(2 * Gi)
 TEST_DATA_BYTES = 1 * Gi
 
@@ -65,9 +70,9 @@ def get_md5sum(file_path):
 
 
 def write_data(k8s_api_client, pod_name):
-    src_dir_path = '/tmp/'
+    src_dir_path = STRESS_RANDOM_DATA_DIR
     dest_dir_path = '/data/'
-    file_name = 'data-' + pod_name + '.bin'
+    file_name = get_data_filename(pod_name)
 
     src_file_path = src_dir_path + file_name
     dest_file_path = dest_dir_path + file_name
@@ -148,6 +153,18 @@ def delete_random_snapshot(longhorn_api_client, volume_name):
         purge_random_snapshot(longhorn_api_client, volume_name, snapshot_name)
 
 
+def get_data_filename(pod_name):
+    return STRESS_DATAFILE_NAME_PREFIX + pod_name + STRESS_DATAFILE_NAME_SUFFIX
+
+
+def remove_datafile(pod_name):
+    file_path = os.path.join(STRESS_RANDOM_DATA_DIR,
+                             get_data_filename(pod_name))
+
+    if os.path.exists(file_path):
+        os.remove(file_path)
+
+
 @pytest.mark.stress
 def test_stress(generate_load):
     pass
@@ -166,6 +183,7 @@ def generate_load(request):
     pvc_name = STRESS_PVC_NAME_PREFIX + index
     pod_name = STRESS_POD_NAME_PREFIX + index
 
+    atexit.register(remove_datafile, pod_name)
     atexit.register(delete_and_wait_longhorn, longhorn_api_client, volume_name)
     atexit.register(delete_and_wait_pv, k8s_api_client, pv_name)
     atexit.register(delete_and_wait_pvc, k8s_api_client, pvc_name)
