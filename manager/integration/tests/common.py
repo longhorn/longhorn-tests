@@ -2467,3 +2467,25 @@ def wait_for_engine_image_deletion(client, core_api, engine_image_name):
         break
 
     assert deleted
+
+
+def create_snapshot(longhorn_api_client, volume_name):
+    volume = longhorn_api_client.by_id_volume(volume_name)
+    snapshots = volume.snapshotList(volume=volume_name)
+    snap = volume.snapshotCreate()
+    snap_name = snap['name']
+
+    snapshot_created = False
+    for i in range(RETRY_COUNTS):
+        snapshots = volume.snapshotList(volume=volume_name)
+
+        for vs in snapshots.data:
+            if vs['name'] == snap_name:
+                snapshot_created = True
+                break
+        if snapshot_created is True:
+            break
+        time.sleep(RETRY_INTERVAL)
+
+    assert snapshot_created
+    return snap
