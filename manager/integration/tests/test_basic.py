@@ -40,6 +40,7 @@ from common import pvc_name # NOQA
 from common import storage_class # NOQA
 from common import pod_make # NOQA
 from common import set_random_backupstore
+from common import create_snapshot
 
 
 @pytest.mark.coretest   # NOQA
@@ -291,13 +292,13 @@ def snapshot_test(clients, volume_name, base_image):  # NOQA
     volume = client.by_id_volume(volume_name)
     positions = {}
 
-    snap1 = volume.snapshotCreate()
+    snap1 = create_snapshot(client, volume_name)
 
     snap2_data = write_volume_random_data(volume, positions)
-    snap2 = volume.snapshotCreate()
+    snap2 = create_snapshot(client, volume_name)
 
     snap3_data = write_volume_random_data(volume, positions)
-    snap3 = volume.snapshotCreate()
+    snap3 = create_snapshot(client, volume_name)
 
     snapshots = volume.snapshotList()
     snapMap = {}
@@ -1113,10 +1114,10 @@ def test_attach_without_frontend(clients, volume_name):  # NOQA
     assert volume["frontend"] == "blockdev"
 
     snap1_data = write_volume_random_data(volume)
-    snap1 = volume.snapshotCreate()
+    snap1 = create_snapshot(client, volume_name)
 
     write_volume_random_data(volume)
-    volume.snapshotCreate()
+    create_snapshot(client, volume_name)
 
     volume.detach()
     volume = common.wait_for_volume_detached(client, volume_name)

@@ -9,6 +9,7 @@ from common import delete_replica_processes
 from common import get_self_host_id, get_volume_endpoint
 from common import wait_for_snapshot_purge, write_volume_random_data
 from common import RETRY_COUNTS, RETRY_INTERVAL
+from common import create_snapshot
 
 
 @pytest.mark.coretest   # NOQA
@@ -152,8 +153,8 @@ def ha_backup_deletion_recovery_test(client, volume_name, size, base_image=""): 
             assert credential["value"] == ""
 
         data = write_volume_random_data(volume)
-        snap2 = volume.snapshotCreate()
-        volume.snapshotCreate()
+        snap2 = create_snapshot(client, volume_name)
+        create_snapshot(client, volume_name)
 
         volume.snapshotBackup(name=snap2["name"])
 
@@ -179,7 +180,7 @@ def ha_backup_deletion_recovery_test(client, volume_name, size, base_image=""): 
                 backup_snapshot = snap["name"]
         assert backup_snapshot != ""
 
-        res_volume.snapshotCreate()
+        create_snapshot(client, res_name)
         snapshots = res_volume.snapshotList()
         assert len(snapshots) == 3
 
