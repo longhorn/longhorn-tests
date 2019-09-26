@@ -22,6 +22,7 @@ from common import wait_volume_kubernetes_status, \
 from common import RETRY_COUNTS, RETRY_INTERVAL
 from common import SIZE
 from common import KUBERNETES_STATUS_LABEL, SETTING_DEFAULT_LONGHORN_STATIC_SC
+from common import DEFAULT_LONGHORN_STATIC_STORAGECLASS_NAME
 
 from kubernetes import client as k8sclient
 from kubernetes.client.rest import ApiException
@@ -203,10 +204,14 @@ def test_kubernetes_status(client, core_api, storage_class,  # NOQA
 
         csi_pv['metadata']['name'] = p['pv_name']
         csi_pv['spec']['csi']['volumeHandle'] = volume_name
+        csi_pv['spec']['storageClassName'] = \
+            DEFAULT_LONGHORN_STATIC_STORAGECLASS_NAME
         core_api.create_persistent_volume(csi_pv)
 
         pvc['metadata']['name'] = p['pvc_name']
         pvc['spec']['volumeName'] = p['pv_name']
+        pvc['spec']['storageClassName'] = \
+            DEFAULT_LONGHORN_STATIC_STORAGECLASS_NAME
         core_api.create_namespaced_persistent_volume_claim(
             body=pvc, namespace='default')
 
