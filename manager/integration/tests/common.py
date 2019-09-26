@@ -179,13 +179,13 @@ def cleanup_volume(client, volume):
 
 def create_backup(client, volname, data={}, labels={}):
     volume = client.by_id_volume(volname)
-    volume.snapshotCreate()
+    create_snapshot(client, volname)
     if not data:
         data = write_volume_random_data(volume)
     else:
         data = write_volume_data(volume, data)
-    snap = volume.snapshotCreate()
-    volume.snapshotCreate()
+    snap = create_snapshot(client, volname)
+    create_snapshot(client, volname)
     volume.snapshotBackup(name=snap["name"], labels=labels)
 
     bv, b = find_backup(client, volname, snap["name"])

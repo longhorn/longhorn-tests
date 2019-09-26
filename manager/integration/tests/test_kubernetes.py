@@ -23,6 +23,7 @@ from common import RETRY_COUNTS, RETRY_INTERVAL
 from common import SIZE
 from common import KUBERNETES_STATUS_LABEL, SETTING_DEFAULT_LONGHORN_STATIC_SC
 from common import DEFAULT_LONGHORN_STATIC_STORAGECLASS_NAME
+from common import create_snapshot
 
 from kubernetes import client as k8sclient
 from kubernetes.client.rest import ApiException
@@ -432,7 +433,7 @@ def test_backup_kubernetes_status(client, core_api, pod):  # NOQA
 
     # Create Backup manually instead of calling create_backup since Kubernetes
     # is not guaranteed to mount our Volume to the test host.
-    snap = volume.snapshotCreate()
+    snap = create_snapshot(client, volume_name)
     volume.snapshotBackup(name=snap["name"])
     bv, b = find_backup(client, volume_name, snap["name"])
     new_b = bv.backupGet(name=b["name"])
@@ -499,7 +500,7 @@ def test_backup_kubernetes_status(client, core_api, pod):  # NOQA
     volume.attach(hostId=host_id)
     volume = wait_for_volume_healthy(client, volume_name)
 
-    snap = volume.snapshotCreate()
+    snap = create_snapshot(client, volume_name)
     volume.snapshotBackup(name=snap["name"])
     bv, b = find_backup(client, volume_name, snap["name"])
     new_b = bv.backupGet(name=b["name"])

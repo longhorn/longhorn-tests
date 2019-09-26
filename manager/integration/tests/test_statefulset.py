@@ -14,6 +14,7 @@ from common import wait_for_volume_detached, write_pod_volume_data
 from common import check_csi
 from common import create_and_wait_statefulset, wait_statefulset
 from common import update_statefulset_manifests, create_storage_class
+from common import create_snapshot
 
 from kubernetes import client as k8sclient
 
@@ -40,11 +41,12 @@ def create_and_test_backups(api, cli, pod_info):
         pod['backup_snapshot'] = ''
 
         # Create backup.
+        volume_name = pod['pv_name']
         volume = cli.by_id_volume(pod['pv_name'])
-        volume.snapshotCreate()
+        create_snapshot(cli, volume_name)
         write_pod_volume_data(api, pod['pod_name'], pod['data'])
-        pod['backup_snapshot'] = volume.snapshotCreate()
-        volume.snapshotCreate()
+        pod['backup_snapshot'] = create_snapshot(cli, volume_name)
+        create_snapshot(cli, volume_name)
         volume.snapshotBackup(name=pod['backup_snapshot']['name'])
 
         # Wait for backup to appear.
