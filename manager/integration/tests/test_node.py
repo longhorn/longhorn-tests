@@ -16,12 +16,14 @@ from common import SETTING_STORAGE_OVER_PROVISIONING_PERCENTAGE, \
     SETTING_STORAGE_MINIMAL_AVAILABLE_PERCENTAGE, \
     SETTING_DEFAULT_DATA_PATH, \
     SETTING_CREATE_DEFAULT_DISK_LABELED_NODES, \
-    DEFAULT_STORAGE_OVER_PROVISIONING_PERCENTAGE
+    DEFAULT_STORAGE_OVER_PROVISIONING_PERCENTAGE, \
+    DEFAULT_REPLICA_DIRECTORY
 from common import get_volume_endpoint
 from common import get_update_disks
 from common import wait_for_disk_status, wait_for_disk_update, \
     wait_for_disk_conditions
 from common import exec_nsenter
+from common import wait_for_replica_directory
 
 CREATE_DEFAULT_DISK_LABEL = "node.longhorn.io/create-default-disk"
 SMALL_DISK_SIZE = (1 * 1024 * 1024)
@@ -1177,3 +1179,9 @@ def test_node_default_disk_labeled(client, core_api, random_disk_path,  reset_de
 
     node = client.by_id_node(cases["unlabeled"])
     assert len(node["disks"]) == 0
+
+
+@pytest.mark.node  # NOQA
+def test_disk_path_replica_subdirectory(client):  # NOQA
+    subprocess.check_call(['rm', '-rf', DEFAULT_REPLICA_DIRECTORY])
+    wait_for_replica_directory()
