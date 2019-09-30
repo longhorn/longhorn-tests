@@ -74,6 +74,9 @@ spec:
     - name: disk-directory
       mountPath: /tmp/longhorn-test
       mountPropagation: Bidirectional
+    - name: longhorn
+      mountPath: /var/lib/rancher/longhorn/
+      mountPropagation: Bidirectional
   volumes:
   - name: dev
     hostPath:
@@ -84,5 +87,8 @@ spec:
   - name: disk-directory
     hostPath:
       path: /tmp/longhorn-test/
+  - name: longhorn
+    hostPath:
+      path: /var/lib/rancher/longhorn/
   restartPolicy: Never
   serviceAccountName: longhorn-test-service-account
