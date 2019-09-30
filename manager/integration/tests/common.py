@@ -93,6 +93,8 @@ DEFAULT_STORAGE_OVER_PROVISIONING_PERCENTAGE = "500"
 DEFAULT_STORAGE_MINIMAL_AVAILABLE_PERCENTAGE = "10"
 DEFAULT_LONGHORN_STATIC_STORAGECLASS_NAME = "longhorn-static"
 
+DEFAULT_REPLICA_DIRECTORY = os.path.join(DEFAULT_DISK_PATH, "replicas/")
+
 NODE_CONDITION_MOUNTPROPAGATION = "MountPropagation"
 DISK_CONDITION_SCHEDULABLE = "Schedulable"
 DISK_CONDITION_READY = "Ready"
@@ -1000,6 +1002,11 @@ def cleanup_client(client):
     reset_disks_for_all_nodes(client)
     reset_engine_image(client)
 
+    # check replica subdirectory of default disk path
+    if not os.path.exists(DEFAULT_REPLICA_DIRECTORY):
+        subprocess.check_call(
+            ["mkdir", "-p", DEFAULT_REPLICA_DIRECTORY])
+
 
 def get_client(address):
     url = 'http://' + address + '/v1/schemas'
@@ -1077,6 +1084,16 @@ def wait_for_device_login(dest_path, name):
         time.sleep(RETRY_INTERVAL)
     assert dev == name
     return dev
+
+
+def wait_for_replica_directory():
+    found = False
+    for i in range(RETRY_COUNTS):
+        if os.path.exists(DEFAULT_REPLICA_DIRECTORY):
+            found = True
+            break
+        time.sleep(RETRY_INTERVAL)
+    assert found
 
 
 def wait_for_volume_creation(client, name):
