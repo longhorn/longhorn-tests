@@ -16,6 +16,7 @@ from common import BASE_IMAGE_LABEL, KUBERNETES_STATUS_LABEL, SIZE
 
 RECURRING_JOB_LABEL = "RecurringJob"
 RECURRING_JOB_NAME = "backup"
+MAX_BACKUP_STATUS_SIZE = 5
 
 
 def create_jobs1():
@@ -73,6 +74,19 @@ def test_recurring_job(clients, volume_name):  # NOQA
             count += 1
     # 2 from job_snap, 1 from job_backup, 2 from job_backup2, 1 volume-head
     assert count == 6
+
+    complete_backup_number = 0
+    in_progress_backup_number = 0
+    volume = client.by_id_volume(volume_name)
+    for b in volume['backupStatus']:
+        assert b['error'] == ""
+        if b['state'] == "complete":
+            complete_backup_number += 1
+        elif b['state'] == "in_progress":
+            in_progress_backup_number += 1
+    assert complete_backup_number <= MAX_BACKUP_STATUS_SIZE
+    # 1 from job_backup, 1 from job_backup2
+    assert in_progress_backup_number <= 2
 
     volume = volume.detach()
 
