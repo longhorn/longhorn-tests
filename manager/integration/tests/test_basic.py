@@ -41,6 +41,7 @@ from common import storage_class # NOQA
 from common import pod_make # NOQA
 from common import set_random_backupstore
 from common import create_snapshot
+from common import wait_for_dr_volume_healthy
 
 
 @pytest.mark.coretest   # NOQA
@@ -622,9 +623,9 @@ def restore_inc_test(client, core_api, volume_name, pod):  # NOQA
     common.wait_for_volume_restoration_completed(client, sb_volume1_name)
     common.wait_for_volume_restoration_completed(client, sb_volume2_name)
 
-    sb_volume0 = common.wait_for_volume_healthy(client, sb_volume0_name)
-    sb_volume1 = common.wait_for_volume_healthy(client, sb_volume1_name)
-    sb_volume2 = common.wait_for_volume_healthy(client, sb_volume2_name)
+    sb_volume0 = wait_for_dr_volume_healthy(client, sb_volume0_name)
+    sb_volume1 = wait_for_dr_volume_healthy(client, sb_volume1_name)
+    sb_volume2 = wait_for_dr_volume_healthy(client, sb_volume2_name)
 
     for i in range(RETRY_COUNTS):
         sb_volume0 = client.by_id_volume(sb_volume0_name)
