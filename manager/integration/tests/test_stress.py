@@ -5,6 +5,7 @@ import pytest
 import subprocess
 import random
 import string
+import time
 
 from common import create_and_check_volume
 from common import create_and_wait_pod
@@ -20,12 +21,14 @@ from common import generate_pod_with_pvc_manifest
 from common import generate_random_data
 from common import get_core_api_client
 from common import get_longhorn_api_client
+from common import get_self_host_id
 from common import get_storage_api_client
 from common import Gi
 from common import read_volume_data
 from common import wait_for_snapshot_purge
 from common import wait_for_volume_detached
 from common import write_pod_volume_data
+from common import wait_for_volume_healthy
 from kubernetes.stream import stream
 from random import randrange
 
@@ -49,11 +52,12 @@ STRESS_VOLUME_NAME_PREFIX = "stress-test-volume-"
 STRESS_RANDOM_DATA_DIR = "/tmp/"
 STRESS_DATAFILE_NAME_PREFIX = "data-"
 STRESS_DATAFILE_NAME_SUFFIX = ".bin"
+STRESS_DEST_DIR = '/data/'
 
 VOLUME_SIZE = str(2 * Gi)
 TEST_DATA_BYTES = 1 * Gi
 
-READ_MD5SUM_TIMEOUT = 60
+READ_MD5SUM_TIMEOUT = 90
 
 
 def get_random_suffix():
@@ -69,21 +73,67 @@ def get_md5sum(file_path):
     return hash_md5.hexdigest()
 
 
-def write_data(k8s_api_client, pod_name):
-    src_dir_path = STRESS_RANDOM_DATA_DIR
-    dest_dir_path = '/data/'
+def revert_random_snapshot(client, core_api, volume_name, pod_manifest, snapshots_md5sum): # NOQA
+    volume = client.by_id_volume(volume_name)
+    host_id = get_self_host_id()
+    pod_name = pod_manifest["metadata"]["name"]
+    snapshots = volume.snapshotList(volume=volume_name)
+    snapshots_count = len(snapshots.data)
+
+    while True:
+        snapshot_id = randrange(0, snapshots_count)
+
+        if snapshots.data[snapshot_id].name == "volume-head":
+            continue
+        else:
+            break
+    snapshot_name = snapshots.data[snapshot_id].name
+
+    delete_and_wait_pod(core_api, pod_name)
+    wait_for_volume_detached(client, volume_name)
+
+    # wait for one second before trying to attach volume again
+    time.sleep(1)
+
+    volume = client.by_id_volume(volume_name)
+
+    volume.attach(hostId=host_id, disableFrontend=True)
+
+    wait_for_volume_healthy(client, volume_name)
+
+    volume = client.by_id_volume(volume_name)
+
+    volume.snapshotRevert(name=snapshot_name)
+
+    volume = client.by_id_volume(volume_name)
+
+    volume.detach()
+
+    wait_for_volume_detached(client, volume_name)
+    create_and_wait_pod(core_api, pod_manifest)
+
+    current_md5sum = read_data_md5sum(core_api, pod_name)
+
+    checksum_ok = False
+    for snap_data in snapshots_md5sum:
+        if snap_data["snap_name"] == snapshot_name:
+            if snap_data["md5sum"] == current_md5sum:
+                checksum_ok = True
+                break
+
+    assert checksum_ok
+
+def snapshot_create_and_record_md5sum(client, core_api, volume_name, pod_name, snapshots_md5sum): # NOQA
+    data_md5sum = read_data_md5sum(core_api, pod_name)
+    snap = create_snapshot(client, volume_name)
+
+    snapshots_md5sum.append({"snap_name": snap["name"],
+                             "md5sum": data_md5sum})
+
+
+def read_data_md5sum(k8s_api_client, pod_name):
     file_name = get_data_filename(pod_name)
-
-    src_file_path = src_dir_path + file_name
-    dest_file_path = dest_dir_path + file_name
-
-    src_file = open('%s' % src_file_path, 'wb')
-    src_file.write(os.urandom(TEST_DATA_BYTES))
-    src_file.close()
-    src_file_md5sum = get_md5sum(src_file_path)
-    command = 'kubectl cp ' + src_file_path + \
-              ' ' + pod_name + ':' + dest_file_path
-    subprocess.call(command, shell=True)
+    dest_file_path = os.path.join(STRESS_DEST_DIR, file_name)
 
     exec_command = exec_command = ['/bin/sh']
     resp = stream(k8s_api_client.connect_get_namespaced_pod_exec,
@@ -96,6 +146,25 @@ def write_data(k8s_api_client, pod_name):
 
     resp.write_stdin("md5sum " + dest_file_path + "\n")
     res = resp.readline_stdout(timeout=READ_MD5SUM_TIMEOUT).split()[0]
+
+    return res
+
+
+def write_data(k8s_api_client, pod_name):
+    file_name = get_data_filename(pod_name)
+
+    src_file_path = os.path.join(STRESS_RANDOM_DATA_DIR, file_name)
+    dest_file_path = os.path.join(STRESS_DEST_DIR, file_name)
+
+    src_file = open('%s' % src_file_path, 'wb')
+    src_file.write(os.urandom(TEST_DATA_BYTES))
+    src_file.close()
+    src_file_md5sum = get_md5sum(src_file_path)
+    command = 'kubectl cp ' + src_file_path + \
+              ' ' + pod_name + ':' + dest_file_path
+    subprocess.call(command, shell=True)
+
+    res = read_data_md5sum(k8s_api_client, pod_name)
 
     assert res == src_file_md5sum
 
@@ -211,27 +280,64 @@ def generate_load(request):
 
     create_and_wait_pod(k8s_api_client, pod_manifest)
 
+    snapshots_md5sum = list()
+
     write_data(k8s_api_client, pod_name)
-    create_snapshot(longhorn_api_client, volume_name)
+
+    snapshot_create_and_record_md5sum(longhorn_api_client,
+                                      k8s_api_client,
+                                      volume_name,
+                                      pod_name,
+                                      snapshots_md5sum)
+
     write_data(k8s_api_client, pod_name)
-    create_snapshot(longhorn_api_client, volume_name)
+
+    snapshot_create_and_record_md5sum(longhorn_api_client,
+                                      k8s_api_client,
+                                      volume_name,
+                                      pod_name,
+                                      snapshots_md5sum)
+
+    write_data(k8s_api_client, pod_name)
+
+    snapshot_create_and_record_md5sum(longhorn_api_client,
+                                      k8s_api_client,
+                                      volume_name,
+                                      pod_name,
+                                      snapshots_md5sum)
+
+    revert_random_snapshot(longhorn_api_client,
+                           k8s_api_client,
+                           volume_name,
+                           pod_manifest,
+                           snapshots_md5sum)
+
     delete_data(k8s_api_client, pod_name)
-    create_snapshot(longhorn_api_client, volume_name)
 
     delete_random_snapshot(longhorn_api_client, volume_name)
 
-    # execute 3 more random actions
-    for round in range(3):
-        action = randrange(0, 4)
+    # execute 5 more random actions
+    for round in range(5):
+        action = randrange(0, 5)
 
         if action == 0:
             write_data(k8s_api_client, pod_name)
         elif action == 1:
             delete_data(k8s_api_client, pod_name)
         elif action == 2:
-            create_snapshot(longhorn_api_client, volume_name)
+            snapshot_create_and_record_md5sum(longhorn_api_client,
+                                              k8s_api_client,
+                                              volume_name,
+                                              pod_name,
+                                              snapshots_md5sum)
         elif action == 3:
             delete_random_snapshot(longhorn_api_client, volume_name)
+        elif action == 4:
+            revert_random_snapshot(longhorn_api_client,
+                                   k8s_api_client,
+                                   volume_name,
+                                   pod_manifest,
+                                   snapshots_md5sum)
 
 
 @pytest.mark.stress
