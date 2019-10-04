@@ -5,7 +5,7 @@ import time
 from common import client, core_api, volume_name  # NOQA
 from common import SIZE, DEV_PATH
 from common import check_volume_data, cleanup_volume, create_and_check_volume
-from common import delete_replica_processes
+from common import delete_replica_processes, crash_replica_processes
 from common import get_self_host_id, get_volume_endpoint
 from common import wait_for_snapshot_purge, write_volume_random_data
 from common import RETRY_COUNTS, RETRY_INTERVAL
@@ -82,6 +82,7 @@ def test_ha_salvage(client, core_api, volume_name):  # NOQA
 
 def ha_salvage_test(client, core_api,  # NOQA
                     volume_name, base_image=""):  # NOQA
+    # case: replica processes are wrongly removed
     volume = create_and_check_volume(client, volume_name, 2,
                                      base_image=base_image)
 
@@ -110,6 +111,39 @@ def ha_salvage_test(client, core_api,  # NOQA
     assert volume["replicas"][1]["failedAt"] == ""
 
     volume = volume.attach(hostId=host_id)
+    volume = common.wait_for_volume_healthy(client, volume_name)
+
+    check_volume_data(volume, data)
+
+    cleanup_volume(client, volume)
+
+    # case: replica processes get crashed
+    volume = create_and_check_volume(client, volume_name, 2,
+                                     base_image=base_image)
+    volume.attach(hostId=host_id)
+    volume = common.wait_for_volume_healthy(client, volume_name)
+
+    assert len(volume["replicas"]) == 2
+    replica0_name = volume["replicas"][0]["name"]
+    replica1_name = volume["replicas"][1]["name"]
+
+    data = write_volume_random_data(volume)
+
+    crash_replica_processes(client, core_api, volume_name)
+
+    volume = common.wait_for_volume_faulted(client, volume_name)
+    assert len(volume["replicas"]) == 2
+    assert volume["replicas"][0]["failedAt"] != ""
+    assert volume["replicas"][1]["failedAt"] != ""
+
+    volume.salvage(names=[replica0_name, replica1_name])
+
+    volume = common.wait_for_volume_detached(client, volume_name)
+    assert len(volume["replicas"]) == 2
+    assert volume["replicas"][0]["failedAt"] == ""
+    assert volume["replicas"][1]["failedAt"] == ""
+
+    volume.attach(hostId=host_id)
     volume = common.wait_for_volume_healthy(client, volume_name)
 
     check_volume_data(volume, data)

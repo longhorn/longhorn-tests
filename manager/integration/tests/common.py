@@ -1350,6 +1350,48 @@ def delete_replica_processes(client, api, volname):
             assert deleted
 
 
+def crash_replica_processes(client, api, volname):
+    volume = client.by_id_volume(volname)
+    for r in volume["replicas"]:
+        kill_command = [
+            '/bin/sh', '-c',
+            "kill `ps aux | grep '" + r['dataPath'] +
+            "' | grep -v grep | awk '{print $2}'`"
+        ]
+        with timeout(seconds=STREAM_EXEC_TIMEOUT,
+                     error_message='Timeout on executing stream read'):
+            stream(api.connect_get_namespaced_pod_exec,
+                   r["instanceManagerName"],
+                   LONGHORN_NAMESPACE, command=kill_command,
+                   stderr=True, stdin=False, stdout=True, tty=False)
+
+    for r in volume["replicas"]:
+        wait_for_replica_failed(client, volname, r['name'])
+
+
+def wait_for_replica_failed(client, volname, replica_name):
+    failed = True
+    for i in range(RETRY_COUNTS):
+        time.sleep(RETRY_INTERVAL)
+        failed = True
+        volume = client.by_id_volume(volname)
+        for r in volume["replicas"]:
+            if r['name'] != replica_name:
+                continue
+            if r['running'] or r['failedAt'] == "":
+                failed = False
+                break
+            if r["instanceManagerName"] != "":
+                im = client.by_id_instance_manager(
+                    r["instanceManagerName"])
+                if r['name'] in im['instances']:
+                    failed = False
+                    break
+        if failed:
+            break
+    assert failed
+
+
 @pytest.fixture
 def volume_name(request):
     return generate_volume_name()
