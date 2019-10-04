@@ -1116,6 +1116,7 @@ def wait_for_volume_endpoint(client, name):
         if engine["endpoint"] != "":
             break
         time.sleep(RETRY_INTERVAL)
+    assert engine["endpoint"] != ""
     return v
 
 
