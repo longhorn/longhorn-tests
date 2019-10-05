@@ -1136,7 +1136,7 @@ def wait_for_volume_healthy(client, name):
     return wait_for_volume_endpoint(client, name)
 
 
-def wait_for_dr_volume_healthy(client, name):
+def wait_for_volume_healthy_no_frontend(client, name):
     wait_for_volume_status(client, name,
                            VOLUME_FIELD_STATE,
                            VOLUME_STATE_ATTACHED)
