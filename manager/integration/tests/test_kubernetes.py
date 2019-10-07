@@ -24,6 +24,7 @@ from common import SIZE
 from common import KUBERNETES_STATUS_LABEL, SETTING_DEFAULT_LONGHORN_STATIC_SC
 from common import DEFAULT_LONGHORN_STATIC_STORAGECLASS_NAME
 from common import create_snapshot
+from common import set_random_backupstore
 
 from kubernetes import client as k8sclient
 from kubernetes.client.rest import ApiException
@@ -379,6 +380,8 @@ def test_backup_kubernetes_status(client, core_api, pod):  # NOQA
     Test that Backups have KubernetesStatus stored properly when there is an
     associated PersistentVolumeClaim and Pod.
     """
+    set_random_backupstore(client)
+
     host_id = get_self_host_id()
     static_sc_name = "longhorn-static-test"
     setting = client.by_id_setting(SETTING_DEFAULT_LONGHORN_STATIC_SC)
