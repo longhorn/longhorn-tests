@@ -56,6 +56,27 @@ TEST_DATA_BYTES = 1 * Gi
 READ_MD5SUM_TIMEOUT = 60
 
 
+class snapshot_data:
+    def __init__(self, snapshot_name):
+        self.snapshot_name = snapshot_name
+        self.removed = False
+        self.backup_name = None
+        self.backup_url = None
+        self.data_md5sum = None
+
+    def set_backup_name(self, backup_name):
+        self.backup_name = backup_name
+
+    def set_backup_url(self, backup_url):
+        self.backup_url = backup_url
+
+    def set_data_md5sum(self, data_md5sum):
+        self.data_md5sum = data_md5sum
+
+    def mark_as_removed(self):
+        self.removed = True
+
+
 def get_random_suffix():
     return ''.join(random.choice(string.ascii_lowercase + string.digits)
                    for _ in range(6))
