@@ -176,6 +176,14 @@ def get_recurring_jobs():
     return [backup_job, snapshot_job]
 
 
+def create_recurring_jobs(client, volume_name):
+    volume = client.by_id_volume(volume_name)
+
+    recurring_jobs = get_recurring_jobs()
+
+    volume.recurringUpdate(jobs=recurring_jobs)
+
+
 def read_data_md5sum(k8s_api_client, pod_name):
     file_name = get_data_filename(pod_name)
     dest_file_path = os.path.join(STRESS_DEST_DIR, file_name)
