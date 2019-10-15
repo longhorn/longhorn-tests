@@ -47,6 +47,7 @@ from test_scheduling import wait_new_replica_ready
 
 # Configuration options
 WAIT_REPLICA_REBUILD = True   # True, False, None=random
+PURGE_DELETED_SNAPSHOT = None  # True, False, None=random
 
 
 WAIT_BACKUP_COMPLETE = True  # True, False, None=random
@@ -423,28 +424,24 @@ def purge_random_snapshot(longhorn_api_client, volume_name, snapshot_name):
     )
 
 
-def delete_random_snapshot(longhorn_api_client, volume_name):
-    volume = longhorn_api_client.by_id_volume(volume_name)
+def delete_random_snapshot(client, volume_name, snapshots_md5sum):
+    volume = client.by_id_volume(volume_name)
 
-    snapshots = volume.snapshotList(volume=volume_name)
+    snapshot = get_random_snapshot(snapshots_md5sum)
 
-    snapshots_count = len(snapshots.data)
+    if snapshot is None:
+        return
 
-    while True:
-        snapshot_id = randrange(0, snapshots_count)
+    volume.snapshotDelete(name=snapshot)
 
-        if snapshots.data[snapshot_id].name == "volume-head":
-            continue
-        else:
-            break
-    snapshot_name = snapshots.data[snapshot_id].name
+    snapshots_md5sum[snapshot].mark_as_removed()
 
-    volume.snapshotDelete(name=snapshot_name)
+    global PURGE_DELETED_SNAPSHOT
+    if PURGE_DELETED_SNAPSHOT is None:
+        PURGE_DELETED_SNAPSHOT = bool(random.getrandbits(1))
 
-    trigger_purge = randrange(0, 2)
-
-    if trigger_purge == 1:
-        purge_random_snapshot(longhorn_api_client, volume_name, snapshot_name)
+    if PURGE_DELETED_SNAPSHOT is True:
+        purge_random_snapshot(client, volume_name, snapshot)
 
 
 def get_data_filename(pod_name):
