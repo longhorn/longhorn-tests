@@ -49,6 +49,7 @@ STRESS_VOLUME_NAME_PREFIX = "stress-test-volume-"
 STRESS_RANDOM_DATA_DIR = "/tmp/"
 STRESS_DATAFILE_NAME_PREFIX = "data-"
 STRESS_DATAFILE_NAME_SUFFIX = ".bin"
+STRESS_DEST_DIR = '/data/'
 
 VOLUME_SIZE = str(2 * Gi)
 TEST_DATA_BYTES = 1 * Gi
@@ -88,6 +89,25 @@ def get_md5sum(file_path):
         for chunk in iter(lambda: f.read(4096), b""):
             hash_md5.update(chunk)
     return hash_md5.hexdigest()
+
+
+def read_data_md5sum(k8s_api_client, pod_name):
+    file_name = get_data_filename(pod_name)
+    dest_file_path = os.path.join(STRESS_DEST_DIR, file_name)
+
+    exec_command = exec_command = ['/bin/sh']
+    resp = stream(k8s_api_client.connect_get_namespaced_pod_exec,
+                  pod_name,
+                  'default',
+                  command=exec_command,
+                  stderr=True, stdin=True,
+                  stdout=True, tty=False,
+                  _preload_content=False)
+
+    resp.write_stdin("md5sum " + dest_file_path + "\n")
+    res = resp.readline_stdout(timeout=READ_MD5SUM_TIMEOUT).split()[0]
+
+    return res
 
 
 def write_data(k8s_api_client, pod_name):
