@@ -25,6 +25,8 @@ from common import get_storage_api_client
 from common import Gi
 from common import read_volume_data
 from common import RETRY_COUNTS
+from common import set_random_backupstore
+from common import SETTING_BACKUP_TARGET
 from common import wait_for_snapshot_purge
 from common import wait_for_volume_detached
 from common import wait_for_volume_healthy_no_frontend
@@ -79,6 +81,14 @@ class snapshot_data:
 
     def mark_as_removed(self):
         self.removed = True
+
+
+# set random backupstore if not defined
+def check_and_set_backupstore(client):
+    setting = client.by_id_setting(SETTING_BACKUP_TARGET)
+
+    if setting["value"] == "":
+        set_random_backupstore(client)
 
 
 def get_random_suffix():
@@ -290,6 +300,8 @@ def generate_load(request):
 
     longhorn_api_client = get_longhorn_api_client()
     k8s_api_client = get_core_api_client()
+
+    check_and_set_backupstore(longhorn_api_client)
 
     volume_name = STRESS_VOLUME_NAME_PREFIX + index
     pv_name = STRESS_PV_NAME_PREFIX + index
