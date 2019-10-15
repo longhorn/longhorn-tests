@@ -16,6 +16,7 @@ from common import delete_and_wait_pod
 from common import delete_and_wait_pv
 from common import delete_and_wait_pvc
 from common import delete_and_wait_volume_attachment
+from common import find_backup
 from common import generate_pod_with_pvc_manifest
 from common import generate_random_data
 from common import get_core_api_client
@@ -27,6 +28,7 @@ from common import read_volume_data
 from common import RETRY_COUNTS
 from common import set_random_backupstore
 from common import SETTING_BACKUP_TARGET
+from common import wait_for_backup_completion
 from common import wait_for_snapshot_purge
 from common import wait_for_volume_detached
 from common import wait_for_volume_healthy_no_frontend
@@ -34,6 +36,8 @@ from common import write_pod_volume_data
 from kubernetes.stream import stream
 from random import randrange
 
+
+WAIT_BACKUP_COMPLETE = True  # True, False, None=random
 
 NPODS = os.getenv("STRESS_TEST_NPODS")
 
@@ -190,6 +194,36 @@ def revert_random_snapshot(client, core_api, volume_name, pod_manifest, snapshot
     current_md5sum = read_data_md5sum(core_api, pod_name)
 
     assert current_md5sum == snapshots_md5sum[snapshot].data_md5sum
+
+
+def backup_create_and_record_md5sum(client, core_api, volume_name, pod_name, snapshots_md5sum): # NOQA
+    volume = client.by_id_volume(volume_name)
+
+    data_md5sum = read_data_md5sum(core_api, pod_name)
+
+    snap_name = snapshot_create_and_record_md5sum(client,
+                                                  core_api,
+                                                  volume_name,
+                                                  pod_name,
+                                                  snapshots_md5sum)
+    snap = snapshot_data(snap_name)
+
+    snapshots_md5sum[snap_name] = snap
+
+    volume.snapshotBackup(name=snap_name)
+
+    global WAIT_BACKUP_COMPLETE
+    if WAIT_BACKUP_COMPLETE is None:
+        WAIT_BACKUP_COMPLETE = bool(random.getrandbits(1))
+
+    if WAIT_BACKUP_COMPLETE is True:
+        wait_for_backup_completion(client, volume_name, snap_name)
+
+    _, b = find_backup(client, volume_name, snap_name)
+
+    snap.set_backup_name(b["name"])
+    snap.set_backup_url(b["url"])
+    snap.set_data_md5sum(data_md5sum)
 
 
 def write_data(k8s_api_client, pod_name):
