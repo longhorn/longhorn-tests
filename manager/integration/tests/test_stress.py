@@ -166,6 +166,16 @@ def get_random_backup_snapshot_data(snapshots_md5sum):
         return snapshots_md5sum[snapshot]
 
 
+def get_recurring_jobs():
+    backup_job = {"name": "backup", "cron": "*/5 * * * *",
+                  "task": "backup", "retain": 3}
+
+    snapshot_job = {"name": "snap", "cron": "*/2 * * * *",
+                    "task": "snapshot", "retain": 5}
+
+    return [backup_job, snapshot_job]
+
+
 def read_data_md5sum(k8s_api_client, pod_name):
     file_name = get_data_filename(pod_name)
     dest_file_path = os.path.join(STRESS_DEST_DIR, file_name)
