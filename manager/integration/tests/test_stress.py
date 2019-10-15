@@ -131,6 +131,29 @@ def get_random_snapshot(snapshots_md5sum):
         return snapshot
 
 
+def get_random_backup_snapshot_data(snapshots_md5sum):
+    snapshots = snapshots_md5sum.keys()
+
+    snapshots_count = len(snapshots)
+
+    if snapshots_count == 0:
+        return None
+
+    for i in range(RETRY_COUNTS):
+        snapshot_id = randrange(0, snapshots_count)
+        snapshot = snapshots[snapshot_id]
+
+        if snapshots_md5sum[snapshot].backup_name is None:
+            continue
+        else:
+            break
+
+    if snapshots_md5sum[snapshot].backup_name is None:
+        return None
+    else:
+        return snapshots_md5sum[snapshot]
+
+
 def read_data_md5sum(k8s_api_client, pod_name):
     file_name = get_data_filename(pod_name)
     dest_file_path = os.path.join(STRESS_DEST_DIR, file_name)
