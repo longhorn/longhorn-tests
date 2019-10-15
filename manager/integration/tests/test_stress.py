@@ -110,6 +110,17 @@ def read_data_md5sum(k8s_api_client, pod_name):
     return res
 
 
+def snapshot_create_and_record_md5sum(client, core_api, volume_name, pod_name, snapshots_md5sum): # NOQA
+    data_md5sum = read_data_md5sum(core_api, pod_name)
+    snap = create_snapshot(client, volume_name)
+
+    snap_data = snapshot_data(snap["name"])
+    snap_data.set_data_md5sum(data_md5sum)
+    snapshots_md5sum[snap["name"]] = snap_data
+
+    return snap["name"]
+
+
 def write_data(k8s_api_client, pod_name):
     src_dir_path = STRESS_RANDOM_DATA_DIR
     dest_dir_path = '/data/'
@@ -251,6 +262,8 @@ def generate_load(request):
                           pvc_name)
 
     create_and_wait_pod(k8s_api_client, pod_manifest)
+
+    snapshots_md5sum = dict()
 
     write_data(k8s_api_client, pod_name)
     create_snapshot(longhorn_api_client, volume_name)
