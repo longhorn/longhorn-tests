@@ -56,5 +56,29 @@ spec:
               fieldPath: spec.nodeName
         securityContext:
           privileged: true
+        volumeMounts:
+        - name: dev
+          mountPath: /dev
+        - name: proc
+          mountPath: /host/proc
+        - name: disk-directory
+          mountPath: /tmp/longhorn-test
+          mountPropagation: Bidirectional
+        - name: longhorn
+          mountPath: /var/lib/rancher/longhorn/
+          mountPropagation: Bidirectional
+      volumes:
+      - name: dev
+        hostPath:
+          path: /dev/
+      - name: proc
+        hostPath:
+          path: /proc/
+      - name: disk-directory
+        hostPath:
+          path: /tmp/longhorn-test/
+      - name: longhorn
+        hostPath:
+          path: /var/lib/rancher/longhorn/
       restartPolicy: Never
       serviceAccountName: longhorn-test-service-account
