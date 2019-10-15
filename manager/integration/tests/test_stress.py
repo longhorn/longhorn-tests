@@ -16,6 +16,7 @@ from common import delete_and_wait_pod
 from common import delete_and_wait_pv
 from common import delete_and_wait_pvc
 from common import delete_and_wait_volume_attachment
+from common import DIRECTORY_PATH
 from common import find_backup
 from common import generate_pod_with_pvc_manifest
 from common import generate_random_data
@@ -23,15 +24,20 @@ from common import get_core_api_client
 from common import get_longhorn_api_client
 from common import get_self_host_id
 from common import get_storage_api_client
+from common import get_volume_endpoint
 from common import Gi
+from common import mount_disk
 from common import read_volume_data
 from common import RETRY_COUNTS
 from common import set_random_backupstore
 from common import SETTING_BACKUP_TARGET
+from common import umount_disk
 from common import wait_for_backup_completion
 from common import wait_for_snapshot_purge
 from common import wait_for_volume_detached
+from common import wait_for_volume_healthy
 from common import wait_for_volume_healthy_no_frontend
+from common import wait_for_volume_restoration_completed
 from common import write_pod_volume_data
 from kubernetes.stream import stream
 from random import randrange
@@ -247,6 +253,69 @@ def backup_create_and_record_md5sum(client, core_api, volume_name, pod_name, sna
     snap.set_backup_name(b["name"])
     snap.set_backup_url(b["url"])
     snap.set_data_md5sum(data_md5sum)
+
+
+def restore_and_check_random_backup(client, core_api, volume_name, pod_name, snapshots_md5sum): # NOQA
+    res_volume_name = volume_name + '-restore'
+
+    host_id = get_self_host_id()
+
+    snap_data = get_random_backup_snapshot_data(snapshots_md5sum)
+
+    if snap_data is None:
+        return
+
+    backup_url = snap_data.backup_url
+
+    client.create_volume(name=res_volume_name,
+                         size=VOLUME_SIZE,
+                         fromBackup=backup_url)
+
+    wait_for_volume_restoration_completed(client, res_volume_name)
+
+    wait_for_volume_detached(client, res_volume_name)
+
+    res_volume = client.by_id_volume(res_volume_name)
+
+    res_volume.attach(hostId=host_id)
+
+    res_volume = wait_for_volume_healthy(client, res_volume_name)
+
+    dev = get_volume_endpoint(res_volume)
+
+    mount_path = os.path.join(DIRECTORY_PATH, res_volume_name)
+
+    command = ['mkdir', '-p', mount_path]
+    subprocess.check_call(command)
+
+    mount_disk(dev, mount_path)
+
+    datafile_name = get_data_filename(pod_name)
+    datafile_path = os.path.join(mount_path, datafile_name)
+
+    command = ['md5sum', datafile_path]
+    output = subprocess.check_output(command)
+
+    bkp_data_md5sum = output.split()[0]
+
+    bkp_checksum_ok = False
+    if snap_data.data_md5sum == bkp_data_md5sum:
+        bkp_checksum_ok = True
+
+    umount_disk(mount_path)
+
+    command = ['rmdir', mount_path]
+    subprocess.check_call(command)
+
+    res_volume = client.by_id_volume(res_volume_name)
+
+    res_volume.detach()
+
+    wait_for_volume_detached(client, res_volume_name)
+
+    delete_and_wait_longhorn(client, res_volume_name)
+
+    assert bkp_checksum_ok
 
 
 def write_data(k8s_api_client, pod_name):
