@@ -20,12 +20,14 @@ from common import generate_pod_with_pvc_manifest
 from common import generate_random_data
 from common import get_core_api_client
 from common import get_longhorn_api_client
+from common import get_self_host_id
 from common import get_storage_api_client
 from common import Gi
 from common import read_volume_data
 from common import RETRY_COUNTS
 from common import wait_for_snapshot_purge
 from common import wait_for_volume_detached
+from common import wait_for_volume_healthy_no_frontend
 from common import write_pod_volume_data
 from kubernetes.stream import stream
 from random import randrange
@@ -143,6 +145,41 @@ def snapshot_create_and_record_md5sum(client, core_api, volume_name, pod_name, s
     snapshots_md5sum[snap["name"]] = snap_data
 
     return snap["name"]
+
+
+def revert_random_snapshot(client, core_api, volume_name, pod_manifest, snapshots_md5sum): # NOQA
+    volume = client.by_id_volume(volume_name)
+    host_id = get_self_host_id()
+    pod_name = pod_manifest["metadata"]["name"]
+
+    snapshot = get_random_snapshot(snapshots_md5sum)
+
+    if snapshot is None:
+        return
+
+    delete_and_wait_pod(core_api, pod_name)
+
+    wait_for_volume_detached(client, volume_name)
+
+    volume = client.by_id_volume(volume_name)
+
+    volume.attach(hostId=host_id, disableFrontend=True)
+
+    volume = wait_for_volume_healthy_no_frontend(client, volume_name)
+
+    volume.snapshotRevert(name=snapshot)
+
+    volume = client.by_id_volume(volume_name)
+
+    volume.detach()
+
+    wait_for_volume_detached(client, volume_name)
+
+    create_and_wait_pod(core_api, pod_manifest)
+
+    current_md5sum = read_data_md5sum(core_api, pod_name)
+
+    assert current_md5sum == snapshots_md5sum[snapshot].data_md5sum
 
 
 def write_data(k8s_api_client, pod_name):
