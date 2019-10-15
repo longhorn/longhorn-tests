@@ -23,6 +23,7 @@ from common import get_longhorn_api_client
 from common import get_storage_api_client
 from common import Gi
 from common import read_volume_data
+from common import RETRY_COUNTS
 from common import wait_for_snapshot_purge
 from common import wait_for_volume_detached
 from common import write_pod_volume_data
@@ -89,6 +90,29 @@ def get_md5sum(file_path):
         for chunk in iter(lambda: f.read(4096), b""):
             hash_md5.update(chunk)
     return hash_md5.hexdigest()
+
+
+def get_random_snapshot(snapshots_md5sum):
+    snapshots = snapshots_md5sum.keys()
+
+    snapshots_count = len(snapshots)
+
+    if snapshots_count == 0:
+        return None
+
+    for i in range(RETRY_COUNTS):
+        snapshot_id = randrange(0, snapshots_count)
+        snapshot = snapshots[snapshot_id]
+
+        if snapshots_md5sum[snapshot].removed is True:
+            continue
+        else:
+            break
+
+    if snapshots_md5sum[snapshot].removed is True:
+        return None
+    else:
+        return snapshot
 
 
 def read_data_md5sum(k8s_api_client, pod_name):
