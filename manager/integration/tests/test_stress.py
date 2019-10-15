@@ -46,11 +46,11 @@ from test_scheduling import wait_new_replica_ready
 
 
 # Configuration options
+N_RANDOM_ACTIONS = 10
 WAIT_REPLICA_REBUILD = True   # True, False, None=random
 PURGE_DELETED_SNAPSHOT = None  # True, False, None=random
-
-
 WAIT_BACKUP_COMPLETE = True  # True, False, None=random
+
 
 NPODS = os.getenv("STRESS_TEST_NPODS")
 
@@ -507,26 +507,56 @@ def generate_load(request):
     snapshots_md5sum = dict()
 
     write_data(k8s_api_client, pod_name)
-    create_snapshot(longhorn_api_client, volume_name)
-    write_data(k8s_api_client, pod_name)
-    create_snapshot(longhorn_api_client, volume_name)
-    delete_data(k8s_api_client, pod_name)
-    create_snapshot(longhorn_api_client, volume_name)
+    create_recurring_jobs(longhorn_api_client, volume_name)
 
-    delete_random_snapshot(longhorn_api_client, volume_name)
-
-    # execute 3 more random actions
-    for round in range(3):
-        action = randrange(0, 4)
+    global N_RANDOM_ACTIONS
+    for round in range(N_RANDOM_ACTIONS):
+        action = randrange(0, 8)
 
         if action == 0:
+            print("write data")
             write_data(k8s_api_client, pod_name)
         elif action == 1:
+            print("delete data")
             delete_data(k8s_api_client, pod_name)
         elif action == 2:
-            create_snapshot(longhorn_api_client, volume_name)
+            print("create snapshot")
+            snapshot_create_and_record_md5sum(longhorn_api_client,
+                                              k8s_api_client,
+                                              volume_name,
+                                              pod_name,
+                                              snapshots_md5sum)
         elif action == 3:
-            delete_random_snapshot(longhorn_api_client, volume_name)
+            print("delete random snapshot")
+            delete_random_snapshot(longhorn_api_client,
+                                   volume_name,
+                                   snapshots_md5sum)
+
+        elif action == 4:
+            print("revert random snapshot")
+            revert_random_snapshot(longhorn_api_client,
+                                   k8s_api_client,
+                                   volume_name,
+                                   pod_manifest,
+                                   snapshots_md5sum)
+        elif action == 5:
+            print("create backup")
+            backup_create_and_record_md5sum(longhorn_api_client,
+                                            k8s_api_client,
+                                            volume_name,
+                                            pod_name,
+                                            snapshots_md5sum)
+        elif action == 6:
+            print("delete replica")
+            delete_replica(longhorn_api_client, volume_name)
+
+        elif action == 7:
+            print("restore random backup")
+            restore_and_check_random_backup(longhorn_api_client,
+                                            k8s_api_client,
+                                            volume_name,
+                                            pod_name,
+                                            snapshots_md5sum)
 
 
 @pytest.mark.stress
