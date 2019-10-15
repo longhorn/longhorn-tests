@@ -48,6 +48,8 @@ spec:
         command: ["/bin/sh", "-c", "while py.test --include-stress-test -s test_stress.py::test_stress; do :; done"]
         imagePullPolicy: Always
         env:
+        - name: LONGHORN_BACKUPSTORES
+          value: "s3://backupbucket@us-east-1/backupstore$minio-secret, nfs://longhorn-test-nfs-svc.default:/opt/backupstore"
         - name: NODE_NAME
           valueFrom:
             fieldRef:
