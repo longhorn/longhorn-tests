@@ -47,6 +47,11 @@ spec:
         image: longhornio/longhorn-manager-test:master
         command: ["/bin/sh", "-c", "while py.test --include-stress-test -s test_stress.py::test_stress; do :; done"]
         imagePullPolicy: Always
+        env:
+        - name: NODE_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: spec.nodeName
         securityContext:
           privileged: true
       restartPolicy: Never
