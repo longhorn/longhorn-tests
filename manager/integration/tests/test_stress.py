@@ -37,10 +37,16 @@ from common import wait_for_snapshot_purge
 from common import wait_for_volume_detached
 from common import wait_for_volume_healthy
 from common import wait_for_volume_healthy_no_frontend
+from common import wait_for_volume_replica_count
 from common import wait_for_volume_restoration_completed
 from common import write_pod_volume_data
 from kubernetes.stream import stream
 from random import randrange
+from test_scheduling import wait_new_replica_ready
+
+
+# Configuration options
+WAIT_REPLICA_REBUILD = True   # True, False, None=random
 
 
 WAIT_BACKUP_COMPLETE = True  # True, False, None=random
@@ -316,6 +322,27 @@ def restore_and_check_random_backup(client, core_api, volume_name, pod_name, sna
     delete_and_wait_longhorn(client, res_volume_name)
 
     assert bkp_checksum_ok
+
+
+def delete_replica(client, volume_name):
+    volume = client.by_id_volume(volume_name)
+
+    replica_count = len(volume.replicas)
+
+    replica_id = randrange(0, replica_count)
+
+    replica_name = volume["replicas"][replica_id]["name"]
+
+    volume.replicaRemove(name=replica_name)
+
+    global WAIT_REPLICA_REBUILD
+    if WAIT_REPLICA_REBUILD is None:
+        WAIT_REPLICA_REBUILD = bool(random.getrandbits(1))
+
+    if WAIT_REPLICA_REBUILD is True:
+        wait_for_volume_replica_count(client, volume_name, replica_count)
+        replica_names = map(lambda replica: replica.name, volume["replicas"])
+        wait_new_replica_ready(client, volume_name, replica_names)
 
 
 def write_data(k8s_api_client, pod_name):
