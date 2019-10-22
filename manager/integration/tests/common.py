@@ -1820,40 +1820,6 @@ def monitor_restore_progress(client, volume_name):
     return v
 
 
-def wait_for_volume_migration_ready(client, volume_name):
-    for i in range(RETRY_COUNTS):
-        v = client.by_id_volume(volume_name)
-        engines = v["controllers"]
-        ready = True
-        if len(engines) == 2:
-            for e in v["controllers"]:
-                if e["endpoint"] == "":
-                    ready = False
-                    break
-        else:
-            ready = False
-        if ready:
-            break
-        time.sleep(RETRY_INTERVAL)
-    assert ready
-    return v
-
-
-def wait_for_volume_migration_node(client, volume_name, node_id):
-    for i in range(RETRY_COUNTS):
-        v = client.by_id_volume(volume_name)
-        engines = v["controllers"]
-        replicas = v["replicas"]
-        if len(engines) == 1 and len(replicas) == v["numberOfReplicas"]:
-            e = engines[0]
-            if e["endpoint"] != "":
-                break
-        time.sleep(RETRY_INTERVAL)
-    assert e["hostId"] == node_id
-    assert e["endpoint"] != ""
-    return v
-
-
 def get_random_client(clients):
     for _, client in clients.iteritems():
         break
