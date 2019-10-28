@@ -7,6 +7,23 @@ RETRY_COUNTS=10
 LONGHORN_MANAGER_REPO_URI="https://github.com/longhorn/longhorn-manager.git"
 LONGHORN_MANAGER_BRANCH="master"
 LONGHORN_MANAGER_TMPDIR="/tmp/longhorn-manager"
+LONGHORN_STABLE_URL="https://raw.githubusercontent.com/longhorn/longhorn/master/deploy/longhorn.yaml"
+
+
+check_longhorn_status() {
+  export KUBECONFIG="${TF_VAR_tf_workspace}/templates/kube_config_3-nodes-k8s.yml"
+
+  RETRIES=0
+  while [[ -n "`kubectl get pods -n longhorn-system  | grep "instance-manager-.*\|longhorn-\(manager\|driver\|csi\)\|engine-image-.*" | awk '{print $3}' | grep -v Running`"  ]]; do
+    echo "Longhorn is being installed ... rechecking in 1m"
+    sleep 1m
+    RETRIES=$((RETRIES+1))
+
+    if [[ ${RETRIES} -eq ${RETRY_COUNTS} ]]; then echo "Error: longhorn installation timeout"; exit 1 ; fi
+  done
+
+}
+
 
 mkdir -p ${LONGHORN_MANAGER_TMPDIR}
 
@@ -28,16 +45,16 @@ sed -i 's/longhornio\/longhorn-engine:'${LONGHORN_ENGINE_IMAGE_TAG}'/longhornio\
 
 export KUBECONFIG="${TF_VAR_tf_workspace}/templates/kube_config_3-nodes-k8s.yml"
 
+
+if [[ ${LONGHORN_UPGRADE_TEST} ]]; then
+  ## install Longhorn stable version, before upgrading to latest.
+  kubectl apply -f "${LONGHORN_STABLE_URL}"
+  check_longhorn_status
+
+fi
+
 kubectl apply -f longhorn.yaml
-
-RETRIES=0
-while [[ -n "`kubectl get pods -n longhorn-system  | grep "instance-manager-.*\|longhorn-\(manager\|driver\|csi\)\|engine-image-.*" | awk '{print $3}' | grep -v Running`"  ]]; do
-  echo "Longhorn is being installed ... rechecking in 1m"
-  sleep 1m
-  RETRIES=$((RETRIES+1))
-
-  if [[ ${RETRIES} -eq ${RETRY_COUNTS} ]]; then echo "Error: longhorn installation timeout"; exit 1 ; fi
-done
+check_longhorn_status
 
 kubectl create -Rf "${WORKSPACE}/manager/integration/deploy/backupstores"
 
