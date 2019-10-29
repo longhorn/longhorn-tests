@@ -893,8 +893,6 @@ def test_node_delete_umount_disks(client):  # NOQA
     for fsid, disk in disks.iteritems():
         if disk["path"] == disk_path1:
             wait_for_disk_status(client, lht_hostId,
-                                 fsid, "allowScheduling", False)
-            wait_for_disk_status(client, lht_hostId,
                                  fsid, "storageMaximum", 0)
             wait_for_disk_conditions(client, lht_hostId, fsid,
                                      DISK_CONDITION_READY,
@@ -906,7 +904,7 @@ def test_node_delete_umount_disks(client):  # NOQA
     update_disks = []
     for fsid, disk in disks.iteritems():
         if disk["path"] == disk_path1:
-            assert not disk["allowScheduling"]
+            assert disk["allowScheduling"]
             assert disk["storageMaximum"] == 0
             assert disk["storageAvailable"] == 0
             assert disk["storageReserved"] == SMALL_DISK_SIZE
@@ -932,7 +930,9 @@ def test_node_delete_umount_disks(client):  # NOQA
     # update other disks
     disks = node["disks"]
     for fsid, disk in disks.iteritems():
-        if disk["path"] != disk_path1:
+        if disk["path"] == disk_path1:
+            disk["allowScheduling"] = False
+        else:
             disk["allowScheduling"] = True
     test_update = get_update_disks(disks)
     node = node.diskUpdate(disks=test_update)
