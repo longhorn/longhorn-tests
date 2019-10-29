@@ -2343,13 +2343,17 @@ def activate_standby_volume(client, volume_name, frontend="blockdev"):
                 engines[0]["lastRestoredBackup"] != volume['lastBackup']:
             time.sleep(RETRY_INTERVAL)
             continue
+        activated = False
         try:
             volume.activate(frontend=frontend)
+            activated = True
             break
         except Exception as e:
             assert "hasn't finished incremental restored" \
                    in str(e.error.message)
             time.sleep(RETRY_INTERVAL)
+        if activated:
+            break
     volume = client.by_id_volume(volume_name)
     assert volume['standby'] is False
     assert volume['frontend'] == "blockdev"
