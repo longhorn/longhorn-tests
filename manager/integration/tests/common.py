@@ -53,6 +53,7 @@ VOLUME_FIELD_ROBUSTNESS = "robustness"
 VOLUME_ROBUSTNESS_HEALTHY = "healthy"
 VOLUME_ROBUSTNESS_DEGRADED = "degraded"
 VOLUME_ROBUSTNESS_FAULTED = "faulted"
+VOLUME_ROBUSTNESS_UNKNOWN = "unknown"
 
 VOLUME_FIELD_INITIALRESTORATIONREQUIRED = "initialRestorationRequired"
 
@@ -1124,6 +1125,13 @@ def wait_for_volume_detached(client, name):
     return wait_for_volume_status(client, name,
                                   VOLUME_FIELD_STATE,
                                   VOLUME_STATE_DETACHED)
+
+
+def wait_for_volume_detached_unknown(client, name):
+    wait_for_volume_status(client, name,
+                           VOLUME_FIELD_ROBUSTNESS,
+                           VOLUME_ROBUSTNESS_UNKNOWN)
+    return wait_for_volume_detached(client, name)
 
 
 def wait_for_volume_healthy(client, name):
