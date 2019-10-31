@@ -105,7 +105,7 @@ def ha_salvage_test(client, core_api,  # NOQA
 
     volume.salvage(names=[replica0_name, replica1_name])
 
-    volume = common.wait_for_volume_detached(client, volume_name)
+    volume = common.wait_for_volume_detached_unknown(client, volume_name)
     assert len(volume["replicas"]) == 2
     assert volume["replicas"][0]["failedAt"] == ""
     assert volume["replicas"][1]["failedAt"] == ""
@@ -138,7 +138,7 @@ def ha_salvage_test(client, core_api,  # NOQA
 
     volume.salvage(names=[replica0_name, replica1_name])
 
-    volume = common.wait_for_volume_detached(client, volume_name)
+    volume = common.wait_for_volume_detached_unknown(client, volume_name)
     assert len(volume["replicas"]) == 2
     assert volume["replicas"][0]["failedAt"] == ""
     assert volume["replicas"][1]["failedAt"] == ""
