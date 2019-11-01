@@ -1983,7 +1983,7 @@ def reset_engine_image(client):
                     ready = False
             else:
                 client.delete(ei)
-                wait_for_engine_image_deletion(ei['name'], core_api, client)
+                wait_for_engine_image_deletion(client, core_api, ei['name'])
         if ready:
             break
         time.sleep(RETRY_INTERVAL)
