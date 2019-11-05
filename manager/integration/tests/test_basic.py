@@ -636,12 +636,9 @@ def restore_inc_test(client, core_api, volume_name, pod):  # NOQA
         sb_engine0 = get_volume_engine(sb_volume0)
         sb_engine1 = get_volume_engine(sb_volume1)
         sb_engine2 = get_volume_engine(sb_volume2)
-        if sb_volume0["lastBackup"] != backup0["name"] or \
-                sb_volume1["lastBackup"] != backup0["name"] or \
-                sb_volume2["lastBackup"] != backup0["name"] or \
-                sb_engine0["lastRestoredBackup"] != backup0["name"] or \
-                sb_engine1["lastRestoredBackup"] != backup0["name"] or \
-                sb_engine2["lastRestoredBackup"] != backup0["name"]:
+        if sb_volume0["initialRestorationRequired"] is True or \
+           sb_volume1["initialRestorationRequired"] is True or \
+           sb_volume2["initialRestorationRequired"] is True:
             time.sleep(RETRY_INTERVAL)
         else:
             break
