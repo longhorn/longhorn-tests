@@ -76,6 +76,10 @@ DEFAULT_POD_TIMEOUT = 180
 DEFAULT_STATEFULSET_INTERVAL = 5
 DEFAULT_STATEFULSET_TIMEOUT = 180
 
+DEFAULT_DEPLOYMENT_INTERVAL = 1
+DEFAULT_DEPLOYMENT_TIMEOUT = 120
+
+
 DEFAULT_VOLUME_SIZE = 3  # In Gi
 EXPANDED_VOLUME_SIZE = 4  # In Gi
 
@@ -2795,3 +2799,127 @@ def wait_for_rebuild_complete(client, volume_name):
             break
         time.sleep(RETRY_INTERVAL)
     return completed == len(rebuild_statuses)
+
+
+@pytest.fixture
+def make_deployment_with_pvc(request):
+    def _generate_deployment_with_pvc_manifest(deployment_name, pvc_name, replicas=1): # NOQA
+        make_deployment_with_pvc.deployment_manifest = {
+            "apiVersion": "apps/v1",
+            "kind": "Deployment",
+            "metadata": {
+               "name": deployment_name,
+               "labels": {
+                  "name": deployment_name
+               }
+            },
+            "spec": {
+               "replicas": replicas,
+               "selector": {
+                  "matchLabels": {
+                     "name": deployment_name
+                  }
+               },
+               "template": {
+                  "metadata": {
+                     "labels": {
+                        "name": deployment_name
+                     }
+                  },
+                  "spec": {
+                     "containers": [
+                        {
+                           "name": deployment_name,
+                           "image": "nginx:stable-alpine",
+                           "volumeMounts": [
+                              {
+                                 "name": "volv",
+                                 "mountPath": "/data"
+                              }
+                           ]
+                        }
+                     ],
+                     "volumes": [
+                        {
+                           "name": "volv",
+                           "persistentVolumeClaim": {
+                              "claimName": pvc_name
+                           }
+                        }
+                     ]
+                  }
+               }
+            }
+        }
+
+        return make_deployment_with_pvc.deployment_manifest
+
+    def finalizer():
+        apps_api = get_apps_api_client()
+        deployment_name = \
+            make_deployment_with_pvc.deployment_manifest["metadata"]["name"]
+        delete_and_wait_deployment(
+            apps_api,
+            deployment_name
+        )
+
+    request.addfinalizer(finalizer)
+
+    return _generate_deployment_with_pvc_manifest
+
+
+def wait_deployment_replica_ready(apps_api, deployment_name, desired_replica_count): # NOQA
+    replicas_ready = False
+    for i in range(DEFAULT_DEPLOYMENT_TIMEOUT):
+        deployment = apps_api.read_namespaced_deployment(
+            name=deployment_name,
+            namespace="default")
+
+        if deployment.status.ready_replicas == desired_replica_count:
+            replicas_ready = True
+            break
+
+        time.sleep(DEFAULT_DEPLOYMENT_INTERVAL)
+
+    assert replicas_ready
+
+
+def create_and_wait_deployment(apps_api, deployment_manifest):
+    apps_api.create_namespaced_deployment(
+        body=deployment_manifest,
+        namespace='default')
+
+    deployment_name = deployment_manifest["metadata"]["name"]
+    desired_replica_count = deployment_manifest["spec"]["replicas"]
+
+    wait_deployment_replica_ready(
+        apps_api,
+        deployment_name,
+        desired_replica_count
+    )
+
+
+def wait_delete_deployment(apps_api, deployment_name):
+    for i in range(DEFAULT_DEPLOYMENT_TIMEOUT):
+        ret = apps_api.list_namespaced_deployment(namespace='default')
+        found = False
+        for item in ret.items:
+            if item.metadata.name == deployment_name:
+                found = True
+                break
+        if not found:
+            break
+        time.sleep(DEFAULT_DEPLOYMENT_INTERVAL)
+    assert not found
+
+
+def delete_and_wait_deployment(apps_api, deployment_name):
+    try:
+        apps_api.delete_namespaced_deployment(
+            name=deployment_name,
+            namespace='default'
+        )
+    except ApiException as e:
+        assert e.status == 404
+
+    wait_delete_deployment(apps_api, deployment_name)
