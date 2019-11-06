@@ -1,12 +1,18 @@
 #!/usr/sbin/python
 import pytest
-
+import random
 import common
-from common import client, core_api, csi_pv, pod_make, pvc  # NOQA
+from common import client, core_api, csi_pv, pod_make, pvc, storage_class  # NOQA
+from common import pod as pod_manifest  # NOQA
 from common import Gi, DEFAULT_VOLUME_SIZE, VOLUME_RWTEST_SIZE
 from common import create_and_wait_pod, create_pvc_spec, delete_and_wait_pod
+from common import size_to_string, create_storage_class, create_pvc
+from common import delete_and_wait_pvc, delete_and_wait_pv
+from common import wait_and_get_pv_for_pvc
 from common import generate_random_data, read_volume_data
 from common import write_pod_volume_data
+from common import write_pod_block_volume_data, read_pod_block_volume_data
+from common import get_pod_block_volume_data_md5sum
 from common import generate_volume_name
 from common import delete_backup
 from common import create_snapshot
@@ -195,3 +201,66 @@ def backupstore_test(client, core_api, csi_pv, pvc, pod_make, pod_name, base_ima
     assert resp == test_data
 
     delete_backup(bv, b["name"])
+
+
+@pytest.mark.csi  # NOQA
+def test_csi_block_volume(client, core_api, storage_class, pvc, pod_manifest):  # NOQA
+    pod_name = 'csi-block-volume-test'
+    pvc_name = pod_name + "-pvc"
+    device_path = "/dev/longhorn/longhorn-test-blk"
+
+    storage_class['reclaimPolicy'] = 'Retain'
+    pvc['metadata']['name'] = pvc_name
+    pvc['spec']['volumeMode'] = 'Block'
+    pvc['spec']['storageClassName'] = storage_class['metadata']['name']
+    pvc['spec']['resources'] = {
+        'requests': {
+            'storage': size_to_string(1 * Gi)
+        }
+    }
+    pod_manifest['metadata']['name'] = pod_name
+    pod_manifest['spec']['volumes'] = [{
+        'name': 'longhorn-blk',
+        'persistentVolumeClaim': {
+            'claimName': pvc_name,
+        },
+    }]
+    pod_manifest['spec']['containers'][0]['volumeMounts'] = []
+    pod_manifest['spec']['containers'][0]['volumeDevices'] = [
+        {'name': 'longhorn-blk', 'devicePath': device_path}
+    ]
+
+    create_storage_class(storage_class)
+    create_pvc(pvc)
+    pv_name = wait_and_get_pv_for_pvc(core_api, pvc_name).metadata.name
+    create_and_wait_pod(core_api, pod_manifest)
+
+    test_data = generate_random_data(VOLUME_RWTEST_SIZE)
+    test_offset = random.randint(0, VOLUME_RWTEST_SIZE)
+    write_pod_block_volume_data(
+        core_api, pod_name, test_data, test_offset, device_path)
+    returned_data = read_pod_block_volume_data(
+        core_api, pod_name, len(test_data), test_offset, device_path
+    )
+    assert test_data == returned_data
+    md5_sum = get_pod_block_volume_data_md5sum(
+        core_api, pod_name, device_path)
+
+    delete_and_wait_pod(core_api, pod_name)
+    common.wait_for_volume_detached(client, pv_name)
+
+    pod_name_2 = 'csi-block-volume-test-reuse'
+    pod_manifest['metadata']['name'] = pod_name_2
+    create_and_wait_pod(core_api, pod_manifest)
+
+    returned_data = read_pod_block_volume_data(
+        core_api, pod_name_2, len(test_data), test_offset, device_path
+    )
+    assert test_data == returned_data
+    md5_sum_2 = get_pod_block_volume_data_md5sum(
+        core_api, pod_name_2, device_path)
+    assert md5_sum == md5_sum_2
+
+    delete_and_wait_pod(core_api, pod_name_2)
+    delete_and_wait_pvc(core_api, pvc_name)
+    delete_and_wait_pv(core_api, pv_name)

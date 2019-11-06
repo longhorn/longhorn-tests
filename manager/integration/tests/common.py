@@ -475,6 +475,57 @@ def write_pod_volume_data(api, pod_name, test_data, filename='test'):
             tty=False)
 
 
+def write_pod_block_volume_data(api, pod_name, test_data, offset, device_path):
+    tmp_file = '/var/test_data'
+    pre_write_cmd = [
+        '/bin/sh',
+        '-c',
+        'echo -ne ' + test_data + ' > ' + tmp_file
+    ]
+    write_cmd = [
+        '/bin/sh',
+        '-c',
+        'dd if=' + tmp_file + ' of=' + device_path +
+        ' bs=' + str(len(test_data)) + ' count=1 seek=' + str(offset)
+    ]
+    with timeout(seconds=STREAM_EXEC_TIMEOUT,
+                 error_message='Timeout on executing stream write'):
+        stream(api.connect_get_namespaced_pod_exec, pod_name, 'default',
+               command=pre_write_cmd, stderr=True, stdin=False, stdout=True,
+               tty=False)
+        return stream(
+            api.connect_get_namespaced_pod_exec, pod_name, 'default',
+            command=write_cmd, stderr=True, stdin=False, stdout=True,
+            tty=False)
+
+
+def read_pod_block_volume_data(api, pod_name, data_size, offset, device_path):
+    read_command = [
+        '/bin/sh',
+        '-c',
+        'dd if=' + device_path +
+        ' status=none bs=' + str(data_size) + ' count=1 skip=' + str(offset)
+    ]
+    with timeout(seconds=STREAM_EXEC_TIMEOUT,
+                 error_message='Timeout on executing stream read'):
+        return stream(
+            api.connect_get_namespaced_pod_exec, pod_name, 'default',
+            command=read_command, stderr=True, stdin=False, stdout=True,
+            tty=False)
+
+
+def get_pod_block_volume_data_md5sum(api, pod_name, device_path):
+    md5sum_command = [
+        '/bin/sh', '-c', 'md5sum ' + device_path + " | awk '{print $1}'"
+    ]
+    with timeout(seconds=STREAM_EXEC_TIMEOUT * 3,
+                 error_message='Timeout on executing stream md5sum'):
+        return stream(
+            api.connect_get_namespaced_pod_exec, pod_name, 'default',
+            command=md5sum_command, stderr=True, stdin=False, stdout=True,
+            tty=False)
+
+
 def size_to_string(volume_size):
     # type: (int) -> str
     """
@@ -2175,6 +2226,12 @@ def delete_storage_class(sc_name):
         assert e.status == 404
 
 
+def create_pvc(pvc_manifest):
+    api = get_core_api_client()
+    api.create_namespaced_persistent_volume_claim(
+        'default', pvc_manifest)
+
+
 def update_statefulset_manifests(ss_manifest, sc_manifest, name):
     """
     Write in a new StatefulSet name and the proper StorageClass name for tests.
@@ -2536,3 +2593,20 @@ def create_snapshot(longhorn_api_client, volume_name):
 
     assert snapshot_created
     return snap
+
+
+def wait_and_get_pv_for_pvc(api, pvc_name):
+    found = False
+    for i in range(RETRY_COUNTS):
+        pvs = api.list_persistent_volume()
+        for item in pvs.items:
+            if item.spec.claim_ref.name == pvc_name:
+                found = True
+                pv = item
+                break
+        if found:
+            break
+        time.sleep(RETRY_INTERVAL)
+
+    assert found
+    return pv
