@@ -290,6 +290,19 @@ def create_and_check_volume(client, volume_name, num_of_replicas=3, size=SIZE,
     return volume
 
 
+def wait_pod(pod_name):
+    api = get_core_api_client()
+
+    for i in range(DEFAULT_POD_TIMEOUT):
+        pod = api.read_namespaced_pod(
+            name=pod_name,
+            namespace='default')
+        if pod.status.phase != 'Pending':
+            break
+        time.sleep(DEFAULT_POD_INTERVAL)
+    assert pod.status.phase == 'Running'
+
+
 def create_and_wait_pod(api, pod_manifest):
     """
     Creates a new Pod attached to a PersistentVolumeClaim for testing.
@@ -306,14 +319,10 @@ def create_and_wait_pod(api, pod_manifest):
     api.create_namespaced_pod(
         body=pod_manifest,
         namespace='default')
-    for i in range(DEFAULT_POD_TIMEOUT):
-        pod = api.read_namespaced_pod(
-            name=pod_manifest['metadata']['name'],
-            namespace='default')
-        if pod.status.phase != 'Pending':
-            break
-        time.sleep(DEFAULT_POD_INTERVAL)
-    assert pod.status.phase == 'Running'
+
+    pod_name = pod_manifest['metadata']['name']
+
+    wait_pod(pod_name)
 
 
 def create_pvc_spec(name):
