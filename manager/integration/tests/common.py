@@ -549,7 +549,7 @@ def flexvolume(request):
     flexvolume_manifest = {
         'name': generate_volume_name(),
         'flexVolume': {
-            'driver': 'rancher.io/longhorn',
+            'driver': 'driver.longhorn.io',
             'fsType': 'ext4',
             'options': {
                 'size': size_to_string(DEFAULT_VOLUME_SIZE * Gi),
@@ -859,7 +859,7 @@ def storage_class(request):
         'metadata': {
             'name': DEFAULT_STORAGECLASS_NAME
         },
-        'provisioner': 'rancher.io/longhorn',
+        'provisioner': 'driver.longhorn.io',
         'parameters': {
             'numberOfReplicas': DEFAULT_LONGHORN_PARAMS['numberOfReplicas'],
             'staleReplicaTimeout':

@@ -350,7 +350,7 @@ def test_statefulset_restore(client, core_api, storage_class,  # NOQA
         }
     else:
         pv['spec']['flexVolume'] = {
-            'driver': 'rancher.io/longhorn',
+            'driver': 'driver.longhorn.io',
             'fsType': 'ext4',
             'options': {
                 'numberOfReplicas':
