@@ -77,6 +77,10 @@ spec:
     - name: longhorn
       mountPath: /var/lib/longhorn/
       mountPropagation: Bidirectional
+  dnsConfig:
+    nameservers:
+      - 8.8.8.8
+      - 1.1.1.1
   volumes:
   - name: dev
     hostPath:
