@@ -1240,14 +1240,17 @@ def test_storage_class_from_backup(volume_name, pvc_name, storage_class, clients
             break
         time.sleep(RETRY_INTERVAL)
 
-    volumes = client.list_volume()
-
     found = False
-    for volume in volumes:
-        if volume.kubernetesStatus.pvcName == backup_pvc_name:
-            backup_volume_name = volume.name
-            found = True
+    for i in range(RETRY_COUNTS):
+        volumes = client.list_volume()
+        for volume in volumes:
+            if volume.kubernetesStatus.pvcName == backup_pvc_name:
+                backup_volume_name = volume.name
+                found = True
+                break
+        if found:
             break
+        time.sleep(RETRY_INTERVAL)
     assert found
 
     wait_for_volume_restoration_completed(client, backup_volume_name)
