@@ -28,6 +28,9 @@ sed -i 's/longhornio\/longhorn-engine:'${LONGHORN_ENGINE_IMAGE_TAG}'/longhornio\
 
 export KUBECONFIG="${TF_VAR_tf_workspace}/templates/kube_config_3-nodes-k8s.yml"
 
+# scale coredns min pods to 3 for node offline tests
+kubectl get configmaps -n kube-system coredns-autoscaler -o yaml | sed  's/\"min\":1/\"min\":3/' | kubectl apply -n kube-system -f -
+
 kubectl apply -f longhorn.yaml
 
 RETRIES=0
