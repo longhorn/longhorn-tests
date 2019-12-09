@@ -10,6 +10,8 @@ import os
 import json
 import time
 import operator
+from functools import reduce
+
 try:
     import argcomplete
 except ImportError:
@@ -134,6 +136,7 @@ class RestObject:
     def __iter__(self):
         if self._is_list():
             return iter(self.data)
+        return iter(self.__dict__)
 
 
 class Schema(object):
@@ -202,7 +205,7 @@ class ClientApiError(Exception):
 
 
 class GdapiClient(object):
-    def __init__(self, access_key=None, secret_key=None, url=None, cache=False,
+    def __init__(self, access_key="", secret_key="", url=None, cache=False,
                  cache_time=86400, strict=False, headers=HEADERS, **kw):
         self._headers = headers
         self._access_key = access_key
@@ -478,7 +481,7 @@ class GdapiClient(object):
 
         if isinstance(value, RestObject):
             ret = {}
-            for k, v in vars(value).iteritems():
+            for k, v in vars(value).items():
                 if not k.startswith('_') and \
                         not isinstance(v, RestObject) and not callable(v):
                     ret[k] = self._to_value(v)
