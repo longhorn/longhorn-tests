@@ -1,4 +1,4 @@
-FROM python:2.7.14-stretch
+FROM python:3.7.4-stretch
 
 ARG KUBECTL_VERSION=v1.15.0
 
