@@ -1,4 +1,3 @@
-#!/usr/sbin/python
 import pytest
 import time
 
@@ -93,53 +92,53 @@ def test_kubernetes_status(client, core_api, storage_class,  # NOQA
     for i in range(len(volume_info)):
         p, volume_name = pod_info[i], volume_info[i]
         volume = client.by_id_volume(volume_name)
-        k_status = volume["kubernetesStatus"]
-        workloads = k_status['workloadsStatus']
-        assert k_status['pvName'] == p['pv_name']
-        assert k_status['pvStatus'] == 'Bound'
-        assert k_status['namespace'] == 'default'
-        assert k_status['pvcName'] == p['pvc_name']
-        assert not k_status['lastPVCRefAt']
-        assert not k_status['lastPodRefAt']
+        k_status = volume.kubernetesStatus
+        workloads = k_status.workloadsStatus
+        assert k_status.pvName == p['pv_name']
+        assert k_status.pvStatus == 'Bound'
+        assert k_status.namespace == 'default'
+        assert k_status.pvcName == p['pvc_name']
+        assert not k_status.lastPVCRefAt
+        assert not k_status.lastPodRefAt
         if i == 0:
             assert len(workloads) == 1
-            assert workloads[0]['podName'] == p['pod_name']
-            assert workloads[0]['workloadName'] == statefulset_name
-            assert workloads[0]['workloadType'] == 'StatefulSet'
+            assert workloads[0].podName == p['pod_name']
+            assert workloads[0].workloadName == statefulset_name
+            assert workloads[0].workloadType == 'StatefulSet'
             for _ in range(RETRY_COUNTS):
-                if workloads[0]['podStatus'] == 'Running':
+                if workloads[0].podStatus == 'Running':
                     break
             time.sleep(RETRY_INTERVAL)
             volume = client.by_id_volume(volume_name)
-            k_status = volume["kubernetesStatus"]
-            workloads = k_status['workloadsStatus']
-            assert workloads[0]['podStatus'] == 'Running'
+            k_status = volume.kubernetesStatus
+            workloads = k_status.workloadsStatus
+            assert workloads[0].podStatus == 'Running'
         if i == 1:
-            assert len(k_status['workloadsStatus']) == 2
-            if workloads[0]['podName'] == pod_info[i]['pod_name']:
-                assert workloads[1]['podName'] == extra_pod_name
-                assert workloads[0]['workloadName'] == statefulset_name
-                assert workloads[0]['workloadType'] == 'StatefulSet'
-                assert not workloads[1]['workloadName']
-                assert not workloads[1]['workloadType']
+            assert len(k_status.workloadsStatus) == 2
+            if workloads[0].podName == pod_info[i]['pod_name']:
+                assert workloads[1].podName == extra_pod_name
+                assert workloads[0].workloadName == statefulset_name
+                assert workloads[0].workloadType == 'StatefulSet'
+                assert not workloads[1].workloadName
+                assert not workloads[1].workloadType
             else:
-                assert workloads[1]['podName'] == pod_info[i]['pod_name']
-                assert workloads[0]['podName'] == extra_pod_name
-                assert not workloads[0]['workloadName']
-                assert not workloads[0]['workloadType']
-                assert workloads[1]['workloadName'] == statefulset_name
-                assert workloads[1]['workloadType'] == 'StatefulSet'
+                assert workloads[1].podName == pod_info[i]['pod_name']
+                assert workloads[0].podName == extra_pod_name
+                assert not workloads[0].workloadName
+                assert not workloads[0].workloadType
+                assert workloads[1].workloadName == statefulset_name
+                assert workloads[1].workloadType == 'StatefulSet'
             for _ in range(RETRY_COUNTS):
-                if workloads[0]['podStatus'] == 'Running' and \
-                        workloads[1]['podStatus'] == 'Running':
+                if workloads[0].podStatus == 'Running' and \
+                        workloads[1].podStatus == 'Running':
                     break
                 time.sleep(RETRY_INTERVAL)
                 volume = client.by_id_volume(volume_name)
-                k_status = volume["kubernetesStatus"]
-                workloads = k_status['workloadsStatus']
+                k_status = volume.kubernetesStatus
+                workloads = k_status.workloadsStatus
                 assert len(workloads) == 2
-            assert workloads[0]['podStatus'] == 'Running'
-            assert workloads[1]['podStatus'] == 'Running'
+            assert workloads[0].podStatus == 'Running'
+            assert workloads[1].podStatus == 'Running'
 
     ks_list = [{}, {}]
     delete_and_wait_statefulset_only(core_api, statefulset)
@@ -289,7 +288,7 @@ def test_pvc_creation_with_default_sc_set(
     static_sc_name = "longhorn-static-test"
     setting = client.by_id_setting(SETTING_DEFAULT_LONGHORN_STATIC_SC)
     setting = client.update(setting, value=static_sc_name)
-    assert setting["value"] == static_sc_name
+    assert setting.value == static_sc_name
 
     volume_name = "test-pvc-creation-with-sc"
     pod_name = "pod-" + volume_name
@@ -386,7 +385,7 @@ def test_backup_kubernetes_status(client, core_api, pod):  # NOQA
     static_sc_name = "longhorn-static-test"
     setting = client.by_id_setting(SETTING_DEFAULT_LONGHORN_STATIC_SC)
     setting = client.update(setting, value=static_sc_name)
-    assert setting["value"] == static_sc_name
+    assert setting.value == static_sc_name
 
     volume_name = "test-backup-kubernetes-status-pod"
     client.create_volume(name=volume_name, size=SIZE,
@@ -437,23 +436,23 @@ def test_backup_kubernetes_status(client, core_api, pod):  # NOQA
     # Create Backup manually instead of calling create_backup since Kubernetes
     # is not guaranteed to mount our Volume to the test host.
     snap = create_snapshot(client, volume_name)
-    volume.snapshotBackup(name=snap["name"])
-    bv, b = find_backup(client, volume_name, snap["name"])
-    new_b = bv.backupGet(name=b["name"])
-    status = loads(new_b["labels"].get(KUBERNETES_STATUS_LABEL))
+    volume.snapshotBackup(name=snap.name)
+    bv, b = find_backup(client, volume_name, snap.name)
+    new_b = bv.backupGet(name=b.name)
+    status = loads(new_b.labels.get(KUBERNETES_STATUS_LABEL))
     assert status == ks
 
     restore_name = generate_volume_name()
     client.create_volume(name=restore_name, size=SIZE,
                          numberOfReplicas=2,
-                         fromBackup=b["url"])
+                         fromBackup=b.url)
     wait_for_volume_restoration_completed(client, restore_name)
     wait_for_volume_detached(client, restore_name)
 
-    snapshot_created = b["snapshotCreated"]
+    snapshot_created = b.snapshotCreated
     ks = {
-        'lastPodRefAt': b["snapshotCreated"],
-        'lastPVCRefAt': b["snapshotCreated"],
+        'lastPodRefAt': b.snapshotCreated,
+        'lastPVCRefAt': b.snapshotCreated,
         'namespace': 'default',
         'pvcName': pvc_name,
         # Restoration should not apply PersistentVolume data.
@@ -470,10 +469,10 @@ def test_backup_kubernetes_status(client, core_api, pod):  # NOQA
     restore = client.by_id_volume(restore_name)
     # We need to compare LastPodRefAt and LastPVCRefAt manually since
     # wait_volume_kubernetes_status only checks for empty or non-empty state.
-    assert restore["kubernetesStatus"]["lastPodRefAt"] == ks["lastPodRefAt"]
-    assert restore["kubernetesStatus"]["lastPVCRefAt"] == ks["lastPVCRefAt"]
+    assert restore.kubernetesStatus.lastPodRefAt == ks["lastPodRefAt"]
+    assert restore.kubernetesStatus.lastPVCRefAt == ks["lastPVCRefAt"]
 
-    bv.backupDelete(name=b["name"])
+    bv.backupDelete(name=b.name)
     client.delete(restore)
     wait_for_volume_delete(client, restore_name)
     delete_and_wait_pod(core_api, pod_name)
@@ -504,19 +503,19 @@ def test_backup_kubernetes_status(client, core_api, pod):  # NOQA
     volume = wait_for_volume_healthy(client, volume_name)
 
     snap = create_snapshot(client, volume_name)
-    volume.snapshotBackup(name=snap["name"])
-    bv, b = find_backup(client, volume_name, snap["name"])
-    new_b = bv.backupGet(name=b["name"])
-    status = loads(new_b["labels"].get(KUBERNETES_STATUS_LABEL))
+    volume.snapshotBackup(name=snap.name)
+    bv, b = find_backup(client, volume_name, snap.name)
+    new_b = bv.backupGet(name=b.name)
+    status = loads(new_b.labels.get(KUBERNETES_STATUS_LABEL))
     # Check each field manually, we have no idea what the LastPodRefAt or the
     # LastPVCRefAt will be. We just know it shouldn't be SnapshotCreated.
-    assert status["lastPodRefAt"] != snapshot_created
-    assert status["lastPVCRefAt"] != snapshot_created
-    assert status["namespace"] == "default"
-    assert status["pvcName"] == pvc_name
-    assert status["pvName"] == ""
-    assert status["pvStatus"] == ""
-    assert status["workloadsStatus"] == [{
+    assert status['lastPodRefAt'] != snapshot_created
+    assert status['lastPVCRefAt'] != snapshot_created
+    assert status['namespace'] == "default"
+    assert status['pvcName'] == pvc_name
+    assert status['pvName'] == ""
+    assert status['pvStatus'] == ""
+    assert status['workloadsStatus'] == [{
         'podName': pod_name,
         'podStatus': 'Running',
         'workloadName': '',
@@ -526,13 +525,13 @@ def test_backup_kubernetes_status(client, core_api, pod):  # NOQA
     restore_name = generate_volume_name()
     client.create_volume(name=restore_name, size=SIZE,
                          numberOfReplicas=2,
-                         fromBackup=b["url"])
+                         fromBackup=b.url)
     wait_for_volume_restoration_completed(client, restore_name)
     wait_for_volume_detached(client, restore_name)
 
     ks = {
-        'lastPodRefAt': status["lastPodRefAt"],
-        'lastPVCRefAt': status["lastPVCRefAt"],
+        'lastPodRefAt': status['lastPodRefAt'],
+        'lastPVCRefAt': status['lastPVCRefAt'],
         'namespace': 'default',
         'pvcName': pvc_name,
         'pvName': '',
@@ -546,9 +545,9 @@ def test_backup_kubernetes_status(client, core_api, pod):  # NOQA
     }
     wait_volume_kubernetes_status(client, restore_name, ks)
     restore = client.by_id_volume(restore_name)
-    assert restore["kubernetesStatus"]["lastPodRefAt"] == ks["lastPodRefAt"]
-    assert restore["kubernetesStatus"]["lastPVCRefAt"] == ks["lastPVCRefAt"]
+    assert restore.kubernetesStatus.lastPodRefAt == ks["lastPodRefAt"]
+    assert restore.kubernetesStatus.lastPVCRefAt == ks["lastPVCRefAt"]
 
-    bv.backupDelete(name=b["name"])
+    bv.backupDelete(name=b.name)
     client.delete(restore)
     cleanup_volume(client, volume)
