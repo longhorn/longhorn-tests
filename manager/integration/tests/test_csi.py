@@ -92,14 +92,14 @@ def csi_mount_test(client, core_api, csi_pv, pvc, pod_make,  # NOQA
     create_and_wait_csi_pod('csi-mount-test', client, core_api, csi_pv, pvc,
                             pod_make, base_image, "")
 
-    volumes = client.list_volume()
+    volumes = client.list_volume().data
     assert len(volumes) == 1
-    assert volumes[0]["name"] == csi_pv['metadata']['name']
-    assert volumes[0]["size"] == str(volume_size)
-    assert volumes[0]["numberOfReplicas"] == \
+    assert volumes[0].name == csi_pv['metadata']['name']
+    assert volumes[0].size == str(volume_size)
+    assert volumes[0].numberOfReplicas == \
         int(csi_pv['spec']['csi']['volumeAttributes']["numberOfReplicas"])
-    assert volumes[0]["state"] == "attached"
-    assert volumes[0]["baseImage"] == base_image
+    assert volumes[0].state == "attached"
+    assert volumes[0].baseImage == base_image
 
 
 @pytest.mark.csi  # NOQA
@@ -164,19 +164,19 @@ def csi_backup_test(client, core_api, csi_pv, pvc, pod_make, base_image=""):  # 
         if common.is_backupTarget_s3(backupstore):
             backupsettings = backupstore.split("$")
             setting = client.update(setting, value=backupsettings[0])
-            assert setting["value"] == backupsettings[0]
+            assert setting.value == backupsettings[0]
 
             credential = client.by_id_setting(
                     common.SETTING_BACKUP_TARGET_CREDENTIAL_SECRET)
             credential = client.update(credential, value=backupsettings[1])
-            assert credential["value"] == backupsettings[1]
+            assert credential.value == backupsettings[1]
         else:
             setting = client.update(setting, value=backupstore)
-            assert setting["value"] == backupstore
+            assert setting.value == backupstore
             credential = client.by_id_setting(
                     common.SETTING_BACKUP_TARGET_CREDENTIAL_SECRET)
             credential = client.update(credential, value="")
-            assert credential["value"] == ""
+            assert credential.value == ""
 
         backupstore_test(client, core_api, csi_pv, pvc, pod_make, pod_name,
                          base_image, test_data, i)
@@ -189,19 +189,18 @@ def backupstore_test(client, core_api, csi_pv, pvc, pod_make, pod_name, base_ima
 
     volume = client.by_id_volume(vol_name)
     snap = create_snapshot(client, vol_name)
-    volume.snapshotBackup(name=snap["name"])
+    volume.snapshotBackup(name=snap.name)
 
-    bv, b = common.find_backup(client, vol_name, snap["name"])
+    bv, b = common.find_backup(client, vol_name, snap.name)
 
     pod2_name = 'csi-backup-test-' + str(i)
     create_and_wait_csi_pod(pod2_name, client, core_api, csi_pv, pvc, pod_make,
-                            base_image, b["url"])
+                            base_image, b.url)
 
     resp = read_volume_data(core_api, pod2_name)
     assert resp == test_data
 
-    delete_backup(bv, b["name"])
-
+    delete_backup(bv, b.name)
 
 @pytest.mark.csi  # NOQA
 def test_csi_block_volume(client, core_api, storage_class, pvc, pod_manifest):  # NOQA
