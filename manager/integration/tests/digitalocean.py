@@ -19,7 +19,7 @@ class digitalocean(cloudprovider):
 
     def is_api_token_defined(self):
         if self.DO_API_TOKEN is None or self.DO_API_TOKEN == "":
-            print "Err: ENV_DO_API_TOKEN is not defined"
+            print("Err: ENV_DO_API_TOKEN is not defined")
             return False
         else:
             return True
@@ -80,8 +80,8 @@ class digitalocean(cloudprovider):
             try:
                 while self.node_status(droplet_id) == expected_status:
                     time.sleep(1)
-            except Exception, exc:
-                print exc
+            except Exception as exc:
+                print(exc)
                 return False
 
             return True
