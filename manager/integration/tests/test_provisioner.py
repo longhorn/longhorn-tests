@@ -1,4 +1,3 @@
-#!/usr/sbin/python
 import pytest
 import common
 
@@ -51,11 +50,11 @@ def test_provisioner_mount(client, core_api, storage_class, pvc, pod):  # NOQA
     # Confirm that the volume has all the correct parameters we gave it.
     volumes = client.list_volume()
     assert len(volumes) == 1
-    assert volumes[0]["name"] == pvc_volume_name
-    assert volumes[0]["size"] == str(volume_size)
-    assert volumes[0]["numberOfReplicas"] == \
+    assert volumes.data[0].name == pvc_volume_name
+    assert volumes.data[0].size == str(volume_size)
+    assert volumes.data[0].numberOfReplicas == \
         int(storage_class['parameters']['numberOfReplicas'])
-    assert volumes[0]["state"] == "attached"
+    assert volumes.data[0].state == "attached"
 
 
 def test_provisioner_params(client, core_api, storage_class, pvc, pod):  # NOQA
@@ -90,11 +89,11 @@ def test_provisioner_params(client, core_api, storage_class, pvc, pod):  # NOQA
     # Confirm that the volume has all the correct parameters we gave it.
     volumes = client.list_volume()
     assert len(volumes) == 1
-    assert volumes[0]["name"] == pvc_volume_name
-    assert volumes[0]["size"] == str(volume_size)
-    assert volumes[0]["numberOfReplicas"] == \
+    assert volumes.data[0].name == pvc_volume_name
+    assert volumes.data[0].size == str(volume_size)
+    assert volumes.data[0].numberOfReplicas == \
         int(storage_class['parameters']['numberOfReplicas'])
-    assert volumes[0]["state"] == "attached"
+    assert volumes.data[0].state == "attached"
 
 
 def test_provisioner_io(client, core_api, storage_class, pvc, pod):  # NOQA
@@ -163,9 +162,9 @@ def test_provisioner_tags(client, core_api, node_default_tags, storage_class, pv
     # Confirm that the volume has all the correct parameters we gave it.
     volumes = client.list_volume()
     assert len(volumes) == 1
-    assert volumes[0]["name"] == pvc_volume_name
-    assert volumes[0]["size"] == str(volume_size)
-    assert volumes[0]["numberOfReplicas"] == \
+    assert volumes.data[0].name == pvc_volume_name
+    assert volumes.data[0].size == str(volume_size)
+    assert volumes.data[0].numberOfReplicas == \
         int(storage_class['parameters']['numberOfReplicas'])
-    assert volumes[0]["state"] == "attached"
-    check_volume_replicas(volumes[0], tag_spec, node_default_tags)
+    assert volumes.data[0].state == "attached"
+    check_volume_replicas(volumes.data[0], tag_spec, node_default_tags)
