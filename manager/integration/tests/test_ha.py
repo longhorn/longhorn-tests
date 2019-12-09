@@ -33,24 +33,24 @@ def ha_rebuild_replica_test(client, volname):   # NOQA
     volume = client.by_id_volume(volname)
     assert get_volume_endpoint(volume) == DEV_PATH + volname
 
-    assert len(volume["replicas"]) == 2
-    replica0 = volume["replicas"][0]
-    assert replica0["name"] != ""
+    assert len(volume.replicas) == 2
+    replica0 = volume.replicas[0]
+    assert replica0.name != ""
 
-    replica1 = volume["replicas"][1]
-    assert replica1["name"] != ""
+    replica1 = volume.replicas[1]
+    assert replica1.name != ""
 
     data = write_volume_random_data(volume)
 
-    volume = volume.replicaRemove(name=replica0["name"])
+    volume = volume.replicaRemove(name=replica0.name)
 
     # wait until we saw a replica starts rebuilding
     new_replica_found = False
     for i in range(RETRY_COUNTS):
         v = client.by_id_volume(volname)
-        for r in v["replicas"]:
-            if r["name"] != replica0["name"] and \
-                    r["name"] != replica1["name"]:
+        for r in v.replicas:
+            if r.name != replica0.name and \
+                    r.name != replica1.name:
                 new_replica_found = True
                 break
         if new_replica_found:
@@ -61,13 +61,13 @@ def ha_rebuild_replica_test(client, volname):   # NOQA
     volume = common.wait_for_volume_healthy(client, volname)
 
     volume = client.by_id_volume(volname)
-    assert volume["state"] == common.VOLUME_STATE_ATTACHED
-    assert volume["robustness"] == common.VOLUME_ROBUSTNESS_HEALTHY
-    assert len(volume["replicas"]) >= 2
+    assert volume.state == common.VOLUME_STATE_ATTACHED
+    assert volume.robustness == common.VOLUME_ROBUSTNESS_HEALTHY
+    assert len(volume.replicas) >= 2
 
     found = False
-    for replica in volume["replicas"]:
-        if replica["name"] == replica1["name"]:
+    for replica in volume.replicas:
+        if replica.name == replica1.name:
             found = True
             break
     assert found
@@ -90,25 +90,25 @@ def ha_salvage_test(client, core_api,  # NOQA
     volume = volume.attach(hostId=host_id)
     volume = common.wait_for_volume_healthy(client, volume_name)
 
-    assert len(volume["replicas"]) == 2
-    replica0_name = volume["replicas"][0]["name"]
-    replica1_name = volume["replicas"][1]["name"]
+    assert len(volume.replicas) == 2
+    replica0_name = volume.replicas[0].name
+    replica1_name = volume.replicas[1].name
 
     data = write_volume_random_data(volume)
 
     delete_replica_processes(client, core_api, volume_name)
 
     volume = common.wait_for_volume_faulted(client, volume_name)
-    assert len(volume["replicas"]) == 2
-    assert volume["replicas"][0]["failedAt"] != ""
-    assert volume["replicas"][1]["failedAt"] != ""
+    assert len(volume.replicas) == 2
+    assert volume.replicas[0].failedAt != ""
+    assert volume.replicas[1].failedAt != ""
 
     volume.salvage(names=[replica0_name, replica1_name])
 
     volume = common.wait_for_volume_detached_unknown(client, volume_name)
-    assert len(volume["replicas"]) == 2
-    assert volume["replicas"][0]["failedAt"] == ""
-    assert volume["replicas"][1]["failedAt"] == ""
+    assert len(volume.replicas) == 2
+    assert volume.replicas[0].failedAt == ""
+    assert volume.replicas[1].failedAt == ""
 
     volume = volume.attach(hostId=host_id)
     volume = common.wait_for_volume_healthy(client, volume_name)
@@ -123,25 +123,25 @@ def ha_salvage_test(client, core_api,  # NOQA
     volume.attach(hostId=host_id)
     volume = common.wait_for_volume_healthy(client, volume_name)
 
-    assert len(volume["replicas"]) == 2
-    replica0_name = volume["replicas"][0]["name"]
-    replica1_name = volume["replicas"][1]["name"]
+    assert len(volume.replicas) == 2
+    replica0_name = volume.replicas[0].name
+    replica1_name = volume.replicas[1].name
 
     data = write_volume_random_data(volume)
 
     crash_replica_processes(client, core_api, volume_name)
 
     volume = common.wait_for_volume_faulted(client, volume_name)
-    assert len(volume["replicas"]) == 2
-    assert volume["replicas"][0]["failedAt"] != ""
-    assert volume["replicas"][1]["failedAt"] != ""
+    assert len(volume.replicas) == 2
+    assert volume.replicas[0].failedAt != ""
+    assert volume.replicas[1].failedAt != ""
 
     volume.salvage(names=[replica0_name, replica1_name])
 
     volume = common.wait_for_volume_detached_unknown(client, volume_name)
-    assert len(volume["replicas"]) == 2
-    assert volume["replicas"][0]["failedAt"] == ""
-    assert volume["replicas"][1]["failedAt"] == ""
+    assert len(volume.replicas) == 2
+    assert volume.replicas[0].failedAt == ""
+    assert volume.replicas[1].failedAt == ""
 
     volume.attach(hostId=host_id)
     volume = common.wait_for_volume_healthy(client, volume_name)
@@ -172,32 +172,32 @@ def ha_backup_deletion_recovery_test(client, volume_name, size, base_image=""): 
         if common.is_backupTarget_s3(backupstore):
             backupsettings = backupstore.split("$")
             setting = client.update(setting, value=backupsettings[0])
-            assert setting["value"] == backupsettings[0]
+            assert setting.value == backupsettings[0]
 
             credential = client.by_id_setting(
                     common.SETTING_BACKUP_TARGET_CREDENTIAL_SECRET)
             credential = client.update(credential, value=backupsettings[1])
-            assert credential["value"] == backupsettings[1]
+            assert credential.value == backupsettings[1]
         else:
             setting = client.update(setting, value=backupstore)
-            assert setting["value"] == backupstore
+            assert setting.value == backupstore
             credential = client.by_id_setting(
                     common.SETTING_BACKUP_TARGET_CREDENTIAL_SECRET)
             credential = client.update(credential, value="")
-            assert credential["value"] == ""
+            assert credential.value == ""
 
         data = write_volume_random_data(volume)
         snap2 = create_snapshot(client, volume_name)
         create_snapshot(client, volume_name)
 
-        volume.snapshotBackup(name=snap2["name"])
+        volume.snapshotBackup(name=snap2.name)
 
-        _, b = common.find_backup(client, volume_name, snap2["name"])
+        _, b = common.find_backup(client, volume_name, snap2.name)
 
         res_name = common.generate_volume_name()
         res_volume = client.create_volume(name=res_name, size=size,
                                           numberOfReplicas=2,
-                                          fromBackup=b["url"])
+                                          fromBackup=b.url)
         res_volume = common.wait_for_volume_restoration_completed(
             client, res_name)
         res_volume = common.wait_for_volume_detached(client, res_name)
@@ -210,8 +210,8 @@ def ha_backup_deletion_recovery_test(client, volume_name, size, base_image=""): 
         assert len(snapshots) == 2
         backup_snapshot = ""
         for snap in snapshots:
-            if snap["name"] != "volume-head":
-                backup_snapshot = snap["name"]
+            if snap.name != "volume-head":
+                backup_snapshot = snap.name
         assert backup_snapshot != ""
 
         create_snapshot(client, res_name)
@@ -245,11 +245,11 @@ def test_ha_prohibit_deleting_last_replica(client, volume_name):  # NOQA
     volume = volume.attach(hostId=host_id)
     volume = common.wait_for_volume_healthy(client, volume_name)
 
-    assert len(volume["replicas"]) == 1
-    replica0 = volume["replicas"][0]
+    assert len(volume.replicas) == 1
+    replica0 = volume.replicas[0]
 
     with pytest.raises(Exception) as e:
-        volume.replicaRemove(name=replica0["name"])
+        volume.replicaRemove(name=replica0.name)
     assert "no other healthy replica available" in str(e.value)
 
     cleanup_volume(client, volume)
