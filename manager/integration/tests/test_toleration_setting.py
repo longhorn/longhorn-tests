@@ -56,7 +56,7 @@ def test_toleration_setting():
     wait_for_volume_detached(client, volume_name)
 
     setting = client.update(setting, value=setting_value_str)
-    assert setting["value"] == setting_value_str
+    assert setting.value == setting_value_str
     wait_for_toleration_update(core_api, apps_api, count, setting_value_dict)
 
     client = get_longhorn_api_client()
@@ -74,7 +74,7 @@ def test_toleration_setting():
     setting_value_dict = {}
     setting = client.by_id_setting(SETTING_TAINT_TOLERATION)
     setting = client.update(setting, value=setting_value_str)
-    assert setting["value"] == setting_value_str
+    assert setting.value == setting_value_str
     wait_for_toleration_update(core_api, apps_api, count, setting_value_dict)
 
     client = get_longhorn_api_client()
@@ -138,7 +138,7 @@ def wait_for_toleration_update(core_api, apps_api, count, set_tolerations):  # N
         client = get_longhorn_api_client()
         images = client.list_engine_image()
         assert len(images) == 1
-        if images[0]["state"] != "ready":
+        if images[0].state != "ready":
             updated = False
             continue
 
