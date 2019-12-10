@@ -114,6 +114,11 @@ class RestObject:
                 data[k] = v
         return repr(data)
 
+    def __len__(self):
+        if self._is_list():
+            return len(self.data)
+        return len(self.__dict__)
+
     def __getattr__(self, k):
         if self._is_list() and k in LIST_METHODS:
             return getattr(self.data, k)
