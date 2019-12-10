@@ -5,7 +5,7 @@ import pytest
 
 from common import clients, random_labels, volume_name  # NOQA
 from common import core_api, pod   # NOQA
-from common import SIZE, DEV_PATH
+from common import SIZE, DEV_PATH, EXPAND_SIZE
 from common import check_device_data, write_device_random_data
 from common import check_volume_data, write_volume_random_data
 from common import get_self_host_id, volume_valid
@@ -27,7 +27,7 @@ from common import DEFAULT_VOLUME_SIZE
 from common import Gi
 from common import wait_for_volume_detached
 from common import create_pvc_spec
-from common import generate_random_data
+from common import generate_random_data, write_volume_data
 from common import VOLUME_RWTEST_SIZE
 from common import write_pod_volume_data
 from common import find_backup
@@ -41,6 +41,8 @@ from common import storage_class # NOQA
 from common import pod_make # NOQA
 from common import set_random_backupstore
 from common import create_snapshot
+from common import wait_for_volume_expansion, wait_for_dr_volume_expansion
+from common import check_block_device_size
 
 
 @pytest.mark.coretest   # NOQA
@@ -1266,3 +1268,85 @@ def test_storage_class_from_backup(volume_name, pvc_name, storage_class, clients
 
     restored_data = read_volume_data(core_api, backup_pod_name)
     assert test_data == restored_data
+
+
+@pytest.mark.coretest   # NOQA
+def test_expansion_basic(clients, volume_name):  # NOQA
+    for host_id, client in iter(clients.items()):
+        break
+
+    volume = create_and_check_volume(client, volume_name)
+
+    lht_hostId = get_self_host_id()
+    volume.attach(hostId=lht_hostId, disableFrontend=False)
+    common.wait_for_volume_healthy(client, volume_name)
+
+    volume = client.by_id_volume(volume_name)
+    assert volume.disableFrontend is False
+    assert volume.frontend == "blockdev"
+
+    snap1_data = write_volume_random_data(volume)
+    snap1 = create_snapshot(client, volume_name)
+
+    volume.expand(size=EXPAND_SIZE)
+
+    snap2_data = write_volume_random_data(volume)
+    snap2 = create_snapshot(client, volume_name)
+
+    wait_for_volume_expansion(client, volume_name)
+    check_block_device_size(volume, int(EXPAND_SIZE))
+
+    snap3_data = {
+        'pos': int(SIZE),
+        'content': generate_random_data(VOLUME_RWTEST_SIZE),
+    }
+    snap3_data = write_volume_data(volume, snap3_data)
+    create_snapshot(client, volume_name)
+    check_volume_data(volume, snap3_data)
+
+    volume.detach()
+    volume = common.wait_for_volume_detached(client, volume_name)
+
+    volume.attach(hostId=lht_hostId, disableFrontend=False)
+    common.wait_for_volume_healthy(client, volume_name)
+    volume = client.by_id_volume(volume_name)
+    check_block_device_size(volume, int(EXPAND_SIZE))
+    check_volume_data(volume, snap3_data)
+    volume.detach()
+    volume = common.wait_for_volume_detached(client, volume_name)
+
+    volume.attach(hostId=lht_hostId, disableFrontend=True)
+    volume = common.wait_for_volume_healthy_no_frontend(client, volume_name)
+    engine = get_volume_engine(volume)
+    assert volume.disableFrontend is True
+    assert volume.frontend == "blockdev"
+    assert engine.endpoint == ""
+    volume.snapshotRevert(name=snap2.name)
+    volume.detach()
+    volume = common.wait_for_volume_detached(client, volume_name)
+    volume.attach(hostId=lht_hostId, disableFrontend=False)
+    common.wait_for_volume_healthy(client, volume_name)
+    volume = client.by_id_volume(volume_name)
+    check_volume_data(volume, snap2_data, False)
+    snap4_data = {
+        'pos': int(SIZE),
+        'content': generate_random_data(VOLUME_RWTEST_SIZE),
+    }
+    snap4_data = write_volume_data(volume, snap4_data)
+    create_snapshot(client, volume_name)
+    check_volume_data(volume, snap4_data)
+    volume.detach()
+    volume = common.wait_for_volume_detached(client, volume_name)
+
+    volume.attach(hostId=lht_hostId, disableFrontend=True)
+    volume = common.wait_for_volume_healthy_no_frontend(client, volume_name)
+    volume.snapshotRevert(name=snap1.name)
+    volume.detach()
+    volume = common.wait_for_volume_detached(client, volume_name)
+    volume.attach(hostId=lht_hostId, disableFrontend=False)
+    common.wait_for_volume_healthy(client, volume_name)
+    volume = client.by_id_volume(volume_name)
+    check_volume_data(volume, snap1_data, False)
+
+    client.delete(volume)
+    wait_for_volume_delete(client, volume_name)
