@@ -1,3 +1,5 @@
+import fcntl
+import struct
 import time
 import os
 import stat
@@ -23,6 +25,7 @@ Mi = (1024 * 1024)
 Gi = (1024 * Mi)
 
 SIZE = str(16 * Mi)
+EXPAND_SIZE = str(32 * Mi)
 VOLUME_NAME = "longhorn-testvol"
 DEV_PATH = "/dev/longhorn/"
 VOLUME_RWTEST_SIZE = 512
@@ -2658,3 +2661,26 @@ def wait_and_get_pv_for_pvc(api, pvc_name):
 
     assert found
     return pv
+
+
+def wait_for_volume_expansion(longhorn_api_client, volume_name):
+    complete = False
+    for i in range(RETRY_COUNTS):
+        volume = longhorn_api_client.by_id_volume(volume_name)
+        engine = get_volume_engine(volume)
+        if engine.size == volume.size:
+            complete = True
+            break
+        time.sleep(RETRY_INTERVAL)
+    assert complete
+
+
+def check_block_device_size(volume, size):
+    dev = get_volume_endpoint(volume)
+    # BLKGETSIZE64, result is bytes as unsigned 64-bit integer (uint64)
+    req = 0x80081272
+    buf = ' ' * 8
+    with open(dev) as dev:
+        buf = fcntl.ioctl(dev.fileno(), req, buf)
+    device_size = struct.unpack('L', buf)[0]
+    assert device_size == size
