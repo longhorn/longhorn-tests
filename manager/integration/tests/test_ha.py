@@ -3,13 +3,15 @@ import common
 import time
 
 from common import client, core_api, volume_name  # NOQA
-from common import SIZE, DEV_PATH
+from common import SIZE, DEV_PATH, VOLUME_RWTEST_SIZE, EXPAND_SIZE
 from common import check_volume_data, cleanup_volume, create_and_check_volume
 from common import delete_replica_processes, crash_replica_processes
 from common import get_self_host_id, get_volume_endpoint
 from common import wait_for_snapshot_purge, write_volume_random_data
 from common import RETRY_COUNTS, RETRY_INTERVAL
 from common import create_snapshot
+from common import wait_for_volume_expansion, check_block_device_size
+from common import write_volume_data, generate_random_data
 
 
 @pytest.mark.coretest   # NOQA
@@ -251,5 +253,62 @@ def test_ha_prohibit_deleting_last_replica(client, volume_name):  # NOQA
     with pytest.raises(Exception) as e:
         volume.replicaRemove(name=replica0.name)
     assert "no other healthy replica available" in str(e.value)
+
+    cleanup_volume(client, volume)
+
+
+def test_ha_recovery_with_expansion(client, volume_name):   # NOQA
+    volume = create_and_check_volume(client, volume_name, 2, SIZE)
+
+    host_id = get_self_host_id()
+    volume = volume.attach(hostId=host_id)
+    volume = common.wait_for_volume_healthy(client, volume_name)
+    assert len(volume.replicas) == 2
+    replica0 = volume.replicas[0]
+    assert replica0.name != ""
+    replica1 = volume.replicas[1]
+    assert replica1.name != ""
+
+    data1 = write_volume_random_data(volume)
+
+    volume.expand(size=EXPAND_SIZE)
+    wait_for_volume_expansion(client, volume_name)
+    check_block_device_size(volume, int(EXPAND_SIZE))
+
+    data2 = {
+        'pos': int(SIZE),
+        'content': generate_random_data(VOLUME_RWTEST_SIZE),
+    }
+    data2 = write_volume_data(volume, data2)
+
+    volume.replicaRemove(name=replica0.name)
+    # wait until we saw a replica starts rebuilding
+    new_replica_found = False
+    for i in range(RETRY_COUNTS):
+        v = client.by_id_volume(volume_name)
+        for r in v.replicas:
+            if r.name != replica0.name and \
+                    r.name != replica1.name:
+                new_replica_found = True
+                break
+        if new_replica_found:
+            break
+        time.sleep(RETRY_INTERVAL)
+    assert new_replica_found
+
+    volume = common.wait_for_volume_healthy(client, volume_name)
+    assert volume.state == common.VOLUME_STATE_ATTACHED
+    assert volume.robustness == common.VOLUME_ROBUSTNESS_HEALTHY
+    assert len(volume.replicas) >= 2
+
+    found = False
+    for replica in volume.replicas:
+        if replica.name == replica1.name:
+            found = True
+            break
+    assert found
+
+    check_volume_data(volume, data1, False)
+    check_volume_data(volume, data2)
 
     cleanup_volume(client, volume)
