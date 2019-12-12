@@ -194,17 +194,23 @@ def create_backup(client, volname, data={}, labels={}):
     create_snapshot(client, volname)
     volume.snapshotBackup(name=snap.name, labels=labels)
 
-    bv, b = find_backup(client, volname, snap.name)
+    verified = False
+    for i in range(RETRY_COMMAND_COUNT):
+        bv, b = find_backup(client, volname, snap.name)
+        new_b = bv.backupGet(name=b.name)
+        if new_b.name == b.name and \
+           new_b.url == b.url and \
+           new_b.snapshotName == b.snapshotName and \
+           new_b.snapshotCreated == b.snapshotCreated and \
+           new_b.created == b.created and \
+           new_b.volumeName == b.volumeName and \
+           new_b.volumeSize == b.volumeSize and \
+           new_b.volumeCreated == b.volumeCreated:
+            verified = True
+            break
+        time.sleep(RETRY_INTERVAL)
+    assert verified
 
-    new_b = bv.backupGet(name=b.name)
-    assert new_b.name == b.name
-    assert new_b.url == b.url
-    assert new_b.snapshotName == b.snapshotName
-    assert new_b.snapshotCreated == b.snapshotCreated
-    assert new_b.created == b.created
-    assert new_b.volumeName == b.volumeName
-    assert new_b.volumeSize == b.volumeSize
-    assert new_b.volumeCreated == b.volumeCreated
     # Don't directly compare the Label dictionaries, since the server could
     # have added extra Labels (for things like BaseImage).
     for key, val in iter(labels.items()):
@@ -2684,3 +2690,16 @@ def check_block_device_size(volume, size):
         buf = fcntl.ioctl(dev.fileno(), req, buf)
     device_size = struct.unpack('L', buf)[0]
     assert device_size == size
+
+
+def wait_for_dr_volume_expansion(longhorn_api_client, volume_name, size_str):
+    complete = False
+    for i in range(RETRY_COUNTS):
+        volume = longhorn_api_client.by_id_volume(volume_name)
+        if volume.size == size_str:
+            engine = get_volume_engine(volume)
+            if engine.size == volume.size:
+                complete = True
+                break
+        time.sleep(RETRY_INTERVAL)
+    assert complete
