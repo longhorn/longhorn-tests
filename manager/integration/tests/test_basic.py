@@ -1350,3 +1350,195 @@ def test_expansion_basic(clients, volume_name):  # NOQA
 
     client.delete(volume)
     wait_for_volume_delete(client, volume_name)
+
+
+@pytest.mark.coretest   # NOQA
+def test_restore_inc_with_expansion(clients, core_api, volume_name, pod):  # NOQA
+    client = get_random_client(clients)
+    lht_host_id = get_self_host_id()
+
+    set_random_backupstore(client)
+
+    std_volume = create_and_check_volume(client, volume_name, 2, SIZE)
+    std_volume.attach(hostId=lht_host_id)
+    std_volume = common.wait_for_volume_healthy(client, volume_name)
+
+    with pytest.raises(Exception) as e:
+        std_volume.activate(frontend="blockdev")
+        assert "already in active mode" in str(e.value)
+
+    data0 = {'pos': 0, 'len': VOLUME_RWTEST_SIZE,
+             'content': common.generate_random_data(VOLUME_RWTEST_SIZE)}
+    bv, backup0, _, data0 = create_backup(
+        client, volume_name, data0)
+
+    dr_volume0_name = "dr-expand-0-" + volume_name
+    dr_volume1_name = "dr-expand-1-" + volume_name
+    dr_volume2_name = "dr-expand-2-" + volume_name
+    client.create_volume(name=dr_volume0_name, size=SIZE,
+                         numberOfReplicas=2, fromBackup=backup0.url,
+                         frontend="", standby=True)
+    client.create_volume(name=dr_volume1_name, size=SIZE,
+                         numberOfReplicas=2, fromBackup=backup0.url,
+                         frontend="", standby=True)
+    client.create_volume(name=dr_volume2_name, size=SIZE,
+                         numberOfReplicas=2, fromBackup=backup0.url,
+                         frontend="", standby=True)
+    common.wait_for_volume_restoration_completed(client, dr_volume0_name)
+    common.wait_for_volume_restoration_completed(client, dr_volume1_name)
+    common.wait_for_volume_restoration_completed(client, dr_volume2_name)
+
+    dr_volume0 = common.wait_for_volume_healthy_no_frontend(client,
+                                                            dr_volume0_name)
+    dr_volume1 = common.wait_for_volume_healthy_no_frontend(client,
+                                                            dr_volume1_name)
+    dr_volume2 = common.wait_for_volume_healthy_no_frontend(client,
+                                                            dr_volume2_name)
+
+    for i in range(RETRY_COUNTS):
+        dr_volume0 = client.by_id_volume(dr_volume0_name)
+        dr_volume1 = client.by_id_volume(dr_volume1_name)
+        dr_volume2 = client.by_id_volume(dr_volume2_name)
+        get_volume_engine(dr_volume0)
+        get_volume_engine(dr_volume1)
+        get_volume_engine(dr_volume2)
+        if dr_volume0.initialRestorationRequired is True or \
+                dr_volume1.initialRestorationRequired is True or \
+                dr_volume2.initialRestorationRequired is True:
+            time.sleep(RETRY_INTERVAL)
+        else:
+            break
+    assert dr_volume0.standby is True
+    assert dr_volume0.lastBackup == backup0.name
+    assert dr_volume0.frontend == ""
+    assert dr_volume0.initialRestorationRequired is False
+    dr_engine0 = get_volume_engine(dr_volume0)
+    assert dr_engine0.lastRestoredBackup == backup0.name
+    assert dr_engine0.requestedBackupRestore == backup0.name
+    assert dr_volume1.standby is True
+    assert dr_volume1.lastBackup == backup0.name
+    assert dr_volume1.frontend == ""
+    assert dr_volume1.initialRestorationRequired is False
+    dr_engine1 = get_volume_engine(dr_volume1)
+    assert dr_engine1.lastRestoredBackup == backup0.name
+    assert dr_engine1.requestedBackupRestore == backup0.name
+    assert dr_volume2.standby is True
+    assert dr_volume2.lastBackup == backup0.name
+    assert dr_volume2.frontend == ""
+    assert dr_volume2.initialRestorationRequired is False
+    dr_engine2 = get_volume_engine(dr_volume2)
+    assert dr_engine2.lastRestoredBackup == backup0.name
+    assert dr_engine2.requestedBackupRestore == backup0.name
+
+    dr0_snaps = dr_volume0.snapshotList()
+    assert len(dr0_snaps) == 2
+
+    activate_standby_volume(client, dr_volume0_name)
+    dr_volume0 = client.by_id_volume(dr_volume0_name)
+    dr_volume0.attach(hostId=lht_host_id)
+    dr_volume0 = common.wait_for_volume_healthy(client, dr_volume0_name)
+    check_volume_data(dr_volume0, data0, False)
+
+    std_volume.expand(size=EXPAND_SIZE)
+    data1 = {'pos': VOLUME_RWTEST_SIZE, 'len': VOLUME_RWTEST_SIZE,
+             'content': common.generate_random_data(VOLUME_RWTEST_SIZE)}
+    bv, backup1, _, data1 = create_backup(
+        client, volume_name, data1)
+
+    wait_for_volume_expansion(client, volume_name)
+    std_volume = client.by_id_volume(volume_name)
+    check_block_device_size(std_volume, int(EXPAND_SIZE))
+
+    client.list_backupVolume()
+    check_volume_last_backup(client, dr_volume1_name, backup1.name)
+    activate_standby_volume(client, dr_volume1_name)
+    dr_volume1 = client.by_id_volume(dr_volume1_name)
+    dr_volume1.attach(hostId=lht_host_id)
+    dr_volume1 = common.wait_for_volume_healthy(client, dr_volume1_name)
+    check_volume_data(dr_volume1, data0, False)
+    check_volume_data(dr_volume1, data1, False)
+
+    data2 = {'pos': int(SIZE), 'len': VOLUME_RWTEST_SIZE,
+             'content': common.generate_random_data(VOLUME_RWTEST_SIZE)}
+    bv, backup2, _, data2 = create_backup(
+        client, volume_name, data2)
+    assert backup2.volumeSize == EXPAND_SIZE
+
+    client.list_backupVolume()
+    wait_for_dr_volume_expansion(client, dr_volume2_name, EXPAND_SIZE)
+    check_volume_last_backup(client, dr_volume2_name, backup2.name)
+    activate_standby_volume(client, dr_volume2_name)
+    dr_volume2 = client.by_id_volume(dr_volume2_name)
+    dr_volume2.attach(hostId=lht_host_id)
+    dr_volume2 = common.wait_for_volume_healthy(client, dr_volume2_name)
+    check_volume_data(dr_volume2, data2)
+
+    # allocated this active volume to a pod
+    dr_volume2.detach()
+    dr_volume2 = common.wait_for_volume_detached(client, dr_volume2_name)
+
+    create_pv_for_volume(client, core_api, dr_volume2, dr_volume2_name)
+    create_pvc_for_volume(client, core_api, dr_volume2, dr_volume2_name)
+
+    dr_volume2_pod_name = "pod-" + dr_volume2_name
+    pod['metadata']['name'] = dr_volume2_pod_name
+    pod['spec']['volumes'] = [{
+        'name': pod['spec']['containers'][0]['volumeMounts'][0]['name'],
+        'persistentVolumeClaim': {
+            'claimName': dr_volume2_name,
+        },
+    }]
+    create_and_wait_pod(core_api, pod)
+
+    dr_volume2 = client.by_id_volume(dr_volume2_name)
+    k_status = dr_volume2.kubernetesStatus
+    workloads = k_status.workloadsStatus
+    assert k_status.pvName == dr_volume2_name
+    assert k_status.pvStatus == 'Bound'
+    assert len(workloads) == 1
+    for i in range(RETRY_COUNTS):
+        if workloads[0].podStatus == 'Running':
+            break
+        time.sleep(RETRY_INTERVAL)
+        dr_volume2 = client.by_id_volume(dr_volume2_name)
+        k_status = dr_volume2.kubernetesStatus
+        workloads = k_status.workloadsStatus
+        assert len(workloads) == 1
+    assert workloads[0].podName == dr_volume2_pod_name
+    assert workloads[0].podStatus == 'Running'
+    assert not workloads[0].workloadName
+    assert not workloads[0].workloadType
+    assert k_status.namespace == 'default'
+    assert k_status.pvcName == dr_volume2_name
+    assert not k_status.lastPVCRefAt
+    assert not k_status.lastPodRefAt
+
+    delete_and_wait_pod(core_api, dr_volume2_pod_name)
+    delete_and_wait_pvc(core_api, dr_volume2_name)
+    delete_and_wait_pv(core_api, dr_volume2_name)
+
+    # cleanup
+    std_volume.detach()
+    dr_volume0.detach()
+    dr_volume1.detach()
+    std_volume = common.wait_for_volume_detached(client, volume_name)
+    dr_volume0 = common.wait_for_volume_detached(client, dr_volume0_name)
+    dr_volume1 = common.wait_for_volume_detached(client, dr_volume1_name)
+    dr_volume2 = common.wait_for_volume_detached(client, dr_volume2_name)
+
+    bv.backupDelete(name=backup2.name)
+    bv.backupDelete(name=backup1.name)
+    bv.backupDelete(name=backup0.name)
+
+    client.delete(std_volume)
+    client.delete(dr_volume0)
+    client.delete(dr_volume1)
+    client.delete(dr_volume2)
+
+    wait_for_volume_delete(client, volume_name)
+    wait_for_volume_delete(client, dr_volume0_name)
+    wait_for_volume_delete(client, dr_volume1_name)
+    wait_for_volume_delete(client, dr_volume2_name)
+
+    volumes = client.list_volume().data
+    assert len(volumes) == 0
