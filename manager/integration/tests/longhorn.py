@@ -134,6 +134,7 @@ class RestObject:
     def __iter__(self):
         if self._is_list():
             return iter(self.data)
+        return iter(self.__dict__)
 
 
 class Schema(object):
