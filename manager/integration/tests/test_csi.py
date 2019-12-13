@@ -4,7 +4,8 @@ import random
 import common
 from common import client, core_api, csi_pv, pod_make, pvc, storage_class  # NOQA
 from common import pod as pod_manifest  # NOQA
-from common import Gi, DEFAULT_VOLUME_SIZE, VOLUME_RWTEST_SIZE
+from common import Gi, DEFAULT_VOLUME_SIZE, EXPANDED_VOLUME_SIZE
+from common import VOLUME_RWTEST_SIZE
 from common import create_and_wait_pod, create_pvc_spec, delete_and_wait_pod
 from common import size_to_string, create_storage_class, create_pvc
 from common import delete_and_wait_pvc, delete_and_wait_pv
@@ -16,6 +17,7 @@ from common import get_pod_block_volume_data_md5sum
 from common import generate_volume_name
 from common import delete_backup
 from common import create_snapshot
+from common import expand_and_wait_for_pvc
 
 
 # Using a StorageClass because GKE is using the default StorageClass if not
@@ -263,3 +265,36 @@ def test_csi_block_volume(client, core_api, storage_class, pvc, pod_manifest):  
     delete_and_wait_pod(core_api, pod_name_2)
     delete_and_wait_pvc(core_api, pvc_name)
     delete_and_wait_pv(core_api, pv_name)
+
+
+@pytest.mark.coretest   # NOQA
+@pytest.mark.csi  # NOQA
+def test_csi_online_expansion(core_api, storage_class, pvc, pod_manifest):  # NOQA
+    create_storage_class(storage_class)
+
+    pod_name = 'csi-online-expand-volume-test'
+    pvc_name = pod_name + "-pvc"
+    pvc['metadata']['name'] = pvc_name
+    pvc['spec']['storageClassName'] = storage_class['metadata']['name']
+    create_pvc(pvc)
+
+    pod_manifest['metadata']['name'] = pod_name
+    pod_manifest['spec']['volumes'] = [{
+        'name':
+            pod_manifest['spec']['containers'][0]['volumeMounts'][0]['name'],
+        'persistentVolumeClaim': {'claimName': pvc_name},
+    }]
+    create_and_wait_pod(core_api, pod_manifest)
+
+    test_data = generate_random_data(VOLUME_RWTEST_SIZE)
+    write_pod_volume_data(core_api, pod_name, test_data)
+
+    pvc['spec']['resources'] = {
+        'requests': {
+            'storage': size_to_string(EXPANDED_VOLUME_SIZE*Gi)
+        }
+    }
+    expand_and_wait_for_pvc(core_api, pvc)
+
+    resp = read_volume_data(core_api, pod_name)
+    assert resp == test_data

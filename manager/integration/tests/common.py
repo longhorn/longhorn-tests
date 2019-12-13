@@ -76,6 +76,7 @@ DEFAULT_STATEFULSET_INTERVAL = 5
 DEFAULT_STATEFULSET_TIMEOUT = 180
 
 DEFAULT_VOLUME_SIZE = 3  # In Gi
+EXPANDED_VOLUME_SIZE = 4  # In Gi
 
 DIRECTORY_PATH = '/tmp/longhorn-test/'
 
@@ -920,6 +921,7 @@ def storage_class(request):
             'name': DEFAULT_STORAGECLASS_NAME
         },
         'provisioner': 'driver.longhorn.io',
+        'allowVolumeExpansion': True,
         'parameters': {
             'numberOfReplicas': DEFAULT_LONGHORN_PARAMS['numberOfReplicas'],
             'staleReplicaTimeout':
@@ -2703,3 +2705,20 @@ def wait_for_dr_volume_expansion(longhorn_api_client, volume_name, size_str):
                 break
         time.sleep(RETRY_INTERVAL)
     assert complete
+
+
+def expand_and_wait_for_pvc(api, pvc):
+    pvc_name = pvc['metadata']['name']
+    api.patch_namespaced_persistent_volume_claim(
+        pvc_name, 'default', pvc)
+    complete = False
+    for i in range(RETRY_COUNTS):
+        claim = api.read_namespaced_persistent_volume_claim(
+            name=pvc_name, namespace='default')
+        if claim.spec.resources.requests['storage'] ==\
+                claim.status.capacity['storage']:
+            complete = True
+            break
+        time.sleep(RETRY_INTERVAL)
+    assert complete
+    return claim
