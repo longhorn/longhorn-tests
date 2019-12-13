@@ -122,7 +122,7 @@ def get_md5sum(file_path):
 
 
 def get_random_snapshot(snapshots_md5sum):
-    snapshots = snapshots_md5sum.keys()
+    snapshots = list(snapshots_md5sum.keys())
 
     snapshots_count = len(snapshots)
 
@@ -145,7 +145,7 @@ def get_random_snapshot(snapshots_md5sum):
 
 
 def get_random_backup_snapshot_data(snapshots_md5sum):
-    snapshots = snapshots_md5sum.keys()
+    snapshots = list(snapshots_md5sum.keys())
 
     snapshots_count = len(snapshots)
 
@@ -321,7 +321,7 @@ def restore_and_check_random_backup(client, core_api, volume_name, pod_name, sna
     command = ['md5sum', datafile_path]
     output = subprocess.check_output(command)
 
-    bkp_data_md5sum = output.split()[0]
+    bkp_data_md5sum = output.split()[0].decode('utf-8')
 
     bkp_checksum_ok = False
     if snap_data.data_md5sum == bkp_data_md5sum:
