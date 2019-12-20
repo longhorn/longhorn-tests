@@ -2068,7 +2068,7 @@ def reset_settings(client):
 
 
 def reset_engine_image(client):
-    core_api = get_core_api_client
+    core_api = get_core_api_client()
     ready = False
 
     for i in range(RETRY_COUNTS):
