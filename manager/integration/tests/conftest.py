@@ -6,7 +6,7 @@ from kubernetes.client import Configuration
 from common import get_longhorn_api_client, \
     NODE_CONDITION_MOUNTPROPAGATION, CONDITION_STATUS_TRUE
 from common import wait_for_node_mountpropagation_condition
-from common import check_longhorn, check_csi
+from common import check_longhorn, check_csi, check_csi_expansion
 
 
 INCLUDE_BASE_IMAGE_OPT = "--include-base-image-test"
@@ -71,6 +71,14 @@ def pytest_collection_modifyitems(config, items):
         for item in items:
             if "csi" in item.keywords:
                 item.add_marker(skip_upgrade)
+
+    csi_expansion_enabled = check_csi_expansion(core_api)
+    if not csi_expansion_enabled:
+        skip_csi_expansion = pytest.mark.skip(reason="environment is not " +
+                                                     "using csi expansion")
+        for item in items:
+            if "csi_expansion" in item.keywords:
+                item.add_marker(skip_csi_expansion)
 
     all_nodes_support_mount_propagation = True
     for node in get_longhorn_api_client().list_node():

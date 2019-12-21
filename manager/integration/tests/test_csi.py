@@ -270,6 +270,7 @@ def test_csi_block_volume(client, core_api, storage_class, pvc, pod_manifest):  
 
 @pytest.mark.coretest   # NOQA
 @pytest.mark.csi  # NOQA
+@pytest.mark.csi_expansion  # NOQA
 def test_csi_online_expansion(core_api, storage_class, pvc, pod_manifest):  # NOQA
     create_storage_class(storage_class)
 
@@ -303,6 +304,7 @@ def test_csi_online_expansion(core_api, storage_class, pvc, pod_manifest):  # NO
 
 @pytest.mark.coretest   # NOQA
 @pytest.mark.csi  # NOQA
+@pytest.mark.csi_expansion  # NOQA
 def test_csi_offline_expansion(client, core_api, storage_class, pvc, pod_manifest):  # NOQA
     create_storage_class(storage_class)
 
