@@ -2241,6 +2241,31 @@ def check_csi(core_api):
     return True if using_csi == CSI_TRUE else False
 
 
+def check_csi_expansion(core_api):
+    csi_expansion_enabled = False
+    has_csi_resizer = False
+    pod_running = True
+
+    try:
+        longhorn_pod_list = core_api.list_namespaced_pod('longhorn-system')
+        for item in longhorn_pod_list.items:
+            if item.status.phase != "Running":
+                pod_running = False
+
+            labels = item.metadata.labels
+            if not labels:
+                pass
+            elif labels.get('app', '') == 'csi-resizer':
+                has_csi_resizer = True
+        if has_csi_resizer and pod_running:
+            csi_expansion_enabled = True
+
+    except ApiException:
+        pass
+
+    return csi_expansion_enabled
+
+
 def create_and_wait_statefulset(statefulset_manifest):
     """
     Create a new StatefulSet for testing.
