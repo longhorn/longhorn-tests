@@ -12,6 +12,7 @@ from common import RETRY_COUNTS, RETRY_INTERVAL
 from common import create_snapshot
 from common import wait_for_volume_expansion, check_block_device_size
 from common import write_volume_data, generate_random_data
+from common import wait_for_rebuild_complete
 
 
 @pytest.mark.coretest   # NOQA
@@ -58,6 +59,7 @@ def ha_rebuild_replica_test(client, volname):   # NOQA
         if new_replica_found:
             break
         time.sleep(RETRY_INTERVAL)
+    wait_for_rebuild_complete(client, volname)
     assert new_replica_found
 
     volume = common.wait_for_volume_healthy(client, volname)
@@ -294,6 +296,7 @@ def test_ha_recovery_with_expansion(client, volume_name):   # NOQA
         if new_replica_found:
             break
         time.sleep(RETRY_INTERVAL)
+    wait_for_rebuild_complete(client, volume_name)
     assert new_replica_found
 
     volume = common.wait_for_volume_healthy(client, volume_name)

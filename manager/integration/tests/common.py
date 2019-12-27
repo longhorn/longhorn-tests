@@ -2747,3 +2747,32 @@ def expand_and_wait_for_pvc(api, pvc):
         time.sleep(RETRY_INTERVAL)
     assert complete
     return claim
+
+
+def wait_for_rebuild_complete(client, volume_name):
+    completed = 0
+    rebuild_statuses = {}
+    for i in range(RETRY_COUNTS):
+        completed = 0
+        v = client.by_id_volume(volume_name)
+        rebuild_statuses = v.rebuildStatus
+        for status in rebuild_statuses:
+            if status.state == "complete":
+                assert status.progress == 100
+                assert not status.error
+                assert not status.isRebuilding
+                completed += 1
+            elif status.state == "":
+                assert not status.error
+                assert not status.isRebuilding
+                completed += 1
+            elif status.state == "in_progress":
+                assert status.isRebuilding
+            else:
+                assert status.state == "error"
+                assert status.error != ""
+                assert not status.isRebuilding
+        if completed == len(rebuild_statuses):
+            break
+        time.sleep(RETRY_INTERVAL)
+    return completed == len(rebuild_statuses)
