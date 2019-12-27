@@ -43,6 +43,7 @@ from common import set_random_backupstore
 from common import create_snapshot
 from common import wait_for_volume_expansion, wait_for_dr_volume_expansion
 from common import check_block_device_size
+from common import wait_for_rebuild_complete
 
 
 @pytest.mark.coretest   # NOQA
@@ -1092,6 +1093,7 @@ def test_volume_update_replica_count(clients, volume_name):  # NOQA
 
     volume = common.wait_for_volume_replica_count(client,
                                                   volume_name, replica_count)
+    wait_for_rebuild_complete(client, volume_name)
     volume = common.wait_for_volume_healthy(client, volume_name)
     assert len(volume.replicas) == replica_count
 

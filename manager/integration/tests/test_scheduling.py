@@ -5,7 +5,9 @@ from common import client, volume_name  # NOQA
 from common import check_volume_data, cleanup_volume, \
     create_and_check_volume, get_longhorn_api_client, get_self_host_id, \
     wait_for_volume_detached, wait_for_volume_degraded, \
-    wait_for_volume_healthy, wait_scheduling_failure, write_volume_random_data
+    wait_for_volume_healthy, wait_scheduling_failure, \
+    write_volume_random_data, wait_for_rebuild_complete
+
 from time import sleep
 
 SETTING_REPLICA_SOFT_ANTI_AFFINITY = "replica-soft-anti-affinity"
@@ -50,6 +52,7 @@ def wait_new_replica_ready(client, volume_name, replica_names):  # NOQA
     :param replica_names: The list of names of the volume's old replicas.
     """
     new_replica_ready = False
+    wait_for_rebuild_complete(client, volume_name)
     for _ in range(RETRY_COUNTS):
         v = client.by_id_volume(volume_name)
         for r in v.replicas:
