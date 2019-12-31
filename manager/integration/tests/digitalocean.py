@@ -1,6 +1,5 @@
 import os
 import requests
-import signal
 import time
 
 from cloudprovider import cloudprovider
@@ -13,9 +12,6 @@ class digitalocean(cloudprovider):
     DO_REQ_HEADERS = {'Content-Type': 'application/json',
                       'Authorization': 'Bearer {0}'.format(DO_API_TOKEN)}
     DO_API_TIMEOUT_SEC = 120
-
-    def timeout_handler(self, signum, frame):
-        raise Exception("Err: Digitalocean API timed out")
 
     def is_api_token_defined(self):
         if self.DO_API_TOKEN is None or self.DO_API_TOKEN == "":
@@ -74,17 +70,16 @@ class digitalocean(cloudprovider):
         if droplet_current_status == expected_status:
             requests.post(api_url, headers=self.DO_REQ_HEADERS, json=payload)
 
-            signal.signal(signal.SIGALRM, self.timeout_handler)
-            signal.alarm(self.DO_API_TIMEOUT_SEC)
-
-            try:
-                while self.node_status(droplet_id) == expected_status:
+            action_ok = False
+            for i in range(self.DO_API_TIMEOUT_SEC):
+                droplet_status = self.node_status(droplet_id)
+                if droplet_status == desired_status:
+                    action_ok = True
+                    break
+                elif droplet_status == expected_status:
                     time.sleep(1)
-            except Exception as exc:
-                print(exc)
-                return False
 
-            return True
+            return action_ok
 
         elif droplet_current_status == desired_status:
             return True
