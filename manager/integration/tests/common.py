@@ -10,6 +10,7 @@ import json
 import hashlib
 import signal
 
+import socket
 import pytest
 
 import longhorn
@@ -164,7 +165,15 @@ def get_longhorn_api_client():
         try:
             k8sconfig.load_incluster_config()
             ips = get_mgr_ips()
-            client = get_client(ips[0] + PORT)
+
+            # check if longhorn manager port is open before calling get_client
+            for ip in ips:
+                sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                mgr_port_open = sock.connect_ex((ip, 9500))
+
+                if mgr_port_open == 0:
+                    client = get_client(ip + PORT)
+                    break
             return client
         except Exception:
             time.sleep(RETRY_INTERVAL)
@@ -1005,13 +1014,22 @@ def client(request):
     k8sconfig.load_incluster_config()
     # Make sure nodes and managers are all online.
     ips = get_mgr_ips()
-    client = get_client(ips[0] + PORT)
+
+    # check if longhorn manager port is open before calling get_client
+    for ip in ips:
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        mgr_port_open = sock.connect_ex((ip, 9500))
+
+        if mgr_port_open == 0:
+            client = get_client(ip + PORT)
+            break
+
     hosts = client.list_node()
     assert len(hosts) == len(ips)
 
-    request.addfinalizer(lambda: cleanup_client(client))
+    request.addfinalizer(lambda: cleanup_client())
 
-    cleanup_client(client)
+    cleanup_client()
 
     return client
 
@@ -1032,12 +1050,13 @@ def clients(request):
     request.addfinalizer(finalizer)
 
     client = next(iter(clis.values()))
-    cleanup_client(client)
+    cleanup_client()
 
     return clis
 
 
-def cleanup_client(client):
+def cleanup_client():
+    client = get_longhorn_api_client()
     # cleanup test disks
     cleanup_test_disks(client)
 
