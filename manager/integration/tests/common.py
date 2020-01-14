@@ -1057,12 +1057,10 @@ def clients(request):
     clis = get_clients(hosts)
 
     def finalizer():
-        client = next(iter(clis.values()))
-        cleanup_client(client)
+        cleanup_client()
 
     request.addfinalizer(finalizer)
 
-    client = next(iter(clis.values()))
     cleanup_client()
 
     return clis
