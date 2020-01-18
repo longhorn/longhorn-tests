@@ -41,6 +41,8 @@ RETRY_COMMAND_COUNT = 3
 RETRY_COUNTS = 300
 RETRY_INTERVAL = 0.5
 RETRY_INTERVAL_LONG = 2
+RETRY_BACKUP_COUNTS = 600
+RETRY_BACKUP_INTERVAL = 0.5
 
 LONGHORN_NAMESPACE = "longhorn-system"
 
@@ -1860,7 +1862,7 @@ def get_volume_attached_nodes(v):
 
 def wait_for_backup_completion(client, volume_name, snapshot_name):
     completed = False
-    for i in range(RETRY_COUNTS):
+    for i in range(RETRY_BACKUP_COUNTS):
         v = client.by_id_volume(volume_name)
         for b in v.backupStatus:
             assert b.error == ""
@@ -1870,7 +1872,7 @@ def wait_for_backup_completion(client, volume_name, snapshot_name):
                 break
         if completed:
             break
-        time.sleep(RETRY_INTERVAL)
+        time.sleep(RETRY_BACKUP_INTERVAL)
     assert completed is True
     return v
 
