@@ -7,6 +7,8 @@ from common import (  # NOQA
     create_and_check_volume, cleanup_volume,
     wait_for_volume_healthy, wait_for_volume_detached,
     write_volume_random_data, check_volume_data,
+    get_default_engine_image,
+    wait_for_engine_image_state,
 
     LONGHORN_NAMESPACE, SETTING_TAINT_TOLERATION,
     RETRY_COUNTS, RETRY_INTERVAL_LONG,
@@ -60,6 +62,10 @@ def test_toleration_setting():
     wait_for_toleration_update(core_api, apps_api, count, setting_value_dict)
 
     client = get_longhorn_api_client()
+
+    ei = get_default_engine_image(client)
+    ei_name = ei["name"]
+    wait_for_engine_image_state(client, ei_name, "ready")
     volume = client.by_id_volume(volume_name)
     volume.attach(hostId=get_self_host_id())
     volume = wait_for_volume_healthy(client, volume_name)
