@@ -14,6 +14,8 @@ from common import (  # NOQA
     RETRY_COUNTS, RETRY_INTERVAL_LONG,
 )
 
+from test_infra import wait_for_node_up_longhorn
+
 KUBERNETES_DEFAULT_TOLERATION = "kubernetes.io"
 
 
@@ -65,9 +67,14 @@ def test_toleration_setting():
 
     ei = get_default_engine_image(client)
     ei_name = ei["name"]
+
     wait_for_engine_image_state(client, ei_name, "ready")
     volume = client.by_id_volume(volume_name)
-    volume.attach(hostId=get_self_host_id())
+
+    node = get_self_host_id()
+    wait_for_node_up_longhorn(node, client)
+
+    volume.attach(hostId=node)
     volume = wait_for_volume_healthy(client, volume_name)
     check_volume_data(volume, data1)
     data2 = write_volume_random_data(volume)
@@ -84,8 +91,17 @@ def test_toleration_setting():
     wait_for_toleration_update(core_api, apps_api, count, setting_value_dict)
 
     client = get_longhorn_api_client()
+
+    ei = get_default_engine_image(client)
+    ei_name = ei["name"]
+
+    wait_for_engine_image_state(client, ei_name, "ready")
+
+    node = get_self_host_id()
+    wait_for_node_up_longhorn(node, client)
+
     volume = client.by_id_volume(volume_name)
-    volume.attach(hostId=get_self_host_id())
+    volume.attach(hostId=node)
     volume = wait_for_volume_healthy(client, volume_name)
     check_volume_data(volume, data2)
     data3 = write_volume_random_data(volume)
