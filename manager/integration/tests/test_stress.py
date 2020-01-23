@@ -348,6 +348,15 @@ def delete_replica(client, volume_name):
 
     replica_count = len(volume.replicas)
 
+    healthy_replica_count = 0
+    for replica in volume.replicas:
+        if replica.running is True and replica.mode == "RW":
+            healthy_replica_count += 1
+
+    # return if there is only one healthy replica left
+    if healthy_replica_count == 1:
+        return
+
     replica_id = randrange(0, replica_count)
 
     replica_name = volume["replicas"][replica_id]["name"]
