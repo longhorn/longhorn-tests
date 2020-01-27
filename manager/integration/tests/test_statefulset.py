@@ -335,31 +335,19 @@ def test_statefulset_restore(client, core_api, storage_class,  # NOQA
         }
     }
 
-    if csi:
-        pv['spec']['csi'] = {
-            'driver': 'io.rancher.longhorn',
-            'fsType': 'ext4',
-            'volumeAttributes': {
-                'numberOfReplicas':
-                    storage_class['parameters']['numberOfReplicas'],
-                'staleReplicaTimeout':
-                    storage_class['parameters']['staleReplicaTimeout']
-            },
-            'volumeHandle': ''
-        }
-    else:
-        pv['spec']['flexVolume'] = {
-            'driver': 'driver.longhorn.io',
-            'fsType': 'ext4',
-            'options': {
-                'numberOfReplicas':
-                    storage_class['parameters']['numberOfReplicas'],
-                'staleReplicaTimeout':
-                    storage_class['parameters']['staleReplicaTimeout'],
-                'fromBackup': '',
-                'size': size_to_string(DEFAULT_VOLUME_SIZE * Gi)
-            }
-        }
+    assert csi
+
+    pv['spec']['csi'] = {
+        'driver': 'io.rancher.longhorn',
+        'fsType': 'ext4',
+        'volumeAttributes': {
+            'numberOfReplicas':
+                storage_class['parameters']['numberOfReplicas'],
+            'staleReplicaTimeout':
+                storage_class['parameters']['staleReplicaTimeout']
+        },
+        'volumeHandle': ''
+    }
 
     # Make sure that volumes still work even if the Pod and StatefulSet names
     # are different.
@@ -368,21 +356,17 @@ def test_statefulset_restore(client, core_api, storage_class,  # NOQA
                                                   'statefulset-restore-test-2')
         pod['pvc_name'] = pod['pvc_name'].replace('statefulset-restore-test',
                                                   'statefulset-restore-test-2')
-
         pv['metadata']['name'] = pod['pvc_name']
-        if csi:
-            client.create_volume(
-                name=pod['pvc_name'],
-                size=size_to_string(DEFAULT_VOLUME_SIZE * Gi),
-                numberOfReplicas=int(
-                    storage_class['parameters']['numberOfReplicas']),
-                fromBackup=pod['backup_snapshot']['url'])
-            wait_for_volume_detached(client, pod['pvc_name'])
 
-            pv['spec']['csi']['volumeHandle'] = pod['pvc_name']
-        else:
-            pv['spec']['flexVolume']['options']['fromBackup'] = \
-                pod['backup_snapshot']['url']
+        client.create_volume(
+            name=pod['pvc_name'],
+            size=size_to_string(DEFAULT_VOLUME_SIZE * Gi),
+            numberOfReplicas=int(
+                storage_class['parameters']['numberOfReplicas']),
+            fromBackup=pod['backup_snapshot']['url'])
+        wait_for_volume_detached(client, pod['pvc_name'])
+
+        pv['spec']['csi']['volumeHandle'] = pod['pvc_name']
 
         core_api.create_persistent_volume(pv)
 

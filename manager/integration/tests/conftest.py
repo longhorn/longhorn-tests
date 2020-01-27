@@ -6,7 +6,7 @@ from kubernetes.client import Configuration
 from common import get_longhorn_api_client, \
     NODE_CONDITION_MOUNTPROPAGATION, CONDITION_STATUS_TRUE
 from common import wait_for_node_mountpropagation_condition
-from common import check_longhorn, check_csi, check_csi_expansion
+from common import check_longhorn, check_csi_expansion
 
 
 INCLUDE_BASE_IMAGE_OPT = "--include-base-image-test"
@@ -55,21 +55,6 @@ def pytest_collection_modifyitems(config, items):
                                                " option to run")
         for item in items:
             if "recurring_job" in item.keywords:
-                item.add_marker(skip_upgrade)
-
-    using_csi = check_csi(core_api)
-    if using_csi:
-        skip_upgrade = pytest.mark.skip(reason="environment is not using " +
-                                               "flexvolume")
-        for item in items:
-            if "flexvolume" in item.keywords:
-                item.add_marker(skip_upgrade)
-
-    else:
-        skip_upgrade = pytest.mark.skip(reason="environment is not " +
-                                               "using csi")
-        for item in items:
-            if "csi" in item.keywords:
                 item.add_marker(skip_upgrade)
 
     csi_expansion_enabled = check_csi_expansion(core_api)
