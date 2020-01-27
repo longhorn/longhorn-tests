@@ -628,43 +628,6 @@ def set_node_tags(client, node, tags=[]):  # NOQA
 
 
 @pytest.fixture
-def flexvolume(request):
-    flexvolume_manifest = {
-        'name': generate_volume_name(),
-        'flexVolume': {
-            'driver': 'driver.longhorn.io',
-            'fsType': 'ext4',
-            'options': {
-                'size': size_to_string(DEFAULT_VOLUME_SIZE * Gi),
-                'numberOfReplicas':
-                    DEFAULT_LONGHORN_PARAMS['numberOfReplicas'],
-                'staleReplicaTimeout':
-                    DEFAULT_LONGHORN_PARAMS['staleReplicaTimeout'],
-                'fromBackup': ''
-            }
-        }
-    }
-
-    def finalizer():
-        client = get_longhorn_api_client()
-        delete_and_wait_longhorn(client, flexvolume_manifest['name'])
-
-    request.addfinalizer(finalizer)
-
-    return flexvolume_manifest
-
-
-@pytest.fixture
-def flexvolume_baseimage(request):
-    flexvolume_manifest = flexvolume(request)
-    flexvolume_manifest['flexVolume']['options']['size'] = \
-        size_to_string(BASE_IMAGE_EXT4_SIZE)
-    flexvolume_manifest['flexVolume']['fsType'] = ''
-    flexvolume_manifest['flexVolume']['options']['baseImage'] = BASE_IMAGE_EXT4
-    return flexvolume_manifest
-
-
-@pytest.fixture
 def pod_make(request):
     def make_pod(name='test-pod'):
         pod_manifest = {

@@ -123,7 +123,7 @@ def test_provisioner_io(client, core_api, storage_class, pvc, pod):  # NOQA
 
     common.wait_for_volume_detached(client, pvc_volume_name)
 
-    pod_name = 'flexvolume-provisioner-io-test-2'
+    pod_name = 'provisioner-io-test-2'
     pod['metadata']['name'] = pod_name
     create_and_wait_pod(core_api, pod)
     resp = read_volume_data(core_api, pod_name)
