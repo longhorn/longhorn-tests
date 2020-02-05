@@ -5,6 +5,7 @@ import pytest
 import subprocess
 import random
 import string
+import datetime
 
 from common import create_and_check_volume
 from common import create_and_wait_pod
@@ -98,6 +99,10 @@ class snapshot_data:
 
     def mark_as_removed(self):
         self.removed = True
+
+
+def time_now():
+    return datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
 
 # set random backupstore if not defined
@@ -523,49 +528,63 @@ def generate_load(request):
         action = randrange(0, 8)
 
         if action == 0:
-            print("write data")
+            print("write data started: " + time_now(), end=', ')
             write_data(k8s_api_client, pod_name)
+            print("ended: " + time_now())
+
         elif action == 1:
-            print("delete data")
+            print("delete data started: " + time_now(), end=', ')
             delete_data(k8s_api_client, pod_name)
+            print("ended: " + time_now())
+
         elif action == 2:
-            print("create snapshot")
+            print("create snapshot started: " + time_now(), end=', ')
             snapshot_create_and_record_md5sum(longhorn_api_client,
                                               k8s_api_client,
                                               volume_name,
                                               pod_name,
                                               snapshots_md5sum)
+            print("ended: " + time_now())
+
         elif action == 3:
-            print("delete random snapshot")
+            print("delete random snapshot  started: " + time_now(), end=', ')
             delete_random_snapshot(longhorn_api_client,
                                    volume_name,
                                    snapshots_md5sum)
+            print("ended: " + time_now())
 
         elif action == 4:
-            print("revert random snapshot")
+            print("revert random snapshot started: " + time_now(), end=', ')
             revert_random_snapshot(longhorn_api_client,
                                    k8s_api_client,
                                    volume_name,
                                    pod_manifest,
                                    snapshots_md5sum)
+            print("ended: " + time_now())
+
         elif action == 5:
-            print("create backup")
+            print("create backup started: " + time_now(), end=', ')
             backup_create_and_record_md5sum(longhorn_api_client,
                                             k8s_api_client,
                                             volume_name,
                                             pod_name,
                                             snapshots_md5sum)
+            print("ended: " + time_now())
+
         elif action == 6:
-            print("delete replica")
+            print("delete replica started: " + time_now(), end=', ')
             delete_replica(longhorn_api_client, volume_name)
+            print("ended: " + time_now())
 
         elif action == 7:
-            print("restore random backup")
+            print("restore random backup started: " + time_now(), end=', ')
             restore_and_check_random_backup(longhorn_api_client,
                                             k8s_api_client,
                                             volume_name,
                                             pod_name,
                                             snapshots_md5sum)
+
+            print("ended: " + time_now())
 
 
 @pytest.mark.stress
