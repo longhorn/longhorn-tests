@@ -6,6 +6,7 @@ import subprocess
 import random
 import string
 import datetime
+import time
 
 from common import create_and_check_volume
 from common import create_and_wait_pod
@@ -30,6 +31,7 @@ from common import Gi
 from common import mount_disk
 from common import read_volume_data
 from common import RETRY_COUNTS
+from common import RETRY_INTERVAL
 from common import set_random_backupstore
 from common import SETTING_BACKUP_TARGET
 from common import umount_disk
@@ -276,7 +278,20 @@ def backup_create_and_record_md5sum(client, core_api, volume_name, pod_name, sna
         WAIT_BACKUP_COMPLETE = bool(random.getrandbits(1))
 
     if WAIT_BACKUP_COMPLETE is True:
-        wait_for_backup_completion(client, volume_name, snap_name)
+        # wait for volume backupStatus to be updated with new backup record
+        for i in range(RETRY_COUNTS):
+            volume = client.by_id_volume(volume_name)
+            for b in volume.backupStatus:
+                if b.snapshot == snap_name:
+                    if b.error == "":
+                        wait_for_backup_completion(client,
+                                                   volume_name,
+                                                   snap_name)
+                        break
+                    else:
+                        print("...aborting backup: " + b.error)
+                        return
+            time.sleep(RETRY_INTERVAL)
 
     _, b = find_backup(client, volume_name, snap_name)
 
