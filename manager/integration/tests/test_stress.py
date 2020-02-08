@@ -43,6 +43,7 @@ from common import wait_for_volume_healthy_no_frontend
 from common import wait_for_volume_replica_count
 from common import wait_for_volume_restoration_completed
 from common import write_pod_volume_data
+from common import wait_for_volume_degraded
 from kubernetes.stream import stream
 from random import randrange
 from test_scheduling import wait_new_replica_ready
@@ -382,6 +383,8 @@ def delete_replica(client, volume_name):
     replica_name = volume["replicas"][replica_id]["name"]
 
     volume.replicaRemove(name=replica_name)
+    
+    wait_for_volume_degraded(client, volume_name)
 
     global WAIT_REPLICA_REBUILD
     if WAIT_REPLICA_REBUILD is None:
