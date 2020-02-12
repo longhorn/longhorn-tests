@@ -383,7 +383,7 @@ def delete_replica(client, volume_name):
     replica_name = volume["replicas"][replica_id]["name"]
 
     volume.replicaRemove(name=replica_name)
-    
+
     wait_for_volume_degraded(client, volume_name)
 
     global WAIT_REPLICA_REBUILD
@@ -486,6 +486,27 @@ def remove_datafile(pod_name):
 
     if os.path.exists(file_path):
         os.remove(file_path)
+
+
+def clean_volume_backups(client, volume_name):
+    print("cleaning all volume backups ", end='... ')
+    bvs = client.list_backupVolume().data
+
+    bv = None
+    for i in bvs:
+        if i.name == volume_name:
+            bv = i
+            break
+
+    if bv is not None:
+        backups = bv.backupList()
+        for b in backups:
+            bv.backupDelete(name=b.name)
+
+        print("done!")
+
+    else:
+        print("no backups found!")
 
 
 @pytest.mark.stress
@@ -603,6 +624,8 @@ def generate_load(request):
                                             snapshots_md5sum)
 
             print("ended: " + time_now())
+
+    clean_volume_backups(longhorn_api_client, volume_name)
 
 
 @pytest.mark.stress
