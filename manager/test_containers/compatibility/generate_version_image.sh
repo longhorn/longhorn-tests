@@ -1,6 +1,6 @@
 #!/bin/bash
 
-if [ $# -lt 6 ]
+if [ $# -lt 8 ]
 then
 	echo not enough arguments
 	exit
@@ -12,10 +12,13 @@ export ControllerAPIVersion=$3
 export ControllerAPIMinVersion=$4
 export DataFormatVersion=$5
 export DataFormatMinVersion=$6
+export InstanceManagerAPIVersion=$7
+export InstanceManagerAPIMinVersion=$8
 
 version_tag="version-test.${CLIAPIVersion}-${CLIAPIMinVersion}"\
 ".${ControllerAPIVersion}-${ControllerAPIMinVersion}"\
-".${DataFormatVersion}-${DataFormatMinVersion}"
+".${DataFormatVersion}-${DataFormatMinVersion}"\
+".${InstanceManagerAPIVersion}-${InstanceManagerAPIMinVersion}"
 
 export Version="\"${version_tag}\""
 
@@ -27,5 +30,6 @@ echo -e "#!/bin/sh\nsleep infinity" > package/longhorn-instance-manager
 chmod a+x package/longhorn package/grpc_health_probe package/engine-manager package/longhorn-instance-manager
 
 docker build -t longhornio/longhorn-test:${version_tag} package/
+docker push longhornio/longhorn-test:${version_tag}
 echo
 echo longhornio/longhorn-test:${version_tag}

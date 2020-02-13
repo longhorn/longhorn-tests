@@ -1486,11 +1486,12 @@ def get_default_engine_image(client):
 
 def get_compatibility_test_image(cli_v, cli_minv,
                                  ctl_v, ctl_minv,
-                                 data_v, data_minv):
-    return "%s.%d-%d.%d-%d.%d-%d" % (COMPATIBILTY_TEST_IMAGE_PREFIX,
-                                     cli_v, cli_minv,
-                                     ctl_v, ctl_minv,
-                                     data_v, data_minv)
+                                 data_v, data_minv,
+                                 im_v, im_minv):
+    return "%s.%d-%d.%d-%d.%d-%d.%d-%d" % (
+        COMPATIBILTY_TEST_IMAGE_PREFIX,
+        cli_v, cli_minv, ctl_v, ctl_minv,
+        data_v, data_minv, im_v, im_minv)
 
 
 def generate_random_data(count):
@@ -1706,11 +1707,12 @@ def generate_random_pos(size, used={}):
 
 def get_upgrade_test_image(cli_v, cli_minv,
                            ctl_v, ctl_minv,
-                           data_v, data_minv):
-    return "%s.%d-%d.%d-%d.%d-%d" % (UPGRADE_TEST_IMAGE_PREFIX,
-                                     cli_v, cli_minv,
-                                     ctl_v, ctl_minv,
-                                     data_v, data_minv)
+                           data_v, data_minv,
+                           im_v, im_minv):
+    return "%s.%d-%d.%d-%d.%d-%d.%d-%d" % (
+        UPGRADE_TEST_IMAGE_PREFIX,
+        cli_v, cli_minv, ctl_v, ctl_minv,
+        data_v, data_minv, im_v, im_minv)
 
 
 def prepare_host_disk(dev, vol_name):

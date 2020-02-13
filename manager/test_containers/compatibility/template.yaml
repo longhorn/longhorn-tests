@@ -8,7 +8,9 @@
 		"controllerAPIVersion": ${ControllerAPIVersion},
 		"controllerAPIMinVersion": ${ControllerAPIMinVersion},
 		"dataFormatVersion": ${DataFormatVersion},
-		"dataFormatMinVersion": ${DataFormatMinVersion}
+		"dataFormatMinVersion": ${DataFormatMinVersion},
+		"instanceManagerAPIVersion": ${InstanceManagerAPIVersion},
+		"instanceManagerAPIMinVersion": ${InstanceManagerAPIMinVersion}
 	},
 	"serverVersion": {
 		"version": ${Version},
@@ -19,6 +21,8 @@
 		"controllerAPIVersion": ${ControllerAPIVersion},
 		"controllerAPIMinVersion": ${ControllerAPIMinVersion},
 		"dataFormatVersion": ${DataFormatVersion},
-		"dataFormatMinVersion": ${DataFormatMinVersion}
+		"dataFormatMinVersion": ${DataFormatMinVersion},
+		"instanceManagerAPIVersion": ${InstanceManagerAPIVersion},
+		"instanceManagerAPIMinVersion": ${InstanceManagerAPIMinVersion}
 	}
 }

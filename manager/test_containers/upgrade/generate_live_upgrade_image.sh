@@ -1,24 +1,34 @@
 #!/bin/bash
 
 # make sure IMAGE wasn't used by any releases
-IMAGE="longhornio/longhorn-engine:live-upgrade-3-3-1"
-
-version=`docker run $IMAGE longhorn version --client-only`
+# The 2nd image's InstanceManagerAPIVersion should be current version + 1
+test_images=()
+IMAGES=("shuowu/longhorn-engine:test1" "shuowu/longhorn-engine:test2")
+for(( i=0;i<${#IMAGES[@]};i++))
+do
+version=`docker run ${IMAGES[i]} longhorn version --client-only`
 echo Image version output: $version
-
+echo
 CLIAPIVersion=`echo $version|jq -r ".clientVersion.cliAPIVersion"`
 CLIAPIMinVersion=`echo $version|jq -r ".clientVersion.cliAPIMinVersion"`
 ControllerAPIVersion=`echo $version|jq -r ".clientVersion.controllerAPIVersion"`
 ControllerAPIMinVersion=`echo $version|jq -r ".clientVersion.controllerAPIMinVersion"`
 DataFormatVersion=`echo $version|jq -r ".clientVersion.dataFormatVersion"`
 DataFormatMinVersion=`echo $version|jq -r ".clientVersion.dataFormatMinVersion"`
+InstanceManagerAPIVersion=`echo $version|jq -r ".clientVersion.instanceManagerAPIVersion"`
+InstanceManagerAPIMinVersion=`echo $version|jq -r ".clientVersion.instanceManagerAPIMinVersion"`
 
-test_image="longhornio/longhorn-test:upgrade-test.${CLIAPIVersion}-${CLIAPIMinVersion}"\
+test_images[i]="longhornio/longhorn-test:upgrade-test.${CLIAPIVersion}-${CLIAPIMinVersion}"\
 ".${ControllerAPIVersion}-${ControllerAPIMinVersion}"\
-".${DataFormatVersion}-${DataFormatMinVersion}"
+".${DataFormatVersion}-${DataFormatMinVersion}"\
+".${InstanceManagerAPIVersion}-${InstanceManagerAPIMinVersion}"
 
-docker tag $IMAGE $test_image
-docker push $test_image
-
+docker tag ${IMAGES[i]} ${test_images[i]}
+docker push ${test_images[i]}
 echo
-echo $test_image
+done
+
+for image in ${test_images[@]}
+do
+echo $image
+done

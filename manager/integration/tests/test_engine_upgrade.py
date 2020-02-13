@@ -33,6 +33,8 @@ def test_engine_image(client, core_api, volume_name):  # NOQA
     ctl_minv = default_img.controllerAPIMinVersion
     data_v = default_img.dataFormatVersion
     data_minv = default_img.dataFormatMinVersion
+    im_v = default_img.instanceManagerAPIVersion
+    im_minv = default_img.instanceManagerAPIMinVersion
 
     assert cli_v != 0
     assert cli_minv != 0
@@ -40,6 +42,8 @@ def test_engine_image(client, core_api, volume_name):  # NOQA
     assert ctl_minv != 0
     assert data_v != 0
     assert data_minv != 0
+    assert im_v != 0
+    assert im_minv != 0
 
     # delete default image is not allowed
     with pytest.raises(Exception) as e:
@@ -50,9 +54,9 @@ def test_engine_image(client, core_api, volume_name):  # NOQA
     with pytest.raises(Exception) as e:
         client.create_engine_image(image=default_img.image)
 
-    engine_upgrade_image = common.get_upgrade_test_image(cli_v, cli_minv,
-                                                         ctl_v, ctl_minv,
-                                                         data_v, data_minv)
+    engine_upgrade_image = common.get_upgrade_test_image(
+        cli_v, cli_minv, ctl_v, ctl_minv,
+        data_v, data_minv, im_v, im_minv)
 
     # test if engine image can be created and cleaned up successfully
     for i in range(ENGINE_IMAGE_TEST_REPEAT_COUNT):
@@ -90,9 +94,11 @@ def engine_offline_upgrade_test(client, core_api, volume_name, base_image=""):  
     ctl_minv = default_img.controllerAPIMinVersion
     data_v = default_img.dataFormatVersion
     data_minv = default_img.dataFormatMinVersion
-    engine_upgrade_image = common.get_upgrade_test_image(cli_v, cli_minv,
-                                                         ctl_v, ctl_minv,
-                                                         data_v, data_minv)
+    im_v = default_img.instanceManagerAPIVersion
+    im_minv = default_img.instanceManagerAPIMinVersion
+    engine_upgrade_image = common.get_upgrade_test_image(
+        cli_v, cli_minv, ctl_v, ctl_minv,
+        data_v, data_minv, im_v, im_minv)
 
     new_img = client.create_engine_image(image=engine_upgrade_image)
     new_img_name = new_img.name
@@ -198,9 +204,11 @@ def engine_live_upgrade_test(client, core_api, volume_name, base_image=""):  # N
     ctl_minv = default_img.controllerAPIMinVersion
     data_v = default_img.dataFormatVersion
     data_minv = default_img.dataFormatMinVersion
-    engine_upgrade_image = common.get_upgrade_test_image(cli_v, cli_minv,
-                                                         ctl_v, ctl_minv,
-                                                         data_v, data_minv)
+    im_v = default_img.instanceManagerAPIVersion
+    im_minv = default_img.instanceManagerAPIMinVersion
+    engine_upgrade_image = common.get_upgrade_test_image(
+        cli_v, cli_minv, ctl_v, ctl_minv,
+        data_v, data_minv, im_v, im_minv)
 
     new_img = client.create_engine_image(image=engine_upgrade_image)
     new_img_name = new_img.name
@@ -329,11 +337,12 @@ def test_engine_image_incompatible(client, core_api, volume_name):  # NOQA
     ctl_minv = images[0].controllerAPIMinVersion
     data_v = images[0].dataFormatVersion
     data_minv = images[0].dataFormatMinVersion
+    im_v = images[0].instanceManagerAPIVersion
+    im_minv = images[0].instanceManagerAPIMinVersion
 
     fail_cli_v_image = common.get_compatibility_test_image(
-            cli_v - 1, cli_v - 1,
-            ctl_v, ctl_minv,
-            data_v, data_minv)
+            cli_v - 1, cli_v - 1, ctl_v, ctl_minv,
+            data_v, data_minv, im_v, im_minv)
     img = client.create_engine_image(image=fail_cli_v_image)
     img_name = img.name
     img = wait_for_engine_image_state(client, img_name, "incompatible")
@@ -344,9 +353,8 @@ def test_engine_image_incompatible(client, core_api, volume_name):  # NOQA
     wait_for_engine_image_deletion(client, core_api, img.name)
 
     fail_cli_minv_image = common.get_compatibility_test_image(
-            cli_v + 1, cli_v + 1,
-            ctl_v, ctl_minv,
-            data_v, data_minv)
+            cli_v + 1, cli_v + 1, ctl_v, ctl_minv,
+            data_v, data_minv, im_v, im_minv)
     img = client.create_engine_image(image=fail_cli_minv_image)
     img_name = img.name
     img = wait_for_engine_image_state(client, img_name, "incompatible")
@@ -371,10 +379,11 @@ def engine_live_upgrade_rollback_test(client, core_api, volume_name, base_image=
     ctl_minv = default_img.controllerAPIMinVersion
     data_v = default_img.dataFormatVersion
     data_minv = default_img.dataFormatMinVersion
+    im_v = default_img.instanceManagerAPIVersion
+    im_minv = default_img.instanceManagerAPIMinVersion
     wrong_engine_upgrade_image = common.get_compatibility_test_image(
-            cli_v, cli_minv,
-            ctl_v, ctl_minv,
-            data_v, data_minv)
+            cli_v, cli_minv, ctl_v, ctl_minv,
+            data_v, data_minv, im_v, im_minv)
     new_img = client.create_engine_image(image=wrong_engine_upgrade_image)
     new_img_name = new_img.name
     new_img = wait_for_engine_image_state(client, new_img_name, "ready")
