@@ -44,6 +44,7 @@ from common import wait_for_volume_replica_count
 from common import wait_for_volume_restoration_completed
 from common import write_pod_volume_data
 from common import wait_for_volume_degraded
+from common import VOLUME_ROBUSTNESS_HEALTHY
 from kubernetes.stream import stream
 from random import randrange
 from test_scheduling import wait_new_replica_ready
@@ -227,6 +228,10 @@ def revert_random_snapshot(client, core_api, volume_name, pod_manifest, snapshot
     volume = client.by_id_volume(volume_name)
     host_id = get_self_host_id()
     pod_name = pod_manifest["metadata"]["name"]
+
+    # wait for volume healthy if rebuilding deleted replica
+    if len(volume.robustness) != VOLUME_ROBUSTNESS_HEALTHY:
+        wait_for_volume_healthy(client, volume_name)
 
     snapshot = get_random_snapshot(snapshots_md5sum)
 
