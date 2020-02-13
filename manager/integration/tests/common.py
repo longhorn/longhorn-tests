@@ -2895,3 +2895,18 @@ def delete_and_wait_deployment(apps_api, deployment_name):
         assert e.status == 404
 
     wait_delete_deployment(apps_api, deployment_name)
+
+
+def wait_for_instance_manager_cleanup(client, image):
+    found = False
+    for i in range(RETRY_COUNTS):
+        found = False
+        im_list = client.list_instance_manager().data
+        for im in im_list:
+            if im.engineImage == image:
+                found = True
+                break
+        if not found:
+            break
+        time.sleep(RETRY_INTERVAL)
+    assert not found

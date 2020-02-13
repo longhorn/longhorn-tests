@@ -484,3 +484,163 @@ def engine_live_upgrade_rollback_test(client, core_api, volume_name, base_image=
 
     client.delete(new_img)
     wait_for_engine_image_deletion(client, core_api, new_img.name)
+
+
+def test_engine_live_upgrade_with_different_im_versions(  # NOQA
+        client, core_api, volume_name, base_image=""):  # NOQA
+    nodes = client.list_node()
+    assert len(nodes) > 0
+    host_id = get_self_host_id()
+    default_img = common.get_default_engine_image(client)
+    default_img_name = default_img.name
+    original_engine_image = default_img.image
+    default_img = wait_for_engine_image_ref_count(client, default_img_name, 0)
+    cli_v = default_img.cliAPIVersion
+    cli_minv = default_img.cliAPIMinVersion
+    ctl_v = default_img.controllerAPIVersion
+    ctl_minv = default_img.controllerAPIMinVersion
+    data_v = default_img.dataFormatVersion
+    data_minv = default_img.dataFormatMinVersion
+    im_v = default_img.instanceManagerAPIVersion
+    im_minv = default_img.instanceManagerAPIMinVersion
+
+    client.create_volume(name=volume_name, size=SIZE,
+                         numberOfReplicas=2, baseImage=base_image)
+    volume = common.wait_for_volume_detached(client, volume_name)
+    assert original_engine_image == volume.engineImage
+    wait_for_engine_image_ref_count(client, default_img_name, 1)
+    volume.attach(hostId=host_id)
+    volume = common.wait_for_volume_healthy(client, volume_name)
+
+    engine_upgrade_image = common.get_upgrade_test_image(
+        cli_v, cli_minv, ctl_v, ctl_minv,
+        data_v, data_minv, im_v + 1, im_minv)
+    assert original_engine_image != engine_upgrade_image
+
+    new_img = client.create_engine_image(
+        image=engine_upgrade_image)
+    new_img_name = new_img.name
+    new_img = wait_for_engine_image_state(client, new_img_name, "ready")
+    assert new_img.refCount == 0
+    assert new_img.noRefSince != ""
+
+    # now there are 2 sets of instance managers
+    im_list = client.list_instance_manager().data
+    assert len(im_list) == 2 * 2 * len(nodes)
+    has_invalid_im = False
+    for im in im_list:
+        if im.engineImage != original_engine_image and \
+                im.engineImage != engine_upgrade_image:
+            has_invalid_im = True
+            break
+    assert not has_invalid_im
+
+    volume.detach()
+    common.wait_for_volume_detached(client, volume_name)
+
+    # now there is no running instance in the instance managers of the
+    # old engine image. Hence those instance managers will be cleaned up.
+    common.wait_for_instance_manager_cleanup(client, original_engine_image)
+
+    volume = client.by_id_volume(volume_name)
+    volume.attach(hostId=host_id)
+    volume = common.wait_for_volume_healthy(client, volume_name)
+    assert volume.engineImage == original_engine_image
+    assert volume.currentImage == original_engine_image
+    assert original_engine_image != engine_upgrade_image
+    engine = get_volume_engine(volume)
+    assert engine.engineImage == original_engine_image
+    assert engine.currentImage == original_engine_image
+    for replica in volume.replicas:
+        assert replica.engineImage == original_engine_image
+        assert replica.currentImage == original_engine_image
+
+    # live upgrade to the engine image
+    # with higher InstanceManagerAPIVersion
+    data = write_volume_random_data(volume)
+    volume.engineUpgrade(image=engine_upgrade_image)
+    volume = wait_for_volume_current_image(client, volume_name,
+                                           engine_upgrade_image)
+    engine = get_volume_engine(volume)
+    assert engine.engineImage == engine_upgrade_image
+
+    default_img = wait_for_engine_image_ref_count(client, default_img_name, 0)
+    new_img = wait_for_engine_image_ref_count(client, new_img_name, 1)
+
+    count = 0
+    # old replica may be in deletion process
+    for replica in volume.replicas:
+        if replica.currentImage == engine_upgrade_image:
+            count += 1
+    assert count == REPLICA_COUNT
+
+    check_volume_data(volume, data)
+
+    volume = volume.detach()
+    volume = common.wait_for_volume_detached(client, volume_name)
+    assert len(volume.replicas) == REPLICA_COUNT
+    assert volume.engineImage == engine_upgrade_image
+    engine = get_volume_engine(volume)
+    assert engine.engineImage == engine_upgrade_image
+    for replica in volume.replicas:
+        assert replica.engineImage == engine_upgrade_image
+
+    volume = volume.attach(hostId=host_id)
+    volume = common.wait_for_volume_healthy(client, volume_name)
+    assert volume.engineImage == engine_upgrade_image
+    assert volume.currentImage == engine_upgrade_image
+    engine = get_volume_engine(volume)
+    assert engine.engineImage == engine_upgrade_image
+    assert engine.currentImage == engine_upgrade_image
+    for replica in volume.replicas:
+        assert replica.engineImage == engine_upgrade_image
+        assert replica.currentImage == engine_upgrade_image
+
+    # Make sure detaching didn't somehow interfere with the data.
+    check_volume_data(volume, data)
+
+    volume.engineUpgrade(image=original_engine_image)
+    volume = wait_for_volume_current_image(client, volume_name,
+                                           original_engine_image)
+    engine = get_volume_engine(volume)
+    assert engine.engineImage == original_engine_image
+
+    default_img = wait_for_engine_image_ref_count(client, default_img_name, 1)
+    new_img = wait_for_engine_image_ref_count(client, new_img_name, 0)
+
+    assert volume.engineImage == original_engine_image
+
+    engine = get_volume_engine(volume)
+    assert engine.engineImage == original_engine_image
+    count = 0
+    # old replica may be in deletion process
+    for replica in volume.replicas:
+        if replica.engineImage == original_engine_image:
+            count += 1
+    assert count == REPLICA_COUNT
+
+    check_volume_data(volume, data)
+
+    volume = volume.detach()
+    volume = common.wait_for_volume_detached(client, volume_name)
+    assert len(volume.replicas) == REPLICA_COUNT
+
+    assert volume.engineImage == original_engine_image
+    engine = get_volume_engine(volume)
+    assert engine.engineImage == original_engine_image
+    for replica in volume.replicas:
+        assert replica.engineImage == original_engine_image
+
+    client.delete(volume)
+    wait_for_volume_delete(client, volume_name)
+
+    client.delete(new_img)
+    wait_for_engine_image_deletion(client, core_api, new_img.name)
+    # now the instance managers of the old engine image will be recreated
+    wait_for_engine_image_state(client, default_img_name, "ready")
+    im_list = client.list_instance_manager().data
+    count = 0
+    for im in im_list:
+        if im.engineImage == original_engine_image:
+            count += 1
+    assert count == 2 * len(nodes)
