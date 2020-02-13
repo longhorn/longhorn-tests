@@ -471,6 +471,12 @@ def purge_random_snapshot(longhorn_api_client, volume_name, snapshot_name):
 def delete_random_snapshot(client, volume_name, snapshots_md5sum):
     volume = client.by_id_volume(volume_name)
 
+    # wait for volume healthy if rebuilding deleted replica
+    if len(volume.robustness) != VOLUME_ROBUSTNESS_HEALTHY:
+        wait_for_volume_healthy(client, volume_name)
+
+    volume = client.by_id_volume(volume_name)
+
     snapshot = get_random_snapshot(snapshots_md5sum)
 
     if snapshot is None:
