@@ -231,6 +231,7 @@ def revert_random_snapshot(client, core_api, volume_name, pod_manifest, snapshot
     snapshot = get_random_snapshot(snapshots_md5sum)
 
     if snapshot is None:
+        print("skipped, no snapshot found", end=" ")
         return
 
     delete_and_wait_pod(core_api, pod_name)
@@ -290,7 +291,7 @@ def backup_create_and_record_md5sum(client, core_api, volume_name, pod_name, sna
                                                    snap_name)
                         break
                     else:
-                        print("...aborting backup: " + b.error)
+                        print("...aborting backup " + b.error)
                         return
             time.sleep(RETRY_INTERVAL)
 
@@ -309,6 +310,7 @@ def restore_and_check_random_backup(client, core_api, volume_name, pod_name, sna
     snap_data = get_random_backup_snapshot_data(snapshots_md5sum)
 
     if snap_data is None:
+        print("skipped, no recorded backup found", end=" ")
         return
 
     backup_url = snap_data.backup_url
@@ -467,6 +469,7 @@ def delete_random_snapshot(client, volume_name, snapshots_md5sum):
     snapshot = get_random_snapshot(snapshots_md5sum)
 
     if snapshot is None:
+        print("skipped, no recorded snapshot found", end=" ")
         return
 
     volume.snapshotDelete(name=snapshot)
