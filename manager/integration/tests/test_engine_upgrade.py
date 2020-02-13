@@ -251,7 +251,7 @@ def engine_live_upgrade_test(client, core_api, volume_name, base_image=""):  # N
     engine = get_volume_engine(volume)
     assert engine.engineImage == engine_upgrade_image
 
-    default_img = wait_for_engine_image_ref_count(client, default_img_name, 1)
+    default_img = wait_for_engine_image_ref_count(client, default_img_name, 0)
     new_img = wait_for_engine_image_ref_count(client, new_img_name, 1)
 
     count = 0
@@ -293,7 +293,7 @@ def engine_live_upgrade_test(client, core_api, volume_name, base_image=""):  # N
     assert engine.engineImage == original_engine_image
 
     default_img = wait_for_engine_image_ref_count(client, default_img_name, 1)
-    new_img = wait_for_engine_image_ref_count(client, new_img_name, 1)
+    new_img = wait_for_engine_image_ref_count(client, new_img_name, 0)
 
     assert volume.engineImage == original_engine_image
 
