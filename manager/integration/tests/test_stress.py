@@ -374,8 +374,13 @@ def delete_replica(client, volume_name):
         if replica.running is True and replica.mode == "RW":
             healthy_replica_count += 1
 
-    # return if there is only one healthy replica left
+    # return if there is no or only one healthy replica left
     if healthy_replica_count == 1:
+        print("skipped, only one healthy replica found", end=" ")
+        return
+
+    if healthy_replica_count == 0:
+        print("skipped, no healthy replicas found", end=" ")
         return
 
     replica_id = randrange(0, replica_count)
