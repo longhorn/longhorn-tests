@@ -1411,9 +1411,13 @@ def delete_replica_processes(client, api, volname):
                    tty=False)
 
 
-def crash_replica_processes(client, api, volname):
-    volume = client.by_id_volume(volname)
-    for r in volume.replicas:
+def crash_replica_processes(client, api, volname, replicas=None):
+
+    if replicas is None:
+        volume = client.by_id_volume(volname)
+        replicas = volume.replicas
+
+    for r in replicas:
         kill_command = [
             '/bin/sh', '-c',
             "kill `ps aux | grep '" + r['dataPath'] +
@@ -1426,7 +1430,7 @@ def crash_replica_processes(client, api, volname):
                    LONGHORN_NAMESPACE, command=kill_command,
                    stderr=True, stdin=False, stdout=True, tty=False)
 
-    for r in volume.replicas:
+    for r in replicas:
         wait_for_replica_failed(client, volname, r['name'])
 
 
@@ -2897,7 +2901,7 @@ def delete_and_wait_deployment(apps_api, deployment_name):
 
 
 @pytest.fixture
-def disable_auto_salvage():
+def disable_auto_salvage(client):
     auto_salvage_setting = client.by_id_setting(SETTING_AUTO_SALVAGE)
     setting = client.update(auto_salvage_setting, value="false")
 
@@ -2911,3 +2915,20 @@ def disable_auto_salvage():
 
     assert setting.name == SETTING_AUTO_SALVAGE
     assert setting.value == "true"
+
+
+def wait_for_pod_restart(core_api, pod_name, pod_ns="default"):
+    pod = core_api.read_namespaced_pod(pod_name, namespace=pod_ns)
+
+    old_restart_count = pod.status.container_statuses[0].restart_count
+
+    for i in range(RETRY_COUNTS):
+        pod = core_api.read_namespaced_pod(pod_name, namespace=pod_ns)
+        new_restart_count = pod.status.container_statuses[0].restart_count
+
+        if new_restart_count > old_restart_count:
+            break
+
+        time.sleep(RETRY_INTERVAL)
+
+    assert new_restart_count > old_restart_count
