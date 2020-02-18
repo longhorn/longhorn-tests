@@ -14,6 +14,16 @@ from common import wait_for_volume_expansion, check_block_device_size
 from common import write_volume_data, generate_random_data
 from common import wait_for_rebuild_complete
 from common import disable_auto_salvage # NOQA
+from common import pod_make  # NOQA
+from common import create_pv_for_volume
+from common import create_pvc_for_volume
+from common import create_pvc_spec
+from common import create_and_wait_pod
+from common import write_pod_volume_data
+from common import wait_for_volume_healthy
+from common import read_volume_data
+from common import wait_for_pod_restart
+from kubernetes.stream import stream
 
 
 @pytest.mark.coretest   # NOQA
@@ -316,3 +326,150 @@ def test_ha_recovery_with_expansion(client, volume_name):   # NOQA
     check_volume_data(volume, data2)
 
     cleanup_volume(client, volume)
+
+
+def test_salvage_auto(client, core_api, volume_name, pod_make):  # NOQA
+    pod_name = volume_name + "-pod"
+    pv_name = volume_name + "-pv"
+    pvc_name = volume_name + "-pvc"
+
+    pod = pod_make(name=pod_name)
+
+    pod_liveness_probe_spec = {
+        "exec": {
+            "command": [
+                "ls",
+                "/data/lost+found"
+            ]
+        },
+        "initialDelaySeconds": 1,
+        "periodSeconds": 1
+    }
+
+    pod['spec']['containers'][0]['livenessProbe'] = pod_liveness_probe_spec
+
+    volume = create_and_check_volume(client, volume_name, num_of_replicas=2)
+
+    create_pv_for_volume(client, core_api, volume, pv_name)
+    create_pvc_for_volume(client, core_api, volume, pvc_name)
+    pod['spec']['volumes'] = [create_pvc_spec(pvc_name)]
+    create_and_wait_pod(core_api, pod)
+
+    test_data = generate_random_data(VOLUME_RWTEST_SIZE)
+
+    write_pod_volume_data(core_api, pod_name, test_data)
+
+    stream(core_api.connect_get_namespaced_pod_exec,
+           pod_name,
+           'default',
+           command="sync",
+           stderr=True, stdin=True,
+           stdout=True, tty=True,
+           _preload_content=False)
+
+    crash_replica_processes(client, core_api, volume_name)
+
+    volume = common.wait_for_volume_faulted(client, volume_name)
+
+    volume = common.wait_for_volume_detached_unknown(client, volume_name)
+    assert len(volume.replicas) == 2
+    assert volume.replicas[0].failedAt == ""
+    assert volume.replicas[1].failedAt == ""
+
+    volume = wait_for_volume_healthy(client, volume_name)
+
+    wait_for_pod_restart(core_api, pod_name)
+
+    resp = read_volume_data(core_api, pod_name)
+
+    assert test_data == resp
+
+    # Test case #2: delete one replica process, wait for 5 seconds
+    # then delete all replica processes.
+
+    test_data = generate_random_data(VOLUME_RWTEST_SIZE)
+
+    write_pod_volume_data(core_api, pod_name, test_data)
+
+    stream(core_api.connect_get_namespaced_pod_exec,
+           pod_name,
+           'default',
+           command="sync",
+           stderr=True, stdin=True,
+           stdout=True, tty=True,
+           _preload_content=False)
+
+    volume = client.by_id_volume(volume_name)
+    replica0 = volume.replicas[0]
+
+    crash_replica_processes(client, core_api, volume_name, [replica0])
+
+    time.sleep(5)
+
+    volume = client.by_id_volume(volume_name)
+
+    replicas = []
+    for r in volume.replicas:
+        if r.running is True:
+            replicas.append(r)
+
+    crash_replica_processes(client, core_api, volume_name, replicas)
+
+    volume = common.wait_for_volume_faulted(client, volume_name)
+
+    volume = common.wait_for_volume_detached_unknown(client, volume_name)
+    assert len(volume.replicas) == 2
+    assert volume.replicas[0].failedAt == ""
+    assert volume.replicas[1].failedAt == ""
+
+    volume = wait_for_volume_healthy(client, volume_name)
+
+    wait_for_pod_restart(core_api, pod_name)
+
+    resp = read_volume_data(core_api, pod_name)
+
+    assert test_data == resp
+
+    # Test case #3: delete one replica process, wait for 60 seconds
+    # then delete all replica processes.
+
+    test_data = generate_random_data(VOLUME_RWTEST_SIZE)
+
+    write_pod_volume_data(core_api, pod_name, test_data)
+
+    stream(core_api.connect_get_namespaced_pod_exec,
+           pod_name,
+           'default',
+           command="sync",
+           stderr=True, stdin=True,
+           stdout=True, tty=True,
+           _preload_content=False)
+
+    volume = client.by_id_volume(volume_name)
+    replica0 = volume.replicas[0]
+
+    crash_replica_processes(client, core_api, volume_name, [replica0])
+
+    time.sleep(60)
+
+    volume = client.by_id_volume(volume_name)
+
+    replicas = []
+    for r in volume.replicas:
+        if r.running is True:
+            replicas.append(r)
+
+    crash_replica_processes(client, core_api, volume_name, replicas)
+
+    volume = common.wait_for_volume_faulted(client, volume_name)
+
+    volume = common.wait_for_volume_detached_unknown(client, volume_name)
+    assert len(volume.replicas) == 3
+
+    volume = wait_for_volume_healthy(client, volume_name)
+
+    wait_for_pod_restart(core_api, pod_name)
+
+    resp = read_volume_data(core_api, pod_name)
+
+    assert test_data == resp
