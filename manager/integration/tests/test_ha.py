@@ -13,6 +13,7 @@ from common import create_snapshot
 from common import wait_for_volume_expansion, check_block_device_size
 from common import write_volume_data, generate_random_data
 from common import wait_for_rebuild_complete
+from common import disable_auto_salvage # NOQA
 
 
 @pytest.mark.coretest   # NOQA
@@ -80,11 +81,11 @@ def ha_rebuild_replica_test(client, volname):   # NOQA
 
 
 @pytest.mark.coretest   # NOQA
-def test_ha_salvage(client, core_api, volume_name):  # NOQA
+def test_ha_salvage(client, core_api, volume_name, disable_auto_salvage):  # NOQA
     ha_salvage_test(client, core_api, volume_name)
 
 
-def ha_salvage_test(client, core_api,  # NOQA
+def ha_salvage_test(client, core_api, # NOQA
                     volume_name, base_image=""):  # NOQA
     # case: replica processes are wrongly removed
     volume = create_and_check_volume(client, volume_name, 2,

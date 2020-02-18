@@ -119,6 +119,8 @@ SETTING_DEFAULT_REPLICA_COUNT = "default-replica-count"
 SETTING_DEFAULT_LONGHORN_STATIC_SC = "default-longhorn-static-storage-class"
 SETTING_TAINT_TOLERATION = "taint-toleration"
 
+SETTING_AUTO_SALVAGE = "auto-salvage"
+
 CSI_UNKNOWN = 0
 CSI_TRUE = 1
 CSI_FALSE = 2
@@ -2892,3 +2894,20 @@ def delete_and_wait_deployment(apps_api, deployment_name):
         assert e.status == 404
 
     wait_delete_deployment(apps_api, deployment_name)
+
+
+@pytest.fixture
+def disable_auto_salvage():
+    auto_salvage_setting = client.by_id_setting(SETTING_AUTO_SALVAGE)
+    setting = client.update(auto_salvage_setting, value="false")
+
+    assert setting.name == SETTING_AUTO_SALVAGE
+    assert setting.value == "false"
+
+    yield
+
+    auto_salvage_setting = client.by_id_setting(SETTING_AUTO_SALVAGE)
+    setting = client.update(auto_salvage_setting, value="true")
+
+    assert setting.name == SETTING_AUTO_SALVAGE
+    assert setting.value == "true"
