@@ -1390,39 +1390,23 @@ def json_string_go_to_python(str):
 
 
 def delete_replica_processes(client, api, volname):
-    replica_managers = []
-
+    replica_map = {}
     volume = client.by_id_volume(volname)
     for r in volume.replicas:
-        replica_managers.append(r.instanceManagerName)
+        replica_map[r.instanceManagerName] = r.name
 
-    list_command = [
-        '/bin/sh', '-c',
-        'longhorn-instance-manager process ls'
-    ]
-    for rm_name in replica_managers:
+    for rm_name, r_name in replica_map.items():
         with timeout(seconds=STREAM_EXEC_TIMEOUT,
                      error_message='Timeout on executing stream read'):
-            ps_str = stream(
-                api.connect_get_namespaced_pod_exec, rm_name,
-                LONGHORN_NAMESPACE, command=list_command,
-                stderr=True, stdin=False, stdout=True, tty=False)
-            ps = json.loads(json_string_go_to_python(ps_str))
-            deleted = False
-            for name in ps:
-                if volname in name:
-                    delete_command = [
-                        '/bin/sh', '-c',
-                        'longhorn-instance-manager process delete ' +
-                        '--name ' + name
-                    ]
-                    stream(api.connect_get_namespaced_pod_exec, rm_name,
-                           LONGHORN_NAMESPACE, command=delete_command,
-                           stderr=True, stdin=False, stdout=True,
-                           tty=False)
-                    deleted = True
-                    break
-            assert deleted
+            delete_command = [
+                '/bin/sh', '-c',
+                'longhorn-instance-manager process delete ' +
+                '--name ' + r_name
+            ]
+            stream(api.connect_get_namespaced_pod_exec, rm_name,
+                   LONGHORN_NAMESPACE, command=delete_command,
+                   stderr=True, stdin=False, stdout=True,
+                   tty=False)
 
 
 def crash_replica_processes(client, api, volname):
