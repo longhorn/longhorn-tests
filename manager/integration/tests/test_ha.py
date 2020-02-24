@@ -23,6 +23,7 @@ from common import write_pod_volume_data
 from common import wait_for_volume_healthy
 from common import read_volume_data
 from common import wait_for_pod_restart
+from common import get_liveness_probe_spec
 from kubernetes.stream import stream
 
 
@@ -328,23 +329,15 @@ def test_ha_recovery_with_expansion(client, volume_name):   # NOQA
     cleanup_volume(client, volume)
 
 
-def test_salvage_auto(client, core_api, volume_name, pod_make):  # NOQA
+def test_salvage_auto_crash_all_replicas(client, core_api, volume_name, pod_make):  # NOQA
     pod_name = volume_name + "-pod"
     pv_name = volume_name + "-pv"
     pvc_name = volume_name + "-pvc"
 
     pod = pod_make(name=pod_name)
 
-    pod_liveness_probe_spec = {
-        "exec": {
-            "command": [
-                "ls",
-                "/data/lost+found"
-            ]
-        },
-        "initialDelaySeconds": 1,
-        "periodSeconds": 1
-    }
+    pod_liveness_probe_spec = get_liveness_probe_spec(initial_delay=1,
+                                                      period=1)
 
     pod['spec']['containers'][0]['livenessProbe'] = pod_liveness_probe_spec
 
@@ -384,8 +377,27 @@ def test_salvage_auto(client, core_api, volume_name, pod_make):  # NOQA
 
     assert test_data == resp
 
-    # Test case #2: delete one replica process, wait for 5 seconds
-    # then delete all replica processes.
+
+# Test case #2: delete one replica process, wait for 5 seconds
+# then delete all replica processes.
+def test_salvage_auto_crash_replicas_short_wait(client, core_api, volume_name, pod_make):  # NOQA
+    pod_name = volume_name + "-pod"
+    pv_name = volume_name + "-pv"
+    pvc_name = volume_name + "-pvc"
+
+    pod = pod_make(name=pod_name)
+
+    pod_liveness_probe_spec = get_liveness_probe_spec(initial_delay=1,
+                                                      period=1)
+
+    pod['spec']['containers'][0]['livenessProbe'] = pod_liveness_probe_spec
+
+    volume = create_and_check_volume(client, volume_name, num_of_replicas=2)
+
+    create_pv_for_volume(client, core_api, volume, pv_name)
+    create_pvc_for_volume(client, core_api, volume, pvc_name)
+    pod['spec']['volumes'] = [create_pvc_spec(pvc_name)]
+    create_and_wait_pod(core_api, pod)
 
     test_data = generate_random_data(VOLUME_RWTEST_SIZE)
 
@@ -430,8 +442,27 @@ def test_salvage_auto(client, core_api, volume_name, pod_make):  # NOQA
 
     assert test_data == resp
 
-    # Test case #3: delete one replica process, wait for 60 seconds
-    # then delete all replica processes.
+
+# Test case #3: delete one replica process, wait for 60 seconds
+# then delete all replica processes.
+def test_salvage_auto_crash_replicas_long_wait(client, core_api, volume_name, pod_make):  # NOQA
+    pod_name = volume_name + "-pod"
+    pv_name = volume_name + "-pv"
+    pvc_name = volume_name + "-pvc"
+
+    pod = pod_make(name=pod_name)
+
+    pod_liveness_probe_spec = get_liveness_probe_spec(initial_delay=1,
+                                                      period=1)
+
+    pod['spec']['containers'][0]['livenessProbe'] = pod_liveness_probe_spec
+
+    volume = create_and_check_volume(client, volume_name, num_of_replicas=2)
+
+    create_pv_for_volume(client, core_api, volume, pv_name)
+    create_pvc_for_volume(client, core_api, volume, pvc_name)
+    pod['spec']['volumes'] = [create_pvc_spec(pvc_name)]
+    create_and_wait_pod(core_api, pod)
 
     test_data = generate_random_data(VOLUME_RWTEST_SIZE)
 
