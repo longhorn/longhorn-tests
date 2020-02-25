@@ -2932,3 +2932,18 @@ def wait_for_pod_restart(core_api, pod_name, pod_ns="default"):
         time.sleep(RETRY_INTERVAL)
 
     assert new_restart_count > old_restart_count
+
+
+def get_liveness_probe_spec(initial_delay=5, period=5):
+    pod_liveness_probe_spec = {
+        "exec": {
+            "command": [
+                "ls",
+                "/data/lost+found"
+            ]
+        },
+        "initialDelaySeconds": initial_delay,
+        "periodSeconds": period
+    }
+
+    return pod_liveness_probe_spec
