@@ -2645,7 +2645,7 @@ def wait_for_engine_image_deletion(client, core_api, engine_image_name):
 
         im_list = client.list_instance_manager().data
         for im in im_list:
-            if im.engineImage == engine_image_name:
+            if im.image == engine_image_name:
                 deleted = False
                 break
         if not deleted:
