@@ -2635,23 +2635,6 @@ def wait_for_engine_image_deletion(client, core_api, engine_image_name):
             deleted = False
             continue
 
-        labels = "longhorn.io/component=instance-manager," \
-                 "longhorn.io/engine-image="+engine_image_name
-        im_pod_list = core_api.list_namespaced_pod(
-            LONGHORN_NAMESPACE, label_selector=labels).items
-        if len(im_pod_list) != 0:
-            deleted = False
-            continue
-
-        im_list = client.list_instance_manager().data
-        for im in im_list:
-            if im.image == engine_image_name:
-                deleted = False
-                break
-        if not deleted:
-            continue
-        break
-
     assert deleted
 
 
