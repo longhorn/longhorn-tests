@@ -24,7 +24,6 @@ check_longhorn_status() {
 
 }
 
-
 mkdir -p ${LONGHORN_MANAGER_TMPDIR}
 
 git clone --single-branch --branch ${LONGHORN_MANAGER_BRANCH} ${LONGHORN_MANAGER_REPO_URI} ${LONGHORN_MANAGER_TMPDIR}
@@ -48,24 +47,46 @@ export KUBECONFIG="${TF_VAR_tf_workspace}/templates/kube_config_3-nodes-k8s.yml"
 # scale coredns min pods to 3 for node offline tests
 kubectl get configmaps -n kube-system coredns-autoscaler -o yaml | sed  's/\"min\":1/\"min\":3/' | kubectl apply -n kube-system -f -
 
+kubectl create -Rf "${WORKSPACE}/manager/integration/deploy/backupstores"
+
 if [[ ${LONGHORN_UPGRADE_TEST} ]]; then
   ## install Longhorn stable version, before running test_upgrade.
   kubectl apply -f "${LONGHORN_STABLE_URL}"
+
   check_longhorn_status
-  sed -i 's/#TEST_FRAMEWORK_ARGS_PLACEHOLDER/args:\ \[\ \"\-s\"\ ,\ \"\-\-junitxml=\$\{LONGHORN_JUNIT_REPORT_PATH\}",\ \"\-\-include\-upgrade\-test\ \-k test_upgrade\" \]/' "${WORKSPACE}/manager/integration/deploy/test.yaml"
+
+  ## generate upgrade_test pod manifest
+  sed 's/#TEST_FRAMEWORK_ARGS_PLACEHOLDER/args:\ \[\ \"\-s\"\ ,\ \"\-\-junitxml=\$\{LONGHORN_JUNIT_REPORT_PATH\}",\ \"\-\-include\-upgrade\-test\ \-k test_upgrade\" \]/; s/name: longhorn-test$/name: longhorn-test-upgrade/' "${WORKSPACE}/manager/integration/deploy/test.yaml" >> "${WORKSPACE}/manager/integration/deploy/upgrade_test.yaml"
+
+  sed  -i 's/longhornio\/longhorn-manager-test:.*$/longhornio\/longhorn-manager-test:master/' "${WORKSPACE}/manager/integration/deploy/upgrade_test.yaml"
+
+  ## run upgrade test
+  kubectl apply -f "${WORKSPACE}/manager/integration/deploy/upgrade_test.yaml"
+
+  echo "Wait for upgrade test pod to be in Running state"
+  sleep 2m
+
+  while [[ -z "`kubectl get pods longhorn-test-upgrade --no-headers=true | awk '{print $3}' | grep -v Running`"  ]]; do
+    echo "upgrade test still running ... rechecking in 1m"
+    sleep 1m
+  done
+
+  ## get upgrade test junit report
+  kubectl logs longhorn-test-upgrade  >> "${TF_VAR_tf_workspace}/longhorn-test-junit-report.xml"
 
 else
+  ## install longhorn latest
   kubectl apply -f longhorn.yaml
   check_longhorn_status
-
-  sed -i 's/#TEST_FRAMEWORK_ARGS_PLACEHOLDER/args:\ \[\ \"\-s\"\ ,\ \"\-\-junitxml=\$\{LONGHORN_JUNIT_REPORT_PATH\}" \]/' "${WORKSPACE}/manager/integration/deploy/test.yaml"
 fi
 
-kubectl create -Rf "${WORKSPACE}/manager/integration/deploy/backupstores"
+# generate test pod manifest
+sed -i 's/#TEST_FRAMEWORK_ARGS_PLACEHOLDER/args:\ \[\ \"\-s\"\ ,\ \"\-\-junitxml=\$\{LONGHORN_JUNIT_REPORT_PATH\}" \]/' "${WORKSPACE}/manager/integration/deploy/test.yaml"
 
 sed  -i 's/longhornio\/longhorn-manager-test:.*$/longhornio\/longhorn-manager-test:master/' "${WORKSPACE}/manager/integration/deploy/test.yaml"
 
-kubectl create -f "${WORKSPACE}/manager/integration/deploy/test.yaml"
+# run manager integration tests
+kubectl apply -f "${WORKSPACE}/manager/integration/deploy/test.yaml"
 
 echo "Waiting for test pod to be in Running state"
 sleep 5m
@@ -75,4 +96,5 @@ while [[ -z "`kubectl get pods longhorn-test --no-headers=true | awk '{print $3}
   sleep 5m
 done
 
-kubectl logs longhorn-test  > "${TF_VAR_tf_workspace}/longhorn-test-junit-report.xml"
+# get integration test junit report
+kubectl logs longhorn-test  >> "${TF_VAR_tf_workspace}/longhorn-test-junit-report.xml"
