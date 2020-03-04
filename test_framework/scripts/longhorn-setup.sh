@@ -47,13 +47,14 @@ export KUBECONFIG="${TF_VAR_tf_workspace}/templates/kube_config_3-nodes-k8s.yml"
 # scale coredns min pods to 3 for node offline tests
 kubectl get configmaps -n kube-system coredns-autoscaler -o yaml | sed  's/\"min\":1/\"min\":3/' | kubectl apply -n kube-system -f -
 
-kubectl create -Rf "${WORKSPACE}/manager/integration/deploy/backupstores"
 
 if [[ ${LONGHORN_UPGRADE_TEST} ]]; then
   ## install Longhorn stable version, before running test_upgrade.
   kubectl apply -f "${LONGHORN_STABLE_URL}"
 
   check_longhorn_status
+
+  kubectl create -Rf "${WORKSPACE}/manager/integration/deploy/backupstores"
 
   ## generate upgrade_test pod manifest
   sed 's/#TEST_FRAMEWORK_ARGS_PLACEHOLDER/args:\ \[\ \"\-s\"\ ,\ \"\-\-junitxml=\$\{LONGHORN_JUNIT_REPORT_PATH\}",\ \"\-\-include\-upgrade\-test\ \-k test_upgrade\" \]/; s/name: longhorn-test$/name: longhorn-test-upgrade/' "${WORKSPACE}/manager/integration/deploy/test.yaml" >> "${WORKSPACE}/manager/integration/deploy/upgrade_test.yaml"
@@ -78,7 +79,9 @@ else
   ## install longhorn latest
   kubectl apply -f longhorn.yaml
   check_longhorn_status
+  kubectl create -Rf "${WORKSPACE}/manager/integration/deploy/backupstores"
 fi
+
 
 # generate test pod manifest
 sed -i 's/#TEST_FRAMEWORK_ARGS_PLACEHOLDER/args:\ \[\ \"\-s\"\ ,\ \"\-\-junitxml=\$\{LONGHORN_JUNIT_REPORT_PATH\}" \]/' "${WORKSPACE}/manager/integration/deploy/test.yaml"
