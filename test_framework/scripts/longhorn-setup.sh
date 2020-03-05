@@ -73,7 +73,7 @@ if [[ ${LONGHORN_UPGRADE_TEST} ]]; then
   done
 
   ## get upgrade test junit report
-  kubectl logs longhorn-test-upgrade  >> "${TF_VAR_tf_workspace}/longhorn-test-junit-report.xml"
+  kubectl logs longhorn-test-upgrade  >> "${TF_VAR_tf_workspace}/longhorn-test-upgrade-junit-report.xml"
 
 else
   ## install longhorn latest
