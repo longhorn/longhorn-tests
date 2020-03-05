@@ -26,6 +26,11 @@ node {
             stage ('report generation') {
                 sh "docker cp ${JOB_NAME}${BUILD_NUMBER}:${TF_VAR_tf_workspace}/longhorn-test-junit-report.xml ."
                 junit 'longhorn-test-junit-report.xml'
+
+		if(params.LONGHORN_UPGRADE_TEST) {
+                    sh "docker cp ${JOB_NAME}${BUILD_NUMBER}:${TF_VAR_tf_workspace}/longhorn-test-upgrade-junit-report.xml ."
+                    junit 'longhorn-test-upgrade-junit-report.xml'
+
             }
         } catch(e) {
             currentBuild.result = "FAILED"
