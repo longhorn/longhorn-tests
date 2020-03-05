@@ -124,9 +124,9 @@ def pytest_collection_modifyitems(config, items):
                 item.add_marker(skip_stress)
 
     if not config.getoption(INCLUDE_UPGRADE_OPT):
-        skip_stress = pytest.mark.skip(reason="include " +
-                                       INCLUDE_UPGRADE_OPT +
-                                       " option to run")
+        skip_upgrade = pytest.mark.skip(reason="include " +
+                                        INCLUDE_UPGRADE_OPT +
+                                        " option to run")
 
         for item in items:
             if "upgrade" in item.keywords:
