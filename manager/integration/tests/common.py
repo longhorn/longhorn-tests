@@ -2682,7 +2682,7 @@ def wait_for_volume_expansion(longhorn_api_client, volume_name):
     for i in range(RETRY_COUNTS):
         volume = longhorn_api_client.by_id_volume(volume_name)
         engine = get_volume_engine(volume)
-        if engine.size == volume.size:
+        if engine.size == volume.size and volume.state == "detached":
             complete = True
             break
         time.sleep(RETRY_INTERVAL)
@@ -2934,3 +2934,15 @@ def wait_for_pod_remount(core_api, pod_name):
                    tty=False)
         except Exception:
             time.sleep(RETRY_INTERVAL)
+
+
+def expand_attached_volume(client, volume_name):
+    volume = wait_for_volume_healthy(client, volume_name)
+    engine = get_volume_engine(volume)
+
+    volume.detach()
+    volume = wait_for_volume_detached(client, volume.name)
+    volume.expand(size=EXPAND_SIZE)
+    wait_for_volume_expansion(client, volume.name)
+    volume.attach(hostId=engine.hostId, disableFrontend=False)
+    wait_for_volume_healthy(client, volume_name)
