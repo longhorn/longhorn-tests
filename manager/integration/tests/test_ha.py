@@ -22,7 +22,7 @@ from common import create_and_wait_pod
 from common import write_pod_volume_data
 from common import wait_for_volume_healthy
 from common import read_volume_data
-from common import wait_for_pod_restart
+from common import wait_for_pod_remount
 from common import get_liveness_probe_spec
 from kubernetes.stream import stream
 
@@ -371,7 +371,7 @@ def test_salvage_auto_crash_all_replicas(client, core_api, volume_name, pod_make
 
     volume = wait_for_volume_healthy(client, volume_name)
 
-    wait_for_pod_restart(core_api, pod_name)
+    wait_for_pod_remount(core_api, pod_name)
 
     resp = read_volume_data(core_api, pod_name)
 
@@ -436,7 +436,7 @@ def test_salvage_auto_crash_replicas_short_wait(client, core_api, volume_name, p
 
     volume = wait_for_volume_healthy(client, volume_name)
 
-    wait_for_pod_restart(core_api, pod_name)
+    wait_for_pod_remount(core_api, pod_name)
 
     resp = read_volume_data(core_api, pod_name)
 
@@ -499,7 +499,7 @@ def test_salvage_auto_crash_replicas_long_wait(client, core_api, volume_name, po
 
     volume = wait_for_volume_healthy(client, volume_name)
 
-    wait_for_pod_restart(core_api, pod_name)
+    wait_for_pod_remount(core_api, pod_name)
 
     resp = read_volume_data(core_api, pod_name)
 
