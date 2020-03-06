@@ -10,7 +10,7 @@ from common import get_self_host_id, get_volume_endpoint
 from common import wait_for_snapshot_purge, write_volume_random_data
 from common import RETRY_COUNTS, RETRY_INTERVAL
 from common import create_snapshot
-from common import wait_for_volume_expansion, check_block_device_size
+from common import expand_attached_volume, check_block_device_size
 from common import write_volume_data, generate_random_data
 from common import wait_for_rebuild_complete
 from common import disable_auto_salvage # NOQA
@@ -285,8 +285,8 @@ def test_ha_recovery_with_expansion(client, volume_name):   # NOQA
 
     data1 = write_volume_random_data(volume)
 
-    volume.expand(size=EXPAND_SIZE)
-    wait_for_volume_expansion(client, volume_name)
+    expand_attached_volume(client, volume_name)
+    volume = client.by_id_volume(volume_name)
     check_block_device_size(volume, int(EXPAND_SIZE))
 
     data2 = {

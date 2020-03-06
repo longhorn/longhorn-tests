@@ -41,7 +41,8 @@ from common import storage_class # NOQA
 from common import pod_make # NOQA
 from common import set_random_backupstore
 from common import create_snapshot
-from common import wait_for_volume_expansion, wait_for_dr_volume_expansion
+from common import expand_attached_volume
+from common import wait_for_dr_volume_expansion
 from common import check_block_device_size
 from common import wait_for_rebuild_complete
 
@@ -1290,13 +1291,12 @@ def test_expansion_basic(clients, volume_name):  # NOQA
     snap1_data = write_volume_random_data(volume)
     snap1 = create_snapshot(client, volume_name)
 
-    volume.expand(size=EXPAND_SIZE)
+    expand_attached_volume(client, volume_name)
+    volume = client.by_id_volume(volume_name)
+    check_block_device_size(volume, int(EXPAND_SIZE))
 
     snap2_data = write_volume_random_data(volume)
     snap2 = create_snapshot(client, volume_name)
-
-    wait_for_volume_expansion(client, volume_name)
-    check_block_device_size(volume, int(EXPAND_SIZE))
 
     snap3_data = {
         'pos': int(SIZE),
@@ -1441,15 +1441,14 @@ def test_restore_inc_with_expansion(clients, core_api, volume_name, pod):  # NOQ
     dr_volume0 = common.wait_for_volume_healthy(client, dr_volume0_name)
     check_volume_data(dr_volume0, data0, False)
 
-    std_volume.expand(size=EXPAND_SIZE)
+    expand_attached_volume(client, volume_name)
+    std_volume = client.by_id_volume(volume_name)
+    check_block_device_size(std_volume, int(EXPAND_SIZE))
+
     data1 = {'pos': VOLUME_RWTEST_SIZE, 'len': VOLUME_RWTEST_SIZE,
              'content': common.generate_random_data(VOLUME_RWTEST_SIZE)}
     bv, backup1, _, data1 = create_backup(
         client, volume_name, data1)
-
-    wait_for_volume_expansion(client, volume_name)
-    std_volume = client.by_id_volume(volume_name)
-    check_block_device_size(std_volume, int(EXPAND_SIZE))
 
     client.list_backupVolume()
     check_volume_last_backup(client, dr_volume1_name, backup1.name)

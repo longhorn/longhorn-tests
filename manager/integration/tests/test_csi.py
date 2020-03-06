@@ -17,7 +17,7 @@ from common import get_pod_block_volume_data_md5sum
 from common import generate_volume_name
 from common import delete_backup
 from common import create_snapshot
-from common import expand_and_wait_for_pvc
+from common import expand_and_wait_for_pvc, wait_for_volume_expansion
 from common import get_volume_engine, wait_for_volume_detached
 
 
@@ -271,40 +271,6 @@ def test_csi_block_volume(client, core_api, storage_class, pvc, pod_manifest):  
 @pytest.mark.coretest   # NOQA
 @pytest.mark.csi  # NOQA
 @pytest.mark.csi_expansion  # NOQA
-def test_csi_online_expansion(core_api, storage_class, pvc, pod_manifest):  # NOQA
-    create_storage_class(storage_class)
-
-    pod_name = 'csi-online-expand-volume-test'
-    pvc_name = pod_name + "-pvc"
-    pvc['metadata']['name'] = pvc_name
-    pvc['spec']['storageClassName'] = storage_class['metadata']['name']
-    create_pvc(pvc)
-
-    pod_manifest['metadata']['name'] = pod_name
-    pod_manifest['spec']['volumes'] = [{
-        'name':
-            pod_manifest['spec']['containers'][0]['volumeMounts'][0]['name'],
-        'persistentVolumeClaim': {'claimName': pvc_name},
-    }]
-    create_and_wait_pod(core_api, pod_manifest)
-
-    test_data = generate_random_data(VOLUME_RWTEST_SIZE)
-    write_pod_volume_data(core_api, pod_name, test_data)
-
-    pvc['spec']['resources'] = {
-        'requests': {
-            'storage': size_to_string(EXPANDED_VOLUME_SIZE*Gi)
-        }
-    }
-    expand_and_wait_for_pvc(core_api, pvc)
-
-    resp = read_volume_data(core_api, pod_name)
-    assert resp == test_data
-
-
-@pytest.mark.coretest   # NOQA
-@pytest.mark.csi  # NOQA
-@pytest.mark.csi_expansion  # NOQA
 def test_csi_offline_expansion(client, core_api, storage_class, pvc, pod_manifest):  # NOQA
     create_storage_class(storage_class)
 
@@ -336,7 +302,7 @@ def test_csi_offline_expansion(client, core_api, storage_class, pvc, pod_manifes
         }
     }
     expand_and_wait_for_pvc(core_api, pvc)
-    wait_for_volume_detached(client, volume_name)
+    wait_for_volume_expansion(client, volume_name)
     volume = client.by_id_volume(volume_name)
     assert volume.state == "detached"
     assert volume.size == str(EXPANDED_VOLUME_SIZE*Gi)
