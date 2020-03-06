@@ -2900,23 +2900,6 @@ def disable_auto_salvage(client):
     assert setting.value == "true"
 
 
-def wait_for_pod_restart(core_api, pod_name, pod_ns="default"):
-    pod = core_api.read_namespaced_pod(pod_name, namespace=pod_ns)
-
-    old_restart_count = pod.status.container_statuses[0].restart_count
-
-    for i in range(RETRY_COUNTS):
-        pod = core_api.read_namespaced_pod(pod_name, namespace=pod_ns)
-        new_restart_count = pod.status.container_statuses[0].restart_count
-
-        if new_restart_count > old_restart_count:
-            break
-
-        time.sleep(RETRY_INTERVAL)
-
-    assert new_restart_count > old_restart_count
-
-
 def get_liveness_probe_spec(initial_delay=5, period=5):
     pod_liveness_probe_spec = {
         "exec": {
@@ -2930,3 +2913,24 @@ def get_liveness_probe_spec(initial_delay=5, period=5):
     }
 
     return pod_liveness_probe_spec
+
+
+def wait_for_pod_remount(core_api, pod_name):
+    check_command = [
+        '/bin/sh',
+        '-c',
+        'ls /data/'
+    ]
+
+    for i in range(RETRY_COUNTS):
+        try:
+            stream(core_api.connect_get_namespaced_pod_exec,
+                   pod_name,
+                   'default',
+                   command=check_command,
+                   stderr=True,
+                   stdin=False,
+                   stdout=True,
+                   tty=False)
+        except Exception:
+            time.sleep(RETRY_INTERVAL)
