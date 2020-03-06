@@ -1,6 +1,6 @@
 FROM python:3.7.4-stretch
 
-ARG KUBECTL_VERSION=v1.15.0
+ARG KUBECTL_VERSION=v1.17.0
 
 RUN apt-get update && \
     apt-get install -y vim-tiny nfs-common
