@@ -1,4 +1,4 @@
-kubernetes_version: v1.14.8-rancher1-1
+kubernetes_version: v1.17.2-rancher1-2
 nodes:
   - address: K8S_CONTROLLER_IP
     hostname_override: K8S_CONTROLLER_HOSTNAME
