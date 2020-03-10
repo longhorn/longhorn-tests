@@ -340,6 +340,16 @@ def test_pvc_creation_with_default_sc_set(
     delete_and_wait_pod(core_api, pod_name)
     delete_and_wait_pvc(core_api, pvc_name)
 
+    ks = {
+        'pvName': pv_name,
+        'pvStatus': 'Released',
+        'namespace': 'default',
+        'pvcName': pvc_name,
+        'lastPVCRefAt': 'not empty',
+        'lastPodRefAt': 'not empty',
+    }
+    wait_volume_kubernetes_status(client, volume_name, ks)
+
     # try to reuse the pv
     volume = wait_for_volume_detached(client, volume_name)
     create_pvc_for_volume(client, core_api, volume, pvc_name_extra)
@@ -347,12 +357,35 @@ def test_pvc_creation_with_default_sc_set(
         pvc_name_extra
     create_and_wait_pod(core_api, pod)
 
-    ks['pvcName'] = pvc_name_extra
+    ks = {
+        'pvName': pv_name,
+        'pvStatus': 'Bound',
+        'namespace': 'default',
+        'pvcName': pvc_name_extra,
+        'lastPVCRefAt': '',
+        'lastPodRefAt': '',
+        'workloadsStatus': [{
+            'podName': pod_name,
+            'podStatus': 'Running',
+            'workloadName': '',
+            'workloadType': '',
+        }, ],
+    }
     wait_volume_kubernetes_status(client, volume_name, ks)
 
     delete_and_wait_pod(core_api, pod_name)
     delete_and_wait_pvc(core_api, pvc_name_extra)
     delete_and_wait_pv(core_api, pv_name)
+
+    ks = {
+        'pvName': '',
+        'pvStatus': '',
+        'namespace': 'default',
+        'pvcName': pvc_name_extra,
+        'lastPVCRefAt': 'not empty',
+        'lastPodRefAt': 'not empty',
+    }
+    wait_volume_kubernetes_status(client, volume_name, ks)
 
     # without default storage class
     delete_storage_class(storage_class['metadata']['name'])
