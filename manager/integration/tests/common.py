@@ -1827,6 +1827,21 @@ def wait_for_disk_update(client, name, disk_num):
     return node
 
 
+def wait_for_node_tag_update(client, name, tags):
+    updated = False
+    for i in range(RETRY_COUNTS):
+        node = client.by_id_node(name)
+        if not tags and not node.tags:
+            updated = True
+            break
+        elif node.tags is not None and set(node.tags) == set(tags):
+            updated = True
+            break
+        time.sleep(RETRY_INTERVAL)
+    assert updated
+    return node
+
+
 def get_volume_engine(v):
     engines = v.controllers
     assert len(engines) != 0
@@ -1937,12 +1952,13 @@ def reset_node(client):
     nodes = client.list_node()
     for node in nodes:
         try:
+            node = client.update(node, tags=[])
+            node = wait_for_node_tag_update(client, node.id, [])
             node = client.update(node, allowScheduling=True)
             wait_for_node_update(client, node.id,
                                  "allowScheduling", True)
         except Exception as e:
-            print("Exception when reset node schedulding", node, e)
-            pass
+            print("Exception when reset node schedulding and tags", node, e)
 
 
 def cleanup_test_disks(client):
@@ -2006,6 +2022,7 @@ def reset_disks_for_all_nodes(client):  # NOQA
             update_disk.allowScheduling = True
             update_disk.storageReserved = \
                 int(update_disk.storageMaximum * 30 / 100)
+            update_disk.tags = []
             update_disks.append(update_disk)
         node = node.diskUpdate(disks=update_disks)
         for fsid, disk in iter(node.disks.items()):

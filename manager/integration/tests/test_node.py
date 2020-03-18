@@ -21,11 +21,14 @@ from common import SETTING_STORAGE_OVER_PROVISIONING_PERCENTAGE, \
 from common import get_volume_endpoint
 from common import get_update_disks
 from common import wait_for_disk_status, wait_for_disk_update, \
-    wait_for_disk_conditions
+    wait_for_disk_conditions, wait_for_node_tag_update
 from common import exec_nsenter
 from common import wait_for_replica_directory
 
 CREATE_DEFAULT_DISK_LABEL = "node.longhorn.io/create-default-disk"
+CREATE_DEFAULT_DISK_LABEL_VALUE_CONFIG = "config"
+DEFAULT_DISK_CONFIG_ANNOTATION = "node.longhorn.io/default-disks-config"
+DEFAULT_NODE_TAG_ANNOTATION = "node.longhorn.io/default-node-tags"
 SMALL_DISK_SIZE = (1 * 1024 * 1024)
 TEST_FILE = 'test'
 
@@ -47,6 +50,23 @@ def reset_default_disk_label():
             "metadata": {
                 "labels": {
                     CREATE_DEFAULT_DISK_LABEL: None
+                }
+            }
+        })
+
+
+@pytest.yield_fixture
+def reset_disk_and_tag_annotations():
+    yield
+    k8sapi = get_core_api_client()
+    lhapi = get_longhorn_api_client()
+    nodes = lhapi.list_node()
+    for node in nodes:
+        k8sapi.patch_node(node.id, {
+            "metadata": {
+                "annotations": {
+                    DEFAULT_DISK_CONFIG_ANNOTATION: None,
+                    DEFAULT_NODE_TAG_ANNOTATION: None,
                 }
             }
         })
@@ -1191,3 +1211,100 @@ def test_node_default_disk_labeled(client, core_api, random_disk_path,  reset_de
 def test_disk_path_replica_subdirectory(client):  # NOQA
     subprocess.check_call(['rm', '-rf', DEFAULT_REPLICA_DIRECTORY])
     wait_for_replica_directory()
+
+
+@pytest.mark.node
+def test_node_config_annotations(client, core_api,  # NOQA
+                                 reset_default_disk_label,  # NOQA
+                                 reset_disk_and_tag_annotations,  # NOQA
+                                 reset_disk_settings):  # NOQA
+    nodes = client.list_node().data
+    assert len(nodes) >= 3
+
+    node0 = nodes[0].id
+    core_api.patch_node(node0, {
+        "metadata": {
+            "labels": {
+                CREATE_DEFAULT_DISK_LABEL:
+                    CREATE_DEFAULT_DISK_LABEL_VALUE_CONFIG
+            },
+            "annotations": {
+                DEFAULT_DISK_CONFIG_ANNOTATION:
+                    '[{"path":"' + DEFAULT_DISK_PATH +
+                    '","allowScheduling":true,' +
+                    '"storageReserved":1024,"tags":["ssd","fast"]}]',
+                DEFAULT_NODE_TAG_ANNOTATION: '["tag2","tag2","tag1"]',
+            }
+        }
+    })
+
+    node1 = nodes[1].id
+    core_api.patch_node(node1, {
+        "metadata": {
+            "labels": {
+                CREATE_DEFAULT_DISK_LABEL:
+                    CREATE_DEFAULT_DISK_LABEL_VALUE_CONFIG
+            },
+            "annotations": {
+                DEFAULT_DISK_CONFIG_ANNOTATION:
+                    '[{"path":"/invalid-path","allowScheduling":false,' +
+                    '"storageReserved":1024,"tags":["ssd","fast"]}]',
+                DEFAULT_NODE_TAG_ANNOTATION: '["tag1",",.*invalid-tag"]',
+            }
+        }
+    })
+
+    disks = nodes[0].disks
+    for _, disk in iter(disks.items()):
+        disk.allowScheduling = False
+    update_disks = get_update_disks(disks)
+    node = client.by_id_node(node0)
+    node.diskUpdate(disks=update_disks)
+    node.diskUpdate(disks=[])
+    wait_for_disk_update(client, node0, 0)
+
+    disks = nodes[1].disks
+    for _, disk in iter(disks.items()):
+        disk.allowScheduling = False
+    update_disks = get_update_disks(disks)
+    node = client.by_id_node(node1)
+    node.diskUpdate(disks=update_disks)
+    node.diskUpdate(disks=[])
+    wait_for_disk_update(client, node1, 0)
+
+    setting = client.by_id_setting(SETTING_CREATE_DEFAULT_DISK_LABELED_NODES)
+    client.update(setting, value="true")
+
+    wait_for_node_tag_update(client, node0, ["tag1", "tag2"])
+    node = wait_for_disk_update(client, node0, 1)
+    for _, disk in iter(node.disks.items()):
+        assert disk.path == DEFAULT_DISK_PATH
+        assert disk.allowScheduling is True
+        assert disk.storageReserved == 1024
+        assert set(disk.tags) == {"ssd", "fast"}
+        break
+
+    node = client.by_id_node(node1)
+    assert len(node.disks) == 0
+    assert not node.tags
+
+    core_api.patch_node(node1, {
+        "metadata": {
+            "annotations": {
+                DEFAULT_DISK_CONFIG_ANNOTATION:
+                    '[{"path":"' + DEFAULT_DISK_PATH +
+                    '","allowScheduling":true,' +
+                    '"storageReserved":2048,"tags":["hdd","slow"]}]',
+                DEFAULT_NODE_TAG_ANNOTATION: '["tag1","tag3"]',
+            }
+        }
+    })
+
+    wait_for_node_tag_update(client, node1, ["tag1", "tag3"])
+    node = wait_for_disk_update(client, node1, 1)
+    for _, disk in iter(node.disks.items()):
+        assert disk.path == DEFAULT_DISK_PATH
+        assert disk.allowScheduling is True
+        assert disk.storageReserved == 2048
+        assert set(disk.tags) == {"hdd", "slow"}
+        break
