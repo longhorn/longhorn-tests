@@ -1800,8 +1800,7 @@ def wait_for_disk_status(client, name, fsid, key, value):
     for i in range(RETRY_COUNTS):
         node = client.by_id_node(name)
         disks = node.disks
-        disk = disks[fsid]
-        if disk[key] == value:
+        if len(disks) > 0 and disks[fsid][key] == value:
             break
         time.sleep(RETRY_INTERVAL)
     return node
@@ -1853,6 +1852,18 @@ def wait_for_node_tag_update(client, name, tags):
         time.sleep(RETRY_INTERVAL)
     assert updated
     return node
+
+
+def cleanup_node_disks(client, node_name):
+    node = client.by_id_node(node_name)
+    disks = node.disks
+    for _, disk in iter(disks.items()):
+        disk.allowScheduling = False
+    update_disks = get_update_disks(disks)
+    node = client.by_id_node(node_name)
+    node.diskUpdate(disks=update_disks)
+    node.diskUpdate(disks=[])
+    return wait_for_disk_update(client, node_name, 0)
 
 
 def get_volume_engine(v):
