@@ -50,7 +50,7 @@ metadata:
 spec:
   containers:
   - name: longhorn-test-pod
-    image: longhornio/longhorn-manager-test:v0.8.0
+    image: longhornio/longhorn-manager-test:master
 #    args: [
 #           "-x", "-s",
 #           "-m", "coretest",
@@ -70,7 +70,7 @@ spec:
       valueFrom:
         fieldRef:
           fieldPath: spec.nodeName
-    - name: ENV_DO_API_TOKEN 
+    - name: ENV_DO_API_TOKEN
       value: DO_API_TOKEN_VALUE
     - name: CLOUDPROVIDER
       value: CLOUDPROVIDER_NAME
