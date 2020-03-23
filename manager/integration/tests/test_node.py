@@ -2,6 +2,7 @@ import common
 import pytest
 import os
 import subprocess
+import time
 
 from random import choice
 from string import ascii_lowercase, digits
@@ -21,7 +22,8 @@ from common import SETTING_STORAGE_OVER_PROVISIONING_PERCENTAGE, \
 from common import get_volume_endpoint
 from common import get_update_disks
 from common import wait_for_disk_status, wait_for_disk_update, \
-    wait_for_disk_conditions, wait_for_node_tag_update
+    wait_for_disk_conditions, wait_for_node_tag_update, \
+    cleanup_node_disks
 from common import exec_nsenter
 from common import wait_for_replica_directory
 
@@ -31,6 +33,7 @@ DEFAULT_DISK_CONFIG_ANNOTATION = "node.longhorn.io/default-disks-config"
 DEFAULT_NODE_TAG_ANNOTATION = "node.longhorn.io/default-node-tags"
 SMALL_DISK_SIZE = (1 * 1024 * 1024)
 TEST_FILE = 'test'
+NODE_UPDATE_WAIT_INTERVAL = 2
 
 
 @pytest.fixture
@@ -1272,9 +1275,6 @@ def test_node_config_annotations(client, core_api,  # NOQA
     node.diskUpdate(disks=[])
     wait_for_disk_update(client, node1, 0)
 
-    setting = client.by_id_setting(SETTING_CREATE_DEFAULT_DISK_LABELED_NODES)
-    client.update(setting, value="true")
-
     wait_for_node_tag_update(client, node0, ["tag1", "tag2"])
     node = wait_for_disk_update(client, node0, 1)
     for _, disk in iter(node.disks.items()):
@@ -1308,3 +1308,151 @@ def test_node_config_annotations(client, core_api,  # NOQA
         assert disk.storageReserved == 2048
         assert set(disk.tags) == {"hdd", "slow"}
         break
+
+
+@pytest.mark.node
+def test_invalid_node_annotations(client, core_api,  # NOQA
+                                 reset_default_disk_label,  # NOQA
+                                 reset_disk_and_tag_annotations,  # NOQA
+                                 reset_disk_settings):  # NOQA
+
+    setting = client.by_id_setting(SETTING_CREATE_DEFAULT_DISK_LABELED_NODES)
+    client.update(setting, value="true")
+
+    nodes = client.list_node().data
+    node_name = nodes[0].id
+
+    # Case1: The invalid disk annotation shouldn't
+    # intervene the node controller.
+    cleanup_node_disks(client, node_name)
+    core_api.patch_node(node_name, {
+        "metadata": {
+            "annotations": {
+                DEFAULT_DISK_CONFIG_ANNOTATION:
+                    '[{"path":"/invalid-path","allowScheduling":false,' +
+                    '"storageReserved":1024,"tags":["ssd","fast"]}]',
+            }
+        }
+    })
+    # Case1.1: Longhorn shouldn't apply the invalid disk annotation.
+    time.sleep(NODE_UPDATE_WAIT_INTERVAL)
+    node = client.by_id_node(node_name)
+    assert len(node.disks) == 0
+    assert not node.tags
+
+    # Case1.2: Disk and tag update should work fine even if there is
+    # invalid disk annotation.
+    disk = {"path": DEFAULT_DISK_PATH, "allowScheduling": True}
+    node.diskUpdate(disks=[disk])
+    node = wait_for_disk_update(client, node_name, 1)
+    assert len(node.disks) == 1
+    for fsid, disk in iter(node.disks.items()):
+        assert disk.path == DEFAULT_DISK_PATH
+        assert disk.allowScheduling is True
+        assert disk.storageReserved == 0
+        assert not disk.tags
+        break
+    client.update(node, tags=["tag1", "tag2"])
+    wait_for_node_tag_update(client, node_name, ["tag1", "tag2"])
+
+    # Case2: The existing node disks keep unchanged
+    # even if the annotation is corrected.
+    core_api.patch_node(node_name, {
+        "metadata": {
+            "annotations": {
+                DEFAULT_DISK_CONFIG_ANNOTATION:
+                    '[{"path":"' + DEFAULT_DISK_PATH +
+                    '","allowScheduling":false,' +
+                    '"storageReserved":2048,"tags":["hdd","slow"]}]',
+            }
+        }
+    })
+    time.sleep(NODE_UPDATE_WAIT_INTERVAL)
+    assert len(node.disks) == 1
+    for _, disk in iter(node.disks.items()):
+        assert disk.path == DEFAULT_DISK_PATH
+        assert disk.allowScheduling is True
+        assert disk.storageReserved == 0
+        assert not disk.tags
+        break
+
+    # Case3: the correct annotation should be applied
+    # after cleaning up all disks
+    node = client.by_id_node(node_name)
+    disks = node.disks
+    for _, disk in iter(disks.items()):
+        disk.allowScheduling = False
+    update_disks = get_update_disks(disks)
+    node = client.by_id_node(node_name)
+    node.diskUpdate(disks=update_disks)
+    node.diskUpdate(disks=[])
+    # the fsid is always the same
+    node = wait_for_disk_status(client, node_name, fsid,
+                                "storageReserved", 2048)
+    for _, disk in iter(node.disks.items()):
+        assert disk.path == DEFAULT_DISK_PATH
+        assert disk.allowScheduling is False
+        assert disk.storageReserved == 2048
+        assert set(disk.tags) == {"hdd", "slow"}
+        break
+
+    # do cleanup then test the invalid tag annotation.
+    core_api.patch_node(node_name, {
+        "metadata": {
+            "annotations": {
+                DEFAULT_DISK_CONFIG_ANNOTATION: None,
+            }
+        }
+    })
+    node = cleanup_node_disks(client, node_name)
+    client.update(node, tags=[])
+    wait_for_node_tag_update(client, node_name, [])
+
+    # Case4: The invalid tag annotation shouldn't
+    # intervene the node controller.
+    core_api.patch_node(node_name, {
+        "metadata": {
+            "annotations": {
+                DEFAULT_NODE_TAG_ANNOTATION: '[",.*invalid-tag"]',
+            }
+        }
+    })
+    # Case4.1: Longhorn shouldn't apply the invalid tag annotation.
+    time.sleep(NODE_UPDATE_WAIT_INTERVAL)
+    node = client.by_id_node(node_name)
+    assert len(node.disks) == 0
+    assert not node.tags
+
+    # Case4.2: Disk and tag update should work fine even if there is
+    # invalid tag annotation.
+    disk = {"path": DEFAULT_DISK_PATH, "allowScheduling": True,
+            "storageReserved": 1024}
+    node.diskUpdate(disks=[disk])
+    node = wait_for_disk_update(client, node_name, 1)
+    assert len(node.disks) == 1
+    for _, disk in iter(node.disks.items()):
+        assert disk.path == DEFAULT_DISK_PATH
+        assert disk.allowScheduling is True
+        assert disk.storageReserved == 1024
+        assert not disk.tags
+        break
+    client.update(node, tags=["tag3", "tag4"])
+    wait_for_node_tag_update(client, node_name, ["tag3", "tag4"])
+
+    # Case5: The existing node keep unchanged
+    # even if the tag annotation is fixed up.
+    core_api.patch_node(node_name, {
+        "metadata": {
+            "annotations": {
+                DEFAULT_NODE_TAG_ANNOTATION: '["storage"]',
+            }
+        }
+    })
+    time.sleep(NODE_UPDATE_WAIT_INTERVAL)
+    node = client.by_id_node(node_name)
+    assert set(node.tags) == {"tag3", "tag4"}
+
+    # Case6: Clean up all node tags
+    # then the correct annotation should be applied.
+    client.update(node, tags=[])
+    wait_for_node_tag_update(client, node_name, ["storage"])
