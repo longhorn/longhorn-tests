@@ -385,6 +385,10 @@ def test_salvage_auto_crash_all_replicas(client, core_api, volume_name, pod_make
 
     assert test_data == resp
 
+    delete_and_wait_pod(core_api, pod_name)
+    delete_and_wait_pvc(core_api, pvc_name)
+    delete_and_wait_pv(core_api, pv_name)
+
 
 # Test case #2: delete one replica process, wait for 5 seconds
 # then delete all replica processes.
@@ -450,6 +454,10 @@ def test_salvage_auto_crash_replicas_short_wait(client, core_api, volume_name, p
 
     assert test_data == resp
 
+    delete_and_wait_pod(core_api, pod_name)
+    delete_and_wait_pvc(core_api, pvc_name)
+    delete_and_wait_pv(core_api, pv_name)
+
 
 # Test case #3: delete one replica process, wait for 60 seconds
 # then delete all replica processes.
@@ -512,6 +520,11 @@ def test_salvage_auto_crash_replicas_long_wait(client, core_api, volume_name, po
     resp = read_volume_data(core_api, pod_name)
 
     assert test_data == resp
+
+    delete_and_wait_pod(core_api, pod_name)
+    delete_and_wait_pvc(core_api, pvc_name)
+    delete_and_wait_pv(core_api, pv_name)
+
 
 
 def test_rebuild_failure_with_intensive_data(client, core_api, volume_name, pod_make):  # NOQA
