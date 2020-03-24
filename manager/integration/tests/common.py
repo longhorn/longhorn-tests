@@ -555,9 +555,9 @@ def read_pod_block_volume_data(api, pod_name, data_size, offset, device_path):
             tty=False)
 
 
-def get_pod_block_volume_data_md5sum(api, pod_name, device_path):
+def get_pod_data_md5sum(api, pod_name, path):
     md5sum_command = [
-        '/bin/sh', '-c', 'md5sum ' + device_path + " | awk '{print $1}'"
+        '/bin/sh', '-c', 'md5sum ' + path + " | awk '{print $1}'"
     ]
     with timeout(seconds=STREAM_EXEC_TIMEOUT * 3,
                  error_message='Timeout on executing stream md5sum'):
@@ -565,6 +565,19 @@ def get_pod_block_volume_data_md5sum(api, pod_name, device_path):
             api.connect_get_namespaced_pod_exec, pod_name, 'default',
             command=md5sum_command, stderr=True, stdin=False, stdout=True,
             tty=False)
+
+
+def write_pod_volume_random_data(api, pod_name, path, size_in_mb):
+    write_cmd = [
+        '/bin/sh',
+        '-c',
+        'dd if=/dev/urandom of=' + path +
+        ' bs=1M' + ' count=' + str(size_in_mb)
+    ]
+    return stream(
+        api.connect_get_namespaced_pod_exec, pod_name, 'default',
+        command=write_cmd, stderr=True, stdin=False, stdout=True,
+        tty=False)
 
 
 def size_to_string(volume_size):
@@ -2774,6 +2787,21 @@ def wait_for_rebuild_complete(client, volume_name):
             break
         time.sleep(RETRY_INTERVAL)
     return completed == len(rebuild_statuses)
+
+
+def wait_for_rebuild_start(client, volume_name):
+    started = False
+    for i in range(RETRY_COUNTS):
+        v = client.by_id_volume(volume_name)
+        rebuild_statuses = v.rebuildStatus
+        for status in rebuild_statuses:
+            if status.state == "in_progress":
+                started = True
+                break
+        if started:
+            break
+        time.sleep(RETRY_INTERVAL)
+    assert started
 
 
 @pytest.fixture

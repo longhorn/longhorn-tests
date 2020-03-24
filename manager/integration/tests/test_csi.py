@@ -14,7 +14,7 @@ from common import wait_and_get_pv_for_pvc
 from common import generate_random_data, read_volume_data
 from common import write_pod_volume_data
 from common import write_pod_block_volume_data, read_pod_block_volume_data
-from common import get_pod_block_volume_data_md5sum
+from common import get_pod_data_md5sum
 from common import generate_volume_name, create_and_check_volume
 from common import delete_backup
 from common import create_snapshot
@@ -249,7 +249,7 @@ def test_csi_block_volume(client, core_api, storage_class, pvc, pod_manifest):  
         core_api, pod_name, len(test_data), test_offset, device_path
     )
     assert test_data == returned_data
-    md5_sum = get_pod_block_volume_data_md5sum(
+    md5_sum = get_pod_data_md5sum(
         core_api, pod_name, device_path)
 
     delete_and_wait_pod(core_api, pod_name)
@@ -263,7 +263,7 @@ def test_csi_block_volume(client, core_api, storage_class, pvc, pod_manifest):  
         core_api, pod_name_2, len(test_data), test_offset, device_path
     )
     assert test_data == returned_data
-    md5_sum_2 = get_pod_block_volume_data_md5sum(
+    md5_sum_2 = get_pod_data_md5sum(
         core_api, pod_name_2, device_path)
     assert md5_sum == md5_sum_2
 
