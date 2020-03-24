@@ -1158,23 +1158,11 @@ def test_node_default_disk_labeled(client, core_api, random_disk_path,  reset_de
             }
         }
     })
-    disks = node.disks
-    for _, disk in iter(disks.items()):
-        disk.allowScheduling = False
-    update_disks = get_update_disks(disks)
-    node = node.diskUpdate(disks=update_disks)
-    node = node.diskUpdate(disks=[])
-    wait_for_disk_update(client, node.id, 0)
+    cleanup_node_disks(client, node.id)
 
     node = nodes[2]
     cases["unlabeled"] = node.id
-    disks = node.disks
-    for _, disk in iter(disks.items()):
-        disk.allowScheduling = False
-    update_disks = get_update_disks(disks)
-    node = node.diskUpdate(disks=update_disks)
-    node = node.diskUpdate(disks=[])
-    wait_for_disk_update(client, node.id, 0)
+    cleanup_node_disks(client, node.id)
 
     # Set disk creation and path Settings.
     setting = client.by_id_setting(SETTING_DEFAULT_DATA_PATH)
@@ -1198,13 +1186,7 @@ def test_node_default_disk_labeled(client, core_api, random_disk_path,  reset_de
     # fixtures clean up after.
     setting = client.by_id_setting(SETTING_CREATE_DEFAULT_DISK_LABELED_NODES)
     client.update(setting, value="false")
-    disks = node.disks
-    for _, disk in iter(disks.items()):
-        disk.allowScheduling = False
-    update_disks = get_update_disks(disks)
-    node = node.diskUpdate(disks=update_disks)
-    node = node.diskUpdate(disks=[])
-    wait_for_disk_update(client, node.id, 0)
+    cleanup_node_disks(client, node.id)
 
     node = client.by_id_node(cases["unlabeled"])
     assert len(node.disks) == 0
@@ -1257,23 +1239,8 @@ def test_node_config_annotations(client, core_api,  # NOQA
         }
     })
 
-    disks = nodes[0].disks
-    for _, disk in iter(disks.items()):
-        disk.allowScheduling = False
-    update_disks = get_update_disks(disks)
-    node = client.by_id_node(node0)
-    node.diskUpdate(disks=update_disks)
-    node.diskUpdate(disks=[])
-    wait_for_disk_update(client, node0, 0)
-
-    disks = nodes[1].disks
-    for _, disk in iter(disks.items()):
-        disk.allowScheduling = False
-    update_disks = get_update_disks(disks)
-    node = client.by_id_node(node1)
-    node.diskUpdate(disks=update_disks)
-    node.diskUpdate(disks=[])
-    wait_for_disk_update(client, node1, 0)
+    cleanup_node_disks(client, node0)
+    cleanup_node_disks(client, node1)
 
     wait_for_node_tag_update(client, node0, ["tag1", "tag2"])
     node = wait_for_disk_update(client, node0, 1)
