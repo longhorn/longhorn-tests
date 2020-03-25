@@ -2463,8 +2463,8 @@ def wait_volume_kubernetes_status(client, volume_name, expect_ks):
     assert expected
 
 
-def create_pv_for_volume(client, core_api, volume, pv_name):
-    volume.pvCreate(pvName=pv_name)
+def create_pv_for_volume(client, core_api, volume, pv_name, fs_type="ext4"):
+    volume.pvCreate(pvName=pv_name, fsType=fs_type)
     for i in range(RETRY_COUNTS):
         if check_pv_existence(core_api, pv_name):
             break
