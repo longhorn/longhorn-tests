@@ -1,8 +1,9 @@
 #!/usr/sbin/python
 import pytest
+import subprocess
 import random
 import common
-from common import client, core_api, csi_pv, pod_make, pvc, storage_class  # NOQA
+from common import client, core_api, csi_pv, pod_make, pvc, storage_class # NOQA
 from common import pod as pod_manifest  # NOQA
 from common import Gi, DEFAULT_VOLUME_SIZE, EXPANDED_VOLUME_SIZE
 from common import VOLUME_RWTEST_SIZE
@@ -14,11 +15,14 @@ from common import generate_random_data, read_volume_data
 from common import write_pod_volume_data
 from common import write_pod_block_volume_data, read_pod_block_volume_data
 from common import get_pod_block_volume_data_md5sum
-from common import generate_volume_name
+from common import generate_volume_name, create_and_check_volume
 from common import delete_backup
 from common import create_snapshot
 from common import expand_and_wait_for_pvc, wait_for_volume_expansion
 from common import get_volume_engine, wait_for_volume_detached
+from common import create_pv_for_volume, create_pvc_for_volume
+from common import get_self_host_id, get_volume_endpoint
+from common import wait_for_volume_healthy
 
 
 # Using a StorageClass because GKE is using the default StorageClass if not
@@ -322,3 +326,60 @@ def test_csi_offline_expansion(client, core_api, storage_class, pvc, pod_manifes
     engine = get_volume_engine(volume)
     assert volume.size == str(EXPANDED_VOLUME_SIZE*Gi)
     assert volume.size == engine.size
+
+
+def test_xfs_pv(client, core_api, pod_manifest): # NOQA
+    volume_name = generate_volume_name()
+
+    volume = create_and_check_volume(client, volume_name)
+
+    create_pv_for_volume(client, core_api, volume, volume_name, "xfs")
+
+    create_pvc_for_volume(client, core_api, volume, volume_name)
+
+    pod_manifest['spec']['volumes'] = [{
+        "name": "pod-data",
+        "persistentVolumeClaim": {
+            "claimName": volume_name
+        }
+    }]
+
+    pod_name = pod_manifest['metadata']['name']
+
+    create_and_wait_pod(core_api, pod_manifest)
+
+    test_data = generate_random_data(VOLUME_RWTEST_SIZE)
+    write_pod_volume_data(core_api, pod_name, test_data)
+    resp = read_volume_data(core_api, pod_name)
+    assert resp == test_data
+
+def test_xfs_pv_existing_volume(client, core_api, pod_manifest): # NOQA
+    volume_name = generate_volume_name()
+
+    volume = create_and_check_volume(client, volume_name)
+
+    create_pv_for_volume(client, core_api, volume, volume_name, "xfs")
+
+    create_pvc_for_volume(client, core_api, volume, volume_name)
+
+    host_id = get_self_host_id()
+
+    volume = volume.attach(hostId=host_id)
+
+    volume = wait_for_volume_healthy(client, volume_name)
+
+    cmd = ['mkfs.xfs', get_volume_endpoint(volume)]
+    subprocess.check_call(cmd)
+
+    volume = volume.detach()
+
+    volume = wait_for_volume_detached(client, volume_name)
+
+    pod_manifest['spec']['volumes'] = [{
+        "name": "pod-data",
+        "persistentVolumeClaim": {
+            "claimName": volume_name
+        }
+    }]
+
+    create_and_wait_pod(core_api, pod_manifest)
