@@ -1423,3 +1423,83 @@ def test_invalid_node_annotations(client, core_api,  # NOQA
     # then the correct annotation should be applied.
     client.update(node, tags=[])
     wait_for_node_tag_update(client, node_name, ["storage"])
+
+
+@pytest.mark.node
+def test_no_node_annotation(client, core_api,  # NOQA
+                            reset_default_disk_label,  # NOQA
+                            reset_disk_and_tag_annotations,  # NOQA
+                            reset_disk_settings):  # NOQA
+
+    setting = client.by_id_setting(SETTING_CREATE_DEFAULT_DISK_LABELED_NODES)
+    client.update(setting, value="true")
+
+    nodes = client.list_node().data
+    node_name = nodes[0].id
+
+    # the label is set but there is no annotation.
+    core_api.patch_node(node_name, {
+        "metadata": {
+            "labels": {
+                CREATE_DEFAULT_DISK_LABEL:
+                    CREATE_DEFAULT_DISK_LABEL_VALUE_CONFIG
+            },
+        }
+    })
+
+    # Case1: Disk update should work fine
+    node = client.by_id_node(node_name)
+    assert len(node.disks) == 1
+    for fsid, disk in iter(node.disks.items()):
+        disk.allowScheduling = False
+        disk.storageReserved = 0
+        disk.tags = ["original"]
+    node.diskUpdate(disks=[disk])
+    node = wait_for_disk_status(client, node_name, fsid,
+                                "storageReserved", 0)
+    assert len(node.disks) == 1
+    assert disk.allowScheduling is False
+    assert disk.storageReserved == 0
+    assert set(disk.tags) == {"original"}
+
+    # Case2: Tag update with disk set should work fine
+    client.update(node, tags=["tag0"])
+    wait_for_node_tag_update(client, node_name, ["tag0"])
+    client.update(node, tags=[])
+    wait_for_node_tag_update(client, node_name, [])
+
+    # Case3: The tag annotation with disk set should work fine
+    core_api.patch_node(node_name, {
+        "metadata": {
+            "annotations": {
+                DEFAULT_NODE_TAG_ANNOTATION: '["tag1"]',
+            }
+        }
+    })
+    wait_for_node_tag_update(client, node_name, ["tag1"])
+    core_api.patch_node(node_name, {
+        "metadata": {
+            "annotations": {
+                DEFAULT_NODE_TAG_ANNOTATION: None,
+            }
+        }
+    })
+    client.update(node, tags=[])
+    wait_for_node_tag_update(client, node_name, [])
+
+    # Case4: Tag update with disk unset should work fine
+    cleanup_node_disks(client, node_name)
+    client.update(node, tags=["tag2"])
+    wait_for_node_tag_update(client, node_name, ["tag2"])
+    client.update(node, tags=[])
+    wait_for_node_tag_update(client, node_name, [])
+
+    # Case5: The tag annotation with disk unset should work fine
+    core_api.patch_node(node_name, {
+        "metadata": {
+            "annotations": {
+                DEFAULT_NODE_TAG_ANNOTATION: '["tag3"]',
+            }
+        }
+    })
+    wait_for_node_tag_update(client, node_name, ["tag3"])
