@@ -285,3 +285,34 @@ def test_recurring_job_kubernetes_status(client, core_api, volume_name):  # NOQA
 
     cleanup_volume(client, volume)
     delete_and_wait_pv(core_api, pv_name)
+
+
+def test_max_recurring_jobs(client, core_api, volume_name): # NOQA
+    volume = client.create_volume(name=volume_name)
+
+    volume = common.wait_for_volume_detached(client, volume_name)
+
+    jobs = create_jobs1()
+
+    # set max total number of retain to exceed 50
+    jobs[0]['retain'] = 30
+    jobs[1]['retain'] = 21
+
+    host_id = get_self_host_id()
+
+    volume = volume.attach(hostId=host_id)
+
+    volume = common.wait_for_volume_healthy(client, volume_name)
+
+    with pytest.raises(Exception) as e:
+        volume.recurringUpdate(jobs=jobs)
+
+    assert "Job Can\\'t retain more than 50 snapshots" in str(e.value)
+
+    jobs[1]['retain'] = 20
+
+    volume = volume.recurringUpdate(jobs=jobs)
+
+    assert len(volume.recurringJobs) == 2
+    assert volume.recurringJobs[0]['retain'] == 30
+    assert volume.recurringJobs[1]['retain'] == 20
