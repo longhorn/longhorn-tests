@@ -744,6 +744,22 @@ def core_api(request):
 
 
 @pytest.fixture
+def apps_api(request):
+    """
+    Create a new AppsV1API instance.
+    Returns:
+        A new AppsV1API Instance.
+    """
+    c = Configuration()
+    c.assert_hostname = False
+    Configuration.set_default(c)
+    k8sconfig.load_incluster_config()
+    apps_api = k8sclient.AppsV1Api()
+
+    return apps_api
+
+
+@pytest.fixture
 def csi_pv(request):
     volume_name = generate_volume_name()
     pv_manifest = {

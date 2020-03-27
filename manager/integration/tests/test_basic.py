@@ -4,7 +4,7 @@ import subprocess
 import pytest
 
 from common import clients, random_labels, volume_name  # NOQA
-from common import core_api, pod   # NOQA
+from common import core_api, apps_api, pod   # NOQA
 from common import SIZE, DEV_PATH, EXPAND_SIZE
 from common import check_device_data, write_device_random_data
 from common import check_volume_data, write_volume_random_data
@@ -1543,3 +1543,34 @@ def test_restore_inc_with_expansion(clients, core_api, volume_name, pod):  # NOQ
 
     volumes = client.list_volume().data
     assert len(volumes) == 0
+
+
+def test_engine_image_daemonset_restart(clients, apps_api, volume_name):  # NOQA
+    client = get_random_client(clients)
+    default_img = common.get_default_engine_image(client)
+    ds_name = "engine-image-" + default_img.name
+
+    volume = create_and_check_volume(client, volume_name)
+
+    lht_hostId = get_self_host_id()
+    volume.attach(hostId=lht_hostId, disableFrontend=False)
+    volume = common.wait_for_volume_healthy(client, volume_name)
+    snap1_data = write_volume_random_data(volume)
+    create_snapshot(client, volume_name)
+
+    # The engine image DaemonSet will be recreated/restarted automatically
+    apps_api.delete_namespaced_daemon_set(ds_name, common.LONGHORN_NAMESPACE)
+
+    # The Longhorn volume is still available
+    # during the engine image DaemonSet restarting
+    check_volume_data(volume, snap1_data)
+
+    # Wait for the restart complete
+    common.wait_for_engine_image_state(client, default_img.name, "ready")
+
+    # Longhorn is still able to use the corresponding engine binary to
+    # operate snapshot
+    check_volume_data(volume, snap1_data)
+    snap2_data = write_volume_random_data(volume)
+    create_snapshot(client, volume_name)
+    check_volume_data(volume, snap2_data)
