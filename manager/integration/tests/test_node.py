@@ -44,7 +44,20 @@ def random_disk_path():
 
 @pytest.yield_fixture
 def reset_default_disk_label():
+    k8sapi = get_core_api_client()
+    lhapi = get_longhorn_api_client()
+    nodes = lhapi.list_node()
+    for node in nodes:
+        k8sapi.patch_node(node.id, {
+            "metadata": {
+                "labels": {
+                    CREATE_DEFAULT_DISK_LABEL: None
+                }
+            }
+        })
+
     yield
+
     k8sapi = get_core_api_client()
     lhapi = get_longhorn_api_client()
     nodes = lhapi.list_node()
@@ -60,7 +73,21 @@ def reset_default_disk_label():
 
 @pytest.yield_fixture
 def reset_disk_and_tag_annotations():
+    k8sapi = get_core_api_client()
+    lhapi = get_longhorn_api_client()
+    nodes = lhapi.list_node()
+    for node in nodes:
+        k8sapi.patch_node(node.id, {
+            "metadata": {
+                "annotations": {
+                    DEFAULT_DISK_CONFIG_ANNOTATION: None,
+                    DEFAULT_NODE_TAG_ANNOTATION: None,
+                }
+            }
+        })
+
     yield
+
     k8sapi = get_core_api_client()
     lhapi = get_longhorn_api_client()
     nodes = lhapi.list_node()
@@ -77,7 +104,14 @@ def reset_disk_and_tag_annotations():
 
 @pytest.yield_fixture
 def reset_disk_settings():
+    api = get_longhorn_api_client()
+    setting = api.by_id_setting(SETTING_CREATE_DEFAULT_DISK_LABELED_NODES)
+    api.update(setting, value="false")
+    setting = api.by_id_setting(SETTING_DEFAULT_DATA_PATH)
+    api.update(setting, value=DEFAULT_DISK_PATH)
+
     yield
+
     api = get_longhorn_api_client()
     setting = api.by_id_setting(SETTING_CREATE_DEFAULT_DISK_LABELED_NODES)
     api.update(setting, value="false")
@@ -1235,6 +1269,9 @@ def test_node_config_annotations(client, core_api,  # NOQA
 
     cleanup_node_disks(client, node0)
     cleanup_node_disks(client, node1)
+
+    setting = client.by_id_setting(SETTING_CREATE_DEFAULT_DISK_LABELED_NODES)
+    client.update(setting, value="true")
 
     wait_for_node_tag_update(client, node0, ["tag1", "tag2"])
     node = wait_for_disk_update(client, node0, 1)
