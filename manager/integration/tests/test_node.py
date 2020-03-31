@@ -1192,12 +1192,6 @@ def test_node_default_disk_labeled(client, core_api, random_disk_path,  reset_de
     assert len(node.disks) == 0
 
 
-@pytest.mark.node  # NOQA
-def test_disk_path_replica_subdirectory(client):  # NOQA
-    subprocess.check_call(['rm', '-rf', DEFAULT_REPLICA_DIRECTORY])
-    wait_for_replica_directory()
-
-
 @pytest.mark.node
 def test_node_config_annotations(client, core_api,  # NOQA
                                  reset_default_disk_label,  # NOQA
