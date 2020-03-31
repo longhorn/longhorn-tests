@@ -36,16 +36,16 @@ def test_tag_basic(client):  # NOQA
     node = client.by_id_node(host_id)
     disks = get_update_disks(node.disks)
     assert len(node.disks) == 1
-    assert disks[0].tags is None
+    assert node.disks[list(node.disks)[0]].tags is None
     assert node.tags is None
 
     unsorted_disk, sorted_disk = generate_unordered_tag_names()
     unsorted_node, sorted_node = generate_unordered_tag_names()
     update_disks = get_update_disks(node.disks)
-    update_disks[0].tags = unsorted_disk
+    update_disks[list(update_disks)[0]].tags = unsorted_disk
     node = node.diskUpdate(disks=update_disks)
     disks = get_update_disks(node.disks)
-    assert disks[0].tags == sorted_disk
+    assert disks[list(disks)[0]].tags == sorted_disk
 
     node = set_node_tags(client, node, unsorted_node)
     assert node.tags == sorted_node
@@ -63,16 +63,16 @@ def test_tag_basic(client):  # NOQA
                str(e.value)
         with pytest.raises(Exception) as e:
             update_disks = get_update_disks(node.disks)
-            update_disks[0].tags = tags
+            update_disks[list(update_disks)[0]].tags = tags
             node.diskUpdate(disks=update_disks)
         assert "at least one error encountered while validating tags" in \
                str(e.value)
 
     update_disks = get_update_disks(node.disks)
-    update_disks[0].tags = []
+    update_disks[list(update_disks)[0]].tags = []
     node = node.diskUpdate(disks=update_disks)
     disks = get_update_disks(node.disks)
-    assert disks[0].tags is None
+    assert node.disks[list(node.disks)[0]].tags is None
 
     node = set_node_tags(client, node)
     assert node.tags is None
@@ -200,7 +200,7 @@ def test_tag_scheduling_on_update(client, node_default_tags, volume_name):  # NO
     host_id = get_self_host_id()
     node = client.by_id_node(host_id)
     update_disks = get_update_disks(node.disks)
-    update_disks[0].tags = tag_spec["disk"]
+    update_disks[list(update_disks)[0]].tags = tag_spec["disk"]
     node = node.diskUpdate(disks=update_disks)
     set_node_tags(client, node, tag_spec["node"])
     scheduled = False
@@ -217,7 +217,7 @@ def test_tag_scheduling_on_update(client, node_default_tags, volume_name):  # NO
     volume = wait_for_volume_healthy(client, volume_name)
     nodes = client.list_node()
     node_mapping = {node.id: {
-        "disk": get_update_disks(node.disks)[0].tags,
+        "disk": node.disks[list(node.disks)[0]].tags,
         "node": node.tags
     } for node in nodes}
     assert len(volume.replicas) == 3
