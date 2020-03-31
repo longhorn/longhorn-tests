@@ -17,15 +17,13 @@ from common import SETTING_STORAGE_OVER_PROVISIONING_PERCENTAGE, \
     SETTING_STORAGE_MINIMAL_AVAILABLE_PERCENTAGE, \
     SETTING_DEFAULT_DATA_PATH, \
     SETTING_CREATE_DEFAULT_DISK_LABELED_NODES, \
-    DEFAULT_STORAGE_OVER_PROVISIONING_PERCENTAGE, \
-    DEFAULT_REPLICA_DIRECTORY
+    DEFAULT_STORAGE_OVER_PROVISIONING_PERCENTAGE
 from common import get_volume_endpoint
 from common import get_update_disks
 from common import wait_for_disk_status, wait_for_disk_update, \
     wait_for_disk_conditions, wait_for_node_tag_update, \
     cleanup_node_disks
 from common import exec_nsenter
-from common import wait_for_replica_directory
 
 CREATE_DEFAULT_DISK_LABEL = "node.longhorn.io/create-default-disk"
 CREATE_DEFAULT_DISK_LABEL_VALUE_CONFIG = "config"
@@ -169,27 +167,11 @@ def test_node_disk_update(client):  # NOQA
     lht_hostId = get_self_host_id()
     node = client.by_id_node(lht_hostId)
     disks = node.disks
-    # test add same disk by different mount path exception
-    with pytest.raises(Exception) as e:
-        disk = {"path": "/var/lib", "allowScheduling": True,
-                "storageReserved": 2 * Gi}
-        update_disk = get_update_disks(disks)
-        update_disk.append(disk)
-        node = node.diskUpdate(disks=update_disk)
-    assert "the same file system" in str(e.value)
 
     # test delete disk exception
     with pytest.raises(Exception) as e:
-        node.diskUpdate(disks=[])
+        node.diskUpdate(disks={})
     assert "disable the disk" in str(e.value)
-
-    # test storageReserved invalid exception
-    with pytest.raises(Exception) as e:
-        for fsid, disk in iter(disks.items()):
-            disk.storageReserved = disk.storageMaximum + 1*Gi
-        update_disk = get_update_disks(disks)
-        node.diskUpdate(disks=update_disk)
-    assert "storageReserved setting of disk" in str(e.value)
 
     # create multiple disks for node
     node = client.by_id_node(lht_hostId)
@@ -203,8 +185,8 @@ def test_node_disk_update(client):  # NOQA
 
     update_disk = get_update_disks(disks)
     # add new disk for node
-    update_disk.append(disk1)
-    update_disk.append(disk2)
+    update_disk["disk1"] = disk1
+    update_disk["disk2"] = disk2
 
     # save disks to node
     node = node.diskUpdate(disks=update_disk)
@@ -217,7 +199,7 @@ def test_node_disk_update(client):  # NOQA
     # update disk
     disks = node.disks
     update_disk = get_update_disks(disks)
-    for disk in update_disk:
+    for disk in update_disk.values():
         # keep default disk for other tests
         if disk.path == disk_path1 or disk.path == disk_path2:
             disk.allowScheduling = False
@@ -225,14 +207,14 @@ def test_node_disk_update(client):  # NOQA
     node = node.diskUpdate(disks=update_disk)
     disks = node.disks
     # wait for node controller to update disk status
-    for fsid, disk in iter(disks.items()):
+    for name, disk in iter(disks.items()):
         if disk.path == disk_path1 or disk.path == disk_path2:
-            wait_for_disk_status(client, lht_hostId, fsid,
+            wait_for_disk_status(client, lht_hostId, name,
                                  "allowScheduling", False)
-            wait_for_disk_status(client, lht_hostId, fsid,
+            wait_for_disk_status(client, lht_hostId, name,
                                  "storageReserved", SMALL_DISK_SIZE)
             free, total = common.get_host_disk_size(disk_path1)
-            wait_for_disk_status(client, lht_hostId, fsid,
+            wait_for_disk_status(client, lht_hostId, name,
                                  "storageAvailable", free)
 
     node = client.by_id_node(lht_hostId)
@@ -255,10 +237,10 @@ def test_node_disk_update(client):  # NOQA
 
     # delete other disks, just remain default disk
     update_disk = get_update_disks(disks)
-    remain_disk = []
-    for disk in update_disk:
+    remain_disk = {}
+    for name, disk in update_disk.items():
         if disk.path != disk_path1 and disk.path != disk_path2:
-            remain_disk.append(disk)
+            remain_disk[name] = disk
     node = node.diskUpdate(disks=remain_disk)
     node = wait_for_disk_update(client, lht_hostId,
                                 len(remain_disk))
@@ -306,24 +288,23 @@ def test_replica_scheduler_no_disks(client):  # NOQA
     # delete all disks on each node
     for node in nodes:
         disks = node.disks
-        name = node.name
         # set allowScheduling to false
-        for fsid, disk in iter(disks.items()):
+        for name, disk in iter(disks.items()):
             disk.allowScheduling = False
         update_disks = get_update_disks(disks)
         node = node.diskUpdate(disks=update_disks)
-        for fsid, disk in iter(node.disks.items()):
+        for name, disk in iter(node.disks.items()):
             # wait for node controller update disk status
-            wait_for_disk_status(client, name, fsid,
+            wait_for_disk_status(client, node.name, name,
                                  "allowScheduling", False)
-            wait_for_disk_status(client, name, fsid,
+            wait_for_disk_status(client, node.name, name,
                                  "storageScheduled", 0)
 
-        node = client.by_id_node(name)
-        for fsid, disk in iter(node.disks.items()):
+        node = client.by_id_node(node.name)
+        for name, disk in iter(node.disks.items()):
             assert not disk.allowScheduling
-        node = node.diskUpdate(disks=[])
-        node = common.wait_for_disk_update(client, name, 0)
+        node = node.diskUpdate(disks={})
+        node = common.wait_for_disk_update(client, node.name, 0)
         assert len(node.disks) == 0
 
     # test there's no disk fit for volume
@@ -348,7 +329,7 @@ def test_replica_scheduler_large_volume_fit_small_disk(client):  # NOQA
                                        SIZE, lht_hostId)
     small_disk = {"path": small_disk_path, "allowScheduling": True}
     update_disks = get_update_disks(node.disks)
-    update_disks.append(small_disk)
+    update_disks["small-disks"] = small_disk
     node = node.diskUpdate(disks=update_disks)
     node = common.wait_for_disk_update(client, lht_hostId,
                                        len(update_disks))
@@ -441,14 +422,14 @@ def test_replica_scheduler_too_large_volume_fit_any_disks(client):  # NOQA
     for node in nodes:
         disks = node.disks
         update_disks = get_update_disks(disks)
-        for disk in update_disks:
+        for disk in update_disks.values():
             disk.storageReserved = \
                 disk.storageMaximum - needed_for_scheduling
         node = node.diskUpdate(disks=update_disks)
         disks = node.disks
-        for fsid, disk in iter(disks.items()):
+        for name, disk in iter(disks.items()):
             wait_for_disk_status(client, node.name,
-                                 fsid, "storageReserved",
+                                 name, "storageReserved",
                                  disk.storageMaximum-needed_for_scheduling)
 
     # check volume status
@@ -773,7 +754,7 @@ def test_node_controller_sync_storage_available(client):  # NOQA
     test_disk_path = create_host_disk(client, "vol-test", SIZE, lht_hostId)
     test_disk = {"path": test_disk_path, "allowScheduling": True}
     update_disks = get_update_disks(node.disks)
-    update_disks.append(test_disk)
+    update_disks["test-disk"] = test_disk
     node = node.diskUpdate(disks=update_disks)
     node = common.wait_for_disk_update(client, lht_hostId, len(update_disks))
     assert len(node.disks) == len(update_disks)
@@ -784,6 +765,7 @@ def test_node_controller_sync_storage_available(client):  # NOQA
         os.remove(test_file_path)
     cmd = ['dd', 'if=/dev/zero', 'of=' + test_file_path, 'bs=1M', 'count=1']
     subprocess.check_call(cmd)
+    subprocess.check_call(['sync', test_file_path])
     node = client.by_id_node(lht_hostId)
     disks = node.disks
     # wait for node controller update disk status
@@ -884,10 +866,10 @@ def test_node_delete_umount_disks(client):  # NOQA
              "storageReserved": SMALL_DISK_SIZE}
 
     update_disk = get_update_disks(disks)
-    for disk in update_disk:
+    for disk in update_disk.values():
         disk.allowScheduling = False
     # add new disk for node
-    update_disk.append(disk1)
+    update_disk["disk1"] = disk1
     # save disks to node
     node = node.diskUpdate(disks=update_disk)
     node = common.wait_for_disk_update(client, lht_hostId,
@@ -898,16 +880,16 @@ def test_node_delete_umount_disks(client):  # NOQA
 
     disks = node.disks
     # wait for node controller to update disk status
-    for fsid, disk in iter(disks.items()):
+    for name, disk in iter(disks.items()):
         if disk.path == disk_path1:
-            wait_for_disk_status(client, lht_hostId, fsid,
+            wait_for_disk_status(client, lht_hostId, name,
                                  "allowScheduling", True)
-            wait_for_disk_status(client, lht_hostId, fsid,
+            wait_for_disk_status(client, lht_hostId, name,
                                  "storageReserved", SMALL_DISK_SIZE)
             free, total = common.get_host_disk_size(disk_path1)
-            wait_for_disk_status(client, lht_hostId, fsid,
+            wait_for_disk_status(client, lht_hostId, name,
                                  "storageAvailable", free)
-            wait_for_disk_status(client, lht_hostId, fsid,
+            wait_for_disk_status(client, lht_hostId, name,
                                  "storageMaximum", total)
 
     node = client.by_id_node(lht_hostId)
@@ -964,7 +946,7 @@ def test_node_delete_umount_disks(client):  # NOQA
     # check result
     node = client.by_id_node(lht_hostId)
     disks = node.disks
-    update_disks = []
+    update_disks = {}
     for fsid, disk in iter(disks.items()):
         if disk.path == disk_path1:
             assert disk.allowScheduling
@@ -983,7 +965,7 @@ def test_node_delete_umount_disks(client):  # NOQA
                 CONDITION_STATUS_TRUE
             assert conditions[DISK_CONDITION_SCHEDULABLE]["status"] == \
                 CONDITION_STATUS_TRUE
-            update_disks.append(disk)
+            update_disks[fsid] = disk
 
     # delete umount disk exception
     with pytest.raises(Exception) as e:
@@ -1089,7 +1071,7 @@ def test_replica_cleanup(client):  # NOQA
                                        "10G", lht_hostId)
     extra_disk = {"path": extra_disk_path, "allowScheduling": True}
     update_disks = get_update_disks(node.disks)
-    update_disks.append(extra_disk)
+    update_disks["extra-disk"] = extra_disk
     node = node.diskUpdate(disks=update_disks)
     node = common.wait_for_disk_update(client, lht_hostId,
                                        len(update_disks))
@@ -1208,12 +1190,12 @@ def test_node_default_disk_labeled(client, core_api, random_disk_path,  reset_de
     # Check each case.
     node = client.by_id_node(cases["disk_exists"])
     assert len(node.disks) == 1
-    assert get_update_disks(node.disks)[0].path == \
+    assert node.disks[list(node.disks)[0]].path == \
         DEFAULT_DISK_PATH
 
     node = client.by_id_node(cases["labeled"])
     assert len(node.disks) == 1
-    assert get_update_disks(node.disks)[0].path == \
+    assert node.disks[list(node.disks)[0]].path == \
         random_disk_path
 
     # Remove the Disk from the Node used for this test case so we can have the
@@ -1267,6 +1249,8 @@ def test_node_config_annotations(client, core_api,  # NOQA
         }
     })
 
+    # Longhorn will not automatically recreate the default disk if setting
+    # `create-default-disk-labeled-nodes` is disabled
     cleanup_node_disks(client, node0)
     cleanup_node_disks(client, node1)
 
@@ -1340,8 +1324,9 @@ def test_invalid_node_annotations(client, core_api,  # NOQA
 
     # Case1.2: Disk and tag update should work fine even if there is
     # invalid disk annotation.
-    disk = {"path": DEFAULT_DISK_PATH, "allowScheduling": True}
-    node.diskUpdate(disks=[disk])
+    disk = {"default-disk": {"path": DEFAULT_DISK_PATH,
+            "allowScheduling": True}}
+    node.diskUpdate(disks=disk)
     node = wait_for_disk_update(client, node_name, 1)
     assert len(node.disks) == 1
     for fsid, disk in iter(node.disks.items()):
@@ -1383,7 +1368,7 @@ def test_invalid_node_annotations(client, core_api,  # NOQA
     update_disks = get_update_disks(disks)
     node = client.by_id_node(node_name)
     node.diskUpdate(disks=update_disks)
-    node.diskUpdate(disks=[])
+    node.diskUpdate(disks={})
     # the fsid is always the same
     node = wait_for_disk_status(client, node_name, fsid,
                                 "storageReserved", 2048)
@@ -1423,9 +1408,9 @@ def test_invalid_node_annotations(client, core_api,  # NOQA
 
     # Case4.2: Disk and tag update should work fine even if there is
     # invalid tag annotation.
-    disk = {"path": DEFAULT_DISK_PATH, "allowScheduling": True,
-            "storageReserved": 1024}
-    node.diskUpdate(disks=[disk])
+    disk = {"default-disk": {"path": DEFAULT_DISK_PATH,
+            "allowScheduling": True, "storageReserved": 1024}}
+    node.diskUpdate(disks=disk)
     node = wait_for_disk_update(client, node_name, 1)
     assert len(node.disks) == 1
     for _, disk in iter(node.disks.items()):
@@ -1481,12 +1466,14 @@ def test_no_node_annotation(client, core_api,  # NOQA
     # Case1: Disk update should work fine
     node = client.by_id_node(node_name)
     assert len(node.disks) == 1
-    for fsid, disk in iter(node.disks.items()):
+    update_disks = {}
+    for name, disk in iter(node.disks.items()):
         disk.allowScheduling = False
         disk.storageReserved = 0
         disk.tags = ["original"]
-    node.diskUpdate(disks=[disk])
-    node = wait_for_disk_status(client, node_name, fsid,
+        update_disks[name] = disk
+    node.diskUpdate(disks=update_disks)
+    node = wait_for_disk_status(client, node_name, name,
                                 "storageReserved", 0)
     assert len(node.disks) == 1
     assert disk.allowScheduling is False

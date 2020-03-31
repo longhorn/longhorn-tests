@@ -982,10 +982,10 @@ def node_default_tags():
         assert len(node.disks) == 1
 
         update_disks = get_update_disks(node.disks)
-        update_disks[0].tags = tags["disk"]
+        update_disks[list(update_disks)[0]].tags = tags["disk"]
         new_node = node.diskUpdate(disks=update_disks)
         disks = get_update_disks(new_node.disks)
-        assert disks[0].tags == tags["disk"]
+        assert disks[list(new_node.disks)[0]].tags == tags["disk"]
 
         new_node = set_node_tags(client, node, tags["node"])
         assert new_node.tags == tags["node"]
@@ -997,10 +997,10 @@ def node_default_tags():
     nodes = client.list_node()
     for node in nodes:
         update_disks = get_update_disks(node.disks)
-        update_disks[0].tags = []
+        update_disks[list(update_disks)[0]].tags = []
         new_node = node.diskUpdate(disks=update_disks)
         disks = get_update_disks(new_node.disks)
-        assert disks[0].tags is None
+        assert disks[list(new_node.disks)[0]].tags is None
 
         new_node = set_node_tags(client, node)
         assert new_node.tags is None
@@ -1812,21 +1812,21 @@ def get_host_disk_size(disk):
     return free, total
 
 
-def wait_for_disk_status(client, name, fsid, key, value):
+def wait_for_disk_status(client, node_name, disk_name, key, value):
     for i in range(RETRY_COUNTS):
-        node = client.by_id_node(name)
+        node = client.by_id_node(node_name)
         disks = node.disks
-        if len(disks) > 0 and disks[fsid][key] == value:
+        if len(disks) > 0 and disks[disk_name][key] == value:
             break
         time.sleep(RETRY_INTERVAL)
     return node
 
 
-def wait_for_disk_conditions(client, name, fsid, key, value):
+def wait_for_disk_conditions(client, node_name, disk_name, key, value):
     for i in range(RETRY_COUNTS):
-        node = client.by_id_node(name)
+        node = client.by_id_node(node_name)
         disks = node.disks
-        disk = disks[fsid]
+        disk = disks[disk_name]
         conditions = disk.conditions
         if conditions[key]["status"] == value:
             break
@@ -1878,7 +1878,7 @@ def cleanup_node_disks(client, node_name):
     update_disks = get_update_disks(disks)
     node = client.by_id_node(node_name)
     node.diskUpdate(disks=update_disks)
-    node.diskUpdate(disks=[])
+    node.diskUpdate(disks={})
     return wait_for_disk_update(client, node_name, 0)
 
 
@@ -1982,9 +1982,9 @@ def get_random_client(clients):
 
 
 def get_update_disks(disks):
-    update_disk = []
+    update_disk = {}
     for key, disk in iter(disks.items()):
-        update_disk.append(disk)
+        update_disk[key] = disk
     return update_disk
 
 
@@ -2006,7 +2006,7 @@ def cleanup_test_disks(client):
     host_id = get_self_host_id()
     node = client.by_id_node(host_id)
     disks = node.disks
-    for fsid, disk in iter(disks.items()):
+    for name, disk in iter(disks.items()):
         for del_dir in del_dirs:
             dir_path = os.path.join(DIRECTORY_PATH, del_dir)
             if dir_path == disk.path:
@@ -2015,11 +2015,11 @@ def cleanup_test_disks(client):
     try:
         node = node.diskUpdate(disks=update_disks)
         disks = node.disks
-        for fsid, disk in iter(disks.items()):
+        for name, disk in iter(disks.items()):
             for del_dir in del_dirs:
                 dir_path = os.path.join(DIRECTORY_PATH, del_dir)
                 if dir_path == disk.path:
-                    wait_for_disk_status(client, host_id, fsid,
+                    wait_for_disk_status(client, host_id, name,
                                          "allowScheduling", False)
     except Exception as e:
         print("Exception when update node disks", node, e)
@@ -2027,10 +2027,10 @@ def cleanup_test_disks(client):
 
     # delete test disks
     disks = node.disks
-    update_disks = []
-    for fsid, disk in iter(disks.items()):
+    update_disks = {}
+    for name, disk in iter(disks.items()):
         if disk.allowScheduling:
-            update_disks.append(disk)
+            update_disks[name] = disk
     try:
         node.diskUpdate(disks=update_disks)
         wait_for_disk_update(client, host_id, len(update_disks))
@@ -2050,28 +2050,30 @@ def reset_disks_for_all_nodes(client):  # NOQA
     nodes = client.list_node()
     for node in nodes:
         if len(node.disks) == 0:
-            default_disk = {"path": DEFAULT_DISK_PATH, "allowScheduling": True}
-            node = node.diskUpdate(disks=[default_disk])
+            default_disk = {"default-disk":
+                            {"path": DEFAULT_DISK_PATH,
+                             "allowScheduling": True}}
+            node = node.diskUpdate(disks=default_disk)
             node = wait_for_disk_update(client, node.name, 1)
             assert len(node.disks) == 1
         # wait for node controller to update disk status
         disks = node.disks
-        update_disks = []
-        for fsid, disk in iter(disks.items()):
+        update_disks = {}
+        for name, disk in iter(disks.items()):
             update_disk = disk
             update_disk.allowScheduling = True
             update_disk.storageReserved = \
                 int(update_disk.storageMaximum * 30 / 100)
             update_disk.tags = []
-            update_disks.append(update_disk)
+            update_disks[name] = update_disk
         node = node.diskUpdate(disks=update_disks)
-        for fsid, disk in iter(node.disks.items()):
+        for name, disk in iter(node.disks.items()):
             # wait for node controller update disk status
-            wait_for_disk_status(client, node.name, fsid,
+            wait_for_disk_status(client, node.name, name,
                                  "allowScheduling", True)
-            wait_for_disk_status(client, node.name, fsid,
+            wait_for_disk_status(client, node.name, name,
                                  "storageScheduled", 0)
-            wait_for_disk_status(client, node.name, fsid,
+            wait_for_disk_status(client, node.name, name,
                                  "storageReserved",
                                  int(update_disk.storageMaximum * 30 / 100))
 
