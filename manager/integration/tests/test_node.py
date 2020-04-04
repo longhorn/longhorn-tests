@@ -1521,3 +1521,109 @@ def test_no_node_annotation(client, core_api,  # NOQA
         }
     })
     wait_for_node_tag_update(client, node_name, ["tag3"])
+
+
+@pytest.mark.node  # NOQA
+def test_replica_scheduler_rebuild_restore_is_too_big(client):  # NOQA
+    nodes = client.list_node()
+    lht_hostId = get_self_host_id()
+    node = client.by_id_node(lht_hostId)
+    small_disk_path = create_host_disk(client, "vol-small",
+                                       SIZE, lht_hostId)
+    small_disk = {"path": small_disk_path, "allowScheduling": False}
+    update_disks = get_update_disks(node.disks)
+    update_disks["small-disk"] = small_disk
+    node = node.diskUpdate(disks=update_disks)
+    node = common.wait_for_disk_update(client, lht_hostId,
+                                       len(update_disks))
+    assert len(node.disks) == len(update_disks)
+
+    # volume is same size as the small disk
+    volume_size = SIZE
+    vol_name = common.generate_volume_name()
+    client.create_volume(name=vol_name, size=str(volume_size),
+                         numberOfReplicas=len(nodes))
+    volume = common.wait_for_volume_condition_scheduled(client, vol_name,
+                                                        "status",
+                                                        CONDITION_STATUS_TRUE)
+    volume = common.wait_for_volume_detached(client, vol_name)
+
+    volume.attach(hostId=lht_hostId)
+    volume = common.wait_for_volume_healthy(client, vol_name)
+
+    # disable all the scheduling except for the small disk
+    nodes = client.list_node()
+    for node in nodes:
+        disks = node.disks
+        for fsid, disk in iter(disks.items()):
+            if disk.path == DEFAULT_DISK_PATH:
+                disk.allowScheduling = False
+            elif disk.path == small_disk_path:
+                disk.allowScheduling = True
+        update_disks = get_update_disks(disks)
+        node.diskUpdate(disks=update_disks)
+
+    data = {'len': int(int(SIZE) * 0.9), 'pos': 0}
+    data['content'] = common.generate_random_data(data['len'])
+    _, b, _, _ = common.create_backup(client, vol_name, data)
+
+    # cannot schedule for restore volume
+    restore_name = common.generate_volume_name()
+    client.create_volume(name=restore_name, size=SIZE,
+                         numberOfReplicas=1,
+                         fromBackup=b.url)
+    r_vol = common.wait_for_volume_condition_scheduled(client, restore_name,
+                                                       "status",
+                                                       CONDITION_STATUS_FALSE)
+
+    # cannot schedule due to all disks except for the small disk is disabled
+    # And the small disk won't have enough space after taking the replica
+    volume = volume.replicaRemove(name=volume.replicas[0].name)
+    volume = common.wait_for_volume_condition_scheduled(client, vol_name,
+                                                        "status",
+                                                        CONDITION_STATUS_FALSE)
+
+    # enable the scheduling
+    nodes = client.list_node()
+    for node in nodes:
+        disks = node.disks
+        for fsid, disk in iter(disks.items()):
+            if disk.path == DEFAULT_DISK_PATH:
+                disk.allowScheduling = True
+            elif disk.path == small_disk_path:
+                disk.allowScheduling = False
+        update_disks = get_update_disks(disks)
+        node.diskUpdate(disks=update_disks)
+
+    volume = common.wait_for_volume_condition_scheduled(client, vol_name,
+                                                        "status",
+                                                        CONDITION_STATUS_TRUE)
+
+    common.check_volume_data(volume, data, check_checksum=False)
+
+    cleanup_volume(client, vol_name)
+
+    r_vol = common.wait_for_volume_condition_scheduled(client, restore_name,
+                                                       "status",
+                                                       CONDITION_STATUS_TRUE)
+    r_vol = common.wait_for_volume_restoration_completed(client, restore_name)
+    r_vol = common.wait_for_volume_detached(client, restore_name)
+    r_vol.attach(hostId=lht_hostId)
+    r_vol = common.wait_for_volume_healthy(client, restore_name)
+
+    common.check_volume_data(r_vol, data, check_checksum=False)
+
+    cleanup_volume(client, restore_name)
+
+    # cleanup test disks
+    node = client.by_id_node(lht_hostId)
+    disks = node.disks
+    updated_disks = {}
+    for name, disk in iter(disks.items()):
+        if disk.path != small_disk_path:
+            updated_disks[name] = disk
+    node.diskUpdate(disks=update_disks)
+
+    node = common.wait_for_disk_update(client, lht_hostId,
+                                       len(update_disks))
+    cleanup_host_disk(client, 'vol-small')
