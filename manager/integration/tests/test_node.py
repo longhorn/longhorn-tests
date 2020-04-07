@@ -29,7 +29,7 @@ CREATE_DEFAULT_DISK_LABEL = "node.longhorn.io/create-default-disk"
 CREATE_DEFAULT_DISK_LABEL_VALUE_CONFIG = "config"
 DEFAULT_DISK_CONFIG_ANNOTATION = "node.longhorn.io/default-disks-config"
 DEFAULT_NODE_TAG_ANNOTATION = "node.longhorn.io/default-node-tags"
-SMALL_DISK_SIZE = (1 * 1024 * 1024)
+SMALL_DISK_SIZE = (2 * 1024 * 1024)
 TEST_FILE = 'test'
 NODE_UPDATE_WAIT_INTERVAL = 2
 
@@ -589,7 +589,8 @@ def test_replica_scheduler_just_under_over_provisioning(client):  # NOQA
                 wait_for_disk_status(client, node.name,
                                      fsid, "storageReserved", 0)
 
-    max_size = min(max_size_array)
+    # volume size is round up by 2MiB
+    max_size = min(max_size_array) - 2 * 1024 * 1024
     # test just under over provisioning limit could be scheduled
     vol_name = common.generate_volume_name()
     volume = client.create_volume(name=vol_name,
