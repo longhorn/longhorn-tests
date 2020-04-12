@@ -190,6 +190,7 @@ def volume_basic_test(clients, volume_name, base_image=""):  # NOQA
 
     volume = create_and_check_volume(client, volume_name, num_replicas, SIZE,
                                      base_image)
+    assert volume.initialRestorationRequired is False
 
     def validate_volume_basic(expected, actual):
         assert actual.name == expected.name
@@ -210,6 +211,7 @@ def volume_basic_test(clients, volume_name, base_image=""):  # NOQA
     lht_hostId = get_self_host_id()
     volume.attach(hostId=lht_hostId)
     volume = common.wait_for_volume_healthy(client, volume_name)
+    assert volume.initialRestorationRequired is False
 
     volumeByName = client.by_id_volume(volume_name)
     validate_volume_basic(volume, volumeByName)
@@ -239,6 +241,10 @@ def volume_basic_test(clients, volume_name, base_image=""):  # NOQA
     assert get_volume_endpoint(volume) == DEV_PATH + volume_name
 
     volume_rw_test(get_volume_endpoint(volume))
+
+    volume.detach()
+    volume = common.wait_for_volume_detached(client, volume_name)
+    assert volume.initialRestorationRequired is False
 
     cleanup_volume(client, volume)
 
@@ -505,31 +511,6 @@ def backup_labels_test(clients, random_labels, volume_name, size=SIZE, base_imag
             assert len(backup.labels) == len(random_labels)
 
     cleanup_volume(client, volume)
-
-
-# test normally created volume's "InitialRestorationRequired" field
-def test_restoration_required_field(clients):  # NOQA
-    for host_id, client in iter(clients.items()):
-        break
-
-    volname = generate_volume_name()
-    volume = client.create_volume(name=volname, size=SIZE, numberOfReplicas=3)
-    volume = common.wait_for_volume_detached(client, volname)
-    assert volume.initialRestorationRequired is False
-
-    volume = volume.attach(hostId=host_id)
-    volume = common.wait_for_volume_healthy(client, volname)
-    assert volume.initialRestorationRequired is False
-
-    volume = volume.detach()
-    volume = common.wait_for_volume_detached(client, volname)
-    assert volume.initialRestorationRequired is False
-
-    client.delete(volume)
-    volume = wait_for_volume_delete(client, volname)
-
-    volumes = client.list_volume()
-    assert len(volumes) == 0
 
 
 def backupstore_test(client, host_id, volname, size):
