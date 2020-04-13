@@ -37,6 +37,15 @@ REBUILD_RETRY_COUNT = 3
 
 @pytest.mark.coretest   # NOQA
 def test_ha_simple_recovery(client, volume_name):  # NOQA
+    """
+    [HA] Test recovering from one replica failure
+
+    1. Create volume and attach to the current node
+    2. Write `data` to the volume.
+    3. Remove one of the replica using Longhorn API
+    4. Wait for a new replica to be rebuilt.
+    5. Check the volume data
+    """
     ha_simple_recovery_test(client, volume_name, SIZE)
 
 
@@ -101,6 +110,29 @@ def ha_rebuild_replica_test(client, volname):   # NOQA
 
 @pytest.mark.coretest   # NOQA
 def test_ha_salvage(client, core_api, volume_name, disable_auto_salvage):  # NOQA
+    """
+    [HA] Test salvage when volume faulted
+
+    Setting: Disable auto salvage
+
+    Case 1: Delete all replica processes using instance manager
+
+    1. Create volume and attach to the current node
+    2. Write `data` to the volume.
+    3. Crash all the replicas using Instance Manager API
+        1. Cannot do it using Longhorn API since a. it will delete data, b. the
+    last replica is not allowed to be deleted
+    4. Make sure volume detached automatically and changed into `faulted` state
+    5. Make sure both replicas reports `failedAt` timestamp.
+    6. Salvage the volume
+    7. Verify that volume is in `detached` `unknown` state. No longer `faulted`
+    8. Verify that all the replicas' `failedAt` timestamp cleaned.
+    9. Attach the volume and check `data`
+
+    Case 2: Crash all replica processes
+
+    Same steps as Case 1 except on step 3, use SIGTERM to crash the processes
+    """
     ha_salvage_test(client, core_api, volume_name)
 
 
@@ -177,6 +209,22 @@ def ha_salvage_test(client, core_api, # NOQA
 
 # https://github.com/rancher/longhorn/issues/253
 def test_ha_backup_deletion_recovery(client, volume_name):  # NOQA
+    """
+    [HA] Test deleting the restored snapshot and rebuild
+
+    Backupstore: all
+
+    1. Create volume and attach it to the current node.
+    2. Write `data` to the volume and create snapshot `snap2`
+    3. Backup `snap2` to create a backup.
+    4. Create volume `res_volume` from the backup. Check volume `data`.
+    5. Check snapshot chain, make sure `backup_snapshot` exists.
+    6. Delete the `backup_snapshot` and purge snapshots.
+    7. After purge complete, delete one replica to verify rebuild works.
+
+    FIXME: Needs improvement, e.g. rebuild when no snapshot is deleted for
+    restored backup, delete a replica when restoring in progress.
+    """
     ha_backup_deletion_recovery_test(client, volume_name, SIZE)
 
 
@@ -263,6 +311,14 @@ def ha_backup_deletion_recovery_test(client, volume_name, size, base_image=""): 
 
 # https://github.com/rancher/longhorn/issues/415
 def test_ha_prohibit_deleting_last_replica(client, volume_name):  # NOQA
+    """
+    Test prohibiting deleting the last replica
+
+    1. Create volume with one replica and attach to the current node.
+    2. Try to delete the replica. It should error out
+
+    FIXME: Move out of test_ha.py
+    """
     volume = create_and_check_volume(client, volume_name, 1)
 
     host_id = get_self_host_id()
@@ -280,6 +336,19 @@ def test_ha_prohibit_deleting_last_replica(client, volume_name):  # NOQA
 
 
 def test_ha_recovery_with_expansion(client, volume_name):   # NOQA
+    """
+    [HA] Test recovery with volume expansion
+
+    1. Create a volume length `SIZE` and attach to the current node.
+    2. Write `data1` to the volume
+    3. Expand the volume to `EXPAND_SIZE`, and check volume has been expanded
+    4. Write `data2` starting from `SIZE`.
+    5. Remove replica0 from volume
+    6. Wait volume to start rebuilding and complete
+    7. Check the `data1` and `data2`
+
+    FIXME: why on step 6, checked volume.replicas >= 2?
+    """
     volume = create_and_check_volume(client, volume_name, 2, SIZE)
 
     host_id = get_self_host_id()
@@ -338,6 +407,20 @@ def test_ha_recovery_with_expansion(client, volume_name):   # NOQA
 
 
 def test_salvage_auto_crash_all_replicas(client, core_api, volume_name, pod_make):  # NOQA
+    """
+    [HA] Test automatic salvage feature by crashing all the replicas
+
+    1. Create PV/PVC/POD. Make sure POD has liveness check. Start the pod
+    2. Generate `test_data` and write to the pod.
+    3. Run `sync` command inside the pod to make sure data flush to the volume.
+    4. Crash all replica processes using SIGTERM
+    5. Wait for volume to `faulted`, then `detached` `unknown`, then `healthy`
+    6. Check replica `failedAt` has been cleared.
+    7. Wait for pod to be restarted.
+    8. Check pod `test_data`.
+
+    FIXME: Step 5 is only a intermediate state, maybe no way to get it for sure
+    """
     pod_name = volume_name + "-pod"
     pv_name = volume_name + "-pv"
     pvc_name = volume_name + "-pvc"
@@ -393,6 +476,20 @@ def test_salvage_auto_crash_all_replicas(client, core_api, volume_name, pod_make
 # Test case #2: delete one replica process, wait for 5 seconds
 # then delete all replica processes.
 def test_salvage_auto_crash_replicas_short_wait(client, core_api, volume_name, pod_make):  # NOQA
+    """
+    [HA] Test automatic salvage feature, with replica building pending
+
+    1. Create a PV/PVC/Pod with liveness check.
+    2. Create volume and start the pod.
+    3. Generate `test_data` and write to the pod.
+    4. Run `sync` command inside the pod to make sure data flush to the volume.
+    5. Crash one of the replica. Wait for 5 seconds.
+    6. Crash all the replicas.
+    7. Make sure volume and Pod recovers.
+    8. Check `test_data` in the Pod.
+
+    FIXME: step 5 should wait for the replica to start rebuilding.
+    """
     pod_name = volume_name + "-pod"
     pv_name = volume_name + "-pv"
     pvc_name = volume_name + "-pvc"
@@ -462,6 +559,21 @@ def test_salvage_auto_crash_replicas_short_wait(client, core_api, volume_name, p
 # Test case #3: delete one replica process, wait for 60 seconds
 # then delete all replica processes.
 def test_salvage_auto_crash_replicas_long_wait(client, core_api, volume_name, pod_make):  # NOQA
+    """
+    [HA] Test automatic salvage feature, with replica building pending
+
+    1. Create a PV/PVC/Pod with liveness check.
+    2. Create volume and start the pod.
+    3. Generate `test_data` and write to the pod.
+    4. Run `sync` command inside the pod to make sure data flush to the volume.
+    5. Crash one of the replica. Wait for 60 seconds.
+    6. Crash all the replicas.
+    7. Make sure volume and Pod recovers.
+    8. Check `test_data` in the Pod.
+
+    FIXME: step 5 should wait for the replica to finish rebuilding.
+    FIXME: should create common function with the previous couple test cases
+    """
     pod_name = volume_name + "-pod"
     pv_name = volume_name + "-pv"
     pvc_name = volume_name + "-pvc"
@@ -528,6 +640,21 @@ def test_salvage_auto_crash_replicas_long_wait(client, core_api, volume_name, po
 
 
 def test_rebuild_failure_with_intensive_data(client, core_api, volume_name, pod_make):  # NOQA
+    """
+    [HA] Test rebuild failure with intensive data writing
+
+    1. Create PV/PVC/POD with livenss check
+    2. Create volume and wait for pod to start
+    3. Write data to `/data/test1` inside the pod and get `original_checksum_1`
+    4. Write data to `/data/test2` inside the pod and get `original_checksum_2`
+    5. Find running replicas of the volume
+    6. Crash one of the running replicas.
+    7. Wait for the replica rebuild to start
+    8. Crash another running replicas
+    9. Wait for volume to finish two rebuilds and become healthy
+    10. Check md5sum for both data location
+    11. Go back step 5 and repeat for `REBUILD_RETRY_COUNT` times.
+    """
     pod_name = volume_name + "-pod"
     pv_name = volume_name + "-pv"
     pvc_name = volume_name + "-pvc"
