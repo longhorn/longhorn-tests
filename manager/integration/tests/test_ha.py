@@ -414,7 +414,7 @@ def test_salvage_auto_crash_all_replicas(client, core_api, volume_name, pod_make
     2. Generate `test_data` and write to the pod.
     3. Run `sync` command inside the pod to make sure data flush to the volume.
     4. Crash all replica processes using SIGTERM
-    5. Wait for volume to `faulted`, then `detached` `unknown`, then `healthy`
+    5. Wait for volume to `faulted`, then `healthy`
     6. Check replica `failedAt` has been cleared.
     7. Wait for pod to be restarted.
     8. Check pod `test_data`.
@@ -453,14 +453,13 @@ def test_salvage_auto_crash_all_replicas(client, core_api, volume_name, pod_make
 
     crash_replica_processes(client, core_api, volume_name)
 
-    volume = common.wait_for_volume_faulted(client, volume_name)
+    # this line may fail if the recovery is too quick
+    common.wait_for_volume_faulted(client, volume_name)
 
-    volume = common.wait_for_volume_detached_unknown(client, volume_name)
+    volume = wait_for_volume_healthy(client, volume_name)
     assert len(volume.replicas) == 2
     assert volume.replicas[0].failedAt == ""
     assert volume.replicas[1].failedAt == ""
-
-    volume = wait_for_volume_healthy(client, volume_name)
 
     wait_for_pod_remount(core_api, pod_name)
 
