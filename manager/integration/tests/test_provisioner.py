@@ -31,6 +31,9 @@ def test_provisioner_mount(client, core_api, storage_class, pvc, pod):  # NOQA
 
     Fixtures are torn down here in reverse order that they are specified as a
     parameter. Take caution when reordering test fixtures.
+
+    1. Create a StorageClass, PVC and Pod
+    2. Verify the pod is up and volume parameters.
     """
 
     # Prepare pod and volume specs.
@@ -64,6 +67,10 @@ def test_provisioner_params(client, core_api, storage_class, pvc, pod):  # NOQA
 
     Fixtures are torn down here in reverse order that they are specified as a
     parameter. Take caution when reordering test fixtures.
+
+    1. Create a StorageClass with replica 2 (instead of 3) etc.
+    2. Create PVC and Pod using it.
+    3. Verify the volume's parameter matches the Storage Class.
     """
 
     # Prepare pod and volume specs.
@@ -103,6 +110,12 @@ def test_provisioner_io(client, core_api, storage_class, pvc, pod):  # NOQA
 
     Fixtures are torn down here in reverse order that they are specified as a
     parameter. Take caution when reordering test fixtures.
+
+    1. Create a StorageClass, PVC and Pod.
+    2. Wait for pod to be up.
+    3. Write data to the pod
+    4. Delete the original pod and create a new one using the same PVC
+    5. Read the data from the new pod, verify the data.
     """
 
     # Prepare pod and volume specs.
@@ -135,6 +148,11 @@ def test_provisioner_tags(client, core_api, node_default_tags, storage_class, pv
     """
     Test that a StorageClass can properly provision a volume with requested
     Tags.
+
+    1. Use `node_default_tags` to add default tags to nodes.
+    2. Create a StorageClass with disk and node tag set.
+    3. Create PVC and Pod.
+    4. Verify the volume has the correct parameters and tags.
     """
 
     # Prepare pod and volume specs.
