@@ -41,6 +41,31 @@ def check_jobs1_result(volume):
 
 @pytest.mark.recurring_job  # NOQA
 def test_recurring_job(clients, volume_name):  # NOQA
+    """
+    Test recurring job
+
+    1. Setup a random backupstore
+    2. Create a volume.
+    3. Create two jobs
+        1 job 1: snapshot every one minute, retain 2
+        1 job 2: backup every two minutes, retain 1
+    4. Attach the volume.
+    5. Sleep for 5 minutes
+    6. Verify we have 4 snapshots total
+        1. 2 snapshots, 1 backup, 1 volume-head
+    7. Update jobs to replace the backup job
+        1. New backup job run every one minute, retain 2
+    8. Sleep for 5 minutes.
+    9. We should have 6 snapshots
+        1. 2 from job_snap, 1 from job_backup, 2 from job_backup2, 1
+        volume-head
+    10. Make sure we have no more than 5 backups.
+        1. old backup job may have at most 1 backups
+        2. new backup job may have at most 3 backups
+        3. FIXME: Seems we should have at most 4 backups?
+    11. Make sure we have no more than 2 backups in progress
+        1. FIXME: Seems we should have at most 1 from the new job?
+    """
     for host_id, client in iter(clients.items()):  # NOQA
         break
 
@@ -102,6 +127,12 @@ def test_recurring_job(clients, volume_name):  # NOQA
 
 @pytest.mark.recurring_job  # NOQA
 def test_recurring_job_in_volume_creation(clients, volume_name):  # NOQA
+    """
+    Test create volume with recurring jobs
+
+    1. Create volume with recurring jobs though Longhorn API
+    2. Verify the recurring jobs run correctly
+    """
     for host_id, client in iter(clients.items()):  # NOQA
         break
 
@@ -137,6 +168,13 @@ def test_recurring_job_in_volume_creation(clients, volume_name):  # NOQA
 
 @pytest.mark.recurring_job  # NOQA
 def test_recurring_job_in_storageclass(client, core_api, storage_class, statefulset):  # NOQA
+    """
+    Test create volume with StorageClass contains recurring jobs
+
+    1. Create a StorageClass with recurring jobs
+    2. Create a StatefulSet with PVC template and StorageClass
+    3. Verify the recurring jobs run correctly.
+    """
     set_random_backupstore(client)
     statefulset_name = 'recurring-job-in-storageclass-test'
     update_statefulset_manifests(statefulset, storage_class, statefulset_name)
@@ -158,8 +196,12 @@ def test_recurring_job_in_storageclass(client, core_api, storage_class, stateful
 @pytest.mark.recurring_job
 def test_recurring_job_labels(client, random_labels, volume_name):  # NOQA
     """
-    Test that a RecurringJob properly applies the correct Labels to the
-    produced Backups.
+    Test a RecurringJob with labels
+
+    1. Set a random backupstore
+    2. Create a backup recurring job with labels
+    3. Verify the recurring jobs runs correctly.
+    4. Verify the labels on the backup is correct.
     """
     recurring_job_labels_test(client, random_labels, volume_name)
 
@@ -219,8 +261,14 @@ def recurring_job_labels_test(client, labels, volume_name, size=SIZE, base_image
 @pytest.mark.recurring_job
 def test_recurring_job_kubernetes_status(client, core_api, volume_name):  # NOQA
     """
-    Test that a RecurringJob properly backs up the KubernetesStatus of a
-    Volume.
+    Test RecurringJob properly backs up the KubernetesStatus
+
+    1. Setup a random backupstore.
+    2. Create a volume.
+    3. Create a PV from the volume, and verify the PV status.
+    4. Create a backup recurring job to run every 2 minutes.
+    5. Verify the recurring job runs correctly.
+    6. Verify the backup contains the Kubernetes Status labels
     """
     set_random_backupstore(client)
     host_id = get_self_host_id()
@@ -287,7 +335,15 @@ def test_recurring_job_kubernetes_status(client, core_api, volume_name):  # NOQA
     delete_and_wait_pv(core_api, pv_name)
 
 
-def test_max_recurring_jobs(client, core_api, volume_name): # NOQA
+def test_recurring_jobs_maximum_retain(client, core_api, volume_name): # NOQA
+    """
+    Test recurring jobs' maximum retain
+
+    1. Create two jobs, with retain 30 and 21.
+    2. Try to apply the jobs to a volume. It should fail.
+    3. Reduce retain to 30 and 20.
+    4. Now the jobs can be applied the volume.
+    """
     volume = client.create_volume(name=volume_name)
 
     volume = common.wait_for_volume_detached(client, volume_name)
