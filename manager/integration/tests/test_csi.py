@@ -86,8 +86,12 @@ def test_csi_mount(client, core_api, csi_pv, pvc, pod_make):  # NOQA
     Test that a statically defined CSI volume can be created, mounted,
     unmounted, and deleted properly on the Kubernetes cluster.
 
-    Fixtures are torn down here in reverse order that they are specified as a
-    parameter. Take caution when reordering test fixtures.
+    Note: Fixtures are torn down here in reverse order that they are specified
+    as a parameter. Take caution when reordering test fixtures.
+
+    1. Create a PV/PVC/Pod with dynamic provisioned Longhorn volume
+    2. Make sure the pod is running
+    3. Verify the volume status
     """
     volume_size = DEFAULT_VOLUME_SIZE * Gi
     csi_mount_test(client, core_api,
@@ -115,8 +119,15 @@ def test_csi_io(client, core_api, csi_pv, pvc, pod_make):  # NOQA
     Test that input and output on a statically defined CSI volume works as
     expected.
 
-    Fixtures are torn down here in reverse order that they are specified as a
-    parameter. Take caution when reordering test fixtures.
+    Note: Fixtures are torn down here in reverse order that they are specified
+    as a parameter. Take caution when reordering test fixtures.
+
+    1. Create PV/PVC/Pod with dynamic positioned Longhorn volume
+    2. Generate `test_data` and write it to volume using the equivalent
+    of `kubectl exec`
+    3. Delete the Pod
+    4. Create another pod with the same PV
+    5. Check the previous created `test_data` in the new Pod
     """
     csi_io_test(client, core_api, csi_pv, pvc, pod_make)
 
@@ -153,6 +164,14 @@ def csi_io_test(client, core_api, csi_pv, pvc, pod_make, base_image=""):  # NOQA
 def test_csi_backup(client, core_api, csi_pv, pvc, pod_make):  # NOQA
     """
     Test that backup/restore works with volumes created by CSI driver.
+
+    Run the test for all the backupstores
+
+    1. Create PV/PVC/Pod using dynamic provisioned volume
+    2. Write data and create snapshot using Longhorn API
+    3. Verify the existence of backup
+    4. Create another Pod using restored backup
+    5. Verify the data in the new Pod
     """
     csi_backup_test(client, core_api, csi_pv, pvc, pod_make)
 
@@ -211,6 +230,17 @@ def backupstore_test(client, core_api, csi_pv, pvc, pod_make, pod_name, base_ima
 
 @pytest.mark.csi  # NOQA
 def test_csi_block_volume(client, core_api, storage_class, pvc, pod_manifest):  # NOQA
+    """
+    Test CSI feature: raw block volume
+
+    1. Create a PVC with `volumeMode = Block`
+    2. Create a pod using the PVC to dynamic provision a volume
+    3. Verify the pod creation
+    4. Generate `test_data` and write to the block volume directly in the pod
+    5. Read the data back for validation
+    6. Delete the pod and create `pod2` to use the same volume
+    7. Validate the data in `pod2` is consistent with `test_data`
+    """
     pod_name = 'csi-block-volume-test'
     pvc_name = pod_name + "-pvc"
     device_path = "/dev/longhorn/longhorn-test-blk"
@@ -276,6 +306,17 @@ def test_csi_block_volume(client, core_api, storage_class, pvc, pod_manifest):  
 @pytest.mark.csi  # NOQA
 @pytest.mark.csi_expansion  # NOQA
 def test_csi_offline_expansion(client, core_api, storage_class, pvc, pod_manifest):  # NOQA
+    """
+    Test CSI feature: offline expansion
+
+    1. Create a new `storage_class` with `allowVolumeExpansion` set
+    2. Create PVC and Pod with dynamic provisioned volume from the StorageClass
+    3. Generate `test_data` and write to the pod
+    4. Delete the pod
+    5. Update pvc.spec.resources to expand the volume
+    6. Verify the volume expansion done using Longhorn API
+    7. Create a new pod and validate the volume content
+    """
     create_storage_class(storage_class)
 
     pod_name = 'csi-offline-expand-volume-test'
@@ -329,6 +370,18 @@ def test_csi_offline_expansion(client, core_api, storage_class, pvc, pod_manifes
 
 
 def test_xfs_pv(client, core_api, pod_manifest): # NOQA
+    """
+    Test create PV with new XFS filesystem
+
+    1. Create a volume
+    2. Create a PV for the existing volume, specify `xfs` as filesystem
+    3. Create PVC and Pod
+    4. Make sure Pod is running.
+    5. Write data into the pod and read back for validation.
+
+    Note: The volume will be formatted to XFS filesystem by Kubernetes in this
+    case.
+    """
     volume_name = generate_volume_name()
 
     volume = create_and_check_volume(client, volume_name)
@@ -354,6 +407,18 @@ def test_xfs_pv(client, core_api, pod_manifest): # NOQA
     assert resp == test_data
 
 def test_xfs_pv_existing_volume(client, core_api, pod_manifest): # NOQA
+    """
+    Test create PV with existing XFS filesystem
+
+    1. Create a volume
+    2. Create PV/PVC for the existing volume, specify `xfs` as filesystem
+    3. Attach the volume to the current node.
+    4. Format it to `xfs`
+    5. Create a POD using the volume
+
+    FIXME: We should write data in step 4 and validate the data in step 5, make
+    sure the disk won't be reformatted
+    """
     volume_name = generate_volume_name()
 
     volume = create_and_check_volume(client, volume_name)
