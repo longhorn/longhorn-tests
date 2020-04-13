@@ -73,6 +73,14 @@ def test_soft_anti_affinity_scheduling(client, volume_name):  # NOQA
     With Soft Anti-Affinity, a new replica should still be scheduled on a node
     with an existing replica, which will result in "Healthy" state but limited
     redundancy.
+
+    1. Create a volume and attach to the current node
+    2. Generate and write `data` to the volume.
+    3. Set `soft anti-affinity` to true
+    4. Disable current node's scheduling.
+    5. Remove the replica on the current node
+    6. Wait for the volume to complete rebuild. Volume should have 3 replicas.
+    7. Verify `data`
     """
     volume = create_and_check_volume(client, volume_name)
     host_id = get_self_host_id()
@@ -101,6 +109,17 @@ def test_soft_anti_affinity_detach(client, volume_name):  # NOQA
     """
     Test that volumes with Soft Anti-Affinity can detach and reattach to a
     node properly.
+
+    1. Create a volume and attach to the current node.
+    2. Generate and write `data` to the volume
+    3. Set `soft anti-affinity` to true
+    4. Disable current node's scheduling.
+    5. Remove the replica on the current node
+    6. Wait for the new replica to be rebuilt
+    7. Detach the volume.
+    8. Verify there are 3 replicas
+    9. Attach the volume again. Verify there are still 3 replicas
+    10. Verify the `data`.
     """
     volume = create_and_check_volume(client, volume_name)
     host_id = get_self_host_id()
@@ -137,6 +156,18 @@ def test_hard_anti_affinity_scheduling(client, volume_name):  # NOQA
 
     With Hard Anti-Affinity, scheduling on nodes with existing replicas should
     be forbidden, resulting in "Degraded" state.
+
+    1. Create a volume and attach to the current node
+    2. Generate and write `data` to the volume.
+    3. Set `soft anti-affinity` to false
+    4. Disable current node's scheduling.
+    5. Remove the replica on the current node
+        1. Verify volume will be in degraded state.
+        2. Verify volume reports condition `scheduled == false`
+        3. Verify only two of three replicas of volume are healthy.
+        4. Verify the remaining replica doesn't have `replica.HostID`, meaning
+        it's unscheduled
+    6. Check volume `data`
     """
     volume = create_and_check_volume(client, volume_name)
     host_id = get_self_host_id()
@@ -176,6 +207,24 @@ def test_hard_anti_affinity_detach(client, volume_name):  # NOQA
     """
     Test that volumes with Hard Anti-Affinity are still able to detach and
     reattach to a node properly, even in degraded state.
+
+    1. Create a volume and attach to the current node
+    2. Generate and write `data` to the volume.
+    3. Set `soft anti-affinity` to false
+    4. Disable current node's scheduling.
+    5. Remove the replica on the current node
+        1. Verify volume will be in degraded state.
+        2. Verify volume reports condition `scheduled == false`
+    6. Detach the volume.
+    7. Verify that volume only have 2 replicas
+        1. Unhealthy replica will be removed upon detach.
+    8. Attach the volume again.
+        1. Verify volume will be in degraded state.
+        2. Verify volume reports condition `scheduled == false`
+        3. Verify only two of three replicas of volume are healthy.
+        4. Verify the remaining replica doesn't have `replica.HostID`, meaning
+        it's unscheduled
+    9. Check volume `data`
     """
     volume = create_and_check_volume(client, volume_name)
     host_id = get_self_host_id()
@@ -220,6 +269,17 @@ def test_hard_anti_affinity_live_rebuild(client, volume_name):  # NOQA
     remain in "Degraded" state. However, once one is available, the replica
     should now be scheduled successfully, with the volume returning to
     "Healthy" state.
+
+    1. Create a volume and attach to the current node
+    2. Generate and write `data` to the volume.
+    3. Set `soft anti-affinity` to false
+    4. Disable current node's scheduling.
+    5. Remove the replica on the current node
+        1. Verify volume will be in degraded state.
+        2. Verify volume reports condition `scheduled == false`
+    6. Enable the current node's scheduling
+    7. Wait for volume to start rebuilding and become healthy again
+    8. Check volume `data`
     """
     volume = create_and_check_volume(client, volume_name)
     host_id = get_self_host_id()
@@ -255,6 +315,19 @@ def test_hard_anti_affinity_offline_rebuild(client, volume_name):  # NOQA
 
     Once a new replica has been built as part of the attaching process, the
     volume should be Healthy again.
+
+    1. Create a volume and attach to the current node
+    2. Generate and write `data` to the volume.
+    3. Set `soft anti-affinity` to false
+    4. Disable current node's scheduling.
+    5. Remove the replica on the current node
+        1. Verify volume will be in degraded state.
+        2. Verify volume reports condition `scheduled == false`
+    6. Detach the volume.
+    7. Enable current node's scheduling.
+    8. Attach the volume again.
+    9. Wait for volume to become healthy with 3 replicas
+    10. Check volume `data`
     """
     volume = create_and_check_volume(client, volume_name)
     host_id = get_self_host_id()
