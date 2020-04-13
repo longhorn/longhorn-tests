@@ -14,6 +14,15 @@ ENGINE_IMAGE_TEST_REPEAT_COUNT = 5
 
 
 def test_engine_image(client, core_api, volume_name):  # NOQA
+    """
+    Test Engine Image deployment
+
+    1. List Engine Images and validate basic properities.
+    2. Try deleting default engine image and it should fail.
+    3. Try creating a duplicate engine image as default and it should fail
+    4. Get upgrade test image for the same versions
+    5. Test if the upgrade test image can be deployed and deleted correctly
+    """
     # can be leftover
     default_img = common.get_default_engine_image(client)
     default_img_name = default_img.name
@@ -77,6 +86,22 @@ def test_engine_image(client, core_api, volume_name):  # NOQA
 
 @pytest.mark.coretest   # NOQA
 def test_engine_offline_upgrade(client, core_api, volume_name):  # NOQA
+    """
+    Test engine offline upgrade
+
+    1. Get a compatible engine image with the default engine image, and deploy
+    2. Create a volume using the default engine image
+    3. Attach the volume and write `data` into it
+    4. Detach the volume and upgrade the volume engine to the new engine image
+    5. Make sure the new engine image reference count has increased to 1
+    6. Make sure we cannot delete the new engine image now (due to reference)
+    7. Attach the volume and verify it's using the new image
+    8. Verify the data. And verify engine and replicas' engine image changed
+    9. Detach the volume
+    10. Upgrade to the old engine image
+    11. Verify the volume's engine image has been upgraded
+    12. Attach the volume and verify the `data`
+    """
     engine_offline_upgrade_test(client, core_api, volume_name)
 
 
@@ -185,6 +210,26 @@ def engine_offline_upgrade_test(client, core_api, volume_name, base_image=""):  
 
 @pytest.mark.coretest   # NOQA
 def test_engine_live_upgrade(client, core_api, volume_name):  # NOQA
+    """
+    Test engine live upgrade
+
+    1. Deploy a compatible new engine image
+    2. Create a volume (with the old default engine image)
+    3. Attach the volume and write `data` to it
+    4. Upgrade the volume when it's attached, to the new engine image
+    5. Wait until the upgrade completed, verify the volume engine image changed
+    6. Verify the reference count of the new engine image changed
+    7. Verify all engine and replicas' engine image changed
+    8. Check volume `data`
+    9. Detach the volume. Check engine and replicas's engine image again.
+    10. Attach the volume.
+    11. Check engine/replica engine image. Check data after reattach.
+    12. Live upgrade to the original engine image
+    13. Check old and new engine image reference count (new 0, old 1)
+    14. Verify all the engine and replica images should be the old image
+    15. Check volume data
+    16. Detach the volume. Make sure engine and replica images are old image
+    """
     engine_live_upgrade_test(client, core_api, volume_name)
 
 
@@ -318,6 +363,12 @@ def engine_live_upgrade_test(client, core_api, volume_name, base_image=""):  # N
 
 
 def test_engine_image_incompatible(client, core_api, volume_name):  # NOQA
+    """
+    Test incompatible engine images
+
+    1. Deploy incompatible engine images
+    2. Make sure their state are `incompatible` once deployed.
+    """
     images = client.list_engine_image()
     assert len(images) == 1
     assert images[0].default
@@ -358,6 +409,26 @@ def test_engine_image_incompatible(client, core_api, volume_name):  # NOQA
 
 
 def test_engine_live_upgrade_rollback(client, core_api, volume_name):  # NOQA
+    """
+    Test engine live upgrade rollback
+
+    1. Deploy `wrong_engine_upgrade_image` compatible upgrade engine image
+        1. It's not functional but compatible per metadata.
+    2. Create a volume with default engine image
+    3. Attach it and write `data` into it.
+    4. Live upgrade to the `wrong_engine_upgrade_image`
+    5. Try to wait for the engine upgrade to complete. Expect it to timeout.
+    6. Rollback by upgrading to the `original_engine_image`
+    7. Make sure the rollback succeed and volume/engine engines are rolled back
+    8. Check the volume `data`.
+    9. Live upgrade to the `wrong_engine_upgrade_image` again.
+    10. Live upgrade will still fail.
+    11. Detach the volume.
+    12. The engine image for the volume will now be upgraded (since the `wrong`
+    image is still compatible)
+    13. Upgrade to the `original_engine_image` when detached
+    14. Attach the volume and check states and `data`.
+    """
     engine_live_upgrade_rollback_test(client, core_api, volume_name)
 
 
