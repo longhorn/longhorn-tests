@@ -153,6 +153,12 @@ def reset_cluster_ready_status(request):
 
 @pytest.mark.infra
 def test_offline_node(reset_cluster_ready_status):
+    """
+    Test offline node
+
+    1. Bring down one of the nodes in Kuberntes cluster (avoid current node)
+    2. Make sure the Longhorn node state become `down`
+    """
     node_worker_label = 'node-role.kubernetes.io/worker'
     pod_lable_selector = "longhorn-test=test-job"
 
@@ -190,7 +196,23 @@ def test_offline_node(reset_cluster_ready_status):
 
 
 @pytest.mark.infra
-def test_offline_node_with_attached_volume(client, core_api, volume_name, make_deployment_with_pvc, reset_cluster_ready_status): # NOQA
+def test_offline_node_with_attached_volume_and_pod(client, core_api, volume_name, make_deployment_with_pvc, reset_cluster_ready_status): # NOQA
+    """
+    Test offline node with attached volume and pod
+
+    1. Create PV/PVC/Deployment manifest.
+    2. Update deployment's tolerations to 20 seconds to speed up test
+    3. Update deployment's node affinity rule to avoid the current node
+    4. Create volume, PV/PVC and deployment.
+    5. Find the pod in the deployment and write `test_data` into it
+    6. Shutdown the node pod is running on
+    7. Wait for deployment to delete the pod
+        1. Deployment cannot delete the pod here because kubelet doesn't
+        response
+    8. Force delete the terminating pod
+    9. Wait for the new pod to be created and the volume attached
+    10. Check `test_data` in the new pod
+    """
     toleration_seconds = 20
 
     apps_api = get_apps_api_client()
