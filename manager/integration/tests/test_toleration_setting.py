@@ -20,6 +20,25 @@ KUBERNETES_DEFAULT_TOLERATION = "kubernetes.io"
 
 
 def test_toleration_setting():
+    """
+    Test toleration setting
+
+    1. Verify that cannot use Kubernetes tolerations for Longhorn setting
+    2. Use "key1=value1:NoSchedule; key2:NoExecute" as toleration.
+    3. Create a volume and attach it.
+    4. Verify that cannot update toleration setting when any volume is attached
+    5. Generate and write `data1` into the volume
+    6. Detach the volume.
+    7. Update setting `toleration` to toleration.
+    8. Wait for all the Longhorn components to restart with new toleration
+    9. Attach the volume again and verify the volume `data1`.
+    10. Generate and write `data2` to the volume.
+    11. Detach the volume.
+    12. Clean the `toleration` setting.
+    13. Wait for all the Longhorn components to restart with no toleration
+    14. Attach the volume and validate `data2`.
+    15. Generate and write `data3` to the volume.
+    """
     client = get_longhorn_api_client()
     apps_api = get_apps_api_client()
     core_api = get_core_api_client()

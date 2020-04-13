@@ -113,6 +113,21 @@ def get_zone_replica_count(client, volume_name, zone_name): # NOQA
 
 
 def test_zone_tags(client, core_api, volume_name, k8s_node_zone_tags):  # NOQA
+    """
+    Test anti affinity zone feature
+
+    1. Add Kubernetes zone labels to the nodes
+        1. Only two zones now: zone1 and zone2
+    2. Create a volume with two replicas
+    3. Verify zone1 and zone2 either has one replica.
+    4. Remove a random replica and wait for volume to finish rebuild
+    5. Verify zone1 and zone2 either has one replica.
+    6. Repeat step 4-5 a few times.
+    7. Update volume to 3 replicas, make sure they're scheduled on 3 nodes
+    8. Remove a random replica and wait for volume to finish rebuild
+    9. Make sure replicas are on different nodes
+    10. Repeat step 8-9 a few times
+    """
 
     wait_longhorn_node_zone_updated(client)
 
@@ -205,16 +220,3 @@ def test_zone_tags(client, core_api, volume_name, k8s_node_zone_tags):  # NOQA
             lh_node_names.remove(replica.hostId)
 
         assert lh_node_names == []
-
-    # test soft antiaffinity feature
-    volume.updateReplicaCount(replicaCount=4)
-
-    wait_for_volume_degraded(client, volume_name)
-
-    wait_for_volume_replica_count(client, volume_name, 4)
-
-    wait_for_volume_healthy(client, volume_name)
-
-    volume = client.by_id_volume(volume_name)
-
-    assert len(volume.replicas) == 4

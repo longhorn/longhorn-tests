@@ -31,6 +31,10 @@ def test_tag_basic(client):  # NOQA
     """
     Test that applying Tags to Nodes/Disks and retrieving them work as
     expected. Ensures that Tags are properly validated when updated.
+
+    1. Generate tags and apply to the disk and nodes
+    2. Make sure the tags are applied
+    3. Try to apply invalid tags to the disk and node. Action will fail.
     """
     host_id = get_self_host_id()
     node = client.by_id_node(host_id)
@@ -80,8 +84,19 @@ def test_tag_basic(client):  # NOQA
 
 def test_tag_scheduling(client, node_default_tags):  # NOQA
     """
-    Test that scheduling succeeds if there are available Nodes/Disks with the
-    requested Tags.
+    Test success scheduling with tags
+
+    Case 1:
+    Don't specify any tags, replica should be scheduled to 3 disks.
+
+    Case 2:
+    Use disk tags to select two nodes for all replicas.
+
+    Case 3:
+    Use node tags to select two nodes for all replicas.
+
+    Case 4:
+    Combine node and disk tags to schedule all replicas on one node.
     """
     host_id = get_self_host_id()
     tag_specs = [
@@ -131,6 +146,14 @@ def test_tag_scheduling_failure(client, node_default_tags):  # NOQA
     """
     Test that scheduling fails if no Nodes/Disks with the requested Tags are
     available.
+
+    Case 1:
+    Validate that if specifying nonexist tags in volume, API call will fail.
+
+    Case 2:
+
+    1. Specify existing but no node or disk can unsatisfied tags.
+    2. Validate the volume will failed the scheduling
     """
     invalid_tag_cases = [
         # Only one Disk Tag exists.
@@ -152,6 +175,7 @@ def test_tag_scheduling_failure(client, node_default_tags):  # NOQA
                                  diskSelector=tags["disk"],
                                  nodeSelector=tags["node"])
         assert "does not exist" in str(e.value)
+
     unsatisfied_tag_cases = [
         {
             "disk": [],
@@ -182,6 +206,12 @@ def test_tag_scheduling_on_update(client, node_default_tags, volume_name):  # NO
     """
     Test that Replicas get scheduled if a Node/Disk disks updated with the
     proper Tags.
+
+    1. Create volume with tags that can not be satisfied
+    2. Wait for volume to fail scheduling
+    3. Update the node and disk with extra tags to satisify the volume
+    4. Verify now volume has been scheduled
+    5. Attach the volume and check the replicas has been scheduled properly
     """
     tag_spec = {
         "disk": ["ssd", "m2"],

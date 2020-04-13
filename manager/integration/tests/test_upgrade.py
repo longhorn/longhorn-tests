@@ -32,6 +32,16 @@ def longhorn_upgrade(image_tag):
 
 @pytest.mark.upgrade
 def test_upgrade(upgrade_image_tag, volume_name):  # NOQA
+    """
+    Test Longhorn upgrade
+
+    1. Find the upgrade image tag
+    2. Create a volume, generate and write `data` into the volume.
+    3. Keep the volume attached, then upgrade Longhorn system.
+    4. Detach the volume.
+    5. Upgrade the volume to the updated engine image.
+    6. Attach the volume and verify `data`
+    """
     new_ei_name = "longhornio/longhorn-engine:" + upgrade_image_tag
 
     client = get_longhorn_api_client()
