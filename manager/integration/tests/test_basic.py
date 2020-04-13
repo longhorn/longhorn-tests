@@ -45,6 +45,8 @@ from common import expand_attached_volume
 from common import wait_for_dr_volume_expansion
 from common import check_block_device_size
 from common import wait_for_rebuild_complete
+from common import wait_for_volume_expansion
+from common import fail_replica_expansion, wait_for_expansion_failure
 
 
 @pytest.mark.coretest   # NOQA
@@ -1794,3 +1796,92 @@ def test_engine_image_daemonset_restart(clients, apps_api, volume_name):  # NOQA
     snap2_data = write_volume_random_data(volume)
     create_snapshot(client, volume_name)
     check_volume_data(volume, snap2_data)
+
+
+@pytest.mark.coretest  # NOQA
+def test_expansion_canceling(clients, core_api, volume_name, pod):  # NOQA
+    """
+    Test expansion canceling
+
+    1. Create a volume, then create the corresponding PV, PVC and Pod.
+    2. Generate `test_data` and write to the pod
+    3. Create an empty directory with expansion snapshot tmp meta file path
+       so that the following expansion will fail
+    4. Delete the pod and wait for volume detachment
+    5. Try to expand the volume using Longhorn API
+    6. Wait for expansion failure then use Longhorn API to cancel it
+    7. Create a new pod and validate the volume content,
+       then re-write random data to the pod
+    8. Delete the pod and wait for volume detachment
+    9. Retry expansion then verify the expansion done using Longhorn API
+    10. Create a new pod
+    11. Validate the volume content, then check if data writing looks fine
+    12. Clean up pod, PVC, and PV
+    """
+    client = get_random_client(clients)
+
+    expansion_pvc_name = "pvc-" + volume_name
+    expansion_pv_name = "pv-" + volume_name
+    pod_name = "pod-" + volume_name
+    volume = create_and_check_volume(client, volume_name, 2, SIZE)
+    create_pv_for_volume(client, core_api, volume, expansion_pv_name)
+    create_pvc_for_volume(client, core_api, volume, expansion_pvc_name)
+    pod['metadata']['name'] = pod_name
+    pod['spec']['volumes'] = [{
+        'name': pod['spec']['containers'][0]['volumeMounts'][0]['name'],
+        'persistentVolumeClaim': {
+            'claimName': expansion_pvc_name,
+        },
+    }]
+    create_and_wait_pod(core_api, pod)
+
+    volume = client.by_id_volume(volume_name)
+    replicas = volume.replicas
+    fail_replica_expansion(client, core_api,
+                           volume_name, EXPAND_SIZE, replicas)
+
+    test_data = generate_random_data(VOLUME_RWTEST_SIZE)
+    write_pod_volume_data(core_api, pod_name, test_data)
+
+    delete_and_wait_pod(core_api, pod_name)
+    volume = wait_for_volume_detached(client, volume_name)
+
+    volume.expand(size=EXPAND_SIZE)
+    wait_for_expansion_failure(client, volume_name)
+    volume = client.by_id_volume(volume_name)
+    volume.cancelExpansion()
+    wait_for_volume_expansion(client, volume_name)
+    volume = client.by_id_volume(volume_name)
+    assert volume.state == "detached"
+    assert volume.size == SIZE
+
+    # check if the volume still works fine
+    create_and_wait_pod(core_api, pod)
+    resp = read_volume_data(core_api, pod_name)
+    assert resp == test_data
+    test_data = generate_random_data(VOLUME_RWTEST_SIZE)
+    write_pod_volume_data(core_api, pod_name, test_data)
+
+    # retry expansion
+    delete_and_wait_pod(core_api, pod_name)
+    volume = wait_for_volume_detached(client, volume_name)
+    volume.expand(size=EXPAND_SIZE)
+    wait_for_volume_expansion(client, volume_name)
+    volume = client.by_id_volume(volume_name)
+    assert volume.state == "detached"
+    assert volume.size == str(EXPAND_SIZE)
+
+    create_and_wait_pod(core_api, pod)
+    volume = client.by_id_volume(volume_name)
+    engine = get_volume_engine(volume)
+    assert volume.size == EXPAND_SIZE
+    assert volume.size == engine.size
+    resp = read_volume_data(core_api, pod_name)
+    assert resp == test_data
+    write_pod_volume_data(core_api, pod_name, test_data)
+    resp = read_volume_data(core_api, pod_name)
+    assert resp == test_data
+
+    delete_and_wait_pod(core_api, pod_name)
+    delete_and_wait_pvc(core_api, expansion_pvc_name)
+    delete_and_wait_pv(core_api, expansion_pv_name)

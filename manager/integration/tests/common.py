@@ -145,6 +145,9 @@ DEFAULT_TAGS = [
     }
 ]
 
+INSTANCE_MANAGER_HOST_PATH_PREFIX = "/host"
+EXPANSION_SNAP_TMP_META_NAME_PATTERN = "volume-snap-expand-%s.img.meta.tmp"
+
 
 def load_k8s_config():
     c = Configuration()
@@ -2787,6 +2790,43 @@ def expand_and_wait_for_pvc(api, pvc):
         time.sleep(RETRY_INTERVAL)
     assert complete
     return claim
+
+
+def fail_replica_expansion(client, api, volname, size, replicas=None):
+    if replicas is None:
+        volume = client.by_id_volume(volname)
+        replicas = volume.replicas
+
+    for r in replicas:
+        tmp_meta_file_name = \
+            EXPANSION_SNAP_TMP_META_NAME_PATTERN % size
+        # os.path.join() cannot deal with the path containing "/"
+        cmd = [
+            '/bin/sh', '-c',
+            'mkdir %s && sync' %
+            (INSTANCE_MANAGER_HOST_PATH_PREFIX + r.dataPath +
+             "/" + tmp_meta_file_name)
+        ]
+        if not r.instanceManagerName:
+            raise Exception(
+                "Should use replica objects in the running volume,"
+                "otherwise the field r.instanceManagerName is emtpy")
+        stream(api.connect_get_namespaced_pod_exec,
+               r.instanceManagerName,
+               LONGHORN_NAMESPACE, command=cmd,
+               stderr=True, stdin=False, stdout=True, tty=False)
+
+
+def wait_for_expansion_failure(client, volume_name, last_failed_at=""):
+    failed = False
+    for i in range(30):
+        volume = client.by_id_volume(volume_name)
+        engine = get_volume_engine(volume)
+        if engine.lastExpansionFailedAt != last_failed_at:
+            failed = True
+            break
+        time.sleep(RETRY_INTERVAL)
+    assert failed
 
 
 def wait_for_rebuild_complete(client, volume_name):
