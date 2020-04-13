@@ -260,7 +260,11 @@ def volume_basic_test(clients, volume_name, base_image=""):  # NOQA
     volume = common.wait_for_volume_detached(client, volume_name)
     assert volume.initialRestorationRequired is False
 
-    cleanup_volume(client, volume)
+    client.delete(volume)
+    wait_for_volume_delete(client, volume_name)
+
+    volumes = client.list_volume().data
+    assert len(volumes) == 0
 
 
 def test_volume_iscsi_basic(clients, volume_name):  # NOQA
