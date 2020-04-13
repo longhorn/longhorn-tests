@@ -66,6 +66,40 @@ def delete_and_wait_statefulset_only(api, ss):
 @pytest.mark.csi  # NOQA
 def test_kubernetes_status(client, core_api, storage_class,  # NOQA
                            statefulset, csi_pv, pvc, pod):  # NOQA
+    """
+    Test Volume feature: Kubernetes Status
+
+    1. Create StorageClass with `reclaimPolicy = Retain`
+    2. Create a statefulset `kubernetes-status-test` with the StorageClass
+        1. The statefulset has scale of 2.
+    3. Get the volume name from the SECOND pod of the StateufulSet pod and
+    create an `extra_pod` with the same volume on the same node
+    4. Check the volumes that used by the StatefulSet
+        1. The volume used by the FIRST StatefulSet pod will have one workload
+        2. The volume used by the SECOND StatefulSet pod will have two
+        workloads
+        3. Validate related status, e.g. pv/pod name/state, workload
+        name/type
+    5. Check the volumes again
+        1. PV/PVC should still be bound
+        2. The volume used by the FIRST pod should have history data
+        3. The volume used by the SECOND and extra pod should have current data
+        point to the extra pod
+    6. Delete the extra pod
+        1. Now all the volume's should only have history data(`lastPodRefAt`
+        set)
+    7. Delete the PVC
+        1. PVC should be updated with status `Released` and become history data
+    8. Delete PV
+        1. All the Kubernetes status information should be cleaned up.
+    9. Reuse the two Longhorn volumes to create new pods
+        1. Since the `reclaimPolicy == Retain`, volume won't be deleted by
+        Longhorn
+        2. Check the Kubernetes status now updated, with pod info but empty
+        workload
+        3. Default Longhorn Static StorageClass will remove the PV with PVC,
+        but leave Longhorn volume
+    """
     statefulset_name = 'kubernetes-status-test'
     update_statefulset_manifests(statefulset, storage_class, statefulset_name)
 
@@ -250,6 +284,14 @@ def test_kubernetes_status(client, core_api, storage_class,  # NOQA
 
 @pytest.mark.csi  # NOQA
 def test_pv_creation(client, core_api):  # NOQA
+    """
+    Test creating PV using Longhorn API
+
+    1. Create volume
+    2. Create PV for the volume
+    3. Try to create another PV for the same volume. It should fail.
+    4. Check Kubernetes Status for the volume since PV is created.
+    """
     volume_name = "test-pv-creation"
     client.create_volume(name=volume_name, size=SIZE,
                          numberOfReplicas=2)
@@ -280,6 +322,31 @@ def test_pv_creation(client, core_api):  # NOQA
 @pytest.mark.csi  # NOQA
 def test_pvc_creation_with_default_sc_set(
         client, core_api, storage_class, pod):  # NOQA
+    """
+    Test creating PVC with default StorageClass set
+
+    The target is to make sure the newly create PV/PVC won't use default
+    StorageClass, and if there is no default StorageClass, PV/PVC can still be
+    created.
+
+    1. Create a StorageClass and set it to be the default StorageClass
+    2. Update static StorageClass to `longhorn-static-test`
+    3. Create volume then PV/PVC.
+    4. Make sure the newly created PV/PVC using StorageClass
+    `longhorn-static-test`
+    5. Create pod with PVC.
+    6. Verify volume's Kubernetes Status
+    7. Remove PVC and Pod.
+    8. Verify volume's Kubernetes Status only contains current PV and history
+    9. Wait for volume to detach (since pod is deleted)
+    10. Reuse the volume on a new pod. Wait for the pod to start
+    11. Verify volume's Kubernetes Status reflect the new pod.
+    12. Delete PV/PVC/Pod.
+    13. Verify volume's Kubernetes Status only contains history
+    14. Delete the default StorageClass.
+    15. Create PV/PVC for the volume.
+    16. Make sure the PV's StorageClass is static StorageClass
+    """
     # set default storage class
     storage_class['metadata']['annotations'] = \
         {"storageclass.kubernetes.io/is-default-class": "true"}
@@ -411,6 +478,27 @@ def test_backup_kubernetes_status(client, core_api, pod):  # NOQA
     """
     Test that Backups have KubernetesStatus stored properly when there is an
     associated PersistentVolumeClaim and Pod.
+
+    1. Setup a random backupstore
+    2. Set settings Longhorn Static StorageClass to `longhorn-static-test`
+    3. Create a volume and PV/PVC. Verify the StorageClass of PVC
+    4. Create a Pod using the PVC.
+    5. Check volume's Kubernetes status to reflect PV/PVC/Pod correctly.
+    6. Create a backup for the volume.
+    7. Verify the labels of created backup reflect PV/PVC/Pod status.
+    8. Restore the backup to a volume. Wait for restoration to complete.
+    9. Check the volume's Kubernetes Status
+        1. Make sure the `lastPodRefAt` and `lastPVCRefAt` is snapshot created
+    time
+    10. Delete the backup and restored volume.
+    11. Delete PV/PVC/Pod.
+    12. Verify volume's Kubernetes Status updated to reflect history data.
+    13. Attach the volume and create another backup. Verify the labels
+    14. Verify the volume's Kubernetes status.
+    15. Restore the previous backup to a new volume. Wait for restoration.
+    16. Verify the restored volume's Kubernetes status.
+        1. Make sure `lastPodRefAt` and `lastPVCRefAt` matched volume on step
+        12
     """
     set_random_backupstore(client)
 
