@@ -92,6 +92,10 @@ def test_statefulset_mount(client, core_api, storage_class, statefulset):  # NOQ
     """
     Tests that volumes provisioned for a StatefulSet can be properly created,
     mounted, unmounted, and deleted on the Kubernetes cluster.
+
+    1. Create a StatefulSet using dynamic provisioned Longhorn volume.
+    2. Wait for pods to become running
+    3. Check volume properites are consistent with the StorageClass
     """
 
     statefulset_name = 'statefulset-mount-test'
@@ -126,6 +130,13 @@ def test_statefulset_mount(client, core_api, storage_class, statefulset):  # NOQ
 def test_statefulset_scaling(client, core_api, storage_class, statefulset):  # NOQA
     """
     Test that scaling up a StatefulSet successfully provisions new volumes.
+
+    1. Create a StatefulSet with VolumeClaimTemplate and Longhorn.
+    2. Wait for pods to run.
+    3. Verify the properities of volumes.
+    4. Scale the StatefulSet to 3 replicas
+    5. Wait for the new pod to become ready.
+    6. Verify the new volume properties.
     """
 
     statefulset_name = 'statefulset-scaling-test'
@@ -198,8 +209,12 @@ def test_statefulset_pod_deletion(core_api, storage_class, statefulset):  # NOQA
     Test that a StatefulSet can spin up a new Pod with the same data after a
     previous Pod has been deleted.
 
-    This test will only work in a CSI environment. It will automatically be
-    disabled in FlexVolume environments.
+    1. Create a StatefulSet with VolumeClaimTemplate and Longhorn.
+    2. Wait for pods to run.
+    3. Write some data to one of the pod.
+    4. Delete that pod.
+    5. Wait for the StatefulSet to recreate the pod
+    6. Verify the data in the pod.
     """
 
     statefulset_name = 'statefulset-pod-deletion-test'
@@ -226,6 +241,19 @@ def test_statefulset_pod_deletion(core_api, storage_class, statefulset):  # NOQA
 def test_statefulset_backup(client, core_api, storage_class, statefulset):  # NOQA
     """
     Test that backups on StatefulSet volumes work properly.
+
+    1. Create a StatefulSet with VolumeClaimTemplate and Longhorn.
+    2. Wait for pods to run.
+
+    Then create backup using following steps for each pod:
+
+    1. Create a snapshot
+    2. Write some data into it
+    3. Create another snapshot `backup_snapshot`
+    4. Create a third snapshot
+    5. Backup the snapshot `backup_snapshot`
+    6. Wait for backup to show up.
+        1 Verify the backup informations
     """
 
     statefulset_name = 'statefulset-backup-test'
@@ -243,6 +271,13 @@ def test_statefulset_recurring_backup(client, core_api, storage_class,  # NOQA
                                       statefulset):  # NOQA
     """
     Test that recurring backups on StatefulSets work properly.
+
+    1. Create a StatefulSet with VolumeClaimTemplate and Longhorn.
+    2. Wait for pods to run.
+    3. Write some data to every pod
+    4. Schedule recurring jobs for volumes using Longhorn API
+    5. Wait for 5 minutes
+    6. Verify the snapshots created by the recurring jobs.
     """
 
     statefulset_name = 'statefulset-backup-test'
@@ -282,6 +317,18 @@ def test_statefulset_restore(client, core_api, storage_class,  # NOQA
                              statefulset):  # NOQA
     """
     Test that data can be restored into volumes usable by a StatefulSet.
+
+    1. Create a StatefulSet with VolumeClaimTemplate and Longhorn.
+    2. Wait for pods to run.
+    3. Create a backup for each pod.
+    4. Delete the StatefulSet, including the Longhorn volumes.
+    5. Create volumes and PV/PVC using previous backups from each Pod.
+        1. PVs will be created using the previous names.
+        2. PVCs will be created using previous name + "-2" due to statefulset
+        has a naming policy for what should be PVC name for them.
+    6. Create a new StatefulSet using the previous name + "-2"
+    7. Wait for pods to be up.
+        . Verify the pods contain the previous backed up data
     """
 
     statefulset_name = 'statefulset-restore-test'
