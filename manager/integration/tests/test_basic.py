@@ -49,6 +49,9 @@ from common import wait_for_rebuild_complete
 
 @pytest.mark.coretest   # NOQA
 def test_hosts(clients):  # NOQA
+    """
+    Check node name and IP
+    """
     hosts = next(iter(clients.values())).list_node()
     for host in hosts:
         assert host.name is not None
@@ -71,6 +74,9 @@ def test_hosts(clients):  # NOQA
 
 @pytest.mark.coretest   # NOQA
 def test_settings(clients):  # NOQA
+    """
+    Check input for settings
+    """
     client = get_random_client(clients)
 
     setting_names = [common.SETTING_BACKUP_TARGET,
@@ -168,6 +174,14 @@ def volume_rw_test(dev):
 
 @pytest.mark.coretest   # NOQA
 def test_volume_basic(clients, volume_name):  # NOQA
+    """
+    Test basic volume operations:
+
+    1. Check volume name and parameter
+    2. Create a volume and attach to the current node, then check volume states
+    3. Check soft anti-affinity rule
+    4. Write then read back to check volume data
+    """
     volume_basic_test(clients, volume_name)
 
 
@@ -250,6 +264,15 @@ def volume_basic_test(clients, volume_name, base_image=""):  # NOQA
 
 
 def test_volume_iscsi_basic(clients, volume_name):  # NOQA
+    """
+    Test basic volume operations with iscsi frontend
+
+    1. Create and attach a volume with iscsi frontend
+    2. Check the volume endpoint and connect it using the iscsi
+    initator on the node.
+    3. Write then read back volume data for validation
+
+    """
     volume_iscsi_basic_test(clients, volume_name)
 
 
@@ -285,6 +308,28 @@ def volume_iscsi_basic_test(clients, volume_name, base_image=""):  # NOQA
 
 @pytest.mark.coretest   # NOQA
 def test_snapshot(clients, volume_name, base_image=""):  # NOQA
+    """
+    Test snapshot operations
+
+    1. Create a volume and attach to the node
+    2. Create the empty snapshot `snap1`
+    3. Generate and write data `snap2_data`, then create `snap2`
+    4. Generate and write data `snap3_data`, then create `snap3`
+    5. List snapshot. Validate the snapshot chain relationship
+    6. Mark `snap3` as removed. Make sure volume's data didn't change
+    7. List snapshot. Make sure `snap3` is marked as removed
+    8. Detach and reattach the volume in maintenance mode.
+    9. Make sure the volume frontend is still `blockdev` but disabled
+    10. Revert to `snap2`
+    11. Detach and reattach the volume with frontend enabled
+    12. Make sure volume's data is `snap2_data`
+    13. List snapshot. Make sure `volume-head` is now `snap2`'s child
+    14. Delete `snap1` and `snap2`
+    15. Purge the snapshot.
+    16. List the snapshot, make sure `snap1` and `snap3`
+    are gone. `snap2` is marked as removed.
+    17. Check volume data, make sure it's still `snap2_data`.
+    """
     snapshot_test(clients, volume_name, base_image)
 
 
@@ -421,6 +466,24 @@ def snapshot_test(clients, volume_name, base_image):  # NOQA
 
 @pytest.mark.coretest   # NOQA
 def test_backup(clients, volume_name):  # NOQA
+    """
+    Test basic backup
+
+    Setup:
+
+    1. Create a volume and attach to the current node
+    2. Run the test for all the available backupstores.
+
+    Steps:
+
+    1. Create a backup of volume
+    2. Restore the backup to a new volume
+    3. Attach the new volume and make sure the data is the same as the old one
+    4. Detach the volume and delete the backup.
+    5. Wait for the restored volume's `lastBackup` to be cleaned (due to remove
+    the backup)
+    6. Delete the volume
+    """
     backup_test(clients, volume_name, SIZE)
 
 
@@ -460,10 +523,49 @@ def backup_test(clients, volume_name, size, base_image=""):  # NOQA
     cleanup_volume(client, volume)
 
 
+def backupstore_test(client, host_id, volname, size):
+    bv, b, snap2, data = create_backup(client, volname)
+
+    # test restore
+    restoreName = generate_volume_name()
+    volume = client.create_volume(name=restoreName, size=size,
+                                  numberOfReplicas=2,
+                                  fromBackup=b.url)
+
+    volume = common.wait_for_volume_restoration_completed(client, restoreName)
+    volume = common.wait_for_volume_detached(client, restoreName)
+    assert volume.name == restoreName
+    assert volume.size == size
+    assert volume.numberOfReplicas == 2
+    assert volume.state == "detached"
+    assert volume.initialRestorationRequired is False
+
+    volume = volume.attach(hostId=host_id)
+    volume = common.wait_for_volume_healthy(client, restoreName)
+    check_volume_data(volume, data)
+    volume = volume.detach()
+    volume = common.wait_for_volume_detached(client, restoreName)
+
+    delete_backup(bv, b.name)
+
+    volume = wait_for_volume_status(client, volume.name,
+                                    "lastBackup", "")
+    assert volume.lastBackupAt == ""
+
+    client.delete(volume)
+
+    volume = wait_for_volume_delete(client, restoreName)
+
+
 @pytest.mark.coretest
 def test_backup_labels(clients, random_labels, volume_name):  # NOQA
     """
     Test that the proper Labels are applied when creating a Backup manually.
+
+    1. Create a volume
+    2. Run the following steps on all backupstores
+    3. Create a backup with some random labels
+    4. Get backup from backupstore, verify the labels are set on the backups
     """
     backup_labels_test(clients, random_labels, volume_name)
 
@@ -513,42 +615,35 @@ def backup_labels_test(clients, random_labels, volume_name, size=SIZE, base_imag
     cleanup_volume(client, volume)
 
 
-def backupstore_test(client, host_id, volname, size):
-    bv, b, snap2, data = create_backup(client, volname)
-
-    # test restore
-    restoreName = generate_volume_name()
-    volume = client.create_volume(name=restoreName, size=size,
-                                  numberOfReplicas=2,
-                                  fromBackup=b.url)
-
-    volume = common.wait_for_volume_restoration_completed(client, restoreName)
-    volume = common.wait_for_volume_detached(client, restoreName)
-    assert volume.name == restoreName
-    assert volume.size == size
-    assert volume.numberOfReplicas == 2
-    assert volume.state == "detached"
-    assert volume.initialRestorationRequired is False
-
-    volume = volume.attach(hostId=host_id)
-    volume = common.wait_for_volume_healthy(client, restoreName)
-    check_volume_data(volume, data)
-    volume = volume.detach()
-    volume = common.wait_for_volume_detached(client, restoreName)
-
-    delete_backup(bv, b.name)
-
-    volume = wait_for_volume_status(client, volume.name,
-                                    "lastBackup", "")
-    assert volume.lastBackupAt == ""
-
-    client.delete(volume)
-
-    volume = wait_for_volume_delete(client, restoreName)
-
-
 @pytest.mark.coretest   # NOQA
 def test_restore_inc(clients, core_api, volume_name, pod):  # NOQA
+    """
+    Test restore from disaster recovery volume (incremental restore)
+
+    Run test against all the backupstores
+
+    1. Create a volume and attach to the current node
+    2. Generate `data0`, write to the volume, make a backup `backup0`
+    3. Create three DR(standby) volumes from the backup: `sb_volume0/1/2`
+    4. Wait for all three DR volumes to finish the initial restoration
+    5. Verify DR volumes's `lastBackup` is `backup0`
+    6. Verify snapshot/pv/pvc/change backup target are not allowed as long
+    as the DR volume exists
+    7. Activate standby `sb_volume0` and attach it to check the volume data
+    8. Generate `data1` and write to the original volume and create `backup1`
+    9. Make sure `sb_volume1`'s `lastBackup` field has been updated to
+    `backup1`
+    10. Wait for `sb_volume1` to finish incremental restoration then activate
+    11. Attach and check `sb_volume1`'s data
+    12. Generate `data2` and write to the original volume and create `backup2`
+    13. Make sure `sb_volume2`'s `lastBackup` field has been updated to
+    `backup1`
+    14. Wait for `sb_volume2` to finish incremental restoration then activate
+    15. Attach and check `sb_volume2`'s data
+    16. Create PV, PVC and Pod to use `sb_volume2`, check PV/PVC/POD are good
+
+    FIXME: Step 16 works because the disk will be treated as a unformatted disk
+    """
     for _, client in iter(clients.items()):
         break
 
@@ -790,6 +885,12 @@ def restore_inc_test(client, core_api, volume_name, pod):  # NOQA
 
 
 def test_deleting_backup_volume(clients):  # NOQA
+    """
+    Test deleting backup volumes
+
+    1. Create volume and create backup
+    2. Delete the backup and make sure it's gone in the backupstore
+    """
     for host_id, client in iter(clients.items()):
         break
     lht_hostId = get_self_host_id()
@@ -811,6 +912,18 @@ def test_deleting_backup_volume(clients):  # NOQA
 
 @pytest.mark.coretest   # NOQA
 def test_listing_backup_volume(clients, base_image=""):   # NOQA
+    """
+    Test listing backup volumes
+
+    1. Create three volumes: `volume1/2/3`
+    2. Setup NFS backupstore since we can manipulate the content easily
+    3. Create snapshots for all three volumes
+    4. Rename `volume1`'s `volume.cfg` to `volume.cfg.tmp` in backupstore
+    5. List backup volumes. Make sure `volume1` errors out but found other two
+    6. Restore `volume1`'s `volume.cfg`.
+    7. Make sure now backup volume `volume1` can be found and deleted
+    8. Delete backups for `volume2/3`, make sure they cannot be found later
+    """
     for host_id, client in iter(clients.items()):
         break
     lht_hostId = get_self_host_id()
@@ -955,6 +1068,12 @@ def test_listing_backup_volume(clients, base_image=""):   # NOQA
 
 @pytest.mark.coretest   # NOQA
 def test_volume_multinode(clients, volume_name):  # NOQA
+    """
+    Test the volume can be attached on multiple nodes
+
+    1. Create one volume
+    2. Attach it on every node once, verify the state, then detach it
+    """
     hosts = clients.keys()
 
     volume = get_random_client(clients).create_volume(name=volume_name,
@@ -984,7 +1103,16 @@ def test_volume_multinode(clients, volume_name):  # NOQA
 def test_volume_scheduling_failure(clients, volume_name):  # NOQA
     '''
     Test fail to schedule by disable scheduling for all the nodes
+
     Also test cannot attach a scheduling failed volume
+
+    1. Disable `allowScheduling` for all nodes
+    2. Create a volume.
+    3. Verify the volume condition `Scheduled` is false
+    4. Verify attaching the volume will result in error
+    5. Enable `allowScheduling` for all nodes
+    6. Volume should be automatically scheduled (condition become true)
+    7. Volume can be attached now
     '''
     client = get_random_client(clients)
     nodes = client.list_node()
@@ -1031,6 +1159,13 @@ def test_volume_scheduling_failure(clients, volume_name):  # NOQA
 
 @pytest.mark.coretest   # NOQA
 def test_setting_default_replica_count(clients, volume_name):  # NOQA
+    """
+    Test `Default Replica Count` setting
+
+    1. Set default replica count in the global settings to 5
+    2. Create a volume without specify the replica count
+    3. The volume should have 5 replicas (instead of the previous default 3)
+    """
     client = get_random_client(clients)
     setting = client.by_id_setting(common.SETTING_DEFAULT_REPLICA_COUNT)
     old_value = setting.value
@@ -1048,6 +1183,21 @@ def test_setting_default_replica_count(clients, volume_name):  # NOQA
 
 @pytest.mark.coretest   # NOQA
 def test_volume_update_replica_count(clients, volume_name):  # NOQA
+    """
+    Test updating volume's replica count
+
+    1. Create a volume with 3 replicas
+    2. Attach the volume
+    3. Increase the replica to 5.
+    4. Volume will become degraded and start rebuilding
+    5. Wait for rebuilding to complete
+    6. Update the replica count to 2. Volume should remain healthy
+    7. Remove 3 replicas, so there will be 2 replicas in the volume
+    8. Verify the volume is still healthy
+
+    FIXME: Don't need to wait for volume to rebuild and healthy before step 8.
+    Volume should always be healthy even only with 2 replicas.
+    """
     for host_id, client in iter(clients.items()):
         break
 
@@ -1085,6 +1235,19 @@ def test_volume_update_replica_count(clients, volume_name):  # NOQA
 
 @pytest.mark.coretest   # NOQA
 def test_attach_without_frontend(clients, volume_name):  # NOQA
+    """
+    Test attach in maintenance mode (without frontend)
+
+    1. Create a volume and attach to the current node with enabled frontend
+    2. Check volume has `blockdev`
+    3. Write `snap1_data` into volume and create snapshot `snap1`
+    4. Write more random data into volume and create another anspshot
+    5. Detach the volume and reattach with disabled frontend
+    6. Check volume still has `blockdev` as frontend but no endpoint
+    7. Revert back to `snap1`
+    8. Detach and reattach the volume with enabled frontend
+    9. Check volume contains data `snap1_data`
+    """
     for host_id, client in iter(clients.items()):
         break
 
@@ -1136,6 +1299,17 @@ def test_attach_without_frontend(clients, volume_name):  # NOQA
 
 @pytest.mark.coretest
 def test_storage_class_from_backup(volume_name, pvc_name, storage_class, clients, core_api, pod_make): # NOQA
+    """
+    Test restore backup using StorageClass
+
+    1. Create volume and PV/PVC/POD
+    2. Write `test_data` into pod
+    3. Create a snapshot and back it up. Get the backup URL
+    4. Create a new StorageClass `longhorn-from-backup` and set backup URL.
+    5. Use `longhorn-from-backup` to create a new PVC
+    6. Wait for the volume to be created and complete the restoration.
+    7. Create the pod using the PVC. Verify the data
+    """
     VOLUME_SIZE = str(DEFAULT_VOLUME_SIZE * Gi)
 
     for _, client in iter(clients.items()):
@@ -1256,6 +1430,29 @@ def test_storage_class_from_backup(volume_name, pvc_name, storage_class, clients
 
 @pytest.mark.coretest   # NOQA
 def test_expansion_basic(clients, volume_name):  # NOQA
+    """
+    Test volume expansion using Longhorn API
+
+    1. Create volume and attach to the current node
+    2. Generate data `snap1_data` and write it to the volume
+    3. Create snapshot `snap1`
+    4. Expand the volume (volume will be detached, expanded, then attached)
+    5. Verify the volume has been expanded
+    6. Generate data `snap2_data` and write it to the volume
+    7. Create snapshot `snap2`
+    8. Gerneate data `snap3_data` and write it after the original size
+    9. Create snapshot `snap3` and verify the `snap3_data` with location
+    10. Detach and reattach the volume.
+    11. Verify the volume is still expanded, and `snap3_data` remain valid
+    12. Detach the volume.
+    13. Reattach the volume in maintence mode
+    14. Revert to `snap2` and detach.
+    15. Attach the volume and check data `snap2_data`
+    16. Generate `snap4_data` and write it after the original size
+    17. Create snapshot `snap4` and verify `snap4_data`.
+    18. Detach the volume and revert to `snap1`
+    19. Validate `snap1_data`
+    """
     for host_id, client in iter(clients.items()):
         break
 
@@ -1337,6 +1534,33 @@ def test_expansion_basic(clients, volume_name):  # NOQA
 
 @pytest.mark.coretest   # NOQA
 def test_restore_inc_with_expansion(clients, core_api, volume_name, pod):  # NOQA
+    """
+    Test restore from disaster recovery volume with volume expansion
+
+    Run test against a random backupstores
+
+    1. Create a volume and attach to the current node
+    2. Generate `data0`, write to the volume, make a backup `backup0`
+    3. Create three DR(standby) volumes from the backup: `dr_volume0/1/2`
+    4. Wait for all three DR volumes to finish the initial restoration
+    5. Verify DR volumes's `lastBackup` is `backup0`
+    6. Verify snapshot/pv/pvc/change backup target are not allowed as long
+    as the DR volume exists
+    7. Activate standby `dr_volume0` and attach it to check the volume data
+    8. Expand the original volume. Make sure the expansion is successful.
+    8. Generate `data1` and write to the original volume and create `backup1`
+    9. Make sure `dr_volume1`'s `lastBackup` field has been updated to
+    `backup1`
+    10. Activate `dr_volume1` and check data `data0` and `data1`
+    11. Generate `data2` and write to the original volume after original SIZE
+    12. Create `backup2`
+    13. Wait for `dr_volume2` to finish expansion, show `backup2` as latest
+    14. Activate `dr_volume2` and verify `data2`
+    15. Detach `dr_volume2`
+    16. Create PV, PVC and Pod to use `sb_volume2`, check PV/PVC/POD are good
+
+    FIXME: Step 16 works because the disk will be treated as a unformatted disk
+    """
     client = get_random_client(clients)
     lht_host_id = get_self_host_id()
 
@@ -1527,6 +1751,21 @@ def test_restore_inc_with_expansion(clients, core_api, volume_name, pod):  # NOQ
 
 
 def test_engine_image_daemonset_restart(clients, apps_api, volume_name):  # NOQA
+    """
+    Test restarting engine image daemonset
+
+    1. Get the default engine image
+    2. Create a volume and attach to the current node
+    3. Write random data to the volume and create a snapshot
+    4. Delete the engine image daemonset
+    5. Engine image daemonset should be recreated
+    6. In the meantime, validate the volume data to prove it's still functional
+    7. Wait for the engine image to become `ready` again
+    8. Check the volume data again.
+    9. Write some data and create a new snapshot.
+        1. Since create snapshot will use engine image binary.
+    10. Check the volume data again
+    """
     client = get_random_client(clients)
     default_img = common.get_default_engine_image(client)
     ds_name = "engine-image-" + default_img.name
