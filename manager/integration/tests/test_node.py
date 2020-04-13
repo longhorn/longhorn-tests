@@ -139,6 +139,15 @@ def cleanup_host_disk(client, *args):  # NOQA
 @pytest.mark.coretest   # NOQA
 @pytest.mark.node  # NOQA
 def test_update_node(client):  # NOQA
+    """
+    Test update node scheduling
+
+    1. Get list of nodes
+    2. Update scheduling to false for current node
+    3. Read back to verify
+    4. Update scheduling to true for current node
+    5. Read back to verify
+    """
     # test node update
     nodes = client.list_node()
     assert len(nodes) > 0
@@ -164,6 +173,21 @@ def test_update_node(client):  # NOQA
 @pytest.mark.node  # NOQA
 @pytest.mark.mountdisk # NOQA
 def test_node_disk_update(client):  # NOQA
+    """
+    Test update node disks
+
+    The test will use Longhorn to create disks on the node.
+
+    1. Get the current node
+    2. Try to delete all the disks. It should fail due to scheduling is enabled
+    3. Create two disks `disk1` and `disk2`, attach them to the current node.
+    4. Add two disks to the current node.
+    5. Verify two extra disks have been added to the node
+    6. Disbale the two disks' scheduling, and set StorageReserved
+    7. Update the two disks.
+    8. Validate all the disks properties.
+    9. Delete other two disks. Validate deletion works.
+    """
     lht_hostId = get_self_host_id()
     node = client.by_id_node(lht_hostId)
     disks = node.disks
@@ -284,6 +308,13 @@ def cleanup_volume(client, vol_name):  # NOQA
 @pytest.mark.coretest   # NOQA
 @pytest.mark.node  # NOQA
 def test_replica_scheduler_no_disks(client):  # NOQA
+    """
+    Test replica scheduler with no disks available
+
+    1. Delete all the disks on all the nodes
+    2. Create a volume.
+    3. Wait for volume condition `scheduled` to be false.
+    """
     nodes = client.list_node()
     # delete all disks on each node
     for node in nodes:
@@ -321,6 +352,13 @@ def test_replica_scheduler_no_disks(client):  # NOQA
 @pytest.mark.node  # NOQA
 @pytest.mark.mountdisk # NOQA
 def test_replica_scheduler_large_volume_fit_small_disk(client):  # NOQA
+    """
+    Test replica scheduler: not schedule a large volume to small disk
+
+    1. Create a host disk `small_disk` and attach i to the current node.
+    2. Create a new large volume.
+    3. Verify the volume wasn't scheduled on the `small_disk`.
+    """
     nodes = client.list_node()
     # create a small size disk on current node
     lht_hostId = get_self_host_id()
@@ -390,6 +428,20 @@ def test_replica_scheduler_large_volume_fit_small_disk(client):  # NOQA
 
 @pytest.mark.node  # NOQA
 def test_replica_scheduler_too_large_volume_fit_any_disks(client):  # NOQA
+    """
+    Test replica scheduler: volume is too large to fit any disks
+
+    1. Disable all default disks on all nodes by setting storageReserved to
+    maximum size
+    2. Create volume.
+    3. Verify the volume scheduled condition is false.
+    4. Reduce the storageReserved on all the disks to just enough for one
+    replica.
+    5. The volume should automatically change scheduled condition to true
+    6. Attach the volume.
+    7. Make sure every replica landed on different nodes's default disk.
+    """
+
     nodes = client.list_node()
     lht_hostId = get_self_host_id()
     expect_node_disk = {}
@@ -463,6 +515,16 @@ def test_replica_scheduler_too_large_volume_fit_any_disks(client):  # NOQA
 
 @pytest.mark.node  # NOQA
 def test_replica_scheduler_update_over_provisioning(client):  # NOQA
+    """
+    Test replica scheduler: update overprovisioning setting
+
+    1. Set setting `overprovisioning` to 0. (disable all scheduling)
+    2. Create a new volume. Verify volume's `scheduled` condition is false.
+    3. Set setting `over provisioning` to 100%.
+    4. Verify volume's `scheduled` condition now become true.
+    5. Attach the volume.
+    6. Make sure every replica landed on different nodes's default disk.
+    """
     nodes = client.list_node()
     lht_hostId = get_self_host_id()
     expect_node_disk = {}
@@ -526,6 +588,14 @@ def test_replica_scheduler_update_over_provisioning(client):  # NOQA
 
 @pytest.mark.node  # NOQA
 def test_replica_scheduler_exceed_over_provisioning(client):  # NOQA
+    """
+    Test replica scheduler: exceeding overprovisioning parameter
+
+    1. Set setting `overprovisioning` to 100
+    2. Update every disks to set 1G available for scheduling
+    3. Try to schedule a volume of 2G. Volume scheduled condition should be
+    false
+    """
     over_provisioning_setting = client.by_id_setting(
         SETTING_STORAGE_OVER_PROVISIONING_PERCENTAGE)
     old_provisioning_setting = over_provisioning_setting.value
@@ -562,6 +632,15 @@ def test_replica_scheduler_exceed_over_provisioning(client):  # NOQA
 
 @pytest.mark.node  # NOQA
 def test_replica_scheduler_just_under_over_provisioning(client):  # NOQA
+    """
+    Test replica scheduler: just under overprovisioning parameter
+
+    1. Set setting `overprovisioning` to 100
+    2. Get the maximum size of all the disks
+    3. Create a volume using maximum_size - 2MiB as the volume size.
+    4. Volume scheduled condition should be true.
+    5. Make sure every replica landed on different nodes's default disk.
+    """
     over_provisioning_setting = client.by_id_setting(
         SETTING_STORAGE_OVER_PROVISIONING_PERCENTAGE)
     old_provisioning_setting = over_provisioning_setting.value
@@ -627,6 +706,18 @@ def test_replica_scheduler_just_under_over_provisioning(client):  # NOQA
 
 @pytest.mark.node  # NOQA
 def test_replica_scheduler_update_minimal_available(client):  # NOQA
+    """
+    Test replica scheduler: update setting `minimal available`
+
+    1. Set setting `minimal available` to 100% (means no one can schedule)
+    2. Verify for all disks' schedulable condition to become false.
+    3. Create a volume. Verify it's unschedulable.
+    4. Set setting `minimal available` back to default setting
+    5. Disk should become schedulable now.
+    6. Volume should be scheduled now.
+    7. Attach the volume.
+    8. Make sure every replica landed on different nodes's default disk.
+    """
     minimal_available_setting = client.by_id_setting(
         SETTING_STORAGE_MINIMAL_AVAILABLE_PERCENTAGE)
     old_minimal_setting = minimal_available_setting.value
@@ -704,6 +795,14 @@ def test_replica_scheduler_update_minimal_available(client):  # NOQA
 
 @pytest.mark.node  # NOQA
 def test_node_controller_sync_storage_scheduled(client):  # NOQA
+    """
+    Test node controller sync storage scheduled correctly
+
+    1. Wait until no disk has anything scheduled
+    2. Create a volume with "number of nodes" replicas
+    3. Confirm that each disks now has "volume size" scheduled
+    4. Confirm every disks are still schedulable.
+    """
     lht_hostId = get_self_host_id()
     nodes = client.list_node()
     for node in nodes:
@@ -749,6 +848,13 @@ def test_node_controller_sync_storage_scheduled(client):  # NOQA
 @pytest.mark.node  # NOQA
 @pytest.mark.mountdisk # NOQA
 def test_node_controller_sync_storage_available(client):  # NOQA
+    """
+    Test node controller sync storage available correctly
+
+    1. Create a host disk `test_disk` on the current node
+    2. Write 1MiB data to the disk, and run `sync`
+    3. Verify the disk `storageAvailable` will update to include the file
+    """
     lht_hostId = get_self_host_id()
     # create a disk to test storageAvailable
     node = client.by_id_node(lht_hostId)
@@ -810,6 +916,14 @@ def test_node_controller_sync_storage_available(client):  # NOQA
 @pytest.mark.coretest   # NOQA
 @pytest.mark.node  # NOQA
 def test_node_controller_sync_disk_state(client):  # NOQA
+    """
+    Test node controller to sync disk state
+
+    1. Set setting `StorageMinimalAvailablePercentage` to 100
+    2. All the disks will become `unschedulable`.
+    3. Restore setting `StorageMinimalAvailablePercentage` to previous
+    4. All the disks will become `schedulable`.
+    """
     # update StorageMinimalAvailablePercentage to test Disk State
     setting = client.by_id_setting(
         SETTING_STORAGE_MINIMAL_AVAILABLE_PERCENTAGE)
@@ -844,18 +958,31 @@ def test_node_controller_sync_disk_state(client):  # NOQA
                                      fsid, DISK_CONDITION_SCHEDULABLE,
                                      CONDITION_STATUS_TRUE)
 
-    nodes = client.list_node()
-    for node in nodes:
-        disks = node.disks
-        for fsid, disk in iter(disks.items()):
-            conditions = disk.conditions
-            assert conditions[DISK_CONDITION_SCHEDULABLE]["status"] == \
-                CONDITION_STATUS_TRUE
-
 
 @pytest.mark.node  # NOQA
 @pytest.mark.mountdisk # NOQA
-def test_node_delete_umount_disks(client):  # NOQA
+def test_node_umount_disk(client):  # NOQA
+    """
+    [Node] Test umount and delete the extra disk on the node
+
+    1. Create host disk and attach it to the current node
+    2. Disable the existing disk's scheduling on the current node
+    3. Add the disk to the current node
+    4. Wait for node to recongize the disk
+    5. Create a volume with "number of nodes" replicas
+    6. Umount the disk from the host
+    7. Verify the disk `READY` condition become false.
+        1. Maximum and available storage become zero.
+        2. No change to storage scheduled and storage reserved.
+    8. Try to delete the extra disk, it should fail due to need to disable
+    scheduling first
+    9. Update the other disk on the node to be allow scheduling. Disable the
+    scheduling for the extra disk
+    10. Mount the disk back
+    11. Verify the disk `READY` condition become true, and other states
+    12. Umount and delete the disk.
+    """
+
     # create test disks for node
     disk_volume_name = 'vol-disk-1'
     lht_hostId = get_self_host_id()
@@ -1063,7 +1190,19 @@ def test_node_delete_umount_disks(client):  # NOQA
 @pytest.mark.coretest   # NOQA
 @pytest.mark.node  # NOQA
 @pytest.mark.mountdisk # NOQA
-def test_replica_cleanup(client):  # NOQA
+def test_replica_datapath_cleanup(client):  # NOQA
+    """
+    Test replicas data path cleanup
+
+    1. Create host disk `extra_disk` and add it to the current node.
+    2. Disable all the disks except for the ones on the current node.
+    3. Create a volume with 5 replicas (soft anti-affinity on)
+        1. To make sure both default disk and extra disk can have one replica
+        2. Current we don't have anti-affinity for disks on the same node
+    4. Verify the data path for replicas are created.
+    5. Delete the volume.
+    6. Verify the data path for replicas are deleted.
+    """
     nodes = client.list_node()
     lht_hostId = get_self_host_id()
 
@@ -1143,9 +1282,19 @@ def test_replica_cleanup(client):  # NOQA
 def test_node_default_disk_labeled(client, core_api, random_disk_path,  reset_default_disk_label,  # NOQA
                                    reset_disk_settings):  # NOQA
     """
-    Test that only Nodes with the proper label applied get a default Disk
-    created on them when one doesn't already exist. Makes sure the created
-    Disk matches the Default Data Path Setting.
+    Test node feature: create default Disk according to the node label
+
+    Makes sure the created Disk matches the Default Data Path Setting.
+
+    1. Add labels to node 0 and 1, don't add label to node 2.
+    2. Remove all the disks on node 1 and 2.
+        1. The initial default disk will not be recreated.
+    3. Set setting `default disk path` to a random disk path.
+    4. Set setting `create default disk labeled node` to true.
+    5. Check node 0. It should still use the previous default disk path.
+        1. Due to we didn't remove the disk from node 0.
+    6. Check node 1. A new disk should be created at the random disk path.
+    7. Check node 2. There is still no disks
     """
     # Set up cases.
     cases = {
@@ -1214,6 +1363,20 @@ def test_node_config_annotations(client, core_api,  # NOQA
                                  reset_default_disk_label,  # NOQA
                                  reset_disk_and_tag_annotations,  # NOQA
                                  reset_disk_settings):  # NOQA
+    """
+    Test node feature: default disks/node configuration
+
+    1. Set node 0 label and annotation.
+    2. Set node 1 label but with invalid annotation (invalid path and tag)
+    3. Cleanup disks on node 0 and 1.
+        1. The initial default disk will not be recreated.
+    4. Enable setting `create default disk labeled nodes`
+    5. Wait for node tag to update on node 0.
+    6. Verify node 0 has correct disk and tags set.
+    7. Verify node 1 has no disk or tag.
+    8. Update node 1's label and tag to be valid
+    9. Verify now node 1 has correct disk and tags set
+    """
     nodes = client.list_node().data
     assert len(nodes) >= 3
 
@@ -1298,7 +1461,46 @@ def test_invalid_node_annotations(client, core_api,  # NOQA
                                  reset_default_disk_label,  # NOQA
                                  reset_disk_and_tag_annotations,  # NOQA
                                  reset_disk_settings):  # NOQA
+    """
+    Test invalid node annotations for default disks/node configuration
 
+
+    Case1: The invalid disk annotation shouldn't intervene the node controller.
+
+    1. Set invalid disk annotation
+    2. The node tag or disks won't be updated
+    3. Create a new disk. It will be updated by the node controller.
+
+
+    Case2: The existing node disks keep unchanged even if the annotation is
+    corrected.
+
+    1. Set valid disk annotation but set `allowScheduling` to false, etc.
+    2. Make sure the current disk won't change
+
+    Case3: the correct annotation should be applied after cleaning up all disks
+
+    1. Delete all the disks on the node
+    2. Wait for the config from disk annotation applied
+
+    Case4: The invalid tag annotation shouldn't intervene the node controller.
+
+    1. Cleanup the node annotation and remove the node disks/tags
+    2. Set invalid tag annotation
+    3. Disk and tags configuration will not be applied
+    4. Disk and tags can still be updated on the node
+
+    Case5: The existing node keep unchanged even if the tag annotation is fixed
+    up.
+
+    1. With existing tags, change tag annotation.
+    2. It won't change the current node's tag
+
+    Case6: Clean up all node tags then the correct annotation should be applied
+
+    1. Clean the current tags
+    2. New tags from node annotation should be applied
+    """
     setting = client.by_id_setting(SETTING_CREATE_DEFAULT_DISK_LABELED_NODES)
     client.update(setting, value="true")
 
@@ -1447,7 +1649,17 @@ def test_no_node_annotation(client, core_api,  # NOQA
                             reset_default_disk_label,  # NOQA
                             reset_disk_and_tag_annotations,  # NOQA
                             reset_disk_settings):  # NOQA
+    """
+    Test node labeled for configuration but no annotation
 
+    1. Set setting `create default disk labeled nodes` to true
+    2. Set the config label on node 0 but leave annotation empty
+    3. Verify disk update works.
+    4. Verify tag update works
+    5. Verify using tag annotation for configuration works.
+    6. After remove the tag annotaion, verify unset tag node works fine.
+    7. Set tag annotation again. Verify node updated for the tag.
+    """
     setting = client.by_id_setting(SETTING_CREATE_DEFAULT_DISK_LABELED_NODES)
     client.update(setting, value="true")
 
@@ -1526,6 +1738,27 @@ def test_no_node_annotation(client, core_api,  # NOQA
 
 @pytest.mark.node  # NOQA
 def test_replica_scheduler_rebuild_restore_is_too_big(client):  # NOQA
+    """
+    Test replica scheduler: rebuild/restore can be too big to fit a disk
+
+    1. Create a small host disk with `SIZE` and add it to the current node.
+    2. Create a volume with size `SIZE`.
+    3. Disable all scheduling except for the small disk.
+    4. Write a data size `SIZE * 0.9` to the volume and make a backup
+    5. Create a restored volume with 1 replica from backup.
+        1. Verify the restored volume cannot be scheduled since the existing
+        data cannot fit in the small disk
+    6. Delete a replica of volume.
+        1. Verify the volume reports `scheduled = false` due to unable to find
+        a suitable disk for rebuliding replica, since the replica with the
+        existing data cannot fit in the small disk
+    6. Enable the scheduling for other disks, disable scheduling for small disk
+    7. Verify the volume reports `scheduled = true`. And verify the data.
+    8. Cleanup the volume.
+    9. Verify the restored volume reports `scheduled = true`.
+    10. Wait for the restored volume to complete restoration, then check data.
+
+    """
     nodes = client.list_node()
     lht_hostId = get_self_host_id()
     node = client.by_id_node(lht_hostId)
