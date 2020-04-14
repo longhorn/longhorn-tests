@@ -23,6 +23,7 @@ from common import get_volume_engine, wait_for_volume_detached
 from common import create_pv_for_volume, create_pvc_for_volume
 from common import get_self_host_id, get_volume_endpoint
 from common import wait_for_volume_healthy
+from common import fail_replica_expansion, wait_for_expansion_failure
 
 
 # Using a StorageClass because GKE is using the default StorageClass if not
@@ -448,3 +449,88 @@ def test_xfs_pv_existing_volume(client, core_api, pod_manifest): # NOQA
     }]
 
     create_and_wait_pod(core_api, pod_manifest)
+
+
+@pytest.mark.coretest  # NOQA
+def test_csi_expansion_with_replica_failure(client, core_api, storage_class, pvc, pod_manifest):  # NOQA
+    """
+    Test expansion success but with one replica expansion failure
+
+    1. Create a new `storage_class` with `allowVolumeExpansion` set
+    2. Create PVC and Pod with dynamic provisioned volume from the StorageClass
+    3. Create an empty directory with expansion snapshot tmp meta file path
+       for one replica so that the replica expansion will fail
+    4. Generate `test_data` and write to the pod
+    5. Delete the pod and wait for volume detachment
+    6. Update pvc.spec.resources to expand the volume
+    7. Check expansion result using Longhorn API. There will be expansion error
+       caused by the failed replica but overall the expansion should succeed.
+    8. Create a new pod and
+       check if the volume will rebuild the failed replica
+    9. Validate the volume content, then check if data writing looks fine
+    """
+    create_storage_class(storage_class)
+
+    pod_name = 'csi-expansion-with-replica-failure-test'
+    pvc_name = pod_name + "-pvc"
+    pvc['metadata']['name'] = pvc_name
+    pvc['spec']['storageClassName'] = storage_class['metadata']['name']
+    create_pvc(pvc)
+
+    pod_manifest['metadata']['name'] = pod_name
+    pod_manifest['spec']['volumes'] = [{
+        'name':
+            pod_manifest['spec']['containers'][0]['volumeMounts'][0]['name'],
+        'persistentVolumeClaim': {'claimName': pvc_name},
+    }]
+    create_and_wait_pod(core_api, pod_manifest)
+
+    expand_size = str(EXPANDED_VOLUME_SIZE*Gi)
+    pv = wait_and_get_pv_for_pvc(core_api, pvc_name)
+    assert pv.status.phase == "Bound"
+    volume_name = pv.spec.csi.volume_handle
+    volume = client.by_id_volume(volume_name)
+    failed_replica = volume.replicas[0]
+    fail_replica_expansion(client, core_api,
+                           volume_name, expand_size, [failed_replica])
+
+    test_data = generate_random_data(VOLUME_RWTEST_SIZE)
+    write_pod_volume_data(core_api, pod_name, test_data)
+
+    delete_and_wait_pod(core_api, pod_name)
+    wait_for_volume_detached(client, volume_name)
+
+    # There will be replica expansion error info
+    # but the expansion should succeed.
+    pvc['spec']['resources'] = {
+        'requests': {
+            'storage': size_to_string(EXPANDED_VOLUME_SIZE*Gi)
+        }
+    }
+    expand_and_wait_for_pvc(core_api, pvc)
+    wait_for_expansion_failure(client, volume_name)
+    wait_for_volume_expansion(client, volume_name)
+    volume = client.by_id_volume(volume_name)
+    assert volume.state == "detached"
+    assert volume.size == expand_size
+    for r in volume.replicas:
+        if r.name == failed_replica.name:
+            assert r.failedAt != ""
+        else:
+            assert r.failedAt == ""
+
+    # Check if the replica will be rebuilded
+    # and if the volume still works fine.
+    create_and_wait_pod(core_api, pod_manifest)
+    volume = wait_for_volume_healthy(client, volume_name)
+    for r in volume.replicas:
+        if r.name == failed_replica.name:
+            assert r.mode == ""
+        else:
+            assert r.mode == "RW"
+    resp = read_volume_data(core_api, pod_name)
+    assert resp == test_data
+    test_data = generate_random_data(VOLUME_RWTEST_SIZE)
+    write_pod_volume_data(core_api, pod_name, test_data)
+    resp = read_volume_data(core_api, pod_name)
+    assert resp == test_data
