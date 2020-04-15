@@ -32,7 +32,6 @@ from common import wait_for_rebuild_start
 from kubernetes.stream import stream
 
 RANDOM_DATA_SIZE = 300
-REBUILD_RETRY_COUNT = 3
 
 
 @pytest.mark.coretest   # NOQA
@@ -637,7 +636,6 @@ def test_salvage_auto_crash_replicas_long_wait(client, core_api, volume_name, po
     delete_and_wait_pv(core_api, pv_name)
 
 
-
 def test_rebuild_failure_with_intensive_data(client, core_api, volume_name, pod_make):  # NOQA
     """
     [HA] Test rebuild failure with intensive data writing
@@ -649,10 +647,9 @@ def test_rebuild_failure_with_intensive_data(client, core_api, volume_name, pod_
     5. Find running replicas of the volume
     6. Crash one of the running replicas.
     7. Wait for the replica rebuild to start
-    8. Crash another running replicas
+    8. Crash the replica which is sending data to the rebuilding replica
     9. Wait for volume to finish two rebuilds and become healthy
     10. Check md5sum for both data location
-    11. Go back step 5 and repeat for `REBUILD_RETRY_COUNT` times.
     """
     pod_name = volume_name + "-pod"
     pv_name = volume_name + "-pv"
@@ -681,28 +678,31 @@ def test_rebuild_failure_with_intensive_data(client, core_api, volume_name, pod_
                                  data_path_2, RANDOM_DATA_SIZE)
     original_md5sum_2 = get_pod_data_md5sum(core_api, pod_name, data_path_2)
 
-    for i in range(REBUILD_RETRY_COUNT):
-        volume = client.by_id_volume(volume_name)
-        replicas = []
-        for r in volume.replicas:
-            if r.running:
-                replicas.append(r)
-            else:
-                volume.replicaRemove(name=r.name)
-        assert len(replicas) == 3
-        random.shuffle(replicas)
-        # Trigger rebuild
-        crash_replica_processes(client, core_api, volume_name, [replicas[0]])
-        wait_for_volume_degraded(client, volume_name)
-        # Since replicas[1] maybe not the sender during the rebuild,
-        # we can try it multiple times to trigger the rebuild failure.
-        wait_for_rebuild_start(client, volume_name)
-        crash_replica_processes(client, core_api, volume_name, [replicas[1]])
-        wait_for_volume_healthy(client, volume_name)
-        md5sum_1 = get_pod_data_md5sum(core_api, pod_name, data_path_1)
-        assert original_md5sum_1 == md5sum_1
-        md5sum_2 = get_pod_data_md5sum(core_api, pod_name, data_path_2)
-        assert original_md5sum_2 == md5sum_2
+    volume = client.by_id_volume(volume_name)
+    replicas = []
+    for r in volume.replicas:
+        if r.running:
+            replicas.append(r)
+        else:
+            volume.replicaRemove(name=r.name)
+    assert len(replicas) == 3
+    random.shuffle(replicas)
+    # Trigger rebuild
+    crash_replica_processes(client, core_api, volume_name, [replicas[0]])
+    wait_for_volume_degraded(client, volume_name)
+    # Trigger rebuild failure by
+    # crashing the replica which is sending data to the rebuilding replica
+    from_replica_name, _ = wait_for_rebuild_start(client, volume_name)
+    for r in replicas:
+        if r.name == from_replica_name:
+            from_replica = r
+    assert from_replica
+    crash_replica_processes(client, core_api, volume_name, [from_replica])
+    wait_for_volume_healthy(client, volume_name)
+    md5sum_1 = get_pod_data_md5sum(core_api, pod_name, data_path_1)
+    assert original_md5sum_1 == md5sum_1
+    md5sum_2 = get_pod_data_md5sum(core_api, pod_name, data_path_2)
+    assert original_md5sum_2 == md5sum_2
 
     delete_and_wait_pod(core_api, pod_name)
     delete_and_wait_pvc(core_api, pvc_name)
