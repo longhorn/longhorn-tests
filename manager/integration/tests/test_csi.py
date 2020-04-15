@@ -90,7 +90,8 @@ def test_csi_mount(client, core_api, csi_pv, pvc, pod_make):  # NOQA
     Note: Fixtures are torn down here in reverse order that they are specified
     as a parameter. Take caution when reordering test fixtures.
 
-    1. Create a PV/PVC/Pod with dynamic provisioned Longhorn volume
+    1. Create a PV/PVC/Pod with pre-created Longhorn volume
+        1. Using Kubernetes manifest instead of Longhorn PV/PVC creation API
     2. Make sure the pod is running
     3. Verify the volume status
     """
