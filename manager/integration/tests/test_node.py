@@ -1852,10 +1852,10 @@ def test_replica_scheduler_rebuild_restore_is_too_big(client):  # NOQA
     # cleanup test disks
     node = client.by_id_node(lht_hostId)
     disks = node.disks
-    updated_disks = {}
+    update_disks = {}
     for name, disk in iter(disks.items()):
         if disk.path != small_disk_path:
-            updated_disks[name] = disk
+            update_disks[name] = disk
     node.diskUpdate(disks=update_disks)
 
     node = common.wait_for_disk_update(client, lht_hostId,
