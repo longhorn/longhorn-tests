@@ -43,6 +43,8 @@ RETRY_INTERVAL = 0.5
 RETRY_INTERVAL_LONG = 2
 RETRY_BACKUP_COUNTS = 600
 RETRY_BACKUP_INTERVAL = 0.5
+RETRY_EXEC_COUNTS = 20
+RETRY_EXEC_INTERVAL = 5
 
 LONGHORN_NAMESPACE = "longhorn-system"
 
@@ -1822,6 +1824,7 @@ def wait_for_disk_status(client, node_name, disk_name, key, value):
         if len(disks) > 0 and disks[disk_name][key] == value:
             break
         time.sleep(RETRY_INTERVAL)
+    assert disks[disk_name][key] == value
     return node
 
 
@@ -3034,21 +3037,22 @@ def wait_for_pod_remount(core_api, pod_name):
     check_command = [
         '/bin/sh',
         '-c',
-        'ls /data/'
+        'ls /data/lost+found'
     ]
 
-    for i in range(RETRY_COUNTS):
-        try:
-            stream(core_api.connect_get_namespaced_pod_exec,
-                   pod_name,
-                   'default',
-                   command=check_command,
-                   stderr=True,
-                   stdin=False,
-                   stdout=True,
-                   tty=False)
-        except Exception:
-            time.sleep(RETRY_INTERVAL)
+    ready = False
+    for i in range(RETRY_EXEC_COUNTS):
+        output = stream(core_api.connect_get_namespaced_pod_exec,
+                        pod_name,
+                        'default',
+                        command=check_command,
+                        stderr=True, stdin=False,
+                        stdout=True, tty=False)
+        if "Input/output error" not in output:
+            ready = True
+            break
+        time.sleep(RETRY_EXEC_INTERVAL)
+    assert ready
 
 
 def expand_attached_volume(client, volume_name):
