@@ -405,21 +405,7 @@ def test_ha_recovery_with_expansion(client, volume_name):   # NOQA
     cleanup_volume(client, volume)
 
 
-def test_salvage_auto_crash_all_replicas(client, core_api, volume_name, pod_make):  # NOQA
-    """
-    [HA] Test automatic salvage feature by crashing all the replicas
-
-    1. Create PV/PVC/POD. Make sure POD has liveness check. Start the pod
-    2. Generate `test_data` and write to the pod.
-    3. Run `sync` command inside the pod to make sure data flush to the volume.
-    4. Crash all replica processes using SIGTERM
-    5. Wait for volume to `faulted`, then `healthy`
-    6. Check replica `failedAt` has been cleared.
-    7. Wait for pod to be restarted.
-    8. Check pod `test_data`.
-
-    FIXME: Step 5 is only a intermediate state, maybe no way to get it for sure
-    """
+def prepare_pod_with_data(client, core_api, volume_name, pod_make):  # NOQA
     pod_name = volume_name + "-pod"
     pv_name = volume_name + "-pv"
     pvc_name = volume_name + "-pvc"
@@ -450,8 +436,11 @@ def test_salvage_auto_crash_all_replicas(client, core_api, volume_name, pod_make
            stdout=True, tty=True,
            _preload_content=False)
 
-    crash_replica_processes(client, core_api, volume_name)
+    return pod_name, pv_name, pvc_name, test_data
 
+
+def wait_pod_for_auto_salvage(client, core_api, volume_name,   # NOQA
+                              pod_name, pv_name, pvc_name, test_data):
     # this line may fail if the recovery is too quick
     common.wait_for_volume_faulted(client, volume_name)
 
@@ -471,6 +460,31 @@ def test_salvage_auto_crash_all_replicas(client, core_api, volume_name, pod_make
     delete_and_wait_pv(core_api, pv_name)
 
 
+def test_salvage_auto_crash_all_replicas(client, core_api, volume_name, pod_make):  # NOQA
+    """
+    [HA] Test automatic salvage feature by crashing all the replicas
+
+    1. Create PV/PVC/POD. Make sure POD has liveness check. Start the pod
+    2. Generate `test_data` and write to the pod.
+    3. Run `sync` command inside the pod to make sure data flush to the volume.
+    4. Crash all replica processes using SIGTERM
+    5. Wait for volume to `faulted`, then `healthy`
+    6. Check replica `failedAt` has been cleared.
+    7. Wait for pod to be restarted.
+    8. Check pod `test_data`.
+
+    FIXME: Step 5 is only a intermediate state, maybe no way to get it for sure
+    """
+
+    pod_name, pv_name, pvc_name, test_data = \
+        prepare_pod_with_data(client, core_api, volume_name, pod_make)
+
+    crash_replica_processes(client, core_api, volume_name)
+
+    wait_pod_for_auto_salvage(client, core_api, volume_name,
+                              pod_name, pv_name, pvc_name, test_data)
+
+
 # Test case #2: delete one replica process, wait for 5 seconds
 # then delete all replica processes.
 def test_salvage_auto_crash_replicas_short_wait(client, core_api, volume_name, pod_make):  # NOQA
@@ -488,35 +502,8 @@ def test_salvage_auto_crash_replicas_short_wait(client, core_api, volume_name, p
 
     FIXME: step 5 should wait for the replica to start rebuilding.
     """
-    pod_name = volume_name + "-pod"
-    pv_name = volume_name + "-pv"
-    pvc_name = volume_name + "-pvc"
-
-    pod = pod_make(name=pod_name)
-
-    pod_liveness_probe_spec = get_liveness_probe_spec(initial_delay=1,
-                                                      period=1)
-
-    pod['spec']['containers'][0]['livenessProbe'] = pod_liveness_probe_spec
-
-    volume = create_and_check_volume(client, volume_name, num_of_replicas=2)
-
-    create_pv_for_volume(client, core_api, volume, pv_name)
-    create_pvc_for_volume(client, core_api, volume, pvc_name)
-    pod['spec']['volumes'] = [create_pvc_spec(pvc_name)]
-    create_and_wait_pod(core_api, pod)
-
-    test_data = generate_random_data(VOLUME_RWTEST_SIZE)
-
-    write_pod_volume_data(core_api, pod_name, test_data)
-
-    stream(core_api.connect_get_namespaced_pod_exec,
-           pod_name,
-           'default',
-           command="sync",
-           stderr=True, stdin=True,
-           stdout=True, tty=True,
-           _preload_content=False)
+    pod_name, pv_name, pvc_name, test_data = \
+        prepare_pod_with_data(client, core_api, volume_name, pod_make)
 
     volume = client.by_id_volume(volume_name)
     replica0 = volume.replicas[0]
@@ -534,24 +521,8 @@ def test_salvage_auto_crash_replicas_short_wait(client, core_api, volume_name, p
 
     crash_replica_processes(client, core_api, volume_name, replicas)
 
-    volume = common.wait_for_volume_faulted(client, volume_name)
-
-    volume = common.wait_for_volume_detached_unknown(client, volume_name)
-    assert len(volume.replicas) == 2
-    assert volume.replicas[0].failedAt == ""
-    assert volume.replicas[1].failedAt == ""
-
-    volume = wait_for_volume_healthy(client, volume_name)
-
-    wait_for_pod_remount(core_api, pod_name)
-
-    resp = read_volume_data(core_api, pod_name)
-
-    assert test_data == resp
-
-    delete_and_wait_pod(core_api, pod_name)
-    delete_and_wait_pvc(core_api, pvc_name)
-    delete_and_wait_pv(core_api, pv_name)
+    wait_pod_for_auto_salvage(client, core_api, volume_name,
+                              pod_name, pv_name, pvc_name, test_data)
 
 
 # Test case #3: delete one replica process, wait for 60 seconds
@@ -570,37 +541,9 @@ def test_salvage_auto_crash_replicas_long_wait(client, core_api, volume_name, po
     8. Check `test_data` in the Pod.
 
     FIXME: step 5 should wait for the replica to finish rebuilding.
-    FIXME: should create common function with the previous couple test cases
     """
-    pod_name = volume_name + "-pod"
-    pv_name = volume_name + "-pv"
-    pvc_name = volume_name + "-pvc"
-
-    pod = pod_make(name=pod_name)
-
-    pod_liveness_probe_spec = get_liveness_probe_spec(initial_delay=1,
-                                                      period=1)
-
-    pod['spec']['containers'][0]['livenessProbe'] = pod_liveness_probe_spec
-
-    volume = create_and_check_volume(client, volume_name, num_of_replicas=2)
-
-    create_pv_for_volume(client, core_api, volume, pv_name)
-    create_pvc_for_volume(client, core_api, volume, pvc_name)
-    pod['spec']['volumes'] = [create_pvc_spec(pvc_name)]
-    create_and_wait_pod(core_api, pod)
-
-    test_data = generate_random_data(VOLUME_RWTEST_SIZE)
-
-    write_pod_volume_data(core_api, pod_name, test_data)
-
-    stream(core_api.connect_get_namespaced_pod_exec,
-           pod_name,
-           'default',
-           command="sync",
-           stderr=True, stdin=True,
-           stdout=True, tty=True,
-           _preload_content=False)
+    pod_name, pv_name, pvc_name, test_data = \
+        prepare_pod_with_data(client, core_api, volume_name, pod_make)
 
     volume = client.by_id_volume(volume_name)
     replica0 = volume.replicas[0]
@@ -618,23 +561,8 @@ def test_salvage_auto_crash_replicas_long_wait(client, core_api, volume_name, po
 
     crash_replica_processes(client, core_api, volume_name, replicas)
 
-    volume = common.wait_for_volume_faulted(client, volume_name)
-
-    volume = common.wait_for_volume_detached_unknown(client, volume_name)
-    assert len(volume.replicas) == 3
-
-    volume = wait_for_volume_healthy(client, volume_name)
-
-    wait_for_pod_remount(core_api, pod_name)
-
-    resp = read_volume_data(core_api, pod_name)
-
-    assert test_data == resp
-
-    delete_and_wait_pod(core_api, pod_name)
-    delete_and_wait_pvc(core_api, pvc_name)
-    delete_and_wait_pv(core_api, pv_name)
-
+    wait_pod_for_auto_salvage(client, core_api, volume_name,
+                              pod_name, pv_name, pvc_name, test_data)
 
 def test_rebuild_failure_with_intensive_data(client, core_api, volume_name, pod_make):  # NOQA
     """
