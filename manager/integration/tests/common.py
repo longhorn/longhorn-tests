@@ -2871,6 +2871,7 @@ def wait_for_rebuild_start(client, volume_name):
             break
         time.sleep(RETRY_INTERVAL)
     assert started
+    return status.fromReplica, status.replica
 
 
 @pytest.fixture
