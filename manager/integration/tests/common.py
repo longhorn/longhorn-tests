@@ -43,7 +43,7 @@ RETRY_INTERVAL = 0.5
 RETRY_INTERVAL_LONG = 2
 RETRY_BACKUP_COUNTS = 600
 RETRY_BACKUP_INTERVAL = 0.5
-RETRY_EXEC_COUNTS = 20
+RETRY_EXEC_COUNTS = 30
 RETRY_EXEC_INTERVAL = 5
 
 LONGHORN_NAMESPACE = "longhorn-system"
@@ -2858,7 +2858,7 @@ def wait_for_rebuild_complete(client, volume_name):
         if completed == len(rebuild_statuses):
             break
         time.sleep(RETRY_INTERVAL)
-    return completed == len(rebuild_statuses)
+    assert completed == len(rebuild_statuses)
 
 
 def wait_for_rebuild_start(client, volume_name):

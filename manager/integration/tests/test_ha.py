@@ -428,13 +428,14 @@ def prepare_pod_with_data(client, core_api, volume_name, pod_make):  # NOQA
 
     write_pod_volume_data(core_api, pod_name, test_data)
 
+    # can flush the data but cannot guarantee replicas are in sync, e.g.
+    # due to the directory access caused by the liveness check
     stream(core_api.connect_get_namespaced_pod_exec,
            pod_name,
            'default',
-           command="sync",
-           stderr=True, stdin=True,
-           stdout=True, tty=True,
-           _preload_content=False)
+           command=["sync"],
+           stderr=True, stdin=False,
+           stdout=True, tty=False)
 
     return pod_name, pv_name, pvc_name, test_data
 
@@ -444,10 +445,7 @@ def wait_pod_for_auto_salvage(client, core_api, volume_name,   # NOQA
     # this line may fail if the recovery is too quick
     common.wait_for_volume_faulted(client, volume_name)
 
-    volume = wait_for_volume_healthy(client, volume_name)
-    assert len(volume.replicas) == 2
-    assert volume.replicas[0].failedAt == ""
-    assert volume.replicas[1].failedAt == ""
+    wait_for_volume_healthy(client, volume_name)
 
     wait_for_pod_remount(core_api, pod_name)
 
@@ -510,6 +508,7 @@ def test_salvage_auto_crash_replicas_short_wait(client, core_api, volume_name, p
 
     crash_replica_processes(client, core_api, volume_name, [replica0])
 
+    # Not enough time for rebuild
     time.sleep(5)
 
     volume = client.by_id_volume(volume_name)
@@ -563,6 +562,7 @@ def test_salvage_auto_crash_replicas_long_wait(client, core_api, volume_name, po
 
     wait_pod_for_auto_salvage(client, core_api, volume_name,
                               pod_name, pv_name, pvc_name, test_data)
+
 
 def test_rebuild_failure_with_intensive_data(client, core_api, volume_name, pod_make):  # NOQA
     """
