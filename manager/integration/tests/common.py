@@ -1818,13 +1818,34 @@ def get_host_disk_size(disk):
 
 
 def wait_for_disk_status(client, node_name, disk_name, key, value):
+    # use wait_for_disk_storage_available to check storageAvailable
+    assert key != "storageAvailable"
     for i in range(RETRY_COUNTS):
         node = client.by_id_node(node_name)
         disks = node.disks
-        if len(disks) > 0 and disks[disk_name][key] == value:
+        if len(disks) > 0 and \
+                disk_name in disks and \
+                disks[disk_name][key] == value:
             break
         time.sleep(RETRY_INTERVAL)
+    assert len(disks) != 0
+    assert disk_name in disks
     assert disks[disk_name][key] == value
+    return node
+
+
+def wait_for_disk_storage_available(client, node_name, disk_name, disk_path):
+    for i in range(RETRY_COUNTS):
+        node = client.by_id_node(node_name)
+        disks = node.disks
+        if len(disks) > 0 and disk_name in disks:
+            free, _ = get_host_disk_size(disk_path)
+            if disks[disk_name]["storageAvailable"] == free:
+                break
+        time.sleep(RETRY_INTERVAL)
+    assert len(disks) != 0
+    assert disk_name in disks
+    assert disks[disk_name]["storageAvailable"] == free
     return node
 
 

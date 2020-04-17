@@ -22,7 +22,7 @@ from common import get_volume_endpoint
 from common import get_update_disks
 from common import wait_for_disk_status, wait_for_disk_update, \
     wait_for_disk_conditions, wait_for_node_tag_update, \
-    cleanup_node_disks
+    cleanup_node_disks, wait_for_disk_storage_available
 from common import exec_nsenter
 
 CREATE_DEFAULT_DISK_LABEL = "node.longhorn.io/create-default-disk"
@@ -237,9 +237,8 @@ def test_node_disk_update(client):  # NOQA
                                  "allowScheduling", False)
             wait_for_disk_status(client, lht_hostId, name,
                                  "storageReserved", SMALL_DISK_SIZE)
-            free, total = common.get_host_disk_size(disk_path1)
-            wait_for_disk_status(client, lht_hostId, name,
-                                 "storageAvailable", free)
+            wait_for_disk_storage_available(client, lht_hostId, name,
+                                            disk_path1)
 
     node = client.by_id_node(lht_hostId)
     disks = node.disks
@@ -877,14 +876,14 @@ def test_node_controller_sync_storage_available(client):  # NOQA
     disks = node.disks
     # wait for node controller update disk status
     expect_disk = {}
-    free, total = common.get_host_disk_size(test_disk_path)
     for fsid, disk in iter(disks.items()):
         if disk.path == test_disk_path:
-            node = wait_for_disk_status(client, lht_hostId, fsid,
-                                        "storageAvailable", free)
+            node = wait_for_disk_storage_available(client, lht_hostId,
+                                                   fsid, test_disk_path)
             expect_disk = node.disks[fsid]
             break
 
+    free, total = common.get_host_disk_size(test_disk_path)
     assert expect_disk.storageAvailable == free
 
     os.remove(test_file_path)
@@ -1014,11 +1013,11 @@ def test_node_umount_disk(client):  # NOQA
                                  "allowScheduling", True)
             wait_for_disk_status(client, lht_hostId, name,
                                  "storageReserved", SMALL_DISK_SIZE)
-            free, total = common.get_host_disk_size(disk_path1)
-            wait_for_disk_status(client, lht_hostId, name,
-                                 "storageAvailable", free)
+            _, total = common.get_host_disk_size(disk_path1)
             wait_for_disk_status(client, lht_hostId, name,
                                  "storageMaximum", total)
+            wait_for_disk_storage_available(client, lht_hostId, name,
+                                            disk_path1)
 
     node = client.by_id_node(lht_hostId)
     disks = node.disks
@@ -1029,7 +1028,6 @@ def test_node_umount_disk(client):  # NOQA
             assert disk.storageScheduled == 0
             free, total = common.get_host_disk_size(disk_path1)
             assert disk.storageMaximum == total
-            assert disk.storageAvailable == free
             conditions = disk.conditions
             assert conditions[DISK_CONDITION_READY]["status"] == \
                 CONDITION_STATUS_TRUE
