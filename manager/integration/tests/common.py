@@ -3086,14 +3086,19 @@ def wait_for_pod_remount(core_api, pod_name):
 
     ready = False
     for i in range(RETRY_EXEC_COUNTS):
-        output = stream(core_api.connect_get_namespaced_pod_exec,
-                        pod_name,
-                        'default',
-                        command=check_command,
-                        stderr=True, stdin=False,
-                        stdout=True, tty=False)
-        if "Input/output error" not in output:
-            ready = True
+        try:
+            output = stream(core_api.connect_get_namespaced_pod_exec,
+                            pod_name,
+                            'default',
+                            command=check_command,
+                            stderr=True, stdin=False,
+                            stdout=True, tty=False)
+            if "Input/output error" not in output:
+                ready = True
+                break
+        except Exception:
+            pass
+        if ready:
             break
         time.sleep(RETRY_EXEC_INTERVAL)
     assert ready
