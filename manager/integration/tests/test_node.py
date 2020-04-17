@@ -22,7 +22,8 @@ from common import get_volume_endpoint
 from common import get_update_disks
 from common import wait_for_disk_status, wait_for_disk_update, \
     wait_for_disk_conditions, wait_for_node_tag_update, \
-    cleanup_node_disks, wait_for_disk_storage_available
+    cleanup_node_disks, wait_for_disk_storage_available, \
+    wait_for_disk_uuid
 from common import exec_nsenter
 
 CREATE_DEFAULT_DISK_LABEL = "node.longhorn.io/create-default-disk"
@@ -1357,10 +1358,10 @@ def test_node_default_disk_labeled(client, core_api, random_disk_path,  reset_de
 
 
 @pytest.mark.node
-def test_node_config_annotations(client, core_api,  # NOQA
-                                 reset_default_disk_label,  # NOQA
-                                 reset_disk_and_tag_annotations,  # NOQA
-                                 reset_disk_settings):  # NOQA
+def test_node_config_annotation(client, core_api,  # NOQA
+                                reset_default_disk_label,  # NOQA
+                                reset_disk_and_tag_annotations,  # NOQA
+                                reset_disk_settings):  # NOQA
     """
     Test node feature: default disks/node configuration
 
@@ -1455,10 +1456,10 @@ def test_node_config_annotations(client, core_api,  # NOQA
 
 
 @pytest.mark.node
-def test_invalid_node_annotations(client, core_api,  # NOQA
-                                 reset_default_disk_label,  # NOQA
-                                 reset_disk_and_tag_annotations,  # NOQA
-                                 reset_disk_settings):  # NOQA
+def test_node_config_annotation_invalid(client, core_api,  # NOQA
+                                        reset_default_disk_label,  # NOQA
+                                        reset_disk_and_tag_annotations,  # NOQA
+                                        reset_disk_settings):  # NOQA
     """
     Test invalid node annotations for default disks/node configuration
 
@@ -1510,6 +1511,10 @@ def test_invalid_node_annotations(client, core_api,  # NOQA
     cleanup_node_disks(client, node_name)
     core_api.patch_node(node_name, {
         "metadata": {
+            "labels": {
+                CREATE_DEFAULT_DISK_LABEL:
+                    CREATE_DEFAULT_DISK_LABEL_VALUE_CONFIG
+            },
             "annotations": {
                 DEFAULT_DISK_CONFIG_ANNOTATION:
                     '[{"path":"/invalid-path","allowScheduling":false,' +
@@ -1534,8 +1539,10 @@ def test_invalid_node_annotations(client, core_api,  # NOQA
         assert disk.path == DEFAULT_DISK_PATH
         assert disk.allowScheduling is True
         assert disk.storageReserved == 0
+        assert disk.diskUUID != ""
         assert not disk.tags
         break
+    disk_uuid = disk.diskUUID
     client.update(node, tags=["tag1", "tag2"])
     wait_for_node_tag_update(client, node_name, ["tag1", "tag2"])
 
@@ -1570,9 +1577,7 @@ def test_invalid_node_annotations(client, core_api,  # NOQA
     node = client.by_id_node(node_name)
     node.diskUpdate(disks=update_disks)
     node.diskUpdate(disks={})
-    # the fsid is always the same
-    node = wait_for_disk_status(client, node_name, fsid,
-                                "storageReserved", 2048)
+    node = wait_for_disk_uuid(client, node_name, disk_uuid)
     for _, disk in iter(node.disks.items()):
         assert disk.path == DEFAULT_DISK_PATH
         assert disk.allowScheduling is False
@@ -1643,10 +1648,10 @@ def test_invalid_node_annotations(client, core_api,  # NOQA
 
 
 @pytest.mark.node
-def test_no_node_annotation(client, core_api,  # NOQA
-                            reset_default_disk_label,  # NOQA
-                            reset_disk_and_tag_annotations,  # NOQA
-                            reset_disk_settings):  # NOQA
+def test_node_config_annotation_missing(client, core_api,  # NOQA
+                                        reset_default_disk_label,  # NOQA
+                                        reset_disk_and_tag_annotations,  # NOQA
+                                        reset_disk_settings):  # NOQA
     """
     Test node labeled for configuration but no annotation
 
