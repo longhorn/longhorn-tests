@@ -1849,6 +1849,22 @@ def wait_for_disk_storage_available(client, node_name, disk_name, disk_path):
     return node
 
 
+def wait_for_disk_uuid(client, node_name, uuid):
+    found = False
+    for i in range(RETRY_COUNTS):
+        node = client.by_id_node(node_name)
+        disks = node.disks
+        for name in disks:
+            if disks[name]["diskUUID"] == uuid:
+                found = True
+                break
+        if found:
+            break
+        time.sleep(RETRY_INTERVAL)
+    assert found
+    return node
+
+
 def wait_for_disk_conditions(client, node_name, disk_name, key, value):
     for i in range(RETRY_COUNTS):
         node = client.by_id_node(node_name)
@@ -1876,7 +1892,14 @@ def wait_for_disk_update(client, name, disk_num):
     for i in range(RETRY_COUNTS):
         node = client.by_id_node(name)
         if len(node.disks) == disk_num:
-            break
+            allUpdated = True
+            disks = node.disks
+            for d in disks:
+                if disks[d]["diskUUID"] == "":
+                    allUpdated = False
+                    break
+            if allUpdated:
+                break
         time.sleep(RETRY_INTERVAL)
     assert len(node.disks) == disk_num
     return node
