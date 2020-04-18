@@ -83,8 +83,18 @@ else
 fi
 
 
-# generate test pod manifest
-sed -i 's/#TEST_FRAMEWORK_ARGS_PLACEHOLDER/args:\ \[\ \"\-s\"\ ,\ \"\-\-junitxml=\$\{LONGHORN_JUNIT_REPORT_PATH\}" \]/' "${WORKSPACE}/manager/integration/deploy/test.yaml"
+if [[ ${LONGHORN_INFRA_TEST} ]] ; then
+  ## enable infrastructure tests
+  sed -i 's/#TEST_FRAMEWORK_ARGS_PLACEHOLDER/args:\ \[\ \"\-s\"\ ,\ \"\-\-junitxml=\$\{LONGHORN_JUNIT_REPORT_PATH\}",\ \"\-\-include\-infra\-test\"  \]/' "${WORKSPACE}/manager/integration/deploy/test.yaml"
+
+  ## set name and credentilas for cloud provider
+  sed -i 's/CLOUDPROVIDER_NAME/'\"${LONGHORN_TEST_CLOUDPROVIDER}\"'/' "${WORKSPACE}/manager/integration/deploy/test.yaml" 
+  sed -i 's/DO_API_TOKEN_VALUE/'\"${TF_VAR_do_token}\"'/' "${WORKSPACE}/manager/integration/deploy/test.yaml" 
+
+else
+  # generate test pod manifest
+  sed -i 's/#TEST_FRAMEWORK_ARGS_PLACEHOLDER/args:\ \[\ \"\-s\"\ ,\ \"\-\-junitxml=\$\{LONGHORN_JUNIT_REPORT_PATH\}" \]/' "${WORKSPACE}/manager/integration/deploy/test.yaml"
+fi
 
 sed  -i 's/longhornio\/longhorn-manager-test:.*$/longhornio\/longhorn-manager-test:master/' "${WORKSPACE}/manager/integration/deploy/test.yaml"
 
