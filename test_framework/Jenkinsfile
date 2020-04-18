@@ -8,7 +8,7 @@ node {
     withCredentials([string(credentialsId: 'longhorn-tests-do-token', variable: 'TF_VAR_do_token')]) {
         stage('build') {
             sh "test_framework/scripts/build.sh"
-            sh "docker run -itd --name ${JOB_NAME}${BUILD_NUMBER} --env LONGHORN_UPGRADE_TEST=${LONGHORN_UPGRADE_TEST} --env TF_VAR_do_token=${env.TF_VAR_do_token} --env TF_VAR_tf_workspace=${TF_VAR_tf_workspace} ${imageName}"
+            sh "docker run -itd --name ${JOB_NAME}${BUILD_NUMBER} --env LONGHORN_UPGRADE_TEST=${LONGHORN_UPGRADE_TEST} --env LONGHORN_INFRA_TEST=${LONGHORN_INFRA_TEST} ---env LONGHORN_TEST_CLOUDPROVIDER=${LONGHORN_TEST_CLOUDPROVIDER} -env TF_VAR_do_token=${env.TF_VAR_do_token} --env TF_VAR_tf_workspace=${TF_VAR_tf_workspace} ${imageName}"
         }
 
         try {
