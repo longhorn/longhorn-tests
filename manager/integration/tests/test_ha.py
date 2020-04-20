@@ -32,6 +32,7 @@ from common import wait_for_rebuild_start
 from kubernetes.stream import stream
 
 RANDOM_DATA_SIZE = 300
+RANDOM_DATA_SIZE2 = 800
 
 
 @pytest.mark.coretest   # NOQA
@@ -631,6 +632,88 @@ def test_rebuild_failure_with_intensive_data(client, core_api, volume_name, pod_
     assert original_md5sum_1 == md5sum_1
     md5sum_2 = get_pod_data_md5sum(core_api, pod_name, data_path_2)
     assert original_md5sum_2 == md5sum_2
+
+    delete_and_wait_pod(core_api, pod_name)
+    delete_and_wait_pvc(core_api, pvc_name)
+    delete_and_wait_pv(core_api, pv_name)
+
+
+def test_rebuild_replica_and_from_replica_on_the_same_node(
+        client, core_api, volume_name, pod_make):  # NOQA
+    """
+    [HA] Test the corner case that the from-replica and the rebuilding replica
+    are on the same node
+
+    1. Disable scheduling for all nodes except for one.
+    2. Create a pod with Longhorn volume and wait for pod to start
+    3. Write data to `/data/test` inside the pod and get `original_checksum`
+    4. Find running replicas of the volume
+    5. Crash one of the running replicas.
+    6. Wait for the replica rebuild to start.
+    7. Check if the rebuilding replica is a new replica,
+       and the replica which is sending data is an existing replica.
+    8. Wait for volume to finish the rebuild and become healthy,
+       then check if the replica is rebuilt on the only available node
+    9. Check md5sum for the written data
+    """
+    available_node_name = ""
+    nodes = client.list_node()
+    assert len(nodes) > 0
+    for node in nodes:
+        if not available_node_name:
+            available_node_name = node.name
+            continue
+        node = client.update(node, allowScheduling=False)
+        common.wait_for_node_update(client, node.id,
+                                    "allowScheduling", False)
+
+    pod_name = volume_name + "-pod"
+    pv_name = volume_name + "-pv"
+    pvc_name = volume_name + "-pvc"
+
+    pod = pod_make(name=pod_name)
+    volume = create_and_check_volume(client, volume_name,
+                                     num_of_replicas=3, size=str(1 * Gi))
+    assert len(volume.replicas) == 3
+    create_pv_for_volume(client, core_api, volume, pv_name)
+    create_pvc_for_volume(client, core_api, volume, pvc_name)
+    pod['spec']['volumes'] = [create_pvc_spec(pvc_name)]
+    create_and_wait_pod(core_api, pod)
+
+    data_path = "/data/test"
+    write_pod_volume_random_data(core_api, pod_name,
+                                 data_path, RANDOM_DATA_SIZE2)
+    original_md5sum = get_pod_data_md5sum(core_api, pod_name, data_path)
+
+    volume = client.by_id_volume(volume_name)
+    original_replicas = volume.replicas
+    assert len(original_replicas) == 3
+    # Trigger rebuild
+    crash_replica_processes(client, core_api, volume_name,
+                            [original_replicas[0]])
+    wait_for_volume_degraded(client, volume_name)
+    from_replica_name, rebuilding_replica_name = \
+        wait_for_rebuild_start(client, volume_name)
+    assert from_replica_name != rebuilding_replica_name
+    verified_from_replica = False
+    for r in original_replicas:
+        assert r.name != rebuilding_replica_name
+        if r.name == from_replica_name:
+            verified_from_replica = True
+    assert verified_from_replica
+
+    # Wait for volume healthy and
+    # check if the replica is rebuilt on the only available node
+    volume = wait_for_volume_healthy(client, volume_name)
+    for replica in volume.replicas:
+        if replica.name == rebuilding_replica_name:
+            rebuilt_replica = replica
+            break
+    assert rebuilt_replica
+    assert rebuilt_replica.hostId == available_node_name
+
+    md5sum = get_pod_data_md5sum(core_api, pod_name, data_path)
+    assert original_md5sum == md5sum
 
     delete_and_wait_pod(core_api, pod_name)
     delete_and_wait_pvc(core_api, pvc_name)
