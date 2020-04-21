@@ -7,6 +7,11 @@ platform:
   arch: amd64
 
 steps:
+- name: fetch
+  image: alpine/git
+  commands:
+  - git fetch --tags
+
 - name: "flake8 check"
   pull: default
   image: rancher/dapper:1.11.2
@@ -34,6 +39,24 @@ steps:
     - master
     event:
     - push
+
+- name: publish-tagged-image
+  image: plugins/docker
+  settings:
+    custom_dns: 1.1.1.1
+    context: manager/integration
+    dockerfile: manager/integration/Dockerfile
+    password:
+      from_secret: docker_password
+    repo: longhornio/longhorn-manager-test
+    tag: "${DRONE_TAG}"
+    username:
+      from_secret: docker_username
+  when:
+    branch:
+    - master
+    event:
+    - tag
 
 volumes:
 - name: socket
