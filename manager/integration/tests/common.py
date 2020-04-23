@@ -1338,6 +1338,34 @@ def wait_for_volume_replica_count(client, name, count):
     return volume
 
 
+def wait_for_volume_replicas_mode(client, volname, mode, replicas_name=None):
+    verified = False
+    for i in range(RETRY_COUNTS):
+        volume = client.by_id_volume(volname)
+        count = 0
+        replicas = []
+        if replicas_name is None:
+            replicas = volume.replicas
+        else:
+            for r_name in replicas_name:
+                found = False
+                for r in volume.replicas:
+                    if r.name == r_name:
+                        replicas.append(r)
+                        found = True
+                assert found
+        for r in replicas:
+            if r.mode == mode:
+                count += 1
+        if count == len(replicas):
+            verified = True
+            break
+        time.sleep(RETRY_INTERVAL)
+
+    assert verified
+    return volume
+
+
 def wait_for_snapshot_purge(client, volume_name, *snaps):
     completed = 0
     last_purge_progress = {}

@@ -8,6 +8,7 @@ from common import wait_for_volume_current_image, wait_for_volume_delete
 from common import wait_for_engine_image_deletion
 from common import wait_for_engine_image_ref_count, wait_for_engine_image_state
 from common import get_volume_engine, write_volume_random_data
+from common import wait_for_volume_replicas_mode
 
 REPLICA_COUNT = 2
 ENGINE_IMAGE_TEST_REPEAT_COUNT = 5
@@ -218,17 +219,19 @@ def test_engine_live_upgrade(client, core_api, volume_name):  # NOQA
     3. Attach the volume and write `data` to it
     4. Upgrade the volume when it's attached, to the new engine image
     5. Wait until the upgrade completed, verify the volume engine image changed
-    6. Verify the reference count of the new engine image changed
-    7. Verify all engine and replicas' engine image changed
-    8. Check volume `data`
-    9. Detach the volume. Check engine and replicas's engine image again.
-    10. Attach the volume.
-    11. Check engine/replica engine image. Check data after reattach.
-    12. Live upgrade to the original engine image
-    13. Check old and new engine image reference count (new 0, old 1)
-    14. Verify all the engine and replica images should be the old image
-    15. Check volume data
-    16. Detach the volume. Make sure engine and replica images are old image
+    6. Wait for new replica mode update then check the engine status.
+    7. Verify the reference count of the new engine image changed
+    8. Verify all engine and replicas' engine image changed
+    9. Check volume `data`
+    10. Detach the volume. Check engine and replicas's engine image again.
+    11. Attach the volume.
+    12. Check engine/replica engine image. Check data after reattach.
+    13. Live upgrade to the original engine image,
+    14. Wait for new replica mode update then check the engine status.
+    15. Check old and new engine image reference count (new 0, old 1)
+    16. Verify all the engine and replica images should be the old image
+    17. Check volume data
+    18. Detach the volume. Make sure engine and replica images are old image
     """
     engine_live_upgrade_test(client, core_api, volume_name)
 
@@ -256,10 +259,10 @@ def engine_live_upgrade_test(client, core_api, volume_name, base_image=""):  # N
     default_img = common.get_default_engine_image(client)
     default_img_name = default_img.name
 
-    volume = client.create_volume(name=volume_name, size=SIZE,
-                                  numberOfReplicas=2, baseImage=base_image)
+    client.create_volume(name=volume_name, size=SIZE,
+                         numberOfReplicas=2, baseImage=base_image)
     volume = common.wait_for_volume_detached(client, volume_name)
-    default_img = wait_for_engine_image_ref_count(client, default_img_name, 1)
+    wait_for_engine_image_ref_count(client, default_img_name, 1)
 
     assert volume.name == volume_name
     assert volume.baseImage == base_image
@@ -268,7 +271,7 @@ def engine_live_upgrade_test(client, core_api, volume_name, base_image=""):  # N
     assert original_engine_image != engine_upgrade_image
 
     host_id = get_self_host_id()
-    volume = volume.attach(hostId=host_id)
+    volume.attach(hostId=host_id)
     volume = common.wait_for_volume_healthy(client, volume_name)
     assert volume.engineImage == original_engine_image
     assert volume.currentImage == original_engine_image
@@ -282,14 +285,15 @@ def engine_live_upgrade_test(client, core_api, volume_name, base_image=""):  # N
     data = write_volume_random_data(volume)
 
     volume.engineUpgrade(image=engine_upgrade_image)
-    volume = wait_for_volume_current_image(client, volume_name,
-                                           engine_upgrade_image)
-
+    wait_for_volume_current_image(client, volume_name, engine_upgrade_image)
+    # Need to wait for Longhorn to get and update the mode for new replicas
+    volume = wait_for_volume_replicas_mode(client, volume_name, "RW")
     engine = get_volume_engine(volume)
     assert engine.engineImage == engine_upgrade_image
+    assert engine.endpoint != ""
 
-    default_img = wait_for_engine_image_ref_count(client, default_img_name, 0)
-    new_img = wait_for_engine_image_ref_count(client, new_img_name, 1)
+    wait_for_engine_image_ref_count(client, default_img_name, 0)
+    wait_for_engine_image_ref_count(client, new_img_name, 1)
 
     count = 0
     # old replica may be in deletion process
@@ -300,7 +304,7 @@ def engine_live_upgrade_test(client, core_api, volume_name, base_image=""):  # N
 
     check_volume_data(volume, data)
 
-    volume = volume.detach()
+    volume.detach()
     volume = common.wait_for_volume_detached(client, volume_name)
     assert len(volume.replicas) == REPLICA_COUNT
     assert volume.engineImage == engine_upgrade_image
@@ -309,13 +313,14 @@ def engine_live_upgrade_test(client, core_api, volume_name, base_image=""):  # N
     for replica in volume.replicas:
         assert replica.engineImage == engine_upgrade_image
 
-    volume = volume.attach(hostId=host_id)
+    volume.attach(hostId=host_id)
     volume = common.wait_for_volume_healthy(client, volume_name)
     assert volume.engineImage == engine_upgrade_image
     assert volume.currentImage == engine_upgrade_image
     engine = get_volume_engine(volume)
     assert engine.engineImage == engine_upgrade_image
     assert engine.currentImage == engine_upgrade_image
+    assert engine.endpoint != ""
     for replica in volume.replicas:
         assert replica.engineImage == engine_upgrade_image
         assert replica.currentImage == engine_upgrade_image
@@ -324,18 +329,19 @@ def engine_live_upgrade_test(client, core_api, volume_name, base_image=""):  # N
     check_volume_data(volume, data)
 
     volume.engineUpgrade(image=original_engine_image)
-    volume = wait_for_volume_current_image(client, volume_name,
-                                           original_engine_image)
+    wait_for_volume_current_image(client, volume_name,
+                                  original_engine_image)
+    volume = wait_for_volume_replicas_mode(client, volume_name, "RW")
     engine = get_volume_engine(volume)
     assert engine.engineImage == original_engine_image
+    assert engine.currentImage == original_engine_image
+    assert engine.endpoint != ""
 
-    default_img = wait_for_engine_image_ref_count(client, default_img_name, 1)
+    wait_for_engine_image_ref_count(client, default_img_name, 1)
     new_img = wait_for_engine_image_ref_count(client, new_img_name, 0)
 
     assert volume.engineImage == original_engine_image
 
-    engine = get_volume_engine(volume)
-    assert engine.engineImage == original_engine_image
     count = 0
     # old replica may be in deletion process
     for replica in volume.replicas:
@@ -345,7 +351,7 @@ def engine_live_upgrade_test(client, core_api, volume_name, base_image=""):  # N
 
     check_volume_data(volume, data)
 
-    volume = volume.detach()
+    volume.detach()
     volume = common.wait_for_volume_detached(client, volume_name)
     assert len(volume.replicas) == REPLICA_COUNT
 
@@ -420,14 +426,15 @@ def test_engine_live_upgrade_rollback(client, core_api, volume_name):  # NOQA
     5. Try to wait for the engine upgrade to complete. Expect it to timeout.
     6. Rollback by upgrading to the `original_engine_image`
     7. Make sure the rollback succeed and volume/engine engines are rolled back
-    8. Check the volume `data`.
-    9. Live upgrade to the `wrong_engine_upgrade_image` again.
-    10. Live upgrade will still fail.
-    11. Detach the volume.
-    12. The engine image for the volume will now be upgraded (since the `wrong`
+    8. Wait for new replica mode update then check the engine status.
+    9. Check the volume `data`.
+    10. Live upgrade to the `wrong_engine_upgrade_image` again.
+    11. Live upgrade will still fail.
+    12. Detach the volume.
+    13. The engine image for the volume will now be upgraded (since the `wrong`
     image is still compatible)
-    13. Upgrade to the `original_engine_image` when detached
-    14. Attach the volume and check states and `data`.
+    14. Upgrade to the `original_engine_image` when detached
+    15. Attach the volume and check states and `data`.
     """
     engine_live_upgrade_rollback_test(client, core_api, volume_name)
 
@@ -455,17 +462,17 @@ def engine_live_upgrade_rollback_test(client, core_api, volume_name, base_image=
     default_img = common.get_default_engine_image(client)
     default_img_name = default_img.name
 
-    volume = client.create_volume(name=volume_name, size=SIZE,
-                                  numberOfReplicas=2, baseImage=base_image)
+    client.create_volume(name=volume_name, size=SIZE,
+                         numberOfReplicas=2, baseImage=base_image)
     volume = common.wait_for_volume_detached(client, volume_name)
-    default_img = wait_for_engine_image_ref_count(client, default_img_name, 1)
+    wait_for_engine_image_ref_count(client, default_img_name, 1)
     assert volume.baseImage == base_image
 
     original_engine_image = volume.engineImage
     assert original_engine_image != wrong_engine_upgrade_image
 
     host_id = get_self_host_id()
-    volume = volume.attach(hostId=host_id)
+    volume.attach(hostId=host_id)
     volume = common.wait_for_volume_healthy(client, volume_name)
 
     data = write_volume_random_data(volume)
@@ -482,8 +489,9 @@ def engine_live_upgrade_rollback_test(client, core_api, volume_name, base_image=
 
     # rollback
     volume.engineUpgrade(image=original_engine_image)
-    volume = wait_for_volume_current_image(client, volume_name,
-                                           original_engine_image)
+    wait_for_volume_current_image(client, volume_name,
+                                  original_engine_image)
+    volume = wait_for_volume_replicas_mode(client, volume_name, "RW")
     assert volume.engineImage == original_engine_image
     assert volume.currentImage == original_engine_image
     engine = get_volume_engine(volume)
@@ -509,7 +517,7 @@ def engine_live_upgrade_rollback_test(client, core_api, volume_name, base_image=
         wait_for_volume_current_image(client, volume_name,
                                       wrong_engine_upgrade_image)
 
-    volume = volume.detach()
+    volume.detach()
     volume = wait_for_volume_current_image(client, volume_name,
                                            wrong_engine_upgrade_image)
     # all the images would be updated
@@ -528,13 +536,15 @@ def engine_live_upgrade_rollback_test(client, core_api, volume_name, base_image=
     volume = client.by_id_volume(volume.name)
     assert volume.engineImage == original_engine_image
 
-    volume = volume.attach(hostId=host_id)
-    volume = common.wait_for_volume_healthy(client, volume_name)
+    volume.attach(hostId=host_id)
+    common.wait_for_volume_healthy(client, volume_name)
+    volume = wait_for_volume_replicas_mode(client, volume_name, "RW")
     assert volume.engineImage == original_engine_image
     assert volume.currentImage == original_engine_image
     engine = get_volume_engine(volume)
     assert engine.engineImage == original_engine_image
     assert engine.currentImage == original_engine_image
+    assert engine.endpoint != ""
     for replica in volume.replicas:
         assert replica.engineImage == original_engine_image
         assert replica.currentImage == original_engine_image
