@@ -83,7 +83,7 @@ else
 fi
 
 
-if [[ "${LONGHORN_INFRA_TEST}" =~ [Tt]rue ]] ; then
+if [[ "${LONGHORN_INFRA_TEST}" == true || "${LONGHORN_INFRA_TEST}" == True  ]] ; then
   ## enable infrastructure tests
   sed -i 's/#TEST_FRAMEWORK_ARGS_PLACEHOLDER/args:\ \[\ \"\-s\"\ ,\ \"\-\-junitxml=\$\{LONGHORN_JUNIT_REPORT_PATH\}",\ \"\-\-include\-infra\-test\"  \]/' "${WORKSPACE}/manager/integration/deploy/test.yaml"
 
