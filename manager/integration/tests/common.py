@@ -585,6 +585,18 @@ def write_pod_volume_random_data(api, pod_name, path, size_in_mb):
         tty=False)
 
 
+def copy_pod_volume_data(api, pod_name, src_path, dest_path):
+    write_cmd = [
+        '/bin/sh',
+        '-c',
+        'dd if=' + src_path + ' of=' + dest_path
+    ]
+    return stream(
+        api.connect_get_namespaced_pod_exec, pod_name, 'default',
+        command=write_cmd, stderr=True, stdin=False, stdout=True,
+        tty=False)
+
+
 def size_to_string(volume_size):
     # type: (int) -> str
     """

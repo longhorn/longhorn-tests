@@ -5,13 +5,26 @@ from common import client, core_api, volume_name  # NOQA
 from common import SIZE
 from common import check_volume_data, get_self_host_id
 from common import wait_for_volume_current_image, wait_for_volume_delete
+from common import wait_for_volume_detached
 from common import wait_for_engine_image_deletion
 from common import wait_for_engine_image_ref_count, wait_for_engine_image_state
 from common import get_volume_engine, write_volume_random_data
 from common import wait_for_volume_replicas_mode
+from common import pod_make  # NOQA
+from common import create_pv_for_volume, create_pvc_for_volume
+from common import create_pvc_spec
+from common import create_and_check_volume, create_and_wait_pod
+from common import delete_and_wait_pvc, delete_and_wait_pv
+from common import delete_and_wait_pod
+from common import write_pod_volume_random_data, get_pod_data_md5sum
+from common import copy_pod_volume_data
+from common import Gi
 
 REPLICA_COUNT = 2
 ENGINE_IMAGE_TEST_REPEAT_COUNT = 5
+
+RANDOM_DATA_SIZE_SMALL = 100
+RANDOM_DATA_SIZE_LARGE = 800
 
 
 def test_engine_image(client, core_api, volume_name):  # NOQA
@@ -556,3 +569,130 @@ def engine_live_upgrade_rollback_test(client, core_api, volume_name, base_image=
 
     client.delete(new_img)
     wait_for_engine_image_deletion(client, core_api, new_img.name)
+
+
+@pytest.mark.coretest   # NOQA
+def test_engine_live_upgrade_with_intensive_data_writing(client, core_api, volume_name, pod_make):  # NOQA
+    """
+    Test engine live upgrade with intensive data writing
+
+    1. Deploy a compatible new engine image
+    2. Create a volume(with the old default engine image) with /PV/PVC/Pod
+       and wait for pod to ready.
+    3. Write data to a tmp file in the pod and get the md5sum
+    4. Upgrade the volume to the new engine image without waiting.
+    5. Keep copying data from the tmp file to the volume
+       during the live upgrade.
+    6. Wait until the upgrade completed, verify the volume engine image changed
+    7. Wait for new replica mode update then check the engine status.
+    8. Verify all engine and replicas' engine image changed
+    9. Verify the reference count of the new engine image changed
+    10. Check the existing data.
+        Then write new data to the upgraded volume and get the md5sum.
+    11. Delete the pod and wait for the volume detached.
+        Then check engine and replicas's engine image again.
+    12. Recreate the pod and wait for the volume attached.
+    13. Check if the attached volume is state `healthy`
+        rather than `degraded`.
+    14. Check the data.
+    """
+    default_img = common.get_default_engine_image(client)
+    default_img_name = default_img.name
+    default_img = wait_for_engine_image_ref_count(client, default_img_name, 0)
+    cli_v = default_img.cliAPIVersion
+    cli_minv = default_img.cliAPIMinVersion
+    ctl_v = default_img.controllerAPIVersion
+    ctl_minv = default_img.controllerAPIMinVersion
+    data_v = default_img.dataFormatVersion
+    data_minv = default_img.dataFormatMinVersion
+    engine_upgrade_image = common.get_upgrade_test_image(cli_v, cli_minv,
+                                                         ctl_v, ctl_minv,
+                                                         data_v, data_minv)
+
+    new_img = client.create_engine_image(image=engine_upgrade_image)
+    new_img_name = new_img.name
+    new_img = wait_for_engine_image_state(client, new_img_name, "ready")
+    assert new_img.refCount == 0
+    assert new_img.noRefSince != ""
+
+    default_img = common.get_default_engine_image(client)
+    default_img_name = default_img.name
+
+    pod_name = volume_name + "-pod"
+    pv_name = volume_name + "-pv"
+    pvc_name = volume_name + "-pvc"
+
+    pod = pod_make(name=pod_name)
+    volume = create_and_check_volume(client, volume_name,
+                                     num_of_replicas=3, size=str(1 * Gi))
+    original_engine_image = volume.engineImage
+    assert original_engine_image != engine_upgrade_image
+
+    create_pv_for_volume(client, core_api, volume, pv_name)
+    create_pvc_for_volume(client, core_api, volume, pvc_name)
+    pod['spec']['volumes'] = [create_pvc_spec(pvc_name)]
+    create_and_wait_pod(core_api, pod)
+
+    volume = client.by_id_volume(volume_name)
+    assert volume.engineImage == original_engine_image
+    assert volume.currentImage == original_engine_image
+    engine = get_volume_engine(volume)
+    assert engine.engineImage == original_engine_image
+    assert engine.currentImage == original_engine_image
+    for replica in volume.replicas:
+        assert replica.engineImage == original_engine_image
+        assert replica.currentImage == original_engine_image
+
+    data_path0 = "/tmp/test"
+    data_path1 = "/data/test1"
+    write_pod_volume_random_data(core_api, pod_name,
+                                 data_path0, RANDOM_DATA_SIZE_LARGE)
+    original_md5sum1 = get_pod_data_md5sum(core_api, pod_name, data_path0)
+
+    volume.engineUpgrade(image=engine_upgrade_image)
+    # Keep writing data to the volume during the live upgrade
+    copy_pod_volume_data(core_api, pod_name, data_path0, data_path1)
+
+    # Wait for live upgrade complete
+    wait_for_volume_current_image(client, volume_name, engine_upgrade_image)
+    volume = wait_for_volume_replicas_mode(client, volume_name, "RW")
+    engine = get_volume_engine(volume)
+    assert engine.engineImage == engine_upgrade_image
+    assert engine.endpoint != ""
+
+    wait_for_engine_image_ref_count(client, default_img_name, 0)
+    wait_for_engine_image_ref_count(client, new_img_name, 1)
+
+    volume_file_md5sum1 = get_pod_data_md5sum(
+        core_api, pod_name, data_path1)
+    assert volume_file_md5sum1 == original_md5sum1
+
+    data_path2 = "/data/test2"
+    write_pod_volume_random_data(core_api, pod_name,
+                                 data_path2, RANDOM_DATA_SIZE_SMALL)
+    original_md5sum2 = get_pod_data_md5sum(core_api, pod_name, data_path2)
+
+    delete_and_wait_pod(core_api, pod_name)
+    volume = wait_for_volume_detached(client, volume_name)
+    assert len(volume.replicas) == 3
+    assert volume.engineImage == engine_upgrade_image
+    engine = get_volume_engine(volume)
+    assert engine.engineImage == engine_upgrade_image
+    for replica in volume.replicas:
+        assert replica.engineImage == engine_upgrade_image
+
+    # The reattached volume should be state `healthy` rather than`degraded`.
+    create_and_wait_pod(core_api, pod)
+    volume = client.by_id_volume(volume_name)
+    assert volume.robustness == "healthy"
+
+    volume_file_md5sum1 = get_pod_data_md5sum(
+        core_api, pod_name, data_path1)
+    assert volume_file_md5sum1 == original_md5sum1
+    volume_file_md5sum2 = get_pod_data_md5sum(
+        core_api, pod_name, data_path2)
+    assert volume_file_md5sum2 == original_md5sum2
+
+    delete_and_wait_pod(core_api, pod_name)
+    delete_and_wait_pvc(core_api, pvc_name)
+    delete_and_wait_pv(core_api, pv_name)
