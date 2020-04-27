@@ -18,6 +18,7 @@ from common import SETTING_STORAGE_OVER_PROVISIONING_PERCENTAGE, \
     SETTING_DEFAULT_DATA_PATH, \
     SETTING_CREATE_DEFAULT_DISK_LABELED_NODES, \
     DEFAULT_STORAGE_OVER_PROVISIONING_PERCENTAGE
+from common import VOLUME_FRONTEND_BLOCKDEV
 from common import get_volume_endpoint
 from common import get_update_disks
 from common import wait_for_disk_status, wait_for_disk_update, \
@@ -277,7 +278,7 @@ def create_volume(client, vol_name, size, node_id, r_num):  # NOQA
     volume = client.create_volume(name=vol_name, size=size,
                                   numberOfReplicas=r_num)
     assert volume.numberOfReplicas == r_num
-    assert volume.frontend == "blockdev"
+    assert volume.frontend == VOLUME_FRONTEND_BLOCKDEV
 
     volume = common.wait_for_volume_detached(client, vol_name)
     assert len(volume.replicas) == r_num
