@@ -48,7 +48,7 @@ export KUBECONFIG="${TF_VAR_tf_workspace}/templates/kube_config_3-nodes-k8s.yml"
 kubectl get configmaps -n kube-system coredns-autoscaler -o yaml | sed  's/\"min\":1/\"min\":3/' | kubectl apply -n kube-system -f -
 
 
-if [[ ${LONGHORN_UPGRADE_TEST} ]]; then
+if [[ "${LONGHORN_UPGRADE_TEST}" == true || "${LONGHORN_UPGRADE_TEST}" == True ]]; then
   ## install Longhorn stable version, before running test_upgrade.
   kubectl apply -f "${LONGHORN_STABLE_URL}"
 

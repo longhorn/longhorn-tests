@@ -15,7 +15,7 @@ resource "digitalocean_droplet" "longhorn-tests" {
   image    = "ubuntu-18-04-x64"
   name     = "longhorn-tests-0${count.index}"
   region   = "nyc3"
-  size     = "s-2vcpu-4gb"
+  size     = "s-4vcpu-8gb"
   ssh_keys = ["${digitalocean_ssh_key.do-ssh-key.fingerprint}"]
   tags     = ["longhorn-tests", "k8s-controller"]
 
