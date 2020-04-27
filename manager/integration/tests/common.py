@@ -96,6 +96,9 @@ CONDITION_STATUS_TRUE = "True"
 CONDITION_STATUS_FALSE = "False"
 CONDITION_STATUS_UNKNOWN = "Unknown"
 
+VOLUME_FRONTEND_BLOCKDEV = "blockdev"
+VOLUME_FRONTEND_ISCSI = "iscsi"
+
 SETTING_STORAGE_OVER_PROVISIONING_PERCENTAGE = \
     "storage-over-provisioning-percentage"
 SETTING_STORAGE_MINIMAL_AVAILABLE_PERCENTAGE = \
@@ -276,7 +279,7 @@ def delete_backup(backup_volume, backup_name):
 
 
 def create_and_check_volume(client, volume_name, num_of_replicas=3, size=SIZE,
-                            base_image="", frontend="blockdev"):
+                            base_image="", frontend=VOLUME_FRONTEND_BLOCKDEV):
     """
     Create a new volume with the specified parameters. Assert that the new
     volume is detached and that all of the requested parameters match.
@@ -2629,7 +2632,8 @@ def create_pvc_for_volume(client, core_api, volume, pvc_name):
     wait_volume_kubernetes_status(client, volume.name, ks)
 
 
-def activate_standby_volume(client, volume_name, frontend="blockdev"):
+def activate_standby_volume(client, volume_name,
+                            frontend=VOLUME_FRONTEND_BLOCKDEV):
     volume = client.by_id_volume(volume_name)
     assert volume.standby is True
     for i in range(RETRY_COUNTS):
@@ -2652,7 +2656,7 @@ def activate_standby_volume(client, volume_name, frontend="blockdev"):
             break
     volume = client.by_id_volume(volume_name)
     assert volume.standby is False
-    assert volume.frontend == "blockdev"
+    assert volume.frontend == VOLUME_FRONTEND_BLOCKDEV
 
     wait_for_volume_detached(client, volume_name)
 

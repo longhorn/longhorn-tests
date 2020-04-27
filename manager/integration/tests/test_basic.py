@@ -47,6 +47,7 @@ from common import check_block_device_size
 from common import wait_for_rebuild_complete
 from common import wait_for_volume_expansion
 from common import fail_replica_expansion, wait_for_expansion_failure
+from common import VOLUME_FRONTEND_BLOCKDEV, VOLUME_FRONTEND_ISCSI
 
 
 @pytest.mark.coretest   # NOQA
@@ -212,7 +213,7 @@ def volume_basic_test(clients, volume_name, base_image=""):  # NOQA
         assert actual.name == expected.name
         assert actual.size == expected.size
         assert actual.numberOfReplicas == expected.numberOfReplicas
-        assert actual.frontend == "blockdev"
+        assert actual.frontend == VOLUME_FRONTEND_BLOCKDEV
         assert actual.baseImage == base_image
         assert actual.state == expected.state
         assert actual.created == expected.created
@@ -288,7 +289,7 @@ def volume_iscsi_basic_test(clients, volume_name, base_image=""):  # NOQA
         break
 
     volume = create_and_check_volume(client, volume_name, 3, SIZE, base_image,
-                                     "iscsi")
+                                     VOLUME_FRONTEND_ISCSI)
     volume.attach(hostId=host_id)
     volume = common.wait_for_volume_healthy(client, volume_name)
 
@@ -299,7 +300,7 @@ def volume_iscsi_basic_test(clients, volume_name, base_image=""):  # NOQA
     assert volumes[0].numberOfReplicas == volume.numberOfReplicas
     assert volumes[0].state == volume.state
     assert volumes[0].created == volume.created
-    assert volumes[0].frontend == "iscsi"
+    assert volumes[0].frontend == VOLUME_FRONTEND_ISCSI
     endpoint = get_volume_endpoint(volumes[0])
     assert endpoint.startswith("iscsi://")
 
@@ -412,7 +413,7 @@ def snapshot_test(clients, volume_name, base_image):  # NOQA
     volume = client.by_id_volume(volume_name)
     engine = get_volume_engine(volume)
     assert volume.disableFrontend is True
-    assert volume.frontend == "blockdev"
+    assert volume.frontend == VOLUME_FRONTEND_BLOCKDEV
     assert engine.endpoint == ""
 
     volume.snapshotRevert(name=snap2.name)
@@ -425,7 +426,7 @@ def snapshot_test(clients, volume_name, base_image):  # NOQA
 
     volume = client.by_id_volume(volume_name)
     assert volume.disableFrontend is False
-    assert volume.frontend == "blockdev"
+    assert volume.frontend == VOLUME_FRONTEND_BLOCKDEV
 
     check_volume_data(volume, snap2_data)
 
@@ -684,7 +685,7 @@ def restore_inc_test(client, core_api, volume_name, pod):  # NOQA
     std_volume = common.wait_for_volume_healthy(client, volume_name)
 
     with pytest.raises(Exception) as e:
-        std_volume.activate(frontend="blockdev")
+        std_volume.activate(frontend=VOLUME_FRONTEND_BLOCKDEV)
         assert "already in active mode" in str(e.value)
 
     data0 = {'len': 4 * 1024, 'pos': 0}
@@ -1265,7 +1266,7 @@ def test_attach_without_frontend(clients, volume_name):  # NOQA
 
     volume = client.by_id_volume(volume_name)
     assert volume.disableFrontend is False
-    assert volume.frontend == "blockdev"
+    assert volume.frontend == VOLUME_FRONTEND_BLOCKDEV
 
     snap1_data = write_volume_random_data(volume)
     snap1 = create_snapshot(client, volume_name)
@@ -1282,7 +1283,7 @@ def test_attach_without_frontend(clients, volume_name):  # NOQA
     volume = client.by_id_volume(volume_name)
     engine = get_volume_engine(volume)
     assert volume.disableFrontend is True
-    assert volume.frontend == "blockdev"
+    assert volume.frontend == VOLUME_FRONTEND_BLOCKDEV
     assert engine.endpoint == ""
 
     volume.snapshotRevert(name=snap1.name)
@@ -1295,7 +1296,7 @@ def test_attach_without_frontend(clients, volume_name):  # NOQA
 
     volume = client.by_id_volume(volume_name)
     assert volume.disableFrontend is False
-    assert volume.frontend == "blockdev"
+    assert volume.frontend == VOLUME_FRONTEND_BLOCKDEV
 
     check_volume_data(volume, snap1_data)
 
@@ -1470,7 +1471,7 @@ def test_expansion_basic(clients, volume_name):  # NOQA
 
     volume = client.by_id_volume(volume_name)
     assert volume.disableFrontend is False
-    assert volume.frontend == "blockdev"
+    assert volume.frontend == VOLUME_FRONTEND_BLOCKDEV
 
     snap1_data = write_volume_random_data(volume)
     snap1 = create_snapshot(client, volume_name)
@@ -1505,7 +1506,7 @@ def test_expansion_basic(clients, volume_name):  # NOQA
     volume = common.wait_for_volume_healthy_no_frontend(client, volume_name)
     engine = get_volume_engine(volume)
     assert volume.disableFrontend is True
-    assert volume.frontend == "blockdev"
+    assert volume.frontend == VOLUME_FRONTEND_BLOCKDEV
     assert engine.endpoint == ""
     volume.snapshotRevert(name=snap2.name)
     volume.detach()
@@ -1577,7 +1578,7 @@ def test_restore_inc_with_expansion(clients, core_api, volume_name, pod):  # NOQ
     std_volume = common.wait_for_volume_healthy(client, volume_name)
 
     with pytest.raises(Exception) as e:
-        std_volume.activate(frontend="blockdev")
+        std_volume.activate(frontend=VOLUME_FRONTEND_BLOCKDEV)
         assert "already in active mode" in str(e.value)
 
     data0 = {'pos': 0, 'len': VOLUME_RWTEST_SIZE,
