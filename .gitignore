@@ -5,3 +5,11 @@ __pycache__
 MANIFEST
 validationTestsJunit.xml
 .bash_history
+
+# build files
+.dapper
+
+# ignores all goland project folders and files
+.idea/
+*.iml
+*.ipr
