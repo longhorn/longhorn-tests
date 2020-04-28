@@ -1230,7 +1230,7 @@ def wait_for_volume_endpoint(client, name):
         if engine.endpoint != "":
             break
         time.sleep(RETRY_INTERVAL)
-    assert engine.endpoint != ""
+    check_volume_endpoint(v)
     return v
 
 
@@ -1982,9 +1982,22 @@ def get_volume_engine(v):
 
 
 def get_volume_endpoint(v):
+    endpoint = check_volume_endpoint(v)
+    return endpoint
+
+
+def check_volume_endpoint(v):
     engine = get_volume_engine(v)
     endpoint = engine.endpoint
-    assert endpoint != ""
+    if v.disableFrontend:
+        assert endpoint == ""
+    else:
+        if v.frontend == VOLUME_FRONTEND_BLOCKDEV:
+            assert endpoint == os.path.join(DEV_PATH, v.name)
+        elif v.frontend == VOLUME_FRONTEND_ISCSI:
+            assert endpoint.startswith("iscsi://")
+        else:
+            raise Exception("Unexpected volume frontend:", v.frontend)
     return endpoint
 
 

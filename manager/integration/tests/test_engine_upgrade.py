@@ -9,6 +9,7 @@ from common import wait_for_volume_detached
 from common import wait_for_engine_image_deletion
 from common import wait_for_engine_image_ref_count, wait_for_engine_image_state
 from common import get_volume_engine, write_volume_random_data
+from common import check_volume_endpoint
 from common import wait_for_volume_replicas_mode
 from common import pod_make  # NOQA
 from common import create_pv_for_volume, create_pvc_for_volume
@@ -303,7 +304,7 @@ def engine_live_upgrade_test(client, core_api, volume_name, base_image=""):  # N
     volume = wait_for_volume_replicas_mode(client, volume_name, "RW")
     engine = get_volume_engine(volume)
     assert engine.engineImage == engine_upgrade_image
-    assert engine.endpoint != ""
+    check_volume_endpoint(volume)
 
     wait_for_engine_image_ref_count(client, default_img_name, 0)
     wait_for_engine_image_ref_count(client, new_img_name, 1)
@@ -333,7 +334,7 @@ def engine_live_upgrade_test(client, core_api, volume_name, base_image=""):  # N
     engine = get_volume_engine(volume)
     assert engine.engineImage == engine_upgrade_image
     assert engine.currentImage == engine_upgrade_image
-    assert engine.endpoint != ""
+    check_volume_endpoint(volume)
     for replica in volume.replicas:
         assert replica.engineImage == engine_upgrade_image
         assert replica.currentImage == engine_upgrade_image
@@ -348,7 +349,7 @@ def engine_live_upgrade_test(client, core_api, volume_name, base_image=""):  # N
     engine = get_volume_engine(volume)
     assert engine.engineImage == original_engine_image
     assert engine.currentImage == original_engine_image
-    assert engine.endpoint != ""
+    check_volume_endpoint(volume)
 
     wait_for_engine_image_ref_count(client, default_img_name, 1)
     new_img = wait_for_engine_image_ref_count(client, new_img_name, 0)
@@ -557,7 +558,7 @@ def engine_live_upgrade_rollback_test(client, core_api, volume_name, base_image=
     engine = get_volume_engine(volume)
     assert engine.engineImage == original_engine_image
     assert engine.currentImage == original_engine_image
-    assert engine.endpoint != ""
+    check_volume_endpoint(volume)
     for replica in volume.replicas:
         assert replica.engineImage == original_engine_image
         assert replica.currentImage == original_engine_image
@@ -658,7 +659,7 @@ def test_engine_live_upgrade_with_intensive_data_writing(client, core_api, volum
     volume = wait_for_volume_replicas_mode(client, volume_name, "RW")
     engine = get_volume_engine(volume)
     assert engine.engineImage == engine_upgrade_image
-    assert engine.endpoint != ""
+    check_volume_endpoint(volume)
 
     wait_for_engine_image_ref_count(client, default_img_name, 0)
     wait_for_engine_image_ref_count(client, new_img_name, 1)
