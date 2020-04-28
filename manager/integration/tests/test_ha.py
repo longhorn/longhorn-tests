@@ -31,8 +31,9 @@ from common import delete_and_wait_pvc, delete_and_wait_pv
 from common import wait_for_rebuild_start
 from kubernetes.stream import stream
 
-RANDOM_DATA_SIZE = 300
-RANDOM_DATA_SIZE2 = 800
+# Size in MiB
+RANDOM_DATA_SIZE_SMALL = 300
+RANDOM_DATA_SIZE_LARGE = 800
 
 
 @pytest.mark.coretest   # NOQA
@@ -599,12 +600,12 @@ def test_rebuild_failure_with_intensive_data(client, core_api, volume_name, pod_
 
     data_path_1 = "/data/test1"
     write_pod_volume_random_data(core_api, pod_name,
-                                 data_path_1, RANDOM_DATA_SIZE)
+                                 data_path_1, RANDOM_DATA_SIZE_SMALL)
     original_md5sum_1 = get_pod_data_md5sum(core_api, pod_name, data_path_1)
     create_snapshot(client, volume_name)
     data_path_2 = "/data/test2"
     write_pod_volume_random_data(core_api, pod_name,
-                                 data_path_2, RANDOM_DATA_SIZE)
+                                 data_path_2, RANDOM_DATA_SIZE_SMALL)
     original_md5sum_2 = get_pod_data_md5sum(core_api, pod_name, data_path_2)
 
     volume = client.by_id_volume(volume_name)
@@ -682,7 +683,7 @@ def test_rebuild_replica_and_from_replica_on_the_same_node(
 
     data_path = "/data/test"
     write_pod_volume_random_data(core_api, pod_name,
-                                 data_path, RANDOM_DATA_SIZE2)
+                                 data_path, RANDOM_DATA_SIZE_LARGE)
     original_md5sum = get_pod_data_md5sum(core_api, pod_name, data_path)
 
     volume = client.by_id_volume(volume_name)
