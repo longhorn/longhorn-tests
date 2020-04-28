@@ -5,7 +5,7 @@ import pytest
 
 from common import clients, random_labels, volume_name  # NOQA
 from common import core_api, apps_api, pod   # NOQA
-from common import SIZE, DEV_PATH, EXPAND_SIZE
+from common import SIZE, EXPAND_SIZE
 from common import check_device_data, write_device_random_data
 from common import check_volume_data, write_volume_random_data
 from common import get_self_host_id, volume_valid
@@ -15,6 +15,7 @@ from common import wait_for_volume_delete
 from common import wait_for_snapshot_purge
 from common import generate_volume_name
 from common import get_volume_endpoint, get_volume_engine
+from common import check_volume_endpoint
 from common import get_random_client
 from common import activate_standby_volume, check_volume_last_backup
 from common import create_pv_for_volume, create_pvc_for_volume
@@ -232,7 +233,7 @@ def volume_basic_test(clients, volume_name, base_image=""):  # NOQA
 
     volumeByName = client.by_id_volume(volume_name)
     validate_volume_basic(volume, volumeByName)
-    assert get_volume_endpoint(volumeByName) == DEV_PATH + volume_name
+    check_volume_endpoint(volumeByName)
 
     # validate soft anti-affinity
     hosts = {}
@@ -252,11 +253,9 @@ def volume_basic_test(clients, volume_name, base_image=""):  # NOQA
     assert volumes[0].numberOfReplicas == volume.numberOfReplicas
     assert volumes[0].state == volume.state
     assert volumes[0].created == volume.created
-    assert get_volume_endpoint(volumes[0]) == DEV_PATH + volume_name
+    check_volume_endpoint(volumes[0])
 
     volume = client.by_id_volume(volume_name)
-    assert get_volume_endpoint(volume) == DEV_PATH + volume_name
-
     volume_rw_test(get_volume_endpoint(volume))
 
     volume.detach()
@@ -302,7 +301,6 @@ def volume_iscsi_basic_test(clients, volume_name, base_image=""):  # NOQA
     assert volumes[0].created == volume.created
     assert volumes[0].frontend == VOLUME_FRONTEND_ISCSI
     endpoint = get_volume_endpoint(volumes[0])
-    assert endpoint.startswith("iscsi://")
 
     try:
         dev = iscsi_login(endpoint)
@@ -411,10 +409,9 @@ def snapshot_test(clients, volume_name, base_image):  # NOQA
     common.wait_for_volume_healthy_no_frontend(client, volume_name)
 
     volume = client.by_id_volume(volume_name)
-    engine = get_volume_engine(volume)
     assert volume.disableFrontend is True
     assert volume.frontend == VOLUME_FRONTEND_BLOCKDEV
-    assert engine.endpoint == ""
+    check_volume_endpoint(volume)
 
     volume.snapshotRevert(name=snap2.name)
 
@@ -1154,7 +1151,6 @@ def test_volume_scheduling_failure(clients, volume_name):  # NOQA
     volume = volume.attach(hostId=self_node)
     volume = common.wait_for_volume_healthy(client, volume_name)
     endpoint = get_volume_endpoint(volume)
-    assert endpoint != ""
     volume_rw_test(endpoint)
 
     volume = volume.detach()
@@ -1281,10 +1277,9 @@ def test_attach_without_frontend(clients, volume_name):  # NOQA
     common.wait_for_volume_healthy_no_frontend(client, volume_name)
 
     volume = client.by_id_volume(volume_name)
-    engine = get_volume_engine(volume)
     assert volume.disableFrontend is True
     assert volume.frontend == VOLUME_FRONTEND_BLOCKDEV
-    assert engine.endpoint == ""
+    check_volume_endpoint(volume)
 
     volume.snapshotRevert(name=snap1.name)
 
@@ -1504,10 +1499,9 @@ def test_expansion_basic(clients, volume_name):  # NOQA
 
     volume.attach(hostId=lht_hostId, disableFrontend=True)
     volume = common.wait_for_volume_healthy_no_frontend(client, volume_name)
-    engine = get_volume_engine(volume)
     assert volume.disableFrontend is True
     assert volume.frontend == VOLUME_FRONTEND_BLOCKDEV
-    assert engine.endpoint == ""
+    check_volume_endpoint(volume)
     volume.snapshotRevert(name=snap2.name)
     volume.detach()
     volume = common.wait_for_volume_detached(client, volume_name)

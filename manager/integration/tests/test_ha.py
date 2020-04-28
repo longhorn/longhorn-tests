@@ -4,10 +4,10 @@ import time
 import random
 
 from common import client, core_api, volume_name  # NOQA
-from common import SIZE, DEV_PATH, VOLUME_RWTEST_SIZE, EXPAND_SIZE, Gi
+from common import SIZE, VOLUME_RWTEST_SIZE, EXPAND_SIZE, Gi
 from common import check_volume_data, cleanup_volume, create_and_check_volume
 from common import delete_replica_processes, crash_replica_processes
-from common import get_self_host_id, get_volume_endpoint
+from common import get_self_host_id, check_volume_endpoint
 from common import wait_for_snapshot_purge, write_volume_random_data
 from common import RETRY_COUNTS, RETRY_INTERVAL
 from common import create_snapshot
@@ -63,7 +63,7 @@ def ha_simple_recovery_test(client, volume_name, size, base_image=""):  # NOQA
 
 def ha_rebuild_replica_test(client, volname):   # NOQA
     volume = client.by_id_volume(volname)
-    assert get_volume_endpoint(volume) == DEV_PATH + volname
+    check_volume_endpoint(volume)
 
     assert len(volume.replicas) == 2
     replica0 = volume.replicas[0]
