@@ -1270,14 +1270,6 @@ def wait_for_volume_healthy_no_frontend(client, name):
                                   VOLUME_ROBUSTNESS_HEALTHY)
 
 
-def wait_for_volume_restoration_completed(client, name):
-    wait_for_volume_creation(client, name)
-    monitor_restore_progress(client, name)
-    return wait_for_volume_status(client, name,
-                                  VOLUME_FIELD_INITIALRESTORATIONREQUIRED,
-                                  False)
-
-
 def wait_for_volume_degraded(client, name):
     wait_for_volume_status(client, name,
                            VOLUME_FIELD_STATE,
@@ -2999,6 +2991,31 @@ def wait_for_rebuild_start(client, volume_name):
         time.sleep(RETRY_INTERVAL)
     assert started
     return status.fromReplica, status.replica
+
+
+def wait_for_volume_restoration_completed(client, name):
+    wait_for_volume_creation(client, name)
+    monitor_restore_progress(client, name)
+    return wait_for_volume_status(client, name,
+                                  VOLUME_FIELD_INITIALRESTORATIONREQUIRED,
+                                  False)
+
+
+def wait_for_volume_restoration_start(client, volume_name):
+    started = False
+    for i in range(RETRY_COUNTS):
+        volume = client.by_id_volume(volume_name)
+        for status in volume.restoreStatus:
+            assert status.error == ""
+            if status.state == "in_progress" and \
+                    status.progress > 0:
+                started = True
+                break
+        if started:
+            break
+        time.sleep(RETRY_INTERVAL)
+    assert started
+    return status.replica
 
 
 @pytest.fixture
