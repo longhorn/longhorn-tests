@@ -30,6 +30,11 @@ from common import delete_and_wait_pvc, delete_and_wait_pv
 from common import wait_for_rebuild_start
 from common import prepare_pod_with_data_in_mb
 from common import wait_for_replica_running
+from common import set_random_backupstore
+from common import wait_for_backup_completion, find_backup
+from common import wait_for_volume_creation, wait_for_volume_detached
+from common import wait_for_volume_restoration_start
+from common import wait_for_volume_restoration_completed
 
 
 @pytest.mark.coretest   # NOQA
@@ -220,7 +225,7 @@ def test_ha_backup_deletion_recovery(client, volume_name):  # NOQA
     7. After purge complete, delete one replica to verify rebuild works.
 
     FIXME: Needs improvement, e.g. rebuild when no snapshot is deleted for
-    restored backup, delete a replica when restoring in progress.
+    restored backup.
     """
     ha_backup_deletion_recovery_test(client, volume_name, SIZE)
 
@@ -655,3 +660,77 @@ def test_rebuild_replica_and_from_replica_on_the_same_node(
     delete_and_wait_pod(core_api, pod_name)
     delete_and_wait_pvc(core_api, pvc_name)
     delete_and_wait_pv(core_api, pv_name)
+
+
+def test_rebuild_with_restoration(
+        client, core_api, volume_name, pod_make):  # NOQA
+    """
+    [HA] Test if the rebuild is disabled for the restoring volume
+    1. Setup a random backupstore.
+    2. Create a pod with a volume and wait for pod to start.
+    3. Write data to the volume and get the md5sum.
+    4. Create a backup for the volume.
+    5. Restore a volume from the backup.
+    6. Delete one replica during the restoration.
+    7. Wait for the restoration complete and the volume detached.
+    8. Check if there is a rebuilt replica for the restored volume.
+    9. Create PV/PVC/Pod for the restored volume and wait for the pod start.
+    10. Check if the restored volume is state `degraded`
+        after the attachment.
+    11. Wait for the rebuild complete and the volume becoming healthy.
+    12. Check md5sum of the data in the restored volume.
+    13. Do cleanup.
+    """
+    set_random_backupstore(client)
+
+    original_volume_name = volume_name + "-origin"
+    data_path = "/data/test"
+    original_pod_name, original_pv_name, original_pvc_name, original_md5sum = \
+        prepare_pod_with_data_in_mb(
+            client, core_api, pod_make, original_volume_name,
+            data_path=data_path, data_size_in_mb=DATA_SIZE_IN_MB_2)
+
+    original_volume = client.by_id_volume(original_volume_name)
+    snap = create_snapshot(client, original_volume_name)
+    original_volume.snapshotBackup(name=snap.name)
+    wait_for_backup_completion(client, original_volume_name, snap.name)
+    bv, b = find_backup(client, original_volume_name, snap.name)
+
+    restore_volume_name = volume_name + "-restore"
+    client.create_volume(name=restore_volume_name, size=str(1 * Gi),
+                         numberOfReplicas=3, fromBackup=b.url)
+    wait_for_volume_creation(client, restore_volume_name)
+
+    restoring_replica = wait_for_volume_restoration_start(
+        client, restore_volume_name)
+    restore_volume = client.by_id_volume(restore_volume_name)
+    restore_volume.replicaRemove(name=restoring_replica)
+    wait_for_volume_restoration_completed(client, restore_volume_name)
+    restore_volume = wait_for_volume_detached(client, restore_volume_name)
+    assert len(restore_volume.replicas) == 2
+    for r in restore_volume.replicas:
+        assert restoring_replica != r.name
+
+    restore_pod_name = restore_volume_name + "-pod"
+    restore_pv_name = restore_volume_name + "-pv"
+    restore_pvc_name = restore_volume_name + "-pvc"
+    restore_pod = pod_make(name=restore_pod_name)
+    create_pv_for_volume(client, core_api, restore_volume, restore_pv_name)
+    create_pvc_for_volume(client, core_api, restore_volume, restore_pvc_name)
+    restore_pod['spec']['volumes'] = [create_pvc_spec(restore_pvc_name)]
+    create_and_wait_pod(core_api, restore_pod)
+
+    wait_for_volume_degraded(client, restore_volume_name)
+    wait_for_rebuild_complete(client, restore_volume_name)
+    wait_for_volume_healthy(client, restore_volume_name)
+
+    md5sum = get_pod_data_md5sum(core_api, restore_pod_name, data_path)
+    assert original_md5sum == md5sum
+
+    bv.backupDelete(name=b.name)
+    delete_and_wait_pod(core_api, original_pod_name)
+    delete_and_wait_pvc(core_api, original_pvc_name)
+    delete_and_wait_pv(core_api, original_pv_name)
+    delete_and_wait_pod(core_api, restore_pod_name)
+    delete_and_wait_pvc(core_api, restore_pvc_name)
+    delete_and_wait_pv(core_api, restore_pv_name)
