@@ -39,12 +39,13 @@ node {
             throw e
         } finally {
             stage('releasing resources') {
-                sh  " docker exec ${JOB_NAME}${BUILD_NUMBER} ${TF_VAR_tf_workspace}/scripts/cleanup.sh"
-                sh "docker stop ${JOB_NAME}${BUILD_NUMBER}"
-                sh "docker rm -v ${JOB_NAME}${BUILD_NUMBER}"
-                sh "docker rmi ${imageName}"
-
-                notifyBuild(currentBuild.result)
+                    if(params.LONGHORN_DEBUG_MODE == false ) {
+                            sh  " docker exec ${JOB_NAME}${BUILD_NUMBER} ${TF_VAR_tf_workspace}/scripts/cleanup.sh"
+                            sh "docker stop ${JOB_NAME}${BUILD_NUMBER}"
+                            sh "docker rm -v ${JOB_NAME}${BUILD_NUMBER}"
+                            sh "docker rmi ${imageName}"
+                    }
+                    notifyBuild(currentBuild.result)
             }
         }
     }
