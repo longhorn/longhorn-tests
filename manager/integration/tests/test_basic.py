@@ -468,6 +468,128 @@ def snapshot_test(clients, volume_name, base_image):  # NOQA
     cleanup_volume(client, volume)
 
 
+def test_backup_status_for_unavailable_replicas(clients, volume_name):    # NOQA
+    """
+    Test backup status for unavailable replicas
+
+    Context:
+
+    We want to make sure that we do not try to retrieve the backup status
+    of no longer valid replicas (offline, deleted, etc). The reason for
+    this is that trying to establish a tcp connection with an old replica
+    address `(tcp://ip:port)` could block the engine retrieval process,
+    since we will wait upto 1 minute for each individual backup status.
+    When this happens for a lot of different statuses the manager will
+    terminate the started engine retrieval process since the process would
+    not have returned in the maximum allowed time. This would then lead
+    to no longer being able to show newly created backups in the UI.
+
+    Setup:
+
+    1. Create a volume and attach to the current node
+    2. Run the test for all the available backupstores
+
+    Steps:
+
+    1. Create a backup of volume
+    2. Find the replica for that backup
+    3. Disable scheduling on the node of that replica
+    4. Delete the replica
+    5. Wait for volume backup status state to go to error
+    6. Verify backup status error contains `unknown replica`
+    7. Create a new backup
+    8. Verify new backup was successful
+    9. Cleanup (delete backups, delete volume)
+    """
+    backup_status_for_unavailable_replicas_test(clients, volume_name, SIZE)
+
+
+def backup_status_for_unavailable_replicas_test(clients, volume_name, # NOQA
+                                                size, base_image=""): # NOQA
+    for host_id, client in iter(clients.items()):
+        break
+
+    volume = create_and_check_volume(client, volume_name, 2, size, base_image)
+
+    lht_hostId = get_self_host_id()
+    volume = volume.attach(hostId=lht_hostId)
+    volume = common.wait_for_volume_healthy(client, volume_name)
+
+    setting = client.by_id_setting(common.SETTING_BACKUP_TARGET)
+    # test backupTarget for multiple settings
+    backupstores = common.get_backupstore_url()
+    for backupstore in backupstores:
+        if common.is_backupTarget_s3(backupstore):
+            backupsettings = backupstore.split("$")
+            setting = client.update(setting, value=backupsettings[0])
+            assert setting.value == backupsettings[0]
+
+            credential = client.by_id_setting(
+                common.SETTING_BACKUP_TARGET_CREDENTIAL_SECRET)
+            credential = client.update(credential, value=backupsettings[1])
+            assert credential.value == backupsettings[1]
+        else:
+            setting = client.update(setting, value=backupstore)
+            assert setting.value == backupstore
+            credential = client.by_id_setting(
+                common.SETTING_BACKUP_TARGET_CREDENTIAL_SECRET)
+            credential = client.update(credential, value="")
+            assert credential.value == ""
+
+        # create a successful backup
+        bv, b, _, _ = create_backup(client, volume_name)
+        backup_id = b.id
+
+        # find the replica for this backup
+        volume = client.by_id_volume(volume_name)
+        for status in volume.backupStatus:
+            if status.id == backup_id:
+                replica_name = status.replica
+        assert replica_name
+
+        # disable scheduling on that node
+        volume = client.by_id_volume(volume_name)
+        for r in volume.replicas:
+            if r.name == replica_name:
+                node = client.by_id_node(r.hostId)
+                node = client.update(node, allowScheduling=False)
+                common.wait_for_node_update(client, node.id,
+                                            "allowScheduling", False)
+        assert node
+
+        # remove the replica with the backup
+        volume.replicaRemove(name=replica_name)
+        volume = common.wait_for_volume_degraded(client, volume_name)
+
+        # now the backup status should be error unknown replica
+        def backup_failure_predicate(b):
+            return b.id == backup_id and "unknown replica" in b.error
+        volume = common.wait_for_backup_state(client, volume_name,
+                                              backup_failure_predicate)
+
+        # re enable scheduling on the previously disabled node
+        node = client.by_id_node(node.id)
+        node = client.update(node, allowScheduling=True)
+        common.wait_for_node_update(client, node.id,
+                                    "allowScheduling", True)
+
+        # delete the old backup
+        delete_backup(bv, b.name)
+        volume = wait_for_volume_status(client, volume_name,
+                                        "lastBackup", "")
+        assert volume.lastBackupAt == ""
+
+        # check that we can create another successful backup
+        bv, b, _, _ = create_backup(client, volume_name)
+
+        # delete the new backup
+        delete_backup(bv, b.name)
+        volume = wait_for_volume_status(client, volume_name, "lastBackup", "")
+        assert volume.lastBackupAt == ""
+
+    cleanup_volume(client, volume)
+
+
 @pytest.mark.coretest   # NOQA
 def test_backup(clients, volume_name):  # NOQA
     """
