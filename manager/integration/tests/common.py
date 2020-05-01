@@ -2016,9 +2016,24 @@ def wait_for_backup_completion(client, volume_name, snapshot_name):
     for i in range(RETRY_BACKUP_COUNTS):
         v = client.by_id_volume(volume_name)
         for b in v.backupStatus:
-            assert b.error == ""
             if b.snapshot == snapshot_name and b.state == "complete":
                 assert b.progress == 100
+                assert b.error == ""
+                completed = True
+                break
+        if completed:
+            break
+        time.sleep(RETRY_BACKUP_INTERVAL)
+    assert completed is True
+    return v
+
+
+def wait_for_backup_state(client, volume_name, predicate):
+    completed = False
+    for i in range(RETRY_BACKUP_COUNTS):
+        v = client.by_id_volume(volume_name)
+        for b in v.backupStatus:
+            if predicate(b):
                 completed = True
                 break
         if completed:
