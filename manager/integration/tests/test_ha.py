@@ -5,6 +5,7 @@ import random
 
 from common import client, core_api, volume_name  # NOQA
 from common import SIZE, VOLUME_RWTEST_SIZE, EXPAND_SIZE, Gi
+from common import DATA_SIZE_IN_MB_2, DATA_SIZE_IN_MB_3
 from common import check_volume_data, cleanup_volume, create_and_check_volume
 from common import delete_replica_processes, crash_replica_processes
 from common import get_self_host_id, check_volume_endpoint
@@ -20,20 +21,15 @@ from common import create_pv_for_volume
 from common import create_pvc_for_volume
 from common import create_pvc_spec
 from common import create_and_wait_pod
-from common import write_pod_volume_data, write_pod_volume_random_data
+from common import write_pod_volume_random_data
 from common import wait_for_volume_healthy, wait_for_volume_degraded
-from common import read_volume_data
 from common import get_pod_data_md5sum
 from common import wait_for_pod_remount
-from common import get_liveness_probe_spec
 from common import delete_and_wait_pod
 from common import delete_and_wait_pvc, delete_and_wait_pv
 from common import wait_for_rebuild_start
-from kubernetes.stream import stream
-
-# Size in MiB
-RANDOM_DATA_SIZE_SMALL = 300
-RANDOM_DATA_SIZE_LARGE = 800
+from common import prepare_pod_with_data_in_mb
+from common import wait_for_replica_running
 
 
 @pytest.mark.coretest   # NOQA
@@ -407,43 +403,9 @@ def test_ha_recovery_with_expansion(client, volume_name):   # NOQA
     cleanup_volume(client, volume)
 
 
-def prepare_pod_with_data(client, core_api, volume_name, pod_make):  # NOQA
-    pod_name = volume_name + "-pod"
-    pv_name = volume_name + "-pv"
-    pvc_name = volume_name + "-pvc"
-
-    pod = pod_make(name=pod_name)
-
-    pod_liveness_probe_spec = get_liveness_probe_spec(initial_delay=1,
-                                                      period=1)
-
-    pod['spec']['containers'][0]['livenessProbe'] = pod_liveness_probe_spec
-
-    volume = create_and_check_volume(client, volume_name, num_of_replicas=2)
-
-    create_pv_for_volume(client, core_api, volume, pv_name)
-    create_pvc_for_volume(client, core_api, volume, pvc_name)
-    pod['spec']['volumes'] = [create_pvc_spec(pvc_name)]
-    create_and_wait_pod(core_api, pod)
-
-    test_data = generate_random_data(VOLUME_RWTEST_SIZE)
-
-    write_pod_volume_data(core_api, pod_name, test_data)
-
-    # can flush the data but cannot guarantee replicas are in sync, e.g.
-    # due to the directory access caused by the liveness check
-    stream(core_api.connect_get_namespaced_pod_exec,
-           pod_name,
-           'default',
-           command=["sync"],
-           stderr=True, stdin=False,
-           stdout=True, tty=False)
-
-    return pod_name, pv_name, pvc_name, test_data
-
-
-def wait_pod_for_auto_salvage(client, core_api, volume_name,   # NOQA
-                              pod_name, pv_name, pvc_name, test_data):
+def wait_pod_for_auto_salvage(
+        client, core_api, volume_name, pod_name, pv_name, pvc_name,   # NOQA
+        original_md5sum, data_path="/data/test"):
     # this line may fail if the recovery is too quick
     common.wait_for_volume_faulted(client, volume_name)
 
@@ -451,9 +413,8 @@ def wait_pod_for_auto_salvage(client, core_api, volume_name,   # NOQA
 
     wait_for_pod_remount(core_api, pod_name)
 
-    resp = read_volume_data(core_api, pod_name)
-
-    assert test_data == resp
+    md5sum = get_pod_data_md5sum(core_api, pod_name, data_path)
+    assert md5sum == original_md5sum
 
     delete_and_wait_pod(core_api, pod_name)
     delete_and_wait_pvc(core_api, pvc_name)
@@ -465,27 +426,27 @@ def test_salvage_auto_crash_all_replicas(client, core_api, volume_name, pod_make
     [HA] Test automatic salvage feature by crashing all the replicas
 
     1. Create PV/PVC/POD. Make sure POD has liveness check. Start the pod
-    2. Generate `test_data` and write to the pod.
+    2. Write random data to the pod and get the md5sum.
     3. Run `sync` command inside the pod to make sure data flush to the volume.
     4. Crash all replica processes using SIGTERM
     5. Wait for volume to `faulted`, then `healthy`
     6. Check replica `failedAt` has been cleared.
     7. Wait for pod to be restarted.
-    8. Check pod `test_data`.
+    8. Check md5sum of the data in the Pod.
 
     FIXME: Step 5 is only a intermediate state, maybe no way to get it for sure
     """
 
-    pod_name, pv_name, pvc_name, test_data = \
-        prepare_pod_with_data(client, core_api, volume_name, pod_make)
+    pod_name, pv_name, pvc_name, md5sum = \
+        prepare_pod_with_data_in_mb(client, core_api, pod_make, volume_name)
 
     crash_replica_processes(client, core_api, volume_name)
 
     wait_pod_for_auto_salvage(client, core_api, volume_name,
-                              pod_name, pv_name, pvc_name, test_data)
+                              pod_name, pv_name, pvc_name, md5sum)
 
 
-# Test case #2: delete one replica process, wait for 5 seconds
+# Test case #2: delete one replica process, wait for rebuild start
 # then delete all replica processes.
 def test_salvage_auto_crash_replicas_short_wait(client, core_api, volume_name, pod_make):  # NOQA
     """
@@ -493,25 +454,29 @@ def test_salvage_auto_crash_replicas_short_wait(client, core_api, volume_name, p
 
     1. Create a PV/PVC/Pod with liveness check.
     2. Create volume and start the pod.
-    3. Generate `test_data` and write to the pod.
+    3. Write random data to the pod and get the md5sum.
     4. Run `sync` command inside the pod to make sure data flush to the volume.
-    5. Crash one of the replica. Wait for 5 seconds.
-    6. Crash all the replicas.
-    7. Make sure volume and Pod recovers.
-    8. Check `test_data` in the Pod.
-
-    FIXME: step 5 should wait for the replica to start rebuilding.
+    5. Crash one of the replica.
+    6. Wait for rebuild start and the rebuilding replica running
+    7. Crash all the replicas.
+    8. Make sure volume and Pod recovers.
+    9. Check md5sum of the data in the Pod.
     """
-    pod_name, pv_name, pvc_name, test_data = \
-        prepare_pod_with_data(client, core_api, volume_name, pod_make)
+    pod_name, pv_name, pvc_name, md5sum = \
+        prepare_pod_with_data_in_mb(
+            client, core_api, pod_make, volume_name,
+            data_size_in_mb=DATA_SIZE_IN_MB_2)
 
     volume = client.by_id_volume(volume_name)
     replica0 = volume.replicas[0]
 
     crash_replica_processes(client, core_api, volume_name, [replica0])
 
-    # Not enough time for rebuild
-    time.sleep(5)
+    # Need to wait for rebuilding replica running before crashing all replicas
+    # Otherwise the rebuilding replica may become running after step7 then
+    # the auto salvage cannot be triggered.
+    _, rebuilding_replica = wait_for_rebuild_start(client, volume_name)
+    wait_for_replica_running(client, volume_name, rebuilding_replica)
 
     volume = client.by_id_volume(volume_name)
 
@@ -523,35 +488,33 @@ def test_salvage_auto_crash_replicas_short_wait(client, core_api, volume_name, p
     crash_replica_processes(client, core_api, volume_name, replicas)
 
     wait_pod_for_auto_salvage(client, core_api, volume_name,
-                              pod_name, pv_name, pvc_name, test_data)
+                              pod_name, pv_name, pvc_name, md5sum)
 
 
-# Test case #3: delete one replica process, wait for 60 seconds
+# Test case #3: delete one replica process, wait for rebuild finish
 # then delete all replica processes.
 def test_salvage_auto_crash_replicas_long_wait(client, core_api, volume_name, pod_make):  # NOQA
     """
-    [HA] Test automatic salvage feature, with replica building pending
+    [HA] Test automatic salvage feature, with replica building complete
 
     1. Create a PV/PVC/Pod with liveness check.
     2. Create volume and start the pod.
-    3. Generate `test_data` and write to the pod.
+    3. Write random data to the pod and get the md5sum.
     4. Run `sync` command inside the pod to make sure data flush to the volume.
-    5. Crash one of the replica. Wait for 60 seconds.
+    5. Crash one of the replica then wait for rebuild complete.
     6. Crash all the replicas.
     7. Make sure volume and Pod recovers.
-    8. Check `test_data` in the Pod.
-
-    FIXME: step 5 should wait for the replica to finish rebuilding.
+    8. Check md5sum of the data in the Pod.
     """
-    pod_name, pv_name, pvc_name, test_data = \
-        prepare_pod_with_data(client, core_api, volume_name, pod_make)
+    pod_name, pv_name, pvc_name, md5sum = \
+        prepare_pod_with_data_in_mb(client, core_api, pod_make, volume_name)
 
     volume = client.by_id_volume(volume_name)
     replica0 = volume.replicas[0]
 
     crash_replica_processes(client, core_api, volume_name, [replica0])
-
-    time.sleep(60)
+    wait_for_rebuild_start(client, volume_name)
+    wait_for_rebuild_complete(client, volume_name)
 
     volume = client.by_id_volume(volume_name)
 
@@ -563,7 +526,7 @@ def test_salvage_auto_crash_replicas_long_wait(client, core_api, volume_name, po
     crash_replica_processes(client, core_api, volume_name, replicas)
 
     wait_pod_for_auto_salvage(client, core_api, volume_name,
-                              pod_name, pv_name, pvc_name, test_data)
+                              pod_name, pv_name, pvc_name, md5sum)
 
 
 def test_rebuild_failure_with_intensive_data(client, core_api, volume_name, pod_make):  # NOQA
@@ -581,31 +544,16 @@ def test_rebuild_failure_with_intensive_data(client, core_api, volume_name, pod_
     9. Wait for volume to finish two rebuilds and become healthy
     10. Check md5sum for both data location
     """
-    pod_name = volume_name + "-pod"
-    pv_name = volume_name + "-pv"
-    pvc_name = volume_name + "-pvc"
-
-    pod = pod_make(name=pod_name)
-    pod_liveness_probe_spec = get_liveness_probe_spec(initial_delay=1,
-                                                      period=1)
-    pod['spec']['containers'][0]['livenessProbe'] = pod_liveness_probe_spec
-
-    volume = create_and_check_volume(client, volume_name,
-                                     num_of_replicas=3, size=str(1 * Gi))
-    assert len(volume.replicas) == 3
-    create_pv_for_volume(client, core_api, volume, pv_name)
-    create_pvc_for_volume(client, core_api, volume, pvc_name)
-    pod['spec']['volumes'] = [create_pvc_spec(pvc_name)]
-    create_and_wait_pod(core_api, pod)
 
     data_path_1 = "/data/test1"
-    write_pod_volume_random_data(core_api, pod_name,
-                                 data_path_1, RANDOM_DATA_SIZE_SMALL)
-    original_md5sum_1 = get_pod_data_md5sum(core_api, pod_name, data_path_1)
-    create_snapshot(client, volume_name)
     data_path_2 = "/data/test2"
+    pod_name, pv_name, pvc_name, original_md5sum_1 = \
+        prepare_pod_with_data_in_mb(
+            client, core_api, pod_make, volume_name,
+            data_path=data_path_1, data_size_in_mb=DATA_SIZE_IN_MB_2)
+    create_snapshot(client, volume_name)
     write_pod_volume_random_data(core_api, pod_name,
-                                 data_path_2, RANDOM_DATA_SIZE_SMALL)
+                                 data_path_2, DATA_SIZE_IN_MB_2)
     original_md5sum_2 = get_pod_data_md5sum(core_api, pod_name, data_path_2)
 
     volume = client.by_id_volume(volume_name)
@@ -668,23 +616,11 @@ def test_rebuild_replica_and_from_replica_on_the_same_node(
         common.wait_for_node_update(client, node.id,
                                     "allowScheduling", False)
 
-    pod_name = volume_name + "-pod"
-    pv_name = volume_name + "-pv"
-    pvc_name = volume_name + "-pvc"
-
-    pod = pod_make(name=pod_name)
-    volume = create_and_check_volume(client, volume_name,
-                                     num_of_replicas=3, size=str(1 * Gi))
-    assert len(volume.replicas) == 3
-    create_pv_for_volume(client, core_api, volume, pv_name)
-    create_pvc_for_volume(client, core_api, volume, pvc_name)
-    pod['spec']['volumes'] = [create_pvc_spec(pvc_name)]
-    create_and_wait_pod(core_api, pod)
-
     data_path = "/data/test"
-    write_pod_volume_random_data(core_api, pod_name,
-                                 data_path, RANDOM_DATA_SIZE_LARGE)
-    original_md5sum = get_pod_data_md5sum(core_api, pod_name, data_path)
+    pod_name, pv_name, pvc_name, original_md5sum = \
+        prepare_pod_with_data_in_mb(
+            client, core_api, pod_make, volume_name,
+            data_path=data_path, data_size_in_mb=DATA_SIZE_IN_MB_3)
 
     volume = client.by_id_volume(volume_name)
     original_replicas = volume.replicas

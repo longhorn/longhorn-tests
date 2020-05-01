@@ -1538,6 +1538,25 @@ def wait_for_replica_failed(client, volname, replica_name):
     assert failed
 
 
+def wait_for_replica_running(client, volname, replica_name):
+    is_running = False
+    for i in range(RETRY_COUNTS):
+        volume = client.by_id_volume(volname)
+        for r in volume.replicas:
+            if r['name'] != replica_name:
+                continue
+            if r['running'] and r['instanceManagerName'] != "":
+                im = client.by_id_instance_manager(
+                    r['instanceManagerName'])
+                if r['name'] in im['instances']:
+                    is_running = True
+                    break
+        if is_running:
+            break
+        time.sleep(RETRY_INTERVAL)
+    assert is_running
+
+
 @pytest.fixture
 def volume_name(request):
     return generate_volume_name()
