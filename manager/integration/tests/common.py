@@ -153,6 +153,10 @@ DEFAULT_TAGS = [
 INSTANCE_MANAGER_HOST_PATH_PREFIX = "/host"
 EXPANSION_SNAP_TMP_META_NAME_PATTERN = "volume-snap-expand-%s.img.meta.tmp"
 
+DATA_SIZE_IN_MB_1 = 100
+DATA_SIZE_IN_MB_2 = 300
+DATA_SIZE_IN_MB_3 = 800
+
 
 def load_k8s_config():
     c = Configuration()
@@ -3186,3 +3190,33 @@ def expand_attached_volume(client, volume_name):
     wait_for_volume_expansion(client, volume.name)
     volume.attach(hostId=engine.hostId, disableFrontend=False)
     wait_for_volume_healthy(client, volume_name)
+
+
+def prepare_pod_with_data_in_mb(
+        client, core_api, pod_make, volume_name, volume_size=str(1*Gi),
+        data_path="/data/test", data_size_in_mb=DATA_SIZE_IN_MB_1):  # NOQA:
+    pod_name = volume_name + "-pod"
+    pv_name = volume_name + "-pv"
+    pvc_name = volume_name + "-pvc"
+
+    pod = pod_make(name=pod_name)
+    pod_liveness_probe_spec = get_liveness_probe_spec(initial_delay=1,
+                                                      period=1)
+    pod['spec']['containers'][0]['livenessProbe'] = pod_liveness_probe_spec
+
+    volume = create_and_check_volume(client, volume_name,
+                                     num_of_replicas=3, size=volume_size)
+    create_pv_for_volume(client, core_api, volume, pv_name)
+    create_pvc_for_volume(client, core_api, volume, pvc_name)
+    pod['spec']['volumes'] = [create_pvc_spec(pvc_name)]
+    create_and_wait_pod(core_api, pod)
+
+    write_pod_volume_random_data(core_api, pod_name,
+                                 data_path, data_size_in_mb)
+    md5sum = get_pod_data_md5sum(core_api, pod_name, data_path)
+
+    stream(core_api.connect_get_namespaced_pod_exec,
+           pod_name, 'default', command=["sync"],
+           stderr=True, stdin=False, stdout=True, tty=False)
+
+    return pod_name, pv_name, pvc_name, md5sum
