@@ -1500,6 +1500,12 @@ def test_node_config_annotation_invalid(client, core_api,  # NOQA
 
     1. Clean the current tags
     2. New tags from node annotation should be applied
+
+    Case7: Same disk name in annotation shouldn't intereven the node controller
+    1. Create one disk for node
+    2. Set the same name in annotation and set label and enable
+       "Create Default Disk on Labeled Nodes" in settings.
+    3. The node tag or disks won't be updated.
     """
     setting = client.by_id_setting(SETTING_CREATE_DEFAULT_DISK_LABELED_NODES)
     client.update(setting, value="true")
@@ -1646,6 +1652,56 @@ def test_node_config_annotation_invalid(client, core_api,  # NOQA
     # then the correct annotation should be applied.
     client.update(node, tags=[])
     wait_for_node_tag_update(client, node_name, ["storage"])
+
+    # Case7: Same disk name in annotation shouldn't intervene the node
+    # controller
+
+    # clean up any existing disk and create one disk for node
+    lht_hostId = get_self_host_id()
+    cleanup_node_disks(client, lht_hostId)
+    node = client.by_id_node(lht_hostId)
+    disks = node.disks
+    disk_path1 = create_host_disk(client, 'vol-disk-1',
+                                  str(Gi), lht_hostId)
+
+    # patch label and annotations to the node
+    core_api.patch_node(lht_hostId, {
+        "metadata": {
+            "labels": {
+                CREATE_DEFAULT_DISK_LABEL:
+                    CREATE_DEFAULT_DISK_LABEL_VALUE_CONFIG
+            },
+            "annotations": {
+                DEFAULT_DISK_CONFIG_ANNOTATION:
+                    '[{"path":"' + DEFAULT_DISK_PATH +
+                    '","allowScheduling":true,' +
+                    '"storageReserved": 1024,"tags": ["ssd", "fast"],' +
+                    '"name":"same-name"},' +
+                    '{"path":"' + disk_path1 +
+                    '","allowScheduling":true,' +
+                    '"storageReserved":1024,"name":"same-name"}]'
+            }
+        }
+    })
+
+    # same disk name shouldn't be applied to Longhorn.
+    time.sleep(NODE_UPDATE_WAIT_INTERVAL)
+    node = client.by_id_node(lht_hostId)
+    assert len(node.disks) == 0
+
+    # do cleanup.
+    core_api.patch_node(lht_hostId, {
+        "metadata": {
+            "labels": {
+                CREATE_DEFAULT_DISK_LABEL: None
+            },
+            "annotations": {
+                DEFAULT_DISK_CONFIG_ANNOTATION: None,
+            }
+        }
+    })
+
+    cleanup_host_disk(client, 'vol-disk-1')
 
 
 @pytest.mark.node
