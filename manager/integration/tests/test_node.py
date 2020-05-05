@@ -1515,6 +1515,38 @@ def test_node_config_annotation_invalid(client, core_api,  # NOQA
 
     # Case1: The invalid disk annotation shouldn't
     # intervene the node controller.
+
+    # Case1.1: Multiple paths on the same filesystem is invalid disk
+    # annotation, Longhorn shouldn't apply this.
+
+    # make a clean condition for test to start.
+    cleanup_node_disks(client, node_name)
+
+    # patch label and annotations to the node.
+    core_api.patch_node(node_name, {
+        "metadata": {
+            "labels": {
+                CREATE_DEFAULT_DISK_LABEL:
+                    CREATE_DEFAULT_DISK_LABEL_VALUE_CONFIG
+            },
+            "annotations": {
+                DEFAULT_DISK_CONFIG_ANNOTATION:
+                    '[{"path":"/root","allowScheduling":false,' +
+                    '"storageReserved":1024,"name":"root-name"},' +
+                    '{"path":"/home","allowScheduling":false,' +
+                    '"storageReserved": 1024,' +
+                    '"name":"home-name"}]'
+            }
+        }
+    })
+
+    # Longhorn shouldn't apply the invalid disk annotation.
+    time.sleep(NODE_UPDATE_WAIT_INTERVAL)
+    node = client.by_id_node(node_name)
+    assert len(node.disks) == 0
+    assert not node.tags
+
+    # Case1.2: Invalid disk path annotation shouldn't be applied to Longhorn.
     cleanup_node_disks(client, node_name)
     core_api.patch_node(node_name, {
         "metadata": {
@@ -1529,13 +1561,13 @@ def test_node_config_annotation_invalid(client, core_api,  # NOQA
             }
         }
     })
-    # Case1.1: Longhorn shouldn't apply the invalid disk annotation.
+    # Longhorn shouldn't apply the invalid disk annotation.
     time.sleep(NODE_UPDATE_WAIT_INTERVAL)
     node = client.by_id_node(node_name)
     assert len(node.disks) == 0
     assert not node.tags
 
-    # Case1.2: Disk and tag update should work fine even if there is
+    # Case1.3: Disk and tag update should work fine even if there is
     # invalid disk annotation.
     disk = {"default-disk": {"path": DEFAULT_DISK_PATH,
             "allowScheduling": True}}
@@ -1690,17 +1722,6 @@ def test_node_config_annotation_invalid(client, core_api,  # NOQA
     assert len(node.disks) == 0
 
     # do cleanup.
-    core_api.patch_node(lht_hostId, {
-        "metadata": {
-            "labels": {
-                CREATE_DEFAULT_DISK_LABEL: None
-            },
-            "annotations": {
-                DEFAULT_DISK_CONFIG_ANNOTATION: None,
-            }
-        }
-    })
-
     cleanup_host_disk(client, 'vol-disk-1')
 
 
