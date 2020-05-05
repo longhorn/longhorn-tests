@@ -18,7 +18,7 @@ resource "digitalocean_droplet" "longhorn-tests" {
   region   = "nyc3"
   size     = "s-4vcpu-8gb"
   ssh_keys = ["${digitalocean_ssh_key.do-ssh-key.fingerprint}"]
-  tags     = ["longhorn-tests", "k8s-controller"]
+  tags     = ["longhorn-tests"]
 
 }
 
