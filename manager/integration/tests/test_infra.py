@@ -213,7 +213,7 @@ def test_offline_node_with_attached_volume_and_pod(client, core_api, volume_name
     9. Wait for the new pod to be created and the volume attached
     10. Check `test_data` in the new pod
     """
-    toleration_seconds = 20
+    toleration_seconds = 60
 
     apps_api = get_apps_api_client()
     cloudprovider = detect_cloudprovider()
