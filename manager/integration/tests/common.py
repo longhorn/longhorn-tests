@@ -157,6 +157,8 @@ DATA_SIZE_IN_MB_1 = 100
 DATA_SIZE_IN_MB_2 = 300
 DATA_SIZE_IN_MB_3 = 800
 
+MESSAGE_TYPE_ERROR = "error"
+
 
 def load_k8s_config():
     c = Configuration()
