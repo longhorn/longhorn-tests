@@ -1,3 +1,4 @@
+import os
 import time
 import common
 import subprocess
@@ -49,6 +50,7 @@ from common import wait_for_rebuild_complete
 from common import wait_for_volume_expansion
 from common import fail_replica_expansion, wait_for_expansion_failure
 from common import VOLUME_FRONTEND_BLOCKDEV, VOLUME_FRONTEND_ISCSI
+from common import MESSAGE_TYPE_ERROR
 
 
 @pytest.mark.coretest   # NOQA
@@ -1043,12 +1045,17 @@ def test_listing_backup_volume(clients, base_image=""):   # NOQA
 
     1. Create three volumes: `volume1/2/3`
     2. Setup NFS backupstore since we can manipulate the content easily
-    3. Create snapshots for all three volumes
+    3. Create multiple snapshots for all three volumes
     4. Rename `volume1`'s `volume.cfg` to `volume.cfg.tmp` in backupstore
     5. List backup volumes. Make sure `volume1` errors out but found other two
     6. Restore `volume1`'s `volume.cfg`.
-    7. Make sure now backup volume `volume1` can be found and deleted
-    8. Delete backups for `volume2/3`, make sure they cannot be found later
+    7. Make sure now backup volume `volume1` can be found
+    8. Delete backups for `volume1/2`, make sure they cannot be found later
+    9. Corrupt a backup.cfg on volume3
+    11. Check that the backup is listed with the other backups of volume3
+    12. Verify that the corrupted backup has Messages of type error
+    13. Check that backup inspection for the previously corrupted backup fails
+    14. Delete backups for `volume3`, make sure they cannot be found later
     """
     for host_id, client in iter(clients.items()):
         break
@@ -1090,6 +1097,11 @@ def test_listing_backup_volume(clients, base_image=""):   # NOQA
     _, _, snap1, _ = create_backup(client, volume1_name)
     _, _, snap2, _ = create_backup(client, volume2_name)
     _, _, snap3, _ = create_backup(client, volume3_name)
+    subprocess.check_output(["sync"])
+    _, _, snap4, _ = create_backup(client, volume3_name)
+    subprocess.check_output(["sync"])
+    _, _, snap5, _ = create_backup(client, volume3_name)
+    subprocess.check_output(["sync"])
 
     # invalidate backup volume 1 by renaming volume.cfg to volume.cfg.tmp
     cmd = ["mkdir", "-p", "/mnt/nfs"]
@@ -1162,13 +1174,51 @@ def test_listing_backup_volume(clients, base_image=""):   # NOQA
                 break
     assert not found
 
+    # corrupt backup for snap4
+    bv4, b4 = common.find_backup(client, volume3_name, snap4.name)
+    b4_cfg_name = "backup_" + b4["name"] + ".cfg"
+    cmd = ["find", "/mnt/nfs", "-type", "d", "-name", volume3_name]
+    v3_backup_path = subprocess.check_output(cmd).strip().decode('utf-8')
+    b4_cfg_path = os.path.join(v3_backup_path, "backups", b4_cfg_name)
+    assert os.path.exists(b4_cfg_path)
+    b4_tmp_cfg_path = os.path.join(v3_backup_path, b4_cfg_name)
+    os.rename(b4_cfg_path, b4_tmp_cfg_path)
+    assert os.path.exists(b4_tmp_cfg_path)
+
+    corrupt_backup = open(b4_cfg_path, "w")
+    assert corrupt_backup
+    assert corrupt_backup.write("{corrupt: definitely") > 0
+    corrupt_backup.close()
+    subprocess.check_output(["sync"])
+
+    # a corrupt backup cannot provide information about the snapshot
+    for i in range(RETRY_COMMAND_COUNT):
+        found = False
+        for b in bv4.backupList().data:
+            if b.name in b4["name"]:
+                found = True
+                assert b.messages is not None
+                assert MESSAGE_TYPE_ERROR in b.messages
+                break
+    assert found
+
+    # cleanup b4
+    os.remove(b4_cfg_path)
+    os.rename(b4_tmp_cfg_path, b4_cfg_path)
+    subprocess.check_output(["sync"])
+
     bv3, b3 = common.find_backup(client, volume3_name, snap3.name)
     bv3.backupDelete(name=b3.name)
+    bv4, b4 = common.find_backup(client, volume3_name, snap4.name)
+    bv4.backupDelete(name=b4.name)
+    bv5, b5 = common.find_backup(client, volume3_name, snap5.name)
+    bv5.backupDelete(name=b5.name)
+    snaps = [snap3.name, snap4.name, snap5.name]
     for i in range(RETRY_COMMAND_COUNT):
         found = False
         backups3 = bv3.backupList().data
         for b in backups3:
-            if b.snapshotName == snap3.name:
+            if b.snapshotName in snaps:
                 found = True
                 break
     assert not found
