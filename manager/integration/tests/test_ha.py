@@ -921,3 +921,49 @@ def test_all_replica_restore_failure():
     16. Verify this faulted volume can be deleted.
     """
     pass
+
+
+@pytest.mark.skip(reason="TODO")
+def test_single_replica_restore_failure():
+    """
+    [HA] Test if one replica restore failure will lead to the restore volume
+    becoming Degraded, and if the restore volume is still usable after
+    the failure.
+
+    Notice that this case is similar to test_rebuild_with_restoration().
+    But the way to fail the replica is different.
+    test_rebuild_with_restoration() directly crash the replica process
+    hence there is no error in the restore status.
+
+    1. Enable auto-salvage.
+    2. Set the a random backupstore.
+    3. Do cleanup for the backupstore.
+    4. Create a pod with a volume and wait for pod to start.
+    5. Write data to the pod volume and get the md5sum.
+    6. Create a backup for the volume.
+    7. Restore a volume from the backup.
+    8. Wait for the volume restore start by checking if:
+       8.1. `volume.restoreStatus` shows the related restore info.
+       8.2. `volume.conditions[restore].status == True &&
+            volume.conditions[restore].reason == "RestoreInProgress"`.
+       8.3. `volume.ready == false`.
+    9. Find a way to fail just one replica restore.
+       e.g. Use iptable to block the restore.
+    10. Wait for the restore volume Degraded.
+    11. Check if `len(restore_volume.replicas) == 2`.
+        Then check if the volume condition and ready status keep unchanged.
+    12. Wait for the volume restore complete and detached.
+    13. Check if
+        13.1. there is no rebuilt replica for the restored volume
+              before reattachment.
+        13.2. `volume.ready == false`
+        13.3. `volume.conditions[restore].status == False &&
+              volume.conditions[restore].reason == ""`.
+    14. Create PV/PVC/Pod for the restored volume and wait for the pod start.
+    15. Check if the restored volume is state `degraded`
+        after the attachment.
+    16. Wait for the rebuild complete and the volume becoming healthy.
+    17. Check md5sum of the data in the restored volume.
+    18. Do cleanup.
+    """
+    pass
