@@ -1391,6 +1391,7 @@ def wait_for_snapshot_purge(client, volume_name, *snaps):
             assert status.error == ""
 
             progress = status.progress
+            assert progress <= 100
             replica = status.replica
             last = last_purge_progress.get(replica)
             assert last is None or last <= status.progress
