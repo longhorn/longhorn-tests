@@ -888,3 +888,36 @@ def test_restore_volume_with_invalid_backupstore():
     12. Verify this faulted volume can be deleted.
     """
     pass
+
+
+@pytest.mark.skip(reason="TODO")
+def test_all_replica_restore_failure():
+    """
+    [HA] Test if all replica restore failure will lead to the restore volume
+    becoming Faulted, and if the auto salvage feature is disabled for
+    the faulted restore volume.
+
+    1. Enable auto-salvage.
+    2. Set the a random backupstore.
+    3. Do cleanup for the backupstore.
+    4. Create a pod with a volume and wait for pod to start.
+    5. Write data to the pod volume and get the md5sum.
+    6. Create a backup for the volume.
+    7. Randomly delete some data blocks of the backup, which will lead to
+       all replica restore failures later.
+    8. Restore a volume from the backup.
+    9. Wait for the volume restore in progress by checking if:
+       9.1. `volume.restoreStatus` shows the related restore info.
+       9.2. `volume.conditions[restore].status == True &&
+            volume.conditions[restore].reason == "RestoreInProgress"`.
+       9.3. `volume.ready == false`.
+    10. Wait for the restore volume Faulted.
+    11. Check if `volume.conditions[restore].status == False &&
+        volume.conditions[restore].reason == "RestoreFailure"`.
+    12. Check if `volume.ready == false`.
+    13. Make sure auto-salvage is not triggered even the feature is enabled.
+    14. Verify if PV/PVC cannot be created from Longhorn.
+    15. Verify the faulted volume cannot be attached to a node.
+    16. Verify this faulted volume can be deleted.
+    """
+    pass
