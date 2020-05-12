@@ -200,8 +200,10 @@ def test_recurring_job_labels(client, random_labels, volume_name):  # NOQA
 
     1. Set a random backupstore
     2. Create a backup recurring job with labels
-    3. Verify the recurring jobs runs correctly.
-    4. Verify the labels on the backup is correct.
+    3. Wait for job to create a backup
+    4. Add a label to the job
+    5. Verify the recurring jobs run correctly.
+    6. Verify the labels on the backup are correct.
     """
     recurring_job_labels_test(client, random_labels, volume_name)
 
@@ -213,11 +215,11 @@ def recurring_job_labels_test(client, labels, volume_name, size=SIZE, base_image
                          numberOfReplicas=2)
     volume = common.wait_for_volume_detached(client, volume_name)
 
-    # Simple Backup Job that runs every 2 minutes, retains 1.
+    # Simple Backup Job that runs every 1 minute, retains 1.
     jobs = [
         {
             "name": RECURRING_JOB_NAME,
-            "cron": "*/2 * * * *",
+            "cron": "*/1 * * * *",
             "task": "backup",
             "retain": 1,
             "labels": labels
@@ -227,8 +229,14 @@ def recurring_job_labels_test(client, labels, volume_name, size=SIZE, base_image
     volume.attach(hostId=host_id)
     volume = common.wait_for_volume_healthy(client, volume_name)
 
-    # 5 minutes
-    time.sleep(300)
+    # 1 minutes 15s
+    time.sleep(75)
+    labels["we-added-this-label"] = "definitely"
+    jobs[0]["labels"] = labels
+    volume = volume.recurringUpdate(jobs=jobs)
+
+    # 2 minutes 15s
+    time.sleep(135)
     snapshots = volume.snapshotList()
     count = 0
     for snapshot in snapshots:
