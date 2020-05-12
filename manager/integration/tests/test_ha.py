@@ -860,3 +860,31 @@ def test_single_replica_failed_during_engine_start():
         r/w data and creating/removing snapshots.
     """
     pass
+
+
+@pytest.mark.skip(reason="TODO")
+def test_restore_volume_with_invalid_backupstore():
+    """
+    [HA] Test if the invalid backup target will lead to the restore volume
+    becoming Faulted, and if the auto salvage feature is disabled for
+    the faulted restore volume.
+
+    1. Enable auto-salvage.
+    2. Set a S3 backupstore. (Cannot use NFS server here before fixing #1295)
+    3. Create a volume then a backup.
+    4. Invalidate the target URL.
+       (e.g.: s3://backupbucket-invalid@us-east-1/backupstore-invalid)
+    5. Restore a volume from the backup.
+       (The fromBackup fields of the volume create API should consist of
+       the invalid target URL and the valid backup volume info)
+    6. Wait for the restore volume Faulted.
+    7. Check if the volume condition "restore":
+       `volume.conditions[restore].status == False &&
+       volume.conditions[restore].reason == "RestoreFailure".`
+    8. Check if `volume.ready` is false.
+    9. Make sure auto-salvage is not triggered even the feature is enabled.
+    10. Verify if PV/PVC cannot be created from Longhorn.
+    11. Verify the faulted volume cannot be attached to a node.
+    12. Verify this faulted volume can be deleted.
+    """
+    pass
