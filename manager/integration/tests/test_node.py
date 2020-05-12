@@ -373,6 +373,25 @@ def test_replica_zone_anti_affinity(client):  # NOQA
     pass
 
 
+@pytest.mark.skip(reason="TODO")
+@pytest.mark.node  # NOQA
+def test_disable_scheduling_on_cordoned_node(client):  # NOQA
+    """
+    Test replica scheduler: schedule replica based on
+    `Disable Scheduling On Cordoned Node` setting
+
+    1. Set `Disable Scheduling On Cordoned Node` to true.
+    2. Set `Replica Soft Anti-Affinity` to false.
+    3. Set cordon on one node.
+    4. Create a volume with 3 replicas.
+    5. Verify the scheduler should fail due to cordoned node.
+    6. Set `Disable Scheduling On Cordoned Node` to false.
+    7. Automatically the scheduler should creates three replicas
+    from step 5 failure.
+    """
+    pass
+
+
 @pytest.mark.node  # NOQA
 @pytest.mark.mountdisk # NOQA
 def test_replica_scheduler_large_volume_fit_small_disk(client):  # NOQA
