@@ -836,3 +836,27 @@ def test_rebuild_with_inc_restoration(
     delete_and_wait_pod(core_api, dr_pod_name)
     delete_and_wait_pvc(core_api, dr_pvc_name)
     delete_and_wait_pv(core_api, dr_pv_name)
+
+
+@pytest.mark.skip
+def test_single_replica_failed_during_engine_start():
+    """
+    Test if the volume still works fine when there is
+    an invalid replica/backend in the engine starting phase.
+
+    1. Create a pod using Longhorn volume.
+    2. Write some data to the volume then get the md5sum.
+    3. Create a snapshot.
+    4. Repeat step2 and step3 for 3 times then there should be 3 snapshots.
+    5. Randomly pick up a replica and
+       manually messing up the snapshot meta file.
+    6. Delete the pod and wait for the volume detached.
+    7. Recreate the pod and wait for the volume attached.
+    8. Check if the volume is Degraded and
+       if the chosen replica is ERR once the volume attached.
+    9. Wait for volume rebuild and volume becoming Healthy.
+    10. Check volume data.
+    11. Check if the volume still works fine by
+        r/w data and creating/removing snapshots.
+    """
+    pass
