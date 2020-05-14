@@ -356,3 +356,56 @@ def test_hard_anti_affinity_offline_rebuild(client, volume_name):  # NOQA
     check_volume_data(volume, data)
 
     cleanup_volume(client, volume)
+
+
+@pytest.mark.skip(reason="TODO")
+def test_replica_rebuild_per_volume_limit():
+    """
+    Test the volume always only have one replica scheduled for rebuild
+
+    1. Set soft anti-affinity to `true`.
+    2. Create a volume with one replicas.
+    3. Attach the volume and write a few hundreds MB data to it.
+    4. Scale the volume replica to 5.
+    5. Constantly checking the volume replica list to make sure there should be
+    at most one replica which is not in the RW state. It should be:
+        1. Either in the WO state
+        2. Doesn't have any state because it's preparing for the rebuild.
+    6. Wait for the volume to complete rebuilding. Then remove 4 of the 5
+    replicas.
+    7. Monitoring the volume replica list again.
+    8. Once the rebuild was completed again, delete the volume and reset the
+    setting.
+
+    """
+    pass
+
+
+@pytest.mark.skip(reason="TODO")
+def test_replica_rebuild_concurrent_limit():
+    """
+    Test setting ReplicaRebuildConcurrentLimit
+
+    1. Create 3 volumes, each with 3 replicas.
+    2. Attach the volumes and write a few hundreds MB data into each of them.
+    3. Set ReplicaRebuildConcurrentLimit to 0.
+    4. Delete two of the three replicas for every volume.
+    5. Wait for 60 seconds. Check the volume's replica list, make sure no
+    rebuild happened.
+    6. Set ReplicaRebuildConcurrentLimit to 1.
+    7. Monitoring the three volumes, the maximum number of rebuilding replica
+    of those three volumes should be 1.
+        1. Make sure there is at least one time we observed one replica is
+        being rebuilt.
+    8. Wait for the rebuild to finish. Check the correctness of the data.
+    9. Set ReplicaRebuildConcurrentLimit to 0.
+    10. Delete two of the the replicas for every volume.
+    11. Set ReplicaRebuildConcurrentLimit to 10.
+    12. Monitoring the three volumes, the maximum number of rebuilding replica
+    of those three volumes should be 3 (due to the per volume limit).
+        1. Make sure there is at least one time we observed three replica is
+        being rebuilt.
+    13. Cleanup the volume
+
+    """
+    pass
