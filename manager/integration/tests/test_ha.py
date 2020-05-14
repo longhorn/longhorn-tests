@@ -985,3 +985,28 @@ def test_volume_reattach_after_engine_sigkill():  # NOQA
     8. Check if data can be still written to the volume.
     """
     pass
+
+
+@pytest.mark.skip(reason="TODO")
+def test_engine_crash_for_restore_volume():
+    """
+    [HA] Test volume can successfully retry restoring after
+    the engine crashes unexpectedly.
+
+    1. Setup a random backupstore.
+    2. Create volume and start the pod.
+    3. Write random data to the pod volume and get the md5sum.
+    4. Create a backup for the volume.
+    5. Restore a new volume from the backup.
+    6. Crash the engine during the restore.
+    7. Wait for the volume detaching.
+    8. Wait for the volume reattached.
+    9. Verify if
+      9.1. `volume.ready == false`.
+      9.2. `volume.conditions[restore].status == True &&
+            volume.conditions[restore].reason == "RestoreInProgress"`.
+    10. Wait for the volume restore complete and detached.
+    11. Recreate a pod for the restored volume and wait for the pod start.
+    12. Check the data md5sum for the restored data.
+    """
+    pass
