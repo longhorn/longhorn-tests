@@ -2,8 +2,10 @@ import pytest
 import common
 import time
 import random
+import subprocess
 
 from common import client, core_api, volume_name  # NOQA
+from common import DATA_SIZE_IN_MB_1, DATA_SIZE_IN_MB_2, DATA_SIZE_IN_MB_3
 from common import check_volume_data, cleanup_volume, create_and_check_volume
 from common import delete_replica_processes, crash_replica_processes
 from common import get_self_host_id, check_volume_endpoint
@@ -13,7 +15,7 @@ from common import expand_attached_volume, check_block_device_size
 from common import write_volume_data, generate_random_data
 from common import wait_for_rebuild_complete
 from common import disable_auto_salvage # NOQA
-from common import pod_make  # NOQA
+from common import pod_make, pod  # NOQA
 from common import create_pv_for_volume
 from common import create_pvc_for_volume
 from common import create_pvc_spec
@@ -36,7 +38,6 @@ from common import check_volume_last_backup
 from common import activate_standby_volume
 
 from common import SIZE, VOLUME_RWTEST_SIZE, EXPAND_SIZE, Gi
-from common import DATA_SIZE_IN_MB_2, DATA_SIZE_IN_MB_3
 from common import RETRY_COUNTS, RETRY_INTERVAL
 from common import SETTING_REPLICA_NODE_SOFT_ANTI_AFFINITY
 
@@ -849,8 +850,8 @@ def test_rebuild_with_inc_restoration(
     delete_and_wait_pv(core_api, dr_pv_name)
 
 
-@pytest.mark.skip(reason="TODO")
-def test_single_replica_failed_during_engine_start():
+@pytest.mark.coretest
+def test_single_replica_failed_during_engine_start(client, core_api, volume_name, pod): # NOQA
     """
     Test if the volume still works fine when there is
     an invalid replica/backend in the engine starting phase.
@@ -870,7 +871,140 @@ def test_single_replica_failed_during_engine_start():
     11. Check if the volume still works fine by
         r/w data and creating/removing snapshots.
     """
-    pass
+    pv_name = "pv-" + volume_name
+    pvc_name = "pvc-" + volume_name
+    pod_name = "pod-" + volume_name
+
+    volume = create_and_check_volume(client, volume_name, size=str(1 * Gi))
+    create_pv_for_volume(client, core_api, volume, pv_name)
+    create_pvc_for_volume(client, core_api, volume, pvc_name)
+
+    pod['metadata']['name'] = pod_name
+    pod['spec']['volumes'] = [{
+        'name': pod['spec']['containers'][0]['volumeMounts'][0]['name'],
+        'persistentVolumeClaim': {
+            'claimName': pvc_name,
+        },
+    }]
+
+    create_and_wait_pod(core_api, pod)
+    wait_for_volume_healthy(client, volume_name)
+
+    volume = client.by_id_volume(volume_name)
+
+    data_path1 = "/data/file1"
+    write_pod_volume_random_data(core_api, pod_name,
+                                 data_path1, DATA_SIZE_IN_MB_1)
+    data_md5sum1 = get_pod_data_md5sum(core_api, pod_name, data_path1)
+    snap1 = volume.snapshotCreate()
+
+    data_path2 = "/data/file2"
+    write_pod_volume_random_data(core_api, pod_name,
+                                 data_path2, DATA_SIZE_IN_MB_1)
+    data_md5sum2 = get_pod_data_md5sum(core_api, pod_name, data_path2)
+    snap2 = volume.snapshotCreate()
+
+    data_path3 = "/data/file3"
+    write_pod_volume_random_data(core_api, pod_name,
+                                 data_path3, DATA_SIZE_IN_MB_1)
+    data_md5sum3 = get_pod_data_md5sum(core_api, pod_name, data_path3)
+    snap3 = volume.snapshotCreate()
+
+    volume = client.by_id_volume(volume_name)
+    host_id = get_self_host_id()
+
+    for replica in volume.replicas:
+        if replica.hostId == host_id:
+            break
+
+    replica_data_path = replica.dataPath
+    replica_name = replica.name
+    snap2_meta_file = replica_data_path + \
+        "/volume-snap-" + \
+        snap2.name + ".img.meta"
+
+    command = ["dd", "if=/dev/zero",
+               "of="+snap2_meta_file,
+               "count=" + str(100)]
+    subprocess.check_call(command)
+
+    delete_and_wait_pod(core_api, pod_name)
+    wait_for_volume_detached(client, volume_name)
+
+    create_and_wait_pod(core_api, pod)
+    wait_for_volume_degraded(client, volume_name)
+
+    volume = client.by_id_volume(volume_name)
+    for repl in volume.replicas:
+        if repl.name == replica_name:
+            break
+
+    assert repl.running is False
+    assert repl.failedAt != ''
+
+    wait_for_volume_healthy(client, volume_name)
+
+    res_data_md5sum1 = get_pod_data_md5sum(core_api, pod_name, data_path1)
+    assert data_md5sum1 == res_data_md5sum1
+
+    res_data_md5sum2 = get_pod_data_md5sum(core_api, pod_name, data_path2)
+    assert data_md5sum2 == res_data_md5sum2
+
+    res_data_md5sum3 = get_pod_data_md5sum(core_api, pod_name, data_path3)
+    assert data_md5sum3 == res_data_md5sum3
+
+    data_path4 = "/data/file4"
+    write_pod_volume_random_data(core_api, pod_name,
+                                 data_path4, DATA_SIZE_IN_MB_1)
+    data_md5sum4 = get_pod_data_md5sum(core_api, pod_name, data_path4)
+
+    res_data_md5sum4 = get_pod_data_md5sum(core_api, pod_name, data_path4)
+    assert data_md5sum4 == res_data_md5sum4
+
+    snap4 = volume.snapshotCreate()
+
+    snapshots = volume.snapshotList()
+    for snap in snapshots:
+        if snap.usercreated is False and snap.name != "volume-head":
+            system_snap = snap
+            break
+
+    snapMap = {}
+    for snap in snapshots:
+        snapMap[snap.name] = snap
+
+    assert snapMap[snap1.name].name == snap1.name
+    assert snapMap[snap1.name].removed is False
+    assert snapMap[snap2.name].name == snap2.name
+    assert snapMap[snap2.name].parent == snap1.name
+    assert snapMap[snap2.name].removed is False
+    assert snapMap[snap3.name].name == snap3.name
+    assert snapMap[snap3.name].parent == snap2.name
+    assert snapMap[snap3.name].removed is False
+    assert snapMap[snap4.name].name == snap4.name
+    assert snapMap[snap4.name].parent == system_snap.name
+    assert snapMap[snap4.name].removed is False
+
+    volume.snapshotDelete(name=snap3.name)
+
+    snapshots = volume.snapshotList(volume=volume_name)
+    snapMap = {}
+    for snap in snapshots:
+        snapMap[snap.name] = snap
+
+    assert snapMap[snap1.name].name == snap1.name
+    assert snapMap[snap1.name].removed is False
+    assert snapMap[snap2.name].name == snap2.name
+    assert snapMap[snap2.name].parent == snap1.name
+    assert snapMap[snap2.name].removed is False
+    assert snapMap[snap3.name].name == snap3.name
+    assert snapMap[snap3.name].parent == snap2.name
+    assert snapMap[snap3.name].removed is True
+    assert snapMap[snap4.name].name == snap4.name
+    assert snapMap[snap4.name].parent == system_snap.name
+    assert len(snapMap[snap4.name].children) == 1
+    assert "volume-head" in snapMap[snap4.name].children.keys()
+    assert snapMap[snap4.name].removed is False
 
 
 @pytest.mark.skip(reason="TODO")
