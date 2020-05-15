@@ -967,3 +967,21 @@ def test_single_replica_restore_failure():
     18. Do cleanup.
     """
     pass
+
+
+@pytest.mark.skip(reason="TODO")
+def test_volume_reattach_after_engine_sigkill():  # NOQA
+    """
+    [HA] Test if the volume can be reattached after using SIGKILL
+    to crash the engine process
+
+    1. Create PV/PVC/Pod. Make sure Pod has the liveness check.
+    2. Wait for the pod start and the volume healthy.
+    3. Write random data to the pod and get the md5sum.
+    4. Crash the engine process by SIGKILL in the engine manager.
+    5. Wait for volume reattached.
+    6. Wait for pod to be restarted.
+    7. Check md5sum of the data in the Pod.
+    8. Check if data can be still written to the volume.
+    """
+    pass
