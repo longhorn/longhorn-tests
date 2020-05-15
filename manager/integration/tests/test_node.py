@@ -352,29 +352,6 @@ def test_replica_scheduler_no_disks(client):  # NOQA
 
 @pytest.mark.skip(reason="TODO")
 @pytest.mark.node  # NOQA
-def test_replica_zone_anti_affinity(client):  # NOQA
-    """
-    Test replica scheduler with zone anti-affinity
-
-    1. Set zone anti-affinity to hard.
-    2. Label nodes 1 & 2 with same zone label "zone1".
-    Label node 3 with zone label "zone2".
-    3. Create a volume with 3 replicas.
-    4. Wait for volume condition `scheduled` to be false.
-    5. Label node 2 with zone label "zone3".
-    6. Wait for volume condition `scheduled` to be success.
-    7. Clear the volume.
-    8. Set zone anti-affinity to soft.
-    9. Change the zone labels on node 1 & 2 & 3 to "zone1".
-    10. Create a volume.
-    11. Wait for volume condition `scheduled` to be success.
-    12. Clean up the replica count, the zone labels and the volume.
-    """
-    pass
-
-
-@pytest.mark.skip(reason="TODO")
-@pytest.mark.node  # NOQA
 def test_disable_scheduling_on_cordoned_node(client):  # NOQA
     """
     Test replica scheduler: schedule replica based on
