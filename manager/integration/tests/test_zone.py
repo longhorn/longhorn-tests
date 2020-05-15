@@ -14,7 +14,13 @@ from common import wait_for_volume_replica_count
 from random import randrange
 from test_scheduling import wait_new_replica_ready
 from common import get_version_api_client
+from common import CONDITION_STATUS_TRUE
+from common import wait_for_volume_condition_scheduled
+from common import wait_for_volume_delete
+from test_scheduling import SETTING_REPLICA_SOFT_ANTI_AFFINITY
 
+
+SETTING_ZONE_SOFT_ANTI_AFFINITY = "replica-zone-soft-anti-affinity"
 
 # label deprecated for k8s >= v1.17
 DEPRECATED_K8S_ZONE_LABEL = "failure-domain.beta.kubernetes.io/zone"
@@ -110,6 +116,19 @@ def get_zone_replica_count(client, volume_name, zone_name): # NOQA
         if replica_host_zone == zone_name:
             zone_replica_count += 1
     return zone_replica_count
+
+
+def set_k8s_node_zone_label(core_api, node_name, zone_name): # NOQA
+    k8s_zone_label = get_k8s_zone_label()
+
+    payload = {
+        "metadata": {
+            "labels": {
+                k8s_zone_label: zone_name}
+        }
+    }
+
+    core_api.patch_node(node_name, body=payload)
 
 
 def test_zone_tags(client, core_api, volume_name, k8s_node_zone_tags):  # NOQA
@@ -220,3 +239,79 @@ def test_zone_tags(client, core_api, volume_name, k8s_node_zone_tags):  # NOQA
             lh_node_names.remove(replica.hostId)
 
         assert lh_node_names == []
+
+
+@pytest.mark.node  # NOQA
+def test_replica_zone_anti_affinity(client, core_api, volume_name, k8s_node_zone_tags):  # NOQA
+    """
+    Test replica scheduler with zone anti-affinity
+
+    1. Set zone anti-affinity to hard.
+    2. Label nodes 1 & 2 with same zone label "zone1".
+    Label node 3 with zone label "zone2".
+    3. Create a volume with 3 replicas.
+    4. Wait for volume condition `scheduled` to be false.
+    5. Label node 2 with zone label "zone3".
+    6. Wait for volume condition `scheduled` to be success.
+    7. Clear the volume.
+    8. Set zone anti-affinity to soft.
+    9. Change the zone labels on node 1 & 2 & 3 to "zone1".
+    10. Create a volume.
+    11. Wait for volume condition `scheduled` to be success.
+    12. Clean up the replica count, the zone labels and the volume.
+    """
+
+    wait_longhorn_node_zone_updated(client)
+
+    node_soft_anti_affinity_setting = \
+        client.by_id_setting(SETTING_REPLICA_SOFT_ANTI_AFFINITY)
+    client.update(node_soft_anti_affinity_setting, value="false")
+
+    zone_soft_anti_affinity_setting = \
+        client.by_id_setting(SETTING_ZONE_SOFT_ANTI_AFFINITY)
+    client.update(zone_soft_anti_affinity_setting, value="false")
+
+    volume = create_and_check_volume(client, volume_name)
+
+    assert volume.conditions.scheduled.status == "False"
+    assert volume.conditions.scheduled.reason == "ReplicaSchedulingFailure"
+
+    lh_nodes = client.list_node()
+
+    count = 0
+    for node in lh_nodes:
+        count += 1
+        set_k8s_node_zone_label(core_api, node.name, "lh-zone" + str(count))
+
+    wait_longhorn_node_zone_updated(client)
+
+    wait_for_volume_condition_scheduled(client, volume_name,
+                                        "status",
+                                        CONDITION_STATUS_TRUE)
+
+    zone_soft_anti_affinity_setting = \
+        client.by_id_setting(SETTING_ZONE_SOFT_ANTI_AFFINITY)
+    client.update(zone_soft_anti_affinity_setting, value="true")
+
+    volume = client.by_id_volume(volume_name)
+    client.delete(volume)
+    wait_for_volume_delete(client, volume_name)
+
+    for node in lh_nodes:
+        set_k8s_node_zone_label(core_api, node.name, "lh-zone1")
+
+    wait_longhorn_node_zone_updated(client)
+
+    volume = create_and_check_volume(client, volume_name)
+    wait_for_volume_condition_scheduled(client, volume_name,
+                                        "status",
+                                        CONDITION_STATUS_TRUE)
+
+    # reset default setting
+    node_soft_anti_affinity_setting = \
+        client.by_id_setting(SETTING_REPLICA_SOFT_ANTI_AFFINITY)
+    client.update(node_soft_anti_affinity_setting, value="false")
+
+    zone_soft_anti_affinity_setting = \
+        client.by_id_setting(SETTING_ZONE_SOFT_ANTI_AFFINITY)
+    client.update(zone_soft_anti_affinity_setting, value="true")
