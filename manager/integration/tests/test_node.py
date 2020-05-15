@@ -979,6 +979,28 @@ def test_node_controller_sync_disk_state(client):  # NOQA
                                      CONDITION_STATUS_TRUE)
 
 
+@pytest.mark.skip(reason="TODO")
+@pytest.mark.node  # NOQA
+@pytest.mark.mountdisk # NOQA
+def test_node_default_disk_added_back_with_extra_disk_unmounted(client):  # NOQA
+    """
+    [Node] Test adding default disk back with extra disk is unmounted
+    on the node
+
+    1. Create a host disk `extra_disk` using Longhorn volume and
+    attach it to node 1.
+    2. Delete the default disk on node 1.
+    3. Unmount the extra disk on node 1.
+    And wait for it becoming "Unschedulable".
+    4. Create and add the default disk back on node 1.
+    5. Wait and verify the default disk should become "Schedulable".
+    6. Mount extra disk back on node 1.
+    7. Wait and verify this extra disk should become "Schedulable".
+    8. Delete the host disk `extra_disk`.
+    """
+    pass
+
+
 @pytest.mark.node  # NOQA
 @pytest.mark.mountdisk # NOQA
 def test_node_umount_disk(client):  # NOQA
