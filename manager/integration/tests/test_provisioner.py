@@ -7,6 +7,7 @@ from common import create_and_wait_pod, create_pvc_spec, delete_and_wait_pod
 from common import generate_random_data, get_storage_api_client
 from common import get_volume_name, read_volume_data, size_to_string
 from common import write_pod_volume_data, check_volume_replicas
+from common import SETTING_REPLICA_NODE_SOFT_ANTI_AFFINITY
 
 DEFAULT_STORAGECLASS_NAME = "longhorn-provisioner"
 
@@ -149,11 +150,18 @@ def test_provisioner_tags(client, core_api, node_default_tags, storage_class, pv
     Test that a StorageClass can properly provision a volume with requested
     Tags.
 
+    Test prerequisite:
+      - set Replica Node Level Soft Anti-Affinity enabled
+
     1. Use `node_default_tags` to add default tags to nodes.
     2. Create a StorageClass with disk and node tag set.
     3. Create PVC and Pod.
     4. Verify the volume has the correct parameters and tags.
     """
+
+    replica_node_soft_anti_affinity_setting = \
+        client.by_id_setting(SETTING_REPLICA_NODE_SOFT_ANTI_AFFINITY)
+    client.update(replica_node_soft_anti_affinity_setting, value="true")
 
     # Prepare pod and volume specs.
     pod_name = 'provisioner-tags-test'
