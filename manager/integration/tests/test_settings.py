@@ -19,7 +19,7 @@ from test_infra import wait_for_node_up_longhorn
 KUBERNETES_DEFAULT_TOLERATION = "kubernetes.io"
 
 
-def test_toleration_setting():
+def test_setting_toleration():
     """
     Test toleration setting
 
