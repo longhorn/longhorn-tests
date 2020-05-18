@@ -7,10 +7,8 @@ from common import check_volume_data, cleanup_volume, \
     wait_for_volume_detached, wait_for_volume_degraded, \
     wait_for_volume_healthy, wait_scheduling_failure, \
     write_volume_random_data, wait_for_rebuild_complete
-
+from common import SETTING_REPLICA_NODE_SOFT_ANTI_AFFINITY
 from time import sleep
-
-SETTING_REPLICA_SOFT_ANTI_AFFINITY = "replica-soft-anti-affinity"
 
 
 @pytest.yield_fixture(autouse=True)
@@ -20,7 +18,7 @@ def reset_settings():
     host_id = get_self_host_id()
     node = client.by_id_node(host_id)
     client.update(node, allowScheduling=True)
-    setting = client.by_id_setting(SETTING_REPLICA_SOFT_ANTI_AFFINITY)
+    setting = client.by_id_setting(SETTING_REPLICA_NODE_SOFT_ANTI_AFFINITY)
     client.update(setting, value="true")
 
 
@@ -89,7 +87,7 @@ def test_soft_anti_affinity_scheduling(client, volume_name):  # NOQA
     assert len(volume.replicas) == 3
 
     data = write_volume_random_data(volume)
-    setting = client.by_id_setting(SETTING_REPLICA_SOFT_ANTI_AFFINITY)
+    setting = client.by_id_setting(SETTING_REPLICA_NODE_SOFT_ANTI_AFFINITY)
     client.update(setting, value="true")
     node = client.by_id_node(host_id)
     client.update(node, allowScheduling=False)
@@ -128,7 +126,7 @@ def test_soft_anti_affinity_detach(client, volume_name):  # NOQA
     assert len(volume.replicas) == 3
 
     data = write_volume_random_data(volume)
-    setting = client.by_id_setting(SETTING_REPLICA_SOFT_ANTI_AFFINITY)
+    setting = client.by_id_setting(SETTING_REPLICA_NODE_SOFT_ANTI_AFFINITY)
     client.update(setting, value="true")
     node = client.by_id_node(host_id)
     client.update(node, allowScheduling=False)
@@ -176,7 +174,7 @@ def test_hard_anti_affinity_scheduling(client, volume_name):  # NOQA
     assert len(volume.replicas) == 3
 
     data = write_volume_random_data(volume)
-    setting = client.by_id_setting(SETTING_REPLICA_SOFT_ANTI_AFFINITY)
+    setting = client.by_id_setting(SETTING_REPLICA_NODE_SOFT_ANTI_AFFINITY)
     client.update(setting, value="false")
     node = client.by_id_node(host_id)
     client.update(node, allowScheduling=False)
@@ -233,7 +231,7 @@ def test_hard_anti_affinity_detach(client, volume_name):  # NOQA
     assert len(volume.replicas) == 3
 
     data = write_volume_random_data(volume)
-    setting = client.by_id_setting(SETTING_REPLICA_SOFT_ANTI_AFFINITY)
+    setting = client.by_id_setting(SETTING_REPLICA_NODE_SOFT_ANTI_AFFINITY)
     client.update(setting, value="false")
     node = client.by_id_node(host_id)
     client.update(node, allowScheduling=False)
@@ -288,7 +286,7 @@ def test_hard_anti_affinity_live_rebuild(client, volume_name):  # NOQA
     assert len(volume.replicas) == 3
 
     data = write_volume_random_data(volume)
-    setting = client.by_id_setting(SETTING_REPLICA_SOFT_ANTI_AFFINITY)
+    setting = client.by_id_setting(SETTING_REPLICA_NODE_SOFT_ANTI_AFFINITY)
     client.update(setting, value="false")
     node = client.by_id_node(host_id)
     client.update(node, allowScheduling=False)
@@ -336,7 +334,7 @@ def test_hard_anti_affinity_offline_rebuild(client, volume_name):  # NOQA
     assert len(volume.replicas) == 3
 
     data = write_volume_random_data(volume)
-    setting = client.by_id_setting(SETTING_REPLICA_SOFT_ANTI_AFFINITY)
+    setting = client.by_id_setting(SETTING_REPLICA_NODE_SOFT_ANTI_AFFINITY)
     client.update(setting, value="false")
     node = client.by_id_node(host_id)
     client.update(node, allowScheduling=False)

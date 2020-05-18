@@ -27,7 +27,7 @@ from common import wait_for_disk_status, wait_for_disk_update, \
     wait_for_disk_uuid
 from common import exec_nsenter
 
-from test_scheduling import SETTING_REPLICA_SOFT_ANTI_AFFINITY
+from common import SETTING_REPLICA_NODE_SOFT_ANTI_AFFINITY
 
 CREATE_DEFAULT_DISK_LABEL = "node.longhorn.io/create-default-disk"
 CREATE_DEFAULT_DISK_LABEL_VALUE_CONFIG = "config"
@@ -1253,9 +1253,9 @@ def test_replica_datapath_cleanup(client):  # NOQA
     lht_hostId = get_self_host_id()
 
     # set soft antiaffinity setting to true
-    node_soft_anti_affinity_setting = \
-        client.by_id_setting(SETTING_REPLICA_SOFT_ANTI_AFFINITY)
-    client.update(node_soft_anti_affinity_setting, value="true")
+    replica_node_soft_anti_affinity_setting = \
+        client.by_id_setting(SETTING_REPLICA_NODE_SOFT_ANTI_AFFINITY)
+    client.update(replica_node_soft_anti_affinity_setting, value="true")
 
     node = client.by_id_node(lht_hostId)
     extra_disk_path = create_host_disk(client, "extra-disk",
@@ -1327,11 +1327,6 @@ def test_replica_datapath_cleanup(client):  # NOQA
                                        len(update_disks))
 
     cleanup_host_disk(client, 'extra-disk')
-
-    # reset soft antiaffinity setting to false
-    node_soft_anti_affinity_setting = \
-        client.by_id_setting(SETTING_REPLICA_SOFT_ANTI_AFFINITY)
-    client.update(node_soft_anti_affinity_setting, value="false")
 
 
 @pytest.mark.node
