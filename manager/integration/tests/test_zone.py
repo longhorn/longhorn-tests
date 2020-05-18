@@ -18,7 +18,7 @@ from common import CONDITION_STATUS_TRUE
 from common import wait_for_volume_condition_scheduled
 from common import wait_for_volume_delete
 from common import SETTING_REPLICA_NODE_SOFT_ANTI_AFFINITY
-SETTING_ZONE_SOFT_ANTI_AFFINITY = "replica-zone-soft-anti-affinity"
+from common import SETTING_REPLICA_ZONE_SOFT_ANTI_AFFINITY
 
 # label deprecated for k8s >= v1.17
 DEPRECATED_K8S_ZONE_LABEL = "failure-domain.beta.kubernetes.io/zone"
@@ -265,9 +265,9 @@ def test_replica_zone_anti_affinity(client, core_api, volume_name, k8s_node_zone
         client.by_id_setting(SETTING_REPLICA_NODE_SOFT_ANTI_AFFINITY)
     client.update(replica_node_soft_anti_affinity_setting, value="false")
 
-    zone_soft_anti_affinity_setting = \
-        client.by_id_setting(SETTING_ZONE_SOFT_ANTI_AFFINITY)
-    client.update(zone_soft_anti_affinity_setting, value="false")
+    replica_zone_soft_anti_affinity_setting = \
+        client.by_id_setting(SETTING_REPLICA_ZONE_SOFT_ANTI_AFFINITY)
+    client.update(replica_zone_soft_anti_affinity_setting, value="false")
 
     volume = create_and_check_volume(client, volume_name)
 
@@ -287,9 +287,9 @@ def test_replica_zone_anti_affinity(client, core_api, volume_name, k8s_node_zone
                                         "status",
                                         CONDITION_STATUS_TRUE)
 
-    zone_soft_anti_affinity_setting = \
-        client.by_id_setting(SETTING_ZONE_SOFT_ANTI_AFFINITY)
-    client.update(zone_soft_anti_affinity_setting, value="true")
+    replica_zone_soft_anti_affinity_setting = \
+        client.by_id_setting(SETTING_REPLICA_ZONE_SOFT_ANTI_AFFINITY)
+    client.update(replica_zone_soft_anti_affinity_setting, value="true")
 
     volume = client.by_id_volume(volume_name)
     client.delete(volume)
@@ -304,7 +304,3 @@ def test_replica_zone_anti_affinity(client, core_api, volume_name, k8s_node_zone
     wait_for_volume_condition_scheduled(client, volume_name,
                                         "status",
                                         CONDITION_STATUS_TRUE)
-
-    zone_soft_anti_affinity_setting = \
-        client.by_id_setting(SETTING_ZONE_SOFT_ANTI_AFFINITY)
-    client.update(zone_soft_anti_affinity_setting, value="true")
