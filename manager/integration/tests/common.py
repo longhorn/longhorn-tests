@@ -126,6 +126,8 @@ SETTING_TAINT_TOLERATION = "taint-toleration"
 
 SETTING_AUTO_SALVAGE = "auto-salvage"
 
+SETTING_REPLICA_NODE_SOFT_ANTI_AFFINITY = "replica-soft-anti-affinity"
+
 CSI_UNKNOWN = 0
 CSI_TRUE = 1
 CSI_FALSE = 2
@@ -2258,6 +2260,17 @@ def reset_settings(client):
         print("Exception when update "
               "create default disk labeled nodes setting",
               create_default_disk_labeled_nodes_setting, e)
+
+    replica_node_soft_anti_affinity_setting = \
+        client.by_id_setting(SETTING_REPLICA_NODE_SOFT_ANTI_AFFINITY)
+    try:
+        client.update(replica_node_soft_anti_affinity_setting,
+                      value="false")
+    except Exception as e:
+        print("Exception when update "
+              "Replica Node Level Soft Anti-Affinity setting",
+              replica_node_soft_anti_affinity_setting, e)
+
 
 
 def reset_engine_image(client):

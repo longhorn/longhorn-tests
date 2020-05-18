@@ -17,9 +17,7 @@ from common import get_version_api_client
 from common import CONDITION_STATUS_TRUE
 from common import wait_for_volume_condition_scheduled
 from common import wait_for_volume_delete
-from test_scheduling import SETTING_REPLICA_SOFT_ANTI_AFFINITY
-
-
+from common import SETTING_REPLICA_NODE_SOFT_ANTI_AFFINITY
 SETTING_ZONE_SOFT_ANTI_AFFINITY = "replica-zone-soft-anti-affinity"
 
 # label deprecated for k8s >= v1.17
@@ -263,9 +261,9 @@ def test_replica_zone_anti_affinity(client, core_api, volume_name, k8s_node_zone
 
     wait_longhorn_node_zone_updated(client)
 
-    node_soft_anti_affinity_setting = \
-        client.by_id_setting(SETTING_REPLICA_SOFT_ANTI_AFFINITY)
-    client.update(node_soft_anti_affinity_setting, value="false")
+    replica_node_soft_anti_affinity_setting = \
+        client.by_id_setting(SETTING_REPLICA_NODE_SOFT_ANTI_AFFINITY)
+    client.update(replica_node_soft_anti_affinity_setting, value="false")
 
     zone_soft_anti_affinity_setting = \
         client.by_id_setting(SETTING_ZONE_SOFT_ANTI_AFFINITY)
@@ -306,11 +304,6 @@ def test_replica_zone_anti_affinity(client, core_api, volume_name, k8s_node_zone
     wait_for_volume_condition_scheduled(client, volume_name,
                                         "status",
                                         CONDITION_STATUS_TRUE)
-
-    # reset default setting
-    node_soft_anti_affinity_setting = \
-        client.by_id_setting(SETTING_REPLICA_SOFT_ANTI_AFFINITY)
-    client.update(node_soft_anti_affinity_setting, value="false")
 
     zone_soft_anti_affinity_setting = \
         client.by_id_setting(SETTING_ZONE_SOFT_ANTI_AFFINITY)
