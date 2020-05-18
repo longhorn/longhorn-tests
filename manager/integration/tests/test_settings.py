@@ -198,3 +198,34 @@ def check_tolerations_set(current_toleration_list, set_tolerations):
                  "operator": t.operator, "effect": t.effect}
 
     return current_tolerations == set_tolerations
+
+
+@pytest.skip(reason="TODO")
+def test_setting_guaranteed_engine_cpu():
+    """
+    Test setting Guaranteed Engine CPU
+
+    Notice any change of the setting will result in all the instance manager
+    recreated, no matter if there is any volume attached or not.
+
+    1. Change the setting to `xxx`. Update setting should fail.
+    2. Change the setting to `0.1`
+    3. Wait for all the IM pods to recreated and become running
+    4. Verify every IM pod has guaranteed CPU set correctly to 100m
+    5. Change the setting to `0`
+    6. Wait for all the IM pods to recreated and become running
+    7. Verify every IM pod no longer has guaranteed CPU set
+    8. Change the setting to `200m`
+    9. Wait for all the IM pods to recreated and become running
+    10. Verify every IM pod has guaranteed CPU set to 200m
+    11. Change the setting to `10`, means 10 vcpus
+    12. Wait for all the IM pods to recreated but unable to run
+    13. Verify no IM pod can become running, with guaranteed CPU set to 10
+    14. Change the setting to `0.25`
+    15. Wait for all the IM pods to recreated and become running
+    16. Verify every IM pod has guaranteed CPU set to 250m
+    17. Create a volume, verify everything works as normal
+
+    Note: use fixture to restore the setting into the original state
+    """
+    pass
