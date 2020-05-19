@@ -379,33 +379,3 @@ def test_replica_rebuild_per_volume_limit():
 
     """
     pass
-
-
-@pytest.mark.skip(reason="TODO")
-def test_replica_rebuild_concurrent_limit():
-    """
-    Test setting ReplicaRebuildConcurrentLimit
-
-    1. Create 3 volumes, each with 3 replicas.
-    2. Attach the volumes and write a few hundreds MB data into each of them.
-    3. Set ReplicaRebuildConcurrentLimit to 0.
-    4. Delete two of the three replicas for every volume.
-    5. Wait for 60 seconds. Check the volume's replica list, make sure no
-    rebuild happened.
-    6. Set ReplicaRebuildConcurrentLimit to 1.
-    7. Monitoring the three volumes, the maximum number of rebuilding replica
-    of those three volumes should be 1.
-        1. Make sure there is at least one time we observed one replica is
-        being rebuilt.
-    8. Wait for the rebuild to finish. Check the correctness of the data.
-    9. Set ReplicaRebuildConcurrentLimit to 0.
-    10. Delete two of the the replicas for every volume.
-    11. Set ReplicaRebuildConcurrentLimit to 10.
-    12. Monitoring the three volumes, the maximum number of rebuilding replica
-    of those three volumes should be 3 (due to the per volume limit).
-        1. Make sure there is at least one time we observed three replica is
-        being rebuilt.
-    13. Cleanup the volume
-
-    """
-    pass
