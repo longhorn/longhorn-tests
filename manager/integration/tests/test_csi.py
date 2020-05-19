@@ -219,6 +219,7 @@ def backupstore_test(client, core_api, csi_pv, pvc, pod_make, pod_name, base_ima
     snap = create_snapshot(client, vol_name)
     volume.snapshotBackup(name=snap.name)
 
+    common.wait_for_backup_completion(client, vol_name, snap.name)
     bv, b = common.find_backup(client, vol_name, snap.name)
 
     pod2_name = 'csi-backup-test-' + str(i)
