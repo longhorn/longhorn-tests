@@ -981,7 +981,6 @@ def test_node_controller_sync_disk_state(client):  # NOQA
                                      CONDITION_STATUS_TRUE)
 
 
-@pytest.mark.skip(reason="TODO")
 @pytest.mark.node  # NOQA
 @pytest.mark.mountdisk # NOQA
 def test_node_default_disk_added_back_with_extra_disk_unmounted(client):  # NOQA
@@ -1000,7 +999,106 @@ def test_node_default_disk_added_back_with_extra_disk_unmounted(client):  # NOQA
     7. Wait and verify this extra disk should become "Schedulable".
     8. Delete the host disk `extra_disk`.
     """
-    pass
+    # Cleanup all existing disks
+    lht_hostId = get_self_host_id()
+    cleanup_node_disks(client, lht_hostId)
+    node = client.by_id_node(lht_hostId)
+
+    # Create a default disk
+    default_disk = {"default-disk":
+                    {"path": DEFAULT_DISK_PATH,
+                     "allowScheduling": True,
+                     "storageReserved": SMALL_DISK_SIZE}}
+    node = node.diskUpdate(disks=default_disk)
+    node = wait_for_disk_update(client, node.name, 1)
+    assert len(node.disks) == 1
+
+    # Create a host disk and attached it to this node
+    extra_disk_volume_name = 'extra-disk'
+    extra_disk_path = create_host_disk(client, extra_disk_volume_name,
+                                       str(Gi), lht_hostId)
+    extra_disk = {"path": extra_disk_path, "allowScheduling": True}
+
+    update_disk = get_update_disks(node.disks)
+    update_disk["extra-disk"] = extra_disk
+    node = node.diskUpdate(disks=update_disk)
+    node = common.wait_for_disk_update(client, lht_hostId,
+                                       len(update_disk))
+    assert len(node.disks) == len(update_disk)
+
+    # Make sure all disks are schedulable
+    for name, disk in node.disks.items():
+        wait_for_disk_conditions(client, node.name,
+                                 name, DISK_CONDITION_SCHEDULABLE,
+                                 CONDITION_STATUS_TRUE)
+
+    # Delete default disk
+    update_disk = get_update_disks(node.disks)
+    update_disk["default-disk"].allowScheduling = False
+    node = node.diskUpdate(disks=update_disk)
+    node = common.wait_for_disk_update(client, lht_hostId,
+                                       len(update_disk))
+    remain_disk = {}
+    for name, disk in node.disks.items():
+        if disk.path == extra_disk_path:
+            remain_disk[name] = disk
+    node = node.diskUpdate(disks=remain_disk)
+    node = wait_for_disk_update(client, lht_hostId,
+                                len(remain_disk))
+    assert len(node.disks) == len(remain_disk)
+
+    # Umount the extra disk and wait for unschedulable condition
+    common.umount_disk(extra_disk_path)
+    for name, disk in node.disks.items():
+        wait_for_disk_conditions(client, node.name,
+                                 name, DISK_CONDITION_SCHEDULABLE,
+                                 CONDITION_STATUS_FALSE)
+
+    # Add default disk back and wait for schedulable condition
+    default_disk = {"path": DEFAULT_DISK_PATH, "allowScheduling": True,
+                    "storageReserved": SMALL_DISK_SIZE}
+    update_disk = get_update_disks(node.disks)
+    update_disk["default-disk"] = default_disk
+    node = node.diskUpdate(disks=update_disk)
+    node = common.wait_for_disk_update(client, lht_hostId,
+                                       len(update_disk))
+    for name, disk in node.disks.items():
+        if disk.path == DEFAULT_DISK_PATH:
+            wait_for_disk_conditions(client, node.name,
+                                     name, DISK_CONDITION_SCHEDULABLE,
+                                     CONDITION_STATUS_TRUE)
+
+    # Mount extra disk back
+    disk_volume = client.by_id_volume(extra_disk_volume_name)
+    dev = get_volume_endpoint(disk_volume)
+    common.mount_disk(dev, extra_disk_path)
+
+    # Check all the disks should be at schedulable condition
+    node = node.diskUpdate(disks=update_disk)
+    node = common.wait_for_disk_update(client, lht_hostId,
+                                       len(update_disk))
+    for name, disk in node.disks.items():
+        wait_for_disk_conditions(client, node.name,
+                                 name, DISK_CONDITION_SCHEDULABLE,
+                                 CONDITION_STATUS_TRUE)
+
+    # Remove extra disk.
+    update_disk = get_update_disks(node.disks)
+    update_disk[extra_disk_volume_name].allowScheduling = False
+    node = node.diskUpdate(disks=update_disk)
+    node = common.wait_for_disk_update(client, lht_hostId,
+                                       len(update_disk))
+
+    update_disk = get_update_disks(node.disks)
+    remain_disk = {}
+    for name, disk in update_disk.items():
+        if disk.path != extra_disk_path:
+            remain_disk[name] = disk
+    node = node.diskUpdate(disks=remain_disk)
+    node = wait_for_disk_update(client, lht_hostId,
+                                len(remain_disk))
+
+    cleanup_host_disk(client, extra_disk_volume_name)
 
 
 @pytest.mark.node  # NOQA
