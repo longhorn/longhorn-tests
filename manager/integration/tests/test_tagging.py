@@ -7,6 +7,7 @@ from common import check_volume_replicas, cleanup_volume, \
     generate_volume_name, get_self_host_id, get_update_disks, set_node_tags, \
     wait_for_volume_delete, wait_for_volume_detached, \
     wait_for_volume_healthy, wait_scheduling_failure
+
 from time import sleep
 
 from common import RETRY_COUNTS, RETRY_INTERVAL, SIZE
@@ -87,6 +88,9 @@ def test_tag_basic(client):  # NOQA
 def test_tag_scheduling(client, node_default_tags):  # NOQA
     """
     Test success scheduling with tags
+
+    Test prerequisites:
+      - set Replica Node Level Soft Anti-Affinity enabled
 
     Case 1:
     Don't specify any tags, replica should be scheduled to 3 disks.
@@ -213,12 +217,14 @@ def test_tag_scheduling_on_update(client, node_default_tags, volume_name):  # NO
     Test that Replicas get scheduled if a Node/Disk disks updated with the
     proper Tags.
 
-    1. Enable the setting replica-soft-anti-affinity.
-    2. Create volume with tags that can not be satisfied
-    3. Wait for volume to fail scheduling
-    4. Update the node and disk with extra tags to satisify the volume
-    5. Verify now volume has been scheduled
-    6. Attach the volume and check the replicas has been scheduled properly
+    Test prerequisites:
+      - set Replica Node Level Soft Anti-Affinity enabled
+
+    1. Create volume with tags that can not be satisfied
+    2. Wait for volume to fail scheduling
+    3. Update the node and disk with extra tags to satisify the volume
+    4. Verify now volume has been scheduled
+    5. Attach the volume and check the replicas has been scheduled properly
     """
     replica_node_soft_anti_affinity_setting = \
         client.by_id_setting(SETTING_REPLICA_NODE_SOFT_ANTI_AFFINITY)
