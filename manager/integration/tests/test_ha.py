@@ -1021,3 +1021,34 @@ def test_engine_crash_for_restore_volume():
     12. Check the data md5sum for the restored data.
     """
     pass
+
+
+@pytest.mark.skip(reason="TODO")
+def test_engine_crash_for_dr_volume():
+    """
+    [HA] Test DR volume can be recovered after
+    the engine crashes unexpectedly.
+
+    1. Setup a random backupstore.
+    2. Create volume and start the pod.
+    3. Write random data to the pod volume and get the md5sum.
+    4. Create a backup for the volume.
+    5. Create a DR volume from the backup.
+    6. Wait for the DR volume init restore complete.
+    7. Wait more data to the original volume and get the md5sum
+    8. Create the 2nd backup for the original volume.
+    9. Wait for the incremental restore triggered
+       after the 2nd backup creation.
+    10. Crash the DR volume engine process during the incremental restore.
+    11. Wait for the DR volume detaching.
+    12. Wait for the DR volume reattached.
+    13. Verify the DR volume:
+      13.1. `volume.ready == false`.
+      13.2. `volume.conditions[restore].status == True &&
+            volume.conditions[restore].reason == "RestoreInProgress"`.
+      13.3. `volume.standby == true`
+    14. Activate the DR volume and wait for detached.
+    15. Create a pod for the restored volume and wait for the pod start.
+    16. Check the data md5sum for the DR volume.
+    """
+    pass
