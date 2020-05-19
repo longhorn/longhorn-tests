@@ -100,6 +100,10 @@ def test_tag_scheduling(client, node_default_tags):  # NOQA
     Case 4:
     Combine node and disk tags to schedule all replicas on one node.
     """
+    replica_node_soft_anti_affinity_setting = \
+        client.by_id_setting(SETTING_REPLICA_NODE_SOFT_ANTI_AFFINITY)
+    client.update(replica_node_soft_anti_affinity_setting, value="true")
+
     host_id = get_self_host_id()
     tag_specs = [
         # Select all Nodes.
