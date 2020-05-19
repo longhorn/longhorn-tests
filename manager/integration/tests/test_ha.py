@@ -602,6 +602,9 @@ def test_rebuild_replica_and_from_replica_on_the_same_node(
     [HA] Test the corner case that the from-replica and the rebuilding replica
     are on the same node
 
+    Test prerequisites:
+      - set Replica Node Level Soft Anti-Affinity enabled
+
     1. Enable the setting replica-soft-anti-affinity.
     2. Disable scheduling for all nodes except for one.
     3. Create a pod with Longhorn volume and wait for pod to start
