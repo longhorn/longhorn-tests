@@ -10,21 +10,23 @@ from string import ascii_lowercase, digits
 from common import core_api, client  # NOQA
 from common import Gi, SIZE, CONDITION_STATUS_FALSE, \
     CONDITION_STATUS_TRUE, DEFAULT_DISK_PATH, DIRECTORY_PATH, \
-    DISK_CONDITION_SCHEDULABLE, DISK_CONDITION_READY
+    DISK_CONDITION_SCHEDULABLE, DISK_CONDITION_READY, \
+    NODE_CONDITION_SCHEDULABLE
 from common import get_core_api_client, get_longhorn_api_client, \
     get_self_host_id
 from common import SETTING_STORAGE_OVER_PROVISIONING_PERCENTAGE, \
     SETTING_STORAGE_MINIMAL_AVAILABLE_PERCENTAGE, \
     SETTING_DEFAULT_DATA_PATH, \
     SETTING_CREATE_DEFAULT_DISK_LABELED_NODES, \
-    DEFAULT_STORAGE_OVER_PROVISIONING_PERCENTAGE
+    DEFAULT_STORAGE_OVER_PROVISIONING_PERCENTAGE, \
+    SETTING_DISABLE_SCHEDULING_ON_CORDONED_NODE
 from common import VOLUME_FRONTEND_BLOCKDEV
 from common import get_volume_endpoint
 from common import get_update_disks
 from common import wait_for_disk_status, wait_for_disk_update, \
     wait_for_disk_conditions, wait_for_node_tag_update, \
     cleanup_node_disks, wait_for_disk_storage_available, \
-    wait_for_disk_uuid
+    wait_for_disk_uuid, wait_for_node_schedulable_condition
 from common import exec_nsenter
 
 from common import SETTING_REPLICA_NODE_SOFT_ANTI_AFFINITY
@@ -36,6 +38,19 @@ DEFAULT_NODE_TAG_ANNOTATION = "node.longhorn.io/default-node-tags"
 SMALL_DISK_SIZE = (2 * 1024 * 1024)
 TEST_FILE = 'test'
 NODE_UPDATE_WAIT_INTERVAL = 2
+
+
+def set_node_cordon(api, node_name, to_cordon):
+    """
+    Set a kubernetes node schedulable status
+    """
+    payload = {
+        "spec": {
+            "unschedulable": to_cordon
+        }
+    }
+
+    api.patch_node(node_name, payload)
 
 
 @pytest.fixture
@@ -352,9 +367,12 @@ def test_replica_scheduler_no_disks(client):  # NOQA
     common.wait_for_volume_delete(client, vol_name)
 
 
-@pytest.mark.skip(reason="TODO")
 @pytest.mark.node  # NOQA
-def test_disable_scheduling_on_cordoned_node(client):  # NOQA
+def test_disable_scheduling_on_cordoned_node(client,  # NOQA
+                                             core_api,  # NOQA
+                                             reset_default_disk_label,  # NOQA
+                                             reset_disk_and_tag_annotations,  # NOQA
+                                             reset_disk_settings):  # NOQA
     """
     Test replica scheduler: schedule replica based on
     `Disable Scheduling On Cordoned Node` setting
@@ -367,9 +385,72 @@ def test_disable_scheduling_on_cordoned_node(client):  # NOQA
     6. Set `Disable Scheduling On Cordoned Node` to false.
     7. Automatically the scheduler should creates three replicas
     from step 5 failure.
+    8. Attach this volume, write data to it and check the data.
+    9. Delete the test volume.
     """
-    pass
+    # Set `Disable Scheduling On Cordoned Node` to true
+    disable_scheduling_on_cordoned_node_setting = \
+        client.by_id_setting(SETTING_DISABLE_SCHEDULING_ON_CORDONED_NODE)
+    client.update(disable_scheduling_on_cordoned_node_setting, value="true")
 
+    # Set `Replica Node Level Soft Anti-Affinity` to false
+    node_soft_anti_affinity_setting = \
+        client.by_id_setting(SETTING_REPLICA_NODE_SOFT_ANTI_AFFINITY)
+    client.update(node_soft_anti_affinity_setting, value="false")
+
+    # Get one node
+    nodes = client.list_node()
+    node = nodes[0]
+
+    # Set cordon on node
+    set_node_cordon(core_api, node.name, True)
+
+    node = wait_for_node_schedulable_condition(
+        get_longhorn_api_client(), node.name)
+
+    # Node schedulable condition should be faulse
+    assert node.conditions[NODE_CONDITION_SCHEDULABLE]["status"] ==  \
+        "False"
+    assert node.conditions[NODE_CONDITION_SCHEDULABLE]["reason"] == \
+        "KubernetesNodeCordoned"
+
+    # Create a volume and check its schedulable condition should be false
+    vol_name = common.generate_volume_name()
+    client.create_volume(name=vol_name, size=SIZE,
+                         numberOfReplicas=len(nodes))
+    common.wait_for_volume_detached(client, vol_name)
+    common.wait_for_volume_condition_scheduled(client, vol_name,
+                                               "status",
+                                               CONDITION_STATUS_FALSE)
+
+    # Set uncordon on node
+    set_node_cordon(core_api, node.name, False)
+
+    # Node schedulable condition should be true
+    node = wait_for_node_schedulable_condition(
+        get_longhorn_api_client(), node.name)
+    assert node.conditions[NODE_CONDITION_SCHEDULABLE]["status"] == "True"
+
+    # Created volume schedulable condition change to true
+    volume = common.wait_for_volume_condition_scheduled(client, vol_name,
+                                                        "status",
+                                                        CONDITION_STATUS_TRUE)
+    volume = common.wait_for_volume_detached(client, vol_name)
+    assert volume.state == "detached"
+    assert volume.created != ""
+
+    # Attach the volume and write data then check it.
+    host_id = get_self_host_id()
+    volume.attach(hostId=host_id)
+    volume = common.wait_for_volume_healthy(client, vol_name)
+
+    assert len(volume.replicas) == 3
+
+    data = common.write_volume_random_data(volume)
+    common.check_volume_data(volume, data)
+
+    # Cleanup volume
+    cleanup_volume(client, vol_name)
 
 @pytest.mark.node  # NOQA
 @pytest.mark.mountdisk # NOQA
