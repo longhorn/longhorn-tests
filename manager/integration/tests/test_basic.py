@@ -46,7 +46,6 @@ from common import create_snapshot
 from common import expand_attached_volume
 from common import wait_for_dr_volume_expansion
 from common import check_block_device_size
-from common import wait_for_rebuild_complete
 from common import wait_for_volume_expansion
 from common import fail_replica_expansion, wait_for_expansion_failure
 from common import VOLUME_FRONTEND_BLOCKDEV, VOLUME_FRONTEND_ISCSI
@@ -1361,28 +1360,27 @@ def test_volume_update_replica_count(clients, volume_name):  # NOQA
     """
     Test updating volume's replica count
 
-    1. Create a volume with 3 replicas
+    1. Create a volume with 2 replicas
     2. Attach the volume
-    3. Increase the replica to 5.
+    3. Increase the replica to 3.
     4. Volume will become degraded and start rebuilding
     5. Wait for rebuilding to complete
     6. Update the replica count to 2. Volume should remain healthy
-    7. Remove 3 replicas, so there will be 2 replicas in the volume
+    7. Remove 1 replicas, so there will be 2 replicas in the volume
     8. Verify the volume is still healthy
 
-    FIXME: Don't need to wait for volume to rebuild and healthy before step 8.
     Volume should always be healthy even only with 2 replicas.
     """
     for host_id, client in iter(clients.items()):
         break
 
-    replica_count = 3
+    replica_count = 2
     volume = create_and_check_volume(client, volume_name, replica_count)
 
     volume.attach(hostId=host_id)
     volume = common.wait_for_volume_healthy(client, volume_name)
 
-    replica_count = 5
+    replica_count = 3
     volume = volume.updateReplicaCount(replicaCount=replica_count)
     volume = common.wait_for_volume_degraded(client, volume_name)
     volume = common.wait_for_volume_healthy(client, volume_name)
@@ -1395,13 +1393,10 @@ def test_volume_update_replica_count(clients, volume_name):  # NOQA
     assert len(volume.replicas) == old_replica_count
 
     volume.replicaRemove(name=volume.replicas[0].name)
-    volume.replicaRemove(name=volume.replicas[1].name)
-    volume.replicaRemove(name=volume.replicas[2].name)
 
-    volume = common.wait_for_volume_replica_count(client,
-                                                  volume_name, replica_count)
-    wait_for_rebuild_complete(client, volume_name)
-    volume = common.wait_for_volume_healthy(client, volume_name)
+    volume = common.wait_for_volume_replica_count(client, volume_name,
+                                                  replica_count)
+    assert volume.robustness == "healthy"
     assert len(volume.replicas) == replica_count
 
     client.delete(volume)
