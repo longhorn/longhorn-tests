@@ -4,13 +4,10 @@ import time
 import random
 
 from common import client, core_api, volume_name  # NOQA
-from common import SIZE, VOLUME_RWTEST_SIZE, EXPAND_SIZE, Gi
-from common import DATA_SIZE_IN_MB_2, DATA_SIZE_IN_MB_3
 from common import check_volume_data, cleanup_volume, create_and_check_volume
 from common import delete_replica_processes, crash_replica_processes
 from common import get_self_host_id, check_volume_endpoint
 from common import wait_for_snapshot_purge, write_volume_random_data
-from common import RETRY_COUNTS, RETRY_INTERVAL
 from common import create_snapshot
 from common import expand_attached_volume, check_block_device_size
 from common import write_volume_data, generate_random_data
@@ -37,6 +34,11 @@ from common import wait_for_volume_restoration_start
 from common import wait_for_volume_restoration_completed
 from common import check_volume_last_backup
 from common import activate_standby_volume
+
+from common import SIZE, VOLUME_RWTEST_SIZE, EXPAND_SIZE, Gi
+from common import DATA_SIZE_IN_MB_2, DATA_SIZE_IN_MB_3
+from common import RETRY_COUNTS, RETRY_INTERVAL
+from common import SETTING_REPLICA_NODE_SOFT_ANTI_AFFINITY
 
 
 @pytest.mark.coretest   # NOQA
@@ -600,18 +602,24 @@ def test_rebuild_replica_and_from_replica_on_the_same_node(
     [HA] Test the corner case that the from-replica and the rebuilding replica
     are on the same node
 
-    1. Disable scheduling for all nodes except for one.
-    2. Create a pod with Longhorn volume and wait for pod to start
-    3. Write data to `/data/test` inside the pod and get `original_checksum`
-    4. Find running replicas of the volume
-    5. Crash one of the running replicas.
-    6. Wait for the replica rebuild to start.
-    7. Check if the rebuilding replica is a new replica,
+    1. Enable the setting replica-soft-anti-affinity.
+    2. Disable scheduling for all nodes except for one.
+    3. Create a pod with Longhorn volume and wait for pod to start
+    4. Write data to `/data/test` inside the pod and get `original_checksum`
+    5. Find running replicas of the volume
+    6. Crash one of the running replicas.
+    7. Wait for the replica rebuild to start.
+    8. Check if the rebuilding replica is a new replica,
        and the replica which is sending data is an existing replica.
-    8. Wait for volume to finish the rebuild and become healthy,
+    9. Wait for volume to finish the rebuild and become healthy,
        then check if the replica is rebuilt on the only available node
-    9. Check md5sum for the written data
+    10. Check md5sum for the written data
     """
+
+    replica_node_soft_anti_affinity_setting = \
+        client.by_id_setting(SETTING_REPLICA_NODE_SOFT_ANTI_AFFINITY)
+    client.update(replica_node_soft_anti_affinity_setting, value="true")
+
     available_node_name = ""
     nodes = client.list_node()
     assert len(nodes) > 0
