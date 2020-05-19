@@ -104,6 +104,8 @@ SETTING_STORAGE_OVER_PROVISIONING_PERCENTAGE = \
 SETTING_STORAGE_MINIMAL_AVAILABLE_PERCENTAGE = \
     "storage-minimal-available-percentage"
 SETTING_CREATE_DEFAULT_DISK_LABELED_NODES = "create-default-disk-labeled-nodes"
+SETTING_DISABLE_SCHEDULING_ON_CORDONED_NODE = \
+    "disable-scheduling-on-cordoned-node"
 SETTING_DEFAULT_DATA_PATH = "default-data-path"
 DEFAULT_DISK_PATH = "/var/lib/longhorn/"
 DEFAULT_STORAGE_OVER_PROVISIONING_PERCENTAGE = "500"
@@ -113,6 +115,7 @@ DEFAULT_LONGHORN_STATIC_STORAGECLASS_NAME = "longhorn-static"
 DEFAULT_REPLICA_DIRECTORY = os.path.join(DEFAULT_DISK_PATH, "replicas/")
 
 NODE_CONDITION_MOUNTPROPAGATION = "MountPropagation"
+NODE_CONDITION_SCHEDULABLE = "Schedulable"
 DISK_CONDITION_SCHEDULABLE = "Schedulable"
 DISK_CONDITION_READY = "Ready"
 
@@ -2282,6 +2285,16 @@ def reset_settings(client):
               "Replica Node Level Soft Anti-Affinity setting",
               replica_node_soft_anti_affinity_setting, e)
 
+    disable_scheduling_on_cordoned_node_setting = \
+        client.by_id_setting(SETTING_DISABLE_SCHEDULING_ON_CORDONED_NODE)
+    try:
+        client.update(disable_scheduling_on_cordoned_node_setting,
+                      value="true")
+    except Exception as e:
+        print("Exception when update "
+              "Disable Scheduling On Cordoned Node setting",
+              disable_scheduling_on_cordoned_node_setting, e)
+
 
 def reset_engine_image(client):
     core_api = get_core_api_client()
@@ -2316,6 +2329,24 @@ def wait_for_node_mountpropagation_condition(client, name):
                 "status" in \
                 conditions[NODE_CONDITION_MOUNTPROPAGATION].keys() \
                 and conditions[NODE_CONDITION_MOUNTPROPAGATION]["status"] != \
+                CONDITION_STATUS_UNKNOWN:
+            break
+        time.sleep(RETRY_INTERVAL)
+    return node
+
+
+def wait_for_node_schedulable_condition(client, name):
+    for i in range(RETRY_COUNTS):
+        node = client.by_id_node(name)
+        conditions = {}
+        if "conditions" in node.keys():
+            conditions = node.conditions
+
+        if NODE_CONDITION_SCHEDULABLE in \
+                conditions.keys() and \
+                "status" in \
+                conditions[NODE_CONDITION_SCHEDULABLE].keys() \
+                and conditions[NODE_CONDITION_SCHEDULABLE]["status"] != \
                 CONDITION_STATUS_UNKNOWN:
             break
         time.sleep(RETRY_INTERVAL)
