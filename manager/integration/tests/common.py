@@ -3343,3 +3343,54 @@ def settings_reset():
 
     client = get_longhorn_api_client()
     reset_settings(client)
+
+
+@pytest.fixture
+def set_backupstore_s3(client):
+    backup_target_setting = client.by_id_setting(SETTING_BACKUP_TARGET)
+    backupstores = get_backupstore_url()
+    for backupstore in backupstores:
+        if is_backupTarget_s3(backupstore):
+            backupsettings = backupstore.split("$")
+            backup_target_setting = client.update(backup_target_setting,
+                                                  value=backupsettings[0])
+            assert backup_target_setting.value == backupsettings[0]
+
+            backup_target_credential_setting = client.by_id_setting(
+                SETTING_BACKUP_TARGET_CREDENTIAL_SECRET)
+            backup_target_credential_setting = \
+                client.update(backup_target_credential_setting,
+                              value=backupsettings[1])
+            assert backup_target_credential_setting.value == backupsettings[1]
+            break
+
+    yield
+    backup_target_setting = client.by_id_setting(SETTING_BACKUP_TARGET)
+    client.update(backup_target_setting, value="")
+    backup_target_credential_setting = client.by_id_setting(
+        SETTING_BACKUP_TARGET_CREDENTIAL_SECRET)
+    client.update(backup_target_credential_setting, value="")
+
+
+@pytest.fixture
+def set_backupstore_nfs(client):
+    backup_target_setting = client.by_id_setting(SETTING_BACKUP_TARGET)
+    backupstores = get_backupstore_url()
+    for backupstore in backupstores:
+        if is_backupTarget_nfs(backupstore):
+            backup_target_setting = client.update(backup_target_setting,
+                                                  value=backupstore)
+            assert backup_target_setting.value == backupstore
+            backup_target_credential_setting = client.by_id_setting(
+                SETTING_BACKUP_TARGET_CREDENTIAL_SECRET)
+            backup_target_credential_setting = \
+                client.update(backup_target_credential_setting, value="")
+            assert backup_target_credential_setting.value == ""
+            break
+
+    yield
+    backup_target_setting = client.by_id_setting(SETTING_BACKUP_TARGET)
+    client.update(backup_target_setting, value="")
+    backup_target_credential_setting = client.by_id_setting(
+        SETTING_BACKUP_TARGET_CREDENTIAL_SECRET)
+    client.update(backup_target_credential_setting, value="")
