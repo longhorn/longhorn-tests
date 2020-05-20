@@ -849,7 +849,7 @@ def test_rebuild_with_inc_restoration(
     delete_and_wait_pv(core_api, dr_pv_name)
 
 
-@pytest.mark.skip
+@pytest.mark.skip(reason="TODO")
 def test_single_replica_failed_during_engine_start():
     """
     Test if the volume still works fine when there is
