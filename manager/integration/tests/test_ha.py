@@ -36,6 +36,12 @@ from common import wait_for_volume_restoration_start
 from common import wait_for_volume_restoration_completed
 from common import check_volume_last_backup
 from common import activate_standby_volume
+from common import set_backupstore_s3  # NOQA
+from common import create_backup
+from common import wait_for_volume_faulted
+from common import wait_for_volume_delete
+from common import SETTING_AUTO_SALVAGE
+from common import SETTING_BACKUP_TARGET
 
 from common import SIZE, VOLUME_RWTEST_SIZE, EXPAND_SIZE, Gi
 from common import RETRY_COUNTS, RETRY_INTERVAL
@@ -1007,8 +1013,7 @@ def test_single_replica_failed_during_engine_start(client, core_api, volume_name
     assert snapMap[snap4.name].removed is False
 
 
-@pytest.mark.skip(reason="TODO")
-def test_restore_volume_with_invalid_backupstore():
+def test_restore_volume_with_invalid_backupstore(client, volume_name, set_backupstore_s3): # NOQA
     """
     [HA] Test if the invalid backup target will lead to the restore volume
     becoming Faulted, and if the auto salvage feature is disabled for
@@ -1032,7 +1037,46 @@ def test_restore_volume_with_invalid_backupstore():
     11. Verify the faulted volume cannot be attached to a node.
     12. Verify this faulted volume can be deleted.
     """
-    pass
+    auto_salvage_setting = client.by_id_setting(SETTING_AUTO_SALVAGE)
+    assert auto_salvage_setting.name == SETTING_AUTO_SALVAGE
+    assert auto_salvage_setting.value == "true"
+
+    volume = create_and_check_volume(client, volume_name)
+    host_id = get_self_host_id()
+    volume.attach(hostId=host_id)
+    volume = wait_for_volume_healthy(client, volume_name)
+    bv, b, _, _ = create_backup(client, volume_name)
+
+    res_name = "res-" + volume_name
+    invalid_backup_target_url = \
+        "s3://backupbucket-invalid@us-east-1/backupstore-invalid"
+
+    backup_target_setting = client.by_id_setting(SETTING_BACKUP_TARGET)
+    backup_target_setting = client.update(backup_target_setting,
+                                          value=invalid_backup_target_url)
+
+    res_volume = client.create_volume(name=res_name,
+                                      fromBackup=b.url)
+
+    wait_for_volume_faulted(client, res_name)
+
+    res_volume = client.by_id_volume(res_name)
+
+    assert res_volume.conditions['restore'].status == "False"
+    assert res_volume.conditions['restore'].reason == "RestoreFailure"
+    assert res_volume.ready is False
+
+    for i in range(10):
+        res_volume = client.by_id_volume(res_name)
+        assert res_volume.state == "detached"
+        time.sleep(0.5)
+
+    assert hasattr(res_volume, 'pvCreate') is False
+    assert hasattr(res_volume, 'pvcCreate') is False
+    assert hasattr(res_volume, 'attach') is False
+
+    client.delete(res_volume)
+    wait_for_volume_delete(client, res_name)
 
 
 @pytest.mark.skip(reason="TODO")
