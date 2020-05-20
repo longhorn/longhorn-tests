@@ -14,12 +14,16 @@ import socket
 import pytest
 
 import longhorn
+import base64
 
 from kubernetes import client as k8sclient, config as k8sconfig
 from kubernetes.client import Configuration
 from kubernetes.stream import stream
 
 from kubernetes.client.rest import ApiException
+
+from minio import Minio
+from minio.error import ResponseError
 
 
 Mi = (1024 * 1024)
@@ -90,6 +94,7 @@ EXPANDED_VOLUME_SIZE = 4  # In Gi
 DIRECTORY_PATH = '/tmp/longhorn-test/'
 
 VOLUME_CONDITION_SCHEDULED = "scheduled"
+VOLUME_CONDITION_RESTORE = "restore"
 VOLUME_CONDITION_STATUS = "status"
 
 CONDITION_STATUS_TRUE = "True"
@@ -1869,6 +1874,23 @@ def wait_for_volume_condition_scheduled(client, name, key, value):
     return volume
 
 
+def wait_for_volume_condition_restore(client, name, key, value):
+    wait_for_volume_creation(client, name)
+    for i in range(RETRY_COUNTS):
+        volume = client.by_id_volume(name)
+        conditions = volume.conditions
+        if conditions is not None and \
+                conditions != {} and \
+                conditions[VOLUME_CONDITION_RESTORE] and \
+                conditions[VOLUME_CONDITION_RESTORE][key] and \
+                conditions[VOLUME_CONDITION_RESTORE][key] == value:
+            break
+        time.sleep(RETRY_INTERVAL)
+    conditions = volume.conditions
+    assert conditions[VOLUME_CONDITION_RESTORE][key] == value
+    return volume
+
+
 def get_host_disk_size(disk):
     cmd = ['stat', '-fc',
            '{"path":"%n","fsid":"%i","type":"%T","freeBlock":%f,'
@@ -3394,3 +3416,101 @@ def set_backupstore_nfs(client):
     backup_target_credential_setting = client.by_id_setting(
         SETTING_BACKUP_TARGET_CREDENTIAL_SECRET)
     client.update(backup_target_credential_setting, value="")
+
+
+def backupstore_cleanup(client):
+    backup_volumes = client.list_backup_volume()
+
+    for backup_volume in backup_volumes:
+        backups = backup_volume.backupList()
+
+        for backup in backups:
+            backup_name = backup.name
+            backup_volume.backupDelete(name=backup_name)
+            wait_for_backup_volume_delete(client, backup_name)
+
+        client.delete(backup_volume)
+
+    backup_volumes = client.list_backup_volume()
+    assert backup_volumes.data == []
+
+
+def get_minio_api(client, core_api, minio_secret_name):
+    secret = core_api.read_namespaced_secret(name=minio_secret_name,
+                                             namespace=LONGHORN_NAMESPACE)
+
+    base64_minio_access_key = secret.data['AWS_ACCESS_KEY_ID']
+    base64_minio_secret_key = secret.data['AWS_SECRET_ACCESS_KEY']
+    base64_minio_endpoint_url = secret.data['AWS_ENDPOINTS']
+    base64_minio_cert = secret.data['AWS_CERT']
+
+    minio_access_key = \
+        base64.b64decode(base64_minio_access_key).decode("utf-8")
+    minio_secret_key = \
+        base64.b64decode(base64_minio_secret_key).decode("utf-8")
+
+    minio_endpoint_url = \
+        base64.b64decode(base64_minio_endpoint_url).decode("utf-8")
+    minio_endpoint_url = minio_endpoint_url.replace('https://', '')
+
+    minio_cert_file_path = "/tmp/minio_cert.crt"
+    with open(minio_cert_file_path, 'w') as minio_cert_file:
+        base64_minio_cert = \
+            base64.b64decode(base64_minio_cert).decode("utf-8")
+        minio_cert_file.write(base64_minio_cert)
+
+    os.environ["SSL_CERT_FILE"] = minio_cert_file_path
+
+    return Minio(minio_endpoint_url,
+                 access_key=minio_access_key,
+                 secret_key=minio_secret_key,
+                 secure=True)
+
+
+def minio_delete_random_backup_block(client, core_api, volume_name):
+    backup_target_credential_setting = client.by_id_setting(
+            SETTING_BACKUP_TARGET_CREDENTIAL_SECRET)
+
+    secret_name = backup_target_credential_setting.value
+
+    minio_api = get_minio_api(client, core_api, secret_name)
+
+    volume_name_sha512 = \
+        hashlib.sha512(volume_name.encode('utf-8')).hexdigest()
+
+    bucket_name = "backupbucket"
+    backup_prefix = "backupstore/backupstore/volumes"
+    volume_dir_level_1 = volume_name_sha512[0:2]
+    volume_dir_level_2 = volume_name_sha512[2:4]
+
+    prefix = backup_prefix + "/" + \
+        volume_dir_level_1 + "/" + \
+        volume_dir_level_2 + "/" + \
+        volume_name + "/blocks"
+
+    block_object_files = minio_api.list_objects(bucket_name,
+                                                prefix=prefix,
+                                                recursive=True)
+
+    object_file = block_object_files.__next__().object_name
+
+    try:
+        minio_api.remove_object(bucket_name, object_file)
+    except ResponseError as err:
+        print(err)
+
+
+# TODO: implement nfs_delete_random_backup_block
+def nfs_delete_random_backup_block(client, core_api, volume_name):
+    pass
+
+
+def delete_random_backup_block(client, core_api, volume_name):
+    backup_target_setting = client.by_id_setting(SETTING_BACKUP_TARGET)
+    backupstore = backup_target_setting.value
+
+    if is_backupTarget_s3(backupstore):
+        minio_delete_random_backup_block(client, core_api, volume_name)
+
+    elif is_backupTarget_nfs(backupstore):
+        nfs_delete_random_backup_block(volume_name)

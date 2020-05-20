@@ -40,8 +40,11 @@ from common import set_backupstore_s3  # NOQA
 from common import create_backup
 from common import wait_for_volume_faulted
 from common import wait_for_volume_delete
+from common import backupstore_cleanup
 from common import SETTING_AUTO_SALVAGE
 from common import SETTING_BACKUP_TARGET
+from common import delete_random_backup_block
+from common import wait_for_volume_condition_restore
 
 from common import SIZE, VOLUME_RWTEST_SIZE, EXPAND_SIZE, Gi
 from common import RETRY_COUNTS, RETRY_INTERVAL
@@ -1079,8 +1082,7 @@ def test_restore_volume_with_invalid_backupstore(client, volume_name, set_backup
     wait_for_volume_delete(client, res_name)
 
 
-@pytest.mark.skip(reason="TODO")
-def test_all_replica_restore_failure():
+def test_all_replica_restore_failure(client, core_api, volume_name, pod_make):  # NOQA
     """
     [HA] Test if all replica restore failure will lead to the restore volume
     becoming Faulted, and if the auto salvage feature is disabled for
@@ -1109,7 +1111,56 @@ def test_all_replica_restore_failure():
     15. Verify the faulted volume cannot be attached to a node.
     16. Verify this faulted volume can be deleted.
     """
-    pass
+    auto_salvage_setting = client.by_id_setting(SETTING_AUTO_SALVAGE)
+    assert auto_salvage_setting.name == SETTING_AUTO_SALVAGE
+    assert auto_salvage_setting.value == "true"
+
+    set_random_backupstore(client)
+    backupstore_cleanup(client)
+
+    pod_name, pv_name, pvc_name, md5sum = \
+        prepare_pod_with_data_in_mb(client, core_api, pod_make, volume_name)
+
+    volume = client.by_id_volume(volume_name)
+    snap = create_snapshot(client, volume_name)
+    volume.snapshotBackup(name=snap.name)
+    wait_for_backup_completion(client, volume_name, snap.name)
+    bv, b = find_backup(client, volume_name, snap.name)
+
+    delete_random_backup_block(client, core_api, volume_name)
+
+    res_name = "res-" + volume_name
+
+    res_volume = client.create_volume(name=res_name,
+                                      fromBackup=b.url)
+
+    wait_for_volume_condition_restore(client, res_name,
+                                      "status", "True")
+    wait_for_volume_condition_restore(client, res_name,
+                                      "reason", "RestoreInProgress")
+
+    res_volume = client.by_id_volume(res_name)
+    assert res_volume.ready is False
+
+    wait_for_volume_faulted(client, res_name)
+
+    res_volume = client.by_id_volume(res_name)
+
+    assert res_volume.conditions['restore'].status == "False"
+    assert res_volume.conditions['restore'].reason == "RestoreFailure"
+    assert res_volume.ready is False
+
+    for i in range(10):
+        res_volume = client.by_id_volume(res_name)
+        assert res_volume.state == "detached"
+        time.sleep(0.5)
+
+    assert hasattr(res_volume, 'pvCreate') is False
+    assert hasattr(res_volume, 'pvcCreate') is False
+    assert hasattr(res_volume, 'attach') is False
+
+    client.delete(res_volume)
+    wait_for_volume_delete(client, res_name)
 
 
 @pytest.mark.skip(reason="TODO")
