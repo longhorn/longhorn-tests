@@ -1284,10 +1284,11 @@ def test_volume_scheduling_failure(clients, volume_name):  # NOQA
     1. Disable `allowScheduling` for all nodes
     2. Create a volume.
     3. Verify the volume condition `Scheduled` is false
-    4. Verify attaching the volume will result in error
-    5. Enable `allowScheduling` for all nodes
-    6. Volume should be automatically scheduled (condition become true)
-    7. Volume can be attached now
+    4. Verify the volume is not ready for workloads
+    5. Verify attaching the volume will result in error
+    6. Enable `allowScheduling` for all nodes
+    7. Volume should be automatically scheduled (condition become true)
+    8. Volume can be attached now
     '''
     client = get_random_client(clients)
     nodes = client.list_node()
@@ -1305,6 +1306,7 @@ def test_volume_scheduling_failure(clients, volume_name):  # NOQA
                                                         "status",
                                                         CONDITION_STATUS_FALSE)
     volume = common.wait_for_volume_detached(client, volume_name)
+    assert not volume.ready
     self_node = get_self_host_id()
     with pytest.raises(Exception) as e:
         volume.attach(hostId=self_node)
