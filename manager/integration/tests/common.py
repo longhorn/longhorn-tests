@@ -2305,6 +2305,12 @@ def reset_settings(client):
         print("Exception when update "
               "Disable Scheduling On Cordoned Node setting",
               disable_scheduling_on_cordoned_node_setting, e)
+    auto_salvage_setting = client.by_id_setting(SETTING_AUTO_SALVAGE)
+    try:
+        client.update(auto_salvage_setting, value="true")
+    except Exception as e:
+        print("Exception when update Auto Salvage setting",
+              auto_salvage_setting, e)
 
 
 def reset_engine_image(client):
