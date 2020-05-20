@@ -2293,8 +2293,8 @@ def reset_settings(client):
                       value="true")
     except Exception as e:
         print("Exception when update "
-              "Replica Node Level Soft Anti-Affinity setting",
-              replica_node_soft_anti_affinity_setting, e)
+              "Replica Zone Level Soft Anti-Affinity setting",
+              replica_zone_soft_anti_affinity_setting, e)
 
     disable_scheduling_on_cordoned_node_setting = \
         client.by_id_setting(SETTING_DISABLE_SCHEDULING_ON_CORDONED_NODE)
