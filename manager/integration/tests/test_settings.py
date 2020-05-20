@@ -200,7 +200,7 @@ def check_tolerations_set(current_toleration_list, set_tolerations):
     return current_tolerations == set_tolerations
 
 
-@pytest.skip(reason="TODO")
+@pytest.mark.skip(reason="TODO")
 def test_setting_guaranteed_engine_cpu():
     """
     Test setting Guaranteed Engine CPU
