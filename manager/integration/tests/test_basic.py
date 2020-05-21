@@ -2053,3 +2053,36 @@ def test_expansion_canceling(clients, core_api, volume_name, pod):  # NOQA
     delete_and_wait_pod(core_api, pod_name)
     delete_and_wait_pvc(core_api, expansion_pvc_name)
     delete_and_wait_pv(core_api, expansion_pv_name)
+
+
+@pytest.mark.coretest  # NOQA
+@pytest.mark.skip(reason="TODO")
+def test_running_volume_with_scheduling_failure():
+    """
+    Test if the running volume still work fine
+    when there is a scheduling failed replica
+
+    Prerequisite:
+    Setting "soft anti-affinity" is false.
+
+    1. Create a volume, then create the corresponding PV, PVC and Pod.
+    2. Wait for the pod running and the volume healthy.
+    3. Write data to the pod volume and get the md5sum.
+    4. Disable the scheduling for a node contains a running replica.
+    5. Crash the replica on the scheduling disabled node for the volume.
+    6. Wait for the new replica created.
+    7. Verify the volume is Degraded and fails to scheduled the replica.
+    8. Verify:
+      8.1. `volume.ready == True`.
+      8.2. `volume.conditions[scheduled].status == False`
+    9. Delete the pod and wait for the volume detached.
+    10. Verify the failed replica is removed and
+        the volume contains healthy replicas only.
+    11. Verify:
+      11.1. `volume.ready == True`.
+      11.2. `volume.conditions[scheduled].status == True`
+    12. Recreate a new pod for the volume and wait for the pod running.
+    13. Validate the volume content, then check if data writing looks fine.
+    14. Clean up pod, PVC, and PV.
+    """
+    pass
