@@ -2086,3 +2086,44 @@ def test_running_volume_with_scheduling_failure():
     14. Clean up pod, PVC, and PV.
     """
     pass
+
+
+@pytest.mark.coretest  # NOQA
+@pytest.mark.skip(reason="TODO")
+def test_expansion_with_scheduling_failure():
+    """
+    Test if the running volume with scheduling failure
+    can be expanded after the detachment.
+
+    Prerequisite:
+    Setting "soft anti-affinity" is false.
+
+    1. Create a volume, then create the corresponding PV, PVC and Pod.
+    2. Wait for the pod running and the volume healthy.
+    3. Write data to the pod volume and get the md5sum.
+    4. Disable the scheduling for a node contains a running replica.
+    5. Crash the replica on the scheduling disabled node for the volume.
+    6. Wait for the new replica created.
+    7. Verify the volume is Degraded and fails to scheduled the replica.
+    8. Verify:
+      8.1. `volume.ready == True`.
+      8.2. `volume.conditions[scheduled].status == False`
+    9. Delete the pod and wait for the volume detached.
+    10. Verify the failed replica is removed and
+        the volume contains healthy replicas only.
+    11. Verify:
+      11.1 `volume.ready == True`.
+      11.2. `volume.conditions[scheduled].status == True`
+    12. Expand the volume and wait for the expansion succeeds.
+    13. Verify there is no rebuild replica during the expansion.
+    14. Recreate a new pod for the volume and wait for the pod running.
+    15. Validate the volume content.
+    16. Enable the node scheduling.
+    17. Wait for the volume rebuild succeeds.
+    18. Verify the expanded part can be read/written correctly.
+    19. Clean up pod, PVC, and PV.
+
+    Notice that the step 1 to step 12 is identical with
+    those of the case test_running_volume_with_scheduling_failure().
+    """
+    pass
