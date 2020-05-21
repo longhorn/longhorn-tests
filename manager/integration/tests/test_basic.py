@@ -48,8 +48,12 @@ from common import wait_for_dr_volume_expansion
 from common import check_block_device_size
 from common import wait_for_volume_expansion
 from common import fail_replica_expansion, wait_for_expansion_failure
+from common import wait_for_volume_creation, wait_for_volume_restoration_start
+from common import write_pod_volume_random_data, get_pod_data_md5sum
+from common import prepare_pod_with_data_in_mb
 from common import VOLUME_FRONTEND_BLOCKDEV, VOLUME_FRONTEND_ISCSI
 from common import MESSAGE_TYPE_ERROR
+from common import DATA_SIZE_IN_MB_1
 
 
 @pytest.mark.coretest   # NOQA
@@ -2127,3 +2131,94 @@ def test_expansion_with_scheduling_failure():
     those of the case test_running_volume_with_scheduling_failure().
     """
     pass
+
+
+def test_dr_volume_with_last_backup_deletion(
+        clients, core_api, volume_name, pod_make):  # NOQA
+    """
+    Test if the DR volume can be activated
+    after deleting the lastest backup.
+
+    1. Set a random backupstore.
+    2. Create a volume, then create the corresponding PV, PVC and Pod.
+    3. Write data to the pod volume and get the md5sum
+       after the pod running.
+    4. Create the 1st backup.
+    5. Create a DR volume from the backup.
+    6. Wait for the DR volume restore complete.
+    7. Write data to the original volume then create the 2nd backup.
+    8. Wait for the DR volume incremental restore complete.
+    9. Delete the 2nd backup.
+    10. Verify the `lastBackup == ""` for both volumes.
+    11. Activate the DR volume and wait for it complete.
+    12. Create PV/PVC/Pod for the activated volume.
+    13. Validate the volume content.
+    14. Verify Writing data to the activated volume is fine.
+    """
+    client = get_random_client(clients)
+    set_random_backupstore(client)
+
+    std_volume_name = volume_name + "-std"
+    data_path1 = "/data/test1"
+    std_pod_name, std_pv_name, std_pvc_name, std_md5sum1 = \
+        prepare_pod_with_data_in_mb(
+            client, core_api, pod_make, std_volume_name,
+            data_path=data_path1, data_size_in_mb=DATA_SIZE_IN_MB_1)
+
+    std_volume = client.by_id_volume(std_volume_name)
+    snap1 = create_snapshot(client, std_volume_name)
+    std_volume.snapshotBackup(name=snap1.name)
+    wait_for_backup_completion(client, std_volume_name, snap1.name)
+    bv, b1 = find_backup(client, std_volume_name, snap1.name)
+
+    dr_volume_name = volume_name + "-dr"
+    client.create_volume(name=dr_volume_name, size=str(1 * Gi),
+                         numberOfReplicas=3, fromBackup=b1.url,
+                         frontend="", standby=True)
+    wait_for_volume_creation(client, dr_volume_name)
+    wait_for_volume_restoration_completed(client, dr_volume_name)
+
+    data_path2 = "/data/test2"
+    write_pod_volume_random_data(core_api, std_pod_name,
+                                 data_path2, DATA_SIZE_IN_MB_1)
+    std_md5sum2 = get_pod_data_md5sum(core_api, std_pod_name, data_path2)
+    snap2 = create_snapshot(client, std_volume_name)
+    std_volume.snapshotBackup(name=snap2.name)
+    wait_for_backup_completion(client, std_volume_name, snap2.name)
+    bv, b2 = find_backup(client, std_volume_name, snap2.name)
+
+    # Wait for the incremental restoration triggered then complete.
+    wait_for_volume_restoration_start(client, dr_volume_name)
+    check_volume_last_backup(client, dr_volume_name, b2.name)
+    wait_for_volume_restoration_completed(client, dr_volume_name)
+
+    # Delete the latest backup then check the `lastBackup` field.
+    bv.backupDelete(name=b2.name)
+    client.list_backupVolume()
+    check_volume_last_backup(client, std_volume_name, "")
+    check_volume_last_backup(client, dr_volume_name, "")
+
+    activate_standby_volume(client, dr_volume_name)
+    dr_volume = wait_for_volume_detached(client, dr_volume_name)
+
+    dr_pod_name = dr_volume_name + "-pod"
+    dr_pv_name = dr_volume_name + "-pv"
+    dr_pvc_name = dr_volume_name + "-pvc"
+    dr_pod = pod_make(name=dr_pod_name)
+    create_pv_for_volume(client, core_api, dr_volume, dr_pv_name)
+    create_pvc_for_volume(client, core_api, dr_volume, dr_pvc_name)
+    dr_pod['spec']['volumes'] = [create_pvc_spec(dr_pvc_name)]
+    create_and_wait_pod(core_api, dr_pod)
+
+    md5sum1 = get_pod_data_md5sum(core_api, dr_pod_name, data_path1)
+    assert std_md5sum1 == md5sum1
+    md5sum2 = get_pod_data_md5sum(core_api, dr_pod_name, data_path2)
+    assert std_md5sum2 == md5sum2
+
+    bv.backupDelete(name=b1.name)
+    delete_and_wait_pod(core_api, std_pod_name)
+    delete_and_wait_pvc(core_api, std_pvc_name)
+    delete_and_wait_pv(core_api, std_pv_name)
+    delete_and_wait_pod(core_api, dr_pod_name)
+    delete_and_wait_pvc(core_api, dr_pvc_name)
+    delete_and_wait_pv(core_api, dr_pv_name)

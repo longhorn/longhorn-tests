@@ -2781,7 +2781,8 @@ def activate_standby_volume(client, volume_name,
         volume = client.by_id_volume(volume_name)
         engines = volume.controllers
         if len(engines) != 1 or \
-                engines[0].lastRestoredBackup != volume.lastBackup:
+                (volume.lastBackup != "" and
+                 engines[0].lastRestoredBackup != volume.lastBackup):
             time.sleep(RETRY_INTERVAL)
             continue
         activated = False
