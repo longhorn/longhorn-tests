@@ -385,7 +385,7 @@ def test_statefulset_restore(client, core_api, storage_class,  # NOQA
     assert csi
 
     pv['spec']['csi'] = {
-        'driver': 'io.rancher.longhorn',
+        'driver': 'driver.longhorn.io',
         'fsType': 'ext4',
         'volumeAttributes': {
             'numberOfReplicas':
