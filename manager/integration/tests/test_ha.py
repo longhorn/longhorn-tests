@@ -1163,8 +1163,7 @@ def test_all_replica_restore_failure(client, core_api, volume_name, pod_make):  
     wait_for_volume_delete(client, res_name)
 
 
-@pytest.mark.skip(reason="TODO")
-def test_single_replica_restore_failure():
+def test_single_replica_restore_failure(client, core_api, volume_name, pod_make): # NOQA
     """
     [HA] Test if one replica restore failure will lead to the restore volume
     becoming Degraded, and if the restore volume is still usable after
@@ -1206,7 +1205,79 @@ def test_single_replica_restore_failure():
     17. Check md5sum of the data in the restored volume.
     18. Do cleanup.
     """
-    pass
+    auto_salvage_setting = client.by_id_setting(SETTING_AUTO_SALVAGE)
+    assert auto_salvage_setting.name == SETTING_AUTO_SALVAGE
+    assert auto_salvage_setting.value == "true"
+
+    set_random_backupstore(client)
+    backupstore_cleanup(client)
+
+    data_path = "/data/test"
+
+    pod_name, pv_name, pvc_name, md5sum = \
+        prepare_pod_with_data_in_mb(client, core_api,
+                                    pod_make,
+                                    volume_name,
+                                    data_size_in_mb=DATA_SIZE_IN_MB_1,
+                                    data_path=data_path)
+
+    volume = client.by_id_volume(volume_name)
+    snap = create_snapshot(client, volume_name)
+    volume.snapshotBackup(name=snap.name)
+    wait_for_backup_completion(client, volume_name, snap.name)
+    bv, b = find_backup(client, volume_name, snap.name)
+
+    res_name = "res-" + volume_name
+
+    res_volume = client.create_volume(name=res_name,
+                                      fromBackup=b.url)
+
+    wait_for_volume_condition_restore(client, res_name,
+                                      "status", "True")
+    wait_for_volume_condition_restore(client, res_name,
+                                      "reason", "RestoreInProgress")
+
+    res_volume = client.by_id_volume(res_name)
+    assert res_volume.ready is False
+
+    crash_replica_processes(client, core_api, res_name,
+                            replicas=[res_volume.replicas[0]],
+                            wait_to_fail=False)
+
+    wait_for_volume_degraded(client, res_name)
+    res_volume = client.by_id_volume(res_name)
+
+    replicas_running = 0
+    for replica in res_volume.replicas:
+        if replica.running is True:
+            replicas_running += 1
+
+    assert replicas_running == 2
+
+    wait_for_volume_condition_restore(client, res_name,
+                                      "status", "True")
+    wait_for_volume_condition_restore(client, res_name,
+                                      "reason", "RestoreInProgress")
+
+    res_volume = client.by_id_volume(res_name)
+    assert res_volume.ready is False
+
+    res_pod_name = res_name + "-pod"
+    pv_name = res_name + "-pv"
+    pvc_name = res_name + "-pvc"
+
+    create_pv_for_volume(client, core_api, res_volume, pv_name)
+    create_pvc_for_volume(client, core_api, res_volume, pvc_name)
+
+    res_pod = pod_make(name=res_pod_name)
+    res_pod['spec']['volumes'] = [create_pvc_spec(pvc_name)]
+    create_and_wait_pod(core_api, res_pod)
+
+    wait_for_volume_degraded(client, res_name)
+    wait_for_volume_healthy(client, res_name)
+
+    res_md5sum = get_pod_data_md5sum(core_api, res_pod_name, data_path)
+    assert md5sum == res_md5sum
 
 
 @pytest.mark.skip(reason="TODO")
