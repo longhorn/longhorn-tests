@@ -808,7 +808,7 @@ def csi_pv(request):
             'accessModes': ['ReadWriteOnce'],
             'persistentVolumeReclaimPolicy': 'Delete',
             'csi': {
-                'driver': 'io.rancher.longhorn',
+                'driver': 'driver.longhorn.io',
                 'fsType': 'ext4',
                 'volumeAttributes': {
                     'numberOfReplicas':
