@@ -3298,15 +3298,20 @@ def expand_attached_volume(client, volume_name):
 
 def prepare_pod_with_data_in_mb(
         client, core_api, pod_make, volume_name, volume_size=str(1*Gi),
-        data_path="/data/test", data_size_in_mb=DATA_SIZE_IN_MB_1):  # NOQA:
+        data_path="/data/test", data_size_in_mb=DATA_SIZE_IN_MB_1,
+        add_liveness_prope=True):  # NOQA:
     pod_name = volume_name + "-pod"
     pv_name = volume_name + "-pv"
     pvc_name = volume_name + "-pvc"
 
     pod = pod_make(name=pod_name)
-    pod_liveness_probe_spec = get_liveness_probe_spec(initial_delay=1,
-                                                      period=1)
-    pod['spec']['containers'][0]['livenessProbe'] = pod_liveness_probe_spec
+
+    if add_liveness_prope is True:
+        pod_liveness_probe_spec = \
+            get_liveness_probe_spec(initial_delay=1,
+                                    period=1)
+        pod['spec']['containers'][0]['livenessProbe'] = \
+            pod_liveness_probe_spec
 
     volume = create_and_check_volume(client, volume_name,
                                      num_of_replicas=3, size=volume_size)
