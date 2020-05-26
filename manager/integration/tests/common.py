@@ -1498,7 +1498,8 @@ def delete_replica_processes(client, api, volname):
                    tty=False)
 
 
-def crash_replica_processes(client, api, volname, replicas=None):
+def crash_replica_processes(client, api, volname, replicas=None,
+                            wait_to_fail=True):
 
     if replicas is None:
         volume = client.by_id_volume(volname)
@@ -1517,8 +1518,9 @@ def crash_replica_processes(client, api, volname, replicas=None):
                    LONGHORN_NAMESPACE, command=kill_command,
                    stderr=True, stdin=False, stdout=True, tty=False)
 
-    for r in replicas:
-        wait_for_replica_failed(client, volname, r['name'])
+    if wait_to_fail is True:
+        for r in replicas:
+            wait_for_replica_failed(client, volname, r['name'])
 
 
 def wait_for_replica_failed(client, volname, replica_name):
