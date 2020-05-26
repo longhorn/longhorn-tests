@@ -1069,38 +1069,45 @@ def test_node_default_disk_added_back_with_extra_disk_unmounted(client):  # NOQA
     [Node] Test adding default disk back with extra disk is unmounted
     on the node
 
-    1. Create a host disk `extra_disk` using Longhorn volume and
-    attach it to node 1.
-    2. Delete the default disk on node 1.
-    3. Unmount the extra disk on node 1.
-    And wait for it becoming "Unschedulable".
-    4. Create and add the default disk back on node 1.
-    5. Wait and verify the default disk should become "Schedulable".
-    6. Mount extra disk back on node 1.
-    7. Wait and verify this extra disk should become "Schedulable".
-    8. Delete the host disk `extra_disk`.
+    1. Clean up all disks on node 1.
+    2. Recreate the default disk with "allowScheduling" disabled for
+       node 1.
+    3. Create a Longhorn volume and attach it to node 1.
+    4. Use the Longhorn volume as an extra host disk and
+       enable "allowScheduling" of the default disk for node 1.
+    5. Verify all disks on node 1 are "Schedulable".
+    6. Delete the default disk on node 1.
+    7. Unmount the extra disk on node 1.
+       And wait for it becoming "Unschedulable".
+    8. Create and add the default disk back on node 1.
+    9. Wait and verify the default disk should become "Schedulable".
+    10. Mount extra disk back on node 1.
+    11. Wait and verify this extra disk should become "Schedulable".
+    12. Delete the host disk `extra_disk`.
     """
-    # Cleanup all existing disks
     lht_hostId = get_self_host_id()
     cleanup_node_disks(client, lht_hostId)
     node = client.by_id_node(lht_hostId)
 
-    # Create a default disk
+    # Create a default disk with `allowScheduling` disabled
+    # so that there is no volume replica using this disk later.
     default_disk = {"default-disk":
                     {"path": DEFAULT_DISK_PATH,
-                     "allowScheduling": True,
+                     "allowScheduling": False,
                      "storageReserved": SMALL_DISK_SIZE}}
     node = node.diskUpdate(disks=default_disk)
     node = wait_for_disk_update(client, node.name, 1)
     assert len(node.disks) == 1
 
-    # Create a host disk and attached it to this node
+    # Create a volume and attached it to this node.
+    # This volume will be used as an extra host disk later.
     extra_disk_volume_name = 'extra-disk'
     extra_disk_path = create_host_disk(client, extra_disk_volume_name,
                                        str(Gi), lht_hostId)
     extra_disk = {"path": extra_disk_path, "allowScheduling": True}
 
     update_disk = get_update_disks(node.disks)
+    update_disk["default-disk"].allowScheduling = True
     update_disk["extra-disk"] = extra_disk
     node = node.diskUpdate(disks=update_disk)
     node = common.wait_for_disk_update(client, lht_hostId,
