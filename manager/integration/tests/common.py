@@ -3324,3 +3324,11 @@ def prepare_pod_with_data_in_mb(
            stderr=True, stdin=False, stdout=True, tty=False)
 
     return pod_name, pv_name, pvc_name, md5sum
+
+
+@pytest.fixture
+def settings_reset():
+    yield
+
+    client = get_longhorn_api_client()
+    reset_settings(client)
