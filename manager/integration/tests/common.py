@@ -2194,6 +2194,17 @@ def cleanup_test_disks(client):
 def reset_disks_for_all_nodes(client):  # NOQA
     nodes = client.list_node()
     for node in nodes:
+        # Reset default disk if there are more than 1 disk
+        # on the node.
+        if len(node.disks) > 1:
+            update_disks = get_update_disks(node.disks)
+            for disk_name, disk in update_disks:
+                disk.allowScheduling = False
+                update_disks[disk_name] = disk
+                node = node.diskUpdate(disks=update_disks)
+            update_disks = {}
+            node = node.diskUpdate(disks=update_disks)
+            node = wait_for_disk_update(client, node.name, 0)
         if len(node.disks) == 0:
             default_disk = {"default-disk":
                             {"path": DEFAULT_DISK_PATH,
