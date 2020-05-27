@@ -1,6 +1,6 @@
 #!/bin/bash 
 
-DOCKER_VERSION=18.09
+DOCKER_VERSION=19.03
 
 apt-get update 
 
