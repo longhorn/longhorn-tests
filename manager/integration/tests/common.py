@@ -3516,3 +3516,38 @@ def delete_random_backup_block(client, core_api, volume_name):
 
     elif is_backupTarget_nfs(backupstore):
         nfs_delete_random_backup_block(volume_name)
+
+
+def crash_engine_process_with_sigkill(client, core_api, volume_name):
+    volume = client.by_id_volume(volume_name)
+    ins_mgr_name = volume.controllers[0].instanceManagerName
+
+    kill_command = [
+            '/bin/sh', '-c',
+            "kill -9 `ps aux | grep -i \"controller " +
+            volume_name + "\" | grep -v grep | awk '{print $2}'`"]
+
+    with timeout(seconds=STREAM_EXEC_TIMEOUT,
+                 error_message='Timeout on executing stream read'):
+        stream(core_api.connect_get_namespaced_pod_exec,
+               ins_mgr_name,
+               LONGHORN_NAMESPACE, command=kill_command,
+               stderr=True, stdin=False, stdout=True, tty=False)
+
+
+def wait_for_pod_restart(core_api, pod_name, namespace="default"):
+    pod = core_api.read_namespaced_pod(name=pod_name,
+                                       namespace=namespace)
+    restart_count = pod.status.container_statuses[0].restart_count
+
+    pod_restarted = False
+    for i in range(RETRY_COUNTS):
+        pod = core_api.read_namespaced_pod(name=pod_name,
+                                           namespace=namespace)
+        count = pod.status.container_statuses[0].restart_count
+        if count > restart_count:
+            pod_restarted = True
+            break
+
+        time.sleep(RETRY_INTERVAL)
+    assert pod_restarted

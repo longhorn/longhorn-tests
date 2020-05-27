@@ -45,6 +45,8 @@ from common import SETTING_AUTO_SALVAGE
 from common import SETTING_BACKUP_TARGET
 from common import delete_random_backup_block
 from common import wait_for_volume_condition_restore
+from common import wait_for_pod_restart
+from common import crash_engine_process_with_sigkill
 
 from common import SIZE, VOLUME_RWTEST_SIZE, EXPAND_SIZE, Gi
 from common import RETRY_COUNTS, RETRY_INTERVAL
@@ -1280,8 +1282,7 @@ def test_single_replica_restore_failure(client, core_api, volume_name, pod_make)
     assert md5sum == res_md5sum
 
 
-@pytest.mark.skip(reason="TODO")
-def test_volume_reattach_after_engine_sigkill():  # NOQA
+def test_volume_reattach_after_engine_sigkill(client, core_api, volume_name, pod_make):  # NOQA
     """
     [HA] Test if the volume can be reattached after using SIGKILL
     to crash the engine process
@@ -1295,7 +1296,33 @@ def test_volume_reattach_after_engine_sigkill():  # NOQA
     7. Check md5sum of the data in the Pod.
     8. Check if data can be still written to the volume.
     """
-    pass
+    data_path1 = "/data/test1"
+    data_path2 = "/data/test2"
+
+    pod_name, _, _, md5sum = \
+        prepare_pod_with_data_in_mb(client, core_api,
+                                    pod_make,
+                                    volume_name,
+                                    data_size_in_mb=DATA_SIZE_IN_MB_1,
+                                    data_path=data_path1)
+
+    crash_engine_process_with_sigkill(client, core_api, volume_name)
+
+    wait_for_volume_detached(client, volume_name)
+    wait_for_volume_healthy(client, volume_name)
+
+    wait_for_pod_restart(core_api, pod_name)
+    wait_for_pod_remount(core_api, pod_name)
+
+    res_md5sum = get_pod_data_md5sum(core_api, pod_name, data_path1)
+    assert md5sum == res_md5sum
+
+    write_pod_volume_random_data(core_api, pod_name,
+                                 data_path2, DATA_SIZE_IN_MB_1)
+    md5sum2 = get_pod_data_md5sum(core_api, pod_name, data_path2)
+
+    res_md5sum2 = get_pod_data_md5sum(core_api, pod_name, data_path2)
+    assert md5sum2 == res_md5sum2
 
 
 @pytest.mark.skip(reason="TODO")
