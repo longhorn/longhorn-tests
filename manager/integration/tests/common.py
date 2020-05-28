@@ -137,6 +137,8 @@ SETTING_AUTO_SALVAGE = "auto-salvage"
 SETTING_REPLICA_NODE_SOFT_ANTI_AFFINITY = "replica-soft-anti-affinity"
 SETTING_REPLICA_ZONE_SOFT_ANTI_AFFINITY = "replica-zone-soft-anti-affinity"
 
+SETTING_GUARANTEED_ENGINE_CPU = "guaranteed-engine-cpu"
+
 CSI_UNKNOWN = 0
 CSI_TRUE = 1
 CSI_FALSE = 2
@@ -2336,6 +2338,23 @@ def reset_settings(client):
         print("Exception when update Auto Salvage setting",
               auto_salvage_setting, e)
 
+    guaranteed_engine_cpu_setting = \
+        client.by_id_setting(SETTING_GUARANTEED_ENGINE_CPU)
+    try:
+        client.update(guaranteed_engine_cpu_setting,
+                      value="0.25")
+    except Exception as e:
+        print("Exception when update "
+              "Guaranteed Engine CPU setting",
+              guaranteed_engine_cpu_setting, e)
+
+    instance_managers = client.list_instance_manager()
+    core_api = get_core_api_client()
+    # Wait for the current instance manager running
+    for im in instance_managers:
+        wait_for_instance_manager_desire_state(client, core_api,
+                                               im.name, "Running", True)
+
 
 def reset_engine_image(client):
     core_api = get_core_api_client()
@@ -3552,3 +3571,34 @@ def wait_for_pod_restart(core_api, pod_name, namespace="default"):
 
         time.sleep(RETRY_INTERVAL)
     assert pod_restarted
+
+
+def wait_for_instance_manager_desire_state(client, core_api, im_name,
+                                           state, desire=True):
+    for i in range(RETRY_COUNTS):
+        im = client.by_id_instance_manager(im_name)
+        try:
+            pod = core_api.read_namespaced_pod(name=im_name,
+                                               namespace=LONGHORN_NAMESPACE)
+        except Exception as e:
+            # Continue with pod restarted case
+            if e.reason == "Not Found":
+                time.sleep(RETRY_INTERVAL)
+                continue
+            # Report any other error
+            else:
+                assert(not e)
+        if desire:
+            if im.currentState == state.lower() and pod.status.phase == state:
+                break
+        else:
+            if im.currentState != state.lower() and pod.status.phase != state:
+                break
+        time.sleep(RETRY_INTERVAL)
+    if desire:
+        assert im.currentState == state.lower()
+        assert pod.status.phase == state
+    else:
+        assert im.currentState != state.lower()
+        assert pod.status.phase != state
+    return im
