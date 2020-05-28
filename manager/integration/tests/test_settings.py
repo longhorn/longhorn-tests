@@ -9,9 +9,14 @@ from common import (  # NOQA
     write_volume_random_data, check_volume_data,
     get_default_engine_image,
     wait_for_engine_image_state,
+    wait_for_instance_manager_desire_state,
+    generate_volume_name,
+    wait_for_volume_condition_scheduled,
+    client, core_api, settings_reset,
 
     LONGHORN_NAMESPACE, SETTING_TAINT_TOLERATION,
-    RETRY_COUNTS, RETRY_INTERVAL_LONG,
+    RETRY_COUNTS, RETRY_INTERVAL_LONG, SETTING_GUARANTEED_ENGINE_CPU,
+    SIZE, RETRY_INTERVAL
 )
 
 from test_infra import wait_for_node_up_longhorn
@@ -39,9 +44,9 @@ def test_setting_toleration():
     14. Attach the volume and validate `data2`.
     15. Generate and write `data3` to the volume.
     """
-    client = get_longhorn_api_client()
+    client = get_longhorn_api_client()  # NOQA
     apps_api = get_apps_api_client()
-    core_api = get_core_api_client()
+    core_api = get_core_api_client()  # NOQA
     count = len(client.list_node())
 
     setting = client.by_id_setting(SETTING_TAINT_TOLERATION)
@@ -176,7 +181,7 @@ def wait_for_toleration_update(core_api, apps_api, count, set_tolerations):  # N
         if not updated:
             continue
 
-        client = get_longhorn_api_client()
+        client = get_longhorn_api_client()  # NOQA
         images = client.list_engine_image()
         assert len(images) == 1
         if images[0].state != "ready":
@@ -200,8 +205,7 @@ def check_tolerations_set(current_toleration_list, set_tolerations):
     return current_tolerations == set_tolerations
 
 
-@pytest.mark.skip(reason="TODO")
-def test_setting_guaranteed_engine_cpu():
+def test_setting_guaranteed_engine_cpu(client, core_api):  # NOQA
     """
     Test setting Guaranteed Engine CPU
 
@@ -228,4 +232,83 @@ def test_setting_guaranteed_engine_cpu():
 
     Note: use fixture to restore the setting into the original state
     """
-    pass
+    # Get current guaranteed engine cpu setting and save it to org_setting
+    setting = client.by_id_setting(SETTING_GUARANTEED_ENGINE_CPU)
+
+    # Get current running instance managers
+    instance_managers = client.list_instance_manager()
+
+    # Set an invalid value, and it should return error
+    with pytest.raises(Exception) as e:
+        client.update(setting, value="xxx")
+    assert "with invalid " + SETTING_GUARANTEED_ENGINE_CPU in \
+           str(e.value)
+
+    # Update guaranteed engine cpu setting to 0.1
+    guaranteed_engine_cpu_setting_check(client, core_api, setting, "0.1",
+                                        "100m", instance_managers,
+                                        "Running", True)
+
+    # Update guaranteed engine cpu setting to 0
+    guaranteed_engine_cpu_setting_check(client, core_api, setting, "0",
+                                        None, instance_managers,
+                                        "Running", True)
+
+    # Update guaranteed engine cpu setting to 200m
+    guaranteed_engine_cpu_setting_check(client, core_api, setting, "200m",
+                                        "200m", instance_managers,
+                                        "Running", True)
+
+    # Update guaranteed engine cpu setting to 10
+    guaranteed_engine_cpu_setting_check(client, core_api, setting, "10",
+                                        None, instance_managers,
+                                        "Running", False)
+
+    # Update guaranteed engine cpu setting to 0.25
+    guaranteed_engine_cpu_setting_check(client, core_api, setting, "0.25",
+                                        "250m", instance_managers,
+                                        "Running", True)
+
+    # Create a volume to test
+    vol_name = generate_volume_name()
+    volume = create_and_check_volume(client, vol_name)
+    volume.attach(hostId=get_self_host_id())
+    volume = wait_for_volume_healthy(client, vol_name)
+    assert len(volume.replicas) == 3
+
+    data = write_volume_random_data(volume)
+    check_volume_data(volume, data)
+
+
+def guaranteed_engine_cpu_setting_check(client, core_api, setting,  # NOQA
+                                        val, cpu_val,  # NOQA
+                                        instance_managers,  # NOQA
+                                        state, desire):  # NOQA
+    """
+    We check if instance managers are in the desired state with
+    correct setting
+    desire is for reflect the state we are looking for.
+    If desire is True, meanning we need the state to be the same.
+    Otherwise, we are looking for the state to be different.
+    e.g. 'Pending', 'OutofCPU', 'Terminating' they are all 'Not Running'.
+    """
+    # Update guaranteed engine cpu setting
+    client.update(setting, value=val)
+
+    # Give sometime to k8s to update the instance manager status
+    time.sleep(6 * RETRY_INTERVAL)
+
+    for im in instance_managers:
+        wait_for_instance_manager_desire_state(client, core_api,
+                                               im.name, state, desire)
+
+    if desire:
+        # Verify guaranteed CPU set correctly
+        for im in instance_managers:
+            pod = core_api.read_namespaced_pod(name=im.name,
+                                               namespace=LONGHORN_NAMESPACE)
+            if cpu_val:
+                assert (pod.spec.containers[0].resources.requests['cpu'] ==
+                        cpu_val)
+            else:
+                assert (not pod.spec.containers[0].resources.requests)
