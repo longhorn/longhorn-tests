@@ -139,6 +139,8 @@ SETTING_REPLICA_ZONE_SOFT_ANTI_AFFINITY = "replica-zone-soft-anti-affinity"
 
 SETTING_GUARANTEED_ENGINE_CPU = "guaranteed-engine-cpu"
 
+SETTING_MKFS_EXT4_PARAMS = "mkfs-ext4-parameters"
+
 CSI_UNKNOWN = 0
 CSI_TRUE = 1
 CSI_FALSE = 2
@@ -1825,8 +1827,11 @@ def get_upgrade_test_image(cli_v, cli_minv,
                                      data_v, data_minv)
 
 
-def prepare_host_disk(dev, vol_name):
-    cmd = ['mkfs.ext4', dev]
+def prepare_host_disk(dev, vol_name, mkfs_ext4_options=""):
+    if mkfs_ext4_options == "":
+        cmd = ['mkfs.ext4', dev]
+    else:
+        cmd = ['mkfs.ext4', mkfs_ext4_options, dev]
     subprocess.check_call(cmd)
 
     mount_path = os.path.join(DIRECTORY_PATH, vol_name)

@@ -30,6 +30,7 @@ from common import wait_for_disk_status, wait_for_disk_update, \
 from common import exec_nsenter
 
 from common import SETTING_REPLICA_NODE_SOFT_ANTI_AFFINITY
+from common import SETTING_MKFS_EXT4_PARAMS
 
 CREATE_DEFAULT_DISK_LABEL = "node.longhorn.io/create-default-disk"
 CREATE_DEFAULT_DISK_LABEL_VALUE_CONFIG = "config"
@@ -140,9 +141,13 @@ def create_host_disk(client, vol_name, size, node_id):  # NOQA
     # create a single replica volume and attach it to node
     volume = create_volume(client, vol_name, size, node_id, 1)
 
+    mkfs_ext4_settings = client.by_id_setting(SETTING_MKFS_EXT4_PARAMS)
+    mkfs_ext4_options = mkfs_ext4_settings.value
+
     # prepare the disk in the host filesystem
     disk_path = common.prepare_host_disk(get_volume_endpoint(volume),
-                                         volume.name)
+                                         volume.name,
+                                         mkfs_ext4_options)
     return disk_path
 
 
