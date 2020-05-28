@@ -51,9 +51,14 @@ from common import fail_replica_expansion, wait_for_expansion_failure
 from common import wait_for_volume_creation, wait_for_volume_restoration_start
 from common import write_pod_volume_random_data, get_pod_data_md5sum
 from common import prepare_pod_with_data_in_mb
+from common import crash_replica_processes
+from common import wait_for_volume_condition_scheduled
+from common import wait_for_volume_degraded, wait_for_volume_healthy
 from common import VOLUME_FRONTEND_BLOCKDEV, VOLUME_FRONTEND_ISCSI
 from common import MESSAGE_TYPE_ERROR
 from common import DATA_SIZE_IN_MB_1
+from common import SETTING_REPLICA_NODE_SOFT_ANTI_AFFINITY
+from common import CONDITION_REASON_SCHEDULING_FAILURE
 
 
 @pytest.mark.coretest   # NOQA
@@ -2060,8 +2065,8 @@ def test_expansion_canceling(clients, core_api, volume_name, pod):  # NOQA
 
 
 @pytest.mark.coretest  # NOQA
-@pytest.mark.skip(reason="TODO")
-def test_running_volume_with_scheduling_failure():
+def test_running_volume_with_scheduling_failure(
+        clients, core_api, volume_name, pod):  # NOQA
     """
     Test if the running volume still work fine
     when there is a scheduling failed replica
@@ -2074,14 +2079,16 @@ def test_running_volume_with_scheduling_failure():
     3. Write data to the pod volume and get the md5sum.
     4. Disable the scheduling for a node contains a running replica.
     5. Crash the replica on the scheduling disabled node for the volume.
-    6. Wait for the new replica created.
-    7. Verify the volume is Degraded and fails to scheduled the replica.
-    8. Verify:
-      8.1. `volume.ready == True`.
-      8.2. `volume.conditions[scheduled].status == False`
+    6. Wait for the scheduling failure which is caused
+       by the new replica creation.
+    7. Verify:
+      7.1. `volume.ready == True`.
+      7.2. `volume.conditions[scheduled].status == False`.
+      7.3. the volume is Degraded.
+      7.4. the new replica is created but it is not running.
+    8. Write more data to the volume and get the md5sum
     9. Delete the pod and wait for the volume detached.
-    10. Verify the failed replica is removed and
-        the volume contains healthy replicas only.
+    10. Verify the scheduling failed replica is removed.
     11. Verify:
       11.1. `volume.ready == True`.
       11.2. `volume.conditions[scheduled].status == True`
@@ -2089,7 +2096,99 @@ def test_running_volume_with_scheduling_failure():
     13. Validate the volume content, then check if data writing looks fine.
     14. Clean up pod, PVC, and PV.
     """
-    pass
+    client = get_random_client(clients)
+
+    replica_node_soft_anti_affinity_setting = \
+        client.by_id_setting(SETTING_REPLICA_NODE_SOFT_ANTI_AFFINITY)
+    client.update(replica_node_soft_anti_affinity_setting, value="false")
+
+    data_path1 = "/data/test1"
+    test_pv_name = "pv-" + volume_name
+    test_pvc_name = "pvc-" + volume_name
+    test_pod_name = "pod-" + volume_name
+
+    volume = create_and_check_volume(client, volume_name, size=str(1 * Gi))
+    create_pv_for_volume(client, core_api, volume, test_pv_name)
+    create_pvc_for_volume(client, core_api, volume, test_pvc_name)
+
+    pod['metadata']['name'] = test_pod_name
+    pod['spec']['volumes'] = [{
+        'name': pod['spec']['containers'][0]['volumeMounts'][0]['name'],
+        'persistentVolumeClaim': {
+            'claimName': test_pvc_name,
+        },
+    }]
+    create_and_wait_pod(core_api, pod)
+    wait_for_volume_healthy(client, volume_name)
+    write_pod_volume_random_data(core_api, test_pod_name,
+                                 data_path1, DATA_SIZE_IN_MB_1)
+    original_md5sum1 = get_pod_data_md5sum(core_api, test_pod_name,
+                                           data_path1)
+
+    volume = client.by_id_volume(volume_name)
+    existing_replicas = {}
+    for r in volume.replicas:
+        existing_replicas[r.name] = r
+    node = client.by_id_node(volume.replicas[0].hostId)
+    node = client.update(node, allowScheduling=False)
+    common.wait_for_node_update(client, node.id,
+                                "allowScheduling", False)
+
+    crash_replica_processes(client, core_api, volume_name,
+                            replicas=[volume.replicas[0]],
+                            wait_to_fail=False)
+
+    # Wait for scheduling failure.
+    # It means the new replica is created but fails to be scheduled.
+    wait_for_volume_condition_scheduled(client, volume_name, "status",
+                                        CONDITION_STATUS_FALSE)
+    wait_for_volume_condition_scheduled(client, volume_name, "reason",
+                                        CONDITION_REASON_SCHEDULING_FAILURE)
+    volume = wait_for_volume_degraded(client, volume_name)
+    assert len(volume.replicas) == 4
+    assert volume.ready
+    for r in volume.replicas:
+        if r.name not in existing_replicas:
+            new_replica = r
+            break
+    assert new_replica
+    assert not new_replica.running
+    assert not new_replica.hostId
+
+    data_path2 = "/data/test2"
+    write_pod_volume_random_data(core_api, test_pod_name,
+                                 data_path2, DATA_SIZE_IN_MB_1)
+    original_md5sum2 = get_pod_data_md5sum(core_api, test_pod_name, data_path2)
+
+    delete_and_wait_pod(core_api, test_pod_name)
+    wait_for_volume_detached(client, volume_name)
+    volume = wait_for_volume_condition_scheduled(client, volume_name, "status",
+                                                 CONDITION_STATUS_TRUE)
+    assert volume.ready
+    # The scheduling failed replica will be removed
+    # so that the volume can be reattached later.
+    assert len(volume.replicas) == 3
+    for r in volume.replicas:
+        assert r.hostId != ""
+        assert r.name != new_replica.name
+
+    create_and_wait_pod(core_api, pod)
+    wait_for_volume_degraded(client, volume_name)
+
+    md5sum1 = get_pod_data_md5sum(core_api, test_pod_name, data_path1)
+    assert md5sum1 == original_md5sum1
+    md5sum2 = get_pod_data_md5sum(core_api, test_pod_name, data_path2)
+    assert md5sum2 == original_md5sum2
+
+    # The data writing is fine
+    data_path3 = "/data/test3"
+    write_pod_volume_random_data(core_api, test_pod_name,
+                                 data_path3, DATA_SIZE_IN_MB_1)
+    get_pod_data_md5sum(core_api, test_pod_name, data_path3)
+
+    delete_and_wait_pod(core_api, test_pod_name)
+    delete_and_wait_pvc(core_api, test_pvc_name)
+    delete_and_wait_pv(core_api, test_pv_name)
 
 
 @pytest.mark.coretest  # NOQA
