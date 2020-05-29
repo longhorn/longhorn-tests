@@ -2399,7 +2399,7 @@ def test_dr_volume_with_last_backup_deletion(
     bv, b2 = find_backup(client, std_volume_name, snap2.name)
 
     # Wait for the incremental restoration triggered then complete.
-    wait_for_volume_restoration_start(client, dr_volume_name)
+    wait_for_volume_restoration_start(client, dr_volume_name, b2.name)
     check_volume_last_backup(client, dr_volume_name, b2.name)
     wait_for_volume_restoration_completed(client, dr_volume_name)
 

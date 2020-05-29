@@ -3141,7 +3141,9 @@ def wait_for_volume_restoration_completed(client, name):
                                   False)
 
 
-def wait_for_volume_restoration_start(client, volume_name):
+def wait_for_volume_restoration_start(client, volume_name, backup_name):
+    wait_for_volume_status(client, volume_name,
+                           VOLUME_FIELD_STATE, VOLUME_STATE_ATTACHED)
     started = False
     for i in range(RETRY_COUNTS):
         volume = client.by_id_volume(volume_name)
@@ -3151,6 +3153,10 @@ def wait_for_volume_restoration_start(client, volume_name):
                     status.progress > 0:
                 started = True
                 break
+        #  Sometime the restore time is pretty short
+        #  and the test may not be able to catch the intermediate status.
+        if volume.controllers[0].lastRestoredBackup == backup_name:
+            started = True
         if started:
             break
         time.sleep(RETRY_INTERVAL)
