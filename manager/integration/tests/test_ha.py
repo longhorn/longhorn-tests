@@ -727,7 +727,7 @@ def test_rebuild_with_restoration(
     wait_for_volume_creation(client, restore_volume_name)
 
     restoring_replica = wait_for_volume_restoration_start(
-        client, restore_volume_name)
+        client, restore_volume_name, b.name)
     restore_volume = client.by_id_volume(restore_volume_name)
     restore_volume.replicaRemove(name=restoring_replica)
     wait_for_volume_restoration_completed(client, restore_volume_name)
@@ -818,7 +818,7 @@ def test_rebuild_with_inc_restoration(
 
     # Trigger rebuild during the incremental restoration
     restoring_replica = wait_for_volume_restoration_start(
-        client, dr_volume_name)
+        client, dr_volume_name, b2.name)
     dr_volume = client.by_id_volume(dr_volume_name)
     dr_volume.replicaRemove(name=restoring_replica)
 
