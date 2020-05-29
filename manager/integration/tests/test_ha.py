@@ -1273,9 +1273,13 @@ def test_single_replica_restore_failure(client, core_api, volume_name, pod_make)
 
     res_pod = pod_make(name=res_pod_name)
     res_pod['spec']['volumes'] = [create_pvc_spec(pvc_name)]
-    create_and_wait_pod(core_api, res_pod)
 
+    core_api.create_namespaced_pod(body=res_pod,
+                                   namespace='default')
     wait_for_volume_degraded(client, res_name)
+
+    common.wait_pod(res_pod_name)
+
     wait_for_volume_healthy(client, res_name)
 
     res_md5sum = get_pod_data_md5sum(core_api, res_pod_name, data_path)
