@@ -2387,6 +2387,7 @@ def test_dr_volume_with_last_backup_deletion(
                          numberOfReplicas=3, fromBackup=b1.url,
                          frontend="", standby=True)
     wait_for_volume_creation(client, dr_volume_name)
+    wait_for_volume_restoration_start(client, dr_volume_name, b1.name)
     wait_for_volume_restoration_completed(client, dr_volume_name)
 
     data_path2 = "/data/test2"
@@ -2399,8 +2400,8 @@ def test_dr_volume_with_last_backup_deletion(
     bv, b2 = find_backup(client, std_volume_name, snap2.name)
 
     # Wait for the incremental restoration triggered then complete.
-    wait_for_volume_restoration_start(client, dr_volume_name, b2.name)
     check_volume_last_backup(client, dr_volume_name, b2.name)
+    wait_for_volume_restoration_start(client, dr_volume_name, b2.name)
     wait_for_volume_restoration_completed(client, dr_volume_name)
 
     # Delete the latest backup then check the `lastBackup` field.
