@@ -47,6 +47,7 @@ from common import delete_random_backup_block
 from common import wait_for_volume_condition_restore
 from common import wait_for_pod_restart
 from common import crash_engine_process_with_sigkill
+from common import wait_for_volume_healthy_no_frontend
 
 from common import SIZE, VOLUME_RWTEST_SIZE, EXPAND_SIZE, Gi
 from common import RETRY_COUNTS, RETRY_INTERVAL
@@ -1220,7 +1221,7 @@ def test_single_replica_restore_failure(client, core_api, volume_name, pod_make)
         prepare_pod_with_data_in_mb(client, core_api,
                                     pod_make,
                                     volume_name,
-                                    data_size_in_mb=DATA_SIZE_IN_MB_1,
+                                    data_size_in_mb=DATA_SIZE_IN_MB_2,
                                     data_path=data_path)
 
     volume = client.by_id_volume(volume_name)
@@ -1241,6 +1242,8 @@ def test_single_replica_restore_failure(client, core_api, volume_name, pod_make)
 
     res_volume = client.by_id_volume(res_name)
     assert res_volume.ready is False
+
+    res_volume = wait_for_volume_healthy_no_frontend(client, res_name)
 
     crash_replica_processes(client, core_api, res_name,
                             replicas=[res_volume.replicas[0]],
