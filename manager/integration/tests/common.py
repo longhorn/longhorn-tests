@@ -1517,6 +1517,9 @@ def crash_replica_processes(client, api, volname, replicas=None,
             "kill `ps aux | grep '" + r['dataPath'] +
             "' | grep -v grep | awk '{print $2}'`"
         ]
+
+        assert r.instanceManagerName != ""
+
         with timeout(seconds=STREAM_EXEC_TIMEOUT,
                      error_message='Timeout on executing stream read'):
             stream(api.connect_get_namespaced_pod_exec,
