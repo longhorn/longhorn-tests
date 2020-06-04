@@ -642,6 +642,44 @@ def test_backup_block_deletion():  # NOQA
     """
     pass
 
+
+@pytest.mark.skip(reason="TODO")
+def test_backup_volume_list():  # NOQA
+    """
+    Test backup volume list
+
+    Context:
+
+    We want to make sure that an error when listing a single backup volume
+    does not stop us from listing all the other backup volumes. Otherwise a
+    single faulty backup can block the retrieval of all known backup volumes.
+
+    Setup:
+
+    1. Setup NFS backupstore since we can manipulate the content easily
+
+    Steps:
+
+    1.  Create volume(1) and attach to the current node
+    2.  Create volume(2) and attach to the current node
+    3.  write some data to volume(1,2)
+    4.  Create backup(1) of volume(1,2)
+    5.  Create backup(2) of volume(1,2)
+    6.  request a backup list
+    7.  verify backup list contains no error messages for volume(1,2)
+    8.  verify backup list contains backup(1,2) information for volume(1,2)
+    9.  place a file named "backup_1234@failure.cfg"
+        into the backups folder of volume(1)
+    10. request a backup list
+    11. verify backup list contains `Invalid name` error messages for volume(1)
+    12. verify backup list contains no error messages for volume(2)
+    13  verify backup list contains backup(1,2) information for volume(2)
+    14. delete backup volumes(1 & 2)
+    15. cleanup
+    """
+    pass
+
+
 @pytest.mark.coretest   # NOQA
 def test_backup(clients, volume_name):  # NOQA
     """
