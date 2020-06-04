@@ -600,6 +600,48 @@ def backup_status_for_unavailable_replicas_test(clients, volume_name, # NOQA
     cleanup_volume(client, volume)
 
 
+@pytest.mark.skip(reason="TODO")
+def test_backup_block_deletion():  # NOQA
+    """
+    Test backup block deletion
+
+    Context:
+
+    We want to make sure that we only delete non referenced backup blocks,
+    we also don't want to delete blocks while there other backups in progress.
+    The reason for this is that we don't yet know which blocks are required by
+    the in progress backup, so blocks deletion could lead to a faulty backup.
+
+    Setup:
+
+    1. Setup NFS backupstore since we can manipulate the content easily
+
+    Steps:
+
+    1.  Create a volume and attach to the current node
+    2.  Write 4 MB to the beginning of the volume (2 x 2MB backup blocks)
+    3.  Create backup(1) of the volume
+    4.  Overwrite the first of the backup blocks of data on the volume
+    5.  Create backup(2) of the volume
+    6.  Overwrite the first of the backup blocks of data on the volume
+    7.  Create backup(3) of the volume
+    8.  Verify backup block count == 4
+        assert volume["DataStored"] == str(BLOCK_SIZE * expected_count)
+        assert count of *.blk files for that volume == expected_count
+    9.  Create an artificial in progress backup.cfg file
+        json.dumps({"Name": name, "VolumeName": volume, "CreatedTime": ""})
+    10. Delete backup(2)
+    11. Verify backup block count == 4 (because of the in progress backup)
+    12. Delete the artificial in progress backup.cfg file
+    13. Delete backup(1)
+    14. Verify backup block count == 2
+    15. Delete backup(3)
+    16. Verify backup block count == 0
+    17. Delete the backup volume
+    18. Cleanup the volume
+    """
+    pass
+
 @pytest.mark.coretest   # NOQA
 def test_backup(clients, volume_name):  # NOQA
     """
