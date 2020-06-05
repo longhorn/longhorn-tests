@@ -727,6 +727,18 @@ def pod_make(request):
             except Exception as e:
                 print("Exception when waiting for pod deletion", e)
                 return
+            try:
+                volume_details = pod_manifest['spec']['volumes'][0]
+                pvc_name = volume_details['persistentVolumeClaim']['claimName']
+                delete_and_wait_pvc(api, pvc_name)
+            except Exception as e:
+                print("Exception when waiting for PVC deletion", e)
+            try:
+                pv = wait_and_get_pv_for_pvc(api, pvc_name)
+                pv_name = pv.metadata.name
+                delete_and_wait_pv(api, pv_name)
+            except Exception as e:
+                print("Exception when waiting for PV deletion", e)
 
         request.addfinalizer(finalizer)
         return pod_manifest
