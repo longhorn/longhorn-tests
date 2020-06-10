@@ -670,12 +670,51 @@ def test_backup_volume_list():  # NOQA
     8.  verify backup list contains backup(1,2) information for volume(1,2)
     9.  place a file named "backup_1234@failure.cfg"
         into the backups folder of volume(1)
+    """
+    pass
+
+
+@pytest.mark.skip(reason="TODO")
+def test_backup_metadata_deletion():  # NOQA
+    """
+    Test backup metadata deletion
+
+    Context:
+
+    We want to be able to delete the metadata (.cfg) files,
+    even if they are corrupt or in a bad state (missing volume.cfg).
+
+    Setup:
+
+    1. Setup NFS backupstore since we can manipulate the content easily
+
+    Steps:
+
+    1.  Create volume(1,2) and attach to the current node
+    2.  write some data to volume(1,2)
+    3.  Create backup(1,2) of volume(1,2)
+    4.  request a backup list
+    5.  verify backup list contains no error messages for volume(1,2)
+    6.  verify backup list contains backup(1,2) information for volume(1,2)
+    7.  corrupt backup(1) of volume(1)
+        (overwrite) backup1_cfg.write("{corrupt: definitely")
+    8.  request a backup list
+    9.  verify backup list contains no error messages for volume(1,2)
+    10. verify backup list contains backup(1,2) information for volume(1,2)
+    11. verify backup list backup(1) of volume(1) contains error message
+    12.  delete backup(1) of volume(1,2)
     10. request a backup list
-    11. verify backup list contains `Invalid name` error messages for volume(1)
-    12. verify backup list contains no error messages for volume(2)
-    13  verify backup list contains backup(1,2) information for volume(2)
-    14. delete backup volumes(1 & 2)
-    15. cleanup
+    11. verify backup list contains no error messages for volume(1,2)
+    12. verify backup list only contains backup(2) information for volume(1,2)
+    13. delete volume.cfg of volume(2)
+    14. request backup volume deletion for volume(2)
+    15. verify that volume(2) has been deleted in the backupstore.
+    16. request a backup list
+    17. verify backup list only contains volume(1) and no errors
+    18. verify backup list only contains backup(2) information for volume(1)
+    19. delete backup volume(1)
+    20. verify that volume(1) has been deleted in the backupstore.
+    21. cleanup
     """
     pass
 
