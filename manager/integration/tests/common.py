@@ -25,6 +25,8 @@ from kubernetes.client.rest import ApiException
 from minio import Minio
 from minio.error import ResponseError
 
+from urllib.parse import urlparse
+
 
 Mi = (1024 * 1024)
 Gi = (1024 * Mi)
@@ -3485,6 +3487,17 @@ def backupstore_cleanup(client):
     assert backup_volumes.data == []
 
 
+def get_backupstore_bucket_name(client):
+    backup_target_setting = client.by_id_setting(SETTING_BACKUP_TARGET)
+    backupstore = backup_target_setting.value
+
+    assert is_backupTarget_s3(backupstore)
+
+    bucket_name = urlparse(backupstore).netloc.split('@')[0]
+
+    return bucket_name
+
+
 def get_minio_api(client, core_api, minio_secret_name):
     secret = core_api.read_namespaced_secret(name=minio_secret_name,
                                              namespace=LONGHORN_NAMESPACE)
@@ -3537,6 +3550,7 @@ def minio_delete_random_backup_block(client, core_api, volume_name):
         volume_dir_level_1 + "/" + \
         volume_dir_level_2 + "/" + \
         volume_name + "/blocks"
+    bucket_name = get_backupstore_bucket_name(client)
 
     block_object_files = minio_api.list_objects(bucket_name,
                                                 prefix=prefix,
