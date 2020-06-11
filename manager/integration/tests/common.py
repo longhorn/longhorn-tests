@@ -3627,6 +3627,89 @@ def minio_count_backup_block_files(client, core_api, volume_name):
     return len(block_object_files_list)
 
 
+def backupstore_create_dummy_in_progress_backup(client, core_api, volume_name):
+    backup_target_setting = client.by_id_setting(SETTING_BACKUP_TARGET)
+    backupstore = backup_target_setting.value
+
+    if is_backupTarget_s3(backupstore):
+        return minio_create_dummy_in_progress_backup(client,
+                                                     core_api,
+                                                     volume_name)
+
+    elif is_backupTarget_nfs(backupstore):
+        return nfs_create_dummy_in_progress_backup()
+
+
+# TODO: implement nfs_create_dummy_in_progress_backup
+def nfs_create_dummy_in_progress_backup():
+    raise NotImplementedError
+
+
+def minio_create_dummy_in_progress_backup(client, core_api, volume_name):
+    backup_target_credential_setting = client.by_id_setting(
+            SETTING_BACKUP_TARGET_CREDENTIAL_SECRET)
+
+    secret_name = backup_target_credential_setting.value
+
+    minio_api = get_minio_api(client, core_api, secret_name)
+    bucket_name = get_backupstore_bucket_name(client)
+    prefix = minio_get_volume_backup_prefix(volume_name) + "/backups"
+
+    dummy_backup_cfg_data = {"Name": "dummy_backup",
+                             "VolumeName": volume_name,
+                             "CreatedTime": ""}
+
+    backup_cfg_file = "/tmp/backup_backup-dummy.cfg"
+
+    with open(backup_cfg_file, 'w') as bkp_cfg_file:
+        json.dump(dummy_backup_cfg_data, bkp_cfg_file)
+
+    try:
+        with open(backup_cfg_file, 'rb') as bkp_cfg_file:
+            bkp_cfg_file_stat = os.stat(backup_cfg_file)
+            minio_api.put_object(bucket_name,
+                                 prefix + "/backup_backup-dummy.cfg",
+                                 bkp_cfg_file,
+                                 bkp_cfg_file_stat.st_size)
+    except ResponseError as err:
+        print(err)
+
+
+def backupstore_delete_dummy_in_progress_backup(client, core_api, volume_name):
+    backup_target_setting = client.by_id_setting(SETTING_BACKUP_TARGET)
+    backupstore = backup_target_setting.value
+
+    if is_backupTarget_s3(backupstore):
+        return minio_delete_dummy_in_progress_backup(client,
+                                                     core_api,
+                                                     volume_name)
+
+    elif is_backupTarget_nfs(backupstore):
+        return nfs_delete_dummy_in_progress_backup()
+
+
+# TODO: implement nfs_delete_dummy_in_progress_backup
+def nfs_delete_dummy_in_progress_backup():
+    raise NotImplementedError
+
+
+def minio_delete_dummy_in_progress_backup(client, core_api, volume_name):
+    backup_target_credential_setting = client.by_id_setting(
+            SETTING_BACKUP_TARGET_CREDENTIAL_SECRET)
+
+    secret_name = backup_target_credential_setting.value
+
+    minio_api = get_minio_api(client, core_api, secret_name)
+    bucket_name = get_backupstore_bucket_name(client)
+    prefix = minio_get_volume_backup_prefix(volume_name) + "/backups"
+
+    try:
+        minio_api.remove_object(bucket_name,
+                                prefix + "/backup_backup-dummy.cfg")
+    except ResponseError as err:
+        print(err)
+
+
 def delete_random_backup_block(client, core_api, volume_name):
     backup_target_setting = client.by_id_setting(SETTING_BACKUP_TARGET)
     backupstore = backup_target_setting.value
