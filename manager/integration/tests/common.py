@@ -3554,13 +3554,21 @@ def minio_get_volume_backup_prefix(volume_name):
     prefix = backup_prefix + "/" + \
         volume_dir_level_1 + "/" + \
         volume_dir_level_2 + "/" + \
-        volume_name + "/blocks"
         volume_name
 
     return prefix
 
 
+def minio_delete_random_backup_block(client, core_api, volume_name):
+    backup_target_credential_setting = client.by_id_setting(
+            SETTING_BACKUP_TARGET_CREDENTIAL_SECRET)
+
+    secret_name = backup_target_credential_setting.value
+
+    minio_api = get_minio_api(client, core_api, secret_name)
+
     bucket_name = get_backupstore_bucket_name(client)
+    prefix = minio_get_volume_backup_prefix(volume_name) + "/blocks"
 
     block_object_files = minio_api.list_objects(bucket_name,
                                                 prefix=prefix,
