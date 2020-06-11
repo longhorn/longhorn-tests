@@ -3559,11 +3559,17 @@ def minio_get_volume_backup_prefix(volume_name):
     return prefix
 
 
-def minio_delete_random_backup_block(client, core_api, volume_name):
+def get_backupstore_secret(client):
     backup_target_credential_setting = client.by_id_setting(
-            SETTING_BACKUP_TARGET_CREDENTIAL_SECRET)
+        SETTING_BACKUP_TARGET_CREDENTIAL_SECRET)
 
-    secret_name = backup_target_credential_setting.value
+    return backup_target_credential_setting.value
+
+
+def minio_delete_random_backup_block(client, core_api, volume_name):
+    secret_name = get_backupstore_secret(client)
+
+    assert secret_name != ''
 
     minio_api = get_minio_api(client, core_api, secret_name)
 
