@@ -3590,7 +3590,7 @@ def minio_delete_random_backup_block(client, core_api, volume_name):
 
 # TODO: implement nfs_delete_random_backup_block
 def nfs_delete_random_backup_block(client, core_api, volume_name):
-    pass
+    raise NotImplementedError
 
 
 def delete_random_backup_block(client, core_api, volume_name):
