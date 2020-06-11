@@ -3498,6 +3498,17 @@ def get_backupstore_bucket_name(client):
     return bucket_name
 
 
+def get_backupstore_path(client):
+    backup_target_setting = client.by_id_setting(SETTING_BACKUP_TARGET)
+    backupstore = backup_target_setting.value
+
+    assert is_backupTarget_s3(backupstore)
+
+    backupstore_path = urlparse(backupstore).path.split('$')[0].strip("/")
+
+    return backupstore_path
+
+
 def get_minio_api(client, core_api, minio_secret_name):
     secret = core_api.read_namespaced_secret(name=minio_secret_name,
                                              namespace=LONGHORN_NAMESPACE)
