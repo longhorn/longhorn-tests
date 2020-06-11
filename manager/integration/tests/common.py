@@ -3593,6 +3593,40 @@ def nfs_delete_random_backup_block(client, core_api, volume_name):
     raise NotImplementedError
 
 
+def backupstore_count_backup_block_files(client, core_api, volume_name):
+    backup_target_setting = client.by_id_setting(SETTING_BACKUP_TARGET)
+    backupstore = backup_target_setting.value
+
+    if is_backupTarget_s3(backupstore):
+        return minio_count_backup_block_files(client, core_api, volume_name)
+
+    elif is_backupTarget_nfs(backupstore):
+        return nfs_count_backup_block_files()
+
+
+# TODO: implement nfs_count_backup_block_files
+def nfs_count_backup_block_files():
+    raise NotImplementedError
+
+
+def minio_count_backup_block_files(client, core_api, volume_name):
+    backup_target_credential_setting = client.by_id_setting(
+            SETTING_BACKUP_TARGET_CREDENTIAL_SECRET)
+
+    secret_name = backup_target_credential_setting.value
+
+    minio_api = get_minio_api(client, core_api, secret_name)
+    bucket_name = get_backupstore_bucket_name(client)
+    prefix = minio_get_volume_backup_prefix(volume_name) + "/blocks"
+
+    block_object_files = minio_api.list_objects(bucket_name,
+                                                prefix=prefix,
+                                                recursive=True)
+    block_object_files_list = list(block_object_files)
+
+    return len(block_object_files_list)
+
+
 def delete_random_backup_block(client, core_api, volume_name):
     backup_target_setting = client.by_id_setting(SETTING_BACKUP_TARGET)
     backupstore = backup_target_setting.value
