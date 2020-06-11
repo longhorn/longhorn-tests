@@ -715,16 +715,19 @@ def test_backup_volume_list():  # NOQA
 
     Steps:
 
-    1.  Create volume(1) and attach to the current node
-    2.  Create volume(2) and attach to the current node
-    3.  write some data to volume(1,2)
-    4.  Create backup(1) of volume(1,2)
-    5.  Create backup(2) of volume(1,2)
-    6.  request a backup list
-    7.  verify backup list contains no error messages for volume(1,2)
-    8.  verify backup list contains backup(1,2) information for volume(1,2)
-    9.  place a file named "backup_1234@failure.cfg"
+    1.  Create a volume(1,2) and attach to the current node
+    2.  write some data to volume(1,2)
+    3.  Create a backup(1) of volume(1,2)
+    4.  request a backup list
+    5.  verify backup list contains no error messages for volume(1,2)
+    6.  verify backup list contains backup(1) for volume(1,2)
+    7.  place a file named "backup_1234@failure.cfg"
         into the backups folder of volume(1)
+    8.  request a backup list
+    9.  verify backup list contains no error messages for volume(1,2)
+    10. verify backup list contains backup(1) for volume(1,2)
+    11. delete backup volumes(1 & 2)
+    12. cleanup
     """
     pass
 
