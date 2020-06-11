@@ -3541,19 +3541,13 @@ def get_minio_api(client, core_api, minio_secret_name):
                  secure=True)
 
 
-def minio_delete_random_backup_block(client, core_api, volume_name):
-    backup_target_credential_setting = client.by_id_setting(
-            SETTING_BACKUP_TARGET_CREDENTIAL_SECRET)
-
-    secret_name = backup_target_credential_setting.value
-
-    minio_api = get_minio_api(client, core_api, secret_name)
+def minio_get_volume_backup_prefix(volume_name):
+    client = get_longhorn_api_client()
 
     volume_name_sha512 = \
         hashlib.sha512(volume_name.encode('utf-8')).hexdigest()
 
-    bucket_name = "backupbucket"
-    backup_prefix = "backupstore/backupstore/volumes"
+    backup_prefix = get_backupstore_path(client) + "/backupstore/volumes"
     volume_dir_level_1 = volume_name_sha512[0:2]
     volume_dir_level_2 = volume_name_sha512[2:4]
 
@@ -3561,6 +3555,11 @@ def minio_delete_random_backup_block(client, core_api, volume_name):
         volume_dir_level_1 + "/" + \
         volume_dir_level_2 + "/" + \
         volume_name + "/blocks"
+        volume_name
+
+    return prefix
+
+
     bucket_name = get_backupstore_bucket_name(client)
 
     block_object_files = minio_api.list_objects(bucket_name,
