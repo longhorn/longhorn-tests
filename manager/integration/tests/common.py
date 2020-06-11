@@ -3785,3 +3785,31 @@ def wait_for_instance_manager_desire_state(client, core_api, im_name,
         assert im.currentState != state.lower()
         assert pod.status.phase != state
     return im
+
+
+def wait_for_backup_delete(client, volume_name, backup_name):
+    for i in range(RETRY_COUNTS):
+        bvs = client.list_backupVolume()
+        bv_found = False
+
+        for bv in bvs:
+            if bv.name == volume_name:
+                bv_found = True
+                break
+
+        assert bv_found
+
+        backups = bv.backupList()
+
+        backup_found = False
+        for b in backups:
+            if b.name == backup_name:
+                backup_found = True
+                break
+
+        if backup_found is False:
+            break
+
+        time.sleep(RETRY_INTERVAL)
+
+    assert not backup_found
