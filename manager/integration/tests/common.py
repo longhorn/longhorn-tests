@@ -178,6 +178,8 @@ DATA_SIZE_IN_MB_3 = 800
 
 MESSAGE_TYPE_ERROR = "error"
 
+BACKUP_BLOCK_SIZE = 2 * Mi
+
 
 def load_k8s_config():
     c = Configuration()

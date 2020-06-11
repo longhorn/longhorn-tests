@@ -58,6 +58,14 @@ from common import MESSAGE_TYPE_ERROR
 from common import DATA_SIZE_IN_MB_1
 from common import SETTING_REPLICA_NODE_SOFT_ANTI_AFFINITY
 from common import CONDITION_REASON_SCHEDULING_FAILURE
+from common import set_backupstore_s3 # NOQA
+from common import backupstore_cleanup
+from common import backupstore_count_backup_block_files
+from common import backupstore_create_dummy_in_progress_backup
+from common import backupstore_delete_dummy_in_progress_backup
+from common import wait_for_backup_delete
+from common import wait_for_backup_volume_delete
+from common import BACKUP_BLOCK_SIZE
 
 
 @pytest.mark.coretest   # NOQA
@@ -585,8 +593,7 @@ def backup_status_for_unavailable_replicas_test(client, volume_name, # NOQA
     cleanup_volume(client, volume)
 
 
-@pytest.mark.skip(reason="TODO")
-def test_backup_block_deletion():  # NOQA
+def test_backup_block_deletion(client, core_api, volume_name, set_backupstore_s3):  # NOQA
     """
     Test backup block deletion
 
@@ -599,7 +606,7 @@ def test_backup_block_deletion():  # NOQA
 
     Setup:
 
-    1. Setup NFS backupstore since we can manipulate the content easily
+    1. Setup minio as S3 backupstore
 
     Steps:
 
@@ -625,7 +632,70 @@ def test_backup_block_deletion():  # NOQA
     17. Delete the backup volume
     18. Cleanup the volume
     """
-    pass
+    backupstore_cleanup(client)
+
+    volume = create_and_check_volume(client, volume_name)
+    host_id = get_self_host_id()
+    volume = volume.attach(hostId=host_id)
+    volume = common.wait_for_volume_healthy(client, volume_name)
+
+    data0 = {'pos': 0,
+             'len': 2 * BACKUP_BLOCK_SIZE,
+             'content': common.generate_random_data(2 * BACKUP_BLOCK_SIZE)}
+
+    bv0, backup0, _, _ = create_backup(client, volume_name, data0)
+
+    data1 = {'pos': 0,
+             'len': BACKUP_BLOCK_SIZE,
+             'content': common.generate_random_data(BACKUP_BLOCK_SIZE)}
+
+    bv1, backup1, _, _ = create_backup(client, volume_name, data1)
+
+    data2 = {'pos': 0,
+             'len': BACKUP_BLOCK_SIZE,
+             'content': common.generate_random_data(BACKUP_BLOCK_SIZE)}
+
+    bv2, backup2, _, _ = create_backup(client, volume_name, data2)
+
+    backup_blocks_count = backupstore_count_backup_block_files(client,
+                                                               core_api,
+                                                               volume_name)
+    assert backup_blocks_count == 4
+
+    bvs = client.list_backupVolume()
+
+    for bv in bvs:
+        if bv['name'] == volume_name:
+            assert bv['dataStored'] == \
+                str(backup_blocks_count * BACKUP_BLOCK_SIZE)
+
+    backupstore_create_dummy_in_progress_backup(client, core_api, volume_name)
+    bv1.backupDelete(name=backup1.name)
+
+    assert backupstore_count_backup_block_files(client,
+                                                core_api,
+                                                volume_name) == 4
+
+    backupstore_delete_dummy_in_progress_backup(client, core_api, volume_name)
+
+    bv0.backupDelete(name=backup0.name)
+    wait_for_backup_delete(client, volume_name, backup0.name)
+
+    assert backupstore_count_backup_block_files(client,
+                                                core_api,
+                                                volume_name) == 2
+
+    bv2.backupDelete(name=backup2.name)
+
+    wait_for_backup_delete(client, volume_name, backup2.name)
+
+    assert backupstore_count_backup_block_files(client,
+                                                core_api,
+                                                volume_name) == 0
+
+    bv = client.by_id_backupVolume(volume_name)
+    client.delete(bv)
+    wait_for_backup_volume_delete(client, volume_name)
 
 
 @pytest.mark.skip(reason="TODO")
