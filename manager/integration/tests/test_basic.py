@@ -63,13 +63,15 @@ from common import wait_for_backup_delete
 from common import wait_for_backup_volume_delete
 from common import BACKUP_BLOCK_SIZE
 from common import assert_backup_state
-
 from backupstore import backupstore_corrupt_backup_cfg_file
 from backupstore import backupstore_delete_volume_cfg_file
 from backupstore import backupstore_cleanup
 from backupstore import backupstore_count_backup_block_files
 from backupstore import backupstore_create_dummy_in_progress_backup
 from backupstore import backupstore_delete_dummy_in_progress_backup
+from common import backupstore_create_file
+from common import backupstore_delete_file
+from common import minio_get_volume_backup_prefix
 
 
 @pytest.mark.coretest   # NOQA
@@ -702,40 +704,6 @@ def test_backup_block_deletion(client, core_api, volume_name, set_backupstore_s3
     wait_for_backup_volume_delete(client, volume_name)
 
 
-@pytest.mark.skip(reason="TODO")
-def test_backup_volume_list():  # NOQA
-    """
-    Test backup volume list
-
-    Context:
-
-    We want to make sure that an error when listing a single backup volume
-    does not stop us from listing all the other backup volumes. Otherwise a
-    single faulty backup can block the retrieval of all known backup volumes.
-
-    Setup:
-
-    1. Setup NFS backupstore since we can manipulate the content easily
-
-    Steps:
-
-    1.  Create a volume(1,2) and attach to the current node
-    2.  write some data to volume(1,2)
-    3.  Create a backup(1) of volume(1,2)
-    4.  request a backup list
-    5.  verify backup list contains no error messages for volume(1,2)
-    6.  verify backup list contains backup(1) for volume(1,2)
-    7.  place a file named "backup_1234@failure.cfg"
-        into the backups folder of volume(1)
-    8.  request a backup list
-    9.  verify backup list contains no error messages for volume(1,2)
-    10. verify backup list contains backup(1) for volume(1,2)
-    11. delete backup volumes(1 & 2)
-    12. cleanup
-    """
-    pass
-
-
 def test_backup_metadata_deletion(client, core_api, volume_name, set_backupstore_s3):  # NOQA
     """
     Test backup metadata deletion
@@ -1345,6 +1313,103 @@ def test_deleting_backup_volume(client):  # NOQA
     client.delete(bv)
     common.wait_for_backup_volume_delete(client, volName)
     cleanup_volume(client, volume)
+
+
+def test_backup_volume_list(client, core_api, set_backupstore_s3):  # NOQA
+    """
+    Test backup volume list
+
+    Context:
+
+    We want to make sure that an error when listing a single backup volume
+    does not stop us from listing all the other backup volumes. Otherwise a
+    single faulty backup can block the retrieval of all known backup volumes.
+
+    Setup:
+
+    1. Setup minio as S3 backupstore
+
+    Steps:
+
+    1.  Create a volume(1,2) and attach to the current node
+    2.  write some data to volume(1,2)
+    3.  Create a backup(1) of volume(1,2)
+    4.  request a backup list
+    5.  verify backup list contains no error messages for volume(1,2)
+    6.  verify backup list contains backup(1) for volume(1,2)
+    7.  place a file named "backup_1234@failure.cfg"
+        into the backups folder of volume(1)
+    8.  request a backup list
+    9.  verify backup list contains no error messages for volume(1,2)
+    10. verify backup list contains backup(1) for volume(1,2)
+    11. delete backup volumes(1 & 2)
+    12. cleanup
+    """
+    backupstore_cleanup(client)
+
+    # create 2 volumes.
+    volume1_name, volume2_name = generate_volume_name(), generate_volume_name()
+
+    volume1 = create_and_check_volume(client, volume1_name)
+    volume2 = create_and_check_volume(client, volume2_name)
+
+    host_id = get_self_host_id()
+    volume1 = volume1.attach(hostId=host_id)
+    volume1 = common.wait_for_volume_healthy(client, volume1_name)
+    volume2 = volume2.attach(hostId=host_id)
+    volume2 = common.wait_for_volume_healthy(client, volume2_name)
+
+    bv1, backup1, snap1, _ = create_backup(client, volume1_name)
+    bv2, backup2, snap2, _ = create_backup(client, volume2_name)
+
+    def verify_no_err():
+        '''
+        request a backup list
+        verify backup list contains no error messages for volume(1,2)
+        verify backup list contains backup(1) for volume(1,2)
+        '''
+        for _ in range(RETRY_COUNTS):
+            verified_bvs = set()
+            backup_volume_list = client.list_backupVolume()
+            for bv in backup_volume_list:
+                if bv.name in (volume1_name, volume2_name):
+                    assert not bv['messages']
+                    for b in bv.backupList().data:
+                        if bv.name == volume1_name \
+                                and b.name == backup1.name \
+                                or bv.name == volume2_name \
+                                and b.name == backup2.name:
+                            verified_bvs.add(bv.name)
+            if len(verified_bvs) == 2:
+                break
+            time.sleep(RETRY_INTERVAL)
+        assert len(verified_bvs) == 2
+
+    verify_no_err()
+
+    # place a bad named file into the backups folder of volume(1)
+    prefix = minio_get_volume_backup_prefix(volume1_name) + "/backups"
+    backupstore_create_file(client,
+                            core_api,
+                            prefix,
+                            "backup_1234@failure.cfg")
+
+    verify_no_err()
+
+    backupstore_delete_file(client,
+                            core_api,
+                            prefix,
+                            "backup_1234@failure.cfg")
+
+    bv1 = client.by_id_backupVolume(volume1_name)
+    client.delete(bv1)
+    wait_for_backup_volume_delete(client, volume1_name)
+
+    bv2 = client.by_id_backupVolume(volume2_name)
+    client.delete(bv2)
+    wait_for_backup_volume_delete(client, volume2_name)
+
+    backupstore_cleanup(client)
 
 
 @pytest.mark.coretest   # NOQA
