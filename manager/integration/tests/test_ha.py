@@ -40,20 +40,19 @@ from common import set_backupstore_s3  # NOQA
 from common import create_backup
 from common import wait_for_volume_faulted
 from common import wait_for_volume_delete
-from common import backupstore_cleanup
 from common import SETTING_AUTO_SALVAGE
 from common import SETTING_BACKUP_TARGET
-from common import delete_random_backup_block
 from common import wait_for_volume_condition_restore
 from common import wait_for_pod_restart
 from common import crash_engine_process_with_sigkill
 from common import wait_for_volume_healthy_no_frontend
 from common import exec_instance_manager
-
 from common import SIZE, VOLUME_RWTEST_SIZE, EXPAND_SIZE, Gi
 from common import RETRY_COUNTS, RETRY_INTERVAL
 from common import SETTING_REPLICA_NODE_SOFT_ANTI_AFFINITY
 
+from backupstore import backupstore_cleanup
+from backupstore import backupstore_delete_random_backup_block
 
 @pytest.mark.coretest   # NOQA
 def test_ha_simple_recovery(client, volume_name):  # NOQA
@@ -1131,7 +1130,7 @@ def test_all_replica_restore_failure(client, core_api, volume_name, pod_make):  
     wait_for_backup_completion(client, volume_name, snap.name)
     bv, b = find_backup(client, volume_name, snap.name)
 
-    delete_random_backup_block(client, core_api, volume_name)
+    backupstore_delete_random_backup_block(client, core_api, volume_name)
 
     res_name = "res-" + volume_name
 
