@@ -3604,3 +3604,15 @@ def wait_for_backup_delete(client, volume_name, backup_name):
         time.sleep(RETRY_INTERVAL)
 
     assert not backup_found
+
+
+def assert_backup_state(b_actual, b_expected):
+    assert b_expected.name == b_actual.name
+    assert b_expected.url == b_actual.url
+    assert b_expected.snapshotName == b_actual.snapshotName
+    assert b_expected.snapshotCreated == b_actual.snapshotCreated
+    assert b_expected.created == b_actual.created
+    assert b_expected.volumeName == b_actual.volumeName
+    assert b_expected.volumeSize == b_actual.volumeSize
+    assert b_expected.volumeCreated == b_actual.volumeCreated
+    assert b_expected.messages == b_actual.messages is None
