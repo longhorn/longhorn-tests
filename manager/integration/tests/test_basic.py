@@ -59,13 +59,17 @@ from common import DATA_SIZE_IN_MB_1
 from common import SETTING_REPLICA_NODE_SOFT_ANTI_AFFINITY
 from common import CONDITION_REASON_SCHEDULING_FAILURE
 from common import set_backupstore_s3 # NOQA
-from common import backupstore_cleanup
-from common import backupstore_count_backup_block_files
-from common import backupstore_create_dummy_in_progress_backup
-from common import backupstore_delete_dummy_in_progress_backup
 from common import wait_for_backup_delete
 from common import wait_for_backup_volume_delete
 from common import BACKUP_BLOCK_SIZE
+from common import assert_backup_state
+
+from backupstore import backupstore_corrupt_backup_cfg_file
+from backupstore import backupstore_delete_volume_cfg_file
+from backupstore import backupstore_cleanup
+from backupstore import backupstore_count_backup_block_files
+from backupstore import backupstore_create_dummy_in_progress_backup
+from backupstore import backupstore_delete_dummy_in_progress_backup
 
 
 @pytest.mark.coretest   # NOQA
@@ -732,8 +736,7 @@ def test_backup_volume_list():  # NOQA
     pass
 
 
-@pytest.mark.skip(reason="TODO")
-def test_backup_metadata_deletion():  # NOQA
+def test_backup_metadata_deletion(client, core_api, volume_name, set_backupstore_s3):  # NOQA
     """
     Test backup metadata deletion
 
@@ -744,7 +747,8 @@ def test_backup_metadata_deletion():  # NOQA
 
     Setup:
 
-    1. Setup NFS backupstore since we can manipulate the content easily
+    1. Setup minio as S3 backupstore
+    2. Cleanup backupstore
 
     Steps:
 
@@ -774,8 +778,119 @@ def test_backup_metadata_deletion():  # NOQA
     20. verify that volume(1) has been deleted in the backupstore.
     21. cleanup
     """
-    pass
+    backupstore_cleanup(client)
 
+    volume1_name = volume_name + "-1"
+    volume2_name = volume_name + "-2"
+
+    host_id = get_self_host_id()
+
+    volume1 = create_and_check_volume(client, volume1_name)
+    volume2 = create_and_check_volume(client, volume2_name)
+
+    volume1.attach(hostId=host_id)
+    volume2.attach(hostId=host_id)
+
+    volume1 = wait_for_volume_healthy(client, volume1_name)
+    volume2 = wait_for_volume_healthy(client, volume2_name)
+
+    v1bv, v1b1, _, _ = create_backup(client, volume1_name)
+    v2bv, v2b1, _, _ = create_backup(client, volume2_name)
+    _, v1b2, _, _ = create_backup(client, volume1_name)
+    _, v2b2, _, _ = create_backup(client, volume2_name)
+
+    bvs = client.list_backupVolume()
+
+    for bv in bvs:
+        backups = bv.backupList()
+        for b in backups:
+            assert b.messages is None
+
+    v1b1_new = v1bv.backupGet(name=v1b1.name)
+    assert_backup_state(v1b1, v1b1_new)
+
+    v1b2_new = v1bv.backupGet(name=v1b2.name)
+    assert_backup_state(v1b2, v1b2_new)
+
+    v2b1_new = v2bv.backupGet(name=v2b1.name)
+    assert_backup_state(v2b1, v2b1_new)
+
+    v2b2_new = v2bv.backupGet(name=v2b2.name)
+    assert_backup_state(v2b2, v2b2_new)
+
+    backupstore_corrupt_backup_cfg_file(client,
+                                        core_api,
+                                        volume1_name,
+                                        v1b1.name)
+
+    bvs = client.list_backupVolume()
+
+    for bv in bvs:
+        if bv.name == volume1_name:
+            backups = bv.backupList()
+            for b in backups:
+                if b.name == v1b1.name:
+                    assert b.messages is not None
+                else:
+                    assert b.messages is None
+
+    v1b2_new = v1bv.backupGet(name=v1b2.name)
+    assert_backup_state(v1b2, v1b2_new)
+
+    v2b1_new = v2bv.backupGet(name=v2b1.name)
+    assert_backup_state(v2b1, v2b1_new)
+
+    v2b2_new = v2bv.backupGet(name=v2b2.name)
+    assert_backup_state(v2b2, v2b2_new)
+
+    v1bv.backupDelete(name=v1b1.name)
+    v2bv.backupDelete(name=v2b1.name)
+
+    wait_for_backup_delete(client, volume1_name, v1b1.name)
+    wait_for_backup_delete(client, volume2_name, v2b1.name)
+
+    bvs = client.list_backupVolume()
+
+    for bv in bvs:
+        backups = bv.backupList()
+        for b in backups:
+            assert b.messages is None
+
+    assert len(v1bv.backupList()) == 1
+    assert len(v2bv.backupList()) == 1
+    assert v1bv.backupList()[0].name == v1b2.name
+    assert v2bv.backupList()[0].name == v2b2.name
+
+    backupstore_delete_volume_cfg_file(client, core_api, volume2_name)
+
+    v2bv.backupDelete(name=v2b2.name)
+    wait_for_backup_delete(client, volume2_name, v2b2.name)
+
+    assert len(v2bv.backupList()) == 0
+
+    client.delete(v2bv)
+
+    assert backupstore_count_backup_block_files(client,
+                                                core_api,
+                                                volume2_name) == 0
+
+    bvs = client.list_backupVolume()
+    for bv in bvs:
+        if bv.name == volume1_name:
+            backups = bv.backupList()
+            for b in backups:
+                assert b.messages is None
+
+    v1b2_new = v1bv.backupGet(name=v1b2.name)
+    assert_backup_state(v1b2, v1b2_new)
+    assert v1b2_new.messages == v1b2.messages is None
+
+    v1bv.backupDelete(name=v1b2.name)
+    wait_for_backup_delete(client, volume1_name, v1b2.name)
+
+    assert backupstore_count_backup_block_files(client,
+                                                core_api,
+                                                volume1_name) == 0
 
 @pytest.mark.coretest   # NOQA
 def test_backup(client, volume_name):  # NOQA
