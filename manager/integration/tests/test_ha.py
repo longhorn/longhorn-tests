@@ -1289,6 +1289,34 @@ def test_single_replica_restore_failure(client, core_api, volume_name, pod_make)
     assert md5sum == res_md5sum
 
 
+@pytest.mark.skip(reason="TODO")
+def test_dr_volume_with_restore_command_error():
+    """
+    Test if Longhorn can capture and handle the restore command error
+    rather than the error triggered the data restoring.
+
+    1. Set a random backupstore.
+    2. Create a volume, then create the corresponding PV, PVC and Pod.
+    3. Write data to the pod volume and get the md5sum
+       after the pod running.
+    4. Create the 1st backup.
+    5. Create a DR volume from the backup.
+    6. Wait for the DR volume restore complete.
+    7. Create a non-empty directory `volume-delta-<last backup name>.img`
+       in one replica directory of the DR volume. This will fail the
+       restore command call later.
+    8. Write data to the original volume then create the 2nd backup.
+    9. Wait for incremental restore complete.
+       Then verify the DR volume is Degraded
+       and there is one failed replica.
+    10. Activate the DR volume and wait for it complete.
+    11. Create PV/PVC/Pod for the activated volume.
+    12. Validate the volume content.
+    13. Verify Writing data to the activated volume is fine.
+    """
+    pass
+
+
 def test_volume_reattach_after_engine_sigkill(client, core_api, volume_name, pod_make):  # NOQA
     """
     [HA] Test if the volume can be reattached after using SIGKILL
