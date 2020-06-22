@@ -738,9 +738,16 @@ def pod_make(request):
             except Exception as e:
                 print("Exception when waiting for PVC deletion", e)
             try:
-                pv = wait_and_get_pv_for_pvc(api, pvc_name)
-                pv_name = pv.metadata.name
-                delete_and_wait_pv(api, pv_name)
+                found = False
+                pvs = api.list_persistent_volume()
+                for item in pvs.items:
+                    if item.spec.claim_ref.name == pvc_name:
+                        pv = item
+                        found = True
+                        break
+                if found:
+                    pv_name = pv.metadata.name
+                    delete_and_wait_pv(api, pv_name)
             except Exception as e:
                 print("Exception when waiting for PV deletion", e)
 
