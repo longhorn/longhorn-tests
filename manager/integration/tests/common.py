@@ -1507,17 +1507,9 @@ def delete_replica_processes(client, api, volname):
         replica_map[r.instanceManagerName] = r.name
 
     for rm_name, r_name in replica_map.items():
-        with timeout(seconds=STREAM_EXEC_TIMEOUT,
-                     error_message='Timeout on executing stream read'):
-            delete_command = [
-                '/bin/sh', '-c',
-                'longhorn-instance-manager process delete ' +
-                '--name ' + r_name
-            ]
-            stream(api.connect_get_namespaced_pod_exec, rm_name,
-                   LONGHORN_NAMESPACE, command=delete_command,
-                   stderr=True, stdin=False, stdout=True,
-                   tty=False)
+        delete_command = 'longhorn-instance-manager process delete ' + \
+                         '--name ' + r_name
+        exec_instance_manager(api, rm_name, delete_command)
 
 
 def crash_replica_processes(client, api, volname, replicas=None,
@@ -1528,24 +1520,25 @@ def crash_replica_processes(client, api, volname, replicas=None,
         replicas = volume.replicas
 
     for r in replicas:
-        kill_command = [
-            '/bin/sh', '-c',
-            "kill `ps aux | grep '" + r['dataPath'] +
-            "' | grep -v grep | awk '{print $2}'`"
-        ]
-
         assert r.instanceManagerName != ""
-
-        with timeout(seconds=STREAM_EXEC_TIMEOUT,
-                     error_message='Timeout on executing stream read'):
-            stream(api.connect_get_namespaced_pod_exec,
-                   r.instanceManagerName,
-                   LONGHORN_NAMESPACE, command=kill_command,
-                   stderr=True, stdin=False, stdout=True, tty=False)
+        kill_command = "kill `ps aux | grep '" + r['dataPath'] +\
+                       "' | grep -v grep | awk '{print $2}'`"
+        exec_instance_manager(api, r.instanceManagerName, kill_command)
 
     if wait_to_fail is True:
         for r in replicas:
             wait_for_replica_failed(client, volname, r['name'])
+
+
+def exec_instance_manager(api, im_name, cmd):
+    exec_cmd = ['/bin/sh', '-c', cmd]
+
+    with timeout(seconds=STREAM_EXEC_TIMEOUT,
+                 error_message='Timeout on executing stream read'):
+        stream(api.connect_get_namespaced_pod_exec,
+               im_name,
+               LONGHORN_NAMESPACE, command=exec_cmd,
+               stderr=True, stdin=False, stdout=True, tty=False)
 
 
 def wait_for_replica_failed(client, volname, replica_name):
@@ -3167,7 +3160,6 @@ def wait_for_volume_restoration_start(client, volume_name, backup_name):
     for i in range(RETRY_COUNTS):
         volume = client.by_id_volume(volume_name)
         for status in volume.restoreStatus:
-            assert status.error == ""
             if status.state == "in_progress" and \
                     status.progress > 0:
                 started = True

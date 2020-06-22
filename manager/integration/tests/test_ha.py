@@ -48,6 +48,7 @@ from common import wait_for_volume_condition_restore
 from common import wait_for_pod_restart
 from common import crash_engine_process_with_sigkill
 from common import wait_for_volume_healthy_no_frontend
+from common import exec_instance_manager
 
 from common import SIZE, VOLUME_RWTEST_SIZE, EXPAND_SIZE, Gi
 from common import RETRY_COUNTS, RETRY_INTERVAL
@@ -1289,8 +1290,8 @@ def test_single_replica_restore_failure(client, core_api, volume_name, pod_make)
     assert md5sum == res_md5sum
 
 
-@pytest.mark.skip(reason="TODO")
-def test_dr_volume_with_restore_command_error():
+def test_dr_volume_with_restore_command_error(
+        client, core_api, volume_name, pod_make):  # NOQA
     """
     Test if Longhorn can capture and handle the restore command error
     rather than the error triggered the data restoring.
@@ -1314,7 +1315,87 @@ def test_dr_volume_with_restore_command_error():
     12. Validate the volume content.
     13. Verify Writing data to the activated volume is fine.
     """
-    pass
+    set_random_backupstore(client)
+
+    std_volume_name = volume_name + "-std"
+    data_path1 = "/data/test1"
+    std_pod_name, std_pv_name, std_pvc_name, std_md5sum1 = \
+        prepare_pod_with_data_in_mb(
+            client, core_api, pod_make, std_volume_name,
+            data_path=data_path1, data_size_in_mb=DATA_SIZE_IN_MB_1)
+
+    std_volume = client.by_id_volume(std_volume_name)
+    snap1 = create_snapshot(client, std_volume_name)
+    std_volume.snapshotBackup(name=snap1.name)
+    wait_for_backup_completion(client, std_volume_name, snap1.name)
+    bv, b1 = find_backup(client, std_volume_name, snap1.name)
+
+    dr_volume_name = volume_name + "-dr"
+    client.create_volume(name=dr_volume_name, size=str(1 * Gi),
+                         numberOfReplicas=3, fromBackup=b1.url,
+                         frontend="", standby=True)
+    wait_for_volume_creation(client, dr_volume_name)
+    wait_for_volume_restoration_start(client, dr_volume_name, b1.name)
+    wait_for_volume_restoration_completed(client, dr_volume_name)
+
+    dr_volume = client.by_id_volume(dr_volume_name)
+    # Will hack into the replica directory, create a non-empty directory
+    # in the special path. (This path will be reserved for the restore.)
+    # Then the following inc restore should fail.
+    failed_replica = dr_volume.replicas[0]
+    cmd = "mkdir -p " + "/host" + failed_replica.dataPath + "/volume-delta-" +\
+          dr_volume.controllers[0].lastRestoredBackup + ".img/random-dir"
+    exec_instance_manager(core_api,
+                          failed_replica.instanceManagerName, cmd)
+
+    data_path2 = "/data/test2"
+    write_pod_volume_random_data(core_api, std_pod_name,
+                                 data_path2, DATA_SIZE_IN_MB_1)
+    std_md5sum2 = get_pod_data_md5sum(core_api, std_pod_name, data_path2)
+    snap2 = create_snapshot(client, std_volume_name)
+    std_volume.snapshotBackup(name=snap2.name)
+    wait_for_backup_completion(client, std_volume_name, snap2.name)
+    bv, b2 = find_backup(client, std_volume_name, snap2.name)
+
+    # Wait for the incremental restoration triggered then complete.
+    client.list_backupVolume()
+    check_volume_last_backup(client, dr_volume_name, b2.name)
+    wait_for_volume_restoration_start(client, dr_volume_name, b2.name)
+    wait_for_volume_restoration_completed(client, dr_volume_name)
+
+    dr_volume = client.by_id_volume(dr_volume_name)
+    verified = False
+    for r in dr_volume.replicas:
+        if r.name == failed_replica.name:
+            assert not r['running']
+            assert r['failedAt'] != ""
+            verified = True
+        else:
+            assert r['running']
+            assert r['failedAt'] == ""
+    assert verified
+    wait_for_volume_degraded(client, dr_volume_name)
+
+    activate_standby_volume(client, dr_volume_name)
+    dr_volume = wait_for_volume_detached(client, dr_volume_name)
+
+    dr_pod_name = dr_volume_name + "-pod"
+    dr_pv_name = dr_volume_name + "-pv"
+    dr_pvc_name = dr_volume_name + "-pvc"
+    dr_pod = pod_make(name=dr_pod_name)
+    create_pv_for_volume(client, core_api, dr_volume, dr_pv_name)
+    create_pvc_for_volume(client, core_api, dr_volume, dr_pvc_name)
+    dr_pod['spec']['volumes'] = [create_pvc_spec(dr_pvc_name)]
+    create_and_wait_pod(core_api, dr_pod)
+
+    md5sum1 = get_pod_data_md5sum(core_api, dr_pod_name, data_path1)
+    assert std_md5sum1 == md5sum1
+    md5sum2 = get_pod_data_md5sum(core_api, dr_pod_name, data_path2)
+    assert std_md5sum2 == md5sum2
+
+    bv.backupDelete(name=b1.name)
+    bv.backupDelete(name=b2.name)
+    client.delete(bv)
 
 
 def test_volume_reattach_after_engine_sigkill(client, core_api, volume_name, pod_make):  # NOQA
