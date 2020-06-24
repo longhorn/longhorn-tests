@@ -23,7 +23,7 @@ from common import wait_statefulset
 from common import create_pvc_spec
 from common import create_and_wait_pod
 from common import get_pod_data_md5sum
-from common import pod_make # NOQA
+from common import pod_make, csi_pv, pvc # NOQA
 from common import statefulset # NOQA
 from common import storage_class # NOQA
 from common import SETTING_AUTO_SALVAGE
@@ -54,7 +54,7 @@ def longhorn_upgrade(image_tag):
 
 
 @pytest.mark.upgrade
-def test_upgrade(upgrade_image_tag, settings_reset, volume_name, pod_make, statefulset, storage_class):  # NOQA
+def test_upgrade(upgrade_image_tag, settings_reset, volume_name, csi_pv, pvc, pod_make, statefulset, storage_class): # NOQA
     """
     Test Longhorn upgrade
 
@@ -103,7 +103,7 @@ def test_upgrade(upgrade_image_tag, settings_reset, volume_name, pod_make, state
 
     # Create Volume used by Pod
     pod_name, pv_name, pvc_name, pod_md5sum = \
-        prepare_pod_with_data_in_mb(client, core_api,
+        prepare_pod_with_data_in_mb(client, core_api, csi_pv, pvc,
                                     pod_make, pod_volume_name,
                                     data_path=pod_data_path,
                                     add_liveness_prope=False)

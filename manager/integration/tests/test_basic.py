@@ -38,7 +38,7 @@ from common import wait_for_volume_restoration_completed
 from common import read_volume_data
 from common import pvc_name # NOQA
 from common import storage_class # NOQA
-from common import pod_make # NOQA
+from common import pod_make, csi_pv, pvc # NOQA
 from common import set_random_backupstore
 from common import create_snapshot
 from common import expand_attached_volume
@@ -2630,7 +2630,7 @@ def test_expansion_with_scheduling_failure(
 
 
 def test_dr_volume_with_last_backup_deletion(
-        client, core_api, volume_name, pod_make):  # NOQA
+        client, core_api, csi_pv, pvc, volume_name, pod_make):  # NOQA
     """
     Test if the DR volume can be activated
     after deleting the lastest backup. There are two cases to the last
@@ -2664,7 +2664,7 @@ def test_dr_volume_with_last_backup_deletion(
     data_path1 = "/data/test1"
     std_pod_name, std_pv_name, std_pvc_name, std_md5sum1 = \
         prepare_pod_with_data_in_mb(
-            client, core_api, pod_make, std_volume_name,
+            client, core_api, csi_pv, pvc, pod_make, std_volume_name,
             data_path=data_path1, data_size_in_mb=DATA_SIZE_IN_MB_1)
 
     std_volume = client.by_id_volume(std_volume_name)
