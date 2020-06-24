@@ -3410,14 +3410,23 @@ def expand_attached_volume(client, volume_name):
 
 
 def prepare_pod_with_data_in_mb(
-        client, core_api, pod_make, volume_name, volume_size=str(1*Gi),
-        data_path="/data/test", data_size_in_mb=DATA_SIZE_IN_MB_1,
-        add_liveness_prope=True):  # NOQA:
+        client, core_api, csi_pv, pvc, pod_make, volume_name,
+        volume_size=str(1*Gi), data_path="/data/test",
+        data_size_in_mb=DATA_SIZE_IN_MB_1, add_liveness_prope=True):# NOQA:
+
     pod_name = volume_name + "-pod"
     pv_name = volume_name + "-pv"
     pvc_name = volume_name + "-pvc"
 
     pod = pod_make(name=pod_name)
+    csi_pv['metadata']['name'] = pv_name
+    csi_pv['spec']['csi']['volumeHandle'] = volume_name
+    csi_pv['spec']['capacity']['storage'] = volume_size
+    pvc['metadata']['name'] = pvc_name
+    pvc['spec']['volumeName'] = pv_name
+    pvc['spec']['resources']['requests']['storage'] = volume_size
+    pvc['spec']['storageClassName'] = ''
+    pod['spec']['volumes'] = [create_pvc_spec(pvc_name)]
 
     if add_liveness_prope is True:
         pod_liveness_probe_spec = \
@@ -3426,11 +3435,12 @@ def prepare_pod_with_data_in_mb(
         pod['spec']['containers'][0]['livenessProbe'] = \
             pod_liveness_probe_spec
 
-    volume = create_and_check_volume(client, volume_name,
-                                     num_of_replicas=3, size=volume_size)
-    create_pv_for_volume(client, core_api, volume, pv_name)
-    create_pvc_for_volume(client, core_api, volume, pvc_name)
-    pod['spec']['volumes'] = [create_pvc_spec(pvc_name)]
+    create_and_check_volume(client, volume_name,
+                            num_of_replicas=3, size=volume_size)
+    core_api.create_persistent_volume(csi_pv)
+    core_api.create_namespaced_persistent_volume_claim(
+        body=pvc, namespace='default')
+
     create_and_wait_pod(core_api, pod)
 
     write_pod_volume_random_data(core_api, pod_name,

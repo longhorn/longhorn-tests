@@ -15,7 +15,7 @@ from common import expand_attached_volume, check_block_device_size
 from common import write_volume_data, generate_random_data
 from common import wait_for_rebuild_complete
 from common import disable_auto_salvage # NOQA
-from common import pod_make, pod  # NOQA
+from common import pod_make, pod, csi_pv, pvc  # NOQA
 from common import create_pv_for_volume
 from common import create_pvc_for_volume
 from common import create_pvc_spec
@@ -25,7 +25,6 @@ from common import wait_for_volume_healthy, wait_for_volume_degraded
 from common import get_pod_data_md5sum
 from common import wait_for_pod_remount
 from common import delete_and_wait_pod
-from common import delete_and_wait_pvc, delete_and_wait_pv
 from common import wait_for_rebuild_start
 from common import prepare_pod_with_data_in_mb
 from common import wait_for_replica_running
@@ -53,6 +52,7 @@ from common import SETTING_REPLICA_NODE_SOFT_ANTI_AFFINITY
 
 from backupstore import backupstore_cleanup
 from backupstore import backupstore_delete_random_backup_block
+
 
 @pytest.mark.coretest   # NOQA
 def test_ha_simple_recovery(client, volume_name):  # NOQA
@@ -426,8 +426,8 @@ def test_ha_recovery_with_expansion(client, volume_name):   # NOQA
 
 
 def wait_pod_for_auto_salvage(
-        client, core_api, volume_name, pod_name, pv_name, pvc_name,   # NOQA
-        original_md5sum, data_path="/data/test"):
+        client, core_api, volume_name, pod_name, original_md5sum,  # NOQA
+        data_path="/data/test"):
     # this line may fail if the recovery is too quick
     common.wait_for_volume_faulted(client, volume_name)
 
@@ -438,12 +438,9 @@ def wait_pod_for_auto_salvage(
     md5sum = get_pod_data_md5sum(core_api, pod_name, data_path)
     assert md5sum == original_md5sum
 
-    delete_and_wait_pod(core_api, pod_name)
-    delete_and_wait_pvc(core_api, pvc_name)
-    delete_and_wait_pv(core_api, pv_name)
 
-
-def test_salvage_auto_crash_all_replicas(client, core_api, volume_name, pod_make):  # NOQA
+def test_salvage_auto_crash_all_replicas(
+        client, core_api, volume_name, csi_pv, pvc, pod_make):  # NOQA
     """
     [HA] Test automatic salvage feature by crashing all the replicas
 
@@ -460,17 +457,18 @@ def test_salvage_auto_crash_all_replicas(client, core_api, volume_name, pod_make
     """
 
     pod_name, pv_name, pvc_name, md5sum = \
-        prepare_pod_with_data_in_mb(client, core_api, pod_make, volume_name)
+        prepare_pod_with_data_in_mb(
+            client, core_api, csi_pv, pvc, pod_make, volume_name)
 
     crash_replica_processes(client, core_api, volume_name)
 
-    wait_pod_for_auto_salvage(client, core_api, volume_name,
-                              pod_name, pv_name, pvc_name, md5sum)
+    wait_pod_for_auto_salvage(client, core_api, volume_name, pod_name, md5sum)
 
 
 # Test case #2: delete one replica process, wait for rebuild start
 # then delete all replica processes.
-def test_salvage_auto_crash_replicas_short_wait(client, core_api, volume_name, pod_make):  # NOQA
+def test_salvage_auto_crash_replicas_short_wait(
+        client, core_api, volume_name, csi_pv, pvc, pod_make):  # NOQA
     """
     [HA] Test automatic salvage feature, with replica building pending
 
@@ -486,7 +484,7 @@ def test_salvage_auto_crash_replicas_short_wait(client, core_api, volume_name, p
     """
     pod_name, pv_name, pvc_name, md5sum = \
         prepare_pod_with_data_in_mb(
-            client, core_api, pod_make, volume_name,
+            client, core_api, csi_pv, pvc, pod_make, volume_name,
             data_size_in_mb=DATA_SIZE_IN_MB_2)
 
     volume = client.by_id_volume(volume_name)
@@ -509,13 +507,13 @@ def test_salvage_auto_crash_replicas_short_wait(client, core_api, volume_name, p
 
     crash_replica_processes(client, core_api, volume_name, replicas)
 
-    wait_pod_for_auto_salvage(client, core_api, volume_name,
-                              pod_name, pv_name, pvc_name, md5sum)
+    wait_pod_for_auto_salvage(client, core_api, volume_name, pod_name, md5sum)
 
 
 # Test case #3: delete one replica process, wait for rebuild finish
 # then delete all replica processes.
-def test_salvage_auto_crash_replicas_long_wait(client, core_api, volume_name, pod_make):  # NOQA
+def test_salvage_auto_crash_replicas_long_wait(
+        client, core_api, volume_name, csi_pv, pvc, pod_make):  # NOQA
     """
     [HA] Test automatic salvage feature, with replica building complete
 
@@ -529,7 +527,8 @@ def test_salvage_auto_crash_replicas_long_wait(client, core_api, volume_name, po
     8. Check md5sum of the data in the Pod.
     """
     pod_name, pv_name, pvc_name, md5sum = \
-        prepare_pod_with_data_in_mb(client, core_api, pod_make, volume_name)
+        prepare_pod_with_data_in_mb(
+            client, core_api, csi_pv, pvc, pod_make, volume_name)
 
     volume = client.by_id_volume(volume_name)
     replica0 = volume.replicas[0]
@@ -547,11 +546,11 @@ def test_salvage_auto_crash_replicas_long_wait(client, core_api, volume_name, po
 
     crash_replica_processes(client, core_api, volume_name, replicas)
 
-    wait_pod_for_auto_salvage(client, core_api, volume_name,
-                              pod_name, pv_name, pvc_name, md5sum)
+    wait_pod_for_auto_salvage(client, core_api, volume_name, pod_name, md5sum)
 
 
-def test_rebuild_failure_with_intensive_data(client, core_api, volume_name, pod_make):  # NOQA
+def test_rebuild_failure_with_intensive_data(
+        client, core_api, volume_name, csi_pv, pvc, pod_make):  # NOQA
     """
     [HA] Test rebuild failure with intensive data writing
 
@@ -571,7 +570,7 @@ def test_rebuild_failure_with_intensive_data(client, core_api, volume_name, pod_
     data_path_2 = "/data/test2"
     pod_name, pv_name, pvc_name, original_md5sum_1 = \
         prepare_pod_with_data_in_mb(
-            client, core_api, pod_make, volume_name,
+            client, core_api, csi_pv, pvc, pod_make, volume_name,
             data_path=data_path_1, data_size_in_mb=DATA_SIZE_IN_MB_2)
     create_snapshot(client, volume_name)
     write_pod_volume_random_data(core_api, pod_name,
@@ -604,13 +603,9 @@ def test_rebuild_failure_with_intensive_data(client, core_api, volume_name, pod_
     md5sum_2 = get_pod_data_md5sum(core_api, pod_name, data_path_2)
     assert original_md5sum_2 == md5sum_2
 
-    delete_and_wait_pod(core_api, pod_name)
-    delete_and_wait_pvc(core_api, pvc_name)
-    delete_and_wait_pv(core_api, pv_name)
-
 
 def test_rebuild_replica_and_from_replica_on_the_same_node(
-        client, core_api, volume_name, pod_make):  # NOQA
+        client, core_api, volume_name, csi_pv, pvc, pod_make):  # NOQA
     """
     [HA] Test the corner case that the from-replica and the rebuilding replica
     are on the same node
@@ -650,7 +645,7 @@ def test_rebuild_replica_and_from_replica_on_the_same_node(
     data_path = "/data/test"
     pod_name, pv_name, pvc_name, original_md5sum = \
         prepare_pod_with_data_in_mb(
-            client, core_api, pod_make, volume_name,
+            client, core_api, csi_pv, pvc, pod_make, volume_name,
             data_path=data_path, data_size_in_mb=DATA_SIZE_IN_MB_3)
 
     volume = client.by_id_volume(volume_name)
@@ -683,13 +678,9 @@ def test_rebuild_replica_and_from_replica_on_the_same_node(
     md5sum = get_pod_data_md5sum(core_api, pod_name, data_path)
     assert original_md5sum == md5sum
 
-    delete_and_wait_pod(core_api, pod_name)
-    delete_and_wait_pvc(core_api, pvc_name)
-    delete_and_wait_pv(core_api, pv_name)
-
 
 def test_rebuild_with_restoration(
-        client, core_api, volume_name, pod_make):  # NOQA
+        client, core_api, volume_name, csi_pv, pvc, pod_make):  # NOQA
     """
     [HA] Test if the rebuild is disabled for the restoring volume
     1. Setup a random backupstore.
@@ -713,7 +704,7 @@ def test_rebuild_with_restoration(
     data_path = "/data/test"
     original_pod_name, original_pv_name, original_pvc_name, original_md5sum = \
         prepare_pod_with_data_in_mb(
-            client, core_api, pod_make, original_volume_name,
+            client, core_api, csi_pv, pvc, pod_make, original_volume_name,
             data_path=data_path, data_size_in_mb=DATA_SIZE_IN_MB_2)
 
     original_volume = client.by_id_volume(original_volume_name)
@@ -755,16 +746,10 @@ def test_rebuild_with_restoration(
 
     # cleanup
     backupstore_cleanup(client)
-    delete_and_wait_pod(core_api, original_pod_name)
-    delete_and_wait_pvc(core_api, original_pvc_name)
-    delete_and_wait_pv(core_api, original_pv_name)
-    delete_and_wait_pod(core_api, restore_pod_name)
-    delete_and_wait_pvc(core_api, restore_pvc_name)
-    delete_and_wait_pv(core_api, restore_pv_name)
 
 
 def test_rebuild_with_inc_restoration(
-        client, core_api, volume_name, pod_make):  # NOQA
+        client, core_api, volume_name, csi_pv, pvc, pod_make):  # NOQA
     """
     [HA] Test if the rebuild is disabled for the DR volume
     1. Setup a random backupstore.
@@ -793,7 +778,7 @@ def test_rebuild_with_inc_restoration(
     data_path1 = "/data/test1"
     std_pod_name, std_pv_name, std_pvc_name, std_md5sum1 = \
         prepare_pod_with_data_in_mb(
-            client, core_api, pod_make, std_volume_name,
+            client, core_api, csi_pv, pvc, pod_make, std_volume_name,
             data_path=data_path1, data_size_in_mb=DATA_SIZE_IN_MB_2)
 
     std_volume = client.by_id_volume(std_volume_name)
@@ -855,16 +840,11 @@ def test_rebuild_with_inc_restoration(
 
     # cleanup
     backupstore_cleanup(client)
-    delete_and_wait_pod(core_api, std_pod_name)
-    delete_and_wait_pvc(core_api, std_pvc_name)
-    delete_and_wait_pv(core_api, std_pv_name)
-    delete_and_wait_pod(core_api, dr_pod_name)
-    delete_and_wait_pvc(core_api, dr_pvc_name)
-    delete_and_wait_pv(core_api, dr_pv_name)
 
 
 @pytest.mark.coretest
-def test_single_replica_failed_during_engine_start(client, core_api, volume_name, pod): # NOQA
+def test_single_replica_failed_during_engine_start(
+        client, core_api, volume_name, csi_pv, pvc, pod): # NOQA
     """
     Test if the volume still works fine when there is
     an invalid replica/backend in the engine starting phase.
@@ -887,10 +867,20 @@ def test_single_replica_failed_during_engine_start(client, core_api, volume_name
     pv_name = "pv-" + volume_name
     pvc_name = "pvc-" + volume_name
     pod_name = "pod-" + volume_name
+    volume_size = str(1 * Gi)
 
-    volume = create_and_check_volume(client, volume_name, size=str(1 * Gi))
-    create_pv_for_volume(client, core_api, volume, pv_name)
-    create_pvc_for_volume(client, core_api, volume, pvc_name)
+    csi_pv['metadata']['name'] = pv_name
+    csi_pv['spec']['csi']['volumeHandle'] = volume_name
+    csi_pv['spec']['capacity']['storage'] = volume_size
+    pvc['metadata']['name'] = pvc_name
+    pvc['spec']['volumeName'] = pv_name
+    pvc['spec']['resources']['requests']['storage'] = volume_size
+    pvc['spec']['storageClassName'] = ''
+
+    create_and_check_volume(client, volume_name, size=volume_size)
+    core_api.create_persistent_volume(csi_pv)
+    core_api.create_namespaced_persistent_volume_claim(
+        body=pvc, namespace='default')
 
     pod['metadata']['name'] = pod_name
     pod['spec']['volumes'] = [{
@@ -1086,7 +1076,8 @@ def test_restore_volume_with_invalid_backupstore(client, volume_name, set_backup
     wait_for_volume_delete(client, res_name)
 
 
-def test_all_replica_restore_failure(client, core_api, volume_name, pod_make):  # NOQA
+def test_all_replica_restore_failure(
+        client, core_api, volume_name, csi_pv, pvc, pod_make):  # NOQA
     """
     [HA] Test if all replica restore failure will lead to the restore volume
     becoming Faulted, and if the auto salvage feature is disabled for
@@ -1123,7 +1114,8 @@ def test_all_replica_restore_failure(client, core_api, volume_name, pod_make):  
     backupstore_cleanup(client)
 
     pod_name, pv_name, pvc_name, md5sum = \
-        prepare_pod_with_data_in_mb(client, core_api, pod_make, volume_name)
+        prepare_pod_with_data_in_mb(
+            client, core_api, csi_pv, pvc, pod_make, volume_name)
 
     volume = client.by_id_volume(volume_name)
     snap = create_snapshot(client, volume_name)
@@ -1167,7 +1159,8 @@ def test_all_replica_restore_failure(client, core_api, volume_name, pod_make):  
     wait_for_volume_delete(client, res_name)
 
 
-def test_single_replica_restore_failure(client, core_api, volume_name, pod_make): # NOQA
+def test_single_replica_restore_failure(
+        client, core_api, volume_name, csi_pv, pvc, pod_make):  # NOQA
     """
     [HA] Test if one replica restore failure will lead to the restore volume
     becoming Degraded, and if the restore volume is still usable after
@@ -1219,7 +1212,7 @@ def test_single_replica_restore_failure(client, core_api, volume_name, pod_make)
     data_path = "/data/test"
 
     pod_name, pv_name, pvc_name, md5sum = \
-        prepare_pod_with_data_in_mb(client, core_api,
+        prepare_pod_with_data_in_mb(client, core_api, csi_pv, pvc,
                                     pod_make,
                                     volume_name,
                                     data_size_in_mb=DATA_SIZE_IN_MB_2,
@@ -1291,7 +1284,7 @@ def test_single_replica_restore_failure(client, core_api, volume_name, pod_make)
 
 
 def test_dr_volume_with_restore_command_error(
-        client, core_api, volume_name, pod_make):  # NOQA
+        client, core_api, volume_name, csi_pv, pvc, pod_make):  # NOQA
     """
     Test if Longhorn can capture and handle the restore command error
     rather than the error triggered the data restoring.
@@ -1321,7 +1314,7 @@ def test_dr_volume_with_restore_command_error(
     data_path1 = "/data/test1"
     std_pod_name, std_pv_name, std_pvc_name, std_md5sum1 = \
         prepare_pod_with_data_in_mb(
-            client, core_api, pod_make, std_volume_name,
+            client, core_api, csi_pv, pvc, pod_make, std_volume_name,
             data_path=data_path1, data_size_in_mb=DATA_SIZE_IN_MB_1)
 
     std_volume = client.by_id_volume(std_volume_name)
@@ -1396,7 +1389,8 @@ def test_dr_volume_with_restore_command_error(
     backupstore_cleanup(client)
 
 
-def test_volume_reattach_after_engine_sigkill(client, core_api, volume_name, pod_make):  # NOQA
+def test_volume_reattach_after_engine_sigkill(
+        client, core_api, volume_name, csi_pv, pvc, pod_make):  # NOQA
     """
     [HA] Test if the volume can be reattached after using SIGKILL
     to crash the engine process
@@ -1414,7 +1408,7 @@ def test_volume_reattach_after_engine_sigkill(client, core_api, volume_name, pod
     data_path2 = "/data/test2"
 
     pod_name, _, _, md5sum = \
-        prepare_pod_with_data_in_mb(client, core_api,
+        prepare_pod_with_data_in_mb(client, core_api, csi_pv, pvc,
                                     pod_make,
                                     volume_name,
                                     data_size_in_mb=DATA_SIZE_IN_MB_1,
