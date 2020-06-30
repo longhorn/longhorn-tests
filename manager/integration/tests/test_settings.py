@@ -25,6 +25,50 @@ from test_infra import wait_for_node_up_longhorn
 KUBERNETES_DEFAULT_TOLERATION = "kubernetes.io"
 
 
+def check_workload_update(core_api, apps_api, count):  # NOQA
+    da_list = apps_api.list_namespaced_daemon_set(LONGHORN_NAMESPACE).items
+    for da in da_list:
+        if da.status.updated_number_scheduled != count:
+            return False
+
+    dp_list = apps_api.list_namespaced_deployment(LONGHORN_NAMESPACE).items
+    for dp in dp_list:
+        if dp.status.updated_replicas != dp.spec.replicas:
+            return False
+
+    im_pod_list = core_api.list_namespaced_pod(
+        LONGHORN_NAMESPACE,
+        label_selector="longhorn.io/component=instance-manager").items
+    if len(im_pod_list) != 2 * count:
+        return False
+
+    for p in im_pod_list:
+        if p.status.phase != "Running":
+            return False
+
+    client = get_longhorn_api_client()  # NOQA
+    images = client.list_engine_image()
+    assert len(images) == 1
+    if images[0].state != "ready":
+        return False
+
+    return True
+
+
+def wait_for_longhorn_node_ready():
+    client = get_longhorn_api_client()  # NOQA
+
+    ei = get_default_engine_image(client)
+    ei_name = ei["name"]
+
+    wait_for_engine_image_state(client, ei_name, "ready")
+
+    node = get_self_host_id()
+    wait_for_node_up_longhorn(node, client)
+
+    return client, node
+
+
 def test_setting_toleration():
     """
     Test toleration setting
@@ -88,17 +132,9 @@ def test_setting_toleration():
     assert setting.value == setting_value_str
     wait_for_toleration_update(core_api, apps_api, count, setting_value_dict)
 
-    client = get_longhorn_api_client()
+    client, node = wait_for_longhorn_node_ready()
 
-    ei = get_default_engine_image(client)
-    ei_name = ei["name"]
-
-    wait_for_engine_image_state(client, ei_name, "ready")
     volume = client.by_id_volume(volume_name)
-
-    node = get_self_host_id()
-    wait_for_node_up_longhorn(node, client)
-
     volume.attach(hostId=node)
     volume = wait_for_volume_healthy(client, volume_name)
     check_volume_data(volume, data1)
@@ -115,15 +151,7 @@ def test_setting_toleration():
     assert setting.value == setting_value_str
     wait_for_toleration_update(core_api, apps_api, count, setting_value_dict)
 
-    client = get_longhorn_api_client()
-
-    ei = get_default_engine_image(client)
-    ei_name = ei["name"]
-
-    wait_for_engine_image_state(client, ei_name, "ready")
-
-    node = get_self_host_id()
-    wait_for_node_up_longhorn(node, client)
+    client, node = wait_for_longhorn_node_ready()
 
     volume = client.by_id_volume(volume_name)
     volume.attach(hostId=node)
@@ -142,34 +170,8 @@ def wait_for_toleration_update(core_api, apps_api, count, set_tolerations):  # N
         time.sleep(RETRY_INTERVAL_LONG)
         updated = True
 
-        da_list = apps_api.list_namespaced_daemon_set(LONGHORN_NAMESPACE).items
-        for da in da_list:
-            if da.status.updated_number_scheduled != count:
-                updated = False
-                break
-        if not updated:
-            continue
-
-        dp_list = apps_api.list_namespaced_deployment(LONGHORN_NAMESPACE).items
-        for dp in dp_list:
-            if dp.status.updated_replicas != dp.spec.replicas:
-                updated = False
-                break
-        if not updated:
-            continue
-
-        im_pod_list = core_api.list_namespaced_pod(
-            LONGHORN_NAMESPACE,
-            label_selector="longhorn.io/component=instance-manager").items
-        if len(im_pod_list) != 2 * count:
+        if not check_workload_update(core_api, apps_api, count):
             updated = False
-            continue
-
-        for p in im_pod_list:
-            if p.status.phase != "Running":
-                updated = False
-                break
-        if not updated:
             continue
 
         pod_list = core_api.list_namespaced_pod(LONGHORN_NAMESPACE).items
@@ -180,13 +182,6 @@ def wait_for_toleration_update(core_api, apps_api, count, set_tolerations):  # N
                 updated = False
                 break
         if not updated:
-            continue
-
-        client = get_longhorn_api_client()  # NOQA
-        images = client.list_engine_image()
-        assert len(images) == 1
-        if images[0].state != "ready":
-            updated = False
             continue
 
         if updated:
@@ -369,16 +364,7 @@ def test_setting_priority_class(core_api, apps_api, scheduling_api, priority_cla
 
     wait_for_priority_class_update(core_api, apps_api, count, priority_class)
 
-    client = get_longhorn_api_client()
-
-    ei = get_default_engine_image(client)
-    ei_name = ei["name"]
-
-    wait_for_engine_image_state(client, ei_name, "ready")
-    volume = client.by_id_volume(volume_name)
-
-    node = get_self_host_id()
-    wait_for_node_up_longhorn(node, client)
+    client, node = wait_for_longhorn_node_ready()
 
     volume = client.by_id_volume(volume_name)
     volume.attach(hostId=node)
@@ -394,15 +380,7 @@ def test_setting_priority_class(core_api, apps_api, scheduling_api, priority_cla
     assert setting.value == ''
     wait_for_priority_class_update(core_api, apps_api, count)
 
-    client = get_longhorn_api_client()
-
-    ei = get_default_engine_image(client)
-    ei_name = ei["name"]
-
-    wait_for_engine_image_state(client, ei_name, "ready")
-
-    node = get_self_host_id()
-    wait_for_node_up_longhorn(node, client)
+    client, node = wait_for_longhorn_node_ready()
 
     volume = client.by_id_volume(volume_name)
     volume.attach(hostId=node)
@@ -423,57 +401,24 @@ def check_priority_class(pod, priority_class=None):  # NOQA
         return pod.spec.priority == 0 and pod.spec.priority_class_name == ''
 
 
-def wait_for_priority_class_update(core_api, apps_api, count, set_tolerations):  # NOQA
+def wait_for_priority_class_update(core_api, apps_api, count, priority_class=None):  # NOQA
     updated = False
 
     for i in range(RETRY_COUNTS):
         time.sleep(RETRY_INTERVAL_LONG)
         updated = True
 
-        da_list = apps_api.list_namespaced_daemon_set(LONGHORN_NAMESPACE).items
-        for da in da_list:
-            if da.status.updated_number_scheduled != count:
-                updated = False
-                break
-        if not updated:
-            continue
-
-        dp_list = apps_api.list_namespaced_deployment(LONGHORN_NAMESPACE).items
-        for dp in dp_list:
-            if dp.status.updated_replicas != dp.spec.replicas:
-                updated = False
-                break
-        if not updated:
-            continue
-
-        im_pod_list = core_api.list_namespaced_pod(
-            LONGHORN_NAMESPACE,
-            label_selector="longhorn.io/component=instance-manager").items
-        if len(im_pod_list) != 2 * count:
+        if not check_workload_update(core_api, apps_api, count):
             updated = False
-            continue
-
-        for p in im_pod_list:
-            if p.status.phase != "Running":
-                updated = False
-                break
-        if not updated:
             continue
 
         pod_list = core_api.list_namespaced_pod(LONGHORN_NAMESPACE).items
         for p in pod_list:
-            if p.status.phase != "Running" or \
+            if p.status.phase != "Running" and \
                     not check_priority_class(p, priority_class):
                 updated = False
                 break
         if not updated:
-            continue
-
-        client = get_longhorn_api_client()  # NOQA
-        images = client.list_engine_image()
-        assert len(images) == 1
-        if images[0].state != "ready":
-            updated = False
             continue
 
         if updated:
