@@ -13,10 +13,11 @@ from common import (  # NOQA
     generate_volume_name,
     wait_for_volume_condition_scheduled,
     client, core_api, settings_reset,
+    apps_api, scheduling_api, priority_class, volume_name,
 
     LONGHORN_NAMESPACE, SETTING_TAINT_TOLERATION,
     RETRY_COUNTS, RETRY_INTERVAL_LONG, SETTING_GUARANTEED_ENGINE_CPU,
-    SIZE, RETRY_INTERVAL
+    SETTING_PRIORITY_CLASS, SIZE, RETRY_INTERVAL
 )
 
 from test_infra import wait_for_node_up_longhorn
@@ -45,7 +46,7 @@ def test_setting_toleration():
     15. Generate and write `data3` to the volume.
     """
     client = get_longhorn_api_client()  # NOQA
-    apps_api = get_apps_api_client()
+    apps_api = get_apps_api_client()  # NOQA
     core_api = get_core_api_client()  # NOQA
     count = len(client.list_node())
 
@@ -68,7 +69,7 @@ def test_setting_toleration():
          "key2": {"key": "key2", "value": None,
                   "operator": "Exists", "effect": "NoExecute"}, }
 
-    volume_name = "test-toleration-vol"
+    volume_name = "test-toleration-vol"  # NOQA
     volume = create_and_check_volume(client, volume_name)
     volume.attach(hostId=get_self_host_id())
     volume = wait_for_volume_healthy(client, volume_name)
@@ -312,3 +313,170 @@ def guaranteed_engine_cpu_setting_check(client, core_api, setting,  # NOQA
                         cpu_val)
             else:
                 assert (not pod.spec.containers[0].resources.requests)
+
+
+def test_setting_priority_class(core_api, apps_api, scheduling_api, priority_class, volume_name):  # NOQA
+    """
+    Test that the Priority Class setting is validated and utilized correctly.
+
+    1. Verify that the name of a non-existent Priority Class cannot be used
+    for the Setting.
+    2. Create a new Priority Class in Kubernetes.
+    3. Create and attach a Volume.
+    4. Verify that the Priority Class Setting cannot be updated with an
+    attached Volume.
+    5. Generate and write `data1`.
+    6. Detach the Volume.
+    7. Update the Priority Class Setting to the new Priority Class.
+    8. Wait for all the Longhorn workloads to restart with the new Priority
+    Class.
+    9. Attach the Volume and verify `data1`.
+    10. Generate and write `data2`.
+    11. Unset the Priority Class Setting.
+    12. Wait for all the Longhorn workloads to restart with the new Priority
+    Class.
+    13. Attach the Volume and verify `data2`.
+    14. Generate and write `data3`.
+    """
+    client = get_longhorn_api_client()  # NOQA
+    count = len(client.list_node())
+    name = priority_class['metadata']['name']
+    setting = client.by_id_setting(SETTING_PRIORITY_CLASS)
+
+    with pytest.raises(Exception) as e:
+        client.update(setting, value=name)
+    assert 'failed to get priority class ' in str(e.value)
+
+    scheduling_api.create_priority_class(priority_class)
+
+    volume = create_and_check_volume(client, volume_name)
+    volume.attach(hostId=get_self_host_id())
+    volume = wait_for_volume_healthy(client, volume_name)
+
+    with pytest.raises(Exception) as e:
+        client.update(setting, value=name)
+    assert 'cannot modify priority class setting before all volumes are ' \
+           'detached' in str(e.value)
+
+    data1 = write_volume_random_data(volume)
+    check_volume_data(volume, data1)
+
+    volume.detach()
+    wait_for_volume_detached(client, volume_name)
+
+    setting = client.update(setting, value=name)
+    assert setting.value == name
+
+    wait_for_priority_class_update(core_api, apps_api, count, priority_class)
+
+    client = get_longhorn_api_client()
+
+    ei = get_default_engine_image(client)
+    ei_name = ei["name"]
+
+    wait_for_engine_image_state(client, ei_name, "ready")
+    volume = client.by_id_volume(volume_name)
+
+    node = get_self_host_id()
+    wait_for_node_up_longhorn(node, client)
+
+    volume = client.by_id_volume(volume_name)
+    volume.attach(hostId=node)
+    volume = wait_for_volume_healthy(client, volume_name)
+    check_volume_data(volume, data1)
+    data2 = write_volume_random_data(volume)
+    check_volume_data(volume, data2)
+    volume.detach()
+    wait_for_volume_detached(client, volume_name)
+
+    setting = client.by_id_setting(SETTING_PRIORITY_CLASS)
+    setting = client.update(setting, value='')
+    assert setting.value == ''
+    wait_for_priority_class_update(core_api, apps_api, count)
+
+    client = get_longhorn_api_client()
+
+    ei = get_default_engine_image(client)
+    ei_name = ei["name"]
+
+    wait_for_engine_image_state(client, ei_name, "ready")
+
+    node = get_self_host_id()
+    wait_for_node_up_longhorn(node, client)
+
+    volume = client.by_id_volume(volume_name)
+    volume.attach(hostId=node)
+    volume = wait_for_volume_healthy(client, volume_name)
+    check_volume_data(volume, data2)
+    data3 = write_volume_random_data(volume)
+    check_volume_data(volume, data3)
+
+    cleanup_volume(client, volume)
+
+
+def check_priority_class(pod, priority_class=None):  # NOQA
+    if priority_class:
+        return pod.spec.priority == priority_class['value'] and \
+               pod.spec.priority_class_name == \
+               priority_class['metadata']['name']
+    else:
+        return pod.spec.priority == 0 and pod.spec.priority_class_name == ''
+
+
+def wait_for_priority_class_update(core_api, apps_api, count, set_tolerations):  # NOQA
+    updated = False
+
+    for i in range(RETRY_COUNTS):
+        time.sleep(RETRY_INTERVAL_LONG)
+        updated = True
+
+        da_list = apps_api.list_namespaced_daemon_set(LONGHORN_NAMESPACE).items
+        for da in da_list:
+            if da.status.updated_number_scheduled != count:
+                updated = False
+                break
+        if not updated:
+            continue
+
+        dp_list = apps_api.list_namespaced_deployment(LONGHORN_NAMESPACE).items
+        for dp in dp_list:
+            if dp.status.updated_replicas != dp.spec.replicas:
+                updated = False
+                break
+        if not updated:
+            continue
+
+        im_pod_list = core_api.list_namespaced_pod(
+            LONGHORN_NAMESPACE,
+            label_selector="longhorn.io/component=instance-manager").items
+        if len(im_pod_list) != 2 * count:
+            updated = False
+            continue
+
+        for p in im_pod_list:
+            if p.status.phase != "Running":
+                updated = False
+                break
+        if not updated:
+            continue
+
+        pod_list = core_api.list_namespaced_pod(LONGHORN_NAMESPACE).items
+        for p in pod_list:
+            if p.status.phase != "Running" or \
+                    not check_priority_class(p, priority_class):
+                updated = False
+                break
+        if not updated:
+            continue
+
+        client = get_longhorn_api_client()  # NOQA
+        images = client.list_engine_image()
+        assert len(images) == 1
+        if images[0].state != "ready":
+            updated = False
+            continue
+
+        if updated:
+            break
+
+    assert updated
