@@ -142,6 +142,7 @@ SETTING_REPLICA_NODE_SOFT_ANTI_AFFINITY = "replica-soft-anti-affinity"
 SETTING_REPLICA_ZONE_SOFT_ANTI_AFFINITY = "replica-zone-soft-anti-affinity"
 
 SETTING_GUARANTEED_ENGINE_CPU = "guaranteed-engine-cpu"
+SETTING_PRIORITY_CLASS = "priority-class"
 
 SETTING_MKFS_EXT4_PARAMS = "mkfs-ext4-parameters"
 
@@ -151,6 +152,11 @@ CSI_FALSE = 2
 
 BASE_IMAGE_LABEL = "ranchervm-base-image"
 KUBERNETES_STATUS_LABEL = "KubernetesStatus"
+
+# https://github.com/kubernetes/kubernetes/blob/a9f0db16614ae62563ead2018f1692407bd93d8f/pkg/apis/scheduling/types.go#L29  # NOQA
+PRIORITY_CLASS_MAX = 1000000000
+PRIORITY_CLASS_MIN = 1
+PRIORITY_CLASS_NAME = "priority-class"
 
 # Default Tag test case set up to fulfill as many test inputs as
 # possible.
@@ -196,6 +202,11 @@ def get_apps_api_client():
 def get_core_api_client():
     load_k8s_config()
     return k8sclient.CoreV1Api()
+
+
+def get_scheduling_api_client():
+    load_k8s_config()
+    return k8sclient.SchedulingV1Api()
 
 
 def get_storage_api_client():
@@ -787,6 +798,22 @@ def pod(request):
 
 
 @pytest.fixture
+def scheduling_api(request):
+    """
+    Create a new SchedulingV1API instance.
+    Returns:
+        A new CoreV1API Instance.
+    """
+    c = Configuration()
+    c.assert_hostname = False
+    Configuration.set_default(c)
+    k8sconfig.load_incluster_config()
+    scheduling_api = k8sclient.SchedulingV1Api()
+
+    return scheduling_api
+
+
+@pytest.fixture
 def core_api(request):
     """
     Create a new CoreV1API instance.
@@ -1023,6 +1050,33 @@ def storage_class(request):
     request.addfinalizer(finalizer)
 
     return sc_manifest
+
+
+@pytest.fixture
+def priority_class(request):
+    priority_class = {
+        'apiVersion': 'scheduling.k8s.io/v1',
+        'kind': 'PriorityClass',
+        'metadata': {
+            'name': PRIORITY_CLASS_NAME + "-" + ''.join(
+                random.choice(string.ascii_lowercase +
+                              string.digits)
+                for _ in range(6))
+        },
+        'value': random.randrange(PRIORITY_CLASS_MIN, PRIORITY_CLASS_MAX)
+    }
+
+    def finalizer():
+        api = get_scheduling_api_client()
+        try:
+            api.delete_priority_class(name=priority_class['metadata']['name'],
+                                      body=k8sclient.V1DeleteOptions())
+        except ApiException as e:
+            assert e.status == 404
+
+    request.addfinalizer(finalizer)
+
+    return priority_class
 
 
 @pytest.yield_fixture
