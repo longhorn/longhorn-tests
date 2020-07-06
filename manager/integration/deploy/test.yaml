@@ -13,6 +13,9 @@ rules:
   resources: ["nodes", "nodes/status", "pods", "pods/exec", "persistentvolumes", "persistentvolumeclaims",
               "persistentvolumeclaims/status", "secrets", "services", "serviceaccounts", "namespaces", "configmaps"]
   verbs: ["*"]
+- apiGroups: ["scheduling.k8s.io"]
+  resources: ["priorityclasses"]
+  verbs: ["*"]
 - apiGroups: ["storage.k8s.io"]
   resources: ["storageclasses"]
   verbs: ["*"]
