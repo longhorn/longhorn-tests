@@ -24,6 +24,9 @@ from common import KUBERNETES_STATUS_LABEL, SETTING_DEFAULT_LONGHORN_STATIC_SC
 from common import DEFAULT_LONGHORN_STATIC_STORAGECLASS_NAME
 from common import create_snapshot
 from common import set_random_backupstore
+from common import create_and_check_volume, create_pvc, \
+    wait_and_get_pv_for_pvc, wait_delete_pvc
+from common import volume_name # NOQA
 
 from kubernetes import client as k8sclient
 from kubernetes.client.rest import ApiException
@@ -61,6 +64,41 @@ def delete_and_wait_statefulset_only(api, ss):
 
     for p in pod_data:
         wait_delete_pod(api, p['pod_name'])
+
+
+def provision_and_wait_pv(client, core_api, storage_class, pvc): # NOQA
+    """
+    Provision a new Longhorn Volume via Storage Class and wait for the Volume
+    and its associated resources to be created.
+
+    This method also waits for the Kubernetes Status to be properly set on the
+    Volume.
+
+    :param client: An instance of the Longhorn client.
+    :param core_api: An instance of the Kubernetes CoreV1API client.
+    :param storage_class: A dict representing a Storage Class spec.
+    :param pvc: A dict representing a Persistent Volume Claim spec.
+    :return: The Persistent Volume that was provisioned.
+    """
+    create_storage_class(storage_class)
+    pvc['spec']['storageClassName'] = storage_class['metadata']['name']
+    pvc_name = pvc['metadata']['name']
+    create_pvc(pvc)
+
+    pv = wait_and_get_pv_for_pvc(core_api, pvc_name)
+    volume_name = pv.spec.csi.volume_handle  # NOQA
+
+    ks = {
+        'pvName': pv.metadata.name,
+        'pvStatus': 'Bound',
+        'namespace': 'default',
+        'pvcName': pvc_name,
+        'lastPVCRefAt': '',
+        'lastPodRefAt': '',
+    }
+    wait_volume_kubernetes_status(client, volume_name, ks)
+
+    return pv
 
 
 @pytest.mark.csi  # NOQA
@@ -672,3 +710,90 @@ def test_backup_kubernetes_status(client, core_api, pod):  # NOQA
     bv.backupDelete(name=b.name)
     client.delete(restore)
     cleanup_volume(client, volume)
+
+
+@pytest.mark.csi
+def test_delete_with_static_pv(client, core_api, volume_name): # NOQA
+    """
+    Test that deleting a Volume with related static Persistent Volume and
+    Persistent Volume Claim resources successfully deletes the Volume and
+    cleans up those resources.
+
+    1. Create a Volume in Longhorn.
+    2. Create a static Persistent Volume and Persistent Volume Claim for the
+    Volume through Longhorn.
+    3. Wait for the Kubernetes Status to indicate the existence of these
+    resources.
+    4. Attempt deletion of the Volume.
+    5. Verify that the Volume and its associated resources have been deleted.
+    """
+    volume = create_and_check_volume(client, volume_name)
+    pv_name = 'pv-' + volume_name
+    pvc_name = 'pvc-' + volume_name
+    create_pv_for_volume(client, core_api, volume, pv_name)
+    create_pvc_for_volume(client, core_api, volume, pvc_name)
+
+    ks = {
+        'pvName': pv_name,
+        'pvStatus': 'Bound',
+        'namespace': 'default',
+        'pvcName': pvc_name,
+        'lastPVCRefAt': '',
+        'lastPodRefAt': '',
+    }
+    wait_volume_kubernetes_status(client, volume_name, ks)
+
+    client.delete(volume)
+    wait_for_volume_delete(client, volume_name)
+    wait_delete_pv(core_api, pv_name)
+    wait_delete_pvc(core_api, pvc_name)
+
+
+@pytest.mark.csi
+def test_delete_with_provisioned_pv(client, core_api, storage_class, pvc): # NOQA
+    """
+    Test that deleting a Volume with dynamically provisioned Persistent Volume
+    and Persistent Volume Claim resources successfully deletes the Volume and
+    cleans up those resources.
+
+    1. Create a Storage Class to test with.
+    2. Create a Persistent Volume Claim that requests a Volume from that
+    Storage Class.
+    3. Wait for the Volume to be provisioned and for the Kubernetes Status to
+    be updated correctly.
+    4. Attempt to delete the Volume.
+    5. Verify that the Volume and its associated resources have been deleted.
+    """
+    pv = provision_and_wait_pv(client, core_api, storage_class, pvc)
+    pv_name = pv.metadata.name
+    volume_name = pv.spec.csi.volume_handle  # NOQA
+
+    volume = client.by_id_volume(volume_name)
+    client.delete(volume)
+    wait_for_volume_delete(client, volume_name)
+    wait_delete_pv(core_api, pv_name)
+    wait_delete_pvc(core_api, pvc['metadata']['name'])
+
+
+@pytest.mark.csi
+def test_delete_provisioned_pvc(client, core_api,  storage_class, pvc): # NOQA
+    """
+    Test that deleting the Persistent Volume Claim for a dynamically
+    provisioned Volume properly deletes the Volume and the associated
+    Kubernetes resources.
+
+    1. Create a Storage Class to test with.
+    2. Create a Persistent Volume Claim that requests a Volume from that
+    Storage Class.
+    3. Wait for the Volume to be provisioned and for the Kubernetes Status to
+    be updated correctly.
+    4. Attempt to delete the Persistent Volume Claim.
+    5. Verify that the associated Volume and its resources have been deleted.
+    """
+    pv = provision_and_wait_pv(client, core_api, storage_class, pvc)
+    pv_name = pv.metadata.name
+    volume_name = pv.spec.csi.volume_handle  # NOQA
+
+    delete_and_wait_pvc(core_api, pvc['metadata']['name'])
+    wait_delete_pv(core_api, pv_name)
+    wait_for_volume_delete(client, volume_name)
