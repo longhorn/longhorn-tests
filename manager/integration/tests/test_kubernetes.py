@@ -162,7 +162,7 @@ def test_kubernetes_status(client, core_api, storage_class,  # NOQA
     create_and_wait_pod(core_api, pod)
 
     for i in range(len(volume_info)):
-        p, volume_name = pod_info[i], volume_info[i]
+        p, volume_name = pod_info[i], volume_info[i] # NOQA
         volume = client.by_id_volume(volume_name)
         k_status = volume.kubernetesStatus
         workloads = k_status.workloadsStatus
@@ -330,7 +330,7 @@ def test_pv_creation(client, core_api):  # NOQA
     3. Try to create another PV for the same volume. It should fail.
     4. Check Kubernetes Status for the volume since PV is created.
     """
-    volume_name = "test-pv-creation"
+    volume_name = "test-pv-creation" # NOQA
     client.create_volume(name=volume_name, size=SIZE,
                          numberOfReplicas=2)
     volume = wait_for_volume_detached(client, volume_name)
@@ -395,7 +395,7 @@ def test_pvc_creation_with_default_sc_set(
     setting = client.update(setting, value=static_sc_name)
     assert setting.value == static_sc_name
 
-    volume_name = "test-pvc-creation-with-sc"
+    volume_name = "test-pvc-creation-with-sc" # NOQA
     pod_name = "pod-" + volume_name
     client.create_volume(name=volume_name, size=SIZE,
                          numberOfReplicas=2)
@@ -546,7 +546,7 @@ def test_backup_kubernetes_status(client, core_api, pod):  # NOQA
     setting = client.update(setting, value=static_sc_name)
     assert setting.value == static_sc_name
 
-    volume_name = "test-backup-kubernetes-status-pod"
+    volume_name = "test-backup-kubernetes-status-pod" # NOQA
     client.create_volume(name=volume_name, size=SIZE,
                          numberOfReplicas=2)
     volume = wait_for_volume_detached(client, volume_name)
