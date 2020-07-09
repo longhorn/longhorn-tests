@@ -2,6 +2,8 @@ import os
 import base64
 import hashlib
 import json
+import subprocess
+
 
 from minio import Minio
 from minio.error import ResponseError
@@ -14,6 +16,8 @@ from common import is_backupTarget_s3
 from common import is_backupTarget_nfs
 from common import get_longhorn_api_client
 from common import wait_for_backup_volume_delete
+
+BACKUPSTORE_BV_PREFIX = "/backupstore/volumes/"
 
 
 TEMP_FILE_PATH = "/tmp/temp_file"
@@ -83,22 +87,44 @@ def minio_get_backupstore_path(client):
     return backupstore_path
 
 
-def minio_get_backup_volume_prefix(volume_name):
-    client = get_longhorn_api_client()
+def get_nfs_mount_point(client):
+    nfs_backuptarget = client.by_id_setting(SETTING_BACKUP_TARGET).value
+    nfs_url = urlparse(nfs_backuptarget).netloc + \
+        urlparse(nfs_backuptarget).path
 
+    cmd = ["findmnt", "-t", "nfs4", "-n", "--output", "source,target"]
+    stdout = subprocess.run(cmd, capture_output=True).stdout
+    mount_info = stdout.decode().strip().split(" ")
+
+    assert mount_info[0] == nfs_url
+    return mount_info[1]
+
+
+def backup_volume_path(volume_name):
     volume_name_sha512 = \
         hashlib.sha512(volume_name.encode('utf-8')).hexdigest()
 
-    backup_prefix = minio_get_backupstore_path(client) + "/backupstore/volumes"
     volume_dir_level_1 = volume_name_sha512[0:2]
     volume_dir_level_2 = volume_name_sha512[2:4]
 
-    prefix = backup_prefix + "/" + \
+    backupstore_bv_path = BACKUPSTORE_BV_PREFIX + \
         volume_dir_level_1 + "/" + \
         volume_dir_level_2 + "/" + \
         volume_name
 
-    return prefix
+    return backupstore_bv_path
+
+
+def minio_get_backup_volume_prefix(volume_name):
+    client = get_longhorn_api_client()
+    backupstore_bv_path = backup_volume_path(volume_name)
+    backupstore_path = minio_get_backupstore_path(client)
+    return backupstore_path + backupstore_bv_path
+
+
+def nfs_get_backup_volume_prefix(client, volume_name):
+    mount_point = get_nfs_mount_point(client)
+    return mount_point + backup_volume_path(volume_name)
 
 
 def backupstore_get_backup_target(client):
@@ -120,7 +146,7 @@ def backupstore_get_backup_cfg_file_path(client, volume_name, backup_name):
         return minio_get_backup_cfg_file_path(volume_name, backup_name)
 
     elif is_backupTarget_nfs(backupstore):
-        return nfs_get_backup_cfg_file_path()
+        return nfs_get_backup_cfg_file_path(client, volume_name, backup_name)
 
 
 def minio_get_backup_cfg_file_path(volume_name, backup_name):
@@ -128,9 +154,9 @@ def minio_get_backup_cfg_file_path(volume_name, backup_name):
     return prefix + "/backups/backup_" + backup_name + ".cfg"
 
 
-# TODO: implement nfs_get_backup_cfg_file_path
-def nfs_get_backup_cfg_file_path():
-    raise NotImplementedError
+def nfs_get_backup_cfg_file_path(client, volume_name, backup_name):
+    prefix = nfs_get_backup_volume_prefix(client, volume_name)
+    return prefix + "/backups/backup_" + backup_name + ".cfg"
 
 
 def backupstore_get_volume_cfg_file_path(client, volume_name):
@@ -140,12 +166,12 @@ def backupstore_get_volume_cfg_file_path(client, volume_name):
         return minio_get_volume_cfg_file_path(volume_name)
 
     elif is_backupTarget_nfs(backupstore):
-        return nfs_get_volume_cfg_file_path()
+        return nfs_get_volume_cfg_file_path(client, volume_name)
 
 
-# TODO: implement nfs_get_volume_cfg_file_path
-def nfs_get_volume_cfg_file_path():
-    raise NotImplementedError
+def nfs_get_volume_cfg_file_path(client, volume_name):
+    prefix = nfs_get_backup_volume_prefix(client, volume_name)
+    return prefix + "/volume.cfg"
 
 
 def minio_get_volume_cfg_file_path(volume_name):
@@ -160,7 +186,7 @@ def backupstore_get_backup_blocks_dir(client, volume_name):
         return minio_get_backup_blocks_dir(volume_name)
 
     elif is_backupTarget_nfs(backupstore):
-        return nfs_get_backup_blocks_dir()
+        return nfs_get_backup_blocks_dir(client, volume_name)
 
 
 def minio_get_backup_blocks_dir(volume_name):
@@ -168,9 +194,9 @@ def minio_get_backup_blocks_dir(volume_name):
     return prefix + "/blocks"
 
 
-# TODO: implement nfs_get_backup_blocks_dir
-def nfs_get_backup_blocks_dir():
-    raise NotImplementedError
+def nfs_get_backup_blocks_dir(client, volume_name):
+    prefix = nfs_get_backup_volume_prefix(client, volume_name)
+    return prefix + "/blocks"
 
 
 def backupstore_create_file(client, core_api, file_path, data={}):
@@ -223,12 +249,19 @@ def backupstore_write_backup_cfg_file(client, core_api, volume_name, backup_name
                                     data)
 
     elif is_backupTarget_nfs(backupstore):
-        nfs_write_backup_cfg_file()
+        nfs_write_backup_cfg_file(client,
+                                  volume_name,
+                                  backup_name,
+                                  data)
 
 
-# TODO: implement nfs_write_backup_cfg_file
-def nfs_write_backup_cfg_file():
-    raise NotImplementedError
+def nfs_write_backup_cfg_file(client, volume_name, backup_name, data):
+    nfs_backup_cfg_file_path = nfs_get_backup_cfg_file_path(client,
+                                                            volume_name,
+                                                            backup_name)
+    cfg_file = open(nfs_backup_cfg_file_path, 'w')
+    cfg_file.write(str(data))
+    cfg_file.close()
 
 
 def minio_write_backup_cfg_file(client, core_api, volume_name, backup_name, backup_cfg_data): # NOQA
@@ -293,12 +326,19 @@ def backupstore_delete_backup_cfg_file(client, core_api, volume_name, backup_nam
                                      backup_name)
 
     elif is_backupTarget_nfs(backupstore):
-        nfs_delete_backup_cfg_file()
+        nfs_delete_backup_cfg_file(client, volume_name, backup_name)
 
 
-# TODO: implement nfs_delete_backup_cfg_file
-def nfs_delete_backup_cfg_file():
-    raise NotImplementedError
+def nfs_delete_backup_cfg_file(client, volume_name, backup_name):
+    nfs_backup_cfg_file_path = nfs_get_backup_cfg_file_path(client,
+                                                            volume_name,
+                                                            backup_name)
+    try:
+        os.remove(nfs_backup_cfg_file_path)
+    except Exception as ex:
+        print("error while deleting backup cfg file:",
+              nfs_backup_cfg_file_path)
+        print(ex)
 
 
 def minio_delete_backup_cfg_file(client, core_api, volume_name, backup_name):
@@ -325,12 +365,16 @@ def backupstore_delete_volume_cfg_file(client, core_api, volume_name):  # NOQA
                                      volume_name)
 
     elif is_backupTarget_nfs(backupstore):
-        nfs_delete_volume_cfg_file()
+        nfs_delete_volume_cfg_file(client, volume_name)
 
 
-# TODO: implement nfs_delete_volume_cfg_file
-def nfs_delete_volume_cfg_file():
-    raise NotImplementedError
+def nfs_delete_volume_cfg_file(client, volume_name):
+    nfs_volume_cfg_path = nfs_get_volume_cfg_file_path(client, volume_name)
+    try:
+        os.remove(nfs_volume_cfg_path)
+    except Exception as ex:
+        print("error while deleting backup cfg file:", nfs_volume_cfg_path)
+        print(ex)
 
 
 def minio_delete_volume_cfg_file(client, core_api, volume_name):
@@ -383,12 +427,22 @@ def backupstore_delete_random_backup_block(client, core_api, volume_name):
         minio_delete_random_backup_block(client, core_api, volume_name)
 
     elif is_backupTarget_nfs(backupstore):
-        nfs_delete_random_backup_block()
+        nfs_delete_random_backup_block(client, volume_name)
 
 
-# TODO: implement nfs_delete_random_backup_block
-def nfs_delete_random_backup_block():
-    raise NotImplementedError
+def nfs_delete_random_backup_block(client, volume_name):
+    backup_blocks_dir = nfs_get_backup_blocks_dir(client, volume_name)
+    cmd = ["find", backup_blocks_dir, "-type", "f"]
+    find_cmd = subprocess.Popen(cmd, stdout=subprocess.PIPE)
+    head_cmd = subprocess.check_output(["head", "-1"], stdin=find_cmd.stdout)
+    backup_block_file_path = head_cmd.decode().strip()
+
+    try:
+        os.remove(backup_block_file_path)
+    except Exception as ex:
+        print("error while deleting backup block file:",
+              backup_block_file_path)
+        print(ex)
 
 
 def minio_delete_random_backup_block(client, core_api, volume_name):
@@ -419,12 +473,17 @@ def backupstore_count_backup_block_files(client, core_api, volume_name):
         return minio_count_backup_block_files(client, core_api, volume_name)
 
     elif is_backupTarget_nfs(backupstore):
-        return nfs_count_backup_block_files()
+        return nfs_count_backup_block_files(client, volume_name)
 
 
-# TODO: implement nfs_count_backup_block_files
-def nfs_count_backup_block_files():
-    raise NotImplementedError
+def nfs_count_backup_block_files(client, volume_name):
+    backup_blocks_dir = nfs_get_backup_blocks_dir(client, volume_name)
+    cmd = ["find", backup_blocks_dir, "-type", "f"]
+    find_cmd = subprocess.Popen(cmd, stdout=subprocess.PIPE)
+    wc_cmd = subprocess.check_output(["wc", "-l"], stdin=find_cmd.stdout)
+    backup_blocks_count = int(wc_cmd.decode().strip())
+
+    return backup_blocks_count
 
 
 def minio_count_backup_block_files(client, core_api, volume_name):
