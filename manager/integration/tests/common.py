@@ -21,6 +21,7 @@ from kubernetes.stream import stream
 
 from kubernetes.client.rest import ApiException
 
+from urllib.parse import urlparse
 
 Mi = (1024 * 1024)
 Gi = (1024 * Mi)
@@ -3510,6 +3511,23 @@ def set_backupstore_nfs(client):
     backup_target_credential_setting = client.by_id_setting(
         SETTING_BACKUP_TARGET_CREDENTIAL_SECRET)
     client.update(backup_target_credential_setting, value="")
+
+
+@pytest.fixture
+def mount_nfs_backupstore(client, set_backupstore_nfs):
+    cmd = ["mkdir", "-p", "/mnt/nfs"]
+    subprocess.check_output(cmd)
+    nfs_backuptarget = client.by_id_setting(SETTING_BACKUP_TARGET).value
+    nfs_url = urlparse(nfs_backuptarget).netloc + \
+        urlparse(nfs_backuptarget).path
+    cmd = ["mount", "-t", "nfs4", nfs_url, "/mnt/nfs"]
+    subprocess.check_output(cmd)
+
+    yield "/mnt/nfs"
+    cmd = ["umount", "/mnt/nfs"]
+    subprocess.check_output(cmd)
+    cmd = ["rmdir", "/mnt/nfs"]
+    subprocess.check_output(cmd)
 
 
 def crash_engine_process_with_sigkill(client, core_api, volume_name):
