@@ -1038,6 +1038,24 @@ def backup_labels_test(client, random_labels, volume_name, size=SIZE, base_image
     cleanup_volume(client, volume)
 
 
+@pytest.mark.skip(reason="TODO")
+def test_create_DRV_option_validation(client, core_api, volume_name, pod):  # NOQA
+    """
+    Test create disaster recovery volume option
+
+    1. Create a volume and attach it to the current node
+    2. Generate `data0`, write to the volume, make a backup `backup0`
+    3. Verify Backup Volume's `lastBackup` is `backup0`
+    4. Generate `data1`, write to the volume, make a backup `backup1`
+    5. Verify Backup Volume's `lastBackup` is `backup1`
+    6. Delete backup `backup1` and verify Backup Volume's `lastBackup` is
+    `backup0`
+    7. Create a DR volume from Backup Volume's `lastBackup`, activate
+    it and verify the data is from `backup0`
+    """
+    pass
+
+
 @pytest.mark.coretest   # NOQA
 def test_restore_inc(client, core_api, volume_name, pod):  # NOQA
     """
