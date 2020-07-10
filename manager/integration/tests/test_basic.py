@@ -736,6 +736,47 @@ def test_backup_volume_list():  # NOQA
     pass
 
 
+@pytest.mark.skip(reason="TODO")
+def test_backup_lock():  # NOQA
+    """
+    Test backup locks
+
+    Context:
+
+    The idea is to implement a locking mechanism that utilizes the backupstore,
+    to prevent the following dangerous cases of concurrent operations.
+    - prevent backup deletion during backup restoration
+    - prevent backup deletion while a backup is in progress
+    - prevent backup creation during backup deletion
+    - prevent backup restoration during backup deletion
+
+    Steps:
+
+    1.  Create a volume(1) and attach to the current node
+    2.  create a backup(1) of volume(1)
+    3.  verify backup(1) creation completed
+    4.  write some data to volume(1)
+    5.  create an active lock of type Delete
+    6.  create a backup(2) of volume(1)
+    7.  verify backup(2) creation timed out
+    8.  delete active lock of type Delete
+    9.  create an active lock of type Delete
+    10. restore backup(1)
+    11. verify backup(1) restore timed out
+    12. delete active lock of type Delete
+    13. restore backup(1)
+    14. verify backup(1) restore completed
+    15. create an active lock of type Restore
+    16. delete backup(1)
+    17. verify backup(1) deletion timed out
+    18. delete active lock of type Restore
+    19. delete backup(1)
+    20. verify backup(1) deletion completed
+    21. cleanup
+    """
+    pass
+
+
 def test_backup_metadata_deletion(client, core_api, volume_name, set_backupstore_s3):  # NOQA
     """
     Test backup metadata deletion
