@@ -1,7 +1,7 @@
 import os
 import base64
 import hashlib
-
+import json
 
 from minio import Minio
 from minio.error import ResponseError
@@ -14,6 +14,9 @@ from common import is_backupTarget_s3
 from common import is_backupTarget_nfs
 from common import get_longhorn_api_client
 from common import wait_for_backup_volume_delete
+
+
+TEMP_FILE_PATH = "/tmp/temp_file"
 
 
 def backupstore_cleanup(client):
@@ -170,6 +173,45 @@ def nfs_get_backup_blocks_dir():
     raise NotImplementedError
 
 
+def backupstore_create_file(client, core_api, file_path, data={}):
+    backup_target_setting = client.by_id_setting(SETTING_BACKUP_TARGET)
+    backupstore = backup_target_setting.value
+
+    if is_backupTarget_s3(backupstore):
+        return mino_create_file_in_backupstore(client,
+                                               core_api,
+                                               file_path,
+                                               data)
+    else:
+        raise NotImplementedError
+
+
+def mino_create_file_in_backupstore(client, core_api, file_path, data={}): # NOQA
+    backup_target_credential_setting = client.by_id_setting(
+        SETTING_BACKUP_TARGET_CREDENTIAL_SECRET)
+
+    secret_name = backup_target_credential_setting.value
+
+    minio_api = minio_get_api_client(client, core_api, secret_name)
+    bucket_name = minio_get_backupstore_bucket_name(client)
+
+    if len(data) == 0:
+        data = {"testkey": "test data from mino_create_file_in_backupstore()"}
+
+    with open(TEMP_FILE_PATH, 'w') as temp_file:
+        json.dump(data, temp_file)
+
+    try:
+        with open(TEMP_FILE_PATH, 'rb') as temp_file:
+            temp_file_stat = os.stat(TEMP_FILE_PATH)
+            minio_api.put_object(bucket_name,
+                                 file_path,
+                                 temp_file,
+                                 temp_file_stat.st_size)
+    except ResponseError as err:
+        print(err)
+
+
 def backupstore_write_backup_cfg_file(client, core_api, volume_name, backup_name, data): # NOQA
     backupstore = backupstore_get_backup_target(client)
 
@@ -209,6 +251,34 @@ def minio_write_backup_cfg_file(client, core_api, volume_name, backup_name, back
                                  minio_backup_cfg_file_path,
                                  tmp_bkp_cfg_file,
                                  tmp_bkp_cfg_file_stat.st_size)
+    except ResponseError as err:
+        print(err)
+
+
+def backupstore_delete_file(client, core_api, file_path):
+    backup_target_setting = client.by_id_setting(SETTING_BACKUP_TARGET)
+    backupstore = backup_target_setting.value
+
+    if is_backupTarget_s3(backupstore):
+        return mino_delete_file_in_backupstore(client,
+                                               core_api,
+                                               file_path)
+
+    else:
+        raise NotImplementedError
+
+
+def mino_delete_file_in_backupstore(client, core_api, file_path):
+    backup_target_credential_setting = client.by_id_setting(
+        SETTING_BACKUP_TARGET_CREDENTIAL_SECRET)
+
+    secret_name = backup_target_credential_setting.value
+
+    minio_api = minio_get_api_client(client, core_api, secret_name)
+    bucket_name = minio_get_backupstore_bucket_name(client)
+
+    try:
+        minio_api.remove_object(bucket_name, file_path)
     except ResponseError as err:
         print(err)
 
