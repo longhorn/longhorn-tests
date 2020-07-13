@@ -1,0 +1,16 @@
+---
+title: "[#1404](https://github.com/longhorn/longhorn/issues/1404) test backup functionality on google cloud and other s3 interop providers."
+---
+- create vol `s3-test`and mount to a node on `/mnt/s3-test` via pvc
+- write some data on vol `s3-test`
+- take backup(1)
+- write new data on vol `s3-test`
+- take backup(2)
+- restore backup(1)
+- verify data is consistent with backup(1)
+- restore backup(2)
+- verify data is consistent with backup(2)
+- delete backup(1)
+- delete backup(2)
+- delete backup volume `s3-test`
+- verify volume path is removed
