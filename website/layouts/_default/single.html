@@ -1,0 +1,11 @@
+{{ define "main" }}
+{{ partial "sidebar.html" . }}
+<main style="padding: 1%; width: 70%;">
+  <h1 id="title">{{ .Title | markdownify }}</h1>
+  <div>
+    <article id="content">
+       {{ .Content }}
+    </article>
+  </div>
+</main>
+{{ end }}
