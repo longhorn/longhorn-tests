@@ -1,0 +1,6 @@
+<aside style="width: 30%; padding: 1%; border-right: 1px solid lightgray;">
+  <a href="{{ "manual" | absURL }}"><h2>Manual Test Cases</h2></a>
+  {{ with .Site.GetPage "manual" }}
+  {{ partial "listing.html" .Page }}
+  {{ end }}
+</aside>
