@@ -1,0 +1,8 @@
+<ul>
+{{ range .CurrentSection.Pages }}
+  <li><a href="{{ .Permalink }}">{{ .Title | markdownify | plainify | safeHTML }}</a></li>
+  {{ if eq .Kind "section" }}
+    {{ partial "listing.html" .Page }}
+  {{ end }}
+{{ end }}
+</ul>
