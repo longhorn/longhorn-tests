@@ -1,3 +1,3 @@
-baseURL = "http://example.org/"
+baseURL = "https://longhorn.github.io/longhorn-tests/"
 languageCode = "en-us"
-title = "My New Hugo Site"
+title = "Longhorn Manual Test Cases"
