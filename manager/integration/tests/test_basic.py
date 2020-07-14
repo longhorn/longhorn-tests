@@ -2628,23 +2628,30 @@ def test_dr_volume_with_last_backup_deletion(
         client, core_api, volume_name, pod_make):  # NOQA
     """
     Test if the DR volume can be activated
-    after deleting the lastest backup.
+    after deleting the lastest backup. There are two cases to the last
+    backup, one is the last backup is no empty, and the other one is
+    last backup is empty.
 
     1. Set a random backupstore.
     2. Create a volume, then create the corresponding PV, PVC and Pod.
     3. Write data to the pod volume and get the md5sum
        after the pod running.
     4. Create the 1st backup.
-    5. Create a DR volume from the backup.
-    6. Wait for the DR volume restore complete.
+    5. Create two DR volumes from the backup.
+    6. Wait for the DR volumes restore complete.
     7. Write data to the original volume then create the 2nd backup.
-    8. Wait for the DR volume incremental restore complete.
+    8. Wait for the DR volumes incremental restore complete.
     9. Delete the 2nd backup.
-    10. Verify the `lastBackup == ""` for both volumes.
-    11. Activate the DR volume and wait for it complete.
-    12. Create PV/PVC/Pod for the activated volume.
+    10. Verify the `lastBackup == 1st backup` for 2 DR volumes and
+       original volume.
+    11. Activate the DR volume 1 and wait for it complete.
+    12. Create PV/PVC/Pod for the activated volume 1.
     13. Validate the volume content.
-    14. Verify Writing data to the activated volume is fine.
+    14. Delete the 1st backup.
+    15. Verify the `lastBackup == ""` for DR volume 2 and original volume.
+    16. Activate the DR volume 2 and wait for it complete.
+    17. Create PV/PVC/Pod for the activated volume 2.
+    18. Validate the volume content, should be backup 1.
     """
     set_random_backupstore(client)
 
@@ -2661,6 +2668,7 @@ def test_dr_volume_with_last_backup_deletion(
     wait_for_backup_completion(client, std_volume_name, snap1.name)
     bv, b1 = find_backup(client, std_volume_name, snap1.name)
 
+    # Create DR volume 1 and 2.
     dr_volume_name = volume_name + "-dr"
     client.create_volume(name=dr_volume_name, size=str(1 * Gi),
                          numberOfReplicas=3, fromBackup=b1.url,
@@ -2669,10 +2677,18 @@ def test_dr_volume_with_last_backup_deletion(
     wait_for_volume_restoration_start(client, dr_volume_name, b1.name)
     wait_for_volume_restoration_completed(client, dr_volume_name)
 
+    dr2_volume_name = volume_name + "-dr2"
+    client.create_volume(name=dr2_volume_name, size=str(1 * Gi),
+                         numberOfReplicas=3, fromBackup=b1.url,
+                         frontend="", standby=True)
+    wait_for_volume_creation(client, dr2_volume_name)
+    wait_for_volume_restoration_start(client, dr2_volume_name, b1.name)
+    wait_for_volume_restoration_completed(client, dr2_volume_name)
+
+    # Write data and create backup 2.
     data_path2 = "/data/test2"
     write_pod_volume_random_data(core_api, std_pod_name,
                                  data_path2, DATA_SIZE_IN_MB_1)
-    std_md5sum2 = get_pod_data_md5sum(core_api, std_pod_name, data_path2)
     snap2 = create_snapshot(client, std_volume_name)
     std_volume.snapshotBackup(name=snap2.name)
     wait_for_backup_completion(client, std_volume_name, snap2.name)
@@ -2683,12 +2699,19 @@ def test_dr_volume_with_last_backup_deletion(
     wait_for_volume_restoration_start(client, dr_volume_name, b2.name)
     wait_for_volume_restoration_completed(client, dr_volume_name)
 
-    # Delete the latest backup then check the `lastBackup` field.
-    bv.backupDelete(name=b2.name)
-    client.list_backupVolume()
-    check_volume_last_backup(client, std_volume_name, "")
-    check_volume_last_backup(client, dr_volume_name, "")
+    check_volume_last_backup(client, dr2_volume_name, b2.name)
+    wait_for_volume_restoration_start(client, dr2_volume_name, b2.name)
+    wait_for_volume_restoration_completed(client, dr2_volume_name)
 
+    # Delete the latest backup backup 2 then check the `lastBackup` field.
+    bv.backupDelete(name=b2.name)
+    wait_for_backup_delete(client, std_volume_name, b2.name)
+    client.list_backupVolume()
+    check_volume_last_backup(client, std_volume_name, b1.name)
+    check_volume_last_backup(client, dr_volume_name, b1.name)
+    check_volume_last_backup(client, dr2_volume_name, b1.name)
+
+    # Active DR volume 1 and create PV/PVC/Pod for DR volume 1.
     activate_standby_volume(client, dr_volume_name)
     dr_volume = wait_for_volume_detached(client, dr_volume_name)
 
@@ -2701,15 +2724,41 @@ def test_dr_volume_with_last_backup_deletion(
     dr_pod['spec']['volumes'] = [create_pvc_spec(dr_pvc_name)]
     create_and_wait_pod(core_api, dr_pod)
 
+    # Validate the volume content.
     md5sum1 = get_pod_data_md5sum(core_api, dr_pod_name, data_path1)
     assert std_md5sum1 == md5sum1
-    md5sum2 = get_pod_data_md5sum(core_api, dr_pod_name, data_path2)
-    assert std_md5sum2 == md5sum2
 
+    # For DR volume, the requested backup restore is backup1 and
+    # the last restored backup is backup2 now. Since the backup2 is gone,
+    # the DR volume will automatically fall back to do full restore
+    # for backup1.
+
+    # Delete backup 1 and check the `lastBackup` field.
     bv.backupDelete(name=b1.name)
+    wait_for_backup_delete(client, std_volume_name, b2.name)
+    client.list_backupVolume()
+    check_volume_last_backup(client, std_volume_name, "")
+    check_volume_last_backup(client, dr_volume_name, "")
+    check_volume_last_backup(client, dr2_volume_name, "")
+
+    # Active DR volume 2 and create PV/PVC/Pod for DR volume 2.
+    activate_standby_volume(client, dr2_volume_name)
+    dr2_volume = wait_for_volume_detached(client, dr2_volume_name)
+
+    dr2_pod_name = dr2_volume_name + "-pod"
+    dr2_pv_name = dr2_volume_name + "-pv"
+    dr2_pvc_name = dr2_volume_name + "-pvc"
+    dr2_pod = pod_make(name=dr2_pod_name)
+    create_pv_for_volume(client, core_api, dr2_volume, dr2_pv_name)
+    create_pvc_for_volume(client, core_api, dr2_volume, dr2_pvc_name)
+    dr2_pod['spec']['volumes'] = [create_pvc_spec(dr2_pvc_name)]
+    create_and_wait_pod(core_api, dr2_pod)
+
+    # Validate the volume content.
+    md5sum1 = get_pod_data_md5sum(core_api, dr2_pod_name, data_path1)
+    assert std_md5sum1 == md5sum1
+
     delete_and_wait_pod(core_api, std_pod_name)
-    delete_and_wait_pvc(core_api, std_pvc_name)
-    delete_and_wait_pv(core_api, std_pv_name)
     delete_and_wait_pod(core_api, dr_pod_name)
-    delete_and_wait_pvc(core_api, dr_pvc_name)
-    delete_and_wait_pv(core_api, dr_pv_name)
+    delete_and_wait_pod(core_api, dr2_pod_name)
+    client.delete(bv)
