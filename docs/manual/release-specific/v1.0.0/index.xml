@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>v1.0.0 on Longhorn Manual Test Cases</title>
+    <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.0/</link>
+    <description>Recent content in v1.0.0 on Longhorn Manual Test Cases</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en-us</language>
+    
+	<atom:link href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.0/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>New Node with Custom Data Directory</title>
+      <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.0/new-node-custom-data-directory/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.0/new-node-custom-data-directory/</guid>
+      <description>Make sure that the default Longhorn setup has all nodes with /var/lib/rancher/longhorn/ as the default Longhorn disk under the Node page. Additionally, check the Setting page and make sure that the &amp;ldquo;Default Data Path&amp;rdquo; setting has been set to /var/lib/rancher/longhorn/ by default. Now, change the &amp;ldquo;Default Data Path&amp;rdquo; setting to something else, such as /home, and save the new settings. Add a new node to the cluster with the proper dependencies to run Longhorn.</description>
+    </item>
+    
+  </channel>
+</rss>

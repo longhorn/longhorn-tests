@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Upgrade on Longhorn Manual Test Cases</title>
+    <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/</link>
+    <description>Recent content in Upgrade on Longhorn Manual Test Cases</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en-us</language>
+    
+	<atom:link href="https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>Kubernetes upgrade test</title>
+      <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/kubernetes-upgrade-test/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/kubernetes-upgrade-test/</guid>
+      <description>We also need to cover the Kubernetes upgrade process for supported Kubernetes version, make sure pod and volumes works after a major version upgrade.</description>
+    </item>
+    
+    <item>
+      <title>Longhorn Upgrade test</title>
+      <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/longhorn-upgrade-test/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/longhorn-upgrade-test/</guid>
+      <description>Setup  2 attached volumes with data. 2 detached volumes with data. 2 new volumes without data. 2 deployments of one pod. 1 statefulset of 10 pods. Auto Salvage set to disable.  Test After upgrade:
+ Make sure the existing instance managers didn&amp;rsquo;t restart. Make sure pods didn&amp;rsquo;t restart. Check the contents of the volumes. If the Engine API version is incompatible, manager cannot do anything about the attached volumes except detaching it.</description>
+    </item>
+    
+  </channel>
+</rss>

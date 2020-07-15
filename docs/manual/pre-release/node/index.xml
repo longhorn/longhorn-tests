@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Node on Longhorn Manual Test Cases</title>
+    <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/node/</link>
+    <description>Recent content in Node on Longhorn Manual Test Cases</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en-us</language>
+    
+	<atom:link href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>Node disconnection test</title>
+      <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/node/node-disconnection/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/node/node-disconnection/</guid>
+      <description>https://github.com/longhorn/longhorn/issues/1545
+Case 1:  Disable the setting auto-salvage. Create and attach a volume. Keep writing data to the volume. Disconnect the node that the volume attached to for 100 seconds during the data writing. Wait for the node back. The volume will be detached then reattached automatically. And there are some replicas still running after the reattachment.  Case 2:  Launch Longhorn. Launch a pod with the volume and write some data.</description>
+    </item>
+    
+    <item>
+      <title>Node drain and deletion test</title>
+      <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/node/node-drain-deletion/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/node/node-drain-deletion/</guid>
+      <description>Make sure the volumes on the drained/removed node can be detached or recovered correctly. The related issue: https://github.com/longhorn/longhorn/issues/1214
+ Deploy a cluster contains 3 worker nodes N1, N2, N3. Deploy Longhorn. Create a 1-replica deployment with a 3-replica Longhorn volume. The volume is attached to N1. Write some data to the volume and get the md5sum. Force drain and remove N2, which contains one replica only. Wait for the volume Degraded.</description>
+    </item>
+    
+    <item>
+      <title>Physical node down</title>
+      <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/node/physical-node-down/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/node/physical-node-down/</guid>
+      <description>One physical node down should result in the state of that node change to Down When using with CSI driver, one node with controller and pod down should result in Kubernetes migrate the pod to another node, and Longhorn volume should be able to be used on that node as well. Test scenarios for this are documented here Reboot the node that the controller attached to. After reboot complete, the volume should be reattached to the node.</description>
+    </item>
+    
+  </channel>
+</rss>

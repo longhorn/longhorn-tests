@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Test scenarios for auto detach of deployment pod&#39;s volume when the node is down on Longhorn Manual Test Cases</title>
+    <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/node/auto-detach/</link>
+    <description>Recent content in Test scenarios for auto detach of deployment pod&#39;s volume when the node is down on Longhorn Manual Test Cases</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en-us</language>
+    
+	<atom:link href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node/auto-detach/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>Workload type: Deployment</title>
+      <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/node/auto-detach/deployment/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/node/auto-detach/deployment/</guid>
+      <description>Volume Attachment Recovery Policy : Immediate:
+ Have a workload deployed using longhorn volume change the terminationGracePeriodSeconds: 480 in the yaml of the workload. Power down the node where the pod is attached on The replacement pod is created after 5 minutes from when the original pod goes into Unknown state. And this replacement pod is in &amp;ldquo;creating/pending&amp;rdquo; state the volume is able to attach/mount and workload come up in about 30 seconds data is accessible after the pod comes up active  Volume Attachment Recovery Policy: wait:</description>
+    </item>
+    
+    <item>
+      <title>Workload type: Stateful set</title>
+      <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/node/auto-detach/statefulset/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/node/auto-detach/statefulset/</guid>
+      <description>Volume Attachment Recovery Policy: Immediate:
+ Have a stateful set workload deployed using volume claim template using longhorn storage class. Number of pods - 6 2 pods are scheduled on N1. Power off N1. The pods go into Unknown state. replacement pods are NOT created force delete these pods in &amp;ldquo;Unknown&amp;rdquo; state replacement pods are created first pod comes up in about 30 seconds. data is accessible in the volume. It takes another 1 minute approx for the second pod to come up.</description>
+    </item>
+    
+  </channel>
+</rss>
