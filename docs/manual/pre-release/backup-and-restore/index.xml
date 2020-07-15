@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Backup &amp; Restore tests on Longhorn Manual Test Cases</title>
+    <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/</link>
+    <description>Recent content in Backup &amp; Restore tests on Longhorn Manual Test Cases</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en-us</language>
+    
+	<atom:link href="https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>[#1326](https://github.com/longhorn/longhorn/issues/1326) concurrent backup creation &amp; deletion</title>
+      <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/concurrent-backup-creation-deletion/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/concurrent-backup-creation-deletion/</guid>
+      <description>This one is a special case, were the volume only contains 1 backup, which the user requests to delete while the user has another backup in progress. Previously the in progress backup would only be written to disk after it&amp;rsquo;s completed while the delete request would trigger the GC which then detects that there is no backups left on the volume which would trigger the volume deletion.
+ create vol dak and attach to the same node vol bak is attached connect to node via ssh and issue dd if=/dev/urandom of=/dev/longhorn/dak status=progress wait for a bunch of data to be written (1GB) take a backup(1) wait for a bunch of data to be written (1GB) take a backup(2) immediately request deletion of backup(1) verify that backup(2) completes succesfully verify that backup(1) has been deleted verify that all blocks mentioned in the backup(2).</description>
+    </item>
+    
+    <item>
+      <title>[#1341](https://github.com/longhorn/longhorn/issues/1341) concurrent backup test</title>
+      <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/concurrent-backup/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/concurrent-backup/</guid>
+      <description> Take a manual backup of the volume bak while a recurring backup is running verify that backup got created verify that backup sticks around even when recurring backups are cleaned up  </description>
+    </item>
+    
+    <item>
+      <title>[#1355](https://github.com/longhorn/longhorn/issues/1355) The node the restore volume attached to is down</title>
+      <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/restore-volume-node-down/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/restore-volume-node-down/</guid>
+      <description> Create a backup. Create a restore volume from the backup. Power off the volume attached node during the restoring. Wait for the Longhorn node down. Wait for the restore volume being reattached and starting restoring volume with state Degraded. Wait for the restore complete. Attach the volume and verify the restored data. Verify the volume works fine.  </description>
+    </item>
+    
+    <item>
+      <title>[#1366](https://github.com/longhorn/longhorn/issues/1366) &amp;&amp; [#1328](https://github.com/longhorn/longhorn/issues/1328) The node the DR volume attached to is down/rebooted</title>
+      <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/dr-volume-node-down-rebooted/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/dr-volume-node-down-rebooted/</guid>
+      <description>Scenario 1  Create a pod with Longhorn volume. Write data to the volume and get the md5sum. Create the 1st backup for the volume. Create a DR volume from the backup. Wait for the DR volume starting the initial restore. Then power off/reboot the DR volume attached node immediately. Wait for the DR volume detached then reattached. Wait for the DR volume restore complete after the reattachment. Activate the DR volume and check the data md5sum.</description>
+    </item>
+    
+    <item>
+      <title>[#1404](https://github.com/longhorn/longhorn/issues/1404) test backup functionality on google cloud and other s3 interop providers.</title>
+      <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/google-cloud-s3-interop-backups/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/google-cloud-s3-interop-backups/</guid>
+      <description> create vol s3-testand mount to a node on /mnt/s3-test via pvc write some data on vol s3-test take backup(1) write new data on vol s3-test take backup(2) restore backup(1) verify data is consistent with backup(1) restore backup(2) verify data is consistent with backup(2) delete backup(1) delete backup(2) delete backup volume s3-test verify volume path is removed  </description>
+    </item>
+    
+    <item>
+      <title>[#1431](https://github.com/longhorn/longhorn/issues/1431) backup block deletion test</title>
+      <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/backup-block-deletion/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/backup-block-deletion/</guid>
+      <description>create vol blkand mount to a node on /mnt/blk take backup(1) dd if=/dev/urandom of=/mnt/blk/data2 bs=2097152 count=10 status=progress take backup(2) dd if=/dev/urandom of=/mnt/blk/data3 bs=2097152 count=10 status=progress take backup(3) diff backup(2) backup(3) (run through json beautifier for easier comparison) delete backup(2) verify that the blocks solely used by backup(2) are deleted verify that the shared blocks between backup(2) and backup(3) are retained delete backup(3) wait delete backup(1) wait verify no more blocks verify volume.</description>
+    </item>
+    
+  </channel>
+</rss>

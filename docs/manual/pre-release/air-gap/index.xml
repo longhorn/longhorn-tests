@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Air Gap on Longhorn Manual Test Cases</title>
+    <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/air-gap/</link>
+    <description>Recent content in Air Gap on Longhorn Manual Test Cases</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en-us</language>
+    
+	<atom:link href="https://longhorn.github.io/longhorn-tests/manual/pre-release/air-gap/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>Air gap installation</title>
+      <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/air-gap/air-gap-installation/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/air-gap/air-gap-installation/</guid>
+      <description>Need to test air gap installation manually for now.</description>
+    </item>
+    
+    <item>
+      <title>Air gap installation with an instance-manager-image name longer than 63 characters</title>
+      <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/air-gap/air-gap-instance-manager-name/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/air-gap/air-gap-instance-manager-name/</guid>
+      <description>Host instance manager image under a name more than 63 characters in Docker hub Update longhorn-manager deployment flag &amp;ndash;instance-manager-image to that value Try to create a new volume and attach it.  Expected behavior:There should be no error.</description>
+    </item>
+    
+  </channel>
+</rss>

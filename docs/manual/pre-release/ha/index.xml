@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>HA on Longhorn Manual Test Cases</title>
+    <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/ha/</link>
+    <description>Recent content in HA on Longhorn Manual Test Cases</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en-us</language>
+    
+	<atom:link href="https://longhorn.github.io/longhorn-tests/manual/pre-release/ha/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>Instance manager pod recovery [[#870](https://github.com/longhorn/longhorn/issues/870)]</title>
+      <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/ha/instance-manager-pod-recovery/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/ha/instance-manager-pod-recovery/</guid>
+      <description>Create and attach a volume. Set an invalid value (Too large to crash the instance manager pods. e.g., 10) for Guaranteed Engine CPU. Verify instance(engine/replica) manager pods will be recreated again and again. Check the managers&amp;rsquo; log. (Use kubetail longhorn-manager -n longhorn-system). Make sure there is no NPE error logs like:  [longhorn-manager-67nhs] E1112 21:58:14.037140 1 runtime.go:69] Observed a panic: &amp;quot;send on closed channel&amp;quot; (send on closed channel) [longhorn-manager-67nhs] /go/src/github.</description>
+    </item>
+    
+  </channel>
+</rss>
