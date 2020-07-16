@@ -1,0 +1,60 @@
+name: Publish Docs
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  publish:
+    runs-on: self-hosted
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Install Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '>=3.5'
+
+      - name: Install pdoc3
+        run: |
+          pip install pdoc3
+
+      - name: Install test requirements
+        run: |
+          pip install -r manager/integration/tests/requirements.txt
+
+      - name: Run pdoc3
+        run: |
+          pdoc --html -o . .
+          mv tests/* ../../../website/content/integration/
+        working-directory: ./manager/integration/tests/
+
+      - name: Install Hugo
+        run: |
+          # Adapted from https://gist.github.com/steinwaywhw/a4cd19cda655b8249d908261a62687f8
+          curl -s https://api.github.com/repos/gohugoio/hugo/releases/latest | \
+            grep -E 'browser_download_url.*hugo_[0-9]+.*Linux-64bit.tar.gz' | \
+            cut -d : -f 2,3 | \
+            tr -d \" | \
+            xargs -n 1 curl -Lo hugo.tar.gz
+          tar -xf hugo.tar.gz -C /usr/local/bin/ hugo
+
+      - name: Run Hugo
+        run: |
+          hugo
+          rm -r ../docs/
+          mv public/ ../docs
+        working-directory: ./website/
+
+      - name: Configure Git
+        run: |
+          git config user.name "$GITHUB_ACTOR"
+          git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
+
+      - name: Commit changes
+        uses: stefanzweifel/git-auto-commit-action@v4
+        with:
+          commit_message: Update docs
+          file_pattern: docs/* website/content/integration/*
