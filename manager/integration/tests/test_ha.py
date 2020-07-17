@@ -753,7 +753,8 @@ def test_rebuild_with_restoration(
     md5sum = get_pod_data_md5sum(core_api, restore_pod_name, data_path)
     assert original_md5sum == md5sum
 
-    bv.backupDelete(name=b.name)
+    # cleanup
+    backupstore_cleanup(client)
     delete_and_wait_pod(core_api, original_pod_name)
     delete_and_wait_pvc(core_api, original_pvc_name)
     delete_and_wait_pv(core_api, original_pv_name)
@@ -852,8 +853,8 @@ def test_rebuild_with_inc_restoration(
     md5sum2 = get_pod_data_md5sum(core_api, dr_pod_name, data_path2)
     assert std_md5sum2 == md5sum2
 
-    bv.backupDelete(name=b1.name)
-    bv.backupDelete(name=b2.name)
+    # cleanup
+    backupstore_cleanup(client)
     delete_and_wait_pod(core_api, std_pod_name)
     delete_and_wait_pvc(core_api, std_pvc_name)
     delete_and_wait_pv(core_api, std_pv_name)
@@ -1392,9 +1393,7 @@ def test_dr_volume_with_restore_command_error(
     md5sum2 = get_pod_data_md5sum(core_api, dr_pod_name, data_path2)
     assert std_md5sum2 == md5sum2
 
-    bv.backupDelete(name=b1.name)
-    bv.backupDelete(name=b2.name)
-    client.delete(bv)
+    backupstore_cleanup(client)
 
 
 def test_volume_reattach_after_engine_sigkill(client, core_api, volume_name, pod_make):  # NOQA

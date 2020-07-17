@@ -229,7 +229,7 @@ def backupstore_test(client, core_api, csi_pv, pvc, pod_make, pod_name, base_ima
     resp = read_volume_data(core_api, pod2_name)
     assert resp == test_data
 
-    delete_backup(bv, b.name)
+    delete_backup(client, bv.name, b.name)
 
 @pytest.mark.csi  # NOQA
 def test_csi_block_volume(client, core_api, storage_class, pvc, pod_manifest):  # NOQA

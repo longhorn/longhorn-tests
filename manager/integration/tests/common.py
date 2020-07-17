@@ -289,26 +289,16 @@ def create_backup(client, volname, data={}, labels={}):
     return bv, b, snap, data
 
 
-def delete_backup(backup_volume, backup_name):
+def delete_backup(client, volume_name, backup_name):
+    backup_volume = client.by_id_backupVolume(volume_name)
     backup_volume.backupDelete(name=backup_name)
+    wait_for_backup_delete(client, volume_name, backup_name)
 
-    found = False
-    for i in range(RETRY_COMMAND_COUNT):
-        found = False
-        try:
-            backups = backup_volume.backupList().data
-        except longhorn.ApiError:
-            continue
 
-        for b in backups:
-            if b.name == backup_name:
-                found = True
-                break
-        if not found:
-            break
-        time.sleep(RETRY_INTERVAL)
-
-    assert not found
+def delete_backup_volume(client, volume_name):
+    bv = client.by_id_backupVolume(volume_name)
+    client.delete(bv)
+    wait_for_backup_volume_delete(client, volume_name)
 
 
 def create_and_check_volume(client, volume_name, num_of_replicas=3, size=SIZE,

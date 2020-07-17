@@ -23,10 +23,11 @@ from common import SIZE
 from common import KUBERNETES_STATUS_LABEL, SETTING_DEFAULT_LONGHORN_STATIC_SC
 from common import DEFAULT_LONGHORN_STATIC_STORAGECLASS_NAME
 from common import create_snapshot
-from common import set_random_backupstore
+from common import set_random_backupstore, delete_backup
 from common import create_and_check_volume, create_pvc, \
     wait_and_get_pv_for_pvc, wait_delete_pvc
 from common import volume_name # NOQA
+from backupstore import backupstore_cleanup
 
 from kubernetes import client as k8sclient
 from kubernetes.client.rest import ApiException
@@ -631,7 +632,7 @@ def test_backup_kubernetes_status(client, core_api, pod):  # NOQA
     assert restore.kubernetesStatus.lastPodRefAt == ks["lastPodRefAt"]
     assert restore.kubernetesStatus.lastPVCRefAt == ks["lastPVCRefAt"]
 
-    bv.backupDelete(name=b.name)
+    delete_backup(client, bv.name, b.name)
     client.delete(restore)
     wait_for_volume_delete(client, restore_name)
     delete_and_wait_pod(core_api, pod_name)
@@ -707,7 +708,8 @@ def test_backup_kubernetes_status(client, core_api, pod):  # NOQA
     assert restore.kubernetesStatus.lastPodRefAt == ks["lastPodRefAt"]
     assert restore.kubernetesStatus.lastPVCRefAt == ks["lastPVCRefAt"]
 
-    bv.backupDelete(name=b.name)
+    # cleanup
+    backupstore_cleanup(client)
     client.delete(restore)
     cleanup_volume(client, volume)
 
