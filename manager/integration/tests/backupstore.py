@@ -15,7 +15,8 @@ from common import LONGHORN_NAMESPACE
 from common import is_backupTarget_s3
 from common import is_backupTarget_nfs
 from common import get_longhorn_api_client
-from common import wait_for_backup_volume_delete
+from common import delete_backup
+from common import delete_backup_volume
 
 BACKUPSTORE_BV_PREFIX = "/backupstore/volumes/"
 
@@ -30,11 +31,9 @@ def backupstore_cleanup(client):
         backups = backup_volume.backupList()
 
         for backup in backups:
-            backup_name = backup.name
-            backup_volume.backupDelete(name=backup_name)
-            wait_for_backup_volume_delete(client, backup_name)
+            delete_backup(client, backup_volume.name, backup.name)
 
-        client.delete(backup_volume)
+        delete_backup_volume(client, backup_volume.name)
 
     backup_volumes = client.list_backup_volume()
     assert backup_volumes.data == []
