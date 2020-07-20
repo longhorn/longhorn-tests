@@ -1,0 +1,1859 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
+<meta name="generator" content="pdoc 0.8.4" />
+<title>tests.test_kubernetes API documentation</title>
+<meta name="description" content="" />
+<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
+<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/typography.min.css" integrity="sha256-7l/o7C8jubJiy74VsKTidCy1yBkRtiUGbVkYBylBqUg=" crossorigin>
+<link rel="stylesheet preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/styles/github.min.css" crossorigin>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:30px;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:1em 0 .50em 0}h3{font-size:1.4em;margin:25px 0 10px 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .3s ease-in-out}a:hover{color:#e82}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900}pre code{background:#f8f8f8;font-size:.8em;line-height:1.4em}code{background:#f2f2f1;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{background:#f8f8f8;border:0;border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0;padding:1ex}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-weight:bold;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em .5em;margin-bottom:1em}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.item .name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul{padding-left:1.5em}.toc > ul > li{margin-top:.5em}}</style>
+<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/highlight.min.js" integrity="sha256-eOgo0OtLL4cdq7RdwRUiGKLX9XsIJ7nGhWEKbohmVAQ=" crossorigin></script>
+<script>window.addEventListener('DOMContentLoaded', () => hljs.initHighlighting())</script>
+</head>
+<body>
+<main>
+<article id="content">
+<header>
+<h1 class="title">Module <code>tests.test_kubernetes</code></h1>
+</header>
+<section id="section-intro">
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">import pytest
+import time
+
+from common import client, core_api, statefulset, storage_class  # NOQA
+from common import csi_pv, pvc, pod  # NOQA
+from common import generate_volume_name, get_apps_api_client
+from common import create_and_wait_statefulset
+from common import update_statefulset_manifests
+from common import create_storage_class, delete_storage_class, \
+    find_backup
+from common import get_self_host_id, get_statefulset_pod_info
+from common import create_and_wait_pod
+from common import delete_and_wait_pod, wait_delete_pod
+from common import delete_and_wait_pvc
+from common import delete_and_wait_pv, wait_delete_pv
+from common import cleanup_volume, create_pv_for_volume, create_pvc_for_volume
+from common import wait_for_volume_delete, wait_for_volume_detached, \
+    wait_for_volume_healthy
+from common import wait_volume_kubernetes_status, \
+    wait_for_volume_restoration_completed
+from common import RETRY_COUNTS, RETRY_INTERVAL
+from common import SIZE
+from common import KUBERNETES_STATUS_LABEL, SETTING_DEFAULT_LONGHORN_STATIC_SC
+from common import DEFAULT_LONGHORN_STATIC_STORAGECLASS_NAME
+from common import create_snapshot
+from common import set_random_backupstore, delete_backup
+from common import create_and_check_volume, create_pvc, \
+    wait_and_get_pv_for_pvc, wait_delete_pvc
+from common import volume_name # NOQA
+from backupstore import backupstore_cleanup
+
+from kubernetes import client as k8sclient
+from kubernetes.client.rest import ApiException
+
+from json import loads
+
+Gi = (1 * 1024 * 1024 * 1024)
+
+DEFAULT_STORAGECLASS_NAME = &#34;longhorn-statefulset&#34;
+DEFAULT_VOLUME_SIZE = 3  # In Gi
+
+
+def delete_and_wait_statefulset_only(api, ss):
+    pod_data = get_statefulset_pod_info(api, ss)
+
+    apps_api = get_apps_api_client()
+    try:
+        apps_api.delete_namespaced_stateful_set(
+            name=ss[&#39;metadata&#39;][&#39;name&#39;],
+            namespace=&#39;default&#39;, body=k8sclient.V1DeleteOptions())
+    except ApiException as e:
+        assert e.status == 404
+
+    for i in range(RETRY_COUNTS):
+        ret = apps_api.list_namespaced_stateful_set(namespace=&#39;default&#39;)
+        found = False
+        for item in ret.items:
+            if item.metadata.name == ss[&#39;metadata&#39;][&#39;name&#39;]:
+                found = True
+                break
+        if not found:
+            break
+        time.sleep(RETRY_INTERVAL)
+    assert not found
+
+    for p in pod_data:
+        wait_delete_pod(api, p[&#39;pod_name&#39;])
+
+
+def provision_and_wait_pv(client, core_api, storage_class, pvc): # NOQA
+    &#34;&#34;&#34;
+    Provision a new Longhorn Volume via Storage Class and wait for the Volume
+    and its associated resources to be created.
+
+    This method also waits for the Kubernetes Status to be properly set on the
+    Volume.
+
+    :param client: An instance of the Longhorn client.
+    :param core_api: An instance of the Kubernetes CoreV1API client.
+    :param storage_class: A dict representing a Storage Class spec.
+    :param pvc: A dict representing a Persistent Volume Claim spec.
+    :return: The Persistent Volume that was provisioned.
+    &#34;&#34;&#34;
+    create_storage_class(storage_class)
+    pvc[&#39;spec&#39;][&#39;storageClassName&#39;] = storage_class[&#39;metadata&#39;][&#39;name&#39;]
+    pvc_name = pvc[&#39;metadata&#39;][&#39;name&#39;]
+    create_pvc(pvc)
+
+    pv = wait_and_get_pv_for_pvc(core_api, pvc_name)
+    volume_name = pv.spec.csi.volume_handle  # NOQA
+
+    ks = {
+        &#39;pvName&#39;: pv.metadata.name,
+        &#39;pvStatus&#39;: &#39;Bound&#39;,
+        &#39;namespace&#39;: &#39;default&#39;,
+        &#39;pvcName&#39;: pvc_name,
+        &#39;lastPVCRefAt&#39;: &#39;&#39;,
+        &#39;lastPodRefAt&#39;: &#39;&#39;,
+    }
+    wait_volume_kubernetes_status(client, volume_name, ks)
+
+    return pv
+
+
+@pytest.mark.csi  # NOQA
+def test_kubernetes_status(client, core_api, storage_class,  # NOQA
+                           statefulset, csi_pv, pvc, pod):  # NOQA
+    &#34;&#34;&#34;
+    Test Volume feature: Kubernetes Status
+
+    1. Create StorageClass with `reclaimPolicy = Retain`
+    2. Create a statefulset `kubernetes-status-test` with the StorageClass
+        1. The statefulset has scale of 2.
+    3. Get the volume name from the SECOND pod of the StateufulSet pod and
+    create an `extra_pod` with the same volume on the same node
+    4. Check the volumes that used by the StatefulSet
+        1. The volume used by the FIRST StatefulSet pod will have one workload
+        2. The volume used by the SECOND StatefulSet pod will have two
+        workloads
+        3. Validate related status, e.g. pv/pod name/state, workload
+        name/type
+    5. Check the volumes again
+        1. PV/PVC should still be bound
+        2. The volume used by the FIRST pod should have history data
+        3. The volume used by the SECOND and extra pod should have current data
+        point to the extra pod
+    6. Delete the extra pod
+        1. Now all the volume&#39;s should only have history data(`lastPodRefAt`
+        set)
+    7. Delete the PVC
+        1. PVC should be updated with status `Released` and become history data
+    8. Delete PV
+        1. All the Kubernetes status information should be cleaned up.
+    9. Reuse the two Longhorn volumes to create new pods
+        1. Since the `reclaimPolicy == Retain`, volume won&#39;t be deleted by
+        Longhorn
+        2. Check the Kubernetes status now updated, with pod info but empty
+        workload
+        3. Default Longhorn Static StorageClass will remove the PV with PVC,
+        but leave Longhorn volume
+    &#34;&#34;&#34;
+    statefulset_name = &#39;kubernetes-status-test&#39;
+    update_statefulset_manifests(statefulset, storage_class, statefulset_name)
+
+    storage_class[&#39;reclaimPolicy&#39;] = &#39;Retain&#39;
+    create_storage_class(storage_class)
+    create_and_wait_statefulset(statefulset)
+
+    pod_info = get_statefulset_pod_info(core_api, statefulset)
+    volume_info = [p[&#39;pv_name&#39;] for p in pod_info]
+
+    extra_pod_name = &#39;extra-pod-using-&#39; + volume_info[1]
+    pod[&#39;metadata&#39;][&#39;name&#39;] = extra_pod_name
+    p2 = core_api.read_namespaced_pod(name=pod_info[1][&#39;pod_name&#39;],
+                                      namespace=&#39;default&#39;)
+    pod[&#39;spec&#39;][&#39;nodeName&#39;] = p2.spec.node_name
+    pod[&#39;spec&#39;][&#39;volumes&#39;] = [{
+        &#39;name&#39;: pod[&#39;spec&#39;][&#39;containers&#39;][0][&#39;volumeMounts&#39;][0][&#39;name&#39;],
+        &#39;persistentVolumeClaim&#39;: {
+            &#39;claimName&#39;: pod_info[1][&#39;pvc_name&#39;],
+        },
+    }]
+    create_and_wait_pod(core_api, pod)
+
+    for i in range(len(volume_info)):
+        p, volume_name = pod_info[i], volume_info[i] # NOQA
+        volume = client.by_id_volume(volume_name)
+        k_status = volume.kubernetesStatus
+        workloads = k_status.workloadsStatus
+        assert k_status.pvName == p[&#39;pv_name&#39;]
+        assert k_status.pvStatus == &#39;Bound&#39;
+        assert k_status.namespace == &#39;default&#39;
+        assert k_status.pvcName == p[&#39;pvc_name&#39;]
+        assert not k_status.lastPVCRefAt
+        assert not k_status.lastPodRefAt
+        if i == 0:
+            assert len(workloads) == 1
+            assert workloads[0].podName == p[&#39;pod_name&#39;]
+            assert workloads[0].workloadName == statefulset_name
+            assert workloads[0].workloadType == &#39;StatefulSet&#39;
+            for _ in range(RETRY_COUNTS):
+                if workloads[0].podStatus == &#39;Running&#39;:
+                    break
+            time.sleep(RETRY_INTERVAL)
+            volume = client.by_id_volume(volume_name)
+            k_status = volume.kubernetesStatus
+            workloads = k_status.workloadsStatus
+            assert workloads[0].podStatus == &#39;Running&#39;
+        if i == 1:
+            assert len(k_status.workloadsStatus) == 2
+            if workloads[0].podName == pod_info[i][&#39;pod_name&#39;]:
+                assert workloads[1].podName == extra_pod_name
+                assert workloads[0].workloadName == statefulset_name
+                assert workloads[0].workloadType == &#39;StatefulSet&#39;
+                assert not workloads[1].workloadName
+                assert not workloads[1].workloadType
+            else:
+                assert workloads[1].podName == pod_info[i][&#39;pod_name&#39;]
+                assert workloads[0].podName == extra_pod_name
+                assert not workloads[0].workloadName
+                assert not workloads[0].workloadType
+                assert workloads[1].workloadName == statefulset_name
+                assert workloads[1].workloadType == &#39;StatefulSet&#39;
+            for _ in range(RETRY_COUNTS):
+                if workloads[0].podStatus == &#39;Running&#39; and \
+                        workloads[1].podStatus == &#39;Running&#39;:
+                    break
+                time.sleep(RETRY_INTERVAL)
+                volume = client.by_id_volume(volume_name)
+                k_status = volume.kubernetesStatus
+                workloads = k_status.workloadsStatus
+                assert len(workloads) == 2
+            assert workloads[0].podStatus == &#39;Running&#39;
+            assert workloads[1].podStatus == &#39;Running&#39;
+
+    ks_list = [{}, {}]
+    delete_and_wait_statefulset_only(core_api, statefulset)
+    # the extra pod is still using the 2nd volume
+    for i in range(len(volume_info)):
+        p, volume_name = pod_info[i], volume_info[i]
+        ks_list[i][&#39;pvName&#39;] = p[&#39;pv_name&#39;]
+        ks_list[i][&#39;pvStatus&#39;] = &#39;Bound&#39;
+        ks_list[i][&#39;namespace&#39;] = &#39;default&#39;
+        ks_list[i][&#39;pvcName&#39;] = p[&#39;pvc_name&#39;]
+        ks_list[i][&#39;lastPVCRefAt&#39;] = &#39;&#39;
+        if i == 0:
+            ks_list[i][&#39;lastPodRefAt&#39;] = &#39;not empty&#39;
+            ks_list[i][&#39;workloadsStatus&#39;] = [
+                {
+                    &#39;podName&#39;: p[&#39;pod_name&#39;],
+                    &#39;podStatus&#39;: &#39;Running&#39;,
+                    &#39;workloadName&#39;: statefulset_name,
+                    &#39;workloadType&#39;: &#39;StatefulSet&#39;,
+                },
+            ]
+        if i == 1:
+            ks_list[i][&#39;lastPodRefAt&#39;] = &#39;&#39;
+            ks_list[i][&#39;workloadsStatus&#39;] = [
+                {
+                    &#39;podName&#39;: extra_pod_name,
+                    &#39;podStatus&#39;: &#39;Running&#39;,
+                    &#39;workloadName&#39;: &#39;&#39;,
+                    &#39;workloadType&#39;: &#39;&#39;,
+                }
+            ]
+        wait_volume_kubernetes_status(client, volume_name, ks_list[i])
+
+    # deleted extra_pod, all volumes have no workload
+    delete_and_wait_pod(core_api, pod[&#39;metadata&#39;][&#39;name&#39;])
+    for i in range(len(volume_info)):
+        p, volume_name = pod_info[i], volume_info[i]
+        ks_list[i][&#39;lastPodRefAt&#39;] = &#39;not empty&#39;
+        wait_volume_kubernetes_status(client, volume_name, ks_list[i])
+
+    # deleted pvc only.
+    for i in range(len(volume_info)):
+        p, volume_name = pod_info[i], volume_info[i]
+        delete_and_wait_pvc(core_api, p[&#39;pvc_name&#39;])
+        ks_list[i][&#39;pvStatus&#39;] = &#39;Released&#39;
+        ks_list[i][&#39;lastPVCRefAt&#39;] = &#39;not empty&#39;
+        wait_volume_kubernetes_status(client, volume_name, ks_list[i])
+
+    # deleted pv only.
+    for i in range(len(volume_info)):
+        p, volume_name = pod_info[i], volume_info[i]
+        delete_and_wait_pv(core_api, p[&#39;pv_name&#39;])
+        ks_list[i][&#39;pvName&#39;] = &#39;&#39;
+        ks_list[i][&#39;pvStatus&#39;] = &#39;&#39;
+        wait_volume_kubernetes_status(client, volume_name, ks_list[i])
+
+    # reuse that volume
+    for p, volume_name in zip(pod_info, volume_info):
+        p[&#39;pod_name&#39;] = p[&#39;pod_name&#39;].replace(&#39;kubernetes-status-test&#39;,
+                                              &#39;kubernetes-status-test-reuse&#39;)
+        p[&#39;pvc_name&#39;] = p[&#39;pvc_name&#39;].replace(&#39;kubernetes-status-test&#39;,
+                                              &#39;kubernetes-status-test-reuse&#39;)
+        p[&#39;pv_name&#39;] = p[&#39;pvc_name&#39;]
+
+        csi_pv[&#39;metadata&#39;][&#39;name&#39;] = p[&#39;pv_name&#39;]
+        csi_pv[&#39;spec&#39;][&#39;csi&#39;][&#39;volumeHandle&#39;] = volume_name
+        csi_pv[&#39;spec&#39;][&#39;storageClassName&#39;] = \
+            DEFAULT_LONGHORN_STATIC_STORAGECLASS_NAME
+        core_api.create_persistent_volume(csi_pv)
+
+        pvc[&#39;metadata&#39;][&#39;name&#39;] = p[&#39;pvc_name&#39;]
+        pvc[&#39;spec&#39;][&#39;volumeName&#39;] = p[&#39;pv_name&#39;]
+        pvc[&#39;spec&#39;][&#39;storageClassName&#39;] = \
+            DEFAULT_LONGHORN_STATIC_STORAGECLASS_NAME
+        core_api.create_namespaced_persistent_volume_claim(
+            body=pvc, namespace=&#39;default&#39;)
+
+        pod[&#39;metadata&#39;][&#39;name&#39;] = p[&#39;pod_name&#39;]
+        pod[&#39;spec&#39;][&#39;volumes&#39;] = [{
+            &#39;name&#39;: pod[&#39;spec&#39;][&#39;containers&#39;][0][&#39;volumeMounts&#39;][0][&#39;name&#39;],
+            &#39;persistentVolumeClaim&#39;: {
+                &#39;claimName&#39;: p[&#39;pvc_name&#39;],
+            },
+        }]
+        create_and_wait_pod(core_api, pod)
+
+        ks = {
+            &#39;pvName&#39;: p[&#39;pv_name&#39;],
+            &#39;pvStatus&#39;: &#39;Bound&#39;,
+            &#39;namespace&#39;: &#39;default&#39;,
+            &#39;pvcName&#39;: p[&#39;pvc_name&#39;],
+            &#39;lastPVCRefAt&#39;: &#39;&#39;,
+            &#39;lastPodRefAt&#39;: &#39;&#39;,
+            &#39;workloadsStatus&#39;: [{
+                &#39;podName&#39;: p[&#39;pod_name&#39;],
+                &#39;podStatus&#39;: &#39;Running&#39;,
+                &#39;workloadName&#39;: &#39;&#39;,
+                &#39;workloadType&#39;: &#39;&#39;,
+            }, ],
+        }
+        wait_volume_kubernetes_status(client, volume_name, ks)
+
+        delete_and_wait_pod(core_api, p[&#39;pod_name&#39;])
+        # Since persistentVolumeReclaimPolicy of csi_pv is `Delete`,
+        # we don&#39;t need to delete bounded pv manually
+        delete_and_wait_pvc(core_api, p[&#39;pvc_name&#39;])
+        wait_delete_pv(core_api, p[&#39;pv_name&#39;])
+
+
+@pytest.mark.csi  # NOQA
+def test_pv_creation(client, core_api):  # NOQA
+    &#34;&#34;&#34;
+    Test creating PV using Longhorn API
+
+    1. Create volume
+    2. Create PV for the volume
+    3. Try to create another PV for the same volume. It should fail.
+    4. Check Kubernetes Status for the volume since PV is created.
+    &#34;&#34;&#34;
+    volume_name = &#34;test-pv-creation&#34; # NOQA
+    client.create_volume(name=volume_name, size=SIZE,
+                         numberOfReplicas=2)
+    volume = wait_for_volume_detached(client, volume_name)
+
+    pv_name = &#34;pv-&#34; + volume_name
+    create_pv_for_volume(client, core_api, volume, pv_name)
+
+    # try to create one more pv for the volume
+    pv_name_2 = &#34;pv2-&#34; + volume_name
+    with pytest.raises(Exception) as e:
+        volume.pvCreate(pvName=pv_name_2)
+        assert &#34;already exist&#34; in str(e.value)
+
+    ks = {
+        &#39;pvName&#39;: pv_name,
+        &#39;pvStatus&#39;: &#39;Available&#39;,
+        &#39;namespace&#39;: &#39;&#39;,
+        &#39;pvcName&#39;: &#39;&#39;,
+        &#39;lastPVCRefAt&#39;: &#39;&#39;,
+        &#39;lastPodRefAt&#39;: &#39;&#39;,
+    }
+    wait_volume_kubernetes_status(client, volume_name, ks)
+
+    delete_and_wait_pv(core_api, pv_name)
+
+
+@pytest.mark.csi  # NOQA
+def test_pvc_creation_with_default_sc_set(
+        client, core_api, storage_class, pod):  # NOQA
+    &#34;&#34;&#34;
+    Test creating PVC with default StorageClass set
+
+    The target is to make sure the newly create PV/PVC won&#39;t use default
+    StorageClass, and if there is no default StorageClass, PV/PVC can still be
+    created.
+
+    1. Create a StorageClass and set it to be the default StorageClass
+    2. Update static StorageClass to `longhorn-static-test`
+    3. Create volume then PV/PVC.
+    4. Make sure the newly created PV/PVC using StorageClass
+    `longhorn-static-test`
+    5. Create pod with PVC.
+    6. Verify volume&#39;s Kubernetes Status
+    7. Remove PVC and Pod.
+    8. Verify volume&#39;s Kubernetes Status only contains current PV and history
+    9. Wait for volume to detach (since pod is deleted)
+    10. Reuse the volume on a new pod. Wait for the pod to start
+    11. Verify volume&#39;s Kubernetes Status reflect the new pod.
+    12. Delete PV/PVC/Pod.
+    13. Verify volume&#39;s Kubernetes Status only contains history
+    14. Delete the default StorageClass.
+    15. Create PV/PVC for the volume.
+    16. Make sure the PV&#39;s StorageClass is static StorageClass
+    &#34;&#34;&#34;
+    # set default storage class
+    storage_class[&#39;metadata&#39;][&#39;annotations&#39;] = \
+        {&#34;storageclass.kubernetes.io/is-default-class&#34;: &#34;true&#34;}
+    create_storage_class(storage_class)
+
+    static_sc_name = &#34;longhorn-static-test&#34;
+    setting = client.by_id_setting(SETTING_DEFAULT_LONGHORN_STATIC_SC)
+    setting = client.update(setting, value=static_sc_name)
+    assert setting.value == static_sc_name
+
+    volume_name = &#34;test-pvc-creation-with-sc&#34; # NOQA
+    pod_name = &#34;pod-&#34; + volume_name
+    client.create_volume(name=volume_name, size=SIZE,
+                         numberOfReplicas=2)
+    volume = wait_for_volume_detached(client, volume_name)
+
+    pv_name = &#34;pv-&#34; + volume_name
+    pvc_name = &#34;pvc-&#34; + volume_name
+    pvc_name_extra = &#34;pvc-&#34; + volume_name + &#34;-extra&#34;
+
+    create_pv_for_volume(client, core_api, volume, pv_name)
+    create_pvc_for_volume(client, core_api, volume, pvc_name)
+
+    ret = core_api.list_namespaced_persistent_volume_claim(
+        namespace=&#39;default&#39;)
+    for item in ret.items:
+        if item.metadata.name == pvc_name:
+            pvc_found = item
+            break
+    assert pvc_found
+    assert pvc_found.spec.storage_class_name == static_sc_name
+
+    pod[&#39;metadata&#39;][&#39;name&#39;] = pod_name
+    pod[&#39;spec&#39;][&#39;volumes&#39;] = [{
+        &#39;name&#39;: pod[&#39;spec&#39;][&#39;containers&#39;][0][&#39;volumeMounts&#39;][0][&#39;name&#39;],
+        &#39;persistentVolumeClaim&#39;: {
+            &#39;claimName&#39;: pvc_name,
+        },
+    }]
+    create_and_wait_pod(core_api, pod)
+
+    ks = {
+        &#39;pvName&#39;: pv_name,
+        &#39;pvStatus&#39;: &#39;Bound&#39;,
+        &#39;namespace&#39;: &#39;default&#39;,
+        &#39;pvcName&#39;: pvc_name,
+        &#39;lastPVCRefAt&#39;: &#39;&#39;,
+        &#39;lastPodRefAt&#39;: &#39;&#39;,
+        &#39;workloadsStatus&#39;: [{
+            &#39;podName&#39;: pod_name,
+            &#39;podStatus&#39;: &#39;Running&#39;,
+            &#39;workloadName&#39;: &#39;&#39;,
+            &#39;workloadType&#39;: &#39;&#39;,
+        }, ],
+    }
+    wait_volume_kubernetes_status(client, volume_name, ks)
+
+    delete_and_wait_pod(core_api, pod_name)
+    delete_and_wait_pvc(core_api, pvc_name)
+
+    ks = {
+        &#39;pvName&#39;: pv_name,
+        &#39;pvStatus&#39;: &#39;Released&#39;,
+        &#39;namespace&#39;: &#39;default&#39;,
+        &#39;pvcName&#39;: pvc_name,
+        &#39;lastPVCRefAt&#39;: &#39;not empty&#39;,
+        &#39;lastPodRefAt&#39;: &#39;not empty&#39;,
+    }
+    wait_volume_kubernetes_status(client, volume_name, ks)
+
+    # try to reuse the pv
+    volume = wait_for_volume_detached(client, volume_name)
+    create_pvc_for_volume(client, core_api, volume, pvc_name_extra)
+    pod[&#39;spec&#39;][&#39;volumes&#39;][0][&#39;persistentVolumeClaim&#39;][&#39;claimName&#39;] = \
+        pvc_name_extra
+    create_and_wait_pod(core_api, pod)
+
+    ks = {
+        &#39;pvName&#39;: pv_name,
+        &#39;pvStatus&#39;: &#39;Bound&#39;,
+        &#39;namespace&#39;: &#39;default&#39;,
+        &#39;pvcName&#39;: pvc_name_extra,
+        &#39;lastPVCRefAt&#39;: &#39;&#39;,
+        &#39;lastPodRefAt&#39;: &#39;&#39;,
+        &#39;workloadsStatus&#39;: [{
+            &#39;podName&#39;: pod_name,
+            &#39;podStatus&#39;: &#39;Running&#39;,
+            &#39;workloadName&#39;: &#39;&#39;,
+            &#39;workloadType&#39;: &#39;&#39;,
+        }, ],
+    }
+    wait_volume_kubernetes_status(client, volume_name, ks)
+
+    delete_and_wait_pod(core_api, pod_name)
+    delete_and_wait_pvc(core_api, pvc_name_extra)
+    delete_and_wait_pv(core_api, pv_name)
+
+    ks = {
+        &#39;pvName&#39;: &#39;&#39;,
+        &#39;pvStatus&#39;: &#39;&#39;,
+        &#39;namespace&#39;: &#39;default&#39;,
+        &#39;pvcName&#39;: pvc_name_extra,
+        &#39;lastPVCRefAt&#39;: &#39;not empty&#39;,
+        &#39;lastPodRefAt&#39;: &#39;not empty&#39;,
+    }
+    wait_volume_kubernetes_status(client, volume_name, ks)
+
+    # without default storage class
+    delete_storage_class(storage_class[&#39;metadata&#39;][&#39;name&#39;])
+
+    create_pv_for_volume(client, core_api, volume, pv_name)
+    create_pvc_for_volume(client, core_api, volume, pvc_name)
+
+    ret = core_api.list_namespaced_persistent_volume_claim(
+        namespace=&#39;default&#39;)
+    for item in ret.items:
+        if item.metadata.name == pvc_name:
+            pvc2 = item
+            break
+    assert pvc2
+    assert pvc2.spec.storage_class_name == static_sc_name
+
+    delete_and_wait_pvc(core_api, pvc_name)
+    delete_and_wait_pv(core_api, pv_name)
+
+
+@pytest.mark.csi
+def test_backup_kubernetes_status(client, core_api, pod):  # NOQA
+    &#34;&#34;&#34;
+    Test that Backups have KubernetesStatus stored properly when there is an
+    associated PersistentVolumeClaim and Pod.
+
+    1. Setup a random backupstore
+    2. Set settings Longhorn Static StorageClass to `longhorn-static-test`
+    3. Create a volume and PV/PVC. Verify the StorageClass of PVC
+    4. Create a Pod using the PVC.
+    5. Check volume&#39;s Kubernetes status to reflect PV/PVC/Pod correctly.
+    6. Create a backup for the volume.
+    7. Verify the labels of created backup reflect PV/PVC/Pod status.
+    8. Restore the backup to a volume. Wait for restoration to complete.
+    9. Check the volume&#39;s Kubernetes Status
+        1. Make sure the `lastPodRefAt` and `lastPVCRefAt` is snapshot created
+    time
+    10. Delete the backup and restored volume.
+    11. Delete PV/PVC/Pod.
+    12. Verify volume&#39;s Kubernetes Status updated to reflect history data.
+    13. Attach the volume and create another backup. Verify the labels
+    14. Verify the volume&#39;s Kubernetes status.
+    15. Restore the previous backup to a new volume. Wait for restoration.
+    16. Verify the restored volume&#39;s Kubernetes status.
+        1. Make sure `lastPodRefAt` and `lastPVCRefAt` matched volume on step
+        12
+    &#34;&#34;&#34;
+    set_random_backupstore(client)
+
+    host_id = get_self_host_id()
+    static_sc_name = &#34;longhorn-static-test&#34;
+    setting = client.by_id_setting(SETTING_DEFAULT_LONGHORN_STATIC_SC)
+    setting = client.update(setting, value=static_sc_name)
+    assert setting.value == static_sc_name
+
+    volume_name = &#34;test-backup-kubernetes-status-pod&#34; # NOQA
+    client.create_volume(name=volume_name, size=SIZE,
+                         numberOfReplicas=2)
+    volume = wait_for_volume_detached(client, volume_name)
+
+    pod_name = &#34;pod-&#34; + volume_name
+    pv_name = &#34;pv-&#34; + volume_name
+    pvc_name = &#34;pvc-&#34; + volume_name
+    create_pv_for_volume(client, core_api, volume, pv_name)
+    create_pvc_for_volume(client, core_api, volume, pvc_name)
+    ret = core_api.list_namespaced_persistent_volume_claim(
+        namespace=&#39;default&#39;)
+    pvc_found = False
+    for item in ret.items:
+        if item.metadata.name == pvc_name:
+            pvc_found = item
+            break
+    assert pvc_found
+    assert pvc_found.spec.storage_class_name == static_sc_name
+
+    pod[&#39;metadata&#39;][&#39;name&#39;] = pod_name
+    pod[&#39;spec&#39;][&#39;volumes&#39;] = [{
+        &#39;name&#39;: pod[&#39;spec&#39;][&#39;containers&#39;][0][&#39;volumeMounts&#39;][0][&#39;name&#39;],
+        &#39;persistentVolumeClaim&#39;: {
+            &#39;claimName&#39;: pvc_name,
+        },
+    }]
+    create_and_wait_pod(core_api, pod)
+
+    ks = {
+        &#39;lastPodRefAt&#39;: &#39;&#39;,
+        &#39;lastPVCRefAt&#39;: &#39;&#39;,
+        &#39;namespace&#39;: &#39;default&#39;,
+        &#39;pvcName&#39;: pvc_name,
+        &#39;pvName&#39;: pv_name,
+        &#39;pvStatus&#39;: &#39;Bound&#39;,
+        &#39;workloadsStatus&#39;: [{
+            &#39;podName&#39;: pod_name,
+            &#39;podStatus&#39;: &#39;Running&#39;,
+            &#39;workloadName&#39;: &#39;&#39;,
+            &#39;workloadType&#39;: &#39;&#39;
+        }]
+    }
+    wait_volume_kubernetes_status(client, volume_name, ks)
+    volume = wait_for_volume_healthy(client, volume_name)
+
+    # Create Backup manually instead of calling create_backup since Kubernetes
+    # is not guaranteed to mount our Volume to the test host.
+    snap = create_snapshot(client, volume_name)
+    volume.snapshotBackup(name=snap.name)
+    bv, b = find_backup(client, volume_name, snap.name)
+    new_b = bv.backupGet(name=b.name)
+    status = loads(new_b.labels.get(KUBERNETES_STATUS_LABEL))
+    assert status == ks
+
+    restore_name = generate_volume_name()
+    client.create_volume(name=restore_name, size=SIZE,
+                         numberOfReplicas=2,
+                         fromBackup=b.url)
+    wait_for_volume_restoration_completed(client, restore_name)
+    wait_for_volume_detached(client, restore_name)
+
+    snapshot_created = b.snapshotCreated
+    ks = {
+        &#39;lastPodRefAt&#39;: b.snapshotCreated,
+        &#39;lastPVCRefAt&#39;: b.snapshotCreated,
+        &#39;namespace&#39;: &#39;default&#39;,
+        &#39;pvcName&#39;: pvc_name,
+        # Restoration should not apply PersistentVolume data.
+        &#39;pvName&#39;: &#39;&#39;,
+        &#39;pvStatus&#39;: &#39;&#39;,
+        &#39;workloadsStatus&#39;: [{
+            &#39;podName&#39;: pod_name,
+            &#39;podStatus&#39;: &#39;Running&#39;,
+            &#39;workloadName&#39;: &#39;&#39;,
+            &#39;workloadType&#39;: &#39;&#39;
+        }]
+    }
+    wait_volume_kubernetes_status(client, restore_name, ks)
+    restore = client.by_id_volume(restore_name)
+    # We need to compare LastPodRefAt and LastPVCRefAt manually since
+    # wait_volume_kubernetes_status only checks for empty or non-empty state.
+    assert restore.kubernetesStatus.lastPodRefAt == ks[&#34;lastPodRefAt&#34;]
+    assert restore.kubernetesStatus.lastPVCRefAt == ks[&#34;lastPVCRefAt&#34;]
+
+    delete_backup(client, bv.name, b.name)
+    client.delete(restore)
+    wait_for_volume_delete(client, restore_name)
+    delete_and_wait_pod(core_api, pod_name)
+    delete_and_wait_pvc(core_api, pvc_name)
+    delete_and_wait_pv(core_api, pv_name)
+
+    # With the Pod, PVC, and PV deleted, the Volume should have both Ref
+    # fields set. Check that a new Backup and Restore will use this instead of
+    # manually populating the Ref fields.
+    ks = {
+        &#39;lastPodRefAt&#39;: &#39;NOT NULL&#39;,
+        &#39;lastPVCRefAt&#39;: &#39;NOT NULL&#39;,
+        &#39;namespace&#39;: &#39;default&#39;,
+        &#39;pvcName&#39;: pvc_name,
+        &#39;pvName&#39;: &#39;&#39;,
+        &#39;pvStatus&#39;: &#39;&#39;,
+        &#39;workloadsStatus&#39;: [{
+            &#39;podName&#39;: pod_name,
+            &#39;podStatus&#39;: &#39;Running&#39;,
+            &#39;workloadName&#39;: &#39;&#39;,
+            &#39;workloadType&#39;: &#39;&#39;
+        }]
+    }
+    wait_volume_kubernetes_status(client, volume_name, ks)
+    volume = wait_for_volume_detached(client, volume_name)
+
+    volume.attach(hostId=host_id)
+    volume = wait_for_volume_healthy(client, volume_name)
+
+    snap = create_snapshot(client, volume_name)
+    volume.snapshotBackup(name=snap.name)
+    bv, b = find_backup(client, volume_name, snap.name)
+    new_b = bv.backupGet(name=b.name)
+    status = loads(new_b.labels.get(KUBERNETES_STATUS_LABEL))
+    # Check each field manually, we have no idea what the LastPodRefAt or the
+    # LastPVCRefAt will be. We just know it shouldn&#39;t be SnapshotCreated.
+    assert status[&#39;lastPodRefAt&#39;] != snapshot_created
+    assert status[&#39;lastPVCRefAt&#39;] != snapshot_created
+    assert status[&#39;namespace&#39;] == &#34;default&#34;
+    assert status[&#39;pvcName&#39;] == pvc_name
+    assert status[&#39;pvName&#39;] == &#34;&#34;
+    assert status[&#39;pvStatus&#39;] == &#34;&#34;
+    assert status[&#39;workloadsStatus&#39;] == [{
+        &#39;podName&#39;: pod_name,
+        &#39;podStatus&#39;: &#39;Running&#39;,
+        &#39;workloadName&#39;: &#39;&#39;,
+        &#39;workloadType&#39;: &#39;&#39;
+    }]
+
+    restore_name = generate_volume_name()
+    client.create_volume(name=restore_name, size=SIZE,
+                         numberOfReplicas=2,
+                         fromBackup=b.url)
+    wait_for_volume_restoration_completed(client, restore_name)
+    wait_for_volume_detached(client, restore_name)
+
+    ks = {
+        &#39;lastPodRefAt&#39;: status[&#39;lastPodRefAt&#39;],
+        &#39;lastPVCRefAt&#39;: status[&#39;lastPVCRefAt&#39;],
+        &#39;namespace&#39;: &#39;default&#39;,
+        &#39;pvcName&#39;: pvc_name,
+        &#39;pvName&#39;: &#39;&#39;,
+        &#39;pvStatus&#39;: &#39;&#39;,
+        &#39;workloadsStatus&#39;: [{
+            &#39;podName&#39;: pod_name,
+            &#39;podStatus&#39;: &#39;Running&#39;,
+            &#39;workloadName&#39;: &#39;&#39;,
+            &#39;workloadType&#39;: &#39;&#39;
+        }]
+    }
+    wait_volume_kubernetes_status(client, restore_name, ks)
+    restore = client.by_id_volume(restore_name)
+    assert restore.kubernetesStatus.lastPodRefAt == ks[&#34;lastPodRefAt&#34;]
+    assert restore.kubernetesStatus.lastPVCRefAt == ks[&#34;lastPVCRefAt&#34;]
+
+    # cleanup
+    backupstore_cleanup(client)
+    client.delete(restore)
+    cleanup_volume(client, volume)
+
+
+@pytest.mark.csi
+def test_delete_with_static_pv(client, core_api, volume_name): # NOQA
+    &#34;&#34;&#34;
+    Test that deleting a Volume with related static Persistent Volume and
+    Persistent Volume Claim resources successfully deletes the Volume and
+    cleans up those resources.
+
+    1. Create a Volume in Longhorn.
+    2. Create a static Persistent Volume and Persistent Volume Claim for the
+    Volume through Longhorn.
+    3. Wait for the Kubernetes Status to indicate the existence of these
+    resources.
+    4. Attempt deletion of the Volume.
+    5. Verify that the Volume and its associated resources have been deleted.
+    &#34;&#34;&#34;
+    volume = create_and_check_volume(client, volume_name)
+    pv_name = &#39;pv-&#39; + volume_name
+    pvc_name = &#39;pvc-&#39; + volume_name
+    create_pv_for_volume(client, core_api, volume, pv_name)
+    create_pvc_for_volume(client, core_api, volume, pvc_name)
+
+    ks = {
+        &#39;pvName&#39;: pv_name,
+        &#39;pvStatus&#39;: &#39;Bound&#39;,
+        &#39;namespace&#39;: &#39;default&#39;,
+        &#39;pvcName&#39;: pvc_name,
+        &#39;lastPVCRefAt&#39;: &#39;&#39;,
+        &#39;lastPodRefAt&#39;: &#39;&#39;,
+    }
+    wait_volume_kubernetes_status(client, volume_name, ks)
+
+    client.delete(volume)
+    wait_for_volume_delete(client, volume_name)
+    wait_delete_pv(core_api, pv_name)
+    wait_delete_pvc(core_api, pvc_name)
+
+
+@pytest.mark.csi
+def test_delete_with_provisioned_pv(client, core_api, storage_class, pvc): # NOQA
+    &#34;&#34;&#34;
+    Test that deleting a Volume with dynamically provisioned Persistent Volume
+    and Persistent Volume Claim resources successfully deletes the Volume and
+    cleans up those resources.
+
+    1. Create a Storage Class to test with.
+    2. Create a Persistent Volume Claim that requests a Volume from that
+    Storage Class.
+    3. Wait for the Volume to be provisioned and for the Kubernetes Status to
+    be updated correctly.
+    4. Attempt to delete the Volume.
+    5. Verify that the Volume and its associated resources have been deleted.
+    &#34;&#34;&#34;
+    pv = provision_and_wait_pv(client, core_api, storage_class, pvc)
+    pv_name = pv.metadata.name
+    volume_name = pv.spec.csi.volume_handle  # NOQA
+
+    volume = client.by_id_volume(volume_name)
+    client.delete(volume)
+    wait_for_volume_delete(client, volume_name)
+    wait_delete_pv(core_api, pv_name)
+    wait_delete_pvc(core_api, pvc[&#39;metadata&#39;][&#39;name&#39;])
+
+
+@pytest.mark.csi
+def test_delete_provisioned_pvc(client, core_api,  storage_class, pvc): # NOQA
+    &#34;&#34;&#34;
+    Test that deleting the Persistent Volume Claim for a dynamically
+    provisioned Volume properly deletes the Volume and the associated
+    Kubernetes resources.
+
+    1. Create a Storage Class to test with.
+    2. Create a Persistent Volume Claim that requests a Volume from that
+    Storage Class.
+    3. Wait for the Volume to be provisioned and for the Kubernetes Status to
+    be updated correctly.
+    4. Attempt to delete the Persistent Volume Claim.
+    5. Verify that the associated Volume and its resources have been deleted.
+    &#34;&#34;&#34;
+    pv = provision_and_wait_pv(client, core_api, storage_class, pvc)
+    pv_name = pv.metadata.name
+    volume_name = pv.spec.csi.volume_handle  # NOQA
+
+    delete_and_wait_pvc(core_api, pvc[&#39;metadata&#39;][&#39;name&#39;])
+    wait_delete_pv(core_api, pv_name)
+    wait_for_volume_delete(client, volume_name)</code></pre>
+</details>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-functions">Functions</h2>
+<dl>
+<dt id="tests.test_kubernetes.delete_and_wait_statefulset_only"><code class="name flex">
+<span>def <span class="ident">delete_and_wait_statefulset_only</span></span>(<span>api, ss)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def delete_and_wait_statefulset_only(api, ss):
+    pod_data = get_statefulset_pod_info(api, ss)
+
+    apps_api = get_apps_api_client()
+    try:
+        apps_api.delete_namespaced_stateful_set(
+            name=ss[&#39;metadata&#39;][&#39;name&#39;],
+            namespace=&#39;default&#39;, body=k8sclient.V1DeleteOptions())
+    except ApiException as e:
+        assert e.status == 404
+
+    for i in range(RETRY_COUNTS):
+        ret = apps_api.list_namespaced_stateful_set(namespace=&#39;default&#39;)
+        found = False
+        for item in ret.items:
+            if item.metadata.name == ss[&#39;metadata&#39;][&#39;name&#39;]:
+                found = True
+                break
+        if not found:
+            break
+        time.sleep(RETRY_INTERVAL)
+    assert not found
+
+    for p in pod_data:
+        wait_delete_pod(api, p[&#39;pod_name&#39;])</code></pre>
+</details>
+</dd>
+<dt id="tests.test_kubernetes.provision_and_wait_pv"><code class="name flex">
+<span>def <span class="ident">provision_and_wait_pv</span></span>(<span>client, core_api, storage_class, pvc)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Provision a new Longhorn Volume via Storage Class and wait for the Volume
+and its associated resources to be created.</p>
+<p>This method also waits for the Kubernetes Status to be properly set on the
+Volume.</p>
+<p>:param client: An instance of the Longhorn client.
+:param core_api: An instance of the Kubernetes CoreV1API client.
+:param storage_class: A dict representing a Storage Class spec.
+:param pvc: A dict representing a Persistent Volume Claim spec.
+:return: The Persistent Volume that was provisioned.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def provision_and_wait_pv(client, core_api, storage_class, pvc): # NOQA
+    &#34;&#34;&#34;
+    Provision a new Longhorn Volume via Storage Class and wait for the Volume
+    and its associated resources to be created.
+
+    This method also waits for the Kubernetes Status to be properly set on the
+    Volume.
+
+    :param client: An instance of the Longhorn client.
+    :param core_api: An instance of the Kubernetes CoreV1API client.
+    :param storage_class: A dict representing a Storage Class spec.
+    :param pvc: A dict representing a Persistent Volume Claim spec.
+    :return: The Persistent Volume that was provisioned.
+    &#34;&#34;&#34;
+    create_storage_class(storage_class)
+    pvc[&#39;spec&#39;][&#39;storageClassName&#39;] = storage_class[&#39;metadata&#39;][&#39;name&#39;]
+    pvc_name = pvc[&#39;metadata&#39;][&#39;name&#39;]
+    create_pvc(pvc)
+
+    pv = wait_and_get_pv_for_pvc(core_api, pvc_name)
+    volume_name = pv.spec.csi.volume_handle  # NOQA
+
+    ks = {
+        &#39;pvName&#39;: pv.metadata.name,
+        &#39;pvStatus&#39;: &#39;Bound&#39;,
+        &#39;namespace&#39;: &#39;default&#39;,
+        &#39;pvcName&#39;: pvc_name,
+        &#39;lastPVCRefAt&#39;: &#39;&#39;,
+        &#39;lastPodRefAt&#39;: &#39;&#39;,
+    }
+    wait_volume_kubernetes_status(client, volume_name, ks)
+
+    return pv</code></pre>
+</details>
+</dd>
+<dt id="tests.test_kubernetes.test_backup_kubernetes_status"><code class="name flex">
+<span>def <span class="ident">test_backup_kubernetes_status</span></span>(<span>client, core_api, pod)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test that Backups have KubernetesStatus stored properly when there is an
+associated PersistentVolumeClaim and Pod.</p>
+<ol>
+<li>Setup a random backupstore</li>
+<li>Set settings Longhorn Static StorageClass to <code>longhorn-static-test</code></li>
+<li>Create a volume and PV/PVC. Verify the StorageClass of PVC</li>
+<li>Create a Pod using the PVC.</li>
+<li>Check volume's Kubernetes status to reflect PV/PVC/Pod correctly.</li>
+<li>Create a backup for the volume.</li>
+<li>Verify the labels of created backup reflect PV/PVC/Pod status.</li>
+<li>Restore the backup to a volume. Wait for restoration to complete.</li>
+<li>Check the volume's Kubernetes Status<ol>
+<li>Make sure the <code>lastPodRefAt</code> and <code>lastPVCRefAt</code> is snapshot created
+time</li>
+</ol>
+</li>
+<li>Delete the backup and restored volume.</li>
+<li>Delete PV/PVC/Pod.</li>
+<li>Verify volume's Kubernetes Status updated to reflect history data.</li>
+<li>Attach the volume and create another backup. Verify the labels</li>
+<li>Verify the volume's Kubernetes status.</li>
+<li>Restore the previous backup to a new volume. Wait for restoration.</li>
+<li>Verify the restored volume's Kubernetes status.<ol>
+<li>Make sure <code>lastPodRefAt</code> and <code>lastPVCRefAt</code> matched volume on step
+12</li>
+</ol>
+</li>
+</ol></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@pytest.mark.csi
+def test_backup_kubernetes_status(client, core_api, pod):  # NOQA
+    &#34;&#34;&#34;
+    Test that Backups have KubernetesStatus stored properly when there is an
+    associated PersistentVolumeClaim and Pod.
+
+    1. Setup a random backupstore
+    2. Set settings Longhorn Static StorageClass to `longhorn-static-test`
+    3. Create a volume and PV/PVC. Verify the StorageClass of PVC
+    4. Create a Pod using the PVC.
+    5. Check volume&#39;s Kubernetes status to reflect PV/PVC/Pod correctly.
+    6. Create a backup for the volume.
+    7. Verify the labels of created backup reflect PV/PVC/Pod status.
+    8. Restore the backup to a volume. Wait for restoration to complete.
+    9. Check the volume&#39;s Kubernetes Status
+        1. Make sure the `lastPodRefAt` and `lastPVCRefAt` is snapshot created
+    time
+    10. Delete the backup and restored volume.
+    11. Delete PV/PVC/Pod.
+    12. Verify volume&#39;s Kubernetes Status updated to reflect history data.
+    13. Attach the volume and create another backup. Verify the labels
+    14. Verify the volume&#39;s Kubernetes status.
+    15. Restore the previous backup to a new volume. Wait for restoration.
+    16. Verify the restored volume&#39;s Kubernetes status.
+        1. Make sure `lastPodRefAt` and `lastPVCRefAt` matched volume on step
+        12
+    &#34;&#34;&#34;
+    set_random_backupstore(client)
+
+    host_id = get_self_host_id()
+    static_sc_name = &#34;longhorn-static-test&#34;
+    setting = client.by_id_setting(SETTING_DEFAULT_LONGHORN_STATIC_SC)
+    setting = client.update(setting, value=static_sc_name)
+    assert setting.value == static_sc_name
+
+    volume_name = &#34;test-backup-kubernetes-status-pod&#34; # NOQA
+    client.create_volume(name=volume_name, size=SIZE,
+                         numberOfReplicas=2)
+    volume = wait_for_volume_detached(client, volume_name)
+
+    pod_name = &#34;pod-&#34; + volume_name
+    pv_name = &#34;pv-&#34; + volume_name
+    pvc_name = &#34;pvc-&#34; + volume_name
+    create_pv_for_volume(client, core_api, volume, pv_name)
+    create_pvc_for_volume(client, core_api, volume, pvc_name)
+    ret = core_api.list_namespaced_persistent_volume_claim(
+        namespace=&#39;default&#39;)
+    pvc_found = False
+    for item in ret.items:
+        if item.metadata.name == pvc_name:
+            pvc_found = item
+            break
+    assert pvc_found
+    assert pvc_found.spec.storage_class_name == static_sc_name
+
+    pod[&#39;metadata&#39;][&#39;name&#39;] = pod_name
+    pod[&#39;spec&#39;][&#39;volumes&#39;] = [{
+        &#39;name&#39;: pod[&#39;spec&#39;][&#39;containers&#39;][0][&#39;volumeMounts&#39;][0][&#39;name&#39;],
+        &#39;persistentVolumeClaim&#39;: {
+            &#39;claimName&#39;: pvc_name,
+        },
+    }]
+    create_and_wait_pod(core_api, pod)
+
+    ks = {
+        &#39;lastPodRefAt&#39;: &#39;&#39;,
+        &#39;lastPVCRefAt&#39;: &#39;&#39;,
+        &#39;namespace&#39;: &#39;default&#39;,
+        &#39;pvcName&#39;: pvc_name,
+        &#39;pvName&#39;: pv_name,
+        &#39;pvStatus&#39;: &#39;Bound&#39;,
+        &#39;workloadsStatus&#39;: [{
+            &#39;podName&#39;: pod_name,
+            &#39;podStatus&#39;: &#39;Running&#39;,
+            &#39;workloadName&#39;: &#39;&#39;,
+            &#39;workloadType&#39;: &#39;&#39;
+        }]
+    }
+    wait_volume_kubernetes_status(client, volume_name, ks)
+    volume = wait_for_volume_healthy(client, volume_name)
+
+    # Create Backup manually instead of calling create_backup since Kubernetes
+    # is not guaranteed to mount our Volume to the test host.
+    snap = create_snapshot(client, volume_name)
+    volume.snapshotBackup(name=snap.name)
+    bv, b = find_backup(client, volume_name, snap.name)
+    new_b = bv.backupGet(name=b.name)
+    status = loads(new_b.labels.get(KUBERNETES_STATUS_LABEL))
+    assert status == ks
+
+    restore_name = generate_volume_name()
+    client.create_volume(name=restore_name, size=SIZE,
+                         numberOfReplicas=2,
+                         fromBackup=b.url)
+    wait_for_volume_restoration_completed(client, restore_name)
+    wait_for_volume_detached(client, restore_name)
+
+    snapshot_created = b.snapshotCreated
+    ks = {
+        &#39;lastPodRefAt&#39;: b.snapshotCreated,
+        &#39;lastPVCRefAt&#39;: b.snapshotCreated,
+        &#39;namespace&#39;: &#39;default&#39;,
+        &#39;pvcName&#39;: pvc_name,
+        # Restoration should not apply PersistentVolume data.
+        &#39;pvName&#39;: &#39;&#39;,
+        &#39;pvStatus&#39;: &#39;&#39;,
+        &#39;workloadsStatus&#39;: [{
+            &#39;podName&#39;: pod_name,
+            &#39;podStatus&#39;: &#39;Running&#39;,
+            &#39;workloadName&#39;: &#39;&#39;,
+            &#39;workloadType&#39;: &#39;&#39;
+        }]
+    }
+    wait_volume_kubernetes_status(client, restore_name, ks)
+    restore = client.by_id_volume(restore_name)
+    # We need to compare LastPodRefAt and LastPVCRefAt manually since
+    # wait_volume_kubernetes_status only checks for empty or non-empty state.
+    assert restore.kubernetesStatus.lastPodRefAt == ks[&#34;lastPodRefAt&#34;]
+    assert restore.kubernetesStatus.lastPVCRefAt == ks[&#34;lastPVCRefAt&#34;]
+
+    delete_backup(client, bv.name, b.name)
+    client.delete(restore)
+    wait_for_volume_delete(client, restore_name)
+    delete_and_wait_pod(core_api, pod_name)
+    delete_and_wait_pvc(core_api, pvc_name)
+    delete_and_wait_pv(core_api, pv_name)
+
+    # With the Pod, PVC, and PV deleted, the Volume should have both Ref
+    # fields set. Check that a new Backup and Restore will use this instead of
+    # manually populating the Ref fields.
+    ks = {
+        &#39;lastPodRefAt&#39;: &#39;NOT NULL&#39;,
+        &#39;lastPVCRefAt&#39;: &#39;NOT NULL&#39;,
+        &#39;namespace&#39;: &#39;default&#39;,
+        &#39;pvcName&#39;: pvc_name,
+        &#39;pvName&#39;: &#39;&#39;,
+        &#39;pvStatus&#39;: &#39;&#39;,
+        &#39;workloadsStatus&#39;: [{
+            &#39;podName&#39;: pod_name,
+            &#39;podStatus&#39;: &#39;Running&#39;,
+            &#39;workloadName&#39;: &#39;&#39;,
+            &#39;workloadType&#39;: &#39;&#39;
+        }]
+    }
+    wait_volume_kubernetes_status(client, volume_name, ks)
+    volume = wait_for_volume_detached(client, volume_name)
+
+    volume.attach(hostId=host_id)
+    volume = wait_for_volume_healthy(client, volume_name)
+
+    snap = create_snapshot(client, volume_name)
+    volume.snapshotBackup(name=snap.name)
+    bv, b = find_backup(client, volume_name, snap.name)
+    new_b = bv.backupGet(name=b.name)
+    status = loads(new_b.labels.get(KUBERNETES_STATUS_LABEL))
+    # Check each field manually, we have no idea what the LastPodRefAt or the
+    # LastPVCRefAt will be. We just know it shouldn&#39;t be SnapshotCreated.
+    assert status[&#39;lastPodRefAt&#39;] != snapshot_created
+    assert status[&#39;lastPVCRefAt&#39;] != snapshot_created
+    assert status[&#39;namespace&#39;] == &#34;default&#34;
+    assert status[&#39;pvcName&#39;] == pvc_name
+    assert status[&#39;pvName&#39;] == &#34;&#34;
+    assert status[&#39;pvStatus&#39;] == &#34;&#34;
+    assert status[&#39;workloadsStatus&#39;] == [{
+        &#39;podName&#39;: pod_name,
+        &#39;podStatus&#39;: &#39;Running&#39;,
+        &#39;workloadName&#39;: &#39;&#39;,
+        &#39;workloadType&#39;: &#39;&#39;
+    }]
+
+    restore_name = generate_volume_name()
+    client.create_volume(name=restore_name, size=SIZE,
+                         numberOfReplicas=2,
+                         fromBackup=b.url)
+    wait_for_volume_restoration_completed(client, restore_name)
+    wait_for_volume_detached(client, restore_name)
+
+    ks = {
+        &#39;lastPodRefAt&#39;: status[&#39;lastPodRefAt&#39;],
+        &#39;lastPVCRefAt&#39;: status[&#39;lastPVCRefAt&#39;],
+        &#39;namespace&#39;: &#39;default&#39;,
+        &#39;pvcName&#39;: pvc_name,
+        &#39;pvName&#39;: &#39;&#39;,
+        &#39;pvStatus&#39;: &#39;&#39;,
+        &#39;workloadsStatus&#39;: [{
+            &#39;podName&#39;: pod_name,
+            &#39;podStatus&#39;: &#39;Running&#39;,
+            &#39;workloadName&#39;: &#39;&#39;,
+            &#39;workloadType&#39;: &#39;&#39;
+        }]
+    }
+    wait_volume_kubernetes_status(client, restore_name, ks)
+    restore = client.by_id_volume(restore_name)
+    assert restore.kubernetesStatus.lastPodRefAt == ks[&#34;lastPodRefAt&#34;]
+    assert restore.kubernetesStatus.lastPVCRefAt == ks[&#34;lastPVCRefAt&#34;]
+
+    # cleanup
+    backupstore_cleanup(client)
+    client.delete(restore)
+    cleanup_volume(client, volume)</code></pre>
+</details>
+</dd>
+<dt id="tests.test_kubernetes.test_delete_provisioned_pvc"><code class="name flex">
+<span>def <span class="ident">test_delete_provisioned_pvc</span></span>(<span>client, core_api, storage_class, pvc)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test that deleting the Persistent Volume Claim for a dynamically
+provisioned Volume properly deletes the Volume and the associated
+Kubernetes resources.</p>
+<ol>
+<li>Create a Storage Class to test with.</li>
+<li>Create a Persistent Volume Claim that requests a Volume from that
+Storage Class.</li>
+<li>Wait for the Volume to be provisioned and for the Kubernetes Status to
+be updated correctly.</li>
+<li>Attempt to delete the Persistent Volume Claim.</li>
+<li>Verify that the associated Volume and its resources have been deleted.</li>
+</ol></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@pytest.mark.csi
+def test_delete_provisioned_pvc(client, core_api,  storage_class, pvc): # NOQA
+    &#34;&#34;&#34;
+    Test that deleting the Persistent Volume Claim for a dynamically
+    provisioned Volume properly deletes the Volume and the associated
+    Kubernetes resources.
+
+    1. Create a Storage Class to test with.
+    2. Create a Persistent Volume Claim that requests a Volume from that
+    Storage Class.
+    3. Wait for the Volume to be provisioned and for the Kubernetes Status to
+    be updated correctly.
+    4. Attempt to delete the Persistent Volume Claim.
+    5. Verify that the associated Volume and its resources have been deleted.
+    &#34;&#34;&#34;
+    pv = provision_and_wait_pv(client, core_api, storage_class, pvc)
+    pv_name = pv.metadata.name
+    volume_name = pv.spec.csi.volume_handle  # NOQA
+
+    delete_and_wait_pvc(core_api, pvc[&#39;metadata&#39;][&#39;name&#39;])
+    wait_delete_pv(core_api, pv_name)
+    wait_for_volume_delete(client, volume_name)</code></pre>
+</details>
+</dd>
+<dt id="tests.test_kubernetes.test_delete_with_provisioned_pv"><code class="name flex">
+<span>def <span class="ident">test_delete_with_provisioned_pv</span></span>(<span>client, core_api, storage_class, pvc)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test that deleting a Volume with dynamically provisioned Persistent Volume
+and Persistent Volume Claim resources successfully deletes the Volume and
+cleans up those resources.</p>
+<ol>
+<li>Create a Storage Class to test with.</li>
+<li>Create a Persistent Volume Claim that requests a Volume from that
+Storage Class.</li>
+<li>Wait for the Volume to be provisioned and for the Kubernetes Status to
+be updated correctly.</li>
+<li>Attempt to delete the Volume.</li>
+<li>Verify that the Volume and its associated resources have been deleted.</li>
+</ol></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@pytest.mark.csi
+def test_delete_with_provisioned_pv(client, core_api, storage_class, pvc): # NOQA
+    &#34;&#34;&#34;
+    Test that deleting a Volume with dynamically provisioned Persistent Volume
+    and Persistent Volume Claim resources successfully deletes the Volume and
+    cleans up those resources.
+
+    1. Create a Storage Class to test with.
+    2. Create a Persistent Volume Claim that requests a Volume from that
+    Storage Class.
+    3. Wait for the Volume to be provisioned and for the Kubernetes Status to
+    be updated correctly.
+    4. Attempt to delete the Volume.
+    5. Verify that the Volume and its associated resources have been deleted.
+    &#34;&#34;&#34;
+    pv = provision_and_wait_pv(client, core_api, storage_class, pvc)
+    pv_name = pv.metadata.name
+    volume_name = pv.spec.csi.volume_handle  # NOQA
+
+    volume = client.by_id_volume(volume_name)
+    client.delete(volume)
+    wait_for_volume_delete(client, volume_name)
+    wait_delete_pv(core_api, pv_name)
+    wait_delete_pvc(core_api, pvc[&#39;metadata&#39;][&#39;name&#39;])</code></pre>
+</details>
+</dd>
+<dt id="tests.test_kubernetes.test_delete_with_static_pv"><code class="name flex">
+<span>def <span class="ident">test_delete_with_static_pv</span></span>(<span>client, core_api, volume_name)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test that deleting a Volume with related static Persistent Volume and
+Persistent Volume Claim resources successfully deletes the Volume and
+cleans up those resources.</p>
+<ol>
+<li>Create a Volume in Longhorn.</li>
+<li>Create a static Persistent Volume and Persistent Volume Claim for the
+Volume through Longhorn.</li>
+<li>Wait for the Kubernetes Status to indicate the existence of these
+resources.</li>
+<li>Attempt deletion of the Volume.</li>
+<li>Verify that the Volume and its associated resources have been deleted.</li>
+</ol></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@pytest.mark.csi
+def test_delete_with_static_pv(client, core_api, volume_name): # NOQA
+    &#34;&#34;&#34;
+    Test that deleting a Volume with related static Persistent Volume and
+    Persistent Volume Claim resources successfully deletes the Volume and
+    cleans up those resources.
+
+    1. Create a Volume in Longhorn.
+    2. Create a static Persistent Volume and Persistent Volume Claim for the
+    Volume through Longhorn.
+    3. Wait for the Kubernetes Status to indicate the existence of these
+    resources.
+    4. Attempt deletion of the Volume.
+    5. Verify that the Volume and its associated resources have been deleted.
+    &#34;&#34;&#34;
+    volume = create_and_check_volume(client, volume_name)
+    pv_name = &#39;pv-&#39; + volume_name
+    pvc_name = &#39;pvc-&#39; + volume_name
+    create_pv_for_volume(client, core_api, volume, pv_name)
+    create_pvc_for_volume(client, core_api, volume, pvc_name)
+
+    ks = {
+        &#39;pvName&#39;: pv_name,
+        &#39;pvStatus&#39;: &#39;Bound&#39;,
+        &#39;namespace&#39;: &#39;default&#39;,
+        &#39;pvcName&#39;: pvc_name,
+        &#39;lastPVCRefAt&#39;: &#39;&#39;,
+        &#39;lastPodRefAt&#39;: &#39;&#39;,
+    }
+    wait_volume_kubernetes_status(client, volume_name, ks)
+
+    client.delete(volume)
+    wait_for_volume_delete(client, volume_name)
+    wait_delete_pv(core_api, pv_name)
+    wait_delete_pvc(core_api, pvc_name)</code></pre>
+</details>
+</dd>
+<dt id="tests.test_kubernetes.test_kubernetes_status"><code class="name flex">
+<span>def <span class="ident">test_kubernetes_status</span></span>(<span>client, core_api, storage_class, statefulset, csi_pv, pvc, pod)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test Volume feature: Kubernetes Status</p>
+<ol>
+<li>Create StorageClass with <code>reclaimPolicy = Retain</code></li>
+<li>Create a statefulset <code>kubernetes-status-test</code> with the StorageClass<ol>
+<li>The statefulset has scale of 2.</li>
+</ol>
+</li>
+<li>Get the volume name from the SECOND pod of the StateufulSet pod and
+create an <code>extra_pod</code> with the same volume on the same node</li>
+<li>Check the volumes that used by the StatefulSet<ol>
+<li>The volume used by the FIRST StatefulSet pod will have one workload</li>
+<li>The volume used by the SECOND StatefulSet pod will have two
+workloads</li>
+<li>Validate related status, e.g. pv/pod name/state, workload
+name/type</li>
+</ol>
+</li>
+<li>Check the volumes again<ol>
+<li>PV/PVC should still be bound</li>
+<li>The volume used by the FIRST pod should have history data</li>
+<li>The volume used by the SECOND and extra pod should have current data
+point to the extra pod</li>
+</ol>
+</li>
+<li>Delete the extra pod<ol>
+<li>Now all the volume's should only have history data(<code>lastPodRefAt</code>
+set)</li>
+</ol>
+</li>
+<li>Delete the PVC<ol>
+<li>PVC should be updated with status <code>Released</code> and become history data</li>
+</ol>
+</li>
+<li>Delete PV<ol>
+<li>All the Kubernetes status information should be cleaned up.</li>
+</ol>
+</li>
+<li>Reuse the two Longhorn volumes to create new pods<ol>
+<li>Since the <code>reclaimPolicy == Retain</code>, volume won't be deleted by
+Longhorn</li>
+<li>Check the Kubernetes status now updated, with pod info but empty
+workload</li>
+<li>Default Longhorn Static StorageClass will remove the PV with PVC,
+but leave Longhorn volume</li>
+</ol>
+</li>
+</ol></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@pytest.mark.csi  # NOQA
+def test_kubernetes_status(client, core_api, storage_class,  # NOQA
+                           statefulset, csi_pv, pvc, pod):  # NOQA
+    &#34;&#34;&#34;
+    Test Volume feature: Kubernetes Status
+
+    1. Create StorageClass with `reclaimPolicy = Retain`
+    2. Create a statefulset `kubernetes-status-test` with the StorageClass
+        1. The statefulset has scale of 2.
+    3. Get the volume name from the SECOND pod of the StateufulSet pod and
+    create an `extra_pod` with the same volume on the same node
+    4. Check the volumes that used by the StatefulSet
+        1. The volume used by the FIRST StatefulSet pod will have one workload
+        2. The volume used by the SECOND StatefulSet pod will have two
+        workloads
+        3. Validate related status, e.g. pv/pod name/state, workload
+        name/type
+    5. Check the volumes again
+        1. PV/PVC should still be bound
+        2. The volume used by the FIRST pod should have history data
+        3. The volume used by the SECOND and extra pod should have current data
+        point to the extra pod
+    6. Delete the extra pod
+        1. Now all the volume&#39;s should only have history data(`lastPodRefAt`
+        set)
+    7. Delete the PVC
+        1. PVC should be updated with status `Released` and become history data
+    8. Delete PV
+        1. All the Kubernetes status information should be cleaned up.
+    9. Reuse the two Longhorn volumes to create new pods
+        1. Since the `reclaimPolicy == Retain`, volume won&#39;t be deleted by
+        Longhorn
+        2. Check the Kubernetes status now updated, with pod info but empty
+        workload
+        3. Default Longhorn Static StorageClass will remove the PV with PVC,
+        but leave Longhorn volume
+    &#34;&#34;&#34;
+    statefulset_name = &#39;kubernetes-status-test&#39;
+    update_statefulset_manifests(statefulset, storage_class, statefulset_name)
+
+    storage_class[&#39;reclaimPolicy&#39;] = &#39;Retain&#39;
+    create_storage_class(storage_class)
+    create_and_wait_statefulset(statefulset)
+
+    pod_info = get_statefulset_pod_info(core_api, statefulset)
+    volume_info = [p[&#39;pv_name&#39;] for p in pod_info]
+
+    extra_pod_name = &#39;extra-pod-using-&#39; + volume_info[1]
+    pod[&#39;metadata&#39;][&#39;name&#39;] = extra_pod_name
+    p2 = core_api.read_namespaced_pod(name=pod_info[1][&#39;pod_name&#39;],
+                                      namespace=&#39;default&#39;)
+    pod[&#39;spec&#39;][&#39;nodeName&#39;] = p2.spec.node_name
+    pod[&#39;spec&#39;][&#39;volumes&#39;] = [{
+        &#39;name&#39;: pod[&#39;spec&#39;][&#39;containers&#39;][0][&#39;volumeMounts&#39;][0][&#39;name&#39;],
+        &#39;persistentVolumeClaim&#39;: {
+            &#39;claimName&#39;: pod_info[1][&#39;pvc_name&#39;],
+        },
+    }]
+    create_and_wait_pod(core_api, pod)
+
+    for i in range(len(volume_info)):
+        p, volume_name = pod_info[i], volume_info[i] # NOQA
+        volume = client.by_id_volume(volume_name)
+        k_status = volume.kubernetesStatus
+        workloads = k_status.workloadsStatus
+        assert k_status.pvName == p[&#39;pv_name&#39;]
+        assert k_status.pvStatus == &#39;Bound&#39;
+        assert k_status.namespace == &#39;default&#39;
+        assert k_status.pvcName == p[&#39;pvc_name&#39;]
+        assert not k_status.lastPVCRefAt
+        assert not k_status.lastPodRefAt
+        if i == 0:
+            assert len(workloads) == 1
+            assert workloads[0].podName == p[&#39;pod_name&#39;]
+            assert workloads[0].workloadName == statefulset_name
+            assert workloads[0].workloadType == &#39;StatefulSet&#39;
+            for _ in range(RETRY_COUNTS):
+                if workloads[0].podStatus == &#39;Running&#39;:
+                    break
+            time.sleep(RETRY_INTERVAL)
+            volume = client.by_id_volume(volume_name)
+            k_status = volume.kubernetesStatus
+            workloads = k_status.workloadsStatus
+            assert workloads[0].podStatus == &#39;Running&#39;
+        if i == 1:
+            assert len(k_status.workloadsStatus) == 2
+            if workloads[0].podName == pod_info[i][&#39;pod_name&#39;]:
+                assert workloads[1].podName == extra_pod_name
+                assert workloads[0].workloadName == statefulset_name
+                assert workloads[0].workloadType == &#39;StatefulSet&#39;
+                assert not workloads[1].workloadName
+                assert not workloads[1].workloadType
+            else:
+                assert workloads[1].podName == pod_info[i][&#39;pod_name&#39;]
+                assert workloads[0].podName == extra_pod_name
+                assert not workloads[0].workloadName
+                assert not workloads[0].workloadType
+                assert workloads[1].workloadName == statefulset_name
+                assert workloads[1].workloadType == &#39;StatefulSet&#39;
+            for _ in range(RETRY_COUNTS):
+                if workloads[0].podStatus == &#39;Running&#39; and \
+                        workloads[1].podStatus == &#39;Running&#39;:
+                    break
+                time.sleep(RETRY_INTERVAL)
+                volume = client.by_id_volume(volume_name)
+                k_status = volume.kubernetesStatus
+                workloads = k_status.workloadsStatus
+                assert len(workloads) == 2
+            assert workloads[0].podStatus == &#39;Running&#39;
+            assert workloads[1].podStatus == &#39;Running&#39;
+
+    ks_list = [{}, {}]
+    delete_and_wait_statefulset_only(core_api, statefulset)
+    # the extra pod is still using the 2nd volume
+    for i in range(len(volume_info)):
+        p, volume_name = pod_info[i], volume_info[i]
+        ks_list[i][&#39;pvName&#39;] = p[&#39;pv_name&#39;]
+        ks_list[i][&#39;pvStatus&#39;] = &#39;Bound&#39;
+        ks_list[i][&#39;namespace&#39;] = &#39;default&#39;
+        ks_list[i][&#39;pvcName&#39;] = p[&#39;pvc_name&#39;]
+        ks_list[i][&#39;lastPVCRefAt&#39;] = &#39;&#39;
+        if i == 0:
+            ks_list[i][&#39;lastPodRefAt&#39;] = &#39;not empty&#39;
+            ks_list[i][&#39;workloadsStatus&#39;] = [
+                {
+                    &#39;podName&#39;: p[&#39;pod_name&#39;],
+                    &#39;podStatus&#39;: &#39;Running&#39;,
+                    &#39;workloadName&#39;: statefulset_name,
+                    &#39;workloadType&#39;: &#39;StatefulSet&#39;,
+                },
+            ]
+        if i == 1:
+            ks_list[i][&#39;lastPodRefAt&#39;] = &#39;&#39;
+            ks_list[i][&#39;workloadsStatus&#39;] = [
+                {
+                    &#39;podName&#39;: extra_pod_name,
+                    &#39;podStatus&#39;: &#39;Running&#39;,
+                    &#39;workloadName&#39;: &#39;&#39;,
+                    &#39;workloadType&#39;: &#39;&#39;,
+                }
+            ]
+        wait_volume_kubernetes_status(client, volume_name, ks_list[i])
+
+    # deleted extra_pod, all volumes have no workload
+    delete_and_wait_pod(core_api, pod[&#39;metadata&#39;][&#39;name&#39;])
+    for i in range(len(volume_info)):
+        p, volume_name = pod_info[i], volume_info[i]
+        ks_list[i][&#39;lastPodRefAt&#39;] = &#39;not empty&#39;
+        wait_volume_kubernetes_status(client, volume_name, ks_list[i])
+
+    # deleted pvc only.
+    for i in range(len(volume_info)):
+        p, volume_name = pod_info[i], volume_info[i]
+        delete_and_wait_pvc(core_api, p[&#39;pvc_name&#39;])
+        ks_list[i][&#39;pvStatus&#39;] = &#39;Released&#39;
+        ks_list[i][&#39;lastPVCRefAt&#39;] = &#39;not empty&#39;
+        wait_volume_kubernetes_status(client, volume_name, ks_list[i])
+
+    # deleted pv only.
+    for i in range(len(volume_info)):
+        p, volume_name = pod_info[i], volume_info[i]
+        delete_and_wait_pv(core_api, p[&#39;pv_name&#39;])
+        ks_list[i][&#39;pvName&#39;] = &#39;&#39;
+        ks_list[i][&#39;pvStatus&#39;] = &#39;&#39;
+        wait_volume_kubernetes_status(client, volume_name, ks_list[i])
+
+    # reuse that volume
+    for p, volume_name in zip(pod_info, volume_info):
+        p[&#39;pod_name&#39;] = p[&#39;pod_name&#39;].replace(&#39;kubernetes-status-test&#39;,
+                                              &#39;kubernetes-status-test-reuse&#39;)
+        p[&#39;pvc_name&#39;] = p[&#39;pvc_name&#39;].replace(&#39;kubernetes-status-test&#39;,
+                                              &#39;kubernetes-status-test-reuse&#39;)
+        p[&#39;pv_name&#39;] = p[&#39;pvc_name&#39;]
+
+        csi_pv[&#39;metadata&#39;][&#39;name&#39;] = p[&#39;pv_name&#39;]
+        csi_pv[&#39;spec&#39;][&#39;csi&#39;][&#39;volumeHandle&#39;] = volume_name
+        csi_pv[&#39;spec&#39;][&#39;storageClassName&#39;] = \
+            DEFAULT_LONGHORN_STATIC_STORAGECLASS_NAME
+        core_api.create_persistent_volume(csi_pv)
+
+        pvc[&#39;metadata&#39;][&#39;name&#39;] = p[&#39;pvc_name&#39;]
+        pvc[&#39;spec&#39;][&#39;volumeName&#39;] = p[&#39;pv_name&#39;]
+        pvc[&#39;spec&#39;][&#39;storageClassName&#39;] = \
+            DEFAULT_LONGHORN_STATIC_STORAGECLASS_NAME
+        core_api.create_namespaced_persistent_volume_claim(
+            body=pvc, namespace=&#39;default&#39;)
+
+        pod[&#39;metadata&#39;][&#39;name&#39;] = p[&#39;pod_name&#39;]
+        pod[&#39;spec&#39;][&#39;volumes&#39;] = [{
+            &#39;name&#39;: pod[&#39;spec&#39;][&#39;containers&#39;][0][&#39;volumeMounts&#39;][0][&#39;name&#39;],
+            &#39;persistentVolumeClaim&#39;: {
+                &#39;claimName&#39;: p[&#39;pvc_name&#39;],
+            },
+        }]
+        create_and_wait_pod(core_api, pod)
+
+        ks = {
+            &#39;pvName&#39;: p[&#39;pv_name&#39;],
+            &#39;pvStatus&#39;: &#39;Bound&#39;,
+            &#39;namespace&#39;: &#39;default&#39;,
+            &#39;pvcName&#39;: p[&#39;pvc_name&#39;],
+            &#39;lastPVCRefAt&#39;: &#39;&#39;,
+            &#39;lastPodRefAt&#39;: &#39;&#39;,
+            &#39;workloadsStatus&#39;: [{
+                &#39;podName&#39;: p[&#39;pod_name&#39;],
+                &#39;podStatus&#39;: &#39;Running&#39;,
+                &#39;workloadName&#39;: &#39;&#39;,
+                &#39;workloadType&#39;: &#39;&#39;,
+            }, ],
+        }
+        wait_volume_kubernetes_status(client, volume_name, ks)
+
+        delete_and_wait_pod(core_api, p[&#39;pod_name&#39;])
+        # Since persistentVolumeReclaimPolicy of csi_pv is `Delete`,
+        # we don&#39;t need to delete bounded pv manually
+        delete_and_wait_pvc(core_api, p[&#39;pvc_name&#39;])
+        wait_delete_pv(core_api, p[&#39;pv_name&#39;])</code></pre>
+</details>
+</dd>
+<dt id="tests.test_kubernetes.test_pv_creation"><code class="name flex">
+<span>def <span class="ident">test_pv_creation</span></span>(<span>client, core_api)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test creating PV using Longhorn API</p>
+<ol>
+<li>Create volume</li>
+<li>Create PV for the volume</li>
+<li>Try to create another PV for the same volume. It should fail.</li>
+<li>Check Kubernetes Status for the volume since PV is created.</li>
+</ol></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@pytest.mark.csi  # NOQA
+def test_pv_creation(client, core_api):  # NOQA
+    &#34;&#34;&#34;
+    Test creating PV using Longhorn API
+
+    1. Create volume
+    2. Create PV for the volume
+    3. Try to create another PV for the same volume. It should fail.
+    4. Check Kubernetes Status for the volume since PV is created.
+    &#34;&#34;&#34;
+    volume_name = &#34;test-pv-creation&#34; # NOQA
+    client.create_volume(name=volume_name, size=SIZE,
+                         numberOfReplicas=2)
+    volume = wait_for_volume_detached(client, volume_name)
+
+    pv_name = &#34;pv-&#34; + volume_name
+    create_pv_for_volume(client, core_api, volume, pv_name)
+
+    # try to create one more pv for the volume
+    pv_name_2 = &#34;pv2-&#34; + volume_name
+    with pytest.raises(Exception) as e:
+        volume.pvCreate(pvName=pv_name_2)
+        assert &#34;already exist&#34; in str(e.value)
+
+    ks = {
+        &#39;pvName&#39;: pv_name,
+        &#39;pvStatus&#39;: &#39;Available&#39;,
+        &#39;namespace&#39;: &#39;&#39;,
+        &#39;pvcName&#39;: &#39;&#39;,
+        &#39;lastPVCRefAt&#39;: &#39;&#39;,
+        &#39;lastPodRefAt&#39;: &#39;&#39;,
+    }
+    wait_volume_kubernetes_status(client, volume_name, ks)
+
+    delete_and_wait_pv(core_api, pv_name)</code></pre>
+</details>
+</dd>
+<dt id="tests.test_kubernetes.test_pvc_creation_with_default_sc_set"><code class="name flex">
+<span>def <span class="ident">test_pvc_creation_with_default_sc_set</span></span>(<span>client, core_api, storage_class, pod)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test creating PVC with default StorageClass set</p>
+<p>The target is to make sure the newly create PV/PVC won't use default
+StorageClass, and if there is no default StorageClass, PV/PVC can still be
+created.</p>
+<ol>
+<li>Create a StorageClass and set it to be the default StorageClass</li>
+<li>Update static StorageClass to <code>longhorn-static-test</code></li>
+<li>Create volume then PV/PVC.</li>
+<li>Make sure the newly created PV/PVC using StorageClass
+<code>longhorn-static-test</code></li>
+<li>Create pod with PVC.</li>
+<li>Verify volume's Kubernetes Status</li>
+<li>Remove PVC and Pod.</li>
+<li>Verify volume's Kubernetes Status only contains current PV and history</li>
+<li>Wait for volume to detach (since pod is deleted)</li>
+<li>Reuse the volume on a new pod. Wait for the pod to start</li>
+<li>Verify volume's Kubernetes Status reflect the new pod.</li>
+<li>Delete PV/PVC/Pod.</li>
+<li>Verify volume's Kubernetes Status only contains history</li>
+<li>Delete the default StorageClass.</li>
+<li>Create PV/PVC for the volume.</li>
+<li>Make sure the PV's StorageClass is static StorageClass</li>
+</ol></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@pytest.mark.csi  # NOQA
+def test_pvc_creation_with_default_sc_set(
+        client, core_api, storage_class, pod):  # NOQA
+    &#34;&#34;&#34;
+    Test creating PVC with default StorageClass set
+
+    The target is to make sure the newly create PV/PVC won&#39;t use default
+    StorageClass, and if there is no default StorageClass, PV/PVC can still be
+    created.
+
+    1. Create a StorageClass and set it to be the default StorageClass
+    2. Update static StorageClass to `longhorn-static-test`
+    3. Create volume then PV/PVC.
+    4. Make sure the newly created PV/PVC using StorageClass
+    `longhorn-static-test`
+    5. Create pod with PVC.
+    6. Verify volume&#39;s Kubernetes Status
+    7. Remove PVC and Pod.
+    8. Verify volume&#39;s Kubernetes Status only contains current PV and history
+    9. Wait for volume to detach (since pod is deleted)
+    10. Reuse the volume on a new pod. Wait for the pod to start
+    11. Verify volume&#39;s Kubernetes Status reflect the new pod.
+    12. Delete PV/PVC/Pod.
+    13. Verify volume&#39;s Kubernetes Status only contains history
+    14. Delete the default StorageClass.
+    15. Create PV/PVC for the volume.
+    16. Make sure the PV&#39;s StorageClass is static StorageClass
+    &#34;&#34;&#34;
+    # set default storage class
+    storage_class[&#39;metadata&#39;][&#39;annotations&#39;] = \
+        {&#34;storageclass.kubernetes.io/is-default-class&#34;: &#34;true&#34;}
+    create_storage_class(storage_class)
+
+    static_sc_name = &#34;longhorn-static-test&#34;
+    setting = client.by_id_setting(SETTING_DEFAULT_LONGHORN_STATIC_SC)
+    setting = client.update(setting, value=static_sc_name)
+    assert setting.value == static_sc_name
+
+    volume_name = &#34;test-pvc-creation-with-sc&#34; # NOQA
+    pod_name = &#34;pod-&#34; + volume_name
+    client.create_volume(name=volume_name, size=SIZE,
+                         numberOfReplicas=2)
+    volume = wait_for_volume_detached(client, volume_name)
+
+    pv_name = &#34;pv-&#34; + volume_name
+    pvc_name = &#34;pvc-&#34; + volume_name
+    pvc_name_extra = &#34;pvc-&#34; + volume_name + &#34;-extra&#34;
+
+    create_pv_for_volume(client, core_api, volume, pv_name)
+    create_pvc_for_volume(client, core_api, volume, pvc_name)
+
+    ret = core_api.list_namespaced_persistent_volume_claim(
+        namespace=&#39;default&#39;)
+    for item in ret.items:
+        if item.metadata.name == pvc_name:
+            pvc_found = item
+            break
+    assert pvc_found
+    assert pvc_found.spec.storage_class_name == static_sc_name
+
+    pod[&#39;metadata&#39;][&#39;name&#39;] = pod_name
+    pod[&#39;spec&#39;][&#39;volumes&#39;] = [{
+        &#39;name&#39;: pod[&#39;spec&#39;][&#39;containers&#39;][0][&#39;volumeMounts&#39;][0][&#39;name&#39;],
+        &#39;persistentVolumeClaim&#39;: {
+            &#39;claimName&#39;: pvc_name,
+        },
+    }]
+    create_and_wait_pod(core_api, pod)
+
+    ks = {
+        &#39;pvName&#39;: pv_name,
+        &#39;pvStatus&#39;: &#39;Bound&#39;,
+        &#39;namespace&#39;: &#39;default&#39;,
+        &#39;pvcName&#39;: pvc_name,
+        &#39;lastPVCRefAt&#39;: &#39;&#39;,
+        &#39;lastPodRefAt&#39;: &#39;&#39;,
+        &#39;workloadsStatus&#39;: [{
+            &#39;podName&#39;: pod_name,
+            &#39;podStatus&#39;: &#39;Running&#39;,
+            &#39;workloadName&#39;: &#39;&#39;,
+            &#39;workloadType&#39;: &#39;&#39;,
+        }, ],
+    }
+    wait_volume_kubernetes_status(client, volume_name, ks)
+
+    delete_and_wait_pod(core_api, pod_name)
+    delete_and_wait_pvc(core_api, pvc_name)
+
+    ks = {
+        &#39;pvName&#39;: pv_name,
+        &#39;pvStatus&#39;: &#39;Released&#39;,
+        &#39;namespace&#39;: &#39;default&#39;,
+        &#39;pvcName&#39;: pvc_name,
+        &#39;lastPVCRefAt&#39;: &#39;not empty&#39;,
+        &#39;lastPodRefAt&#39;: &#39;not empty&#39;,
+    }
+    wait_volume_kubernetes_status(client, volume_name, ks)
+
+    # try to reuse the pv
+    volume = wait_for_volume_detached(client, volume_name)
+    create_pvc_for_volume(client, core_api, volume, pvc_name_extra)
+    pod[&#39;spec&#39;][&#39;volumes&#39;][0][&#39;persistentVolumeClaim&#39;][&#39;claimName&#39;] = \
+        pvc_name_extra
+    create_and_wait_pod(core_api, pod)
+
+    ks = {
+        &#39;pvName&#39;: pv_name,
+        &#39;pvStatus&#39;: &#39;Bound&#39;,
+        &#39;namespace&#39;: &#39;default&#39;,
+        &#39;pvcName&#39;: pvc_name_extra,
+        &#39;lastPVCRefAt&#39;: &#39;&#39;,
+        &#39;lastPodRefAt&#39;: &#39;&#39;,
+        &#39;workloadsStatus&#39;: [{
+            &#39;podName&#39;: pod_name,
+            &#39;podStatus&#39;: &#39;Running&#39;,
+            &#39;workloadName&#39;: &#39;&#39;,
+            &#39;workloadType&#39;: &#39;&#39;,
+        }, ],
+    }
+    wait_volume_kubernetes_status(client, volume_name, ks)
+
+    delete_and_wait_pod(core_api, pod_name)
+    delete_and_wait_pvc(core_api, pvc_name_extra)
+    delete_and_wait_pv(core_api, pv_name)
+
+    ks = {
+        &#39;pvName&#39;: &#39;&#39;,
+        &#39;pvStatus&#39;: &#39;&#39;,
+        &#39;namespace&#39;: &#39;default&#39;,
+        &#39;pvcName&#39;: pvc_name_extra,
+        &#39;lastPVCRefAt&#39;: &#39;not empty&#39;,
+        &#39;lastPodRefAt&#39;: &#39;not empty&#39;,
+    }
+    wait_volume_kubernetes_status(client, volume_name, ks)
+
+    # without default storage class
+    delete_storage_class(storage_class[&#39;metadata&#39;][&#39;name&#39;])
+
+    create_pv_for_volume(client, core_api, volume, pv_name)
+    create_pvc_for_volume(client, core_api, volume, pvc_name)
+
+    ret = core_api.list_namespaced_persistent_volume_claim(
+        namespace=&#39;default&#39;)
+    for item in ret.items:
+        if item.metadata.name == pvc_name:
+            pvc2 = item
+            break
+    assert pvc2
+    assert pvc2.spec.storage_class_name == static_sc_name
+
+    delete_and_wait_pvc(core_api, pvc_name)
+    delete_and_wait_pv(core_api, pv_name)</code></pre>
+</details>
+</dd>
+</dl>
+</section>
+<section>
+</section>
+</article>
+<nav id="sidebar">
+<h1>Index</h1>
+<div class="toc">
+<ul></ul>
+</div>
+<ul id="index">
+<li><h3>Super-module</h3>
+<ul>
+<li><code><a title="tests" href="index.html">tests</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-functions">Functions</a></h3>
+<ul class="">
+<li><code><a title="tests.test_kubernetes.delete_and_wait_statefulset_only" href="#tests.test_kubernetes.delete_and_wait_statefulset_only">delete_and_wait_statefulset_only</a></code></li>
+<li><code><a title="tests.test_kubernetes.provision_and_wait_pv" href="#tests.test_kubernetes.provision_and_wait_pv">provision_and_wait_pv</a></code></li>
+<li><code><a title="tests.test_kubernetes.test_backup_kubernetes_status" href="#tests.test_kubernetes.test_backup_kubernetes_status">test_backup_kubernetes_status</a></code></li>
+<li><code><a title="tests.test_kubernetes.test_delete_provisioned_pvc" href="#tests.test_kubernetes.test_delete_provisioned_pvc">test_delete_provisioned_pvc</a></code></li>
+<li><code><a title="tests.test_kubernetes.test_delete_with_provisioned_pv" href="#tests.test_kubernetes.test_delete_with_provisioned_pv">test_delete_with_provisioned_pv</a></code></li>
+<li><code><a title="tests.test_kubernetes.test_delete_with_static_pv" href="#tests.test_kubernetes.test_delete_with_static_pv">test_delete_with_static_pv</a></code></li>
+<li><code><a title="tests.test_kubernetes.test_kubernetes_status" href="#tests.test_kubernetes.test_kubernetes_status">test_kubernetes_status</a></code></li>
+<li><code><a title="tests.test_kubernetes.test_pv_creation" href="#tests.test_kubernetes.test_pv_creation">test_pv_creation</a></code></li>
+<li><code><a title="tests.test_kubernetes.test_pvc_creation_with_default_sc_set" href="#tests.test_kubernetes.test_pvc_creation_with_default_sc_set">test_pvc_creation_with_default_sc_set</a></code></li>
+</ul>
+</li>
+</ul>
+</nav>
+</main>
+<footer id="footer">
+<p>Generated by <a href="https://pdoc3.github.io/pdoc"><cite>pdoc</cite> 0.8.4</a>.</p>
+</footer>
+</body>
+</html>

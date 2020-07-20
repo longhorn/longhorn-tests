@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Operating System specific tests for SUSE SLES12SP3 on Longhorn Manual Test Cases</title>
+    <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/environment/suse-sles12sp3/</link>
+    <description>Recent content in Operating System specific tests for SUSE SLES12SP3 on Longhorn Manual Test Cases</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en-us</language>
+    
+	<atom:link href="https://longhorn.github.io/longhorn-tests/manual/pre-release/environment/suse-sles12sp3/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>Testing ext4 with custom fs params1 (no 64bit, no metadata_csum)</title>
+      <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/environment/suse-sles12sp3/ext4-custom-fs-params-1/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/environment/suse-sles12sp3/ext4-custom-fs-params-1/</guid>
+      <description> set the following filesystem parameters: -O ^64bit,^metadata_csum create a volume + pv + pvc with filesystem ext4 named ext4-no-ck-no-64 create a deployment that uses ext4-no-ck-no-64 verify that the pod enters running state and the volume is accessible  </description>
+    </item>
+    
+    <item>
+      <title>Testing ext4 with custom fs params2 (no metadata_csum)</title>
+      <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/environment/suse-sles12sp3/ext4-custom-fs-params-2/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/environment/suse-sles12sp3/ext4-custom-fs-params-2/</guid>
+      <description> set the following filesystem parameters: -O ^metadata_csum create a volume + pv + pvc with filesystem ext4 named ext4-no-ck create a deployment that uses ext4-no-ck verify that the pod enters running state and the volume is accessible  </description>
+    </item>
+    
+    <item>
+      <title>Testing ext4 without custom fs params</title>
+      <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/environment/suse-sles12sp3/ext4-no-custom-fs-params/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/environment/suse-sles12sp3/ext4-no-custom-fs-params/</guid>
+      <description> create a volume + pv + pvc with filesystem ext4 named ext-ck-fail create a deployment that uses ext-ck-fail verify MountVolume.SetUp failed for volume &amp;quot;ext4-ck-fails&amp;quot; is part of the pod events verify that the pod does not enter running state  </description>
+    </item>
+    
+    <item>
+      <title>Testing xfs after custom fs params (xfs should ignore the custom fs params)</title>
+      <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/environment/suse-sles12sp3/xfs-after-custom-fs-params/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/environment/suse-sles12sp3/xfs-after-custom-fs-params/</guid>
+      <description> create a volume + pv + pvc with filesystem xfs named xfs-ignores create a deployment that uses xfs-ignores verify that the pod enters running state and the volume is accessible  </description>
+    </item>
+    
+  </channel>
+</rss>

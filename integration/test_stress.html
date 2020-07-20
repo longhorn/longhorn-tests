@@ -1,0 +1,1681 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
+<meta name="generator" content="pdoc 0.8.4" />
+<title>tests.test_stress API documentation</title>
+<meta name="description" content="" />
+<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
+<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/typography.min.css" integrity="sha256-7l/o7C8jubJiy74VsKTidCy1yBkRtiUGbVkYBylBqUg=" crossorigin>
+<link rel="stylesheet preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/styles/github.min.css" crossorigin>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:30px;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:1em 0 .50em 0}h3{font-size:1.4em;margin:25px 0 10px 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .3s ease-in-out}a:hover{color:#e82}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900}pre code{background:#f8f8f8;font-size:.8em;line-height:1.4em}code{background:#f2f2f1;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{background:#f8f8f8;border:0;border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0;padding:1ex}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-weight:bold;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em .5em;margin-bottom:1em}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.item .name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul{padding-left:1.5em}.toc > ul > li{margin-top:.5em}}</style>
+<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/highlight.min.js" integrity="sha256-eOgo0OtLL4cdq7RdwRUiGKLX9XsIJ7nGhWEKbohmVAQ=" crossorigin></script>
+<script>window.addEventListener('DOMContentLoaded', () => hljs.initHighlighting())</script>
+</head>
+<body>
+<main>
+<article id="content">
+<header>
+<h1 class="title">Module <code>tests.test_stress</code></h1>
+</header>
+<section id="section-intro">
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">import atexit
+import hashlib
+import os
+import pytest
+import subprocess
+import random
+import string
+import datetime
+import time
+
+from common import create_and_check_volume
+from common import create_and_wait_pod
+from common import create_pvc_for_volume
+from common import create_pv_for_volume
+from common import create_snapshot
+from common import delete_and_wait_longhorn
+from common import delete_and_wait_pod
+from common import delete_and_wait_pv
+from common import delete_and_wait_pvc
+from common import delete_and_wait_volume_attachment
+from common import DIRECTORY_PATH
+from common import find_backup
+from common import generate_pod_with_pvc_manifest
+from common import generate_random_data
+from common import get_core_api_client
+from common import get_longhorn_api_client
+from common import get_self_host_id
+from common import get_storage_api_client
+from common import get_volume_endpoint
+from common import Gi
+from common import mount_disk
+from common import read_volume_data
+from common import RETRY_COUNTS
+from common import RETRY_INTERVAL
+from common import set_random_backupstore
+from common import SETTING_BACKUP_TARGET
+from common import umount_disk
+from common import wait_for_backup_completion
+from common import wait_for_snapshot_purge
+from common import wait_for_volume_detached
+from common import wait_for_volume_healthy
+from common import wait_for_volume_healthy_no_frontend
+from common import wait_for_volume_replica_count
+from common import wait_for_volume_restoration_completed
+from common import write_pod_volume_data
+from common import wait_for_volume_degraded
+from common import VOLUME_ROBUSTNESS_HEALTHY
+from kubernetes.stream import stream
+from random import randrange
+from test_scheduling import wait_new_replica_ready
+
+
+# Configuration options
+N_RANDOM_ACTIONS = 10
+WAIT_REPLICA_REBUILD = True   # True, False, None=random
+PURGE_DELETED_SNAPSHOT = None  # True, False, None=random
+WAIT_BACKUP_COMPLETE = True  # True, False, None=random
+
+
+NPODS = os.getenv(&#34;STRESS_TEST_NPODS&#34;)
+
+if NPODS is None:
+    NPODS = 1
+else:
+    NPODS = int(NPODS)
+
+count = [str(i) for i in range(NPODS)]
+
+
+STRESS_POD_NAME_PREFIX = &#34;stress-test-pod-&#34;
+STRESS_PVC_NAME_PREFIX = &#34;stress-test-pvc-&#34;
+STRESS_PV_NAME_PREFIX = &#34;stress-test-pv-&#34;
+STRESS_VOLUME_NAME_PREFIX = &#34;stress-test-volume-&#34;
+
+
+STRESS_RANDOM_DATA_DIR = &#34;/tmp/&#34;
+STRESS_DATAFILE_NAME_PREFIX = &#34;data-&#34;
+STRESS_DATAFILE_NAME_SUFFIX = &#34;.bin&#34;
+STRESS_DEST_DIR = &#39;/data/&#39;
+
+VOLUME_SIZE = str(2 * Gi)
+TEST_DATA_BYTES = 1 * Gi
+
+READ_MD5SUM_TIMEOUT = 120
+
+
+class snapshot_data:
+    def __init__(self, snapshot_name):
+        self.snapshot_name = snapshot_name
+        self.removed = False
+        self.backup_name = None
+        self.backup_url = None
+        self.data_md5sum = None
+
+    def set_backup_name(self, backup_name):
+        self.backup_name = backup_name
+
+    def set_backup_url(self, backup_url):
+        self.backup_url = backup_url
+
+    def set_data_md5sum(self, data_md5sum):
+        self.data_md5sum = data_md5sum
+
+    def mark_as_removed(self):
+        self.removed = True
+
+
+def time_now():
+    return datetime.datetime.now().strftime(&#34;%Y-%m-%d %H:%M:%S&#34;)
+
+
+# set random backupstore if not defined
+def check_and_set_backupstore(client):
+    setting = client.by_id_setting(SETTING_BACKUP_TARGET)
+
+    if setting[&#34;value&#34;] == &#34;&#34;:
+        set_random_backupstore(client)
+
+
+def get_random_suffix():
+    return &#39;&#39;.join(random.choice(string.ascii_lowercase + string.digits)
+                   for _ in range(6))
+
+
+def get_md5sum(file_path):
+    hash_md5 = hashlib.md5()
+    with open(file_path, &#34;rb&#34;) as f:
+        for chunk in iter(lambda: f.read(4096), b&#34;&#34;):
+            hash_md5.update(chunk)
+    return hash_md5.hexdigest()
+
+
+def get_random_snapshot(snapshots_md5sum):
+    snapshots = list(snapshots_md5sum.keys())
+
+    snapshots_count = len(snapshots)
+
+    if snapshots_count == 0:
+        return None
+
+    for i in range(RETRY_COUNTS):
+        snapshot_id = randrange(0, snapshots_count)
+        snapshot = snapshots[snapshot_id]
+
+        if snapshots_md5sum[snapshot].removed is True:
+            continue
+        else:
+            break
+
+    if snapshots_md5sum[snapshot].removed is True:
+        return None
+    else:
+        return snapshot
+
+
+def get_random_backup_snapshot_data(snapshots_md5sum):
+    snapshots = list(snapshots_md5sum.keys())
+
+    snapshots_count = len(snapshots)
+
+    if snapshots_count == 0:
+        return None
+
+    for i in range(RETRY_COUNTS):
+        snapshot_id = randrange(0, snapshots_count)
+        snapshot = snapshots[snapshot_id]
+
+        if snapshots_md5sum[snapshot].backup_name is None:
+            continue
+        else:
+            break
+
+    if snapshots_md5sum[snapshot].backup_name is None:
+        return None
+    else:
+        return snapshots_md5sum[snapshot]
+
+
+def get_recurring_jobs():
+    backup_job = {&#34;name&#34;: &#34;backup&#34;, &#34;cron&#34;: &#34;*/5 * * * *&#34;,
+                  &#34;task&#34;: &#34;backup&#34;, &#34;retain&#34;: 3}
+
+    snapshot_job = {&#34;name&#34;: &#34;snap&#34;, &#34;cron&#34;: &#34;*/2 * * * *&#34;,
+                    &#34;task&#34;: &#34;snapshot&#34;, &#34;retain&#34;: 5}
+
+    return [backup_job, snapshot_job]
+
+
+def create_recurring_jobs(client, volume_name):
+    volume = client.by_id_volume(volume_name)
+
+    recurring_jobs = get_recurring_jobs()
+
+    volume.recurringUpdate(jobs=recurring_jobs)
+
+
+def read_data_md5sum(k8s_api_client, pod_name):
+    file_name = get_data_filename(pod_name)
+    dest_file_path = os.path.join(STRESS_DEST_DIR, file_name)
+
+    exec_command = exec_command = [&#39;/bin/sh&#39;]
+    resp = stream(k8s_api_client.connect_get_namespaced_pod_exec,
+                  pod_name,
+                  &#39;default&#39;,
+                  command=exec_command,
+                  stderr=True, stdin=True,
+                  stdout=True, tty=False,
+                  _preload_content=False)
+
+    resp.write_stdin(&#34;md5sum &#34; + dest_file_path + &#34;\n&#34;)
+    res = resp.readline_stdout(timeout=READ_MD5SUM_TIMEOUT).split()[0]
+
+    return res
+
+
+def snapshot_create_and_record_md5sum(client, core_api, volume_name, pod_name, snapshots_md5sum): # NOQA
+    data_md5sum = read_data_md5sum(core_api, pod_name)
+    snap = create_snapshot(client, volume_name)
+
+    snap_data = snapshot_data(snap[&#34;name&#34;])
+    snap_data.set_data_md5sum(data_md5sum)
+    snapshots_md5sum[snap[&#34;name&#34;]] = snap_data
+
+    return snap[&#34;name&#34;]
+
+
+def revert_random_snapshot(client, core_api, volume_name, pod_manifest, snapshots_md5sum): # NOQA
+    volume = client.by_id_volume(volume_name)
+    host_id = get_self_host_id()
+    pod_name = pod_manifest[&#34;metadata&#34;][&#34;name&#34;]
+
+    # wait for volume healthy if rebuilding deleted replica
+    if len(volume.robustness) != VOLUME_ROBUSTNESS_HEALTHY:
+        wait_for_volume_healthy(client, volume_name)
+
+    snapshot = get_random_snapshot(snapshots_md5sum)
+
+    if snapshot is None:
+        print(&#34;skipped, no snapshot found&#34;, end=&#34; &#34;)
+        return
+
+    delete_and_wait_pod(core_api, pod_name)
+
+    wait_for_volume_detached(client, volume_name)
+
+    volume = client.by_id_volume(volume_name)
+
+    volume.attach(hostId=host_id, disableFrontend=True)
+
+    volume = wait_for_volume_healthy_no_frontend(client, volume_name)
+
+    volume.snapshotRevert(name=snapshot)
+
+    volume = client.by_id_volume(volume_name)
+
+    volume.detach()
+
+    wait_for_volume_detached(client, volume_name)
+
+    create_and_wait_pod(core_api, pod_manifest)
+
+    current_md5sum = read_data_md5sum(core_api, pod_name)
+
+    assert current_md5sum == snapshots_md5sum[snapshot].data_md5sum
+
+
+def backup_create_and_record_md5sum(client, core_api, volume_name, pod_name, snapshots_md5sum): # NOQA
+    volume = client.by_id_volume(volume_name)
+
+    data_md5sum = read_data_md5sum(core_api, pod_name)
+
+    snap_name = snapshot_create_and_record_md5sum(client,
+                                                  core_api,
+                                                  volume_name,
+                                                  pod_name,
+                                                  snapshots_md5sum)
+    snap = snapshot_data(snap_name)
+
+    snapshots_md5sum[snap_name] = snap
+
+    volume.snapshotBackup(name=snap_name)
+
+    global WAIT_BACKUP_COMPLETE
+    if WAIT_BACKUP_COMPLETE is None:
+        WAIT_BACKUP_COMPLETE = bool(random.getrandbits(1))
+
+    if WAIT_BACKUP_COMPLETE is True:
+        # wait for volume backupStatus to be updated with new backup record
+        for i in range(RETRY_COUNTS):
+            volume = client.by_id_volume(volume_name)
+            for b in volume.backupStatus:
+                if b.snapshot == snap_name:
+                    if b.error == &#34;&#34;:
+                        wait_for_backup_completion(client,
+                                                   volume_name,
+                                                   snap_name)
+                        break
+                    else:
+                        print(&#34;...aborting backup &#34; + b.error)
+                        return
+            time.sleep(RETRY_INTERVAL)
+
+    _, b = find_backup(client, volume_name, snap_name)
+
+    snap.set_backup_name(b[&#34;name&#34;])
+    snap.set_backup_url(b[&#34;url&#34;])
+    snap.set_data_md5sum(data_md5sum)
+
+
+def restore_and_check_random_backup(client, core_api, volume_name, pod_name, snapshots_md5sum): # NOQA
+    res_volume_name = volume_name + &#39;-restore&#39;
+
+    host_id = get_self_host_id()
+
+    snap_data = get_random_backup_snapshot_data(snapshots_md5sum)
+
+    if snap_data is None:
+        print(&#34;skipped, no recorded backup found&#34;, end=&#34; &#34;)
+        return
+
+    backup_url = snap_data.backup_url
+
+    client.create_volume(name=res_volume_name,
+                         size=VOLUME_SIZE,
+                         fromBackup=backup_url)
+
+    wait_for_volume_restoration_completed(client, res_volume_name)
+
+    wait_for_volume_detached(client, res_volume_name)
+
+    res_volume = client.by_id_volume(res_volume_name)
+
+    res_volume.attach(hostId=host_id)
+
+    res_volume = wait_for_volume_healthy(client, res_volume_name)
+
+    dev = get_volume_endpoint(res_volume)
+
+    mount_path = os.path.join(DIRECTORY_PATH, res_volume_name)
+
+    command = [&#39;mkdir&#39;, &#39;-p&#39;, mount_path]
+    subprocess.check_call(command)
+
+    mount_disk(dev, mount_path)
+
+    datafile_name = get_data_filename(pod_name)
+    datafile_path = os.path.join(mount_path, datafile_name)
+
+    command = [&#39;md5sum&#39;, datafile_path]
+    output = subprocess.check_output(command)
+
+    bkp_data_md5sum = output.split()[0].decode(&#39;utf-8&#39;)
+
+    bkp_checksum_ok = False
+    if snap_data.data_md5sum == bkp_data_md5sum:
+        bkp_checksum_ok = True
+
+    umount_disk(mount_path)
+
+    command = [&#39;rmdir&#39;, mount_path]
+    subprocess.check_call(command)
+
+    res_volume = client.by_id_volume(res_volume_name)
+
+    res_volume.detach()
+
+    wait_for_volume_detached(client, res_volume_name)
+
+    delete_and_wait_longhorn(client, res_volume_name)
+
+    assert bkp_checksum_ok
+
+
+def delete_replica(client, volume_name):
+    volume = client.by_id_volume(volume_name)
+
+    replica_count = len(volume.replicas)
+
+    healthy_replica_count = 0
+    for replica in volume.replicas:
+        if replica.running is True and replica.mode == &#34;RW&#34;:
+            healthy_replica_count += 1
+
+    # return if there is no or only one healthy replica left
+    if healthy_replica_count == 1:
+        print(&#34;skipped, only one healthy replica found&#34;, end=&#34; &#34;)
+        return
+
+    if healthy_replica_count == 0:
+        print(&#34;skipped, no healthy replicas found&#34;, end=&#34; &#34;)
+        return
+
+    replica_id = randrange(0, replica_count)
+
+    replica_name = volume[&#34;replicas&#34;][replica_id][&#34;name&#34;]
+
+    volume.replicaRemove(name=replica_name)
+
+    wait_for_volume_degraded(client, volume_name)
+
+    global WAIT_REPLICA_REBUILD
+    if WAIT_REPLICA_REBUILD is None:
+        WAIT_REPLICA_REBUILD = bool(random.getrandbits(1))
+
+    if WAIT_REPLICA_REBUILD is True:
+        wait_for_volume_replica_count(client, volume_name, replica_count)
+        replica_names = map(lambda replica: replica.name, volume[&#34;replicas&#34;])
+        wait_new_replica_ready(client, volume_name, replica_names)
+
+
+def write_data(k8s_api_client, pod_name):
+    src_dir_path = STRESS_RANDOM_DATA_DIR
+    dest_dir_path = &#39;/data/&#39;
+    file_name = get_data_filename(pod_name)
+
+    src_file_path = src_dir_path + file_name
+    dest_file_path = dest_dir_path + file_name
+
+    src_file = open(&#39;%s&#39; % src_file_path, &#39;wb&#39;)
+    src_file.write(os.urandom(TEST_DATA_BYTES))
+    src_file.close()
+    src_file_md5sum = get_md5sum(src_file_path)
+    command = &#39;kubectl cp &#39; + src_file_path + \
+              &#39; &#39; + pod_name + &#39;:&#39; + dest_file_path
+    subprocess.call(command, shell=True)
+
+    exec_command = exec_command = [&#39;/bin/sh&#39;]
+    resp = stream(k8s_api_client.connect_get_namespaced_pod_exec,
+                  pod_name,
+                  &#39;default&#39;,
+                  command=exec_command,
+                  stderr=True, stdin=True,
+                  stdout=True, tty=False,
+                  _preload_content=False)
+
+    resp.write_stdin(&#34;md5sum &#34; + dest_file_path + &#34;\n&#34;)
+    res = resp.readline_stdout(timeout=READ_MD5SUM_TIMEOUT).split()[0]
+
+    assert res == src_file_md5sum
+
+
+def delete_data(k8s_api_client, pod_name):
+    file_name = &#39;data-&#39; + pod_name + &#39;.bin&#39;
+    test_data = generate_random_data(0)
+
+    write_pod_volume_data(k8s_api_client,
+                          pod_name,
+                          test_data,
+                          filename=file_name)
+
+    volume_data = read_volume_data(k8s_api_client,
+                                   pod_name,
+                                   filename=file_name)
+
+    assert volume_data == &#34;&#34;
+
+
+def purge_random_snapshot(longhorn_api_client, volume_name, snapshot_name):
+
+    volume = longhorn_api_client.by_id_volume(volume_name)
+
+    volume.snapshotPurge()
+
+    wait_for_snapshot_purge(
+        longhorn_api_client,
+        volume_name,
+        snapshot_name
+    )
+
+
+def delete_random_snapshot(client, volume_name, snapshots_md5sum):
+    volume = client.by_id_volume(volume_name)
+
+    # wait for volume healthy if rebuilding deleted replica
+    if len(volume.robustness) != VOLUME_ROBUSTNESS_HEALTHY:
+        wait_for_volume_healthy(client, volume_name)
+
+    volume = client.by_id_volume(volume_name)
+
+    snapshot = get_random_snapshot(snapshots_md5sum)
+
+    if snapshot is None:
+        print(&#34;skipped, no recorded snapshot found&#34;, end=&#34; &#34;)
+        return
+
+    volume.snapshotDelete(name=snapshot)
+
+    snapshots_md5sum[snapshot].mark_as_removed()
+
+    global PURGE_DELETED_SNAPSHOT
+    if PURGE_DELETED_SNAPSHOT is None:
+        PURGE_DELETED_SNAPSHOT = bool(random.getrandbits(1))
+
+    if PURGE_DELETED_SNAPSHOT is True:
+        purge_random_snapshot(client, volume_name, snapshot)
+
+
+def get_data_filename(pod_name):
+    return STRESS_DATAFILE_NAME_PREFIX + pod_name + STRESS_DATAFILE_NAME_SUFFIX
+
+
+def remove_datafile(pod_name):
+    file_path = os.path.join(STRESS_RANDOM_DATA_DIR,
+                             get_data_filename(pod_name))
+
+    if os.path.exists(file_path):
+        os.remove(file_path)
+
+
+def clean_volume_backups(client, volume_name):
+    print(&#34;cleaning all volume backups &#34;, end=&#39;... &#39;)
+    bvs = client.list_backupVolume().data
+
+    bv = None
+    for i in bvs:
+        if i.name == volume_name:
+            bv = i
+            break
+
+    if bv is not None:
+        backups = bv.backupList()
+        for b in backups:
+            bv.backupDelete(name=b.name)
+
+        print(&#34;done!&#34;)
+
+    else:
+        print(&#34;no backups found!&#34;)
+
+
+@pytest.mark.stress
+def test_stress(generate_load):
+    pass
+
+
+@pytest.fixture
+def generate_load(request):
+
+    index = get_random_suffix()
+
+    longhorn_api_client = get_longhorn_api_client()
+    k8s_api_client = get_core_api_client()
+
+    check_and_set_backupstore(longhorn_api_client)
+
+    volume_name = STRESS_VOLUME_NAME_PREFIX + index
+    pv_name = STRESS_PV_NAME_PREFIX + index
+    pvc_name = STRESS_PVC_NAME_PREFIX + index
+    pod_name = STRESS_POD_NAME_PREFIX + index
+
+    atexit.register(remove_datafile, pod_name)
+    atexit.register(delete_and_wait_longhorn, longhorn_api_client, volume_name)
+    atexit.register(delete_and_wait_pv, k8s_api_client, pv_name)
+    atexit.register(delete_and_wait_pvc, k8s_api_client, pvc_name)
+    atexit.register(delete_and_wait_pod, k8s_api_client, pod_name)
+
+    longhorn_volume = create_and_check_volume(
+        longhorn_api_client,
+        volume_name,
+        size=VOLUME_SIZE
+    )
+
+    wait_for_volume_detached(longhorn_api_client, volume_name)
+
+    pod_manifest = generate_pod_with_pvc_manifest(pod_name, pvc_name)
+
+    create_pv_for_volume(longhorn_api_client,
+                         k8s_api_client,
+                         longhorn_volume,
+                         pv_name)
+
+    create_pvc_for_volume(longhorn_api_client,
+                          k8s_api_client,
+                          longhorn_volume,
+                          pvc_name)
+
+    create_and_wait_pod(k8s_api_client, pod_manifest)
+
+    snapshots_md5sum = dict()
+
+    write_data(k8s_api_client, pod_name)
+    create_recurring_jobs(longhorn_api_client, volume_name)
+
+    global N_RANDOM_ACTIONS
+    for round in range(N_RANDOM_ACTIONS):
+        action = randrange(0, 8)
+
+        if action == 0:
+            print(&#34;write data started: &#34; + time_now(), end=&#39;, &#39;)
+            write_data(k8s_api_client, pod_name)
+            print(&#34;ended: &#34; + time_now())
+
+        elif action == 1:
+            print(&#34;delete data started: &#34; + time_now(), end=&#39;, &#39;)
+            delete_data(k8s_api_client, pod_name)
+            print(&#34;ended: &#34; + time_now())
+
+        elif action == 2:
+            print(&#34;create snapshot started: &#34; + time_now(), end=&#39;, &#39;)
+            snapshot_create_and_record_md5sum(longhorn_api_client,
+                                              k8s_api_client,
+                                              volume_name,
+                                              pod_name,
+                                              snapshots_md5sum)
+            print(&#34;ended: &#34; + time_now())
+
+        elif action == 3:
+            print(&#34;delete random snapshot  started: &#34; + time_now(), end=&#39;, &#39;)
+            delete_random_snapshot(longhorn_api_client,
+                                   volume_name,
+                                   snapshots_md5sum)
+            print(&#34;ended: &#34; + time_now())
+
+        elif action == 4:
+            print(&#34;revert random snapshot started: &#34; + time_now(), end=&#39;, &#39;)
+            revert_random_snapshot(longhorn_api_client,
+                                   k8s_api_client,
+                                   volume_name,
+                                   pod_manifest,
+                                   snapshots_md5sum)
+            print(&#34;ended: &#34; + time_now())
+
+        elif action == 5:
+            print(&#34;create backup started: &#34; + time_now(), end=&#39;, &#39;)
+            backup_create_and_record_md5sum(longhorn_api_client,
+                                            k8s_api_client,
+                                            volume_name,
+                                            pod_name,
+                                            snapshots_md5sum)
+            print(&#34;ended: &#34; + time_now())
+
+        elif action == 6:
+            print(&#34;delete replica started: &#34; + time_now(), end=&#39;, &#39;)
+            delete_replica(longhorn_api_client, volume_name)
+            print(&#34;ended: &#34; + time_now())
+
+        elif action == 7:
+            print(&#34;restore random backup started: &#34; + time_now(), end=&#39;, &#39;)
+            restore_and_check_random_backup(longhorn_api_client,
+                                            k8s_api_client,
+                                            volume_name,
+                                            pod_name,
+                                            snapshots_md5sum)
+
+            print(&#34;ended: &#34; + time_now())
+
+    clean_volume_backups(longhorn_api_client, volume_name)
+
+
+@pytest.mark.stress
+def test_reset_env():
+    k8s_api_client = get_core_api_client()
+    k8s_storage_client = get_storage_api_client()
+    longhorn_api_client = get_longhorn_api_client()
+
+    pod_list = k8s_api_client.list_namespaced_pod(&#34;default&#34;)
+    for pod in pod_list.items:
+        if STRESS_POD_NAME_PREFIX in pod.metadata.name:
+            delete_and_wait_pod(k8s_api_client, pod.metadata.name)
+
+    pvc_list = \
+        k8s_api_client.list_namespaced_persistent_volume_claim(&#34;default&#34;)
+    for pvc in pvc_list.items:
+        if STRESS_PVC_NAME_PREFIX in pvc.metadata.name:
+            delete_and_wait_pvc(k8s_api_client, pvc.metadata.name)
+
+    pv_list = k8s_api_client.list_persistent_volume()
+    for pv in pv_list.items:
+        pv_name = pv.metadata.name
+        if STRESS_PV_NAME_PREFIX in pv_name:
+            try:
+                delete_and_wait_pv(k8s_api_client, pv_name)
+            except AssertionError:
+                volumeattachment_list = \
+                    k8s_storage_client.list_volume_attachment()
+                for volumeattachment in volumeattachment_list.items:
+                    volume_attachment_name = \
+                        volumeattachment.spec.source.persistent_volume_name
+                    if volume_attachment_name == pv_name:
+                        delete_and_wait_volume_attachment(
+                            k8s_storage_client,
+                            volume_attachment_name
+                        )
+                        delete_and_wait_pv(k8s_api_client, pv.metadata.name)
+
+    volume_list = \
+        longhorn_api_client.list_volume()
+    for volume in volume_list.data:
+        if STRESS_VOLUME_NAME_PREFIX in volume.name:
+            delete_and_wait_longhorn(longhorn_api_client, volume.name)</code></pre>
+</details>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-functions">Functions</h2>
+<dl>
+<dt id="tests.test_stress.backup_create_and_record_md5sum"><code class="name flex">
+<span>def <span class="ident">backup_create_and_record_md5sum</span></span>(<span>client, core_api, volume_name, pod_name, snapshots_md5sum)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def backup_create_and_record_md5sum(client, core_api, volume_name, pod_name, snapshots_md5sum): # NOQA
+    volume = client.by_id_volume(volume_name)
+
+    data_md5sum = read_data_md5sum(core_api, pod_name)
+
+    snap_name = snapshot_create_and_record_md5sum(client,
+                                                  core_api,
+                                                  volume_name,
+                                                  pod_name,
+                                                  snapshots_md5sum)
+    snap = snapshot_data(snap_name)
+
+    snapshots_md5sum[snap_name] = snap
+
+    volume.snapshotBackup(name=snap_name)
+
+    global WAIT_BACKUP_COMPLETE
+    if WAIT_BACKUP_COMPLETE is None:
+        WAIT_BACKUP_COMPLETE = bool(random.getrandbits(1))
+
+    if WAIT_BACKUP_COMPLETE is True:
+        # wait for volume backupStatus to be updated with new backup record
+        for i in range(RETRY_COUNTS):
+            volume = client.by_id_volume(volume_name)
+            for b in volume.backupStatus:
+                if b.snapshot == snap_name:
+                    if b.error == &#34;&#34;:
+                        wait_for_backup_completion(client,
+                                                   volume_name,
+                                                   snap_name)
+                        break
+                    else:
+                        print(&#34;...aborting backup &#34; + b.error)
+                        return
+            time.sleep(RETRY_INTERVAL)
+
+    _, b = find_backup(client, volume_name, snap_name)
+
+    snap.set_backup_name(b[&#34;name&#34;])
+    snap.set_backup_url(b[&#34;url&#34;])
+    snap.set_data_md5sum(data_md5sum)</code></pre>
+</details>
+</dd>
+<dt id="tests.test_stress.check_and_set_backupstore"><code class="name flex">
+<span>def <span class="ident">check_and_set_backupstore</span></span>(<span>client)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def check_and_set_backupstore(client):
+    setting = client.by_id_setting(SETTING_BACKUP_TARGET)
+
+    if setting[&#34;value&#34;] == &#34;&#34;:
+        set_random_backupstore(client)</code></pre>
+</details>
+</dd>
+<dt id="tests.test_stress.clean_volume_backups"><code class="name flex">
+<span>def <span class="ident">clean_volume_backups</span></span>(<span>client, volume_name)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def clean_volume_backups(client, volume_name):
+    print(&#34;cleaning all volume backups &#34;, end=&#39;... &#39;)
+    bvs = client.list_backupVolume().data
+
+    bv = None
+    for i in bvs:
+        if i.name == volume_name:
+            bv = i
+            break
+
+    if bv is not None:
+        backups = bv.backupList()
+        for b in backups:
+            bv.backupDelete(name=b.name)
+
+        print(&#34;done!&#34;)
+
+    else:
+        print(&#34;no backups found!&#34;)</code></pre>
+</details>
+</dd>
+<dt id="tests.test_stress.create_recurring_jobs"><code class="name flex">
+<span>def <span class="ident">create_recurring_jobs</span></span>(<span>client, volume_name)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def create_recurring_jobs(client, volume_name):
+    volume = client.by_id_volume(volume_name)
+
+    recurring_jobs = get_recurring_jobs()
+
+    volume.recurringUpdate(jobs=recurring_jobs)</code></pre>
+</details>
+</dd>
+<dt id="tests.test_stress.delete_data"><code class="name flex">
+<span>def <span class="ident">delete_data</span></span>(<span>k8s_api_client, pod_name)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def delete_data(k8s_api_client, pod_name):
+    file_name = &#39;data-&#39; + pod_name + &#39;.bin&#39;
+    test_data = generate_random_data(0)
+
+    write_pod_volume_data(k8s_api_client,
+                          pod_name,
+                          test_data,
+                          filename=file_name)
+
+    volume_data = read_volume_data(k8s_api_client,
+                                   pod_name,
+                                   filename=file_name)
+
+    assert volume_data == &#34;&#34;</code></pre>
+</details>
+</dd>
+<dt id="tests.test_stress.delete_random_snapshot"><code class="name flex">
+<span>def <span class="ident">delete_random_snapshot</span></span>(<span>client, volume_name, snapshots_md5sum)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def delete_random_snapshot(client, volume_name, snapshots_md5sum):
+    volume = client.by_id_volume(volume_name)
+
+    # wait for volume healthy if rebuilding deleted replica
+    if len(volume.robustness) != VOLUME_ROBUSTNESS_HEALTHY:
+        wait_for_volume_healthy(client, volume_name)
+
+    volume = client.by_id_volume(volume_name)
+
+    snapshot = get_random_snapshot(snapshots_md5sum)
+
+    if snapshot is None:
+        print(&#34;skipped, no recorded snapshot found&#34;, end=&#34; &#34;)
+        return
+
+    volume.snapshotDelete(name=snapshot)
+
+    snapshots_md5sum[snapshot].mark_as_removed()
+
+    global PURGE_DELETED_SNAPSHOT
+    if PURGE_DELETED_SNAPSHOT is None:
+        PURGE_DELETED_SNAPSHOT = bool(random.getrandbits(1))
+
+    if PURGE_DELETED_SNAPSHOT is True:
+        purge_random_snapshot(client, volume_name, snapshot)</code></pre>
+</details>
+</dd>
+<dt id="tests.test_stress.delete_replica"><code class="name flex">
+<span>def <span class="ident">delete_replica</span></span>(<span>client, volume_name)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def delete_replica(client, volume_name):
+    volume = client.by_id_volume(volume_name)
+
+    replica_count = len(volume.replicas)
+
+    healthy_replica_count = 0
+    for replica in volume.replicas:
+        if replica.running is True and replica.mode == &#34;RW&#34;:
+            healthy_replica_count += 1
+
+    # return if there is no or only one healthy replica left
+    if healthy_replica_count == 1:
+        print(&#34;skipped, only one healthy replica found&#34;, end=&#34; &#34;)
+        return
+
+    if healthy_replica_count == 0:
+        print(&#34;skipped, no healthy replicas found&#34;, end=&#34; &#34;)
+        return
+
+    replica_id = randrange(0, replica_count)
+
+    replica_name = volume[&#34;replicas&#34;][replica_id][&#34;name&#34;]
+
+    volume.replicaRemove(name=replica_name)
+
+    wait_for_volume_degraded(client, volume_name)
+
+    global WAIT_REPLICA_REBUILD
+    if WAIT_REPLICA_REBUILD is None:
+        WAIT_REPLICA_REBUILD = bool(random.getrandbits(1))
+
+    if WAIT_REPLICA_REBUILD is True:
+        wait_for_volume_replica_count(client, volume_name, replica_count)
+        replica_names = map(lambda replica: replica.name, volume[&#34;replicas&#34;])
+        wait_new_replica_ready(client, volume_name, replica_names)</code></pre>
+</details>
+</dd>
+<dt id="tests.test_stress.generate_load"><code class="name flex">
+<span>def <span class="ident">generate_load</span></span>(<span>request)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@pytest.fixture
+def generate_load(request):
+
+    index = get_random_suffix()
+
+    longhorn_api_client = get_longhorn_api_client()
+    k8s_api_client = get_core_api_client()
+
+    check_and_set_backupstore(longhorn_api_client)
+
+    volume_name = STRESS_VOLUME_NAME_PREFIX + index
+    pv_name = STRESS_PV_NAME_PREFIX + index
+    pvc_name = STRESS_PVC_NAME_PREFIX + index
+    pod_name = STRESS_POD_NAME_PREFIX + index
+
+    atexit.register(remove_datafile, pod_name)
+    atexit.register(delete_and_wait_longhorn, longhorn_api_client, volume_name)
+    atexit.register(delete_and_wait_pv, k8s_api_client, pv_name)
+    atexit.register(delete_and_wait_pvc, k8s_api_client, pvc_name)
+    atexit.register(delete_and_wait_pod, k8s_api_client, pod_name)
+
+    longhorn_volume = create_and_check_volume(
+        longhorn_api_client,
+        volume_name,
+        size=VOLUME_SIZE
+    )
+
+    wait_for_volume_detached(longhorn_api_client, volume_name)
+
+    pod_manifest = generate_pod_with_pvc_manifest(pod_name, pvc_name)
+
+    create_pv_for_volume(longhorn_api_client,
+                         k8s_api_client,
+                         longhorn_volume,
+                         pv_name)
+
+    create_pvc_for_volume(longhorn_api_client,
+                          k8s_api_client,
+                          longhorn_volume,
+                          pvc_name)
+
+    create_and_wait_pod(k8s_api_client, pod_manifest)
+
+    snapshots_md5sum = dict()
+
+    write_data(k8s_api_client, pod_name)
+    create_recurring_jobs(longhorn_api_client, volume_name)
+
+    global N_RANDOM_ACTIONS
+    for round in range(N_RANDOM_ACTIONS):
+        action = randrange(0, 8)
+
+        if action == 0:
+            print(&#34;write data started: &#34; + time_now(), end=&#39;, &#39;)
+            write_data(k8s_api_client, pod_name)
+            print(&#34;ended: &#34; + time_now())
+
+        elif action == 1:
+            print(&#34;delete data started: &#34; + time_now(), end=&#39;, &#39;)
+            delete_data(k8s_api_client, pod_name)
+            print(&#34;ended: &#34; + time_now())
+
+        elif action == 2:
+            print(&#34;create snapshot started: &#34; + time_now(), end=&#39;, &#39;)
+            snapshot_create_and_record_md5sum(longhorn_api_client,
+                                              k8s_api_client,
+                                              volume_name,
+                                              pod_name,
+                                              snapshots_md5sum)
+            print(&#34;ended: &#34; + time_now())
+
+        elif action == 3:
+            print(&#34;delete random snapshot  started: &#34; + time_now(), end=&#39;, &#39;)
+            delete_random_snapshot(longhorn_api_client,
+                                   volume_name,
+                                   snapshots_md5sum)
+            print(&#34;ended: &#34; + time_now())
+
+        elif action == 4:
+            print(&#34;revert random snapshot started: &#34; + time_now(), end=&#39;, &#39;)
+            revert_random_snapshot(longhorn_api_client,
+                                   k8s_api_client,
+                                   volume_name,
+                                   pod_manifest,
+                                   snapshots_md5sum)
+            print(&#34;ended: &#34; + time_now())
+
+        elif action == 5:
+            print(&#34;create backup started: &#34; + time_now(), end=&#39;, &#39;)
+            backup_create_and_record_md5sum(longhorn_api_client,
+                                            k8s_api_client,
+                                            volume_name,
+                                            pod_name,
+                                            snapshots_md5sum)
+            print(&#34;ended: &#34; + time_now())
+
+        elif action == 6:
+            print(&#34;delete replica started: &#34; + time_now(), end=&#39;, &#39;)
+            delete_replica(longhorn_api_client, volume_name)
+            print(&#34;ended: &#34; + time_now())
+
+        elif action == 7:
+            print(&#34;restore random backup started: &#34; + time_now(), end=&#39;, &#39;)
+            restore_and_check_random_backup(longhorn_api_client,
+                                            k8s_api_client,
+                                            volume_name,
+                                            pod_name,
+                                            snapshots_md5sum)
+
+            print(&#34;ended: &#34; + time_now())
+
+    clean_volume_backups(longhorn_api_client, volume_name)</code></pre>
+</details>
+</dd>
+<dt id="tests.test_stress.get_data_filename"><code class="name flex">
+<span>def <span class="ident">get_data_filename</span></span>(<span>pod_name)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_data_filename(pod_name):
+    return STRESS_DATAFILE_NAME_PREFIX + pod_name + STRESS_DATAFILE_NAME_SUFFIX</code></pre>
+</details>
+</dd>
+<dt id="tests.test_stress.get_md5sum"><code class="name flex">
+<span>def <span class="ident">get_md5sum</span></span>(<span>file_path)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_md5sum(file_path):
+    hash_md5 = hashlib.md5()
+    with open(file_path, &#34;rb&#34;) as f:
+        for chunk in iter(lambda: f.read(4096), b&#34;&#34;):
+            hash_md5.update(chunk)
+    return hash_md5.hexdigest()</code></pre>
+</details>
+</dd>
+<dt id="tests.test_stress.get_random_backup_snapshot_data"><code class="name flex">
+<span>def <span class="ident">get_random_backup_snapshot_data</span></span>(<span>snapshots_md5sum)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_random_backup_snapshot_data(snapshots_md5sum):
+    snapshots = list(snapshots_md5sum.keys())
+
+    snapshots_count = len(snapshots)
+
+    if snapshots_count == 0:
+        return None
+
+    for i in range(RETRY_COUNTS):
+        snapshot_id = randrange(0, snapshots_count)
+        snapshot = snapshots[snapshot_id]
+
+        if snapshots_md5sum[snapshot].backup_name is None:
+            continue
+        else:
+            break
+
+    if snapshots_md5sum[snapshot].backup_name is None:
+        return None
+    else:
+        return snapshots_md5sum[snapshot]</code></pre>
+</details>
+</dd>
+<dt id="tests.test_stress.get_random_snapshot"><code class="name flex">
+<span>def <span class="ident">get_random_snapshot</span></span>(<span>snapshots_md5sum)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_random_snapshot(snapshots_md5sum):
+    snapshots = list(snapshots_md5sum.keys())
+
+    snapshots_count = len(snapshots)
+
+    if snapshots_count == 0:
+        return None
+
+    for i in range(RETRY_COUNTS):
+        snapshot_id = randrange(0, snapshots_count)
+        snapshot = snapshots[snapshot_id]
+
+        if snapshots_md5sum[snapshot].removed is True:
+            continue
+        else:
+            break
+
+    if snapshots_md5sum[snapshot].removed is True:
+        return None
+    else:
+        return snapshot</code></pre>
+</details>
+</dd>
+<dt id="tests.test_stress.get_random_suffix"><code class="name flex">
+<span>def <span class="ident">get_random_suffix</span></span>(<span>)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_random_suffix():
+    return &#39;&#39;.join(random.choice(string.ascii_lowercase + string.digits)
+                   for _ in range(6))</code></pre>
+</details>
+</dd>
+<dt id="tests.test_stress.get_recurring_jobs"><code class="name flex">
+<span>def <span class="ident">get_recurring_jobs</span></span>(<span>)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_recurring_jobs():
+    backup_job = {&#34;name&#34;: &#34;backup&#34;, &#34;cron&#34;: &#34;*/5 * * * *&#34;,
+                  &#34;task&#34;: &#34;backup&#34;, &#34;retain&#34;: 3}
+
+    snapshot_job = {&#34;name&#34;: &#34;snap&#34;, &#34;cron&#34;: &#34;*/2 * * * *&#34;,
+                    &#34;task&#34;: &#34;snapshot&#34;, &#34;retain&#34;: 5}
+
+    return [backup_job, snapshot_job]</code></pre>
+</details>
+</dd>
+<dt id="tests.test_stress.purge_random_snapshot"><code class="name flex">
+<span>def <span class="ident">purge_random_snapshot</span></span>(<span>longhorn_api_client, volume_name, snapshot_name)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def purge_random_snapshot(longhorn_api_client, volume_name, snapshot_name):
+
+    volume = longhorn_api_client.by_id_volume(volume_name)
+
+    volume.snapshotPurge()
+
+    wait_for_snapshot_purge(
+        longhorn_api_client,
+        volume_name,
+        snapshot_name
+    )</code></pre>
+</details>
+</dd>
+<dt id="tests.test_stress.read_data_md5sum"><code class="name flex">
+<span>def <span class="ident">read_data_md5sum</span></span>(<span>k8s_api_client, pod_name)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def read_data_md5sum(k8s_api_client, pod_name):
+    file_name = get_data_filename(pod_name)
+    dest_file_path = os.path.join(STRESS_DEST_DIR, file_name)
+
+    exec_command = exec_command = [&#39;/bin/sh&#39;]
+    resp = stream(k8s_api_client.connect_get_namespaced_pod_exec,
+                  pod_name,
+                  &#39;default&#39;,
+                  command=exec_command,
+                  stderr=True, stdin=True,
+                  stdout=True, tty=False,
+                  _preload_content=False)
+
+    resp.write_stdin(&#34;md5sum &#34; + dest_file_path + &#34;\n&#34;)
+    res = resp.readline_stdout(timeout=READ_MD5SUM_TIMEOUT).split()[0]
+
+    return res</code></pre>
+</details>
+</dd>
+<dt id="tests.test_stress.remove_datafile"><code class="name flex">
+<span>def <span class="ident">remove_datafile</span></span>(<span>pod_name)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def remove_datafile(pod_name):
+    file_path = os.path.join(STRESS_RANDOM_DATA_DIR,
+                             get_data_filename(pod_name))
+
+    if os.path.exists(file_path):
+        os.remove(file_path)</code></pre>
+</details>
+</dd>
+<dt id="tests.test_stress.restore_and_check_random_backup"><code class="name flex">
+<span>def <span class="ident">restore_and_check_random_backup</span></span>(<span>client, core_api, volume_name, pod_name, snapshots_md5sum)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def restore_and_check_random_backup(client, core_api, volume_name, pod_name, snapshots_md5sum): # NOQA
+    res_volume_name = volume_name + &#39;-restore&#39;
+
+    host_id = get_self_host_id()
+
+    snap_data = get_random_backup_snapshot_data(snapshots_md5sum)
+
+    if snap_data is None:
+        print(&#34;skipped, no recorded backup found&#34;, end=&#34; &#34;)
+        return
+
+    backup_url = snap_data.backup_url
+
+    client.create_volume(name=res_volume_name,
+                         size=VOLUME_SIZE,
+                         fromBackup=backup_url)
+
+    wait_for_volume_restoration_completed(client, res_volume_name)
+
+    wait_for_volume_detached(client, res_volume_name)
+
+    res_volume = client.by_id_volume(res_volume_name)
+
+    res_volume.attach(hostId=host_id)
+
+    res_volume = wait_for_volume_healthy(client, res_volume_name)
+
+    dev = get_volume_endpoint(res_volume)
+
+    mount_path = os.path.join(DIRECTORY_PATH, res_volume_name)
+
+    command = [&#39;mkdir&#39;, &#39;-p&#39;, mount_path]
+    subprocess.check_call(command)
+
+    mount_disk(dev, mount_path)
+
+    datafile_name = get_data_filename(pod_name)
+    datafile_path = os.path.join(mount_path, datafile_name)
+
+    command = [&#39;md5sum&#39;, datafile_path]
+    output = subprocess.check_output(command)
+
+    bkp_data_md5sum = output.split()[0].decode(&#39;utf-8&#39;)
+
+    bkp_checksum_ok = False
+    if snap_data.data_md5sum == bkp_data_md5sum:
+        bkp_checksum_ok = True
+
+    umount_disk(mount_path)
+
+    command = [&#39;rmdir&#39;, mount_path]
+    subprocess.check_call(command)
+
+    res_volume = client.by_id_volume(res_volume_name)
+
+    res_volume.detach()
+
+    wait_for_volume_detached(client, res_volume_name)
+
+    delete_and_wait_longhorn(client, res_volume_name)
+
+    assert bkp_checksum_ok</code></pre>
+</details>
+</dd>
+<dt id="tests.test_stress.revert_random_snapshot"><code class="name flex">
+<span>def <span class="ident">revert_random_snapshot</span></span>(<span>client, core_api, volume_name, pod_manifest, snapshots_md5sum)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def revert_random_snapshot(client, core_api, volume_name, pod_manifest, snapshots_md5sum): # NOQA
+    volume = client.by_id_volume(volume_name)
+    host_id = get_self_host_id()
+    pod_name = pod_manifest[&#34;metadata&#34;][&#34;name&#34;]
+
+    # wait for volume healthy if rebuilding deleted replica
+    if len(volume.robustness) != VOLUME_ROBUSTNESS_HEALTHY:
+        wait_for_volume_healthy(client, volume_name)
+
+    snapshot = get_random_snapshot(snapshots_md5sum)
+
+    if snapshot is None:
+        print(&#34;skipped, no snapshot found&#34;, end=&#34; &#34;)
+        return
+
+    delete_and_wait_pod(core_api, pod_name)
+
+    wait_for_volume_detached(client, volume_name)
+
+    volume = client.by_id_volume(volume_name)
+
+    volume.attach(hostId=host_id, disableFrontend=True)
+
+    volume = wait_for_volume_healthy_no_frontend(client, volume_name)
+
+    volume.snapshotRevert(name=snapshot)
+
+    volume = client.by_id_volume(volume_name)
+
+    volume.detach()
+
+    wait_for_volume_detached(client, volume_name)
+
+    create_and_wait_pod(core_api, pod_manifest)
+
+    current_md5sum = read_data_md5sum(core_api, pod_name)
+
+    assert current_md5sum == snapshots_md5sum[snapshot].data_md5sum</code></pre>
+</details>
+</dd>
+<dt id="tests.test_stress.snapshot_create_and_record_md5sum"><code class="name flex">
+<span>def <span class="ident">snapshot_create_and_record_md5sum</span></span>(<span>client, core_api, volume_name, pod_name, snapshots_md5sum)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def snapshot_create_and_record_md5sum(client, core_api, volume_name, pod_name, snapshots_md5sum): # NOQA
+    data_md5sum = read_data_md5sum(core_api, pod_name)
+    snap = create_snapshot(client, volume_name)
+
+    snap_data = snapshot_data(snap[&#34;name&#34;])
+    snap_data.set_data_md5sum(data_md5sum)
+    snapshots_md5sum[snap[&#34;name&#34;]] = snap_data
+
+    return snap[&#34;name&#34;]</code></pre>
+</details>
+</dd>
+<dt id="tests.test_stress.test_reset_env"><code class="name flex">
+<span>def <span class="ident">test_reset_env</span></span>(<span>)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@pytest.mark.stress
+def test_reset_env():
+    k8s_api_client = get_core_api_client()
+    k8s_storage_client = get_storage_api_client()
+    longhorn_api_client = get_longhorn_api_client()
+
+    pod_list = k8s_api_client.list_namespaced_pod(&#34;default&#34;)
+    for pod in pod_list.items:
+        if STRESS_POD_NAME_PREFIX in pod.metadata.name:
+            delete_and_wait_pod(k8s_api_client, pod.metadata.name)
+
+    pvc_list = \
+        k8s_api_client.list_namespaced_persistent_volume_claim(&#34;default&#34;)
+    for pvc in pvc_list.items:
+        if STRESS_PVC_NAME_PREFIX in pvc.metadata.name:
+            delete_and_wait_pvc(k8s_api_client, pvc.metadata.name)
+
+    pv_list = k8s_api_client.list_persistent_volume()
+    for pv in pv_list.items:
+        pv_name = pv.metadata.name
+        if STRESS_PV_NAME_PREFIX in pv_name:
+            try:
+                delete_and_wait_pv(k8s_api_client, pv_name)
+            except AssertionError:
+                volumeattachment_list = \
+                    k8s_storage_client.list_volume_attachment()
+                for volumeattachment in volumeattachment_list.items:
+                    volume_attachment_name = \
+                        volumeattachment.spec.source.persistent_volume_name
+                    if volume_attachment_name == pv_name:
+                        delete_and_wait_volume_attachment(
+                            k8s_storage_client,
+                            volume_attachment_name
+                        )
+                        delete_and_wait_pv(k8s_api_client, pv.metadata.name)
+
+    volume_list = \
+        longhorn_api_client.list_volume()
+    for volume in volume_list.data:
+        if STRESS_VOLUME_NAME_PREFIX in volume.name:
+            delete_and_wait_longhorn(longhorn_api_client, volume.name)</code></pre>
+</details>
+</dd>
+<dt id="tests.test_stress.test_stress"><code class="name flex">
+<span>def <span class="ident">test_stress</span></span>(<span>generate_load)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@pytest.mark.stress
+def test_stress(generate_load):
+    pass</code></pre>
+</details>
+</dd>
+<dt id="tests.test_stress.time_now"><code class="name flex">
+<span>def <span class="ident">time_now</span></span>(<span>)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def time_now():
+    return datetime.datetime.now().strftime(&#34;%Y-%m-%d %H:%M:%S&#34;)</code></pre>
+</details>
+</dd>
+<dt id="tests.test_stress.write_data"><code class="name flex">
+<span>def <span class="ident">write_data</span></span>(<span>k8s_api_client, pod_name)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def write_data(k8s_api_client, pod_name):
+    src_dir_path = STRESS_RANDOM_DATA_DIR
+    dest_dir_path = &#39;/data/&#39;
+    file_name = get_data_filename(pod_name)
+
+    src_file_path = src_dir_path + file_name
+    dest_file_path = dest_dir_path + file_name
+
+    src_file = open(&#39;%s&#39; % src_file_path, &#39;wb&#39;)
+    src_file.write(os.urandom(TEST_DATA_BYTES))
+    src_file.close()
+    src_file_md5sum = get_md5sum(src_file_path)
+    command = &#39;kubectl cp &#39; + src_file_path + \
+              &#39; &#39; + pod_name + &#39;:&#39; + dest_file_path
+    subprocess.call(command, shell=True)
+
+    exec_command = exec_command = [&#39;/bin/sh&#39;]
+    resp = stream(k8s_api_client.connect_get_namespaced_pod_exec,
+                  pod_name,
+                  &#39;default&#39;,
+                  command=exec_command,
+                  stderr=True, stdin=True,
+                  stdout=True, tty=False,
+                  _preload_content=False)
+
+    resp.write_stdin(&#34;md5sum &#34; + dest_file_path + &#34;\n&#34;)
+    res = resp.readline_stdout(timeout=READ_MD5SUM_TIMEOUT).split()[0]
+
+    assert res == src_file_md5sum</code></pre>
+</details>
+</dd>
+</dl>
+</section>
+<section>
+<h2 class="section-title" id="header-classes">Classes</h2>
+<dl>
+<dt id="tests.test_stress.snapshot_data"><code class="flex name class">
+<span>class <span class="ident">snapshot_data</span></span>
+<span>(</span><span>snapshot_name)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class snapshot_data:
+    def __init__(self, snapshot_name):
+        self.snapshot_name = snapshot_name
+        self.removed = False
+        self.backup_name = None
+        self.backup_url = None
+        self.data_md5sum = None
+
+    def set_backup_name(self, backup_name):
+        self.backup_name = backup_name
+
+    def set_backup_url(self, backup_url):
+        self.backup_url = backup_url
+
+    def set_data_md5sum(self, data_md5sum):
+        self.data_md5sum = data_md5sum
+
+    def mark_as_removed(self):
+        self.removed = True</code></pre>
+</details>
+<h3>Methods</h3>
+<dl>
+<dt id="tests.test_stress.snapshot_data.mark_as_removed"><code class="name flex">
+<span>def <span class="ident">mark_as_removed</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def mark_as_removed(self):
+    self.removed = True</code></pre>
+</details>
+</dd>
+<dt id="tests.test_stress.snapshot_data.set_backup_name"><code class="name flex">
+<span>def <span class="ident">set_backup_name</span></span>(<span>self, backup_name)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def set_backup_name(self, backup_name):
+    self.backup_name = backup_name</code></pre>
+</details>
+</dd>
+<dt id="tests.test_stress.snapshot_data.set_backup_url"><code class="name flex">
+<span>def <span class="ident">set_backup_url</span></span>(<span>self, backup_url)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def set_backup_url(self, backup_url):
+    self.backup_url = backup_url</code></pre>
+</details>
+</dd>
+<dt id="tests.test_stress.snapshot_data.set_data_md5sum"><code class="name flex">
+<span>def <span class="ident">set_data_md5sum</span></span>(<span>self, data_md5sum)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def set_data_md5sum(self, data_md5sum):
+    self.data_md5sum = data_md5sum</code></pre>
+</details>
+</dd>
+</dl>
+</dd>
+</dl>
+</section>
+</article>
+<nav id="sidebar">
+<h1>Index</h1>
+<div class="toc">
+<ul></ul>
+</div>
+<ul id="index">
+<li><h3>Super-module</h3>
+<ul>
+<li><code><a title="tests" href="index.html">tests</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-functions">Functions</a></h3>
+<ul class="">
+<li><code><a title="tests.test_stress.backup_create_and_record_md5sum" href="#tests.test_stress.backup_create_and_record_md5sum">backup_create_and_record_md5sum</a></code></li>
+<li><code><a title="tests.test_stress.check_and_set_backupstore" href="#tests.test_stress.check_and_set_backupstore">check_and_set_backupstore</a></code></li>
+<li><code><a title="tests.test_stress.clean_volume_backups" href="#tests.test_stress.clean_volume_backups">clean_volume_backups</a></code></li>
+<li><code><a title="tests.test_stress.create_recurring_jobs" href="#tests.test_stress.create_recurring_jobs">create_recurring_jobs</a></code></li>
+<li><code><a title="tests.test_stress.delete_data" href="#tests.test_stress.delete_data">delete_data</a></code></li>
+<li><code><a title="tests.test_stress.delete_random_snapshot" href="#tests.test_stress.delete_random_snapshot">delete_random_snapshot</a></code></li>
+<li><code><a title="tests.test_stress.delete_replica" href="#tests.test_stress.delete_replica">delete_replica</a></code></li>
+<li><code><a title="tests.test_stress.generate_load" href="#tests.test_stress.generate_load">generate_load</a></code></li>
+<li><code><a title="tests.test_stress.get_data_filename" href="#tests.test_stress.get_data_filename">get_data_filename</a></code></li>
+<li><code><a title="tests.test_stress.get_md5sum" href="#tests.test_stress.get_md5sum">get_md5sum</a></code></li>
+<li><code><a title="tests.test_stress.get_random_backup_snapshot_data" href="#tests.test_stress.get_random_backup_snapshot_data">get_random_backup_snapshot_data</a></code></li>
+<li><code><a title="tests.test_stress.get_random_snapshot" href="#tests.test_stress.get_random_snapshot">get_random_snapshot</a></code></li>
+<li><code><a title="tests.test_stress.get_random_suffix" href="#tests.test_stress.get_random_suffix">get_random_suffix</a></code></li>
+<li><code><a title="tests.test_stress.get_recurring_jobs" href="#tests.test_stress.get_recurring_jobs">get_recurring_jobs</a></code></li>
+<li><code><a title="tests.test_stress.purge_random_snapshot" href="#tests.test_stress.purge_random_snapshot">purge_random_snapshot</a></code></li>
+<li><code><a title="tests.test_stress.read_data_md5sum" href="#tests.test_stress.read_data_md5sum">read_data_md5sum</a></code></li>
+<li><code><a title="tests.test_stress.remove_datafile" href="#tests.test_stress.remove_datafile">remove_datafile</a></code></li>
+<li><code><a title="tests.test_stress.restore_and_check_random_backup" href="#tests.test_stress.restore_and_check_random_backup">restore_and_check_random_backup</a></code></li>
+<li><code><a title="tests.test_stress.revert_random_snapshot" href="#tests.test_stress.revert_random_snapshot">revert_random_snapshot</a></code></li>
+<li><code><a title="tests.test_stress.snapshot_create_and_record_md5sum" href="#tests.test_stress.snapshot_create_and_record_md5sum">snapshot_create_and_record_md5sum</a></code></li>
+<li><code><a title="tests.test_stress.test_reset_env" href="#tests.test_stress.test_reset_env">test_reset_env</a></code></li>
+<li><code><a title="tests.test_stress.test_stress" href="#tests.test_stress.test_stress">test_stress</a></code></li>
+<li><code><a title="tests.test_stress.time_now" href="#tests.test_stress.time_now">time_now</a></code></li>
+<li><code><a title="tests.test_stress.write_data" href="#tests.test_stress.write_data">write_data</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-classes">Classes</a></h3>
+<ul>
+<li>
+<h4><code><a title="tests.test_stress.snapshot_data" href="#tests.test_stress.snapshot_data">snapshot_data</a></code></h4>
+<ul class="">
+<li><code><a title="tests.test_stress.snapshot_data.mark_as_removed" href="#tests.test_stress.snapshot_data.mark_as_removed">mark_as_removed</a></code></li>
+<li><code><a title="tests.test_stress.snapshot_data.set_backup_name" href="#tests.test_stress.snapshot_data.set_backup_name">set_backup_name</a></code></li>
+<li><code><a title="tests.test_stress.snapshot_data.set_backup_url" href="#tests.test_stress.snapshot_data.set_backup_url">set_backup_url</a></code></li>
+<li><code><a title="tests.test_stress.snapshot_data.set_data_md5sum" href="#tests.test_stress.snapshot_data.set_data_md5sum">set_data_md5sum</a></code></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</nav>
+</main>
+<footer id="footer">
+<p>Generated by <a href="https://pdoc3.github.io/pdoc"><cite>pdoc</cite> 0.8.4</a>.</p>
+</footer>
+</body>
+</html>

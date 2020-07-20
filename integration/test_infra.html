@@ -1,0 +1,902 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
+<meta name="generator" content="pdoc 0.8.4" />
+<title>tests.test_infra API documentation</title>
+<meta name="description" content="" />
+<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
+<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/typography.min.css" integrity="sha256-7l/o7C8jubJiy74VsKTidCy1yBkRtiUGbVkYBylBqUg=" crossorigin>
+<link rel="stylesheet preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/styles/github.min.css" crossorigin>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:30px;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:1em 0 .50em 0}h3{font-size:1.4em;margin:25px 0 10px 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .3s ease-in-out}a:hover{color:#e82}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900}pre code{background:#f8f8f8;font-size:.8em;line-height:1.4em}code{background:#f2f2f1;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{background:#f8f8f8;border:0;border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0;padding:1ex}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-weight:bold;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em .5em;margin-bottom:1em}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.item .name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul{padding-left:1.5em}.toc > ul > li{margin-top:.5em}}</style>
+<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/highlight.min.js" integrity="sha256-eOgo0OtLL4cdq7RdwRUiGKLX9XsIJ7nGhWEKbohmVAQ=" crossorigin></script>
+<script>window.addEventListener('DOMContentLoaded', () => hljs.initHighlighting())</script>
+</head>
+<body>
+<main>
+<article id="content">
+<header>
+<h1 class="title">Module <code>tests.test_infra</code></h1>
+</header>
+<section id="section-intro">
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">import os
+import pytest
+import time
+
+from digitalocean import digitalocean
+from common import get_core_api_client, get_longhorn_api_client
+from common import RETRY_COUNTS, RETRY_INTERVAL
+
+from common import SIZE
+from common import create_and_check_volume
+from common import wait_for_volume_detached
+from common import create_pvc_for_volume
+from common import create_pv_for_volume
+from common import delete_and_wait_pod
+from common import make_deployment_with_pvc   # NOQA
+from common import create_and_wait_deployment
+from common import get_apps_api_client
+from common import wait_for_volume_healthy
+from common import generate_random_data
+from common import VOLUME_RWTEST_SIZE
+from common import write_pod_volume_data
+from common import read_volume_data
+from common import get_self_host_id
+from common import core_api # NOQA
+from common import client # NOQA
+from common import wait_pod
+from common import volume_name # NOQA
+from common import generate_volume_name
+
+TERMINATING_POD_RETRYS = 30
+TERMINATING_POD_INTERVAL = 1
+
+
+def detect_cloudprovider():
+    cloudprovider_name = os.getenv(&#34;CLOUDPROVIDER&#34;)
+
+    if cloudprovider_name == &#34;digitalocean&#34;:
+        cloudprovider = digitalocean()
+        return cloudprovider
+    else:
+        assert False
+
+
+def is_node_ready_k8s(node_name, k8s_api_client):
+    node_status_k8s = k8s_api_client.read_node_status(node_name)
+
+    for node_condition in node_status_k8s.status.conditions:
+        if node_condition.type == &#34;Ready&#34; and \
+           node_condition.status == &#34;True&#34;:
+            node_ready = True
+        else:
+            node_ready = False
+
+    return node_ready
+
+
+def wait_for_node_up_k8s(node_name, k8s_api_client):
+    node_up = False
+    for i in range(RETRY_COUNTS):
+        if is_node_ready_k8s(node_name, k8s_api_client) is True:
+            node_up = True
+            break
+        else:
+            time.sleep(RETRY_INTERVAL)
+            continue
+    return node_up
+
+
+def wait_for_node_down_k8s(node_name, k8s_api_client):
+    node_down = False
+    for i in range(RETRY_COUNTS):
+        if is_node_ready_k8s(node_name, k8s_api_client) is False:
+            node_down = True
+            break
+        else:
+            time.sleep(RETRY_INTERVAL)
+            continue
+    return node_down
+
+
+def is_node_ready_longhorn(node_name, longhorn_api_client):
+    node = longhorn_api_client.by_id_node(node_name)
+
+    if node.conditions.Ready.status == &#39;False&#39;:
+        node_ready = False
+    else:
+        node_ready = True
+
+    return node_ready
+
+
+def wait_for_node_up_longhorn(node_name, longhorn_api_client):
+    longhorn_node_up = False
+    for i in range(RETRY_COUNTS):
+        if is_node_ready_longhorn(node_name, longhorn_api_client) is True:
+            longhorn_node_up = True
+            break
+        else:
+            time.sleep(RETRY_INTERVAL)
+            continue
+
+    return longhorn_node_up
+
+
+def wait_for_node_down_longhorn(node_name, longhorn_api_client):
+    longhorn_node_down = False
+    for i in range(RETRY_COUNTS):
+        if is_node_ready_longhorn(node_name, longhorn_api_client) is False:
+            longhorn_node_down = True
+            break
+        else:
+            time.sleep(RETRY_INTERVAL)
+            continue
+
+    return longhorn_node_down
+
+
+@pytest.fixture
+def reset_cluster_ready_status(request):
+    def finalizer():
+        node_worker_label = &#39;node-role.kubernetes.io/worker&#39;
+
+        k8s_api_client = get_core_api_client()
+        longhorn_api_client = get_longhorn_api_client()
+        cloudprovider = detect_cloudprovider()
+
+        for node_item in k8s_api_client.list_node().items:
+            if node_worker_label in node_item.metadata.labels and \
+                    node_item.metadata.labels[node_worker_label] == &#39;true&#39;:
+                node_name = node_item.metadata.name
+
+                if is_node_ready_k8s(node_name, k8s_api_client) is False:
+                    node = cloudprovider.node_id(node_name)
+
+                    cloudprovider.node_start(node)
+
+                    node_up_k8s = wait_for_node_up_k8s(node_name,
+                                                       k8s_api_client)
+
+                    assert node_up_k8s
+
+                else:
+                    continue
+
+                node_up_longhorn =\
+                    wait_for_node_up_longhorn(node_name,
+                                              longhorn_api_client)
+
+                assert node_up_longhorn
+
+    request.addfinalizer(finalizer)
+
+
+@pytest.mark.infra
+def test_offline_node(reset_cluster_ready_status):
+    &#34;&#34;&#34;
+    Test offline node
+
+    1. Bring down one of the nodes in Kuberntes cluster (avoid current node)
+    2. Make sure the Longhorn node state become `down`
+    &#34;&#34;&#34;
+    node_worker_label = &#39;node-role.kubernetes.io/worker&#39;
+    pod_lable_selector = &#34;longhorn-test=test-job&#34;
+
+    k8s_api_client = get_core_api_client()
+    longhorn_api_client = get_longhorn_api_client()
+    cloudprovider = detect_cloudprovider()
+
+    for pod in k8s_api_client.list_namespaced_pod(
+                    &#39;default&#39;,
+                    label_selector=pod_lable_selector).items:
+        if pod.metadata.name == &#34;longhorn-test&#34;:
+            longhorn_test_node_name = pod.spec.node_name
+
+    for node_item in k8s_api_client.list_node().items:
+        if node_worker_label in node_item.metadata.labels and \
+                node_item.metadata.labels[node_worker_label] == &#39;true&#39;:
+            node_name = node_item.metadata.name
+            if node_name == longhorn_test_node_name:
+                continue
+            else:
+                break
+
+    node = cloudprovider.node_id(node_name)
+
+    cloudprovider.node_shutdown(node)
+
+    k8s_node_down = wait_for_node_down_k8s(node_name, k8s_api_client)
+
+    assert k8s_node_down
+
+    longhorn_node_down = wait_for_node_down_longhorn(node_name,
+                                                     longhorn_api_client)
+
+    assert longhorn_node_down
+
+
+@pytest.mark.infra
+def test_offline_node_with_attached_volume_and_pod(client, core_api, volume_name, make_deployment_with_pvc, reset_cluster_ready_status): # NOQA
+    &#34;&#34;&#34;
+    Test offline node with attached volume and pod
+
+    1. Create PV/PVC/Deployment manifest.
+    2. Update deployment&#39;s tolerations to 20 seconds to speed up test
+    3. Update deployment&#39;s node affinity rule to avoid the current node
+    4. Create volume, PV/PVC and deployment.
+    5. Find the pod in the deployment and write `test_data` into it
+    6. Shutdown the node pod is running on
+    7. Wait for deployment to delete the pod
+        1. Deployment cannot delete the pod here because kubelet doesn&#39;t
+        response
+    8. Force delete the terminating pod
+    9. Wait for the new pod to be created and the volume attached
+    10. Check `test_data` in the new pod
+    &#34;&#34;&#34;
+    toleration_seconds = 20
+
+    apps_api = get_apps_api_client()
+    cloudprovider = detect_cloudprovider()
+
+    volume_name = generate_volume_name()
+    pv_name = volume_name + &#34;-pv&#34;
+    pvc_name = volume_name + &#34;-pvc&#34;
+    deployment_name = volume_name + &#34;-dep&#34;
+
+    longhorn_test_node_name = get_self_host_id()
+
+    deployment_manifest = make_deployment_with_pvc(
+        deployment_name,
+        pvc_name
+    )
+
+    unreachable_toleration = {
+        &#34;key&#34;: &#34;node.kubernetes.io/unreachable&#34;,
+        &#34;operator&#34;: &#34;Exists&#34;,
+        &#34;effect&#34;: &#34;NoExecute&#34;,
+        &#34;tolerationSeconds&#34;: toleration_seconds
+    }
+
+    not_ready_toleration = {
+        &#34;key&#34;: &#34;node.kubernetes.io/not-ready&#34;,
+        &#34;operator&#34;: &#34;Exists&#34;,
+        &#34;effect&#34;: &#34;NoExecute&#34;,
+        &#34;tolerationSeconds&#34;: toleration_seconds
+    }
+
+    deployment_manifest[&#34;spec&#34;][&#34;template&#34;][&#34;spec&#34;][&#34;tolerations&#34;] =\
+        [unreachable_toleration, not_ready_toleration]
+
+    node_affinity_roles = {
+        &#34;nodeAffinity&#34;: {
+          &#34;requiredDuringSchedulingIgnoredDuringExecution&#34;: {
+            &#34;nodeSelectorTerms&#34;: [
+              {
+                &#34;matchExpressions&#34;: [
+                  {
+                    &#34;key&#34;: &#34;kubernetes.io/hostname&#34;,
+                    &#34;operator&#34;: &#34;NotIn&#34;,
+                    &#34;values&#34;: [longhorn_test_node_name]
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      }
+
+    deployment_manifest[&#34;spec&#34;][&#34;template&#34;][&#34;spec&#34;][&#34;affinity&#34;] =\
+        node_affinity_roles
+
+    longhorn_volume = create_and_check_volume(
+        client,
+        volume_name,
+        size=SIZE
+    )
+
+    wait_for_volume_detached(client, volume_name)
+
+    create_pv_for_volume(client,
+                         core_api,
+                         longhorn_volume,
+                         pv_name)
+
+    create_pvc_for_volume(client,
+                          core_api,
+                          longhorn_volume,
+                          pvc_name)
+
+    create_and_wait_deployment(apps_api, deployment_manifest)
+
+    deployment_label_selector =\
+        &#34;name=&#34; + deployment_manifest[&#34;metadata&#34;][&#34;labels&#34;][&#34;name&#34;]
+
+    deployment_pod_list =\
+        core_api.list_namespaced_pod(namespace=&#34;default&#34;,
+                                     label_selector=deployment_label_selector)
+
+    assert deployment_pod_list.items.__len__() == 1
+
+    pod_name = deployment_pod_list.items[0].metadata.name
+
+    test_data = generate_random_data(VOLUME_RWTEST_SIZE)
+
+    write_pod_volume_data(core_api, pod_name, test_data)
+
+    node_name = deployment_pod_list.items[0].spec.node_name
+    node = cloudprovider.node_id(node_name)
+
+    cloudprovider.node_shutdown(node)
+
+    k8s_node_down = wait_for_node_down_k8s(node_name, core_api)
+
+    assert k8s_node_down
+
+    client = get_longhorn_api_client()
+
+    longhorn_node_down = wait_for_node_down_longhorn(node_name,
+                                                     client)
+    assert longhorn_node_down
+
+    time.sleep(toleration_seconds + 5)
+
+    for i in range(TERMINATING_POD_RETRYS):
+        deployment_pod_list =\
+            core_api.list_namespaced_pod(
+                namespace=&#34;default&#34;,
+                label_selector=deployment_label_selector
+            )
+
+        terminating_pod_name = None
+        for pod in deployment_pod_list.items:
+            if pod.metadata.__getattribute__(&#34;deletion_timestamp&#34;) is not None:
+                terminating_pod_name = pod.metadata.name
+                break
+
+        if terminating_pod_name is not None:
+            break
+        else:
+            time.sleep(TERMINATING_POD_INTERVAL)
+
+    assert terminating_pod_name is not None
+
+    core_api.delete_namespaced_pod(namespace=&#34;default&#34;,
+                                   name=terminating_pod_name,
+                                   grace_period_seconds=0)
+
+    delete_and_wait_pod(core_api, terminating_pod_name)
+
+    deployment_pod_list =\
+        core_api.list_namespaced_pod(
+            namespace=&#34;default&#34;,
+            label_selector=deployment_label_selector
+        )
+
+    assert deployment_pod_list.items.__len__() == 1
+
+    wait_for_volume_detached(client, volume_name)
+    wait_for_volume_healthy(client, volume_name)
+
+    deployment_pod_list =\
+        core_api.list_namespaced_pod(
+            namespace=&#34;default&#34;,
+            label_selector=deployment_label_selector
+        )
+
+    assert deployment_pod_list.items.__len__() == 1
+
+    new_pod_name = deployment_pod_list.items[0].metadata.name
+
+    wait_pod(new_pod_name)
+
+    resp_data = read_volume_data(core_api, new_pod_name)
+
+    assert test_data == resp_data</code></pre>
+</details>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-functions">Functions</h2>
+<dl>
+<dt id="tests.test_infra.detect_cloudprovider"><code class="name flex">
+<span>def <span class="ident">detect_cloudprovider</span></span>(<span>)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def detect_cloudprovider():
+    cloudprovider_name = os.getenv(&#34;CLOUDPROVIDER&#34;)
+
+    if cloudprovider_name == &#34;digitalocean&#34;:
+        cloudprovider = digitalocean()
+        return cloudprovider
+    else:
+        assert False</code></pre>
+</details>
+</dd>
+<dt id="tests.test_infra.is_node_ready_k8s"><code class="name flex">
+<span>def <span class="ident">is_node_ready_k8s</span></span>(<span>node_name, k8s_api_client)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def is_node_ready_k8s(node_name, k8s_api_client):
+    node_status_k8s = k8s_api_client.read_node_status(node_name)
+
+    for node_condition in node_status_k8s.status.conditions:
+        if node_condition.type == &#34;Ready&#34; and \
+           node_condition.status == &#34;True&#34;:
+            node_ready = True
+        else:
+            node_ready = False
+
+    return node_ready</code></pre>
+</details>
+</dd>
+<dt id="tests.test_infra.is_node_ready_longhorn"><code class="name flex">
+<span>def <span class="ident">is_node_ready_longhorn</span></span>(<span>node_name, longhorn_api_client)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def is_node_ready_longhorn(node_name, longhorn_api_client):
+    node = longhorn_api_client.by_id_node(node_name)
+
+    if node.conditions.Ready.status == &#39;False&#39;:
+        node_ready = False
+    else:
+        node_ready = True
+
+    return node_ready</code></pre>
+</details>
+</dd>
+<dt id="tests.test_infra.reset_cluster_ready_status"><code class="name flex">
+<span>def <span class="ident">reset_cluster_ready_status</span></span>(<span>request)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@pytest.fixture
+def reset_cluster_ready_status(request):
+    def finalizer():
+        node_worker_label = &#39;node-role.kubernetes.io/worker&#39;
+
+        k8s_api_client = get_core_api_client()
+        longhorn_api_client = get_longhorn_api_client()
+        cloudprovider = detect_cloudprovider()
+
+        for node_item in k8s_api_client.list_node().items:
+            if node_worker_label in node_item.metadata.labels and \
+                    node_item.metadata.labels[node_worker_label] == &#39;true&#39;:
+                node_name = node_item.metadata.name
+
+                if is_node_ready_k8s(node_name, k8s_api_client) is False:
+                    node = cloudprovider.node_id(node_name)
+
+                    cloudprovider.node_start(node)
+
+                    node_up_k8s = wait_for_node_up_k8s(node_name,
+                                                       k8s_api_client)
+
+                    assert node_up_k8s
+
+                else:
+                    continue
+
+                node_up_longhorn =\
+                    wait_for_node_up_longhorn(node_name,
+                                              longhorn_api_client)
+
+                assert node_up_longhorn
+
+    request.addfinalizer(finalizer)</code></pre>
+</details>
+</dd>
+<dt id="tests.test_infra.test_offline_node"><code class="name flex">
+<span>def <span class="ident">test_offline_node</span></span>(<span>reset_cluster_ready_status)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test offline node</p>
+<ol>
+<li>Bring down one of the nodes in Kuberntes cluster (avoid current node)</li>
+<li>Make sure the Longhorn node state become <code>down</code></li>
+</ol></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@pytest.mark.infra
+def test_offline_node(reset_cluster_ready_status):
+    &#34;&#34;&#34;
+    Test offline node
+
+    1. Bring down one of the nodes in Kuberntes cluster (avoid current node)
+    2. Make sure the Longhorn node state become `down`
+    &#34;&#34;&#34;
+    node_worker_label = &#39;node-role.kubernetes.io/worker&#39;
+    pod_lable_selector = &#34;longhorn-test=test-job&#34;
+
+    k8s_api_client = get_core_api_client()
+    longhorn_api_client = get_longhorn_api_client()
+    cloudprovider = detect_cloudprovider()
+
+    for pod in k8s_api_client.list_namespaced_pod(
+                    &#39;default&#39;,
+                    label_selector=pod_lable_selector).items:
+        if pod.metadata.name == &#34;longhorn-test&#34;:
+            longhorn_test_node_name = pod.spec.node_name
+
+    for node_item in k8s_api_client.list_node().items:
+        if node_worker_label in node_item.metadata.labels and \
+                node_item.metadata.labels[node_worker_label] == &#39;true&#39;:
+            node_name = node_item.metadata.name
+            if node_name == longhorn_test_node_name:
+                continue
+            else:
+                break
+
+    node = cloudprovider.node_id(node_name)
+
+    cloudprovider.node_shutdown(node)
+
+    k8s_node_down = wait_for_node_down_k8s(node_name, k8s_api_client)
+
+    assert k8s_node_down
+
+    longhorn_node_down = wait_for_node_down_longhorn(node_name,
+                                                     longhorn_api_client)
+
+    assert longhorn_node_down</code></pre>
+</details>
+</dd>
+<dt id="tests.test_infra.test_offline_node_with_attached_volume_and_pod"><code class="name flex">
+<span>def <span class="ident">test_offline_node_with_attached_volume_and_pod</span></span>(<span>client, core_api, volume_name, make_deployment_with_pvc, reset_cluster_ready_status)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test offline node with attached volume and pod</p>
+<ol>
+<li>Create PV/PVC/Deployment manifest.</li>
+<li>Update deployment's tolerations to 20 seconds to speed up test</li>
+<li>Update deployment's node affinity rule to avoid the current node</li>
+<li>Create volume, PV/PVC and deployment.</li>
+<li>Find the pod in the deployment and write <code>test_data</code> into it</li>
+<li>Shutdown the node pod is running on</li>
+<li>Wait for deployment to delete the pod<ol>
+<li>Deployment cannot delete the pod here because kubelet doesn't
+response</li>
+</ol>
+</li>
+<li>Force delete the terminating pod</li>
+<li>Wait for the new pod to be created and the volume attached</li>
+<li>Check <code>test_data</code> in the new pod</li>
+</ol></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@pytest.mark.infra
+def test_offline_node_with_attached_volume_and_pod(client, core_api, volume_name, make_deployment_with_pvc, reset_cluster_ready_status): # NOQA
+    &#34;&#34;&#34;
+    Test offline node with attached volume and pod
+
+    1. Create PV/PVC/Deployment manifest.
+    2. Update deployment&#39;s tolerations to 20 seconds to speed up test
+    3. Update deployment&#39;s node affinity rule to avoid the current node
+    4. Create volume, PV/PVC and deployment.
+    5. Find the pod in the deployment and write `test_data` into it
+    6. Shutdown the node pod is running on
+    7. Wait for deployment to delete the pod
+        1. Deployment cannot delete the pod here because kubelet doesn&#39;t
+        response
+    8. Force delete the terminating pod
+    9. Wait for the new pod to be created and the volume attached
+    10. Check `test_data` in the new pod
+    &#34;&#34;&#34;
+    toleration_seconds = 20
+
+    apps_api = get_apps_api_client()
+    cloudprovider = detect_cloudprovider()
+
+    volume_name = generate_volume_name()
+    pv_name = volume_name + &#34;-pv&#34;
+    pvc_name = volume_name + &#34;-pvc&#34;
+    deployment_name = volume_name + &#34;-dep&#34;
+
+    longhorn_test_node_name = get_self_host_id()
+
+    deployment_manifest = make_deployment_with_pvc(
+        deployment_name,
+        pvc_name
+    )
+
+    unreachable_toleration = {
+        &#34;key&#34;: &#34;node.kubernetes.io/unreachable&#34;,
+        &#34;operator&#34;: &#34;Exists&#34;,
+        &#34;effect&#34;: &#34;NoExecute&#34;,
+        &#34;tolerationSeconds&#34;: toleration_seconds
+    }
+
+    not_ready_toleration = {
+        &#34;key&#34;: &#34;node.kubernetes.io/not-ready&#34;,
+        &#34;operator&#34;: &#34;Exists&#34;,
+        &#34;effect&#34;: &#34;NoExecute&#34;,
+        &#34;tolerationSeconds&#34;: toleration_seconds
+    }
+
+    deployment_manifest[&#34;spec&#34;][&#34;template&#34;][&#34;spec&#34;][&#34;tolerations&#34;] =\
+        [unreachable_toleration, not_ready_toleration]
+
+    node_affinity_roles = {
+        &#34;nodeAffinity&#34;: {
+          &#34;requiredDuringSchedulingIgnoredDuringExecution&#34;: {
+            &#34;nodeSelectorTerms&#34;: [
+              {
+                &#34;matchExpressions&#34;: [
+                  {
+                    &#34;key&#34;: &#34;kubernetes.io/hostname&#34;,
+                    &#34;operator&#34;: &#34;NotIn&#34;,
+                    &#34;values&#34;: [longhorn_test_node_name]
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      }
+
+    deployment_manifest[&#34;spec&#34;][&#34;template&#34;][&#34;spec&#34;][&#34;affinity&#34;] =\
+        node_affinity_roles
+
+    longhorn_volume = create_and_check_volume(
+        client,
+        volume_name,
+        size=SIZE
+    )
+
+    wait_for_volume_detached(client, volume_name)
+
+    create_pv_for_volume(client,
+                         core_api,
+                         longhorn_volume,
+                         pv_name)
+
+    create_pvc_for_volume(client,
+                          core_api,
+                          longhorn_volume,
+                          pvc_name)
+
+    create_and_wait_deployment(apps_api, deployment_manifest)
+
+    deployment_label_selector =\
+        &#34;name=&#34; + deployment_manifest[&#34;metadata&#34;][&#34;labels&#34;][&#34;name&#34;]
+
+    deployment_pod_list =\
+        core_api.list_namespaced_pod(namespace=&#34;default&#34;,
+                                     label_selector=deployment_label_selector)
+
+    assert deployment_pod_list.items.__len__() == 1
+
+    pod_name = deployment_pod_list.items[0].metadata.name
+
+    test_data = generate_random_data(VOLUME_RWTEST_SIZE)
+
+    write_pod_volume_data(core_api, pod_name, test_data)
+
+    node_name = deployment_pod_list.items[0].spec.node_name
+    node = cloudprovider.node_id(node_name)
+
+    cloudprovider.node_shutdown(node)
+
+    k8s_node_down = wait_for_node_down_k8s(node_name, core_api)
+
+    assert k8s_node_down
+
+    client = get_longhorn_api_client()
+
+    longhorn_node_down = wait_for_node_down_longhorn(node_name,
+                                                     client)
+    assert longhorn_node_down
+
+    time.sleep(toleration_seconds + 5)
+
+    for i in range(TERMINATING_POD_RETRYS):
+        deployment_pod_list =\
+            core_api.list_namespaced_pod(
+                namespace=&#34;default&#34;,
+                label_selector=deployment_label_selector
+            )
+
+        terminating_pod_name = None
+        for pod in deployment_pod_list.items:
+            if pod.metadata.__getattribute__(&#34;deletion_timestamp&#34;) is not None:
+                terminating_pod_name = pod.metadata.name
+                break
+
+        if terminating_pod_name is not None:
+            break
+        else:
+            time.sleep(TERMINATING_POD_INTERVAL)
+
+    assert terminating_pod_name is not None
+
+    core_api.delete_namespaced_pod(namespace=&#34;default&#34;,
+                                   name=terminating_pod_name,
+                                   grace_period_seconds=0)
+
+    delete_and_wait_pod(core_api, terminating_pod_name)
+
+    deployment_pod_list =\
+        core_api.list_namespaced_pod(
+            namespace=&#34;default&#34;,
+            label_selector=deployment_label_selector
+        )
+
+    assert deployment_pod_list.items.__len__() == 1
+
+    wait_for_volume_detached(client, volume_name)
+    wait_for_volume_healthy(client, volume_name)
+
+    deployment_pod_list =\
+        core_api.list_namespaced_pod(
+            namespace=&#34;default&#34;,
+            label_selector=deployment_label_selector
+        )
+
+    assert deployment_pod_list.items.__len__() == 1
+
+    new_pod_name = deployment_pod_list.items[0].metadata.name
+
+    wait_pod(new_pod_name)
+
+    resp_data = read_volume_data(core_api, new_pod_name)
+
+    assert test_data == resp_data</code></pre>
+</details>
+</dd>
+<dt id="tests.test_infra.wait_for_node_down_k8s"><code class="name flex">
+<span>def <span class="ident">wait_for_node_down_k8s</span></span>(<span>node_name, k8s_api_client)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def wait_for_node_down_k8s(node_name, k8s_api_client):
+    node_down = False
+    for i in range(RETRY_COUNTS):
+        if is_node_ready_k8s(node_name, k8s_api_client) is False:
+            node_down = True
+            break
+        else:
+            time.sleep(RETRY_INTERVAL)
+            continue
+    return node_down</code></pre>
+</details>
+</dd>
+<dt id="tests.test_infra.wait_for_node_down_longhorn"><code class="name flex">
+<span>def <span class="ident">wait_for_node_down_longhorn</span></span>(<span>node_name, longhorn_api_client)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def wait_for_node_down_longhorn(node_name, longhorn_api_client):
+    longhorn_node_down = False
+    for i in range(RETRY_COUNTS):
+        if is_node_ready_longhorn(node_name, longhorn_api_client) is False:
+            longhorn_node_down = True
+            break
+        else:
+            time.sleep(RETRY_INTERVAL)
+            continue
+
+    return longhorn_node_down</code></pre>
+</details>
+</dd>
+<dt id="tests.test_infra.wait_for_node_up_k8s"><code class="name flex">
+<span>def <span class="ident">wait_for_node_up_k8s</span></span>(<span>node_name, k8s_api_client)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def wait_for_node_up_k8s(node_name, k8s_api_client):
+    node_up = False
+    for i in range(RETRY_COUNTS):
+        if is_node_ready_k8s(node_name, k8s_api_client) is True:
+            node_up = True
+            break
+        else:
+            time.sleep(RETRY_INTERVAL)
+            continue
+    return node_up</code></pre>
+</details>
+</dd>
+<dt id="tests.test_infra.wait_for_node_up_longhorn"><code class="name flex">
+<span>def <span class="ident">wait_for_node_up_longhorn</span></span>(<span>node_name, longhorn_api_client)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def wait_for_node_up_longhorn(node_name, longhorn_api_client):
+    longhorn_node_up = False
+    for i in range(RETRY_COUNTS):
+        if is_node_ready_longhorn(node_name, longhorn_api_client) is True:
+            longhorn_node_up = True
+            break
+        else:
+            time.sleep(RETRY_INTERVAL)
+            continue
+
+    return longhorn_node_up</code></pre>
+</details>
+</dd>
+</dl>
+</section>
+<section>
+</section>
+</article>
+<nav id="sidebar">
+<h1>Index</h1>
+<div class="toc">
+<ul></ul>
+</div>
+<ul id="index">
+<li><h3>Super-module</h3>
+<ul>
+<li><code><a title="tests" href="index.html">tests</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-functions">Functions</a></h3>
+<ul class="">
+<li><code><a title="tests.test_infra.detect_cloudprovider" href="#tests.test_infra.detect_cloudprovider">detect_cloudprovider</a></code></li>
+<li><code><a title="tests.test_infra.is_node_ready_k8s" href="#tests.test_infra.is_node_ready_k8s">is_node_ready_k8s</a></code></li>
+<li><code><a title="tests.test_infra.is_node_ready_longhorn" href="#tests.test_infra.is_node_ready_longhorn">is_node_ready_longhorn</a></code></li>
+<li><code><a title="tests.test_infra.reset_cluster_ready_status" href="#tests.test_infra.reset_cluster_ready_status">reset_cluster_ready_status</a></code></li>
+<li><code><a title="tests.test_infra.test_offline_node" href="#tests.test_infra.test_offline_node">test_offline_node</a></code></li>
+<li><code><a title="tests.test_infra.test_offline_node_with_attached_volume_and_pod" href="#tests.test_infra.test_offline_node_with_attached_volume_and_pod">test_offline_node_with_attached_volume_and_pod</a></code></li>
+<li><code><a title="tests.test_infra.wait_for_node_down_k8s" href="#tests.test_infra.wait_for_node_down_k8s">wait_for_node_down_k8s</a></code></li>
+<li><code><a title="tests.test_infra.wait_for_node_down_longhorn" href="#tests.test_infra.wait_for_node_down_longhorn">wait_for_node_down_longhorn</a></code></li>
+<li><code><a title="tests.test_infra.wait_for_node_up_k8s" href="#tests.test_infra.wait_for_node_up_k8s">wait_for_node_up_k8s</a></code></li>
+<li><code><a title="tests.test_infra.wait_for_node_up_longhorn" href="#tests.test_infra.wait_for_node_up_longhorn">wait_for_node_up_longhorn</a></code></li>
+</ul>
+</li>
+</ul>
+</nav>
+</main>
+<footer id="footer">
+<p>Generated by <a href="https://pdoc3.github.io/pdoc"><cite>pdoc</cite> 0.8.4</a>.</p>
+</footer>
+</body>
+</html>

@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>v1.0.1 on Longhorn Manual Test Cases</title>
+    <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.1/</link>
+    <description>Recent content in v1.0.1 on Longhorn Manual Test Cases</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en-us</language>
+    
+	<atom:link href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.1/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>BestEffort Recurring Job Cleanup</title>
+      <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.1/besteffort-recurring-job/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.1/besteffort-recurring-job/</guid>
+      <description>Set up a BackupStore anywhere (since the cleanup fails at the Engine level, any BackupStore can be used. Add both of the Engine Images listed here:   quay.io/ttpcodes/longhorn-engine:no-cleanup - Snapshot and Backup deletion are both set to return an error. If the Snapshot part of a Backup fails, that will error out first and Backup deletion will not be reached. quay.io/ttpcodes/longhorn-engine:no-cleanup-backup - Only Backup deletion is set to return an error.</description>
+    </item>
+    
+    <item>
+      <title>Change imagePullPolicy to IfNotPresent Test</title>
+      <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.1/change-imagepullpolicy/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.1/change-imagepullpolicy/</guid>
+      <description> Install Longhorn using Helm chart with the new longhorn master Verify that Engine Image daemonset, Manager daemonset, UI deployment, Driver Deployer deployment has the field spec.template.spec.containers.imagePullPolicy set to IfNotPresent run the bash script dev/scripts/update-image-pull-policy.sh inside longhorn repo Verify that Engine Image daemonset, Manager daemonset, UI deployment, Driver Deployer deployment has the field spec.template.spec.containers.imagePullPolicy set back to Always  </description>
+    </item>
+    
+    <item>
+      <title>DR volume related latest backup deletion test</title>
+      <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.1/dr-volume-latest-backup-deletion/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.1/dr-volume-latest-backup-deletion/</guid>
+      <description>DR volume keeps getting the latest update from the related backups. Edge cases where the latest backup is deleted can be test as below.
+Case 1:  Create a volume and take multiple backups for the same. Delete the latest backup. Create another cluster and set the same backup store to access the backups created in step 1. Go to backup page and click on the backup. Verify the Create Disaster Recovery option is enabled for it.</description>
+    </item>
+    
+    <item>
+      <title>NFSv4 Enforcement (No NFSv3 Fallback)</title>
+      <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.1/nfsv4-enforcement/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.1/nfsv4-enforcement/</guid>
+      <description>Since the client falling back to NFSv3 usually results in a failure to mount the NFS share, the way we can check for NFSv3 fallback is to check the error message returned and see if it mentions rpc.statd, since dependencies on rpc.statd and other services are no longer needed for NFSv4, but are needed for NFSv3. The NFS mount should not fall back to NFSv3 and instead only give the user a warning that the server may be NFSv3:</description>
+    </item>
+    
+    <item>
+      <title>Priority Class Default Setting</title>
+      <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.1/priorityclass-default-setting/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.1/priorityclass-default-setting/</guid>
+      <description>There are three different cases we need to test when the user inputs a default setting for Priority Class:
+ Install Longhorn with no priority-class set in the default settings. The Priority Class setting should be empty after the installation completes according to the longhorn-ui, and the default Priority of all Pods in the longhorn-system namespace should be 0:  ~ kubectl -n longhorn-system describe pods | grep Priority # should be repeated many times Priority: 0 Install Longhorn with a nonexistent priority-class in the default settings.</description>
+    </item>
+    
+    <item>
+      <title>Return an error when fail to remount a volume</title>
+      <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.1/error-fail-remount/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.1/error-fail-remount/</guid>
+      <description>Case 1: Volume with a corrupted filesystem try to remount Steps to reproduce bug:
+ Create a volume of size 1GB, say terminate-immediatly volume. Create PV/PVC from the volume terminate-immediatly Create a deployment of 1 pod with image ubuntu:xenial and the PVC terminate-immediatly in default namespace Find the node on which the pod is scheduled to. Let&amp;rsquo;s say the node is Node-1 ssh into Node-1 destroy the filesystem of terminate-immediatly by running command dd if=/dev/zero of=/dev/longhorn/terminate-immediatly Find and kill the engine instance manager in Node-X.</description>
+    </item>
+    
+    <item>
+      <title>Test access style for S3 compatible backupstore</title>
+      <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.1/test-s3-access-style/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.1/test-s3-access-style/</guid>
+      <description>Case 1: Using Alibaba Cloud OSS bucket as backupstore  Create an OSS bucket within Region China in Alibaba Cloud(Aliyun). Create a secret without VIRTUAL_HOSTED_STYLE for the OSS bucket. Set backup target and the secret in Longhorn UI. Try to list backup. Then the error error: AWS Error: SecondLevelDomainForbidden Please use virtual hosted style to access. is triggered. Add VIRTUAL_HOSTED_STYLE: dHJ1ZQ== # true to the secret. Backup list/create/delete/restore work fine after the configuration.</description>
+    </item>
+    
+    <item>
+      <title>Test S3 backupstore in a cluster sitting behind a Http Proxy</title>
+      <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.1/test-s3-backupstore/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.1/test-s3-backupstore/</guid>
+      <description>Create a new instance on Linode and setup an Http Proxy server on the instance as in this instruction (you will have to log in to see the instruction) Create a cluster using Rancher as below:  Choose AWS EC2 t2.medium as the node template. The reason to chose EC2 is that its security group makes our lives easier to block the outgoing traffic from the instance and all k8s Pods running inside the instance.</description>
+    </item>
+    
+    <item>
+      <title>Volume Deletion UI Warnings</title>
+      <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.1/ui-volume-deletion/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.1/ui-volume-deletion/</guid>
+      <description>A number of cases need to be manually tested in longhorn-ui. To test these cases, create the Volume with the specified conditions in each case, and then try to delete it. What is observed should match what is described in the test case:
+ A regular Volume. Only the default deletion prompt should show up asking to confirm deletion. A Volume with a Persistent Volume. The deletion prompt should tell the user that there is a Persistent Volume that will be deleted along with the Volume.</description>
+    </item>
+    
+  </channel>
+</rss>

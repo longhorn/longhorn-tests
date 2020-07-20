@@ -1,0 +1,1352 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
+<meta name="generator" content="pdoc 0.8.4" />
+<title>tests.test_csi API documentation</title>
+<meta name="description" content="" />
+<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
+<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/typography.min.css" integrity="sha256-7l/o7C8jubJiy74VsKTidCy1yBkRtiUGbVkYBylBqUg=" crossorigin>
+<link rel="stylesheet preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/styles/github.min.css" crossorigin>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:30px;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:1em 0 .50em 0}h3{font-size:1.4em;margin:25px 0 10px 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .3s ease-in-out}a:hover{color:#e82}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900}pre code{background:#f8f8f8;font-size:.8em;line-height:1.4em}code{background:#f2f2f1;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{background:#f8f8f8;border:0;border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0;padding:1ex}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-weight:bold;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em .5em;margin-bottom:1em}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.item .name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul{padding-left:1.5em}.toc > ul > li{margin-top:.5em}}</style>
+<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/highlight.min.js" integrity="sha256-eOgo0OtLL4cdq7RdwRUiGKLX9XsIJ7nGhWEKbohmVAQ=" crossorigin></script>
+<script>window.addEventListener('DOMContentLoaded', () => hljs.initHighlighting())</script>
+</head>
+<body>
+<main>
+<article id="content">
+<header>
+<h1 class="title">Module <code>tests.test_csi</code></h1>
+</header>
+<section id="section-intro">
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">#!/usr/sbin/python
+import pytest
+import subprocess
+import random
+import common
+from common import client, core_api, csi_pv, pod_make, pvc, storage_class # NOQA
+from common import pod as pod_manifest  # NOQA
+from common import Gi, DEFAULT_VOLUME_SIZE, EXPANDED_VOLUME_SIZE
+from common import VOLUME_RWTEST_SIZE
+from common import create_and_wait_pod, create_pvc_spec, delete_and_wait_pod
+from common import size_to_string, create_storage_class, create_pvc
+from common import delete_and_wait_pvc, delete_and_wait_pv
+from common import wait_and_get_pv_for_pvc
+from common import generate_random_data, read_volume_data
+from common import write_pod_volume_data
+from common import write_pod_block_volume_data, read_pod_block_volume_data
+from common import get_pod_data_md5sum
+from common import generate_volume_name, create_and_check_volume
+from common import delete_backup
+from common import create_snapshot
+from common import expand_and_wait_for_pvc, wait_for_volume_expansion
+from common import get_volume_engine, wait_for_volume_detached
+from common import create_pv_for_volume, create_pvc_for_volume
+from common import get_self_host_id, get_volume_endpoint
+from common import wait_for_volume_healthy
+from common import fail_replica_expansion, wait_for_expansion_failure
+
+
+# Using a StorageClass because GKE is using the default StorageClass if not
+# specified. Volumes are still being manually created and not provisioned.
+CSI_PV_TEST_STORAGE_NAME = &#39;longhorn-csi-pv-test&#39;
+
+
+def create_pv_storage(api, cli, pv, claim, base_image, from_backup):
+    &#34;&#34;&#34;
+    Manually create a new PV and PVC for testing.
+    &#34;&#34;&#34;
+    cli.create_volume(
+        name=pv[&#39;metadata&#39;][&#39;name&#39;], size=pv[&#39;spec&#39;][&#39;capacity&#39;][&#39;storage&#39;],
+        numberOfReplicas=int(pv[&#39;spec&#39;][&#39;csi&#39;][&#39;volumeAttributes&#39;]
+                             [&#39;numberOfReplicas&#39;]),
+        baseImage=base_image, fromBackup=from_backup)
+    common.wait_for_volume_restoration_completed(cli, pv[&#39;metadata&#39;][&#39;name&#39;])
+    common.wait_for_volume_detached(cli, pv[&#39;metadata&#39;][&#39;name&#39;])
+
+    api.create_persistent_volume(pv)
+    api.create_namespaced_persistent_volume_claim(
+        body=claim,
+        namespace=&#39;default&#39;)
+
+
+def update_storageclass_references(name, pv, claim):
+    &#34;&#34;&#34;
+    Rename all references to a StorageClass to a specified name.
+    &#34;&#34;&#34;
+    pv[&#39;spec&#39;][&#39;storageClassName&#39;] = name
+    claim[&#39;spec&#39;][&#39;storageClassName&#39;] = name
+
+
+def create_and_wait_csi_pod(pod_name, client, core_api, csi_pv, pvc, pod_make, base_image, from_backup):  # NOQA
+    pv_name = generate_volume_name()
+    create_and_wait_csi_pod_named_pv(pv_name, pod_name, client, core_api,
+                                     csi_pv, pvc, pod_make, base_image,
+                                     from_backup)
+
+
+def create_and_wait_csi_pod_named_pv(pv_name, pod_name, client, core_api, csi_pv, pvc, pod_make, base_image, from_backup):  # NOQA
+    pod = pod_make(name=pod_name)
+    pod[&#39;spec&#39;][&#39;volumes&#39;] = [
+        create_pvc_spec(pv_name)
+    ]
+    csi_pv[&#39;metadata&#39;][&#39;name&#39;] = pv_name
+    csi_pv[&#39;spec&#39;][&#39;csi&#39;][&#39;volumeHandle&#39;] = pv_name
+    csi_pv[&#39;spec&#39;][&#39;csi&#39;][&#39;volumeAttributes&#39;][&#39;fromBackup&#39;] = from_backup
+    pvc[&#39;metadata&#39;][&#39;name&#39;] = pv_name
+    pvc[&#39;spec&#39;][&#39;volumeName&#39;] = pv_name
+    update_storageclass_references(CSI_PV_TEST_STORAGE_NAME, csi_pv, pvc)
+
+    create_pv_storage(core_api, client, csi_pv, pvc, base_image, from_backup)
+    create_and_wait_pod(core_api, pod)
+
+
+@pytest.mark.coretest   # NOQA
+@pytest.mark.csi  # NOQA
+def test_csi_mount(client, core_api, csi_pv, pvc, pod_make):  # NOQA
+    &#34;&#34;&#34;
+    Test that a statically defined CSI volume can be created, mounted,
+    unmounted, and deleted properly on the Kubernetes cluster.
+
+    Note: Fixtures are torn down here in reverse order that they are specified
+    as a parameter. Take caution when reordering test fixtures.
+
+    1. Create a PV/PVC/Pod with pre-created Longhorn volume
+        1. Using Kubernetes manifest instead of Longhorn PV/PVC creation API
+    2. Make sure the pod is running
+    3. Verify the volume status
+    &#34;&#34;&#34;
+    volume_size = DEFAULT_VOLUME_SIZE * Gi
+    csi_mount_test(client, core_api,
+                   csi_pv, pvc, pod_make, volume_size)
+
+
+def csi_mount_test(client, core_api, csi_pv, pvc, pod_make,  # NOQA
+                   volume_size, base_image=&#34;&#34;): # NOQA
+    create_and_wait_csi_pod(&#39;csi-mount-test&#39;, client, core_api, csi_pv, pvc,
+                            pod_make, base_image, &#34;&#34;)
+
+    volumes = client.list_volume().data
+    assert len(volumes) == 1
+    assert volumes[0].name == csi_pv[&#39;metadata&#39;][&#39;name&#39;]
+    assert volumes[0].size == str(volume_size)
+    assert volumes[0].numberOfReplicas == \
+        int(csi_pv[&#39;spec&#39;][&#39;csi&#39;][&#39;volumeAttributes&#39;][&#34;numberOfReplicas&#34;])
+    assert volumes[0].state == &#34;attached&#34;
+    assert volumes[0].baseImage == base_image
+
+
+@pytest.mark.csi  # NOQA
+def test_csi_io(client, core_api, csi_pv, pvc, pod_make):  # NOQA
+    &#34;&#34;&#34;
+    Test that input and output on a statically defined CSI volume works as
+    expected.
+
+    Note: Fixtures are torn down here in reverse order that they are specified
+    as a parameter. Take caution when reordering test fixtures.
+
+    1. Create PV/PVC/Pod with dynamic positioned Longhorn volume
+    2. Generate `test_data` and write it to volume using the equivalent
+    of `kubectl exec`
+    3. Delete the Pod
+    4. Create another pod with the same PV
+    5. Check the previous created `test_data` in the new Pod
+    &#34;&#34;&#34;
+    csi_io_test(client, core_api, csi_pv, pvc, pod_make)
+
+
+def csi_io_test(client, core_api, csi_pv, pvc, pod_make, base_image=&#34;&#34;):  # NOQA
+    pv_name = generate_volume_name()
+    pod_name = &#39;csi-io-test&#39;
+    create_and_wait_csi_pod_named_pv(pv_name, pod_name, client, core_api,
+                                     csi_pv, pvc, pod_make, base_image, &#34;&#34;)
+
+    test_data = generate_random_data(VOLUME_RWTEST_SIZE)
+    write_pod_volume_data(core_api, pod_name, test_data)
+    delete_and_wait_pod(core_api, pod_name)
+    common.wait_for_volume_detached(client, csi_pv[&#39;metadata&#39;][&#39;name&#39;])
+
+    pod_name = &#39;csi-io-test-2&#39;
+    pod = pod_make(name=pod_name)
+    pod[&#39;spec&#39;][&#39;volumes&#39;] = [
+        create_pvc_spec(pv_name)
+    ]
+    csi_pv[&#39;metadata&#39;][&#39;name&#39;] = pv_name
+    csi_pv[&#39;spec&#39;][&#39;csi&#39;][&#39;volumeHandle&#39;] = pv_name
+    pvc[&#39;metadata&#39;][&#39;name&#39;] = pv_name
+    pvc[&#39;spec&#39;][&#39;volumeName&#39;] = pv_name
+    update_storageclass_references(CSI_PV_TEST_STORAGE_NAME, csi_pv, pvc)
+
+    create_and_wait_pod(core_api, pod)
+
+    resp = read_volume_data(core_api, pod_name)
+    assert resp == test_data
+
+
+@pytest.mark.csi  # NOQA
+def test_csi_backup(client, core_api, csi_pv, pvc, pod_make):  # NOQA
+    &#34;&#34;&#34;
+    Test that backup/restore works with volumes created by CSI driver.
+
+    Run the test for all the backupstores
+
+    1. Create PV/PVC/Pod using dynamic provisioned volume
+    2. Write data and create snapshot using Longhorn API
+    3. Verify the existence of backup
+    4. Create another Pod using restored backup
+    5. Verify the data in the new Pod
+    &#34;&#34;&#34;
+    csi_backup_test(client, core_api, csi_pv, pvc, pod_make)
+
+
+def csi_backup_test(client, core_api, csi_pv, pvc, pod_make, base_image=&#34;&#34;):  # NOQA
+    pod_name = &#39;csi-backup-test&#39;
+    create_and_wait_csi_pod(pod_name, client, core_api, csi_pv, pvc, pod_make,
+                            base_image, &#34;&#34;)
+    test_data = generate_random_data(VOLUME_RWTEST_SIZE)
+
+    setting = client.by_id_setting(common.SETTING_BACKUP_TARGET)
+    # test backupTarget for multiple settings
+    backupstores = common.get_backupstore_url()
+    i = 1
+    for backupstore in backupstores:
+        if common.is_backupTarget_s3(backupstore):
+            backupsettings = backupstore.split(&#34;$&#34;)
+            setting = client.update(setting, value=backupsettings[0])
+            assert setting.value == backupsettings[0]
+
+            credential = client.by_id_setting(
+                    common.SETTING_BACKUP_TARGET_CREDENTIAL_SECRET)
+            credential = client.update(credential, value=backupsettings[1])
+            assert credential.value == backupsettings[1]
+        else:
+            setting = client.update(setting, value=backupstore)
+            assert setting.value == backupstore
+            credential = client.by_id_setting(
+                    common.SETTING_BACKUP_TARGET_CREDENTIAL_SECRET)
+            credential = client.update(credential, value=&#34;&#34;)
+            assert credential.value == &#34;&#34;
+
+        backupstore_test(client, core_api, csi_pv, pvc, pod_make, pod_name,
+                         base_image, test_data, i)
+        i += 1
+
+
+def backupstore_test(client, core_api, csi_pv, pvc, pod_make, pod_name, base_image, test_data, i):  # NOQA
+    vol_name = csi_pv[&#39;metadata&#39;][&#39;name&#39;]
+    write_pod_volume_data(core_api, pod_name, test_data)
+
+    volume = client.by_id_volume(vol_name)
+    snap = create_snapshot(client, vol_name)
+    volume.snapshotBackup(name=snap.name)
+
+    common.wait_for_backup_completion(client, vol_name, snap.name)
+    bv, b = common.find_backup(client, vol_name, snap.name)
+
+    pod2_name = &#39;csi-backup-test-&#39; + str(i)
+    create_and_wait_csi_pod(pod2_name, client, core_api, csi_pv, pvc, pod_make,
+                            base_image, b.url)
+
+    resp = read_volume_data(core_api, pod2_name)
+    assert resp == test_data
+
+    delete_backup(client, bv.name, b.name)
+
+@pytest.mark.csi  # NOQA
+def test_csi_block_volume(client, core_api, storage_class, pvc, pod_manifest):  # NOQA
+    &#34;&#34;&#34;
+    Test CSI feature: raw block volume
+
+    1. Create a PVC with `volumeMode = Block`
+    2. Create a pod using the PVC to dynamic provision a volume
+    3. Verify the pod creation
+    4. Generate `test_data` and write to the block volume directly in the pod
+    5. Read the data back for validation
+    6. Delete the pod and create `pod2` to use the same volume
+    7. Validate the data in `pod2` is consistent with `test_data`
+    &#34;&#34;&#34;
+    pod_name = &#39;csi-block-volume-test&#39;
+    pvc_name = pod_name + &#34;-pvc&#34;
+    device_path = &#34;/dev/longhorn/longhorn-test-blk&#34;
+
+    storage_class[&#39;reclaimPolicy&#39;] = &#39;Retain&#39;
+    pvc[&#39;metadata&#39;][&#39;name&#39;] = pvc_name
+    pvc[&#39;spec&#39;][&#39;volumeMode&#39;] = &#39;Block&#39;
+    pvc[&#39;spec&#39;][&#39;storageClassName&#39;] = storage_class[&#39;metadata&#39;][&#39;name&#39;]
+    pvc[&#39;spec&#39;][&#39;resources&#39;] = {
+        &#39;requests&#39;: {
+            &#39;storage&#39;: size_to_string(1 * Gi)
+        }
+    }
+    pod_manifest[&#39;metadata&#39;][&#39;name&#39;] = pod_name
+    pod_manifest[&#39;spec&#39;][&#39;volumes&#39;] = [{
+        &#39;name&#39;: &#39;longhorn-blk&#39;,
+        &#39;persistentVolumeClaim&#39;: {
+            &#39;claimName&#39;: pvc_name,
+        },
+    }]
+    pod_manifest[&#39;spec&#39;][&#39;containers&#39;][0][&#39;volumeMounts&#39;] = []
+    pod_manifest[&#39;spec&#39;][&#39;containers&#39;][0][&#39;volumeDevices&#39;] = [
+        {&#39;name&#39;: &#39;longhorn-blk&#39;, &#39;devicePath&#39;: device_path}
+    ]
+
+    create_storage_class(storage_class)
+    create_pvc(pvc)
+    pv_name = wait_and_get_pv_for_pvc(core_api, pvc_name).metadata.name
+    create_and_wait_pod(core_api, pod_manifest)
+
+    test_data = generate_random_data(VOLUME_RWTEST_SIZE)
+    test_offset = random.randint(0, VOLUME_RWTEST_SIZE)
+    write_pod_block_volume_data(
+        core_api, pod_name, test_data, test_offset, device_path)
+    returned_data = read_pod_block_volume_data(
+        core_api, pod_name, len(test_data), test_offset, device_path
+    )
+    assert test_data == returned_data
+    md5_sum = get_pod_data_md5sum(
+        core_api, pod_name, device_path)
+
+    delete_and_wait_pod(core_api, pod_name)
+    common.wait_for_volume_detached(client, pv_name)
+
+    pod_name_2 = &#39;csi-block-volume-test-reuse&#39;
+    pod_manifest[&#39;metadata&#39;][&#39;name&#39;] = pod_name_2
+    create_and_wait_pod(core_api, pod_manifest)
+
+    returned_data = read_pod_block_volume_data(
+        core_api, pod_name_2, len(test_data), test_offset, device_path
+    )
+    assert test_data == returned_data
+    md5_sum_2 = get_pod_data_md5sum(
+        core_api, pod_name_2, device_path)
+    assert md5_sum == md5_sum_2
+
+    delete_and_wait_pod(core_api, pod_name_2)
+    delete_and_wait_pvc(core_api, pvc_name)
+    delete_and_wait_pv(core_api, pv_name)
+
+
+@pytest.mark.coretest   # NOQA
+@pytest.mark.csi  # NOQA
+@pytest.mark.csi_expansion  # NOQA
+def test_csi_offline_expansion(client, core_api, storage_class, pvc, pod_manifest):  # NOQA
+    &#34;&#34;&#34;
+    Test CSI feature: offline expansion
+
+    1. Create a new `storage_class` with `allowVolumeExpansion` set
+    2. Create PVC and Pod with dynamic provisioned volume from the StorageClass
+    3. Generate `test_data` and write to the pod
+    4. Delete the pod
+    5. Update pvc.spec.resources to expand the volume
+    6. Verify the volume expansion done using Longhorn API
+    7. Create a new pod and validate the volume content
+    &#34;&#34;&#34;
+    create_storage_class(storage_class)
+
+    pod_name = &#39;csi-offline-expand-volume-test&#39;
+    pvc_name = pod_name + &#34;-pvc&#34;
+    pvc[&#39;metadata&#39;][&#39;name&#39;] = pvc_name
+    pvc[&#39;spec&#39;][&#39;storageClassName&#39;] = storage_class[&#39;metadata&#39;][&#39;name&#39;]
+    create_pvc(pvc)
+
+    pod_manifest[&#39;metadata&#39;][&#39;name&#39;] = pod_name
+    pod_manifest[&#39;spec&#39;][&#39;volumes&#39;] = [{
+        &#39;name&#39;:
+            pod_manifest[&#39;spec&#39;][&#39;containers&#39;][0][&#39;volumeMounts&#39;][0][&#39;name&#39;],
+        &#39;persistentVolumeClaim&#39;: {&#39;claimName&#39;: pvc_name},
+    }]
+    create_and_wait_pod(core_api, pod_manifest)
+    test_data = generate_random_data(VOLUME_RWTEST_SIZE)
+    write_pod_volume_data(core_api, pod_name, test_data)
+    delete_and_wait_pod(core_api, pod_name)
+
+    pv = wait_and_get_pv_for_pvc(core_api, pvc_name)
+    assert pv.status.phase == &#34;Bound&#34;
+    volume_name = pv.spec.csi.volume_handle
+    wait_for_volume_detached(client, volume_name)
+
+    pvc[&#39;spec&#39;][&#39;resources&#39;] = {
+        &#39;requests&#39;: {
+            &#39;storage&#39;: size_to_string(EXPANDED_VOLUME_SIZE*Gi)
+        }
+    }
+    expand_and_wait_for_pvc(core_api, pvc)
+    wait_for_volume_expansion(client, volume_name)
+    volume = client.by_id_volume(volume_name)
+    assert volume.state == &#34;detached&#34;
+    assert volume.size == str(EXPANDED_VOLUME_SIZE*Gi)
+
+    pod_manifest[&#39;metadata&#39;][&#39;name&#39;] = pod_name
+    pod_manifest[&#39;spec&#39;][&#39;volumes&#39;] = [{
+        &#39;name&#39;:
+            pod_manifest[&#39;spec&#39;][&#39;containers&#39;][0][&#39;volumeMounts&#39;][0][&#39;name&#39;],
+        &#39;persistentVolumeClaim&#39;: {&#39;claimName&#39;: pvc_name},
+    }]
+    create_and_wait_pod(core_api, pod_manifest)
+
+    resp = read_volume_data(core_api, pod_name)
+    assert resp == test_data
+
+    volume = client.by_id_volume(volume_name)
+    engine = get_volume_engine(volume)
+    assert volume.size == str(EXPANDED_VOLUME_SIZE*Gi)
+    assert volume.size == engine.size
+
+
+def test_xfs_pv(client, core_api, pod_manifest): # NOQA
+    &#34;&#34;&#34;
+    Test create PV with new XFS filesystem
+
+    1. Create a volume
+    2. Create a PV for the existing volume, specify `xfs` as filesystem
+    3. Create PVC and Pod
+    4. Make sure Pod is running.
+    5. Write data into the pod and read back for validation.
+
+    Note: The volume will be formatted to XFS filesystem by Kubernetes in this
+    case.
+    &#34;&#34;&#34;
+    volume_name = generate_volume_name()
+
+    volume = create_and_check_volume(client, volume_name)
+
+    create_pv_for_volume(client, core_api, volume, volume_name, &#34;xfs&#34;)
+
+    create_pvc_for_volume(client, core_api, volume, volume_name)
+
+    pod_manifest[&#39;spec&#39;][&#39;volumes&#39;] = [{
+        &#34;name&#34;: &#34;pod-data&#34;,
+        &#34;persistentVolumeClaim&#34;: {
+            &#34;claimName&#34;: volume_name
+        }
+    }]
+
+    pod_name = pod_manifest[&#39;metadata&#39;][&#39;name&#39;]
+
+    create_and_wait_pod(core_api, pod_manifest)
+
+    test_data = generate_random_data(VOLUME_RWTEST_SIZE)
+    write_pod_volume_data(core_api, pod_name, test_data)
+    resp = read_volume_data(core_api, pod_name)
+    assert resp == test_data
+
+def test_xfs_pv_existing_volume(client, core_api, pod_manifest): # NOQA
+    &#34;&#34;&#34;
+    Test create PV with existing XFS filesystem
+
+    1. Create a volume
+    2. Create PV/PVC for the existing volume, specify `xfs` as filesystem
+    3. Attach the volume to the current node.
+    4. Format it to `xfs`
+    5. Create a POD using the volume
+
+    FIXME: We should write data in step 4 and validate the data in step 5, make
+    sure the disk won&#39;t be reformatted
+    &#34;&#34;&#34;
+    volume_name = generate_volume_name()
+
+    volume = create_and_check_volume(client, volume_name)
+
+    create_pv_for_volume(client, core_api, volume, volume_name, &#34;xfs&#34;)
+
+    create_pvc_for_volume(client, core_api, volume, volume_name)
+
+    host_id = get_self_host_id()
+
+    volume = volume.attach(hostId=host_id)
+
+    volume = wait_for_volume_healthy(client, volume_name)
+
+    cmd = [&#39;mkfs.xfs&#39;, get_volume_endpoint(volume)]
+    subprocess.check_call(cmd)
+
+    volume = volume.detach()
+
+    volume = wait_for_volume_detached(client, volume_name)
+
+    pod_manifest[&#39;spec&#39;][&#39;volumes&#39;] = [{
+        &#34;name&#34;: &#34;pod-data&#34;,
+        &#34;persistentVolumeClaim&#34;: {
+            &#34;claimName&#34;: volume_name
+        }
+    }]
+
+    create_and_wait_pod(core_api, pod_manifest)
+
+
+@pytest.mark.coretest  # NOQA
+def test_csi_expansion_with_replica_failure(client, core_api, storage_class, pvc, pod_manifest):  # NOQA
+    &#34;&#34;&#34;
+    Test expansion success but with one replica expansion failure
+
+    1. Create a new `storage_class` with `allowVolumeExpansion` set
+    2. Create PVC and Pod with dynamic provisioned volume from the StorageClass
+    3. Create an empty directory with expansion snapshot tmp meta file path
+       for one replica so that the replica expansion will fail
+    4. Generate `test_data` and write to the pod
+    5. Delete the pod and wait for volume detachment
+    6. Update pvc.spec.resources to expand the volume
+    7. Check expansion result using Longhorn API. There will be expansion error
+       caused by the failed replica but overall the expansion should succeed.
+    8. Create a new pod and
+       check if the volume will rebuild the failed replica
+    9. Validate the volume content, then check if data writing looks fine
+    &#34;&#34;&#34;
+    create_storage_class(storage_class)
+
+    pod_name = &#39;csi-expansion-with-replica-failure-test&#39;
+    pvc_name = pod_name + &#34;-pvc&#34;
+    pvc[&#39;metadata&#39;][&#39;name&#39;] = pvc_name
+    pvc[&#39;spec&#39;][&#39;storageClassName&#39;] = storage_class[&#39;metadata&#39;][&#39;name&#39;]
+    create_pvc(pvc)
+
+    pod_manifest[&#39;metadata&#39;][&#39;name&#39;] = pod_name
+    pod_manifest[&#39;spec&#39;][&#39;volumes&#39;] = [{
+        &#39;name&#39;:
+            pod_manifest[&#39;spec&#39;][&#39;containers&#39;][0][&#39;volumeMounts&#39;][0][&#39;name&#39;],
+        &#39;persistentVolumeClaim&#39;: {&#39;claimName&#39;: pvc_name},
+    }]
+    create_and_wait_pod(core_api, pod_manifest)
+
+    expand_size = str(EXPANDED_VOLUME_SIZE*Gi)
+    pv = wait_and_get_pv_for_pvc(core_api, pvc_name)
+    assert pv.status.phase == &#34;Bound&#34;
+    volume_name = pv.spec.csi.volume_handle
+    volume = client.by_id_volume(volume_name)
+    failed_replica = volume.replicas[0]
+    fail_replica_expansion(client, core_api,
+                           volume_name, expand_size, [failed_replica])
+
+    test_data = generate_random_data(VOLUME_RWTEST_SIZE)
+    write_pod_volume_data(core_api, pod_name, test_data)
+
+    delete_and_wait_pod(core_api, pod_name)
+    wait_for_volume_detached(client, volume_name)
+
+    # There will be replica expansion error info
+    # but the expansion should succeed.
+    pvc[&#39;spec&#39;][&#39;resources&#39;] = {
+        &#39;requests&#39;: {
+            &#39;storage&#39;: size_to_string(EXPANDED_VOLUME_SIZE*Gi)
+        }
+    }
+    expand_and_wait_for_pvc(core_api, pvc)
+    wait_for_expansion_failure(client, volume_name)
+    wait_for_volume_expansion(client, volume_name)
+    volume = client.by_id_volume(volume_name)
+    assert volume.state == &#34;detached&#34;
+    assert volume.size == expand_size
+    for r in volume.replicas:
+        if r.name == failed_replica.name:
+            assert r.failedAt != &#34;&#34;
+        else:
+            assert r.failedAt == &#34;&#34;
+
+    # Check if the replica will be rebuilded
+    # and if the volume still works fine.
+    create_and_wait_pod(core_api, pod_manifest)
+    volume = wait_for_volume_healthy(client, volume_name)
+    for r in volume.replicas:
+        if r.name == failed_replica.name:
+            assert r.mode == &#34;&#34;
+        else:
+            assert r.mode == &#34;RW&#34;
+    resp = read_volume_data(core_api, pod_name)
+    assert resp == test_data
+    test_data = generate_random_data(VOLUME_RWTEST_SIZE)
+    write_pod_volume_data(core_api, pod_name, test_data)
+    resp = read_volume_data(core_api, pod_name)
+    assert resp == test_data</code></pre>
+</details>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-functions">Functions</h2>
+<dl>
+<dt id="tests.test_csi.backupstore_test"><code class="name flex">
+<span>def <span class="ident">backupstore_test</span></span>(<span>client, core_api, csi_pv, pvc, pod_make, pod_name, base_image, test_data, i)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def backupstore_test(client, core_api, csi_pv, pvc, pod_make, pod_name, base_image, test_data, i):  # NOQA
+    vol_name = csi_pv[&#39;metadata&#39;][&#39;name&#39;]
+    write_pod_volume_data(core_api, pod_name, test_data)
+
+    volume = client.by_id_volume(vol_name)
+    snap = create_snapshot(client, vol_name)
+    volume.snapshotBackup(name=snap.name)
+
+    common.wait_for_backup_completion(client, vol_name, snap.name)
+    bv, b = common.find_backup(client, vol_name, snap.name)
+
+    pod2_name = &#39;csi-backup-test-&#39; + str(i)
+    create_and_wait_csi_pod(pod2_name, client, core_api, csi_pv, pvc, pod_make,
+                            base_image, b.url)
+
+    resp = read_volume_data(core_api, pod2_name)
+    assert resp == test_data
+
+    delete_backup(client, bv.name, b.name)</code></pre>
+</details>
+</dd>
+<dt id="tests.test_csi.create_and_wait_csi_pod"><code class="name flex">
+<span>def <span class="ident">create_and_wait_csi_pod</span></span>(<span>pod_name, client, core_api, csi_pv, pvc, pod_make, base_image, from_backup)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def create_and_wait_csi_pod(pod_name, client, core_api, csi_pv, pvc, pod_make, base_image, from_backup):  # NOQA
+    pv_name = generate_volume_name()
+    create_and_wait_csi_pod_named_pv(pv_name, pod_name, client, core_api,
+                                     csi_pv, pvc, pod_make, base_image,
+                                     from_backup)</code></pre>
+</details>
+</dd>
+<dt id="tests.test_csi.create_and_wait_csi_pod_named_pv"><code class="name flex">
+<span>def <span class="ident">create_and_wait_csi_pod_named_pv</span></span>(<span>pv_name, pod_name, client, core_api, csi_pv, pvc, pod_make, base_image, from_backup)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def create_and_wait_csi_pod_named_pv(pv_name, pod_name, client, core_api, csi_pv, pvc, pod_make, base_image, from_backup):  # NOQA
+    pod = pod_make(name=pod_name)
+    pod[&#39;spec&#39;][&#39;volumes&#39;] = [
+        create_pvc_spec(pv_name)
+    ]
+    csi_pv[&#39;metadata&#39;][&#39;name&#39;] = pv_name
+    csi_pv[&#39;spec&#39;][&#39;csi&#39;][&#39;volumeHandle&#39;] = pv_name
+    csi_pv[&#39;spec&#39;][&#39;csi&#39;][&#39;volumeAttributes&#39;][&#39;fromBackup&#39;] = from_backup
+    pvc[&#39;metadata&#39;][&#39;name&#39;] = pv_name
+    pvc[&#39;spec&#39;][&#39;volumeName&#39;] = pv_name
+    update_storageclass_references(CSI_PV_TEST_STORAGE_NAME, csi_pv, pvc)
+
+    create_pv_storage(core_api, client, csi_pv, pvc, base_image, from_backup)
+    create_and_wait_pod(core_api, pod)</code></pre>
+</details>
+</dd>
+<dt id="tests.test_csi.create_pv_storage"><code class="name flex">
+<span>def <span class="ident">create_pv_storage</span></span>(<span>api, cli, pv, claim, base_image, from_backup)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Manually create a new PV and PVC for testing.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def create_pv_storage(api, cli, pv, claim, base_image, from_backup):
+    &#34;&#34;&#34;
+    Manually create a new PV and PVC for testing.
+    &#34;&#34;&#34;
+    cli.create_volume(
+        name=pv[&#39;metadata&#39;][&#39;name&#39;], size=pv[&#39;spec&#39;][&#39;capacity&#39;][&#39;storage&#39;],
+        numberOfReplicas=int(pv[&#39;spec&#39;][&#39;csi&#39;][&#39;volumeAttributes&#39;]
+                             [&#39;numberOfReplicas&#39;]),
+        baseImage=base_image, fromBackup=from_backup)
+    common.wait_for_volume_restoration_completed(cli, pv[&#39;metadata&#39;][&#39;name&#39;])
+    common.wait_for_volume_detached(cli, pv[&#39;metadata&#39;][&#39;name&#39;])
+
+    api.create_persistent_volume(pv)
+    api.create_namespaced_persistent_volume_claim(
+        body=claim,
+        namespace=&#39;default&#39;)</code></pre>
+</details>
+</dd>
+<dt id="tests.test_csi.csi_backup_test"><code class="name flex">
+<span>def <span class="ident">csi_backup_test</span></span>(<span>client, core_api, csi_pv, pvc, pod_make, base_image='')</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def csi_backup_test(client, core_api, csi_pv, pvc, pod_make, base_image=&#34;&#34;):  # NOQA
+    pod_name = &#39;csi-backup-test&#39;
+    create_and_wait_csi_pod(pod_name, client, core_api, csi_pv, pvc, pod_make,
+                            base_image, &#34;&#34;)
+    test_data = generate_random_data(VOLUME_RWTEST_SIZE)
+
+    setting = client.by_id_setting(common.SETTING_BACKUP_TARGET)
+    # test backupTarget for multiple settings
+    backupstores = common.get_backupstore_url()
+    i = 1
+    for backupstore in backupstores:
+        if common.is_backupTarget_s3(backupstore):
+            backupsettings = backupstore.split(&#34;$&#34;)
+            setting = client.update(setting, value=backupsettings[0])
+            assert setting.value == backupsettings[0]
+
+            credential = client.by_id_setting(
+                    common.SETTING_BACKUP_TARGET_CREDENTIAL_SECRET)
+            credential = client.update(credential, value=backupsettings[1])
+            assert credential.value == backupsettings[1]
+        else:
+            setting = client.update(setting, value=backupstore)
+            assert setting.value == backupstore
+            credential = client.by_id_setting(
+                    common.SETTING_BACKUP_TARGET_CREDENTIAL_SECRET)
+            credential = client.update(credential, value=&#34;&#34;)
+            assert credential.value == &#34;&#34;
+
+        backupstore_test(client, core_api, csi_pv, pvc, pod_make, pod_name,
+                         base_image, test_data, i)
+        i += 1</code></pre>
+</details>
+</dd>
+<dt id="tests.test_csi.csi_io_test"><code class="name flex">
+<span>def <span class="ident">csi_io_test</span></span>(<span>client, core_api, csi_pv, pvc, pod_make, base_image='')</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def csi_io_test(client, core_api, csi_pv, pvc, pod_make, base_image=&#34;&#34;):  # NOQA
+    pv_name = generate_volume_name()
+    pod_name = &#39;csi-io-test&#39;
+    create_and_wait_csi_pod_named_pv(pv_name, pod_name, client, core_api,
+                                     csi_pv, pvc, pod_make, base_image, &#34;&#34;)
+
+    test_data = generate_random_data(VOLUME_RWTEST_SIZE)
+    write_pod_volume_data(core_api, pod_name, test_data)
+    delete_and_wait_pod(core_api, pod_name)
+    common.wait_for_volume_detached(client, csi_pv[&#39;metadata&#39;][&#39;name&#39;])
+
+    pod_name = &#39;csi-io-test-2&#39;
+    pod = pod_make(name=pod_name)
+    pod[&#39;spec&#39;][&#39;volumes&#39;] = [
+        create_pvc_spec(pv_name)
+    ]
+    csi_pv[&#39;metadata&#39;][&#39;name&#39;] = pv_name
+    csi_pv[&#39;spec&#39;][&#39;csi&#39;][&#39;volumeHandle&#39;] = pv_name
+    pvc[&#39;metadata&#39;][&#39;name&#39;] = pv_name
+    pvc[&#39;spec&#39;][&#39;volumeName&#39;] = pv_name
+    update_storageclass_references(CSI_PV_TEST_STORAGE_NAME, csi_pv, pvc)
+
+    create_and_wait_pod(core_api, pod)
+
+    resp = read_volume_data(core_api, pod_name)
+    assert resp == test_data</code></pre>
+</details>
+</dd>
+<dt id="tests.test_csi.csi_mount_test"><code class="name flex">
+<span>def <span class="ident">csi_mount_test</span></span>(<span>client, core_api, csi_pv, pvc, pod_make, volume_size, base_image='')</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def csi_mount_test(client, core_api, csi_pv, pvc, pod_make,  # NOQA
+                   volume_size, base_image=&#34;&#34;): # NOQA
+    create_and_wait_csi_pod(&#39;csi-mount-test&#39;, client, core_api, csi_pv, pvc,
+                            pod_make, base_image, &#34;&#34;)
+
+    volumes = client.list_volume().data
+    assert len(volumes) == 1
+    assert volumes[0].name == csi_pv[&#39;metadata&#39;][&#39;name&#39;]
+    assert volumes[0].size == str(volume_size)
+    assert volumes[0].numberOfReplicas == \
+        int(csi_pv[&#39;spec&#39;][&#39;csi&#39;][&#39;volumeAttributes&#39;][&#34;numberOfReplicas&#34;])
+    assert volumes[0].state == &#34;attached&#34;
+    assert volumes[0].baseImage == base_image</code></pre>
+</details>
+</dd>
+<dt id="tests.test_csi.test_csi_backup"><code class="name flex">
+<span>def <span class="ident">test_csi_backup</span></span>(<span>client, core_api, csi_pv, pvc, pod_make)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test that backup/restore works with volumes created by CSI driver.</p>
+<p>Run the test for all the backupstores</p>
+<ol>
+<li>Create PV/PVC/Pod using dynamic provisioned volume</li>
+<li>Write data and create snapshot using Longhorn API</li>
+<li>Verify the existence of backup</li>
+<li>Create another Pod using restored backup</li>
+<li>Verify the data in the new Pod</li>
+</ol></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@pytest.mark.csi  # NOQA
+def test_csi_backup(client, core_api, csi_pv, pvc, pod_make):  # NOQA
+    &#34;&#34;&#34;
+    Test that backup/restore works with volumes created by CSI driver.
+
+    Run the test for all the backupstores
+
+    1. Create PV/PVC/Pod using dynamic provisioned volume
+    2. Write data and create snapshot using Longhorn API
+    3. Verify the existence of backup
+    4. Create another Pod using restored backup
+    5. Verify the data in the new Pod
+    &#34;&#34;&#34;
+    csi_backup_test(client, core_api, csi_pv, pvc, pod_make)</code></pre>
+</details>
+</dd>
+<dt id="tests.test_csi.test_csi_block_volume"><code class="name flex">
+<span>def <span class="ident">test_csi_block_volume</span></span>(<span>client, core_api, storage_class, pvc, pod_manifest)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test CSI feature: raw block volume</p>
+<ol>
+<li>Create a PVC with <code>volumeMode = Block</code></li>
+<li>Create a pod using the PVC to dynamic provision a volume</li>
+<li>Verify the pod creation</li>
+<li>Generate <code>test_data</code> and write to the block volume directly in the pod</li>
+<li>Read the data back for validation</li>
+<li>Delete the pod and create <code>pod2</code> to use the same volume</li>
+<li>Validate the data in <code>pod2</code> is consistent with <code>test_data</code></li>
+</ol></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@pytest.mark.csi  # NOQA
+def test_csi_block_volume(client, core_api, storage_class, pvc, pod_manifest):  # NOQA
+    &#34;&#34;&#34;
+    Test CSI feature: raw block volume
+
+    1. Create a PVC with `volumeMode = Block`
+    2. Create a pod using the PVC to dynamic provision a volume
+    3. Verify the pod creation
+    4. Generate `test_data` and write to the block volume directly in the pod
+    5. Read the data back for validation
+    6. Delete the pod and create `pod2` to use the same volume
+    7. Validate the data in `pod2` is consistent with `test_data`
+    &#34;&#34;&#34;
+    pod_name = &#39;csi-block-volume-test&#39;
+    pvc_name = pod_name + &#34;-pvc&#34;
+    device_path = &#34;/dev/longhorn/longhorn-test-blk&#34;
+
+    storage_class[&#39;reclaimPolicy&#39;] = &#39;Retain&#39;
+    pvc[&#39;metadata&#39;][&#39;name&#39;] = pvc_name
+    pvc[&#39;spec&#39;][&#39;volumeMode&#39;] = &#39;Block&#39;
+    pvc[&#39;spec&#39;][&#39;storageClassName&#39;] = storage_class[&#39;metadata&#39;][&#39;name&#39;]
+    pvc[&#39;spec&#39;][&#39;resources&#39;] = {
+        &#39;requests&#39;: {
+            &#39;storage&#39;: size_to_string(1 * Gi)
+        }
+    }
+    pod_manifest[&#39;metadata&#39;][&#39;name&#39;] = pod_name
+    pod_manifest[&#39;spec&#39;][&#39;volumes&#39;] = [{
+        &#39;name&#39;: &#39;longhorn-blk&#39;,
+        &#39;persistentVolumeClaim&#39;: {
+            &#39;claimName&#39;: pvc_name,
+        },
+    }]
+    pod_manifest[&#39;spec&#39;][&#39;containers&#39;][0][&#39;volumeMounts&#39;] = []
+    pod_manifest[&#39;spec&#39;][&#39;containers&#39;][0][&#39;volumeDevices&#39;] = [
+        {&#39;name&#39;: &#39;longhorn-blk&#39;, &#39;devicePath&#39;: device_path}
+    ]
+
+    create_storage_class(storage_class)
+    create_pvc(pvc)
+    pv_name = wait_and_get_pv_for_pvc(core_api, pvc_name).metadata.name
+    create_and_wait_pod(core_api, pod_manifest)
+
+    test_data = generate_random_data(VOLUME_RWTEST_SIZE)
+    test_offset = random.randint(0, VOLUME_RWTEST_SIZE)
+    write_pod_block_volume_data(
+        core_api, pod_name, test_data, test_offset, device_path)
+    returned_data = read_pod_block_volume_data(
+        core_api, pod_name, len(test_data), test_offset, device_path
+    )
+    assert test_data == returned_data
+    md5_sum = get_pod_data_md5sum(
+        core_api, pod_name, device_path)
+
+    delete_and_wait_pod(core_api, pod_name)
+    common.wait_for_volume_detached(client, pv_name)
+
+    pod_name_2 = &#39;csi-block-volume-test-reuse&#39;
+    pod_manifest[&#39;metadata&#39;][&#39;name&#39;] = pod_name_2
+    create_and_wait_pod(core_api, pod_manifest)
+
+    returned_data = read_pod_block_volume_data(
+        core_api, pod_name_2, len(test_data), test_offset, device_path
+    )
+    assert test_data == returned_data
+    md5_sum_2 = get_pod_data_md5sum(
+        core_api, pod_name_2, device_path)
+    assert md5_sum == md5_sum_2
+
+    delete_and_wait_pod(core_api, pod_name_2)
+    delete_and_wait_pvc(core_api, pvc_name)
+    delete_and_wait_pv(core_api, pv_name)</code></pre>
+</details>
+</dd>
+<dt id="tests.test_csi.test_csi_expansion_with_replica_failure"><code class="name flex">
+<span>def <span class="ident">test_csi_expansion_with_replica_failure</span></span>(<span>client, core_api, storage_class, pvc, pod_manifest)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test expansion success but with one replica expansion failure</p>
+<ol>
+<li>Create a new <code>storage_class</code> with <code>allowVolumeExpansion</code> set</li>
+<li>Create PVC and Pod with dynamic provisioned volume from the StorageClass</li>
+<li>Create an empty directory with expansion snapshot tmp meta file path
+for one replica so that the replica expansion will fail</li>
+<li>Generate <code>test_data</code> and write to the pod</li>
+<li>Delete the pod and wait for volume detachment</li>
+<li>Update pvc.spec.resources to expand the volume</li>
+<li>Check expansion result using Longhorn API. There will be expansion error
+caused by the failed replica but overall the expansion should succeed.</li>
+<li>Create a new pod and
+check if the volume will rebuild the failed replica</li>
+<li>Validate the volume content, then check if data writing looks fine</li>
+</ol></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@pytest.mark.coretest  # NOQA
+def test_csi_expansion_with_replica_failure(client, core_api, storage_class, pvc, pod_manifest):  # NOQA
+    &#34;&#34;&#34;
+    Test expansion success but with one replica expansion failure
+
+    1. Create a new `storage_class` with `allowVolumeExpansion` set
+    2. Create PVC and Pod with dynamic provisioned volume from the StorageClass
+    3. Create an empty directory with expansion snapshot tmp meta file path
+       for one replica so that the replica expansion will fail
+    4. Generate `test_data` and write to the pod
+    5. Delete the pod and wait for volume detachment
+    6. Update pvc.spec.resources to expand the volume
+    7. Check expansion result using Longhorn API. There will be expansion error
+       caused by the failed replica but overall the expansion should succeed.
+    8. Create a new pod and
+       check if the volume will rebuild the failed replica
+    9. Validate the volume content, then check if data writing looks fine
+    &#34;&#34;&#34;
+    create_storage_class(storage_class)
+
+    pod_name = &#39;csi-expansion-with-replica-failure-test&#39;
+    pvc_name = pod_name + &#34;-pvc&#34;
+    pvc[&#39;metadata&#39;][&#39;name&#39;] = pvc_name
+    pvc[&#39;spec&#39;][&#39;storageClassName&#39;] = storage_class[&#39;metadata&#39;][&#39;name&#39;]
+    create_pvc(pvc)
+
+    pod_manifest[&#39;metadata&#39;][&#39;name&#39;] = pod_name
+    pod_manifest[&#39;spec&#39;][&#39;volumes&#39;] = [{
+        &#39;name&#39;:
+            pod_manifest[&#39;spec&#39;][&#39;containers&#39;][0][&#39;volumeMounts&#39;][0][&#39;name&#39;],
+        &#39;persistentVolumeClaim&#39;: {&#39;claimName&#39;: pvc_name},
+    }]
+    create_and_wait_pod(core_api, pod_manifest)
+
+    expand_size = str(EXPANDED_VOLUME_SIZE*Gi)
+    pv = wait_and_get_pv_for_pvc(core_api, pvc_name)
+    assert pv.status.phase == &#34;Bound&#34;
+    volume_name = pv.spec.csi.volume_handle
+    volume = client.by_id_volume(volume_name)
+    failed_replica = volume.replicas[0]
+    fail_replica_expansion(client, core_api,
+                           volume_name, expand_size, [failed_replica])
+
+    test_data = generate_random_data(VOLUME_RWTEST_SIZE)
+    write_pod_volume_data(core_api, pod_name, test_data)
+
+    delete_and_wait_pod(core_api, pod_name)
+    wait_for_volume_detached(client, volume_name)
+
+    # There will be replica expansion error info
+    # but the expansion should succeed.
+    pvc[&#39;spec&#39;][&#39;resources&#39;] = {
+        &#39;requests&#39;: {
+            &#39;storage&#39;: size_to_string(EXPANDED_VOLUME_SIZE*Gi)
+        }
+    }
+    expand_and_wait_for_pvc(core_api, pvc)
+    wait_for_expansion_failure(client, volume_name)
+    wait_for_volume_expansion(client, volume_name)
+    volume = client.by_id_volume(volume_name)
+    assert volume.state == &#34;detached&#34;
+    assert volume.size == expand_size
+    for r in volume.replicas:
+        if r.name == failed_replica.name:
+            assert r.failedAt != &#34;&#34;
+        else:
+            assert r.failedAt == &#34;&#34;
+
+    # Check if the replica will be rebuilded
+    # and if the volume still works fine.
+    create_and_wait_pod(core_api, pod_manifest)
+    volume = wait_for_volume_healthy(client, volume_name)
+    for r in volume.replicas:
+        if r.name == failed_replica.name:
+            assert r.mode == &#34;&#34;
+        else:
+            assert r.mode == &#34;RW&#34;
+    resp = read_volume_data(core_api, pod_name)
+    assert resp == test_data
+    test_data = generate_random_data(VOLUME_RWTEST_SIZE)
+    write_pod_volume_data(core_api, pod_name, test_data)
+    resp = read_volume_data(core_api, pod_name)
+    assert resp == test_data</code></pre>
+</details>
+</dd>
+<dt id="tests.test_csi.test_csi_io"><code class="name flex">
+<span>def <span class="ident">test_csi_io</span></span>(<span>client, core_api, csi_pv, pvc, pod_make)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test that input and output on a statically defined CSI volume works as
+expected.</p>
+<p>Note: Fixtures are torn down here in reverse order that they are specified
+as a parameter. Take caution when reordering test fixtures.</p>
+<ol>
+<li>Create PV/PVC/Pod with dynamic positioned Longhorn volume</li>
+<li>Generate <code>test_data</code> and write it to volume using the equivalent
+of <code>kubectl exec</code></li>
+<li>Delete the Pod</li>
+<li>Create another pod with the same PV</li>
+<li>Check the previous created <code>test_data</code> in the new Pod</li>
+</ol></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@pytest.mark.csi  # NOQA
+def test_csi_io(client, core_api, csi_pv, pvc, pod_make):  # NOQA
+    &#34;&#34;&#34;
+    Test that input and output on a statically defined CSI volume works as
+    expected.
+
+    Note: Fixtures are torn down here in reverse order that they are specified
+    as a parameter. Take caution when reordering test fixtures.
+
+    1. Create PV/PVC/Pod with dynamic positioned Longhorn volume
+    2. Generate `test_data` and write it to volume using the equivalent
+    of `kubectl exec`
+    3. Delete the Pod
+    4. Create another pod with the same PV
+    5. Check the previous created `test_data` in the new Pod
+    &#34;&#34;&#34;
+    csi_io_test(client, core_api, csi_pv, pvc, pod_make)</code></pre>
+</details>
+</dd>
+<dt id="tests.test_csi.test_csi_mount"><code class="name flex">
+<span>def <span class="ident">test_csi_mount</span></span>(<span>client, core_api, csi_pv, pvc, pod_make)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test that a statically defined CSI volume can be created, mounted,
+unmounted, and deleted properly on the Kubernetes cluster.</p>
+<p>Note: Fixtures are torn down here in reverse order that they are specified
+as a parameter. Take caution when reordering test fixtures.</p>
+<ol>
+<li>Create a PV/PVC/Pod with pre-created Longhorn volume<ol>
+<li>Using Kubernetes manifest instead of Longhorn PV/PVC creation API</li>
+</ol>
+</li>
+<li>Make sure the pod is running</li>
+<li>Verify the volume status</li>
+</ol></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@pytest.mark.coretest   # NOQA
+@pytest.mark.csi  # NOQA
+def test_csi_mount(client, core_api, csi_pv, pvc, pod_make):  # NOQA
+    &#34;&#34;&#34;
+    Test that a statically defined CSI volume can be created, mounted,
+    unmounted, and deleted properly on the Kubernetes cluster.
+
+    Note: Fixtures are torn down here in reverse order that they are specified
+    as a parameter. Take caution when reordering test fixtures.
+
+    1. Create a PV/PVC/Pod with pre-created Longhorn volume
+        1. Using Kubernetes manifest instead of Longhorn PV/PVC creation API
+    2. Make sure the pod is running
+    3. Verify the volume status
+    &#34;&#34;&#34;
+    volume_size = DEFAULT_VOLUME_SIZE * Gi
+    csi_mount_test(client, core_api,
+                   csi_pv, pvc, pod_make, volume_size)</code></pre>
+</details>
+</dd>
+<dt id="tests.test_csi.test_csi_offline_expansion"><code class="name flex">
+<span>def <span class="ident">test_csi_offline_expansion</span></span>(<span>client, core_api, storage_class, pvc, pod_manifest)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test CSI feature: offline expansion</p>
+<ol>
+<li>Create a new <code>storage_class</code> with <code>allowVolumeExpansion</code> set</li>
+<li>Create PVC and Pod with dynamic provisioned volume from the StorageClass</li>
+<li>Generate <code>test_data</code> and write to the pod</li>
+<li>Delete the pod</li>
+<li>Update pvc.spec.resources to expand the volume</li>
+<li>Verify the volume expansion done using Longhorn API</li>
+<li>Create a new pod and validate the volume content</li>
+</ol></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@pytest.mark.coretest   # NOQA
+@pytest.mark.csi  # NOQA
+@pytest.mark.csi_expansion  # NOQA
+def test_csi_offline_expansion(client, core_api, storage_class, pvc, pod_manifest):  # NOQA
+    &#34;&#34;&#34;
+    Test CSI feature: offline expansion
+
+    1. Create a new `storage_class` with `allowVolumeExpansion` set
+    2. Create PVC and Pod with dynamic provisioned volume from the StorageClass
+    3. Generate `test_data` and write to the pod
+    4. Delete the pod
+    5. Update pvc.spec.resources to expand the volume
+    6. Verify the volume expansion done using Longhorn API
+    7. Create a new pod and validate the volume content
+    &#34;&#34;&#34;
+    create_storage_class(storage_class)
+
+    pod_name = &#39;csi-offline-expand-volume-test&#39;
+    pvc_name = pod_name + &#34;-pvc&#34;
+    pvc[&#39;metadata&#39;][&#39;name&#39;] = pvc_name
+    pvc[&#39;spec&#39;][&#39;storageClassName&#39;] = storage_class[&#39;metadata&#39;][&#39;name&#39;]
+    create_pvc(pvc)
+
+    pod_manifest[&#39;metadata&#39;][&#39;name&#39;] = pod_name
+    pod_manifest[&#39;spec&#39;][&#39;volumes&#39;] = [{
+        &#39;name&#39;:
+            pod_manifest[&#39;spec&#39;][&#39;containers&#39;][0][&#39;volumeMounts&#39;][0][&#39;name&#39;],
+        &#39;persistentVolumeClaim&#39;: {&#39;claimName&#39;: pvc_name},
+    }]
+    create_and_wait_pod(core_api, pod_manifest)
+    test_data = generate_random_data(VOLUME_RWTEST_SIZE)
+    write_pod_volume_data(core_api, pod_name, test_data)
+    delete_and_wait_pod(core_api, pod_name)
+
+    pv = wait_and_get_pv_for_pvc(core_api, pvc_name)
+    assert pv.status.phase == &#34;Bound&#34;
+    volume_name = pv.spec.csi.volume_handle
+    wait_for_volume_detached(client, volume_name)
+
+    pvc[&#39;spec&#39;][&#39;resources&#39;] = {
+        &#39;requests&#39;: {
+            &#39;storage&#39;: size_to_string(EXPANDED_VOLUME_SIZE*Gi)
+        }
+    }
+    expand_and_wait_for_pvc(core_api, pvc)
+    wait_for_volume_expansion(client, volume_name)
+    volume = client.by_id_volume(volume_name)
+    assert volume.state == &#34;detached&#34;
+    assert volume.size == str(EXPANDED_VOLUME_SIZE*Gi)
+
+    pod_manifest[&#39;metadata&#39;][&#39;name&#39;] = pod_name
+    pod_manifest[&#39;spec&#39;][&#39;volumes&#39;] = [{
+        &#39;name&#39;:
+            pod_manifest[&#39;spec&#39;][&#39;containers&#39;][0][&#39;volumeMounts&#39;][0][&#39;name&#39;],
+        &#39;persistentVolumeClaim&#39;: {&#39;claimName&#39;: pvc_name},
+    }]
+    create_and_wait_pod(core_api, pod_manifest)
+
+    resp = read_volume_data(core_api, pod_name)
+    assert resp == test_data
+
+    volume = client.by_id_volume(volume_name)
+    engine = get_volume_engine(volume)
+    assert volume.size == str(EXPANDED_VOLUME_SIZE*Gi)
+    assert volume.size == engine.size</code></pre>
+</details>
+</dd>
+<dt id="tests.test_csi.test_xfs_pv"><code class="name flex">
+<span>def <span class="ident">test_xfs_pv</span></span>(<span>client, core_api, pod_manifest)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test create PV with new XFS filesystem</p>
+<ol>
+<li>Create a volume</li>
+<li>Create a PV for the existing volume, specify <code>xfs</code> as filesystem</li>
+<li>Create PVC and Pod</li>
+<li>Make sure Pod is running.</li>
+<li>Write data into the pod and read back for validation.</li>
+</ol>
+<p>Note: The volume will be formatted to XFS filesystem by Kubernetes in this
+case.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def test_xfs_pv(client, core_api, pod_manifest): # NOQA
+    &#34;&#34;&#34;
+    Test create PV with new XFS filesystem
+
+    1. Create a volume
+    2. Create a PV for the existing volume, specify `xfs` as filesystem
+    3. Create PVC and Pod
+    4. Make sure Pod is running.
+    5. Write data into the pod and read back for validation.
+
+    Note: The volume will be formatted to XFS filesystem by Kubernetes in this
+    case.
+    &#34;&#34;&#34;
+    volume_name = generate_volume_name()
+
+    volume = create_and_check_volume(client, volume_name)
+
+    create_pv_for_volume(client, core_api, volume, volume_name, &#34;xfs&#34;)
+
+    create_pvc_for_volume(client, core_api, volume, volume_name)
+
+    pod_manifest[&#39;spec&#39;][&#39;volumes&#39;] = [{
+        &#34;name&#34;: &#34;pod-data&#34;,
+        &#34;persistentVolumeClaim&#34;: {
+            &#34;claimName&#34;: volume_name
+        }
+    }]
+
+    pod_name = pod_manifest[&#39;metadata&#39;][&#39;name&#39;]
+
+    create_and_wait_pod(core_api, pod_manifest)
+
+    test_data = generate_random_data(VOLUME_RWTEST_SIZE)
+    write_pod_volume_data(core_api, pod_name, test_data)
+    resp = read_volume_data(core_api, pod_name)
+    assert resp == test_data</code></pre>
+</details>
+</dd>
+<dt id="tests.test_csi.test_xfs_pv_existing_volume"><code class="name flex">
+<span>def <span class="ident">test_xfs_pv_existing_volume</span></span>(<span>client, core_api, pod_manifest)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test create PV with existing XFS filesystem</p>
+<ol>
+<li>Create a volume</li>
+<li>Create PV/PVC for the existing volume, specify <code>xfs</code> as filesystem</li>
+<li>Attach the volume to the current node.</li>
+<li>Format it to <code>xfs</code></li>
+<li>Create a POD using the volume</li>
+</ol>
+<p>FIXME: We should write data in step 4 and validate the data in step 5, make
+sure the disk won't be reformatted</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def test_xfs_pv_existing_volume(client, core_api, pod_manifest): # NOQA
+    &#34;&#34;&#34;
+    Test create PV with existing XFS filesystem
+
+    1. Create a volume
+    2. Create PV/PVC for the existing volume, specify `xfs` as filesystem
+    3. Attach the volume to the current node.
+    4. Format it to `xfs`
+    5. Create a POD using the volume
+
+    FIXME: We should write data in step 4 and validate the data in step 5, make
+    sure the disk won&#39;t be reformatted
+    &#34;&#34;&#34;
+    volume_name = generate_volume_name()
+
+    volume = create_and_check_volume(client, volume_name)
+
+    create_pv_for_volume(client, core_api, volume, volume_name, &#34;xfs&#34;)
+
+    create_pvc_for_volume(client, core_api, volume, volume_name)
+
+    host_id = get_self_host_id()
+
+    volume = volume.attach(hostId=host_id)
+
+    volume = wait_for_volume_healthy(client, volume_name)
+
+    cmd = [&#39;mkfs.xfs&#39;, get_volume_endpoint(volume)]
+    subprocess.check_call(cmd)
+
+    volume = volume.detach()
+
+    volume = wait_for_volume_detached(client, volume_name)
+
+    pod_manifest[&#39;spec&#39;][&#39;volumes&#39;] = [{
+        &#34;name&#34;: &#34;pod-data&#34;,
+        &#34;persistentVolumeClaim&#34;: {
+            &#34;claimName&#34;: volume_name
+        }
+    }]
+
+    create_and_wait_pod(core_api, pod_manifest)</code></pre>
+</details>
+</dd>
+<dt id="tests.test_csi.update_storageclass_references"><code class="name flex">
+<span>def <span class="ident">update_storageclass_references</span></span>(<span>name, pv, claim)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Rename all references to a StorageClass to a specified name.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def update_storageclass_references(name, pv, claim):
+    &#34;&#34;&#34;
+    Rename all references to a StorageClass to a specified name.
+    &#34;&#34;&#34;
+    pv[&#39;spec&#39;][&#39;storageClassName&#39;] = name
+    claim[&#39;spec&#39;][&#39;storageClassName&#39;] = name</code></pre>
+</details>
+</dd>
+</dl>
+</section>
+<section>
+</section>
+</article>
+<nav id="sidebar">
+<h1>Index</h1>
+<div class="toc">
+<ul></ul>
+</div>
+<ul id="index">
+<li><h3>Super-module</h3>
+<ul>
+<li><code><a title="tests" href="index.html">tests</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-functions">Functions</a></h3>
+<ul class="">
+<li><code><a title="tests.test_csi.backupstore_test" href="#tests.test_csi.backupstore_test">backupstore_test</a></code></li>
+<li><code><a title="tests.test_csi.create_and_wait_csi_pod" href="#tests.test_csi.create_and_wait_csi_pod">create_and_wait_csi_pod</a></code></li>
+<li><code><a title="tests.test_csi.create_and_wait_csi_pod_named_pv" href="#tests.test_csi.create_and_wait_csi_pod_named_pv">create_and_wait_csi_pod_named_pv</a></code></li>
+<li><code><a title="tests.test_csi.create_pv_storage" href="#tests.test_csi.create_pv_storage">create_pv_storage</a></code></li>
+<li><code><a title="tests.test_csi.csi_backup_test" href="#tests.test_csi.csi_backup_test">csi_backup_test</a></code></li>
+<li><code><a title="tests.test_csi.csi_io_test" href="#tests.test_csi.csi_io_test">csi_io_test</a></code></li>
+<li><code><a title="tests.test_csi.csi_mount_test" href="#tests.test_csi.csi_mount_test">csi_mount_test</a></code></li>
+<li><code><a title="tests.test_csi.test_csi_backup" href="#tests.test_csi.test_csi_backup">test_csi_backup</a></code></li>
+<li><code><a title="tests.test_csi.test_csi_block_volume" href="#tests.test_csi.test_csi_block_volume">test_csi_block_volume</a></code></li>
+<li><code><a title="tests.test_csi.test_csi_expansion_with_replica_failure" href="#tests.test_csi.test_csi_expansion_with_replica_failure">test_csi_expansion_with_replica_failure</a></code></li>
+<li><code><a title="tests.test_csi.test_csi_io" href="#tests.test_csi.test_csi_io">test_csi_io</a></code></li>
+<li><code><a title="tests.test_csi.test_csi_mount" href="#tests.test_csi.test_csi_mount">test_csi_mount</a></code></li>
+<li><code><a title="tests.test_csi.test_csi_offline_expansion" href="#tests.test_csi.test_csi_offline_expansion">test_csi_offline_expansion</a></code></li>
+<li><code><a title="tests.test_csi.test_xfs_pv" href="#tests.test_csi.test_xfs_pv">test_xfs_pv</a></code></li>
+<li><code><a title="tests.test_csi.test_xfs_pv_existing_volume" href="#tests.test_csi.test_xfs_pv_existing_volume">test_xfs_pv_existing_volume</a></code></li>
+<li><code><a title="tests.test_csi.update_storageclass_references" href="#tests.test_csi.update_storageclass_references">update_storageclass_references</a></code></li>
+</ul>
+</li>
+</ul>
+</nav>
+</main>
+<footer id="footer">
+<p>Generated by <a href="https://pdoc3.github.io/pdoc"><cite>pdoc</cite> 0.8.4</a>.</p>
+</footer>
+</body>
+</html>

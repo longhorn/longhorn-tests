@@ -1,0 +1,1040 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
+<meta name="generator" content="pdoc 0.8.4" />
+<title>tests.test_scheduling API documentation</title>
+<meta name="description" content="" />
+<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
+<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/typography.min.css" integrity="sha256-7l/o7C8jubJiy74VsKTidCy1yBkRtiUGbVkYBylBqUg=" crossorigin>
+<link rel="stylesheet preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/styles/github.min.css" crossorigin>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:30px;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:1em 0 .50em 0}h3{font-size:1.4em;margin:25px 0 10px 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .3s ease-in-out}a:hover{color:#e82}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900}pre code{background:#f8f8f8;font-size:.8em;line-height:1.4em}code{background:#f2f2f1;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{background:#f8f8f8;border:0;border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0;padding:1ex}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-weight:bold;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em .5em;margin-bottom:1em}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.item .name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul{padding-left:1.5em}.toc > ul > li{margin-top:.5em}}</style>
+<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/highlight.min.js" integrity="sha256-eOgo0OtLL4cdq7RdwRUiGKLX9XsIJ7nGhWEKbohmVAQ=" crossorigin></script>
+<script>window.addEventListener('DOMContentLoaded', () => hljs.initHighlighting())</script>
+</head>
+<body>
+<main>
+<article id="content">
+<header>
+<h1 class="title">Module <code>tests.test_scheduling</code></h1>
+</header>
+<section id="section-intro">
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">import pytest
+
+from common import RETRY_COUNTS, RETRY_INTERVAL
+from common import client, volume_name  # NOQA
+from common import check_volume_data, cleanup_volume, \
+    create_and_check_volume, get_longhorn_api_client, get_self_host_id, \
+    wait_for_volume_detached, wait_for_volume_degraded, \
+    wait_for_volume_healthy, wait_scheduling_failure, \
+    write_volume_random_data, wait_for_rebuild_complete
+from common import SETTING_REPLICA_NODE_SOFT_ANTI_AFFINITY
+from time import sleep
+
+
+@pytest.yield_fixture(autouse=True)
+def reset_settings():
+    yield
+    client = get_longhorn_api_client()  # NOQA
+    host_id = get_self_host_id()
+    node = client.by_id_node(host_id)
+    client.update(node, allowScheduling=True)
+    setting = client.by_id_setting(SETTING_REPLICA_NODE_SOFT_ANTI_AFFINITY)
+    client.update(setting, value=&#34;true&#34;)
+
+
+def get_host_replica(volume, host_id):
+    &#34;&#34;&#34;
+    Get the replica of the volume that is running on the test host. Trigger a
+    failed assertion if it can&#39;t be found.
+    :param volume: The volume to get the replica from.
+    :param host_id: The ID of the test host.
+    :return: The replica hosted on the test host.
+    &#34;&#34;&#34;
+    host_replica = None
+    for i in volume.replicas:
+        if i.hostId == host_id:
+            host_replica = i
+    assert host_replica is not None
+    return host_replica
+
+
+# We check to make sure the replica is found, running, and in RW mode (not
+# rebuilding) since the longhorn-engine has the latest status compared to
+# longhorn-manager, which might be in an intermediate state.
+def wait_new_replica_ready(client, volume_name, replica_names):  # NOQA
+    &#34;&#34;&#34;
+    Wait for a new replica to be found on the specified volume. Trigger a
+    failed assertion if one can&#39;t be found.
+    :param client: The Longhorn client to use in the request.
+    :param volume_name: The name of the volume.
+    :param replica_names: The list of names of the volume&#39;s old replicas.
+    &#34;&#34;&#34;
+    new_replica_ready = False
+    wait_for_rebuild_complete(client, volume_name)
+    for _ in range(RETRY_COUNTS):
+        v = client.by_id_volume(volume_name)
+        for r in v.replicas:
+            if r[&#34;name&#34;] not in replica_names and r[&#34;running&#34;] and \
+                    r[&#34;mode&#34;] == &#34;RW&#34;:
+                new_replica_ready = True
+                break
+        if new_replica_ready:
+            break
+        sleep(RETRY_INTERVAL)
+    assert new_replica_ready
+
+
+def test_soft_anti_affinity_scheduling(client, volume_name):  # NOQA
+    &#34;&#34;&#34;
+    Test that volumes with Soft Anti-Affinity work as expected.
+
+    With Soft Anti-Affinity, a new replica should still be scheduled on a node
+    with an existing replica, which will result in &#34;Healthy&#34; state but limited
+    redundancy.
+
+    1. Create a volume and attach to the current node
+    2. Generate and write `data` to the volume.
+    3. Set `soft anti-affinity` to true
+    4. Disable current node&#39;s scheduling.
+    5. Remove the replica on the current node
+    6. Wait for the volume to complete rebuild. Volume should have 3 replicas.
+    7. Verify `data`
+    &#34;&#34;&#34;
+    volume = create_and_check_volume(client, volume_name)
+    host_id = get_self_host_id()
+    volume.attach(hostId=host_id)
+    volume = wait_for_volume_healthy(client, volume_name)
+    assert len(volume.replicas) == 3
+
+    data = write_volume_random_data(volume)
+    setting = client.by_id_setting(SETTING_REPLICA_NODE_SOFT_ANTI_AFFINITY)
+    client.update(setting, value=&#34;true&#34;)
+    node = client.by_id_node(host_id)
+    client.update(node, allowScheduling=False)
+    replica_names = list(map(lambda replica: replica.name, volume.replicas))
+    host_replica = get_host_replica(volume, host_id)
+
+    volume.replicaRemove(name=host_replica.name)
+    wait_new_replica_ready(client, volume_name, replica_names)
+    volume = wait_for_volume_healthy(client, volume_name)
+    assert len(volume.replicas) == 3
+    check_volume_data(volume, data)
+
+    cleanup_volume(client, volume)
+
+
+def test_soft_anti_affinity_detach(client, volume_name):  # NOQA
+    &#34;&#34;&#34;
+    Test that volumes with Soft Anti-Affinity can detach and reattach to a
+    node properly.
+
+    1. Create a volume and attach to the current node.
+    2. Generate and write `data` to the volume
+    3. Set `soft anti-affinity` to true
+    4. Disable current node&#39;s scheduling.
+    5. Remove the replica on the current node
+    6. Wait for the new replica to be rebuilt
+    7. Detach the volume.
+    8. Verify there are 3 replicas
+    9. Attach the volume again. Verify there are still 3 replicas
+    10. Verify the `data`.
+    &#34;&#34;&#34;
+    volume = create_and_check_volume(client, volume_name)
+    host_id = get_self_host_id()
+    volume.attach(hostId=host_id)
+    volume = wait_for_volume_healthy(client, volume_name)
+    assert len(volume.replicas) == 3
+
+    data = write_volume_random_data(volume)
+    setting = client.by_id_setting(SETTING_REPLICA_NODE_SOFT_ANTI_AFFINITY)
+    client.update(setting, value=&#34;true&#34;)
+    node = client.by_id_node(host_id)
+    client.update(node, allowScheduling=False)
+    replica_names = list(map(lambda replica: replica.name, volume.replicas))
+    host_replica = get_host_replica(volume, host_id)
+
+    volume.replicaRemove(name=host_replica.name)
+    wait_new_replica_ready(client, volume_name, replica_names)
+    volume = wait_for_volume_healthy(client, volume_name)
+    volume.detach()
+    volume = wait_for_volume_detached(client, volume_name)
+    assert len(volume.replicas) == 3
+
+    volume.attach(hostId=host_id)
+    volume = wait_for_volume_healthy(client, volume_name)
+    assert len(volume.replicas) == 3
+    check_volume_data(volume, data)
+
+    cleanup_volume(client, volume)
+
+
+def test_hard_anti_affinity_scheduling(client, volume_name):  # NOQA
+    &#34;&#34;&#34;
+    Test that volumes with Hard Anti-Affinity work as expected.
+
+    With Hard Anti-Affinity, scheduling on nodes with existing replicas should
+    be forbidden, resulting in &#34;Degraded&#34; state.
+
+    1. Create a volume and attach to the current node
+    2. Generate and write `data` to the volume.
+    3. Set `soft anti-affinity` to false
+    4. Disable current node&#39;s scheduling.
+    5. Remove the replica on the current node
+        1. Verify volume will be in degraded state.
+        2. Verify volume reports condition `scheduled == false`
+        3. Verify only two of three replicas of volume are healthy.
+        4. Verify the remaining replica doesn&#39;t have `replica.HostID`, meaning
+        it&#39;s unscheduled
+    6. Check volume `data`
+    &#34;&#34;&#34;
+    volume = create_and_check_volume(client, volume_name)
+    host_id = get_self_host_id()
+    volume.attach(hostId=host_id)
+    volume = wait_for_volume_healthy(client, volume_name)
+    assert len(volume.replicas) == 3
+
+    data = write_volume_random_data(volume)
+    setting = client.by_id_setting(SETTING_REPLICA_NODE_SOFT_ANTI_AFFINITY)
+    client.update(setting, value=&#34;false&#34;)
+    node = client.by_id_node(host_id)
+    client.update(node, allowScheduling=False)
+    host_replica = get_host_replica(volume, host_id)
+
+    volume.replicaRemove(name=host_replica.name)
+    # Instead of waiting for timeout and lengthening the tests a significant
+    # amount we can make sure the scheduling isn&#39;t working by making sure the
+    # volume becomes Degraded and reports a scheduling error.
+    wait_for_volume_degraded(client, volume_name)
+    wait_scheduling_failure(client, volume_name)
+    # While there are three replicas that should exist to meet the Volume&#39;s
+    # request, only two of those volumes should actually be Healthy.
+    volume = client.by_id_volume(volume_name)
+    assert sum([1 for replica in volume.replicas if replica.running and
+                replica.mode == &#34;RW&#34;]) == 2
+    # Confirm that the final volume is an unscheduled volume.
+    assert sum([1 for replica in volume.replicas if
+                not replica.hostId]) == 1
+    # Three replicas in total should still exist.
+    assert len(volume.replicas) == 3
+    check_volume_data(volume, data)
+
+    cleanup_volume(client, volume)
+
+
+def test_hard_anti_affinity_detach(client, volume_name):  # NOQA
+    &#34;&#34;&#34;
+    Test that volumes with Hard Anti-Affinity are still able to detach and
+    reattach to a node properly, even in degraded state.
+
+    1. Create a volume and attach to the current node
+    2. Generate and write `data` to the volume.
+    3. Set `soft anti-affinity` to false
+    4. Disable current node&#39;s scheduling.
+    5. Remove the replica on the current node
+        1. Verify volume will be in degraded state.
+        2. Verify volume reports condition `scheduled == false`
+    6. Detach the volume.
+    7. Verify that volume only have 2 replicas
+        1. Unhealthy replica will be removed upon detach.
+    8. Attach the volume again.
+        1. Verify volume will be in degraded state.
+        2. Verify volume reports condition `scheduled == false`
+        3. Verify only two of three replicas of volume are healthy.
+        4. Verify the remaining replica doesn&#39;t have `replica.HostID`, meaning
+        it&#39;s unscheduled
+    9. Check volume `data`
+    &#34;&#34;&#34;
+    volume = create_and_check_volume(client, volume_name)
+    host_id = get_self_host_id()
+    volume.attach(hostId=host_id)
+    volume = wait_for_volume_healthy(client, volume_name)
+    assert len(volume.replicas) == 3
+
+    data = write_volume_random_data(volume)
+    setting = client.by_id_setting(SETTING_REPLICA_NODE_SOFT_ANTI_AFFINITY)
+    client.update(setting, value=&#34;false&#34;)
+    node = client.by_id_node(host_id)
+    client.update(node, allowScheduling=False)
+    host_replica = get_host_replica(volume, host_id)
+
+    volume.replicaRemove(name=host_replica.name)
+    volume = wait_for_volume_degraded(client, volume_name)
+    wait_scheduling_failure(client, volume_name)
+    volume.detach()
+    volume = wait_for_volume_detached(client, volume_name)
+    assert len(volume.replicas) == 2
+
+    volume.attach(hostId=host_id)
+    # Make sure we&#39;re still not getting another successful replica.
+    volume = wait_for_volume_degraded(client, volume_name)
+    wait_scheduling_failure(client, volume_name)
+    assert sum([1 for replica in volume.replicas if replica.running and
+                replica.mode == &#34;RW&#34;]) == 2
+    assert sum([1 for replica in volume.replicas if
+                not replica.hostId]) == 1
+    assert len(volume.replicas) == 3
+    check_volume_data(volume, data)
+
+    cleanup_volume(client, volume)
+
+
+def test_hard_anti_affinity_live_rebuild(client, volume_name):  # NOQA
+    &#34;&#34;&#34;
+    Test that volumes with Hard Anti-Affinity can build new replicas live once
+    a valid node is available.
+
+    If no nodes without existing replicas are available, the volume should
+    remain in &#34;Degraded&#34; state. However, once one is available, the replica
+    should now be scheduled successfully, with the volume returning to
+    &#34;Healthy&#34; state.
+
+    1. Create a volume and attach to the current node
+    2. Generate and write `data` to the volume.
+    3. Set `soft anti-affinity` to false
+    4. Disable current node&#39;s scheduling.
+    5. Remove the replica on the current node
+        1. Verify volume will be in degraded state.
+        2. Verify volume reports condition `scheduled == false`
+    6. Enable the current node&#39;s scheduling
+    7. Wait for volume to start rebuilding and become healthy again
+    8. Check volume `data`
+    &#34;&#34;&#34;
+    volume = create_and_check_volume(client, volume_name)
+    host_id = get_self_host_id()
+    volume.attach(hostId=host_id)
+    volume = wait_for_volume_healthy(client, volume_name)
+    assert len(volume.replicas) == 3
+
+    data = write_volume_random_data(volume)
+    setting = client.by_id_setting(SETTING_REPLICA_NODE_SOFT_ANTI_AFFINITY)
+    client.update(setting, value=&#34;false&#34;)
+    node = client.by_id_node(host_id)
+    client.update(node, allowScheduling=False)
+    replica_names = map(lambda replica: replica.name, volume.replicas)
+    host_replica = get_host_replica(volume, host_id)
+
+    volume.replicaRemove(name=host_replica.name)
+    wait_for_volume_degraded(client, volume_name)
+    wait_scheduling_failure(client, volume_name)
+    # Allow scheduling on host node again
+    client.update(node, allowScheduling=True)
+    wait_new_replica_ready(client, volume_name, replica_names)
+    volume = wait_for_volume_healthy(client, volume_name)
+    assert len(volume.replicas) == 3
+    check_volume_data(volume, data)
+
+    cleanup_volume(client, volume)
+
+
+def test_hard_anti_affinity_offline_rebuild(client, volume_name):  # NOQA
+    &#34;&#34;&#34;
+    Test that volumes with Hard Anti-Affinity can build new replicas during
+    the attaching process once a valid node is available.
+
+    Once a new replica has been built as part of the attaching process, the
+    volume should be Healthy again.
+
+    1. Create a volume and attach to the current node
+    2. Generate and write `data` to the volume.
+    3. Set `soft anti-affinity` to false
+    4. Disable current node&#39;s scheduling.
+    5. Remove the replica on the current node
+        1. Verify volume will be in degraded state.
+        2. Verify volume reports condition `scheduled == false`
+    6. Detach the volume.
+    7. Enable current node&#39;s scheduling.
+    8. Attach the volume again.
+    9. Wait for volume to become healthy with 3 replicas
+    10. Check volume `data`
+    &#34;&#34;&#34;
+    volume = create_and_check_volume(client, volume_name)
+    host_id = get_self_host_id()
+    volume.attach(hostId=host_id)
+    volume = wait_for_volume_healthy(client, volume_name)
+    assert len(volume.replicas) == 3
+
+    data = write_volume_random_data(volume)
+    setting = client.by_id_setting(SETTING_REPLICA_NODE_SOFT_ANTI_AFFINITY)
+    client.update(setting, value=&#34;false&#34;)
+    node = client.by_id_node(host_id)
+    client.update(node, allowScheduling=False)
+    replica_names = map(lambda replica: replica.name, volume.replicas)
+    host_replica = get_host_replica(volume, host_id)
+
+    volume.replicaRemove(name=host_replica.name)
+    volume = wait_for_volume_degraded(client, volume_name)
+    wait_scheduling_failure(client, volume_name)
+    volume.detach()
+    volume = wait_for_volume_detached(client, volume_name)
+    client.update(node, allowScheduling=True)
+    volume.attach(hostId=host_id)
+    wait_new_replica_ready(client, volume_name, replica_names)
+    volume = wait_for_volume_healthy(client, volume_name)
+    assert len(volume.replicas) == 3
+    check_volume_data(volume, data)
+
+    cleanup_volume(client, volume)
+
+
+@pytest.mark.skip(reason=&#34;TODO&#34;)
+def test_replica_rebuild_per_volume_limit():
+    &#34;&#34;&#34;
+    Test the volume always only have one replica scheduled for rebuild
+
+    1. Set soft anti-affinity to `true`.
+    2. Create a volume with one replicas.
+    3. Attach the volume and write a few hundreds MB data to it.
+    4. Scale the volume replica to 5.
+    5. Constantly checking the volume replica list to make sure there should be
+    at most one replica which is not in the RW state. It should be:
+        1. Either in the WO state
+        2. Doesn&#39;t have any state because it&#39;s preparing for the rebuild.
+    6. Wait for the volume to complete rebuilding. Then remove 4 of the 5
+    replicas.
+    7. Monitoring the volume replica list again.
+    8. Once the rebuild was completed again, delete the volume and reset the
+    setting.
+
+    &#34;&#34;&#34;
+    pass</code></pre>
+</details>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-functions">Functions</h2>
+<dl>
+<dt id="tests.test_scheduling.get_host_replica"><code class="name flex">
+<span>def <span class="ident">get_host_replica</span></span>(<span>volume, host_id)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Get the replica of the volume that is running on the test host. Trigger a
+failed assertion if it can't be found.
+:param volume: The volume to get the replica from.
+:param host_id: The ID of the test host.
+:return: The replica hosted on the test host.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_host_replica(volume, host_id):
+    &#34;&#34;&#34;
+    Get the replica of the volume that is running on the test host. Trigger a
+    failed assertion if it can&#39;t be found.
+    :param volume: The volume to get the replica from.
+    :param host_id: The ID of the test host.
+    :return: The replica hosted on the test host.
+    &#34;&#34;&#34;
+    host_replica = None
+    for i in volume.replicas:
+        if i.hostId == host_id:
+            host_replica = i
+    assert host_replica is not None
+    return host_replica</code></pre>
+</details>
+</dd>
+<dt id="tests.test_scheduling.reset_settings"><code class="name flex">
+<span>def <span class="ident">reset_settings</span></span>(<span>)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@pytest.yield_fixture(autouse=True)
+def reset_settings():
+    yield
+    client = get_longhorn_api_client()  # NOQA
+    host_id = get_self_host_id()
+    node = client.by_id_node(host_id)
+    client.update(node, allowScheduling=True)
+    setting = client.by_id_setting(SETTING_REPLICA_NODE_SOFT_ANTI_AFFINITY)
+    client.update(setting, value=&#34;true&#34;)</code></pre>
+</details>
+</dd>
+<dt id="tests.test_scheduling.test_hard_anti_affinity_detach"><code class="name flex">
+<span>def <span class="ident">test_hard_anti_affinity_detach</span></span>(<span>client, volume_name)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test that volumes with Hard Anti-Affinity are still able to detach and
+reattach to a node properly, even in degraded state.</p>
+<ol>
+<li>Create a volume and attach to the current node</li>
+<li>Generate and write <code>data</code> to the volume.</li>
+<li>Set <code>soft anti-affinity</code> to false</li>
+<li>Disable current node's scheduling.</li>
+<li>Remove the replica on the current node<ol>
+<li>Verify volume will be in degraded state.</li>
+<li>Verify volume reports condition <code>scheduled == false</code></li>
+</ol>
+</li>
+<li>Detach the volume.</li>
+<li>Verify that volume only have 2 replicas<ol>
+<li>Unhealthy replica will be removed upon detach.</li>
+</ol>
+</li>
+<li>Attach the volume again.<ol>
+<li>Verify volume will be in degraded state.</li>
+<li>Verify volume reports condition <code>scheduled == false</code></li>
+<li>Verify only two of three replicas of volume are healthy.</li>
+<li>Verify the remaining replica doesn't have <code>replica.HostID</code>, meaning
+it's unscheduled</li>
+</ol>
+</li>
+<li>Check volume <code>data</code></li>
+</ol></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def test_hard_anti_affinity_detach(client, volume_name):  # NOQA
+    &#34;&#34;&#34;
+    Test that volumes with Hard Anti-Affinity are still able to detach and
+    reattach to a node properly, even in degraded state.
+
+    1. Create a volume and attach to the current node
+    2. Generate and write `data` to the volume.
+    3. Set `soft anti-affinity` to false
+    4. Disable current node&#39;s scheduling.
+    5. Remove the replica on the current node
+        1. Verify volume will be in degraded state.
+        2. Verify volume reports condition `scheduled == false`
+    6. Detach the volume.
+    7. Verify that volume only have 2 replicas
+        1. Unhealthy replica will be removed upon detach.
+    8. Attach the volume again.
+        1. Verify volume will be in degraded state.
+        2. Verify volume reports condition `scheduled == false`
+        3. Verify only two of three replicas of volume are healthy.
+        4. Verify the remaining replica doesn&#39;t have `replica.HostID`, meaning
+        it&#39;s unscheduled
+    9. Check volume `data`
+    &#34;&#34;&#34;
+    volume = create_and_check_volume(client, volume_name)
+    host_id = get_self_host_id()
+    volume.attach(hostId=host_id)
+    volume = wait_for_volume_healthy(client, volume_name)
+    assert len(volume.replicas) == 3
+
+    data = write_volume_random_data(volume)
+    setting = client.by_id_setting(SETTING_REPLICA_NODE_SOFT_ANTI_AFFINITY)
+    client.update(setting, value=&#34;false&#34;)
+    node = client.by_id_node(host_id)
+    client.update(node, allowScheduling=False)
+    host_replica = get_host_replica(volume, host_id)
+
+    volume.replicaRemove(name=host_replica.name)
+    volume = wait_for_volume_degraded(client, volume_name)
+    wait_scheduling_failure(client, volume_name)
+    volume.detach()
+    volume = wait_for_volume_detached(client, volume_name)
+    assert len(volume.replicas) == 2
+
+    volume.attach(hostId=host_id)
+    # Make sure we&#39;re still not getting another successful replica.
+    volume = wait_for_volume_degraded(client, volume_name)
+    wait_scheduling_failure(client, volume_name)
+    assert sum([1 for replica in volume.replicas if replica.running and
+                replica.mode == &#34;RW&#34;]) == 2
+    assert sum([1 for replica in volume.replicas if
+                not replica.hostId]) == 1
+    assert len(volume.replicas) == 3
+    check_volume_data(volume, data)
+
+    cleanup_volume(client, volume)</code></pre>
+</details>
+</dd>
+<dt id="tests.test_scheduling.test_hard_anti_affinity_live_rebuild"><code class="name flex">
+<span>def <span class="ident">test_hard_anti_affinity_live_rebuild</span></span>(<span>client, volume_name)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test that volumes with Hard Anti-Affinity can build new replicas live once
+a valid node is available.</p>
+<p>If no nodes without existing replicas are available, the volume should
+remain in "Degraded" state. However, once one is available, the replica
+should now be scheduled successfully, with the volume returning to
+"Healthy" state.</p>
+<ol>
+<li>Create a volume and attach to the current node</li>
+<li>Generate and write <code>data</code> to the volume.</li>
+<li>Set <code>soft anti-affinity</code> to false</li>
+<li>Disable current node's scheduling.</li>
+<li>Remove the replica on the current node<ol>
+<li>Verify volume will be in degraded state.</li>
+<li>Verify volume reports condition <code>scheduled == false</code></li>
+</ol>
+</li>
+<li>Enable the current node's scheduling</li>
+<li>Wait for volume to start rebuilding and become healthy again</li>
+<li>Check volume <code>data</code></li>
+</ol></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def test_hard_anti_affinity_live_rebuild(client, volume_name):  # NOQA
+    &#34;&#34;&#34;
+    Test that volumes with Hard Anti-Affinity can build new replicas live once
+    a valid node is available.
+
+    If no nodes without existing replicas are available, the volume should
+    remain in &#34;Degraded&#34; state. However, once one is available, the replica
+    should now be scheduled successfully, with the volume returning to
+    &#34;Healthy&#34; state.
+
+    1. Create a volume and attach to the current node
+    2. Generate and write `data` to the volume.
+    3. Set `soft anti-affinity` to false
+    4. Disable current node&#39;s scheduling.
+    5. Remove the replica on the current node
+        1. Verify volume will be in degraded state.
+        2. Verify volume reports condition `scheduled == false`
+    6. Enable the current node&#39;s scheduling
+    7. Wait for volume to start rebuilding and become healthy again
+    8. Check volume `data`
+    &#34;&#34;&#34;
+    volume = create_and_check_volume(client, volume_name)
+    host_id = get_self_host_id()
+    volume.attach(hostId=host_id)
+    volume = wait_for_volume_healthy(client, volume_name)
+    assert len(volume.replicas) == 3
+
+    data = write_volume_random_data(volume)
+    setting = client.by_id_setting(SETTING_REPLICA_NODE_SOFT_ANTI_AFFINITY)
+    client.update(setting, value=&#34;false&#34;)
+    node = client.by_id_node(host_id)
+    client.update(node, allowScheduling=False)
+    replica_names = map(lambda replica: replica.name, volume.replicas)
+    host_replica = get_host_replica(volume, host_id)
+
+    volume.replicaRemove(name=host_replica.name)
+    wait_for_volume_degraded(client, volume_name)
+    wait_scheduling_failure(client, volume_name)
+    # Allow scheduling on host node again
+    client.update(node, allowScheduling=True)
+    wait_new_replica_ready(client, volume_name, replica_names)
+    volume = wait_for_volume_healthy(client, volume_name)
+    assert len(volume.replicas) == 3
+    check_volume_data(volume, data)
+
+    cleanup_volume(client, volume)</code></pre>
+</details>
+</dd>
+<dt id="tests.test_scheduling.test_hard_anti_affinity_offline_rebuild"><code class="name flex">
+<span>def <span class="ident">test_hard_anti_affinity_offline_rebuild</span></span>(<span>client, volume_name)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test that volumes with Hard Anti-Affinity can build new replicas during
+the attaching process once a valid node is available.</p>
+<p>Once a new replica has been built as part of the attaching process, the
+volume should be Healthy again.</p>
+<ol>
+<li>Create a volume and attach to the current node</li>
+<li>Generate and write <code>data</code> to the volume.</li>
+<li>Set <code>soft anti-affinity</code> to false</li>
+<li>Disable current node's scheduling.</li>
+<li>Remove the replica on the current node<ol>
+<li>Verify volume will be in degraded state.</li>
+<li>Verify volume reports condition <code>scheduled == false</code></li>
+</ol>
+</li>
+<li>Detach the volume.</li>
+<li>Enable current node's scheduling.</li>
+<li>Attach the volume again.</li>
+<li>Wait for volume to become healthy with 3 replicas</li>
+<li>Check volume <code>data</code></li>
+</ol></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def test_hard_anti_affinity_offline_rebuild(client, volume_name):  # NOQA
+    &#34;&#34;&#34;
+    Test that volumes with Hard Anti-Affinity can build new replicas during
+    the attaching process once a valid node is available.
+
+    Once a new replica has been built as part of the attaching process, the
+    volume should be Healthy again.
+
+    1. Create a volume and attach to the current node
+    2. Generate and write `data` to the volume.
+    3. Set `soft anti-affinity` to false
+    4. Disable current node&#39;s scheduling.
+    5. Remove the replica on the current node
+        1. Verify volume will be in degraded state.
+        2. Verify volume reports condition `scheduled == false`
+    6. Detach the volume.
+    7. Enable current node&#39;s scheduling.
+    8. Attach the volume again.
+    9. Wait for volume to become healthy with 3 replicas
+    10. Check volume `data`
+    &#34;&#34;&#34;
+    volume = create_and_check_volume(client, volume_name)
+    host_id = get_self_host_id()
+    volume.attach(hostId=host_id)
+    volume = wait_for_volume_healthy(client, volume_name)
+    assert len(volume.replicas) == 3
+
+    data = write_volume_random_data(volume)
+    setting = client.by_id_setting(SETTING_REPLICA_NODE_SOFT_ANTI_AFFINITY)
+    client.update(setting, value=&#34;false&#34;)
+    node = client.by_id_node(host_id)
+    client.update(node, allowScheduling=False)
+    replica_names = map(lambda replica: replica.name, volume.replicas)
+    host_replica = get_host_replica(volume, host_id)
+
+    volume.replicaRemove(name=host_replica.name)
+    volume = wait_for_volume_degraded(client, volume_name)
+    wait_scheduling_failure(client, volume_name)
+    volume.detach()
+    volume = wait_for_volume_detached(client, volume_name)
+    client.update(node, allowScheduling=True)
+    volume.attach(hostId=host_id)
+    wait_new_replica_ready(client, volume_name, replica_names)
+    volume = wait_for_volume_healthy(client, volume_name)
+    assert len(volume.replicas) == 3
+    check_volume_data(volume, data)
+
+    cleanup_volume(client, volume)</code></pre>
+</details>
+</dd>
+<dt id="tests.test_scheduling.test_hard_anti_affinity_scheduling"><code class="name flex">
+<span>def <span class="ident">test_hard_anti_affinity_scheduling</span></span>(<span>client, volume_name)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test that volumes with Hard Anti-Affinity work as expected.</p>
+<p>With Hard Anti-Affinity, scheduling on nodes with existing replicas should
+be forbidden, resulting in "Degraded" state.</p>
+<ol>
+<li>Create a volume and attach to the current node</li>
+<li>Generate and write <code>data</code> to the volume.</li>
+<li>Set <code>soft anti-affinity</code> to false</li>
+<li>Disable current node's scheduling.</li>
+<li>Remove the replica on the current node<ol>
+<li>Verify volume will be in degraded state.</li>
+<li>Verify volume reports condition <code>scheduled == false</code></li>
+<li>Verify only two of three replicas of volume are healthy.</li>
+<li>Verify the remaining replica doesn't have <code>replica.HostID</code>, meaning
+it's unscheduled</li>
+</ol>
+</li>
+<li>Check volume <code>data</code></li>
+</ol></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def test_hard_anti_affinity_scheduling(client, volume_name):  # NOQA
+    &#34;&#34;&#34;
+    Test that volumes with Hard Anti-Affinity work as expected.
+
+    With Hard Anti-Affinity, scheduling on nodes with existing replicas should
+    be forbidden, resulting in &#34;Degraded&#34; state.
+
+    1. Create a volume and attach to the current node
+    2. Generate and write `data` to the volume.
+    3. Set `soft anti-affinity` to false
+    4. Disable current node&#39;s scheduling.
+    5. Remove the replica on the current node
+        1. Verify volume will be in degraded state.
+        2. Verify volume reports condition `scheduled == false`
+        3. Verify only two of three replicas of volume are healthy.
+        4. Verify the remaining replica doesn&#39;t have `replica.HostID`, meaning
+        it&#39;s unscheduled
+    6. Check volume `data`
+    &#34;&#34;&#34;
+    volume = create_and_check_volume(client, volume_name)
+    host_id = get_self_host_id()
+    volume.attach(hostId=host_id)
+    volume = wait_for_volume_healthy(client, volume_name)
+    assert len(volume.replicas) == 3
+
+    data = write_volume_random_data(volume)
+    setting = client.by_id_setting(SETTING_REPLICA_NODE_SOFT_ANTI_AFFINITY)
+    client.update(setting, value=&#34;false&#34;)
+    node = client.by_id_node(host_id)
+    client.update(node, allowScheduling=False)
+    host_replica = get_host_replica(volume, host_id)
+
+    volume.replicaRemove(name=host_replica.name)
+    # Instead of waiting for timeout and lengthening the tests a significant
+    # amount we can make sure the scheduling isn&#39;t working by making sure the
+    # volume becomes Degraded and reports a scheduling error.
+    wait_for_volume_degraded(client, volume_name)
+    wait_scheduling_failure(client, volume_name)
+    # While there are three replicas that should exist to meet the Volume&#39;s
+    # request, only two of those volumes should actually be Healthy.
+    volume = client.by_id_volume(volume_name)
+    assert sum([1 for replica in volume.replicas if replica.running and
+                replica.mode == &#34;RW&#34;]) == 2
+    # Confirm that the final volume is an unscheduled volume.
+    assert sum([1 for replica in volume.replicas if
+                not replica.hostId]) == 1
+    # Three replicas in total should still exist.
+    assert len(volume.replicas) == 3
+    check_volume_data(volume, data)
+
+    cleanup_volume(client, volume)</code></pre>
+</details>
+</dd>
+<dt id="tests.test_scheduling.test_replica_rebuild_per_volume_limit"><code class="name flex">
+<span>def <span class="ident">test_replica_rebuild_per_volume_limit</span></span>(<span>)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test the volume always only have one replica scheduled for rebuild</p>
+<ol>
+<li>Set soft anti-affinity to <code>true</code>.</li>
+<li>Create a volume with one replicas.</li>
+<li>Attach the volume and write a few hundreds MB data to it.</li>
+<li>Scale the volume replica to 5.</li>
+<li>Constantly checking the volume replica list to make sure there should be
+at most one replica which is not in the RW state. It should be:<ol>
+<li>Either in the WO state</li>
+<li>Doesn't have any state because it's preparing for the rebuild.</li>
+</ol>
+</li>
+<li>Wait for the volume to complete rebuilding. Then remove 4 of the 5
+replicas.</li>
+<li>Monitoring the volume replica list again.</li>
+<li>Once the rebuild was completed again, delete the volume and reset the
+setting.</li>
+</ol></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@pytest.mark.skip(reason=&#34;TODO&#34;)
+def test_replica_rebuild_per_volume_limit():
+    &#34;&#34;&#34;
+    Test the volume always only have one replica scheduled for rebuild
+
+    1. Set soft anti-affinity to `true`.
+    2. Create a volume with one replicas.
+    3. Attach the volume and write a few hundreds MB data to it.
+    4. Scale the volume replica to 5.
+    5. Constantly checking the volume replica list to make sure there should be
+    at most one replica which is not in the RW state. It should be:
+        1. Either in the WO state
+        2. Doesn&#39;t have any state because it&#39;s preparing for the rebuild.
+    6. Wait for the volume to complete rebuilding. Then remove 4 of the 5
+    replicas.
+    7. Monitoring the volume replica list again.
+    8. Once the rebuild was completed again, delete the volume and reset the
+    setting.
+
+    &#34;&#34;&#34;
+    pass</code></pre>
+</details>
+</dd>
+<dt id="tests.test_scheduling.test_soft_anti_affinity_detach"><code class="name flex">
+<span>def <span class="ident">test_soft_anti_affinity_detach</span></span>(<span>client, volume_name)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test that volumes with Soft Anti-Affinity can detach and reattach to a
+node properly.</p>
+<ol>
+<li>Create a volume and attach to the current node.</li>
+<li>Generate and write <code>data</code> to the volume</li>
+<li>Set <code>soft anti-affinity</code> to true</li>
+<li>Disable current node's scheduling.</li>
+<li>Remove the replica on the current node</li>
+<li>Wait for the new replica to be rebuilt</li>
+<li>Detach the volume.</li>
+<li>Verify there are 3 replicas</li>
+<li>Attach the volume again. Verify there are still 3 replicas</li>
+<li>Verify the <code>data</code>.</li>
+</ol></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def test_soft_anti_affinity_detach(client, volume_name):  # NOQA
+    &#34;&#34;&#34;
+    Test that volumes with Soft Anti-Affinity can detach and reattach to a
+    node properly.
+
+    1. Create a volume and attach to the current node.
+    2. Generate and write `data` to the volume
+    3. Set `soft anti-affinity` to true
+    4. Disable current node&#39;s scheduling.
+    5. Remove the replica on the current node
+    6. Wait for the new replica to be rebuilt
+    7. Detach the volume.
+    8. Verify there are 3 replicas
+    9. Attach the volume again. Verify there are still 3 replicas
+    10. Verify the `data`.
+    &#34;&#34;&#34;
+    volume = create_and_check_volume(client, volume_name)
+    host_id = get_self_host_id()
+    volume.attach(hostId=host_id)
+    volume = wait_for_volume_healthy(client, volume_name)
+    assert len(volume.replicas) == 3
+
+    data = write_volume_random_data(volume)
+    setting = client.by_id_setting(SETTING_REPLICA_NODE_SOFT_ANTI_AFFINITY)
+    client.update(setting, value=&#34;true&#34;)
+    node = client.by_id_node(host_id)
+    client.update(node, allowScheduling=False)
+    replica_names = list(map(lambda replica: replica.name, volume.replicas))
+    host_replica = get_host_replica(volume, host_id)
+
+    volume.replicaRemove(name=host_replica.name)
+    wait_new_replica_ready(client, volume_name, replica_names)
+    volume = wait_for_volume_healthy(client, volume_name)
+    volume.detach()
+    volume = wait_for_volume_detached(client, volume_name)
+    assert len(volume.replicas) == 3
+
+    volume.attach(hostId=host_id)
+    volume = wait_for_volume_healthy(client, volume_name)
+    assert len(volume.replicas) == 3
+    check_volume_data(volume, data)
+
+    cleanup_volume(client, volume)</code></pre>
+</details>
+</dd>
+<dt id="tests.test_scheduling.test_soft_anti_affinity_scheduling"><code class="name flex">
+<span>def <span class="ident">test_soft_anti_affinity_scheduling</span></span>(<span>client, volume_name)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test that volumes with Soft Anti-Affinity work as expected.</p>
+<p>With Soft Anti-Affinity, a new replica should still be scheduled on a node
+with an existing replica, which will result in "Healthy" state but limited
+redundancy.</p>
+<ol>
+<li>Create a volume and attach to the current node</li>
+<li>Generate and write <code>data</code> to the volume.</li>
+<li>Set <code>soft anti-affinity</code> to true</li>
+<li>Disable current node's scheduling.</li>
+<li>Remove the replica on the current node</li>
+<li>Wait for the volume to complete rebuild. Volume should have 3 replicas.</li>
+<li>Verify <code>data</code></li>
+</ol></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def test_soft_anti_affinity_scheduling(client, volume_name):  # NOQA
+    &#34;&#34;&#34;
+    Test that volumes with Soft Anti-Affinity work as expected.
+
+    With Soft Anti-Affinity, a new replica should still be scheduled on a node
+    with an existing replica, which will result in &#34;Healthy&#34; state but limited
+    redundancy.
+
+    1. Create a volume and attach to the current node
+    2. Generate and write `data` to the volume.
+    3. Set `soft anti-affinity` to true
+    4. Disable current node&#39;s scheduling.
+    5. Remove the replica on the current node
+    6. Wait for the volume to complete rebuild. Volume should have 3 replicas.
+    7. Verify `data`
+    &#34;&#34;&#34;
+    volume = create_and_check_volume(client, volume_name)
+    host_id = get_self_host_id()
+    volume.attach(hostId=host_id)
+    volume = wait_for_volume_healthy(client, volume_name)
+    assert len(volume.replicas) == 3
+
+    data = write_volume_random_data(volume)
+    setting = client.by_id_setting(SETTING_REPLICA_NODE_SOFT_ANTI_AFFINITY)
+    client.update(setting, value=&#34;true&#34;)
+    node = client.by_id_node(host_id)
+    client.update(node, allowScheduling=False)
+    replica_names = list(map(lambda replica: replica.name, volume.replicas))
+    host_replica = get_host_replica(volume, host_id)
+
+    volume.replicaRemove(name=host_replica.name)
+    wait_new_replica_ready(client, volume_name, replica_names)
+    volume = wait_for_volume_healthy(client, volume_name)
+    assert len(volume.replicas) == 3
+    check_volume_data(volume, data)
+
+    cleanup_volume(client, volume)</code></pre>
+</details>
+</dd>
+<dt id="tests.test_scheduling.wait_new_replica_ready"><code class="name flex">
+<span>def <span class="ident">wait_new_replica_ready</span></span>(<span>client, volume_name, replica_names)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Wait for a new replica to be found on the specified volume. Trigger a
+failed assertion if one can't be found.
+:param client: The Longhorn client to use in the request.
+:param volume_name: The name of the volume.
+:param replica_names: The list of names of the volume's old replicas.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def wait_new_replica_ready(client, volume_name, replica_names):  # NOQA
+    &#34;&#34;&#34;
+    Wait for a new replica to be found on the specified volume. Trigger a
+    failed assertion if one can&#39;t be found.
+    :param client: The Longhorn client to use in the request.
+    :param volume_name: The name of the volume.
+    :param replica_names: The list of names of the volume&#39;s old replicas.
+    &#34;&#34;&#34;
+    new_replica_ready = False
+    wait_for_rebuild_complete(client, volume_name)
+    for _ in range(RETRY_COUNTS):
+        v = client.by_id_volume(volume_name)
+        for r in v.replicas:
+            if r[&#34;name&#34;] not in replica_names and r[&#34;running&#34;] and \
+                    r[&#34;mode&#34;] == &#34;RW&#34;:
+                new_replica_ready = True
+                break
+        if new_replica_ready:
+            break
+        sleep(RETRY_INTERVAL)
+    assert new_replica_ready</code></pre>
+</details>
+</dd>
+</dl>
+</section>
+<section>
+</section>
+</article>
+<nav id="sidebar">
+<h1>Index</h1>
+<div class="toc">
+<ul></ul>
+</div>
+<ul id="index">
+<li><h3>Super-module</h3>
+<ul>
+<li><code><a title="tests" href="index.html">tests</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-functions">Functions</a></h3>
+<ul class="">
+<li><code><a title="tests.test_scheduling.get_host_replica" href="#tests.test_scheduling.get_host_replica">get_host_replica</a></code></li>
+<li><code><a title="tests.test_scheduling.reset_settings" href="#tests.test_scheduling.reset_settings">reset_settings</a></code></li>
+<li><code><a title="tests.test_scheduling.test_hard_anti_affinity_detach" href="#tests.test_scheduling.test_hard_anti_affinity_detach">test_hard_anti_affinity_detach</a></code></li>
+<li><code><a title="tests.test_scheduling.test_hard_anti_affinity_live_rebuild" href="#tests.test_scheduling.test_hard_anti_affinity_live_rebuild">test_hard_anti_affinity_live_rebuild</a></code></li>
+<li><code><a title="tests.test_scheduling.test_hard_anti_affinity_offline_rebuild" href="#tests.test_scheduling.test_hard_anti_affinity_offline_rebuild">test_hard_anti_affinity_offline_rebuild</a></code></li>
+<li><code><a title="tests.test_scheduling.test_hard_anti_affinity_scheduling" href="#tests.test_scheduling.test_hard_anti_affinity_scheduling">test_hard_anti_affinity_scheduling</a></code></li>
+<li><code><a title="tests.test_scheduling.test_replica_rebuild_per_volume_limit" href="#tests.test_scheduling.test_replica_rebuild_per_volume_limit">test_replica_rebuild_per_volume_limit</a></code></li>
+<li><code><a title="tests.test_scheduling.test_soft_anti_affinity_detach" href="#tests.test_scheduling.test_soft_anti_affinity_detach">test_soft_anti_affinity_detach</a></code></li>
+<li><code><a title="tests.test_scheduling.test_soft_anti_affinity_scheduling" href="#tests.test_scheduling.test_soft_anti_affinity_scheduling">test_soft_anti_affinity_scheduling</a></code></li>
+<li><code><a title="tests.test_scheduling.wait_new_replica_ready" href="#tests.test_scheduling.wait_new_replica_ready">wait_new_replica_ready</a></code></li>
+</ul>
+</li>
+</ul>
+</nav>
+</main>
+<footer id="footer">
+<p>Generated by <a href="https://pdoc3.github.io/pdoc"><cite>pdoc</cite> 0.8.4</a>.</p>
+</footer>
+</body>
+</html>

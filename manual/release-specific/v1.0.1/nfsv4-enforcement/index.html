@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>
+      Longhorn Manual Test Cases
+    </title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/4.0.0/github-markdown.min.css">
+  </head>
+  <body class="markdown-body" style="display: flex; padding: 1%;">
+    
+<aside style="width: 30%; padding: 1%; border-right: 1px solid lightgray;">
+  <a href="https://longhorn.github.io/longhorn-tests/manual"><h2>Manual Test Cases</h2></a>
+  
+  <ul>
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/">Pre-release tests</a></li>
+  
+    <ul>
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/air-gap/">Air Gap</a></li>
+  
+    <ul>
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/air-gap/air-gap-installation/">Air gap installation</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/air-gap/air-gap-instance-manager-name/">Air gap installation with an instance-manager-image name longer than 63 characters</a></li>
+  
+
+</ul>
+
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/">Backup &amp; Restore tests</a></li>
+  
+    <ul>
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/concurrent-backup-creation-deletion/">#1326 concurrent backup creation &amp; deletion</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/concurrent-backup/">#1341 concurrent backup test</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/restore-volume-node-down/">#1355 The node the restore volume attached to is down</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/dr-volume-node-down-rebooted/">#1366 &amp;&amp; #1328 The node the DR volume attached to is down/rebooted</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/google-cloud-s3-interop-backups/">#1404 test backup functionality on google cloud and other s3 interop providers.</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/backup-block-deletion/">#1431 backup block deletion test</a></li>
+  
+
+</ul>
+
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/environment/">Environment</a></li>
+  
+    <ul>
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/environment/k3s-selinux-compatibility/">Compatibility with k3s and SELinux</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/environment/suse-sles12sp3/">Operating System specific tests for SUSE SLES12SP3</a></li>
+  
+    <ul>
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/environment/suse-sles12sp3/ext4-custom-fs-params-1/">Testing ext4 with custom fs params1 (no 64bit, no metadata_csum)</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/environment/suse-sles12sp3/ext4-custom-fs-params-2/">Testing ext4 with custom fs params2 (no metadata_csum)</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/environment/suse-sles12sp3/ext4-no-custom-fs-params/">Testing ext4 without custom fs params</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/environment/suse-sles12sp3/xfs-after-custom-fs-params/">Testing xfs after custom fs params (xfs should ignore the custom fs params)</a></li>
+  
+
+</ul>
+
+  
+
+</ul>
+
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/ha/">HA</a></li>
+  
+    <ul>
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/ha/instance-manager-pod-recovery/">Instance manager pod recovery [#870]</a></li>
+  
+
+</ul>
+
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node/">Node</a></li>
+  
+    <ul>
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node/node-disconnection/">Node disconnection test</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node/node-drain-deletion/">Node drain and deletion test</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node/physical-node-down/">Physical node down</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node/auto-detach/">Test scenarios for auto detach of deployment pod&rsquo;s volume when the node is down</a></li>
+  
+    <ul>
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node/auto-detach/deployment/">Workload type: Deployment</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node/auto-detach/statefulset/">Workload type: Stateful set</a></li>
+  
+
+</ul>
+
+  
+
+</ul>
+
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/">Upgrade</a></li>
+  
+    <ul>
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/kubernetes-upgrade-test/">Kubernetes upgrade test</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/longhorn-upgrade-test/">Longhorn Upgrade test</a></li>
+  
+
+</ul>
+
+  
+
+</ul>
+
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/">Release specific tests</a></li>
+  
+    <ul>
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.0/">v1.0.0</a></li>
+  
+    <ul>
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.0/new-node-custom-data-directory/">New Node with Custom Data Directory</a></li>
+  
+
+</ul>
+
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.1/">v1.0.1</a></li>
+  
+    <ul>
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.1/besteffort-recurring-job/">BestEffort Recurring Job Cleanup</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.1/change-imagepullpolicy/">Change imagePullPolicy to IfNotPresent Test</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.1/dr-volume-latest-backup-deletion/">DR volume related latest backup deletion test</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.1/nfsv4-enforcement/">NFSv4 Enforcement (No NFSv3 Fallback)</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.1/priorityclass-default-setting/">Priority Class Default Setting</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.1/error-fail-remount/">Return an error when fail to remount a volume</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.1/test-s3-access-style/">Test access style for S3 compatible backupstore</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.1/test-s3-backupstore/">Test S3 backupstore in a cluster sitting behind a Http Proxy</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.1/ui-volume-deletion/">Volume Deletion UI Warnings</a></li>
+  
+
+</ul>
+
+  
+
+</ul>
+
+  
+
+</ul>
+
+  
+</aside>
+
+<main style="padding: 1%; width: 70%;">
+  <h1 id="title">NFSv4 Enforcement (No NFSv3 Fallback)</h1>
+  <div>
+    <article id="content">
+       <p>Since the client falling back to <code>NFSv3</code> usually results in a failure to mount the <code>NFS</code> share, the way we can check for <code>NFSv3</code> fallback is to check the error message returned and see if it mentions <code>rpc.statd</code>, since dependencies on <code>rpc.statd</code> and other services are no longer needed for <code>NFSv4</code>, but are needed for <code>NFSv3</code>. The <code>NFS</code> mount <strong>should not</strong> fall back to <code>NFSv3</code> and instead only give the user a warning that the server may be <code>NFSv3</code>:</p>
+<ol>
+<li>Modify <code>nfs-backupstore.yaml</code> from <code>deploy/backupstores/</code> in the <code>longhorn</code> repository such that it includes the following environment variable (this will force the server to only support <code>NFSv3</code>):</li>
+</ol>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#66d9ef">name</span>: PROTOCOLS
+<span style="color:#66d9ef">value</span>: <span style="color:#e6db74">&#34;3&#34;</span>
+</code></pre></div><ol start="2">
+<li>Create the <code>Backup Store</code> using <code>nfs-backupstore.yaml</code>.</li>
+<li>Set the <code>Backup Target</code> in the <code>longhorn-ui</code> to <code>nfs://longhorn-test-nfs-svc.default:/opt/backupstore</code>.</li>
+<li>Attempt to list the <code>Backup Volumes</code> in the <code>longhorn-ui</code>. You should get an error that resembles the following:</li>
+</ol>
+<pre><code>error listing backups: error listing backup volumes: Failed to execute: /var/lib/longhorn/engine-binaries/quay.io-ttpcodes-longhorn-engine-nfs4/longhorn [backup ls --volume-only nfs://longhorn-test-nfs-svc.default:/opt/backupstore], output Cannot mount nfs longhorn-test-nfs-svc.default:/opt/backupstore: nfsv4 mount failed but nfsv3 mount succeeded, may be due to server only supporting nfsv3: Failed to execute: mount [-t nfs4 -o nfsvers=4.2 longhorn-test-nfs-svc.default:/opt/backupstore /var/lib/longhorn-backupstore-mounts/longhorn-test-nfs-svc_default/opt/backupstore], output mount.nfs4: mounting longhorn-test-nfs-svc.default:/opt/backupstore failed, reason given by server: No such file or directory , error exit status 32 , stderr, time=&quot;2020-07-09T20:05:44Z&quot; level=error msg=&quot;Cannot mount nfs longhorn-test-nfs-svc.default:/opt/backupstore: nfsv4 mount failed but nfsv3 mount succeeded, may be due to server only supporting nfsv3: Failed to execute: mount [-t nfs4 -o nfsvers=4.2 longhorn-test-nfs-svc.default:/opt/backupstore /var/lib/longhorn-backupstore-mounts/longhorn-test-nfs-svc_default/opt/backupstore], output mount.nfs4: mounting longhorn-test-nfs-svc.default:/opt/backupstore failed, reason given by server: No such file or directory\n, error exit status 32&quot; , error exit status 1
+</code></pre><p>This indicates that the mount failed on <code>NFSv4</code> and did not attempt to fall back to <code>NFSv3</code> since there&rsquo;s no mention of <code>rpc.statd</code>. However, the server <strong>did</strong> detect that the problem may have been the result of <code>NFSv3</code> as mentioned in this error log.</p>
+<p>If the <code>NFS</code> mount attempted to fall back to <code>NFSv3</code>, you should see an error similar to the following:</p>
+<pre><code>error listing backups: error listing backup volumes: Failed to execute: /var/lib/longhorn/engine-binaries/longhornio-longhorn-engine-master/longhorn [backup ls --volume-only nfs://longhorn-test-nfs-svc.default:/opt/backupstore], output Cannot mount nfs longhorn-test-nfs-svc.default:/opt/backupstore: Failed to execute: mount [-t nfs4 longhorn-test-nfs-svc.default:/opt/backupstore /var/lib/longhorn-backupstore-mounts/longhorn-test-nfs-svc_default/opt/backupstore], output /usr/sbin/start-statd: 23: /usr/sbin/start-statd: systemctl: not found mount.nfs4: rpc.statd is not running but is required for remote locking. mount.nfs4: Either use '-o nolock' to keep locks local, or start statd. , error exit status 32 , stderr, time=&quot;2020-07-02T23:13:33Z&quot; level=error msg=&quot;Cannot mount nfs longhorn-test-nfs-svc.default:/opt/backupstore: Failed to execute: mount [-t nfs4 longhorn-test-nfs-svc.default:/opt/backupstore /var/lib/longhorn-backupstore-mounts/longhorn-test-nfs-svc_default/opt/backupstore], output /usr/sbin/start-statd: 23: /usr/sbin/start-statd: systemctl: not found\nmount.nfs4: rpc.statd is not running but is required for remote locking.\nmount.nfs4: Either use '-o nolock' to keep locks local, or start statd.\n, error exit status 32&quot; , error exit status 1
+</code></pre><p>This error mentions <code>rpc.statd</code> and indicates a fallback to <code>NFSv3</code>.</p>
+<p>Additionally, we need to test and make sure that the <code>NFSv3</code> warning only occurs when <code>NFSv3</code> may have been involved:</p>
+<ol>
+<li>Set up the <code>NFS Backup Store</code> normally using <code>nfs-backupstore.yaml</code>. Do <strong>not</strong> make the changes to <code>nfs-backupstore.yaml</code> that I described above. This will create an <code>NFS</code> server that only supports <code>NFSv4</code>.</li>
+<li>Set the <code>Backup Target</code> in the <code>longhorn-ui</code> to a non-exported <code>NFS</code> share, such as <code>nfs://longhorn-test-nfs-svc.default:/opt/test</code> (I set it to <code>test</code> because the correct directory is supposed to be <code>backupstore</code>).</li>
+<li>Attempt to list the Backup Volumes in the longhorn-ui. You should get an <code>error</code> that resembles the following:</li>
+</ol>
+<pre><code>error listing backups: error listing backup volumes: Failed to execute: /var/lib/longhorn/engine-binaries/quay.io-ttpcodes-longhorn-engine-nfs4/longhorn [backup ls --volume-only nfs://longhorn-test-nfs-svc.default:/opt/test], output Cannot mount nfs longhorn-test-nfs-svc.default:/opt/test: Failed to execute: mount [-t nfs4 -o nfsvers=4.2 longhorn-test-nfs-svc.default:/opt/test /var/lib/longhorn-backupstore-mounts/longhorn-test-nfs-svc_default/opt/test], output mount.nfs4: mounting longhorn-test-nfs-svc.default:/opt/test failed, reason given by server: No such file or directory , error exit status 32 , stderr, time=&quot;2020-07-09T20:09:21Z&quot; level=error msg=&quot;Cannot mount nfs longhorn-test-nfs-svc.default:/opt/test: Failed to execute: mount [-t nfs4 -o nfsvers=4.2 longhorn-test-nfs-svc.default:/opt/test /var/lib/longhorn-backupstore-mounts/longhorn-test-nfs-svc_default/opt/test], output mount.nfs4: mounting longhorn-test-nfs-svc.default:/opt/test failed, reason given by server: No such file or directory\n, error exit status 32&quot; , error exit status 1
+</code></pre><p>You should <strong>not</strong> see any mention of <code>NFSv3</code> in this case.</p>
+
+    </article>
+  </div>
+</main>
+
+    
+    
+  </body>
+</html>

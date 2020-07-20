@@ -1,0 +1,2091 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
+<meta name="generator" content="pdoc 0.8.4" />
+<title>tests.longhorn API documentation</title>
+<meta name="description" content="" />
+<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
+<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/typography.min.css" integrity="sha256-7l/o7C8jubJiy74VsKTidCy1yBkRtiUGbVkYBylBqUg=" crossorigin>
+<link rel="stylesheet preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/styles/github.min.css" crossorigin>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:30px;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:1em 0 .50em 0}h3{font-size:1.4em;margin:25px 0 10px 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .3s ease-in-out}a:hover{color:#e82}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900}pre code{background:#f8f8f8;font-size:.8em;line-height:1.4em}code{background:#f2f2f1;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{background:#f8f8f8;border:0;border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0;padding:1ex}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-weight:bold;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em .5em;margin-bottom:1em}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.item .name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul{padding-left:1.5em}.toc > ul > li{margin-top:.5em}}</style>
+<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/highlight.min.js" integrity="sha256-eOgo0OtLL4cdq7RdwRUiGKLX9XsIJ7nGhWEKbohmVAQ=" crossorigin></script>
+<script>window.addEventListener('DOMContentLoaded', () => hljs.initHighlighting())</script>
+</head>
+<body>
+<main>
+<article id="content">
+<header>
+<h1 class="title">Module <code>tests.longhorn</code></h1>
+</header>
+<section id="section-intro">
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">#!/usr/bin/env python
+
+from __future__ import print_function
+import six
+import re
+import requests
+import collections
+import hashlib
+import os
+import json
+import time
+import operator
+from functools import reduce
+
+try:
+    import argcomplete
+except ImportError:
+    pass
+# {{{ http://code.activestate.com/recipes/267662/ (r7)
+try:
+    from cStringIO import StringIO
+except ImportError:
+    from io import StringIO
+
+
+def _prefix(cmd):
+    prefix = os.path.basename(cmd.replace(&#39;-&#39;, &#39;_&#39;))
+    for i in [&#39;.pyc&#39;, &#39;.py&#39;, &#39;-cli&#39;, &#39;-tool&#39;, &#39;-util&#39;]:
+        prefix = prefix.replace(i, &#39;&#39;)
+    return prefix.upper()
+
+
+PREFIX = _prefix(__file__)
+CACHE_DIR = &#39;~/.&#39; + PREFIX.lower()
+TIME = not os.environ.get(&#39;TIME_API&#39;) is None
+
+LIST = &#39;list-&#39;
+CREATE = &#39;create-&#39;
+UPDATE = &#39;update-&#39;
+DELETE = &#39;delete-&#39;
+ACTION = &#39;action-&#39;
+TRIM = True
+JSON = False
+
+GET_METHOD = &#39;GET&#39;
+POST_METHOD = &#39;POST&#39;
+PUT_METHOD = &#39;PUT&#39;
+DELETE_METHOD = &#39;DELETE&#39;
+
+HEADERS = {&#39;Accept&#39;: &#39;application/json&#39;}
+
+LIST_METHODS = {&#39;__iter__&#39;: True, &#39;__len__&#39;: True, &#39;__getitem__&#39;: True}
+
+DEFAULT_TIMEOUT = 45
+
+
+def echo(fn):
+    def wrapped(*args, **kw):
+        ret = fn(*args, **kw)
+        print(fn.__name__, repr(ret))
+        return ret
+    return wrapped
+
+
+def timed_url(fn):
+    def wrapped(*args, **kw):
+        if TIME:
+            start = time.time()
+            ret = fn(*args, **kw)
+            delta = time.time() - start
+            print(delta, args[1], fn.__name__)
+            return ret
+        else:
+            return fn(*args, **kw)
+    return wrapped
+
+
+class RestObject:
+    def __init__(self):
+        pass
+
+    @staticmethod
+    def _is_public(k, v):
+        return k not in [&#39;links&#39;, &#39;actions&#39;, &#39;id&#39;, &#39;type&#39;] and not callable(v)
+
+    def __str__(self):
+        return self.__repr__()
+
+    def _as_table(self):
+        if not hasattr(self, &#39;type&#39;):
+            return str(self.__dict__)
+        data = [(&#39;Type&#39;, &#39;Id&#39;, &#39;Name&#39;, &#39;Value&#39;)]
+        for k, v in six.iteritems(self):
+            if self._is_public(k, v):
+                if v is None:
+                    v = &#39;null&#39;
+                if v is True:
+                    v = &#39;true&#39;
+                if v is False:
+                    v = &#39;false&#39;
+                v = str(v)
+                if TRIM and len(v) &gt; 70:
+                    v = v[0:70] + &#39;...&#39;
+                data.append((self.type, self.id, str(k), v))
+
+        return indent(data, hasHeader=True, prefix=&#39;| &#39;, postfix=&#39; |&#39;,
+                      wrapfunc=lambda x: str(x))
+
+    def _is_list(self):
+        return &#39;data&#39; in self.__dict__ and isinstance(self.data, list)
+
+    def __repr__(self):
+        data = {}
+        for k, v in six.iteritems(self.__dict__):
+            if self._is_public(k, v):
+                data[k] = v
+        return repr(data)
+
+    def __len__(self):
+        if self._is_list():
+            return len(self.data)
+        return len(self.__dict__)
+
+    def __getitem__(self, key):
+        if not self:
+            return None
+        if self._is_list():
+            return self.data[key]
+        return self.__dict__[key]
+
+    def __getattr__(self, k):
+        if self._is_list() and k in LIST_METHODS:
+            return getattr(self.data, k)
+        return getattr(self.__dict__, k)
+
+    def __iter__(self):
+        if self._is_list():
+            return iter(self.data)
+        return iter(self.__dict__)
+
+
+class Schema(object):
+    def __init__(self, text, obj):
+        self.text = text
+        self.types = {}
+        for t in obj:
+            if t.type != &#39;schema&#39;:
+                continue
+
+            self.types[t.id] = t
+            t.creatable = False
+            try:
+                if POST_METHOD in t.collectionMethods:
+                    t.creatable = True
+            except Exception:
+                pass
+
+            t.updatable = False
+            try:
+                if PUT_METHOD in t.resourceMethods:
+                    t.updatable = True
+            except Exception:
+                pass
+
+            t.deletable = False
+            try:
+                if DELETE_METHOD in t.resourceMethods:
+                    t.deletable = True
+            except Exception:
+                pass
+
+            t.listable = False
+            try:
+                if GET_METHOD in t.collectionMethods:
+                    t.listable = True
+            except Exception:
+                pass
+
+            if not hasattr(t, &#39;collectionFilters&#39;):
+                t.collectionFilters = {}
+
+    def __str__(self):
+        return str(self.text)
+
+    def __repr(self):
+        return repr(self.text)
+
+
+class ApiError(Exception):
+    def __init__(self, obj, status_code):
+        if not obj:
+            obj = RestObject()
+            obj.message = &#34;&#34;
+        obj.code = status_code
+        self.error = obj
+        try:
+            msg = &#39;{} : {}\n{}&#39;.format(obj.code, obj.message, obj)
+            super(ApiError, self).__init__(self, msg)
+        except Exception:
+            super(ApiError, self).__init__(self, &#39;API Error&#39;)
+
+
+class ClientApiError(Exception):
+    pass
+
+
+class GdapiClient(object):
+    def __init__(self, access_key=&#34;&#34;, secret_key=&#34;&#34;, url=None, cache=False,
+                 cache_time=86400, strict=False, headers=HEADERS, **kw):
+        self._headers = headers
+        self._access_key = access_key
+        self._secret_key = secret_key
+        self._auth = (self._access_key, self._secret_key)
+        self._url = url
+        self._cache = cache
+        self._cache_time = cache_time
+        self._strict = strict
+        self.schema = None
+        self._session = requests.Session()
+
+        if not self._cache_time:
+            self._cache_time = 60 * 60 * 24  # 24 Hours
+
+        self._load_schemas()
+
+    def valid(self):
+        return self._url is not None and self.schema is not None
+
+    def object_hook(self, obj):
+        if isinstance(obj, list):
+            return [self.object_hook(x) for x in obj]
+
+        if isinstance(obj, dict):
+            result = RestObject()
+
+            for k, v in six.iteritems(obj):
+                setattr(result, k, self.object_hook(v))
+
+            for link in [&#39;next&#39;, &#39;prev&#39;]:
+                try:
+                    url = getattr(result.pagination, link)
+                    if url is not None:
+                        setattr(result, link, lambda url=url: self._get(url))
+                except AttributeError:
+                    pass
+
+            if hasattr(result, &#39;type&#39;) and isinstance(getattr(result, &#39;type&#39;),
+                                                      six.string_types):
+                if hasattr(result, &#39;links&#39;):
+                    for link_name, link in six.iteritems(result.links):
+                        def cb(_link=link, **kw):
+                            return self._get(_link, data=kw)
+                        if hasattr(result, link_name):
+                            setattr(result, link_name + &#39;_link&#39;, cb)
+                        else:
+                            setattr(result, link_name, cb)
+
+                if hasattr(result, &#39;actions&#39;):
+                    for link_name, link in six.iteritems(result.actions):
+                        def cb(_link_name=link_name,
+                               _result=result, *args, **kw):
+                            return self.action(_result, _link_name,
+                                               *args, **kw)
+                        if hasattr(result, link_name):
+                            setattr(result, link_name + &#39;_action&#39;, cb)
+                        else:
+                            setattr(result, link_name, cb)
+
+            return result
+
+        return obj
+
+    def object_pairs_hook(self, pairs):
+        ret = collections.OrderedDict()
+        for k, v in pairs:
+            ret[k] = v
+        return self.object_hook(ret)
+
+    def _get(self, url, data=None):
+        return self._unmarshall(self._get_raw(url, data=data))
+
+    def _error(self, text, status_code):
+        raise ApiError(self._unmarshall(text), status_code)
+
+    @timed_url
+    def _get_raw(self, url, data=None):
+        r = self._get_response(url, data)
+        return r.text
+
+    def _get_response(self, url, data=None):
+        r = self._session.get(url, auth=self._auth, params=data,
+                              headers=self._headers)
+        if r.status_code &lt; 200 or r.status_code &gt;= 300:
+            self._error(r.text, r.status_code)
+
+        return r
+
+    @timed_url
+    def _post(self, url, data=None):
+        r = self._session.post(url, auth=self._auth, data=self._marshall(data),
+                               headers=self._headers)
+        if r.status_code &lt; 200 or r.status_code &gt;= 300:
+            self._error(r.text, r.status_code)
+
+        return self._unmarshall(r.text)
+
+    @timed_url
+    def _put(self, url, data=None):
+        r = self._session.put(url, auth=self._auth, data=self._marshall(data),
+                              headers=self._headers)
+        if r.status_code &lt; 200 or r.status_code &gt;= 300:
+            self._error(r.text, r.status_code)
+
+        return self._unmarshall(r.text)
+
+    @timed_url
+    def _delete(self, url):
+        r = self._session.delete(url, auth=self._auth, headers=self._headers)
+        if r.status_code &lt; 200 or r.status_code &gt;= 300:
+            self._error(r.text, r.status_code)
+
+        return self._unmarshall(r.text)
+
+    def _unmarshall(self, text):
+        if text is None or text == &#39;&#39;:
+            return text
+        obj = json.loads(text, object_hook=self.object_hook,
+                         object_pairs_hook=self.object_pairs_hook)
+        return obj
+
+    def _marshall(self, obj, indent=None, sort_keys=False):
+        if obj is None:
+            return None
+        return json.dumps(self._to_dict(obj), indent=indent, sort_keys=True)
+
+    def _load_schemas(self, force=False):
+        if self.schema and not force:
+            return
+
+        schema_text = self._get_cached_schema()
+
+        if force or not schema_text:
+            response = self._get_response(self._url)
+            schema_url = response.headers.get(&#39;X-API-Schemas&#39;)
+            if schema_url is not None and self._url != schema_url:
+                schema_text = self._get_raw(schema_url)
+            else:
+                schema_text = response.text
+            self._cache_schema(schema_text)
+
+        obj = self._unmarshall(schema_text)
+
+        schema = Schema(schema_text, obj)
+
+        if len(schema.types) &gt; 0:
+            self._bind_methods(schema)
+            self.schema = schema
+
+    def reload_schema(self):
+        self._load_schemas(force=True)
+
+    def by_id(self, type, id, **kw):
+        id = str(id)
+        url = self.schema.types[type].links.collection
+        if url.endswith(&#39;/&#39;):
+            url += id
+        else:
+            url = &#39;/&#39;.join([url, id])
+        try:
+            return self._get(url, self._to_dict(**kw))
+        except ApiError as e:
+            if e.error.code == 404:
+                return None
+            else:
+                raise e
+
+    def update_by_id(self, type, id, *args, **kw):
+        url = self.schema.types[type].links.collection
+        if url.endswith(&#39;/&#39;):
+            url = url + id
+        else:
+            url = &#39;/&#39;.join([url, id])
+
+        return self._put_and_retry(url, *args, **kw)
+
+    def update(self, obj, *args, **kw):
+        url = obj.links.self
+        return self._put_and_retry(url, *args, **kw)
+
+    def _put_and_retry(self, url, *args, **kw):
+        retries = kw.get(&#39;retries&#39;, 3)
+        last_error = None
+        for i in range(retries):
+            try:
+                return self._put(url, data=self._to_dict(*args, **kw))
+            except ApiError as e:
+                if e.error.code == 409:
+                    last_error = e
+                    time.sleep(.1)
+                else:
+                    raise e
+        raise last_error
+
+    def _post_and_retry(self, url, *args, **kw):
+        retries = kw.get(&#39;retries&#39;, 3)
+        last_error = None
+        for i in range(retries):
+            try:
+                return self._post(url, data=self._to_dict(*args, **kw))
+            except ApiError as e:
+                if e.error.code == 409:
+                    last_error = e
+                    time.sleep(.1)
+                else:
+                    raise e
+        raise last_error
+
+    def _validate_list(self, type, **kw):
+        if not self._strict:
+            return
+
+        collection_filters = self.schema.types[type].collectionFilters
+
+        for k in kw:
+            if hasattr(collection_filters, k):
+                return
+
+            for filter_name, filter_value in six.iteritems(collection_filters):
+                for m in filter_value.modifiers:
+                    if k == &#39;_&#39;.join([filter_name, m]):
+                        return
+
+            raise ClientApiError(k + &#39; is not searchable field&#39;)
+
+    def list(self, type, **kw):
+        if type not in self.schema.types:
+            raise ClientApiError(type + &#39; is not a valid type&#39;)
+
+        self._validate_list(type, **kw)
+        collection_url = self.schema.types[type].links.collection
+        return self._get(collection_url, data=self._to_dict(**kw))
+
+    def reload(self, obj):
+        return self.by_id(obj.type, obj.id)
+
+    def create(self, type, *args, **kw):
+        collection_url = self.schema.types[type].links.collection
+        return self._post(collection_url, data=self._to_dict(*args, **kw))
+
+    def delete(self, *args):
+        for i in args:
+            if isinstance(i, RestObject):
+                return self._delete(i.links.self)
+
+    def action(self, obj, action_name, *args, **kw):
+        url = getattr(obj.actions, action_name)
+        return self._post_and_retry(url, *args, **kw)
+
+    def _is_list(self, obj):
+        if isinstance(obj, list):
+            return True
+
+        if isinstance(obj, RestObject) and &#39;type&#39; in obj.__dict__ and \
+                obj.type == &#39;collection&#39;:
+            return True
+
+        return False
+
+    def _to_value(self, value):
+        if isinstance(value, dict):
+            ret = {}
+            for k, v in six.iteritems(value):
+                ret[k] = self._to_value(v)
+            return ret
+
+        if isinstance(value, list):
+            ret = []
+            for v in value:
+                ret.append(self._to_value(v))
+            return ret
+
+        if isinstance(value, RestObject):
+            ret = {}
+            for k, v in vars(value).items():
+                if not k.startswith(&#39;_&#39;) and \
+                        not isinstance(v, RestObject) and not callable(v):
+                    ret[k] = self._to_value(v)
+                elif not k.startswith(&#39;_&#39;) and isinstance(v, RestObject):
+                    ret[k] = self._to_dict(v)
+            return ret
+
+        return value
+
+    def _to_dict(self, *args, **kw):
+        if len(kw) == 0 and len(args) == 1 and self._is_list(args[0]):
+            ret = []
+            for i in args[0]:
+                ret.append(self._to_dict(i))
+            return ret
+
+        ret = {}
+
+        for i in args:
+            value = self._to_value(i)
+            if isinstance(value, dict):
+                for k, v in six.iteritems(value):
+                    ret[k] = v
+
+        for k, v in six.iteritems(kw):
+            ret[k] = self._to_value(v)
+
+        return ret
+
+    @staticmethod
+    def _type_name_variants(name):
+        ret = [name]
+        python_name = re.sub(r&#39;([a-z])([A-Z])&#39;, r&#39;\1_\2&#39;, name)
+        if python_name != name:
+            ret.append(python_name.lower())
+
+        return ret
+
+    def _bind_methods(self, schema):
+        bindings = [
+            (&#39;list&#39;, &#39;collectionMethods&#39;, GET_METHOD, self.list),
+            (&#39;by_id&#39;, &#39;collectionMethods&#39;, GET_METHOD, self.by_id),
+            (&#39;update_by_id&#39;, &#39;resourceMethods&#39;, PUT_METHOD, self.update_by_id),
+            (&#39;create&#39;, &#39;collectionMethods&#39;, POST_METHOD, self.create)
+        ]
+
+        for type_name, typ in six.iteritems(schema.types):
+            for name_variant in self._type_name_variants(type_name):
+                for method_name, type_collection, test_method, m in bindings:
+                    # double lambda for lexical binding hack, I&#39;m sure there&#39;s
+                    # a better way to do this
+                    def cb(type_name=type_name, method=m):
+                        return lambda *args, **kw: \
+                            method(type_name, *args, **kw)
+                    if test_method in getattr(typ, type_collection, []):
+                        setattr(self, &#39;_&#39;.join([method_name, name_variant]),
+                                cb())
+
+    def _get_schema_hash(self):
+        h = hashlib.new(&#39;sha1&#39;)
+        h.update(self._url)
+        if self._access_key is not None:
+            h.update(self._access_key)
+        return h.hexdigest()
+
+    def _get_cached_schema_file_name(self):
+        if not self._cache:
+            return None
+
+        h = self._get_schema_hash()
+
+        cachedir = os.path.expanduser(CACHE_DIR)
+        if not cachedir:
+            return None
+
+        if not os.path.exists(cachedir):
+            os.mkdir(cachedir)
+
+        return os.path.join(cachedir, &#39;schema-&#39; + h + &#39;.json&#39;)
+
+    def _cache_schema(self, text):
+        cached_schema = self._get_cached_schema_file_name()
+
+        if not cached_schema:
+            return None
+
+        with open(cached_schema, &#39;w&#39;) as f:
+            f.write(text)
+
+    def _get_cached_schema(self):
+        if not self._cache:
+            return None
+
+        cached_schema = self._get_cached_schema_file_name()
+
+        if not cached_schema:
+            return None
+
+        if os.path.exists(cached_schema):
+            mod_time = os.path.getmtime(cached_schema)
+            if time.time() - mod_time &lt; self._cache_time:
+                with open(cached_schema) as f:
+                    data = f.read()
+                return data
+
+        return None
+
+
+def _print_cli(client, obj):
+    if obj is None:
+        return
+
+    if JSON:
+        print(client._marshall(obj, indent=2, sort_keys=True))
+    elif callable(getattr(obj, &#39;_as_table&#39;)):
+        print(obj._as_table())
+    else:
+        print(obj)
+
+
+def indent(rows, hasHeader=False, headerChar=&#39;-&#39;, delim=&#39; | &#39;, justify=&#39;left&#39;,
+           separateRows=False, prefix=&#39;&#39;, postfix=&#39;&#39;, wrapfunc=lambda x: x):
+    &#39;&#39;&#39;Indents a table by column.
+         - rows: A sequence of sequences of items, one sequence per row.
+         - hasHeader: True if the first row consists of the columns&#39; names.
+         - headerChar: Character to be used for the row separator line
+             (if hasHeader==True or separateRows==True).
+         - delim: The column delimiter.
+         - justify: Determines how are data justified in their column.
+             Valid values are &#39;left&#39;,&#39;right&#39; and &#39;center&#39;.
+         - separateRows: True if rows are to be separated by a line
+             of &#39;headerChar&#39;s.
+         - prefix: A string prepended to each printed row.
+         - postfix: A string appended to each printed row.
+         - wrapfunc: A function f(text) for wrapping text; each element in
+             the table is first wrapped by this function.&#39;&#39;&#39;
+    # closure for breaking logical rows to physical, using wrapfunc
+    def rowWrapper(row):
+        newRows = [wrapfunc(item).split(&#39;\n&#39;) for item in row]
+        return [[substr or &#39;&#39; for substr in item] for item in map(None, *newRows)]  # NOQA
+    # break each logical row into one or more physical ones
+    logicalRows = [rowWrapper(row) for row in rows]
+    # columns of physical rows
+    columns = map(None, *reduce(operator.add, logicalRows))
+    # get the maximum of each column by the string length of its items
+    maxWidths = [max([len(str(item)) for item in column])
+                 for column in columns]
+    rowSeparator = headerChar * (len(prefix) + len(postfix) +
+                                 sum(maxWidths) +
+                                 len(delim)*(len(maxWidths)-1))
+    # select the appropriate justify method
+    justify = {&#39;center&#39;: str.center, &#39;right&#39;: str.rjust, &#39;left&#39;: str.ljust}[justify.lower()]  # NOQA
+    output = StringIO()
+    if separateRows:
+        print(rowSeparator, file=output)
+    for physicalRows in logicalRows:
+        for row in physicalRows:
+            print(prefix
+                  + delim.join([justify(str(item), width) for (item, width) in zip(row, maxWidths)]) + postfix,  # NOQA
+                  file=output)
+        if separateRows or hasHeader:
+            print(rowSeparator, file=output)
+            hasHeader = False
+    return output.getvalue()
+# End {{{ http://code.activestate.com/recipes/267662/ (r7)
+
+
+def _env_prefix(cmd):
+    return _prefix(cmd) + &#39;_&#39;
+
+
+def gdapi_from_env(prefix=PREFIX + &#39;_&#39;, factory=GdapiClient, **kw):
+    args = dict((x, None) for x in [&#39;access_key&#39;, &#39;secret_key&#39;, &#39;url&#39;, &#39;cache&#39;,
+                                    &#39;cache_time&#39;, &#39;strict&#39;])
+    args.update(kw)
+    if not prefix.endswith(&#39;_&#39;):
+        prefix += &#39;_&#39;
+    prefix = prefix.upper()
+    return _from_env(prefix=prefix, factory=factory, **args)
+
+
+def _from_env(prefix=PREFIX + &#39;_&#39;, factory=GdapiClient, **kw):
+    result = dict(kw)
+    for k, v in six.iteritems(kw):
+        if v is not None:
+            result[k] = v
+        else:
+            result[k] = os.environ.get(prefix + k.upper())
+
+        if result[k] is None:
+            del result[k]
+
+    if &#39;cache_time&#39; in result:
+        result[&#39;cache_time&#39;] = int(result[&#39;cache_time&#39;])
+
+    if &#39;cache&#39; in result:
+        result[&#39;cache&#39;] = result[&#39;cache&#39;] is True or result[&#39;cache&#39;] == &#39;true&#39;
+    return factory(**result)
+
+
+def _general_args(help=True):
+    import argparse
+
+    parser = argparse.ArgumentParser(add_help=help)
+    parser.add_argument(&#39;--access-key&#39;, dest=&#39;_access_key&#39;)
+    parser.add_argument(&#39;--secret-key&#39;, dest=&#39;_secret_key&#39;)
+    parser.add_argument(&#39;--url&#39;, dest=&#39;_url&#39;)
+    parser.add_argument(&#39;--format&#39;, dest=&#39;_format&#39;, default=&#39;table&#39;,
+                        choices=[&#39;table&#39;, &#39;json&#39;])
+    parser.add_argument(&#39;--cache&#39;, dest=&#39;_cache&#39;, action=&#39;store_true&#39;,
+                        default=True)
+    parser.add_argument(&#39;--no-cache&#39;, dest=&#39;_cache&#39;, action=&#39;store_false&#39;)
+    parser.add_argument(&#39;--cache-time&#39;, dest=&#39;_cache_time&#39;, type=int)
+    parser.add_argument(&#39;--strict&#39;, dest=&#39;_strict&#39;, type=bool)
+    parser.add_argument(&#39;--trim&#39;, dest=&#39;_trim&#39;, action=&#39;store_true&#39;,
+                        default=True)
+    parser.add_argument(&#39;--no-trim&#39;, dest=&#39;_trim&#39;, action=&#39;store_false&#39;)
+
+    return parser
+
+
+def _list_args(subparsers, client, type, schema):
+    help_msg = LIST[0:len(LIST)-1].capitalize() + &#39; &#39; + type
+    subparser = subparsers.add_parser(LIST + type, help=help_msg)
+    for name, filter in six.iteritems(schema.collectionFilters):
+        subparser.add_argument(&#39;--&#39; + name)
+        for m in filter.modifiers:
+            if m != &#39;eq&#39;:
+                subparser.add_argument(&#39;--&#39; + name + &#39;_&#39; + m)
+
+    return subparser
+
+
+def _map_load(value):
+    value = value.strip()
+    if len(value) == 0:
+        return value
+
+    if value[0] == &#39;{&#39;:
+        return json.loads(value)
+    else:
+        ret = {}
+        for k, v in [x.strip().split(&#39;=&#39;, 1) for x in value.split(&#39;,&#39;)]:
+            ret[k] = v
+        return ret
+
+
+def _generic_args(subparsers, field_key, type, schema,
+                  operation=None, operation_name=None, help=None):
+    if operation is None:
+        prefix = operation_name
+        help_msg = help
+    else:
+        prefix = operation + type
+        help_msg_prefix = operation[0:len(operation)-1].capitalize()
+        help_msg = help_msg_prefix + &#39; &#39; + type + &#39; resource&#39;
+    subparser = subparsers.add_parser(prefix, help=help_msg)
+
+    if schema is not None:
+        for name, field in six.iteritems(schema):
+            if field.get(field_key) is True:
+                if field.get(&#39;type&#39;).startswith(&#39;array&#39;):
+                    subparser.add_argument(&#39;--&#39; + name, nargs=&#39;*&#39;)
+                elif field.get(&#39;type&#39;).startswith(&#39;map&#39;):
+                    subparser.add_argument(&#39;--&#39; + name, type=_map_load)
+                else:
+                    subparser.add_argument(&#39;--&#39; + name)
+
+    return subparser
+
+
+def _full_args(client):
+    parser = _general_args()
+    subparsers = parser.add_subparsers(help=&#39;Sub-Command Help&#39;)
+    for type, schema in six.iteritems(client.schema.types):
+        if schema.listable:
+            subparser = _list_args(subparsers, client, type, schema)
+            subparser.set_defaults(_action=LIST, _type=type)
+        if schema.creatable:
+            subparser = _generic_args(subparsers, &#39;create&#39;, type,
+                                      schema.resourceFields, operation=CREATE)
+            subparser.set_defaults(_action=CREATE, _type=type)
+        if schema.updatable:
+            subparser = _generic_args(subparsers, &#39;update&#39;, type,
+                                      schema.resourceFields, operation=UPDATE)
+            subparser.add_argument(&#39;--id&#39;)
+            subparser.set_defaults(_action=UPDATE, _type=type)
+        if schema.deletable:
+            subparser = _generic_args(subparsers, &#39;delete&#39;, type,
+                                      {}, operation=DELETE)
+            subparser.add_argument(&#39;--id&#39;)
+            subparser.set_defaults(_action=DELETE, _type=type)
+
+        try:
+            for name, args in six.iteritems(schema.resourceActions):
+                action_schema = None
+                try:
+                    action_schema = client.schema.types[args.input]
+                except (KeyError, AttributeError):
+                    pass
+                help_msg = &#39;Action &#39; + name + &#39; on &#39; + type
+                resource_fields = None
+                if action_schema is not None:
+                    resource_fields = action_schema.resourceFields
+                subparser = _generic_args(subparsers, &#39;create&#39;, type,
+                                          resource_fields,
+                                          operation_name=type + &#39;-&#39; + name,
+                                          help=help_msg)
+                subparser.add_argument(&#39;--id&#39;)
+                subparser.set_defaults(_action=ACTION + name, _type=type)
+
+        except (KeyError, AttributeError):
+            pass
+
+    if &#39;argcomplete&#39; in globals():
+        argcomplete.autocomplete(parser)
+    return parser
+
+
+def _run_cli(client, namespace):
+    args, command_type, type_name = _extract(namespace, &#39;_action&#39;, &#39;_type&#39;)
+    args = _remove_none(args)
+
+    try:
+        if command_type == LIST:
+            if &#39;id&#39; in args:
+                _print_cli(client, client.by_id(type_name, args[&#39;id&#39;]))
+            else:
+                result = client.list(type_name, **args)
+                if JSON:
+                    _print_cli(client, result)
+                else:
+                    for i in result:
+                        _print_cli(client, i)
+
+        if command_type == CREATE:
+            _print_cli(client, client.create(type_name, **args))
+
+        if command_type == DELETE:
+            obj = client.by_id(type_name, args[&#39;id&#39;])
+            if obj is None:
+                raise ClientApiError(&#39;{0} Not Found&#39;.format(args[&#39;id&#39;]))
+            client.delete(obj)
+            _print_cli(client, obj)
+
+        if command_type == UPDATE:
+            _print_cli(client,
+                       client.update_by_id(type_name, args[&#39;id&#39;], args))
+
+        if command_type.startswith(ACTION):
+            obj = client.by_id(type_name, args[&#39;id&#39;])
+            if obj is None:
+                raise ClientApiError(&#39;{0} Not Found&#39;.format(args[&#39;id&#39;]))
+            obj = client.action(obj, command_type[len(ACTION):], **args)
+            if obj:
+                _print_cli(client, obj)
+    except ApiError as e:
+        import sys
+
+        sys.stderr.write(&#39;Error : {}\n&#39;.format(e.error))
+        status = int(e.error.code) - 400
+        if status &gt; 0 and status &lt; 255:
+            sys.exit(status)
+        else:
+            sys.exit(1)
+
+
+def _remove_none(args):
+    return dict(filter(lambda x: x[1] is not None, args.items()))
+
+
+def _extract(namespace, *args):
+    values = vars(namespace)
+    result = [values]
+    for arg in args:
+        value = values.get(arg)
+        result.append(value)
+        try:
+            del values[arg]
+        except KeyError:
+            pass
+
+    return tuple(result)
+
+
+def _get_generic_vars(argv):
+    ret = []
+
+    for arg in argv:
+        if re.match(r&#39;[a-zA-Z]+-[a-zA-Z]&#39;, arg):
+            break
+        ret.append(arg)
+
+    return ret
+
+
+def _cli_client(argv):
+    generic_argv = _get_generic_vars(argv)
+    args, unknown = _general_args(help=False).parse_known_args(generic_argv)
+
+    global TRIM
+    TRIM = args._trim
+
+    global JSON
+    if args._format == &#39;json&#39;:
+        JSON = True
+
+    dict_args = {}
+    for k, v in vars(args).items():
+        dict_args[k[1:]] = v
+
+    prefix = _env_prefix(argv[0])
+    return _from_env(prefix, **dict_args)
+
+
+# cattle-cli
+class Client(GdapiClient):
+    def __init__(self, *args, **kw):
+        super(Client, self).__init__(*args, **kw)
+
+    def wait_success(self, obj, timeout=-1):
+        obj = self.wait_transitioning(obj, timeout)
+        if obj.transitioning != &#39;no&#39;:
+            raise ClientApiError(obj.transitioningMessage)
+        return obj
+
+    def wait_transitioning(self, obj, timeout=-1, sleep=0.01):
+        timeout = _get_timeout(timeout)
+        start = time.time()
+        obj = self.reload(obj)
+        while obj.transitioning == &#39;yes&#39;:
+            time.sleep(sleep)
+            sleep *= 2
+            if sleep &gt; 2:
+                sleep = 2
+            obj = self.reload(obj)
+            delta = time.time() - start
+            if delta &gt; timeout:
+                msg = \
+                    &#39;Timeout waiting for [{}:{}] to be done after {} seconds&#39;.\
+                    format(obj.type, obj.id, delta)
+                raise Exception(msg)
+
+        return obj
+
+
+def _get_timeout(timeout):
+    if timeout == -1:
+        return DEFAULT_TIMEOUT
+    return timeout
+
+
+def from_env(prefix=&#39;CATTLE_&#39;, **kw):
+    return gdapi_from_env(prefix=prefix, factory=Client, **kw)</code></pre>
+</details>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-functions">Functions</h2>
+<dl>
+<dt id="tests.longhorn.echo"><code class="name flex">
+<span>def <span class="ident">echo</span></span>(<span>fn)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def echo(fn):
+    def wrapped(*args, **kw):
+        ret = fn(*args, **kw)
+        print(fn.__name__, repr(ret))
+        return ret
+    return wrapped</code></pre>
+</details>
+</dd>
+<dt id="tests.longhorn.from_env"><code class="name flex">
+<span>def <span class="ident">from_env</span></span>(<span>prefix='CATTLE_', **kw)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def from_env(prefix=&#39;CATTLE_&#39;, **kw):
+    return gdapi_from_env(prefix=prefix, factory=Client, **kw)</code></pre>
+</details>
+</dd>
+<dt id="tests.longhorn.gdapi_from_env"><code class="name flex">
+<span>def <span class="ident">gdapi_from_env</span></span>(<span>prefix='LONGHORN_', factory=tests.longhorn.GdapiClient, **kw)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def gdapi_from_env(prefix=PREFIX + &#39;_&#39;, factory=GdapiClient, **kw):
+    args = dict((x, None) for x in [&#39;access_key&#39;, &#39;secret_key&#39;, &#39;url&#39;, &#39;cache&#39;,
+                                    &#39;cache_time&#39;, &#39;strict&#39;])
+    args.update(kw)
+    if not prefix.endswith(&#39;_&#39;):
+        prefix += &#39;_&#39;
+    prefix = prefix.upper()
+    return _from_env(prefix=prefix, factory=factory, **args)</code></pre>
+</details>
+</dd>
+<dt id="tests.longhorn.indent"><code class="name flex">
+<span>def <span class="ident">indent</span></span>(<span>rows, hasHeader=False, headerChar='-', delim=' | ', justify='left', separateRows=False, prefix='', postfix='', wrapfunc=&lt;function &lt;lambda&gt;&gt;)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Indents a table by column.
+- rows: A sequence of sequences of items, one sequence per row.
+- hasHeader: True if the first row consists of the columns' names.
+- headerChar: Character to be used for the row separator line
+(if hasHeader==True or separateRows==True).
+- delim: The column delimiter.
+- justify: Determines how are data justified in their column.
+Valid values are 'left','right' and 'center'.
+- separateRows: True if rows are to be separated by a line
+of 'headerChar's.
+- prefix: A string prepended to each printed row.
+- postfix: A string appended to each printed row.
+- wrapfunc: A function f(text) for wrapping text; each element in
+the table is first wrapped by this function.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def indent(rows, hasHeader=False, headerChar=&#39;-&#39;, delim=&#39; | &#39;, justify=&#39;left&#39;,
+           separateRows=False, prefix=&#39;&#39;, postfix=&#39;&#39;, wrapfunc=lambda x: x):
+    &#39;&#39;&#39;Indents a table by column.
+         - rows: A sequence of sequences of items, one sequence per row.
+         - hasHeader: True if the first row consists of the columns&#39; names.
+         - headerChar: Character to be used for the row separator line
+             (if hasHeader==True or separateRows==True).
+         - delim: The column delimiter.
+         - justify: Determines how are data justified in their column.
+             Valid values are &#39;left&#39;,&#39;right&#39; and &#39;center&#39;.
+         - separateRows: True if rows are to be separated by a line
+             of &#39;headerChar&#39;s.
+         - prefix: A string prepended to each printed row.
+         - postfix: A string appended to each printed row.
+         - wrapfunc: A function f(text) for wrapping text; each element in
+             the table is first wrapped by this function.&#39;&#39;&#39;
+    # closure for breaking logical rows to physical, using wrapfunc
+    def rowWrapper(row):
+        newRows = [wrapfunc(item).split(&#39;\n&#39;) for item in row]
+        return [[substr or &#39;&#39; for substr in item] for item in map(None, *newRows)]  # NOQA
+    # break each logical row into one or more physical ones
+    logicalRows = [rowWrapper(row) for row in rows]
+    # columns of physical rows
+    columns = map(None, *reduce(operator.add, logicalRows))
+    # get the maximum of each column by the string length of its items
+    maxWidths = [max([len(str(item)) for item in column])
+                 for column in columns]
+    rowSeparator = headerChar * (len(prefix) + len(postfix) +
+                                 sum(maxWidths) +
+                                 len(delim)*(len(maxWidths)-1))
+    # select the appropriate justify method
+    justify = {&#39;center&#39;: str.center, &#39;right&#39;: str.rjust, &#39;left&#39;: str.ljust}[justify.lower()]  # NOQA
+    output = StringIO()
+    if separateRows:
+        print(rowSeparator, file=output)
+    for physicalRows in logicalRows:
+        for row in physicalRows:
+            print(prefix
+                  + delim.join([justify(str(item), width) for (item, width) in zip(row, maxWidths)]) + postfix,  # NOQA
+                  file=output)
+        if separateRows or hasHeader:
+            print(rowSeparator, file=output)
+            hasHeader = False
+    return output.getvalue()</code></pre>
+</details>
+</dd>
+<dt id="tests.longhorn.timed_url"><code class="name flex">
+<span>def <span class="ident">timed_url</span></span>(<span>fn)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def timed_url(fn):
+    def wrapped(*args, **kw):
+        if TIME:
+            start = time.time()
+            ret = fn(*args, **kw)
+            delta = time.time() - start
+            print(delta, args[1], fn.__name__)
+            return ret
+        else:
+            return fn(*args, **kw)
+    return wrapped</code></pre>
+</details>
+</dd>
+</dl>
+</section>
+<section>
+<h2 class="section-title" id="header-classes">Classes</h2>
+<dl>
+<dt id="tests.longhorn.ApiError"><code class="flex name class">
+<span>class <span class="ident">ApiError</span></span>
+<span>(</span><span>obj, status_code)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Common base class for all non-exit exceptions.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class ApiError(Exception):
+    def __init__(self, obj, status_code):
+        if not obj:
+            obj = RestObject()
+            obj.message = &#34;&#34;
+        obj.code = status_code
+        self.error = obj
+        try:
+            msg = &#39;{} : {}\n{}&#39;.format(obj.code, obj.message, obj)
+            super(ApiError, self).__init__(self, msg)
+        except Exception:
+            super(ApiError, self).__init__(self, &#39;API Error&#39;)</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li>builtins.Exception</li>
+<li>builtins.BaseException</li>
+</ul>
+</dd>
+<dt id="tests.longhorn.Client"><code class="flex name class">
+<span>class <span class="ident">Client</span></span>
+<span>(</span><span>*args, **kw)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class Client(GdapiClient):
+    def __init__(self, *args, **kw):
+        super(Client, self).__init__(*args, **kw)
+
+    def wait_success(self, obj, timeout=-1):
+        obj = self.wait_transitioning(obj, timeout)
+        if obj.transitioning != &#39;no&#39;:
+            raise ClientApiError(obj.transitioningMessage)
+        return obj
+
+    def wait_transitioning(self, obj, timeout=-1, sleep=0.01):
+        timeout = _get_timeout(timeout)
+        start = time.time()
+        obj = self.reload(obj)
+        while obj.transitioning == &#39;yes&#39;:
+            time.sleep(sleep)
+            sleep *= 2
+            if sleep &gt; 2:
+                sleep = 2
+            obj = self.reload(obj)
+            delta = time.time() - start
+            if delta &gt; timeout:
+                msg = \
+                    &#39;Timeout waiting for [{}:{}] to be done after {} seconds&#39;.\
+                    format(obj.type, obj.id, delta)
+                raise Exception(msg)
+
+        return obj</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li><a title="tests.longhorn.GdapiClient" href="#tests.longhorn.GdapiClient">GdapiClient</a></li>
+</ul>
+<h3>Methods</h3>
+<dl>
+<dt id="tests.longhorn.Client.wait_success"><code class="name flex">
+<span>def <span class="ident">wait_success</span></span>(<span>self, obj, timeout=-1)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def wait_success(self, obj, timeout=-1):
+    obj = self.wait_transitioning(obj, timeout)
+    if obj.transitioning != &#39;no&#39;:
+        raise ClientApiError(obj.transitioningMessage)
+    return obj</code></pre>
+</details>
+</dd>
+<dt id="tests.longhorn.Client.wait_transitioning"><code class="name flex">
+<span>def <span class="ident">wait_transitioning</span></span>(<span>self, obj, timeout=-1, sleep=0.01)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def wait_transitioning(self, obj, timeout=-1, sleep=0.01):
+    timeout = _get_timeout(timeout)
+    start = time.time()
+    obj = self.reload(obj)
+    while obj.transitioning == &#39;yes&#39;:
+        time.sleep(sleep)
+        sleep *= 2
+        if sleep &gt; 2:
+            sleep = 2
+        obj = self.reload(obj)
+        delta = time.time() - start
+        if delta &gt; timeout:
+            msg = \
+                &#39;Timeout waiting for [{}:{}] to be done after {} seconds&#39;.\
+                format(obj.type, obj.id, delta)
+            raise Exception(msg)
+
+    return obj</code></pre>
+</details>
+</dd>
+</dl>
+</dd>
+<dt id="tests.longhorn.ClientApiError"><code class="flex name class">
+<span>class <span class="ident">ClientApiError</span></span>
+<span>(</span><span>...)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Common base class for all non-exit exceptions.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class ClientApiError(Exception):
+    pass</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li>builtins.Exception</li>
+<li>builtins.BaseException</li>
+</ul>
+</dd>
+<dt id="tests.longhorn.GdapiClient"><code class="flex name class">
+<span>class <span class="ident">GdapiClient</span></span>
+<span>(</span><span>access_key='', secret_key='', url=None, cache=False, cache_time=86400, strict=False, headers={'Accept': 'application/json'}, **kw)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class GdapiClient(object):
+    def __init__(self, access_key=&#34;&#34;, secret_key=&#34;&#34;, url=None, cache=False,
+                 cache_time=86400, strict=False, headers=HEADERS, **kw):
+        self._headers = headers
+        self._access_key = access_key
+        self._secret_key = secret_key
+        self._auth = (self._access_key, self._secret_key)
+        self._url = url
+        self._cache = cache
+        self._cache_time = cache_time
+        self._strict = strict
+        self.schema = None
+        self._session = requests.Session()
+
+        if not self._cache_time:
+            self._cache_time = 60 * 60 * 24  # 24 Hours
+
+        self._load_schemas()
+
+    def valid(self):
+        return self._url is not None and self.schema is not None
+
+    def object_hook(self, obj):
+        if isinstance(obj, list):
+            return [self.object_hook(x) for x in obj]
+
+        if isinstance(obj, dict):
+            result = RestObject()
+
+            for k, v in six.iteritems(obj):
+                setattr(result, k, self.object_hook(v))
+
+            for link in [&#39;next&#39;, &#39;prev&#39;]:
+                try:
+                    url = getattr(result.pagination, link)
+                    if url is not None:
+                        setattr(result, link, lambda url=url: self._get(url))
+                except AttributeError:
+                    pass
+
+            if hasattr(result, &#39;type&#39;) and isinstance(getattr(result, &#39;type&#39;),
+                                                      six.string_types):
+                if hasattr(result, &#39;links&#39;):
+                    for link_name, link in six.iteritems(result.links):
+                        def cb(_link=link, **kw):
+                            return self._get(_link, data=kw)
+                        if hasattr(result, link_name):
+                            setattr(result, link_name + &#39;_link&#39;, cb)
+                        else:
+                            setattr(result, link_name, cb)
+
+                if hasattr(result, &#39;actions&#39;):
+                    for link_name, link in six.iteritems(result.actions):
+                        def cb(_link_name=link_name,
+                               _result=result, *args, **kw):
+                            return self.action(_result, _link_name,
+                                               *args, **kw)
+                        if hasattr(result, link_name):
+                            setattr(result, link_name + &#39;_action&#39;, cb)
+                        else:
+                            setattr(result, link_name, cb)
+
+            return result
+
+        return obj
+
+    def object_pairs_hook(self, pairs):
+        ret = collections.OrderedDict()
+        for k, v in pairs:
+            ret[k] = v
+        return self.object_hook(ret)
+
+    def _get(self, url, data=None):
+        return self._unmarshall(self._get_raw(url, data=data))
+
+    def _error(self, text, status_code):
+        raise ApiError(self._unmarshall(text), status_code)
+
+    @timed_url
+    def _get_raw(self, url, data=None):
+        r = self._get_response(url, data)
+        return r.text
+
+    def _get_response(self, url, data=None):
+        r = self._session.get(url, auth=self._auth, params=data,
+                              headers=self._headers)
+        if r.status_code &lt; 200 or r.status_code &gt;= 300:
+            self._error(r.text, r.status_code)
+
+        return r
+
+    @timed_url
+    def _post(self, url, data=None):
+        r = self._session.post(url, auth=self._auth, data=self._marshall(data),
+                               headers=self._headers)
+        if r.status_code &lt; 200 or r.status_code &gt;= 300:
+            self._error(r.text, r.status_code)
+
+        return self._unmarshall(r.text)
+
+    @timed_url
+    def _put(self, url, data=None):
+        r = self._session.put(url, auth=self._auth, data=self._marshall(data),
+                              headers=self._headers)
+        if r.status_code &lt; 200 or r.status_code &gt;= 300:
+            self._error(r.text, r.status_code)
+
+        return self._unmarshall(r.text)
+
+    @timed_url
+    def _delete(self, url):
+        r = self._session.delete(url, auth=self._auth, headers=self._headers)
+        if r.status_code &lt; 200 or r.status_code &gt;= 300:
+            self._error(r.text, r.status_code)
+
+        return self._unmarshall(r.text)
+
+    def _unmarshall(self, text):
+        if text is None or text == &#39;&#39;:
+            return text
+        obj = json.loads(text, object_hook=self.object_hook,
+                         object_pairs_hook=self.object_pairs_hook)
+        return obj
+
+    def _marshall(self, obj, indent=None, sort_keys=False):
+        if obj is None:
+            return None
+        return json.dumps(self._to_dict(obj), indent=indent, sort_keys=True)
+
+    def _load_schemas(self, force=False):
+        if self.schema and not force:
+            return
+
+        schema_text = self._get_cached_schema()
+
+        if force or not schema_text:
+            response = self._get_response(self._url)
+            schema_url = response.headers.get(&#39;X-API-Schemas&#39;)
+            if schema_url is not None and self._url != schema_url:
+                schema_text = self._get_raw(schema_url)
+            else:
+                schema_text = response.text
+            self._cache_schema(schema_text)
+
+        obj = self._unmarshall(schema_text)
+
+        schema = Schema(schema_text, obj)
+
+        if len(schema.types) &gt; 0:
+            self._bind_methods(schema)
+            self.schema = schema
+
+    def reload_schema(self):
+        self._load_schemas(force=True)
+
+    def by_id(self, type, id, **kw):
+        id = str(id)
+        url = self.schema.types[type].links.collection
+        if url.endswith(&#39;/&#39;):
+            url += id
+        else:
+            url = &#39;/&#39;.join([url, id])
+        try:
+            return self._get(url, self._to_dict(**kw))
+        except ApiError as e:
+            if e.error.code == 404:
+                return None
+            else:
+                raise e
+
+    def update_by_id(self, type, id, *args, **kw):
+        url = self.schema.types[type].links.collection
+        if url.endswith(&#39;/&#39;):
+            url = url + id
+        else:
+            url = &#39;/&#39;.join([url, id])
+
+        return self._put_and_retry(url, *args, **kw)
+
+    def update(self, obj, *args, **kw):
+        url = obj.links.self
+        return self._put_and_retry(url, *args, **kw)
+
+    def _put_and_retry(self, url, *args, **kw):
+        retries = kw.get(&#39;retries&#39;, 3)
+        last_error = None
+        for i in range(retries):
+            try:
+                return self._put(url, data=self._to_dict(*args, **kw))
+            except ApiError as e:
+                if e.error.code == 409:
+                    last_error = e
+                    time.sleep(.1)
+                else:
+                    raise e
+        raise last_error
+
+    def _post_and_retry(self, url, *args, **kw):
+        retries = kw.get(&#39;retries&#39;, 3)
+        last_error = None
+        for i in range(retries):
+            try:
+                return self._post(url, data=self._to_dict(*args, **kw))
+            except ApiError as e:
+                if e.error.code == 409:
+                    last_error = e
+                    time.sleep(.1)
+                else:
+                    raise e
+        raise last_error
+
+    def _validate_list(self, type, **kw):
+        if not self._strict:
+            return
+
+        collection_filters = self.schema.types[type].collectionFilters
+
+        for k in kw:
+            if hasattr(collection_filters, k):
+                return
+
+            for filter_name, filter_value in six.iteritems(collection_filters):
+                for m in filter_value.modifiers:
+                    if k == &#39;_&#39;.join([filter_name, m]):
+                        return
+
+            raise ClientApiError(k + &#39; is not searchable field&#39;)
+
+    def list(self, type, **kw):
+        if type not in self.schema.types:
+            raise ClientApiError(type + &#39; is not a valid type&#39;)
+
+        self._validate_list(type, **kw)
+        collection_url = self.schema.types[type].links.collection
+        return self._get(collection_url, data=self._to_dict(**kw))
+
+    def reload(self, obj):
+        return self.by_id(obj.type, obj.id)
+
+    def create(self, type, *args, **kw):
+        collection_url = self.schema.types[type].links.collection
+        return self._post(collection_url, data=self._to_dict(*args, **kw))
+
+    def delete(self, *args):
+        for i in args:
+            if isinstance(i, RestObject):
+                return self._delete(i.links.self)
+
+    def action(self, obj, action_name, *args, **kw):
+        url = getattr(obj.actions, action_name)
+        return self._post_and_retry(url, *args, **kw)
+
+    def _is_list(self, obj):
+        if isinstance(obj, list):
+            return True
+
+        if isinstance(obj, RestObject) and &#39;type&#39; in obj.__dict__ and \
+                obj.type == &#39;collection&#39;:
+            return True
+
+        return False
+
+    def _to_value(self, value):
+        if isinstance(value, dict):
+            ret = {}
+            for k, v in six.iteritems(value):
+                ret[k] = self._to_value(v)
+            return ret
+
+        if isinstance(value, list):
+            ret = []
+            for v in value:
+                ret.append(self._to_value(v))
+            return ret
+
+        if isinstance(value, RestObject):
+            ret = {}
+            for k, v in vars(value).items():
+                if not k.startswith(&#39;_&#39;) and \
+                        not isinstance(v, RestObject) and not callable(v):
+                    ret[k] = self._to_value(v)
+                elif not k.startswith(&#39;_&#39;) and isinstance(v, RestObject):
+                    ret[k] = self._to_dict(v)
+            return ret
+
+        return value
+
+    def _to_dict(self, *args, **kw):
+        if len(kw) == 0 and len(args) == 1 and self._is_list(args[0]):
+            ret = []
+            for i in args[0]:
+                ret.append(self._to_dict(i))
+            return ret
+
+        ret = {}
+
+        for i in args:
+            value = self._to_value(i)
+            if isinstance(value, dict):
+                for k, v in six.iteritems(value):
+                    ret[k] = v
+
+        for k, v in six.iteritems(kw):
+            ret[k] = self._to_value(v)
+
+        return ret
+
+    @staticmethod
+    def _type_name_variants(name):
+        ret = [name]
+        python_name = re.sub(r&#39;([a-z])([A-Z])&#39;, r&#39;\1_\2&#39;, name)
+        if python_name != name:
+            ret.append(python_name.lower())
+
+        return ret
+
+    def _bind_methods(self, schema):
+        bindings = [
+            (&#39;list&#39;, &#39;collectionMethods&#39;, GET_METHOD, self.list),
+            (&#39;by_id&#39;, &#39;collectionMethods&#39;, GET_METHOD, self.by_id),
+            (&#39;update_by_id&#39;, &#39;resourceMethods&#39;, PUT_METHOD, self.update_by_id),
+            (&#39;create&#39;, &#39;collectionMethods&#39;, POST_METHOD, self.create)
+        ]
+
+        for type_name, typ in six.iteritems(schema.types):
+            for name_variant in self._type_name_variants(type_name):
+                for method_name, type_collection, test_method, m in bindings:
+                    # double lambda for lexical binding hack, I&#39;m sure there&#39;s
+                    # a better way to do this
+                    def cb(type_name=type_name, method=m):
+                        return lambda *args, **kw: \
+                            method(type_name, *args, **kw)
+                    if test_method in getattr(typ, type_collection, []):
+                        setattr(self, &#39;_&#39;.join([method_name, name_variant]),
+                                cb())
+
+    def _get_schema_hash(self):
+        h = hashlib.new(&#39;sha1&#39;)
+        h.update(self._url)
+        if self._access_key is not None:
+            h.update(self._access_key)
+        return h.hexdigest()
+
+    def _get_cached_schema_file_name(self):
+        if not self._cache:
+            return None
+
+        h = self._get_schema_hash()
+
+        cachedir = os.path.expanduser(CACHE_DIR)
+        if not cachedir:
+            return None
+
+        if not os.path.exists(cachedir):
+            os.mkdir(cachedir)
+
+        return os.path.join(cachedir, &#39;schema-&#39; + h + &#39;.json&#39;)
+
+    def _cache_schema(self, text):
+        cached_schema = self._get_cached_schema_file_name()
+
+        if not cached_schema:
+            return None
+
+        with open(cached_schema, &#39;w&#39;) as f:
+            f.write(text)
+
+    def _get_cached_schema(self):
+        if not self._cache:
+            return None
+
+        cached_schema = self._get_cached_schema_file_name()
+
+        if not cached_schema:
+            return None
+
+        if os.path.exists(cached_schema):
+            mod_time = os.path.getmtime(cached_schema)
+            if time.time() - mod_time &lt; self._cache_time:
+                with open(cached_schema) as f:
+                    data = f.read()
+                return data
+
+        return None</code></pre>
+</details>
+<h3>Subclasses</h3>
+<ul class="hlist">
+<li><a title="tests.longhorn.Client" href="#tests.longhorn.Client">Client</a></li>
+</ul>
+<h3>Methods</h3>
+<dl>
+<dt id="tests.longhorn.GdapiClient.action"><code class="name flex">
+<span>def <span class="ident">action</span></span>(<span>self, obj, action_name, *args, **kw)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def action(self, obj, action_name, *args, **kw):
+    url = getattr(obj.actions, action_name)
+    return self._post_and_retry(url, *args, **kw)</code></pre>
+</details>
+</dd>
+<dt id="tests.longhorn.GdapiClient.by_id"><code class="name flex">
+<span>def <span class="ident">by_id</span></span>(<span>self, type, id, **kw)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def by_id(self, type, id, **kw):
+    id = str(id)
+    url = self.schema.types[type].links.collection
+    if url.endswith(&#39;/&#39;):
+        url += id
+    else:
+        url = &#39;/&#39;.join([url, id])
+    try:
+        return self._get(url, self._to_dict(**kw))
+    except ApiError as e:
+        if e.error.code == 404:
+            return None
+        else:
+            raise e</code></pre>
+</details>
+</dd>
+<dt id="tests.longhorn.GdapiClient.create"><code class="name flex">
+<span>def <span class="ident">create</span></span>(<span>self, type, *args, **kw)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def create(self, type, *args, **kw):
+    collection_url = self.schema.types[type].links.collection
+    return self._post(collection_url, data=self._to_dict(*args, **kw))</code></pre>
+</details>
+</dd>
+<dt id="tests.longhorn.GdapiClient.delete"><code class="name flex">
+<span>def <span class="ident">delete</span></span>(<span>self, *args)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def delete(self, *args):
+    for i in args:
+        if isinstance(i, RestObject):
+            return self._delete(i.links.self)</code></pre>
+</details>
+</dd>
+<dt id="tests.longhorn.GdapiClient.list"><code class="name flex">
+<span>def <span class="ident">list</span></span>(<span>self, type, **kw)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def list(self, type, **kw):
+    if type not in self.schema.types:
+        raise ClientApiError(type + &#39; is not a valid type&#39;)
+
+    self._validate_list(type, **kw)
+    collection_url = self.schema.types[type].links.collection
+    return self._get(collection_url, data=self._to_dict(**kw))</code></pre>
+</details>
+</dd>
+<dt id="tests.longhorn.GdapiClient.object_hook"><code class="name flex">
+<span>def <span class="ident">object_hook</span></span>(<span>self, obj)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def object_hook(self, obj):
+    if isinstance(obj, list):
+        return [self.object_hook(x) for x in obj]
+
+    if isinstance(obj, dict):
+        result = RestObject()
+
+        for k, v in six.iteritems(obj):
+            setattr(result, k, self.object_hook(v))
+
+        for link in [&#39;next&#39;, &#39;prev&#39;]:
+            try:
+                url = getattr(result.pagination, link)
+                if url is not None:
+                    setattr(result, link, lambda url=url: self._get(url))
+            except AttributeError:
+                pass
+
+        if hasattr(result, &#39;type&#39;) and isinstance(getattr(result, &#39;type&#39;),
+                                                  six.string_types):
+            if hasattr(result, &#39;links&#39;):
+                for link_name, link in six.iteritems(result.links):
+                    def cb(_link=link, **kw):
+                        return self._get(_link, data=kw)
+                    if hasattr(result, link_name):
+                        setattr(result, link_name + &#39;_link&#39;, cb)
+                    else:
+                        setattr(result, link_name, cb)
+
+            if hasattr(result, &#39;actions&#39;):
+                for link_name, link in six.iteritems(result.actions):
+                    def cb(_link_name=link_name,
+                           _result=result, *args, **kw):
+                        return self.action(_result, _link_name,
+                                           *args, **kw)
+                    if hasattr(result, link_name):
+                        setattr(result, link_name + &#39;_action&#39;, cb)
+                    else:
+                        setattr(result, link_name, cb)
+
+        return result
+
+    return obj</code></pre>
+</details>
+</dd>
+<dt id="tests.longhorn.GdapiClient.object_pairs_hook"><code class="name flex">
+<span>def <span class="ident">object_pairs_hook</span></span>(<span>self, pairs)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def object_pairs_hook(self, pairs):
+    ret = collections.OrderedDict()
+    for k, v in pairs:
+        ret[k] = v
+    return self.object_hook(ret)</code></pre>
+</details>
+</dd>
+<dt id="tests.longhorn.GdapiClient.reload"><code class="name flex">
+<span>def <span class="ident">reload</span></span>(<span>self, obj)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def reload(self, obj):
+    return self.by_id(obj.type, obj.id)</code></pre>
+</details>
+</dd>
+<dt id="tests.longhorn.GdapiClient.reload_schema"><code class="name flex">
+<span>def <span class="ident">reload_schema</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def reload_schema(self):
+    self._load_schemas(force=True)</code></pre>
+</details>
+</dd>
+<dt id="tests.longhorn.GdapiClient.update"><code class="name flex">
+<span>def <span class="ident">update</span></span>(<span>self, obj, *args, **kw)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def update(self, obj, *args, **kw):
+    url = obj.links.self
+    return self._put_and_retry(url, *args, **kw)</code></pre>
+</details>
+</dd>
+<dt id="tests.longhorn.GdapiClient.update_by_id"><code class="name flex">
+<span>def <span class="ident">update_by_id</span></span>(<span>self, type, id, *args, **kw)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def update_by_id(self, type, id, *args, **kw):
+    url = self.schema.types[type].links.collection
+    if url.endswith(&#39;/&#39;):
+        url = url + id
+    else:
+        url = &#39;/&#39;.join([url, id])
+
+    return self._put_and_retry(url, *args, **kw)</code></pre>
+</details>
+</dd>
+<dt id="tests.longhorn.GdapiClient.valid"><code class="name flex">
+<span>def <span class="ident">valid</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def valid(self):
+    return self._url is not None and self.schema is not None</code></pre>
+</details>
+</dd>
+</dl>
+</dd>
+<dt id="tests.longhorn.RestObject"><code class="flex name class">
+<span>class <span class="ident">RestObject</span></span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class RestObject:
+    def __init__(self):
+        pass
+
+    @staticmethod
+    def _is_public(k, v):
+        return k not in [&#39;links&#39;, &#39;actions&#39;, &#39;id&#39;, &#39;type&#39;] and not callable(v)
+
+    def __str__(self):
+        return self.__repr__()
+
+    def _as_table(self):
+        if not hasattr(self, &#39;type&#39;):
+            return str(self.__dict__)
+        data = [(&#39;Type&#39;, &#39;Id&#39;, &#39;Name&#39;, &#39;Value&#39;)]
+        for k, v in six.iteritems(self):
+            if self._is_public(k, v):
+                if v is None:
+                    v = &#39;null&#39;
+                if v is True:
+                    v = &#39;true&#39;
+                if v is False:
+                    v = &#39;false&#39;
+                v = str(v)
+                if TRIM and len(v) &gt; 70:
+                    v = v[0:70] + &#39;...&#39;
+                data.append((self.type, self.id, str(k), v))
+
+        return indent(data, hasHeader=True, prefix=&#39;| &#39;, postfix=&#39; |&#39;,
+                      wrapfunc=lambda x: str(x))
+
+    def _is_list(self):
+        return &#39;data&#39; in self.__dict__ and isinstance(self.data, list)
+
+    def __repr__(self):
+        data = {}
+        for k, v in six.iteritems(self.__dict__):
+            if self._is_public(k, v):
+                data[k] = v
+        return repr(data)
+
+    def __len__(self):
+        if self._is_list():
+            return len(self.data)
+        return len(self.__dict__)
+
+    def __getitem__(self, key):
+        if not self:
+            return None
+        if self._is_list():
+            return self.data[key]
+        return self.__dict__[key]
+
+    def __getattr__(self, k):
+        if self._is_list() and k in LIST_METHODS:
+            return getattr(self.data, k)
+        return getattr(self.__dict__, k)
+
+    def __iter__(self):
+        if self._is_list():
+            return iter(self.data)
+        return iter(self.__dict__)</code></pre>
+</details>
+</dd>
+<dt id="tests.longhorn.Schema"><code class="flex name class">
+<span>class <span class="ident">Schema</span></span>
+<span>(</span><span>text, obj)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class Schema(object):
+    def __init__(self, text, obj):
+        self.text = text
+        self.types = {}
+        for t in obj:
+            if t.type != &#39;schema&#39;:
+                continue
+
+            self.types[t.id] = t
+            t.creatable = False
+            try:
+                if POST_METHOD in t.collectionMethods:
+                    t.creatable = True
+            except Exception:
+                pass
+
+            t.updatable = False
+            try:
+                if PUT_METHOD in t.resourceMethods:
+                    t.updatable = True
+            except Exception:
+                pass
+
+            t.deletable = False
+            try:
+                if DELETE_METHOD in t.resourceMethods:
+                    t.deletable = True
+            except Exception:
+                pass
+
+            t.listable = False
+            try:
+                if GET_METHOD in t.collectionMethods:
+                    t.listable = True
+            except Exception:
+                pass
+
+            if not hasattr(t, &#39;collectionFilters&#39;):
+                t.collectionFilters = {}
+
+    def __str__(self):
+        return str(self.text)
+
+    def __repr(self):
+        return repr(self.text)</code></pre>
+</details>
+</dd>
+</dl>
+</section>
+</article>
+<nav id="sidebar">
+<h1>Index</h1>
+<div class="toc">
+<ul></ul>
+</div>
+<ul id="index">
+<li><h3>Super-module</h3>
+<ul>
+<li><code><a title="tests" href="index.html">tests</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-functions">Functions</a></h3>
+<ul class="">
+<li><code><a title="tests.longhorn.echo" href="#tests.longhorn.echo">echo</a></code></li>
+<li><code><a title="tests.longhorn.from_env" href="#tests.longhorn.from_env">from_env</a></code></li>
+<li><code><a title="tests.longhorn.gdapi_from_env" href="#tests.longhorn.gdapi_from_env">gdapi_from_env</a></code></li>
+<li><code><a title="tests.longhorn.indent" href="#tests.longhorn.indent">indent</a></code></li>
+<li><code><a title="tests.longhorn.timed_url" href="#tests.longhorn.timed_url">timed_url</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-classes">Classes</a></h3>
+<ul>
+<li>
+<h4><code><a title="tests.longhorn.ApiError" href="#tests.longhorn.ApiError">ApiError</a></code></h4>
+</li>
+<li>
+<h4><code><a title="tests.longhorn.Client" href="#tests.longhorn.Client">Client</a></code></h4>
+<ul class="">
+<li><code><a title="tests.longhorn.Client.wait_success" href="#tests.longhorn.Client.wait_success">wait_success</a></code></li>
+<li><code><a title="tests.longhorn.Client.wait_transitioning" href="#tests.longhorn.Client.wait_transitioning">wait_transitioning</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="tests.longhorn.ClientApiError" href="#tests.longhorn.ClientApiError">ClientApiError</a></code></h4>
+</li>
+<li>
+<h4><code><a title="tests.longhorn.GdapiClient" href="#tests.longhorn.GdapiClient">GdapiClient</a></code></h4>
+<ul class="two-column">
+<li><code><a title="tests.longhorn.GdapiClient.action" href="#tests.longhorn.GdapiClient.action">action</a></code></li>
+<li><code><a title="tests.longhorn.GdapiClient.by_id" href="#tests.longhorn.GdapiClient.by_id">by_id</a></code></li>
+<li><code><a title="tests.longhorn.GdapiClient.create" href="#tests.longhorn.GdapiClient.create">create</a></code></li>
+<li><code><a title="tests.longhorn.GdapiClient.delete" href="#tests.longhorn.GdapiClient.delete">delete</a></code></li>
+<li><code><a title="tests.longhorn.GdapiClient.list" href="#tests.longhorn.GdapiClient.list">list</a></code></li>
+<li><code><a title="tests.longhorn.GdapiClient.object_hook" href="#tests.longhorn.GdapiClient.object_hook">object_hook</a></code></li>
+<li><code><a title="tests.longhorn.GdapiClient.object_pairs_hook" href="#tests.longhorn.GdapiClient.object_pairs_hook">object_pairs_hook</a></code></li>
+<li><code><a title="tests.longhorn.GdapiClient.reload" href="#tests.longhorn.GdapiClient.reload">reload</a></code></li>
+<li><code><a title="tests.longhorn.GdapiClient.reload_schema" href="#tests.longhorn.GdapiClient.reload_schema">reload_schema</a></code></li>
+<li><code><a title="tests.longhorn.GdapiClient.update" href="#tests.longhorn.GdapiClient.update">update</a></code></li>
+<li><code><a title="tests.longhorn.GdapiClient.update_by_id" href="#tests.longhorn.GdapiClient.update_by_id">update_by_id</a></code></li>
+<li><code><a title="tests.longhorn.GdapiClient.valid" href="#tests.longhorn.GdapiClient.valid">valid</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="tests.longhorn.RestObject" href="#tests.longhorn.RestObject">RestObject</a></code></h4>
+</li>
+<li>
+<h4><code><a title="tests.longhorn.Schema" href="#tests.longhorn.Schema">Schema</a></code></h4>
+</li>
+</ul>
+</li>
+</ul>
+</nav>
+</main>
+<footer id="footer">
+<p>Generated by <a href="https://pdoc3.github.io/pdoc"><cite>pdoc</cite> 0.8.4</a>.</p>
+</footer>
+</body>
+</html>
