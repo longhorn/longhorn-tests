@@ -7,7 +7,7 @@ on:
 
 jobs:
   publish:
-    runs-on: self-hosted
+    runs-on: [self-hosted, python3.8]
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -19,7 +19,7 @@ jobs:
       - name: Install Python
         uses: actions/setup-python@v2
         with:
-          python-version: '>=3.5'
+          python-version: '3.8'
 
       - name: Install pdoc3
         run: |
