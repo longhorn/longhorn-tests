@@ -32,7 +32,7 @@ jobs:
       - name: Run pdoc3
         run: |
           pdoc --html -o . .
-          mv tests/* ../../../website/content/integration/
+          mv tests/ ../../../website/content/integration
         working-directory: ./manager/integration/tests/
 
       - name: Install Hugo
@@ -54,13 +54,6 @@ jobs:
         run: |
           git config user.name "$GITHUB_ACTOR"
           git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
-
-      - name: Commit integration test docs changes
-        uses: stefanzweifel/git-auto-commit-action@v4
-        with:
-          commit_message: Update generated integration test docs
-          file_pattern: website/content/integration/*
-          commit_options: --signoff
 
       - name: Deploy new test docs
         run: |
