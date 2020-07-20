@@ -12,6 +12,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
 
+      - name: Fetch gh-pages branch
+        run: |
+          git fetch --depth=1 origin gh-pages
+
       - name: Install Python
         uses: actions/setup-python@v2
         with:
@@ -44,8 +48,6 @@ jobs:
       - name: Run Hugo
         run: |
           hugo
-          rm -r ../docs/
-          mv public/ ../docs
         working-directory: ./website/
 
       - name: Configure Git
@@ -53,8 +55,27 @@ jobs:
           git config user.name "$GITHUB_ACTOR"
           git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
 
-      - name: Commit changes
+      - name: Commit integration test docs changes
         uses: stefanzweifel/git-auto-commit-action@v4
         with:
-          commit_message: Update docs
-          file_pattern: docs/* website/content/integration/*
+          commit_message: Update generated integration test docs
+          file_pattern: website/content/integration/*
+          commit_options: --signoff
+
+      - name: Deploy new test docs
+        run: |
+          # Adapted from https://github.com/helm/chart-releaser-action/blob/master/cr.sh
+          gh_pages_worktree=$(mktemp -d)
+          git worktree add "$gh_pages_worktree" gh-pages
+          pushd "$gh_pages_worktree" > /dev/null
+          git rm -r --ignore-unmatch .
+          popd > /dev/null
+
+          mv website/public/* "$gh_pages_worktree"
+          pushd "$gh_pages_worktree" > /dev/null
+          git add .
+          # Only commit files if changes are detected
+          git diff-index --quiet HEAD || git commit --message="Update testing docs" --signoff
+          git push origin gh-pages
+          popd > /dev/null
+          git worktree remove "$gh_pages_worktree"
