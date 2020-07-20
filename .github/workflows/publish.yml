@@ -32,7 +32,7 @@ jobs:
       - name: Run pdoc3
         run: |
           pdoc --html -o . .
-          mv tests/ ../../../website/content/integration
+          mv tests/ ../../../docs/content/integration
         working-directory: ./manager/integration/tests/
 
       - name: Install Hugo
@@ -48,7 +48,7 @@ jobs:
       - name: Run Hugo
         run: |
           hugo
-        working-directory: ./website/
+        working-directory: ./docs/
 
       - name: Configure Git
         run: |
@@ -64,7 +64,7 @@ jobs:
           git rm -r --ignore-unmatch .
           popd > /dev/null
 
-          mv website/public/* "$gh_pages_worktree"
+          mv docs/public/* "$gh_pages_worktree"
           pushd "$gh_pages_worktree" > /dev/null
           git add .
           # Only commit files if changes are detected
