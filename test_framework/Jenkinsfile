@@ -25,11 +25,11 @@ node {
             }
             stage ('report generation') {
                 sh "docker cp ${JOB_NAME}${BUILD_NUMBER}:${TF_VAR_tf_workspace}/longhorn-test-junit-report.xml ."
-                junit 'longhorn-test-junit-report.xml'
+                def summary = junit 'longhorn-test-junit-report.xml'
 
 		if(params.LONGHORN_UPGRADE_TEST) {
                     sh "docker cp ${JOB_NAME}${BUILD_NUMBER}:${TF_VAR_tf_workspace}/longhorn-test-upgrade-junit-report.xml ."
-                    junit 'longhorn-test-upgrade-junit-report.xml'
+                    def summary = junit 'longhorn-test-upgrade-junit-report.xml'
 		}
 
             }
@@ -43,15 +43,15 @@ node {
                 sh "docker stop ${JOB_NAME}${BUILD_NUMBER}"
                 sh "docker rm -v ${JOB_NAME}${BUILD_NUMBER}"
                 sh "docker rmi ${imageName}"
-
-                notifyBuild(currentBuild.result)
+                summary_msg = "\nTest Summary - Failures: ${summary.failCount}, Skipped: ${summary.skipCount}, Passed: ${summary.passCount}  -- Job completed in ${currentBuild.durationString.replace(' and counting', '')}"
+                notifyBuild(currentBuild.result, summary_msg)
             }
         }
     }
 }
 
 
-def notifyBuild(String buildStatus = 'STARTED') {
+def notifyBuild(String buildStatus = 'STARTED', String summary_msg) {
   // build status of null means successful
   buildStatus =  buildStatus ?: 'SUCCESSFUL'
 
@@ -59,7 +59,7 @@ def notifyBuild(String buildStatus = 'STARTED') {
   def colorName = 'RED'
   def colorCode = '#FF0000'
   def subject = "${buildStatus}: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]'"
-  def summary = "${subject} (${env.BUILD_URL})"
+  def summary = "${subject} (${env.BUILD_URL})" + summary_msg
 
   // Override default values based on build status
   if (buildStatus == 'STARTED') {
