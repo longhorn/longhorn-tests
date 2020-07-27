@@ -1,0 +1,17 @@
+From alpine:latest
+
+ARG TERRAFORM_VERSION=0.12.0
+
+ENV WORKSPACE /src/longhorn-tests
+
+WORKDIR $WORKSPACE
+
+RUN apk add rsync && \
+    wget -q https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/terraform_${TERRAFORM_VERSION}_linux_amd64.zip && \
+    unzip terraform_${TERRAFORM_VERSION}_linux_amd64.zip && rm terraform_${TERRAFORM_VERSION}_linux_amd64.zip && \
+    mv terraform /usr/bin/terraform && \
+    chmod +x /usr/bin/terraform && \
+    apk add openssh-client ca-certificates git && \
+    ssh-keygen -t rsa -b 4096 -N "" -f ~/.ssh/id_rsa
+
+COPY [".", "$WORKSPACE"]
