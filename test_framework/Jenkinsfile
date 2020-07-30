@@ -1,7 +1,7 @@
 def imageName = "${JOB_NAME}${env.BUILD_NUMBER}"
 
 node {
-    notifyBuild('STARTED', "")
+    notifyBuild('STARTED')
 
     checkout scm
 
@@ -29,7 +29,7 @@ node {
 
 		if(params.LONGHORN_UPGRADE_TEST) {
                     sh "docker cp ${JOB_NAME}${BUILD_NUMBER}:${TF_VAR_tf_workspace}/longhorn-test-upgrade-junit-report.xml ."
-                    summary = junit 'longhorn-test-upgrade-junit-report.xml'
+                    def summary = junit 'longhorn-test-upgrade-junit-report.xml'
 		}
 
             }
