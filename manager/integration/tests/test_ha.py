@@ -6,6 +6,7 @@ import subprocess
 
 from common import client, core_api, volume_name  # NOQA
 from common import DATA_SIZE_IN_MB_1, DATA_SIZE_IN_MB_2, DATA_SIZE_IN_MB_3
+from common import DATA_SIZE_IN_MB_4
 from common import check_volume_data, cleanup_volume, create_and_check_volume
 from common import delete_replica_processes, crash_replica_processes
 from common import get_self_host_id, check_volume_endpoint
@@ -49,6 +50,8 @@ from common import exec_instance_manager
 from common import SIZE, VOLUME_RWTEST_SIZE, EXPAND_SIZE, Gi
 from common import RETRY_COUNTS, RETRY_INTERVAL
 from common import SETTING_REPLICA_NODE_SOFT_ANTI_AFFINITY
+from common import write_pod_volume_data
+from common import read_volume_data
 
 from backupstore import backupstore_cleanup
 from backupstore import backupstore_delete_random_backup_block
@@ -528,7 +531,8 @@ def test_salvage_auto_crash_replicas_long_wait(
     """
     pod_name, pv_name, pvc_name, md5sum = \
         prepare_pod_with_data_in_mb(
-            client, core_api, csi_pv, pvc, pod_make, volume_name)
+            client, core_api, csi_pv, pvc, pod_make, volume_name,
+            data_size_in_mb=DATA_SIZE_IN_MB_2)
 
     volume = client.by_id_volume(volume_name)
     replica0 = volume.replicas[0]
@@ -646,7 +650,7 @@ def test_rebuild_replica_and_from_replica_on_the_same_node(
     pod_name, pv_name, pvc_name, original_md5sum = \
         prepare_pod_with_data_in_mb(
             client, core_api, csi_pv, pvc, pod_make, volume_name,
-            data_path=data_path, data_size_in_mb=DATA_SIZE_IN_MB_3)
+            data_path=data_path, data_size_in_mb=DATA_SIZE_IN_MB_4)
 
     volume = client.by_id_volume(volume_name)
     original_replicas = volume.replicas
@@ -705,7 +709,7 @@ def test_rebuild_with_restoration(
     original_pod_name, original_pv_name, original_pvc_name, original_md5sum = \
         prepare_pod_with_data_in_mb(
             client, core_api, csi_pv, pvc, pod_make, original_volume_name,
-            data_path=data_path, data_size_in_mb=DATA_SIZE_IN_MB_2)
+            data_path=data_path, data_size_in_mb=DATA_SIZE_IN_MB_3)
 
     original_volume = client.by_id_volume(original_volume_name)
     snap = create_snapshot(client, original_volume_name)
@@ -1405,13 +1409,12 @@ def test_volume_reattach_after_engine_sigkill(
     8. Check if data can be still written to the volume.
     """
     data_path1 = "/data/test1"
-    data_path2 = "/data/test2"
 
     pod_name, _, _, md5sum = \
         prepare_pod_with_data_in_mb(client, core_api, csi_pv, pvc,
                                     pod_make,
                                     volume_name,
-                                    data_size_in_mb=DATA_SIZE_IN_MB_1,
+                                    data_size_in_mb=DATA_SIZE_IN_MB_2,
                                     data_path=data_path1)
 
     crash_engine_process_with_sigkill(client, core_api, volume_name)
@@ -1425,12 +1428,11 @@ def test_volume_reattach_after_engine_sigkill(
     res_md5sum = get_pod_data_md5sum(core_api, pod_name, data_path1)
     assert md5sum == res_md5sum
 
-    write_pod_volume_random_data(core_api, pod_name,
-                                 data_path2, DATA_SIZE_IN_MB_1)
-    md5sum2 = get_pod_data_md5sum(core_api, pod_name, data_path2)
+    write_pod_volume_data(core_api, pod_name, 'longhorn-integration-test',
+                          filename='test2')
+    read_data = read_volume_data(core_api, pod_name, 'test2')
 
-    res_md5sum2 = get_pod_data_md5sum(core_api, pod_name, data_path2)
-    assert md5sum2 == res_md5sum2
+    assert read_data == 'longhorn-integration-test'
 
 
 @pytest.mark.skip(reason="TODO")
