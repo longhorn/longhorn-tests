@@ -65,26 +65,6 @@
   <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/environment/k3s-selinux-compatibility/">Compatibility with k3s and SELinux</a></li>
   
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/environment/suse-sles12sp3/">Operating System specific tests for SUSE SLES12SP3</a></li>
-  
-    <ul>
-
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/environment/suse-sles12sp3/ext4-custom-fs-params-1/">Testing ext4 with custom fs params1 (no 64bit, no metadata_csum)</a></li>
-  
-
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/environment/suse-sles12sp3/ext4-custom-fs-params-2/">Testing ext4 with custom fs params2 (no metadata_csum)</a></li>
-  
-
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/environment/suse-sles12sp3/ext4-no-custom-fs-params/">Testing ext4 without custom fs params</a></li>
-  
-
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/environment/suse-sles12sp3/xfs-after-custom-fs-params/">Testing xfs after custom fs params (xfs should ignore the custom fs params)</a></li>
-  
-
-</ul>
-
-  
-
 </ul>
 
   
@@ -160,6 +140,26 @@
   <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.0/new-node-custom-data-directory/">New Node with Custom Data Directory</a></li>
   
 
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.0/suse-sles12sp3/">Operating System specific tests for SUSE SLES12SP3</a></li>
+  
+    <ul>
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.0/suse-sles12sp3/ext4-custom-fs-params-1/">Testing ext4 with custom fs params1 (no 64bit, no metadata_csum)</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.0/suse-sles12sp3/ext4-custom-fs-params-2/">Testing ext4 with custom fs params2 (no metadata_csum)</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.0/suse-sles12sp3/ext4-no-custom-fs-params/">Testing ext4 without custom fs params</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.0/suse-sles12sp3/xfs-after-custom-fs-params/">Testing xfs after custom fs params (xfs should ignore the custom fs params)</a></li>
+  
+
+</ul>
+
+  
+
 </ul>
 
   
@@ -209,36 +209,16 @@
 </aside>
 
 <main style="padding: 1%; width: 70%;">
-  <header class="homepage-header">
-    <h1>Operating System specific tests for SUSE SLES12SP3</h1>
-    
-  </header>
-  <div class="homepage-content">
-    <p>For older Kernels like Suse SLES12SP3 we require the user to provide custom ext4 filesystem settings, a manual test documented below is required.</p>
-<h1 id="test-setup">Test Setup</h1>
-<ul>
-<li>create a SLES12SP3 cluster</li>
-<li>keep all 4 deployments around till the end of the test</li>
-</ul>
-
-  </div>
+  <h1 id="title">Testing xfs after custom fs params (xfs should ignore the custom fs params)</h1>
   <div>
-    <ul>
-
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/environment/suse-sles12sp3/ext4-custom-fs-params-1/">Testing ext4 with custom fs params1 (no 64bit, no metadata_csum)</a></li>
-  
-
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/environment/suse-sles12sp3/ext4-custom-fs-params-2/">Testing ext4 with custom fs params2 (no metadata_csum)</a></li>
-  
-
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/environment/suse-sles12sp3/ext4-no-custom-fs-params/">Testing ext4 without custom fs params</a></li>
-  
-
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/environment/suse-sles12sp3/xfs-after-custom-fs-params/">Testing xfs after custom fs params (xfs should ignore the custom fs params)</a></li>
-  
-
+    <article id="content">
+       <ul>
+<li>create a volume + pv + pvc with filesystem <code>xfs</code> named <code>xfs-ignores</code></li>
+<li>create a deployment that uses <code>xfs-ignores</code></li>
+<li>verify that the pod enters running state and the volume is accessible</li>
 </ul>
 
+    </article>
   </div>
 </main>
 

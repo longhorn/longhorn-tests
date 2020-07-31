@@ -107,7 +107,7 @@
   </url>
   
   <url>
-    <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/environment/suse-sles12sp3/</loc>
+    <loc>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.0/suse-sles12sp3/</loc>
   </url>
   
   <url>
@@ -143,19 +143,19 @@
   </url>
   
   <url>
-    <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/environment/suse-sles12sp3/ext4-custom-fs-params-1/</loc>
+    <loc>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.0/suse-sles12sp3/ext4-custom-fs-params-1/</loc>
   </url>
   
   <url>
-    <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/environment/suse-sles12sp3/ext4-custom-fs-params-2/</loc>
+    <loc>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.0/suse-sles12sp3/ext4-custom-fs-params-2/</loc>
   </url>
   
   <url>
-    <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/environment/suse-sles12sp3/ext4-no-custom-fs-params/</loc>
+    <loc>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.0/suse-sles12sp3/ext4-no-custom-fs-params/</loc>
   </url>
   
   <url>
-    <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/environment/suse-sles12sp3/xfs-after-custom-fs-params/</loc>
+    <loc>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.0/suse-sles12sp3/xfs-after-custom-fs-params/</loc>
   </url>
   
   <url>
