@@ -1,4 +1,4 @@
-def imageName = "${JOB_NAME}${env.BUILD_NUMBER}"
+def imageName = "${JOB_BASE_NAME}${env.BUILD_NUMBER}"
 
 node {
     notifyBuild('STARTED')
@@ -8,16 +8,16 @@ node {
     withCredentials([string(credentialsId: 'longhorn-tests-do-token', variable: 'TF_VAR_do_token')]) {
         stage('build') {
             sh "secscan/scripts/build.sh"
-            sh "docker run -itd --name ${JOB_NAME}${BUILD_NUMBER} --env TF_VAR_tf_workspace=${TF_VAR_tf_workspace} --env TF_VAR_do_token=${env.TF_VAR_do_token} ${imageName}"
+            sh "docker run -itd --name ${JOB_BASE_NAME}${BUILD_NUMBER} --env TF_VAR_tf_workspace=${TF_VAR_tf_workspace} --env TF_VAR_do_token=${env.TF_VAR_do_token} ${imageName}"
         }
 
         try {
             stage ('scan images') {
-                sh  " docker exec ${JOB_NAME}${BUILD_NUMBER} ${TF_VAR_tf_workspace}/scripts/terraform-setup.sh"
+                sh  " docker exec ${JOB_BASE_NAME}${BUILD_NUMBER} ${TF_VAR_tf_workspace}/scripts/terraform-setup.sh"
             }
 
             stage ('report generation') {
-                sh "docker cp ${JOB_NAME}${BUILD_NUMBER}:${TF_VAR_tf_workspace}/junit-reports ."
+                sh "docker cp ${JOB_BASE_NAME}${BUILD_NUMBER}:${TF_VAR_tf_workspace}/junit-reports ."
                 def summary = junit "junit-reports/*.xml"
             }
 
@@ -26,9 +26,9 @@ node {
             throw e
         } finally {
             stage('releasing resources') {
-                sh  " docker exec ${JOB_NAME}${BUILD_NUMBER} ${TF_VAR_tf_workspace}/scripts/cleanup.sh"
-                sh "docker stop ${JOB_NAME}${BUILD_NUMBER}"
-                sh "docker rm -v ${JOB_NAME}${BUILD_NUMBER}"
+                sh  " docker exec ${JOB_BASE_NAME}${BUILD_NUMBER} ${TF_VAR_tf_workspace}/scripts/cleanup.sh"
+                sh "docker stop ${JOB_BASE_NAME}${BUILD_NUMBER}"
+                sh "docker rm -v ${JOB_BASE_NAME}${BUILD_NUMBER}"
                 sh "docker rmi ${imageName}"
                 notifyBuild(currentBuild.result)
             }
@@ -44,7 +44,7 @@ def notifyBuild(String buildStatus = 'STARTED') {
   // Default values
   def colorName = 'RED'
   def colorCode = '#FF0000'
-  def subject = "${buildStatus}: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]'"
+  def subject = "${buildStatus}: Job '${env.JOB_BASE_NAME} [${env.BUILD_NUMBER}]'"
   def summary = "${subject} (${env.BUILD_URL})"
 
   // Override default values based on build status
