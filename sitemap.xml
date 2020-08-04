@@ -163,11 +163,19 @@
   </url>
   
   <url>
+    <loc>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.2/upgrade-lease-lock/</loc>
+  </url>
+  
+  <url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.0/</loc>
   </url>
   
   <url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.1/</loc>
+  </url>
+  
+  <url>
+    <loc>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.2/</loc>
   </url>
   
   <url>

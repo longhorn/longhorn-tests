@@ -220,46 +220,39 @@
 </aside>
 
 <main style="padding: 1%; width: 70%;">
-  <header class="homepage-header">
-    <h1>Backup &amp; Restore tests</h1>
-    
-  </header>
-  <div class="homepage-content">
-    <p>Anytime we identify a backup &amp; restore issue we should add it to the test scenarios below.
-In general it&rsquo;s important to test concurrent backup &amp; deletion &amp; restoration operations.</p>
-<h1 id="test-setup">Test Setup</h1>
-<ul>
-<li>create vol <code>bak</code> and attach to node</li>
-<li>connect to node via ssh and issue <code>dd if=/dev/urandom of=/dev/longhorn/bak status=progress</code></li>
-<li>keep the dd running while doing all the tests below, that way you constantly have new data when backing up</li>
-<li>setup recurring backups every minute with retain count of <code>3</code></li>
-<li>do all the tests for each currently supported backup store <code>nfs, s3</code></li>
-</ul>
-
-  </div>
+  <h1 id="title">Upgrade Lease Lock</h1>
   <div>
-    <ul>
-
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/concurrent-backup-creation-deletion/">#1326 concurrent backup creation &amp; deletion</a></li>
-  
-
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/concurrent-backup/">#1341 concurrent backup test</a></li>
-  
-
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/restore-volume-node-down/">#1355 The node the restore volume attached to is down</a></li>
-  
-
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/dr-volume-node-down-rebooted/">#1366 &amp;&amp; #1328 The node the DR volume attached to is down/rebooted</a></li>
-  
-
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/google-cloud-s3-interop-backups/">#1404 test backup functionality on google cloud and other s3 interop providers.</a></li>
-  
-
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/backup-block-deletion/">#1431 backup block deletion test</a></li>
-  
-
+    <article id="content">
+       <p>The time it takes between the Longhorn Manager starting up and the upgrade completing for that Longhorn Manager can be used to determine if the upgrade lock was released correctly:</p>
+<ol>
+<li>Create a fresh Longhorn installation or delete all of the Longhorn Manager Pods in the existing installation.</li>
+<li>Check the logs for the Longhorn Manager Pods and note the timestamps for the first line in the log and the timestamp for when the upgrade has completed.
+For example, in this log, the relevant timestamps are <code>2020-08-03T22:55:39Z</code> and <code>2020-08-03T22:56:24Z</code>:</li>
+</ol>
+<pre><code>time=&quot;2020-08-03T22:55:39Z&quot; level=info msg=&quot;Start overwriting built-in settings with customized values&quot;
+E0803 22:55:40.141071       1 leaderelection.go:310] error initially creating leader election record: leases.coordination.k8s.io &quot;longhorn-manager-upgrade-lock&quot; already exists
+time=&quot;2020-08-03T22:55:43Z&quot; level=info msg=&quot;New upgrade leader elected: 74.207.240.60&quot;
+time=&quot;2020-08-03T22:56:01Z&quot; level=info msg=&quot;New upgrade leader elected: 96.126.101.152&quot;
+time=&quot;2020-08-03T22:56:24Z&quot; level=info msg=&quot;Start upgrading&quot;
+time=&quot;2020-08-03T22:56:24Z&quot; level=info msg=&quot;No API version upgrade is needed&quot;
+time=&quot;2020-08-03T22:56:24Z&quot; level=info msg=&quot;Finish upgrading&quot;
+</code></pre><ol start="3">
+<li>Calculate the amount of time between the two timestamps.
+If the lock was released successfully, then it should take no longer than about 15 seconds for the upgrade process to complete on each Pod:</li>
+</ol>
+<ul>
+<li><code>longhorn-manager-k95bm</code>: 2020-08-03T23:04:14Z - 2020-08-03T23:04:20Z <strong>(6 seconds)</strong></li>
+<li><code>longhorn-manager-rgpvt</code>: 2020-08-03T23:04:14Z - 2020-08-03T23:04:15Z <strong>(1 second)</strong></li>
+<li><code>longhorn-manager-z2jd9</code>: 2020-08-03T23:04:21Z - 2020-08-03T23:04:21Z <strong>(0 seconds)</strong></li>
+</ul>
+<p>Here is an example of a failing case with the Longhorn Manager attempting to upgrade and the upgrade lock not being released successfully.</p>
+<ul>
+<li><code>longhorn-manager-82kt4</code>: 2020-08-03T22:55:39Z - 2020-08-03T22:55:40Z <strong>(1 second)</strong></li>
+<li><code>longhorn-manager-lpbth</code>: 2020-08-03T22:55:40Z - 2020-08-03T22:56:00Z <strong>(20 seconds)</strong></li>
+<li><code>longhorn-manager-pdmrv</code>: 2020-08-03T22:55:39Z - 2020-08-03T22:56:24Z <strong>(45 seconds)</strong></li>
 </ul>
 
+    </article>
   </div>
 </main>
 

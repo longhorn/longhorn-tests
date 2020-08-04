@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>v1.0.2 on Longhorn Manual Test Cases</title>
+    <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.2/</link>
+    <description>Recent content in v1.0.2 on Longhorn Manual Test Cases</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en-us</language>
+    
+	<atom:link href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.2/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>Upgrade Lease Lock</title>
+      <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.2/upgrade-lease-lock/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.2/upgrade-lease-lock/</guid>
+      <description>The time it takes between the Longhorn Manager starting up and the upgrade completing for that Longhorn Manager can be used to determine if the upgrade lock was released correctly:
+ Create a fresh Longhorn installation or delete all of the Longhorn Manager Pods in the existing installation. Check the logs for the Longhorn Manager Pods and note the timestamps for the first line in the log and the timestamp for when the upgrade has completed.</description>
+    </item>
+    
+  </channel>
+</rss>

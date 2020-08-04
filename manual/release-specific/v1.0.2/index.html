@@ -221,41 +221,16 @@
 
 <main style="padding: 1%; width: 70%;">
   <header class="homepage-header">
-    <h1>Backup &amp; Restore tests</h1>
+    <h1>v1.0.2</h1>
     
   </header>
   <div class="homepage-content">
-    <p>Anytime we identify a backup &amp; restore issue we should add it to the test scenarios below.
-In general it&rsquo;s important to test concurrent backup &amp; deletion &amp; restoration operations.</p>
-<h1 id="test-setup">Test Setup</h1>
-<ul>
-<li>create vol <code>bak</code> and attach to node</li>
-<li>connect to node via ssh and issue <code>dd if=/dev/urandom of=/dev/longhorn/bak status=progress</code></li>
-<li>keep the dd running while doing all the tests below, that way you constantly have new data when backing up</li>
-<li>setup recurring backups every minute with retain count of <code>3</code></li>
-<li>do all the tests for each currently supported backup store <code>nfs, s3</code></li>
-</ul>
-
+    
   </div>
   <div>
     <ul>
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/concurrent-backup-creation-deletion/">#1326 concurrent backup creation &amp; deletion</a></li>
-  
-
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/concurrent-backup/">#1341 concurrent backup test</a></li>
-  
-
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/restore-volume-node-down/">#1355 The node the restore volume attached to is down</a></li>
-  
-
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/dr-volume-node-down-rebooted/">#1366 &amp;&amp; #1328 The node the DR volume attached to is down/rebooted</a></li>
-  
-
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/google-cloud-s3-interop-backups/">#1404 test backup functionality on google cloud and other s3 interop providers.</a></li>
-  
-
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/backup-block-deletion/">#1431 backup block deletion test</a></li>
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.2/upgrade-lease-lock/">Upgrade Lease Lock</a></li>
   
 
 </ul>
