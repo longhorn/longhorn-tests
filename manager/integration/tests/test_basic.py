@@ -34,6 +34,7 @@ from common import write_pod_volume_data
 from common import find_backup
 from common import wait_for_backup_completion
 from common import create_storage_class
+from common import wait_for_backup_restore_completed
 from common import wait_for_volume_restoration_completed
 from common import read_volume_data
 from common import pvc_name # NOQA
@@ -226,7 +227,7 @@ def volume_basic_test(client, volume_name, base_image=""):  # NOQA
 
     volume = create_and_check_volume(client, volume_name, num_replicas, SIZE,
                                      base_image)
-    assert volume.initialRestorationRequired is False
+    assert volume.restoreRequired is False
 
     def validate_volume_basic(expected, actual):
         assert actual.name == expected.name
@@ -247,7 +248,7 @@ def volume_basic_test(client, volume_name, base_image=""):  # NOQA
     lht_hostId = get_self_host_id()
     volume.attach(hostId=lht_hostId)
     volume = common.wait_for_volume_healthy(client, volume_name)
-    assert volume.initialRestorationRequired is False
+    assert volume.restoreRequired is False
 
     volumeByName = client.by_id_volume(volume_name)
     validate_volume_basic(volume, volumeByName)
@@ -278,7 +279,7 @@ def volume_basic_test(client, volume_name, base_image=""):  # NOQA
 
     volume.detach()
     volume = common.wait_for_volume_detached(client, volume_name)
-    assert volume.initialRestorationRequired is False
+    assert volume.restoreRequired is False
 
     client.delete(volume)
     wait_for_volume_delete(client, volume_name)
@@ -996,7 +997,7 @@ def backupstore_test(client, host_id, volname, size): # NOQA
     assert volume.size == size
     assert volume.numberOfReplicas == 2
     assert volume.state == "detached"
-    assert volume.initialRestorationRequired is False
+    assert volume.restoreRequired is False
 
     volume = volume.attach(hostId=host_id)
     volume = common.wait_for_volume_healthy(client, restore_name)
@@ -1079,7 +1080,7 @@ def test_restore_inc(client, core_api, volume_name, pod):  # NOQA
     1. Create a volume and attach to the current node
     2. Generate `data0`, write to the volume, make a backup `backup0`
     3. Create three DR(standby) volumes from the backup: `sb_volume0/1/2`
-    4. Wait for all three DR volumes to finish the initial restoration
+    4. Wait for all three DR volumes to start the initial restoration
     5. Verify DR volumes's `lastBackup` is `backup0`
     6. Verify snapshot/pv/pvc/change backup target are not allowed as long
     as the DR volume exists
@@ -1150,9 +1151,9 @@ def restore_inc_test(client, core_api, volume_name, pod):  # NOQA
     client.create_volume(name=sb_volume2_name, size=SIZE,
                          numberOfReplicas=2, fromBackup=backup0.url,
                          frontend="", standby=True)
-    common.wait_for_volume_restoration_completed(client, sb_volume0_name)
-    common.wait_for_volume_restoration_completed(client, sb_volume1_name)
-    common.wait_for_volume_restoration_completed(client, sb_volume2_name)
+    wait_for_backup_restore_completed(client, sb_volume0_name, backup0.name)
+    wait_for_backup_restore_completed(client, sb_volume1_name, backup0.name)
+    wait_for_backup_restore_completed(client, sb_volume2_name, backup0.name)
 
     sb_volume0 = common.wait_for_volume_healthy_no_frontend(client,
                                                             sb_volume0_name)
@@ -1162,36 +1163,40 @@ def restore_inc_test(client, core_api, volume_name, pod):  # NOQA
                                                             sb_volume2_name)
 
     for i in range(RETRY_COUNTS):
+        client.list_backupVolume()
         sb_volume0 = client.by_id_volume(sb_volume0_name)
         sb_volume1 = client.by_id_volume(sb_volume1_name)
         sb_volume2 = client.by_id_volume(sb_volume2_name)
         sb_engine0 = get_volume_engine(sb_volume0)
         sb_engine1 = get_volume_engine(sb_volume1)
         sb_engine2 = get_volume_engine(sb_volume2)
-        if sb_volume0.initialRestorationRequired is True or \
-           sb_volume1.initialRestorationRequired is True or \
-           sb_volume2.initialRestorationRequired is True:
+        if sb_volume0.restoreRequired is False or \
+           sb_volume1.restoreRequired is False or \
+           sb_volume2.restoreRequired is False or \
+                not sb_engine0.lastRestoredBackup or \
+                not sb_engine1.lastRestoredBackup or \
+                not sb_engine2.lastRestoredBackup:
             time.sleep(RETRY_INTERVAL)
         else:
             break
     assert sb_volume0.standby is True
     assert sb_volume0.lastBackup == backup0.name
     assert sb_volume0.frontend == ""
-    assert sb_volume0.initialRestorationRequired is False
+    assert sb_volume0.restoreRequired is True
     sb_engine0 = get_volume_engine(sb_volume0)
     assert sb_engine0.lastRestoredBackup == backup0.name
     assert sb_engine0.requestedBackupRestore == backup0.name
     assert sb_volume1.standby is True
     assert sb_volume1.lastBackup == backup0.name
     assert sb_volume1.frontend == ""
-    assert sb_volume1.initialRestorationRequired is False
+    assert sb_volume1.restoreRequired is True
     sb_engine1 = get_volume_engine(sb_volume1)
     assert sb_engine1.lastRestoredBackup == backup0.name
     assert sb_engine1.requestedBackupRestore == backup0.name
     assert sb_volume2.standby is True
     assert sb_volume2.lastBackup == backup0.name
     assert sb_volume2.frontend == ""
-    assert sb_volume2.initialRestorationRequired is False
+    assert sb_volume2.restoreRequired is True
     sb_engine2 = get_volume_engine(sb_volume2)
     assert sb_engine2.lastRestoredBackup == backup0.name
     assert sb_engine2.requestedBackupRestore == backup0.name
@@ -2015,7 +2020,7 @@ def test_restore_inc_with_expansion(client, core_api, volume_name, pod):  # NOQA
     1. Create a volume and attach to the current node
     2. Generate `data0`, write to the volume, make a backup `backup0`
     3. Create three DR(standby) volumes from the backup: `dr_volume0/1/2`
-    4. Wait for all three DR volumes to finish the initial restoration
+    4. Wait for all three DR volumes to start the initial restoration
     5. Verify DR volumes's `lastBackup` is `backup0`
     6. Verify snapshot/pv/pvc/change backup target are not allowed as long
     as the DR volume exists
@@ -2063,9 +2068,9 @@ def test_restore_inc_with_expansion(client, core_api, volume_name, pod):  # NOQA
     client.create_volume(name=dr_volume2_name, size=SIZE,
                          numberOfReplicas=2, fromBackup=backup0.url,
                          frontend="", standby=True)
-    common.wait_for_volume_restoration_completed(client, dr_volume0_name)
-    common.wait_for_volume_restoration_completed(client, dr_volume1_name)
-    common.wait_for_volume_restoration_completed(client, dr_volume2_name)
+    wait_for_backup_restore_completed(client, dr_volume0_name, backup0.name)
+    wait_for_backup_restore_completed(client, dr_volume1_name, backup0.name)
+    wait_for_backup_restore_completed(client, dr_volume2_name, backup0.name)
 
     dr_volume0 = common.wait_for_volume_healthy_no_frontend(client,
                                                             dr_volume0_name)
@@ -2075,36 +2080,40 @@ def test_restore_inc_with_expansion(client, core_api, volume_name, pod):  # NOQA
                                                             dr_volume2_name)
 
     for i in range(RETRY_COUNTS):
+        client.list_backupVolume()
         dr_volume0 = client.by_id_volume(dr_volume0_name)
         dr_volume1 = client.by_id_volume(dr_volume1_name)
         dr_volume2 = client.by_id_volume(dr_volume2_name)
-        get_volume_engine(dr_volume0)
-        get_volume_engine(dr_volume1)
-        get_volume_engine(dr_volume2)
-        if dr_volume0.initialRestorationRequired is True or \
-                dr_volume1.initialRestorationRequired is True or \
-                dr_volume2.initialRestorationRequired is True:
+        dr_engine0 = get_volume_engine(dr_volume0)
+        dr_engine1 = get_volume_engine(dr_volume1)
+        dr_engine2 = get_volume_engine(dr_volume2)
+        if dr_volume0.restoreRequired is False or \
+                dr_volume1.restoreRequired is False or \
+                dr_volume2.restoreRequired is False or \
+                not dr_engine0.lastRestoredBackup or \
+                not dr_engine1.lastRestoredBackup or \
+                not dr_engine2.lastRestoredBackup:
             time.sleep(RETRY_INTERVAL)
         else:
             break
     assert dr_volume0.standby is True
     assert dr_volume0.lastBackup == backup0.name
     assert dr_volume0.frontend == ""
-    assert dr_volume0.initialRestorationRequired is False
+    assert dr_volume0.restoreRequired is True
     dr_engine0 = get_volume_engine(dr_volume0)
     assert dr_engine0.lastRestoredBackup == backup0.name
     assert dr_engine0.requestedBackupRestore == backup0.name
     assert dr_volume1.standby is True
     assert dr_volume1.lastBackup == backup0.name
     assert dr_volume1.frontend == ""
-    assert dr_volume1.initialRestorationRequired is False
+    assert dr_volume1.restoreRequired is True
     dr_engine1 = get_volume_engine(dr_volume1)
     assert dr_engine1.lastRestoredBackup == backup0.name
     assert dr_engine1.requestedBackupRestore == backup0.name
     assert dr_volume2.standby is True
     assert dr_volume2.lastBackup == backup0.name
     assert dr_volume2.frontend == ""
-    assert dr_volume2.initialRestorationRequired is False
+    assert dr_volume2.restoreRequired is True
     dr_engine2 = get_volume_engine(dr_volume2)
     assert dr_engine2.lastRestoredBackup == backup0.name
     assert dr_engine2.requestedBackupRestore == backup0.name
@@ -2680,7 +2689,7 @@ def test_dr_volume_with_last_backup_deletion(
                          frontend="", standby=True)
     wait_for_volume_creation(client, dr_volume_name)
     wait_for_volume_restoration_start(client, dr_volume_name, b1.name)
-    wait_for_volume_restoration_completed(client, dr_volume_name)
+    wait_for_backup_restore_completed(client, dr_volume_name, b1.name)
 
     dr2_volume_name = volume_name + "-dr2"
     client.create_volume(name=dr2_volume_name, size=str(1 * Gi),
@@ -2688,7 +2697,7 @@ def test_dr_volume_with_last_backup_deletion(
                          frontend="", standby=True)
     wait_for_volume_creation(client, dr2_volume_name)
     wait_for_volume_restoration_start(client, dr2_volume_name, b1.name)
-    wait_for_volume_restoration_completed(client, dr2_volume_name)
+    wait_for_backup_restore_completed(client, dr2_volume_name, b1.name)
 
     # Write data and create backup 2.
     data_path2 = "/data/test2"
@@ -2702,11 +2711,11 @@ def test_dr_volume_with_last_backup_deletion(
     # Wait for the incremental restoration triggered then complete.
     check_volume_last_backup(client, dr_volume_name, b2.name)
     wait_for_volume_restoration_start(client, dr_volume_name, b2.name)
-    wait_for_volume_restoration_completed(client, dr_volume_name)
+    wait_for_backup_restore_completed(client, dr_volume_name, b2.name)
 
     check_volume_last_backup(client, dr2_volume_name, b2.name)
     wait_for_volume_restoration_start(client, dr2_volume_name, b2.name)
-    wait_for_volume_restoration_completed(client, dr2_volume_name)
+    wait_for_backup_restore_completed(client, dr2_volume_name, b2.name)
 
     # Delete the latest backup backup 2 then check the `lastBackup` field.
     delete_backup(client, bv.name, b2.name)

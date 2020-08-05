@@ -64,7 +64,7 @@ VOLUME_ROBUSTNESS_DEGRADED = "degraded"
 VOLUME_ROBUSTNESS_FAULTED = "faulted"
 VOLUME_ROBUSTNESS_UNKNOWN = "unknown"
 
-VOLUME_FIELD_INITIALRESTORATIONREQUIRED = "initialRestorationRequired"
+VOLUME_FIELD_RESTOREREQUIRED = "restoreRequired"
 
 DEFAULT_STORAGECLASS_NAME = 'longhorn-test'
 
@@ -3189,8 +3189,20 @@ def wait_for_volume_restoration_completed(client, name):
     wait_for_volume_creation(client, name)
     monitor_restore_progress(client, name)
     return wait_for_volume_status(client, name,
-                                  VOLUME_FIELD_INITIALRESTORATIONREQUIRED,
+                                  VOLUME_FIELD_RESTOREREQUIRED,
                                   False)
+
+
+def wait_for_backup_restore_completed(client, name, backup_name):
+    complete = False
+    for i in range(RETRY_COUNTS):
+        v = client.by_id_volume(name)
+        if v.controllers and len(v.controllers) != 0 and \
+                v.controllers[0].lastRestoredBackup == backup_name:
+            complete = True
+            break
+        time.sleep(RETRY_INTERVAL_LONG)
+    assert complete
 
 
 def wait_for_volume_restoration_start(client, volume_name, backup_name):
