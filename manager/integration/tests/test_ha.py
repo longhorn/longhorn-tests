@@ -33,6 +33,7 @@ from common import set_random_backupstore
 from common import wait_for_backup_completion, find_backup
 from common import wait_for_volume_creation, wait_for_volume_detached
 from common import wait_for_volume_restoration_start
+from common import wait_for_backup_restore_completed
 from common import wait_for_volume_restoration_completed
 from common import check_volume_last_backup
 from common import activate_standby_volume
@@ -52,6 +53,8 @@ from common import RETRY_COUNTS, RETRY_INTERVAL
 from common import SETTING_REPLICA_NODE_SOFT_ANTI_AFFINITY
 from common import write_pod_volume_data
 from common import read_volume_data
+from common import VOLUME_FIELD_ROBUSTNESS
+from common import VOLUME_ROBUSTNESS_HEALTHY
 
 from backupstore import backupstore_cleanup
 from backupstore import backupstore_delete_random_backup_block
@@ -694,13 +697,12 @@ def test_rebuild_with_restoration(
     5. Restore a volume from the backup.
     6. Delete one replica during the restoration.
     7. Wait for the restoration complete and the volume detached.
-    8. Check if there is a rebuilt replica for the restored volume.
+    8. Check if the replica is rebuilt for the auto detachment.
     9. Create PV/PVC/Pod for the restored volume and wait for the pod start.
-    10. Check if the restored volume is state `degraded`
+    10. Check if the restored volume is state `Healthy`
         after the attachment.
-    11. Wait for the rebuild complete and the volume becoming healthy.
-    12. Check md5sum of the data in the restored volume.
-    13. Do cleanup.
+    11. Check md5sum of the data in the restored volume.
+    12. Do cleanup.
     """
     set_random_backupstore(client)
 
@@ -726,11 +728,27 @@ def test_rebuild_with_restoration(
         client, restore_volume_name, b.name)
     restore_volume = client.by_id_volume(restore_volume_name)
     restore_volume.replicaRemove(name=restoring_replica)
+    client.list_backupVolume()
+
+    # Wait for the rebuild start
+    running_replica_count = 0
+    for i in range(RETRY_COUNTS):
+        running_replica_count = 0
+        restore_volume = client.by_id_volume(restore_volume_name)
+        for r in restore_volume.replicas:
+            if r['running'] and not r['failedAt']:
+                running_replica_count += 1
+        if running_replica_count == 3:
+            break
+        time.sleep(RETRY_INTERVAL)
+    assert running_replica_count == 3
+
     wait_for_volume_restoration_completed(client, restore_volume_name)
     restore_volume = wait_for_volume_detached(client, restore_volume_name)
-    assert len(restore_volume.replicas) == 2
+    assert len(restore_volume.replicas) == 3
     for r in restore_volume.replicas:
         assert restoring_replica != r.name
+        assert r['failedAt'] == ""
 
     restore_pod_name = restore_volume_name + "-pod"
     restore_pv_name = restore_volume_name + "-pv"
@@ -741,9 +759,9 @@ def test_rebuild_with_restoration(
     restore_pod['spec']['volumes'] = [create_pvc_spec(restore_pvc_name)]
     create_and_wait_pod(core_api, restore_pod)
 
-    wait_for_volume_degraded(client, restore_volume_name)
-    wait_for_rebuild_complete(client, restore_volume_name)
-    wait_for_volume_healthy(client, restore_volume_name)
+    restore_volume = client.by_id_volume(restore_volume_name)
+    assert restore_volume[VOLUME_FIELD_ROBUSTNESS] == \
+           VOLUME_ROBUSTNESS_HEALTHY
 
     md5sum = get_pod_data_md5sum(core_api, restore_pod_name, data_path)
     assert original_md5sum == md5sum
@@ -763,18 +781,15 @@ def test_rebuild_with_inc_restoration(
     5. Create a DR volume based on the backup
        and wait for the init restoration complete.
     6. Write more data to the original volume then create the 2nd backup.
-    7. Wait for the DR volume incremental restoration start
-       then delete one replica during the restoration.
-    8. Wait for the inc restoration complete.
-    9. Activate the DR volume then check
-       if the rebuild is disabled for the DR volume.
+    7. Delete one replica and trigger incremental restore simultaneously.
+    8. Wait for the inc restoration complete and the volume becoming Healthy.
+    9. Activate the DR volume.
     10. Create PV/PVC/Pod for the activated volume
         and wait for the pod start.
-    11. Check if the restored volume is state `degraded`
+    11. Check if the restored volume is state `healthy`
         after the attachment.
-    12. Wait for the rebuild complete and the volume becoming healthy.
-    13. Check md5sum of the data in the activated volume.
-    14. Do cleanup.
+    12. Check md5sum of the data in the activated volume.
+    13. Do cleanup.
     """
     set_random_backupstore(client)
 
@@ -796,7 +811,7 @@ def test_rebuild_with_inc_restoration(
                          numberOfReplicas=3, fromBackup=b1.url,
                          frontend="", standby=True)
     wait_for_volume_creation(client, dr_volume_name)
-    wait_for_volume_restoration_completed(client, dr_volume_name)
+    wait_for_backup_restore_completed(client, dr_volume_name, b1.name)
 
     data_path2 = "/data/test2"
     write_pod_volume_random_data(core_api, std_pod_name,
@@ -808,17 +823,32 @@ def test_rebuild_with_inc_restoration(
     bv, b2 = find_backup(client, std_volume_name, snap2.name)
 
     # Trigger rebuild during the incremental restoration
-    restoring_replica = wait_for_volume_restoration_start(
-        client, dr_volume_name, b2.name)
     dr_volume = client.by_id_volume(dr_volume_name)
-    dr_volume.replicaRemove(name=restoring_replica)
-
-    # Wait for inc restoration complete
-    check_volume_last_backup(client, dr_volume_name, b2.name)
-    dr_volume = wait_for_volume_degraded(client, dr_volume_name)
-    assert len(dr_volume.replicas) == 2
     for r in dr_volume.replicas:
-        assert restoring_replica != r.name
+        failed_replica = r.name
+        break
+    assert failed_replica
+    dr_volume.replicaRemove(name=failed_replica)
+    client.list_backupVolume()
+
+    wait_for_volume_degraded(client, dr_volume_name)
+
+    # Wait for the rebuild start
+    running_replica_count = 0
+    for i in range(RETRY_COUNTS):
+        running_replica_count = 0
+        dr_volume = client.by_id_volume(dr_volume_name)
+        for r in dr_volume.replicas:
+            if r['running'] and not r['failedAt']:
+                running_replica_count += 1
+        if running_replica_count == 3:
+            break
+        time.sleep(RETRY_INTERVAL)
+    assert running_replica_count == 3
+
+    # Wait for inc restoration & rebuild complete
+    wait_for_volume_healthy_no_frontend(client, dr_volume_name)
+    check_volume_last_backup(client, dr_volume_name, b2.name)
 
     activate_standby_volume(client, dr_volume_name)
     wait_for_volume_detached(client, dr_volume_name)
@@ -832,10 +862,9 @@ def test_rebuild_with_inc_restoration(
     dr_pod['spec']['volumes'] = [create_pvc_spec(dr_pvc_name)]
     create_and_wait_pod(core_api, dr_pod)
 
-    wait_for_volume_degraded(client, dr_volume_name)
-    wait_for_rebuild_start(client, dr_volume_name)
-    wait_for_rebuild_complete(client, dr_volume_name)
-    wait_for_volume_healthy(client, dr_volume_name)
+    dr_volume = client.by_id_volume(dr_volume_name)
+    assert dr_volume[VOLUME_FIELD_ROBUSTNESS] == \
+           VOLUME_ROBUSTNESS_HEALTHY
 
     md5sum1 = get_pod_data_md5sum(core_api, dr_pod_name, data_path1)
     assert std_md5sum1 == md5sum1
@@ -1190,21 +1219,15 @@ def test_single_replica_restore_failure(
     9. Find a way to fail just one replica restore.
        e.g. Use iptable to block the restore.
     10. Wait for the restore volume Degraded.
-    11. Check if `len(restore_volume.replicas) == 2`.
-        Then check if the volume condition and ready status keep unchanged.
-    12. Wait for the volume restore complete and detached.
-    13. Check if
-        13.1. there is no rebuilt replica for the restored volume
-              before reattachment.
-        13.2. `volume.ready == false`
-        13.3. `volume.conditions[restore].status == False &&
+    11. Wait for the volume restore & rebuild complete and check if:
+        11.1. `volume.ready == true`
+        11.2. `volume.conditions[restore].status == False &&
               volume.conditions[restore].reason == ""`.
-    14. Create PV/PVC/Pod for the restored volume and wait for the pod start.
-    15. Check if the restored volume is state `degraded`
+    12. Create PV/PVC/Pod for the restored volume and wait for the pod start.
+    13. Check if the restored volume is state `Healthy`
         after the attachment.
-    16. Wait for the rebuild complete and the volume becoming healthy.
-    17. Check md5sum of the data in the restored volume.
-    18. Do cleanup.
+    14. Check md5sum of the data in the restored volume.
+    15. Do cleanup.
     """
     auto_salvage_setting = client.by_id_setting(SETTING_AUTO_SALVAGE)
     assert auto_salvage_setting.name == SETTING_AUTO_SALVAGE
@@ -1230,9 +1253,7 @@ def test_single_replica_restore_failure(
 
     res_name = "res-" + volume_name
 
-    res_volume = client.create_volume(name=res_name,
-                                      fromBackup=b.url)
-
+    client.create_volume(name=res_name, fromBackup=b.url)
     wait_for_volume_condition_restore(client, res_name,
                                       "status", "True")
     wait_for_volume_condition_restore(client, res_name,
@@ -1243,27 +1264,30 @@ def test_single_replica_restore_failure(
 
     res_volume = wait_for_volume_healthy_no_frontend(client, res_name)
 
+    failed_replica = res_volume.replicas[0]
     crash_replica_processes(client, core_api, res_name,
-                            replicas=[res_volume.replicas[0]],
+                            replicas=[failed_replica],
                             wait_to_fail=False)
-
     wait_for_volume_degraded(client, res_name)
-    res_volume = client.by_id_volume(res_name)
 
-    replicas_running = 0
-    for replica in res_volume.replicas:
-        if replica.running is True:
-            replicas_running += 1
+    # Wait for the rebuild start
+    running_replica_count = 0
+    for i in range(RETRY_COUNTS):
+        running_replica_count = 0
+        res_volume = client.by_id_volume(res_name)
+        for r in res_volume.replicas:
+            if r['running'] and not r['failedAt']:
+                running_replica_count += 1
+        if running_replica_count == 3:
+            break
+        time.sleep(RETRY_INTERVAL)
+    assert running_replica_count == 3
 
-    assert replicas_running == 2
-
+    wait_for_volume_restoration_completed(client, res_name)
     wait_for_volume_condition_restore(client, res_name,
-                                      "status", "True")
-    wait_for_volume_condition_restore(client, res_name,
-                                      "reason", "RestoreInProgress")
-
-    res_volume = client.by_id_volume(res_name)
-    assert res_volume.ready is False
+                                      "status", "False")
+    res_volume = wait_for_volume_detached(client, res_name)
+    assert res_volume.ready is True
 
     res_pod_name = res_name + "-pod"
     pv_name = res_name + "-pv"
@@ -1274,14 +1298,11 @@ def test_single_replica_restore_failure(
 
     res_pod = pod_make(name=res_pod_name)
     res_pod['spec']['volumes'] = [create_pvc_spec(pvc_name)]
+    create_and_wait_pod(core_api, res_pod)
 
-    core_api.create_namespaced_pod(body=res_pod,
-                                   namespace='default')
-    wait_for_volume_degraded(client, res_name)
-
-    common.wait_pod(res_pod_name)
-
-    wait_for_volume_healthy(client, res_name)
+    res_volume = client.by_id_volume(res_name)
+    assert res_volume[VOLUME_FIELD_ROBUSTNESS] == \
+           VOLUME_ROBUSTNESS_HEALTHY
 
     res_md5sum = get_pod_data_md5sum(core_api, res_pod_name, data_path)
     assert md5sum == res_md5sum
@@ -1333,7 +1354,7 @@ def test_dr_volume_with_restore_command_error(
                          frontend="", standby=True)
     wait_for_volume_creation(client, dr_volume_name)
     wait_for_volume_restoration_start(client, dr_volume_name, b1.name)
-    wait_for_volume_restoration_completed(client, dr_volume_name)
+    wait_for_backup_restore_completed(client, dr_volume_name, b1.name)
 
     dr_volume = client.by_id_volume(dr_volume_name)
     # Will hack into the replica directory, create a non-empty directory
@@ -1358,7 +1379,7 @@ def test_dr_volume_with_restore_command_error(
     client.list_backupVolume()
     check_volume_last_backup(client, dr_volume_name, b2.name)
     wait_for_volume_restoration_start(client, dr_volume_name, b2.name)
-    wait_for_volume_restoration_completed(client, dr_volume_name)
+    wait_for_backup_restore_completed(client, dr_volume_name, b2.name)
 
     dr_volume = client.by_id_volume(dr_volume_name)
     verified = False
