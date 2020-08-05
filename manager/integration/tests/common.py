@@ -1944,7 +1944,7 @@ def wait_for_volume_condition_restore(client, name, key, value):
         conditions = volume.conditions
         if conditions is not None and \
                 conditions != {} and \
-                conditions[VOLUME_CONDITION_RESTORE] and \
+                VOLUME_CONDITION_RESTORE in conditions and \
                 conditions[VOLUME_CONDITION_RESTORE][key] and \
                 conditions[VOLUME_CONDITION_RESTORE][key] == value:
             break
