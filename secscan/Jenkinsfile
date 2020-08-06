@@ -8,7 +8,7 @@ node {
     withCredentials([string(credentialsId: 'longhorn-tests-do-token', variable: 'TF_VAR_do_token')]) {
         stage('build') {
             sh "secscan/scripts/build.sh"
-            sh "docker run -itd --name ${JOB_BASE_NAME}${BUILD_NUMBER} --env TF_VAR_tf_workspace=${TF_VAR_tf_workspace} --env TF_VAR_do_token=${env.TF_VAR_do_token} ${imageName}"
+            sh "docker run -itd --name ${JOB_BASE_NAME}${BUILD_NUMBER} --env TF_VAR_tf_workspace=${TF_VAR_tf_workspace} --env TF_VAR_SEVERITY=${TF_VAR_SEVERITY} --env TF_VAR_do_token=${env.TF_VAR_do_token} ${imageName}"
         }
 
         try {
