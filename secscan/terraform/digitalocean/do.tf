@@ -22,6 +22,10 @@ variable "tf_workspace" {
 	type = string
 }
 
+variable "SEVERITY" {
+	type = string
+}
+
 provider "digitalocean" {
   token = var.do_token
 }
@@ -56,7 +60,32 @@ resource "null_resource" "provision" {
 
     scripts = [
       "${var.tf_workspace}/scripts/provision.sh",
-      "${var.tf_workspace}/scripts/secscan.sh"
+    ]
+  }
+
+  provisioner "file" {
+     connection {
+      host         = element(digitalocean_droplet.longhorn-tests.*.ipv4_address, count.index)
+      type         = "ssh"
+      user         = "root"
+      private_key  = file("~/.ssh/id_rsa")
+    }
+
+    source      = "${var.tf_workspace}/scripts/secscan.sh"
+    destination = "/tmp/secscan.sh"
+  }
+
+  provisioner "remote-exec" {
+     connection {
+      host         = element(digitalocean_droplet.longhorn-tests.*.ipv4_address, count.index)
+      type         = "ssh"
+      user         = "root"
+      private_key  = file("~/.ssh/id_rsa")
+    }
+   
+    inline = [
+      "chmod +x /tmp/secscan.sh",
+      "/tmp/secscan.sh ${var.SEVERITY}",
     ]
   }
 
