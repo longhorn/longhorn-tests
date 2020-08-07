@@ -31,12 +31,12 @@ steps:
     password:
       from_secret: docker_password
     repo: longhornio/longhorn-manager-test
-    tag: master
+    tag: v1.0.x
     username:
       from_secret: docker_username
   when:
     branch:
-    - master
+    - v1.0.x
     event:
     - push
 
@@ -54,7 +54,7 @@ steps:
       from_secret: docker_username
   when:
     branch:
-    - master
+    - v1.0.x
     event:
     - tag
 
