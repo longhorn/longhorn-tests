@@ -223,16 +223,23 @@
 </aside>
 
 <main style="padding: 1%; width: 70%;">
-  <h1 id="title">Compatibility with k3s and SELinux</h1>
+  <h1 id="title"></h1>
   <div>
     <article id="content">
-       <ol>
-<li>Set up a node with <code>CentOS</code> and make sure that the output of <code>sestatus</code> indicates that <code>SELinux</code> is enabled and set to <code>Enforcing</code>.</li>
-<li>Run the <code>k3s</code> installation script.</li>
-<li>Install <code>Longhorn</code>.</li>
-<li>The system should come up successfully. The logs of the <code>Engine Image</code> pod should only say <code>installed</code>, and the system should be able to deploy a <code>Volume</code> successfully from the UI.</li>
+       <h3 id="new-installation">New installation:</h3>
+<ol>
+<li>create a large cluster of many nodes (about 30 nodes)</li>
+<li>Install Longhorn <code>master</code></li>
 </ol>
-<p>Note: There appears to be some problems with running <code>k3s</code> on <code>CentOS</code>, presumably due to the <code>firewalld</code> rules. This seems to be reported in rancher/k3s#977. I ended up disabling <code>firewalld</code> with <code>systemctl stop firewalld</code> in order to get <code>k3s</code> working.</p>
+<h3 id="upgrading-from-old-version">Upgrading from old version:</h3>
+<ol>
+<li>create a large cluster of many nodes (about 30 nodes)</li>
+<li>Install Longhorn v1.0.0</li>
+<li>Upgrade Longhorn to <code>master</code></li>
+</ol>
+<p><strong>Success if:</strong> install/upgrade successfully after maximum 15 minutes.</p>
+<p><strong>Fail if:</strong> The upgrading is blocked after about 17-20 managers are up.</p>
+<p><strong>Note:</strong> This is a race condition, so we need to try multiple times to validate the fix.</p>
 
     </article>
   </div>
