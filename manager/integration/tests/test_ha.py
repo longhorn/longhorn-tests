@@ -1621,6 +1621,97 @@ def test_dr_volume_with_restore_command_error(
     backupstore_cleanup(client)
 
 
+def test_engine_crash_for_restore_volume(
+        client, core_api, volume_name, csi_pv, pvc, pod_make):  # NOQA
+    """
+    [HA] Test volume can successfully retry restoring after
+    the engine crashes unexpectedly.
+
+    1. Setup a random backupstore.
+    2. Create volume and start the pod.
+    3. Write random data to the pod volume and get the md5sum.
+    4. Create a backup for the volume.
+    5. Restore a new volume from the backup.
+    6. Crash the engine during the restore.
+    7. Wait for the volume detaching.
+    8. Wait for the volume reattached.
+    9. Verify if
+      9.1. `volume.ready == false`.
+      9.2. `volume.conditions[restore].status == True &&
+            volume.conditions[restore].reason == "RestoreInProgress"`.
+    10. Wait for the volume restore complete and detached.
+    11. Recreate a pod for the restored volume and wait for the pod start.
+    12. Check the data md5sum for the restored data.
+    """
+    auto_salvage_setting = client.by_id_setting(SETTING_AUTO_SALVAGE)
+    assert auto_salvage_setting.name == SETTING_AUTO_SALVAGE
+    assert auto_salvage_setting.value == "true"
+
+    set_random_backupstore(client)
+    backupstore_cleanup(client)
+
+    data_path = "/data/test"
+
+    pod_name, pv_name, pvc_name, md5sum = \
+        prepare_pod_with_data_in_mb(client, core_api, csi_pv, pvc,
+                                    pod_make,
+                                    volume_name,
+                                    data_size_in_mb=DATA_SIZE_IN_MB_4,
+                                    data_path=data_path)
+
+    volume = client.by_id_volume(volume_name)
+    snap = create_snapshot(client, volume_name)
+    volume.snapshotBackup(name=snap.name)
+    wait_for_backup_completion(client, volume_name, snap.name)
+    bv, b = find_backup(client, volume_name, snap.name)
+
+    res_name = "res-" + volume_name
+
+    client.create_volume(name=res_name, fromBackup=b.url)
+    wait_for_volume_condition_restore(client, res_name,
+                                      "status", "True")
+    wait_for_volume_condition_restore(client, res_name,
+                                      "reason", "RestoreInProgress")
+
+    # Check if the restore volume is auto reattached then continue
+    # restoring data.
+    crash_engine_process_with_sigkill(client, core_api, res_name)
+    wait_for_volume_detached(client, res_name)
+
+    res_volume = wait_for_volume_healthy_no_frontend(client, res_name)
+    assert res_volume.ready is False
+    assert res_volume.restoreRequired
+    client.list_backupVolume()
+    wait_for_volume_condition_restore(client, res_name,
+                                      "status", "True")
+    wait_for_volume_condition_restore(client, res_name,
+                                      "reason", "RestoreInProgress")
+
+    wait_for_volume_restoration_completed(client, res_name)
+    wait_for_volume_condition_restore(client, res_name,
+                                      "status", "False")
+    res_volume = wait_for_volume_detached(client, res_name)
+    assert res_volume.ready is True
+
+    res_pod_name = res_name + "-pod"
+    pv_name = res_name + "-pv"
+    pvc_name = res_name + "-pvc"
+
+    create_pv_for_volume(client, core_api, res_volume, pv_name)
+    create_pvc_for_volume(client, core_api, res_volume, pvc_name)
+
+    res_pod = pod_make(name=res_pod_name)
+    res_pod['spec']['volumes'] = [create_pvc_spec(pvc_name)]
+    create_and_wait_pod(core_api, res_pod)
+
+    res_volume = client.by_id_volume(res_name)
+    assert res_volume[VOLUME_FIELD_ROBUSTNESS] == \
+           VOLUME_ROBUSTNESS_HEALTHY
+
+    res_md5sum = get_pod_data_md5sum(core_api, res_pod_name, data_path)
+    assert md5sum == res_md5sum
+
+
 def test_volume_reattach_after_engine_sigkill(
         client, core_api, volume_name, csi_pv, pvc, pod_make):  # NOQA
     """
@@ -1661,31 +1752,6 @@ def test_volume_reattach_after_engine_sigkill(
     read_data = read_volume_data(core_api, pod_name, 'test2')
 
     assert read_data == 'longhorn-integration-test'
-
-
-@pytest.mark.skip(reason="TODO")
-def test_engine_crash_for_restore_volume():
-    """
-    [HA] Test volume can successfully retry restoring after
-    the engine crashes unexpectedly.
-
-    1. Setup a random backupstore.
-    2. Create volume and start the pod.
-    3. Write random data to the pod volume and get the md5sum.
-    4. Create a backup for the volume.
-    5. Restore a new volume from the backup.
-    6. Crash the engine during the restore.
-    7. Wait for the volume detaching.
-    8. Wait for the volume reattached.
-    9. Verify if
-      9.1. `volume.ready == false`.
-      9.2. `volume.conditions[restore].status == True &&
-            volume.conditions[restore].reason == "RestoreInProgress"`.
-    10. Wait for the volume restore complete and detached.
-    11. Recreate a pod for the restored volume and wait for the pod start.
-    12. Check the data md5sum for the restored data.
-    """
-    pass
 
 
 @pytest.mark.skip(reason="TODO")
