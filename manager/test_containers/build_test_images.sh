@@ -3,11 +3,11 @@
 set -e
 
 cd compatibility
-img1=`./generate_version_image.sh 4 4 3 3 1 1 | tail -n 1`
-img2=`./generate_version_image.sh 2 2 3 3 1 1 | tail -n 1`
-img3=`./generate_version_image.sh 3 3 4 4 1 1 | tail -n 1`
-img4=`./generate_version_image.sh 3 3 2 2 1 1 | tail -n 1`
-img5=`./generate_version_image.sh 3 3 3 3 1 1 | tail -n 1`
+img1=`./generate_version_image.sh 5 4 3 3 1 1 | tail -n 1`
+img2=`./generate_version_image.sh 3 2 3 3 1 1 | tail -n 1`
+img3=`./generate_version_image.sh 4 3 4 4 1 1 | tail -n 1`
+img4=`./generate_version_image.sh 4 3 2 2 1 1 | tail -n 1`
+img5=`./generate_version_image.sh 4 3 3 3 1 1 | tail -n 1`
 
 cd ..
 cd upgrade
