@@ -1712,6 +1712,118 @@ def test_engine_crash_for_restore_volume(
     assert md5sum == res_md5sum
 
 
+def test_engine_crash_for_dr_volume(
+        client, core_api, volume_name, csi_pv, pvc, pod_make):  # NOQA
+    """
+    [HA] Test DR volume can be recovered after
+    the engine crashes unexpectedly.
+
+    1. Setup a random backupstore.
+    2. Create volume and start the pod.
+    3. Write random data to the pod volume and get the md5sum.
+    4. Create a backup for the volume.
+    5. Create a DR volume from the backup.
+    6. Wait for the DR volume init restore complete.
+    7. Wait more data to the original volume and get the md5sum
+    8. Create the 2nd backup for the original volume.
+    9. Wait for the incremental restore triggered
+       after the 2nd backup creation.
+    10. Crash the DR volume engine process during the incremental restore.
+    11. Wait for the DR volume detaching.
+    12. Wait for the DR volume reattached.
+    13. Verify the DR volume:
+      13.1. `volume.ready == false`.
+      13.2. `volume.conditions[restore].status == True &&
+            volume.conditions[restore].reason == "RestoreInProgress"`.
+      13.3. `volume.standby == true`
+    14. Activate the DR volume and wait for detached.
+    15. Create a pod for the restored volume and wait for the pod start.
+    16. Check the data md5sum for the DR volume.
+    """
+    auto_salvage_setting = client.by_id_setting(SETTING_AUTO_SALVAGE)
+    assert auto_salvage_setting.name == SETTING_AUTO_SALVAGE
+    assert auto_salvage_setting.value == "true"
+
+    set_random_backupstore(client)
+    backupstore_cleanup(client)
+
+    data_path = "/data/test"
+    pod_name, pv_name, pvc_name, md5sum1 = \
+        prepare_pod_with_data_in_mb(client, core_api, csi_pv, pvc,
+                                    pod_make,
+                                    volume_name,
+                                    data_size_in_mb=DATA_SIZE_IN_MB_1,
+                                    data_path=data_path)
+    snap1 = create_snapshot(client, volume_name)
+    volume = client.by_id_volume(volume_name)
+    volume.snapshotBackup(name=snap1.name)
+    wait_for_backup_completion(client, volume_name, snap1.name)
+    bv, b1 = find_backup(client, volume_name, snap1.name)
+
+    dr_volume_name = volume_name + "-dr"
+    client.create_volume(name=dr_volume_name, size=str(1 * Gi),
+                         numberOfReplicas=3, fromBackup=b1.url,
+                         frontend="", standby=True)
+    wait_for_volume_creation(client, dr_volume_name)
+    wait_for_volume_restoration_start(client, dr_volume_name, b1.name)
+    wait_for_backup_restore_completed(client, dr_volume_name, b1.name)
+
+    data_path2 = "/data/test2"
+    write_pod_volume_random_data(core_api, pod_name,
+                                 data_path2, DATA_SIZE_IN_MB_3)
+    md5sum2 = get_pod_data_md5sum(core_api, pod_name, data_path2)
+    snap2 = create_snapshot(client, volume_name)
+    volume = client.by_id_volume(volume_name)
+    volume.snapshotBackup(name=snap2.name)
+    wait_for_backup_completion(client, volume_name, snap2.name)
+    bv, b2 = find_backup(client, volume_name, snap2.name)
+
+    # Trigger the inc restore then crash the engine process immediately.
+    client.list_backupVolume()
+    wait_for_volume_restoration_start(client, dr_volume_name, b2.name)
+    crash_engine_process_with_sigkill(client, core_api, dr_volume_name)
+    wait_for_volume_detached(client, dr_volume_name)
+
+    # Check if the DR volume is auto reattached then continue
+    # restoring data.
+    dr_volume = wait_for_volume_healthy_no_frontend(client, dr_volume_name)
+    assert dr_volume.ready is False
+    assert dr_volume.restoreRequired
+    client.list_backupVolume()
+    wait_for_volume_condition_restore(client, dr_volume_name,
+                                      "status", "True")
+    wait_for_volume_condition_restore(client, dr_volume_name,
+                                      "reason", "RestoreInProgress")
+    wait_for_backup_restore_completed(client, dr_volume_name, b2.name)
+
+    activate_standby_volume(client, dr_volume_name)
+    wait_for_volume_detached(client, dr_volume_name)
+    wait_for_volume_condition_restore(client, dr_volume_name,
+                                      "status", "False")
+    dr_volume = wait_for_volume_detached(client, dr_volume_name)
+    assert dr_volume.ready is True
+
+    dr_pod_name = dr_volume_name + "-pod"
+    pv_name = dr_volume_name + "-pv"
+    pvc_name = dr_volume_name + "-pvc"
+
+    create_pv_for_volume(client, core_api, dr_volume, pv_name)
+    create_pvc_for_volume(client, core_api, dr_volume, pvc_name)
+
+    dr_pod = pod_make(name=dr_pod_name)
+    dr_pod['spec']['volumes'] = [create_pvc_spec(pvc_name)]
+    create_and_wait_pod(core_api, dr_pod)
+
+    dr_volume = client.by_id_volume(dr_volume_name)
+    assert dr_volume[VOLUME_FIELD_ROBUSTNESS] == \
+           VOLUME_ROBUSTNESS_HEALTHY
+
+    dr_md5sum1 = get_pod_data_md5sum(core_api, dr_pod_name, data_path)
+    assert md5sum1 == dr_md5sum1
+    dr_md5sum2 = get_pod_data_md5sum(core_api, dr_pod_name, data_path2)
+    assert md5sum2 == dr_md5sum2
+
+
 def test_volume_reattach_after_engine_sigkill(
         client, core_api, volume_name, csi_pv, pvc, pod_make):  # NOQA
     """
@@ -1752,34 +1864,3 @@ def test_volume_reattach_after_engine_sigkill(
     read_data = read_volume_data(core_api, pod_name, 'test2')
 
     assert read_data == 'longhorn-integration-test'
-
-
-@pytest.mark.skip(reason="TODO")
-def test_engine_crash_for_dr_volume():
-    """
-    [HA] Test DR volume can be recovered after
-    the engine crashes unexpectedly.
-
-    1. Setup a random backupstore.
-    2. Create volume and start the pod.
-    3. Write random data to the pod volume and get the md5sum.
-    4. Create a backup for the volume.
-    5. Create a DR volume from the backup.
-    6. Wait for the DR volume init restore complete.
-    7. Wait more data to the original volume and get the md5sum
-    8. Create the 2nd backup for the original volume.
-    9. Wait for the incremental restore triggered
-       after the 2nd backup creation.
-    10. Crash the DR volume engine process during the incremental restore.
-    11. Wait for the DR volume detaching.
-    12. Wait for the DR volume reattached.
-    13. Verify the DR volume:
-      13.1. `volume.ready == false`.
-      13.2. `volume.conditions[restore].status == True &&
-            volume.conditions[restore].reason == "RestoreInProgress"`.
-      13.3. `volume.standby == true`
-    14. Activate the DR volume and wait for detached.
-    15. Create a pod for the restored volume and wait for the pod start.
-    16. Check the data md5sum for the DR volume.
-    """
-    pass
