@@ -11,17 +11,6 @@
     
     
     <item>
-      <title></title>
-      <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/upgrade-conflict-handling/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/upgrade-conflict-handling/</guid>
-      <description>New installation:  create a large cluster of many nodes (about 30 nodes) Install Longhorn master  Upgrading from old version:  create a large cluster of many nodes (about 30 nodes) Install Longhorn v1.0.0 Upgrade Longhorn to master  Success if: install/upgrade successfully after maximum 15 minutes.
-Fail if: The upgrading is blocked after about 17-20 managers are up.
-Note: This is a race condition, so we need to try multiple times to validate the fix.</description>
-    </item>
-    
-    <item>
       <title>[#1326](https://github.com/longhorn/longhorn/issues/1326) concurrent backup creation &amp; deletion</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/concurrent-backup-creation-deletion/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
@@ -147,6 +136,15 @@ Case 1:  Create a volume and take multiple backups for the same. Delete the late
       
       <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/kubernetes-upgrade-test/</guid>
       <description>We also need to cover the Kubernetes upgrade process for supported Kubernetes version, make sure pod and volumes works after a major version upgrade.</description>
+    </item>
+    
+    <item>
+      <title>Longhorn installation multiple times</title>
+      <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/stability/multiple-installation/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/stability/multiple-installation/</guid>
+      <description>Create a cluster(3 worker nodes and 1 etc/control plane). Deploy the longhorn app. Once longhorn deployed successfully, uninstall longhorn. Repeat the steps 2 and 3 multiple times. Run the below script to install and uninstall longhorn continuously for some time.  installcount=0 while true; echo `date` do kubectl apply -f https://raw.githubusercontent.com/longhorn/longhorn/master/deploy/longhorn.yaml pod=`kubectl get pods -n longhorn-system | grep -i &#39;longhorn-manager&#39; | grep -i &#39;running&#39; | awk -F &#39; &#39; &#39;{print $2}&#39; | grep &#39;1/1&#39; | wc -l` count=0 while [ $pod !</description>
     </item>
     
     <item>
@@ -278,6 +276,17 @@ Case 1:  Disable the setting auto-salvage. Create and attach a volume. Keep writ
       
       <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.0/suse-sles12sp3/xfs-after-custom-fs-params/</guid>
       <description> create a volume + pv + pvc with filesystem xfs named xfs-ignores create a deployment that uses xfs-ignores verify that the pod enters running state and the volume is accessible  </description>
+    </item>
+    
+    <item>
+      <title>Upgrade Conflict Handling test</title>
+      <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/upgrade-conflict-handling/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/upgrade-conflict-handling/</guid>
+      <description>New installation:  create a large cluster of many nodes (about 30 nodes) Install Longhorn master  Upgrading from old version:  create a large cluster of many nodes (about 30 nodes) Install Longhorn v1.0.0 Upgrade Longhorn to master  Success if: install/upgrade successfully after maximum 15 minutes.
+Fail if: The upgrading is blocked after about 17-20 managers are up.
+Note: This is a race condition, so we need to try multiple times to validate the fix.</description>
     </item>
     
     <item>

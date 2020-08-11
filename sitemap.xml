@@ -3,10 +3,6 @@
   xmlns:xhtml="http://www.w3.org/1999/xhtml">
   
   <url>
-    <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/upgrade-conflict-handling/</loc>
-  </url>
-  
-  <url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/concurrent-backup-creation-deletion/</loc>
   </url>
   
@@ -79,6 +75,10 @@
   </url>
   
   <url>
+    <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/stability/multiple-installation/</loc>
+  </url>
+  
+  <url>
     <loc>https://longhorn.github.io/longhorn-tests/</loc>
   </url>
   
@@ -135,6 +135,10 @@
   </url>
   
   <url>
+    <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/stability/</loc>
+  </url>
+  
+  <url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.1/test-s3-access-style/</loc>
   </url>
   
@@ -164,6 +168,10 @@
   
   <url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/</loc>
+  </url>
+  
+  <url>
+    <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/upgrade-conflict-handling/</loc>
   </url>
   
   <url>
