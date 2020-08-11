@@ -1,3 +1,6 @@
+---
+title: Upgrade Conflict Handling test
+---
 ### New installation:
 1. create a large cluster of many nodes (about 30 nodes)
 1. Install Longhorn `master`
