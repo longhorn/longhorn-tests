@@ -5,9 +5,9 @@ set  -x
 RETRY_COUNTS=10
 
 LONGHORN_MANAGER_REPO_URI="https://github.com/longhorn/longhorn-manager.git"
-LONGHORN_MANAGER_BRANCH="master"
+LONGHORN_MANAGER_BRANCH="v1.0.x"
 LONGHORN_MANAGER_TMPDIR="/tmp/longhorn-manager"
-LONGHORN_STABLE_URL="https://raw.githubusercontent.com/longhorn/longhorn/master/deploy/longhorn.yaml"
+LONGHORN_STABLE_URL="https://raw.githubusercontent.com/longhorn/longhorn/v1.0.x/deploy/longhorn.yaml"
 
 
 check_longhorn_status() {
@@ -38,8 +38,8 @@ LONGHORN_MANAGER_IMAGE_TAG=`grep -io "longhornio\/longhorn-manager:.*$" longhorn
 LONGHORN_ENGINE_IMAGE_TAG=`grep -io "longhornio\/longhorn-engine:.*$" longhorn.yaml | head -1 | awk -F ":" '{print $2}'`
 
 
-sed -i 's/longhornio\/longhorn-manager:'${LONGHORN_MANAGER_IMAGE_TAG}'/longhornio\/longhorn-manager:master/' longhorn.yaml
-sed -i 's/longhornio\/longhorn-engine:'${LONGHORN_ENGINE_IMAGE_TAG}'/longhornio\/longhorn-engine:master/' longhorn.yaml
+sed -i 's/longhornio\/longhorn-manager:'${LONGHORN_MANAGER_IMAGE_TAG}'/longhornio\/longhorn-manager:v1.0.x/' longhorn.yaml
+sed -i 's/longhornio\/longhorn-engine:'${LONGHORN_ENGINE_IMAGE_TAG}'/longhornio\/longhorn-engine:v1.0.x/' longhorn.yaml
 
 
 export KUBECONFIG="${TF_VAR_tf_workspace}/templates/kube_config_3-nodes-k8s.yml"
@@ -59,7 +59,7 @@ if [[ "${LONGHORN_UPGRADE_TEST}" == true || "${LONGHORN_UPGRADE_TEST}" == True ]
   ## generate upgrade_test pod manifest
   sed 's/#TEST_FRAMEWORK_ARGS_PLACEHOLDER/args:\ \[\ \"\-s\"\ ,\ \"\-\-junitxml=\$\{LONGHORN_JUNIT_REPORT_PATH\}",\ \"\-\-include\-upgrade\-test\ \-k test_upgrade\" \]/; s/name: longhorn-test$/name: longhorn-test-upgrade/' "${WORKSPACE}/manager/integration/deploy/test.yaml" >> "${WORKSPACE}/manager/integration/deploy/upgrade_test.yaml"
 
-  sed  -i 's/longhornio\/longhorn-manager-test:.*$/longhornio\/longhorn-manager-test:master/' "${WORKSPACE}/manager/integration/deploy/upgrade_test.yaml"
+  sed  -i 's/longhornio\/longhorn-manager-test:.*$/longhornio\/longhorn-manager-test:v1.0.x/' "${WORKSPACE}/manager/integration/deploy/upgrade_test.yaml"
 
   ## run upgrade test
   kubectl apply -f "${WORKSPACE}/manager/integration/deploy/upgrade_test.yaml"
@@ -96,7 +96,7 @@ else
   sed -i 's/#TEST_FRAMEWORK_ARGS_PLACEHOLDER/args:\ \[\ \"\-s\"\ ,\ \"\-\-junitxml=\$\{LONGHORN_JUNIT_REPORT_PATH\}" \]/' "${WORKSPACE}/manager/integration/deploy/test.yaml"
 fi
 
-sed  -i 's/longhornio\/longhorn-manager-test:.*$/longhornio\/longhorn-manager-test:master/' "${WORKSPACE}/manager/integration/deploy/test.yaml"
+sed  -i 's/longhornio\/longhorn-manager-test:.*$/longhornio\/longhorn-manager-test:v1.0.x/' "${WORKSPACE}/manager/integration/deploy/test.yaml"
 
 # run manager integration tests
 kubectl apply -f "${WORKSPACE}/manager/integration/deploy/test.yaml"
