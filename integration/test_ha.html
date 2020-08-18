@@ -61,6 +61,7 @@ from common import set_random_backupstore
 from common import wait_for_backup_completion, find_backup
 from common import wait_for_volume_creation, wait_for_volume_detached
 from common import wait_for_volume_restoration_start
+from common import wait_for_backup_restore_completed
 from common import wait_for_volume_restoration_completed
 from common import check_volume_last_backup
 from common import activate_standby_volume
@@ -80,6 +81,10 @@ from common import RETRY_COUNTS, RETRY_INTERVAL
 from common import SETTING_REPLICA_NODE_SOFT_ANTI_AFFINITY
 from common import write_pod_volume_data
 from common import read_volume_data
+from common import VOLUME_FIELD_ROBUSTNESS
+from common import VOLUME_ROBUSTNESS_HEALTHY
+from common import wait_for_volume_expansion
+from common import delete_and_wait_pvc, delete_and_wait_pv
 
 from backupstore import backupstore_cleanup
 from backupstore import backupstore_delete_random_backup_block
@@ -722,13 +727,12 @@ def test_rebuild_with_restoration(
     5. Restore a volume from the backup.
     6. Delete one replica during the restoration.
     7. Wait for the restoration complete and the volume detached.
-    8. Check if there is a rebuilt replica for the restored volume.
+    8. Check if the replica is rebuilt for the auto detachment.
     9. Create PV/PVC/Pod for the restored volume and wait for the pod start.
-    10. Check if the restored volume is state `degraded`
+    10. Check if the restored volume is state `Healthy`
         after the attachment.
-    11. Wait for the rebuild complete and the volume becoming healthy.
-    12. Check md5sum of the data in the restored volume.
-    13. Do cleanup.
+    11. Check md5sum of the data in the restored volume.
+    12. Do cleanup.
     &#34;&#34;&#34;
     set_random_backupstore(client)
 
@@ -754,11 +758,27 @@ def test_rebuild_with_restoration(
         client, restore_volume_name, b.name)
     restore_volume = client.by_id_volume(restore_volume_name)
     restore_volume.replicaRemove(name=restoring_replica)
+    client.list_backupVolume()
+
+    # Wait for the rebuild start
+    running_replica_count = 0
+    for i in range(RETRY_COUNTS):
+        running_replica_count = 0
+        restore_volume = client.by_id_volume(restore_volume_name)
+        for r in restore_volume.replicas:
+            if r[&#39;running&#39;] and not r[&#39;failedAt&#39;]:
+                running_replica_count += 1
+        if running_replica_count == 3:
+            break
+        time.sleep(RETRY_INTERVAL)
+    assert running_replica_count == 3
+
     wait_for_volume_restoration_completed(client, restore_volume_name)
     restore_volume = wait_for_volume_detached(client, restore_volume_name)
-    assert len(restore_volume.replicas) == 2
+    assert len(restore_volume.replicas) == 3
     for r in restore_volume.replicas:
         assert restoring_replica != r.name
+        assert r[&#39;failedAt&#39;] == &#34;&#34;
 
     restore_pod_name = restore_volume_name + &#34;-pod&#34;
     restore_pv_name = restore_volume_name + &#34;-pv&#34;
@@ -769,9 +789,9 @@ def test_rebuild_with_restoration(
     restore_pod[&#39;spec&#39;][&#39;volumes&#39;] = [create_pvc_spec(restore_pvc_name)]
     create_and_wait_pod(core_api, restore_pod)
 
-    wait_for_volume_degraded(client, restore_volume_name)
-    wait_for_rebuild_complete(client, restore_volume_name)
-    wait_for_volume_healthy(client, restore_volume_name)
+    restore_volume = client.by_id_volume(restore_volume_name)
+    assert restore_volume[VOLUME_FIELD_ROBUSTNESS] == \
+           VOLUME_ROBUSTNESS_HEALTHY
 
     md5sum = get_pod_data_md5sum(core_api, restore_pod_name, data_path)
     assert original_md5sum == md5sum
@@ -791,18 +811,15 @@ def test_rebuild_with_inc_restoration(
     5. Create a DR volume based on the backup
        and wait for the init restoration complete.
     6. Write more data to the original volume then create the 2nd backup.
-    7. Wait for the DR volume incremental restoration start
-       then delete one replica during the restoration.
-    8. Wait for the inc restoration complete.
-    9. Activate the DR volume then check
-       if the rebuild is disabled for the DR volume.
+    7. Delete one replica and trigger incremental restore simultaneously.
+    8. Wait for the inc restoration complete and the volume becoming Healthy.
+    9. Activate the DR volume.
     10. Create PV/PVC/Pod for the activated volume
         and wait for the pod start.
-    11. Check if the restored volume is state `degraded`
+    11. Check if the restored volume is state `healthy`
         after the attachment.
-    12. Wait for the rebuild complete and the volume becoming healthy.
-    13. Check md5sum of the data in the activated volume.
-    14. Do cleanup.
+    12. Check md5sum of the data in the activated volume.
+    13. Do cleanup.
     &#34;&#34;&#34;
     set_random_backupstore(client)
 
@@ -824,7 +841,7 @@ def test_rebuild_with_inc_restoration(
                          numberOfReplicas=3, fromBackup=b1.url,
                          frontend=&#34;&#34;, standby=True)
     wait_for_volume_creation(client, dr_volume_name)
-    wait_for_volume_restoration_completed(client, dr_volume_name)
+    wait_for_backup_restore_completed(client, dr_volume_name, b1.name)
 
     data_path2 = &#34;/data/test2&#34;
     write_pod_volume_random_data(core_api, std_pod_name,
@@ -836,17 +853,32 @@ def test_rebuild_with_inc_restoration(
     bv, b2 = find_backup(client, std_volume_name, snap2.name)
 
     # Trigger rebuild during the incremental restoration
-    restoring_replica = wait_for_volume_restoration_start(
-        client, dr_volume_name, b2.name)
     dr_volume = client.by_id_volume(dr_volume_name)
-    dr_volume.replicaRemove(name=restoring_replica)
-
-    # Wait for inc restoration complete
-    check_volume_last_backup(client, dr_volume_name, b2.name)
-    dr_volume = wait_for_volume_degraded(client, dr_volume_name)
-    assert len(dr_volume.replicas) == 2
     for r in dr_volume.replicas:
-        assert restoring_replica != r.name
+        failed_replica = r.name
+        break
+    assert failed_replica
+    dr_volume.replicaRemove(name=failed_replica)
+    client.list_backupVolume()
+
+    wait_for_volume_degraded(client, dr_volume_name)
+
+    # Wait for the rebuild start
+    running_replica_count = 0
+    for i in range(RETRY_COUNTS):
+        running_replica_count = 0
+        dr_volume = client.by_id_volume(dr_volume_name)
+        for r in dr_volume.replicas:
+            if r[&#39;running&#39;] and not r[&#39;failedAt&#39;]:
+                running_replica_count += 1
+        if running_replica_count == 3:
+            break
+        time.sleep(RETRY_INTERVAL)
+    assert running_replica_count == 3
+
+    # Wait for inc restoration &amp; rebuild complete
+    wait_for_volume_healthy_no_frontend(client, dr_volume_name)
+    check_volume_last_backup(client, dr_volume_name, b2.name)
 
     activate_standby_volume(client, dr_volume_name)
     wait_for_volume_detached(client, dr_volume_name)
@@ -860,15 +892,219 @@ def test_rebuild_with_inc_restoration(
     dr_pod[&#39;spec&#39;][&#39;volumes&#39;] = [create_pvc_spec(dr_pvc_name)]
     create_and_wait_pod(core_api, dr_pod)
 
-    wait_for_volume_degraded(client, dr_volume_name)
-    wait_for_rebuild_start(client, dr_volume_name)
-    wait_for_rebuild_complete(client, dr_volume_name)
-    wait_for_volume_healthy(client, dr_volume_name)
+    dr_volume = client.by_id_volume(dr_volume_name)
+    assert dr_volume[VOLUME_FIELD_ROBUSTNESS] == \
+           VOLUME_ROBUSTNESS_HEALTHY
 
     md5sum1 = get_pod_data_md5sum(core_api, dr_pod_name, data_path1)
     assert std_md5sum1 == md5sum1
     md5sum2 = get_pod_data_md5sum(core_api, dr_pod_name, data_path2)
     assert std_md5sum2 == md5sum2
+
+    # cleanup
+    backupstore_cleanup(client)
+
+
+def test_inc_restoration_with_multiple_rebuild_and_expansion(
+        client, core_api, volume_name, csi_pv, pvc, pod_make):  # NOQA
+    &#34;&#34;&#34;
+    [HA] Test if the rebuild is disabled for the DR volume
+    1. Setup a random backupstore.
+    2. Create a pod with a volume and wait for pod to start.
+    3. Write data to the volume and get the md5sum.
+    4. Create the 1st backup for the volume.
+    5. Create a DR volume based on the backup
+       and wait for the init restoration complete.
+    6. Shut down the pod and wait for the normal volume detached.
+    7. Expand the normal volume and wait for expansion complete.
+    8. Re-launch a pod for the normal volume.
+    9. Write more data to the normal volume. Make sure there is data in the
+       expanded part.
+    10. Create the 2nd backup and wait for the backup creatiom complete.
+    11. Delete one replica and trigger incremental restore simultaneously.
+    12. Wait for the inc restoration complete and the volume becoming Healthy.
+    13. Check the DR volume size and snapshot info. Make sure there is only
+        one snapshot in the volume.
+    14. Write data to the normal volume then create the 3rd backup.
+    15. Wait for the 3rd backup creation then trigger the inc restore for the
+        DR volume.
+    16. Wait for the restore complete then activate the DR volume.
+    17. Create PV/PVC/Pod for the activated volume
+        and wait for the pod start.
+    18. Check if the restored volume is state `healthy`
+        after the attachment.
+    19. Check md5sum of the data in the activated volume.
+    20. Crash one random replica. Then verify the rebuild still works fine for
+        the activated volume.
+    21. Do cleanup.
+    &#34;&#34;&#34;
+    set_random_backupstore(client)
+
+    data_path1 = &#34;/data/test1&#34;
+
+    std_volume_name = volume_name + &#34;-std&#34;
+    std_pod_name = std_volume_name + &#34;-pod&#34;
+    std_pv_name = std_volume_name + &#34;-pv&#34;
+    std_pvc_name = std_volume_name + &#34;-pvc&#34;
+    size = str(1 * Gi)
+
+    std_pod = pod_make(name=std_pod_name)
+    csi_pv[&#39;metadata&#39;][&#39;name&#39;] = std_pv_name
+    csi_pv[&#39;spec&#39;][&#39;csi&#39;][&#39;volumeHandle&#39;] = std_volume_name
+    csi_pv[&#39;spec&#39;][&#39;capacity&#39;][&#39;storage&#39;] = size
+    csi_pv[&#39;spec&#39;][&#39;persistentVolumeReclaimPolicy&#39;] = &#39;Retain&#39;
+    pvc[&#39;metadata&#39;][&#39;name&#39;] = std_pvc_name
+    pvc[&#39;spec&#39;][&#39;volumeName&#39;] = std_pv_name
+    pvc[&#39;spec&#39;][&#39;resources&#39;][&#39;requests&#39;][&#39;storage&#39;] = size
+    pvc[&#39;spec&#39;][&#39;storageClassName&#39;] = &#39;&#39;
+    std_pod[&#39;spec&#39;][&#39;volumes&#39;] = [create_pvc_spec(std_pvc_name)]
+
+    create_and_check_volume(client, std_volume_name,
+                            num_of_replicas=3, size=size)
+    core_api.create_persistent_volume(csi_pv)
+    core_api.create_namespaced_persistent_volume_claim(
+        body=pvc, namespace=&#39;default&#39;)
+    create_and_wait_pod(core_api, std_pod)
+    wait_for_volume_healthy(client, std_volume_name)
+
+    # Create the 1st backup.
+    write_pod_volume_random_data(core_api, std_pod_name,
+                                 data_path1, DATA_SIZE_IN_MB_3)
+    std_md5sum1 = get_pod_data_md5sum(core_api, std_pod_name, data_path1)
+
+    std_volume = client.by_id_volume(std_volume_name)
+    snap1 = create_snapshot(client, std_volume_name)
+    std_volume.snapshotBackup(name=snap1.name)
+    wait_for_backup_completion(client, std_volume_name, snap1.name)
+    bv, b1 = find_backup(client, std_volume_name, snap1.name)
+
+    # Create the DR volume
+    dr_volume_name = volume_name + &#34;-dr&#34;
+    client.create_volume(name=dr_volume_name, size=str(1 * Gi),
+                         numberOfReplicas=3, fromBackup=b1.url,
+                         frontend=&#34;&#34;, standby=True)
+    wait_for_volume_creation(client, dr_volume_name)
+    wait_for_volume_healthy_no_frontend(client, dr_volume_name)
+    wait_for_backup_restore_completed(client, dr_volume_name, b1.name)
+
+    # Do offline expansion for the volume.
+    delete_and_wait_pod(core_api, std_pod_name)
+    delete_and_wait_pvc(core_api, std_pvc_name)
+    delete_and_wait_pv(core_api, std_pv_name)
+    std_volume = wait_for_volume_detached(client, std_volume_name)
+    expand_size = str(2 * Gi)
+    std_volume.expand(size=str(expand_size))
+    wait_for_volume_expansion(client, std_volume_name)
+
+    # Re-launch the pod
+    csi_pv[&#39;spec&#39;][&#39;capacity&#39;][&#39;storage&#39;] = expand_size
+    pvc[&#39;spec&#39;][&#39;resources&#39;][&#39;requests&#39;][&#39;storage&#39;] = expand_size
+    core_api.create_persistent_volume(csi_pv)
+    core_api.create_namespaced_persistent_volume_claim(
+        body=pvc, namespace=&#39;default&#39;)
+    create_and_wait_pod(core_api, std_pod)
+    wait_for_volume_healthy(client, std_volume_name)
+
+    dr_volume = client.by_id_volume(dr_volume_name)
+    for r in dr_volume.replicas:
+        failed_replica = r.name
+        break
+    assert failed_replica
+
+    # When the total writen data size is more than 1Gi, there must be data in
+    # the expanded part.
+    data_path2 = &#34;/data/test2&#34;
+    write_pod_volume_random_data(core_api, std_pod_name,
+                                 data_path2, DATA_SIZE_IN_MB_4)
+    std_md5sum2 = get_pod_data_md5sum(core_api, std_pod_name, data_path2)
+    snap2 = create_snapshot(client, std_volume_name)
+    std_volume = client.by_id_volume(std_volume_name)
+    std_volume.snapshotBackup(name=snap2.name)
+    wait_for_backup_completion(client, std_volume_name, snap2.name)
+    bv, b2 = find_backup(client, std_volume_name, snap2.name)
+
+    # Trigger rebuild and the incremental restoration
+    dr_volume.replicaRemove(name=failed_replica)
+    client.list_backupVolume()
+
+    wait_for_volume_degraded(client, dr_volume_name)
+
+    # Wait for the rebuild start
+    running_replica_count = 0
+    for i in range(RETRY_COUNTS):
+        running_replica_count = 0
+        dr_volume = client.by_id_volume(dr_volume_name)
+        for r in dr_volume.replicas:
+            if r[&#39;running&#39;] and not r[&#39;failedAt&#39;]:
+                running_replica_count += 1
+        if running_replica_count == 3:
+            break
+        time.sleep(RETRY_INTERVAL)
+    assert running_replica_count == 3
+
+    # Wait for inc restoration &amp; rebuild complete
+    wait_for_volume_healthy_no_frontend(client, dr_volume_name)
+    check_volume_last_backup(client, dr_volume_name, b2.name)
+
+    # Verify the snapshot info
+    dr_volume = client.by_id_volume(dr_volume_name)
+    assert dr_volume.size == expand_size
+    snapshots = dr_volume.snapshotList(volume=dr_volume_name)
+    assert len(snapshots) == 2
+    for snap in snapshots:
+        if snap[&#34;name&#34;] != &#34;volume-head&#34;:
+            assert snap[&#34;name&#34;] == &#34;expand-&#34; + expand_size
+            assert not snap[&#34;usercreated&#34;]
+            assert &#34;volume-head&#34; in snap[&#34;children&#34;]
+
+    data_path3 = &#34;/data/test3&#34;
+    write_pod_volume_random_data(core_api, std_pod_name,
+                                 data_path3, DATA_SIZE_IN_MB_1)
+    std_md5sum3 = get_pod_data_md5sum(core_api, std_pod_name, data_path3)
+    snap3 = create_snapshot(client, std_volume_name)
+    std_volume = client.by_id_volume(std_volume_name)
+    std_volume.snapshotBackup(name=snap3.name)
+    wait_for_backup_completion(client, std_volume_name, snap3.name)
+    bv, b3 = find_backup(client, std_volume_name, snap3.name)
+
+    client.list_backupVolume()
+    check_volume_last_backup(client, dr_volume_name, b3.name)
+
+    activate_standby_volume(client, dr_volume_name)
+    wait_for_volume_detached(client, dr_volume_name)
+
+    dr_pod_name = dr_volume_name + &#34;-pod&#34;
+    dr_pv_name = dr_volume_name + &#34;-pv&#34;
+    dr_pvc_name = dr_volume_name + &#34;-pvc&#34;
+    dr_pod = pod_make(name=dr_pod_name)
+    create_pv_for_volume(client, core_api, dr_volume, dr_pv_name)
+    create_pvc_for_volume(client, core_api, dr_volume, dr_pvc_name)
+    dr_pod[&#39;spec&#39;][&#39;volumes&#39;] = [create_pvc_spec(dr_pvc_name)]
+    create_and_wait_pod(core_api, dr_pod)
+
+    dr_volume = client.by_id_volume(dr_volume_name)
+    assert dr_volume[VOLUME_FIELD_ROBUSTNESS] == \
+           VOLUME_ROBUSTNESS_HEALTHY
+
+    md5sum1 = get_pod_data_md5sum(core_api, dr_pod_name, data_path1)
+    assert std_md5sum1 == md5sum1
+    md5sum2 = get_pod_data_md5sum(core_api, dr_pod_name, data_path2)
+    assert std_md5sum2 == md5sum2
+    md5sum3 = get_pod_data_md5sum(core_api, dr_pod_name, data_path3)
+    assert std_md5sum3 == md5sum3
+
+    failed_replica = dr_volume.replicas[0]
+    crash_replica_processes(client, core_api, dr_volume_name,
+                            replicas=[failed_replica],
+                            wait_to_fail=False)
+    wait_for_volume_degraded(client, dr_volume_name)
+    wait_for_volume_healthy(client, dr_volume_name)
+
+    # Check if the activated volume still works fine after the rebuild
+    write_pod_volume_data(core_api, dr_pod_name, &#39;longhorn-integration-test&#39;,
+                          filename=&#39;test4&#39;)
+    read_data = read_volume_data(core_api, dr_pod_name, &#39;test4&#39;)
+    assert read_data == &#39;longhorn-integration-test&#39;
 
     # cleanup
     backupstore_cleanup(client)
@@ -1218,21 +1454,15 @@ def test_single_replica_restore_failure(
     9. Find a way to fail just one replica restore.
        e.g. Use iptable to block the restore.
     10. Wait for the restore volume Degraded.
-    11. Check if `len(restore_volume.replicas) == 2`.
-        Then check if the volume condition and ready status keep unchanged.
-    12. Wait for the volume restore complete and detached.
-    13. Check if
-        13.1. there is no rebuilt replica for the restored volume
-              before reattachment.
-        13.2. `volume.ready == false`
-        13.3. `volume.conditions[restore].status == False &amp;&amp;
+    11. Wait for the volume restore &amp; rebuild complete and check if:
+        11.1. `volume.ready == true`
+        11.2. `volume.conditions[restore].status == False &amp;&amp;
               volume.conditions[restore].reason == &#34;&#34;`.
-    14. Create PV/PVC/Pod for the restored volume and wait for the pod start.
-    15. Check if the restored volume is state `degraded`
+    12. Create PV/PVC/Pod for the restored volume and wait for the pod start.
+    13. Check if the restored volume is state `Healthy`
         after the attachment.
-    16. Wait for the rebuild complete and the volume becoming healthy.
-    17. Check md5sum of the data in the restored volume.
-    18. Do cleanup.
+    14. Check md5sum of the data in the restored volume.
+    15. Do cleanup.
     &#34;&#34;&#34;
     auto_salvage_setting = client.by_id_setting(SETTING_AUTO_SALVAGE)
     assert auto_salvage_setting.name == SETTING_AUTO_SALVAGE
@@ -1258,9 +1488,7 @@ def test_single_replica_restore_failure(
 
     res_name = &#34;res-&#34; + volume_name
 
-    res_volume = client.create_volume(name=res_name,
-                                      fromBackup=b.url)
-
+    client.create_volume(name=res_name, fromBackup=b.url)
     wait_for_volume_condition_restore(client, res_name,
                                       &#34;status&#34;, &#34;True&#34;)
     wait_for_volume_condition_restore(client, res_name,
@@ -1271,27 +1499,30 @@ def test_single_replica_restore_failure(
 
     res_volume = wait_for_volume_healthy_no_frontend(client, res_name)
 
+    failed_replica = res_volume.replicas[0]
     crash_replica_processes(client, core_api, res_name,
-                            replicas=[res_volume.replicas[0]],
+                            replicas=[failed_replica],
                             wait_to_fail=False)
-
     wait_for_volume_degraded(client, res_name)
-    res_volume = client.by_id_volume(res_name)
 
-    replicas_running = 0
-    for replica in res_volume.replicas:
-        if replica.running is True:
-            replicas_running += 1
+    # Wait for the rebuild start
+    running_replica_count = 0
+    for i in range(RETRY_COUNTS):
+        running_replica_count = 0
+        res_volume = client.by_id_volume(res_name)
+        for r in res_volume.replicas:
+            if r[&#39;running&#39;] and not r[&#39;failedAt&#39;]:
+                running_replica_count += 1
+        if running_replica_count == 3:
+            break
+        time.sleep(RETRY_INTERVAL)
+    assert running_replica_count == 3
 
-    assert replicas_running == 2
-
+    wait_for_volume_restoration_completed(client, res_name)
     wait_for_volume_condition_restore(client, res_name,
-                                      &#34;status&#34;, &#34;True&#34;)
-    wait_for_volume_condition_restore(client, res_name,
-                                      &#34;reason&#34;, &#34;RestoreInProgress&#34;)
-
-    res_volume = client.by_id_volume(res_name)
-    assert res_volume.ready is False
+                                      &#34;status&#34;, &#34;False&#34;)
+    res_volume = wait_for_volume_detached(client, res_name)
+    assert res_volume.ready is True
 
     res_pod_name = res_name + &#34;-pod&#34;
     pv_name = res_name + &#34;-pv&#34;
@@ -1302,14 +1533,11 @@ def test_single_replica_restore_failure(
 
     res_pod = pod_make(name=res_pod_name)
     res_pod[&#39;spec&#39;][&#39;volumes&#39;] = [create_pvc_spec(pvc_name)]
+    create_and_wait_pod(core_api, res_pod)
 
-    core_api.create_namespaced_pod(body=res_pod,
-                                   namespace=&#39;default&#39;)
-    wait_for_volume_degraded(client, res_name)
-
-    common.wait_pod(res_pod_name)
-
-    wait_for_volume_healthy(client, res_name)
+    res_volume = client.by_id_volume(res_name)
+    assert res_volume[VOLUME_FIELD_ROBUSTNESS] == \
+           VOLUME_ROBUSTNESS_HEALTHY
 
     res_md5sum = get_pod_data_md5sum(core_api, res_pod_name, data_path)
     assert md5sum == res_md5sum
@@ -1361,7 +1589,7 @@ def test_dr_volume_with_restore_command_error(
                          frontend=&#34;&#34;, standby=True)
     wait_for_volume_creation(client, dr_volume_name)
     wait_for_volume_restoration_start(client, dr_volume_name, b1.name)
-    wait_for_volume_restoration_completed(client, dr_volume_name)
+    wait_for_backup_restore_completed(client, dr_volume_name, b1.name)
 
     dr_volume = client.by_id_volume(dr_volume_name)
     # Will hack into the replica directory, create a non-empty directory
@@ -1386,7 +1614,7 @@ def test_dr_volume_with_restore_command_error(
     client.list_backupVolume()
     check_volume_last_backup(client, dr_volume_name, b2.name)
     wait_for_volume_restoration_start(client, dr_volume_name, b2.name)
-    wait_for_volume_restoration_completed(client, dr_volume_name)
+    wait_for_backup_restore_completed(client, dr_volume_name, b2.name)
 
     dr_volume = client.by_id_volume(dr_volume_name)
     verified = False
@@ -1419,6 +1647,209 @@ def test_dr_volume_with_restore_command_error(
     assert std_md5sum2 == md5sum2
 
     backupstore_cleanup(client)
+
+
+def test_engine_crash_for_restore_volume(
+        client, core_api, volume_name, csi_pv, pvc, pod_make):  # NOQA
+    &#34;&#34;&#34;
+    [HA] Test volume can successfully retry restoring after
+    the engine crashes unexpectedly.
+
+    1. Setup a random backupstore.
+    2. Create volume and start the pod.
+    3. Write random data to the pod volume and get the md5sum.
+    4. Create a backup for the volume.
+    5. Restore a new volume from the backup.
+    6. Crash the engine during the restore.
+    7. Wait for the volume detaching.
+    8. Wait for the volume reattached.
+    9. Verify if
+      9.1. `volume.ready == false`.
+      9.2. `volume.conditions[restore].status == True &amp;&amp;
+            volume.conditions[restore].reason == &#34;RestoreInProgress&#34;`.
+    10. Wait for the volume restore complete and detached.
+    11. Recreate a pod for the restored volume and wait for the pod start.
+    12. Check the data md5sum for the restored data.
+    &#34;&#34;&#34;
+    auto_salvage_setting = client.by_id_setting(SETTING_AUTO_SALVAGE)
+    assert auto_salvage_setting.name == SETTING_AUTO_SALVAGE
+    assert auto_salvage_setting.value == &#34;true&#34;
+
+    set_random_backupstore(client)
+    backupstore_cleanup(client)
+
+    data_path = &#34;/data/test&#34;
+
+    pod_name, pv_name, pvc_name, md5sum = \
+        prepare_pod_with_data_in_mb(client, core_api, csi_pv, pvc,
+                                    pod_make,
+                                    volume_name,
+                                    data_size_in_mb=DATA_SIZE_IN_MB_4,
+                                    data_path=data_path)
+
+    volume = client.by_id_volume(volume_name)
+    snap = create_snapshot(client, volume_name)
+    volume.snapshotBackup(name=snap.name)
+    wait_for_backup_completion(client, volume_name, snap.name)
+    bv, b = find_backup(client, volume_name, snap.name)
+
+    res_name = &#34;res-&#34; + volume_name
+
+    client.create_volume(name=res_name, fromBackup=b.url)
+    wait_for_volume_condition_restore(client, res_name,
+                                      &#34;status&#34;, &#34;True&#34;)
+    wait_for_volume_condition_restore(client, res_name,
+                                      &#34;reason&#34;, &#34;RestoreInProgress&#34;)
+
+    # Check if the restore volume is auto reattached then continue
+    # restoring data.
+    crash_engine_process_with_sigkill(client, core_api, res_name)
+    wait_for_volume_detached(client, res_name)
+
+    res_volume = wait_for_volume_healthy_no_frontend(client, res_name)
+    assert res_volume.ready is False
+    assert res_volume.restoreRequired
+    client.list_backupVolume()
+    wait_for_volume_condition_restore(client, res_name,
+                                      &#34;status&#34;, &#34;True&#34;)
+    wait_for_volume_condition_restore(client, res_name,
+                                      &#34;reason&#34;, &#34;RestoreInProgress&#34;)
+
+    wait_for_volume_restoration_completed(client, res_name)
+    wait_for_volume_condition_restore(client, res_name,
+                                      &#34;status&#34;, &#34;False&#34;)
+    res_volume = wait_for_volume_detached(client, res_name)
+    assert res_volume.ready is True
+
+    res_pod_name = res_name + &#34;-pod&#34;
+    pv_name = res_name + &#34;-pv&#34;
+    pvc_name = res_name + &#34;-pvc&#34;
+
+    create_pv_for_volume(client, core_api, res_volume, pv_name)
+    create_pvc_for_volume(client, core_api, res_volume, pvc_name)
+
+    res_pod = pod_make(name=res_pod_name)
+    res_pod[&#39;spec&#39;][&#39;volumes&#39;] = [create_pvc_spec(pvc_name)]
+    create_and_wait_pod(core_api, res_pod)
+
+    res_volume = client.by_id_volume(res_name)
+    assert res_volume[VOLUME_FIELD_ROBUSTNESS] == \
+           VOLUME_ROBUSTNESS_HEALTHY
+
+    res_md5sum = get_pod_data_md5sum(core_api, res_pod_name, data_path)
+    assert md5sum == res_md5sum
+
+
+def test_engine_crash_for_dr_volume(
+        client, core_api, volume_name, csi_pv, pvc, pod_make):  # NOQA
+    &#34;&#34;&#34;
+    [HA] Test DR volume can be recovered after
+    the engine crashes unexpectedly.
+
+    1. Setup a random backupstore.
+    2. Create volume and start the pod.
+    3. Write random data to the pod volume and get the md5sum.
+    4. Create a backup for the volume.
+    5. Create a DR volume from the backup.
+    6. Wait for the DR volume init restore complete.
+    7. Wait more data to the original volume and get the md5sum
+    8. Create the 2nd backup for the original volume.
+    9. Wait for the incremental restore triggered
+       after the 2nd backup creation.
+    10. Crash the DR volume engine process during the incremental restore.
+    11. Wait for the DR volume detaching.
+    12. Wait for the DR volume reattached.
+    13. Verify the DR volume:
+      13.1. `volume.ready == false`.
+      13.2. `volume.conditions[restore].status == True &amp;&amp;
+            volume.conditions[restore].reason == &#34;RestoreInProgress&#34;`.
+      13.3. `volume.standby == true`
+    14. Activate the DR volume and wait for detached.
+    15. Create a pod for the restored volume and wait for the pod start.
+    16. Check the data md5sum for the DR volume.
+    &#34;&#34;&#34;
+    auto_salvage_setting = client.by_id_setting(SETTING_AUTO_SALVAGE)
+    assert auto_salvage_setting.name == SETTING_AUTO_SALVAGE
+    assert auto_salvage_setting.value == &#34;true&#34;
+
+    set_random_backupstore(client)
+    backupstore_cleanup(client)
+
+    data_path = &#34;/data/test&#34;
+    pod_name, pv_name, pvc_name, md5sum1 = \
+        prepare_pod_with_data_in_mb(client, core_api, csi_pv, pvc,
+                                    pod_make,
+                                    volume_name,
+                                    data_size_in_mb=DATA_SIZE_IN_MB_1,
+                                    data_path=data_path)
+    snap1 = create_snapshot(client, volume_name)
+    volume = client.by_id_volume(volume_name)
+    volume.snapshotBackup(name=snap1.name)
+    wait_for_backup_completion(client, volume_name, snap1.name)
+    bv, b1 = find_backup(client, volume_name, snap1.name)
+
+    dr_volume_name = volume_name + &#34;-dr&#34;
+    client.create_volume(name=dr_volume_name, size=str(1 * Gi),
+                         numberOfReplicas=3, fromBackup=b1.url,
+                         frontend=&#34;&#34;, standby=True)
+    wait_for_volume_creation(client, dr_volume_name)
+    wait_for_volume_restoration_start(client, dr_volume_name, b1.name)
+    wait_for_backup_restore_completed(client, dr_volume_name, b1.name)
+
+    data_path2 = &#34;/data/test2&#34;
+    write_pod_volume_random_data(core_api, pod_name,
+                                 data_path2, DATA_SIZE_IN_MB_3)
+    md5sum2 = get_pod_data_md5sum(core_api, pod_name, data_path2)
+    snap2 = create_snapshot(client, volume_name)
+    volume = client.by_id_volume(volume_name)
+    volume.snapshotBackup(name=snap2.name)
+    wait_for_backup_completion(client, volume_name, snap2.name)
+    bv, b2 = find_backup(client, volume_name, snap2.name)
+
+    # Trigger the inc restore then crash the engine process immediately.
+    client.list_backupVolume()
+    wait_for_volume_restoration_start(client, dr_volume_name, b2.name)
+    crash_engine_process_with_sigkill(client, core_api, dr_volume_name)
+    wait_for_volume_detached(client, dr_volume_name)
+
+    # Check if the DR volume is auto reattached then continue
+    # restoring data.
+    dr_volume = wait_for_volume_healthy_no_frontend(client, dr_volume_name)
+    assert dr_volume.ready is False
+    assert dr_volume.restoreRequired
+    client.list_backupVolume()
+    wait_for_volume_condition_restore(client, dr_volume_name,
+                                      &#34;status&#34;, &#34;True&#34;)
+    wait_for_volume_condition_restore(client, dr_volume_name,
+                                      &#34;reason&#34;, &#34;RestoreInProgress&#34;)
+    wait_for_backup_restore_completed(client, dr_volume_name, b2.name)
+
+    activate_standby_volume(client, dr_volume_name)
+    wait_for_volume_detached(client, dr_volume_name)
+    wait_for_volume_condition_restore(client, dr_volume_name,
+                                      &#34;status&#34;, &#34;False&#34;)
+    dr_volume = wait_for_volume_detached(client, dr_volume_name)
+    assert dr_volume.ready is True
+
+    dr_pod_name = dr_volume_name + &#34;-pod&#34;
+    pv_name = dr_volume_name + &#34;-pv&#34;
+    pvc_name = dr_volume_name + &#34;-pvc&#34;
+
+    create_pv_for_volume(client, core_api, dr_volume, pv_name)
+    create_pvc_for_volume(client, core_api, dr_volume, pvc_name)
+
+    dr_pod = pod_make(name=dr_pod_name)
+    dr_pod[&#39;spec&#39;][&#39;volumes&#39;] = [create_pvc_spec(pvc_name)]
+    create_and_wait_pod(core_api, dr_pod)
+
+    dr_volume = client.by_id_volume(dr_volume_name)
+    assert dr_volume[VOLUME_FIELD_ROBUSTNESS] == \
+           VOLUME_ROBUSTNESS_HEALTHY
+
+    dr_md5sum1 = get_pod_data_md5sum(core_api, dr_pod_name, data_path)
+    assert md5sum1 == dr_md5sum1
+    dr_md5sum2 = get_pod_data_md5sum(core_api, dr_pod_name, data_path2)
+    assert md5sum2 == dr_md5sum2
 
 
 def test_volume_reattach_after_engine_sigkill(
@@ -1460,63 +1891,7 @@ def test_volume_reattach_after_engine_sigkill(
                           filename=&#39;test2&#39;)
     read_data = read_volume_data(core_api, pod_name, &#39;test2&#39;)
 
-    assert read_data == &#39;longhorn-integration-test&#39;
-
-
-@pytest.mark.skip(reason=&#34;TODO&#34;)
-def test_engine_crash_for_restore_volume():
-    &#34;&#34;&#34;
-    [HA] Test volume can successfully retry restoring after
-    the engine crashes unexpectedly.
-
-    1. Setup a random backupstore.
-    2. Create volume and start the pod.
-    3. Write random data to the pod volume and get the md5sum.
-    4. Create a backup for the volume.
-    5. Restore a new volume from the backup.
-    6. Crash the engine during the restore.
-    7. Wait for the volume detaching.
-    8. Wait for the volume reattached.
-    9. Verify if
-      9.1. `volume.ready == false`.
-      9.2. `volume.conditions[restore].status == True &amp;&amp;
-            volume.conditions[restore].reason == &#34;RestoreInProgress&#34;`.
-    10. Wait for the volume restore complete and detached.
-    11. Recreate a pod for the restored volume and wait for the pod start.
-    12. Check the data md5sum for the restored data.
-    &#34;&#34;&#34;
-    pass
-
-
-@pytest.mark.skip(reason=&#34;TODO&#34;)
-def test_engine_crash_for_dr_volume():
-    &#34;&#34;&#34;
-    [HA] Test DR volume can be recovered after
-    the engine crashes unexpectedly.
-
-    1. Setup a random backupstore.
-    2. Create volume and start the pod.
-    3. Write random data to the pod volume and get the md5sum.
-    4. Create a backup for the volume.
-    5. Create a DR volume from the backup.
-    6. Wait for the DR volume init restore complete.
-    7. Wait more data to the original volume and get the md5sum
-    8. Create the 2nd backup for the original volume.
-    9. Wait for the incremental restore triggered
-       after the 2nd backup creation.
-    10. Crash the DR volume engine process during the incremental restore.
-    11. Wait for the DR volume detaching.
-    12. Wait for the DR volume reattached.
-    13. Verify the DR volume:
-      13.1. `volume.ready == false`.
-      13.2. `volume.conditions[restore].status == True &amp;&amp;
-            volume.conditions[restore].reason == &#34;RestoreInProgress&#34;`.
-      13.3. `volume.standby == true`
-    14. Activate the DR volume and wait for detached.
-    15. Create a pod for the restored volume and wait for the pod start.
-    16. Check the data md5sum for the DR volume.
-    &#34;&#34;&#34;
-    pass</code></pre>
+    assert read_data == &#39;longhorn-integration-test&#39;</code></pre>
 </details>
 </section>
 <section>
@@ -1967,7 +2342,7 @@ and there is one failed replica.</li>
                          frontend=&#34;&#34;, standby=True)
     wait_for_volume_creation(client, dr_volume_name)
     wait_for_volume_restoration_start(client, dr_volume_name, b1.name)
-    wait_for_volume_restoration_completed(client, dr_volume_name)
+    wait_for_backup_restore_completed(client, dr_volume_name, b1.name)
 
     dr_volume = client.by_id_volume(dr_volume_name)
     # Will hack into the replica directory, create a non-empty directory
@@ -1992,7 +2367,7 @@ and there is one failed replica.</li>
     client.list_backupVolume()
     check_volume_last_backup(client, dr_volume_name, b2.name)
     wait_for_volume_restoration_start(client, dr_volume_name, b2.name)
-    wait_for_volume_restoration_completed(client, dr_volume_name)
+    wait_for_backup_restore_completed(client, dr_volume_name, b2.name)
 
     dr_volume = client.by_id_volume(dr_volume_name)
     verified = False
@@ -2028,7 +2403,7 @@ and there is one failed replica.</li>
 </details>
 </dd>
 <dt id="tests.test_ha.test_engine_crash_for_dr_volume"><code class="name flex">
-<span>def <span class="ident">test_engine_crash_for_dr_volume</span></span>(<span>)</span>
+<span>def <span class="ident">test_engine_crash_for_dr_volume</span></span>(<span>client, core_api, volume_name, csi_pv, pvc, pod_make)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>[HA] Test DR volume can be recovered after
@@ -2060,8 +2435,8 @@ volume.conditions[restore].reason == "RestoreInProgress"</code>.
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">@pytest.mark.skip(reason=&#34;TODO&#34;)
-def test_engine_crash_for_dr_volume():
+<pre><code class="python">def test_engine_crash_for_dr_volume(
+        client, core_api, volume_name, csi_pv, pvc, pod_make):  # NOQA
     &#34;&#34;&#34;
     [HA] Test DR volume can be recovered after
     the engine crashes unexpectedly.
@@ -2088,11 +2463,92 @@ def test_engine_crash_for_dr_volume():
     15. Create a pod for the restored volume and wait for the pod start.
     16. Check the data md5sum for the DR volume.
     &#34;&#34;&#34;
-    pass</code></pre>
+    auto_salvage_setting = client.by_id_setting(SETTING_AUTO_SALVAGE)
+    assert auto_salvage_setting.name == SETTING_AUTO_SALVAGE
+    assert auto_salvage_setting.value == &#34;true&#34;
+
+    set_random_backupstore(client)
+    backupstore_cleanup(client)
+
+    data_path = &#34;/data/test&#34;
+    pod_name, pv_name, pvc_name, md5sum1 = \
+        prepare_pod_with_data_in_mb(client, core_api, csi_pv, pvc,
+                                    pod_make,
+                                    volume_name,
+                                    data_size_in_mb=DATA_SIZE_IN_MB_1,
+                                    data_path=data_path)
+    snap1 = create_snapshot(client, volume_name)
+    volume = client.by_id_volume(volume_name)
+    volume.snapshotBackup(name=snap1.name)
+    wait_for_backup_completion(client, volume_name, snap1.name)
+    bv, b1 = find_backup(client, volume_name, snap1.name)
+
+    dr_volume_name = volume_name + &#34;-dr&#34;
+    client.create_volume(name=dr_volume_name, size=str(1 * Gi),
+                         numberOfReplicas=3, fromBackup=b1.url,
+                         frontend=&#34;&#34;, standby=True)
+    wait_for_volume_creation(client, dr_volume_name)
+    wait_for_volume_restoration_start(client, dr_volume_name, b1.name)
+    wait_for_backup_restore_completed(client, dr_volume_name, b1.name)
+
+    data_path2 = &#34;/data/test2&#34;
+    write_pod_volume_random_data(core_api, pod_name,
+                                 data_path2, DATA_SIZE_IN_MB_3)
+    md5sum2 = get_pod_data_md5sum(core_api, pod_name, data_path2)
+    snap2 = create_snapshot(client, volume_name)
+    volume = client.by_id_volume(volume_name)
+    volume.snapshotBackup(name=snap2.name)
+    wait_for_backup_completion(client, volume_name, snap2.name)
+    bv, b2 = find_backup(client, volume_name, snap2.name)
+
+    # Trigger the inc restore then crash the engine process immediately.
+    client.list_backupVolume()
+    wait_for_volume_restoration_start(client, dr_volume_name, b2.name)
+    crash_engine_process_with_sigkill(client, core_api, dr_volume_name)
+    wait_for_volume_detached(client, dr_volume_name)
+
+    # Check if the DR volume is auto reattached then continue
+    # restoring data.
+    dr_volume = wait_for_volume_healthy_no_frontend(client, dr_volume_name)
+    assert dr_volume.ready is False
+    assert dr_volume.restoreRequired
+    client.list_backupVolume()
+    wait_for_volume_condition_restore(client, dr_volume_name,
+                                      &#34;status&#34;, &#34;True&#34;)
+    wait_for_volume_condition_restore(client, dr_volume_name,
+                                      &#34;reason&#34;, &#34;RestoreInProgress&#34;)
+    wait_for_backup_restore_completed(client, dr_volume_name, b2.name)
+
+    activate_standby_volume(client, dr_volume_name)
+    wait_for_volume_detached(client, dr_volume_name)
+    wait_for_volume_condition_restore(client, dr_volume_name,
+                                      &#34;status&#34;, &#34;False&#34;)
+    dr_volume = wait_for_volume_detached(client, dr_volume_name)
+    assert dr_volume.ready is True
+
+    dr_pod_name = dr_volume_name + &#34;-pod&#34;
+    pv_name = dr_volume_name + &#34;-pv&#34;
+    pvc_name = dr_volume_name + &#34;-pvc&#34;
+
+    create_pv_for_volume(client, core_api, dr_volume, pv_name)
+    create_pvc_for_volume(client, core_api, dr_volume, pvc_name)
+
+    dr_pod = pod_make(name=dr_pod_name)
+    dr_pod[&#39;spec&#39;][&#39;volumes&#39;] = [create_pvc_spec(pvc_name)]
+    create_and_wait_pod(core_api, dr_pod)
+
+    dr_volume = client.by_id_volume(dr_volume_name)
+    assert dr_volume[VOLUME_FIELD_ROBUSTNESS] == \
+           VOLUME_ROBUSTNESS_HEALTHY
+
+    dr_md5sum1 = get_pod_data_md5sum(core_api, dr_pod_name, data_path)
+    assert md5sum1 == dr_md5sum1
+    dr_md5sum2 = get_pod_data_md5sum(core_api, dr_pod_name, data_path2)
+    assert md5sum2 == dr_md5sum2</code></pre>
 </details>
 </dd>
 <dt id="tests.test_ha.test_engine_crash_for_restore_volume"><code class="name flex">
-<span>def <span class="ident">test_engine_crash_for_restore_volume</span></span>(<span>)</span>
+<span>def <span class="ident">test_engine_crash_for_restore_volume</span></span>(<span>client, core_api, volume_name, csi_pv, pvc, pod_make)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>[HA] Test volume can successfully retry restoring after
@@ -2118,8 +2574,8 @@ volume.conditions[restore].reason == "RestoreInProgress"</code>.</li>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">@pytest.mark.skip(reason=&#34;TODO&#34;)
-def test_engine_crash_for_restore_volume():
+<pre><code class="python">def test_engine_crash_for_restore_volume(
+        client, core_api, volume_name, csi_pv, pvc, pod_make):  # NOQA
     &#34;&#34;&#34;
     [HA] Test volume can successfully retry restoring after
     the engine crashes unexpectedly.
@@ -2140,7 +2596,73 @@ def test_engine_crash_for_restore_volume():
     11. Recreate a pod for the restored volume and wait for the pod start.
     12. Check the data md5sum for the restored data.
     &#34;&#34;&#34;
-    pass</code></pre>
+    auto_salvage_setting = client.by_id_setting(SETTING_AUTO_SALVAGE)
+    assert auto_salvage_setting.name == SETTING_AUTO_SALVAGE
+    assert auto_salvage_setting.value == &#34;true&#34;
+
+    set_random_backupstore(client)
+    backupstore_cleanup(client)
+
+    data_path = &#34;/data/test&#34;
+
+    pod_name, pv_name, pvc_name, md5sum = \
+        prepare_pod_with_data_in_mb(client, core_api, csi_pv, pvc,
+                                    pod_make,
+                                    volume_name,
+                                    data_size_in_mb=DATA_SIZE_IN_MB_4,
+                                    data_path=data_path)
+
+    volume = client.by_id_volume(volume_name)
+    snap = create_snapshot(client, volume_name)
+    volume.snapshotBackup(name=snap.name)
+    wait_for_backup_completion(client, volume_name, snap.name)
+    bv, b = find_backup(client, volume_name, snap.name)
+
+    res_name = &#34;res-&#34; + volume_name
+
+    client.create_volume(name=res_name, fromBackup=b.url)
+    wait_for_volume_condition_restore(client, res_name,
+                                      &#34;status&#34;, &#34;True&#34;)
+    wait_for_volume_condition_restore(client, res_name,
+                                      &#34;reason&#34;, &#34;RestoreInProgress&#34;)
+
+    # Check if the restore volume is auto reattached then continue
+    # restoring data.
+    crash_engine_process_with_sigkill(client, core_api, res_name)
+    wait_for_volume_detached(client, res_name)
+
+    res_volume = wait_for_volume_healthy_no_frontend(client, res_name)
+    assert res_volume.ready is False
+    assert res_volume.restoreRequired
+    client.list_backupVolume()
+    wait_for_volume_condition_restore(client, res_name,
+                                      &#34;status&#34;, &#34;True&#34;)
+    wait_for_volume_condition_restore(client, res_name,
+                                      &#34;reason&#34;, &#34;RestoreInProgress&#34;)
+
+    wait_for_volume_restoration_completed(client, res_name)
+    wait_for_volume_condition_restore(client, res_name,
+                                      &#34;status&#34;, &#34;False&#34;)
+    res_volume = wait_for_volume_detached(client, res_name)
+    assert res_volume.ready is True
+
+    res_pod_name = res_name + &#34;-pod&#34;
+    pv_name = res_name + &#34;-pv&#34;
+    pvc_name = res_name + &#34;-pvc&#34;
+
+    create_pv_for_volume(client, core_api, res_volume, pv_name)
+    create_pvc_for_volume(client, core_api, res_volume, pvc_name)
+
+    res_pod = pod_make(name=res_pod_name)
+    res_pod[&#39;spec&#39;][&#39;volumes&#39;] = [create_pvc_spec(pvc_name)]
+    create_and_wait_pod(core_api, res_pod)
+
+    res_volume = client.by_id_volume(res_name)
+    assert res_volume[VOLUME_FIELD_ROBUSTNESS] == \
+           VOLUME_ROBUSTNESS_HEALTHY
+
+    res_md5sum = get_pod_data_md5sum(core_api, res_pod_name, data_path)
+    assert md5sum == res_md5sum</code></pre>
 </details>
 </dd>
 <dt id="tests.test_ha.test_ha_backup_deletion_recovery"><code class="name flex">
@@ -2399,6 +2921,248 @@ def test_ha_simple_recovery(client, volume_name):  # NOQA
     ha_simple_recovery_test(client, volume_name, SIZE)</code></pre>
 </details>
 </dd>
+<dt id="tests.test_ha.test_inc_restoration_with_multiple_rebuild_and_expansion"><code class="name flex">
+<span>def <span class="ident">test_inc_restoration_with_multiple_rebuild_and_expansion</span></span>(<span>client, core_api, volume_name, csi_pv, pvc, pod_make)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>[HA] Test if the rebuild is disabled for the DR volume
+1. Setup a random backupstore.
+2. Create a pod with a volume and wait for pod to start.
+3. Write data to the volume and get the md5sum.
+4. Create the 1st backup for the volume.
+5. Create a DR volume based on the backup
+and wait for the init restoration complete.
+6. Shut down the pod and wait for the normal volume detached.
+7. Expand the normal volume and wait for expansion complete.
+8. Re-launch a pod for the normal volume.
+9. Write more data to the normal volume. Make sure there is data in the
+expanded part.
+10. Create the 2nd backup and wait for the backup creatiom complete.
+11. Delete one replica and trigger incremental restore simultaneously.
+12. Wait for the inc restoration complete and the volume becoming Healthy.
+13. Check the DR volume size and snapshot info. Make sure there is only
+one snapshot in the volume.
+14. Write data to the normal volume then create the 3rd backup.
+15. Wait for the 3rd backup creation then trigger the inc restore for the
+DR volume.
+16. Wait for the restore complete then activate the DR volume.
+17. Create PV/PVC/Pod for the activated volume
+and wait for the pod start.
+18. Check if the restored volume is state <code>healthy</code>
+after the attachment.
+19. Check md5sum of the data in the activated volume.
+20. Crash one random replica. Then verify the rebuild still works fine for
+the activated volume.
+21. Do cleanup.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def test_inc_restoration_with_multiple_rebuild_and_expansion(
+        client, core_api, volume_name, csi_pv, pvc, pod_make):  # NOQA
+    &#34;&#34;&#34;
+    [HA] Test if the rebuild is disabled for the DR volume
+    1. Setup a random backupstore.
+    2. Create a pod with a volume and wait for pod to start.
+    3. Write data to the volume and get the md5sum.
+    4. Create the 1st backup for the volume.
+    5. Create a DR volume based on the backup
+       and wait for the init restoration complete.
+    6. Shut down the pod and wait for the normal volume detached.
+    7. Expand the normal volume and wait for expansion complete.
+    8. Re-launch a pod for the normal volume.
+    9. Write more data to the normal volume. Make sure there is data in the
+       expanded part.
+    10. Create the 2nd backup and wait for the backup creatiom complete.
+    11. Delete one replica and trigger incremental restore simultaneously.
+    12. Wait for the inc restoration complete and the volume becoming Healthy.
+    13. Check the DR volume size and snapshot info. Make sure there is only
+        one snapshot in the volume.
+    14. Write data to the normal volume then create the 3rd backup.
+    15. Wait for the 3rd backup creation then trigger the inc restore for the
+        DR volume.
+    16. Wait for the restore complete then activate the DR volume.
+    17. Create PV/PVC/Pod for the activated volume
+        and wait for the pod start.
+    18. Check if the restored volume is state `healthy`
+        after the attachment.
+    19. Check md5sum of the data in the activated volume.
+    20. Crash one random replica. Then verify the rebuild still works fine for
+        the activated volume.
+    21. Do cleanup.
+    &#34;&#34;&#34;
+    set_random_backupstore(client)
+
+    data_path1 = &#34;/data/test1&#34;
+
+    std_volume_name = volume_name + &#34;-std&#34;
+    std_pod_name = std_volume_name + &#34;-pod&#34;
+    std_pv_name = std_volume_name + &#34;-pv&#34;
+    std_pvc_name = std_volume_name + &#34;-pvc&#34;
+    size = str(1 * Gi)
+
+    std_pod = pod_make(name=std_pod_name)
+    csi_pv[&#39;metadata&#39;][&#39;name&#39;] = std_pv_name
+    csi_pv[&#39;spec&#39;][&#39;csi&#39;][&#39;volumeHandle&#39;] = std_volume_name
+    csi_pv[&#39;spec&#39;][&#39;capacity&#39;][&#39;storage&#39;] = size
+    csi_pv[&#39;spec&#39;][&#39;persistentVolumeReclaimPolicy&#39;] = &#39;Retain&#39;
+    pvc[&#39;metadata&#39;][&#39;name&#39;] = std_pvc_name
+    pvc[&#39;spec&#39;][&#39;volumeName&#39;] = std_pv_name
+    pvc[&#39;spec&#39;][&#39;resources&#39;][&#39;requests&#39;][&#39;storage&#39;] = size
+    pvc[&#39;spec&#39;][&#39;storageClassName&#39;] = &#39;&#39;
+    std_pod[&#39;spec&#39;][&#39;volumes&#39;] = [create_pvc_spec(std_pvc_name)]
+
+    create_and_check_volume(client, std_volume_name,
+                            num_of_replicas=3, size=size)
+    core_api.create_persistent_volume(csi_pv)
+    core_api.create_namespaced_persistent_volume_claim(
+        body=pvc, namespace=&#39;default&#39;)
+    create_and_wait_pod(core_api, std_pod)
+    wait_for_volume_healthy(client, std_volume_name)
+
+    # Create the 1st backup.
+    write_pod_volume_random_data(core_api, std_pod_name,
+                                 data_path1, DATA_SIZE_IN_MB_3)
+    std_md5sum1 = get_pod_data_md5sum(core_api, std_pod_name, data_path1)
+
+    std_volume = client.by_id_volume(std_volume_name)
+    snap1 = create_snapshot(client, std_volume_name)
+    std_volume.snapshotBackup(name=snap1.name)
+    wait_for_backup_completion(client, std_volume_name, snap1.name)
+    bv, b1 = find_backup(client, std_volume_name, snap1.name)
+
+    # Create the DR volume
+    dr_volume_name = volume_name + &#34;-dr&#34;
+    client.create_volume(name=dr_volume_name, size=str(1 * Gi),
+                         numberOfReplicas=3, fromBackup=b1.url,
+                         frontend=&#34;&#34;, standby=True)
+    wait_for_volume_creation(client, dr_volume_name)
+    wait_for_volume_healthy_no_frontend(client, dr_volume_name)
+    wait_for_backup_restore_completed(client, dr_volume_name, b1.name)
+
+    # Do offline expansion for the volume.
+    delete_and_wait_pod(core_api, std_pod_name)
+    delete_and_wait_pvc(core_api, std_pvc_name)
+    delete_and_wait_pv(core_api, std_pv_name)
+    std_volume = wait_for_volume_detached(client, std_volume_name)
+    expand_size = str(2 * Gi)
+    std_volume.expand(size=str(expand_size))
+    wait_for_volume_expansion(client, std_volume_name)
+
+    # Re-launch the pod
+    csi_pv[&#39;spec&#39;][&#39;capacity&#39;][&#39;storage&#39;] = expand_size
+    pvc[&#39;spec&#39;][&#39;resources&#39;][&#39;requests&#39;][&#39;storage&#39;] = expand_size
+    core_api.create_persistent_volume(csi_pv)
+    core_api.create_namespaced_persistent_volume_claim(
+        body=pvc, namespace=&#39;default&#39;)
+    create_and_wait_pod(core_api, std_pod)
+    wait_for_volume_healthy(client, std_volume_name)
+
+    dr_volume = client.by_id_volume(dr_volume_name)
+    for r in dr_volume.replicas:
+        failed_replica = r.name
+        break
+    assert failed_replica
+
+    # When the total writen data size is more than 1Gi, there must be data in
+    # the expanded part.
+    data_path2 = &#34;/data/test2&#34;
+    write_pod_volume_random_data(core_api, std_pod_name,
+                                 data_path2, DATA_SIZE_IN_MB_4)
+    std_md5sum2 = get_pod_data_md5sum(core_api, std_pod_name, data_path2)
+    snap2 = create_snapshot(client, std_volume_name)
+    std_volume = client.by_id_volume(std_volume_name)
+    std_volume.snapshotBackup(name=snap2.name)
+    wait_for_backup_completion(client, std_volume_name, snap2.name)
+    bv, b2 = find_backup(client, std_volume_name, snap2.name)
+
+    # Trigger rebuild and the incremental restoration
+    dr_volume.replicaRemove(name=failed_replica)
+    client.list_backupVolume()
+
+    wait_for_volume_degraded(client, dr_volume_name)
+
+    # Wait for the rebuild start
+    running_replica_count = 0
+    for i in range(RETRY_COUNTS):
+        running_replica_count = 0
+        dr_volume = client.by_id_volume(dr_volume_name)
+        for r in dr_volume.replicas:
+            if r[&#39;running&#39;] and not r[&#39;failedAt&#39;]:
+                running_replica_count += 1
+        if running_replica_count == 3:
+            break
+        time.sleep(RETRY_INTERVAL)
+    assert running_replica_count == 3
+
+    # Wait for inc restoration &amp; rebuild complete
+    wait_for_volume_healthy_no_frontend(client, dr_volume_name)
+    check_volume_last_backup(client, dr_volume_name, b2.name)
+
+    # Verify the snapshot info
+    dr_volume = client.by_id_volume(dr_volume_name)
+    assert dr_volume.size == expand_size
+    snapshots = dr_volume.snapshotList(volume=dr_volume_name)
+    assert len(snapshots) == 2
+    for snap in snapshots:
+        if snap[&#34;name&#34;] != &#34;volume-head&#34;:
+            assert snap[&#34;name&#34;] == &#34;expand-&#34; + expand_size
+            assert not snap[&#34;usercreated&#34;]
+            assert &#34;volume-head&#34; in snap[&#34;children&#34;]
+
+    data_path3 = &#34;/data/test3&#34;
+    write_pod_volume_random_data(core_api, std_pod_name,
+                                 data_path3, DATA_SIZE_IN_MB_1)
+    std_md5sum3 = get_pod_data_md5sum(core_api, std_pod_name, data_path3)
+    snap3 = create_snapshot(client, std_volume_name)
+    std_volume = client.by_id_volume(std_volume_name)
+    std_volume.snapshotBackup(name=snap3.name)
+    wait_for_backup_completion(client, std_volume_name, snap3.name)
+    bv, b3 = find_backup(client, std_volume_name, snap3.name)
+
+    client.list_backupVolume()
+    check_volume_last_backup(client, dr_volume_name, b3.name)
+
+    activate_standby_volume(client, dr_volume_name)
+    wait_for_volume_detached(client, dr_volume_name)
+
+    dr_pod_name = dr_volume_name + &#34;-pod&#34;
+    dr_pv_name = dr_volume_name + &#34;-pv&#34;
+    dr_pvc_name = dr_volume_name + &#34;-pvc&#34;
+    dr_pod = pod_make(name=dr_pod_name)
+    create_pv_for_volume(client, core_api, dr_volume, dr_pv_name)
+    create_pvc_for_volume(client, core_api, dr_volume, dr_pvc_name)
+    dr_pod[&#39;spec&#39;][&#39;volumes&#39;] = [create_pvc_spec(dr_pvc_name)]
+    create_and_wait_pod(core_api, dr_pod)
+
+    dr_volume = client.by_id_volume(dr_volume_name)
+    assert dr_volume[VOLUME_FIELD_ROBUSTNESS] == \
+           VOLUME_ROBUSTNESS_HEALTHY
+
+    md5sum1 = get_pod_data_md5sum(core_api, dr_pod_name, data_path1)
+    assert std_md5sum1 == md5sum1
+    md5sum2 = get_pod_data_md5sum(core_api, dr_pod_name, data_path2)
+    assert std_md5sum2 == md5sum2
+    md5sum3 = get_pod_data_md5sum(core_api, dr_pod_name, data_path3)
+    assert std_md5sum3 == md5sum3
+
+    failed_replica = dr_volume.replicas[0]
+    crash_replica_processes(client, core_api, dr_volume_name,
+                            replicas=[failed_replica],
+                            wait_to_fail=False)
+    wait_for_volume_degraded(client, dr_volume_name)
+    wait_for_volume_healthy(client, dr_volume_name)
+
+    # Check if the activated volume still works fine after the rebuild
+    write_pod_volume_data(core_api, dr_pod_name, &#39;longhorn-integration-test&#39;,
+                          filename=&#39;test4&#39;)
+    read_data = read_volume_data(core_api, dr_pod_name, &#39;test4&#39;)
+    assert read_data == &#39;longhorn-integration-test&#39;
+
+    # cleanup
+    backupstore_cleanup(client)</code></pre>
+</details>
+</dd>
 <dt id="tests.test_ha.test_rebuild_failure_with_intensive_data"><code class="name flex">
 <span>def <span class="ident">test_rebuild_failure_with_intensive_data</span></span>(<span>client, core_api, volume_name, csi_pv, pvc, pod_make)</span>
 </code></dt>
@@ -2588,18 +3352,15 @@ then check if the replica is rebuilt on the only available node</li>
 5. Create a DR volume based on the backup
 and wait for the init restoration complete.
 6. Write more data to the original volume then create the 2nd backup.
-7. Wait for the DR volume incremental restoration start
-then delete one replica during the restoration.
-8. Wait for the inc restoration complete.
-9. Activate the DR volume then check
-if the rebuild is disabled for the DR volume.
+7. Delete one replica and trigger incremental restore simultaneously.
+8. Wait for the inc restoration complete and the volume becoming Healthy.
+9. Activate the DR volume.
 10. Create PV/PVC/Pod for the activated volume
 and wait for the pod start.
-11. Check if the restored volume is state <code>degraded</code>
+11. Check if the restored volume is state <code>healthy</code>
 after the attachment.
-12. Wait for the rebuild complete and the volume becoming healthy.
-13. Check md5sum of the data in the activated volume.
-14. Do cleanup.</p></div>
+12. Check md5sum of the data in the activated volume.
+13. Do cleanup.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -2615,18 +3376,15 @@ after the attachment.
     5. Create a DR volume based on the backup
        and wait for the init restoration complete.
     6. Write more data to the original volume then create the 2nd backup.
-    7. Wait for the DR volume incremental restoration start
-       then delete one replica during the restoration.
-    8. Wait for the inc restoration complete.
-    9. Activate the DR volume then check
-       if the rebuild is disabled for the DR volume.
+    7. Delete one replica and trigger incremental restore simultaneously.
+    8. Wait for the inc restoration complete and the volume becoming Healthy.
+    9. Activate the DR volume.
     10. Create PV/PVC/Pod for the activated volume
         and wait for the pod start.
-    11. Check if the restored volume is state `degraded`
+    11. Check if the restored volume is state `healthy`
         after the attachment.
-    12. Wait for the rebuild complete and the volume becoming healthy.
-    13. Check md5sum of the data in the activated volume.
-    14. Do cleanup.
+    12. Check md5sum of the data in the activated volume.
+    13. Do cleanup.
     &#34;&#34;&#34;
     set_random_backupstore(client)
 
@@ -2648,7 +3406,7 @@ after the attachment.
                          numberOfReplicas=3, fromBackup=b1.url,
                          frontend=&#34;&#34;, standby=True)
     wait_for_volume_creation(client, dr_volume_name)
-    wait_for_volume_restoration_completed(client, dr_volume_name)
+    wait_for_backup_restore_completed(client, dr_volume_name, b1.name)
 
     data_path2 = &#34;/data/test2&#34;
     write_pod_volume_random_data(core_api, std_pod_name,
@@ -2660,17 +3418,32 @@ after the attachment.
     bv, b2 = find_backup(client, std_volume_name, snap2.name)
 
     # Trigger rebuild during the incremental restoration
-    restoring_replica = wait_for_volume_restoration_start(
-        client, dr_volume_name, b2.name)
     dr_volume = client.by_id_volume(dr_volume_name)
-    dr_volume.replicaRemove(name=restoring_replica)
-
-    # Wait for inc restoration complete
-    check_volume_last_backup(client, dr_volume_name, b2.name)
-    dr_volume = wait_for_volume_degraded(client, dr_volume_name)
-    assert len(dr_volume.replicas) == 2
     for r in dr_volume.replicas:
-        assert restoring_replica != r.name
+        failed_replica = r.name
+        break
+    assert failed_replica
+    dr_volume.replicaRemove(name=failed_replica)
+    client.list_backupVolume()
+
+    wait_for_volume_degraded(client, dr_volume_name)
+
+    # Wait for the rebuild start
+    running_replica_count = 0
+    for i in range(RETRY_COUNTS):
+        running_replica_count = 0
+        dr_volume = client.by_id_volume(dr_volume_name)
+        for r in dr_volume.replicas:
+            if r[&#39;running&#39;] and not r[&#39;failedAt&#39;]:
+                running_replica_count += 1
+        if running_replica_count == 3:
+            break
+        time.sleep(RETRY_INTERVAL)
+    assert running_replica_count == 3
+
+    # Wait for inc restoration &amp; rebuild complete
+    wait_for_volume_healthy_no_frontend(client, dr_volume_name)
+    check_volume_last_backup(client, dr_volume_name, b2.name)
 
     activate_standby_volume(client, dr_volume_name)
     wait_for_volume_detached(client, dr_volume_name)
@@ -2684,10 +3457,9 @@ after the attachment.
     dr_pod[&#39;spec&#39;][&#39;volumes&#39;] = [create_pvc_spec(dr_pvc_name)]
     create_and_wait_pod(core_api, dr_pod)
 
-    wait_for_volume_degraded(client, dr_volume_name)
-    wait_for_rebuild_start(client, dr_volume_name)
-    wait_for_rebuild_complete(client, dr_volume_name)
-    wait_for_volume_healthy(client, dr_volume_name)
+    dr_volume = client.by_id_volume(dr_volume_name)
+    assert dr_volume[VOLUME_FIELD_ROBUSTNESS] == \
+           VOLUME_ROBUSTNESS_HEALTHY
 
     md5sum1 = get_pod_data_md5sum(core_api, dr_pod_name, data_path1)
     assert std_md5sum1 == md5sum1
@@ -2710,13 +3482,12 @@ after the attachment.
 5. Restore a volume from the backup.
 6. Delete one replica during the restoration.
 7. Wait for the restoration complete and the volume detached.
-8. Check if there is a rebuilt replica for the restored volume.
+8. Check if the replica is rebuilt for the auto detachment.
 9. Create PV/PVC/Pod for the restored volume and wait for the pod start.
-10. Check if the restored volume is state <code>degraded</code>
+10. Check if the restored volume is state <code>Healthy</code>
 after the attachment.
-11. Wait for the rebuild complete and the volume becoming healthy.
-12. Check md5sum of the data in the restored volume.
-13. Do cleanup.</p></div>
+11. Check md5sum of the data in the restored volume.
+12. Do cleanup.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -2732,13 +3503,12 @@ after the attachment.
     5. Restore a volume from the backup.
     6. Delete one replica during the restoration.
     7. Wait for the restoration complete and the volume detached.
-    8. Check if there is a rebuilt replica for the restored volume.
+    8. Check if the replica is rebuilt for the auto detachment.
     9. Create PV/PVC/Pod for the restored volume and wait for the pod start.
-    10. Check if the restored volume is state `degraded`
+    10. Check if the restored volume is state `Healthy`
         after the attachment.
-    11. Wait for the rebuild complete and the volume becoming healthy.
-    12. Check md5sum of the data in the restored volume.
-    13. Do cleanup.
+    11. Check md5sum of the data in the restored volume.
+    12. Do cleanup.
     &#34;&#34;&#34;
     set_random_backupstore(client)
 
@@ -2764,11 +3534,27 @@ after the attachment.
         client, restore_volume_name, b.name)
     restore_volume = client.by_id_volume(restore_volume_name)
     restore_volume.replicaRemove(name=restoring_replica)
+    client.list_backupVolume()
+
+    # Wait for the rebuild start
+    running_replica_count = 0
+    for i in range(RETRY_COUNTS):
+        running_replica_count = 0
+        restore_volume = client.by_id_volume(restore_volume_name)
+        for r in restore_volume.replicas:
+            if r[&#39;running&#39;] and not r[&#39;failedAt&#39;]:
+                running_replica_count += 1
+        if running_replica_count == 3:
+            break
+        time.sleep(RETRY_INTERVAL)
+    assert running_replica_count == 3
+
     wait_for_volume_restoration_completed(client, restore_volume_name)
     restore_volume = wait_for_volume_detached(client, restore_volume_name)
-    assert len(restore_volume.replicas) == 2
+    assert len(restore_volume.replicas) == 3
     for r in restore_volume.replicas:
         assert restoring_replica != r.name
+        assert r[&#39;failedAt&#39;] == &#34;&#34;
 
     restore_pod_name = restore_volume_name + &#34;-pod&#34;
     restore_pv_name = restore_volume_name + &#34;-pv&#34;
@@ -2779,9 +3565,9 @@ after the attachment.
     restore_pod[&#39;spec&#39;][&#39;volumes&#39;] = [create_pvc_spec(restore_pvc_name)]
     create_and_wait_pod(core_api, restore_pod)
 
-    wait_for_volume_degraded(client, restore_volume_name)
-    wait_for_rebuild_complete(client, restore_volume_name)
-    wait_for_volume_healthy(client, restore_volume_name)
+    restore_volume = client.by_id_volume(restore_volume_name)
+    assert restore_volume[VOLUME_FIELD_ROBUSTNESS] == \
+           VOLUME_ROBUSTNESS_HEALTHY
 
     md5sum = get_pod_data_md5sum(core_api, restore_pod_name, data_path)
     assert original_md5sum == md5sum
@@ -3273,19 +4059,13 @@ volume.conditions[restore].reason == "RestoreInProgress"</code>.
 <li>Find a way to fail just one replica restore.
 e.g. Use iptable to block the restore.</li>
 <li>Wait for the restore volume Degraded.</li>
-<li>Check if <code>len(restore_volume.replicas) == 2</code>.
-Then check if the volume condition and ready status keep unchanged.</li>
-<li>Wait for the volume restore complete and detached.</li>
-<li>Check if
-13.1. there is no rebuilt replica for the restored volume
-before reattachment.
-13.2. <code>volume.ready == false</code>
-13.3. <code>volume.conditions[restore].status == False &amp;&amp;
+<li>Wait for the volume restore &amp; rebuild complete and check if:
+11.1. <code>volume.ready == true</code>
+11.2. <code>volume.conditions[restore].status == False &amp;&amp;
 volume.conditions[restore].reason == ""</code>.</li>
 <li>Create PV/PVC/Pod for the restored volume and wait for the pod start.</li>
-<li>Check if the restored volume is state <code>degraded</code>
+<li>Check if the restored volume is state <code>Healthy</code>
 after the attachment.</li>
-<li>Wait for the rebuild complete and the volume becoming healthy.</li>
 <li>Check md5sum of the data in the restored volume.</li>
 <li>Do cleanup.</li>
 </ol></div>
@@ -3320,21 +4100,15 @@ after the attachment.</li>
     9. Find a way to fail just one replica restore.
        e.g. Use iptable to block the restore.
     10. Wait for the restore volume Degraded.
-    11. Check if `len(restore_volume.replicas) == 2`.
-        Then check if the volume condition and ready status keep unchanged.
-    12. Wait for the volume restore complete and detached.
-    13. Check if
-        13.1. there is no rebuilt replica for the restored volume
-              before reattachment.
-        13.2. `volume.ready == false`
-        13.3. `volume.conditions[restore].status == False &amp;&amp;
+    11. Wait for the volume restore &amp; rebuild complete and check if:
+        11.1. `volume.ready == true`
+        11.2. `volume.conditions[restore].status == False &amp;&amp;
               volume.conditions[restore].reason == &#34;&#34;`.
-    14. Create PV/PVC/Pod for the restored volume and wait for the pod start.
-    15. Check if the restored volume is state `degraded`
+    12. Create PV/PVC/Pod for the restored volume and wait for the pod start.
+    13. Check if the restored volume is state `Healthy`
         after the attachment.
-    16. Wait for the rebuild complete and the volume becoming healthy.
-    17. Check md5sum of the data in the restored volume.
-    18. Do cleanup.
+    14. Check md5sum of the data in the restored volume.
+    15. Do cleanup.
     &#34;&#34;&#34;
     auto_salvage_setting = client.by_id_setting(SETTING_AUTO_SALVAGE)
     assert auto_salvage_setting.name == SETTING_AUTO_SALVAGE
@@ -3360,9 +4134,7 @@ after the attachment.</li>
 
     res_name = &#34;res-&#34; + volume_name
 
-    res_volume = client.create_volume(name=res_name,
-                                      fromBackup=b.url)
-
+    client.create_volume(name=res_name, fromBackup=b.url)
     wait_for_volume_condition_restore(client, res_name,
                                       &#34;status&#34;, &#34;True&#34;)
     wait_for_volume_condition_restore(client, res_name,
@@ -3373,27 +4145,30 @@ after the attachment.</li>
 
     res_volume = wait_for_volume_healthy_no_frontend(client, res_name)
 
+    failed_replica = res_volume.replicas[0]
     crash_replica_processes(client, core_api, res_name,
-                            replicas=[res_volume.replicas[0]],
+                            replicas=[failed_replica],
                             wait_to_fail=False)
-
     wait_for_volume_degraded(client, res_name)
-    res_volume = client.by_id_volume(res_name)
 
-    replicas_running = 0
-    for replica in res_volume.replicas:
-        if replica.running is True:
-            replicas_running += 1
+    # Wait for the rebuild start
+    running_replica_count = 0
+    for i in range(RETRY_COUNTS):
+        running_replica_count = 0
+        res_volume = client.by_id_volume(res_name)
+        for r in res_volume.replicas:
+            if r[&#39;running&#39;] and not r[&#39;failedAt&#39;]:
+                running_replica_count += 1
+        if running_replica_count == 3:
+            break
+        time.sleep(RETRY_INTERVAL)
+    assert running_replica_count == 3
 
-    assert replicas_running == 2
-
+    wait_for_volume_restoration_completed(client, res_name)
     wait_for_volume_condition_restore(client, res_name,
-                                      &#34;status&#34;, &#34;True&#34;)
-    wait_for_volume_condition_restore(client, res_name,
-                                      &#34;reason&#34;, &#34;RestoreInProgress&#34;)
-
-    res_volume = client.by_id_volume(res_name)
-    assert res_volume.ready is False
+                                      &#34;status&#34;, &#34;False&#34;)
+    res_volume = wait_for_volume_detached(client, res_name)
+    assert res_volume.ready is True
 
     res_pod_name = res_name + &#34;-pod&#34;
     pv_name = res_name + &#34;-pv&#34;
@@ -3404,14 +4179,11 @@ after the attachment.</li>
 
     res_pod = pod_make(name=res_pod_name)
     res_pod[&#39;spec&#39;][&#39;volumes&#39;] = [create_pvc_spec(pvc_name)]
+    create_and_wait_pod(core_api, res_pod)
 
-    core_api.create_namespaced_pod(body=res_pod,
-                                   namespace=&#39;default&#39;)
-    wait_for_volume_degraded(client, res_name)
-
-    common.wait_pod(res_pod_name)
-
-    wait_for_volume_healthy(client, res_name)
+    res_volume = client.by_id_volume(res_name)
+    assert res_volume[VOLUME_FIELD_ROBUSTNESS] == \
+           VOLUME_ROBUSTNESS_HEALTHY
 
     res_md5sum = get_pod_data_md5sum(core_api, res_pod_name, data_path)
     assert md5sum == res_md5sum</code></pre>
@@ -3533,6 +4305,7 @@ to crash the engine process</p>
 <li><code><a title="tests.test_ha.test_ha_recovery_with_expansion" href="#tests.test_ha.test_ha_recovery_with_expansion">test_ha_recovery_with_expansion</a></code></li>
 <li><code><a title="tests.test_ha.test_ha_salvage" href="#tests.test_ha.test_ha_salvage">test_ha_salvage</a></code></li>
 <li><code><a title="tests.test_ha.test_ha_simple_recovery" href="#tests.test_ha.test_ha_simple_recovery">test_ha_simple_recovery</a></code></li>
+<li><code><a title="tests.test_ha.test_inc_restoration_with_multiple_rebuild_and_expansion" href="#tests.test_ha.test_inc_restoration_with_multiple_rebuild_and_expansion">test_inc_restoration_with_multiple_rebuild_and_expansion</a></code></li>
 <li><code><a title="tests.test_ha.test_rebuild_failure_with_intensive_data" href="#tests.test_ha.test_rebuild_failure_with_intensive_data">test_rebuild_failure_with_intensive_data</a></code></li>
 <li><code><a title="tests.test_ha.test_rebuild_replica_and_from_replica_on_the_same_node" href="#tests.test_ha.test_rebuild_replica_and_from_replica_on_the_same_node">test_rebuild_replica_and_from_replica_on_the_same_node</a></code></li>
 <li><code><a title="tests.test_ha.test_rebuild_with_inc_restoration" href="#tests.test_ha.test_rebuild_with_inc_restoration">test_rebuild_with_inc_restoration</a></code></li>

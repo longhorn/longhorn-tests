@@ -92,7 +92,7 @@ VOLUME_ROBUSTNESS_DEGRADED = &#34;degraded&#34;
 VOLUME_ROBUSTNESS_FAULTED = &#34;faulted&#34;
 VOLUME_ROBUSTNESS_UNKNOWN = &#34;unknown&#34;
 
-VOLUME_FIELD_INITIALRESTORATIONREQUIRED = &#34;initialRestorationRequired&#34;
+VOLUME_FIELD_RESTOREREQUIRED = &#34;restoreRequired&#34;
 
 DEFAULT_STORAGECLASS_NAME = &#39;longhorn-test&#39;
 
@@ -1972,7 +1972,7 @@ def wait_for_volume_condition_restore(client, name, key, value):
         conditions = volume.conditions
         if conditions is not None and \
                 conditions != {} and \
-                conditions[VOLUME_CONDITION_RESTORE] and \
+                VOLUME_CONDITION_RESTORE in conditions and \
                 conditions[VOLUME_CONDITION_RESTORE][key] and \
                 conditions[VOLUME_CONDITION_RESTORE][key] == value:
             break
@@ -3217,8 +3217,20 @@ def wait_for_volume_restoration_completed(client, name):
     wait_for_volume_creation(client, name)
     monitor_restore_progress(client, name)
     return wait_for_volume_status(client, name,
-                                  VOLUME_FIELD_INITIALRESTORATIONREQUIRED,
+                                  VOLUME_FIELD_RESTOREREQUIRED,
                                   False)
+
+
+def wait_for_backup_restore_completed(client, name, backup_name):
+    complete = False
+    for i in range(RETRY_COUNTS):
+        v = client.by_id_volume(name)
+        if v.controllers and len(v.controllers) != 0 and \
+                v.controllers[0].lastRestoredBackup == backup_name:
+            complete = True
+            break
+        time.sleep(RETRY_INTERVAL_LONG)
+    assert complete
 
 
 def wait_for_volume_restoration_start(client, volume_name, backup_name):
@@ -7621,6 +7633,27 @@ def volume_name(request):
     assert not backup_found</code></pre>
 </details>
 </dd>
+<dt id="tests.common.wait_for_backup_restore_completed"><code class="name flex">
+<span>def <span class="ident">wait_for_backup_restore_completed</span></span>(<span>client, name, backup_name)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def wait_for_backup_restore_completed(client, name, backup_name):
+    complete = False
+    for i in range(RETRY_COUNTS):
+        v = client.by_id_volume(name)
+        if v.controllers and len(v.controllers) != 0 and \
+                v.controllers[0].lastRestoredBackup == backup_name:
+            complete = True
+            break
+        time.sleep(RETRY_INTERVAL_LONG)
+    assert complete</code></pre>
+</details>
+</dd>
 <dt id="tests.common.wait_for_backup_state"><code class="name flex">
 <span>def <span class="ident">wait_for_backup_state</span></span>(<span>client, volume_name, predicate)</span>
 </code></dt>
@@ -8374,7 +8407,7 @@ def volume_name(request):
         conditions = volume.conditions
         if conditions is not None and \
                 conditions != {} and \
-                conditions[VOLUME_CONDITION_RESTORE] and \
+                VOLUME_CONDITION_RESTORE in conditions and \
                 conditions[VOLUME_CONDITION_RESTORE][key] and \
                 conditions[VOLUME_CONDITION_RESTORE][key] == value:
             break
@@ -8742,7 +8775,7 @@ def volume_name(request):
     wait_for_volume_creation(client, name)
     monitor_restore_progress(client, name)
     return wait_for_volume_status(client, name,
-                                  VOLUME_FIELD_INITIALRESTORATIONREQUIRED,
+                                  VOLUME_FIELD_RESTOREREQUIRED,
                                   False)</code></pre>
 </details>
 </dd>
@@ -9274,6 +9307,7 @@ volume. Trigger a failed assertion of one is detected.
 <li><code><a title="tests.common.wait_deployment_replica_ready" href="#tests.common.wait_deployment_replica_ready">wait_deployment_replica_ready</a></code></li>
 <li><code><a title="tests.common.wait_for_backup_completion" href="#tests.common.wait_for_backup_completion">wait_for_backup_completion</a></code></li>
 <li><code><a title="tests.common.wait_for_backup_delete" href="#tests.common.wait_for_backup_delete">wait_for_backup_delete</a></code></li>
+<li><code><a title="tests.common.wait_for_backup_restore_completed" href="#tests.common.wait_for_backup_restore_completed">wait_for_backup_restore_completed</a></code></li>
 <li><code><a title="tests.common.wait_for_backup_state" href="#tests.common.wait_for_backup_state">wait_for_backup_state</a></code></li>
 <li><code><a title="tests.common.wait_for_backup_volume_delete" href="#tests.common.wait_for_backup_volume_delete">wait_for_backup_volume_delete</a></code></li>
 <li><code><a title="tests.common.wait_for_device_login" href="#tests.common.wait_for_device_login">wait_for_device_login</a></code></li>
