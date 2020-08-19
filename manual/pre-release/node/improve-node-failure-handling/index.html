@@ -237,15 +237,90 @@
 </aside>
 
 <main style="padding: 1%; width: 70%;">
-  <h1 id="title">Testing ext4 with custom fs params1 (no 64bit, no metadata_csum)</h1>
+  <h1 id="title">Improve Node Failure Handling By Automatically Force Delete Terminating Pods of StatefulSet/Deployment On Downed Node</h1>
   <div>
     <article id="content">
-       <ul>
-<li>set the following filesystem parameters: <code>-O ^64bit,^metadata_csum</code></li>
-<li>create a volume + pv + pvc with filesystem <code>ext4</code> named <code>ext4-no-ck-no-64</code></li>
-<li>create a deployment that uses <code>ext4-no-ck-no-64</code></li>
-<li>verify that the pod enters running state and the volume is accessible</li>
+       <ol>
+<li>Setup a cluster of 3 worker nodes</li>
+<li>Install Longhorn and set <code>Default Replica Count = 2</code> (because we will turn off one node)</li>
+<li>Create a StatefulSet with 2 pods using the command:
+<pre><code>kubectl create -f https://raw.githubusercontent.com/longhorn/longhorn/master/examples/statefulset.yaml
+</code></pre></li>
+<li>Create a volume + pv + pvc named <code>vol1</code> and create a deployment(1 pod) of default ubuntu named <code>shell</code> with the usage of pvc <code>vol1</code> mounted under <code>/mnt/vol1</code></li>
+<li>Find the node which contains one pod of the StatefulSet/Deployment. Power off the node</li>
+</ol>
+<h4 id="statefulset">StatefulSet</h4>
+<h5 id="if-nodedownpoddeletionpolicy--is-set-to-do-nothing---delete-deployment-pod">if <code>NodeDownPodDeletionPolicy </code> is set to <code>do-nothing </code> | <code>delete-deployment-pod</code></h5>
+<ul>
+<li>wait till the <code>pod.deletionTimestamp</code> has passed</li>
+<li>verify no replacement pod generated, the pod is stuck at terminating forever.</li>
 </ul>
+<h5 id="if-nodedownpoddeletionpolicy--is-set-to-delete-statefulset-pod---delete-both-statefulset-and-deployment-pod">if <code>NodeDownPodDeletionPolicy </code> is set to <code>delete-statefulset-pod </code> | <code>delete-both-statefulset-and-deployment-pod</code></h5>
+<ul>
+<li>wait till pod&rsquo;s status becomes <code>terminating</code> and the <code>pod.deletionTimestamp</code> has passed (around 7 minutes)</li>
+<li>verify that the pod is deleted and there is a new running replacement pod.</li>
+<li>Verify that you can access/read/write the volume on the new pod</li>
+</ul>
+<h4 id="deployment">Deployment</h4>
+<h5 id="if-nodedownpoddeletionpolicy--is-set-to-do-nothing---delete-statefulset-pod-and-volume-attachment-recovery-policy-is-never">if <code>NodeDownPodDeletionPolicy </code> is set to <code>do-nothing </code> | <code>delete-statefulset-pod</code> AND <code>Volume Attachment Recovery Policy</code> is <code>never</code></h5>
+<ul>
+<li>wait till the <code>pod.deletionTimestamp</code> has passed</li>
+<li>replacement pod will be stuck in <code>Pending</code> state forever</li>
+<li>force delete the terminating pod</li>
+<li>wait till replacement pod is running</li>
+<li>verify that you can access <code>vol1</code> via the <code>shell</code> replacement pod under <code>/mnt/vol1</code> once it is in the running state</li>
+</ul>
+<h5 id="if-nodedownpoddeletionpolicy--is-set-to-do-nothing---delete-statefulset-pod-and-volume-attachment-recovery-policy-is-wait">if <code>NodeDownPodDeletionPolicy </code> is set to <code>do-nothing </code> | <code>delete-statefulset-pod</code> AND <code>Volume Attachment Recovery Policy</code> is <code>wait</code></h5>
+<ul>
+<li>wait till replacement pod is generated (default is around 6 minutes, kubernetes setting)</li>
+<li>wait till the <code>pod.deletionTimestamp</code> has passed</li>
+<li>verify that you can access <code>vol1</code> via the <code>shell</code> replacement pod under <code>/mnt/vol1</code> once it is in the running state</li>
+<li>verify that the original <code>shell</code> pod is stuck in <code>Pending</code> state forever</li>
+</ul>
+<h5 id="if-nodedownpoddeletionpolicy--is-set-to-do-nothing---delete-statefulset-pod-and-volume-attachment-recovery-policy-is-immediate">if <code>NodeDownPodDeletionPolicy </code> is set to <code>do-nothing </code> | <code>delete-statefulset-pod</code> AND <code>Volume Attachment Recovery Policy</code> is <code>immediate</code></h5>
+<ul>
+<li>wait till replacement pod is generated (default is around 6 minutes, kubernetes setting)</li>
+<li>verify that you can access <code>vol1</code> via the <code>shell</code> replacement pod under <code>/mnt/vol1</code> once it is in the running state</li>
+<li>verify that the original <code>shell</code> pod is stuck in <code>Pending</code> state forever</li>
+</ul>
+<h5 id="if-nodedownpoddeletionpolicy--is-set-to-delete-deployment-pod---delete-both-statefulset-and-deployment-pod-and-volume-attachment-recovery-policy-is-never-waitimmediate">if <code>NodeDownPodDeletionPolicy </code> is set to <code>delete-deployment-pod </code> | <code>delete-both-statefulset-and-deployment-pod</code> AND <code>Volume Attachment Recovery Policy</code> is <code>never</code>| <code>wait</code>|<code>immediate</code></h5>
+<ul>
+<li>wait till the <code>pod.deletionTimestamp</code> has passed</li>
+<li>verify that the pod is deleted and there is a new running replacement pod.</li>
+<li>verify that you can access <code>vol1</code> via the <code>shell</code> replacement pod under <code>/mnt/vol1</code></li>
+</ul>
+<h4 id="other-kinds">Other kinds</h4>
+<ul>
+<li>Verify that Longhorn never deletes any other pod on the downed node.</li>
+</ul>
+<h4 id="test-example">Test example</h4>
+<p>One typical scenario when the enhancement has succeeded is as below. When a node (say <code>node-x</code>) goes down (assume using Kubernetes&rsquo; default settings and user allows Longhorn to force delete pods):</p>
+<table>
+<thead>
+<tr>
+<th align="left">Time</th>
+<th align="center">Event</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="left">0m:00s</td>
+<td align="center"><code>node-x</code>goes down and stops sending heartbeats to Kubernetes Node controller</td>
+</tr>
+<tr>
+<td align="left">0m:40s</td>
+<td align="center">Kubernetes Node controller reports <code>node-x</code> is <code>NotReady</code>.</td>
+</tr>
+<tr>
+<td align="left">5m:40s</td>
+<td align="center">Kubernetes Node controller starts evicting pods from <code>node-x</code> using graceful termination (set <code>DeletionTimestamp</code> and <code>deletionGracePeriodSeconds = 10s/30s</code>)</td>
+</tr>
+<tr>
+<td align="left">5m:50s/6m:10s</td>
+<td align="center">Longhorn forces delete the pod of StatefulSet/Deployment which uses Longhorn volume</td>
+</tr>
+</tbody>
+</table>
 
     </article>
   </div>

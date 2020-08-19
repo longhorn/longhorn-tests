@@ -121,6 +121,15 @@ Case 1:  Create a volume and take multiple backups for the same. Delete the late
     </item>
     
     <item>
+      <title>Improve Node Failure Handling By Automatically Force Delete Terminating Pods of StatefulSet/Deployment On Downed Node</title>
+      <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/node/improve-node-failure-handling/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/node/improve-node-failure-handling/</guid>
+      <description>Setup a cluster of 3 worker nodes Install Longhorn and set Default Replica Count = 2 (because we will turn off one node) Create a StatefulSet with 2 pods using the command: kubectl create -f https://raw.githubusercontent.com/longhorn/longhorn/master/examples/statefulset.yaml  Create a volume + pv + pvc named vol1 and create a deployment(1 pod) of default ubuntu named shell with the usage of pvc vol1 mounted under /mnt/vol1 Find the node which contains one pod of the StatefulSet/Deployment.</description>
+    </item>
+    
+    <item>
       <title>Instance manager pod recovery [[#870](https://github.com/longhorn/longhorn/issues/870)]</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/ha/instance-manager-pod-recovery/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
