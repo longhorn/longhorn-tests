@@ -1864,3 +1864,19 @@ def test_volume_reattach_after_engine_sigkill(
     read_data = read_volume_data(core_api, pod_name, 'test2')
 
     assert read_data == 'longhorn-integration-test'
+
+
+@pytest.mark.skip(reason="TODO")
+def test_rebuild_after_replica_file_crash():
+    """
+    [HA] Test replica rebuild should be triggered if any crashes happened.
+
+    1. Create a longhorn volume with replicas.
+    2. Write random data to the volume and get the md5sum.
+    3. Remove file `volume-head-000.img` from one of the replicas.
+    4. Wait replica rebuild to be triggered.
+    5. Verify a new replica is rebuilt, and the old replica containing
+    the crashed file is state ERROR
+    6. Read the data from the volume and verify the md5sum.
+    """
+    pass
