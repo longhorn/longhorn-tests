@@ -2184,3 +2184,52 @@ def test_replica_scheduler_rebuild_restore_is_too_big(client):  # NOQA
     node = common.wait_for_disk_update(client, lht_hostId,
                                        len(update_disks))
     cleanup_host_disk(client, 'vol-small')
+
+
+@pytest.mark.skip(reason="TODO")
+def test_node_eviction():
+    """
+    Test node eviction (assuming this is a 3 nodes cluster)
+
+    1. Disable scheduling on node 3.
+    2. Create volume 1 with 2 replicas.
+    3. Attach volume 1 to node 1 and write some data to it and get
+    checksum 1.
+    4. Disable scheduling and set 'Eviction Requested' to 'true' on node 1.
+    5. Volume 1 should be failed to schedule new replica.
+    6. Set 'Eviction Requested' to 'false' to cancel node 1 eviction and
+    check there should be 1 replica on node 1 and node 2. And remove the
+    unscheduled replica.
+    7. Set 'Eviction Requested' to 'true' on node 1.
+    8. Set 'Replica Node Level Soft Anti-Affinity' to 'true'.
+    9. The eviction should be success, and no replica on node 1, 2 replicas
+    on node 2.
+    10. Enable scheduling on node 3, and set 'Eviction Requested' to
+    'false', enable scheduling on node 1.
+    11. Set 'Replica Node Level Soft Anti-Affinity' to 'false'.
+    12. Disable scheduling and set 'Eviction Requested' to 'true' on
+    node 2. And make sure the volume is in healthy state during the
+    eviction.
+    13. The eviction should be success and no replica on node 2. And 1
+    replica on node 1 and node 3. And verify the data with checksum 1.
+    14. Set 'Eviction Requested' to 'false' and enable scheduling on node 2.
+    15. Remove the replica on node 1 to make volume 1 in 'Degraded'
+    State. And set 'Eviction Requested' to 'true' and disable scheduling
+    on node 3.
+    16. Once volume 1 is back at 'Healthy' state, and the eviction is
+    done, there should be 1 replica on node 1 and node 2. And verify the
+    data with checksum 1.
+    17. Disable scheduling on node 1.
+    18. Create volume 2 with 2 replicas.
+    19. Attach volume 2 to node 2 and write some data to it and get
+    checksum 2. (volume 1 has replicas on node 1&2, volume 2 has replicas
+    on node 2&3)
+    20. Enable scheduling on node 1. And set 'Eviction Requested' to 'true'
+    and disable scheduling on node 2.
+    21. After the eviction is success, volume 1 should has replicas on node
+    1&3 and volume 2 should has replicas on node 1&3.
+    22. Verify the data on volume 1 and volume 2, the checksum should be
+    the same as checksum 1 and checksum 2.
+    23. Set 'Eviction Requested' to 'false' and enable scheduling on node 2.
+    """
+    pass
