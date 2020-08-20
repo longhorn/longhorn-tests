@@ -1891,7 +1891,23 @@ def test_volume_reattach_after_engine_sigkill(
                           filename=&#39;test2&#39;)
     read_data = read_volume_data(core_api, pod_name, &#39;test2&#39;)
 
-    assert read_data == &#39;longhorn-integration-test&#39;</code></pre>
+    assert read_data == &#39;longhorn-integration-test&#39;
+
+
+@pytest.mark.skip(reason=&#34;TODO&#34;)
+def test_rebuild_after_replica_file_crash():
+    &#34;&#34;&#34;
+    [HA] Test replica rebuild should be triggered if any crashes happened.
+
+    1. Create a longhorn volume with replicas.
+    2. Write random data to the volume and get the md5sum.
+    3. Remove file `volume-head-000.img` from one of the replicas.
+    4. Wait replica rebuild to be triggered.
+    5. Verify a new replica is rebuilt, and the old replica containing
+    the crashed file is state ERROR
+    6. Read the data from the volume and verify the md5sum.
+    &#34;&#34;&#34;
+    pass</code></pre>
 </details>
 </section>
 <section>
@@ -3163,6 +3179,40 @@ the activated volume.
     backupstore_cleanup(client)</code></pre>
 </details>
 </dd>
+<dt id="tests.test_ha.test_rebuild_after_replica_file_crash"><code class="name flex">
+<span>def <span class="ident">test_rebuild_after_replica_file_crash</span></span>(<span>)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>[HA] Test replica rebuild should be triggered if any crashes happened.</p>
+<ol>
+<li>Create a longhorn volume with replicas.</li>
+<li>Write random data to the volume and get the md5sum.</li>
+<li>Remove file <code>volume-head-000.img</code> from one of the replicas.</li>
+<li>Wait replica rebuild to be triggered.</li>
+<li>Verify a new replica is rebuilt, and the old replica containing
+the crashed file is state ERROR</li>
+<li>Read the data from the volume and verify the md5sum.</li>
+</ol></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@pytest.mark.skip(reason=&#34;TODO&#34;)
+def test_rebuild_after_replica_file_crash():
+    &#34;&#34;&#34;
+    [HA] Test replica rebuild should be triggered if any crashes happened.
+
+    1. Create a longhorn volume with replicas.
+    2. Write random data to the volume and get the md5sum.
+    3. Remove file `volume-head-000.img` from one of the replicas.
+    4. Wait replica rebuild to be triggered.
+    5. Verify a new replica is rebuilt, and the old replica containing
+    the crashed file is state ERROR
+    6. Read the data from the volume and verify the md5sum.
+    &#34;&#34;&#34;
+    pass</code></pre>
+</details>
+</dd>
 <dt id="tests.test_ha.test_rebuild_failure_with_intensive_data"><code class="name flex">
 <span>def <span class="ident">test_rebuild_failure_with_intensive_data</span></span>(<span>client, core_api, volume_name, csi_pv, pvc, pod_make)</span>
 </code></dt>
@@ -4306,6 +4356,7 @@ to crash the engine process</p>
 <li><code><a title="tests.test_ha.test_ha_salvage" href="#tests.test_ha.test_ha_salvage">test_ha_salvage</a></code></li>
 <li><code><a title="tests.test_ha.test_ha_simple_recovery" href="#tests.test_ha.test_ha_simple_recovery">test_ha_simple_recovery</a></code></li>
 <li><code><a title="tests.test_ha.test_inc_restoration_with_multiple_rebuild_and_expansion" href="#tests.test_ha.test_inc_restoration_with_multiple_rebuild_and_expansion">test_inc_restoration_with_multiple_rebuild_and_expansion</a></code></li>
+<li><code><a title="tests.test_ha.test_rebuild_after_replica_file_crash" href="#tests.test_ha.test_rebuild_after_replica_file_crash">test_rebuild_after_replica_file_crash</a></code></li>
 <li><code><a title="tests.test_ha.test_rebuild_failure_with_intensive_data" href="#tests.test_ha.test_rebuild_failure_with_intensive_data">test_rebuild_failure_with_intensive_data</a></code></li>
 <li><code><a title="tests.test_ha.test_rebuild_replica_and_from_replica_on_the_same_node" href="#tests.test_ha.test_rebuild_replica_and_from_replica_on_the_same_node">test_rebuild_replica_and_from_replica_on_the_same_node</a></code></li>
 <li><code><a title="tests.test_ha.test_rebuild_with_inc_restoration" href="#tests.test_ha.test_rebuild_with_inc_restoration">test_rebuild_with_inc_restoration</a></code></li>
