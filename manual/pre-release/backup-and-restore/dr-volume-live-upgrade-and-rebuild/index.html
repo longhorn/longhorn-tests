@@ -240,21 +240,37 @@
 </aside>
 
 <main style="padding: 1%; width: 70%;">
-  <header class="homepage-header">
-    <h1>v1.0.2</h1>
-    
-  </header>
-  <div class="homepage-content">
-    
-  </div>
+  <h1 id="title"><a href="https://github.com/longhorn/longhorn/issues/1279">#1279</a> DR volume live upgrade and rebuild</h1>
   <div>
-    <ul>
+    <article id="content">
+       <ol>
+<li>Launch Longhorn v1.0.1.</li>
+<li>Launch a pod with Longhorn volume.</li>
+<li>Write data to the volume and take the 1st backup.</li>
+<li>Create 2 DR volumes from the 1st backup.</li>
+<li>Shutdown the pod and wait for the original volume detached.</li>
+<li>Expand the original volume and wait for the expansion complete.</li>
+<li>Write data to the original volume and take the 2nd backup. (Make sure the total data size is larger than the original volume size so that there is date written to the expanded part.)</li>
+<li>Trigger incremental restore for the DR volumes by listing the backup volumes, and wait for restore complete.</li>
+<li>Upgrade Longhorn to the latest version.</li>
+<li>Crash one random replica for the 1st DR volume .</li>
+<li>Verify the 1st DR volume won&rsquo;t rebuild replicas and keep state <code>Degraded</code>.</li>
+<li>Write data to the original volume and take the 3rd backup.</li>
+<li>Trigger incremental restore for the DR volumes, and wait for restore complete.</li>
+<li>Do live upgrade for the 1st DR volume. This live upgrade call should fail and nothing gets changed.</li>
+<li>Activate the 1st DR volume.</li>
+<li>Launch a pod for the 1st activated volume, and verify the restored data is correct.</li>
+<li>Do live upgrade for the original volume and the 2nd DR volumes.</li>
+<li>Crash one random replica for the 2nd DR volume.</li>
+<li>Wait for the restore &amp; rebuild complete.</li>
+<li>Delete one replica for the 2nd DR volume, then activate the DR volume before the rebuild complete.</li>
+<li>Verify the DR volume will be auto detached after the rebuild complete.</li>
+<li>Launch a pod for the 2nd activated volume, and verify the restored data is correct.</li>
+<li>Crash one replica for the 2nd activated volume.</li>
+<li>Wait for the rebuild complete, then verify the volume still works fine by reading/writing more data.</li>
+</ol>
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.2/upgrade-lease-lock/">Upgrade Lease Lock</a></li>
-  
-
-</ul>
-
+    </article>
   </div>
 </main>
 
