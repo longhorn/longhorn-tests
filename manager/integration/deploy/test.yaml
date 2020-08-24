@@ -23,12 +23,14 @@ rules:
   resources: ["statefulsets", "deployments", "daemonsets"]
   verbs: ["*"]
 - apiGroups: ["rbac.authorization.k8s.io"]
-  resources: ["clusterroles", "clusterrolebindings"]
+  resources: ["clusterroles", "clusterrolebindings", "rolebindings", "roles"]
   verbs: ["*"]
 - apiGroups: ["apiextensions.k8s.io"]
   resources: ["customresourcedefinitions"]
   verbs: ["*"]
-
+- apiGroups: ["policy"]
+  resources: ["podsecuritypolicies"]
+  verbs: ["*"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
