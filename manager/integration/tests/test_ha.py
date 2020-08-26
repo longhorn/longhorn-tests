@@ -441,6 +441,7 @@ def wait_pod_for_auto_salvage(
 
     wait_for_volume_healthy(client, volume_name)
 
+    wait_for_pod_restart(core_api, pod_name)
     wait_for_pod_remount(core_api, pod_name)
 
     md5sum = get_pod_data_md5sum(core_api, pod_name, data_path)
