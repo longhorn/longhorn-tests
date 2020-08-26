@@ -58,6 +58,7 @@ if [[ "${LONGHORN_UPGRADE_TEST}" == true || "${LONGHORN_UPGRADE_TEST}" == True ]
   check_longhorn_status
 
   kubectl create -Rf "${WORKSPACE}/manager/integration/deploy/backupstores"
+  kubectl create -f "${WORKSPACE}/manager/integration/deploy/rwx_requirements.yaml"
 
   ## generate upgrade_test pod manifest
   sed 's/#TEST_FRAMEWORK_ARGS_PLACEHOLDER/args:\ \[\ \"\-s\"\ ,\ \"\-\-junitxml=\$\{LONGHORN_JUNIT_REPORT_PATH\}",\ \"\-\-include\-upgrade\-test\ \-k test_upgrade\" \]/; s/name: longhorn-test$/name: longhorn-test-upgrade/' "${WORKSPACE}/manager/integration/deploy/test.yaml" >> "${WORKSPACE}/manager/integration/deploy/upgrade_test.yaml"
@@ -83,6 +84,7 @@ else
   kubectl apply -f longhorn.yaml
   check_longhorn_status
   kubectl create -Rf "${WORKSPACE}/manager/integration/deploy/backupstores"
+  kubectl create -f "${WORKSPACE}/manager/integration/deploy/rwx_requirements.yaml"
 fi
 
 
