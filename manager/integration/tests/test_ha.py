@@ -1867,8 +1867,7 @@ def test_volume_reattach_after_engine_sigkill(
     assert read_data == 'longhorn-integration-test'
 
 
-@pytest.mark.skip(reason="TODO")
-def test_rebuild_after_replica_file_crash():
+def test_rebuild_after_replica_file_crash(client, volume_name): # NOQA
     """
     [HA] Test replica rebuild should be triggered if any crashes happened.
 
@@ -1880,4 +1879,43 @@ def test_rebuild_after_replica_file_crash():
     the crashed file is state ERROR
     6. Read the data from the volume and verify the md5sum.
     """
-    pass
+    replica_count = 3
+    volume = create_and_check_volume(client, volume_name, replica_count)
+    host_id = get_self_host_id()
+    volume = volume.attach(hostId=host_id)
+    volume = common.wait_for_volume_healthy(client, volume_name)
+    data = write_volume_random_data(volume)
+
+    replica = None
+    for rep in volume.replicas:
+        if rep["hostId"] == host_id:
+            replica = rep
+            break
+    assert replica is not None
+
+    volume_head_file_path = replica["dataPath"] + "/volume-head-000.img"
+
+    exec_cmd = ["rm", volume_head_file_path]
+
+    try:
+        subprocess.check_output(exec_cmd)
+    except subprocess.CalledProcessError as e:
+        print(e.output)
+
+    wait_for_volume_degraded(client, volume_name)
+    wait_for_rebuild_complete(client, volume_name)
+    wait_for_volume_healthy(client, volume_name)
+
+    volume = client.by_id_volume(volume_name)
+
+    crashed_replica = None
+    for rep in volume.replicas:
+        if rep["name"] == replica["name"]:
+            crashed_replica = rep
+            break
+
+    assert crashed_replica["running"] is False
+    assert crashed_replica["mode"] == ""
+    assert crashed_replica["failedAt"] is not None
+
+    check_volume_data(volume, data)
