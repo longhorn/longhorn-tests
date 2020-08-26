@@ -3321,12 +3321,13 @@ def make_deployment_with_pvc(request):
     return _generate_deployment_with_pvc_manifest
 
 
-def wait_deployment_replica_ready(apps_api, deployment_name, desired_replica_count): # NOQA
+def wait_deployment_replica_ready(apps_api, deployment_name,
+                                  desired_replica_count, namespace='default'):  # NOQA
     replicas_ready = False
     for i in range(DEFAULT_DEPLOYMENT_TIMEOUT):
         deployment = apps_api.read_namespaced_deployment(
             name=deployment_name,
-            namespace="default")
+            namespace=namespace)
 
         if deployment.status.ready_replicas == desired_replica_count:
             replicas_ready = True
@@ -3366,11 +3367,11 @@ def wait_delete_deployment(apps_api, deployment_name):
     assert not found
 
 
-def delete_and_wait_deployment(apps_api, deployment_name):
+def delete_and_wait_deployment(apps_api, deployment_name, namespace='default'):
     try:
         apps_api.delete_namespaced_deployment(
             name=deployment_name,
-            namespace='default'
+            namespace=namespace
         )
     except ApiException as e:
         assert e.status == 404
