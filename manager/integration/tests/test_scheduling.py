@@ -377,3 +377,83 @@ def test_replica_rebuild_per_volume_limit():
 
     """
     pass
+
+
+@pytest.mark.skip(reason="TODO")
+def test_data_locality_basic():
+    """
+    Test data locality basic feature
+
+    Context:
+
+    Data Locality feature allows users to have an option to keep a local
+    replica on the same node as the consuming pod.
+    Longhorn is currently supporting 2 modes:
+    - disabled: Longhorn does not try to keep a local replica
+    - best-effort: Longhorn try to keep a local replica
+
+    See manual tests at:
+    https://github.com/longhorn/longhorn/issues/1045#issuecomment-680706283
+
+    Steps:
+
+    1. Create a volume(1) with 1 replica and dataLocality set to disabled
+    2. Find node where the replica is located on.
+       Let's call the node is replica-node
+    3. Attach the volume to a node different than replica-node.
+       Let call the node is engine-node
+    4. Write 200MB data to volume(1)
+    5. Use a retry loop to verify that Longhorn does not create
+       a replica on the engine-node
+    6. Update dataLocality to best-effort for volume(1)
+    7. Use a retry loop to verify that Longhorn creates and rebuilds
+       a replica on the engine-node and remove the other replica
+    8. detach the volume(1) and attach it to a different node.
+       Let's call the new node is new-engine-node and the old
+       node is old-engine-node
+    9. Wait for volume(1) to finish attaching
+    10. Use a retry loop to verify that Longhorn creates and rebuilds
+       a replica on the new-engine-node and remove the replica on
+       old-engine-node
+    11. Update dataLocality to disabled for volume(1)
+    12. detach the volume(1) and attach it to a different node.
+       Let's call the new node is new-engine-node and the old
+       node is old-engine-node
+    13. Wait for volume(1) to finish detaching
+    14. Use a retry loop to verify that Longhorn does not create
+        a replica on the new-engine-node
+
+    15. Add the tag AVAIL to node-1 and node-2
+    16. Set node soft anti-affinity to `true`.
+    17. Create a volume(2) with 3 replicas and dataLocality set to best-effort
+    18. Use a retry loop to verify that all 3 replicas are on node-1 and
+        node-2, no replica is on node-3
+    19. Attach volume(2) to node-3
+    20. User a retry loop to verify that there is no replica on node-3 and
+        we can still read/write to volume(2)
+    21. Find the node which contains 2 replicas.
+        Let call the node is most-replica-node
+    22. Set the replica count to 2 for volume(2)
+    23. Verify that Longhorn remove one replica from most-replica-node
+
+    24. Remove the tag AVAIL from node-1 and node-2
+    25. Set node soft anti-affinity to `false`.
+    26. Create a volume(3) with 1 replicas and dataLocality set to best-effort
+    27. Attach volume(3) to node-3.
+    28. Use a retry loop to verify that volume(3) has only 1 replica on node-3
+    29. Write 10GB data to volume(3)
+    30. Detach volume(3)
+    31. Attach volume(3) to node-1
+    32. Use a retry loop to:
+        Wait until volume(3) finishes attaching.
+        Wait until Longhorn start rebuilding a replica on node-1
+        Immediately detach volume(3)
+    33. Verify that the replica on node-1 is in ERR state.
+    34. Attach volume(3) to node-1
+    35. Wait until volume(3) finishes attaching.
+    36. Use a retry loop to verify the Longhorn cleanup the ERR replica,
+        rebuild a new replica on node-1, and remove the replica on node-3
+
+    37. clean up
+    """
+    pass
