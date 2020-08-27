@@ -111,11 +111,12 @@ SETTING_CREATE_DEFAULT_DISK_LABELED_NODES = "create-default-disk-labeled-nodes"
 SETTING_DISABLE_SCHEDULING_ON_CORDONED_NODE = \
     "disable-scheduling-on-cordoned-node"
 SETTING_DEFAULT_DATA_PATH = "default-data-path"
+SETTING_VOLUME_ATTACHMENT_RECOVERY_POLICY = "volume-attachment-recovery-policy"
 DEFAULT_DISK_PATH = "/var/lib/longhorn/"
 DEFAULT_STORAGE_OVER_PROVISIONING_PERCENTAGE = "500"
 DEFAULT_STORAGE_MINIMAL_AVAILABLE_PERCENTAGE = "10"
 DEFAULT_LONGHORN_STATIC_STORAGECLASS_NAME = "longhorn-static"
-
+DEFAULT_VOLUME_ATTACHMENT_RECOVERY_POLICY = "wait"
 DEFAULT_REPLICA_DIRECTORY = os.path.join(DEFAULT_DISK_PATH, "replicas/")
 
 NODE_CONDITION_MOUNTPROPAGATION = "MountPropagation"
@@ -2406,6 +2407,16 @@ def reset_settings(client):
         print("Exception when update "
               "Guaranteed Engine CPU setting",
               guaranteed_engine_cpu_setting, e)
+
+    volume_attachment_recovery_policy_setting = client.by_id_setting(
+        SETTING_VOLUME_ATTACHMENT_RECOVERY_POLICY)
+    try:
+        client.update(volume_attachment_recovery_policy_setting,
+                      value=DEFAULT_VOLUME_ATTACHMENT_RECOVERY_POLICY)
+    except Exception as e:
+        print("Exception when update "
+              " Volume Attachment Recovery Policy settings",
+              volume_attachment_recovery_policy_setting, e)
 
     instance_managers = client.list_instance_manager()
     core_api = get_core_api_client()

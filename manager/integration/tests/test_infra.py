@@ -4,7 +4,6 @@ import time
 
 from digitalocean import digitalocean
 from common import get_core_api_client, get_longhorn_api_client
-from common import RETRY_COUNTS, RETRY_INTERVAL
 
 from common import SIZE
 from common import create_and_check_volume
@@ -26,9 +25,17 @@ from common import client # NOQA
 from common import wait_pod
 from common import volume_name # NOQA
 from common import generate_volume_name
+from common import settings_reset # NOQA
+from common import SETTING_REPLICA_NODE_SOFT_ANTI_AFFINITY
+from common import SETTING_VOLUME_ATTACHMENT_RECOVERY_POLICY
 
 TERMINATING_POD_RETRYS = 30
 TERMINATING_POD_INTERVAL = 1
+
+K8S_NODE_RETRY_COUNTS = 600
+K8S_NODE_RETRY_INTERVAL = 1
+LONGHORN_NODE_RETRY_COUNTS = 300
+LONGHORN_NODE_RETRY_INTERVAL = 1
 
 
 def detect_cloudprovider():
@@ -56,24 +63,24 @@ def is_node_ready_k8s(node_name, k8s_api_client):
 
 def wait_for_node_up_k8s(node_name, k8s_api_client):
     node_up = False
-    for i in range(RETRY_COUNTS):
+    for i in range(K8S_NODE_RETRY_COUNTS):
         if is_node_ready_k8s(node_name, k8s_api_client) is True:
             node_up = True
             break
         else:
-            time.sleep(RETRY_INTERVAL)
+            time.sleep(K8S_NODE_RETRY_INTERVAL)
             continue
     return node_up
 
 
 def wait_for_node_down_k8s(node_name, k8s_api_client):
     node_down = False
-    for i in range(RETRY_COUNTS):
+    for i in range(K8S_NODE_RETRY_COUNTS):
         if is_node_ready_k8s(node_name, k8s_api_client) is False:
             node_down = True
             break
         else:
-            time.sleep(RETRY_INTERVAL)
+            time.sleep(K8S_NODE_RETRY_INTERVAL)
             continue
     return node_down
 
@@ -91,12 +98,12 @@ def is_node_ready_longhorn(node_name, longhorn_api_client):
 
 def wait_for_node_up_longhorn(node_name, longhorn_api_client):
     longhorn_node_up = False
-    for i in range(RETRY_COUNTS):
+    for i in range(LONGHORN_NODE_RETRY_COUNTS):
         if is_node_ready_longhorn(node_name, longhorn_api_client) is True:
             longhorn_node_up = True
             break
         else:
-            time.sleep(RETRY_INTERVAL)
+            time.sleep(LONGHORN_NODE_RETRY_INTERVAL)
             continue
 
     return longhorn_node_up
@@ -104,12 +111,12 @@ def wait_for_node_up_longhorn(node_name, longhorn_api_client):
 
 def wait_for_node_down_longhorn(node_name, longhorn_api_client):
     longhorn_node_down = False
-    for i in range(RETRY_COUNTS):
+    for i in range(LONGHORN_NODE_RETRY_COUNTS):
         if is_node_ready_longhorn(node_name, longhorn_api_client) is False:
             longhorn_node_down = True
             break
         else:
-            time.sleep(RETRY_INTERVAL)
+            time.sleep(LONGHORN_NODE_RETRY_INTERVAL)
             continue
 
     return longhorn_node_down
@@ -196,7 +203,7 @@ def test_offline_node(reset_cluster_ready_status):
 
 
 @pytest.mark.infra
-def test_offline_node_with_attached_volume_and_pod(client, core_api, volume_name, make_deployment_with_pvc, reset_cluster_ready_status): # NOQA
+def test_offline_node_with_attached_volume_and_pod(client, core_api, volume_name, make_deployment_with_pvc, settings_reset, reset_cluster_ready_status): # NOQA
     """
     Test offline node with attached volume and pod
 
@@ -214,6 +221,14 @@ def test_offline_node_with_attached_volume_and_pod(client, core_api, volume_name
     10. Check `test_data` in the new pod
     """
     toleration_seconds = 20
+
+    replica_node_soft_anti_affinity_setting = \
+        client.by_id_setting(SETTING_REPLICA_NODE_SOFT_ANTI_AFFINITY)
+    client.update(replica_node_soft_anti_affinity_setting, value="true")
+
+    volume_attachment_recovery_policy_setting = client.by_id_setting(
+        SETTING_VOLUME_ATTACHMENT_RECOVERY_POLICY)
+    client.update(volume_attachment_recovery_policy_setting, value="never")
 
     apps_api = get_apps_api_client()
     cloudprovider = detect_cloudprovider()
