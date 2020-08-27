@@ -396,22 +396,22 @@ def test_engine_image_incompatible(client, core_api, volume_name):  # NOQA
     assert images[0].state == "ready"
 
     cli_v = images[0].cliAPIVersion
-    # cli_minv = images[0].cliAPIMinVersion
+    cli_minv = images[0].cliAPIMinVersion
     ctl_v = images[0].controllerAPIVersion
     ctl_minv = images[0].controllerAPIMinVersion
     data_v = images[0].dataFormatVersion
     data_minv = images[0].dataFormatMinVersion
 
     fail_cli_v_image = common.get_compatibility_test_image(
-            cli_v - 1, cli_v - 1,
-            ctl_v, ctl_minv,
-            data_v, data_minv)
+        cli_minv - 1, cli_minv - 1,
+        ctl_v, ctl_minv,
+        data_v, data_minv)
     img = client.create_engine_image(image=fail_cli_v_image)
     img_name = img.name
     img = wait_for_engine_image_state(client, img_name, "incompatible")
     assert img.state == "incompatible"
-    assert img.cliAPIVersion == cli_v - 1
-    assert img.cliAPIMinVersion == cli_v - 1
+    assert img.cliAPIVersion == cli_minv - 1
+    assert img.cliAPIMinVersion == cli_minv - 1
     client.delete(img)
     wait_for_engine_image_deletion(client, core_api, img.name)
 
