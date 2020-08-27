@@ -1895,8 +1895,7 @@ def test_volume_reattach_after_engine_sigkill(
     assert read_data == &#39;longhorn-integration-test&#39;
 
 
-@pytest.mark.skip(reason=&#34;TODO&#34;)
-def test_rebuild_after_replica_file_crash():
+def test_rebuild_after_replica_file_crash(client, volume_name): # NOQA
     &#34;&#34;&#34;
     [HA] Test replica rebuild should be triggered if any crashes happened.
 
@@ -1908,7 +1907,46 @@ def test_rebuild_after_replica_file_crash():
     the crashed file is state ERROR
     6. Read the data from the volume and verify the md5sum.
     &#34;&#34;&#34;
-    pass</code></pre>
+    replica_count = 3
+    volume = create_and_check_volume(client, volume_name, replica_count)
+    host_id = get_self_host_id()
+    volume = volume.attach(hostId=host_id)
+    volume = common.wait_for_volume_healthy(client, volume_name)
+    data = write_volume_random_data(volume)
+
+    replica = None
+    for rep in volume.replicas:
+        if rep[&#34;hostId&#34;] == host_id:
+            replica = rep
+            break
+    assert replica is not None
+
+    volume_head_file_path = replica[&#34;dataPath&#34;] + &#34;/volume-head-000.img&#34;
+
+    exec_cmd = [&#34;rm&#34;, volume_head_file_path]
+
+    try:
+        subprocess.check_output(exec_cmd)
+    except subprocess.CalledProcessError as e:
+        print(e.output)
+
+    wait_for_volume_degraded(client, volume_name)
+    wait_for_rebuild_complete(client, volume_name)
+    wait_for_volume_healthy(client, volume_name)
+
+    volume = client.by_id_volume(volume_name)
+
+    crashed_replica = None
+    for rep in volume.replicas:
+        if rep[&#34;name&#34;] == replica[&#34;name&#34;]:
+            crashed_replica = rep
+            break
+
+    assert crashed_replica[&#34;running&#34;] is False
+    assert crashed_replica[&#34;mode&#34;] == &#34;&#34;
+    assert crashed_replica[&#34;failedAt&#34;] is not None
+
+    check_volume_data(volume, data)</code></pre>
 </details>
 </section>
 <section>
@@ -3181,7 +3219,7 @@ the activated volume.
 </details>
 </dd>
 <dt id="tests.test_ha.test_rebuild_after_replica_file_crash"><code class="name flex">
-<span>def <span class="ident">test_rebuild_after_replica_file_crash</span></span>(<span>)</span>
+<span>def <span class="ident">test_rebuild_after_replica_file_crash</span></span>(<span>client, volume_name)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>[HA] Test replica rebuild should be triggered if any crashes happened.</p>
@@ -3198,8 +3236,7 @@ the crashed file is state ERROR</li>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">@pytest.mark.skip(reason=&#34;TODO&#34;)
-def test_rebuild_after_replica_file_crash():
+<pre><code class="python">def test_rebuild_after_replica_file_crash(client, volume_name): # NOQA
     &#34;&#34;&#34;
     [HA] Test replica rebuild should be triggered if any crashes happened.
 
@@ -3211,7 +3248,46 @@ def test_rebuild_after_replica_file_crash():
     the crashed file is state ERROR
     6. Read the data from the volume and verify the md5sum.
     &#34;&#34;&#34;
-    pass</code></pre>
+    replica_count = 3
+    volume = create_and_check_volume(client, volume_name, replica_count)
+    host_id = get_self_host_id()
+    volume = volume.attach(hostId=host_id)
+    volume = common.wait_for_volume_healthy(client, volume_name)
+    data = write_volume_random_data(volume)
+
+    replica = None
+    for rep in volume.replicas:
+        if rep[&#34;hostId&#34;] == host_id:
+            replica = rep
+            break
+    assert replica is not None
+
+    volume_head_file_path = replica[&#34;dataPath&#34;] + &#34;/volume-head-000.img&#34;
+
+    exec_cmd = [&#34;rm&#34;, volume_head_file_path]
+
+    try:
+        subprocess.check_output(exec_cmd)
+    except subprocess.CalledProcessError as e:
+        print(e.output)
+
+    wait_for_volume_degraded(client, volume_name)
+    wait_for_rebuild_complete(client, volume_name)
+    wait_for_volume_healthy(client, volume_name)
+
+    volume = client.by_id_volume(volume_name)
+
+    crashed_replica = None
+    for rep in volume.replicas:
+        if rep[&#34;name&#34;] == replica[&#34;name&#34;]:
+            crashed_replica = rep
+            break
+
+    assert crashed_replica[&#34;running&#34;] is False
+    assert crashed_replica[&#34;mode&#34;] == &#34;&#34;
+    assert crashed_replica[&#34;failedAt&#34;] is not None
+
+    check_volume_data(volume, data)</code></pre>
 </details>
 </dd>
 <dt id="tests.test_ha.test_rebuild_failure_with_intensive_data"><code class="name flex">
