@@ -2211,7 +2211,56 @@ def test_replica_scheduler_rebuild_restore_is_too_big(client):  # NOQA
 
     node = common.wait_for_disk_update(client, lht_hostId,
                                        len(update_disks))
-    cleanup_host_disk(client, &#39;vol-small&#39;)</code></pre>
+    cleanup_host_disk(client, &#39;vol-small&#39;)
+
+
+@pytest.mark.skip(reason=&#34;TODO&#34;)
+def test_node_eviction():
+    &#34;&#34;&#34;
+    Test node eviction (assuming this is a 3 nodes cluster)
+
+    1. Disable scheduling on node 3.
+    2. Create volume 1 with 2 replicas.
+    3. Attach volume 1 to node 1 and write some data to it and get
+    checksum 1.
+    4. Disable scheduling and set &#39;Eviction Requested&#39; to &#39;true&#39; on node 1.
+    5. Volume 1 should be failed to schedule new replica.
+    6. Set &#39;Eviction Requested&#39; to &#39;false&#39; to cancel node 1 eviction and
+    check there should be 1 replica on node 1 and node 2. And remove the
+    unscheduled replica.
+    7. Set &#39;Eviction Requested&#39; to &#39;true&#39; on node 1.
+    8. Set &#39;Replica Node Level Soft Anti-Affinity&#39; to &#39;true&#39;.
+    9. The eviction should be success, and no replica on node 1, 2 replicas
+    on node 2.
+    10. Enable scheduling on node 3, and set &#39;Eviction Requested&#39; to
+    &#39;false&#39;, enable scheduling on node 1.
+    11. Set &#39;Replica Node Level Soft Anti-Affinity&#39; to &#39;false&#39;.
+    12. Disable scheduling and set &#39;Eviction Requested&#39; to &#39;true&#39; on
+    node 2. And make sure the volume is in healthy state during the
+    eviction.
+    13. The eviction should be success and no replica on node 2. And 1
+    replica on node 1 and node 3. And verify the data with checksum 1.
+    14. Set &#39;Eviction Requested&#39; to &#39;false&#39; and enable scheduling on node 2.
+    15. Remove the replica on node 1 to make volume 1 in &#39;Degraded&#39;
+    State. And set &#39;Eviction Requested&#39; to &#39;true&#39; and disable scheduling
+    on node 3.
+    16. Once volume 1 is back at &#39;Healthy&#39; state, and the eviction is
+    done, there should be 1 replica on node 1 and node 2. And verify the
+    data with checksum 1.
+    17. Disable scheduling on node 1.
+    18. Create volume 2 with 2 replicas.
+    19. Attach volume 2 to node 2 and write some data to it and get
+    checksum 2. (volume 1 has replicas on node 1&amp;2, volume 2 has replicas
+    on node 2&amp;3)
+    20. Enable scheduling on node 1. And set &#39;Eviction Requested&#39; to &#39;true&#39;
+    and disable scheduling on node 2.
+    21. After the eviction is success, volume 1 should has replicas on node
+    1&amp;3 and volume 2 should has replicas on node 1&amp;3.
+    22. Verify the data on volume 1 and volume 2, the checksum should be
+    the same as checksum 1 and checksum 2.
+    23. Set &#39;Eviction Requested&#39; to &#39;false&#39; and enable scheduling on node 2.
+    &#34;&#34;&#34;
+    pass</code></pre>
 </details>
 </section>
 <section>
@@ -3703,6 +3752,106 @@ def test_node_disk_update(client):  # NOQA
     cleanup_host_disk(client, &#39;vol-disk-1&#39;, &#39;vol-disk-2&#39;)</code></pre>
 </details>
 </dd>
+<dt id="tests.test_node.test_node_eviction"><code class="name flex">
+<span>def <span class="ident">test_node_eviction</span></span>(<span>)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test node eviction (assuming this is a 3 nodes cluster)</p>
+<ol>
+<li>Disable scheduling on node 3.</li>
+<li>Create volume 1 with 2 replicas.</li>
+<li>Attach volume 1 to node 1 and write some data to it and get
+checksum 1.</li>
+<li>Disable scheduling and set 'Eviction Requested' to 'true' on node 1.</li>
+<li>Volume 1 should be failed to schedule new replica.</li>
+<li>Set 'Eviction Requested' to 'false' to cancel node 1 eviction and
+check there should be 1 replica on node 1 and node 2. And remove the
+unscheduled replica.</li>
+<li>Set 'Eviction Requested' to 'true' on node 1.</li>
+<li>Set 'Replica Node Level Soft Anti-Affinity' to 'true'.</li>
+<li>The eviction should be success, and no replica on node 1, 2 replicas
+on node 2.</li>
+<li>Enable scheduling on node 3, and set 'Eviction Requested' to
+'false', enable scheduling on node 1.</li>
+<li>Set 'Replica Node Level Soft Anti-Affinity' to 'false'.</li>
+<li>Disable scheduling and set 'Eviction Requested' to 'true' on
+node 2. And make sure the volume is in healthy state during the
+eviction.</li>
+<li>The eviction should be success and no replica on node 2. And 1
+replica on node 1 and node 3. And verify the data with checksum 1.</li>
+<li>Set 'Eviction Requested' to 'false' and enable scheduling on node 2.</li>
+<li>Remove the replica on node 1 to make volume 1 in 'Degraded'
+State. And set 'Eviction Requested' to 'true' and disable scheduling
+on node 3.</li>
+<li>Once volume 1 is back at 'Healthy' state, and the eviction is
+done, there should be 1 replica on node 1 and node 2. And verify the
+data with checksum 1.</li>
+<li>Disable scheduling on node 1.</li>
+<li>Create volume 2 with 2 replicas.</li>
+<li>Attach volume 2 to node 2 and write some data to it and get
+checksum 2. (volume 1 has replicas on node 1&amp;2, volume 2 has replicas
+on node 2&amp;3)</li>
+<li>Enable scheduling on node 1. And set 'Eviction Requested' to 'true'
+and disable scheduling on node 2.</li>
+<li>After the eviction is success, volume 1 should has replicas on node
+1&amp;3 and volume 2 should has replicas on node 1&amp;3.</li>
+<li>Verify the data on volume 1 and volume 2, the checksum should be
+the same as checksum 1 and checksum 2.</li>
+<li>Set 'Eviction Requested' to 'false' and enable scheduling on node 2.</li>
+</ol></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@pytest.mark.skip(reason=&#34;TODO&#34;)
+def test_node_eviction():
+    &#34;&#34;&#34;
+    Test node eviction (assuming this is a 3 nodes cluster)
+
+    1. Disable scheduling on node 3.
+    2. Create volume 1 with 2 replicas.
+    3. Attach volume 1 to node 1 and write some data to it and get
+    checksum 1.
+    4. Disable scheduling and set &#39;Eviction Requested&#39; to &#39;true&#39; on node 1.
+    5. Volume 1 should be failed to schedule new replica.
+    6. Set &#39;Eviction Requested&#39; to &#39;false&#39; to cancel node 1 eviction and
+    check there should be 1 replica on node 1 and node 2. And remove the
+    unscheduled replica.
+    7. Set &#39;Eviction Requested&#39; to &#39;true&#39; on node 1.
+    8. Set &#39;Replica Node Level Soft Anti-Affinity&#39; to &#39;true&#39;.
+    9. The eviction should be success, and no replica on node 1, 2 replicas
+    on node 2.
+    10. Enable scheduling on node 3, and set &#39;Eviction Requested&#39; to
+    &#39;false&#39;, enable scheduling on node 1.
+    11. Set &#39;Replica Node Level Soft Anti-Affinity&#39; to &#39;false&#39;.
+    12. Disable scheduling and set &#39;Eviction Requested&#39; to &#39;true&#39; on
+    node 2. And make sure the volume is in healthy state during the
+    eviction.
+    13. The eviction should be success and no replica on node 2. And 1
+    replica on node 1 and node 3. And verify the data with checksum 1.
+    14. Set &#39;Eviction Requested&#39; to &#39;false&#39; and enable scheduling on node 2.
+    15. Remove the replica on node 1 to make volume 1 in &#39;Degraded&#39;
+    State. And set &#39;Eviction Requested&#39; to &#39;true&#39; and disable scheduling
+    on node 3.
+    16. Once volume 1 is back at &#39;Healthy&#39; state, and the eviction is
+    done, there should be 1 replica on node 1 and node 2. And verify the
+    data with checksum 1.
+    17. Disable scheduling on node 1.
+    18. Create volume 2 with 2 replicas.
+    19. Attach volume 2 to node 2 and write some data to it and get
+    checksum 2. (volume 1 has replicas on node 1&amp;2, volume 2 has replicas
+    on node 2&amp;3)
+    20. Enable scheduling on node 1. And set &#39;Eviction Requested&#39; to &#39;true&#39;
+    and disable scheduling on node 2.
+    21. After the eviction is success, volume 1 should has replicas on node
+    1&amp;3 and volume 2 should has replicas on node 1&amp;3.
+    22. Verify the data on volume 1 and volume 2, the checksum should be
+    the same as checksum 1 and checksum 2.
+    23. Set &#39;Eviction Requested&#39; to &#39;false&#39; and enable scheduling on node 2.
+    &#34;&#34;&#34;
+    pass</code></pre>
+</details>
+</dd>
 <dt id="tests.test_node.test_node_umount_disk"><code class="name flex">
 <span>def <span class="ident">test_node_umount_disk</span></span>(<span>client)</span>
 </code></dt>
@@ -4928,6 +5077,7 @@ def test_update_node(client):  # NOQA
 <li><code><a title="tests.test_node.test_node_default_disk_added_back_with_extra_disk_unmounted" href="#tests.test_node.test_node_default_disk_added_back_with_extra_disk_unmounted">test_node_default_disk_added_back_with_extra_disk_unmounted</a></code></li>
 <li><code><a title="tests.test_node.test_node_default_disk_labeled" href="#tests.test_node.test_node_default_disk_labeled">test_node_default_disk_labeled</a></code></li>
 <li><code><a title="tests.test_node.test_node_disk_update" href="#tests.test_node.test_node_disk_update">test_node_disk_update</a></code></li>
+<li><code><a title="tests.test_node.test_node_eviction" href="#tests.test_node.test_node_eviction">test_node_eviction</a></code></li>
 <li><code><a title="tests.test_node.test_node_umount_disk" href="#tests.test_node.test_node_umount_disk">test_node_umount_disk</a></code></li>
 <li><code><a title="tests.test_node.test_replica_datapath_cleanup" href="#tests.test_node.test_replica_datapath_cleanup">test_replica_datapath_cleanup</a></code></li>
 <li><code><a title="tests.test_node.test_replica_scheduler_exceed_over_provisioning" href="#tests.test_node.test_replica_scheduler_exceed_over_provisioning">test_replica_scheduler_exceed_over_provisioning</a></code></li>
