@@ -1919,3 +1919,23 @@ def test_rebuild_after_replica_file_crash(client, volume_name): # NOQA
     assert crashed_replica["failedAt"] is not None
 
     check_volume_data(volume, data)
+
+
+@pytest.mark.skip(reason="TODO")
+def test_extra_replica_cleanup():
+    """
+    Test extra failed to scheduled replica cleanup
+    when no eviction requested
+
+    1. Make sure 'Replica Node Level Soft Anti-Affinity' is disabled.
+    2. Create a volume with 3 replicas.
+    3. Attach the volume to a node and write some data to it and
+    save the checksum.
+    4. Increase the volume replica number to 4.
+    5. Volume should show failed to schedule and an extra stop replica.
+    6. Decrease the volume replica nubmer to 3.
+    7. Volume should show healthy and the extra failed to scheduled replica
+    should be removed.
+    8. Check the data in the volume and make sure it's same as the chechsum.
+    """
+    pass
