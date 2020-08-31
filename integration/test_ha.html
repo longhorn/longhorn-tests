@@ -1946,7 +1946,27 @@ def test_rebuild_after_replica_file_crash(client, volume_name): # NOQA
     assert crashed_replica[&#34;mode&#34;] == &#34;&#34;
     assert crashed_replica[&#34;failedAt&#34;] is not None
 
-    check_volume_data(volume, data)</code></pre>
+    check_volume_data(volume, data)
+
+
+@pytest.mark.skip(reason=&#34;TODO&#34;)
+def test_extra_replica_cleanup():
+    &#34;&#34;&#34;
+    Test extra failed to scheduled replica cleanup
+    when no eviction requested
+
+    1. Make sure &#39;Replica Node Level Soft Anti-Affinity&#39; is disabled.
+    2. Create a volume with 3 replicas.
+    3. Attach the volume to a node and write some data to it and
+    save the checksum.
+    4. Increase the volume replica number to 4.
+    5. Volume should show failed to schedule and an extra stop replica.
+    6. Decrease the volume replica nubmer to 3.
+    7. Volume should show healthy and the extra failed to scheduled replica
+    should be removed.
+    8. Check the data in the volume and make sure it&#39;s same as the chechsum.
+    &#34;&#34;&#34;
+    pass</code></pre>
 </details>
 </section>
 <section>
@@ -2718,6 +2738,48 @@ volume.conditions[restore].reason == "RestoreInProgress"</code>.</li>
 
     res_md5sum = get_pod_data_md5sum(core_api, res_pod_name, data_path)
     assert md5sum == res_md5sum</code></pre>
+</details>
+</dd>
+<dt id="tests.test_ha.test_extra_replica_cleanup"><code class="name flex">
+<span>def <span class="ident">test_extra_replica_cleanup</span></span>(<span>)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test extra failed to scheduled replica cleanup
+when no eviction requested</p>
+<ol>
+<li>Make sure 'Replica Node Level Soft Anti-Affinity' is disabled.</li>
+<li>Create a volume with 3 replicas.</li>
+<li>Attach the volume to a node and write some data to it and
+save the checksum.</li>
+<li>Increase the volume replica number to 4.</li>
+<li>Volume should show failed to schedule and an extra stop replica.</li>
+<li>Decrease the volume replica nubmer to 3.</li>
+<li>Volume should show healthy and the extra failed to scheduled replica
+should be removed.</li>
+<li>Check the data in the volume and make sure it's same as the chechsum.</li>
+</ol></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@pytest.mark.skip(reason=&#34;TODO&#34;)
+def test_extra_replica_cleanup():
+    &#34;&#34;&#34;
+    Test extra failed to scheduled replica cleanup
+    when no eviction requested
+
+    1. Make sure &#39;Replica Node Level Soft Anti-Affinity&#39; is disabled.
+    2. Create a volume with 3 replicas.
+    3. Attach the volume to a node and write some data to it and
+    save the checksum.
+    4. Increase the volume replica number to 4.
+    5. Volume should show failed to schedule and an extra stop replica.
+    6. Decrease the volume replica nubmer to 3.
+    7. Volume should show healthy and the extra failed to scheduled replica
+    should be removed.
+    8. Check the data in the volume and make sure it&#39;s same as the chechsum.
+    &#34;&#34;&#34;
+    pass</code></pre>
 </details>
 </dd>
 <dt id="tests.test_ha.test_ha_backup_deletion_recovery"><code class="name flex">
@@ -4428,6 +4490,7 @@ to crash the engine process</p>
 <li><code><a title="tests.test_ha.test_dr_volume_with_restore_command_error" href="#tests.test_ha.test_dr_volume_with_restore_command_error">test_dr_volume_with_restore_command_error</a></code></li>
 <li><code><a title="tests.test_ha.test_engine_crash_for_dr_volume" href="#tests.test_ha.test_engine_crash_for_dr_volume">test_engine_crash_for_dr_volume</a></code></li>
 <li><code><a title="tests.test_ha.test_engine_crash_for_restore_volume" href="#tests.test_ha.test_engine_crash_for_restore_volume">test_engine_crash_for_restore_volume</a></code></li>
+<li><code><a title="tests.test_ha.test_extra_replica_cleanup" href="#tests.test_ha.test_extra_replica_cleanup">test_extra_replica_cleanup</a></code></li>
 <li><code><a title="tests.test_ha.test_ha_backup_deletion_recovery" href="#tests.test_ha.test_ha_backup_deletion_recovery">test_ha_backup_deletion_recovery</a></code></li>
 <li><code><a title="tests.test_ha.test_ha_prohibit_deleting_last_replica" href="#tests.test_ha.test_ha_prohibit_deleting_last_replica">test_ha_prohibit_deleting_last_replica</a></code></li>
 <li><code><a title="tests.test_ha.test_ha_recovery_with_expansion" href="#tests.test_ha.test_ha_recovery_with_expansion">test_ha_recovery_with_expansion</a></code></li>
