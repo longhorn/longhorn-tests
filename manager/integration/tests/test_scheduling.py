@@ -1,13 +1,28 @@
 import pytest
+import time
 
 from common import RETRY_COUNTS, RETRY_INTERVAL
-from common import client, volume_name  # NOQA
+from common import client, core_api, volume_name, pod  # NOQA
 from common import check_volume_data, cleanup_volume, \
     create_and_check_volume, get_longhorn_api_client, get_self_host_id, \
     wait_for_volume_detached, wait_for_volume_degraded, \
     wait_for_volume_healthy, wait_scheduling_failure, \
     write_volume_random_data, wait_for_rebuild_complete
 from common import SETTING_REPLICA_NODE_SOFT_ANTI_AFFINITY
+from common import SETTING_DEFAULT_DATA_LOCALITY
+from common import create_pv_for_volume
+from common import create_pvc_for_volume
+from common import write_pod_volume_random_data
+from common import wait_for_volume_replica_count
+
+from common import Mi, Gi, DATA_SIZE_IN_MB_2, DATA_SIZE_IN_MB_4
+from common import create_and_wait_pod
+from common import settings_reset # NOQA
+from common import wait_for_rebuild_start
+from common import delete_and_wait_pod
+from common import wait_for_replica_failed
+from common import crash_engine_process_with_sigkill
+
 from time import sleep
 
 
@@ -379,8 +394,7 @@ def test_replica_rebuild_per_volume_limit():
     pass
 
 
-@pytest.mark.skip(reason="TODO")
-def test_data_locality_basic():
+def test_data_locality_basic(client, core_api, volume_name, pod, settings_reset): # NOQA
     """
     Test data locality basic feature
 
@@ -454,6 +468,426 @@ def test_data_locality_basic():
     36. Use a retry loop to verify the Longhorn cleanup the ERR replica,
         rebuild a new replica on node-1, and remove the replica on node-3
 
-    37. clean up
+    37. Disable scheduling for node-3
+    38. Create a vol with 1 replica, `dataLocality = best-effort`.
+        The replica is scheduled on a node (say node-1)
+    39. Attach vol to node-3. There is a fail-to-schedule
+        replica with Spec.HardNodeAffinity=node-3
+    40. Increase numberOfReplica to 3. Verify that the replica set contains:
+        one on node-1, one on node-2,  one failed replica
+        with Spec.HardNodeAffinity=node-3.
+    41. Decrease numberOfReplica to 2. Verify that the replica set contains:
+        one on node-1, one on node-2,  one failed replica
+        with Spec.HardNodeAffinity=node-3.
+    42. Decrease numberOfReplica to 1. Verify that the replica set contains:
+        one on node-1 or node-2,  one failed replica
+        with Spec.HardNodeAffinity=node-3.
+    43. Decrease numberOfReplica to 2. Verify that the replica set contains:
+        one on node-1, one on node-2, one failed replica
+        with Spec.HardNodeAffinity=node-3.
+    44. Turn off data locality by set `dataLocality=disabled` for the vol.
+        Verify that the replica set contains: one on node-1, one on node-2
+
+    45. clean up
     """
-    pass
+    nodes = client.list_node()
+
+    default_data_locality_setting = \
+        client.by_id_setting(SETTING_DEFAULT_DATA_LOCALITY)
+    try:
+        client.update(default_data_locality_setting, value="disabled")
+    except Exception as e:
+        print("Exception when update Default Data Locality setting",
+              default_data_locality_setting, e)
+
+    volume1_name = volume_name + "-1"
+    volume1_size = str(500 * Mi)
+    volume1_data_path = "/data/test"
+    pv1_name = volume1_name + "-pv"
+    pvc1_name = volume1_name + "-pvc"
+    pod1_name = volume1_name + "-pod"
+    pod1 = pod
+
+    pod1['metadata']['name'] = pod1_name
+
+    volume1 = create_and_check_volume(client,
+                                      volume1_name,
+                                      num_of_replicas=1,
+                                      size=volume1_size)
+
+    volume1 = client.by_id_volume(volume1_name)
+    create_pv_for_volume(client, core_api, volume1, pv1_name)
+    create_pvc_for_volume(client, core_api, volume1, pvc1_name)
+
+    volume1 = client.by_id_volume(volume1_name)
+    volume1_replica_node = volume1.replicas[0]['hostId']
+
+    volume1_attached_node = None
+    for node in nodes:
+        if node.name != volume1_replica_node:
+            volume1_attached_node = node.name
+            break
+
+    assert volume1_attached_node is not None
+
+    pod1['spec']['volumes'] = [{
+        "name": "pod-data",
+        "persistentVolumeClaim": {
+            "claimName": pvc1_name
+        }
+    }]
+
+    pod1['spec']['nodeSelector'] = \
+        {"kubernetes.io/hostname": volume1_attached_node}
+    create_and_wait_pod(core_api, pod1)
+
+    write_pod_volume_random_data(core_api, pod1_name,
+                                 volume1_data_path, DATA_SIZE_IN_MB_2)
+
+    for i in range(10):
+        volume1 = client.by_id_volume(volume1_name)
+        assert len(volume1.replicas) == 1
+        assert volume1.replicas[0]['hostId'] != volume1_attached_node
+        time.sleep(1)
+
+    volume1 = client.by_id_volume(volume1_name)
+    volume1.updateDataLocality(dataLocality="best-effort")
+
+    wait_for_rebuild_start(client, volume1_name)
+
+    volume1 = wait_for_volume_replica_count(client, volume1_name, 2)
+    volume1 = client.by_id_volume(volume1_name)
+    assert len(volume1.replicas) == 2
+
+    wait_for_rebuild_complete(client, volume1_name)
+
+    volume1 = wait_for_volume_replica_count(client, volume1_name, 1)
+    volume1 = client.by_id_volume(volume1_name)
+
+    assert len(volume1.replicas) == 1
+    assert volume1.replicas[0]['hostId'] == volume1_attached_node
+
+    delete_and_wait_pod(core_api, pod1_name)
+    volume1 = wait_for_volume_detached(client, volume1_name)
+
+    volume1_replica_node = volume1.replicas[0]['hostId']
+
+    volume1_attached_node = None
+    for node in nodes:
+        if node.name != volume1_replica_node:
+            volume1_attached_node = node.name
+            break
+
+    assert volume1_attached_node is not None
+
+    pod1['spec']['nodeSelector'] = \
+        {"kubernetes.io/hostname": volume1_attached_node}
+    create_and_wait_pod(core_api, pod1)
+
+    wait_for_rebuild_start(client, volume1_name)
+
+    volume1 = client.by_id_volume(volume1_name)
+    assert len(volume1.replicas) == 2
+
+    wait_for_rebuild_complete(client, volume1_name)
+
+    volume1 = wait_for_volume_replica_count(client, volume1_name, 1)
+    volume1 = client.by_id_volume(volume1_name)
+    assert len(volume1.replicas) == 1
+    assert volume1.replicas[0]['hostId'] == volume1_attached_node
+
+    node1 = nodes[0]
+    node2 = nodes[1]
+    node3 = nodes[2]
+
+    client.update(node1, allowScheduling=True, tags=["AVAIL"])
+    client.update(node2, allowScheduling=True, tags=["AVAIL"])
+
+    replica_node_soft_anti_affinity_setting = \
+        client.by_id_setting(SETTING_REPLICA_NODE_SOFT_ANTI_AFFINITY)
+    try:
+        client.update(replica_node_soft_anti_affinity_setting,
+                      value="true")
+    except Exception as e:
+        print("Exception when update "
+              "Replica Node Level Soft Anti-Affinity setting",
+              replica_node_soft_anti_affinity_setting, e)
+
+    # case 2
+    volume2_name = volume_name + "-2"
+    volume2_size = str(500 * Mi)
+    pv2_name = volume2_name + "-pv"
+    pvc2_name = volume2_name + "-pvc"
+    pod2_name = volume2_name + "-pod"
+    pod2 = pod
+
+    pod2['metadata']['name'] = pod2_name
+
+    volume2 = client.create_volume(name=volume2_name,
+                                   size=volume2_size,
+                                   numberOfReplicas=3,
+                                   nodeSelector=["AVAIL"],
+                                   dataLocality="best-effort")
+
+    volume2 = wait_for_volume_detached(client, volume2_name)
+    volume2 = client.by_id_volume(volume2_name)
+    create_pv_for_volume(client, core_api, volume2, pv2_name)
+    create_pvc_for_volume(client, core_api, volume2, pvc2_name)
+
+    volume2 = client.by_id_volume(volume2_name)
+
+    pod2['spec']['volumes'] = [{
+        "name": "pod-data",
+        "persistentVolumeClaim": {
+            "claimName": pvc2_name
+        }
+    }]
+
+    pod2['spec']['nodeSelector'] = {"kubernetes.io/hostname": node3.name}
+    create_and_wait_pod(core_api, pod2)
+
+    volume2 = wait_for_volume_healthy(client, volume2_name)
+
+    for replica in volume2.replicas:
+        assert replica["hostId"] != node3.name
+
+    volume2.updateReplicaCount(replicaCount=2)
+
+    # 2 Healthy replicas and 1 replica failed to schedule
+    volume2 = wait_for_volume_replica_count(client, volume2_name, 3)
+    volume2 = client.by_id_volume(volume2_name)
+
+    volume2_healthy_replicas = []
+    for replica in volume2.replicas:
+        if replica.running is True:
+            volume2_healthy_replicas.append(replica)
+
+    assert len(volume2_healthy_replicas) == 2
+
+    volume2_rep1 = volume2_healthy_replicas[0]
+    volume2_rep2 = volume2_healthy_replicas[1]
+    assert volume2_rep1["hostId"] != volume2_rep2["hostId"]
+
+    # case 3
+    client.update(node1, allowScheduling=True, tags=[])
+    client.update(node2, allowScheduling=True, tags=[])
+
+    replica_node_soft_anti_affinity_setting = \
+        client.by_id_setting(SETTING_REPLICA_NODE_SOFT_ANTI_AFFINITY)
+    try:
+        client.update(replica_node_soft_anti_affinity_setting,
+                      value="false")
+    except Exception as e:
+        print("Exception when update "
+              "Replica Node Level Soft Anti-Affinity setting",
+              replica_node_soft_anti_affinity_setting, e)
+
+    volume3_name = volume_name + "-3"
+    volume3_size = str(1 * Gi)
+    volume3_data_path = "/data/test"
+    pv3_name = volume3_name + "-pv"
+    pvc3_name = volume3_name + "-pvc"
+    pod3_name = volume3_name + "-pod"
+    pod3 = pod
+
+    pod3['metadata']['name'] = pod3_name
+
+    volume3 = client.create_volume(name=volume3_name,
+                                   size=volume3_size,
+                                   numberOfReplicas=1)
+
+    volume3 = wait_for_volume_detached(client, volume3_name)
+    volume3 = client.by_id_volume(volume3_name)
+    create_pv_for_volume(client, core_api, volume3, pv3_name)
+    create_pvc_for_volume(client, core_api, volume3, pvc3_name)
+
+    volume3 = client.by_id_volume(volume3_name)
+
+    pod3['spec']['volumes'] = [{
+        "name": "pod-data",
+        "persistentVolumeClaim": {
+            "claimName": pvc3_name
+        }
+    }]
+
+    pod3['spec']['nodeSelector'] = {"kubernetes.io/hostname": node3.name}
+    create_and_wait_pod(core_api, pod3)
+    volume3 = wait_for_volume_healthy(client, volume3_name)
+
+    write_pod_volume_random_data(core_api, pod3_name,
+                                 volume3_data_path, DATA_SIZE_IN_MB_4)
+
+    volume3.updateDataLocality(dataLocality="best-effort")
+    volume3 = client.by_id_volume(volume3_name)
+
+    if volume3.replicas[0]['hostId'] != node3.name:
+        wait_for_rebuild_start(client, volume3_name)
+        volume3 = client.by_id_volume(volume3_name)
+        assert len(volume3.replicas) == 2
+        wait_for_rebuild_complete(client, volume3_name)
+
+    volume3 = wait_for_volume_replica_count(client, volume3_name, 1)
+    assert volume3.replicas[0]["hostId"] == node3.name
+
+    delete_and_wait_pod(core_api, pod3_name)
+
+    pod3['spec']['nodeSelector'] = {"kubernetes.io/hostname": node1.name}
+    create_and_wait_pod(core_api, pod3)
+
+    wait_for_rebuild_start(client, volume3_name)
+    volume3 = client.by_id_volume(volume3_name)
+    crash_engine_process_with_sigkill(client, core_api, volume3_name)
+    volume3 = client.by_id_volume(volume3_name)
+
+    delete_and_wait_pod(core_api, pod3_name)
+    wait_for_volume_detached(client, volume3_name)
+
+    err_replica = None
+    for replica in volume3.replicas:
+        if replica["hostId"] == node1.name:
+            err_replica = replica
+            break
+
+    assert err_replica is not None
+
+    wait_for_replica_failed(client, volume3_name, err_replica["name"])
+
+    volume3 = client.by_id_volume(volume3_name)
+    assert len(volume3.replicas) == 1
+    volume3 = client.by_id_volume(volume3_name)
+
+    create_and_wait_pod(core_api, pod3)
+    wait_for_rebuild_start(client, volume3_name)
+    volume3 = client.by_id_volume(volume3_name)
+    assert len(volume3.replicas) == 2
+    wait_for_rebuild_complete(client, volume3_name)
+
+    volume3 = client.by_id_volume(volume3_name)
+    assert len(volume3.replicas) == 1
+    assert volume3.replicas[0]["hostId"] == node1.name
+    assert volume3.replicas[0]["mode"] == "RW"
+    assert volume3.replicas[0]["running"] is True
+
+    # case 4
+    replica_node_soft_anti_affinity_setting = \
+        client.by_id_setting(SETTING_REPLICA_NODE_SOFT_ANTI_AFFINITY)
+    try:
+        client.update(replica_node_soft_anti_affinity_setting,
+                      value="false")
+    except Exception as e:
+        print("Exception when update "
+              "Replica Node Level Soft Anti-Affinity setting",
+              replica_node_soft_anti_affinity_setting, e)
+
+    client.update(node3, allowScheduling=False)
+
+    volume4_name = volume_name + "-4"
+    volume4_size = str(1 * Gi)
+
+    volume4 = client.create_volume(name=volume4_name,
+                                   size=volume4_size,
+                                   numberOfReplicas=1,
+                                   dataLocality="best-effort")
+
+    volume4 = wait_for_volume_detached(client, volume4_name)
+    volume4 = client.by_id_volume(volume4_name)
+
+    volume4_replica_name = volume4.replicas[0]["name"]
+
+    volume4.attach(hostId=node3.name)
+
+    wait_for_volume_healthy(client, volume4_name)
+
+    volume4 = client.by_id_volume(volume4_name)
+    assert len(volume4.replicas) == 2
+
+    for replica in volume4.replicas:
+        if replica["name"] == volume4_replica_name:
+            assert replica["running"] is True
+            assert replica["mode"] == "RW"
+        else:
+            assert replica["running"] is False
+            assert replica["mode"] == ""
+
+    assert volume4.conditions.scheduled.reason == \
+        "LocalReplicaSchedulingFailure"
+
+    volume4 = volume4.updateReplicaCount(replicaCount=3)
+
+    volume4 = wait_for_volume_degraded(client, volume4_name)
+
+    v4_node1_replica_count = 0
+    v4_node2_replica_count = 0
+    v4_failed_replica_count = 0
+
+    for replica in volume4.replicas:
+        if replica["hostId"] == node1.name:
+            v4_node1_replica_count += 1
+        elif replica["hostId"] == node2.name:
+            v4_node2_replica_count += 1
+        elif replica["hostId"] == "":
+            v4_failed_replica_count += 1
+
+    assert v4_node1_replica_count == 1
+    assert v4_node2_replica_count == 1
+    assert v4_failed_replica_count > 0
+
+    volume4 = volume4.updateReplicaCount(replicaCount=2)
+
+    volume4 = wait_for_volume_replica_count(client, volume4_name, 3)
+
+    v4_node1_replica_count = 0
+    v4_node2_replica_count = 0
+    v4_failed_replica_count = 0
+
+    for replica in volume4.replicas:
+        if replica["hostId"] == node1.name:
+            v4_node1_replica_count += 1
+        elif replica["hostId"] == node2.name:
+            v4_node2_replica_count += 1
+        elif replica["hostId"] == "":
+            v4_failed_replica_count += 1
+
+    assert v4_node1_replica_count == 1
+    assert v4_node2_replica_count == 1
+    assert v4_failed_replica_count > 0
+
+    volume4 = volume4.updateReplicaCount(replicaCount=1)
+
+    volume4 = wait_for_volume_replica_count(client, volume4_name, 2)
+
+    v4_node1_replica_count = 0
+    v4_node2_replica_count = 0
+    v4_failed_replica_count = 0
+
+    for replica in volume4.replicas:
+        if replica["hostId"] == node1.name:
+            v4_node1_replica_count += 1
+        elif replica["hostId"] == node2.name:
+            v4_node2_replica_count += 1
+        elif replica["hostId"] == "":
+            v4_failed_replica_count += 1
+
+    assert v4_node1_replica_count + v4_node2_replica_count == 1
+    assert v4_failed_replica_count == 1
+
+    volume4 = volume4.updateDataLocality(dataLocality="disabled")
+    volume4 = volume4.updateReplicaCount(replicaCount=2)
+    wait_for_volume_healthy(client, volume4_name)
+    volume4 = wait_for_volume_replica_count(client, volume4_name, 2)
+
+    v4_node1_replica_count = 0
+    v4_node2_replica_count = 0
+    v4_node3_replica_count = 0
+
+    for replica in volume4.replicas:
+        if replica["hostId"] == node1.name:
+            v4_node1_replica_count += 1
+        elif replica["hostId"] == node2.name:
+            v4_node2_replica_count += 1
+        elif replica["hostId"] == node3.name:
+            v4_node3_replica_count += 1
+
+    assert v4_node1_replica_count == 1
+    assert v4_node2_replica_count == 1
+    assert v4_node3_replica_count == 0

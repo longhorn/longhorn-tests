@@ -130,6 +130,7 @@ SETTING_BACKUP_TARGET_CREDENTIAL_SECRET = "backup-target-credential-secret"
 SETTING_DEFAULT_REPLICA_COUNT = "default-replica-count"
 SETTING_DEFAULT_LONGHORN_STATIC_SC = "default-longhorn-static-storage-class"
 SETTING_TAINT_TOLERATION = "taint-toleration"
+SETTING_DEFAULT_DATA_LOCALITY = "default-data-locality"
 
 SETTING_AUTO_SALVAGE = "auto-salvage"
 
@@ -2397,6 +2398,14 @@ def reset_settings(client):
     except Exception as e:
         print("Exception when update Auto Salvage setting",
               auto_salvage_setting, e)
+
+    default_data_locality_setting = \
+        client.by_id_setting(SETTING_DEFAULT_DATA_LOCALITY)
+    try:
+        client.update(default_data_locality_setting, value="disabled")
+    except Exception as e:
+        print("Exception when update Default Data Locality setting",
+              default_data_locality_setting, e)
 
     guaranteed_engine_cpu_setting = \
         client.by_id_setting(SETTING_GUARANTEED_ENGINE_CPU)
