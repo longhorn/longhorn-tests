@@ -2198,8 +2198,7 @@ def test_node_eviction():
     4. Disable scheduling and set 'Eviction Requested' to 'true' on node 1.
     5. Volume 1 should be failed to schedule new replica.
     6. Set 'Eviction Requested' to 'false' to cancel node 1 eviction and
-    check there should be 1 replica on node 1 and node 2. And remove the
-    unscheduled replica.
+    check there should be 1 replica on node 1 and node 2.
     7. Set 'Eviction Requested' to 'true' on node 1.
     8. Set 'Replica Node Level Soft Anti-Affinity' to 'true'.
     9. The eviction should be success, and no replica on node 1, 2 replicas
