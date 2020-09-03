@@ -9,7 +9,21 @@ node {
     withCredentials([string(credentialsId: 'longhorn-tests-do-token', variable: 'TF_VAR_do_token')]) {
         stage('build') {
             sh "test_framework/scripts/build.sh"
-            sh "docker run -itd --name ${JOB_BASE_NAME}${BUILD_NUMBER} --env LONGHORN_UPGRADE_TEST=${LONGHORN_UPGRADE_TEST} --env LONGHORN_INFRA_TEST=${LONGHORN_INFRA_TEST} --env LONGHORN_TEST_CLOUDPROVIDER=${LONGHORN_TEST_CLOUDPROVIDER} --env TF_VAR_do_token=${env.TF_VAR_do_token} --env TF_VAR_tf_workspace=${TF_VAR_tf_workspace} --env TF_VAR_hostname_prefix=${JOB_BASE_NAME} ${imageName}"
+
+            sh """ docker run -itd --name ${JOB_BASE_NAME}${BUILD_NUMBER} \
+                              --env LONGHORN_UPGRADE_TEST=${LONGHORN_UPGRADE_TEST} \
+                              --env LONGHORN_INFRA_TEST=${LONGHORN_INFRA_TEST} \
+                              --env LONGHORN_TEST_CLOUDPROVIDER=${LONGHORN_TEST_CLOUDPROVIDER} \
+                              --env TF_VAR_do_token=${env.TF_VAR_do_token} \
+                              --env TF_VAR_tf_workspace=${TF_VAR_tf_workspace} \
+                              --env LONGHORN_REPO_URL=${LONGHORN_REPO_URL} \
+                              --env LONGHORN_REPO_BRANCH=${LONGHORN_REPO_BRANCH} \
+                              --env CUSTOM_LONGHORN_MANAGER_IMAGE=${CUSTOM_LONGHORN_MANAGER_IMAGE} \
+                              --env CUSTOM_LONGHORN_ENGINE_IMAGE=${CUSTOM_LONGHORN_ENGINE_IMAGE} \
+                              --env CUSTOM_LONGHORN_INSTANCE_MANAGER_IMAGE=${CUSTOM_LONGHORN_INSTANCE_MANAGER_IMAGE} \
+                              --env TF_VAR_hostname_prefix=${JOB_BASE_NAME} \
+                              ${imageName}
+            """
         }
 
         try {
