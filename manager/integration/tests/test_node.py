@@ -2227,8 +2227,16 @@ def test_node_eviction():
     and disable scheduling on node 2.
     21. After the eviction is success, volume 1 should has replicas on node
     1&3 and volume 2 should has replicas on node 1&3.
-    22. Verify the data on volume 1 and volume 2, the checksum should be
+    22. Detach volume 1 and volume 2.
+    23. Disable scheduling and set 'Eviction Requested' to 'true' on node 1.
+    24. Both volume 1 and 2 will be auto-attached and make sure the volumes
+    are in healthy state during the eviction.
+    25. After the eviction is success, volume 1 should has replicas on node
+    2&3, and volume 2 should has replicas on node 2&3.
+    26. Enabled scheduling and set 'Eviction Requested' to 'false' on node
+    1.
+    27. Verify the data on volume 1 and volume 2, the checksum should be
     the same as checksum 1 and checksum 2.
-    23. Set 'Eviction Requested' to 'false' and enable scheduling on node 2.
+    28. Set 'Eviction Requested' to 'false' and enable scheduling on node 2.
     """
     pass
