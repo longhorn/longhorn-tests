@@ -2120,9 +2120,10 @@ def get_volume_attached_nodes(v):
     return nodes
 
 
-def wait_for_backup_completion(client, volume_name, snapshot_name):
+def wait_for_backup_completion(client, volume_name, snapshot_name,
+                               retry_count=RETRY_BACKUP_COUNTS):
     completed = False
-    for i in range(RETRY_BACKUP_COUNTS):
+    for i in range(retry_count):
         v = client.by_id_volume(volume_name)
         for b in v.backupStatus:
             if b.snapshot == snapshot_name and b.state == "complete":
