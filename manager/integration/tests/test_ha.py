@@ -993,7 +993,8 @@ def test_inc_restoration_with_multiple_rebuild_and_expansion(
     snap2 = create_snapshot(client, std_volume_name)
     std_volume = client.by_id_volume(std_volume_name)
     std_volume.snapshotBackup(name=snap2.name)
-    wait_for_backup_completion(client, std_volume_name, snap2.name)
+    wait_for_backup_completion(client, std_volume_name, snap2.name,
+                               retry_count=1200)
     bv, b2 = find_backup(client, std_volume_name, snap2.name)
 
     # Trigger rebuild and the incremental restoration
@@ -1663,7 +1664,8 @@ def test_engine_crash_for_restore_volume(
     volume = client.by_id_volume(volume_name)
     snap = create_snapshot(client, volume_name)
     volume.snapshotBackup(name=snap.name)
-    wait_for_backup_completion(client, volume_name, snap.name)
+    wait_for_backup_completion(client, volume_name, snap.name,
+                               retry_count=1200)
     bv, b = find_backup(client, volume_name, snap.name)
 
     res_name = "res-" + volume_name
