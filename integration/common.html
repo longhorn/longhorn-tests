@@ -2148,9 +2148,10 @@ def get_volume_attached_nodes(v):
     return nodes
 
 
-def wait_for_backup_completion(client, volume_name, snapshot_name):
+def wait_for_backup_completion(client, volume_name, snapshot_name,
+                               retry_count=RETRY_BACKUP_COUNTS):
     completed = False
-    for i in range(RETRY_BACKUP_COUNTS):
+    for i in range(retry_count):
         v = client.by_id_volume(volume_name)
         for b in v.backupStatus:
             if b.snapshot == snapshot_name and b.state == &#34;complete&#34;:
@@ -7571,7 +7572,7 @@ def volume_name(request):
 </details>
 </dd>
 <dt id="tests.common.wait_for_backup_completion"><code class="name flex">
-<span>def <span class="ident">wait_for_backup_completion</span></span>(<span>client, volume_name, snapshot_name)</span>
+<span>def <span class="ident">wait_for_backup_completion</span></span>(<span>client, volume_name, snapshot_name, retry_count=600)</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -7579,9 +7580,10 @@ def volume_name(request):
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def wait_for_backup_completion(client, volume_name, snapshot_name):
+<pre><code class="python">def wait_for_backup_completion(client, volume_name, snapshot_name,
+                               retry_count=RETRY_BACKUP_COUNTS):
     completed = False
-    for i in range(RETRY_BACKUP_COUNTS):
+    for i in range(retry_count):
         v = client.by_id_volume(volume_name)
         for b in v.backupStatus:
             if b.snapshot == snapshot_name and b.state == &#34;complete&#34;:
