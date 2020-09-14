@@ -5,11 +5,7 @@
     <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/stability/</link>
     <description>Recent content in Stability on Longhorn Manual Test Cases</description>
     <generator>Hugo -- gohugo.io</generator>
-    <language>en-us</language>
-    
-	<atom:link href="https://longhorn.github.io/longhorn-tests/manual/pre-release/stability/index.xml" rel="self" type="application/rss+xml" />
-    
-    
+    <language>en-us</language><atom:link href="https://longhorn.github.io/longhorn-tests/manual/pre-release/stability/index.xml" rel="self" type="application/rss+xml" />
     <item>
       <title>Longhorn installation multiple times</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/stability/multiple-installation/</link>

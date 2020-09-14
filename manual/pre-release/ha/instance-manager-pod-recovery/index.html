@@ -247,7 +247,7 @@
 <li>Create and attach a volume.</li>
 <li>Set an invalid value (Too large to crash the instance manager pods. e.g., 10) for <code>Guaranteed Engine CPU</code>.</li>
 <li>Verify instance(engine/replica) manager pods will be recreated again and again.</li>
-<li>Check the managers&rsquo; log. (Use <code>kubetail longhorn-manager -n longhorn-system</code>). Make sure there is no NPE error logs like:</li>
+<li>Check the managers' log. (Use <code>kubetail longhorn-manager -n longhorn-system</code>). Make sure there is no NPE error logs like:</li>
 </ol>
 <pre><code>[longhorn-manager-67nhs] E1112 21:58:14.037140       1 runtime.go:69] Observed a panic: &quot;send on closed channel&quot; (send on closed channel)
 [longhorn-manager-67nhs] /go/src/github.com/longhorn/longhorn-manager/vendor/k8s.io/apimachinery/pkg/util/runtime/runtime.go:76

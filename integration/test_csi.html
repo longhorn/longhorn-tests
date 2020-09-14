@@ -563,7 +563,140 @@ def test_csi_expansion_with_replica_failure(client, core_api, storage_class, pvc
     test_data = generate_random_data(VOLUME_RWTEST_SIZE)
     write_pod_volume_data(core_api, pod_name, test_data)
     resp = read_volume_data(core_api, pod_name)
-    assert resp == test_data</code></pre>
+    assert resp == test_data
+
+@pytest.mark.skip(reason=&#34;TODO&#34;) # NOQA
+def test_csi_volumesnapshot_basic():  # NOQA
+    &#34;&#34;&#34;
+    Test creation / restoration / deletion of a backup via the csi snapshotter
+
+    Context:
+
+    We want to allow the user to programmatically create/restore/delete
+    longhorn backups via the csi snapshot mechanism
+    ref: https://kubernetes.io/docs/concepts/storage/volume-snapshots/
+
+    Setup:
+
+    1. Make sure your cluster contains the below crds
+    https://github.com/kubernetes-csi/external-snapshotter
+    /tree/master/client/config/crd
+    2. Make sure your cluster contains the snapshot controller
+    https://github.com/kubernetes-csi/external-snapshotter
+    /tree/master/deploy/kubernetes/snapshot-controller
+
+    Steps:
+
+    def csi_volumesnapshot_creation_test(snapshotClass=longhorn|custom):
+    1. create volume(1)
+    2. write data to volume(1)
+    3. create a kubernetes `VolumeSnapshot` object
+       the `VolumeSnapshot.uuid` will be used to identify a
+       **longhorn snapshot** and the associated `VolumeSnapshotContent` object
+    4. check creation of a new longhorn snapshot named `snapshot-uuid`
+    5. check for `VolumeSnapshotContent` named `snapcontent-uuid`
+    6. wait for `VolumeSnapshotContent.readyToUse` flag to be set to **true**
+    7. check for backup existance on the backupstore
+
+    # the csi snapshot restore sets the fromBackup field same as
+    # the StorageClass based restore approach.
+    def csi_volumesnapshot_restore_test():
+    8. create a `PersistentVolumeClaim` object where the `dataSource` field
+       references the `VolumeSnapshot` object by name
+    9. verify creation of a new volume(2) bound to the pvc created in step(8)
+    10. verify data of new volume(2) equals data
+        from backup (ie old data above)
+
+    # default longhorn snapshot class is set to Delete
+    # add a second test with a custom snapshot class with deletionPolicy
+    # set to Retain you can reuse these methods for that and other tests
+    def csi_volumesnapshot_deletion_test(deletionPolicy=&#39;Delete|Retain&#39;):
+    11. delete `VolumeSnapshot` object
+    12. if deletionPolicy == Delete:
+        13. verify deletion of `VolumeSnapshot` and
+            `VolumeSnapshotContent` objects
+        14. verify deletion of backup from backupstore
+    12. if deletionPolicy == Retain:
+        13. verify deletion of `VolumeSnapshot`
+        14. verify retention of `VolumeSnapshotContent`
+            and backup on backupstore
+
+    15. cleanup
+    &#34;&#34;&#34;
+
+
+@pytest.mark.skip(reason=&#34;TODO&#34;) # NOQA
+def test_csi_volumesnapshot_restore_existing_backup():  # NOQA
+    &#34;&#34;&#34;
+    Test restoration of a non csi created backup via the csi snapshotter
+
+    Context:
+
+    We want to allow the user to programmatically create/restore/delete
+    longhorn backups via the csi snapshot mechanism
+    ref: https://kubernetes.io/docs/concepts/storage/volume-snapshots/
+
+    Setup:
+
+    1. Make sure your cluster contains the below crds
+    https://github.com/kubernetes-csi/external-snapshotter
+    /tree/master/client/config/crd
+    2. Make sure your cluster contains the snapshot controller
+    https://github.com/kubernetes-csi/external-snapshotter
+    /tree/master/deploy/kubernetes/snapshot-controller
+
+    Steps:
+    1. create volume(1)
+    2. write data to volume(1)
+    3. create backup of volume(1)
+    4. wait for backup completion
+
+    # see example yamls, in the longhorn-manager repo
+    5. create `VolumeSnapshotContent` and `snapshotHandle` set as
+       `bs://backup-volume/backup-name`
+    6. create the associated `VolumeSnapshot` object where the `source` field
+       refers to a `VolumeSnapshotContent` object via the
+       `volumeSnapshotContentName` field.
+       This differs from the creation of a backup in which case the
+       `source` field refers to a `PersistentVolumeClaim` via the
+       `persistentVolumeClaimName` field. Only one type of reference
+       can be set for a `VolumeSnapshot` object.
+
+    7. call csi_volumesnapshot_restore_test()
+    8. call csi_volumesnapshot_deletion_test()
+
+    9. cleanup
+    &#34;&#34;&#34;
+
+@pytest.mark.skip(reason=&#34;TODO&#34;) # NOQA
+def test_csi_volumesnapshot_deletion_retain():  # NOQA
+    &#34;&#34;&#34;
+    Test retention of a backup while deleting the associated `VolumeSnapshot`
+    via the csi snapshotter
+
+    Context:
+
+    We want to allow the user to programmatically create/restore/delete
+    longhorn backups via the csi snapshot mechanism
+    ref: https://kubernetes.io/docs/concepts/storage/volume-snapshots/
+
+    Setup:
+
+    1. Make sure your cluster contains the below crds
+    https://github.com/kubernetes-csi/external-snapshotter
+    /tree/master/client/config/crd
+    2. Make sure your cluster contains the snapshot controller
+    https://github.com/kubernetes-csi/external-snapshotter
+    /tree/master/deploy/kubernetes/snapshot-controller
+
+    Steps:
+
+    1. create new snapshotClass with deletionPolicy set to Retain
+    2. call csi_volumesnapshot_creation_test(snapshotClass=custom)
+    3. call csi_volumesnapshot_restore_test()
+    4. call csi_volumesnapshot_deletion_test(deletionPolicy=&#39;Retain&#39;):
+    5. cleanup
+    &#34;&#34;&#34;</code></pre>
 </details>
 </section>
 <section>
@@ -1171,6 +1304,279 @@ def test_csi_offline_expansion(client, core_api, storage_class, pvc, pod_manifes
     assert volume.size == engine.size</code></pre>
 </details>
 </dd>
+<dt id="tests.test_csi.test_csi_volumesnapshot_basic"><code class="name flex">
+<span>def <span class="ident">test_csi_volumesnapshot_basic</span></span>(<span>)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test creation / restoration / deletion of a backup via the csi snapshotter</p>
+<p>Context:</p>
+<p>We want to allow the user to programmatically create/restore/delete
+longhorn backups via the csi snapshot mechanism
+ref: <a href="https://kubernetes.io/docs/concepts/storage/volume-snapshots/">https://kubernetes.io/docs/concepts/storage/volume-snapshots/</a></p>
+<p>Setup:</p>
+<ol>
+<li>Make sure your cluster contains the below crds
+<a href="https://github.com/kubernetes-csi/external-snapshotter">https://github.com/kubernetes-csi/external-snapshotter</a>
+/tree/master/client/config/crd</li>
+<li>Make sure your cluster contains the snapshot controller
+<a href="https://github.com/kubernetes-csi/external-snapshotter">https://github.com/kubernetes-csi/external-snapshotter</a>
+/tree/master/deploy/kubernetes/snapshot-controller</li>
+</ol>
+<p>Steps:</p>
+<p>def csi_volumesnapshot_creation_test(snapshotClass=longhorn|custom):
+1. create volume(1)
+2. write data to volume(1)
+3. create a kubernetes <code>VolumeSnapshot</code> object
+the <code>VolumeSnapshot.uuid</code> will be used to identify a
+<strong>longhorn snapshot</strong> and the associated <code>VolumeSnapshotContent</code> object
+4. check creation of a new longhorn snapshot named <code>snapshot-uuid</code>
+5. check for <code>VolumeSnapshotContent</code> named <code>snapcontent-uuid</code>
+6. wait for <code>VolumeSnapshotContent.readyToUse</code> flag to be set to <strong>true</strong>
+7. check for backup existance on the backupstore</p>
+<h1 id="the-csi-snapshot-restore-sets-the-frombackup-field-same-as">the csi snapshot restore sets the fromBackup field same as</h1>
+<h1 id="the-storageclass-based-restore-approach">the StorageClass based restore approach.</h1>
+<p>def csi_volumesnapshot_restore_test():
+8. create a <code>PersistentVolumeClaim</code> object where the <code>dataSource</code> field
+references the <code>VolumeSnapshot</code> object by name
+9. verify creation of a new volume(2) bound to the pvc created in step(8)
+10. verify data of new volume(2) equals data
+from backup (ie old data above)</p>
+<h1 id="default-longhorn-snapshot-class-is-set-to-delete">default longhorn snapshot class is set to Delete</h1>
+<h1 id="add-a-second-test-with-a-custom-snapshot-class-with-deletionpolicy">add a second test with a custom snapshot class with deletionPolicy</h1>
+<h1 id="set-to-retain-you-can-reuse-these-methods-for-that-and-other-tests">set to Retain you can reuse these methods for that and other tests</h1>
+<p>def csi_volumesnapshot_deletion_test(deletionPolicy='Delete|Retain'):
+11. delete <code>VolumeSnapshot</code> object
+12. if deletionPolicy == Delete:
+13. verify deletion of <code>VolumeSnapshot</code> and
+<code>VolumeSnapshotContent</code> objects
+14. verify deletion of backup from backupstore
+12. if deletionPolicy == Retain:
+13. verify deletion of <code>VolumeSnapshot</code>
+14. verify retention of <code>VolumeSnapshotContent</code>
+and backup on backupstore</p>
+<ol>
+<li>cleanup</li>
+</ol></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@pytest.mark.skip(reason=&#34;TODO&#34;) # NOQA
+def test_csi_volumesnapshot_basic():  # NOQA
+    &#34;&#34;&#34;
+    Test creation / restoration / deletion of a backup via the csi snapshotter
+
+    Context:
+
+    We want to allow the user to programmatically create/restore/delete
+    longhorn backups via the csi snapshot mechanism
+    ref: https://kubernetes.io/docs/concepts/storage/volume-snapshots/
+
+    Setup:
+
+    1. Make sure your cluster contains the below crds
+    https://github.com/kubernetes-csi/external-snapshotter
+    /tree/master/client/config/crd
+    2. Make sure your cluster contains the snapshot controller
+    https://github.com/kubernetes-csi/external-snapshotter
+    /tree/master/deploy/kubernetes/snapshot-controller
+
+    Steps:
+
+    def csi_volumesnapshot_creation_test(snapshotClass=longhorn|custom):
+    1. create volume(1)
+    2. write data to volume(1)
+    3. create a kubernetes `VolumeSnapshot` object
+       the `VolumeSnapshot.uuid` will be used to identify a
+       **longhorn snapshot** and the associated `VolumeSnapshotContent` object
+    4. check creation of a new longhorn snapshot named `snapshot-uuid`
+    5. check for `VolumeSnapshotContent` named `snapcontent-uuid`
+    6. wait for `VolumeSnapshotContent.readyToUse` flag to be set to **true**
+    7. check for backup existance on the backupstore
+
+    # the csi snapshot restore sets the fromBackup field same as
+    # the StorageClass based restore approach.
+    def csi_volumesnapshot_restore_test():
+    8. create a `PersistentVolumeClaim` object where the `dataSource` field
+       references the `VolumeSnapshot` object by name
+    9. verify creation of a new volume(2) bound to the pvc created in step(8)
+    10. verify data of new volume(2) equals data
+        from backup (ie old data above)
+
+    # default longhorn snapshot class is set to Delete
+    # add a second test with a custom snapshot class with deletionPolicy
+    # set to Retain you can reuse these methods for that and other tests
+    def csi_volumesnapshot_deletion_test(deletionPolicy=&#39;Delete|Retain&#39;):
+    11. delete `VolumeSnapshot` object
+    12. if deletionPolicy == Delete:
+        13. verify deletion of `VolumeSnapshot` and
+            `VolumeSnapshotContent` objects
+        14. verify deletion of backup from backupstore
+    12. if deletionPolicy == Retain:
+        13. verify deletion of `VolumeSnapshot`
+        14. verify retention of `VolumeSnapshotContent`
+            and backup on backupstore
+
+    15. cleanup
+    &#34;&#34;&#34;</code></pre>
+</details>
+</dd>
+<dt id="tests.test_csi.test_csi_volumesnapshot_deletion_retain"><code class="name flex">
+<span>def <span class="ident">test_csi_volumesnapshot_deletion_retain</span></span>(<span>)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test retention of a backup while deleting the associated <code>VolumeSnapshot</code>
+via the csi snapshotter</p>
+<p>Context:</p>
+<p>We want to allow the user to programmatically create/restore/delete
+longhorn backups via the csi snapshot mechanism
+ref: <a href="https://kubernetes.io/docs/concepts/storage/volume-snapshots/">https://kubernetes.io/docs/concepts/storage/volume-snapshots/</a></p>
+<p>Setup:</p>
+<ol>
+<li>Make sure your cluster contains the below crds
+<a href="https://github.com/kubernetes-csi/external-snapshotter">https://github.com/kubernetes-csi/external-snapshotter</a>
+/tree/master/client/config/crd</li>
+<li>Make sure your cluster contains the snapshot controller
+<a href="https://github.com/kubernetes-csi/external-snapshotter">https://github.com/kubernetes-csi/external-snapshotter</a>
+/tree/master/deploy/kubernetes/snapshot-controller</li>
+</ol>
+<p>Steps:</p>
+<ol>
+<li>create new snapshotClass with deletionPolicy set to Retain</li>
+<li>call csi_volumesnapshot_creation_test(snapshotClass=custom)</li>
+<li>call csi_volumesnapshot_restore_test()</li>
+<li>call csi_volumesnapshot_deletion_test(deletionPolicy='Retain'):</li>
+<li>cleanup</li>
+</ol></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@pytest.mark.skip(reason=&#34;TODO&#34;) # NOQA
+def test_csi_volumesnapshot_deletion_retain():  # NOQA
+    &#34;&#34;&#34;
+    Test retention of a backup while deleting the associated `VolumeSnapshot`
+    via the csi snapshotter
+
+    Context:
+
+    We want to allow the user to programmatically create/restore/delete
+    longhorn backups via the csi snapshot mechanism
+    ref: https://kubernetes.io/docs/concepts/storage/volume-snapshots/
+
+    Setup:
+
+    1. Make sure your cluster contains the below crds
+    https://github.com/kubernetes-csi/external-snapshotter
+    /tree/master/client/config/crd
+    2. Make sure your cluster contains the snapshot controller
+    https://github.com/kubernetes-csi/external-snapshotter
+    /tree/master/deploy/kubernetes/snapshot-controller
+
+    Steps:
+
+    1. create new snapshotClass with deletionPolicy set to Retain
+    2. call csi_volumesnapshot_creation_test(snapshotClass=custom)
+    3. call csi_volumesnapshot_restore_test()
+    4. call csi_volumesnapshot_deletion_test(deletionPolicy=&#39;Retain&#39;):
+    5. cleanup
+    &#34;&#34;&#34;</code></pre>
+</details>
+</dd>
+<dt id="tests.test_csi.test_csi_volumesnapshot_restore_existing_backup"><code class="name flex">
+<span>def <span class="ident">test_csi_volumesnapshot_restore_existing_backup</span></span>(<span>)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test restoration of a non csi created backup via the csi snapshotter</p>
+<p>Context:</p>
+<p>We want to allow the user to programmatically create/restore/delete
+longhorn backups via the csi snapshot mechanism
+ref: <a href="https://kubernetes.io/docs/concepts/storage/volume-snapshots/">https://kubernetes.io/docs/concepts/storage/volume-snapshots/</a></p>
+<p>Setup:</p>
+<ol>
+<li>Make sure your cluster contains the below crds
+<a href="https://github.com/kubernetes-csi/external-snapshotter">https://github.com/kubernetes-csi/external-snapshotter</a>
+/tree/master/client/config/crd</li>
+<li>Make sure your cluster contains the snapshot controller
+<a href="https://github.com/kubernetes-csi/external-snapshotter">https://github.com/kubernetes-csi/external-snapshotter</a>
+/tree/master/deploy/kubernetes/snapshot-controller</li>
+</ol>
+<p>Steps:
+1. create volume(1)
+2. write data to volume(1)
+3. create backup of volume(1)
+4. wait for backup completion</p>
+<h1 id="see-example-yamls-in-the-longhorn-manager-repo">see example yamls, in the longhorn-manager repo</h1>
+<ol>
+<li>create <code>VolumeSnapshotContent</code> and <code>snapshotHandle</code> set as
+<code>bs://backup-volume/backup-name</code></li>
+<li>
+<p>create the associated <code>VolumeSnapshot</code> object where the <code>source</code> field
+refers to a <code>VolumeSnapshotContent</code> object via the
+<code>volumeSnapshotContentName</code> field.
+This differs from the creation of a backup in which case the
+<code>source</code> field refers to a <code>PersistentVolumeClaim</code> via the
+<code>persistentVolumeClaimName</code> field. Only one type of reference
+can be set for a <code>VolumeSnapshot</code> object.</p>
+</li>
+<li>
+<p>call csi_volumesnapshot_restore_test()</p>
+</li>
+<li>
+<p>call csi_volumesnapshot_deletion_test()</p>
+</li>
+<li>
+<p>cleanup</p>
+</li>
+</ol></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@pytest.mark.skip(reason=&#34;TODO&#34;) # NOQA
+def test_csi_volumesnapshot_restore_existing_backup():  # NOQA
+    &#34;&#34;&#34;
+    Test restoration of a non csi created backup via the csi snapshotter
+
+    Context:
+
+    We want to allow the user to programmatically create/restore/delete
+    longhorn backups via the csi snapshot mechanism
+    ref: https://kubernetes.io/docs/concepts/storage/volume-snapshots/
+
+    Setup:
+
+    1. Make sure your cluster contains the below crds
+    https://github.com/kubernetes-csi/external-snapshotter
+    /tree/master/client/config/crd
+    2. Make sure your cluster contains the snapshot controller
+    https://github.com/kubernetes-csi/external-snapshotter
+    /tree/master/deploy/kubernetes/snapshot-controller
+
+    Steps:
+    1. create volume(1)
+    2. write data to volume(1)
+    3. create backup of volume(1)
+    4. wait for backup completion
+
+    # see example yamls, in the longhorn-manager repo
+    5. create `VolumeSnapshotContent` and `snapshotHandle` set as
+       `bs://backup-volume/backup-name`
+    6. create the associated `VolumeSnapshot` object where the `source` field
+       refers to a `VolumeSnapshotContent` object via the
+       `volumeSnapshotContentName` field.
+       This differs from the creation of a backup in which case the
+       `source` field refers to a `PersistentVolumeClaim` via the
+       `persistentVolumeClaimName` field. Only one type of reference
+       can be set for a `VolumeSnapshot` object.
+
+    7. call csi_volumesnapshot_restore_test()
+    8. call csi_volumesnapshot_deletion_test()
+
+    9. cleanup
+    &#34;&#34;&#34;</code></pre>
+</details>
+</dd>
 <dt id="tests.test_csi.test_xfs_pv"><code class="name flex">
 <span>def <span class="ident">test_xfs_pv</span></span>(<span>client, core_api, pod_manifest)</span>
 </code></dt>
@@ -1337,6 +1743,9 @@ sure the disk won't be reformatted</p></div>
 <li><code><a title="tests.test_csi.test_csi_io" href="#tests.test_csi.test_csi_io">test_csi_io</a></code></li>
 <li><code><a title="tests.test_csi.test_csi_mount" href="#tests.test_csi.test_csi_mount">test_csi_mount</a></code></li>
 <li><code><a title="tests.test_csi.test_csi_offline_expansion" href="#tests.test_csi.test_csi_offline_expansion">test_csi_offline_expansion</a></code></li>
+<li><code><a title="tests.test_csi.test_csi_volumesnapshot_basic" href="#tests.test_csi.test_csi_volumesnapshot_basic">test_csi_volumesnapshot_basic</a></code></li>
+<li><code><a title="tests.test_csi.test_csi_volumesnapshot_deletion_retain" href="#tests.test_csi.test_csi_volumesnapshot_deletion_retain">test_csi_volumesnapshot_deletion_retain</a></code></li>
+<li><code><a title="tests.test_csi.test_csi_volumesnapshot_restore_existing_backup" href="#tests.test_csi.test_csi_volumesnapshot_restore_existing_backup">test_csi_volumesnapshot_restore_existing_backup</a></code></li>
 <li><code><a title="tests.test_csi.test_xfs_pv" href="#tests.test_csi.test_xfs_pv">test_xfs_pv</a></code></li>
 <li><code><a title="tests.test_csi.test_xfs_pv_existing_volume" href="#tests.test_csi.test_xfs_pv_existing_volume">test_xfs_pv_existing_volume</a></code></li>
 <li><code><a title="tests.test_csi.update_storageclass_references" href="#tests.test_csi.update_storageclass_references">update_storageclass_references</a></code></li>

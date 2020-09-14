@@ -5,11 +5,7 @@
     <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/node/auto-detach/</link>
     <description>Recent content in Test scenarios for auto detach of deployment pod&#39;s volume when the node is down on Longhorn Manual Test Cases</description>
     <generator>Hugo -- gohugo.io</generator>
-    <language>en-us</language>
-    
-	<atom:link href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node/auto-detach/index.xml" rel="self" type="application/rss+xml" />
-    
-    
+    <language>en-us</language><atom:link href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node/auto-detach/index.xml" rel="self" type="application/rss+xml" />
     <item>
       <title>Workload type: Deployment</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/node/auto-detach/deployment/</link>
