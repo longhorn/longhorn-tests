@@ -1262,6 +1262,9 @@ def restore_inc_test(client, core_api, volume_name, pod):  # NOQA
     data2 = {'len': 1 * 1024 * 1024, 'pos': 0}
     data2['content'] = common.generate_random_data(data2['len'])
     _, backup2, _, data2 = create_backup(client, volume_name, data2)
+
+    # HACK: #558 we use a side effect of the list call
+    # to update the volumes last backup field
     client.list_backupVolume()
     check_volume_last_backup(client, sb_volume2_name, backup2.name)
     activate_standby_volume(client, sb_volume2_name)
