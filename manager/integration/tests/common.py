@@ -42,8 +42,8 @@ RETRY_COMMAND_COUNT = 3
 RETRY_COUNTS = 300
 RETRY_INTERVAL = 0.5
 RETRY_INTERVAL_LONG = 2
-RETRY_BACKUP_COUNTS = 600
-RETRY_BACKUP_INTERVAL = 0.5
+RETRY_BACKUP_COUNTS = 300
+RETRY_BACKUP_INTERVAL = 1
 RETRY_EXEC_COUNTS = 30
 RETRY_EXEC_INTERVAL = 5
 
@@ -2138,9 +2138,10 @@ def wait_for_backup_completion(client, volume_name, snapshot_name,
     return v
 
 
-def wait_for_backup_state(client, volume_name, predicate):
+def wait_for_backup_state(client, volume_name, predicate,
+                          retry_count=RETRY_BACKUP_COUNTS):
     completed = False
-    for i in range(RETRY_BACKUP_COUNTS):
+    for i in range(retry_count):
         v = client.by_id_volume(volume_name)
         for b in v.backupStatus:
             if predicate(b):
