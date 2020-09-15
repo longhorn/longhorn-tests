@@ -257,7 +257,12 @@ def create_backup(client, volname, data={}, labels={}):
         data = write_volume_data(volume, data)
     snap = create_snapshot(client, volname)
     create_snapshot(client, volname)
+
+    # after backup request we need to wait for completion of the backup
+    # since the backup.cfg will only be available once the backup operation
+    # has been completed
     volume.snapshotBackup(name=snap.name, labels=labels)
+    wait_for_backup_completion(client, volname, snap.name)
 
     verified = False
     for i in range(RETRY_COMMAND_COUNT):
@@ -281,7 +286,6 @@ def create_backup(client, volname, data={}, labels={}):
     for key, val in iter(labels.items()):
         assert new_b.labels.get(key) == val
 
-    volume = wait_for_backup_completion(client, volname, snap.name)
     volume = wait_for_volume_status(client, volname,
                                     "lastBackup",
                                     b.name)

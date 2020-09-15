@@ -290,7 +290,7 @@ def ha_backup_deletion_recovery_test(client, volume_name, size, base_image=""): 
         create_snapshot(client, volume_name)
 
         volume.snapshotBackup(name=snap2.name)
-
+        wait_for_backup_completion(client, volume_name, snap2.name)
         _, b = common.find_backup(client, volume_name, snap2.name)
 
         res_name = common.generate_volume_name()

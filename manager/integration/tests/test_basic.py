@@ -1824,10 +1824,8 @@ def test_storage_class_from_backup(volume_name, pvc_name, storage_class, client,
     snapshot = volume_id.snapshotCreate()
 
     volume_id.snapshotBackup(name=snapshot.name)
-
-    bv, b = find_backup(client, volume_name, snapshot.name)
-
     wait_for_backup_completion(client, volume_name, snapshot.name)
+    bv, b = find_backup(client, volume_name, snapshot.name)
 
     backup_url = b.url
 
