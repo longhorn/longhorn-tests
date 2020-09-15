@@ -3617,31 +3617,30 @@ def wait_for_instance_manager_desire_state(client, core_api, im_name,
 
 
 def wait_for_backup_delete(client, volume_name, backup_name):
-    for i in range(RETRY_COUNTS):
-        bvs = client.list_backupVolume()
-        bv_found = False
 
+    def find_backup_volume():
+        bvs = client.list_backupVolume()
         for bv in bvs:
             if bv.name == volume_name:
-                bv_found = True
-                break
+                return bv
+        return None
 
-        assert bv_found
+    def backup_exists():
+        bv = find_backup_volume()
+        if bv is not None:
+            backups = bv.backupList()
+            for b in backups:
+                if b.name == backup_name:
+                    return True
+        return False
 
-        backups = bv.backupList()
+    for i in range(RETRY_BACKUP_COUNTS):
+        if backup_exists() is False:
+            return
+        time.sleep(RETRY_BACKUP_INTERVAL)
 
-        backup_found = False
-        for b in backups:
-            if b.name == backup_name:
-                backup_found = True
-                break
-
-        if backup_found is False:
-            break
-
-        time.sleep(RETRY_INTERVAL)
-
-    assert not backup_found
+    assert False, "deleted backup " + backup_name + " for volume " \
+                  + volume_name + " is still present"
 
 
 def assert_backup_state(b_actual, b_expected):
