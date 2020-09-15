@@ -1466,35 +1466,11 @@ def test_listing_backup_volume(client, base_image=""):   # NOQA
     subprocess.check_output(cmd)
     subprocess.check_output(["sync"])
 
-    found = False
-    for i in range(RETRY_COMMAND_COUNT):
-        try:
-            bv1, b1 = common.find_backup(client, volume1_name, snap1.name)
-            found = True
-            break
-        except Exception:
-            time.sleep(1)
-    assert found
-    bv1.backupDelete(name=b1.name)
-    for i in range(RETRY_COMMAND_COUNT):
-        found = False
-        backups1 = bv1.backupList().data
-        for b in backups1:
-            if b.snapshotName == snap1.name:
-                found = True
-                break
-    assert not found
+    bv1, b1 = common.find_backup(client, volume1_name, snap1.name)
+    common.delete_backup(client, volume1_name, b1.name)
 
     bv2, b2 = common.find_backup(client, volume2_name, snap2.name)
-    bv2.backupDelete(name=b2.name)
-    for i in range(RETRY_COMMAND_COUNT):
-        found = False
-        backups2 = bv2.backupList().data
-        for b in backups2:
-            if b.snapshotName == snap2.name:
-                found = True
-                break
-    assert not found
+    common.delete_backup(client, volume2_name, b2.name)
 
     # corrupt backup for snap4
     bv4, b4 = common.find_backup(client, volume3_name, snap4.name)
@@ -1530,20 +1506,11 @@ def test_listing_backup_volume(client, base_image=""):   # NOQA
     subprocess.check_output(["sync"])
 
     bv3, b3 = common.find_backup(client, volume3_name, snap3.name)
-    bv3.backupDelete(name=b3.name)
+    common.delete_backup(client, volume3_name, b3.name)
     bv4, b4 = common.find_backup(client, volume3_name, snap4.name)
-    bv4.backupDelete(name=b4.name)
+    common.delete_backup(client, volume3_name, b4.name)
     bv5, b5 = common.find_backup(client, volume3_name, snap5.name)
-    bv5.backupDelete(name=b5.name)
-    snaps = [snap3.name, snap4.name, snap5.name]
-    for i in range(RETRY_COMMAND_COUNT):
-        found = False
-        backups3 = bv3.backupList().data
-        for b in backups3:
-            if b.snapshotName in snaps:
-                found = True
-                break
-    assert not found
+    common.delete_backup(client, volume3_name, b5.name)
 
     volume1.detach()
     volume1 = common.wait_for_volume_detached(client, volume1_name)
