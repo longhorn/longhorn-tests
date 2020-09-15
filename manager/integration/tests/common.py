@@ -2504,31 +2504,32 @@ def is_backupTarget_nfs(s):
 
 
 def find_backup(client, vol_name, snap_name):
-    found = False
-    for i in range(100):
+    """
+    find_backup will look for a backup on the backupstore
+    it's important to note, that this can only be used for completed backups
+    since the backup.cfg will only be written once a backup operation has
+    been completed successfully
+    """
+
+    def find_backup_volume():
         bvs = client.list_backupVolume()
         for bv in bvs:
             if bv.name == vol_name:
-                found = True
-                break
-        if found:
-            break
-        time.sleep(1)
-    assert found
+                return bv
+        return None
 
-    found = False
-    for i in range(20):
-        backups = bv.backupList().data
-        for b in backups:
-            if b.snapshotName == snap_name:
-                found = True
-                break
-        if found:
-            break
-        time.sleep(1)
-    assert found
-
-    return bv, b
+    bv = None
+    for i in range(120):
+        if bv is None:
+            bv = find_backup_volume()
+        if bv is not None:
+            backups = bv.backupList().data
+            for b in backups:
+                if b.snapshotName == snap_name:
+                    return bv, b
+        time.sleep(RETRY_BACKUP_INTERVAL)
+    assert False, "failed to find backup for snapshot " + snap_name + \
+                  " for volume " + vol_name
 
 
 def check_longhorn(core_api):
