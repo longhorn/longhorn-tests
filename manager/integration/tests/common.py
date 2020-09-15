@@ -728,22 +728,26 @@ def pod_make(request):
         def finalizer():
             api = get_core_api_client()
             try:
-                delete_and_wait_pod(api, pod_manifest['metadata']['name'])
+                pod_name = pod_manifest['metadata']['name']
+                delete_and_wait_pod(api, pod_name)
             except Exception as e:
-                print("Exception when waiting for pod deletion", e)
+                print("\nException when waiting for pod deletion")
+                print(e)
                 return
             try:
                 volume_details = pod_manifest['spec']['volumes'][0]
                 pvc_name = volume_details['persistentVolumeClaim']['claimName']
                 delete_and_wait_pvc(api, pvc_name)
             except Exception as e:
-                print("Exception when waiting for PVC deletion", e)
+                print("\nException when waiting for PVC deletion")
+                print(e)
             try:
                 pv = wait_and_get_pv_for_pvc(api, pvc_name)
                 pv_name = pv.metadata.name
                 delete_and_wait_pv(api, pv_name)
             except Exception as e:
-                print("Exception when waiting for PV deletion", e)
+                print("\nException when waiting for PV deletion")
+                print(e)
 
         request.addfinalizer(finalizer)
         return pod_manifest
@@ -1181,7 +1185,8 @@ def cleanup_client():
         try:
             client.delete(v)
         except Exception as e:
-            print("Exception when cleanup volume ", v, e)
+            print("\nException when cleanup volume ", v)
+            print(e)
             pass
     images = client.list_engine_image()
     for img in images:
@@ -1190,7 +1195,8 @@ def cleanup_client():
             try:
                 client.delete(img)
             except Exception as e:
-                print("Exception when cleanup image", img, e)
+                print("\nException when cleanup image", img)
+                print(e)
                 pass
 
     # enable nodes scheduling
@@ -2234,7 +2240,8 @@ def reset_node(client):
             wait_for_node_update(client, node.id,
                                  "allowScheduling", True)
         except Exception as e:
-            print("Exception when reset node schedulding and tags", node, e)
+            print("\nException when reset node schedulding and tags", node)
+            print(e)
 
 
 def cleanup_test_disks(client):
@@ -2258,7 +2265,8 @@ def cleanup_test_disks(client):
                     wait_for_disk_status(client, host_id, name,
                                          "allowScheduling", False)
     except Exception as e:
-        print("Exception when update node disks", node, e)
+        print("\nException when update node disks", node)
+        print(e)
         pass
 
     # delete test disks
@@ -2271,14 +2279,16 @@ def cleanup_test_disks(client):
         node.diskUpdate(disks=update_disks)
         wait_for_disk_update(client, host_id, len(update_disks))
     except Exception as e:
-        print("Exception when delete node test disks", node, e)
+        print("\nException when delete node test disks", node)
+        print(e)
         pass
     # cleanup host disks
     for del_dir in del_dirs:
         try:
             cleanup_host_disk(del_dir)
         except Exception as e:
-            print("Exception when cleanup host disk", del_dir, e)
+            print("\nException when cleanup host disk", del_dir)
+            print(e)
             pass
 
 
@@ -2332,9 +2342,10 @@ def reset_settings(client):
         client.update(minimal_setting,
                       value=DEFAULT_STORAGE_MINIMAL_AVAILABLE_PERCENTAGE)
     except Exception as e:
-        print("Exception when update "
+        print("\nException when update "
               "storage minimal available percentage settings",
-              minimal_setting, e)
+              minimal_setting)
+        print(e)
         pass
 
     over_provisioning_setting = client.by_id_setting(
@@ -2343,9 +2354,10 @@ def reset_settings(client):
         client.update(over_provisioning_setting,
                       value=DEFAULT_STORAGE_OVER_PROVISIONING_PERCENTAGE)
     except Exception as e:
-        print("Exception when update "
+        print("\nException when update "
               "storage over provisioning percentage settings",
-              over_provisioning_setting, e)
+              over_provisioning_setting)
+        print(e)
 
     default_data_path_setting = client.by_id_setting(
         SETTING_DEFAULT_DATA_PATH)
@@ -2353,9 +2365,10 @@ def reset_settings(client):
         client.update(default_data_path_setting,
                       value=DEFAULT_DISK_PATH)
     except Exception as e:
-        print("Exception when update "
+        print("\nException when update "
               "default data path setting",
-              default_data_path_setting, e)
+              default_data_path_setting)
+        print(e)
 
     create_default_disk_labeled_nodes_setting = client.by_id_setting(
         SETTING_CREATE_DEFAULT_DISK_LABELED_NODES)
@@ -2363,9 +2376,10 @@ def reset_settings(client):
         client.update(create_default_disk_labeled_nodes_setting,
                       value="false")
     except Exception as e:
-        print("Exception when update "
+        print("\nException when update "
               "create default disk labeled nodes setting",
-              create_default_disk_labeled_nodes_setting, e)
+              create_default_disk_labeled_nodes_setting)
+        print(e)
 
     replica_node_soft_anti_affinity_setting = \
         client.by_id_setting(SETTING_REPLICA_NODE_SOFT_ANTI_AFFINITY)
@@ -2373,9 +2387,10 @@ def reset_settings(client):
         client.update(replica_node_soft_anti_affinity_setting,
                       value="false")
     except Exception as e:
-        print("Exception when update "
+        print("\nException when update "
               "Replica Node Level Soft Anti-Affinity setting",
-              replica_node_soft_anti_affinity_setting, e)
+              replica_node_soft_anti_affinity_setting)
+        print(e)
 
     replica_zone_soft_anti_affinity_setting = \
         client.by_id_setting(SETTING_REPLICA_ZONE_SOFT_ANTI_AFFINITY)
@@ -2383,9 +2398,10 @@ def reset_settings(client):
         client.update(replica_zone_soft_anti_affinity_setting,
                       value="true")
     except Exception as e:
-        print("Exception when update "
+        print("\nException when update "
               "Replica Zone Level Soft Anti-Affinity setting",
-              replica_zone_soft_anti_affinity_setting, e)
+              replica_zone_soft_anti_affinity_setting)
+        print(e)
 
     disable_scheduling_on_cordoned_node_setting = \
         client.by_id_setting(SETTING_DISABLE_SCHEDULING_ON_CORDONED_NODE)
@@ -2393,15 +2409,17 @@ def reset_settings(client):
         client.update(disable_scheduling_on_cordoned_node_setting,
                       value="true")
     except Exception as e:
-        print("Exception when update "
+        print("\nException when update "
               "Disable Scheduling On Cordoned Node setting",
-              disable_scheduling_on_cordoned_node_setting, e)
+              disable_scheduling_on_cordoned_node_setting)
+        print(e)
     auto_salvage_setting = client.by_id_setting(SETTING_AUTO_SALVAGE)
     try:
         client.update(auto_salvage_setting, value="true")
     except Exception as e:
-        print("Exception when update Auto Salvage setting",
-              auto_salvage_setting, e)
+        print("\nException when update Auto Salvage setting",
+              auto_salvage_setting)
+        print(e)
 
     guaranteed_engine_cpu_setting = \
         client.by_id_setting(SETTING_GUARANTEED_ENGINE_CPU)
@@ -2409,9 +2427,10 @@ def reset_settings(client):
         client.update(guaranteed_engine_cpu_setting,
                       value="0.25")
     except Exception as e:
-        print("Exception when update "
+        print("\nException when update "
               "Guaranteed Engine CPU setting",
-              guaranteed_engine_cpu_setting, e)
+              guaranteed_engine_cpu_setting)
+        print(e)
 
     instance_managers = client.list_instance_manager()
     core_api = get_core_api_client()
