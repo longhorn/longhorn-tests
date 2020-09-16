@@ -39,6 +39,7 @@ BASE_IMAGE_EXT4_SIZE = 32 * Mi
 PORT = ":9500"
 
 RETRY_COMMAND_COUNT = 3
+RETRY_COUNTS_SHORT = 60
 RETRY_COUNTS = 300
 RETRY_INTERVAL = 0.5
 RETRY_INTERVAL_LONG = 2
@@ -114,7 +115,7 @@ SETTING_DEFAULT_DATA_PATH = "default-data-path"
 SETTING_DEGRADED_AVAILABILITY = \
     "allow-volume-creation-with-degraded-availability"
 
-DEFAULT_DISK_PATH = "/var/lib/longhorn/"
+DEFAULT_DISK_PATH = "/var/lib/longhorn"
 DEFAULT_STORAGE_OVER_PROVISIONING_PERCENTAGE = "500"
 DEFAULT_STORAGE_MINIMAL_AVAILABLE_PERCENTAGE = "10"
 DEFAULT_LONGHORN_STATIC_STORAGECLASS_NAME = "longhorn-static"
@@ -1095,16 +1096,16 @@ def node_default_tags():
     client = get_longhorn_api_client()  # NOQA
     nodes = client.list_node()
     assert len(nodes) == 3
+    node_disks_list = get_node_disks_list(client)
+    assert len(node_disks_list) == 3
 
     tag_mappings = {}
     for tags, node in zip(DEFAULT_TAGS, nodes):
-        assert len(node.disks) == 1
-
-        update_disks = get_update_disks(node.disks)
-        update_disks[list(update_disks)[0]].tags = tags["disk"]
-        new_node = node.diskUpdate(disks=update_disks)
-        disks = get_update_disks(new_node.disks)
-        assert disks[list(new_node.disks)[0]].tags == tags["disk"]
+        assert node.name in node_disks_list
+        assert len(node_disks_list[node.name]) == 1
+        disk = node_disks_list[node.name][0]
+        client.update(disk, allowScheduling=True, tags=tags["disk"])
+        wait_for_disk_status(client, disk.name, "tags", tags["disk"])
 
         new_node = set_node_tags(client, node, tags["node"])
         assert new_node.tags == tags["node"]
@@ -1114,12 +1115,13 @@ def node_default_tags():
 
     client = get_longhorn_api_client()  # NOQA
     nodes = client.list_node()
+    node_disks_list = get_node_disks_list(client)
     for node in nodes:
-        update_disks = get_update_disks(node.disks)
-        update_disks[list(update_disks)[0]].tags = []
-        new_node = node.diskUpdate(disks=update_disks)
-        disks = get_update_disks(new_node.disks)
-        assert disks[list(new_node.disks)[0]].tags is None
+        assert node.name in node_disks_list
+        assert len(node_disks_list[node.name]) == 1
+        disk = node_disks_list[node.name][0]
+        client.update(disk, allowScheduling=True, tags=[])
+        wait_for_disk_status(client, disk.name, "tags", None)
 
         new_node = set_node_tags(client, node)
         assert new_node.tags is None
@@ -1188,8 +1190,6 @@ def clients(request):
 
 def cleanup_client():
     client = get_longhorn_api_client()
-    # cleanup test disks
-    cleanup_test_disks(client)
 
     volumes = client.list_volume()
     for v in volumes:
@@ -1215,6 +1215,7 @@ def cleanup_client():
     reset_node(client)
     reset_settings(client)
     reset_disks_for_all_nodes(client)
+    cleanup_host_disk_dir()
     reset_engine_image(client)
 
     # check replica subdirectory of default disk path
@@ -1913,15 +1914,15 @@ def prepare_host_disk(dev, vol_name, mkfs_ext4_options=""):
     subprocess.check_call(cmd)
 
     mount_path = os.path.join(DIRECTORY_PATH, vol_name)
-    # create directory before mount
-    cmd = ['mkdir', '-p', mount_path]
-    subprocess.check_call(cmd)
 
     mount_disk(dev, mount_path)
-    return mount_path
+    return os.path.abspath(mount_path)
 
 
 def mount_disk(dev, mount_path):
+    # check/create directory before mount
+    cmd = ['mkdir', '-p', mount_path]
+    subprocess.check_call(cmd)
     cmd = ['mount', dev, mount_path]
     subprocess.check_call(cmd)
 
@@ -1993,65 +1994,129 @@ def get_host_disk_size(disk):
     return free, total
 
 
-def wait_for_disk_status(client, node_name, disk_name, key, value):
+def wait_for_disk_status(client, disk_name, key, value):
     # use wait_for_disk_storage_available to check storageAvailable
     assert key != "storageAvailable"
-    for i in range(RETRY_COUNTS):
-        node = client.by_id_node(node_name)
-        disks = node.disks
-        if len(disks) > 0 and \
-                disk_name in disks and \
-                disks[disk_name][key] == value:
-            break
-        time.sleep(RETRY_INTERVAL)
-    assert len(disks) != 0
-    assert disk_name in disks
-    assert disks[disk_name][key] == value
-    return node
-
-
-def wait_for_disk_storage_available(client, node_name, disk_name, disk_path):
-    for i in range(RETRY_COUNTS):
-        node = client.by_id_node(node_name)
-        disks = node.disks
-        if len(disks) > 0 and disk_name in disks:
-            free, _ = get_host_disk_size(disk_path)
-            if disks[disk_name]["storageAvailable"] == free:
+    verified = False
+    for i in range(RETRY_COUNTS_SHORT):
+        try:
+            disk = client.by_id_disk(disk_name)
+            if key == "tags":
+                if (value is None or not value) and disk[key] is None:
+                    verified = True
+                    break
+                elif set(disk[key]) == set(value):
+                    verified = True
+                    break
+            if disk[key] == value:
+                verified = True
                 break
+        except Exception:
+            pass
         time.sleep(RETRY_INTERVAL)
-    assert len(disks) != 0
-    assert disk_name in disks
-    assert disks[disk_name]["storageAvailable"] == free
-    return node
+    assert verified
+    return disk
 
 
-def wait_for_disk_uuid(client, node_name, uuid):
+def wait_for_disk_storage_available(client, disk_name, disk_path):
+    for i in range(RETRY_COUNTS):
+        try:
+            disk = client.by_id_disk(disk_name)
+            free, _ = get_host_disk_size(disk_path)
+            if disk.storageAvailable == free:
+                break
+        except Exception:
+            pass
+        time.sleep(RETRY_INTERVAL)
+    assert disk.storageAvailable == free
+    return disk
+
+
+def wait_for_disk_connected(client, disk_name):
+    connected = False
+    for i in range(RETRY_COUNTS_SHORT):
+        try:
+            disk = client.by_id_disk(disk_name)
+            if disk.state == "connected" and \
+                    disk.storageAvailable != 0 and disk.storageMaximum != 0:
+                connected = True
+                break
+        except Exception:
+            pass
+        time.sleep(RETRY_INTERVAL)
+    assert connected
+    return disk
+
+
+def wait_for_disk_deletion(client, disk_name):
     found = False
     for i in range(RETRY_COUNTS):
-        node = client.by_id_node(node_name)
-        disks = node.disks
-        for name in disks:
-            if disks[name]["diskUUID"] == uuid:
+        found = False
+        disks = client.list_disk()
+        for disk in disks:
+            if disk.name == disk_name:
                 found = True
                 break
-        if found:
+        if not found:
             break
         time.sleep(RETRY_INTERVAL)
-    assert found
-    return node
+    assert not found
 
 
-def wait_for_disk_conditions(client, node_name, disk_name, key, value):
+def wait_for_disk_conditions(client, disk_name, key, value):
     for i in range(RETRY_COUNTS):
-        node = client.by_id_node(node_name)
-        disks = node.disks
-        disk = disks[disk_name]
+        disk = client.by_id_disk(disk_name)
         conditions = disk.conditions
         if conditions[key]["status"] == value:
             break
         time.sleep(RETRY_INTERVAL)
     assert conditions[key]["status"] == value
-    return node
+    return disk
+
+
+def cleanup_node_disks(client, node_name):
+    disks = client.list_disk()
+    for disk in disks:
+        if disk.nodeID == node_name:
+            client.update(disk, allowScheduling=False)
+            disk = wait_for_disk_status(
+                client, disk.name, "allowScheduling", False)
+            client.delete(disk)
+
+    done = False
+    for i in range(RETRY_COUNTS):
+        done = True
+        disks = client.list_disk()
+        for disk in disks:
+            if disk.nodeID == node_name:
+                done = False
+                break
+        if done:
+            break
+        time.sleep(RETRY_INTERVAL)
+    assert done
+
+
+def get_node_disks_dict(client):
+    node_disks_dict = {}
+    disk_list = client.list_disk()
+    for disk in disk_list:
+        if disk.nodeID not in node_disks_dict:
+            node_disks_dict[disk.nodeID] = {disk.name: disk}
+        else:
+            node_disks_dict[disk.nodeID][disk.name] = disk
+    return node_disks_dict
+
+
+def get_node_disks_list(client):
+    node_disks_list = {}
+    disk_list = client.list_disk()
+    for disk in disk_list:
+        if disk.nodeID not in node_disks_list:
+            node_disks_list[disk.nodeID] = [disk]
+        else:
+            node_disks_list[disk.nodeID].append(disk)
+    return node_disks_list
 
 
 def wait_for_node_update(client, name, key, value):
@@ -2061,23 +2126,6 @@ def wait_for_node_update(client, name, key, value):
             break
         time.sleep(RETRY_INTERVAL)
     assert str(node[key]) == str(value)
-    return node
-
-
-def wait_for_disk_update(client, name, disk_num):
-    for i in range(RETRY_COUNTS):
-        node = client.by_id_node(name)
-        if len(node.disks) == disk_num:
-            allUpdated = True
-            disks = node.disks
-            for d in disks:
-                if disks[d]["diskUUID"] == "":
-                    allUpdated = False
-                    break
-            if allUpdated:
-                break
-        time.sleep(RETRY_INTERVAL)
-    assert len(node.disks) == disk_num
     return node
 
 
@@ -2094,18 +2142,6 @@ def wait_for_node_tag_update(client, name, tags):
         time.sleep(RETRY_INTERVAL)
     assert updated
     return node
-
-
-def cleanup_node_disks(client, node_name):
-    node = client.by_id_node(node_name)
-    disks = node.disks
-    for _, disk in iter(disks.items()):
-        disk.allowScheduling = False
-    update_disks = get_update_disks(disks)
-    node = client.by_id_node(node_name)
-    node.diskUpdate(disks=update_disks)
-    node.diskUpdate(disks={})
-    return wait_for_disk_update(client, node_name, 0)
 
 
 def get_volume_engine(v):
@@ -2255,13 +2291,6 @@ def get_random_client(clients):
     return client
 
 
-def get_update_disks(disks):
-    update_disk = {}
-    for key, disk in iter(disks.items()):
-        update_disk[key] = disk
-    return update_disk
-
-
 def reset_node(client):
     nodes = client.list_node()
     for node in nodes:
@@ -2276,45 +2305,9 @@ def reset_node(client):
             print(e)
 
 
-def cleanup_test_disks(client):
+def cleanup_host_disk_dir():
+    # cleanup host disk dir
     del_dirs = os.listdir(DIRECTORY_PATH)
-    host_id = get_self_host_id()
-    node = client.by_id_node(host_id)
-    disks = node.disks
-    for name, disk in iter(disks.items()):
-        for del_dir in del_dirs:
-            dir_path = os.path.join(DIRECTORY_PATH, del_dir)
-            if dir_path == disk.path:
-                disk.allowScheduling = False
-    update_disks = get_update_disks(disks)
-    try:
-        node = node.diskUpdate(disks=update_disks)
-        disks = node.disks
-        for name, disk in iter(disks.items()):
-            for del_dir in del_dirs:
-                dir_path = os.path.join(DIRECTORY_PATH, del_dir)
-                if dir_path == disk.path:
-                    wait_for_disk_status(client, host_id, name,
-                                         "allowScheduling", False)
-    except Exception as e:
-        print("\nException when update node disks", node)
-        print(e)
-        pass
-
-    # delete test disks
-    disks = node.disks
-    update_disks = {}
-    for name, disk in iter(disks.items()):
-        if disk.allowScheduling:
-            update_disks[name] = disk
-    try:
-        node.diskUpdate(disks=update_disks)
-        wait_for_disk_update(client, host_id, len(update_disks))
-    except Exception as e:
-        print("\nException when delete node test disks", node)
-        print(e)
-        pass
-    # cleanup host disks
     for del_dir in del_dirs:
         try:
             cleanup_host_disk(del_dir)
@@ -2325,46 +2318,54 @@ def cleanup_test_disks(client):
 
 
 def reset_disks_for_all_nodes(client):  # NOQA
+    node_disks_dict = get_node_disks_dict(client)
     nodes = client.list_node()
+
     for node in nodes:
         # Reset default disk if there are more than 1 disk
         # on the node.
-        if len(node.disks) > 1:
-            update_disks = get_update_disks(node.disks)
-            for disk_name, disk in iter(update_disks.items()):
-                disk.allowScheduling = False
-                update_disks[disk_name] = disk
-                node = node.diskUpdate(disks=update_disks)
-            update_disks = {}
-            node = node.diskUpdate(disks=update_disks)
-            node = wait_for_disk_update(client, node.name, 0)
-        if len(node.disks) == 0:
-            default_disk = {"default-disk":
-                            {"path": DEFAULT_DISK_PATH,
-                             "allowScheduling": True}}
-            node = node.diskUpdate(disks=default_disk)
-            node = wait_for_disk_update(client, node.name, 1)
-            assert len(node.disks) == 1
-        # wait for node controller to update disk status
-        disks = node.disks
-        update_disks = {}
-        for name, disk in iter(disks.items()):
-            update_disk = disk
-            update_disk.allowScheduling = True
-            update_disk.storageReserved = \
-                int(update_disk.storageMaximum * 30 / 100)
-            update_disk.tags = []
-            update_disks[name] = update_disk
-        node = node.diskUpdate(disks=update_disks)
-        for name, disk in iter(node.disks.items()):
-            # wait for node controller update disk status
-            wait_for_disk_status(client, node.name, name,
-                                 "allowScheduling", True)
-            wait_for_disk_status(client, node.name, name,
-                                 "storageScheduled", 0)
-            wait_for_disk_status(client, node.name, name,
-                                 "storageReserved",
-                                 int(update_disk.storageMaximum * 30 / 100))
+        skip_default_disk_creation = False
+        if node.name in node_disks_dict:
+            for disk_name, disk in node_disks_dict[node.name].items():
+                if disk.path == DEFAULT_DISK_PATH:
+                    client.update(
+                        disk, allowScheduling=True, evictionRequested=False,
+                        storageReserved=int(disk.storageMaximum * 30 / 100))
+                    skip_default_disk_creation = True
+                else:
+                    if disk.state == "connected":
+                        client.update(disk, allowScheduling=False)
+                        disk = wait_for_disk_status(
+                            client, disk.name, "allowScheduling", False)
+                    client.delete(disk)
+                    wait_for_disk_deletion(client, disk.name)
+
+        if not skip_default_disk_creation:
+            try:
+                disk = client.create_disk(
+                    path=DEFAULT_DISK_PATH, nodeID=node.name,
+                    allowScheduling=True)
+            except Exception as e:
+                if "is already on node" in e.error.message:
+                    pass
+                else:
+                    print("\nException when creating default disk:", e)
+            disk = wait_for_disk_connected(client, disk.name)
+            client.update(
+                disk, allowScheduling=True,
+                storageReserved=int(disk.storageMaximum * 30 / 100))
+    # wait for disk update
+    disk_list = client.list_disk()
+    for disk in disk_list:
+        wait_for_disk_status(client, disk.name,
+                             "state", "connected")
+        wait_for_disk_status(client, disk.name,
+                             "allowScheduling", True)
+        wait_for_disk_status(client, disk.name,
+                             "storageScheduled", 0)
+        wait_for_disk_status(client, disk.name,
+                             "storageReserved",
+                             int(disk.storageMaximum * 30 / 100))
 
 
 def reset_settings(client):

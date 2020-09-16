@@ -9,11 +9,11 @@ from string import ascii_lowercase, digits
 
 import copy
 
-from common import core_api, client  # NOQA
-from common import Gi, SIZE, CONDITION_STATUS_FALSE, \
-    CONDITION_STATUS_TRUE, DEFAULT_DISK_PATH, DIRECTORY_PATH, \
-    DISK_CONDITION_SCHEDULABLE, DISK_CONDITION_READY, \
-    NODE_CONDITION_SCHEDULABLE
+from common import core_api, client, pod  # NOQA
+from common import Mi, Gi, SIZE, DATA_SIZE_IN_MB_2
+from common import DEFAULT_DISK_PATH, DIRECTORY_PATH
+from common import CONDITION_STATUS_FALSE, CONDITION_STATUS_TRUE, \
+    NODE_CONDITION_SCHEDULABLE, DISK_CONDITION_SCHEDULABLE
 from common import get_core_api_client, get_longhorn_api_client, \
     get_self_host_id
 from common import SETTING_STORAGE_OVER_PROVISIONING_PERCENTAGE, \
@@ -24,19 +24,17 @@ from common import SETTING_STORAGE_OVER_PROVISIONING_PERCENTAGE, \
     SETTING_DISABLE_SCHEDULING_ON_CORDONED_NODE
 from common import VOLUME_FRONTEND_BLOCKDEV
 from common import get_volume_endpoint
-from common import get_update_disks
-from common import wait_for_disk_status, wait_for_disk_update, \
-    wait_for_disk_conditions, wait_for_node_tag_update, \
-    cleanup_node_disks, wait_for_disk_storage_available, \
-    wait_for_disk_uuid, wait_for_node_schedulable_condition
+from common import wait_for_node_tag_update, \
+    wait_for_node_schedulable_condition
+from common import wait_for_disk_status, wait_for_disk_conditions, \
+    wait_for_disk_connected, wait_for_disk_storage_available, \
+    wait_for_disk_deletion, cleanup_node_disks
 from common import exec_nsenter
 
 from common import SETTING_REPLICA_NODE_SOFT_ANTI_AFFINITY
 from common import SETTING_MKFS_EXT4_PARAMS
-from common import volume_name # NOQA
-from common import pod # NOQA
+
 from common import settings_reset # NOQA
-from common import Mi, DATA_SIZE_IN_MB_2
 from common import create_and_check_volume
 from common import create_pv_for_volume
 from common import create_pvc_for_volume
@@ -49,6 +47,8 @@ from common import wait_for_volume_degraded
 from common import delete_and_wait_pod
 from common import wait_for_volume_detached
 from common import wait_for_volume_healthy_no_frontend
+
+from common import RETRY_COUNTS, RETRY_INTERVAL
 
 CREATE_DEFAULT_DISK_LABEL = "node.longhorn.io/create-default-disk"
 CREATE_DEFAULT_DISK_LABEL_VALUE_CONFIG = "config"
@@ -74,8 +74,9 @@ def set_node_cordon(api, node_name, to_cordon):
 
 @pytest.fixture
 def random_disk_path():
-    return "/var/lib/longhorn-" + "".join(choice(ascii_lowercase + digits)
-                                          for _ in range(6))
+    return os.path.abspath(
+        "/var/lib/longhorn-" + "".join(choice(ascii_lowercase + digits)
+                                       for _ in range(6)))
 
 
 @pytest.yield_fixture
@@ -169,13 +170,45 @@ def create_host_disk(client, vol_name, size, node_id):  # NOQA
     return disk_path
 
 
-def cleanup_host_disk(client, *args):  # NOQA
+def cleanup_host_disk_with_volume(client, *args):  # NOQA
     # clean disk
     for vol_name in args:
         # umount disk
         common.cleanup_host_disk(vol_name)
         # clean volume
         cleanup_volume(client, vol_name)
+
+
+def create_volume(client, vol_name, size, node_id, r_num):  # NOQA
+    volume = client.create_volume(name=vol_name, size=size,
+                                  numberOfReplicas=r_num)
+    assert volume.numberOfReplicas == r_num
+    assert volume.frontend == VOLUME_FRONTEND_BLOCKDEV
+
+    volume = common.wait_for_volume_detached(client, vol_name)
+    assert len(volume.replicas) == r_num
+
+    assert volume.state == "detached"
+    assert volume.created != ""
+
+    volumeByName = client.by_id_volume(vol_name)
+    assert volumeByName.name == volume.name
+    assert volumeByName.size == volume.size
+    assert volumeByName.numberOfReplicas == volume.numberOfReplicas
+    assert volumeByName.state == volume.state
+    assert volumeByName.created == volume.created
+
+    volume.attach(hostId=node_id)
+    volume = common.wait_for_volume_healthy(client, vol_name)
+
+    return volume
+
+
+def cleanup_volume(client, vol_name):  # NOQA
+    volume = client.by_id_volume(vol_name)
+    volume.detach()
+    client.delete(volume)
+    common.wait_for_volume_delete(client, vol_name)
 
 
 @pytest.mark.coretest   # NOQA
@@ -214,136 +247,84 @@ def test_update_node(client):  # NOQA
 @pytest.mark.coretest   # NOQA
 @pytest.mark.node  # NOQA
 @pytest.mark.mountdisk # NOQA
-def test_node_disk_update(client):  # NOQA
+def test_disk_operations(client):  # NOQA
     """
-    Test update node disks
+    Test disk operations
 
-    The test will use Longhorn to create disks on the node.
+    The test will verify Longhorn disks work fine
 
-    1. Get the current node
-    2. Try to delete all the disks. It should fail due to scheduling is enabled
-    3. Create two disks `disk1` and `disk2`, attach them to the current node.
-    4. Add two disks to the current node.
-    5. Verify two extra disks have been added to the node
-    6. Disbale the two disks' scheduling, and set StorageReserved
+    1. Try to delete all the disks. It should fail due to scheduling is enabled
+    2. Create and connect two disks `disk1` and `disk2` to the current node.
+    3. Verify two extra disks have been added to the node
+    4. Disconnect and re-connect the 2 disks.
+    5. Verify 'connect' and 'disconnect' calls work fine.
+    6. Disable the two disks' scheduling and StorageReserved,
     7. Update the two disks.
     8. Validate all the disks properties.
     9. Delete other two disks. Validate deletion works.
     """
     lht_hostId = get_self_host_id()
-    node = client.by_id_node(lht_hostId)
-    disks = node.disks
+
+    disks = client.list_disk()
+    for disk in disks:
+        if disk.nodeID == lht_hostId:
+            break
+    assert disk
 
     # test delete disk exception
     with pytest.raises(Exception) as e:
-        node.diskUpdate(disks={})
-    assert "disable the disk" in str(e.value)
+        client.delete(disk)
+    assert "need to disable the scheduling " \
+           "before deleting the connected disk" \
+           in str(e.value)
 
-    # create multiple disks for node
-    node = client.by_id_node(lht_hostId)
-    disks = node.disks
     disk_path1 = create_host_disk(client, 'vol-disk-1',
                                   str(Gi), lht_hostId)
-    disk1 = {"path": disk_path1, "allowScheduling": True}
     disk_path2 = create_host_disk(client, 'vol-disk-2',
                                   str(Gi), lht_hostId)
-    disk2 = {"path": disk_path2, "allowScheduling": True}
+    disk1 = client.create_disk(path=disk_path1, nodeID=lht_hostId,
+                               allowScheduling=True)
+    disk2 = client.create_disk(path=disk_path2, nodeID=lht_hostId,
+                               allowScheduling=True)
+    disk_name1 = disk1.name
+    disk_name2 = disk2.name
+    disk1 = wait_for_disk_connected(client, disk_name1)
+    disk2 = wait_for_disk_connected(client, disk_name2)
 
-    update_disk = get_update_disks(disks)
-    # add new disk for node
-    update_disk["disk1"] = disk1
-    update_disk["disk2"] = disk2
+    client.update(disk1, allowScheduling=False,
+                  storageReserved=SMALL_DISK_SIZE)
+    client.update(disk2, allowScheduling=False,
+                  storageReserved=SMALL_DISK_SIZE)
+    wait_for_disk_status(client, disk_name1, "allowScheduling", False)
+    wait_for_disk_status(client, disk_name2, "allowScheduling", False)
+    wait_for_disk_status(client, disk_name1,
+                         "storageReserved", SMALL_DISK_SIZE)
+    wait_for_disk_status(client, disk_name2,
+                         "storageReserved", SMALL_DISK_SIZE)
+    disk1 = wait_for_disk_storage_available(client, disk_name1, disk_path1)
+    disk2 = wait_for_disk_storage_available(client, disk_name2, disk_path2)
 
-    # save disks to node
-    node = node.diskUpdate(disks=update_disk)
-    node = common.wait_for_disk_update(client, lht_hostId,
-                                       len(update_disk))
-    assert len(node.disks) == len(update_disk)
-    node = client.by_id_node(lht_hostId)
-    assert len(node.disks) == len(update_disk)
+    assert not disk1.allowScheduling
+    assert disk1.storageReserved == SMALL_DISK_SIZE
+    assert disk1.storageScheduled == 0
+    free1, total1 = common.get_host_disk_size(disk_path1)
+    assert disk1.storageMaximum == total1
+    assert disk1.storageAvailable == free1
 
-    # update disk
-    disks = node.disks
-    update_disk = get_update_disks(disks)
-    for disk in update_disk.values():
-        # keep default disk for other tests
-        if disk.path == disk_path1 or disk.path == disk_path2:
-            disk.allowScheduling = False
-            disk.storageReserved = SMALL_DISK_SIZE
-    node = node.diskUpdate(disks=update_disk)
-    disks = node.disks
-    # wait for node controller to update disk status
-    for name, disk in iter(disks.items()):
-        if disk.path == disk_path1 or disk.path == disk_path2:
-            wait_for_disk_status(client, lht_hostId, name,
-                                 "allowScheduling", False)
-            wait_for_disk_status(client, lht_hostId, name,
-                                 "storageReserved", SMALL_DISK_SIZE)
-            wait_for_disk_storage_available(client, lht_hostId, name,
-                                            disk_path1)
+    assert not disk2.allowScheduling
+    assert disk2.storageReserved == SMALL_DISK_SIZE
+    assert disk2.storageScheduled == 0
+    free2, total2 = common.get_host_disk_size(disk_path1)
+    assert disk2.storageMaximum == total2
+    assert disk2.storageAvailable == free2
 
-    node = client.by_id_node(lht_hostId)
-    disks = node.disks
-    for key, disk in iter(disks.items()):
-        if disk.path == disk_path1:
-            assert not disk.allowScheduling
-            assert disk.storageReserved == SMALL_DISK_SIZE
-            assert disk.storageScheduled == 0
-            free, total = common.get_host_disk_size(disk_path1)
-            assert disk.storageMaximum == total
-            assert disk.storageAvailable == free
-        elif disk.path == disk_path2:
-            assert not disk.allowScheduling
-            assert disk.storageReserved == SMALL_DISK_SIZE
-            assert disk.storageScheduled == 0
-            free, total = common.get_host_disk_size(disk_path2)
-            assert disk.storageMaximum == total
-            assert disk.storageAvailable == free
+    client.delete(disk1)
+    client.delete(disk2)
 
-    # delete other disks, just remain default disk
-    update_disk = get_update_disks(disks)
-    remain_disk = {}
-    for name, disk in update_disk.items():
-        if disk.path != disk_path1 and disk.path != disk_path2:
-            remain_disk[name] = disk
-    node = node.diskUpdate(disks=remain_disk)
-    node = wait_for_disk_update(client, lht_hostId,
-                                len(remain_disk))
-    assert len(node.disks) == len(remain_disk)
-    # cleanup disks
-    cleanup_host_disk(client, 'vol-disk-1', 'vol-disk-2')
+    wait_for_disk_deletion(client, disk_name1)
+    wait_for_disk_deletion(client, disk_name2)
 
-
-def create_volume(client, vol_name, size, node_id, r_num):  # NOQA
-    volume = client.create_volume(name=vol_name, size=size,
-                                  numberOfReplicas=r_num)
-    assert volume.numberOfReplicas == r_num
-    assert volume.frontend == VOLUME_FRONTEND_BLOCKDEV
-
-    volume = common.wait_for_volume_detached(client, vol_name)
-    assert len(volume.replicas) == r_num
-
-    assert volume.state == "detached"
-    assert volume.created != ""
-
-    volumeByName = client.by_id_volume(vol_name)
-    assert volumeByName.name == volume.name
-    assert volumeByName.size == volume.size
-    assert volumeByName.numberOfReplicas == volume.numberOfReplicas
-    assert volumeByName.state == volume.state
-    assert volumeByName.created == volume.created
-
-    volume.attach(hostId=node_id)
-    volume = common.wait_for_volume_healthy(client, vol_name)
-
-    return volume
-
-
-def cleanup_volume(client, vol_name):  # NOQA
-    volume = client.by_id_volume(vol_name)
-    volume.detach()
-    client.delete(volume)
-    common.wait_for_volume_delete(client, vol_name)
+    cleanup_host_disk_with_volume(client, 'vol-disk-1', 'vol-disk-2')
 
 
 @pytest.mark.coretest   # NOQA
@@ -357,35 +338,27 @@ def test_replica_scheduler_no_disks(client):  # NOQA
     3. Wait for volume condition `scheduled` to be false.
     """
     nodes = client.list_node()
-    # delete all disks on each node
-    for node in nodes:
-        disks = node.disks
-        # set allowScheduling to false
-        for name, disk in iter(disks.items()):
-            disk.allowScheduling = False
-        update_disks = get_update_disks(disks)
-        node = node.diskUpdate(disks=update_disks)
-        for name, disk in iter(node.disks.items()):
-            # wait for node controller update disk status
-            wait_for_disk_status(client, node.name, name,
-                                 "allowScheduling", False)
-            wait_for_disk_status(client, node.name, name,
-                                 "storageScheduled", 0)
-
-        node = client.by_id_node(node.name)
-        for name, disk in iter(node.disks.items()):
-            assert not disk.allowScheduling
-        node = node.diskUpdate(disks={})
-        node = common.wait_for_disk_update(client, node.name, 0)
-        assert len(node.disks) == 0
+    disks = client.list_disk()
+    for disk in disks:
+        client.update(disk, allowScheduling=False)
+    disks = client.list_disk()
+    for disk in disks:
+        wait_for_disk_status(client, disk.name,
+                             "allowScheduling", False)
+        client.delete(disk)
+    for i in range(RETRY_COUNTS):
+        disks = client.list_disk()
+        if len(disks) == 0:
+            break
+        time.sleep(RETRY_INTERVAL)
+    assert len(disks) == 0
 
     # test there's no disk fit for volume
     vol_name = common.generate_volume_name()
-    volume = client.create_volume(name=vol_name,
-                                  size=SIZE, numberOfReplicas=len(nodes))
-    volume = common.wait_for_volume_condition_scheduled(client, vol_name,
-                                                        "status",
-                                                        CONDITION_STATUS_FALSE)
+    client.create_volume(name=vol_name, size=SIZE,
+                         numberOfReplicas=len(nodes))
+    volume = common.wait_for_volume_condition_scheduled(
+        client, vol_name, "status", CONDITION_STATUS_FALSE)
     client.delete(volume)
     common.wait_for_volume_delete(client, vol_name)
 
@@ -481,43 +454,27 @@ def test_replica_scheduler_large_volume_fit_small_disk(client):  # NOQA
     """
     Test replica scheduler: not schedule a large volume to small disk
 
-    1. Create a host disk `small_disk` and attach i to the current node.
+    1. Create a host disk `small_disk` and connect it to the current node.
     2. Create a new large volume.
     3. Verify the volume wasn't scheduled on the `small_disk`.
     """
-    nodes = client.list_node()
     # create a small size disk on current node
     lht_hostId = get_self_host_id()
-    node = client.by_id_node(lht_hostId)
-    small_disk_path = create_host_disk(client, "vol-small",
-                                       SIZE, lht_hostId)
-    small_disk = {"path": small_disk_path, "allowScheduling": True}
-    update_disks = get_update_disks(node.disks)
-    update_disks["small-disks"] = small_disk
-    node = node.diskUpdate(disks=update_disks)
-    node = common.wait_for_disk_update(client, lht_hostId,
-                                       len(update_disks))
-    assert len(node.disks) == len(update_disks)
-
-    unexpected_disk = {}
-    for fsid, disk in iter(node.disks.items()):
-        if disk.path == small_disk_path:
-            unexpected_disk["fsid"] = fsid
-            unexpected_disk["path"] = disk["path"]
-            break
-
-    # volume is too large to fill into small size disk on current node
-    vol_name = common.generate_volume_name()
-    volume = create_volume(client,
-                           vol_name,
-                           str(Gi),
-                           lht_hostId,
-                           len(nodes))
-
     nodes = client.list_node()
     node_hosts = []
     for node in nodes:
         node_hosts.append(node.name)
+
+    small_disk_path = create_host_disk(client, "vol-small",
+                                       SIZE, lht_hostId)
+    disk = client.create_disk(
+        path=small_disk_path, nodeID=lht_hostId, allowScheduling=True)
+    disk = wait_for_disk_status(client, disk.name, "state", "connected")
+
+    # volume is too large to fill into small size disk on current node
+    vol_name = common.generate_volume_name()
+    volume = create_volume(client, vol_name, str(Gi),
+                           lht_hostId, len(nodes))
 
     # check replica on current node shouldn't schedule to small disk
     for replica in volume.replicas:
@@ -525,31 +482,11 @@ def test_replica_scheduler_large_volume_fit_small_disk(client):  # NOQA
         assert id != ""
         assert replica.running
         if id == lht_hostId:
-            assert replica.diskID != unexpected_disk["fsid"]
-            assert replica.dataPath != unexpected_disk["path"]
+            assert replica.diskID != disk.name
+            assert replica.dataPath != disk.path
         node_hosts = list(filter(lambda x: x != id, node_hosts))
 
     assert len(node_hosts) == 0
-
-    cleanup_volume(client, vol_name)
-
-    # cleanup test disks
-    node = client.by_id_node(lht_hostId)
-    disks = node.disks
-    disk = disks[unexpected_disk["fsid"]]
-    disk.allowScheduling = False
-    update_disks = get_update_disks(disks)
-    node = node.diskUpdate(disks=update_disks)
-    node = wait_for_disk_status(client, lht_hostId,
-                                unexpected_disk["fsid"],
-                                "allowScheduling", False)
-    disks = node.disks
-    disk = disks[unexpected_disk["fsid"]]
-    assert not disk.allowScheduling
-    disks.pop(unexpected_disk["fsid"])
-    update_disks = get_update_disks(disks)
-    node.diskUpdate(disks=update_disks)
-    cleanup_host_disk(client, 'vol-small')
 
 
 @pytest.mark.node  # NOQA
@@ -568,69 +505,61 @@ def test_replica_scheduler_too_large_volume_fit_any_disks(client):  # NOQA
     7. Make sure every replica landed on different nodes's default disk.
     """
 
-    nodes = client.list_node()
     lht_hostId = get_self_host_id()
+    nodes = client.list_node()
+    disks = client.list_disk()
+
     expect_node_disk = {}
-    for node in nodes:
-        disks = node.disks
-        for fsid, disk in iter(disks.items()):
-            if disk.path == DEFAULT_DISK_PATH:
-                expect_disk = disk
-                expect_disk.fsid = fsid
-                expect_node_disk[node.name] = expect_disk
-            disk.storageReserved = disk.storageMaximum
-        update_disks = get_update_disks(disks)
-        node.diskUpdate(disks=update_disks)
+    for disk in disks:
+        if disk.path == DEFAULT_DISK_PATH and disk.state == "connected":
+            client.update(disk, allowScheduling=disk.allowScheduling,
+                          storageReserved=disk.storageMaximum)
+            disk = wait_for_disk_status(
+                client, disk.name, "storageReserved", disk.storageMaximum)
+            expect_node_disk[disk.nodeID] = disk
 
     # volume is too large to fill into any disks
     volume_size = 4 * Gi
     vol_name = common.generate_volume_name()
     client.create_volume(name=vol_name, size=str(volume_size),
                          numberOfReplicas=len(nodes))
-    volume = common.wait_for_volume_condition_scheduled(client, vol_name,
-                                                        "status",
-                                                        CONDITION_STATUS_FALSE)
+    common.wait_for_volume_condition_scheduled(
+        client, vol_name, "status", CONDITION_STATUS_FALSE)
 
     # Reduce StorageReserved of each default disk so that each node can fit
     # only one replica.
     needed_for_scheduling = int(
         volume_size * 1.5 * 100 /
         int(DEFAULT_STORAGE_OVER_PROVISIONING_PERCENTAGE))
-    nodes = client.list_node()
-    for node in nodes:
-        disks = node.disks
-        update_disks = get_update_disks(disks)
-        for disk in update_disks.values():
-            disk.storageReserved = \
-                disk.storageMaximum - needed_for_scheduling
-        node = node.diskUpdate(disks=update_disks)
-        disks = node.disks
-        for name, disk in iter(disks.items()):
-            wait_for_disk_status(client, node.name,
-                                 name, "storageReserved",
-                                 disk.storageMaximum-needed_for_scheduling)
+
+    for disk in disks:
+        if disk.path == DEFAULT_DISK_PATH and disk.state == "connected":
+            reserved = disk.storageMaximum - needed_for_scheduling
+            client.update(disk, allowScheduling=disk.allowScheduling,
+                          storageReserved=reserved)
+            wait_for_disk_status(
+                client, disk.name, "storageReserved", reserved)
 
     # check volume status
-    volume = common.wait_for_volume_condition_scheduled(client, vol_name,
-                                                        "status",
-                                                        CONDITION_STATUS_TRUE)
+    common.wait_for_volume_condition_scheduled(
+        client, vol_name, "status", CONDITION_STATUS_TRUE)
     volume = common.wait_for_volume_detached(client, vol_name)
     assert volume.state == "detached"
     assert volume.created != ""
-
     volume.attach(hostId=lht_hostId)
     volume = common.wait_for_volume_healthy(client, vol_name)
-    nodes = client.list_node()
+
     node_hosts = []
     for node in nodes:
         node_hosts.append(node.name)
+    assert len(node_hosts) != 0
     # check all replica should be scheduled to default disk
     for replica in volume.replicas:
         id = replica.hostId
         assert id != ""
         assert replica.running
         expect_disk = expect_node_disk[id]
-        assert replica.diskID == expect_disk.fsid
+        assert replica.diskID == expect_disk.name
         assert expect_disk.path in replica.dataPath
         node_hosts = list(filter(lambda x: x != id, node_hosts))
     assert len(node_hosts) == 0
@@ -651,16 +580,14 @@ def test_replica_scheduler_update_over_provisioning(client):  # NOQA
     5. Attach the volume.
     6. Make sure every replica landed on different nodes's default disk.
     """
-    nodes = client.list_node()
     lht_hostId = get_self_host_id()
+    nodes = client.list_node()
+    disks = client.list_disk()
+
     expect_node_disk = {}
-    for node in nodes:
-        disks = node.disks
-        for fsid, disk in iter(disks.items()):
-            if disk.path == DEFAULT_DISK_PATH:
-                expect_disk = disk
-                expect_disk.fsid = fsid
-                expect_node_disk[node.name] = expect_disk
+    for disk in disks:
+        if disk.path == DEFAULT_DISK_PATH and disk.state == "connected":
+            expect_node_disk[disk.nodeID] = disk
 
     over_provisioning_setting = client.by_id_setting(
         SETTING_STORAGE_OVER_PROVISIONING_PERCENTAGE)
@@ -671,20 +598,17 @@ def test_replica_scheduler_update_over_provisioning(client):  # NOQA
     over_provisioning_setting = client.update(over_provisioning_setting,
                                               value="0")
     vol_name = common.generate_volume_name()
-    volume = client.create_volume(name=vol_name,
-                                  size=SIZE, numberOfReplicas=len(nodes))
-    volume = common.wait_for_volume_condition_scheduled(client, vol_name,
-                                                        "status",
-                                                        CONDITION_STATUS_FALSE)
+    client.create_volume(name=vol_name, size=SIZE, numberOfReplicas=len(nodes))
+    common.wait_for_volume_condition_scheduled(
+        client, vol_name, "status", CONDITION_STATUS_FALSE)
 
     # set storage over provisioning percentage to 100
     over_provisioning_setting = client.update(over_provisioning_setting,
                                               value="100")
 
     # check volume status
-    volume = common.wait_for_volume_condition_scheduled(client, vol_name,
-                                                        "status",
-                                                        CONDITION_STATUS_TRUE)
+    common.wait_for_volume_condition_scheduled(
+        client, vol_name, "status", CONDITION_STATUS_TRUE)
     volume = common.wait_for_volume_detached(client, vol_name)
     assert volume.state == "detached"
     assert volume.created != ""
@@ -701,7 +625,7 @@ def test_replica_scheduler_update_over_provisioning(client):  # NOQA
         assert id != ""
         assert replica.running
         expect_disk = expect_node_disk[id]
-        assert replica.diskID == expect_disk.fsid
+        assert replica.diskID == expect_disk.name
         assert expect_disk.path in replica.dataPath
         node_hosts = list(filter(lambda x: x != id, node_hosts))
     assert len(node_hosts) == 0
@@ -730,27 +654,21 @@ def test_replica_scheduler_exceed_over_provisioning(client):  # NOQA
                                               value="100")
 
     # test exceed over provisioning limit couldn't be scheduled
-    nodes = client.list_node()
-    for node in nodes:
-        disks = node.disks
-        for fsid, disk in iter(disks.items()):
-            disk.storageReserved = \
-                disk.storageMaximum - 1*Gi
-        update_disks = get_update_disks(disks)
-        node = node.diskUpdate(disks=update_disks)
-        disks = node.disks
-        for fsid, disk in iter(disks.items()):
-            wait_for_disk_status(client, node.name,
-                                 fsid, "storageReserved",
-                                 disk.storageMaximum - 1*Gi)
+    disks = client.list_disk()
+    for disk in disks:
+        if disk.path == DEFAULT_DISK_PATH and disk.state == "connected":
+            client.update(disk, allowScheduling=disk.allowScheduling,
+                          storageReserved=disk.storageMaximum - 1*Gi)
+            wait_for_disk_status(
+                client, disk.name,
+                "storageReserved", disk.storageMaximum - 1*Gi)
 
+    nodes = client.list_node()
     vol_name = common.generate_volume_name()
-    volume = client.create_volume(name=vol_name,
-                                  size=str(2*Gi),
-                                  numberOfReplicas=len(nodes))
-    volume = common.wait_for_volume_condition_scheduled(client, vol_name,
-                                                        "status",
-                                                        CONDITION_STATUS_FALSE)
+    client.create_volume(name=vol_name, size=str(2*Gi),
+                         numberOfReplicas=len(nodes))
+    volume = common.wait_for_volume_condition_scheduled(
+        client, vol_name, "status", CONDITION_STATUS_FALSE)
     client.delete(volume)
     common.wait_for_volume_delete(client, vol_name)
     client.update(over_provisioning_setting, value=old_provisioning_setting)
@@ -776,34 +694,27 @@ def test_replica_scheduler_just_under_over_provisioning(client):  # NOQA
 
     lht_hostId = get_self_host_id()
     nodes = client.list_node()
+    disks = client.list_disk()
+
     expect_node_disk = {}
     max_size_array = []
-    for node in nodes:
-        disks = node.disks
-        for fsid, disk in iter(disks.items()):
-            if disk.path == DEFAULT_DISK_PATH:
-                expect_disk = disk
-                expect_disk.fsid = fsid
-                expect_node_disk[node.name] = expect_disk
-                max_size_array.append(disk.storageMaximum)
-            disk.storageReserved = 0
-            update_disks = get_update_disks(disks)
-            node = node.diskUpdate(disks=update_disks)
-            disks = node.disks
-            for fsid, disk in iter(disks.items()):
-                wait_for_disk_status(client, node.name,
-                                     fsid, "storageReserved", 0)
+    for disk in disks:
+        if disk.path == DEFAULT_DISK_PATH and disk.state == "connected":
+            expect_node_disk[disk.nodeID] = disk
+            max_size_array.append(disk.storageMaximum)
+        client.update(disk, allowScheduling=disk.allowScheduling,
+                      storageReserved=0)
+        wait_for_disk_status(
+            client, disk.name, "storageReserved", 0)
 
     # volume size is round up by 2MiB
     max_size = min(max_size_array) - 2 * 1024 * 1024
     # test just under over provisioning limit could be scheduled
     vol_name = common.generate_volume_name()
-    volume = client.create_volume(name=vol_name,
-                                  size=str(max_size),
-                                  numberOfReplicas=len(nodes))
-    volume = common.wait_for_volume_condition_scheduled(client, vol_name,
-                                                        "status",
-                                                        CONDITION_STATUS_TRUE)
+    client.create_volume(
+        name=vol_name, size=str(max_size), numberOfReplicas=len(nodes))
+    common.wait_for_volume_condition_scheduled(
+        client, vol_name, "status", CONDITION_STATUS_TRUE)
     volume = common.wait_for_volume_detached(client, vol_name)
     assert volume.state == "detached"
     assert volume.created != ""
@@ -820,7 +731,7 @@ def test_replica_scheduler_just_under_over_provisioning(client):  # NOQA
         assert id != ""
         assert replica.running
         expect_disk = expect_node_disk[id]
-        assert replica.diskID == expect_disk.fsid
+        assert replica.diskID == expect_disk.name
         assert expect_disk.path in replica.dataPath
         node_hosts = list(filter(lambda x: x != id, node_hosts))
     assert len(node_hosts) == 0
@@ -848,59 +759,49 @@ def test_replica_scheduler_update_minimal_available(client):  # NOQA
         SETTING_STORAGE_MINIMAL_AVAILABLE_PERCENTAGE)
     old_minimal_setting = minimal_available_setting.value
 
+    lht_hostId = get_self_host_id()
     nodes = client.list_node()
+
+    disks = client.list_disk()
     expect_node_disk = {}
-    for node in nodes:
-        disks = node.disks
-        for fsid, disk in iter(disks.items()):
-            if disk.path == DEFAULT_DISK_PATH:
-                expect_disk = disk
-                expect_disk.fsid = fsid
-                expect_node_disk[node.name] = expect_disk
+    for disk in disks:
+        if disk.path == DEFAULT_DISK_PATH and disk.state == "connected":
+            expect_node_disk[disk.nodeID] = disk
 
     # set storage minimal available percentage to 100
     # to test all replica couldn't be scheduled
     minimal_available_setting = client.update(minimal_available_setting,
                                               value="100")
     # wait for disks state
-    nodes = client.list_node()
-    for node in nodes:
-        disks = node.disks
-        for fsid, disk in iter(disks.items()):
-            wait_for_disk_conditions(client, node.name,
-                                     fsid, DISK_CONDITION_SCHEDULABLE,
-                                     CONDITION_STATUS_FALSE)
+    disks = client.list_disk()
+    for disk in disks:
+        wait_for_disk_conditions(
+            client, disk.name,
+            DISK_CONDITION_SCHEDULABLE, CONDITION_STATUS_FALSE)
 
-    lht_hostId = get_self_host_id()
     vol_name = common.generate_volume_name()
-    volume = client.create_volume(name=vol_name,
-                                  size=SIZE, numberOfReplicas=len(nodes))
-    volume = common.wait_for_volume_condition_scheduled(client, vol_name,
-                                                        "status",
-                                                        CONDITION_STATUS_FALSE)
+    client.create_volume(name=vol_name, size=SIZE, numberOfReplicas=len(nodes))
+    common.wait_for_volume_condition_scheduled(
+        client, vol_name, "status", CONDITION_STATUS_FALSE)
 
     # set storage minimal available percentage to default value(10)
-    minimal_available_setting = client.update(minimal_available_setting,
-                                              value=old_minimal_setting)
+    client.update(minimal_available_setting, value=old_minimal_setting)
     # wait for disks state
-    nodes = client.list_node()
-    for node in nodes:
-        disks = node.disks
-        for fsid, disk in iter(disks.items()):
-            wait_for_disk_conditions(client, node.name,
-                                     fsid, DISK_CONDITION_SCHEDULABLE,
-                                     CONDITION_STATUS_TRUE)
+    disks = client.list_disk()
+    for disk in disks:
+        wait_for_disk_conditions(
+            client, disk.name,
+            DISK_CONDITION_SCHEDULABLE, CONDITION_STATUS_TRUE)
+
     # check volume status
-    volume = common.wait_for_volume_condition_scheduled(client, vol_name,
-                                                        "status",
-                                                        CONDITION_STATUS_TRUE)
+    common.wait_for_volume_condition_scheduled(
+        client, vol_name, "status", CONDITION_STATUS_TRUE)
     volume = common.wait_for_volume_detached(client, vol_name)
     assert volume.state == "detached"
     assert volume.created != ""
 
     volume.attach(hostId=lht_hostId)
     volume = common.wait_for_volume_healthy(client, vol_name)
-    nodes = client.list_node()
     node_hosts = []
     for node in nodes:
         node_hosts.append(node.name)
@@ -910,7 +811,7 @@ def test_replica_scheduler_update_minimal_available(client):  # NOQA
         assert id != ""
         assert replica.running
         expect_disk = expect_node_disk[id]
-        assert replica.diskID == expect_disk.fsid
+        assert replica.diskID == expect_disk.name
         assert expect_disk.path in replica.dataPath
         node_hosts = list(filter(lambda x: x != id, node_hosts))
     assert len(node_hosts) == 0
@@ -924,18 +825,12 @@ def test_node_controller_sync_storage_scheduled(client):  # NOQA
     """
     Test node controller sync storage scheduled correctly
 
-    1. Wait until no disk has anything scheduled
-    2. Create a volume with "number of nodes" replicas
-    3. Confirm that each disks now has "volume size" scheduled
-    4. Confirm every disks are still schedulable.
+    1. Create a volume with "number of nodes" replicas
+    2. Confirm that each disks now has "volume size" scheduled
+    3. Confirm every disks are still schedulable.
     """
     lht_hostId = get_self_host_id()
     nodes = client.list_node()
-    for node in nodes:
-        for fsid, disk in iter(node.disks.items()):
-            # wait for node controller update disk status
-            wait_for_disk_status(client, node.name, fsid,
-                                 "storageScheduled", 0)
 
     # create a volume and test update StorageScheduled of each node
     vol_name = common.generate_volume_name()
@@ -948,23 +843,17 @@ def test_node_controller_sync_storage_scheduled(client):  # NOQA
         assert replica.running
 
     # wait for node controller to update disk status
-    for node in nodes:
-        disks = node.disks
-        for fsid, disk in iter(disks.items()):
-            wait_for_disk_status(client, node.name, fsid,
-                                 "storageScheduled", SMALL_DISK_SIZE)
+    disks = client.list_disk()
+    for disk in disks:
+        wait_for_disk_status(
+            client, disk.name, "storageScheduled", SMALL_DISK_SIZE)
 
-    nodes = client.list_node()
-    for node in nodes:
-        disks = node.disks
-        for replica in replicas:
-            if replica.hostId == node.name:
-                disk = disks[replica["diskID"]]
-                conditions = disk.conditions
-                assert disk.storageScheduled == SMALL_DISK_SIZE
-                assert conditions[DISK_CONDITION_SCHEDULABLE]["status"] == \
-                    CONDITION_STATUS_TRUE
-                break
+    for replica in replicas:
+        disk = client.by_id_disk(replica.diskID)
+        conditions = disk.conditions
+        assert disk.storageScheduled == SMALL_DISK_SIZE
+        assert conditions[DISK_CONDITION_SCHEDULABLE]["status"] == \
+               CONDITION_STATUS_TRUE
 
     # clean volumes
     cleanup_volume(client, vol_name)
@@ -982,15 +871,13 @@ def test_node_controller_sync_storage_available(client):  # NOQA
     3. Verify the disk `storageAvailable` will update to include the file
     """
     lht_hostId = get_self_host_id()
+
     # create a disk to test storageAvailable
-    node = client.by_id_node(lht_hostId)
-    test_disk_path = create_host_disk(client, "vol-test", SIZE, lht_hostId)
-    test_disk = {"path": test_disk_path, "allowScheduling": True}
-    update_disks = get_update_disks(node.disks)
-    update_disks["test-disk"] = test_disk
-    node = node.diskUpdate(disks=update_disks)
-    node = common.wait_for_disk_update(client, lht_hostId, len(update_disks))
-    assert len(node.disks) == len(update_disks)
+    test_disk_path = create_host_disk(
+        client, "vol-test", SIZE, lht_hostId)
+    disk = client.create_disk(
+        path=test_disk_path, nodeID=lht_hostId, allowScheduling=True)
+    wait_for_disk_connected(client, disk.name)
 
     # write specified byte data into disk
     test_file_path = os.path.join(test_disk_path, TEST_FILE)
@@ -999,44 +886,10 @@ def test_node_controller_sync_storage_available(client):  # NOQA
     cmd = ['dd', 'if=/dev/zero', 'of=' + test_file_path, 'bs=1M', 'count=1']
     subprocess.check_call(cmd)
     subprocess.check_call(['sync', test_file_path])
-    node = client.by_id_node(lht_hostId)
-    disks = node.disks
-    # wait for node controller update disk status
-    expect_disk = {}
-    for fsid, disk in iter(disks.items()):
-        if disk.path == test_disk_path:
-            node = wait_for_disk_storage_available(client, lht_hostId,
-                                                   fsid, test_disk_path)
-            expect_disk = node.disks[fsid]
-            break
 
-    free, total = common.get_host_disk_size(test_disk_path)
-    assert expect_disk.storageAvailable == free
+    wait_for_disk_storage_available(client, disk.name, test_disk_path)
 
     os.remove(test_file_path)
-    # cleanup test disks
-    node = client.by_id_node(lht_hostId)
-    disks = node.disks
-    wait_fsid = ''
-    for fsid, disk in iter(disks.items()):
-        if disk.path == test_disk_path:
-            wait_fsid = fsid
-            disk.allowScheduling = False
-
-    update_disks = get_update_disks(disks)
-    node = node.diskUpdate(disks=update_disks)
-    node = wait_for_disk_status(client, lht_hostId, wait_fsid,
-                                "allowScheduling", False)
-    disks = node.disks
-    for fsid, disk in iter(disks.items()):
-        if disk.path == test_disk_path:
-            disks.pop(fsid)
-            break
-    update_disks = get_update_disks(disks)
-    node = node.diskUpdate(disks=update_disks)
-    node = wait_for_disk_update(client, lht_hostId, len(update_disks))
-    assert len(node.disks) == len(update_disks)
-    cleanup_host_disk(client, 'vol-test')
 
 
 @pytest.mark.coretest   # NOQA
@@ -1056,387 +909,113 @@ def test_node_controller_sync_disk_state(client):  # NOQA
     old_minimal_available_percentage = setting.value
     setting = client.update(setting, value="100")
     assert setting.value == "100"
-    nodes = client.list_node()
-    # wait for node controller to update disk state
-    for node in nodes:
-        disks = node.disks
-        for fsid, disk in iter(disks.items()):
-            wait_for_disk_conditions(client, node.name,
-                                     fsid, DISK_CONDITION_SCHEDULABLE,
-                                     CONDITION_STATUS_FALSE)
 
-    nodes = client.list_node()
-    for node in nodes:
-        disks = node.disks
-        for fsid, disk in iter(disks.items()):
-            conditions = disk.conditions
-            assert conditions[DISK_CONDITION_SCHEDULABLE]["status"] == \
-                CONDITION_STATUS_FALSE
+    # wait for disk state update
+    disks = client.list_disk()
+    for disk in disks:
+        wait_for_disk_conditions(
+            client, disk.name,
+            DISK_CONDITION_SCHEDULABLE, CONDITION_STATUS_FALSE)
 
     setting = client.update(setting, value=old_minimal_available_percentage)
     assert setting.value == old_minimal_available_percentage
-    # wait for node controller to update disk state
-    nodes = client.list_node()
-    for node in nodes:
-        disks = node.disks
-        for fsid, disk in iter(disks.items()):
-            wait_for_disk_conditions(client, node.name,
-                                     fsid, DISK_CONDITION_SCHEDULABLE,
-                                     CONDITION_STATUS_TRUE)
+
+    # wait for disk state update
+    disks = client.list_disk()
+    for disk in disks:
+        wait_for_disk_conditions(
+            client, disk.name,
+            DISK_CONDITION_SCHEDULABLE, CONDITION_STATUS_TRUE)
 
 
 @pytest.mark.node  # NOQA
 @pytest.mark.mountdisk # NOQA
-def test_node_default_disk_added_back_with_extra_disk_unmounted(client):  # NOQA
+def test_extra_disk_unmount_and_remount(client):  # NOQA
     """
     [Node] Test adding default disk back with extra disk is unmounted
     on the node
 
-    1. Clean up all disks on node 1.
+    1. Clean up all disks on current node.
     2. Recreate the default disk with "allowScheduling" disabled for
-       node 1.
-    3. Create a Longhorn volume and attach it to node 1.
+       current node.
+    3. Create a Longhorn volume and attach it to current node.
     4. Use the Longhorn volume as an extra host disk and
-       enable "allowScheduling" of the default disk for node 1.
-    5. Verify all disks on node 1 are "Schedulable".
-    6. Delete the default disk on node 1.
-    7. Unmount the extra disk on node 1.
+       enable "allowScheduling" of the default disk for current node.
+    5. Verify all disks on current node are "Schedulable".
+    6. Delete the default disk on current node.
+    7. Unmount the extra disk on current node.
        And wait for it becoming "Unschedulable".
-    8. Create and add the default disk back on node 1.
+    8. Create and add the default disk back on current node.
     9. Wait and verify the default disk should become "Schedulable".
-    10. Mount extra disk back on node 1.
+    10. Mount extra disk back on current node.
     11. Wait and verify this extra disk should become "Schedulable".
     12. Delete the host disk `extra_disk`.
     """
     lht_hostId = get_self_host_id()
     cleanup_node_disks(client, lht_hostId)
-    node = client.by_id_node(lht_hostId)
 
     # Create a default disk with `allowScheduling` disabled
     # so that there is no volume replica using this disk later.
-    default_disk = {"default-disk":
-                    {"path": DEFAULT_DISK_PATH,
-                     "allowScheduling": False,
-                     "storageReserved": SMALL_DISK_SIZE}}
-    node = node.diskUpdate(disks=default_disk)
-    node = wait_for_disk_update(client, node.name, 1)
-    assert len(node.disks) == 1
+    default_disk = client.create_disk(
+        path=DEFAULT_DISK_PATH, nodeID=lht_hostId,
+        allowScheduling=False, storageReserved=SMALL_DISK_SIZE)
+    wait_for_disk_connected(client, default_disk.name)
 
     # Create a volume and attached it to this node.
     # This volume will be used as an extra host disk later.
     extra_disk_volume_name = 'extra-disk'
     extra_disk_path = create_host_disk(client, extra_disk_volume_name,
                                        str(Gi), lht_hostId)
-    extra_disk = {"path": extra_disk_path, "allowScheduling": True}
-
-    update_disk = get_update_disks(node.disks)
-    update_disk["default-disk"].allowScheduling = True
-    update_disk["extra-disk"] = extra_disk
-    node = node.diskUpdate(disks=update_disk)
-    node = common.wait_for_disk_update(client, lht_hostId,
-                                       len(update_disk))
-    assert len(node.disks) == len(update_disk)
+    extra_disk = client.create_disk(
+        path=extra_disk_path, nodeID=lht_hostId, allowScheduling=True)
+    wait_for_disk_connected(client, extra_disk.name)
 
     # Make sure all disks are schedulable
-    for name, disk in node.disks.items():
-        wait_for_disk_conditions(client, node.name,
-                                 name, DISK_CONDITION_SCHEDULABLE,
-                                 CONDITION_STATUS_TRUE)
+    disks = client.list_disk()
+    for disk in disks:
+        if disk.nodeID == lht_hostId:
+            wait_for_disk_conditions(
+                client, disk.name,
+                DISK_CONDITION_SCHEDULABLE, CONDITION_STATUS_TRUE)
 
     # Delete default disk
-    update_disk = get_update_disks(node.disks)
-    update_disk["default-disk"].allowScheduling = False
-    node = node.diskUpdate(disks=update_disk)
-    node = common.wait_for_disk_update(client, lht_hostId,
-                                       len(update_disk))
-    remain_disk = {}
-    for name, disk in node.disks.items():
-        if disk.path == extra_disk_path:
-            remain_disk[name] = disk
-    node = node.diskUpdate(disks=remain_disk)
-    node = wait_for_disk_update(client, lht_hostId,
-                                len(remain_disk))
-    assert len(node.disks) == len(remain_disk)
+    default_disk = client.by_id_disk(default_disk.name)
+    client.delete(default_disk)
+    wait_for_disk_deletion(client, default_disk.name)
 
     # Umount the extra disk and wait for unschedulable condition
-    common.umount_disk(extra_disk_path)
-    for name, disk in node.disks.items():
-        wait_for_disk_conditions(client, node.name,
-                                 name, DISK_CONDITION_SCHEDULABLE,
-                                 CONDITION_STATUS_FALSE)
+    common.cleanup_host_disk(extra_disk_path)
+    wait_for_disk_status(client, extra_disk.name, "state", "disconnected")
+    wait_for_disk_conditions(
+        client, extra_disk.name,
+        DISK_CONDITION_SCHEDULABLE, CONDITION_STATUS_FALSE)
 
     # Add default disk back and wait for schedulable condition
-    default_disk = {"path": DEFAULT_DISK_PATH, "allowScheduling": True,
-                    "storageReserved": SMALL_DISK_SIZE}
-    update_disk = get_update_disks(node.disks)
-    update_disk["default-disk"] = default_disk
-    node = node.diskUpdate(disks=update_disk)
-    node = common.wait_for_disk_update(client, lht_hostId,
-                                       len(update_disk))
-    for name, disk in node.disks.items():
-        if disk.path == DEFAULT_DISK_PATH:
-            wait_for_disk_conditions(client, node.name,
-                                     name, DISK_CONDITION_SCHEDULABLE,
-                                     CONDITION_STATUS_TRUE)
+    default_disk = client.create_disk(
+        path=DEFAULT_DISK_PATH, nodeID=lht_hostId,
+        allowScheduling=True, storageReserved=SMALL_DISK_SIZE)
+    wait_for_disk_connected(client, default_disk.name)
+    wait_for_disk_conditions(
+        client, default_disk.name,
+        DISK_CONDITION_SCHEDULABLE, CONDITION_STATUS_TRUE)
+    wait_for_node_schedulable_condition(client, lht_hostId)
 
     # Mount extra disk back
+    # Then verify the extra disk should be at schedulable condition
     disk_volume = client.by_id_volume(extra_disk_volume_name)
     dev = get_volume_endpoint(disk_volume)
     common.mount_disk(dev, extra_disk_path)
-
-    # Check all the disks should be at schedulable condition
-    node = node.diskUpdate(disks=update_disk)
-    node = common.wait_for_disk_update(client, lht_hostId,
-                                       len(update_disk))
-    for name, disk in node.disks.items():
-        wait_for_disk_conditions(client, node.name,
-                                 name, DISK_CONDITION_SCHEDULABLE,
-                                 CONDITION_STATUS_TRUE)
+    extra_disk = wait_for_disk_conditions(
+        client, extra_disk.name,
+        DISK_CONDITION_SCHEDULABLE, CONDITION_STATUS_TRUE)
 
     # Remove extra disk.
-    update_disk = get_update_disks(node.disks)
-    update_disk[extra_disk_volume_name].allowScheduling = False
-    node = node.diskUpdate(disks=update_disk)
-    node = common.wait_for_disk_update(client, lht_hostId,
-                                       len(update_disk))
+    client.update(extra_disk, allowScheduling=False)
+    extra_disk = wait_for_disk_status(
+        client, extra_disk.name, "allowScheduling", False)
+    client.delete(extra_disk)
 
-    update_disk = get_update_disks(node.disks)
-    remain_disk = {}
-    for name, disk in update_disk.items():
-        if disk.path != extra_disk_path:
-            remain_disk[name] = disk
-    node = node.diskUpdate(disks=remain_disk)
-    node = wait_for_disk_update(client, lht_hostId,
-                                len(remain_disk))
-
-    cleanup_host_disk(client, extra_disk_volume_name)
-
-
-@pytest.mark.node  # NOQA
-@pytest.mark.mountdisk # NOQA
-def test_node_umount_disk(client):  # NOQA
-    """
-    [Node] Test umount and delete the extra disk on the node
-
-    1. Create host disk and attach it to the current node
-    2. Disable the existing disk's scheduling on the current node
-    3. Add the disk to the current node
-    4. Wait for node to recongize the disk
-    5. Create a volume with "number of nodes" replicas
-    6. Umount the disk from the host
-    7. Verify the disk `READY` condition become false.
-        1. Maximum and available storage become zero.
-        2. No change to storage scheduled and storage reserved.
-    8. Try to delete the extra disk, it should fail due to need to disable
-    scheduling first
-    9. Update the other disk on the node to be allow scheduling. Disable the
-    scheduling for the extra disk
-    10. Mount the disk back
-    11. Verify the disk `READY` condition become true, and other states
-    12. Umount and delete the disk.
-    """
-
-    # create test disks for node
-    disk_volume_name = 'vol-disk-1'
-    lht_hostId = get_self_host_id()
-    node = client.by_id_node(lht_hostId)
-    disks = node.disks
-    disk_path1 = create_host_disk(client, disk_volume_name,
-                                  str(Gi), lht_hostId)
-    disk1 = {"path": disk_path1, "allowScheduling": True,
-             "storageReserved": SMALL_DISK_SIZE}
-
-    update_disk = get_update_disks(disks)
-    for disk in update_disk.values():
-        disk.allowScheduling = False
-    # add new disk for node
-    update_disk["disk1"] = disk1
-    # save disks to node
-    node = node.diskUpdate(disks=update_disk)
-    node = common.wait_for_disk_update(client, lht_hostId,
-                                       len(update_disk))
-    assert len(node.disks) == len(update_disk)
-    node = client.by_id_node(lht_hostId)
-    assert len(node.disks) == len(update_disk)
-
-    disks = node.disks
-    # wait for node controller to update disk status
-    for name, disk in iter(disks.items()):
-        if disk.path == disk_path1:
-            wait_for_disk_status(client, lht_hostId, name,
-                                 "allowScheduling", True)
-            wait_for_disk_status(client, lht_hostId, name,
-                                 "storageReserved", SMALL_DISK_SIZE)
-            _, total = common.get_host_disk_size(disk_path1)
-            wait_for_disk_status(client, lht_hostId, name,
-                                 "storageMaximum", total)
-            wait_for_disk_storage_available(client, lht_hostId, name,
-                                            disk_path1)
-
-    node = client.by_id_node(lht_hostId)
-    disks = node.disks
-    for key, disk in iter(disks.items()):
-        if disk.path == disk_path1:
-            assert disk.allowScheduling
-            assert disk.storageReserved == SMALL_DISK_SIZE
-            assert disk.storageScheduled == 0
-            free, total = common.get_host_disk_size(disk_path1)
-            assert disk.storageMaximum == total
-            conditions = disk.conditions
-            assert conditions[DISK_CONDITION_READY]["status"] == \
-                CONDITION_STATUS_TRUE
-            assert conditions[DISK_CONDITION_SCHEDULABLE]["status"] == \
-                CONDITION_STATUS_TRUE
-        else:
-            assert not disk.allowScheduling
-
-    # create a volume
-    nodes = client.list_node()
-    vol_name = common.generate_volume_name()
-    volume = create_volume(client, vol_name, str(SMALL_DISK_SIZE),
-                           lht_hostId, len(nodes))
-    replicas = volume.replicas
-    for replica in replicas:
-        id = replica.hostId
-        assert id != ""
-        assert replica.running
-        if id == lht_hostId:
-            assert replica.dataPath.startswith(disk_path1)
-
-    # umount the disk
-    mount_path = os.path.join(DIRECTORY_PATH, disk_volume_name)
-    # After longhorn refactor, umount_disk will fail with
-    # `target is busy` error from Linux as replica is using
-    # this mount path for storing it's files.
-    # As a work around, we are using `-l` flag that does the
-    # unmount for active mount destinations.
-    common.lazy_umount_disk(mount_path)
-
-    # wait for update node status
-    node = client.by_id_node(lht_hostId)
-    disks = node.disks
-    for fsid, disk in iter(disks.items()):
-        if disk.path == disk_path1:
-            wait_for_disk_status(client, lht_hostId,
-                                 fsid, "storageMaximum", 0)
-            wait_for_disk_conditions(client, lht_hostId, fsid,
-                                     DISK_CONDITION_READY,
-                                     CONDITION_STATUS_FALSE)
-
-    # check result
-    node = client.by_id_node(lht_hostId)
-    disks = node.disks
-    update_disks = {}
-    for fsid, disk in iter(disks.items()):
-        if disk.path == disk_path1:
-            assert disk.allowScheduling
-            assert disk.storageMaximum == 0
-            assert disk.storageAvailable == 0
-            assert disk.storageReserved == SMALL_DISK_SIZE
-            assert disk.storageScheduled == SMALL_DISK_SIZE
-            conditions = disk.conditions
-            assert conditions[DISK_CONDITION_READY]["status"] == \
-                CONDITION_STATUS_FALSE
-            assert conditions[DISK_CONDITION_SCHEDULABLE]["status"] == \
-                CONDITION_STATUS_FALSE
-        else:
-            conditions = disk.conditions
-            assert conditions[DISK_CONDITION_READY]["status"] == \
-                CONDITION_STATUS_TRUE
-            assert conditions[DISK_CONDITION_SCHEDULABLE]["status"] == \
-                CONDITION_STATUS_TRUE
-            update_disks[fsid] = disk
-
-    # delete umount disk exception
-    with pytest.raises(Exception) as e:
-        node.diskUpdate(disks=update_disks)
-    assert "disable the disk" in str(e.value)
-
-    # update other disks
-    disks = node.disks
-    for fsid, disk in iter(disks.items()):
-        if disk.path == disk_path1:
-            disk.allowScheduling = False
-        else:
-            disk.allowScheduling = True
-    test_update = get_update_disks(disks)
-    node = node.diskUpdate(disks=test_update)
-    disks = node.disks
-    for fsid, disk in iter(disks.items()):
-        if disk.path != disk_path1:
-            wait_for_disk_status(client, lht_hostId,
-                                 fsid, "allowScheduling", True)
-    node = client.by_id_node(lht_hostId)
-    disks = node.disks
-    for fsid, disk in iter(disks.items()):
-        if disk.path != disk_path1:
-            assert disk.allowScheduling
-
-    # mount the disk back
-    mount_path = os.path.join(DIRECTORY_PATH, disk_volume_name)
-    disk_volume = client.by_id_volume(disk_volume_name)
-    dev = get_volume_endpoint(disk_volume)
-    common.mount_disk(dev, mount_path)
-
-    # wait for update node status
-    node = client.by_id_node(lht_hostId)
-    disks = node.disks
-    for fsid, disk in iter(disks.items()):
-        if disk.path == disk_path1:
-            wait_for_disk_status(client, lht_hostId,
-                                 fsid, "allowScheduling", False)
-            wait_for_disk_conditions(client, lht_hostId, fsid,
-                                     DISK_CONDITION_READY,
-                                     CONDITION_STATUS_TRUE)
-
-    # check result
-    node = client.by_id_node(lht_hostId)
-    disks = node.disks
-    for fsid, disk in iter(disks.items()):
-        if disk.path == disk_path1:
-            free, total = common.get_host_disk_size(disk_path1)
-            assert not disk.allowScheduling
-            assert disk.storageMaximum == total
-            assert disk.storageAvailable == free
-            assert disk.storageReserved == SMALL_DISK_SIZE
-            assert disk.storageScheduled == SMALL_DISK_SIZE
-            conditions = disk.conditions
-            assert conditions[DISK_CONDITION_READY]["status"] == \
-                CONDITION_STATUS_TRUE
-            assert conditions[DISK_CONDITION_SCHEDULABLE]["status"] == \
-                CONDITION_STATUS_TRUE
-        else:
-            conditions = disk.conditions
-            assert conditions[DISK_CONDITION_READY]["status"] == \
-                CONDITION_STATUS_TRUE
-            assert conditions[DISK_CONDITION_SCHEDULABLE]["status"] == \
-                CONDITION_STATUS_TRUE
-
-    # delete volume and umount disk
-    cleanup_volume(client, vol_name)
-    mount_path = os.path.join(DIRECTORY_PATH, disk_volume_name)
-    common.umount_disk(mount_path)
-
-    # wait for update node status
-    node = client.by_id_node(lht_hostId)
-    disks = node.disks
-    for fsid, disk in iter(disks.items()):
-        if disk.path == disk_path1:
-            wait_for_disk_status(client, lht_hostId,
-                                 fsid, "allowScheduling", False)
-            wait_for_disk_status(client, lht_hostId,
-                                 fsid, "storageScheduled", 0)
-            wait_for_disk_status(client, lht_hostId,
-                                 fsid, "storageMaximum", 0)
-
-    # test delete the umount disk
-    node = client.by_id_node(lht_hostId)
-    node.diskUpdate(disks=update_disks)
-    node = common.wait_for_disk_update(client, lht_hostId,
-                                       len(update_disks))
-    assert len(node.disks) == len(update_disks)
-    cmd = ['rm', '-r', mount_path]
-    subprocess.check_call(cmd)
+    cleanup_host_disk_with_volume(client, extra_disk_volume_name)
 
 
 @pytest.mark.coretest   # NOQA
@@ -1458,7 +1037,6 @@ def test_replica_datapath_cleanup(client):  # NOQA
     5. Delete the volume.
     6. Verify the data path for replicas are deleted.
     """
-    nodes = client.list_node()
     lht_hostId = get_self_host_id()
 
     # set soft antiaffinity setting to true
@@ -1466,35 +1044,18 @@ def test_replica_datapath_cleanup(client):  # NOQA
         client.by_id_setting(SETTING_REPLICA_NODE_SOFT_ANTI_AFFINITY)
     client.update(replica_node_soft_anti_affinity_setting, value="true")
 
-    node = client.by_id_node(lht_hostId)
     extra_disk_path = create_host_disk(client, "extra-disk",
                                        "10G", lht_hostId)
-    extra_disk = {"path": extra_disk_path, "allowScheduling": True}
-    update_disks = get_update_disks(node.disks)
-    update_disks["extra-disk"] = extra_disk
-    node = node.diskUpdate(disks=update_disks)
-    node = common.wait_for_disk_update(client, lht_hostId,
-                                       len(update_disks))
-    assert len(node.disks) == len(update_disks)
+    extra_disk = client.create_disk(
+        path=extra_disk_path, nodeID=lht_hostId, allowScheduling=True)
+    wait_for_disk_connected(client, extra_disk.name)
 
-    extra_disk_fsid = ""
-    for fsid, disk in iter(node.disks.items()):
-        if disk.path == extra_disk_path:
-            extra_disk_fsid = fsid
-            break
-
-    for node in nodes:
-        # disable all the disks except the ones on the current node
-        if node.name == lht_hostId:
-            continue
-        for fsid, disk in iter(node.disks.items()):
-            break
-        disk.allowScheduling = False
-        update_disks = get_update_disks(node.disks)
-        node.diskUpdate(disks=update_disks)
-        node = wait_for_disk_status(client, node.name,
-                                    fsid,
-                                    "allowScheduling", False)
+    # disable all the disks except the ones on the current node
+    disks = client.list_disk()
+    for disk in disks:
+        if disk.nodeID != lht_hostId:
+            client.update(disk, allowScheduling=False)
+            wait_for_disk_status(client, disk.name, "allowScheduling", False)
 
     vol_name = common.generate_volume_name()
     # more replicas, make sure both default and extra disk will get one
@@ -1513,34 +1074,22 @@ def test_replica_datapath_cleanup(client):  # NOQA
     for data_path in data_paths:
         with pytest.raises(subprocess.CalledProcessError):
             exec_nsenter("ls {}".format(data_path))
+    extra_disk = wait_for_disk_status(
+        client, extra_disk.name, "storageScheduled", 0)
 
-    node = client.by_id_node(lht_hostId)
-    disks = node.disks
-    disk = disks[extra_disk_fsid]
-    disk.allowScheduling = False
-    update_disks = get_update_disks(disks)
-    node = node.diskUpdate(disks=update_disks)
-    node = wait_for_disk_status(client, lht_hostId,
-                                extra_disk_fsid,
-                                "allowScheduling", False)
-    wait_for_disk_status(client, lht_hostId, extra_disk_fsid,
-                         "storageScheduled", 0)
+    client.update(extra_disk, allowScheduing=False)
+    extra_disk = wait_for_disk_status(
+        client, extra_disk.name, "allowScheduling", False)
+    client.delete(extra_disk)
+    wait_for_disk_deletion(client, extra_disk.name)
 
-    disks = node.disks
-    disk = disks[extra_disk_fsid]
-    assert not disk.allowScheduling
-    disks.pop(extra_disk_fsid)
-    update_disks = get_update_disks(disks)
-    node.diskUpdate(disks=update_disks)
-    node = common.wait_for_disk_update(client, lht_hostId,
-                                       len(update_disks))
-
-    cleanup_host_disk(client, 'extra-disk')
+    cleanup_host_disk_with_volume(client, 'extra-disk')
 
 
 @pytest.mark.node
-def test_node_default_disk_labeled(client, core_api, random_disk_path,  reset_default_disk_label,  # NOQA
-                                   reset_disk_settings):  # NOQA
+def test_node_default_disk_labeled(
+        client, core_api, random_disk_path,   # NOQA
+        reset_default_disk_label, reset_disk_settings):  # NOQA
     """
     Test node feature: create default Disk according to the node label
 
@@ -1595,27 +1144,40 @@ def test_node_default_disk_labeled(client, core_api, random_disk_path,  reset_de
     client.update(setting, value=random_disk_path)
     setting = client.by_id_setting(SETTING_CREATE_DEFAULT_DISK_LABELED_NODES)
     client.update(setting, value="true")
-    wait_for_disk_update(client, cases["labeled"], 1)
 
     # Check each case.
-    node = client.by_id_node(cases["disk_exists"])
-    assert len(node.disks) == 1
-    assert node.disks[list(node.disks)[0]].path == \
-        DEFAULT_DISK_PATH
-
-    node = client.by_id_node(cases["labeled"])
-    assert len(node.disks) == 1
-    assert node.disks[list(node.disks)[0]].path == \
-        random_disk_path
+    for i in range(RETRY_COUNTS):
+        node0_verified = False
+        node1_verified = False
+        node0_disk_count = 0
+        node1_disk_count = 0
+        disks = client.list_disk()
+        for disk in disks:
+            if disk.nodeID == cases["disk_exists"]:
+                assert disk.path == DEFAULT_DISK_PATH
+                wait_for_disk_connected(client, disk.name)
+                node0_disk_count += 1
+                node0_verified = True
+            if disk.nodeID == cases["labeled"]:
+                assert disk.path == random_disk_path
+                wait_for_disk_connected(client, disk.name)
+                node1_disk_count += 1
+                node1_verified = True
+        if node0_verified and node1_verified:
+            break
+        time.sleep(RETRY_INTERVAL)
+    assert node0_disk_count == 1 and node1_disk_count == 1
+    assert node0_verified and node1_verified
 
     # Remove the Disk from the Node used for this test case so we can have the
     # fixtures clean up after.
     setting = client.by_id_setting(SETTING_CREATE_DEFAULT_DISK_LABELED_NODES)
     client.update(setting, value="false")
-    cleanup_node_disks(client, node.id)
 
-    node = client.by_id_node(cases["unlabeled"])
-    assert len(node.disks) == 0
+    cleanup_node_disks(client, cases["unlabeled"])
+    disks = client.list_disk()
+    for disk in disks:
+        assert disk.nodeID != cases["unlabeled"]
 
 
 @pytest.mark.node
@@ -1682,17 +1244,30 @@ def test_node_config_annotation(client, core_api,  # NOQA
     client.update(setting, value="true")
 
     wait_for_node_tag_update(client, node0, ["tag1", "tag2"])
-    node = wait_for_disk_update(client, node0, 1)
-    for _, disk in iter(node.disks.items()):
-        assert disk.path == DEFAULT_DISK_PATH
-        assert disk.allowScheduling is True
-        assert disk.storageReserved == 1024
-        assert set(disk.tags) == {"ssd", "fast"}
-        break
 
-    node = client.by_id_node(node1)
-    assert len(node.disks) == 0
-    assert not node.tags
+    found = False
+    for i in range(RETRY_COUNTS):
+        disks = client.list_disk()
+        for disk in disks:
+            if disk.nodeID == node0 and disk.path == DEFAULT_DISK_PATH:
+                found = True
+                disk0 = disk
+                break
+        if found:
+            break
+        time.sleep(RETRY_INTERVAL)
+    assert found and disk0
+    wait_for_disk_connected(client, disk0.name)
+    wait_for_disk_status(
+        client, disk0.name, "allowScheduling", True)
+    wait_for_disk_status(
+        client, disk0.name, "storageReserved", 1024)
+    wait_for_disk_status(
+        client, disk0.name, "tags", {"ssd", "fast"})
+
+    disks = client.list_disk()
+    for disk in disks:
+        assert disk.nodeID != node1
 
     core_api.patch_node(node1, {
         "metadata": {
@@ -1707,13 +1282,26 @@ def test_node_config_annotation(client, core_api,  # NOQA
     })
 
     wait_for_node_tag_update(client, node1, ["tag1", "tag3"])
-    node = wait_for_disk_update(client, node1, 1)
-    for _, disk in iter(node.disks.items()):
-        assert disk.path == DEFAULT_DISK_PATH
-        assert disk.allowScheduling is True
-        assert disk.storageReserved == 2048
-        assert set(disk.tags) == {"hdd", "slow"}
-        break
+
+    found = False
+    for i in range(RETRY_COUNTS):
+        disks = client.list_disk()
+        for disk in disks:
+            if disk.nodeID == node1 and disk.path == DEFAULT_DISK_PATH:
+                found = True
+                disk1 = disk
+                break
+        if found:
+            break
+        time.sleep(RETRY_INTERVAL)
+    assert found and disk1
+    wait_for_disk_connected(client, disk1.name)
+    wait_for_disk_status(
+        client, disk1.name, "allowScheduling", True)
+    wait_for_disk_status(
+        client, disk1.name, "storageReserved", 2048)
+    wait_for_disk_status(
+        client, disk1.name, "tags", {"hdd", "slow"})
 
 
 @pytest.mark.node
@@ -1784,8 +1372,8 @@ def test_node_config_annotation_invalid(client, core_api,  # NOQA
 
     # patch label and annotations to the node.
     host_dirs = [
-        os.path.join(DEFAULT_DISK_PATH, "engine-binaries"),
-        os.path.join(DEFAULT_DISK_PATH, "replicas")
+        os.path.abspath(os.path.join(DEFAULT_DISK_PATH, "engine-binaries")),
+        os.path.abspath(os.path.join(DEFAULT_DISK_PATH, "replicas"))
     ]
     core_api.patch_node(node_name, {
         "metadata": {
@@ -1797,20 +1385,20 @@ def test_node_config_annotation_invalid(client, core_api,  # NOQA
                 DEFAULT_DISK_CONFIG_ANNOTATION:
                     '[{"path":"' + host_dirs[0] + '",' +
                     '"allowScheduling":false,' +
-                    '"storageReserved":1024,' +
-                    '"name":"' + os.path.basename(host_dirs[0]) + '"},' +
+                    '"storageReserved":1024},' +
                     '{"path":"' + host_dirs[1] + '",' +
                     '"allowScheduling":false,' +
-                    '"storageReserved": 1024,' +
-                    '"name":"' + os.path.basename(host_dirs[1]) + '"}]'
+                    '"storageReserved": 1024}]'
             }
         }
     })
 
     # Longhorn shouldn't apply the invalid disk annotation.
     time.sleep(NODE_UPDATE_WAIT_INTERVAL)
+    disks = client.list_disk()
+    for disk in disks:
+        assert disk.nodeID != node_name
     node = client.by_id_node(node_name)
-    assert len(node.disks) == 0
     assert not node.tags
 
     # Case1.2: Invalid disk path annotation shouldn't be applied to Longhorn.
@@ -1830,25 +1418,19 @@ def test_node_config_annotation_invalid(client, core_api,  # NOQA
     })
     # Longhorn shouldn't apply the invalid disk annotation.
     time.sleep(NODE_UPDATE_WAIT_INTERVAL)
+    disks = client.list_disk()
+    for disk in disks:
+        assert disk.nodeID != node_name
     node = client.by_id_node(node_name)
-    assert len(node.disks) == 0
     assert not node.tags
 
     # Case1.3: Disk and tag update should work fine even if there is
     # invalid disk annotation.
-    disk = {"default-disk": {"path": DEFAULT_DISK_PATH,
-            "allowScheduling": True}}
-    node.diskUpdate(disks=disk)
-    node = wait_for_disk_update(client, node_name, 1)
-    assert len(node.disks) == 1
-    for fsid, disk in iter(node.disks.items()):
-        assert disk.path == DEFAULT_DISK_PATH
-        assert disk.allowScheduling is True
-        assert disk.storageReserved == 0
-        assert disk.diskUUID != ""
-        assert not disk.tags
-        break
-    disk_uuid = disk.diskUUID
+    disk = client.create_disk(
+        path=DEFAULT_DISK_PATH, nodeID=node_name, allowScheduling=True)
+    wait_for_disk_connected(client, disk.name)
+    wait_for_disk_conditions(
+        client, disk.name, DISK_CONDITION_SCHEDULABLE, CONDITION_STATUS_TRUE)
     client.update(node, tags=["tag1", "tag2"])
     wait_for_node_tag_update(client, node_name, ["tag1", "tag2"])
 
@@ -1865,31 +1447,41 @@ def test_node_config_annotation_invalid(client, core_api,  # NOQA
         }
     })
     time.sleep(NODE_UPDATE_WAIT_INTERVAL)
-    assert len(node.disks) == 1
-    for _, disk in iter(node.disks.items()):
-        assert disk.path == DEFAULT_DISK_PATH
-        assert disk.allowScheduling is True
-        assert disk.storageReserved == 0
-        assert not disk.tags
-        break
+    disks = client.list_disk()
+    node_disk_count = 0
+    for disk in disks:
+        if disk.nodeID == node_name:
+            node_disk_count += 1
+            assert disk.path == DEFAULT_DISK_PATH
+            assert disk.allowScheduling is True
+            assert disk.storageReserved == 0
+            assert not disk.tags
+    assert node_disk_count == 1
 
     # Case3: the correct annotation should be applied
     # after cleaning up all disks
-    node = client.by_id_node(node_name)
-    disks = node.disks
-    for _, disk in iter(disks.items()):
-        disk.allowScheduling = False
-    update_disks = get_update_disks(disks)
-    node = client.by_id_node(node_name)
-    node.diskUpdate(disks=update_disks)
-    node.diskUpdate(disks={})
-    node = wait_for_disk_uuid(client, node_name, disk_uuid)
-    for _, disk in iter(node.disks.items()):
-        assert disk.path == DEFAULT_DISK_PATH
-        assert disk.allowScheduling is False
-        assert disk.storageReserved == 2048
-        assert set(disk.tags) == {"hdd", "slow"}
-        break
+    for disk in disks:
+        if disk.nodeID == node_name:
+            client.update(disk, allowScheduling=False)
+            old_disk = wait_for_disk_status(
+                client, disk.name, "allowScheduling", False)
+            client.delete(old_disk)
+
+    new_disk_created = False
+    for i in range(RETRY_COUNTS):
+        disks = client.list_disk()
+        for disk in disks:
+            if disk.nodeID == node_name and \
+                    disk.name != old_disk.name:
+                new_disk_created = True
+                assert disk.path == DEFAULT_DISK_PATH
+                assert disk.allowScheduling is False
+                assert disk.storageReserved == 2048
+                assert set(disk.tags) == {"hdd", "slow"}
+                break
+        if new_disk_created:
+            break
+        time.sleep(RETRY_INTERVAL)
 
     # do cleanup then test the invalid tag annotation.
     core_api.patch_node(node_name, {
@@ -1899,7 +1491,7 @@ def test_node_config_annotation_invalid(client, core_api,  # NOQA
             }
         }
     })
-    node = cleanup_node_disks(client, node_name)
+    cleanup_node_disks(client, node_name)
     client.update(node, tags=[])
     wait_for_node_tag_update(client, node_name, [])
 
@@ -1914,23 +1506,28 @@ def test_node_config_annotation_invalid(client, core_api,  # NOQA
     })
     # Case4.1: Longhorn shouldn't apply the invalid tag annotation.
     time.sleep(NODE_UPDATE_WAIT_INTERVAL)
+    disks = client.list_disk()
+    for disk in disks:
+        assert disk.nodeID != node_name
     node = client.by_id_node(node_name)
-    assert len(node.disks) == 0
     assert not node.tags
 
     # Case4.2: Disk and tag update should work fine even if there is
     # invalid tag annotation.
-    disk = {"default-disk": {"path": DEFAULT_DISK_PATH,
-            "allowScheduling": True, "storageReserved": 1024}}
-    node.diskUpdate(disks=disk)
-    node = wait_for_disk_update(client, node_name, 1)
-    assert len(node.disks) == 1
-    for _, disk in iter(node.disks.items()):
-        assert disk.path == DEFAULT_DISK_PATH
-        assert disk.allowScheduling is True
-        assert disk.storageReserved == 1024
-        assert not disk.tags
-        break
+    disk = client.create_disk(
+        path=DEFAULT_DISK_PATH, nodeID=node_name,
+        allowScheduling=True, storageReserved=1024)
+    wait_for_disk_connected(client, disk.name)
+    disks = client.list_disk()
+    node_disk_count = 0
+    for disk in disks:
+        if disk.nodeID == node_name:
+            node_disk_count += 1
+            assert disk.path == DEFAULT_DISK_PATH
+            assert disk.allowScheduling is True
+            assert disk.storageReserved == 1024
+            assert not disk.tags
+    assert node_disk_count == 1
     client.update(node, tags=["tag3", "tag4"])
     wait_for_node_tag_update(client, node_name, ["tag3", "tag4"])
 
@@ -1951,45 +1548,6 @@ def test_node_config_annotation_invalid(client, core_api,  # NOQA
     # then the correct annotation should be applied.
     client.update(node, tags=[])
     wait_for_node_tag_update(client, node_name, ["storage"])
-
-    # Case7: Same disk name in annotation shouldn't intervene the node
-    # controller
-
-    # clean up any existing disk and create one disk for node
-    lht_hostId = get_self_host_id()
-    cleanup_node_disks(client, lht_hostId)
-    node = client.by_id_node(lht_hostId)
-    disks = node.disks
-    disk_path1 = create_host_disk(client, 'vol-disk-1',
-                                  str(Gi), lht_hostId)
-
-    # patch label and annotations to the node
-    core_api.patch_node(lht_hostId, {
-        "metadata": {
-            "labels": {
-                CREATE_DEFAULT_DISK_LABEL:
-                    CREATE_DEFAULT_DISK_LABEL_VALUE_CONFIG
-            },
-            "annotations": {
-                DEFAULT_DISK_CONFIG_ANNOTATION:
-                    '[{"path":"' + DEFAULT_DISK_PATH +
-                    '","allowScheduling":true,' +
-                    '"storageReserved": 1024,"tags": ["ssd", "fast"],' +
-                    '"name":"same-name"},' +
-                    '{"path":"' + disk_path1 +
-                    '","allowScheduling":true,' +
-                    '"storageReserved":1024,"name":"same-name"}]'
-            }
-        }
-    })
-
-    # same disk name shouldn't be applied to Longhorn.
-    time.sleep(NODE_UPDATE_WAIT_INTERVAL)
-    node = client.by_id_node(lht_hostId)
-    assert len(node.disks) == 0
-
-    # do cleanup.
-    cleanup_host_disk(client, 'vol-disk-1')
 
 
 @pytest.mark.node
@@ -2025,23 +1583,21 @@ def test_node_config_annotation_missing(client, core_api,  # NOQA
     })
 
     # Case1: Disk update should work fine
-    node = client.by_id_node(node_name)
-    assert len(node.disks) == 1
-    update_disks = {}
-    for name, disk in iter(node.disks.items()):
-        disk.allowScheduling = False
-        disk.storageReserved = 0
-        disk.tags = ["original"]
-        update_disks[name] = disk
-    node.diskUpdate(disks=update_disks)
-    node = wait_for_disk_status(client, node_name, name,
-                                "storageReserved", 0)
-    assert len(node.disks) == 1
-    assert disk.allowScheduling is False
-    assert disk.storageReserved == 0
-    assert set(disk.tags) == {"original"}
+    disks = client.list_disk()
+    node_disk_count = 0
+    for disk in disks:
+        if disk.nodeID == node_name:
+            node_disk_count += 1
+            client.update(
+                disk, allowScheduling=False, storageReserved=0,
+                tags=["original"])
+            wait_for_disk_status(client, disk.name, "allowScheduling", False)
+            wait_for_disk_status(client, disk.name, "storageReserved", 0)
+            wait_for_disk_status(client, disk.name, "tags", ["original"])
+    assert node_disk_count == 1
 
     # Case2: Tag update with disk set should work fine
+    node = client.by_id_node(node_name)
     client.update(node, tags=["tag0"])
     wait_for_node_tag_update(client, node_name, ["tag0"])
     client.update(node, tags=[])
@@ -2107,43 +1663,39 @@ def test_replica_scheduler_rebuild_restore_is_too_big(client):  # NOQA
     10. Wait for the restored volume to complete restoration, then check data.
 
     """
-    nodes = client.list_node()
+    common.set_random_backupstore(client)
+
     lht_hostId = get_self_host_id()
-    node = client.by_id_node(lht_hostId)
+    nodes = client.list_node()
+
     small_disk_path = create_host_disk(client, "vol-small",
                                        SIZE, lht_hostId)
-    small_disk = {"path": small_disk_path, "allowScheduling": False}
-    update_disks = get_update_disks(node.disks)
-    update_disks["small-disk"] = small_disk
-    node = node.diskUpdate(disks=update_disks)
-    node = common.wait_for_disk_update(client, lht_hostId,
-                                       len(update_disks))
-    assert len(node.disks) == len(update_disks)
+    small_disk = client.create_disk(
+        path=small_disk_path, nodeID=lht_hostId, allowScheduling=False)
+    small_disk_name = small_disk.name
+    wait_for_disk_connected(client, small_disk_name)
 
     # volume is same size as the small disk
     volume_size = SIZE
     vol_name = common.generate_volume_name()
     client.create_volume(name=vol_name, size=str(volume_size),
                          numberOfReplicas=len(nodes))
-    volume = common.wait_for_volume_condition_scheduled(client, vol_name,
-                                                        "status",
-                                                        CONDITION_STATUS_TRUE)
+    common.wait_for_volume_condition_scheduled(
+        client, vol_name, "status", CONDITION_STATUS_TRUE)
     volume = common.wait_for_volume_detached(client, vol_name)
 
     volume.attach(hostId=lht_hostId)
-    volume = common.wait_for_volume_healthy(client, vol_name)
+    common.wait_for_volume_healthy(client, vol_name)
 
     # disable all the scheduling except for the small disk
-    nodes = client.list_node()
-    for node in nodes:
-        disks = node.disks
-        for fsid, disk in iter(disks.items()):
-            if disk.path == DEFAULT_DISK_PATH:
-                disk.allowScheduling = False
-            elif disk.path == small_disk_path:
-                disk.allowScheduling = True
-        update_disks = get_update_disks(disks)
-        node.diskUpdate(disks=update_disks)
+    disks = client.list_disk()
+    for disk in disks:
+        if disk.name != small_disk_name:
+            client.update(disk, allowScheduling=False)
+            wait_for_disk_status(client, disk.name, "allowScheduling", False)
+        else:
+            client.update(disk, allowScheduling=True)
+            wait_for_disk_status(client, disk.name, "allowScheduling", True)
 
     data = {'len': int(int(SIZE) * 0.9), 'pos': 0}
     data['content'] = common.generate_random_data(data['len'])
@@ -2151,44 +1703,37 @@ def test_replica_scheduler_rebuild_restore_is_too_big(client):  # NOQA
 
     # cannot schedule for restore volume
     restore_name = common.generate_volume_name()
-    client.create_volume(name=restore_name, size=SIZE,
-                         numberOfReplicas=1,
-                         fromBackup=b.url)
-    r_vol = common.wait_for_volume_condition_scheduled(client, restore_name,
-                                                       "status",
-                                                       CONDITION_STATUS_FALSE)
+    client.create_volume(
+        name=restore_name, size=SIZE, numberOfReplicas=1, fromBackup=b.url)
+    common.wait_for_volume_condition_scheduled(
+        client, restore_name, "status", CONDITION_STATUS_FALSE)
 
     # cannot schedule due to all disks except for the small disk is disabled
     # And the small disk won't have enough space after taking the replica
-    volume = volume.replicaRemove(name=volume.replicas[0].name)
-    volume = common.wait_for_volume_condition_scheduled(client, vol_name,
-                                                        "status",
-                                                        CONDITION_STATUS_FALSE)
+    volume.replicaRemove(name=volume.replicas[0].name)
+    common.wait_for_volume_condition_scheduled(
+        client, vol_name, "status", CONDITION_STATUS_FALSE)
 
     # enable the scheduling
-    nodes = client.list_node()
-    for node in nodes:
-        disks = node.disks
-        for fsid, disk in iter(disks.items()):
-            if disk.path == DEFAULT_DISK_PATH:
-                disk.allowScheduling = True
-            elif disk.path == small_disk_path:
-                disk.allowScheduling = False
-        update_disks = get_update_disks(disks)
-        node.diskUpdate(disks=update_disks)
+    disks = client.list_disk()
+    for disk in disks:
+        if disk.name != small_disk_name:
+            client.update(disk, allowScheduling=True)
+            wait_for_disk_status(client, disk.name, "allowScheduling", True)
+        else:
+            client.update(disk, allowScheduling=False)
+            wait_for_disk_status(client, disk.name, "allowScheduling", False)
 
-    volume = common.wait_for_volume_condition_scheduled(client, vol_name,
-                                                        "status",
-                                                        CONDITION_STATUS_TRUE)
+    volume = common.wait_for_volume_condition_scheduled(
+        client, vol_name, "status", CONDITION_STATUS_TRUE)
 
     common.check_volume_data(volume, data, check_checksum=False)
 
     cleanup_volume(client, vol_name)
 
-    r_vol = common.wait_for_volume_condition_scheduled(client, restore_name,
-                                                       "status",
-                                                       CONDITION_STATUS_TRUE)
-    r_vol = common.wait_for_volume_restoration_completed(client, restore_name)
+    common.wait_for_volume_condition_scheduled(
+        client, restore_name, "status", CONDITION_STATUS_TRUE)
+    common.wait_for_volume_restoration_completed(client, restore_name)
     r_vol = common.wait_for_volume_detached(client, restore_name)
     r_vol.attach(hostId=lht_hostId)
     r_vol = common.wait_for_volume_healthy(client, restore_name)
@@ -2197,18 +1742,106 @@ def test_replica_scheduler_rebuild_restore_is_too_big(client):  # NOQA
 
     cleanup_volume(client, restore_name)
 
-    # cleanup test disks
-    node = client.by_id_node(lht_hostId)
-    disks = node.disks
-    update_disks = {}
-    for name, disk in iter(disks.items()):
-        if disk.path != small_disk_path:
-            update_disks[name] = disk
-    node.diskUpdate(disks=update_disks)
+    cleanup_host_disk_with_volume(client, 'vol-small')
 
-    node = common.wait_for_disk_update(client, lht_hostId,
-                                       len(update_disks))
-    cleanup_host_disk(client, 'vol-small')
+
+@pytest.mark.node  # NOQA
+def test_disk_migration(client):  # NOQA
+    """
+    1. Disable the node soft anti-affinity.
+    2. Create a new disk for the current node.
+    3. Add the corresponding Longhorn disk.
+    4. Disable the default disk for the current node.
+    5. Launch a Longhorn volume with 1 replica.
+       Then verify the only replica is scheduled to the new disk.
+    6. Write random data to the volume then verify the data.
+    7. Detach the volume.
+    7. Unmount then remount the disk to another path. (disk migration)
+    8. Create another Longhorn disk based on the migrated path.
+    9. Verify the Longhorn disk state.
+       - The Longhorn disk created before the migration should
+         become "disconnected".
+       - The Longhorn disk created after the migration should
+         become "connected".
+    10. Verify the replica DiskID and the path is updated.
+    11. Attach the volume. Then verify the state and the data.
+    """
+    setting = client.by_id_setting(SETTING_REPLICA_NODE_SOFT_ANTI_AFFINITY)
+    client.update(setting, value="false")
+
+    lht_hostId = get_self_host_id()
+
+    disk_vol_name = 'vol-disk'
+    disk_path = create_host_disk(client, disk_vol_name, str(Gi), lht_hostId)
+    extra_disk = client.create_disk(path=disk_path, nodeID=lht_hostId,
+                                    allowScheduling=True, tags=["extra"])
+    extra_disk_name = extra_disk.name
+    wait_for_disk_connected(client, extra_disk_name)
+    extra_disk = wait_for_disk_status(client, extra_disk_name,
+                                      "tags", ["extra"])
+
+    disks = client.list_disk()
+    for disk in disks:
+        # Disable the default disk for the current node
+        # Then the volume replicas must be scheduled to the new disk
+        if disk.nodeID == lht_hostId and disk.path != disk_path:
+            client.update(disk, allowScheduling=False)
+            wait_for_disk_status(client, disk.name, "allowScheduling", False)
+
+    vol_name = common.generate_volume_name()
+    client.create_volume(name=vol_name, size=SIZE,
+                         numberOfReplicas=1, diskSelector=["extra"])
+    common.wait_for_volume_condition_scheduled(
+        client, vol_name, "status", CONDITION_STATUS_TRUE)
+    volume = common.wait_for_volume_detached(client, vol_name)
+    volume.attach(hostId=lht_hostId)
+    volume = common.wait_for_volume_healthy(client, vol_name)
+
+    assert len(volume.replicas) == 1
+    assert volume.replicas[0].running
+    assert volume.replicas[0].hostId == lht_hostId
+    assert volume.replicas[0].diskID == extra_disk_name
+    assert extra_disk.path in volume.replicas[0].dataPath
+
+    data = common.write_volume_random_data(volume)
+    common.check_volume_data(volume, data)
+
+    volume.detach()
+    volume = common.wait_for_volume_detached(client, vol_name)
+
+    # Mount the volume disk to another path
+    common.cleanup_host_disk(disk_path)
+
+    migrated_disk_path = os.path.join(
+        DIRECTORY_PATH, disk_vol_name+"-migrated")
+    dev = get_volume_endpoint(client.by_id_volume(disk_vol_name))
+    common.mount_disk(dev, migrated_disk_path)
+
+    extra_disk = client.create_disk(
+        path=migrated_disk_path, nodeID=lht_hostId, allowScheduling=True,
+        tags=["extra"])
+    assert extra_disk.name == extra_disk_name
+    extra_disk = wait_for_disk_connected(client, extra_disk_name)
+
+    replica_migrated = False
+    for i in range(RETRY_COUNTS):
+        volume = client.by_id_volume(vol_name)
+        assert len(volume.replicas) == 1
+        replica = volume.replicas[0]
+        assert replica.hostId == lht_hostId
+        if replica.diskID == extra_disk_name and \
+                extra_disk.path in replica.dataPath:
+            replica_migrated = True
+            break
+        time.sleep(RETRY_INTERVAL)
+    assert replica_migrated
+
+    volume.attach(hostId=lht_hostId)
+    volume = common.wait_for_volume_healthy(client, vol_name)
+
+    common.check_volume_data(volume, data)
+
+    cleanup_volume(client, vol_name)
 
 
 def test_node_eviction(client, core_api, volume_name, pod, settings_reset): # NOQA

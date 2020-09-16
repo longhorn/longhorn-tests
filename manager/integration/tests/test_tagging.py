@@ -4,10 +4,10 @@ import string
 
 from common import client, node_default_tags, volume_name # NOQA
 from common import check_volume_replicas, cleanup_volume, \
-    generate_volume_name, get_self_host_id, get_update_disks, set_node_tags, \
+    generate_volume_name, get_self_host_id, set_node_tags, \
     wait_for_volume_delete, wait_for_volume_detached, \
     wait_for_volume_healthy, wait_scheduling_failure
-
+from common import wait_for_disk_status, get_node_disks_list
 from time import sleep
 
 from common import RETRY_COUNTS, RETRY_INTERVAL, SIZE
@@ -40,22 +40,29 @@ def test_tag_basic(client):  # NOQA
     3. Try to apply invalid tags to the disk and node. Action will fail.
     """
     host_id = get_self_host_id()
+
     node = client.by_id_node(host_id)
-    disks = get_update_disks(node.disks)
-    assert len(node.disks) == 1
-    assert node.disks[list(node.disks)[0]].tags is None
     assert node.tags is None
 
-    unsorted_disk, sorted_disk = generate_unordered_tag_names()
-    unsorted_node, sorted_node = generate_unordered_tag_names()
-    update_disks = get_update_disks(node.disks)
-    update_disks[list(update_disks)[0]].tags = unsorted_disk
-    node = node.diskUpdate(disks=update_disks)
-    disks = get_update_disks(node.disks)
-    assert disks[list(disks)[0]].tags == sorted_disk
+    node_disks = []
+    disks = client.list_disk()
+    for disk in disks:
+        if disk.nodeID == host_id:
+            node_disks.append(disk)
+    assert len(node_disks) == 1
+    assert node_disks[0].tags is None
 
-    node = set_node_tags(client, node, unsorted_node)
-    assert node.tags == sorted_node
+    unsorted_disk_tag, sorted_disk_tag = generate_unordered_tag_names()
+    unsorted_node_tag, sorted_node_tag = generate_unordered_tag_names()
+
+    disk_name = node_disks[0].name
+    disk = client.by_id_disk(disk_name)
+    client.update(disk, tags=unsorted_disk_tag)
+    disk = wait_for_disk_status(client, disk_name, "tags", sorted_disk_tag)
+    assert disk.tags == sorted_disk_tag
+
+    node = set_node_tags(client, node, unsorted_node_tag)
+    assert node.tags == sorted_node_tag
 
     improper_tag_cases = [
         [""],   # Empty string
@@ -69,17 +76,13 @@ def test_tag_basic(client):  # NOQA
         assert "at least one error encountered while validating tags" in \
                str(e.value)
         with pytest.raises(Exception) as e:
-            update_disks = get_update_disks(node.disks)
-            update_disks[list(update_disks)[0]].tags = tags
-            node.diskUpdate(disks=update_disks)
+            disk = client.by_id_disk(disk_name)
+            client.update(disk, tags=tags)
         assert "at least one error encountered while validating tags" in \
                str(e.value)
 
-    update_disks = get_update_disks(node.disks)
-    update_disks[list(update_disks)[0]].tags = []
-    node = node.diskUpdate(disks=update_disks)
-    disks = get_update_disks(node.disks)
-    assert node.disks[list(node.disks)[0]].tags is None
+    client.update(disk, tags=[])
+    wait_for_disk_status(client, disk_name, "tags", None)
 
     node = set_node_tags(client, node)
     assert node.tags is None
@@ -246,9 +249,14 @@ def test_tag_scheduling_on_update(client, node_default_tags, volume_name):  # NO
 
     host_id = get_self_host_id()
     node = client.by_id_node(host_id)
-    update_disks = get_update_disks(node.disks)
-    update_disks[list(update_disks)[0]].tags = tag_spec["disk"]
-    node = node.diskUpdate(disks=update_disks)
+    disks = client.list_disk()
+    for disk in disks:
+        if disk.nodeID == host_id:
+            break
+    assert disk
+    assert disk.nodeID == host_id
+    client.update(disk, allowScheduling=True, tags=tag_spec["disk"])
+    wait_for_disk_status(client, disk.name, "tags", tag_spec["disk"])
     set_node_tags(client, node, tag_spec["node"])
     scheduled = False
     for i in range(RETRY_COUNTS):
@@ -264,7 +272,7 @@ def test_tag_scheduling_on_update(client, node_default_tags, volume_name):  # NO
     volume = wait_for_volume_healthy(client, volume_name)
     nodes = client.list_node()
     node_mapping = {node.id: {
-        "disk": node.disks[list(node.disks)[0]].tags,
+        "disk": get_node_disks_list(client)[node.name][0].tags,
         "node": node.tags
     } for node in nodes}
     assert len(volume.replicas) == 3
