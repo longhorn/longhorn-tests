@@ -60,6 +60,7 @@ from common import delete_and_wait_pvc, delete_and_wait_pv
 
 from backupstore import backupstore_cleanup
 from backupstore import backupstore_delete_random_backup_block
+from backupstore import backupstore_wait_for_lock_expiration
 
 
 @pytest.mark.coretest   # NOQA
@@ -769,7 +770,11 @@ def test_rebuild_with_restoration(
     md5sum = get_pod_data_md5sum(core_api, restore_pod_name, data_path)
     assert original_md5sum == md5sum
 
-    # cleanup
+    # cleanup the backupstore so we don't impact other tests
+    # since we crashed the replica that initiated the restore
+    # it's backupstore lock will still be present, so we need to
+    # wait till the lock is expired, before we can delete the backups
+    backupstore_wait_for_lock_expiration()
     backupstore_cleanup(client)
 
 
@@ -1516,6 +1521,13 @@ def test_single_replica_restore_failure(
     res_md5sum = get_pod_data_md5sum(core_api, res_pod_name, data_path)
     assert md5sum == res_md5sum
 
+    # cleanup the backupstore so we don't impact other tests
+    # since we crashed the replica that initiated the restore
+    # it's backupstore lock will still be present, so we need to
+    # wait till the lock is expired, before we can delete the backups
+    backupstore_wait_for_lock_expiration()
+    backupstore_cleanup(client)
+
 
 def test_dr_volume_with_restore_command_error(
         client, core_api, volume_name, csi_pv, pvc, pod_make):  # NOQA
@@ -1713,6 +1725,12 @@ def test_engine_crash_for_restore_volume(
 
     res_md5sum = get_pod_data_md5sum(core_api, res_pod_name, data_path)
     assert md5sum == res_md5sum
+
+    # cleanup the backupstore so we don't impact other tests
+    # since we only crashed the engine and not the replica
+    # we don't need to wait for lock expiration, since the replica
+    # process will remove the lock
+    backupstore_cleanup(client)
 
 
 def test_engine_crash_for_dr_volume(
