@@ -1,4 +1,5 @@
 import os
+import time
 import base64
 import hashlib
 import json
@@ -18,6 +19,7 @@ from common import get_longhorn_api_client
 from common import delete_backup_volume
 
 BACKUPSTORE_BV_PREFIX = "/backupstore/volumes/"
+BACKUPSTORE_LOCK_DURATION = 150
 
 
 TEMP_FILE_PATH = "/tmp/temp_file"
@@ -495,3 +497,12 @@ def minio_count_backup_block_files(client, core_api, volume_name):
     block_object_files_list = list(block_object_files)
 
     return len(block_object_files_list)
+
+
+def backupstore_wait_for_lock_expiration():
+    """
+    waits 150 seconds which is the lock duration
+    TODO: once we have implemented the delete functions,
+          we can switch to removing the locks directly
+    """
+    time.sleep(BACKUPSTORE_LOCK_DURATION)
