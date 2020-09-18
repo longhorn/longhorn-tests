@@ -15,7 +15,6 @@ from common import LONGHORN_NAMESPACE
 from common import is_backupTarget_s3
 from common import is_backupTarget_nfs
 from common import get_longhorn_api_client
-from common import delete_backup
 from common import delete_backup_volume
 
 BACKUPSTORE_BV_PREFIX = "/backupstore/volumes/"
@@ -27,12 +26,8 @@ TEMP_FILE_PATH = "/tmp/temp_file"
 def backupstore_cleanup(client):
     backup_volumes = client.list_backup_volume()
 
+    # we delete the whole backup volume, which skips block gc
     for backup_volume in backup_volumes:
-        backups = backup_volume.backupList()
-
-        for backup in backups:
-            delete_backup(client, backup_volume.name, backup.name)
-
         delete_backup_volume(client, backup_volume.name)
 
     backup_volumes = client.list_backup_volume()
