@@ -2300,7 +2300,7 @@ def reset_disks_for_all_nodes(client):  # NOQA
         # on the node.
         if len(node.disks) > 1:
             update_disks = get_update_disks(node.disks)
-            for disk_name, disk in update_disks:
+            for disk_name, disk in iter(update_disks.items()):
                 disk.allowScheduling = False
                 update_disks[disk_name] = disk
                 node = node.diskUpdate(disks=update_disks)
