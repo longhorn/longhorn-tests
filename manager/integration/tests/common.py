@@ -338,14 +338,15 @@ def create_and_check_volume(client, volume_name, num_of_replicas=3, size=SIZE,
 def wait_pod(pod_name):
     api = get_core_api_client()
 
+    pod = None
     for i in range(DEFAULT_POD_TIMEOUT):
         pod = api.read_namespaced_pod(
             name=pod_name,
             namespace='default')
-        if pod.status.phase != 'Pending':
+        if pod is not None and pod.status.phase != 'Pending':
             break
         time.sleep(DEFAULT_POD_INTERVAL)
-    assert pod.status.phase == 'Running'
+    assert pod is not None and pod.status.phase == 'Running'
 
 
 def create_and_wait_pod(api, pod_manifest):
