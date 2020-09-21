@@ -318,7 +318,7 @@ def ha_backup_deletion_recovery_test(client, volume_name, size, base_image=&#34;
         create_snapshot(client, volume_name)
 
         volume.snapshotBackup(name=snap2.name)
-
+        wait_for_backup_completion(client, volume_name, snap2.name)
         _, b = common.find_backup(client, volume_name, snap2.name)
 
         res_name = common.generate_volume_name()
@@ -1022,7 +1022,7 @@ def test_inc_restoration_with_multiple_rebuild_and_expansion(
     std_volume = client.by_id_volume(std_volume_name)
     std_volume.snapshotBackup(name=snap2.name)
     wait_for_backup_completion(client, std_volume_name, snap2.name,
-                               retry_count=1200)
+                               retry_count=600)
     bv, b2 = find_backup(client, std_volume_name, snap2.name)
 
     # Trigger rebuild and the incremental restoration
@@ -1693,7 +1693,7 @@ def test_engine_crash_for_restore_volume(
     snap = create_snapshot(client, volume_name)
     volume.snapshotBackup(name=snap.name)
     wait_for_backup_completion(client, volume_name, snap.name,
-                               retry_count=1200)
+                               retry_count=600)
     bv, b = find_backup(client, volume_name, snap.name)
 
     res_name = &#34;res-&#34; + volume_name
@@ -2022,7 +2022,7 @@ def test_extra_replica_cleanup():
         create_snapshot(client, volume_name)
 
         volume.snapshotBackup(name=snap2.name)
-
+        wait_for_backup_completion(client, volume_name, snap2.name)
         _, b = common.find_backup(client, volume_name, snap2.name)
 
         res_name = common.generate_volume_name()
@@ -2693,7 +2693,7 @@ volume.conditions[restore].reason == "RestoreInProgress"</code>.</li>
     snap = create_snapshot(client, volume_name)
     volume.snapshotBackup(name=snap.name)
     wait_for_backup_completion(client, volume_name, snap.name,
-                               retry_count=1200)
+                               retry_count=600)
     bv, b = find_backup(client, volume_name, snap.name)
 
     res_name = &#34;res-&#34; + volume_name
@@ -3194,7 +3194,7 @@ the activated volume.
     std_volume = client.by_id_volume(std_volume_name)
     std_volume.snapshotBackup(name=snap2.name)
     wait_for_backup_completion(client, std_volume_name, snap2.name,
-                               retry_count=1200)
+                               retry_count=600)
     bv, b2 = find_backup(client, std_volume_name, snap2.name)
 
     # Trigger rebuild and the incremental restoration

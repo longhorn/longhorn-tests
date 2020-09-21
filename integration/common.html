@@ -70,8 +70,8 @@ RETRY_COMMAND_COUNT = 3
 RETRY_COUNTS = 300
 RETRY_INTERVAL = 0.5
 RETRY_INTERVAL_LONG = 2
-RETRY_BACKUP_COUNTS = 600
-RETRY_BACKUP_INTERVAL = 0.5
+RETRY_BACKUP_COUNTS = 300
+RETRY_BACKUP_INTERVAL = 1
 RETRY_EXEC_COUNTS = 30
 RETRY_EXEC_INTERVAL = 5
 
@@ -285,7 +285,12 @@ def create_backup(client, volname, data={}, labels={}):
         data = write_volume_data(volume, data)
     snap = create_snapshot(client, volname)
     create_snapshot(client, volname)
+
+    # after backup request we need to wait for completion of the backup
+    # since the backup.cfg will only be available once the backup operation
+    # has been completed
     volume.snapshotBackup(name=snap.name, labels=labels)
+    wait_for_backup_completion(client, volname, snap.name)
 
     verified = False
     for i in range(RETRY_COMMAND_COUNT):
@@ -309,7 +314,6 @@ def create_backup(client, volname, data={}, labels={}):
     for key, val in iter(labels.items()):
         assert new_b.labels.get(key) == val
 
-    volume = wait_for_backup_completion(client, volname, snap.name)
     volume = wait_for_volume_status(client, volname,
                                     &#34;lastBackup&#34;,
                                     b.name)
@@ -362,14 +366,15 @@ def create_and_check_volume(client, volume_name, num_of_replicas=3, size=SIZE,
 def wait_pod(pod_name):
     api = get_core_api_client()
 
+    pod = None
     for i in range(DEFAULT_POD_TIMEOUT):
         pod = api.read_namespaced_pod(
             name=pod_name,
             namespace=&#39;default&#39;)
-        if pod.status.phase != &#39;Pending&#39;:
+        if pod is not None and pod.status.phase != &#39;Pending&#39;:
             break
         time.sleep(DEFAULT_POD_INTERVAL)
-    assert pod.status.phase == &#39;Running&#39;
+    assert pod is not None and pod.status.phase == &#39;Running&#39;
 
 
 def create_and_wait_pod(api, pod_manifest):
@@ -752,22 +757,26 @@ def pod_make(request):
         def finalizer():
             api = get_core_api_client()
             try:
-                delete_and_wait_pod(api, pod_manifest[&#39;metadata&#39;][&#39;name&#39;])
+                pod_name = pod_manifest[&#39;metadata&#39;][&#39;name&#39;]
+                delete_and_wait_pod(api, pod_name)
             except Exception as e:
-                print(&#34;Exception when waiting for pod deletion&#34;, e)
+                print(&#34;\nException when waiting for pod deletion&#34;)
+                print(e)
                 return
             try:
                 volume_details = pod_manifest[&#39;spec&#39;][&#39;volumes&#39;][0]
                 pvc_name = volume_details[&#39;persistentVolumeClaim&#39;][&#39;claimName&#39;]
                 delete_and_wait_pvc(api, pvc_name)
             except Exception as e:
-                print(&#34;Exception when waiting for PVC deletion&#34;, e)
+                print(&#34;\nException when waiting for PVC deletion&#34;)
+                print(e)
             try:
                 pv = wait_and_get_pv_for_pvc(api, pvc_name)
                 pv_name = pv.metadata.name
                 delete_and_wait_pv(api, pv_name)
             except Exception as e:
-                print(&#34;Exception when waiting for PV deletion&#34;, e)
+                print(&#34;\nException when waiting for PV deletion&#34;)
+                print(e)
 
         request.addfinalizer(finalizer)
         return pod_manifest
@@ -1205,7 +1214,8 @@ def cleanup_client():
         try:
             client.delete(v)
         except Exception as e:
-            print(&#34;Exception when cleanup volume &#34;, v, e)
+            print(&#34;\nException when cleanup volume &#34;, v)
+            print(e)
             pass
     images = client.list_engine_image()
     for img in images:
@@ -1214,7 +1224,8 @@ def cleanup_client():
             try:
                 client.delete(img)
             except Exception as e:
-                print(&#34;Exception when cleanup image&#34;, img, e)
+                print(&#34;\nException when cleanup image&#34;, img)
+                print(e)
                 pass
 
     # enable nodes scheduling
@@ -2166,9 +2177,10 @@ def wait_for_backup_completion(client, volume_name, snapshot_name,
     return v
 
 
-def wait_for_backup_state(client, volume_name, predicate):
+def wait_for_backup_state(client, volume_name, predicate,
+                          retry_count=RETRY_BACKUP_COUNTS):
     completed = False
-    for i in range(RETRY_BACKUP_COUNTS):
+    for i in range(retry_count):
         v = client.by_id_volume(volume_name)
         for b in v.backupStatus:
             if predicate(b):
@@ -2257,7 +2269,8 @@ def reset_node(client):
             wait_for_node_update(client, node.id,
                                  &#34;allowScheduling&#34;, True)
         except Exception as e:
-            print(&#34;Exception when reset node schedulding and tags&#34;, node, e)
+            print(&#34;\nException when reset node schedulding and tags&#34;, node)
+            print(e)
 
 
 def cleanup_test_disks(client):
@@ -2281,7 +2294,8 @@ def cleanup_test_disks(client):
                     wait_for_disk_status(client, host_id, name,
                                          &#34;allowScheduling&#34;, False)
     except Exception as e:
-        print(&#34;Exception when update node disks&#34;, node, e)
+        print(&#34;\nException when update node disks&#34;, node)
+        print(e)
         pass
 
     # delete test disks
@@ -2294,14 +2308,16 @@ def cleanup_test_disks(client):
         node.diskUpdate(disks=update_disks)
         wait_for_disk_update(client, host_id, len(update_disks))
     except Exception as e:
-        print(&#34;Exception when delete node test disks&#34;, node, e)
+        print(&#34;\nException when delete node test disks&#34;, node)
+        print(e)
         pass
     # cleanup host disks
     for del_dir in del_dirs:
         try:
             cleanup_host_disk(del_dir)
         except Exception as e:
-            print(&#34;Exception when cleanup host disk&#34;, del_dir, e)
+            print(&#34;\nException when cleanup host disk&#34;, del_dir)
+            print(e)
             pass
 
 
@@ -2312,7 +2328,7 @@ def reset_disks_for_all_nodes(client):  # NOQA
         # on the node.
         if len(node.disks) &gt; 1:
             update_disks = get_update_disks(node.disks)
-            for disk_name, disk in update_disks:
+            for disk_name, disk in iter(update_disks.items()):
                 disk.allowScheduling = False
                 update_disks[disk_name] = disk
                 node = node.diskUpdate(disks=update_disks)
@@ -2355,9 +2371,10 @@ def reset_settings(client):
         client.update(minimal_setting,
                       value=DEFAULT_STORAGE_MINIMAL_AVAILABLE_PERCENTAGE)
     except Exception as e:
-        print(&#34;Exception when update &#34;
+        print(&#34;\nException when update &#34;
               &#34;storage minimal available percentage settings&#34;,
-              minimal_setting, e)
+              minimal_setting)
+        print(e)
         pass
 
     over_provisioning_setting = client.by_id_setting(
@@ -2366,9 +2383,10 @@ def reset_settings(client):
         client.update(over_provisioning_setting,
                       value=DEFAULT_STORAGE_OVER_PROVISIONING_PERCENTAGE)
     except Exception as e:
-        print(&#34;Exception when update &#34;
+        print(&#34;\nException when update &#34;
               &#34;storage over provisioning percentage settings&#34;,
-              over_provisioning_setting, e)
+              over_provisioning_setting)
+        print(e)
 
     default_data_path_setting = client.by_id_setting(
         SETTING_DEFAULT_DATA_PATH)
@@ -2376,9 +2394,10 @@ def reset_settings(client):
         client.update(default_data_path_setting,
                       value=DEFAULT_DISK_PATH)
     except Exception as e:
-        print(&#34;Exception when update &#34;
+        print(&#34;\nException when update &#34;
               &#34;default data path setting&#34;,
-              default_data_path_setting, e)
+              default_data_path_setting)
+        print(e)
 
     create_default_disk_labeled_nodes_setting = client.by_id_setting(
         SETTING_CREATE_DEFAULT_DISK_LABELED_NODES)
@@ -2386,9 +2405,10 @@ def reset_settings(client):
         client.update(create_default_disk_labeled_nodes_setting,
                       value=&#34;false&#34;)
     except Exception as e:
-        print(&#34;Exception when update &#34;
+        print(&#34;\nException when update &#34;
               &#34;create default disk labeled nodes setting&#34;,
-              create_default_disk_labeled_nodes_setting, e)
+              create_default_disk_labeled_nodes_setting)
+        print(e)
 
     replica_node_soft_anti_affinity_setting = \
         client.by_id_setting(SETTING_REPLICA_NODE_SOFT_ANTI_AFFINITY)
@@ -2396,9 +2416,10 @@ def reset_settings(client):
         client.update(replica_node_soft_anti_affinity_setting,
                       value=&#34;false&#34;)
     except Exception as e:
-        print(&#34;Exception when update &#34;
+        print(&#34;\nException when update &#34;
               &#34;Replica Node Level Soft Anti-Affinity setting&#34;,
-              replica_node_soft_anti_affinity_setting, e)
+              replica_node_soft_anti_affinity_setting)
+        print(e)
 
     replica_zone_soft_anti_affinity_setting = \
         client.by_id_setting(SETTING_REPLICA_ZONE_SOFT_ANTI_AFFINITY)
@@ -2406,9 +2427,10 @@ def reset_settings(client):
         client.update(replica_zone_soft_anti_affinity_setting,
                       value=&#34;true&#34;)
     except Exception as e:
-        print(&#34;Exception when update &#34;
+        print(&#34;\nException when update &#34;
               &#34;Replica Zone Level Soft Anti-Affinity setting&#34;,
-              replica_zone_soft_anti_affinity_setting, e)
+              replica_zone_soft_anti_affinity_setting)
+        print(e)
 
     disable_scheduling_on_cordoned_node_setting = \
         client.by_id_setting(SETTING_DISABLE_SCHEDULING_ON_CORDONED_NODE)
@@ -2416,15 +2438,17 @@ def reset_settings(client):
         client.update(disable_scheduling_on_cordoned_node_setting,
                       value=&#34;true&#34;)
     except Exception as e:
-        print(&#34;Exception when update &#34;
+        print(&#34;\nException when update &#34;
               &#34;Disable Scheduling On Cordoned Node setting&#34;,
-              disable_scheduling_on_cordoned_node_setting, e)
+              disable_scheduling_on_cordoned_node_setting)
+        print(e)
     auto_salvage_setting = client.by_id_setting(SETTING_AUTO_SALVAGE)
     try:
         client.update(auto_salvage_setting, value=&#34;true&#34;)
     except Exception as e:
-        print(&#34;Exception when update Auto Salvage setting&#34;,
-              auto_salvage_setting, e)
+        print(&#34;\nException when update Auto Salvage setting&#34;,
+              auto_salvage_setting)
+        print(e)
 
     guaranteed_engine_cpu_setting = \
         client.by_id_setting(SETTING_GUARANTEED_ENGINE_CPU)
@@ -2432,9 +2456,10 @@ def reset_settings(client):
         client.update(guaranteed_engine_cpu_setting,
                       value=&#34;0.25&#34;)
     except Exception as e:
-        print(&#34;Exception when update &#34;
+        print(&#34;\nException when update &#34;
               &#34;Guaranteed Engine CPU setting&#34;,
-              guaranteed_engine_cpu_setting, e)
+              guaranteed_engine_cpu_setting)
+        print(e)
 
     instance_managers = client.list_instance_manager()
     core_api = get_core_api_client()
@@ -2527,31 +2552,32 @@ def is_backupTarget_nfs(s):
 
 
 def find_backup(client, vol_name, snap_name):
-    found = False
-    for i in range(100):
+    &#34;&#34;&#34;
+    find_backup will look for a backup on the backupstore
+    it&#39;s important to note, that this can only be used for completed backups
+    since the backup.cfg will only be written once a backup operation has
+    been completed successfully
+    &#34;&#34;&#34;
+
+    def find_backup_volume():
         bvs = client.list_backupVolume()
         for bv in bvs:
             if bv.name == vol_name:
-                found = True
-                break
-        if found:
-            break
-        time.sleep(1)
-    assert found
+                return bv
+        return None
 
-    found = False
-    for i in range(20):
-        backups = bv.backupList().data
-        for b in backups:
-            if b.snapshotName == snap_name:
-                found = True
-                break
-        if found:
-            break
-        time.sleep(1)
-    assert found
-
-    return bv, b
+    bv = None
+    for i in range(120):
+        if bv is None:
+            bv = find_backup_volume()
+        if bv is not None:
+            backups = bv.backupList().data
+            for b in backups:
+                if b.snapshotName == snap_name:
+                    return bv, b
+        time.sleep(RETRY_BACKUP_INTERVAL)
+    assert False, &#34;failed to find backup for snapshot &#34; + snap_name + \
+                  &#34; for volume &#34; + vol_name
 
 
 def check_longhorn(core_api):
@@ -3639,31 +3665,30 @@ def wait_for_instance_manager_desire_state(client, core_api, im_name,
 
 
 def wait_for_backup_delete(client, volume_name, backup_name):
-    for i in range(RETRY_COUNTS):
-        bvs = client.list_backupVolume()
-        bv_found = False
 
+    def find_backup_volume():
+        bvs = client.list_backupVolume()
         for bv in bvs:
             if bv.name == volume_name:
-                bv_found = True
-                break
+                return bv
+        return None
 
-        assert bv_found
+    def backup_exists():
+        bv = find_backup_volume()
+        if bv is not None:
+            backups = bv.backupList()
+            for b in backups:
+                if b.name == backup_name:
+                    return True
+        return False
 
-        backups = bv.backupList()
+    for i in range(RETRY_BACKUP_COUNTS):
+        if backup_exists() is False:
+            return
+        time.sleep(RETRY_BACKUP_INTERVAL)
 
-        backup_found = False
-        for b in backups:
-            if b.name == backup_name:
-                backup_found = True
-                break
-
-        if backup_found is False:
-            break
-
-        time.sleep(RETRY_INTERVAL)
-
-    assert not backup_found
+    assert False, &#34;deleted backup &#34; + backup_name + &#34; for volume &#34; \
+                  + volume_name + &#34; is still present&#34;
 
 
 def assert_backup_state(b_actual, b_expected):
@@ -4152,7 +4177,8 @@ properly.
         try:
             client.delete(v)
         except Exception as e:
-            print(&#34;Exception when cleanup volume &#34;, v, e)
+            print(&#34;\nException when cleanup volume &#34;, v)
+            print(e)
             pass
     images = client.list_engine_image()
     for img in images:
@@ -4161,7 +4187,8 @@ properly.
             try:
                 client.delete(img)
             except Exception as e:
-                print(&#34;Exception when cleanup image&#34;, img, e)
+                print(&#34;\nException when cleanup image&#34;, img)
+                print(e)
                 pass
 
     # enable nodes scheduling
@@ -4244,7 +4271,8 @@ properly.
                     wait_for_disk_status(client, host_id, name,
                                          &#34;allowScheduling&#34;, False)
     except Exception as e:
-        print(&#34;Exception when update node disks&#34;, node, e)
+        print(&#34;\nException when update node disks&#34;, node)
+        print(e)
         pass
 
     # delete test disks
@@ -4257,14 +4285,16 @@ properly.
         node.diskUpdate(disks=update_disks)
         wait_for_disk_update(client, host_id, len(update_disks))
     except Exception as e:
-        print(&#34;Exception when delete node test disks&#34;, node, e)
+        print(&#34;\nException when delete node test disks&#34;, node)
+        print(e)
         pass
     # cleanup host disks
     for del_dir in del_dirs:
         try:
             cleanup_host_disk(del_dir)
         except Exception as e:
-            print(&#34;Exception when cleanup host disk&#34;, del_dir, e)
+            print(&#34;\nException when cleanup host disk&#34;, del_dir)
+            print(e)
             pass</code></pre>
 </details>
 </dd>
@@ -4616,7 +4646,12 @@ or it times out, whichever occurs first.</p></div>
         data = write_volume_data(volume, data)
     snap = create_snapshot(client, volname)
     create_snapshot(client, volname)
+
+    # after backup request we need to wait for completion of the backup
+    # since the backup.cfg will only be available once the backup operation
+    # has been completed
     volume.snapshotBackup(name=snap.name, labels=labels)
+    wait_for_backup_completion(client, volname, snap.name)
 
     verified = False
     for i in range(RETRY_COMMAND_COUNT):
@@ -4640,7 +4675,6 @@ or it times out, whichever occurs first.</p></div>
     for key, val in iter(labels.items()):
         assert new_b.labels.get(key) == val
 
-    volume = wait_for_backup_completion(client, volname, snap.name)
     volume = wait_for_volume_status(client, volname,
                                     &#34;lastBackup&#34;,
                                     b.name)
@@ -5360,37 +5394,41 @@ def disable_auto_salvage(client):
 <span>def <span class="ident">find_backup</span></span>(<span>client, vol_name, snap_name)</span>
 </code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>find_backup will look for a backup on the backupstore
+it's important to note, that this can only be used for completed backups
+since the backup.cfg will only be written once a backup operation has
+been completed successfully</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def find_backup(client, vol_name, snap_name):
-    found = False
-    for i in range(100):
+    &#34;&#34;&#34;
+    find_backup will look for a backup on the backupstore
+    it&#39;s important to note, that this can only be used for completed backups
+    since the backup.cfg will only be written once a backup operation has
+    been completed successfully
+    &#34;&#34;&#34;
+
+    def find_backup_volume():
         bvs = client.list_backupVolume()
         for bv in bvs:
             if bv.name == vol_name:
-                found = True
-                break
-        if found:
-            break
-        time.sleep(1)
-    assert found
+                return bv
+        return None
 
-    found = False
-    for i in range(20):
-        backups = bv.backupList().data
-        for b in backups:
-            if b.snapshotName == snap_name:
-                found = True
-                break
-        if found:
-            break
-        time.sleep(1)
-    assert found
-
-    return bv, b</code></pre>
+    bv = None
+    for i in range(120):
+        if bv is None:
+            bv = find_backup_volume()
+        if bv is not None:
+            backups = bv.backupList().data
+            for b in backups:
+                if b.snapshotName == snap_name:
+                    return bv, b
+        time.sleep(RETRY_BACKUP_INTERVAL)
+    assert False, &#34;failed to find backup for snapshot &#34; + snap_name + \
+                  &#34; for volume &#34; + vol_name</code></pre>
 </details>
 </dd>
 <dt id="tests.common.find_dockerd_pid"><code class="name flex">
@@ -6462,22 +6500,26 @@ def pod_make(request):
         def finalizer():
             api = get_core_api_client()
             try:
-                delete_and_wait_pod(api, pod_manifest[&#39;metadata&#39;][&#39;name&#39;])
+                pod_name = pod_manifest[&#39;metadata&#39;][&#39;name&#39;]
+                delete_and_wait_pod(api, pod_name)
             except Exception as e:
-                print(&#34;Exception when waiting for pod deletion&#34;, e)
+                print(&#34;\nException when waiting for pod deletion&#34;)
+                print(e)
                 return
             try:
                 volume_details = pod_manifest[&#39;spec&#39;][&#39;volumes&#39;][0]
                 pvc_name = volume_details[&#39;persistentVolumeClaim&#39;][&#39;claimName&#39;]
                 delete_and_wait_pvc(api, pvc_name)
             except Exception as e:
-                print(&#34;Exception when waiting for PVC deletion&#34;, e)
+                print(&#34;\nException when waiting for PVC deletion&#34;)
+                print(e)
             try:
                 pv = wait_and_get_pv_for_pvc(api, pvc_name)
                 pv_name = pv.metadata.name
                 delete_and_wait_pv(api, pv_name)
             except Exception as e:
-                print(&#34;Exception when waiting for PV deletion&#34;, e)
+                print(&#34;\nException when waiting for PV deletion&#34;)
+                print(e)
 
         request.addfinalizer(finalizer)
         return pod_manifest
@@ -6791,7 +6833,7 @@ def random_labels():
         # on the node.
         if len(node.disks) &gt; 1:
             update_disks = get_update_disks(node.disks)
-            for disk_name, disk in update_disks:
+            for disk_name, disk in iter(update_disks.items()):
                 disk.allowScheduling = False
                 update_disks[disk_name] = disk
                 node = node.diskUpdate(disks=update_disks)
@@ -6876,7 +6918,8 @@ def random_labels():
             wait_for_node_update(client, node.id,
                                  &#34;allowScheduling&#34;, True)
         except Exception as e:
-            print(&#34;Exception when reset node schedulding and tags&#34;, node, e)</code></pre>
+            print(&#34;\nException when reset node schedulding and tags&#34;, node)
+            print(e)</code></pre>
 </details>
 </dd>
 <dt id="tests.common.reset_settings"><code class="name flex">
@@ -6895,9 +6938,10 @@ def random_labels():
         client.update(minimal_setting,
                       value=DEFAULT_STORAGE_MINIMAL_AVAILABLE_PERCENTAGE)
     except Exception as e:
-        print(&#34;Exception when update &#34;
+        print(&#34;\nException when update &#34;
               &#34;storage minimal available percentage settings&#34;,
-              minimal_setting, e)
+              minimal_setting)
+        print(e)
         pass
 
     over_provisioning_setting = client.by_id_setting(
@@ -6906,9 +6950,10 @@ def random_labels():
         client.update(over_provisioning_setting,
                       value=DEFAULT_STORAGE_OVER_PROVISIONING_PERCENTAGE)
     except Exception as e:
-        print(&#34;Exception when update &#34;
+        print(&#34;\nException when update &#34;
               &#34;storage over provisioning percentage settings&#34;,
-              over_provisioning_setting, e)
+              over_provisioning_setting)
+        print(e)
 
     default_data_path_setting = client.by_id_setting(
         SETTING_DEFAULT_DATA_PATH)
@@ -6916,9 +6961,10 @@ def random_labels():
         client.update(default_data_path_setting,
                       value=DEFAULT_DISK_PATH)
     except Exception as e:
-        print(&#34;Exception when update &#34;
+        print(&#34;\nException when update &#34;
               &#34;default data path setting&#34;,
-              default_data_path_setting, e)
+              default_data_path_setting)
+        print(e)
 
     create_default_disk_labeled_nodes_setting = client.by_id_setting(
         SETTING_CREATE_DEFAULT_DISK_LABELED_NODES)
@@ -6926,9 +6972,10 @@ def random_labels():
         client.update(create_default_disk_labeled_nodes_setting,
                       value=&#34;false&#34;)
     except Exception as e:
-        print(&#34;Exception when update &#34;
+        print(&#34;\nException when update &#34;
               &#34;create default disk labeled nodes setting&#34;,
-              create_default_disk_labeled_nodes_setting, e)
+              create_default_disk_labeled_nodes_setting)
+        print(e)
 
     replica_node_soft_anti_affinity_setting = \
         client.by_id_setting(SETTING_REPLICA_NODE_SOFT_ANTI_AFFINITY)
@@ -6936,9 +6983,10 @@ def random_labels():
         client.update(replica_node_soft_anti_affinity_setting,
                       value=&#34;false&#34;)
     except Exception as e:
-        print(&#34;Exception when update &#34;
+        print(&#34;\nException when update &#34;
               &#34;Replica Node Level Soft Anti-Affinity setting&#34;,
-              replica_node_soft_anti_affinity_setting, e)
+              replica_node_soft_anti_affinity_setting)
+        print(e)
 
     replica_zone_soft_anti_affinity_setting = \
         client.by_id_setting(SETTING_REPLICA_ZONE_SOFT_ANTI_AFFINITY)
@@ -6946,9 +6994,10 @@ def random_labels():
         client.update(replica_zone_soft_anti_affinity_setting,
                       value=&#34;true&#34;)
     except Exception as e:
-        print(&#34;Exception when update &#34;
+        print(&#34;\nException when update &#34;
               &#34;Replica Zone Level Soft Anti-Affinity setting&#34;,
-              replica_zone_soft_anti_affinity_setting, e)
+              replica_zone_soft_anti_affinity_setting)
+        print(e)
 
     disable_scheduling_on_cordoned_node_setting = \
         client.by_id_setting(SETTING_DISABLE_SCHEDULING_ON_CORDONED_NODE)
@@ -6956,15 +7005,17 @@ def random_labels():
         client.update(disable_scheduling_on_cordoned_node_setting,
                       value=&#34;true&#34;)
     except Exception as e:
-        print(&#34;Exception when update &#34;
+        print(&#34;\nException when update &#34;
               &#34;Disable Scheduling On Cordoned Node setting&#34;,
-              disable_scheduling_on_cordoned_node_setting, e)
+              disable_scheduling_on_cordoned_node_setting)
+        print(e)
     auto_salvage_setting = client.by_id_setting(SETTING_AUTO_SALVAGE)
     try:
         client.update(auto_salvage_setting, value=&#34;true&#34;)
     except Exception as e:
-        print(&#34;Exception when update Auto Salvage setting&#34;,
-              auto_salvage_setting, e)
+        print(&#34;\nException when update Auto Salvage setting&#34;,
+              auto_salvage_setting)
+        print(e)
 
     guaranteed_engine_cpu_setting = \
         client.by_id_setting(SETTING_GUARANTEED_ENGINE_CPU)
@@ -6972,9 +7023,10 @@ def random_labels():
         client.update(guaranteed_engine_cpu_setting,
                       value=&#34;0.25&#34;)
     except Exception as e:
-        print(&#34;Exception when update &#34;
+        print(&#34;\nException when update &#34;
               &#34;Guaranteed Engine CPU setting&#34;,
-              guaranteed_engine_cpu_setting, e)
+              guaranteed_engine_cpu_setting)
+        print(e)
 
     instance_managers = client.list_instance_manager()
     core_api = get_core_api_client()
@@ -7572,7 +7624,7 @@ def volume_name(request):
 </details>
 </dd>
 <dt id="tests.common.wait_for_backup_completion"><code class="name flex">
-<span>def <span class="ident">wait_for_backup_completion</span></span>(<span>client, volume_name, snapshot_name, retry_count=600)</span>
+<span>def <span class="ident">wait_for_backup_completion</span></span>(<span>client, volume_name, snapshot_name, retry_count=300)</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -7608,31 +7660,30 @@ def volume_name(request):
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def wait_for_backup_delete(client, volume_name, backup_name):
-    for i in range(RETRY_COUNTS):
-        bvs = client.list_backupVolume()
-        bv_found = False
 
+    def find_backup_volume():
+        bvs = client.list_backupVolume()
         for bv in bvs:
             if bv.name == volume_name:
-                bv_found = True
-                break
+                return bv
+        return None
 
-        assert bv_found
+    def backup_exists():
+        bv = find_backup_volume()
+        if bv is not None:
+            backups = bv.backupList()
+            for b in backups:
+                if b.name == backup_name:
+                    return True
+        return False
 
-        backups = bv.backupList()
+    for i in range(RETRY_BACKUP_COUNTS):
+        if backup_exists() is False:
+            return
+        time.sleep(RETRY_BACKUP_INTERVAL)
 
-        backup_found = False
-        for b in backups:
-            if b.name == backup_name:
-                backup_found = True
-                break
-
-        if backup_found is False:
-            break
-
-        time.sleep(RETRY_INTERVAL)
-
-    assert not backup_found</code></pre>
+    assert False, &#34;deleted backup &#34; + backup_name + &#34; for volume &#34; \
+                  + volume_name + &#34; is still present&#34;</code></pre>
 </details>
 </dd>
 <dt id="tests.common.wait_for_backup_restore_completed"><code class="name flex">
@@ -7657,7 +7708,7 @@ def volume_name(request):
 </details>
 </dd>
 <dt id="tests.common.wait_for_backup_state"><code class="name flex">
-<span>def <span class="ident">wait_for_backup_state</span></span>(<span>client, volume_name, predicate)</span>
+<span>def <span class="ident">wait_for_backup_state</span></span>(<span>client, volume_name, predicate, retry_count=300)</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -7665,9 +7716,10 @@ def volume_name(request):
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def wait_for_backup_state(client, volume_name, predicate):
+<pre><code class="python">def wait_for_backup_state(client, volume_name, predicate,
+                          retry_count=RETRY_BACKUP_COUNTS):
     completed = False
-    for i in range(RETRY_BACKUP_COUNTS):
+    for i in range(retry_count):
         v = client.by_id_volume(volume_name)
         for b in v.backupStatus:
             if predicate(b):
@@ -8844,14 +8896,15 @@ def volume_name(request):
 <pre><code class="python">def wait_pod(pod_name):
     api = get_core_api_client()
 
+    pod = None
     for i in range(DEFAULT_POD_TIMEOUT):
         pod = api.read_namespaced_pod(
             name=pod_name,
             namespace=&#39;default&#39;)
-        if pod.status.phase != &#39;Pending&#39;:
+        if pod is not None and pod.status.phase != &#39;Pending&#39;:
             break
         time.sleep(DEFAULT_POD_INTERVAL)
-    assert pod.status.phase == &#39;Running&#39;</code></pre>
+    assert pod is not None and pod.status.phase == &#39;Running&#39;</code></pre>
 </details>
 </dd>
 <dt id="tests.common.wait_scheduling_failure"><code class="name flex">

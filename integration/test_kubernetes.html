@@ -34,8 +34,8 @@ from common import csi_pv, pvc, pod  # NOQA
 from common import generate_volume_name, get_apps_api_client
 from common import create_and_wait_statefulset
 from common import update_statefulset_manifests
-from common import create_storage_class, delete_storage_class, \
-    find_backup
+from common import create_storage_class, delete_storage_class
+from common import wait_for_backup_completion, find_backup
 from common import get_self_host_id, get_statefulset_pod_info
 from common import create_and_wait_pod
 from common import delete_and_wait_pod, wait_delete_pod
@@ -625,6 +625,7 @@ def test_backup_kubernetes_status(client, core_api, pod):  # NOQA
     # is not guaranteed to mount our Volume to the test host.
     snap = create_snapshot(client, volume_name)
     volume.snapshotBackup(name=snap.name)
+    wait_for_backup_completion(client, volume_name, snap.name)
     bv, b = find_backup(client, volume_name, snap.name)
     new_b = bv.backupGet(name=b.name)
     status = loads(new_b.labels.get(KUBERNETES_STATUS_LABEL))
@@ -692,6 +693,7 @@ def test_backup_kubernetes_status(client, core_api, pod):  # NOQA
 
     snap = create_snapshot(client, volume_name)
     volume.snapshotBackup(name=snap.name)
+    volume = wait_for_backup_completion(client, volume_name, snap.name)
     bv, b = find_backup(client, volume_name, snap.name)
     new_b = bv.backupGet(name=b.name)
     status = loads(new_b.labels.get(KUBERNETES_STATUS_LABEL))
@@ -1045,6 +1047,7 @@ def test_backup_kubernetes_status(client, core_api, pod):  # NOQA
     # is not guaranteed to mount our Volume to the test host.
     snap = create_snapshot(client, volume_name)
     volume.snapshotBackup(name=snap.name)
+    wait_for_backup_completion(client, volume_name, snap.name)
     bv, b = find_backup(client, volume_name, snap.name)
     new_b = bv.backupGet(name=b.name)
     status = loads(new_b.labels.get(KUBERNETES_STATUS_LABEL))
@@ -1112,6 +1115,7 @@ def test_backup_kubernetes_status(client, core_api, pod):  # NOQA
 
     snap = create_snapshot(client, volume_name)
     volume.snapshotBackup(name=snap.name)
+    volume = wait_for_backup_completion(client, volume_name, snap.name)
     bv, b = find_backup(client, volume_name, snap.name)
     new_b = bv.backupGet(name=b.name)
     status = loads(new_b.labels.get(KUBERNETES_STATUS_LABEL))
