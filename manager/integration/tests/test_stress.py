@@ -32,7 +32,6 @@ from common import mount_disk
 from common import read_volume_data
 from common import RETRY_COUNTS
 from common import RETRY_INTERVAL
-from common import set_random_backupstore
 from common import SETTING_BACKUP_TARGET
 from common import umount_disk
 from common import wait_for_backup_completion
@@ -49,6 +48,7 @@ from kubernetes.stream import stream
 from random import randrange
 from test_scheduling import wait_new_replica_ready
 
+from backupstore import set_random_backupstore
 
 # Configuration options
 N_RANDOM_ACTIONS = 10

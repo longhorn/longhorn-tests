@@ -14,13 +14,13 @@ from common import create_storage_class, \
     create_and_wait_statefulset, delete_and_wait_pv
 from common import update_statefulset_manifests, get_self_host_id, \
     get_statefulset_pod_info, wait_volume_kubernetes_status
-from common import set_random_backupstore
 from common import write_volume_random_data
 from common import write_pod_volume_random_data
 from common import BASE_IMAGE_LABEL, KUBERNETES_STATUS_LABEL
 from common import SIZE, Mi, Gi
 from common import SETTING_RECURRING_JOB_WHILE_VOLUME_DETACHED
 
+from backupstore import set_random_backupstore # NOQA
 
 RECURRING_JOB_LABEL = "RecurringJob"
 RECURRING_JOB_NAME = "backup"
@@ -55,7 +55,7 @@ def wait_until_begin_of_an_even_minute():
         time.sleep(1)
 
 @pytest.mark.recurring_job  # NOQA
-def test_recurring_job(client, volume_name):  # NOQA
+def test_recurring_job(clients, volume_name, set_random_backupstore):  # NOQA
     """
     Test recurring job
 
@@ -93,8 +93,6 @@ def test_recurring_job(client, volume_name):  # NOQA
     '''
 
     host_id = get_self_host_id()
-
-    set_random_backupstore(client)
 
     volume = client.create_volume(name=volume_name, size=SIZE,
                                   numberOfReplicas=2)
@@ -165,7 +163,7 @@ def test_recurring_job(client, volume_name):  # NOQA
 
 
 @pytest.mark.recurring_job  # NOQA
-def test_recurring_job_in_volume_creation(client, volume_name):  # NOQA
+def test_recurring_job_in_volume_creation(clients, volume_name, set_random_backupstore):  # NOQA
     """
     Test create volume with recurring jobs
 
@@ -173,8 +171,6 @@ def test_recurring_job_in_volume_creation(client, volume_name):  # NOQA
     2. Verify the recurring jobs run correctly
     """
     host_id = get_self_host_id()
-
-    set_random_backupstore(client)
 
     # error when creating volume with duplicate jobs
     with pytest.raises(Exception) as e:
@@ -214,7 +210,7 @@ def test_recurring_job_in_volume_creation(client, volume_name):  # NOQA
 
 
 @pytest.mark.recurring_job  # NOQA
-def test_recurring_job_in_storageclass(client, core_api, storage_class, statefulset):  # NOQA
+def test_recurring_job_in_storageclass(client, core_api, storage_class, statefulset, set_random_backupstore):  # NOQA
     """
     Test create volume with StorageClass contains recurring jobs
 
@@ -222,7 +218,6 @@ def test_recurring_job_in_storageclass(client, core_api, storage_class, stateful
     2. Create a StatefulSet with PVC template and StorageClass
     3. Verify the recurring jobs run correctly.
     """
-    set_random_backupstore(client)
     statefulset_name = 'recurring-job-in-storageclass-test'
     update_statefulset_manifests(statefulset, storage_class, statefulset_name)
     storage_class["parameters"]["recurringJobs"] = json.dumps(create_jobs1())
@@ -272,8 +267,7 @@ def test_recurring_job_labels(client, random_labels, volume_name):  # NOQA
     recurring_job_labels_test(client, random_labels, volume_name)
 
 
-def recurring_job_labels_test(client, labels, volume_name, size=SIZE, base_image=""):  # NOQA
-    set_random_backupstore(client)
+def recurring_job_labels_test(client, labels, volume_name, set_random_backupstore ,size=SIZE, base_image=""):  # NOQA
     host_id = get_self_host_id()
     client.create_volume(name=volume_name, size=size,
                          numberOfReplicas=2)
@@ -334,7 +328,7 @@ def recurring_job_labels_test(client, labels, volume_name, size=SIZE, base_image
 
 @pytest.mark.csi
 @pytest.mark.recurring_job
-def test_recurring_job_kubernetes_status(client, core_api, volume_name):  # NOQA
+def test_recurring_job_kubernetes_status(client, core_api, volume_name, set_random_backupstore):  # NOQA
     """
     Test RecurringJob properly backs up the KubernetesStatus
 
@@ -345,7 +339,6 @@ def test_recurring_job_kubernetes_status(client, core_api, volume_name):  # NOQA
     5. Verify the recurring job runs correctly.
     6. Verify the backup contains the Kubernetes Status labels
     """
-    set_random_backupstore(client)
     host_id = get_self_host_id()
     client.create_volume(name=volume_name, size=SIZE,
                          numberOfReplicas=2)

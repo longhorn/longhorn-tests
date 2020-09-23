@@ -23,7 +23,7 @@ from common import SIZE
 from common import KUBERNETES_STATUS_LABEL, SETTING_DEFAULT_LONGHORN_STATIC_SC
 from common import DEFAULT_LONGHORN_STATIC_STORAGECLASS_NAME
 from common import create_snapshot
-from common import set_random_backupstore, delete_backup
+from common import delete_backup
 from common import create_and_check_volume, create_pvc, \
     wait_and_get_pv_for_pvc, wait_delete_pvc
 from common import volume_name # NOQA
@@ -31,6 +31,8 @@ from backupstore import backupstore_cleanup
 
 from kubernetes import client as k8sclient
 from kubernetes.client.rest import ApiException
+
+from backupstore import set_random_backupstore  # NOQA
 
 from json import loads
 
@@ -513,7 +515,7 @@ def test_pvc_creation_with_default_sc_set(
 
 
 @pytest.mark.csi
-def test_backup_kubernetes_status(client, core_api, pod):  # NOQA
+def test_backup_kubernetes_status(client, core_api, pod, set_random_backupstore):  # NOQA
     """
     Test that Backups have KubernetesStatus stored properly when there is an
     associated PersistentVolumeClaim and Pod.
@@ -539,7 +541,6 @@ def test_backup_kubernetes_status(client, core_api, pod):  # NOQA
         1. Make sure `lastPodRefAt` and `lastPVCRefAt` matched volume on step
         12
     """
-    set_random_backupstore(client)
 
     host_id = get_self_host_id()
     static_sc_name = "longhorn-static-test"
