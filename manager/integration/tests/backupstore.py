@@ -306,6 +306,9 @@ def backupstore_create_file(client, core_api, file_path, data={}):
                                                core_api,
                                                file_path,
                                                data)
+    elif is_backupTarget_nfs(backupstore):
+        return nfs_create_file_in_backupstore(file_path, data={})
+
     else:
         raise NotImplementedError
 
@@ -335,6 +338,10 @@ def mino_create_file_in_backupstore(client, core_api, file_path, data={}): # NOQ
     except ResponseError as err:
         print(err)
 
+
+def nfs_create_file_in_backupstore(file_path, data={}):
+    with open(file_path, 'w') as cfg_file:
+        cfg_file.write(str(data))
 
 def backupstore_write_backup_cfg_file(client, core_api, volume_name, backup_name, data): # NOQA
     backupstore = backupstore_get_backup_target(client)
