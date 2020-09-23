@@ -402,6 +402,9 @@ def backupstore_delete_file(client, core_api, file_path):
                                                core_api,
                                                file_path)
 
+    elif is_backupTarget_nfs(backupstore):
+        return nfs_delete_file_in_backupstore(file_path)
+
     else:
         raise NotImplementedError
 
@@ -419,6 +422,15 @@ def mino_delete_file_in_backupstore(client, core_api, file_path):
         minio_api.remove_object(bucket_name, file_path)
     except ResponseError as err:
         print(err)
+
+
+def nfs_delete_file_in_backupstore(file_path):
+    try:
+        os.remove(file_path)
+    except Exception as ex:
+        print("error while deleting file:",
+              file_path)
+        print(ex)
 
 
 def backupstore_delete_backup_cfg_file(client, core_api, volume_name, backup_name):  # NOQA
