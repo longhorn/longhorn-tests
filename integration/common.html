@@ -3349,12 +3349,13 @@ def make_deployment_with_pvc(request):
     return _generate_deployment_with_pvc_manifest
 
 
-def wait_deployment_replica_ready(apps_api, deployment_name, desired_replica_count): # NOQA
+def wait_deployment_replica_ready(apps_api, deployment_name,
+                                  desired_replica_count, namespace=&#39;default&#39;):  # NOQA
     replicas_ready = False
     for i in range(DEFAULT_DEPLOYMENT_TIMEOUT):
         deployment = apps_api.read_namespaced_deployment(
             name=deployment_name,
-            namespace=&#34;default&#34;)
+            namespace=namespace)
 
         if deployment.status.ready_replicas == desired_replica_count:
             replicas_ready = True
@@ -3394,11 +3395,11 @@ def wait_delete_deployment(apps_api, deployment_name):
     assert not found
 
 
-def delete_and_wait_deployment(apps_api, deployment_name):
+def delete_and_wait_deployment(apps_api, deployment_name, namespace=&#39;default&#39;):
     try:
         apps_api.delete_namespaced_deployment(
             name=deployment_name,
-            namespace=&#39;default&#39;
+            namespace=namespace
         )
     except ApiException as e:
         assert e.status == 404
@@ -4909,7 +4910,7 @@ def csi_pvc_name(request):
 </details>
 </dd>
 <dt id="tests.common.delete_and_wait_deployment"><code class="name flex">
-<span>def <span class="ident">delete_and_wait_deployment</span></span>(<span>apps_api, deployment_name)</span>
+<span>def <span class="ident">delete_and_wait_deployment</span></span>(<span>apps_api, deployment_name, namespace='default')</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -4917,11 +4918,11 @@ def csi_pvc_name(request):
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def delete_and_wait_deployment(apps_api, deployment_name):
+<pre><code class="python">def delete_and_wait_deployment(apps_api, deployment_name, namespace=&#39;default&#39;):
     try:
         apps_api.delete_namespaced_deployment(
             name=deployment_name,
-            namespace=&#39;default&#39;
+            namespace=namespace
         )
     except ApiException as e:
         assert e.status == 404
@@ -7599,7 +7600,7 @@ def volume_name(request):
 </details>
 </dd>
 <dt id="tests.common.wait_deployment_replica_ready"><code class="name flex">
-<span>def <span class="ident">wait_deployment_replica_ready</span></span>(<span>apps_api, deployment_name, desired_replica_count)</span>
+<span>def <span class="ident">wait_deployment_replica_ready</span></span>(<span>apps_api, deployment_name, desired_replica_count, namespace='default')</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -7607,12 +7608,13 @@ def volume_name(request):
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def wait_deployment_replica_ready(apps_api, deployment_name, desired_replica_count): # NOQA
+<pre><code class="python">def wait_deployment_replica_ready(apps_api, deployment_name,
+                                  desired_replica_count, namespace=&#39;default&#39;):  # NOQA
     replicas_ready = False
     for i in range(DEFAULT_DEPLOYMENT_TIMEOUT):
         deployment = apps_api.read_namespaced_deployment(
             name=deployment_name,
-            namespace=&#34;default&#34;)
+            namespace=namespace)
 
         if deployment.status.ready_replicas == desired_replica_count:
             replicas_ready = True
