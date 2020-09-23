@@ -201,6 +201,18 @@ def backup_volume_path(volume_name):
     return backupstore_bv_path
 
 
+def backupstore_get_backup_volume_prefix(client, volume_name):
+    backupstore = backupstore_get_backup_target(client)
+
+    if is_backupTarget_s3(backupstore):
+        return minio_get_backup_volume_prefix(volume_name)
+
+    elif is_backupTarget_nfs(backupstore):
+        return nfs_get_backup_volume_prefix(client, volume_name)
+    else:
+        raise NotImplementedError
+
+
 def minio_get_backup_volume_prefix(volume_name):
     client = get_longhorn_api_client()
     backupstore_bv_path = backup_volume_path(volume_name)
