@@ -30,7 +30,6 @@ from common import wait_for_pod_remount
 from common import delete_and_wait_pod
 from common import wait_for_rebuild_start
 from common import prepare_pod_with_data_in_mb
-from common import set_random_backupstore
 from common import wait_for_backup_completion, find_backup
 from common import wait_for_volume_creation, wait_for_volume_detached
 from common import wait_for_volume_restoration_start
@@ -62,6 +61,7 @@ from common import wait_for_volume_replica_count
 from common import settings_reset # NOQA
 from common import set_node_tags, set_node_scheduling # NOQA
 
+from backupstore import set_random_backupstore
 from backupstore import backupstore_cleanup
 from backupstore import backupstore_delete_random_backup_block
 from backupstore import backupstore_wait_for_lock_expiration

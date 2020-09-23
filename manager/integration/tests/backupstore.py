@@ -1,10 +1,10 @@
 import os
 import time
+import pytest
 import base64
 import hashlib
 import json
 import subprocess
-
 
 from minio import Minio
 from minio.error import ResponseError
@@ -17,12 +17,102 @@ from common import is_backupTarget_s3
 from common import is_backupTarget_nfs
 from common import get_longhorn_api_client
 from common import delete_backup_volume
+from common import get_backupstore_url
 
 BACKUPSTORE_BV_PREFIX = "/backupstore/volumes/"
 BACKUPSTORE_LOCK_DURATION = 150
 
-
 TEMP_FILE_PATH = "/tmp/temp_file"
+
+
+@pytest.fixture
+def backupstore_s3(client):
+    set_backupstore_s3(client)
+    yield
+    reset_backupstore_setting(client)
+
+
+@pytest.fixture
+def backupstore_nfs(client):
+    set_backupstore_nfs(client)
+    yield
+    reset_backupstore_setting(client)
+
+
+@pytest.fixture(params=["s3", "nfs"])
+def set_random_backupstore(request, client):
+    if request.param == "s3":
+        set_backupstore_s3(client)
+    elif request.param == "nfs":
+        set_backupstore_nfs(client)
+        mount_nfs_backupstore(client)
+
+    yield
+    backupstore_cleanup(client)
+    reset_backupstore_setting(client)
+
+    if request.param == "nfs":
+        umount_nfs_backupstore(client)
+
+
+def reset_backupstore_setting(client):
+    backup_target_setting = client.by_id_setting(SETTING_BACKUP_TARGET)
+    client.update(backup_target_setting, value="")
+    backup_target_credential_setting = client.by_id_setting(
+        SETTING_BACKUP_TARGET_CREDENTIAL_SECRET)
+    client.update(backup_target_credential_setting, value="")
+
+
+def set_backupstore_s3(client):
+    backup_target_setting = client.by_id_setting(SETTING_BACKUP_TARGET)
+    backupstores = get_backupstore_url()
+    for backupstore in backupstores:
+        if is_backupTarget_s3(backupstore):
+            backupsettings = backupstore.split("$")
+            backup_target_setting = client.update(backup_target_setting,
+                                                  value=backupsettings[0])
+            assert backup_target_setting.value == backupsettings[0]
+
+            backup_target_credential_setting = client.by_id_setting(
+                SETTING_BACKUP_TARGET_CREDENTIAL_SECRET)
+            backup_target_credential_setting = \
+                client.update(backup_target_credential_setting,
+                              value=backupsettings[1])
+            assert backup_target_credential_setting.value == backupsettings[1]
+            break
+
+
+def set_backupstore_nfs(client):
+    backup_target_setting = client.by_id_setting(SETTING_BACKUP_TARGET)
+    backupstores = get_backupstore_url()
+    for backupstore in backupstores:
+        if is_backupTarget_nfs(backupstore):
+            backup_target_setting = client.update(backup_target_setting,
+                                                  value=backupstore)
+            assert backup_target_setting.value == backupstore
+            backup_target_credential_setting = client.by_id_setting(
+                SETTING_BACKUP_TARGET_CREDENTIAL_SECRET)
+            backup_target_credential_setting = \
+                client.update(backup_target_credential_setting, value="")
+            assert backup_target_credential_setting.value == ""
+            break
+
+
+def mount_nfs_backupstore(client, mount_path="/mnt/nfs"):
+    cmd = ["mkdir", "-p", mount_path]
+    subprocess.check_output(cmd)
+    nfs_backuptarget = client.by_id_setting(SETTING_BACKUP_TARGET).value
+    nfs_url = urlparse(nfs_backuptarget).netloc + \
+        urlparse(nfs_backuptarget).path
+    cmd = ["mount", "-t", "nfs", "-o", "nfsvers=4.2", nfs_url, mount_path]
+    subprocess.check_output(cmd)
+
+
+def umount_nfs_backupstore(client, mount_path="/mnt/nfs"):
+    cmd = ["umount", mount_path]
+    subprocess.check_output(cmd)
+    cmd = ["rmdir", mount_path]
+    subprocess.check_output(cmd)
 
 
 def backupstore_cleanup(client):
