@@ -21,8 +21,6 @@ from kubernetes.stream import stream
 
 from kubernetes.client.rest import ApiException
 
-from urllib.parse import urlparse
-
 Ki = 1024
 Mi = (1024 * 1024)
 Gi = (1024 * Mi)
@@ -3154,29 +3152,6 @@ def check_volume_last_backup(client, volume_name, last_backup):
     assert volume.lastBackup == last_backup
 
 
-def set_random_backupstore(client):
-    setting = client.by_id_setting(SETTING_BACKUP_TARGET)
-    backupstores = get_backupstore_url()
-    for backupstore in backupstores:
-        if is_backupTarget_s3(backupstore):
-            backupsettings = backupstore.split("$")
-            setting = client.update(setting, value=backupsettings[0])
-            assert setting.value == backupsettings[0]
-
-            credential = client.by_id_setting(
-                SETTING_BACKUP_TARGET_CREDENTIAL_SECRET)
-            credential = client.update(credential, value=backupsettings[1])
-            assert credential.value == backupsettings[1]
-        else:
-            setting = client.update(setting, value=backupstore)
-            assert setting.value == backupstore
-            credential = client.by_id_setting(
-                SETTING_BACKUP_TARGET_CREDENTIAL_SECRET)
-            credential = client.update(credential, value="")
-            assert credential.value == ""
-        break
-
-
 def generate_pod_with_pvc_manifest(pod_name, pvc_name):
     pod_manifest = {
         "apiVersion": "v1",
@@ -3813,74 +3788,6 @@ def settings_reset():
 
     client = get_longhorn_api_client()
     reset_settings(client)
-
-
-@pytest.fixture
-def set_backupstore_s3(client):
-    backup_target_setting = client.by_id_setting(SETTING_BACKUP_TARGET)
-    backupstores = get_backupstore_url()
-    for backupstore in backupstores:
-        if is_backupTarget_s3(backupstore):
-            backupsettings = backupstore.split("$")
-            backup_target_setting = client.update(backup_target_setting,
-                                                  value=backupsettings[0])
-            assert backup_target_setting.value == backupsettings[0]
-
-            backup_target_credential_setting = client.by_id_setting(
-                SETTING_BACKUP_TARGET_CREDENTIAL_SECRET)
-            backup_target_credential_setting = \
-                client.update(backup_target_credential_setting,
-                              value=backupsettings[1])
-            assert backup_target_credential_setting.value == backupsettings[1]
-            break
-
-    yield
-    backup_target_setting = client.by_id_setting(SETTING_BACKUP_TARGET)
-    client.update(backup_target_setting, value="")
-    backup_target_credential_setting = client.by_id_setting(
-        SETTING_BACKUP_TARGET_CREDENTIAL_SECRET)
-    client.update(backup_target_credential_setting, value="")
-
-
-@pytest.fixture
-def set_backupstore_nfs(client):
-    backup_target_setting = client.by_id_setting(SETTING_BACKUP_TARGET)
-    backupstores = get_backupstore_url()
-    for backupstore in backupstores:
-        if is_backupTarget_nfs(backupstore):
-            backup_target_setting = client.update(backup_target_setting,
-                                                  value=backupstore)
-            assert backup_target_setting.value == backupstore
-            backup_target_credential_setting = client.by_id_setting(
-                SETTING_BACKUP_TARGET_CREDENTIAL_SECRET)
-            backup_target_credential_setting = \
-                client.update(backup_target_credential_setting, value="")
-            assert backup_target_credential_setting.value == ""
-            break
-
-    yield
-    backup_target_setting = client.by_id_setting(SETTING_BACKUP_TARGET)
-    client.update(backup_target_setting, value="")
-    backup_target_credential_setting = client.by_id_setting(
-        SETTING_BACKUP_TARGET_CREDENTIAL_SECRET)
-    client.update(backup_target_credential_setting, value="")
-
-
-@pytest.fixture
-def mount_nfs_backupstore(client, set_backupstore_nfs):
-    cmd = ["mkdir", "-p", "/mnt/nfs"]
-    subprocess.check_output(cmd)
-    nfs_backuptarget = client.by_id_setting(SETTING_BACKUP_TARGET).value
-    nfs_url = urlparse(nfs_backuptarget).netloc + \
-        urlparse(nfs_backuptarget).path
-    cmd = ["mount", "-t", "nfs4", nfs_url, "/mnt/nfs"]
-    subprocess.check_output(cmd)
-
-    yield "/mnt/nfs"
-    cmd = ["umount", "/mnt/nfs"]
-    subprocess.check_output(cmd)
-    cmd = ["rmdir", "/mnt/nfs"]
-    subprocess.check_output(cmd)
 
 
 def crash_engine_process_with_sigkill(client, core_api, volume_name):
