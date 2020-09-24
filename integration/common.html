@@ -158,6 +158,7 @@ SETTING_BACKUP_TARGET_CREDENTIAL_SECRET = &#34;backup-target-credential-secret&#
 SETTING_DEFAULT_REPLICA_COUNT = &#34;default-replica-count&#34;
 SETTING_DEFAULT_LONGHORN_STATIC_SC = &#34;default-longhorn-static-storage-class&#34;
 SETTING_TAINT_TOLERATION = &#34;taint-toleration&#34;
+SETTING_DEFAULT_DATA_LOCALITY = &#34;default-data-locality&#34;
 
 SETTING_AUTO_SALVAGE = &#34;auto-salvage&#34;
 
@@ -2449,6 +2450,14 @@ def reset_settings(client):
         print(&#34;\nException when update Auto Salvage setting&#34;,
               auto_salvage_setting)
         print(e)
+
+    default_data_locality_setting = \
+        client.by_id_setting(SETTING_DEFAULT_DATA_LOCALITY)
+    try:
+        client.update(default_data_locality_setting, value=&#34;disabled&#34;)
+    except Exception as e:
+        print(&#34;Exception when update Default Data Locality setting&#34;,
+              default_data_locality_setting, e)
 
     guaranteed_engine_cpu_setting = \
         client.by_id_setting(SETTING_GUARANTEED_ENGINE_CPU)
@@ -7017,6 +7026,14 @@ def random_labels():
         print(&#34;\nException when update Auto Salvage setting&#34;,
               auto_salvage_setting)
         print(e)
+
+    default_data_locality_setting = \
+        client.by_id_setting(SETTING_DEFAULT_DATA_LOCALITY)
+    try:
+        client.update(default_data_locality_setting, value=&#34;disabled&#34;)
+    except Exception as e:
+        print(&#34;Exception when update Default Data Locality setting&#34;,
+              default_data_locality_setting, e)
 
     guaranteed_engine_cpu_setting = \
         client.by_id_setting(SETTING_GUARANTEED_ENGINE_CPU)
