@@ -139,6 +139,12 @@ def ha_rebuild_replica_test(client, volname):   # NOQA
 def test_ha_salvage(client, core_api, volume_name, disable_auto_salvage):  # NOQA
     """
     [HA] Test salvage when volume faulted
+    TODO
+    The test cases should cover the following four cases:
+    1. Manual salvage with revision counter enabled.
+    2. Manual salvage with revision counter disabled.
+    3. Auto salvage with revision counter enabled.
+    4. Auto salvage with revision counter enabled.
 
     Setting: Disable auto salvage
 
@@ -159,6 +165,39 @@ def test_ha_salvage(client, core_api, volume_name, disable_auto_salvage):  # NOQ
     Case 2: Crash all replica processes
 
     Same steps as Case 1 except on step 3, use SIGTERM to crash the processes
+
+    Setting: Enabled auto salvage.
+
+    Case 3: Revision counter disabled.
+
+    1. Set 'Automatic salvage' to true.
+    2. Set 'Disable Revision Counter' to true.
+    3. Create a volume with 3 replicas.
+    4. Attach the volume to a node and write some data to it and save the
+    checksum.
+    5. Delete all replica processes using instance manager or
+    crash all replica processes using SIGTERM.
+    6. Wait for volume to `faulted`, then `healthy`.
+    7. Verify there are 5 replicas, 3 good replicas
+        (one is from the first three replicas), and 2 failed replicas
+        (both are from the first three replicas).
+    8. Check the data in the volume and make sure it's the same as the
+    checksum saved on step 5.
+
+    Case 4: Revision counter enabled.
+
+    1. Set 'Automatic salvage' to true.
+    2. Set 'Disable Revision Counter' to false.
+    4. Create a volume with 3 replicas.
+    5. Attach the volume to a node and write some data to it and save the
+    checksum.
+    6. Delete all replica processes using instance manager or
+    crash all replica processes using SIGTERM.
+    7. Wait for volume to `faulted`, then `healthy`.
+    8. Verify there are 3 replicas, they are all from previous replicas.
+    9. Check the data in the volume and make sure it's the same as the
+    checksum saved on step 5.
+
     """
     ha_salvage_test(client, core_api, volume_name)
 

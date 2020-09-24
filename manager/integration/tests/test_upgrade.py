@@ -58,11 +58,17 @@ def test_upgrade(upgrade_image_tag, settings_reset, volume_name, csi_pv, pvc, po
     """
     Test Longhorn upgrade
 
+    TODO
+    The test will cover both volume has revision counter enabled and
+    disabled cases.
+
     Prerequisite:
       - Disable Auto Salvage Setting
 
     1. Find the upgrade image tag
     2. Create a volume, generate and write data into the volume.
+        1. Create a volume with revision counter enabled case.
+        2. Create a volume with revision counter disabled case.
     3. Create a Pod using a volume, generate and write data
     4. Create a StatefulSet with 2 replicas,
        generate and write data to their volumes
