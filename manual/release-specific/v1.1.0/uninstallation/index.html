@@ -251,80 +251,79 @@
 </aside>
 
 <main style="padding: 1%; width: 70%;">
-  <h1 id="title">Longhorn installation multiple times</h1>
+  <h1 id="title">Test uninstallation</h1>
   <div>
     <article id="content">
        <ol>
-<li>Create a cluster(3 worker nodes and 1 etc/control plane).</li>
-<li>Deploy the longhorn app.</li>
-<li>Once longhorn deployed successfully, uninstall longhorn.</li>
-<li>Repeat the steps 2 and 3 multiple times.</li>
-<li>Run the below script to install and uninstall longhorn continuously for some time.</li>
+<li>
+<p>Launch Longhorn system.</p>
+</li>
+<li>
+<p>Use scripts to continuously create then delete multiple DaemonSets.</p>
+<ul>
+<li>e.g., putting the following python test into the manager integration test directory and run it:</li>
+</ul>
+<pre><code>from common import get_apps_api_client # NOQA
+   
+   
+def test_uninstall_script():
+    apps_api = get_apps_api_client()
+    while True:
+        for i in range(10):
+            name = &quot;ds-&quot; + str(i)
+            try:
+                ds = apps_api.read_namespaced_daemon_set(name, &quot;default&quot;)
+                if ds.status.number_ready == ds.status.number_ready:
+                    apps_api.delete_namespaced_daemon_set(name, &quot;default&quot;)
+            except Exception:
+                apps_api.create_namespaced_daemon_set(
+                    &quot;default&quot;, ds_manifest(name))
+   
+   
+def ds_manifest(name):
+    return {
+        'apiVersion': 'apps/v1',
+        'kind': 'DaemonSet',
+        'metadata': {
+            'name': name
+        },
+        'spec': {
+            'selector': {
+                'matchLabels': {
+                    'app': name
+                }
+            },
+            'template': {
+                'metadata': {
+                    'labels': {
+                        'app': name
+                    }
+                },
+                'spec': {
+                    'terminationGracePeriodSeconds': 10,
+                    'containers': [{
+                        'image': 'busybox',
+                        'imagePullPolicy': 'IfNotPresent',
+                        'name': 'sleep',
+                        'args': [
+                            '/bin/sh',
+                            '-c',
+                            'while true;do date;sleep 5; done'
+                        ],
+                    }]
+                }
+            },
+        }
+    }
+</code></pre></li>
+<li>
+<p>Start to uninstall longhorn.</p>
+</li>
+<li>
+<p>Check if the uninstaller pod gets stuck there</p>
+</li>
 </ol>
-<pre><code>installcount=0
-while true;
- echo `date`
- do
-  kubectl apply -f https://raw.githubusercontent.com/longhorn/longhorn/master/deploy/longhorn.yaml
 
-  pod=`kubectl get pods -n longhorn-system | grep -i 'longhorn-manager' | grep -i 'running' | awk -F ' ' '{print $2}' | grep '1/1' | wc -l`
-  count=0
-  while [ $pod != 3 ];
-   do
-    sleep 5
-    pod=`kubectl get pods -n longhorn-system | grep -i 'longhorn-manager' | grep -i 'running' | awk -F ' ' '{print $2}' | grep '1/1' | wc -l`
-    echo `kubectl get pods -n longhorn-system | grep -i 'longhorn-manager'`
-    count=$((count+1))
-    if [ $count -gt 59 ]
-     then
-      echo 'longhorn installation failed'
-      exit
-    fi
-  done
-
-  sleep 30
- 
-  kubectl create -f https://raw.githubusercontent.com/longhorn/longhorn/master/uninstall/uninstall.yaml
-
-  poduninstall=`kubectl get job/longhorn-uninstall | grep '1/1' | wc -l`
-  uninstall=0
- while [ $poduninstall = 0 ];
-  do
-   sleep 10
-   poduninstall=`kubectl get job/longhorn-uninstall | grep '1/1' | wc -l`
-   echo `kubectl get job/longhorn-uninstall`
-   uninstall=$((uninstall+1))
-   if [ $uninstall -gt 24 ]  
-    then
-     echo 'Problem in unistall'
-     exit
-   fi
- done
- 
- kubectl delete -f https://raw.githubusercontent.com/longhorn/longhorn/master/deploy/longhorn.yaml
- sleep 3
-
- kubectl delete -f https://raw.githubusercontent.com/longhorn/longhorn/master/uninstall/uninstall.yaml
-
- nscount=0
- longhornns=`kubectl get namespace | grep -i 'longhorn-system' | wc -l`l
- while [ $longhornns != 0 ];
-  do
-   sleep 10
-   longhornns=`kubectl get namespace | grep -i 'longhorn-system' | wc -l`
-   nscount=$((nscount+1))
-   if [ $nscount -gt 18 ]
-    then
-     echo 'longhorn-system termination stuck'
-     exit
-   fi
- done
-
- installcount=$((installcount+1))
- echo 'Installation count = '
- echo $installcount
-done
-</code></pre>
     </article>
   </div>
 </main>

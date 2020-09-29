@@ -257,6 +257,17 @@ Case 1:  Disable the setting auto-salvage. Create and attach a volume. Keep writ
     </item>
     
     <item>
+      <title>Test uninstallation</title>
+      <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/uninstallation/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/uninstallation/</guid>
+      <description>Launch Longhorn system.
+  Use scripts to continuously create then delete multiple DaemonSets.
+ e.g., putting the following python test into the manager integration test directory and run it:  from common import get_apps_api_client # NOQA def test_uninstall_script(): apps_api = get_apps_api_client() while True: for i in range(10): name = &amp;quot;ds-&amp;quot; + str(i) try: ds = apps_api.read_namespaced_daemon_set(name, &amp;quot;default&amp;quot;) if ds.status.number_ready == ds.status.number_ready: apps_api.delete_namespaced_daemon_set(name, &amp;quot;default&amp;quot;) except Exception: apps_api.create_namespaced_daemon_set( &amp;quot;default&amp;quot;, ds_manifest(name)) def ds_manifest(name): return { &#39;apiVersion&#39;: &#39;apps/v1&#39;, &#39;kind&#39;: &#39;DaemonSet&#39;, &#39;metadata&#39;: { &#39;name&#39;: name }, &#39;spec&#39;: { &#39;selector&#39;: { &#39;matchLabels&#39;: { &#39;app&#39;: name } }, &#39;template&#39;: { &#39;metadata&#39;: { &#39;labels&#39;: { &#39;app&#39;: name } }, &#39;spec&#39;: { &#39;terminationGracePeriodSeconds&#39;: 10, &#39;containers&#39;: [{ &#39;image&#39;: &#39;busybox&#39;, &#39;imagePullPolicy&#39;: &#39;IfNotPresent&#39;, &#39;name&#39;: &#39;sleep&#39;, &#39;args&#39;: [ &#39;/bin/sh&#39;, &#39;-c&#39;, &#39;while true;do date;sleep 5; done&#39; ], }] } }, } }   Start to uninstall longhorn.</description>
+    </item>
+    
+    <item>
       <title>Testing ext4 with custom fs params1 (no 64bit, no metadata_csum)</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.0/suse-sles12sp3/ext4-custom-fs-params-1/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
