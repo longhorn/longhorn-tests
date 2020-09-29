@@ -57,6 +57,8 @@ from common import VOLUME_FIELD_ROBUSTNESS
 from common import VOLUME_ROBUSTNESS_HEALTHY
 from common import wait_for_volume_expansion
 from common import delete_and_wait_pvc, delete_and_wait_pv
+from common import wait_for_volume_replica_count
+from common import settings_reset # NOQA
 
 from backupstore import backupstore_cleanup
 from backupstore import backupstore_delete_random_backup_block
@@ -1962,8 +1964,7 @@ def test_rebuild_after_replica_file_crash(client, volume_name): # NOQA
     check_volume_data(volume, data)
 
 
-@pytest.mark.skip(reason="TODO")
-def test_extra_replica_cleanup():
+def test_extra_replica_cleanup(client, volume_name, settings_reset): # NOQA
     """
     Test extra failed to scheduled replica cleanup
     when no eviction requested
@@ -1979,4 +1980,42 @@ def test_extra_replica_cleanup():
     should be removed.
     8. Check the data in the volume and make sure it's same as the chechsum.
     """
-    pass
+    replica_node_soft_anti_affinity_setting = \
+        client.by_id_setting(SETTING_REPLICA_NODE_SOFT_ANTI_AFFINITY)
+    try:
+        client.update(replica_node_soft_anti_affinity_setting,
+                      value="false")
+    except Exception as e:
+        print("\nException when update "
+              "Replica Node Level Soft Anti-Affinity setting",
+              replica_node_soft_anti_affinity_setting)
+        print(e)
+
+    hostId = get_self_host_id()
+    volume = create_and_check_volume(client, volume_name, num_of_replicas=3)
+
+    volume = volume.attach(hostId=hostId)
+    volume = wait_for_volume_healthy(client, volume_name)
+    data = write_volume_random_data(volume)
+    volume = volume.updateReplicaCount(replicaCount=4)
+    wait_for_volume_replica_count(client, volume_name, 4)
+
+    volume = client.by_id_volume(volume_name)
+
+    err_replica = None
+    for replica in volume.replicas:
+        if replica.running is False:
+            err_replica = replica
+            break
+
+    assert err_replica is not None
+    assert err_replica.running is False
+    assert err_replica.mode == ""
+
+    volume = volume.updateReplicaCount(replicaCount=3)
+    wait_for_volume_replica_count(client, volume_name, 3)
+
+    volume = client.by_id_volume(volume_name)
+    assert volume.robustness == "healthy"
+
+    check_volume_data(volume, data)
