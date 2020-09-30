@@ -248,6 +248,17 @@ Case 1:  Disable the setting auto-salvage. Create and attach a volume. Keep writ
     </item>
     
     <item>
+      <title>Test Additional Printer Columns</title>
+      <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/additional-printer-columns/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/additional-printer-columns/</guid>
+      <description>For each of the case below:
+ Fresh installation of Longhorn. (make sure to delete all Longhorn CRDs before installation) Upgrade from older version.  Run:
+kubectl get &amp;lt;LONGHORN-CRD&amp;gt; -n longhorn-system Verify that the output contains information as specify in the additionalPrinerColumns at here</description>
+    </item>
+    
+    <item>
       <title>Test S3 backupstore in a cluster sitting behind a Http Proxy</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.1/test-s3-backupstore/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>

@@ -7,6 +7,17 @@
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language><atom:link href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/index.xml" rel="self" type="application/rss+xml" />
     <item>
+      <title>Test Additional Printer Columns</title>
+      <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/additional-printer-columns/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/additional-printer-columns/</guid>
+      <description>For each of the case below:
+ Fresh installation of Longhorn. (make sure to delete all Longhorn CRDs before installation) Upgrade from older version.  Run:
+kubectl get &amp;lt;LONGHORN-CRD&amp;gt; -n longhorn-system Verify that the output contains information as specify in the additionalPrinerColumns at here</description>
+    </item>
+    
+    <item>
       <title>Test uninstallation</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/uninstallation/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>

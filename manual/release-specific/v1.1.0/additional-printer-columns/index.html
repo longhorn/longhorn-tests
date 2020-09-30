@@ -254,23 +254,18 @@
 </aside>
 
 <main style="padding: 1%; width: 70%;">
-  <h1 id="title">Upgrade Conflict Handling test</h1>
+  <h1 id="title">Test Additional Printer Columns</h1>
   <div>
     <article id="content">
-       <h3 id="new-installation">New installation:</h3>
+       <p>For each of the case below:</p>
 <ol>
-<li>create a large cluster of many nodes (about 30 nodes)</li>
-<li>Install Longhorn <code>master</code></li>
+<li>Fresh installation of Longhorn. (make sure to delete all Longhorn CRDs before installation)</li>
+<li>Upgrade from older version.</li>
 </ol>
-<h3 id="upgrading-from-old-version">Upgrading from old version:</h3>
-<ol>
-<li>create a large cluster of many nodes (about 30 nodes)</li>
-<li>Install Longhorn v1.0.0</li>
-<li>Upgrade Longhorn to <code>master</code></li>
-</ol>
-<p><strong>Success if:</strong> install/upgrade successfully after maximum 15 minutes.</p>
-<p><strong>Fail if:</strong> The upgrading is blocked after about 17-20 managers are up.</p>
-<p><strong>Note:</strong> This is a race condition, so we need to try multiple times to validate the fix.</p>
+<p>Run:</p>
+<pre><code>kubectl get &lt;LONGHORN-CRD&gt; -n longhorn-system
+</code></pre><p>Verify that the output contains information as specify in the <code>additionalPrinerColumns</code>
+at <a href="https://github.com/longhorn/longhorn-manager/blob/master/deploy/install/01-prerequisite/03-crd.yaml">here</a></p>
 
     </article>
   </div>
