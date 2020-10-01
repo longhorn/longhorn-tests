@@ -167,6 +167,12 @@ def ha_rebuild_replica_test(client, volname):   # NOQA
 def test_ha_salvage(client, core_api, volume_name, disable_auto_salvage):  # NOQA
     &#34;&#34;&#34;
     [HA] Test salvage when volume faulted
+    TODO
+    The test cases should cover the following four cases:
+    1. Manual salvage with revision counter enabled.
+    2. Manual salvage with revision counter disabled.
+    3. Auto salvage with revision counter enabled.
+    4. Auto salvage with revision counter enabled.
 
     Setting: Disable auto salvage
 
@@ -187,6 +193,39 @@ def test_ha_salvage(client, core_api, volume_name, disable_auto_salvage):  # NOQ
     Case 2: Crash all replica processes
 
     Same steps as Case 1 except on step 3, use SIGTERM to crash the processes
+
+    Setting: Enabled auto salvage.
+
+    Case 3: Revision counter disabled.
+
+    1. Set &#39;Automatic salvage&#39; to true.
+    2. Set &#39;Disable Revision Counter&#39; to true.
+    3. Create a volume with 3 replicas.
+    4. Attach the volume to a node and write some data to it and save the
+    checksum.
+    5. Delete all replica processes using instance manager or
+    crash all replica processes using SIGTERM.
+    6. Wait for volume to `faulted`, then `healthy`.
+    7. Verify there are 5 replicas, 3 good replicas
+        (one is from the first three replicas), and 2 failed replicas
+        (both are from the first three replicas).
+    8. Check the data in the volume and make sure it&#39;s the same as the
+    checksum saved on step 5.
+
+    Case 4: Revision counter enabled.
+
+    1. Set &#39;Automatic salvage&#39; to true.
+    2. Set &#39;Disable Revision Counter&#39; to false.
+    4. Create a volume with 3 replicas.
+    5. Attach the volume to a node and write some data to it and save the
+    checksum.
+    6. Delete all replica processes using instance manager or
+    crash all replica processes using SIGTERM.
+    7. Wait for volume to `faulted`, then `healthy`.
+    8. Verify there are 3 replicas, they are all from previous replicas.
+    9. Check the data in the volume and make sure it&#39;s the same as the
+    checksum saved on step 5.
+
     &#34;&#34;&#34;
     ha_salvage_test(client, core_api, volume_name)
 
@@ -2959,7 +2998,13 @@ restored backup.</p></div>
 <span>def <span class="ident">test_ha_salvage</span></span>(<span>client, core_api, volume_name, disable_auto_salvage)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>[HA] Test salvage when volume faulted</p>
+<div class="desc"><p>[HA] Test salvage when volume faulted
+TODO
+The test cases should cover the following four cases:
+1. Manual salvage with revision counter enabled.
+2. Manual salvage with revision counter disabled.
+3. Auto salvage with revision counter enabled.
+4. Auto salvage with revision counter enabled.</p>
 <p>Setting: Disable auto salvage</p>
 <p>Case 1: Delete all replica processes using instance manager</p>
 <ol>
@@ -2978,7 +3023,38 @@ last replica is not allowed to be deleted</li>
 <li>Attach the volume and check <code>data</code></li>
 </ol>
 <p>Case 2: Crash all replica processes</p>
-<p>Same steps as Case 1 except on step 3, use SIGTERM to crash the processes</p></div>
+<p>Same steps as Case 1 except on step 3, use SIGTERM to crash the processes</p>
+<p>Setting: Enabled auto salvage.</p>
+<p>Case 3: Revision counter disabled.</p>
+<ol>
+<li>Set 'Automatic salvage' to true.</li>
+<li>Set 'Disable Revision Counter' to true.</li>
+<li>Create a volume with 3 replicas.</li>
+<li>Attach the volume to a node and write some data to it and save the
+checksum.</li>
+<li>Delete all replica processes using instance manager or
+crash all replica processes using SIGTERM.</li>
+<li>Wait for volume to <code>faulted</code>, then <code>healthy</code>.</li>
+<li>Verify there are 5 replicas, 3 good replicas
+(one is from the first three replicas), and 2 failed replicas
+(both are from the first three replicas).</li>
+<li>Check the data in the volume and make sure it's the same as the
+checksum saved on step 5.</li>
+</ol>
+<p>Case 4: Revision counter enabled.</p>
+<ol>
+<li>Set 'Automatic salvage' to true.</li>
+<li>Set 'Disable Revision Counter' to false.</li>
+<li>Create a volume with 3 replicas.</li>
+<li>Attach the volume to a node and write some data to it and save the
+checksum.</li>
+<li>Delete all replica processes using instance manager or
+crash all replica processes using SIGTERM.</li>
+<li>Wait for volume to <code>faulted</code>, then <code>healthy</code>.</li>
+<li>Verify there are 3 replicas, they are all from previous replicas.</li>
+<li>Check the data in the volume and make sure it's the same as the
+checksum saved on step 5.</li>
+</ol></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -2987,6 +3063,12 @@ last replica is not allowed to be deleted</li>
 def test_ha_salvage(client, core_api, volume_name, disable_auto_salvage):  # NOQA
     &#34;&#34;&#34;
     [HA] Test salvage when volume faulted
+    TODO
+    The test cases should cover the following four cases:
+    1. Manual salvage with revision counter enabled.
+    2. Manual salvage with revision counter disabled.
+    3. Auto salvage with revision counter enabled.
+    4. Auto salvage with revision counter enabled.
 
     Setting: Disable auto salvage
 
@@ -3007,6 +3089,39 @@ def test_ha_salvage(client, core_api, volume_name, disable_auto_salvage):  # NOQ
     Case 2: Crash all replica processes
 
     Same steps as Case 1 except on step 3, use SIGTERM to crash the processes
+
+    Setting: Enabled auto salvage.
+
+    Case 3: Revision counter disabled.
+
+    1. Set &#39;Automatic salvage&#39; to true.
+    2. Set &#39;Disable Revision Counter&#39; to true.
+    3. Create a volume with 3 replicas.
+    4. Attach the volume to a node and write some data to it and save the
+    checksum.
+    5. Delete all replica processes using instance manager or
+    crash all replica processes using SIGTERM.
+    6. Wait for volume to `faulted`, then `healthy`.
+    7. Verify there are 5 replicas, 3 good replicas
+        (one is from the first three replicas), and 2 failed replicas
+        (both are from the first three replicas).
+    8. Check the data in the volume and make sure it&#39;s the same as the
+    checksum saved on step 5.
+
+    Case 4: Revision counter enabled.
+
+    1. Set &#39;Automatic salvage&#39; to true.
+    2. Set &#39;Disable Revision Counter&#39; to false.
+    4. Create a volume with 3 replicas.
+    5. Attach the volume to a node and write some data to it and save the
+    checksum.
+    6. Delete all replica processes using instance manager or
+    crash all replica processes using SIGTERM.
+    7. Wait for volume to `faulted`, then `healthy`.
+    8. Verify there are 3 replicas, they are all from previous replicas.
+    9. Check the data in the volume and make sure it&#39;s the same as the
+    checksum saved on step 5.
+
     &#34;&#34;&#34;
     ha_salvage_test(client, core_api, volume_name)</code></pre>
 </details>
