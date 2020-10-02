@@ -7,6 +7,16 @@
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language><atom:link href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/index.xml" rel="self" type="application/rss+xml" />
     <item>
+      <title>Prometheus Support</title>
+      <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/prometheus_support/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/prometheus_support/</guid>
+      <description>Prometheus Support allows user to monitor the longhorn metrics. The details are available at https://longhorn.io/docs/1.1.0/monitoring/
+Monitor longhorn  Deploy the Prometheus-operator, ServiceMonitor pointing to longhorn-backend and Prometheus as mentioned in the doc. Create an ingress pointing to Prometheus service. Access the Prometheus web UI using the ingress created in the step 2. Select the metrics from below to monitor the longhorn resources.  longhorn_volume_capacity_bytes longhorn_volume_actual_size_bytes longhorn_volume_state longhorn_volume_robustness longhorn_instance_manager_cpu_requests_millicpu longhorn_instance_manager_cpu_usage_millicpu longhorn_instance_manager_memory_requests_bytes longhorn_instance_manager_memory_usage_bytes longhorn_manager_cpu_usage_millicpu longhorn_manager_memory_usage_bytes longhorn_node_count_total longhorn_node_status longhorn_node_cpu_capacity_millicpu longhorn_node_cpu_usage_millicpu longhorn_node_memory_capacity_bytes longhorn_node_memory_usage_bytes   Deploy workloads which use Longhorn volumes into the cluster.</description>
+    </item>
+    
+    <item>
       <title>Test Additional Printer Columns</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/additional-printer-columns/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
