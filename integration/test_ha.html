@@ -85,6 +85,8 @@ from common import VOLUME_FIELD_ROBUSTNESS
 from common import VOLUME_ROBUSTNESS_HEALTHY
 from common import wait_for_volume_expansion
 from common import delete_and_wait_pvc, delete_and_wait_pv
+from common import wait_for_volume_replica_count
+from common import settings_reset # NOQA
 
 from backupstore import backupstore_cleanup
 from backupstore import backupstore_delete_random_backup_block
@@ -1990,8 +1992,7 @@ def test_rebuild_after_replica_file_crash(client, volume_name): # NOQA
     check_volume_data(volume, data)
 
 
-@pytest.mark.skip(reason=&#34;TODO&#34;)
-def test_extra_replica_cleanup():
+def test_extra_replica_cleanup(client, volume_name, settings_reset): # NOQA
     &#34;&#34;&#34;
     Test extra failed to scheduled replica cleanup
     when no eviction requested
@@ -2007,7 +2008,45 @@ def test_extra_replica_cleanup():
     should be removed.
     8. Check the data in the volume and make sure it&#39;s same as the chechsum.
     &#34;&#34;&#34;
-    pass</code></pre>
+    replica_node_soft_anti_affinity_setting = \
+        client.by_id_setting(SETTING_REPLICA_NODE_SOFT_ANTI_AFFINITY)
+    try:
+        client.update(replica_node_soft_anti_affinity_setting,
+                      value=&#34;false&#34;)
+    except Exception as e:
+        print(&#34;\nException when update &#34;
+              &#34;Replica Node Level Soft Anti-Affinity setting&#34;,
+              replica_node_soft_anti_affinity_setting)
+        print(e)
+
+    hostId = get_self_host_id()
+    volume = create_and_check_volume(client, volume_name, num_of_replicas=3)
+
+    volume = volume.attach(hostId=hostId)
+    volume = wait_for_volume_healthy(client, volume_name)
+    data = write_volume_random_data(volume)
+    volume = volume.updateReplicaCount(replicaCount=4)
+    wait_for_volume_replica_count(client, volume_name, 4)
+
+    volume = client.by_id_volume(volume_name)
+
+    err_replica = None
+    for replica in volume.replicas:
+        if replica.running is False:
+            err_replica = replica
+            break
+
+    assert err_replica is not None
+    assert err_replica.running is False
+    assert err_replica.mode == &#34;&#34;
+
+    volume = volume.updateReplicaCount(replicaCount=3)
+    wait_for_volume_replica_count(client, volume_name, 3)
+
+    volume = client.by_id_volume(volume_name)
+    assert volume.robustness == &#34;healthy&#34;
+
+    check_volume_data(volume, data)</code></pre>
 </details>
 </section>
 <section>
@@ -2783,7 +2822,7 @@ volume.conditions[restore].reason == "RestoreInProgress"</code>.</li>
 </details>
 </dd>
 <dt id="tests.test_ha.test_extra_replica_cleanup"><code class="name flex">
-<span>def <span class="ident">test_extra_replica_cleanup</span></span>(<span>)</span>
+<span>def <span class="ident">test_extra_replica_cleanup</span></span>(<span>client, volume_name, settings_reset)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Test extra failed to scheduled replica cleanup
@@ -2804,8 +2843,7 @@ should be removed.</li>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">@pytest.mark.skip(reason=&#34;TODO&#34;)
-def test_extra_replica_cleanup():
+<pre><code class="python">def test_extra_replica_cleanup(client, volume_name, settings_reset): # NOQA
     &#34;&#34;&#34;
     Test extra failed to scheduled replica cleanup
     when no eviction requested
@@ -2821,7 +2859,45 @@ def test_extra_replica_cleanup():
     should be removed.
     8. Check the data in the volume and make sure it&#39;s same as the chechsum.
     &#34;&#34;&#34;
-    pass</code></pre>
+    replica_node_soft_anti_affinity_setting = \
+        client.by_id_setting(SETTING_REPLICA_NODE_SOFT_ANTI_AFFINITY)
+    try:
+        client.update(replica_node_soft_anti_affinity_setting,
+                      value=&#34;false&#34;)
+    except Exception as e:
+        print(&#34;\nException when update &#34;
+              &#34;Replica Node Level Soft Anti-Affinity setting&#34;,
+              replica_node_soft_anti_affinity_setting)
+        print(e)
+
+    hostId = get_self_host_id()
+    volume = create_and_check_volume(client, volume_name, num_of_replicas=3)
+
+    volume = volume.attach(hostId=hostId)
+    volume = wait_for_volume_healthy(client, volume_name)
+    data = write_volume_random_data(volume)
+    volume = volume.updateReplicaCount(replicaCount=4)
+    wait_for_volume_replica_count(client, volume_name, 4)
+
+    volume = client.by_id_volume(volume_name)
+
+    err_replica = None
+    for replica in volume.replicas:
+        if replica.running is False:
+            err_replica = replica
+            break
+
+    assert err_replica is not None
+    assert err_replica.running is False
+    assert err_replica.mode == &#34;&#34;
+
+    volume = volume.updateReplicaCount(replicaCount=3)
+    wait_for_volume_replica_count(client, volume_name, 3)
+
+    volume = client.by_id_volume(volume_name)
+    assert volume.robustness == &#34;healthy&#34;
+
+    check_volume_data(volume, data)</code></pre>
 </details>
 </dd>
 <dt id="tests.test_ha.test_ha_backup_deletion_recovery"><code class="name flex">
