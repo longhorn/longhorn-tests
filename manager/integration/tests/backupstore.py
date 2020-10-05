@@ -209,6 +209,7 @@ def backupstore_get_backup_volume_prefix(client, volume_name):
 
     elif is_backupTarget_nfs(backupstore):
         return nfs_get_backup_volume_prefix(client, volume_name)
+
     else:
         raise NotImplementedError
 
@@ -246,6 +247,9 @@ def backupstore_get_backup_cfg_file_path(client, volume_name, backup_name):
     elif is_backupTarget_nfs(backupstore):
         return nfs_get_backup_cfg_file_path(client, volume_name, backup_name)
 
+    else:
+        raise NotImplementedError
+
 
 def minio_get_backup_cfg_file_path(volume_name, backup_name):
     prefix = minio_get_backup_volume_prefix(volume_name)
@@ -266,6 +270,9 @@ def backupstore_get_volume_cfg_file_path(client, volume_name):
     elif is_backupTarget_nfs(backupstore):
         return nfs_get_volume_cfg_file_path(client, volume_name)
 
+    else:
+        raise NotImplementedError
+
 
 def nfs_get_volume_cfg_file_path(client, volume_name):
     prefix = nfs_get_backup_volume_prefix(client, volume_name)
@@ -285,6 +292,9 @@ def backupstore_get_backup_blocks_dir(client, volume_name):
 
     elif is_backupTarget_nfs(backupstore):
         return nfs_get_backup_blocks_dir(client, volume_name)
+
+    else:
+        raise NotImplementedError
 
 
 def minio_get_backup_blocks_dir(volume_name):
@@ -358,6 +368,9 @@ def backupstore_write_backup_cfg_file(client, core_api, volume_name, backup_name
                                   volume_name,
                                   backup_name,
                                   data)
+
+    else:
+        raise NotImplementedError
 
 
 def nfs_write_backup_cfg_file(client, volume_name, backup_name, data):
@@ -445,6 +458,9 @@ def backupstore_delete_backup_cfg_file(client, core_api, volume_name, backup_nam
     elif is_backupTarget_nfs(backupstore):
         nfs_delete_backup_cfg_file(client, volume_name, backup_name)
 
+    else:
+        raise NotImplementedError
+
 
 def nfs_delete_backup_cfg_file(client, volume_name, backup_name):
     nfs_backup_cfg_file_path = nfs_get_backup_cfg_file_path(client,
@@ -483,6 +499,9 @@ def backupstore_delete_volume_cfg_file(client, core_api, volume_name):  # NOQA
 
     elif is_backupTarget_nfs(backupstore):
         nfs_delete_volume_cfg_file(client, volume_name)
+
+    else:
+        raise NotImplementedError
 
 
 def nfs_delete_volume_cfg_file(client, volume_name):
@@ -546,6 +565,9 @@ def backupstore_delete_random_backup_block(client, core_api, volume_name):
     elif is_backupTarget_nfs(backupstore):
         nfs_delete_random_backup_block(client, volume_name)
 
+    else:
+        raise NotImplementedError
+
 
 def nfs_delete_random_backup_block(client, volume_name):
     backup_blocks_dir = nfs_get_backup_blocks_dir(client, volume_name)
@@ -591,6 +613,9 @@ def backupstore_count_backup_block_files(client, core_api, volume_name):
 
     elif is_backupTarget_nfs(backupstore):
         return nfs_count_backup_block_files(client, volume_name)
+
+    else:
+        raise NotImplementedError
 
 
 def nfs_count_backup_block_files(client, volume_name):
