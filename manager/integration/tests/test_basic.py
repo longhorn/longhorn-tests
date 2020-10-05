@@ -2742,3 +2742,111 @@ def test_dr_volume_with_last_backup_deletion(
     delete_and_wait_pod(core_api, dr_pod_name)
     delete_and_wait_pod(core_api, dr2_pod_name)
     client.delete(bv)
+
+
+@pytest.mark.skip(reason="TODO")
+def test_backup_lock_deletion_during_restoration():  # NOQA
+    """
+    Test backup locks
+    Context:
+    To test the locking mechanism that utilizes the backupstore,
+    to prevent the following case of concurrent operations.
+    - prevent backup deletion during backup restoration
+
+    steps:
+    1. Create a volume, then create the corresponding PV, PVC and Pod.
+    2. Wait for the pod running and the volume healthy.
+    3. Write data to the pod volume and get the md5sum.
+    4. Take a backup.
+    5. Wait for the backup to be completed.
+    6. Start backup restoration for the backup creation.
+    7. Wait for restoration to be in progress.
+    8. Delete the backup from the backup store.
+    9. Wait for the restoration to be completed.
+    10. Assert the data from the restored volume with md5sum.
+    11. Assert the backup count in the backup store with 1.
+       (The backup should not be deleted)
+    """
+    pass
+
+
+@pytest.mark.skip(reason="TODO")
+def test_backup_lock_deletion_during_backup():  # NOQA
+    """
+    Test backup locks
+    Context:
+    To test the locking mechanism that utilizes the backupstore,
+    to prevent the following case of concurrent operations.
+    - prevent backup deletion while a backup is in progress
+
+    steps:
+    1. Create a volume, then create the corresponding PV, PVC and Pod.
+    2. Wait for the pod running and the volume healthy.
+    3. Write data to the pod volume and get the md5sum.
+    4. Take a backup.
+    5. Wait for the backup to be completed.
+    6. Write more data into the volume and compute md5sum.
+    7. Take another backup of the volume.
+    8. While backup is in progress, delete the older backup up.
+    9. Wait for the backup creation in progress to be completed.
+    10. Check the backup store, there should be 2 backups.
+       (The older backup should not be deleted)
+    11. Restore the latest backup.
+    12. Wait for the restoration to be completed. Assert md5sum from step 6.
+    12. Restore the older backup.
+    13. Wait for the restoration to be completed. Assert md5sum from step 3.
+    """
+    pass
+
+
+@pytest.mark.skip(reason="TODO")
+def test_backup_lock_creation_during_deletion():  # NOQA
+    """
+    Test backup locks
+    Context:
+    To test the locking mechanism that utilizes the backupstore,
+    to prevent the following case of concurrent operations.
+    - prevent backup creation during backup deletion
+
+    steps:
+    1. Create a volume, then create the corresponding PV, PVC and Pod.
+    2. Wait for the pod running and the volume healthy.
+    3. Write data (DATA_SIZE_IN_MB_4) to the pod volume and get the md5sum.
+    4. Take a backup.
+    5. Wait for the backup to be completed.
+    6. Delete the backup.
+    7. Without waiting for the backup deletion completion, create another
+       backup of the same volume.
+    8. Verify the API response of the backup creation containing the backup
+       creation failure info.
+    9. Wait for the backup deletion and assert there is 0 backup in the backup
+       store.
+    """
+    pass
+
+
+@pytest.mark.skip(reason="TODO")
+def test_backup_lock_restoration_during_deletion():  # NOQA
+    """
+    Test backup locks
+    Context:
+    To test the locking mechanism that utilizes the backupstore,
+    to prevent the following case of concurrent operations.
+    - prevent backup restoration during backup deletion
+
+    steps:
+    1. Create a volume, then create the corresponding PV, PVC and Pod.
+    2. Wait for the pod running and the volume healthy.
+    3. Write data (DATA_SIZE_IN_MB_4) to the pod volume and get the md5sum.
+    4. Take a backup.
+    5. Wait for the backup to be completed.
+    6. Write more data to the volume and take another backup.
+    7. Wait for the 2nd backup to be completed.
+    6. Delete the 1st backup.
+    7. Without waiting for the backup deletion completion, restore the 2nd
+       backup from the backup store.
+    8. Verify the restored volume become faulted.
+    9. Wait for the 1st backup deletion and assert the count of the backups
+       with 1 in the backup store.
+    """
+    pass
