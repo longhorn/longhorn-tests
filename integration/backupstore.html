@@ -27,6 +27,7 @@
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">import os
+import time
 import base64
 import hashlib
 import json
@@ -46,6 +47,7 @@ from common import get_longhorn_api_client
 from common import delete_backup_volume
 
 BACKUPSTORE_BV_PREFIX = &#34;/backupstore/volumes/&#34;
+BACKUPSTORE_LOCK_DURATION = 150
 
 
 TEMP_FILE_PATH = &#34;/tmp/temp_file&#34;
@@ -522,7 +524,16 @@ def minio_count_backup_block_files(client, core_api, volume_name):
 
     block_object_files_list = list(block_object_files)
 
-    return len(block_object_files_list)</code></pre>
+    return len(block_object_files_list)
+
+
+def backupstore_wait_for_lock_expiration():
+    &#34;&#34;&#34;
+    waits 150 seconds which is the lock duration
+    TODO: once we have implemented the delete functions,
+          we can switch to removing the locks directly
+    &#34;&#34;&#34;
+    time.sleep(BACKUPSTORE_LOCK_DURATION)</code></pre>
 </details>
 </section>
 <section>
@@ -842,6 +853,26 @@ def minio_count_backup_block_files(client, core_api, volume_name):
 
     elif is_backupTarget_nfs(backupstore):
         return nfs_get_volume_cfg_file_path(client, volume_name)</code></pre>
+</details>
+</dd>
+<dt id="tests.backupstore.backupstore_wait_for_lock_expiration"><code class="name flex">
+<span>def <span class="ident">backupstore_wait_for_lock_expiration</span></span>(<span>)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>waits 150 seconds which is the lock duration
+TODO: once we have implemented the delete functions,
+we can switch to removing the locks directly</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def backupstore_wait_for_lock_expiration():
+    &#34;&#34;&#34;
+    waits 150 seconds which is the lock duration
+    TODO: once we have implemented the delete functions,
+          we can switch to removing the locks directly
+    &#34;&#34;&#34;
+    time.sleep(BACKUPSTORE_LOCK_DURATION)</code></pre>
 </details>
 </dd>
 <dt id="tests.backupstore.backupstore_write_backup_cfg_file"><code class="name flex">
@@ -1409,6 +1440,7 @@ def minio_count_backup_block_files(client, core_api, volume_name):
 <li><code><a title="tests.backupstore.backupstore_get_backup_target" href="#tests.backupstore.backupstore_get_backup_target">backupstore_get_backup_target</a></code></li>
 <li><code><a title="tests.backupstore.backupstore_get_secret" href="#tests.backupstore.backupstore_get_secret">backupstore_get_secret</a></code></li>
 <li><code><a title="tests.backupstore.backupstore_get_volume_cfg_file_path" href="#tests.backupstore.backupstore_get_volume_cfg_file_path">backupstore_get_volume_cfg_file_path</a></code></li>
+<li><code><a title="tests.backupstore.backupstore_wait_for_lock_expiration" href="#tests.backupstore.backupstore_wait_for_lock_expiration">backupstore_wait_for_lock_expiration</a></code></li>
 <li><code><a title="tests.backupstore.backupstore_write_backup_cfg_file" href="#tests.backupstore.backupstore_write_backup_cfg_file">backupstore_write_backup_cfg_file</a></code></li>
 <li><code><a title="tests.backupstore.get_nfs_mount_point" href="#tests.backupstore.get_nfs_mount_point">get_nfs_mount_point</a></code></li>
 <li><code><a title="tests.backupstore.minio_count_backup_block_files" href="#tests.backupstore.minio_count_backup_block_files">minio_count_backup_block_files</a></code></li>
