@@ -380,3 +380,42 @@ def test_recurring_jobs_maximum_retain(client, core_api, volume_name): # NOQA
     assert len(volume.recurringJobs) == 2
     assert volume.recurringJobs[0]['retain'] == 30
     assert volume.recurringJobs[1]['retain'] == 20
+
+
+@pytest.mark.skip(reason="TODO")
+def test_recurring_jobs_for_detached_volume():  # NOQA
+    """
+    Test recurring jobs for detached volume
+
+    Context:
+    In the current Longhorn implementation, users cannot do recurring
+    backup when volumes are detached.
+    This feature gives the users an option to do recurring backup even when
+    volumes are detached.
+    longhorn/longhorn#1509
+
+    Steps:
+    1.  Change the setting allow-recurring-job-while-volume-detached to true
+    2.  Create a volume-1, attach to node-1, write 50MB data to the volume-1.
+    3.  Detach the volume
+    4.  Set the recurring backup for the volume on every minute
+    5.  In a 4-mintute retry loop, verify that there is exactly 1 new backup
+    6.  Delete the recurring backup
+
+    7.  Create a PVC from the volume
+    8.  Create a deployment of 1 pod using the PVC
+    9.  Write 400MB data to the volume from the pod.
+    10. Scale down the deployment. Wait until the volume is detached.
+    11. Set the recurring backup for every 2 minutes.
+    12. Wait util the recurring backup starts, scale up the deployment to 1
+        pod.
+    13. Verify that during the recurring backup, the volume's frontend is
+        disabled, and pod cannot start.
+    14. Wait for the recurring backup finishes.
+        Delete the recurring backup
+    15. In a 6-mintute retry loop, verify that the pod can eventually start.
+
+    16. Change the setting allow-recurring-job-while-volume-detached to false
+    17. cleanup
+    """
+    pass
