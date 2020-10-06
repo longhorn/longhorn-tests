@@ -260,27 +260,32 @@
 </aside>
 
 <main style="padding: 1%; width: 70%;">
-  <header class="homepage-header">
-    <h1>Upgrade</h1>
-    
-  </header>
-  <div class="homepage-content">
-    
-  </div>
+  <h1 id="title">Support Kubelet Volume Metrics</h1>
   <div>
-    <ul>
+    <article id="content">
+       <h2 id="intro">Intro</h2>
+<p>Kubelet exposes <a href="https://github.com/kubernetes/kubernetes/blob/4b24dca228d61f4d13dcd57b46465b0df74571f6/pkg/kubelet/metrics/collectors/volume_stats.go#L27">kubelet_volume_stats_* metrics</a>.
+Those metrics measure PVC&rsquo;s filesystem related information inside a Longhorn block device.</p>
+<h2 id="test-steps">Test steps:</h2>
+<ol>
+<li>Create a cluster and set up this monitoring system: <a href="https://github.com/prometheus-community/helm-charts/tree/main/charts/kube-prometheus-stack">https://github.com/prometheus-community/helm-charts/tree/main/charts/kube-prometheus-stack</a></li>
+<li>Install Longhorn. Deploy some workloads using Longhorn volumes.
+Make sure there are some workloads using Longhorn PVCs in  <code>volumeMode: Block</code> and some workloads using Longhorn PVCs in <code>volumeMode: Filesystem</code>.
+See <a href="https://longhorn.io/docs/1.0.2/references/examples/">https://longhorn.io/docs/1.0.2/references/examples/</a> for examples.</li>
+<li>Create ingress to Prometheus server and Grafana.</li>
+<li>Navigate to Prometheus server, verify that all Longhorn PVCs in <code>volumeMode: Filesystem</code> show up in metrics: <code>kubelet_volume_stats_capacity_bytes kubelet_volume_stats_available_bytes kubelet_volume_stats_used_bytes kubelet_volume_stats_inodes kubelet_volume_stats_inodes_free kubelet_volume_stats_inodes_used</code>.<br>
+Verify that all Longhorn PVCs in <code>volumeMode: Block</code> do not show up.</li>
+<li>Write/Delete files in Longhorn volumes.
+Verify that the Prometheus server shows the correct status of Longhorn PVCs.
+Verify that alerts get fired when we go above <a href="https://github.com/prometheus-community/helm-charts/blob/main/charts/kube-prometheus-stack/templates/prometheus/rules/kubernetes-storage.yaml?rgh-link-date=2020-09-24T13%3A00%3A06Z">the thresholds</a></li>
+<li>Navigate to Grafana, navigate to <code>Kubernetes/Persistent Volumes</code> dashboard.
+Verify that graphs report correct data.</li>
+<li>Negative test case:
+use Longhorn UI to delete a volume of a running pod,
+verify that the PVC corresponding volume still exists but it stops showing up in <code>kubelet_volume_stats_*</code> metrics</li>
+</ol>
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/kubernetes-upgrade-test/">Kubernetes upgrade test</a></li>
-  
-
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/longhorn-upgrade-test/">Longhorn Upgrade test</a></li>
-  
-
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/upgrade-conflict-handling/">Upgrade Conflict Handling test</a></li>
-  
-
-</ul>
-
+    </article>
   </div>
 </main>
 

@@ -17,6 +17,16 @@ Monitor longhorn  Deploy the Prometheus-operator, ServiceMonitor pointing to lon
     </item>
     
     <item>
+      <title>Support Kubelet Volume Metrics</title>
+      <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/kubelet_volume_metrics/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/kubelet_volume_metrics/</guid>
+      <description>Intro Kubelet exposes kubelet_volume_stats_* metrics. Those metrics measure PVC&amp;rsquo;s filesystem related information inside a Longhorn block device.
+Test steps:  Create a cluster and set up this monitoring system: https://github.com/prometheus-community/helm-charts/tree/main/charts/kube-prometheus-stack Install Longhorn. Deploy some workloads using Longhorn volumes. Make sure there are some workloads using Longhorn PVCs in volumeMode: Block and some workloads using Longhorn PVCs in volumeMode: Filesystem. See https://longhorn.io/docs/1.0.2/references/examples/ for examples. Create ingress to Prometheus server and Grafana. Navigate to Prometheus server, verify that all Longhorn PVCs in volumeMode: Filesystem show up in metrics: kubelet_volume_stats_capacity_bytes kubelet_volume_stats_available_bytes kubelet_volume_stats_used_bytes kubelet_volume_stats_inodes kubelet_volume_stats_inodes_free kubelet_volume_stats_inodes_used.</description>
+    </item>
+    
+    <item>
       <title>Test Additional Printer Columns</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/additional-printer-columns/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
