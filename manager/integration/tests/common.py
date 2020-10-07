@@ -2157,6 +2157,24 @@ def wait_for_backup_completion(client, volume_name, snapshot_name,
     return v
 
 
+def wait_for_backup_to_start(client, volume_name, snapshot_name,
+                             retry_count=RETRY_BACKUP_COUNTS):
+    in_progress = False
+    for i in range(retry_count):
+        v = client.by_id_volume(volume_name)
+        for b in v.backupStatus:
+            if b.snapshot == snapshot_name and b.state == "in_progress":
+                assert b.progress > 0
+                assert b.error == ""
+                in_progress = True
+                break
+        if in_progress:
+            break
+        time.sleep(RETRY_BACKUP_INTERVAL)
+    assert in_progress is True
+    return v
+
+
 def wait_for_backup_state(client, volume_name, predicate,
                           retry_count=RETRY_BACKUP_COUNTS):
     completed = False
