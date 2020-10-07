@@ -407,7 +407,46 @@ def test_recurring_jobs_maximum_retain(client, core_api, volume_name): # NOQA
 
     assert len(volume.recurringJobs) == 2
     assert volume.recurringJobs[0][&#39;retain&#39;] == 30
-    assert volume.recurringJobs[1][&#39;retain&#39;] == 20</code></pre>
+    assert volume.recurringJobs[1][&#39;retain&#39;] == 20
+
+
+@pytest.mark.skip(reason=&#34;TODO&#34;)
+def test_recurring_jobs_for_detached_volume():  # NOQA
+    &#34;&#34;&#34;
+    Test recurring jobs for detached volume
+
+    Context:
+    In the current Longhorn implementation, users cannot do recurring
+    backup when volumes are detached.
+    This feature gives the users an option to do recurring backup even when
+    volumes are detached.
+    longhorn/longhorn#1509
+
+    Steps:
+    1.  Change the setting allow-recurring-job-while-volume-detached to true
+    2.  Create a volume-1, attach to node-1, write 50MB data to the volume-1.
+    3.  Detach the volume
+    4.  Set the recurring backup for the volume on every minute
+    5.  In a 4-mintute retry loop, verify that there is exactly 1 new backup
+    6.  Delete the recurring backup
+
+    7.  Create a PVC from the volume
+    8.  Create a deployment of 1 pod using the PVC
+    9.  Write 400MB data to the volume from the pod.
+    10. Scale down the deployment. Wait until the volume is detached.
+    11. Set the recurring backup for every 2 minutes.
+    12. Wait util the recurring backup starts, scale up the deployment to 1
+        pod.
+    13. Verify that during the recurring backup, the volume&#39;s frontend is
+        disabled, and pod cannot start.
+    14. Wait for the recurring backup finishes.
+        Delete the recurring backup
+    15. In a 6-mintute retry loop, verify that the pod can eventually start.
+
+    16. Change the setting allow-recurring-job-while-volume-detached to false
+    17. cleanup
+    &#34;&#34;&#34;
+    pass</code></pre>
 </details>
 </section>
 <section>
@@ -871,6 +910,93 @@ def test_recurring_job_labels(client, random_labels, volume_name):  # NOQA
     recurring_job_labels_test(client, random_labels, volume_name)</code></pre>
 </details>
 </dd>
+<dt id="tests.test_recurring_job.test_recurring_jobs_for_detached_volume"><code class="name flex">
+<span>def <span class="ident">test_recurring_jobs_for_detached_volume</span></span>(<span>)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test recurring jobs for detached volume</p>
+<p>Context:
+In the current Longhorn implementation, users cannot do recurring
+backup when volumes are detached.
+This feature gives the users an option to do recurring backup even when
+volumes are detached.
+longhorn/longhorn#1509</p>
+<p>Steps:
+1.
+Change the setting allow-recurring-job-while-volume-detached to true
+2.
+Create a volume-1, attach to node-1, write 50MB data to the volume-1.
+3.
+Detach the volume
+4.
+Set the recurring backup for the volume on every minute
+5.
+In a 4-mintute retry loop, verify that there is exactly 1 new backup
+6.
+Delete the recurring backup</p>
+<ol>
+<li>Create a PVC from the volume</li>
+<li>Create a deployment of 1 pod using the PVC</li>
+<li>Write 400MB data to the volume from the pod.</li>
+<li>Scale down the deployment. Wait until the volume is detached.</li>
+<li>Set the recurring backup for every 2 minutes.</li>
+<li>Wait util the recurring backup starts, scale up the deployment to 1
+pod.</li>
+<li>Verify that during the recurring backup, the volume's frontend is
+disabled, and pod cannot start.</li>
+<li>Wait for the recurring backup finishes.
+Delete the recurring backup</li>
+<li>
+<p>In a 6-mintute retry loop, verify that the pod can eventually start.</p>
+</li>
+<li>
+<p>Change the setting allow-recurring-job-while-volume-detached to false</p>
+</li>
+<li>cleanup</li>
+</ol></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@pytest.mark.skip(reason=&#34;TODO&#34;)
+def test_recurring_jobs_for_detached_volume():  # NOQA
+    &#34;&#34;&#34;
+    Test recurring jobs for detached volume
+
+    Context:
+    In the current Longhorn implementation, users cannot do recurring
+    backup when volumes are detached.
+    This feature gives the users an option to do recurring backup even when
+    volumes are detached.
+    longhorn/longhorn#1509
+
+    Steps:
+    1.  Change the setting allow-recurring-job-while-volume-detached to true
+    2.  Create a volume-1, attach to node-1, write 50MB data to the volume-1.
+    3.  Detach the volume
+    4.  Set the recurring backup for the volume on every minute
+    5.  In a 4-mintute retry loop, verify that there is exactly 1 new backup
+    6.  Delete the recurring backup
+
+    7.  Create a PVC from the volume
+    8.  Create a deployment of 1 pod using the PVC
+    9.  Write 400MB data to the volume from the pod.
+    10. Scale down the deployment. Wait until the volume is detached.
+    11. Set the recurring backup for every 2 minutes.
+    12. Wait util the recurring backup starts, scale up the deployment to 1
+        pod.
+    13. Verify that during the recurring backup, the volume&#39;s frontend is
+        disabled, and pod cannot start.
+    14. Wait for the recurring backup finishes.
+        Delete the recurring backup
+    15. In a 6-mintute retry loop, verify that the pod can eventually start.
+
+    16. Change the setting allow-recurring-job-while-volume-detached to false
+    17. cleanup
+    &#34;&#34;&#34;
+    pass</code></pre>
+</details>
+</dd>
 <dt id="tests.test_recurring_job.test_recurring_jobs_maximum_retain"><code class="name flex">
 <span>def <span class="ident">test_recurring_jobs_maximum_retain</span></span>(<span>client, core_api, volume_name)</span>
 </code></dt>
@@ -951,6 +1077,7 @@ def test_recurring_job_labels(client, random_labels, volume_name):  # NOQA
 <li><code><a title="tests.test_recurring_job.test_recurring_job_in_volume_creation" href="#tests.test_recurring_job.test_recurring_job_in_volume_creation">test_recurring_job_in_volume_creation</a></code></li>
 <li><code><a title="tests.test_recurring_job.test_recurring_job_kubernetes_status" href="#tests.test_recurring_job.test_recurring_job_kubernetes_status">test_recurring_job_kubernetes_status</a></code></li>
 <li><code><a title="tests.test_recurring_job.test_recurring_job_labels" href="#tests.test_recurring_job.test_recurring_job_labels">test_recurring_job_labels</a></code></li>
+<li><code><a title="tests.test_recurring_job.test_recurring_jobs_for_detached_volume" href="#tests.test_recurring_job.test_recurring_jobs_for_detached_volume">test_recurring_jobs_for_detached_volume</a></code></li>
 <li><code><a title="tests.test_recurring_job.test_recurring_jobs_maximum_retain" href="#tests.test_recurring_job.test_recurring_jobs_maximum_retain">test_recurring_jobs_maximum_retain</a></code></li>
 </ul>
 </li>
