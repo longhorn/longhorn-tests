@@ -63,6 +63,11 @@ from common import delete_backup
 from common import delete_backup_volume
 from common import BACKUP_BLOCK_SIZE
 from common import assert_backup_state
+from common import wait_for_volume_condition_restore, wait_for_backup_delete
+from common import VOLUME_FIELD_ROBUSTNESS, VOLUME_ROBUSTNESS_HEALTHY
+from common import VOLUME_ROBUSTNESS_FAULTED
+from common import DATA_SIZE_IN_MB_2, DATA_SIZE_IN_MB_3
+from common import wait_for_backup_to_start
 
 from backupstore import backupstore_corrupt_backup_cfg_file
 from backupstore import backupstore_delete_volume_cfg_file
@@ -1014,7 +1019,7 @@ def backupstore_test(client, host_id, volname, size): # NOQA
     volume = wait_for_volume_delete(client, restore_name)
 
 
-@pytest.mark.coretest
+@pytest.mark.coretest  # NOQA
 def test_backup_labels(client, random_labels, volume_name):  # NOQA
     """
     Test that the proper Labels are applied when creating a Backup manually.
@@ -1752,8 +1757,8 @@ def test_attach_without_frontend(client, volume_name):  # NOQA
     wait_for_volume_delete(client, volume_name)
 
 
-@pytest.mark.coretest
-def test_storage_class_from_backup(volume_name, pvc_name, storage_class, client, core_api, pod_make): # NOQA
+@pytest.mark.coretest  # NOQA
+def test_storage_class_from_backup(volume_name, pvc_name, storage_class, client, core_api, pod_make):  # NOQA
     """
     Test restore backup using StorageClass
 
@@ -2606,8 +2611,7 @@ def test_expansion_with_scheduling_failure(
     delete_and_wait_pv(core_api, test_pv_name)
 
 
-def test_dr_volume_with_last_backup_deletion(
-        client, core_api, csi_pv, pvc, volume_name, pod_make):  # NOQA
+def test_dr_volume_with_last_backup_deletion(client, core_api, csi_pv, pvc, volume_name, pod_make):  # NOQA
     """
     Test if the DR volume can be activated
     after deleting the lastest backup. There are two cases to the last
@@ -2744,8 +2748,7 @@ def test_dr_volume_with_last_backup_deletion(
     client.delete(bv)
 
 
-@pytest.mark.skip(reason="TODO")
-def test_backup_lock_deletion_during_restoration():  # NOQA
+def test_backup_lock_deletion_during_restoration(client, core_api, volume_name, csi_pv, pvc, pod_make):  # NOQA
     """
     Test backup locks
     Context:
@@ -2767,11 +2770,53 @@ def test_backup_lock_deletion_during_restoration():  # NOQA
     11. Assert the backup count in the backup store with 1.
        (The backup should not be deleted)
     """
-    pass
+    set_random_backupstore(client)
+    backupstore_cleanup(client)
+    std_volume_name = volume_name + "-std"
+    restore_volume_name = volume_name + "-restore"
+    _, _, _, std_md5sum = \
+        prepare_pod_with_data_in_mb(
+            client, core_api, csi_pv, pvc, pod_make, std_volume_name)
+    std_volume = client.by_id_volume(std_volume_name)
+    snap1 = create_snapshot(client, std_volume_name)
+    std_volume.snapshotBackup(name=snap1.name)
+    wait_for_backup_completion(client, std_volume_name, snap1.name)
+    backup_volume = client.by_id_backupVolume(std_volume_name)
+
+    _, b = common.find_backup(client, std_volume_name, snap1.name)
+    client.create_volume(name=restore_volume_name, fromBackup=b.url)
+    wait_for_volume_condition_restore(client, restore_volume_name,
+                                      "status", "True")
+    wait_for_volume_condition_restore(client, restore_volume_name,
+                                      "reason", "RestoreInProgress")
+    wait_for_volume_restoration_start(client, restore_volume_name, b.name)
+
+    backup_volume.backupDelete(name=b.name)
+
+    wait_for_volume_restoration_completed(client, restore_volume_name)
+    restore_volume = wait_for_volume_detached(client, restore_volume_name)
+    assert len(restore_volume.replicas) == 3
+
+    restore_pod_name = restore_volume_name + "-pod"
+    restore_pv_name = restore_volume_name + "-pv"
+    restore_pvc_name = restore_volume_name + "-pvc"
+    restore_pod = pod_make(name=restore_pod_name)
+    create_pv_for_volume(client, core_api, restore_volume, restore_pv_name)
+    create_pvc_for_volume(client, core_api, restore_volume, restore_pvc_name)
+    restore_pod['spec']['volumes'] = [create_pvc_spec(restore_pvc_name)]
+    create_and_wait_pod(core_api, restore_pod)
+
+    restore_volume = client.by_id_volume(restore_volume_name)
+    assert restore_volume[VOLUME_FIELD_ROBUSTNESS] == VOLUME_ROBUSTNESS_HEALTHY
+
+    md5sum = get_pod_data_md5sum(core_api, restore_pod_name, "/data/test")
+    assert std_md5sum == md5sum
+
+    _, b = common.find_backup(client, std_volume_name, snap1.name)
+    assert b is not None
 
 
-@pytest.mark.skip(reason="TODO")
-def test_backup_lock_deletion_during_backup():  # NOQA
+def test_backup_lock_deletion_during_backup(client, core_api, volume_name, csi_pv, pvc, pod_make):  # NOQA
     """
     Test backup locks
     Context:
@@ -2793,14 +2838,85 @@ def test_backup_lock_deletion_during_backup():  # NOQA
        (The older backup should not be deleted)
     11. Restore the latest backup.
     12. Wait for the restoration to be completed. Assert md5sum from step 6.
-    12. Restore the older backup.
-    13. Wait for the restoration to be completed. Assert md5sum from step 3.
+    13. Restore the older backup.
+    14. Wait for the restoration to be completed. Assert md5sum from step 3.
     """
-    pass
+    set_random_backupstore(client)
+    backupstore_cleanup(client)
+    std_volume_name = volume_name + "-std"
+    restore_volume_name_1 = volume_name + "-restore-1"
+    restore_volume_name_2 = volume_name + "-restore-2"
+
+    std_pod_name, _, _, std_md5sum1 = \
+        prepare_pod_with_data_in_mb(
+            client, core_api, csi_pv, pvc, pod_make, std_volume_name)
+    std_volume = client.by_id_volume(std_volume_name)
+    snap1 = create_snapshot(client, std_volume_name)
+    std_volume.snapshotBackup(name=snap1.name)
+    wait_for_backup_completion(client, std_volume_name, snap1.name)
+    backup_volume = client.by_id_backupVolume(std_volume_name)
+    _, b1 = common.find_backup(client, std_volume_name, snap1.name)
+
+    write_pod_volume_random_data(core_api, std_pod_name, "/data/test2",
+                                 DATA_SIZE_IN_MB_3)
+
+    std_md5sum2 = get_pod_data_md5sum(core_api, std_pod_name, "/data/test2")
+    snap2 = create_snapshot(client, std_volume_name)
+    std_volume.snapshotBackup(name=snap2.name)
+    wait_for_backup_to_start(client, std_volume_name, snap2.name)
+
+    backup_volume.backupDelete(name=b1.name)
+
+    wait_for_backup_completion(client, std_volume_name, snap2.name,
+                               retry_count=600)
+
+    _, b1 = common.find_backup(client, std_volume_name, snap1.name)
+    _, b2 = common.find_backup(client, std_volume_name, snap2.name)
+
+    assert b1, b2 is not None
+
+    client.create_volume(name=restore_volume_name_1, fromBackup=b1.url)
+
+    wait_for_volume_restoration_completed(client, restore_volume_name_1)
+    restore_volume_1 = wait_for_volume_detached(client, restore_volume_name_1)
+    assert len(restore_volume_1.replicas) == 3
+
+    restore_pod_name_1 = restore_volume_name_1 + "-pod"
+    restore_pv_name_1 = restore_volume_name_1 + "-pv"
+    restore_pvc_name_1 = restore_volume_name_1 + "-pvc"
+    restore_pod_1 = pod_make(name=restore_pod_name_1)
+    create_pv_for_volume(client, core_api, restore_volume_1, restore_pv_name_1)
+    create_pvc_for_volume(client, core_api, restore_volume_1,
+                          restore_pvc_name_1)
+    restore_pod_1['spec']['volumes'] = [create_pvc_spec(restore_pvc_name_1)]
+    create_and_wait_pod(core_api, restore_pod_1)
+
+    md5sum1 = get_pod_data_md5sum(core_api, restore_pod_name_1, "/data/test")
+
+    assert std_md5sum1 == md5sum1
+
+    client.create_volume(name=restore_volume_name_2, fromBackup=b2.url)
+
+    wait_for_volume_restoration_completed(client, restore_volume_name_2)
+    restore_volume_2 = wait_for_volume_detached(client, restore_volume_name_2)
+    assert len(restore_volume_2.replicas) == 3
+
+    restore_pod_name_2 = restore_volume_name_2 + "-pod"
+    restore_pv_name_2 = restore_volume_name_2 + "-pv"
+    restore_pvc_name_2 = restore_volume_name_2 + "-pvc"
+    restore_pod_2 = pod_make(name=restore_pod_name_2)
+    create_pv_for_volume(client, core_api, restore_volume_2, restore_pv_name_2)
+    create_pvc_for_volume(client, core_api, restore_volume_2,
+                          restore_pvc_name_2)
+    restore_pod_2['spec']['volumes'] = [create_pvc_spec(restore_pvc_name_2)]
+    create_and_wait_pod(core_api, restore_pod_2)
+
+    md5sum2 = get_pod_data_md5sum(core_api, restore_pod_name_2, "/data/test2")
+
+    assert std_md5sum2 == md5sum2
 
 
-@pytest.mark.skip(reason="TODO")
-def test_backup_lock_creation_during_deletion():  # NOQA
+def test_backup_lock_creation_during_deletion(client, core_api, volume_name, csi_pv, pvc, pod_make):  # NOQA
     """
     Test backup locks
     Context:
@@ -2811,7 +2927,7 @@ def test_backup_lock_creation_during_deletion():  # NOQA
     steps:
     1. Create a volume, then create the corresponding PV, PVC and Pod.
     2. Wait for the pod running and the volume healthy.
-    3. Write data (DATA_SIZE_IN_MB_4) to the pod volume and get the md5sum.
+    3. Write data (DATA_SIZE_IN_MB_2) to the pod volume and get the md5sum.
     4. Take a backup.
     5. Wait for the backup to be completed.
     6. Delete the backup.
@@ -2822,11 +2938,43 @@ def test_backup_lock_creation_during_deletion():  # NOQA
     9. Wait for the backup deletion and assert there is 0 backup in the backup
        store.
     """
-    pass
+    set_random_backupstore(client)
+    backupstore_cleanup(client)
+    std_volume_name = volume_name + "-std"
+
+    std_pod_name, _, _, std_md5sum1 = \
+        prepare_pod_with_data_in_mb(
+            client, core_api, csi_pv, pvc, pod_make, std_volume_name,
+            data_size_in_mb=DATA_SIZE_IN_MB_2)
+    std_volume = client.by_id_volume(std_volume_name)
+    snap1 = create_snapshot(client, std_volume_name)
+    std_volume.snapshotBackup(name=snap1.name)
+    wait_for_backup_completion(client, std_volume_name, snap1.name)
+    backup_volume = client.by_id_backupVolume(std_volume_name)
+    _, b1 = common.find_backup(client, std_volume_name, snap1.name)
+
+    write_pod_volume_random_data(core_api, std_pod_name,
+                                 "/data/test2", DATA_SIZE_IN_MB_1)
+
+    backup_volume.backupDelete(name=b1.name)
+
+    snap2 = create_snapshot(client, std_volume_name)
+
+    try:
+        std_volume.snapshotBackup(name=snap2.name)
+    except Exception as e:
+        assert e.error.status == 500
+
+    wait_for_backup_delete(client, volume_name, b1.name)
+    try:
+        _, b2 = common.find_backup(client, std_volume_name, snap2.name)
+    except AssertionError:
+        b2 = None
+    assert b2 is None
 
 
-@pytest.mark.skip(reason="TODO")
-def test_backup_lock_restoration_during_deletion():  # NOQA
+@pytest.mark.skip(reason="This test takes more than 20 mins to run")
+def test_backup_lock_restoration_during_deletion(client, core_api, volume_name, csi_pv, pvc, pod_make):  # NOQA
     """
     Test backup locks
     Context:
@@ -2837,16 +2985,56 @@ def test_backup_lock_restoration_during_deletion():  # NOQA
     steps:
     1. Create a volume, then create the corresponding PV, PVC and Pod.
     2. Wait for the pod running and the volume healthy.
-    3. Write data (DATA_SIZE_IN_MB_4) to the pod volume and get the md5sum.
+    3. Write data to the pod volume and get the md5sum.
     4. Take a backup.
     5. Wait for the backup to be completed.
-    6. Write more data to the volume and take another backup.
+    6. Write more data (1.5 Gi) to the volume and take another backup.
     7. Wait for the 2nd backup to be completed.
-    6. Delete the 1st backup.
-    7. Without waiting for the backup deletion completion, restore the 2nd
+    8. Delete the 2nd backup.
+    9. Without waiting for the backup deletion completion, restore the 1st
        backup from the backup store.
-    8. Verify the restored volume become faulted.
-    9. Wait for the 1st backup deletion and assert the count of the backups
+    10. Verify the restored volume become faulted.
+    11. Wait for the 2nd backup deletion and assert the count of the backups
        with 1 in the backup store.
     """
-    pass
+    set_random_backupstore(client)
+    backupstore_cleanup(client)
+    std_volume_name = volume_name + "-std"
+    restore_volume_name = volume_name + "-restore"
+    std_pod_name, _, _, std_md5sum1 = \
+        prepare_pod_with_data_in_mb(
+            client, core_api, csi_pv, pvc, pod_make, std_volume_name,
+            volume_size=str(3*Gi), data_size_in_mb=DATA_SIZE_IN_MB_1)
+    std_volume = client.by_id_volume(std_volume_name)
+    snap1 = create_snapshot(client, std_volume_name)
+    std_volume.snapshotBackup(name=snap1.name)
+    wait_for_backup_completion(client, std_volume_name, snap1.name)
+    std_volume.snapshotBackup(name=snap1.name)
+    backup_volume = client.by_id_backupVolume(std_volume_name)
+    _, b1 = common.find_backup(client, std_volume_name, snap1.name)
+
+    write_pod_volume_random_data(core_api, std_pod_name,
+                                 "/data/test2", 1500)
+    snap2 = create_snapshot(client, std_volume_name)
+    std_volume.snapshotBackup(name=snap2.name)
+    wait_for_backup_completion(client, std_volume_name, snap2.name,
+                               retry_count=1200)
+    _, b2 = common.find_backup(client, std_volume_name, snap2.name)
+
+    backup_volume.backupDelete(name=b2.name)
+
+    client.create_volume(name=restore_volume_name, fromBackup=b1.url)
+    wait_for_volume_detached(client, restore_volume_name)
+    restore_volume = client.by_id_volume(restore_volume_name)
+    assert restore_volume[VOLUME_FIELD_ROBUSTNESS] == VOLUME_ROBUSTNESS_FAULTED
+
+    wait_for_backup_delete(client, volume_name, b2.name)
+
+    _, b1 = common.find_backup(client, std_volume_name, snap1.name)
+    assert b1 is not None
+
+    try:
+        _, b2 = common.find_backup(client, std_volume_name, snap2.name)
+    except AssertionError:
+        b2 = None
+    assert b2 is None
