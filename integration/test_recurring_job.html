@@ -30,6 +30,8 @@
 import time
 import json
 
+from datetime import datetime
+
 import common
 from common import client, clients, core_api, random_labels, volume_name  # NOQA
 from common import storage_class, statefulset  # NOQA
@@ -39,6 +41,8 @@ from common import create_pv_for_volume, create_storage_class, \
 from common import update_statefulset_manifests, get_self_host_id, \
     get_statefulset_pod_info, wait_volume_kubernetes_status
 from common import set_random_backupstore
+from common import write_volume_random_data
+from common import write_pod_volume_random_data
 from common import BASE_IMAGE_LABEL, KUBERNETES_STATUS_LABEL, SIZE
 
 
@@ -67,8 +71,15 @@ def check_jobs1_result(volume):
     assert count == 4
 
 
+def wait_until_begin_of_an_even_minute():
+    while True:
+        current_time = datetime.utcnow()
+        if current_time.second == 0 and current_time.minute % 2 == 0:
+            break
+        time.sleep(1)
+
 @pytest.mark.recurring_job  # NOQA
-def test_recurring_job(clients, volume_name):  # NOQA
+def test_recurring_job(client, volume_name):  # NOQA
     &#34;&#34;&#34;
     Test recurring job
 
@@ -78,24 +89,34 @@ def test_recurring_job(clients, volume_name):  # NOQA
         1 job 1: snapshot every one minute, retain 2
         1 job 2: backup every two minutes, retain 1
     4. Attach the volume.
-    5. Sleep for 5 minutes
+       Wait until the 10th second since the beginning of an even minute
+    5. Write some data. Sleep 2.5 minutes.
+       Write some data. Sleep 2.5 minutes
     6. Verify we have 4 snapshots total
         1. 2 snapshots, 1 backup, 1 volume-head
     7. Update jobs to replace the backup job
         1. New backup job run every one minute, retain 2
-    8. Sleep for 5 minutes.
+    8. Write some data. Sleep 2.5 minutes.
+       Write some data. Sleep 2.5 minutes
     9. We should have 6 snapshots
         1. 2 from job_snap, 1 from job_backup, 2 from job_backup2, 1
         volume-head
-    10. Make sure we have no more than 5 backups.
-        1. old backup job may have at most 1 backups
-        2. new backup job may have at most 3 backups
-        3. FIXME: Seems we should have at most 4 backups?
-    11. Make sure we have no more than 2 backups in progress
-        1. FIXME: Seems we should have at most 1 from the new job?
+    10. Make sure there are exactly 4 completed backups.
+        1. old backup job completed 2 backups
+        2. new backup job completed 2 backups
+    11. Make sure we have no backup in progress
     &#34;&#34;&#34;
-    for host_id, client in iter(clients.items()):  # NOQA
-        break
+
+    &#39;&#39;&#39;
+    The timeline looks like this:
+    0   1   2   3   4   5   6   7   8   9   10     (minute)
+    |W  |   | W |   |   |W  |   | W |   |   |      (write data)
+    |   S   |   S   |   |   S   |   S   |   |      (job_snap)
+    |   |   B   |   B   |   |   |   |   |   |      (job_backup1)
+    |   |   |   |   |   |   B   |   B   |   |      (job_backup2)
+    &#39;&#39;&#39;
+
+    host_id = get_self_host_id()
 
     set_random_backupstore(client)
 
@@ -109,16 +130,27 @@ def test_recurring_job(clients, volume_name):  # NOQA
     volume = volume.attach(hostId=host_id)
     volume = common.wait_for_volume_healthy(client, volume_name)
 
-    # 5 minutes
-    time.sleep(300)
+    # wait until the beginning of an even minute
+    wait_until_begin_of_an_even_minute()
+    # wait until the 10th second of an even minute
+    # make sure that snapshot job happens before the backup job
+    time.sleep(10)
+
+    write_volume_random_data(volume)
+    time.sleep(150)  # 2.5 minutes
+    write_volume_random_data(volume)
+    time.sleep(150)  # 2.5 minutes
+
     check_jobs1_result(volume)
 
     job_backup2 = {&#34;name&#34;: &#34;backup2&#34;, &#34;cron&#34;: &#34;* * * * *&#34;,
                    &#34;task&#34;: &#34;backup&#34;, &#34;retain&#34;: 2}
     volume.recurringUpdate(jobs=[jobs[0], job_backup2])
 
-    # 5 minutes
-    time.sleep(300)
+    write_volume_random_data(volume)
+    time.sleep(150)  # 2.5 minutes
+    write_volume_random_data(volume)
+    time.sleep(150)  # 2.5 minutes
 
     snapshots = volume.snapshotList()
     count = 0
@@ -137,9 +169,12 @@ def test_recurring_job(clients, volume_name):  # NOQA
             complete_backup_number += 1
         elif b.state == &#34;in_progress&#34;:
             in_progress_backup_number += 1
-    assert complete_backup_number &lt;= MAX_BACKUP_STATUS_SIZE
-    # 1 from job_backup, 1 from job_backup2
-    assert in_progress_backup_number &lt;= 2
+
+    # 2 completed backups from job_backup
+    # 2 completed backups from job_backup2
+    assert complete_backup_number == 4
+
+    assert in_progress_backup_number == 0
 
     volume = volume.detach()
 
@@ -154,15 +189,14 @@ def test_recurring_job(clients, volume_name):  # NOQA
 
 
 @pytest.mark.recurring_job  # NOQA
-def test_recurring_job_in_volume_creation(clients, volume_name):  # NOQA
+def test_recurring_job_in_volume_creation(client, volume_name):  # NOQA
     &#34;&#34;&#34;
     Test create volume with recurring jobs
 
     1. Create volume with recurring jobs though Longhorn API
     2. Verify the recurring jobs run correctly
     &#34;&#34;&#34;
-    for host_id, client in iter(clients.items()):  # NOQA
-        break
+    host_id = get_self_host_id()
 
     set_random_backupstore(client)
 
@@ -180,8 +214,17 @@ def test_recurring_job_in_volume_creation(clients, volume_name):  # NOQA
     volume.attach(hostId=host_id)
     volume = common.wait_for_volume_healthy(client, volume_name)
 
-    # 5 minutes
-    time.sleep(300)
+    # wait until the beginning of an even minute
+    wait_until_begin_of_an_even_minute()
+    # wait until the 10th second of an even minute
+    # to avoid writing data at the same time backup is taking
+    time.sleep(10)
+
+    write_volume_random_data(volume)
+    time.sleep(150)  # 2.5 minutes
+    write_volume_random_data(volume)
+    time.sleep(150)  # 2.5 minutes
+
     check_jobs1_result(volume)
 
     volume = volume.detach()
@@ -209,13 +252,30 @@ def test_recurring_job_in_storageclass(client, core_api, storage_class, stateful
     storage_class[&#34;parameters&#34;][&#34;recurringJobs&#34;] = json.dumps(create_jobs1())
 
     create_storage_class(storage_class)
+
+    # wait until the beginning of an even minute
+    wait_until_begin_of_an_even_minute()
+
+    start_time = datetime.utcnow()
     create_and_wait_statefulset(statefulset)
+    statefulset_creating_duration = datetime.utcnow() - start_time
+
+    assert 150 &gt; statefulset_creating_duration.seconds
+
+    # We want to write data exactly at the 150th second since the start_time
+    time.sleep(150 - statefulset_creating_duration.seconds)
 
     pod_info = get_statefulset_pod_info(core_api, statefulset)
     volume_info = [p[&#39;pv_name&#39;] for p in pod_info]
+    pod_names = [p[&#39;pod_name&#39;] for p in pod_info]
 
-    # 5 minutes
-    time.sleep(300)
+    # write random data to volume to trigger recurring snapshot and backup job
+    volume_data_path = &#34;/data/test&#34;
+    for pod_name in pod_names:
+        write_pod_volume_random_data(core_api, pod_name, volume_data_path, 2)
+
+    time.sleep(150)  # 2.5 minutes
+
     for volume_name in volume_info:  # NOQA
         volume = client.by_id_volume(volume_name)
         check_jobs1_result(volume)
@@ -256,12 +316,15 @@ def recurring_job_labels_test(client, labels, volume_name, size=SIZE, base_image
     volume.recurringUpdate(jobs=jobs)
     volume.attach(hostId=host_id)
     volume = common.wait_for_volume_healthy(client, volume_name)
+    write_volume_random_data(volume)
 
     # 1 minutes 15s
     time.sleep(75)
     labels[&#34;we-added-this-label&#34;] = &#34;definitely&#34;
     jobs[0][&#34;labels&#34;] = labels
     volume = volume.recurringUpdate(jobs=jobs)
+    volume = common.wait_for_volume_healthy(client, volume_name)
+    write_volume_random_data(volume)
 
     # 2 minutes 15s
     time.sleep(135)
@@ -337,6 +400,7 @@ def test_recurring_job_kubernetes_status(client, core_api, volume_name):  # NOQA
     volume.attach(hostId=host_id)
     volume = common.wait_for_volume_healthy(client, volume_name)
 
+    write_volume_random_data(volume)
     # 5 minutes
     time.sleep(300)
     snapshots = volume.snapshotList()
@@ -523,12 +587,15 @@ def test_recurring_jobs_for_detached_volume():  # NOQA
     volume.recurringUpdate(jobs=jobs)
     volume.attach(hostId=host_id)
     volume = common.wait_for_volume_healthy(client, volume_name)
+    write_volume_random_data(volume)
 
     # 1 minutes 15s
     time.sleep(75)
     labels[&#34;we-added-this-label&#34;] = &#34;definitely&#34;
     jobs[0][&#34;labels&#34;] = labels
     volume = volume.recurringUpdate(jobs=jobs)
+    volume = common.wait_for_volume_healthy(client, volume_name)
+    write_volume_random_data(volume)
 
     # 2 minutes 15s
     time.sleep(135)
@@ -561,7 +628,7 @@ def test_recurring_jobs_for_detached_volume():  # NOQA
 </details>
 </dd>
 <dt id="tests.test_recurring_job.test_recurring_job"><code class="name flex">
-<span>def <span class="ident">test_recurring_job</span></span>(<span>clients, volume_name)</span>
+<span>def <span class="ident">test_recurring_job</span></span>(<span>client, volume_name)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Test recurring job</p>
@@ -571,8 +638,10 @@ def test_recurring_jobs_for_detached_volume():  # NOQA
 <li>Create two jobs
 1 job 1: snapshot every one minute, retain 2
 1 job 2: backup every two minutes, retain 1</li>
-<li>Attach the volume.</li>
-<li>Sleep for 5 minutes</li>
+<li>Attach the volume.
+Wait until the 10th second since the beginning of an even minute</li>
+<li>Write some data. Sleep 2.5 minutes.
+Write some data. Sleep 2.5 minutes</li>
 <li>Verify we have 4 snapshots total<ol>
 <li>2 snapshots, 1 backup, 1 volume-head</li>
 </ol>
@@ -581,29 +650,26 @@ def test_recurring_jobs_for_detached_volume():  # NOQA
 <li>New backup job run every one minute, retain 2</li>
 </ol>
 </li>
-<li>Sleep for 5 minutes.</li>
+<li>Write some data. Sleep 2.5 minutes.
+Write some data. Sleep 2.5 minutes</li>
 <li>We should have 6 snapshots<ol>
 <li>2 from job_snap, 1 from job_backup, 2 from job_backup2, 1
 volume-head</li>
 </ol>
 </li>
-<li>Make sure we have no more than 5 backups.<ol>
-<li>old backup job may have at most 1 backups</li>
-<li>new backup job may have at most 3 backups</li>
-<li>FIXME: Seems we should have at most 4 backups?</li>
+<li>Make sure there are exactly 4 completed backups.<ol>
+<li>old backup job completed 2 backups</li>
+<li>new backup job completed 2 backups</li>
 </ol>
 </li>
-<li>Make sure we have no more than 2 backups in progress<ol>
-<li>FIXME: Seems we should have at most 1 from the new job?</li>
-</ol>
-</li>
+<li>Make sure we have no backup in progress</li>
 </ol></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">@pytest.mark.recurring_job  # NOQA
-def test_recurring_job(clients, volume_name):  # NOQA
+def test_recurring_job(client, volume_name):  # NOQA
     &#34;&#34;&#34;
     Test recurring job
 
@@ -613,24 +679,34 @@ def test_recurring_job(clients, volume_name):  # NOQA
         1 job 1: snapshot every one minute, retain 2
         1 job 2: backup every two minutes, retain 1
     4. Attach the volume.
-    5. Sleep for 5 minutes
+       Wait until the 10th second since the beginning of an even minute
+    5. Write some data. Sleep 2.5 minutes.
+       Write some data. Sleep 2.5 minutes
     6. Verify we have 4 snapshots total
         1. 2 snapshots, 1 backup, 1 volume-head
     7. Update jobs to replace the backup job
         1. New backup job run every one minute, retain 2
-    8. Sleep for 5 minutes.
+    8. Write some data. Sleep 2.5 minutes.
+       Write some data. Sleep 2.5 minutes
     9. We should have 6 snapshots
         1. 2 from job_snap, 1 from job_backup, 2 from job_backup2, 1
         volume-head
-    10. Make sure we have no more than 5 backups.
-        1. old backup job may have at most 1 backups
-        2. new backup job may have at most 3 backups
-        3. FIXME: Seems we should have at most 4 backups?
-    11. Make sure we have no more than 2 backups in progress
-        1. FIXME: Seems we should have at most 1 from the new job?
+    10. Make sure there are exactly 4 completed backups.
+        1. old backup job completed 2 backups
+        2. new backup job completed 2 backups
+    11. Make sure we have no backup in progress
     &#34;&#34;&#34;
-    for host_id, client in iter(clients.items()):  # NOQA
-        break
+
+    &#39;&#39;&#39;
+    The timeline looks like this:
+    0   1   2   3   4   5   6   7   8   9   10     (minute)
+    |W  |   | W |   |   |W  |   | W |   |   |      (write data)
+    |   S   |   S   |   |   S   |   S   |   |      (job_snap)
+    |   |   B   |   B   |   |   |   |   |   |      (job_backup1)
+    |   |   |   |   |   |   B   |   B   |   |      (job_backup2)
+    &#39;&#39;&#39;
+
+    host_id = get_self_host_id()
 
     set_random_backupstore(client)
 
@@ -644,16 +720,27 @@ def test_recurring_job(clients, volume_name):  # NOQA
     volume = volume.attach(hostId=host_id)
     volume = common.wait_for_volume_healthy(client, volume_name)
 
-    # 5 minutes
-    time.sleep(300)
+    # wait until the beginning of an even minute
+    wait_until_begin_of_an_even_minute()
+    # wait until the 10th second of an even minute
+    # make sure that snapshot job happens before the backup job
+    time.sleep(10)
+
+    write_volume_random_data(volume)
+    time.sleep(150)  # 2.5 minutes
+    write_volume_random_data(volume)
+    time.sleep(150)  # 2.5 minutes
+
     check_jobs1_result(volume)
 
     job_backup2 = {&#34;name&#34;: &#34;backup2&#34;, &#34;cron&#34;: &#34;* * * * *&#34;,
                    &#34;task&#34;: &#34;backup&#34;, &#34;retain&#34;: 2}
     volume.recurringUpdate(jobs=[jobs[0], job_backup2])
 
-    # 5 minutes
-    time.sleep(300)
+    write_volume_random_data(volume)
+    time.sleep(150)  # 2.5 minutes
+    write_volume_random_data(volume)
+    time.sleep(150)  # 2.5 minutes
 
     snapshots = volume.snapshotList()
     count = 0
@@ -672,9 +759,12 @@ def test_recurring_job(clients, volume_name):  # NOQA
             complete_backup_number += 1
         elif b.state == &#34;in_progress&#34;:
             in_progress_backup_number += 1
-    assert complete_backup_number &lt;= MAX_BACKUP_STATUS_SIZE
-    # 1 from job_backup, 1 from job_backup2
-    assert in_progress_backup_number &lt;= 2
+
+    # 2 completed backups from job_backup
+    # 2 completed backups from job_backup2
+    assert complete_backup_number == 4
+
+    assert in_progress_backup_number == 0
 
     volume = volume.detach()
 
@@ -717,20 +807,37 @@ def test_recurring_job_in_storageclass(client, core_api, storage_class, stateful
     storage_class[&#34;parameters&#34;][&#34;recurringJobs&#34;] = json.dumps(create_jobs1())
 
     create_storage_class(storage_class)
+
+    # wait until the beginning of an even minute
+    wait_until_begin_of_an_even_minute()
+
+    start_time = datetime.utcnow()
     create_and_wait_statefulset(statefulset)
+    statefulset_creating_duration = datetime.utcnow() - start_time
+
+    assert 150 &gt; statefulset_creating_duration.seconds
+
+    # We want to write data exactly at the 150th second since the start_time
+    time.sleep(150 - statefulset_creating_duration.seconds)
 
     pod_info = get_statefulset_pod_info(core_api, statefulset)
     volume_info = [p[&#39;pv_name&#39;] for p in pod_info]
+    pod_names = [p[&#39;pod_name&#39;] for p in pod_info]
 
-    # 5 minutes
-    time.sleep(300)
+    # write random data to volume to trigger recurring snapshot and backup job
+    volume_data_path = &#34;/data/test&#34;
+    for pod_name in pod_names:
+        write_pod_volume_random_data(core_api, pod_name, volume_data_path, 2)
+
+    time.sleep(150)  # 2.5 minutes
+
     for volume_name in volume_info:  # NOQA
         volume = client.by_id_volume(volume_name)
         check_jobs1_result(volume)</code></pre>
 </details>
 </dd>
 <dt id="tests.test_recurring_job.test_recurring_job_in_volume_creation"><code class="name flex">
-<span>def <span class="ident">test_recurring_job_in_volume_creation</span></span>(<span>clients, volume_name)</span>
+<span>def <span class="ident">test_recurring_job_in_volume_creation</span></span>(<span>client, volume_name)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Test create volume with recurring jobs</p>
@@ -743,15 +850,14 @@ def test_recurring_job_in_storageclass(client, core_api, storage_class, stateful
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">@pytest.mark.recurring_job  # NOQA
-def test_recurring_job_in_volume_creation(clients, volume_name):  # NOQA
+def test_recurring_job_in_volume_creation(client, volume_name):  # NOQA
     &#34;&#34;&#34;
     Test create volume with recurring jobs
 
     1. Create volume with recurring jobs though Longhorn API
     2. Verify the recurring jobs run correctly
     &#34;&#34;&#34;
-    for host_id, client in iter(clients.items()):  # NOQA
-        break
+    host_id = get_self_host_id()
 
     set_random_backupstore(client)
 
@@ -769,8 +875,17 @@ def test_recurring_job_in_volume_creation(clients, volume_name):  # NOQA
     volume.attach(hostId=host_id)
     volume = common.wait_for_volume_healthy(client, volume_name)
 
-    # 5 minutes
-    time.sleep(300)
+    # wait until the beginning of an even minute
+    wait_until_begin_of_an_even_minute()
+    # wait until the 10th second of an even minute
+    # to avoid writing data at the same time backup is taking
+    time.sleep(10)
+
+    write_volume_random_data(volume)
+    time.sleep(150)  # 2.5 minutes
+    write_volume_random_data(volume)
+    time.sleep(150)  # 2.5 minutes
+
     check_jobs1_result(volume)
 
     volume = volume.detach()
@@ -844,6 +959,7 @@ def test_recurring_job_kubernetes_status(client, core_api, volume_name):  # NOQA
     volume.attach(hostId=host_id)
     volume = common.wait_for_volume_healthy(client, volume_name)
 
+    write_volume_random_data(volume)
     # 5 minutes
     time.sleep(300)
     snapshots = volume.snapshotList()
@@ -1051,6 +1167,23 @@ def test_recurring_jobs_for_detached_volume():  # NOQA
     assert volume.recurringJobs[1][&#39;retain&#39;] == 20</code></pre>
 </details>
 </dd>
+<dt id="tests.test_recurring_job.wait_until_begin_of_an_even_minute"><code class="name flex">
+<span>def <span class="ident">wait_until_begin_of_an_even_minute</span></span>(<span>)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def wait_until_begin_of_an_even_minute():
+    while True:
+        current_time = datetime.utcnow()
+        if current_time.second == 0 and current_time.minute % 2 == 0:
+            break
+        time.sleep(1)</code></pre>
+</details>
+</dd>
 </dl>
 </section>
 <section>
@@ -1079,6 +1212,7 @@ def test_recurring_jobs_for_detached_volume():  # NOQA
 <li><code><a title="tests.test_recurring_job.test_recurring_job_labels" href="#tests.test_recurring_job.test_recurring_job_labels">test_recurring_job_labels</a></code></li>
 <li><code><a title="tests.test_recurring_job.test_recurring_jobs_for_detached_volume" href="#tests.test_recurring_job.test_recurring_jobs_for_detached_volume">test_recurring_jobs_for_detached_volume</a></code></li>
 <li><code><a title="tests.test_recurring_job.test_recurring_jobs_maximum_retain" href="#tests.test_recurring_job.test_recurring_jobs_maximum_retain">test_recurring_jobs_maximum_retain</a></code></li>
+<li><code><a title="tests.test_recurring_job.wait_until_begin_of_an_even_minute" href="#tests.test_recurring_job.wait_until_begin_of_an_even_minute">wait_until_begin_of_an_even_minute</a></code></li>
 </ul>
 </li>
 </ul>
