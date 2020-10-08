@@ -299,7 +299,14 @@ def test_statefulset_recurring_backup(client, core_api, storage_class,  # NOQA
         write_pod_volume_data(core_api, pod['pod_name'], pod['data'])
         volume.recurringUpdate(jobs=[job_backup])
 
-    time.sleep(300)
+    time.sleep(150)
+
+    for pod in pod_data:
+        volume = client.by_id_volume(pod['pv_name'])
+        write_pod_volume_data(core_api, pod['pod_name'], pod['data'])
+        volume.recurringUpdate(jobs=[job_backup])
+
+    time.sleep(150)
 
     for pod in pod_data:
         volume = client.by_id_volume(pod['pv_name'])
