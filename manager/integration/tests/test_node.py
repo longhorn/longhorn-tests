@@ -2337,11 +2337,11 @@ def test_node_eviction(client, core_api, volume_name, pod, settings_reset): # NO
         if replica.name == volume1_replica1.name:
             assert replica.running is True
             assert replica.mode == "RW"
-            assert replica.hostId == node1.name
+            assert replica.hostId == volume1_replica1["hostId"]
         elif replica.name == volume1_replica2.name:
             assert replica.running is True
             assert replica.mode == "RW"
-            assert replica.hostId == node2.name
+            assert replica.hostId == volume1_replica2["hostId"]
         else:
             assert False
 
