@@ -1318,6 +1318,7 @@ def wait_for_volume_creation(client, name):
                 break
         if found:
             break
+        time.sleep(RETRY_INTERVAL)
     assert found
 
 
@@ -1527,6 +1528,7 @@ def wait_for_engine_image_creation(client, image_name):
                 break
         if found:
             break
+        time.sleep(RETRY_INTERVAL)
     assert found
 
 
