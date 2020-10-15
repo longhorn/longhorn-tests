@@ -10,14 +10,18 @@ Requirement:
 4. Need kubernetes 1.10 or higher.
 5. Make sure MountPropagation feature gate is enabled
    5.1 For RKE before v0.1.9, you would need the extra parameter feature-gates: `MountPropagation=true` for kube-api and kubelet to enable the feature gate.
-6. Make sure `nfs-common` or equivalent has been installed on the node to allow NFS client to work.
+6. Make sure `nfs-common` or equivalent has been installed on the node to allow the NFS client to work.
 
 Run the test:
-1. Deploy all backupstore servers(including `NFS` server and `Minio` as s3 server) for test purpose.
+1. Deploy all backupstore servers(including `NFS` server and `Minio` as s3 server) for test purposes.
 ```
 kubectl create -Rf integration/deploy/backupstores
 ```
-2. Deploy the test script to the Kubernetes cluster.
+2. Deploy NFS provisioner setup dependencies for test purposes.
+```
+kubectl create -f integration/deploy/rwx_requirements.yaml
+```
+3. Deploy the test script to the Kubernetes cluster.
 ```
 kubectl create -f integration/deploy/test.yaml
 ```
