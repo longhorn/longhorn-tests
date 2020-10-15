@@ -1811,6 +1811,10 @@ def test_node_config_annotation_invalid(client, core_api,  # NOQA
     cleanup_node_disks(client, node_name)
 
     # patch label and annotations to the node.
+    host_dirs = [
+        os.path.join(DEFAULT_DISK_PATH, &#34;engine-binaries&#34;),
+        os.path.join(DEFAULT_DISK_PATH, &#34;replicas&#34;)
+    ]
     core_api.patch_node(node_name, {
         &#34;metadata&#34;: {
             &#34;labels&#34;: {
@@ -1819,11 +1823,14 @@ def test_node_config_annotation_invalid(client, core_api,  # NOQA
             },
             &#34;annotations&#34;: {
                 DEFAULT_DISK_CONFIG_ANNOTATION:
-                    &#39;[{&#34;path&#34;:&#34;/root&#34;,&#34;allowScheduling&#34;:false,&#39; +
-                    &#39;&#34;storageReserved&#34;:1024,&#34;name&#34;:&#34;root-name&#34;},&#39; +
-                    &#39;{&#34;path&#34;:&#34;/home&#34;,&#34;allowScheduling&#34;:false,&#39; +
+                    &#39;[{&#34;path&#34;:&#34;&#39; + host_dirs[0] + &#39;&#34;,&#39; +
+                    &#39;&#34;allowScheduling&#34;:false,&#39; +
+                    &#39;&#34;storageReserved&#34;:1024,&#39; +
+                    &#39;&#34;name&#34;:&#34;&#39; + os.path.basename(host_dirs[0]) + &#39;&#34;},&#39; +
+                    &#39;{&#34;path&#34;:&#34;&#39; + host_dirs[1] + &#39;&#34;,&#39; +
+                    &#39;&#34;allowScheduling&#34;:false,&#39; +
                     &#39;&#34;storageReserved&#34;: 1024,&#39; +
-                    &#39;&#34;name&#34;:&#34;home-name&#34;}]&#39;
+                    &#39;&#34;name&#34;:&#34;&#39; + os.path.basename(host_dirs[1]) + &#39;&#34;}]&#39;
             }
         }
     })
@@ -3182,6 +3189,10 @@ def test_node_config_annotation_invalid(client, core_api,  # NOQA
     cleanup_node_disks(client, node_name)
 
     # patch label and annotations to the node.
+    host_dirs = [
+        os.path.join(DEFAULT_DISK_PATH, &#34;engine-binaries&#34;),
+        os.path.join(DEFAULT_DISK_PATH, &#34;replicas&#34;)
+    ]
     core_api.patch_node(node_name, {
         &#34;metadata&#34;: {
             &#34;labels&#34;: {
@@ -3190,11 +3201,14 @@ def test_node_config_annotation_invalid(client, core_api,  # NOQA
             },
             &#34;annotations&#34;: {
                 DEFAULT_DISK_CONFIG_ANNOTATION:
-                    &#39;[{&#34;path&#34;:&#34;/root&#34;,&#34;allowScheduling&#34;:false,&#39; +
-                    &#39;&#34;storageReserved&#34;:1024,&#34;name&#34;:&#34;root-name&#34;},&#39; +
-                    &#39;{&#34;path&#34;:&#34;/home&#34;,&#34;allowScheduling&#34;:false,&#39; +
+                    &#39;[{&#34;path&#34;:&#34;&#39; + host_dirs[0] + &#39;&#34;,&#39; +
+                    &#39;&#34;allowScheduling&#34;:false,&#39; +
+                    &#39;&#34;storageReserved&#34;:1024,&#39; +
+                    &#39;&#34;name&#34;:&#34;&#39; + os.path.basename(host_dirs[0]) + &#39;&#34;},&#39; +
+                    &#39;{&#34;path&#34;:&#34;&#39; + host_dirs[1] + &#39;&#34;,&#39; +
+                    &#39;&#34;allowScheduling&#34;:false,&#39; +
                     &#39;&#34;storageReserved&#34;: 1024,&#39; +
-                    &#39;&#34;name&#34;:&#34;home-name&#34;}]&#39;
+                    &#39;&#34;name&#34;:&#34;&#39; + os.path.basename(host_dirs[1]) + &#39;&#34;}]&#39;
             }
         }
     })
