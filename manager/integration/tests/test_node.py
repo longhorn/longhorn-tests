@@ -1783,6 +1783,10 @@ def test_node_config_annotation_invalid(client, core_api,  # NOQA
     cleanup_node_disks(client, node_name)
 
     # patch label and annotations to the node.
+    host_dirs = [
+        os.path.join(DEFAULT_DISK_PATH, "engine-binaries"),
+        os.path.join(DEFAULT_DISK_PATH, "replicas")
+    ]
     core_api.patch_node(node_name, {
         "metadata": {
             "labels": {
@@ -1791,11 +1795,14 @@ def test_node_config_annotation_invalid(client, core_api,  # NOQA
             },
             "annotations": {
                 DEFAULT_DISK_CONFIG_ANNOTATION:
-                    '[{"path":"/root","allowScheduling":false,' +
-                    '"storageReserved":1024,"name":"root-name"},' +
-                    '{"path":"/home","allowScheduling":false,' +
+                    '[{"path":"' + host_dirs[0] + '",' +
+                    '"allowScheduling":false,' +
+                    '"storageReserved":1024,' +
+                    '"name":"' + os.path.basename(host_dirs[0]) + '"},' +
+                    '{"path":"' + host_dirs[1] + '",' +
+                    '"allowScheduling":false,' +
                     '"storageReserved": 1024,' +
-                    '"name":"home-name"}]'
+                    '"name":"' + os.path.basename(host_dirs[1]) + '"}]'
             }
         }
     })
