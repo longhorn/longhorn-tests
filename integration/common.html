@@ -2187,6 +2187,24 @@ def wait_for_backup_completion(client, volume_name, snapshot_name,
     return v
 
 
+def wait_for_backup_to_start(client, volume_name, snapshot_name,
+                             retry_count=RETRY_BACKUP_COUNTS):
+    in_progress = False
+    for i in range(retry_count):
+        v = client.by_id_volume(volume_name)
+        for b in v.backupStatus:
+            if b.snapshot == snapshot_name and b.state == &#34;in_progress&#34;:
+                assert b.progress &gt; 0
+                assert b.error == &#34;&#34;
+                in_progress = True
+                break
+        if in_progress:
+            break
+        time.sleep(RETRY_BACKUP_INTERVAL)
+    assert in_progress is True
+    return v
+
+
 def wait_for_backup_state(client, volume_name, predicate,
                           retry_count=RETRY_BACKUP_COUNTS):
     completed = False
@@ -7767,6 +7785,33 @@ def volume_name(request):
     return v</code></pre>
 </details>
 </dd>
+<dt id="tests.common.wait_for_backup_to_start"><code class="name flex">
+<span>def <span class="ident">wait_for_backup_to_start</span></span>(<span>client, volume_name, snapshot_name, retry_count=300)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def wait_for_backup_to_start(client, volume_name, snapshot_name,
+                             retry_count=RETRY_BACKUP_COUNTS):
+    in_progress = False
+    for i in range(retry_count):
+        v = client.by_id_volume(volume_name)
+        for b in v.backupStatus:
+            if b.snapshot == snapshot_name and b.state == &#34;in_progress&#34;:
+                assert b.progress &gt; 0
+                assert b.error == &#34;&#34;
+                in_progress = True
+                break
+        if in_progress:
+            break
+        time.sleep(RETRY_BACKUP_INTERVAL)
+    assert in_progress is True
+    return v</code></pre>
+</details>
+</dd>
 <dt id="tests.common.wait_for_backup_volume_delete"><code class="name flex">
 <span>def <span class="ident">wait_for_backup_volume_delete</span></span>(<span>client, name)</span>
 </code></dt>
@@ -9401,6 +9446,7 @@ volume. Trigger a failed assertion of one is detected.
 <li><code><a title="tests.common.wait_for_backup_delete" href="#tests.common.wait_for_backup_delete">wait_for_backup_delete</a></code></li>
 <li><code><a title="tests.common.wait_for_backup_restore_completed" href="#tests.common.wait_for_backup_restore_completed">wait_for_backup_restore_completed</a></code></li>
 <li><code><a title="tests.common.wait_for_backup_state" href="#tests.common.wait_for_backup_state">wait_for_backup_state</a></code></li>
+<li><code><a title="tests.common.wait_for_backup_to_start" href="#tests.common.wait_for_backup_to_start">wait_for_backup_to_start</a></code></li>
 <li><code><a title="tests.common.wait_for_backup_volume_delete" href="#tests.common.wait_for_backup_volume_delete">wait_for_backup_volume_delete</a></code></li>
 <li><code><a title="tests.common.wait_for_device_login" href="#tests.common.wait_for_device_login">wait_for_device_login</a></code></li>
 <li><code><a title="tests.common.wait_for_disk_conditions" href="#tests.common.wait_for_disk_conditions">wait_for_disk_conditions</a></code></li>
