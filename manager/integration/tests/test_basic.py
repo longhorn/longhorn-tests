@@ -63,7 +63,7 @@ from common import delete_backup
 from common import delete_backup_volume
 from common import BACKUP_BLOCK_SIZE
 from common import assert_backup_state
-from common import wait_for_volume_condition_restore, wait_for_backup_delete
+from common import wait_for_backup_delete
 from common import VOLUME_FIELD_ROBUSTNESS, VOLUME_ROBUSTNESS_HEALTHY
 from common import VOLUME_ROBUSTNESS_FAULTED
 from common import DATA_SIZE_IN_MB_2, DATA_SIZE_IN_MB_3
@@ -2776,7 +2776,8 @@ def test_backup_lock_deletion_during_restoration(client, core_api, volume_name, 
     restore_volume_name = volume_name + "-restore"
     _, _, _, std_md5sum = \
         prepare_pod_with_data_in_mb(
-            client, core_api, csi_pv, pvc, pod_make, std_volume_name)
+            client, core_api, csi_pv, pvc, pod_make, std_volume_name,
+            data_size_in_mb=DATA_SIZE_IN_MB_2)
     std_volume = client.by_id_volume(std_volume_name)
     snap1 = create_snapshot(client, std_volume_name)
     std_volume.snapshotBackup(name=snap1.name)
@@ -2785,10 +2786,6 @@ def test_backup_lock_deletion_during_restoration(client, core_api, volume_name, 
 
     _, b = common.find_backup(client, std_volume_name, snap1.name)
     client.create_volume(name=restore_volume_name, fromBackup=b.url)
-    wait_for_volume_condition_restore(client, restore_volume_name,
-                                      "status", "True")
-    wait_for_volume_condition_restore(client, restore_volume_name,
-                                      "reason", "RestoreInProgress")
     wait_for_volume_restoration_start(client, restore_volume_name, b.name)
 
     backup_volume.backupDelete(name=b.name)
@@ -2973,7 +2970,7 @@ def test_backup_lock_creation_during_deletion(client, core_api, volume_name, csi
     assert b2 is None
 
 
-@pytest.mark.skip(reason="This test takes more than 20 mins to run")
+@pytest.mark.skip(reason="This test takes more than 20 mins to run")  # NOQA
 def test_backup_lock_restoration_during_deletion(client, core_api, volume_name, csi_pv, pvc, pod_make):  # NOQA
     """
     Test backup locks
