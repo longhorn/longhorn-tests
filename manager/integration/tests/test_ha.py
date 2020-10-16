@@ -2037,3 +2037,35 @@ def test_extra_replica_cleanup(client, volume_name, settings_reset): # NOQA
     assert volume.robustness == "healthy"
 
     check_volume_data(volume, data)
+
+
+@pytest.mark.skip(reason="TODO") # NOQA
+def test_disable_replica_rebuild():
+    """
+    Test disable replica rebuild
+
+    1. Disable node scheduling on node-2 and node-3. To make sure
+    replica scheduled on node-1.
+    2. Set 'Disable Replica Rebuild' to true.
+    3. Create a volume with 1 replica and attach it to node-1.
+    4. Enable scheduling on node-2 and node-3. Set node-1 scheduling to
+    'Disable' and 'Enable' eviction on node-1.
+    5. Wait for 30 seconds, and check no eviction happen.
+    6. 'Enable' node-1 scheduling and 'Disable' node-1 eviction.
+    7. Detach the volume and update data locality to 'best-effort'.
+    8. Attach the volume to node-2, and wait for 30 seconds, and check
+    no data locality happen.
+    9. Detach the volume and update data locality to 'disable'.
+    10. Attach the volume to node-2 and update the replica number to 2.
+    11. Wait for 30 seconds, and no new replica scheduled and volume is
+    at 'degraded' state.
+    12. Set 'Disable Replica Rebuild' to false, and wait for replica
+    rebuild and volume becomes 'healthy' state with 2 replicas.
+    13. Set 'Disable Replica Rebuild' to True, delete one replica.
+    14. Wait for 30 seconds, no rebuild should get triggered. The volume
+    should stay in 'degraded' state with 1 replica.
+    15. Set 'Disable Replica Rebuild' to false, and wait for replica
+    rebuild and volume becomes 'healthy' state with 2 replicas.
+    16. Clean up the volume.
+    """
+    pass
