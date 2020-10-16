@@ -263,7 +263,8 @@
   <h1 id="title">Node drain and deletion test</h1>
   <div>
     <article id="content">
-       <p>Make sure the volumes on the drained/removed node can be detached or recovered correctly. The related issue: <a href="https://github.com/longhorn/longhorn/issues/1214">https://github.com/longhorn/longhorn/issues/1214</a></p>
+       <h1 id="drain-with-force">Drain with force</h1>
+<p>Make sure the volumes on the drained/removed node can be detached or recovered correctly. The related issue: <a href="https://github.com/longhorn/longhorn/issues/1214">https://github.com/longhorn/longhorn/issues/1214</a></p>
 <ol>
 <li>Deploy a cluster contains 3 worker nodes N1, N2, N3.</li>
 <li>Deploy Longhorn.</li>
@@ -275,6 +276,27 @@
 <li>Wait for the volume detaching then being recovered. Will get attached to the workload/node.</li>
 <li>Validate the volume content. The data is intact.</li>
 </ol>
+<h1 id="drain-without-force">Drain without force</h1>
+<ol>
+<li>Cordon the node. Longhorn will automatically disable the node scheduling when a Kubernetes node is cordoned.</li>
+<li>Evict all the replicas from the node.</li>
+<li>Run the following command to drain the node with <code>force</code> flag set to false.
+<pre><code>kubectl drain &lt;Node name&gt; --delete-local-data=true --force=false --grace-period=-1 --ignore-daemonsets=true --timeout=&lt;Desired timeout in secs&gt;
+</code></pre></li>
+<li>Observe that the workloads move to another node. The volumes should first detach and attach to workloads once they move to another node.</li>
+<li>Observe the logs, one by one all the pods should get evicted.
+<pre><code>node/&lt;node-name&gt; already cordoned
+WARNING: ignoring DaemonSet-managed Pods: ingress-nginx/nginx-ingress-controller-bpf2t, kube-system/canal-hwk6v, longhorn-system/engine-image-ei-605a0f3e-8gb8l, longhorn-system/longhorn-csi-plugin-flq84, longhorn-system/longhorn-manager-tps6v
+evicting pod longhorn-system/instance-manager-r-1aebab59
+evicting pod kube-system/coredns-849545576b-v54vn
+evicting pod longhorn-system/instance-manager-e-e591dbce
+pod/instance-manager-r-1aebab59 evicted
+pod/instance-manager-e-e591dbce evicted
+pod/coredns-849545576b-v54vn evicted
+node/&lt;node-name&gt; evicted
+</code></pre></li>
+</ol>
+<p>Note: <code>--ignore-daemonsets</code> should be set to true to ignore some DaemonSets that exist on node such as Longhorn manager, Longhorn CSI plugin, engine image in a Longhorn deployed cluster.</p>
 
     </article>
   </div>
