@@ -279,6 +279,15 @@ kubectl get &amp;lt;LONGHORN-CRD&amp;gt; -n longhorn-system Verify that the outp
     </item>
     
     <item>
+      <title>Test node deletion</title>
+      <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/node/node-deletion/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/node/node-deletion/</guid>
+      <description>Case 1: Delete multiple kinds of nodes:  Deploy Longhorn. Shut down the VM for one node and wait for the node Down. Disable another node. Delete the above 2 nodes. Make sure the corresponding Kubernetes node object is deleted. &amp;ndash;&amp;gt; The related Longhorn node objects will be cleaned up immediately, too. Add new nodes with the same names for the cluster. &amp;ndash;&amp;gt; The new nodes are available.  Case 2: Delete nodes when there are running volumes:  Deploy Longhorn.</description>
+    </item>
+    
+    <item>
       <title>Test S3 backupstore in a cluster sitting behind a Http Proxy</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.1/test-s3-backupstore/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>

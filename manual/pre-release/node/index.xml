@@ -44,5 +44,14 @@ Case 1:  Disable the setting auto-salvage. Create and attach a volume. Keep writ
       <description>One physical node down should result in the state of that node change to Down When using with CSI driver, one node with controller and pod down should result in Kubernetes migrate the pod to another node, and Longhorn volume should be able to be used on that node as well. Test scenarios for this are documented here Reboot the node that the controller attached to. After reboot complete, the volume should be reattached to the node.</description>
     </item>
     
+    <item>
+      <title>Test node deletion</title>
+      <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/node/node-deletion/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/node/node-deletion/</guid>
+      <description>Case 1: Delete multiple kinds of nodes:  Deploy Longhorn. Shut down the VM for one node and wait for the node Down. Disable another node. Delete the above 2 nodes. Make sure the corresponding Kubernetes node object is deleted. &amp;ndash;&amp;gt; The related Longhorn node objects will be cleaned up immediately, too. Add new nodes with the same names for the cluster. &amp;ndash;&amp;gt; The new nodes are available.  Case 2: Delete nodes when there are running volumes:  Deploy Longhorn.</description>
+    </item>
+    
   </channel>
 </rss>
