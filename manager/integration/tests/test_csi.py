@@ -3,7 +3,7 @@ import pytest
 import subprocess
 import random
 import common
-from common import client, core_api, csi_pv, pod_make, pvc, storage_class # NOQA
+from common import client, core_api, csi_pv, pod_make, pvc, storage_class  # NOQA
 from common import pod as pod_manifest  # NOQA
 from common import Gi, DEFAULT_VOLUME_SIZE, EXPANDED_VOLUME_SIZE
 from common import VOLUME_RWTEST_SIZE
@@ -101,7 +101,7 @@ def test_csi_mount(client, core_api, csi_pv, pvc, pod_make):  # NOQA
 
 
 def csi_mount_test(client, core_api, csi_pv, pvc, pod_make,  # NOQA
-                   volume_size, base_image=""): # NOQA
+                   volume_size, base_image=""):  # NOQA
     create_and_wait_csi_pod('csi-mount-test', client, core_api, csi_pv, pvc,
                             pod_make, base_image, "")
 
@@ -195,14 +195,14 @@ def csi_backup_test(client, core_api, csi_pv, pvc, pod_make, base_image=""):  # 
             assert setting.value == backupsettings[0]
 
             credential = client.by_id_setting(
-                    common.SETTING_BACKUP_TARGET_CREDENTIAL_SECRET)
+                common.SETTING_BACKUP_TARGET_CREDENTIAL_SECRET)
             credential = client.update(credential, value=backupsettings[1])
             assert credential.value == backupsettings[1]
         else:
             setting = client.update(setting, value=backupstore)
             assert setting.value == backupstore
             credential = client.by_id_setting(
-                    common.SETTING_BACKUP_TARGET_CREDENTIAL_SECRET)
+                common.SETTING_BACKUP_TARGET_CREDENTIAL_SECRET)
             credential = client.update(credential, value="")
             assert credential.value == ""
 
@@ -230,6 +230,7 @@ def backupstore_test(client, core_api, csi_pv, pvc, pod_make, pod_name, base_ima
     assert resp == test_data
 
     delete_backup(client, bv.name, b.name)
+
 
 @pytest.mark.csi  # NOQA
 def test_csi_block_volume(client, core_api, storage_class, pvc, pod_manifest):  # NOQA
@@ -372,7 +373,7 @@ def test_csi_offline_expansion(client, core_api, storage_class, pvc, pod_manifes
     assert volume.size == engine.size
 
 
-def test_xfs_pv(client, core_api, pod_manifest): # NOQA
+def test_xfs_pv(client, core_api, pod_manifest):  # NOQA
     """
     Test create PV with new XFS filesystem
 
@@ -409,7 +410,8 @@ def test_xfs_pv(client, core_api, pod_manifest): # NOQA
     resp = read_volume_data(core_api, pod_name)
     assert resp == test_data
 
-def test_xfs_pv_existing_volume(client, core_api, pod_manifest): # NOQA
+
+def test_xfs_pv_existing_volume(client, core_api, pod_manifest):  # NOQA
     """
     Test create PV with existing XFS filesystem
 
@@ -537,7 +539,8 @@ def test_csi_expansion_with_replica_failure(client, core_api, storage_class, pvc
     resp = read_volume_data(core_api, pod_name)
     assert resp == test_data
 
-@pytest.mark.skip(reason="TODO") # NOQA
+
+@pytest.mark.skip(reason="TODO")  # NOQA
 def test_csi_volumesnapshot_basic():  # NOQA
     """
     Test creation / restoration / deletion of a backup via the csi snapshotter
@@ -597,7 +600,7 @@ def test_csi_volumesnapshot_basic():  # NOQA
     """
 
 
-@pytest.mark.skip(reason="TODO") # NOQA
+@pytest.mark.skip(reason="TODO")  # NOQA
 def test_csi_volumesnapshot_restore_existing_backup():  # NOQA
     """
     Test restoration of a non csi created backup via the csi snapshotter
@@ -640,7 +643,8 @@ def test_csi_volumesnapshot_restore_existing_backup():  # NOQA
     9. cleanup
     """
 
-@pytest.mark.skip(reason="TODO") # NOQA
+
+@pytest.mark.skip(reason="TODO")  # NOQA
 def test_csi_volumesnapshot_deletion_retain():  # NOQA
     """
     Test retention of a backup while deleting the associated `VolumeSnapshot`
@@ -668,4 +672,32 @@ def test_csi_volumesnapshot_deletion_retain():  # NOQA
     3. call csi_volumesnapshot_restore_test()
     4. call csi_volumesnapshot_deletion_test(deletionPolicy='Retain'):
     5. cleanup
+    """
+
+
+@pytest.mark.skip(reason="TODO")  # NOQA
+@pytest.mark.coretest
+def test_allow_volume_creation_with_degraded_availability_csi():
+    """
+    Test Allow Volume Creation with Degraded Availability (CSI)
+
+    Requirement:
+    1. Set `allow-volume-creation-with-degraded-availability` to true
+    2. `node-level-soft-anti-affinity` to false
+
+    Steps:
+    1. Disable scheduling for node 3
+    2. Create a Deployment Pod with a volume and three replicas.
+        1. After the volume is attached, scheduling error should be seen.
+    3. Write data to the Pod.
+    4. Scale down the deployment to 0 to detach the volume.
+        1. Scheduled condition should become true.
+    5. Scale up the deployment back to 1 verify the data.
+        1. Scheduled condition should become false.
+    6. Enable the scheduling for the third node.
+        1. Volume should start rebuilding on the third node soon.
+        2. Once the rebuilding starts, the scheduled condition should become
+        true
+    7. Once rebuild finished, scale down and back the deployment to
+        verify the data.
     """
