@@ -37,9 +37,9 @@ from common import create_storage_class
 from common import wait_for_backup_restore_completed
 from common import wait_for_volume_restoration_completed
 from common import read_volume_data
-from common import pvc_name # NOQA
-from common import storage_class # NOQA
-from common import pod_make, csi_pv, pvc # NOQA
+from common import pvc_name  # NOQA
+from common import storage_class  # NOQA
+from common import pod_make, csi_pv, pvc  # NOQA
 from common import set_random_backupstore
 from common import create_snapshot
 from common import expand_attached_volume
@@ -58,7 +58,7 @@ from common import MESSAGE_TYPE_ERROR
 from common import DATA_SIZE_IN_MB_1
 from common import SETTING_REPLICA_NODE_SOFT_ANTI_AFFINITY
 from common import CONDITION_REASON_SCHEDULING_FAILURE
-from common import set_backupstore_s3 # NOQA
+from common import set_backupstore_s3  # NOQA
 from common import delete_backup
 from common import delete_backup_volume
 from common import BACKUP_BLOCK_SIZE
@@ -522,8 +522,8 @@ def test_backup_status_for_unavailable_replicas(client, volume_name):    # NOQA
     backup_status_for_unavailable_replicas_test(client, volume_name, SIZE)
 
 
-def backup_status_for_unavailable_replicas_test(client, volume_name, # NOQA
-                                                size, base_image=""): # NOQA
+def backup_status_for_unavailable_replicas_test(client, volume_name,  # NOQA
+                                                size, base_image=""):  # NOQA
     volume = create_and_check_volume(client, volume_name, 2, size, base_image)
 
     lht_hostId = get_self_host_id()
@@ -931,6 +931,7 @@ def test_backup_metadata_deletion(client, core_api, volume_name, set_backupstore
                                                 core_api,
                                                 volume1_name) == 0
 
+
 @pytest.mark.coretest   # NOQA
 def test_backup(client, volume_name):  # NOQA
     """
@@ -971,14 +972,14 @@ def backup_test(client, volume_name, size, base_image=""):  # NOQA
             assert setting.value == backupsettings[0]
 
             credential = client.by_id_setting(
-                    common.SETTING_BACKUP_TARGET_CREDENTIAL_SECRET)
+                common.SETTING_BACKUP_TARGET_CREDENTIAL_SECRET)
             credential = client.update(credential, value=backupsettings[1])
             assert credential.value == backupsettings[1]
         else:
             setting = client.update(setting, value=backupstore)
             assert setting.value == backupstore
             credential = client.by_id_setting(
-                    common.SETTING_BACKUP_TARGET_CREDENTIAL_SECRET)
+                common.SETTING_BACKUP_TARGET_CREDENTIAL_SECRET)
             credential = client.update(credential, value="")
             assert credential.value == ""
 
@@ -987,7 +988,7 @@ def backup_test(client, volume_name, size, base_image=""):  # NOQA
     cleanup_volume(client, volume)
 
 
-def backupstore_test(client, host_id, volname, size): # NOQA
+def backupstore_test(client, host_id, volname, size):  # NOQA
     bv, b, snap2, data = create_backup(client, volname)
 
     # test restore
@@ -1818,15 +1819,15 @@ def test_storage_class_from_backup(volume_name, pvc_name, storage_class, client,
                 "name": backup_pvc_name,
         },
         "spec": {
-                "accessModes": [
-                        "ReadWriteOnce"
-                ],
-                "storageClassName": storage_class['metadata']['name'],
-                "resources": {
-                        "requests": {
-                                "storage": VOLUME_SIZE
-                        }
+            "accessModes": [
+                "ReadWriteOnce"
+            ],
+            "storageClassName": storage_class['metadata']['name'],
+            "resources": {
+                "requests": {
+                    "storage": VOLUME_SIZE
                 }
+            }
         }
     }
 
@@ -3035,3 +3036,89 @@ def test_backup_lock_restoration_during_deletion(client, core_api, volume_name, 
     except AssertionError:
         b2 = None
     assert b2 is None
+
+
+@pytest.mark.skip(reason="TODO")
+@pytest.mark.coretest
+def test_allow_volume_creation_with_degraded_availability_api():
+    """
+    Test Allow Volume Creation with Degraded Availability (API)
+
+    Requirement:
+    1. Set `allow-volume-creation-with-degraded-availability` to true
+    2. `node-level-soft-anti-affinity` to false
+
+    Steps:
+    (degraded availablity)
+    1. Disable scheduling for node 2 and 3
+    2. Create a volume with three replicas.
+        1. Volume should be `ready` after creation and `Scheduled` is true
+        2. One replica schedule succeed. Two other replicas failed scheduling.
+    3. Enable the scheduling of node 2.
+        1. One additional replica of the volume will become scheduled
+        2. The other replica is still failed to schedule.
+        3. Scheduled condition is still true
+    4. Attach the volume.
+        1. After the volume is attached, scheduled condition become false.
+    5. Write data to the volume.
+    6. Detach the volume
+        1. Scheduled condition should become true.
+    7. Reattach the volume to verify the data.
+        1. Scheduled condition should become false.
+    8. Enable the scheduling for the node 3.
+    9. Wait for the scheduling condition to become true
+    10. Wait for the rebuild to complete.
+    11. Detach and reattach the volume to verify the data
+
+    (no availability)
+    1. Disable all nodes' scheduling.
+    2. Create a volume with three replicas.
+        1. Volume should be NotReady after creation
+        2. Scheduled condition should become false.
+    3. Attaching the volume should result in error.
+    4. Enable one node's scheduling
+        1. Volume should become Ready soon
+        2. Scheduling error should be gone.
+    5. Attach the volume. Write data. Detach and reattach to verify the data
+    """
+
+
+@pytest.mark.skip(reason="TODO")
+def test_allow_volume_creation_with_degraded_availability_restore():
+    """
+    Test Allow Volume Creation with Degraded Availability (Restore)
+
+    Requirement:
+    1. Set `allow-volume-creation-with-degraded-availability` to true
+    2. `node-level-soft-anti-affinity` to false
+    3. Create a backup of 800MB.
+
+    Steps:
+    (restore)
+    1. Disable scheduling for node 2 and 3
+    2. Restore a volume with three replicas.
+        1. Volume should be attached automatically and `Scheduled` is true
+        2. One replica schedule succeed. Two other replicas failed scheduling.
+    3. During the restore, enable scheduling for node 2.
+        1. One additional replica of the volume will become scheduled
+        2. The other replica is still failed to schedule.
+        3. Scheduled condition is still true
+    4. Wait for the restore to complete and volume detach automatically.
+        1. After the volume detached, scheduled condition become true.
+    5. Attach the volume and verify the data.
+        1. After the volume is attached, scheduled condition become false.
+
+    (DR volume)
+    1. Disable scheduling for node 2 and 3
+    2. Create a DR volume from backup with three replicas.
+        1. Volume should be attached automatically and `Scheduled` is true
+        2. One replica schedule succeed. Two other replicas failed scheduling.
+    3. During the restore, enable scheduling for node 2.
+        1. One additional replica of the volume will become scheduled
+        2. The other replica is still failed to schedule.
+        3. Scheduled condition is still true
+    4. Wait for the restore to complete.
+    5. Enable the scheduling for node 3.
+        1. DR volume should automatically rebuild the third replica.
+    6. Activate the volume and verify the data.
+    """
