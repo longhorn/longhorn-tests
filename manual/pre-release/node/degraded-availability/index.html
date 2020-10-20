@@ -266,50 +266,45 @@
 </aside>
 
 <main style="padding: 1%; width: 70%;">
-  <header class="homepage-header">
-    <h1>Node</h1>
-    
-  </header>
-  <div class="homepage-content">
-    
-  </div>
+  <h1 id="title">Degraded availability with added nodes</h1>
   <div>
-    <ul>
+    <article id="content">
+       <p><a href="https://github.com/longhorn/longhorn/issues/1701">https://github.com/longhorn/longhorn/issues/1701</a></p>
+<h4 id="volume-creation-using-ui-with-degraded-availability-and-added-node">Volume creation using UI with degraded availability and added node</h4>
+<p>Start with one node cluster.</p>
+<ol>
+<li>Create a Deployment Pod with a volume and three replicas.
+<ol>
+<li>After the volume is attached, <code>scheduling error</code> should be seen from the UI. But no functional impact.</li>
+</ol>
+</li>
+<li>Write data to the Pod.</li>
+<li>Scale down the deployment to 0 to detach the volume.
+<ol>
+<li><code>scheduling error</code> should be gone.</li>
+</ol>
+</li>
+<li>Scale up the deployment back to 1 verify the data.
+<ol>
+<li><code>scheduling error</code> should be seen again from the UI.</li>
+</ol>
+</li>
+<li>Add another node to the cluster.
+<ol>
+<li>Volume should start rebuilding on the second node soon.</li>
+</ol>
+</li>
+<li>Once the rebuild completed, scale down and back up the deployment to verify the data.</li>
+<li>And the third node to the cluster.
+<ol>
+<li>Volume should start rebuilding on the third node soon.</li>
+<li>Once the rebuilding starts, the <code>scheduling error</code> should be gone.</li>
+</ol>
+</li>
+<li>Scale down and back the deployment to verify the data.</li>
+</ol>
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node/degraded-availability/">Degraded availability with added nodes</a></li>
-  
-
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node/improve-node-failure-handling/">Improve Node Failure Handling By Automatically Force Delete Terminating Pods of StatefulSet/Deployment On Downed Node</a></li>
-  
-
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node/node-disconnection/">Node disconnection test</a></li>
-  
-
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node/node-drain-deletion/">Node drain and deletion test</a></li>
-  
-
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node/physical-node-down/">Physical node down</a></li>
-  
-
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node/node-deletion/">Test node deletion</a></li>
-  
-
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node/auto-detach/">Test scenarios for auto detach of deployment pod&rsquo;s volume when the node is down</a></li>
-  
-    <ul>
-
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node/auto-detach/deployment/">Workload type: Deployment</a></li>
-  
-
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node/auto-detach/statefulset/">Workload type: Stateful set</a></li>
-  
-
-</ul>
-
-  
-
-</ul>
-
+    </article>
   </div>
 </main>
 

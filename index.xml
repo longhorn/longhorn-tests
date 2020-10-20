@@ -116,6 +116,17 @@
     </item>
     
     <item>
+      <title>Degraded availability with added nodes</title>
+      <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/node/degraded-availability/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/node/degraded-availability/</guid>
+      <description>https://github.com/longhorn/longhorn/issues/1701
+Volume creation using UI with degraded availability and added node Start with one node cluster.
+ Create a Deployment Pod with a volume and three replicas.  After the volume is attached, scheduling error should be seen from the UI. But no functional impact.   Write data to the Pod. Scale down the deployment to 0 to detach the volume.  scheduling error should be gone.   Scale up the deployment back to 1 verify the data.</description>
+    </item>
+    
+    <item>
       <title>DR volume related latest backup deletion test</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.1/dr-volume-latest-backup-deletion/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
