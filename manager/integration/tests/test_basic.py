@@ -3122,3 +3122,17 @@ def test_allow_volume_creation_with_degraded_availability_restore():
         1. DR volume should automatically rebuild the third replica.
     6. Activate the volume and verify the data.
     """
+
+
+@pytest.mark.skip(reason="TODO")
+def test_cleanup_system_generated_snapshots():
+    """
+    Test Cleanup System Generated Snapshots
+
+    1. Enabled 'Auto Cleanup System Generated Snapshot'.
+    2. Create a volume and attach it to a node.
+    3. Write some data to the volume and get the checksum of the data.
+    4. Delete a random replica to trigger a system generated snapshot.
+    5. Repeat Step 3 for 3 times, and make sure only one snapshot is left.
+    6. Check the data with the saved checksum.
+    """
