@@ -139,6 +139,9 @@ SETTING_CREATE_DEFAULT_DISK_LABELED_NODES = &#34;create-default-disk-labeled-nod
 SETTING_DISABLE_SCHEDULING_ON_CORDONED_NODE = \
     &#34;disable-scheduling-on-cordoned-node&#34;
 SETTING_DEFAULT_DATA_PATH = &#34;default-data-path&#34;
+SETTING_DEGRADED_AVAILABILITY = \
+    &#34;allow-volume-creation-with-degraded-availability&#34;
+
 DEFAULT_DISK_PATH = &#34;/var/lib/longhorn/&#34;
 DEFAULT_STORAGE_OVER_PROVISIONING_PERCENTAGE = &#34;500&#34;
 DEFAULT_STORAGE_MINIMAL_AVAILABLE_PERCENTAGE = &#34;10&#34;
@@ -2393,6 +2396,18 @@ def reset_disks_for_all_nodes(client):  # NOQA
 
 
 def reset_settings(client):
+    degraded_availability_setting = client.by_id_setting(
+            SETTING_DEGRADED_AVAILABILITY)
+    try:
+        client.update(degraded_availability_setting,
+                      value=&#34;false&#34;)
+    except Exception as e:
+        print(&#34;\nException when update &#34;
+              &#34;allow volume creation with degraded availability settings&#34;,
+              degraded_availability_setting)
+        print(e)
+        pass
+
     minimal_setting = client.by_id_setting(
         SETTING_STORAGE_MINIMAL_AVAILABLE_PERCENTAGE)
     try:
@@ -6976,6 +6991,18 @@ def random_labels():
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def reset_settings(client):
+    degraded_availability_setting = client.by_id_setting(
+            SETTING_DEGRADED_AVAILABILITY)
+    try:
+        client.update(degraded_availability_setting,
+                      value=&#34;false&#34;)
+    except Exception as e:
+        print(&#34;\nException when update &#34;
+              &#34;allow volume creation with degraded availability settings&#34;,
+              degraded_availability_setting)
+        print(e)
+        pass
+
     minimal_setting = client.by_id_setting(
         SETTING_STORAGE_MINIMAL_AVAILABLE_PERCENTAGE)
     try:
