@@ -7,9 +7,7 @@ import time
 from random import choice
 from string import ascii_lowercase, digits
 
-import copy
-
-from common import core_api, client  # NOQA
+from common import core_api, client, csi_pv, pvc, pod_make  # NOQA
 from common import Gi, SIZE, CONDITION_STATUS_FALSE, \
     CONDITION_STATUS_TRUE, DEFAULT_DISK_PATH, DIRECTORY_PATH, \
     DISK_CONDITION_SCHEDULABLE, DISK_CONDITION_READY, \
@@ -34,21 +32,16 @@ from common import exec_nsenter
 from common import SETTING_REPLICA_NODE_SOFT_ANTI_AFFINITY
 from common import SETTING_MKFS_EXT4_PARAMS
 from common import volume_name # NOQA
-from common import pod # NOQA
 from common import settings_reset # NOQA
 from common import Mi, DATA_SIZE_IN_MB_2
-from common import create_and_check_volume
-from common import create_pv_for_volume
-from common import create_pvc_for_volume
 from common import create_and_wait_pod
-from common import write_pod_volume_random_data
 from common import get_pod_data_md5sum
 from common import wait_for_volume_healthy
-from common import wait_for_volume_replica_count
+from common import wait_for_volume_replica_count, \
+    wait_for_volume_replica_count_not_equal
 from common import wait_for_volume_degraded
 from common import delete_and_wait_pod
 from common import wait_for_volume_detached
-from common import wait_for_volume_healthy_no_frontend
 
 CREATE_DEFAULT_DISK_LABEL = "node.longhorn.io/create-default-disk"
 CREATE_DEFAULT_DISK_LABEL_VALUE_CONFIG = "config"
@@ -2211,320 +2204,357 @@ def test_replica_scheduler_rebuild_restore_is_too_big(client):  # NOQA
     cleanup_host_disk(client, 'vol-small')
 
 
-def test_node_eviction(client, core_api, volume_name, pod, settings_reset): # NOQA
+def test_node_eviction(client, core_api, csi_pv, pvc, pod_make, volume_name): # NOQA
+    """
+    Test node eviction (assuming this is a 3 nodes cluster)
+
+    Case: node 1, 3 to node 1, 2 eviction
+    1. Disable scheduling on node 2.
+    2. Create pv, pvc, pod with volume of 2 replicas.
+    3. Write some data and get the checksum.
+    4. Set 'Eviction Requested' to 'false' and enable scheduling on node 2.
+    5. Set 'Eviction Requested' to 'true' and disable scheduling on node 3.
+    6. Remove replica on node 1 to make volume degraded.
+    7. Wait for volume 'healthy' and eviction completed.
+    8. Check replicas running on node 1 and 2.
+    9. Check volume data checksum.
+    """
+    nodes = client.list_node()
+    node1 = nodes[0]
+    node2 = nodes[1]
+    node3 = nodes[2]
+
+    # schedule replicas to node 1, 3
+    client.update(node2, allowScheduling=False)
+
+    data_path = "/data/test"
+    pod_name, _, _, created_md5sum = \
+        common.prepare_pod_with_data_in_mb(client, core_api, csi_pv,
+                                           pvc, pod_make, volume_name,
+                                           num_of_replicas=2,
+                                           data_path=data_path)
+
+    volume = wait_for_volume_healthy(client, volume_name)
+    assert len(volume.replicas) == 2
+    for r in volume.replicas:
+        assert r.mode == "RW"
+        assert r.running is True
+
+    # replica now running on node 1, 3
+    # enable node 2
+    client.update(node2, allowScheduling=True, evictionRequested=False)
+    # disable node 3 to have replica schedule to node 1, 2
+    client.update(node3, allowScheduling=False, evictionRequested=True)
+
+    volume = client.by_id_volume(volume_name)
+    for r in volume.replicas:
+        if r.hostId == node1.name:
+            volume.replicaRemove(name=r.name)
+            break
+    wait_for_volume_degraded(client, volume_name)
+    wait_for_volume_healthy(client, volume_name)
+
+    try:
+        wait_for_volume_replica_count(client, volume_name, 3)
+    except AssertionError as e:
+        print("\nException when asserting replica count, "
+              "could have missed this intermediate state for ",
+              volume_name)
+        print(e)
+        pass
+    wait_for_volume_replica_count(client, volume_name, 2)
+
+    volume = client.by_id_volume(volume_name)
+    for r in volume.replicas:
+        assert r.hostId == node1.name or \
+               r.hostId == node2.name
+        assert r.running is True
+        assert r.mode == "RW"
+
+    expect_md5sum = get_pod_data_md5sum(core_api, pod_name, data_path)
+    assert expect_md5sum == created_md5sum
+
+
+def test_node_eviction_no_schedulable_node(client, core_api, csi_pv, pvc, pod_make, volume_name, settings_reset): # NOQA
     """
     Test node eviction (assuming this is a 3 nodes cluster)
 
     1. Disable scheduling on node 3.
-    2. Create volume 1 with 2 replicas.
-    3. Attach volume 1 to node 1 and write some data to it and get
-    checksum 1.
+    2. Create pv, pvc, pod with volume of 2 replicas.
+    3. Write some data and get the checksum.
     4. Disable scheduling and set 'Eviction Requested' to 'true' on node 1.
-    5. Volume 1 should be failed to schedule new replica.
-    6. Set 'Eviction Requested' to 'false' to cancel node 1 eviction and
-    check there should be 1 replica on node 1 and node 2.
-    7. Set 'Eviction Requested' to 'true' on node 1.
+    5. Volume should be failed to schedule new replica.
+    6. Set 'Eviction Requested' to 'false' to cancel node 1 eviction.
+    7. Check replica has the same hostID.
+    8. Check volume data checksum.
+    """
+    nodes = client.list_node()
+    node1 = nodes[0]
+    node3 = nodes[2]
+
+    # schedule replicas to node 1, 2
+    client.update(node3, allowScheduling=False)
+
+    data_path = "/data/test"
+    pod_name, _, _, created_md5sum = \
+        common.prepare_pod_with_data_in_mb(client, core_api, csi_pv,
+                                           pvc, pod_make, volume_name,
+                                           data_path=data_path,
+                                           num_of_replicas=2)
+
+    volume = wait_for_volume_healthy(client, volume_name)
+    assert len(volume.replicas) == 2
+    replica_names = []
+    replica_hostIDs = []
+    for r in volume.replicas:
+        assert r.mode == "RW"
+        assert r.running is True
+        replica_names.append(r.name)
+        replica_hostIDs.append(r["hostId"])
+
+    client.update(node1, allowScheduling=False, evictionRequested=True)
+    wait_for_volume_replica_count(client, volume_name, 3)
+
+    volume = client.by_id_volume(volume_name)
+    volume_err_replica = None
+    for r in volume.replicas:
+        if r.name in replica_names:
+            assert r.running is True
+            assert r.mode == "RW"
+        else:
+            volume_err_replica = r
+            break
+    assert volume_err_replica is not None
+    assert volume_err_replica.running is False
+    assert volume_err_replica.mode == ''
+
+    client.update(node1, allowScheduling=False, evictionRequested=False)
+    wait_for_volume_replica_count(client, volume_name, 2)
+
+    volume = client.by_id_volume(volume_name)
+    for r in volume.replicas:
+        if r.name in replica_names:
+            assert r.running is True
+            assert r.mode == "RW"
+            assert r.hostId in replica_hostIDs
+            replica_hostIDs.remove(r.hostId)
+        else:
+            assert False
+
+    expect_md5sum = get_pod_data_md5sum(core_api, pod_name, data_path)
+    assert expect_md5sum == created_md5sum
+
+
+def test_node_eviction_soft_anti_affinity(client, core_api, csi_pv, pvc, pod_make, volume_name, settings_reset): # NOQA
+    """
+    Test node eviction (assuming this is a 3 nodes cluster)
+
+    Case #1: node 1,2 to node 2 eviction
+    1. Disable scheduling on node 3.
+    2. Create pv, pvc, pod with volume of 2 replicas.
+    3. Write some data and get the checksum.
+    7. Set 'Eviction Requested' to 'true' and disable scheduling on node 1.
     8. Set 'Replica Node Level Soft Anti-Affinity' to 'true'.
-    9. The eviction should be success, and no replica on node 1, 2 replicas
-    on node 2.
-    10. Enable scheduling on node 3, and set 'Eviction Requested' to
-    'false', enable scheduling on node 1.
+    9. The eviction should succeed, and all replicas running on node 2.
+    Case #2: node 2 to node 1, 3 eviction
+    10. Enable scheduling on node 1 and 3.
     11. Set 'Replica Node Level Soft Anti-Affinity' to 'false'.
-    12. Disable scheduling and set 'Eviction Requested' to 'true' on
-    node 2. And make sure the volume is in healthy state during the
-    eviction.
-    13. The eviction should be success and no replica on node 2. And 1
-    replica on node 1 and node 3. And verify the data with checksum 1.
-    14. Set 'Eviction Requested' to 'false' and enable scheduling on node 2.
-    15. Remove the replica on node 1 to make volume 1 in 'Degraded'
-    State. And set 'Eviction Requested' to 'true' and disable scheduling
-    on node 3.
-    16. Once volume 1 is back at 'Healthy' state, and the eviction is
-    done, there should be 1 replica on node 1 and node 2. And verify the
-    data with checksum 1.
-    17. Disable scheduling on node 1.
-    18. Create volume 2 with 2 replicas.
-    19. Attach volume 2 to node 2 and write some data to it and get
-    checksum 2. (volume 1 has replicas on node 1&2, volume 2 has replicas
-    on node 2&3)
-    20. Enable scheduling on node 1. And set 'Eviction Requested' to 'true'
-    and disable scheduling on node 2.
-    21. After the eviction is success, volume 1 should has replicas on node
-    1&3 and volume 2 should has replicas on node 1&3.
-    22. Detach volume 1 and volume 2.
-    23. Disable scheduling and set 'Eviction Requested' to 'true' on node 1.
-    24. Both volume 1 and 2 will be auto-attached and make sure the volumes
-    are in healthy state during the eviction.
-    25. After the eviction is success, volume 1 should has replicas on node
-    2&3, and volume 2 should has replicas on node 2&3.
-    26. Enabled scheduling and set 'Eviction Requested' to 'false' on node
-    1.
-    27. Verify the data on volume 1 and volume 2, the checksum should be
-    the same as checksum 1 and checksum 2.
-    28. Set 'Eviction Requested' to 'false' and enable scheduling on node 2.
+    12. Set 'Eviction Requested' to 'true' and disable scheduling on node 2.
+    13. Check volume is still `healty`.
+    14. Check replicas running on node 1 and 3.
+    15, Check volume data checksum.
+    """
+    nodes = client.list_node()
+    node1 = nodes[0]
+    node2 = nodes[1]
+    node3 = nodes[2]
+
+    # schedule replicas to node 1, 2
+    client.update(node3, allowScheduling=False)
+
+    data_path = "/data/test"
+    pod_name, _, _, created_md5sum = \
+        common.prepare_pod_with_data_in_mb(client, core_api, csi_pv,
+                                           pvc, pod_make, volume_name,
+                                           num_of_replicas=2,
+                                           data_path=data_path)
+
+    volume = wait_for_volume_healthy(client, volume_name)
+    assert len(volume.replicas) == 2
+    for r in volume.replicas:
+        assert r.mode == "RW"
+        assert r.running is True
+
+    # replica now running on node 1, 2
+    # evict node 1 and disable schedule
+    client.update(node1, allowScheduling=False, evictionRequested=True)
+
+    # enable anti-affinity allow the 2 replicas running on node 2
+    replica_node_soft_anti_affinity_setting = \
+        client.by_id_setting(SETTING_REPLICA_NODE_SOFT_ANTI_AFFINITY)
+    client.update(replica_node_soft_anti_affinity_setting, value="true")
+
+    try:
+        wait_for_volume_replica_count(client, volume_name, 3)
+    except AssertionError as e:
+        print("\nException when asserting replica count, "
+              "could have missed this intermediate state for ",
+              volume_name)
+        print(e)
+        pass
+    wait_for_volume_replica_count(client, volume_name, 2)
+
+    volume1 = client.by_id_volume(volume_name)
+    for replica in volume1.replicas:
+        assert replica.hostId == node2.name
+        assert replica.running is True
+        assert replica.mode == "RW"
+
+    # replicas now all running on node 2, enable schedule on node 3
+    client.update(node3, allowScheduling=True)
+    # replicas now all running on node 2, enable schedule on node 1
+    client.update(node1, allowScheduling=True)
+
+    replica_node_soft_anti_affinity_setting = \
+        client.by_id_setting(SETTING_REPLICA_NODE_SOFT_ANTI_AFFINITY)
+    client.update(replica_node_soft_anti_affinity_setting, value="false")
+
+    # replica now all running on node 2, disable node 2 schedule to
+    # schedule to node 1, 3
+    client.update(node2, allowScheduling=False, evictionRequested=True)
+
+    # By observation, when K8s try to relocate from the single node with
+    # anti-affinity sometimes would replicate to single or mutiple replicas
+    # for the relocation, hense we do not know the expected replica size
+    # here.
+    try:
+        wait_for_volume_replica_count_not_equal(client, volume_name, 2)
+        wait_for_volume_replica_count(client, volume_name, 2)
+    except AssertionError as e:
+        print("\nException when asserting replica count, "
+              "could have missed this intermediate state for ",
+              volume_name)
+        print(e)
+        pass
+
+    volume = client.by_id_volume(volume_name)
+    assert volume.robustness == "healthy"
+
+    try:
+        # K8s may replicate to single or multi replicas for relocation.
+        # Sometimes this step is not required when multiple replicas are
+        # replicated correctly on the first try of relocation.
+        # However, this is still a necessary step in case K8s decided
+        # to have relocation done multiple times.
+        wait_for_volume_replica_count_not_equal(client, volume_name, 2)
+    except AssertionError as e:
+        print("\nException when asserting replica count, "
+              "possibly already completed eviction",
+              volume_name)
+        print(e)
+        pass
+    wait_for_volume_replica_count(client, volume_name, 2)
+
+    volume = client.by_id_volume(volume_name)
+    assert volume.robustness == "healthy"
+    for r in volume.replicas:
+        assert r.hostId == node1.name or \
+               r.hostId == node3.name
+        assert r.running is True
+        assert replica.mode == "RW"
+
+    expect_md5sum = get_pod_data_md5sum(core_api, pod_name, data_path)
+    assert expect_md5sum == created_md5sum
+
+
+def test_node_eviction_multiple_volume(client, core_api, csi_pv, pvc, pod_make, volume_name): # NOQA
+    """
+    Test node eviction (assuming this is a 3 nodes cluster)
+
+    1. Disable scheduling on node 1.
+    2. Create pv, pvc, pod with volume 1 of 2 replicas.
+    3. Write some data to volume 1 and get the checksum.
+    2. Create pv, pvc, pod with volume 2 of 2 replicas.
+    3. Write some data to volume 2 and get the checksum.
+    4. Set 'Eviction Requested' to 'true' and disable scheduling on node 2.
+    5. Set 'Eviction Requested' to 'false' and enable scheduling on node 1.
+    6. Check all replicas running on node 1 and 3.
+    7. delete pods to detach volume 1 and 2.
+    8. Set 'Eviction Requested' to 'false' and enable scheduling on node 2.
+    9. Set 'Eviction Requested' to 'true' and disable scheduling on node 1.
+    10. Create pod 1 and pod 2 to automatically attach to volume 1 and 2.
+    11. Check all replicas running on node 2 and 3.
+    12. Check volume data checksum for volume 1 and 2.
     """
     nodes = client.list_node()
 
     node1 = nodes[0]
     node2 = nodes[1]
     node3 = nodes[2]
-    client.update(node3, allowScheduling=False)
 
-    volume1_name = volume_name + "-1"
-    volume1_size = str(500 * Mi)
-    volume1_data_path = "/data/test"
-    pv1_name = volume1_name + "-pv"
-    pvc1_name = volume1_name + "-pvc"
-    pod1_name = volume1_name + "-pod"
-    pod1 = copy.deepcopy(pod)
-
-    pod1['metadata']['name'] = pod1_name
-    pod1['spec']['volumes'] = [{
-        "name": "pod-data",
-        "persistentVolumeClaim": {
-            "claimName": pvc1_name
-        }
-    }]
-
-    pod1['spec']['nodeSelector'] = \
-        {"kubernetes.io/hostname": node1.name}
-
-    volume1 = create_and_check_volume(client,
-                                      volume1_name,
-                                      num_of_replicas=2,
-                                      size=volume1_size)
-
-    create_pv_for_volume(client, core_api, volume1, pv1_name)
-    create_pvc_for_volume(client, core_api, volume1, pvc1_name)
-
-    create_and_wait_pod(core_api, pod1)
-    volume1 = wait_for_volume_healthy(client, volume1_name)
-
-    volume1_replica1 = volume1.replicas[0]
-    volume1_replica2 = volume1.replicas[1]
-
-    assert volume1_replica1.mode == "RW"
-    assert volume1_replica2.mode == "RW"
-    assert volume1_replica1.running is True
-    assert volume1_replica2.running is True
-
-    write_pod_volume_random_data(core_api,
-                                 pod1_name,
-                                 volume1_data_path,
-                                 DATA_SIZE_IN_MB_2)
-
-    volume1_md5sum = get_pod_data_md5sum(core_api,
-                                         pod1_name,
-                                         volume1_data_path)
-
-    client.update(node1, allowScheduling=False, evictionRequested=True)
-    wait_for_volume_replica_count(client, volume1_name, 3)
-
-    volume1 = client.by_id_volume(volume1_name)
-
-    volume1_err_replica = None
-    for replica in volume1.replicas:
-        if replica.name == volume1_replica1.name or \
-           replica.name == volume1_replica2.name:
-            assert replica.running is True
-            assert replica.mode == "RW"
-        else:
-            volume1_err_replica = replica
-            break
-    assert volume1_err_replica is not None
-    assert volume1_err_replica.running is False
-    assert volume1_err_replica.mode == ''
-
-    client.update(node1, allowScheduling=False, evictionRequested=False)
-    wait_for_volume_replica_count(client, volume1_name, 2)
-
-    volume1 = client.by_id_volume(volume1_name)
-
-    for replica in volume1.replicas:
-        if replica.name == volume1_replica1.name:
-            assert replica.running is True
-            assert replica.mode == "RW"
-            assert replica.hostId == volume1_replica1["hostId"]
-        elif replica.name == volume1_replica2.name:
-            assert replica.running is True
-            assert replica.mode == "RW"
-            assert replica.hostId == volume1_replica2["hostId"]
-        else:
-            assert False
-
-    client.update(node1, evictionRequested=True)
-
-    replica_node_soft_anti_affinity_setting = \
-        client.by_id_setting(SETTING_REPLICA_NODE_SOFT_ANTI_AFFINITY)
-    try:
-        client.update(replica_node_soft_anti_affinity_setting,
-                      value="true")
-    except Exception as e:
-        print("\nException when update "
-              "Replica Node Level Soft Anti-Affinity setting",
-              replica_node_soft_anti_affinity_setting)
-        print(e)
-
-    wait_for_volume_replica_count(client, volume1_name, 3)
-    wait_for_volume_replica_count(client, volume1_name, 2)
-
-    volume1 = client.by_id_volume(volume1_name)
-    for replica in volume1.replicas:
-        assert replica.hostId == node2.name
-        assert replica.running is True
-        assert replica.mode == "RW"
-
-    client.update(node3, allowScheduling=True, evictionRequested=False)
-    client.update(node1, allowScheduling=True)
-
-    replica_node_soft_anti_affinity_setting = \
-        client.by_id_setting(SETTING_REPLICA_NODE_SOFT_ANTI_AFFINITY)
-    try:
-        client.update(replica_node_soft_anti_affinity_setting,
-                      value="false")
-    except Exception as e:
-        print("\nException when update "
-              "Replica Node Level Soft Anti-Affinity setting",
-              replica_node_soft_anti_affinity_setting)
-        print(e)
-
-    client.update(node2, allowScheduling=False, evictionRequested=True)
-
-    volume1 = client.by_id_volume(volume1_name)
-    assert volume1.robustness == "healthy"
-
-    wait_for_volume_replica_count(client, volume1_name, 3)
-    wait_for_volume_replica_count(client, volume1_name, 2)
-
-    volume1 = client.by_id_volume(volume1_name)
-    assert volume1.robustness == "healthy"
-
-    wait_for_volume_replica_count(client, volume1_name, 3)
-    wait_for_volume_replica_count(client, volume1_name, 2)
-
-    volume1 = client.by_id_volume(volume1_name)
-    assert volume1.robustness == "healthy"
-
-    for replica in volume1.replicas:
-        if replica.hostId == node1.name:
-            assert replica.running is True
-            assert replica.mode == "RW"
-        elif replica.hostId == node3.name:
-            assert replica.running is True
-            assert replica.mode == "RW"
-        else:
-            assert False
-
-    v1md5sum = get_pod_data_md5sum(core_api,
-                                   pod1_name,
-                                   volume1_data_path)
-
-    assert v1md5sum == volume1_md5sum
-    client.update(node2, allowScheduling=True, evictionRequested=False)
-    volume1 = client.by_id_volume(volume1_name)
-
-    for replica in volume1.replicas:
-        if replica.hostId == node1.name:
-            break
-
-    volume1.replicaRemove(name=replica.name)
-
-    client.update(node3, allowScheduling=False, evictionRequested=True)
-    wait_for_volume_degraded(client, volume1_name)
-    wait_for_volume_healthy(client, volume1_name)
-
-    wait_for_volume_replica_count(client, volume1_name, 3)
-    wait_for_volume_replica_count(client, volume1_name, 2)
-
-    volume1 = client.by_id_volume(volume1_name)
-    assert volume1.robustness == "healthy"
-
-    for replica in volume1.replicas:
-        if replica.hostId == node1.name:
-            assert replica.running is True
-            assert replica.mode == "RW"
-        elif replica.hostId == node2.name:
-            assert replica.running is True
-            assert replica.mode == "RW"
-        else:
-            assert False
-
-    v1md5sum = get_pod_data_md5sum(core_api,
-                                   pod1_name,
-                                   volume1_data_path)
-
-    assert v1md5sum == volume1_md5sum
-
+    # schedule replicas to node 2, 3
     client.update(node1, allowScheduling=False)
-    client.update(node3, allowScheduling=True, evictionRequested=False)
 
+    data_path = "/data/test"
+
+    # create volume 1
+    volume1_name = volume_name + "-1"
+    pod1_name, _, pvc1_name, created_md5sum1 = \
+        common.prepare_pod_with_data_in_mb(client, core_api, csi_pv,
+                                           pvc, pod_make, volume1_name,
+                                           num_of_replicas=2,
+                                           data_path=data_path)
+
+    volume = wait_for_volume_healthy(client, volume1_name)
+    assert len(volume.replicas) == 2
+    for r in volume.replicas:
+        assert r.mode == "RW"
+        assert r.running is True
+
+    # create volume 2
     volume2_name = volume_name + "-2"
-    volume2_size = str(500 * Mi)
-    volume2_data_path = "/data/test"
-    pv2_name = volume2_name + "-pv"
-    pvc2_name = volume2_name + "-pvc"
-    pod2_name = volume2_name + "-pod"
-    pod2 = copy.deepcopy(pod)
+    pod2_name, _, pvc2_name, created_md5sum2 = \
+        common.prepare_pod_with_data_in_mb(client, core_api, csi_pv,
+                                           pvc, pod_make, volume2_name,
+                                           volume_size=str(500 * Mi),
+                                           num_of_replicas=2,
+                                           data_size_in_mb=DATA_SIZE_IN_MB_2,
+                                           data_path=data_path)
 
-    pod2['metadata']['name'] = pod2_name
+    volume = wait_for_volume_healthy(client, volume2_name)
+    assert len(volume.replicas) == 2
+    for r in volume.replicas:
+        assert r.mode == "RW"
+        assert r.running is True
 
-    pod2['spec']['volumes'] = [{
-        "name": "pod-data",
-        "persistentVolumeClaim": {
-            "claimName": pvc2_name
-        }
-    }]
-
-    pod2['spec']['nodeSelector'] = \
-        {"kubernetes.io/hostname": node2.name}
-
-    volume2 = create_and_check_volume(client,
-                                      volume2_name,
-                                      num_of_replicas=2,
-                                      size=volume2_size)
-
-    create_pv_for_volume(client, core_api, volume2, pv2_name)
-    create_pvc_for_volume(client, core_api, volume2, pvc2_name)
-
-    create_and_wait_pod(core_api, pod2)
-    volume2 = wait_for_volume_healthy(client, volume2_name)
-
-    volume2_replica1 = volume2.replicas[0]
-    volume2_replica2 = volume2.replicas[1]
-
-    assert volume2_replica1.mode == "RW"
-    assert volume2_replica2.mode == "RW"
-    assert volume2_replica1.running is True
-    assert volume2_replica2.running is True
-
-    write_pod_volume_random_data(core_api,
-                                 pod2_name,
-                                 volume2_data_path,
-                                 DATA_SIZE_IN_MB_2)
-
-    volume2_md5sum = get_pod_data_md5sum(core_api,
-                                         pod2_name,
-                                         volume2_data_path)
-
-    client.update(node1, allowScheduling=True)
+    # replica running on node 2, 3
+    # disable node 2
     client.update(node2, allowScheduling=False, evictionRequested=True)
+    # enable node 1 to have scheduled to 1, 3
+    client.update(node1, allowScheduling=True)
 
-    wait_for_volume_replica_count(client, volume1_name, 3)
-    wait_for_volume_replica_count(client, volume2_name, 3)
+    try:
+        wait_for_volume_replica_count(client, volume1_name, 3)
+        wait_for_volume_replica_count(client, volume2_name, 3)
+    except AssertionError as e:
+        print("\nException when asserting replica count, "
+              "could have missed this intermediate state for ",
+              volume1_name, "or", volume2_name)
+        print(e)
+        pass
 
     wait_for_volume_replica_count(client, volume1_name, 2)
     wait_for_volume_replica_count(client, volume2_name, 2)
 
     volume1 = client.by_id_volume(volume1_name)
+    for replica in volume1.replicas:
+        assert replica.hostId == node1.name or \
+               replica.hostId == node3.name
+
     volume2 = client.by_id_volume(volume2_name)
-
-    for v1replica in volume1.replicas:
-        assert v1replica.hostId == node1.name or \
-               v1replica.hostId == node3.name
-
-    for v2replica in volume2.replicas:
-        assert v2replica.hostId == node1.name or \
-               v2replica.hostId == node3.name
+    for replica in volume2.replicas:
+        assert replica.hostId == node1.name or \
+               replica.hostId == node3.name
 
     delete_and_wait_pod(core_api, pod1_name)
     delete_and_wait_pod(core_api, pod2_name)
@@ -2532,46 +2562,48 @@ def test_node_eviction(client, core_api, volume_name, pod, settings_reset): # NO
     wait_for_volume_detached(client, volume1_name)
     wait_for_volume_detached(client, volume2_name)
 
+    # replica running on node 1, 3
+    # enable node 2
     client.update(node2, allowScheduling=True, evictionRequested=False)
+    # disable node 1 to schedule to node 2, 3
     client.update(node1, allowScheduling=False, evictionRequested=True)
 
-    wait_for_volume_healthy_no_frontend(client, volume1_name)
-    wait_for_volume_healthy_no_frontend(client, volume2_name)
-
-    wait_for_volume_replica_count(client, volume1_name, 3)
-    wait_for_volume_replica_count(client, volume2_name, 3)
+    try:
+        wait_for_volume_replica_count(client, volume1_name, 3)
+        wait_for_volume_replica_count(client, volume2_name, 3)
+    except AssertionError as e:
+        print("\nException when asserting replica count, "
+              "could have missed this intermediate state for ",
+              volume1_name, "or", volume2_name)
+        print(e)
+        pass
 
     wait_for_volume_replica_count(client, volume1_name, 2)
     wait_for_volume_replica_count(client, volume2_name, 2)
 
-    volume1 = client.by_id_volume(volume1_name)
-    volume2 = client.by_id_volume(volume2_name)
-
-    for v1replica in volume1.replicas:
-        assert v1replica.hostId == node2.name or \
-               v1replica.hostId == node3.name
-
-    for v2replica in volume2.replicas:
-        assert v2replica.hostId == node2.name or \
-               v2replica.hostId == node3.name
-
     wait_for_volume_detached(client, volume1_name)
     wait_for_volume_detached(client, volume2_name)
+
+    pod1 = pod_make(name=pod1_name)
+    pod1['spec']['volumes'] = [common.create_pvc_spec(pvc1_name)]
+
+    pod2 = pod_make(name=pod2_name)
+    pod2['spec']['volumes'] = [common.create_pvc_spec(pvc2_name)]
 
     create_and_wait_pod(core_api, pod1)
     create_and_wait_pod(core_api, pod2)
 
-    wait_for_volume_healthy(client, volume2_name)
-    wait_for_volume_healthy(client, volume2_name)
+    volume1 = client.by_id_volume(volume1_name)
+    volume2 = client.by_id_volume(volume2_name)
+    for v in [volume1, volume2]:
+        for r in v.replicas:
+            assert r.hostId == node2.name or \
+                   r.hostId == node3.name
+            assert r.running is True
+            assert r.mode == "RW"
 
-    v1md5sum = get_pod_data_md5sum(core_api,
-                                   pod1_name,
-                                   volume1_data_path)
+    expect_md5sum = get_pod_data_md5sum(core_api, pod1_name, data_path)
+    assert expect_md5sum == created_md5sum1
 
-    assert v1md5sum == volume1_md5sum
-
-    v2md5sum = get_pod_data_md5sum(core_api,
-                                   pod2_name,
-                                   volume2_data_path)
-
-    assert v2md5sum == volume2_md5sum
+    expect_md5sum = get_pod_data_md5sum(core_api, pod2_name, data_path)
+    assert expect_md5sum == created_md5sum2
