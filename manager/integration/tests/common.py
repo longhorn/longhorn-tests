@@ -111,6 +111,9 @@ SETTING_CREATE_DEFAULT_DISK_LABELED_NODES = "create-default-disk-labeled-nodes"
 SETTING_DISABLE_SCHEDULING_ON_CORDONED_NODE = \
     "disable-scheduling-on-cordoned-node"
 SETTING_DEFAULT_DATA_PATH = "default-data-path"
+SETTING_DEGRADED_AVAILABILITY = \
+    "allow-volume-creation-with-degraded-availability"
+
 DEFAULT_DISK_PATH = "/var/lib/longhorn/"
 DEFAULT_STORAGE_OVER_PROVISIONING_PERCENTAGE = "500"
 DEFAULT_STORAGE_MINIMAL_AVAILABLE_PERCENTAGE = "10"
@@ -2365,6 +2368,18 @@ def reset_disks_for_all_nodes(client):  # NOQA
 
 
 def reset_settings(client):
+    degraded_availability_setting = client.by_id_setting(
+            SETTING_DEGRADED_AVAILABILITY)
+    try:
+        client.update(degraded_availability_setting,
+                      value="false")
+    except Exception as e:
+        print("\nException when update "
+              "allow volume creation with degraded availability settings",
+              degraded_availability_setting)
+        print(e)
+        pass
+
     minimal_setting = client.by_id_setting(
         SETTING_STORAGE_MINIMAL_AVAILABLE_PERCENTAGE)
     try:
