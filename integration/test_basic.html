@@ -3149,6 +3149,20 @@ def test_allow_volume_creation_with_degraded_availability_restore():
     5. Enable the scheduling for node 3.
         1. DR volume should automatically rebuild the third replica.
     6. Activate the volume and verify the data.
+    &#34;&#34;&#34;
+
+
+@pytest.mark.skip(reason=&#34;TODO&#34;)
+def test_cleanup_system_generated_snapshots():
+    &#34;&#34;&#34;
+    Test Cleanup System Generated Snapshots
+
+    1. Enabled &#39;Auto Cleanup System Generated Snapshot&#39;.
+    2. Create a volume and attach it to a node.
+    3. Write some data to the volume and get the checksum of the data.
+    4. Delete a random replica to trigger a system generated snapshot.
+    5. Repeat Step 3 for 3 times, and make sure only one snapshot is left.
+    6. Check the data with the saved checksum.
     &#34;&#34;&#34;</code></pre>
 </details>
 </section>
@@ -4992,6 +5006,37 @@ verify backup list contains no error messages for volume(1,2)
                             prefix + &#34;/backup_1234@failure.cfg&#34;)
 
     backupstore_cleanup(client)</code></pre>
+</details>
+</dd>
+<dt id="tests.test_basic.test_cleanup_system_generated_snapshots"><code class="name flex">
+<span>def <span class="ident">test_cleanup_system_generated_snapshots</span></span>(<span>)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test Cleanup System Generated Snapshots</p>
+<ol>
+<li>Enabled 'Auto Cleanup System Generated Snapshot'.</li>
+<li>Create a volume and attach it to a node.</li>
+<li>Write some data to the volume and get the checksum of the data.</li>
+<li>Delete a random replica to trigger a system generated snapshot.</li>
+<li>Repeat Step 3 for 3 times, and make sure only one snapshot is left.</li>
+<li>Check the data with the saved checksum.</li>
+</ol></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@pytest.mark.skip(reason=&#34;TODO&#34;)
+def test_cleanup_system_generated_snapshots():
+    &#34;&#34;&#34;
+    Test Cleanup System Generated Snapshots
+
+    1. Enabled &#39;Auto Cleanup System Generated Snapshot&#39;.
+    2. Create a volume and attach it to a node.
+    3. Write some data to the volume and get the checksum of the data.
+    4. Delete a random replica to trigger a system generated snapshot.
+    5. Repeat Step 3 for 3 times, and make sure only one snapshot is left.
+    6. Check the data with the saved checksum.
+    &#34;&#34;&#34;</code></pre>
 </details>
 </dd>
 <dt id="tests.test_basic.test_deleting_backup_volume"><code class="name flex">
@@ -7186,6 +7231,7 @@ def test_volume_update_replica_count(client, volume_name):  # NOQA
 <li><code><a title="tests.test_basic.test_backup_metadata_deletion" href="#tests.test_basic.test_backup_metadata_deletion">test_backup_metadata_deletion</a></code></li>
 <li><code><a title="tests.test_basic.test_backup_status_for_unavailable_replicas" href="#tests.test_basic.test_backup_status_for_unavailable_replicas">test_backup_status_for_unavailable_replicas</a></code></li>
 <li><code><a title="tests.test_basic.test_backup_volume_list" href="#tests.test_basic.test_backup_volume_list">test_backup_volume_list</a></code></li>
+<li><code><a title="tests.test_basic.test_cleanup_system_generated_snapshots" href="#tests.test_basic.test_cleanup_system_generated_snapshots">test_cleanup_system_generated_snapshots</a></code></li>
 <li><code><a title="tests.test_basic.test_deleting_backup_volume" href="#tests.test_basic.test_deleting_backup_volume">test_deleting_backup_volume</a></code></li>
 <li><code><a title="tests.test_basic.test_dr_volume_with_last_backup_deletion" href="#tests.test_basic.test_dr_volume_with_last_backup_deletion">test_dr_volume_with_last_backup_deletion</a></code></li>
 <li><code><a title="tests.test_basic.test_engine_image_daemonset_restart" href="#tests.test_basic.test_engine_image_daemonset_restart">test_engine_image_daemonset_restart</a></code></li>
