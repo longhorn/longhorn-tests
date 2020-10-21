@@ -2069,3 +2069,59 @@ def test_disable_replica_rebuild():
     16. Clean up the volume.
     """
     pass
+
+@pytest.mark.skip(reason="TODO") # NOQA
+def test_auto_remount_with_subpath():
+    """
+    Test Auto Remount With Subpath
+
+    Context:
+
+    Instead of manually finding and remounting all mount points of the volume,
+    we delete the workload pod so that Kubernetes handles those works.
+    This new implementation also solves the issue that remount doesn't
+    support subpath (e.g. when pod use subpath in PVC).
+    longhorn/longhorn#1719
+
+    Steps:
+
+    1. Deploy a storage class with parameter `numberOfReplicas: 1`
+       and `datalocality: best-effort`
+    2. Deploy a statefulset with `replicas: 1` and using the above storageclass
+       Make sure the container in the pod template uses subpath, like this:
+       ```yaml
+       volumeMounts:
+       - name: <PVC-NAME>
+         mountPath: /mnt
+         subPath: html
+       ```
+    3. Find the node where the statefulset pods are running.
+       Let's say `pod-1` is on `node-1`, and use `vol-1`.
+    4. exec into `pod-1`, create a file `test_data.txt`
+       inside the folder `/mnt/html`
+    5. Kill the replica instance manager pod on `node-1`.
+       This action simulates a network disconnection.
+    6. in a 2 minutes retry loop:
+       Exec into the `pod-1`, run `ls /mnt/html`.
+       Verify the file `test_data.txt` exists.
+
+    7. Kill the replica instance manager pod on `node-1` one more time.
+    8. Wait for volume to become healthy,
+       kill the replica instance manager pod on `node-1` one more time.
+    9. in a 2 minutes retry loop:
+       Exec into the `pod-1`, run `ls /mnt/html`.
+       Verify the file `test_data.txt` exists.
+
+    10. Update `numberOfReplicas` to 3.
+        Wait for replicas rebuilding finishes.
+    11. Kill the engine instance manager pod on `node-1`
+    12. In a 2 minutes retry loop:
+       Exec into the `pod-1`, run `ls /mnt/html`.
+       Verify the file `test_data.txt` exists.
+
+    13. kill `pod-1`.
+    14. In a 2 minutes retry loop:
+       Exec into the `pod-1`, run `ls /mnt/html`.
+       Verify the file `test_data.txt` exists.
+    """
+    pass
