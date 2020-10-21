@@ -1440,6 +1440,17 @@ def wait_for_volume_replica_count(client, name, count):
     return volume
 
 
+def wait_for_volume_replica_count_not_equal(client, name, count):
+    wait_for_volume_creation(client, name)
+    for i in range(RETRY_COUNTS):
+        volume = client.by_id_volume(name)
+        if len(volume.replicas) != count:
+            break
+        time.sleep(RETRY_INTERVAL)
+    assert len(volume.replicas) != count
+    return volume
+
+
 def wait_for_volume_replicas_mode(client, volname, mode, replicas_name=None):
     verified = False
     for i in range(RETRY_COUNTS):
@@ -3556,7 +3567,7 @@ def prepare_statefulset_with_data_in_mb(
 
 def prepare_pod_with_data_in_mb(
         client, core_api, csi_pv, pvc, pod_make, volume_name,
-        volume_size=str(1*Gi), data_path="/data/test",
+        volume_size=str(1*Gi), num_of_replicas=3, data_path="/data/test",
         data_size_in_mb=DATA_SIZE_IN_MB_1, add_liveness_prope=True):# NOQA:
 
     pod_name = volume_name + "-pod"
@@ -3581,7 +3592,8 @@ def prepare_pod_with_data_in_mb(
             pod_liveness_probe_spec
 
     create_and_check_volume(client, volume_name,
-                            num_of_replicas=3, size=volume_size)
+                            num_of_replicas=num_of_replicas,
+                            size=volume_size)
     core_api.create_persistent_volume(csi_pv)
     core_api.create_namespaced_persistent_volume_claim(
         body=pvc, namespace='default')
