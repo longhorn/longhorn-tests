@@ -2096,6 +2096,62 @@ def test_disable_replica_rebuild():
     rebuild and volume becomes &#39;healthy&#39; state with 2 replicas.
     16. Clean up the volume.
     &#34;&#34;&#34;
+    pass
+
+@pytest.mark.skip(reason=&#34;TODO&#34;) # NOQA
+def test_auto_remount_with_subpath():
+    &#34;&#34;&#34;
+    Test Auto Remount With Subpath
+
+    Context:
+
+    Instead of manually finding and remounting all mount points of the volume,
+    we delete the workload pod so that Kubernetes handles those works.
+    This new implementation also solves the issue that remount doesn&#39;t
+    support subpath (e.g. when pod use subpath in PVC).
+    longhorn/longhorn#1719
+
+    Steps:
+
+    1. Deploy a storage class with parameter `numberOfReplicas: 1`
+       and `datalocality: best-effort`
+    2. Deploy a statefulset with `replicas: 1` and using the above storageclass
+       Make sure the container in the pod template uses subpath, like this:
+       ```yaml
+       volumeMounts:
+       - name: &lt;PVC-NAME&gt;
+         mountPath: /mnt
+         subPath: html
+       ```
+    3. Find the node where the statefulset pods are running.
+       Let&#39;s say `pod-1` is on `node-1`, and use `vol-1`.
+    4. exec into `pod-1`, create a file `test_data.txt`
+       inside the folder `/mnt/html`
+    5. Kill the replica instance manager pod on `node-1`.
+       This action simulates a network disconnection.
+    6. in a 2 minutes retry loop:
+       Exec into the `pod-1`, run `ls /mnt/html`.
+       Verify the file `test_data.txt` exists.
+
+    7. Kill the replica instance manager pod on `node-1` one more time.
+    8. Wait for volume to become healthy,
+       kill the replica instance manager pod on `node-1` one more time.
+    9. in a 2 minutes retry loop:
+       Exec into the `pod-1`, run `ls /mnt/html`.
+       Verify the file `test_data.txt` exists.
+
+    10. Update `numberOfReplicas` to 3.
+        Wait for replicas rebuilding finishes.
+    11. Kill the engine instance manager pod on `node-1`
+    12. In a 2 minutes retry loop:
+       Exec into the `pod-1`, run `ls /mnt/html`.
+       Verify the file `test_data.txt` exists.
+
+    13. kill `pod-1`.
+    14. In a 2 minutes retry loop:
+       Exec into the `pod-1`, run `ls /mnt/html`.
+       Verify the file `test_data.txt` exists.
+    &#34;&#34;&#34;
     pass</code></pre>
 </details>
 </section>
@@ -2469,6 +2525,128 @@ volume.conditions[restore].reason == "RestoreFailure"</code>.</li>
 
     client.delete(res_volume)
     wait_for_volume_delete(client, res_name)</code></pre>
+</details>
+</dd>
+<dt id="tests.test_ha.test_auto_remount_with_subpath"><code class="name flex">
+<span>def <span class="ident">test_auto_remount_with_subpath</span></span>(<span>)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test Auto Remount With Subpath</p>
+<p>Context:</p>
+<p>Instead of manually finding and remounting all mount points of the volume,
+we delete the workload pod so that Kubernetes handles those works.
+This new implementation also solves the issue that remount doesn't
+support subpath (e.g. when pod use subpath in PVC).
+longhorn/longhorn#1719</p>
+<p>Steps:</p>
+<ol>
+<li>Deploy a storage class with parameter <code>numberOfReplicas: 1</code>
+and <code>datalocality: best-effort</code></li>
+<li>Deploy a statefulset with <code>replicas: 1</code> and using the above storageclass
+Make sure the container in the pod template uses subpath, like this:
+```yaml
+volumeMounts:</li>
+<li>name: <PVC-NAME>
+mountPath: /mnt
+subPath: html
+```</li>
+<li>Find the node where the statefulset pods are running.
+Let's say <code>pod-1</code> is on <code>node-1</code>, and use <code>vol-1</code>.</li>
+<li>exec into <code>pod-1</code>, create a file <code>test_data.txt</code>
+inside the folder <code>/mnt/html</code></li>
+<li>Kill the replica instance manager pod on <code>node-1</code>.
+This action simulates a network disconnection.</li>
+<li>
+<p>in a 2 minutes retry loop:
+Exec into the <code>pod-1</code>, run <code>ls /mnt/html</code>.
+Verify the file <code>test_data.txt</code> exists.</p>
+</li>
+<li>
+<p>Kill the replica instance manager pod on <code>node-1</code> one more time.</p>
+</li>
+<li>Wait for volume to become healthy,
+kill the replica instance manager pod on <code>node-1</code> one more time.</li>
+<li>
+<p>in a 2 minutes retry loop:
+Exec into the <code>pod-1</code>, run <code>ls /mnt/html</code>.
+Verify the file <code>test_data.txt</code> exists.</p>
+</li>
+<li>
+<p>Update <code>numberOfReplicas</code> to 3.
+Wait for replicas rebuilding finishes.</p>
+</li>
+<li>Kill the engine instance manager pod on <code>node-1</code></li>
+<li>
+<p>In a 2 minutes retry loop:
+Exec into the <code>pod-1</code>, run <code>ls /mnt/html</code>.
+Verify the file <code>test_data.txt</code> exists.</p>
+</li>
+<li>
+<p>kill <code>pod-1</code>.</p>
+</li>
+<li>In a 2 minutes retry loop:
+Exec into the <code>pod-1</code>, run <code>ls /mnt/html</code>.
+Verify the file <code>test_data.txt</code> exists.</li>
+</ol></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@pytest.mark.skip(reason=&#34;TODO&#34;) # NOQA
+def test_auto_remount_with_subpath():
+    &#34;&#34;&#34;
+    Test Auto Remount With Subpath
+
+    Context:
+
+    Instead of manually finding and remounting all mount points of the volume,
+    we delete the workload pod so that Kubernetes handles those works.
+    This new implementation also solves the issue that remount doesn&#39;t
+    support subpath (e.g. when pod use subpath in PVC).
+    longhorn/longhorn#1719
+
+    Steps:
+
+    1. Deploy a storage class with parameter `numberOfReplicas: 1`
+       and `datalocality: best-effort`
+    2. Deploy a statefulset with `replicas: 1` and using the above storageclass
+       Make sure the container in the pod template uses subpath, like this:
+       ```yaml
+       volumeMounts:
+       - name: &lt;PVC-NAME&gt;
+         mountPath: /mnt
+         subPath: html
+       ```
+    3. Find the node where the statefulset pods are running.
+       Let&#39;s say `pod-1` is on `node-1`, and use `vol-1`.
+    4. exec into `pod-1`, create a file `test_data.txt`
+       inside the folder `/mnt/html`
+    5. Kill the replica instance manager pod on `node-1`.
+       This action simulates a network disconnection.
+    6. in a 2 minutes retry loop:
+       Exec into the `pod-1`, run `ls /mnt/html`.
+       Verify the file `test_data.txt` exists.
+
+    7. Kill the replica instance manager pod on `node-1` one more time.
+    8. Wait for volume to become healthy,
+       kill the replica instance manager pod on `node-1` one more time.
+    9. in a 2 minutes retry loop:
+       Exec into the `pod-1`, run `ls /mnt/html`.
+       Verify the file `test_data.txt` exists.
+
+    10. Update `numberOfReplicas` to 3.
+        Wait for replicas rebuilding finishes.
+    11. Kill the engine instance manager pod on `node-1`
+    12. In a 2 minutes retry loop:
+       Exec into the `pod-1`, run `ls /mnt/html`.
+       Verify the file `test_data.txt` exists.
+
+    13. kill `pod-1`.
+    14. In a 2 minutes retry loop:
+       Exec into the `pod-1`, run `ls /mnt/html`.
+       Verify the file `test_data.txt` exists.
+    &#34;&#34;&#34;
+    pass</code></pre>
 </details>
 </dd>
 <dt id="tests.test_ha.test_disable_replica_rebuild"><code class="name flex">
@@ -4815,6 +4993,7 @@ to crash the engine process</p>
 <li><code><a title="tests.test_ha.ha_salvage_test" href="#tests.test_ha.ha_salvage_test">ha_salvage_test</a></code></li>
 <li><code><a title="tests.test_ha.ha_simple_recovery_test" href="#tests.test_ha.ha_simple_recovery_test">ha_simple_recovery_test</a></code></li>
 <li><code><a title="tests.test_ha.test_all_replica_restore_failure" href="#tests.test_ha.test_all_replica_restore_failure">test_all_replica_restore_failure</a></code></li>
+<li><code><a title="tests.test_ha.test_auto_remount_with_subpath" href="#tests.test_ha.test_auto_remount_with_subpath">test_auto_remount_with_subpath</a></code></li>
 <li><code><a title="tests.test_ha.test_disable_replica_rebuild" href="#tests.test_ha.test_disable_replica_rebuild">test_disable_replica_rebuild</a></code></li>
 <li><code><a title="tests.test_ha.test_dr_volume_with_restore_command_error" href="#tests.test_ha.test_dr_volume_with_restore_command_error">test_dr_volume_with_restore_command_error</a></code></li>
 <li><code><a title="tests.test_ha.test_engine_crash_for_dr_volume" href="#tests.test_ha.test_engine_crash_for_dr_volume">test_engine_crash_for_dr_volume</a></code></li>
