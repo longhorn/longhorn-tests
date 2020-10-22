@@ -593,7 +593,7 @@ def test_engine_live_upgrade_with_intensive_data_writing(client, core_api, volum
         Then write new data to the upgraded volume and get the md5sum.
     11. Delete the pod and wait for the volume detached.
         Then check engine and replicas's engine image again.
-    12. Recreate the pod and wait for the volume attached.
+    12. Recreate the pod and wait for the volume replicas rebuild.
     13. Check if the attached volume is state `healthy`
         rather than `degraded`.
     14. Check the data.
@@ -683,10 +683,11 @@ def test_engine_live_upgrade_with_intensive_data_writing(client, core_api, volum
     for replica in volume.replicas:
         assert replica.engineImage == engine_upgrade_image
 
-    # The reattached volume should be state `healthy` rather than`degraded`.
     create_and_wait_pod(core_api, pod)
-    volume = client.by_id_volume(volume_name)
-    assert volume.robustness == "healthy"
+    common.wait_for_volume_degraded(client, volume_name)
+    common.wait_for_rebuild_start(client, volume_name)
+    common.wait_for_rebuild_complete(client, volume_name)
+    common.wait_for_volume_healthy(client, volume_name)
 
     volume_file_md5sum1 = get_pod_data_md5sum(
         core_api, pod_name, data_path1)
@@ -698,3 +699,9 @@ def test_engine_live_upgrade_with_intensive_data_writing(client, core_api, volum
     delete_and_wait_pod(core_api, pod_name)
     delete_and_wait_pvc(core_api, pvc_name)
     delete_and_wait_pv(core_api, pv_name)
+
+    client.delete(volume)
+    wait_for_volume_delete(client, volume_name)
+
+    client.delete(new_img)
+    wait_for_engine_image_deletion(client, core_api, new_img.name)
