@@ -3124,8 +3124,7 @@ def test_allow_volume_creation_with_degraded_availability_restore():
     """
 
 
-@pytest.mark.skip(reason="TODO")
-def test_cleanup_system_generated_snapshots():
+def test_cleanup_system_generated_snapshots(client, core_api, volume_name, csi_pv, pvc, pod_make):  # NOQA
     """
     Test Cleanup System Generated Snapshots
 
@@ -3136,3 +3135,23 @@ def test_cleanup_system_generated_snapshots():
     5. Repeat Step 3 for 3 times, and make sure only one snapshot is left.
     6. Check the data with the saved checksum.
     """
+
+    pod_name, _, _, md5sum1 = \
+        prepare_pod_with_data_in_mb(
+            client, core_api, csi_pv, pvc, pod_make, volume_name)
+
+    volume = client.by_id_volume(volume_name)
+
+    for i in range(3):
+        replica_name = volume["replicas"][i]["name"]
+        volume.replicaRemove(name=replica_name)
+        wait_for_volume_degraded(client, volume_name)
+        wait_for_volume_healthy(client, volume_name)
+
+        volume = client.by_id_volume(volume_name)
+        # For the below assertion, the number of snapshots is compared with 2
+        # as the list of snapshot have the volume-head too.
+        assert len(volume.snapshotList()) == 2
+
+    read_md5sum1 = get_pod_data_md5sum(core_api, pod_name, "/data/test")
+    assert md5sum1 == read_md5sum1
