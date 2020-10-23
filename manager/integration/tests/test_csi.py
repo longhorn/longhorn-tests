@@ -701,3 +701,17 @@ def test_allow_volume_creation_with_degraded_availability_csi():
     7. Once rebuild finished, scale down and back the deployment to
         verify the data.
     """
+
+
+@pytest.mark.skip(reason="TODO")  # NOQA
+def test_csi_minimal_volume_size(): # NOQA
+    """
+    Test CSI Minimal Volume Size
+
+    1. Create a PVC with size 5MiB. Check the PVC should get size 10MiB.
+    Remove the PVC.
+    2. Create a PVC with size 10MiB. Check the PVC should get size 10MiB.
+    3. Create a pod to use this PVC, and generate some data with checksum.
+    4. Write the data to the volume and read it back to compare the checksum.
+    5. Delete the pod and the PVC.
+    """
