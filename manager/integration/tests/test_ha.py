@@ -2125,3 +2125,31 @@ def test_auto_remount_with_subpath():
        Verify the file `test_data.txt` exists.
     """
     pass
+
+
+@pytest.mark.skip(reason="TODO") # NOQA
+def test_reuse_failed_replica():
+    """
+    Steps:
+    1. Set a long wait interval for
+       setting `replica-replenishment-wait-interval`.
+    2. Disable the setting soft node anti-affinity.
+    3. Create and attach a volume. Then write data to the volume.
+    4. Disable the scheduling for a node.
+    5. Crash the replica on the node.
+       --> Verify Longhorn won't create a new replica on the node
+           for the volume.
+    6. Update setting `replica-replenishment-wait-interval` to
+       a small value.
+    7. Verify Longhorn starts to create a new replica for the volume.
+       Notice that the new replica scheduling will fail.
+    8. Update setting `replica-replenishment-wait-interval` to
+       a large value.
+    9. Delete the newly created replica.
+       --> Verify Longhorn won't create a new replica on the node
+           for the volume.
+    10. Enable the scheduling for the node.
+    11. Verify the failed replica (in step 5) will be reused.
+    12. Verify the volume r/w still works fine.
+    """
+    pass
