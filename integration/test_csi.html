@@ -728,6 +728,20 @@ def test_allow_volume_creation_with_degraded_availability_csi():
         true
     7. Once rebuild finished, scale down and back the deployment to
         verify the data.
+    &#34;&#34;&#34;
+
+
+@pytest.mark.skip(reason=&#34;TODO&#34;)  # NOQA
+def test_csi_minimal_volume_size(): # NOQA
+    &#34;&#34;&#34;
+    Test CSI Minimal Volume Size
+
+    1. Create a PVC with size 5MiB. Check the PVC should get size 10MiB.
+    Remove the PVC.
+    2. Create a PVC with size 10MiB. Check the PVC should get size 10MiB.
+    3. Create a pod to use this PVC, and generate some data with checksum.
+    4. Write the data to the volume and read it back to compare the checksum.
+    5. Delete the pod and the PVC.
     &#34;&#34;&#34;</code></pre>
 </details>
 </section>
@@ -1264,6 +1278,37 @@ def test_csi_io(client, core_api, csi_pv, pvc, pod_make):  # NOQA
     5. Check the previous created `test_data` in the new Pod
     &#34;&#34;&#34;
     csi_io_test(client, core_api, csi_pv, pvc, pod_make)</code></pre>
+</details>
+</dd>
+<dt id="tests.test_csi.test_csi_minimal_volume_size"><code class="name flex">
+<span>def <span class="ident">test_csi_minimal_volume_size</span></span>(<span>)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test CSI Minimal Volume Size</p>
+<ol>
+<li>Create a PVC with size 5MiB. Check the PVC should get size 10MiB.
+Remove the PVC.</li>
+<li>Create a PVC with size 10MiB. Check the PVC should get size 10MiB.</li>
+<li>Create a pod to use this PVC, and generate some data with checksum.</li>
+<li>Write the data to the volume and read it back to compare the checksum.</li>
+<li>Delete the pod and the PVC.</li>
+</ol></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@pytest.mark.skip(reason=&#34;TODO&#34;)  # NOQA
+def test_csi_minimal_volume_size(): # NOQA
+    &#34;&#34;&#34;
+    Test CSI Minimal Volume Size
+
+    1. Create a PVC with size 5MiB. Check the PVC should get size 10MiB.
+    Remove the PVC.
+    2. Create a PVC with size 10MiB. Check the PVC should get size 10MiB.
+    3. Create a pod to use this PVC, and generate some data with checksum.
+    4. Write the data to the volume and read it back to compare the checksum.
+    5. Delete the pod and the PVC.
+    &#34;&#34;&#34;</code></pre>
 </details>
 </dd>
 <dt id="tests.test_csi.test_csi_mount"><code class="name flex">
@@ -1829,6 +1874,7 @@ sure the disk won't be reformatted</p></div>
 <li><code><a title="tests.test_csi.test_csi_block_volume" href="#tests.test_csi.test_csi_block_volume">test_csi_block_volume</a></code></li>
 <li><code><a title="tests.test_csi.test_csi_expansion_with_replica_failure" href="#tests.test_csi.test_csi_expansion_with_replica_failure">test_csi_expansion_with_replica_failure</a></code></li>
 <li><code><a title="tests.test_csi.test_csi_io" href="#tests.test_csi.test_csi_io">test_csi_io</a></code></li>
+<li><code><a title="tests.test_csi.test_csi_minimal_volume_size" href="#tests.test_csi.test_csi_minimal_volume_size">test_csi_minimal_volume_size</a></code></li>
 <li><code><a title="tests.test_csi.test_csi_mount" href="#tests.test_csi.test_csi_mount">test_csi_mount</a></code></li>
 <li><code><a title="tests.test_csi.test_csi_offline_expansion" href="#tests.test_csi.test_csi_offline_expansion">test_csi_offline_expansion</a></code></li>
 <li><code><a title="tests.test_csi.test_csi_volumesnapshot_basic" href="#tests.test_csi.test_csi_volumesnapshot_basic">test_csi_volumesnapshot_basic</a></code></li>
