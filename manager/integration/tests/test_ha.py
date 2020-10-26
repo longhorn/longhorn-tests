@@ -2153,3 +2153,26 @@ def test_reuse_failed_replica():
     12. Verify the volume r/w still works fine.
     """
     pass
+
+
+@pytest.mark.skip(reason="TODO") # NOQA
+def test_reuse_failed_replica_with_scheduling_check():
+    """
+    Steps:
+    1. Set a long wait interval for
+       setting `replica-replenishment-wait-interval`.
+    2. Disable the setting soft node anti-affinity.
+    3. Add tags for all nodes and disks.
+    4. Create and attach a volume with node and disk selectors.
+       Then write data to the volume.
+    5. Disable the scheduling for the 2 nodes (node1 and node2).
+    6. Crash the replicas on the node1 and node2.
+       --> Verify Longhorn won't create new replicas on the nodes.
+    7. Remove tags for node1 and the related disks.
+    8. Enable the scheduling for node1 and node2.
+    9. Verify the only failed replica on node2 is reused.
+    10. Add the tags back for node1 and the related disks.
+    11. Verify the failed replica on node1 is reused.
+    12. Verify the volume r/w still works fine.
+    """
+    pass
