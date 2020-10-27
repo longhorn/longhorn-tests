@@ -18,7 +18,7 @@ node {
 
             stage ('report generation') {
                 sh "docker cp ${JOB_BASE_NAME}${BUILD_NUMBER}:${TF_VAR_tf_workspace}/junit-reports ."
-                def summary = junit "junit-reports/*.xml"
+                def summary = junit allowEmptyResults: true, testResults: "junit-reports/*.xml"
             }
 
         } catch(e) {
