@@ -141,6 +141,8 @@ SETTING_DISABLE_SCHEDULING_ON_CORDONED_NODE = \
 SETTING_DEFAULT_DATA_PATH = &#34;default-data-path&#34;
 SETTING_DEGRADED_AVAILABILITY = \
     &#34;allow-volume-creation-with-degraded-availability&#34;
+SETTING_REPLICA_REPLENISHMENT_WAIT_INTERVAL = \
+    &#34;replica-replenishment-wait-interval&#34;
 
 DEFAULT_DISK_PATH = &#34;/var/lib/longhorn/&#34;
 DEFAULT_STORAGE_OVER_PROVISIONING_PERCENTAGE = &#34;500&#34;
@@ -2510,6 +2512,16 @@ def reset_settings(client):
         print(&#34;\nException when update &#34;
               &#34;Guaranteed Engine CPU setting&#34;,
               guaranteed_engine_cpu_setting)
+        print(e)
+
+    replenishment_wait_setting = \
+        client.by_id_setting(SETTING_REPLICA_REPLENISHMENT_WAIT_INTERVAL)
+    try:
+        client.update(replenishment_wait_setting, value=&#34;0&#34;)
+    except Exception as e:
+        print(&#34;\nException when update &#34;
+              &#34;Replica Replenishment Wait Interval&#34;,
+              replenishment_wait_setting)
         print(e)
 
     instance_managers = client.list_instance_manager()
@@ -7105,6 +7117,16 @@ def random_labels():
         print(&#34;\nException when update &#34;
               &#34;Guaranteed Engine CPU setting&#34;,
               guaranteed_engine_cpu_setting)
+        print(e)
+
+    replenishment_wait_setting = \
+        client.by_id_setting(SETTING_REPLICA_REPLENISHMENT_WAIT_INTERVAL)
+    try:
+        client.update(replenishment_wait_setting, value=&#34;0&#34;)
+    except Exception as e:
+        print(&#34;\nException when update &#34;
+              &#34;Replica Replenishment Wait Interval&#34;,
+              replenishment_wait_setting)
         print(e)
 
     instance_managers = client.list_instance_manager()

@@ -2152,6 +2152,57 @@ def test_auto_remount_with_subpath():
        Exec into the `pod-1`, run `ls /mnt/html`.
        Verify the file `test_data.txt` exists.
     &#34;&#34;&#34;
+    pass
+
+
+@pytest.mark.skip(reason=&#34;TODO&#34;) # NOQA
+def test_reuse_failed_replica():
+    &#34;&#34;&#34;
+    Steps:
+    1. Set a long wait interval for
+       setting `replica-replenishment-wait-interval`.
+    2. Disable the setting soft node anti-affinity.
+    3. Create and attach a volume. Then write data to the volume.
+    4. Disable the scheduling for a node.
+    5. Crash the replica on the node.
+       --&gt; Verify Longhorn won&#39;t create a new replica on the node
+           for the volume.
+    6. Update setting `replica-replenishment-wait-interval` to
+       a small value.
+    7. Verify Longhorn starts to create a new replica for the volume.
+       Notice that the new replica scheduling will fail.
+    8. Update setting `replica-replenishment-wait-interval` to
+       a large value.
+    9. Delete the newly created replica.
+       --&gt; Verify Longhorn won&#39;t create a new replica on the node
+           for the volume.
+    10. Enable the scheduling for the node.
+    11. Verify the failed replica (in step 5) will be reused.
+    12. Verify the volume r/w still works fine.
+    &#34;&#34;&#34;
+    pass
+
+
+@pytest.mark.skip(reason=&#34;TODO&#34;) # NOQA
+def test_reuse_failed_replica_with_scheduling_check():
+    &#34;&#34;&#34;
+    Steps:
+    1. Set a long wait interval for
+       setting `replica-replenishment-wait-interval`.
+    2. Disable the setting soft node anti-affinity.
+    3. Add tags for all nodes and disks.
+    4. Create and attach a volume with node and disk selectors.
+       Then write data to the volume.
+    5. Disable the scheduling for the 2 nodes (node1 and node2).
+    6. Crash the replicas on the node1 and node2.
+       --&gt; Verify Longhorn won&#39;t create new replicas on the nodes.
+    7. Remove tags for node1 and the related disks.
+    8. Enable the scheduling for node1 and node2.
+    9. Verify the only failed replica on node2 is reused.
+    10. Add the tags back for node1 and the related disks.
+    11. Verify the failed replica on node1 is reused.
+    12. Verify the volume r/w still works fine.
+    &#34;&#34;&#34;
     pass</code></pre>
 </details>
 </section>
@@ -4360,6 +4411,110 @@ volume.conditions[restore].reason == "RestoreFailure".</code></li>
     wait_for_volume_delete(client, res_name)</code></pre>
 </details>
 </dd>
+<dt id="tests.test_ha.test_reuse_failed_replica"><code class="name flex">
+<span>def <span class="ident">test_reuse_failed_replica</span></span>(<span>)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Steps:
+1. Set a long wait interval for
+setting <code>replica-replenishment-wait-interval</code>.
+2. Disable the setting soft node anti-affinity.
+3. Create and attach a volume. Then write data to the volume.
+4. Disable the scheduling for a node.
+5. Crash the replica on the node.
+&ndash;&gt; Verify Longhorn won't create a new replica on the node
+for the volume.
+6. Update setting <code>replica-replenishment-wait-interval</code> to
+a small value.
+7. Verify Longhorn starts to create a new replica for the volume.
+Notice that the new replica scheduling will fail.
+8. Update setting <code>replica-replenishment-wait-interval</code> to
+a large value.
+9. Delete the newly created replica.
+&ndash;&gt; Verify Longhorn won't create a new replica on the node
+for the volume.
+10. Enable the scheduling for the node.
+11. Verify the failed replica (in step 5) will be reused.
+12. Verify the volume r/w still works fine.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@pytest.mark.skip(reason=&#34;TODO&#34;) # NOQA
+def test_reuse_failed_replica():
+    &#34;&#34;&#34;
+    Steps:
+    1. Set a long wait interval for
+       setting `replica-replenishment-wait-interval`.
+    2. Disable the setting soft node anti-affinity.
+    3. Create and attach a volume. Then write data to the volume.
+    4. Disable the scheduling for a node.
+    5. Crash the replica on the node.
+       --&gt; Verify Longhorn won&#39;t create a new replica on the node
+           for the volume.
+    6. Update setting `replica-replenishment-wait-interval` to
+       a small value.
+    7. Verify Longhorn starts to create a new replica for the volume.
+       Notice that the new replica scheduling will fail.
+    8. Update setting `replica-replenishment-wait-interval` to
+       a large value.
+    9. Delete the newly created replica.
+       --&gt; Verify Longhorn won&#39;t create a new replica on the node
+           for the volume.
+    10. Enable the scheduling for the node.
+    11. Verify the failed replica (in step 5) will be reused.
+    12. Verify the volume r/w still works fine.
+    &#34;&#34;&#34;
+    pass</code></pre>
+</details>
+</dd>
+<dt id="tests.test_ha.test_reuse_failed_replica_with_scheduling_check"><code class="name flex">
+<span>def <span class="ident">test_reuse_failed_replica_with_scheduling_check</span></span>(<span>)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Steps:
+1. Set a long wait interval for
+setting <code>replica-replenishment-wait-interval</code>.
+2. Disable the setting soft node anti-affinity.
+3. Add tags for all nodes and disks.
+4. Create and attach a volume with node and disk selectors.
+Then write data to the volume.
+5. Disable the scheduling for the 2 nodes (node1 and node2).
+6. Crash the replicas on the node1 and node2.
+&ndash;&gt; Verify Longhorn won't create new replicas on the nodes.
+7. Remove tags for node1 and the related disks.
+8. Enable the scheduling for node1 and node2.
+9. Verify the only failed replica on node2 is reused.
+10. Add the tags back for node1 and the related disks.
+11. Verify the failed replica on node1 is reused.
+12. Verify the volume r/w still works fine.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@pytest.mark.skip(reason=&#34;TODO&#34;) # NOQA
+def test_reuse_failed_replica_with_scheduling_check():
+    &#34;&#34;&#34;
+    Steps:
+    1. Set a long wait interval for
+       setting `replica-replenishment-wait-interval`.
+    2. Disable the setting soft node anti-affinity.
+    3. Add tags for all nodes and disks.
+    4. Create and attach a volume with node and disk selectors.
+       Then write data to the volume.
+    5. Disable the scheduling for the 2 nodes (node1 and node2).
+    6. Crash the replicas on the node1 and node2.
+       --&gt; Verify Longhorn won&#39;t create new replicas on the nodes.
+    7. Remove tags for node1 and the related disks.
+    8. Enable the scheduling for node1 and node2.
+    9. Verify the only failed replica on node2 is reused.
+    10. Add the tags back for node1 and the related disks.
+    11. Verify the failed replica on node1 is reused.
+    12. Verify the volume r/w still works fine.
+    &#34;&#34;&#34;
+    pass</code></pre>
+</details>
+</dd>
 <dt id="tests.test_ha.test_salvage_auto_crash_all_replicas"><code class="name flex">
 <span>def <span class="ident">test_salvage_auto_crash_all_replicas</span></span>(<span>client, core_api, volume_name, csi_pv, pvc, pod_make)</span>
 </code></dt>
@@ -5011,6 +5166,8 @@ to crash the engine process</p>
 <li><code><a title="tests.test_ha.test_rebuild_with_inc_restoration" href="#tests.test_ha.test_rebuild_with_inc_restoration">test_rebuild_with_inc_restoration</a></code></li>
 <li><code><a title="tests.test_ha.test_rebuild_with_restoration" href="#tests.test_ha.test_rebuild_with_restoration">test_rebuild_with_restoration</a></code></li>
 <li><code><a title="tests.test_ha.test_restore_volume_with_invalid_backupstore" href="#tests.test_ha.test_restore_volume_with_invalid_backupstore">test_restore_volume_with_invalid_backupstore</a></code></li>
+<li><code><a title="tests.test_ha.test_reuse_failed_replica" href="#tests.test_ha.test_reuse_failed_replica">test_reuse_failed_replica</a></code></li>
+<li><code><a title="tests.test_ha.test_reuse_failed_replica_with_scheduling_check" href="#tests.test_ha.test_reuse_failed_replica_with_scheduling_check">test_reuse_failed_replica_with_scheduling_check</a></code></li>
 <li><code><a title="tests.test_ha.test_salvage_auto_crash_all_replicas" href="#tests.test_ha.test_salvage_auto_crash_all_replicas">test_salvage_auto_crash_all_replicas</a></code></li>
 <li><code><a title="tests.test_ha.test_salvage_auto_crash_replicas_long_wait" href="#tests.test_ha.test_salvage_auto_crash_replicas_long_wait">test_salvage_auto_crash_replicas_long_wait</a></code></li>
 <li><code><a title="tests.test_ha.test_salvage_auto_crash_replicas_short_wait" href="#tests.test_ha.test_salvage_auto_crash_replicas_short_wait">test_salvage_auto_crash_replicas_short_wait</a></code></li>
