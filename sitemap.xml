@@ -167,6 +167,10 @@
   </url>
   
   <url>
+    <loc>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/instance-manager-ip-sync/</loc>
+  </url>
+  
+  <url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/node/node-deletion/</loc>
   </url>
   

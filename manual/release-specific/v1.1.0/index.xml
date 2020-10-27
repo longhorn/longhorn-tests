@@ -38,6 +38,15 @@ kubectl get &amp;lt;LONGHORN-CRD&amp;gt; -n longhorn-system Verify that the outp
     </item>
     
     <item>
+      <title>Test Instance Manager IP Sync</title>
+      <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/instance-manager-ip-sync/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/instance-manager-ip-sync/</guid>
+      <description>Test step:  Launch longhorn system Create and attach a volume Follow this doc to manually modify the IP of one instance-manager-r. e.g., curl -k -XPATCH -H &amp;quot;Accept: application/json&amp;quot; -H &amp;quot;Content-Type: application/merge-patch+json&amp;quot; -H &amp;quot;Authorization: Bearer kubeconfig-xxxxxx&amp;quot; --data &#39;{&amp;quot;status&amp;quot;:{&amp;quot;ip&amp;quot;:&amp;quot;1.1.1.1&amp;quot;}}&#39; https://172.104.72.64/k8s/clusters/c-znrxc/apis/longhorn.io/v1beta1/namespaces/longhorn-system/instancemanagers/instance-manager-r-63ece607/status  Notice that the bearer token kubeconfig-xxx can be found in your kube config file Remember to add /status at the end of the URL   Verify the IP of the instance manager still matches the pod IP Verify the volume can be detached.</description>
+    </item>
+    
+    <item>
       <title>Test uninstallation</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/uninstallation/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
