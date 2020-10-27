@@ -5,6 +5,7 @@ import random
 import subprocess
 
 from common import client, core_api, volume_name  # NOQA
+from common import sts_name, statefulset, storage_class  # NOQA
 from common import DATA_SIZE_IN_MB_1, DATA_SIZE_IN_MB_2, DATA_SIZE_IN_MB_3
 from common import DATA_SIZE_IN_MB_4
 from common import check_volume_data, cleanup_volume, create_and_check_volume
@@ -28,7 +29,6 @@ from common import wait_for_pod_remount
 from common import delete_and_wait_pod
 from common import wait_for_rebuild_start
 from common import prepare_pod_with_data_in_mb
-from common import wait_for_replica_running
 from common import set_random_backupstore
 from common import wait_for_backup_completion, find_backup
 from common import wait_for_volume_creation, wait_for_volume_detached
@@ -478,12 +478,18 @@ def test_ha_recovery_with_expansion(client, volume_name):   # NOQA
 def wait_pod_for_auto_salvage(
         client, core_api, volume_name, pod_name, original_md5sum,  # NOQA
         data_path="/data/test"):
-    # this line may fail if the recovery is too quick
-    common.wait_for_volume_faulted(client, volume_name)
+    try:
+        # this line may fail if the recovery is too quick
+        common.wait_for_volume_faulted(client, volume_name)
+    except AssertionError:
+        print("\nException waiting for volume faulted,"
+              "could have missed it")
 
     wait_for_volume_healthy(client, volume_name)
 
-    wait_for_pod_restart(core_api, pod_name)
+    common.wait_for_pod_phase(core_api, pod_name, pod_phase="Pending")
+    common.wait_for_pod_phase(core_api, pod_name, pod_phase="Running")
+
     wait_for_pod_remount(core_api, pod_name)
 
     md5sum = get_pod_data_md5sum(core_api, pod_name, data_path)
@@ -491,114 +497,51 @@ def wait_pod_for_auto_salvage(
 
 
 def test_salvage_auto_crash_all_replicas(
-        client, core_api, volume_name, csi_pv, pvc, pod_make):  # NOQA
+        client, core_api, storage_class, sts_name, statefulset):  # NOQA
     """
     [HA] Test automatic salvage feature by crashing all the replicas
 
-    1. Create PV/PVC/POD. Make sure POD has liveness check. Start the pod
+    Case #1: crash all replicas
+    1. Create StorageClass and StatefulSet.
     2. Write random data to the pod and get the md5sum.
     3. Run `sync` command inside the pod to make sure data flush to the volume.
-    4. Crash all replica processes using SIGTERM
-    5. Wait for volume to `faulted`, then `healthy`
-    6. Check replica `failedAt` has been cleared.
-    7. Wait for pod to be restarted.
-    8. Check md5sum of the data in the Pod.
+    4. Crash all replica processes using SIGTERM.
+    5. Wait for volume to `faulted`, then `healthy`.
+    6. Wait for K8s to terminate the pod and statefulset to bring pod to
+       `Pending`, then `Running`.
+    7. Check volume path exist in the pod.
+    8. Check md5sum of the data in the pod.
+    Case #2: crash one replica and then crash all replicas
+    9. Crash one of the replica.
+    10. Try to wait for rebuild start and the rebuilding replica running.
+    11. Crash all the replicas.
+    12. Make sure volume and pod recovers.
+    13. Check md5sum of the data in the pod.
 
     FIXME: Step 5 is only a intermediate state, maybe no way to get it for sure
     """
 
-    pod_name, pv_name, pvc_name, md5sum = \
-        prepare_pod_with_data_in_mb(
-            client, core_api, csi_pv, pvc, pod_make, volume_name)
+    # Case #1
+    vol_name, pod_name, md5sum = common.prepare_statefulset_with_data_in_mb(
+        client, core_api, statefulset, sts_name, storage_class)
+    crash_replica_processes(client, core_api, vol_name)
+    wait_pod_for_auto_salvage(client, core_api, vol_name, pod_name, md5sum)
 
-    crash_replica_processes(client, core_api, volume_name)
-
-    wait_pod_for_auto_salvage(client, core_api, volume_name, pod_name, md5sum)
-
-
-# Test case #2: delete one replica process, wait for rebuild start
-# then delete all replica processes.
-def test_salvage_auto_crash_replicas_short_wait(
-        client, core_api, volume_name, csi_pv, pvc, pod_make):  # NOQA
-    """
-    [HA] Test automatic salvage feature, with replica building pending
-
-    1. Create a PV/PVC/Pod with liveness check.
-    2. Create volume and start the pod.
-    3. Write random data to the pod and get the md5sum.
-    4. Run `sync` command inside the pod to make sure data flush to the volume.
-    5. Crash one of the replica.
-    6. Wait for rebuild start and the rebuilding replica running
-    7. Crash all the replicas.
-    8. Make sure volume and Pod recovers.
-    9. Check md5sum of the data in the Pod.
-    """
-    pod_name, pv_name, pvc_name, md5sum = \
-        prepare_pod_with_data_in_mb(
-            client, core_api, csi_pv, pvc, pod_make, volume_name,
-            data_size_in_mb=DATA_SIZE_IN_MB_2)
-
-    volume = client.by_id_volume(volume_name)
+    # Case #2
+    volume = client.by_id_volume(vol_name)
     replica0 = volume.replicas[0]
 
-    crash_replica_processes(client, core_api, volume_name, [replica0])
+    crash_replica_processes(client, core_api, vol_name, [replica0])
 
-    # Need to wait for rebuilding replica running before crashing all replicas
-    # Otherwise the rebuilding replica may become running after step7 then
-    # the auto salvage cannot be triggered.
-    _, rebuilding_replica = wait_for_rebuild_start(client, volume_name)
-    wait_for_replica_running(client, volume_name, rebuilding_replica)
-
-    volume = client.by_id_volume(volume_name)
-
+    volume = wait_for_volume_healthy(client, vol_name)
     replicas = []
     for r in volume.replicas:
         if r.running is True:
             replicas.append(r)
 
-    crash_replica_processes(client, core_api, volume_name, replicas)
+    crash_replica_processes(client, core_api, vol_name, replicas)
 
-    wait_pod_for_auto_salvage(client, core_api, volume_name, pod_name, md5sum)
-
-
-# Test case #3: delete one replica process, wait for rebuild finish
-# then delete all replica processes.
-def test_salvage_auto_crash_replicas_long_wait(
-        client, core_api, volume_name, csi_pv, pvc, pod_make):  # NOQA
-    """
-    [HA] Test automatic salvage feature, with replica building complete
-
-    1. Create a PV/PVC/Pod with liveness check.
-    2. Create volume and start the pod.
-    3. Write random data to the pod and get the md5sum.
-    4. Run `sync` command inside the pod to make sure data flush to the volume.
-    5. Crash one of the replica then wait for rebuild complete.
-    6. Crash all the replicas.
-    7. Make sure volume and Pod recovers.
-    8. Check md5sum of the data in the Pod.
-    """
-    pod_name, pv_name, pvc_name, md5sum = \
-        prepare_pod_with_data_in_mb(
-            client, core_api, csi_pv, pvc, pod_make, volume_name,
-            data_size_in_mb=DATA_SIZE_IN_MB_2)
-
-    volume = client.by_id_volume(volume_name)
-    replica0 = volume.replicas[0]
-
-    crash_replica_processes(client, core_api, volume_name, [replica0])
-    wait_for_rebuild_start(client, volume_name)
-    wait_for_rebuild_complete(client, volume_name)
-
-    volume = client.by_id_volume(volume_name)
-
-    replicas = []
-    for r in volume.replicas:
-        if r.running is True:
-            replicas.append(r)
-
-    crash_replica_processes(client, core_api, volume_name, replicas)
-
-    wait_pod_for_auto_salvage(client, core_api, volume_name, pod_name, md5sum)
+    wait_pod_for_auto_salvage(client, core_api, vol_name, pod_name, md5sum)
 
 
 def test_rebuild_failure_with_intensive_data(

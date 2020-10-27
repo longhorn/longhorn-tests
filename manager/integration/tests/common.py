@@ -29,6 +29,7 @@ Gi = (1024 * Mi)
 SIZE = str(16 * Mi)
 EXPAND_SIZE = str(32 * Mi)
 VOLUME_NAME = "longhorn-testvol"
+STATEFULSET_NAME = "longhorn-teststs"
 DEV_PATH = "/dev/longhorn/"
 VOLUME_RWTEST_SIZE = 512
 VOLUME_INVALID_POS = -1
@@ -1666,6 +1667,17 @@ def csi_pvc_name(request):
 
 def generate_volume_name():
     return VOLUME_NAME + "-" + \
+        ''.join(random.choice(string.ascii_lowercase + string.digits)
+                for _ in range(6))
+
+
+@pytest.fixture
+def sts_name(request):
+    return generate_sts_name()
+
+
+def generate_sts_name():
+    return STATEFULSET_NAME + "-" + \
         ''.join(random.choice(string.ascii_lowercase + string.digits)
                 for _ in range(6))
 
@@ -3513,6 +3525,44 @@ def expand_attached_volume(client, volume_name):
     wait_for_volume_healthy(client, volume_name)
 
 
+def prepare_statefulset_with_data_in_mb(
+        client, core_api, statefulset, sts_name, storage_class,
+        data_path="/data/test",
+        data_size_in_mb=DATA_SIZE_IN_MB_1):
+    update_statefulset_manifests(statefulset, storage_class, sts_name)
+    statefulset['spec']['replicas'] = 1
+
+    create_storage_class(storage_class)
+    create_and_wait_statefulset(statefulset)
+
+    pod_info = get_statefulset_pod_info(core_api, statefulset)
+    volumes = client.list_volume()
+    assert len(volumes) == statefulset['spec']['replicas']
+
+    vol_name = None
+    pod_name = None
+    md5sum = None
+    for v in volumes:
+        info = pod_info[0]
+        if v.name == info['pv_name']:
+            write_pod_volume_random_data(core_api, info['pod_name'],
+                                         data_path, data_size_in_mb)
+            md5sum = get_pod_data_md5sum(core_api, info['pod_name'],
+                                         data_path)
+            stream(core_api.connect_get_namespaced_pod_exec,
+                   info['pod_name'], 'default', command=["sync"],
+                   stderr=True, stdin=False, stdout=True, tty=False)
+
+            vol_name = v.name
+            pod_name = info['pod_name']
+            break
+
+    assert vol_name is not None
+    assert pod_name is not None
+    assert md5sum is not None
+    return vol_name, pod_name, md5sum
+
+
 def prepare_pod_with_data_in_mb(
         client, core_api, csi_pv, pvc, pod_make, volume_name,
         volume_size=str(1*Gi), data_path="/data/test",
@@ -3667,6 +3717,21 @@ def wait_for_pod_restart(core_api, pod_name, namespace="default"):
 
         time.sleep(RETRY_INTERVAL)
     assert pod_restarted
+
+
+def wait_for_pod_phase(core_api, pod_name, pod_phase, namespace="default"):
+    pod = core_api.read_namespaced_pod(name=pod_name,
+                                       namespace=namespace)
+    is_phase = False
+    for _ in range(RETRY_COUNTS):
+        pod = core_api.read_namespaced_pod(name=pod_name,
+                                           namespace=namespace)
+        if pod.status.phase == pod_phase:
+            is_phase = True
+            break
+
+        time.sleep(RETRY_INTERVAL_LONG)
+    assert is_phase
 
 
 def wait_for_instance_manager_desire_state(client, core_api, im_name,
