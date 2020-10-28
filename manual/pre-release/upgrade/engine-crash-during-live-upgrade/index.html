@@ -272,24 +272,18 @@
 </aside>
 
 <main style="padding: 1%; width: 70%;">
-  <header class="homepage-header">
-    <h1>Air Gap</h1>
-    
-  </header>
-  <div class="homepage-content">
-    
-  </div>
+  <h1 id="title">Test Engine Crash During Live Upgrade</h1>
   <div>
-    <ul>
+    <article id="content">
+       <ol>
+<li>Create and attach a volume.</li>
+<li>Deploy an extra engine image.</li>
+<li>Send live upgrade request then immediately delete the related engine manager pod/engine process (The new replicas are not in active in this case).</li>
+<li>Verify the volume will detach then reattach automatically.</li>
+<li>Verify the upgrade is done during the reattachment. (It actually becomes offline upgrade.)</li>
+</ol>
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/air-gap/air-gap-installation/">Air gap installation</a></li>
-  
-
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/air-gap/air-gap-instance-manager-name/">Air gap installation with an instance-manager-image name longer than 63 characters</a></li>
-  
-
-</ul>
-
+    </article>
   </div>
 </main>
 
