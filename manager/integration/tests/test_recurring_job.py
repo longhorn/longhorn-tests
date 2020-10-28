@@ -483,3 +483,43 @@ def test_recurring_jobs_for_detached_volume():  # NOQA
     17. cleanup
     """
     pass
+
+
+@pytest.mark.skip(reason="TODO")
+def test_recurring_jobs_on_nodes_with_taints():  # NOQA
+    """
+    Test recurring jobs on nodes with taints
+
+    Context:
+
+    Test the prevention of creation of multiple pods due to
+    recurring job's pod being rejected by Taint controller
+    on nodes with taints
+
+    Steps:
+
+    1. Set taint toleration for Longhorn components
+       `persistence=true:NoExecute`
+    2. Taint `node-1` with `persistence=true:NoExecute`
+    3. Create a volume, vol-1.
+       Attach vol-1 to node-1
+       Write some data to vol-1
+    4. Create a recurring backup job which:
+       Has retain count 10
+       Runs every minute
+    5. Wait for 3 minutes.
+       Verify that the there is 1 backup created
+       Verify that the total number of pod in longhorn-system namespace < 50
+       Verify that the number of pods of the cronjob is <= 2
+
+    6. Taint all nodes with `persistence=true:NoExecute`
+    7. Write some data to vol-1
+    8. Wait for 3 minutes.
+       Verify that the there are 2 backups created in total
+       Verify that the total number of pod in longhorn-system namespace < 50
+       Verify that the number of pods of the cronjob is <= 2
+
+    9. Remove `persistence=true:NoExecute` from all nodes and Longhorn setting
+       Clean up backups, volumes
+    """
+    pass
