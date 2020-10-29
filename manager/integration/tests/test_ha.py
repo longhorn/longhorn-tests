@@ -1877,8 +1877,7 @@ def test_rebuild_after_replica_file_crash(client, volume_name): # NOQA
     2. Write random data to the volume and get the md5sum.
     3. Remove file `volume-head-000.img` from one of the replicas.
     4. Wait replica rebuild to be triggered.
-    5. Verify a new replica is rebuilt, and the old replica containing
-    the crashed file is state ERROR
+    5. Verify the old replica containing the crashed file will be reused.
     6. Read the data from the volume and verify the md5sum.
     """
     replica_count = 3
@@ -1910,15 +1909,15 @@ def test_rebuild_after_replica_file_crash(client, volume_name): # NOQA
 
     volume = client.by_id_volume(volume_name)
 
-    crashed_replica = None
+    reused_replica = None
     for rep in volume.replicas:
         if rep["name"] == replica["name"]:
-            crashed_replica = rep
+            reused_replica = rep
             break
 
-    assert crashed_replica["running"] is False
-    assert crashed_replica["mode"] == ""
-    assert crashed_replica["failedAt"] is not None
+    assert reused_replica["running"] is True
+    assert reused_replica["mode"] == "RW"
+    assert not reused_replica["failedAt"]
 
     check_volume_data(volume, data)
 
