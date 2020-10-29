@@ -510,6 +510,46 @@ def test_recurring_jobs_for_detached_volume():  # NOQA
     16. Change the setting allow-recurring-job-while-volume-detached to false
     17. cleanup
     &#34;&#34;&#34;
+    pass
+
+
+@pytest.mark.skip(reason=&#34;TODO&#34;)
+def test_recurring_jobs_on_nodes_with_taints():  # NOQA
+    &#34;&#34;&#34;
+    Test recurring jobs on nodes with taints
+
+    Context:
+
+    Test the prevention of creation of multiple pods due to
+    recurring job&#39;s pod being rejected by Taint controller
+    on nodes with taints
+
+    Steps:
+
+    1. Set taint toleration for Longhorn components
+       `persistence=true:NoExecute`
+    2. Taint `node-1` with `persistence=true:NoExecute`
+    3. Create a volume, vol-1.
+       Attach vol-1 to node-1
+       Write some data to vol-1
+    4. Create a recurring backup job which:
+       Has retain count 10
+       Runs every minute
+    5. Wait for 3 minutes.
+       Verify that the there is 1 backup created
+       Verify that the total number of pod in longhorn-system namespace &lt; 50
+       Verify that the number of pods of the cronjob is &lt;= 2
+
+    6. Taint all nodes with `persistence=true:NoExecute`
+    7. Write some data to vol-1
+    8. Wait for 3 minutes.
+       Verify that the there are 2 backups created in total
+       Verify that the total number of pod in longhorn-system namespace &lt; 50
+       Verify that the number of pods of the cronjob is &lt;= 2
+
+    9. Remove `persistence=true:NoExecute` from all nodes and Longhorn setting
+       Clean up backups, volumes
+    &#34;&#34;&#34;
     pass</code></pre>
 </details>
 </section>
@@ -1167,6 +1207,91 @@ def test_recurring_jobs_for_detached_volume():  # NOQA
     assert volume.recurringJobs[1][&#39;retain&#39;] == 20</code></pre>
 </details>
 </dd>
+<dt id="tests.test_recurring_job.test_recurring_jobs_on_nodes_with_taints"><code class="name flex">
+<span>def <span class="ident">test_recurring_jobs_on_nodes_with_taints</span></span>(<span>)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test recurring jobs on nodes with taints</p>
+<p>Context:</p>
+<p>Test the prevention of creation of multiple pods due to
+recurring job's pod being rejected by Taint controller
+on nodes with taints</p>
+<p>Steps:</p>
+<ol>
+<li>Set taint toleration for Longhorn components
+<code>persistence=true:NoExecute</code></li>
+<li>Taint <code>node-1</code> with <code>persistence=true:NoExecute</code></li>
+<li>Create a volume, vol-1.
+Attach vol-1 to node-1
+Write some data to vol-1</li>
+<li>Create a recurring backup job which:
+Has retain count 10
+Runs every minute</li>
+<li>
+<p>Wait for 3 minutes.
+Verify that the there is 1 backup created
+Verify that the total number of pod in longhorn-system namespace &lt; 50
+Verify that the number of pods of the cronjob is &lt;= 2</p>
+</li>
+<li>
+<p>Taint all nodes with <code>persistence=true:NoExecute</code></p>
+</li>
+<li>Write some data to vol-1</li>
+<li>
+<p>Wait for 3 minutes.
+Verify that the there are 2 backups created in total
+Verify that the total number of pod in longhorn-system namespace &lt; 50
+Verify that the number of pods of the cronjob is &lt;= 2</p>
+</li>
+<li>
+<p>Remove <code>persistence=true:NoExecute</code> from all nodes and Longhorn setting
+Clean up backups, volumes</p>
+</li>
+</ol></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@pytest.mark.skip(reason=&#34;TODO&#34;)
+def test_recurring_jobs_on_nodes_with_taints():  # NOQA
+    &#34;&#34;&#34;
+    Test recurring jobs on nodes with taints
+
+    Context:
+
+    Test the prevention of creation of multiple pods due to
+    recurring job&#39;s pod being rejected by Taint controller
+    on nodes with taints
+
+    Steps:
+
+    1. Set taint toleration for Longhorn components
+       `persistence=true:NoExecute`
+    2. Taint `node-1` with `persistence=true:NoExecute`
+    3. Create a volume, vol-1.
+       Attach vol-1 to node-1
+       Write some data to vol-1
+    4. Create a recurring backup job which:
+       Has retain count 10
+       Runs every minute
+    5. Wait for 3 minutes.
+       Verify that the there is 1 backup created
+       Verify that the total number of pod in longhorn-system namespace &lt; 50
+       Verify that the number of pods of the cronjob is &lt;= 2
+
+    6. Taint all nodes with `persistence=true:NoExecute`
+    7. Write some data to vol-1
+    8. Wait for 3 minutes.
+       Verify that the there are 2 backups created in total
+       Verify that the total number of pod in longhorn-system namespace &lt; 50
+       Verify that the number of pods of the cronjob is &lt;= 2
+
+    9. Remove `persistence=true:NoExecute` from all nodes and Longhorn setting
+       Clean up backups, volumes
+    &#34;&#34;&#34;
+    pass</code></pre>
+</details>
+</dd>
 <dt id="tests.test_recurring_job.wait_until_begin_of_an_even_minute"><code class="name flex">
 <span>def <span class="ident">wait_until_begin_of_an_even_minute</span></span>(<span>)</span>
 </code></dt>
@@ -1212,6 +1337,7 @@ def test_recurring_jobs_for_detached_volume():  # NOQA
 <li><code><a title="tests.test_recurring_job.test_recurring_job_labels" href="#tests.test_recurring_job.test_recurring_job_labels">test_recurring_job_labels</a></code></li>
 <li><code><a title="tests.test_recurring_job.test_recurring_jobs_for_detached_volume" href="#tests.test_recurring_job.test_recurring_jobs_for_detached_volume">test_recurring_jobs_for_detached_volume</a></code></li>
 <li><code><a title="tests.test_recurring_job.test_recurring_jobs_maximum_retain" href="#tests.test_recurring_job.test_recurring_jobs_maximum_retain">test_recurring_jobs_maximum_retain</a></code></li>
+<li><code><a title="tests.test_recurring_job.test_recurring_jobs_on_nodes_with_taints" href="#tests.test_recurring_job.test_recurring_jobs_on_nodes_with_taints">test_recurring_jobs_on_nodes_with_taints</a></code></li>
 <li><code><a title="tests.test_recurring_job.wait_until_begin_of_an_even_minute" href="#tests.test_recurring_job.wait_until_begin_of_an_even_minute">wait_until_begin_of_an_even_minute</a></code></li>
 </ul>
 </li>
