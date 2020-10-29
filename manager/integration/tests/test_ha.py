@@ -51,6 +51,7 @@ from common import exec_instance_manager
 from common import SIZE, VOLUME_RWTEST_SIZE, EXPAND_SIZE, Gi
 from common import RETRY_COUNTS, RETRY_INTERVAL
 from common import SETTING_REPLICA_NODE_SOFT_ANTI_AFFINITY
+from common import SETTING_REPLICA_REPLENISHMENT_WAIT_INTERVAL
 from common import write_pod_volume_data
 from common import read_volume_data
 from common import VOLUME_FIELD_ROBUSTNESS
@@ -606,36 +607,27 @@ def test_rebuild_replica_and_from_replica_on_the_same_node(
     are on the same node
 
     Test prerequisites:
-      - set Replica Node Level Soft Anti-Affinity enabled
+      - set Replica Node Level Soft Anti-Affinity disabled
 
-    1. Enable the setting replica-soft-anti-affinity.
-    2. Disable scheduling for all nodes except for one.
+    1. Disable the setting replica-soft-anti-affinity.
+    2. Set replica replenishment wait interval to an appropriate value.
     3. Create a pod with Longhorn volume and wait for pod to start
     4. Write data to `/data/test` inside the pod and get `original_checksum`
-    5. Find running replicas of the volume
-    6. Crash one of the running replicas.
-    7. Wait for the replica rebuild to start.
-    8. Check if the rebuilding replica is a new replica,
-       and the replica which is sending data is an existing replica.
-    9. Wait for volume to finish the rebuild and become healthy,
-       then check if the replica is rebuilt on the only available node
+    5. Disable scheduling for all nodes except for one.
+    6. Find running replicas of the volume
+    7. Crash 2 running replicas.
+    8. Wait for the replica rebuild to start.
+    9. Check if the rebuilding replica is one of the crashed replica,
+       and this reused replica is rebuilt on the only available node.
     10. Check md5sum for the written data
     """
 
     replica_node_soft_anti_affinity_setting = \
         client.by_id_setting(SETTING_REPLICA_NODE_SOFT_ANTI_AFFINITY)
-    client.update(replica_node_soft_anti_affinity_setting, value="true")
-
-    available_node_name = ""
-    nodes = client.list_node()
-    assert len(nodes) > 0
-    for node in nodes:
-        if not available_node_name:
-            available_node_name = node.name
-            continue
-        node = client.update(node, allowScheduling=False)
-        common.wait_for_node_update(client, node.id,
-                                    "allowScheduling", False)
+    client.update(replica_node_soft_anti_affinity_setting, value="false")
+    replenish_wait_setting = \
+        client.by_id_setting(SETTING_REPLICA_REPLENISHMENT_WAIT_INTERVAL)
+    client.update(replenish_wait_setting, value="600")
 
     data_path = "/data/test"
     pod_name, pv_name, pvc_name, original_md5sum = \
@@ -646,29 +638,35 @@ def test_rebuild_replica_and_from_replica_on_the_same_node(
     volume = client.by_id_volume(volume_name)
     original_replicas = volume.replicas
     assert len(original_replicas) == 3
+
+    available_node_name = original_replicas[0].hostId
+    nodes = client.list_node()
+    assert len(nodes) > 0
+    for node in nodes:
+        if node.name == available_node_name:
+            continue
+        node = client.update(node, allowScheduling=False)
+        common.wait_for_node_update(client, node.id,
+                                    "allowScheduling", False)
+
     # Trigger rebuild
     crash_replica_processes(client, core_api, volume_name,
-                            [original_replicas[0]])
+                            [original_replicas[0], original_replicas[1]])
     wait_for_volume_degraded(client, volume_name)
     from_replica_name, rebuilding_replica_name = \
         wait_for_rebuild_start(client, volume_name)
     assert from_replica_name != rebuilding_replica_name
-    verified_from_replica = False
-    for r in original_replicas:
-        assert r.name != rebuilding_replica_name
-        if r.name == from_replica_name:
-            verified_from_replica = True
-    assert verified_from_replica
+    assert from_replica_name == original_replicas[2].name
+    assert rebuilding_replica_name == original_replicas[0].name
 
     # Wait for volume healthy and
-    # check if the replica is rebuilt on the only available node
-    volume = wait_for_volume_healthy(client, volume_name)
-    for replica in volume.replicas:
-        if replica.name == rebuilding_replica_name:
-            rebuilt_replica = replica
-            break
-    assert rebuilt_replica
-    assert rebuilt_replica.hostId == available_node_name
+    # check if the failed replica on the only available node is reused.
+    wait_for_rebuild_complete(client, volume_name)
+    volume = wait_for_volume_degraded(client, volume_name)
+    assert volume.robustness == "degraded"
+    for r in volume.replicas:
+        if r.name == rebuilding_replica_name:
+            assert r.hostId == available_node_name
 
     md5sum = get_pod_data_md5sum(core_api, pod_name, data_path)
     assert original_md5sum == md5sum
