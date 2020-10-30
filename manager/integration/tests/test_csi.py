@@ -470,7 +470,7 @@ def test_csi_expansion_with_replica_failure(client, core_api, storage_class, pvc
     7. Check expansion result using Longhorn API. There will be expansion error
        caused by the failed replica but overall the expansion should succeed.
     8. Create a new pod and
-       check if the volume will rebuild the failed replica
+       check if the volume will reuse the failed replica during rebuilding.
     9. Validate the volume content, then check if data writing looks fine
     """
     create_storage_class(storage_class)
@@ -523,15 +523,12 @@ def test_csi_expansion_with_replica_failure(client, core_api, storage_class, pvc
         else:
             assert r.failedAt == ""
 
-    # Check if the replica will be rebuilded
+    # Check if the failed replica will be reused during rebuilding,
     # and if the volume still works fine.
     create_and_wait_pod(core_api, pod_manifest)
     volume = wait_for_volume_healthy(client, volume_name)
     for r in volume.replicas:
-        if r.name == failed_replica.name:
-            assert r.mode == ""
-        else:
-            assert r.mode == "RW"
+        assert r.mode == "RW"
     resp = read_volume_data(core_api, pod_name)
     assert resp == test_data
     test_data = generate_random_data(VOLUME_RWTEST_SIZE)
