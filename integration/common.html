@@ -57,6 +57,7 @@ Gi = (1024 * Mi)
 SIZE = str(16 * Mi)
 EXPAND_SIZE = str(32 * Mi)
 VOLUME_NAME = &#34;longhorn-testvol&#34;
+STATEFULSET_NAME = &#34;longhorn-teststs&#34;
 DEV_PATH = &#34;/dev/longhorn/&#34;
 VOLUME_RWTEST_SIZE = 512
 VOLUME_INVALID_POS = -1
@@ -1694,6 +1695,17 @@ def csi_pvc_name(request):
 
 def generate_volume_name():
     return VOLUME_NAME + &#34;-&#34; + \
+        &#39;&#39;.join(random.choice(string.ascii_lowercase + string.digits)
+                for _ in range(6))
+
+
+@pytest.fixture
+def sts_name(request):
+    return generate_sts_name()
+
+
+def generate_sts_name():
+    return STATEFULSET_NAME + &#34;-&#34; + \
         &#39;&#39;.join(random.choice(string.ascii_lowercase + string.digits)
                 for _ in range(6))
 
@@ -3541,6 +3553,44 @@ def expand_attached_volume(client, volume_name):
     wait_for_volume_healthy(client, volume_name)
 
 
+def prepare_statefulset_with_data_in_mb(
+        client, core_api, statefulset, sts_name, storage_class,
+        data_path=&#34;/data/test&#34;,
+        data_size_in_mb=DATA_SIZE_IN_MB_1):
+    update_statefulset_manifests(statefulset, storage_class, sts_name)
+    statefulset[&#39;spec&#39;][&#39;replicas&#39;] = 1
+
+    create_storage_class(storage_class)
+    create_and_wait_statefulset(statefulset)
+
+    pod_info = get_statefulset_pod_info(core_api, statefulset)
+    volumes = client.list_volume()
+    assert len(volumes) == statefulset[&#39;spec&#39;][&#39;replicas&#39;]
+
+    vol_name = None
+    pod_name = None
+    md5sum = None
+    for v in volumes:
+        info = pod_info[0]
+        if v.name == info[&#39;pv_name&#39;]:
+            write_pod_volume_random_data(core_api, info[&#39;pod_name&#39;],
+                                         data_path, data_size_in_mb)
+            md5sum = get_pod_data_md5sum(core_api, info[&#39;pod_name&#39;],
+                                         data_path)
+            stream(core_api.connect_get_namespaced_pod_exec,
+                   info[&#39;pod_name&#39;], &#39;default&#39;, command=[&#34;sync&#34;],
+                   stderr=True, stdin=False, stdout=True, tty=False)
+
+            vol_name = v.name
+            pod_name = info[&#39;pod_name&#39;]
+            break
+
+    assert vol_name is not None
+    assert pod_name is not None
+    assert md5sum is not None
+    return vol_name, pod_name, md5sum
+
+
 def prepare_pod_with_data_in_mb(
         client, core_api, csi_pv, pvc, pod_make, volume_name,
         volume_size=str(1*Gi), data_path=&#34;/data/test&#34;,
@@ -3695,6 +3745,21 @@ def wait_for_pod_restart(core_api, pod_name, namespace=&#34;default&#34;):
 
         time.sleep(RETRY_INTERVAL)
     assert pod_restarted
+
+
+def wait_for_pod_phase(core_api, pod_name, pod_phase, namespace=&#34;default&#34;):
+    pod = core_api.read_namespaced_pod(name=pod_name,
+                                       namespace=namespace)
+    is_phase = False
+    for _ in range(RETRY_COUNTS):
+        pod = core_api.read_namespaced_pod(name=pod_name,
+                                           namespace=namespace)
+        if pod.status.phase == pod_phase:
+            is_phase = True
+            break
+
+        time.sleep(RETRY_INTERVAL_LONG)
+    assert is_phase
 
 
 def wait_for_instance_manager_desire_state(client, core_api, im_name,
@@ -5613,6 +5678,21 @@ been completed successfully</p></div>
     return pos</code></pre>
 </details>
 </dd>
+<dt id="tests.common.generate_sts_name"><code class="name flex">
+<span>def <span class="ident">generate_sts_name</span></span>(<span>)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def generate_sts_name():
+    return STATEFULSET_NAME + &#34;-&#34; + \
+        &#39;&#39;.join(random.choice(string.ascii_lowercase + string.digits)
+                for _ in range(6))</code></pre>
+</details>
+</dd>
 <dt id="tests.common.generate_volume_name"><code class="name flex">
 <span>def <span class="ident">generate_volume_name</span></span>(<span>)</span>
 </code></dt>
@@ -6677,6 +6757,53 @@ def pod_make(request):
     return pod_name, pv_name, pvc_name, md5sum</code></pre>
 </details>
 </dd>
+<dt id="tests.common.prepare_statefulset_with_data_in_mb"><code class="name flex">
+<span>def <span class="ident">prepare_statefulset_with_data_in_mb</span></span>(<span>client, core_api, statefulset, sts_name, storage_class, data_path='/data/test', data_size_in_mb=100)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def prepare_statefulset_with_data_in_mb(
+        client, core_api, statefulset, sts_name, storage_class,
+        data_path=&#34;/data/test&#34;,
+        data_size_in_mb=DATA_SIZE_IN_MB_1):
+    update_statefulset_manifests(statefulset, storage_class, sts_name)
+    statefulset[&#39;spec&#39;][&#39;replicas&#39;] = 1
+
+    create_storage_class(storage_class)
+    create_and_wait_statefulset(statefulset)
+
+    pod_info = get_statefulset_pod_info(core_api, statefulset)
+    volumes = client.list_volume()
+    assert len(volumes) == statefulset[&#39;spec&#39;][&#39;replicas&#39;]
+
+    vol_name = None
+    pod_name = None
+    md5sum = None
+    for v in volumes:
+        info = pod_info[0]
+        if v.name == info[&#39;pv_name&#39;]:
+            write_pod_volume_random_data(core_api, info[&#39;pod_name&#39;],
+                                         data_path, data_size_in_mb)
+            md5sum = get_pod_data_md5sum(core_api, info[&#39;pod_name&#39;],
+                                         data_path)
+            stream(core_api.connect_get_namespaced_pod_exec,
+                   info[&#39;pod_name&#39;], &#39;default&#39;, command=[&#34;sync&#34;],
+                   stderr=True, stdin=False, stdout=True, tty=False)
+
+            vol_name = v.name
+            pod_name = info[&#39;pod_name&#39;]
+            break
+
+    assert vol_name is not None
+    assert pod_name is not None
+    assert md5sum is not None
+    return vol_name, pod_name, md5sum</code></pre>
+</details>
+</dd>
 <dt id="tests.common.priority_class"><code class="name flex">
 <span>def <span class="ident">priority_class</span></span>(<span>request)</span>
 </code></dt>
@@ -7457,6 +7584,20 @@ def storage_class(request):
     request.addfinalizer(finalizer)
 
     return sc_manifest</code></pre>
+</details>
+</dd>
+<dt id="tests.common.sts_name"><code class="name flex">
+<span>def <span class="ident">sts_name</span></span>(<span>request)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@pytest.fixture
+def sts_name(request):
+    return generate_sts_name()</code></pre>
 </details>
 </dd>
 <dt id="tests.common.umount_disk"><code class="name flex">
@@ -8313,6 +8454,30 @@ def volume_name(request):
         time.sleep(RETRY_INTERVAL)
     assert str(node[key]) == str(value)
     return node</code></pre>
+</details>
+</dd>
+<dt id="tests.common.wait_for_pod_phase"><code class="name flex">
+<span>def <span class="ident">wait_for_pod_phase</span></span>(<span>core_api, pod_name, pod_phase, namespace='default')</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def wait_for_pod_phase(core_api, pod_name, pod_phase, namespace=&#34;default&#34;):
+    pod = core_api.read_namespaced_pod(name=pod_name,
+                                       namespace=namespace)
+    is_phase = False
+    for _ in range(RETRY_COUNTS):
+        pod = core_api.read_namespaced_pod(name=pod_name,
+                                           namespace=namespace)
+        if pod.status.phase == pod_phase:
+            is_phase = True
+            break
+
+        time.sleep(RETRY_INTERVAL_LONG)
+    assert is_phase</code></pre>
 </details>
 </dd>
 <dt id="tests.common.wait_for_pod_remount"><code class="name flex">
@@ -9410,6 +9575,7 @@ volume. Trigger a failed assertion of one is detected.
 <li><code><a title="tests.common.generate_pod_with_pvc_manifest" href="#tests.common.generate_pod_with_pvc_manifest">generate_pod_with_pvc_manifest</a></code></li>
 <li><code><a title="tests.common.generate_random_data" href="#tests.common.generate_random_data">generate_random_data</a></code></li>
 <li><code><a title="tests.common.generate_random_pos" href="#tests.common.generate_random_pos">generate_random_pos</a></code></li>
+<li><code><a title="tests.common.generate_sts_name" href="#tests.common.generate_sts_name">generate_sts_name</a></code></li>
 <li><code><a title="tests.common.generate_volume_name" href="#tests.common.generate_volume_name">generate_volume_name</a></code></li>
 <li><code><a title="tests.common.get_apps_api_client" href="#tests.common.get_apps_api_client">get_apps_api_client</a></code></li>
 <li><code><a title="tests.common.get_backupstore_url" href="#tests.common.get_backupstore_url">get_backupstore_url</a></code></li>
@@ -9458,6 +9624,7 @@ volume. Trigger a failed assertion of one is detected.
 <li><code><a title="tests.common.pod_make" href="#tests.common.pod_make">pod_make</a></code></li>
 <li><code><a title="tests.common.prepare_host_disk" href="#tests.common.prepare_host_disk">prepare_host_disk</a></code></li>
 <li><code><a title="tests.common.prepare_pod_with_data_in_mb" href="#tests.common.prepare_pod_with_data_in_mb">prepare_pod_with_data_in_mb</a></code></li>
+<li><code><a title="tests.common.prepare_statefulset_with_data_in_mb" href="#tests.common.prepare_statefulset_with_data_in_mb">prepare_statefulset_with_data_in_mb</a></code></li>
 <li><code><a title="tests.common.priority_class" href="#tests.common.priority_class">priority_class</a></code></li>
 <li><code><a title="tests.common.pvc" href="#tests.common.pvc">pvc</a></code></li>
 <li><code><a title="tests.common.pvc_baseimage" href="#tests.common.pvc_baseimage">pvc_baseimage</a></code></li>
@@ -9478,6 +9645,7 @@ volume. Trigger a failed assertion of one is detected.
 <li><code><a title="tests.common.size_to_string" href="#tests.common.size_to_string">size_to_string</a></code></li>
 <li><code><a title="tests.common.statefulset" href="#tests.common.statefulset">statefulset</a></code></li>
 <li><code><a title="tests.common.storage_class" href="#tests.common.storage_class">storage_class</a></code></li>
+<li><code><a title="tests.common.sts_name" href="#tests.common.sts_name">sts_name</a></code></li>
 <li><code><a title="tests.common.umount_disk" href="#tests.common.umount_disk">umount_disk</a></code></li>
 <li><code><a title="tests.common.update_statefulset_manifests" href="#tests.common.update_statefulset_manifests">update_statefulset_manifests</a></code></li>
 <li><code><a title="tests.common.volume_name" href="#tests.common.volume_name">volume_name</a></code></li>
@@ -9514,6 +9682,7 @@ volume. Trigger a failed assertion of one is detected.
 <li><code><a title="tests.common.wait_for_node_schedulable_condition" href="#tests.common.wait_for_node_schedulable_condition">wait_for_node_schedulable_condition</a></code></li>
 <li><code><a title="tests.common.wait_for_node_tag_update" href="#tests.common.wait_for_node_tag_update">wait_for_node_tag_update</a></code></li>
 <li><code><a title="tests.common.wait_for_node_update" href="#tests.common.wait_for_node_update">wait_for_node_update</a></code></li>
+<li><code><a title="tests.common.wait_for_pod_phase" href="#tests.common.wait_for_pod_phase">wait_for_pod_phase</a></code></li>
 <li><code><a title="tests.common.wait_for_pod_remount" href="#tests.common.wait_for_pod_remount">wait_for_pod_remount</a></code></li>
 <li><code><a title="tests.common.wait_for_pod_restart" href="#tests.common.wait_for_pod_restart">wait_for_pod_restart</a></code></li>
 <li><code><a title="tests.common.wait_for_rebuild_complete" href="#tests.common.wait_for_rebuild_complete">wait_for_rebuild_complete</a></code></li>
