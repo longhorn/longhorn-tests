@@ -1531,10 +1531,12 @@ def test_dr_volume_with_restore_command_error(
     9. Wait for incremental restore complete.
        Then verify the DR volume is Degraded
        and there is one failed replica.
-    10. Activate the DR volume and wait for it complete.
-    11. Create PV/PVC/Pod for the activated volume.
-    12. Validate the volume content.
-    13. Verify Writing data to the activated volume is fine.
+    10. Verify the failed replica will be reused for rebuilding
+        (restore actually).
+    11. Activate the DR volume and wait for it complete.
+    12. Create PV/PVC/Pod for the activated volume.
+    13. Validate the volume content.
+    14. Verify Writing data to the activated volume is fine.
     """
     set_random_backupstore(client)
 
@@ -1582,9 +1584,8 @@ def test_dr_volume_with_restore_command_error(
     client.list_backupVolume()
     check_volume_last_backup(client, dr_volume_name, b2.name)
     wait_for_volume_restoration_start(client, dr_volume_name, b2.name)
-    wait_for_backup_restore_completed(client, dr_volume_name, b2.name)
 
-    dr_volume = client.by_id_volume(dr_volume_name)
+    dr_volume = wait_for_volume_degraded(client, dr_volume_name)
     verified = False
     for r in dr_volume.replicas:
         if r.name == failed_replica.name:
@@ -1595,7 +1596,17 @@ def test_dr_volume_with_restore_command_error(
             assert r['running']
             assert r['failedAt'] == ""
     assert verified
-    wait_for_volume_degraded(client, dr_volume_name)
+
+    wait_for_backup_restore_completed(client, dr_volume_name, b2.name)
+
+    dr_volume = wait_for_volume_healthy_no_frontend(client, dr_volume_name)
+    verified = False
+    for r in dr_volume.replicas:
+        assert r['running']
+        assert r['failedAt'] == ""
+        if r.name == failed_replica.name:
+            verified = True
+    assert verified
 
     activate_standby_volume(client, dr_volume_name)
     dr_volume = wait_for_volume_detached(client, dr_volume_name)
