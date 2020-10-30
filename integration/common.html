@@ -1231,16 +1231,6 @@ def cleanup_client():
             print(&#34;\nException when cleanup volume &#34;, v)
             print(e)
             pass
-    images = client.list_engine_image()
-    for img in images:
-        if not img.default:
-            # ignore the error when clean up
-            try:
-                client.delete(img)
-            except Exception as e:
-                print(&#34;\nException when cleanup image&#34;, img)
-                print(e)
-                pass
 
     # enable nodes scheduling
     reset_node(client)
@@ -2556,6 +2546,7 @@ def reset_engine_image(client):
                 if ei.state != &#39;ready&#39;:
                     ready = False
             else:
+                wait_for_engine_image_ref_count(client, ei.name, 0)
                 client.delete(ei)
                 wait_for_engine_image_deletion(client, core_api, ei.name)
         if ready:
@@ -4309,16 +4300,6 @@ properly.
             print(&#34;\nException when cleanup volume &#34;, v)
             print(e)
             pass
-    images = client.list_engine_image()
-    for img in images:
-        if not img.default:
-            # ignore the error when clean up
-            try:
-                client.delete(img)
-            except Exception as e:
-                print(&#34;\nException when cleanup image&#34;, img)
-                print(e)
-                pass
 
     # enable nodes scheduling
     reset_node(client)
@@ -7088,6 +7069,7 @@ def random_labels():
                 if ei.state != &#39;ready&#39;:
                     ready = False
             else:
+                wait_for_engine_image_ref_count(client, ei.name, 0)
                 client.delete(ei)
                 wait_for_engine_image_deletion(client, core_api, ei.name)
         if ready:
