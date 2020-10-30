@@ -697,8 +697,4 @@ def test_engine_live_upgrade_with_intensive_data_writing(client, core_api, volum
     delete_and_wait_pvc(core_api, pvc_name)
     delete_and_wait_pv(core_api, pv_name)
 
-    client.delete(volume)
-    wait_for_volume_delete(client, volume_name)
-
-    client.delete(new_img)
-    wait_for_engine_image_deletion(client, core_api, new_img.name)
+    common.cleanup_volume(client, volume)
