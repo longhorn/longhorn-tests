@@ -2079,7 +2079,8 @@ def test_reuse_failed_replica():
     2. Disable the setting soft node anti-affinity.
     3. Create and attach a volume. Then write data to the volume.
     4. Disable the scheduling for a node.
-    5. Crash the replica on the node.
+    5. Mess up the data of a random snapshot or the volume head for a replica.
+       Then crash the replica on the node.
        --> Verify Longhorn won't create a new replica on the node
            for the volume.
     6. Update setting `replica-replenishment-wait-interval` to
