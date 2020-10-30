@@ -394,6 +394,17 @@ Note: This is a race condition, so we need to try multiple times to validate the
     </item>
     
     <item>
+      <title>Upgrade Longhorn with modified Storage Class</title>
+      <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/upgrade_with_modified_storageclass/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/upgrade_with_modified_storageclass/</guid>
+      <description>Intro Longhorn can be upgraded with modified Storage Class.
+Related Issue https://github.com/longhorn/longhorn/issues/1527
+Test steps: Kubectl apply -f  Install Longhorn v1.0.2 kubectl apply -f https://raw.githubusercontent.com/longhorn/longhorn/v1.0.2/deploy/longhorn.yaml  Create a statefulset using longhorn storageclass for PVCs. Set the scale to 1. Observe that there is a workload pod (pod-1) is using 1 volume (vol-1) with 3 replicas. In Longhorn repo, on master branch. Modify numberOfReplicas: &amp;quot;1&amp;quot; in https://raw.githubusercontent.com/longhorn/longhorn/master/deploy/longhorn.yaml. Upgrade Longhorn to master by running kubectl apply -f https://raw.</description>
+    </item>
+    
+    <item>
       <title>Volume Deletion UI Warnings</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.1/ui-volume-deletion/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>

@@ -219,6 +219,10 @@
   </url>
   
   <url>
+    <loc>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/upgrade_with_modified_storageclass/</loc>
+  </url>
+  
+  <url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.0/</loc>
   </url>
   
