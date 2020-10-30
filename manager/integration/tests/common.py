@@ -1202,16 +1202,6 @@ def cleanup_client():
             print("\nException when cleanup volume ", v)
             print(e)
             pass
-    images = client.list_engine_image()
-    for img in images:
-        if not img.default:
-            # ignore the error when clean up
-            try:
-                client.delete(img)
-            except Exception as e:
-                print("\nException when cleanup image", img)
-                print(e)
-                pass
 
     # enable nodes scheduling
     reset_node(client)
@@ -2516,6 +2506,7 @@ def reset_engine_image(client):
                 if ei.state != 'ready':
                     ready = False
             else:
+                wait_for_engine_image_ref_count(client, ei.name, 0)
                 client.delete(ei)
                 wait_for_engine_image_deletion(client, core_api, ei.name)
         if ready:
