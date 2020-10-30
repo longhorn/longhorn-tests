@@ -2476,6 +2476,7 @@ def test_expansion_with_scheduling_failure(
     3. Write data to the pod volume and get the md5sum.
     4. Disable the scheduling for a node contains a running replica.
     5. Crash the replica on the scheduling disabled node for the volume.
+       Then delete the failed replica so that it won't be reused.
     6. Wait for the scheduling failure which is caused
        by the new replica creation.
     7. Verify:
@@ -2530,17 +2531,22 @@ def test_expansion_with_scheduling_failure(
                                            data_path1)
 
     volume = client.by_id_volume(volume_name)
-    existing_replicas = {}
+    old_replicas = {}
     for r in volume.replicas:
-        existing_replicas[r.name] = r
-    node = client.by_id_node(volume.replicas[0].hostId)
+        old_replicas[r.name] = r
+    failed_replica = volume.replicas[0]
+    node = client.by_id_node(failed_replica.hostId)
     node = client.update(node, allowScheduling=False)
     common.wait_for_node_update(client, node.id,
                                 "allowScheduling", False)
 
     crash_replica_processes(client, core_api, volume_name,
-                            replicas=[volume.replicas[0]],
+                            replicas=[failed_replica],
                             wait_to_fail=False)
+
+    # Remove the failed replica so that it won't be reused later
+    volume = wait_for_volume_degraded(client, volume_name)
+    volume.replicaRemove(name=failed_replica.name)
 
     # Wait for scheduling failure.
     # It means the new replica is created but fails to be scheduled.
@@ -2549,10 +2555,11 @@ def test_expansion_with_scheduling_failure(
     wait_for_volume_condition_scheduled(client, volume_name, "reason",
                                         CONDITION_REASON_SCHEDULING_FAILURE)
     volume = wait_for_volume_degraded(client, volume_name)
-    assert len(volume.replicas) == 4
+    assert len(volume.replicas) == 3
     assert volume.ready
     for r in volume.replicas:
-        if r.name not in existing_replicas:
+        assert r.name != failed_replica.name
+        if r.name not in old_replicas:
             new_replica = r
             break
     assert new_replica
@@ -2571,7 +2578,7 @@ def test_expansion_with_scheduling_failure(
     assert volume.ready
     # The scheduling failed replica will be removed
     # so that the volume can be reattached later.
-    assert len(volume.replicas) == 3
+    assert len(volume.replicas) == 2
     for r in volume.replicas:
         assert r.hostId != ""
         assert r.name != new_replica.name
@@ -2582,9 +2589,9 @@ def test_expansion_with_scheduling_failure(
     volume = client.by_id_volume(volume_name)
     assert volume.state == "detached"
     assert volume.size == expanded_size
-    assert len(volume.replicas) == 3
+    assert len(volume.replicas) == 2
     for r in volume.replicas:
-        assert r.name in existing_replicas
+        assert r.name in old_replicas
 
     create_and_wait_pod(core_api, pod)
     wait_for_volume_degraded(client, volume_name)
@@ -2600,7 +2607,7 @@ def test_expansion_with_scheduling_failure(
                                  data_path3, DATA_SIZE_IN_MB_1)
     original_md5sum3 = get_pod_data_md5sum(core_api, test_pod_name, data_path3)
 
-    node = client.by_id_node(volume.replicas[0].hostId)
+    node = client.by_id_node(failed_replica.hostId)
     client.update(node, allowScheduling=True)
     wait_for_volume_healthy(client, volume_name)
 
