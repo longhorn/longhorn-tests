@@ -47,6 +47,17 @@ kubectl get &amp;lt;LONGHORN-CRD&amp;gt; -n longhorn-system Verify that the outp
     </item>
     
     <item>
+      <title>Test ISCSI Installation on EKS</title>
+      <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/iscsi_installation/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/iscsi_installation/</guid>
+      <description>This is for EKS or similar users who doesn&amp;rsquo;t need to log into each host to install &amp;lsquo;ISCSI&amp;rsquo; individually.
+Test steps:
+ Create an EKS cluster with 3 nodes. Run the following command to install iscsi on every nodes.  kubectl apply -f https://raw.githubusercontent.com/longhorn/longhorn/master/deploy/iscsi/longhorn-iscsi-installation.yaml In Longhorn Manager Repo Directory run:  kubectl apply -Rf ./deploy/install/ Longhorn should be able installed successfully. Try to create a pod with a pvc:  kubectl apply -f https://raw.</description>
+    </item>
+    
+    <item>
       <title>Test uninstallation</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/uninstallation/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
