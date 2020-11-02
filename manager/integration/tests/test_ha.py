@@ -488,7 +488,6 @@ def wait_pod_for_auto_salvage(
 
     wait_for_volume_healthy(client, volume_name)
 
-    common.wait_for_pod_phase(core_api, pod_name, pod_phase="Pending")
     common.wait_for_pod_phase(core_api, pod_name, pod_phase="Running")
 
     wait_for_pod_remount(core_api, pod_name)
