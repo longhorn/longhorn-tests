@@ -147,6 +147,10 @@
   </url>
   
   <url>
+    <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/ha/replica-rebuilding/</loc>
+  </url>
+  
+  <url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.1/error-fail-remount/</loc>
   </url>
   

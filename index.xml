@@ -250,6 +250,15 @@ Monitor longhorn  Deploy the Prometheus-operator, ServiceMonitor pointing to lon
     </item>
     
     <item>
+      <title>Replica Rebuilding</title>
+      <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/ha/replica-rebuilding/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/ha/replica-rebuilding/</guid>
+      <description>Create and attach a volume. Write a large amount of data to the volume. Disable disk scheduling and the node scheduling for one replica. Crash the replica progress. Verify  the corresponding replica will become ERROR. the volume will keep robustness Degraded.   Enable the disk scheduling. Verify nothing changes. Enable the node scheduling. Verify.  the failed replica is reused by Longhorn. the rebuilding progress in UI page looks good.</description>
+    </item>
+    
+    <item>
       <title>Return an error when fail to remount a volume</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.1/error-fail-remount/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>

@@ -15,5 +15,14 @@
       <description>Create and attach a volume. Set an invalid value (Too large to crash the instance manager pods. e.g., 10) for Guaranteed Engine CPU. Verify instance(engine/replica) manager pods will be recreated again and again. Check the managers&#39; log. (Use kubetail longhorn-manager -n longhorn-system). Make sure there is no NPE error logs like:  [longhorn-manager-67nhs] E1112 21:58:14.037140 1 runtime.go:69] Observed a panic: &amp;quot;send on closed channel&amp;quot; (send on closed channel) [longhorn-manager-67nhs] /go/src/github.</description>
     </item>
     
+    <item>
+      <title>Replica Rebuilding</title>
+      <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/ha/replica-rebuilding/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/ha/replica-rebuilding/</guid>
+      <description>Create and attach a volume. Write a large amount of data to the volume. Disable disk scheduling and the node scheduling for one replica. Crash the replica progress. Verify  the corresponding replica will become ERROR. the volume will keep robustness Degraded.   Enable the disk scheduling. Verify nothing changes. Enable the node scheduling. Verify.  the failed replica is reused by Longhorn. the rebuilding progress in UI page looks good.</description>
+    </item>
+    
   </channel>
 </rss>
