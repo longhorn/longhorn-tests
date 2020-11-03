@@ -516,6 +516,11 @@ def wait_pod_for_auto_salvage(
 
     wait_for_volume_healthy(client, volume_name)
 
+    try:
+        common.wait_for_pod_phase(core_api, pod_name, pod_phase=&#34;Pending&#34;)
+    except AssertionError:
+        print(&#34;\nException waiting for pod pending,&#34;
+              &#34;could have missed it&#34;)
     common.wait_for_pod_phase(core_api, pod_name, pod_phase=&#34;Running&#34;)
 
     wait_for_pod_remount(core_api, pod_name)
@@ -4990,6 +4995,11 @@ to crash the engine process</p>
 
     wait_for_volume_healthy(client, volume_name)
 
+    try:
+        common.wait_for_pod_phase(core_api, pod_name, pod_phase=&#34;Pending&#34;)
+    except AssertionError:
+        print(&#34;\nException waiting for pod pending,&#34;
+              &#34;could have missed it&#34;)
     common.wait_for_pod_phase(core_api, pod_name, pod_phase=&#34;Running&#34;)
 
     wait_for_pod_remount(core_api, pod_name)
