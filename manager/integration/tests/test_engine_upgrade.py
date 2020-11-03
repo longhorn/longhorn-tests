@@ -15,7 +15,6 @@ from common import pod_make  # NOQA
 from common import create_pv_for_volume, create_pvc_for_volume
 from common import create_pvc_spec
 from common import create_and_check_volume, create_and_wait_pod
-from common import delete_and_wait_pvc, delete_and_wait_pv
 from common import delete_and_wait_pod
 from common import write_pod_volume_random_data, get_pod_data_md5sum
 from common import copy_pod_volume_data
@@ -692,9 +691,3 @@ def test_engine_live_upgrade_with_intensive_data_writing(client, core_api, volum
     volume_file_md5sum2 = get_pod_data_md5sum(
         core_api, pod_name, data_path2)
     assert volume_file_md5sum2 == original_md5sum2
-
-    delete_and_wait_pod(core_api, pod_name)
-    delete_and_wait_pvc(core_api, pvc_name)
-    delete_and_wait_pv(core_api, pv_name)
-
-    common.cleanup_volume(client, volume)
