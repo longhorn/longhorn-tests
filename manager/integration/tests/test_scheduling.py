@@ -22,6 +22,7 @@ from common import wait_for_rebuild_start
 from common import delete_and_wait_pod
 from common import wait_for_replica_failed
 from common import crash_engine_process_with_sigkill
+from common import wait_for_replica_running
 
 from time import sleep
 
@@ -394,7 +395,7 @@ def test_replica_rebuild_per_volume_limit():
     pass
 
 
-def test_data_locality_basic(client, core_api, volume_name, pod, settings_reset): # NOQA
+def test_data_locality_basic(client, core_api, volume_name, pod, settings_reset):  # NOQA
     """
     Test data locality basic feature
 
@@ -735,7 +736,6 @@ def test_data_locality_basic(client, core_api, volume_name, pod, settings_reset)
     create_and_wait_pod(core_api, pod3)
 
     wait_for_rebuild_start(client, volume3_name)
-    volume3 = client.by_id_volume(volume3_name)
     crash_engine_process_with_sigkill(client, core_api, volume3_name)
     volume3 = client.by_id_volume(volume3_name)
 
@@ -754,7 +754,6 @@ def test_data_locality_basic(client, core_api, volume_name, pod, settings_reset)
 
     volume3 = client.by_id_volume(volume3_name)
     assert len(volume3.replicas) == 1
-    volume3 = client.by_id_volume(volume3_name)
 
     create_and_wait_pod(core_api, pod3)
     wait_for_rebuild_start(client, volume3_name)
@@ -762,8 +761,8 @@ def test_data_locality_basic(client, core_api, volume_name, pod, settings_reset)
     assert len(volume3.replicas) == 2
     wait_for_rebuild_complete(client, volume3_name)
 
-    volume3 = client.by_id_volume(volume3_name)
-    assert len(volume3.replicas) == 1
+    # Wait for deletion of extra replica
+    volume3 = wait_for_volume_replica_count(client, volume3_name, 1)
     assert volume3.replicas[0]["hostId"] == node1.name
     assert volume3.replicas[0]["mode"] == "RW"
     assert volume3.replicas[0]["running"] is True
@@ -881,6 +880,7 @@ def test_data_locality_basic(client, core_api, volume_name, pod, settings_reset)
     v4_node3_replica_count = 0
 
     for replica in volume4.replicas:
+        wait_for_replica_running(client, volume4_name, replica["name"])
         if replica["hostId"] == node1.name:
             v4_node1_replica_count += 1
         elif replica["hostId"] == node2.name:
