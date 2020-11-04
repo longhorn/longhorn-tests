@@ -3587,7 +3587,7 @@ def prepare_statefulset_with_data_in_mb(
 def prepare_pod_with_data_in_mb(
         client, core_api, csi_pv, pvc, pod_make, volume_name,
         volume_size=str(1*Gi), num_of_replicas=3, data_path="/data/test",
-        data_size_in_mb=DATA_SIZE_IN_MB_1, add_liveness_prope=True):# NOQA:
+        data_size_in_mb=DATA_SIZE_IN_MB_1, add_liveness_probe=True):# NOQA:
 
     pod_name = volume_name + "-pod"
     pv_name = volume_name + "-pv"
@@ -3603,7 +3603,7 @@ def prepare_pod_with_data_in_mb(
     pvc['spec']['storageClassName'] = ''
     pod['spec']['volumes'] = [create_pvc_spec(pvc_name)]
 
-    if add_liveness_prope is True:
+    if add_liveness_probe is True:
         pod_liveness_probe_spec = \
             get_liveness_probe_spec(initial_delay=1,
                                     period=1)
