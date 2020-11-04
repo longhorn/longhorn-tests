@@ -1668,6 +1668,36 @@ def wait_for_replica_running(client, volname, replica_name):
     assert is_running
 
 
+def wait_for_replica_scheduled(client, volume_name, to_nodes,
+                               replica_count=2, anti_affinity=False,
+                               is_vol_healthy=True):
+    scheduled = 0
+    for _ in range(RETRY_COUNTS):
+        volume = client.by_id_volume(volume_name)
+        if is_vol_healthy:
+            assert volume.robustness == VOLUME_ROBUSTNESS_HEALTHY
+
+        for r in volume.replicas:
+            try:
+                assert r.hostId in to_nodes
+                assert r.running is True
+                assert r.mode == &#34;RW&#34;
+
+                if not anti_affinity:
+                    to_nodes.remove(r.hostId)
+
+                scheduled += 1
+                break
+            except AssertionError:
+                continue
+
+        if scheduled == replica_count:
+            break
+
+        time.sleep(RETRY_INTERVAL)
+    assert scheduled == replica_count
+
+
 @pytest.fixture
 def volume_name(request):
     return generate_volume_name()
@@ -3584,7 +3614,7 @@ def prepare_statefulset_with_data_in_mb(
 
 def prepare_pod_with_data_in_mb(
         client, core_api, csi_pv, pvc, pod_make, volume_name,
-        volume_size=str(1*Gi), data_path=&#34;/data/test&#34;,
+        volume_size=str(1*Gi), num_of_replicas=3, data_path=&#34;/data/test&#34;,
         data_size_in_mb=DATA_SIZE_IN_MB_1, add_liveness_prope=True):# NOQA:
 
     pod_name = volume_name + &#34;-pod&#34;
@@ -3609,7 +3639,8 @@ def prepare_pod_with_data_in_mb(
             pod_liveness_probe_spec
 
     create_and_check_volume(client, volume_name,
-                            num_of_replicas=3, size=volume_size)
+                            num_of_replicas=num_of_replicas,
+                            size=volume_size)
     core_api.create_persistent_volume(csi_pv)
     core_api.create_namespaced_persistent_volume_claim(
         body=pvc, namespace=&#39;default&#39;)
@@ -6685,7 +6716,7 @@ def pod_make(request):
 </details>
 </dd>
 <dt id="tests.common.prepare_pod_with_data_in_mb"><code class="name flex">
-<span>def <span class="ident">prepare_pod_with_data_in_mb</span></span>(<span>client, core_api, csi_pv, pvc, pod_make, volume_name, volume_size='1073741824', data_path='/data/test', data_size_in_mb=100, add_liveness_prope=True)</span>
+<span>def <span class="ident">prepare_pod_with_data_in_mb</span></span>(<span>client, core_api, csi_pv, pvc, pod_make, volume_name, volume_size='1073741824', num_of_replicas=3, data_path='/data/test', data_size_in_mb=100, add_liveness_prope=True)</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -6695,7 +6726,7 @@ def pod_make(request):
 </summary>
 <pre><code class="python">def prepare_pod_with_data_in_mb(
         client, core_api, csi_pv, pvc, pod_make, volume_name,
-        volume_size=str(1*Gi), data_path=&#34;/data/test&#34;,
+        volume_size=str(1*Gi), num_of_replicas=3, data_path=&#34;/data/test&#34;,
         data_size_in_mb=DATA_SIZE_IN_MB_1, add_liveness_prope=True):# NOQA:
 
     pod_name = volume_name + &#34;-pod&#34;
@@ -6720,7 +6751,8 @@ def pod_make(request):
             pod_liveness_probe_spec
 
     create_and_check_volume(client, volume_name,
-                            num_of_replicas=3, size=volume_size)
+                            num_of_replicas=num_of_replicas,
+                            size=volume_size)
     core_api.create_persistent_volume(csi_pv)
     core_api.create_namespaced_persistent_volume_claim(
         body=pvc, namespace=&#39;default&#39;)
@@ -8667,6 +8699,45 @@ def volume_name(request):
     assert is_running</code></pre>
 </details>
 </dd>
+<dt id="tests.common.wait_for_replica_scheduled"><code class="name flex">
+<span>def <span class="ident">wait_for_replica_scheduled</span></span>(<span>client, volume_name, to_nodes, replica_count=2, anti_affinity=False, is_vol_healthy=True)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def wait_for_replica_scheduled(client, volume_name, to_nodes,
+                               replica_count=2, anti_affinity=False,
+                               is_vol_healthy=True):
+    scheduled = 0
+    for _ in range(RETRY_COUNTS):
+        volume = client.by_id_volume(volume_name)
+        if is_vol_healthy:
+            assert volume.robustness == VOLUME_ROBUSTNESS_HEALTHY
+
+        for r in volume.replicas:
+            try:
+                assert r.hostId in to_nodes
+                assert r.running is True
+                assert r.mode == &#34;RW&#34;
+
+                if not anti_affinity:
+                    to_nodes.remove(r.hostId)
+
+                scheduled += 1
+                break
+            except AssertionError:
+                continue
+
+        if scheduled == replica_count:
+            break
+
+        time.sleep(RETRY_INTERVAL)
+    assert scheduled == replica_count</code></pre>
+</details>
+</dd>
 <dt id="tests.common.wait_for_snapshot_purge"><code class="name flex">
 <span>def <span class="ident">wait_for_snapshot_purge</span></span>(<span>client, volume_name, *snaps)</span>
 </code></dt>
@@ -9672,6 +9743,7 @@ volume. Trigger a failed assertion of one is detected.
 <li><code><a title="tests.common.wait_for_replica_directory" href="#tests.common.wait_for_replica_directory">wait_for_replica_directory</a></code></li>
 <li><code><a title="tests.common.wait_for_replica_failed" href="#tests.common.wait_for_replica_failed">wait_for_replica_failed</a></code></li>
 <li><code><a title="tests.common.wait_for_replica_running" href="#tests.common.wait_for_replica_running">wait_for_replica_running</a></code></li>
+<li><code><a title="tests.common.wait_for_replica_scheduled" href="#tests.common.wait_for_replica_scheduled">wait_for_replica_scheduled</a></code></li>
 <li><code><a title="tests.common.wait_for_snapshot_purge" href="#tests.common.wait_for_snapshot_purge">wait_for_snapshot_purge</a></code></li>
 <li><code><a title="tests.common.wait_for_volume_condition_restore" href="#tests.common.wait_for_volume_condition_restore">wait_for_volume_condition_restore</a></code></li>
 <li><code><a title="tests.common.wait_for_volume_condition_scheduled" href="#tests.common.wait_for_volume_condition_scheduled">wait_for_volume_condition_scheduled</a></code></li>
