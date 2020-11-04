@@ -1440,17 +1440,6 @@ def wait_for_volume_replica_count(client, name, count):
     return volume
 
 
-def wait_for_volume_replica_count_not_equal(client, name, count):
-    wait_for_volume_creation(client, name)
-    for i in range(RETRY_COUNTS):
-        volume = client.by_id_volume(name)
-        if len(volume.replicas) != count:
-            break
-        time.sleep(RETRY_INTERVAL)
-    assert len(volume.replicas) != count
-    return volume
-
-
 def wait_for_volume_replicas_mode(client, volname, mode, replicas_name=None):
     verified = False
     for i in range(RETRY_COUNTS):
@@ -1649,6 +1638,36 @@ def wait_for_replica_running(client, volname, replica_name):
             break
         time.sleep(RETRY_INTERVAL)
     assert is_running
+
+
+def wait_for_replica_scheduled(client, volume_name, to_nodes,
+                               replica_count=2, anti_affinity=False,
+                               is_vol_healthy=True):
+    scheduled = 0
+    for _ in range(RETRY_COUNTS):
+        volume = client.by_id_volume(volume_name)
+        if is_vol_healthy:
+            assert volume.robustness == VOLUME_ROBUSTNESS_HEALTHY
+
+        for r in volume.replicas:
+            try:
+                assert r.hostId in to_nodes
+                assert r.running is True
+                assert r.mode == "RW"
+
+                if not anti_affinity:
+                    to_nodes.remove(r.hostId)
+
+                scheduled += 1
+                break
+            except AssertionError:
+                continue
+
+        if scheduled == replica_count:
+            break
+
+        time.sleep(RETRY_INTERVAL)
+    assert scheduled == replica_count
 
 
 @pytest.fixture
