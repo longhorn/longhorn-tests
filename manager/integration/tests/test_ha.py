@@ -475,7 +475,7 @@ def test_ha_recovery_with_expansion(client, volume_name):   # NOQA
     cleanup_volume(client, volume)
 
 
-def wait_pod_for_auto_salvage(
+def wait_pod_for_remount_request(
         client, core_api, volume_name, pod_name, original_md5sum,  # NOQA
         data_path="/data/test"):
     try:
@@ -529,7 +529,7 @@ def test_salvage_auto_crash_all_replicas(
     vol_name, pod_name, md5sum = common.prepare_statefulset_with_data_in_mb(
         client, core_api, statefulset, sts_name, storage_class)
     crash_replica_processes(client, core_api, vol_name)
-    wait_pod_for_auto_salvage(client, core_api, vol_name, pod_name, md5sum)
+    wait_pod_for_remount_request(client, core_api, vol_name, pod_name, md5sum)
 
     # Case #2
     volume = client.by_id_volume(vol_name)
@@ -545,7 +545,7 @@ def test_salvage_auto_crash_all_replicas(
 
     crash_replica_processes(client, core_api, vol_name, replicas)
 
-    wait_pod_for_auto_salvage(client, core_api, vol_name, pod_name, md5sum)
+    wait_pod_for_remount_request(client, core_api, vol_name, pod_name, md5sum)
 
 
 def test_rebuild_failure_with_intensive_data(
@@ -1863,7 +1863,7 @@ def test_volume_reattach_after_engine_sigkill(
 
     crash_engine_process_with_sigkill(client, core_api, vol_name)
 
-    wait_pod_for_auto_salvage(client, core_api, vol_name, pod_name, md5sum)
+    wait_pod_for_remount_request(client, core_api, vol_name, pod_name, md5sum)
 
     write_pod_volume_data(core_api, pod_name, 'longhorn-integration-test',
                           filename='test2')
