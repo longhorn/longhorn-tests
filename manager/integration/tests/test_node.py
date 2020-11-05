@@ -40,6 +40,7 @@ from common import wait_for_volume_healthy
 from common import wait_for_volume_replica_count
 from common import delete_and_wait_pod
 from common import wait_for_volume_detached
+from common import RETRY_COUNTS, RETRY_INTERVAL
 
 CREATE_DEFAULT_DISK_LABEL = "node.longhorn.io/create-default-disk"
 CREATE_DEFAULT_DISK_LABEL_VALUE_CONFIG = "config"
@@ -2204,6 +2205,122 @@ def test_replica_scheduler_rebuild_restore_is_too_big(client):  # NOQA
     node = common.wait_for_disk_update(client, lht_hostId,
                                        len(update_disks))
     cleanup_host_disk(client, 'vol-small')
+
+
+@pytest.mark.node  # NOQA
+def test_disk_migration(client):  # NOQA
+    """
+    1. Disable the node soft anti-affinity.
+    2. Create a new host disk.
+    3. Disable the default disk and add the extra disk with scheduling enabled
+       for the current node.
+    4. Launch a Longhorn volume with 1 replica.
+       Then verify the only replica is scheduled to the new disk.
+    5. Write random data to the volume then verify the data.
+    6. Detach the volume.
+    7. Unmount then remount the disk to another path. (disk migration)
+    8. Create another Longhorn disk based on the migrated path.
+    9. Verify the Longhorn disk state.
+       - The Longhorn disk added before the migration should
+         become "unschedulable".
+       - The Longhorn disk created after the migration should
+         become "schedulable".
+    10. Verify the replica DiskID and the path is updated.
+    11. Attach the volume. Then verify the state and the data.
+    """
+    setting = client.by_id_setting(SETTING_REPLICA_NODE_SOFT_ANTI_AFFINITY)
+    client.update(setting, value="false")
+
+    lht_hostId = get_self_host_id()
+
+    node = client.by_id_node(lht_hostId)
+    update_disks = get_update_disks(node.disks)
+    for fsid, disk in iter(update_disks.items()):
+        disk.allowScheduling = False
+        update_disks[fsid] = disk
+    disk_vol_name = 'vol-disk'
+    extra_disk_name = "extra-disk"
+    extra_disk_path = create_host_disk(
+        client, disk_vol_name, str(Gi), lht_hostId)
+    extra_disk_manifest = \
+        {"path": extra_disk_path, "allowScheduling": True, "tags": ["extra"]}
+    update_disks[extra_disk_name] = extra_disk_manifest
+    node.diskUpdate(disks=update_disks)
+    node = common.wait_for_disk_update(client, lht_hostId,
+                                       len(update_disks))
+    assert len(node.disks) == len(update_disks)
+    node = wait_for_disk_conditions(
+        client, node.name,
+        extra_disk_name, DISK_CONDITION_SCHEDULABLE, CONDITION_STATUS_TRUE)
+    extra_disk = node.disks[extra_disk_name]
+
+    vol_name = common.generate_volume_name()
+    client.create_volume(name=vol_name, size=SIZE,
+                         numberOfReplicas=1, diskSelector=["extra"])
+    common.wait_for_volume_condition_scheduled(
+        client, vol_name, "status", CONDITION_STATUS_TRUE)
+    volume = common.wait_for_volume_detached(client, vol_name)
+    volume.attach(hostId=lht_hostId)
+    volume = common.wait_for_volume_healthy(client, vol_name)
+
+    assert len(volume.replicas) == 1
+    assert volume.replicas[0].running
+    assert volume.replicas[0].hostId == lht_hostId
+    assert volume.replicas[0].diskID == extra_disk.diskUUID
+    assert volume.replicas[0].diskPath == extra_disk.path
+
+    data = common.write_volume_random_data(volume)
+    common.check_volume_data(volume, data)
+
+    volume.detach()
+    volume = common.wait_for_volume_detached(client, vol_name)
+
+    # Mount the volume disk to another path
+    common.cleanup_host_disk(extra_disk_path)
+
+    migrated_disk_path = os.path.join(
+        DIRECTORY_PATH, disk_vol_name+"-migrated")
+    dev = get_volume_endpoint(client.by_id_volume(disk_vol_name))
+    common.mount_disk(dev, migrated_disk_path)
+
+    node = client.by_id_node(lht_hostId)
+    update_disks = get_update_disks(node.disks)
+    migrated_disk_name = "migrated-disk"
+    migrated_disk_manifest = \
+        {"path": migrated_disk_path, "allowScheduling": True,
+         "tags": ["extra"]}
+    update_disks[migrated_disk_name] = migrated_disk_manifest
+    node.diskUpdate(disks=update_disks)
+    node = common.wait_for_disk_update(client, lht_hostId,
+                                       len(update_disks))
+    assert len(node.disks) == len(update_disks)
+    wait_for_disk_conditions(
+        client, node.name,
+        extra_disk_name, DISK_CONDITION_SCHEDULABLE, CONDITION_STATUS_FALSE)
+    node = wait_for_disk_conditions(
+        client, node.name,
+        migrated_disk_name, DISK_CONDITION_SCHEDULABLE, CONDITION_STATUS_TRUE)
+    migrated_disk = node.disks[migrated_disk_name]
+    assert migrated_disk.diskUUID == extra_disk.diskUUID
+
+    replica_migrated = False
+    for i in range(RETRY_COUNTS):
+        volume = client.by_id_volume(vol_name)
+        assert len(volume.replicas) == 1
+        replica = volume.replicas[0]
+        assert replica.hostId == lht_hostId
+        if replica.diskID == migrated_disk.diskUUID and \
+                replica.diskPath == migrated_disk.path:
+            replica_migrated = True
+            break
+        time.sleep(RETRY_INTERVAL)
+    assert replica_migrated
+
+    volume.attach(hostId=lht_hostId)
+    volume = common.wait_for_volume_healthy(client, vol_name)
+    common.check_volume_data(volume, data)
+
+    cleanup_volume(client, vol_name)
 
 
 def test_node_eviction(client, core_api, csi_pv, pvc, pod_make, volume_name): # NOQA
