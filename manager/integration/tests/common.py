@@ -2362,7 +2362,14 @@ def reset_disks_for_all_nodes(client):  # NOQA
     for node in nodes:
         # Reset default disk if there are more than 1 disk
         # on the node.
+        cleanup_required = False
         if len(node.disks) > 1:
+            cleanup_required = True
+        if len(node.disks) == 1:
+            for _, disk in iter(node.disks.items()):
+                if disk.path != DEFAULT_DISK_PATH:
+                    cleanup_required = True
+        if cleanup_required:
             update_disks = get_update_disks(node.disks)
             for disk_name, disk in iter(update_disks.items()):
                 disk.allowScheduling = False
