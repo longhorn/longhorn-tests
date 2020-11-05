@@ -1947,15 +1947,14 @@ def prepare_host_disk(dev, vol_name, mkfs_ext4_options=""):
     subprocess.check_call(cmd)
 
     mount_path = os.path.join(DIRECTORY_PATH, vol_name)
-    # create directory before mount
-    cmd = ['mkdir', '-p', mount_path]
-    subprocess.check_call(cmd)
-
     mount_disk(dev, mount_path)
     return mount_path
 
 
 def mount_disk(dev, mount_path):
+    # create directory before mount
+    cmd = ['mkdir', '-p', mount_path]
+    subprocess.check_call(cmd)
     cmd = ['mount', dev, mount_path]
     subprocess.check_call(cmd)
 
