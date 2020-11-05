@@ -44,7 +44,6 @@ from common import wait_for_volume_delete
 from common import SETTING_AUTO_SALVAGE
 from common import SETTING_BACKUP_TARGET
 from common import wait_for_volume_condition_restore
-from common import wait_for_pod_restart
 from common import crash_engine_process_with_sigkill
 from common import wait_for_volume_healthy_no_frontend
 from common import exec_instance_manager
@@ -1843,39 +1842,28 @@ def test_engine_crash_for_dr_volume(
 
 
 def test_volume_reattach_after_engine_sigkill(
-        client, core_api, volume_name, csi_pv, pvc, pod_make):  # NOQA
+        client, core_api, storage_class, sts_name, statefulset):  # NOQA
     """
     [HA] Test if the volume can be reattached after using SIGKILL
     to crash the engine process
 
-    1. Create PV/PVC/Pod. Make sure Pod has the liveness check.
-    2. Wait for the pod start and the volume healthy.
-    3. Write random data to the pod and get the md5sum.
-    4. Crash the engine process by SIGKILL in the engine manager.
-    5. Wait for volume reattached.
-    6. Wait for pod to be restarted.
-    7. Check md5sum of the data in the Pod.
-    8. Check if data can be still written to the volume.
+    1. Create StorageClass and StatefulSet.
+    2. Write random data to the pod and get the md5sum.
+    3. Crash the engine process by SIGKILL in the engine manager.
+    4. Wait for volume to `faulted`, then `healthy`.
+    5. Wait for K8s to terminate the pod and statefulset to bring pod to
+       `Pending`, then `Running`.
+    6. Check volume path exist in the pod.
+    7. Check md5sum of the data in the pod.
+    8. Check new data written to the volume is successful.
     """
-    data_path1 = "/data/test1"
+    vol_name, pod_name, md5sum = \
+        common.prepare_statefulset_with_data_in_mb(
+            client, core_api, statefulset, sts_name, storage_class)
 
-    pod_name, _, _, md5sum = \
-        prepare_pod_with_data_in_mb(client, core_api, csi_pv, pvc,
-                                    pod_make,
-                                    volume_name,
-                                    data_size_in_mb=DATA_SIZE_IN_MB_2,
-                                    data_path=data_path1)
+    crash_engine_process_with_sigkill(client, core_api, vol_name)
 
-    crash_engine_process_with_sigkill(client, core_api, volume_name)
-
-    wait_for_volume_detached(client, volume_name)
-    wait_for_volume_healthy(client, volume_name)
-
-    wait_for_pod_restart(core_api, pod_name)
-    wait_for_pod_remount(core_api, pod_name)
-
-    res_md5sum = get_pod_data_md5sum(core_api, pod_name, data_path1)
-    assert md5sum == res_md5sum
+    wait_pod_for_auto_salvage(client, core_api, vol_name, pod_name, md5sum)
 
     write_pod_volume_data(core_api, pod_name, 'longhorn-integration-test',
                           filename='test2')
