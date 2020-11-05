@@ -140,7 +140,7 @@ def test_upgrade(upgrade_image_tag, settings_reset, volume_name, csi_pv, pvc, po
         prepare_pod_with_data_in_mb(client, core_api, csi_pv, pvc,
                                     pod_make, pod_volume_name,
                                     data_path=pod_data_path,
-                                    add_liveness_prope=False)
+                                    add_liveness_probe=False)
 
     # Create multiple volumes used by StatefulSet
     statefulset_name = &#39;statefulset-upgrade-test&#39;
@@ -392,7 +392,7 @@ def test_upgrade(upgrade_image_tag, settings_reset, volume_name, csi_pv, pvc, po
         prepare_pod_with_data_in_mb(client, core_api, csi_pv, pvc,
                                     pod_make, pod_volume_name,
                                     data_path=pod_data_path,
-                                    add_liveness_prope=False)
+                                    add_liveness_probe=False)
 
     # Create multiple volumes used by StatefulSet
     statefulset_name = &#39;statefulset-upgrade-test&#39;
