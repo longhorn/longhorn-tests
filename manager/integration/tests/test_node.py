@@ -564,10 +564,9 @@ def test_replica_scheduler_too_large_volume_fit_any_disks(client):  # NOQA
     expect_node_disk = {}
     for node in nodes:
         disks = node.disks
-        for fsid, disk in iter(disks.items()):
+        for _, disk in iter(disks.items()):
             if disk.path == DEFAULT_DISK_PATH:
                 expect_disk = disk
-                expect_disk.fsid = fsid
                 expect_node_disk[node.name] = expect_disk
             disk.storageReserved = disk.storageMaximum
         update_disks = get_update_disks(disks)
@@ -621,7 +620,7 @@ def test_replica_scheduler_too_large_volume_fit_any_disks(client):  # NOQA
         assert id != ""
         assert replica.running
         expect_disk = expect_node_disk[id]
-        assert replica.diskID == expect_disk.fsid
+        assert replica.diskID == expect_disk.diskUUID
         assert expect_disk.path in replica.dataPath
         node_hosts = list(filter(lambda x: x != id, node_hosts))
     assert len(node_hosts) == 0
@@ -647,10 +646,9 @@ def test_replica_scheduler_update_over_provisioning(client):  # NOQA
     expect_node_disk = {}
     for node in nodes:
         disks = node.disks
-        for fsid, disk in iter(disks.items()):
+        for _, disk in iter(disks.items()):
             if disk.path == DEFAULT_DISK_PATH:
                 expect_disk = disk
-                expect_disk.fsid = fsid
                 expect_node_disk[node.name] = expect_disk
 
     over_provisioning_setting = client.by_id_setting(
@@ -692,7 +690,7 @@ def test_replica_scheduler_update_over_provisioning(client):  # NOQA
         assert id != ""
         assert replica.running
         expect_disk = expect_node_disk[id]
-        assert replica.diskID == expect_disk.fsid
+        assert replica.diskID == expect_disk.diskUUID
         assert expect_disk.path in replica.dataPath
         node_hosts = list(filter(lambda x: x != id, node_hosts))
     assert len(node_hosts) == 0
@@ -771,10 +769,9 @@ def test_replica_scheduler_just_under_over_provisioning(client):  # NOQA
     max_size_array = []
     for node in nodes:
         disks = node.disks
-        for fsid, disk in iter(disks.items()):
+        for _, disk in iter(disks.items()):
             if disk.path == DEFAULT_DISK_PATH:
                 expect_disk = disk
-                expect_disk.fsid = fsid
                 expect_node_disk[node.name] = expect_disk
                 max_size_array.append(disk.storageMaximum)
             disk.storageReserved = 0
@@ -811,7 +808,7 @@ def test_replica_scheduler_just_under_over_provisioning(client):  # NOQA
         assert id != ""
         assert replica.running
         expect_disk = expect_node_disk[id]
-        assert replica.diskID == expect_disk.fsid
+        assert replica.diskID == expect_disk.diskUUID
         assert expect_disk.path in replica.dataPath
         node_hosts = list(filter(lambda x: x != id, node_hosts))
     assert len(node_hosts) == 0
@@ -843,10 +840,9 @@ def test_replica_scheduler_update_minimal_available(client):  # NOQA
     expect_node_disk = {}
     for node in nodes:
         disks = node.disks
-        for fsid, disk in iter(disks.items()):
+        for _, disk in iter(disks.items()):
             if disk.path == DEFAULT_DISK_PATH:
                 expect_disk = disk
-                expect_disk.fsid = fsid
                 expect_node_disk[node.name] = expect_disk
 
     # set storage minimal available percentage to 100
@@ -901,7 +897,7 @@ def test_replica_scheduler_update_minimal_available(client):  # NOQA
         assert id != ""
         assert replica.running
         expect_disk = expect_node_disk[id]
-        assert replica.diskID == expect_disk.fsid
+        assert replica.diskID == expect_disk.diskUUID
         assert expect_disk.path in replica.dataPath
         node_hosts = list(filter(lambda x: x != id, node_hosts))
     assert len(node_hosts) == 0
@@ -949,13 +945,18 @@ def test_node_controller_sync_storage_scheduled(client):  # NOQA
     for node in nodes:
         disks = node.disks
         for replica in replicas:
+            disk_found = False
             if replica.hostId == node.name:
-                disk = disks[replica["diskID"]]
-                conditions = disk.conditions
-                assert disk.storageScheduled == SMALL_DISK_SIZE
-                assert conditions[DISK_CONDITION_SCHEDULABLE]["status"] == \
-                    CONDITION_STATUS_TRUE
-                break
+                for _, disk in iter(disks.items()):
+                    if replica.diskID == disk.diskUUID:
+                        disk_found = True
+                        conditions = disk.conditions
+                        assert disk.storageScheduled == SMALL_DISK_SIZE
+                        assert \
+                            conditions[DISK_CONDITION_SCHEDULABLE]["status"] \
+                            == CONDITION_STATUS_TRUE
+                        break
+                assert disk_found
 
     # clean volumes
     cleanup_volume(client, vol_name)
@@ -1310,6 +1311,8 @@ def test_node_umount_disk(client):  # NOQA
         if disk.path == disk_path1:
             wait_for_disk_status(client, lht_hostId,
                                  fsid, "storageMaximum", 0)
+            wait_for_disk_status(client, lht_hostId,
+                                 fsid, "storageScheduled", 0)
             wait_for_disk_conditions(client, lht_hostId, fsid,
                                      DISK_CONDITION_READY,
                                      CONDITION_STATUS_FALSE)
@@ -1324,7 +1327,7 @@ def test_node_umount_disk(client):  # NOQA
             assert disk.storageMaximum == 0
             assert disk.storageAvailable == 0
             assert disk.storageReserved == SMALL_DISK_SIZE
-            assert disk.storageScheduled == SMALL_DISK_SIZE
+            assert disk.storageScheduled == 0
             conditions = disk.conditions
             assert conditions[DISK_CONDITION_READY]["status"] == \
                 CONDITION_STATUS_FALSE
@@ -2098,6 +2101,7 @@ def test_replica_scheduler_rebuild_restore_is_too_big(client):  # NOQA
     10. Wait for the restored volume to complete restoration, then check data.
 
     """
+    common.set_random_backupstore(client)
     nodes = client.list_node()
     lht_hostId = get_self_host_id()
     node = client.by_id_node(lht_hostId)
