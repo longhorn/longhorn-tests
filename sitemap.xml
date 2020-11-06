@@ -103,10 +103,6 @@
   </url>
   
   <url>
-    <loc>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/longhorn-upgrade-with-node-down-and-removal/</loc>
-  </url>
-  
-  <url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/</loc>
   </url>
   
@@ -160,6 +156,10 @@
   
   <url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.1/error-fail-remount/</loc>
+  </url>
+  
+  <url>
+    <loc>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/reusing-failed-replica-for-rebuilding/</loc>
   </url>
   
   <url>

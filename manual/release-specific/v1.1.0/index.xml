@@ -7,15 +7,6 @@
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language><atom:link href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/index.xml" rel="self" type="application/rss+xml" />
     <item>
-      <title>Longhorn upgrade with node down and removal</title>
-      <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/longhorn-upgrade-with-node-down-and-removal/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/longhorn-upgrade-with-node-down-and-removal/</guid>
-      <description>Longhorn upgrade with node down and removal  Launch Longhorn v1.0.x Create and attach a volume, then write data to the volume. Directly remove a Kubernetes node, and shut down a node. Wait for the related replicas failure. Then record replica.Spec.DiskID for the failed replicas. Upgrade to Longhorn master Verify the Longhorn node related to the removed node is gone. Verify  replica.Spec.DiskID on the down node is updated and the field of the replica on the gone node is unchanged.</description>
-    </item>
-    
-    <item>
       <title>Prometheus Support</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/prometheus_support/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
@@ -23,6 +14,15 @@
       <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/prometheus_support/</guid>
       <description>Prometheus Support allows user to monitor the longhorn metrics. The details are available at https://longhorn.io/docs/1.1.0/monitoring/
 Monitor longhorn  Deploy the Prometheus-operator, ServiceMonitor pointing to longhorn-backend and Prometheus as mentioned in the doc. Create an ingress pointing to Prometheus service. Access the Prometheus web UI using the ingress created in the step 2. Select the metrics from below to monitor the longhorn resources.  longhorn_volume_capacity_bytes longhorn_volume_actual_size_bytes longhorn_volume_state longhorn_volume_robustness longhorn_instance_manager_cpu_requests_millicpu longhorn_instance_manager_cpu_usage_millicpu longhorn_instance_manager_memory_requests_bytes longhorn_instance_manager_memory_usage_bytes longhorn_manager_cpu_usage_millicpu longhorn_manager_memory_usage_bytes longhorn_node_count_total longhorn_node_status longhorn_node_cpu_capacity_millicpu longhorn_node_cpu_usage_millicpu longhorn_node_memory_capacity_bytes longhorn_node_memory_usage_bytes   Deploy workloads which use Longhorn volumes into the cluster.</description>
+    </item>
+    
+    <item>
+      <title>Reusing failed replica for rebuilding</title>
+      <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/reusing-failed-replica-for-rebuilding/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/reusing-failed-replica-for-rebuilding/</guid>
+      <description>Longhorn upgrade with node down and removal  Launch Longhorn v1.0.x Create and attach a volume, then write data to the volume. Directly remove a Kubernetes node, and shut down a node. Wait for the related replicas failure. Then record replica.Spec.DiskID for the failed replicas. Upgrade to Longhorn master Verify the Longhorn node related to the removed node is gone. Verify  replica.Spec.DiskID on the down node is updated and the field of the replica on the gone node is unchanged.</description>
     </item>
     
     <item>

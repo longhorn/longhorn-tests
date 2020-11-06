@@ -192,15 +192,6 @@ Case 1:  Create a volume and take multiple backups for the same. Delete the late
     </item>
     
     <item>
-      <title>Longhorn upgrade with node down and removal</title>
-      <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/longhorn-upgrade-with-node-down-and-removal/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/longhorn-upgrade-with-node-down-and-removal/</guid>
-      <description>Longhorn upgrade with node down and removal  Launch Longhorn v1.0.x Create and attach a volume, then write data to the volume. Directly remove a Kubernetes node, and shut down a node. Wait for the related replicas failure. Then record replica.Spec.DiskID for the failed replicas. Upgrade to Longhorn master Verify the Longhorn node related to the removed node is gone. Verify  replica.Spec.DiskID on the down node is updated and the field of the replica on the gone node is unchanged.</description>
-    </item>
-    
-    <item>
       <title>New Node with Custom Data Directory</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.0/new-node-custom-data-directory/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
@@ -284,6 +275,15 @@ Monitor longhorn  Deploy the Prometheus-operator, ServiceMonitor pointing to lon
       <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.1/error-fail-remount/</guid>
       <description>Case 1: Volume with a corrupted filesystem try to remount Steps to reproduce bug:
  Create a volume of size 1GB, say terminate-immediatly volume. Create PV/PVC from the volume terminate-immediatly Create a deployment of 1 pod with image ubuntu:xenial and the PVC terminate-immediatly in default namespace Find the node on which the pod is scheduled to. Let&amp;rsquo;s say the node is Node-1 ssh into Node-1 destroy the filesystem of terminate-immediatly by running command dd if=/dev/zero of=/dev/longhorn/terminate-immediatly Find and kill the engine instance manager in Node-X.</description>
+    </item>
+    
+    <item>
+      <title>Reusing failed replica for rebuilding</title>
+      <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/reusing-failed-replica-for-rebuilding/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/reusing-failed-replica-for-rebuilding/</guid>
+      <description>Longhorn upgrade with node down and removal  Launch Longhorn v1.0.x Create and attach a volume, then write data to the volume. Directly remove a Kubernetes node, and shut down a node. Wait for the related replicas failure. Then record replica.Spec.DiskID for the failed replicas. Upgrade to Longhorn master Verify the Longhorn node related to the removed node is gone. Verify  replica.Spec.DiskID on the down node is updated and the field of the replica on the gone node is unchanged.</description>
     </item>
     
     <item>

@@ -249,10 +249,10 @@
   
     <ul>
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/longhorn-upgrade-with-node-down-and-removal/">Longhorn upgrade with node down and removal</a></li>
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/prometheus_support/">Prometheus Support</a></li>
   
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/prometheus_support/">Prometheus Support</a></li>
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/reusing-failed-replica-for-rebuilding/">Reusing failed replica for rebuilding</a></li>
   
 
   <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/kubelet_volume_metrics/">Support Kubelet Volume Metrics</a></li>
@@ -287,7 +287,7 @@
 </aside>
 
 <main style="padding: 1%; width: 70%;">
-  <h1 id="title">Longhorn upgrade with node down and removal</h1>
+  <h1 id="title">Reusing failed replica for rebuilding</h1>
   <div>
     <article id="content">
        <h2 id="longhorn-upgrade-with-node-down-and-removal">Longhorn upgrade with node down and removal</h2>
@@ -307,6 +307,18 @@
 <li>Remove all unscheduled replicas.</li>
 <li>Power on the down node. Wait for the failed replica on the down node being reused.</li>
 <li>Wait for a new replica being replenished and available.</li>
+</ol>
+<h2 id="replica-not-available-for-reuse-after-disk-migration">Replica not available for reuse after disk migration</h2>
+<ol>
+<li>Deploy longhorn v1.1.0</li>
+<li>Create and attach a volume, then write data to the volume.</li>
+<li>Directly remove a Kubernetes node which has a replica on it.</li>
+<li>Wait for the related replicas failure.</li>
+<li>Verify the Longhorn node related to the removed node is gone.</li>
+<li>Ssh to the node and crash the replica folder or make it readonly.</li>
+<li>Add the node in the cluster again.</li>
+<li>Verify a new replica being rebuilt and available.</li>
+<li>Verify the data of the replica.</li>
 </ol>
 
     </article>
