@@ -2,6 +2,12 @@
 
 set  -x
 
+if [[ ${TF_VAR_arch} == "amd64" ]] ; then
+	export KUBECONFIG="${TF_VAR_tf_workspace}/kube_config_rke.yml"
+elif [[ ${TF_VAR_arch} == "arm64"  ]]; then
+	export KUBECONFIG="${TF_VAR_tf_workspace}/../k3s.yaml"
+fi
+
 RETRY_COUNTS=10
 
 LONGHORN_MANAGER_REPO_URI=${LONGHORN_MANAGER_REPO_URI:-"https://github.com/longhorn/longhorn-manager.git"}
@@ -14,8 +20,6 @@ CUSTOM_LONGHORN_INSTANCE_MANAGER_IMAGE=${CUSTOM_LONGHORN_INSTANCE_MANAGER_IMAGE:
 CUSTOM_LONGHORN_ENGINE_IMAGE=${CUSTOM_LONGHORN_ENGINE_IMAGE:-"longhornio/longhorn-engine:master"}
 
 check_longhorn_status() {
-  export KUBECONFIG="${TF_VAR_tf_workspace}/templates/kube_config_3-nodes-k8s.yml"
-
   RETRIES=0
   while [[ -n "`kubectl get pods -n longhorn-system  | grep "instance-manager-.*\|longhorn-\(manager\|driver\|csi\)\|engine-image-.*" | awk '{print $3}' | grep -v Running`"  ]]; do
     echo "Longhorn is being installed ... rechecking in 1m"
@@ -44,8 +48,6 @@ LONGHORN_INSTANCE_MANAGER_IMAGE=`grep -io "longhornio\/longhorn-instance-manager
 sed -i 's#'${LONGHORN_MANAGER_IMAGE}'#'${CUSTOM_LONGHORN_MANAGER_IMAGE}'#' longhorn.yaml
 sed -i 's#'${LONGHORN_ENGINE_IMAGE}'#'${CUSTOM_LONGHORN_ENGINE_IMAGE}'#' longhorn.yaml
 sed -i 's#'${LONGHORN_INSTANCE_MANAGER_IMAGE}'#'${CUSTOM_LONGHORN_INSTANCE_MANAGER_IMAGE}'#' longhorn.yaml
-
-export KUBECONFIG="${TF_VAR_tf_workspace}/templates/kube_config_3-nodes-k8s.yml"
 
 # scale coredns min pods to 3 for node offline tests
 kubectl get configmaps -n kube-system coredns-autoscaler -o yaml | sed  's/\"min\":1/\"min\":3/' | kubectl apply -n kube-system -f -

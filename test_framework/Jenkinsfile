@@ -6,7 +6,7 @@ node {
 
     checkout scm
 
-    withCredentials([string(credentialsId: 'longhorn-tests-do-token', variable: 'TF_VAR_do_token')]) {
+    withCredentials([usernamePassword(credentialsId: 'AWS_CREDS', passwordVariable: 'AWS_SECRET_KEY', usernameVariable: 'AWS_ACCESS_KEY')]) {
         stage('build') {
             sh "test_framework/scripts/build.sh"
 
@@ -21,7 +21,13 @@ node {
                               --env CUSTOM_LONGHORN_MANAGER_IMAGE=${CUSTOM_LONGHORN_MANAGER_IMAGE} \
                               --env CUSTOM_LONGHORN_ENGINE_IMAGE=${CUSTOM_LONGHORN_ENGINE_IMAGE} \
                               --env CUSTOM_LONGHORN_INSTANCE_MANAGER_IMAGE=${CUSTOM_LONGHORN_INSTANCE_MANAGER_IMAGE} \
-                              --env TF_VAR_hostname_prefix=${JOB_BASE_NAME} \
+                              --env TF_VAR_lh_aws_instance_name_controlplane="${JOB_BASE_NAME}-controlplane" \
+                              --env TF_VAR_lh_lh_aws_instance_name_worker="${JOB_BASE_NAME}-worker" \
+                              --env TF_VAR_lh_aws_access_key=${AWS_ACCESS_KEY} \
+                              --env TF_VAR_lh_aws_secret_key=${AWS_SECRET_KEY} \
+                              --env TF_VAR_arch=${ARCH} \
+                              --env TF_VAR_lh_aws_instance_type_controlplane=${CONTROLPLANE_INSTANCE_TYPE} \
+                              --env TF_VAR_lh_aws_instance_type_worker=${WORKER_INSTANCE_TYPE} \
                               ${imageName}
             """
         }
@@ -29,10 +35,6 @@ node {
         try {
             stage ('terraform') {
                 sh  " docker exec ${JOB_BASE_NAME}${BUILD_NUMBER} ${TF_VAR_tf_workspace}/scripts/terraform-setup.sh"
-            }
-
-            stage ('rke') {
-                sh  " docker exec ${JOB_BASE_NAME}${BUILD_NUMBER} ${TF_VAR_tf_workspace}/scripts/rke-setup.sh ${JOB_BASE_NAME}"  
             }
 
             stage ('longhorn setup & tests') {
