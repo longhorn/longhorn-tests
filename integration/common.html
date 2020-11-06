@@ -1975,15 +1975,14 @@ def prepare_host_disk(dev, vol_name, mkfs_ext4_options=&#34;&#34;):
     subprocess.check_call(cmd)
 
     mount_path = os.path.join(DIRECTORY_PATH, vol_name)
-    # create directory before mount
-    cmd = [&#39;mkdir&#39;, &#39;-p&#39;, mount_path]
-    subprocess.check_call(cmd)
-
     mount_disk(dev, mount_path)
     return mount_path
 
 
 def mount_disk(dev, mount_path):
+    # create directory before mount
+    cmd = [&#39;mkdir&#39;, &#39;-p&#39;, mount_path]
+    subprocess.check_call(cmd)
     cmd = [&#39;mount&#39;, dev, mount_path]
     subprocess.check_call(cmd)
 
@@ -2391,7 +2390,14 @@ def reset_disks_for_all_nodes(client):  # NOQA
     for node in nodes:
         # Reset default disk if there are more than 1 disk
         # on the node.
+        cleanup_required = False
         if len(node.disks) &gt; 1:
+            cleanup_required = True
+        if len(node.disks) == 1:
+            for _, disk in iter(node.disks.items()):
+                if disk.path != DEFAULT_DISK_PATH:
+                    cleanup_required = True
+        if cleanup_required:
             update_disks = get_update_disks(node.disks)
             for disk_name, disk in iter(update_disks.items()):
                 disk.allowScheduling = False
@@ -6476,6 +6482,9 @@ def make_deployment_with_pvc(request):
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def mount_disk(dev, mount_path):
+    # create directory before mount
+    cmd = [&#39;mkdir&#39;, &#39;-p&#39;, mount_path]
+    subprocess.check_call(cmd)
     cmd = [&#39;mount&#39;, dev, mount_path]
     subprocess.check_call(cmd)</code></pre>
 </details>
@@ -6707,10 +6716,6 @@ def pod_make(request):
     subprocess.check_call(cmd)
 
     mount_path = os.path.join(DIRECTORY_PATH, vol_name)
-    # create directory before mount
-    cmd = [&#39;mkdir&#39;, &#39;-p&#39;, mount_path]
-    subprocess.check_call(cmd)
-
     mount_disk(dev, mount_path)
     return mount_path</code></pre>
 </details>
@@ -7042,7 +7047,14 @@ def random_labels():
     for node in nodes:
         # Reset default disk if there are more than 1 disk
         # on the node.
+        cleanup_required = False
         if len(node.disks) &gt; 1:
+            cleanup_required = True
+        if len(node.disks) == 1:
+            for _, disk in iter(node.disks.items()):
+                if disk.path != DEFAULT_DISK_PATH:
+                    cleanup_required = True
+        if cleanup_required:
             update_disks = get_update_disks(node.disks)
             for disk_name, disk in iter(update_disks.items()):
                 disk.allowScheduling = False
