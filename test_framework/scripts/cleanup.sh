@@ -9,4 +9,4 @@ fi
 # wait 30 seconds for graceful terraform termination
 sleep 30
 
-terraform destroy -auto-approve ${TF_VAR_tf_workspace}/terraform/digitalocean
+terraform destroy -auto-approve -no-color ${TF_VAR_tf_workspace}/terraform/aws
