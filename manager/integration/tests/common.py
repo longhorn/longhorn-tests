@@ -3232,6 +3232,22 @@ def expand_and_wait_for_pvc(api, pvc):
     return claim
 
 
+def wait_for_pvc_phase(api, pvc_name, phase):
+    complete = False
+    for _ in range(RETRY_COUNTS):
+        pvc = api.read_namespaced_persistent_volume_claim(
+            name=pvc_name, namespace='default')
+        try:
+            assert pvc.status.phase == phase
+            complete = True
+            break
+        except AssertionError:
+            pass
+        time.sleep(RETRY_INTERVAL)
+    assert complete
+    return pvc
+
+
 def fail_replica_expansion(client, api, volname, size, replicas=None):
     if replicas is None:
         volume = client.by_id_volume(volname)
