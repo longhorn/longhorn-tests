@@ -3,9 +3,10 @@ import pytest
 import subprocess
 import random
 import common
-from common import client, core_api, csi_pv, pod_make, pvc, storage_class  # NOQA
+from common import client, core_api # NOQA
+from common import csi_pv, pod_make, pvc, storage_class  # NOQA
 from common import pod as pod_manifest  # NOQA
-from common import Gi, DEFAULT_VOLUME_SIZE, EXPANDED_VOLUME_SIZE
+from common import Mi, Gi, DEFAULT_VOLUME_SIZE, EXPANDED_VOLUME_SIZE
 from common import VOLUME_RWTEST_SIZE
 from common import create_and_wait_pod, create_pvc_spec, delete_and_wait_pod
 from common import size_to_string, create_storage_class, create_pvc
@@ -700,15 +701,65 @@ def test_allow_volume_creation_with_degraded_availability_csi():
     """
 
 
-@pytest.mark.skip(reason="TODO")  # NOQA
-def test_csi_minimal_volume_size(): # NOQA
+@pytest.mark.csi  # NOQA
+def test_csi_minimal_volume_size(
+    client, core_api, csi_pv, pvc, pod_make): # NOQA
     """
     Test CSI Minimal Volume Size
 
-    1. Create a PVC with size 5MiB. Check the PVC should get size 10MiB.
-    Remove the PVC.
-    2. Create a PVC with size 10MiB. Check the PVC should get size 10MiB.
-    3. Create a pod to use this PVC, and generate some data with checksum.
-    4. Write the data to the volume and read it back to compare the checksum.
-    5. Delete the pod and the PVC.
+    1. Create a PVC requesting size 5MiB. Check the PVC requested size is
+       5MiB and capacity size get is 10MiB.
+    2. Remove the PVC.
+    3. Create a PVC requesting size 10MiB. Check the PVC requested size and
+       capacity size get are both 10MiB.
+    4. Create a pod to use this PVC.
+    5. Write some data to the volume and read it back to compare.
     """
+    vol_name = generate_volume_name()
+    create_and_check_volume(client, vol_name, size=str(100*Mi))
+
+    low_storage = str(5*Mi)
+    min_storage = str(10*Mi)
+
+    pv_name = vol_name + "-pv"
+    csi_pv['metadata']['name'] = pv_name
+    csi_pv['spec']['csi']['volumeHandle'] = vol_name
+    csi_pv['spec']['capacity']['storage'] = min_storage
+    core_api.create_persistent_volume(csi_pv)
+
+    pvc_name = vol_name + "-pvc"
+    pvc['metadata']['name'] = pvc_name
+    pvc['spec']['volumeName'] = pv_name
+    pvc['spec']['resources']['requests']['storage'] = low_storage
+    pvc['spec']['storageClassName'] = ''
+    core_api.create_namespaced_persistent_volume_claim(body=pvc,
+                                                       namespace='default')
+
+    claim = common.wait_for_pvc_phase(core_api, pvc_name, "Bound")
+    assert claim.spec.resources.requests['storage'] == low_storage
+    assert claim.status.capacity['storage'] == min_storage
+
+    common.delete_and_wait_pvc(core_api, pvc_name)
+    common.delete_and_wait_pv(core_api, pv_name)
+    wait_for_volume_detached(client, vol_name)
+
+    core_api.create_persistent_volume(csi_pv)
+
+    pvc['spec']['resources']['requests']['storage'] = min_storage
+    core_api.create_namespaced_persistent_volume_claim(body=pvc,
+                                                       namespace='default')
+
+    claim = common.wait_for_pvc_phase(core_api, pvc_name, "Bound")
+    assert claim.spec.resources.requests['storage'] == min_storage
+    assert claim.status.capacity['storage'] == min_storage
+
+    pod_name = vol_name + '-pod'
+    pod = pod_make(name=pod_name)
+    pod['spec']['volumes'] = [create_pvc_spec(pvc_name)]
+    create_and_wait_pod(core_api, pod)
+
+    test_data = "longhorn-integration-test"
+    test_file = "test"
+    write_pod_volume_data(core_api, pod_name, test_data, test_file)
+    read_data = read_volume_data(core_api, pod_name, test_file)
+    assert read_data == test_data
