@@ -1,5 +1,5 @@
 ---
-title: Longhorn upgrade with node down and removal
+title: Reusing failed replica for rebuilding
 ---
 
 ## Longhorn upgrade with node down and removal
@@ -15,3 +15,14 @@ title: Longhorn upgrade with node down and removal
 8. Remove all unscheduled replicas.
 9. Power on the down node. Wait for the failed replica on the down node being reused.
 10. Wait for a new replica being replenished and available.
+
+## Replica not available for reuse after disk migration
+1. Deploy longhorn v1.1.0
+2. Create and attach a volume, then write data to the volume.
+3. Directly remove a Kubernetes node which has a replica on it.
+4. Wait for the related replicas failure.
+5. Verify the Longhorn node related to the removed node is gone.
+6. Ssh to the node and crash the replica folder or make it readonly.
+8. Add the node in the cluster again.
+9. Verify a new replica being rebuilt and available.
+10. Verify the data of the replica.
