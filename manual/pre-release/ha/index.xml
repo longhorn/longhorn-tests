@@ -7,6 +7,15 @@
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language><atom:link href="https://longhorn.github.io/longhorn-tests/manual/pre-release/ha/index.xml" rel="self" type="application/rss+xml" />
     <item>
+      <title>Disk migration in AWS ASG</title>
+      <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/ha/disk-migration-in-aws-asg/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/ha/disk-migration-in-aws-asg/</guid>
+      <description>Some Longhorn worker nodes in AWS Auto Scaling group is in replacement  Set ReplicaReplenishmentWaitInterval. Make sure it&amp;rsquo;s longer than the time needs for node replacement. Launch a Kubernetes cluster with the nodes in AWS Auto Scaling group. Then Deploy Longhorn. Deploy some workloads using Longhorn volumes. Wait for/Trigger the ASG instance replacement. Verify new replicas won&amp;rsquo;t be created before reaching ReplicaReplenishmentWaitInterval. Verify the failed replicas are reused after the node recovery.</description>
+    </item>
+    
+    <item>
       <title>Instance manager pod recovery [[#870](https://github.com/longhorn/longhorn/issues/870)]</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/ha/instance-manager-pod-recovery/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>

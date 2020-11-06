@@ -127,6 +127,15 @@ Volume creation using UI with degraded availability and added node Start with on
     </item>
     
     <item>
+      <title>Disk migration in AWS ASG</title>
+      <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/ha/disk-migration-in-aws-asg/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/ha/disk-migration-in-aws-asg/</guid>
+      <description>Some Longhorn worker nodes in AWS Auto Scaling group is in replacement  Set ReplicaReplenishmentWaitInterval. Make sure it&amp;rsquo;s longer than the time needs for node replacement. Launch a Kubernetes cluster with the nodes in AWS Auto Scaling group. Then Deploy Longhorn. Deploy some workloads using Longhorn volumes. Wait for/Trigger the ASG instance replacement. Verify new replicas won&amp;rsquo;t be created before reaching ReplicaReplenishmentWaitInterval. Verify the failed replicas are reused after the node recovery.</description>
+    </item>
+    
+    <item>
       <title>DR volume related latest backup deletion test</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.1/dr-volume-latest-backup-deletion/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
@@ -180,6 +189,15 @@ Case 1:  Create a volume and take multiple backups for the same. Delete the late
       <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/longhorn-upgrade-test/</guid>
       <description>Setup  2 attached volumes with data. 2 detached volumes with data. 2 new volumes without data. 2 deployments of one pod. 1 statefulset of 10 pods. Auto Salvage set to disable.  Test After upgrade:
  Make sure the existing instance managers didn&amp;rsquo;t restart. Make sure pods didn&amp;rsquo;t restart. Check the contents of the volumes. If the Engine API version is incompatible, manager cannot do anything about the attached volumes except detaching it.</description>
+    </item>
+    
+    <item>
+      <title>Longhorn upgrade with node down and removal</title>
+      <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/longhorn-upgrade-with-node-down-and-removal/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/longhorn-upgrade-with-node-down-and-removal/</guid>
+      <description>Longhorn upgrade with node down and removal  Launch Longhorn v1.0.x Create and attach a volume, then write data to the volume. Directly remove a Kubernetes node, and shut down a node. Wait for the related replicas failure. Then record replica.Spec.DiskID for the failed replicas. Upgrade to Longhorn master Verify the Longhorn node related to the removed node is gone. Verify  replica.Spec.DiskID on the down node is updated and the field of the replica on the gone node is unchanged.</description>
     </item>
     
     <item>
