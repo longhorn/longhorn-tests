@@ -3260,6 +3260,22 @@ def expand_and_wait_for_pvc(api, pvc):
     return claim
 
 
+def wait_for_pvc_phase(api, pvc_name, phase):
+    complete = False
+    for _ in range(RETRY_COUNTS):
+        pvc = api.read_namespaced_persistent_volume_claim(
+            name=pvc_name, namespace=&#39;default&#39;)
+        try:
+            assert pvc.status.phase == phase
+            complete = True
+            break
+        except AssertionError:
+            pass
+        time.sleep(RETRY_INTERVAL)
+    assert complete
+    return pvc
+
+
 def fail_replica_expansion(client, api, volname, size, replicas=None):
     if replicas is None:
         volume = client.by_id_volume(volname)
@@ -8569,6 +8585,31 @@ def volume_name(request):
     assert pod_restarted</code></pre>
 </details>
 </dd>
+<dt id="tests.common.wait_for_pvc_phase"><code class="name flex">
+<span>def <span class="ident">wait_for_pvc_phase</span></span>(<span>api, pvc_name, phase)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def wait_for_pvc_phase(api, pvc_name, phase):
+    complete = False
+    for _ in range(RETRY_COUNTS):
+        pvc = api.read_namespaced_persistent_volume_claim(
+            name=pvc_name, namespace=&#39;default&#39;)
+        try:
+            assert pvc.status.phase == phase
+            complete = True
+            break
+        except AssertionError:
+            pass
+        time.sleep(RETRY_INTERVAL)
+    assert complete
+    return pvc</code></pre>
+</details>
+</dd>
 <dt id="tests.common.wait_for_rebuild_complete"><code class="name flex">
 <span>def <span class="ident">wait_for_rebuild_complete</span></span>(<span>client, volume_name)</span>
 </code></dt>
@@ -9750,6 +9791,7 @@ volume. Trigger a failed assertion of one is detected.
 <li><code><a title="tests.common.wait_for_pod_phase" href="#tests.common.wait_for_pod_phase">wait_for_pod_phase</a></code></li>
 <li><code><a title="tests.common.wait_for_pod_remount" href="#tests.common.wait_for_pod_remount">wait_for_pod_remount</a></code></li>
 <li><code><a title="tests.common.wait_for_pod_restart" href="#tests.common.wait_for_pod_restart">wait_for_pod_restart</a></code></li>
+<li><code><a title="tests.common.wait_for_pvc_phase" href="#tests.common.wait_for_pvc_phase">wait_for_pvc_phase</a></code></li>
 <li><code><a title="tests.common.wait_for_rebuild_complete" href="#tests.common.wait_for_rebuild_complete">wait_for_rebuild_complete</a></code></li>
 <li><code><a title="tests.common.wait_for_rebuild_start" href="#tests.common.wait_for_rebuild_start">wait_for_rebuild_start</a></code></li>
 <li><code><a title="tests.common.wait_for_replica_directory" href="#tests.common.wait_for_replica_directory">wait_for_replica_directory</a></code></li>
