@@ -523,3 +523,36 @@ def test_recurring_jobs_on_nodes_with_taints():  # NOQA
        Clean up backups, volumes
     """
     pass
+
+
+@pytest.mark.skip(reason="TODO")
+def test_recurring_jobs_when_volume_detached_unexpectedly():  # NOQA
+    """
+    Test recurring jobs when volume detached unexpectedly
+
+    Context:
+
+    If the volume is automatically attached by the recurring backup job,
+    make sure that workload pod eventually is able to use the volume
+    when volume is detached unexpectedly during the backup process.
+
+    Steps:
+
+    1. Create a volume, attach to a pod of a deployment,
+       write 300MB to the volume
+    2. Scale down the deployment. The volume is detached.
+    3. Turn on `Allow Recurring Job While Volume Is Detached` setting
+    4. Create a recurring backup job that runs every 4 mins
+    5. Wait until the recurring backup job starts and the backup progress
+       is > 50%, kill the engine process of the volume.
+    6. In a 2-min retry loop, verify that the volume is healthy again
+       and there is replacement backup job running.
+    7. Wait until the backup finishes.
+    8. Wait for the volume to be in detached state with
+       `frontendDisabled=false`
+    9. Scale up the deployment.
+       Verify that we can read the file `lost+found` from the workload pod
+    10. Turn off `Allow Recurring Job While Volume Is Detached` setting
+       Clean up backups, volumes
+    """
+    pass
