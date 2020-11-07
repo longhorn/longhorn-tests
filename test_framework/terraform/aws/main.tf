@@ -234,9 +234,8 @@ resource "aws_instance" "lh_aws_instance_controlplane" {
     aws_security_group.lh_aws_secgrp_controlplane.id
   ]
 
-  ebs_block_device {
+  root_block_device {
     delete_on_termination = true
-    device_name = "/dev/xvda"
     volume_size = var.lh_aws_instance_root_block_device_size_controlplane
   }
 
@@ -285,9 +284,8 @@ resource "aws_instance" "lh_aws_instance_worker" {
     aws_security_group.lh_aws_secgrp_worker.id
   ]
 
-  ebs_block_device {
+  root_block_device {
     delete_on_termination = true
-    device_name = "/dev/xvda"
     volume_size = var.lh_aws_instance_root_block_device_size_worker
   }
 
