@@ -52,6 +52,7 @@ from common import write_pod_volume_random_data, get_pod_data_md5sum
 from common import prepare_pod_with_data_in_mb
 from common import crash_replica_processes
 from common import wait_for_volume_condition_scheduled
+from common import wait_for_volume_condition_toomanysnapshots
 from common import wait_for_volume_degraded, wait_for_volume_healthy
 from common import VOLUME_FRONTEND_BLOCKDEV, VOLUME_FRONTEND_ISCSI
 from common import MESSAGE_TYPE_ERROR
@@ -3164,8 +3165,7 @@ def test_cleanup_system_generated_snapshots(client, core_api, volume_name, csi_p
     assert md5sum1 == read_md5sum1
 
 
-@pytest.mark.skip(reason="TODO")
-def test_volume_toomanysnapshots_condition(): # NOQA
+def test_volume_toomanysnapshots_condition(client, core_api, volume_name): # NOQA
     """
     Test Volume TooManySnapshots Condition
 
@@ -3175,6 +3175,39 @@ def test_volume_toomanysnapshots_condition(): # NOQA
     4. Check the 'TooManySnapshots' condition is True.
     5. Take one more snapshot to make sure snapshots works fine.
     6. Delete 2 snapshots, and check the 'TooManySnapshots' condition is
-    False.
-    7. Cleanup snapshots and volume.
+       False.
     """
+    volume = create_and_check_volume(client, volume_name)
+    self_hostId = get_self_host_id()
+    volume = volume.attach(hostId=self_hostId)
+    volume = common.wait_for_volume_healthy(client, volume_name)
+
+    snap = {}
+    max_count = 100
+    for i in range(max_count):
+        write_volume_random_data(volume, {})
+
+        count = i + 1
+        snap[count] = create_snapshot(client, volume_name)
+
+        if count < max_count:
+            volume = client.by_id_volume(volume_name)
+            assert volume.conditions.toomanysnapshots.status == "False"
+        else:
+            wait_for_volume_condition_toomanysnapshots(client, volume_name,
+                                                       "status", "True")
+
+    snap[max_count + 1] = create_snapshot(client, volume_name)
+    wait_for_volume_condition_toomanysnapshots(client, volume_name,
+                                               "status", "True")
+
+    volume = client.by_id_volume(volume_name)
+    volume.snapshotDelete(name=snap[100].name)
+    volume.snapshotDelete(name=snap[99].name)
+
+    volume.snapshotPurge()
+    volume = wait_for_snapshot_purge(client, volume_name,
+                                     snap[100].name, snap[99].name)
+
+    wait_for_volume_condition_toomanysnapshots(client, volume_name,
+                                               "status", "False")
