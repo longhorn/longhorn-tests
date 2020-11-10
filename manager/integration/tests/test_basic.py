@@ -55,6 +55,7 @@ from common import wait_for_volume_condition_scheduled
 from common import wait_for_volume_condition_toomanysnapshots
 from common import wait_for_volume_degraded, wait_for_volume_healthy
 from common import VOLUME_FRONTEND_BLOCKDEV, VOLUME_FRONTEND_ISCSI
+from common import VOLUME_CONDITION_SCHEDULED
 from common import MESSAGE_TYPE_ERROR
 from common import DATA_SIZE_IN_MB_1
 from common import SETTING_REPLICA_NODE_SOFT_ANTI_AFFINITY
@@ -3046,49 +3047,192 @@ def test_backup_lock_restoration_during_deletion(client, core_api, volume_name, 
     assert b2 is None
 
 
-@pytest.mark.skip(reason="TODO")
 @pytest.mark.coretest
-def test_allow_volume_creation_with_degraded_availability_api():
+def test_allow_volume_creation_with_degraded_availability(client, volume_name):  # NOQA
     """
     Test Allow Volume Creation with Degraded Availability (API)
 
     Requirement:
-    1. Set `allow-volume-creation-with-degraded-availability` to true
-    2. `node-level-soft-anti-affinity` to false
+    1. Set `allow-volume-creation-with-degraded-availability` to true.
+    2. `node-level-soft-anti-affinity` to false.
 
     Steps:
     (degraded availablity)
-    1. Disable scheduling for node 2 and 3
+    1. Disable scheduling for node 2 and 3.
     2. Create a volume with three replicas.
-        1. Volume should be `ready` after creation and `Scheduled` is true
+        1. Volume should be `ready` after creation and `Scheduled` is true.
         2. One replica schedule succeed. Two other replicas failed scheduling.
     3. Enable the scheduling of node 2.
-        1. One additional replica of the volume will become scheduled
+        1. One additional replica of the volume will become scheduled.
         2. The other replica is still failed to schedule.
-        3. Scheduled condition is still true
+        3. Scheduled condition is still true.
     4. Attach the volume.
         1. After the volume is attached, scheduled condition become false.
     5. Write data to the volume.
-    6. Detach the volume
+    6. Detach the volume.
         1. Scheduled condition should become true.
     7. Reattach the volume to verify the data.
         1. Scheduled condition should become false.
     8. Enable the scheduling for the node 3.
-    9. Wait for the scheduling condition to become true
-    10. Wait for the rebuild to complete.
-    11. Detach and reattach the volume to verify the data
+    9. Wait for the scheduling condition to become true.
+    10. Detach and reattach the volume to verify the data.
+    """
+    # enable volume create with degraded availability
+    degraded_availability_setting = \
+        client.by_id_setting(common.SETTING_DEGRADED_AVAILABILITY)
+    client.update(degraded_availability_setting, value="true")
 
+    # disable node level soft anti-affinity
+    replica_soft_anti_affinity_setting = \
+        client.by_id_setting(SETTING_REPLICA_NODE_SOFT_ANTI_AFFINITY)
+    client.update(replica_soft_anti_affinity_setting, value="false")
+
+    nodes = client.list_node()
+    node1 = nodes[0]
+    node2 = nodes[1]
+    node3 = nodes[2]
+
+    # disable node 2 and 3 to schedule to node 1
+    client.update(node2, allowScheduling=False)
+    client.update(node3, allowScheduling=False)
+
+    # create volume
+    volume = create_and_check_volume(client, volume_name, num_of_replicas=3)
+    assert volume.ready
+    assert volume.conditions[VOLUME_CONDITION_SCHEDULED]['status'] == "True"
+
+    # check only 1 replica scheduled successfully
+    common.wait_for_replica_scheduled(client, volume_name,
+                                      to_nodes=[node1.name],
+                                      expect_success=1, expect_fail=2,
+                                      is_vol_healthy=False,
+                                      is_replica_running=False)
+
+    # enable node 2 to schedule to node 1 and 2
+    client.update(node2, allowScheduling=True)
+
+    # check 2 replicas scheduled successfully
+    common.wait_for_replica_scheduled(client, volume_name,
+                                      to_nodes=[node1.name, node2.name],
+                                      expect_success=2, expect_fail=1,
+                                      is_vol_healthy=False,
+                                      is_replica_running=False)
+
+    volume = client.by_id_volume(volume_name)
+    assert volume.conditions[VOLUME_CONDITION_SCHEDULED]['status'] == "True"
+
+    # attach volume
+    self_host = get_self_host_id()
+    volume.attach(hostId=self_host)
+    volume = common.wait_for_volume_degraded(client, volume_name)
+    assert volume.conditions[VOLUME_CONDITION_SCHEDULED]['status'] == "False"
+
+    data = write_volume_random_data(volume, {})
+
+    # detach volume
+    volume.detach()
+    volume = common.wait_for_volume_detached(client, volume_name)
+    assert volume.conditions[VOLUME_CONDITION_SCHEDULED]['status'] == "True"
+
+    # re-attach volume to verify the data
+    volume.attach(hostId=self_host)
+    volume = common.wait_for_volume_degraded(client, volume_name)
+    check_volume_data(volume, data)
+    assert volume.conditions[VOLUME_CONDITION_SCHEDULED]['status'] == "False"
+
+    # enable node 3 to schedule to node 1, 2 and 3
+    client.update(node3, allowScheduling=True)
+    common.wait_for_volume_condition_scheduled(client, volume_name,
+                                               "status", "True")
+
+    # detach and re-attach the volume to verify the data
+    volume.detach()
+    volume = common.wait_for_volume_detached(client, volume_name)
+
+    volume.attach(hostId=self_host)
+    volume = common.wait_for_volume_degraded(client, volume_name)
+    check_volume_data(volume, data)
+
+
+@pytest.mark.coretest
+def test_allow_volume_creation_with_degraded_availability_error(
+        client, volume_name):  # NOQA
+    """
+    Test Allow Volume Creation with Degraded Availability (API)
+
+    Requirement:
+    1. Set `allow-volume-creation-with-degraded-availability` to true.
+    2. `node-level-soft-anti-affinity` to false.
+
+    Steps:
     (no availability)
     1. Disable all nodes' scheduling.
     2. Create a volume with three replicas.
-        1. Volume should be NotReady after creation
+        1. Volume should be NotReady after creation.
         2. Scheduled condition should become false.
     3. Attaching the volume should result in error.
-    4. Enable one node's scheduling
-        1. Volume should become Ready soon
-        2. Scheduling error should be gone.
-    5. Attach the volume. Write data. Detach and reattach to verify the data
+    4. Enable one node's scheduling.
+        1. Volume should become Ready soon.
+        2. Scheduled condition should become true.
+    5. Attach the volume. Write data. Detach and reattach to verify the data.
     """
+    # enable volume create with degraded availability
+    degraded_availability_setting = \
+        client.by_id_setting(common.SETTING_DEGRADED_AVAILABILITY)
+    client.update(degraded_availability_setting, value="true")
+
+    # disable node level soft anti-affinity
+    replica_soft_anti_affinity_setting = \
+        client.by_id_setting(SETTING_REPLICA_NODE_SOFT_ANTI_AFFINITY)
+    client.update(replica_soft_anti_affinity_setting, value="false")
+
+    nodes = client.list_node()
+    node1 = nodes[0]
+    node2 = nodes[1]
+    node3 = nodes[2]
+
+    # disable node 1, 2 and 3 to make 0 available node
+    client.update(node1, allowScheduling=False)
+    client.update(node2, allowScheduling=False)
+    client.update(node3, allowScheduling=False)
+
+    # create volume
+    volume = create_and_check_volume(client, volume_name, num_of_replicas=3)
+    assert not volume.ready
+    assert volume.conditions[VOLUME_CONDITION_SCHEDULED]['status'] == "False"
+
+    # attach the volume
+    self_host = get_self_host_id()
+    with pytest.raises(Exception) as e:
+        volume.attach(hostId=self_host)
+    assert "cannot be scheduled" in str(e.value)
+
+    # enable node 1
+    client.update(node1, allowScheduling=True)
+
+    # check only 1 replica scheduled successfully
+    common.wait_for_replica_scheduled(client, volume_name,
+                                      to_nodes=[node1.name],
+                                      expect_success=1, expect_fail=2,
+                                      is_vol_healthy=False,
+                                      is_replica_running=False)
+
+    volume = client.by_id_volume(volume_name)
+    assert volume.ready
+    assert volume.conditions[VOLUME_CONDITION_SCHEDULED]['status'] == "True"
+
+    # attach the volume and write some data
+    volume.attach(hostId=self_host)
+    volume = common.wait_for_volume_degraded(client, volume_name)
+    data = write_volume_random_data(volume, {})
+
+    # detach and re-attach the volume to verify the data
+    volume.detach()
+    volume = common.wait_for_volume_detached(client, volume_name)
+
+    volume.attach(hostId=self_host)
+    volume = common.wait_for_volume_degraded(client, volume_name)
+    check_volume_data(volume, data)
 
 
 @pytest.mark.skip(reason="TODO")

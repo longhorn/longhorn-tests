@@ -1642,33 +1642,40 @@ def wait_for_replica_running(client, volname, replica_name):
 
 
 def wait_for_replica_scheduled(client, volume_name, to_nodes,
-                               replica_count=2, anti_affinity=False,
-                               is_vol_healthy=True):
-    scheduled = 0
+                               expect_success=2, expect_fail=0,
+                               anti_affinity=False,
+                               is_vol_healthy=True,
+                               is_replica_running=True):
     for _ in range(RETRY_COUNTS):
         volume = client.by_id_volume(volume_name)
         if is_vol_healthy:
             assert volume.robustness == VOLUME_ROBUSTNESS_HEALTHY
 
+        scheduled = 0
+        unexpect_fail = expect_fail
+        expect_nodes = [n for n in to_nodes]
         for r in volume.replicas:
             try:
-                assert r.hostId in to_nodes
-                assert r.running is True
-                assert r.mode == "RW"
+                assert r.hostId in expect_nodes
+
+                if is_replica_running:
+                    assert r.running is True
+                    assert r.mode == "RW"
 
                 if not anti_affinity:
-                    to_nodes.remove(r.hostId)
+                    expect_nodes.remove(r.hostId)
 
                 scheduled += 1
-                break
             except AssertionError:
-                continue
+                if expect_fail != 0:
+                    unexpect_fail -= 1
 
-        if scheduled == replica_count:
+        if scheduled == expect_success and unexpect_fail == 0:
             break
 
         time.sleep(RETRY_INTERVAL)
-    assert scheduled == replica_count
+    assert scheduled == expect_success
+    assert unexpect_fail == 0
 
 
 @pytest.fixture
