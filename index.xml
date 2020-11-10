@@ -259,6 +259,17 @@ Monitor longhorn  Deploy the Prometheus-operator, ServiceMonitor pointing to lon
     </item>
     
     <item>
+      <title>Recurring backup job interruptions</title>
+      <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/recurring-backup-job-interruptions/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/recurring-backup-job-interruptions/</guid>
+      <description>Related Issue https://github.com/longhorn/longhorn/issues/1882
+##Scenario 1- Allow Recurring Job While Volume Is Detached disabled, attached pod scaled down while the recurring backup was in progress.
+ Create a volume, attach to a pod of a statefulSet, and write 800 Mi data into it. Set a recurring job. While the recurring job is in progress, scale down the pod to 0 of the statefulSet. Volume first detached and cron job gets finished saying unable to complete the backup.</description>
+    </item>
+    
+    <item>
       <title>Replica Rebuilding</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/ha/replica-rebuilding/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>

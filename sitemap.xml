@@ -147,6 +147,10 @@
   </url>
   
   <url>
+    <loc>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/recurring-backup-job-interruptions/</loc>
+  </url>
+  
+  <url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/release-specific/</loc>
   </url>
   
