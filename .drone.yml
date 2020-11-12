@@ -187,3 +187,55 @@ steps:
 depends_on:
 - default-amd64
 - default-arm64
+
+---
+
+kind: pipeline
+name: build engine compitable image
+
+platform:
+  os: linux
+  arch: amd64
+
+steps:
+    #- name: clone longhorn engine
+    #  image: alpine/git
+    #  commands:
+    #  - git clone https://github.com/longhorn/longhorn-engine.git
+    #  - cd longhorn-engine
+    #  - git commit --allow-empty -m "add dummy commit"
+    #
+    #- name: build
+    #  pull: default
+    #  image: rancher/dapper:v0.5.3
+    #  commands:
+    #  - cd longhorn-engine
+    #  - dapper package
+    #  privileged: true
+    #  volumes:
+    #  - name: socket
+    #    path: /var/run/docker.sock
+
+- name: generate compitable image
+  image: ubuntu:20.04
+  commands:
+  - apt-get update && apt-get install gettext-base
+  - cd manager/test_containers/compatibility
+  - ./drone_build_images.sh > .tags
+
+- name: publish engine compitable image
+  image: plugins/docker
+  settings:
+    custom_dns: 1.1.1.1
+    auto_tag_suffix: "amd64"
+    password:
+      from_secret: docker_password
+    repo: longhornio/longhorn-test
+    username:
+      from_secret: docker_username
+
+
+volumes:
+- name: socket
+  host:
+    path: /var/run/docker.sock
