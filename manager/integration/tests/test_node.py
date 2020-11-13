@@ -2585,10 +2585,10 @@ def test_node_eviction_multiple_volume(client, core_api, csi_pv, pvc, pod_make, 
 
     common.wait_for_replica_scheduled(client, volume1_name,
                                       to_nodes=[node2.name, node3.name],
-                                      is_vol_healthy=False)
+                                      chk_vol_healthy=False)
     common.wait_for_replica_scheduled(client, volume2_name,
                                       to_nodes=[node2.name, node3.name],
-                                      is_vol_healthy=False)
+                                      chk_vol_healthy=False)
 
     pod1 = pod_make(name=pod1_name)
     pod1['spec']['volumes'] = [common.create_pvc_spec(pvc1_name)]

@@ -3099,8 +3099,8 @@ def test_allow_volume_creation_with_degraded_availability(client, volume_name): 
     common.wait_for_replica_scheduled(client, volume_name,
                                       to_nodes=[node1.name],
                                       expect_success=1, expect_fail=2,
-                                      is_vol_healthy=False,
-                                      is_replica_running=False)
+                                      chk_vol_healthy=False,
+                                      chk_replica_running=False)
 
     # enable node 2 to schedule to node 1 and 2
     client.update(node2, allowScheduling=True)
@@ -3109,8 +3109,8 @@ def test_allow_volume_creation_with_degraded_availability(client, volume_name): 
     common.wait_for_replica_scheduled(client, volume_name,
                                       to_nodes=[node1.name, node2.name],
                                       expect_success=2, expect_fail=1,
-                                      is_vol_healthy=False,
-                                      is_replica_running=False)
+                                      chk_vol_healthy=False,
+                                      chk_replica_running=False)
 
     volume = client.by_id_volume(volume_name)
     assert volume.conditions[VOLUME_CONDITION_SCHEDULED]['status'] == "True"
@@ -3208,8 +3208,8 @@ def test_allow_volume_creation_with_degraded_availability_error(
     common.wait_for_replica_scheduled(client, volume_name,
                                       to_nodes=[node1.name],
                                       expect_success=1, expect_fail=2,
-                                      is_vol_healthy=False,
-                                      is_replica_running=False)
+                                      chk_vol_healthy=False,
+                                      chk_replica_running=False)
     volume = common.wait_for_volume_status(client, volume_name,
                                            VOLUME_FIELD_READY, True)
     assert volume.conditions[VOLUME_CONDITION_SCHEDULED]['status'] == "True"
@@ -3252,45 +3252,235 @@ def test_multiple_volumes_creation_with_degraded_availability():
     pass
 
 
-@pytest.mark.skip(reason="TODO")
-def test_allow_volume_creation_with_degraded_availability_restore():
+def test_allow_volume_creation_with_degraded_availability_restore(
+        set_random_backupstore, client, core_api, volume_name, csi_pv, pvc, pod, pod_make):  # NOQA
     """
     Test Allow Volume Creation with Degraded Availability (Restore)
 
     Requirement:
-    1. Set `allow-volume-creation-with-degraded-availability` to true
-    2. `node-level-soft-anti-affinity` to false
+    1. Set `allow-volume-creation-with-degraded-availability` to true.
+    2. `node-level-soft-anti-affinity` to false.
     3. Create a backup of 800MB.
 
     Steps:
     (restore)
-    1. Disable scheduling for node 2 and 3
-    2. Restore a volume with three replicas.
-        1. Volume should be attached automatically and `Scheduled` is true
-        2. One replica schedule succeed. Two other replicas failed scheduling.
-    3. During the restore, enable scheduling for node 2.
-        1. One additional replica of the volume will become scheduled
-        2. The other replica is still failed to schedule.
-        3. Scheduled condition is still true
+    1. Disable scheduling for node 2 and 3.
+    2. Restore a volume with 3 replicas.
+        1. The scheduled condition is true.
+        2. Only node 1 replica become scheduled.
+    3. Enable scheduling for node 2.
     4. Wait for the restore to complete and volume detach automatically.
-        1. After the volume detached, scheduled condition become true.
-    5. Attach the volume and verify the data.
-        1. After the volume is attached, scheduled condition become false.
-
-    (DR volume)
-    1. Disable scheduling for node 2 and 3
-    2. Create a DR volume from backup with three replicas.
-        1. Volume should be attached automatically and `Scheduled` is true
-        2. One replica schedule succeed. Two other replicas failed scheduling.
-    3. During the restore, enable scheduling for node 2.
-        1. One additional replica of the volume will become scheduled
-        2. The other replica is still failed to schedule.
-        3. Scheduled condition is still true
-    4. Wait for the restore to complete.
-    5. Enable the scheduling for node 3.
-        1. DR volume should automatically rebuild the third replica.
-    6. Activate the volume and verify the data.
+       Then check the scheduled condition still true.
+    5. Attach and wait for the volume.
+        1. Replicas scheduling to node 1 and 2 success.
+           Replica scheduling to node 3 fail.
+        2. The scheduled condition becomes false.
+        3. Verify the data.
     """
+    # enable volume create with degraded availability
+    degraded_availability_setting = \
+        client.by_id_setting(common.SETTING_DEGRADED_AVAILABILITY)
+    client.update(degraded_availability_setting, value="true")
+
+    # disable node level soft anti-affinity
+    replica_soft_anti_affinity_setting = \
+        client.by_id_setting(SETTING_REPLICA_NODE_SOFT_ANTI_AFFINITY)
+    client.update(replica_soft_anti_affinity_setting, value="false")
+
+    # create a backup
+    backupstore_cleanup(client)
+
+    data_path = "/data/test"
+    src_vol_name = generate_volume_name()
+    _, _, _, src_md5sum = \
+        prepare_pod_with_data_in_mb(
+            client, core_api, csi_pv, pvc, pod_make, src_vol_name,
+            data_path=data_path, data_size_in_mb=common.DATA_SIZE_IN_MB_4)
+
+    src_vol = client.by_id_volume(src_vol_name)
+    src_snap = create_snapshot(client, src_vol_name)
+    src_vol.snapshotBackup(name=src_snap.name)
+    wait_for_backup_completion(client, src_vol_name, src_snap.name,
+                               retry_count=600)
+    _, backup = find_backup(client, src_vol_name, src_snap.name)
+
+    nodes = client.list_node()
+    node1 = nodes[0]
+    node2 = nodes[1]
+    node3 = nodes[2]
+
+    # disable node 2 and 3 to schedule to node 1
+    client.update(node2, allowScheduling=False)
+    client.update(node3, allowScheduling=False)
+
+    # restore volume
+    dst_vol_name = generate_volume_name()
+    client.create_volume(name=dst_vol_name, size=str(1*Gi),
+                         numberOfReplicas=3, fromBackup=backup.url)
+    common.wait_for_volume_replica_count(client, dst_vol_name, 3)
+    common.wait_for_volume_restoration_start(client, dst_vol_name, backup.name)
+    wait_for_volume_condition_scheduled(client, dst_vol_name,
+                                        "status", "True")
+
+    # check only 1 replica scheduled successfully
+    common.wait_for_replica_scheduled(client, dst_vol_name,
+                                      to_nodes=[node1.name],
+                                      expect_success=1,
+                                      chk_vol_healthy=False,
+                                      chk_replica_running=False)
+
+    # Enable node 2 to schedule to node 1, 2
+    client.update(node2, allowScheduling=True)
+
+    # wait to complete restore
+    common.wait_for_volume_restoration_completed(client, dst_vol_name)
+    dst_vol = common.wait_for_volume_detached(client, dst_vol_name)
+    assert dst_vol.conditions[VOLUME_CONDITION_SCHEDULED]['status'] == "True"
+
+    # attach the volume
+    create_pv_for_volume(client, core_api, dst_vol, dst_vol_name)
+    create_pvc_for_volume(client, core_api, dst_vol, dst_vol_name)
+
+    dst_pod_name = dst_vol_name + "-pod"
+    pod['metadata']['name'] = dst_vol_name + "-pod"
+    pod['spec']['volumes'] = [{
+        'name': pod['spec']['containers'][0]['volumeMounts'][0]['name'],
+        'persistentVolumeClaim': {
+            'claimName': dst_vol_name,
+        },
+    }]
+    create_and_wait_pod(core_api, pod)
+    # check 2 replica scheduled successfully
+    dst_vol = common.wait_for_replica_scheduled(client, dst_vol_name,
+                                                to_nodes=[node1.name,
+                                                          node2.name],
+                                                expect_success=2,
+                                                expect_fail=1,
+                                                chk_vol_healthy=False,
+                                                chk_replica_running=False)
+    wait_for_volume_condition_scheduled(client, dst_vol_name,
+                                        "status", "False")
+
+    # verify the data
+    dst_md5sum = get_pod_data_md5sum(core_api, dst_pod_name, data_path)
+    assert src_md5sum == dst_md5sum
+
+
+def test_allow_volume_creation_with_degraded_availability_dr(
+        set_random_backupstore, client, core_api, volume_name, csi_pv, pvc, pod, pod_make):  # NOQA
+    """
+    Test Allow Volume Creation with Degraded Availability (Restore)
+
+    Requirement:
+    1. Set `allow-volume-creation-with-degraded-availability` to true.
+    2. `node-level-soft-anti-affinity` to false.
+    3. Create a backup of 800MB.
+
+    Steps:
+    (DR volume)
+    1. Disable scheduling for node 2 and 3.
+    2. Create a DR volume from backup with 3 replicas.
+        1. The scheduled condition is false.
+        2. Only node 1 replica become scheduled.
+    3. Enable scheduling for node 2 and 3.
+        1. Replicas scheduling to node 1, 2, 3 success.
+        2. Wait for restore progress to complete.
+        3. The scheduled condition becomes true.
+    4. Activate, attach the volume, and verify the data.
+    """
+    # enable volume create with degraded availability
+    degraded_availability_setting = \
+        client.by_id_setting(common.SETTING_DEGRADED_AVAILABILITY)
+    client.update(degraded_availability_setting, value="true")
+
+    # disable node level soft anti-affinity
+    replica_soft_anti_affinity_setting = \
+        client.by_id_setting(SETTING_REPLICA_NODE_SOFT_ANTI_AFFINITY)
+    client.update(replica_soft_anti_affinity_setting, value="false")
+
+    # create a backup
+    backupstore_cleanup(client)
+
+    data_path = "/data/test"
+    src_vol_name = generate_volume_name()
+    _, _, _, src_md5sum = \
+        prepare_pod_with_data_in_mb(
+            client, core_api, csi_pv, pvc, pod_make, src_vol_name,
+            data_path=data_path, data_size_in_mb=common.DATA_SIZE_IN_MB_4)
+
+    src_vol = client.by_id_volume(src_vol_name)
+    src_snap = create_snapshot(client, src_vol_name)
+    src_vol.snapshotBackup(name=src_snap.name)
+    wait_for_backup_completion(client, src_vol_name, src_snap.name,
+                               retry_count=600)
+    _, backup = find_backup(client, src_vol_name, src_snap.name)
+
+    nodes = client.list_node()
+    node1 = nodes[0]
+    node2 = nodes[1]
+    node3 = nodes[2]
+
+    # disable node 2 and 3 to schedule to node 1
+    client.update(node2, allowScheduling=False)
+    client.update(node3, allowScheduling=False)
+
+    # create DR volume
+    dst_vol_name = generate_volume_name()
+    dst_vol = client.create_volume(name=dst_vol_name, size=str(1*Gi),
+                                   numberOfReplicas=3,
+                                   fromBackup=backup.url,
+                                   frontend="",
+                                   standby=True)
+    common.wait_for_volume_replica_count(client, dst_vol_name, 3)
+    wait_for_volume_restoration_start(client, dst_vol_name, backup.name)
+    wait_for_volume_condition_scheduled(client, dst_vol_name,
+                                        "status", "False")
+
+    # check only 1 replica scheduled successfully
+    common.wait_for_replica_scheduled(client, dst_vol_name,
+                                      to_nodes=[node1.name],
+                                      expect_success=1,
+                                      expect_fail=2,
+                                      chk_vol_healthy=False,
+                                      chk_replica_running=False)
+
+    # Enable node 2, 3 to schedule to node 1,2,3
+    client.update(node2, allowScheduling=True)
+    client.update(node3, allowScheduling=True)
+
+    common.wait_for_replica_scheduled(client, dst_vol_name,
+                                      to_nodes=[node1.name,
+                                                node2.name,
+                                                node3.name],
+                                      expect_success=3,
+                                      chk_vol_healthy=False,
+                                      chk_replica_running=False)
+    common.monitor_restore_progress(client, dst_vol_name)
+
+    wait_for_volume_condition_scheduled(client, dst_vol_name,
+                                        "status", "True")
+
+    # activate the volume
+    activate_standby_volume(client, dst_vol_name)
+
+    # attach the volume
+    dst_vol = client.by_id_volume(dst_vol_name)
+    create_pv_for_volume(client, core_api, dst_vol, dst_vol_name)
+    create_pvc_for_volume(client, core_api, dst_vol, dst_vol_name)
+
+    dst_pod_name = dst_vol_name + "-pod"
+    pod['metadata']['name'] = dst_vol_name + "-pod"
+    pod['spec']['volumes'] = [{
+        'name': pod['spec']['containers'][0]['volumeMounts'][0]['name'],
+        'persistentVolumeClaim': {
+            'claimName': dst_vol_name,
+        },
+    }]
+    create_and_wait_pod(core_api, pod)
+
+    # verify the data
+    dst_md5sum = get_pod_data_md5sum(core_api, dst_pod_name, data_path)
+    assert src_md5sum == dst_md5sum
 
 
 def test_cleanup_system_generated_snapshots(client, core_api, volume_name, csi_pv, pvc, pod_make):  # NOQA
