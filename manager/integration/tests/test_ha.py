@@ -2013,8 +2013,9 @@ def test_disable_replica_rebuild():
     """
     pass
 
-@pytest.mark.skip(reason="TODO") # NOQA
-def test_auto_remount_with_subpath():
+
+def test_auto_remount_with_subpath(
+    client, core_api, storage_class, sts_name, statefulset):  # NOQA
     """
     Test Auto Remount With Subpath
 
@@ -2035,39 +2036,84 @@ def test_auto_remount_with_subpath():
        ```yaml
        volumeMounts:
        - name: <PVC-NAME>
-         mountPath: /mnt
-         subPath: html
+         mountPath: /data/sub
+         subPath: sub
        ```
-    3. Find the node where the statefulset pods are running.
-       Let's say `pod-1` is on `node-1`, and use `vol-1`.
-    4. exec into `pod-1`, create a file `test_data.txt`
-       inside the folder `/mnt/html`
-    5. Kill the replica instance manager pod on `node-1`.
+    3. exec into statefulset pod, create a file `test_data.txt`
+       inside the folder `/data/sub`
+    4. Delete the statefulset replica instance manager pod.
        This action simulates a network disconnection.
-    6. in a 2 minutes retry loop:
-       Exec into the `pod-1`, run `ls /mnt/html`.
-       Verify the file `test_data.txt` exists.
-
-    7. Kill the replica instance manager pod on `node-1` one more time.
-    8. Wait for volume to become healthy,
-       kill the replica instance manager pod on `node-1` one more time.
-    9. in a 2 minutes retry loop:
-       Exec into the `pod-1`, run `ls /mnt/html`.
-       Verify the file `test_data.txt` exists.
-
-    10. Update `numberOfReplicas` to 3.
-        Wait for replicas rebuilding finishes.
-    11. Kill the engine instance manager pod on `node-1`
-    12. In a 2 minutes retry loop:
-       Exec into the `pod-1`, run `ls /mnt/html`.
-       Verify the file `test_data.txt` exists.
-
-    13. kill `pod-1`.
-    14. In a 2 minutes retry loop:
-       Exec into the `pod-1`, run `ls /mnt/html`.
-       Verify the file `test_data.txt` exists.
+    5. Wait for volume `healthy`, then verify the file checksum.
+    6. Repeat step #4~#5 for 3 times.
+    7. Update `numberOfReplicas` to 3.
+    8. Wait for replicas rebuilding finishes.
+    9. Delete one of the statefulset engine instance manager pod.
+    10. Wait for volume remount.
+        Then verify the file checksum.
+    11. Delete statefulset pod.
+    12. Wait for pod recreation and volume remount.
+        Then verify the file checksum.
     """
-    pass
+    storage_class['parameters']['numberOfReplicas'] = "1"
+
+    statefulset['spec']['replicas'] = 1
+    statefulset['spec']['template']['spec']['containers'] = \
+        [{
+            'image': 'busybox',
+            'imagePullPolicy': 'IfNotPresent',
+            'name': 'sleep',
+            'args': [
+                '/bin/sh',
+                '-c',
+                'while true;do date;sleep 5; done'
+            ],
+            'volumeMounts': [{
+                'name': 'pod-data',
+                'mountPath': '/data/sub',
+                'subPath': 'sub'
+            }]
+        }]
+
+    data_path = "/data/sub/test_data.txt"
+    vol_name, pod_name, md5sum = \
+        common.prepare_statefulset_with_data_in_mb(
+            client, core_api, statefulset, sts_name, storage_class,
+            data_path=data_path)
+
+    vol = client.by_id_volume(vol_name)
+    vol.updateDataLocality(dataLocality="best-effort")
+    wait_for_volume_healthy(client, vol_name)
+    common.wait_for_pod_remount(core_api, pod_name, chk_path=data_path)
+
+    crash_count = 3
+    for _ in range(crash_count):
+        vol = client.by_id_volume(vol_name)
+        rim_name = vol.replicas[0].instanceManagerName
+        delete_and_wait_pod(core_api, rim_name,
+                            namespace='longhorn-system',
+                            wait=False)
+        wait_for_volume_healthy(client, vol_name)
+        common.wait_for_pod_remount(core_api, pod_name, chk_path=data_path)
+        expect_md5sum = get_pod_data_md5sum(core_api, pod_name, data_path)
+        assert expect_md5sum == md5sum
+
+    vol = client.by_id_volume(vol_name)
+    vol.updateReplicaCount(replicaCount=3)
+    wait_for_rebuild_complete(client, vol_name)
+
+    eim_name = vol.controllers[0].instanceManagerName
+    delete_and_wait_pod(core_api, eim_name,
+                        namespace='longhorn-system',
+                        wait=False)
+    common.wait_for_pod_remount(core_api, pod_name, chk_path=data_path)
+    expect_md5sum = get_pod_data_md5sum(core_api, pod_name, data_path)
+    assert expect_md5sum == md5sum
+
+    delete_and_wait_pod(core_api, pod_name, wait=False)
+    common.wait_for_pod_phase(core_api, pod_name, pod_phase="Running")
+    common.wait_for_pod_remount(core_api, pod_name, chk_path=data_path)
+    expect_md5sum = get_pod_data_md5sum(core_api, pod_name, data_path)
+    assert expect_md5sum == md5sum
 
 
 @pytest.mark.skip(reason="TODO") # NOQA
