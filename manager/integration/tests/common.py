@@ -396,9 +396,9 @@ def create_pvc_spec(name):
     }
 
 
-def delete_and_wait_pod(api, pod_name):
+def delete_and_wait_pod(api, pod_name, namespace='default', wait=True):
     """
-    Delete a specified Pod from the "default" namespace.
+    Delete a specified Pod.
 
     This function does not check if the Pod does exist and will throw an error
     if a nonexistent Pod is specified.
@@ -409,12 +409,13 @@ def delete_and_wait_pod(api, pod_name):
     """
     try:
         api.delete_namespaced_pod(
-            name=pod_name, namespace='default',
+            name=pod_name, namespace=namespace,
             body=k8sclient.V1DeleteOptions())
     except ApiException as e:
         assert e.status == 404
 
-    wait_delete_pod(api, pod_name)
+    if wait:
+        wait_delete_pod(api, pod_name)
 
 
 def delete_and_wait_statefulset(api, client, statefulset):
@@ -3554,11 +3555,11 @@ def get_liveness_probe_spec(initial_delay=5, period=5):
     return pod_liveness_probe_spec
 
 
-def wait_for_pod_remount(core_api, pod_name):
+def wait_for_pod_remount(core_api, pod_name, chk_path="/data/lost+found"):
     check_command = [
         '/bin/sh',
         '-c',
-        'ls /data/lost+found'
+        'ls ' + chk_path
     ]
 
     ready = False
