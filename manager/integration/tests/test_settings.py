@@ -158,6 +158,34 @@ def test_setting_toleration():
     cleanup_volume(client, volume)
 
 
+@pytest.mark.skip(reason="TODO") # NOQA
+def test_setting_toleration_extra():
+    """
+    Steps:
+    1. Set Kubernetes Taint Toleration to:
+       `example.com/foobar:NoExecute;example.com/foobar:NoSchedule`
+    2. Verify that all components have the 2 tolerations
+       `example.com/foobar:NoExecute; example.com/foobar:NoSchedule`
+    3. Set Kubernetes Taint Toleration to:
+       `node-role.kubernetes.io/controlplane=true:NoSchedule`
+    4. Verify that all components have the the toleration
+       `node-role.kubernetes.io/controlplane=true:NoSchedule`
+       and don't have the 2 tolerations
+       `example.com/foobar:NoExecute;example.com/foobar:NoSchedule`
+    5. Set Kubernetes Taint Toleration to special value:
+       `:`
+    6. Verify that all components have the toleration with
+       `operator: Exists` and other field of the toleration are empty.
+       Verify that all components don't have the toleration
+       `node-role.kubernetes.io/controlplane=true:NoSchedule`
+    7. Clear Kubernetes Taint Toleration
+
+    Note: `components` in this context is referring to all deployments,
+       daemonsets, IM pods, recurring jobs in Longhorn system
+    """
+    pass
+
+
 def wait_for_toleration_update(core_api, apps_api, count, set_tolerations):  # NOQA
     updated = False
 
