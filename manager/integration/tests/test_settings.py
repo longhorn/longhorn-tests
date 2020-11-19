@@ -98,11 +98,6 @@ def test_setting_toleration():
 
     with pytest.raises(Exception) as e:
         client.update(setting,
-                      value=KUBERNETES_DEFAULT_TOLERATION + ":NoSchedule")
-    assert "is considered as the key of Kubernetes default tolerations" \
-           in str(e.value)
-    with pytest.raises(Exception) as e:
-        client.update(setting,
                       value="key1=value1:NoSchedule; key2:InvalidEffect")
     assert 'invalid effect' in str(e.value)
 
