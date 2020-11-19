@@ -3,16 +3,16 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
-<meta name="generator" content="pdoc 0.8.4" />
+<meta name="generator" content="pdoc 0.9.1" />
 <title>tests.test_ha API documentation</title>
 <meta name="description" content="" />
 <link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
 <link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/typography.min.css" integrity="sha256-7l/o7C8jubJiy74VsKTidCy1yBkRtiUGbVkYBylBqUg=" crossorigin>
-<link rel="stylesheet preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/styles/github.min.css" crossorigin>
+<link rel="stylesheet preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/styles/github.min.css" crossorigin>
 <style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:30px;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:1em 0 .50em 0}h3{font-size:1.4em;margin:25px 0 10px 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .3s ease-in-out}a:hover{color:#e82}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900}pre code{background:#f8f8f8;font-size:.8em;line-height:1.4em}code{background:#f2f2f1;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{background:#f8f8f8;border:0;border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0;padding:1ex}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-weight:bold;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em .5em;margin-bottom:1em}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
 <style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.item .name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul{padding-left:1.5em}.toc > ul > li{margin-top:.5em}}</style>
 <style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
-<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/highlight.min.js" integrity="sha256-eOgo0OtLL4cdq7RdwRUiGKLX9XsIJ7nGhWEKbohmVAQ=" crossorigin></script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/highlight.min.js" integrity="sha256-Uv3H6lx7dJmRfRvH8TH6kJD1TSK1aFcwgx+mdg3epi8=" crossorigin></script>
 <script>window.addEventListener('DOMContentLoaded', () => hljs.initHighlighting())</script>
 </head>
 <body>
@@ -2041,8 +2041,9 @@ def test_disable_replica_rebuild():
     &#34;&#34;&#34;
     pass
 
-@pytest.mark.skip(reason=&#34;TODO&#34;) # NOQA
-def test_auto_remount_with_subpath():
+
+def test_auto_remount_with_subpath(
+    client, core_api, storage_class, sts_name, statefulset):  # NOQA
     &#34;&#34;&#34;
     Test Auto Remount With Subpath
 
@@ -2063,39 +2064,84 @@ def test_auto_remount_with_subpath():
        ```yaml
        volumeMounts:
        - name: &lt;PVC-NAME&gt;
-         mountPath: /mnt
-         subPath: html
+         mountPath: /data/sub
+         subPath: sub
        ```
-    3. Find the node where the statefulset pods are running.
-       Let&#39;s say `pod-1` is on `node-1`, and use `vol-1`.
-    4. exec into `pod-1`, create a file `test_data.txt`
-       inside the folder `/mnt/html`
-    5. Kill the replica instance manager pod on `node-1`.
+    3. exec into statefulset pod, create a file `test_data.txt`
+       inside the folder `/data/sub`
+    4. Delete the statefulset replica instance manager pod.
        This action simulates a network disconnection.
-    6. in a 2 minutes retry loop:
-       Exec into the `pod-1`, run `ls /mnt/html`.
-       Verify the file `test_data.txt` exists.
-
-    7. Kill the replica instance manager pod on `node-1` one more time.
-    8. Wait for volume to become healthy,
-       kill the replica instance manager pod on `node-1` one more time.
-    9. in a 2 minutes retry loop:
-       Exec into the `pod-1`, run `ls /mnt/html`.
-       Verify the file `test_data.txt` exists.
-
-    10. Update `numberOfReplicas` to 3.
-        Wait for replicas rebuilding finishes.
-    11. Kill the engine instance manager pod on `node-1`
-    12. In a 2 minutes retry loop:
-       Exec into the `pod-1`, run `ls /mnt/html`.
-       Verify the file `test_data.txt` exists.
-
-    13. kill `pod-1`.
-    14. In a 2 minutes retry loop:
-       Exec into the `pod-1`, run `ls /mnt/html`.
-       Verify the file `test_data.txt` exists.
+    5. Wait for volume `healthy`, then verify the file checksum.
+    6. Repeat step #4~#5 for 3 times.
+    7. Update `numberOfReplicas` to 3.
+    8. Wait for replicas rebuilding finishes.
+    9. Delete one of the statefulset engine instance manager pod.
+    10. Wait for volume remount.
+        Then verify the file checksum.
+    11. Delete statefulset pod.
+    12. Wait for pod recreation and volume remount.
+        Then verify the file checksum.
     &#34;&#34;&#34;
-    pass
+    storage_class[&#39;parameters&#39;][&#39;numberOfReplicas&#39;] = &#34;1&#34;
+
+    statefulset[&#39;spec&#39;][&#39;replicas&#39;] = 1
+    statefulset[&#39;spec&#39;][&#39;template&#39;][&#39;spec&#39;][&#39;containers&#39;] = \
+        [{
+            &#39;image&#39;: &#39;busybox&#39;,
+            &#39;imagePullPolicy&#39;: &#39;IfNotPresent&#39;,
+            &#39;name&#39;: &#39;sleep&#39;,
+            &#39;args&#39;: [
+                &#39;/bin/sh&#39;,
+                &#39;-c&#39;,
+                &#39;while true;do date;sleep 5; done&#39;
+            ],
+            &#39;volumeMounts&#39;: [{
+                &#39;name&#39;: &#39;pod-data&#39;,
+                &#39;mountPath&#39;: &#39;/data/sub&#39;,
+                &#39;subPath&#39;: &#39;sub&#39;
+            }]
+        }]
+
+    data_path = &#34;/data/sub/test_data.txt&#34;
+    vol_name, pod_name, md5sum = \
+        common.prepare_statefulset_with_data_in_mb(
+            client, core_api, statefulset, sts_name, storage_class,
+            data_path=data_path)
+
+    vol = client.by_id_volume(vol_name)
+    vol.updateDataLocality(dataLocality=&#34;best-effort&#34;)
+    wait_for_volume_healthy(client, vol_name)
+    common.wait_for_pod_remount(core_api, pod_name, chk_path=data_path)
+
+    crash_count = 3
+    for _ in range(crash_count):
+        vol = client.by_id_volume(vol_name)
+        rim_name = vol.replicas[0].instanceManagerName
+        delete_and_wait_pod(core_api, rim_name,
+                            namespace=&#39;longhorn-system&#39;,
+                            wait=False)
+        wait_for_volume_healthy(client, vol_name)
+        common.wait_for_pod_remount(core_api, pod_name, chk_path=data_path)
+        expect_md5sum = get_pod_data_md5sum(core_api, pod_name, data_path)
+        assert expect_md5sum == md5sum
+
+    vol = client.by_id_volume(vol_name)
+    vol.updateReplicaCount(replicaCount=3)
+    wait_for_rebuild_complete(client, vol_name)
+
+    eim_name = vol.controllers[0].instanceManagerName
+    delete_and_wait_pod(core_api, eim_name,
+                        namespace=&#39;longhorn-system&#39;,
+                        wait=False)
+    common.wait_for_pod_remount(core_api, pod_name, chk_path=data_path)
+    expect_md5sum = get_pod_data_md5sum(core_api, pod_name, data_path)
+    assert expect_md5sum == md5sum
+
+    delete_and_wait_pod(core_api, pod_name, wait=False)
+    common.wait_for_pod_phase(core_api, pod_name, pod_phase=&#34;Running&#34;)
+    common.wait_for_pod_remount(core_api, pod_name, chk_path=data_path)
+    expect_md5sum = get_pod_data_md5sum(core_api, pod_name, data_path)
+    assert expect_md5sum == md5sum
 
 
 @pytest.mark.skip(reason=&#34;TODO&#34;) # NOQA
@@ -2523,7 +2569,7 @@ volume.conditions[restore].reason == "RestoreFailure"</code>.</li>
 </details>
 </dd>
 <dt id="tests.test_ha.test_auto_remount_with_subpath"><code class="name flex">
-<span>def <span class="ident">test_auto_remount_with_subpath</span></span>(<span>)</span>
+<span>def <span class="ident">test_auto_remount_with_subpath</span></span>(<span>client, core_api, storage_class, sts_name, statefulset)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Test Auto Remount With Subpath</p>
@@ -2542,53 +2588,30 @@ Make sure the container in the pod template uses subpath, like this:
 ```yaml
 volumeMounts:</li>
 <li>name: <PVC-NAME>
-mountPath: /mnt
-subPath: html
+mountPath: /data/sub
+subPath: sub
 ```</li>
-<li>Find the node where the statefulset pods are running.
-Let's say <code>pod-1</code> is on <code>node-1</code>, and use <code>vol-1</code>.</li>
-<li>exec into <code>pod-1</code>, create a file <code>test_data.txt</code>
-inside the folder <code>/mnt/html</code></li>
-<li>Kill the replica instance manager pod on <code>node-1</code>.
+<li>exec into statefulset pod, create a file <code>test_data.txt</code>
+inside the folder <code>/data/sub</code></li>
+<li>Delete the statefulset replica instance manager pod.
 This action simulates a network disconnection.</li>
-<li>
-<p>in a 2 minutes retry loop:
-Exec into the <code>pod-1</code>, run <code>ls /mnt/html</code>.
-Verify the file <code>test_data.txt</code> exists.</p>
-</li>
-<li>
-<p>Kill the replica instance manager pod on <code>node-1</code> one more time.</p>
-</li>
-<li>Wait for volume to become healthy,
-kill the replica instance manager pod on <code>node-1</code> one more time.</li>
-<li>
-<p>in a 2 minutes retry loop:
-Exec into the <code>pod-1</code>, run <code>ls /mnt/html</code>.
-Verify the file <code>test_data.txt</code> exists.</p>
-</li>
-<li>
-<p>Update <code>numberOfReplicas</code> to 3.
-Wait for replicas rebuilding finishes.</p>
-</li>
-<li>Kill the engine instance manager pod on <code>node-1</code></li>
-<li>
-<p>In a 2 minutes retry loop:
-Exec into the <code>pod-1</code>, run <code>ls /mnt/html</code>.
-Verify the file <code>test_data.txt</code> exists.</p>
-</li>
-<li>
-<p>kill <code>pod-1</code>.</p>
-</li>
-<li>In a 2 minutes retry loop:
-Exec into the <code>pod-1</code>, run <code>ls /mnt/html</code>.
-Verify the file <code>test_data.txt</code> exists.</li>
+<li>Wait for volume <code>healthy</code>, then verify the file checksum.</li>
+<li>Repeat step #4~#5 for 3 times.</li>
+<li>Update <code>numberOfReplicas</code> to 3.</li>
+<li>Wait for replicas rebuilding finishes.</li>
+<li>Delete one of the statefulset engine instance manager pod.</li>
+<li>Wait for volume remount.
+Then verify the file checksum.</li>
+<li>Delete statefulset pod.</li>
+<li>Wait for pod recreation and volume remount.
+Then verify the file checksum.</li>
 </ol></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">@pytest.mark.skip(reason=&#34;TODO&#34;) # NOQA
-def test_auto_remount_with_subpath():
+<pre><code class="python">def test_auto_remount_with_subpath(
+    client, core_api, storage_class, sts_name, statefulset):  # NOQA
     &#34;&#34;&#34;
     Test Auto Remount With Subpath
 
@@ -2609,39 +2632,84 @@ def test_auto_remount_with_subpath():
        ```yaml
        volumeMounts:
        - name: &lt;PVC-NAME&gt;
-         mountPath: /mnt
-         subPath: html
+         mountPath: /data/sub
+         subPath: sub
        ```
-    3. Find the node where the statefulset pods are running.
-       Let&#39;s say `pod-1` is on `node-1`, and use `vol-1`.
-    4. exec into `pod-1`, create a file `test_data.txt`
-       inside the folder `/mnt/html`
-    5. Kill the replica instance manager pod on `node-1`.
+    3. exec into statefulset pod, create a file `test_data.txt`
+       inside the folder `/data/sub`
+    4. Delete the statefulset replica instance manager pod.
        This action simulates a network disconnection.
-    6. in a 2 minutes retry loop:
-       Exec into the `pod-1`, run `ls /mnt/html`.
-       Verify the file `test_data.txt` exists.
-
-    7. Kill the replica instance manager pod on `node-1` one more time.
-    8. Wait for volume to become healthy,
-       kill the replica instance manager pod on `node-1` one more time.
-    9. in a 2 minutes retry loop:
-       Exec into the `pod-1`, run `ls /mnt/html`.
-       Verify the file `test_data.txt` exists.
-
-    10. Update `numberOfReplicas` to 3.
-        Wait for replicas rebuilding finishes.
-    11. Kill the engine instance manager pod on `node-1`
-    12. In a 2 minutes retry loop:
-       Exec into the `pod-1`, run `ls /mnt/html`.
-       Verify the file `test_data.txt` exists.
-
-    13. kill `pod-1`.
-    14. In a 2 minutes retry loop:
-       Exec into the `pod-1`, run `ls /mnt/html`.
-       Verify the file `test_data.txt` exists.
+    5. Wait for volume `healthy`, then verify the file checksum.
+    6. Repeat step #4~#5 for 3 times.
+    7. Update `numberOfReplicas` to 3.
+    8. Wait for replicas rebuilding finishes.
+    9. Delete one of the statefulset engine instance manager pod.
+    10. Wait for volume remount.
+        Then verify the file checksum.
+    11. Delete statefulset pod.
+    12. Wait for pod recreation and volume remount.
+        Then verify the file checksum.
     &#34;&#34;&#34;
-    pass</code></pre>
+    storage_class[&#39;parameters&#39;][&#39;numberOfReplicas&#39;] = &#34;1&#34;
+
+    statefulset[&#39;spec&#39;][&#39;replicas&#39;] = 1
+    statefulset[&#39;spec&#39;][&#39;template&#39;][&#39;spec&#39;][&#39;containers&#39;] = \
+        [{
+            &#39;image&#39;: &#39;busybox&#39;,
+            &#39;imagePullPolicy&#39;: &#39;IfNotPresent&#39;,
+            &#39;name&#39;: &#39;sleep&#39;,
+            &#39;args&#39;: [
+                &#39;/bin/sh&#39;,
+                &#39;-c&#39;,
+                &#39;while true;do date;sleep 5; done&#39;
+            ],
+            &#39;volumeMounts&#39;: [{
+                &#39;name&#39;: &#39;pod-data&#39;,
+                &#39;mountPath&#39;: &#39;/data/sub&#39;,
+                &#39;subPath&#39;: &#39;sub&#39;
+            }]
+        }]
+
+    data_path = &#34;/data/sub/test_data.txt&#34;
+    vol_name, pod_name, md5sum = \
+        common.prepare_statefulset_with_data_in_mb(
+            client, core_api, statefulset, sts_name, storage_class,
+            data_path=data_path)
+
+    vol = client.by_id_volume(vol_name)
+    vol.updateDataLocality(dataLocality=&#34;best-effort&#34;)
+    wait_for_volume_healthy(client, vol_name)
+    common.wait_for_pod_remount(core_api, pod_name, chk_path=data_path)
+
+    crash_count = 3
+    for _ in range(crash_count):
+        vol = client.by_id_volume(vol_name)
+        rim_name = vol.replicas[0].instanceManagerName
+        delete_and_wait_pod(core_api, rim_name,
+                            namespace=&#39;longhorn-system&#39;,
+                            wait=False)
+        wait_for_volume_healthy(client, vol_name)
+        common.wait_for_pod_remount(core_api, pod_name, chk_path=data_path)
+        expect_md5sum = get_pod_data_md5sum(core_api, pod_name, data_path)
+        assert expect_md5sum == md5sum
+
+    vol = client.by_id_volume(vol_name)
+    vol.updateReplicaCount(replicaCount=3)
+    wait_for_rebuild_complete(client, vol_name)
+
+    eim_name = vol.controllers[0].instanceManagerName
+    delete_and_wait_pod(core_api, eim_name,
+                        namespace=&#39;longhorn-system&#39;,
+                        wait=False)
+    common.wait_for_pod_remount(core_api, pod_name, chk_path=data_path)
+    expect_md5sum = get_pod_data_md5sum(core_api, pod_name, data_path)
+    assert expect_md5sum == md5sum
+
+    delete_and_wait_pod(core_api, pod_name, wait=False)
+    common.wait_for_pod_phase(core_api, pod_name, pod_phase=&#34;Running&#34;)
+    common.wait_for_pod_remount(core_api, pod_name, chk_path=data_path)
+    expect_md5sum = get_pod_data_md5sum(core_api, pod_name, data_path)
+    assert expect_md5sum == md5sum</code></pre>
 </details>
 </dd>
 <dt id="tests.test_ha.test_disable_replica_rebuild"><code class="name flex">
@@ -5040,7 +5108,7 @@ to crash the engine process</p>
 </nav>
 </main>
 <footer id="footer">
-<p>Generated by <a href="https://pdoc3.github.io/pdoc"><cite>pdoc</cite> 0.8.4</a>.</p>
+<p>Generated by <a href="https://pdoc3.github.io/pdoc"><cite>pdoc</cite> 0.9.1</a>.</p>
 </footer>
 </body>
 </html>
