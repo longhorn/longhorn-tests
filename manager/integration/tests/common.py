@@ -67,6 +67,8 @@ VOLUME_ROBUSTNESS_UNKNOWN = "unknown"
 
 VOLUME_FIELD_RESTOREREQUIRED = "restoreRequired"
 
+VOLUME_REPLICA_WO_LIMIT = 1
+
 DEFAULT_STORAGECLASS_NAME = 'longhorn-test'
 
 DEFAULT_LONGHORN_PARAMS = {
@@ -1442,26 +1444,34 @@ def wait_for_volume_replica_count(client, name, count):
     return volume
 
 
-def wait_for_volume_replicas_mode(client, volname, mode, replicas_name=None):
+def wait_for_volume_replicas_mode(client, volname, mode,
+                                  replica_names=None, replica_count=None):
     verified = False
-    for i in range(RETRY_COUNTS):
-        volume = client.by_id_volume(volname)
-        count = 0
+    for _ in range(RETRY_COUNTS):
         replicas = []
-        if replicas_name is None:
+        volume = client.by_id_volume(volname)
+        if replica_names is None:
             replicas = volume.replicas
         else:
-            for r_name in replicas_name:
+            for r_name in replica_names:
                 found = False
                 for r in volume.replicas:
                     if r.name == r_name:
                         replicas.append(r)
                         found = True
                 assert found
+
+        count = 0
+        wo_count = 0
         for r in replicas:
             if r.mode == mode:
                 count += 1
-        if count == len(replicas):
+            if r.mode == 'WO':
+                wo_count += 1
+        assert wo_count <= VOLUME_REPLICA_WO_LIMIT
+
+        r_count = len(replicas) if replica_count is None else replica_count
+        if count == r_count:
             verified = True
             break
         time.sleep(RETRY_INTERVAL)
