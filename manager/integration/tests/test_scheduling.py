@@ -1,8 +1,11 @@
+import common
 import pytest
 import time
 
 from common import RETRY_COUNTS, RETRY_INTERVAL
-from common import client, core_api, volume_name, pod  # NOQA
+from common import client, core_api  # NOQA
+from common import storage_class, statefulset, pod  # NOQA
+from common import sts_name, volume_name  # NOQA
 from common import check_volume_data, cleanup_volume, \
     create_and_check_volume, get_longhorn_api_client, get_self_host_id, \
     wait_for_volume_detached, wait_for_volume_degraded, \
@@ -372,27 +375,51 @@ def test_hard_anti_affinity_offline_rebuild(client, volume_name):  # NOQA
     cleanup_volume(client, volume)
 
 
-@pytest.mark.skip(reason="TODO")
-def test_replica_rebuild_per_volume_limit():
+def test_replica_rebuild_per_volume_limit(
+    client, core_api, storage_class, sts_name, statefulset):  # NOQA
     """
     Test the volume always only have one replica scheduled for rebuild
 
     1. Set soft anti-affinity to `true`.
-    2. Create a volume with one replicas.
+    2. Create a volume with 1 replica.
     3. Attach the volume and write a few hundreds MB data to it.
     4. Scale the volume replica to 5.
     5. Constantly checking the volume replica list to make sure there should be
-    at most one replica which is not in the RW state. It should be:
-        1. Either in the WO state
-        2. Doesn't have any state because it's preparing for the rebuild.
+       only 1 replica in WO state.
     6. Wait for the volume to complete rebuilding. Then remove 4 of the 5
-    replicas.
+       replicas.
     7. Monitoring the volume replica list again.
-    8. Once the rebuild was completed again, delete the volume and reset the
-    setting.
-
+    8. Once the rebuild was completed again, verify the data checksum.
     """
-    pass
+    replica_soft_anti_affinity_setting = \
+        client.by_id_setting(SETTING_REPLICA_NODE_SOFT_ANTI_AFFINITY)
+    client.update(replica_soft_anti_affinity_setting, value="true")
+
+    data_path = '/data/test'
+    storage_class['parameters']['numberOfReplicas'] = "1"
+    vol_name, pod_name, md5sum = \
+        common.prepare_statefulset_with_data_in_mb(
+            client, core_api, statefulset, sts_name, storage_class,
+            data_path=data_path, data_size_in_mb=DATA_SIZE_IN_MB_2)
+
+    # Scale the volume replica to 5
+    r_count = 5
+    vol = client.by_id_volume(vol_name)
+    vol.updateReplicaCount(replicaCount=r_count)
+
+    vol = common.wait_for_volume_replicas_mode(client, vol_name, 'RW',
+                                               replica_count=r_count)
+
+    # Delete 4 volume replicas
+    del vol.replicas[0]
+    for r in vol.replicas:
+        vol.replicaRemove(name=r.name)
+
+    r_count = 1
+    common.wait_for_volume_replicas_mode(client, vol_name, 'RW',
+                                         replica_count=r_count)
+
+    assert md5sum == common.get_pod_data_md5sum(core_api, pod_name, data_path)
 
 
 def test_data_locality_basic(client, core_api, volume_name, pod, settings_reset):  # NOQA
