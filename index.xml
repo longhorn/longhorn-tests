@@ -132,7 +132,7 @@ Volume creation using UI with degraded availability and added node Start with on
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/ha/disk-migration-in-aws-asg/</guid>
-      <description>Some Longhorn worker nodes in AWS Auto Scaling group is in replacement  Set ReplicaReplenishmentWaitInterval. Make sure it&amp;rsquo;s longer than the time needs for node replacement. Launch a Kubernetes cluster with the nodes in AWS Auto Scaling group. Then Deploy Longhorn. Deploy some workloads using Longhorn volumes. Wait for/Trigger the ASG instance replacement. Verify new replicas won&amp;rsquo;t be created before reaching ReplicaReplenishmentWaitInterval. Verify the failed replicas are reused after the node recovery.</description>
+      <description>Some Longhorn worker nodes in AWS Auto Scaling group is in replacement  Launch a Kubernetes cluster with the nodes in AWS Auto Scaling group. Make sure there is an additional EBS attached to instance with setting Delete on Termination disabled. Deploy Longhorn v1.1.0 on the cluster and Set ReplicaReplenishmentWaitInterval. Make sure it&amp;rsquo;s longer than the time needs for node replacement. Deploy some workloads using Longhorn volumes. Trigger the ASG instance refresh in AWS.</description>
     </item>
     
     <item>

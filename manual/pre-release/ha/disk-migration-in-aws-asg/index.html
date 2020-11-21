@@ -295,14 +295,47 @@
     <article id="content">
        <h2 id="some-longhorn-worker-nodes-in-aws-auto-scaling-group-is-in-replacement">Some Longhorn worker nodes in AWS Auto Scaling group is in replacement</h2>
 <ol>
-<li>Set <code>ReplicaReplenishmentWaitInterval</code>. Make sure it&rsquo;s longer than the time needs for node replacement.</li>
-<li>Launch a Kubernetes cluster with the nodes in AWS Auto Scaling group. Then Deploy Longhorn.</li>
+<li>Launch a Kubernetes cluster with the nodes in AWS Auto Scaling group. Make sure there is an additional EBS attached to instance with setting <code>Delete on Termination</code> disabled.</li>
+<li>Deploy Longhorn v1.1.0 on the cluster and Set <code>ReplicaReplenishmentWaitInterval</code>. Make sure it&rsquo;s longer than the time needs for node replacement.</li>
 <li>Deploy some workloads using Longhorn volumes.</li>
-<li>Wait for/Trigger the ASG instance replacement.</li>
+<li>Trigger the ASG instance refresh in AWS.</li>
+<li>Manually attach EBS to new instance and mount the disk.</li>
+<li>Add the disk in longhorn to make the existing replica available to be identified by Longhorn.</li>
 <li>Verify new replicas won&rsquo;t be created before reaching <code>ReplicaReplenishmentWaitInterval</code>.</li>
 <li>Verify the failed replicas are reused after the node recovery.</li>
 <li>Verify if workloads still work fine with the volumes after the recovery.</li>
 </ol>
+<h2 id="ebs-migration-in-aws-in-a-asg-set-up-using-script">EBS migration in AWS in a ASG set up using script</h2>
+<ol>
+<li>Launch a Kubernetes cluster with 1 node in AWS Auto Scaling group. Make sure there is an additional EBS attached to instance with setting <code>Delete on Termination</code> disabled.</li>
+<li>Deploy Longhorn v1.1.0 on the cluster and Set <code>ReplicaReplenishmentWaitInterval</code>. Make sure it&rsquo;s longer than the time needs for node replacement.</li>
+<li>Deploy some workloads using Longhorn volumes.</li>
+<li>Modify launch template of ASG and provide mount command for EBS.
+<pre><code>sudo mkdir -p /data
+sudo mount /dev/xvdh /data
+</code></pre></li>
+<li>Trigger ASG instance refresh with below script using AWS Cli, which will attach the existing EBS volume to the new instance.
+<pre><code>AWS_REGION=&lt;Your aws region&gt;
+INSTANCE_NAME=&lt;Instance name&gt;
+VOLUME_STATUS=''
+INSTANCE_ID=$(aws --region=$AWS_REGION ec2 describe-instances --filters 'Name=tag:Name,Values=$INSTANCE_NAME' | jq -r '.Reservations[].Instances[].InstanceId')
+VOLUME_ID= $(aws --region=$AWS_REGION ec2 describe-volumes --filters 'Name='attachment.instance-id',Values='$INSTANCE_ID'' | jq -r '.Volumes[1].VolumeId')
+
+aws autoscaling start-instance-refresh --auto-scaling-group-name my-asg --preferences '{&quot;InstanceWarmup&quot;: 300, &quot;MinHealthyPercentage&quot;: 90}'
+
+until [ &quot;x$VOLUME_STATUS&quot; == &quot;xattached&quot; ]; do
+    VOL_STATUS=$(aws ec2 describe-volumes --volume-ids $VOL_ID --query 'Volumes[0].State')
+    sleep 5
+done
+INSTANCE_ID=$(aws --region=$AWS_REGION ec2 describe-instances --filters 'Name=tag:Name,Values=$INSTANCE_NAME' | jq -r '.Reservations[].Instances[].InstanceId')
+aws ec2 attach-volume --volume-id $VOLUME_ID --instance-id $INSTANCE_ID --device /dev/sdh'
+</code></pre></li>
+<li>Add the disk in longhorn to make the existing replica available to be identified by Longhorn.</li>
+<li>Verify new replicas won&rsquo;t be created before reaching <code>ReplicaReplenishmentWaitInterval</code>.</li>
+<li>Verify the failed replicas are reused after the node recovery.</li>
+<li>Verify if workloads still work fine with the volumes after the recovery.</li>
+</ol>
+<p>Note: 1 node cluster is taken only for testing purpose, in real scenario more complex script would be needed for cluster having multiple nodes.</p>
 
     </article>
   </div>
