@@ -293,7 +293,8 @@
   <h1 id="title">Test uninstallation</h1>
   <div>
     <article id="content">
-       <ol>
+       <h2 id="stability-of-uninstallation">Stability of uninstallation</h2>
+<ol>
 <li>
 <p>Launch Longhorn system.</p>
 </li>
@@ -361,6 +362,51 @@ def ds_manifest(name):
 <li>
 <p>Check if the uninstaller pod gets stuck there</p>
 </li>
+</ol>
+<h2 id="performance-improvement-of-uninstallation">Performance improvement of uninstallation</h2>
+<ol>
+<li>Install Longhorn v1.1.0 on a 4 nodes cluster (1 etcd/control plane and 3 workers).</li>
+<li>Uninstall longhorn v1.1.0.</li>
+<li>Uninstallation should be completed somewhere between ~(1-2) min which was observed between ~(2-3) min in similar set up with Longhorn v1.0.2.</li>
+<li>There should not be repeated log messages like below:
+<pre><code>time=&quot;2020-07-31T20:25:54Z&quot; level=info msg=&quot;2 instance managers remaining&quot;
+time=&quot;2020-07-31T20:25:55Z&quot; level=info msg=&quot;2 instance managers remaining&quot;
+time=&quot;2020-07-31T20:25:56Z&quot; level=info msg=&quot;2 instance managers remaining&quot;
+time=&quot;2020-07-31T20:25:57Z&quot; level=info msg=&quot;2 instance managers remaining&quot;
+time=&quot;2020-07-31T20:25:58Z&quot; level=info msg=&quot;2 instance managers remaining&quot;
+time=&quot;2020-07-31T20:25:59Z&quot; level=info msg=&quot;2 instance managers remaining&quot;
+time=&quot;2020-07-31T20:25:59Z&quot; level=info msg=&quot;2 instance managers remaining&quot;
+time=&quot;2020-07-31T20:26:00Z&quot; level=info msg=&quot;2 instance managers remaining&quot;
+time=&quot;2020-07-31T20:26:01Z&quot; level=info msg=&quot;2 instance managers remaining&quot;
+time=&quot;2020-07-31T20:26:02Z&quot; level=info msg=&quot;2 instance managers remaining&quot;
+time=&quot;2020-07-31T20:26:02Z&quot; level=info msg=&quot;2 instance managers remaining&quot;
+time=&quot;2020-07-31T20:26:03Z&quot; level=info msg=&quot;2 instance managers remaining&quot;
+time=&quot;2020-07-31T20:26:04Z&quot; level=info msg=&quot;2 instance managers remaining&quot;
+</code></pre></li>
+<li>Also, Below logs should not be present anymore:
+<pre><code>time=&quot;2020-08-06T18:35:05Z&quot; level=debug msg=&quot;Instance Manager Controller longhorn-node-1 picked up instance-manager-e-1e97de2b&quot;
+time=&quot;2020-08-06T18:35:05Z&quot; level=debug msg=&quot;Instance Manager Controller longhorn-node-1 picked up instance-manager-e-b7b0e26c&quot;
+time=&quot;2020-08-06T18:35:07Z&quot; level=debug msg=&quot;Instance Manager Controller longhorn-node-1 picked up instance-manager-e-c597a586&quot;
+time=&quot;2020-08-06T18:35:07Z&quot; level=debug msg=&quot;Instance Manager Controller longhorn-node-1 picked up instance-manager-e-1e97de2b&quot;
+time=&quot;2020-08-06T18:35:08Z&quot; level=debug msg=&quot;Instance Manager Controller longhorn-node-1 picked up instance-manager-e-b7b0e26c&quot;
+time=&quot;2020-08-06T18:35:09Z&quot; level=debug msg=&quot;Instance Manager Controller longhorn-node-1 picked up instance-manager-e-c597a586&quot;
+time=&quot;2020-08-06T18:35:10Z&quot; level=debug msg=&quot;Instance Manager Controller longhorn-node-1 picked up instance-manager-e-1e97de2b&quot;
+time=&quot;2020-08-06T18:35:10Z&quot; level=warning msg=&quot;Can't find instance manager for pod instance-manager-r-fea32bbc, may be deleted&quot;
+time=&quot;2020-08-06T18:35:10Z&quot; level=warning msg=&quot;Can't find instance manager for pod instance-manager-r-fea32bbc, may be deleted&quot;
+time=&quot;2020-08-06T18:35:10Z&quot; level=error msg=&quot;failed to mark existing instances to error when stopping instance manager monitor: failed to update instance map for instance manager instance-manager-e-1e97de2b: Operation cannot be fulfilled on instancemanagers.longhorn.io \&quot;instance-manager-e-1e97de2b\&quot;: the object has been modified; please apply your changes to the latest version and try again&quot;
+time=&quot;2020-08-06T18:35:10Z&quot; level=debug msg=&quot;Instance Manager Controller longhorn-node-1 picked up instance-manager-e-b7b0e26c&quot;
+time=&quot;2020-08-06T18:35:11Z&quot; level=debug msg=&quot;Instance Manager Controller longhorn-node-1 picked up instance-manager-e-1e97de2b&quot;
+time=&quot;2020-08-06T18:35:12Z&quot; level=debug msg=&quot;Instance Manager Controller longhorn-node-1 picked up instance-manager-e-c597a586&quot;
+time=&quot;2020-08-06T18:35:13Z&quot; level=debug msg=&quot;Instance Manager Controller longhorn-node-1 picked up instance-manager-e-b7b0e26c&quot;
+time=&quot;2020-08-06T18:35:14Z&quot; level=debug msg=&quot;Instance Manager Controller longhorn-node-1 picked up instance-manager-e-1e97de2b&quot;
+time=&quot;2020-08-06T18:35:15Z&quot; level=debug msg=&quot;Instance Manager Controller longhorn-node-1 picked up instance-manager-e-c597a586&quot;
+time=&quot;2020-08-06T18:35:15Z&quot; level=debug msg=&quot;Instance Manager Controller longhorn-node-1 picked up instance-manager-e-b7b0e26c&quot;
+time=&quot;2020-08-06T18:35:16Z&quot; level=debug msg=&quot;Instance Manager Controller longhorn-node-1 picked up instance-manager-e-1e97de2b&quot;
+time=&quot;2020-08-06T18:35:16Z&quot; level=debug msg=&quot;Instance Manager Controller longhorn-node-1 picked up instance-manager-e-c597a586&quot;
+time=&quot;2020-08-06T18:35:17Z&quot; level=error msg=&quot;failed to mark existing instances to error when stopping instance manager monitor: failed to update instance map for instance manager instance-manager-e-c597a586: Operation cannot be fulfilled on instancemanagers.longhorn.io \&quot;instance-manager-e-c597a586\&quot;: the object has been modified; please apply your changes to the latest version and try again&quot;
+time=&quot;2020-08-06T18:35:18Z&quot; level=debug msg=&quot;Instance Manager Controller longhorn-node-1 picked up instance-manager-e-b7b0e26c&quot;
+time=&quot;2020-08-06T18:35:19Z&quot; level=debug msg=&quot;Instance Manager Controller longhorn-node-1 picked up instance-manager-e-1e97de2b&quot;
+</code></pre></li>
 </ol>
 
     </article>
