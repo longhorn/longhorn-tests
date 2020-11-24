@@ -186,6 +186,34 @@ def test_setting_toleration():
     cleanup_volume(client, volume)
 
 
+@pytest.mark.skip(reason=&#34;TODO&#34;) # NOQA
+def test_setting_toleration_extra():
+    &#34;&#34;&#34;
+    Steps:
+    1. Set Kubernetes Taint Toleration to:
+       `example.com/foobar:NoExecute;example.com/foobar:NoSchedule`
+    2. Verify that all components have the 2 tolerations
+       `example.com/foobar:NoExecute; example.com/foobar:NoSchedule`
+    3. Set Kubernetes Taint Toleration to:
+       `node-role.kubernetes.io/controlplane=true:NoSchedule`
+    4. Verify that all components have the the toleration
+       `node-role.kubernetes.io/controlplane=true:NoSchedule`
+       and don&#39;t have the 2 tolerations
+       `example.com/foobar:NoExecute;example.com/foobar:NoSchedule`
+    5. Set Kubernetes Taint Toleration to special value:
+       `:`
+    6. Verify that all components have the toleration with
+       `operator: Exists` and other field of the toleration are empty.
+       Verify that all components don&#39;t have the toleration
+       `node-role.kubernetes.io/controlplane=true:NoSchedule`
+    7. Clear Kubernetes Taint Toleration
+
+    Note: `components` in this context is referring to all deployments,
+       daemonsets, IM pods, recurring jobs in Longhorn system
+    &#34;&#34;&#34;
+    pass
+
+
 def wait_for_toleration_update(core_api, apps_api, count, set_tolerations):  # NOQA
     updated = False
 
@@ -914,6 +942,62 @@ Class.</li>
     cleanup_volume(client, volume)</code></pre>
 </details>
 </dd>
+<dt id="tests.test_settings.test_setting_toleration_extra"><code class="name flex">
+<span>def <span class="ident">test_setting_toleration_extra</span></span>(<span>)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Steps:
+1. Set Kubernetes Taint Toleration to:
+<code>example.com/foobar:NoExecute;example.com/foobar:NoSchedule</code>
+2. Verify that all components have the 2 tolerations
+<code>example.com/foobar:NoExecute; example.com/foobar:NoSchedule</code>
+3. Set Kubernetes Taint Toleration to:
+<code>node-role.kubernetes.io/controlplane=true:NoSchedule</code>
+4. Verify that all components have the the toleration
+<code>node-role.kubernetes.io/controlplane=true:NoSchedule</code>
+and don't have the 2 tolerations
+<code>example.com/foobar:NoExecute;example.com/foobar:NoSchedule</code>
+5. Set Kubernetes Taint Toleration to special value:
+<code>:</code>
+6. Verify that all components have the toleration with
+<code>operator: Exists</code> and other field of the toleration are empty.
+Verify that all components don't have the toleration
+<code>node-role.kubernetes.io/controlplane=true:NoSchedule</code>
+7. Clear Kubernetes Taint Toleration</p>
+<p>Note: <code>components</code> in this context is referring to all deployments,
+daemonsets, IM pods, recurring jobs in Longhorn system</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@pytest.mark.skip(reason=&#34;TODO&#34;) # NOQA
+def test_setting_toleration_extra():
+    &#34;&#34;&#34;
+    Steps:
+    1. Set Kubernetes Taint Toleration to:
+       `example.com/foobar:NoExecute;example.com/foobar:NoSchedule`
+    2. Verify that all components have the 2 tolerations
+       `example.com/foobar:NoExecute; example.com/foobar:NoSchedule`
+    3. Set Kubernetes Taint Toleration to:
+       `node-role.kubernetes.io/controlplane=true:NoSchedule`
+    4. Verify that all components have the the toleration
+       `node-role.kubernetes.io/controlplane=true:NoSchedule`
+       and don&#39;t have the 2 tolerations
+       `example.com/foobar:NoExecute;example.com/foobar:NoSchedule`
+    5. Set Kubernetes Taint Toleration to special value:
+       `:`
+    6. Verify that all components have the toleration with
+       `operator: Exists` and other field of the toleration are empty.
+       Verify that all components don&#39;t have the toleration
+       `node-role.kubernetes.io/controlplane=true:NoSchedule`
+    7. Clear Kubernetes Taint Toleration
+
+    Note: `components` in this context is referring to all deployments,
+       daemonsets, IM pods, recurring jobs in Longhorn system
+    &#34;&#34;&#34;
+    pass</code></pre>
+</details>
+</dd>
 <dt id="tests.test_settings.wait_for_longhorn_node_ready"><code class="name flex">
 <span>def <span class="ident">wait_for_longhorn_node_ready</span></span>(<span>)</span>
 </code></dt>
@@ -1033,6 +1117,7 @@ Class.</li>
 <li><code><a title="tests.test_settings.test_setting_guaranteed_engine_cpu" href="#tests.test_settings.test_setting_guaranteed_engine_cpu">test_setting_guaranteed_engine_cpu</a></code></li>
 <li><code><a title="tests.test_settings.test_setting_priority_class" href="#tests.test_settings.test_setting_priority_class">test_setting_priority_class</a></code></li>
 <li><code><a title="tests.test_settings.test_setting_toleration" href="#tests.test_settings.test_setting_toleration">test_setting_toleration</a></code></li>
+<li><code><a title="tests.test_settings.test_setting_toleration_extra" href="#tests.test_settings.test_setting_toleration_extra">test_setting_toleration_extra</a></code></li>
 <li><code><a title="tests.test_settings.wait_for_longhorn_node_ready" href="#tests.test_settings.wait_for_longhorn_node_ready">wait_for_longhorn_node_ready</a></code></li>
 <li><code><a title="tests.test_settings.wait_for_priority_class_update" href="#tests.test_settings.wait_for_priority_class_update">wait_for_priority_class_update</a></code></li>
 <li><code><a title="tests.test_settings.wait_for_toleration_update" href="#tests.test_settings.wait_for_toleration_update">wait_for_toleration_update</a></code></li>
