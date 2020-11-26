@@ -120,6 +120,8 @@ SETTING_DEGRADED_AVAILABILITY = \
     "allow-volume-creation-with-degraded-availability"
 SETTING_REPLICA_REPLENISHMENT_WAIT_INTERVAL = \
     "replica-replenishment-wait-interval"
+SETTING_RECURRING_JOB_WHILE_VOLUME_DETACHED = \
+    "allow-recurring-job-while-volume-detached"
 
 DEFAULT_DISK_PATH = "/var/lib/longhorn/"
 DEFAULT_STORAGE_OVER_PROVISIONING_PERCENTAGE = "500"
@@ -1334,6 +1336,12 @@ def wait_for_volume_endpoint(client, name):
     return v
 
 
+def wait_for_volume_attached(client, name):
+    return wait_for_volume_status(client, name,
+                                  VOLUME_FIELD_STATE,
+                                  VOLUME_STATE_ATTACHED)
+
+
 def wait_for_volume_detached(client, name):
     return wait_for_volume_status(client, name,
                                   VOLUME_FIELD_STATE,
@@ -1479,6 +1487,16 @@ def wait_for_volume_replicas_mode(client, volname, mode,
 
     assert verified
     return volume
+
+
+def wait_for_volume_frontend_disabled(client, volume_name, state=True):
+    for _ in range(RETRY_COUNTS):
+        vol = client.by_id_volume(volume_name)
+        try:
+            assert vol.disableFrontend is state
+            break
+        except AssertionError:
+            time.sleep(RETRY_INTERVAL)
 
 
 def wait_for_snapshot_purge(client, volume_name, *snaps):
@@ -2214,13 +2232,15 @@ def get_volume_attached_nodes(v):
     return nodes
 
 
-def wait_for_backup_completion(client, volume_name, snapshot_name,
+def wait_for_backup_completion(client, volume_name, snapshot_name=None,
                                retry_count=RETRY_BACKUP_COUNTS):
     completed = False
-    for i in range(retry_count):
+    for _ in range(retry_count):
         v = client.by_id_volume(volume_name)
         for b in v.backupStatus:
-            if b.snapshot == snapshot_name and b.state == "complete":
+            if snapshot_name is not None and b.snapshot != snapshot_name:
+                continue
+            if b.state == "complete":
                 assert b.progress == 100
                 assert b.error == ""
                 completed = True
@@ -2232,13 +2252,44 @@ def wait_for_backup_completion(client, volume_name, snapshot_name,
     return v
 
 
-def wait_for_backup_to_start(client, volume_name, snapshot_name,
+def wait_pod_auto_attach_after_first_backup_completion(
+        client, core_api, volume_name, label_name):
+    completed = False
+    for _ in range(RETRY_BACKUP_COUNTS):
+        vol = client.by_id_volume(volume_name)
+        for b in vol.backupStatus:
+            if b.state == 'complete':
+                assert b.progress == 100
+                assert b.error == ''
+                completed = True
+                break
+        if completed:
+            wait_for_volume_detached(client, vol.name)
+            wait_for_volume_frontend_disabled(client, vol.name, False)
+            wait_for_volume_attached(client, vol.name)
+            break
+
+        label_selector = "name=" + label_name
+        pods = core_api.list_namespaced_pod(namespace="default",
+                                            label_selector=label_selector)
+        for pod in pods.items:
+            assert pod.status.phase != 'Running'
+        assert vol.disableFrontend is True
+
+        time.sleep(RETRY_BACKUP_INTERVAL)
+    assert completed is True
+    return vol
+
+
+def wait_for_backup_to_start(client, volume_name, snapshot_name=None,
                              retry_count=RETRY_BACKUP_COUNTS):
     in_progress = False
-    for i in range(retry_count):
+    for _ in range(retry_count):
         v = client.by_id_volume(volume_name)
         for b in v.backupStatus:
-            if b.snapshot == snapshot_name and b.state == "in_progress":
+            if snapshot_name is not None and b.snapshot != snapshot_name:
+                continue
+            if b.state == "in_progress":
                 assert b.progress > 0
                 assert b.error == ""
                 in_progress = True
@@ -2569,6 +2620,16 @@ def reset_settings(client):
         print("\nException when update "
               "Replica Replenishment Wait Interval",
               replenishment_wait_setting)
+        print(e)
+
+    recurring_job_setting = \
+        client.by_id_setting(SETTING_RECURRING_JOB_WHILE_VOLUME_DETACHED)
+    try:
+        client.update(recurring_job_setting, value="false")
+    except Exception as e:
+        print("\nException when update "
+              "Allow Recurring Job While Volume Detached setting",
+              recurring_job_setting)
         print(e)
 
     instance_managers = client.list_instance_manager()
@@ -3548,6 +3609,18 @@ def delete_and_wait_deployment(apps_api, deployment_name, namespace='default'):
     wait_delete_deployment(apps_api, deployment_name)
 
 
+def get_deployment_pod_names(core_api, deployment):
+    label_selector = \
+        "name=" + deployment["metadata"]["labels"]["name"]
+    deployment_pod_list = \
+        core_api.list_namespaced_pod(namespace="default",
+                                     label_selector=label_selector)
+    pod_names = []
+    for pod in deployment_pod_list.items:
+        pod_names.append(pod.metadata.name)
+    return pod_names
+
+
 @pytest.fixture
 def disable_auto_salvage(client):
     auto_salvage_setting = client.by_id_setting(SETTING_AUTO_SALVAGE)
@@ -3815,8 +3888,6 @@ def wait_for_pod_restart(core_api, pod_name, namespace="default"):
 
 
 def wait_for_pod_phase(core_api, pod_name, pod_phase, namespace="default"):
-    pod = core_api.read_namespaced_pod(name=pod_name,
-                                       namespace=namespace)
     is_phase = False
     for _ in range(RETRY_COUNTS):
         pod = core_api.read_namespaced_pod(name=pod_name,

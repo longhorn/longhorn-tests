@@ -5,17 +5,21 @@ import json
 from datetime import datetime
 
 import common
-from common import client, clients, core_api, random_labels, volume_name  # NOQA
+from common import client, clients, core_api, apps_api  # NOQA
+from common import random_labels, volume_name  # NOQA
 from common import storage_class, statefulset  # NOQA
+from common import make_deployment_with_pvc  # NOQA
 from common import cleanup_volume, wait_for_volume_delete
-from common import create_pv_for_volume, create_storage_class, \
+from common import create_storage_class, \
     create_and_wait_statefulset, delete_and_wait_pv
 from common import update_statefulset_manifests, get_self_host_id, \
     get_statefulset_pod_info, wait_volume_kubernetes_status
 from common import set_random_backupstore
 from common import write_volume_random_data
 from common import write_pod_volume_random_data
-from common import BASE_IMAGE_LABEL, KUBERNETES_STATUS_LABEL, SIZE
+from common import BASE_IMAGE_LABEL, KUBERNETES_STATUS_LABEL
+from common import SIZE, Mi, Gi
+from common import SETTING_RECURRING_JOB_WHILE_VOLUME_DETACHED
 
 
 RECURRING_JOB_LABEL = "RecurringJob"
@@ -348,7 +352,7 @@ def test_recurring_job_kubernetes_status(client, core_api, volume_name):  # NOQA
     volume = common.wait_for_volume_detached(client, volume_name)
 
     pv_name = "pv-" + volume_name
-    create_pv_for_volume(client, core_api, volume, pv_name)
+    common.create_pv_for_volume(client, core_api, volume, pv_name)
     ks = {
         'pvName': pv_name,
         'pvStatus': 'Available',
@@ -446,8 +450,8 @@ def test_recurring_jobs_maximum_retain(client, core_api, volume_name): # NOQA
     assert volume.recurringJobs[1]['retain'] == 20
 
 
-@pytest.mark.skip(reason="TODO")
-def test_recurring_jobs_for_detached_volume():  # NOQA
+def test_recurring_jobs_for_detached_volume(
+    client, core_api, apps_api, volume_name, make_deployment_with_pvc):  # NOQA
     """
     Test recurring jobs for detached volume
 
@@ -459,15 +463,14 @@ def test_recurring_jobs_for_detached_volume():  # NOQA
     longhorn/longhorn#1509
 
     Steps:
-    1.  Change the setting allow-recurring-job-while-volume-detached to true
-    2.  Create a volume-1, attach to node-1, write 50MB data to the volume-1.
-    3.  Detach the volume
-    4.  Set the recurring backup for the volume on every minute
-    5.  In a 4-mintute retry loop, verify that there is exactly 1 new backup
-    6.  Delete the recurring backup
-
-    7.  Create a PVC from the volume
-    8.  Create a deployment of 1 pod using the PVC
+    1.  Change the setting allow-recurring-job-while-volume-detached to true.
+    2.  Create and attach volume, write 50MB data to the volume.
+    3.  Detach the volume.
+    4.  Set the recurring backup for the volume on every minute.
+    5.  In a 2-minutes retry loop, verify that there is exactly 1 new backup.
+    6.  Delete the recurring backup.
+    7.  Create a PV and PVC from the volume.
+    8.  Create a deployment of 1 pod using the PVC.
     9.  Write 400MB data to the volume from the pod.
     10. Scale down the deployment. Wait until the volume is detached.
     11. Set the recurring backup for every 2 minutes.
@@ -476,13 +479,100 @@ def test_recurring_jobs_for_detached_volume():  # NOQA
     13. Verify that during the recurring backup, the volume's frontend is
         disabled, and pod cannot start.
     14. Wait for the recurring backup finishes.
-        Delete the recurring backup
-    15. In a 6-mintute retry loop, verify that the pod can eventually start.
-
-    16. Change the setting allow-recurring-job-while-volume-detached to false
-    17. cleanup
+        Delete the recurring backup.
+    15. In a 10-minutes retry loop, verify that the pod can eventually start.
+    16. Change the setting allow-recurring-job-while-volume-detached to false.
+    17. Cleanup.
     """
-    pass
+    set_random_backupstore(client)
+
+    recurring_job_setting = \
+        client.by_id_setting(SETTING_RECURRING_JOB_WHILE_VOLUME_DETACHED)
+    client.update(recurring_job_setting, value="true")
+
+    vol = common.create_and_check_volume(client, volume_name, size=str(1 * Gi))
+
+    lht_hostId = get_self_host_id()
+    vol.attach(hostId=lht_hostId)
+    vol = common.wait_for_volume_healthy(client, vol.name)
+
+    data = {
+        'pos': 0,
+        'content': common.generate_random_data(50 * Mi),
+    }
+    common.write_volume_data(vol, data)
+
+    # Give sometimes for data to flush to disk
+    time.sleep(15)
+
+    vol.detach()
+    vol = common.wait_for_volume_detached(client, vol.name)
+
+    jobs = [
+        {
+            "name": RECURRING_JOB_NAME,
+            "cron": "*/1 * * * *",
+            "task": "backup",
+            "retain": 1
+        }
+    ]
+    vol.recurringUpdate(jobs=jobs)
+    common.wait_for_backup_completion(client, vol.name)
+    for _ in range(4):
+        bv = client.by_id_backupVolume(vol.name)
+        backups = bv.backupList().data
+        assert len(backups) == 1
+        time.sleep(30)
+
+    vol.recurringUpdate(jobs=[])
+
+    pv_name = volume_name + "-pv"
+    common.create_pv_for_volume(client, core_api, vol, pv_name)
+
+    pvc_name = volume_name + "-pvc"
+    common.create_pvc_for_volume(client, core_api, vol, pvc_name)
+
+    deployment_name = volume_name + "-dep"
+    deployment = make_deployment_with_pvc(deployment_name, pvc_name)
+    common.create_and_wait_deployment(apps_api, deployment)
+
+    size_mb = 400
+    pod_names = common.get_deployment_pod_names(core_api, deployment)
+    write_pod_volume_random_data(core_api, pod_names[0], "/data/test",
+                                 size_mb)
+
+    deployment['spec']['replicas'] = 0
+    apps_api.patch_namespaced_deployment(body=deployment,
+                                         namespace='default',
+                                         name=deployment["metadata"]["name"])
+
+    vol = common.wait_for_volume_detached(client, vol.name)
+
+    jobs = [
+        {
+            "name": RECURRING_JOB_NAME,
+            "cron": "*/2 * * * *",
+            "task": "backup",
+            "retain": 1
+        }
+    ]
+    vol.recurringUpdate(jobs=jobs)
+
+    common.wait_for_backup_to_start(client, vol.name)
+
+    deployment['spec']['replicas'] = 1
+    apps_api.patch_namespaced_deployment(body=deployment,
+                                         namespace='default',
+                                         name=deployment["metadata"]["name"])
+
+    deployment_label_name = deployment["metadata"]["labels"]["name"]
+    common.wait_pod_auto_attach_after_first_backup_completion(
+        client, core_api, vol.name, deployment_label_name)
+
+    vol.recurringUpdate(jobs=[])
+
+    pod_names = common.get_deployment_pod_names(core_api, deployment)
+    common.wait_for_pod_phase(core_api, pod_names[0], pod_phase="Running")
 
 
 @pytest.mark.skip(reason="TODO")
