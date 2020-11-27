@@ -66,8 +66,8 @@ from common import delete_backup_volume
 from common import BACKUP_BLOCK_SIZE
 from common import assert_backup_state
 from common import wait_for_backup_delete
-from common import VOLUME_FIELD_ROBUSTNESS, VOLUME_ROBUSTNESS_HEALTHY
-from common import VOLUME_ROBUSTNESS_FAULTED
+from common import VOLUME_FIELD_ROBUSTNESS, VOLUME_FIELD_READY
+from common import VOLUME_ROBUSTNESS_HEALTHY, VOLUME_ROBUSTNESS_FAULTED
 from common import DATA_SIZE_IN_MB_2, DATA_SIZE_IN_MB_3
 from common import wait_for_backup_to_start
 
@@ -3216,9 +3216,8 @@ def test_allow_volume_creation_with_degraded_availability_error(
                                       expect_success=1, expect_fail=2,
                                       is_vol_healthy=False,
                                       is_replica_running=False)
-
-    volume = client.by_id_volume(volume_name)
-    assert volume.ready
+    volume = common.wait_for_volume_status(client, volume_name,
+                                           VOLUME_FIELD_READY, True)
     assert volume.conditions[VOLUME_CONDITION_SCHEDULED]['status'] == "True"
 
     # attach the volume and write some data
