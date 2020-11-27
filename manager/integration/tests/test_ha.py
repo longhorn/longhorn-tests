@@ -2166,3 +2166,28 @@ def test_reuse_failed_replica_with_scheduling_check():
     12. Verify the volume r/w still works fine.
     """
     pass
+
+
+@pytest.mark.skip(reason="TODO") # NOQA
+def test_replica_failure_during_attaching():
+    """
+    Steps:
+    1. Set a short interval for setting replica-replenishment-wait-interval.
+    2. Disable the setting soft-node-anti-affinity.
+    3. Create volume1 with 1 replica. and attach it to the host node.
+    4. Mount volume1 to a new mount point. then use it as an extra node disk.
+    5. Disable the scheduling for the default disk of the host node,
+       and make sure the extra disk is the only available disk on the node.
+    6. Create and attach volume2, then write data to volume2.
+    7. Detach volume2.
+    8. Directly unmount volume1 and remove the related mount point directory.
+       --> Verify the extra disk becomes unavailable.
+    9. Attach volume2.
+       --> Verify volume will be attached with state Degraded.
+    10. Wait for the replenishment interval.
+        --> Verify the failed replica using the extra disk will be removed.
+    11. Enable the default disk for the host node.
+    12. Wait for volume2 becoming Healthy.
+    13. Verify data content and r/w capability for volume2.
+    """
+    pass
