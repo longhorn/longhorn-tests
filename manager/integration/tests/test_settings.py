@@ -102,11 +102,20 @@ def test_setting_toleration():
     assert 'invalid effect' in str(e.value)
 
     setting_value_str = "key1=value1:NoSchedule; key2:NoExecute"
-    setting_value_dict = \
-        {"key1": {"key": "key1", "value": "value1",
-                  "operator": "Equal", "effect": "NoSchedule"},
-         "key2": {"key": "key2", "value": None,
-                  "operator": "Exists", "effect": "NoExecute"}, }
+    setting_value_dicts = [
+        {
+            "key": "key1",
+            "value": "value1",
+            "operator": "Equal",
+            "effect": "NoSchedule"
+        },
+        {
+            "key": "key2",
+            "value": None,
+            "operator": "Exists",
+            "effect": "NoExecute"
+        },
+    ]
 
     volume_name = "test-toleration-vol"  # NOQA
     volume = create_and_check_volume(client, volume_name)
@@ -125,7 +134,7 @@ def test_setting_toleration():
 
     setting = client.update(setting, value=setting_value_str)
     assert setting.value == setting_value_str
-    wait_for_toleration_update(core_api, apps_api, count, setting_value_dict)
+    wait_for_toleration_update(core_api, apps_api, count, setting_value_dicts)
 
     client, node = wait_for_longhorn_node_ready()
 
@@ -140,11 +149,11 @@ def test_setting_toleration():
 
     # cleanup
     setting_value_str = ""
-    setting_value_dict = {}
+    setting_value_dicts = []
     setting = client.by_id_setting(SETTING_TAINT_TOLERATION)
     setting = client.update(setting, value=setting_value_str)
     assert setting.value == setting_value_str
-    wait_for_toleration_update(core_api, apps_api, count, setting_value_dict)
+    wait_for_toleration_update(core_api, apps_api, count, setting_value_dicts)
 
     client, node = wait_for_longhorn_node_ready()
 
@@ -158,20 +167,19 @@ def test_setting_toleration():
     cleanup_volume(client, volume)
 
 
-@pytest.mark.skip(reason="TODO") # NOQA
-def test_setting_toleration_extra():
+def test_setting_toleration_extra(core_api, apps_api):  # NOQA
     """
     Steps:
     1. Set Kubernetes Taint Toleration to:
-       `example.com/foobar:NoExecute;example.com/foobar:NoSchedule`
+       `ex.com/foobar:NoExecute;ex.com/foobar:NoSchedule`
     2. Verify that all components have the 2 tolerations
-       `example.com/foobar:NoExecute; example.com/foobar:NoSchedule`
+       `ex.com/foobar:NoExecute; ex.com/foobar:NoSchedule`
     3. Set Kubernetes Taint Toleration to:
        `node-role.kubernetes.io/controlplane=true:NoSchedule`
     4. Verify that all components have the the toleration
        `node-role.kubernetes.io/controlplane=true:NoSchedule`
        and don't have the 2 tolerations
-       `example.com/foobar:NoExecute;example.com/foobar:NoSchedule`
+       `ex.com/foobar:NoExecute;ex.com/foobar:NoSchedule`
     5. Set Kubernetes Taint Toleration to special value:
        `:`
     6. Verify that all components have the toleration with
@@ -183,45 +191,110 @@ def test_setting_toleration_extra():
     Note: `components` in this context is referring to all deployments,
        daemonsets, IM pods, recurring jobs in Longhorn system
     """
-    pass
+    settings = [
+        {
+            "value": "ex.com/foobar:NoExecute;ex.com/foobar:NoSchedule",
+            "expect": [
+                {
+                    "key": "ex.com/foobar",
+                    "value": None,
+                    "operator": "Exists",
+                    "effect": "NoExecute"
+                },
+                {
+                    "key": "ex.com/foobar",
+                    "value": None,
+                    "operator": "Exists",
+                    "effect": "NoSchedule"
+                },
+            ],
+        },
+        {
+            "value": "node-role.kubernetes.io/controlplane=true:NoSchedule",
+            "expect": [
+                {
+                    "key": "node-role.kubernetes.io/controlplane",
+                    "value": "true",
+                    "operator": "Equal",
+                    "effect": "NoSchedule"
+                },
+            ],
+        },
+        {
+            "value": ":",
+            "expect": [
+                {
+                    "key": None,
+                    "value": None,
+                    "operator": "Exists",
+                    "effect": None,
+                },
+            ]
+        },
+        {
+            "value": "",
+            "expect": [],
+        },
+    ]
+
+    chk_removed_tolerations = []
+    for setting in settings:
+        client = get_longhorn_api_client()  # NOQA
+        taint_toleration = client.by_id_setting(SETTING_TAINT_TOLERATION)
+        updated = client.update(taint_toleration,
+                                value=setting["value"])
+        assert updated.value == setting["value"]
+
+        node_count = len(client.list_node())
+        wait_for_toleration_update(core_api, apps_api, node_count,
+                                   setting["expect"], chk_removed_tolerations)
+        chk_removed_tolerations = setting["expect"]
 
 
-def wait_for_toleration_update(core_api, apps_api, count, set_tolerations):  # NOQA
+def wait_for_toleration_update(core_api, apps_api, count,  # NOQA
+                               expected_tolerations,
+                               chk_removed_tolerations=[]):
     updated = False
-
-    for i in range(RETRY_COUNTS):
+    for _ in range(RETRY_COUNTS):
         time.sleep(RETRY_INTERVAL_LONG)
-        updated = True
 
+        updated = True
         if not check_workload_update(core_api, apps_api, count):
             updated = False
             continue
 
         pod_list = core_api.list_namespaced_pod(LONGHORN_NAMESPACE).items
         for p in pod_list:
-            if p.status.phase != "Running" or \
-                    not check_tolerations_set(p.spec.tolerations,
-                                              set_tolerations):
+            if p.status.phase != "Running" \
+                or not check_tolerations_set(p.spec.tolerations,
+                                             expected_tolerations,
+                                             chk_removed_tolerations):
                 updated = False
                 break
-        if not updated:
-            continue
-
         if updated:
             break
-
     assert updated
 
 
-def check_tolerations_set(current_toleration_list, set_tolerations):
-    current_tolerations = dict()
+def check_tolerations_set(current_toleration_list, expected_tolerations,
+                          chk_removed_tolerations=[]):
+    found = 0
+    unexpected = 0
     for t in current_toleration_list:
-        if KUBERNETES_DEFAULT_TOLERATION not in t.key:
-            current_tolerations[t.key] = \
-                {"key": t.key, "value": t.value,
-                 "operator": t.operator, "effect": t.effect}
+        current_toleration = {
+            "key": t.key,
+            "value": t.value,
+            "operator": t.operator,
+            "effect": t.effect
+        }
+        for expected in expected_tolerations:
+            if current_toleration == expected:
+                found += 1
 
-    return current_tolerations == set_tolerations
+        for removed in chk_removed_tolerations:
+            if current_toleration == removed:
+                unexpected += 1
+    return len(expected_tolerations) == found and unexpected == 0
 
 
 def test_setting_guaranteed_engine_cpu(client, core_api):  # NOQA
