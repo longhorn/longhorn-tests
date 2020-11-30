@@ -2193,6 +2193,31 @@ def test_reuse_failed_replica_with_scheduling_check():
     11. Verify the failed replica on node1 is reused.
     12. Verify the volume r/w still works fine.
     &#34;&#34;&#34;
+    pass
+
+
+@pytest.mark.skip(reason=&#34;TODO&#34;) # NOQA
+def test_replica_failure_during_attaching():
+    &#34;&#34;&#34;
+    Steps:
+    1. Set a short interval for setting replica-replenishment-wait-interval.
+    2. Disable the setting soft-node-anti-affinity.
+    3. Create volume1 with 1 replica. and attach it to the host node.
+    4. Mount volume1 to a new mount point. then use it as an extra node disk.
+    5. Disable the scheduling for the default disk of the host node,
+       and make sure the extra disk is the only available disk on the node.
+    6. Create and attach volume2, then write data to volume2.
+    7. Detach volume2.
+    8. Directly unmount volume1 and remove the related mount point directory.
+       --&gt; Verify the extra disk becomes unavailable.
+    9. Attach volume2.
+       --&gt; Verify volume will be attached with state Degraded.
+    10. Wait for the replenishment interval.
+        --&gt; Verify the failed replica using the extra disk will be removed.
+    11. Enable the default disk for the host node.
+    12. Wait for volume2 becoming Healthy.
+    13. Verify data content and r/w capability for volume2.
+    &#34;&#34;&#34;
     pass</code></pre>
 </details>
 </section>
@@ -4334,6 +4359,57 @@ after the attachment.
     backupstore_cleanup(client)</code></pre>
 </details>
 </dd>
+<dt id="tests.test_ha.test_replica_failure_during_attaching"><code class="name flex">
+<span>def <span class="ident">test_replica_failure_during_attaching</span></span>(<span>)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Steps:
+1. Set a short interval for setting replica-replenishment-wait-interval.
+2. Disable the setting soft-node-anti-affinity.
+3. Create volume1 with 1 replica. and attach it to the host node.
+4. Mount volume1 to a new mount point. then use it as an extra node disk.
+5. Disable the scheduling for the default disk of the host node,
+and make sure the extra disk is the only available disk on the node.
+6. Create and attach volume2, then write data to volume2.
+7. Detach volume2.
+8. Directly unmount volume1 and remove the related mount point directory.
+&ndash;&gt; Verify the extra disk becomes unavailable.
+9. Attach volume2.
+&ndash;&gt; Verify volume will be attached with state Degraded.
+10. Wait for the replenishment interval.
+&ndash;&gt; Verify the failed replica using the extra disk will be removed.
+11. Enable the default disk for the host node.
+12. Wait for volume2 becoming Healthy.
+13. Verify data content and r/w capability for volume2.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@pytest.mark.skip(reason=&#34;TODO&#34;) # NOQA
+def test_replica_failure_during_attaching():
+    &#34;&#34;&#34;
+    Steps:
+    1. Set a short interval for setting replica-replenishment-wait-interval.
+    2. Disable the setting soft-node-anti-affinity.
+    3. Create volume1 with 1 replica. and attach it to the host node.
+    4. Mount volume1 to a new mount point. then use it as an extra node disk.
+    5. Disable the scheduling for the default disk of the host node,
+       and make sure the extra disk is the only available disk on the node.
+    6. Create and attach volume2, then write data to volume2.
+    7. Detach volume2.
+    8. Directly unmount volume1 and remove the related mount point directory.
+       --&gt; Verify the extra disk becomes unavailable.
+    9. Attach volume2.
+       --&gt; Verify volume will be attached with state Degraded.
+    10. Wait for the replenishment interval.
+        --&gt; Verify the failed replica using the extra disk will be removed.
+    11. Enable the default disk for the host node.
+    12. Wait for volume2 becoming Healthy.
+    13. Verify data content and r/w capability for volume2.
+    &#34;&#34;&#34;
+    pass</code></pre>
+</details>
+</dd>
 <dt id="tests.test_ha.test_restore_volume_with_invalid_backupstore"><code class="name flex">
 <span>def <span class="ident">test_restore_volume_with_invalid_backupstore</span></span>(<span>client, volume_name, set_backupstore_s3)</span>
 </code></dt>
@@ -5094,6 +5170,7 @@ to crash the engine process</p>
 <li><code><a title="tests.test_ha.test_rebuild_replica_and_from_replica_on_the_same_node" href="#tests.test_ha.test_rebuild_replica_and_from_replica_on_the_same_node">test_rebuild_replica_and_from_replica_on_the_same_node</a></code></li>
 <li><code><a title="tests.test_ha.test_rebuild_with_inc_restoration" href="#tests.test_ha.test_rebuild_with_inc_restoration">test_rebuild_with_inc_restoration</a></code></li>
 <li><code><a title="tests.test_ha.test_rebuild_with_restoration" href="#tests.test_ha.test_rebuild_with_restoration">test_rebuild_with_restoration</a></code></li>
+<li><code><a title="tests.test_ha.test_replica_failure_during_attaching" href="#tests.test_ha.test_replica_failure_during_attaching">test_replica_failure_during_attaching</a></code></li>
 <li><code><a title="tests.test_ha.test_restore_volume_with_invalid_backupstore" href="#tests.test_ha.test_restore_volume_with_invalid_backupstore">test_restore_volume_with_invalid_backupstore</a></code></li>
 <li><code><a title="tests.test_ha.test_reuse_failed_replica" href="#tests.test_ha.test_reuse_failed_replica">test_reuse_failed_replica</a></code></li>
 <li><code><a title="tests.test_ha.test_reuse_failed_replica_with_scheduling_check" href="#tests.test_ha.test_reuse_failed_replica_with_scheduling_check">test_reuse_failed_replica_with_scheduling_check</a></code></li>
