@@ -220,17 +220,23 @@ def test_setting_toleration_extra(core_api, apps_api):  # NOQA
                 },
             ],
         },
-        {
-            "value": ":",
-            "expect": [
-                {
-                    "key": None,
-                    "value": None,
-                    "operator": "Exists",
-                    "effect": None,
-                },
-            ]
-        },
+        # Skip the this special toleration for now because it makes
+        # Longhorn deploy manager pods on control/etcd nodes
+        # and the control/etcd nodes become "down" after the test
+        # clear this toleration.
+        # We will enable this test once we implement logic for
+        # deleting failed nodes.
+        # {
+        #     "value": ":",
+        #     "expect": [
+        #         {
+        #             "key": None,
+        #             "value": None,
+        #             "operator": "Exists",
+        #             "effect": None,
+        #         },
+        #     ]
+        # },
         {
             "value": "",
             "expect": [],
