@@ -3508,6 +3508,20 @@ def create_and_wait_deployment(apps_api, deployment_manifest):
     )
 
 
+def wait_and_get_any_deployment_pod(core_api, deployment_name,
+                                    is_phase="Running"):
+    for _ in range(DEFAULT_DEPLOYMENT_TIMEOUT):
+        label_selector = "name=" + deployment_name
+        pods = core_api.list_namespaced_pod(namespace="default",
+                                            label_selector=label_selector)
+        for pod in pods.items:
+            if pod.status.phase == is_phase:
+                return pod
+
+        time.sleep(DEFAULT_DEPLOYMENT_INTERVAL)
+    assert False
+
+
 def wait_delete_deployment(apps_api, deployment_name):
     for i in range(DEFAULT_DEPLOYMENT_TIMEOUT):
         ret = apps_api.list_namespaced_deployment(namespace='default')

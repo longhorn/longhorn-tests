@@ -2,12 +2,16 @@
 import pytest
 import subprocess
 import random
+
 import common
-from common import client, core_api # NOQA
+from common import client, core_api, apps_api # NOQA
 from common import csi_pv, pod_make, pvc, storage_class  # NOQA
+from common import make_deployment_with_pvc  # NOQA
 from common import pod as pod_manifest  # NOQA
 from common import Mi, Gi, DEFAULT_VOLUME_SIZE, EXPANDED_VOLUME_SIZE
 from common import VOLUME_RWTEST_SIZE
+from common import VOLUME_CONDITION_SCHEDULED
+from common import SETTING_REPLICA_NODE_SOFT_ANTI_AFFINITY
 from common import create_and_wait_pod, create_pvc_spec, delete_and_wait_pod
 from common import size_to_string, create_storage_class, create_pvc
 from common import delete_and_wait_pvc, delete_and_wait_pv
@@ -673,32 +677,112 @@ def test_csi_volumesnapshot_deletion_retain():  # NOQA
     """
 
 
-@pytest.mark.skip(reason="TODO")  # NOQA
 @pytest.mark.coretest
-def test_allow_volume_creation_with_degraded_availability_csi():
+def test_allow_volume_creation_with_degraded_availability_csi(
+        client, core_api, apps_api, make_deployment_with_pvc):  # NOQA
     """
     Test Allow Volume Creation with Degraded Availability (CSI)
 
     Requirement:
-    1. Set `allow-volume-creation-with-degraded-availability` to true
-    2. `node-level-soft-anti-affinity` to false
+    1. Set `allow-volume-creation-with-degraded-availability` to true.
+    2. Set `node-level-soft-anti-affinity` to false.
 
     Steps:
-    1. Disable scheduling for node 3
-    2. Create a Deployment Pod with a volume and three replicas.
+    1. Disable scheduling for node 3.
+    2. Create a Deployment Pod with a volume and 3 replicas.
         1. After the volume is attached, scheduling error should be seen.
     3. Write data to the Pod.
     4. Scale down the deployment to 0 to detach the volume.
         1. Scheduled condition should become true.
-    5. Scale up the deployment back to 1 verify the data.
+    5. Scale up the deployment back to 1 and verify the data.
         1. Scheduled condition should become false.
-    6. Enable the scheduling for the third node.
-        1. Volume should start rebuilding on the third node soon.
+    6. Enable the scheduling for node 3.
+        1. Volume should start rebuilding on the node 3 soon.
         2. Once the rebuilding starts, the scheduled condition should become
-        true
-    7. Once rebuild finished, scale down and back the deployment to
-        verify the data.
+           true.
+    7. Once rebuild finished, scale down and back the deployment to verify
+       the data.
     """
+    setting = client.by_id_setting(common.SETTING_DEGRADED_AVAILABILITY)
+    client.update(setting, value="true")
+
+    setting = client.by_id_setting(SETTING_REPLICA_NODE_SOFT_ANTI_AFFINITY)
+    client.update(setting, value="false")
+
+    nodes = client.list_node()
+    node3 = nodes[2]
+    client.update(node3, allowScheduling=False)
+
+    vol = common.create_and_check_volume(client, generate_volume_name(),
+                                         size=str(500 * Mi))
+
+    pv_name = vol.name + "-pv"
+    common.create_pv_for_volume(client, core_api, vol, pv_name)
+
+    pvc_name = vol.name + "-pvc"
+    common.create_pvc_for_volume(client, core_api, vol, pvc_name)
+
+    deployment_name = vol.name + "-dep"
+    deployment = make_deployment_with_pvc(deployment_name, pvc_name)
+    deployment["spec"]["replicas"] = 3
+    apps_api.create_namespaced_deployment(body=deployment, namespace='default')
+    common.wait_for_volume_status(client, vol.name,
+                                  common.VOLUME_FIELD_STATE,
+                                  common.VOLUME_STATE_ATTACHED)
+    common.wait_scheduling_failure(client, vol.name)
+
+    data_path = "/data/test"
+    pod = common.wait_and_get_any_deployment_pod(core_api, deployment_name)
+    common.write_pod_volume_random_data(core_api, pod.metadata.name,
+                                        data_path, common.DATA_SIZE_IN_MB_1)
+    created_md5sum = get_pod_data_md5sum(core_api, pod.metadata.name,
+                                         data_path)
+
+    deployment['spec']['replicas'] = 0
+    apps_api.patch_namespaced_deployment(body=deployment,
+                                         namespace='default',
+                                         name=deployment_name)
+    vol = common.wait_for_volume_detached(client, vol.name)
+    assert vol.conditions[VOLUME_CONDITION_SCHEDULED]['status'] == "True"
+
+    deployment['spec']['replicas'] = 1
+    apps_api.patch_namespaced_deployment(body=deployment,
+                                         namespace='default',
+                                         name=deployment_name)
+    common.wait_for_volume_status(client, vol.name,
+                                  common.VOLUME_FIELD_STATE,
+                                  common.VOLUME_STATE_ATTACHED)
+    common.wait_for_volume_condition_scheduled(client, vol.name, "status",
+                                               common.CONDITION_STATUS_FALSE)
+    pod = common.wait_and_get_any_deployment_pod(core_api, deployment_name)
+    assert created_md5sum == get_pod_data_md5sum(core_api,
+                                                 pod.metadata.name,
+                                                 data_path)
+
+    client.update(node3, allowScheduling=True)
+    common.wait_for_rebuild_start(client, vol.name)
+    vol = client.by_id_volume(vol.name)
+    assert vol.conditions[VOLUME_CONDITION_SCHEDULED]['status'] == "True"
+    common.wait_for_rebuild_complete(client, vol.name)
+
+    deployment['spec']['replicas'] = 0
+    apps_api.patch_namespaced_deployment(body=deployment,
+                                         namespace='default',
+                                         name=deployment_name)
+    common.wait_for_volume_detached(client, vol.name)
+
+    deployment['spec']['replicas'] = 1
+    apps_api.patch_namespaced_deployment(body=deployment,
+                                         namespace='default',
+                                         name=deployment_name)
+    common.wait_for_volume_status(client, vol.name,
+                                  common.VOLUME_FIELD_STATE,
+                                  common.VOLUME_STATE_ATTACHED)
+
+    pod = common.wait_and_get_any_deployment_pod(core_api, deployment_name)
+    assert created_md5sum == get_pod_data_md5sum(core_api,
+                                                 pod.metadata.name,
+                                                 data_path)
 
 
 @pytest.mark.csi  # NOQA
