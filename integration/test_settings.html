@@ -248,17 +248,23 @@ def test_setting_toleration_extra(core_api, apps_api):  # NOQA
                 },
             ],
         },
-        {
-            &#34;value&#34;: &#34;:&#34;,
-            &#34;expect&#34;: [
-                {
-                    &#34;key&#34;: None,
-                    &#34;value&#34;: None,
-                    &#34;operator&#34;: &#34;Exists&#34;,
-                    &#34;effect&#34;: None,
-                },
-            ]
-        },
+        # Skip the this special toleration for now because it makes
+        # Longhorn deploy manager pods on control/etcd nodes
+        # and the control/etcd nodes become &#34;down&#34; after the test
+        # clear this toleration.
+        # We will enable this test once we implement logic for
+        # deleting failed nodes.
+        # {
+        #     &#34;value&#34;: &#34;:&#34;,
+        #     &#34;expect&#34;: [
+        #         {
+        #             &#34;key&#34;: None,
+        #             &#34;value&#34;: None,
+        #             &#34;operator&#34;: &#34;Exists&#34;,
+        #             &#34;effect&#34;: None,
+        #         },
+        #     ]
+        # },
         {
             &#34;value&#34;: &#34;&#34;,
             &#34;expect&#34;: [],
@@ -1115,17 +1121,23 @@ daemonsets, IM pods, recurring jobs in Longhorn system</p></div>
                 },
             ],
         },
-        {
-            &#34;value&#34;: &#34;:&#34;,
-            &#34;expect&#34;: [
-                {
-                    &#34;key&#34;: None,
-                    &#34;value&#34;: None,
-                    &#34;operator&#34;: &#34;Exists&#34;,
-                    &#34;effect&#34;: None,
-                },
-            ]
-        },
+        # Skip the this special toleration for now because it makes
+        # Longhorn deploy manager pods on control/etcd nodes
+        # and the control/etcd nodes become &#34;down&#34; after the test
+        # clear this toleration.
+        # We will enable this test once we implement logic for
+        # deleting failed nodes.
+        # {
+        #     &#34;value&#34;: &#34;:&#34;,
+        #     &#34;expect&#34;: [
+        #         {
+        #             &#34;key&#34;: None,
+        #             &#34;value&#34;: None,
+        #             &#34;operator&#34;: &#34;Exists&#34;,
+        #             &#34;effect&#34;: None,
+        #         },
+        #     ]
+        # },
         {
             &#34;value&#34;: &#34;&#34;,
             &#34;expect&#34;: [],
