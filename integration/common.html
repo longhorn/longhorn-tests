@@ -3536,6 +3536,20 @@ def create_and_wait_deployment(apps_api, deployment_manifest):
     )
 
 
+def wait_and_get_any_deployment_pod(core_api, deployment_name,
+                                    is_phase=&#34;Running&#34;):
+    for _ in range(DEFAULT_DEPLOYMENT_TIMEOUT):
+        label_selector = &#34;name=&#34; + deployment_name
+        pods = core_api.list_namespaced_pod(namespace=&#34;default&#34;,
+                                            label_selector=label_selector)
+        for pod in pods.items:
+            if pod.status.phase == is_phase:
+                return pod
+
+        time.sleep(DEFAULT_DEPLOYMENT_INTERVAL)
+    assert False
+
+
 def wait_delete_deployment(apps_api, deployment_name):
     for i in range(DEFAULT_DEPLOYMENT_TIMEOUT):
         ret = apps_api.list_namespaced_deployment(namespace=&#39;default&#39;)
@@ -7772,6 +7786,29 @@ def volume_name(request):
     return dev_write(dev, start, data)</code></pre>
 </details>
 </dd>
+<dt id="tests.common.wait_and_get_any_deployment_pod"><code class="name flex">
+<span>def <span class="ident">wait_and_get_any_deployment_pod</span></span>(<span>core_api, deployment_name, is_phase='Running')</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def wait_and_get_any_deployment_pod(core_api, deployment_name,
+                                    is_phase=&#34;Running&#34;):
+    for _ in range(DEFAULT_DEPLOYMENT_TIMEOUT):
+        label_selector = &#34;name=&#34; + deployment_name
+        pods = core_api.list_namespaced_pod(namespace=&#34;default&#34;,
+                                            label_selector=label_selector)
+        for pod in pods.items:
+            if pod.status.phase == is_phase:
+                return pod
+
+        time.sleep(DEFAULT_DEPLOYMENT_INTERVAL)
+    assert False</code></pre>
+</details>
+</dd>
 <dt id="tests.common.wait_and_get_pv_for_pvc"><code class="name flex">
 <span>def <span class="ident">wait_and_get_pv_for_pvc</span></span>(<span>api, pvc_name)</span>
 </code></dt>
@@ -9837,6 +9874,7 @@ volume. Trigger a failed assertion of one is detected.
 <li><code><a title="tests.common.volume_read" href="#tests.common.volume_read">volume_read</a></code></li>
 <li><code><a title="tests.common.volume_valid" href="#tests.common.volume_valid">volume_valid</a></code></li>
 <li><code><a title="tests.common.volume_write" href="#tests.common.volume_write">volume_write</a></code></li>
+<li><code><a title="tests.common.wait_and_get_any_deployment_pod" href="#tests.common.wait_and_get_any_deployment_pod">wait_and_get_any_deployment_pod</a></code></li>
 <li><code><a title="tests.common.wait_and_get_pv_for_pvc" href="#tests.common.wait_and_get_pv_for_pvc">wait_and_get_pv_for_pvc</a></code></li>
 <li><code><a title="tests.common.wait_delete_deployment" href="#tests.common.wait_delete_deployment">wait_delete_deployment</a></code></li>
 <li><code><a title="tests.common.wait_delete_pod" href="#tests.common.wait_delete_pod">wait_delete_pod</a></code></li>
