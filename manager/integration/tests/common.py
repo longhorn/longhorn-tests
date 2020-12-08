@@ -1081,6 +1081,13 @@ def priority_class(request):
     }
 
     def finalizer():
+        # ensure that the priority class gets unset for longhorn
+        # before deleting the class
+        client = get_longhorn_api_client()
+        setting = client.by_id_setting(SETTING_PRIORITY_CLASS)
+        setting = client.update(setting, value='')
+        assert setting.value == ''
+
         api = get_scheduling_api_client()
         try:
             api.delete_priority_class(name=priority_class['metadata']['name'],
@@ -2445,6 +2452,17 @@ def reset_disks_for_all_nodes(client):  # NOQA
 
 
 def reset_settings(client):
+    try:
+        priority_class_setting = client.by_id_setting(SETTING_PRIORITY_CLASS)
+        if priority_class_setting.value != "":
+            client.update(priority_class_setting, value="")
+    except Exception as e:
+        print("\nException when clearing "
+              "priority class setting",
+              priority_class_setting)
+        print(e)
+        pass
+
     degraded_availability_setting = client.by_id_setting(
             SETTING_DEGRADED_AVAILABILITY)
     try:
