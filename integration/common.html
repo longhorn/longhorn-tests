@@ -1109,6 +1109,13 @@ def priority_class(request):
     }
 
     def finalizer():
+        # ensure that the priority class gets unset for longhorn
+        # before deleting the class
+        client = get_longhorn_api_client()
+        setting = client.by_id_setting(SETTING_PRIORITY_CLASS)
+        setting = client.update(setting, value=&#39;&#39;)
+        assert setting.value == &#39;&#39;
+
         api = get_scheduling_api_client()
         try:
             api.delete_priority_class(name=priority_class[&#39;metadata&#39;][&#39;name&#39;],
@@ -2473,6 +2480,17 @@ def reset_disks_for_all_nodes(client):  # NOQA
 
 
 def reset_settings(client):
+    try:
+        priority_class_setting = client.by_id_setting(SETTING_PRIORITY_CLASS)
+        if priority_class_setting.value != &#34;&#34;:
+            client.update(priority_class_setting, value=&#34;&#34;)
+    except Exception as e:
+        print(&#34;\nException when clearing &#34;
+              &#34;priority class setting&#34;,
+              priority_class_setting)
+        print(e)
+        pass
+
     degraded_availability_setting = client.by_id_setting(
             SETTING_DEGRADED_AVAILABILITY)
     try:
@@ -6914,6 +6932,13 @@ def priority_class(request):
     }
 
     def finalizer():
+        # ensure that the priority class gets unset for longhorn
+        # before deleting the class
+        client = get_longhorn_api_client()
+        setting = client.by_id_setting(SETTING_PRIORITY_CLASS)
+        setting = client.update(setting, value=&#39;&#39;)
+        assert setting.value == &#39;&#39;
+
         api = get_scheduling_api_client()
         try:
             api.delete_priority_class(name=priority_class[&#39;metadata&#39;][&#39;name&#39;],
@@ -7224,6 +7249,17 @@ def random_labels():
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def reset_settings(client):
+    try:
+        priority_class_setting = client.by_id_setting(SETTING_PRIORITY_CLASS)
+        if priority_class_setting.value != &#34;&#34;:
+            client.update(priority_class_setting, value=&#34;&#34;)
+    except Exception as e:
+        print(&#34;\nException when clearing &#34;
+              &#34;priority class setting&#34;,
+              priority_class_setting)
+        print(e)
+        pass
+
     degraded_availability_setting = client.by_id_setting(
             SETTING_DEGRADED_AVAILABILITY)
     try:
