@@ -293,24 +293,17 @@
 </aside>
 
 <main style="padding: 1%; width: 70%;">
-  <h1 id="title"><a href="https://github.com/longhorn/longhorn/issues/1404">#1404</a> test backup functionality on google cloud and other s3 interop providers.</h1>
+  <h1 id="title">Re-deploy CSI components when their images change</h1>
   <div>
     <article id="content">
-       <ul>
-<li>create vol <code>s3-test</code>and mount to a node on <code>/mnt/s3-test</code> via pvc</li>
-<li>write some data on vol <code>s3-test</code></li>
-<li>take backup(1)</li>
-<li>write new data on vol <code>s3-test</code></li>
-<li>take backup(2)</li>
-<li>restore backup(1)</li>
-<li>verify data is consistent with backup(1)</li>
-<li>restore backup(2)</li>
-<li>verify data is consistent with backup(2)</li>
-<li>delete backup(1)</li>
-<li>delete backup(2)</li>
-<li>delete backup volume <code>s3-test</code></li>
-<li>verify volume path is removed</li>
-</ul>
+       <ol>
+<li>Install Longhorn</li>
+<li>Change the <code>longhorn-driver-deployer</code> yaml at <a href="https://github.com/longhorn/longhorn-manager/blob/c2ceb9f3f991810f811601d8c41c09b67fb50746/deploy/install/02-components/04-driver.yaml#L50">https://github.com/longhorn/longhorn-manager/blob/c2ceb9f3f991810f811601d8c41c09b67fb50746/deploy/install/02-components/04-driver.yaml#L50</a> to use the new images for some CSI components</li>
+<li><code>Kubectl apply -f</code> the <code>longhorn-driver-deployer</code> yaml</li>
+<li>Verify that only CSI components with the new images are re-deployed and have new images</li>
+<li>Redeploy <code>longhorn-driver-deployer</code> without changing the images.</li>
+<li>Verify that no CSI component is re-deployed</li>
+</ol>
 
     </article>
   </div>

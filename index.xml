@@ -259,6 +259,15 @@ Monitor longhorn  Deploy the Prometheus-operator, ServiceMonitor pointing to lon
     </item>
     
     <item>
+      <title>Re-deploy CSI components when their images change</title>
+      <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/update_csi_components_when_images_change/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/update_csi_components_when_images_change/</guid>
+      <description> Install Longhorn Change the longhorn-driver-deployer yaml at https://github.com/longhorn/longhorn-manager/blob/c2ceb9f3f991810f811601d8c41c09b67fb50746/deploy/install/02-components/04-driver.yaml#L50 to use the new images for some CSI components Kubectl apply -f the longhorn-driver-deployer yaml Verify that only CSI components with the new images are re-deployed and have new images Redeploy longhorn-driver-deployer without changing the images. Verify that no CSI component is re-deployed  </description>
+    </item>
+    
+    <item>
       <title>Recurring backup job interruptions</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/recurring-backup-job-interruptions/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
