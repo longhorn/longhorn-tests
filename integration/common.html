@@ -148,6 +148,8 @@ SETTING_DEGRADED_AVAILABILITY = \
     &#34;allow-volume-creation-with-degraded-availability&#34;
 SETTING_REPLICA_REPLENISHMENT_WAIT_INTERVAL = \
     &#34;replica-replenishment-wait-interval&#34;
+SETTING_RECURRING_JOB_WHILE_VOLUME_DETACHED = \
+    &#34;allow-recurring-job-while-volume-detached&#34;
 
 DEFAULT_DISK_PATH = &#34;/var/lib/longhorn/&#34;
 DEFAULT_STORAGE_OVER_PROVISIONING_PERCENTAGE = &#34;500&#34;
@@ -1369,6 +1371,12 @@ def wait_for_volume_endpoint(client, name):
     return v
 
 
+def wait_for_volume_attached(client, name):
+    return wait_for_volume_status(client, name,
+                                  VOLUME_FIELD_STATE,
+                                  VOLUME_STATE_ATTACHED)
+
+
 def wait_for_volume_detached(client, name):
     return wait_for_volume_status(client, name,
                                   VOLUME_FIELD_STATE,
@@ -1514,6 +1522,16 @@ def wait_for_volume_replicas_mode(client, volname, mode,
 
     assert verified
     return volume
+
+
+def wait_for_volume_frontend_disabled(client, volume_name, state=True):
+    for _ in range(RETRY_COUNTS):
+        vol = client.by_id_volume(volume_name)
+        try:
+            assert vol.disableFrontend is state
+            break
+        except AssertionError:
+            time.sleep(RETRY_INTERVAL)
 
 
 def wait_for_snapshot_purge(client, volume_name, *snaps):
@@ -2249,13 +2267,15 @@ def get_volume_attached_nodes(v):
     return nodes
 
 
-def wait_for_backup_completion(client, volume_name, snapshot_name,
+def wait_for_backup_completion(client, volume_name, snapshot_name=None,
                                retry_count=RETRY_BACKUP_COUNTS):
     completed = False
-    for i in range(retry_count):
+    for _ in range(retry_count):
         v = client.by_id_volume(volume_name)
         for b in v.backupStatus:
-            if b.snapshot == snapshot_name and b.state == &#34;complete&#34;:
+            if snapshot_name is not None and b.snapshot != snapshot_name:
+                continue
+            if b.state == &#34;complete&#34;:
                 assert b.progress == 100
                 assert b.error == &#34;&#34;
                 completed = True
@@ -2267,13 +2287,44 @@ def wait_for_backup_completion(client, volume_name, snapshot_name,
     return v
 
 
-def wait_for_backup_to_start(client, volume_name, snapshot_name,
+def wait_pod_auto_attach_after_first_backup_completion(
+        client, core_api, volume_name, label_name):
+    completed = False
+    for _ in range(RETRY_BACKUP_COUNTS):
+        vol = client.by_id_volume(volume_name)
+        for b in vol.backupStatus:
+            if b.state == &#39;complete&#39;:
+                assert b.progress == 100
+                assert b.error == &#39;&#39;
+                completed = True
+                break
+        if completed:
+            wait_for_volume_detached(client, vol.name)
+            wait_for_volume_frontend_disabled(client, vol.name, False)
+            wait_for_volume_attached(client, vol.name)
+            break
+
+        label_selector = &#34;name=&#34; + label_name
+        pods = core_api.list_namespaced_pod(namespace=&#34;default&#34;,
+                                            label_selector=label_selector)
+        for pod in pods.items:
+            assert pod.status.phase != &#39;Running&#39;
+        assert vol.disableFrontend is True
+
+        time.sleep(RETRY_BACKUP_INTERVAL)
+    assert completed is True
+    return vol
+
+
+def wait_for_backup_to_start(client, volume_name, snapshot_name=None,
                              retry_count=RETRY_BACKUP_COUNTS):
     in_progress = False
-    for i in range(retry_count):
+    for _ in range(retry_count):
         v = client.by_id_volume(volume_name)
         for b in v.backupStatus:
-            if b.snapshot == snapshot_name and b.state == &#34;in_progress&#34;:
+            if snapshot_name is not None and b.snapshot != snapshot_name:
+                continue
+            if b.state == &#34;in_progress&#34;:
                 assert b.progress &gt; 0
                 assert b.error == &#34;&#34;
                 in_progress = True
@@ -2615,6 +2666,16 @@ def reset_settings(client):
         print(&#34;\nException when update &#34;
               &#34;Replica Replenishment Wait Interval&#34;,
               replenishment_wait_setting)
+        print(e)
+
+    recurring_job_setting = \
+        client.by_id_setting(SETTING_RECURRING_JOB_WHILE_VOLUME_DETACHED)
+    try:
+        client.update(recurring_job_setting, value=&#34;false&#34;)
+    except Exception as e:
+        print(&#34;\nException when update &#34;
+              &#34;Allow Recurring Job While Volume Detached setting&#34;,
+              recurring_job_setting)
         print(e)
 
     instance_managers = client.list_instance_manager()
@@ -3594,6 +3655,18 @@ def delete_and_wait_deployment(apps_api, deployment_name, namespace=&#39;default
     wait_delete_deployment(apps_api, deployment_name)
 
 
+def get_deployment_pod_names(core_api, deployment):
+    label_selector = \
+        &#34;name=&#34; + deployment[&#34;metadata&#34;][&#34;labels&#34;][&#34;name&#34;]
+    deployment_pod_list = \
+        core_api.list_namespaced_pod(namespace=&#34;default&#34;,
+                                     label_selector=label_selector)
+    pod_names = []
+    for pod in deployment_pod_list.items:
+        pod_names.append(pod.metadata.name)
+    return pod_names
+
+
 @pytest.fixture
 def disable_auto_salvage(client):
     auto_salvage_setting = client.by_id_setting(SETTING_AUTO_SALVAGE)
@@ -3861,8 +3934,6 @@ def wait_for_pod_restart(core_api, pod_name, namespace=&#34;default&#34;):
 
 
 def wait_for_pod_phase(core_api, pod_name, pod_phase, namespace=&#34;default&#34;):
-    pod = core_api.read_namespaced_pod(name=pod_name,
-                                       namespace=namespace)
     is_phase = False
     for _ in range(RETRY_COUNTS):
         pod = core_api.read_namespaced_pod(name=pod_name,
@@ -5926,6 +5997,27 @@ been completed successfully</p></div>
     assert False</code></pre>
 </details>
 </dd>
+<dt id="tests.common.get_deployment_pod_names"><code class="name flex">
+<span>def <span class="ident">get_deployment_pod_names</span></span>(<span>core_api, deployment)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_deployment_pod_names(core_api, deployment):
+    label_selector = \
+        &#34;name=&#34; + deployment[&#34;metadata&#34;][&#34;labels&#34;][&#34;name&#34;]
+    deployment_pod_list = \
+        core_api.list_namespaced_pod(namespace=&#34;default&#34;,
+                                     label_selector=label_selector)
+    pod_names = []
+    for pod in deployment_pod_list.items:
+        pod_names.append(pod.metadata.name)
+    return pod_names</code></pre>
+</details>
+</dd>
 <dt id="tests.common.get_device_checksum"><code class="name flex">
 <span>def <span class="ident">get_device_checksum</span></span>(<span>dev)</span>
 </code></dt>
@@ -7386,6 +7478,16 @@ def random_labels():
               replenishment_wait_setting)
         print(e)
 
+    recurring_job_setting = \
+        client.by_id_setting(SETTING_RECURRING_JOB_WHILE_VOLUME_DETACHED)
+    try:
+        client.update(recurring_job_setting, value=&#34;false&#34;)
+    except Exception as e:
+        print(&#34;\nException when update &#34;
+              &#34;Allow Recurring Job While Volume Detached setting&#34;,
+              recurring_job_setting)
+        print(e)
+
     instance_managers = client.list_instance_manager()
     core_api = get_core_api_client()
     # Wait for the current instance manager running
@@ -8020,7 +8122,7 @@ def volume_name(request):
 </details>
 </dd>
 <dt id="tests.common.wait_for_backup_completion"><code class="name flex">
-<span>def <span class="ident">wait_for_backup_completion</span></span>(<span>client, volume_name, snapshot_name, retry_count=300)</span>
+<span>def <span class="ident">wait_for_backup_completion</span></span>(<span>client, volume_name, snapshot_name=None, retry_count=300)</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -8028,13 +8130,15 @@ def volume_name(request):
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def wait_for_backup_completion(client, volume_name, snapshot_name,
+<pre><code class="python">def wait_for_backup_completion(client, volume_name, snapshot_name=None,
                                retry_count=RETRY_BACKUP_COUNTS):
     completed = False
-    for i in range(retry_count):
+    for _ in range(retry_count):
         v = client.by_id_volume(volume_name)
         for b in v.backupStatus:
-            if b.snapshot == snapshot_name and b.state == &#34;complete&#34;:
+            if snapshot_name is not None and b.snapshot != snapshot_name:
+                continue
+            if b.state == &#34;complete&#34;:
                 assert b.progress == 100
                 assert b.error == &#34;&#34;
                 completed = True
@@ -8129,7 +8233,7 @@ def volume_name(request):
 </details>
 </dd>
 <dt id="tests.common.wait_for_backup_to_start"><code class="name flex">
-<span>def <span class="ident">wait_for_backup_to_start</span></span>(<span>client, volume_name, snapshot_name, retry_count=300)</span>
+<span>def <span class="ident">wait_for_backup_to_start</span></span>(<span>client, volume_name, snapshot_name=None, retry_count=300)</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -8137,13 +8241,15 @@ def volume_name(request):
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def wait_for_backup_to_start(client, volume_name, snapshot_name,
+<pre><code class="python">def wait_for_backup_to_start(client, volume_name, snapshot_name=None,
                              retry_count=RETRY_BACKUP_COUNTS):
     in_progress = False
-    for i in range(retry_count):
+    for _ in range(retry_count):
         v = client.by_id_volume(volume_name)
         for b in v.backupStatus:
-            if b.snapshot == snapshot_name and b.state == &#34;in_progress&#34;:
+            if snapshot_name is not None and b.snapshot != snapshot_name:
+                continue
+            if b.state == &#34;in_progress&#34;:
                 assert b.progress &gt; 0
                 assert b.error == &#34;&#34;
                 in_progress = True
@@ -8619,8 +8725,6 @@ def volume_name(request):
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def wait_for_pod_phase(core_api, pod_name, pod_phase, namespace=&#34;default&#34;):
-    pod = core_api.read_namespaced_pod(name=pod_name,
-                                       namespace=namespace)
     is_phase = False
     for _ in range(RETRY_COUNTS):
         pod = core_api.read_namespaced_pod(name=pod_name,
@@ -8964,6 +9068,21 @@ def volume_name(request):
     return v</code></pre>
 </details>
 </dd>
+<dt id="tests.common.wait_for_volume_attached"><code class="name flex">
+<span>def <span class="ident">wait_for_volume_attached</span></span>(<span>client, name)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def wait_for_volume_attached(client, name):
+    return wait_for_volume_status(client, name,
+                                  VOLUME_FIELD_STATE,
+                                  VOLUME_STATE_ATTACHED)</code></pre>
+</details>
+</dd>
 <dt id="tests.common.wait_for_volume_condition_restore"><code class="name flex">
 <span>def <span class="ident">wait_for_volume_condition_restore</span></span>(<span>client, name, key, value)</span>
 </code></dt>
@@ -9216,6 +9335,25 @@ def volume_name(request):
                                   VOLUME_ROBUSTNESS_FAULTED)</code></pre>
 </details>
 </dd>
+<dt id="tests.common.wait_for_volume_frontend_disabled"><code class="name flex">
+<span>def <span class="ident">wait_for_volume_frontend_disabled</span></span>(<span>client, volume_name, state=True)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def wait_for_volume_frontend_disabled(client, volume_name, state=True):
+    for _ in range(RETRY_COUNTS):
+        vol = client.by_id_volume(volume_name)
+        try:
+            assert vol.disableFrontend is state
+            break
+        except AssertionError:
+            time.sleep(RETRY_INTERVAL)</code></pre>
+</details>
+</dd>
 <dt id="tests.common.wait_for_volume_healthy"><code class="name flex">
 <span>def <span class="ident">wait_for_volume_healthy</span></span>(<span>client, name)</span>
 </code></dt>
@@ -9459,6 +9597,44 @@ def volume_name(request):
             break
         time.sleep(DEFAULT_POD_INTERVAL)
     assert pod is not None and pod.status.phase == &#39;Running&#39;</code></pre>
+</details>
+</dd>
+<dt id="tests.common.wait_pod_auto_attach_after_first_backup_completion"><code class="name flex">
+<span>def <span class="ident">wait_pod_auto_attach_after_first_backup_completion</span></span>(<span>client, core_api, volume_name, label_name)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def wait_pod_auto_attach_after_first_backup_completion(
+        client, core_api, volume_name, label_name):
+    completed = False
+    for _ in range(RETRY_BACKUP_COUNTS):
+        vol = client.by_id_volume(volume_name)
+        for b in vol.backupStatus:
+            if b.state == &#39;complete&#39;:
+                assert b.progress == 100
+                assert b.error == &#39;&#39;
+                completed = True
+                break
+        if completed:
+            wait_for_volume_detached(client, vol.name)
+            wait_for_volume_frontend_disabled(client, vol.name, False)
+            wait_for_volume_attached(client, vol.name)
+            break
+
+        label_selector = &#34;name=&#34; + label_name
+        pods = core_api.list_namespaced_pod(namespace=&#34;default&#34;,
+                                            label_selector=label_selector)
+        for pod in pods.items:
+            assert pod.status.phase != &#39;Running&#39;
+        assert vol.disableFrontend is True
+
+        time.sleep(RETRY_BACKUP_INTERVAL)
+    assert completed is True
+    return vol</code></pre>
 </details>
 </dd>
 <dt id="tests.common.wait_scheduling_failure"><code class="name flex">
@@ -9842,6 +10018,7 @@ volume. Trigger a failed assertion of one is detected.
 <li><code><a title="tests.common.get_compatibility_test_image" href="#tests.common.get_compatibility_test_image">get_compatibility_test_image</a></code></li>
 <li><code><a title="tests.common.get_core_api_client" href="#tests.common.get_core_api_client">get_core_api_client</a></code></li>
 <li><code><a title="tests.common.get_default_engine_image" href="#tests.common.get_default_engine_image">get_default_engine_image</a></code></li>
+<li><code><a title="tests.common.get_deployment_pod_names" href="#tests.common.get_deployment_pod_names">get_deployment_pod_names</a></code></li>
 <li><code><a title="tests.common.get_device_checksum" href="#tests.common.get_device_checksum">get_device_checksum</a></code></li>
 <li><code><a title="tests.common.get_host_disk_size" href="#tests.common.get_host_disk_size">get_host_disk_size</a></code></li>
 <li><code><a title="tests.common.get_iscsi_ip" href="#tests.common.get_iscsi_ip">get_iscsi_ip</a></code></li>
@@ -9952,6 +10129,7 @@ volume. Trigger a failed assertion of one is detected.
 <li><code><a title="tests.common.wait_for_replica_running" href="#tests.common.wait_for_replica_running">wait_for_replica_running</a></code></li>
 <li><code><a title="tests.common.wait_for_replica_scheduled" href="#tests.common.wait_for_replica_scheduled">wait_for_replica_scheduled</a></code></li>
 <li><code><a title="tests.common.wait_for_snapshot_purge" href="#tests.common.wait_for_snapshot_purge">wait_for_snapshot_purge</a></code></li>
+<li><code><a title="tests.common.wait_for_volume_attached" href="#tests.common.wait_for_volume_attached">wait_for_volume_attached</a></code></li>
 <li><code><a title="tests.common.wait_for_volume_condition_restore" href="#tests.common.wait_for_volume_condition_restore">wait_for_volume_condition_restore</a></code></li>
 <li><code><a title="tests.common.wait_for_volume_condition_scheduled" href="#tests.common.wait_for_volume_condition_scheduled">wait_for_volume_condition_scheduled</a></code></li>
 <li><code><a title="tests.common.wait_for_volume_condition_toomanysnapshots" href="#tests.common.wait_for_volume_condition_toomanysnapshots">wait_for_volume_condition_toomanysnapshots</a></code></li>
@@ -9964,6 +10142,7 @@ volume. Trigger a failed assertion of one is detected.
 <li><code><a title="tests.common.wait_for_volume_endpoint" href="#tests.common.wait_for_volume_endpoint">wait_for_volume_endpoint</a></code></li>
 <li><code><a title="tests.common.wait_for_volume_expansion" href="#tests.common.wait_for_volume_expansion">wait_for_volume_expansion</a></code></li>
 <li><code><a title="tests.common.wait_for_volume_faulted" href="#tests.common.wait_for_volume_faulted">wait_for_volume_faulted</a></code></li>
+<li><code><a title="tests.common.wait_for_volume_frontend_disabled" href="#tests.common.wait_for_volume_frontend_disabled">wait_for_volume_frontend_disabled</a></code></li>
 <li><code><a title="tests.common.wait_for_volume_healthy" href="#tests.common.wait_for_volume_healthy">wait_for_volume_healthy</a></code></li>
 <li><code><a title="tests.common.wait_for_volume_healthy_no_frontend" href="#tests.common.wait_for_volume_healthy_no_frontend">wait_for_volume_healthy_no_frontend</a></code></li>
 <li><code><a title="tests.common.wait_for_volume_migration_node" href="#tests.common.wait_for_volume_migration_node">wait_for_volume_migration_node</a></code></li>
@@ -9974,6 +10153,7 @@ volume. Trigger a failed assertion of one is detected.
 <li><code><a title="tests.common.wait_for_volume_restoration_start" href="#tests.common.wait_for_volume_restoration_start">wait_for_volume_restoration_start</a></code></li>
 <li><code><a title="tests.common.wait_for_volume_status" href="#tests.common.wait_for_volume_status">wait_for_volume_status</a></code></li>
 <li><code><a title="tests.common.wait_pod" href="#tests.common.wait_pod">wait_pod</a></code></li>
+<li><code><a title="tests.common.wait_pod_auto_attach_after_first_backup_completion" href="#tests.common.wait_pod_auto_attach_after_first_backup_completion">wait_pod_auto_attach_after_first_backup_completion</a></code></li>
 <li><code><a title="tests.common.wait_scheduling_failure" href="#tests.common.wait_scheduling_failure">wait_scheduling_failure</a></code></li>
 <li><code><a title="tests.common.wait_statefulset" href="#tests.common.wait_statefulset">wait_statefulset</a></code></li>
 <li><code><a title="tests.common.wait_volume_kubernetes_status" href="#tests.common.wait_volume_kubernetes_status">wait_volume_kubernetes_status</a></code></li>
