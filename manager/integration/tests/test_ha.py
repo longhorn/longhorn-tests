@@ -3,11 +3,12 @@ import common
 import time
 import random
 import subprocess
+import os
 
 from common import client, core_api, volume_name  # NOQA
 from common import sts_name, statefulset, storage_class  # NOQA
 from common import DATA_SIZE_IN_MB_1, DATA_SIZE_IN_MB_2, DATA_SIZE_IN_MB_3
-from common import DATA_SIZE_IN_MB_4
+from common import DATA_SIZE_IN_MB_4, Ki
 from common import check_volume_data, cleanup_volume, create_and_check_volume
 from common import delete_replica_processes, crash_replica_processes
 from common import get_self_host_id, check_volume_endpoint
@@ -48,7 +49,7 @@ from common import crash_engine_process_with_sigkill
 from common import wait_for_volume_healthy_no_frontend
 from common import exec_instance_manager
 from common import SIZE, VOLUME_RWTEST_SIZE, EXPAND_SIZE, Gi
-from common import RETRY_COUNTS, RETRY_INTERVAL
+from common import RETRY_COUNTS, RETRY_INTERVAL, RETRY_INTERVAL_LONG
 from common import SETTING_REPLICA_NODE_SOFT_ANTI_AFFINITY
 from common import SETTING_REPLICA_REPLENISHMENT_WAIT_INTERVAL
 from common import write_pod_volume_data
@@ -64,6 +65,7 @@ from backupstore import backupstore_cleanup
 from backupstore import backupstore_delete_random_backup_block
 from backupstore import backupstore_wait_for_lock_expiration
 
+SMALL_RETRY_COUNTS = 30
 
 @pytest.mark.coretest   # NOQA
 def test_ha_simple_recovery(client, volume_name):  # NOQA
@@ -2116,8 +2118,7 @@ def test_auto_remount_with_subpath(
     assert expect_md5sum == md5sum
 
 
-@pytest.mark.skip(reason="TODO") # NOQA
-def test_reuse_failed_replica():
+def test_reuse_failed_replica(client, core_api, volume_name): # NOQA
     """
     Steps:
     1. Set a long wait interval for
@@ -2142,8 +2143,100 @@ def test_reuse_failed_replica():
     11. Verify the failed replica (in step 5) will be reused.
     12. Verify the volume r/w still works fine.
     """
-    pass
+    long_wait = 60*60
+    short_wait = 3
 
+    replenish_wait_setting = \
+        client.by_id_setting(SETTING_REPLICA_REPLENISHMENT_WAIT_INTERVAL)
+    client.update(replenish_wait_setting, value=str(long_wait))
+
+    replica_node_soft_anti_affinity_setting = \
+        client.by_id_setting(SETTING_REPLICA_NODE_SOFT_ANTI_AFFINITY)
+    client.update(replica_node_soft_anti_affinity_setting, value="false")
+
+    vol = create_and_check_volume(client, volume_name)
+    host_id = get_self_host_id()
+    vol = vol.attach(hostId=host_id)
+    vol = common.wait_for_volume_healthy(client, volume_name)
+    data = {
+        'pos': 0,
+        'content': common.generate_random_data(16*Ki),
+    }
+    common.write_volume_data(vol, data)
+
+    current_host = client.by_id_node(id=host_id)
+    client.update(current_host, allowScheduling=False)
+
+    vol = client.by_id_volume(volume_name)
+    assert len(vol.replicas) == 3
+    other_replicas = []
+    for r in vol.replicas:
+        if r["hostId"] == current_host.name:
+            replica_1 = r
+        else:
+            other_replicas.append(r)
+    replica_2, replica_3 = other_replicas
+
+    for filenames in os.listdir(replica_1.dataPath):
+        if filenames.endswith(".img"):
+            with open(os.path.join(replica_1.dataPath, filenames), 'w') as f:
+                f.write("Longhorn is the best!")
+
+    crash_replica_processes(client, core_api, volume_name,
+                            replicas=[replica_1],
+                            wait_to_fail=False)
+
+    # We need to wait for a minute to very that
+    # Longhorn doesn't create a new replica
+    for i in range(SMALL_RETRY_COUNTS):
+        vol = client.by_id_volume(volume_name)
+        current_replica_names = set([r.name for r in vol.replicas])
+        assert current_replica_names == \
+               {replica_1.name, replica_2.name, replica_3.name}
+        time.sleep(RETRY_INTERVAL_LONG)
+
+    replenish_wait_setting = \
+        client.by_id_setting(SETTING_REPLICA_REPLENISHMENT_WAIT_INTERVAL)
+    client.update(replenish_wait_setting, value=str(short_wait))
+
+    new_replica = None
+    for i in range(RETRY_COUNTS):
+        vol = client.by_id_volume(volume_name)
+        for r in vol.replicas:
+            if r.name not in {replica_1.name, replica_2.name, replica_3.name}:
+                new_replica = r
+        if new_replica is not None:
+            break
+        time.sleep(RETRY_INTERVAL)
+    assert new_replica is not None
+    assert new_replica.hostId == ""
+
+    replenish_wait_setting = \
+        client.by_id_setting(SETTING_REPLICA_REPLENISHMENT_WAIT_INTERVAL)
+    client.update(replenish_wait_setting, value=str(long_wait))
+
+    vol = client.by_id_volume(volume_name)
+    vol.replicaRemove(name=new_replica.name)
+    # Removing replica doesn't take effect immediately
+    # Wait for Longhorn to finish removing it before process
+    for i in range(RETRY_COUNTS):
+        vol = client.by_id_volume(volume_name)
+        if len(vol.replicas) == 3:
+            break
+        time.sleep(RETRY_INTERVAL)
+    current_replica_names = set([r.name for r in vol.replicas])
+    assert current_replica_names == \
+           {replica_1.name, replica_2.name, replica_3.name}
+
+    current_host = client.by_id_node(id=host_id)
+    client.update(current_host, allowScheduling=True)
+
+    vol = common.wait_for_volume_healthy(client, volume_name)
+    current_replica_names = set([r.name for r in vol.replicas])
+    assert current_replica_names == \
+           {replica_1.name, replica_2.name, replica_3.name}
+    data = common.write_volume_data(vol, data)
+    common.check_volume_data(vol, data)
 
 @pytest.mark.skip(reason="TODO") # NOQA
 def test_reuse_failed_replica_with_scheduling_check():

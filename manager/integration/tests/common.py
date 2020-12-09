@@ -23,6 +23,7 @@ from kubernetes.client.rest import ApiException
 
 from urllib.parse import urlparse
 
+Ki = 1024
 Mi = (1024 * 1024)
 Gi = (1024 * Mi)
 
