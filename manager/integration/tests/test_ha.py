@@ -60,6 +60,7 @@ from common import wait_for_volume_expansion
 from common import delete_and_wait_pvc, delete_and_wait_pv
 from common import wait_for_volume_replica_count
 from common import settings_reset # NOQA
+from common import set_node_tags, set_node_scheduling # NOQA
 
 from backupstore import backupstore_cleanup
 from backupstore import backupstore_delete_random_backup_block
@@ -2238,8 +2239,26 @@ def test_reuse_failed_replica(client, core_api, volume_name): # NOQA
     data = common.write_volume_data(vol, data)
     common.check_volume_data(vol, data)
 
-@pytest.mark.skip(reason="TODO") # NOQA
-def test_reuse_failed_replica_with_scheduling_check():
+
+def set_tags_for_node_and_its_disks(client, node, tags): # NOQA
+    if len(tags) == 0:
+        expected_tags = None
+    else:
+        expected_tags = list(tags)
+
+    for disk_name in node.disks.keys():
+        node.disks[disk_name].tags = tags
+    node = node.diskUpdate(disks=node.disks)
+    for disk_name in node.disks.keys():
+        assert node.disks[disk_name].tags == expected_tags
+
+    node = common.set_node_tags(client, node, tags)
+    assert node.tags == expected_tags
+
+    return node
+
+
+def test_reuse_failed_replica_with_scheduling_check(client, core_api, volume_name): # NOQA
     """
     Steps:
     1. Set a long wait interval for
@@ -2258,7 +2277,90 @@ def test_reuse_failed_replica_with_scheduling_check():
     11. Verify the failed replica on node1 is reused.
     12. Verify the volume r/w still works fine.
     """
-    pass
+    long_wait = 60*60
+    replenish_wait_setting = \
+        client.by_id_setting(SETTING_REPLICA_REPLENISHMENT_WAIT_INTERVAL)
+    client.update(replenish_wait_setting, value=str(long_wait))
+
+    replica_node_soft_anti_affinity_setting = \
+        client.by_id_setting(SETTING_REPLICA_NODE_SOFT_ANTI_AFFINITY)
+    client.update(replica_node_soft_anti_affinity_setting, value="false")
+
+    nodes = client.list_node()
+    tags = ["avail"]
+    for node in nodes:
+        set_tags_for_node_and_its_disks(client, node, tags)
+
+    client.create_volume(name=volume_name, size=SIZE, numberOfReplicas=3,
+                         diskSelector=tags, nodeSelector=tags)
+    vol = common.wait_for_volume_detached(client, volume_name)
+    assert vol.diskSelector == tags
+    assert vol.nodeSelector == tags
+    vol.attach(hostId=get_self_host_id())
+    vol = common.wait_for_volume_healthy(client, volume_name)
+    data = {
+        'pos': 0,
+        'content': common.generate_random_data(16*Ki),
+    }
+    common.write_volume_data(vol, data)
+
+    nodes = client.list_node()
+    assert len(nodes) == 3
+    node_1, node_2, node_3 = nodes
+    common.set_node_scheduling(client, node_1, False)
+    common.set_node_scheduling(client, node_2, False)
+
+    vol = client.by_id_volume(volume_name)
+    replica_1, replica_2, replica_3 = None, None, None
+    for r in vol.replicas:
+        if r.hostId == node_1.name:
+            replica_1 = r
+        elif r.hostId == node_2.name:
+            replica_2 = r
+        elif r.hostId == node_3.name:
+            replica_3 = r
+    assert replica_1 is not None and \
+           replica_2 is not None and \
+           replica_3 is not None
+
+    crash_replica_processes(client, core_api,
+                            volume_name,
+                            replicas=[replica_1, replica_2],
+                            wait_to_fail=False)
+
+    # We need to wait for a minute to very that
+    # Longhorn doesn't create a new replica
+    for i in range(SMALL_RETRY_COUNTS):
+        vol = client.by_id_volume(volume_name)
+        current_replica_names = set([r.name for r in vol.replicas])
+        assert current_replica_names == \
+               {replica_1.name, replica_2.name, replica_3.name}
+        time.sleep(RETRY_INTERVAL_LONG)
+
+    node_1 = set_tags_for_node_and_its_disks(client, node_1, [])
+
+    common.set_node_scheduling(client, node_1, True)
+    common.set_node_scheduling(client, node_2, True)
+
+    # Wait for rebuilding to finish
+    # It should take less than 1 minute since the replica is small
+    time.sleep(60)
+
+    vol = client.by_id_volume(volume_name)
+    for r in vol.replicas:
+        if r.name == replica_1.name:
+            assert r.failedAt != "" and r.running is False
+        else:
+            assert r.failedAt == "" and r.running is True
+
+    node_1 = set_tags_for_node_and_its_disks(client, node_1, tags)
+
+    vol = common.wait_for_volume_healthy(client, volume_name)
+    current_replica_names = set([r.name for r in vol.replicas])
+    assert current_replica_names == \
+           {replica_1.name, replica_2.name, replica_3.name}
+    data = common.write_volume_data(vol, data)
+    common.check_volume_data(vol, data)
 
 
 @pytest.mark.skip(reason="TODO") # NOQA
