@@ -713,6 +713,13 @@ def set_node_tags(client, node, tags=[]):  # NOQA
                          tags=tags)
 
 
+def set_node_scheduling(client, node, allowScheduling):
+    if node.tags is None:
+        node.tags = []
+    return client.update(node, allowScheduling=allowScheduling,
+                         tags=node.tags)
+
+
 @pytest.fixture
 def pod_make(request):
     def make_pod(name='test-pod'):
