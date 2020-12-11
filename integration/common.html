@@ -51,6 +51,7 @@ from kubernetes.client.rest import ApiException
 
 from urllib.parse import urlparse
 
+Ki = 1024
 Mi = (1024 * 1024)
 Gi = (1024 * Mi)
 
@@ -738,6 +739,13 @@ def set_node_tags(client, node, tags=[]):  # NOQA
     &#34;&#34;&#34;
     return client.update(node, allowScheduling=node.allowScheduling,
                          tags=tags)
+
+
+def set_node_scheduling(client, node, allowScheduling):
+    if node.tags is None:
+        node.tags = []
+    return client.update(node, allowScheduling=allowScheduling,
+                         tags=node.tags)
 
 
 @pytest.fixture
@@ -7592,6 +7600,22 @@ def set_backupstore_s3(client):
     client.update(backup_target_credential_setting, value=&#34;&#34;)</code></pre>
 </details>
 </dd>
+<dt id="tests.common.set_node_scheduling"><code class="name flex">
+<span>def <span class="ident">set_node_scheduling</span></span>(<span>client, node, allowScheduling)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def set_node_scheduling(client, node, allowScheduling):
+    if node.tags is None:
+        node.tags = []
+    return client.update(node, allowScheduling=allowScheduling,
+                         tags=node.tags)</code></pre>
+</details>
+</dd>
 <dt id="tests.common.set_node_tags"><code class="name flex">
 <span>def <span class="ident">set_node_tags</span></span>(<span>client, node, tags=[])</span>
 </code></dt>
@@ -10074,6 +10098,7 @@ volume. Trigger a failed assertion of one is detected.
 <li><code><a title="tests.common.scheduling_api" href="#tests.common.scheduling_api">scheduling_api</a></code></li>
 <li><code><a title="tests.common.set_backupstore_nfs" href="#tests.common.set_backupstore_nfs">set_backupstore_nfs</a></code></li>
 <li><code><a title="tests.common.set_backupstore_s3" href="#tests.common.set_backupstore_s3">set_backupstore_s3</a></code></li>
+<li><code><a title="tests.common.set_node_scheduling" href="#tests.common.set_node_scheduling">set_node_scheduling</a></code></li>
 <li><code><a title="tests.common.set_node_tags" href="#tests.common.set_node_tags">set_node_tags</a></code></li>
 <li><code><a title="tests.common.set_random_backupstore" href="#tests.common.set_random_backupstore">set_random_backupstore</a></code></li>
 <li><code><a title="tests.common.settings_reset" href="#tests.common.settings_reset">settings_reset</a></code></li>
