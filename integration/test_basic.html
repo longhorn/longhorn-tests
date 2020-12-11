@@ -3262,6 +3262,30 @@ def test_allow_volume_creation_with_degraded_availability_error(
     check_volume_data(volume, data)
 
 
+@pytest.mark.skip(reason=&#34;TODO&#34;) # NOQA
+def test_multiple_volumes_creation_with_degraded_availability():
+    &#34;&#34;&#34;
+    Goal:
+    We want to verify that multiple volumes with degraded availability
+    can be created, attached, detached, and deleted at the nearly the
+    same time.
+
+    Steps:
+    1. create StorageClass longhorn-extra with numberOfReplicas=5
+       Set allow-volume-creation-with-degraded-availability to True
+    2. Deploy this StatefulSet:
+       https://github.com/longhorn/longhorn/issues/2073#issuecomment-742948726
+    3. In a 1-min retry loop, Verify that all 10 volumes are healthy
+    4. Delete the StatefulSet
+    5. In a 1-min retry loop, Verify that all 10 volumes are detached
+    6. Find and delete the PVC of the 10 volumes.
+    7. In a 1-min retry loop, Verify that all 10 volumes are deleted
+    8. Make sure to delete all extra storage classes in
+       common.cleanup_client()
+    &#34;&#34;&#34;
+    pass
+
+
 @pytest.mark.skip(reason=&#34;TODO&#34;)
 def test_allow_volume_creation_with_degraded_availability_restore():
     &#34;&#34;&#34;
@@ -6374,6 +6398,54 @@ def test_listing_backup_volume(client, base_image=&#34;&#34;):   # NOQA
     assert len(volumes) == 0</code></pre>
 </details>
 </dd>
+<dt id="tests.test_basic.test_multiple_volumes_creation_with_degraded_availability"><code class="name flex">
+<span>def <span class="ident">test_multiple_volumes_creation_with_degraded_availability</span></span>(<span>)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Goal:
+We want to verify that multiple volumes with degraded availability
+can be created, attached, detached, and deleted at the nearly the
+same time.</p>
+<p>Steps:
+1. create StorageClass longhorn-extra with numberOfReplicas=5
+Set allow-volume-creation-with-degraded-availability to True
+2. Deploy this StatefulSet:
+<a href="https://github.com/longhorn/longhorn/issues/2073#issuecomment-742948726">https://github.com/longhorn/longhorn/issues/2073#issuecomment-742948726</a>
+3. In a 1-min retry loop, Verify that all 10 volumes are healthy
+4. Delete the StatefulSet
+5. In a 1-min retry loop, Verify that all 10 volumes are detached
+6. Find and delete the PVC of the 10 volumes.
+7. In a 1-min retry loop, Verify that all 10 volumes are deleted
+8. Make sure to delete all extra storage classes in
+common.cleanup_client()</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@pytest.mark.skip(reason=&#34;TODO&#34;) # NOQA
+def test_multiple_volumes_creation_with_degraded_availability():
+    &#34;&#34;&#34;
+    Goal:
+    We want to verify that multiple volumes with degraded availability
+    can be created, attached, detached, and deleted at the nearly the
+    same time.
+
+    Steps:
+    1. create StorageClass longhorn-extra with numberOfReplicas=5
+       Set allow-volume-creation-with-degraded-availability to True
+    2. Deploy this StatefulSet:
+       https://github.com/longhorn/longhorn/issues/2073#issuecomment-742948726
+    3. In a 1-min retry loop, Verify that all 10 volumes are healthy
+    4. Delete the StatefulSet
+    5. In a 1-min retry loop, Verify that all 10 volumes are detached
+    6. Find and delete the PVC of the 10 volumes.
+    7. In a 1-min retry loop, Verify that all 10 volumes are deleted
+    8. Make sure to delete all extra storage classes in
+       common.cleanup_client()
+    &#34;&#34;&#34;
+    pass</code></pre>
+</details>
+</dd>
 <dt id="tests.test_basic.test_restore_inc"><code class="name flex">
 <span>def <span class="ident">test_restore_inc</span></span>(<span>client, core_api, volume_name, pod)</span>
 </code></dt>
@@ -7706,6 +7778,7 @@ def test_volume_update_replica_count(client, volume_name):  # NOQA
 <li><code><a title="tests.test_basic.test_expansion_with_scheduling_failure" href="#tests.test_basic.test_expansion_with_scheduling_failure">test_expansion_with_scheduling_failure</a></code></li>
 <li><code><a title="tests.test_basic.test_hosts" href="#tests.test_basic.test_hosts">test_hosts</a></code></li>
 <li><code><a title="tests.test_basic.test_listing_backup_volume" href="#tests.test_basic.test_listing_backup_volume">test_listing_backup_volume</a></code></li>
+<li><code><a title="tests.test_basic.test_multiple_volumes_creation_with_degraded_availability" href="#tests.test_basic.test_multiple_volumes_creation_with_degraded_availability">test_multiple_volumes_creation_with_degraded_availability</a></code></li>
 <li><code><a title="tests.test_basic.test_restore_inc" href="#tests.test_basic.test_restore_inc">test_restore_inc</a></code></li>
 <li><code><a title="tests.test_basic.test_restore_inc_with_expansion" href="#tests.test_basic.test_restore_inc_with_expansion">test_restore_inc_with_expansion</a></code></li>
 <li><code><a title="tests.test_basic.test_running_volume_with_scheduling_failure" href="#tests.test_basic.test_running_volume_with_scheduling_failure">test_running_volume_with_scheduling_failure</a></code></li>
