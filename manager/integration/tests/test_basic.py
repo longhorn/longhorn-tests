@@ -3234,6 +3234,30 @@ def test_allow_volume_creation_with_degraded_availability_error(
     check_volume_data(volume, data)
 
 
+@pytest.mark.skip(reason="TODO") # NOQA
+def test_multiple_volumes_creation_with_degraded_availability():
+    """
+    Goal:
+    We want to verify that multiple volumes with degraded availability
+    can be created, attached, detached, and deleted at the nearly the
+    same time.
+
+    Steps:
+    1. create StorageClass longhorn-extra with numberOfReplicas=5
+       Set allow-volume-creation-with-degraded-availability to True
+    2. Deploy this StatefulSet:
+       https://github.com/longhorn/longhorn/issues/2073#issuecomment-742948726
+    3. In a 1-min retry loop, Verify that all 10 volumes are healthy
+    4. Delete the StatefulSet
+    5. In a 1-min retry loop, Verify that all 10 volumes are detached
+    6. Find and delete the PVC of the 10 volumes.
+    7. In a 1-min retry loop, Verify that all 10 volumes are deleted
+    8. Make sure to delete all extra storage classes in
+       common.cleanup_client()
+    """
+    pass
+
+
 @pytest.mark.skip(reason="TODO")
 def test_allow_volume_creation_with_degraded_availability_restore():
     """
