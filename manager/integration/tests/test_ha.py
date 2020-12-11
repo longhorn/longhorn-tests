@@ -2033,7 +2033,6 @@ def test_auto_remount_with_subpath(
     Steps:
 
     1. Deploy a storage class with parameter `numberOfReplicas: 1`
-       and `datalocality: best-effort`
     2. Deploy a statefulset with `replicas: 1` and using the above storageclass
        Make sure the container in the pod template uses subpath, like this:
        ```yaml
@@ -2083,18 +2082,13 @@ def test_auto_remount_with_subpath(
             client, core_api, statefulset, sts_name, storage_class,
             data_path=data_path)
 
-    vol = client.by_id_volume(vol_name)
-    vol.updateDataLocality(dataLocality="best-effort")
-    wait_for_volume_healthy(client, vol_name)
-    common.wait_for_pod_remount(core_api, pod_name, chk_path=data_path)
-
     crash_count = 3
     for _ in range(crash_count):
         vol = client.by_id_volume(vol_name)
         rim_name = vol.replicas[0].instanceManagerName
         delete_and_wait_pod(core_api, rim_name,
                             namespace='longhorn-system',
-                            wait=False)
+                            wait=True)
         wait_for_volume_healthy(client, vol_name)
         common.wait_for_pod_remount(core_api, pod_name, chk_path=data_path)
         expect_md5sum = get_pod_data_md5sum(core_api, pod_name, data_path)
@@ -2102,17 +2096,19 @@ def test_auto_remount_with_subpath(
 
     vol = client.by_id_volume(vol_name)
     vol.updateReplicaCount(replicaCount=3)
-    wait_for_rebuild_complete(client, vol_name)
+    wait_for_volume_replica_count(client, vol_name, 3)
+    vol = wait_for_volume_healthy(client, vol_name)
 
     eim_name = vol.controllers[0].instanceManagerName
     delete_and_wait_pod(core_api, eim_name,
                         namespace='longhorn-system',
-                        wait=False)
+                        wait=True)
+    wait_for_volume_healthy(client, vol_name)
     common.wait_for_pod_remount(core_api, pod_name, chk_path=data_path)
     expect_md5sum = get_pod_data_md5sum(core_api, pod_name, data_path)
     assert expect_md5sum == md5sum
 
-    delete_and_wait_pod(core_api, pod_name, wait=False)
+    delete_and_wait_pod(core_api, pod_name, wait=True)
     common.wait_for_pod_phase(core_api, pod_name, pod_phase="Running")
     common.wait_for_pod_remount(core_api, pod_name, chk_path=data_path)
     expect_md5sum = get_pod_data_md5sum(core_api, pod_name, data_path)
