@@ -413,15 +413,24 @@ def delete_and_wait_pod(api, pod_name, namespace='default', wait=True):
         api: An instance of CoreV1API.
         pod_name: The name of the Pod.
     """
+    target_pod = None
+    try:
+        target_pod = api.read_namespaced_pod(name=pod_name,
+                                             namespace=namespace)
+    except ApiException as e:
+        assert e.status == 404
+        return
+
     try:
         api.delete_namespaced_pod(
             name=pod_name, namespace=namespace,
             body=k8sclient.V1DeleteOptions())
     except ApiException as e:
         assert e.status == 404
+        return
 
     if wait:
-        wait_delete_pod(api, pod_name)
+        wait_delete_pod(api, target_pod.metadata.uid, namespace=namespace)
 
 
 def delete_and_wait_statefulset(api, client, statefulset):
@@ -455,7 +464,7 @@ def delete_and_wait_statefulset(api, client, statefulset):
     client = get_longhorn_api_client()
     for pod in pod_data:
         # Wait on Pods too, we apparently had timeout issues with them.
-        wait_delete_pod(api, pod['pod_name'])
+        wait_delete_pod(api, pod['pod_uid'])
         delete_and_wait_pvc(api, pod['pvc_name'])
         # The StatefulSet tests involve both StorageClass provisioned volumes
         # and our manually created PVs. This checks the status of our PV once
@@ -499,6 +508,7 @@ def get_statefulset_pod_info(api, s_set):
         pv_name = get_volume_name(api, pvc_name)
         pod_info.append({
             'pod_name': pod_name,
+            'pod_uid': pod.metadata.uid,
             'pv_name': pv_name,
             'pvc_name': pvc_name,
         })
@@ -661,12 +671,12 @@ def size_to_string(volume_size):
         return str(volume_size >> 10) + 'Ki'
 
 
-def wait_delete_pod(api, pod_name):
+def wait_delete_pod(api, pod_uid, namespace='default'):
     for i in range(DEFAULT_POD_TIMEOUT):
-        ret = api.list_namespaced_pod(namespace='default')
+        ret = api.list_namespaced_pod(namespace=namespace)
         found = False
         for item in ret.items:
-            if item.metadata.name == pod_name:
+            if item.metadata.uid == pod_uid:
                 found = True
                 break
         if not found:
