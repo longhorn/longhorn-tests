@@ -92,7 +92,7 @@ def delete_and_wait_statefulset_only(api, ss):
     assert not found
 
     for p in pod_data:
-        wait_delete_pod(api, p[&#39;pod_name&#39;])
+        wait_delete_pod(api, p[&#39;pod_uid&#39;])
 
 
 def provision_and_wait_pv(client, core_api, storage_class, pvc): # NOQA
@@ -871,7 +871,7 @@ def test_delete_provisioned_pvc(client, core_api,  storage_class, pvc): # NOQA
     assert not found
 
     for p in pod_data:
-        wait_delete_pod(api, p[&#39;pod_name&#39;])</code></pre>
+        wait_delete_pod(api, p[&#39;pod_uid&#39;])</code></pre>
 </details>
 </dd>
 <dt id="tests.test_kubernetes.provision_and_wait_pv"><code class="name flex">
