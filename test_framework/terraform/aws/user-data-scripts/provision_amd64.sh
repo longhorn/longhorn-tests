@@ -3,7 +3,7 @@
 DOCKER_VERSION=19.03
 
 sudo apt-get update 
-sudo apt-get install -y build-essential git 
+sudo apt-get install -y build-essential git nfs-common
 
 until (curl https://releases.rancher.com/install-docker/${DOCKER_VERSION}.sh | sudo sh); do
   echo 'docker did not install correctly'                                          
