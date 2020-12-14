@@ -64,7 +64,7 @@ def delete_and_wait_statefulset_only(api, ss):
     assert not found
 
     for p in pod_data:
-        wait_delete_pod(api, p['pod_name'])
+        wait_delete_pod(api, p['pod_uid'])
 
 
 def provision_and_wait_pv(client, core_api, storage_class, pvc): # NOQA
