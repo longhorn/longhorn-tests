@@ -13,6 +13,7 @@ from common import check_volume_data, cleanup_volume, \
     write_volume_random_data, wait_for_rebuild_complete
 from common import SETTING_REPLICA_NODE_SOFT_ANTI_AFFINITY
 from common import SETTING_DEFAULT_DATA_LOCALITY
+from common import VOLUME_FIELD_ROBUSTNESS, VOLUME_ROBUSTNESS_HEALTHY
 from common import create_pv_for_volume
 from common import create_pvc_for_volume
 from common import write_pod_volume_random_data
@@ -23,7 +24,6 @@ from common import create_and_wait_pod
 from common import settings_reset # NOQA
 from common import wait_for_rebuild_start
 from common import delete_and_wait_pod
-from common import wait_for_replica_failed
 from common import crash_engine_process_with_sigkill
 from common import wait_for_replica_running
 
@@ -439,6 +439,8 @@ def test_data_locality_basic(client, core_api, volume_name, pod, settings_reset)
 
     Steps:
 
+    Case 1: Test that Longhorn builds a local replica on the engine node
+
     1. Create a volume(1) with 1 replica and dataLocality set to disabled
     2. Find node where the replica is located on.
        Let's call the node is replica-node
@@ -457,67 +459,71 @@ def test_data_locality_basic(client, core_api, volume_name, pod, settings_reset)
     10. Use a retry loop to verify that Longhorn creates and rebuilds
        a replica on the new-engine-node and remove the replica on
        old-engine-node
-    11. Update dataLocality to disabled for volume(1)
-    12. detach the volume(1) and attach it to a different node.
-       Let's call the new node is new-engine-node and the old
-       node is old-engine-node
-    13. Wait for volume(1) to finish detaching
-    14. Use a retry loop to verify that Longhorn does not create
-        a replica on the new-engine-node
 
-    15. Add the tag AVAIL to node-1 and node-2
-    16. Set node soft anti-affinity to `true`.
-    17. Create a volume(2) with 3 replicas and dataLocality set to best-effort
-    18. Use a retry loop to verify that all 3 replicas are on node-1 and
+    Case 2: Test that Longhorn prioritizes deleting replicas on the same node
+
+    1. Add the tag AVAIL to node-1 and node-2
+    2. Set node soft anti-affinity to `true`.
+    3. Create a volume(2) with 3 replicas and dataLocality set to best-effort
+    4. Use a retry loop to verify that all 3 replicas are on node-1 and
         node-2, no replica is on node-3
-    19. Attach volume(2) to node-3
-    20. User a retry loop to verify that there is no replica on node-3 and
+    5. Attach volume(2) to node-3
+    6. User a retry loop to verify that there is no replica on node-3 and
         we can still read/write to volume(2)
-    21. Find the node which contains 2 replicas.
+    7. Find the node which contains 2 replicas.
         Let call the node is most-replica-node
-    22. Set the replica count to 2 for volume(2)
-    23. Verify that Longhorn remove one replica from most-replica-node
+    8. Set the replica count to 2 for volume(2)
+    9. Verify that Longhorn remove one replica from most-replica-node
 
-    24. Remove the tag AVAIL from node-1 and node-2
-    25. Set node soft anti-affinity to `false`.
-    26. Create a volume(3) with 1 replicas and dataLocality set to best-effort
-    27. Attach volume(3) to node-3.
-    28. Use a retry loop to verify that volume(3) has only 1 replica on node-3
-    29. Write 10GB data to volume(3)
-    30. Detach volume(3)
-    31. Attach volume(3) to node-1
-    32. Use a retry loop to:
+    Case 3: Test that the volume is not corrupted if there is an unexpected
+    detachment during building local replica
+
+    1. Remove the tag AVAIL from node-1 and node-2
+       Set node soft anti-affinity to `false`.
+    2. Create a volume(3) with 1 replicas and dataLocality set to best-effort
+    3. Attach volume(3) to node-3.
+    4. Use a retry loop to verify that volume(3) has only 1 replica on node-3
+    5. Write 800MB data to volume(3)
+    6. Detach volume(3)
+    7. Attach volume(3) to node-1
+    8. Use a retry loop to:
         Wait until volume(3) finishes attaching.
         Wait until Longhorn start rebuilding a replica on node-1
         Immediately detach volume(3)
-    33. Verify that the replica on node-1 is in ERR state.
-    34. Attach volume(3) to node-1
-    35. Wait until volume(3) finishes attaching.
-    36. Use a retry loop to verify the Longhorn cleanup the ERR replica,
+    9. Verify that the replica on node-1 is in ERR state.
+    10. Attach volume(3) to node-1
+    11. Wait until volume(3) finishes attaching.
+    12. Use a retry loop to verify the Longhorn cleanup the ERR replica,
         rebuild a new replica on node-1, and remove the replica on node-3
 
-    37. Disable scheduling for node-3
-    38. Create a vol with 1 replica, `dataLocality = best-effort`.
+    Case 4: Make sure failed to schedule local replica doesn't block the
+    the creation of other replicas.
+
+    1. Disable scheduling for node-3
+    2. Create a vol with 1 replica, `dataLocality = best-effort`.
         The replica is scheduled on a node (say node-1)
-    39. Attach vol to node-3. There is a fail-to-schedule
+    3. Attach vol to node-3. There is a fail-to-schedule
         replica with Spec.HardNodeAffinity=node-3
-    40. Increase numberOfReplica to 3. Verify that the replica set contains:
+    4. Increase numberOfReplica to 3. Verify that the replica set contains:
         one on node-1, one on node-2,  one failed replica
         with Spec.HardNodeAffinity=node-3.
-    41. Decrease numberOfReplica to 2. Verify that the replica set contains:
+    5. Decrease numberOfReplica to 2. Verify that the replica set contains:
         one on node-1, one on node-2,  one failed replica
         with Spec.HardNodeAffinity=node-3.
-    42. Decrease numberOfReplica to 1. Verify that the replica set contains:
+    6. Decrease numberOfReplica to 1. Verify that the replica set contains:
         one on node-1 or node-2,  one failed replica
         with Spec.HardNodeAffinity=node-3.
-    43. Decrease numberOfReplica to 2. Verify that the replica set contains:
+    7. Decrease numberOfReplica to 2. Verify that the replica set contains:
         one on node-1, one on node-2, one failed replica
         with Spec.HardNodeAffinity=node-3.
-    44. Turn off data locality by set `dataLocality=disabled` for the vol.
+    8. Turn off data locality by set `dataLocality=disabled` for the vol.
         Verify that the replica set contains: one on node-1, one on node-2
 
-    45. clean up
+    9. clean up
     """
+
+    # Case 1: Test that Longhorn builds a local replica on the engine node
+
     nodes = client.list_node()
 
     default_data_locality_setting = \
@@ -581,17 +587,13 @@ def test_data_locality_basic(client, core_api, volume_name, pod, settings_reset)
     volume1 = client.by_id_volume(volume1_name)
     volume1.updateDataLocality(dataLocality="best-effort")
 
-    wait_for_rebuild_start(client, volume1_name)
-
-    volume1 = wait_for_volume_replica_count(client, volume1_name, 2)
-    volume1 = client.by_id_volume(volume1_name)
-    assert len(volume1.replicas) == 2
-
-    wait_for_rebuild_complete(client, volume1_name)
-
-    volume1 = wait_for_volume_replica_count(client, volume1_name, 1)
-    volume1 = client.by_id_volume(volume1_name)
-
+    for _ in range(RETRY_COUNTS):
+        volume1 = client.by_id_volume(volume1_name)
+        assert volume1[VOLUME_FIELD_ROBUSTNESS] == VOLUME_ROBUSTNESS_HEALTHY
+        if len(volume1.replicas) == 1 and \
+                volume1.replicas[0]['hostId'] == volume1_attached_node:
+            break
+        time.sleep(RETRY_INTERVAL)
     assert len(volume1.replicas) == 1
     assert volume1.replicas[0]['hostId'] == volume1_attached_node
 
@@ -611,18 +613,19 @@ def test_data_locality_basic(client, core_api, volume_name, pod, settings_reset)
     pod1['spec']['nodeSelector'] = \
         {"kubernetes.io/hostname": volume1_attached_node}
     create_and_wait_pod(core_api, pod1)
-
-    wait_for_rebuild_start(client, volume1_name)
-
-    volume1 = client.by_id_volume(volume1_name)
-    assert len(volume1.replicas) == 2
-
-    wait_for_rebuild_complete(client, volume1_name)
-
-    volume1 = wait_for_volume_replica_count(client, volume1_name, 1)
-    volume1 = client.by_id_volume(volume1_name)
+    for _ in range(RETRY_COUNTS):
+        volume1 = client.by_id_volume(volume1_name)
+        assert volume1[VOLUME_FIELD_ROBUSTNESS] == VOLUME_ROBUSTNESS_HEALTHY
+        if len(volume1.replicas) == 1 and \
+                volume1.replicas[0]['hostId'] == volume1_attached_node:
+            break
+        time.sleep(RETRY_INTERVAL)
     assert len(volume1.replicas) == 1
     assert volume1.replicas[0]['hostId'] == volume1_attached_node
+    delete_and_wait_pod(core_api, pod1_name)
+    wait_for_volume_detached(client, volume1_name)
+
+    # Case 2: Test that Longhorn prioritizes deleting replicas on the same node
 
     node1 = nodes[0]
     node2 = nodes[1]
@@ -641,7 +644,6 @@ def test_data_locality_basic(client, core_api, volume_name, pod, settings_reset)
               "Replica Node Level Soft Anti-Affinity setting",
               replica_node_soft_anti_affinity_setting, e)
 
-    # case 2
     volume2_name = volume_name + "-2"
     volume2_size = str(500 * Mi)
     pv2_name = volume2_name + "-pv"
@@ -682,6 +684,7 @@ def test_data_locality_basic(client, core_api, volume_name, pod, settings_reset)
     volume2.updateReplicaCount(replicaCount=2)
 
     # 2 Healthy replicas and 1 replica failed to schedule
+    # The failed to schedule replica is the local replica on node3
     volume2 = wait_for_volume_replica_count(client, volume2_name, 3)
     volume2 = client.by_id_volume(volume2_name)
 
@@ -695,8 +698,12 @@ def test_data_locality_basic(client, core_api, volume_name, pod, settings_reset)
     volume2_rep1 = volume2_healthy_replicas[0]
     volume2_rep2 = volume2_healthy_replicas[1]
     assert volume2_rep1["hostId"] != volume2_rep2["hostId"]
+    delete_and_wait_pod(core_api, pod2_name)
+    wait_for_volume_detached(client, volume2_name)
 
-    # case 3
+    # Case 3: Test that the volume is not corrupted if there is an unexpected
+    # detachment during building local replica
+
     client.update(node1, allowScheduling=True, tags=[])
     client.update(node2, allowScheduling=True, tags=[])
 
@@ -764,23 +771,11 @@ def test_data_locality_basic(client, core_api, volume_name, pod, settings_reset)
 
     wait_for_rebuild_start(client, volume3_name)
     crash_engine_process_with_sigkill(client, core_api, volume3_name)
-    volume3 = client.by_id_volume(volume3_name)
-
     delete_and_wait_pod(core_api, pod3_name)
     wait_for_volume_detached(client, volume3_name)
-
-    err_replica = None
-    for replica in volume3.replicas:
-        if replica["hostId"] == node1.name:
-            err_replica = replica
-            break
-
-    assert err_replica is not None
-
-    wait_for_replica_failed(client, volume3_name, err_replica["name"])
-
     volume3 = client.by_id_volume(volume3_name)
     assert len(volume3.replicas) == 1
+    assert volume3.replicas[0]["hostId"] == node3.name
 
     create_and_wait_pod(core_api, pod3)
     wait_for_rebuild_start(client, volume3_name)
@@ -794,7 +789,12 @@ def test_data_locality_basic(client, core_api, volume_name, pod, settings_reset)
     assert volume3.replicas[0]["mode"] == "RW"
     assert volume3.replicas[0]["running"] is True
 
-    # case 4
+    delete_and_wait_pod(core_api, pod3_name)
+    wait_for_volume_detached(client, volume3_name)
+
+    # Case 4: Make sure failed to schedule local replica doesn't block the
+    # the creation of other replicas.
+
     replica_node_soft_anti_affinity_setting = \
         client.by_id_setting(SETTING_REPLICA_NODE_SOFT_ANTI_AFFINITY)
     try:
@@ -899,8 +899,18 @@ def test_data_locality_basic(client, core_api, volume_name, pod, settings_reset)
 
     volume4 = volume4.updateDataLocality(dataLocality="disabled")
     volume4 = volume4.updateReplicaCount(replicaCount=2)
-    wait_for_volume_healthy(client, volume4_name)
-    volume4 = wait_for_volume_replica_count(client, volume4_name, 2)
+
+    running_replica_count = 0
+    for _ in range(RETRY_COUNTS):
+        volume4 = client.by_id_volume(volume4_name)
+        running_replica_count = 0
+        for r in volume4.replicas:
+            if r.failedAt == "" and r.running is True:
+                running_replica_count += 1
+        if running_replica_count == 2:
+            break
+        time.sleep(RETRY_INTERVAL)
+    assert running_replica_count == 2
 
     v4_node1_replica_count = 0
     v4_node2_replica_count = 0
@@ -914,7 +924,6 @@ def test_data_locality_basic(client, core_api, volume_name, pod, settings_reset)
             v4_node2_replica_count += 1
         elif replica["hostId"] == node3.name:
             v4_node3_replica_count += 1
-
     assert v4_node1_replica_count == 1
     assert v4_node2_replica_count == 1
     assert v4_node3_replica_count == 0
