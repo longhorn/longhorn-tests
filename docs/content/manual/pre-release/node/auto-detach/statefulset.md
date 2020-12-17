@@ -37,3 +37,5 @@ Volume Attachment Recovery Policy: **never:**
 - data is accessible in the volume.
 - It takes another 1 minute approx for the second pod to come up.
 - data is accessible in the volume.
+
+**Note:** All the above behavior will depend on `NodeDownPodDeletionPolicy`. It is assumed that `NodeDownPodDeletionPolicy` is set to `do-nothing` while executing the above scenarios.
