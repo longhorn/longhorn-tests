@@ -7,10 +7,10 @@ Prometheus Support allows user to monitor the longhorn metrics. The details are 
 2. Create an ingress pointing to Prometheus service.
 3. Access the Prometheus web UI using the ingress created in the step 2.
 4. Select the metrics from below to monitor the longhorn resources.
-    1. longhorn_volume_capacity_bytes
-    2. longhorn_volume_actual_size_bytes
-    3. longhorn_volume_state
-    4. longhorn_volume_robustness
+    1. longhorn_volume_actual_size_bytes
+    2. longhorn_volume_capacity_bytes
+    3. longhorn_volume_robustness
+    4. longhorn_volume_state
     5. longhorn_instance_manager_cpu_requests_millicpu
     6. longhorn_instance_manager_cpu_usage_millicpu
     7. longhorn_instance_manager_memory_requests_bytes
@@ -23,6 +23,12 @@ Prometheus Support allows user to monitor the longhorn metrics. The details are 
     14. longhorn_node_cpu_usage_millicpu
     15. longhorn_node_memory_capacity_bytes
     16. longhorn_node_memory_usage_bytes
+    17. longhorn_node_storage_capacity_bytes
+    18. longhorn_node_storage_reservation_bytes
+    19. longhorn_node_storage_usage_bytes
+    20. longhorn_disk_capacity_bytes
+    21. longhorn_disk_reservation_bytes
+    22. longhorn_disk_usage_bytes
 5. Deploy workloads which use Longhorn volumes into the cluster. Verify that there is no abnormal data. e.g: volume capacity is 0, cpu usage is over 4000 milicpu etc.
 6. Attach a volume to a node. Detach the volume and attach it to a different node. Verify that the volume's information is reported by at most 1 longhorn-manager at any time.
 
@@ -45,5 +51,26 @@ Prometheus Support allows user to monitor the longhorn metrics. The details are 
 2. Deploy longhorn v1.1.0.
 3. Enable the monitoring for a project.
 4. Deploy the ServiceMonitor pointing to longhorn-backend.
+    ```
+   apiVersion: monitoring.coreos.com/v1
+    kind: ServiceMonitor
+    metadata:
+      name: longhorn-prometheus-servicemonitor
+      namespace: longhorn-system
+      labels:
+        name: longhorn-prometheus-servicemonitor
+    spec:
+      selector:
+      matchLabels:
+        app: longhorn-manager
+      namespaceSelector:
+        matchNames:
+        - longhorn-system
+      endpoints:
+      - port: manager
+    ```
 5. Access the url provided by the app to access Prometheus or Grafana.
 6. Verify the longhorn metrics are available to monitor.
+7. Verify that [kubelet_volume_*](https://v1-1-0.longhorn.io/docs/1.1.0/monitoring/kubelet-volume-metrics/) metrics are available if Rancher 2.5 monitoring app is deployed.
+8. Import [Longhorn Example dashboard](https://grafana.com/grafana/dashboards/13032). Verify that the graph looks good.
+9. Setup alert and alert rules in Rancher monitoring app. Verify that alerts are working ok.

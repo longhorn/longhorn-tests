@@ -28,3 +28,5 @@ Volume Attachment Recovery Policy: **never:**
 - Delete the pod stuck in "Unknown" status
 - Replacement pod comes up in about 1 minute
 - data is accessible after the pod comes up active
+
+**Note:** All the above behavior will depend on `NodeDownPodDeletionPolicy`. It is assumed that `NodeDownPodDeletionPolicy` is set to `do-nothing` while executing the above scenarios.
