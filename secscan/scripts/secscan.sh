@@ -5,7 +5,7 @@ SEVERITY=${1}
 mkdir -p /junit-reports /templates
 
 REPO="longhornio"
-IMAGES=("longhorn-manager" "longhorn-engine" "longhorn-instance-manager" "longhorn-ui")
+IMAGES=("longhorn-manager" "longhorn-engine" "longhorn-instance-manager" "longhorn-ui" "longhorn-share-manager")
 TAG="master"
 
 wget -O /templates/junit.tpl https://raw.githubusercontent.com/longhorn/longhorn-tests/master/secscan/templates/junit.tpl
