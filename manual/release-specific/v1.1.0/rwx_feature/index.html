@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>
+      Longhorn Manual Test Cases
+    </title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/4.0.0/github-markdown.min.css">
+  </head>
+  <body class="markdown-body" style="display: flex; padding: 1%;">
+    
+<aside style="width: 30%; padding: 1%; border-right: 1px solid lightgray;">
+  <a href="https://longhorn.github.io/longhorn-tests/manual"><h2>Manual Test Cases</h2></a>
+  
+  <ul>
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/">Pre-release tests</a></li>
+  
+    <ul>
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/air-gap/">Air Gap</a></li>
+  
+    <ul>
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/air-gap/air-gap-installation/">Air gap installation</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/air-gap/air-gap-instance-manager-name/">Air gap installation with an instance-manager-image name longer than 63 characters</a></li>
+  
+
+</ul>
+
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/">Backup &amp; Restore tests</a></li>
+  
+    <ul>
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/dr-volume-live-upgrade-and-rebuild/">#1279 DR volume live upgrade and rebuild</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/concurrent-backup-creation-deletion/">#1326 concurrent backup creation &amp; deletion</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/concurrent-backup/">#1341 concurrent backup test</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/restore-volume-node-down/">#1355 The node the restore volume attached to is down</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/dr-volume-node-down-rebooted/">#1366 &amp;&amp; #1328 The node the DR volume attached to is down/rebooted</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/google-cloud-s3-interop-backups/">#1404 test backup functionality on google cloud and other s3 interop providers.</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/backup-block-deletion/">#1431 backup block deletion test</a></li>
+  
+
+</ul>
+
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/environment/">Environment</a></li>
+  
+    <ul>
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/environment/k3s-selinux-compatibility/">Compatibility with k3s and SELinux</a></li>
+  
+
+</ul>
+
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/ha/">HA</a></li>
+  
+    <ul>
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/ha/disk-migration-in-aws-asg/">Disk migration in AWS ASG</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/ha/instance-manager-pod-recovery/">Instance manager pod recovery [#870]</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/ha/replica-rebuilding/">Replica Rebuilding</a></li>
+  
+
+</ul>
+
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node/">Node</a></li>
+  
+    <ul>
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node/degraded-availability/">Degraded availability with added nodes</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node/improve-node-failure-handling/">Improve Node Failure Handling By Automatically Force Delete Terminating Pods of StatefulSet/Deployment On Downed Node</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node/node-disconnection/">Node disconnection test</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node/node-drain-deletion/">Node drain and deletion test</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node/physical-node-down/">Physical node down</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node/node-deletion/">Test node deletion</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node/auto-detach/">Test scenarios for auto detach of deployment pod&rsquo;s volume when the node is down</a></li>
+  
+    <ul>
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node/auto-detach/deployment/">Workload type: Deployment</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node/auto-detach/statefulset/">Workload type: Stateful set</a></li>
+  
+
+</ul>
+
+  
+
+</ul>
+
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/stability/">Stability</a></li>
+  
+    <ul>
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/stability/multiple-installation/">Longhorn installation multiple times</a></li>
+  
+
+</ul>
+
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/">Upgrade</a></li>
+  
+    <ul>
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/kubernetes-upgrade-test/">Kubernetes upgrade test</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/longhorn-upgrade-test/">Longhorn Upgrade test</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/update_csi_components_when_images_change/">Re-deploy CSI components when their images change</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/engine-crash-during-live-upgrade/">Test Engine Crash During Live Upgrade</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/upgrade-conflict-handling/">Upgrade Conflict Handling test</a></li>
+  
+
+</ul>
+
+  
+
+</ul>
+
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/">Release specific tests</a></li>
+  
+    <ul>
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.0/">v1.0.0</a></li>
+  
+    <ul>
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.0/new-node-custom-data-directory/">New Node with Custom Data Directory</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.0/suse-sles12sp3/">Operating System specific tests for SUSE SLES12SP3</a></li>
+  
+    <ul>
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.0/suse-sles12sp3/ext4-custom-fs-params-1/">Testing ext4 with custom fs params1 (no 64bit, no metadata_csum)</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.0/suse-sles12sp3/ext4-custom-fs-params-2/">Testing ext4 with custom fs params2 (no metadata_csum)</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.0/suse-sles12sp3/ext4-no-custom-fs-params/">Testing ext4 without custom fs params</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.0/suse-sles12sp3/xfs-after-custom-fs-params/">Testing xfs after custom fs params (xfs should ignore the custom fs params)</a></li>
+  
+
+</ul>
+
+  
+
+</ul>
+
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.1/">v1.0.1</a></li>
+  
+    <ul>
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.1/besteffort-recurring-job/">BestEffort Recurring Job Cleanup</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.1/change-imagepullpolicy/">Change imagePullPolicy to IfNotPresent Test</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.1/dr-volume-latest-backup-deletion/">DR volume related latest backup deletion test</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.1/nfsv4-enforcement/">NFSv4 Enforcement (No NFSv3 Fallback)</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.1/priorityclass-default-setting/">Priority Class Default Setting</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.1/error-fail-remount/">Return an error when fail to remount a volume</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.1/test-s3-access-style/">Test access style for S3 compatible backupstore</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.1/test-s3-backupstore/">Test S3 backupstore in a cluster sitting behind a Http Proxy</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.1/ui-volume-deletion/">Volume Deletion UI Warnings</a></li>
+  
+
+</ul>
+
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.2/">v1.0.2</a></li>
+  
+    <ul>
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.2/upgrade-lease-lock/">Upgrade Lease Lock</a></li>
+  
+
+</ul>
+
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/">v1.1.0</a></li>
+  
+    <ul>
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/prometheus_support/">Prometheus Support</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/recurring-backup-job-interruptions/">Recurring backup job interruptions</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/reusing-failed-replica-for-rebuilding/">Reusing failed replica for rebuilding</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/kubelet_volume_metrics/">Support Kubelet Volume Metrics</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/additional-printer-columns/">Test Additional Printer Columns</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/instance-manager-ip-sync/">Test Instance Manager IP Sync</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/iscsi_installation/">Test ISCSI Installation on EKS</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/rwx_feature/">Test Read Write Many Feature</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/uninstallation/">Test uninstallation</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/upgrade_with_modified_storageclass/">Upgrade Longhorn with modified Storage Class</a></li>
+  
+
+</ul>
+
+  
+
+</ul>
+
+  
+
+</ul>
+
+  
+</aside>
+
+<main style="padding: 1%; width: 70%;">
+  <h1 id="title">Test Read Write Many Feature</h1>
+  <div>
+    <article id="content">
+       <h1 id="prerequisite">Prerequisite:</h1>
+<ol>
+<li>Set up a Cluster of 4 nodes (1 etc/control plane and 3 workers)</li>
+<li>Deploy Latest Longhorn-master</li>
+</ol>
+<h1 id="create-statefulsetdeployment-with-single-pod-with-volume-attached-in-rwx-mode">Create StatefulSet/Deployment with single pod with volume attached in RWX mode.</h1>
+<ol>
+<li>Create a PVC with RWX mode using longhorn class by selecting the option <code>read write many</code>.</li>
+<li>Attach the PVC to a StatefulSet/Deployment with 1 pod.</li>
+<li>Verify that a PVC, ShareManger pod, CRD and volume in Longhorn get created.</li>
+<li>Verify share-manager pod come up healthy.</li>
+<li>Verify there is directory with the name of PVC exists in the ShareManager mount point.
+Example - <code>ls /export/pvc-8c3481c7-4127-47c3-b840-5f41dc9d603e</code></li>
+<li>Write some data in the pod and verify the same data reflects in the ShareManager.</li>
+<li>Verify the longhorn volume, it should reflect the correct size.</li>
+</ol>
+<h1 id="create-statefulsetdeployment-with-more-than-1-pod-with-volume-attached-in-rwx-mode">Create StatefulSet/Deployment with more than 1 pod with volume attached in RWX mode.</h1>
+<ol>
+<li>Create a PVC with RWX mode using longhorn class by selecting the option <code>read write many</code>.</li>
+<li>Attach the PVC to a StatefulSet/Deployment with 2 pods.</li>
+<li>Verify that 2 volumes in Longhorn get created.</li>
+<li>Verify there is directory with the name of PVC exists in the ShareManager mount point i.e. <code>export</code></li>
+<li>Verify that Longhorn UI shows all the pods name attached to the volume.</li>
+<li>Write some data in all the pod and verify all the data reflects in the ShareManager.</li>
+<li>Verify the longhorn volume, it should reflect the correct size.</li>
+</ol>
+<h1 id="create-statefulsetdeployment-with-the-existing-pvc-of-a-rwx-volume">Create StatefulSet/Deployment with the existing PVC of a RWX volume.</h1>
+<ol>
+<li>Create a PVC with RWX mode using longhorn class by selecting the option <code>read write many</code>.</li>
+<li>Attach the PVC to a StatefulSet/Deployment with 1 pod.</li>
+<li>Verify that a PVC, ShareManger pod, CRD and volume in Longhorn get created.</li>
+<li>Write some data in the pod and verify the same data reflects in the ShareManager.</li>
+<li>Create another StatefulSet/Deployment using the above created PVC.</li>
+<li>Write some data in the new pod, the same should be reflected in the ShareManager pod.</li>
+<li>Verify the longhorn volume, it should reflect the correct size.</li>
+</ol>
+<h1 id="scale-up-statefulsetdeployment-with-one-pod-attached-with-volume-in-rwx-mode">Scale up StatefulSet/Deployment with one pod attached with volume in RWX mode.</h1>
+<ol>
+<li>Create a PVC with RWX mode using longhorn class by selecting the option <code>read write many</code>.</li>
+<li>Attach the PVC to a StatefulSet/Deployment with 1 pod.</li>
+<li>Write some data in the pod and verify the same data reflects in the ShareManager.</li>
+<li>Scale up the StatefulSet/Deployment.</li>
+<li>Verify a new volume gets created.</li>
+<li>Write some data in the new pod, the same should be reflected in the ShareManager pod.</li>
+<li>Verify the longhorn volume, it should reflect the correct size.</li>
+</ol>
+<h1 id="scale-down-statefulsetdeployment-attached-with-volume-in-rwx-mode-to-zero">Scale down StatefulSet/Deployment attached with volume in RWX mode to zero.</h1>
+<ol>
+<li>Create a PVC with RWX mode using longhorn class by selecting the option <code>read write many</code>.</li>
+<li>Attach the PVC to a StatefulSet/Deployment with 1 pod.</li>
+<li>Write some data in the pod and verify the same data reflects in the ShareManager.</li>
+<li>Scale down the StatefulSet/Deployment to zero</li>
+<li>Verify the ShareManager pod gets deleted.</li>
+<li>Verify the volume should be in detached state.</li>
+<li>Create a new StatefulSet/Deployment with the existing PVC.</li>
+<li>Verify the ShareManager should get created and volume should become attached.</li>
+<li>Verify the data.</li>
+<li>Delete the newly created StatefulSet/Deployment.</li>
+<li>Verify the ShareManager pod gets deleted again.</li>
+<li>Scale up the first StatefulSet/Deployment.</li>
+<li>Verify the ShareManager should get created and volume should become attached.</li>
+<li>Verify the data.</li>
+</ol>
+<h1 id="delete-the-workload-statefulsetdeployment-attached-with-rwx-volume">Delete the Workload StatefulSet/Deployment attached with RWX volume.</h1>
+<ol>
+<li>Create a PVC with RWX mode using longhorn class by selecting the option <code>read write many</code>.</li>
+<li>Attach the PVC to a StatefulSet/Deployment with 2 pods.</li>
+<li>Write some data in the pod and verify the same data reflects in the ShareManager.</li>
+<li>Delete the workload.</li>
+<li>Verify the ShareManager pod gets deleted but the CRD should not be deleted.</li>
+<li>Verify the ShareManager.status.state == &ldquo;stopped&rdquo;. <code>kubectl get ShareManager -n longhorn-system</code></li>
+<li>Verify the volume should be in detached state.</li>
+<li>Create another StatefulSet with existing PVC.</li>
+<li>Verify the ShareManager should get created and volume should become attached.</li>
+<li>Verify the data.</li>
+</ol>
+<h1 id="take-snapshot-and-backup-of-a-rwx-volume-in-longhorn">Take snapshot and backup of a RWX volume in Longhorn.</h1>
+<ol>
+<li>Create a PVC with RWX mode using longhorn class by selecting the option <code>read write many</code>.</li>
+<li>Attach the PVC to a StatefulSet/Deployment with 2 pods.</li>
+<li>Write some data in the pod.</li>
+<li>Take a snapshot and a backup.</li>
+<li>Write some more data into the pod.</li>
+<li>Revert to snapshot 1 and verify the data.</li>
+</ol>
+<h1 id="restore-a-backup-taken-from-a-rwx-volume-in-longhorn">Restore a backup taken from a RWX volume in Longhorn.</h1>
+<ol>
+<li>Create a PVC with RWX mode using longhorn class by selecting the option <code>read write many</code>.</li>
+<li>Attach the PVC to a StatefulSet/Deployment with 2 pods.</li>
+<li>Write some data in the pod.</li>
+<li>Take a backup of the RWX volume.</li>
+<li>Restore from the backup and select access mode as <code>rwx</code>.</li>
+<li>Verify the restored volume has <code>volume.spec.accessMode</code> as <code>rwx</code>.</li>
+<li>Create PV/PVC with <code>accessMode</code> as <code>rwx</code> for restored volume or create PV/PVC using Longhorn UI.</li>
+<li>Attach a pod to the PVC created and verify the data.</li>
+</ol>
+<h1 id="restore-an-rwx-backup-into-an-rwo-volume">Restore an RWX backup into an RWO volume.</h1>
+<ol>
+<li>Create a PVC with RWX mode using longhorn class by selecting the option <code>read write many</code>.</li>
+<li>Attach the PVC to a StatefulSet/Deployment with 2 pods.</li>
+<li>Write some data in the pod.</li>
+<li>Take a backup of the RWX volume.</li>
+<li>Restore from the backup and select access mode as <code>rwo</code>.</li>
+<li>Verify the restored volume has <code>volume.spec.accessMode</code> as <code>rwo</code>.</li>
+<li>Create a PV and PVC with <code>accessMode</code> as <code>rwo</code> for the restored volume or create them using Longhorn UI.</li>
+<li>Attach a pod to the PVC and verify the data.</li>
+<li>Try to attach the PVC to another pod on another node, user should get <code>multi attach</code> error.</li>
+</ol>
+<h1 id="restore-an-rwo-backup-into-an-rwx-volume">Restore an RWO backup into an RWX volume.</h1>
+<ol>
+<li>Create a PVC with RWO mode using longhorn class by selecting the option <code>read write once</code>.</li>
+<li>Attach the PVC to a StatefulSet/Deployment with 1 pod.</li>
+<li>Write some data in the pod.</li>
+<li>Take a backup of the RWO volume.</li>
+<li>Restore from the backup and select access mode as <code>rwx</code>.</li>
+<li>Create a PV and PVC with <code>accessMode</code> as <code>rwx</code> for the restored volume or create them using Longhorn UI.</li>
+<li>Verify the restored volume has <code>volume.spec.accessMode</code> as <code>rwx</code> now.</li>
+<li>Attach a pod to the PVC and verify the data.</li>
+<li>Attach more pods to the PVC, verify the volume is accessible from multiple pods.</li>
+</ol>
+<h1 id="create-pv-and-pvc-using-longhorn-ui-for-rwxrwo-volume">Create PV and PVC using Longhorn UI for RWX/RWO volume</h1>
+<ol>
+<li>Create an RWX volume using Longhorn UI.</li>
+<li>Select the volume and create PV/PVC.</li>
+<li>Verify the PV and PVC are created with <code>rwx</code> access mode.</li>
+<li>Create an RWO volume using Longhorn UI.</li>
+<li>Select the volume and create PV/PVC.</li>
+<li>Verify the PV and PVC are created with <code>rwo</code> access mode.</li>
+</ol>
+<h1 id="create-rwx-dr-volume-of-a-rwx-volume-in-longhorn">Create RWX DR volume of a RWX volume in Longhorn.</h1>
+<ol>
+<li>Create a PVC with RWX mode using longhorn class by selecting the option <code>read write many</code>.</li>
+<li>Attach the PVC to a StatefulSet/Deployment with 2 pods.</li>
+<li>Write some data in the pod.</li>
+<li>Take a backup of the volume.</li>
+<li>Create a DR volume of the backup by selecting <code>rwx</code> in access mode.</li>
+<li>Write more data in the pods and take more backups.</li>
+<li>Verify the DR volume is getting synced with latest backup.</li>
+<li>Activate the DR volume, attach it to multiple pods and verify the data.</li>
+</ol>
+<h1 id="create-rwo-dr-volume-of-a-rwx-volume-in-longhorn">Create RWO DR volume of a RWX volume in Longhorn.</h1>
+<ol>
+<li>Create a PVC with RWX mode using longhorn class by selecting the option <code>read write many</code>.</li>
+<li>Attach the PVC to a StatefulSet/Deployment with 2 pods.</li>
+<li>Write some data in the pod.</li>
+<li>Take a backup of the volume.</li>
+<li>Create a DR volume of the backup by selecting <code>rwo</code> in access mode.</li>
+<li>Write more data in the pods and take more backups.</li>
+<li>Verify the DR volume is getting synced with latest backup.</li>
+<li>Activate the DR volume, attach it to a pod and verify the data.</li>
+<li>Try to attach it to multiple pods, it should show <code>multi attach error</code>.</li>
+</ol>
+<h1 id="create-rwx-dr-volume-of-a-rwo-volume-in-longhorn">Create RWX DR volume of a RWO volume in Longhorn.</h1>
+<ol>
+<li>Create a PVC with RWO mode using longhorn class by selecting the option <code>read write once</code>.</li>
+<li>Attach the PVC to a StatefulSet/Deployment with 1 pod.</li>
+<li>Write some data in the pod.</li>
+<li>Take a backup of the volume.</li>
+<li>Create a DR volume of the backup by selecting <code>rwx</code> in access mode.</li>
+<li>Write more data in the pod and take more backups.</li>
+<li>Verify the DR volume is getting synced with latest backup.</li>
+<li>Activate the DR volume, attach it to multiple pods and verify the data.</li>
+</ol>
+<h1 id="expand-the-rwx-volume">Expand the RWX volume.</h1>
+<ol>
+<li>Create a PVC with RWX mode using longhorn class by selecting the option <code>read write many</code>.</li>
+<li>Attach the PVC to a StatefulSet/Deployment with 2 pods.</li>
+<li>Write some data in the pod.</li>
+<li>Scale down the StatefulSet/Deployment.</li>
+<li>Once the volume is detached, expand the volume.</li>
+<li>Scale up the StatefulSet/Deployment and verify that user is able to write data in the expanded volume.</li>
+<li>Verify the new size of the volume (same approach as in writing the data).</li>
+</ol>
+<h1 id="recurring-backupsnapshot-with-rwx-volume">Recurring Backup/Snapshot with RWX volume.</h1>
+<p>Create a PVC with RWX mode using longhorn class by selecting the option <code>read write many</code>.
+2. Attach the PVC to a StatefulSet/Deployment with 2 pods.
+3. Write some data in the pod.
+4. Schedule a recurring backup/Snapshot.
+5. Verify the recurring jobs are getting created and is taking backup/snapshot successfully.</p>
+<h1 id="deletion-of-the-replica-of-a-longhorn-rwx-volume">Deletion of the replica of a Longhorn RWX volume.</h1>
+<ol>
+<li>Create a PVC with RWX mode using longhorn class by selecting the option <code>read write many</code>.</li>
+<li>Attach the PVC to a StatefulSet/Deployment with 2 pods.</li>
+<li>Write some data in the pod.</li>
+<li>Delete one of the replica and verify that the rebuild of replica is working fine.</li>
+</ol>
+<h1 id="data-locality-with-rwx-volume">Data locality with RWX volume.</h1>
+<ol>
+<li>Create a PVC with RWX mode using longhorn class by selecting the option <code>read write many</code>.</li>
+<li>Attach the PVC to a StatefulSet/Deployment with 2 pods.</li>
+<li>Write some data in the pod.</li>
+<li>Enable <code>Data-locality</code></li>
+<li>Disable <code>Node soft anti-affinity</code>.</li>
+<li>Disable the node where the volume is attached for some time.</li>
+<li>Wait for replica to be rebuilt on another node.</li>
+<li>Enable the node scheduling and verify a replica gets rebuilt on the attached node.</li>
+</ol>
+<h1 id="node-eviction-with-rwx-volume">Node eviction with RWX volume.</h1>
+<ol>
+<li>Create a PVC with RWX mode using longhorn class by selecting the option <code>read write many</code>.</li>
+<li>Attach the PVC to a StatefulSet/Deployment with 2 pods.</li>
+<li>Write some data in the pod.</li>
+<li>Do a node eviction and verify the data.</li>
+</ol>
+<h1 id="auto-salvage-feature-on-an-rwx-volume">Auto salvage feature on an RWX volume.</h1>
+<ol>
+<li>Create a PVC with RWX mode using longhorn class by selecting the option <code>read write many</code>.</li>
+<li>Attach the PVC to a StatefulSet/Deployment with 2 pods.</li>
+<li>Write some data in the pod.</li>
+<li>Crash all the replicas and verify the auto-salvage works fine.</li>
+</ol>
+<h1 id="rwx-volume-with-allow-recurring-job-while-volume-is-detached-enabled">RWX volume with <code>Allow Recurring Job While Volume Is Detached</code> enabled.</h1>
+<ol>
+<li>Create a PVC with RWX mode using longhorn class by selecting the option <code>read write many</code>.</li>
+<li>Attach the PVC to a StatefulSet/Deployment with 2 pods.</li>
+<li>Write some data in the pod.</li>
+<li>Set a recurring backup and scale down all the pods.</li>
+<li>Verify the volume get attached at scheduled time and backup/snapshot get created.</li>
+</ol>
+<h1 id="rwx-volume-with-toleration">RWX volume with Toleration.</h1>
+<ol>
+<li>Create a PVC with RWX mode using longhorn class by selecting the option <code>read write many</code>.</li>
+<li>Attach the PVC to a StatefulSet/Deployment with 2 pods.</li>
+<li>Write some data in the pod.</li>
+<li>Detach the volume by scaling down the StatefulSet/Deployment to 0.</li>
+<li>Set some Toleration.</li>
+<li>Wait for the Longhorn pods to be redeployed.</li>
+<li>Scale up the StatefulSet/Deployment back to 2.</li>
+<li>Verify the ShareManager pods have the toleration and annotation updated.</li>
+</ol>
+<h1 id="detachdelete-operation-on-an-rwx-volume">Detach/Delete operation on an RWX volume.</h1>
+<ol>
+<li>Detach action on the RWX volume should not work. A detach will temporarily remove the volume then the share manager controller will try to attach it again and restart a new share manager pod.</li>
+<li>On deletion of the RWX volume, the ShareManager CRDs should also get deleted.</li>
+</ol>
+<h1 id="crash-instance-e-manager-of-the-rwx-volume">Crash instance e manager of the RWX volume</h1>
+<ol>
+<li>Create a PVC with RWX mode using longhorn class by selecting the option <code>read write many</code>.</li>
+<li>Attach the PVC to a StatefulSet/Deployment with 2 pods.</li>
+<li>Write some data in the pod.</li>
+<li>Crash the instance manager.</li>
+<li>On crashing the IM, the ShareManager pods should be immediately redeployed.</li>
+<li>Based on the setting <code>Automatically Delete Workload Pod when The Volume Is Detached Unexpectedly</code>, the workload pods will get redeployed.</li>
+<li>On recreating on workload pods, the volume should get attached successfully.</li>
+<li>If <code>Automatically Delete Workload Pod when The Volume Is Detached Unexpectedly</code> is disabled, user should see I/O error on the mounted point.</li>
+</ol>
+<h1 id="reboot-the-sharemanager-and-workload-node">Reboot the ShareManager and workload node</h1>
+<ol>
+<li>Create a PVC with RWX mode using longhorn class by selecting the option <code>read write many</code>.</li>
+<li>Attach the PVC to a StatefulSet/Deployment with 2 pods.</li>
+<li>Write some data in the pod.</li>
+<li>Reboot the ShareManager node.</li>
+<li>The ShareManager pod should move to another node.</li>
+<li>As the instance e manager is on the same node and based on setting <code>Automatically Delete Workload Pod when The Volume Is Detached Unexpectedly</code>, the workload should be redeployed and volume should be available to user.</li>
+<li>Reboot the workload node.</li>
+<li>On restart on the node, pods should get attached to the volume. Verify the data.</li>
+</ol>
+<h1 id="power-down-the-sharemanager-and-workload-node">Power down the ShareManager and workload node.</h1>
+<ol>
+<li>Create a PVC with RWX mode using longhorn class by selecting the option <code>read write many</code>.</li>
+<li>Attach the PVC to a StatefulSet/Deployment with 2 pods.</li>
+<li>Write some data in the pod.</li>
+<li>Power down the ShareManager node.</li>
+<li>The ShareManager pod should move to another node.</li>
+<li>As the instance manager is on the same node and based on the setting <code>Automatically Delete Workload Pod when The Volume Is Detached Unexpectedly</code>, the workload should be redeployed and volume should be available to user.</li>
+<li>Power down the workload node.</li>
+<li>The workload pods should move to another node based on <code>Pod Deletion Policy When Node is Down</code> setting.</li>
+<li>Once the pods are up, they should get attached to the volume. Verify the data.</li>
+</ol>
+<h1 id="kill-the-nfs-process-in-the-sharemanager">Kill the nfs process in the ShareManager</h1>
+<ol>
+<li>Create a PVC with RWX mode using longhorn class by selecting the option <code>read write many</code>.</li>
+<li>Attach the PVC to a StatefulSet/Deployment with 2 pods.</li>
+<li>Write some data in the pod.</li>
+<li>Kill the NFS server in the ShareManager pod.</li>
+<li>The ShareManager pod should go into terminate then restarted by the ShareManager controller. The ganesha service pid can be seen by <code>cat /var/run/ganesha.pid</code>.</li>
+<li>The workload pods should be restarted.</li>
+<li>Verify the data in workload pods.</li>
+</ol>
+<h1 id="delete-the-sharemanager-crd">Delete the ShareManager CRD.</h1>
+<ol>
+<li>Create a PVC with RWX mode using longhorn class by selecting the option <code>read write many</code>.</li>
+<li>Attach the PVC to a StatefulSet/Deployment with 2 pods.</li>
+<li>Write some data in the pod.</li>
+<li>Delete the ShareManager CRD.</li>
+<li>A new ShareManager CRD should be created.</li>
+<li>Workloads should be restarted based on the setting <code>Automatically Delete Workload Pod when The Volume Is Detached Unexpectedly</code>.</li>
+</ol>
+<h1 id="delete-the-sharemanager-pod">Delete the ShareManager pod.</h1>
+<ol>
+<li>Create a PVC with RWX mode using longhorn class by selecting the option <code>read write many</code>.</li>
+<li>Attach the PVC to a StatefulSet/Deployment with 2 pods.</li>
+<li>Write some data in the pod.</li>
+<li>Delete the ShareManager pod.</li>
+<li>A new ShareManager pod should be immediately created.</li>
+</ol>
+<h1 id="drain-the-sharemanager-node">Drain the ShareManager node.</h1>
+<ol>
+<li>Create a PVC with RWX mode using longhorn class by selecting the option <code>read write many</code>.</li>
+<li>Attach the PVC to a StatefulSet/Deployment with 2 pods.</li>
+<li>Write some data in the pod.</li>
+<li>Drain the ShareManager pod node.</li>
+<li>The volume should get detached first, then the shareManager pod should move to another node and Volume should get reattached.</li>
+</ol>
+<h1 id="disk-full-on-the-sharemanager-node">Disk full on the ShareManager node.</h1>
+<ol>
+<li>Create a PVC with RWX mode using longhorn class by selecting the option <code>read write many</code>.</li>
+<li>Attach the PVC to a StatefulSet/Deployment with 2 pods.</li>
+<li>Write some data in the pod and make the disk almost full.</li>
+<li>Verify the RWX volume is not failed.</li>
+<li>Verify the creation of snapshot/backup.</li>
+<li>Try to write more data, and the it should error out <code>no space left</code>.</li>
+</ol>
+<h1 id="scheduling-failure-with-rwx-volume">Scheduling failure with RWX volume.</h1>
+<ol>
+<li>Disable 1 node. Enable <code>Allow Volume Creation with Degraded Availability</code>.</li>
+<li>Create a PVC with RWX mode using longhorn class by selecting the option <code>read write many</code>.</li>
+<li>Attach the PVC to a StatefulSet/Deployment with 1 pod.</li>
+<li>Verify the RWX volume gets created with degraded state.</li>
+<li>Write some data in the pod.</li>
+<li>Enable the node and the volume should become healthy.</li>
+<li>Disable 1 node again and disable <code>Allow Volume Creation with Degraded Availability</code>.</li>
+<li>Create a PVC with RWX mode using longhorn class by selecting the option <code>read write many</code>.</li>
+<li>Verify volume fails to schedule.</li>
+</ol>
+<h1 id="add-a-node-in-the-cluster">Add a node in the cluster.</h1>
+<ol>
+<li>Add a node in the cluster.</li>
+<li>Create multiple statefulSet/deployment with RWX volume.</li>
+<li>Verify that the ShareManager pod is able to scheduled on the new node.</li>
+</ol>
+<h1 id="delete-a-node-from-the-cluster">Delete a node from the cluster</h1>
+<ol>
+<li>Create a PVC with RWX mode using longhorn class by selecting the option <code>read write many</code>.</li>
+<li>Attach the PVC to a StatefulSet/Deployment with 2 pods.</li>
+<li>Write some data in the pod.</li>
+<li>Delete the ShareManager node from the cluster.</li>
+<li>Verify the ShareManager pod move to new node and volume continues to be accessible.</li>
+</ol>
+<h1 id="rwx-on-selinux-enabled-cluster">RWX on SeLinux enabled cluster</h1>
+<ol>
+<li>Verify the RWX feature with a Se Linux enabled cluster.</li>
+</ol>
+<h1 id="rwx-with-linuxsles-os">RWX with Linux/SLES OS</h1>
+<ol>
+<li>Verify the RWX feature with a cluster of Linux and SLES OS.</li>
+</ol>
+<h1 id="rwx-with-k3s-set-up">RWX with K3s set up</h1>
+<ol>
+<li>Set up a K3s cluster and verify the RWX feature.</li>
+</ol>
+<h1 id="rwx-in-air-gap-set-up">RWX in Air gap set up.</h1>
+<ol>
+<li>Set up an Air gap set up and verify the RWX feature.</li>
+</ol>
+<h1 id="rwx-in-psp-enabled-set-up">RWX in PSP enabled set up.</h1>
+<ol>
+<li>Enable PSP in a cluster and verify the RWX feature.</li>
+</ol>
+
+    </article>
+  </div>
+</main>
+
+    
+    
+  </body>
+</html>
