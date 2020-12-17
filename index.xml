@@ -21,8 +21,8 @@
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/concurrent-backup-creation-deletion/</guid>
-      <description>This one is a special case, were the volume only contains 1 backup, which the user requests to delete while the user has another backup in progress. Previously the in progress backup would only be written to disk after it&amp;rsquo;s completed while the delete request would trigger the GC which then detects that there is no backups left on the volume which would trigger the volume deletion.
- create vol dak and attach to the same node vol bak is attached connect to node via ssh and issue dd if=/dev/urandom of=/dev/longhorn/dak status=progress wait for a bunch of data to be written (1GB) take a backup(1) wait for a bunch of data to be written (1GB) take a backup(2) immediately request deletion of backup(1) verify that backup(2) completes succesfully verify that backup(1) has been deleted verify that all blocks mentioned in the backup(2).</description>
+      <description>This one is a special case, were the volume only contains 1 backup, which the user requests to delete while the user has another backup in progress. In this case, as the another backup is in progress a lock mechanism will be applied to it and blocks the deletion of the backup.
+ create vol dak and attach to the same node vol bak is attached connect to node via ssh and issue dd if=/dev/urandom of=/dev/longhorn/dak status=progress wait for a bunch of data to be written (1GB) take a backup(1) wait for a bunch of data to be written (1GB) take a backup(2) immediately request deletion of backup(1) verify that backup(2) completes successfully.</description>
     </item>
     
     <item>
@@ -255,7 +255,7 @@ Case 1:  Disable the setting auto-salvage. Create and attach a volume. Keep writ
       
       <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/prometheus_support/</guid>
       <description>Prometheus Support allows user to monitor the longhorn metrics. The details are available at https://longhorn.io/docs/1.1.0/monitoring/
-Monitor longhorn  Deploy the Prometheus-operator, ServiceMonitor pointing to longhorn-backend and Prometheus as mentioned in the doc. Create an ingress pointing to Prometheus service. Access the Prometheus web UI using the ingress created in the step 2. Select the metrics from below to monitor the longhorn resources.  longhorn_volume_capacity_bytes longhorn_volume_actual_size_bytes longhorn_volume_state longhorn_volume_robustness longhorn_instance_manager_cpu_requests_millicpu longhorn_instance_manager_cpu_usage_millicpu longhorn_instance_manager_memory_requests_bytes longhorn_instance_manager_memory_usage_bytes longhorn_manager_cpu_usage_millicpu longhorn_manager_memory_usage_bytes longhorn_node_count_total longhorn_node_status longhorn_node_cpu_capacity_millicpu longhorn_node_cpu_usage_millicpu longhorn_node_memory_capacity_bytes longhorn_node_memory_usage_bytes   Deploy workloads which use Longhorn volumes into the cluster.</description>
+Monitor longhorn  Deploy the Prometheus-operator, ServiceMonitor pointing to longhorn-backend and Prometheus as mentioned in the doc. Create an ingress pointing to Prometheus service. Access the Prometheus web UI using the ingress created in the step 2. Select the metrics from below to monitor the longhorn resources.  longhorn_volume_actual_size_bytes longhorn_volume_capacity_bytes longhorn_volume_robustness longhorn_volume_state longhorn_instance_manager_cpu_requests_millicpu longhorn_instance_manager_cpu_usage_millicpu longhorn_instance_manager_memory_requests_bytes longhorn_instance_manager_memory_usage_bytes longhorn_manager_cpu_usage_millicpu longhorn_manager_memory_usage_bytes longhorn_node_count_total longhorn_node_status longhorn_node_cpu_capacity_millicpu longhorn_node_cpu_usage_millicpu longhorn_node_memory_capacity_bytes longhorn_node_memory_usage_bytes longhorn_node_storage_capacity_bytes longhorn_node_storage_reservation_bytes longhorn_node_storage_usage_bytes longhorn_disk_capacity_bytes longhorn_disk_reservation_bytes longhorn_disk_usage_bytes   Deploy workloads which use Longhorn volumes into the cluster.</description>
     </item>
     
     <item>
@@ -274,8 +274,7 @@ Monitor longhorn  Deploy the Prometheus-operator, ServiceMonitor pointing to lon
       
       <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/recurring-backup-job-interruptions/</guid>
       <description>Related Issue https://github.com/longhorn/longhorn/issues/1882
-##Scenario 1- Allow Recurring Job While Volume Is Detached disabled, attached pod scaled down while the recurring backup was in progress.
- Create a volume, attach to a pod of a statefulSet, and write 800 Mi data into it. Set a recurring job. While the recurring job is in progress, scale down the pod to 0 of the statefulSet. Volume first detached and cron job gets finished saying unable to complete the backup.</description>
+Scenario 1- Allow Recurring Job While Volume Is Detached disabled, attached pod scaled down while the recurring backup was in progress.  Create a volume, attach to a pod of a statefulSet, and write 800 Mi data into it. Set a recurring job. While the recurring job is in progress, scale down the pod to 0 of the statefulSet. Volume first detached and cron job gets finished saying unable to complete the backup.</description>
     </item>
     
     <item>
