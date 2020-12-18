@@ -109,21 +109,6 @@ CONDITION_REASON_SCHEDULING_FAILURE = "ReplicaSchedulingFailure"
 VOLUME_FRONTEND_BLOCKDEV = "blockdev"
 VOLUME_FRONTEND_ISCSI = "iscsi"
 
-SETTING_STORAGE_OVER_PROVISIONING_PERCENTAGE = \
-    "storage-over-provisioning-percentage"
-SETTING_STORAGE_MINIMAL_AVAILABLE_PERCENTAGE = \
-    "storage-minimal-available-percentage"
-SETTING_CREATE_DEFAULT_DISK_LABELED_NODES = "create-default-disk-labeled-nodes"
-SETTING_DISABLE_SCHEDULING_ON_CORDONED_NODE = \
-    "disable-scheduling-on-cordoned-node"
-SETTING_DEFAULT_DATA_PATH = "default-data-path"
-SETTING_DEGRADED_AVAILABILITY = \
-    "allow-volume-creation-with-degraded-availability"
-SETTING_REPLICA_REPLENISHMENT_WAIT_INTERVAL = \
-    "replica-replenishment-wait-interval"
-SETTING_RECURRING_JOB_WHILE_VOLUME_DETACHED = \
-    "allow-recurring-job-while-volume-detached"
-
 DEFAULT_DISK_PATH = "/var/lib/longhorn/"
 DEFAULT_STORAGE_OVER_PROVISIONING_PERCENTAGE = "500"
 DEFAULT_STORAGE_MINIMAL_AVAILABLE_PERCENTAGE = "10"
@@ -138,22 +123,32 @@ DISK_CONDITION_READY = "Ready"
 
 STREAM_EXEC_TIMEOUT = 60
 
+SETTING_AUTO_SALVAGE = "auto-salvage"
 SETTING_BACKUP_TARGET = "backup-target"
 SETTING_BACKUP_TARGET_CREDENTIAL_SECRET = "backup-target-credential-secret"
-SETTING_DEFAULT_REPLICA_COUNT = "default-replica-count"
-SETTING_DEFAULT_LONGHORN_STATIC_SC = "default-longhorn-static-storage-class"
-SETTING_TAINT_TOLERATION = "taint-toleration"
+SETTING_CREATE_DEFAULT_DISK_LABELED_NODES = "create-default-disk-labeled-nodes"
 SETTING_DEFAULT_DATA_LOCALITY = "default-data-locality"
-
-SETTING_AUTO_SALVAGE = "auto-salvage"
-
-SETTING_REPLICA_NODE_SOFT_ANTI_AFFINITY = "replica-soft-anti-affinity"
-SETTING_REPLICA_ZONE_SOFT_ANTI_AFFINITY = "replica-zone-soft-anti-affinity"
-
+SETTING_DEFAULT_DATA_PATH = "default-data-path"
+SETTING_DEFAULT_LONGHORN_STATIC_SC = "default-longhorn-static-storage-class"
+SETTING_DEFAULT_REPLICA_COUNT = "default-replica-count"
+SETTING_DEGRADED_AVAILABILITY = \
+    "allow-volume-creation-with-degraded-availability"
+SETTING_DISABLE_SCHEDULING_ON_CORDONED_NODE = \
+    "disable-scheduling-on-cordoned-node"
 SETTING_GUARANTEED_ENGINE_CPU = "guaranteed-engine-cpu"
-SETTING_PRIORITY_CLASS = "priority-class"
-
 SETTING_MKFS_EXT4_PARAMS = "mkfs-ext4-parameters"
+SETTING_PRIORITY_CLASS = "priority-class"
+SETTING_RECURRING_JOB_WHILE_VOLUME_DETACHED = \
+    "allow-recurring-job-while-volume-detached"
+SETTING_REPLICA_NODE_SOFT_ANTI_AFFINITY = "replica-soft-anti-affinity"
+SETTING_REPLICA_REPLENISHMENT_WAIT_INTERVAL = \
+    "replica-replenishment-wait-interval"
+SETTING_REPLICA_ZONE_SOFT_ANTI_AFFINITY = "replica-zone-soft-anti-affinity"
+SETTING_STORAGE_OVER_PROVISIONING_PERCENTAGE = \
+    "storage-over-provisioning-percentage"
+SETTING_STORAGE_MINIMAL_AVAILABLE_PERCENTAGE = \
+    "storage-minimal-available-percentage"
+SETTING_TAINT_TOLERATION = "taint-toleration"
 
 CSI_UNKNOWN = 0
 CSI_TRUE = 1
