@@ -137,21 +137,6 @@ CONDITION_REASON_SCHEDULING_FAILURE = &#34;ReplicaSchedulingFailure&#34;
 VOLUME_FRONTEND_BLOCKDEV = &#34;blockdev&#34;
 VOLUME_FRONTEND_ISCSI = &#34;iscsi&#34;
 
-SETTING_STORAGE_OVER_PROVISIONING_PERCENTAGE = \
-    &#34;storage-over-provisioning-percentage&#34;
-SETTING_STORAGE_MINIMAL_AVAILABLE_PERCENTAGE = \
-    &#34;storage-minimal-available-percentage&#34;
-SETTING_CREATE_DEFAULT_DISK_LABELED_NODES = &#34;create-default-disk-labeled-nodes&#34;
-SETTING_DISABLE_SCHEDULING_ON_CORDONED_NODE = \
-    &#34;disable-scheduling-on-cordoned-node&#34;
-SETTING_DEFAULT_DATA_PATH = &#34;default-data-path&#34;
-SETTING_DEGRADED_AVAILABILITY = \
-    &#34;allow-volume-creation-with-degraded-availability&#34;
-SETTING_REPLICA_REPLENISHMENT_WAIT_INTERVAL = \
-    &#34;replica-replenishment-wait-interval&#34;
-SETTING_RECURRING_JOB_WHILE_VOLUME_DETACHED = \
-    &#34;allow-recurring-job-while-volume-detached&#34;
-
 DEFAULT_DISK_PATH = &#34;/var/lib/longhorn/&#34;
 DEFAULT_STORAGE_OVER_PROVISIONING_PERCENTAGE = &#34;500&#34;
 DEFAULT_STORAGE_MINIMAL_AVAILABLE_PERCENTAGE = &#34;10&#34;
@@ -166,22 +151,32 @@ DISK_CONDITION_READY = &#34;Ready&#34;
 
 STREAM_EXEC_TIMEOUT = 60
 
+SETTING_AUTO_SALVAGE = &#34;auto-salvage&#34;
 SETTING_BACKUP_TARGET = &#34;backup-target&#34;
 SETTING_BACKUP_TARGET_CREDENTIAL_SECRET = &#34;backup-target-credential-secret&#34;
-SETTING_DEFAULT_REPLICA_COUNT = &#34;default-replica-count&#34;
-SETTING_DEFAULT_LONGHORN_STATIC_SC = &#34;default-longhorn-static-storage-class&#34;
-SETTING_TAINT_TOLERATION = &#34;taint-toleration&#34;
+SETTING_CREATE_DEFAULT_DISK_LABELED_NODES = &#34;create-default-disk-labeled-nodes&#34;
 SETTING_DEFAULT_DATA_LOCALITY = &#34;default-data-locality&#34;
-
-SETTING_AUTO_SALVAGE = &#34;auto-salvage&#34;
-
-SETTING_REPLICA_NODE_SOFT_ANTI_AFFINITY = &#34;replica-soft-anti-affinity&#34;
-SETTING_REPLICA_ZONE_SOFT_ANTI_AFFINITY = &#34;replica-zone-soft-anti-affinity&#34;
-
+SETTING_DEFAULT_DATA_PATH = &#34;default-data-path&#34;
+SETTING_DEFAULT_LONGHORN_STATIC_SC = &#34;default-longhorn-static-storage-class&#34;
+SETTING_DEFAULT_REPLICA_COUNT = &#34;default-replica-count&#34;
+SETTING_DEGRADED_AVAILABILITY = \
+    &#34;allow-volume-creation-with-degraded-availability&#34;
+SETTING_DISABLE_SCHEDULING_ON_CORDONED_NODE = \
+    &#34;disable-scheduling-on-cordoned-node&#34;
 SETTING_GUARANTEED_ENGINE_CPU = &#34;guaranteed-engine-cpu&#34;
-SETTING_PRIORITY_CLASS = &#34;priority-class&#34;
-
 SETTING_MKFS_EXT4_PARAMS = &#34;mkfs-ext4-parameters&#34;
+SETTING_PRIORITY_CLASS = &#34;priority-class&#34;
+SETTING_RECURRING_JOB_WHILE_VOLUME_DETACHED = \
+    &#34;allow-recurring-job-while-volume-detached&#34;
+SETTING_REPLICA_NODE_SOFT_ANTI_AFFINITY = &#34;replica-soft-anti-affinity&#34;
+SETTING_REPLICA_REPLENISHMENT_WAIT_INTERVAL = \
+    &#34;replica-replenishment-wait-interval&#34;
+SETTING_REPLICA_ZONE_SOFT_ANTI_AFFINITY = &#34;replica-zone-soft-anti-affinity&#34;
+SETTING_STORAGE_OVER_PROVISIONING_PERCENTAGE = \
+    &#34;storage-over-provisioning-percentage&#34;
+SETTING_STORAGE_MINIMAL_AVAILABLE_PERCENTAGE = \
+    &#34;storage-minimal-available-percentage&#34;
+SETTING_TAINT_TOLERATION = &#34;taint-toleration&#34;
 
 CSI_UNKNOWN = 0
 CSI_TRUE = 1
