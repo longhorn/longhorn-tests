@@ -1,4 +1,4 @@
-FROM python:3.7.4-stretch
+FROM python:3.9-buster
 
 ARG KUBECTL_VERSION=v1.17.0
 ARG ARCH=amd64
