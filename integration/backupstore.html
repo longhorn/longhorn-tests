@@ -28,11 +28,11 @@
 </summary>
 <pre><code class="python">import os
 import time
+import pytest
 import base64
 import hashlib
 import json
 import subprocess
-
 
 from minio import Minio
 from minio.error import ResponseError
@@ -45,12 +45,102 @@ from common import is_backupTarget_s3
 from common import is_backupTarget_nfs
 from common import get_longhorn_api_client
 from common import delete_backup_volume
+from common import get_backupstore_url
 
 BACKUPSTORE_BV_PREFIX = &#34;/backupstore/volumes/&#34;
 BACKUPSTORE_LOCK_DURATION = 150
 
-
 TEMP_FILE_PATH = &#34;/tmp/temp_file&#34;
+
+
+@pytest.fixture
+def backupstore_s3(client):
+    set_backupstore_s3(client)
+    yield
+    reset_backupstore_setting(client)
+
+
+@pytest.fixture
+def backupstore_nfs(client):
+    set_backupstore_nfs(client)
+    yield
+    reset_backupstore_setting(client)
+
+
+@pytest.fixture(params=[&#34;s3&#34;, &#34;nfs&#34;])
+def set_random_backupstore(request, client):
+    if request.param == &#34;s3&#34;:
+        set_backupstore_s3(client)
+    elif request.param == &#34;nfs&#34;:
+        set_backupstore_nfs(client)
+        mount_nfs_backupstore(client)
+
+    yield
+    backupstore_cleanup(client)
+    reset_backupstore_setting(client)
+
+    if request.param == &#34;nfs&#34;:
+        umount_nfs_backupstore(client)
+
+
+def reset_backupstore_setting(client):
+    backup_target_setting = client.by_id_setting(SETTING_BACKUP_TARGET)
+    client.update(backup_target_setting, value=&#34;&#34;)
+    backup_target_credential_setting = client.by_id_setting(
+        SETTING_BACKUP_TARGET_CREDENTIAL_SECRET)
+    client.update(backup_target_credential_setting, value=&#34;&#34;)
+
+
+def set_backupstore_s3(client):
+    backup_target_setting = client.by_id_setting(SETTING_BACKUP_TARGET)
+    backupstores = get_backupstore_url()
+    for backupstore in backupstores:
+        if is_backupTarget_s3(backupstore):
+            backupsettings = backupstore.split(&#34;$&#34;)
+            backup_target_setting = client.update(backup_target_setting,
+                                                  value=backupsettings[0])
+            assert backup_target_setting.value == backupsettings[0]
+
+            backup_target_credential_setting = client.by_id_setting(
+                SETTING_BACKUP_TARGET_CREDENTIAL_SECRET)
+            backup_target_credential_setting = \
+                client.update(backup_target_credential_setting,
+                              value=backupsettings[1])
+            assert backup_target_credential_setting.value == backupsettings[1]
+            break
+
+
+def set_backupstore_nfs(client):
+    backup_target_setting = client.by_id_setting(SETTING_BACKUP_TARGET)
+    backupstores = get_backupstore_url()
+    for backupstore in backupstores:
+        if is_backupTarget_nfs(backupstore):
+            backup_target_setting = client.update(backup_target_setting,
+                                                  value=backupstore)
+            assert backup_target_setting.value == backupstore
+            backup_target_credential_setting = client.by_id_setting(
+                SETTING_BACKUP_TARGET_CREDENTIAL_SECRET)
+            backup_target_credential_setting = \
+                client.update(backup_target_credential_setting, value=&#34;&#34;)
+            assert backup_target_credential_setting.value == &#34;&#34;
+            break
+
+
+def mount_nfs_backupstore(client, mount_path=&#34;/mnt/nfs&#34;):
+    cmd = [&#34;mkdir&#34;, &#34;-p&#34;, mount_path]
+    subprocess.check_output(cmd)
+    nfs_backuptarget = client.by_id_setting(SETTING_BACKUP_TARGET).value
+    nfs_url = urlparse(nfs_backuptarget).netloc + \
+        urlparse(nfs_backuptarget).path
+    cmd = [&#34;mount&#34;, &#34;-t&#34;, &#34;nfs&#34;, &#34;-o&#34;, &#34;nfsvers=4.2&#34;, nfs_url, mount_path]
+    subprocess.check_output(cmd)
+
+
+def umount_nfs_backupstore(client, mount_path=&#34;/mnt/nfs&#34;):
+    cmd = [&#34;umount&#34;, mount_path]
+    subprocess.check_output(cmd)
+    cmd = [&#34;rmdir&#34;, mount_path]
+    subprocess.check_output(cmd)
 
 
 def backupstore_cleanup(client):
@@ -139,6 +229,19 @@ def backup_volume_path(volume_name):
     return backupstore_bv_path
 
 
+def backupstore_get_backup_volume_prefix(client, volume_name):
+    backupstore = backupstore_get_backup_target(client)
+
+    if is_backupTarget_s3(backupstore):
+        return minio_get_backup_volume_prefix(volume_name)
+
+    elif is_backupTarget_nfs(backupstore):
+        return nfs_get_backup_volume_prefix(client, volume_name)
+
+    else:
+        raise NotImplementedError
+
+
 def minio_get_backup_volume_prefix(volume_name):
     client = get_longhorn_api_client()
     backupstore_bv_path = backup_volume_path(volume_name)
@@ -172,6 +275,9 @@ def backupstore_get_backup_cfg_file_path(client, volume_name, backup_name):
     elif is_backupTarget_nfs(backupstore):
         return nfs_get_backup_cfg_file_path(client, volume_name, backup_name)
 
+    else:
+        raise NotImplementedError
+
 
 def minio_get_backup_cfg_file_path(volume_name, backup_name):
     prefix = minio_get_backup_volume_prefix(volume_name)
@@ -191,6 +297,9 @@ def backupstore_get_volume_cfg_file_path(client, volume_name):
 
     elif is_backupTarget_nfs(backupstore):
         return nfs_get_volume_cfg_file_path(client, volume_name)
+
+    else:
+        raise NotImplementedError
 
 
 def nfs_get_volume_cfg_file_path(client, volume_name):
@@ -212,6 +321,9 @@ def backupstore_get_backup_blocks_dir(client, volume_name):
     elif is_backupTarget_nfs(backupstore):
         return nfs_get_backup_blocks_dir(client, volume_name)
 
+    else:
+        raise NotImplementedError
+
 
 def minio_get_backup_blocks_dir(volume_name):
     prefix = minio_get_backup_volume_prefix(volume_name)
@@ -232,6 +344,9 @@ def backupstore_create_file(client, core_api, file_path, data={}):
                                                core_api,
                                                file_path,
                                                data)
+    elif is_backupTarget_nfs(backupstore):
+        return nfs_create_file_in_backupstore(file_path, data={})
+
     else:
         raise NotImplementedError
 
@@ -262,6 +377,10 @@ def mino_create_file_in_backupstore(client, core_api, file_path, data={}): # NOQ
         print(err)
 
 
+def nfs_create_file_in_backupstore(file_path, data={}):
+    with open(file_path, &#39;w&#39;) as cfg_file:
+        cfg_file.write(str(data))
+
 def backupstore_write_backup_cfg_file(client, core_api, volume_name, backup_name, data): # NOQA
     backupstore = backupstore_get_backup_target(client)
 
@@ -278,14 +397,16 @@ def backupstore_write_backup_cfg_file(client, core_api, volume_name, backup_name
                                   backup_name,
                                   data)
 
+    else:
+        raise NotImplementedError
+
 
 def nfs_write_backup_cfg_file(client, volume_name, backup_name, data):
     nfs_backup_cfg_file_path = nfs_get_backup_cfg_file_path(client,
                                                             volume_name,
                                                             backup_name)
-    cfg_file = open(nfs_backup_cfg_file_path, &#39;w&#39;)
-    cfg_file.write(str(data))
-    cfg_file.close()
+    with open(nfs_backup_cfg_file_path, &#39;w&#39;) as cfg_file:
+        cfg_file.write(str(data))
 
 
 def minio_write_backup_cfg_file(client, core_api, volume_name, backup_name, backup_cfg_data): # NOQA
@@ -321,6 +442,9 @@ def backupstore_delete_file(client, core_api, file_path):
                                                core_api,
                                                file_path)
 
+    elif is_backupTarget_nfs(backupstore):
+        return nfs_delete_file_in_backupstore(file_path)
+
     else:
         raise NotImplementedError
 
@@ -340,6 +464,15 @@ def mino_delete_file_in_backupstore(client, core_api, file_path):
         print(err)
 
 
+def nfs_delete_file_in_backupstore(file_path):
+    try:
+        os.remove(file_path)
+    except Exception as ex:
+        print(&#34;error while deleting file:&#34;,
+              file_path)
+        print(ex)
+
+
 def backupstore_delete_backup_cfg_file(client, core_api, volume_name, backup_name):  # NOQA
     backupstore = backupstore_get_backup_target(client)
 
@@ -351,6 +484,9 @@ def backupstore_delete_backup_cfg_file(client, core_api, volume_name, backup_nam
 
     elif is_backupTarget_nfs(backupstore):
         nfs_delete_backup_cfg_file(client, volume_name, backup_name)
+
+    else:
+        raise NotImplementedError
 
 
 def nfs_delete_backup_cfg_file(client, volume_name, backup_name):
@@ -390,6 +526,9 @@ def backupstore_delete_volume_cfg_file(client, core_api, volume_name):  # NOQA
 
     elif is_backupTarget_nfs(backupstore):
         nfs_delete_volume_cfg_file(client, volume_name)
+
+    else:
+        raise NotImplementedError
 
 
 def nfs_delete_volume_cfg_file(client, volume_name):
@@ -453,6 +592,9 @@ def backupstore_delete_random_backup_block(client, core_api, volume_name):
     elif is_backupTarget_nfs(backupstore):
         nfs_delete_random_backup_block(client, volume_name)
 
+    else:
+        raise NotImplementedError
+
 
 def nfs_delete_random_backup_block(client, volume_name):
     backup_blocks_dir = nfs_get_backup_blocks_dir(client, volume_name)
@@ -498,6 +640,9 @@ def backupstore_count_backup_block_files(client, core_api, volume_name):
 
     elif is_backupTarget_nfs(backupstore):
         return nfs_count_backup_block_files(client, volume_name)
+
+    else:
+        raise NotImplementedError
 
 
 def nfs_count_backup_block_files(client, volume_name):
@@ -622,7 +767,10 @@ def backupstore_wait_for_lock_expiration():
         return minio_count_backup_block_files(client, core_api, volume_name)
 
     elif is_backupTarget_nfs(backupstore):
-        return nfs_count_backup_block_files(client, volume_name)</code></pre>
+        return nfs_count_backup_block_files(client, volume_name)
+
+    else:
+        raise NotImplementedError</code></pre>
 </details>
 </dd>
 <dt id="tests.backupstore.backupstore_create_dummy_in_progress_backup"><code class="name flex">
@@ -664,6 +812,9 @@ def backupstore_wait_for_lock_expiration():
                                                core_api,
                                                file_path,
                                                data)
+    elif is_backupTarget_nfs(backupstore):
+        return nfs_create_file_in_backupstore(file_path, data={})
+
     else:
         raise NotImplementedError</code></pre>
 </details>
@@ -687,7 +838,10 @@ def backupstore_wait_for_lock_expiration():
                                      backup_name)
 
     elif is_backupTarget_nfs(backupstore):
-        nfs_delete_backup_cfg_file(client, volume_name, backup_name)</code></pre>
+        nfs_delete_backup_cfg_file(client, volume_name, backup_name)
+
+    else:
+        raise NotImplementedError</code></pre>
 </details>
 </dd>
 <dt id="tests.backupstore.backupstore_delete_dummy_in_progress_backup"><code class="name flex">
@@ -724,6 +878,9 @@ def backupstore_wait_for_lock_expiration():
                                                core_api,
                                                file_path)
 
+    elif is_backupTarget_nfs(backupstore):
+        return nfs_delete_file_in_backupstore(file_path)
+
     else:
         raise NotImplementedError</code></pre>
 </details>
@@ -744,7 +901,10 @@ def backupstore_wait_for_lock_expiration():
         minio_delete_random_backup_block(client, core_api, volume_name)
 
     elif is_backupTarget_nfs(backupstore):
-        nfs_delete_random_backup_block(client, volume_name)</code></pre>
+        nfs_delete_random_backup_block(client, volume_name)
+
+    else:
+        raise NotImplementedError</code></pre>
 </details>
 </dd>
 <dt id="tests.backupstore.backupstore_delete_volume_cfg_file"><code class="name flex">
@@ -765,7 +925,10 @@ def backupstore_wait_for_lock_expiration():
                                      volume_name)
 
     elif is_backupTarget_nfs(backupstore):
-        nfs_delete_volume_cfg_file(client, volume_name)</code></pre>
+        nfs_delete_volume_cfg_file(client, volume_name)
+
+    else:
+        raise NotImplementedError</code></pre>
 </details>
 </dd>
 <dt id="tests.backupstore.backupstore_get_backup_blocks_dir"><code class="name flex">
@@ -784,7 +947,10 @@ def backupstore_wait_for_lock_expiration():
         return minio_get_backup_blocks_dir(volume_name)
 
     elif is_backupTarget_nfs(backupstore):
-        return nfs_get_backup_blocks_dir(client, volume_name)</code></pre>
+        return nfs_get_backup_blocks_dir(client, volume_name)
+
+    else:
+        raise NotImplementedError</code></pre>
 </details>
 </dd>
 <dt id="tests.backupstore.backupstore_get_backup_cfg_file_path"><code class="name flex">
@@ -803,7 +969,10 @@ def backupstore_wait_for_lock_expiration():
         return minio_get_backup_cfg_file_path(volume_name, backup_name)
 
     elif is_backupTarget_nfs(backupstore):
-        return nfs_get_backup_cfg_file_path(client, volume_name, backup_name)</code></pre>
+        return nfs_get_backup_cfg_file_path(client, volume_name, backup_name)
+
+    else:
+        raise NotImplementedError</code></pre>
 </details>
 </dd>
 <dt id="tests.backupstore.backupstore_get_backup_target"><code class="name flex">
@@ -818,6 +987,28 @@ def backupstore_wait_for_lock_expiration():
 <pre><code class="python">def backupstore_get_backup_target(client):
     backup_target_setting = client.by_id_setting(SETTING_BACKUP_TARGET)
     return backup_target_setting.value</code></pre>
+</details>
+</dd>
+<dt id="tests.backupstore.backupstore_get_backup_volume_prefix"><code class="name flex">
+<span>def <span class="ident">backupstore_get_backup_volume_prefix</span></span>(<span>client, volume_name)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def backupstore_get_backup_volume_prefix(client, volume_name):
+    backupstore = backupstore_get_backup_target(client)
+
+    if is_backupTarget_s3(backupstore):
+        return minio_get_backup_volume_prefix(volume_name)
+
+    elif is_backupTarget_nfs(backupstore):
+        return nfs_get_backup_volume_prefix(client, volume_name)
+
+    else:
+        raise NotImplementedError</code></pre>
 </details>
 </dd>
 <dt id="tests.backupstore.backupstore_get_secret"><code class="name flex">
@@ -852,7 +1043,42 @@ def backupstore_wait_for_lock_expiration():
         return minio_get_volume_cfg_file_path(volume_name)
 
     elif is_backupTarget_nfs(backupstore):
-        return nfs_get_volume_cfg_file_path(client, volume_name)</code></pre>
+        return nfs_get_volume_cfg_file_path(client, volume_name)
+
+    else:
+        raise NotImplementedError</code></pre>
+</details>
+</dd>
+<dt id="tests.backupstore.backupstore_nfs"><code class="name flex">
+<span>def <span class="ident">backupstore_nfs</span></span>(<span>client)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@pytest.fixture
+def backupstore_nfs(client):
+    set_backupstore_nfs(client)
+    yield
+    reset_backupstore_setting(client)</code></pre>
+</details>
+</dd>
+<dt id="tests.backupstore.backupstore_s3"><code class="name flex">
+<span>def <span class="ident">backupstore_s3</span></span>(<span>client)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@pytest.fixture
+def backupstore_s3(client):
+    set_backupstore_s3(client)
+    yield
+    reset_backupstore_setting(client)</code></pre>
 </details>
 </dd>
 <dt id="tests.backupstore.backupstore_wait_for_lock_expiration"><code class="name flex">
@@ -898,7 +1124,10 @@ we can switch to removing the locks directly</p></div>
         nfs_write_backup_cfg_file(client,
                                   volume_name,
                                   backup_name,
-                                  data)</code></pre>
+                                  data)
+
+    else:
+        raise NotImplementedError</code></pre>
 </details>
 </dd>
 <dt id="tests.backupstore.get_nfs_mount_point"><code class="name flex">
@@ -1250,6 +1479,25 @@ we can switch to removing the locks directly</p></div>
         print(err)</code></pre>
 </details>
 </dd>
+<dt id="tests.backupstore.mount_nfs_backupstore"><code class="name flex">
+<span>def <span class="ident">mount_nfs_backupstore</span></span>(<span>client, mount_path='/mnt/nfs')</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def mount_nfs_backupstore(client, mount_path=&#34;/mnt/nfs&#34;):
+    cmd = [&#34;mkdir&#34;, &#34;-p&#34;, mount_path]
+    subprocess.check_output(cmd)
+    nfs_backuptarget = client.by_id_setting(SETTING_BACKUP_TARGET).value
+    nfs_url = urlparse(nfs_backuptarget).netloc + \
+        urlparse(nfs_backuptarget).path
+    cmd = [&#34;mount&#34;, &#34;-t&#34;, &#34;nfs&#34;, &#34;-o&#34;, &#34;nfsvers=4.2&#34;, nfs_url, mount_path]
+    subprocess.check_output(cmd)</code></pre>
+</details>
+</dd>
 <dt id="tests.backupstore.nfs_count_backup_block_files"><code class="name flex">
 <span>def <span class="ident">nfs_count_backup_block_files</span></span>(<span>client, volume_name)</span>
 </code></dt>
@@ -1267,6 +1515,20 @@ we can switch to removing the locks directly</p></div>
     backup_blocks_count = int(wc_cmd.decode().strip())
 
     return backup_blocks_count</code></pre>
+</details>
+</dd>
+<dt id="tests.backupstore.nfs_create_file_in_backupstore"><code class="name flex">
+<span>def <span class="ident">nfs_create_file_in_backupstore</span></span>(<span>file_path, data={})</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def nfs_create_file_in_backupstore(file_path, data={}):
+    with open(file_path, &#39;w&#39;) as cfg_file:
+        cfg_file.write(str(data))</code></pre>
 </details>
 </dd>
 <dt id="tests.backupstore.nfs_delete_backup_cfg_file"><code class="name flex">
@@ -1287,6 +1549,24 @@ we can switch to removing the locks directly</p></div>
     except Exception as ex:
         print(&#34;error while deleting backup cfg file:&#34;,
               nfs_backup_cfg_file_path)
+        print(ex)</code></pre>
+</details>
+</dd>
+<dt id="tests.backupstore.nfs_delete_file_in_backupstore"><code class="name flex">
+<span>def <span class="ident">nfs_delete_file_in_backupstore</span></span>(<span>file_path)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def nfs_delete_file_in_backupstore(file_path):
+    try:
+        os.remove(file_path)
+    except Exception as ex:
+        print(&#34;error while deleting file:&#34;,
+              file_path)
         print(ex)</code></pre>
 </details>
 </dd>
@@ -1401,9 +1681,119 @@ we can switch to removing the locks directly</p></div>
     nfs_backup_cfg_file_path = nfs_get_backup_cfg_file_path(client,
                                                             volume_name,
                                                             backup_name)
-    cfg_file = open(nfs_backup_cfg_file_path, &#39;w&#39;)
-    cfg_file.write(str(data))
-    cfg_file.close()</code></pre>
+    with open(nfs_backup_cfg_file_path, &#39;w&#39;) as cfg_file:
+        cfg_file.write(str(data))</code></pre>
+</details>
+</dd>
+<dt id="tests.backupstore.reset_backupstore_setting"><code class="name flex">
+<span>def <span class="ident">reset_backupstore_setting</span></span>(<span>client)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def reset_backupstore_setting(client):
+    backup_target_setting = client.by_id_setting(SETTING_BACKUP_TARGET)
+    client.update(backup_target_setting, value=&#34;&#34;)
+    backup_target_credential_setting = client.by_id_setting(
+        SETTING_BACKUP_TARGET_CREDENTIAL_SECRET)
+    client.update(backup_target_credential_setting, value=&#34;&#34;)</code></pre>
+</details>
+</dd>
+<dt id="tests.backupstore.set_backupstore_nfs"><code class="name flex">
+<span>def <span class="ident">set_backupstore_nfs</span></span>(<span>client)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def set_backupstore_nfs(client):
+    backup_target_setting = client.by_id_setting(SETTING_BACKUP_TARGET)
+    backupstores = get_backupstore_url()
+    for backupstore in backupstores:
+        if is_backupTarget_nfs(backupstore):
+            backup_target_setting = client.update(backup_target_setting,
+                                                  value=backupstore)
+            assert backup_target_setting.value == backupstore
+            backup_target_credential_setting = client.by_id_setting(
+                SETTING_BACKUP_TARGET_CREDENTIAL_SECRET)
+            backup_target_credential_setting = \
+                client.update(backup_target_credential_setting, value=&#34;&#34;)
+            assert backup_target_credential_setting.value == &#34;&#34;
+            break</code></pre>
+</details>
+</dd>
+<dt id="tests.backupstore.set_backupstore_s3"><code class="name flex">
+<span>def <span class="ident">set_backupstore_s3</span></span>(<span>client)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def set_backupstore_s3(client):
+    backup_target_setting = client.by_id_setting(SETTING_BACKUP_TARGET)
+    backupstores = get_backupstore_url()
+    for backupstore in backupstores:
+        if is_backupTarget_s3(backupstore):
+            backupsettings = backupstore.split(&#34;$&#34;)
+            backup_target_setting = client.update(backup_target_setting,
+                                                  value=backupsettings[0])
+            assert backup_target_setting.value == backupsettings[0]
+
+            backup_target_credential_setting = client.by_id_setting(
+                SETTING_BACKUP_TARGET_CREDENTIAL_SECRET)
+            backup_target_credential_setting = \
+                client.update(backup_target_credential_setting,
+                              value=backupsettings[1])
+            assert backup_target_credential_setting.value == backupsettings[1]
+            break</code></pre>
+</details>
+</dd>
+<dt id="tests.backupstore.set_random_backupstore"><code class="name flex">
+<span>def <span class="ident">set_random_backupstore</span></span>(<span>request, client)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@pytest.fixture(params=[&#34;s3&#34;, &#34;nfs&#34;])
+def set_random_backupstore(request, client):
+    if request.param == &#34;s3&#34;:
+        set_backupstore_s3(client)
+    elif request.param == &#34;nfs&#34;:
+        set_backupstore_nfs(client)
+        mount_nfs_backupstore(client)
+
+    yield
+    backupstore_cleanup(client)
+    reset_backupstore_setting(client)
+
+    if request.param == &#34;nfs&#34;:
+        umount_nfs_backupstore(client)</code></pre>
+</details>
+</dd>
+<dt id="tests.backupstore.umount_nfs_backupstore"><code class="name flex">
+<span>def <span class="ident">umount_nfs_backupstore</span></span>(<span>client, mount_path='/mnt/nfs')</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def umount_nfs_backupstore(client, mount_path=&#34;/mnt/nfs&#34;):
+    cmd = [&#34;umount&#34;, mount_path]
+    subprocess.check_output(cmd)
+    cmd = [&#34;rmdir&#34;, mount_path]
+    subprocess.check_output(cmd)</code></pre>
 </details>
 </dd>
 </dl>
@@ -1438,8 +1828,11 @@ we can switch to removing the locks directly</p></div>
 <li><code><a title="tests.backupstore.backupstore_get_backup_blocks_dir" href="#tests.backupstore.backupstore_get_backup_blocks_dir">backupstore_get_backup_blocks_dir</a></code></li>
 <li><code><a title="tests.backupstore.backupstore_get_backup_cfg_file_path" href="#tests.backupstore.backupstore_get_backup_cfg_file_path">backupstore_get_backup_cfg_file_path</a></code></li>
 <li><code><a title="tests.backupstore.backupstore_get_backup_target" href="#tests.backupstore.backupstore_get_backup_target">backupstore_get_backup_target</a></code></li>
+<li><code><a title="tests.backupstore.backupstore_get_backup_volume_prefix" href="#tests.backupstore.backupstore_get_backup_volume_prefix">backupstore_get_backup_volume_prefix</a></code></li>
 <li><code><a title="tests.backupstore.backupstore_get_secret" href="#tests.backupstore.backupstore_get_secret">backupstore_get_secret</a></code></li>
 <li><code><a title="tests.backupstore.backupstore_get_volume_cfg_file_path" href="#tests.backupstore.backupstore_get_volume_cfg_file_path">backupstore_get_volume_cfg_file_path</a></code></li>
+<li><code><a title="tests.backupstore.backupstore_nfs" href="#tests.backupstore.backupstore_nfs">backupstore_nfs</a></code></li>
+<li><code><a title="tests.backupstore.backupstore_s3" href="#tests.backupstore.backupstore_s3">backupstore_s3</a></code></li>
 <li><code><a title="tests.backupstore.backupstore_wait_for_lock_expiration" href="#tests.backupstore.backupstore_wait_for_lock_expiration">backupstore_wait_for_lock_expiration</a></code></li>
 <li><code><a title="tests.backupstore.backupstore_write_backup_cfg_file" href="#tests.backupstore.backupstore_write_backup_cfg_file">backupstore_write_backup_cfg_file</a></code></li>
 <li><code><a title="tests.backupstore.get_nfs_mount_point" href="#tests.backupstore.get_nfs_mount_point">get_nfs_mount_point</a></code></li>
@@ -1457,8 +1850,11 @@ we can switch to removing the locks directly</p></div>
 <li><code><a title="tests.backupstore.minio_write_backup_cfg_file" href="#tests.backupstore.minio_write_backup_cfg_file">minio_write_backup_cfg_file</a></code></li>
 <li><code><a title="tests.backupstore.mino_create_file_in_backupstore" href="#tests.backupstore.mino_create_file_in_backupstore">mino_create_file_in_backupstore</a></code></li>
 <li><code><a title="tests.backupstore.mino_delete_file_in_backupstore" href="#tests.backupstore.mino_delete_file_in_backupstore">mino_delete_file_in_backupstore</a></code></li>
+<li><code><a title="tests.backupstore.mount_nfs_backupstore" href="#tests.backupstore.mount_nfs_backupstore">mount_nfs_backupstore</a></code></li>
 <li><code><a title="tests.backupstore.nfs_count_backup_block_files" href="#tests.backupstore.nfs_count_backup_block_files">nfs_count_backup_block_files</a></code></li>
+<li><code><a title="tests.backupstore.nfs_create_file_in_backupstore" href="#tests.backupstore.nfs_create_file_in_backupstore">nfs_create_file_in_backupstore</a></code></li>
 <li><code><a title="tests.backupstore.nfs_delete_backup_cfg_file" href="#tests.backupstore.nfs_delete_backup_cfg_file">nfs_delete_backup_cfg_file</a></code></li>
+<li><code><a title="tests.backupstore.nfs_delete_file_in_backupstore" href="#tests.backupstore.nfs_delete_file_in_backupstore">nfs_delete_file_in_backupstore</a></code></li>
 <li><code><a title="tests.backupstore.nfs_delete_random_backup_block" href="#tests.backupstore.nfs_delete_random_backup_block">nfs_delete_random_backup_block</a></code></li>
 <li><code><a title="tests.backupstore.nfs_delete_volume_cfg_file" href="#tests.backupstore.nfs_delete_volume_cfg_file">nfs_delete_volume_cfg_file</a></code></li>
 <li><code><a title="tests.backupstore.nfs_get_backup_blocks_dir" href="#tests.backupstore.nfs_get_backup_blocks_dir">nfs_get_backup_blocks_dir</a></code></li>
@@ -1466,6 +1862,11 @@ we can switch to removing the locks directly</p></div>
 <li><code><a title="tests.backupstore.nfs_get_backup_volume_prefix" href="#tests.backupstore.nfs_get_backup_volume_prefix">nfs_get_backup_volume_prefix</a></code></li>
 <li><code><a title="tests.backupstore.nfs_get_volume_cfg_file_path" href="#tests.backupstore.nfs_get_volume_cfg_file_path">nfs_get_volume_cfg_file_path</a></code></li>
 <li><code><a title="tests.backupstore.nfs_write_backup_cfg_file" href="#tests.backupstore.nfs_write_backup_cfg_file">nfs_write_backup_cfg_file</a></code></li>
+<li><code><a title="tests.backupstore.reset_backupstore_setting" href="#tests.backupstore.reset_backupstore_setting">reset_backupstore_setting</a></code></li>
+<li><code><a title="tests.backupstore.set_backupstore_nfs" href="#tests.backupstore.set_backupstore_nfs">set_backupstore_nfs</a></code></li>
+<li><code><a title="tests.backupstore.set_backupstore_s3" href="#tests.backupstore.set_backupstore_s3">set_backupstore_s3</a></code></li>
+<li><code><a title="tests.backupstore.set_random_backupstore" href="#tests.backupstore.set_random_backupstore">set_random_backupstore</a></code></li>
+<li><code><a title="tests.backupstore.umount_nfs_backupstore" href="#tests.backupstore.umount_nfs_backupstore">umount_nfs_backupstore</a></code></li>
 </ul>
 </li>
 </ul>

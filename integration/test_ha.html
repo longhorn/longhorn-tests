@@ -58,7 +58,6 @@ from common import wait_for_pod_remount
 from common import delete_and_wait_pod
 from common import wait_for_rebuild_start
 from common import prepare_pod_with_data_in_mb
-from common import set_random_backupstore
 from common import wait_for_backup_completion, find_backup
 from common import wait_for_volume_creation, wait_for_volume_detached
 from common import wait_for_volume_restoration_start
@@ -66,7 +65,6 @@ from common import wait_for_backup_restore_completed
 from common import wait_for_volume_restoration_completed
 from common import check_volume_last_backup
 from common import activate_standby_volume
-from common import set_backupstore_s3  # NOQA
 from common import create_backup
 from common import wait_for_volume_faulted
 from common import wait_for_volume_delete
@@ -90,9 +88,11 @@ from common import wait_for_volume_replica_count
 from common import settings_reset # NOQA
 from common import set_node_tags, set_node_scheduling # NOQA
 
+from backupstore import set_random_backupstore # NOQA
 from backupstore import backupstore_cleanup
 from backupstore import backupstore_delete_random_backup_block
 from backupstore import backupstore_wait_for_lock_expiration
+from backupstore import backupstore_s3  # NOQA
 
 SMALL_RETRY_COUNTS = 30
 
@@ -707,7 +707,8 @@ def test_rebuild_replica_and_from_replica_on_the_same_node(
 
 
 def test_rebuild_with_restoration(
-        client, core_api, volume_name, csi_pv, pvc, pod_make):  # NOQA
+        client, core_api, volume_name, csi_pv, pvc, pod_make, # NOQA
+        set_random_backupstore):  # NOQA
     &#34;&#34;&#34;
     [HA] Test if the rebuild is disabled for the restoring volume
     1. Setup a random backupstore.
@@ -724,8 +725,6 @@ def test_rebuild_with_restoration(
     11. Check md5sum of the data in the restored volume.
     12. Do cleanup.
     &#34;&#34;&#34;
-    set_random_backupstore(client)
-
     original_volume_name = volume_name + &#34;-origin&#34;
     data_path = &#34;/data/test&#34;
     original_pod_name, original_pv_name, original_pvc_name, original_md5sum = \
@@ -795,7 +794,8 @@ def test_rebuild_with_restoration(
 
 
 def test_rebuild_with_inc_restoration(
-        client, core_api, volume_name, csi_pv, pvc, pod_make):  # NOQA
+        client, core_api, volume_name, csi_pv, pvc, pod_make, # NOQA
+        set_random_backupstore):  # NOQA
     &#34;&#34;&#34;
     [HA] Test if the rebuild is disabled for the DR volume
     1. Setup a random backupstore.
@@ -815,8 +815,6 @@ def test_rebuild_with_inc_restoration(
     12. Check md5sum of the data in the activated volume.
     13. Do cleanup.
     &#34;&#34;&#34;
-    set_random_backupstore(client)
-
     std_volume_name = volume_name + &#34;-std&#34;
     data_path1 = &#34;/data/test1&#34;
     std_pod_name, std_pv_name, std_pvc_name, std_md5sum1 = \
@@ -900,7 +898,8 @@ def test_rebuild_with_inc_restoration(
 
 
 def test_inc_restoration_with_multiple_rebuild_and_expansion(
-        client, core_api, volume_name, csi_pv, pvc, pod_make):  # NOQA
+        set_random_backupstore, client, core_api, volume_name, csi_pv, pvc, pod_make, # NOQA
+        ):  # NOQA
     &#34;&#34;&#34;
     [HA] Test if the rebuild is disabled for the DR volume
     1. Setup a random backupstore.
@@ -932,8 +931,6 @@ def test_inc_restoration_with_multiple_rebuild_and_expansion(
         the activated volume.
     21. Do cleanup.
     &#34;&#34;&#34;
-    set_random_backupstore(client)
-
     data_path1 = &#34;/data/test1&#34;
 
     std_volume_name = volume_name + &#34;-std&#34;
@@ -1273,7 +1270,7 @@ def test_single_replica_failed_during_engine_start(
     assert snapMap[snap4.name].removed is False
 
 
-def test_restore_volume_with_invalid_backupstore(client, volume_name, set_backupstore_s3): # NOQA
+def test_restore_volume_with_invalid_backupstore(client, volume_name, backupstore_s3): # NOQA
     &#34;&#34;&#34;
     [HA] Test if the invalid backup target will lead to the restore volume
     becoming Faulted, and if the auto salvage feature is disabled for
@@ -1340,7 +1337,8 @@ def test_restore_volume_with_invalid_backupstore(client, volume_name, set_backup
 
 
 def test_all_replica_restore_failure(
-        client, core_api, volume_name, csi_pv, pvc, pod_make):  # NOQA
+        client, core_api, volume_name, csi_pv, pvc, pod_make, # NOQA
+        set_random_backupstore):  # NOQA
     &#34;&#34;&#34;
     [HA] Test if all replica restore failure will lead to the restore volume
     becoming Faulted, and if the auto salvage feature is disabled for
@@ -1373,7 +1371,6 @@ def test_all_replica_restore_failure(
     assert auto_salvage_setting.name == SETTING_AUTO_SALVAGE
     assert auto_salvage_setting.value == &#34;true&#34;
 
-    set_random_backupstore(client)
     backupstore_cleanup(client)
 
     pod_name, pv_name, pvc_name, md5sum = \
@@ -1423,7 +1420,8 @@ def test_all_replica_restore_failure(
 
 
 def test_single_replica_restore_failure(
-        client, core_api, volume_name, csi_pv, pvc, pod_make):  # NOQA
+        client, core_api, volume_name, csi_pv, pvc, pod_make, # NOQA
+        set_random_backupstore):  # NOQA
     &#34;&#34;&#34;
     [HA] Test if one replica restore failure will lead to the restore volume
     becoming Degraded, and if the restore volume is still usable after
@@ -1463,7 +1461,6 @@ def test_single_replica_restore_failure(
     assert auto_salvage_setting.name == SETTING_AUTO_SALVAGE
     assert auto_salvage_setting.value == &#34;true&#34;
 
-    set_random_backupstore(client)
     backupstore_cleanup(client)
 
     data_path = &#34;/data/test&#34;
@@ -1546,7 +1543,8 @@ def test_single_replica_restore_failure(
 
 
 def test_dr_volume_with_restore_command_error(
-        client, core_api, volume_name, csi_pv, pvc, pod_make):  # NOQA
+        client, core_api, volume_name, csi_pv, pvc, pod_make, # NOQA
+        set_random_backupstore):  # NOQA
     &#34;&#34;&#34;
     Test if Longhorn can capture and handle the restore command error
     rather than the error triggered the data restoring.
@@ -1572,8 +1570,6 @@ def test_dr_volume_with_restore_command_error(
     13. Validate the volume content.
     14. Verify Writing data to the activated volume is fine.
     &#34;&#34;&#34;
-    set_random_backupstore(client)
-
     std_volume_name = volume_name + &#34;-std&#34;
     data_path1 = &#34;/data/test1&#34;
     std_pod_name, std_pv_name, std_pvc_name, std_md5sum1 = \
@@ -1663,7 +1659,8 @@ def test_dr_volume_with_restore_command_error(
 
 
 def test_engine_crash_for_restore_volume(
-        client, core_api, volume_name, csi_pv, pvc, pod_make):  # NOQA
+        client, core_api, volume_name, csi_pv, pvc, pod_make, # NOQA
+        set_random_backupstore):  # NOQA
     &#34;&#34;&#34;
     [HA] Test volume can successfully retry restoring after
     the engine crashes unexpectedly.
@@ -1688,7 +1685,6 @@ def test_engine_crash_for_restore_volume(
     assert auto_salvage_setting.name == SETTING_AUTO_SALVAGE
     assert auto_salvage_setting.value == &#34;true&#34;
 
-    set_random_backupstore(client)
     backupstore_cleanup(client)
 
     data_path = &#34;/data/test&#34;
@@ -1761,7 +1757,8 @@ def test_engine_crash_for_restore_volume(
 
 
 def test_engine_crash_for_dr_volume(
-        client, core_api, volume_name, csi_pv, pvc, pod_make):  # NOQA
+        client, core_api, volume_name, csi_pv, pvc, pod_make, # NOQA
+        set_random_backupstore):  # NOQA
     &#34;&#34;&#34;
     [HA] Test DR volume can be recovered after
     the engine crashes unexpectedly.
@@ -1792,7 +1789,6 @@ def test_engine_crash_for_dr_volume(
     assert auto_salvage_setting.name == SETTING_AUTO_SALVAGE
     assert auto_salvage_setting.value == &#34;true&#34;
 
-    set_random_backupstore(client)
     backupstore_cleanup(client)
 
     data_path = &#34;/data/test&#34;
@@ -2694,7 +2690,7 @@ def test_replica_failure_during_attaching():
 </details>
 </dd>
 <dt id="tests.test_ha.test_all_replica_restore_failure"><code class="name flex">
-<span>def <span class="ident">test_all_replica_restore_failure</span></span>(<span>client, core_api, volume_name, csi_pv, pvc, pod_make)</span>
+<span>def <span class="ident">test_all_replica_restore_failure</span></span>(<span>client, core_api, volume_name, csi_pv, pvc, pod_make, set_random_backupstore)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>[HA] Test if all replica restore failure will lead to the restore volume
@@ -2729,7 +2725,8 @@ volume.conditions[restore].reason == "RestoreFailure"</code>.</li>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def test_all_replica_restore_failure(
-        client, core_api, volume_name, csi_pv, pvc, pod_make):  # NOQA
+        client, core_api, volume_name, csi_pv, pvc, pod_make, # NOQA
+        set_random_backupstore):  # NOQA
     &#34;&#34;&#34;
     [HA] Test if all replica restore failure will lead to the restore volume
     becoming Faulted, and if the auto salvage feature is disabled for
@@ -2762,7 +2759,6 @@ volume.conditions[restore].reason == "RestoreFailure"</code>.</li>
     assert auto_salvage_setting.name == SETTING_AUTO_SALVAGE
     assert auto_salvage_setting.value == &#34;true&#34;
 
-    set_random_backupstore(client)
     backupstore_cleanup(client)
 
     pod_name, pv_name, pvc_name, md5sum = \
@@ -3017,7 +3013,7 @@ def test_disable_replica_rebuild():
 </details>
 </dd>
 <dt id="tests.test_ha.test_dr_volume_with_restore_command_error"><code class="name flex">
-<span>def <span class="ident">test_dr_volume_with_restore_command_error</span></span>(<span>client, core_api, volume_name, csi_pv, pvc, pod_make)</span>
+<span>def <span class="ident">test_dr_volume_with_restore_command_error</span></span>(<span>client, core_api, volume_name, csi_pv, pvc, pod_make, set_random_backupstore)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Test if Longhorn can capture and handle the restore command error
@@ -3049,7 +3045,8 @@ and there is one failed replica.</li>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def test_dr_volume_with_restore_command_error(
-        client, core_api, volume_name, csi_pv, pvc, pod_make):  # NOQA
+        client, core_api, volume_name, csi_pv, pvc, pod_make, # NOQA
+        set_random_backupstore):  # NOQA
     &#34;&#34;&#34;
     Test if Longhorn can capture and handle the restore command error
     rather than the error triggered the data restoring.
@@ -3075,8 +3072,6 @@ and there is one failed replica.</li>
     13. Validate the volume content.
     14. Verify Writing data to the activated volume is fine.
     &#34;&#34;&#34;
-    set_random_backupstore(client)
-
     std_volume_name = volume_name + &#34;-std&#34;
     data_path1 = &#34;/data/test1&#34;
     std_pod_name, std_pv_name, std_pvc_name, std_md5sum1 = \
@@ -3166,7 +3161,7 @@ and there is one failed replica.</li>
 </details>
 </dd>
 <dt id="tests.test_ha.test_engine_crash_for_dr_volume"><code class="name flex">
-<span>def <span class="ident">test_engine_crash_for_dr_volume</span></span>(<span>client, core_api, volume_name, csi_pv, pvc, pod_make)</span>
+<span>def <span class="ident">test_engine_crash_for_dr_volume</span></span>(<span>client, core_api, volume_name, csi_pv, pvc, pod_make, set_random_backupstore)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>[HA] Test DR volume can be recovered after
@@ -3199,7 +3194,8 @@ volume.conditions[restore].reason == "RestoreInProgress"</code>.
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def test_engine_crash_for_dr_volume(
-        client, core_api, volume_name, csi_pv, pvc, pod_make):  # NOQA
+        client, core_api, volume_name, csi_pv, pvc, pod_make, # NOQA
+        set_random_backupstore):  # NOQA
     &#34;&#34;&#34;
     [HA] Test DR volume can be recovered after
     the engine crashes unexpectedly.
@@ -3230,7 +3226,6 @@ volume.conditions[restore].reason == "RestoreInProgress"</code>.
     assert auto_salvage_setting.name == SETTING_AUTO_SALVAGE
     assert auto_salvage_setting.value == &#34;true&#34;
 
-    set_random_backupstore(client)
     backupstore_cleanup(client)
 
     data_path = &#34;/data/test&#34;
@@ -3311,7 +3306,7 @@ volume.conditions[restore].reason == "RestoreInProgress"</code>.
 </details>
 </dd>
 <dt id="tests.test_ha.test_engine_crash_for_restore_volume"><code class="name flex">
-<span>def <span class="ident">test_engine_crash_for_restore_volume</span></span>(<span>client, core_api, volume_name, csi_pv, pvc, pod_make)</span>
+<span>def <span class="ident">test_engine_crash_for_restore_volume</span></span>(<span>client, core_api, volume_name, csi_pv, pvc, pod_make, set_random_backupstore)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>[HA] Test volume can successfully retry restoring after
@@ -3338,7 +3333,8 @@ volume.conditions[restore].reason == "RestoreInProgress"</code>.</li>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def test_engine_crash_for_restore_volume(
-        client, core_api, volume_name, csi_pv, pvc, pod_make):  # NOQA
+        client, core_api, volume_name, csi_pv, pvc, pod_make, # NOQA
+        set_random_backupstore):  # NOQA
     &#34;&#34;&#34;
     [HA] Test volume can successfully retry restoring after
     the engine crashes unexpectedly.
@@ -3363,7 +3359,6 @@ volume.conditions[restore].reason == "RestoreInProgress"</code>.</li>
     assert auto_salvage_setting.name == SETTING_AUTO_SALVAGE
     assert auto_salvage_setting.value == &#34;true&#34;
 
-    set_random_backupstore(client)
     backupstore_cleanup(client)
 
     data_path = &#34;/data/test&#34;
@@ -3847,7 +3842,7 @@ def test_ha_simple_recovery(client, volume_name):  # NOQA
 </details>
 </dd>
 <dt id="tests.test_ha.test_inc_restoration_with_multiple_rebuild_and_expansion"><code class="name flex">
-<span>def <span class="ident">test_inc_restoration_with_multiple_rebuild_and_expansion</span></span>(<span>client, core_api, volume_name, csi_pv, pvc, pod_make)</span>
+<span>def <span class="ident">test_inc_restoration_with_multiple_rebuild_and_expansion</span></span>(<span>set_random_backupstore, client, core_api, volume_name, csi_pv, pvc, pod_make)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>[HA] Test if the rebuild is disabled for the DR volume
@@ -3884,7 +3879,8 @@ the activated volume.
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def test_inc_restoration_with_multiple_rebuild_and_expansion(
-        client, core_api, volume_name, csi_pv, pvc, pod_make):  # NOQA
+        set_random_backupstore, client, core_api, volume_name, csi_pv, pvc, pod_make, # NOQA
+        ):  # NOQA
     &#34;&#34;&#34;
     [HA] Test if the rebuild is disabled for the DR volume
     1. Setup a random backupstore.
@@ -3916,8 +3912,6 @@ the activated volume.
         the activated volume.
     21. Do cleanup.
     &#34;&#34;&#34;
-    set_random_backupstore(client)
-
     data_path1 = &#34;/data/test1&#34;
 
     std_volume_name = volume_name + &#34;-std&#34;
@@ -4333,7 +4327,7 @@ and this reused replica is rebuilt on the only available node.</li>
 </details>
 </dd>
 <dt id="tests.test_ha.test_rebuild_with_inc_restoration"><code class="name flex">
-<span>def <span class="ident">test_rebuild_with_inc_restoration</span></span>(<span>client, core_api, volume_name, csi_pv, pvc, pod_make)</span>
+<span>def <span class="ident">test_rebuild_with_inc_restoration</span></span>(<span>client, core_api, volume_name, csi_pv, pvc, pod_make, set_random_backupstore)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>[HA] Test if the rebuild is disabled for the DR volume
@@ -4358,7 +4352,8 @@ after the attachment.
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def test_rebuild_with_inc_restoration(
-        client, core_api, volume_name, csi_pv, pvc, pod_make):  # NOQA
+        client, core_api, volume_name, csi_pv, pvc, pod_make, # NOQA
+        set_random_backupstore):  # NOQA
     &#34;&#34;&#34;
     [HA] Test if the rebuild is disabled for the DR volume
     1. Setup a random backupstore.
@@ -4378,8 +4373,6 @@ after the attachment.
     12. Check md5sum of the data in the activated volume.
     13. Do cleanup.
     &#34;&#34;&#34;
-    set_random_backupstore(client)
-
     std_volume_name = volume_name + &#34;-std&#34;
     data_path1 = &#34;/data/test1&#34;
     std_pod_name, std_pv_name, std_pvc_name, std_md5sum1 = \
@@ -4463,7 +4456,7 @@ after the attachment.
 </details>
 </dd>
 <dt id="tests.test_ha.test_rebuild_with_restoration"><code class="name flex">
-<span>def <span class="ident">test_rebuild_with_restoration</span></span>(<span>client, core_api, volume_name, csi_pv, pvc, pod_make)</span>
+<span>def <span class="ident">test_rebuild_with_restoration</span></span>(<span>client, core_api, volume_name, csi_pv, pvc, pod_make, set_random_backupstore)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>[HA] Test if the rebuild is disabled for the restoring volume
@@ -4485,7 +4478,8 @@ after the attachment.
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def test_rebuild_with_restoration(
-        client, core_api, volume_name, csi_pv, pvc, pod_make):  # NOQA
+        client, core_api, volume_name, csi_pv, pvc, pod_make, # NOQA
+        set_random_backupstore):  # NOQA
     &#34;&#34;&#34;
     [HA] Test if the rebuild is disabled for the restoring volume
     1. Setup a random backupstore.
@@ -4502,8 +4496,6 @@ after the attachment.
     11. Check md5sum of the data in the restored volume.
     12. Do cleanup.
     &#34;&#34;&#34;
-    set_random_backupstore(client)
-
     original_volume_name = volume_name + &#34;-origin&#34;
     data_path = &#34;/data/test&#34;
     original_pod_name, original_pv_name, original_pvc_name, original_md5sum = \
@@ -4624,7 +4616,7 @@ def test_replica_failure_during_attaching():
 </details>
 </dd>
 <dt id="tests.test_ha.test_restore_volume_with_invalid_backupstore"><code class="name flex">
-<span>def <span class="ident">test_restore_volume_with_invalid_backupstore</span></span>(<span>client, volume_name, set_backupstore_s3)</span>
+<span>def <span class="ident">test_restore_volume_with_invalid_backupstore</span></span>(<span>client, volume_name, backupstore_s3)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>[HA] Test if the invalid backup target will lead to the restore volume
@@ -4653,7 +4645,7 @@ volume.conditions[restore].reason == "RestoreFailure".</code></li>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def test_restore_volume_with_invalid_backupstore(client, volume_name, set_backupstore_s3): # NOQA
+<pre><code class="python">def test_restore_volume_with_invalid_backupstore(client, volume_name, backupstore_s3): # NOQA
     &#34;&#34;&#34;
     [HA] Test if the invalid backup target will lead to the restore volume
     becoming Faulted, and if the auto salvage feature is disabled for
@@ -5268,7 +5260,7 @@ def test_single_replica_failed_during_engine_start(
 </details>
 </dd>
 <dt id="tests.test_ha.test_single_replica_restore_failure"><code class="name flex">
-<span>def <span class="ident">test_single_replica_restore_failure</span></span>(<span>client, core_api, volume_name, csi_pv, pvc, pod_make)</span>
+<span>def <span class="ident">test_single_replica_restore_failure</span></span>(<span>client, core_api, volume_name, csi_pv, pvc, pod_make, set_random_backupstore)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>[HA] Test if one replica restore failure will lead to the restore volume
@@ -5309,7 +5301,8 @@ after the attachment.</li>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def test_single_replica_restore_failure(
-        client, core_api, volume_name, csi_pv, pvc, pod_make):  # NOQA
+        client, core_api, volume_name, csi_pv, pvc, pod_make, # NOQA
+        set_random_backupstore):  # NOQA
     &#34;&#34;&#34;
     [HA] Test if one replica restore failure will lead to the restore volume
     becoming Degraded, and if the restore volume is still usable after
@@ -5349,7 +5342,6 @@ after the attachment.</li>
     assert auto_salvage_setting.name == SETTING_AUTO_SALVAGE
     assert auto_salvage_setting.value == &#34;true&#34;
 
-    set_random_backupstore(client)
     backupstore_cleanup(client)
 
     data_path = &#34;/data/test&#34;

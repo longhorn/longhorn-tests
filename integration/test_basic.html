@@ -65,10 +65,9 @@ from common import create_storage_class
 from common import wait_for_backup_restore_completed
 from common import wait_for_volume_restoration_completed
 from common import read_volume_data
-from common import pvc_name  # NOQA
-from common import storage_class  # NOQA
-from common import pod_make, csi_pv, pvc  # NOQA
-from common import set_random_backupstore
+from common import pvc_name # NOQA
+from common import storage_class # NOQA
+from common import pod_make, csi_pv, pvc # NOQA
 from common import create_snapshot
 from common import expand_attached_volume
 from common import wait_for_dr_volume_expansion
@@ -88,7 +87,6 @@ from common import MESSAGE_TYPE_ERROR
 from common import DATA_SIZE_IN_MB_1
 from common import SETTING_REPLICA_NODE_SOFT_ANTI_AFFINITY
 from common import CONDITION_REASON_SCHEDULING_FAILURE
-from common import set_backupstore_s3  # NOQA
 from common import delete_backup
 from common import delete_backup_volume
 from common import BACKUP_BLOCK_SIZE
@@ -105,9 +103,10 @@ from backupstore import backupstore_cleanup
 from backupstore import backupstore_count_backup_block_files
 from backupstore import backupstore_create_dummy_in_progress_backup
 from backupstore import backupstore_delete_dummy_in_progress_backup
-from backupstore import minio_get_backup_volume_prefix
 from backupstore import backupstore_create_file
 from backupstore import backupstore_delete_file
+from backupstore import set_random_backupstore # NOQA
+from backupstore import backupstore_get_backup_volume_prefix
 
 
 @pytest.mark.coretest   # NOQA
@@ -635,7 +634,7 @@ def backup_status_for_unavailable_replicas_test(client, volume_name,  # NOQA
     cleanup_volume(client, volume)
 
 
-def test_backup_block_deletion(client, core_api, volume_name, set_backupstore_s3):  # NOQA
+def test_backup_block_deletion(client, core_api, volume_name, set_random_backupstore):  # NOQA
     &#34;&#34;&#34;
     Test backup block deletion
 
@@ -732,7 +731,7 @@ def test_backup_block_deletion(client, core_api, volume_name, set_backupstore_s3
     delete_backup_volume(client, volume_name)
 
 
-def test_backup_volume_list(client, core_api, set_backupstore_s3):  # NOQA
+def test_backup_volume_list(client, core_api, set_random_backupstore):  # NOQA
     &#34;&#34;&#34;
     Test backup volume list
     Context:
@@ -799,7 +798,8 @@ def test_backup_volume_list(client, core_api, set_backupstore_s3):  # NOQA
     verify_no_err()
 
     # place a bad named file into the backups folder of volume(1)
-    prefix = minio_get_backup_volume_prefix(volume1_name) + &#34;/backups&#34;
+    prefix = \
+        backupstore_get_backup_volume_prefix(client, volume1_name) + &#34;/backups&#34;
     backupstore_create_file(client,
                             core_api,
                             prefix + &#34;/backup_1234@failure.cfg&#34;)
@@ -813,7 +813,7 @@ def test_backup_volume_list(client, core_api, set_backupstore_s3):  # NOQA
     backupstore_cleanup(client)
 
 
-def test_backup_metadata_deletion(client, core_api, volume_name, set_backupstore_s3):  # NOQA
+def test_backup_metadata_deletion(client, core_api, volume_name, set_random_backupstore):  # NOQA
     &#34;&#34;&#34;
     Test backup metadata deletion
 
@@ -1803,8 +1803,6 @@ def test_storage_class_from_backup(volume_name, pvc_name, storage_class, client,
     &#34;&#34;&#34;
     VOLUME_SIZE = str(DEFAULT_VOLUME_SIZE * Gi)
 
-    set_random_backupstore(client)
-
     pv_name = pvc_name
 
     volume = create_and_check_volume(
@@ -2015,7 +2013,7 @@ def test_expansion_basic(client, volume_name):  # NOQA
 
 
 @pytest.mark.coretest   # NOQA
-def test_restore_inc_with_expansion(client, core_api, volume_name, pod):  # NOQA
+def test_restore_inc_with_expansion(client, core_api, volume_name, pod, set_random_backupstore):  # NOQA
     &#34;&#34;&#34;
     Test restore from disaster recovery volume with volume expansion
 
@@ -2044,8 +2042,6 @@ def test_restore_inc_with_expansion(client, core_api, volume_name, pod):  # NOQA
     FIXME: Step 16 works because the disk will be treated as a unformatted disk
     &#34;&#34;&#34;
     lht_host_id = get_self_host_id()
-
-    set_random_backupstore(client)
 
     std_volume = create_and_check_volume(client, volume_name, 2, SIZE)
     std_volume.attach(hostId=lht_host_id)
@@ -2649,7 +2645,7 @@ def test_expansion_with_scheduling_failure(
     delete_and_wait_pv(core_api, test_pv_name)
 
 
-def test_dr_volume_with_last_backup_deletion(client, core_api, csi_pv, pvc, volume_name, pod_make):  # NOQA
+def test_dr_volume_with_last_backup_deletion(client, core_api, csi_pv, pvc, volume_name, pod_make, set_random_backupstore):  # NOQA
     &#34;&#34;&#34;
     Test if the DR volume can be activated
     after deleting the lastest backup. There are two cases to the last
@@ -2677,8 +2673,6 @@ def test_dr_volume_with_last_backup_deletion(client, core_api, csi_pv, pvc, volu
     17. Create PV/PVC/Pod for the activated volume 2.
     18. Validate the volume content, should be backup 1.
     &#34;&#34;&#34;
-    set_random_backupstore(client)
-
     std_volume_name = volume_name + &#34;-std&#34;
     data_path1 = &#34;/data/test1&#34;
     std_pod_name, std_pv_name, std_pvc_name, std_md5sum1 = \
@@ -4456,7 +4450,7 @@ def test_backup(client, volume_name):  # NOQA
 </details>
 </dd>
 <dt id="tests.test_basic.test_backup_block_deletion"><code class="name flex">
-<span>def <span class="ident">test_backup_block_deletion</span></span>(<span>client, core_api, volume_name, set_backupstore_s3)</span>
+<span>def <span class="ident">test_backup_block_deletion</span></span>(<span>client, core_api, volume_name, set_random_backupstore)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Test backup block deletion</p>
@@ -4497,7 +4491,7 @@ json.dumps({"Name": name, "VolumeName": volume, "CreatedTime": ""})</li>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def test_backup_block_deletion(client, core_api, volume_name, set_backupstore_s3):  # NOQA
+<pre><code class="python">def test_backup_block_deletion(client, core_api, volume_name, set_random_backupstore):  # NOQA
     &#34;&#34;&#34;
     Test backup block deletion
 
@@ -5020,7 +5014,7 @@ def test_backup_lock_restoration_during_deletion(client, core_api, volume_name, 
 </details>
 </dd>
 <dt id="tests.test_basic.test_backup_metadata_deletion"><code class="name flex">
-<span>def <span class="ident">test_backup_metadata_deletion</span></span>(<span>client, core_api, volume_name, set_backupstore_s3)</span>
+<span>def <span class="ident">test_backup_metadata_deletion</span></span>(<span>client, core_api, volume_name, set_random_backupstore)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Test backup metadata deletion</p>
@@ -5064,7 +5058,7 @@ even if they are corrupt or in a bad state (missing volume.cfg).</p>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def test_backup_metadata_deletion(client, core_api, volume_name, set_backupstore_s3):  # NOQA
+<pre><code class="python">def test_backup_metadata_deletion(client, core_api, volume_name, set_random_backupstore):  # NOQA
     &#34;&#34;&#34;
     Test backup metadata deletion
 
@@ -5286,7 +5280,7 @@ to no longer being able to show newly created backups in the UI.</p>
 </details>
 </dd>
 <dt id="tests.test_basic.test_backup_volume_list"><code class="name flex">
-<span>def <span class="ident">test_backup_volume_list</span></span>(<span>client, core_api, set_backupstore_s3)</span>
+<span>def <span class="ident">test_backup_volume_list</span></span>(<span>client, core_api, set_random_backupstore)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Test backup volume list
@@ -5323,7 +5317,7 @@ verify backup list contains no error messages for volume(1,2)
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def test_backup_volume_list(client, core_api, set_backupstore_s3):  # NOQA
+<pre><code class="python">def test_backup_volume_list(client, core_api, set_random_backupstore):  # NOQA
     &#34;&#34;&#34;
     Test backup volume list
     Context:
@@ -5390,7 +5384,8 @@ verify backup list contains no error messages for volume(1,2)
     verify_no_err()
 
     # place a bad named file into the backups folder of volume(1)
-    prefix = minio_get_backup_volume_prefix(volume1_name) + &#34;/backups&#34;
+    prefix = \
+        backupstore_get_backup_volume_prefix(client, volume1_name) + &#34;/backups&#34;
     backupstore_create_file(client,
                             core_api,
                             prefix + &#34;/backup_1234@failure.cfg&#34;)
@@ -5488,7 +5483,7 @@ verify backup list contains no error messages for volume(1,2)
 </details>
 </dd>
 <dt id="tests.test_basic.test_dr_volume_with_last_backup_deletion"><code class="name flex">
-<span>def <span class="ident">test_dr_volume_with_last_backup_deletion</span></span>(<span>client, core_api, csi_pv, pvc, volume_name, pod_make)</span>
+<span>def <span class="ident">test_dr_volume_with_last_backup_deletion</span></span>(<span>client, core_api, csi_pv, pvc, volume_name, pod_make, set_random_backupstore)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Test if the DR volume can be activated
@@ -5521,7 +5516,7 @@ original volume.</li>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def test_dr_volume_with_last_backup_deletion(client, core_api, csi_pv, pvc, volume_name, pod_make):  # NOQA
+<pre><code class="python">def test_dr_volume_with_last_backup_deletion(client, core_api, csi_pv, pvc, volume_name, pod_make, set_random_backupstore):  # NOQA
     &#34;&#34;&#34;
     Test if the DR volume can be activated
     after deleting the lastest backup. There are two cases to the last
@@ -5549,8 +5544,6 @@ original volume.</li>
     17. Create PV/PVC/Pod for the activated volume 2.
     18. Validate the volume content, should be backup 1.
     &#34;&#34;&#34;
-    set_random_backupstore(client)
-
     std_volume_name = volume_name + &#34;-std&#34;
     data_path1 = &#34;/data/test1&#34;
     std_pod_name, std_pv_name, std_pvc_name, std_md5sum1 = \
@@ -6533,7 +6526,7 @@ def test_restore_inc(client, core_api, volume_name, pod):  # NOQA
 </details>
 </dd>
 <dt id="tests.test_basic.test_restore_inc_with_expansion"><code class="name flex">
-<span>def <span class="ident">test_restore_inc_with_expansion</span></span>(<span>client, core_api, volume_name, pod)</span>
+<span>def <span class="ident">test_restore_inc_with_expansion</span></span>(<span>client, core_api, volume_name, pod, set_random_backupstore)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Test restore from disaster recovery volume with volume expansion</p>
@@ -6565,7 +6558,7 @@ as the DR volume exists</li>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">@pytest.mark.coretest   # NOQA
-def test_restore_inc_with_expansion(client, core_api, volume_name, pod):  # NOQA
+def test_restore_inc_with_expansion(client, core_api, volume_name, pod, set_random_backupstore):  # NOQA
     &#34;&#34;&#34;
     Test restore from disaster recovery volume with volume expansion
 
@@ -6594,8 +6587,6 @@ def test_restore_inc_with_expansion(client, core_api, volume_name, pod):  # NOQA
     FIXME: Step 16 works because the disk will be treated as a unformatted disk
     &#34;&#34;&#34;
     lht_host_id = get_self_host_id()
-
-    set_random_backupstore(client)
 
     std_volume = create_and_check_volume(client, volume_name, 2, SIZE)
     std_volume.attach(hostId=lht_host_id)
@@ -7171,8 +7162,6 @@ def test_storage_class_from_backup(volume_name, pvc_name, storage_class, client,
     7. Create the pod using the PVC. Verify the data
     &#34;&#34;&#34;
     VOLUME_SIZE = str(DEFAULT_VOLUME_SIZE * Gi)
-
-    set_random_backupstore(client)
 
     pv_name = pvc_name
 
