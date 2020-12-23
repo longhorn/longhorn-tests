@@ -377,9 +377,8 @@ def nfs_write_backup_cfg_file(client, volume_name, backup_name, data):
     nfs_backup_cfg_file_path = nfs_get_backup_cfg_file_path(client,
                                                             volume_name,
                                                             backup_name)
-    cfg_file = open(nfs_backup_cfg_file_path, 'w')
-    cfg_file.write(str(data))
-    cfg_file.close()
+    with open(nfs_backup_cfg_file_path, 'w') as cfg_file:
+        cfg_file.write(str(data))
 
 
 def minio_write_backup_cfg_file(client, core_api, volume_name, backup_name, backup_cfg_data): # NOQA
