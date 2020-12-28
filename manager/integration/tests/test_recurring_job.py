@@ -444,7 +444,7 @@ def test_recurring_jobs_maximum_retain(client, core_api, volume_name): # NOQA
 
 
 def test_recurring_jobs_for_detached_volume(
-    client, core_api, apps_api, volume_name, make_deployment_with_pvc):  # NOQA
+    client, core_api, apps_api, volume_name, make_deployment_with_pvc, set_random_backupstore):  # NOQA
     """
     Test recurring jobs for detached volume
 
@@ -477,8 +477,6 @@ def test_recurring_jobs_for_detached_volume(
     16. Change the setting allow-recurring-job-while-volume-detached to false.
     17. Cleanup.
     """
-    set_random_backupstore(client)
-
     recurring_job_setting = \
         client.by_id_setting(SETTING_RECURRING_JOB_WHILE_VOLUME_DETACHED)
     client.update(recurring_job_setting, value="true")

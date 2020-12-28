@@ -42,6 +42,8 @@ from common import delete_and_wait_pod
 from common import wait_for_volume_detached
 from common import RETRY_COUNTS, RETRY_INTERVAL
 
+from backupstore import set_random_backupstore # NOQA
+
 CREATE_DEFAULT_DISK_LABEL = "node.longhorn.io/create-default-disk"
 CREATE_DEFAULT_DISK_LABEL_VALUE_CONFIG = "config"
 DEFAULT_DISK_CONFIG_ANNOTATION = "node.longhorn.io/default-disks-config"
@@ -2080,7 +2082,7 @@ def test_node_config_annotation_missing(client, core_api,  # NOQA
 
 
 @pytest.mark.node  # NOQA
-def test_replica_scheduler_rebuild_restore_is_too_big(client):  # NOQA
+def test_replica_scheduler_rebuild_restore_is_too_big(client, set_random_backupstore):  # NOQA
     """
     Test replica scheduler: rebuild/restore can be too big to fit a disk
 
@@ -2102,7 +2104,6 @@ def test_replica_scheduler_rebuild_restore_is_too_big(client):  # NOQA
     10. Wait for the restored volume to complete restoration, then check data.
 
     """
-    common.set_random_backupstore(client)
     nodes = client.list_node()
     lht_hostId = get_self_host_id()
     node = client.by_id_node(lht_hostId)
