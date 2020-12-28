@@ -2752,7 +2752,7 @@ def test_dr_volume_with_last_backup_deletion(client, core_api, csi_pv, pvc, volu
     client.delete(bv)
 
 
-def test_backup_lock_deletion_during_restoration(client, core_api, volume_name, csi_pv, pvc, pod_make):  # NOQA
+def test_backup_lock_deletion_during_restoration(client, core_api, volume_name, csi_pv, pvc, pod_make, set_random_backupstore):  # NOQA
     """
     Test backup locks
     Context:
@@ -2774,7 +2774,6 @@ def test_backup_lock_deletion_during_restoration(client, core_api, volume_name, 
     11. Assert the backup count in the backup store with 1.
        (The backup should not be deleted)
     """
-    set_random_backupstore(client)
     backupstore_cleanup(client)
     std_volume_name = volume_name + "-std"
     restore_volume_name = volume_name + "-restore"
@@ -2817,7 +2816,7 @@ def test_backup_lock_deletion_during_restoration(client, core_api, volume_name, 
     assert b is not None
 
 
-def test_backup_lock_deletion_during_backup(client, core_api, volume_name, csi_pv, pvc, pod_make):  # NOQA
+def test_backup_lock_deletion_during_backup(client, core_api, volume_name, csi_pv, pvc, pod_make, set_random_backupstore):  # NOQA
     """
     Test backup locks
     Context:
@@ -2842,7 +2841,6 @@ def test_backup_lock_deletion_during_backup(client, core_api, volume_name, csi_p
     13. Restore the older backup.
     14. Wait for the restoration to be completed. Assert md5sum from step 3.
     """
-    set_random_backupstore(client)
     backupstore_cleanup(client)
     std_volume_name = volume_name + "-std"
     restore_volume_name_1 = volume_name + "-restore-1"
@@ -2917,7 +2915,7 @@ def test_backup_lock_deletion_during_backup(client, core_api, volume_name, csi_p
     assert std_md5sum2 == md5sum2
 
 
-def test_backup_lock_creation_during_deletion(client, core_api, volume_name, csi_pv, pvc, pod_make):  # NOQA
+def test_backup_lock_creation_during_deletion(client, core_api, volume_name, csi_pv, pvc, pod_make, set_random_backupstore):  # NOQA
     """
     Test backup locks
     Context:
@@ -2939,7 +2937,6 @@ def test_backup_lock_creation_during_deletion(client, core_api, volume_name, csi
     9. Wait for the backup deletion and assert there is 0 backup in the backup
        store.
     """
-    set_random_backupstore(client)
     backupstore_cleanup(client)
     std_volume_name = volume_name + "-std"
 
@@ -2975,7 +2972,7 @@ def test_backup_lock_creation_during_deletion(client, core_api, volume_name, csi
 
 
 @pytest.mark.skip(reason="This test takes more than 20 mins to run")  # NOQA
-def test_backup_lock_restoration_during_deletion(client, core_api, volume_name, csi_pv, pvc, pod_make):  # NOQA
+def test_backup_lock_restoration_during_deletion(client, core_api, volume_name, csi_pv, pvc, pod_make, set_random_backupstore):  # NOQA
     """
     Test backup locks
     Context:
@@ -2998,7 +2995,6 @@ def test_backup_lock_restoration_during_deletion(client, core_api, volume_name, 
     11. Wait for the 2nd backup deletion and assert the count of the backups
        with 1 in the backup store.
     """
-    set_random_backupstore(client)
     backupstore_cleanup(client)
     std_volume_name = volume_name + "-std"
     restore_volume_name = volume_name + "-restore"
