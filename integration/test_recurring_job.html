@@ -472,7 +472,7 @@ def test_recurring_jobs_maximum_retain(client, core_api, volume_name): # NOQA
 
 
 def test_recurring_jobs_for_detached_volume(
-    client, core_api, apps_api, volume_name, make_deployment_with_pvc):  # NOQA
+    client, core_api, apps_api, volume_name, make_deployment_with_pvc, set_random_backupstore):  # NOQA
     &#34;&#34;&#34;
     Test recurring jobs for detached volume
 
@@ -505,8 +505,6 @@ def test_recurring_jobs_for_detached_volume(
     16. Change the setting allow-recurring-job-while-volume-detached to false.
     17. Cleanup.
     &#34;&#34;&#34;
-    set_random_backupstore(client)
-
     recurring_job_setting = \
         client.by_id_setting(SETTING_RECURRING_JOB_WHILE_VOLUME_DETACHED)
     client.update(recurring_job_setting, value=&#34;true&#34;)
@@ -1176,7 +1174,7 @@ def test_recurring_job_labels(client, random_labels, volume_name):  # NOQA
 </details>
 </dd>
 <dt id="tests.test_recurring_job.test_recurring_jobs_for_detached_volume"><code class="name flex">
-<span>def <span class="ident">test_recurring_jobs_for_detached_volume</span></span>(<span>client, core_api, apps_api, volume_name, make_deployment_with_pvc)</span>
+<span>def <span class="ident">test_recurring_jobs_for_detached_volume</span></span>(<span>client, core_api, apps_api, volume_name, make_deployment_with_pvc, set_random_backupstore)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Test recurring jobs for detached volume</p>
@@ -1221,7 +1219,7 @@ Delete the recurring backup.
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def test_recurring_jobs_for_detached_volume(
-    client, core_api, apps_api, volume_name, make_deployment_with_pvc):  # NOQA
+    client, core_api, apps_api, volume_name, make_deployment_with_pvc, set_random_backupstore):  # NOQA
     &#34;&#34;&#34;
     Test recurring jobs for detached volume
 
@@ -1254,8 +1252,6 @@ Delete the recurring backup.
     16. Change the setting allow-recurring-job-while-volume-detached to false.
     17. Cleanup.
     &#34;&#34;&#34;
-    set_random_backupstore(client)
-
     recurring_job_setting = \
         client.by_id_setting(SETTING_RECURRING_JOB_WHILE_VOLUME_DETACHED)
     client.update(recurring_job_setting, value=&#34;true&#34;)
