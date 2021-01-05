@@ -17,11 +17,7 @@ Run the test:
 ```
 kubectl create -Rf integration/deploy/backupstores
 ```
-2. Deploy NFS provisioner setup dependencies for test purposes.
-```
-kubectl create -f integration/deploy/rwx_requirements.yaml
-```
-3. Deploy the test script to the Kubernetes cluster.
+2. Deploy the test script to the Kubernetes cluster.
 ```
 kubectl create -f integration/deploy/test.yaml
 ```
