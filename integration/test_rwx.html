@@ -27,803 +27,130 @@
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">import pytest
-from common import (generate_random_data, VOLUME_RWTEST_SIZE,
-                    delete_and_wait_pvc, create_storage_class,
-                    create_and_wait_statefulset, write_pod_volume_data,
-                    get_core_api_client, get_longhorn_api_client,
-                    delete_and_wait_deployment, check_pvc_existence,
-                    wait_for_volume_delete, wait_deployment_replica_ready,
-                    get_apps_api_client, delete_storage_class,
-                    timeout, get_volume_name, create_and_wait_pod,
-                    create_pvc_spec, cleanup_client,
-                    create_and_wait_deployment, wait_statefulset,
-                    DEFAULT_STATEFULSET_TIMEOUT, DEFAULT_STATEFULSET_INTERVAL,
-                    write_pod_volume_random_data, DATA_SIZE_IN_MB_3,
-                    get_pod_data_md5sum)
-from common import core_api, statefulset, pvc, pod, make_deployment_with_pvc  # NOQA
-from kubernetes import client as k8sclient, config as k8sconfig
-from kubernetes.client import Configuration
-from kubernetes.stream import stream
-import time
-from multiprocessing import Pool
-
-NFS_STORAGECLASS_NAME = &#39;longhorn-nfs-test&#39;
-STREAM_EXEC_TIMEOUT = 60
-NFS_TEST_DATA = generate_random_data(VOLUME_RWTEST_SIZE)
 
 
-@pytest.fixture(scope=&#34;module&#34;, autouse=&#34;True&#34;)
-def deployment_nfs(request):
-    deployment_nfs_manifest = {
-       &#34;kind&#34;: &#34;Deployment&#34;,
-       &#34;apiVersion&#34;: &#34;apps/v1&#34;,
-       &#34;metadata&#34;: {
-          &#34;name&#34;: &#34;longhorn-nfs-provisioner&#34;,
-          &#34;namespace&#34;: &#34;longhorn-system&#34;
-       },
-       &#34;spec&#34;: {
-          &#34;selector&#34;: {
-             &#34;matchLabels&#34;: {
-                &#34;app&#34;: &#34;longhorn-nfs-provisioner&#34;
-             }
-          },
-          &#34;replicas&#34;: 1,
-          &#34;strategy&#34;: {
-             &#34;type&#34;: &#34;Recreate&#34;
-          },
-          &#34;template&#34;: {
-             &#34;metadata&#34;: {
-                &#34;labels&#34;: {
-                   &#34;app&#34;: &#34;longhorn-nfs-provisioner&#34;
-                }
-             },
-             &#34;spec&#34;: {
-                &#34;serviceAccount&#34;: &#34;longhorn-nfs-provisioner&#34;,
-                &#34;containers&#34;: [
-                   {
-                      &#34;name&#34;: &#34;longhorn-nfs-provisioner&#34;,
-                      &#34;image&#34;: &#34;quay.io/kubernetes_incubator/nfs-provisioner:latest&#34;,  # NOQA
-                      &#34;ports&#34;: [
-                         {
-                            &#34;name&#34;: &#34;nfs&#34;,
-                            &#34;containerPort&#34;: 2049
-                         },
-                         {
-                            &#34;name&#34;: &#34;nfs-udp&#34;,
-                            &#34;containerPort&#34;: 2049,
-                            &#34;protocol&#34;: &#34;UDP&#34;
-                         },
-                         {
-                            &#34;name&#34;: &#34;nlockmgr&#34;,
-                            &#34;containerPort&#34;: 32803
-                         },
-                         {
-                            &#34;name&#34;: &#34;nlockmgr-udp&#34;,
-                            &#34;containerPort&#34;: 32803,
-                            &#34;protocol&#34;: &#34;UDP&#34;
-                         },
-                         {
-                            &#34;name&#34;: &#34;mountd&#34;,
-                            &#34;containerPort&#34;: 20048
-                         },
-                         {
-                            &#34;name&#34;: &#34;mountd-udp&#34;,
-                            &#34;containerPort&#34;: 20048,
-                            &#34;protocol&#34;: &#34;UDP&#34;
-                         },
-                         {
-                            &#34;name&#34;: &#34;rquotad&#34;,
-                            &#34;containerPort&#34;: 875
-                         },
-                         {
-                            &#34;name&#34;: &#34;rquotad-udp&#34;,
-                            &#34;containerPort&#34;: 875,
-                            &#34;protocol&#34;: &#34;UDP&#34;
-                         },
-                         {
-                            &#34;name&#34;: &#34;rpcbind&#34;,
-                            &#34;containerPort&#34;: 111
-                         },
-                         {
-                            &#34;name&#34;: &#34;rpcbind-udp&#34;,
-                            &#34;containerPort&#34;: 111,
-                            &#34;protocol&#34;: &#34;UDP&#34;
-                         },
-                         {
-                            &#34;name&#34;: &#34;statd&#34;,
-                            &#34;containerPort&#34;: 662
-                         },
-                         {
-                            &#34;name&#34;: &#34;statd-udp&#34;,
-                            &#34;containerPort&#34;: 662,
-                            &#34;protocol&#34;: &#34;UDP&#34;
-                         }
-                      ],
-                      &#34;securityContext&#34;: {
-                         &#34;capabilities&#34;: {
-                            &#34;add&#34;: [
-                               &#34;DAC_READ_SEARCH&#34;,
-                               &#34;SYS_RESOURCE&#34;
-                            ]
-                         }
-                      },
-                      &#34;args&#34;: [
-                         &#34;-provisioner=nfs.longhorn.io&#34;,
-                         &#34;-device-based-fsids=false&#34;
-                      ],
-                      &#34;env&#34;: [
-                         {
-                            &#34;name&#34;: &#34;POD_IP&#34;,
-                            &#34;valueFrom&#34;: {
-                               &#34;fieldRef&#34;: {
-                                  &#34;fieldPath&#34;: &#34;status.podIP&#34;
-                               }
-                            }
-                         },
-                         {
-                            &#34;name&#34;: &#34;SERVICE_NAME&#34;,
-                            &#34;value&#34;: &#34;longhorn-nfs-provisioner&#34;
-                         },
-                         {
-                            &#34;name&#34;: &#34;POD_NAMESPACE&#34;,
-                            &#34;valueFrom&#34;: {
-                               &#34;fieldRef&#34;: {
-                                  &#34;fieldPath&#34;: &#34;metadata.namespace&#34;
-                               }
-                            }
-                         }
-                      ],
-                      &#34;imagePullPolicy&#34;: &#34;IfNotPresent&#34;,
-                      &#34;readinessProbe&#34;: {
-                         &#34;exec&#34;: {
-                            &#34;command&#34;: [
-                               &#34;ls&#34;,
-                               &#34;/export&#34;
-                            ]
-                         },
-                         &#34;initialDelaySeconds&#34;: 5,
-                         &#34;periodSeconds&#34;: 5
-                      },
-                      &#34;livenessProbe&#34;: {
-                         &#34;exec&#34;: {
-                            &#34;command&#34;: [
-                               &#34;ls&#34;,
-                               &#34;/export&#34;
-                            ]
-                         },
-                         &#34;initialDelaySeconds&#34;: 5,
-                         &#34;periodSeconds&#34;: 5
-                      },
-                      &#34;volumeMounts&#34;: [
-                         {
-                            &#34;name&#34;: &#34;export-volume&#34;,
-                            &#34;mountPath&#34;: &#34;/export&#34;
-                         }
-                      ]
-                   }
-                ],
-                &#34;volumes&#34;: [
-                   {
-                      &#34;name&#34;: &#34;export-volume&#34;,
-                      &#34;persistentVolumeClaim&#34;: {
-                         &#34;claimName&#34;: &#34;longhorn-nfs-provisioner&#34;
-                      }
-                   }
-                ],
-                &#34;terminationGracePeriodSeconds&#34;: 30,
-                &#34;tolerations&#34;: [
-                   {
-                      &#34;effect&#34;: &#34;NoExecute&#34;,
-                      &#34;key&#34;: &#34;node.kubernetes.io/not-ready&#34;,
-                      &#34;operator&#34;: &#34;Exists&#34;,
-                      &#34;tolerationSeconds&#34;: 60
-                   },
-                   {
-                      &#34;effect&#34;: &#34;NoExecute&#34;,
-                      &#34;key&#34;: &#34;node.kubernetes.io/unreachable&#34;,
-                      &#34;operator&#34;: &#34;Exists&#34;,
-                      &#34;tolerationSeconds&#34;: 60
-                   }
-                ]
-             }
-          }
-       }
-    }
-
-    def finalizer():
-        api = get_apps_api_client()
-        delete_and_wait_deployment(api, &#39;longhorn-nfs-provisioner&#39;,
-                                   namespace=&#39;longhorn-system&#39;)
-
-    request.addfinalizer(finalizer)
-
-    return deployment_nfs_manifest
-
-
-@pytest.fixture(scope=&#34;module&#34;, autouse=&#34;True&#34;)
-def nfs_pvc(request):
-    pvc_manifest = {
-        &#39;apiVersion&#39;: &#39;v1&#39;,
-        &#39;kind&#39;: &#39;PersistentVolumeClaim&#39;,
-        &#39;metadata&#39;: {
-            &#39;name&#39;: &#39;longhorn-nfs-provisioner&#39;,
-            &#39;namespace&#39;: &#39;longhorn-system&#39;
-        },
-        &#39;spec&#39;: {
-            &#39;storageClassName&#39;: &#39;longhorn&#39;,
-            &#39;accessModes&#39;: [
-                &#39;ReadWriteOnce&#39;
-            ],
-            &#39;resources&#39;: {
-                &#39;requests&#39;: {
-                    &#39;storage&#39;: &#39;10G&#39;
-                }
-            }
-        }
-    }
-
-    def finalizer():
-        api = k8sclient.CoreV1Api()
-        client = get_longhorn_api_client()
-        volumes = client.list_volume()
-
-        if not check_pvc_existence(api, pvc_manifest[&#39;metadata&#39;][&#39;name&#39;],
-                                   namespace=&#39;longhorn-system&#39;):
-            return
-
-        volume_name = &#39;&#39;
-        for v in volumes:
-            if v.kubernetesStatus.pvcName == &#39;longhorn-nfs-provisioner&#39;:
-                volume_name = v.name
-                client.delete(v)
-                break
-        wait_for_volume_delete(client, volume_name)
-
-        core_api_client = get_core_api_client()
-        delete_and_wait_pvc(core_api_client, pvc_manifest[&#39;metadata&#39;][&#39;name&#39;])
-
-    request.addfinalizer(finalizer)
-
-    return pvc_manifest
-
-
-@pytest.fixture(scope=&#34;module&#34;, autouse=&#34;True&#34;)
-def nfs_storage_class(request):
-    sc_manifest = {
-        &#39;apiVersion&#39;: &#39;storage.k8s.io/v1&#39;,
-        &#39;kind&#39;: &#39;StorageClass&#39;,
-        &#39;metadata&#39;: {
-            &#39;name&#39;: NFS_STORAGECLASS_NAME
-        },
-        &#39;provisioner&#39;: &#39;nfs.longhorn.io&#39;,
-        &#39;mountOptions&#39;: [
-            &#39;vers=4.1&#39;,
-            &#39;noresvport&#39;
-        ]
-    }
-
-    def finalizer():
-        delete_storage_class(NFS_STORAGECLASS_NAME)
-
-    request.addfinalizer(finalizer)
-
-    return sc_manifest
-
-
-@pytest.fixture(scope=&#34;module&#34;, autouse=&#34;True&#34;)  # NOQA
-def core_api_module(request):
+@pytest.mark.skip(reason=&#39;TODO&#39;)
+def test_rwx_with_statefulset_multi_pods():  # NOQA
     &#34;&#34;&#34;
-    Create a new CoreV1API instance.
-    Returns:
-        A new CoreV1API Instance.
-    &#34;&#34;&#34;
-    c = Configuration()
-    c.assert_hostname = False
-    Configuration.set_default(c)
-    k8sconfig.load_incluster_config()
-    core_api = k8sclient.CoreV1Api()  # NOQA
+    Test creation of share manager pod and rwx volumes from 2 pods.
 
-    cleanup_client()
-
-    return core_api
-
-
-@pytest.fixture(scope=&#34;module&#34;, autouse=&#34;True&#34;)
-def apps_api_module(request):
-    &#34;&#34;&#34;
-    Create a new AppsV1API instance.
-    Returns:
-        A new AppsV1API Instance.
-    &#34;&#34;&#34;
-    c = Configuration()
-    c.assert_hostname = False
-    Configuration.set_default(c)
-    k8sconfig.load_incluster_config()
-    apps_api = k8sclient.AppsV1Api()
-
-    return apps_api
-
-
-@pytest.fixture(scope=&#34;module&#34;, autouse=&#34;True&#34;)
-def longhorn_nfs_provisioner_setup(core_api_module, apps_api_module, nfs_pvc,
-                                   nfs_storage_class, deployment_nfs):
-    &#34;&#34;&#34;
-    Deploy longhorn-nfs-provisioner pod and volume
+    1. Create a StatefulSet of 2 pods with VolumeClaimTemplate where accessMode
+       is &#39;RWX&#39;.
+    2. Wait for both pods to come up running.
+    3. Verify there are two share manager pods created in the longhorn
+       namespace and they have the directory with the PV name in the
+       path `/export`
+    4. Write data in both pods and compute md5sum.
+    5. Compare md5sum of the data with the data written the share manager.
     &#34;&#34;&#34;
 
-    create_storage_class(nfs_storage_class)
-    core_api_module.create_namespaced_persistent_volume_claim(
-        body=nfs_pvc, namespace=&#39;longhorn-system&#39;)
-    apps_api_module.create_namespaced_deployment(namespace=&#39;longhorn-system&#39;,
-                                                 body=deployment_nfs)
-    wait_deployment_replica_ready(apps_api_module, &#39;longhorn-nfs-provisioner&#39;,
-                                  1, namespace=&#39;longhorn-system&#39;)
-    # This is to make sure nfs server is started.
-    time.sleep(25)
 
-
-def read_nfs_provisioner_data(api, command, pod_name, namespace):
+@pytest.mark.skip(reason=&#39;TODO&#39;)
+def test_rwx_multi_statefulset_with_same_pvc():  # NOQA
     &#34;&#34;&#34;
-    Retrieve data from a Pod&#39;s volume.
+    Test writing of data into a volume from multiple pods using same PVC
 
-    Args:
-        api: An instance of CoreV1API.
-        pod_name: The name of the Pod.
-        command: The command to execute in the pod.
-        namespace: The namespace where the pod exists.
-
-    Returns:
-        The data contained within the volume.
-    &#34;&#34;&#34;
-    exec_command = [
-        &#39;/bin/sh&#39;,
-        &#39;-c&#39;,
-        command
-    ]
-    with timeout(seconds=STREAM_EXEC_TIMEOUT,
-                 error_message=&#39;Timeout on executing stream read&#39;):
-        return stream(
-            api.connect_get_namespaced_pod_exec, pod_name, namespace,
-            command=exec_command, stderr=True, stdin=False, stdout=True,
-            tty=False)
-
-
-def write_data_into_pod(pod_name):
-    core_api = get_core_api_client()  # NOQA
-    write_pod_volume_random_data(core_api, pod_name, &#34;/data/test&#34;,
-                                 DATA_SIZE_IN_MB_3)
-
-
-def test_rwx_with_statefulset_multi_pods(core_api, nfs_storage_class, statefulset):  # NOQA
-    &#34;&#34;&#34;
-    Test writing of data in same volume from 2 pods
-
-    1. Create PodSecurityPolicy for longhorn-nfs-provisioner as sample yaml
-       https://raw.githubusercontent.com/longhorn/longhorn/master/examples
-       /rwx/01-security.yaml
-
-    2. Create serviceAccount, service, longhorn-nfs-provisioner deployment,
-       PVC and StorageClass as sample yaml https://raw.githubusercontent.com/
-       longhorn/longhorn/master/examples/rwx/02-longhorn-nfs-provisioner.yaml
-
-    3. Wait for longhorn-nfs-provisioner deployment to come up healthy.
-    4. Verify the volume named as the PV attached to longhorn-nfs-provisioner
-       `volume.ready == True`
-    5. Create a StatefulSet of 2 pods with VolumeClaimTemplate and
-       longhorn-nfs class in default namespace.
-    6. Wait for both pods to come up running.
-    7. Verify two folders get created with PV names in longhorn-nfs-provisioner
+    1. Create a volume with &#39;accessMode&#39; rwx.
+    2. Create a PV and a PVC with access mode &#39;readwritemany&#39; and attach to the
        volume.
-    8. Write data in both pods and compute md5sum.
-    9. Compare md5sum of the data in longhorn-nfs-provisioner volume
-    &#34;&#34;&#34;
-
-    nfs_provisioner_pod = k8sclient.CoreV1Api().list_pod_for_all_namespaces(
-        label_selector=&#34;app=longhorn-nfs-provisioner&#34;, watch=False)
-    nfs_provisioner_pod_name = nfs_provisioner_pod.items[0].metadata.name
-
-    statefulset_name = &#39;statefulset-rwx-multi-pods-test&#39;
-    statefulset[&#39;metadata&#39;][&#39;name&#39;] = \
-        statefulset[&#39;spec&#39;][&#39;selector&#39;][&#39;matchLabels&#39;][&#39;app&#39;] = \
-        statefulset[&#39;spec&#39;][&#39;serviceName&#39;] = \
-        statefulset[&#39;spec&#39;][&#39;template&#39;][&#39;metadata&#39;][&#39;labels&#39;][&#39;app&#39;] = \
-        statefulset_name
-    statefulset[&#39;spec&#39;][&#39;volumeClaimTemplates&#39;][0][&#39;spec&#39;][&#39;storageClassName&#39;]\
-        = NFS_STORAGECLASS_NAME
-
-    create_and_wait_statefulset(statefulset)
-
-    command = &#34;ls /export | grep -i &#39;pvc&#39; | wc -l&#34;
-
-    dir_num = read_nfs_provisioner_data(
-        core_api, command, nfs_provisioner_pod_name, &#39;longhorn-system&#39;)
-
-    assert dir_num == &#39;2&#39;
-
-    md5sum_pod = []
-    for i in range(2):
-        test_pod_name = statefulset_name + &#39;-&#39; + str(i)
-        test_data = generate_random_data(VOLUME_RWTEST_SIZE)
-        write_pod_volume_data(core_api, test_pod_name, test_data)
-        md5sum_pod.append(test_data)
-
-    for i in range(2):
-        pvc_name = \
-            statefulset[&#39;spec&#39;][&#39;volumeClaimTemplates&#39;][0][&#39;metadata&#39;][&#39;name&#39;]\
-            + &#39;-&#39; + statefulset_name + &#39;-&#39; + str(i)
-        volume_name = get_volume_name(core_api, pvc_name)
-        command = &#39;cat /export&#39; + &#39;/&#39; + volume_name + &#39;/&#39; + &#39;test&#39;
-        pod_data = read_nfs_provisioner_data(
-            core_api, command, nfs_provisioner_pod_name, &#39;longhorn-system&#39;)
-
-        assert pod_data == md5sum_pod[i]
-
-
-def test_rwx_multi_statefulset_with_same_pvc(core_api, nfs_storage_class, statefulset, pod):  # NOQA
-    &#34;&#34;&#34;
-    Test writing of data with multiple pods using same PVC
-
-    1. Create PodSecurityPolicy for longhorn-nfs-provisioner as sample yaml
-       https://raw.githubusercontent.com/longhorn/longhorn/master/examples
-       /rwx/01-security.yaml
-
-    2. Create serviceAccount, service, longhorn-nfs-provisioner deployment,
-       PVC and StorageClass as sample yaml https://raw.githubusercontent.com/
-       longhorn/longhorn/master/examples/rwx/02-longhorn-nfs-provisioner.yaml
-
-    3. Wait for longhorn-nfs-provisioner deployment to come up healthy.
-    4. Verify the volume named as the PV attached to longhorn-nfs-provisioner
-       `volume.ready == True`
-    5. Create a StatefulSet of 1 pod with VolumeClaimTemplate and
-       longhorn-nfs class in default namespace.
+    3. Deploy a StatefulSet of 2 pods with the existing PVC above created.
+    4. Wait for both pods to come up.
+    5. Create a StatefulSet of 2 pods with VolumeClaimTemplate and
     6. Wait for StatefulSet to come up healthy.
     7. Write data and compute md5sum.
     8. Create another statefulSet with same pvc which got created with first
        statefulSet.
     9. Wait for statefulSet to come up healthy.
     10. Check the data md5sum.
-    11. Write more data and compute md5sum
-    12. Check the data md5sum in longhorn-nfs-provisioner volume
+    11. Write more data and compute md5sum.
+    12. Check the data md5sum in the share manager pod.
     &#34;&#34;&#34;
-    nfs_provisioner_pod = k8sclient.CoreV1Api().list_pod_for_all_namespaces(
-        label_selector=&#34;app=longhorn-nfs-provisioner&#34;, watch=False)
-    nfs_provisioner_pod_name = nfs_provisioner_pod.items[0].metadata.name
-
-    statefulset_name = &#39;statefulset-rwx-same-pvc-test&#39;
-    statefulset[&#39;metadata&#39;][&#39;name&#39;] = \
-        statefulset[&#39;spec&#39;][&#39;selector&#39;][&#39;matchLabels&#39;][&#39;app&#39;] = \
-        statefulset[&#39;spec&#39;][&#39;serviceName&#39;] = \
-        statefulset[&#39;spec&#39;][&#39;template&#39;][&#39;metadata&#39;][&#39;labels&#39;][&#39;app&#39;] = \
-        statefulset_name
-    statefulset[&#39;spec&#39;][&#39;volumeClaimTemplates&#39;][0][&#39;spec&#39;][&#39;storageClassName&#39;]\
-        = NFS_STORAGECLASS_NAME
-    statefulset[&#39;spec&#39;][&#39;replicas&#39;] = 1
-
-    create_and_wait_statefulset(statefulset)
-
-    command = &#34;ls /export | grep -i &#39;pvc&#39; | wc -l&#34;
-
-    dir_num = read_nfs_provisioner_data(
-        core_api, command, nfs_provisioner_pod_name, &#39;longhorn-system&#39;)
-
-    assert dir_num == &#39;1&#39;
-
-    test_pod_name = statefulset_name + &#39;-0&#39;
-    test_data = generate_random_data(VOLUME_RWTEST_SIZE)
-    write_pod_volume_data(core_api, test_pod_name, test_data, filename=&#39;test1&#39;)
-
-    pvc_name = \
-        statefulset[&#39;spec&#39;][&#39;volumeClaimTemplates&#39;][0][&#39;metadata&#39;][&#39;name&#39;] \
-        + &#39;-&#39; + statefulset_name + &#39;-0&#39;
-    volume_name = get_volume_name(core_api, pvc_name)
-
-    pod_2_name = &#39;pod2-rwx-same-pvc-test&#39;
-    pod[&#39;metadata&#39;][&#39;name&#39;] = pod_2_name
-    pod[&#39;spec&#39;][&#39;volumes&#39;] = [create_pvc_spec(pvc_name)]
-    create_and_wait_pod(core_api, pod)
-
-    command = &#39;cat /data/test1&#39;
-    pod_data_2 = read_nfs_provisioner_data(
-        core_api, command, pod_2_name, &#39;default&#39;)
-
-    assert test_data == pod_data_2
-
-    test_data_2 = generate_random_data(VOLUME_RWTEST_SIZE)
-    write_pod_volume_data(core_api, pod_2_name, test_data_2, filename=&#39;test2&#39;)
-
-    command = &#39;cat /export&#39; + &#39;/&#39; + volume_name + &#39;/&#39; + &#39;test1&#39;
-    nfs_pod_data_1 = read_nfs_provisioner_data(
-        core_api, command, nfs_provisioner_pod_name, &#39;longhorn-system&#39;)
-    assert test_data == nfs_pod_data_1
-
-    command = &#39;cat /export&#39; + &#39;/&#39; + volume_name + &#39;/&#39; + &#39;test2&#39;
-    nfs_pod_data_2 = read_nfs_provisioner_data(
-        core_api, command, nfs_provisioner_pod_name, &#39;longhorn-system&#39;)
-
-    assert test_data_2 == nfs_pod_data_2
 
 
-def test_rwx_parallel_writing(core_api, nfs_storage_class, statefulset, pvc, pod):  # NOQA
+@pytest.mark.skip(reason=&#39;TODO&#39;)
+def test_rwx_parallel_writing():  # NOQA
     &#34;&#34;&#34;
     Test parallel writing of data
 
-    1. Create PodSecurityPolicy for longhorn-nfs-provisioner as sample yaml
-       https://raw.githubusercontent.com/longhorn/longhorn/master/examples
-       /rwx/01-security.yaml
-
-    2. Create serviceAccount, service, longhorn-nfs-provisioner deployment,
-       PVC and StorageClass as sample yaml https://raw.githubusercontent.com/
-       longhorn/longhorn/master/examples/rwx/02-longhorn-nfs-provisioner.yaml
-
-    3. Wait for longhorn-nfs-provisioner deployment to come up healthy.
-    4. Verify the volume named as the PV attached to longhorn-nfs-provisioner
-       `volume.ready == True`
-    5. Create a StatefulSet of 1 pod with VolumeClaimTemplate and
-       longhorn-nfs class in default namespace.
-    6. Wait for StatefulSet to come up healthy.
-    7. Create another statefulSet with same pvc which got created with first
+    1. Create a StatefulSet of 1 pod with VolumeClaimTemplate where accessMode
+       is &#39;RWX&#39;.
+    2. Wait for StatefulSet to come up healthy.
+    3. Create another statefulSet with same pvc which got created with first
        statefulSet.
-    8. Wait for statefulSet to come up healthy.
-    9. Start writing 800 MB data in first statefulSet `file 1` and start
+    4. Wait for statefulSet to come up healthy.
+    5. Start writing 800 MB data in first statefulSet `file 1` and start
        writing 500 MB data in second statefulSet `file 2`.
-    10. Compute md5sum.
-    11. Check the data md5sum in longhorn-nfs-provisioner volume
+    6. Compute md5sum.
+    7. Check the data md5sum in share manager pod volume
     &#34;&#34;&#34;
-    nfs_provisioner_pod = k8sclient.CoreV1Api().list_pod_for_all_namespaces(
-        label_selector=&#34;app=longhorn-nfs-provisioner&#34;, watch=False)
-    nfs_provisioner_pod_name = nfs_provisioner_pod.items[0].metadata.name
-
-    statefulset_name = &#39;statefulset-parallel-write-test&#39;
-    statefulset[&#39;metadata&#39;][&#39;name&#39;] = \
-        statefulset[&#39;spec&#39;][&#39;selector&#39;][&#39;matchLabels&#39;][&#39;app&#39;] = \
-        statefulset[&#39;spec&#39;][&#39;serviceName&#39;] = \
-        statefulset[&#39;spec&#39;][&#39;template&#39;][&#39;metadata&#39;][&#39;labels&#39;][&#39;app&#39;] = \
-        statefulset_name
-    statefulset[&#39;spec&#39;][&#39;volumeClaimTemplates&#39;][0][&#39;spec&#39;][&#39;storageClassName&#39;]\
-        = NFS_STORAGECLASS_NAME
-    statefulset[&#39;spec&#39;][&#39;replicas&#39;] = 1
-
-    create_and_wait_statefulset(statefulset)
-
-    statefuleset_pod_name = statefulset_name + &#39;-0&#39;
-    statefuleset_pvc_name = \
-        statefulset[&#39;spec&#39;][&#39;volumeClaimTemplates&#39;][0][&#39;metadata&#39;][&#39;name&#39;] \
-        + &#39;-&#39; + statefulset_name + &#39;-0&#39;
-    statefulset_volume_name = get_volume_name(core_api, statefuleset_pvc_name)
-
-    pvc_name = &#39;pvc-parallel-write-test&#39;
-    pvc[&#39;metadata&#39;][&#39;name&#39;] = pvc_name
-    pvc[&#39;spec&#39;][&#39;storageClassName&#39;] = NFS_STORAGECLASS_NAME
-    core_api.create_namespaced_persistent_volume_claim(
-        body=pvc, namespace=&#39;default&#39;)
-
-    pod_name = &#39;pod-parallel-write-test&#39;
-    pod[&#39;metadata&#39;][&#39;name&#39;] = pod_name
-    pod[&#39;spec&#39;][&#39;volumes&#39;] = [create_pvc_spec(pvc_name)]
-    create_and_wait_pod(core_api, pod)
-    pod_volume_name = get_volume_name(core_api, pvc_name)
-
-    with Pool(2) as p:
-        p.map(write_data_into_pod, [pod_name, statefuleset_pod_name])
-
-    md5sum1 = get_pod_data_md5sum(core_api, statefuleset_pod_name, &#39;data/test&#39;)
-    md5sum2 = get_pod_data_md5sum(core_api, pod_name, &#39;data/test&#39;)
-
-    command = &#39;md5sum /export&#39; + &#39;/&#39; + statefulset_volume_name + &#39;/&#39; + &#39;test&#39; \
-              + &#34; | awk &#39;{print $1}&#39;&#34;
-    nfs_pod_data = read_nfs_provisioner_data(
-        core_api, command, nfs_provisioner_pod_name, &#39;longhorn-system&#39;)
-
-    assert md5sum1 == nfs_pod_data
-
-    command = &#39;md5sum /export&#39; + &#39;/&#39; + pod_volume_name + &#39;/&#39; + &#39;test&#39; \
-              + &#34; | awk &#39;{print $1}&#39;&#34;
-    nfs_pod_data = read_nfs_provisioner_data(
-        core_api, command, nfs_provisioner_pod_name, &#39;longhorn-system&#39;)
-
-    assert md5sum2 == nfs_pod_data
 
 
-def test_rwx_statefulset_scale_down_up(core_api, nfs_storage_class, statefulset):  # NOQA
+@pytest.mark.skip(reason=&#39;TODO&#39;)
+def test_rwx_statefulset_scale_down_up():  # NOQA
     &#34;&#34;&#34;
-    Test Scaling up and down of pods attached to longhorn-nfs-provisioner
-    volume.
+    Test Scaling up and down of pods attached to rwx volume.
 
-    1. Create PodSecurityPolicy for longhorn-nfs-provisioner as sample yaml
-       https://raw.githubusercontent.com/longhorn/longhorn/master/examples
-       /rwx/01-security.yaml
-
-    2. Create serviceAccount, service, longhorn-nfs-provisioner deployment,
-       PVC and StorageClass as sample yaml https://raw.githubusercontent.com/
-       longhorn/longhorn/master/examples/rwx/02-longhorn-nfs-provisioner.yaml
-
-    3. Wait for longhorn-nfs-provisioner deployment to come up healthy.
-    4. Verify the volume named as the PV attached to longhorn-nfs-provisioner
-       `volume.ready == True`
-    5. Create a StatefulSet of 2 pods with VolumeClaimTemplate and
-       longhorn-nfs class in default namespace.
-    6. Wait for StatefulSet pods to come up healthy.
-    7. Write data and compute md5sum in both pods
-    8. Delete pods.
-    9. Wait for pods to terminate.
-    10. Recreate the pods
-    11. Wait for new pods to come up.
-    12. Check the data md5sum in new pods
+    1. Create a StatefulSet of 2 pods with VolumeClaimTemplate where accessMode
+       is &#39;RWX&#39;.
+    2. Wait for StatefulSet pods to come up healthy.
+    3. Write data and compute md5sum in the both pods.
+    4. Delete the pods.
+    5. Wait for the pods to be terminated.
+    6. Verify the share manager pods are no longer available and the volume is
+       detached.
+    6. Recreate the pods
+    7. Wait for new pods to come up.
+    8. Check the data md5sum in new pods.
     &#34;&#34;&#34;
-    nfs_provisioner_pod = k8sclient.CoreV1Api().list_pod_for_all_namespaces(
-        label_selector=&#34;app=longhorn-nfs-provisioner&#34;, watch=False)
-    nfs_provisioner_pod_name = nfs_provisioner_pod.items[0].metadata.name
-
-    statefulset_name = &#39;statefulset-rwx-scale-down-up-test&#39;
-    statefulset[&#39;metadata&#39;][&#39;name&#39;] = \
-        statefulset[&#39;spec&#39;][&#39;selector&#39;][&#39;matchLabels&#39;][&#39;app&#39;] = \
-        statefulset[&#39;spec&#39;][&#39;serviceName&#39;] = \
-        statefulset[&#39;spec&#39;][&#39;template&#39;][&#39;metadata&#39;][&#39;labels&#39;][&#39;app&#39;] = \
-        statefulset_name
-    statefulset[&#39;spec&#39;][&#39;volumeClaimTemplates&#39;][0][&#39;spec&#39;][&#39;storageClassName&#39;]\
-        = NFS_STORAGECLASS_NAME
-
-    create_and_wait_statefulset(statefulset)
-
-    command = &#34;ls /export | grep -i &#39;pvc&#39; | wc -l&#34;
-
-    dir_num = read_nfs_provisioner_data(
-        core_api, command, nfs_provisioner_pod_name, &#39;longhorn-system&#39;)
-
-    assert dir_num == &#39;2&#39;
-
-    md5sum_pod = []
-    for i in range(2):
-        test_pod_name = statefulset_name + &#39;-&#39; + str(i)
-        test_data = generate_random_data(VOLUME_RWTEST_SIZE)
-        write_pod_volume_data(core_api, test_pod_name, test_data)
-        md5sum_pod.append(test_data)
-
-    statefulset[&#39;spec&#39;][&#39;replicas&#39;] = replicas = 0
-    apps_api = get_apps_api_client()
-    apps_api.patch_namespaced_stateful_set(
-        name=statefulset_name,
-        namespace=&#39;default&#39;,
-        body={
-            &#39;spec&#39;: {
-                &#39;replicas&#39;: replicas
-            }
-        })
-    for i in range(DEFAULT_STATEFULSET_TIMEOUT):
-        s_set = apps_api.read_namespaced_stateful_set(
-            name=statefulset[&#39;metadata&#39;][&#39;name&#39;],
-            namespace=&#39;default&#39;)
-        if s_set.status.ready_replicas == replicas or \
-                (replicas == 0 and not s_set.status.ready_replicas):
-            break
-        time.sleep(DEFAULT_STATEFULSET_INTERVAL)
-
-    dir_num = read_nfs_provisioner_data(
-        core_api, command, nfs_provisioner_pod_name, &#39;longhorn-system&#39;)
-    assert dir_num == &#39;2&#39;
-
-    statefulset[&#39;spec&#39;][&#39;replicas&#39;] = replicas = 2
-    apps_api = get_apps_api_client()
-    apps_api.patch_namespaced_stateful_set(
-        name=statefulset_name,
-        namespace=&#39;default&#39;,
-        body={
-            &#39;spec&#39;: {
-                &#39;replicas&#39;: replicas
-            }
-        })
-    wait_statefulset(statefulset)
-
-    for i in range(2):
-        test_pod_name = statefulset_name + &#39;-&#39; + str(i)
-        command = &#39;cat /data/test&#39;
-        pod_data = read_nfs_provisioner_data(
-            core_api, command, test_pod_name, &#39;default&#39;)
-
-        assert pod_data == md5sum_pod[i]
 
 
 @pytest.mark.skip(reason=&#34;TODO&#34;)
-def test_rwx_offline_node_longhorn_nfs_provisioner():
+def test_rwx_delete_share_manager_pod():  # NOQA
     &#34;&#34;&#34;
-    Test moving of longhorn-nfs-provisioner pod from one node to another.
+    Test moving of Share manager pod from one node to another.
 
-    1. Create PodSecurityPolicy for longhorn-nfs-provisioner as sample yaml
-       https://raw.githubusercontent.com/longhorn/longhorn/master/examples
-       /rwx/01-security.yaml
-
-    2. Create serviceAccount, service, longhorn-nfs-provisioner deployment,
-       PVC and StorageClass as sample yaml https://raw.githubusercontent.com/
-       longhorn/longhorn/master/examples/rwx/02-longhorn-nfs-provisioner.yaml
-       Make sure liveness probe is added in the deployment.
-
-    3. Wait for longhorn-nfs-provisioner deployment to come up healthy.
-    4. Verify the volume named as the PV attached to longhorn-nfs-provisioner
-       `volume.ready == True`
-    5. Create a StatefulSet of 1 pod with VolumeClaimTemplate and
-       longhorn-nfs class in default namespace.
-    6. Wait for StatefulSet to come up healthy.
-    7. Write data and compute md5sum.
-    8. Shutdown the node where longhorn-nfs-provisioner is running. The
-       liveness probe will restart the pod on another node.
-    9. Wait for a new pod to be created and volume getting attached.
-    10. Check the data md5sum in statefulSet
-    11. Write more data to it and compute md5sum.
-    12. Check the data md5sum in longhorn-nfs-provisioner volume
+    1. Create a StatefulSet of 1 pod with VolumeClaimTemplate where accessMode
+       is &#39;RWX&#39;.
+    2. Wait for StatefulSet to come up healthy.
+    3. Write data and compute md5sum.
+    4. Delete the share manager pod.
+    5. Wait for a new pod to be created and volume getting attached.
+    6. Check the data md5sum in statefulSet
+    7. Write more data to it and compute md5sum.
+    8. Check the data md5sum in share manager volume
     &#34;&#34;&#34;
-    pass
 
 
-def test_rwx_deployment_with_multi_pods(core_api, nfs_storage_class, pvc, make_deployment_with_pvc):  # NOQA
+@pytest.mark.skip(reason=&#39;TODO&#39;)
+def test_rwx_deployment_with_multi_pods():  # NOQA
     &#34;&#34;&#34;
     Test deployment of 2 pods with same PVC.
 
-    1. Create PodSecurityPolicy for longhorn-nfs-provisioner as sample yaml
-       https://raw.githubusercontent.com/longhorn/longhorn/master/examples
-       /rwx/01-security.yaml
-
-    2. Create serviceAccount, service, longhorn-nfs-provisioner deployment,
-       PVC and StorageClass as sample yaml https://raw.githubusercontent.com/
-       longhorn/longhorn/master/examples/rwx/02-longhorn-nfs-provisioner.yaml
-       Make sure liveness probe is added in the deployment.
-
-    3. Wait for longhorn-nfs-provisioner deployment to come up healthy.
-    4. Verify the volume named as the PV attached to longhorn-nfs-provisioner
-       `volume.ready == True`
-    5. Create a deployment of 2 pods with PVC created with longhorn-nfs class
-    6. Wait for 2 pods to come up healthy.
-    7. Write data in both pods and compute md5sum.
-    8. Check the data md5sum in longhorn-nfs-provisioner volume
+    1. Create a volume with &#39;accessMode&#39; rwx.
+    2. Create a PV and a PVC with access mode &#39;readwritemany&#39; and attach to the
+       volume.
+    3. Create a deployment of 2 pods with PVC created
+    4. Wait for 2 pods to come up healthy.
+    5. Write data in both pods and compute md5sum.
+    6. Check the data md5sum in the share manager pod.
     &#34;&#34;&#34;
-    nfs_provisioner_pod = k8sclient.CoreV1Api().list_pod_for_all_namespaces(
-        label_selector=&#34;app=longhorn-nfs-provisioner&#34;, watch=False)
-    nfs_provisioner_pod_name = nfs_provisioner_pod.items[0].metadata.name
 
-    pvc_name = &#39;pvc-deployment-multi-pods-test&#39;
-    pvc[&#39;metadata&#39;][&#39;name&#39;] = pvc_name
-    pvc[&#39;spec&#39;][&#39;storageClassName&#39;] = NFS_STORAGECLASS_NAME
-    core_api.create_namespaced_persistent_volume_claim(
-        body=pvc, namespace=&#39;default&#39;)
 
-    deployment = make_deployment_with_pvc(
-        &#39;deployment-multi-pods-test&#39;, pvc_name, replicas=2)
-    apps_api = get_apps_api_client()
-    create_and_wait_deployment(apps_api, deployment)
+@pytest.mark.skip(reason=&#39;TODO&#39;)
+def test_restore_rwo_volume_to_rwx():  # NOQA
+    &#34;&#34;&#34;
+    Test restoring a rwo to a rwx volume.
 
-    volume_name = get_volume_name(core_api, pvc_name)
-    deployment_label_selector = \
-        &#34;name=&#34; + deployment[&#34;metadata&#34;][&#34;labels&#34;][&#34;name&#34;]
-
-    deployment_pod_list = \
-        core_api.list_namespaced_pod(namespace=&#34;default&#34;,
-                                     label_selector=deployment_label_selector)
-
-    assert deployment_pod_list.items.__len__() == 2
-
-    pod_name_1 = deployment_pod_list.items[0].metadata.name
-    test_data_1 = generate_random_data(VOLUME_RWTEST_SIZE)
-    write_pod_volume_data(core_api, pod_name_1, test_data_1, filename=&#39;test1&#39;)
-
-    pod_name_2 = deployment_pod_list.items[1].metadata.name
-    command = &#39;cat /data/test1&#39;
-    pod_data_2 = read_nfs_provisioner_data(
-        core_api, command, pod_name_2, &#39;default&#39;)
-
-    assert test_data_1 == pod_data_2
-
-    test_data_2 = generate_random_data(VOLUME_RWTEST_SIZE)
-    write_pod_volume_data(core_api, pod_name_2, test_data_2, filename=&#39;test2&#39;)
-
-    command = &#39;cat /export&#39; + &#39;/&#39; + volume_name + &#39;/&#39; + &#39;test1&#39;
-    nfs_pod_data_1 = read_nfs_provisioner_data(
-        core_api, command, nfs_provisioner_pod_name, &#39;longhorn-system&#39;)
-    assert test_data_1 == nfs_pod_data_1
-
-    command = &#39;cat /export&#39; + &#39;/&#39; + volume_name + &#39;/&#39; + &#39;test2&#39;
-    nfs_pod_data_2 = read_nfs_provisioner_data(
-        core_api, command, nfs_provisioner_pod_name, &#39;longhorn-system&#39;)
-
-    assert test_data_2 == nfs_pod_data_2</code></pre>
+    1. Create a volume with &#39;accessMode&#39; rwo.
+    2. Create a PV and a PVC with access mode &#39;readwriteonce&#39; and attach to the
+       volume.
+    3. Create a pod and attach to the PVC.
+    4. Write some data into the pod and compute md5sum.
+    5. Take a backup of the volume.
+    6. Restore the backup with &#39;accessMode&#39; rwx.
+    7. Create PV and PVC and attach to 2 pods.
+    8. Verify the data.
+    &#34;&#34;&#34;</code></pre>
 </details>
 </section>
 <section>
@@ -833,736 +160,168 @@ def test_rwx_deployment_with_multi_pods(core_api, nfs_storage_class, pvc, make_d
 <section>
 <h2 class="section-title" id="header-functions">Functions</h2>
 <dl>
-<dt id="tests.test_rwx.apps_api_module"><code class="name flex">
-<span>def <span class="ident">apps_api_module</span></span>(<span>request)</span>
+<dt id="tests.test_rwx.test_restore_rwo_volume_to_rwx"><code class="name flex">
+<span>def <span class="ident">test_restore_rwo_volume_to_rwx</span></span>(<span>)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Create a new AppsV1API instance.</p>
-<h2 id="returns">Returns</h2>
-<p>A new AppsV1API Instance.</p></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">@pytest.fixture(scope=&#34;module&#34;, autouse=&#34;True&#34;)
-def apps_api_module(request):
-    &#34;&#34;&#34;
-    Create a new AppsV1API instance.
-    Returns:
-        A new AppsV1API Instance.
-    &#34;&#34;&#34;
-    c = Configuration()
-    c.assert_hostname = False
-    Configuration.set_default(c)
-    k8sconfig.load_incluster_config()
-    apps_api = k8sclient.AppsV1Api()
-
-    return apps_api</code></pre>
-</details>
-</dd>
-<dt id="tests.test_rwx.core_api_module"><code class="name flex">
-<span>def <span class="ident">core_api_module</span></span>(<span>request)</span>
-</code></dt>
-<dd>
-<div class="desc"><p>Create a new CoreV1API instance.</p>
-<h2 id="returns">Returns</h2>
-<p>A new CoreV1API Instance.</p></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">@pytest.fixture(scope=&#34;module&#34;, autouse=&#34;True&#34;)  # NOQA
-def core_api_module(request):
-    &#34;&#34;&#34;
-    Create a new CoreV1API instance.
-    Returns:
-        A new CoreV1API Instance.
-    &#34;&#34;&#34;
-    c = Configuration()
-    c.assert_hostname = False
-    Configuration.set_default(c)
-    k8sconfig.load_incluster_config()
-    core_api = k8sclient.CoreV1Api()  # NOQA
-
-    cleanup_client()
-
-    return core_api</code></pre>
-</details>
-</dd>
-<dt id="tests.test_rwx.deployment_nfs"><code class="name flex">
-<span>def <span class="ident">deployment_nfs</span></span>(<span>request)</span>
-</code></dt>
-<dd>
-<div class="desc"></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">@pytest.fixture(scope=&#34;module&#34;, autouse=&#34;True&#34;)
-def deployment_nfs(request):
-    deployment_nfs_manifest = {
-       &#34;kind&#34;: &#34;Deployment&#34;,
-       &#34;apiVersion&#34;: &#34;apps/v1&#34;,
-       &#34;metadata&#34;: {
-          &#34;name&#34;: &#34;longhorn-nfs-provisioner&#34;,
-          &#34;namespace&#34;: &#34;longhorn-system&#34;
-       },
-       &#34;spec&#34;: {
-          &#34;selector&#34;: {
-             &#34;matchLabels&#34;: {
-                &#34;app&#34;: &#34;longhorn-nfs-provisioner&#34;
-             }
-          },
-          &#34;replicas&#34;: 1,
-          &#34;strategy&#34;: {
-             &#34;type&#34;: &#34;Recreate&#34;
-          },
-          &#34;template&#34;: {
-             &#34;metadata&#34;: {
-                &#34;labels&#34;: {
-                   &#34;app&#34;: &#34;longhorn-nfs-provisioner&#34;
-                }
-             },
-             &#34;spec&#34;: {
-                &#34;serviceAccount&#34;: &#34;longhorn-nfs-provisioner&#34;,
-                &#34;containers&#34;: [
-                   {
-                      &#34;name&#34;: &#34;longhorn-nfs-provisioner&#34;,
-                      &#34;image&#34;: &#34;quay.io/kubernetes_incubator/nfs-provisioner:latest&#34;,  # NOQA
-                      &#34;ports&#34;: [
-                         {
-                            &#34;name&#34;: &#34;nfs&#34;,
-                            &#34;containerPort&#34;: 2049
-                         },
-                         {
-                            &#34;name&#34;: &#34;nfs-udp&#34;,
-                            &#34;containerPort&#34;: 2049,
-                            &#34;protocol&#34;: &#34;UDP&#34;
-                         },
-                         {
-                            &#34;name&#34;: &#34;nlockmgr&#34;,
-                            &#34;containerPort&#34;: 32803
-                         },
-                         {
-                            &#34;name&#34;: &#34;nlockmgr-udp&#34;,
-                            &#34;containerPort&#34;: 32803,
-                            &#34;protocol&#34;: &#34;UDP&#34;
-                         },
-                         {
-                            &#34;name&#34;: &#34;mountd&#34;,
-                            &#34;containerPort&#34;: 20048
-                         },
-                         {
-                            &#34;name&#34;: &#34;mountd-udp&#34;,
-                            &#34;containerPort&#34;: 20048,
-                            &#34;protocol&#34;: &#34;UDP&#34;
-                         },
-                         {
-                            &#34;name&#34;: &#34;rquotad&#34;,
-                            &#34;containerPort&#34;: 875
-                         },
-                         {
-                            &#34;name&#34;: &#34;rquotad-udp&#34;,
-                            &#34;containerPort&#34;: 875,
-                            &#34;protocol&#34;: &#34;UDP&#34;
-                         },
-                         {
-                            &#34;name&#34;: &#34;rpcbind&#34;,
-                            &#34;containerPort&#34;: 111
-                         },
-                         {
-                            &#34;name&#34;: &#34;rpcbind-udp&#34;,
-                            &#34;containerPort&#34;: 111,
-                            &#34;protocol&#34;: &#34;UDP&#34;
-                         },
-                         {
-                            &#34;name&#34;: &#34;statd&#34;,
-                            &#34;containerPort&#34;: 662
-                         },
-                         {
-                            &#34;name&#34;: &#34;statd-udp&#34;,
-                            &#34;containerPort&#34;: 662,
-                            &#34;protocol&#34;: &#34;UDP&#34;
-                         }
-                      ],
-                      &#34;securityContext&#34;: {
-                         &#34;capabilities&#34;: {
-                            &#34;add&#34;: [
-                               &#34;DAC_READ_SEARCH&#34;,
-                               &#34;SYS_RESOURCE&#34;
-                            ]
-                         }
-                      },
-                      &#34;args&#34;: [
-                         &#34;-provisioner=nfs.longhorn.io&#34;,
-                         &#34;-device-based-fsids=false&#34;
-                      ],
-                      &#34;env&#34;: [
-                         {
-                            &#34;name&#34;: &#34;POD_IP&#34;,
-                            &#34;valueFrom&#34;: {
-                               &#34;fieldRef&#34;: {
-                                  &#34;fieldPath&#34;: &#34;status.podIP&#34;
-                               }
-                            }
-                         },
-                         {
-                            &#34;name&#34;: &#34;SERVICE_NAME&#34;,
-                            &#34;value&#34;: &#34;longhorn-nfs-provisioner&#34;
-                         },
-                         {
-                            &#34;name&#34;: &#34;POD_NAMESPACE&#34;,
-                            &#34;valueFrom&#34;: {
-                               &#34;fieldRef&#34;: {
-                                  &#34;fieldPath&#34;: &#34;metadata.namespace&#34;
-                               }
-                            }
-                         }
-                      ],
-                      &#34;imagePullPolicy&#34;: &#34;IfNotPresent&#34;,
-                      &#34;readinessProbe&#34;: {
-                         &#34;exec&#34;: {
-                            &#34;command&#34;: [
-                               &#34;ls&#34;,
-                               &#34;/export&#34;
-                            ]
-                         },
-                         &#34;initialDelaySeconds&#34;: 5,
-                         &#34;periodSeconds&#34;: 5
-                      },
-                      &#34;livenessProbe&#34;: {
-                         &#34;exec&#34;: {
-                            &#34;command&#34;: [
-                               &#34;ls&#34;,
-                               &#34;/export&#34;
-                            ]
-                         },
-                         &#34;initialDelaySeconds&#34;: 5,
-                         &#34;periodSeconds&#34;: 5
-                      },
-                      &#34;volumeMounts&#34;: [
-                         {
-                            &#34;name&#34;: &#34;export-volume&#34;,
-                            &#34;mountPath&#34;: &#34;/export&#34;
-                         }
-                      ]
-                   }
-                ],
-                &#34;volumes&#34;: [
-                   {
-                      &#34;name&#34;: &#34;export-volume&#34;,
-                      &#34;persistentVolumeClaim&#34;: {
-                         &#34;claimName&#34;: &#34;longhorn-nfs-provisioner&#34;
-                      }
-                   }
-                ],
-                &#34;terminationGracePeriodSeconds&#34;: 30,
-                &#34;tolerations&#34;: [
-                   {
-                      &#34;effect&#34;: &#34;NoExecute&#34;,
-                      &#34;key&#34;: &#34;node.kubernetes.io/not-ready&#34;,
-                      &#34;operator&#34;: &#34;Exists&#34;,
-                      &#34;tolerationSeconds&#34;: 60
-                   },
-                   {
-                      &#34;effect&#34;: &#34;NoExecute&#34;,
-                      &#34;key&#34;: &#34;node.kubernetes.io/unreachable&#34;,
-                      &#34;operator&#34;: &#34;Exists&#34;,
-                      &#34;tolerationSeconds&#34;: 60
-                   }
-                ]
-             }
-          }
-       }
-    }
-
-    def finalizer():
-        api = get_apps_api_client()
-        delete_and_wait_deployment(api, &#39;longhorn-nfs-provisioner&#39;,
-                                   namespace=&#39;longhorn-system&#39;)
-
-    request.addfinalizer(finalizer)
-
-    return deployment_nfs_manifest</code></pre>
-</details>
-</dd>
-<dt id="tests.test_rwx.longhorn_nfs_provisioner_setup"><code class="name flex">
-<span>def <span class="ident">longhorn_nfs_provisioner_setup</span></span>(<span>core_api_module, apps_api_module, nfs_pvc, nfs_storage_class, deployment_nfs)</span>
-</code></dt>
-<dd>
-<div class="desc"><p>Deploy longhorn-nfs-provisioner pod and volume</p></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">@pytest.fixture(scope=&#34;module&#34;, autouse=&#34;True&#34;)
-def longhorn_nfs_provisioner_setup(core_api_module, apps_api_module, nfs_pvc,
-                                   nfs_storage_class, deployment_nfs):
-    &#34;&#34;&#34;
-    Deploy longhorn-nfs-provisioner pod and volume
-    &#34;&#34;&#34;
-
-    create_storage_class(nfs_storage_class)
-    core_api_module.create_namespaced_persistent_volume_claim(
-        body=nfs_pvc, namespace=&#39;longhorn-system&#39;)
-    apps_api_module.create_namespaced_deployment(namespace=&#39;longhorn-system&#39;,
-                                                 body=deployment_nfs)
-    wait_deployment_replica_ready(apps_api_module, &#39;longhorn-nfs-provisioner&#39;,
-                                  1, namespace=&#39;longhorn-system&#39;)
-    # This is to make sure nfs server is started.
-    time.sleep(25)</code></pre>
-</details>
-</dd>
-<dt id="tests.test_rwx.nfs_pvc"><code class="name flex">
-<span>def <span class="ident">nfs_pvc</span></span>(<span>request)</span>
-</code></dt>
-<dd>
-<div class="desc"></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">@pytest.fixture(scope=&#34;module&#34;, autouse=&#34;True&#34;)
-def nfs_pvc(request):
-    pvc_manifest = {
-        &#39;apiVersion&#39;: &#39;v1&#39;,
-        &#39;kind&#39;: &#39;PersistentVolumeClaim&#39;,
-        &#39;metadata&#39;: {
-            &#39;name&#39;: &#39;longhorn-nfs-provisioner&#39;,
-            &#39;namespace&#39;: &#39;longhorn-system&#39;
-        },
-        &#39;spec&#39;: {
-            &#39;storageClassName&#39;: &#39;longhorn&#39;,
-            &#39;accessModes&#39;: [
-                &#39;ReadWriteOnce&#39;
-            ],
-            &#39;resources&#39;: {
-                &#39;requests&#39;: {
-                    &#39;storage&#39;: &#39;10G&#39;
-                }
-            }
-        }
-    }
-
-    def finalizer():
-        api = k8sclient.CoreV1Api()
-        client = get_longhorn_api_client()
-        volumes = client.list_volume()
-
-        if not check_pvc_existence(api, pvc_manifest[&#39;metadata&#39;][&#39;name&#39;],
-                                   namespace=&#39;longhorn-system&#39;):
-            return
-
-        volume_name = &#39;&#39;
-        for v in volumes:
-            if v.kubernetesStatus.pvcName == &#39;longhorn-nfs-provisioner&#39;:
-                volume_name = v.name
-                client.delete(v)
-                break
-        wait_for_volume_delete(client, volume_name)
-
-        core_api_client = get_core_api_client()
-        delete_and_wait_pvc(core_api_client, pvc_manifest[&#39;metadata&#39;][&#39;name&#39;])
-
-    request.addfinalizer(finalizer)
-
-    return pvc_manifest</code></pre>
-</details>
-</dd>
-<dt id="tests.test_rwx.nfs_storage_class"><code class="name flex">
-<span>def <span class="ident">nfs_storage_class</span></span>(<span>request)</span>
-</code></dt>
-<dd>
-<div class="desc"></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">@pytest.fixture(scope=&#34;module&#34;, autouse=&#34;True&#34;)
-def nfs_storage_class(request):
-    sc_manifest = {
-        &#39;apiVersion&#39;: &#39;storage.k8s.io/v1&#39;,
-        &#39;kind&#39;: &#39;StorageClass&#39;,
-        &#39;metadata&#39;: {
-            &#39;name&#39;: NFS_STORAGECLASS_NAME
-        },
-        &#39;provisioner&#39;: &#39;nfs.longhorn.io&#39;,
-        &#39;mountOptions&#39;: [
-            &#39;vers=4.1&#39;,
-            &#39;noresvport&#39;
-        ]
-    }
-
-    def finalizer():
-        delete_storage_class(NFS_STORAGECLASS_NAME)
-
-    request.addfinalizer(finalizer)
-
-    return sc_manifest</code></pre>
-</details>
-</dd>
-<dt id="tests.test_rwx.read_nfs_provisioner_data"><code class="name flex">
-<span>def <span class="ident">read_nfs_provisioner_data</span></span>(<span>api, command, pod_name, namespace)</span>
-</code></dt>
-<dd>
-<div class="desc"><p>Retrieve data from a Pod's volume.</p>
-<h2 id="args">Args</h2>
-<dl>
-<dt><strong><code>api</code></strong></dt>
-<dd>An instance of CoreV1API.</dd>
-<dt><strong><code>pod_name</code></strong></dt>
-<dd>The name of the Pod.</dd>
-<dt><strong><code>command</code></strong></dt>
-<dd>The command to execute in the pod.</dd>
-<dt><strong><code>namespace</code></strong></dt>
-<dd>The namespace where the pod exists.</dd>
-</dl>
-<h2 id="returns">Returns</h2>
-<p>The data contained within the volume.</p></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def read_nfs_provisioner_data(api, command, pod_name, namespace):
-    &#34;&#34;&#34;
-    Retrieve data from a Pod&#39;s volume.
-
-    Args:
-        api: An instance of CoreV1API.
-        pod_name: The name of the Pod.
-        command: The command to execute in the pod.
-        namespace: The namespace where the pod exists.
-
-    Returns:
-        The data contained within the volume.
-    &#34;&#34;&#34;
-    exec_command = [
-        &#39;/bin/sh&#39;,
-        &#39;-c&#39;,
-        command
-    ]
-    with timeout(seconds=STREAM_EXEC_TIMEOUT,
-                 error_message=&#39;Timeout on executing stream read&#39;):
-        return stream(
-            api.connect_get_namespaced_pod_exec, pod_name, namespace,
-            command=exec_command, stderr=True, stdin=False, stdout=True,
-            tty=False)</code></pre>
-</details>
-</dd>
-<dt id="tests.test_rwx.test_rwx_deployment_with_multi_pods"><code class="name flex">
-<span>def <span class="ident">test_rwx_deployment_with_multi_pods</span></span>(<span>core_api, nfs_storage_class, pvc, make_deployment_with_pvc)</span>
-</code></dt>
-<dd>
-<div class="desc"><p>Test deployment of 2 pods with same PVC.</p>
+<div class="desc"><p>Test restoring a rwo to a rwx volume.</p>
 <ol>
-<li>
-<p>Create PodSecurityPolicy for longhorn-nfs-provisioner as sample yaml
-<a href="https://raw.githubusercontent.com/longhorn/longhorn/master/examples">https://raw.githubusercontent.com/longhorn/longhorn/master/examples</a>
-/rwx/01-security.yaml</p>
-</li>
-<li>
-<p>Create serviceAccount, service, longhorn-nfs-provisioner deployment,
-PVC and StorageClass as sample yaml <a href="https://raw.githubusercontent.com/">https://raw.githubusercontent.com/</a>
-longhorn/longhorn/master/examples/rwx/02-longhorn-nfs-provisioner.yaml
-Make sure liveness probe is added in the deployment.</p>
-</li>
-<li>
-<p>Wait for longhorn-nfs-provisioner deployment to come up healthy.</p>
-</li>
-<li>Verify the volume named as the PV attached to longhorn-nfs-provisioner
-<code>volume.ready == True</code></li>
-<li>Create a deployment of 2 pods with PVC created with longhorn-nfs class</li>
-<li>Wait for 2 pods to come up healthy.</li>
-<li>Write data in both pods and compute md5sum.</li>
-<li>Check the data md5sum in longhorn-nfs-provisioner volume</li>
+<li>Create a volume with 'accessMode' rwo.</li>
+<li>Create a PV and a PVC with access mode 'readwriteonce' and attach to the
+volume.</li>
+<li>Create a pod and attach to the PVC.</li>
+<li>Write some data into the pod and compute md5sum.</li>
+<li>Take a backup of the volume.</li>
+<li>Restore the backup with 'accessMode' rwx.</li>
+<li>Create PV and PVC and attach to 2 pods.</li>
+<li>Verify the data.</li>
 </ol></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def test_rwx_deployment_with_multi_pods(core_api, nfs_storage_class, pvc, make_deployment_with_pvc):  # NOQA
+<pre><code class="python">@pytest.mark.skip(reason=&#39;TODO&#39;)
+def test_restore_rwo_volume_to_rwx():  # NOQA
     &#34;&#34;&#34;
-    Test deployment of 2 pods with same PVC.
+    Test restoring a rwo to a rwx volume.
 
-    1. Create PodSecurityPolicy for longhorn-nfs-provisioner as sample yaml
-       https://raw.githubusercontent.com/longhorn/longhorn/master/examples
-       /rwx/01-security.yaml
-
-    2. Create serviceAccount, service, longhorn-nfs-provisioner deployment,
-       PVC and StorageClass as sample yaml https://raw.githubusercontent.com/
-       longhorn/longhorn/master/examples/rwx/02-longhorn-nfs-provisioner.yaml
-       Make sure liveness probe is added in the deployment.
-
-    3. Wait for longhorn-nfs-provisioner deployment to come up healthy.
-    4. Verify the volume named as the PV attached to longhorn-nfs-provisioner
-       `volume.ready == True`
-    5. Create a deployment of 2 pods with PVC created with longhorn-nfs class
-    6. Wait for 2 pods to come up healthy.
-    7. Write data in both pods and compute md5sum.
-    8. Check the data md5sum in longhorn-nfs-provisioner volume
-    &#34;&#34;&#34;
-    nfs_provisioner_pod = k8sclient.CoreV1Api().list_pod_for_all_namespaces(
-        label_selector=&#34;app=longhorn-nfs-provisioner&#34;, watch=False)
-    nfs_provisioner_pod_name = nfs_provisioner_pod.items[0].metadata.name
-
-    pvc_name = &#39;pvc-deployment-multi-pods-test&#39;
-    pvc[&#39;metadata&#39;][&#39;name&#39;] = pvc_name
-    pvc[&#39;spec&#39;][&#39;storageClassName&#39;] = NFS_STORAGECLASS_NAME
-    core_api.create_namespaced_persistent_volume_claim(
-        body=pvc, namespace=&#39;default&#39;)
-
-    deployment = make_deployment_with_pvc(
-        &#39;deployment-multi-pods-test&#39;, pvc_name, replicas=2)
-    apps_api = get_apps_api_client()
-    create_and_wait_deployment(apps_api, deployment)
-
-    volume_name = get_volume_name(core_api, pvc_name)
-    deployment_label_selector = \
-        &#34;name=&#34; + deployment[&#34;metadata&#34;][&#34;labels&#34;][&#34;name&#34;]
-
-    deployment_pod_list = \
-        core_api.list_namespaced_pod(namespace=&#34;default&#34;,
-                                     label_selector=deployment_label_selector)
-
-    assert deployment_pod_list.items.__len__() == 2
-
-    pod_name_1 = deployment_pod_list.items[0].metadata.name
-    test_data_1 = generate_random_data(VOLUME_RWTEST_SIZE)
-    write_pod_volume_data(core_api, pod_name_1, test_data_1, filename=&#39;test1&#39;)
-
-    pod_name_2 = deployment_pod_list.items[1].metadata.name
-    command = &#39;cat /data/test1&#39;
-    pod_data_2 = read_nfs_provisioner_data(
-        core_api, command, pod_name_2, &#39;default&#39;)
-
-    assert test_data_1 == pod_data_2
-
-    test_data_2 = generate_random_data(VOLUME_RWTEST_SIZE)
-    write_pod_volume_data(core_api, pod_name_2, test_data_2, filename=&#39;test2&#39;)
-
-    command = &#39;cat /export&#39; + &#39;/&#39; + volume_name + &#39;/&#39; + &#39;test1&#39;
-    nfs_pod_data_1 = read_nfs_provisioner_data(
-        core_api, command, nfs_provisioner_pod_name, &#39;longhorn-system&#39;)
-    assert test_data_1 == nfs_pod_data_1
-
-    command = &#39;cat /export&#39; + &#39;/&#39; + volume_name + &#39;/&#39; + &#39;test2&#39;
-    nfs_pod_data_2 = read_nfs_provisioner_data(
-        core_api, command, nfs_provisioner_pod_name, &#39;longhorn-system&#39;)
-
-    assert test_data_2 == nfs_pod_data_2</code></pre>
+    1. Create a volume with &#39;accessMode&#39; rwo.
+    2. Create a PV and a PVC with access mode &#39;readwriteonce&#39; and attach to the
+       volume.
+    3. Create a pod and attach to the PVC.
+    4. Write some data into the pod and compute md5sum.
+    5. Take a backup of the volume.
+    6. Restore the backup with &#39;accessMode&#39; rwx.
+    7. Create PV and PVC and attach to 2 pods.
+    8. Verify the data.
+    &#34;&#34;&#34;</code></pre>
 </details>
 </dd>
-<dt id="tests.test_rwx.test_rwx_multi_statefulset_with_same_pvc"><code class="name flex">
-<span>def <span class="ident">test_rwx_multi_statefulset_with_same_pvc</span></span>(<span>core_api, nfs_storage_class, statefulset, pod)</span>
+<dt id="tests.test_rwx.test_rwx_delete_share_manager_pod"><code class="name flex">
+<span>def <span class="ident">test_rwx_delete_share_manager_pod</span></span>(<span>)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Test writing of data with multiple pods using same PVC</p>
+<div class="desc"><p>Test moving of Share manager pod from one node to another.</p>
 <ol>
-<li>
-<p>Create PodSecurityPolicy for longhorn-nfs-provisioner as sample yaml
-<a href="https://raw.githubusercontent.com/longhorn/longhorn/master/examples">https://raw.githubusercontent.com/longhorn/longhorn/master/examples</a>
-/rwx/01-security.yaml</p>
-</li>
-<li>
-<p>Create serviceAccount, service, longhorn-nfs-provisioner deployment,
-PVC and StorageClass as sample yaml <a href="https://raw.githubusercontent.com/">https://raw.githubusercontent.com/</a>
-longhorn/longhorn/master/examples/rwx/02-longhorn-nfs-provisioner.yaml</p>
-</li>
-<li>
-<p>Wait for longhorn-nfs-provisioner deployment to come up healthy.</p>
-</li>
-<li>Verify the volume named as the PV attached to longhorn-nfs-provisioner
-<code>volume.ready == True</code></li>
-<li>Create a StatefulSet of 1 pod with VolumeClaimTemplate and
-longhorn-nfs class in default namespace.</li>
+<li>Create a StatefulSet of 1 pod with VolumeClaimTemplate where accessMode
+is 'RWX'.</li>
 <li>Wait for StatefulSet to come up healthy.</li>
 <li>Write data and compute md5sum.</li>
-<li>Create another statefulSet with same pvc which got created with first
-statefulSet.</li>
-<li>Wait for statefulSet to come up healthy.</li>
-<li>Check the data md5sum.</li>
-<li>Write more data and compute md5sum</li>
-<li>Check the data md5sum in longhorn-nfs-provisioner volume</li>
-</ol></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def test_rwx_multi_statefulset_with_same_pvc(core_api, nfs_storage_class, statefulset, pod):  # NOQA
-    &#34;&#34;&#34;
-    Test writing of data with multiple pods using same PVC
-
-    1. Create PodSecurityPolicy for longhorn-nfs-provisioner as sample yaml
-       https://raw.githubusercontent.com/longhorn/longhorn/master/examples
-       /rwx/01-security.yaml
-
-    2. Create serviceAccount, service, longhorn-nfs-provisioner deployment,
-       PVC and StorageClass as sample yaml https://raw.githubusercontent.com/
-       longhorn/longhorn/master/examples/rwx/02-longhorn-nfs-provisioner.yaml
-
-    3. Wait for longhorn-nfs-provisioner deployment to come up healthy.
-    4. Verify the volume named as the PV attached to longhorn-nfs-provisioner
-       `volume.ready == True`
-    5. Create a StatefulSet of 1 pod with VolumeClaimTemplate and
-       longhorn-nfs class in default namespace.
-    6. Wait for StatefulSet to come up healthy.
-    7. Write data and compute md5sum.
-    8. Create another statefulSet with same pvc which got created with first
-       statefulSet.
-    9. Wait for statefulSet to come up healthy.
-    10. Check the data md5sum.
-    11. Write more data and compute md5sum
-    12. Check the data md5sum in longhorn-nfs-provisioner volume
-    &#34;&#34;&#34;
-    nfs_provisioner_pod = k8sclient.CoreV1Api().list_pod_for_all_namespaces(
-        label_selector=&#34;app=longhorn-nfs-provisioner&#34;, watch=False)
-    nfs_provisioner_pod_name = nfs_provisioner_pod.items[0].metadata.name
-
-    statefulset_name = &#39;statefulset-rwx-same-pvc-test&#39;
-    statefulset[&#39;metadata&#39;][&#39;name&#39;] = \
-        statefulset[&#39;spec&#39;][&#39;selector&#39;][&#39;matchLabels&#39;][&#39;app&#39;] = \
-        statefulset[&#39;spec&#39;][&#39;serviceName&#39;] = \
-        statefulset[&#39;spec&#39;][&#39;template&#39;][&#39;metadata&#39;][&#39;labels&#39;][&#39;app&#39;] = \
-        statefulset_name
-    statefulset[&#39;spec&#39;][&#39;volumeClaimTemplates&#39;][0][&#39;spec&#39;][&#39;storageClassName&#39;]\
-        = NFS_STORAGECLASS_NAME
-    statefulset[&#39;spec&#39;][&#39;replicas&#39;] = 1
-
-    create_and_wait_statefulset(statefulset)
-
-    command = &#34;ls /export | grep -i &#39;pvc&#39; | wc -l&#34;
-
-    dir_num = read_nfs_provisioner_data(
-        core_api, command, nfs_provisioner_pod_name, &#39;longhorn-system&#39;)
-
-    assert dir_num == &#39;1&#39;
-
-    test_pod_name = statefulset_name + &#39;-0&#39;
-    test_data = generate_random_data(VOLUME_RWTEST_SIZE)
-    write_pod_volume_data(core_api, test_pod_name, test_data, filename=&#39;test1&#39;)
-
-    pvc_name = \
-        statefulset[&#39;spec&#39;][&#39;volumeClaimTemplates&#39;][0][&#39;metadata&#39;][&#39;name&#39;] \
-        + &#39;-&#39; + statefulset_name + &#39;-0&#39;
-    volume_name = get_volume_name(core_api, pvc_name)
-
-    pod_2_name = &#39;pod2-rwx-same-pvc-test&#39;
-    pod[&#39;metadata&#39;][&#39;name&#39;] = pod_2_name
-    pod[&#39;spec&#39;][&#39;volumes&#39;] = [create_pvc_spec(pvc_name)]
-    create_and_wait_pod(core_api, pod)
-
-    command = &#39;cat /data/test1&#39;
-    pod_data_2 = read_nfs_provisioner_data(
-        core_api, command, pod_2_name, &#39;default&#39;)
-
-    assert test_data == pod_data_2
-
-    test_data_2 = generate_random_data(VOLUME_RWTEST_SIZE)
-    write_pod_volume_data(core_api, pod_2_name, test_data_2, filename=&#39;test2&#39;)
-
-    command = &#39;cat /export&#39; + &#39;/&#39; + volume_name + &#39;/&#39; + &#39;test1&#39;
-    nfs_pod_data_1 = read_nfs_provisioner_data(
-        core_api, command, nfs_provisioner_pod_name, &#39;longhorn-system&#39;)
-    assert test_data == nfs_pod_data_1
-
-    command = &#39;cat /export&#39; + &#39;/&#39; + volume_name + &#39;/&#39; + &#39;test2&#39;
-    nfs_pod_data_2 = read_nfs_provisioner_data(
-        core_api, command, nfs_provisioner_pod_name, &#39;longhorn-system&#39;)
-
-    assert test_data_2 == nfs_pod_data_2</code></pre>
-</details>
-</dd>
-<dt id="tests.test_rwx.test_rwx_offline_node_longhorn_nfs_provisioner"><code class="name flex">
-<span>def <span class="ident">test_rwx_offline_node_longhorn_nfs_provisioner</span></span>(<span>)</span>
-</code></dt>
-<dd>
-<div class="desc"><p>Test moving of longhorn-nfs-provisioner pod from one node to another.</p>
-<ol>
-<li>
-<p>Create PodSecurityPolicy for longhorn-nfs-provisioner as sample yaml
-<a href="https://raw.githubusercontent.com/longhorn/longhorn/master/examples">https://raw.githubusercontent.com/longhorn/longhorn/master/examples</a>
-/rwx/01-security.yaml</p>
-</li>
-<li>
-<p>Create serviceAccount, service, longhorn-nfs-provisioner deployment,
-PVC and StorageClass as sample yaml <a href="https://raw.githubusercontent.com/">https://raw.githubusercontent.com/</a>
-longhorn/longhorn/master/examples/rwx/02-longhorn-nfs-provisioner.yaml
-Make sure liveness probe is added in the deployment.</p>
-</li>
-<li>
-<p>Wait for longhorn-nfs-provisioner deployment to come up healthy.</p>
-</li>
-<li>Verify the volume named as the PV attached to longhorn-nfs-provisioner
-<code>volume.ready == True</code></li>
-<li>Create a StatefulSet of 1 pod with VolumeClaimTemplate and
-longhorn-nfs class in default namespace.</li>
-<li>Wait for StatefulSet to come up healthy.</li>
-<li>Write data and compute md5sum.</li>
-<li>Shutdown the node where longhorn-nfs-provisioner is running. The
-liveness probe will restart the pod on another node.</li>
+<li>Delete the share manager pod.</li>
 <li>Wait for a new pod to be created and volume getting attached.</li>
 <li>Check the data md5sum in statefulSet</li>
 <li>Write more data to it and compute md5sum.</li>
-<li>Check the data md5sum in longhorn-nfs-provisioner volume</li>
+<li>Check the data md5sum in share manager volume</li>
 </ol></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">@pytest.mark.skip(reason=&#34;TODO&#34;)
-def test_rwx_offline_node_longhorn_nfs_provisioner():
+def test_rwx_delete_share_manager_pod():  # NOQA
     &#34;&#34;&#34;
-    Test moving of longhorn-nfs-provisioner pod from one node to another.
+    Test moving of Share manager pod from one node to another.
 
-    1. Create PodSecurityPolicy for longhorn-nfs-provisioner as sample yaml
-       https://raw.githubusercontent.com/longhorn/longhorn/master/examples
-       /rwx/01-security.yaml
+    1. Create a StatefulSet of 1 pod with VolumeClaimTemplate where accessMode
+       is &#39;RWX&#39;.
+    2. Wait for StatefulSet to come up healthy.
+    3. Write data and compute md5sum.
+    4. Delete the share manager pod.
+    5. Wait for a new pod to be created and volume getting attached.
+    6. Check the data md5sum in statefulSet
+    7. Write more data to it and compute md5sum.
+    8. Check the data md5sum in share manager volume
+    &#34;&#34;&#34;</code></pre>
+</details>
+</dd>
+<dt id="tests.test_rwx.test_rwx_deployment_with_multi_pods"><code class="name flex">
+<span>def <span class="ident">test_rwx_deployment_with_multi_pods</span></span>(<span>)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test deployment of 2 pods with same PVC.</p>
+<ol>
+<li>Create a volume with 'accessMode' rwx.</li>
+<li>Create a PV and a PVC with access mode 'readwritemany' and attach to the
+volume.</li>
+<li>Create a deployment of 2 pods with PVC created</li>
+<li>Wait for 2 pods to come up healthy.</li>
+<li>Write data in both pods and compute md5sum.</li>
+<li>Check the data md5sum in the share manager pod.</li>
+</ol></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@pytest.mark.skip(reason=&#39;TODO&#39;)
+def test_rwx_deployment_with_multi_pods():  # NOQA
+    &#34;&#34;&#34;
+    Test deployment of 2 pods with same PVC.
 
-    2. Create serviceAccount, service, longhorn-nfs-provisioner deployment,
-       PVC and StorageClass as sample yaml https://raw.githubusercontent.com/
-       longhorn/longhorn/master/examples/rwx/02-longhorn-nfs-provisioner.yaml
-       Make sure liveness probe is added in the deployment.
+    1. Create a volume with &#39;accessMode&#39; rwx.
+    2. Create a PV and a PVC with access mode &#39;readwritemany&#39; and attach to the
+       volume.
+    3. Create a deployment of 2 pods with PVC created
+    4. Wait for 2 pods to come up healthy.
+    5. Write data in both pods and compute md5sum.
+    6. Check the data md5sum in the share manager pod.
+    &#34;&#34;&#34;</code></pre>
+</details>
+</dd>
+<dt id="tests.test_rwx.test_rwx_multi_statefulset_with_same_pvc"><code class="name flex">
+<span>def <span class="ident">test_rwx_multi_statefulset_with_same_pvc</span></span>(<span>)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test writing of data into a volume from multiple pods using same PVC</p>
+<ol>
+<li>Create a volume with 'accessMode' rwx.</li>
+<li>Create a PV and a PVC with access mode 'readwritemany' and attach to the
+volume.</li>
+<li>Deploy a StatefulSet of 2 pods with the existing PVC above created.</li>
+<li>Wait for both pods to come up.</li>
+<li>Create a StatefulSet of 2 pods with VolumeClaimTemplate and</li>
+<li>Wait for StatefulSet to come up healthy.</li>
+<li>Write data and compute md5sum.</li>
+<li>Create another statefulSet with same pvc which got created with first
+statefulSet.</li>
+<li>Wait for statefulSet to come up healthy.</li>
+<li>Check the data md5sum.</li>
+<li>Write more data and compute md5sum.</li>
+<li>Check the data md5sum in the share manager pod.</li>
+</ol></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@pytest.mark.skip(reason=&#39;TODO&#39;)
+def test_rwx_multi_statefulset_with_same_pvc():  # NOQA
+    &#34;&#34;&#34;
+    Test writing of data into a volume from multiple pods using same PVC
 
-    3. Wait for longhorn-nfs-provisioner deployment to come up healthy.
-    4. Verify the volume named as the PV attached to longhorn-nfs-provisioner
-       `volume.ready == True`
-    5. Create a StatefulSet of 1 pod with VolumeClaimTemplate and
-       longhorn-nfs class in default namespace.
+    1. Create a volume with &#39;accessMode&#39; rwx.
+    2. Create a PV and a PVC with access mode &#39;readwritemany&#39; and attach to the
+       volume.
+    3. Deploy a StatefulSet of 2 pods with the existing PVC above created.
+    4. Wait for both pods to come up.
+    5. Create a StatefulSet of 2 pods with VolumeClaimTemplate and
     6. Wait for StatefulSet to come up healthy.
     7. Write data and compute md5sum.
-    8. Shutdown the node where longhorn-nfs-provisioner is running. The
-       liveness probe will restart the pod on another node.
-    9. Wait for a new pod to be created and volume getting attached.
-    10. Check the data md5sum in statefulSet
-    11. Write more data to it and compute md5sum.
-    12. Check the data md5sum in longhorn-nfs-provisioner volume
-    &#34;&#34;&#34;
-    pass</code></pre>
+    8. Create another statefulSet with same pvc which got created with first
+       statefulSet.
+    9. Wait for statefulSet to come up healthy.
+    10. Check the data md5sum.
+    11. Write more data and compute md5sum.
+    12. Check the data md5sum in the share manager pod.
+    &#34;&#34;&#34;</code></pre>
 </details>
 </dd>
 <dt id="tests.test_rwx.test_rwx_parallel_writing"><code class="name flex">
-<span>def <span class="ident">test_rwx_parallel_writing</span></span>(<span>core_api, nfs_storage_class, statefulset, pvc, pod)</span>
+<span>def <span class="ident">test_rwx_parallel_writing</span></span>(<span>)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Test parallel writing of data</p>
 <ol>
-<li>
-<p>Create PodSecurityPolicy for longhorn-nfs-provisioner as sample yaml
-<a href="https://raw.githubusercontent.com/longhorn/longhorn/master/examples">https://raw.githubusercontent.com/longhorn/longhorn/master/examples</a>
-/rwx/01-security.yaml</p>
-</li>
-<li>
-<p>Create serviceAccount, service, longhorn-nfs-provisioner deployment,
-PVC and StorageClass as sample yaml <a href="https://raw.githubusercontent.com/">https://raw.githubusercontent.com/</a>
-longhorn/longhorn/master/examples/rwx/02-longhorn-nfs-provisioner.yaml</p>
-</li>
-<li>
-<p>Wait for longhorn-nfs-provisioner deployment to come up healthy.</p>
-</li>
-<li>Verify the volume named as the PV attached to longhorn-nfs-provisioner
-<code>volume.ready == True</code></li>
-<li>Create a StatefulSet of 1 pod with VolumeClaimTemplate and
-longhorn-nfs class in default namespace.</li>
+<li>Create a StatefulSet of 1 pod with VolumeClaimTemplate where accessMode
+is 'RWX'.</li>
 <li>Wait for StatefulSet to come up healthy.</li>
 <li>Create another statefulSet with same pvc which got created with first
 statefulSet.</li>
@@ -1570,339 +329,104 @@ statefulSet.</li>
 <li>Start writing 800 MB data in first statefulSet <code>file 1</code> and start
 writing 500 MB data in second statefulSet <code>file 2</code>.</li>
 <li>Compute md5sum.</li>
-<li>Check the data md5sum in longhorn-nfs-provisioner volume</li>
+<li>Check the data md5sum in share manager pod volume</li>
 </ol></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def test_rwx_parallel_writing(core_api, nfs_storage_class, statefulset, pvc, pod):  # NOQA
+<pre><code class="python">@pytest.mark.skip(reason=&#39;TODO&#39;)
+def test_rwx_parallel_writing():  # NOQA
     &#34;&#34;&#34;
     Test parallel writing of data
 
-    1. Create PodSecurityPolicy for longhorn-nfs-provisioner as sample yaml
-       https://raw.githubusercontent.com/longhorn/longhorn/master/examples
-       /rwx/01-security.yaml
-
-    2. Create serviceAccount, service, longhorn-nfs-provisioner deployment,
-       PVC and StorageClass as sample yaml https://raw.githubusercontent.com/
-       longhorn/longhorn/master/examples/rwx/02-longhorn-nfs-provisioner.yaml
-
-    3. Wait for longhorn-nfs-provisioner deployment to come up healthy.
-    4. Verify the volume named as the PV attached to longhorn-nfs-provisioner
-       `volume.ready == True`
-    5. Create a StatefulSet of 1 pod with VolumeClaimTemplate and
-       longhorn-nfs class in default namespace.
-    6. Wait for StatefulSet to come up healthy.
-    7. Create another statefulSet with same pvc which got created with first
+    1. Create a StatefulSet of 1 pod with VolumeClaimTemplate where accessMode
+       is &#39;RWX&#39;.
+    2. Wait for StatefulSet to come up healthy.
+    3. Create another statefulSet with same pvc which got created with first
        statefulSet.
-    8. Wait for statefulSet to come up healthy.
-    9. Start writing 800 MB data in first statefulSet `file 1` and start
+    4. Wait for statefulSet to come up healthy.
+    5. Start writing 800 MB data in first statefulSet `file 1` and start
        writing 500 MB data in second statefulSet `file 2`.
-    10. Compute md5sum.
-    11. Check the data md5sum in longhorn-nfs-provisioner volume
-    &#34;&#34;&#34;
-    nfs_provisioner_pod = k8sclient.CoreV1Api().list_pod_for_all_namespaces(
-        label_selector=&#34;app=longhorn-nfs-provisioner&#34;, watch=False)
-    nfs_provisioner_pod_name = nfs_provisioner_pod.items[0].metadata.name
-
-    statefulset_name = &#39;statefulset-parallel-write-test&#39;
-    statefulset[&#39;metadata&#39;][&#39;name&#39;] = \
-        statefulset[&#39;spec&#39;][&#39;selector&#39;][&#39;matchLabels&#39;][&#39;app&#39;] = \
-        statefulset[&#39;spec&#39;][&#39;serviceName&#39;] = \
-        statefulset[&#39;spec&#39;][&#39;template&#39;][&#39;metadata&#39;][&#39;labels&#39;][&#39;app&#39;] = \
-        statefulset_name
-    statefulset[&#39;spec&#39;][&#39;volumeClaimTemplates&#39;][0][&#39;spec&#39;][&#39;storageClassName&#39;]\
-        = NFS_STORAGECLASS_NAME
-    statefulset[&#39;spec&#39;][&#39;replicas&#39;] = 1
-
-    create_and_wait_statefulset(statefulset)
-
-    statefuleset_pod_name = statefulset_name + &#39;-0&#39;
-    statefuleset_pvc_name = \
-        statefulset[&#39;spec&#39;][&#39;volumeClaimTemplates&#39;][0][&#39;metadata&#39;][&#39;name&#39;] \
-        + &#39;-&#39; + statefulset_name + &#39;-0&#39;
-    statefulset_volume_name = get_volume_name(core_api, statefuleset_pvc_name)
-
-    pvc_name = &#39;pvc-parallel-write-test&#39;
-    pvc[&#39;metadata&#39;][&#39;name&#39;] = pvc_name
-    pvc[&#39;spec&#39;][&#39;storageClassName&#39;] = NFS_STORAGECLASS_NAME
-    core_api.create_namespaced_persistent_volume_claim(
-        body=pvc, namespace=&#39;default&#39;)
-
-    pod_name = &#39;pod-parallel-write-test&#39;
-    pod[&#39;metadata&#39;][&#39;name&#39;] = pod_name
-    pod[&#39;spec&#39;][&#39;volumes&#39;] = [create_pvc_spec(pvc_name)]
-    create_and_wait_pod(core_api, pod)
-    pod_volume_name = get_volume_name(core_api, pvc_name)
-
-    with Pool(2) as p:
-        p.map(write_data_into_pod, [pod_name, statefuleset_pod_name])
-
-    md5sum1 = get_pod_data_md5sum(core_api, statefuleset_pod_name, &#39;data/test&#39;)
-    md5sum2 = get_pod_data_md5sum(core_api, pod_name, &#39;data/test&#39;)
-
-    command = &#39;md5sum /export&#39; + &#39;/&#39; + statefulset_volume_name + &#39;/&#39; + &#39;test&#39; \
-              + &#34; | awk &#39;{print $1}&#39;&#34;
-    nfs_pod_data = read_nfs_provisioner_data(
-        core_api, command, nfs_provisioner_pod_name, &#39;longhorn-system&#39;)
-
-    assert md5sum1 == nfs_pod_data
-
-    command = &#39;md5sum /export&#39; + &#39;/&#39; + pod_volume_name + &#39;/&#39; + &#39;test&#39; \
-              + &#34; | awk &#39;{print $1}&#39;&#34;
-    nfs_pod_data = read_nfs_provisioner_data(
-        core_api, command, nfs_provisioner_pod_name, &#39;longhorn-system&#39;)
-
-    assert md5sum2 == nfs_pod_data</code></pre>
+    6. Compute md5sum.
+    7. Check the data md5sum in share manager pod volume
+    &#34;&#34;&#34;</code></pre>
 </details>
 </dd>
 <dt id="tests.test_rwx.test_rwx_statefulset_scale_down_up"><code class="name flex">
-<span>def <span class="ident">test_rwx_statefulset_scale_down_up</span></span>(<span>core_api, nfs_storage_class, statefulset)</span>
+<span>def <span class="ident">test_rwx_statefulset_scale_down_up</span></span>(<span>)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Test Scaling up and down of pods attached to longhorn-nfs-provisioner
-volume.</p>
+<div class="desc"><p>Test Scaling up and down of pods attached to rwx volume.</p>
 <ol>
-<li>
-<p>Create PodSecurityPolicy for longhorn-nfs-provisioner as sample yaml
-<a href="https://raw.githubusercontent.com/longhorn/longhorn/master/examples">https://raw.githubusercontent.com/longhorn/longhorn/master/examples</a>
-/rwx/01-security.yaml</p>
-</li>
-<li>
-<p>Create serviceAccount, service, longhorn-nfs-provisioner deployment,
-PVC and StorageClass as sample yaml <a href="https://raw.githubusercontent.com/">https://raw.githubusercontent.com/</a>
-longhorn/longhorn/master/examples/rwx/02-longhorn-nfs-provisioner.yaml</p>
-</li>
-<li>
-<p>Wait for longhorn-nfs-provisioner deployment to come up healthy.</p>
-</li>
-<li>Verify the volume named as the PV attached to longhorn-nfs-provisioner
-<code>volume.ready == True</code></li>
-<li>Create a StatefulSet of 2 pods with VolumeClaimTemplate and
-longhorn-nfs class in default namespace.</li>
+<li>Create a StatefulSet of 2 pods with VolumeClaimTemplate where accessMode
+is 'RWX'.</li>
 <li>Wait for StatefulSet pods to come up healthy.</li>
-<li>Write data and compute md5sum in both pods</li>
-<li>Delete pods.</li>
-<li>Wait for pods to terminate.</li>
+<li>Write data and compute md5sum in the both pods.</li>
+<li>Delete the pods.</li>
+<li>Wait for the pods to be terminated.</li>
+<li>Verify the share manager pods are no longer available and the volume is
+detached.</li>
 <li>Recreate the pods</li>
 <li>Wait for new pods to come up.</li>
-<li>Check the data md5sum in new pods</li>
+<li>Check the data md5sum in new pods.</li>
 </ol></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def test_rwx_statefulset_scale_down_up(core_api, nfs_storage_class, statefulset):  # NOQA
+<pre><code class="python">@pytest.mark.skip(reason=&#39;TODO&#39;)
+def test_rwx_statefulset_scale_down_up():  # NOQA
     &#34;&#34;&#34;
-    Test Scaling up and down of pods attached to longhorn-nfs-provisioner
-    volume.
+    Test Scaling up and down of pods attached to rwx volume.
 
-    1. Create PodSecurityPolicy for longhorn-nfs-provisioner as sample yaml
-       https://raw.githubusercontent.com/longhorn/longhorn/master/examples
-       /rwx/01-security.yaml
-
-    2. Create serviceAccount, service, longhorn-nfs-provisioner deployment,
-       PVC and StorageClass as sample yaml https://raw.githubusercontent.com/
-       longhorn/longhorn/master/examples/rwx/02-longhorn-nfs-provisioner.yaml
-
-    3. Wait for longhorn-nfs-provisioner deployment to come up healthy.
-    4. Verify the volume named as the PV attached to longhorn-nfs-provisioner
-       `volume.ready == True`
-    5. Create a StatefulSet of 2 pods with VolumeClaimTemplate and
-       longhorn-nfs class in default namespace.
-    6. Wait for StatefulSet pods to come up healthy.
-    7. Write data and compute md5sum in both pods
-    8. Delete pods.
-    9. Wait for pods to terminate.
-    10. Recreate the pods
-    11. Wait for new pods to come up.
-    12. Check the data md5sum in new pods
-    &#34;&#34;&#34;
-    nfs_provisioner_pod = k8sclient.CoreV1Api().list_pod_for_all_namespaces(
-        label_selector=&#34;app=longhorn-nfs-provisioner&#34;, watch=False)
-    nfs_provisioner_pod_name = nfs_provisioner_pod.items[0].metadata.name
-
-    statefulset_name = &#39;statefulset-rwx-scale-down-up-test&#39;
-    statefulset[&#39;metadata&#39;][&#39;name&#39;] = \
-        statefulset[&#39;spec&#39;][&#39;selector&#39;][&#39;matchLabels&#39;][&#39;app&#39;] = \
-        statefulset[&#39;spec&#39;][&#39;serviceName&#39;] = \
-        statefulset[&#39;spec&#39;][&#39;template&#39;][&#39;metadata&#39;][&#39;labels&#39;][&#39;app&#39;] = \
-        statefulset_name
-    statefulset[&#39;spec&#39;][&#39;volumeClaimTemplates&#39;][0][&#39;spec&#39;][&#39;storageClassName&#39;]\
-        = NFS_STORAGECLASS_NAME
-
-    create_and_wait_statefulset(statefulset)
-
-    command = &#34;ls /export | grep -i &#39;pvc&#39; | wc -l&#34;
-
-    dir_num = read_nfs_provisioner_data(
-        core_api, command, nfs_provisioner_pod_name, &#39;longhorn-system&#39;)
-
-    assert dir_num == &#39;2&#39;
-
-    md5sum_pod = []
-    for i in range(2):
-        test_pod_name = statefulset_name + &#39;-&#39; + str(i)
-        test_data = generate_random_data(VOLUME_RWTEST_SIZE)
-        write_pod_volume_data(core_api, test_pod_name, test_data)
-        md5sum_pod.append(test_data)
-
-    statefulset[&#39;spec&#39;][&#39;replicas&#39;] = replicas = 0
-    apps_api = get_apps_api_client()
-    apps_api.patch_namespaced_stateful_set(
-        name=statefulset_name,
-        namespace=&#39;default&#39;,
-        body={
-            &#39;spec&#39;: {
-                &#39;replicas&#39;: replicas
-            }
-        })
-    for i in range(DEFAULT_STATEFULSET_TIMEOUT):
-        s_set = apps_api.read_namespaced_stateful_set(
-            name=statefulset[&#39;metadata&#39;][&#39;name&#39;],
-            namespace=&#39;default&#39;)
-        if s_set.status.ready_replicas == replicas or \
-                (replicas == 0 and not s_set.status.ready_replicas):
-            break
-        time.sleep(DEFAULT_STATEFULSET_INTERVAL)
-
-    dir_num = read_nfs_provisioner_data(
-        core_api, command, nfs_provisioner_pod_name, &#39;longhorn-system&#39;)
-    assert dir_num == &#39;2&#39;
-
-    statefulset[&#39;spec&#39;][&#39;replicas&#39;] = replicas = 2
-    apps_api = get_apps_api_client()
-    apps_api.patch_namespaced_stateful_set(
-        name=statefulset_name,
-        namespace=&#39;default&#39;,
-        body={
-            &#39;spec&#39;: {
-                &#39;replicas&#39;: replicas
-            }
-        })
-    wait_statefulset(statefulset)
-
-    for i in range(2):
-        test_pod_name = statefulset_name + &#39;-&#39; + str(i)
-        command = &#39;cat /data/test&#39;
-        pod_data = read_nfs_provisioner_data(
-            core_api, command, test_pod_name, &#39;default&#39;)
-
-        assert pod_data == md5sum_pod[i]</code></pre>
+    1. Create a StatefulSet of 2 pods with VolumeClaimTemplate where accessMode
+       is &#39;RWX&#39;.
+    2. Wait for StatefulSet pods to come up healthy.
+    3. Write data and compute md5sum in the both pods.
+    4. Delete the pods.
+    5. Wait for the pods to be terminated.
+    6. Verify the share manager pods are no longer available and the volume is
+       detached.
+    6. Recreate the pods
+    7. Wait for new pods to come up.
+    8. Check the data md5sum in new pods.
+    &#34;&#34;&#34;</code></pre>
 </details>
 </dd>
 <dt id="tests.test_rwx.test_rwx_with_statefulset_multi_pods"><code class="name flex">
-<span>def <span class="ident">test_rwx_with_statefulset_multi_pods</span></span>(<span>core_api, nfs_storage_class, statefulset)</span>
+<span>def <span class="ident">test_rwx_with_statefulset_multi_pods</span></span>(<span>)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Test writing of data in same volume from 2 pods</p>
+<div class="desc"><p>Test creation of share manager pod and rwx volumes from 2 pods.</p>
 <ol>
-<li>
-<p>Create PodSecurityPolicy for longhorn-nfs-provisioner as sample yaml
-<a href="https://raw.githubusercontent.com/longhorn/longhorn/master/examples">https://raw.githubusercontent.com/longhorn/longhorn/master/examples</a>
-/rwx/01-security.yaml</p>
-</li>
-<li>
-<p>Create serviceAccount, service, longhorn-nfs-provisioner deployment,
-PVC and StorageClass as sample yaml <a href="https://raw.githubusercontent.com/">https://raw.githubusercontent.com/</a>
-longhorn/longhorn/master/examples/rwx/02-longhorn-nfs-provisioner.yaml</p>
-</li>
-<li>
-<p>Wait for longhorn-nfs-provisioner deployment to come up healthy.</p>
-</li>
-<li>Verify the volume named as the PV attached to longhorn-nfs-provisioner
-<code>volume.ready == True</code></li>
-<li>Create a StatefulSet of 2 pods with VolumeClaimTemplate and
-longhorn-nfs class in default namespace.</li>
+<li>Create a StatefulSet of 2 pods with VolumeClaimTemplate where accessMode
+is 'RWX'.</li>
 <li>Wait for both pods to come up running.</li>
-<li>Verify two folders get created with PV names in longhorn-nfs-provisioner
-volume.</li>
+<li>Verify there are two share manager pods created in the longhorn
+namespace and they have the directory with the PV name in the
+path <code>/export</code></li>
 <li>Write data in both pods and compute md5sum.</li>
-<li>Compare md5sum of the data in longhorn-nfs-provisioner volume</li>
+<li>Compare md5sum of the data with the data written the share manager.</li>
 </ol></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def test_rwx_with_statefulset_multi_pods(core_api, nfs_storage_class, statefulset):  # NOQA
+<pre><code class="python">@pytest.mark.skip(reason=&#39;TODO&#39;)
+def test_rwx_with_statefulset_multi_pods():  # NOQA
     &#34;&#34;&#34;
-    Test writing of data in same volume from 2 pods
+    Test creation of share manager pod and rwx volumes from 2 pods.
 
-    1. Create PodSecurityPolicy for longhorn-nfs-provisioner as sample yaml
-       https://raw.githubusercontent.com/longhorn/longhorn/master/examples
-       /rwx/01-security.yaml
-
-    2. Create serviceAccount, service, longhorn-nfs-provisioner deployment,
-       PVC and StorageClass as sample yaml https://raw.githubusercontent.com/
-       longhorn/longhorn/master/examples/rwx/02-longhorn-nfs-provisioner.yaml
-
-    3. Wait for longhorn-nfs-provisioner deployment to come up healthy.
-    4. Verify the volume named as the PV attached to longhorn-nfs-provisioner
-       `volume.ready == True`
-    5. Create a StatefulSet of 2 pods with VolumeClaimTemplate and
-       longhorn-nfs class in default namespace.
-    6. Wait for both pods to come up running.
-    7. Verify two folders get created with PV names in longhorn-nfs-provisioner
-       volume.
-    8. Write data in both pods and compute md5sum.
-    9. Compare md5sum of the data in longhorn-nfs-provisioner volume
-    &#34;&#34;&#34;
-
-    nfs_provisioner_pod = k8sclient.CoreV1Api().list_pod_for_all_namespaces(
-        label_selector=&#34;app=longhorn-nfs-provisioner&#34;, watch=False)
-    nfs_provisioner_pod_name = nfs_provisioner_pod.items[0].metadata.name
-
-    statefulset_name = &#39;statefulset-rwx-multi-pods-test&#39;
-    statefulset[&#39;metadata&#39;][&#39;name&#39;] = \
-        statefulset[&#39;spec&#39;][&#39;selector&#39;][&#39;matchLabels&#39;][&#39;app&#39;] = \
-        statefulset[&#39;spec&#39;][&#39;serviceName&#39;] = \
-        statefulset[&#39;spec&#39;][&#39;template&#39;][&#39;metadata&#39;][&#39;labels&#39;][&#39;app&#39;] = \
-        statefulset_name
-    statefulset[&#39;spec&#39;][&#39;volumeClaimTemplates&#39;][0][&#39;spec&#39;][&#39;storageClassName&#39;]\
-        = NFS_STORAGECLASS_NAME
-
-    create_and_wait_statefulset(statefulset)
-
-    command = &#34;ls /export | grep -i &#39;pvc&#39; | wc -l&#34;
-
-    dir_num = read_nfs_provisioner_data(
-        core_api, command, nfs_provisioner_pod_name, &#39;longhorn-system&#39;)
-
-    assert dir_num == &#39;2&#39;
-
-    md5sum_pod = []
-    for i in range(2):
-        test_pod_name = statefulset_name + &#39;-&#39; + str(i)
-        test_data = generate_random_data(VOLUME_RWTEST_SIZE)
-        write_pod_volume_data(core_api, test_pod_name, test_data)
-        md5sum_pod.append(test_data)
-
-    for i in range(2):
-        pvc_name = \
-            statefulset[&#39;spec&#39;][&#39;volumeClaimTemplates&#39;][0][&#39;metadata&#39;][&#39;name&#39;]\
-            + &#39;-&#39; + statefulset_name + &#39;-&#39; + str(i)
-        volume_name = get_volume_name(core_api, pvc_name)
-        command = &#39;cat /export&#39; + &#39;/&#39; + volume_name + &#39;/&#39; + &#39;test&#39;
-        pod_data = read_nfs_provisioner_data(
-            core_api, command, nfs_provisioner_pod_name, &#39;longhorn-system&#39;)
-
-        assert pod_data == md5sum_pod[i]</code></pre>
-</details>
-</dd>
-<dt id="tests.test_rwx.write_data_into_pod"><code class="name flex">
-<span>def <span class="ident">write_data_into_pod</span></span>(<span>pod_name)</span>
-</code></dt>
-<dd>
-<div class="desc"></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def write_data_into_pod(pod_name):
-    core_api = get_core_api_client()  # NOQA
-    write_pod_volume_random_data(core_api, pod_name, &#34;/data/test&#34;,
-                                 DATA_SIZE_IN_MB_3)</code></pre>
+    1. Create a StatefulSet of 2 pods with VolumeClaimTemplate where accessMode
+       is &#39;RWX&#39;.
+    2. Wait for both pods to come up running.
+    3. Verify there are two share manager pods created in the longhorn
+       namespace and they have the directory with the PV name in the
+       path `/export`
+    4. Write data in both pods and compute md5sum.
+    5. Compare md5sum of the data with the data written the share manager.
+    &#34;&#34;&#34;</code></pre>
 </details>
 </dd>
 </dl>
@@ -1923,20 +447,13 @@ volume.</li>
 </li>
 <li><h3><a href="#header-functions">Functions</a></h3>
 <ul class="">
-<li><code><a title="tests.test_rwx.apps_api_module" href="#tests.test_rwx.apps_api_module">apps_api_module</a></code></li>
-<li><code><a title="tests.test_rwx.core_api_module" href="#tests.test_rwx.core_api_module">core_api_module</a></code></li>
-<li><code><a title="tests.test_rwx.deployment_nfs" href="#tests.test_rwx.deployment_nfs">deployment_nfs</a></code></li>
-<li><code><a title="tests.test_rwx.longhorn_nfs_provisioner_setup" href="#tests.test_rwx.longhorn_nfs_provisioner_setup">longhorn_nfs_provisioner_setup</a></code></li>
-<li><code><a title="tests.test_rwx.nfs_pvc" href="#tests.test_rwx.nfs_pvc">nfs_pvc</a></code></li>
-<li><code><a title="tests.test_rwx.nfs_storage_class" href="#tests.test_rwx.nfs_storage_class">nfs_storage_class</a></code></li>
-<li><code><a title="tests.test_rwx.read_nfs_provisioner_data" href="#tests.test_rwx.read_nfs_provisioner_data">read_nfs_provisioner_data</a></code></li>
+<li><code><a title="tests.test_rwx.test_restore_rwo_volume_to_rwx" href="#tests.test_rwx.test_restore_rwo_volume_to_rwx">test_restore_rwo_volume_to_rwx</a></code></li>
+<li><code><a title="tests.test_rwx.test_rwx_delete_share_manager_pod" href="#tests.test_rwx.test_rwx_delete_share_manager_pod">test_rwx_delete_share_manager_pod</a></code></li>
 <li><code><a title="tests.test_rwx.test_rwx_deployment_with_multi_pods" href="#tests.test_rwx.test_rwx_deployment_with_multi_pods">test_rwx_deployment_with_multi_pods</a></code></li>
 <li><code><a title="tests.test_rwx.test_rwx_multi_statefulset_with_same_pvc" href="#tests.test_rwx.test_rwx_multi_statefulset_with_same_pvc">test_rwx_multi_statefulset_with_same_pvc</a></code></li>
-<li><code><a title="tests.test_rwx.test_rwx_offline_node_longhorn_nfs_provisioner" href="#tests.test_rwx.test_rwx_offline_node_longhorn_nfs_provisioner">test_rwx_offline_node_longhorn_nfs_provisioner</a></code></li>
 <li><code><a title="tests.test_rwx.test_rwx_parallel_writing" href="#tests.test_rwx.test_rwx_parallel_writing">test_rwx_parallel_writing</a></code></li>
 <li><code><a title="tests.test_rwx.test_rwx_statefulset_scale_down_up" href="#tests.test_rwx.test_rwx_statefulset_scale_down_up">test_rwx_statefulset_scale_down_up</a></code></li>
 <li><code><a title="tests.test_rwx.test_rwx_with_statefulset_multi_pods" href="#tests.test_rwx.test_rwx_with_statefulset_multi_pods">test_rwx_with_statefulset_multi_pods</a></code></li>
-<li><code><a title="tests.test_rwx.write_data_into_pod" href="#tests.test_rwx.write_data_into_pod">write_data_into_pod</a></code></li>
 </ul>
 </li>
 </ul>
