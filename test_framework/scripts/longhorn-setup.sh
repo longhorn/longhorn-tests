@@ -31,6 +31,12 @@ check_longhorn_status() {
 
 }
 
+install_csi_snapshotter_crds(){                                                 
+    git clone --single-branch --branch "master" "https://github.com/kubernetes-csi/external-snapshotter.git" /tmp/k8s-csi-external-snapshotter
+    kubectl apply -f /tmp/k8s-csi-external-snapshotter/client/config/crd \      
+                  -f /tmp/k8s-csi-external-snapshotter/deploy/kubernetes/snapshot-controller
+}  
+
 mkdir -p ${LONGHORN_MANAGER_TMPDIR}
 
 git clone --single-branch --branch ${LONGHORN_MANAGER_BRANCH} ${LONGHORN_MANAGER_REPO_URI} ${LONGHORN_MANAGER_TMPDIR}
@@ -60,6 +66,7 @@ if [[ "${LONGHORN_UPGRADE_TEST}" == true || "${LONGHORN_UPGRADE_TEST}" == True ]
   check_longhorn_status
 
   kubectl create -Rf "${WORKSPACE}/manager/integration/deploy/backupstores"
+  install_csi_snapshotter_crds
 
   ## generate upgrade_test pod manifest
   sed 's/#TEST_FRAMEWORK_ARGS_PLACEHOLDER/args:\ \[\ \"\-s\"\ ,\ \"\-\-junitxml=\$\{LONGHORN_JUNIT_REPORT_PATH\}",\ \"\-\-include\-upgrade\-test\ \-k test_upgrade\" \]/; s/name: longhorn-test$/name: longhorn-test-upgrade/' "${WORKSPACE}/manager/integration/deploy/test.yaml" >> "${WORKSPACE}/manager/integration/deploy/upgrade_test.yaml"
@@ -85,6 +92,7 @@ else
   kubectl apply -f longhorn.yaml
   check_longhorn_status
   kubectl create -Rf "${WORKSPACE}/manager/integration/deploy/backupstores"
+  install_csi_snapshotter_crds
 fi
 
 

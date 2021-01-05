@@ -222,6 +222,11 @@ def get_version_api_client():
     return k8sclient.VersionApi()
 
 
+def get_custom_object_api_client():
+    load_k8s_config()
+    return k8sclient.CustomObjectsApi()
+
+
 def get_longhorn_api_client():
     for i in range(RETRY_COUNTS):
         try:
