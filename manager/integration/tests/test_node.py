@@ -2082,7 +2082,7 @@ def test_node_config_annotation_missing(client, core_api,  # NOQA
 
 
 @pytest.mark.node  # NOQA
-def test_replica_scheduler_rebuild_restore_is_too_big(client, set_random_backupstore):  # NOQA
+def test_replica_scheduler_rebuild_restore_is_too_big(set_random_backupstore, client):  # NOQA
     """
     Test replica scheduler: rebuild/restore can be too big to fit a disk
 

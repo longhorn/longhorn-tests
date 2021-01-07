@@ -606,7 +606,7 @@ def backup_status_for_unavailable_replicas_test(client, volume_name,  # NOQA
     cleanup_volume(client, volume)
 
 
-def test_backup_block_deletion(client, core_api, volume_name, set_random_backupstore):  # NOQA
+def test_backup_block_deletion(set_random_backupstore, client, core_api, volume_name):  # NOQA
     """
     Test backup block deletion
 
@@ -703,7 +703,7 @@ def test_backup_block_deletion(client, core_api, volume_name, set_random_backups
     delete_backup_volume(client, volume_name)
 
 
-def test_backup_volume_list(client, core_api, set_random_backupstore):  # NOQA
+def test_backup_volume_list(set_random_backupstore ,client, core_api):  # NOQA
     """
     Test backup volume list
     Context:
@@ -785,7 +785,7 @@ def test_backup_volume_list(client, core_api, set_random_backupstore):  # NOQA
     backupstore_cleanup(client)
 
 
-def test_backup_metadata_deletion(client, core_api, volume_name, set_random_backupstore):  # NOQA
+def test_backup_metadata_deletion(set_random_backupstore, client, core_api, volume_name):  # NOQA
     """
     Test backup metadata deletion
 
@@ -1985,7 +1985,7 @@ def test_expansion_basic(client, volume_name):  # NOQA
 
 
 @pytest.mark.coretest   # NOQA
-def test_restore_inc_with_expansion(client, core_api, volume_name, pod, set_random_backupstore):  # NOQA
+def test_restore_inc_with_expansion(set_random_backupstore, client, core_api, volume_name, pod):  # NOQA
     """
     Test restore from disaster recovery volume with volume expansion
 
@@ -2617,7 +2617,7 @@ def test_expansion_with_scheduling_failure(
     delete_and_wait_pv(core_api, test_pv_name)
 
 
-def test_dr_volume_with_last_backup_deletion(client, core_api, csi_pv, pvc, volume_name, pod_make, set_random_backupstore):  # NOQA
+def test_dr_volume_with_last_backup_deletion(set_random_backupstore, client, core_api, csi_pv, pvc, volume_name, pod_make):  # NOQA
     """
     Test if the DR volume can be activated
     after deleting the lastest backup. There are two cases to the last
@@ -2752,7 +2752,7 @@ def test_dr_volume_with_last_backup_deletion(client, core_api, csi_pv, pvc, volu
     client.delete(bv)
 
 
-def test_backup_lock_deletion_during_restoration(client, core_api, volume_name, csi_pv, pvc, pod_make, set_random_backupstore):  # NOQA
+def test_backup_lock_deletion_during_restoration(set_random_backupstore, client, core_api, volume_name, csi_pv, pvc, pod_make):  # NOQA
     """
     Test backup locks
     Context:
@@ -2816,7 +2816,7 @@ def test_backup_lock_deletion_during_restoration(client, core_api, volume_name, 
     assert b is not None
 
 
-def test_backup_lock_deletion_during_backup(client, core_api, volume_name, csi_pv, pvc, pod_make, set_random_backupstore):  # NOQA
+def test_backup_lock_deletion_during_backup(set_random_backupstore, client, core_api, volume_name, csi_pv, pvc, pod_make):  # NOQA
     """
     Test backup locks
     Context:
@@ -2915,7 +2915,7 @@ def test_backup_lock_deletion_during_backup(client, core_api, volume_name, csi_p
     assert std_md5sum2 == md5sum2
 
 
-def test_backup_lock_creation_during_deletion(client, core_api, volume_name, csi_pv, pvc, pod_make, set_random_backupstore):  # NOQA
+def test_backup_lock_creation_during_deletion(set_random_backupstore, client, core_api, volume_name, csi_pv, pvc, pod_make):  # NOQA
     """
     Test backup locks
     Context:
@@ -2972,7 +2972,7 @@ def test_backup_lock_creation_during_deletion(client, core_api, volume_name, csi
 
 
 @pytest.mark.skip(reason="This test takes more than 20 mins to run")  # NOQA
-def test_backup_lock_restoration_during_deletion(client, core_api, volume_name, csi_pv, pvc, pod_make, set_random_backupstore):  # NOQA
+def test_backup_lock_restoration_during_deletion(set_random_backupstore, client, core_api, volume_name, csi_pv, pvc, pod_make):  # NOQA
     """
     Test backup locks
     Context:
