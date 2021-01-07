@@ -678,9 +678,7 @@ def test_rebuild_replica_and_from_replica_on_the_same_node(
     assert original_md5sum == md5sum
 
 
-def test_rebuild_with_restoration(
-        client, core_api, volume_name, csi_pv, pvc, pod_make, # NOQA
-        set_random_backupstore):  # NOQA
+def test_rebuild_with_restoration(set_random_backupstore, client, core_api, volume_name, csi_pv, pvc, pod_make): # NOQA
     """
     [HA] Test if the rebuild is disabled for the restoring volume
     1. Setup a random backupstore.
@@ -765,9 +763,7 @@ def test_rebuild_with_restoration(
     backupstore_cleanup(client)
 
 
-def test_rebuild_with_inc_restoration(
-        client, core_api, volume_name, csi_pv, pvc, pod_make, # NOQA
-        set_random_backupstore):  # NOQA
+def test_rebuild_with_inc_restoration(set_random_backupstore, client, core_api, volume_name, csi_pv, pvc, pod_make):  # NOQA
     """
     [HA] Test if the rebuild is disabled for the DR volume
     1. Setup a random backupstore.
@@ -869,9 +865,7 @@ def test_rebuild_with_inc_restoration(
     backupstore_cleanup(client)
 
 
-def test_inc_restoration_with_multiple_rebuild_and_expansion(
-        set_random_backupstore, client, core_api, volume_name, csi_pv, pvc, pod_make, # NOQA
-        ):  # NOQA
+def test_inc_restoration_with_multiple_rebuild_and_expansion(set_random_backupstore, client, core_api, volume_name, csi_pv, pvc, pod_make): # NOQA
     """
     [HA] Test if the rebuild is disabled for the DR volume
     1. Setup a random backupstore.
@@ -1308,9 +1302,7 @@ def test_restore_volume_with_invalid_backupstore(client, volume_name, backupstor
     wait_for_volume_delete(client, res_name)
 
 
-def test_all_replica_restore_failure(
-        client, core_api, volume_name, csi_pv, pvc, pod_make, # NOQA
-        set_random_backupstore):  # NOQA
+def test_all_replica_restore_failure(set_random_backupstore, client, core_api, volume_name, csi_pv, pvc, pod_make):  # NOQA
     """
     [HA] Test if all replica restore failure will lead to the restore volume
     becoming Faulted, and if the auto salvage feature is disabled for
@@ -1391,9 +1383,7 @@ def test_all_replica_restore_failure(
     wait_for_volume_delete(client, res_name)
 
 
-def test_single_replica_restore_failure(
-        client, core_api, volume_name, csi_pv, pvc, pod_make, # NOQA
-        set_random_backupstore):  # NOQA
+def test_single_replica_restore_failure(set_random_backupstore, client, core_api, volume_name, csi_pv, pvc, pod_make):  # NOQA
     """
     [HA] Test if one replica restore failure will lead to the restore volume
     becoming Degraded, and if the restore volume is still usable after
@@ -1514,9 +1504,7 @@ def test_single_replica_restore_failure(
     backupstore_cleanup(client)
 
 
-def test_dr_volume_with_restore_command_error(
-        client, core_api, volume_name, csi_pv, pvc, pod_make, # NOQA
-        set_random_backupstore):  # NOQA
+def test_dr_volume_with_restore_command_error(set_random_backupstore, client, core_api, volume_name, csi_pv, pvc, pod_make):  # NOQA
     """
     Test if Longhorn can capture and handle the restore command error
     rather than the error triggered the data restoring.
@@ -1630,9 +1618,7 @@ def test_dr_volume_with_restore_command_error(
     backupstore_cleanup(client)
 
 
-def test_engine_crash_for_restore_volume(
-        client, core_api, volume_name, csi_pv, pvc, pod_make, # NOQA
-        set_random_backupstore):  # NOQA
+def test_engine_crash_for_restore_volume(set_random_backupstore, client, core_api, volume_name, csi_pv, pvc, pod_make):  # NOQA
     """
     [HA] Test volume can successfully retry restoring after
     the engine crashes unexpectedly.
@@ -1728,9 +1714,7 @@ def test_engine_crash_for_restore_volume(
     backupstore_cleanup(client)
 
 
-def test_engine_crash_for_dr_volume(
-        client, core_api, volume_name, csi_pv, pvc, pod_make, # NOQA
-        set_random_backupstore):  # NOQA
+def test_engine_crash_for_dr_volume(set_random_backupstore, client, core_api, volume_name, csi_pv, pvc, pod_make):  # NOQA
     """
     [HA] Test DR volume can be recovered after
     the engine crashes unexpectedly.

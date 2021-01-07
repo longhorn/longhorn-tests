@@ -515,7 +515,7 @@ def test_pvc_creation_with_default_sc_set(
 
 
 @pytest.mark.csi
-def test_backup_kubernetes_status(client, core_api, pod, set_random_backupstore):  # NOQA
+def test_backup_kubernetes_status(set_random_backupstore, client, core_api, pod):  # NOQA
     """
     Test that Backups have KubernetesStatus stored properly when there is an
     associated PersistentVolumeClaim and Pod.
