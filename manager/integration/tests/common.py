@@ -615,6 +615,30 @@ def read_pod_block_volume_data(api, pod_name, data_size, offset, device_path):
             tty=False)
 
 
+def exec_command_in_pod(api, command, pod_name, namespace):
+    """
+    Execute command in the pod.
+    Args:
+        api: An instance of CoreV1API.
+        pod_name: The name of the Pod.
+        command: The command to execute in the pod.
+        namespace: The namespace where the pod exists.
+    Returns:
+        The output of the command.
+    """
+    exec_command = [
+        '/bin/sh',
+        '-c',
+        command
+    ]
+    with timeout(seconds=STREAM_EXEC_TIMEOUT,
+                 error_message='Timeout on executing stream read/write'):
+        return stream(
+            api.connect_get_namespaced_pod_exec, pod_name, namespace,
+            command=exec_command, stderr=True, stdin=False, stdout=True,
+            tty=False)
+
+
 def get_pod_data_md5sum(api, pod_name, path):
     md5sum_command = [
         '/bin/sh', '-c', 'md5sum ' + path + " | awk '{print $1}'"
