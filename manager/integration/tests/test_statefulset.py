@@ -15,6 +15,8 @@ from common import create_and_wait_statefulset, wait_statefulset
 from common import update_statefulset_manifests, create_storage_class
 from common import create_snapshot
 
+from backupstore import set_random_backupstore # NOQA
+
 from kubernetes import client as k8sclient
 
 Gi = (1 * 1024 * 1024 * 1024)
@@ -238,7 +240,7 @@ def test_statefulset_pod_deletion(core_api, storage_class, statefulset):  # NOQA
     assert resp == test_data
 
 
-def test_statefulset_backup(client, core_api, storage_class, statefulset):  # NOQA
+def test_statefulset_backup(set_random_backupstore, client, core_api, storage_class, statefulset):  # NOQA
     """
     Test that backups on StatefulSet volumes work properly.
 
@@ -320,8 +322,7 @@ def test_statefulset_recurring_backup(client, core_api, storage_class,  # NOQA
         assert count == 3
 
 
-def test_statefulset_restore(client, core_api, storage_class,  # NOQA
-                             statefulset):  # NOQA
+def test_statefulset_restore(set_random_backupstore, client, core_api, storage_class, statefulset):  # NOQA
     """
     Test that data can be restored into volumes usable by a StatefulSet.
 
