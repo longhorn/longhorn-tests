@@ -254,7 +254,7 @@ def test_recurring_job_in_storageclass(client, core_api, storage_class, stateful
 
 
 @pytest.mark.recurring_job  # NOQA
-def test_recurring_job_labels(client, random_labels, volume_name):  # NOQA
+def test_recurring_job_labels(client, random_labels, volume_name, set_random_backupstore):  # NOQA
     """
     Test a RecurringJob with labels
 
@@ -265,10 +265,10 @@ def test_recurring_job_labels(client, random_labels, volume_name):  # NOQA
     5. Verify the recurring jobs run correctly.
     6. Verify the labels on the backup are correct.
     """
-    recurring_job_labels_test(client, random_labels, volume_name)
+    recurring_job_labels_test(client, random_labels, volume_name, set_random_backupstore)  # NOQA
 
 
-def recurring_job_labels_test(client, labels, volume_name, size=SIZE, base_image=""):  # NOQA
+def recurring_job_labels_test(client, labels, volume_name, set_random_backupstore, size=SIZE, base_image=""):  # NOQA
     host_id = get_self_host_id()
     client.create_volume(name=volume_name, size=size,
                          numberOfReplicas=2)
