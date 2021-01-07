@@ -2110,7 +2110,7 @@ def test_node_config_annotation_missing(client, core_api,  # NOQA
 
 
 @pytest.mark.node  # NOQA
-def test_replica_scheduler_rebuild_restore_is_too_big(client, set_random_backupstore):  # NOQA
+def test_replica_scheduler_rebuild_restore_is_too_big(set_random_backupstore, client):  # NOQA
     &#34;&#34;&#34;
     Test replica scheduler: rebuild/restore can be too big to fit a disk
 
@@ -5333,7 +5333,7 @@ def test_replica_scheduler_no_disks(client):  # NOQA
 </details>
 </dd>
 <dt id="tests.test_node.test_replica_scheduler_rebuild_restore_is_too_big"><code class="name flex">
-<span>def <span class="ident">test_replica_scheduler_rebuild_restore_is_too_big</span></span>(<span>client, set_random_backupstore)</span>
+<span>def <span class="ident">test_replica_scheduler_rebuild_restore_is_too_big</span></span>(<span>set_random_backupstore, client)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Test replica scheduler: rebuild/restore can be too big to fit a disk</p>
@@ -5364,7 +5364,7 @@ existing data cannot fit in the small disk</li>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">@pytest.mark.node  # NOQA
-def test_replica_scheduler_rebuild_restore_is_too_big(client, set_random_backupstore):  # NOQA
+def test_replica_scheduler_rebuild_restore_is_too_big(set_random_backupstore, client):  # NOQA
     &#34;&#34;&#34;
     Test replica scheduler: rebuild/restore can be too big to fit a disk
 

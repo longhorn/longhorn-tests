@@ -634,7 +634,7 @@ def backup_status_for_unavailable_replicas_test(client, volume_name,  # NOQA
     cleanup_volume(client, volume)
 
 
-def test_backup_block_deletion(client, core_api, volume_name, set_random_backupstore):  # NOQA
+def test_backup_block_deletion(set_random_backupstore, client, core_api, volume_name):  # NOQA
     &#34;&#34;&#34;
     Test backup block deletion
 
@@ -731,7 +731,7 @@ def test_backup_block_deletion(client, core_api, volume_name, set_random_backups
     delete_backup_volume(client, volume_name)
 
 
-def test_backup_volume_list(client, core_api, set_random_backupstore):  # NOQA
+def test_backup_volume_list(set_random_backupstore ,client, core_api):  # NOQA
     &#34;&#34;&#34;
     Test backup volume list
     Context:
@@ -813,7 +813,7 @@ def test_backup_volume_list(client, core_api, set_random_backupstore):  # NOQA
     backupstore_cleanup(client)
 
 
-def test_backup_metadata_deletion(client, core_api, volume_name, set_random_backupstore):  # NOQA
+def test_backup_metadata_deletion(set_random_backupstore, client, core_api, volume_name):  # NOQA
     &#34;&#34;&#34;
     Test backup metadata deletion
 
@@ -2013,7 +2013,7 @@ def test_expansion_basic(client, volume_name):  # NOQA
 
 
 @pytest.mark.coretest   # NOQA
-def test_restore_inc_with_expansion(client, core_api, volume_name, pod, set_random_backupstore):  # NOQA
+def test_restore_inc_with_expansion(set_random_backupstore, client, core_api, volume_name, pod):  # NOQA
     &#34;&#34;&#34;
     Test restore from disaster recovery volume with volume expansion
 
@@ -2645,7 +2645,7 @@ def test_expansion_with_scheduling_failure(
     delete_and_wait_pv(core_api, test_pv_name)
 
 
-def test_dr_volume_with_last_backup_deletion(client, core_api, csi_pv, pvc, volume_name, pod_make, set_random_backupstore):  # NOQA
+def test_dr_volume_with_last_backup_deletion(set_random_backupstore, client, core_api, csi_pv, pvc, volume_name, pod_make):  # NOQA
     &#34;&#34;&#34;
     Test if the DR volume can be activated
     after deleting the lastest backup. There are two cases to the last
@@ -2780,7 +2780,7 @@ def test_dr_volume_with_last_backup_deletion(client, core_api, csi_pv, pvc, volu
     client.delete(bv)
 
 
-def test_backup_lock_deletion_during_restoration(client, core_api, volume_name, csi_pv, pvc, pod_make, set_random_backupstore):  # NOQA
+def test_backup_lock_deletion_during_restoration(set_random_backupstore, client, core_api, volume_name, csi_pv, pvc, pod_make):  # NOQA
     &#34;&#34;&#34;
     Test backup locks
     Context:
@@ -2844,7 +2844,7 @@ def test_backup_lock_deletion_during_restoration(client, core_api, volume_name, 
     assert b is not None
 
 
-def test_backup_lock_deletion_during_backup(client, core_api, volume_name, csi_pv, pvc, pod_make, set_random_backupstore):  # NOQA
+def test_backup_lock_deletion_during_backup(set_random_backupstore, client, core_api, volume_name, csi_pv, pvc, pod_make):  # NOQA
     &#34;&#34;&#34;
     Test backup locks
     Context:
@@ -2943,7 +2943,7 @@ def test_backup_lock_deletion_during_backup(client, core_api, volume_name, csi_p
     assert std_md5sum2 == md5sum2
 
 
-def test_backup_lock_creation_during_deletion(client, core_api, volume_name, csi_pv, pvc, pod_make, set_random_backupstore):  # NOQA
+def test_backup_lock_creation_during_deletion(set_random_backupstore, client, core_api, volume_name, csi_pv, pvc, pod_make):  # NOQA
     &#34;&#34;&#34;
     Test backup locks
     Context:
@@ -3000,7 +3000,7 @@ def test_backup_lock_creation_during_deletion(client, core_api, volume_name, csi
 
 
 @pytest.mark.skip(reason=&#34;This test takes more than 20 mins to run&#34;)  # NOQA
-def test_backup_lock_restoration_during_deletion(client, core_api, volume_name, csi_pv, pvc, pod_make, set_random_backupstore):  # NOQA
+def test_backup_lock_restoration_during_deletion(set_random_backupstore, client, core_api, volume_name, csi_pv, pvc, pod_make):  # NOQA
     &#34;&#34;&#34;
     Test backup locks
     Context:
@@ -4446,7 +4446,7 @@ def test_backup(client, volume_name):  # NOQA
 </details>
 </dd>
 <dt id="tests.test_basic.test_backup_block_deletion"><code class="name flex">
-<span>def <span class="ident">test_backup_block_deletion</span></span>(<span>client, core_api, volume_name, set_random_backupstore)</span>
+<span>def <span class="ident">test_backup_block_deletion</span></span>(<span>set_random_backupstore, client, core_api, volume_name)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Test backup block deletion</p>
@@ -4487,7 +4487,7 @@ json.dumps({"Name": name, "VolumeName": volume, "CreatedTime": ""})</li>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def test_backup_block_deletion(client, core_api, volume_name, set_random_backupstore):  # NOQA
+<pre><code class="python">def test_backup_block_deletion(set_random_backupstore, client, core_api, volume_name):  # NOQA
     &#34;&#34;&#34;
     Test backup block deletion
 
@@ -4613,7 +4613,7 @@ def test_backup_labels(client, random_labels, volume_name):  # NOQA
 </details>
 </dd>
 <dt id="tests.test_basic.test_backup_lock_creation_during_deletion"><code class="name flex">
-<span>def <span class="ident">test_backup_lock_creation_during_deletion</span></span>(<span>client, core_api, volume_name, csi_pv, pvc, pod_make, set_random_backupstore)</span>
+<span>def <span class="ident">test_backup_lock_creation_during_deletion</span></span>(<span>set_random_backupstore, client, core_api, volume_name, csi_pv, pvc, pod_make)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Test backup locks
@@ -4638,7 +4638,7 @@ store.</p></div>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def test_backup_lock_creation_during_deletion(client, core_api, volume_name, csi_pv, pvc, pod_make, set_random_backupstore):  # NOQA
+<pre><code class="python">def test_backup_lock_creation_during_deletion(set_random_backupstore, client, core_api, volume_name, csi_pv, pvc, pod_make):  # NOQA
     &#34;&#34;&#34;
     Test backup locks
     Context:
@@ -4695,7 +4695,7 @@ store.</p></div>
 </details>
 </dd>
 <dt id="tests.test_basic.test_backup_lock_deletion_during_backup"><code class="name flex">
-<span>def <span class="ident">test_backup_lock_deletion_during_backup</span></span>(<span>client, core_api, volume_name, csi_pv, pvc, pod_make, set_random_backupstore)</span>
+<span>def <span class="ident">test_backup_lock_deletion_during_backup</span></span>(<span>set_random_backupstore, client, core_api, volume_name, csi_pv, pvc, pod_make)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Test backup locks
@@ -4723,7 +4723,7 @@ to prevent the following case of concurrent operations.
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def test_backup_lock_deletion_during_backup(client, core_api, volume_name, csi_pv, pvc, pod_make, set_random_backupstore):  # NOQA
+<pre><code class="python">def test_backup_lock_deletion_during_backup(set_random_backupstore, client, core_api, volume_name, csi_pv, pvc, pod_make):  # NOQA
     &#34;&#34;&#34;
     Test backup locks
     Context:
@@ -4823,7 +4823,7 @@ to prevent the following case of concurrent operations.
 </details>
 </dd>
 <dt id="tests.test_basic.test_backup_lock_deletion_during_restoration"><code class="name flex">
-<span>def <span class="ident">test_backup_lock_deletion_during_restoration</span></span>(<span>client, core_api, volume_name, csi_pv, pvc, pod_make, set_random_backupstore)</span>
+<span>def <span class="ident">test_backup_lock_deletion_during_restoration</span></span>(<span>set_random_backupstore, client, core_api, volume_name, csi_pv, pvc, pod_make)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Test backup locks
@@ -4848,7 +4848,7 @@ to prevent the following case of concurrent operations.
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def test_backup_lock_deletion_during_restoration(client, core_api, volume_name, csi_pv, pvc, pod_make, set_random_backupstore):  # NOQA
+<pre><code class="python">def test_backup_lock_deletion_during_restoration(set_random_backupstore, client, core_api, volume_name, csi_pv, pvc, pod_make):  # NOQA
     &#34;&#34;&#34;
     Test backup locks
     Context:
@@ -4913,7 +4913,7 @@ to prevent the following case of concurrent operations.
 </details>
 </dd>
 <dt id="tests.test_basic.test_backup_lock_restoration_during_deletion"><code class="name flex">
-<span>def <span class="ident">test_backup_lock_restoration_during_deletion</span></span>(<span>client, core_api, volume_name, csi_pv, pvc, pod_make, set_random_backupstore)</span>
+<span>def <span class="ident">test_backup_lock_restoration_during_deletion</span></span>(<span>set_random_backupstore, client, core_api, volume_name, csi_pv, pvc, pod_make)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Test backup locks
@@ -4940,7 +4940,7 @@ with 1 in the backup store.</p></div>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">@pytest.mark.skip(reason=&#34;This test takes more than 20 mins to run&#34;)  # NOQA
-def test_backup_lock_restoration_during_deletion(client, core_api, volume_name, csi_pv, pvc, pod_make, set_random_backupstore):  # NOQA
+def test_backup_lock_restoration_during_deletion(set_random_backupstore, client, core_api, volume_name, csi_pv, pvc, pod_make):  # NOQA
     &#34;&#34;&#34;
     Test backup locks
     Context:
@@ -5006,7 +5006,7 @@ def test_backup_lock_restoration_during_deletion(client, core_api, volume_name, 
 </details>
 </dd>
 <dt id="tests.test_basic.test_backup_metadata_deletion"><code class="name flex">
-<span>def <span class="ident">test_backup_metadata_deletion</span></span>(<span>client, core_api, volume_name, set_random_backupstore)</span>
+<span>def <span class="ident">test_backup_metadata_deletion</span></span>(<span>set_random_backupstore, client, core_api, volume_name)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Test backup metadata deletion</p>
@@ -5050,7 +5050,7 @@ even if they are corrupt or in a bad state (missing volume.cfg).</p>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def test_backup_metadata_deletion(client, core_api, volume_name, set_random_backupstore):  # NOQA
+<pre><code class="python">def test_backup_metadata_deletion(set_random_backupstore, client, core_api, volume_name):  # NOQA
     &#34;&#34;&#34;
     Test backup metadata deletion
 
@@ -5272,7 +5272,7 @@ to no longer being able to show newly created backups in the UI.</p>
 </details>
 </dd>
 <dt id="tests.test_basic.test_backup_volume_list"><code class="name flex">
-<span>def <span class="ident">test_backup_volume_list</span></span>(<span>client, core_api, set_random_backupstore)</span>
+<span>def <span class="ident">test_backup_volume_list</span></span>(<span>set_random_backupstore, client, core_api)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Test backup volume list
@@ -5309,7 +5309,7 @@ verify backup list contains no error messages for volume(1,2)
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def test_backup_volume_list(client, core_api, set_random_backupstore):  # NOQA
+<pre><code class="python">def test_backup_volume_list(set_random_backupstore ,client, core_api):  # NOQA
     &#34;&#34;&#34;
     Test backup volume list
     Context:
@@ -5475,7 +5475,7 @@ verify backup list contains no error messages for volume(1,2)
 </details>
 </dd>
 <dt id="tests.test_basic.test_dr_volume_with_last_backup_deletion"><code class="name flex">
-<span>def <span class="ident">test_dr_volume_with_last_backup_deletion</span></span>(<span>client, core_api, csi_pv, pvc, volume_name, pod_make, set_random_backupstore)</span>
+<span>def <span class="ident">test_dr_volume_with_last_backup_deletion</span></span>(<span>set_random_backupstore, client, core_api, csi_pv, pvc, volume_name, pod_make)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Test if the DR volume can be activated
@@ -5508,7 +5508,7 @@ original volume.</li>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def test_dr_volume_with_last_backup_deletion(client, core_api, csi_pv, pvc, volume_name, pod_make, set_random_backupstore):  # NOQA
+<pre><code class="python">def test_dr_volume_with_last_backup_deletion(set_random_backupstore, client, core_api, csi_pv, pvc, volume_name, pod_make):  # NOQA
     &#34;&#34;&#34;
     Test if the DR volume can be activated
     after deleting the lastest backup. There are two cases to the last
@@ -6518,7 +6518,7 @@ def test_restore_inc(client, core_api, volume_name, pod):  # NOQA
 </details>
 </dd>
 <dt id="tests.test_basic.test_restore_inc_with_expansion"><code class="name flex">
-<span>def <span class="ident">test_restore_inc_with_expansion</span></span>(<span>client, core_api, volume_name, pod, set_random_backupstore)</span>
+<span>def <span class="ident">test_restore_inc_with_expansion</span></span>(<span>set_random_backupstore, client, core_api, volume_name, pod)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Test restore from disaster recovery volume with volume expansion</p>
@@ -6550,7 +6550,7 @@ as the DR volume exists</li>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">@pytest.mark.coretest   # NOQA
-def test_restore_inc_with_expansion(client, core_api, volume_name, pod, set_random_backupstore):  # NOQA
+def test_restore_inc_with_expansion(set_random_backupstore, client, core_api, volume_name, pod):  # NOQA
     &#34;&#34;&#34;
     Test restore from disaster recovery volume with volume expansion
 

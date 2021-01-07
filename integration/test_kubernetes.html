@@ -543,7 +543,7 @@ def test_pvc_creation_with_default_sc_set(
 
 
 @pytest.mark.csi
-def test_backup_kubernetes_status(client, core_api, pod, set_random_backupstore):  # NOQA
+def test_backup_kubernetes_status(set_random_backupstore, client, core_api, pod):  # NOQA
     &#34;&#34;&#34;
     Test that Backups have KubernetesStatus stored properly when there is an
     associated PersistentVolumeClaim and Pod.
@@ -928,7 +928,7 @@ Volume.</p>
 </details>
 </dd>
 <dt id="tests.test_kubernetes.test_backup_kubernetes_status"><code class="name flex">
-<span>def <span class="ident">test_backup_kubernetes_status</span></span>(<span>client, core_api, pod, set_random_backupstore)</span>
+<span>def <span class="ident">test_backup_kubernetes_status</span></span>(<span>set_random_backupstore, client, core_api, pod)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Test that Backups have KubernetesStatus stored properly when there is an
@@ -964,7 +964,7 @@ time</li>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">@pytest.mark.csi
-def test_backup_kubernetes_status(client, core_api, pod, set_random_backupstore):  # NOQA
+def test_backup_kubernetes_status(set_random_backupstore, client, core_api, pod):  # NOQA
     &#34;&#34;&#34;
     Test that Backups have KubernetesStatus stored properly when there is an
     associated PersistentVolumeClaim and Pod.

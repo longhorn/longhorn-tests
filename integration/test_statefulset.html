@@ -43,6 +43,8 @@ from common import create_and_wait_statefulset, wait_statefulset
 from common import update_statefulset_manifests, create_storage_class
 from common import create_snapshot
 
+from backupstore import set_random_backupstore # NOQA
+
 from kubernetes import client as k8sclient
 
 Gi = (1 * 1024 * 1024 * 1024)
@@ -266,7 +268,7 @@ def test_statefulset_pod_deletion(core_api, storage_class, statefulset):  # NOQA
     assert resp == test_data
 
 
-def test_statefulset_backup(client, core_api, storage_class, statefulset):  # NOQA
+def test_statefulset_backup(set_random_backupstore, client, core_api, storage_class, statefulset):  # NOQA
     &#34;&#34;&#34;
     Test that backups on StatefulSet volumes work properly.
 
@@ -348,8 +350,7 @@ def test_statefulset_recurring_backup(client, core_api, storage_class,  # NOQA
         assert count == 3
 
 
-def test_statefulset_restore(client, core_api, storage_class,  # NOQA
-                             statefulset):  # NOQA
+def test_statefulset_restore(set_random_backupstore, client, core_api, storage_class, statefulset):  # NOQA
     &#34;&#34;&#34;
     Test that data can be restored into volumes usable by a StatefulSet.
 
@@ -561,7 +562,7 @@ located in common.py.</dd>
 </details>
 </dd>
 <dt id="tests.test_statefulset.test_statefulset_backup"><code class="name flex">
-<span>def <span class="ident">test_statefulset_backup</span></span>(<span>client, core_api, storage_class, statefulset)</span>
+<span>def <span class="ident">test_statefulset_backup</span></span>(<span>set_random_backupstore, client, core_api, storage_class, statefulset)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Test that backups on StatefulSet volumes work properly.</p>
@@ -583,7 +584,7 @@ located in common.py.</dd>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def test_statefulset_backup(client, core_api, storage_class, statefulset):  # NOQA
+<pre><code class="python">def test_statefulset_backup(set_random_backupstore, client, core_api, storage_class, statefulset):  # NOQA
     &#34;&#34;&#34;
     Test that backups on StatefulSet volumes work properly.
 
@@ -789,7 +790,7 @@ def test_statefulset_recurring_backup(client, core_api, storage_class,  # NOQA
 </details>
 </dd>
 <dt id="tests.test_statefulset.test_statefulset_restore"><code class="name flex">
-<span>def <span class="ident">test_statefulset_restore</span></span>(<span>client, core_api, storage_class, statefulset)</span>
+<span>def <span class="ident">test_statefulset_restore</span></span>(<span>set_random_backupstore, client, core_api, storage_class, statefulset)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Test that data can be restored into volumes usable by a StatefulSet.</p>
@@ -812,8 +813,7 @@ has a naming policy for what should be PVC name for them.</li>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def test_statefulset_restore(client, core_api, storage_class,  # NOQA
-                             statefulset):  # NOQA
+<pre><code class="python">def test_statefulset_restore(set_random_backupstore, client, core_api, storage_class, statefulset):  # NOQA
     &#34;&#34;&#34;
     Test that data can be restored into volumes usable by a StatefulSet.
 

@@ -84,7 +84,7 @@ def wait_until_begin_of_an_even_minute():
 
 
 @pytest.mark.recurring_job  # NOQA
-def test_recurring_job(client, volume_name, set_random_backupstore):  # NOQA
+def test_recurring_job(set_random_backupstore, client, volume_name):  # NOQA
     &#34;&#34;&#34;
     Test recurring job
 
@@ -192,7 +192,7 @@ def test_recurring_job(client, volume_name, set_random_backupstore):  # NOQA
 
 
 @pytest.mark.recurring_job  # NOQA
-def test_recurring_job_in_volume_creation(client, volume_name, set_random_backupstore):  # NOQA
+def test_recurring_job_in_volume_creation(set_random_backupstore, client, volume_name):  # NOQA
     &#34;&#34;&#34;
     Test create volume with recurring jobs
 
@@ -239,7 +239,7 @@ def test_recurring_job_in_volume_creation(client, volume_name, set_random_backup
 
 
 @pytest.mark.recurring_job  # NOQA
-def test_recurring_job_in_storageclass(client, core_api, storage_class, statefulset, set_random_backupstore):  # NOQA
+def test_recurring_job_in_storageclass(set_random_backupstore, client, core_api, storage_class, statefulset):  # NOQA
     &#34;&#34;&#34;
     Test create volume with StorageClass contains recurring jobs
 
@@ -282,7 +282,7 @@ def test_recurring_job_in_storageclass(client, core_api, storage_class, stateful
 
 
 @pytest.mark.recurring_job  # NOQA
-def test_recurring_job_labels(client, random_labels, volume_name, set_random_backupstore):  # NOQA
+def test_recurring_job_labels(set_random_backupstore, client, random_labels, volume_name):  # NOQA
     &#34;&#34;&#34;
     Test a RecurringJob with labels
 
@@ -293,10 +293,10 @@ def test_recurring_job_labels(client, random_labels, volume_name, set_random_bac
     5. Verify the recurring jobs run correctly.
     6. Verify the labels on the backup are correct.
     &#34;&#34;&#34;
-    recurring_job_labels_test(client, random_labels, volume_name, set_random_backupstore)  # NOQA
+    recurring_job_labels_test(client, random_labels, volume_name)  # NOQA
 
 
-def recurring_job_labels_test(client, labels, volume_name, set_random_backupstore, size=SIZE, base_image=&#34;&#34;):  # NOQA
+def recurring_job_labels_test(client, labels, volume_name, size=SIZE, base_image=&#34;&#34;):  # NOQA
     host_id = get_self_host_id()
     client.create_volume(name=volume_name, size=size,
                          numberOfReplicas=2)
@@ -357,7 +357,7 @@ def recurring_job_labels_test(client, labels, volume_name, set_random_backupstor
 
 @pytest.mark.csi  # NOQA
 @pytest.mark.recurring_job
-def test_recurring_job_kubernetes_status(client, core_api, volume_name, set_random_backupstore):  # NOQA
+def test_recurring_job_kubernetes_status(set_random_backupstore, client, core_api, volume_name):  # NOQA
     &#34;&#34;&#34;
     Test RecurringJob properly backs up the KubernetesStatus
 
@@ -472,7 +472,7 @@ def test_recurring_jobs_maximum_retain(client, core_api, volume_name): # NOQA
     assert volume.recurringJobs[1][&#39;retain&#39;] == 20
 
 
-def test_recurring_jobs_for_detached_volume(client, core_api, apps_api, volume_name, make_deployment_with_pvc, set_random_backupstore):  # NOQA
+def test_recurring_jobs_for_detached_volume(set_random_backupstore, client, core_api, apps_api, volume_name, make_deployment_with_pvc):  # NOQA
     &#34;&#34;&#34;
     Test recurring jobs for detached volume
 
@@ -713,7 +713,7 @@ def test_recurring_jobs_when_volume_detached_unexpectedly():  # NOQA
 </details>
 </dd>
 <dt id="tests.test_recurring_job.recurring_job_labels_test"><code class="name flex">
-<span>def <span class="ident">recurring_job_labels_test</span></span>(<span>client, labels, volume_name, set_random_backupstore, size='16777216', base_image='')</span>
+<span>def <span class="ident">recurring_job_labels_test</span></span>(<span>client, labels, volume_name, size='16777216', base_image='')</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -721,7 +721,7 @@ def test_recurring_jobs_when_volume_detached_unexpectedly():  # NOQA
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def recurring_job_labels_test(client, labels, volume_name, set_random_backupstore, size=SIZE, base_image=&#34;&#34;):  # NOQA
+<pre><code class="python">def recurring_job_labels_test(client, labels, volume_name, size=SIZE, base_image=&#34;&#34;):  # NOQA
     host_id = get_self_host_id()
     client.create_volume(name=volume_name, size=size,
                          numberOfReplicas=2)
@@ -781,7 +781,7 @@ def test_recurring_jobs_when_volume_detached_unexpectedly():  # NOQA
 </details>
 </dd>
 <dt id="tests.test_recurring_job.test_recurring_job"><code class="name flex">
-<span>def <span class="ident">test_recurring_job</span></span>(<span>client, volume_name, set_random_backupstore)</span>
+<span>def <span class="ident">test_recurring_job</span></span>(<span>set_random_backupstore, client, volume_name)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Test recurring job</p>
@@ -822,7 +822,7 @@ volume-head</li>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">@pytest.mark.recurring_job  # NOQA
-def test_recurring_job(client, volume_name, set_random_backupstore):  # NOQA
+def test_recurring_job(set_random_backupstore, client, volume_name):  # NOQA
     &#34;&#34;&#34;
     Test recurring job
 
@@ -930,7 +930,7 @@ def test_recurring_job(client, volume_name, set_random_backupstore):  # NOQA
 </details>
 </dd>
 <dt id="tests.test_recurring_job.test_recurring_job_in_storageclass"><code class="name flex">
-<span>def <span class="ident">test_recurring_job_in_storageclass</span></span>(<span>client, core_api, storage_class, statefulset, set_random_backupstore)</span>
+<span>def <span class="ident">test_recurring_job_in_storageclass</span></span>(<span>set_random_backupstore, client, core_api, storage_class, statefulset)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Test create volume with StorageClass contains recurring jobs</p>
@@ -944,7 +944,7 @@ def test_recurring_job(client, volume_name, set_random_backupstore):  # NOQA
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">@pytest.mark.recurring_job  # NOQA
-def test_recurring_job_in_storageclass(client, core_api, storage_class, statefulset, set_random_backupstore):  # NOQA
+def test_recurring_job_in_storageclass(set_random_backupstore, client, core_api, storage_class, statefulset):  # NOQA
     &#34;&#34;&#34;
     Test create volume with StorageClass contains recurring jobs
 
@@ -987,7 +987,7 @@ def test_recurring_job_in_storageclass(client, core_api, storage_class, stateful
 </details>
 </dd>
 <dt id="tests.test_recurring_job.test_recurring_job_in_volume_creation"><code class="name flex">
-<span>def <span class="ident">test_recurring_job_in_volume_creation</span></span>(<span>client, volume_name, set_random_backupstore)</span>
+<span>def <span class="ident">test_recurring_job_in_volume_creation</span></span>(<span>set_random_backupstore, client, volume_name)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Test create volume with recurring jobs</p>
@@ -1000,7 +1000,7 @@ def test_recurring_job_in_storageclass(client, core_api, storage_class, stateful
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">@pytest.mark.recurring_job  # NOQA
-def test_recurring_job_in_volume_creation(client, volume_name, set_random_backupstore):  # NOQA
+def test_recurring_job_in_volume_creation(set_random_backupstore, client, volume_name):  # NOQA
     &#34;&#34;&#34;
     Test create volume with recurring jobs
 
@@ -1047,7 +1047,7 @@ def test_recurring_job_in_volume_creation(client, volume_name, set_random_backup
 </details>
 </dd>
 <dt id="tests.test_recurring_job.test_recurring_job_kubernetes_status"><code class="name flex">
-<span>def <span class="ident">test_recurring_job_kubernetes_status</span></span>(<span>client, core_api, volume_name, set_random_backupstore)</span>
+<span>def <span class="ident">test_recurring_job_kubernetes_status</span></span>(<span>set_random_backupstore, client, core_api, volume_name)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Test RecurringJob properly backs up the KubernetesStatus</p>
@@ -1065,7 +1065,7 @@ def test_recurring_job_in_volume_creation(client, volume_name, set_random_backup
 </summary>
 <pre><code class="python">@pytest.mark.csi  # NOQA
 @pytest.mark.recurring_job
-def test_recurring_job_kubernetes_status(client, core_api, volume_name, set_random_backupstore):  # NOQA
+def test_recurring_job_kubernetes_status(set_random_backupstore, client, core_api, volume_name):  # NOQA
     &#34;&#34;&#34;
     Test RecurringJob properly backs up the KubernetesStatus
 
@@ -1142,7 +1142,7 @@ def test_recurring_job_kubernetes_status(client, core_api, volume_name, set_rand
 </details>
 </dd>
 <dt id="tests.test_recurring_job.test_recurring_job_labels"><code class="name flex">
-<span>def <span class="ident">test_recurring_job_labels</span></span>(<span>client, random_labels, volume_name, set_random_backupstore)</span>
+<span>def <span class="ident">test_recurring_job_labels</span></span>(<span>set_random_backupstore, client, random_labels, volume_name)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Test a RecurringJob with labels</p>
@@ -1159,7 +1159,7 @@ def test_recurring_job_kubernetes_status(client, core_api, volume_name, set_rand
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">@pytest.mark.recurring_job  # NOQA
-def test_recurring_job_labels(client, random_labels, volume_name, set_random_backupstore):  # NOQA
+def test_recurring_job_labels(set_random_backupstore, client, random_labels, volume_name):  # NOQA
     &#34;&#34;&#34;
     Test a RecurringJob with labels
 
@@ -1170,11 +1170,11 @@ def test_recurring_job_labels(client, random_labels, volume_name, set_random_bac
     5. Verify the recurring jobs run correctly.
     6. Verify the labels on the backup are correct.
     &#34;&#34;&#34;
-    recurring_job_labels_test(client, random_labels, volume_name, set_random_backupstore)  # NOQA</code></pre>
+    recurring_job_labels_test(client, random_labels, volume_name)  # NOQA</code></pre>
 </details>
 </dd>
 <dt id="tests.test_recurring_job.test_recurring_jobs_for_detached_volume"><code class="name flex">
-<span>def <span class="ident">test_recurring_jobs_for_detached_volume</span></span>(<span>client, core_api, apps_api, volume_name, make_deployment_with_pvc, set_random_backupstore)</span>
+<span>def <span class="ident">test_recurring_jobs_for_detached_volume</span></span>(<span>set_random_backupstore, client, core_api, apps_api, volume_name, make_deployment_with_pvc)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Test recurring jobs for detached volume</p>
@@ -1218,7 +1218,7 @@ Delete the recurring backup.
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def test_recurring_jobs_for_detached_volume(client, core_api, apps_api, volume_name, make_deployment_with_pvc, set_random_backupstore):  # NOQA
+<pre><code class="python">def test_recurring_jobs_for_detached_volume(set_random_backupstore, client, core_api, apps_api, volume_name, make_deployment_with_pvc):  # NOQA
     &#34;&#34;&#34;
     Test recurring jobs for detached volume
 
