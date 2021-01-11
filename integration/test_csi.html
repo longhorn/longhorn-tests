@@ -40,6 +40,7 @@ from common import Mi, Gi, DEFAULT_VOLUME_SIZE, EXPANDED_VOLUME_SIZE
 from common import VOLUME_RWTEST_SIZE
 from common import VOLUME_CONDITION_SCHEDULED
 from common import SETTING_REPLICA_NODE_SOFT_ANTI_AFFINITY
+from common import SETTING_REPLICA_REPLENISHMENT_WAIT_INTERVAL
 from common import create_and_wait_pod, create_pvc_spec, delete_and_wait_pod
 from common import size_to_string, create_storage_class, create_pvc
 from common import delete_and_wait_pvc, delete_and_wait_pv
@@ -506,6 +507,10 @@ def test_csi_expansion_with_replica_failure(client, core_api, storage_class, pvc
        check if the volume will reuse the failed replica during rebuilding.
     9. Validate the volume content, then check if data writing looks fine
     &#34;&#34;&#34;
+    replenish_wait_setting = \
+        client.by_id_setting(SETTING_REPLICA_REPLENISHMENT_WAIT_INTERVAL)
+    client.update(replenish_wait_setting, value=&#34;600&#34;)
+
     create_storage_class(storage_class)
 
     pod_name = &#39;csi-expansion-with-replica-failure-test&#39;
@@ -1386,6 +1391,10 @@ def test_csi_expansion_with_replica_failure(client, core_api, storage_class, pvc
        check if the volume will reuse the failed replica during rebuilding.
     9. Validate the volume content, then check if data writing looks fine
     &#34;&#34;&#34;
+    replenish_wait_setting = \
+        client.by_id_setting(SETTING_REPLICA_REPLENISHMENT_WAIT_INTERVAL)
+    client.update(replenish_wait_setting, value=&#34;600&#34;)
+
     create_storage_class(storage_class)
 
     pod_name = &#39;csi-expansion-with-replica-failure-test&#39;
