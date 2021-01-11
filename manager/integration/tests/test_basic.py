@@ -79,6 +79,8 @@ from backupstore import backupstore_create_file
 from backupstore import backupstore_delete_file
 from backupstore import set_random_backupstore # NOQA
 from backupstore import backupstore_get_backup_volume_prefix
+from backupstore import backupstore_wait_for_lock_expiration
+
 
 
 @pytest.mark.coretest   # NOQA
@@ -2952,11 +2954,11 @@ def test_backup_lock_creation_during_deletion(set_random_backupstore, client, co
     _, b1 = common.find_backup(client, std_volume_name, snap1.name)
 
     write_pod_volume_random_data(core_api, std_pod_name,
-                                 "/data/test2", DATA_SIZE_IN_MB_1)
-
-    backup_volume.backupDelete(name=b1.name)
+                                 "/data/test2", DATA_SIZE_IN_MB_2)
 
     snap2 = create_snapshot(client, std_volume_name)
+
+    backup_volume.backupDelete(name=b1.name)
 
     try:
         std_volume.snapshotBackup(name=snap2.name)
@@ -2969,6 +2971,8 @@ def test_backup_lock_creation_during_deletion(set_random_backupstore, client, co
     except AssertionError:
         b2 = None
     assert b2 is None
+
+    backupstore_wait_for_lock_expiration()
 
 
 @pytest.mark.skip(reason="This test takes more than 20 mins to run")  # NOQA

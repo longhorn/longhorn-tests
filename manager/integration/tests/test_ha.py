@@ -705,7 +705,10 @@ def test_rebuild_with_restoration(set_random_backupstore, client, core_api, volu
     original_volume = client.by_id_volume(original_volume_name)
     snap = create_snapshot(client, original_volume_name)
     original_volume.snapshotBackup(name=snap.name)
-    wait_for_backup_completion(client, original_volume_name, snap.name)
+    wait_for_backup_completion(client,
+                               original_volume_name,
+                               snap.name,
+                               retry_count=600)
     bv, b = find_backup(client, original_volume_name, snap.name)
 
     restore_volume_name = volume_name + "-restore"
@@ -932,7 +935,10 @@ def test_inc_restoration_with_multiple_rebuild_and_expansion(set_random_backupst
     std_volume = client.by_id_volume(std_volume_name)
     snap1 = create_snapshot(client, std_volume_name)
     std_volume.snapshotBackup(name=snap1.name)
-    wait_for_backup_completion(client, std_volume_name, snap1.name)
+    wait_for_backup_completion(client,
+                               std_volume_name,
+                               snap1.name,
+                               retry_count=600)
     bv, b1 = find_backup(client, std_volume_name, snap1.name)
 
     # Create the DR volume
@@ -1775,7 +1781,10 @@ def test_engine_crash_for_dr_volume(set_random_backupstore, client, core_api, vo
     snap2 = create_snapshot(client, volume_name)
     volume = client.by_id_volume(volume_name)
     volume.snapshotBackup(name=snap2.name)
-    wait_for_backup_completion(client, volume_name, snap2.name)
+    wait_for_backup_completion(client,
+                               volume_name,
+                               snap2.name,
+                               retry_count=600)
     bv, b2 = find_backup(client, volume_name, snap2.name)
 
     # Trigger the inc restore then crash the engine process immediately.
