@@ -133,7 +133,7 @@ def test_setting_toleration():
     data1 = write_volume_random_data(volume)
     check_volume_data(volume, data1)
 
-    volume.detach()
+    volume.detach(hostId="")
     wait_for_volume_detached(client, volume_name)
 
     setting = client.update(setting, value=setting_value_str)
@@ -148,7 +148,7 @@ def test_setting_toleration():
     check_volume_data(volume, data1)
     data2 = write_volume_random_data(volume)
     check_volume_data(volume, data2)
-    volume.detach()
+    volume.detach(hostId="")
     wait_for_volume_detached(client, volume_name)
 
     # cleanup
@@ -537,7 +537,7 @@ def test_setting_priority_class(core_api, apps_api, scheduling_api, priority_cla
     data1 = write_volume_random_data(volume)
     check_volume_data(volume, data1)
 
-    volume.detach()
+    volume.detach(hostId="")
     wait_for_volume_detached(client, volume_name)
 
     setting = client.update(setting, value=name)
@@ -553,7 +553,7 @@ def test_setting_priority_class(core_api, apps_api, scheduling_api, priority_cla
     check_volume_data(volume, data1)
     data2 = write_volume_random_data(volume)
     check_volume_data(volume, data2)
-    volume.detach()
+    volume.detach(hostId="")
     wait_for_volume_detached(client, volume_name)
 
     setting = client.by_id_setting(SETTING_PRIORITY_CLASS)

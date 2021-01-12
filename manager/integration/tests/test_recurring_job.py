@@ -204,7 +204,7 @@ def test_recurring_job(set_random_backupstore, client, volume_name):  # NOQA
 
     assert in_progress_backup_number == 0
 
-    volume = volume.detach()
+    volume = volume.detach(hostId="")
 
     common.wait_for_volume_detached(client, volume_name)
 
@@ -253,7 +253,7 @@ def test_recurring_job_in_volume_creation(set_random_backupstore, client, volume
 
     check_jobs1_result(volume)
 
-    volume = volume.detach()
+    volume = volume.detach(hostId="")
     common.wait_for_volume_detached(client, volume_name)
 
     client.delete(volume)
@@ -548,7 +548,7 @@ def test_recurring_jobs_for_detached_volume(set_random_backupstore, client, core
     # Give sometimes for data to flush to disk
     time.sleep(15)
 
-    vol.detach()
+    vol.detach(hostId="")
     vol = common.wait_for_volume_detached(client, vol.name)
 
     jobs = [

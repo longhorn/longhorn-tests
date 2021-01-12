@@ -239,7 +239,7 @@ def test_upgrade(upgrade_longhorn_manager_repo_url,
     delete_and_wait_pod(core_api, pod_name)
 
     volume = client.by_id_volume(volume_name)
-    volume.detach()
+    volume.detach(hostId="")
 
     volumes = client.list_volume()
     for v in volumes:

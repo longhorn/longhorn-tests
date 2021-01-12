@@ -163,7 +163,7 @@ def engine_offline_upgrade_test(client, core_api, volume_name, backing_image="")
 
     data = write_volume_random_data(volume)
 
-    volume = volume.detach()
+    volume = volume.detach(hostId="")
     volume = common.wait_for_volume_detached(client, volume_name)
 
     volume.engineUpgrade(image=engine_upgrade_image)
@@ -189,7 +189,7 @@ def engine_offline_upgrade_test(client, core_api, volume_name, backing_image="")
 
     check_volume_data(volume, data)
 
-    volume = volume.detach()
+    volume = volume.detach(hostId="")
     volume = common.wait_for_volume_detached(client, volume_name)
 
     volume.engineUpgrade(image=original_engine_image)
@@ -318,7 +318,7 @@ def engine_live_upgrade_test(client, core_api, volume_name, backing_image=""):  
 
     check_volume_data(volume, data)
 
-    volume.detach()
+    volume.detach(hostId="")
     volume = common.wait_for_volume_detached(client, volume_name)
     assert len(volume.replicas) == REPLICA_COUNT
     assert volume.engineImage == engine_upgrade_image
@@ -365,7 +365,7 @@ def engine_live_upgrade_test(client, core_api, volume_name, backing_image=""):  
 
     check_volume_data(volume, data)
 
-    volume.detach()
+    volume.detach(hostId="")
     volume = common.wait_for_volume_detached(client, volume_name)
     assert len(volume.replicas) == REPLICA_COUNT
 
@@ -531,7 +531,7 @@ def engine_live_upgrade_rollback_test(client, core_api, volume_name, backing_ima
         wait_for_volume_current_image(client, volume_name,
                                       wrong_engine_upgrade_image)
 
-    volume.detach()
+    volume.detach(hostId="")
     volume = wait_for_volume_current_image(client, volume_name,
                                            wrong_engine_upgrade_image)
     # all the images would be updated

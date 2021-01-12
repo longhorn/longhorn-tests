@@ -335,7 +335,7 @@ def create_volume(client, vol_name, size, node_id, r_num):  # NOQA
 
 def cleanup_volume(client, vol_name):  # NOQA
     volume = client.by_id_volume(vol_name)
-    volume.detach()
+    volume.detach(hostId="")
     client.delete(volume)
     common.wait_for_volume_delete(client, vol_name)
 
@@ -2273,7 +2273,7 @@ def test_disk_migration(client):  # NOQA
     data = common.write_volume_random_data(volume)
     common.check_volume_data(volume, data)
 
-    volume.detach()
+    volume.detach(hostId="")
     volume = common.wait_for_volume_detached(client, vol_name)
 
     # Mount the volume disk to another path
