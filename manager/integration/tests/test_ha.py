@@ -373,7 +373,7 @@ def ha_backup_deletion_recovery_test(client, volume_name, size, backing_image=""
 
         ha_rebuild_replica_test(client, res_name)
 
-        res_volume = res_volume.detach()
+        res_volume = res_volume.detach(hostId="")
         res_volume = common.wait_for_volume_detached(client, res_name)
 
         client.delete(res_volume)

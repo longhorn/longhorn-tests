@@ -155,7 +155,7 @@ def test_soft_anti_affinity_detach(client, volume_name):  # NOQA
     volume.replicaRemove(name=host_replica.name)
     wait_new_replica_ready(client, volume_name, replica_names)
     volume = wait_for_volume_healthy(client, volume_name)
-    volume.detach()
+    volume.detach(hostId="")
     volume = wait_for_volume_detached(client, volume_name)
     assert len(volume.replicas) == 3
 
@@ -259,7 +259,7 @@ def test_hard_anti_affinity_detach(client, volume_name):  # NOQA
     volume.replicaRemove(name=host_replica.name)
     volume = wait_for_volume_degraded(client, volume_name)
     wait_scheduling_failure(client, volume_name)
-    volume.detach()
+    volume.detach(hostId="")
     volume = wait_for_volume_detached(client, volume_name)
     assert len(volume.replicas) == 2
 
@@ -363,7 +363,7 @@ def test_hard_anti_affinity_offline_rebuild(client, volume_name):  # NOQA
     volume.replicaRemove(name=host_replica.name)
     volume = wait_for_volume_degraded(client, volume_name)
     wait_scheduling_failure(client, volume_name)
-    volume.detach()
+    volume.detach(hostId="")
     volume = wait_for_volume_detached(client, volume_name)
     client.update(node, allowScheduling=True)
     volume.attach(hostId=host_id)

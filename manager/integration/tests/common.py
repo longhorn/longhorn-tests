@@ -257,7 +257,7 @@ def cleanup_volume(client, volume):
     :param client: The Longhorn client to use in the request.
     :param volume: The volume to clean up.
     """
-    volume.detach()
+    volume.detach(hostId="")
     volume = wait_for_volume_detached(client, volume.name)
     client.delete(volume)
     wait_for_volume_delete(client, volume.name)
@@ -1861,7 +1861,7 @@ def check_volume_data(volume, data, check_checksum=True):
 
 def write_volume_random_data(volume, position={}):
     dev = get_volume_endpoint(volume)
-    return write_device_random_data(dev, position={})
+    return write_device_random_data(dev, position=position)
 
 
 def check_device_data(dev, data, check_checksum=True):
@@ -2314,16 +2314,6 @@ def check_volume_endpoint(v):
     return endpoint
 
 
-def get_volume_attached_nodes(v):
-    nodes = []
-    engines = v.controllers
-    for e in engines:
-        node = e.hostId
-        if node != "":
-            nodes.append(node)
-    return nodes
-
-
 def wait_for_backup_completion(client, volume_name, snapshot_name=None,
                                retry_count=RETRY_BACKUP_COUNTS):
     completed = False
@@ -2429,17 +2419,13 @@ def monitor_restore_progress(client, volume_name):
 
 
 def wait_for_volume_migration_ready(client, volume_name):
+    ready = False
     for i in range(RETRY_COUNTS):
         v = client.by_id_volume(volume_name)
         engines = v.controllers
-        ready = True
-        if len(engines) == 2:
-            for e in v.controllers:
-                if e.endpoint == "":
-                    ready = False
-                    break
-        else:
-            ready = False
+        ready = len(engines) == 2
+        for e in engines:
+            ready = ready and e.endpoint != ""
         if ready:
             break
         time.sleep(RETRY_INTERVAL)
@@ -2448,6 +2434,7 @@ def wait_for_volume_migration_ready(client, volume_name):
 
 
 def wait_for_volume_migration_node(client, volume_name, node_id):
+    ready = False
     for i in range(RETRY_COUNTS):
         v = client.by_id_volume(volume_name)
         engines = v.controllers
@@ -2455,10 +2442,11 @@ def wait_for_volume_migration_node(client, volume_name, node_id):
         if len(engines) == 1 and len(replicas) == v.numberOfReplicas:
             e = engines[0]
             if e.endpoint != "":
+                assert e.hostId == node_id
+                ready = True
                 break
         time.sleep(RETRY_INTERVAL)
-    assert e.hostId == node_id
-    assert e.endpoint != ""
+    assert ready
     return v
 
 
@@ -3774,7 +3762,7 @@ def expand_attached_volume(client, volume_name):
     volume = wait_for_volume_healthy(client, volume_name)
     engine = get_volume_engine(volume)
 
-    volume.detach()
+    volume.detach(hostId="")
     volume = wait_for_volume_detached(client, volume.name)
     volume.expand(size=EXPAND_SIZE)
     wait_for_volume_expansion(client, volume.name)
