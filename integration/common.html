@@ -643,6 +643,30 @@ def read_pod_block_volume_data(api, pod_name, data_size, offset, device_path):
             tty=False)
 
 
+def exec_command_in_pod(api, command, pod_name, namespace):
+    &#34;&#34;&#34;
+    Execute command in the pod.
+    Args:
+        api: An instance of CoreV1API.
+        pod_name: The name of the Pod.
+        command: The command to execute in the pod.
+        namespace: The namespace where the pod exists.
+    Returns:
+        The output of the command.
+    &#34;&#34;&#34;
+    exec_command = [
+        &#39;/bin/sh&#39;,
+        &#39;-c&#39;,
+        command
+    ]
+    with timeout(seconds=STREAM_EXEC_TIMEOUT,
+                 error_message=&#39;Timeout on executing stream read/write&#39;):
+        return stream(
+            api.connect_get_namespaced_pod_exec, pod_name, namespace,
+            command=exec_command, stderr=True, stdin=False, stdout=True,
+            tty=False)
+
+
 def get_pod_data_md5sum(api, pod_name, path):
     md5sum_command = [
         &#39;/bin/sh&#39;, &#39;-c&#39;, &#39;md5sum &#39; + path + &#34; | awk &#39;{print $1}&#39;&#34;
@@ -5490,6 +5514,52 @@ def disable_auto_salvage(client):
     assert setting.value == &#34;true&#34;</code></pre>
 </details>
 </dd>
+<dt id="tests.common.exec_command_in_pod"><code class="name flex">
+<span>def <span class="ident">exec_command_in_pod</span></span>(<span>api, command, pod_name, namespace)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Execute command in the pod.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>api</code></strong></dt>
+<dd>An instance of CoreV1API.</dd>
+<dt><strong><code>pod_name</code></strong></dt>
+<dd>The name of the Pod.</dd>
+<dt><strong><code>command</code></strong></dt>
+<dd>The command to execute in the pod.</dd>
+<dt><strong><code>namespace</code></strong></dt>
+<dd>The namespace where the pod exists.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>The output of the command.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def exec_command_in_pod(api, command, pod_name, namespace):
+    &#34;&#34;&#34;
+    Execute command in the pod.
+    Args:
+        api: An instance of CoreV1API.
+        pod_name: The name of the Pod.
+        command: The command to execute in the pod.
+        namespace: The namespace where the pod exists.
+    Returns:
+        The output of the command.
+    &#34;&#34;&#34;
+    exec_command = [
+        &#39;/bin/sh&#39;,
+        &#39;-c&#39;,
+        command
+    ]
+    with timeout(seconds=STREAM_EXEC_TIMEOUT,
+                 error_message=&#39;Timeout on executing stream read/write&#39;):
+        return stream(
+            api.connect_get_namespaced_pod_exec, pod_name, namespace,
+            command=exec_command, stderr=True, stdin=False, stdout=True,
+            tty=False)</code></pre>
+</details>
+</dd>
 <dt id="tests.common.exec_instance_manager"><code class="name flex">
 <span>def <span class="ident">exec_instance_manager</span></span>(<span>api, im_name, cmd)</span>
 </code></dt>
@@ -9835,6 +9905,7 @@ volume. Trigger a failed assertion of one is detected.
 <li><code><a title="tests.common.dev_read" href="#tests.common.dev_read">dev_read</a></code></li>
 <li><code><a title="tests.common.dev_write" href="#tests.common.dev_write">dev_write</a></code></li>
 <li><code><a title="tests.common.disable_auto_salvage" href="#tests.common.disable_auto_salvage">disable_auto_salvage</a></code></li>
+<li><code><a title="tests.common.exec_command_in_pod" href="#tests.common.exec_command_in_pod">exec_command_in_pod</a></code></li>
 <li><code><a title="tests.common.exec_instance_manager" href="#tests.common.exec_instance_manager">exec_instance_manager</a></code></li>
 <li><code><a title="tests.common.exec_nsenter" href="#tests.common.exec_nsenter">exec_nsenter</a></code></li>
 <li><code><a title="tests.common.expand_and_wait_for_pvc" href="#tests.common.expand_and_wait_for_pvc">expand_and_wait_for_pvc</a></code></li>
