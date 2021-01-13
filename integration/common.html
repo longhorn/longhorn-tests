@@ -250,6 +250,11 @@ def get_version_api_client():
     return k8sclient.VersionApi()
 
 
+def get_custom_object_api_client():
+    load_k8s_config()
+    return k8sclient.CustomObjectsApi()
+
+
 def get_longhorn_api_client():
     for i in range(RETRY_COUNTS):
         try:
@@ -5909,6 +5914,20 @@ been completed successfully</p></div>
     return k8sclient.CoreV1Api()</code></pre>
 </details>
 </dd>
+<dt id="tests.common.get_custom_object_api_client"><code class="name flex">
+<span>def <span class="ident">get_custom_object_api_client</span></span>(<span>)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_custom_object_api_client():
+    load_k8s_config()
+    return k8sclient.CustomObjectsApi()</code></pre>
+</details>
+</dd>
 <dt id="tests.common.get_default_engine_image"><code class="name flex">
 <span>def <span class="ident">get_default_engine_image</span></span>(<span>client)</span>
 </code></dt>
@@ -9836,6 +9855,7 @@ volume. Trigger a failed assertion of one is detected.
 <li><code><a title="tests.common.get_clients" href="#tests.common.get_clients">get_clients</a></code></li>
 <li><code><a title="tests.common.get_compatibility_test_image" href="#tests.common.get_compatibility_test_image">get_compatibility_test_image</a></code></li>
 <li><code><a title="tests.common.get_core_api_client" href="#tests.common.get_core_api_client">get_core_api_client</a></code></li>
+<li><code><a title="tests.common.get_custom_object_api_client" href="#tests.common.get_custom_object_api_client">get_custom_object_api_client</a></code></li>
 <li><code><a title="tests.common.get_default_engine_image" href="#tests.common.get_default_engine_image">get_default_engine_image</a></code></li>
 <li><code><a title="tests.common.get_deployment_pod_names" href="#tests.common.get_deployment_pod_names">get_deployment_pod_names</a></code></li>
 <li><code><a title="tests.common.get_device_checksum" href="#tests.common.get_device_checksum">get_device_checksum</a></code></li>
