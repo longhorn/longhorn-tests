@@ -20,7 +20,7 @@ RUN wget -q https://storage.googleapis.com/kubernetes-release/release/$KUBECTL_V
     unzip terraform_${TERRAFORM_VERSION}_linux_amd64.zip && rm terraform_${TERRAFORM_VERSION}_linux_amd64.zip && \
     mv terraform /usr/bin/terraform && \
     chmod +x /usr/bin/terraform && \
-    apk add openssh-client ca-certificates git rsync && \
+    apk add openssh-client ca-certificates git rsync bash && \
     ssh-keygen -t rsa -b 4096 -N "" -f ~/.ssh/id_rsa
 
 

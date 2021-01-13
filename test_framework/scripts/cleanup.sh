@@ -1,4 +1,4 @@
-#!/usr/bin/env ash
+#!/usr/bin/env bash
 
 # terminate any terraform processes
 TERRAFORM_PIDS="`ps aux | grep -i terraform | grep -v grep | awk {'print $1'} | tr \"\n\" \" \" `" 
