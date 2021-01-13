@@ -1,4 +1,4 @@
-#!/usr/bin/env ash
+#!/usr/bin/env bash
 
 set  -x
 
@@ -33,7 +33,7 @@ check_longhorn_status() {
 
 install_csi_snapshotter_crds(){                                                 
     git clone --single-branch --branch "master" "https://github.com/kubernetes-csi/external-snapshotter.git" /tmp/k8s-csi-external-snapshotter
-    kubectl apply -f /tmp/k8s-csi-external-snapshotter/client/config/crd \      
+    kubectl apply -f /tmp/k8s-csi-external-snapshotter/client/config/crd \
                   -f /tmp/k8s-csi-external-snapshotter/deploy/kubernetes/snapshot-controller
 }  
 
