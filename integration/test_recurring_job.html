@@ -135,14 +135,14 @@ def test_recurring_job(set_random_backupstore, client, volume_name):  # NOQA
 
     # wait until the beginning of an even minute
     wait_until_begin_of_an_even_minute()
-    # wait until the 10th second of an even minute
+    # wait until the 20th second of an even minute
     # make sure that snapshot job happens before the backup job
-    time.sleep(10)
+    time.sleep(20)
 
     write_volume_random_data(volume)
-    time.sleep(150)  # 2.5 minutes
+    time.sleep(120)  # 2 minutes
     write_volume_random_data(volume)
-    time.sleep(150)  # 2.5 minutes
+    time.sleep(120)  # 2 minutes
 
     check_jobs1_result(volume)
 
@@ -151,9 +151,9 @@ def test_recurring_job(set_random_backupstore, client, volume_name):  # NOQA
     volume.recurringUpdate(jobs=[jobs[0], job_backup2])
 
     write_volume_random_data(volume)
-    time.sleep(150)  # 2.5 minutes
+    time.sleep(120)  # 2 minutes
     write_volume_random_data(volume)
-    time.sleep(150)  # 2.5 minutes
+    time.sleep(120)  # 2 minutes
 
     snapshots = volume.snapshotList()
     count = 0
@@ -873,14 +873,14 @@ def test_recurring_job(set_random_backupstore, client, volume_name):  # NOQA
 
     # wait until the beginning of an even minute
     wait_until_begin_of_an_even_minute()
-    # wait until the 10th second of an even minute
+    # wait until the 20th second of an even minute
     # make sure that snapshot job happens before the backup job
-    time.sleep(10)
+    time.sleep(20)
 
     write_volume_random_data(volume)
-    time.sleep(150)  # 2.5 minutes
+    time.sleep(120)  # 2 minutes
     write_volume_random_data(volume)
-    time.sleep(150)  # 2.5 minutes
+    time.sleep(120)  # 2 minutes
 
     check_jobs1_result(volume)
 
@@ -889,9 +889,9 @@ def test_recurring_job(set_random_backupstore, client, volume_name):  # NOQA
     volume.recurringUpdate(jobs=[jobs[0], job_backup2])
 
     write_volume_random_data(volume)
-    time.sleep(150)  # 2.5 minutes
+    time.sleep(120)  # 2 minutes
     write_volume_random_data(volume)
-    time.sleep(150)  # 2.5 minutes
+    time.sleep(120)  # 2 minutes
 
     snapshots = volume.snapshotList()
     count = 0
