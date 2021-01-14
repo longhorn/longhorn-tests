@@ -16,6 +16,7 @@ from common import wait_delete_pod, wait_for_pod_remount
 from common import get_core_api_client, write_pod_volume_random_data
 from common import create_pvc_spec, make_deployment_with_pvc  # NOQA
 from common import core_api, statefulset, pvc, pod, client  # NOQA
+from backupstore import set_random_backupstore # NOQA
 from multiprocessing import Pool
 
 import time
@@ -449,7 +450,7 @@ def test_rwx_deployment_with_multi_pods(core_api, pvc, make_deployment_with_pvc)
     assert test_data_2 == share_manager_data_2
 
 
-def test_restore_rwo_volume_to_rwx(client, core_api, volume_name, pvc, csi_pv, pod_make, make_deployment_with_pvc):  # NOQA
+def test_restore_rwo_volume_to_rwx(set_random_backupstore, client, core_api, volume_name, pvc, csi_pv, pod_make, make_deployment_with_pvc):  # NOQA
     """
     Test restoring a rwo to a rwx volume.
 
