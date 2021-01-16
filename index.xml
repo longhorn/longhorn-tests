@@ -392,6 +392,17 @@ Test steps:
     </item>
     
     <item>
+      <title>Test Snapshot Purge Error Handling</title>
+      <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/snapshot-purge-error-handling/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/snapshot-purge-error-handling/</guid>
+      <description>Related issue https://github.com/longhorn/longhorn/issues/1895
+Longhorn v1.1.1 handles the error during snapshot purge better and reports to Longhorn-manager.
+Scenario-1  Create a volume with 3 replicas and attach to a pod. Write some data into the volume and take a snapshot. Delete a replica that will result in creating a system generated snapshot. Wait for replica to finish and take another snapshot. ssh into a node and resize the latest snapshot. (e.g dd if=/dev/urandom count=50 bs=1M of=&amp;lt;SNAPSHOT-NAME&amp;gt;.</description>
+    </item>
+    
+    <item>
       <title>Test uninstallation</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/uninstallation/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
