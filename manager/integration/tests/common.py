@@ -33,9 +33,11 @@ DEV_PATH = "/dev/longhorn/"
 VOLUME_RWTEST_SIZE = 512
 VOLUME_INVALID_POS = -1
 
-BACKING_IMAGE_NAME = "backing-image-test"
-BACKING_IMAGE_URL = "https://docs.google.com/uc\\?export\\=download\\&id\\=" \
-                    "1DYFLg2mteBtba_wBBMITee4SeYocffkK"
+BACKING_IMAGE_NAME = "bi-test"
+BACKING_IMAGE_QCOW2_URL = \
+    "https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2"
+BACKING_IMAGE_RAW_URL = \
+    "https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.raw"
 BACKING_IMAGE_EXT4_SIZE = 32 * Mi
 
 PORT = ":9500"
@@ -149,6 +151,8 @@ SETTING_STORAGE_OVER_PROVISIONING_PERCENTAGE = \
 SETTING_STORAGE_MINIMAL_AVAILABLE_PERCENTAGE = \
     "storage-minimal-available-percentage"
 SETTING_TAINT_TOLERATION = "taint-toleration"
+SETTING_BACKING_IMAGE_CLEANUP_WAIT_INTERVAL = \
+    "backing-image-cleanup-wait-interval"
 
 CSI_UNKNOWN = 0
 CSI_TRUE = 1
@@ -257,6 +261,31 @@ def cleanup_volume(client, volume):
     volume = wait_for_volume_detached(client, volume.name)
     client.delete(volume)
     wait_for_volume_delete(client, volume.name)
+    volumes = client.list_volume()
+    assert len(volumes) == 0
+
+
+def cleanup_all_volumes(client):
+    """
+    Clean up all volumes
+    :param client: The Longhorn client to use in the request.
+    """
+
+    volumes = client.list_volume()
+    for v in volumes:
+        # ignore the error when clean up
+        try:
+            client.delete(v)
+        except Exception as e:
+            print("\nException when cleanup volume ", v)
+            print(e)
+            pass
+    for i in range(RETRY_COUNTS):
+        volumes = client.list_volume()
+        if len(volumes) == 0:
+            break
+        time.sleep(RETRY_INTERVAL)
+
     volumes = client.list_volume()
     assert len(volumes) == 0
 
@@ -903,8 +932,7 @@ def apps_api(request):
     return apps_api
 
 
-@pytest.fixture
-def csi_pv(request):
+def get_pv_manifest(request):
     volume_name = generate_volume_name()
     pv_manifest = {
         'apiVersion': 'v1',
@@ -946,17 +974,31 @@ def csi_pv(request):
 
 
 @pytest.fixture
+def csi_pv(request):
+    return get_pv_manifest(request)
+
+
+@pytest.fixture
 def csi_pv_backingimage(request):
-    pv_manifest = csi_pv(request)
+    pv_manifest = get_pv_manifest(request)
     pv_manifest['spec']['capacity']['storage'] = \
         size_to_string(BACKING_IMAGE_EXT4_SIZE)
     pv_manifest['spec']['csi']['volumeAttributes']['backingImage'] = \
         BACKING_IMAGE_NAME
+
+    def finalizer():
+        api = get_core_api_client()
+        delete_and_wait_pv(api, pv_manifest['metadata']['name'])
+
+        client = get_longhorn_api_client()
+        delete_and_wait_longhorn(client, pv_manifest['metadata']['name'])
+
+    request.addfinalizer(finalizer)
+
     return pv_manifest
 
 
-@pytest.fixture
-def pvc(request):
+def get_pvc_manifest(request):
     pvc_manifest = {
         'apiVersion': 'v1',
         'kind': 'PersistentVolumeClaim',
@@ -1002,8 +1044,13 @@ def pvc(request):
 
 
 @pytest.fixture
+def pvc(request):
+    return get_pvc_manifest(request)
+
+
+@pytest.fixture
 def pvc_backingimage(request):
-    pvc_manifest = pvc(request)
+    pvc_manifest = get_pvc_manifest(request)
     pvc_manifest['spec']['resources']['requests']['storage'] = \
         size_to_string(BACKING_IMAGE_EXT4_SIZE)
     return pvc_manifest
@@ -1250,15 +1297,9 @@ def cleanup_client():
     # cleanup test disks
     cleanup_test_disks(client)
 
-    volumes = client.list_volume()
-    for v in volumes:
-        # ignore the error when clean up
-        try:
-            client.delete(v)
-        except Exception as e:
-            print("\nException when cleanup volume ", v)
-            print(e)
-            pass
+    cleanup_all_volumes(client)
+
+    cleanup_all_backing_images(client)
 
     # enable nodes scheduling
     reset_node(client)
@@ -2694,6 +2735,16 @@ def reset_settings(client):
               recurring_job_setting)
         print(e)
 
+    bi_cleanup_setting = \
+        client.by_id_setting(SETTING_BACKING_IMAGE_CLEANUP_WAIT_INTERVAL)
+    try:
+        client.update(bi_cleanup_setting, value="60")
+    except Exception as e:
+        print("\nException when update "
+              "Backing Image Cleanup Wait Interval setting",
+              bi_cleanup_setting)
+        print(e)
+
     instance_managers = client.list_instance_manager()
     core_api = get_core_api_client()
     # Wait for the current instance manager running
@@ -3939,3 +3990,71 @@ def assert_backup_state(b_actual, b_expected):
     assert b_expected.volumeSize == b_actual.volumeSize
     assert b_expected.volumeCreated == b_actual.volumeCreated
     assert b_expected.messages == b_actual.messages is None
+
+
+def create_backing_image_with_matching_url(client, name, url):
+    backing_images = client.list_backing_image()
+    found = False
+    for bi in backing_images:
+        if bi.name == name:
+            found = True
+            break
+    if found:
+        if bi.imageURL != url:
+            client.delete(bi)
+            bi = client.by_id_backing_image(name=name)
+        if bi.deletionTimestamp != "":
+            wait_for_backing_image_delete(client, bi.name)
+            found = False
+    if not found:
+        bi = client.create_backing_image(name=name, imageURL=url)
+    assert bi
+    return bi
+
+
+def wait_for_backing_image_disk_cleanup(client, bi_name, disk_id):
+    found = False
+    for i in range(RETRY_COUNTS):
+        found = False
+        bi = client.by_id_backing_image(bi_name)
+        for disk, state in iter(bi.diskStateMap.items()):
+            if disk == disk_id:
+                found = True
+                break
+        if not found:
+            break
+        time.sleep(RETRY_INTERVAL)
+    assert not found
+    return bi
+
+
+def wait_for_backing_image_delete(client, name):
+    found = False
+    for i in range(RETRY_COUNTS):
+        bi_list = client.list_backing_image()
+        found = False
+        for bi in bi_list:
+            if bi.name == name:
+                found = True
+                break
+        if not found:
+            break
+        time.sleep(RETRY_INTERVAL)
+    assert not found
+
+
+def cleanup_all_backing_images(client):
+    backing_images = client.list_backing_image()
+    for bi in backing_images:
+        try:
+            client.delete(bi)
+        except Exception as e:
+            print("\nException when cleanup backing image ", bi)
+            print(e)
+            pass
+    for i in range(RETRY_COUNTS):
+        backing_images = client.list_backing_image()
+        if len(backing_images) == 0:
+            break
+        time.sleep(RETRY_INTERVAL)
+    assert len(client.list_backing_image()) == 0

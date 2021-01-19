@@ -324,7 +324,7 @@ def test_recurring_job_labels(set_random_backupstore, client, random_labels, vol
 def recurring_job_labels_test(client, labels, volume_name, size=SIZE, backing_image=""):  # NOQA
     host_id = get_self_host_id()
     client.create_volume(name=volume_name, size=size,
-                         numberOfReplicas=2)
+                         numberOfReplicas=2, backingImage=backing_image)
     volume = common.wait_for_volume_detached(client, volume_name)
 
     # Simple Backup Job that runs every 1 minute, retains 1.
@@ -372,9 +372,9 @@ def recurring_job_labels_test(client, labels, volume_name, size=SIZE, backing_im
     # One extra Label from RecurringJob.
     assert len(b.labels) == len(labels) + 1
     if backing_image:
-        assert b.backingImageName == \
+        assert b.volumeBackingImageName == \
                backing_image
-        assert b.backingImageURL != ""
+        assert b.volumeBackingImageURL != ""
 
     cleanup_volume(client, volume)
 
