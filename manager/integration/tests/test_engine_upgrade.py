@@ -120,7 +120,7 @@ def test_engine_offline_upgrade(client, core_api, volume_name):  # NOQA
     engine_offline_upgrade_test(client, core_api, volume_name)
 
 
-def engine_offline_upgrade_test(client, core_api, volume_name, base_image=""):  # NOQA
+def engine_offline_upgrade_test(client, core_api, volume_name, backing_image=""):  # NOQA
     default_img = common.get_default_engine_image(client)
     default_img_name = default_img.name
     default_img = wait_for_engine_image_ref_count(client, default_img_name, 0)
@@ -145,7 +145,7 @@ def engine_offline_upgrade_test(client, core_api, volume_name, base_image=""):  
 
     volume = client.create_volume(name=volume_name, size=SIZE,
                                   numberOfReplicas=REPLICA_COUNT,
-                                  baseImage=base_image)
+                                  backingImage=backing_image)
     volume = common.wait_for_volume_detached(client, volume_name)
     default_img = wait_for_engine_image_ref_count(client, default_img_name, 1)
 
@@ -154,7 +154,7 @@ def engine_offline_upgrade_test(client, core_api, volume_name, base_image=""):  
     assert volume.name == volume_name
     assert volume.engineImage == original_engine_image
     assert volume.currentImage == original_engine_image
-    assert volume.baseImage == base_image
+    assert volume.backingImage == backing_image
 
     # Before our upgrade, write data to the volume first.
     host_id = get_self_host_id()
@@ -250,7 +250,7 @@ def test_engine_live_upgrade(client, core_api, volume_name):  # NOQA
     engine_live_upgrade_test(client, core_api, volume_name)
 
 
-def engine_live_upgrade_test(client, core_api, volume_name, base_image=""):  # NOQA
+def engine_live_upgrade_test(client, core_api, volume_name, backing_image=""):  # NOQA
     default_img = common.get_default_engine_image(client)
     default_img_name = default_img.name
     default_img = wait_for_engine_image_ref_count(client, default_img_name, 0)
@@ -274,12 +274,12 @@ def engine_live_upgrade_test(client, core_api, volume_name, base_image=""):  # N
     default_img_name = default_img.name
 
     client.create_volume(name=volume_name, size=SIZE,
-                         numberOfReplicas=2, baseImage=base_image)
+                         numberOfReplicas=2, backingImage=backing_image)
     volume = common.wait_for_volume_detached(client, volume_name)
     wait_for_engine_image_ref_count(client, default_img_name, 1)
 
     assert volume.name == volume_name
-    assert volume.baseImage == base_image
+    assert volume.backingImage == backing_image
 
     original_engine_image = volume.engineImage
     assert original_engine_image != engine_upgrade_image
@@ -453,7 +453,7 @@ def test_engine_live_upgrade_rollback(client, core_api, volume_name):  # NOQA
     engine_live_upgrade_rollback_test(client, core_api, volume_name)
 
 
-def engine_live_upgrade_rollback_test(client, core_api, volume_name, base_image=""):  # NOQA
+def engine_live_upgrade_rollback_test(client, core_api, volume_name, backing_image=""):  # NOQA
     default_img = common.get_default_engine_image(client)
     default_img_name = default_img.name
     default_img = wait_for_engine_image_ref_count(client, default_img_name, 0)
@@ -477,10 +477,10 @@ def engine_live_upgrade_rollback_test(client, core_api, volume_name, base_image=
     default_img_name = default_img.name
 
     client.create_volume(name=volume_name, size=SIZE,
-                         numberOfReplicas=2, baseImage=base_image)
+                         numberOfReplicas=2, backingImage=backing_image)
     volume = common.wait_for_volume_detached(client, volume_name)
     wait_for_engine_image_ref_count(client, default_img_name, 1)
-    assert volume.baseImage == base_image
+    assert volume.backingImage == backing_image
 
     original_engine_image = volume.engineImage
     assert original_engine_image != wrong_engine_upgrade_image
