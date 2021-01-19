@@ -33,8 +33,10 @@ DEV_PATH = "/dev/longhorn/"
 VOLUME_RWTEST_SIZE = 512
 VOLUME_INVALID_POS = -1
 
-BASE_IMAGE_EXT4 = "rancher/longhorn-test:baseimage-ext4"
-BASE_IMAGE_EXT4_SIZE = 32 * Mi
+BACKING_IMAGE_NAME = "backing-image-test"
+BACKING_IMAGE_URL = "https://docs.google.com/uc\\?export\\=download\\&id\\=" \
+                    "1DYFLg2mteBtba_wBBMITee4SeYocffkK"
+BACKING_IMAGE_EXT4_SIZE = 32 * Mi
 
 PORT = ":9500"
 
@@ -152,7 +154,6 @@ CSI_UNKNOWN = 0
 CSI_TRUE = 1
 CSI_FALSE = 2
 
-BASE_IMAGE_LABEL = "ranchervm-base-image"
 KUBERNETES_STATUS_LABEL = "KubernetesStatus"
 
 # https://github.com/kubernetes/kubernetes/blob/a9f0db16614ae62563ead2018f1692407bd93d8f/pkg/apis/scheduling/types.go#L29  # NOQA
@@ -294,7 +295,7 @@ def create_backup(client, volname, data={}, labels={}):
     assert verified
 
     # Don't directly compare the Label dictionaries, since the server could
-    # have added extra Labels (for things like BaseImage).
+    # have added extra Labels.
     for key, val in iter(labels.items()):
         assert new_b.labels.get(key) == val
 
@@ -318,8 +319,9 @@ def delete_backup_volume(client, volume_name):
     wait_for_backup_volume_delete(client, volume_name)
 
 
-def create_and_check_volume(client, volume_name, num_of_replicas=3, size=SIZE,
-                            base_image="", frontend=VOLUME_FRONTEND_BLOCKDEV):
+def create_and_check_volume(client, volume_name,
+                            num_of_replicas=3, size=SIZE, backing_image="",
+                            frontend=VOLUME_FRONTEND_BLOCKDEV):
     """
     Create a new volume with the specified parameters. Assert that the new
     volume is detached and that all of the requested parameters match.
@@ -329,19 +331,19 @@ def create_and_check_volume(client, volume_name, num_of_replicas=3, size=SIZE,
     :param num_of_replicas: The number of replicas the volume should have.
     :param size: The size of the volume, as a string representing the number
     of bytes.
-    :param base_image: The base image to use for the volume.
+    :param backing_image: The backing image to use for the volume.
     :param frontend: The frontend to use for the volume.
     :return: The volume instance created.
     """
     client.create_volume(name=volume_name, size=size,
                          numberOfReplicas=num_of_replicas,
-                         baseImage=base_image, frontend=frontend)
+                         backingImage=backing_image, frontend=frontend)
     volume = wait_for_volume_detached(client, volume_name)
     assert volume.name == volume_name
     assert volume.size == size
     assert volume.numberOfReplicas == num_of_replicas
     assert volume.state == "detached"
-    assert volume.baseImage == base_image
+    assert volume.backingImage == backing_image
     assert volume.frontend == frontend
     assert volume.created != ""
     return volume
@@ -944,12 +946,12 @@ def csi_pv(request):
 
 
 @pytest.fixture
-def csi_pv_baseimage(request):
+def csi_pv_backingimage(request):
     pv_manifest = csi_pv(request)
     pv_manifest['spec']['capacity']['storage'] = \
-        size_to_string(BASE_IMAGE_EXT4_SIZE)
-    pv_manifest['spec']['csi']['volumeAttributes']['baseImage'] = \
-        BASE_IMAGE_EXT4
+        size_to_string(BACKING_IMAGE_EXT4_SIZE)
+    pv_manifest['spec']['csi']['volumeAttributes']['backingImage'] = \
+        BACKING_IMAGE_NAME
     return pv_manifest
 
 
@@ -1000,10 +1002,10 @@ def pvc(request):
 
 
 @pytest.fixture
-def pvc_baseimage(request):
+def pvc_backingimage(request):
     pvc_manifest = pvc(request)
     pvc_manifest['spec']['resources']['requests']['storage'] = \
-        size_to_string(BASE_IMAGE_EXT4_SIZE)
+        size_to_string(BACKING_IMAGE_EXT4_SIZE)
     return pvc_manifest
 
 
