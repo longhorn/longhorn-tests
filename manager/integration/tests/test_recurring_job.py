@@ -17,10 +17,21 @@ from common import update_statefulset_manifests, get_self_host_id, \
 from common import write_volume_random_data
 from common import write_pod_volume_random_data
 from common import BASE_IMAGE_LABEL, KUBERNETES_STATUS_LABEL
-from common import SIZE, Mi, Gi
+from common import SIZE, Mi, Gi, pvc  # NOQA
 from common import SETTING_RECURRING_JOB_WHILE_VOLUME_DETACHED
+from common import create_and_wait_deployment, DATA_SIZE_IN_MB_3
+from common import get_volume_name, wait_for_volume_detached
+from common import crash_engine_process_with_sigkill
+from common import check_pod_existence, LONGHORN_NAMESPACE
+from common import RETRY_BACKUP_INTERVAL, wait_for_backup_completion
+from common import RETRY_BACKUP_COUNTS
+from common import wait_deployment_replica_ready, read_volume_data
+from common import settings_reset # NOQA
+from common import wait_for_volume_healthy_no_frontend
 
-from backupstore import set_random_backupstore # NOQA
+from kubernetes.client.rest import ApiException
+
+from backupstore import set_random_backupstore, backupstore_s3  # NOQA
 
 RECURRING_JOB_LABEL = "RecurringJob"
 RECURRING_JOB_NAME = "backup"
@@ -53,6 +64,47 @@ def wait_until_begin_of_an_even_minute():
         if current_time.second == 0 and current_time.minute % 2 == 0:
             break
         time.sleep(1)
+
+
+# wait for backup progress created by recurring job to
+# exceed the minimum_progress percentage.
+def wait_for_recurring_backup_to_start(client, core_api, volume_name, expected_snapshot_count, minimum_progress=50):  # NOQA
+    job_pod_name = volume_name + '-backup-c'
+    snapshot_name = ''
+    snapshots = []
+    check_pod_existence(core_api, job_pod_name, namespace=LONGHORN_NAMESPACE)
+
+    # Find the snapshot which is being backed up
+    for _ in range(RETRY_BACKUP_COUNTS):
+        volume = client.by_id_volume(volume_name)
+        try:
+            snapshots = volume.snapshotList()
+        except (AttributeError, ApiException):
+            time.sleep(RETRY_BACKUP_INTERVAL)
+            continue
+        if len(snapshots) == expected_snapshot_count + 1:
+            for snapshot in snapshots:
+                if snapshot.children['volume-head']:
+                    snapshot_name = snapshot.name
+            break
+    assert snapshots is not None
+
+    # To ensure the progress of backup
+    in_progress = False
+    for _ in range(RETRY_BACKUP_COUNTS):
+        v = client.by_id_volume(volume_name)
+        for b in v.backupStatus:
+            if b.snapshot == snapshot_name and b.state == "in_progress" \
+                    and b.progress > minimum_progress:
+                assert b.error == ""
+                in_progress = True
+                break
+        if in_progress:
+            break
+        time.sleep(RETRY_BACKUP_INTERVAL)
+    assert in_progress is True
+
+    return snapshot_name
 
 
 @pytest.mark.recurring_job  # NOQA
@@ -606,8 +658,7 @@ def test_recurring_jobs_on_nodes_with_taints():  # NOQA
     pass
 
 
-@pytest.mark.skip(reason="TODO")
-def test_recurring_jobs_when_volume_detached_unexpectedly():  # NOQA
+def test_recurring_jobs_when_volume_detached_unexpectedly(settings_reset, set_random_backupstore, client, core_api, apps_api, pvc, make_deployment_with_pvc):  # NOQA
     """
     Test recurring jobs when volume detached unexpectedly
 
@@ -636,4 +687,67 @@ def test_recurring_jobs_when_volume_detached_unexpectedly():  # NOQA
     10. Turn off `Allow Recurring Job While Volume Is Detached` setting
        Clean up backups, volumes
     """
-    pass
+
+    recurring_job_setting = \
+        client.by_id_setting(SETTING_RECURRING_JOB_WHILE_VOLUME_DETACHED)
+    client.update(recurring_job_setting, value="true")
+
+    pvc_name = 'pvc-volume-detached-unexpectedly-test'
+    pvc['metadata']['name'] = pvc_name
+    pvc['spec']['storageClassName'] = 'longhorn'
+
+    core_api.create_namespaced_persistent_volume_claim(
+        body=pvc, namespace='default')
+
+    deployment = make_deployment_with_pvc(
+        'deployment-volume-detached-unexpectedly-test', pvc_name)
+    create_and_wait_deployment(apps_api, deployment)
+    pod_names = common.get_deployment_pod_names(core_api, deployment)
+    vol_name = get_volume_name(core_api, pvc_name)
+
+    write_pod_volume_random_data(core_api, pod_names[0], "/data/test",
+                                 DATA_SIZE_IN_MB_3)
+
+    data = read_volume_data(core_api, pod_names[0], 'default')
+    deployment['spec']['replicas'] = 0
+    apps_api.patch_namespaced_deployment(body=deployment,
+                                         namespace='default',
+                                         name=deployment["metadata"]["name"])
+    vol = wait_for_volume_detached(client, vol_name)
+
+    jobs = [
+        {
+            "name": RECURRING_JOB_NAME,
+            "cron": "*/2 * * * *",
+            "task": "backup",
+            "retain": 1
+        }
+    ]
+    vol.recurringUpdate(jobs=jobs)
+
+    wait_for_recurring_backup_to_start(client,
+                                       core_api,
+                                       vol_name,
+                                       expected_snapshot_count=1)
+
+    crash_engine_process_with_sigkill(client, core_api, vol_name)
+    time.sleep(30)
+    wait_for_volume_healthy_no_frontend(client, vol_name)
+
+    snapshot_name = \
+        wait_for_recurring_backup_to_start(client,
+                                           core_api,
+                                           vol_name,
+                                           expected_snapshot_count=1)
+
+    wait_for_backup_completion(client, vol_name, snapshot_name)
+    wait_for_volume_detached(client, vol_name)
+
+    deployment['spec']['replicas'] = 1
+    apps_api.patch_namespaced_deployment(body=deployment,
+                                         namespace='default',
+                                         name=deployment["metadata"]["name"])
+    wait_deployment_replica_ready(apps_api, deployment["metadata"]["name"], 1)
+    pod_names = common.get_deployment_pod_names(core_api, deployment)
+
+    assert read_volume_data(core_api, pod_names[0], 'default') == data
