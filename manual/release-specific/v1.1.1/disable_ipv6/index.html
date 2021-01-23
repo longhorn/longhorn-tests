@@ -310,37 +310,34 @@
 </aside>
 
 <main style="padding: 1%; width: 70%;">
-  <h1 id="title">Upgrade Lease Lock</h1>
+  <h1 id="title">Test Disable IPv6</h1>
   <div>
     <article id="content">
-       <p>The time it takes between the Longhorn Manager starting up and the upgrade completing for that Longhorn Manager can be used to determine if the upgrade lock was released correctly:</p>
+       <h2 id="related-issue">Related issue</h2>
+<p><a href="https://github.com/longhorn/longhorn/issues/2136">https://github.com/longhorn/longhorn/issues/2136</a>
+<a href="https://github.com/longhorn/longhorn/issues/2197">https://github.com/longhorn/longhorn/issues/2197</a></p>
+<p>Longhorn v1.1.1 should work with IPv6 disabled.</p>
+<h2 id="scenario">Scenario</h2>
 <ol>
-<li>Create a fresh Longhorn installation or delete all of the Longhorn Manager Pods in the existing installation.</li>
-<li>Check the logs for the Longhorn Manager Pods and note the timestamps for the first line in the log and the timestamp for when the upgrade has completed.
-For example, in this log, the relevant timestamps are <code>2020-08-03T22:55:39Z</code> and <code>2020-08-03T22:56:24Z</code>:</li>
+<li>Install Kubernetes</li>
+<li>Disable IPv6 on all the nodes using the following commands</li>
 </ol>
-<pre><code>time=&quot;2020-08-03T22:55:39Z&quot; level=info msg=&quot;Start overwriting built-in settings with customized values&quot;
-E0803 22:55:40.141071       1 leaderelection.go:310] error initially creating leader election record: leases.coordination.k8s.io &quot;longhorn-manager-upgrade-lock&quot; already exists
-time=&quot;2020-08-03T22:55:43Z&quot; level=info msg=&quot;New upgrade leader elected: 74.207.240.60&quot;
-time=&quot;2020-08-03T22:56:01Z&quot; level=info msg=&quot;New upgrade leader elected: 96.126.101.152&quot;
-time=&quot;2020-08-03T22:56:24Z&quot; level=info msg=&quot;Start upgrading&quot;
-time=&quot;2020-08-03T22:56:24Z&quot; level=info msg=&quot;No API version upgrade is needed&quot;
-time=&quot;2020-08-03T22:56:24Z&quot; level=info msg=&quot;Finish upgrading&quot;
+<pre><code>sysctl -w net.ipv6.conf.all.disable_ipv6=1
+sysctl -w net.ipv6.conf.default.disable_ipv6=1
 </code></pre><ol start="3">
-<li>Calculate the amount of time between the two timestamps.
-If the lock was released successfully, then it should take no longer than about 15 seconds for the upgrade process to complete on each Pod:</li>
+<li>Deploy Longhorn and test basic use cases.
+<ol>
+<li>Accessing the UI for CRUD RWO/RWX volumes</li>
+<li>Use kubectl to create workloads using RWO/RWX volumes.</li>
 </ol>
-<ul>
-<li><code>longhorn-manager-k95bm</code>: 2020-08-03T23:04:14Z - 2020-08-03T23:04:20Z <strong>(6 seconds)</strong></li>
-<li><code>longhorn-manager-rgpvt</code>: 2020-08-03T23:04:14Z - 2020-08-03T23:04:15Z <strong>(1 second)</strong></li>
-<li><code>longhorn-manager-z2jd9</code>: 2020-08-03T23:04:21Z - 2020-08-03T23:04:21Z <strong>(0 seconds)</strong></li>
-</ul>
-<p>Here is an example of a failing case with the Longhorn Manager attempting to upgrade and the upgrade lock not being released successfully.</p>
-<ul>
-<li><code>longhorn-manager-82kt4</code>: 2020-08-03T22:55:39Z - 2020-08-03T22:55:40Z <strong>(1 second)</strong></li>
-<li><code>longhorn-manager-lpbth</code>: 2020-08-03T22:55:40Z - 2020-08-03T22:56:00Z <strong>(20 seconds)</strong></li>
-<li><code>longhorn-manager-pdmrv</code>: 2020-08-03T22:55:39Z - 2020-08-03T22:56:24Z <strong>(45 seconds)</strong></li>
-</ul>
+</li>
+<li>Re-enable ipv6 on all the nodes using:</li>
+</ol>
+<pre><code>sysctl -w net.ipv6.conf.all.disable_ipv6=0
+sysctl -w net.ipv6.conf.default.disable_ipv6=0
+</code></pre><ol start="5">
+<li>Make sure the basic use cases still works.</li>
+</ol>
 
     </article>
   </div>

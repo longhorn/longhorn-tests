@@ -7,6 +7,17 @@
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language><atom:link href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/index.xml" rel="self" type="application/rss+xml" />
     <item>
+      <title>Test Disable IPv6</title>
+      <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/disable_ipv6/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/disable_ipv6/</guid>
+      <description>Related issue https://github.com/longhorn/longhorn/issues/2136 https://github.com/longhorn/longhorn/issues/2197
+Longhorn v1.1.1 should work with IPv6 disabled.
+Scenario  Install Kubernetes Disable IPv6 on all the nodes using the following commands  sysctl -w net.ipv6.conf.all.disable_ipv6=1 sysctl -w net.ipv6.conf.default.disable_ipv6=1 Deploy Longhorn and test basic use cases.  Accessing the UI for CRUD RWO/RWX volumes Use kubectl to create workloads using RWO/RWX volumes.   Re-enable ipv6 on all the nodes using:  sysctl -w net.ipv6.conf.all.disable_ipv6=0 sysctl -w net.</description>
+    </item>
+    
+    <item>
       <title>Test Snapshot Purge Error Handling</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/snapshot-purge-error-handling/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
