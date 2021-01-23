@@ -691,3 +691,76 @@ def test_engine_live_upgrade_with_intensive_data_writing(client, core_api, volum
     volume_file_md5sum2 = get_pod_data_md5sum(
         core_api, pod_name, data_path2)
     assert volume_file_md5sum2 == original_md5sum2
+
+
+@pytest.mark.skip(reason="TODO") # NOQA
+def test_auto_upgrade_engine_to_default_version():
+    """
+    Steps:
+
+    Preparation:
+    1. set up a backup store
+    2. Deploy a compatible new engine image
+
+    Case 1: Concurrent engine upgrade
+    1. Create 10 volumes each of 1Gb.
+    2. Attach 5 volumes vol-0 to vol-4. Write data to it
+    3. Upgrade all volumes to the new engine image
+    4. Wait until the upgrades are completed (volumes' engine image changed,
+       replicas' mode change to RW for attached volumes, reference count of the
+       new engine image changed, all engine and replicas' engine image changed)
+    5. Set concurrent-automatic-engine-upgrade-per-node-limit setting to 3
+    6. In a retry loop, verify that the number of volumes who
+       is upgrading engine is always smaller or equal to 3
+    7. Wait until the upgrades are completed (volumes' engine image changed,
+       replica mode change to RW for attached volumes, reference count of the
+       new engine image changed, all engine and replicas' engine image changed,
+       etc ...)
+    8. verify the volumes' data
+
+    Case 2: DR volume
+    1. Create a backup for vol-0. Create a DR volume from the backup
+    2. Try to upgrade the DR volume engine's image to the new engine image
+    3. Verify that the Longhorn API returns error. Upgrade fails.
+    4. Set concurrent-automatic-engine-upgrade-per-node-limit setting to 0
+    5. Try to upgrade the DR volume engine's image to the new engine image
+    6. Wait until the upgrade are completed (volumes' engine image changed,
+       replicas' mode change to RW, reference count of the new engine image
+       changed, engine and replicas' engine image changed)
+    7. Wait for the DR volume to finish restoring
+    8. Set concurrent-automatic-engine-upgrade-per-node-limit setting to 3
+    9. In a 2-min retry loop, verify that Longhorn doesn't automatically
+       upgrade engine image for DR volume.
+
+    Case 3: Expanding volume
+    1. set concurrent-automatic-engine-upgrade-per-node-limit setting to 0
+    2. Upgrade vol-0 to the new engine image
+    3. Wait until the upgrade are completed (volumes' engine image changed,
+       replicas' mode change to RW, reference count of the new engine image
+       changed, engine and replicas' engine image changed)
+    4. Detach vol-0
+    5. Expand the vol-0 from 1Gb to 5GB
+    6. Wait for the vol-0 to start expanding
+    7. Set concurrent-automatic-engine-upgrade-per-node-limit setting to 3
+    8. While vol-0 is expanding, verify that its engine is not upgraded to
+       the default engine image
+    9. Wait for the expansion to finish and vol-0 is detached
+    10. Verify that Longhorn upgrades vol-0's engine to the default version
+
+    Case 4: Degraded volume
+    1. set concurrent-automatic-engine-upgrade-per-node-limit setting to 0
+    2. Upgrade vol-1 (an healthy attached volume) to the new engine image
+    3. Wait until the upgrade are completed (volumes' engine image changed,
+       replicas' mode change to RW, reference count of the new engine image
+       changed, engine and replicas' engine image changed)
+    4. Increase number of replica count to 4 to make the volume degraded
+    5. Set concurrent-automatic-engine-upgrade-per-node-limit setting to 3
+    6. In a 2-min retry loop, verify that Longhorn doesn't automatically
+       upgrade engine image for vol-1.
+
+    Cleaning up:
+    1. Clean up volumes
+    2. Reset automatically-upgrade-engine-to-default-version setting in
+       the client fixture
+    """
+    pass
