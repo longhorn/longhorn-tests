@@ -13,22 +13,19 @@ from common import check_volume_data, cleanup_volume, create_and_check_volume
 from common import delete_replica_processes, crash_replica_processes
 from common import get_self_host_id, check_volume_endpoint
 from common import wait_for_snapshot_purge, write_volume_random_data
-from common import create_snapshot
+from common import create_snapshot, DIRECTORY_PATH
 from common import expand_attached_volume, check_block_device_size
 from common import write_volume_data, generate_random_data
 from common import wait_for_rebuild_complete
 from common import disable_auto_salvage # NOQA
 from common import pod_make, pod, csi_pv, pvc  # NOQA
-from common import create_pv_for_volume
-from common import create_pvc_for_volume
-from common import create_pvc_spec
-from common import create_and_wait_pod
+from common import create_pv_for_volume, create_pvc_for_volume
+from common import create_pvc_spec, create_and_wait_pod
 from common import write_pod_volume_random_data
 from common import wait_for_volume_healthy, wait_for_volume_degraded
 from common import get_pod_data_md5sum
-from common import wait_for_pod_remount
-from common import delete_and_wait_pod
-from common import wait_for_rebuild_start
+from common import wait_for_pod_remount, delete_and_wait_pod
+from common import wait_for_rebuild_start, get_update_disks
 from common import prepare_pod_with_data_in_mb
 from common import wait_for_backup_completion, find_backup
 from common import wait_for_volume_creation, wait_for_volume_detached
@@ -52,7 +49,7 @@ from common import SETTING_REPLICA_NODE_SOFT_ANTI_AFFINITY
 from common import SETTING_REPLICA_REPLENISHMENT_WAIT_INTERVAL
 from common import write_pod_volume_data
 from common import read_volume_data
-from common import VOLUME_FIELD_ROBUSTNESS
+from common import VOLUME_FIELD_ROBUSTNESS, VOLUME_ROBUSTNESS_DEGRADED
 from common import VOLUME_ROBUSTNESS_HEALTHY
 from common import wait_for_volume_expansion
 from common import delete_and_wait_pvc, delete_and_wait_pv
@@ -66,7 +63,10 @@ from backupstore import backupstore_delete_random_backup_block
 from backupstore import backupstore_wait_for_lock_expiration
 from backupstore import backupstore_s3  # NOQA
 
+from test_node import create_host_disk
+
 SMALL_RETRY_COUNTS = 30
+
 
 @pytest.mark.coretest   # NOQA
 def test_ha_simple_recovery(client, volume_name):  # NOQA
@@ -478,9 +478,7 @@ def test_ha_recovery_with_expansion(client, volume_name):   # NOQA
     cleanup_volume(client, volume)
 
 
-def wait_pod_for_remount_request(
-        client, core_api, volume_name, pod_name, original_md5sum,  # NOQA
-        data_path="/data/test"):
+def wait_pod_for_remount_request(client, core_api, volume_name, pod_name, original_md5sum, data_path="/data/test"):  # NOQA
     try:
         # this line may fail if the recovery is too quick
         common.wait_for_volume_faulted(client, volume_name)
@@ -503,8 +501,7 @@ def wait_pod_for_remount_request(
     assert md5sum == original_md5sum
 
 
-def test_salvage_auto_crash_all_replicas(
-        client, core_api, storage_class, sts_name, statefulset):  # NOQA
+def test_salvage_auto_crash_all_replicas(client, core_api, storage_class, sts_name, statefulset):  # NOQA
     """
     [HA] Test automatic salvage feature by crashing all the replicas
 
@@ -551,8 +548,7 @@ def test_salvage_auto_crash_all_replicas(
     wait_pod_for_remount_request(client, core_api, vol_name, pod_name, md5sum)
 
 
-def test_rebuild_failure_with_intensive_data(
-        client, core_api, volume_name, csi_pv, pvc, pod_make):  # NOQA
+def test_rebuild_failure_with_intensive_data(client, core_api, volume_name, csi_pv, pvc, pod_make):  # NOQA
     """
     [HA] Test rebuild failure with intensive data writing
 
@@ -606,8 +602,7 @@ def test_rebuild_failure_with_intensive_data(
     assert original_md5sum_2 == md5sum_2
 
 
-def test_rebuild_replica_and_from_replica_on_the_same_node(
-        client, core_api, volume_name, csi_pv, pvc, pod_make):  # NOQA
+def test_rebuild_replica_and_from_replica_on_the_same_node(client, core_api, volume_name, csi_pv, pvc, pod_make):  # NOQA
     """
     [HA] Test the corner case that the from-replica and the rebuilding replica
     are on the same node
@@ -752,8 +747,7 @@ def test_rebuild_with_restoration(set_random_backupstore, client, core_api, volu
     create_and_wait_pod(core_api, restore_pod)
 
     restore_volume = client.by_id_volume(restore_volume_name)
-    assert restore_volume[VOLUME_FIELD_ROBUSTNESS] == \
-           VOLUME_ROBUSTNESS_HEALTHY
+    assert restore_volume[VOLUME_FIELD_ROBUSTNESS] == VOLUME_ROBUSTNESS_HEALTHY
 
     md5sum = get_pod_data_md5sum(core_api, restore_pod_name, data_path)
     assert original_md5sum == md5sum
@@ -1047,8 +1041,7 @@ def test_inc_restoration_with_multiple_rebuild_and_expansion(set_random_backupst
     create_and_wait_pod(core_api, dr_pod)
 
     dr_volume = client.by_id_volume(dr_volume_name)
-    assert dr_volume[VOLUME_FIELD_ROBUSTNESS] == \
-           VOLUME_ROBUSTNESS_HEALTHY
+    assert dr_volume[VOLUME_FIELD_ROBUSTNESS] == VOLUME_ROBUSTNESS_HEALTHY
 
     md5sum1 = get_pod_data_md5sum(core_api, dr_pod_name, data_path1)
     assert std_md5sum1 == md5sum1
@@ -1074,9 +1067,8 @@ def test_inc_restoration_with_multiple_rebuild_and_expansion(set_random_backupst
     backupstore_cleanup(client)
 
 
-@pytest.mark.coretest
-def test_single_replica_failed_during_engine_start(
-        client, core_api, volume_name, csi_pv, pvc, pod): # NOQA
+@pytest.mark.coretest  # NOQA
+def test_single_replica_failed_during_engine_start(client, core_api, volume_name, csi_pv, pvc, pod):  # NOQA
     """
     Test if the volume still works fine when there is
     an invalid replica/backend in the engine starting phase.
@@ -1833,8 +1825,7 @@ def test_engine_crash_for_dr_volume(set_random_backupstore, client, core_api, vo
     assert md5sum2 == dr_md5sum2
 
 
-def test_volume_reattach_after_engine_sigkill(
-        client, core_api, storage_class, sts_name, statefulset):  # NOQA
+def test_volume_reattach_after_engine_sigkill(client, core_api, storage_class, sts_name, statefulset):  # NOQA
     """
     [HA] Test if the volume can be reattached after using SIGKILL
     to crash the engine process
@@ -2006,8 +1997,7 @@ def test_disable_replica_rebuild():
     pass
 
 
-def test_auto_remount_with_subpath(
-    client, core_api, storage_class, sts_name, statefulset):  # NOQA
+def test_auto_remount_with_subpath(client, core_api, storage_class, sts_name, statefulset):  # NOQA
     """
     Test Auto Remount With Subpath
 
@@ -2348,8 +2338,7 @@ def test_reuse_failed_replica_with_scheduling_check(client, core_api, volume_nam
     common.check_volume_data(vol, data)
 
 
-@pytest.mark.skip(reason="TODO") # NOQA
-def test_replica_failure_during_attaching():
+def test_replica_failure_during_attaching(settings_reset, client, core_api, volume_name):  # NOQA
     """
     Steps:
     1. Set a short interval for setting replica-replenishment-wait-interval.
@@ -2365,9 +2354,75 @@ def test_replica_failure_during_attaching():
     9. Attach volume2.
        --> Verify volume will be attached with state Degraded.
     10. Wait for the replenishment interval.
-        --> Verify the failed replica using the extra disk will be removed.
+        --> Verify a new replica will be created but it cannot be scheduled.
     11. Enable the default disk for the host node.
     12. Wait for volume2 becoming Healthy.
     13. Verify data content and r/w capability for volume2.
     """
-    pass
+
+    replenish_wait_setting = \
+        client.by_id_setting(SETTING_REPLICA_REPLENISHMENT_WAIT_INTERVAL)
+    client.update(replenish_wait_setting, value='10')
+
+    replica_node_soft_anti_affinity_setting = \
+        client.by_id_setting(SETTING_REPLICA_NODE_SOFT_ANTI_AFFINITY)
+    client.update(replica_node_soft_anti_affinity_setting, value="false")
+
+    volume_name_1 = volume_name
+    host_id = get_self_host_id()
+    node = client.by_id_node(host_id)
+
+    extra_disk_path = create_host_disk(client, volume_name_1, str(3 * Gi),
+                                       host_id)
+    extra_disk = {"path": extra_disk_path, "allowScheduling": True}
+
+    update_disks = get_update_disks(node.disks)
+    default_disk_name = next(iter(update_disks))
+    update_disks["extra-disk"] = extra_disk
+    update_disks[default_disk_name].allowScheduling = False
+
+    node = node.diskUpdate(disks=update_disks)
+    node = common.wait_for_disk_update(client, node.name, len(update_disks))
+
+    volume_name_2 = volume_name + '-2'
+    volume_2 = create_and_check_volume(client, volume_name_2, 3, str(1 * Gi))
+    volume_2.attach(hostId=host_id)
+    volume_2 = common.wait_for_volume_healthy(client, volume_name_2)
+    write_volume_random_data(volume_2)
+    volume_2.detach()
+    wait_for_volume_detached(client, volume_name_2)
+
+    # unmount the disk
+    mount_path = os.path.join(DIRECTORY_PATH, volume_name_1)
+    common.umount_disk(mount_path)
+    cmd = ['rm', '-r', mount_path]
+    subprocess.check_call(cmd)
+
+    volume_2 = client.by_id_volume(volume_name_2)
+    volume_2.attach(hostId=host_id)
+    common.wait_for_volume_status(client, volume_name_2,
+                                  VOLUME_FIELD_ROBUSTNESS,
+                                  VOLUME_ROBUSTNESS_DEGRADED)
+
+    time.sleep(10)
+    wait_for_volume_replica_count(client, volume_name_2, 4)
+    volume_2 = client.by_id_volume(volume_name_2)
+    assert volume_2.conditions.scheduled.status == "False"
+    assert volume_2.conditions.scheduled.reason == "ReplicaSchedulingFailure"
+
+    update_disks[default_disk_name].allowScheduling = True
+    update_disks["extra-disk"]["allowScheduling"] = False
+
+    node = node.diskUpdate(disks=update_disks)
+    common.wait_for_disk_update(client, node.name, len(update_disks))
+
+    common.wait_for_volume_status(client, volume_name_2,
+                                  VOLUME_FIELD_ROBUSTNESS,
+                                  VOLUME_ROBUSTNESS_HEALTHY)
+
+    volume_2 = client.by_id_volume(volume_name_2)
+    write_volume_random_data(volume_2)
+
+    del update_disks["extra-disk"]
+    node.diskUpdate(disks=update_disks)
+    common.wait_for_disk_update(client, node.name, 1)
