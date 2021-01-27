@@ -1,15 +1,21 @@
-# Query AWS for Ubuntu AMI
-data "aws_ami" "aws_ami_ubuntu" {
+# Query AWS for RHEL AMI
+locals {
+  aws_ami_rhel_arch = var.arch == "amd64" ? "x86_64" : var.arch
+}
+
+data "aws_ami" "aws_ami_rhel" {
+
   most_recent      = true
-  owners           = [var.aws_ami_ubuntu_account_number]
+  owners           = [var.aws_ami_rhel_account_number]
 
   filter {
     name   = "name"
-    values = ["ubuntu/images/hvm-ssd/ubuntu-bionic-${var.aws_ami_ubuntu_version}-${var.arch}-server-*"]
+    values = ["RHEL-${var.distro_version}_HVM*${local.aws_ami_rhel_arch}-*"]
   }
 }
 
-# Generate template file for k3s agent on arm64
+
+# Generate template file for k3s server on arm64
 data "template_file" "provision_arm64_server" {
   template = var.arch == "arm64" ? file("${path.module}/user-data-scripts/provision_arm64_server.sh.tpl") : null
   vars = {

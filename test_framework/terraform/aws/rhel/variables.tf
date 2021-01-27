@@ -28,14 +28,14 @@ variable "arch" {
   description = "available values (amd64, arm64)"
 }
 
-variable "aws_ami_ubuntu_version" {
+variable "distro_version" {
   type        = string
-  default     = "18.04"
+  default     = "8.3.0"
 }
 
-variable "aws_ami_ubuntu_account_number" {
+variable "aws_ami_rhel_account_number" {
   type        = string
-  default     = "099720109477"
+  default     = "309956199498"
 }
 
 variable "lh_aws_instance_count_controlplane" {
@@ -55,13 +55,14 @@ variable "lh_aws_instance_name_controlplane" {
 
 variable "lh_aws_instance_type_controlplane" {
   type        = string
-  description = "Recommended instance types c5.xlarge for amd64 & a1.xlarge  for arm64"
+  default     = "a1.xlarge"
+  description = "Recommended instance types t2.xlarge for amd64 & a1.xlarge  for arm64"
 }
 
 variable "lh_aws_instance_type_worker" {
   type        = string
-  description = "Recommended instance types c5.xlarge for amd64 & a1.xlarge  for arm64"
-
+  default     = "a1.xlarge"
+  description = "Recommended instance types t2.xlarge for amd64 & a1.xlarge  for arm64"
 }
 
 variable "lh_aws_instance_root_block_device_size_controlplane" {
@@ -91,12 +92,12 @@ variable "lh_aws_instance_root_block_device_size_worker" {
 
 variable "rke_k8s_version" {
   type        = string
-  default     = "v1.18.6-rancher1-1"
-  description = "RKE k8s version will be used to generate RKE config file output"
+  default     = "v1.19.7-rancher1-1"
+  description = "RKE k8s version will be used to generate RKE config file output in case of arch=amd64"
 }
 
 variable "k3s_version" {
   type        = string
-  default     = "v1.18.9+k3s1"
-  description = "RKE k8s version will be used to generate RKE config file output"
+  default     = "v1.19.7+k3s1"
+  description = "K3s version that will be deployed in case of arch=arm64"
 }
