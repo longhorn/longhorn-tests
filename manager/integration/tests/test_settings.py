@@ -527,3 +527,39 @@ def wait_for_priority_class_update(core_api, apps_api, count, priority_class=Non
             break
 
     assert updated
+
+
+@pytest.mark.skip(reason="TODO")
+@pytest.mark.backing_image  # NOQA
+def test_setting_backing_image_auto_cleanup():  # NOQA
+    """
+    Test that the Backing Image Cleanup Wait Interval setting works correctly.
+
+    The default setting value is 60.
+
+    1. Set `BackingImageCleanupWaitInterval` to default value.
+    2. Create a backing image.
+    3. Create multiple volumes using the backing image.
+    4. Attach all volumes, Then:
+        1. Wait for all volumes can become running.
+        2. Verify the correct in all volumes.
+        3. Verify the backing image disk status map.
+        4. Verify the only backing image file in each disk is reused by
+           multiple replicas. The backing image file path is
+           `<Data path>/<The backing image name>/backing`
+    5. Decrease the replica count by 1 for all volumes.
+    6. Remove all replicas in one disk.
+       Wait for 1 minute.
+       Then verify nothing changes in the backing image disk state map
+       (before the cleanup wait interval is passed).
+    7. Modify `BackingImageCleanupWaitInterval` to a small value. Then verify:
+        1. The download state of the disk containing no replica becomes
+           terminating first, and the entry will be removed from the map later.
+        2. The related backing image file is removed.
+        3. The download state of other disks keep unchanged.
+           All volumes still work fine.
+    8. Delete all volumes. Verify that all states in the backing image disk map
+       will become terminating first,
+       and all entries will be removed from the map later.
+    9. Delete the backing image.
+    """
