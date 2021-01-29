@@ -43,6 +43,10 @@
   </url>
   
   <url>
+    <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/auto-upgrade-engine/</loc>
+  </url>
+  
+  <url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/</loc>
   </url>
   
