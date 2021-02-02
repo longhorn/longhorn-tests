@@ -263,3 +263,44 @@ def test_recurring_job_labels_with_backing_image(client, random_labels, volume_n
                                   BACKING_IMAGE_NAME)
         cleanup_all_volumes(client)
         cleanup_all_backing_images(client)
+
+
+@pytest.mark.skip(reason="TODO") # NOQA
+@pytest.mark.backing_image  # NOQA
+def test_backing_image_with_disk_migration():  # NOQA
+    """
+    1. Update settings:
+       1. Disable Node Soft Anti-affinity.
+       2. Set Replica Replenishment Wait Interval to a relatively long value.
+    2. Create a new host disk.
+    3. Disable the default disk and add the extra disk with scheduling enabled
+       for the current node.
+    4. Create a backing image.
+    5. Create and attach a 2-replica volume with the backing image set.
+       Then verify:
+       1. there is a replica scheduled to the new disk.
+       2. there are 2 entries in the backing image download state map,
+          and both are state `downloaded`.
+    6. Directly mount the volume (without making filesystem) to a directory.
+       Then verify the content of the backing image by checking the existence
+       of the directory `<Mount point>/guests/`.
+    7. Write random data to the mount point then verify the data.
+    8. Unmount the host disk. Then verify:
+       1. The replica in the host disk will be failed.
+       2. The disk state in the backing image will become failed.
+       3. The related download pod named
+          `<Backing image name>-<First 8 characters of disk UUID>` is removed.
+    9. Remount the host disk to another path. Then create another Longhorn disk
+       based on the migrated path (disk migration).
+    10. Verify the followings.
+        1. The disk added in step3 (before the migration) should
+           be "unschedulable".
+        2. The disk added in step9 (after the migration) should
+           become "schedulable".
+        3. The failed replica will be reused. And the replica DiskID as well as
+           the disk path is updated.
+        4. The 2-replica volume r/w works fine.
+        5. The download state in the backing image will become `downloaded`.
+        6. The related download pod will be recreated.
+    11. Do cleanup.
+    """
