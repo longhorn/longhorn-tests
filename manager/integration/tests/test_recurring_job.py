@@ -28,6 +28,7 @@ from common import RETRY_BACKUP_COUNTS
 from common import wait_deployment_replica_ready, read_volume_data
 from common import settings_reset # NOQA
 from common import wait_for_volume_healthy_no_frontend
+from common import wait_for_volume_healthy
 
 from kubernetes.client.rest import ApiException
 
@@ -155,7 +156,7 @@ def test_recurring_job(set_random_backupstore, client, volume_name):  # NOQA
     volume.recurringUpdate(jobs=jobs)
 
     volume = volume.attach(hostId=host_id)
-    volume = common.wait_for_volume_healthy(client, volume_name)
+    volume = wait_for_volume_healthy(client, volume_name)
 
     # wait until the beginning of an even minute
     wait_until_begin_of_an_even_minute()
@@ -237,7 +238,7 @@ def test_recurring_job_in_volume_creation(set_random_backupstore, client, volume
     volume = common.wait_for_volume_detached(client, volume_name)
 
     volume.attach(hostId=host_id)
-    volume = common.wait_for_volume_healthy(client, volume_name)
+    volume = wait_for_volume_healthy(client, volume_name)
 
     # wait until the beginning of an even minute
     wait_until_begin_of_an_even_minute()
@@ -338,7 +339,7 @@ def recurring_job_labels_test(client, labels, volume_name, size=SIZE, base_image
     ]
     volume.recurringUpdate(jobs=jobs)
     volume.attach(hostId=host_id)
-    volume = common.wait_for_volume_healthy(client, volume_name)
+    volume = wait_for_volume_healthy(client, volume_name)
     write_volume_random_data(volume)
 
     # 1 minutes 15s
@@ -346,7 +347,7 @@ def recurring_job_labels_test(client, labels, volume_name, size=SIZE, base_image
     labels["we-added-this-label"] = "definitely"
     jobs[0]["labels"] = labels
     volume = volume.recurringUpdate(jobs=jobs)
-    volume = common.wait_for_volume_healthy(client, volume_name)
+    volume = wait_for_volume_healthy(client, volume_name)
     write_volume_random_data(volume)
 
     # 2 minutes 15s
@@ -420,7 +421,7 @@ def test_recurring_job_kubernetes_status(set_random_backupstore, client, core_ap
     ]
     volume.recurringUpdate(jobs=jobs)
     volume.attach(hostId=host_id)
-    volume = common.wait_for_volume_healthy(client, volume_name)
+    volume = wait_for_volume_healthy(client, volume_name)
 
     write_volume_random_data(volume)
     # 5 minutes
@@ -480,7 +481,7 @@ def test_recurring_jobs_maximum_retain(client, core_api, volume_name): # NOQA
 
     volume = volume.attach(hostId=host_id)
 
-    volume = common.wait_for_volume_healthy(client, volume_name)
+    volume = wait_for_volume_healthy(client, volume_name)
 
     with pytest.raises(Exception) as e:
         volume.recurringUpdate(jobs=jobs)
@@ -537,7 +538,7 @@ def test_recurring_jobs_for_detached_volume(set_random_backupstore, client, core
 
     lht_hostId = get_self_host_id()
     vol.attach(hostId=lht_hostId)
-    vol = common.wait_for_volume_healthy(client, vol.name)
+    vol = wait_for_volume_healthy(client, vol.name)
 
     data = {
         'pos': 0,
@@ -731,6 +732,8 @@ def test_recurring_jobs_when_volume_detached_unexpectedly(settings_reset, set_ra
                                        expected_snapshot_count=1)
 
     crash_engine_process_with_sigkill(client, core_api, vol_name)
+    # waiting 30sec for volume detach and attach operation
+    # after recurring backup is interrupted
     time.sleep(30)
     wait_for_volume_healthy_no_frontend(client, vol_name)
 
