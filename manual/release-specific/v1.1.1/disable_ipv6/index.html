@@ -323,10 +323,13 @@
 <h2 id="scenario">Scenario</h2>
 <ol>
 <li>Install Kubernetes</li>
-<li>Disable IPv6 on all the nodes using the following commands</li>
+<li>Disable IPv6 on all the worker nodes using the following</li>
 </ol>
-<pre><code>sysctl -w net.ipv6.conf.all.disable_ipv6=1
-sysctl -w net.ipv6.conf.default.disable_ipv6=1
+<pre><code>Go to the folder /etc/default
+In the grub file, edit the value GRUB_CMDLINE_LINUX_DEFAULT=&quot;ipv6.disable=1&quot;
+Once the file is saved update by the command update-grub
+Reboot the node and once the node becomes active, 
+use the command cat /proc/cmdline to verify &quot;ipv6.disable=1&quot; is reflected in the values 
 </code></pre><ol start="3">
 <li>Deploy Longhorn and test basic use cases.
 <ol>
@@ -336,8 +339,10 @@ sysctl -w net.ipv6.conf.default.disable_ipv6=1
 </li>
 <li>Re-enable ipv6 on all the nodes using:</li>
 </ol>
-<pre><code>sysctl -w net.ipv6.conf.all.disable_ipv6=0
-sysctl -w net.ipv6.conf.default.disable_ipv6=0
+<pre><code>By deleting the &quot;ipv6.disable=1&quot; from the GRUB_CMDLINE_LINUX_DEFAULT accessing grub file from
+/etc/default
+Perform a reboot and once the node comes active 
+use the command cat /proc/cmdline to verify &quot;ipv6.disable=1&quot; is reflected in the values
 </code></pre><ol start="5">
 <li>Make sure the basic use cases still works.</li>
 </ol>
