@@ -138,6 +138,8 @@ SETTING_DEGRADED_AVAILABILITY = \
 SETTING_DISABLE_SCHEDULING_ON_CORDONED_NODE = \
     "disable-scheduling-on-cordoned-node"
 SETTING_GUARANTEED_ENGINE_CPU = "guaranteed-engine-cpu"
+SETTING_GUARANTEED_ENGINE_MANAGER_CPU = "guaranteed-engine-manager-cpu"
+SETTING_GUARANTEED_REPLICA_MANAGER_CPU = "guaranteed-replica-manager-cpu"
 SETTING_MKFS_EXT4_PARAMS = "mkfs-ext4-parameters"
 SETTING_PRIORITY_CLASS = "priority-class"
 SETTING_RECURRING_JOB_WHILE_VOLUME_DETACHED = \
@@ -2708,11 +2710,33 @@ def reset_settings(client):
         client.by_id_setting(SETTING_GUARANTEED_ENGINE_CPU)
     try:
         client.update(guaranteed_engine_cpu_setting,
-                      value="0.25")
+                      value="")
     except Exception as e:
         print("\nException when update "
               "Guaranteed Engine CPU setting",
               guaranteed_engine_cpu_setting)
+        print(e)
+
+    guaranteed_em_cpu_setting = \
+        client.by_id_setting(SETTING_GUARANTEED_ENGINE_MANAGER_CPU)
+    try:
+        client.update(guaranteed_em_cpu_setting,
+                      value="12")
+    except Exception as e:
+        print("\nException when update "
+              "Guaranteed Engine Manager CPU setting",
+              guaranteed_em_cpu_setting)
+        print(e)
+
+    guaranteed_rm_cpu_setting = \
+        client.by_id_setting(SETTING_GUARANTEED_REPLICA_MANAGER_CPU)
+    try:
+        client.update(guaranteed_rm_cpu_setting,
+                      value="12")
+    except Exception as e:
+        print("\nException when update "
+              "Guaranteed Replica Manager CPU setting",
+              guaranteed_rm_cpu_setting)
         print(e)
 
     replenishment_wait_setting = \
