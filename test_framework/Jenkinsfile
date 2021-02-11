@@ -26,6 +26,8 @@ node {
                               --env TF_VAR_lh_aws_access_key=${AWS_ACCESS_KEY} \
                               --env TF_VAR_lh_aws_secret_key=${AWS_SECRET_KEY} \
                               --env TF_VAR_arch=${ARCH} \
+                              --env TF_VAR_aws_region=${AWS_REGION} \
+                              --env TF_VAR_aws_availability_zone=${AWS_AVAILABILITY_ZONE} \
                               --env DISTRO=${DISTRO} \
                               --env TF_VAR_distro_version=${DISTRO_VERSION} \
                               --env TF_VAR_lh_aws_instance_type_controlplane=${CONTROLPLANE_INSTANCE_TYPE} \
