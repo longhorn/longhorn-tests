@@ -356,7 +356,7 @@ resource "null_resource" "rsync_kubeconfig_file" {
   ]
 
   provisioner "remote-exec" {
-    inline = var.arch == "arm64" ? ["until([ -f /etc/rancher/k3s/k3s.yaml ] && [[ `sudo /usr/local/bin/kubectl get nodes --no-headers | grep -v \"NotReady\" | wc -l` -eq ${var.lh_aws_instance_count_worker} ]]); do echo \"waiting for k3s kubeconfig file\"; sleep 2; done"] : null
+    inline = var.arch == "arm64" ? ["until([ -f /etc/rancher/k3s/k3s.yaml ] && [ `sudo /usr/local/bin/kubectl get nodes --no-headers | grep -v \"NotReady\" | wc -l` -eq ${var.lh_aws_instance_count_worker} ]); do echo \"waiting for k3s cluster nodes to be running\"; sleep 2; done"] : null
 
     connection {
       type     = "ssh"
