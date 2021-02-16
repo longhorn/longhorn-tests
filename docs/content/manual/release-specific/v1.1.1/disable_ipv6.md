@@ -27,6 +27,5 @@ use the command cat /proc/cmdline to verify "ipv6.disable=1" is reflected in the
 By deleting the "ipv6.disable=1" from the GRUB_CMDLINE_LINUX_DEFAULT accessing grub file from
 /etc/default
 Perform a reboot and once the node comes active 
-use the command cat /proc/cmdline to verify "ipv6.disable=1" is reflected in the values
-```
+use the command cat /proc/cmdline to verify "ipv6.disable=1" is not reflected in the values
 5. Make sure the basic use cases still works.
