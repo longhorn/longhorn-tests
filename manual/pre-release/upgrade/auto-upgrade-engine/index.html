@@ -316,7 +316,9 @@
   <h1 id="title">Automatically Upgrading Longhorn Engine Test</h1>
   <div>
     <article id="content">
-       <h3 id="test-basic-upgrade">Test basic upgrade</h3>
+       <!-- raw HTML omitted -->
+<p><a href="https://github.com/longhorn/longhorn/issues/2152">Reference ticket 2152</a></p>
+<h3 id="test-basic-upgrade">Test basic upgrade</h3>
 <ol>
 <li>Install old Longhorn version. E.g., &lt;= <code>v1.0.2</code></li>
 <li>Create a volume, attach it to a pod, write some data. Create a DR volume. Create volume and leave it in the detached state.</li>
@@ -329,18 +331,26 @@
 <li>Create a StatefulSet of scale 10 using 10 Longhorn volume. Set node selector so that all pods land on the same node.</li>
 <li>Upgrade Longhorn to use a newer default engine image</li>
 <li>In Longhorn UI and Longhorn manager logs, Verify that Longhorn doesn&rsquo;t upgrade all volumes at the same time. Only 3 at a time.</li>
+<li>In Longhorn UI, while the concurrent value is set to limit 1, change the value to higher number and verify if the upgrade is happening as per the new value.</li>
+<li>Create stateful set pods with volume claim template, set the scale to 10 and in the configure options, select RWO and RWX. Verify the volumes created have RWX set as RWX takes precedence.</li>
+<li>While the auto upgrade is set, try to manually upgrade the image engine to the latest version. The manual upgrade should work and the image should be upgraded to the default version.</li>
+<li>Take backup for a volume when upgrade hasn&rsquo;t started.</li>
+<li>Create 10 volumes and set concurrent upgrade limit to 2. When the upgrade starts, delete all the volumes. [Volumes are deleted and Longhorn UI is not corrupted.</li>
+<li>Deploy a workload with rwx scale 10 with persistent volume claim template and verify the volume created can be used for all of 10 pods.</li>
+<li>While upgrade has started, detach the nodes from the volume and verify the detached volume is upgraded.</li>
 </ol>
 <h3 id="test-degraded-volume">Test degraded volume</h3>
 <ol>
-<li>Verify that Longhorn doesn&rsquo;t upgrade engine image for degraded volume</li>
+<li>Verify that Longhorn doesn&rsquo;t upgrade engine image for degraded volume.</li>
+<li>While the upgrade is happening, make a volume degraded and verify if the upgrade still happen.</li>
 </ol>
 <h3 id="test-dr-volume">Test DR volume</h3>
 <ol>
-<li>Verify that Longhorn doesn&rsquo;t upgrade engine image for DR volume</li>
+<li>Verify that Longhorn doesn&rsquo;t upgrade engine image for DR volume.</li>
 </ol>
 <h3 id="test-expanding-volume">Test expanding volume</h3>
 <ol>
-<li>Verify that Longhorn doesn&rsquo;t upgrade engine image for volume which is expanding</li>
+<li>Verify that Longhorn doesn&rsquo;t upgrade engine image for volume which is expanding.</li>
 </ol>
 
     </article>
