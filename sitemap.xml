@@ -1,297 +1,151 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
   xmlns:xhtml="http://www.w3.org/1999/xhtml">
-  
   <url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/dr-volume-live-upgrade-and-rebuild/</loc>
-  </url>
-  
-  <url>
+  </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/concurrent-backup-creation-deletion/</loc>
-  </url>
-  
-  <url>
+  </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/concurrent-backup/</loc>
-  </url>
-  
-  <url>
+  </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/restore-volume-node-down/</loc>
-  </url>
-  
-  <url>
+  </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/dr-volume-node-down-rebooted/</loc>
-  </url>
-  
-  <url>
+  </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/google-cloud-s3-interop-backups/</loc>
-  </url>
-  
-  <url>
+  </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/backup-block-deletion/</loc>
-  </url>
-  
-  <url>
+  </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/air-gap/</loc>
-  </url>
-  
-  <url>
+  </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/air-gap/air-gap-installation/</loc>
-  </url>
-  
-  <url>
+  </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/air-gap/air-gap-instance-manager-name/</loc>
-  </url>
-  
-  <url>
+  </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/auto-upgrade-engine/</loc>
-  </url>
-  
-  <url>
+  </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/</loc>
-  </url>
-  
-  <url>
+  </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.1/besteffort-recurring-job/</loc>
-  </url>
-  
-  <url>
+  </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.1/change-imagepullpolicy/</loc>
-  </url>
-  
-  <url>
+  </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/environment/k3s-selinux-compatibility/</loc>
-  </url>
-  
-  <url>
+  </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/node/degraded-availability/</loc>
-  </url>
-  
-  <url>
+  </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/ha/disk-migration-in-aws-asg/</loc>
-  </url>
-  
-  <url>
+  </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.1/dr-volume-latest-backup-deletion/</loc>
-  </url>
-  
-  <url>
+  </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/environment/</loc>
-  </url>
-  
-  <url>
+  </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/ha/</loc>
-  </url>
-  
-  <url>
+  </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/node/improve-node-failure-handling/</loc>
-  </url>
-  
-  <url>
+  </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/ha/instance-manager-pod-recovery/</loc>
-  </url>
-  
-  <url>
+  </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/kubernetes-upgrade-test/</loc>
-  </url>
-  
-  <url>
+  </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/stability/multiple-installation/</loc>
-  </url>
-  
-  <url>
+  </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/</loc>
-  </url>
-  
-  <url>
+  </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/longhorn-upgrade-test/</loc>
-  </url>
-  
-  <url>
+  </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/</loc>
-  </url>
-  
-  <url>
+  </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.0/new-node-custom-data-directory/</loc>
-  </url>
-  
-  <url>
+  </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.1/nfsv4-enforcement/</loc>
-  </url>
-  
-  <url>
+  </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/node/</loc>
-  </url>
-  
-  <url>
+  </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/node/node-disconnection/</loc>
-  </url>
-  
-  <url>
+  </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/node/node-drain-deletion/</loc>
-  </url>
-  
-  <url>
+  </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.0/suse-sles12sp3/</loc>
-  </url>
-  
-  <url>
+  </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/node/physical-node-down/</loc>
-  </url>
-  
-  <url>
+  </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/</loc>
-  </url>
-  
-  <url>
+  </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.1/priorityclass-default-setting/</loc>
-  </url>
-  
-  <url>
+  </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/prometheus_support/</loc>
-  </url>
-  
-  <url>
+  </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/update_csi_components_when_images_change/</loc>
-  </url>
-  
-  <url>
+  </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/recurring-backup-job-interruptions/</loc>
-  </url>
-  
-  <url>
+  </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/release-specific/</loc>
-  </url>
-  
-  <url>
+  </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/ha/replica-rebuilding/</loc>
-  </url>
-  
-  <url>
+  </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.1/error-fail-remount/</loc>
-  </url>
-  
-  <url>
+  </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/reusing-failed-replica-for-rebuilding/</loc>
-  </url>
-  
-  <url>
+  </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/stability/</loc>
-  </url>
-  
-  <url>
+  </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/kubelet_volume_metrics/</loc>
-  </url>
-  
-  <url>
+  </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.1/test-s3-access-style/</loc>
-  </url>
-  
-  <url>
+  </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/additional-printer-columns/</loc>
-  </url>
-  
-  <url>
+  </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/disable_ipv6/</loc>
-  </url>
-  
-  <url>
+  </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/engine-crash-during-live-upgrade/</loc>
-  </url>
-  
-  <url>
+  </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/instance-manager-ip-sync/</loc>
-  </url>
-  
-  <url>
+  </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/iscsi_installation/</loc>
-  </url>
-  
-  <url>
+  </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/node/node-deletion/</loc>
-  </url>
-  
-  <url>
+  </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/rwx_feature/</loc>
-  </url>
-  
-  <url>
+  </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.1/test-s3-backupstore/</loc>
-  </url>
-  
-  <url>
+  </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/node/auto-detach/</loc>
-  </url>
-  
-  <url>
+  </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/snapshot-purge-error-handling/</loc>
-  </url>
-  
-  <url>
+  </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/uninstallation/</loc>
-  </url>
-  
-  <url>
+  </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.0/suse-sles12sp3/ext4-custom-fs-params-1/</loc>
-  </url>
-  
-  <url>
+  </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.0/suse-sles12sp3/ext4-custom-fs-params-2/</loc>
-  </url>
-  
-  <url>
+  </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.0/suse-sles12sp3/ext4-no-custom-fs-params/</loc>
-  </url>
-  
-  <url>
+  </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.0/suse-sles12sp3/xfs-after-custom-fs-params/</loc>
-  </url>
-  
-  <url>
+  </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/</loc>
-  </url>
-  
-  <url>
+  </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/upgrade-conflict-handling/</loc>
-  </url>
-  
-  <url>
+  </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.2/upgrade-lease-lock/</loc>
-  </url>
-  
-  <url>
+  </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/upgrade_with_modified_storageclass/</loc>
-  </url>
-  
-  <url>
+  </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.0/</loc>
-  </url>
-  
-  <url>
+  </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.1/</loc>
-  </url>
-  
-  <url>
+  </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.2/</loc>
-  </url>
-  
-  <url>
+  </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/</loc>
-  </url>
-  
-  <url>
+  </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/</loc>
-  </url>
-  
-  <url>
+  </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.1/ui-volume-deletion/</loc>
-  </url>
-  
-  <url>
+  </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/node/auto-detach/deployment/</loc>
-  </url>
-  
-  <url>
+  </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/node/auto-detach/statefulset/</loc>
   </url>
-  
 </urlset>
