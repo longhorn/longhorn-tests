@@ -36,13 +36,50 @@ from common import settings_reset # NOQA
 
 
 @pytest.fixture
-def upgrade_image_tag(request):
-    return request.config.getoption("--upgrade-image-tag")
+def upgrade_longhorn_manager_repo_url(request):
+    return request.config.getoption("--upgrade-lh-manager-repo-url")
 
 
-def longhorn_upgrade(image_tag):
+@pytest.fixture
+def upgrade_longhorn_manager_repo_branch(request):
+    return request.config.getoption("--upgrade-lh-manager-repo-branch")
+
+
+@pytest.fixture
+def upgrade_longhorn_manager_image(request):
+    return request.config.getoption("--upgrade-lh-manager-image")
+
+
+@pytest.fixture
+def upgrade_longhorn_engine_image(request):
+    return request.config.getoption("--upgrade-lh-engine-image")
+
+
+@pytest.fixture
+def upgrade_longhorn_instnace_manager_image(request):
+    return request.config.getoption("--upgrade-lh-instance-manager-image")
+
+
+@pytest.fixture
+def upgrade_longhorn_share_manager_image(request):
+    return request.config.getoption("--upgrade-lh-share-manager-image")
+
+
+def longhorn_upgrade(longhorn_manager_repo,
+                     longhorn_manager_branch,
+                     longhorn_manager_image,
+                     longhorn_engine_image,
+                     longhorn_instance_manager_image,
+                     longhorn_share_manager_image):
+
     command = "../scripts/upgrade-longhorn.sh"
-    process = subprocess.Popen([command, image_tag], shell=False)
+    process = subprocess.Popen([command,
+                                longhorn_manager_repo,
+                                longhorn_manager_branch,
+                                longhorn_manager_image,
+                                longhorn_engine_image,
+                                longhorn_instance_manager_image,
+                                longhorn_share_manager_image], shell=False)
     process.wait()
     if process.returncode == 0:
         longhorn_upgraded = True
@@ -54,7 +91,14 @@ def longhorn_upgrade(image_tag):
 
 
 @pytest.mark.upgrade
-def test_upgrade(upgrade_image_tag, settings_reset, volume_name, csi_pv, pvc, pod_make, statefulset, storage_class): # NOQA
+def test_upgrade(upgrade_longhorn_manager_repo_url,
+                 upgrade_longhorn_manager_repo_branch,
+                 upgrade_longhorn_manager_image,
+                 upgrade_longhorn_engine_image,
+                 upgrade_longhorn_instnace_manager_image,
+                 upgrade_longhorn_share_manager_image,
+                 settings_reset, volume_name, csi_pv, # NOQA
+                 pvc, pod_make, statefulset, storage_class): # NOQA
     """
     Test Longhorn upgrade
 
@@ -84,7 +128,12 @@ def test_upgrade(upgrade_image_tag, settings_reset, volume_name, csi_pv, pvc, po
     13. Attach the volume, and recreate Pod, and StatefulSet
     14. Check All volumes data
     """
-    new_ei_name = "longhornio/longhorn-engine:" + upgrade_image_tag
+    longhorn_manager_repo = upgrade_longhorn_manager_repo_url
+    longhorn_manager_branch = upgrade_longhorn_manager_repo_branch
+    longhorn_manager_image = upgrade_longhorn_engine_image
+    longhorn_engine_image = upgrade_longhorn_engine_image
+    longhorn_instance_manager_image = upgrade_longhorn_instnace_manager_image
+    longhorn_share_manager_image = upgrade_longhorn_share_manager_image
 
     client = get_longhorn_api_client()
     core_api = get_core_api_client()
@@ -130,7 +179,12 @@ def test_upgrade(upgrade_image_tag, settings_reset, volume_name, csi_pv, pvc, po
                               sspod_info['data'])
 
     # upgrade Longhorn
-    assert longhorn_upgrade(upgrade_image_tag)
+    assert longhorn_upgrade(longhorn_manager_repo,
+                            longhorn_manager_branch,
+                            longhorn_manager_image,
+                            longhorn_engine_image,
+                            longhorn_instance_manager_image,
+                            longhorn_share_manager_image)
 
     client = get_longhorn_api_client()
 
@@ -195,7 +249,7 @@ def test_upgrade(upgrade_image_tag, settings_reset, volume_name, csi_pv, pvc, po
     engineimages = client.list_engine_image()
 
     for ei in engineimages:
-        if ei.image == new_ei_name:
+        if ei.image == longhorn_engine_image:
             new_ei = ei
 
     volumes = client.list_volume()
