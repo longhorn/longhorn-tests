@@ -42,12 +42,19 @@ SKIP_RECURRING_JOB_OPT = &#34;--skip-recurring-job-test&#34;
 INCLUDE_INFRA_OPT = &#34;--include-infra-test&#34;
 INCLUDE_STRESS_OPT = &#34;--include-stress-test&#34;
 INCLUDE_UPGRADE_OPT = &#34;--include-upgrade-test&#34;
-UPGRADE_IMAGE_TAG = &#34;--upgrade-image-tag&#34;
+
+UPGRADE_LH_MANAGER_REPO_URL = &#34;--upgrade-lh-manager-repo-url&#34;
+UPGRADE_LH_MANAGER_REPO_BRANCH = &#34;--upgrade-lh-manager-repo-branch&#34;
+UPGRADE_LH_MANAGER_IMAGE = &#34;--upgrade-lh-manager-image&#34;
+UPGRADE_LH_ENGINE_IMAGE = &#34;--upgrade-lh-engine-image&#34;
+UPGRADE_LH_INSTANCE_MANAGER_IMAGE = &#34;--upgrade-lh-instance-manager-image&#34;
+UPGRADE_LH_SHARE_MANAGER_IMAGE = &#34;--upgrade-lh-share-manager-image&#34;
 
 
 def pytest_addoption(parser):
     parser.addoption(INCLUDE_BASE_IMAGE_OPT, action=&#34;store_true&#34;,
                      default=False, help=&#34;include base image tests&#34;)
+
     parser.addoption(SKIP_RECURRING_JOB_OPT, action=&#34;store_true&#34;,
                      default=False,
                      help=&#34;skip recurring job test or not&#34;)
@@ -60,14 +67,49 @@ def pytest_addoption(parser):
                      default=False,
                      help=&#34;include stress tests (default: False)&#34;)
 
-    parser.addoption(UPGRADE_IMAGE_TAG, action=&#34;store&#34;,
-                     default=&#34;master&#34;,
-                     help=&#34;set longhorn componenets image tag for upgrade\
-                           test (default: master)&#34;)
-
     parser.addoption(INCLUDE_UPGRADE_OPT, action=&#34;store_true&#34;,
                      default=False,
                      help=&#34;include upgrade tests (default: False)&#34;)
+
+    longhorn_manager_repo_url =\
+        &#34;https://github.com/longhorn/longhorn-manager.git&#34;
+    parser.addoption(UPGRADE_LH_MANAGER_REPO_URL, action=&#34;store&#34;,
+                     default=longhorn_manager_repo_url,
+                     help=&#39;&#39;&#39;set longhorn-manger repo url, this will be used
+                     to generate longhorn yaml manifest for test_upgrade
+                     (default:
+                     https://github.com/longhorn/longhorn-manager.git)&#39;&#39;&#39;)
+
+    parser.addoption(UPGRADE_LH_MANAGER_REPO_BRANCH, action=&#34;store&#34;,
+                     default=&#34;master&#34;,
+                     help=&#39;&#39;&#39;set longhorn-manger repo branch, this will be used
+                     to generate longhorn yaml manifest for test_upgrade
+                     (default: master)&#39;&#39;&#39;)
+
+    parser.addoption(UPGRADE_LH_MANAGER_IMAGE, action=&#34;store&#34;,
+                     default=&#34;longhornio/longhorn-manager:master&#34;,
+                     help=&#39;&#39;&#39;set custom longhorn-manger image, this image will
+                     be used in test_upgrade
+                     (default: longhornio/longhorn-manager:master)&#39;&#39;&#39;)
+
+    parser.addoption(UPGRADE_LH_ENGINE_IMAGE, action=&#34;store&#34;,
+                     default=&#34;longhornio/longhorn-engine:master&#34;,
+                     help=&#39;&#39;&#39;set custom longhorn-engine image, this image will
+                     be used in test_upgrade
+                     (default: longhornio/longhorn-engine:master)&#39;&#39;&#39;)
+
+    parser.addoption(UPGRADE_LH_INSTANCE_MANAGER_IMAGE, action=&#34;store&#34;,
+                     default=&#34;longhornio/longhorn-instance-manager:master&#34;,
+                     help=&#39;&#39;&#39;set custom longhorn-instance-manager image, this
+                     image will be used in test_upgrade
+                     (default: longhornio/longhorn-instance-manager:master)
+                     &#39;&#39;&#39;)
+
+    parser.addoption(UPGRADE_LH_SHARE_MANAGER_IMAGE, action=&#34;store&#34;,
+                     default=&#34;longhornio/longhorn-share-manager:master&#34;,
+                     help=&#39;&#39;&#39;set custom longhorn-share-manager image, this image
+                     will be used in test_upgrade
+                     (default: longhornio/longhorn-share-manager:master)&#39;&#39;&#39;)
 
 
 def pytest_collection_modifyitems(config, items):
@@ -180,6 +222,7 @@ def pytest_collection_modifyitems(config, items):
 <pre><code class="python">def pytest_addoption(parser):
     parser.addoption(INCLUDE_BASE_IMAGE_OPT, action=&#34;store_true&#34;,
                      default=False, help=&#34;include base image tests&#34;)
+
     parser.addoption(SKIP_RECURRING_JOB_OPT, action=&#34;store_true&#34;,
                      default=False,
                      help=&#34;skip recurring job test or not&#34;)
@@ -192,14 +235,49 @@ def pytest_collection_modifyitems(config, items):
                      default=False,
                      help=&#34;include stress tests (default: False)&#34;)
 
-    parser.addoption(UPGRADE_IMAGE_TAG, action=&#34;store&#34;,
-                     default=&#34;master&#34;,
-                     help=&#34;set longhorn componenets image tag for upgrade\
-                           test (default: master)&#34;)
-
     parser.addoption(INCLUDE_UPGRADE_OPT, action=&#34;store_true&#34;,
                      default=False,
-                     help=&#34;include upgrade tests (default: False)&#34;)</code></pre>
+                     help=&#34;include upgrade tests (default: False)&#34;)
+
+    longhorn_manager_repo_url =\
+        &#34;https://github.com/longhorn/longhorn-manager.git&#34;
+    parser.addoption(UPGRADE_LH_MANAGER_REPO_URL, action=&#34;store&#34;,
+                     default=longhorn_manager_repo_url,
+                     help=&#39;&#39;&#39;set longhorn-manger repo url, this will be used
+                     to generate longhorn yaml manifest for test_upgrade
+                     (default:
+                     https://github.com/longhorn/longhorn-manager.git)&#39;&#39;&#39;)
+
+    parser.addoption(UPGRADE_LH_MANAGER_REPO_BRANCH, action=&#34;store&#34;,
+                     default=&#34;master&#34;,
+                     help=&#39;&#39;&#39;set longhorn-manger repo branch, this will be used
+                     to generate longhorn yaml manifest for test_upgrade
+                     (default: master)&#39;&#39;&#39;)
+
+    parser.addoption(UPGRADE_LH_MANAGER_IMAGE, action=&#34;store&#34;,
+                     default=&#34;longhornio/longhorn-manager:master&#34;,
+                     help=&#39;&#39;&#39;set custom longhorn-manger image, this image will
+                     be used in test_upgrade
+                     (default: longhornio/longhorn-manager:master)&#39;&#39;&#39;)
+
+    parser.addoption(UPGRADE_LH_ENGINE_IMAGE, action=&#34;store&#34;,
+                     default=&#34;longhornio/longhorn-engine:master&#34;,
+                     help=&#39;&#39;&#39;set custom longhorn-engine image, this image will
+                     be used in test_upgrade
+                     (default: longhornio/longhorn-engine:master)&#39;&#39;&#39;)
+
+    parser.addoption(UPGRADE_LH_INSTANCE_MANAGER_IMAGE, action=&#34;store&#34;,
+                     default=&#34;longhornio/longhorn-instance-manager:master&#34;,
+                     help=&#39;&#39;&#39;set custom longhorn-instance-manager image, this
+                     image will be used in test_upgrade
+                     (default: longhornio/longhorn-instance-manager:master)
+                     &#39;&#39;&#39;)
+
+    parser.addoption(UPGRADE_LH_SHARE_MANAGER_IMAGE, action=&#34;store&#34;,
+                     default=&#34;longhornio/longhorn-share-manager:master&#34;,
+                     help=&#39;&#39;&#39;set custom longhorn-share-manager image, this image
+                     will be used in test_upgrade
+                     (default: longhornio/longhorn-share-manager:master)&#39;&#39;&#39;)</code></pre>
 </details>
 </dd>
 <dt id="tests.conftest.pytest_collection_modifyitems"><code class="name flex">
