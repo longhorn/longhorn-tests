@@ -1,8 +1,12 @@
 def imageName = "${JOB_BASE_NAME}-${env.BUILD_NUMBER}"
 def summary
+def BUILD_TRIGGER_BY = "\n${currentBuild.getBuildCauses()[0].shortDescription}"
 
 node {
-    notifyBuild('STARTED', "")
+
+	if(params.SEND_SLACK_NOTIFICATION){
+		notifyBuild('STARTED', BUILD_TRIGGER_BY, params.NOTIFY_SLACK_CHANNEL)
+	}
 
     checkout scm
 
@@ -75,14 +79,16 @@ node {
                     summary_msg = "\n Test Failed: No Junit report"
                 }
 
-                notifyBuild(currentBuild.result, summary_msg)
+				if(params.SEND_SLACK_NOTIFICATION){
+					notifyBuild(currentBuild.result, summary_msg, params.NOTIFY_SLACK_CHANNEL)
+				}
             }
         }
     }
 }
 
 
-def notifyBuild(String buildStatus = 'STARTED', String summary_msg) {
+def notifyBuild(String buildStatus = 'STARTED', String summary_msg, String slack_channel) {
   // build status of null means successful
   buildStatus =  buildStatus ?: 'SUCCESSFUL'
 
@@ -105,5 +111,5 @@ def notifyBuild(String buildStatus = 'STARTED', String summary_msg) {
   }
 
   // Send notifications
-  slackSend (color: colorCode, message: summary, channel: 'C01G91NUHFY',  teamDomain: 'rancher',  tokenCredentialId: 'longhorn-tests-slack-token')
+  slackSend (color: colorCode, message: summary, channel: slack_channel,  teamDomain: 'rancher',  tokenCredentialId: 'longhorn-tests-slack-token')
 }
