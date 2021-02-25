@@ -45,10 +45,22 @@ from common import update_statefulset_manifests, get_self_host_id, \
 from common import write_volume_random_data
 from common import write_pod_volume_random_data
 from common import BASE_IMAGE_LABEL, KUBERNETES_STATUS_LABEL
-from common import SIZE, Mi, Gi
+from common import SIZE, Mi, Gi, pvc  # NOQA
 from common import SETTING_RECURRING_JOB_WHILE_VOLUME_DETACHED
+from common import create_and_wait_deployment, DATA_SIZE_IN_MB_3
+from common import get_volume_name, wait_for_volume_detached
+from common import crash_engine_process_with_sigkill
+from common import check_pod_existence, LONGHORN_NAMESPACE
+from common import RETRY_BACKUP_INTERVAL, wait_for_backup_completion
+from common import RETRY_BACKUP_COUNTS
+from common import wait_deployment_replica_ready, read_volume_data
+from common import settings_reset # NOQA
+from common import wait_for_volume_healthy_no_frontend
+from common import wait_for_volume_healthy
 
-from backupstore import set_random_backupstore # NOQA
+from kubernetes.client.rest import ApiException
+
+from backupstore import set_random_backupstore, backupstore_s3  # NOQA
 
 RECURRING_JOB_LABEL = &#34;RecurringJob&#34;
 RECURRING_JOB_NAME = &#34;backup&#34;
@@ -81,6 +93,47 @@ def wait_until_begin_of_an_even_minute():
         if current_time.second == 0 and current_time.minute % 2 == 0:
             break
         time.sleep(1)
+
+
+# wait for backup progress created by recurring job to
+# exceed the minimum_progress percentage.
+def wait_for_recurring_backup_to_start(client, core_api, volume_name, expected_snapshot_count, minimum_progress=50):  # NOQA
+    job_pod_name = volume_name + &#39;-backup-c&#39;
+    snapshot_name = &#39;&#39;
+    snapshots = []
+    check_pod_existence(core_api, job_pod_name, namespace=LONGHORN_NAMESPACE)
+
+    # Find the snapshot which is being backed up
+    for _ in range(RETRY_BACKUP_COUNTS):
+        volume = client.by_id_volume(volume_name)
+        try:
+            snapshots = volume.snapshotList()
+        except (AttributeError, ApiException):
+            time.sleep(RETRY_BACKUP_INTERVAL)
+            continue
+        if len(snapshots) == expected_snapshot_count + 1:
+            for snapshot in snapshots:
+                if snapshot.children[&#39;volume-head&#39;]:
+                    snapshot_name = snapshot.name
+            break
+    assert snapshots is not None
+
+    # To ensure the progress of backup
+    in_progress = False
+    for _ in range(RETRY_BACKUP_COUNTS):
+        v = client.by_id_volume(volume_name)
+        for b in v.backupStatus:
+            if b.snapshot == snapshot_name and b.state == &#34;in_progress&#34; \
+                    and b.progress &gt; minimum_progress:
+                assert b.error == &#34;&#34;
+                in_progress = True
+                break
+        if in_progress:
+            break
+        time.sleep(RETRY_BACKUP_INTERVAL)
+    assert in_progress is True
+
+    return snapshot_name
 
 
 @pytest.mark.recurring_job  # NOQA
@@ -131,7 +184,7 @@ def test_recurring_job(set_random_backupstore, client, volume_name):  # NOQA
     volume.recurringUpdate(jobs=jobs)
 
     volume = volume.attach(hostId=host_id)
-    volume = common.wait_for_volume_healthy(client, volume_name)
+    volume = wait_for_volume_healthy(client, volume_name)
 
     # wait until the beginning of an even minute
     wait_until_begin_of_an_even_minute()
@@ -213,7 +266,7 @@ def test_recurring_job_in_volume_creation(set_random_backupstore, client, volume
     volume = common.wait_for_volume_detached(client, volume_name)
 
     volume.attach(hostId=host_id)
-    volume = common.wait_for_volume_healthy(client, volume_name)
+    volume = wait_for_volume_healthy(client, volume_name)
 
     # wait until the beginning of an even minute
     wait_until_begin_of_an_even_minute()
@@ -314,7 +367,7 @@ def recurring_job_labels_test(client, labels, volume_name, size=SIZE, base_image
     ]
     volume.recurringUpdate(jobs=jobs)
     volume.attach(hostId=host_id)
-    volume = common.wait_for_volume_healthy(client, volume_name)
+    volume = wait_for_volume_healthy(client, volume_name)
     write_volume_random_data(volume)
 
     # 1 minutes 15s
@@ -322,7 +375,7 @@ def recurring_job_labels_test(client, labels, volume_name, size=SIZE, base_image
     labels[&#34;we-added-this-label&#34;] = &#34;definitely&#34;
     jobs[0][&#34;labels&#34;] = labels
     volume = volume.recurringUpdate(jobs=jobs)
-    volume = common.wait_for_volume_healthy(client, volume_name)
+    volume = wait_for_volume_healthy(client, volume_name)
     write_volume_random_data(volume)
 
     # 2 minutes 15s
@@ -396,7 +449,7 @@ def test_recurring_job_kubernetes_status(set_random_backupstore, client, core_ap
     ]
     volume.recurringUpdate(jobs=jobs)
     volume.attach(hostId=host_id)
-    volume = common.wait_for_volume_healthy(client, volume_name)
+    volume = wait_for_volume_healthy(client, volume_name)
 
     write_volume_random_data(volume)
     # 5 minutes
@@ -456,7 +509,7 @@ def test_recurring_jobs_maximum_retain(client, core_api, volume_name): # NOQA
 
     volume = volume.attach(hostId=host_id)
 
-    volume = common.wait_for_volume_healthy(client, volume_name)
+    volume = wait_for_volume_healthy(client, volume_name)
 
     with pytest.raises(Exception) as e:
         volume.recurringUpdate(jobs=jobs)
@@ -513,7 +566,7 @@ def test_recurring_jobs_for_detached_volume(set_random_backupstore, client, core
 
     lht_hostId = get_self_host_id()
     vol.attach(hostId=lht_hostId)
-    vol = common.wait_for_volume_healthy(client, vol.name)
+    vol = wait_for_volume_healthy(client, vol.name)
 
     data = {
         &#39;pos&#39;: 0,
@@ -634,8 +687,7 @@ def test_recurring_jobs_on_nodes_with_taints():  # NOQA
     pass
 
 
-@pytest.mark.skip(reason=&#34;TODO&#34;)
-def test_recurring_jobs_when_volume_detached_unexpectedly():  # NOQA
+def test_recurring_jobs_when_volume_detached_unexpectedly(settings_reset, set_random_backupstore, client, core_api, apps_api, pvc, make_deployment_with_pvc):  # NOQA
     &#34;&#34;&#34;
     Test recurring jobs when volume detached unexpectedly
 
@@ -664,7 +716,72 @@ def test_recurring_jobs_when_volume_detached_unexpectedly():  # NOQA
     10. Turn off `Allow Recurring Job While Volume Is Detached` setting
        Clean up backups, volumes
     &#34;&#34;&#34;
-    pass</code></pre>
+
+    recurring_job_setting = \
+        client.by_id_setting(SETTING_RECURRING_JOB_WHILE_VOLUME_DETACHED)
+    client.update(recurring_job_setting, value=&#34;true&#34;)
+
+    pvc_name = &#39;pvc-volume-detached-unexpectedly-test&#39;
+    pvc[&#39;metadata&#39;][&#39;name&#39;] = pvc_name
+    pvc[&#39;spec&#39;][&#39;storageClassName&#39;] = &#39;longhorn&#39;
+
+    core_api.create_namespaced_persistent_volume_claim(
+        body=pvc, namespace=&#39;default&#39;)
+
+    deployment = make_deployment_with_pvc(
+        &#39;deployment-volume-detached-unexpectedly-test&#39;, pvc_name)
+    create_and_wait_deployment(apps_api, deployment)
+    pod_names = common.get_deployment_pod_names(core_api, deployment)
+    vol_name = get_volume_name(core_api, pvc_name)
+
+    write_pod_volume_random_data(core_api, pod_names[0], &#34;/data/test&#34;,
+                                 DATA_SIZE_IN_MB_3)
+
+    data = read_volume_data(core_api, pod_names[0], &#39;default&#39;)
+    deployment[&#39;spec&#39;][&#39;replicas&#39;] = 0
+    apps_api.patch_namespaced_deployment(body=deployment,
+                                         namespace=&#39;default&#39;,
+                                         name=deployment[&#34;metadata&#34;][&#34;name&#34;])
+    vol = wait_for_volume_detached(client, vol_name)
+
+    jobs = [
+        {
+            &#34;name&#34;: RECURRING_JOB_NAME,
+            &#34;cron&#34;: &#34;*/2 * * * *&#34;,
+            &#34;task&#34;: &#34;backup&#34;,
+            &#34;retain&#34;: 1
+        }
+    ]
+    vol.recurringUpdate(jobs=jobs)
+
+    wait_for_recurring_backup_to_start(client,
+                                       core_api,
+                                       vol_name,
+                                       expected_snapshot_count=1)
+
+    crash_engine_process_with_sigkill(client, core_api, vol_name)
+    # waiting 30sec for volume detach and attach operation
+    # after recurring backup is interrupted
+    time.sleep(30)
+    wait_for_volume_healthy_no_frontend(client, vol_name)
+
+    snapshot_name = \
+        wait_for_recurring_backup_to_start(client,
+                                           core_api,
+                                           vol_name,
+                                           expected_snapshot_count=1)
+
+    wait_for_backup_completion(client, vol_name, snapshot_name)
+    wait_for_volume_detached(client, vol_name)
+
+    deployment[&#39;spec&#39;][&#39;replicas&#39;] = 1
+    apps_api.patch_namespaced_deployment(body=deployment,
+                                         namespace=&#39;default&#39;,
+                                         name=deployment[&#34;metadata&#34;][&#34;name&#34;])
+    wait_deployment_replica_ready(apps_api, deployment[&#34;metadata&#34;][&#34;name&#34;], 1)
+    pod_names = common.get_deployment_pod_names(core_api, deployment)
+
+    assert read_volume_data(core_api, pod_names[0], &#39;default&#39;) == data</code></pre>
 </details>
 </section>
 <section>
@@ -739,7 +856,7 @@ def test_recurring_jobs_when_volume_detached_unexpectedly():  # NOQA
     ]
     volume.recurringUpdate(jobs=jobs)
     volume.attach(hostId=host_id)
-    volume = common.wait_for_volume_healthy(client, volume_name)
+    volume = wait_for_volume_healthy(client, volume_name)
     write_volume_random_data(volume)
 
     # 1 minutes 15s
@@ -747,7 +864,7 @@ def test_recurring_jobs_when_volume_detached_unexpectedly():  # NOQA
     labels[&#34;we-added-this-label&#34;] = &#34;definitely&#34;
     jobs[0][&#34;labels&#34;] = labels
     volume = volume.recurringUpdate(jobs=jobs)
-    volume = common.wait_for_volume_healthy(client, volume_name)
+    volume = wait_for_volume_healthy(client, volume_name)
     write_volume_random_data(volume)
 
     # 2 minutes 15s
@@ -869,7 +986,7 @@ def test_recurring_job(set_random_backupstore, client, volume_name):  # NOQA
     volume.recurringUpdate(jobs=jobs)
 
     volume = volume.attach(hostId=host_id)
-    volume = common.wait_for_volume_healthy(client, volume_name)
+    volume = wait_for_volume_healthy(client, volume_name)
 
     # wait until the beginning of an even minute
     wait_until_begin_of_an_even_minute()
@@ -1021,7 +1138,7 @@ def test_recurring_job_in_volume_creation(set_random_backupstore, client, volume
     volume = common.wait_for_volume_detached(client, volume_name)
 
     volume.attach(hostId=host_id)
-    volume = common.wait_for_volume_healthy(client, volume_name)
+    volume = wait_for_volume_healthy(client, volume_name)
 
     # wait until the beginning of an even minute
     wait_until_begin_of_an_even_minute()
@@ -1104,7 +1221,7 @@ def test_recurring_job_kubernetes_status(set_random_backupstore, client, core_ap
     ]
     volume.recurringUpdate(jobs=jobs)
     volume.attach(hostId=host_id)
-    volume = common.wait_for_volume_healthy(client, volume_name)
+    volume = wait_for_volume_healthy(client, volume_name)
 
     write_volume_random_data(volume)
     # 5 minutes
@@ -1259,7 +1376,7 @@ Delete the recurring backup.
 
     lht_hostId = get_self_host_id()
     vol.attach(hostId=lht_hostId)
-    vol = common.wait_for_volume_healthy(client, vol.name)
+    vol = wait_for_volume_healthy(client, vol.name)
 
     data = {
         &#39;pos&#39;: 0,
@@ -1378,7 +1495,7 @@ Delete the recurring backup.
 
     volume = volume.attach(hostId=host_id)
 
-    volume = common.wait_for_volume_healthy(client, volume_name)
+    volume = wait_for_volume_healthy(client, volume_name)
 
     with pytest.raises(Exception) as e:
         volume.recurringUpdate(jobs=jobs)
@@ -1480,7 +1597,7 @@ def test_recurring_jobs_on_nodes_with_taints():  # NOQA
 </details>
 </dd>
 <dt id="tests.test_recurring_job.test_recurring_jobs_when_volume_detached_unexpectedly"><code class="name flex">
-<span>def <span class="ident">test_recurring_jobs_when_volume_detached_unexpectedly</span></span>(<span>)</span>
+<span>def <span class="ident">test_recurring_jobs_when_volume_detached_unexpectedly</span></span>(<span>settings_reset, set_random_backupstore, client, core_api, apps_api, pvc, make_deployment_with_pvc)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Test recurring jobs when volume detached unexpectedly</p>
@@ -1511,8 +1628,7 @@ Clean up backups, volumes</li>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">@pytest.mark.skip(reason=&#34;TODO&#34;)
-def test_recurring_jobs_when_volume_detached_unexpectedly():  # NOQA
+<pre><code class="python">def test_recurring_jobs_when_volume_detached_unexpectedly(settings_reset, set_random_backupstore, client, core_api, apps_api, pvc, make_deployment_with_pvc):  # NOQA
     &#34;&#34;&#34;
     Test recurring jobs when volume detached unexpectedly
 
@@ -1541,7 +1657,120 @@ def test_recurring_jobs_when_volume_detached_unexpectedly():  # NOQA
     10. Turn off `Allow Recurring Job While Volume Is Detached` setting
        Clean up backups, volumes
     &#34;&#34;&#34;
-    pass</code></pre>
+
+    recurring_job_setting = \
+        client.by_id_setting(SETTING_RECURRING_JOB_WHILE_VOLUME_DETACHED)
+    client.update(recurring_job_setting, value=&#34;true&#34;)
+
+    pvc_name = &#39;pvc-volume-detached-unexpectedly-test&#39;
+    pvc[&#39;metadata&#39;][&#39;name&#39;] = pvc_name
+    pvc[&#39;spec&#39;][&#39;storageClassName&#39;] = &#39;longhorn&#39;
+
+    core_api.create_namespaced_persistent_volume_claim(
+        body=pvc, namespace=&#39;default&#39;)
+
+    deployment = make_deployment_with_pvc(
+        &#39;deployment-volume-detached-unexpectedly-test&#39;, pvc_name)
+    create_and_wait_deployment(apps_api, deployment)
+    pod_names = common.get_deployment_pod_names(core_api, deployment)
+    vol_name = get_volume_name(core_api, pvc_name)
+
+    write_pod_volume_random_data(core_api, pod_names[0], &#34;/data/test&#34;,
+                                 DATA_SIZE_IN_MB_3)
+
+    data = read_volume_data(core_api, pod_names[0], &#39;default&#39;)
+    deployment[&#39;spec&#39;][&#39;replicas&#39;] = 0
+    apps_api.patch_namespaced_deployment(body=deployment,
+                                         namespace=&#39;default&#39;,
+                                         name=deployment[&#34;metadata&#34;][&#34;name&#34;])
+    vol = wait_for_volume_detached(client, vol_name)
+
+    jobs = [
+        {
+            &#34;name&#34;: RECURRING_JOB_NAME,
+            &#34;cron&#34;: &#34;*/2 * * * *&#34;,
+            &#34;task&#34;: &#34;backup&#34;,
+            &#34;retain&#34;: 1
+        }
+    ]
+    vol.recurringUpdate(jobs=jobs)
+
+    wait_for_recurring_backup_to_start(client,
+                                       core_api,
+                                       vol_name,
+                                       expected_snapshot_count=1)
+
+    crash_engine_process_with_sigkill(client, core_api, vol_name)
+    # waiting 30sec for volume detach and attach operation
+    # after recurring backup is interrupted
+    time.sleep(30)
+    wait_for_volume_healthy_no_frontend(client, vol_name)
+
+    snapshot_name = \
+        wait_for_recurring_backup_to_start(client,
+                                           core_api,
+                                           vol_name,
+                                           expected_snapshot_count=1)
+
+    wait_for_backup_completion(client, vol_name, snapshot_name)
+    wait_for_volume_detached(client, vol_name)
+
+    deployment[&#39;spec&#39;][&#39;replicas&#39;] = 1
+    apps_api.patch_namespaced_deployment(body=deployment,
+                                         namespace=&#39;default&#39;,
+                                         name=deployment[&#34;metadata&#34;][&#34;name&#34;])
+    wait_deployment_replica_ready(apps_api, deployment[&#34;metadata&#34;][&#34;name&#34;], 1)
+    pod_names = common.get_deployment_pod_names(core_api, deployment)
+
+    assert read_volume_data(core_api, pod_names[0], &#39;default&#39;) == data</code></pre>
+</details>
+</dd>
+<dt id="tests.test_recurring_job.wait_for_recurring_backup_to_start"><code class="name flex">
+<span>def <span class="ident">wait_for_recurring_backup_to_start</span></span>(<span>client, core_api, volume_name, expected_snapshot_count, minimum_progress=50)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def wait_for_recurring_backup_to_start(client, core_api, volume_name, expected_snapshot_count, minimum_progress=50):  # NOQA
+    job_pod_name = volume_name + &#39;-backup-c&#39;
+    snapshot_name = &#39;&#39;
+    snapshots = []
+    check_pod_existence(core_api, job_pod_name, namespace=LONGHORN_NAMESPACE)
+
+    # Find the snapshot which is being backed up
+    for _ in range(RETRY_BACKUP_COUNTS):
+        volume = client.by_id_volume(volume_name)
+        try:
+            snapshots = volume.snapshotList()
+        except (AttributeError, ApiException):
+            time.sleep(RETRY_BACKUP_INTERVAL)
+            continue
+        if len(snapshots) == expected_snapshot_count + 1:
+            for snapshot in snapshots:
+                if snapshot.children[&#39;volume-head&#39;]:
+                    snapshot_name = snapshot.name
+            break
+    assert snapshots is not None
+
+    # To ensure the progress of backup
+    in_progress = False
+    for _ in range(RETRY_BACKUP_COUNTS):
+        v = client.by_id_volume(volume_name)
+        for b in v.backupStatus:
+            if b.snapshot == snapshot_name and b.state == &#34;in_progress&#34; \
+                    and b.progress &gt; minimum_progress:
+                assert b.error == &#34;&#34;
+                in_progress = True
+                break
+        if in_progress:
+            break
+        time.sleep(RETRY_BACKUP_INTERVAL)
+    assert in_progress is True
+
+    return snapshot_name</code></pre>
 </details>
 </dd>
 <dt id="tests.test_recurring_job.wait_until_begin_of_an_even_minute"><code class="name flex">
@@ -1591,6 +1820,7 @@ def test_recurring_jobs_when_volume_detached_unexpectedly():  # NOQA
 <li><code><a title="tests.test_recurring_job.test_recurring_jobs_maximum_retain" href="#tests.test_recurring_job.test_recurring_jobs_maximum_retain">test_recurring_jobs_maximum_retain</a></code></li>
 <li><code><a title="tests.test_recurring_job.test_recurring_jobs_on_nodes_with_taints" href="#tests.test_recurring_job.test_recurring_jobs_on_nodes_with_taints">test_recurring_jobs_on_nodes_with_taints</a></code></li>
 <li><code><a title="tests.test_recurring_job.test_recurring_jobs_when_volume_detached_unexpectedly" href="#tests.test_recurring_job.test_recurring_jobs_when_volume_detached_unexpectedly">test_recurring_jobs_when_volume_detached_unexpectedly</a></code></li>
+<li><code><a title="tests.test_recurring_job.wait_for_recurring_backup_to_start" href="#tests.test_recurring_job.wait_for_recurring_backup_to_start">wait_for_recurring_backup_to_start</a></code></li>
 <li><code><a title="tests.test_recurring_job.wait_until_begin_of_an_even_minute" href="#tests.test_recurring_job.wait_until_begin_of_an_even_minute">wait_until_begin_of_an_even_minute</a></code></li>
 </ul>
 </li>
