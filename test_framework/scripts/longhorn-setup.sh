@@ -60,7 +60,7 @@ generate_longhorn_yaml_manifest() {
 	MANIFEST_BASEDIR="${1}"
 
 	LONGHORN_MANAGER_REPO_URI=${LONGHORN_MANAGER_REPO_URI:-"https://github.com/longhorn/longhorn-manager.git"}
-	LONGHORN_MANAGER_BRANCH="master"
+	LONGHORN_MANAGER_BRANCH=${LONGHORN_MANAGER_BRANCH:-"master"}
 	LONGHORN_MANAGER_REPO_DIR="${TMPDIR}/longhorn-manager"
 
     CUSTOM_LONGHORN_MANAGER_IMAGE=${CUSTOM_LONGHORN_MANAGER_IMAGE:-"longhornio/longhorn-manager:master"}
