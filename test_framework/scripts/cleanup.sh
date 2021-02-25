@@ -1,9 +1,11 @@
 #!/usr/bin/env bash
 
 # terminate any terraform processes
-TERRAFORM_PIDS="`ps aux | grep -i terraform | grep -v grep | awk {'print $1'} | tr \"\n\" \" \" `" 
-if [[ -n TERRAFORM_PIDS ]] ; then
-  kill  "${TERRAFORM_PIDS}"
+TERRAFORM_PIDS=( `ps aux | grep -i terraform | grep -v grep | awk '{printf("%s ",$1)}'` )
+if [[ -n ${TERRAFORM_PIDS[@]} ]] ; then
+	for PID in ${TERRAFORM_PIDS[@]}; do
+		kill "${TERRAFORM_PIDS}"
+	done
 fi
 
 # wait 30 seconds for graceful terraform termination
