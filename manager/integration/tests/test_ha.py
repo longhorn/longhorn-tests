@@ -2427,3 +2427,109 @@ def test_replica_failure_during_attaching(settings_reset, client, core_api, volu
     del update_disks["extra-disk"]
     node.diskUpdate(disks=update_disks)
     common.wait_for_disk_update(client, node.name, 1)
+
+
+@pytest.mark.skip(reason="TODO") # NOQA
+def test_engine_image_missing_on_some_nodes():
+    """
+    This e2e test follows the manual test steps at:
+    https://github.com/longhorn/longhorn/issues/2081#issuecomment-783747541
+
+    Steps:
+
+    Preparation:
+    1. Set up a backup store
+    2. Let's name the 3 nodes: node-1, node-2, node-3
+
+    Case 1: Test volume operations when engine image DaemonSet is miss
+    scheduled
+    1. Create a volume, vol-1, of 3 replicas
+    2. Create another volume, vol-2, of 3 replicas
+    3. Taint node-1 with the taint: key=value:NoSchedule
+    4. Verify that we can attach, take snapshot, take a backup,
+       detach, then expand vol-1
+
+    Case 2: Test volume operations when engine image DaemonSet is not fully
+    deployed
+    1. Continue from case #1
+    2. Attach vol-1 to node-1. Change the number of replicas of vol-1
+       to 2. Delete the replica on node-1
+    3. Delete the pod on node-1 of the engine image DaemonSet.
+       Or delete the engine image DaemonSet and wait for Longhorn
+       to automatically recreates it.
+    4. Wait for the engine image CR state become deploying
+    5. Verify that functions (snapshot, backup, detach) are working ok
+       for vol-1
+    6. Detach vol-1
+    7. Attach vol-1 to node-1. Verify that Longhorn cannot attach vol-1 to
+       node-1 since there is no engine image on node-1. The attach API call
+       returns error
+    8. Verify that we can attach to another node, take snapshot, take a backup,
+       detach, then expand for vol-1
+    9. Verify that vol-2 cannot be attached to any nodes because one of
+       its replicas is sitting on the node-1 which doesn't have the
+       engine image. The attach API call returns error
+
+    Case 3: Test engine upgrade when engine image DaemonSet is not fully
+    deployed
+    1. Continue from case #2
+    2. Deploy a new engine image, new-ei
+    3. Detach vol-1
+    4. Verify that you can upgrade vol-1 to new-ei
+    5. Attach vol-1 to node-2
+    6. Verify that you can live upgrade vol-1 to back to default engine image
+    7. Try to upgrade vol-2 to new-ei
+    8. Verify that the engineUpgrade API call returns error
+
+    Case 4: Test replicas scheduling when engine image DaemonSet is not fully
+    deployed
+    1. Continue from case #3
+    2. Create a new volume, vol-3, with 2 replicas
+    3. disable the scheduling for node-2
+    4. Verify that there is one replica fail to be scheduled
+    5. enable the scheduling for node-2
+    6. Verify that replicas are scheduled onto node-2 and node-3
+
+    Case 5: Test auto upgrade engine feature when engine image DaemonSet is
+    not fully deployed
+    1. Continue from case #4
+    2. Detach vol-1 and vol-3
+    3. Upgrade vol-1 and vol-3 to the new-ei
+    4. Attach vol-3 to node node-2
+    5. Set `Concurrent Automatic Engine Upgrade Per Node Limit` setting to 3
+    6. In a 2-min retry, verify that Longhorn upgrades the engine image of
+       vol-1 and vol-3 back to the default version and Longhorn doesn't
+       automatically upgrade vol-2's engine image since it has 1 replica
+       sitting on node-1 which doesn't have the engine image deployed
+
+    Case 6: Test DR, restoring, expanding volumes when engine image DaemonSet
+    is not fully deployed
+    1. Continue from case #5
+    2. Create a DR volume (vol-dr) of 2 replicas.
+    3. Verify that 2 replicas are on node-2 and node-3 and the DR volume
+       is attached to either node-2 or node-3.
+       Let's say it is attached to node-x
+    4. Taint node-x with the taint `key=value:NoSchedule`
+    5. Delete the pod of engine image DeamonSet on node-x. Now, the engine
+       image is missing on node-1 and node-x
+    6. Verify that vol-dr is auto-attached node-y.
+    7. Restore a volume from backupstore with name vol-rs and replica count
+       is 1
+    8. Verify that replica is on node-y and the volume successfully restored.
+    9. Wait for vol-rs to finish restoring
+    10. Expand vol-rs.
+    11. Verify that the expansion is ok
+
+    Case 7: Test replicas scheduling when engine image DaemonSet is not fully
+    deployed
+    1. Continue from case #6
+    2. Set `Replica Replenishment Wait Interval` setting to 600
+    3. Crash the replica of vol-3 on node-x. Wait for the replica to fail
+    4. In a 2-min retry verify that Longhorn doesn't create new replica
+       for vol-3 and doesn't reuse the failed replica on node-x
+
+    Cleaning up:
+    1. Remove the taint from node-1 and node-x
+    2. Delete the new-ei
+    """
+    pass
