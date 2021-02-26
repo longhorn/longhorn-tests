@@ -2762,7 +2762,7 @@ def reset_engine_image(client):
         ei_list = client.list_engine_image().data
         for ei in ei_list:
             if ei.default:
-                if ei.state != 'ready':
+                if ei.state != 'deployed':
                     ready = False
             else:
                 wait_for_engine_image_ref_count(client, ei.name, 0)
