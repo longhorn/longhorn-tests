@@ -319,50 +319,17 @@
 </aside>
 
 <main style="padding: 1%; width: 70%;">
-  <h1 id="title">Workload type: Stateful set</h1>
+  <h1 id="title">Test Backing Image during Longhorn upgrade</h1>
   <div>
     <article id="content">
-       <p>Volume Attachment Recovery Policy: <strong>Immediate:</strong></p>
-<ul>
-<li>Have a stateful set workload deployed using volume claim template using longhorn storage class.</li>
-<li>Number of pods - 6</li>
-<li>2 pods are scheduled on N1.</li>
-<li>Power off N1. The pods go into Unknown state.</li>
-<li>replacement pods are NOT created</li>
-<li>force delete these pods in &ldquo;Unknown&rdquo; state</li>
-<li>replacement pods are created</li>
-<li>first pod comes up in about 30 seconds.</li>
-<li>data is accessible in the volume.</li>
-<li>It takes another 1 minute approx for the second pod to come up.</li>
-<li>data is accessible in the volume.</li>
-</ul>
-<p>Volume Attachment Recovery Policy: <strong>wait:</strong></p>
-<ul>
-<li>Have a stateful set workload deployed using volume claim template using longhorn storage class.</li>
-<li>Number of pods - 6</li>
-<li>1 pod is scheduled on N1.</li>
-<li>Power off N1. The pod goes into Unknown state.</li>
-<li>replacement pod is NOT created</li>
-<li>force delete this pod in &ldquo;Unknown&rdquo; state</li>
-<li>replacement pod is created</li>
-<li>It comes up in about 30 seconds.</li>
-<li>data is accessible in the volume.</li>
-</ul>
-<p>Volume Attachment Recovery Policy: <strong>never:</strong></p>
-<ul>
-<li>Have a stateful set workload deployed using volume claim template using longhorn storage class.</li>
-<li>Number of pods - 6</li>
-<li>2 pods are scheduled on N1.</li>
-<li>Power off N1. The pods go into Unknown state.</li>
-<li>replacement pods are NOT created</li>
-<li>force delete these pods in &ldquo;Unknown&rdquo; state</li>
-<li>replacement pods are created</li>
-<li>first pod comes up in about 30 seconds.</li>
-<li>data is accessible in the volume.</li>
-<li>It takes another 1 minute approx for the second pod to come up.</li>
-<li>data is accessible in the volume.</li>
-</ul>
-<p><strong>Note:</strong> All the above behavior will depend on <code>NodeDownPodDeletionPolicy</code>. It is assumed that <code>NodeDownPodDeletionPolicy</code> is set to <code>do-nothing</code> while executing the above scenarios.</p>
+       <ol>
+<li>Deploy an old version Longhorn. Then set <code>Concurrent Automatic Engine Upgrade Per Node Limit</code> to a positive value to enable volume engine auto upgrade.</li>
+<li>Create a backing image.</li>
+<li>Create and attach volumes with the backing image.</li>
+<li>Verify the backing image content then write random data in the volumes.</li>
+<li>Upgrade the whole Longhorn system with a new engine image.</li>
+<li>Verify the volumes still work fine, and the content is correct in the volumes during/after the upgrade.</li>
+</ol>
 
     </article>
   </div>

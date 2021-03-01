@@ -45,6 +45,15 @@ Test basic upgrade  Install old Longhorn version. E.g., &amp;lt;= v1.0.2 Create 
     </item>
     
     <item>
+      <title>Test Backing Image during Longhorn upgrade</title>
+      <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/backing-image-during-upgrade/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/backing-image-during-upgrade/</guid>
+      <description>Deploy an old version Longhorn. Then set Concurrent Automatic Engine Upgrade Per Node Limit to a positive value to enable volume engine auto upgrade. Create a backing image. Create and attach volumes with the backing image. Verify the backing image content then write random data in the volumes. Upgrade the whole Longhorn system with a new engine image. Verify the volumes still work fine, and the content is correct in the volumes during/after the upgrade.</description>
+    </item>
+    
+    <item>
       <title>Test Engine Crash During Live Upgrade</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/engine-crash-during-live-upgrade/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>

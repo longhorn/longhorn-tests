@@ -248,7 +248,7 @@ def test_volume_basic(client, volume_name):  # NOQA
     volume_basic_test(client, volume_name)
 
 
-def volume_basic_test(client, volume_name, base_image=&#34;&#34;):  # NOQA
+def volume_basic_test(client, volume_name, backing_image=&#34;&#34;):  # NOQA
     num_hosts = len(client.list_node())
     num_replicas = 3
 
@@ -262,7 +262,7 @@ def volume_basic_test(client, volume_name, base_image=&#34;&#34;):  # NOQA
                                       frontend=&#34;invalid_frontend&#34;)
 
     volume = create_and_check_volume(client, volume_name, num_replicas, SIZE,
-                                     base_image)
+                                     backing_image)
     assert volume.restoreRequired is False
 
     def validate_volume_basic(expected, actual):
@@ -270,7 +270,7 @@ def volume_basic_test(client, volume_name, base_image=&#34;&#34;):  # NOQA
         assert actual.size == expected.size
         assert actual.numberOfReplicas == expected.numberOfReplicas
         assert actual.frontend == VOLUME_FRONTEND_BLOCKDEV
-        assert actual.baseImage == base_image
+        assert actual.backingImage == backing_image
         assert actual.state == expected.state
         assert actual.created == expected.created
 
@@ -337,10 +337,10 @@ def test_volume_iscsi_basic(client, volume_name):  # NOQA
     volume_iscsi_basic_test(client, volume_name)
 
 
-def volume_iscsi_basic_test(client, volume_name, base_image=&#34;&#34;):  # NOQA
+def volume_iscsi_basic_test(client, volume_name, backing_image=&#34;&#34;):  # NOQA
     host_id = get_self_host_id()
-    volume = create_and_check_volume(client, volume_name, 3, SIZE, base_image,
-                                     VOLUME_FRONTEND_ISCSI)
+    volume = create_and_check_volume(client, volume_name, 3, SIZE,
+                                     backing_image, VOLUME_FRONTEND_ISCSI)
     volume.attach(hostId=host_id)
     volume = common.wait_for_volume_healthy(client, volume_name)
 
@@ -352,6 +352,7 @@ def volume_iscsi_basic_test(client, volume_name, base_image=&#34;&#34;):  # NOQA
     assert volumes[0].state == volume.state
     assert volumes[0].created == volume.created
     assert volumes[0].frontend == VOLUME_FRONTEND_ISCSI
+    assert volumes[0].backingImage == volume.backingImage
     endpoint = get_volume_endpoint(volumes[0])
 
     try:
@@ -364,7 +365,7 @@ def volume_iscsi_basic_test(client, volume_name, base_image=&#34;&#34;):  # NOQA
 
 
 @pytest.mark.coretest   # NOQA
-def test_snapshot(client, volume_name, base_image=&#34;&#34;):  # NOQA
+def test_snapshot(client, volume_name, backing_image=&#34;&#34;):  # NOQA
     &#34;&#34;&#34;
     Test snapshot operations
 
@@ -387,12 +388,12 @@ def test_snapshot(client, volume_name, base_image=&#34;&#34;):  # NOQA
     are gone. `snap2` is marked as removed.
     17. Check volume data, make sure it&#39;s still `snap2_data`.
     &#34;&#34;&#34;
-    snapshot_test(client, volume_name, base_image)
+    snapshot_test(client, volume_name, backing_image)
 
 
-def snapshot_test(client, volume_name, base_image):  # NOQA
+def snapshot_test(client, volume_name, backing_image):  # NOQA
     volume = create_and_check_volume(client, volume_name,
-                                     base_image=base_image)
+                                     backing_image=backing_image)
 
     lht_hostId = get_self_host_id()
     volume = volume.attach(hostId=lht_hostId)
@@ -554,8 +555,9 @@ def test_backup_status_for_unavailable_replicas(client, volume_name):    # NOQA
 
 
 def backup_status_for_unavailable_replicas_test(client, volume_name,  # NOQA
-                                                size, base_image=&#34;&#34;):  # NOQA
-    volume = create_and_check_volume(client, volume_name, 2, size, base_image)
+                                                size, backing_image=&#34;&#34;):  # NOQA
+    volume = create_and_check_volume(client, volume_name, 2, size,
+                                     backing_image)
 
     lht_hostId = get_self_host_id()
     volume = volume.attach(hostId=lht_hostId)
@@ -987,8 +989,9 @@ def test_backup(client, volume_name):  # NOQA
     backup_test(client, volume_name, SIZE)
 
 
-def backup_test(client, volume_name, size, base_image=&#34;&#34;):  # NOQA
-    volume = create_and_check_volume(client, volume_name, 2, size, base_image)
+def backup_test(client, volume_name, size, backing_image=&#34;&#34;):  # NOQA
+    volume = create_and_check_volume(client, volume_name, 2, size,
+                                     backing_image)
 
     lht_hostId = get_self_host_id()
     volume = volume.attach(hostId=lht_hostId)
@@ -1065,10 +1068,11 @@ def test_backup_labels(client, random_labels, volume_name):  # NOQA
     backup_labels_test(client, random_labels, volume_name)
 
 
-def backup_labels_test(client, random_labels, volume_name, size=SIZE, base_image=&#34;&#34;):  # NOQA
+def backup_labels_test(client, random_labels, volume_name, size=SIZE, backing_image=&#34;&#34;):  # NOQA
     host_id = get_self_host_id()
 
-    volume = create_and_check_volume(client, volume_name, 2, size, base_image)
+    volume = create_and_check_volume(client, volume_name, 2, size,
+                                     backing_image)
 
     volume.attach(hostId=host_id)
     volume = common.wait_for_volume_healthy(client, volume_name)
@@ -1095,15 +1099,14 @@ def backup_labels_test(client, random_labels, volume_name, size=SIZE, base_image
             assert credential.value == &#34;&#34;
 
         bv, b, _, _ = create_backup(client, volume_name, labels=random_labels)
-        # If we&#39;re running the test with a BaseImage, check that this Label is
-        # set properly.
+        # If we&#39;re running the test with a BackingImage,
+        # check field `volumeBackingImageName` is set properly.
         backup = bv.backupGet(name=b.name)
-        if base_image:
-            assert backup.labels.get(common.BASE_IMAGE_LABEL) == base_image
-            # One extra Label from the BaseImage being set.
-            assert len(backup.labels) == len(random_labels) + 1
-        else:
-            assert len(backup.labels) == len(random_labels)
+        if backing_image:
+            assert backup.volumeBackingImageName == \
+                   backing_image
+            assert backup.volumeBackingImageURL != &#34;&#34;
+        assert len(backup.labels) == len(random_labels)
 
     cleanup_volume(client, volume)
 
@@ -1401,7 +1404,7 @@ def test_deleting_backup_volume(client, volume_name):  # NOQA
 
 
 @pytest.mark.coretest   # NOQA
-def test_listing_backup_volume(client, base_image=&#34;&#34;):   # NOQA
+def test_listing_backup_volume(client, backing_image=&#34;&#34;):   # NOQA
     &#34;&#34;&#34;
     Test listing backup volumes
 
@@ -3600,7 +3603,7 @@ def test_volume_toomanysnapshots_condition(client, core_api, volume_name): # NOQ
 <h2 class="section-title" id="header-functions">Functions</h2>
 <dl>
 <dt id="tests.test_basic.backup_labels_test"><code class="name flex">
-<span>def <span class="ident">backup_labels_test</span></span>(<span>client, random_labels, volume_name, size='16777216', base_image='')</span>
+<span>def <span class="ident">backup_labels_test</span></span>(<span>client, random_labels, volume_name, size='16777216', backing_image='')</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -3608,10 +3611,11 @@ def test_volume_toomanysnapshots_condition(client, core_api, volume_name): # NOQ
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def backup_labels_test(client, random_labels, volume_name, size=SIZE, base_image=&#34;&#34;):  # NOQA
+<pre><code class="python">def backup_labels_test(client, random_labels, volume_name, size=SIZE, backing_image=&#34;&#34;):  # NOQA
     host_id = get_self_host_id()
 
-    volume = create_and_check_volume(client, volume_name, 2, size, base_image)
+    volume = create_and_check_volume(client, volume_name, 2, size,
+                                     backing_image)
 
     volume.attach(hostId=host_id)
     volume = common.wait_for_volume_healthy(client, volume_name)
@@ -3638,21 +3642,20 @@ def test_volume_toomanysnapshots_condition(client, core_api, volume_name): # NOQ
             assert credential.value == &#34;&#34;
 
         bv, b, _, _ = create_backup(client, volume_name, labels=random_labels)
-        # If we&#39;re running the test with a BaseImage, check that this Label is
-        # set properly.
+        # If we&#39;re running the test with a BackingImage,
+        # check field `volumeBackingImageName` is set properly.
         backup = bv.backupGet(name=b.name)
-        if base_image:
-            assert backup.labels.get(common.BASE_IMAGE_LABEL) == base_image
-            # One extra Label from the BaseImage being set.
-            assert len(backup.labels) == len(random_labels) + 1
-        else:
-            assert len(backup.labels) == len(random_labels)
+        if backing_image:
+            assert backup.volumeBackingImageName == \
+                   backing_image
+            assert backup.volumeBackingImageURL != &#34;&#34;
+        assert len(backup.labels) == len(random_labels)
 
     cleanup_volume(client, volume)</code></pre>
 </details>
 </dd>
 <dt id="tests.test_basic.backup_status_for_unavailable_replicas_test"><code class="name flex">
-<span>def <span class="ident">backup_status_for_unavailable_replicas_test</span></span>(<span>client, volume_name, size, base_image='')</span>
+<span>def <span class="ident">backup_status_for_unavailable_replicas_test</span></span>(<span>client, volume_name, size, backing_image='')</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -3661,8 +3664,9 @@ def test_volume_toomanysnapshots_condition(client, core_api, volume_name): # NOQ
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def backup_status_for_unavailable_replicas_test(client, volume_name,  # NOQA
-                                                size, base_image=&#34;&#34;):  # NOQA
-    volume = create_and_check_volume(client, volume_name, 2, size, base_image)
+                                                size, backing_image=&#34;&#34;):  # NOQA
+    volume = create_and_check_volume(client, volume_name, 2, size,
+                                     backing_image)
 
     lht_hostId = get_self_host_id()
     volume = volume.attach(hostId=lht_hostId)
@@ -3744,7 +3748,7 @@ def test_volume_toomanysnapshots_condition(client, core_api, volume_name): # NOQ
 </details>
 </dd>
 <dt id="tests.test_basic.backup_test"><code class="name flex">
-<span>def <span class="ident">backup_test</span></span>(<span>client, volume_name, size, base_image='')</span>
+<span>def <span class="ident">backup_test</span></span>(<span>client, volume_name, size, backing_image='')</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -3752,8 +3756,9 @@ def test_volume_toomanysnapshots_condition(client, core_api, volume_name): # NOQ
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def backup_test(client, volume_name, size, base_image=&#34;&#34;):  # NOQA
-    volume = create_and_check_volume(client, volume_name, 2, size, base_image)
+<pre><code class="python">def backup_test(client, volume_name, size, backing_image=&#34;&#34;):  # NOQA
+    volume = create_and_check_volume(client, volume_name, 2, size,
+                                     backing_image)
 
     lht_hostId = get_self_host_id()
     volume = volume.attach(hostId=lht_hostId)
@@ -4054,7 +4059,7 @@ def test_volume_toomanysnapshots_condition(client, core_api, volume_name): # NOQ
 </details>
 </dd>
 <dt id="tests.test_basic.snapshot_test"><code class="name flex">
-<span>def <span class="ident">snapshot_test</span></span>(<span>client, volume_name, base_image)</span>
+<span>def <span class="ident">snapshot_test</span></span>(<span>client, volume_name, backing_image)</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -4062,9 +4067,9 @@ def test_volume_toomanysnapshots_condition(client, core_api, volume_name): # NOQ
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def snapshot_test(client, volume_name, base_image):  # NOQA
+<pre><code class="python">def snapshot_test(client, volume_name, backing_image):  # NOQA
     volume = create_and_check_volume(client, volume_name,
-                                     base_image=base_image)
+                                     backing_image=backing_image)
 
     lht_hostId = get_self_host_id()
     volume = volume.attach(hostId=lht_hostId)
@@ -6588,7 +6593,7 @@ def test_hosts(client):  # NOQA
 </details>
 </dd>
 <dt id="tests.test_basic.test_listing_backup_volume"><code class="name flex">
-<span>def <span class="ident">test_listing_backup_volume</span></span>(<span>client, base_image='')</span>
+<span>def <span class="ident">test_listing_backup_volume</span></span>(<span>client, backing_image='')</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Test listing backup volumes</p>
@@ -6612,7 +6617,7 @@ def test_hosts(client):  # NOQA
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">@pytest.mark.coretest   # NOQA
-def test_listing_backup_volume(client, base_image=&#34;&#34;):   # NOQA
+def test_listing_backup_volume(client, backing_image=&#34;&#34;):   # NOQA
     &#34;&#34;&#34;
     Test listing backup volumes
 
@@ -7464,7 +7469,7 @@ def test_settings(client):  # NOQA
 </details>
 </dd>
 <dt id="tests.test_basic.test_snapshot"><code class="name flex">
-<span>def <span class="ident">test_snapshot</span></span>(<span>client, volume_name, base_image='')</span>
+<span>def <span class="ident">test_snapshot</span></span>(<span>client, volume_name, backing_image='')</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Test snapshot operations</p>
@@ -7493,7 +7498,7 @@ are gone. <code>snap2</code> is marked as removed.</li>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">@pytest.mark.coretest   # NOQA
-def test_snapshot(client, volume_name, base_image=&#34;&#34;):  # NOQA
+def test_snapshot(client, volume_name, backing_image=&#34;&#34;):  # NOQA
     &#34;&#34;&#34;
     Test snapshot operations
 
@@ -7516,7 +7521,7 @@ def test_snapshot(client, volume_name, base_image=&#34;&#34;):  # NOQA
     are gone. `snap2` is marked as removed.
     17. Check volume data, make sure it&#39;s still `snap2_data`.
     &#34;&#34;&#34;
-    snapshot_test(client, volume_name, base_image)</code></pre>
+    snapshot_test(client, volume_name, backing_image)</code></pre>
 </details>
 </dd>
 <dt id="tests.test_basic.test_storage_class_from_backup"><code class="name flex">
@@ -7975,7 +7980,7 @@ def test_volume_update_replica_count(client, volume_name):  # NOQA
 </details>
 </dd>
 <dt id="tests.test_basic.volume_basic_test"><code class="name flex">
-<span>def <span class="ident">volume_basic_test</span></span>(<span>client, volume_name, base_image='')</span>
+<span>def <span class="ident">volume_basic_test</span></span>(<span>client, volume_name, backing_image='')</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -7983,7 +7988,7 @@ def test_volume_update_replica_count(client, volume_name):  # NOQA
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def volume_basic_test(client, volume_name, base_image=&#34;&#34;):  # NOQA
+<pre><code class="python">def volume_basic_test(client, volume_name, backing_image=&#34;&#34;):  # NOQA
     num_hosts = len(client.list_node())
     num_replicas = 3
 
@@ -7997,7 +8002,7 @@ def test_volume_update_replica_count(client, volume_name):  # NOQA
                                       frontend=&#34;invalid_frontend&#34;)
 
     volume = create_and_check_volume(client, volume_name, num_replicas, SIZE,
-                                     base_image)
+                                     backing_image)
     assert volume.restoreRequired is False
 
     def validate_volume_basic(expected, actual):
@@ -8005,7 +8010,7 @@ def test_volume_update_replica_count(client, volume_name):  # NOQA
         assert actual.size == expected.size
         assert actual.numberOfReplicas == expected.numberOfReplicas
         assert actual.frontend == VOLUME_FRONTEND_BLOCKDEV
-        assert actual.baseImage == base_image
+        assert actual.backingImage == backing_image
         assert actual.state == expected.state
         assert actual.created == expected.created
 
@@ -8060,7 +8065,7 @@ def test_volume_update_replica_count(client, volume_name):  # NOQA
 </details>
 </dd>
 <dt id="tests.test_basic.volume_iscsi_basic_test"><code class="name flex">
-<span>def <span class="ident">volume_iscsi_basic_test</span></span>(<span>client, volume_name, base_image='')</span>
+<span>def <span class="ident">volume_iscsi_basic_test</span></span>(<span>client, volume_name, backing_image='')</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -8068,10 +8073,10 @@ def test_volume_update_replica_count(client, volume_name):  # NOQA
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def volume_iscsi_basic_test(client, volume_name, base_image=&#34;&#34;):  # NOQA
+<pre><code class="python">def volume_iscsi_basic_test(client, volume_name, backing_image=&#34;&#34;):  # NOQA
     host_id = get_self_host_id()
-    volume = create_and_check_volume(client, volume_name, 3, SIZE, base_image,
-                                     VOLUME_FRONTEND_ISCSI)
+    volume = create_and_check_volume(client, volume_name, 3, SIZE,
+                                     backing_image, VOLUME_FRONTEND_ISCSI)
     volume.attach(hostId=host_id)
     volume = common.wait_for_volume_healthy(client, volume_name)
 
@@ -8083,6 +8088,7 @@ def test_volume_update_replica_count(client, volume_name):  # NOQA
     assert volumes[0].state == volume.state
     assert volumes[0].created == volume.created
     assert volumes[0].frontend == VOLUME_FRONTEND_ISCSI
+    assert volumes[0].backingImage == volume.backingImage
     endpoint = get_volume_endpoint(volumes[0])
 
     try:

@@ -7,6 +7,15 @@
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language><atom:link href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node/index.xml" rel="self" type="application/rss+xml" />
     <item>
+      <title>Backing Image on a down node</title>
+      <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/node/backing-image-on-a-down-node/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/node/backing-image-on-a-down-node/</guid>
+      <description>Update the settings:  Disable Node Soft Anti-affinity. Set Replica Replenishment Wait Interval to a relatively long value.   Create a backing image with one of the following URLs:   https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2 https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.raw Create 2 volumes with the backing image and attach them on different nodes. Verify:  the disk state map of the backing image contains the disks of all replicas, and the state is running for all disks.</description>
+    </item>
+    
+    <item>
       <title>Degraded availability with added nodes</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/node/degraded-availability/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>

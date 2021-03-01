@@ -554,7 +554,43 @@ def wait_for_priority_class_update(core_api, apps_api, count, priority_class=Non
         if updated:
             break
 
-    assert updated</code></pre>
+    assert updated
+
+
+@pytest.mark.skip(reason=&#34;TODO&#34;)
+@pytest.mark.backing_image  # NOQA
+def test_setting_backing_image_auto_cleanup():  # NOQA
+    &#34;&#34;&#34;
+    Test that the Backing Image Cleanup Wait Interval setting works correctly.
+
+    The default setting value is 60.
+
+    1. Set `BackingImageCleanupWaitInterval` to default value.
+    2. Create a backing image.
+    3. Create multiple volumes using the backing image.
+    4. Attach all volumes, Then:
+        1. Wait for all volumes can become running.
+        2. Verify the correct in all volumes.
+        3. Verify the backing image disk status map.
+        4. Verify the only backing image file in each disk is reused by
+           multiple replicas. The backing image file path is
+           `&lt;Data path&gt;/&lt;The backing image name&gt;/backing`
+    5. Decrease the replica count by 1 for all volumes.
+    6. Remove all replicas in one disk.
+       Wait for 1 minute.
+       Then verify nothing changes in the backing image disk state map
+       (before the cleanup wait interval is passed).
+    7. Modify `BackingImageCleanupWaitInterval` to a small value. Then verify:
+        1. The download state of the disk containing no replica becomes
+           terminating first, and the entry will be removed from the map later.
+        2. The related backing image file is removed.
+        3. The download state of other disks keep unchanged.
+           All volumes still work fine.
+    8. Delete all volumes. Verify that all states in the backing image disk map
+       will become terminating first,
+       and all entries will be removed from the map later.
+    9. Delete the backing image.
+    &#34;&#34;&#34;</code></pre>
 </details>
 </section>
 <section>
@@ -697,6 +733,83 @@ e.g. 'Pending', 'OutofCPU', 'Terminating' they are all 'Not Running'.</p></div>
                         cpu_val)
             else:
                 assert (not pod.spec.containers[0].resources.requests)</code></pre>
+</details>
+</dd>
+<dt id="tests.test_settings.test_setting_backing_image_auto_cleanup"><code class="name flex">
+<span>def <span class="ident">test_setting_backing_image_auto_cleanup</span></span>(<span>)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test that the Backing Image Cleanup Wait Interval setting works correctly.</p>
+<p>The default setting value is 60.</p>
+<ol>
+<li>Set <code>BackingImageCleanupWaitInterval</code> to default value.</li>
+<li>Create a backing image.</li>
+<li>Create multiple volumes using the backing image.</li>
+<li>Attach all volumes, Then:<ol>
+<li>Wait for all volumes can become running.</li>
+<li>Verify the correct in all volumes.</li>
+<li>Verify the backing image disk status map.</li>
+<li>Verify the only backing image file in each disk is reused by
+multiple replicas. The backing image file path is
+<code>&lt;Data path&gt;/&lt;The backing image name&gt;/backing</code></li>
+</ol>
+</li>
+<li>Decrease the replica count by 1 for all volumes.</li>
+<li>Remove all replicas in one disk.
+Wait for 1 minute.
+Then verify nothing changes in the backing image disk state map
+(before the cleanup wait interval is passed).</li>
+<li>Modify <code>BackingImageCleanupWaitInterval</code> to a small value. Then verify:<ol>
+<li>The download state of the disk containing no replica becomes
+terminating first, and the entry will be removed from the map later.</li>
+<li>The related backing image file is removed.</li>
+<li>The download state of other disks keep unchanged.
+All volumes still work fine.</li>
+</ol>
+</li>
+<li>Delete all volumes. Verify that all states in the backing image disk map
+will become terminating first,
+and all entries will be removed from the map later.</li>
+<li>Delete the backing image.</li>
+</ol></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@pytest.mark.skip(reason=&#34;TODO&#34;)
+@pytest.mark.backing_image  # NOQA
+def test_setting_backing_image_auto_cleanup():  # NOQA
+    &#34;&#34;&#34;
+    Test that the Backing Image Cleanup Wait Interval setting works correctly.
+
+    The default setting value is 60.
+
+    1. Set `BackingImageCleanupWaitInterval` to default value.
+    2. Create a backing image.
+    3. Create multiple volumes using the backing image.
+    4. Attach all volumes, Then:
+        1. Wait for all volumes can become running.
+        2. Verify the correct in all volumes.
+        3. Verify the backing image disk status map.
+        4. Verify the only backing image file in each disk is reused by
+           multiple replicas. The backing image file path is
+           `&lt;Data path&gt;/&lt;The backing image name&gt;/backing`
+    5. Decrease the replica count by 1 for all volumes.
+    6. Remove all replicas in one disk.
+       Wait for 1 minute.
+       Then verify nothing changes in the backing image disk state map
+       (before the cleanup wait interval is passed).
+    7. Modify `BackingImageCleanupWaitInterval` to a small value. Then verify:
+        1. The download state of the disk containing no replica becomes
+           terminating first, and the entry will be removed from the map later.
+        2. The related backing image file is removed.
+        3. The download state of other disks keep unchanged.
+           All volumes still work fine.
+    8. Delete all volumes. Verify that all states in the backing image disk map
+       will become terminating first,
+       and all entries will be removed from the map later.
+    9. Delete the backing image.
+    &#34;&#34;&#34;</code></pre>
 </details>
 </dd>
 <dt id="tests.test_settings.test_setting_guaranteed_engine_cpu"><code class="name flex">
@@ -1272,6 +1385,7 @@ daemonsets, IM pods, recurring jobs in Longhorn system</p></div>
 <li><code><a title="tests.test_settings.check_tolerations_set" href="#tests.test_settings.check_tolerations_set">check_tolerations_set</a></code></li>
 <li><code><a title="tests.test_settings.check_workload_update" href="#tests.test_settings.check_workload_update">check_workload_update</a></code></li>
 <li><code><a title="tests.test_settings.guaranteed_engine_cpu_setting_check" href="#tests.test_settings.guaranteed_engine_cpu_setting_check">guaranteed_engine_cpu_setting_check</a></code></li>
+<li><code><a title="tests.test_settings.test_setting_backing_image_auto_cleanup" href="#tests.test_settings.test_setting_backing_image_auto_cleanup">test_setting_backing_image_auto_cleanup</a></code></li>
 <li><code><a title="tests.test_settings.test_setting_guaranteed_engine_cpu" href="#tests.test_settings.test_setting_guaranteed_engine_cpu">test_setting_guaranteed_engine_cpu</a></code></li>
 <li><code><a title="tests.test_settings.test_setting_priority_class" href="#tests.test_settings.test_setting_priority_class">test_setting_priority_class</a></code></li>
 <li><code><a title="tests.test_settings.test_setting_toleration" href="#tests.test_settings.test_setting_toleration">test_setting_toleration</a></code></li>

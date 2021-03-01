@@ -319,50 +319,44 @@
 </aside>
 
 <main style="padding: 1%; width: 70%;">
-  <h1 id="title">Workload type: Stateful set</h1>
+  <h1 id="title">Backing Image on a down node</h1>
   <div>
     <article id="content">
-       <p>Volume Attachment Recovery Policy: <strong>Immediate:</strong></p>
+       <ol>
+<li>Update the settings:
+<ol>
+<li>Disable Node Soft Anti-affinity.</li>
+<li>Set Replica Replenishment Wait Interval to a relatively long value.</li>
+</ol>
+</li>
+<li>Create a backing image with one of the following URLs:</li>
+</ol>
+<pre><code>   https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2
+   https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.raw
+</code></pre><ol start="3">
+<li>Create 2 volumes with the backing image and attach them on different nodes. Verify:
 <ul>
-<li>Have a stateful set workload deployed using volume claim template using longhorn storage class.</li>
-<li>Number of pods - 6</li>
-<li>2 pods are scheduled on N1.</li>
-<li>Power off N1. The pods go into Unknown state.</li>
-<li>replacement pods are NOT created</li>
-<li>force delete these pods in &ldquo;Unknown&rdquo; state</li>
-<li>replacement pods are created</li>
-<li>first pod comes up in about 30 seconds.</li>
-<li>data is accessible in the volume.</li>
-<li>It takes another 1 minute approx for the second pod to come up.</li>
-<li>data is accessible in the volume.</li>
+<li>the disk state map of the backing image contains the disks of all replicas, and the state is running for all disks.</li>
+<li>the backing image content is correct</li>
 </ul>
-<p>Volume Attachment Recovery Policy: <strong>wait:</strong></p>
+</li>
+<li>Write random data to the volumes.</li>
+<li>Power off a node containing one volume. Verify that
 <ul>
-<li>Have a stateful set workload deployed using volume claim template using longhorn storage class.</li>
-<li>Number of pods - 6</li>
-<li>1 pod is scheduled on N1.</li>
-<li>Power off N1. The pod goes into Unknown state.</li>
-<li>replacement pod is NOT created</li>
-<li>force delete this pod in &ldquo;Unknown&rdquo; state</li>
-<li>replacement pod is created</li>
-<li>It comes up in about 30 seconds.</li>
-<li>data is accessible in the volume.</li>
+<li>the related disk download state in the backing image will become <code>failed</code> once the download pod is removed by Kubernetes.</li>
+<li>the volume on the running node still works fine but is state <code>Degraded</code>, and the content is correct in the volume.</li>
+<li>the volume on the down node become <code>Unknown</code>.</li>
 </ul>
-<p>Volume Attachment Recovery Policy: <strong>never:</strong></p>
+</li>
+<li>Power on the node. Verify
 <ul>
-<li>Have a stateful set workload deployed using volume claim template using longhorn storage class.</li>
-<li>Number of pods - 6</li>
-<li>2 pods are scheduled on N1.</li>
-<li>Power off N1. The pods go into Unknown state.</li>
-<li>replacement pods are NOT created</li>
-<li>force delete these pods in &ldquo;Unknown&rdquo; state</li>
-<li>replacement pods are created</li>
-<li>first pod comes up in about 30 seconds.</li>
-<li>data is accessible in the volume.</li>
-<li>It takes another 1 minute approx for the second pod to come up.</li>
-<li>data is accessible in the volume.</li>
+<li>the failed replica of the <code>Degraded</code> volume can be reused.</li>
+<li>the volume on the down node will be recovered automatically. And the data is correct.</li>
+<li>the backing image will be recovered automatically.</li>
 </ul>
-<p><strong>Note:</strong> All the above behavior will depend on <code>NodeDownPodDeletionPolicy</code>. It is assumed that <code>NodeDownPodDeletionPolicy</code> is set to <code>do-nothing</code> while executing the above scenarios.</p>
+</li>
+<li>Delete all replicas expect for the reused failed replica for the volume not on the down node. Then wait for rebuilding and check the data. This verifies the reused replica data content.</li>
+</ol>
 
     </article>
   </div>

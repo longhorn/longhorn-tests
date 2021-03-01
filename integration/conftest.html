@@ -37,7 +37,7 @@ from common import wait_for_node_mountpropagation_condition
 from common import check_longhorn, check_csi_expansion
 
 
-INCLUDE_BASE_IMAGE_OPT = &#34;--include-base-image-test&#34;
+SKIP_BACKING_IMAGE_OPT = &#34;--skip-backing-image-test&#34;
 SKIP_RECURRING_JOB_OPT = &#34;--skip-recurring-job-test&#34;
 INCLUDE_INFRA_OPT = &#34;--include-infra-test&#34;
 INCLUDE_STRESS_OPT = &#34;--include-stress-test&#34;
@@ -52,8 +52,8 @@ UPGRADE_LH_SHARE_MANAGER_IMAGE = &#34;--upgrade-lh-share-manager-image&#34;
 
 
 def pytest_addoption(parser):
-    parser.addoption(INCLUDE_BASE_IMAGE_OPT, action=&#34;store_true&#34;,
-                     default=False, help=&#34;include base image tests&#34;)
+    parser.addoption(SKIP_BACKING_IMAGE_OPT, action=&#34;store_true&#34;,
+                     default=False, help=&#34;skip backing image tests&#34;)
 
     parser.addoption(SKIP_RECURRING_JOB_OPT, action=&#34;store_true&#34;,
                      default=False,
@@ -121,14 +121,12 @@ def pytest_collection_modifyitems(config, items):
 
     check_longhorn(core_api)
 
-    include_base_image = config.getoption(INCLUDE_BASE_IMAGE_OPT)
-    if not include_base_image:
-        skip_base_image = pytest.mark.skip(reason=&#34;set &#34; +
-                                                  INCLUDE_BASE_IMAGE_OPT +
-                                                  &#34; option to run&#34;)
+    if config.getoption(SKIP_BACKING_IMAGE_OPT):
+        skip_backing_image = pytest.mark.skip(
+            reason=&#34;remove &#34; + SKIP_BACKING_IMAGE_OPT + &#34; option to run&#34;)
         for item in items:
-            if &#34;baseimage&#34; in item.keywords:
-                item.add_marker(skip_base_image)
+            if &#34;backing_image&#34; in item.keywords:
+                item.add_marker(skip_backing_image)
 
     if config.getoption(SKIP_RECURRING_JOB_OPT):
         skip_upgrade = pytest.mark.skip(reason=&#34;remove &#34; +
@@ -163,16 +161,10 @@ def pytest_collection_modifyitems(config, items):
             break
 
     if not all_nodes_support_mount_propagation:
-        skip_upgrade = pytest.mark.skip(reason=&#34;environment does not &#34; +
-                                               &#34;support base image&#34;)
         skip_node = pytest.mark.skip(reason=&#34;environment does not &#34; +
                                             &#34;support mount disk&#34;)
-
         for item in items:
-            # Don&#39;t need to add skip marker for Base Image twice.
-            if include_base_image and &#34;baseimage&#34; in item.keywords:
-                item.add_marker(skip_upgrade)
-            elif &#34;mountdisk&#34; in item.keywords:
+            if &#34;mountdisk&#34; in item.keywords:
                 item.add_marker(skip_node)
 
     if not config.getoption(INCLUDE_INFRA_OPT):
@@ -220,8 +212,8 @@ def pytest_collection_modifyitems(config, items):
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def pytest_addoption(parser):
-    parser.addoption(INCLUDE_BASE_IMAGE_OPT, action=&#34;store_true&#34;,
-                     default=False, help=&#34;include base image tests&#34;)
+    parser.addoption(SKIP_BACKING_IMAGE_OPT, action=&#34;store_true&#34;,
+                     default=False, help=&#34;skip backing image tests&#34;)
 
     parser.addoption(SKIP_RECURRING_JOB_OPT, action=&#34;store_true&#34;,
                      default=False,
@@ -298,14 +290,12 @@ def pytest_collection_modifyitems(config, items):
 
     check_longhorn(core_api)
 
-    include_base_image = config.getoption(INCLUDE_BASE_IMAGE_OPT)
-    if not include_base_image:
-        skip_base_image = pytest.mark.skip(reason=&#34;set &#34; +
-                                                  INCLUDE_BASE_IMAGE_OPT +
-                                                  &#34; option to run&#34;)
+    if config.getoption(SKIP_BACKING_IMAGE_OPT):
+        skip_backing_image = pytest.mark.skip(
+            reason=&#34;remove &#34; + SKIP_BACKING_IMAGE_OPT + &#34; option to run&#34;)
         for item in items:
-            if &#34;baseimage&#34; in item.keywords:
-                item.add_marker(skip_base_image)
+            if &#34;backing_image&#34; in item.keywords:
+                item.add_marker(skip_backing_image)
 
     if config.getoption(SKIP_RECURRING_JOB_OPT):
         skip_upgrade = pytest.mark.skip(reason=&#34;remove &#34; +
@@ -340,16 +330,10 @@ def pytest_collection_modifyitems(config, items):
             break
 
     if not all_nodes_support_mount_propagation:
-        skip_upgrade = pytest.mark.skip(reason=&#34;environment does not &#34; +
-                                               &#34;support base image&#34;)
         skip_node = pytest.mark.skip(reason=&#34;environment does not &#34; +
                                             &#34;support mount disk&#34;)
-
         for item in items:
-            # Don&#39;t need to add skip marker for Base Image twice.
-            if include_base_image and &#34;baseimage&#34; in item.keywords:
-                item.add_marker(skip_upgrade)
-            elif &#34;mountdisk&#34; in item.keywords:
+            if &#34;mountdisk&#34; in item.keywords:
                 item.add_marker(skip_node)
 
     if not config.getoption(INCLUDE_INFRA_OPT):

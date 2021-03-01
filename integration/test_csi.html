@@ -65,7 +65,7 @@ from common import fail_replica_expansion, wait_for_expansion_failure
 CSI_PV_TEST_STORAGE_NAME = &#39;longhorn-csi-pv-test&#39;
 
 
-def create_pv_storage(api, cli, pv, claim, base_image, from_backup):
+def create_pv_storage(api, cli, pv, claim, backing_image, from_backup):
     &#34;&#34;&#34;
     Manually create a new PV and PVC for testing.
     &#34;&#34;&#34;
@@ -73,7 +73,7 @@ def create_pv_storage(api, cli, pv, claim, base_image, from_backup):
         name=pv[&#39;metadata&#39;][&#39;name&#39;], size=pv[&#39;spec&#39;][&#39;capacity&#39;][&#39;storage&#39;],
         numberOfReplicas=int(pv[&#39;spec&#39;][&#39;csi&#39;][&#39;volumeAttributes&#39;]
                              [&#39;numberOfReplicas&#39;]),
-        baseImage=base_image, fromBackup=from_backup)
+        backingImage=backing_image, fromBackup=from_backup)
     common.wait_for_volume_restoration_completed(cli, pv[&#39;metadata&#39;][&#39;name&#39;])
     common.wait_for_volume_detached(cli, pv[&#39;metadata&#39;][&#39;name&#39;])
 
@@ -91,14 +91,15 @@ def update_storageclass_references(name, pv, claim):
     claim[&#39;spec&#39;][&#39;storageClassName&#39;] = name
 
 
-def create_and_wait_csi_pod(pod_name, client, core_api, csi_pv, pvc, pod_make, base_image, from_backup):  # NOQA
-    pv_name = generate_volume_name()
-    create_and_wait_csi_pod_named_pv(pv_name, pod_name, client, core_api,
-                                     csi_pv, pvc, pod_make, base_image,
+def create_and_wait_csi_pod(pod_name, client, core_api, csi_pv, pvc, pod_make, backing_image, from_backup):  # NOQA
+    volume_name = generate_volume_name()
+    create_and_wait_csi_pod_named_pv(volume_name, pod_name, client, core_api,
+                                     csi_pv, pvc, pod_make, backing_image,
                                      from_backup)
+    return volume_name
 
 
-def create_and_wait_csi_pod_named_pv(pv_name, pod_name, client, core_api, csi_pv, pvc, pod_make, base_image, from_backup):  # NOQA
+def create_and_wait_csi_pod_named_pv(pv_name, pod_name, client, core_api, csi_pv, pvc, pod_make, backing_image, from_backup):  # NOQA
     pod = pod_make(name=pod_name)
     pod[&#39;spec&#39;][&#39;volumes&#39;] = [
         create_pvc_spec(pv_name)
@@ -110,7 +111,8 @@ def create_and_wait_csi_pod_named_pv(pv_name, pod_name, client, core_api, csi_pv
     pvc[&#39;spec&#39;][&#39;volumeName&#39;] = pv_name
     update_storageclass_references(CSI_PV_TEST_STORAGE_NAME, csi_pv, pvc)
 
-    create_pv_storage(core_api, client, csi_pv, pvc, base_image, from_backup)
+    create_pv_storage(core_api, client, csi_pv, pvc,
+                      backing_image, from_backup)
     create_and_wait_pod(core_api, pod)
 
 
@@ -135,9 +137,10 @@ def test_csi_mount(client, core_api, csi_pv, pvc, pod_make):  # NOQA
 
 
 def csi_mount_test(client, core_api, csi_pv, pvc, pod_make,  # NOQA
-                   volume_size, base_image=&#34;&#34;):  # NOQA
-    create_and_wait_csi_pod(&#39;csi-mount-test&#39;, client, core_api, csi_pv, pvc,
-                            pod_make, base_image, &#34;&#34;)
+                   volume_size, backing_image=&#34;&#34;):  # NOQA
+    pod_name = &#39;csi-mount-test&#39;
+    create_and_wait_csi_pod(pod_name, client, core_api, csi_pv, pvc,
+                            pod_make, backing_image, &#34;&#34;)
 
     volumes = client.list_volume().data
     assert len(volumes) == 1
@@ -146,7 +149,11 @@ def csi_mount_test(client, core_api, csi_pv, pvc, pod_make,  # NOQA
     assert volumes[0].numberOfReplicas == \
         int(csi_pv[&#39;spec&#39;][&#39;csi&#39;][&#39;volumeAttributes&#39;][&#34;numberOfReplicas&#34;])
     assert volumes[0].state == &#34;attached&#34;
-    assert volumes[0].baseImage == base_image
+    assert volumes[0].backingImage == backing_image
+
+    delete_and_wait_pod(core_api, pod_name)
+    delete_and_wait_pvc(core_api, pvc[&#39;metadata&#39;][&#39;name&#39;])
+    delete_and_wait_pv(core_api, csi_pv[&#39;metadata&#39;][&#39;name&#39;])
 
 
 @pytest.mark.csi  # NOQA
@@ -168,11 +175,11 @@ def test_csi_io(client, core_api, csi_pv, pvc, pod_make):  # NOQA
     csi_io_test(client, core_api, csi_pv, pvc, pod_make)
 
 
-def csi_io_test(client, core_api, csi_pv, pvc, pod_make, base_image=&#34;&#34;):  # NOQA
+def csi_io_test(client, core_api, csi_pv, pvc, pod_make, backing_image=&#34;&#34;):  # NOQA
     pv_name = generate_volume_name()
     pod_name = &#39;csi-io-test&#39;
     create_and_wait_csi_pod_named_pv(pv_name, pod_name, client, core_api,
-                                     csi_pv, pvc, pod_make, base_image, &#34;&#34;)
+                                     csi_pv, pvc, pod_make, backing_image, &#34;&#34;)
 
     test_data = generate_random_data(VOLUME_RWTEST_SIZE)
     write_pod_volume_data(core_api, pod_name, test_data)
@@ -195,6 +202,10 @@ def csi_io_test(client, core_api, csi_pv, pvc, pod_make, base_image=&#34;&#34;):
     resp = read_volume_data(core_api, pod_name)
     assert resp == test_data
 
+    delete_and_wait_pod(core_api, pod_name)
+    delete_and_wait_pvc(core_api, pvc[&#39;metadata&#39;][&#39;name&#39;])
+    delete_and_wait_pv(core_api, pv_name)
+
 
 @pytest.mark.csi  # NOQA
 def test_csi_backup(client, core_api, csi_pv, pvc, pod_make):  # NOQA
@@ -212,10 +223,10 @@ def test_csi_backup(client, core_api, csi_pv, pvc, pod_make):  # NOQA
     csi_backup_test(client, core_api, csi_pv, pvc, pod_make)
 
 
-def csi_backup_test(client, core_api, csi_pv, pvc, pod_make, base_image=&#34;&#34;):  # NOQA
+def csi_backup_test(client, core_api, csi_pv, pvc, pod_make, backing_image=&#34;&#34;):  # NOQA
     pod_name = &#39;csi-backup-test&#39;
-    create_and_wait_csi_pod(pod_name, client, core_api, csi_pv, pvc, pod_make,
-                            base_image, &#34;&#34;)
+    vol_name = create_and_wait_csi_pod(
+        pod_name, client, core_api, csi_pv, pvc, pod_make, backing_image, &#34;&#34;)
     test_data = generate_random_data(VOLUME_RWTEST_SIZE)
 
     setting = client.by_id_setting(common.SETTING_BACKUP_TARGET)
@@ -241,12 +252,15 @@ def csi_backup_test(client, core_api, csi_pv, pvc, pod_make, base_image=&#34;&#3
             assert credential.value == &#34;&#34;
 
         backupstore_test(client, core_api, csi_pv, pvc, pod_make, pod_name,
-                         base_image, test_data, i)
+                         vol_name, backing_image, test_data, i)
         i += 1
 
+    delete_and_wait_pod(core_api, pod_name)
+    delete_and_wait_pvc(core_api, vol_name)
+    delete_and_wait_pv(core_api, vol_name)
 
-def backupstore_test(client, core_api, csi_pv, pvc, pod_make, pod_name, base_image, test_data, i):  # NOQA
-    vol_name = csi_pv[&#39;metadata&#39;][&#39;name&#39;]
+
+def backupstore_test(client, core_api, csi_pv, pvc, pod_make, pod_name, vol_name, backing_image, test_data, i):  # NOQA
     write_pod_volume_data(core_api, pod_name, test_data)
 
     volume = client.by_id_volume(vol_name)
@@ -257,13 +271,17 @@ def backupstore_test(client, core_api, csi_pv, pvc, pod_make, pod_name, base_ima
     bv, b = common.find_backup(client, vol_name, snap.name)
 
     pod2_name = &#39;csi-backup-test-&#39; + str(i)
-    create_and_wait_csi_pod(pod2_name, client, core_api, csi_pv, pvc, pod_make,
-                            base_image, b.url)
+    vol2_name = create_and_wait_csi_pod(
+        pod2_name, client, core_api, csi_pv, pvc, pod_make,
+        backing_image, b.url)
+    volume2 = client.by_id_volume(vol2_name)
 
     resp = read_volume_data(core_api, pod2_name)
     assert resp == test_data
 
     delete_backup(client, bv.name, b.name)
+    delete_and_wait_pod(core_api, pod2_name)
+    client.delete(volume2)
 
 
 @pytest.mark.csi  # NOQA
@@ -755,7 +773,7 @@ def test_csi_minimal_volume_size(
 <h2 class="section-title" id="header-functions">Functions</h2>
 <dl>
 <dt id="tests.test_csi.backupstore_test"><code class="name flex">
-<span>def <span class="ident">backupstore_test</span></span>(<span>client, core_api, csi_pv, pvc, pod_make, pod_name, base_image, test_data, i)</span>
+<span>def <span class="ident">backupstore_test</span></span>(<span>client, core_api, csi_pv, pvc, pod_make, pod_name, vol_name, backing_image, test_data, i)</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -763,8 +781,7 @@ def test_csi_minimal_volume_size(
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def backupstore_test(client, core_api, csi_pv, pvc, pod_make, pod_name, base_image, test_data, i):  # NOQA
-    vol_name = csi_pv[&#39;metadata&#39;][&#39;name&#39;]
+<pre><code class="python">def backupstore_test(client, core_api, csi_pv, pvc, pod_make, pod_name, vol_name, backing_image, test_data, i):  # NOQA
     write_pod_volume_data(core_api, pod_name, test_data)
 
     volume = client.by_id_volume(vol_name)
@@ -775,17 +792,21 @@ def test_csi_minimal_volume_size(
     bv, b = common.find_backup(client, vol_name, snap.name)
 
     pod2_name = &#39;csi-backup-test-&#39; + str(i)
-    create_and_wait_csi_pod(pod2_name, client, core_api, csi_pv, pvc, pod_make,
-                            base_image, b.url)
+    vol2_name = create_and_wait_csi_pod(
+        pod2_name, client, core_api, csi_pv, pvc, pod_make,
+        backing_image, b.url)
+    volume2 = client.by_id_volume(vol2_name)
 
     resp = read_volume_data(core_api, pod2_name)
     assert resp == test_data
 
-    delete_backup(client, bv.name, b.name)</code></pre>
+    delete_backup(client, bv.name, b.name)
+    delete_and_wait_pod(core_api, pod2_name)
+    client.delete(volume2)</code></pre>
 </details>
 </dd>
 <dt id="tests.test_csi.create_and_wait_csi_pod"><code class="name flex">
-<span>def <span class="ident">create_and_wait_csi_pod</span></span>(<span>pod_name, client, core_api, csi_pv, pvc, pod_make, base_image, from_backup)</span>
+<span>def <span class="ident">create_and_wait_csi_pod</span></span>(<span>pod_name, client, core_api, csi_pv, pvc, pod_make, backing_image, from_backup)</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -793,15 +814,16 @@ def test_csi_minimal_volume_size(
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def create_and_wait_csi_pod(pod_name, client, core_api, csi_pv, pvc, pod_make, base_image, from_backup):  # NOQA
-    pv_name = generate_volume_name()
-    create_and_wait_csi_pod_named_pv(pv_name, pod_name, client, core_api,
-                                     csi_pv, pvc, pod_make, base_image,
-                                     from_backup)</code></pre>
+<pre><code class="python">def create_and_wait_csi_pod(pod_name, client, core_api, csi_pv, pvc, pod_make, backing_image, from_backup):  # NOQA
+    volume_name = generate_volume_name()
+    create_and_wait_csi_pod_named_pv(volume_name, pod_name, client, core_api,
+                                     csi_pv, pvc, pod_make, backing_image,
+                                     from_backup)
+    return volume_name</code></pre>
 </details>
 </dd>
 <dt id="tests.test_csi.create_and_wait_csi_pod_named_pv"><code class="name flex">
-<span>def <span class="ident">create_and_wait_csi_pod_named_pv</span></span>(<span>pv_name, pod_name, client, core_api, csi_pv, pvc, pod_make, base_image, from_backup)</span>
+<span>def <span class="ident">create_and_wait_csi_pod_named_pv</span></span>(<span>pv_name, pod_name, client, core_api, csi_pv, pvc, pod_make, backing_image, from_backup)</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -809,7 +831,7 @@ def test_csi_minimal_volume_size(
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def create_and_wait_csi_pod_named_pv(pv_name, pod_name, client, core_api, csi_pv, pvc, pod_make, base_image, from_backup):  # NOQA
+<pre><code class="python">def create_and_wait_csi_pod_named_pv(pv_name, pod_name, client, core_api, csi_pv, pvc, pod_make, backing_image, from_backup):  # NOQA
     pod = pod_make(name=pod_name)
     pod[&#39;spec&#39;][&#39;volumes&#39;] = [
         create_pvc_spec(pv_name)
@@ -821,12 +843,13 @@ def test_csi_minimal_volume_size(
     pvc[&#39;spec&#39;][&#39;volumeName&#39;] = pv_name
     update_storageclass_references(CSI_PV_TEST_STORAGE_NAME, csi_pv, pvc)
 
-    create_pv_storage(core_api, client, csi_pv, pvc, base_image, from_backup)
+    create_pv_storage(core_api, client, csi_pv, pvc,
+                      backing_image, from_backup)
     create_and_wait_pod(core_api, pod)</code></pre>
 </details>
 </dd>
 <dt id="tests.test_csi.create_pv_storage"><code class="name flex">
-<span>def <span class="ident">create_pv_storage</span></span>(<span>api, cli, pv, claim, base_image, from_backup)</span>
+<span>def <span class="ident">create_pv_storage</span></span>(<span>api, cli, pv, claim, backing_image, from_backup)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Manually create a new PV and PVC for testing.</p></div>
@@ -834,7 +857,7 @@ def test_csi_minimal_volume_size(
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def create_pv_storage(api, cli, pv, claim, base_image, from_backup):
+<pre><code class="python">def create_pv_storage(api, cli, pv, claim, backing_image, from_backup):
     &#34;&#34;&#34;
     Manually create a new PV and PVC for testing.
     &#34;&#34;&#34;
@@ -842,7 +865,7 @@ def test_csi_minimal_volume_size(
         name=pv[&#39;metadata&#39;][&#39;name&#39;], size=pv[&#39;spec&#39;][&#39;capacity&#39;][&#39;storage&#39;],
         numberOfReplicas=int(pv[&#39;spec&#39;][&#39;csi&#39;][&#39;volumeAttributes&#39;]
                              [&#39;numberOfReplicas&#39;]),
-        baseImage=base_image, fromBackup=from_backup)
+        backingImage=backing_image, fromBackup=from_backup)
     common.wait_for_volume_restoration_completed(cli, pv[&#39;metadata&#39;][&#39;name&#39;])
     common.wait_for_volume_detached(cli, pv[&#39;metadata&#39;][&#39;name&#39;])
 
@@ -853,7 +876,7 @@ def test_csi_minimal_volume_size(
 </details>
 </dd>
 <dt id="tests.test_csi.csi_backup_test"><code class="name flex">
-<span>def <span class="ident">csi_backup_test</span></span>(<span>client, core_api, csi_pv, pvc, pod_make, base_image='')</span>
+<span>def <span class="ident">csi_backup_test</span></span>(<span>client, core_api, csi_pv, pvc, pod_make, backing_image='')</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -861,10 +884,10 @@ def test_csi_minimal_volume_size(
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def csi_backup_test(client, core_api, csi_pv, pvc, pod_make, base_image=&#34;&#34;):  # NOQA
+<pre><code class="python">def csi_backup_test(client, core_api, csi_pv, pvc, pod_make, backing_image=&#34;&#34;):  # NOQA
     pod_name = &#39;csi-backup-test&#39;
-    create_and_wait_csi_pod(pod_name, client, core_api, csi_pv, pvc, pod_make,
-                            base_image, &#34;&#34;)
+    vol_name = create_and_wait_csi_pod(
+        pod_name, client, core_api, csi_pv, pvc, pod_make, backing_image, &#34;&#34;)
     test_data = generate_random_data(VOLUME_RWTEST_SIZE)
 
     setting = client.by_id_setting(common.SETTING_BACKUP_TARGET)
@@ -890,12 +913,16 @@ def test_csi_minimal_volume_size(
             assert credential.value == &#34;&#34;
 
         backupstore_test(client, core_api, csi_pv, pvc, pod_make, pod_name,
-                         base_image, test_data, i)
-        i += 1</code></pre>
+                         vol_name, backing_image, test_data, i)
+        i += 1
+
+    delete_and_wait_pod(core_api, pod_name)
+    delete_and_wait_pvc(core_api, vol_name)
+    delete_and_wait_pv(core_api, vol_name)</code></pre>
 </details>
 </dd>
 <dt id="tests.test_csi.csi_io_test"><code class="name flex">
-<span>def <span class="ident">csi_io_test</span></span>(<span>client, core_api, csi_pv, pvc, pod_make, base_image='')</span>
+<span>def <span class="ident">csi_io_test</span></span>(<span>client, core_api, csi_pv, pvc, pod_make, backing_image='')</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -903,11 +930,11 @@ def test_csi_minimal_volume_size(
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def csi_io_test(client, core_api, csi_pv, pvc, pod_make, base_image=&#34;&#34;):  # NOQA
+<pre><code class="python">def csi_io_test(client, core_api, csi_pv, pvc, pod_make, backing_image=&#34;&#34;):  # NOQA
     pv_name = generate_volume_name()
     pod_name = &#39;csi-io-test&#39;
     create_and_wait_csi_pod_named_pv(pv_name, pod_name, client, core_api,
-                                     csi_pv, pvc, pod_make, base_image, &#34;&#34;)
+                                     csi_pv, pvc, pod_make, backing_image, &#34;&#34;)
 
     test_data = generate_random_data(VOLUME_RWTEST_SIZE)
     write_pod_volume_data(core_api, pod_name, test_data)
@@ -928,11 +955,15 @@ def test_csi_minimal_volume_size(
     create_and_wait_pod(core_api, pod)
 
     resp = read_volume_data(core_api, pod_name)
-    assert resp == test_data</code></pre>
+    assert resp == test_data
+
+    delete_and_wait_pod(core_api, pod_name)
+    delete_and_wait_pvc(core_api, pvc[&#39;metadata&#39;][&#39;name&#39;])
+    delete_and_wait_pv(core_api, pv_name)</code></pre>
 </details>
 </dd>
 <dt id="tests.test_csi.csi_mount_test"><code class="name flex">
-<span>def <span class="ident">csi_mount_test</span></span>(<span>client, core_api, csi_pv, pvc, pod_make, volume_size, base_image='')</span>
+<span>def <span class="ident">csi_mount_test</span></span>(<span>client, core_api, csi_pv, pvc, pod_make, volume_size, backing_image='')</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -941,9 +972,10 @@ def test_csi_minimal_volume_size(
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def csi_mount_test(client, core_api, csi_pv, pvc, pod_make,  # NOQA
-                   volume_size, base_image=&#34;&#34;):  # NOQA
-    create_and_wait_csi_pod(&#39;csi-mount-test&#39;, client, core_api, csi_pv, pvc,
-                            pod_make, base_image, &#34;&#34;)
+                   volume_size, backing_image=&#34;&#34;):  # NOQA
+    pod_name = &#39;csi-mount-test&#39;
+    create_and_wait_csi_pod(pod_name, client, core_api, csi_pv, pvc,
+                            pod_make, backing_image, &#34;&#34;)
 
     volumes = client.list_volume().data
     assert len(volumes) == 1
@@ -952,7 +984,11 @@ def test_csi_minimal_volume_size(
     assert volumes[0].numberOfReplicas == \
         int(csi_pv[&#39;spec&#39;][&#39;csi&#39;][&#39;volumeAttributes&#39;][&#34;numberOfReplicas&#34;])
     assert volumes[0].state == &#34;attached&#34;
-    assert volumes[0].baseImage == base_image</code></pre>
+    assert volumes[0].backingImage == backing_image
+
+    delete_and_wait_pod(core_api, pod_name)
+    delete_and_wait_pvc(core_api, pvc[&#39;metadata&#39;][&#39;name&#39;])
+    delete_and_wait_pv(core_api, csi_pv[&#39;metadata&#39;][&#39;name&#39;])</code></pre>
 </details>
 </dd>
 <dt id="tests.test_csi.test_allow_volume_creation_with_degraded_availability_csi"><code class="name flex">

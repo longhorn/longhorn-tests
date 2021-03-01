@@ -61,8 +61,12 @@ DEV_PATH = &#34;/dev/longhorn/&#34;
 VOLUME_RWTEST_SIZE = 512
 VOLUME_INVALID_POS = -1
 
-BASE_IMAGE_EXT4 = &#34;rancher/longhorn-test:baseimage-ext4&#34;
-BASE_IMAGE_EXT4_SIZE = 32 * Mi
+BACKING_IMAGE_NAME = &#34;bi-test&#34;
+BACKING_IMAGE_QCOW2_URL = \
+    &#34;https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2&#34;
+BACKING_IMAGE_RAW_URL = \
+    &#34;https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.raw&#34;
+BACKING_IMAGE_EXT4_SIZE = 32 * Mi
 
 PORT = &#34;:9500&#34;
 
@@ -175,12 +179,13 @@ SETTING_STORAGE_OVER_PROVISIONING_PERCENTAGE = \
 SETTING_STORAGE_MINIMAL_AVAILABLE_PERCENTAGE = \
     &#34;storage-minimal-available-percentage&#34;
 SETTING_TAINT_TOLERATION = &#34;taint-toleration&#34;
+SETTING_BACKING_IMAGE_CLEANUP_WAIT_INTERVAL = \
+    &#34;backing-image-cleanup-wait-interval&#34;
 
 CSI_UNKNOWN = 0
 CSI_TRUE = 1
 CSI_FALSE = 2
 
-BASE_IMAGE_LABEL = &#34;ranchervm-base-image&#34;
 KUBERNETES_STATUS_LABEL = &#34;KubernetesStatus&#34;
 
 # https://github.com/kubernetes/kubernetes/blob/a9f0db16614ae62563ead2018f1692407bd93d8f/pkg/apis/scheduling/types.go#L29  # NOQA
@@ -288,6 +293,31 @@ def cleanup_volume(client, volume):
     assert len(volumes) == 0
 
 
+def cleanup_all_volumes(client):
+    &#34;&#34;&#34;
+    Clean up all volumes
+    :param client: The Longhorn client to use in the request.
+    &#34;&#34;&#34;
+
+    volumes = client.list_volume()
+    for v in volumes:
+        # ignore the error when clean up
+        try:
+            client.delete(v)
+        except Exception as e:
+            print(&#34;\nException when cleanup volume &#34;, v)
+            print(e)
+            pass
+    for i in range(RETRY_COUNTS):
+        volumes = client.list_volume()
+        if len(volumes) == 0:
+            break
+        time.sleep(RETRY_INTERVAL)
+
+    volumes = client.list_volume()
+    assert len(volumes) == 0
+
+
 def create_backup(client, volname, data={}, labels={}):
     volume = client.by_id_volume(volname)
     create_snapshot(client, volname)
@@ -322,7 +352,7 @@ def create_backup(client, volname, data={}, labels={}):
     assert verified
 
     # Don&#39;t directly compare the Label dictionaries, since the server could
-    # have added extra Labels (for things like BaseImage).
+    # have added extra Labels.
     for key, val in iter(labels.items()):
         assert new_b.labels.get(key) == val
 
@@ -346,8 +376,9 @@ def delete_backup_volume(client, volume_name):
     wait_for_backup_volume_delete(client, volume_name)
 
 
-def create_and_check_volume(client, volume_name, num_of_replicas=3, size=SIZE,
-                            base_image=&#34;&#34;, frontend=VOLUME_FRONTEND_BLOCKDEV):
+def create_and_check_volume(client, volume_name,
+                            num_of_replicas=3, size=SIZE, backing_image=&#34;&#34;,
+                            frontend=VOLUME_FRONTEND_BLOCKDEV):
     &#34;&#34;&#34;
     Create a new volume with the specified parameters. Assert that the new
     volume is detached and that all of the requested parameters match.
@@ -357,19 +388,19 @@ def create_and_check_volume(client, volume_name, num_of_replicas=3, size=SIZE,
     :param num_of_replicas: The number of replicas the volume should have.
     :param size: The size of the volume, as a string representing the number
     of bytes.
-    :param base_image: The base image to use for the volume.
+    :param backing_image: The backing image to use for the volume.
     :param frontend: The frontend to use for the volume.
     :return: The volume instance created.
     &#34;&#34;&#34;
     client.create_volume(name=volume_name, size=size,
                          numberOfReplicas=num_of_replicas,
-                         baseImage=base_image, frontend=frontend)
+                         backingImage=backing_image, frontend=frontend)
     volume = wait_for_volume_detached(client, volume_name)
     assert volume.name == volume_name
     assert volume.size == size
     assert volume.numberOfReplicas == num_of_replicas
     assert volume.state == &#34;detached&#34;
-    assert volume.baseImage == base_image
+    assert volume.backingImage == backing_image
     assert volume.frontend == frontend
     assert volume.created != &#34;&#34;
     return volume
@@ -929,8 +960,7 @@ def apps_api(request):
     return apps_api
 
 
-@pytest.fixture
-def csi_pv(request):
+def get_pv_manifest(request):
     volume_name = generate_volume_name()
     pv_manifest = {
         &#39;apiVersion&#39;: &#39;v1&#39;,
@@ -972,17 +1002,31 @@ def csi_pv(request):
 
 
 @pytest.fixture
-def csi_pv_baseimage(request):
-    pv_manifest = csi_pv(request)
-    pv_manifest[&#39;spec&#39;][&#39;capacity&#39;][&#39;storage&#39;] = \
-        size_to_string(BASE_IMAGE_EXT4_SIZE)
-    pv_manifest[&#39;spec&#39;][&#39;csi&#39;][&#39;volumeAttributes&#39;][&#39;baseImage&#39;] = \
-        BASE_IMAGE_EXT4
-    return pv_manifest
+def csi_pv(request):
+    return get_pv_manifest(request)
 
 
 @pytest.fixture
-def pvc(request):
+def csi_pv_backingimage(request):
+    pv_manifest = get_pv_manifest(request)
+    pv_manifest[&#39;spec&#39;][&#39;capacity&#39;][&#39;storage&#39;] = \
+        size_to_string(BACKING_IMAGE_EXT4_SIZE)
+    pv_manifest[&#39;spec&#39;][&#39;csi&#39;][&#39;volumeAttributes&#39;][&#39;backingImage&#39;] = \
+        BACKING_IMAGE_NAME
+
+    def finalizer():
+        api = get_core_api_client()
+        delete_and_wait_pv(api, pv_manifest[&#39;metadata&#39;][&#39;name&#39;])
+
+        client = get_longhorn_api_client()
+        delete_and_wait_longhorn(client, pv_manifest[&#39;metadata&#39;][&#39;name&#39;])
+
+    request.addfinalizer(finalizer)
+
+    return pv_manifest
+
+
+def get_pvc_manifest(request):
     pvc_manifest = {
         &#39;apiVersion&#39;: &#39;v1&#39;,
         &#39;kind&#39;: &#39;PersistentVolumeClaim&#39;,
@@ -1028,10 +1072,15 @@ def pvc(request):
 
 
 @pytest.fixture
-def pvc_baseimage(request):
-    pvc_manifest = pvc(request)
+def pvc(request):
+    return get_pvc_manifest(request)
+
+
+@pytest.fixture
+def pvc_backingimage(request):
+    pvc_manifest = get_pvc_manifest(request)
     pvc_manifest[&#39;spec&#39;][&#39;resources&#39;][&#39;requests&#39;][&#39;storage&#39;] = \
-        size_to_string(BASE_IMAGE_EXT4_SIZE)
+        size_to_string(BACKING_IMAGE_EXT4_SIZE)
     return pvc_manifest
 
 
@@ -1276,15 +1325,9 @@ def cleanup_client():
     # cleanup test disks
     cleanup_test_disks(client)
 
-    volumes = client.list_volume()
-    for v in volumes:
-        # ignore the error when clean up
-        try:
-            client.delete(v)
-        except Exception as e:
-            print(&#34;\nException when cleanup volume &#34;, v)
-            print(e)
-            pass
+    cleanup_all_volumes(client)
+
+    cleanup_all_backing_images(client)
 
     # enable nodes scheduling
     reset_node(client)
@@ -2720,6 +2763,16 @@ def reset_settings(client):
               recurring_job_setting)
         print(e)
 
+    bi_cleanup_setting = \
+        client.by_id_setting(SETTING_BACKING_IMAGE_CLEANUP_WAIT_INTERVAL)
+    try:
+        client.update(bi_cleanup_setting, value=&#34;60&#34;)
+    except Exception as e:
+        print(&#34;\nException when update &#34;
+              &#34;Backing Image Cleanup Wait Interval setting&#34;,
+              bi_cleanup_setting)
+        print(e)
+
     instance_managers = client.list_instance_manager()
     core_api = get_core_api_client()
     # Wait for the current instance manager running
@@ -3964,7 +4017,75 @@ def assert_backup_state(b_actual, b_expected):
     assert b_expected.volumeName == b_actual.volumeName
     assert b_expected.volumeSize == b_actual.volumeSize
     assert b_expected.volumeCreated == b_actual.volumeCreated
-    assert b_expected.messages == b_actual.messages is None</code></pre>
+    assert b_expected.messages == b_actual.messages is None
+
+
+def create_backing_image_with_matching_url(client, name, url):
+    backing_images = client.list_backing_image()
+    found = False
+    for bi in backing_images:
+        if bi.name == name:
+            found = True
+            break
+    if found:
+        if bi.imageURL != url:
+            client.delete(bi)
+            bi = client.by_id_backing_image(name=name)
+        if bi.deletionTimestamp != &#34;&#34;:
+            wait_for_backing_image_delete(client, bi.name)
+            found = False
+    if not found:
+        bi = client.create_backing_image(name=name, imageURL=url)
+    assert bi
+    return bi
+
+
+def wait_for_backing_image_disk_cleanup(client, bi_name, disk_id):
+    found = False
+    for i in range(RETRY_COUNTS):
+        found = False
+        bi = client.by_id_backing_image(bi_name)
+        for disk, state in iter(bi.diskStateMap.items()):
+            if disk == disk_id:
+                found = True
+                break
+        if not found:
+            break
+        time.sleep(RETRY_INTERVAL)
+    assert not found
+    return bi
+
+
+def wait_for_backing_image_delete(client, name):
+    found = False
+    for i in range(RETRY_COUNTS):
+        bi_list = client.list_backing_image()
+        found = False
+        for bi in bi_list:
+            if bi.name == name:
+                found = True
+                break
+        if not found:
+            break
+        time.sleep(RETRY_INTERVAL)
+    assert not found
+
+
+def cleanup_all_backing_images(client):
+    backing_images = client.list_backing_image()
+    for bi in backing_images:
+        try:
+            client.delete(bi)
+        except Exception as e:
+            print(&#34;\nException when cleanup backing image &#34;, bi)
+            print(e)
+            pass
+    for i in range(RETRY_COUNTS):
+        backing_images = client.list_backing_image()
+        if len(backing_images) == 0:
+            break
+        time.sleep(RETRY_INTERVAL)
+    assert len(client.list_backing_image()) == 0</code></pre>
 </details>
 </section>
 <section>
@@ -4421,6 +4542,67 @@ properly.
     assert len(found_hosts) == spec[&#34;expected&#34;]</code></pre>
 </details>
 </dd>
+<dt id="tests.common.cleanup_all_backing_images"><code class="name flex">
+<span>def <span class="ident">cleanup_all_backing_images</span></span>(<span>client)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def cleanup_all_backing_images(client):
+    backing_images = client.list_backing_image()
+    for bi in backing_images:
+        try:
+            client.delete(bi)
+        except Exception as e:
+            print(&#34;\nException when cleanup backing image &#34;, bi)
+            print(e)
+            pass
+    for i in range(RETRY_COUNTS):
+        backing_images = client.list_backing_image()
+        if len(backing_images) == 0:
+            break
+        time.sleep(RETRY_INTERVAL)
+    assert len(client.list_backing_image()) == 0</code></pre>
+</details>
+</dd>
+<dt id="tests.common.cleanup_all_volumes"><code class="name flex">
+<span>def <span class="ident">cleanup_all_volumes</span></span>(<span>client)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Clean up all volumes
+:param client: The Longhorn client to use in the request.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def cleanup_all_volumes(client):
+    &#34;&#34;&#34;
+    Clean up all volumes
+    :param client: The Longhorn client to use in the request.
+    &#34;&#34;&#34;
+
+    volumes = client.list_volume()
+    for v in volumes:
+        # ignore the error when clean up
+        try:
+            client.delete(v)
+        except Exception as e:
+            print(&#34;\nException when cleanup volume &#34;, v)
+            print(e)
+            pass
+    for i in range(RETRY_COUNTS):
+        volumes = client.list_volume()
+        if len(volumes) == 0:
+            break
+        time.sleep(RETRY_INTERVAL)
+
+    volumes = client.list_volume()
+    assert len(volumes) == 0</code></pre>
+</details>
+</dd>
 <dt id="tests.common.cleanup_client"><code class="name flex">
 <span>def <span class="ident">cleanup_client</span></span>(<span>)</span>
 </code></dt>
@@ -4435,15 +4617,9 @@ properly.
     # cleanup test disks
     cleanup_test_disks(client)
 
-    volumes = client.list_volume()
-    for v in volumes:
-        # ignore the error when clean up
-        try:
-            client.delete(v)
-        except Exception as e:
-            print(&#34;\nException when cleanup volume &#34;, v)
-            print(e)
-            pass
+    cleanup_all_volumes(client)
+
+    cleanup_all_backing_images(client)
 
     # enable nodes scheduling
     reset_node(client)
@@ -4744,7 +4920,7 @@ def core_api(request):
 </details>
 </dd>
 <dt id="tests.common.create_and_check_volume"><code class="name flex">
-<span>def <span class="ident">create_and_check_volume</span></span>(<span>client, volume_name, num_of_replicas=3, size='16777216', base_image='', frontend='blockdev')</span>
+<span>def <span class="ident">create_and_check_volume</span></span>(<span>client, volume_name, num_of_replicas=3, size='16777216', backing_image='', frontend='blockdev')</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Create a new volume with the specified parameters. Assert that the new
@@ -4754,15 +4930,16 @@ volume is detached and that all of the requested parameters match.</p>
 :param num_of_replicas: The number of replicas the volume should have.
 :param size: The size of the volume, as a string representing the number
 of bytes.
-:param base_image: The base image to use for the volume.
+:param backing_image: The backing image to use for the volume.
 :param frontend: The frontend to use for the volume.
 :return: The volume instance created.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def create_and_check_volume(client, volume_name, num_of_replicas=3, size=SIZE,
-                            base_image=&#34;&#34;, frontend=VOLUME_FRONTEND_BLOCKDEV):
+<pre><code class="python">def create_and_check_volume(client, volume_name,
+                            num_of_replicas=3, size=SIZE, backing_image=&#34;&#34;,
+                            frontend=VOLUME_FRONTEND_BLOCKDEV):
     &#34;&#34;&#34;
     Create a new volume with the specified parameters. Assert that the new
     volume is detached and that all of the requested parameters match.
@@ -4772,19 +4949,19 @@ of bytes.
     :param num_of_replicas: The number of replicas the volume should have.
     :param size: The size of the volume, as a string representing the number
     of bytes.
-    :param base_image: The base image to use for the volume.
+    :param backing_image: The backing image to use for the volume.
     :param frontend: The frontend to use for the volume.
     :return: The volume instance created.
     &#34;&#34;&#34;
     client.create_volume(name=volume_name, size=size,
                          numberOfReplicas=num_of_replicas,
-                         baseImage=base_image, frontend=frontend)
+                         backingImage=backing_image, frontend=frontend)
     volume = wait_for_volume_detached(client, volume_name)
     assert volume.name == volume_name
     assert volume.size == size
     assert volume.numberOfReplicas == num_of_replicas
     assert volume.state == &#34;detached&#34;
-    assert volume.baseImage == base_image
+    assert volume.backingImage == backing_image
     assert volume.frontend == frontend
     assert volume.created != &#34;&#34;
     return volume</code></pre>
@@ -4882,6 +5059,35 @@ or it times out, whichever occurs first.</p></div>
     wait_statefulset(statefulset_manifest)</code></pre>
 </details>
 </dd>
+<dt id="tests.common.create_backing_image_with_matching_url"><code class="name flex">
+<span>def <span class="ident">create_backing_image_with_matching_url</span></span>(<span>client, name, url)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def create_backing_image_with_matching_url(client, name, url):
+    backing_images = client.list_backing_image()
+    found = False
+    for bi in backing_images:
+        if bi.name == name:
+            found = True
+            break
+    if found:
+        if bi.imageURL != url:
+            client.delete(bi)
+            bi = client.by_id_backing_image(name=name)
+        if bi.deletionTimestamp != &#34;&#34;:
+            wait_for_backing_image_delete(client, bi.name)
+            found = False
+    if not found:
+        bi = client.create_backing_image(name=name, imageURL=url)
+    assert bi
+    return bi</code></pre>
+</details>
+</dd>
 <dt id="tests.common.create_backup"><code class="name flex">
 <span>def <span class="ident">create_backup</span></span>(<span>client, volname, data={}, labels={})</span>
 </code></dt>
@@ -4925,7 +5131,7 @@ or it times out, whichever occurs first.</p></div>
     assert verified
 
     # Don&#39;t directly compare the Label dictionaries, since the server could
-    # have added extra Labels (for things like BaseImage).
+    # have added extra Labels.
     for key, val in iter(labels.items()):
         assert new_b.labels.get(key) == val
 
@@ -5089,33 +5295,25 @@ created using a storage class).</p></div>
 </summary>
 <pre><code class="python">@pytest.fixture
 def csi_pv(request):
-    volume_name = generate_volume_name()
-    pv_manifest = {
-        &#39;apiVersion&#39;: &#39;v1&#39;,
-        &#39;kind&#39;: &#39;PersistentVolume&#39;,
-        &#39;metadata&#39;: {
-            &#39;name&#39;: volume_name
-        },
-        &#39;spec&#39;: {
-            &#39;capacity&#39;: {
-                &#39;storage&#39;: size_to_string(DEFAULT_VOLUME_SIZE * Gi)
-            },
-            &#39;volumeMode&#39;: &#39;Filesystem&#39;,
-            &#39;accessModes&#39;: [&#39;ReadWriteOnce&#39;],
-            &#39;persistentVolumeReclaimPolicy&#39;: &#39;Delete&#39;,
-            &#39;csi&#39;: {
-                &#39;driver&#39;: &#39;driver.longhorn.io&#39;,
-                &#39;fsType&#39;: &#39;ext4&#39;,
-                &#39;volumeAttributes&#39;: {
-                    &#39;numberOfReplicas&#39;:
-                        DEFAULT_LONGHORN_PARAMS[&#39;numberOfReplicas&#39;],
-                    &#39;staleReplicaTimeout&#39;:
-                        DEFAULT_LONGHORN_PARAMS[&#39;staleReplicaTimeout&#39;]
-                },
-                &#39;volumeHandle&#39;: volume_name
-            }
-        }
-    }
+    return get_pv_manifest(request)</code></pre>
+</details>
+</dd>
+<dt id="tests.common.csi_pv_backingimage"><code class="name flex">
+<span>def <span class="ident">csi_pv_backingimage</span></span>(<span>request)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@pytest.fixture
+def csi_pv_backingimage(request):
+    pv_manifest = get_pv_manifest(request)
+    pv_manifest[&#39;spec&#39;][&#39;capacity&#39;][&#39;storage&#39;] = \
+        size_to_string(BACKING_IMAGE_EXT4_SIZE)
+    pv_manifest[&#39;spec&#39;][&#39;csi&#39;][&#39;volumeAttributes&#39;][&#39;backingImage&#39;] = \
+        BACKING_IMAGE_NAME
 
     def finalizer():
         api = get_core_api_client()
@@ -5126,25 +5324,6 @@ def csi_pv(request):
 
     request.addfinalizer(finalizer)
 
-    return pv_manifest</code></pre>
-</details>
-</dd>
-<dt id="tests.common.csi_pv_baseimage"><code class="name flex">
-<span>def <span class="ident">csi_pv_baseimage</span></span>(<span>request)</span>
-</code></dt>
-<dd>
-<div class="desc"></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">@pytest.fixture
-def csi_pv_baseimage(request):
-    pv_manifest = csi_pv(request)
-    pv_manifest[&#39;spec&#39;][&#39;capacity&#39;][&#39;storage&#39;] = \
-        size_to_string(BASE_IMAGE_EXT4_SIZE)
-    pv_manifest[&#39;spec&#39;][&#39;csi&#39;][&#39;volumeAttributes&#39;][&#39;baseImage&#39;] = \
-        BASE_IMAGE_EXT4
     return pv_manifest</code></pre>
 </details>
 </dd>
@@ -6256,6 +6435,110 @@ been completed successfully</p></div>
     return info</code></pre>
 </details>
 </dd>
+<dt id="tests.common.get_pv_manifest"><code class="name flex">
+<span>def <span class="ident">get_pv_manifest</span></span>(<span>request)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_pv_manifest(request):
+    volume_name = generate_volume_name()
+    pv_manifest = {
+        &#39;apiVersion&#39;: &#39;v1&#39;,
+        &#39;kind&#39;: &#39;PersistentVolume&#39;,
+        &#39;metadata&#39;: {
+            &#39;name&#39;: volume_name
+        },
+        &#39;spec&#39;: {
+            &#39;capacity&#39;: {
+                &#39;storage&#39;: size_to_string(DEFAULT_VOLUME_SIZE * Gi)
+            },
+            &#39;volumeMode&#39;: &#39;Filesystem&#39;,
+            &#39;accessModes&#39;: [&#39;ReadWriteOnce&#39;],
+            &#39;persistentVolumeReclaimPolicy&#39;: &#39;Delete&#39;,
+            &#39;csi&#39;: {
+                &#39;driver&#39;: &#39;driver.longhorn.io&#39;,
+                &#39;fsType&#39;: &#39;ext4&#39;,
+                &#39;volumeAttributes&#39;: {
+                    &#39;numberOfReplicas&#39;:
+                        DEFAULT_LONGHORN_PARAMS[&#39;numberOfReplicas&#39;],
+                    &#39;staleReplicaTimeout&#39;:
+                        DEFAULT_LONGHORN_PARAMS[&#39;staleReplicaTimeout&#39;]
+                },
+                &#39;volumeHandle&#39;: volume_name
+            }
+        }
+    }
+
+    def finalizer():
+        api = get_core_api_client()
+        delete_and_wait_pv(api, pv_manifest[&#39;metadata&#39;][&#39;name&#39;])
+
+        client = get_longhorn_api_client()
+        delete_and_wait_longhorn(client, pv_manifest[&#39;metadata&#39;][&#39;name&#39;])
+
+    request.addfinalizer(finalizer)
+
+    return pv_manifest</code></pre>
+</details>
+</dd>
+<dt id="tests.common.get_pvc_manifest"><code class="name flex">
+<span>def <span class="ident">get_pvc_manifest</span></span>(<span>request)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_pvc_manifest(request):
+    pvc_manifest = {
+        &#39;apiVersion&#39;: &#39;v1&#39;,
+        &#39;kind&#39;: &#39;PersistentVolumeClaim&#39;,
+        &#39;metadata&#39;: {
+            &#39;name&#39;: generate_volume_name()
+        },
+        &#39;spec&#39;: {
+            &#39;accessModes&#39;: [
+                &#39;ReadWriteOnce&#39;
+            ],
+            &#39;resources&#39;: {
+                &#39;requests&#39;: {
+                    &#39;storage&#39;: size_to_string(DEFAULT_VOLUME_SIZE * Gi)
+                }
+            }
+        }
+    }
+
+    def finalizer():
+        api = k8sclient.CoreV1Api()
+
+        if not check_pvc_existence(api, pvc_manifest[&#39;metadata&#39;][&#39;name&#39;]):
+            return
+
+        claim = api.read_namespaced_persistent_volume_claim(
+            name=pvc_manifest[&#39;metadata&#39;][&#39;name&#39;], namespace=&#39;default&#39;)
+        volume_name = claim.spec.volume_name
+
+        api = get_core_api_client()
+        delete_and_wait_pvc(api, pvc_manifest[&#39;metadata&#39;][&#39;name&#39;])
+
+        # Working around line break issue.
+        key = &#39;volume.beta.kubernetes.io/storage-provisioner&#39;
+        # If not using StorageClass (such as in CSI test), the Longhorn volume
+        # will not be automatically deleted, causing this to throw an error.
+        if (key in claim.metadata.annotations):
+            client = get_longhorn_api_client()
+            wait_for_volume_delete(client, volume_name)
+
+    request.addfinalizer(finalizer)
+
+    return pvc_manifest</code></pre>
+</details>
+</dd>
 <dt id="tests.common.get_random_client"><code class="name flex">
 <span>def <span class="ident">get_random_client</span></span>(<span>clients)</span>
 </code></dt>
@@ -7049,52 +7332,11 @@ def priority_class(request):
 </summary>
 <pre><code class="python">@pytest.fixture
 def pvc(request):
-    pvc_manifest = {
-        &#39;apiVersion&#39;: &#39;v1&#39;,
-        &#39;kind&#39;: &#39;PersistentVolumeClaim&#39;,
-        &#39;metadata&#39;: {
-            &#39;name&#39;: generate_volume_name()
-        },
-        &#39;spec&#39;: {
-            &#39;accessModes&#39;: [
-                &#39;ReadWriteOnce&#39;
-            ],
-            &#39;resources&#39;: {
-                &#39;requests&#39;: {
-                    &#39;storage&#39;: size_to_string(DEFAULT_VOLUME_SIZE * Gi)
-                }
-            }
-        }
-    }
-
-    def finalizer():
-        api = k8sclient.CoreV1Api()
-
-        if not check_pvc_existence(api, pvc_manifest[&#39;metadata&#39;][&#39;name&#39;]):
-            return
-
-        claim = api.read_namespaced_persistent_volume_claim(
-            name=pvc_manifest[&#39;metadata&#39;][&#39;name&#39;], namespace=&#39;default&#39;)
-        volume_name = claim.spec.volume_name
-
-        api = get_core_api_client()
-        delete_and_wait_pvc(api, pvc_manifest[&#39;metadata&#39;][&#39;name&#39;])
-
-        # Working around line break issue.
-        key = &#39;volume.beta.kubernetes.io/storage-provisioner&#39;
-        # If not using StorageClass (such as in CSI test), the Longhorn volume
-        # will not be automatically deleted, causing this to throw an error.
-        if (key in claim.metadata.annotations):
-            client = get_longhorn_api_client()
-            wait_for_volume_delete(client, volume_name)
-
-    request.addfinalizer(finalizer)
-
-    return pvc_manifest</code></pre>
+    return get_pvc_manifest(request)</code></pre>
 </details>
 </dd>
-<dt id="tests.common.pvc_baseimage"><code class="name flex">
-<span>def <span class="ident">pvc_baseimage</span></span>(<span>request)</span>
+<dt id="tests.common.pvc_backingimage"><code class="name flex">
+<span>def <span class="ident">pvc_backingimage</span></span>(<span>request)</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -7103,10 +7345,10 @@ def pvc(request):
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">@pytest.fixture
-def pvc_baseimage(request):
-    pvc_manifest = pvc(request)
+def pvc_backingimage(request):
+    pvc_manifest = get_pvc_manifest(request)
     pvc_manifest[&#39;spec&#39;][&#39;resources&#39;][&#39;requests&#39;][&#39;storage&#39;] = \
-        size_to_string(BASE_IMAGE_EXT4_SIZE)
+        size_to_string(BACKING_IMAGE_EXT4_SIZE)
     return pvc_manifest</code></pre>
 </details>
 </dd>
@@ -7481,6 +7723,16 @@ def random_labels():
         print(&#34;\nException when update &#34;
               &#34;Allow Recurring Job While Volume Detached setting&#34;,
               recurring_job_setting)
+        print(e)
+
+    bi_cleanup_setting = \
+        client.by_id_setting(SETTING_BACKING_IMAGE_CLEANUP_WAIT_INTERVAL)
+    try:
+        client.update(bi_cleanup_setting, value=&#34;60&#34;)
+    except Exception as e:
+        print(&#34;\nException when update &#34;
+              &#34;Backing Image Cleanup Wait Interval setting&#34;,
+              bi_cleanup_setting)
         print(e)
 
     instance_managers = client.list_instance_manager()
@@ -8029,6 +8281,55 @@ def volume_name(request):
         time.sleep(DEFAULT_DEPLOYMENT_INTERVAL)
 
     assert replicas_ready</code></pre>
+</details>
+</dd>
+<dt id="tests.common.wait_for_backing_image_delete"><code class="name flex">
+<span>def <span class="ident">wait_for_backing_image_delete</span></span>(<span>client, name)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def wait_for_backing_image_delete(client, name):
+    found = False
+    for i in range(RETRY_COUNTS):
+        bi_list = client.list_backing_image()
+        found = False
+        for bi in bi_list:
+            if bi.name == name:
+                found = True
+                break
+        if not found:
+            break
+        time.sleep(RETRY_INTERVAL)
+    assert not found</code></pre>
+</details>
+</dd>
+<dt id="tests.common.wait_for_backing_image_disk_cleanup"><code class="name flex">
+<span>def <span class="ident">wait_for_backing_image_disk_cleanup</span></span>(<span>client, bi_name, disk_id)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def wait_for_backing_image_disk_cleanup(client, bi_name, disk_id):
+    found = False
+    for i in range(RETRY_COUNTS):
+        found = False
+        bi = client.by_id_backing_image(bi_name)
+        for disk, state in iter(bi.diskStateMap.items()):
+            if disk == disk_id:
+                found = True
+                break
+        if not found:
+            break
+        time.sleep(RETRY_INTERVAL)
+    assert not found
+    return bi</code></pre>
 </details>
 </dd>
 <dt id="tests.common.wait_for_backup_completion"><code class="name flex">
@@ -9870,6 +10171,8 @@ volume. Trigger a failed assertion of one is detected.
 <li><code><a title="tests.common.check_volume_existence" href="#tests.common.check_volume_existence">check_volume_existence</a></code></li>
 <li><code><a title="tests.common.check_volume_last_backup" href="#tests.common.check_volume_last_backup">check_volume_last_backup</a></code></li>
 <li><code><a title="tests.common.check_volume_replicas" href="#tests.common.check_volume_replicas">check_volume_replicas</a></code></li>
+<li><code><a title="tests.common.cleanup_all_backing_images" href="#tests.common.cleanup_all_backing_images">cleanup_all_backing_images</a></code></li>
+<li><code><a title="tests.common.cleanup_all_volumes" href="#tests.common.cleanup_all_volumes">cleanup_all_volumes</a></code></li>
 <li><code><a title="tests.common.cleanup_client" href="#tests.common.cleanup_client">cleanup_client</a></code></li>
 <li><code><a title="tests.common.cleanup_host_disk" href="#tests.common.cleanup_host_disk">cleanup_host_disk</a></code></li>
 <li><code><a title="tests.common.cleanup_node_disks" href="#tests.common.cleanup_node_disks">cleanup_node_disks</a></code></li>
@@ -9885,6 +10188,7 @@ volume. Trigger a failed assertion of one is detected.
 <li><code><a title="tests.common.create_and_wait_deployment" href="#tests.common.create_and_wait_deployment">create_and_wait_deployment</a></code></li>
 <li><code><a title="tests.common.create_and_wait_pod" href="#tests.common.create_and_wait_pod">create_and_wait_pod</a></code></li>
 <li><code><a title="tests.common.create_and_wait_statefulset" href="#tests.common.create_and_wait_statefulset">create_and_wait_statefulset</a></code></li>
+<li><code><a title="tests.common.create_backing_image_with_matching_url" href="#tests.common.create_backing_image_with_matching_url">create_backing_image_with_matching_url</a></code></li>
 <li><code><a title="tests.common.create_backup" href="#tests.common.create_backup">create_backup</a></code></li>
 <li><code><a title="tests.common.create_pv_for_volume" href="#tests.common.create_pv_for_volume">create_pv_for_volume</a></code></li>
 <li><code><a title="tests.common.create_pvc" href="#tests.common.create_pvc">create_pvc</a></code></li>
@@ -9893,7 +10197,7 @@ volume. Trigger a failed assertion of one is detected.
 <li><code><a title="tests.common.create_snapshot" href="#tests.common.create_snapshot">create_snapshot</a></code></li>
 <li><code><a title="tests.common.create_storage_class" href="#tests.common.create_storage_class">create_storage_class</a></code></li>
 <li><code><a title="tests.common.csi_pv" href="#tests.common.csi_pv">csi_pv</a></code></li>
-<li><code><a title="tests.common.csi_pv_baseimage" href="#tests.common.csi_pv_baseimage">csi_pv_baseimage</a></code></li>
+<li><code><a title="tests.common.csi_pv_backingimage" href="#tests.common.csi_pv_backingimage">csi_pv_backingimage</a></code></li>
 <li><code><a title="tests.common.csi_pvc_name" href="#tests.common.csi_pvc_name">csi_pvc_name</a></code></li>
 <li><code><a title="tests.common.delete_and_wait_deployment" href="#tests.common.delete_and_wait_deployment">delete_and_wait_deployment</a></code></li>
 <li><code><a title="tests.common.delete_and_wait_longhorn" href="#tests.common.delete_and_wait_longhorn">delete_and_wait_longhorn</a></code></li>
@@ -9944,6 +10248,8 @@ volume. Trigger a failed assertion of one is detected.
 <li><code><a title="tests.common.get_mgr_ips" href="#tests.common.get_mgr_ips">get_mgr_ips</a></code></li>
 <li><code><a title="tests.common.get_pod_data_md5sum" href="#tests.common.get_pod_data_md5sum">get_pod_data_md5sum</a></code></li>
 <li><code><a title="tests.common.get_process_info" href="#tests.common.get_process_info">get_process_info</a></code></li>
+<li><code><a title="tests.common.get_pv_manifest" href="#tests.common.get_pv_manifest">get_pv_manifest</a></code></li>
+<li><code><a title="tests.common.get_pvc_manifest" href="#tests.common.get_pvc_manifest">get_pvc_manifest</a></code></li>
 <li><code><a title="tests.common.get_random_client" href="#tests.common.get_random_client">get_random_client</a></code></li>
 <li><code><a title="tests.common.get_scheduling_api_client" href="#tests.common.get_scheduling_api_client">get_scheduling_api_client</a></code></li>
 <li><code><a title="tests.common.get_self_host_id" href="#tests.common.get_self_host_id">get_self_host_id</a></code></li>
@@ -9975,7 +10281,7 @@ volume. Trigger a failed assertion of one is detected.
 <li><code><a title="tests.common.prepare_statefulset_with_data_in_mb" href="#tests.common.prepare_statefulset_with_data_in_mb">prepare_statefulset_with_data_in_mb</a></code></li>
 <li><code><a title="tests.common.priority_class" href="#tests.common.priority_class">priority_class</a></code></li>
 <li><code><a title="tests.common.pvc" href="#tests.common.pvc">pvc</a></code></li>
-<li><code><a title="tests.common.pvc_baseimage" href="#tests.common.pvc_baseimage">pvc_baseimage</a></code></li>
+<li><code><a title="tests.common.pvc_backingimage" href="#tests.common.pvc_backingimage">pvc_backingimage</a></code></li>
 <li><code><a title="tests.common.pvc_name" href="#tests.common.pvc_name">pvc_name</a></code></li>
 <li><code><a title="tests.common.random_labels" href="#tests.common.random_labels">random_labels</a></code></li>
 <li><code><a title="tests.common.read_pod_block_volume_data" href="#tests.common.read_pod_block_volume_data">read_pod_block_volume_data</a></code></li>
@@ -10006,6 +10312,8 @@ volume. Trigger a failed assertion of one is detected.
 <li><code><a title="tests.common.wait_delete_pvc" href="#tests.common.wait_delete_pvc">wait_delete_pvc</a></code></li>
 <li><code><a title="tests.common.wait_delete_volume_attachment" href="#tests.common.wait_delete_volume_attachment">wait_delete_volume_attachment</a></code></li>
 <li><code><a title="tests.common.wait_deployment_replica_ready" href="#tests.common.wait_deployment_replica_ready">wait_deployment_replica_ready</a></code></li>
+<li><code><a title="tests.common.wait_for_backing_image_delete" href="#tests.common.wait_for_backing_image_delete">wait_for_backing_image_delete</a></code></li>
+<li><code><a title="tests.common.wait_for_backing_image_disk_cleanup" href="#tests.common.wait_for_backing_image_disk_cleanup">wait_for_backing_image_disk_cleanup</a></code></li>
 <li><code><a title="tests.common.wait_for_backup_completion" href="#tests.common.wait_for_backup_completion">wait_for_backup_completion</a></code></li>
 <li><code><a title="tests.common.wait_for_backup_delete" href="#tests.common.wait_for_backup_delete">wait_for_backup_delete</a></code></li>
 <li><code><a title="tests.common.wait_for_backup_restore_completed" href="#tests.common.wait_for_backup_restore_completed">wait_for_backup_restore_completed</a></code></li>
