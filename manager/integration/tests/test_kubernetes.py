@@ -600,6 +600,8 @@ def test_backup_kubernetes_status(set_random_backupstore, client, core_api, pod)
     volume.snapshotBackup(name=snap.name)
     wait_for_backup_completion(client, volume_name, snap.name)
     bv, b = find_backup(client, volume_name, snap.name)
+    status = loads(bv.labels.get(KUBERNETES_STATUS_LABEL))
+    assert status == ks
     new_b = bv.backupGet(name=b.name)
     status = loads(new_b.labels.get(KUBERNETES_STATUS_LABEL))
     assert status == ks
