@@ -7,6 +7,19 @@
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language><atom:link href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/index.xml" rel="self" type="application/rss+xml" />
     <item>
+      <title>CSI Sanity Check</title>
+      <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/csi-sanity-check/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/csi-sanity-check/</guid>
+      <description>Related issue https://github.com/longhorn/longhorn/issues/2076
+Run csi-sanity   Prepare Longhorn cluster and setup backup target.
+  Make csi-sanity binary from csi-test.
+  On one of the cluster node, run csi-sanity binary.
+csi-sanity -csi.endpoint /var/lib/kubelet/obsoleted-longhorn-plugins/driver.longhorn.io/csi.sock -ginkgo.skip=&amp;#34;should create volume from an existing source snapshot|should return appropriate values|should succeed when creating snapshot with maximum-length name|should succeed when requesting to create a snapshot with already existing name and same source volume ID|should fail when requesting to create a snapshot with already existing name and different source volume ID&amp;#34;  NOTE</description>
+    </item>
+    
+    <item>
       <title>Test Disable IPv6</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/disable_ipv6/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>

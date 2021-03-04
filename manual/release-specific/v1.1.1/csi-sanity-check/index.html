@@ -322,90 +322,70 @@
 </aside>
 
 <main style="padding: 1%; width: 70%;">
-  <h1 id="title">Improve Node Failure Handling By Automatically Force Delete Terminating Pods of StatefulSet/Deployment On Downed Node</h1>
+  <h1 id="title">CSI Sanity Check</h1>
   <div>
     <article id="content">
-       <ol>
-<li>Setup a cluster of 3 worker nodes</li>
-<li>Install Longhorn and set <code>Default Replica Count = 2</code> (because we will turn off one node)</li>
-<li>Create a StatefulSet with 2 pods using the command:
-<pre><code>kubectl create -f https://raw.githubusercontent.com/longhorn/longhorn/master/examples/statefulset.yaml
-</code></pre></li>
-<li>Create a volume + pv + pvc named <code>vol1</code> and create a deployment(1 pod) of default ubuntu named <code>shell</code> with the usage of pvc <code>vol1</code> mounted under <code>/mnt/vol1</code></li>
-<li>Find the node which contains one pod of the StatefulSet/Deployment. Power off the node</li>
+       <h2 id="related-issue">Related issue</h2>
+<p><a href="https://github.com/longhorn/longhorn/issues/2076">https://github.com/longhorn/longhorn/issues/2076</a></p>
+<h2 id="run-csi-sanity">Run csi-sanity</h2>
+<ol>
+<li>
+<p>Prepare Longhorn cluster and setup backup target.</p>
+</li>
+<li>
+<p>Make csi-sanity binary from <a href="https://github.com/kubernetes-csi/csi-test">csi-test</a>.</p>
+</li>
+<li>
+<p>On one of the cluster node, run csi-sanity binary.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">csi-sanity -csi.endpoint /var/lib/kubelet/obsoleted-longhorn-plugins/driver.longhorn.io/csi.sock -ginkgo.skip<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;should create volume from an existing source snapshot|should return appropriate values|should succeed when creating snapshot with maximum-length name|should succeed when requesting to create a snapshot with already existing name and same source volume ID|should fail when requesting to create a snapshot with already existing name and different source volume ID&#34;</span>
+</code></pre></div><hr>
+<p><strong>NOTE</strong></p>
+<p>The skipped tests will be tracked by <a href="https://github.com/longhorn/longhorn/issues/2271">#2271</a>.</p>
+<hr>
+<hr>
+<p><strong>NOTE</strong></p>
+<p>Some success of CSI sanity tests is dependent on <a href="https://github.com/longhorn/longhorn/issues/2270">#2270</a>.</p>
+<p>Currently, there will be 11 test failures caused by the dependent PR. Those could also be tested by applying the dependent PR.</p>
+<pre><code>Summarizing 11 Failures:
+
+[Fail] Node Service NodeGetVolumeStats [It] should fail when volume does not exist on the specified path 
+/mnt/sda2/go/src/github.com/kubernetes-csi/csi-test/pkg/sanity/node.go:196
+
+[Fail] Node Service [It] should work 
+/mnt/sda2/go/src/github.com/kubernetes-csi/csi-test/pkg/sanity/node.go:91
+
+[Fail] Node Service [It] should be idempotent 
+/mnt/sda2/go/src/github.com/kubernetes-csi/csi-test/pkg/sanity/node.go:91
+
+[Fail] Controller Service [Controller Server] CreateVolume [It] should not  fail when requesting to create a volume with already existing name and   same capacity 
+/mnt/sda2/go/src/github.com/kubernetes-csi/csi-test/pkg/sanity/controller.  go:465
+
+[Fail] Controller Service [Controller Server] CreateVolume [It] should  fail when requesting to create a volume with already existing name and   different capacity 
+/mnt/sda2/go/src/github.com/kubernetes-csi/csi-test/pkg/sanity/controller.  go:506
+
+[Fail] Controller Service [Controller Server] CreateVolume [It] should not  fail when creating volume with maximum-length name 
+/mnt/sda2/go/src/github.com/kubernetes-csi/csi-test/pkg/sanity/controller.  go:554
+
+[Fail] Controller Service [Controller Server] ValidateVolumeCapabilities    [It] should fail when no volume capabilities are provided 
+/mnt/sda2/go/src/github.com/kubernetes-csi/csi-test/pkg/sanity/controller.  go:753
+
+[Fail] Controller Service [Controller Server] ControllerPublishVolume [It]  should fail when the node does not exist 
+/mnt/sda2/go/src/github.com/kubernetes-csi/csi-test/pkg/sanity/controller.  go:967
+
+[Fail] Controller Service [Controller Server] volume lifecycle [It] should  work 
+/mnt/sda2/go/src/github.com/kubernetes-csi/csi-test/pkg/sanity/controller.  go:1659
+
+[Fail] Controller Service [Controller Server] volume lifecycle [It] should  be idempotent 
+/mnt/sda2/go/src/github.com/kubernetes-csi/csi-test/pkg/sanity/controller.  go:1659
+
+[Fail] ExpandVolume [Controller Server] [It] should work 
+/mnt/sda2/go/src/github.com/kubernetes-csi/csi-test/pkg/sanity/controller.  go:1537
+
+Ran 42 of 77 Specs in 0.534 seconds
+FAIL! -- 31 Passed | 11 Failed | 1 Pending | 34 Skipped
+</code></pre><hr>
+</li>
 </ol>
-<h4 id="statefulset">StatefulSet</h4>
-<h5 id="if-nodedownpoddeletionpolicy--is-set-to-do-nothing---delete-deployment-pod">if <code>NodeDownPodDeletionPolicy </code> is set to <code>do-nothing </code> | <code>delete-deployment-pod</code></h5>
-<ul>
-<li>wait till the <code>pod.deletionTimestamp</code> has passed</li>
-<li>verify no replacement pod generated, the pod is stuck at terminating forever.</li>
-</ul>
-<h5 id="if-nodedownpoddeletionpolicy--is-set-to-delete-statefulset-pod---delete-both-statefulset-and-deployment-pod">if <code>NodeDownPodDeletionPolicy </code> is set to <code>delete-statefulset-pod </code> | <code>delete-both-statefulset-and-deployment-pod</code></h5>
-<ul>
-<li>wait till pod&rsquo;s status becomes <code>terminating</code> and the <code>pod.deletionTimestamp</code> has passed (around 7 minutes)</li>
-<li>verify that the pod is deleted and there is a new running replacement pod.</li>
-<li>Verify that you can access/read/write the volume on the new pod</li>
-</ul>
-<h4 id="deployment">Deployment</h4>
-<h5 id="if-nodedownpoddeletionpolicy--is-set-to-do-nothing---delete-statefulset-pod-and-volume-attachment-recovery-policy-is-never">if <code>NodeDownPodDeletionPolicy </code> is set to <code>do-nothing </code> | <code>delete-statefulset-pod</code> AND <code>Volume Attachment Recovery Policy</code> is <code>never</code></h5>
-<ul>
-<li>wait till the <code>pod.deletionTimestamp</code> has passed</li>
-<li>replacement pod will be stuck in <code>Pending</code> state forever</li>
-<li>force delete the terminating pod</li>
-<li>wait till replacement pod is running</li>
-<li>verify that you can access <code>vol1</code> via the <code>shell</code> replacement pod under <code>/mnt/vol1</code> once it is in the running state</li>
-</ul>
-<h5 id="if-nodedownpoddeletionpolicy--is-set-to-do-nothing---delete-statefulset-pod-and-volume-attachment-recovery-policy-is-wait">if <code>NodeDownPodDeletionPolicy </code> is set to <code>do-nothing </code> | <code>delete-statefulset-pod</code> AND <code>Volume Attachment Recovery Policy</code> is <code>wait</code></h5>
-<ul>
-<li>wait till replacement pod is generated (default is around 6 minutes, kubernetes setting)</li>
-<li>wait till the <code>pod.deletionTimestamp</code> has passed</li>
-<li>verify that you can access <code>vol1</code> via the <code>shell</code> replacement pod under <code>/mnt/vol1</code> once it is in the running state</li>
-<li>verify that the original <code>shell</code> pod is stuck in <code>Pending</code> state forever</li>
-</ul>
-<h5 id="if-nodedownpoddeletionpolicy--is-set-to-do-nothing---delete-statefulset-pod-and-volume-attachment-recovery-policy-is-immediate">if <code>NodeDownPodDeletionPolicy </code> is set to <code>do-nothing </code> | <code>delete-statefulset-pod</code> AND <code>Volume Attachment Recovery Policy</code> is <code>immediate</code></h5>
-<ul>
-<li>wait till replacement pod is generated (default is around 6 minutes, kubernetes setting)</li>
-<li>verify that you can access <code>vol1</code> via the <code>shell</code> replacement pod under <code>/mnt/vol1</code> once it is in the running state</li>
-<li>verify that the original <code>shell</code> pod is stuck in <code>Pending</code> state forever</li>
-</ul>
-<h5 id="if-nodedownpoddeletionpolicy--is-set-to-delete-deployment-pod---delete-both-statefulset-and-deployment-pod-and-volume-attachment-recovery-policy-is-never-waitimmediate">if <code>NodeDownPodDeletionPolicy </code> is set to <code>delete-deployment-pod </code> | <code>delete-both-statefulset-and-deployment-pod</code> AND <code>Volume Attachment Recovery Policy</code> is <code>never</code>| <code>wait</code>|<code>immediate</code></h5>
-<ul>
-<li>wait till the <code>pod.deletionTimestamp</code> has passed</li>
-<li>verify that the pod is deleted and there is a new running replacement pod.</li>
-<li>verify that you can access <code>vol1</code> via the <code>shell</code> replacement pod under <code>/mnt/vol1</code></li>
-</ul>
-<h4 id="other-kinds">Other kinds</h4>
-<ul>
-<li>Verify that Longhorn never deletes any other pod on the downed node.</li>
-</ul>
-<h4 id="test-example">Test example</h4>
-<p>One typical scenario when the enhancement has succeeded is as below. When a node (say <code>node-x</code>) goes down (assume using Kubernetes' default settings and user allows Longhorn to force delete pods):</p>
-<table>
-<thead>
-<tr>
-<th style="text-align:left">Time</th>
-<th style="text-align:center">Event</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td style="text-align:left">0m:00s</td>
-<td style="text-align:center"><code>node-x</code>goes down and stops sending heartbeats to Kubernetes Node controller</td>
-</tr>
-<tr>
-<td style="text-align:left">0m:40s</td>
-<td style="text-align:center">Kubernetes Node controller reports <code>node-x</code> is <code>NotReady</code>.</td>
-</tr>
-<tr>
-<td style="text-align:left">5m:40s</td>
-<td style="text-align:center">Kubernetes Node controller starts evicting pods from <code>node-x</code> using graceful termination (set <code>DeletionTimestamp</code> and <code>deletionGracePeriodSeconds = 10s/30s</code>)</td>
-</tr>
-<tr>
-<td style="text-align:left">5m:50s/6m:10s</td>
-<td style="text-align:center">Longhorn forces delete the pod of StatefulSet/Deployment which uses Longhorn volume</td>
-</tr>
-</tbody>
-</table>
 
     </article>
   </div>

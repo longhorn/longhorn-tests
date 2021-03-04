@@ -34,6 +34,8 @@
   </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/environment/k3s-selinux-compatibility/</loc>
   </url><url>
+    <loc>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/csi-sanity-check/</loc>
+  </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/node/degraded-availability/</loc>
   </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/ha/disk-migration-in-aws-asg/</loc>
