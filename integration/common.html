@@ -2790,7 +2790,7 @@ def reset_engine_image(client):
         ei_list = client.list_engine_image().data
         for ei in ei_list:
             if ei.default:
-                if ei.state != &#39;ready&#39;:
+                if ei.state != &#39;deployed&#39;:
                     ready = False
             else:
                 wait_for_engine_image_ref_count(client, ei.name, 0)
@@ -7532,7 +7532,7 @@ def random_labels():
         ei_list = client.list_engine_image().data
         for ei in ei_list:
             if ei.default:
-                if ei.state != &#39;ready&#39;:
+                if ei.state != &#39;deployed&#39;:
                     ready = False
             else:
                 wait_for_engine_image_ref_count(client, ei.name, 0)
