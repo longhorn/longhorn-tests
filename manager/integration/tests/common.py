@@ -366,9 +366,14 @@ def create_and_check_volume(client, volume_name,
     :param frontend: The frontend to use for the volume.
     :return: The volume instance created.
     """
-    client.create_volume(name=volume_name, size=size,
-                         numberOfReplicas=num_of_replicas,
-                         backingImage=backing_image, frontend=frontend)
+    if backing_image_feature_supported(client):
+        client.create_volume(name=volume_name, size=size,
+                             numberOfReplicas=num_of_replicas,
+                             backingImage=backing_image, frontend=frontend)
+    else:
+        client.create_volume(name=volume_name, size=size,
+                             numberOfReplicas=num_of_replicas,
+                             frontend=frontend)
     volume = wait_for_volume_detached(client, volume_name)
     assert volume.name == volume_name
     assert volume.size == size
@@ -1301,7 +1306,8 @@ def cleanup_client():
 
     cleanup_all_volumes(client)
 
-    cleanup_all_backing_images(client)
+    if backing_image_feature_supported(client):
+        cleanup_all_backing_images(client)
 
     # enable nodes scheduling
     reset_node(client)
@@ -4082,3 +4088,12 @@ def cleanup_all_backing_images(client):
             break
         time.sleep(RETRY_INTERVAL)
     assert len(client.list_backing_image()) == 0
+
+
+# this function will check if backing image feature is supported, and is added
+# for the case of test_upgrade starting from Longhorn <= v1.1.0
+def backing_image_feature_supported(client):
+    if dict(client.by_id_schema("backingImage").actions) != {}:
+        return True
+    else:
+        return False
