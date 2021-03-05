@@ -342,48 +342,6 @@
 <p><strong>NOTE</strong></p>
 <p>The skipped tests will be tracked by <a href="https://github.com/longhorn/longhorn/issues/2271">#2271</a>.</p>
 <hr>
-<hr>
-<p><strong>NOTE</strong></p>
-<p>Some success of CSI sanity tests is dependent on <a href="https://github.com/longhorn/longhorn/issues/2270">#2270</a>.</p>
-<p>Currently, there will be 11 test failures caused by the dependent PR. Those could also be tested by applying the dependent PR.</p>
-<pre><code>Summarizing 11 Failures:
-
-[Fail] Node Service NodeGetVolumeStats [It] should fail when volume does not exist on the specified path 
-/mnt/sda2/go/src/github.com/kubernetes-csi/csi-test/pkg/sanity/node.go:196
-
-[Fail] Node Service [It] should work 
-/mnt/sda2/go/src/github.com/kubernetes-csi/csi-test/pkg/sanity/node.go:91
-
-[Fail] Node Service [It] should be idempotent 
-/mnt/sda2/go/src/github.com/kubernetes-csi/csi-test/pkg/sanity/node.go:91
-
-[Fail] Controller Service [Controller Server] CreateVolume [It] should not  fail when requesting to create a volume with already existing name and   same capacity 
-/mnt/sda2/go/src/github.com/kubernetes-csi/csi-test/pkg/sanity/controller.  go:465
-
-[Fail] Controller Service [Controller Server] CreateVolume [It] should  fail when requesting to create a volume with already existing name and   different capacity 
-/mnt/sda2/go/src/github.com/kubernetes-csi/csi-test/pkg/sanity/controller.  go:506
-
-[Fail] Controller Service [Controller Server] CreateVolume [It] should not  fail when creating volume with maximum-length name 
-/mnt/sda2/go/src/github.com/kubernetes-csi/csi-test/pkg/sanity/controller.  go:554
-
-[Fail] Controller Service [Controller Server] ValidateVolumeCapabilities    [It] should fail when no volume capabilities are provided 
-/mnt/sda2/go/src/github.com/kubernetes-csi/csi-test/pkg/sanity/controller.  go:753
-
-[Fail] Controller Service [Controller Server] ControllerPublishVolume [It]  should fail when the node does not exist 
-/mnt/sda2/go/src/github.com/kubernetes-csi/csi-test/pkg/sanity/controller.  go:967
-
-[Fail] Controller Service [Controller Server] volume lifecycle [It] should  work 
-/mnt/sda2/go/src/github.com/kubernetes-csi/csi-test/pkg/sanity/controller.  go:1659
-
-[Fail] Controller Service [Controller Server] volume lifecycle [It] should  be idempotent 
-/mnt/sda2/go/src/github.com/kubernetes-csi/csi-test/pkg/sanity/controller.  go:1659
-
-[Fail] ExpandVolume [Controller Server] [It] should work 
-/mnt/sda2/go/src/github.com/kubernetes-csi/csi-test/pkg/sanity/controller.  go:1537
-
-Ran 42 of 77 Specs in 0.534 seconds
-FAIL! -- 31 Passed | 11 Failed | 1 Pending | 34 Skipped
-</code></pre><hr>
 </li>
 </ol>
 
