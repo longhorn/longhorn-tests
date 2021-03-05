@@ -72,7 +72,7 @@ def backing_image_basic_operation_test(client, volume_name, bi_name, bi_url):  #
     assert random_disk_id != ''
 
     with pytest.raises(Exception):
-        backing_image.backingImageCleanup(diks=[random_disk_id])
+        backing_image.backingImageCleanup(disks=[random_disk_id])
     with pytest.raises(Exception):
         client.delete(backing_image)
 
