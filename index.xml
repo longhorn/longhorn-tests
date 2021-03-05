@@ -455,6 +455,25 @@ Scenario-1  Create a volume with 3 replicas and attach to a pod. Write some data
     </item>
     
     <item>
+      <title>Test System Upgrade with New Instance Manager</title>
+      <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/upgrade-with-new-instance-manager/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/upgrade-with-new-instance-manager/</guid>
+      <description>Prepare 3 sets of longhorn-manager and longhorn-instance-manager images. Deploy Longhorn with the 1st set of images. Set Guaranteed Engine Manager CPU and Guaranteed Replica Manager CPU to 15 and 24, respectively. Then wait for the instance manager recreation. Create and attach a volume to a node (node1). Upgrade the Longhorn system with the 2nd set of images. Verify the CPU requests in the pods of both instance managers match the settings.</description>
+    </item>
+    
+    <item>
+      <title>Test system upgrade with the deprecated CPU setting</title>
+      <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/system-upgrade-with-deprecated-cpu-setting/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/system-upgrade-with-deprecated-cpu-setting/</guid>
+      <description>Related issue https://github.com/longhorn/longhorn/issues/2207
+Test step  Deploy a cluster that each node has different CPUs. Launch Longhorn v1.1.0. Deploy some workloads using Longhorn volumes. Upgrade to the latest Longhorn version. Validate:  all workloads work fine and no instance manager pod crash during the upgrade. The fields node.Spec.EngineManagerCPURequest and node.Spec.ReplicaManagerCPURequest of each node are the same as the setting Guaranteed Engine CPU value in the old version * 1000. The old setting Guaranteed Engine CPU is deprecated with an empty value.</description>
+    </item>
+    
+    <item>
       <title>Test uninstallation</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/uninstallation/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>

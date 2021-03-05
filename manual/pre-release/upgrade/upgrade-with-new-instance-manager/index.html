@@ -328,43 +328,22 @@
 </aside>
 
 <main style="padding: 1%; width: 70%;">
-  <h1 id="title">Backing Image on a down node</h1>
+  <h1 id="title">Test System Upgrade with New Instance Manager</h1>
   <div>
     <article id="content">
        <ol>
-<li>Update the settings:
-<ol>
-<li>Disable Node Soft Anti-affinity.</li>
-<li>Set Replica Replenishment Wait Interval to a relatively long value.</li>
-</ol>
-</li>
-<li>Create a backing image with one of the following URLs:</li>
-</ol>
-<pre><code>   https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2
-   https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.raw
-</code></pre><ol start="3">
-<li>Create 2 volumes with the backing image and attach them on different nodes. Verify:
-<ul>
-<li>the disk state map of the backing image contains the disks of all replicas, and the state is running for all disks.</li>
-<li>the backing image content is correct</li>
-</ul>
-</li>
-<li>Write random data to the volumes.</li>
-<li>Power off a node containing one volume. Verify that
-<ul>
-<li>the related disk download state in the backing image will become <code>failed</code> once the download pod is removed by Kubernetes.</li>
-<li>the volume on the running node still works fine but is state <code>Degraded</code>, and the content is correct in the volume.</li>
-<li>the volume on the down node become <code>Unknown</code>.</li>
-</ul>
-</li>
-<li>Power on the node. Verify
-<ul>
-<li>the failed replica of the <code>Degraded</code> volume can be reused.</li>
-<li>the volume on the down node will be recovered automatically. And the data is correct.</li>
-<li>the backing image will be recovered automatically.</li>
-</ul>
-</li>
-<li>Delete all replicas expect for the reused failed replica for the volume not on the down node. Then wait for rebuilding and check the data. This verifies the reused replica data content.</li>
+<li>Prepare 3 sets of longhorn-manager and longhorn-instance-manager images.</li>
+<li>Deploy Longhorn with the 1st set of images.</li>
+<li>Set <code>Guaranteed Engine Manager CPU</code> and <code>Guaranteed Replica Manager CPU</code> to 15 and 24, respectively.
+Then wait for the instance manager recreation.</li>
+<li>Create and attach a volume to a node (node1).</li>
+<li>Upgrade the Longhorn system with the 2nd set of images.
+Verify the CPU requests in the pods of both instance managers match the settings.</li>
+<li>Create and attach one more volume to node1.</li>
+<li>Upgrade the Longhorn system with the 3rd set of images.</li>
+<li>Verify the pods of the 3rd instance manager cannot be launched on node1 since there is no available CPU for the allocation.</li>
+<li>Detach the volume in the 1st instance manager pod.
+Verify the related instance manager pods will be cleaned up and the new instance manager pod can be launched on node1.</li>
 </ol>
 
     </article>

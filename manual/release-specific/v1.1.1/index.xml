@@ -41,5 +41,15 @@ Longhorn v1.1.1 handles the error during snapshot purge better and reports to Lo
 Scenario-1  Create a volume with 3 replicas and attach to a pod. Write some data into the volume and take a snapshot. Delete a replica that will result in creating a system generated snapshot. Wait for replica to finish and take another snapshot. ssh into a node and resize the latest snapshot. (e.g dd if=/dev/urandom count=50 bs=1M of=&amp;lt;SNAPSHOT-NAME&amp;gt;.</description>
     </item>
     
+    <item>
+      <title>Test system upgrade with the deprecated CPU setting</title>
+      <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/system-upgrade-with-deprecated-cpu-setting/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/system-upgrade-with-deprecated-cpu-setting/</guid>
+      <description>Related issue https://github.com/longhorn/longhorn/issues/2207
+Test step  Deploy a cluster that each node has different CPUs. Launch Longhorn v1.1.0. Deploy some workloads using Longhorn volumes. Upgrade to the latest Longhorn version. Validate:  all workloads work fine and no instance manager pod crash during the upgrade. The fields node.Spec.EngineManagerCPURequest and node.Spec.ReplicaManagerCPURequest of each node are the same as the setting Guaranteed Engine CPU value in the old version * 1000. The old setting Guaranteed Engine CPU is deprecated with an empty value.</description>
+    </item>
+    
   </channel>
 </rss>

@@ -328,43 +328,28 @@
 </aside>
 
 <main style="padding: 1%; width: 70%;">
-  <h1 id="title">Backing Image on a down node</h1>
+  <h1 id="title">Test system upgrade with the deprecated CPU setting</h1>
   <div>
     <article id="content">
-       <ol>
-<li>Update the settings:
+       <h2 id="related-issue">Related issue</h2>
+<p><a href="https://github.com/longhorn/longhorn/issues/2207">https://github.com/longhorn/longhorn/issues/2207</a></p>
+<h2 id="test-step">Test step</h2>
 <ol>
-<li>Disable Node Soft Anti-affinity.</li>
-<li>Set Replica Replenishment Wait Interval to a relatively long value.</li>
+<li>Deploy a cluster that each node has different CPUs.</li>
+<li>Launch Longhorn v1.1.0.</li>
+<li>Deploy some workloads using Longhorn volumes.</li>
+<li>Upgrade to the latest Longhorn version. Validate:
+<ol>
+<li>all workloads work fine and no instance manager pod crash during the upgrade.</li>
+<li>The fields <code>node.Spec.EngineManagerCPURequest</code> and <code>node.Spec.ReplicaManagerCPURequest</code> of each node are the same as the setting <code>Guaranteed Engine CPU</code> value in the old version * 1000.</li>
+<li>The old setting <code>Guaranteed Engine CPU</code> is deprecated with an empty value.</li>
 </ol>
 </li>
-<li>Create a backing image with one of the following URLs:</li>
-</ol>
-<pre><code>   https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2
-   https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.raw
-</code></pre><ol start="3">
-<li>Create 2 volumes with the backing image and attach them on different nodes. Verify:
-<ul>
-<li>the disk state map of the backing image contains the disks of all replicas, and the state is running for all disks.</li>
-<li>the backing image content is correct</li>
-</ul>
-</li>
-<li>Write random data to the volumes.</li>
-<li>Power off a node containing one volume. Verify that
-<ul>
-<li>the related disk download state in the backing image will become <code>failed</code> once the download pod is removed by Kubernetes.</li>
-<li>the volume on the running node still works fine but is state <code>Degraded</code>, and the content is correct in the volume.</li>
-<li>the volume on the down node become <code>Unknown</code>.</li>
-</ul>
-</li>
-<li>Power on the node. Verify
-<ul>
-<li>the failed replica of the <code>Degraded</code> volume can be reused.</li>
-<li>the volume on the down node will be recovered automatically. And the data is correct.</li>
-<li>the backing image will be recovered automatically.</li>
-</ul>
-</li>
-<li>Delete all replicas expect for the reused failed replica for the volume not on the down node. Then wait for rebuilding and check the data. This verifies the reused replica data content.</li>
+<li>Modify new settings <code>Guaranteed Engine Manager CPU</code> and <code>Guaranteed Replica Manager CPU</code>. Validate all workloads work fine and no instance manager pod restart.</li>
+<li>Scale down all workloads and wait for the volume detachment.</li>
+<li>Set <code>node.Spec.EngineManagerCPURequest</code> and <code>node.Spec.ReplicaManagerCPURequest</code> to 0 for some node. Verify the new settings will be applied to those node and the related instance manager pods will be recreated with the CPU requests matching the new settings.</li>
+<li>Scale up all workloads and verify the data as well as the volume r/w.</li>
+<li>Do cleanup.</li>
 </ol>
 
     </article>

@@ -63,6 +63,15 @@ Test basic upgrade  Install old Longhorn version. E.g., &amp;lt;= v1.0.2 Create 
     </item>
     
     <item>
+      <title>Test System Upgrade with New Instance Manager</title>
+      <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/upgrade-with-new-instance-manager/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/upgrade-with-new-instance-manager/</guid>
+      <description>Prepare 3 sets of longhorn-manager and longhorn-instance-manager images. Deploy Longhorn with the 1st set of images. Set Guaranteed Engine Manager CPU and Guaranteed Replica Manager CPU to 15 and 24, respectively. Then wait for the instance manager recreation. Create and attach a volume to a node (node1). Upgrade the Longhorn system with the 2nd set of images. Verify the CPU requests in the pods of both instance managers match the settings.</description>
+    </item>
+    
+    <item>
       <title>Upgrade Conflict Handling test</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/upgrade-conflict-handling/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
