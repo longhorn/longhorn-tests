@@ -394,9 +394,14 @@ def create_and_check_volume(client, volume_name,
     :param frontend: The frontend to use for the volume.
     :return: The volume instance created.
     &#34;&#34;&#34;
-    client.create_volume(name=volume_name, size=size,
-                         numberOfReplicas=num_of_replicas,
-                         backingImage=backing_image, frontend=frontend)
+    if backing_image_feature_supported(client):
+        client.create_volume(name=volume_name, size=size,
+                             numberOfReplicas=num_of_replicas,
+                             backingImage=backing_image, frontend=frontend)
+    else:
+        client.create_volume(name=volume_name, size=size,
+                             numberOfReplicas=num_of_replicas,
+                             frontend=frontend)
     volume = wait_for_volume_detached(client, volume_name)
     assert volume.name == volume_name
     assert volume.size == size
@@ -1329,7 +1334,8 @@ def cleanup_client():
 
     cleanup_all_volumes(client)
 
-    cleanup_all_backing_images(client)
+    if backing_image_feature_supported(client):
+        cleanup_all_backing_images(client)
 
     # enable nodes scheduling
     reset_node(client)
@@ -4109,7 +4115,16 @@ def cleanup_all_backing_images(client):
         if len(backing_images) == 0:
             break
         time.sleep(RETRY_INTERVAL)
-    assert len(client.list_backing_image()) == 0</code></pre>
+    assert len(client.list_backing_image()) == 0
+
+
+# this function will check if backing image feature is supported, and is added
+# for the case of test_upgrade starting from Longhorn &lt;= v1.1.0
+def backing_image_feature_supported(client):
+    if dict(client.by_id_schema(&#34;backingImage&#34;).actions) != {}:
+        return True
+    else:
+        return False</code></pre>
 </details>
 </section>
 <section>
@@ -4209,6 +4224,22 @@ def apps_api(request):
     assert b_expected.volumeSize == b_actual.volumeSize
     assert b_expected.volumeCreated == b_actual.volumeCreated
     assert b_expected.messages == b_actual.messages is None</code></pre>
+</details>
+</dd>
+<dt id="tests.common.backing_image_feature_supported"><code class="name flex">
+<span>def <span class="ident">backing_image_feature_supported</span></span>(<span>client)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def backing_image_feature_supported(client):
+    if dict(client.by_id_schema(&#34;backingImage&#34;).actions) != {}:
+        return True
+    else:
+        return False</code></pre>
 </details>
 </dd>
 <dt id="tests.common.check_block_device_size"><code class="name flex">
@@ -4643,7 +4674,8 @@ properly.
 
     cleanup_all_volumes(client)
 
-    cleanup_all_backing_images(client)
+    if backing_image_feature_supported(client):
+        cleanup_all_backing_images(client)
 
     # enable nodes scheduling
     reset_node(client)
@@ -4977,9 +5009,14 @@ of bytes.
     :param frontend: The frontend to use for the volume.
     :return: The volume instance created.
     &#34;&#34;&#34;
-    client.create_volume(name=volume_name, size=size,
-                         numberOfReplicas=num_of_replicas,
-                         backingImage=backing_image, frontend=frontend)
+    if backing_image_feature_supported(client):
+        client.create_volume(name=volume_name, size=size,
+                             numberOfReplicas=num_of_replicas,
+                             backingImage=backing_image, frontend=frontend)
+    else:
+        client.create_volume(name=volume_name, size=size,
+                             numberOfReplicas=num_of_replicas,
+                             frontend=frontend)
     volume = wait_for_volume_detached(client, volume_name)
     assert volume.name == volume_name
     assert volume.size == size
@@ -10203,6 +10240,7 @@ volume. Trigger a failed assertion of one is detected.
 <li><code><a title="tests.common.activate_standby_volume" href="#tests.common.activate_standby_volume">activate_standby_volume</a></code></li>
 <li><code><a title="tests.common.apps_api" href="#tests.common.apps_api">apps_api</a></code></li>
 <li><code><a title="tests.common.assert_backup_state" href="#tests.common.assert_backup_state">assert_backup_state</a></code></li>
+<li><code><a title="tests.common.backing_image_feature_supported" href="#tests.common.backing_image_feature_supported">backing_image_feature_supported</a></code></li>
 <li><code><a title="tests.common.check_block_device_size" href="#tests.common.check_block_device_size">check_block_device_size</a></code></li>
 <li><code><a title="tests.common.check_csi" href="#tests.common.check_csi">check_csi</a></code></li>
 <li><code><a title="tests.common.check_csi_expansion" href="#tests.common.check_csi_expansion">check_csi_expansion</a></code></li>
