@@ -1084,7 +1084,7 @@ def backup_labels_test(client, random_labels, volume_name, size=SIZE, backing_im
 
 
 @pytest.mark.coretest   # NOQA
-def test_restore_inc(client, core_api, volume_name, pod):  # NOQA
+def test_restore_inc(set_random_backupstore, client, core_api, volume_name, pod):  # NOQA
     """
     Test restore from disaster recovery volume (incremental restore)
 
@@ -1112,29 +1112,7 @@ def test_restore_inc(client, core_api, volume_name, pod):  # NOQA
 
     FIXME: Step 16 works because the disk will be treated as a unformatted disk
     """
-
-    setting = client.by_id_setting(common.SETTING_BACKUP_TARGET)
-    # test backupTarget for multiple settings
-    backupstores = common.get_backupstore_url()
-    for backupstore in backupstores:
-        if common.is_backupTarget_s3(backupstore):
-            backupsettings = backupstore.split("$")
-            setting = client.update(setting, value=backupsettings[0])
-            assert setting.value == backupsettings[0]
-
-            credential = client.by_id_setting(
-                common.SETTING_BACKUP_TARGET_CREDENTIAL_SECRET)
-            credential = client.update(credential, value=backupsettings[1])
-            assert credential.value == backupsettings[1]
-        else:
-            setting = client.update(setting, value=backupstore)
-            assert setting.value == backupstore
-            credential = client.by_id_setting(
-                common.SETTING_BACKUP_TARGET_CREDENTIAL_SECRET)
-            credential = client.update(credential, value="")
-            assert credential.value == ""
-
-        restore_inc_test(client, core_api, volume_name, pod)
+    restore_inc_test(client, core_api, volume_name, pod)
 
 
 def restore_inc_test(client, core_api, volume_name, pod):  # NOQA
@@ -1149,7 +1127,7 @@ def restore_inc_test(client, core_api, volume_name, pod):  # NOQA
 
     data0 = {'len': 4 * 1024, 'pos': 0}
     data0['content'] = common.generate_random_data(data0['len'])
-    bv, backup0, _, data0 = create_backup(
+    _, backup0, _, data0 = create_backup(
         client, volume_name, data0)
 
     sb_volume0_name = "sb-0-" + volume_name
@@ -1175,7 +1153,7 @@ def restore_inc_test(client, core_api, volume_name, pod):  # NOQA
     sb_volume2 = common.wait_for_volume_healthy_no_frontend(client,
                                                             sb_volume2_name)
 
-    for i in range(RETRY_COUNTS):
+    for _ in range(RETRY_COUNTS):
         client.list_backupVolume()
         sb_volume0 = client.by_id_volume(sb_volume0_name)
         sb_volume1 = client.by_id_volume(sb_volume1_name)
@@ -1329,30 +1307,6 @@ def restore_inc_test(client, core_api, volume_name, pod):  # NOQA
     delete_and_wait_pod(core_api, sb_volume2_pod_name)
     delete_and_wait_pvc(core_api, sb_volume2_name)
     delete_and_wait_pv(core_api, sb_volume2_name)
-
-    # cleanup
-    std_volume.detach(hostId="")
-    sb_volume0.detach(hostId="")
-    sb_volume1.detach(hostId="")
-    std_volume = common.wait_for_volume_detached(client, volume_name)
-    sb_volume0 = common.wait_for_volume_detached(client, sb_volume0_name)
-    sb_volume1 = common.wait_for_volume_detached(client, sb_volume1_name)
-    sb_volume2 = common.wait_for_volume_detached(client, sb_volume2_name)
-
-    backupstore_cleanup(client)
-
-    client.delete(std_volume)
-    client.delete(sb_volume0)
-    client.delete(sb_volume1)
-    client.delete(sb_volume2)
-
-    wait_for_volume_delete(client, volume_name)
-    wait_for_volume_delete(client, sb_volume0_name)
-    wait_for_volume_delete(client, sb_volume1_name)
-    wait_for_volume_delete(client, sb_volume2_name)
-
-    volumes = client.list_volume()
-    assert len(volumes) == 0
 
 
 def test_deleting_backup_volume(set_random_backupstore, client, volume_name):  # NOQA
