@@ -1513,7 +1513,7 @@ def wait_for_volume_delete(client, name):
 
 
 def wait_for_backup_volume_delete(client, name):
-    for i in range(RETRY_COUNTS):
+    for _ in range(RETRY_COUNTS):
         bvs = client.list_backupVolume()
         found = False
         for bv in bvs:
