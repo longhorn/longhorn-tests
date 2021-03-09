@@ -287,7 +287,7 @@ def cleanup_volume(client, volume):
     :param client: The Longhorn client to use in the request.
     :param volume: The volume to clean up.
     &#34;&#34;&#34;
-    volume.detach()
+    volume.detach(hostId=&#34;&#34;)
     volume = wait_for_volume_detached(client, volume.name)
     client.delete(volume)
     wait_for_volume_delete(client, volume.name)
@@ -1897,7 +1897,7 @@ def check_volume_data(volume, data, check_checksum=True):
 
 def write_volume_random_data(volume, position={}):
     dev = get_volume_endpoint(volume)
-    return write_device_random_data(dev, position={})
+    return write_device_random_data(dev, position=position)
 
 
 def check_device_data(dev, data, check_checksum=True):
@@ -2350,16 +2350,6 @@ def check_volume_endpoint(v):
     return endpoint
 
 
-def get_volume_attached_nodes(v):
-    nodes = []
-    engines = v.controllers
-    for e in engines:
-        node = e.hostId
-        if node != &#34;&#34;:
-            nodes.append(node)
-    return nodes
-
-
 def wait_for_backup_completion(client, volume_name, snapshot_name=None,
                                retry_count=RETRY_BACKUP_COUNTS):
     completed = False
@@ -2465,17 +2455,13 @@ def monitor_restore_progress(client, volume_name):
 
 
 def wait_for_volume_migration_ready(client, volume_name):
+    ready = False
     for i in range(RETRY_COUNTS):
         v = client.by_id_volume(volume_name)
         engines = v.controllers
-        ready = True
-        if len(engines) == 2:
-            for e in v.controllers:
-                if e.endpoint == &#34;&#34;:
-                    ready = False
-                    break
-        else:
-            ready = False
+        ready = len(engines) == 2
+        for e in engines:
+            ready = ready and e.endpoint != &#34;&#34;
         if ready:
             break
         time.sleep(RETRY_INTERVAL)
@@ -2484,6 +2470,7 @@ def wait_for_volume_migration_ready(client, volume_name):
 
 
 def wait_for_volume_migration_node(client, volume_name, node_id):
+    ready = False
     for i in range(RETRY_COUNTS):
         v = client.by_id_volume(volume_name)
         engines = v.controllers
@@ -2491,10 +2478,11 @@ def wait_for_volume_migration_node(client, volume_name, node_id):
         if len(engines) == 1 and len(replicas) == v.numberOfReplicas:
             e = engines[0]
             if e.endpoint != &#34;&#34;:
+                assert e.hostId == node_id
+                ready = True
                 break
         time.sleep(RETRY_INTERVAL)
-    assert e.hostId == node_id
-    assert e.endpoint != &#34;&#34;
+    assert ready
     return v
 
 
@@ -3832,7 +3820,7 @@ def expand_attached_volume(client, volume_name):
     volume = wait_for_volume_healthy(client, volume_name)
     engine = get_volume_engine(volume)
 
-    volume.detach()
+    volume.detach(hostId=&#34;&#34;)
     volume = wait_for_volume_detached(client, volume.name)
     volume.expand(size=EXPAND_SIZE)
     wait_for_volume_expansion(client, volume.name)
@@ -4801,7 +4789,7 @@ properly.
     :param client: The Longhorn client to use in the request.
     :param volume: The volume to clean up.
     &#34;&#34;&#34;
-    volume.detach()
+    volume.detach(hostId=&#34;&#34;)
     volume = wait_for_volume_detached(client, volume.name)
     client.delete(volume)
     wait_for_volume_delete(client, volume.name)
@@ -5878,7 +5866,7 @@ def disable_auto_salvage(client):
     volume = wait_for_volume_healthy(client, volume_name)
     engine = get_volume_engine(volume)
 
-    volume.detach()
+    volume.detach(hostId=&#34;&#34;)
     volume = wait_for_volume_detached(client, volume.name)
     volume.expand(size=EXPAND_SIZE)
     wait_for_volume_expansion(client, volume.name)
@@ -6728,25 +6716,6 @@ been completed successfully</p></div>
 <pre><code class="python">def get_version_api_client():
     load_k8s_config()
     return k8sclient.VersionApi()</code></pre>
-</details>
-</dd>
-<dt id="tests.common.get_volume_attached_nodes"><code class="name flex">
-<span>def <span class="ident">get_volume_attached_nodes</span></span>(<span>v)</span>
-</code></dt>
-<dd>
-<div class="desc"></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def get_volume_attached_nodes(v):
-    nodes = []
-    engines = v.controllers
-    for e in engines:
-        node = e.hostId
-        if node != &#34;&#34;:
-            nodes.append(node)
-    return nodes</code></pre>
 </details>
 </dd>
 <dt id="tests.common.get_volume_endpoint"><code class="name flex">
@@ -9697,6 +9666,7 @@ def volume_name(request):
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def wait_for_volume_migration_node(client, volume_name, node_id):
+    ready = False
     for i in range(RETRY_COUNTS):
         v = client.by_id_volume(volume_name)
         engines = v.controllers
@@ -9704,10 +9674,11 @@ def volume_name(request):
         if len(engines) == 1 and len(replicas) == v.numberOfReplicas:
             e = engines[0]
             if e.endpoint != &#34;&#34;:
+                assert e.hostId == node_id
+                ready = True
                 break
         time.sleep(RETRY_INTERVAL)
-    assert e.hostId == node_id
-    assert e.endpoint != &#34;&#34;
+    assert ready
     return v</code></pre>
 </details>
 </dd>
@@ -9721,17 +9692,13 @@ def volume_name(request):
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def wait_for_volume_migration_ready(client, volume_name):
+    ready = False
     for i in range(RETRY_COUNTS):
         v = client.by_id_volume(volume_name)
         engines = v.controllers
-        ready = True
-        if len(engines) == 2:
-            for e in v.controllers:
-                if e.endpoint == &#34;&#34;:
-                    ready = False
-                    break
-        else:
-            ready = False
+        ready = len(engines) == 2
+        for e in engines:
+            ready = ready and e.endpoint != &#34;&#34;
         if ready:
             break
         time.sleep(RETRY_INTERVAL)
@@ -10170,7 +10137,7 @@ volume. Trigger a failed assertion of one is detected.
 </summary>
 <pre><code class="python">def write_volume_random_data(volume, position={}):
     dev = get_volume_endpoint(volume)
-    return write_device_random_data(dev, position={})</code></pre>
+    return write_device_random_data(dev, position=position)</code></pre>
 </details>
 </dd>
 </dl>
@@ -10342,7 +10309,6 @@ volume. Trigger a failed assertion of one is detected.
 <li><code><a title="tests.common.get_update_disks" href="#tests.common.get_update_disks">get_update_disks</a></code></li>
 <li><code><a title="tests.common.get_upgrade_test_image" href="#tests.common.get_upgrade_test_image">get_upgrade_test_image</a></code></li>
 <li><code><a title="tests.common.get_version_api_client" href="#tests.common.get_version_api_client">get_version_api_client</a></code></li>
-<li><code><a title="tests.common.get_volume_attached_nodes" href="#tests.common.get_volume_attached_nodes">get_volume_attached_nodes</a></code></li>
 <li><code><a title="tests.common.get_volume_endpoint" href="#tests.common.get_volume_endpoint">get_volume_endpoint</a></code></li>
 <li><code><a title="tests.common.get_volume_engine" href="#tests.common.get_volume_engine">get_volume_engine</a></code></li>
 <li><code><a title="tests.common.get_volume_name" href="#tests.common.get_volume_name">get_volume_name</a></code></li>
