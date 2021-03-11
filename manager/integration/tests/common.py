@@ -2777,7 +2777,7 @@ def reset_engine_image(client):
         ei_list = client.list_engine_image().data
         for ei in ei_list:
             if ei.default:
-                if ei.state != 'deployed':
+                if ei.state != get_engine_image_status_value(client, ei.name):
                     ready = False
             else:
                 wait_for_engine_image_ref_count(client, ei.name, 0)
@@ -4082,3 +4082,13 @@ def backing_image_feature_supported(client):
         return True
     else:
         return False
+
+
+# get correct engine image status based on Longhorn version
+# Longhorn <= v1.1.0   ei.status == "ready"
+# Longhorn >= v1.1.1   ei.status == "deployed"
+def get_engine_image_status_value(client, ei_name):
+    if hasattr(client.by_id_engine_image(ei_name), "nodeDeploymentMap"):
+        return "deployed"
+    else:
+        return "ready"

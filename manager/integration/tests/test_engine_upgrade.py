@@ -19,6 +19,7 @@ from common import delete_and_wait_pod
 from common import write_pod_volume_random_data, get_pod_data_md5sum
 from common import copy_pod_volume_data
 from common import Gi
+from common import get_engine_image_status_value
 
 REPLICA_COUNT = 2
 ENGINE_IMAGE_TEST_REPEAT_COUNT = 5
@@ -44,9 +45,10 @@ def test_engine_image(client, core_api, volume_name):  # NOQA
     default_img = wait_for_engine_image_ref_count(client, default_img_name, 0)
 
     images = client.list_engine_image()
+    ei_status_value = get_engine_image_status_value(client, images[0].name)
     assert len(images) == 1
     assert images[0].default
-    assert images[0].state == "deployed"
+    assert images[0].state == ei_status_value
     assert images[0].refCount == 0
     assert images[0].gitCommit != ""
     assert images[0].buildDate != ""
@@ -78,13 +80,17 @@ def test_engine_image(client, core_api, volume_name):  # NOQA
                                                          ctl_v, ctl_minv,
                                                          data_v, data_minv)
 
+    new_img = client.create_engine_image(image=engine_upgrade_image)
+    ei_status_value = get_engine_image_status_value(client, new_img.name)
     # test if engine image can be created and cleaned up successfully
     for i in range(ENGINE_IMAGE_TEST_REPEAT_COUNT):
         new_img = client.create_engine_image(image=engine_upgrade_image)
         new_img_name = new_img.name
-        new_img = wait_for_engine_image_state(client, new_img_name, "deployed")
+        new_img = wait_for_engine_image_state(client,
+                                              new_img_name,
+                                              ei_status_value)
         assert not new_img.default
-        assert new_img.state == "deployed"
+        assert new_img.state == ei_status_value
         assert new_img.refCount == 0
         assert new_img.cliAPIVersion != 0
         assert new_img.cliAPIMinVersion != 0
@@ -136,7 +142,10 @@ def engine_offline_upgrade_test(client, core_api, volume_name, backing_image="")
 
     new_img = client.create_engine_image(image=engine_upgrade_image)
     new_img_name = new_img.name
-    new_img = wait_for_engine_image_state(client, new_img_name, "deployed")
+    ei_status_value = get_engine_image_status_value(client, new_img_name)
+    new_img = wait_for_engine_image_state(client,
+                                          new_img_name,
+                                          ei_status_value)
     assert new_img.refCount == 0
     assert new_img.noRefSince != ""
 
@@ -266,7 +275,10 @@ def engine_live_upgrade_test(client, core_api, volume_name, backing_image=""):  
 
     new_img = client.create_engine_image(image=engine_upgrade_image)
     new_img_name = new_img.name
-    new_img = wait_for_engine_image_state(client, new_img_name, "deployed")
+    ei_status_value = get_engine_image_status_value(client, new_img_name)
+    new_img = wait_for_engine_image_state(client,
+                                          new_img_name,
+                                          ei_status_value)
     assert new_img.refCount == 0
     assert new_img.noRefSince != ""
 
@@ -391,8 +403,9 @@ def test_engine_image_incompatible(client, core_api, volume_name):  # NOQA
     """
     images = client.list_engine_image()
     assert len(images) == 1
+    ei_status_value = get_engine_image_status_value(client, images[0].name)
     assert images[0].default
-    assert images[0].state == "deployed"
+    assert images[0].state == ei_status_value
 
     cli_v = images[0].cliAPIVersion
     cli_minv = images[0].cliAPIMinVersion
@@ -469,7 +482,10 @@ def engine_live_upgrade_rollback_test(client, core_api, volume_name, backing_ima
             data_v, data_minv)
     new_img = client.create_engine_image(image=wrong_engine_upgrade_image)
     new_img_name = new_img.name
-    new_img = wait_for_engine_image_state(client, new_img_name, "deployed")
+    ei_status_value = get_engine_image_status_value(client, new_img_name)
+    new_img = wait_for_engine_image_state(client,
+                                          new_img_name,
+                                          ei_status_value)
     assert new_img.refCount == 0
     assert new_img.noRefSince != ""
 
@@ -612,7 +628,10 @@ def test_engine_live_upgrade_with_intensive_data_writing(client, core_api, volum
 
     new_img = client.create_engine_image(image=engine_upgrade_image)
     new_img_name = new_img.name
-    new_img = wait_for_engine_image_state(client, new_img_name, "deployed")
+    ei_status_value = get_engine_image_status_value(client, new_img_name)
+    new_img = wait_for_engine_image_state(client,
+                                          new_img_name,
+                                          ei_status_value)
     assert new_img.refCount == 0
     assert new_img.noRefSince != ""
 
