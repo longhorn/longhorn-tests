@@ -376,7 +376,8 @@ def create_and_check_volume(client, volume_name,
     assert volume.size == size
     assert volume.numberOfReplicas == num_of_replicas
     assert volume.state == "detached"
-    assert volume.backingImage == backing_image
+    if backing_image_feature_supported(client):
+        assert volume.backingImage == backing_image
     assert volume.frontend == frontend
     assert volume.created != ""
     return volume
