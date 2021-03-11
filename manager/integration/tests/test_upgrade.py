@@ -11,7 +11,6 @@ from common import wait_for_volume_healthy
 from common import write_volume_random_data
 from common import check_volume_data
 from common import get_longhorn_api_client
-from common import get_core_api_client
 from common import prepare_pod_with_data_in_mb
 from common import update_statefulset_manifests
 from common import create_storage_class
@@ -33,6 +32,7 @@ from common import VOLUME_RWTEST_SIZE
 from common import write_pod_volume_data
 from common import read_volume_data
 from common import settings_reset # NOQA
+from common import client, core_api # NOQA
 
 
 @pytest.fixture
@@ -97,7 +97,7 @@ def test_upgrade(upgrade_longhorn_manager_repo_url,
                  upgrade_longhorn_engine_image,
                  upgrade_longhorn_instance_manager_image,
                  upgrade_longhorn_share_manager_image,
-                 settings_reset, volume_name, csi_pv, # NOQA
+                 client, core_api, volume_name, csi_pv, # NOQA
                  pvc, pod_make, statefulset, storage_class): # NOQA
     """
     Test Longhorn upgrade
@@ -135,8 +135,6 @@ def test_upgrade(upgrade_longhorn_manager_repo_url,
     longhorn_instance_manager_image = upgrade_longhorn_instance_manager_image
     longhorn_share_manager_image = upgrade_longhorn_share_manager_image
 
-    client = get_longhorn_api_client()
-    core_api = get_core_api_client()
     host_id = get_self_host_id()
     pod_data_path = "/data/test"
 
