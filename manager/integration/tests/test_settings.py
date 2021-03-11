@@ -312,68 +312,42 @@ def test_instance_manager_cpu_reservation(client, core_api):  # NOQA
     Test if the CPU requests of instance manager pods are controlled by
     the settings and the node specs correctly.
 
-    1. Change the deprecated setting `Guaranteed Engine CPU` to `0.1`.
-       Then wait for all the IM pods to recreated and become running.
-       --> every IM pod has guaranteed CPU set correctly to 100m
-    2. Change the new settings `Guaranteed Engine Manager CPU` and
-       `Guaranteed Replica Manager CPU` to 10 and 20, respectively.
-       --> Nothing happens.
-    3. Pick up node1, set `node.engineManagerCPURequest` and
+    1. Try to change the deprecated setting `Guaranteed Engine CPU`.
+       --> The setting update should fail.
+    2. Pick up node 1, set `node.engineManagerCPURequest` and
        `node.replicaManagerCPURequest` to 150 and 250, respectively.
-       --> Nothing happens.
-    4. Unset the deprecated setting.
-       Then wait for all the IM pods to recreated and become running.
-       --> The CPU requests of instance manager pods on node1 is the same
-           as the node fields.
-       --> The CPU requests of other instance manager pods equals to
+       --> The IM pods on this node will be restarted. And the CPU requests
+       of these IM pods matches the above milli value.
+    3. Change the new settings `Guaranteed Engine Manager CPU` and
+       `Guaranteed Replica Manager CPU` to 10 and 20, respectively.
+       Then wait for all IM pods except for the pods on node 1 restarting.
+       --> The CPU requests of the restarted IM pods equals to
            the new setting value multiply the kube node allocatable CPU.
-    5. Set the fields on node1 to 0.
-       --> The CPU requests of the instance manager pods on node1 become
-           the same as other instance manager pods.
-    6. Set the both new settings to 0.
-       --> All instance manager pod CPU requests are unset.
+    4. Set the both new settings to 0.
+       --> All IM pods except for the pod on node 1 will be restarted without
+        CPU requests.
+    5. Set the fields on node 1 to 0.
+       --> The IM pods on node 1 will be restarted without CPU requests.
+    6. Set the both new settings to 2 random values,
+       and the sum of the 2 values is small than 40.
+       Then wait for all IM pods restarting.
+       --> The CPU requests of all IM pods equals to
+           the new setting value multiply the kube node allocatable CPU.
     7. Set the both new settings to 2 random values,
        and the single value or the sum of the 2 values is greater than 40.
        --> The setting update should fail.
-    8. Set the both new settings to 2 random values,
-       and the sum of the 2 values is small than 40.
-       Then wait for all the IM pods to recreated and become running.
-       --> The CPU requests of all instance manager pods equals to
-           the new setting value multiply the kube node allocatable CPU.
-    9. Create a volume, verify everything works as normal
+    8. Create a volume, verify everything works as normal
 
     Note: use fixture to restore the setting into the original state
     """
 
     instance_managers = client.list_instance_manager()
     deprecated_setting = client.by_id_setting(SETTING_GUARANTEED_ENGINE_CPU)
-    client.update(deprecated_setting, value="0.1")
-    time.sleep(15)
-    guaranteed_engine_cpu_setting_check(
-        client, core_api, instance_managers, "Running", True, "100m")
-
-    em_setting = client.by_id_setting(SETTING_GUARANTEED_ENGINE_MANAGER_CPU)
-    client.update(em_setting, value="10")
-    rm_setting = client.by_id_setting(SETTING_GUARANTEED_REPLICA_MANAGER_CPU)
-    client.update(rm_setting, value="20")
-    time.sleep(5)
-    # it's unchanged since the deprecated setting is not empty
-    guaranteed_engine_cpu_setting_check(
-        client, core_api, instance_managers, "Running", True, "100m")
+    with pytest.raises(Exception) as e:
+        client.update(deprecated_setting, value="0.1")
 
     host_node_name = get_self_host_id()
     host_node = client.by_id_node(host_node_name)
-    client.update(host_node, allowScheduling=True,
-                  engineManagerCPURequest=150, replicaManagerCPURequest=250)
-    time.sleep(5)
-    # it's unchanged since the deprecated setting is not empty
-    guaranteed_engine_cpu_setting_check(
-        client, core_api, instance_managers, "Running", True, "100m")
-
-    deprecated_setting = client.by_id_setting(SETTING_GUARANTEED_ENGINE_CPU)
-    client.update(deprecated_setting, value="")
-    time.sleep(5)
-
     other_ems, other_rms = [], []
     for im in instance_managers:
         if im.managerType == "engine":
@@ -386,25 +360,42 @@ def test_instance_manager_cpu_reservation(client, core_api):  # NOQA
                 rm_on_host = im
             else:
                 other_rms.append(im)
-    assert em_on_host
-    assert rm_on_host
-
+    assert em_on_host and rm_on_host
     host_kb_node = core_api.read_node(host_node_name)
     if host_kb_node.status.allocatable["cpu"].endswith('m'):
         allocatable_millicpu = int(host_kb_node.status.allocatable["cpu"][:-1])
     else:
         allocatable_millicpu = int(host_kb_node.status.allocatable["cpu"])*1000
 
+    client.update(host_node, allowScheduling=True,
+                  engineManagerCPURequest=150, replicaManagerCPURequest=250)
+    time.sleep(5)
     guaranteed_engine_cpu_setting_check(
         client, core_api, [em_on_host], "Running", True, "150m")
     guaranteed_engine_cpu_setting_check(
         client, core_api, [rm_on_host], "Running", True, "250m")
+
+    em_setting = client.by_id_setting(SETTING_GUARANTEED_ENGINE_MANAGER_CPU)
+    client.update(em_setting, value="10")
+    rm_setting = client.by_id_setting(SETTING_GUARANTEED_REPLICA_MANAGER_CPU)
+    client.update(rm_setting, value="20")
+    time.sleep(5)
     guaranteed_engine_cpu_setting_check(
         client, core_api, other_ems, "Running", True,
         str(int(allocatable_millicpu*10/100)) + "m")
     guaranteed_engine_cpu_setting_check(
         client, core_api, other_rms, "Running", True,
         str(int(allocatable_millicpu*20/100)) + "m")
+
+    em_setting = client.by_id_setting(SETTING_GUARANTEED_ENGINE_MANAGER_CPU)
+    client.update(em_setting, value="0")
+    rm_setting = client.by_id_setting(SETTING_GUARANTEED_REPLICA_MANAGER_CPU)
+    client.update(rm_setting, value="0")
+    time.sleep(5)
+    guaranteed_engine_cpu_setting_check(
+        client, core_api, other_ems, "Running", True, "")
+    guaranteed_engine_cpu_setting_check(
+        client, core_api, other_rms, "Running", True, "")
 
     ems, rms = other_ems, other_rms
     ems.append(em_on_host)
@@ -415,42 +406,31 @@ def test_instance_manager_cpu_reservation(client, core_api):  # NOQA
                   engineManagerCPURequest=0, replicaManagerCPURequest=0)
     time.sleep(5)
     guaranteed_engine_cpu_setting_check(
-        client, core_api, ems, "Running", True,
-        str(int(allocatable_millicpu*10/100)) + "m")
-    guaranteed_engine_cpu_setting_check(
-        client, core_api, rms, "Running", True,
-        str(int(allocatable_millicpu*20/100)) + "m")
-
-    em_setting = client.by_id_setting(SETTING_GUARANTEED_ENGINE_MANAGER_CPU)
-    client.update(em_setting, value="0")
-    rm_setting = client.by_id_setting(SETTING_GUARANTEED_REPLICA_MANAGER_CPU)
-    client.update(rm_setting, value="0")
-    time.sleep(5)
-    guaranteed_engine_cpu_setting_check(
         client, core_api, ems, "Running", True, "")
     guaranteed_engine_cpu_setting_check(
         client, core_api, rms, "Running", True, "")
 
-    em_setting = client.by_id_setting(SETTING_GUARANTEED_ENGINE_MANAGER_CPU)
-    with pytest.raises(Exception) as e:
-        client.update(em_setting, value="30")
-        assert "should not be greater than or equal to 40%" in \
-               str(e.value)
-    with pytest.raises(Exception) as e:
-        client.update(em_setting, value="40")
-        assert "should between 0.0 to 40.0" in \
-               str(e.value)
     client.update(em_setting, value="20")
     rm_setting = client.by_id_setting(SETTING_GUARANTEED_REPLICA_MANAGER_CPU)
-    client.update(rm_setting, value="10")
+    client.update(rm_setting, value="15")
     time.sleep(5)
-
     guaranteed_engine_cpu_setting_check(
         client, core_api, ems, "Running", True,
         str(int(allocatable_millicpu*20/100)) + "m")
     guaranteed_engine_cpu_setting_check(
         client, core_api, rms, "Running", True,
-        str(int(allocatable_millicpu*10/100)) + "m")
+        str(int(allocatable_millicpu*15/100)) + "m")
+
+    with pytest.raises(Exception) as e:
+        client.update(em_setting, value="41")
+    assert "should be between 0 to 40" in \
+           str(e.value)
+
+    em_setting = client.by_id_setting(SETTING_GUARANTEED_ENGINE_MANAGER_CPU)
+    with pytest.raises(Exception) as e:
+        client.update(em_setting, value="35")
+    assert "The sum should not be smaller than 0% or greater than 40%" in \
+           str(e.value)
 
     # Create a volume to test
     vol_name = generate_volume_name()
