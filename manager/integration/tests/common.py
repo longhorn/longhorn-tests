@@ -2581,184 +2581,23 @@ def reset_disks_for_all_nodes(client):  # NOQA
 
 
 def reset_settings(client):
-    try:
-        priority_class_setting = client.by_id_setting(SETTING_PRIORITY_CLASS)
-        if priority_class_setting.value != "":
-            client.update(priority_class_setting, value="")
-    except Exception as e:
-        print("\nException when clearing "
-              "priority class setting",
-              priority_class_setting)
-        print(e)
-        pass
 
-    degraded_availability_setting = client.by_id_setting(
-            SETTING_DEGRADED_AVAILABILITY)
-    try:
-        client.update(degraded_availability_setting,
-                      value="false")
-    except Exception as e:
-        print("\nException when update "
-              "allow volume creation with degraded availability settings",
-              degraded_availability_setting)
-        print(e)
-        pass
+    for setting in client.list_setting():
+        setting_name = setting.name
+        setting_default_value = setting.definition.default
+        setting_readonly = setting.definition.readOnly
 
-    minimal_setting = client.by_id_setting(
-        SETTING_STORAGE_MINIMAL_AVAILABLE_PERCENTAGE)
-    try:
-        client.update(minimal_setting,
-                      value=DEFAULT_STORAGE_MINIMAL_AVAILABLE_PERCENTAGE)
-    except Exception as e:
-        print("\nException when update "
-              "storage minimal available percentage settings",
-              minimal_setting)
-        print(e)
-        pass
-
-    over_provisioning_setting = client.by_id_setting(
-        SETTING_STORAGE_OVER_PROVISIONING_PERCENTAGE)
-    try:
-        client.update(over_provisioning_setting,
-                      value=DEFAULT_STORAGE_OVER_PROVISIONING_PERCENTAGE)
-    except Exception as e:
-        print("\nException when update "
-              "storage over provisioning percentage settings",
-              over_provisioning_setting)
-        print(e)
-
-    default_data_path_setting = client.by_id_setting(
-        SETTING_DEFAULT_DATA_PATH)
-    try:
-        client.update(default_data_path_setting,
-                      value=DEFAULT_DISK_PATH)
-    except Exception as e:
-        print("\nException when update "
-              "default data path setting",
-              default_data_path_setting)
-        print(e)
-
-    create_default_disk_labeled_nodes_setting = client.by_id_setting(
-        SETTING_CREATE_DEFAULT_DISK_LABELED_NODES)
-    try:
-        client.update(create_default_disk_labeled_nodes_setting,
-                      value="false")
-    except Exception as e:
-        print("\nException when update "
-              "create default disk labeled nodes setting",
-              create_default_disk_labeled_nodes_setting)
-        print(e)
-
-    replica_node_soft_anti_affinity_setting = \
-        client.by_id_setting(SETTING_REPLICA_NODE_SOFT_ANTI_AFFINITY)
-    try:
-        client.update(replica_node_soft_anti_affinity_setting,
-                      value="false")
-    except Exception as e:
-        print("\nException when update "
-              "Replica Node Level Soft Anti-Affinity setting",
-              replica_node_soft_anti_affinity_setting)
-        print(e)
-
-    replica_zone_soft_anti_affinity_setting = \
-        client.by_id_setting(SETTING_REPLICA_ZONE_SOFT_ANTI_AFFINITY)
-    try:
-        client.update(replica_zone_soft_anti_affinity_setting,
-                      value="true")
-    except Exception as e:
-        print("\nException when update "
-              "Replica Zone Level Soft Anti-Affinity setting",
-              replica_zone_soft_anti_affinity_setting)
-        print(e)
-
-    disable_scheduling_on_cordoned_node_setting = \
-        client.by_id_setting(SETTING_DISABLE_SCHEDULING_ON_CORDONED_NODE)
-    try:
-        client.update(disable_scheduling_on_cordoned_node_setting,
-                      value="true")
-    except Exception as e:
-        print("\nException when update "
-              "Disable Scheduling On Cordoned Node setting",
-              disable_scheduling_on_cordoned_node_setting)
-        print(e)
-    auto_salvage_setting = client.by_id_setting(SETTING_AUTO_SALVAGE)
-    try:
-        client.update(auto_salvage_setting, value="true")
-    except Exception as e:
-        print("\nException when update Auto Salvage setting",
-              auto_salvage_setting)
-        print(e)
-
-    default_data_locality_setting = \
-        client.by_id_setting(SETTING_DEFAULT_DATA_LOCALITY)
-    try:
-        client.update(default_data_locality_setting, value="disabled")
-    except Exception as e:
-        print("Exception when update Default Data Locality setting",
-              default_data_locality_setting, e)
-
-    guaranteed_engine_cpu_setting = \
-        client.by_id_setting(SETTING_GUARANTEED_ENGINE_CPU)
-    try:
-        client.update(guaranteed_engine_cpu_setting,
-                      value="")
-    except Exception as e:
-        print("\nException when update "
-              "Guaranteed Engine CPU setting",
-              guaranteed_engine_cpu_setting)
-        print(e)
-
-    guaranteed_em_cpu_setting = \
-        client.by_id_setting(SETTING_GUARANTEED_ENGINE_MANAGER_CPU)
-    try:
-        client.update(guaranteed_em_cpu_setting,
-                      value="12")
-    except Exception as e:
-        print("\nException when update "
-              "Guaranteed Engine Manager CPU setting",
-              guaranteed_em_cpu_setting)
-        print(e)
-
-    guaranteed_rm_cpu_setting = \
-        client.by_id_setting(SETTING_GUARANTEED_REPLICA_MANAGER_CPU)
-    try:
-        client.update(guaranteed_rm_cpu_setting,
-                      value="12")
-    except Exception as e:
-        print("\nException when update "
-              "Guaranteed Replica Manager CPU setting",
-              guaranteed_rm_cpu_setting)
-        print(e)
-
-    replenishment_wait_setting = \
-        client.by_id_setting(SETTING_REPLICA_REPLENISHMENT_WAIT_INTERVAL)
-    try:
-        client.update(replenishment_wait_setting, value="0")
-    except Exception as e:
-        print("\nException when update "
-              "Replica Replenishment Wait Interval",
-              replenishment_wait_setting)
-        print(e)
-
-    recurring_job_setting = \
-        client.by_id_setting(SETTING_RECURRING_JOB_WHILE_VOLUME_DETACHED)
-    try:
-        client.update(recurring_job_setting, value="false")
-    except Exception as e:
-        print("\nException when update "
-              "Allow Recurring Job While Volume Detached setting",
-              recurring_job_setting)
-        print(e)
-
-    bi_cleanup_setting = \
-        client.by_id_setting(SETTING_BACKING_IMAGE_CLEANUP_WAIT_INTERVAL)
-    try:
-        client.update(bi_cleanup_setting, value="60")
-    except Exception as e:
-        print("\nException when update "
-              "Backing Image Cleanup Wait Interval setting",
-              bi_cleanup_setting)
-        print(e)
+        s = client.by_id_setting(setting_name)
+        if s.value != setting_default_value and not setting_readonly:
+            try:
+                client.update(s, value=setting_default_value)
+            except Exception as e:
+                print("\nException when resetting ",
+                      setting_name,
+                      " to value: ",
+                      setting_default_value)
+                print(s)
+                print(e)
 
     instance_managers = client.list_instance_manager()
     core_api = get_core_api_client()
