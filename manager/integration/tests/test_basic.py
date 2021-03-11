@@ -1355,7 +1355,7 @@ def restore_inc_test(client, core_api, volume_name, pod):  # NOQA
     assert len(volumes) == 0
 
 
-def test_deleting_backup_volume(client, volume_name):  # NOQA
+def test_deleting_backup_volume(set_random_backupstore, client, volume_name):  # NOQA
     """
     Test deleting backup volumes
 
@@ -1368,8 +1368,8 @@ def test_deleting_backup_volume(client, volume_name):  # NOQA
     volume.attach(hostId=lht_host_id)
     volume = common.wait_for_volume_healthy(client, volume_name)
 
-    bv, _, snap1, _ = create_backup(client, volume_name)
-    _, _, snap2, _ = create_backup(client, volume_name)
+    create_backup(client, volume_name)
+    create_backup(client, volume_name)
 
     delete_backup_volume(client, volume_name)
     cleanup_volume(client, volume)
