@@ -1720,7 +1720,7 @@ def test_attach_without_frontend(client, volume_name):  # NOQA
 
 
 @pytest.mark.coretest  # NOQA
-def test_storage_class_from_backup(volume_name, pvc_name, storage_class, client, core_api, pod_make):  # NOQA
+def test_storage_class_from_backup(set_random_backupstore, volume_name, pvc_name, storage_class, client, core_api, pod_make):  # NOQA
     """
     Test restore backup using StorageClass
 
