@@ -14,6 +14,7 @@ from common import (  # NOQA
     wait_for_volume_condition_scheduled,
     client, core_api, settings_reset,
     apps_api, scheduling_api, priority_class, volume_name,
+    get_engine_image_status_value,
 
     LONGHORN_NAMESPACE,
     SETTING_TAINT_TOLERATION,
@@ -53,7 +54,8 @@ def check_workload_update(core_api, apps_api, count):  # NOQA
     client = get_longhorn_api_client()  # NOQA
     images = client.list_engine_image()
     assert len(images) == 1
-    if images[0].state != "ready":
+    ei_state = get_engine_image_status_value(client, images[0].name)
+    if images[0].state != ei_state:
         return False
 
     return True
@@ -64,8 +66,8 @@ def wait_for_longhorn_node_ready():
 
     ei = get_default_engine_image(client)
     ei_name = ei["name"]
-
-    wait_for_engine_image_state(client, ei_name, "ready")
+    ei_state = get_engine_image_status_value(client, ei_name)
+    wait_for_engine_image_state(client, ei_name, ei_state)
 
     node = get_self_host_id()
     wait_for_node_up_longhorn(node, client)
