@@ -1,5 +1,6 @@
 import pytest
 
+from backupstore import set_random_backupstore  # NOQA
 from common import client, random_labels, volume_name, core_api  # NOQA
 from common import csi_pv, pvc, pod_make  # NOQA
 from common import csi_pv_backingimage, pvc_backingimage  # NOQA
@@ -254,7 +255,7 @@ def test_csi_backup_with_backing_image(client, core_api, csi_pv, pvc, pod_make):
 
 @pytest.mark.backing_image
 @pytest.mark.recurring_job
-def test_recurring_job_labels_with_backing_image(client, random_labels, volume_name):  # NOQA
+def test_recurring_job_labels_with_backing_image(set_random_backupstore, client, random_labels, volume_name):  # NOQA
     for bi_url in (BACKING_IMAGE_QCOW2_URL, BACKING_IMAGE_RAW_URL):
         create_backing_image_with_matching_url(
             client, BACKING_IMAGE_NAME, bi_url)
