@@ -43,12 +43,12 @@ def test_engine_image(client, core_api, volume_name):  # NOQA
     default_img = common.get_default_engine_image(client)
     default_img_name = default_img.name
     default_img = wait_for_engine_image_ref_count(client, default_img_name, 0)
+    ei_state = get_engine_image_status_value(client, default_img_name)
 
     images = client.list_engine_image()
-    ei_status_value = get_engine_image_status_value(client, images[0].name)
     assert len(images) == 1
     assert images[0].default
-    assert images[0].state == ei_status_value
+    assert images[0].state == ei_state
     assert images[0].refCount == 0
     assert images[0].gitCommit != ""
     assert images[0].buildDate != ""
@@ -80,17 +80,15 @@ def test_engine_image(client, core_api, volume_name):  # NOQA
                                                          ctl_v, ctl_minv,
                                                          data_v, data_minv)
 
-    new_img = client.create_engine_image(image=engine_upgrade_image)
-    ei_status_value = get_engine_image_status_value(client, new_img.name)
     # test if engine image can be created and cleaned up successfully
-    for i in range(ENGINE_IMAGE_TEST_REPEAT_COUNT):
+    for _ in range(ENGINE_IMAGE_TEST_REPEAT_COUNT):
         new_img = client.create_engine_image(image=engine_upgrade_image)
         new_img_name = new_img.name
         new_img = wait_for_engine_image_state(client,
                                               new_img_name,
-                                              ei_status_value)
+                                              ei_state)
         assert not new_img.default
-        assert new_img.state == ei_status_value
+        assert new_img.state == ei_state
         assert new_img.refCount == 0
         assert new_img.cliAPIVersion != 0
         assert new_img.cliAPIMinVersion != 0
@@ -419,8 +417,7 @@ def test_engine_image_incompatible(client, core_api, volume_name):  # NOQA
         ctl_v, ctl_minv,
         data_v, data_minv)
     img = client.create_engine_image(image=fail_cli_v_image)
-    img_name = img.name
-    img = wait_for_engine_image_state(client, img_name, "incompatible")
+    img = wait_for_engine_image_state(client, img.name, "incompatible")
     assert img.state == "incompatible"
     assert img.cliAPIVersion == cli_minv - 1
     assert img.cliAPIMinVersion == cli_minv - 1
@@ -432,8 +429,7 @@ def test_engine_image_incompatible(client, core_api, volume_name):  # NOQA
             ctl_v, ctl_minv,
             data_v, data_minv)
     img = client.create_engine_image(image=fail_cli_minv_image)
-    img_name = img.name
-    img = wait_for_engine_image_state(client, img_name, "incompatible")
+    img = wait_for_engine_image_state(client, img.name, "incompatible")
     assert img.state == "incompatible"
     assert img.cliAPIVersion == cli_v + 1
     assert img.cliAPIMinVersion == cli_v + 1
