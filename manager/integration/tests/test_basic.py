@@ -2195,7 +2195,8 @@ def test_engine_image_daemonset_restart(client, apps_api, volume_name):  # NOQA
     check_volume_data(volume, snap1_data)
 
     # Wait for the restart complete
-    common.wait_for_engine_image_state(client, default_img.name, "ready")
+    ei_state = common.get_engine_image_status_value(client, default_img.name)
+    common.wait_for_engine_image_state(client, default_img.name, ei_state)
 
     # Longhorn is still able to use the corresponding engine binary to
     # operate snapshot
