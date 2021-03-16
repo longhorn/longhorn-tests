@@ -58,6 +58,7 @@ from common import VOLUME_CONDITION_SCHEDULED
 from common import MESSAGE_TYPE_ERROR
 from common import DATA_SIZE_IN_MB_1
 from common import SETTING_REPLICA_NODE_SOFT_ANTI_AFFINITY
+from common import SETTING_REPLICA_REPLENISHMENT_WAIT_INTERVAL
 from common import CONDITION_REASON_SCHEDULING_FAILURE
 from common import delete_backup
 from common import delete_backup_volume
@@ -2302,6 +2303,7 @@ def test_running_volume_with_scheduling_failure(
 
     Prerequisite:
     Setting "soft anti-affinity" is false.
+    Setting "replica-replenishment-wait-interval" is 0
 
     1. Create a volume, then create the corresponding PV, PVC and Pod.
     2. Wait for the pod running and the volume healthy.
@@ -2329,6 +2331,10 @@ def test_running_volume_with_scheduling_failure(
     replica_node_soft_anti_affinity_setting = \
         client.by_id_setting(SETTING_REPLICA_NODE_SOFT_ANTI_AFFINITY)
     client.update(replica_node_soft_anti_affinity_setting, value="false")
+
+    replenish_wait_setting = \
+        client.by_id_setting(SETTING_REPLICA_REPLENISHMENT_WAIT_INTERVAL)
+    client.update(replenish_wait_setting, value="0")
 
     data_path1 = "/data/test1"
     test_pv_name = "pv-" + volume_name
