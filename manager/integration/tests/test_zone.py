@@ -271,9 +271,6 @@ def test_replica_zone_anti_affinity(client, core_api, volume_name, k8s_node_zone
 
     volume = create_and_check_volume(client, volume_name)
 
-    assert volume.conditions.scheduled.status == "False"
-    assert volume.conditions.scheduled.reason == "ReplicaSchedulingFailure"
-
     lh_nodes = client.list_node()
 
     count = 0
