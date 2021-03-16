@@ -44,9 +44,11 @@ node {
         }
 
         try {
-            stage ('terraform') {
-                sh  " docker exec ${JOB_BASE_NAME}-${BUILD_NUMBER} ${TF_VAR_tf_workspace}/scripts/terraform-setup.sh"
-            }
+            timeout(15) {
+                stage ('terraform') {
+                    sh  " docker exec ${JOB_BASE_NAME}-${BUILD_NUMBER} ${TF_VAR_tf_workspace}/scripts/terraform-setup.sh"
+                }
+			}
 
             stage ('longhorn setup & tests') {
                 sh  " docker exec ${JOB_BASE_NAME}-${BUILD_NUMBER} ${TF_VAR_tf_workspace}/scripts/longhorn-setup.sh"
