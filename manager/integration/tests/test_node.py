@@ -398,12 +398,11 @@ def test_disable_scheduling_on_cordoned_node(client,  # NOQA
     2. Set `Replica Soft Anti-Affinity` to false.
     3. Set cordon on one node.
     4. Create a volume with 3 replicas.
-    5. Verify the scheduler should fail due to cordoned node.
-    6. Set `Disable Scheduling On Cordoned Node` to false.
-    7. Automatically the scheduler should creates three replicas
-    from step 5 failure.
-    8. Attach this volume, write data to it and check the data.
-    9. Delete the test volume.
+    5. Set `Disable Scheduling On Cordoned Node` to false.
+    6. Automatically the scheduler should creates three replicas
+       from step 5 failure.
+    7. Attach this volume, write data to it and check the data.
+    8. Delete the test volume.
     """
     # Set `Disable Scheduling On Cordoned Node` to true
     disable_scheduling_on_cordoned_node_setting = \
@@ -425,20 +424,17 @@ def test_disable_scheduling_on_cordoned_node(client,  # NOQA
     node = wait_for_node_schedulable_condition(
         get_longhorn_api_client(), node.name)
 
-    # Node schedulable condition should be faulse
+    # Node schedulable condition should be false
     assert node.conditions[NODE_CONDITION_SCHEDULABLE]["status"] ==  \
         "False"
     assert node.conditions[NODE_CONDITION_SCHEDULABLE]["reason"] == \
         "KubernetesNodeCordoned"
 
-    # Create a volume and check its schedulable condition should be false
+    # Create a volume
     vol_name = common.generate_volume_name()
     client.create_volume(name=vol_name, size=SIZE,
                          numberOfReplicas=len(nodes))
     common.wait_for_volume_detached(client, vol_name)
-    common.wait_for_volume_condition_scheduled(client, vol_name,
-                                               "status",
-                                               CONDITION_STATUS_FALSE)
 
     # Set uncordon on node
     set_node_cordon(core_api, node.name, False)
