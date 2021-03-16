@@ -53,7 +53,7 @@ from common import VOLUME_FIELD_ROBUSTNESS, VOLUME_ROBUSTNESS_DEGRADED
 from common import VOLUME_ROBUSTNESS_HEALTHY
 from common import wait_for_volume_expansion
 from common import delete_and_wait_pvc, delete_and_wait_pv
-from common import wait_for_volume_replica_count
+from common import wait_for_volume_replica_count, wait_for_replica_failed
 from common import settings_reset # NOQA
 from common import set_node_tags, set_node_scheduling # NOQA
 
@@ -1074,6 +1074,9 @@ def test_single_replica_failed_during_engine_start(client, core_api, volume_name
     Test if the volume still works fine when there is
     an invalid replica/backend in the engine starting phase.
 
+    Prerequisite:
+    Setting "replica-replenishment-wait-interval" is 0
+
     1. Create a pod using Longhorn volume.
     2. Write some data to the volume then get the md5sum.
     3. Create a snapshot.
@@ -1089,6 +1092,10 @@ def test_single_replica_failed_during_engine_start(client, core_api, volume_name
     11. Check if the volume still works fine by
         r/w data and creating/removing snapshots.
     """
+    replenish_wait_setting = \
+        client.by_id_setting(SETTING_REPLICA_REPLENISHMENT_WAIT_INTERVAL)
+    client.update(replenish_wait_setting, value="0")
+
     pv_name = "pv-" + volume_name
     pvc_name = "pvc-" + volume_name
     pod_name = "pod-" + volume_name
@@ -1161,14 +1168,7 @@ def test_single_replica_failed_during_engine_start(client, core_api, volume_name
 
     create_and_wait_pod(core_api, pod)
     wait_for_volume_degraded(client, volume_name)
-
-    volume = client.by_id_volume(volume_name)
-    for repl in volume.replicas:
-        if repl.name == replica_name:
-            break
-
-    assert repl.running is False
-    assert repl.failedAt != ''
+    wait_for_replica_failed(client, volume_name, replica_name)
 
     wait_for_volume_healthy(client, volume_name)
 
