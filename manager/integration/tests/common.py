@@ -2370,15 +2370,15 @@ def wait_pod_auto_attach_after_first_backup_completion(
 
 
 def wait_for_backup_to_start(client, volume_name, snapshot_name=None,
-                             retry_count=RETRY_BACKUP_COUNTS):
+                             retry_count=RETRY_BACKUP_COUNTS,
+                             chk_progress=0):
     in_progress = False
     for _ in range(retry_count):
         v = client.by_id_volume(volume_name)
         for b in v.backupStatus:
             if snapshot_name is not None and b.snapshot != snapshot_name:
                 continue
-            if b.state == "in_progress":
-                assert b.progress > 0
+            if b.state == "in_progress" and b.progress > chk_progress:
                 assert b.error == ""
                 in_progress = True
                 break
@@ -3393,7 +3393,8 @@ def wait_for_backup_restore_completed(client, name, backup_name):
     assert complete
 
 
-def wait_for_volume_restoration_start(client, volume_name, backup_name):
+def wait_for_volume_restoration_start(client, volume_name, backup_name,
+                                      progress=0):
     wait_for_volume_status(client, volume_name,
                            VOLUME_FIELD_STATE, VOLUME_STATE_ATTACHED)
     started = False
@@ -3401,7 +3402,7 @@ def wait_for_volume_restoration_start(client, volume_name, backup_name):
         volume = client.by_id_volume(volume_name)
         for status in volume.restoreStatus:
             if status.state == "in_progress" and \
-                    status.progress > 0:
+                    status.progress > progress:
                 started = True
                 break
         #  Sometime the restore time is pretty short
