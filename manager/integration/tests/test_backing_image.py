@@ -1,3 +1,6 @@
+import os
+import subprocess
+
 import pytest
 
 from backupstore import set_random_backupstore  # NOQA
@@ -20,9 +23,12 @@ from common import create_and_check_volume, wait_for_volume_healthy, \
     wait_for_volume_delete, cleanup_all_volumes
 from common import create_backing_image_with_matching_url, \
     wait_for_backing_image_disk_cleanup, cleanup_all_backing_images
+from common import get_volume_endpoint, mount_disk, cleanup_host_disk
+from common import write_volume_random_data, check_volume_data
 
 from common import BACKING_IMAGE_NAME, BACKING_IMAGE_QCOW2_URL, \
-    BACKING_IMAGE_RAW_URL, BACKING_IMAGE_EXT4_SIZE
+    BACKING_IMAGE_RAW_URL, BACKING_IMAGE_EXT4_SIZE, \
+    DIRECTORY_PATH
 
 
 @pytest.mark.coretest   # NOQA
@@ -85,6 +91,85 @@ def backing_image_basic_operation_test(client, volume_name, bi_name, bi_url):  #
     backing_image = wait_for_backing_image_disk_cleanup(
         client, bi_name, random_disk_id)
     client.delete(backing_image)
+
+
+@pytest.mark.coretest   # NOQA
+@pytest.mark.backing_image  # NOQA
+def test_backing_image_content(client, volume_name):  # NOQA
+    for bi_url in (BACKING_IMAGE_QCOW2_URL, BACKING_IMAGE_RAW_URL):
+        create_backing_image_with_matching_url(
+            client, BACKING_IMAGE_NAME, bi_url)
+        backing_image_content_test(
+            client, volume_name, BACKING_IMAGE_NAME, bi_url)
+        cleanup_all_volumes(client)
+        cleanup_all_backing_images(client)
+
+
+def backing_image_content_test(client, volume_name_prefix, bi_name, bi_url):  # NOQA
+    """
+    Verify the content of the Backing Image is accessible and read-only for
+    all volumes.
+
+    1. Create a backing image. (Done by the caller)
+    2. Create a Volume with the backing image set then attach it to host node.
+    3. Verify that the all disk states in the backing image are "downloaded".
+    4. Verify volume can be directly mounted and there is already data in the
+       filesystem due to the backing image.
+    5. Verify the volume r/w.
+    6. Launch one more volume with the same backing image.
+    7. Verify the data content of the new volume is the same as the data in
+       step 4.
+    5. Do cleanup. (Done by the caller)
+    """
+    lht_host_id = get_self_host_id()
+
+    volume_name1 = volume_name_prefix + "-1"
+    volume1 = create_and_check_volume(
+        client, volume_name1, 3,
+        str(BACKING_IMAGE_EXT4_SIZE), bi_name)
+    volume1.attach(hostId=lht_host_id)
+    volume1 = wait_for_volume_healthy(client, volume_name1)
+    assert volume1.backingImage == bi_name
+    assert volume1.size == str(BACKING_IMAGE_EXT4_SIZE)
+
+    backing_image = client.by_id_backing_image(bi_name)
+    assert backing_image.imageURL == bi_url
+    assert not backing_image.deletionTimestamp
+    assert len(backing_image.diskStateMap) == 3
+    for disk_id, state in iter(backing_image.diskStateMap.items()):
+        assert state == "downloaded"
+
+    # Since there is already a filesystem with data in the backing image,
+    # we can directly mount and access the volume without `mkfs`.
+    dev1 = get_volume_endpoint(volume1)
+    mount_path1 = os.path.join(DIRECTORY_PATH, volume_name1)
+    mount_disk(dev1, mount_path1)
+    output1 = subprocess.check_output(["ls", mount_path1])
+    # The following random write may crash the filesystem of volume1,
+    # need to umount it here
+    cleanup_host_disk(volume_name1)
+
+    # Verify r/w for the volume with a backing image
+    data = write_volume_random_data(volume1)
+    check_volume_data(volume1, data)
+
+    volume_name2 = volume_name_prefix + "-2"
+    volume2 = create_and_check_volume(
+        client, volume_name2, 3,
+        str(BACKING_IMAGE_EXT4_SIZE), bi_name)
+    volume2.attach(hostId=lht_host_id)
+    volume2 = wait_for_volume_healthy(client, volume_name2)
+    assert volume1.backingImage == bi_name
+    assert volume1.size == str(BACKING_IMAGE_EXT4_SIZE)
+    dev2 = get_volume_endpoint(volume2)
+    mount_path2 = os.path.join(DIRECTORY_PATH, volume_name2)
+    mount_disk(dev2, mount_path2)
+    output2 = subprocess.check_output(["ls", mount_path2])
+    # The output is the content of the backing image, which should keep
+    # unchanged
+    assert output2 == output1
+
+    cleanup_host_disk(volume_name2)
 
 
 @pytest.mark.coretest   # NOQA
