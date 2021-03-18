@@ -44,7 +44,7 @@ node {
         }
 
         try {
-            timeout(15) {
+            timeout(30) {
                 stage ('terraform') {
                     sh  " docker exec ${JOB_BASE_NAME}-${BUILD_NUMBER} ${TF_VAR_tf_workspace}/scripts/terraform-setup.sh"
                 }
