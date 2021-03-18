@@ -3,16 +3,16 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
-<meta name="generator" content="pdoc 0.8.4" />
+<meta name="generator" content="pdoc 0.9.2" />
 <title>tests.test_ha API documentation</title>
 <meta name="description" content="" />
 <link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
 <link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/typography.min.css" integrity="sha256-7l/o7C8jubJiy74VsKTidCy1yBkRtiUGbVkYBylBqUg=" crossorigin>
-<link rel="stylesheet preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/styles/github.min.css" crossorigin>
+<link rel="stylesheet preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/styles/github.min.css" crossorigin>
 <style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:30px;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:1em 0 .50em 0}h3{font-size:1.4em;margin:25px 0 10px 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .3s ease-in-out}a:hover{color:#e82}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900}pre code{background:#f8f8f8;font-size:.8em;line-height:1.4em}code{background:#f2f2f1;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{background:#f8f8f8;border:0;border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0;padding:1ex}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-weight:bold;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em .5em;margin-bottom:1em}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
 <style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.item .name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul{padding-left:1.5em}.toc > ul > li{margin-top:.5em}}</style>
 <style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
-<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/highlight.min.js" integrity="sha256-eOgo0OtLL4cdq7RdwRUiGKLX9XsIJ7nGhWEKbohmVAQ=" crossorigin></script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/highlight.min.js" integrity="sha256-Uv3H6lx7dJmRfRvH8TH6kJD1TSK1aFcwgx+mdg3epi8=" crossorigin></script>
 <script>window.addEventListener('DOMContentLoaded', () => hljs.initHighlighting())</script>
 </head>
 <body>
@@ -81,7 +81,7 @@ from common import VOLUME_FIELD_ROBUSTNESS, VOLUME_ROBUSTNESS_DEGRADED
 from common import VOLUME_ROBUSTNESS_HEALTHY
 from common import wait_for_volume_expansion
 from common import delete_and_wait_pvc, delete_and_wait_pv
-from common import wait_for_volume_replica_count
+from common import wait_for_volume_replica_count, wait_for_replica_failed
 from common import settings_reset # NOQA
 from common import set_node_tags, set_node_scheduling # NOQA
 
@@ -1102,6 +1102,9 @@ def test_single_replica_failed_during_engine_start(client, core_api, volume_name
     Test if the volume still works fine when there is
     an invalid replica/backend in the engine starting phase.
 
+    Prerequisite:
+    Setting &#34;replica-replenishment-wait-interval&#34; is 0
+
     1. Create a pod using Longhorn volume.
     2. Write some data to the volume then get the md5sum.
     3. Create a snapshot.
@@ -1117,6 +1120,10 @@ def test_single_replica_failed_during_engine_start(client, core_api, volume_name
     11. Check if the volume still works fine by
         r/w data and creating/removing snapshots.
     &#34;&#34;&#34;
+    replenish_wait_setting = \
+        client.by_id_setting(SETTING_REPLICA_REPLENISHMENT_WAIT_INTERVAL)
+    client.update(replenish_wait_setting, value=&#34;0&#34;)
+
     pv_name = &#34;pv-&#34; + volume_name
     pvc_name = &#34;pvc-&#34; + volume_name
     pod_name = &#34;pod-&#34; + volume_name
@@ -1189,14 +1196,7 @@ def test_single_replica_failed_during_engine_start(client, core_api, volume_name
 
     create_and_wait_pod(core_api, pod)
     wait_for_volume_degraded(client, volume_name)
-
-    volume = client.by_id_volume(volume_name)
-    for repl in volume.replicas:
-        if repl.name == replica_name:
-            break
-
-    assert repl.running is False
-    assert repl.failedAt != &#39;&#39;
+    wait_for_replica_failed(client, volume_name, replica_name)
 
     wait_for_volume_healthy(client, volume_name)
 
@@ -1265,27 +1265,17 @@ def test_single_replica_failed_during_engine_start(client, core_api, volume_name
 
 def test_restore_volume_with_invalid_backupstore(client, volume_name, backupstore_s3): # NOQA
     &#34;&#34;&#34;
-    [HA] Test if the invalid backup target will lead to the restore volume
-    becoming Faulted, and if the auto salvage feature is disabled for
-    the faulted restore volume.
+    [HA] Test if the invalid backup target will lead to to volume restore.
 
     1. Enable auto-salvage.
     2. Set a S3 backupstore. (Cannot use NFS server here before fixing #1295)
     3. Create a volume then a backup.
     4. Invalidate the target URL.
        (e.g.: s3://backupbucket-invalid@us-east-1/backupstore-invalid)
-    5. Restore a volume from the backup.
+    5. Restore a volume from the backup should return error.
        (The fromBackup fields of the volume create API should consist of
        the invalid target URL and the valid backup volume info)
-    6. Wait for the restore volume Faulted.
-    7. Check if the volume condition &#34;restore&#34;:
-       `volume.conditions[restore].status == False &amp;&amp;
-       volume.conditions[restore].reason == &#34;RestoreFailure&#34;.`
-    8. Check if `volume.ready` is false.
-    9. Make sure auto-salvage is not triggered even the feature is enabled.
-    10. Verify if PV/PVC cannot be created from Longhorn.
-    11. Verify the faulted volume cannot be attached to a node.
-    12. Verify this faulted volume can be deleted.
+    6. Check restore volume not created.
     &#34;&#34;&#34;
     auto_salvage_setting = client.by_id_setting(SETTING_AUTO_SALVAGE)
     assert auto_salvage_setting.name == SETTING_AUTO_SALVAGE
@@ -1295,7 +1285,8 @@ def test_restore_volume_with_invalid_backupstore(client, volume_name, backupstor
     host_id = get_self_host_id()
     volume.attach(hostId=host_id)
     volume = wait_for_volume_healthy(client, volume_name)
-    bv, b, _, _ = create_backup(client, volume_name)
+
+    _, b, _, _ = create_backup(client, volume_name)
 
     res_name = &#34;res-&#34; + volume_name
     invalid_backup_target_url = \
@@ -1305,28 +1296,14 @@ def test_restore_volume_with_invalid_backupstore(client, volume_name, backupstor
     backup_target_setting = client.update(backup_target_setting,
                                           value=invalid_backup_target_url)
 
-    res_volume = client.create_volume(name=res_name,
-                                      fromBackup=b.url)
+    with pytest.raises(Exception) as e:
+        client.create_volume(name=res_name,
+                             fromBackup=b.url)
+    assert &#34;unable to create volume&#34; in str(e.value)
 
-    wait_for_volume_faulted(client, res_name)
-
-    res_volume = client.by_id_volume(res_name)
-
-    assert res_volume.conditions[&#39;restore&#39;].status == &#34;False&#34;
-    assert res_volume.conditions[&#39;restore&#39;].reason == &#34;RestoreFailure&#34;
-    assert res_volume.ready is False
-
-    for i in range(10):
-        res_volume = client.by_id_volume(res_name)
-        assert res_volume.state == &#34;detached&#34;
-        time.sleep(0.5)
-
-    assert hasattr(res_volume, &#39;pvCreate&#39;) is False
-    assert hasattr(res_volume, &#39;pvcCreate&#39;) is False
-    assert hasattr(res_volume, &#39;attach&#39;) is False
-
-    client.delete(res_volume)
-    wait_for_volume_delete(client, res_name)
+    volumes = client.list_volume()
+    for v in volumes:
+        assert v.name != res_name
 
 
 def test_all_replica_restore_failure(set_random_backupstore, client, core_api, volume_name, csi_pv, pvc, pod_make):  # NOQA
@@ -5033,27 +5010,17 @@ and make sure the extra disk is the only available disk on the node.
 <span>def <span class="ident">test_restore_volume_with_invalid_backupstore</span></span>(<span>client, volume_name, backupstore_s3)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>[HA] Test if the invalid backup target will lead to the restore volume
-becoming Faulted, and if the auto salvage feature is disabled for
-the faulted restore volume.</p>
+<div class="desc"><p>[HA] Test if the invalid backup target will lead to to volume restore.</p>
 <ol>
 <li>Enable auto-salvage.</li>
 <li>Set a S3 backupstore. (Cannot use NFS server here before fixing #1295)</li>
 <li>Create a volume then a backup.</li>
 <li>Invalidate the target URL.
 (e.g.: s3://backupbucket-invalid@us-east-1/backupstore-invalid)</li>
-<li>Restore a volume from the backup.
+<li>Restore a volume from the backup should return error.
 (The fromBackup fields of the volume create API should consist of
 the invalid target URL and the valid backup volume info)</li>
-<li>Wait for the restore volume Faulted.</li>
-<li>Check if the volume condition "restore":
-<code>volume.conditions[restore].status == False &amp;&amp;
-volume.conditions[restore].reason == "RestoreFailure".</code></li>
-<li>Check if <code>volume.ready</code> is false.</li>
-<li>Make sure auto-salvage is not triggered even the feature is enabled.</li>
-<li>Verify if PV/PVC cannot be created from Longhorn.</li>
-<li>Verify the faulted volume cannot be attached to a node.</li>
-<li>Verify this faulted volume can be deleted.</li>
+<li>Check restore volume not created.</li>
 </ol></div>
 <details class="source">
 <summary>
@@ -5061,27 +5028,17 @@ volume.conditions[restore].reason == "RestoreFailure".</code></li>
 </summary>
 <pre><code class="python">def test_restore_volume_with_invalid_backupstore(client, volume_name, backupstore_s3): # NOQA
     &#34;&#34;&#34;
-    [HA] Test if the invalid backup target will lead to the restore volume
-    becoming Faulted, and if the auto salvage feature is disabled for
-    the faulted restore volume.
+    [HA] Test if the invalid backup target will lead to to volume restore.
 
     1. Enable auto-salvage.
     2. Set a S3 backupstore. (Cannot use NFS server here before fixing #1295)
     3. Create a volume then a backup.
     4. Invalidate the target URL.
        (e.g.: s3://backupbucket-invalid@us-east-1/backupstore-invalid)
-    5. Restore a volume from the backup.
+    5. Restore a volume from the backup should return error.
        (The fromBackup fields of the volume create API should consist of
        the invalid target URL and the valid backup volume info)
-    6. Wait for the restore volume Faulted.
-    7. Check if the volume condition &#34;restore&#34;:
-       `volume.conditions[restore].status == False &amp;&amp;
-       volume.conditions[restore].reason == &#34;RestoreFailure&#34;.`
-    8. Check if `volume.ready` is false.
-    9. Make sure auto-salvage is not triggered even the feature is enabled.
-    10. Verify if PV/PVC cannot be created from Longhorn.
-    11. Verify the faulted volume cannot be attached to a node.
-    12. Verify this faulted volume can be deleted.
+    6. Check restore volume not created.
     &#34;&#34;&#34;
     auto_salvage_setting = client.by_id_setting(SETTING_AUTO_SALVAGE)
     assert auto_salvage_setting.name == SETTING_AUTO_SALVAGE
@@ -5091,7 +5048,8 @@ volume.conditions[restore].reason == "RestoreFailure".</code></li>
     host_id = get_self_host_id()
     volume.attach(hostId=host_id)
     volume = wait_for_volume_healthy(client, volume_name)
-    bv, b, _, _ = create_backup(client, volume_name)
+
+    _, b, _, _ = create_backup(client, volume_name)
 
     res_name = &#34;res-&#34; + volume_name
     invalid_backup_target_url = \
@@ -5101,28 +5059,14 @@ volume.conditions[restore].reason == "RestoreFailure".</code></li>
     backup_target_setting = client.update(backup_target_setting,
                                           value=invalid_backup_target_url)
 
-    res_volume = client.create_volume(name=res_name,
-                                      fromBackup=b.url)
+    with pytest.raises(Exception) as e:
+        client.create_volume(name=res_name,
+                             fromBackup=b.url)
+    assert &#34;unable to create volume&#34; in str(e.value)
 
-    wait_for_volume_faulted(client, res_name)
-
-    res_volume = client.by_id_volume(res_name)
-
-    assert res_volume.conditions[&#39;restore&#39;].status == &#34;False&#34;
-    assert res_volume.conditions[&#39;restore&#39;].reason == &#34;RestoreFailure&#34;
-    assert res_volume.ready is False
-
-    for i in range(10):
-        res_volume = client.by_id_volume(res_name)
-        assert res_volume.state == &#34;detached&#34;
-        time.sleep(0.5)
-
-    assert hasattr(res_volume, &#39;pvCreate&#39;) is False
-    assert hasattr(res_volume, &#39;pvcCreate&#39;) is False
-    assert hasattr(res_volume, &#39;attach&#39;) is False
-
-    client.delete(res_volume)
-    wait_for_volume_delete(client, res_name)</code></pre>
+    volumes = client.list_volume()
+    for v in volumes:
+        assert v.name != res_name</code></pre>
 </details>
 </dd>
 <dt id="tests.test_ha.test_reuse_failed_replica"><code class="name flex">
@@ -5484,6 +5428,8 @@ Case #2: crash one replica and then crash all replicas
 <dd>
 <div class="desc"><p>Test if the volume still works fine when there is
 an invalid replica/backend in the engine starting phase.</p>
+<p>Prerequisite:
+Setting "replica-replenishment-wait-interval" is 0</p>
 <ol>
 <li>Create a pod using Longhorn volume.</li>
 <li>Write some data to the volume then get the md5sum.</li>
@@ -5510,6 +5456,9 @@ def test_single_replica_failed_during_engine_start(client, core_api, volume_name
     Test if the volume still works fine when there is
     an invalid replica/backend in the engine starting phase.
 
+    Prerequisite:
+    Setting &#34;replica-replenishment-wait-interval&#34; is 0
+
     1. Create a pod using Longhorn volume.
     2. Write some data to the volume then get the md5sum.
     3. Create a snapshot.
@@ -5525,6 +5474,10 @@ def test_single_replica_failed_during_engine_start(client, core_api, volume_name
     11. Check if the volume still works fine by
         r/w data and creating/removing snapshots.
     &#34;&#34;&#34;
+    replenish_wait_setting = \
+        client.by_id_setting(SETTING_REPLICA_REPLENISHMENT_WAIT_INTERVAL)
+    client.update(replenish_wait_setting, value=&#34;0&#34;)
+
     pv_name = &#34;pv-&#34; + volume_name
     pvc_name = &#34;pvc-&#34; + volume_name
     pod_name = &#34;pod-&#34; + volume_name
@@ -5597,14 +5550,7 @@ def test_single_replica_failed_during_engine_start(client, core_api, volume_name
 
     create_and_wait_pod(core_api, pod)
     wait_for_volume_degraded(client, volume_name)
-
-    volume = client.by_id_volume(volume_name)
-    for repl in volume.replicas:
-        if repl.name == replica_name:
-            break
-
-    assert repl.running is False
-    assert repl.failedAt != &#39;&#39;
+    wait_for_replica_failed(client, volume_name, replica_name)
 
     wait_for_volume_healthy(client, volume_name)
 
@@ -5973,7 +5919,7 @@ to crash the engine process</p>
 </nav>
 </main>
 <footer id="footer">
-<p>Generated by <a href="https://pdoc3.github.io/pdoc"><cite>pdoc</cite> 0.8.4</a>.</p>
+<p>Generated by <a href="https://pdoc3.github.io/pdoc"><cite>pdoc</cite> 0.9.2</a>.</p>
 </footer>
 </body>
 </html>
