@@ -51,7 +51,7 @@ from common import create_and_wait_deployment, DATA_SIZE_IN_MB_3
 from common import get_volume_name, wait_for_volume_detached
 from common import crash_engine_process_with_sigkill
 from common import check_pod_existence, LONGHORN_NAMESPACE
-from common import RETRY_BACKUP_INTERVAL
+from common import RETRY_BACKUP_INTERVAL, wait_for_backup_completion
 from common import RETRY_BACKUP_COUNTS
 from common import wait_deployment_replica_ready, read_volume_data
 from common import settings_reset # NOQA
@@ -60,7 +60,6 @@ from common import wait_for_volume_healthy
 
 from kubernetes.client.rest import ApiException
 
-import backupstore
 from backupstore import set_random_backupstore, backupstore_s3  # NOQA
 
 RECURRING_JOB_LABEL = &#34;RecurringJob&#34;
@@ -98,7 +97,7 @@ def wait_until_begin_of_an_even_minute():
 
 # wait for backup progress created by recurring job to
 # exceed the minimum_progress percentage.
-def wait_for_recurring_backup_to_start(client, core_api, volume_name, expected_snapshot_count, minimum_progress=0):  # NOQA
+def wait_for_recurring_backup_to_start(client, core_api, volume_name, expected_snapshot_count, minimum_progress=50):  # NOQA
     job_pod_name = volume_name + &#39;-backup-c&#39;
     snapshot_name = &#39;&#39;
     snapshots = []
@@ -109,22 +108,30 @@ def wait_for_recurring_backup_to_start(client, core_api, volume_name, expected_s
         volume = client.by_id_volume(volume_name)
         try:
             snapshots = volume.snapshotList()
-
-            assert len(snapshots) == expected_snapshot_count + 1
+        except (AttributeError, ApiException):
+            time.sleep(RETRY_BACKUP_INTERVAL)
+            continue
+        if len(snapshots) == expected_snapshot_count + 1:
             for snapshot in snapshots:
                 if snapshot.children[&#39;volume-head&#39;]:
                     snapshot_name = snapshot.name
-                    break
-            if len(snapshot_name) != 0:
-                break
-        except (AttributeError, ApiException, AssertionError):
-            time.sleep(RETRY_BACKUP_INTERVAL)
-    assert len(snapshot_name) != 0
+            break
+    assert snapshots is not None
 
     # To ensure the progress of backup
-    common.wait_for_backup_to_start(client, volume_name,
-                                    snapshot_name=snapshot_name,
-                                    chk_progress=minimum_progress)
+    in_progress = False
+    for _ in range(RETRY_BACKUP_COUNTS):
+        v = client.by_id_volume(volume_name)
+        for b in v.backupStatus:
+            if b.snapshot == snapshot_name and b.state == &#34;in_progress&#34; \
+                    and b.progress &gt; minimum_progress:
+                assert b.error == &#34;&#34;
+                in_progress = True
+                break
+        if in_progress:
+            break
+        time.sleep(RETRY_BACKUP_INTERVAL)
+    assert in_progress is True
 
     return snapshot_name
 
@@ -692,20 +699,21 @@ def test_recurring_jobs_when_volume_detached_unexpectedly(settings_reset, set_ra
     Steps:
 
     1. Create a volume, attach to a pod of a deployment,
-       write 500MB to the volume.
+       write 300MB to the volume
     2. Scale down the deployment. The volume is detached.
-    3. Turn on `Allow Recurring Job While Volume Is Detached` setting.
-    4. Create a recurring backup job that runs every 2 mins.
+    3. Turn on `Allow Recurring Job While Volume Is Detached` setting
+    4. Create a recurring backup job that runs every 4 mins
     5. Wait until the recurring backup job starts and the backup progress
        is &gt; 50%, kill the engine process of the volume.
-    6. Verify volume automatically reattached and is healthy again.
+    6. In a 2-min retry loop, verify that the volume is healthy again
+       and there is replacement backup job running.
     7. Wait until the backup finishes.
     8. Wait for the volume to be in detached state with
        `frontendDisabled=false`
     9. Scale up the deployment.
        Verify that we can read the file `lost+found` from the workload pod
     10. Turn off `Allow Recurring Job While Volume Is Detached` setting
-       Clean up backups, volumes.
+       Clean up backups, volumes
     &#34;&#34;&#34;
 
     recurring_job_setting = \
@@ -744,23 +752,25 @@ def test_recurring_jobs_when_volume_detached_unexpectedly(settings_reset, set_ra
         }
     ]
     vol.recurringUpdate(jobs=jobs)
-    time.sleep(60)
-    wait_for_recurring_backup_to_start(client, core_api, vol_name,
-                                       expected_snapshot_count=1,
-                                       minimum_progress=50)
+
+    wait_for_recurring_backup_to_start(client,
+                                       core_api,
+                                       vol_name,
+                                       expected_snapshot_count=1)
 
     crash_engine_process_with_sigkill(client, core_api, vol_name)
-    # Check if the volume is reattached after recurring backup is interrupted
-    time.sleep(10)
+    # waiting 30sec for volume detach and attach operation
+    # after recurring backup is interrupted
+    time.sleep(30)
     wait_for_volume_healthy_no_frontend(client, vol_name)
 
-    # Since the backup state is removed after the backup complete and it
-    # could happen quickly. Checking for the both in-progress and complete
-    # state could be hard to catch, thus we only check the complete state
-    def backup_complete_predicate(b):
-        return b.state == &#34;complete&#34; and b.error == &#34;&#34;
-    common.wait_for_backup_state(client, vol_name, backup_complete_predicate)
+    snapshot_name = \
+        wait_for_recurring_backup_to_start(client,
+                                           core_api,
+                                           vol_name,
+                                           expected_snapshot_count=1)
 
+    wait_for_backup_completion(client, vol_name, snapshot_name)
     wait_for_volume_detached(client, vol_name)
 
     deployment[&#39;spec&#39;][&#39;replicas&#39;] = 1
@@ -770,15 +780,7 @@ def test_recurring_jobs_when_volume_detached_unexpectedly(settings_reset, set_ra
     wait_deployment_replica_ready(apps_api, deployment[&#34;metadata&#34;][&#34;name&#34;], 1)
     pod_names = common.get_deployment_pod_names(core_api, deployment)
 
-    assert read_volume_data(core_api, pod_names[0], &#39;default&#39;) == data
-
-    # Use fixture to cleanup the backupstore and since we
-    # crashed the engine replica initiated the backup, it&#39;s
-    # backupstore lock will still be present, so we need
-    # to wait till the lock is expired, before we can delete
-    # the backups
-    vol.recurringUpdate(jobs=[])
-    backupstore.backupstore_wait_for_lock_expiration()</code></pre>
+    assert read_volume_data(core_api, pod_names[0], &#39;default&#39;) == data</code></pre>
 </details>
 </section>
 <section>
@@ -1604,20 +1606,21 @@ when volume is detached unexpectedly during the backup process.</p>
 <p>Steps:</p>
 <ol>
 <li>Create a volume, attach to a pod of a deployment,
-write 500MB to the volume.</li>
+write 300MB to the volume</li>
 <li>Scale down the deployment. The volume is detached.</li>
-<li>Turn on <code>Allow Recurring Job While Volume Is Detached</code> setting.</li>
-<li>Create a recurring backup job that runs every 2 mins.</li>
+<li>Turn on <code>Allow Recurring Job While Volume Is Detached</code> setting</li>
+<li>Create a recurring backup job that runs every 4 mins</li>
 <li>Wait until the recurring backup job starts and the backup progress
 is &gt; 50%, kill the engine process of the volume.</li>
-<li>Verify volume automatically reattached and is healthy again.</li>
+<li>In a 2-min retry loop, verify that the volume is healthy again
+and there is replacement backup job running.</li>
 <li>Wait until the backup finishes.</li>
 <li>Wait for the volume to be in detached state with
 <code>frontendDisabled=false</code></li>
 <li>Scale up the deployment.
 Verify that we can read the file <code>lost+found</code> from the workload pod</li>
 <li>Turn off <code>Allow Recurring Job While Volume Is Detached</code> setting
-Clean up backups, volumes.</li>
+Clean up backups, volumes</li>
 </ol></div>
 <details class="source">
 <summary>
@@ -1636,20 +1639,21 @@ Clean up backups, volumes.</li>
     Steps:
 
     1. Create a volume, attach to a pod of a deployment,
-       write 500MB to the volume.
+       write 300MB to the volume
     2. Scale down the deployment. The volume is detached.
-    3. Turn on `Allow Recurring Job While Volume Is Detached` setting.
-    4. Create a recurring backup job that runs every 2 mins.
+    3. Turn on `Allow Recurring Job While Volume Is Detached` setting
+    4. Create a recurring backup job that runs every 4 mins
     5. Wait until the recurring backup job starts and the backup progress
        is &gt; 50%, kill the engine process of the volume.
-    6. Verify volume automatically reattached and is healthy again.
+    6. In a 2-min retry loop, verify that the volume is healthy again
+       and there is replacement backup job running.
     7. Wait until the backup finishes.
     8. Wait for the volume to be in detached state with
        `frontendDisabled=false`
     9. Scale up the deployment.
        Verify that we can read the file `lost+found` from the workload pod
     10. Turn off `Allow Recurring Job While Volume Is Detached` setting
-       Clean up backups, volumes.
+       Clean up backups, volumes
     &#34;&#34;&#34;
 
     recurring_job_setting = \
@@ -1688,23 +1692,25 @@ Clean up backups, volumes.</li>
         }
     ]
     vol.recurringUpdate(jobs=jobs)
-    time.sleep(60)
-    wait_for_recurring_backup_to_start(client, core_api, vol_name,
-                                       expected_snapshot_count=1,
-                                       minimum_progress=50)
+
+    wait_for_recurring_backup_to_start(client,
+                                       core_api,
+                                       vol_name,
+                                       expected_snapshot_count=1)
 
     crash_engine_process_with_sigkill(client, core_api, vol_name)
-    # Check if the volume is reattached after recurring backup is interrupted
-    time.sleep(10)
+    # waiting 30sec for volume detach and attach operation
+    # after recurring backup is interrupted
+    time.sleep(30)
     wait_for_volume_healthy_no_frontend(client, vol_name)
 
-    # Since the backup state is removed after the backup complete and it
-    # could happen quickly. Checking for the both in-progress and complete
-    # state could be hard to catch, thus we only check the complete state
-    def backup_complete_predicate(b):
-        return b.state == &#34;complete&#34; and b.error == &#34;&#34;
-    common.wait_for_backup_state(client, vol_name, backup_complete_predicate)
+    snapshot_name = \
+        wait_for_recurring_backup_to_start(client,
+                                           core_api,
+                                           vol_name,
+                                           expected_snapshot_count=1)
 
+    wait_for_backup_completion(client, vol_name, snapshot_name)
     wait_for_volume_detached(client, vol_name)
 
     deployment[&#39;spec&#39;][&#39;replicas&#39;] = 1
@@ -1714,19 +1720,11 @@ Clean up backups, volumes.</li>
     wait_deployment_replica_ready(apps_api, deployment[&#34;metadata&#34;][&#34;name&#34;], 1)
     pod_names = common.get_deployment_pod_names(core_api, deployment)
 
-    assert read_volume_data(core_api, pod_names[0], &#39;default&#39;) == data
-
-    # Use fixture to cleanup the backupstore and since we
-    # crashed the engine replica initiated the backup, it&#39;s
-    # backupstore lock will still be present, so we need
-    # to wait till the lock is expired, before we can delete
-    # the backups
-    vol.recurringUpdate(jobs=[])
-    backupstore.backupstore_wait_for_lock_expiration()</code></pre>
+    assert read_volume_data(core_api, pod_names[0], &#39;default&#39;) == data</code></pre>
 </details>
 </dd>
 <dt id="tests.test_recurring_job.wait_for_recurring_backup_to_start"><code class="name flex">
-<span>def <span class="ident">wait_for_recurring_backup_to_start</span></span>(<span>client, core_api, volume_name, expected_snapshot_count, minimum_progress=0)</span>
+<span>def <span class="ident">wait_for_recurring_backup_to_start</span></span>(<span>client, core_api, volume_name, expected_snapshot_count, minimum_progress=50)</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -1734,7 +1732,7 @@ Clean up backups, volumes.</li>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def wait_for_recurring_backup_to_start(client, core_api, volume_name, expected_snapshot_count, minimum_progress=0):  # NOQA
+<pre><code class="python">def wait_for_recurring_backup_to_start(client, core_api, volume_name, expected_snapshot_count, minimum_progress=50):  # NOQA
     job_pod_name = volume_name + &#39;-backup-c&#39;
     snapshot_name = &#39;&#39;
     snapshots = []
@@ -1745,22 +1743,30 @@ Clean up backups, volumes.</li>
         volume = client.by_id_volume(volume_name)
         try:
             snapshots = volume.snapshotList()
-
-            assert len(snapshots) == expected_snapshot_count + 1
+        except (AttributeError, ApiException):
+            time.sleep(RETRY_BACKUP_INTERVAL)
+            continue
+        if len(snapshots) == expected_snapshot_count + 1:
             for snapshot in snapshots:
                 if snapshot.children[&#39;volume-head&#39;]:
                     snapshot_name = snapshot.name
-                    break
-            if len(snapshot_name) != 0:
-                break
-        except (AttributeError, ApiException, AssertionError):
-            time.sleep(RETRY_BACKUP_INTERVAL)
-    assert len(snapshot_name) != 0
+            break
+    assert snapshots is not None
 
     # To ensure the progress of backup
-    common.wait_for_backup_to_start(client, volume_name,
-                                    snapshot_name=snapshot_name,
-                                    chk_progress=minimum_progress)
+    in_progress = False
+    for _ in range(RETRY_BACKUP_COUNTS):
+        v = client.by_id_volume(volume_name)
+        for b in v.backupStatus:
+            if b.snapshot == snapshot_name and b.state == &#34;in_progress&#34; \
+                    and b.progress &gt; minimum_progress:
+                assert b.error == &#34;&#34;
+                in_progress = True
+                break
+        if in_progress:
+            break
+        time.sleep(RETRY_BACKUP_INTERVAL)
+    assert in_progress is True
 
     return snapshot_name</code></pre>
 </details>
