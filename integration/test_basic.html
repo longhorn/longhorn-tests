@@ -2856,7 +2856,7 @@ def test_backup_lock_deletion_during_backup(set_random_backupstore, client, core
     std_md5sum2 = get_pod_data_md5sum(core_api, std_pod_name, &#34;/data/test2&#34;)
     snap2 = create_snapshot(client, std_volume_name)
     std_volume.snapshotBackup(name=snap2.name)
-    wait_for_backup_to_start(client, std_volume_name, snap2.name)
+    wait_for_backup_to_start(client, std_volume_name, snapshot_name=snap2.name)
 
     backup_volume.backupDelete(name=b1.name)
 
@@ -5108,7 +5108,7 @@ to prevent the following case of concurrent operations.
     std_md5sum2 = get_pod_data_md5sum(core_api, std_pod_name, &#34;/data/test2&#34;)
     snap2 = create_snapshot(client, std_volume_name)
     std_volume.snapshotBackup(name=snap2.name)
-    wait_for_backup_to_start(client, std_volume_name, snap2.name)
+    wait_for_backup_to_start(client, std_volume_name, snapshot_name=snap2.name)
 
     backup_volume.backupDelete(name=b1.name)
 
