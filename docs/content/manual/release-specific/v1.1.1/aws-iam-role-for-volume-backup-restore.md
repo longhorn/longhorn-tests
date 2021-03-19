@@ -136,7 +136,7 @@ EOF
 K8S_LONGHORN_ROLE=`~/bin/aws iam get-role --role-name k8s-longhorn | jq -r '.Role.Arn'`
 
 kubectl create secret generic aws-secret \
-    --from-literal=AWS_IAM_ROLE=$K8S_LONGHORN_ROLE \
+    --from-literal=AWS_IAM_ROLE_ARN=$K8S_LONGHORN_ROLE \
     -n longhorn-system
 ```
 10. On the Longhorn UI, click Settings. In the Backup section, set Backup Target to:
