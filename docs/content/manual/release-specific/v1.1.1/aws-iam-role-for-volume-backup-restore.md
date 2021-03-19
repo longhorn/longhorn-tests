@@ -147,3 +147,4 @@ s3://<your-bucket-name>@<your-aws-region>/
 ```shell
 aws-secret
 ```
+11. Verify that the user is able to create/list/restore/delete backups.
