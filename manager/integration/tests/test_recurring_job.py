@@ -101,53 +101,89 @@ def wait_for_recurring_backup_to_start(client, core_api, volume_name, expected_s
     return snapshot_name
 
 
+def check_recurring_job_result(client, volume_name, expect_snapshot_number,  # NOQA
+                               expect_backup_number):
+    volume = client.by_id_volume(volume_name)
+    snapshots = volume.snapshotList()
+    s_cnt = 0
+    for s in snapshots:
+        if s.removed is False:
+            s_cnt += 1
+    assert s_cnt == expect_snapshot_number
+
+    complete_b_cnt = 0
+    progress_b_cnt = 0
+    for b in volume.backupStatus:
+        assert b.error == ""
+        if b.state == "complete":
+            complete_b_cnt += 1
+        elif b.state == "in_progress":
+            progress_b_cnt += 1
+    assert progress_b_cnt == 0
+    assert complete_b_cnt == expect_backup_number
+
+
 @pytest.mark.recurring_job  # NOQA
 def test_recurring_job(set_random_backupstore, client, volume_name):  # NOQA
     """
     Test recurring job
 
-    1. Setup a random backupstore
+    1. Setup a random backupstore.
     2. Create a volume.
-    3. Create two jobs
-        1 job 1: snapshot every one minute, retain 2
-        1 job 2: backup every two minutes, retain 1
+    3. Create 2 jobs:
+       - job 1: snapshot every 1 minute, retain 2
+       - job 2: backup every 3 minutes, retain 1
     4. Attach the volume.
-       Wait until the 10th second since the beginning of an even minute
-    5. Write some data. Sleep 2.5 minutes.
-       Write some data. Sleep 2.5 minutes
-    6. Verify we have 4 snapshots total
-        1. 2 snapshots, 1 backup, 1 volume-head
-    7. Update jobs to replace the backup job
-        1. New backup job run every one minute, retain 2
-    8. Write some data. Sleep 2.5 minutes.
-       Write some data. Sleep 2.5 minutes
-    9. We should have 6 snapshots
-        1. 2 from job_snap, 1 from job_backup, 2 from job_backup2, 1
-        volume-head
-    10. Make sure there are exactly 4 completed backups.
-        1. old backup job completed 2 backups
-        2. new backup job completed 2 backups
-    11. Make sure we have no backup in progress
+       Wait until the 20th second since the beginning of an even minute.
+    5. Write some data. Sleep 4 minutes.
+       Write some data. Sleep 4 minutes.
+    6. Verify we have 4 snapshots total.
+       - 2 snapshots
+       - 1 backup
+       - 1 volume-head
+    7. Make sure there are exactly 2 completed backups.
+    8. Update job 2;
+       - job 2: backup every 2 minute, retain 2
+    9. Write some data. Sleep 4 minutes.
+       Write some data. Sleep 4 minutes.
+    10. We should have 6 snapshots.
+       - 2 from job 1 (snap)
+       - 1 from job 2 (back1)
+       - 2 from job 2 (back2)
+       - 1 volume-head
+    11. Make sure there are exactly 4 completed backups.
+       - 2 from job 2 (back1)
+       - 2 from job 2 (back2)
+    12. Make sure we have no backup in progress.
     """
-
     '''
     The timeline looks like this:
-    0   1   2   3   4   5   6   7   8   9   10     (minute)
-    |W  |   | W |   |   |W  |   | W |   |   |      (write data)
-    |   S   |   S   |   |   S   |   S   |   |      (job_snap)
-    |   |   B   |   B   |   |   |   |   |   |      (job_backup1)
-    |   |   |   |   |   |   B   |   B   |   |      (job_backup2)
+    0   1   2   3   4   5   6   7   8   9   10  11  12  13  14  (minute)
+    |W  |   |   |   |W  |   |   |   |W  |   |   |   |W  |   |   (write data)
+    |   s   |   |   |   s   |   |   |   s   |   |   |   s   |   (job_1 - snap)
+    |   |   |   B   |   |   B   |   |   |   |   |   |   |   |   (job_2 - back1)
+    |   |   |   |   |   |   |   |   |   |   B   |   |   |   B   (job_2 - back2)
     '''
-
-    host_id = get_self_host_id()
 
     volume = client.create_volume(name=volume_name, size=SIZE,
                                   numberOfReplicas=2)
     volume = common.wait_for_volume_detached(client, volume_name)
 
-    jobs = create_jobs1()
-    volume.recurringUpdate(jobs=jobs)
+    job_1 = {
+        "name": "snap",
+        "cron": "* * * * *",
+        "task": "snapshot",
+        "retain": 2,
+    }
+    job_2 = {
+        "name": "back1",
+        "cron": "*/3 * * * *",
+        "task": "backup",
+        "retain": 1,
+    }
+    volume.recurringUpdate(jobs=[job_1, job_2])
 
+    host_id = get_self_host_id()
     volume = volume.attach(hostId=host_id)
     volume = wait_for_volume_healthy(client, volume_name)
 
@@ -158,55 +194,152 @@ def test_recurring_job(set_random_backupstore, client, volume_name):  # NOQA
     time.sleep(20)
 
     write_volume_random_data(volume)
-    time.sleep(120)  # 2 minutes
-    write_volume_random_data(volume)
-    time.sleep(120)  # 2 minutes
-
-    check_jobs1_result(volume)
-
-    job_backup2 = {"name": "backup2", "cron": "* * * * *",
-                   "task": "backup", "retain": 2}
-    volume.recurringUpdate(jobs=[jobs[0], job_backup2])
+    time.sleep(240)
 
     write_volume_random_data(volume)
-    time.sleep(120)  # 2 minutes
+    time.sleep(240)
+
+    # snap count = 2 from job 1 (snap),
+    #              1 from job 2 (back1),
+    #              1 volume-head
+    # backup     = 2 from job 2
+    check_recurring_job_result(client, volume_name,
+                               expect_snapshot_number=4,
+                               expect_backup_number=2)
+
+    job_2 = {
+        "name": "back2",
+        "cron": "*/2 * * * *",
+        "task": "backup",
+        "retain": 2
+    }
+    volume.recurringUpdate(jobs=[job_1, job_2])
+
     write_volume_random_data(volume)
-    time.sleep(120)  # 2 minutes
+    time.sleep(240)
 
-    snapshots = volume.snapshotList()
-    count = 0
-    for snapshot in snapshots:
-        if snapshot.removed is False:
-            count += 1
-    # 2 from job_snap, 1 from job_backup, 2 from job_backup2, 1 volume-head
-    assert count == 6
+    write_volume_random_data(volume)
+    time.sleep(240)
 
-    complete_backup_number = 0
-    in_progress_backup_number = 0
-    volume = client.by_id_volume(volume_name)
-    for b in volume.backupStatus:
-        assert b.error == ""
-        if b.state == "complete":
-            complete_backup_number += 1
-        elif b.state == "in_progress":
-            in_progress_backup_number += 1
+    # snapcount = 2 from job 1 (snap),
+    #             1 from job 2 (back1),
+    #             2 from job 2 (back2),
+    #             1 volume-head
+    # backup    = 2 from job 2 (back1),
+    #           = 2 from job 2 (back2)
+    check_recurring_job_result(client, volume_name,
+                               expect_snapshot_number=6,
+                               expect_backup_number=4)
 
-    # 2 completed backups from job_backup
-    # 2 completed backups from job_backup2
-    assert complete_backup_number == 4
 
-    assert in_progress_backup_number == 0
+@pytest.mark.recurring_job  # NOQA
+def test_recurring_job_write_and_backup_concurrent(set_random_backupstore, client, volume_name):  # NOQA
+    """
+    Test recurring job
 
-    volume = volume.detach(hostId="")
+    1. Setup a random backupstore.
+    2. Create a volume.
+    3. Create 2 jobs.
+       - job 1: snapshot every 1 minute, retain 2
+       - job 2: backup every 2 minutes, retain 1
+    4. Attach the volume.
+       Wait until the 20th second since the beginning of an even minute.
+    5. Write some data. Sleep 2 minutes.
+       Write some data. Sleep 2 minutes.
+    6. Verify we have 4 snapshots total.
+       - 2 snapshots
+       - 1 backup
+       - 1 volume-head
+    7. Make sure there are exactly 2 completed backups.
+    8. Update job 2:
+       - job 2: backup every 1 minutes, retain 2
+    9. Write some data. Sleep 2 minutes.
+       Write some data. Sleep 2 minutes.
+    10. We should have 6 snapshots.
+       - 2 from job 1 (snap)
+       - 1 from job 2 (back1)
+       - 2 from job 2 (back2)
+       - 1 volume-head
+    11. Make sure there are exactly 4 completed backups.
+       - 2 from job 2 (back1)
+       - 2 from job 2 (back2)
+    12. Make sure we have no backup in progress
+    """
 
-    common.wait_for_volume_detached(client, volume_name)
+    '''
+    The timeline looks like this:
+    0   1   2   3   4   5   6   7   8   (minute)
+    |W  |   |W  |   |W  |   |W  |   |   (write data)
+    |   S   |   S   |   S   |   S   |   (job_1 - snap)
+    |   |   B   |   B   |   |   |   |   (job_2 - back1)
+    |   |   |   |   |   |   B   |   B   (job_2 - back2)
+    '''
 
-    client.delete(volume)
+    volume = client.create_volume(name=volume_name, size=SIZE,
+                                  numberOfReplicas=2)
+    volume = common.wait_for_volume_detached(client, volume_name)
 
-    wait_for_volume_delete(client, volume_name)
+    job_1 = {
+        "name": "snap",
+        "cron": "* * * * *",
+        "task": "snapshot",
+        "retain": 2,
+    }
+    job_2 = {
+        "name": "back1",
+        "cron": "*/2 * * * *",
+        "task": "backup",
+        "retain": 1,
+    }
+    volume.recurringUpdate(jobs=[job_1, job_2])
 
-    volumes = client.list_volume()
-    assert len(volumes) == 0
+    host_id = get_self_host_id()
+    volume = volume.attach(hostId=host_id)
+    volume = wait_for_volume_healthy(client, volume_name)
+
+    # wait until the beginning of an even minute
+    wait_until_begin_of_an_even_minute()
+    # wait until the 20th second of an even minute
+    # make sure that snapshot job happens before the backup job
+    time.sleep(20)
+
+    write_volume_random_data(volume)
+    time.sleep(120)
+
+    write_volume_random_data(volume)
+    time.sleep(120)
+
+    # snap count = 2 from job 1 (snap),
+    #              1 from job 2 (back1),
+    #              1 volume-head
+    # backup     = 2 from job 2
+    check_recurring_job_result(client, volume_name,
+                               expect_snapshot_number=4,
+                               expect_backup_number=2)
+
+    job_2 = {
+        "name": "back2",
+        "cron": "* * * * *",
+        "task": "backup",
+        "retain": 2
+    }
+    volume.recurringUpdate(jobs=[job_1, job_2])
+
+    write_volume_random_data(volume)
+    time.sleep(120)
+
+    write_volume_random_data(volume)
+    time.sleep(120)
+
+    # snapcount = 2 from job 1 (snap),
+    #             1 from job 2 (back1),
+    #             2 from job 2 (back2),
+    #             1 volume-head
+    # backup    = 2 from job 2 (back1),
+    #           = 2 from job 2 (back2)
+    check_recurring_job_result(client, volume_name,
+                               expect_snapshot_number=6,
+                               expect_backup_number=4)
 
 
 @pytest.mark.recurring_job  # NOQA
