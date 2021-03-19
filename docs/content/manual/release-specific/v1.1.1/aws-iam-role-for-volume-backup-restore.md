@@ -64,7 +64,7 @@ host:
 rbac:
   create: true
 ```
-7. Install kube2iam on namespace kube2iam 
+6. Install kube2iam on namespace kube2iam 
 ```shell
 helm repo add kube2iam https://jtblin.github.io/kube2iam/
 helm repo update
@@ -73,7 +73,7 @@ helm upgrade --install kube2iam kube2iam/kube2iam \
     -n kube2iam \
     --create-namespace
 ```
-8. Create a new IAM role `k8s-longhorn` and attach a trust policy to it
+7. Create a new IAM role `k8s-longhorn` and attach a trust policy to it
 ```shell
 NODE_INSTANCE_ROLE=`~/bin/aws iam get-role --role-name NodeInstanceRole | jq -r '.Role.Arn'`
 
@@ -131,7 +131,7 @@ EOF
     --policy-name s3 \
     --policy-document file://s3-longhorn-policy.json
 ```
-9. Create the secret `aws-secret` to longhorn-system
+8. Create the secret `aws-secret` to longhorn-system
 ```shell
 K8S_LONGHORN_ROLE=`~/bin/aws iam get-role --role-name k8s-longhorn | jq -r '.Role.Arn'`
 
@@ -139,11 +139,11 @@ kubectl create secret generic aws-secret \
     --from-literal=AWS_IAM_ROLE_ARN=$K8S_LONGHORN_ROLE \
     -n longhorn-system
 ```
-10. On the Longhorn UI, click Settings. In the Backup section, set Backup Target to:
+9. On the Longhorn UI, click Settings. In the Backup section, set Backup Target to:
 ```shell
 s3://<your-bucket-name>@<your-aws-region>/
 ```
-11. In the Backup section, set Backup Target Credential Secret to:
+10. In the Backup section, set Backup Target Credential Secret to:
 ```shell
 aws-secret
 ```
