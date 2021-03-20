@@ -214,6 +214,16 @@ Case 1:  Create a volume and take multiple backups for the same. Delete the late
     </item>
     
     <item>
+      <title>Longhorn system upgrade with restore</title>
+      <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/cluster-restore/system-upgrade-with-restore/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/cluster-restore/system-upgrade-with-restore/</guid>
+      <description>Notice that the behaviors will be different if the cluster node roles are different. e.g., A cluster contains 1 dedicated master node + 3 worker node is different from a cluster contains 3 nodes which are both master and worker. This test may need to be validated for both kind of cluster.
+ Install Longhorn system. Deploy one more compatible engine image. Deploy some workloads using Longhorn volumes then write some data.</description>
+    </item>
+    
+    <item>
       <title>Longhorn Upgrade test</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/longhorn-upgrade-test/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
@@ -239,6 +249,16 @@ Case 1:  Create a volume and take multiple backups for the same. Delete the late
       
       <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.1/nfsv4-enforcement/</guid>
       <description>Since the client falling back to NFSv3 usually results in a failure to mount the NFS share, the way we can check for NFSv3 fallback is to check the error message returned and see if it mentions rpc.statd, since dependencies on rpc.statd and other services are no longer needed for NFSv4, but are needed for NFSv3. The NFS mount should not fall back to NFSv3 and instead only give the user a warning that the server may be NFSv3:</description>
+    </item>
+    
+    <item>
+      <title>Node creation and deletion with restore</title>
+      <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/cluster-restore/node-creation-deletion-with-restore/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/cluster-restore/node-creation-deletion-with-restore/</guid>
+      <description>Notice that the behaviors will be different if the cluster node roles are different. e.g., A cluster contains 1 dedicated master node + 3 worker node is different from a cluster contains 3 nodes which are both master and worker. This test may need to be validated for both kind of cluster.
+ Deploy a 3-worker-node cluster then install Longhorn system. Deploy some workloads using Longhorn volumes then write some data.</description>
     </item>
     
     <item>
@@ -297,6 +317,16 @@ Monitor longhorn  Deploy the Prometheus-operator, ServiceMonitor pointing to lon
       
       <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/update_csi_components_when_images_change/</guid>
       <description> Install Longhorn Change the longhorn-driver-deployer yaml at https://github.com/longhorn/longhorn-manager/blob/c2ceb9f3f991810f811601d8c41c09b67fb50746/deploy/install/02-components/04-driver.yaml#L50 to use the new images for some CSI components Kubectl apply -f the longhorn-driver-deployer yaml Verify that only CSI components with the new images are re-deployed and have new images Redeploy longhorn-driver-deployer without changing the images. Verify that no CSI component is re-deployed  </description>
+    </item>
+    
+    <item>
+      <title>Recover Longhorn volumes after Rancher cluster restore</title>
+      <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/cluster-restore/recover-volumes-after-restore/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/cluster-restore/recover-volumes-after-restore/</guid>
+      <description>Notice that the behaviors will be different if the cluster node roles are different. e.g., A cluster contains 1 dedicated master node + 3 worker node is different from a cluster contains 3 nodes which are both master and worker. This test may need to be validated for both kind of cluster.
+ Launch a Longhorn system. Deploy one more compatible engine image. Prepare some volumes with workloads:  Create and attach volume A via UI.</description>
     </item>
     
     <item>

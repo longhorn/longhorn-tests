@@ -359,48 +359,47 @@
 </aside>
 
 <main style="padding: 1%; width: 70%;">
-  <h1 id="title">Test Node Delete</h1>
+  <h1 id="title">Recover Longhorn volumes after Rancher cluster restore</h1>
   <div>
     <article id="content">
-       <h2 id="related-issue">Related issue</h2>
-<p><a href="https://github.com/longhorn/longhorn/issues/2186">https://github.com/longhorn/longhorn/issues/2186</a></p>
-<h2 id="test-node-delete">Test Node Delete</h2>
-<p><strong>Given</strong> pod with pvc created.</p>
-<pre><code>kubectl create -f https://raw.githubusercontent.com/longhorn/longhorn/v1.1.0/examples/pod_with_pvc.yaml
-</code></pre><p><em>And</em> node down:</p>
+       <p>Notice that the behaviors will be different if the cluster node roles are different. e.g., A cluster contains 1 dedicated master node + 3 worker node is different from a cluster contains 3 nodes which are both master and worker.
+This test may need to be validated for both kind of cluster.</p>
 <ol>
-<li>
-<p>Disable Node Scheduling and set Eviction Requested to true from the browser.</p>
+<li>Launch a Longhorn system. Deploy one more compatible engine image.</li>
+<li>Prepare some volumes with workloads:
+<ol>
+<li>Create and attach volume A via UI. Write some data and do some snapshot operations. (Validate 1 case: The volume deleted after the cluster snapshot will be restored but is invalid)</li>
+<li>Deploy a single pod with volume B. Write some data, do some snapshot operations, and create some backups. (Validate 3 cases: &lt;1&gt; data modification won&rsquo;t crash the whole volume; &lt;2&gt; backup info will be resynced; &lt;3&gt; users need to manual restart the single pod)</li>
+<li>Deploy a StatefulSet with volume C. Write some data and do some snapshot operations. (Validate 1 case: Users need to manually recover the volume if all existing replicas are replaced by new replicas)</li>
+<li>Deploy a StatefulSet with volume D. Write some data and do some snapshot operations. (Validate 2 cases: &lt;1&gt; volume can be recovered automatically if some replicas are removed and some new replicas are replenished; &lt;2&gt; snapshot info will be resynced;)</li>
+<li>Deploy a Deployment with volume E. Write some data and do some snapshot operations. (Validate 4 cases: &lt;1&gt; engine upgrade; &lt;2&gt; offline expansion)</li>
+</ol>
 </li>
-<li>
-<p>Taint node-1 with kubectl and wait for pods to re-deploy.</p>
-<pre><code>kubectl taint nodes ${NODE} nodetype=storage:NoExecute
-</code></pre><p>2.1. Check longhorn pods are not scheduled to node-1.</p>
-<p>2.2. Node status should be Down.</p>
+<li>Create a cluster snapshot via Rancher.</li>
+<li>Do the followings before the restore:
+<ol>
+<li>Delete volume A.</li>
+<li>Write more data to volume B and create more backups.</li>
+<li>Remove all current replicas one by one for volume C. Then all replicas of volume C are new replicas.</li>
+<li>Remove some replicas for volume D. Do snapshot creation, deletion, and revert.</li>
+<li>Scale down the workload. Upgrade volume E from the default image to another engine image. And do expansion.</li>
+<li>Create and attach volume F via UI. Write some data and do some snapshot operations. (Validate 1 case: Users need to manuall recover the volume if it&rsquo;s created after the cluster snapshot)</li>
+</ol>
+</li>
+<li>Restore the cluster.</li>
+<li>Check the followings according to the doc:
+<ol>
+<li>Volume A is back. But there is no data in it. And users can re-delete it.</li>
+<li>Volume B can be reattached or keep attached with correct data. The backup info of volume B is resynced when the volume is reattahed. The pod can use the volume after restart.</li>
+<li>All old removed replicas are back and all newly rebuilt replicas in step4-3 disappear for volume C. There is no data in volume C. The data directories of the disappeared replicas are still on the node. Hence the data are be recovered by exporting a single replica volume.</li>
+<li>The old removed replicas are back and the newly rebuilt replicas in step4-4 disappear for volume D. The restored replicas will become failed then get rebuilt with correct data. The data directories of the disappeared replicas are still on the node.</li>
+<li>Volume E re-uses the default engine image, and gets stuck in shrinking the expanded size to the original size. By re-scaling down the workload, re-upgrade and re-expand the volume. The volume can work fine then.</li>
+<li>Volume F will disappear. The data directories of the disappeared replicas are still on the node. Hence the data are be recovered by exporting a single replica volume.</li>
+</ol>
 </li>
 </ol>
-<p><strong>When</strong> node-1 deleted from the browser.</p>
-<p><strong>Then</strong> should see node-1 removed from the node list in the browser.</p>
-<p><em>And</em> should see node-1 removed from nodes.longhorn.io.</p>
-<pre><code>kubectl -n longhorn-system get nodes.longhorn.io
-</code></pre><h2 id="test-node-delete---should-fail-when-volume-replica-not-evicted-on-node">Test Node Delete - should fail when volume replica not evicted on node</h2>
-<p><strong>Given</strong> pod with pvc created.</p>
-<pre><code>kubectl create -f https://raw.githubusercontent.com/longhorn/longhorn/v1.1.0/examples/pod_with_pvc.yaml
-</code></pre><p><em>And</em> node down:</p>
-<ol>
-<li>
-<p>Taint node-1 with kubectl and wait for pods to re-deploy.</p>
-<pre><code>kubectl taint nodes ${NODE} nodetype=storage:NoExecute
-</code></pre><p>1.1. Check longhorn pods are not scheduled to node-1.</p>
-<p>1.2. Node status should be Down.</p>
-<p>1.3. Check longhorn replicas are running on node-1.</p>
-<pre><code>kubectl -n longhorn-system get replicas
-</code></pre></li>
-</ol>
-<p><strong>When</strong> node-1 deleted from the browser.</p>
-<p><strong>Then</strong> should see error in the browser.</p>
-<pre><code>unable to delete node: Could not delete node ip-172-30-0-16 with node ready condition is False, reason is ManagerPodMissing, node schedulable false, and 1 replica, 1 engine running on it
-</code></pre>
+<p>The github issue link: <a href="https://github.com/longhorn/longhorn/issues/2228">https://github.com/longhorn/longhorn/issues/2228</a></p>
+
     </article>
   </div>
 </main>

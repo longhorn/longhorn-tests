@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Cluster Restore on Longhorn Manual Test Cases</title>
+    <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/cluster-restore/</link>
+    <description>Recent content in Cluster Restore on Longhorn Manual Test Cases</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en-us</language><atom:link href="https://longhorn.github.io/longhorn-tests/manual/pre-release/cluster-restore/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Longhorn system upgrade with restore</title>
+      <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/cluster-restore/system-upgrade-with-restore/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/cluster-restore/system-upgrade-with-restore/</guid>
+      <description>Notice that the behaviors will be different if the cluster node roles are different. e.g., A cluster contains 1 dedicated master node + 3 worker node is different from a cluster contains 3 nodes which are both master and worker. This test may need to be validated for both kind of cluster.
+ Install Longhorn system. Deploy one more compatible engine image. Deploy some workloads using Longhorn volumes then write some data.</description>
+    </item>
+    
+    <item>
+      <title>Node creation and deletion with restore</title>
+      <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/cluster-restore/node-creation-deletion-with-restore/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/cluster-restore/node-creation-deletion-with-restore/</guid>
+      <description>Notice that the behaviors will be different if the cluster node roles are different. e.g., A cluster contains 1 dedicated master node + 3 worker node is different from a cluster contains 3 nodes which are both master and worker. This test may need to be validated for both kind of cluster.
+ Deploy a 3-worker-node cluster then install Longhorn system. Deploy some workloads using Longhorn volumes then write some data.</description>
+    </item>
+    
+    <item>
+      <title>Recover Longhorn volumes after Rancher cluster restore</title>
+      <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/cluster-restore/recover-volumes-after-restore/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/cluster-restore/recover-volumes-after-restore/</guid>
+      <description>Notice that the behaviors will be different if the cluster node roles are different. e.g., A cluster contains 1 dedicated master node + 3 worker node is different from a cluster contains 3 nodes which are both master and worker. This test may need to be validated for both kind of cluster.
+ Launch a Longhorn system. Deploy one more compatible engine image. Prepare some volumes with workloads:  Create and attach volume A via UI.</description>
+    </item>
+    
+  </channel>
+</rss>
