@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Basic operations parallelism on Longhorn Manual Test Cases</title>
+    <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/basic-operations-parallelism/</link>
+    <description>Recent content in Basic operations parallelism on Longhorn Manual Test Cases</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en-us</language><atom:link href="https://longhorn.github.io/longhorn-tests/manual/pre-release/basic-operations-parallelism/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Snapshot while writing data in the volume</title>
+      <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/basic-operations-parallelism/snapshot-while-writing-data/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/basic-operations-parallelism/snapshot-while-writing-data/</guid>
+      <description>Related issue: https://github.com/longhorn/longhorn/issues/2187
+Scenario  Create a kubernetes pod + pvc that mounts a Longhorn volume. Write 5 Gib into the pod using dd if=/dev/urandom of=/mnt/&amp;lt;volume&amp;gt; count=5000 bs=1M conv=fsync status=progress While running the above command initiate a snapshot. Verify the logs of the instance-manager using kubetail instance-manager -n longhorn-system. There should some logs related to freezing and unfreezing the filesystem. Like Froze filesystem of volume mounted ... Verify snapshot succeeded and dd operation will complete.</description>
+    </item>
+    
+  </channel>
+</rss>
