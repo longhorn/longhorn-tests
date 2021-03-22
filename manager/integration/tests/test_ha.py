@@ -56,6 +56,7 @@ from common import delete_and_wait_pvc, delete_and_wait_pv
 from common import wait_for_volume_replica_count, wait_for_replica_failed
 from common import settings_reset # NOQA
 from common import set_node_tags, set_node_scheduling # NOQA
+from common import SETTING_DISABLE_REVISION_COUNTER
 
 from backupstore import set_random_backupstore # NOQA
 from backupstore import backupstore_cleanup
@@ -185,9 +186,7 @@ def test_ha_salvage(client, core_api, volume_name, disable_auto_salvage):  # NOQ
     5. Delete all replica processes using instance manager or
     crash all replica processes using SIGTERM.
     6. Wait for volume to `faulted`, then `healthy`.
-    7. Verify there are 5 replicas, 3 good replicas
-        (one is from the first three replicas), and 2 failed replicas
-        (both are from the first three replicas).
+    7. Verify all 3 replicas are reused successfully.
     8. Check the data in the volume and make sure it's the same as the
     checksum saved on step 5.
 
@@ -211,7 +210,15 @@ def test_ha_salvage(client, core_api, volume_name, disable_auto_salvage):  # NOQ
 
 def ha_salvage_test(client, core_api, # NOQA
                     volume_name, backing_image=""):  # NOQA
-    # case: replica processes are wrongly removed
+
+    # Setting Disable auto salvage
+    # Case 1: Delete all replica processes using instance manager
+
+    auto_salvage_setting = client.by_id_setting(SETTING_AUTO_SALVAGE)
+    setting = client.update(auto_salvage_setting, value="false")
+    assert setting.name == SETTING_AUTO_SALVAGE
+    assert setting.value == "false"
+
     volume = create_and_check_volume(client, volume_name, 2,
                                      backing_image=backing_image)
 
@@ -246,7 +253,13 @@ def ha_salvage_test(client, core_api, # NOQA
 
     cleanup_volume(client, volume)
 
-    # case: replica processes get crashed
+    # Setting Disable auto salvage
+    # Case 2: Crash all replica processes
+    auto_salvage_setting = client.by_id_setting(SETTING_AUTO_SALVAGE)
+    setting = client.update(auto_salvage_setting, value="false")
+    assert setting.name == SETTING_AUTO_SALVAGE
+    assert setting.value == "false"
+
     volume = create_and_check_volume(client, volume_name, 2,
                                      backing_image=backing_image)
     volume.attach(hostId=host_id)
@@ -279,6 +292,92 @@ def ha_salvage_test(client, core_api, # NOQA
 
     cleanup_volume(client, volume)
 
+    # Setting: Enabled auto salvage.
+    # Case 3: Revision counter disabled.
+
+    auto_salvage_setting = client.by_id_setting(SETTING_AUTO_SALVAGE)
+    setting = client.update(auto_salvage_setting, value="true")
+    assert setting.name == SETTING_AUTO_SALVAGE
+    assert setting.value == "true"
+
+    disable_revision_counter_setting = \
+        client.by_id_setting(SETTING_DISABLE_REVISION_COUNTER)
+    setting = client.update(disable_revision_counter_setting, value="true")
+    assert setting.name == SETTING_DISABLE_REVISION_COUNTER
+    assert setting.value == "true"
+
+    volume = create_and_check_volume(client, volume_name, 3,
+                                     backing_image=backing_image)
+
+    host_id = get_self_host_id()
+    volume = volume.attach(hostId=host_id)
+    volume = common.wait_for_volume_healthy(client, volume_name)
+
+    assert len(volume.replicas) == 3
+    orig_replica_names = []
+    for replica in volume.replicas:
+        orig_replica_names.append(replica.name)
+
+    data = write_volume_random_data(volume)
+
+    crash_replica_processes(client, core_api, volume_name)
+
+    volume = common.wait_for_volume_faulted(client, volume_name)
+    assert len(volume.replicas) == 3
+
+    volume = common.wait_for_volume_healthy(client, volume_name)
+    assert len(volume.replicas) == 3
+
+    for replica in volume.replicas:
+        assert replica.name in orig_replica_names
+
+    check_volume_data(volume, data)
+    cleanup_volume(client, volume)
+
+    # Setting: Enabled auto salvage.
+    # Case 4: Revision counter enabled.
+
+    auto_salvage_setting = client.by_id_setting(SETTING_AUTO_SALVAGE)
+    setting = client.update(auto_salvage_setting, value="true")
+    assert setting.name == SETTING_AUTO_SALVAGE
+    assert setting.value == "true"
+
+    disable_revision_counter_setting = \
+        client.by_id_setting("disable-revision-counter")
+    setting = client.update(disable_revision_counter_setting, value="false")
+    assert setting.name == "disable-revision-counter"
+    assert setting.value == "false"
+
+    volume = create_and_check_volume(client, volume_name, 3,
+                                     backing_image=backing_image)
+
+    host_id = get_self_host_id()
+    volume = volume.attach(hostId=host_id)
+    volume = common.wait_for_volume_healthy(client, volume_name)
+
+    assert len(volume.replicas) == 3
+    orig_replica_names = []
+    for replica in volume.replicas:
+        orig_replica_names.append(replica.name)
+
+    data = write_volume_random_data(volume)
+
+    crash_replica_processes(client, core_api, volume_name)
+
+    volume = common.wait_for_volume_faulted(client, volume_name)
+    assert len(volume.replicas) == 3
+    assert volume.replicas[0].failedAt != ""
+    assert volume.replicas[1].failedAt != ""
+    assert volume.replicas[2].failedAt != ""
+
+    volume = common.wait_for_volume_healthy(client, volume_name)
+    assert len(volume.replicas) == 3
+    assert volume.replicas[0].failedAt == ""
+    assert volume.replicas[1].failedAt == ""
+    assert volume.replicas[2].failedAt == ""
+
+    check_volume_data(volume, data)
+    cleanup_volume(client, volume)
 
 # https://github.com/rancher/longhorn/issues/253
 def test_ha_backup_deletion_recovery(client, volume_name):  # NOQA
