@@ -150,15 +150,15 @@ run_longhorn_upgrade_test(){
 	kubectl apply -f ${LONGHORN_UPGRADE_TESTS_MANIFEST_FILE_PATH}
 
 	# wait upgrade test pod to start running
-    while [[ -n "`kubectl get pods longhorn-test-upgrade --no-headers=true | awk '{print $3}' | grep -v Running`"  ]]; do
+    while [[ -n "`kubectl get pods longhorn-test-upgrade --no-headers=true | awk '{print $3}' | grep -v \"Running\|Completed\"`"  ]]; do
 		echo "waiting upgrade test pod to be in running state ... rechecking in 10s"
 		sleep 10s
     done
 
-	# wait upgrade test to complete
+    # wait upgrade test to complete
     while [[ -z "`kubectl get pods longhorn-test-upgrade --no-headers=true | awk '{print $3}' | grep -v Running`"  ]]; do
-		echo "upgrade test still running ... rechecking in 30s"
-		sleep 30s
+        echo "upgrade test still running ... rechecking in 30s"
+        sleep 30s
     done
 
 	# get upgrade test junit xml report
@@ -193,7 +193,7 @@ run_longhorn_tests(){
 	local RETRY_COUNTS=60
 	local RETRIES=0
 	# wait longhorn tests pod to start running
-    while [[ -n "`kubectl get pods "${LONGHORN_TEST_POD_NAME}" --no-headers=true | awk '{print $3}' | grep -v Running`"  ]]; do
+    while [[ -n "`kubectl get pods "${LONGHORN_TEST_POD_NAME}" --no-headers=true | awk '{print $3}' | grep -v \"Running\|Completed\"`"  ]]; do
         echo "waiting longhorn test pod to be in running state ... rechecking in 10s"
         sleep 10s
 		RETRIES=$((RETRIES+1))
