@@ -63,23 +63,26 @@ def reset_backupstore_setting(client):
     client.update(backup_target_credential_setting, value="")
 
 
-def set_backupstore_s3(client):
+def set_backupstore_s3(client, s3_server="minio"):
     backup_target_setting = client.by_id_setting(SETTING_BACKUP_TARGET)
     backupstores = get_backupstore_url()
     for backupstore in backupstores:
-        if is_backupTarget_s3(backupstore):
-            backupsettings = backupstore.split("$")
-            backup_target_setting = client.update(backup_target_setting,
-                                                  value=backupsettings[0])
-            assert backup_target_setting.value == backupsettings[0]
+        if not is_backupTarget_s3(backupstore):
+            continue
+        backupsettings = backupstore.split("$")
+        backup_target_setting = client.update(backup_target_setting,
+                                              value=backupsettings[0])
+        assert backup_target_setting.value == backupsettings[0]
 
-            backup_target_credential_setting = client.by_id_setting(
-                SETTING_BACKUP_TARGET_CREDENTIAL_SECRET)
-            backup_target_credential_setting = \
-                client.update(backup_target_credential_setting,
-                              value=backupsettings[1])
-            assert backup_target_credential_setting.value == backupsettings[1]
-            break
+        if s3_server not in backupsettings[1]:
+            continue
+        backup_target_credential_setting = client.by_id_setting(
+            SETTING_BACKUP_TARGET_CREDENTIAL_SECRET)
+        backup_target_credential_setting = \
+            client.update(backup_target_credential_setting,
+                          value=backupsettings[1])
+        assert backup_target_credential_setting.value == backupsettings[1]
+        break
 
 
 def set_backupstore_nfs(client):
