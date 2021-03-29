@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: aws-secret
+  namespace: longhorn-system
+type: Opaque
+data:
+  AWS_IAM_ROLE_ARN: YXJuOmF3czppYW06OjAxMjM0NTY3ODk6cm9sZS9sb25naG9ybi10ZXN0LXJvbGU= # arn:aws:iam::0123456789:role/longhorn-test-role
