@@ -312,10 +312,10 @@ def backupstore_create_file(client, core_api, file_path, data={}):
     backupstore = backup_target_setting.value
 
     if is_backupTarget_s3(backupstore):
-        return mino_create_file_in_backupstore(client,
-                                               core_api,
-                                               file_path,
-                                               data)
+        return minio_create_file_in_backupstore(client,
+                                                core_api,
+                                                file_path,
+                                                data)
     elif is_backupTarget_nfs(backupstore):
         return nfs_create_file_in_backupstore(file_path, data={})
 
@@ -323,7 +323,7 @@ def backupstore_create_file(client, core_api, file_path, data={}):
         raise NotImplementedError
 
 
-def mino_create_file_in_backupstore(client, core_api, file_path, data={}): # NOQA
+def minio_create_file_in_backupstore(client, core_api, file_path, data={}):  # NOQA
     backup_target_credential_setting = client.by_id_setting(
         SETTING_BACKUP_TARGET_CREDENTIAL_SECRET)
 
@@ -333,7 +333,7 @@ def mino_create_file_in_backupstore(client, core_api, file_path, data={}): # NOQ
     bucket_name = minio_get_backupstore_bucket_name(client)
 
     if len(data) == 0:
-        data = {"testkey": "test data from mino_create_file_in_backupstore()"}
+        data = {"testkey": "test data from minio_create_file_in_backupstore()"}
 
     with open(TEMP_FILE_PATH, 'w') as temp_file:
         json.dump(data, temp_file)
@@ -353,7 +353,8 @@ def nfs_create_file_in_backupstore(file_path, data={}):
     with open(file_path, 'w') as cfg_file:
         cfg_file.write(str(data))
 
-def backupstore_write_backup_cfg_file(client, core_api, volume_name, backup_name, data): # NOQA
+
+def backupstore_write_backup_cfg_file(client, core_api, volume_name, backup_name, data):  # NOQA
     backupstore = backupstore_get_backup_target(client)
 
     if is_backupTarget_s3(backupstore):
@@ -381,7 +382,7 @@ def nfs_write_backup_cfg_file(client, volume_name, backup_name, data):
         cfg_file.write(str(data))
 
 
-def minio_write_backup_cfg_file(client, core_api, volume_name, backup_name, backup_cfg_data): # NOQA
+def minio_write_backup_cfg_file(client, core_api, volume_name, backup_name, backup_cfg_data):  # NOQA
     secret_name = backupstore_get_secret(client)
     assert secret_name != ''
 
@@ -410,9 +411,9 @@ def backupstore_delete_file(client, core_api, file_path):
     backupstore = backup_target_setting.value
 
     if is_backupTarget_s3(backupstore):
-        return mino_delete_file_in_backupstore(client,
-                                               core_api,
-                                               file_path)
+        return minio_delete_file_in_backupstore(client,
+                                                core_api,
+                                                file_path)
 
     elif is_backupTarget_nfs(backupstore):
         return nfs_delete_file_in_backupstore(file_path)
@@ -421,7 +422,7 @@ def backupstore_delete_file(client, core_api, file_path):
         raise NotImplementedError
 
 
-def mino_delete_file_in_backupstore(client, core_api, file_path):
+def minio_delete_file_in_backupstore(client, core_api, file_path):
     backup_target_credential_setting = client.by_id_setting(
         SETTING_BACKUP_TARGET_CREDENTIAL_SECRET)
 
@@ -538,7 +539,7 @@ def backupstore_create_dummy_in_progress_backup(client, core_api, volume_name):
                                       dummy_backup_cfg_data)
 
 
-def backupstore_corrupt_backup_cfg_file(client, core_api, volume_name, backup_name): # NOQA
+def backupstore_corrupt_backup_cfg_file(client, core_api, volume_name, backup_name):  # NOQA
     corrupt_backup_cfg_data = "{corrupt: definitely"
 
     backupstore_write_backup_cfg_file(client,
