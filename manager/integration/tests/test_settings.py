@@ -79,21 +79,26 @@ def test_setting_toleration():
     """
     Test toleration setting
 
-    1. Verify that cannot use Kubernetes tolerations for Longhorn setting
-    2. Use "key1=value1:NoSchedule; key2:NoExecute" as toleration.
+    1. Set `taint-toleration` to "key1=value1:NoSchedule; key2:InvalidEffect"
+    2. Verify the request fails
     3. Create a volume and attach it.
-    4. Verify that cannot update toleration setting when any volume is attached
-    5. Generate and write `data1` into the volume
-    6. Detach the volume.
-    7. Update setting `toleration` to toleration.
-    8. Wait for all the Longhorn components to restart with new toleration
-    9. Attach the volume again and verify the volume `data1`.
-    10. Generate and write `data2` to the volume.
-    11. Detach the volume.
-    12. Clean the `toleration` setting.
-    13. Wait for all the Longhorn components to restart with no toleration
-    14. Attach the volume and validate `data2`.
-    15. Generate and write `data3` to the volume.
+    4. Set `taint-toleration` to "key1=value1:NoSchedule; key2:NoExecute".
+    5. Verify that cannot update toleration setting when any volume is attached
+    6. Generate and write `data1` into the volume
+    7. Detach the volume.
+    8. Set `taint-toleration` to "key1=value1:NoSchedule; key2:NoExecute".
+    9. Wait for all the Longhorn system components to restart with new
+       toleration
+    10. Verify that UI, manager, and drive deployer don't restart and
+       don't have new toleration
+    11. Attach the volume again and verify the volume `data1`.
+    12. Generate and write `data2` to the volume.
+    13. Detach the volume.
+    14. Clean the `toleration` setting.
+    15. Wait for all the Longhorn system components to restart with no
+        toleration
+    16. Attach the volume and validate `data2`.
+    17. Generate and write `data3` to the volume.
     """
     client = get_longhorn_api_client()  # NOQA
     apps_api = get_apps_api_client()  # NOQA
@@ -178,24 +183,30 @@ def test_setting_toleration_extra(core_api, apps_api):  # NOQA
     Steps:
     1. Set Kubernetes Taint Toleration to:
        `ex.com/foobar:NoExecute;ex.com/foobar:NoSchedule`
-    2. Verify that all components have the 2 tolerations
+    2. Verify that all system components have the 2 tolerations
        `ex.com/foobar:NoExecute; ex.com/foobar:NoSchedule`
+       Verify that UI, manager, and drive deployer don't restart and
+       don't have toleration
     3. Set Kubernetes Taint Toleration to:
        `node-role.kubernetes.io/controlplane=true:NoSchedule`
-    4. Verify that all components have the the toleration
+    4. Verify that all system components have the the toleration
        `node-role.kubernetes.io/controlplane=true:NoSchedule`
        and don't have the 2 tolerations
        `ex.com/foobar:NoExecute;ex.com/foobar:NoSchedule`
+       Verify that UI, manager, and drive deployer don't restart and
+       don't have toleration
     5. Set Kubernetes Taint Toleration to special value:
        `:`
-    6. Verify that all components have the toleration with
+    6. Verify that all system components have the toleration with
        `operator: Exists` and other field of the toleration are empty.
-       Verify that all components don't have the toleration
+       Verify that all system components don't have the toleration
        `node-role.kubernetes.io/controlplane=true:NoSchedule`
+       Verify that UI, manager, and drive deployer don't restart and
+       don't have toleration
     7. Clear Kubernetes Taint Toleration
 
-    Note: `components` in this context is referring to all deployments,
-       daemonsets, IM pods, recurring jobs in Longhorn system
+    Note: system components are workloads other than UI, manager, driver
+    deployer
     """
     settings = [
         {
@@ -486,15 +497,20 @@ def test_setting_priority_class(core_api, apps_api, scheduling_api, priority_cla
     5. Generate and write `data1`.
     6. Detach the Volume.
     7. Update the Priority Class Setting to the new Priority Class.
-    8. Wait for all the Longhorn workloads to restart with the new Priority
-    Class.
-    9. Attach the Volume and verify `data1`.
-    10. Generate and write `data2`.
-    11. Unset the Priority Class Setting.
-    12. Wait for all the Longhorn workloads to restart with the new Priority
-    Class.
-    13. Attach the Volume and verify `data2`.
-    14. Generate and write `data3`.
+    8. Wait for all the Longhorn system components to restart with the new
+       Priority Class.
+    9. Verify that UI, manager, and drive deployer don't have Priority Class
+    10. Attach the Volume and verify `data1`.
+    11. Generate and write `data2`.
+    12. Unset the Priority Class Setting.
+    13. Wait for all the Longhorn system components to restart with the new
+        Priority Class.
+    14. Verify that UI, manager, and drive deployer don't have Priority Class
+    15. Attach the Volume and verify `data2`.
+    16. Generate and write `data3`.
+
+    Note: system components are workloads other than UI, manager, driver
+     deployer
     """
     client = get_longhorn_api_client()  # NOQA
     count = len(client.list_node())
