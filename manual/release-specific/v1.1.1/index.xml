@@ -31,6 +31,19 @@ Scenario  Install Kubernetes Disable IPv6 on all the worker nodes using the foll
     </item>
     
     <item>
+      <title>Test Frontend Traffic</title>
+      <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/ws-traffic-flood/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/ws-traffic-flood/</guid>
+      <description>Related issue https://github.com/longhorn/longhorn/issues/2372
+Test Frontend Traffic Given 100 pvc created.
+And all pvcs deployed and detached.
+When monitor traffic in frontend pod with nload.
+apk add nload nload Then should not see a continuing large amount of traffic when there is no operation happening. The smaller spikes are mostly coming from event resources which possibly could be enhanced later (https://github.com/longhorn/longhorn/issues/2433).</description>
+    </item>
+    
+    <item>
       <title>Test Node Delete</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/delete-node/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
