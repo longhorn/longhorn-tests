@@ -371,48 +371,25 @@
 </aside>
 
 <main style="padding: 1%; width: 70%;">
-  <header class="homepage-header">
-    <h1>v1.1.0</h1>
-    
-  </header>
-  <div class="homepage-content">
-    
-  </div>
+  <h1 id="title">Test Service Account mount on host</h1>
   <div>
-    <ul>
+    <article id="content">
+       <ol>
+<li>This test case should be tested on both yaml installation, chart installation (Helm and Rancher UI), as well as upgrade scenarios</li>
+<li>After install Longhorn using on of the above method, ssh into a worker node that has a longhorn-manager pod running</li>
+<li>check the mount point <code>/run/secrets/kubernetes.io/serviceaccount</code> by running:
+<pre><code>root@node-1:~# findmnt  /run/secrets/kubernetes.io/serviceaccount
+</code></pre></li>
+<li>Verify that there is no such mount point</li>
+<li>Kill the longhorn-manager pod on the above node and wait for it to be recreated and running</li>
+<li>check the mount point <code>/run/secrets/kubernetes.io/serviceaccount</code> by running:
+<pre><code>root@node-1:~# findmnt  /run/secrets/kubernetes.io/serviceaccount
+</code></pre></li>
+<li>Verify that there is no such mount point</li>
+<li>Repeat the step 5 to 7 a few times</li>
+</ol>
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/prometheus_support/">Prometheus Support</a></li>
-  
-
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/recurring-backup-job-interruptions/">Recurring backup job interruptions</a></li>
-  
-
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/reusing-failed-replica-for-rebuilding/">Reusing failed replica for rebuilding</a></li>
-  
-
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/kubelet_volume_metrics/">Support Kubelet Volume Metrics</a></li>
-  
-
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/additional-printer-columns/">Test Additional Printer Columns</a></li>
-  
-
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/instance-manager-ip-sync/">Test Instance Manager IP Sync</a></li>
-  
-
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/iscsi_installation/">Test ISCSI Installation on EKS</a></li>
-  
-
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/rwx_feature/">Test Read Write Many Feature</a></li>
-  
-
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/uninstallation/">Test uninstallation</a></li>
-  
-
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/upgrade_with_modified_storageclass/">Upgrade Longhorn with modified Storage Class</a></li>
-  
-
-</ul>
-
+    </article>
   </div>
 </main>
 

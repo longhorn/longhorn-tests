@@ -60,6 +60,15 @@ kubectl taint nodes ${NODE} nodetype=storage:NoExecute 2.1. Check longhorn pods 
     </item>
     
     <item>
+      <title>Test Service Account mount on host</title>
+      <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/test-service-account-mount/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/test-service-account-mount/</guid>
+      <description>This test case should be tested on both yaml installation, chart installation (Helm and Rancher UI), as well as upgrade scenarios After install Longhorn using on of the above method, ssh into a worker node that has a longhorn-manager pod running check the mount point /run/secrets/kubernetes.io/serviceaccount by running: root@node-1:~# findmnt /run/secrets/kubernetes.io/serviceaccount  Verify that there is no such mount point Kill the longhorn-manager pod on the above node and wait for it to be recreated and running check the mount point /run/secrets/kubernetes.</description>
+    </item>
+    
+    <item>
       <title>Test Snapshot Purge Error Handling</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/snapshot-purge-error-handling/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
