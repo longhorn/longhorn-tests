@@ -368,46 +368,155 @@
 </aside>
 
 <main style="padding: 1%; width: 70%;">
-  <h1 id="title">Priority Class Default Setting</h1>
+  <h1 id="title">Test Volume Backup and Restore by AWS IAM role</h1>
   <div>
     <article id="content">
-       <p>There are three different cases we need to test when the user inputs a default setting for <code>Priority Class</code>:</p>
+       <h2 id="related-issue">Related issue</h2>
+<p><a href="https://github.com/longhorn/longhorn/issues/1526">https://github.com/longhorn/longhorn/issues/1526</a></p>
+<p>Longhorn v1.1.1 should work with volume backup and restore by AWS IAM role</p>
+<h2 id="scenario">Scenario</h2>
 <ol>
-<li>Install <code>Longhorn</code> with no <code>priority-class</code> set in the default settings. The <code>Priority Class</code> setting should be empty after the installation completes according to the <code>longhorn-ui</code>, and the default <code>Priority</code> of all <code>Pods</code> in the <code>longhorn-system</code> namespace should be <code>0</code>:</li>
+<li>Install AWS CLI and configure your AWS credentials</li>
 </ol>
-<pre><code>~ kubectl -n longhorn-system describe pods | grep Priority
-# should be repeated many times
-Priority:     0
-</code></pre><ol start="2">
-<li>Install <code>Longhorn</code> with a nonexistent <code>priority-class</code> in the default settings. The system should fail to come online. The <code>Priority Class</code> setting should be set and the status of the <code>Daemon Set</code> for the <code>longhorn-manager</code> should indicate that the reason it failed was due to an invalid <code>Priority Class</code>:</li>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">curl <span style="color:#e6db74">&#34;https://s3.amazonaws.com/aws-cli/awscli-bundle.zip&#34;</span> -o <span style="color:#e6db74">&#34;awscli-bundle.zip&#34;</span>
+unzip awscli-bundle.zip
+./awscli-bundle/install -b ~/bin/aws
+~/bin/aws configure
+</code></pre></div><ol start="2">
+<li>Create AWS S3 bucket</li>
 </ol>
-<pre><code>~ kubectl -n longhorn-system describe lhs priority-class
-Name:         priority-class
-...
-Value:                 nonexistent-priority-class
-...
-~ kubectl -n longhorn-system describe daemonset.apps/longhorn-manager
-Name:           longhorn-manager
-...
-  Priority Class Name:  nonexistent-priority-class
-Events:
-  Type     Reason            Age                From                  Message
-  ----     ------            ----               ----                  -------
-  Normal   SuccessfulCreate  23s                daemonset-controller  Created pod: longhorn-manager-gbskd
-  Normal   SuccessfulCreate  23s                daemonset-controller  Created pod: longhorn-manager-9s7mg
-  Normal   SuccessfulCreate  23s                daemonset-controller  Created pod: longhorn-manager-gtl2j
-  Normal   SuccessfulDelete  17s                daemonset-controller  Deleted pod: longhorn-manager-9s7mg
-  Normal   SuccessfulDelete  17s                daemonset-controller  Deleted pod: longhorn-manager-gbskd
-  Normal   SuccessfulDelete  17s                daemonset-controller  Deleted pod: longhorn-manager-gtl2j
-  Warning  FailedCreate      4s (x14 over 15s)  daemonset-controller  Error creating: pods &quot;longhorn-manager-&quot; is forbidden: no PriorityClass with name nonexistent-priority-class was found
-</code></pre><ol start="3">
-<li>Install <code>Longhorn</code> with a valid <code>priority-class</code> in the default settings. The <code>Priority Class</code> setting should be set according to the <code>longhorn-ui</code>, and all the <code>Pods</code> in the <code>longhorn-system</code> namespace should have the right <code>Priority</code> set:</li>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">S3_BUCKET_NAME<span style="color:#f92672">=</span>&lt;bucket-name&gt;
+
+~/bin/aws s3api create-bucket <span style="color:#ae81ff">\
+</span><span style="color:#ae81ff"></span>    --bucket $S3_BUCKET_NAME <span style="color:#ae81ff">\
+</span><span style="color:#ae81ff"></span>    --region us-west-2 <span style="color:#ae81ff">\
+</span><span style="color:#ae81ff"></span>    --create-bucket-configuration LocationConstraint<span style="color:#f92672">=</span>us-west-2
+</code></pre></div><ol start="3">
+<li>Create a new IAM instance profile <code>NodeInstanceProfile</code></li>
 </ol>
-<pre><code>~ kubectl -n longhorn-system describe pods | grep Priority
-# should be repeated many times
-Priority:             2000001000
-Priority Class Name:  system-node-critical
-</code></pre>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">cat &gt; node-instance-assume-role-policy.json <span style="color:#e6db74">&lt;&lt;EOF
+</span><span style="color:#e6db74">{
+</span><span style="color:#e6db74">  &#34;Version&#34;: &#34;2012-10-17&#34;,
+</span><span style="color:#e6db74">  &#34;Statement&#34;: [
+</span><span style="color:#e6db74">    {
+</span><span style="color:#e6db74">      &#34;Effect&#34;: &#34;Allow&#34;,
+</span><span style="color:#e6db74">      &#34;Principal&#34;: {
+</span><span style="color:#e6db74">        &#34;Service&#34;: &#34;ec2.amazonaws.com&#34;
+</span><span style="color:#e6db74">      },
+</span><span style="color:#e6db74">      &#34;Action&#34;: &#34;sts:AssumeRole&#34;
+</span><span style="color:#e6db74">    }
+</span><span style="color:#e6db74">  ]
+</span><span style="color:#e6db74">}
+</span><span style="color:#e6db74">EOF</span>
+
+~/bin/aws iam create-role <span style="color:#ae81ff">\
+</span><span style="color:#ae81ff"></span>    --role-name NodeInstanceRole <span style="color:#ae81ff">\
+</span><span style="color:#ae81ff"></span>    --assume-role-policy-document file://node-instance-assume-role-policy.json
+
+~/bin/aws iam create-instance-profile <span style="color:#ae81ff">\
+</span><span style="color:#ae81ff"></span>    --instance-profile-name NodeInstanceProfile
+
+~/bin/aws iam add-role-to-instance-profile <span style="color:#ae81ff">\
+</span><span style="color:#ae81ff"></span>    --instance-profile-name NodeInstanceProfile <span style="color:#ae81ff">\
+</span><span style="color:#ae81ff"></span>    --role-name NodeInstanceRole
+</code></pre></div><ol start="4">
+<li>Install RKE2 with CNI canal on top of AWS with IAM instance profile name <code>NodeInstanceProfile</code></li>
+<li>Prepare kube2iam-values.yaml</li>
+</ol>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#f92672">host</span>:
+  <span style="color:#f92672">iptables</span>: <span style="color:#66d9ef">true</span>
+  <span style="color:#f92672">interface</span>: <span style="color:#e6db74">&#34;cali+&#34;</span>
+  <span style="color:#f92672">port</span>: <span style="color:#ae81ff">8080</span>
+ 
+<span style="color:#f92672">rbac</span>:
+  <span style="color:#f92672">create</span>: <span style="color:#66d9ef">true</span>
+</code></pre></div><ol start="6">
+<li>Install kube2iam on namespace kube2iam</li>
+</ol>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">helm repo add kube2iam https://jtblin.github.io/kube2iam/
+helm repo update
+helm upgrade --install kube2iam kube2iam/kube2iam <span style="color:#ae81ff">\
+</span><span style="color:#ae81ff"></span>    -f kube2iam-values.yaml <span style="color:#ae81ff">\
+</span><span style="color:#ae81ff"></span>    -n kube2iam <span style="color:#ae81ff">\
+</span><span style="color:#ae81ff"></span>    --create-namespace
+</code></pre></div><ol start="7">
+<li>Create a new IAM role <code>k8s-longhorn</code> and attach a trust policy to it</li>
+</ol>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">NODE_INSTANCE_ROLE<span style="color:#f92672">=</span><span style="color:#e6db74">`</span>~/bin/aws iam get-role --role-name NodeInstanceRole | jq -r <span style="color:#e6db74">&#39;.Role.Arn&#39;</span><span style="color:#e6db74">`</span>
+
+cat &gt; node-trust-policy.json <span style="color:#e6db74">&lt;&lt;EOF
+</span><span style="color:#e6db74">{
+</span><span style="color:#e6db74">  &#34;Version&#34;: &#34;2012-10-17&#34;,
+</span><span style="color:#e6db74">  &#34;Statement&#34;: [
+</span><span style="color:#e6db74">    {
+</span><span style="color:#e6db74">      &#34;Effect&#34;: &#34;Allow&#34;,
+</span><span style="color:#e6db74">      &#34;Principal&#34;: {
+</span><span style="color:#e6db74">        &#34;Service&#34;: &#34;ec2.amazonaws.com&#34;
+</span><span style="color:#e6db74">      },
+</span><span style="color:#e6db74">      &#34;Action&#34;: &#34;sts:AssumeRole&#34;
+</span><span style="color:#e6db74">    },
+</span><span style="color:#e6db74">    {
+</span><span style="color:#e6db74">      &#34;Sid&#34;: &#34;&#34;,
+</span><span style="color:#e6db74">      &#34;Effect&#34;: &#34;Allow&#34;,
+</span><span style="color:#e6db74">      &#34;Principal&#34;: {
+</span><span style="color:#e6db74">        &#34;AWS&#34;: &#34;$NODE_INSTANCE_ROLE&#34;
+</span><span style="color:#e6db74">      },
+</span><span style="color:#e6db74">      &#34;Action&#34;: &#34;sts:AssumeRole&#34;
+</span><span style="color:#e6db74">    }
+</span><span style="color:#e6db74">  ]
+</span><span style="color:#e6db74">}
+</span><span style="color:#e6db74">EOF</span>
+ 
+aws iam create-role <span style="color:#ae81ff">\
+</span><span style="color:#ae81ff"></span>    --role-name k8s-longhorn <span style="color:#ae81ff">\
+</span><span style="color:#ae81ff"></span>    --assume-role-policy-document <span style="color:#ae81ff">\
+</span><span style="color:#ae81ff"></span>    file://node-trust-policy.json
+ 
+cat &gt; s3-longhorn-policy.json <span style="color:#e6db74">&lt;&lt;EOF
+</span><span style="color:#e6db74">{
+</span><span style="color:#e6db74">  &#34;Version&#34;: &#34;2012-10-17&#34;,
+</span><span style="color:#e6db74">  &#34;Statement&#34;: [
+</span><span style="color:#e6db74">    {
+</span><span style="color:#e6db74">      &#34;Effect&#34;: &#34;Allow&#34;,
+</span><span style="color:#e6db74">      &#34;Action&#34;: [
+</span><span style="color:#e6db74">        &#34;s3:PutObject&#34;,
+</span><span style="color:#e6db74">        &#34;s3:GetObject&#34;,
+</span><span style="color:#e6db74">        &#34;s3:ListBucket&#34;,
+</span><span style="color:#e6db74">        &#34;s3:DeleteObject&#34;
+</span><span style="color:#e6db74">      ],
+</span><span style="color:#e6db74">      &#34;Resource&#34;: [
+</span><span style="color:#e6db74">        &#34;arn:aws:s3:::$S3_BUCKET_NAME&#34;,
+</span><span style="color:#e6db74">        &#34;arn:aws:s3:::$S3_BUCKET_NAME/*&#34;
+</span><span style="color:#e6db74">      ]
+</span><span style="color:#e6db74">    }
+</span><span style="color:#e6db74">  ]
+</span><span style="color:#e6db74">}
+</span><span style="color:#e6db74">EOF</span>
+ 
+~/bin/aws iam put-role-policy <span style="color:#ae81ff">\
+</span><span style="color:#ae81ff"></span>    --role-name k8s-longhorn <span style="color:#ae81ff">\
+</span><span style="color:#ae81ff"></span>    --policy-name s3 <span style="color:#ae81ff">\
+</span><span style="color:#ae81ff"></span>    --policy-document file://s3-longhorn-policy.json
+</code></pre></div><ol start="8">
+<li>Create the secret <code>aws-secret</code> to longhorn-system</li>
+</ol>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">K8S_LONGHORN_ROLE<span style="color:#f92672">=</span><span style="color:#e6db74">`</span>~/bin/aws iam get-role --role-name k8s-longhorn | jq -r <span style="color:#e6db74">&#39;.Role.Arn&#39;</span><span style="color:#e6db74">`</span>
+
+kubectl create secret generic aws-secret <span style="color:#ae81ff">\
+</span><span style="color:#ae81ff"></span>    --from-literal<span style="color:#f92672">=</span>AWS_IAM_ROLE_ARN<span style="color:#f92672">=</span>$K8S_LONGHORN_ROLE <span style="color:#ae81ff">\
+</span><span style="color:#ae81ff"></span>    -n longhorn-system
+</code></pre></div><ol start="9">
+<li>On the Longhorn UI, click Settings. In the Backup section, set Backup Target to:</li>
+</ol>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">s3://&lt;your-bucket-name&gt;@&lt;your-aws-region&gt;/
+</code></pre></div><ol start="10">
+<li>In the Backup section, set Backup Target Credential Secret to:</li>
+</ol>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">aws-secret
+</code></pre></div><ol start="11">
+<li>Verify that the user is able to create/list/restore/delete backups.</li>
+</ol>
+
     </article>
   </div>
 </main>
