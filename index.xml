@@ -104,7 +104,7 @@ Test basic upgrade  Install old Longhorn version. E.g., &amp;lt;= v1.0.2 Create 
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/node/backing-image-on-a-down-node/</guid>
-      <description>Update the settings:  Disable Node Soft Anti-affinity. Set Replica Replenishment Wait Interval to a relatively long value.   Create a backing image with one of the following URLs:   https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2 https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.raw Create 2 volumes with the backing image and attach them on different nodes. Verify:  the disk state map of the backing image contains the disks of all replicas, and the state is running for all disks.</description>
+      <description>Update the settings:  Disable Node Soft Anti-affinity. Set Replica Replenishment Wait Interval to a relatively long value.   Create a backing image: Create 2 volumes with the backing image and attach them on different nodes. Verify:  the disk state map of the backing image contains the disks of all replicas, and the state is running for all disks. the backing image content is correct   Write random data to the volumes.</description>
     </item>
     
     <item>
@@ -368,6 +368,17 @@ Scenario 1- Allow Recurring Job While Volume Is Detached disabled, attached pod 
     </item>
     
     <item>
+      <title>Set Tolerations/PriorityClass For System Components</title>
+      <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/tolerations_priorityclass_setting/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/tolerations_priorityclass_setting/</guid>
+      <description>Related issue https://github.com/longhorn/longhorn/issues/2120
+Manual Tests:
+Case 1: Existing Longhorn installation  Install Longhorn master. Change toleration in UI setting Verify that longhorn.io/last-applied-tolerations annotation and toleration of manager, drive deployer, UI are not changed. Verify that longhorn.io/last-applied-tolerations annotation and toleration for managed components (CSI components, IM pods, share manager pod, EI daemonset, backing-image-manager, cronjob) are updated correctly  Case 2: New installation by Helm  Install Longhorn master, set tolerations like:  defaultSettings: taintToleration: &amp;#34;key=value:NoSchedule&amp;#34; longhornManager: priorityClass: ~ tolerations: - key: key operator: Equal value: value effect: NoSchedule longhornDriver: priorityClass: ~ tolerations: - key: key operator: Equal value: value effect: NoSchedule longhornUI: priorityClass: ~ tolerations: - key: key operator: Equal value: value effect: NoSchedule  Verify that the toleration is added for: IM pods, Share Manager pods, CSI deployments, CSI daemonset, the backup jobs, manager, drive deployer, UI Uninstall the Helm release.</description>
+    </item>
+    
+    <item>
       <title>Snapshot while writing data in the volume</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/basic-operations-parallelism/snapshot-while-writing-data/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
@@ -413,7 +424,7 @@ kubectl get &amp;lt;LONGHORN-CRD&amp;gt; -n longhorn-system Verify that the outp
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/backing-image-during-upgrade/</guid>
-      <description>Deploy an old version Longhorn. Then set Concurrent Automatic Engine Upgrade Per Node Limit to a positive value to enable volume engine auto upgrade. Create a backing image. Create and attach volumes with the backing image. Verify the backing image content then write random data in the volumes. Upgrade the whole Longhorn system with a new engine image. Verify the volumes still work fine, and the content is correct in the volumes during/after the upgrade.</description>
+      <description>System upgrade with compatible backing image manager image  Deploy Longhorn. Then set Concurrent Automatic Engine Upgrade Per Node Limit to a positive value to enable volume engine auto upgrade. Create 2 backing images: a large one and a small one. Create and attach volumes with the small backing image. Wait for volumes attachment. Then verify the backing image content then write random data in the volumes. Create and attach one more volume with the large backing image.</description>
     </item>
     
     <item>

@@ -336,6 +336,9 @@
   <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/csi-sanity-check/">CSI Sanity Check</a></li>
   
 
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/tolerations_priorityclass_setting/">Set Tolerations/PriorityClass For System Components</a></li>
+  
+
   <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/disable_ipv6/">Test Disable IPv6</a></li>
   
 
@@ -384,11 +387,7 @@
 <li>Set Replica Replenishment Wait Interval to a relatively long value.</li>
 </ol>
 </li>
-<li>Create a backing image with one of the following URLs:</li>
-</ol>
-<pre><code>   https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2
-   https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.raw
-</code></pre><ol start="3">
+<li>Create a backing image:</li>
 <li>Create 2 volumes with the backing image and attach them on different nodes. Verify:
 <ul>
 <li>the disk state map of the backing image contains the disks of all replicas, and the state is running for all disks.</li>
@@ -396,23 +395,29 @@
 </ul>
 </li>
 <li>Write random data to the volumes.</li>
-<li>Power off a node containing one volume. Verify that
+<li>Power off 2 nodes. One node should contain one volume engine. Verify that
 <ul>
-<li>the related disk download state in the backing image will become <code>failed</code> once the download pod is removed by Kubernetes.</li>
+<li>the related disk download state in the backing image will become <code>unknown</code>.</li>
 <li>the volume on the running node still works fine but is state <code>Degraded</code>, and the content is correct in the volume.</li>
 <li>the volume on the down node become <code>Unknown</code>.</li>
 </ul>
 </li>
-<li>Power on the node. Verify
+<li>Power on the 1st node. Verify
 <ul>
 <li>the failed replica of the <code>Degraded</code> volume can be reused.</li>
 <li>the volume on the down node will be recovered automatically. And the data is correct.</li>
 <li>the backing image will be recovered automatically.</li>
+<li>the backing image file on this node will be reused when the related backing image manager pod is recovered (by check the pod log).</li>
 </ul>
 </li>
-<li>Delete all replicas expect for the reused failed replica for the volume not on the down node. Then wait for rebuilding and check the data. This verifies the reused replica data content.</li>
+<li>Delete all volumes and the backing image. Verify the backing image manager can be deleted once forcing removing the related terminating pod.</li>
 </ol>
-
+<h4 id="available-test-backing-image-urls">Available test backing image URLs:</h4>
+<pre><code>https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2
+https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.raw
+https://cloud-images.ubuntu.com/minimal/releases/focal/release-20200729/ubuntu-20.04-minimal-cloudimg-amd64.img
+https://github.com/rancher/k3os/releases/download/v0.11.0/k3os-amd64.iso 
+</code></pre>
     </article>
   </div>
 </main>

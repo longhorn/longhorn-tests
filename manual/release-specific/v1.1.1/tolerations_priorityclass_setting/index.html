@@ -377,31 +377,91 @@
 </aside>
 
 <main style="padding: 1%; width: 70%;">
-  <h1 id="title">Return an error when fail to remount a volume</h1>
+  <h1 id="title">Set Tolerations/PriorityClass For System Components</h1>
   <div>
     <article id="content">
-       <h3 id="case-1-volume-with-a-corrupted-filesystem-try-to-remount">Case 1: Volume with a corrupted filesystem try to remount</h3>
-<p>Steps to reproduce bug:</p>
+       <h2 id="related-issue">Related issue</h2>
+<p><a href="https://github.com/longhorn/longhorn/issues/2120">https://github.com/longhorn/longhorn/issues/2120</a></p>
+<p>Manual Tests:</p>
+<h3 id="case-1-existing-longhorn-installation">Case 1: Existing Longhorn installation</h3>
 <ol>
-<li>Create a volume of size 1GB, say <code>terminate-immediatly</code> volume.</li>
-<li>Create PV/PVC from the volume <code>terminate-immediatly</code></li>
-<li>Create a deployment of 1 pod with image <code>ubuntu:xenial</code> and the PVC <code>terminate-immediatly</code> in default namespace</li>
-<li>Find the node on which the pod is scheduled to. Let&rsquo;s say the node is <code>Node-1</code></li>
-<li>ssh into <code>Node-1</code></li>
-<li>destroy the filesystem of <code>terminate-immediatly</code> by running command  <code>dd if=/dev/zero of=/dev/longhorn/terminate-immediatly</code></li>
-<li>Find and kill the engine instance manager in <code>Node-X</code>. Longhorn manager will notice that the instance manager is down and try to bring up a new instance manager e for <code>Node-X</code>.</li>
-<li>After bringing up the instance manager e, Longhorn manager will try to remount the volume <code>terminate-immediatly</code>. The remounting should fail bc we already destroyed the filesystem of the volume.</li>
-<li>We should see this log message</li>
+<li>Install Longhorn master.</li>
+<li>Change toleration in UI setting</li>
+<li>Verify that <code>longhorn.io/last-applied-tolerations</code> annotation and <code>toleration</code> of manager, drive deployer, UI are not changed.</li>
+<li>Verify that <code>longhorn.io/last-applied-tolerations</code> annotation and <code>toleration</code> for managed components (CSI components, IM pods, share manager pod, EI daemonset, backing-image-manager, cronjob) are updated correctly</li>
 </ol>
-<pre><code>[longhorn-manager-xv5th] time=&quot;2020-06-23T18:13:15Z&quot; level=info msg=&quot;Event(v1.ObjectReference{Kind:\&quot;Volume\&quot;, Namespace:\&quot;longhorn-system\&quot;, Name:\&quot;terminate-immediatly\&quot;, UID:\&quot;de6ae587-fc7c-40bd-b513-47175ddddf97\&quot;, APIVersion:\&quot;longhorn.io/v1beta1\&quot;, ResourceVersion:\&quot;4088981\&quot;, FieldPath:\&quot;\&quot;}): type: 'Warning' reason: 'Remount' cannot proceed to remount terminate-immediatly on phan-cluster-v3-worker1: cannot get the filesystem type by using the command blkid /dev/longhorn/terminate-immediatly | sed 's/.*TYPE=//g'&quot;
-</code></pre><h3 id="case-2-volume-with-no-filesystem-try-to-remount">Case 2: Volume with no filesystem try to remount</h3>
+<h3 id="case-2-new-installation-by-helm">Case 2: New installation by Helm</h3>
 <ol>
-<li>Create a volume of size 1GB, say <code>terminate-immediatly</code> volume.</li>
-<li>Attach volume <code>terminate-immediatly</code> to a node, say <code>Node-1</code></li>
-<li>Find and kill the engine instance manager in <code>Node-1</code>. Longhorn manager will notice that the instance manager is down and try to bring up a new instance manager e for <code>Node-1</code>.</li>
-<li>After bringing up the instance manager e, Longhorn manager will try to remount the volume <code>terminate-immediatly</code>. The remounting should fail bc the volume does not have a filesystem.</li>
-<li>We should see that Longhorn reattached but skip the remount the volume <code>terminate-immediatly</code></li>
-<li>Verify the volume can be detached.</li>
+<li>Install Longhorn master, set tolerations like:</li>
+</ol>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#f92672">defaultSettings</span>:
+  <span style="color:#f92672">taintToleration</span>: <span style="color:#e6db74">&#34;key=value:NoSchedule&#34;</span>
+
+<span style="color:#f92672">longhornManager</span>:
+  <span style="color:#f92672">priorityClass</span>: <span style="color:#ae81ff">~</span>
+  <span style="color:#f92672">tolerations</span>:
+  - <span style="color:#f92672">key</span>: <span style="color:#ae81ff">key</span>
+    <span style="color:#f92672">operator</span>: <span style="color:#ae81ff">Equal</span>
+    <span style="color:#f92672">value</span>: <span style="color:#ae81ff">value</span>
+    <span style="color:#f92672">effect</span>: <span style="color:#ae81ff">NoSchedule</span>
+
+<span style="color:#f92672">longhornDriver</span>:
+  <span style="color:#f92672">priorityClass</span>: <span style="color:#ae81ff">~</span>
+  <span style="color:#f92672">tolerations</span>:
+  - <span style="color:#f92672">key</span>: <span style="color:#ae81ff">key</span>
+    <span style="color:#f92672">operator</span>: <span style="color:#ae81ff">Equal</span>
+    <span style="color:#f92672">value</span>: <span style="color:#ae81ff">value</span>
+    <span style="color:#f92672">effect</span>: <span style="color:#ae81ff">NoSchedule</span>
+
+<span style="color:#f92672">longhornUI</span>:
+  <span style="color:#f92672">priorityClass</span>: <span style="color:#ae81ff">~</span>
+  <span style="color:#f92672">tolerations</span>:
+  - <span style="color:#f92672">key</span>: <span style="color:#ae81ff">key</span>
+    <span style="color:#f92672">operator</span>: <span style="color:#ae81ff">Equal</span>
+    <span style="color:#f92672">value</span>: <span style="color:#ae81ff">value</span>
+    <span style="color:#f92672">effect</span>: <span style="color:#ae81ff">NoSchedule   </span>
+</code></pre></div><ol start="3">
+<li>Verify that the toleration is added for: IM pods, Share Manager pods, CSI deployments, CSI daemonset, the backup jobs, manager, drive deployer, UI</li>
+<li>Uninstall the Helm release.
+Verify that uninstalling job has the same toleration as Longhorn manager.
+Verify that the uninstallation success.</li>
+</ol>
+<h3 id="case-3-upgrading-from-helm">Case 3: Upgrading from Helm</h3>
+<ol>
+<li>Install Longhorn v1.0.2 using Helm, set tolerations using Longhorn UI</li>
+<li>Upgrade Longhorn to master version, verify that <code>longhorn.io/managed-by: longhorn-manager</code> is not set for manager, driver deployer and UI.</li>
+<li>Verify that <code>longhorn.io/managed-by: longhorn-manager</code> label is added for:  IM CRs, EI CRs, Share Manager CRs, IM pods, Share Manager pods, CSI services, CSI deployments, CSI daemonset.</li>
+<li>Verify that <code>longhorn.io/last-applied-tolerations</code> is set for: IM pods, Share Manager pods, CSI deployments, CSI daemonset</li>
+<li>Edit the tolerations using Longhorn UI and verify the tolerations get updated for components other than Longhorn manager, driver deployer and UI only. Longhorn manager, driver deployer and UI pods should not get restarted.</li>
+<li>Upgrade the chart to specify toleration for manager, drive deployer, UI.</li>
+<li>Verify that the toleration get applied</li>
+<li>Repeat this test case with Longhorn v1.1.0 in step 1</li>
+</ol>
+<h3 id="case-4-upgrading-from-kubectl">Case 4: Upgrading from kubectl</h3>
+<ol>
+<li>Install Longhorn v1.0.2 using kubectl, set tolerations using Longhorn UI</li>
+<li>Upgrade Longhorn to master version, verify that <code>longhorn.io/managed-by: longhorn-manager</code> is not set for manager, driver deployer and UI.</li>
+<li>Verify that <code>longhorn.io/managed-by: longhorn-manager</code> label is added for:  IM CRs, EI CRs, Share Manager CRs, IM pods, Share Manager pods, CSI services, CSI deployments, CSI daemonset.</li>
+<li>Verify that <code>longhorn.io/last-applied-tolerations</code> is set for: IM pods, Share Manager pods, CSI deployments, CSI daemonset</li>
+<li>Edit the tolerations using Longhorn UI and verify the tolerations get updated for components other than Longhorn manager, driver deployer and UI only. Longhorn manager, driver deployer and UI pods should not get restarted.</li>
+<li>Edit the Yaml to specify toleration for manager, drive deployer, UI and upgrade Longhorn using kubectl command.</li>
+<li>Verify that the toleration get applied</li>
+<li>Repeat this test case with Longhorn v1.1.0 in step 1</li>
+</ol>
+<h3 id="case-5-node-with-taints">Case 5: Node with taints</h3>
+<ol>
+<li>Add some taints to all node in the cluster, e.g., <code>key=value:NoSchedule</code></li>
+<li>Repeate case 2, 3, 4</li>
+</ol>
+<h3 id="case-6-priority-class-ui">Case 6: Priority Class UI</h3>
+<ol>
+<li>Change Priority Class setting in Longhorn UI</li>
+<li>Verify that Longhorn only updates the managed components</li>
+</ol>
+<h3 id="case-7-priority-class-helm">Case 7: Priority Class Helm</h3>
+<ol>
+<li>Change Priority Class in Helm for manager, driver, UI</li>
+<li>Verify that only priority class name of manager, driver, UI get updated</li>
 </ol>
 
     </article>
