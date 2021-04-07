@@ -1,0 +1,30 @@
+---
+title: Single replica node down
+---
+
+## Related Issues
+https://github.com/longhorn/longhorn/issues/2329
+https://github.com/longhorn/longhorn/issues/2309
+
+## Default Setting
+`Automatic salvage` is enabled.
+
+## Node restart/down scenario with `Pod Deletion Policy When Node is Down` set to default value `do-nothing`.
+1. Create RWO|RWX volume with replica count = 1 & data locality = enabled|disabled.
+2. Create deployment|statefulset for volume.
+3. Power down node of volume/replica.
+4. The workload pod will get stuck in the `unknown` state.
+5. Volume will fail to attach since volume is not ready (i.e remains faulted, since single replica is on downed node).
+6. Power up node or delete the workload pod so that kubernetes will recreate pod on another node.
+7. Verify auto salvage finishes (i.e pod completes start).
+8. Verify volume attached & accessible by pod (i.e test data is available).
+
+## Node restart/down scenario with `Pod Deletion Policy When Node is Down` set to `delete-both-statefulset-and-deployment-pod`
+1. Create RWO|RWX volume with replica count = 1 & data locality = enabled|disabled.
+2. Create deployment|statefulset for volume.
+3. Power down node of volume/replica.
+4. Volume will become faulted.
+5. Wait for pod deletion & recreation on another node. For RWX volume power on the node. 
+6. Verify the auto salvage finishes for volumes.
+7. Verify volume attached & accessible by pod (i.e test data is available).
+ 
