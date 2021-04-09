@@ -24,7 +24,7 @@ https://github.com/longhorn/longhorn/issues/2081
 1. Check that all functions (attach to other nodes, detach, snapshot, backup, expand, restore, creating DR volume, ... ) are working ok for `vol-1`
 1. Verify that `vol-2` cannot be attached to any nodes because one of its replica is sitting on the `node-1` which doesn't have the engine image
 
-### Case 3: Test engine upgrade when engine image DaemonSet is not fully deployed
+### Case 3: Test engine upgrade when some of the engine image DaemonSet pods are not fully deployed
 1. Continue from case 2
 1. Deploy a new engine image, `newEI`
 1. Verify that you can upgrade `vol-1` to `newEI` (both live and offline upgrade)
