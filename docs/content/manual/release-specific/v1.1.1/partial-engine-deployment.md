@@ -13,7 +13,7 @@ https://github.com/longhorn/longhorn/issues/2081
 1. Taint `node-1` with the taint: `key=value:NoSchedule`
 1. Check that all functions (attach, detach, snapshot, backup, expand, restore, creating DR volume, ... ) are working ok for `vol-1`
 
-### Case 2: Test volume operations engine image DaemonSet is not fully deployed
+### Case 2: Test volume operations when some of engine image DaemonSet pods are not fully deployed
 1. Continue from case 1
 1. Attach `vol-1` to `node-1`. Change the number of replicas of `vol-1` to 2. Delete the replica on `node-1`
 1. Delete the pod on `node-1` of the engine image DaemonSet. Or delete the engine image DaemonSet and wait for Longhorn to automatically recreates it. 
