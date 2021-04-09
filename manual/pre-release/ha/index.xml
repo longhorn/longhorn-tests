@@ -25,6 +25,16 @@
     </item>
     
     <item>
+      <title>Longhorn with engine is not deployed on all the nodes</title>
+      <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/ha/partial-engine-deployment/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/ha/partial-engine-deployment/</guid>
+      <description>Related Issue https://github.com/longhorn/longhorn/issues/2081
+Scenarios: Case 1: Test volume operations when some of the engine image DaemonSet pods are miss scheduled  Install Longhorn in a 3-node cluster: node-1, node-2, node-3 Create a volume, vol-1, of 3 replicas Create another volume, vol-2, of 3 replicas Taint node-1 with the taint: key=value:NoSchedule Check that all functions (attach, detach, snapshot, backup, expand, restore, creating DR volume, &amp;hellip; ) are working ok for vol-1  Case 2: Test volume operations when some of the engine image DaemonSet pods are not fully deployed  Continue from case 1 Attach vol-1 to node-1.</description>
+    </item>
+    
+    <item>
       <title>Replica Rebuilding</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/ha/replica-rebuilding/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>

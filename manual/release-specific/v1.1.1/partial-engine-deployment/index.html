@@ -386,35 +386,72 @@
 </aside>
 
 <main style="padding: 1%; width: 70%;">
-  <h1 id="title">Single replica node down</h1>
+  <h1 id="title">Longhorn with engine is not deployed on all the nodes</h1>
   <div>
     <article id="content">
-       <h2 id="related-issues">Related Issues</h2>
-<p><a href="https://github.com/longhorn/longhorn/issues/2329">https://github.com/longhorn/longhorn/issues/2329</a>
-<a href="https://github.com/longhorn/longhorn/issues/2309">https://github.com/longhorn/longhorn/issues/2309</a></p>
-<h2 id="default-setting">Default Setting</h2>
-<p><code>Automatic salvage</code> is enabled.</p>
-<h2 id="node-restartdown-scenario-with-pod-deletion-policy-when-node-is-down-set-to-default-value-do-nothing">Node restart/down scenario with <code>Pod Deletion Policy When Node is Down</code> set to default value <code>do-nothing</code>.</h2>
+       <h2 id="related-issue">Related Issue</h2>
+<p><a href="https://github.com/longhorn/longhorn/issues/2081">https://github.com/longhorn/longhorn/issues/2081</a></p>
+<h2 id="scenarios">Scenarios:</h2>
+<h3 id="case-1-test-volume-operations-when-some-of-the-engine-image-daemonset-pods-are-miss-scheduled">Case 1: Test volume operations when some of the engine image DaemonSet pods are miss scheduled</h3>
 <ol>
-<li>Create RWO|RWX volume with replica count = 1 &amp; data locality = enabled|disabled.</li>
-<li>Create deployment|statefulset for volume.</li>
-<li>Power down node of volume/replica.</li>
-<li>The workload pod will get stuck in the <code>unknown</code> state.</li>
-<li>Volume will fail to attach since volume is not ready (i.e remains faulted, since single replica is on downed node).</li>
-<li>Power up node or delete the workload pod so that kubernetes will recreate pod on another node.</li>
-<li>Verify auto salvage finishes (i.e pod completes start).</li>
-<li>Verify volume attached &amp; accessible by pod (i.e test data is available).</li>
+<li>Install Longhorn in a 3-node cluster: <code>node-1</code>, <code>node-2</code>, <code>node-3</code></li>
+<li>Create a volume, <code>vol-1</code>, of 3 replicas</li>
+<li>Create another volume, <code>vol-2</code>, of 3 replicas</li>
+<li>Taint <code>node-1</code> with the taint: <code>key=value:NoSchedule</code></li>
+<li>Check that all functions (attach, detach, snapshot, backup, expand, restore, creating DR volume, &hellip; ) are working ok for <code>vol-1</code></li>
 </ol>
-<h2 id="node-restartdown-scenario-with-pod-deletion-policy-when-node-is-down-set-to-delete-both-statefulset-and-deployment-pod">Node restart/down scenario with <code>Pod Deletion Policy When Node is Down</code> set to <code>delete-both-statefulset-and-deployment-pod</code></h2>
+<h3 id="case-2-test-volume-operations-when-some-of-engine-image-daemonset-pods-are-not-fully-deployed">Case 2: Test volume operations when some of engine image DaemonSet pods are not fully deployed</h3>
 <ol>
-<li>Create RWO|RWX volume with replica count = 1 &amp; data locality = enabled|disabled.</li>
-<li>Create deployment|statefulset for volume.</li>
-<li>Power down node of volume/replica.</li>
-<li>Volume will become faulted.</li>
-<li>Wait for pod deletion &amp; recreation on another node. For RWX volume power on the node.</li>
-<li>Verify the auto salvage finishes for volumes.</li>
-<li>Verify volume attached &amp; accessible by pod (i.e test data is available).</li>
+<li>Continue from case 1</li>
+<li>Attach <code>vol-1</code> to <code>node-1</code>. Change the number of replicas of <code>vol-1</code> to 2. Delete the replica on <code>node-1</code></li>
+<li>Delete the pod on <code>node-1</code> of the engine image DaemonSet. Or delete the engine image DaemonSet and wait for Longhorn to automatically recreates it.</li>
+<li>Notice that the engine image CR state become deploying</li>
+<li>Verify that functions (detach, snapshot, backup) are working ok for <code>vol-1</code></li>
+<li>Detach <code>vol-1</code></li>
+<li>Verify that Longhorn cannot attach <code>vol-1</code> to <code>node-1</code> since there is no engine image on <code>node-1</code></li>
+<li>Check that all functions (attach to other nodes, detach, snapshot, backup, expand, restore, creating DR volume, &hellip; ) are working ok for <code>vol-1</code></li>
+<li>Verify that <code>vol-2</code> cannot be attached to any nodes because one of its replica is sitting on the <code>node-1</code> which doesn&rsquo;t have the engine image</li>
 </ol>
+<h3 id="case-3-test-engine-upgrade-when-some-of-the-engine-image-daemonset-pods-are-not-fully-deployed">Case 3: Test engine upgrade when some of the engine image DaemonSet pods are not fully deployed</h3>
+<ol>
+<li>Continue from case 2</li>
+<li>Deploy a new engine image, <code>newEI</code></li>
+<li>Verify that you can upgrade <code>vol-1</code> to <code>newEI</code> (both live and offline upgrade)</li>
+<li>Verify that you can not upgrade <code>vol-2</code> to <code>newEI</code></li>
+</ol>
+<h3 id="case-4-test-replicas-scheduling-when-some-of-the-engine-image-daemonset-pods-are-not-fully-deployed">Case 4: Test replicas scheduling when some of the engine image DaemonSet pods are not fully deployed</h3>
+<ol>
+<li>Continue from case 2</li>
+<li>Create a new volume, <code>vol-3</code>, with 2 replicas</li>
+<li>Verify that replicas of <code>vol-3</code> are on <code>node-2</code> and <code>node-3</code></li>
+<li>Check that all functions (attach, detach, snapshot, backup, expand, restore, creating DR volume,&hellip; ) are working ok for <code>vol-3</code></li>
+</ol>
+<h3 id="case-5-test-longhorn-upgrade-when-some-of-the-engine-image-daemonset-pods-are-not-fully-deployed">Case 5: Test Longhorn upgrade when some of the engine image DaemonSet pods are not fully deployed</h3>
+<ol>
+<li>Continue from case 3</li>
+<li>Upgrade Longhorn to a new version</li>
+<li>Verify that the upgrade is not blocked. Longhorn successfully upgrades to the new version using the same default engine image even though the default engine image is not fully deployed.</li>
+</ol>
+<h3 id="case-6-test-auto-upgrade-engine-feature-when-some-of-the-engine-image-daemonset-pods-are-not-fully-deployed">Case 6: Test <code>auto upgrade engine</code> feature when some of the engine image DaemonSet pods are not fully deployed</h3>
+<p>With the engine image is missing on <code>node-1</code>, we need  to re-verify the manual test for feature <code>auto upgrade engine</code> <a href="https://github.com/longhorn/longhorn-tests/blob/master/docs/content/manual/pre-release/upgrade/auto-upgrade-engine.md">https://github.com/longhorn/longhorn-tests/blob/master/docs/content/manual/pre-release/upgrade/auto-upgrade-engine.md</a>
+Make sure that Longhorn automatically upgrades engine image for volumes that are either:</p>
+<ol>
+<li>in the detached state, and has the new engine image on all replicas' node</li>
+<li>in the attached state, and has the new engine image on all replicas' node and attaching node</li>
+</ol>
+<h3 id="case-7-test-auto-attach-volume-for-recurring-backup-job-feature-when-some-of-the-engine-image-daemonset-pods-are-not-fully-deployed">Case 7: Test <code>auto attach volume for recurring backup job</code> feature when some of the engine image DaemonSet pods are not fully deployed</h3>
+<p>Verify that the recurring backup job only attaches the volume to a node that has the engine image deployed.</p>
+<h3 id="case-8-test-dr-restoring-expanding-volumes--when-some-of-the-engine-image-daemonset-pods-are-not-fully-deployed">Case 8: Test DR, restoring, expanding volumes  when some of the engine image DaemonSet pods are not fully deployed</h3>
+<ol>
+<li>Create a DR volume of 2 replicas. Verify that 2 replicas are on <code>node-2</code> and <code>node-3</code> and the DR volume is attached to either <code>node-2</code> or <code>node-3</code>. Let&rsquo;s say it is attached to <code>node-2</code></li>
+<li>Taint <code>node-2</code> with the taint: <code>key=value:NoSchedule</code></li>
+<li>Delete the pod of engine image DeamonSet on <code>node-2</code>. Now, the engine image is missing on <code>node-1</code> and <code>node-2</code></li>
+<li>Verify that the owner ID of the DR volume temporarily moves to <code>node-3</code>. And the DR volume will be auto-attached to <code>node-3</code>.</li>
+<li>Restore a volume from backupstore. Set the replica to 1. Verify that replica is on <code>node-3</code> and the volume successfully restored.</li>
+<li>Expand the restored volume in the previous step. Verify that the expansion is ok</li>
+</ol>
+<h3 id="case-9-test-reusing-failed-replica-when-some-of-the-engine-image-daemonset-pods-are-not-fully-deployed">Case 9: Test reusing failed replica when some of the engine image DaemonSet pods are not fully deployed</h3>
+<p>Verify that Longhorn doesn&rsquo;t reuse the failed replicas on nodes that don&rsquo;t have engine image deployed</p>
 
     </article>
   </div>
