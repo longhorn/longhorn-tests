@@ -6,7 +6,7 @@ title: Longhorn with engine is not deployed on all the nodes
 https://github.com/longhorn/longhorn/issues/2081
 
 ## Scenarios:
-### Case 1: Test volume operations when engine image DaemonSet is miss scheduled 
+### Case 1: Test volume operations when some of the engine image DaemonSet pods are miss scheduled 
 1. Install Longhorn in a 3-node cluster: `node-1`, `node-2`, `node-3`
 1. Create a volume, `vol-1`, of 3 replicas
 1. Create another volume, `vol-2`, of 3 replicas
