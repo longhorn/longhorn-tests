@@ -394,8 +394,8 @@
 <h3 id="test-basic-upgrade">Test basic upgrade</h3>
 <ol>
 <li>Install old Longhorn version. E.g., &lt;= <code>v1.0.2</code></li>
-<li>Create a volume, attach it to a pod, write some data. Create a DR volume. Create volume and leave it in the detached state.</li>
-<li>Upgrade to  Longhorn master</li>
+<li>Create a volume, attach it to a pod, write some data. Create a DR volume and leave it in the detached state.</li>
+<li>Upgrade to Longhorn master</li>
 <li>Set setting <code>concurrent automatic engine upgrade per node limit</code> to 3</li>
 <li>Verify that volumes' engines are upgraded automatically.</li>
 </ol>
@@ -410,7 +410,7 @@
 <li>Take backup for a volume when upgrade hasn&rsquo;t started.</li>
 <li>Create 10 volumes and set concurrent upgrade limit to 2. When the upgrade starts, delete all the volumes. [Volumes are deleted and Longhorn UI is not corrupted.</li>
 <li>Deploy a workload with rwx scale 10 with persistent volume claim template and verify the volume created can be used for all of 10 pods.</li>
-<li>While upgrade has started, detach the nodes from the volume and verify the detached volume is upgraded.</li>
+<li>While upgrade is in progress, detach the volume from node and verify the detached volume is upgraded.</li>
 </ol>
 <h3 id="test-degraded-volume">Test degraded volume</h3>
 <ol>
