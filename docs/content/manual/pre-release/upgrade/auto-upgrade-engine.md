@@ -8,8 +8,8 @@ title: Automatically Upgrading Longhorn Engine Test
 
 ### Test basic upgrade
 1. Install old Longhorn version. E.g., <= `v1.0.2`
-1. Create a volume, attach it to a pod, write some data. Create a DR volume. Create volume and leave it in the detached state.
-1. Upgrade to  Longhorn master
+1. Create a volume, attach it to a pod, write some data. Create a DR volume and leave it in the detached state.
+1. Upgrade to Longhorn master
 1. Set setting `concurrent automatic engine upgrade per node limit` to 3
 1. Verify that volumes' engines are upgraded automatically.
 
@@ -23,7 +23,7 @@ title: Automatically Upgrading Longhorn Engine Test
 7. Take backup for a volume when upgrade hasn't started.
 8. Create 10 volumes and set concurrent upgrade limit to 2. When the upgrade starts, delete all the volumes. [Volumes are deleted and Longhorn UI is not corrupted.
 9. Deploy a workload with rwx scale 10 with persistent volume claim template and verify the volume created can be used for all of 10 pods.
-10. While upgrade has started, detach the nodes from the volume and verify the detached volume is upgraded.
+10. While upgrade has started, detach the volume from node and verify the detached volume is upgraded.
   
 ### Test degraded volume
 1. Verify that Longhorn doesn't upgrade engine image for degraded volume.
