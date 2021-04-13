@@ -46,7 +46,7 @@ from common import wait_for_dr_volume_expansion
 from common import check_block_device_size
 from common import wait_for_volume_expansion
 from common import fail_replica_expansion, wait_for_expansion_failure
-from common import wait_for_volume_creation, wait_for_volume_restoration_start
+from common import wait_for_volume_restoration_start
 from common import write_pod_volume_random_data, get_pod_data_md5sum
 from common import prepare_pod_with_data_in_mb
 from common import crash_replica_processes
@@ -57,6 +57,7 @@ from common import VOLUME_FRONTEND_BLOCKDEV, VOLUME_FRONTEND_ISCSI
 from common import VOLUME_CONDITION_SCHEDULED
 from common import MESSAGE_TYPE_ERROR
 from common import DATA_SIZE_IN_MB_1
+from common import update_setting
 from common import SETTING_REPLICA_NODE_SOFT_ANTI_AFFINITY
 from common import SETTING_REPLICA_REPLENISHMENT_WAIT_INTERVAL
 from common import CONDITION_REASON_SCHEDULING_FAILURE
@@ -706,6 +707,265 @@ def test_backup_block_deletion(set_random_backupstore, client, core_api, volume_
                                                 volume_name) == 0
 
     delete_backup_volume(client, volume_name)
+
+
+def test_dr_volume_with_backup_block_deletion(set_random_backupstore, client, core_api, volume_name):  # NOQA
+    """
+    Test DR volume last backup after block deletion.
+
+    Context:
+
+    We want to make sure that when the block is delete, the DR volume picks up
+    the correct last backup.
+
+    Steps:
+
+    1.  Create a volume and attach to the current node.
+    2.  Write 4 MB to the beginning of the volume (2 x 2MB backup blocks).
+    3.  Create backup(0) of the volume.
+    4.  Overwrite backup(0) 1st blocks of data on the volume.
+        (Since backup(0) contains 2 blocks of data, the updated data is
+        data1["content"] + data0["content"][BACKUP_BLOCK_SIZE:])
+    5.  Create backup(1) of the volume.
+    6.  Verify backup block count == 3.
+    7.  Create DR volume from backup(1).
+    8.  Verify DR volume last backup is backup(1).
+    9.  Delete backup(1).
+    10. Verify backup block count == 2.
+    11. Verify DR volume last backup is backup(0).
+    12. Overwrite backup(0) 1st blocks of data on the volume.
+        (Since backup(0) contains 2 blocks of data, the updated data is
+        data2["content"] + data0["content"][BACKUP_BLOCK_SIZE:])
+    13. Create backup(2) of the volume.
+    14. Verify DR volume last backup is backup(2).
+    15. Activate and verify DR volume data is
+        data2["content"] + data0["content"][BACKUP_BLOCK_SIZE:].
+    """
+    backupstore_cleanup(client)
+
+    # Set backupstore poll interval to have last backup update quicker
+    update_setting(client, common.SETTING_BACKUPSTORE_POLL_INTERVAL, "5")
+
+    host_id = get_self_host_id()
+
+    vol = create_and_check_volume(client, volume_name, 2, SIZE)
+    vol.attach(hostId=host_id)
+    vol = common.wait_for_volume_healthy(client, volume_name)
+
+    data0 = {'pos': 0, 'len': 2 * BACKUP_BLOCK_SIZE,
+             'content': common.generate_random_data(2 * BACKUP_BLOCK_SIZE)}
+    _, backup0, _, data0 = create_backup(
+        client, volume_name, data0)
+
+    data1 = {'pos': 0, 'len': BACKUP_BLOCK_SIZE,
+             'content': common.generate_random_data(BACKUP_BLOCK_SIZE)}
+    _, backup1, _, data1 = create_backup(
+        client, volume_name, data1)
+
+    backup_blocks_count = backupstore_count_backup_block_files(client,
+                                                               core_api,
+                                                               volume_name)
+    assert backup_blocks_count == 3
+
+    dr_vol_name = "dr-" + volume_name
+    client.create_volume(name=dr_vol_name, size=SIZE,
+                         numberOfReplicas=2, fromBackup=backup1.url,
+                         frontend="", standby=True)
+    check_volume_last_backup(client, dr_vol_name, backup1.name)
+    wait_for_backup_restore_completed(client, dr_vol_name, backup1.name)
+
+    delete_backup(client, volume_name, backup1.name)
+    assert backupstore_count_backup_block_files(client,
+                                                core_api,
+                                                volume_name) == 2
+    check_volume_last_backup(client, dr_vol_name, backup0.name)
+    wait_for_backup_restore_completed(client, dr_vol_name, backup0.name)
+
+    data2 = {'pos': 0,
+             'len': BACKUP_BLOCK_SIZE,
+             'content': common.generate_random_data(BACKUP_BLOCK_SIZE)}
+    _, backup2, _, _ = create_backup(client, volume_name, data2)
+
+    check_volume_last_backup(client, dr_vol_name, backup2.name)
+    wait_for_volume_restoration_start(client, dr_vol_name, backup2.name)
+    wait_for_backup_restore_completed(client, dr_vol_name, backup2.name)
+
+    activate_standby_volume(client, dr_vol_name)
+    dr_vol = client.by_id_volume(dr_vol_name)
+    dr_vol.attach(hostId=host_id)
+    dr_vol = common.wait_for_volume_healthy(client, dr_vol_name)
+    final_data = {
+        'pos': 0,
+        'len': 2 * BACKUP_BLOCK_SIZE,
+        'content': data2['content'] + data0['content'][BACKUP_BLOCK_SIZE:],
+    }
+    check_volume_data(dr_vol, final_data, False)
+
+
+def test_dr_volume_with_backup_block_deletion_abort_during_backup_in_progress(
+    set_random_backupstore, client, core_api, volume_name):  # NOQA
+    """
+    Test DR volume last backup after block deletion aborted. This will set the
+    last backup to be empty.
+
+    Context:
+
+    We want to make sure that when the block deletion for the last backup is
+    aborted by operations such as backups in progress, the DR volume will still
+    pick up the correct last backup.
+
+    Steps:
+
+    1.  Create a volume and attach to the current node.
+    2.  Write 4 MB to the beginning of the volume (2 x 2MB backup blocks).
+    3.  Create backup(0) of the volume.
+    4.  Overwrite backup(0) 1st blocks of data on the volume.
+        (Since backup(0) contains 2 blocks of data, the updated data is
+        data1["content"] + data0["content"][BACKUP_BLOCK_SIZE:])
+    5.  Create backup(1) of the volume.
+    6.  Verify backup block count == 3.
+    7.  Create DR volume from backup(1).
+    8.  Verify DR volume last backup is backup(1).
+    9.  Create an artificial in progress backup.cfg file.
+        This cfg file will convince the longhorn manager that there is a
+        backup being created. Then all subsequent backup block cleanup will be
+        skipped.
+    10. Delete backup(1).
+    11. Verify backup block count == 3 (because of the in progress backup).
+    12. Delete the artificial in progress backup.cfg file.
+    13. Verify DR volume last backup is backup(0).
+    14. Overwrite backup(0) 1st blocks of data on the volume.
+        (Since backup(0) contains 2 blocks of data, the updated data is
+        data2["content"] + data0["content"][BACKUP_BLOCK_SIZE:])
+    15. Create backup(2) of the volume.
+    16. Verify DR volume last backup is backup(2).
+    17. Activate and verify DR volume data is
+        data2["content"] + data0["content"][BACKUP_BLOCK_SIZE:].
+    """
+    backupstore_cleanup(client)
+
+    # Set backupstore poll interval to have last backup update quicker
+    update_setting(client, common.SETTING_BACKUPSTORE_POLL_INTERVAL, "5")
+
+    host_id = get_self_host_id()
+
+    vol = create_and_check_volume(client, volume_name, 2, SIZE)
+    vol.attach(hostId=host_id)
+    vol = common.wait_for_volume_healthy(client, volume_name)
+
+    data0 = {'pos': 0, 'len': 2 * BACKUP_BLOCK_SIZE,
+             'content': common.generate_random_data(2 * BACKUP_BLOCK_SIZE)}
+    _, backup0, _, data0 = create_backup(
+        client, volume_name, data0)
+
+    data1 = {'pos': 0, 'len': BACKUP_BLOCK_SIZE,
+             'content': common.generate_random_data(BACKUP_BLOCK_SIZE)}
+    _, backup1, _, data1 = create_backup(
+        client, volume_name, data1)
+
+    backup_blocks_count = backupstore_count_backup_block_files(client,
+                                                               core_api,
+                                                               volume_name)
+    assert backup_blocks_count == 3
+
+    dr_vol_name = "dr-" + volume_name
+    client.create_volume(name=dr_vol_name, size=SIZE,
+                         numberOfReplicas=2, fromBackup=backup1.url,
+                         frontend="", standby=True)
+    check_volume_last_backup(client, dr_vol_name, backup1.name)
+    wait_for_backup_restore_completed(client, dr_vol_name, backup1.name)
+
+    backupstore_create_dummy_in_progress_backup(client, core_api, volume_name)
+    delete_backup(client, volume_name, backup1.name)
+    assert backupstore_count_backup_block_files(client,
+                                                core_api,
+                                                volume_name) == 3
+    check_volume_last_backup(client, dr_vol_name, backup0.name)
+    wait_for_backup_restore_completed(client, dr_vol_name, backup0.name)
+    backupstore_delete_dummy_in_progress_backup(client, core_api, volume_name)
+
+    data2 = {'pos': 0,
+             'len': BACKUP_BLOCK_SIZE,
+             'content': common.generate_random_data(BACKUP_BLOCK_SIZE)}
+    _, backup2, _, _ = create_backup(client, volume_name, data2)
+
+    check_volume_last_backup(client, dr_vol_name, backup2.name)
+    wait_for_volume_restoration_start(client, dr_vol_name, backup2.name)
+    wait_for_backup_restore_completed(client, dr_vol_name, backup2.name)
+
+    activate_standby_volume(client, dr_vol_name)
+    dr_vol = client.by_id_volume(dr_vol_name)
+    dr_vol.attach(hostId=host_id)
+    dr_vol = common.wait_for_volume_healthy(client, dr_vol_name)
+    final_data = {
+        'pos': 0,
+        'len': 2 * BACKUP_BLOCK_SIZE,
+        'content': data2['content'] + data0['content'][BACKUP_BLOCK_SIZE:],
+    }
+    check_volume_data(dr_vol, final_data, False)
+
+
+def test_dr_volume_with_all_backup_blocks_deleted(
+    set_random_backupstore, client, core_api, volume_name):  # NOQA
+    """
+    Test DR volume can be activate after delete all backups.
+
+    Context:
+
+    We want to make sure that DR volume can activate after delete all backups.
+
+    Steps:
+
+    1.  Create a volume and attach to the current node.
+    2.  Write 4 MB to the beginning of the volume (2 x 2MB backup blocks).
+    3.  Create backup(0) of the volume.
+    6.  Verify backup block count == 2.
+    7.  Create DR volume from backup(0).
+    8.  Verify DR volume last backup is backup(0).
+    9.  Delete backup(0).
+    10. Verify backup block count == 0.
+    11. Verify DR volume last backup is empty.
+    15. Activate and verify DR volume data is data(0).
+    """
+    backupstore_cleanup(client)
+
+    # Set backupstore poll interval to have last backup update quicker
+    update_setting(client, common.SETTING_BACKUPSTORE_POLL_INTERVAL, "5")
+
+    host_id = get_self_host_id()
+
+    vol = create_and_check_volume(client, volume_name, 2, SIZE)
+    vol.attach(hostId=host_id)
+    vol = common.wait_for_volume_healthy(client, volume_name)
+
+    data0 = {'pos': 0, 'len': 2 * BACKUP_BLOCK_SIZE,
+             'content': common.generate_random_data(2 * BACKUP_BLOCK_SIZE)}
+    _, backup0, _, data0 = create_backup(
+        client, volume_name, data0)
+
+    backup_blocks_count = backupstore_count_backup_block_files(client,
+                                                               core_api,
+                                                               volume_name)
+    assert backup_blocks_count == 2
+
+    dr_vol_name = "dr-" + volume_name
+    client.create_volume(name=dr_vol_name, size=SIZE,
+                         numberOfReplicas=2, fromBackup=backup0.url,
+                         frontend="", standby=True)
+    check_volume_last_backup(client, dr_vol_name, backup0.name)
+    wait_for_backup_restore_completed(client, dr_vol_name, backup0.name)
+
+    delete_backup(client, volume_name, backup0.name)
+    assert backupstore_count_backup_block_files(client,
+                                                core_api,
+                                                volume_name) == 0
+    check_volume_last_backup(client, dr_vol_name, "")
+
+    activate_standby_volume(client, dr_vol_name)
+    dr_vol = client.by_id_volume(dr_vol_name)
+    dr_vol.attach(hostId=host_id)
+    dr_vol = common.wait_for_volume_healthy(client, dr_vol_name)
+    check_volume_data(dr_vol, data0, False)
 
 
 def test_backup_volume_list(set_random_backupstore ,client, core_api):  # NOQA
@@ -2581,141 +2841,6 @@ def test_expansion_with_scheduling_failure(
     delete_and_wait_pod(core_api, test_pod_name)
     delete_and_wait_pvc(core_api, test_pvc_name)
     delete_and_wait_pv(core_api, test_pv_name)
-
-
-def test_dr_volume_with_last_backup_deletion(set_random_backupstore, client, core_api, csi_pv, pvc, volume_name, pod_make):  # NOQA
-    """
-    Test if the DR volume can be activated
-    after deleting the lastest backup. There are two cases to the last
-    backup, one is the last backup is no empty, and the other one is
-    last backup is empty.
-
-    1. Set a random backupstore.
-    2. Create a volume, then create the corresponding PV, PVC and Pod.
-    3. Write data to the pod volume and get the md5sum
-       after the pod running.
-    4. Create the 1st backup.
-    5. Create two DR volumes from the backup.
-    6. Wait for the DR volumes restore complete.
-    7. Write data to the original volume then create the 2nd backup.
-    8. Wait for the DR volumes incremental restore complete.
-    9. Delete the 2nd backup.
-    10. Verify the `lastBackup == 1st backup` for 2 DR volumes and
-       original volume.
-    11. Activate the DR volume 1 and wait for it complete.
-    12. Create PV/PVC/Pod for the activated volume 1.
-    13. Validate the volume content.
-    14. Delete the 1st backup.
-    15. Verify the `lastBackup == ""` for DR volume 2 and original volume.
-    16. Activate the DR volume 2 and wait for it complete.
-    17. Create PV/PVC/Pod for the activated volume 2.
-    18. Validate the volume content, should be backup 1.
-    """
-    std_volume_name = volume_name + "-std"
-    data_path1 = "/data/test1"
-    std_pod_name, std_pv_name, std_pvc_name, std_md5sum1 = \
-        prepare_pod_with_data_in_mb(
-            client, core_api, csi_pv, pvc, pod_make, std_volume_name,
-            data_path=data_path1, data_size_in_mb=DATA_SIZE_IN_MB_1)
-
-    std_volume = client.by_id_volume(std_volume_name)
-    snap1 = create_snapshot(client, std_volume_name)
-    std_volume.snapshotBackup(name=snap1.name)
-    wait_for_backup_completion(client, std_volume_name, snap1.name)
-    bv, b1 = find_backup(client, std_volume_name, snap1.name)
-
-    # Create DR volume 1 and 2.
-    dr_volume_name = volume_name + "-dr"
-    client.create_volume(name=dr_volume_name, size=str(1 * Gi),
-                         numberOfReplicas=3, fromBackup=b1.url,
-                         frontend="", standby=True)
-    wait_for_volume_creation(client, dr_volume_name)
-    wait_for_volume_restoration_start(client, dr_volume_name, b1.name)
-    wait_for_backup_restore_completed(client, dr_volume_name, b1.name)
-
-    dr2_volume_name = volume_name + "-dr2"
-    client.create_volume(name=dr2_volume_name, size=str(1 * Gi),
-                         numberOfReplicas=3, fromBackup=b1.url,
-                         frontend="", standby=True)
-    wait_for_volume_creation(client, dr2_volume_name)
-    wait_for_volume_restoration_start(client, dr2_volume_name, b1.name)
-    wait_for_backup_restore_completed(client, dr2_volume_name, b1.name)
-
-    # Write data and create backup 2.
-    data_path2 = "/data/test2"
-    write_pod_volume_random_data(core_api, std_pod_name,
-                                 data_path2, DATA_SIZE_IN_MB_1)
-    snap2 = create_snapshot(client, std_volume_name)
-    std_volume.snapshotBackup(name=snap2.name)
-    wait_for_backup_completion(client, std_volume_name, snap2.name)
-    bv, b2 = find_backup(client, std_volume_name, snap2.name)
-
-    # Wait for the incremental restoration triggered then complete.
-    check_volume_last_backup(client, dr_volume_name, b2.name)
-    wait_for_volume_restoration_start(client, dr_volume_name, b2.name)
-    wait_for_backup_restore_completed(client, dr_volume_name, b2.name)
-
-    check_volume_last_backup(client, dr2_volume_name, b2.name)
-    wait_for_volume_restoration_start(client, dr2_volume_name, b2.name)
-    wait_for_backup_restore_completed(client, dr2_volume_name, b2.name)
-
-    # Delete the latest backup backup 2 then check the `lastBackup` field.
-    delete_backup(client, bv.name, b2.name)
-    client.list_backupVolume()
-    check_volume_last_backup(client, std_volume_name, b1.name)
-    check_volume_last_backup(client, dr_volume_name, b1.name)
-    check_volume_last_backup(client, dr2_volume_name, b1.name)
-
-    # Active DR volume 1 and create PV/PVC/Pod for DR volume 1.
-    activate_standby_volume(client, dr_volume_name)
-    dr_volume = wait_for_volume_detached(client, dr_volume_name)
-
-    dr_pod_name = dr_volume_name + "-pod"
-    dr_pv_name = dr_volume_name + "-pv"
-    dr_pvc_name = dr_volume_name + "-pvc"
-    dr_pod = pod_make(name=dr_pod_name)
-    create_pv_for_volume(client, core_api, dr_volume, dr_pv_name)
-    create_pvc_for_volume(client, core_api, dr_volume, dr_pvc_name)
-    dr_pod['spec']['volumes'] = [create_pvc_spec(dr_pvc_name)]
-    create_and_wait_pod(core_api, dr_pod)
-
-    # Validate the volume content.
-    md5sum1 = get_pod_data_md5sum(core_api, dr_pod_name, data_path1)
-    assert std_md5sum1 == md5sum1
-
-    # For DR volume, the requested backup restore is backup1 and
-    # the last restored backup is backup2 now. Since the backup2 is gone,
-    # the DR volume will automatically fall back to do full restore
-    # for backup1.
-
-    # Delete backup 1 and check the `lastBackup` field.
-    delete_backup(client, bv.name, b1.name)
-    client.list_backupVolume()
-    check_volume_last_backup(client, std_volume_name, "")
-    check_volume_last_backup(client, dr_volume_name, "")
-    check_volume_last_backup(client, dr2_volume_name, "")
-
-    # Active DR volume 2 and create PV/PVC/Pod for DR volume 2.
-    activate_standby_volume(client, dr2_volume_name)
-    dr2_volume = wait_for_volume_detached(client, dr2_volume_name)
-
-    dr2_pod_name = dr2_volume_name + "-pod"
-    dr2_pv_name = dr2_volume_name + "-pv"
-    dr2_pvc_name = dr2_volume_name + "-pvc"
-    dr2_pod = pod_make(name=dr2_pod_name)
-    create_pv_for_volume(client, core_api, dr2_volume, dr2_pv_name)
-    create_pvc_for_volume(client, core_api, dr2_volume, dr2_pvc_name)
-    dr2_pod['spec']['volumes'] = [create_pvc_spec(dr2_pvc_name)]
-    create_and_wait_pod(core_api, dr2_pod)
-
-    # Validate the volume content.
-    md5sum1 = get_pod_data_md5sum(core_api, dr2_pod_name, data_path1)
-    assert std_md5sum1 == md5sum1
-
-    delete_and_wait_pod(core_api, std_pod_name)
-    delete_and_wait_pod(core_api, dr_pod_name)
-    delete_and_wait_pod(core_api, dr2_pod_name)
-    client.delete(bv)
 
 
 def test_backup_lock_deletion_during_restoration(set_random_backupstore, client, core_api, volume_name, csi_pv, pvc, pod_make):  # NOQA

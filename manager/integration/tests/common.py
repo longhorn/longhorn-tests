@@ -128,6 +128,7 @@ STREAM_EXEC_TIMEOUT = 60
 SETTING_AUTO_SALVAGE = "auto-salvage"
 SETTING_BACKUP_TARGET = "backup-target"
 SETTING_BACKUP_TARGET_CREDENTIAL_SECRET = "backup-target-credential-secret"
+SETTING_BACKUPSTORE_POLL_INTERVAL = "backupstore-poll-interval"
 SETTING_CREATE_DEFAULT_DISK_LABELED_NODES = "create-default-disk-labeled-nodes"
 SETTING_DEFAULT_DATA_LOCALITY = "default-data-locality"
 SETTING_DEFAULT_DATA_PATH = "default-data-path"
@@ -3934,3 +3935,8 @@ def get_engine_image_status_value(client, ei_name):
         return "deployed"
     else:
         return "ready"
+
+
+def update_setting(client, name, value):
+    setting = client.by_id_setting(name)
+    client.update(setting, value=value)
