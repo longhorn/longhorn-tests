@@ -390,34 +390,33 @@
   <div>
     <article id="content">
        <h2 id="related-issue">Related issue</h2>
-<p><a href="https://github.com/longhorn/longhorn/issues/2136">https://github.com/longhorn/longhorn/issues/2136</a>
-<a href="https://github.com/longhorn/longhorn/issues/2197">https://github.com/longhorn/longhorn/issues/2197</a></p>
+<p><a href="https://github.com/longhorn/longhorn/issues/2136">https://github.com/longhorn/longhorn/issues/2136</a></p>
+<p><a href="https://github.com/longhorn/longhorn/issues/2197">https://github.com/longhorn/longhorn/issues/2197</a></p>
 <p>Longhorn v1.1.1 should work with IPv6 disabled.</p>
 <h2 id="scenario">Scenario</h2>
 <ol>
 <li>Install Kubernetes</li>
-<li>Disable IPv6 on all the worker nodes using the following</li>
-</ol>
+<li>Disable IPv6 on all the worker nodes using the following
 <pre><code>Go to the folder /etc/default
 In the grub file, edit the value GRUB_CMDLINE_LINUX_DEFAULT=&quot;ipv6.disable=1&quot;
 Once the file is saved update by the command update-grub
 Reboot the node and once the node becomes active, 
-use the command cat /proc/cmdline to verify &quot;ipv6.disable=1&quot; is reflected in the values 
-</code></pre><ol start="3">
+Use the command cat /proc/cmdline to verify &quot;ipv6.disable=1&quot; is reflected in the values 
+</code></pre></li>
 <li>Deploy Longhorn and test basic use cases.
 <ol>
 <li>Accessing the UI for CRUD RWO/RWX volumes</li>
 <li>Use kubectl to create workloads using RWO/RWX volumes.</li>
 </ol>
 </li>
-<li>Re-enable ipv6 on all the nodes using:</li>
+<li>Re-enable ipv6 on all the nodes using:
+<pre><code>By deleting the &quot;ipv6.disable=1&quot; from the GRUB_CMDLINE_LINUX_DEFAULT accessing grub file from /etc/default
+Perform a reboot and once the node comes active
+Use the command cat /proc/cmdline to verify &quot;ipv6.disable=1&quot; is not reflected in the values
+</code></pre></li>
+<li>Make sure the basic use cases still works.</li>
 </ol>
-<pre><code>By deleting the &quot;ipv6.disable=1&quot; from the GRUB_CMDLINE_LINUX_DEFAULT accessing grub file from
-/etc/default
-Perform a reboot and once the node comes active 
-use the command cat /proc/cmdline to verify &quot;ipv6.disable=1&quot; is not reflected in the values
-5. Make sure the basic use cases still works.
-</code></pre>
+
     </article>
   </div>
 </main>

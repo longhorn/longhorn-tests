@@ -464,9 +464,10 @@ kubectl get &amp;lt;LONGHORN-CRD&amp;gt; -n longhorn-system Verify that the outp
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/disable_ipv6/</guid>
-      <description>Related issue https://github.com/longhorn/longhorn/issues/2136 https://github.com/longhorn/longhorn/issues/2197
+      <description>Related issue https://github.com/longhorn/longhorn/issues/2136
+https://github.com/longhorn/longhorn/issues/2197
 Longhorn v1.1.1 should work with IPv6 disabled.
-Scenario  Install Kubernetes Disable IPv6 on all the worker nodes using the following  Go to the folder /etc/default In the grub file, edit the value GRUB_CMDLINE_LINUX_DEFAULT=&amp;quot;ipv6.disable=1&amp;quot; Once the file is saved update by the command update-grub Reboot the node and once the node becomes active, use the command cat /proc/cmdline to verify &amp;quot;ipv6.disable=1&amp;quot; is reflected in the values Deploy Longhorn and test basic use cases.</description>
+Scenario  Install Kubernetes Disable IPv6 on all the worker nodes using the following Go to the folder /etc/default In the grub file, edit the value GRUB_CMDLINE_LINUX_DEFAULT=&amp;quot;ipv6.disable=1&amp;quot; Once the file is saved update by the command update-grub Reboot the node and once the node becomes active, Use the command cat /proc/cmdline to verify &amp;quot;ipv6.disable=1&amp;quot; is reflected in the values  Deploy Longhorn and test basic use cases.</description>
     </item>
     
     <item>
