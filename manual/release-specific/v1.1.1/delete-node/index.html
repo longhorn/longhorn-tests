@@ -390,7 +390,18 @@
   <div>
     <article id="content">
        <h2 id="related-issue">Related issue</h2>
-<p><a href="https://github.com/longhorn/longhorn/issues/2186">https://github.com/longhorn/longhorn/issues/2186</a></p>
+<p><a href="https://github.com/longhorn/longhorn/issues/2186">https://github.com/longhorn/longhorn/issues/2186</a>
+<a href="https://github.com/longhorn/longhorn/issues/2462">https://github.com/longhorn/longhorn/issues/2462</a></p>
+<h2 id="delete-method">Delete Method</h2>
+<p>Should verify with both of the delete methods.</p>
+<ul>
+<li>Bulk Delete - This is the <code>Delete</code> on the Node page.</li>
+<li>Node Delete - This is the <code>Remove Node</code> for each node <code>Operation</code> drop-down list.</li>
+</ul>
+<h2 id="test-node-delete---should-grey-out-when-node-not-down">Test Node Delete - should grey out when node not down</h2>
+<p><strong>Given</strong> node not <code>Down</code>.</p>
+<p><strong>When</strong> Try to delete any node.</p>
+<p><strong>Then</strong> Should see button greyed out.</p>
 <h2 id="test-node-delete">Test Node Delete</h2>
 <p><strong>Given</strong> pod with pvc created.</p>
 <pre><code>kubectl create -f https://raw.githubusercontent.com/longhorn/longhorn/v1.1.0/examples/pod_with_pvc.yaml
@@ -406,27 +417,82 @@
 <p>2.2. Node status should be Down.</p>
 </li>
 </ol>
-<p><strong>When</strong> node-1 deleted from the browser.</p>
-<p><strong>Then</strong> should see node-1 removed from the node list in the browser.</p>
+<p><strong>When</strong> delete node-1 from the browser.</p>
+<p><strong>Then</strong> click <code>OK</code> in the pop-up window for delete confirmation.</p>
+<p><em>And</em> should see node-1 removed from the node list in the browser.</p>
 <p><em>And</em> should see node-1 removed from nodes.longhorn.io.</p>
 <pre><code>kubectl -n longhorn-system get nodes.longhorn.io
-</code></pre><h2 id="test-node-delete---should-fail-when-volume-replica-not-evicted-on-node">Test Node Delete - should fail when volume replica not evicted on node</h2>
-<p><strong>Given</strong> pod with pvc created.</p>
+</code></pre><h2 id="test-node-delete---should-delete-the-node-when-the-node-is-down-even-the-schedule-is-enabled-and-replicas-not-evicted-from-the-node">Test Node Delete - should delete the node when the node is down, even the schedule is enabled and replicas not evicted from the node</h2>
+<p><strong>Given</strong> Cluster with 4 nodes.</p>
+<p><em>And</em> pod with pvc created.</p>
 <pre><code>kubectl create -f https://raw.githubusercontent.com/longhorn/longhorn/v1.1.0/examples/pod_with_pvc.yaml
-</code></pre><p><em>And</em> node down:</p>
+</code></pre><p><em>And</em> node with replica is down:</p>
 <ol>
 <li>
 <p>Taint node-1 with kubectl and wait for pods to re-deploy.</p>
 <pre><code>kubectl taint nodes ${NODE} nodetype=storage:NoExecute
-</code></pre><p>1.1. Check longhorn pods are not scheduled to node-1.</p>
-<p>1.2. Node status should be Down.</p>
-<p>1.3. Check longhorn replicas are running on node-1.</p>
-<pre><code>kubectl -n longhorn-system get replicas
+</code></pre><p>1.1. Check longhorn pods are not scheduled to node-1.
+1.2. Node status should be Down.</p>
+</li>
+<li>
+<p>Longhorn replica should be stopped for the tainted node.</p>
+<pre><code>ip-172-30-0-21:~ # kubectl -n longhorn-system get replica
+NAME                                                  STATE     NODE              DISK                                   INSTANCEMANAGER                IMAGE                               AGE
+pvc-cf792de8-62be-4c8d-bd6e-dc855d958e8b-r-1c6008f2   running   ip-172-30-0-21    fad71ef9-a830-495c-974d-06538e4387fa   instance-manager-r-f694df29   longhornio/  longhorn-engine:master   50m
+pvc-cf792de8-62be-4c8d-bd6e-dc855d958e8b-r-cab245c9   running   ip-172-30-0-190   3d435563-bd11-4566-bd9f-34815920a9e8   instance-manager-r-eb56d441   longhornio/  longhorn-engine:master   50m
+pvc-cf792de8-62be-4c8d-bd6e-dc855d958e8b-r-e79536a5   stopped   ip-172-30-0-16    c1c8597d-f3ee-44fc-b045-ee51beb14bb6                                                                       28m
+</code></pre></li>
+<li>
+<p>Volume should be degraded.</p>
+<pre><code>ip-172-30-0-21:~ # kubectl -n longhorn-system get volume
+NAME                                       STATE      ROBUSTNESS   SCHEDULED    SIZE         NODE              AGE
+pvc-cf792de8-62be-4c8d-bd6e-dc855d958e8b   attached   degraded     True         2147483648   ip-172-30-0-190   64m
 </code></pre></li>
 </ol>
-<p><strong>When</strong> node-1 deleted from the browser.</p>
-<p><strong>Then</strong> should see error in the browser.</p>
-<pre><code>unable to delete node: Could not delete node ip-172-30-0-16 with node ready condition is False, reason is ManagerPodMissing, node schedulable false, and 1 replica, 1 engine running on it
+<p><strong>When</strong> delete node-1 from the browser.</p>
+<p><strong>Then</strong> click <code>OK</code> in the pop-up window for delete confirmation.</p>
+<p><em>And</em> should see node-1 removed from the node list in the browser.</p>
+<p><em>And</em> should see node-1 removed from nodes.longhorn.io.</p>
+<pre><code>kubectl -n longhorn-system get nodes.longhorn.io
+</code></pre><p><em>And</em> should see replica re-scheduled to an available node.</p>
+<pre><code>ip-172-30-0-21:~ # kubectl -n longhorn-system get replica
+NAME                                                  STATE     NODE              DISK                                   INSTANCEMANAGER               IMAGE                               AGE
+pvc-cf792de8-62be-4c8d-bd6e-dc855d958e8b-r-1c6008f2   running   ip-172-30-0-21    fad71ef9-a830-495c-974d-06538e4387fa   instance-manager-r-f694df29   longhornio/longhorn-engine:master   53m
+pvc-cf792de8-62be-4c8d-bd6e-dc855d958e8b-r-cab245c9   running   ip-172-30-0-190   3d435563-bd11-4566-bd9f-34815920a9e8   instance-manager-r-eb56d441   longhornio/longhorn-engine:master   53m
+pvc-cf792de8-62be-4c8d-bd6e-dc855d958e8b-r-a45afce7   running   ip-172-30-0-85    f78a06cc-56df-4269-b98c-e51504aaba10   instance-manager-r-79bd9ce1   longhornio/longhorn-engine:master   18s
+</code></pre><p><em>And</em> volume should eventually become healthy.</p>
+<pre><code>NAME                                       STATE      ROBUSTNESS   SCHEDULED   SIZE         NODE              AGE
+pvc-cf792de8-62be-4c8d-bd6e-dc855d958e8b   attached   healthy      True        2147483648   ip-172-30-0-190   73m
+</code></pre><h2 id="test-node-delete---when-the-volume-has-only-1-replica-should-fail-to-delete-the-node-when-the-node-is-down-the-schedule-is-enabled-and-replicas-not-evicted-from-the-node">Test Node Delete - when the volume has only 1 replica should fail to delete the node when the node is down, the schedule is enabled and replicas not evicted from the node.</h2>
+<p><strong>Given</strong> pod with pvc created.</p>
+<pre><code>kubectl create -f https://raw.githubusercontent.com/longhorn/longhorn/v1.1.0/examples/pod_with_pvc.yaml
+</code></pre><p><em>And</em> volume has only 1 replica.</p>
+<p><em>And</em> node with the 1 replica is down:</p>
+<ol>
+<li>
+<p>Taint node-1 with kubectl and wait for pods to re-deploy.</p>
+<pre><code>kubectl taint nodes ${NODE} nodetype=storage:NoExecute
+</code></pre><p>1.1. Check longhorn pods are not scheduled to node-1.
+1.2. Node status should be Down.</p>
+</li>
+<li>
+<p>Longhorn replica should be stopped.</p>
+<pre><code>ip-172-30-0-21:~ # kubectl -n longhorn-system get replica
+NAME                                                  STATE         NODE             DISK                                   INSTANCEMANAGER     IMAGE   AGE
+pvc-b040fe48-5ee1-4a7b-9b3a-accc65f7e947-r-b9d1a5bd   stopped       ip-172-30-0-85      f78a06cc-56df-4269-b98c-e51504aaba10                             9m39s
+</code></pre></li>
+</ol>
+<p><strong>When</strong> delete node-1 from the browser.</p>
+<p><strong>Then</strong> click <code>OK</code> in the pop-up window for delete confirmation.</p>
+<p><em>And</em> should see pop-up error bar.</p>
+<pre><code>unable to delete node: Could not delete node ip-172-30-0-85 with node ready condition is False, reason is ManagerPodMissing, node schedulable false, and 1 replica, 0 engine running on it
+</code></pre><p><em>And</em> should see node-1 still exist in the node list in the browser.</p>
+<p><em>And</em> should see node-1 still exist in nodes.longhorn.io.</p>
+<pre><code>ip-172-30-0-21:~ # kubectl -n longhorn-system get nodes
+NAME              STATUS     ROLES                  AGE     VERSION
+ip-172-30-0-16    Ready      &lt;none&gt;                 26h     v1.20.5+k3s1
+ip-172-30-0-21    Ready      control-plane,master   26h     v1.20.5+k3s1
+ip-172-30-0-85    Ready      &lt;none&gt;                 26h     v1.20.5+k3s1
 </code></pre>
     </article>
   </div>

@@ -529,14 +529,12 @@ Scenario  Prepare 1 control plane node and 3 worker nodes Install RKE2 with CIS-
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/delete-node/</guid>
-      <description>Related issue https://github.com/longhorn/longhorn/issues/2186
-Test Node Delete Given pod with pvc created.
-kubectl create -f https://raw.githubusercontent.com/longhorn/longhorn/v1.1.0/examples/pod_with_pvc.yaml And node down:
-  Disable Node Scheduling and set Eviction Requested to true from the browser.
-  Taint node-1 with kubectl and wait for pods to re-deploy.
-kubectl taint nodes ${NODE} nodetype=storage:NoExecute 2.1. Check longhorn pods are not scheduled to node-1.
-2.2. Node status should be Down.
-  When node-1 deleted from the browser.</description>
+      <description>Related issue https://github.com/longhorn/longhorn/issues/2186 https://github.com/longhorn/longhorn/issues/2462
+Delete Method Should verify with both of the delete methods.
+ Bulk Delete - This is the Delete on the Node page. Node Delete - This is the Remove Node for each node Operation drop-down list.  Test Node Delete - should grey out when node not down Given node not Down.
+When Try to delete any node.
+Then Should see button greyed out.
+Test Node Delete Given pod with pvc created.</description>
     </item>
     
     <item>
