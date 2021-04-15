@@ -389,34 +389,34 @@
   <h1 id="title">Workload type: Deployment</h1>
   <div>
     <article id="content">
-       <p>Volume Attachment Recovery Policy : <strong>Immediate:</strong></p>
+       <p>Volume Attachment Recovery Policy: <strong>Immediate:</strong></p>
 <ul>
-<li>Have a workload deployed using longhorn volume</li>
+<li>Have a workload deployed using longhorn volume.</li>
 <li>change the <code>terminationGracePeriodSeconds: 480</code> in the yaml of the workload.</li>
-<li>Power down the node where the pod is attached on</li>
-<li>The replacement pod is created after 5 minutes from when the original pod goes into <code>Unknown</code> state. And this replacement pod is in &ldquo;creating/pending&rdquo; state</li>
-<li>the volume is able to attach/mount and workload come up in about 30 seconds</li>
-<li>data is accessible after the pod comes up active</li>
+<li>Power down the node where the pod is attached on.</li>
+<li>The replacement pod is created after 5 minutes from when the original pod goes into <code>Terminating</code> state. And this replacement pod is in <code>ContainerCreating</code> state.</li>
+<li>the volume is able to attach/mount and workload come up in about 30 seconds.</li>
+<li>data is accessible after the pod comes up active.</li>
 </ul>
 <p>Volume Attachment Recovery Policy: <strong>wait:</strong></p>
 <ul>
-<li>Have a workload deployed using longhorn volume</li>
+<li>Have a workload deployed using longhorn volume.</li>
 <li>change the <code>terminationGracePeriodSeconds: 480</code> in the yaml of the workload.</li>
-<li>Power down the node where the pod is attached on</li>
-<li>The replacement pod is created after 5 minutes from when the original pod goes into Unknown state. And this replacement pod is in &ldquo;creating/pending&rdquo; state</li>
+<li>Power down the node where the pod is attached on.</li>
+<li>The replacement pod is created after 5 minutes from when the original pod goes into <code>Terminating</code> state. And this replacement pod is in <code>ContainerCreating</code> state.</li>
 <li>the volume is able to attach/mount and workload come up only after about 15 minutes.</li>
-<li>data is accessible after the pod comes up active</li>
+<li>data is accessible after the pod comes up active.</li>
 </ul>
 <p>Volume Attachment Recovery Policy: <strong>never:</strong></p>
 <ul>
-<li>Have a workload deployed using longhorn volume</li>
+<li>Have a workload deployed using longhorn volume.</li>
 <li>change the <code>terminationGracePeriodSeconds: 480</code> in the yaml of the workload.</li>
-<li>Power down the node where the pod is attached on</li>
-<li>The replacement pod is created after 5 minutes from when the original pod goes into Unknown state. And this replacement pod is in &ldquo;creating/pending&rdquo; state</li>
+<li>Power down the node where the pod is attached on.</li>
+<li>The replacement pod is created after 5 minutes from when the original pod goes into <code>Terminating</code> state. And this replacement pod is in <code>ContainerCreating</code> state.</li>
 <li>the volume is NOT able to attach/mount and workload come up even for an hour.</li>
-<li>Delete the pod stuck in &ldquo;Unknown&rdquo; status</li>
-<li>Replacement pod comes up in about 1 minute</li>
-<li>data is accessible after the pod comes up active</li>
+<li>Delete the pod stuck in <code>Terminating</code> status.</li>
+<li>Replacement pod comes up in about 1 minute.</li>
+<li>data is accessible after the pod comes up active.</li>
 </ul>
 <p><strong>Note:</strong> All the above behavior will depend on <code>NodeDownPodDeletionPolicy</code>. It is assumed that <code>NodeDownPodDeletionPolicy</code> is set to <code>do-nothing</code> while executing the above scenarios.</p>
 
