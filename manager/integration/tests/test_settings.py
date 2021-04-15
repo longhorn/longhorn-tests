@@ -79,24 +79,25 @@ def test_setting_toleration():
     """
     Test toleration setting
 
-    1. Set `taint-toleration` to "key1=value1:NoSchedule; key2:InvalidEffect"
-    2. Verify the request fails
-    3. Create a volume and attach it.
-    4. Set `taint-toleration` to "key1=value1:NoSchedule; key2:NoExecute".
-    5. Verify that cannot update toleration setting when any volume is attached
-    6. Generate and write `data1` into the volume
-    7. Detach the volume.
-    8. Set `taint-toleration` to "key1=value1:NoSchedule; key2:NoExecute".
-    9. Wait for all the Longhorn system components to restart with new
-       toleration
+    1.  Set `taint-toleration` to "key1=value1:NoSchedule; key2:InvalidEffect".
+    2.  Verify the request fails.
+    3.  Create a volume and attach it.
+    4.  Set `taint-toleration` to "key1=value1:NoSchedule; key2:NoExecute".
+    5.  Verify that cannot update toleration setting when any volume is
+        attached.
+    6.  Generate and write `data1` into the volume.
+    7.  Detach the volume.
+    8.  Set `taint-toleration` to "key1=value1:NoSchedule; key2:NoExecute".
+    9.  Wait for all the Longhorn system components to restart with new
+        toleration.
     10. Verify that UI, manager, and drive deployer don't restart and
-       don't have new toleration
+        don't have new toleration.
     11. Attach the volume again and verify the volume `data1`.
     12. Generate and write `data2` to the volume.
     13. Detach the volume.
     14. Clean the `toleration` setting.
     15. Wait for all the Longhorn system components to restart with no
-        toleration
+        toleration.
     16. Attach the volume and validate `data2`.
     17. Generate and write `data3` to the volume.
     """
@@ -111,6 +112,11 @@ def test_setting_toleration():
         client.update(setting,
                       value="key1=value1:NoSchedule; key2:InvalidEffect")
     assert 'invalid effect' in str(e.value)
+
+    volume_name = "test-toleration-vol"  # NOQA
+    volume = create_and_check_volume(client, volume_name)
+    volume.attach(hostId=get_self_host_id())
+    volume = wait_for_volume_healthy(client, volume_name)
 
     setting_value_str = "key1=value1:NoSchedule; key2:NoExecute"
     setting_value_dicts = [
@@ -127,11 +133,6 @@ def test_setting_toleration():
             "effect": "NoExecute"
         },
     ]
-
-    volume_name = "test-toleration-vol"  # NOQA
-    volume = create_and_check_volume(client, volume_name)
-    volume.attach(hostId=get_self_host_id())
-    volume = wait_for_volume_healthy(client, volume_name)
     with pytest.raises(Exception) as e:
         client.update(setting, value=setting_value_str)
     assert 'cannot modify toleration setting before all volumes are detached' \
@@ -182,27 +183,27 @@ def test_setting_toleration_extra(core_api, apps_api):  # NOQA
     """
     Steps:
     1. Set Kubernetes Taint Toleration to:
-       `ex.com/foobar:NoExecute;ex.com/foobar:NoSchedule`
+       `ex.com/foobar:NoExecute;ex.com/foobar:NoSchedule`.
     2. Verify that all system components have the 2 tolerations
-       `ex.com/foobar:NoExecute; ex.com/foobar:NoSchedule`
+       `ex.com/foobar:NoExecute; ex.com/foobar:NoSchedule`.
        Verify that UI, manager, and drive deployer don't restart and
-       don't have toleration
+       don't have toleration.
     3. Set Kubernetes Taint Toleration to:
-       `node-role.kubernetes.io/controlplane=true:NoSchedule`
+       `node-role.kubernetes.io/controlplane=true:NoSchedule`.
     4. Verify that all system components have the the toleration
-       `node-role.kubernetes.io/controlplane=true:NoSchedule`
+       `node-role.kubernetes.io/controlplane=true:NoSchedule`,
        and don't have the 2 tolerations
-       `ex.com/foobar:NoExecute;ex.com/foobar:NoSchedule`
+       `ex.com/foobar:NoExecute;ex.com/foobar:NoSchedule`.
        Verify that UI, manager, and drive deployer don't restart and
-       don't have toleration
+       don't have toleration.
     5. Set Kubernetes Taint Toleration to special value:
-       `:`
+       `:`.
     6. Verify that all system components have the toleration with
        `operator: Exists` and other field of the toleration are empty.
        Verify that all system components don't have the toleration
-       `node-role.kubernetes.io/controlplane=true:NoSchedule`
+       `node-role.kubernetes.io/controlplane=true:NoSchedule`.
        Verify that UI, manager, and drive deployer don't restart and
-       don't have toleration
+       don't have toleration.
     7. Clear Kubernetes Taint Toleration
 
     Note: system components are workloads other than UI, manager, driver
@@ -277,6 +278,16 @@ def test_setting_toleration_extra(core_api, apps_api):  # NOQA
 def wait_for_toleration_update(core_api, apps_api, count,  # NOQA
                                expected_tolerations,
                                chk_removed_tolerations=[]):
+    not_managed_apps = [
+        "csi-attacher",
+        "csi-provisioner",
+        "csi-resizer",
+        "csi-snapshotter",
+        "longhorn-csi-plugin",
+        "longhorn-driver-deployer",
+        "longhorn-manager",
+        "longhorn-ui",
+    ]
     updated = False
     for _ in range(RETRY_COUNTS):
         time.sleep(RETRY_INTERVAL_LONG)
@@ -288,6 +299,13 @@ def wait_for_toleration_update(core_api, apps_api, count,  # NOQA
 
         pod_list = core_api.list_namespaced_pod(LONGHORN_NAMESPACE).items
         for p in pod_list:
+            managed_by = p.metadata.labels.get('longhorn.io/managed-by', '')
+            if str(managed_by) != "longhorn-manager":
+                continue
+            else:
+                app_name = str(p.metadata.labels.get('app', ''))
+                assert app_name not in not_managed_apps
+
             if p.status.phase != "Running" \
                 or not check_tolerations_set(p.spec.tolerations,
                                              expected_tolerations,
