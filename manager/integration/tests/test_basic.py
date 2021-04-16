@@ -1126,8 +1126,8 @@ def restore_inc_test(client, core_api, volume_name, pod):  # NOQA
         std_volume.activate(frontend=VOLUME_FRONTEND_BLOCKDEV)
         assert "already in active mode" in str(e.value)
 
-    data0 = {'len': 4 * 1024, 'pos': 0}
-    data0['content'] = common.generate_random_data(data0['len'])
+    data0 = {'len': 2 * BACKUP_BLOCK_SIZE, 'pos': 0,
+             'content': common.generate_random_data(2 * BACKUP_BLOCK_SIZE)}
     _, backup0, _, data0 = create_backup(
         client, volume_name, data0)
 
@@ -1235,7 +1235,8 @@ def restore_inc_test(client, core_api, volume_name, pod):  # NOQA
     zero_string = b'\x00'.decode('utf-8')
     _, backup1, _, data1 = create_backup(
         client, volume_name,
-        {'len': 2 * 1024, 'pos': 0, 'content': zero_string * 2 * 1024})
+        {'len': BACKUP_BLOCK_SIZE, 'pos': 0,
+         'content': zero_string * BACKUP_BLOCK_SIZE})
     # use this api to update field `last backup`
     client.list_backupVolume()
     check_volume_last_backup(client, sb_volume1_name, backup1.name)
@@ -1243,16 +1244,16 @@ def restore_inc_test(client, core_api, volume_name, pod):  # NOQA
     sb_volume1 = client.by_id_volume(sb_volume1_name)
     sb_volume1.attach(hostId=lht_host_id)
     sb_volume1 = common.wait_for_volume_healthy(client, sb_volume1_name)
-    data0_modified = {
-        'len': data0['len'] - data1['len'],
-        'pos': data1['len'],
-        'content': data0['content'][data1['len']:],
+    data0_modified1 = {
+        'len': data0['len'],
+        'pos': 0,
+        'content': data1['content'] + data0['content'][data1['len']:],
     }
-    check_volume_data(sb_volume1, data0_modified, False)
-    check_volume_data(sb_volume1, data1)
+    check_volume_data(sb_volume1, data0_modified1, False)
 
-    data2 = {'len': 1 * 1024 * 1024, 'pos': 0}
-    data2['content'] = common.generate_random_data(data2['len'])
+    data2_len = int(BACKUP_BLOCK_SIZE/2)
+    data2 = {'len': data2_len, 'pos': 0,
+             'content': common.generate_random_data(data2_len)}
     _, backup2, _, data2 = create_backup(client, volume_name, data2)
 
     # HACK: #558 we use a side effect of the list call
@@ -1263,7 +1264,15 @@ def restore_inc_test(client, core_api, volume_name, pod):  # NOQA
     sb_volume2 = client.by_id_volume(sb_volume2_name)
     sb_volume2.attach(hostId=lht_host_id)
     sb_volume2 = common.wait_for_volume_healthy(client, sb_volume2_name)
-    check_volume_data(sb_volume2, data2)
+    data0_modified2 = {
+        'len': data0['len'],
+        'pos': 0,
+        'content':
+            data2['content'] +
+            data1['content'][data2['len']:] +
+            data0['content'][data1['len']:],
+    }
+    check_volume_data(sb_volume2, data0_modified2, False)
 
     # allocated this active volume to a pod
     sb_volume2.detach(hostId="")
