@@ -80,6 +80,16 @@ Test Node Delete Given pod with pvc created.</description>
     </item>
     
     <item>
+      <title>Test Node Selector</title>
+      <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/test-node-selector/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/test-node-selector/</guid>
+      <description>Prepare the cluster  Using Rancher RKE to create a cluster of 2 Windows worker nodes and 3 Linux worker nodes. Rancher will add the taint cattle.io/os=linux:NoSchedule to Linux nodes Kubernetes will add label kubernetes.io/os:linux to Linux nodes  Test steps Repeat the following steps for each type of Longhorn installation: Rancher, Helm, Kubectl:
+ Follow the Longhorn document at the PR https://github.com/longhorn/website/pull/287 to install Longhorn with toleration cattle.io/os=linux:NoSchedule and node selector kubernetes.</description>
+    </item>
+    
+    <item>
       <title>Test RWX share-mount ownership reset</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/rwx-mount-ownership-reset/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
