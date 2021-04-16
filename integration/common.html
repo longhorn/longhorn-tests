@@ -156,6 +156,7 @@ STREAM_EXEC_TIMEOUT = 60
 SETTING_AUTO_SALVAGE = &#34;auto-salvage&#34;
 SETTING_BACKUP_TARGET = &#34;backup-target&#34;
 SETTING_BACKUP_TARGET_CREDENTIAL_SECRET = &#34;backup-target-credential-secret&#34;
+SETTING_BACKUPSTORE_POLL_INTERVAL = &#34;backupstore-poll-interval&#34;
 SETTING_CREATE_DEFAULT_DISK_LABELED_NODES = &#34;create-default-disk-labeled-nodes&#34;
 SETTING_DEFAULT_DATA_LOCALITY = &#34;default-data-locality&#34;
 SETTING_DEFAULT_DATA_PATH = &#34;default-data-path&#34;
@@ -3961,7 +3962,12 @@ def get_engine_image_status_value(client, ei_name):
     if hasattr(client.by_id_engine_image(ei_name), &#34;nodeDeploymentMap&#34;):
         return &#34;deployed&#34;
     else:
-        return &#34;ready&#34;</code></pre>
+        return &#34;ready&#34;
+
+
+def update_setting(client, name, value):
+    setting = client.by_id_setting(name)
+    client.update(setting, value=value)</code></pre>
 </details>
 </section>
 <section>
@@ -7762,6 +7768,20 @@ def sts_name(request):
     subprocess.check_call(cmd)</code></pre>
 </details>
 </dd>
+<dt id="tests.common.update_setting"><code class="name flex">
+<span>def <span class="ident">update_setting</span></span>(<span>client, name, value)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def update_setting(client, name, value):
+    setting = client.by_id_setting(name)
+    client.update(setting, value=value)</code></pre>
+</details>
+</dd>
 <dt id="tests.common.update_statefulset_manifests"><code class="name flex">
 <span>def <span class="ident">update_statefulset_manifests</span></span>(<span>ss_manifest, sc_manifest, name)</span>
 </code></dt>
@@ -10053,6 +10073,7 @@ volume. Trigger a failed assertion of one is detected.
 <li><code><a title="tests.common.storage_class" href="#tests.common.storage_class">storage_class</a></code></li>
 <li><code><a title="tests.common.sts_name" href="#tests.common.sts_name">sts_name</a></code></li>
 <li><code><a title="tests.common.umount_disk" href="#tests.common.umount_disk">umount_disk</a></code></li>
+<li><code><a title="tests.common.update_setting" href="#tests.common.update_setting">update_setting</a></code></li>
 <li><code><a title="tests.common.update_statefulset_manifests" href="#tests.common.update_statefulset_manifests">update_statefulset_manifests</a></code></li>
 <li><code><a title="tests.common.volume_name" href="#tests.common.volume_name">volume_name</a></code></li>
 <li><code><a title="tests.common.volume_read" href="#tests.common.volume_read">volume_read</a></code></li>
