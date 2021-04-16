@@ -1154,8 +1154,8 @@ def restore_inc_test(client, core_api, volume_name, pod):  # NOQA
         std_volume.activate(frontend=VOLUME_FRONTEND_BLOCKDEV)
         assert &#34;already in active mode&#34; in str(e.value)
 
-    data0 = {&#39;len&#39;: 4 * 1024, &#39;pos&#39;: 0}
-    data0[&#39;content&#39;] = common.generate_random_data(data0[&#39;len&#39;])
+    data0 = {&#39;len&#39;: 2 * BACKUP_BLOCK_SIZE, &#39;pos&#39;: 0,
+             &#39;content&#39;: common.generate_random_data(2 * BACKUP_BLOCK_SIZE)}
     _, backup0, _, data0 = create_backup(
         client, volume_name, data0)
 
@@ -1263,7 +1263,8 @@ def restore_inc_test(client, core_api, volume_name, pod):  # NOQA
     zero_string = b&#39;\x00&#39;.decode(&#39;utf-8&#39;)
     _, backup1, _, data1 = create_backup(
         client, volume_name,
-        {&#39;len&#39;: 2 * 1024, &#39;pos&#39;: 0, &#39;content&#39;: zero_string * 2 * 1024})
+        {&#39;len&#39;: BACKUP_BLOCK_SIZE, &#39;pos&#39;: 0,
+         &#39;content&#39;: zero_string * BACKUP_BLOCK_SIZE})
     # use this api to update field `last backup`
     client.list_backupVolume()
     check_volume_last_backup(client, sb_volume1_name, backup1.name)
@@ -1271,16 +1272,16 @@ def restore_inc_test(client, core_api, volume_name, pod):  # NOQA
     sb_volume1 = client.by_id_volume(sb_volume1_name)
     sb_volume1.attach(hostId=lht_host_id)
     sb_volume1 = common.wait_for_volume_healthy(client, sb_volume1_name)
-    data0_modified = {
-        &#39;len&#39;: data0[&#39;len&#39;] - data1[&#39;len&#39;],
-        &#39;pos&#39;: data1[&#39;len&#39;],
-        &#39;content&#39;: data0[&#39;content&#39;][data1[&#39;len&#39;]:],
+    data0_modified1 = {
+        &#39;len&#39;: data0[&#39;len&#39;],
+        &#39;pos&#39;: 0,
+        &#39;content&#39;: data1[&#39;content&#39;] + data0[&#39;content&#39;][data1[&#39;len&#39;]:],
     }
-    check_volume_data(sb_volume1, data0_modified, False)
-    check_volume_data(sb_volume1, data1)
+    check_volume_data(sb_volume1, data0_modified1, False)
 
-    data2 = {&#39;len&#39;: 1 * 1024 * 1024, &#39;pos&#39;: 0}
-    data2[&#39;content&#39;] = common.generate_random_data(data2[&#39;len&#39;])
+    data2_len = int(BACKUP_BLOCK_SIZE/2)
+    data2 = {&#39;len&#39;: data2_len, &#39;pos&#39;: 0,
+             &#39;content&#39;: common.generate_random_data(data2_len)}
     _, backup2, _, data2 = create_backup(client, volume_name, data2)
 
     # HACK: #558 we use a side effect of the list call
@@ -1291,7 +1292,15 @@ def restore_inc_test(client, core_api, volume_name, pod):  # NOQA
     sb_volume2 = client.by_id_volume(sb_volume2_name)
     sb_volume2.attach(hostId=lht_host_id)
     sb_volume2 = common.wait_for_volume_healthy(client, sb_volume2_name)
-    check_volume_data(sb_volume2, data2)
+    data0_modified2 = {
+        &#39;len&#39;: data0[&#39;len&#39;],
+        &#39;pos&#39;: 0,
+        &#39;content&#39;:
+            data2[&#39;content&#39;] +
+            data1[&#39;content&#39;][data2[&#39;len&#39;]:] +
+            data0[&#39;content&#39;][data1[&#39;len&#39;]:],
+    }
+    check_volume_data(sb_volume2, data0_modified2, False)
 
     # allocated this active volume to a pod
     sb_volume2.detach(hostId=&#34;&#34;)
@@ -3811,8 +3820,8 @@ def test_volume_toomanysnapshots_condition(client, core_api, volume_name): # NOQ
         std_volume.activate(frontend=VOLUME_FRONTEND_BLOCKDEV)
         assert &#34;already in active mode&#34; in str(e.value)
 
-    data0 = {&#39;len&#39;: 4 * 1024, &#39;pos&#39;: 0}
-    data0[&#39;content&#39;] = common.generate_random_data(data0[&#39;len&#39;])
+    data0 = {&#39;len&#39;: 2 * BACKUP_BLOCK_SIZE, &#39;pos&#39;: 0,
+             &#39;content&#39;: common.generate_random_data(2 * BACKUP_BLOCK_SIZE)}
     _, backup0, _, data0 = create_backup(
         client, volume_name, data0)
 
@@ -3920,7 +3929,8 @@ def test_volume_toomanysnapshots_condition(client, core_api, volume_name): # NOQ
     zero_string = b&#39;\x00&#39;.decode(&#39;utf-8&#39;)
     _, backup1, _, data1 = create_backup(
         client, volume_name,
-        {&#39;len&#39;: 2 * 1024, &#39;pos&#39;: 0, &#39;content&#39;: zero_string * 2 * 1024})
+        {&#39;len&#39;: BACKUP_BLOCK_SIZE, &#39;pos&#39;: 0,
+         &#39;content&#39;: zero_string * BACKUP_BLOCK_SIZE})
     # use this api to update field `last backup`
     client.list_backupVolume()
     check_volume_last_backup(client, sb_volume1_name, backup1.name)
@@ -3928,16 +3938,16 @@ def test_volume_toomanysnapshots_condition(client, core_api, volume_name): # NOQ
     sb_volume1 = client.by_id_volume(sb_volume1_name)
     sb_volume1.attach(hostId=lht_host_id)
     sb_volume1 = common.wait_for_volume_healthy(client, sb_volume1_name)
-    data0_modified = {
-        &#39;len&#39;: data0[&#39;len&#39;] - data1[&#39;len&#39;],
-        &#39;pos&#39;: data1[&#39;len&#39;],
-        &#39;content&#39;: data0[&#39;content&#39;][data1[&#39;len&#39;]:],
+    data0_modified1 = {
+        &#39;len&#39;: data0[&#39;len&#39;],
+        &#39;pos&#39;: 0,
+        &#39;content&#39;: data1[&#39;content&#39;] + data0[&#39;content&#39;][data1[&#39;len&#39;]:],
     }
-    check_volume_data(sb_volume1, data0_modified, False)
-    check_volume_data(sb_volume1, data1)
+    check_volume_data(sb_volume1, data0_modified1, False)
 
-    data2 = {&#39;len&#39;: 1 * 1024 * 1024, &#39;pos&#39;: 0}
-    data2[&#39;content&#39;] = common.generate_random_data(data2[&#39;len&#39;])
+    data2_len = int(BACKUP_BLOCK_SIZE/2)
+    data2 = {&#39;len&#39;: data2_len, &#39;pos&#39;: 0,
+             &#39;content&#39;: common.generate_random_data(data2_len)}
     _, backup2, _, data2 = create_backup(client, volume_name, data2)
 
     # HACK: #558 we use a side effect of the list call
@@ -3948,7 +3958,15 @@ def test_volume_toomanysnapshots_condition(client, core_api, volume_name): # NOQ
     sb_volume2 = client.by_id_volume(sb_volume2_name)
     sb_volume2.attach(hostId=lht_host_id)
     sb_volume2 = common.wait_for_volume_healthy(client, sb_volume2_name)
-    check_volume_data(sb_volume2, data2)
+    data0_modified2 = {
+        &#39;len&#39;: data0[&#39;len&#39;],
+        &#39;pos&#39;: 0,
+        &#39;content&#39;:
+            data2[&#39;content&#39;] +
+            data1[&#39;content&#39;][data2[&#39;len&#39;]:] +
+            data0[&#39;content&#39;][data1[&#39;len&#39;]:],
+    }
+    check_volume_data(sb_volume2, data0_modified2, False)
 
     # allocated this active volume to a pod
     sb_volume2.detach(hostId=&#34;&#34;)
