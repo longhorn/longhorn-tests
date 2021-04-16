@@ -832,8 +832,8 @@ def test_dr_volume_with_backup_block_deletion_abort_during_backup_in_progress(
         skipped.
     10. Delete backup(1).
     11. Verify backup block count == 3 (because of the in progress backup).
-    12. Delete the artificial in progress backup.cfg file.
-    13. Verify DR volume last backup is backup(0).
+    12. Verify DR volume last backup is empty.
+    13. Delete the artificial in progress backup.cfg file.
     14. Overwrite backup(0) 1st blocks of data on the volume.
         (Since backup(0) contains 2 blocks of data, the updated data is
         data2["content"] + data0["content"][BACKUP_BLOCK_SIZE:])
@@ -855,8 +855,7 @@ def test_dr_volume_with_backup_block_deletion_abort_during_backup_in_progress(
 
     data0 = {'pos': 0, 'len': 2 * BACKUP_BLOCK_SIZE,
              'content': common.generate_random_data(2 * BACKUP_BLOCK_SIZE)}
-    _, backup0, _, data0 = create_backup(
-        client, volume_name, data0)
+    create_backup(client, volume_name, data0)
 
     data1 = {'pos': 0, 'len': BACKUP_BLOCK_SIZE,
              'content': common.generate_random_data(BACKUP_BLOCK_SIZE)}
@@ -880,8 +879,7 @@ def test_dr_volume_with_backup_block_deletion_abort_during_backup_in_progress(
     assert backupstore_count_backup_block_files(client,
                                                 core_api,
                                                 volume_name) == 3
-    check_volume_last_backup(client, dr_vol_name, backup0.name)
-    wait_for_backup_restore_completed(client, dr_vol_name, backup0.name)
+    check_volume_last_backup(client, dr_vol_name, "")
     backupstore_delete_dummy_in_progress_backup(client, core_api, volume_name)
 
     data2 = {'pos': 0,
