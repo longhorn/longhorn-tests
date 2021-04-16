@@ -392,38 +392,77 @@
 </aside>
 
 <main style="padding: 1%; width: 70%;">
-  <h1 id="title">Reusing failed replica for rebuilding</h1>
+  <h1 id="title">Test File Sync Cancellation</h1>
   <div>
     <article id="content">
-       <h2 id="longhorn-upgrade-with-node-down-and-removal">Longhorn upgrade with node down and removal</h2>
+       <h2 id="related-issue">Related issue</h2>
+<p><a href="https://github.com/longhorn/longhorn/issues/2416">https://github.com/longhorn/longhorn/issues/2416</a></p>
+<h2 id="test-step">Test step</h2>
 <ol>
-<li>Launch Longhorn v1.0.x</li>
-<li>Create and attach a volume, then write data to the volume.</li>
-<li>Directly remove a Kubernetes node, and shut down a node.</li>
-<li>Wait for the related replicas failure. Then record <code>replica.Spec.DiskID</code> for the failed replicas.</li>
-<li>Upgrade to Longhorn master</li>
-<li>Verify the Longhorn node related to the removed node is gone.</li>
-<li>Verify
-<ol>
-<li><code>replica.Spec.DiskID</code> on the down node is updated and the field of the replica on the gone node is unchanged.</li>
-<li><code>replica.Spec.DataPath</code> for all replicas becomes empty.</li>
+<li>For test convenience, manually launch the backing image manager pods:</li>
 </ol>
-</li>
-<li>Remove all unscheduled replicas.</li>
-<li>Power on the down node. Wait for the failed replica on the down node being reused.</li>
-<li>Wait for a new replica being replenished and available.</li>
+<pre><code>apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  labels:
+    app: backing-image-manager
+  name: backing-image-manager
+  namespace: longhorn-system
+spec:
+  selector:
+    matchLabels:
+      app: backing-image-manager
+  template:
+    metadata:
+      labels:
+        app: backing-image-manager
+    spec:
+      containers:
+      - name: backing-image-manager
+        image: longhornio/backing-image-manager:master
+        imagePullPolicy: Always
+        securityContext:
+          privileged: true
+        command:
+        - backing-image-manager
+        - --debug
+        - daemon
+        - --listen
+        - 0.0.0.0:8000
+        readinessProbe:
+          tcpSocket:
+            port: 8000
+        volumeMounts:
+        - name: disk-path
+          mountPath: /data
+      volumes:
+      - name: disk-path
+        hostPath:
+          path: /var/lib/longhorn/
+      serviceAccountName: longhorn-service-account
+</code></pre><ol start="2">
+<li>Download a backing image in the first pod:</li>
 </ol>
-<h2 id="replica-not-available-for-reuse-after-disk-migration">Replica not available for reuse after disk migration</h2>
-<ol>
-<li>Deploy longhorn v1.1.0</li>
-<li>Create and attach a volume, then write data to the volume.</li>
-<li>Directly remove a Kubernetes node which has a replica on it.</li>
-<li>Wait for the related replicas failure.</li>
-<li>Verify the Longhorn node related to the removed node is gone.</li>
-<li>Ssh to the node and crash the replica folder or make it readonly.</li>
-<li>Add the node in the cluster again.</li>
-<li>Verify a new replica being rebuilt and available.</li>
-<li>Verify the data of the replica.</li>
+<pre><code># alias bm=&quot;backing-image-manager backing-image&quot;
+# bm pull --name bi-test --uuid uuid-bi-test --download-url https://cloud-images.ubuntu.com/minimal/releases/focal/release-20200729/ubuntu-20.04-minimal-cloudimg-amd64.img
+# bm ls
+</code></pre><ol start="3">
+<li>In the 2nd pod, limit the bandwidth first so that the downloading won&rsquo;t be done within several seconds</li>
+</ol>
+<pre><code>tc qdisc del dev eth0 root
+tc qdisc add dev eth0 root tbf rate 500kbit latency 0.1ms burst 1000kbit
+</code></pre><ol start="4">
+<li>Then start to get the backing image file from the 1st BIM pod</li>
+</ol>
+<pre><code># alias bm=&quot;backing-image-manager backing-image&quot;
+# bm sync --name bi-test --uuid uuid-bi-test --download-url https://cloud-images.ubuntu.com/minimal/releases/focal/release-20200729/ubuntu-20.04-minimal-cloudimg-amd64.img --size 208601088 --from-host &lt;the IP of 1st BIM pod&gt; --to-host &lt;the IP of 2nd BIM pod&gt;
+# bm ls
+</code></pre><ol start="5">
+<li>During the syncing, directly deleting the downloading backing image in the 2nd pod</li>
+</ol>
+<pre><code># bm delete bi-test
+</code></pre><ol start="6">
+<li>Wait 1 minute and check the log of the 2nd pod. Make sure there is no download/sync (failure) related logs after the deletion. Then restarting sync without deletion, the backing image can be downloaded successfully.</li>
 </ol>
 
     </article>

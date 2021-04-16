@@ -480,6 +480,16 @@ Scenario  Install Kubernetes Disable IPv6 on all the worker nodes using the foll
     </item>
     
     <item>
+      <title>Test File Sync Cancellation</title>
+      <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/test-file-sync-cancellation/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/test-file-sync-cancellation/</guid>
+      <description>Related issue https://github.com/longhorn/longhorn/issues/2416
+Test step  For test convenience, manually launch the backing image manager pods:  apiVersion: apps/v1 kind: DaemonSet metadata: labels: app: backing-image-manager name: backing-image-manager namespace: longhorn-system spec: selector: matchLabels: app: backing-image-manager template: metadata: labels: app: backing-image-manager spec: containers: - name: backing-image-manager image: longhornio/backing-image-manager:master imagePullPolicy: Always securityContext: privileged: true command: - backing-image-manager - --debug - daemon - --listen - 0.0.0.0:8000 readinessProbe: tcpSocket: port: 8000 volumeMounts: - name: disk-path mountPath: /data volumes: - name: disk-path hostPath: path: /var/lib/longhorn/ serviceAccountName: longhorn-service-account Download a backing image in the first pod:  # alias bm=&amp;quot;backing-image-manager backing-image&amp;quot; # bm pull --name bi-test --uuid uuid-bi-test --download-url https://cloud-images.</description>
+    </item>
+    
+    <item>
       <title>Test Frontend Traffic</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/ws-traffic-flood/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
