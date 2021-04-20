@@ -3295,7 +3295,7 @@ def test_allow_volume_creation_with_degraded_availability_error(
     self_host = get_self_host_id()
     with pytest.raises(Exception) as e:
         volume.attach(hostId=self_host)
-    assert "cannot be scheduled" in str(e.value)
+    assert "unable to attach volume" in str(e.value)
 
     # enable node 1
     client.update(node1, allowScheduling=True)
