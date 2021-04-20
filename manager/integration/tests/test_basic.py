@@ -1834,7 +1834,7 @@ def test_volume_scheduling_failure(client, volume_name):  # NOQA
     self_node = get_self_host_id()
     with pytest.raises(Exception) as e:
         volume.attach(hostId=self_node)
-    assert "cannot be scheduled" in str(e.value)
+    assert "unable to attach volume" in str(e.value)
 
     for node in nodes:
         node = client.update(node, allowScheduling=True)
