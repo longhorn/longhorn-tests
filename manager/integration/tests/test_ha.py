@@ -364,11 +364,9 @@ def ha_salvage_test(client, core_api, # NOQA
 
     crash_replica_processes(client, core_api, volume_name)
 
-    volume = common.wait_for_volume_faulted(client, volume_name)
-    assert len(volume.replicas) == 3
-    assert volume.replicas[0].failedAt != ""
-    assert volume.replicas[1].failedAt != ""
-    assert volume.replicas[2].failedAt != ""
+    common.wait_for_volume_faulted(client, volume_name)
+
+    common.wait_for_volume_healthy(client, volume_name)
 
     volume = common.wait_for_volume_healthy(client, volume_name)
     assert len(volume.replicas) == 3
