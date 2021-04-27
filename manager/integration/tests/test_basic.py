@@ -1,11 +1,12 @@
-import os
-import time
-import common
-import subprocess
 import pytest
 
+import os
+import subprocess
+import time
+
+import common
 from common import client, random_labels, volume_name  # NOQA
-from common import core_api, apps_api, pod   # NOQA
+from common import core_api, apps_api, pod, statefulset   # NOQA
 from common import SIZE, EXPAND_SIZE
 from common import check_device_data, write_device_random_data
 from common import check_volume_data, write_volume_random_data
@@ -85,6 +86,7 @@ from backupstore import backupstore_get_backup_volume_prefix
 from backupstore import set_backupstore_url, set_backupstore_credential_secret, set_backupstore_poll_interval  # NOQA
 from backupstore import reset_backupstore_setting  # NOQA
 
+from kubernetes import client as k8sclient
 
 @pytest.mark.coretest   # NOQA
 def test_hosts(client):  # NOQA
@@ -3247,25 +3249,61 @@ def test_allow_volume_creation_with_degraded_availability_error(client, volume_n
 
 def test_multiple_volumes_creation_with_degraded_availability(set_random_backupstore, client, core_api, apps_api, storage_class, statefulset):  # NOQA
     """
-    Goal:
-    We want to verify that multiple volumes with degraded availability
-    can be created, attached, detached, and deleted at the nearly the
-    same time.
+    Scenario: verify multiple volumes with degraded availability can be
+              created, attached, detached, and deleted at nearly the same time.
 
-    Steps:
-    1. create StorageClass longhorn-extra with numberOfReplicas=5
-       Set allow-volume-creation-with-degraded-availability to True
-    2. Deploy this StatefulSet:
-       https://github.com/longhorn/longhorn/issues/2073#issuecomment-742948726
-    3. In a 1-min retry loop, Verify that all 10 volumes are healthy
-    4. Delete the StatefulSet
-    5. In a 1-min retry loop, Verify that all 10 volumes are detached
-    6. Find and delete the PVC of the 10 volumes.
-    7. In a 1-min retry loop, Verify that all 10 volumes are deleted
-    8. Make sure to delete all extra storage classes in
-       common.cleanup_client()
+    Given new StorageClass created with `numberOfReplicas=5`.
+
+    When set `allow-volume-creation-with-degraded-availability` to `True`.
+    And deploy this StatefulSet:
+        https://github.com/longhorn/longhorn/issues/2073#issuecomment-742948726
+    Then all 10 volumes are healthy in 1 minute.
+
+    When delete the StatefulSet.
+    then all 10 volumes are detached in 1 minute.
+
+    When find and delete the PVC of the 10 volumes.
+    Then all 10 volumes are deleted in 1 minute.
     """
-    pass
+    storage_class['parameters']['numberOfReplicas'] = "5"
+    create_storage_class(storage_class)
+
+    common.update_setting(client,
+                          common.SETTING_DEGRADED_AVAILABILITY, "true")
+
+    sts_spec = statefulset['spec']
+    sts_spec['podManagementPolicy'] = "Parallel"
+    sts_spec['replicas'] = 10
+    sts_spec['volumeClaimTemplates'][0]['spec']['storageClassName'] = \
+        storage_class['metadata']['name']
+    statefulset['spec'] = sts_spec
+    common.create_and_wait_statefulset(statefulset)
+    pod_list = common.get_statefulset_pod_info(core_api, statefulset)
+    retry_counts = int(60 / RETRY_INTERVAL)
+    common.wait_for_pods_volume_state(
+        client, pod_list,
+        common.VOLUME_FIELD_ROBUSTNESS,
+        common.VOLUME_ROBUSTNESS_HEALTHY,
+        retry_counts=retry_counts
+    )
+
+    apps_api.delete_namespaced_stateful_set(
+        name=statefulset['metadata']['name'],
+        namespace=statefulset['metadata']['namespace'],
+        body=k8sclient.V1DeleteOptions()
+    )
+    common.wait_for_pods_volume_state(
+        client, pod_list,
+        common.VOLUME_FIELD_STATE,
+        common.VOLUME_STATE_DETACHED,
+        retry_counts=retry_counts
+    )
+
+    for p in pod_list:
+        common.delete_and_wait_pvc(core_api, p['pvc_name'],
+                                   retry_counts=retry_counts)
+    common.wait_for_pods_volume_delete(client, pod_list,
+                                       retry_counts=retry_counts)
 
 
 def test_allow_volume_creation_with_degraded_availability_restore(set_random_backupstore, client, core_api, volume_name, csi_pv, pvc, pod, pod_make):  # NOQA
