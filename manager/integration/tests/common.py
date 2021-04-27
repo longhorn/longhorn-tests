@@ -92,7 +92,7 @@ DEFAULT_BACKUP_TIMEOUT = 100
 DEFAULT_POD_INTERVAL = 1
 DEFAULT_POD_TIMEOUT = 180
 
-DEFAULT_STATEFULSET_INTERVAL = 5
+DEFAULT_STATEFULSET_INTERVAL = 1
 DEFAULT_STATEFULSET_TIMEOUT = 180
 
 DEFAULT_DEPLOYMENT_INTERVAL = 1
@@ -1111,7 +1111,8 @@ def statefulset(request):
         'apiVersion': 'apps/v1',
         'kind': 'StatefulSet',
         'metadata': {
-            'name': 'test-statefulset'
+            'name': 'test-statefulset',
+            'namespace': 'default',
         },
         'spec': {
             'selector': {
@@ -1353,6 +1354,8 @@ def cleanup_client():
 
     if backing_image_feature_supported(client):
         cleanup_all_backing_images(client)
+
+    cleanup_storage_class()
 
     # enable nodes scheduling
     reset_node(client)
@@ -3003,6 +3006,16 @@ def check_csi_expansion(core_api):
     return csi_expansion_enabled
 
 
+def create_statefulset(statefulset_manifest):
+    """
+    Create a new StatefulSet for testing.
+    """
+    api = get_apps_api_client()
+    api.create_namespaced_stateful_set(
+        body=statefulset_manifest,
+        namespace='default')
+
+
 def create_and_wait_statefulset(statefulset_manifest):
     """
     Create a new StatefulSet for testing.
@@ -3010,10 +3023,7 @@ def create_and_wait_statefulset(statefulset_manifest):
     This function will block until all replicas in the StatefulSet are online
     or it times out, whichever occurs first.
     """
-    api = get_apps_api_client()
-    api.create_namespaced_stateful_set(
-        body=statefulset_manifest,
-        namespace='default')
+    create_statefulset(statefulset_manifest)
     wait_statefulset(statefulset_manifest)
 
 
@@ -3043,6 +3053,29 @@ def delete_storage_class(sc_name):
         api.delete_storage_class(sc_name, body=k8sclient.V1DeleteOptions())
     except ApiException as e:
         assert e.status == 404
+
+
+def cleanup_storage_class():
+    skip_sc_deletes = ["longhorn", "local-path"]
+    api = get_storage_api_client()
+    ret = api.list_storage_class()
+    for sc in ret.items:
+        if sc.metadata.name in skip_sc_deletes:
+            continue
+        delete_storage_class(sc.metadata.name)
+
+    ok = False
+    for _ in range(RETRY_COUNTS):
+        ok = True
+        ret = api.list_storage_class()
+        for sc in ret.items:
+            if sc.metadata.name not in skip_sc_deletes:
+                ok = False
+                break
+        if ok:
+            break
+        time.sleep(RETRY_INTERVAL)
+    assert ok
 
 
 def create_pvc(pvc_manifest):
@@ -3107,7 +3140,7 @@ def check_statefulset_existence(api, ss_name, namespace="default"):
     return False
 
 
-def delete_and_wait_pvc(api, pvc_name):
+def delete_and_wait_pvc(api, pvc_name, retry_counts=RETRY_COUNTS):
     try:
         api.delete_namespaced_persistent_volume_claim(
             name=pvc_name, namespace='default',
@@ -3115,11 +3148,11 @@ def delete_and_wait_pvc(api, pvc_name):
     except ApiException as e:
         assert e.status == 404
 
-    wait_delete_pvc(api, pvc_name)
+    wait_delete_pvc(api, pvc_name, retry_counts=retry_counts)
 
 
-def wait_delete_pvc(api, pvc_name):
-    for i in range(RETRY_COUNTS):
+def wait_delete_pvc(api, pvc_name, retry_counts=RETRY_COUNTS):
+    for _ in range(retry_counts):
         found = False
         ret = api.list_namespaced_persistent_volume_claim(namespace='default')
         for item in ret.items:
@@ -3962,6 +3995,35 @@ def wait_for_pod_phase(core_api, pod_name, pod_phase, namespace="default"):
 
         time.sleep(RETRY_INTERVAL_LONG)
     assert is_phase
+
+
+def wait_for_pods_volume_state(client, pod_list, field, value,  # NOQA
+                               retry_counts=RETRY_COUNTS):
+    for _ in range(retry_counts):
+        volume_names = []
+        volumes = client.list_volume()
+        for v in volumes:
+            for p in pod_list:
+                if v.name == p['pv_name'] and v[field] == value:
+                    volume_names.append(v.name)
+                    break
+        time.sleep(RETRY_INTERVAL)
+    return len(volume_names) == len(pod_list)
+
+
+def wait_for_pods_volume_delete(client, pod_list,  # NOQA
+                                retry_counts=RETRY_BACKUP_COUNTS):
+    volume_deleted = False
+    for _ in range(retry_counts):
+        volume_deleted = True
+        volumes = client.list_volume()
+        for v in volumes:
+            for p in pod_list:
+                if v.name == p['pv_name']:
+                    volume_deleted = False
+                    break
+        time.sleep(RETRY_INTERVAL)
+    assert volume_deleted is True
 
 
 def wait_for_instance_manager_desire_state(client, core_api, im_name,
