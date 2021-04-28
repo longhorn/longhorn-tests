@@ -4246,6 +4246,24 @@ def create_backing_image_with_matching_url(client, name, url):
     return bi
 
 
+def list_backing_image_disks(backing_images):
+    bi_disks = []
+    for bi in backing_images:
+        for disk, _ in iter(bi.diskFileStatusMap.items()):
+            bi_disks.append(disk)
+    return bi_disks
+
+
+def list_backing_image_manager_pods(core_api):
+    bim_pods = []
+    pods = core_api.list_namespaced_pod(LONGHORN_NAMESPACE).items
+    for p in pods:
+        if not p.metadata.name.startswith("backing-image-manager"):
+            continue
+        bim_pods.append(p)
+    return bim_pods
+
+
 def wait_for_backing_image_disk_cleanup(client, bi_name, disk_id):
     found = False
     for i in range(RETRY_COUNTS):

@@ -1,6 +1,7 @@
 import time
 import pytest
 
+import common
 from common import (  # NOQA
     get_longhorn_api_client, get_self_host_id,
     get_core_api_client, get_apps_api_client,
@@ -30,14 +31,28 @@ from test_infra import wait_for_node_up_longhorn
 KUBERNETES_DEFAULT_TOLERATION = "kubernetes.io"
 
 
-def check_workload_update(core_api, apps_api, count):  # NOQA
+def check_longhorn_managed_workloads(core_api, apps_api, count, backing_images=[]):  # NOQA
+    pod_list = core_api.list_namespaced_pod(LONGHORN_NAMESPACE).items
+    for p in pod_list:
+        if p.status.phase != "Running":
+            return False
+
+    skip_updates = [
+        "longhorn-driver-deployer",
+        "longhorn-manager",
+        "longhorn-ui",
+    ]
     da_list = apps_api.list_namespaced_daemon_set(LONGHORN_NAMESPACE).items
     for da in da_list:
+        if da.metadata.name in skip_updates:
+            continue
         if da.status.updated_number_scheduled != count:
             return False
 
     dp_list = apps_api.list_namespaced_deployment(LONGHORN_NAMESPACE).items
     for dp in dp_list:
+        if dp.metadata.name in skip_updates:
+            continue
         if dp.status.updated_replicas != dp.spec.replicas:
             return False
 
@@ -47,16 +62,18 @@ def check_workload_update(core_api, apps_api, count):  # NOQA
     if len(im_pod_list) != 2 * count:
         return False
 
-    for p in im_pod_list:
-        if p.status.phase != "Running":
-            return False
-
     client = get_longhorn_api_client()  # NOQA
     images = client.list_engine_image()
     assert len(images) == 1
     ei_state = get_engine_image_status_value(client, images[0].name)
     if images[0].state != ei_state:
         return False
+
+    if len(backing_images) != 0:
+        bi_disks = common.list_backing_image_disks(backing_images)
+        bim_pods = common.list_backing_image_manager_pods(core_api)
+        if len(bi_disks) != len(bim_pods):
+            return False
 
     return True
 
@@ -81,7 +98,8 @@ def test_setting_toleration():
 
     1.  Set `taint-toleration` to "key1=value1:NoSchedule; key2:InvalidEffect".
     2.  Verify the request fails.
-    3.  Create a volume and attach it.
+    3.  Create a volume.
+    4.  Attach the volume to self node and wait volume healthy.
     4.  Set `taint-toleration` to "key1=value1:NoSchedule; key2:NoExecute".
     5.  Verify that cannot update toleration setting when any volume is
         attached.
@@ -90,7 +108,7 @@ def test_setting_toleration():
     8.  Set `taint-toleration` to "key1=value1:NoSchedule; key2:NoExecute".
     9.  Wait for all the Longhorn system components to restart with new
         toleration.
-    10. Verify that UI, manager, and drive deployer don't restart and
+    10. Verify that UI, manager, and drive-deployer don't restart and
         don't have new toleration.
     11. Attach the volume again and verify the volume `data1`.
     12. Generate and write `data2` to the volume.
@@ -99,8 +117,14 @@ def test_setting_toleration():
     15. Wait for all the Longhorn system components to restart with no
         toleration.
     16. Attach the volume and validate `data2`.
-    17. Generate and write `data3` to the volume.
+    17. Generate, write, and validate `data3` on the volume.
+
+    Note: system components are workloads except UI, manager, driver-deployer
     """
+    setting_toleration_test()
+
+
+def setting_toleration_test(backing_image=""):
     client = get_longhorn_api_client()  # NOQA
     apps_api = get_apps_api_client()  # NOQA
     core_api = get_core_api_client()  # NOQA
@@ -114,7 +138,8 @@ def test_setting_toleration():
     assert 'invalid effect' in str(e.value)
 
     volume_name = "test-toleration-vol"  # NOQA
-    volume = create_and_check_volume(client, volume_name)
+    volume = create_and_check_volume(client, volume_name,
+                                     backing_image=backing_image)
     volume.attach(hostId=get_self_host_id())
     volume = wait_for_volume_healthy(client, volume_name)
 
@@ -146,7 +171,9 @@ def test_setting_toleration():
 
     setting = client.update(setting, value=setting_value_str)
     assert setting.value == setting_value_str
-    wait_for_toleration_update(core_api, apps_api, count, setting_value_dicts)
+    backing_images = client.list_backing_image()
+    wait_for_toleration_update(core_api, apps_api, count, setting_value_dicts,
+                               backing_images=backing_images)
 
     client, node = wait_for_longhorn_node_ready()
 
@@ -154,6 +181,7 @@ def test_setting_toleration():
     volume.attach(hostId=node)
     volume = wait_for_volume_healthy(client, volume_name)
     check_volume_data(volume, data1)
+
     data2 = write_volume_random_data(volume)
     check_volume_data(volume, data2)
     volume.detach(hostId="")
@@ -161,11 +189,14 @@ def test_setting_toleration():
 
     # cleanup
     setting_value_str = ""
+    del_setting_value_dicts = setting_value_dicts
     setting_value_dicts = []
     setting = client.by_id_setting(SETTING_TAINT_TOLERATION)
     setting = client.update(setting, value=setting_value_str)
     assert setting.value == setting_value_str
-    wait_for_toleration_update(core_api, apps_api, count, setting_value_dicts)
+    wait_for_toleration_update(core_api, apps_api, count, setting_value_dicts,
+                               chk_removed_tolerations=del_setting_value_dicts,
+                               backing_images=backing_images)
 
     client, node = wait_for_longhorn_node_ready()
 
@@ -173,6 +204,7 @@ def test_setting_toleration():
     volume.attach(hostId=node)
     volume = wait_for_volume_healthy(client, volume_name)
     check_volume_data(volume, data2)
+
     data3 = write_volume_random_data(volume)
     check_volume_data(volume, data3)
 
@@ -206,8 +238,7 @@ def test_setting_toleration_extra(core_api, apps_api):  # NOQA
        don't have toleration.
     7. Clear Kubernetes Taint Toleration
 
-    Note: system components are workloads other than UI, manager, driver
-    deployer
+    Note: system components are workloads except UI, manager, driver-deployer
     """
     settings = [
         {
@@ -277,48 +308,40 @@ def test_setting_toleration_extra(core_api, apps_api):  # NOQA
 
 def wait_for_toleration_update(core_api, apps_api, count,  # NOQA
                                expected_tolerations,
-                               chk_removed_tolerations=[]):
-    not_managed_apps = [
-        "csi-attacher",
-        "csi-provisioner",
-        "csi-resizer",
-        "csi-snapshotter",
-        "longhorn-csi-plugin",
+                               chk_removed_tolerations=[],
+                               backing_images=[]):
+    skip_updates = [
         "longhorn-driver-deployer",
         "longhorn-manager",
         "longhorn-ui",
     ]
-    updated = False
+    ok = False
     for _ in range(RETRY_COUNTS):
         time.sleep(RETRY_INTERVAL_LONG)
 
-        updated = True
-        if not check_workload_update(core_api, apps_api, count):
-            updated = False
+        ok = False
+        if not check_longhorn_managed_workloads(core_api, apps_api, count,
+                                                backing_images):
             continue
 
         pod_list = core_api.list_namespaced_pod(LONGHORN_NAMESPACE).items
+
         for p in pod_list:
-            managed_by = p.metadata.labels.get('longhorn.io/managed-by', '')
-            if str(managed_by) != "longhorn-manager":
-                continue
-            else:
-                app_name = str(p.metadata.labels.get('app', ''))
-                assert app_name not in not_managed_apps
-
-            if p.status.phase != "Running" \
-                or not check_tolerations_set(p.spec.tolerations,
-                                             expected_tolerations,
-                                             chk_removed_tolerations):
-                updated = False
-                break
-        if updated:
+            updated = check_tolerations_set_update(p.spec.tolerations,
+                                                   expected_tolerations,
+                                                   chk_removed_tolerations)
+            app_name = str(p.metadata.labels.get('app', ''))
+            if app_name in skip_updates and updated == 0:
+                ok = True
+            elif updated == len(expected_tolerations):
+                ok = True
+        if ok:
             break
-    assert updated
+    assert ok
 
 
-def check_tolerations_set(current_toleration_list, expected_tolerations,
-                          chk_removed_tolerations=[]):
+def check_tolerations_set_update(current_toleration_list, expected_tolerations,
+                                 chk_removed_tolerations=[]):
     found = 0
     unexpected = 0
     for t in current_toleration_list:
@@ -335,7 +358,8 @@ def check_tolerations_set(current_toleration_list, expected_tolerations,
         for removed in chk_removed_tolerations:
             if current_toleration == removed:
                 unexpected += 1
-    return len(expected_tolerations) == found and unexpected == 0
+    assert unexpected == 0
+    return found
 
 
 def test_instance_manager_cpu_reservation(client, core_api):  # NOQA
@@ -506,29 +530,28 @@ def test_setting_priority_class(core_api, apps_api, scheduling_api, priority_cla
     """
     Test that the Priority Class setting is validated and utilized correctly.
 
-    1. Verify that the name of a non-existent Priority Class cannot be used
-    for the Setting.
-    2. Create a new Priority Class in Kubernetes.
-    3. Create and attach a Volume.
-    4. Verify that the Priority Class Setting cannot be updated with an
-    attached Volume.
-    5. Generate and write `data1`.
-    6. Detach the Volume.
-    7. Update the Priority Class Setting to the new Priority Class.
-    8. Wait for all the Longhorn system components to restart with the new
-       Priority Class.
-    9. Verify that UI, manager, and drive deployer don't have Priority Class
+    1.  Verify that the name of a non-existent Priority Class cannot be used
+        for the Setting.
+    2.  Create a new Priority Class in Kubernetes.
+    3.  Create and attach a Volume.
+    4.  Verify that the Priority Class Setting cannot be updated with an
+        attached Volume.
+    5.  Generate and write `data1`.
+    6.  Detach the Volume.
+    7.  Update the Priority Class Setting to the new Priority Class.
+    8.  Wait for all the Longhorn system components to restart with the new
+        Priority Class.
+    9.  Verify that UI, manager, and driver-deployer don't have Priority Class
     10. Attach the Volume and verify `data1`.
     11. Generate and write `data2`.
     12. Unset the Priority Class Setting.
     13. Wait for all the Longhorn system components to restart with the new
         Priority Class.
-    14. Verify that UI, manager, and drive deployer don't have Priority Class
+    14. Verify that UI, manager, and drive-deployer don't have Priority Class.
     15. Attach the Volume and verify `data2`.
     16. Generate and write `data3`.
 
-    Note: system components are workloads other than UI, manager, driver
-     deployer
+    Note: system components are workloads except UI, manager, driver-deployer
     """
     client = get_longhorn_api_client()  # NOQA
     count = len(client.list_node())
@@ -541,7 +564,11 @@ def test_setting_priority_class(core_api, apps_api, scheduling_api, priority_cla
 
     scheduling_api.create_priority_class(priority_class)
 
-    volume = create_and_check_volume(client, volume_name)
+    common.create_backing_image_with_matching_url(
+        client, common.BACKING_IMAGE_NAME, common.BACKING_IMAGE_QCOW2_URL)
+    volume = client.create_volume(name=volume_name, size=SIZE,
+                                  backingImage=common.BACKING_IMAGE_NAME)
+    volume = common.wait_for_volume_detached(client, volume_name)
     volume.attach(hostId=get_self_host_id())
     volume = wait_for_volume_healthy(client, volume_name)
 
@@ -558,7 +585,6 @@ def test_setting_priority_class(core_api, apps_api, scheduling_api, priority_cla
 
     setting = client.update(setting, value=name)
     assert setting.value == name
-
     wait_for_priority_class_update(core_api, apps_api, count, priority_class)
 
     client, node = wait_for_longhorn_node_ready()
@@ -567,6 +593,7 @@ def test_setting_priority_class(core_api, apps_api, scheduling_api, priority_cla
     volume.attach(hostId=node)
     volume = wait_for_volume_healthy(client, volume_name)
     check_volume_data(volume, data1)
+
     data2 = write_volume_random_data(volume)
     check_volume_data(volume, data2)
     volume.detach(hostId="")
@@ -583,10 +610,12 @@ def test_setting_priority_class(core_api, apps_api, scheduling_api, priority_cla
     volume.attach(hostId=node)
     volume = wait_for_volume_healthy(client, volume_name)
     check_volume_data(volume, data2)
+
     data3 = write_volume_random_data(volume)
     check_volume_data(volume, data3)
 
     cleanup_volume(client, volume)
+    common.cleanup_all_backing_images(client)
 
 
 def check_priority_class(pod, priority_class=None):  # NOQA
@@ -595,33 +624,33 @@ def check_priority_class(pod, priority_class=None):  # NOQA
                pod.spec.priority_class_name == \
                priority_class['metadata']['name']
     else:
-        return pod.spec.priority == 0 and pod.spec.priority_class_name == ''
+        return pod.spec.priority == 0 and not pod.spec.priority_class_name
 
 
 def wait_for_priority_class_update(core_api, apps_api, count, priority_class=None):  # NOQA
-    updated = False
-
-    for i in range(RETRY_COUNTS):
+    skip_updates = [
+        "longhorn-driver-deployer",
+        "longhorn-manager",
+        "longhorn-ui",
+    ]
+    ok = False
+    for _ in range(RETRY_COUNTS):
         time.sleep(RETRY_INTERVAL_LONG)
-        updated = True
 
-        if not check_workload_update(core_api, apps_api, count):
-            updated = False
+        ok = False
+        if not check_longhorn_managed_workloads(core_api, apps_api, count):
             continue
 
         pod_list = core_api.list_namespaced_pod(LONGHORN_NAMESPACE).items
         for p in pod_list:
-            if p.status.phase != "Running" and \
-                    not check_priority_class(p, priority_class):
-                updated = False
-                break
-        if not updated:
-            continue
-
-        if updated:
+            app_name = str(p.metadata.labels.get('app', ''))
+            if str(app_name) in skip_updates:
+                ok = check_priority_class(p, None)
+            else:
+                ok = check_priority_class(p, priority_class)
+        if ok:
             break
-
-    assert updated
+    assert ok
 
 
 @pytest.mark.skip(reason="TODO")

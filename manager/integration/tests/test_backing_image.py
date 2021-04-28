@@ -8,6 +8,7 @@ from common import client, random_labels, volume_name, core_api  # NOQA
 from common import csi_pv, pvc, pod_make  # NOQA
 from common import csi_pv_backingimage, pvc_backingimage  # NOQA
 from common import disable_auto_salvage  # NOQA
+from common import get_longhorn_api_client  # NOQA
 
 from test_basic import volume_basic_test, volume_iscsi_basic_test,\
     snapshot_test, backup_test, backup_labels_test
@@ -17,6 +18,7 @@ from test_ha import ha_simple_recovery_test, ha_salvage_test, \
     ha_backup_deletion_recovery_test
 from test_csi import csi_mount_test, csi_io_test, csi_backup_test
 from test_recurring_job import recurring_job_labels_test
+from test_settings import setting_toleration_test
 
 from common import get_self_host_id
 from common import create_and_check_volume, wait_for_volume_healthy, \
@@ -421,3 +423,39 @@ def test_exporting_backing_image_from_volume():  # NOQA
         is the same as that of the 2nd volume.
     11. Do cleanup.
     """
+
+
+@pytest.mark.backing_image
+def test_setting_toleration_with_backing_image():
+    """
+    Test toleration setting with backing image
+
+    1.  Create backing image.
+    2.  Set `taint-toleration` to "key1=value1:NoSchedule; key2:InvalidEffect".
+    3.  Verify the request fails.
+    4.  Create a volume with backing image
+    5.  Attach the volume to self node and wait volume healthy.
+    6.  Set `taint-toleration` to "key1=value1:NoSchedule; key2:NoExecute".
+    7.  Verify that cannot update toleration setting when any volume is
+        attached.
+    8.  Generate and write `data1` into the volume.
+    9.  Detach the volume.
+    10. Set `taint-toleration` to "key1=value1:NoSchedule; key2:NoExecute".
+    11. Wait for all the Longhorn "backing-image-manager" components to restart
+        with new toleration.
+    12. Attach the volume again and verify the volume `data1`.
+    13. Generate and write `data2` to the volume.
+    14. Detach the volume.
+    15. Clean the `toleration` setting.
+    16. Wait for all the Longhorn "backing-image-manager" components to restart
+        with no toleration.
+    17. Attach the volume and validate `data2`.
+    18. Generate, write, and validate `data3` on the volume.
+    """
+    for bi_url in (BACKING_IMAGE_QCOW2_URL, BACKING_IMAGE_RAW_URL):
+        client = get_longhorn_api_client()  # NOQA
+        create_backing_image_with_matching_url(
+            client, BACKING_IMAGE_NAME, bi_url)
+        setting_toleration_test(backing_image=BACKING_IMAGE_NAME)
+        cleanup_all_volumes(client)
+        cleanup_all_backing_images(client)
