@@ -396,6 +396,41 @@
   <div>
     <article id="content">
        <p>We also need to cover the Kubernetes upgrade process for supported Kubernetes version, make sure pod and volumes works after a major version upgrade.</p>
+<h2 id="related-issue">Related Issue</h2>
+<p><a href="https://github.com/longhorn/longhorn/issues/2566">https://github.com/longhorn/longhorn/issues/2566</a></p>
+<h2 id="test-with-k8s-upgrade">Test with K8s upgrade</h2>
+<ol>
+<li>Create a K8s (Immediate prior version) cluster with 3 worker nodes and 1 control plane.</li>
+<li>Deploy Longhorn version (Immediate prior version) on the cluster.</li>
+<li>Create a volume and attach to a pod.</li>
+<li>Write data to the volume and compute the checksum.</li>
+<li>Create 2nd volume and keep it detached.</li>
+<li>Upgrade K8s to the latest version.</li>
+<li>Observe the volume replicas get rebuilt as the instance manager goes down temporarily for the upgrade.</li>
+<li>Verify all the volume should come up healthy after all the nodes are upgraded.</li>
+<li>Upgrade Longhorn to the latest version and verify all the volumes become healthy eventually.</li>
+<li>Verify the data in the volume.</li>
+</ol>
+<p><strong>Known Issue</strong>: If the volumes are still attaching and the instance managers got killed due to node went down temporarily for the upgrade, the replicas on those instance managers will be out of sync and will become error.
+<a href="https://github.com/longhorn/longhorn/issues/494">https://github.com/longhorn/longhorn/issues/494</a></p>
+<h2 id="test-with-k8s-upgrade-with-drain">Test with K8s upgrade with Drain</h2>
+<ol>
+<li>Create a K8s (Immediate prior version) cluster with 3 worker nodes and 1 control plane.</li>
+<li>Deploy Longhorn version (Immediate prior version) on the cluster.</li>
+<li>Create a volume and attach to a pod.</li>
+<li>Write data to the volume and compute the checksum.</li>
+<li>Create 2nd volume and keep it detached.</li>
+<li>Upgrade K8s version to latest, drain each node first before it gets upgraded. If using Rancher, upgrade with &ldquo;Drain before upgrade&rdquo; enabled.</li>
+<li>Observe the volume replicas get rebuilt as the instance manager goes down temporarily for the upgrade.</li>
+<li>Verify all the volume should come up healthy after all the nodes are upgraded.</li>
+<li>Upgrade Longhorn to the latest version and verify all the volumes become healthy eventually.</li>
+<li>Verify the data in the volume.</li>
+</ol>
+<p>Note: In this case, no problem w.r.t attaching/detaching should be observed.</p>
+<h2 id="test-with-k3s-upgrade">Test with K3s upgrade.</h2>
+<ol>
+<li>Repeat the above tests with k3s cluster.</li>
+</ol>
 
     </article>
   </div>

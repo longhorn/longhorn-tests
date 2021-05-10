@@ -201,7 +201,9 @@ Case 1:  Create a volume and take multiple backups for the same. Delete the late
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/kubernetes-upgrade-test/</guid>
-      <description>We also need to cover the Kubernetes upgrade process for supported Kubernetes version, make sure pod and volumes works after a major version upgrade.</description>
+      <description>We also need to cover the Kubernetes upgrade process for supported Kubernetes version, make sure pod and volumes works after a major version upgrade.
+Related Issue https://github.com/longhorn/longhorn/issues/2566
+Test with K8s upgrade  Create a K8s (Immediate prior version) cluster with 3 worker nodes and 1 control plane. Deploy Longhorn version (Immediate prior version) on the cluster. Create a volume and attach to a pod. Write data to the volume and compute the checksum.</description>
     </item>
     
     <item>
