@@ -146,6 +146,7 @@ SETTING_PRIORITY_CLASS = "priority-class"
 SETTING_RECURRING_JOB_WHILE_VOLUME_DETACHED = \
     "allow-recurring-job-while-volume-detached"
 SETTING_REPLICA_NODE_SOFT_ANTI_AFFINITY = "replica-soft-anti-affinity"
+SETTING_REPLICA_AUTO_BALANCE = "replica-auto-balance"
 SETTING_REPLICA_REPLENISHMENT_WAIT_INTERVAL = \
     "replica-replenishment-wait-interval"
 SETTING_REPLICA_ZONE_SOFT_ANTI_AFFINITY = "replica-zone-soft-anti-affinity"
@@ -197,6 +198,11 @@ DATA_SIZE_IN_MB_4 = 800
 MESSAGE_TYPE_ERROR = "error"
 
 BACKUP_BLOCK_SIZE = 2 * Mi
+
+# label deprecated for k8s >= v1.17
+DEPRECATED_K8S_ZONE_LABEL = "failure-domain.beta.kubernetes.io/zone"
+
+K8S_ZONE_LABEL = "topology.kubernetes.io/zone"
 
 
 def load_k8s_config():
@@ -1551,6 +1557,17 @@ def wait_for_volume_replica_count(client, name, count):
     return volume
 
 
+def wait_for_volume_replica_auto_balance_update(client, volume_name, value):
+    wait_for_volume_creation(client, volume_name)
+    for i in range(RETRY_COUNTS):
+        volume = client.by_id_volume(volume_name)
+        if volume.replicaAutoBalance == value:
+            break
+        time.sleep(RETRY_INTERVAL)
+    assert volume.replicaAutoBalance == value
+    return volume
+
+
 def wait_for_volume_replicas_mode(client, volname, mode,
                                   replica_names=None, replica_count=None):
     verified = False
@@ -1584,6 +1601,32 @@ def wait_for_volume_replicas_mode(client, volname, mode,
         time.sleep(RETRY_INTERVAL)
 
     assert verified
+    return volume
+
+
+def wait_for_volume_replicas_running_on_hosts(client, volume_name, host_ids,
+                                              replica_balanced):
+    hosts = list(host_ids)
+    for i in range(RETRY_COUNTS):
+        hosts = list(host_ids)
+        num_running = 0
+        volume = client.by_id_volume(volume_name)
+        for replica in volume.replicas:
+            if not replica.running:
+                continue
+
+            if replica.hostId not in hosts:
+                continue
+
+            if replica_balanced:
+                hosts.remove(replica.hostId)
+
+            num_running += 1
+        if num_running == volume.numberOfReplicas:
+            break
+
+        time.sleep(RETRY_INTERVAL)
+    assert num_running == volume.numberOfReplicas
     return volume
 
 
@@ -1806,6 +1849,18 @@ def wait_for_replica_scheduled(client, volume_name, to_nodes,
     assert unexpect_fail == 0
     assert len(volume.replicas) == expect_success + expect_fail
     return volume
+
+
+def get_host_replica_count(client, volume_name, host_id, chk_running=False):
+    volume = client.by_id_volume(volume_name)
+
+    replica_count = 0
+    for replica in volume.replicas:
+        if chk_running and not replica.running:
+            continue
+        if replica.hostId == host_id:
+            replica_count += 1
+    return replica_count
 
 
 @pytest.fixture
@@ -2483,6 +2538,62 @@ def reset_node(client):
         except Exception as e:
             print("\nException when reset node schedulding and tags", node)
             print(e)
+
+    reset_longhorn_node_zone(client)
+
+
+def reset_longhorn_node_zone(client):
+    core_api = get_core_api_client()
+
+    nodes = client.list_node()
+    for n in nodes:
+        set_k8s_node_zone_label(core_api, n.name, None)
+    wait_longhorn_node_zone_reset(client)
+
+
+def wait_longhorn_node_zone_reset(client):
+
+    lh_nodes = client.list_node()
+    node_names = map(lambda node: node.name, lh_nodes)
+
+    for node_name in node_names:
+        for j in range(RETRY_COUNTS):
+            lh_node = client.by_id_node(node_name)
+            if lh_node.zone == '':
+                break
+            time.sleep(RETRY_INTERVAL)
+
+        assert lh_node.zone == ''
+
+
+def set_k8s_node_zone_label(core_api, node_name, zone_name):
+    k8s_zone_label = get_k8s_zone_label()
+
+    payload = {
+        "metadata": {
+            "labels": {
+                k8s_zone_label: zone_name}
+        }
+    }
+
+    core_api.patch_node(node_name, body=payload)
+
+
+def get_k8s_zone_label():
+    ver_api = get_version_api_client()
+    k8s_ver_data = ver_api.get_code()
+
+    k8s_ver_major = k8s_ver_data.major
+    assert k8s_ver_major == '1'
+
+    k8s_ver_minor = k8s_ver_data.minor
+
+    if int(k8s_ver_minor) >= 17:
+        k8s_zone_label = K8S_ZONE_LABEL
+    else:
+        k8s_zone_label = DEPRECATED_K8S_ZONE_LABEL
+
+    return k8s_zone_label
 
 
 def cleanup_test_disks(client):
