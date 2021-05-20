@@ -461,6 +461,15 @@ kubectl get &amp;lt;LONGHORN-CRD&amp;gt; -n longhorn-system Verify that the outp
     </item>
     
     <item>
+      <title>Test backup listing S3/NFS</title>
+      <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/stress/backup-listing/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/stress/backup-listing/</guid>
+      <description>1. Backup listing with more than 1000 backups - S3  Deploy Longhorn on a kubernetes cluster. Set up S3 backupStore. Create a volume of 2Gi and attach it to a pod. Write some data into it and compute md5sum. Open browser developer tool. Create one backup by clicking LH GUI (It&amp;rsquo;ll call snapshotCreate and snapshotBackup APIs). Copy the snapshotBackup API call, right click Copy -&amp;gt; Copy as cURL. Run the curl command over 1k times in the Shell.</description>
+    </item>
+    
+    <item>
       <title>Test Disable IPv6</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/disable_ipv6/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>

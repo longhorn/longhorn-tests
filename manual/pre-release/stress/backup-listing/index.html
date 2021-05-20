@@ -395,28 +395,47 @@
 </aside>
 
 <main style="padding: 1%; width: 70%;">
-  <h1 id="title">Test ISCSI Installation on EKS</h1>
+  <h1 id="title">Test backup listing S3/NFS</h1>
   <div>
     <article id="content">
-       <p>This is for EKS or similar users who doesn&rsquo;t need to log into each host to install &lsquo;ISCSI&rsquo; individually.</p>
-<p>Test steps:</p>
+       <h2 id="1-backup-listing-with-more-than-1000-backups---s3">1. Backup listing with more than 1000 backups - S3</h2>
 <ol>
-<li>Create an EKS cluster with 3 nodes.</li>
-<li>Run the following command to install iscsi on every nodes.</li>
+<li>Deploy Longhorn on a kubernetes cluster.</li>
+<li>Set up S3 backupStore.</li>
+<li>Create a volume of 2Gi and attach it to a pod.</li>
+<li>Write some data into it and compute md5sum.</li>
+<li>Open browser developer tool.</li>
+<li>Create one backup by clicking LH GUI (It&rsquo;ll call <code>snapshotCreate</code> and <code>snapshotBackup</code> APIs).</li>
+<li>Copy the <code>snapshotBackup</code> API call, right click <code>Copy</code> -&gt; <code>Copy as cURL</code>.</li>
+<li>Run the curl command over 1k times in the Shell.</li>
+<li>On LH GUI, click the Backup -&gt; Volume Name to display total volume backups, you should see all the backup backups listed on the page.</li>
+<li>Restore any backup and verify the data.</li>
 </ol>
-<pre><code>kubectl apply -f https://raw.githubusercontent.com/longhorn/longhorn/master/deploy/iscsi/longhorn-iscsi-installation.yaml
-</code></pre><ol start="3">
-<li>In Longhorn Manager Repo Directory run:</li>
+<h2 id="2-backup-listing-with-more-than-1000-backups---nfs">2. Backup listing with more than 1000 backups - NFS</h2>
+<ol>
+<li>Repeat the steps from test scenario <code>1. Backup listing with more than 1000 backups - S3</code> with NFS backupStore.</li>
 </ol>
-<pre><code>kubectl apply -Rf ./deploy/install/
-</code></pre><ol start="4">
-<li>Longhorn should be able installed successfully.</li>
-<li>Try to create a pod with a pvc:</li>
+<h2 id="3-backup-listing-of-volume-bigger-than-200-gi---s3">3. Backup listing of volume bigger than 200 Gi - S3</h2>
+<ol>
+<li>Deploy Longhorn on a kubernetes cluster.</li>
+<li>Set up S3 backupStore.</li>
+<li>Create a volume <code>vol-1</code> of 250Gi and attach it to a pod.</li>
+<li>Write data of 240Gi.</li>
+<li>Take a backup.</li>
+<li>Go to the backup page and click on the volume <code>vol-1</code> to list the backups, you should see the backup getting listed.</li>
+<li>Verify the size of data by restoring it.</li>
+<li>Create another volume <code>vol-2</code> of 200Gi and attach it to a pod.</li>
+<li>Write data of 150Gi.</li>
+<li>Take a backup.</li>
+<li>Go to the backup page, you should be able to see both the backups.</li>
+<li>Click the volume <code>vol-2</code>, you should be able to see the backup.</li>
+<li>Write 40Gi in the <code>vol-2</code>.</li>
+<li>Take one more backup and verify the listing of the backup in the backup page.</li>
 </ol>
-<pre><code>kubectl apply -f https://raw.githubusercontent.com/longhorn/longhorn/master/examples/simple_pvc.yaml
-kubectl apply -f https://raw.githubusercontent.com/longhorn/longhorn/master/examples/simple_pod.yaml
-</code></pre><ol start="6">
-<li>Check the pod is created successfully with a valid Longhorn volume mounted.</li>
+<p><strong>Note</strong> - Use the same cluster from the test scenario-1 where 1k backups are already there to increase the stress on the system.</p>
+<h2 id="4-backup-listing-of-volume-bigger-than-200-gi---nfs">4. Backup listing of volume bigger than 200 Gi - NFS</h2>
+<ol>
+<li>Repeat steps from test scenario <code>3. Backup listing of volume more than 200 Gi - S3</code> with NFS backupStore.</li>
 </ol>
 
     </article>
