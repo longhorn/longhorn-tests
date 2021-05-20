@@ -91,6 +91,8 @@ DEFAULT_STATEFULSET_TIMEOUT = 180
 DEFAULT_DEPLOYMENT_INTERVAL = 1
 DEFAULT_DEPLOYMENT_TIMEOUT = 120
 
+DEFAULT_DAEMONSET_INTERVAL = 1
+DEFAULT_DAEMONSET_TIMEOUT = 120
 
 DEFAULT_VOLUME_SIZE = 3  # In Gi
 EXPANDED_VOLUME_SIZE = 4  # In Gi
@@ -214,6 +216,16 @@ def get_apps_api_client():
 def get_core_api_client():
     load_k8s_config()
     return k8sclient.CoreV1Api()
+
+
+def get_batch_api_client():
+    load_k8s_config()
+    return k8sclient.BatchV1Api()
+
+
+def get_batch_api_v1_beta1_client():
+    load_k8s_config()
+    return k8sclient.BatchV1beta1Api()
 
 
 def get_scheduling_api_client():
@@ -937,6 +949,36 @@ def apps_api(request):
     apps_api = k8sclient.AppsV1Api()
 
     return apps_api
+
+
+@pytest.fixture
+def batch_v1_api(request):
+    """
+    Create a new BatchV1Api instance.
+    Returns:
+        A new BatchV1Api Instance.
+    """
+    c = Configuration()
+    c.assert_hostname = False
+    Configuration.set_default(c)
+    k8sconfig.load_incluster_config()
+    batch_v1_api = k8sclient.BatchV1Api()
+    return batch_v1_api
+
+
+@pytest.fixture
+def batch_v1_beta1_api(request):
+    """
+    Create a new BatchV1beta1Api instance.
+    Returns:
+        A new BatchV1beta1Api Instance.
+    """
+    c = Configuration()
+    c.assert_hostname = False
+    Configuration.set_default(c)
+    k8sconfig.load_incluster_config()
+    batch_v1_beta1_api = k8sclient.BatchV1beta1Api()
+    return batch_v1_beta1_api
 
 
 def get_pv_manifest(request):
@@ -3940,3 +3982,238 @@ def get_engine_image_status_value(client, ei_name):
 def update_setting(client, name, value):
     setting = client.by_id_setting(name)
     client.update(setting, value=value)
+
+
+def create_toleration_for_daemon_sets(apps_v1_api,
+                                      daemon_sets,
+                                      key,
+                                      value,
+                                      operator,
+                                      effect,
+                                      toleration_seconds=300):
+    for daemon_set in daemon_sets.items:
+        try:
+            apps_v1_api.patch_namespaced_daemon_set(
+                daemon_set.metadata.name,
+                daemon_set.metadata.namespace,
+                {
+                    "spec": {
+                        "template": {
+                            "spec": {
+                                "tolerations": [
+                                    {
+                                        "key": key,
+                                        "value": value,
+                                        # "operator": operator,
+                                        "effect": effect,
+                                        # "toleration_seconds": 300
+                                    },
+                                ]
+                            }
+                        }
+                    }
+                })
+        except Exception as e:
+            print(e)
+
+
+def wait_daemon_set_status_is_equal(apps_v1_api,
+                                    daemon_set_name,
+                                    namespace='default'):
+    daemon_set = None
+    condition = False
+    for i in range(DEFAULT_DAEMONSET_TIMEOUT):
+        daemon_set = apps_v1_api.read_namespaced_daemon_set(
+            name=daemon_set_name, namespace=namespace)
+        if daemon_set is not None and \
+           daemon_set.status.number_ready == \
+           daemon_set.status.desired_number_scheduled:
+            condition = True
+            break
+        time.sleep(DEFAULT_DAEMONSET_TIMEOUT)
+    assert condition
+
+
+def create_toleration_for_deployments(apps_v1_api,
+                                      deployments,
+                                      key,
+                                      value,
+                                      operator,
+                                      effect,
+                                      toleration_seconds=300):
+    for deployment in deployments.items:
+        try:
+            apps_v1_api.patch_namespaced_deployment(
+                deployment.metadata.name,
+                deployment.metadata.namespace,
+                {
+                    "spec": {
+                        "template": {
+                            "spec": {
+                                "tolerations": [
+                                    {
+                                        "key": key,
+                                        "value": value,
+                                        # "operator": operator,
+                                        "effect": effect,
+                                        # "toleration_seconds": 300
+                                    },
+                                ]
+                            }
+                        }
+                    }
+                })
+        except Exception as e:
+            print(e)
+
+
+def wait_deployment_status_is_equal(apps_v1_api,
+                                    deployment_name,
+                                    namespace='default'):
+    deployment = None
+    condition = False
+    for i in range(DEFAULT_DEPLOYMENT_TIMEOUT):
+        deployment = apps_v1_api.read_namespaced_deployment(
+            name=deployment_name, namespace=namespace)
+        if deployment is not None and \
+           deployment.status.ready_replicas == \
+           deployment.status.replicas:
+            condition = True
+            break
+        time.sleep(DEFAULT_DEPLOYMENT_INTERVAL)
+    assert condition
+
+
+def create_toleration_for_pods(core_v1_api,
+                               pods,
+                               key,
+                               value,
+                               operator,
+                               effect,
+                               toleration_seconds=300):
+    for pod in pods:
+        try:
+            core_v1_api.patch_namespaced_pod(
+                pod.metadata.name,
+                pod.metadata.namespace,
+                {
+                    "spec": {
+                        "tolerations": [
+                            {
+                                "key": key,
+                                "value": value,
+                                # "operator": operator,
+                                "effect": effect,
+                                # "toleration_seconds": 300
+                            },
+                        ]
+                    }
+                })
+        except Exception as e:
+            print(e)
+
+
+def wait_all_pod_in_namespaced_running(core_v1_api,
+                                       namespace,
+                                       label_selector=""):
+    pod = None
+    condition = False
+    for i in range(DEFAULT_POD_TIMEOUT):
+        if label_selector != "":
+            pods = core_v1_api.list_namespaced_pod(
+                namespace, label_selector=label_selector)
+        else:
+            pods = core_v1_api.list_namespaced_pod(namespace)
+        pod_count = len(pods.items)
+        running_count = 0
+        other_states_count = 0
+        for pod in pods.items:
+            if pod is not None and pod.status.phase == "Running":
+                running_count += 1
+            if pod is not None and pod.status.phase != "Running":
+                other_states_count += 1
+        if running_count == pod_count and other_states_count == 0:
+            condition = True
+            break
+        time.sleep(DEFAULT_POD_INTERVAL)
+    assert condition
+
+
+def create_toleration_for_longhorn_component(core_v1_api,
+                                             apps_v1_api,
+                                             new_toleration_key,
+                                             new_toleration_value,
+                                             new_toleration_operator,
+                                             new_toleration_effect):
+    daemon_set_list = apps_v1_api.list_namespaced_daemon_set(
+        namespace="longhorn-system")
+    create_toleration_for_daemon_sets(apps_v1_api, daemon_set_list,
+                                      new_toleration_key, new_toleration_value,
+                                      new_toleration_operator,
+                                      new_toleration_effect)
+    time.sleep(5)
+    wait_daemon_set_status_is_equal(apps_v1_api,
+                                    daemon_set_name='longhorn-manager',
+                                    namespace='longhorn-system')
+    wait_daemon_set_status_is_equal(apps_v1_api,
+                                    daemon_set_name='longhorn-csi-plugin',
+                                    namespace='longhorn-system')
+    daemon_set_engine_list = apps_v1_api.list_namespaced_daemon_set(
+        namespace='longhorn-system',
+        label_selector='longhorn.io/component=engine-image')
+    for d in daemon_set_engine_list.items:
+        wait_daemon_set_status_is_equal(apps_v1_api,
+                                        daemon_set_name=d.metadata.name,
+                                        namespace='longhorn-system')
+
+    deployment_list = apps_v1_api.list_namespaced_deployment(
+        namespace="longhorn-system")
+    create_toleration_for_deployments(apps_v1_api, deployment_list,
+                                      new_toleration_key, new_toleration_value,
+                                      new_toleration_operator,
+                                      new_toleration_effect)
+    time.sleep(5)
+    wait_deployment_status_is_equal(apps_v1_api,
+                                    deployment_name='longhorn-ui',
+                                    namespace='longhorn-system')
+    wait_deployment_status_is_equal(apps_v1_api,
+                                    deployment_name='longhorn-driver-deployer',
+                                    namespace='longhorn-system')
+    wait_deployment_status_is_equal(apps_v1_api,
+                                    deployment_name='csi-snapshotter',
+                                    namespace='longhorn-system')
+    wait_deployment_status_is_equal(apps_v1_api,
+                                    deployment_name='csi-resizer',
+                                    namespace='longhorn-system')
+    wait_deployment_status_is_equal(apps_v1_api,
+                                    deployment_name='csi-attacher',
+                                    namespace='longhorn-system')
+    wait_deployment_status_is_equal(apps_v1_api,
+                                    deployment_name='csi-provisioner',
+                                    namespace='longhorn-system')
+
+    pods_longhorn_engine = core_v1_api.list_namespaced_pod(
+        namespace="longhorn-system",
+        label_selector='longhorn.io/instance-manager-type=engine')
+    pods_longhorn_replica = core_v1_api.list_namespaced_pod(
+        namespace="longhorn-system",
+        label_selector='longhorn.io/instance-manager-type=replica')
+    pods_minio = core_v1_api.list_namespaced_pod(
+        namespace="default", label_selector='app=longhorn-test-minio')
+    pods_nfs = core_v1_api.list_namespaced_pod(
+        namespace="default", label_selector='app=longhorn-test-nfs')
+    pods_test = core_v1_api.list_namespaced_pod(
+        namespace="default", label_selector='longhorn-test=test-job')
+    pod_list = pods_longhorn_engine.items + \
+        pods_longhorn_replica.items + \
+        pods_minio.items + \
+        pods_nfs.items + \
+        pods_test.items
+    create_toleration_for_pods(core_v1_api, pod_list, new_toleration_key,
+                               new_toleration_value, new_toleration_operator,
+                               new_toleration_effect)
+    time.sleep(3)
+    wait_all_pod_in_namespaced_running(core_v1_api,
+                                       namespace='longhorn-system')
+    wait_all_pod_in_namespaced_running(core_v1_api, namespace='default')
+    time.sleep(10)

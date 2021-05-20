@@ -5,7 +5,7 @@ import json
 from datetime import datetime
 
 import common
-from common import client, core_api, apps_api  # NOQA
+from common import client, core_api, apps_api, batch_v1_api  # NOQA
 from common import random_labels, volume_name  # NOQA
 from common import storage_class, statefulset, pvc  # NOQA
 from common import make_deployment_with_pvc  # NOQA
@@ -29,6 +29,8 @@ from common import wait_deployment_replica_ready, read_volume_data
 from common import settings_reset # NOQA
 from common import wait_for_volume_healthy_no_frontend
 from common import wait_for_volume_healthy
+from common import get_longhorn_api_client
+from common import create_toleration_for_longhorn_component
 
 from kubernetes.client.rest import ApiException
 
@@ -611,8 +613,7 @@ def test_recurring_jobs_for_detached_volume(set_random_backupstore, client, core
     common.wait_for_pod_phase(core_api, pod_names[0], pod_phase="Running")
 
 
-@pytest.mark.skip(reason="TODO")
-def test_recurring_jobs_on_nodes_with_taints():  # NOQA
+def test_recurring_jobs_on_nodes_with_taints(core_api, apps_api, batch_v1_api):  # NOQA
     """
     Test recurring jobs on nodes with taints
 
@@ -633,22 +634,161 @@ def test_recurring_jobs_on_nodes_with_taints():  # NOQA
     4. Create a recurring backup job which:
        Has retain count 10
        Runs every minute
-    5. Wait for 3 minutes.
+    5. Wait for 1 minutes.
        Verify that the there is 1 backup created
        Verify that the total number of pod in longhorn-system namespace < 50
        Verify that the number of pods of the cronjob is <= 2
 
     6. Taint all nodes with `persistence=true:NoExecute`
     7. Write some data to vol-1
-    8. Wait for 3 minutes.
-       Verify that the there are 2 backups created in total
+    8. Wait for 2 minutes.
+       Verify that the there are 1 backups created in total
        Verify that the total number of pod in longhorn-system namespace < 50
        Verify that the number of pods of the cronjob is <= 2
 
     9. Remove `persistence=true:NoExecute` from all nodes and Longhorn setting
        Clean up backups, volumes
     """
-    pass
+
+    # 1. Set taint toleration for Longhorn components
+    # `persistence=true:NoExecute`
+    new_toleration_key = "persistence"
+    new_toleration_value = "true"
+    new_toleration_operator = "Exists"
+    new_toleration_effect = "NoExecute"
+    create_toleration_for_longhorn_component(core_api, apps_api,
+                                             new_toleration_key,
+                                             new_toleration_value,
+                                             new_toleration_operator,
+                                             new_toleration_effect)
+
+    # 2. Taint `node-1` with `persistence=true:NoExecute`
+    host_id = get_self_host_id()
+    core_api.patch_node(
+        host_id,
+        {
+            "spec": {
+                "taints": [
+                    {
+                        "key": "persistence",
+                        "value": "true",
+                        "effect": "NoExecute"
+                    },
+                ]
+            }
+        })
+
+    # 3. Create a volume, vol-1.
+    #    Attach vol-1 to node-1
+    #    Write some data to vol-1
+    lh_api_client = get_longhorn_api_client()
+    vol_name = common.generate_volume_name()
+    volume = lh_api_client.create_volume(
+        name=vol_name, size=str(1 * Gi), numberOfReplicas=2)
+    volume = common.wait_for_volume_detached(lh_api_client, vol_name)
+    volume.attach(hostId=host_id)
+    volume = wait_for_volume_healthy(lh_api_client, vol_name)
+    write_volume_random_data(volume)
+
+    # 4. Create a recurring backup job which:
+    #    Has retain count 10
+    #    Runs every minute
+    jobs = [
+        {
+            "name": "backup",
+            "cron": "*/1 * * * *",
+            "task": "backup",
+            "retain": 10,
+            "labels": {'app': 'lh-bk-test'}
+        }
+    ]
+    volume.recurringUpdate(jobs=jobs)
+
+    # 5. Wait for 1 minutes.
+    #    Verify that the there is 1 backup created
+    #    Verify that the total number of pod in longhorn-system namespace < 50
+    #    Verify that the number of pods of the cronjob is <= 2
+    time.sleep(60 + 15)
+    print("\n>>> Start Validation: 1...\n")
+    complete_backup_number = 0
+    in_progress_backup_number = 0
+    volume = lh_api_client.by_id_volume(vol_name)
+    for b in volume.backupStatus:
+        assert b.error == ""
+        if b.state == "complete":
+            complete_backup_number += 1
+        elif b.state == "in_progress":
+            in_progress_backup_number += 1
+    assert complete_backup_number == 1
+    pod_list = core_api.list_namespaced_pod("longhorn-system")
+    assert len(pod_list.items) < 50
+    label_selector = "app=lh-bk-test"
+    job_list = batch_v1_api.list_namespaced_job(
+        namespace="longhorn-system", label_selector=label_selector)
+    assert len(job_list.items) <= 2
+
+    # 6. Taint all nodes with `persistence=true:NoExecute`
+    nodes = core_api.list_node()
+    for node in nodes.items:
+        core_api.patch_node(
+            node.metadata.name,
+            {
+                "spec": {
+                    "taints": [
+                        {
+                            "key": "persistence",
+                            "value": "true",
+                            "effect": "NoExecute"
+                        },
+                    ]
+                }
+            })
+
+    # 7. Write some data to vol-1
+    write_volume_random_data(volume)
+
+    # 8. Wait for 2 minutes.
+    # Verify that the there are 1 backups created in total
+    # Verify that the total number of pod in longhorn-system namespace < 50
+    # Verify that the number of pods of the cronjob is <= 2
+    time.sleep(2 * 60 + 15)
+    print("\n>>> Start Validation: 2...\n")
+    complete_backup_number = 0
+    in_progress_backup_number = 0
+    volume = lh_api_client.by_id_volume(vol_name)
+    for b in volume.backupStatus:
+        assert b.error == ""
+        if b.state == "complete":
+            complete_backup_number += 1
+        elif b.state == "in_progress":
+            in_progress_backup_number += 1
+    assert complete_backup_number == 1
+    pod_list = core_api.list_namespaced_pod("longhorn-system")
+    assert len(pod_list.items) < 50
+    label_selector = "app=lh-bk-test"
+    job_list = batch_v1_api.list_namespaced_job(
+        namespace="longhorn-system", label_selector=label_selector)
+    assert len(job_list.items) <= 2
+
+    # 9. Remove `persistence=true:NoExecute`
+    #    from all nodes and Longhorn setting Clean up backups, volumes
+    for node in nodes.items:
+        core_api.patch_node(
+            node.metadata.name,
+            {
+                "spec": {
+                    "taints": []
+                }
+            })
+
+    volume.detach(hostId="")
+    common.wait_for_volume_detached(lh_api_client, vol_name)
+
+    lh_api_client.delete(volume)
+    wait_for_volume_delete(lh_api_client, vol_name)
+
+    volumes = lh_api_client.list_volume()
+    assert len(volumes) == 0
 
 
 def test_recurring_jobs_when_volume_detached_unexpectedly(settings_reset, set_random_backupstore, client, core_api, apps_api, pvc, make_deployment_with_pvc):  # NOQA
