@@ -33,12 +33,10 @@ steps:
     password:
       from_secret: docker_password
     repo: longhornio/longhorn-manager-test
-    tag: "master-amd64"
+    tag: "${DRONE_BRANCH}-head-amd64"
     username:
       from_secret: docker_username
   when:
-    branch:
-    - master
     event:
     - push
 
@@ -57,8 +55,6 @@ steps:
     username:
       from_secret: docker_username
   when:
-    branch:
-    - master
     event:
     - tag
 
@@ -102,12 +98,10 @@ steps:
     password:
       from_secret: docker_password
     repo: longhornio/longhorn-manager-test
-    tag: "master-arm64"
+    tag: "${DRONE_BRANCH}-head-arm64"
     username:
       from_secret: docker_username
   when:
-    branch:
-    - master
     event:
     - push
 
@@ -126,8 +120,6 @@ steps:
     username:
       from_secret: docker_username
   when:
-    branch:
-    - master
     event:
     - tag
 
@@ -144,7 +136,7 @@ platform:
   arch: amd64
 
 steps:
-- name: manifest-master
+- name: manifest
   image: plugins/manifest:1
   settings:
     username:
@@ -154,13 +146,11 @@ steps:
     platforms:
       - linux/amd64
       - linux/arm64
-    target: "longhornio/longhorn-manager-test:master"
-    template: "longhornio/longhorn-manager-test:master-ARCH"
+    target: "longhornio/longhorn-manager-test:${DRONE_BRANCH}-head"
+    template: "longhornio/longhorn-manager-test:${DRONE_BRANCH}-head-ARCH"
   when:
     instance:
     - drone-publish.longhorn.io
-    branch:
-    - master
     event:
     - push
 
@@ -179,8 +169,6 @@ steps:
   when:
     instance:
     - drone-publish.longhorn.io
-    branch:
-    - master
     event:
     - tag
 
