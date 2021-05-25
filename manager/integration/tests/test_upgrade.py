@@ -65,12 +65,18 @@ def upgrade_longhorn_share_manager_image(request):
     return request.config.getoption("--upgrade-lh-share-manager-image")
 
 
+@pytest.fixture
+def upgrade_longhorn_backing_image_manager_image(request):
+    return request.config.getoption("--upgrade-lh-backing-image-manager-image")
+
+
 def longhorn_upgrade(longhorn_manager_repo,
                      longhorn_manager_branch,
                      longhorn_manager_image,
                      longhorn_engine_image,
                      longhorn_instance_manager_image,
-                     longhorn_share_manager_image):
+                     longhorn_share_manager_image,
+                     longhorn_backing_image_manager_image):
 
     command = "../scripts/upgrade-longhorn.sh"
     process = subprocess.Popen([command,
@@ -97,6 +103,7 @@ def test_upgrade(upgrade_longhorn_manager_repo_url,
                  upgrade_longhorn_engine_image,
                  upgrade_longhorn_instance_manager_image,
                  upgrade_longhorn_share_manager_image,
+                 upgrade_longhorn_backing_image_manager_image,
                  client, core_api, volume_name, csi_pv, # NOQA
                  pvc, pod_make, statefulset, storage_class): # NOQA
     """
@@ -134,6 +141,8 @@ def test_upgrade(upgrade_longhorn_manager_repo_url,
     longhorn_engine_image = upgrade_longhorn_engine_image
     longhorn_instance_manager_image = upgrade_longhorn_instance_manager_image
     longhorn_share_manager_image = upgrade_longhorn_share_manager_image
+    longhorn_backing_image_manager_image = \
+        upgrade_longhorn_backing_image_manager_image
 
     host_id = get_self_host_id()
     pod_data_path = "/data/test"
@@ -182,7 +191,8 @@ def test_upgrade(upgrade_longhorn_manager_repo_url,
                             longhorn_manager_image,
                             longhorn_engine_image,
                             longhorn_instance_manager_image,
-                            longhorn_share_manager_image)
+                            longhorn_share_manager_image,
+                            longhorn_backing_image_manager_image)
 
     client = get_longhorn_api_client()
 
