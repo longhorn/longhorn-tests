@@ -21,6 +21,8 @@ UPGRADE_LH_MANAGER_IMAGE = "--upgrade-lh-manager-image"
 UPGRADE_LH_ENGINE_IMAGE = "--upgrade-lh-engine-image"
 UPGRADE_LH_INSTANCE_MANAGER_IMAGE = "--upgrade-lh-instance-manager-image"
 UPGRADE_LH_SHARE_MANAGER_IMAGE = "--upgrade-lh-share-manager-image"
+UPGRADE_LH_BACKING_IMAGE_MANAGER_IMAGE = \
+    "--upgrade-lh-backing-image-manager-image"
 
 
 def pytest_addoption(parser):
@@ -59,29 +61,35 @@ def pytest_addoption(parser):
                      (default: master)''')
 
     parser.addoption(UPGRADE_LH_MANAGER_IMAGE, action="store",
-                     default="longhornio/longhorn-manager:master",
+                     default="longhornio/longhorn-manager:master-head",
                      help='''set custom longhorn-manger image, this image will
                      be used in test_upgrade
-                     (default: longhornio/longhorn-manager:master)''')
+                     (default: longhornio/longhorn-manager:master-head)''')
 
     parser.addoption(UPGRADE_LH_ENGINE_IMAGE, action="store",
-                     default="longhornio/longhorn-engine:master",
+                     default="longhornio/longhorn-engine:master-head",
                      help='''set custom longhorn-engine image, this image will
                      be used in test_upgrade
-                     (default: longhornio/longhorn-engine:master)''')
+                     (default: longhornio/longhorn-engine:master-head)''')
 
     parser.addoption(UPGRADE_LH_INSTANCE_MANAGER_IMAGE, action="store",
-                     default="longhornio/longhorn-instance-manager:master",
+                     default="longhornio/longhorn-instance-manager:master-head", # NOQA
                      help='''set custom longhorn-instance-manager image, this
                      image will be used in test_upgrade
-                     (default: longhornio/longhorn-instance-manager:master)
-                     ''')
+                     (default: longhornio/longhorn-instance-manager:master-head)
+                     ''') # NOQA
 
     parser.addoption(UPGRADE_LH_SHARE_MANAGER_IMAGE, action="store",
-                     default="longhornio/longhorn-share-manager:master",
+                     default="longhornio/longhorn-share-manager:master-head",
                      help='''set custom longhorn-share-manager image, this image
                      will be used in test_upgrade
-                     (default: longhornio/longhorn-share-manager:master)''')
+                     (default: longhornio/longhorn-share-manager:master-head)''') # NOQA
+
+    parser.addoption(UPGRADE_LH_BACKING_IMAGE_MANAGER_IMAGE, action="store",
+                     default="longhornio/backing-image-manager:master-head",
+                     help='''set custom backing-image-manager image, this image
+                     will be used in test_upgrade
+                     (default: longhornio/backing-image-manager:master-head)''') # NOQA
 
 
 def pytest_collection_modifyitems(config, items):
