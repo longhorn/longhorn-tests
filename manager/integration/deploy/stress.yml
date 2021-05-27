@@ -44,7 +44,7 @@ spec:
     spec:
       containers:
       - name: longhorn-test-pod
-        image: longhornio/longhorn-manager-test:master
+        image: longhornio/longhorn-manager-test:master-head
         command: ["/bin/sh", "-c", "while py.test --include-stress-test -s test_stress.py::test_stress; do :; done"]
         imagePullPolicy: Always
         env:
