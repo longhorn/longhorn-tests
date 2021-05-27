@@ -58,7 +58,7 @@ metadata:
 spec:
   containers:
   - name: longhorn-test-pod
-    image: longhornio/longhorn-manager-test:master
+    image: longhornio/longhorn-manager-test:master-head
 #    args: [
 #           "-x", "-s",
 #           "-m", "coretest",
