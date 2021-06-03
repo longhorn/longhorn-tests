@@ -501,6 +501,18 @@ Test step  For test convenience, manually launch the backing image manager pods:
     </item>
     
     <item>
+      <title>Test Frontend Payload Data When Resource Not Updated</title>
+      <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.2/full-ws-data-tranfer-when-no-updates/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.2/full-ws-data-tranfer-when-no-updates/</guid>
+      <description>Related issue https://github.com/longhorn/longhorn/issues/2646 https://github.com/longhorn/longhorn/issues/2591
+Test Frontend Payload Data Given 1 PVC/Pod created.
+When monitor traffic in frontend pod with browser inspect tool.
+Then wait for 3 mins And should see empty data list in volume payloads. Example: https://github.com/longhorn/longhorn-manager/pull/905#issuecomment-851391374</description>
+    </item>
+    
+    <item>
       <title>Test Frontend Traffic</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/ws-traffic-flood/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>

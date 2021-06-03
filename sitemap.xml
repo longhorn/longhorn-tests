@@ -130,6 +130,8 @@
   </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/test-file-sync-cancellation/</loc>
   </url><url>
+    <loc>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.2/full-ws-data-tranfer-when-no-updates/</loc>
+  </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/ws-traffic-flood/</loc>
   </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/instance-manager-ip-sync/</loc>
@@ -189,6 +191,10 @@
     <loc>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/</loc>
   </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/</loc>
+  </url><url>
+    <loc>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.2/</loc>
+  </url><url>
+    <loc>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.2.0/</loc>
   </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.1/ui-volume-deletion/</loc>
   </url><url>

@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>v1.1.2 on Longhorn Manual Test Cases</title>
+    <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.2/</link>
+    <description>Recent content in v1.1.2 on Longhorn Manual Test Cases</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en-us</language><atom:link href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.2/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Test Frontend Payload Data When Resource Not Updated</title>
+      <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.2/full-ws-data-tranfer-when-no-updates/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.2/full-ws-data-tranfer-when-no-updates/</guid>
+      <description>Related issue https://github.com/longhorn/longhorn/issues/2646 https://github.com/longhorn/longhorn/issues/2591
+Test Frontend Payload Data Given 1 PVC/Pod created.
+When monitor traffic in frontend pod with browser inspect tool.
+Then wait for 3 mins And should see empty data list in volume payloads. Example: https://github.com/longhorn/longhorn-manager/pull/905#issuecomment-851391374</description>
+    </item>
+    
+  </channel>
+</rss>
