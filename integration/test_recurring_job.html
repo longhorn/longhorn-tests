@@ -72,7 +72,7 @@ def create_jobs1():
     # snapshot every one minute
     job_snap = {&#34;name&#34;: &#34;snap&#34;, &#34;cron&#34;: &#34;* * * * *&#34;,
                 &#34;task&#34;: &#34;snapshot&#34;, &#34;retain&#34;: 2}
-    # backup every two minutes
+    # backup every two minutes, retain 1 snapshot from backup and 1 backup
     job_backup = {&#34;name&#34;: &#34;backup&#34;, &#34;cron&#34;: &#34;*/2 * * * *&#34;,
                   &#34;task&#34;: &#34;backup&#34;, &#34;retain&#34;: 1}
     return [job_snap, job_backup]
@@ -138,23 +138,23 @@ def test_recurring_job(set_random_backupstore, client, volume_name):  # NOQA
     2. Create a volume.
     3. Create two jobs
         1 job 1: snapshot every one minute, retain 2
-        1 job 2: backup every two minutes, retain 1
+        1 job 2: backup every two minutes, retain 1 snapshot
     4. Attach the volume.
-       Wait until the 10th second since the beginning of an even minute
-    5. Write some data. Sleep 2.5 minutes.
-       Write some data. Sleep 2.5 minutes
+       Wait until the 20th second since the beginning of an even minute
+    5. Write some data. Sleep 2 minutes.
+       Write some data. Sleep 2 minutes
     6. Verify we have 4 snapshots total
-        1. 2 snapshots, 1 backup, 1 volume-head
+        1. 2 snapshots from job_snap, 1 snapshot from job_backup, 1 volume-head
     7. Update jobs to replace the backup job
-        1. New backup job run every one minute, retain 2
-    8. Write some data. Sleep 2.5 minutes.
-       Write some data. Sleep 2.5 minutes
-    9. We should have 6 snapshots
-        1. 2 from job_snap, 1 from job_backup, 2 from job_backup2, 1
-        volume-head
-    10. Make sure there are exactly 4 completed backups.
+        1. New backup job run every one minute, retain 1 snapshot
+    8. Write some data. Sleep 2 minutes.
+       Write some data. Sleep 2 minutes
+    9. We should have 5 snapshots
+        1. 2 from job_snap, 1 snapshot from job_backup,
+           1 snapshot from job_backup2, 1 volume-head
+    10. Make sure there are exactly 5 completed backups.
         1. old backup job completed 2 backups
-        2. new backup job completed 2 backups
+        2. new backup job completed 3 backups
     11. Make sure we have no backup in progress
     &#34;&#34;&#34;
 
@@ -164,7 +164,7 @@ def test_recurring_job(set_random_backupstore, client, volume_name):  # NOQA
     |W  |   | W |   |   |W  |   | W |   |   |      (write data)
     |   S   |   S   |   |   S   |   S   |   |      (job_snap)
     |   |   B   |   B   |   |   |   |   |   |      (job_backup1)
-    |   |   |   |   |   |   B   |   B   |   |      (job_backup2)
+    |   |   |   |   |   |   B   B   B   |   |      (job_backup2)
     &#39;&#39;&#39;
 
     host_id = get_self_host_id()
@@ -206,24 +206,32 @@ def test_recurring_job(set_random_backupstore, client, volume_name):  # NOQA
     for snapshot in snapshots:
         if snapshot.removed is False:
             count += 1
-    # 2 from job_snap, 1 from job_backup, 2 from job_backup2, 1 volume-head
-    assert count == 6
+    # 2 from job_snap, 1 from job_backup, 1 from job_backup2, 1 volume-head
+    assert count == 5
 
-    complete_backup_number = 0
-    in_progress_backup_number = 0
+    complete_backup_number_1 = 0
+    complete_backup_number_2 = 0
+    other_backup_state = 0
     volume = client.by_id_volume(volume_name)
     for b in volume.backupStatus:
-        assert b.error == &#34;&#34;
         if b.state == &#34;complete&#34;:
-            complete_backup_number += 1
-        elif b.state == &#34;in_progress&#34;:
-            in_progress_backup_number += 1
+            assert b.progress == 100
+            assert b.error == &#34;&#34;
+            if &#34;backup-&#34; in b.snapshot:
+                complete_backup_number_1 += 1
+            elif &#34;backup2-&#34; in b.snapshot:
+                complete_backup_number_2 += 1
+        else:
+            other_backup_state += 1
 
-    # 2 completed backups from job_backup
-    # 2 completed backups from job_backup2
-    assert complete_backup_number == 4
+    assert other_backup_state == 0
 
-    assert in_progress_backup_number == 0
+    # 2 completed backups from job_backup1
+    # 2 or more completed backups from job_backup2
+    # NOTE: NFS backup can be slow sometimes and error prone
+    assert complete_backup_number_1 == 2
+    assert complete_backup_number_2 &gt;= 2
+    assert complete_backup_number_2 &lt; 4
 
     volume = volume.detach(hostId=&#34;&#34;)
 
@@ -820,7 +828,7 @@ def test_recurring_jobs_when_volume_detached_unexpectedly(settings_reset, set_ra
     # snapshot every one minute
     job_snap = {&#34;name&#34;: &#34;snap&#34;, &#34;cron&#34;: &#34;* * * * *&#34;,
                 &#34;task&#34;: &#34;snapshot&#34;, &#34;retain&#34;: 2}
-    # backup every two minutes
+    # backup every two minutes, retain 1 snapshot from backup and 1 backup
     job_backup = {&#34;name&#34;: &#34;backup&#34;, &#34;cron&#34;: &#34;*/2 * * * *&#34;,
                   &#34;task&#34;: &#34;backup&#34;, &#34;retain&#34;: 1}
     return [job_snap, job_backup]</code></pre>
@@ -903,29 +911,29 @@ def test_recurring_jobs_when_volume_detached_unexpectedly(settings_reset, set_ra
 <li>Create a volume.</li>
 <li>Create two jobs
 1 job 1: snapshot every one minute, retain 2
-1 job 2: backup every two minutes, retain 1</li>
+1 job 2: backup every two minutes, retain 1 snapshot</li>
 <li>Attach the volume.
-Wait until the 10th second since the beginning of an even minute</li>
-<li>Write some data. Sleep 2.5 minutes.
-Write some data. Sleep 2.5 minutes</li>
+Wait until the 20th second since the beginning of an even minute</li>
+<li>Write some data. Sleep 2 minutes.
+Write some data. Sleep 2 minutes</li>
 <li>Verify we have 4 snapshots total<ol>
-<li>2 snapshots, 1 backup, 1 volume-head</li>
+<li>2 snapshots from job_snap, 1 snapshot from job_backup, 1 volume-head</li>
 </ol>
 </li>
 <li>Update jobs to replace the backup job<ol>
-<li>New backup job run every one minute, retain 2</li>
+<li>New backup job run every one minute, retain 1 snapshot</li>
 </ol>
 </li>
-<li>Write some data. Sleep 2.5 minutes.
-Write some data. Sleep 2.5 minutes</li>
-<li>We should have 6 snapshots<ol>
-<li>2 from job_snap, 1 from job_backup, 2 from job_backup2, 1
-volume-head</li>
+<li>Write some data. Sleep 2 minutes.
+Write some data. Sleep 2 minutes</li>
+<li>We should have 5 snapshots<ol>
+<li>2 from job_snap, 1 snapshot from job_backup,
+1 snapshot from job_backup2, 1 volume-head</li>
 </ol>
 </li>
-<li>Make sure there are exactly 4 completed backups.<ol>
+<li>Make sure there are exactly 5 completed backups.<ol>
 <li>old backup job completed 2 backups</li>
-<li>new backup job completed 2 backups</li>
+<li>new backup job completed 3 backups</li>
 </ol>
 </li>
 <li>Make sure we have no backup in progress</li>
@@ -943,23 +951,23 @@ def test_recurring_job(set_random_backupstore, client, volume_name):  # NOQA
     2. Create a volume.
     3. Create two jobs
         1 job 1: snapshot every one minute, retain 2
-        1 job 2: backup every two minutes, retain 1
+        1 job 2: backup every two minutes, retain 1 snapshot
     4. Attach the volume.
-       Wait until the 10th second since the beginning of an even minute
-    5. Write some data. Sleep 2.5 minutes.
-       Write some data. Sleep 2.5 minutes
+       Wait until the 20th second since the beginning of an even minute
+    5. Write some data. Sleep 2 minutes.
+       Write some data. Sleep 2 minutes
     6. Verify we have 4 snapshots total
-        1. 2 snapshots, 1 backup, 1 volume-head
+        1. 2 snapshots from job_snap, 1 snapshot from job_backup, 1 volume-head
     7. Update jobs to replace the backup job
-        1. New backup job run every one minute, retain 2
-    8. Write some data. Sleep 2.5 minutes.
-       Write some data. Sleep 2.5 minutes
-    9. We should have 6 snapshots
-        1. 2 from job_snap, 1 from job_backup, 2 from job_backup2, 1
-        volume-head
-    10. Make sure there are exactly 4 completed backups.
+        1. New backup job run every one minute, retain 1 snapshot
+    8. Write some data. Sleep 2 minutes.
+       Write some data. Sleep 2 minutes
+    9. We should have 5 snapshots
+        1. 2 from job_snap, 1 snapshot from job_backup,
+           1 snapshot from job_backup2, 1 volume-head
+    10. Make sure there are exactly 5 completed backups.
         1. old backup job completed 2 backups
-        2. new backup job completed 2 backups
+        2. new backup job completed 3 backups
     11. Make sure we have no backup in progress
     &#34;&#34;&#34;
 
@@ -969,7 +977,7 @@ def test_recurring_job(set_random_backupstore, client, volume_name):  # NOQA
     |W  |   | W |   |   |W  |   | W |   |   |      (write data)
     |   S   |   S   |   |   S   |   S   |   |      (job_snap)
     |   |   B   |   B   |   |   |   |   |   |      (job_backup1)
-    |   |   |   |   |   |   B   |   B   |   |      (job_backup2)
+    |   |   |   |   |   |   B   B   B   |   |      (job_backup2)
     &#39;&#39;&#39;
 
     host_id = get_self_host_id()
@@ -1011,24 +1019,32 @@ def test_recurring_job(set_random_backupstore, client, volume_name):  # NOQA
     for snapshot in snapshots:
         if snapshot.removed is False:
             count += 1
-    # 2 from job_snap, 1 from job_backup, 2 from job_backup2, 1 volume-head
-    assert count == 6
+    # 2 from job_snap, 1 from job_backup, 1 from job_backup2, 1 volume-head
+    assert count == 5
 
-    complete_backup_number = 0
-    in_progress_backup_number = 0
+    complete_backup_number_1 = 0
+    complete_backup_number_2 = 0
+    other_backup_state = 0
     volume = client.by_id_volume(volume_name)
     for b in volume.backupStatus:
-        assert b.error == &#34;&#34;
         if b.state == &#34;complete&#34;:
-            complete_backup_number += 1
-        elif b.state == &#34;in_progress&#34;:
-            in_progress_backup_number += 1
+            assert b.progress == 100
+            assert b.error == &#34;&#34;
+            if &#34;backup-&#34; in b.snapshot:
+                complete_backup_number_1 += 1
+            elif &#34;backup2-&#34; in b.snapshot:
+                complete_backup_number_2 += 1
+        else:
+            other_backup_state += 1
 
-    # 2 completed backups from job_backup
-    # 2 completed backups from job_backup2
-    assert complete_backup_number == 4
+    assert other_backup_state == 0
 
-    assert in_progress_backup_number == 0
+    # 2 completed backups from job_backup1
+    # 2 or more completed backups from job_backup2
+    # NOTE: NFS backup can be slow sometimes and error prone
+    assert complete_backup_number_1 == 2
+    assert complete_backup_number_2 &gt;= 2
+    assert complete_backup_number_2 &lt; 4
 
     volume = volume.detach(hostId=&#34;&#34;)
 
