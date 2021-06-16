@@ -23,6 +23,7 @@ from common import create_and_wait_pod, delete_and_wait_pod
 from common import delete_and_wait_pvc, delete_and_wait_pv
 from common import CONDITION_STATUS_FALSE, CONDITION_STATUS_TRUE
 from common import RETRY_COUNTS, RETRY_INTERVAL, RETRY_COMMAND_COUNT
+from common import DEFAULT_POD_TIMEOUT, DEFAULT_POD_INTERVAL
 from common import cleanup_volume, create_and_check_volume, create_backup
 from common import DEFAULT_VOLUME_SIZE
 from common import Gi, Mi
@@ -70,6 +71,7 @@ from common import VOLUME_FIELD_ROBUSTNESS, VOLUME_FIELD_READY
 from common import VOLUME_ROBUSTNESS_HEALTHY, VOLUME_ROBUSTNESS_FAULTED
 from common import DATA_SIZE_IN_MB_2, DATA_SIZE_IN_MB_3
 from common import wait_for_backup_to_start
+from common import SETTING_DEFAULT_LONGHORN_STATIC_SC
 
 from backupstore import backupstore_corrupt_backup_cfg_file
 from backupstore import backupstore_delete_volume_cfg_file
@@ -3658,3 +3660,87 @@ def test_volume_toomanysnapshots_condition(client, core_api, volume_name): # NOQ
 
     wait_for_volume_condition_toomanysnapshots(client, volume_name,
                                                "status", "False")
+
+
+def test_expand_pvc_with_size_round_up(client, core_api, volume_name):  # NOQA
+    """
+    test expand longhorn volume with pvc
+
+    1. Create LHV,PV,PVC with size '1Gi'
+    2. Attach, write data, and detach
+    3. Expand volume size to '2000000000/2G' and
+        check if size round up '2000683008/1908Mi'
+    4. Attach, write data, and detach
+    5. Expand volume size to '2Gi' and check if size is '2147483648'
+    6. Attach, write data, and detach
+    """
+
+    static_sc_name = "longhorn"
+    setting = client.by_id_setting(SETTING_DEFAULT_LONGHORN_STATIC_SC)
+    setting = client.update(setting, value=static_sc_name)
+    assert setting.value == static_sc_name
+
+    volume = create_and_check_volume(client, volume_name, 2, str(1 * Gi))
+    create_pv_for_volume(client, core_api, volume, volume_name)
+    create_pvc_for_volume(client, core_api, volume, volume_name)
+
+    self_hostId = get_self_host_id()
+    volume.attach(hostId=self_hostId, disableFrontend=False)
+    volume = wait_for_volume_healthy(client, volume_name)
+    test_data = write_volume_random_data(volume)
+    volume.detach(hostId="")
+    volume = wait_for_volume_detached(client, volume_name)
+
+    volume.expand(size="2000000000")
+    wait_for_volume_expansion(client, volume_name)
+
+    for i in range(DEFAULT_POD_TIMEOUT):
+        claim = core_api.read_namespaced_persistent_volume_claim(
+            name=volume_name, namespace='default')
+        if claim.spec.resources.requests['storage'] == "2000683008" and \
+                claim.status.capacity['storage'] == "1908Mi":
+            break
+        time.sleep(DEFAULT_POD_INTERVAL)
+    assert claim.spec.resources.requests['storage'] == "2000683008"
+    assert claim.status.capacity['storage'] == "1908Mi"
+
+    volume = client.by_id_volume(volume_name)
+    assert volume.size == "2000683008"
+    volume.detach(hostId="")
+    volume = wait_for_volume_detached(client, volume_name)
+
+    self_hostId = get_self_host_id()
+    volume.attach(hostId=self_hostId, disableFrontend=False)
+    volume = wait_for_volume_healthy(client, volume_name)
+    check_volume_data(volume, test_data, False)
+    test_data = write_volume_random_data(volume)
+    volume.detach(hostId="")
+    volume = wait_for_volume_detached(client, volume_name)
+
+    volume.expand(size=str(2 * Gi))
+    wait_for_volume_expansion(client, volume_name)
+
+    for i in range(DEFAULT_POD_TIMEOUT):
+        claim = core_api.read_namespaced_persistent_volume_claim(
+            name=volume_name, namespace='default')
+        if claim.spec.resources.requests['storage'] == "2147483648" and \
+                claim.status.capacity['storage'] == "2Gi":
+            break
+        time.sleep(DEFAULT_POD_INTERVAL)
+    assert claim.spec.resources.requests['storage'] == "2147483648"
+    assert claim.status.capacity['storage'] == "2Gi"
+
+    volume = client.by_id_volume(volume_name)
+    assert volume.size == "2147483648"
+    volume.detach(hostId="")
+    volume = wait_for_volume_detached(client, volume_name)
+
+    self_hostId = get_self_host_id()
+    volume.attach(hostId=self_hostId, disableFrontend=False)
+    volume = wait_for_volume_healthy(client, volume_name)
+    check_volume_data(volume, test_data, False)
+    volume.detach(hostId="")
+    volume = wait_for_volume_detached(client, volume_name)
+
+    client.delete(volume)
+    wait_for_volume_delete(client, volume_name)
