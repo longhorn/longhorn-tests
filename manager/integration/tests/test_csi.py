@@ -18,7 +18,7 @@ from common import size_to_string, create_storage_class, create_pvc
 from common import delete_and_wait_pvc, delete_and_wait_pv
 from common import wait_and_get_pv_for_pvc
 from common import generate_random_data, read_volume_data
-from common import write_pod_volume_data
+from common import write_pod_volume_data, write_volume_random_data
 from common import write_pod_block_volume_data, read_pod_block_volume_data
 from common import get_pod_data_md5sum
 from common import generate_volume_name, create_and_check_volume
@@ -28,8 +28,9 @@ from common import expand_and_wait_for_pvc, wait_for_volume_expansion
 from common import get_volume_engine, wait_for_volume_detached
 from common import create_pv_for_volume, create_pvc_for_volume
 from common import get_self_host_id, get_volume_endpoint
-from common import wait_for_volume_healthy
+from common import wait_for_volume_healthy, wait_for_volume_delete
 from common import fail_replica_expansion, wait_for_expansion_failure
+from common import check_volume_data
 
 
 # Using a StorageClass because GKE is using the default StorageClass if not
@@ -735,3 +736,55 @@ def test_csi_minimal_volume_size(
     write_pod_volume_data(core_api, pod_name, test_data, test_file)
     read_data = read_volume_data(core_api, pod_name, test_file)
     assert read_data == test_data
+
+
+def test_csi_expansion_with_size_round_up(client, core_api):  # NOQA
+    """
+    test expand longhorn volume
+
+    1. Create longhorn volume with size '1Gi'
+    2. Attach, write data, and detach
+    3. Expand volume size to '2000000000/2G' and
+        check if size round up '2000683008'
+    4. Attach, write data, and detach
+    5. Expand volume size to '2Gi' and check if size is '2147483648'
+    6. Attach, write data, and detach
+    """
+
+    volume_name = generate_volume_name()
+    volume = create_and_check_volume(client, volume_name, 2, str(1 * Gi))
+
+    self_hostId = get_self_host_id()
+    volume.attach(hostId=self_hostId, disableFrontend=False)
+    volume = wait_for_volume_healthy(client, volume_name)
+    test_data = write_volume_random_data(volume)
+    volume.detach(hostId="")
+    volume = wait_for_volume_detached(client, volume_name)
+
+    volume.expand(size="2000000000")
+    wait_for_volume_expansion(client, volume_name)
+    volume = client.by_id_volume(volume_name)
+    assert volume.size == "2000683008"
+
+    self_hostId = get_self_host_id()
+    volume.attach(hostId=self_hostId, disableFrontend=False)
+    volume = wait_for_volume_healthy(client, volume_name)
+    check_volume_data(volume, test_data, False)
+    test_data = write_volume_random_data(volume)
+    volume.detach(hostId="")
+    volume = wait_for_volume_detached(client, volume_name)
+
+    volume.expand(size=str(2 * Gi))
+    wait_for_volume_expansion(client, volume_name)
+    volume = client.by_id_volume(volume_name)
+    assert volume.size == "2147483648"
+
+    self_hostId = get_self_host_id()
+    volume.attach(hostId=self_hostId, disableFrontend=False)
+    volume = wait_for_volume_healthy(client, volume_name)
+    check_volume_data(volume, test_data, False)
+    volume.detach(hostId="")
+    volume = wait_for_volume_detached(client, volume_name)
+
+    client.delete(volume)
+    wait_for_volume_delete(client, volume_name)
