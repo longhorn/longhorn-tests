@@ -142,7 +142,7 @@ run_longhorn_upgrade_test(){
                                  "--upgrade-lh-manager-image", "'${CUSTOM_LONGHORN_MANAGER_IMAGE}'",
                                  "--upgrade-lh-engine-image", "'${CUSTOM_LONGHORN_ENGINE_IMAGE}'",
                                  "--upgrade-lh-instance-manager-image", "'${CUSTOM_LONGHORN_INSTANCE_MANAGER_IMAGE}'",
-                                 "--upgrade-lh-share-manager-image", "'${CUSTOM_LONGHORN_SHARE_MANAGER_IMAGE}'"
+                                 "--upgrade-lh-share-manager-image", "'${CUSTOM_LONGHORN_SHARE_MANAGER_IMAGE}'",
                                  "--upgrade-lh-backing-image-manager-image", "'${CUSTOM_LONGHORN_BACKING_IMAGE_MANAGER_IMAGE}'"
                               '''
 
