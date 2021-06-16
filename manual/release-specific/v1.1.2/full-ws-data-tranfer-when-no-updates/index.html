@@ -389,7 +389,7 @@
   
     <ul>
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.2/full-ws-data-tranfer-when-no-updates/">Test Frontend Payload Data When Resource Not Updated</a></li>
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.2/full-ws-data-tranfer-when-no-updates/">Test Frontend Web-socket Data Transfer When Resource Not Updated</a></li>
   
 
 </ul>
@@ -414,17 +414,30 @@
 </aside>
 
 <main style="padding: 1%; width: 70%;">
-  <h1 id="title">Test Frontend Payload Data When Resource Not Updated</h1>
+  <h1 id="title">Test Frontend Web-socket Data Transfer When Resource Not Updated</h1>
   <div>
     <article id="content">
        <h2 id="related-issue">Related issue</h2>
-<p><a href="https://github.com/longhorn/longhorn/issues/2646">https://github.com/longhorn/longhorn/issues/2646</a>
+<p><a href="https://github.com/longhorn/longhorn-manager/pull/918">https://github.com/longhorn/longhorn-manager/pull/918</a>
+<a href="https://github.com/longhorn/longhorn/issues/2646">https://github.com/longhorn/longhorn/issues/2646</a>
 <a href="https://github.com/longhorn/longhorn/issues/2591">https://github.com/longhorn/longhorn/issues/2591</a></p>
-<h2 id="test-frontend-payload-data">Test Frontend Payload Data</h2>
-<p><strong>Given</strong> 1 PVC/Pod created.</p>
-<p><strong>When</strong> monitor traffic in frontend pod with browser inspect tool.</p>
+<h2 id="test-data-send-over-web-socket-when-no-resource-updated">Test Data Send Over Web-socket When No Resource Updated</h2>
+<p><strong>Given</strong> 1 PVC/Pod created.
+<em>And</em> the Pod is not writing to the mounted volume.</p>
+<p><strong>When</strong> monitor network traffic with browser inspect tool.</p>
 <p><strong>Then</strong> wait for 3 mins
-<em>And</em> should see empty data list in volume payloads. Example: <a href="https://github.com/longhorn/longhorn-manager/pull/905#issuecomment-851391374">https://github.com/longhorn/longhorn-manager/pull/905#issuecomment-851391374</a></p>
+<em>And</em> should not see data send over web-socket when there are no updates to the resources.</p>
+<h2 id="test-data-send-over-web-socket-resource-updated">Test Data Send Over Web-socket Resource Updated</h2>
+<p><strong>Given</strong> monitor network traffic with browser inspect tool.</p>
+<p><strong>When</strong> 1 PVC/Pod created.</p>
+<p><strong>Then</strong> should see data send over event log web-socket.
+<em>And</em> should see data send over volume web-socket.</p>
+<h2 id="test-web-socket-keep-alive">Test Web-socket Keep-alive</h2>
+<p><strong>Given</strong> monitor network traffic with browser inspect tool.</p>
+<p><strong>When</strong> wait for 6 minutes.</p>
+<p><strong>Then</strong> should show web-socket connected.
+<em>And</em> create 1 PVC/Pod.
+<em>And</em> should see data send over volume web-socket.</p>
 
     </article>
   </div>
