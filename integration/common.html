@@ -174,6 +174,7 @@ SETTING_PRIORITY_CLASS = &#34;priority-class&#34;
 SETTING_RECURRING_JOB_WHILE_VOLUME_DETACHED = \
     &#34;allow-recurring-job-while-volume-detached&#34;
 SETTING_REPLICA_NODE_SOFT_ANTI_AFFINITY = &#34;replica-soft-anti-affinity&#34;
+SETTING_REPLICA_AUTO_BALANCE = &#34;replica-auto-balance&#34;
 SETTING_REPLICA_REPLENISHMENT_WAIT_INTERVAL = \
     &#34;replica-replenishment-wait-interval&#34;
 SETTING_REPLICA_ZONE_SOFT_ANTI_AFFINITY = &#34;replica-zone-soft-anti-affinity&#34;
@@ -225,6 +226,11 @@ DATA_SIZE_IN_MB_4 = 800
 MESSAGE_TYPE_ERROR = &#34;error&#34;
 
 BACKUP_BLOCK_SIZE = 2 * Mi
+
+# label deprecated for k8s &gt;= v1.17
+DEPRECATED_K8S_ZONE_LABEL = &#34;failure-domain.beta.kubernetes.io/zone&#34;
+
+K8S_ZONE_LABEL = &#34;topology.kubernetes.io/zone&#34;
 
 
 def load_k8s_config():
@@ -1579,6 +1585,17 @@ def wait_for_volume_replica_count(client, name, count):
     return volume
 
 
+def wait_for_volume_replica_auto_balance_update(client, volume_name, value):
+    wait_for_volume_creation(client, volume_name)
+    for i in range(RETRY_COUNTS):
+        volume = client.by_id_volume(volume_name)
+        if volume.replicaAutoBalance == value:
+            break
+        time.sleep(RETRY_INTERVAL)
+    assert volume.replicaAutoBalance == value
+    return volume
+
+
 def wait_for_volume_replicas_mode(client, volname, mode,
                                   replica_names=None, replica_count=None):
     verified = False
@@ -1612,6 +1629,32 @@ def wait_for_volume_replicas_mode(client, volname, mode,
         time.sleep(RETRY_INTERVAL)
 
     assert verified
+    return volume
+
+
+def wait_for_volume_replicas_running_on_hosts(client, volume_name, host_ids,
+                                              replica_balanced):
+    hosts = list(host_ids)
+    for i in range(RETRY_COUNTS):
+        hosts = list(host_ids)
+        num_running = 0
+        volume = client.by_id_volume(volume_name)
+        for replica in volume.replicas:
+            if not replica.running:
+                continue
+
+            if replica.hostId not in hosts:
+                continue
+
+            if replica_balanced:
+                hosts.remove(replica.hostId)
+
+            num_running += 1
+        if num_running == volume.numberOfReplicas:
+            break
+
+        time.sleep(RETRY_INTERVAL)
+    assert num_running == volume.numberOfReplicas
     return volume
 
 
@@ -1834,6 +1877,18 @@ def wait_for_replica_scheduled(client, volume_name, to_nodes,
     assert unexpect_fail == 0
     assert len(volume.replicas) == expect_success + expect_fail
     return volume
+
+
+def get_host_replica_count(client, volume_name, host_id, chk_running=False):
+    volume = client.by_id_volume(volume_name)
+
+    replica_count = 0
+    for replica in volume.replicas:
+        if chk_running and not replica.running:
+            continue
+        if replica.hostId == host_id:
+            replica_count += 1
+    return replica_count
 
 
 @pytest.fixture
@@ -2511,6 +2566,62 @@ def reset_node(client):
         except Exception as e:
             print(&#34;\nException when reset node schedulding and tags&#34;, node)
             print(e)
+
+    reset_longhorn_node_zone(client)
+
+
+def reset_longhorn_node_zone(client):
+    core_api = get_core_api_client()
+
+    nodes = client.list_node()
+    for n in nodes:
+        set_k8s_node_zone_label(core_api, n.name, None)
+    wait_longhorn_node_zone_reset(client)
+
+
+def wait_longhorn_node_zone_reset(client):
+
+    lh_nodes = client.list_node()
+    node_names = map(lambda node: node.name, lh_nodes)
+
+    for node_name in node_names:
+        for j in range(RETRY_COUNTS):
+            lh_node = client.by_id_node(node_name)
+            if lh_node.zone == &#39;&#39;:
+                break
+            time.sleep(RETRY_INTERVAL)
+
+        assert lh_node.zone == &#39;&#39;
+
+
+def set_k8s_node_zone_label(core_api, node_name, zone_name):
+    k8s_zone_label = get_k8s_zone_label()
+
+    payload = {
+        &#34;metadata&#34;: {
+            &#34;labels&#34;: {
+                k8s_zone_label: zone_name}
+        }
+    }
+
+    core_api.patch_node(node_name, body=payload)
+
+
+def get_k8s_zone_label():
+    ver_api = get_version_api_client()
+    k8s_ver_data = ver_api.get_code()
+
+    k8s_ver_major = k8s_ver_data.major
+    assert k8s_ver_major == &#39;1&#39;
+
+    k8s_ver_minor = k8s_ver_data.minor
+
+    if int(k8s_ver_minor) &gt;= 17:
+        k8s_zone_label = K8S_ZONE_LABEL
+    else:
+        k8s_zone_label = DEPRECATED_K8S_ZONE_LABEL
+
+    return k8s_zone_label
 
 
 def cleanup_test_disks(client):
@@ -6179,6 +6290,27 @@ been completed successfully</p></div>
     return free, total</code></pre>
 </details>
 </dd>
+<dt id="tests.common.get_host_replica_count"><code class="name flex">
+<span>def <span class="ident">get_host_replica_count</span></span>(<span>client, volume_name, host_id, chk_running=False)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_host_replica_count(client, volume_name, host_id, chk_running=False):
+    volume = client.by_id_volume(volume_name)
+
+    replica_count = 0
+    for replica in volume.replicas:
+        if chk_running and not replica.running:
+            continue
+        if replica.hostId == host_id:
+            replica_count += 1
+    return replica_count</code></pre>
+</details>
+</dd>
 <dt id="tests.common.get_iscsi_ip"><code class="name flex">
 <span>def <span class="ident">get_iscsi_ip</span></span>(<span>iscsi)</span>
 </code></dt>
@@ -6235,6 +6367,32 @@ been completed successfully</p></div>
 <pre><code class="python">def get_iscsi_target(iscsi):
     iscsi_endpoint = parse_iscsi_endpoint(iscsi)
     return iscsi_endpoint[1]</code></pre>
+</details>
+</dd>
+<dt id="tests.common.get_k8s_zone_label"><code class="name flex">
+<span>def <span class="ident">get_k8s_zone_label</span></span>(<span>)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_k8s_zone_label():
+    ver_api = get_version_api_client()
+    k8s_ver_data = ver_api.get_code()
+
+    k8s_ver_major = k8s_ver_data.major
+    assert k8s_ver_major == &#39;1&#39;
+
+    k8s_ver_minor = k8s_ver_data.minor
+
+    if int(k8s_ver_minor) &gt;= 17:
+        k8s_zone_label = K8S_ZONE_LABEL
+    else:
+        k8s_zone_label = DEPRECATED_K8S_ZONE_LABEL
+
+    return k8s_zone_label</code></pre>
 </details>
 </dd>
 <dt id="tests.common.get_liveness_probe_spec"><code class="name flex">
@@ -7444,6 +7602,24 @@ def random_labels():
     assert ready</code></pre>
 </details>
 </dd>
+<dt id="tests.common.reset_longhorn_node_zone"><code class="name flex">
+<span>def <span class="ident">reset_longhorn_node_zone</span></span>(<span>client)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def reset_longhorn_node_zone(client):
+    core_api = get_core_api_client()
+
+    nodes = client.list_node()
+    for n in nodes:
+        set_k8s_node_zone_label(core_api, n.name, None)
+    wait_longhorn_node_zone_reset(client)</code></pre>
+</details>
+</dd>
 <dt id="tests.common.reset_node"><code class="name flex">
 <span>def <span class="ident">reset_node</span></span>(<span>client)</span>
 </code></dt>
@@ -7464,7 +7640,9 @@ def random_labels():
                                  &#34;allowScheduling&#34;, True)
         except Exception as e:
             print(&#34;\nException when reset node schedulding and tags&#34;, node)
-            print(e)</code></pre>
+            print(e)
+
+    reset_longhorn_node_zone(client)</code></pre>
 </details>
 </dd>
 <dt id="tests.common.reset_settings"><code class="name flex">
@@ -7528,6 +7706,28 @@ def scheduling_api(request):
     scheduling_api = k8sclient.SchedulingV1Api()
 
     return scheduling_api</code></pre>
+</details>
+</dd>
+<dt id="tests.common.set_k8s_node_zone_label"><code class="name flex">
+<span>def <span class="ident">set_k8s_node_zone_label</span></span>(<span>core_api, node_name, zone_name)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def set_k8s_node_zone_label(core_api, node_name, zone_name):
+    k8s_zone_label = get_k8s_zone_label()
+
+    payload = {
+        &#34;metadata&#34;: {
+            &#34;labels&#34;: {
+                k8s_zone_label: zone_name}
+        }
+    }
+
+    core_api.patch_node(node_name, body=payload)</code></pre>
 </details>
 </dd>
 <dt id="tests.common.set_node_scheduling"><code class="name flex">
@@ -9428,6 +9628,26 @@ def volume_name(request):
     return v</code></pre>
 </details>
 </dd>
+<dt id="tests.common.wait_for_volume_replica_auto_balance_update"><code class="name flex">
+<span>def <span class="ident">wait_for_volume_replica_auto_balance_update</span></span>(<span>client, volume_name, value)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def wait_for_volume_replica_auto_balance_update(client, volume_name, value):
+    wait_for_volume_creation(client, volume_name)
+    for i in range(RETRY_COUNTS):
+        volume = client.by_id_volume(volume_name)
+        if volume.replicaAutoBalance == value:
+            break
+        time.sleep(RETRY_INTERVAL)
+    assert volume.replicaAutoBalance == value
+    return volume</code></pre>
+</details>
+</dd>
 <dt id="tests.common.wait_for_volume_replica_count"><code class="name flex">
 <span>def <span class="ident">wait_for_volume_replica_count</span></span>(<span>client, name, count)</span>
 </code></dt>
@@ -9490,6 +9710,41 @@ def volume_name(request):
         time.sleep(RETRY_INTERVAL)
 
     assert verified
+    return volume</code></pre>
+</details>
+</dd>
+<dt id="tests.common.wait_for_volume_replicas_running_on_hosts"><code class="name flex">
+<span>def <span class="ident">wait_for_volume_replicas_running_on_hosts</span></span>(<span>client, volume_name, host_ids, replica_balanced)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def wait_for_volume_replicas_running_on_hosts(client, volume_name, host_ids,
+                                              replica_balanced):
+    hosts = list(host_ids)
+    for i in range(RETRY_COUNTS):
+        hosts = list(host_ids)
+        num_running = 0
+        volume = client.by_id_volume(volume_name)
+        for replica in volume.replicas:
+            if not replica.running:
+                continue
+
+            if replica.hostId not in hosts:
+                continue
+
+            if replica_balanced:
+                hosts.remove(replica.hostId)
+
+            num_running += 1
+        if num_running == volume.numberOfReplicas:
+            break
+
+        time.sleep(RETRY_INTERVAL)
+    assert num_running == volume.numberOfReplicas
     return volume</code></pre>
 </details>
 </dd>
@@ -9560,6 +9815,30 @@ def volume_name(request):
         time.sleep(RETRY_INTERVAL)
     assert volume[key] == value
     return volume</code></pre>
+</details>
+</dd>
+<dt id="tests.common.wait_longhorn_node_zone_reset"><code class="name flex">
+<span>def <span class="ident">wait_longhorn_node_zone_reset</span></span>(<span>client)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def wait_longhorn_node_zone_reset(client):
+
+    lh_nodes = client.list_node()
+    node_names = map(lambda node: node.name, lh_nodes)
+
+    for node_name in node_names:
+        for j in range(RETRY_COUNTS):
+            lh_node = client.by_id_node(node_name)
+            if lh_node.zone == &#39;&#39;:
+                break
+            time.sleep(RETRY_INTERVAL)
+
+        assert lh_node.zone == &#39;&#39;</code></pre>
 </details>
 </dd>
 <dt id="tests.common.wait_pod"><code class="name flex">
@@ -10014,10 +10293,12 @@ volume. Trigger a failed assertion of one is detected.
 <li><code><a title="tests.common.get_device_checksum" href="#tests.common.get_device_checksum">get_device_checksum</a></code></li>
 <li><code><a title="tests.common.get_engine_image_status_value" href="#tests.common.get_engine_image_status_value">get_engine_image_status_value</a></code></li>
 <li><code><a title="tests.common.get_host_disk_size" href="#tests.common.get_host_disk_size">get_host_disk_size</a></code></li>
+<li><code><a title="tests.common.get_host_replica_count" href="#tests.common.get_host_replica_count">get_host_replica_count</a></code></li>
 <li><code><a title="tests.common.get_iscsi_ip" href="#tests.common.get_iscsi_ip">get_iscsi_ip</a></code></li>
 <li><code><a title="tests.common.get_iscsi_lun" href="#tests.common.get_iscsi_lun">get_iscsi_lun</a></code></li>
 <li><code><a title="tests.common.get_iscsi_port" href="#tests.common.get_iscsi_port">get_iscsi_port</a></code></li>
 <li><code><a title="tests.common.get_iscsi_target" href="#tests.common.get_iscsi_target">get_iscsi_target</a></code></li>
+<li><code><a title="tests.common.get_k8s_zone_label" href="#tests.common.get_k8s_zone_label">get_k8s_zone_label</a></code></li>
 <li><code><a title="tests.common.get_liveness_probe_spec" href="#tests.common.get_liveness_probe_spec">get_liveness_probe_spec</a></code></li>
 <li><code><a title="tests.common.get_longhorn_api_client" href="#tests.common.get_longhorn_api_client">get_longhorn_api_client</a></code></li>
 <li><code><a title="tests.common.get_mgr_ips" href="#tests.common.get_mgr_ips">get_mgr_ips</a></code></li>
@@ -10062,9 +10343,11 @@ volume. Trigger a failed assertion of one is detected.
 <li><code><a title="tests.common.read_volume_data" href="#tests.common.read_volume_data">read_volume_data</a></code></li>
 <li><code><a title="tests.common.reset_disks_for_all_nodes" href="#tests.common.reset_disks_for_all_nodes">reset_disks_for_all_nodes</a></code></li>
 <li><code><a title="tests.common.reset_engine_image" href="#tests.common.reset_engine_image">reset_engine_image</a></code></li>
+<li><code><a title="tests.common.reset_longhorn_node_zone" href="#tests.common.reset_longhorn_node_zone">reset_longhorn_node_zone</a></code></li>
 <li><code><a title="tests.common.reset_node" href="#tests.common.reset_node">reset_node</a></code></li>
 <li><code><a title="tests.common.reset_settings" href="#tests.common.reset_settings">reset_settings</a></code></li>
 <li><code><a title="tests.common.scheduling_api" href="#tests.common.scheduling_api">scheduling_api</a></code></li>
+<li><code><a title="tests.common.set_k8s_node_zone_label" href="#tests.common.set_k8s_node_zone_label">set_k8s_node_zone_label</a></code></li>
 <li><code><a title="tests.common.set_node_scheduling" href="#tests.common.set_node_scheduling">set_node_scheduling</a></code></li>
 <li><code><a title="tests.common.set_node_tags" href="#tests.common.set_node_tags">set_node_tags</a></code></li>
 <li><code><a title="tests.common.settings_reset" href="#tests.common.settings_reset">settings_reset</a></code></li>
@@ -10141,11 +10424,14 @@ volume. Trigger a failed assertion of one is detected.
 <li><code><a title="tests.common.wait_for_volume_healthy_no_frontend" href="#tests.common.wait_for_volume_healthy_no_frontend">wait_for_volume_healthy_no_frontend</a></code></li>
 <li><code><a title="tests.common.wait_for_volume_migration_node" href="#tests.common.wait_for_volume_migration_node">wait_for_volume_migration_node</a></code></li>
 <li><code><a title="tests.common.wait_for_volume_migration_ready" href="#tests.common.wait_for_volume_migration_ready">wait_for_volume_migration_ready</a></code></li>
+<li><code><a title="tests.common.wait_for_volume_replica_auto_balance_update" href="#tests.common.wait_for_volume_replica_auto_balance_update">wait_for_volume_replica_auto_balance_update</a></code></li>
 <li><code><a title="tests.common.wait_for_volume_replica_count" href="#tests.common.wait_for_volume_replica_count">wait_for_volume_replica_count</a></code></li>
 <li><code><a title="tests.common.wait_for_volume_replicas_mode" href="#tests.common.wait_for_volume_replicas_mode">wait_for_volume_replicas_mode</a></code></li>
+<li><code><a title="tests.common.wait_for_volume_replicas_running_on_hosts" href="#tests.common.wait_for_volume_replicas_running_on_hosts">wait_for_volume_replicas_running_on_hosts</a></code></li>
 <li><code><a title="tests.common.wait_for_volume_restoration_completed" href="#tests.common.wait_for_volume_restoration_completed">wait_for_volume_restoration_completed</a></code></li>
 <li><code><a title="tests.common.wait_for_volume_restoration_start" href="#tests.common.wait_for_volume_restoration_start">wait_for_volume_restoration_start</a></code></li>
 <li><code><a title="tests.common.wait_for_volume_status" href="#tests.common.wait_for_volume_status">wait_for_volume_status</a></code></li>
+<li><code><a title="tests.common.wait_longhorn_node_zone_reset" href="#tests.common.wait_longhorn_node_zone_reset">wait_longhorn_node_zone_reset</a></code></li>
 <li><code><a title="tests.common.wait_pod" href="#tests.common.wait_pod">wait_pod</a></code></li>
 <li><code><a title="tests.common.wait_pod_auto_attach_after_first_backup_completion" href="#tests.common.wait_pod_auto_attach_after_first_backup_completion">wait_pod_auto_attach_after_first_backup_completion</a></code></li>
 <li><code><a title="tests.common.wait_scheduling_failure" href="#tests.common.wait_scheduling_failure">wait_scheduling_failure</a></code></li>
