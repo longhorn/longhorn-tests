@@ -124,6 +124,8 @@
   </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/stress/backup-listing/</loc>
   </url><url>
+    <loc>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.2/delete-cronjob-for-detached-volumes/</loc>
+  </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/disable_ipv6/</loc>
   </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/engine-crash-during-live-upgrade/</loc>

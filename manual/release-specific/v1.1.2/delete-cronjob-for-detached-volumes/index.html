@@ -420,35 +420,27 @@
 </aside>
 
 <main style="padding: 1%; width: 70%;">
-  <h1 id="title">Test Disable IPv6</h1>
+  <h1 id="title">Test CronJob For Volumes That Are Detached For A Long Time</h1>
   <div>
     <article id="content">
        <h2 id="related-issue">Related issue</h2>
-<p><a href="https://github.com/longhorn/longhorn/issues/2136">https://github.com/longhorn/longhorn/issues/2136</a></p>
-<p><a href="https://github.com/longhorn/longhorn/issues/2197">https://github.com/longhorn/longhorn/issues/2197</a></p>
-<p>Longhorn v1.1.1 should work with IPv6 disabled.</p>
-<h2 id="scenario">Scenario</h2>
+<p><a href="https://github.com/longhorn/longhorn/issues/2513">https://github.com/longhorn/longhorn/issues/2513</a></p>
+<h2 id="steps">Steps</h2>
 <ol>
-<li>Install Kubernetes</li>
-<li>Disable IPv6 on all the worker nodes using the following
-<pre><code>Go to the folder /etc/default
-In the grub file, edit the value GRUB_CMDLINE_LINUX_DEFAULT=&quot;ipv6.disable=1&quot;
-Once the file is saved update by the command update-grub
-Reboot the node and once the node becomes active, 
-Use the command cat /proc/cmdline to verify &quot;ipv6.disable=1&quot; is reflected in the values 
-</code></pre></li>
-<li>Deploy Longhorn and test basic use cases.
-<ol>
-<li>Accessing the UI for CRUD RWO/RWX volumes</li>
-<li>Use kubectl to create workloads using RWO/RWX volumes.</li>
-</ol>
-</li>
-<li>Re-enable ipv6 on all the nodes using:
-<pre><code>By deleting the &quot;ipv6.disable=1&quot; from the GRUB_CMDLINE_LINUX_DEFAULT accessing grub file from /etc/default
-Perform a reboot and once the node comes active
-Use the command cat /proc/cmdline to verify &quot;ipv6.disable=1&quot; is not reflected in the values
-</code></pre></li>
-<li>Make sure the basic use cases still works.</li>
+<li>Make sure the setting <code>Allow Recurring Job While Volume Is Detached</code> is <code>disabled</code></li>
+<li>Create a volume. Attach to a node. Create a recurring backup job that run every minute.</li>
+<li>Wait for the cronjob to be scheduled a few times.</li>
+<li>Detach the volume.</li>
+<li>Verify that the CronJob get deleted.</li>
+<li>Wait 2 hours (&gt; 100 mins).</li>
+<li>Attach the volume to a node.</li>
+<li>Verify that the CronJob get created.</li>
+<li>Verify that Kubernetes schedules a run for the CronJob at the beginning of the next minute.</li>
+<li>Make sure the setting <code>Allow Recurring Job While Volume Is Detached</code> is <code>enabled</code>.</li>
+<li>Detach the volume.</li>
+<li>Verify that the CronJob is not deleted.</li>
+<li>Wait for Kubernetes to schedule a run for the CronJob at the beginning of the next minute.
+Verify that the volume is attached, CronJob runs, then volume is detached.</li>
 </ol>
 
     </article>

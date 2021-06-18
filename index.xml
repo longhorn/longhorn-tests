@@ -470,6 +470,16 @@ kubectl get &amp;lt;LONGHORN-CRD&amp;gt; -n longhorn-system Verify that the outp
     </item>
     
     <item>
+      <title>Test CronJob For Volumes That Are Detached For A Long Time</title>
+      <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.2/delete-cronjob-for-detached-volumes/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.2/delete-cronjob-for-detached-volumes/</guid>
+      <description>Related issue https://github.com/longhorn/longhorn/issues/2513
+Steps  Make sure the setting Allow Recurring Job While Volume Is Detached is disabled Create a volume. Attach to a node. Create a recurring backup job that run every minute. Wait for the cronjob to be scheduled a few times. Detach the volume. Verify that the CronJob get deleted. Wait 2 hours (&amp;gt; 100 mins). Attach the volume to a node. Verify that the CronJob get created.</description>
+    </item>
+    
+    <item>
       <title>Test Disable IPv6</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/disable_ipv6/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
