@@ -536,6 +536,19 @@ Test Data Send Over Web-socket Resource Updated Given monitor network traffic wi
     </item>
     
     <item>
+      <title>Test Instance Manager Streaming Connection Recovery</title>
+      <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.2/instance-manager-streaming-connection-recovery/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.2/instance-manager-streaming-connection-recovery/</guid>
+      <description>Related issue https://github.com/longhorn/longhorn/issues/2561
+Test Step Given A cluster with Longhorn
+And create a volume and attach it to a pod.
+And exec into a longhorn manager pod and kill the connection with an engine or replica instance manager pod. The connections are instance manager pods&#39; IP with port 8500.
+$ kl exec -it longhorn-manager-5z8zn -- bash root@longhorn-manager-5z8zn:/# ss Netid State Recv-Q Send-Q Local Address:Port Peer Address:Port tcp ESTAB 0 0 10.</description>
+    </item>
+    
+    <item>
       <title>Test ISCSI Installation on EKS</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/iscsi_installation/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>

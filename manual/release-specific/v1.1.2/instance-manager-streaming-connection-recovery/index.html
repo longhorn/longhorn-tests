@@ -417,31 +417,33 @@
 </aside>
 
 <main style="padding: 1%; width: 70%;">
-  <h1 id="title">Volume Deletion UI Warnings</h1>
+  <h1 id="title">Test Instance Manager Streaming Connection Recovery</h1>
   <div>
     <article id="content">
-       <p>A number of cases need to be manually tested in <code>longhorn-ui</code>. To test these cases, create the <code>Volume</code> with the specified conditions in each case, and then try to delete it. What is observed should match what is described in the test case:</p>
-<ol>
-<li>A regular <code>Volume</code>. Only the default deletion prompt should show up asking to confirm deletion.</li>
-<li>A <code>Volume</code> with a <code>Persistent Volume</code>. The deletion prompt should tell the user that there is a <code>Persistent Volume</code> that will be deleted along with the <code>Volume</code>.</li>
-<li>A <code>Volume</code> with a <code>Persistent Volume</code> and <code>Persistent Volume Claim</code>. The deletion prompt should tell the user that there is a <code>Persistent Volume</code> and <code>Persistent Volume Claim</code> that will be deleted along with the <code>Volume</code>.</li>
-<li>A <code>Volume</code> that is <code>Attached</code>. The deletion prompt should indicate what <code>Node</code> the <code>Volume</code> is attached to and warn the user about errors that may occur as a result of deleting an attached <code>Volume</code>.</li>
-<li>A <code>Volume</code> that is <code>Attached</code> and has a <code>Persistent Volume</code>. The deletion prompt should contain the information from both test cases 2 and 4.</li>
-</ol>
-<p>Additionally, here are bulk deletion test cases that need testing:</p>
-<ol>
-<li>1+ regular <code>Volumes</code>. Only the default deletion prompt should show up asking to confirm deletion.</li>
-<li>1+ <code>Volumes</code> with a <code>Persistent Volume</code>.  The deletion prompt should list the <code>Persistent Volumes</code> associated with the <code>Volumes</code> and tell the user that these will also be deleted.</li>
-<li>0+ regular <code>Volumes</code> and 1+ <code>Volumes</code> that are <code>Attached</code>. The deletion prompt should list only <code>Volumes</code> that are <code>Attached</code> and tell the user that applications using them may encounter errors once the <code>Volumes</code> are deleted. <strong>This test case has not been addressed in <code>longhorn-ui</code> yet and will likely fail.</strong></li>
-<li>0+ regular <code>Volumes</code>, 1+ <code>Volumes</code> with a <code>Persistent Volume</code>, and 1+ <code>Volumes</code> that are <code>Attached</code>. The information described in test cases 2 and 3 should be displayed. <strong>This test case has not been addressed in <code>longhorn-ui</code> yet and will likely fail.</strong></li>
-</ol>
-<p>Finally, there are some other test cases to check here:</p>
-<ol>
-<li>Create a <code>Volume</code> and create a <code>Persistent Volume</code> and <code>Persistent Volume Claim</code> through the <code>longhorn-ui</code>. Delete the <code>Persistent Volume Claim</code> manually. Delete the <code>Volume</code>. The deletion prompt should not list the <code>Persistent Volume Claim</code> that was deleted in the list of resources to be deleted.</li>
-<li>Create a <code>Disaster Recovery Volume</code>. Delete the <code>Disaster Recovery Volume</code>. The deletion prompt should not give a warning about errors that may occur from deleting an attached <code>Volume</code>. <strong>This test case has not been addressed in <code>longhorn-ui</code> yet and will likely fail.</strong></li>
-<li>Create a <code>Volume</code> from a <code>Backup</code>. While the <code>Volume</code> is still being restored, delete the <code>Volume</code>. The deletion prompt should not give a warning about errors that may occur from deleting an attached <code>Volume</code>. <strong>This test case has not been addressed in <code>longhorn-ui</code> yet and will likely fail.</strong></li>
-</ol>
-<p>Some of these test cases have not been addressed yet and will fail until addressed in a later PR.</p>
+       <h2 id="related-issue">Related issue</h2>
+<p><a href="https://github.com/longhorn/longhorn/issues/2561">https://github.com/longhorn/longhorn/issues/2561</a></p>
+<h2 id="test-step">Test Step</h2>
+<p><strong>Given</strong> A cluster with Longhorn</p>
+<p><em>And</em> create a volume and attach it to a pod.</p>
+<p><em>And</em> <code>exec</code> into a longhorn manager pod and kill the connection with an engine or replica instance manager pod. The connections are instance manager pods' IP with port <code>8500</code>.</p>
+<pre><code>$ kl exec -it longhorn-manager-5z8zn -- bash
+
+root@longhorn-manager-5z8zn:/# ss
+Netid                    State                     Recv-Q                     Send-Q                                           Local Address:Port                                            Peer Address:Port
+tcp                      ESTAB                     0                          0                                                  10.42.1.124:59414                                            10.42.1.123:8500
+tcp                      ESTAB                     0                          0                                                  10.42.1.124:39096                                           52.36.54.134:https
+tcp                      ESTAB                     0                          0                                                  10.42.1.124:45302                                              10.43.0.1:https
+tcp                      ESTAB                     0                          0                                                  10.42.1.124:34124                                            10.42.1.122:8500
+root@longhorn-manager-5z8zn:/# ss -K dst 10.42.1.122:8500
+Netid                    State                     Recv-Q                     Send-Q                                            Local Address:Port                                            Peer Address:Port
+tcp                      ESTAB                     0                          0                                                   10.42.1.124:34124                                            10.42.1.122:8500
+root@longhorn-manager-5z8zn:/# exit
+</code></pre><p><strong>Then</strong> Check the longhorn manager pod log. There must be following logs:</p>
+<pre><code>[longhorn-manager-5z8zn] time=&quot;2021-06-17T11:16:37Z&quot; level=error msg=&quot;error receiving next item in engine watch: rpc error: code = Unavailable desc = transport is closing&quot; controller=longhorn-instance-manager instance manager=instance-manager-e-285962e9 node=shuo-cluster-0-worker-3
+......
+[longhorn-manager-5z8zn] time=&quot;2021-06-17T11:16:38Z&quot; level=error msg=&quot;instance manager monitor streaming continuously errors receiving items for 10 times, will stop the monitor itself&quot; controller=longhorn-instance-manager instance manager=instance-manager-e-285962e9 node=shuo-cluster-0-worker-3
+</code></pre><p><em>And</em> verify the volume still works fine.</p>
+<p><em>And</em> verify the volume can be detached and reattached.</p>
 
     </article>
   </div>
