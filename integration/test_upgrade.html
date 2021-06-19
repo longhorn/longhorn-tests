@@ -113,7 +113,9 @@ def longhorn_upgrade(longhorn_manager_repo,
                                 longhorn_manager_image,
                                 longhorn_engine_image,
                                 longhorn_instance_manager_image,
-                                longhorn_share_manager_image], shell=False)
+                                longhorn_share_manager_image,
+                                longhorn_backing_image_manager_image],
+                               shell=False)
     process.wait()
     if process.returncode == 0:
         longhorn_upgraded = True
@@ -354,7 +356,9 @@ def test_upgrade(upgrade_longhorn_manager_repo_url,
                                 longhorn_manager_image,
                                 longhorn_engine_image,
                                 longhorn_instance_manager_image,
-                                longhorn_share_manager_image], shell=False)
+                                longhorn_share_manager_image,
+                                longhorn_backing_image_manager_image],
+                               shell=False)
     process.wait()
     if process.returncode == 0:
         longhorn_upgraded = True
