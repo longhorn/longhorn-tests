@@ -65,6 +65,16 @@ Case 1:  Disable the setting auto-salvage. Create and attach a volume. Keep writ
     </item>
     
     <item>
+      <title>Test kubelet restart on a node of the cluster</title>
+      <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/node/kubelet-restart-on-a-node/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/node/kubelet-restart-on-a-node/</guid>
+      <description>Related issues: https://github.com/longhorn/longhorn/issues/2629
+Case 1: Kubelet restart on RKE1 multi node cluster:  Create a RKE1 cluster with config of 1 etcd/control plane and 3 worker nodes. Deploy Longhorn on the cluster. Deploy prometheus monitoring app on the cluster which is using Longhorn storage class or deploy a statefulSet with Longhorn volume. Write some data into the mount point and compute the md5sum. Restart the kubelet on the node where the statefulSet or Prometheus pod is running using the command sudo docker restart kubelet Observe the volume.</description>
+    </item>
+    
+    <item>
       <title>Test node deletion</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/node/node-deletion/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>

@@ -423,205 +423,68 @@
 </aside>
 
 <main style="padding: 1%; width: 70%;">
-  <header class="homepage-header">
-    <h1>Release specific tests</h1>
-    
-  </header>
-  <div class="homepage-content">
-    
-  </div>
+  <h1 id="title">Test kubelet restart on a node of the cluster</h1>
   <div>
-    <ul>
-
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.0/">v1.0.0</a></li>
-  
-    <ul>
-
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.0/new-node-custom-data-directory/">New Node with Custom Data Directory</a></li>
-  
-
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.0/suse-sles12sp3/">Operating System specific tests for SUSE SLES12SP3</a></li>
-  
-    <ul>
-
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.0/suse-sles12sp3/ext4-custom-fs-params-1/">Testing ext4 with custom fs params1 (no 64bit, no metadata_csum)</a></li>
-  
-
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.0/suse-sles12sp3/ext4-custom-fs-params-2/">Testing ext4 with custom fs params2 (no metadata_csum)</a></li>
-  
-
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.0/suse-sles12sp3/ext4-no-custom-fs-params/">Testing ext4 without custom fs params</a></li>
-  
-
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.0/suse-sles12sp3/xfs-after-custom-fs-params/">Testing xfs after custom fs params (xfs should ignore the custom fs params)</a></li>
-  
-
-</ul>
-
-  
-
-</ul>
-
-  
-
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.1/">v1.0.1</a></li>
-  
-    <ul>
-
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.1/besteffort-recurring-job/">BestEffort Recurring Job Cleanup</a></li>
-  
-
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.1/change-imagepullpolicy/">Change imagePullPolicy to IfNotPresent Test</a></li>
-  
-
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.1/dr-volume-latest-backup-deletion/">DR volume related latest backup deletion test</a></li>
-  
-
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.1/nfsv4-enforcement/">NFSv4 Enforcement (No NFSv3 Fallback)</a></li>
-  
-
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.1/priorityclass-default-setting/">Priority Class Default Setting</a></li>
-  
-
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.1/error-fail-remount/">Return an error when fail to remount a volume</a></li>
-  
-
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.1/test-s3-access-style/">Test access style for S3 compatible backupstore</a></li>
-  
-
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.1/test-s3-backupstore/">Test S3 backupstore in a cluster sitting behind a Http Proxy</a></li>
-  
-
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.1/ui-volume-deletion/">Volume Deletion UI Warnings</a></li>
-  
-
-</ul>
-
-  
-
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.2/">v1.0.2</a></li>
-  
-    <ul>
-
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.2/upgrade-lease-lock/">Upgrade Lease Lock</a></li>
-  
-
-</ul>
-
-  
-
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/">v1.1.0</a></li>
-  
-    <ul>
-
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/prometheus_support/">Prometheus Support</a></li>
-  
-
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/recurring-backup-job-interruptions/">Recurring backup job interruptions</a></li>
-  
-
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/reusing-failed-replica-for-rebuilding/">Reusing failed replica for rebuilding</a></li>
-  
-
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/kubelet_volume_metrics/">Support Kubelet Volume Metrics</a></li>
-  
-
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/additional-printer-columns/">Test Additional Printer Columns</a></li>
-  
-
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/instance-manager-ip-sync/">Test Instance Manager IP Sync</a></li>
-  
-
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/iscsi_installation/">Test ISCSI Installation on EKS</a></li>
-  
-
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/rwx_feature/">Test Read Write Many Feature</a></li>
-  
-
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/uninstallation/">Test uninstallation</a></li>
-  
-
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/upgrade_with_modified_storageclass/">Upgrade Longhorn with modified Storage Class</a></li>
-  
-
-</ul>
-
-  
-
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/">v1.1.1</a></li>
-  
-    <ul>
-
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/csi-sanity-check/">CSI Sanity Check</a></li>
-  
-
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/partial-engine-deployment/">Longhorn with engine is not deployed on all the nodes</a></li>
-  
-
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/tolerations_priorityclass_setting/">Set Tolerations/PriorityClass For System Components</a></li>
-  
-
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/disable_ipv6/">Test Disable IPv6</a></li>
-  
-
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/test-file-sync-cancellation/">Test File Sync Cancellation</a></li>
-  
-
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/ws-traffic-flood/">Test Frontend Traffic</a></li>
-  
-
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/delete-node/">Test Node Delete</a></li>
-  
-
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/test-node-selector/">Test Node Selector</a></li>
-  
-
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/rwx-mount-ownership-reset/">Test RWX share-mount ownership reset</a></li>
-  
-
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/test-service-account-mount/">Test Service Account mount on host</a></li>
-  
-
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/snapshot-purge-error-handling/">Test Snapshot Purge Error Handling</a></li>
-  
-
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/system-upgrade-with-deprecated-cpu-setting/">Test system upgrade with the deprecated CPU setting</a></li>
-  
-
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/aws-iam-role-for-volume-backup-restore/">Test Volume Backup and Restore by AWS IAM role</a></li>
-  
-
-</ul>
-
-  
-
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.2/">v1.1.2</a></li>
-  
-    <ul>
-
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.2/delete-cronjob-for-detached-volumes/">Test CronJob For Volumes That Are Detached For A Long Time</a></li>
-  
-
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.2/full-ws-data-tranfer-when-no-updates/">Test Frontend Web-socket Data Transfer When Resource Not Updated</a></li>
-  
-
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.2/instance-manager-streaming-connection-recovery/">Test Instance Manager Streaming Connection Recovery</a></li>
-  
-
-</ul>
-
-  
-
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.2.0/">v1.2.0</a></li>
-  
-    <ul>
-
-</ul>
-
-  
-
-</ul>
-
+    <article id="content">
+       <h3 id="related-issues">Related issues:</h3>
+<p><a href="https://github.com/longhorn/longhorn/issues/2629">https://github.com/longhorn/longhorn/issues/2629</a></p>
+<h3 id="case-1-kubelet-restart-on-rke1-multi-node-cluster">Case 1: Kubelet restart on RKE1 multi node cluster:</h3>
+<ol>
+<li>Create a RKE1 cluster with config of 1 etcd/control plane and 3 worker nodes.</li>
+<li>Deploy Longhorn on the cluster.</li>
+<li>Deploy prometheus monitoring app on the cluster which is using Longhorn storage class or deploy a statefulSet with Longhorn volume.</li>
+<li>Write some data into the mount point and compute the md5sum.</li>
+<li>Restart the kubelet on the node where the statefulSet or Prometheus pod is running using the command <code>sudo docker restart kubelet</code></li>
+<li>Observe the volume. It gets detached and the pod gets terminated.</li>
+<li>Once the pod is terminated, a new pod should be created and get attached to the volume successfully.</li>
+<li>Verify that the mount of the volume is successful and data is safe.</li>
+</ol>
+<h3 id="case-2-kubelet-restart-on-one-node-rke1-cluster">Case 2: Kubelet restart on one node RKE1 cluster:</h3>
+<ol>
+<li>Create a RKE1 cluster with config of 1 node all role.</li>
+<li>Deploy Longhorn on the cluster.</li>
+<li>Deploy prometheus monitoring app on the cluster which is using Longhorn storage class or deploy a statefulSet with Longhorn volume.</li>
+<li>Write some data into the mount point and compute the md5sum.</li>
+<li>Restart the kubelet on the node using the command <code>sudo docker restart kubelet</code></li>
+<li>Observe the volume. It gets detached and the pod gets terminated.</li>
+<li>Once the pod is terminated, a new pod should be created and get attached to the volume successfully.</li>
+<li>Verify that the mount of the volume is successful and data is safe.</li>
+</ol>
+<h3 id="case-3-rke2-serverrke2-agent-restart-on-rke2-multi-node-cluster">Case 3: rke2-server/rke2-agent restart on RKE2 multi node cluster:</h3>
+<ol>
+<li>Create a RKE2 cluster with config of 1 control plane and 3 worker nodes.</li>
+<li>Deploy Longhorn on the cluster.</li>
+<li>Deploy prometheus monitoring app on the cluster which is using Longhorn storage class or deploy a statefulSet with Longhorn volume.</li>
+<li>Write some data into the mount point and compute the md5sum.</li>
+<li>Restart the rke-agent service on the node where the statefulSet or Prometheus pod is running using the command <code>systemctl restart rke2-agent.service</code></li>
+<li>Observe the volume. It gets detached and the pod gets terminated.</li>
+<li>Once the pod is terminated, a new pod should be created and get attached to the volume successfully.</li>
+<li>Verify that the mount of the volume is successful and data is safe.</li>
+<li>Create a stateful set with Longhorn volume on the control plane node.</li>
+<li>Once the stateful set is up and running, Write some data into the mount point and compute the md5sum.</li>
+<li>Restart the rke2-service on the control plane node using the command <code>systemctl restart rke2-server.service</code>.</li>
+<li>Observe the volume gets detached and the pod gets terminated.</li>
+<li>Once the pod is recreated, verify the mount of the volume is successful and data is safe.</li>
+</ol>
+<h3 id="case-4-kubelet-restart-on-a-node-with-rwx-volume-on-a-rke1-cluster">Case 4: Kubelet restart on a node with RWX volume on a RKE1 Cluster:</h3>
+<ol>
+<li>Create a RKE1 cluster with config of 1 etcd/control plane and 3 worker nodes.</li>
+<li>Deploy Longhorn on the cluster.</li>
+<li>Deploy a statefulSet attached with an RWX volume.</li>
+<li>Write some data into the mount point and compute the md5sum.</li>
+<li>Restart the kubelet on the node where the share-manager pod is running using the command <code>sudo docker restart kubelet</code></li>
+<li>Observe the volume. It gets detached and the share-manager pod gets terminated.</li>
+<li>Watch the pod of the statefulSet using the command <code>kubectl get pods -n &lt;namespace&gt; -w</code>.</li>
+<li>The pods (Share-manager and statefulSet) should be terminated and restarted.</li>
+<li>Verify that the mount of the volume is successful and data is safe.</li>
+<li>Repeat the above steps where the StatefulSet pod and share-manager pod are attached to different nodes and restart the node where the statefulSet pod is running.</li>
+</ol>
+<h3 id="case-5-kubelet-restart-on-a-node-with-rwx-volume-on-a-rke2-cluster">Case 5: Kubelet restart on a node with RWX volume on a RKE2 Cluster:</h3>
+<ol>
+<li>Repeat the steps from the case 4 on an RKE2 cluster.</li>
+</ol>
+
+    </article>
   </div>
 </main>
 
