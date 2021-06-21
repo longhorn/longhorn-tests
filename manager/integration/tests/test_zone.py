@@ -291,7 +291,7 @@ def test_replica_auto_balance_zone_least_effort(client, core_api, volume_name): 
     And disable scheduling for node-2.
         disable scheduling for node-3.
     And create a volume with 6 replicas.
-    And attach the volume to node-1.
+    And attach the volume to self-node.
     And 6 replicas running in zone-1.
         0 replicas running in zone-2.
         0 replicas running in zone-3.
@@ -328,7 +328,7 @@ def test_replica_auto_balance_zone_least_effort(client, core_api, volume_name): 
     n_replicas = 6
     volume = create_and_check_volume(client, volume_name,
                                      num_of_replicas=n_replicas)
-    volume.attach(hostId=n1.name)
+    volume.attach(hostId=get_self_host_id())
 
     for _ in range(RETRY_COUNTS):
         z1_r_count = get_zone_replica_count(
@@ -398,7 +398,7 @@ def test_replica_auto_balance_zone_best_effort(client, core_api, volume_name):  
     And disable scheduling for node-2.
         disable scheduling for node-3.
     And create a volume with 6 replicas.
-    And attach the volume to node-1.
+    And attach the volume to self-node.
     And 6 replicas running in zone-1.
         0 replicas running in zone-2.
         0 replicas running in zone-3.
@@ -436,7 +436,7 @@ def test_replica_auto_balance_zone_best_effort(client, core_api, volume_name):  
     n_replicas = 6
     volume = create_and_check_volume(client, volume_name,
                                      num_of_replicas=n_replicas)
-    volume.attach(hostId=n1.name)
+    volume.attach(hostId=get_self_host_id())
 
     for _ in range(RETRY_COUNTS):
         z1_r_count = get_zone_replica_count(
@@ -647,7 +647,7 @@ def test_replica_auto_balance_node_duplicates_in_multiple_zones(client, core_api
         set node-2 to zone-2.
     And disable scheduling for node-3.
     And create a volume with 3 replicas.
-    And attach the volume to node-1.
+    And attach the volume to self-node.
     And zone-1 and zone-2 should contain 3 replica in total.
 
     When set node-3 to the zone with duplicated replicas.
@@ -679,7 +679,7 @@ def test_replica_auto_balance_node_duplicates_in_multiple_zones(client, core_api
     n_replicas = 3
     volume = create_and_check_volume(client, volume_name,
                                      num_of_replicas=n_replicas)
-    volume.attach(hostId=n1.name)
+    volume.attach(hostId=get_self_host_id())
     z1_r_count = get_zone_replica_count(client, volume_name, ZONE1)
     z2_r_count = get_zone_replica_count(client, volume_name, ZONE2)
     assert z1_r_count + z2_r_count == n_replicas

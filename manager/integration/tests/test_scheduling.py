@@ -432,11 +432,10 @@ def test_replica_auto_balance_node_least_effort(client, volume_name):  # NOQA
     And set `replica-auto-balance` to `least_effort`.
     And disable scheduling for node-2.
         disable scheduling for node-3.
-    And create a volume.
-    And attach the volume to node-1.
+    And create a volume with 6 replicas.
+    And attach the volume to self-node.
     And wait for the volume to be healthy.
     And write some data to the volume.
-    And set volume replicas to 6.
     And count replicas running on each nodes.
     And 6 replicas running on node-1.
         0 replicas running on node-2.
@@ -472,16 +471,15 @@ def test_replica_auto_balance_node_least_effort(client, volume_name):  # NOQA
     client.update(n2, allowScheduling=False)
     client.update(n3, allowScheduling=False)
 
-    volume = create_and_check_volume(client, volume_name)
-    volume.attach(hostId=n1.name)
+    n_replicas = 6
+    volume = create_and_check_volume(client, volume_name,
+                                     num_of_replicas=n_replicas)
+    volume.attach(hostId=get_self_host_id())
     volume = wait_for_volume_healthy(client, volume_name)
 
     data = write_volume_random_data(volume)
     check_volume_data(volume, data)
 
-    n_replicas = 6
-    volume = volume.updateReplicaCount(replicaCount=n_replicas)
-    wait_for_volume_replica_count(client, volume_name, n_replicas)
     for _ in range(RETRY_COUNTS):
         n1_r_count = common.get_host_replica_count(
             client, volume_name, n1.name, chk_running=True)
@@ -565,11 +563,10 @@ def test_replica_auto_balance_node_best_effort(client, volume_name):  # NOQA
     And set `replica-auto-balance` to `best_effort`.
     And disable scheduling for node-2.
         disable scheduling for node-3.
-    And create a volume.
-    And attach the volume to node-1.
+    And create a volume with 6 replicas.
+    And attach the volume to self-node.
     And wait for the volume to be healthy.
     And write some data to the volume.
-    And set volume replicas to 6.
     And count replicas running on each node.
     And 6 replicas running on node-1.
         0 replicas running on node-2.
@@ -609,16 +606,15 @@ def test_replica_auto_balance_node_best_effort(client, volume_name):  # NOQA
     client.update(n2, allowScheduling=False)
     client.update(n3, allowScheduling=False)
 
-    volume = create_and_check_volume(client, volume_name)
-    volume.attach(hostId=n1.name)
+    n_replicas = 6
+    volume = create_and_check_volume(client, volume_name,
+                                     num_of_replicas=n_replicas)
+    volume.attach(hostId=get_self_host_id())
     volume = wait_for_volume_healthy(client, volume_name)
 
     data = write_volume_random_data(volume)
     check_volume_data(volume, data)
 
-    n_replicas = 6
-    volume = volume.updateReplicaCount(replicaCount=n_replicas)
-    wait_for_volume_replica_count(client, volume_name, n_replicas)
     for _ in range(RETRY_COUNTS):
         n1_r_count = common.get_host_replica_count(
             client, volume_name, n1.name, chk_running=True)
@@ -699,35 +695,45 @@ def test_replica_auto_balance_disabled_volume_spec_enabled(client, volume_name):
               volume spec `replicaAutoBalance` is `least_effort`.
 
     Given set `replica-soft-anti-affinity` to `true`.
-    And set `replica-auto-balance` to `least_effort`.
+    And set `replica-auto-balance` to `disabled`.
     And disable scheduling for node-2.
         disable scheduling for node-3.
     And create volume-1 with 3 replicas.
         create volume-2 with 3 replicas.
     And set volume-2 spec `replicaAutoBalance` to `least-effort`.
-    And attach volume-1 to node-1.
-        attach volume-2 to node-1.
+    And attach volume-1 to self-node.
+        attach volume-2 to self-node.
     And wait for volume-1 to be healthy.
         wait for volume-2 to be healthy.
-    And volume-1 replicas should be running on node-1.
-        volume-2 replicas should be running on node-1.
+    And count volume-1 replicas running on each node.
+    And 3 replicas running on node-1.
+        0 replicas running on node-2.
+        0 replicas running on node-3.
+    And count volume-2 replicas running on each node.
+    And 3 replicas running on node-1.
+        0 replicas running on node-2.
+        0 replicas running on node-3.
     And write some data to volume-1.
         write some data to volume-2.
 
     When enable scheduling for node-2.
          enable scheduling for node-3.
-    And count replicas running on each nodes for volume-1.
-        count replicas running on each nodes for volume-2.
 
-    Then all 3 replicas of volume-1 should be running on node-1.
-    And all 3 replicas of volume-2 should be running on node-1, node-2, node-3.
+    Then count volume-1 replicas running on each node.
+    And 3 replicas running on node-1.
+        0 replicas running on node-2.
+        0 replicas running on node-3.
+    And count volume-2 replicas running on each node.
+    And 1 replicas running on node-1.
+        1 replicas running on node-2.
+        1 replicas running on node-3.
     And volume-1 data should be the same as written.
     And volume-2 data should be the same as written.
     """
     common.update_setting(client,
                           SETTING_REPLICA_NODE_SOFT_ANTI_AFFINITY, "true")
     common.update_setting(client,
-                          SETTING_REPLICA_AUTO_BALANCE, "least-effort")
+                          SETTING_REPLICA_AUTO_BALANCE, "disabled")
 
     n1, n2, n3 = client.list_node()
     client.update(n2, allowScheduling=False)
@@ -747,20 +753,42 @@ def test_replica_auto_balance_disabled_volume_spec_enabled(client, volume_name):
         client, v2_name, "least-effort"
     )
 
-    v1.attach(hostId=n1.name)
-    v2.attach(hostId=n1.name)
+    self_node = get_self_host_id()
+    v1.attach(hostId=self_node)
+    v2.attach(hostId=self_node)
 
     v1 = wait_for_volume_healthy(client, v1_name)
     v2 = wait_for_volume_healthy(client, v2_name)
 
-    v1 = common.wait_for_volume_replicas_running_on_hosts(
-        client, v1_name, (n1.name,),
-        replica_balanced=False
-    )
-    v2 = common.wait_for_volume_replicas_running_on_hosts(
-        client, v2_name, (n1.name,),
-        replica_balanced=False
-    )
+    for _ in range(RETRY_COUNTS):
+        v1n1_r_count = common.get_host_replica_count(
+            client, v1_name, n1.name, chk_running=True)
+        v1n2_r_count = common.get_host_replica_count(
+            client, v1_name, n2.name, chk_running=True)
+        v1n3_r_count = common.get_host_replica_count(
+            client, v1_name, n3.name, chk_running=True)
+
+        if v1n1_r_count == n_replicas and v1n2_r_count == v1n3_r_count == 0:
+            break
+        time.sleep(RETRY_INTERVAL)
+    assert v1n1_r_count == n_replicas
+    assert v1n2_r_count == 0
+    assert v1n3_r_count == 0
+
+    for _ in range(RETRY_COUNTS):
+        v2n1_r_count = common.get_host_replica_count(
+            client, v2_name, n1.name, chk_running=True)
+        v2n2_r_count = common.get_host_replica_count(
+            client, v2_name, n2.name, chk_running=True)
+        v2n3_r_count = common.get_host_replica_count(
+            client, v2_name, n3.name, chk_running=True)
+
+        if v2n1_r_count == n_replicas and v2n2_r_count == v2n3_r_count == 0:
+            break
+        time.sleep(RETRY_INTERVAL)
+    assert v2n1_r_count == n_replicas
+    assert v2n2_r_count == 0
+    assert v2n3_r_count == 0
 
     d1 = write_volume_random_data(v1)
     d2 = write_volume_random_data(v2)
@@ -770,17 +798,27 @@ def test_replica_auto_balance_disabled_volume_spec_enabled(client, volume_name):
     client.update(n2, allowScheduling=True, evictionRequested=False)
     client.update(n3, allowScheduling=True, evictionRequested=False)
 
-    common.wait_for_volume_replica_count(client, v1_name, n_replicas)
-    v1 = common.wait_for_volume_replicas_running_on_hosts(
-        client, v1_name, (n1.name,),
-        replica_balanced=False
-    )
+    assert v1n1_r_count == common.get_host_replica_count(
+        client, v1_name, n1.name, chk_running=True)
+    assert v1n2_r_count == common.get_host_replica_count(
+        client, v1_name, n2.name, chk_running=True)
+    assert v1n3_r_count == common.get_host_replica_count(
+        client, v1_name, n3.name, chk_running=True)
 
-    common.wait_for_volume_replica_count(client, v2_name, n_replicas)
-    v2 = common.wait_for_volume_replicas_running_on_hosts(
-        client, v2_name, (n1.name, n2.name, n3.name,),
-        replica_balanced=True
-    )
+    for _ in range(RETRY_COUNTS):
+        v2n1_r_count = common.get_host_replica_count(
+            client, v2_name, n1.name, chk_running=True)
+        v2n2_r_count = common.get_host_replica_count(
+            client, v2_name, n2.name, chk_running=True)
+        v2n3_r_count = common.get_host_replica_count(
+            client, v2_name, n3.name, chk_running=True)
+
+        if v2n1_r_count == v2n2_r_count == v2n3_r_count == 1:
+            break
+        time.sleep(RETRY_INTERVAL)
+    assert v2n1_r_count == 1
+    assert v2n2_r_count == 1
+    assert v2n3_r_count == 1
 
     check_volume_data(v1, d1)
     check_volume_data(v2, d2)
