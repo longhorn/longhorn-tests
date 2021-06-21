@@ -51,6 +51,7 @@ from common import create_and_wait_pod, delete_and_wait_pod
 from common import delete_and_wait_pvc, delete_and_wait_pv
 from common import CONDITION_STATUS_FALSE, CONDITION_STATUS_TRUE
 from common import RETRY_COUNTS, RETRY_INTERVAL, RETRY_COMMAND_COUNT
+from common import DEFAULT_POD_TIMEOUT, DEFAULT_POD_INTERVAL
 from common import cleanup_volume, create_and_check_volume, create_backup
 from common import DEFAULT_VOLUME_SIZE
 from common import Gi, Mi
@@ -98,6 +99,7 @@ from common import VOLUME_FIELD_ROBUSTNESS, VOLUME_FIELD_READY
 from common import VOLUME_ROBUSTNESS_HEALTHY, VOLUME_ROBUSTNESS_FAULTED
 from common import DATA_SIZE_IN_MB_2, DATA_SIZE_IN_MB_3
 from common import wait_for_backup_to_start
+from common import SETTING_DEFAULT_LONGHORN_STATIC_SC
 
 from backupstore import backupstore_corrupt_backup_cfg_file
 from backupstore import backupstore_delete_volume_cfg_file
@@ -3685,7 +3687,91 @@ def test_volume_toomanysnapshots_condition(client, core_api, volume_name): # NOQ
                                      snap[100].name, snap[99].name)
 
     wait_for_volume_condition_toomanysnapshots(client, volume_name,
-                                               &#34;status&#34;, &#34;False&#34;)</code></pre>
+                                               &#34;status&#34;, &#34;False&#34;)
+
+
+def test_expand_pvc_with_size_round_up(client, core_api, volume_name):  # NOQA
+    &#34;&#34;&#34;
+    test expand longhorn volume with pvc
+
+    1. Create LHV,PV,PVC with size &#39;1Gi&#39;
+    2. Attach, write data, and detach
+    3. Expand volume size to &#39;2000000000/2G&#39; and
+        check if size round up &#39;2000683008/1908Mi&#39;
+    4. Attach, write data, and detach
+    5. Expand volume size to &#39;2Gi&#39; and check if size is &#39;2147483648&#39;
+    6. Attach, write data, and detach
+    &#34;&#34;&#34;
+
+    static_sc_name = &#34;longhorn&#34;
+    setting = client.by_id_setting(SETTING_DEFAULT_LONGHORN_STATIC_SC)
+    setting = client.update(setting, value=static_sc_name)
+    assert setting.value == static_sc_name
+
+    volume = create_and_check_volume(client, volume_name, 2, str(1 * Gi))
+    create_pv_for_volume(client, core_api, volume, volume_name)
+    create_pvc_for_volume(client, core_api, volume, volume_name)
+
+    self_hostId = get_self_host_id()
+    volume.attach(hostId=self_hostId, disableFrontend=False)
+    volume = wait_for_volume_healthy(client, volume_name)
+    test_data = write_volume_random_data(volume)
+    volume.detach(hostId=&#34;&#34;)
+    volume = wait_for_volume_detached(client, volume_name)
+
+    volume.expand(size=&#34;2000000000&#34;)
+    wait_for_volume_expansion(client, volume_name)
+
+    for i in range(DEFAULT_POD_TIMEOUT):
+        claim = core_api.read_namespaced_persistent_volume_claim(
+            name=volume_name, namespace=&#39;default&#39;)
+        if claim.spec.resources.requests[&#39;storage&#39;] == &#34;2000683008&#34; and \
+                claim.status.capacity[&#39;storage&#39;] == &#34;1908Mi&#34;:
+            break
+        time.sleep(DEFAULT_POD_INTERVAL)
+    assert claim.spec.resources.requests[&#39;storage&#39;] == &#34;2000683008&#34;
+    assert claim.status.capacity[&#39;storage&#39;] == &#34;1908Mi&#34;
+
+    volume = client.by_id_volume(volume_name)
+    assert volume.size == &#34;2000683008&#34;
+    volume.detach(hostId=&#34;&#34;)
+    volume = wait_for_volume_detached(client, volume_name)
+
+    self_hostId = get_self_host_id()
+    volume.attach(hostId=self_hostId, disableFrontend=False)
+    volume = wait_for_volume_healthy(client, volume_name)
+    check_volume_data(volume, test_data, False)
+    test_data = write_volume_random_data(volume)
+    volume.detach(hostId=&#34;&#34;)
+    volume = wait_for_volume_detached(client, volume_name)
+
+    volume.expand(size=str(2 * Gi))
+    wait_for_volume_expansion(client, volume_name)
+
+    for i in range(DEFAULT_POD_TIMEOUT):
+        claim = core_api.read_namespaced_persistent_volume_claim(
+            name=volume_name, namespace=&#39;default&#39;)
+        if claim.spec.resources.requests[&#39;storage&#39;] == &#34;2147483648&#34; and \
+                claim.status.capacity[&#39;storage&#39;] == &#34;2Gi&#34;:
+            break
+        time.sleep(DEFAULT_POD_INTERVAL)
+    assert claim.spec.resources.requests[&#39;storage&#39;] == &#34;2147483648&#34;
+    assert claim.status.capacity[&#39;storage&#39;] == &#34;2Gi&#34;
+
+    volume = client.by_id_volume(volume_name)
+    assert volume.size == &#34;2147483648&#34;
+    volume.detach(hostId=&#34;&#34;)
+    volume = wait_for_volume_detached(client, volume_name)
+
+    self_hostId = get_self_host_id()
+    volume.attach(hostId=self_hostId, disableFrontend=False)
+    volume = wait_for_volume_healthy(client, volume_name)
+    check_volume_data(volume, test_data, False)
+    volume.detach(hostId=&#34;&#34;)
+    volume = wait_for_volume_detached(client, volume_name)
+
+    client.delete(volume)
+    wait_for_volume_delete(client, volume_name)</code></pre>
 </details>
 </section>
 <section>
@@ -6382,6 +6468,108 @@ data2["content"] + data0["content"][BACKUP_BLOCK_SIZE:].</li>
     check_volume_data(volume, snap2_data)</code></pre>
 </details>
 </dd>
+<dt id="tests.test_basic.test_expand_pvc_with_size_round_up"><code class="name flex">
+<span>def <span class="ident">test_expand_pvc_with_size_round_up</span></span>(<span>client, core_api, volume_name)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>test expand longhorn volume with pvc</p>
+<ol>
+<li>Create LHV,PV,PVC with size '1Gi'</li>
+<li>Attach, write data, and detach</li>
+<li>Expand volume size to '2000000000/2G' and
+check if size round up '2000683008/1908Mi'</li>
+<li>Attach, write data, and detach</li>
+<li>Expand volume size to '2Gi' and check if size is '2147483648'</li>
+<li>Attach, write data, and detach</li>
+</ol></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def test_expand_pvc_with_size_round_up(client, core_api, volume_name):  # NOQA
+    &#34;&#34;&#34;
+    test expand longhorn volume with pvc
+
+    1. Create LHV,PV,PVC with size &#39;1Gi&#39;
+    2. Attach, write data, and detach
+    3. Expand volume size to &#39;2000000000/2G&#39; and
+        check if size round up &#39;2000683008/1908Mi&#39;
+    4. Attach, write data, and detach
+    5. Expand volume size to &#39;2Gi&#39; and check if size is &#39;2147483648&#39;
+    6. Attach, write data, and detach
+    &#34;&#34;&#34;
+
+    static_sc_name = &#34;longhorn&#34;
+    setting = client.by_id_setting(SETTING_DEFAULT_LONGHORN_STATIC_SC)
+    setting = client.update(setting, value=static_sc_name)
+    assert setting.value == static_sc_name
+
+    volume = create_and_check_volume(client, volume_name, 2, str(1 * Gi))
+    create_pv_for_volume(client, core_api, volume, volume_name)
+    create_pvc_for_volume(client, core_api, volume, volume_name)
+
+    self_hostId = get_self_host_id()
+    volume.attach(hostId=self_hostId, disableFrontend=False)
+    volume = wait_for_volume_healthy(client, volume_name)
+    test_data = write_volume_random_data(volume)
+    volume.detach(hostId=&#34;&#34;)
+    volume = wait_for_volume_detached(client, volume_name)
+
+    volume.expand(size=&#34;2000000000&#34;)
+    wait_for_volume_expansion(client, volume_name)
+
+    for i in range(DEFAULT_POD_TIMEOUT):
+        claim = core_api.read_namespaced_persistent_volume_claim(
+            name=volume_name, namespace=&#39;default&#39;)
+        if claim.spec.resources.requests[&#39;storage&#39;] == &#34;2000683008&#34; and \
+                claim.status.capacity[&#39;storage&#39;] == &#34;1908Mi&#34;:
+            break
+        time.sleep(DEFAULT_POD_INTERVAL)
+    assert claim.spec.resources.requests[&#39;storage&#39;] == &#34;2000683008&#34;
+    assert claim.status.capacity[&#39;storage&#39;] == &#34;1908Mi&#34;
+
+    volume = client.by_id_volume(volume_name)
+    assert volume.size == &#34;2000683008&#34;
+    volume.detach(hostId=&#34;&#34;)
+    volume = wait_for_volume_detached(client, volume_name)
+
+    self_hostId = get_self_host_id()
+    volume.attach(hostId=self_hostId, disableFrontend=False)
+    volume = wait_for_volume_healthy(client, volume_name)
+    check_volume_data(volume, test_data, False)
+    test_data = write_volume_random_data(volume)
+    volume.detach(hostId=&#34;&#34;)
+    volume = wait_for_volume_detached(client, volume_name)
+
+    volume.expand(size=str(2 * Gi))
+    wait_for_volume_expansion(client, volume_name)
+
+    for i in range(DEFAULT_POD_TIMEOUT):
+        claim = core_api.read_namespaced_persistent_volume_claim(
+            name=volume_name, namespace=&#39;default&#39;)
+        if claim.spec.resources.requests[&#39;storage&#39;] == &#34;2147483648&#34; and \
+                claim.status.capacity[&#39;storage&#39;] == &#34;2Gi&#34;:
+            break
+        time.sleep(DEFAULT_POD_INTERVAL)
+    assert claim.spec.resources.requests[&#39;storage&#39;] == &#34;2147483648&#34;
+    assert claim.status.capacity[&#39;storage&#39;] == &#34;2Gi&#34;
+
+    volume = client.by_id_volume(volume_name)
+    assert volume.size == &#34;2147483648&#34;
+    volume.detach(hostId=&#34;&#34;)
+    volume = wait_for_volume_detached(client, volume_name)
+
+    self_hostId = get_self_host_id()
+    volume.attach(hostId=self_hostId, disableFrontend=False)
+    volume = wait_for_volume_healthy(client, volume_name)
+    check_volume_data(volume, test_data, False)
+    volume.detach(hostId=&#34;&#34;)
+    volume = wait_for_volume_detached(client, volume_name)
+
+    client.delete(volume)
+    wait_for_volume_delete(client, volume_name)</code></pre>
+</details>
+</dd>
 <dt id="tests.test_basic.test_expansion_basic"><code class="name flex">
 <span>def <span class="ident">test_expansion_basic</span></span>(<span>client, volume_name)</span>
 </code></dt>
@@ -8412,6 +8600,7 @@ def test_volume_update_replica_count(client, volume_name):  # NOQA
 <li><code><a title="tests.test_basic.test_dr_volume_with_backup_block_deletion" href="#tests.test_basic.test_dr_volume_with_backup_block_deletion">test_dr_volume_with_backup_block_deletion</a></code></li>
 <li><code><a title="tests.test_basic.test_dr_volume_with_backup_block_deletion_abort_during_backup_in_progress" href="#tests.test_basic.test_dr_volume_with_backup_block_deletion_abort_during_backup_in_progress">test_dr_volume_with_backup_block_deletion_abort_during_backup_in_progress</a></code></li>
 <li><code><a title="tests.test_basic.test_engine_image_daemonset_restart" href="#tests.test_basic.test_engine_image_daemonset_restart">test_engine_image_daemonset_restart</a></code></li>
+<li><code><a title="tests.test_basic.test_expand_pvc_with_size_round_up" href="#tests.test_basic.test_expand_pvc_with_size_round_up">test_expand_pvc_with_size_round_up</a></code></li>
 <li><code><a title="tests.test_basic.test_expansion_basic" href="#tests.test_basic.test_expansion_basic">test_expansion_basic</a></code></li>
 <li><code><a title="tests.test_basic.test_expansion_canceling" href="#tests.test_basic.test_expansion_canceling">test_expansion_canceling</a></code></li>
 <li><code><a title="tests.test_basic.test_expansion_with_scheduling_failure" href="#tests.test_basic.test_expansion_with_scheduling_failure">test_expansion_with_scheduling_failure</a></code></li>
