@@ -21,7 +21,7 @@ from common import create_pvc_for_volume
 from common import write_pod_volume_random_data
 from common import wait_for_volume_replica_count
 
-from common import Mi, Gi, DATA_SIZE_IN_MB_2, DATA_SIZE_IN_MB_4
+from common import Mi, Gi, DATA_SIZE_IN_MB_2
 from common import create_and_wait_pod
 from common import settings_reset # NOQA
 from common import wait_for_rebuild_start
@@ -885,7 +885,7 @@ def test_data_locality_basic(client, core_api, volume_name, pod, settings_reset)
     2. Create a volume(3) with 1 replicas and dataLocality set to best-effort
     3. Attach volume(3) to node-3.
     4. Use a retry loop to verify that volume(3) has only 1 replica on node-3
-    5. Write 800MB data to volume(3)
+    5. Write 2GB data to volume(3)
     6. Detach volume(3)
     7. Attach volume(3) to node-1
     8. Use a retry loop to:
@@ -1120,7 +1120,7 @@ def test_data_locality_basic(client, core_api, volume_name, pod, settings_reset)
               replica_node_soft_anti_affinity_setting, e)
 
     volume3_name = volume_name + "-3"
-    volume3_size = str(1 * Gi)
+    volume3_size = str(4 * Gi)
     volume3_data_path = "/data/test"
     pv3_name = volume3_name + "-pv"
     pvc3_name = volume3_name + "-pvc"
@@ -1152,7 +1152,7 @@ def test_data_locality_basic(client, core_api, volume_name, pod, settings_reset)
     volume3 = wait_for_volume_healthy(client, volume3_name)
 
     write_pod_volume_random_data(core_api, pod3_name,
-                                 volume3_data_path, DATA_SIZE_IN_MB_4)
+                                 volume3_data_path, 2 * Gi)
 
     volume3.updateDataLocality(dataLocality="best-effort")
     volume3 = client.by_id_volume(volume3_name)
@@ -1167,6 +1167,7 @@ def test_data_locality_basic(client, core_api, volume_name, pod, settings_reset)
     assert volume3.replicas[0]["hostId"] == node3.name
 
     delete_and_wait_pod(core_api, pod3_name)
+    wait_for_volume_detached(client, volume3_name)
 
     pod3['spec']['nodeSelector'] = {"kubernetes.io/hostname": node1.name}
     create_and_wait_pod(core_api, pod3)
