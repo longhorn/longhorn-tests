@@ -91,11 +91,11 @@ variable "lh_aws_instance_root_block_device_size_worker" {
 
 variable "rke_k8s_version" {
   type        = string
-  default     = "v1.19.6-rancher1-1"
+  default     = "v1.20.8-rancher1-1"
   description = "RKE k8s version will be used to generate RKE config file output"
 }
 
 variable "k3s_version" {
   type        = string
-  default     = "v1.19.7+k3s1"
+  default     = "v1.20.8+k3s1"
 }
