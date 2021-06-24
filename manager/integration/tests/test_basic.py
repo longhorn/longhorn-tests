@@ -2543,6 +2543,15 @@ def test_expansion_canceling(client, core_api, volume_name, pod):  # NOQA
     volume = wait_for_volume_detached(client, volume_name)
     volume.expand(size=EXPAND_SIZE)
     wait_for_volume_expansion(client, volume_name)
+    for i in range(RETRY_COUNTS):
+        claim = core_api.read_namespaced_persistent_volume_claim(
+            name=expansion_pvc_name, namespace='default')
+        if claim.spec.resources.requests['storage'] == EXPAND_SIZE and \
+                claim.status.capacity['storage'] == "32Mi":
+            break
+        time.sleep(RETRY_INTERVAL)
+    assert claim.spec.resources.requests['storage'] == EXPAND_SIZE
+    assert claim.status.capacity['storage'] == "32Mi"
     volume = client.by_id_volume(volume_name)
     assert volume.state == "detached"
     assert volume.size == str(EXPAND_SIZE)
@@ -2819,6 +2828,15 @@ def test_expansion_with_scheduling_failure(
     expanded_size = str(400 * Mi)
     volume.expand(size=expanded_size)
     wait_for_volume_expansion(client, volume_name)
+    for i in range(RETRY_COUNTS):
+        claim = core_api.read_namespaced_persistent_volume_claim(
+            name=test_pvc_name, namespace='default')
+        if claim.spec.resources.requests['storage'] == expanded_size and \
+                claim.status.capacity['storage'] == "400":
+            break
+        time.sleep(RETRY_INTERVAL)
+    assert claim.spec.resources.requests['storage'] == expanded_size
+    assert claim.status.capacity['storage'] == "400Mi"
     volume = client.by_id_volume(volume_name)
     assert volume.state == "detached"
     assert volume.size == expanded_size
