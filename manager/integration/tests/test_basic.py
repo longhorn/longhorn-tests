@@ -1269,9 +1269,9 @@ def backup_labels_test(client, random_labels, volume_name, size=SIZE, backing_im
     # check field `volumeBackingImageName` is set properly.
     backup = bv.backupGet(name=b.name)
     if backing_image:
-        assert backup.volumeBackingImageName == \
-            backing_image
-        assert backup.volumeBackingImageURL != ""
+        assert bv.backingImageName == backing_image
+        assert bv.backingImageChecksum != ""
+        assert backup.volumeBackingImageName == backing_image
     assert len(backup.labels) == len(random_labels)
 
 

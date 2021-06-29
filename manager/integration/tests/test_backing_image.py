@@ -3,7 +3,7 @@ import subprocess
 
 import pytest
 
-from backupstore import set_random_backupstore  # NOQA
+from backupstore import set_random_backupstore, backupstore_cleanup  # NOQA
 from common import client, random_labels, volume_name, core_api  # NOQA
 from common import csi_pv, pvc, pod_make  # NOQA
 from common import csi_pv_backingimage, pvc_backingimage  # NOQA
@@ -28,7 +28,7 @@ from common import write_volume_random_data, check_volume_data
 
 from common import BACKING_IMAGE_NAME, BACKING_IMAGE_QCOW2_URL, \
     BACKING_IMAGE_RAW_URL, BACKING_IMAGE_EXT4_SIZE, \
-    DIRECTORY_PATH
+    DIRECTORY_PATH, BACKING_IMAGE_SOURCE_TYPE_DOWNLOAD
 
 
 @pytest.mark.coretest   # NOQA
@@ -70,11 +70,13 @@ def backing_image_basic_operation_test(client, volume_name, bi_name, bi_url):  #
 
     random_disk_id = ""
     backing_image = client.by_id_backing_image(bi_name)
-    assert backing_image.imageURL == bi_url
+    assert backing_image.sourceType == BACKING_IMAGE_SOURCE_TYPE_DOWNLOAD
+    assert backing_image.parameters["url"] == bi_url
+    assert backing_image.currentChecksum != ""
     assert not backing_image.deletionTimestamp
-    assert len(backing_image.diskStateMap) == 3
-    for disk_id, state in iter(backing_image.diskStateMap.items()):
-        assert state == "downloaded"
+    assert len(backing_image.diskFileStatusMap) == 3
+    for disk_id, status in iter(backing_image.diskFileStatusMap.items()):
+        assert status.state == "ready"
         random_disk_id = disk_id
     assert random_disk_id != ''
 
@@ -133,11 +135,13 @@ def backing_image_content_test(client, volume_name_prefix, bi_name, bi_url):  # 
     assert volume1.size == str(BACKING_IMAGE_EXT4_SIZE)
 
     backing_image = client.by_id_backing_image(bi_name)
-    assert backing_image.imageURL == bi_url
+    assert backing_image.sourceType == BACKING_IMAGE_SOURCE_TYPE_DOWNLOAD
+    assert backing_image.parameters["url"] == bi_url
+    assert backing_image.currentChecksum != ""
     assert not backing_image.deletionTimestamp
-    assert len(backing_image.diskStateMap) == 3
-    for disk_id, state in iter(backing_image.diskStateMap.items()):
-        assert state == "downloaded"
+    assert len(backing_image.diskFileStatusMap) == 3
+    for disk_id, status in iter(backing_image.diskFileStatusMap.items()):
+        assert status.state == "ready"
 
     # Since there is already a filesystem with data in the backing image,
     # we can directly mount and access the volume without `mkfs`.
@@ -215,6 +219,7 @@ def test_backup_with_backing_image(set_random_backupstore, client, volume_name):
                     BACKING_IMAGE_NAME)
         cleanup_all_volumes(client)
         cleanup_all_backing_images(client)
+        backupstore_cleanup(client)
 
 
 @pytest.mark.coretest   # NOQA
@@ -227,6 +232,7 @@ def test_backup_labels_with_backing_image(set_random_backupstore, client, random
                            str(BACKING_IMAGE_EXT4_SIZE), BACKING_IMAGE_NAME)
         cleanup_all_volumes(client)
         cleanup_all_backing_images(client)
+        backupstore_cleanup(client)
 
 
 @pytest.mark.coretest   # NOQA
@@ -262,6 +268,7 @@ def test_ha_backup_deletion_recovery(set_random_backupstore, client, volume_name
                                          BACKING_IMAGE_NAME)
         cleanup_all_volumes(client)
         cleanup_all_backing_images(client)
+        backupstore_cleanup(client)
 
 
 @pytest.mark.backing_image  # NOQA
@@ -335,6 +342,7 @@ def test_csi_backup_with_backing_image(set_random_backupstore, client, core_api,
                         BACKING_IMAGE_NAME)
         cleanup_all_volumes(client)
         cleanup_all_backing_images(client)
+        backupstore_cleanup(client)
 
 
 @pytest.mark.backing_image
@@ -348,6 +356,7 @@ def test_recurring_job_labels_with_backing_image(set_random_backupstore, client,
                                   BACKING_IMAGE_NAME)
         cleanup_all_volumes(client)
         cleanup_all_backing_images(client)
+        backupstore_cleanup(client)
 
 
 @pytest.mark.skip(reason="TODO") # NOQA
@@ -364,8 +373,8 @@ def test_backing_image_with_disk_migration():  # NOQA
     5. Create and attach a 2-replica volume with the backing image set.
        Then verify:
        1. there is a replica scheduled to the new disk.
-       2. there are 2 entries in the backing image download state map,
-          and both are state `downloaded`.
+       2. there are 2 entries in the backing image disk file status map,
+          and both are state `ready`.
     6. Directly mount the volume (without making filesystem) to a directory.
        Then verify the content of the backing image by checking the existence
        of the directory `<Mount point>/guests/`.

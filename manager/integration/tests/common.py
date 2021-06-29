@@ -204,6 +204,8 @@ DEPRECATED_K8S_ZONE_LABEL = "failure-domain.beta.kubernetes.io/zone"
 
 K8S_ZONE_LABEL = "topology.kubernetes.io/zone"
 
+BACKING_IMAGE_SOURCE_TYPE_DOWNLOAD = "download"
+
 
 def load_k8s_config():
     c = Configuration()
@@ -3970,15 +3972,31 @@ def create_backing_image_with_matching_url(client, name, url):
             found = True
             break
     if found:
-        if bi.imageURL != url:
+        if bi.sourceType != BACKING_IMAGE_SOURCE_TYPE_DOWNLOAD or \
+                bi.parameters["url"] != url:
             client.delete(bi)
             bi = client.by_id_backing_image(name=name)
-        if bi.deletionTimestamp != "":
-            wait_for_backing_image_delete(client, bi.name)
+        if bi is None or bi.deletionTimestamp != "":
+            wait_for_backing_image_delete(client, name)
             found = False
     if not found:
-        bi = client.create_backing_image(name=name, imageURL=url)
+        bi = client.create_backing_image(
+            name=name, sourceType=BACKING_IMAGE_SOURCE_TYPE_DOWNLOAD,
+            parameters={"url": url})
     assert bi
+
+    is_ready = False
+    for i in range(RETRY_COUNTS):
+        bi = client.by_id_backing_image(name)
+        if len(bi.diskStateMap) == 1 and bi.currentChecksum != "":
+            for disk, state in iter(bi.diskStateMap.items()):
+                if state == "ready":
+                    is_ready = True
+                    break
+            if is_ready:
+                break
+        time.sleep(RETRY_INTERVAL)
+
     return bi
 
 
