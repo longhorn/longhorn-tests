@@ -6,7 +6,7 @@ mkdir -p /junit-reports /templates
 
 REPO="longhornio"
 IMAGES=("longhorn-manager" "longhorn-engine" "longhorn-instance-manager" "longhorn-ui" "longhorn-share-manager" "backing-image-manager")
-TAG="master"
+TAG="master-head"
 
 wget -O /templates/junit.tpl https://raw.githubusercontent.com/longhorn/longhorn-tests/master/secscan/templates/junit.tpl
 
