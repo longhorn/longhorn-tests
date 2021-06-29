@@ -36,3 +36,24 @@ Make sure the volumes on the drained/removed node can be detached or recovered c
 
 Note: ```--ignore-daemonsets``` should be set to true to ignore some DaemonSets that exist on node such as Longhorn manager, Longhorn CSI plugin, engine image in a Longhorn deployed cluster.
 
+
+## [Test kubectl drain nodes for PVC/PV/LHV is created through Longhorn UI](https://github.com/longhorn/longhorn/issues/2673)
+**Given** 1 PVC/PV/LHV created through Longhorn UI
+_And_ LHV is not yet attached/replicated.
+
+**When** kubectl drain nodes.
+
+```bash
+NODE=centos-worker-0
+kubectl cordon ${NODE}
+kubectl drain --force --ignore-daemonsets --delete-emptydir-data --grace-period=10 ${NODE}
+```
+
+**Then** all node should successfully drain.
+
+NOTE: We might still 1 or 2 times of the pod's disruption budget message, but will drain successfully in the end.
+
+```log
+evicting pod longhorn-system/instance-manager-r-xxxxxxxx
+error when evicting pods/"instance-manager-r-xxxxxxxx" -n "longhorn-system" (will retry after 5s): Cannot evict pod as it would violate the pod's disruption budget.
+```
