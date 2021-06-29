@@ -373,10 +373,9 @@ def recurring_job_labels_test(client, labels, volume_name, size=SIZE, backing_im
     # One extra Label from RecurringJob.
     assert len(b.labels) == len(labels) + 1
     if backing_image:
-        assert b.volumeBackingImageName == \
-               backing_image
-        assert b.volumeBackingImageURL != ""
-
+        assert bv.backingImageName == backing_image
+        assert bv.backingImageChecksum != ""
+        assert b.volumeBackingImageName == backing_image
     cleanup_volume(client, volume)
 
 
