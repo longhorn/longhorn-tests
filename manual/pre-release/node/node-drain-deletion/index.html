@@ -460,7 +460,18 @@ node/&lt;node-name&gt; evicted
 </code></pre></li>
 </ol>
 <p>Note: <code>--ignore-daemonsets</code> should be set to true to ignore some DaemonSets that exist on node such as Longhorn manager, Longhorn CSI plugin, engine image in a Longhorn deployed cluster.</p>
-
+<h2 id="test-kubectl-drain-nodes-for-pvcpvlhv-is-created-through-longhorn-uihttpsgithubcomlonghornlonghornissues2673"><a href="https://github.com/longhorn/longhorn/issues/2673">Test kubectl drain nodes for PVC/PV/LHV is created through Longhorn UI</a></h2>
+<p><strong>Given</strong> 1 PVC/PV/LHV created through Longhorn UI
+<em>And</em> LHV is not yet attached/replicated.</p>
+<p><strong>When</strong> kubectl drain nodes.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">NODE<span style="color:#f92672">=</span>centos-worker-0
+kubectl cordon <span style="color:#e6db74">${</span>NODE<span style="color:#e6db74">}</span>
+kubectl drain --force --ignore-daemonsets --delete-emptydir-data --grace-period<span style="color:#f92672">=</span><span style="color:#ae81ff">10</span> <span style="color:#e6db74">${</span>NODE<span style="color:#e6db74">}</span>
+</code></pre></div><p><strong>Then</strong> all node should successfully drain.</p>
+<p>NOTE: We might still 1 or 2 times of the pod&rsquo;s disruption budget message, but will drain successfully in the end.</p>
+<pre><code class="language-log" data-lang="log">evicting pod longhorn-system/instance-manager-r-xxxxxxxx
+error when evicting pods/&quot;instance-manager-r-xxxxxxxx&quot; -n &quot;longhorn-system&quot; (will retry after 5s): Cannot evict pod as it would violate the pod's disruption budget.
+</code></pre>
     </article>
   </div>
 </main>
