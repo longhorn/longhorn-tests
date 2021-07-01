@@ -2853,7 +2853,8 @@ def wait_statefulset(statefulset_manifest):
         s_set = api.read_namespaced_stateful_set(
             name=statefulset_manifest['metadata']['name'],
             namespace='default')
-        if s_set.status.ready_replicas == replicas:
+        # s_set is none if statefulset is not yet created
+        if s_set is not None and s_set.status.ready_replicas == replicas:
             break
         time.sleep(DEFAULT_STATEFULSET_INTERVAL)
     assert s_set.status.ready_replicas == replicas
@@ -3487,19 +3488,17 @@ def make_deployment_with_pvc(request):
 
 def wait_deployment_replica_ready(apps_api, deployment_name,
                                   desired_replica_count, namespace='default'):  # NOQA
-    replicas_ready = False
     for i in range(DEFAULT_DEPLOYMENT_TIMEOUT):
         deployment = apps_api.read_namespaced_deployment(
             name=deployment_name,
             namespace=namespace)
 
-        if deployment.status.ready_replicas == desired_replica_count:
-            replicas_ready = True
+        # deployment is none if deployment is not yet created
+        if deployment is not None and \
+           deployment.status.ready_replicas == desired_replica_count:
             break
 
         time.sleep(DEFAULT_DEPLOYMENT_INTERVAL)
-
-    assert replicas_ready
 
 
 def create_and_wait_deployment(apps_api, deployment_manifest):
