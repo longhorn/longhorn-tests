@@ -318,8 +318,8 @@ def test_statefulset_recurring_backup(client, core_api, storage_class,  # NOQA
             if snapshot.removed is False:
                 count += 1
 
-        # two backups + volume-head
-        assert count == 3
+        # one backups + volume-head
+        assert count == 2
 
 
 def test_statefulset_restore(set_random_backupstore, client, core_api, storage_class, statefulset):  # NOQA
