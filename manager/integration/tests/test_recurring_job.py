@@ -181,21 +181,29 @@ def test_recurring_job(set_random_backupstore, client, volume_name):  # NOQA
     # 2 from job_snap, 1 from job_backup, 2 from job_backup2, 1 volume-head
     assert count == 6
 
-    complete_backup_number = 0
-    in_progress_backup_number = 0
+    complete_backup_number_1 = 0
+    complete_backup_number_2 = 0
+    other_backup_state = 0
     volume = client.by_id_volume(volume_name)
     for b in volume.backupStatus:
-        assert b.error == ""
         if b.state == "complete":
-            complete_backup_number += 1
-        elif b.state == "in_progress":
-            in_progress_backup_number += 1
+            assert b.progress == 100
+            assert b.error == ""
+            if "backup-" in b.snapshot:
+                complete_backup_number_1 += 1
+            elif "backup2-" in b.snapshot:
+                complete_backup_number_2 += 1
+        else:
+            other_backup_state += 1
 
-    # 2 completed backups from job_backup
-    # 2 completed backups from job_backup2
-    assert complete_backup_number == 4
+    assert other_backup_state == 0
 
-    assert in_progress_backup_number == 0
+    # 2 completed backups from job_backup1
+    # 2 or more completed backups from job_backup2
+    # NOTE: NFS backup can be slow sometimes and error prone
+    assert complete_backup_number_1 == 2
+    assert complete_backup_number_2 >= 2
+    assert complete_backup_number_2 < 4
 
     volume = volume.detach(hostId="")
 
