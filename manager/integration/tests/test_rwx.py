@@ -289,7 +289,8 @@ def test_rwx_statefulset_scale_down_up(core_api, statefulset):  # NOQA
         s_set = apps_api.read_namespaced_stateful_set(
             name=statefulset['metadata']['name'],
             namespace='default')
-        if s_set.status.ready_replicas == replicas or \
+        # s_set is none if statefulset is not yet created
+        if s_set is not None and s_set.status.ready_replicas == replicas or \
                 (replicas == 0 and not s_set.status.ready_replicas):
             break
         time.sleep(DEFAULT_STATEFULSET_INTERVAL)

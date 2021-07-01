@@ -180,7 +180,8 @@ def test_statefulset_scaling(client, core_api, storage_class, statefulset):  # N
         s_set = apps_api.read_namespaced_stateful_set(
             name=statefulset_name,
             namespace='default')
-        if s_set.status.ready_replicas == replicas:
+        # s_set is none if statefulset is not yet created
+        if s_set is not None and s_set.status.ready_replicas == replicas:
             break
         time.sleep(DEFAULT_POD_INTERVAL)
     assert s_set.status.ready_replicas == replicas
