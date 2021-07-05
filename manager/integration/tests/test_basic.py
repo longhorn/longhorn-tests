@@ -722,9 +722,6 @@ def test_dr_volume_with_backup_block_deletion(set_random_backupstore, client, co
     """
     backupstore_cleanup(client)
 
-    # Set backupstore poll interval to have last backup update quicker
-    update_setting(client, common.SETTING_BACKUPSTORE_POLL_INTERVAL, "5")
-
     host_id = get_self_host_id()
 
     vol = create_and_check_volume(client, volume_name, 2, SIZE)
@@ -823,9 +820,6 @@ def test_dr_volume_with_backup_block_deletion_abort_during_backup_in_progress(
     """
     backupstore_cleanup(client)
 
-    # Set backupstore poll interval to have last backup update quicker
-    update_setting(client, common.SETTING_BACKUPSTORE_POLL_INTERVAL, "5")
-
     host_id = get_self_host_id()
 
     vol = create_and_check_volume(client, volume_name, 2, SIZE)
@@ -905,9 +899,6 @@ def test_dr_volume_with_all_backup_blocks_deleted(
     15. Activate and verify DR volume data is data(0).
     """
     backupstore_cleanup(client)
-
-    # Set backupstore poll interval to have last backup update quicker
-    update_setting(client, common.SETTING_BACKUPSTORE_POLL_INTERVAL, "5")
 
     host_id = get_self_host_id()
 
