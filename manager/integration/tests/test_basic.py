@@ -936,7 +936,7 @@ def test_dr_volume_with_all_backup_blocks_deleted(
     check_volume_data(dr_vol, data0, False)
 
 
-def test_backup_volume_list(set_random_backupstore ,client, core_api):  # NOQA
+def test_backup_volume_list(set_random_backupstore, client, core_api):  # NOQA
     """
     Test backup volume list
     Context:
@@ -1601,24 +1601,20 @@ def test_listing_backup_volume(client, backing_image=""):   # NOQA
     subprocess.check_output(cmd)
     subprocess.check_output(["sync"])
 
-    found1 = found2 = found3 = False
+    found1 = True
+    found2 = found3 = False
     for i in range(RETRY_COUNTS):
         bvs = client.list_backupVolume()
-        for bv in bvs:
-            if bv.name == volume1_name:
-                if "error" in bv.messages:
-                    assert "volume.cfg" in bv.messages.error.lower()
-                    found1 = True
-            elif bv.name == volume2_name:
-                assert not bv.messages
-                found2 = True
-            elif bv.name == volume3_name:
-                assert not bv.messages
-                found3 = True
-        if found1 & found2 & found3:
+        if volume1_name not in bvs:
+            found1 = False
+        if volume2_name in bvs:
+            found2 = True
+        if volume3_name in bvs:
+            found3 = True
+        if not found1 & found2 & found3:
             break
         time.sleep(RETRY_INTERVAL)
-    assert found1 & found2 & found3
+    assert not found1 & found2 & found3
 
     cmd = ["mv", volume1_backup_volume_cfg_path + ".tmp",
            volume1_backup_volume_cfg_path]
@@ -1649,15 +1645,12 @@ def test_listing_backup_volume(client, backing_image=""):   # NOQA
     subprocess.check_output(["sync"])
 
     # a corrupt backup cannot provide information about the snapshot
+    found = True
     for i in range(RETRY_COMMAND_COUNT):
-        found = False
-        for b in bv4.backupList().data:
-            if b.name in b4["name"]:
-                found = True
-                assert b.messages is not None
-                assert MESSAGE_TYPE_ERROR in b.messages
-                break
-    assert found
+        if b4["name"] not in bv4.backupList():
+            found = False
+            break
+    assert not found
 
     # cleanup b4
     os.remove(b4_cfg_path)
