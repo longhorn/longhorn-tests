@@ -2884,17 +2884,13 @@ def test_backup_lock_deletion_during_backup(set_random_backupstore, client, core
     7. Take another backup of the volume.
     8. While backup is in progress, delete the older backup up.
     9. Wait for the backup creation in progress to be completed.
-    10. Check the backup store, there should be 2 backups.
-       (The older backup should not be deleted)
+    10. Check the backup store, there should be 1 backup.
     11. Restore the latest backup.
     12. Wait for the restoration to be completed. Assert md5sum from step 6.
-    13. Restore the older backup.
-    14. Wait for the restoration to be completed. Assert md5sum from step 3.
     """
     backupstore_cleanup(client)
     std_volume_name = volume_name + "-std"
     restore_volume_name_1 = volume_name + "-restore-1"
-    restore_volume_name_2 = volume_name + "-restore-2"
 
     std_pod_name, _, _, std_md5sum1 = \
         prepare_pod_with_data_in_mb(
@@ -2903,28 +2899,33 @@ def test_backup_lock_deletion_during_backup(set_random_backupstore, client, core
     snap1 = create_snapshot(client, std_volume_name)
     std_volume.snapshotBackup(name=snap1.name)
     wait_for_backup_completion(client, std_volume_name, snap1.name)
-    backup_volume = client.by_id_backupVolume(std_volume_name)
     _, b1 = common.find_backup(client, std_volume_name, snap1.name)
 
-    write_pod_volume_random_data(core_api, std_pod_name, "/data/test2",
+    write_pod_volume_random_data(core_api, std_pod_name, "/data/test",
                                  DATA_SIZE_IN_MB_3)
 
-    std_md5sum2 = get_pod_data_md5sum(core_api, std_pod_name, "/data/test2")
+    std_md5sum2 = get_pod_data_md5sum(core_api, std_pod_name, "/data/test")
     snap2 = create_snapshot(client, std_volume_name)
     std_volume.snapshotBackup(name=snap2.name)
     wait_for_backup_to_start(client, std_volume_name, snapshot_name=snap2.name)
 
+    backup_volume = client.by_id_backupVolume(std_volume_name)
     backup_volume.backupDelete(name=b1.name)
 
     wait_for_backup_completion(client, std_volume_name, snap2.name,
                                retry_count=600)
+    wait_for_backup_delete(client, std_volume_name, b1.name)
 
-    _, b1 = common.find_backup(client, std_volume_name, snap1.name)
     _, b2 = common.find_backup(client, std_volume_name, snap2.name)
+    assert b2 is not None
 
-    assert b1, b2 is not None
+    try:
+        _, b1 = common.find_backup(client, std_volume_name, snap1.name)
+    except AssertionError:
+        b1 = None
+    assert b1 is None
 
-    client.create_volume(name=restore_volume_name_1, fromBackup=b1.url)
+    client.create_volume(name=restore_volume_name_1, fromBackup=b2.url)
 
     wait_for_volume_restoration_completed(client, restore_volume_name_1)
     restore_volume_1 = wait_for_volume_detached(client, restore_volume_name_1)
@@ -2940,27 +2941,7 @@ def test_backup_lock_deletion_during_backup(set_random_backupstore, client, core
     restore_pod_1['spec']['volumes'] = [create_pvc_spec(restore_pvc_name_1)]
     create_and_wait_pod(core_api, restore_pod_1)
 
-    md5sum1 = get_pod_data_md5sum(core_api, restore_pod_name_1, "/data/test")
-
-    assert std_md5sum1 == md5sum1
-
-    client.create_volume(name=restore_volume_name_2, fromBackup=b2.url)
-
-    wait_for_volume_restoration_completed(client, restore_volume_name_2)
-    restore_volume_2 = wait_for_volume_detached(client, restore_volume_name_2)
-    assert len(restore_volume_2.replicas) == 3
-
-    restore_pod_name_2 = restore_volume_name_2 + "-pod"
-    restore_pv_name_2 = restore_volume_name_2 + "-pv"
-    restore_pvc_name_2 = restore_volume_name_2 + "-pvc"
-    restore_pod_2 = pod_make(name=restore_pod_name_2)
-    create_pv_for_volume(client, core_api, restore_volume_2, restore_pv_name_2)
-    create_pvc_for_volume(client, core_api, restore_volume_2,
-                          restore_pvc_name_2)
-    restore_pod_2['spec']['volumes'] = [create_pvc_spec(restore_pvc_name_2)]
-    create_and_wait_pod(core_api, restore_pod_2)
-
-    md5sum2 = get_pod_data_md5sum(core_api, restore_pod_name_2, "/data/test2")
+    md5sum2 = get_pod_data_md5sum(core_api, restore_pod_name_1, "/data/test")
 
     assert std_md5sum2 == md5sum2
 
