@@ -1342,9 +1342,11 @@ def test_restore_volume_with_invalid_backupstore(client, volume_name, backupstor
     backup_target_setting = client.update(backup_target_setting,
                                           value=invalid_backup_target_url)
 
+    # make fromBackup URL consistent to the the invalid target URL
+    url = invalid_backup_target_url + b.url.split("?")[1]
     with pytest.raises(Exception) as e:
         client.create_volume(name=res_name,
-                             fromBackup=b.url)
+                             fromBackup=url)
     assert "unable to create volume" in str(e.value)
 
     volumes = client.list_volume()
