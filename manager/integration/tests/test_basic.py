@@ -2821,8 +2821,7 @@ def test_backup_lock_deletion_during_restoration(set_random_backupstore, client,
     8. Delete the backup from the backup store.
     9. Wait for the restoration to be completed.
     10. Assert the data from the restored volume with md5sum.
-    11. Assert the backup count in the backup store with 1.
-       (The backup should not be deleted)
+    11. Assert the backup count in the backup store with 0.
     """
     backupstore_cleanup(client)
     std_volume_name = volume_name + "-std"
@@ -2835,15 +2834,16 @@ def test_backup_lock_deletion_during_restoration(set_random_backupstore, client,
     snap1 = create_snapshot(client, std_volume_name)
     std_volume.snapshotBackup(name=snap1.name)
     wait_for_backup_completion(client, std_volume_name, snap1.name)
-    backup_volume = client.by_id_backupVolume(std_volume_name)
 
     _, b = common.find_backup(client, std_volume_name, snap1.name)
     client.create_volume(name=restore_volume_name, fromBackup=b.url)
     wait_for_volume_restoration_start(client, restore_volume_name, b.name)
 
+    backup_volume = client.by_id_backupVolume(std_volume_name)
     backup_volume.backupDelete(name=b.name)
 
     wait_for_volume_restoration_completed(client, restore_volume_name)
+    wait_for_backup_delete(client, std_volume_name, b.name)
     restore_volume = wait_for_volume_detached(client, restore_volume_name)
     assert len(restore_volume.replicas) == 3
 
@@ -2862,8 +2862,11 @@ def test_backup_lock_deletion_during_restoration(set_random_backupstore, client,
     md5sum = get_pod_data_md5sum(core_api, restore_pod_name, "/data/test")
     assert std_md5sum == md5sum
 
-    _, b = common.find_backup(client, std_volume_name, snap1.name)
-    assert b is not None
+    try:
+        _, b = common.find_backup(client, std_volume_name, snap1.name)
+    except AssertionError:
+        b = None
+    assert b is None
 
 
 def test_backup_lock_deletion_during_backup(set_random_backupstore, client, core_api, volume_name, csi_pv, pvc, pod_make):  # NOQA
