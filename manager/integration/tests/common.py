@@ -1357,6 +1357,12 @@ def get_backupstore_url():
     return backupstores
 
 
+def get_backupstore_poll_interval():
+    poll_interval = os.environ['LONGHORN_BACKUPSTORE_POLL_INTERVAL']
+    assert len(poll_interval) != 0
+    return poll_interval
+
+
 def get_clients(hosts):
     clients = {}
     for host in hosts:
