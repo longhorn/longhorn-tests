@@ -82,8 +82,6 @@ from backupstore import backupstore_create_file
 from backupstore import backupstore_delete_file
 from backupstore import set_random_backupstore # NOQA
 from backupstore import backupstore_get_backup_volume_prefix
-from backupstore import backupstore_wait_for_lock_expiration
-
 
 
 @pytest.mark.coretest   # NOQA
@@ -2964,12 +2962,10 @@ def test_backup_lock_creation_during_deletion(set_random_backupstore, client, co
     4. Take a backup.
     5. Wait for the backup to be completed.
     6. Delete the backup.
-    7. Without waiting for the backup deletion completion, create another
-       backup of the same volume.
-    8. Verify the API response of the backup creation containing the backup
-       creation failure info.
-    9. Wait for the backup deletion and assert there is 0 backup in the backup
-       store.
+    7. Create another backup of the same volume.
+    8. Wait for the delete backup to be completed.
+    8. Wait for the backup to be completed.
+    9. Assert there is 1 backup in the backup store.
     """
     backupstore_cleanup(client)
     std_volume_name = volume_name + "-std"
@@ -2977,34 +2973,31 @@ def test_backup_lock_creation_during_deletion(set_random_backupstore, client, co
     std_pod_name, _, _, std_md5sum1 = \
         prepare_pod_with_data_in_mb(
             client, core_api, csi_pv, pvc, pod_make, std_volume_name,
-            data_size_in_mb=DATA_SIZE_IN_MB_2)
+            data_size_in_mb=DATA_SIZE_IN_MB_1)
     std_volume = client.by_id_volume(std_volume_name)
     snap1 = create_snapshot(client, std_volume_name)
     std_volume.snapshotBackup(name=snap1.name)
     wait_for_backup_completion(client, std_volume_name, snap1.name)
-    backup_volume = client.by_id_backupVolume(std_volume_name)
     _, b1 = common.find_backup(client, std_volume_name, snap1.name)
 
     write_pod_volume_random_data(core_api, std_pod_name,
-                                 "/data/test2", DATA_SIZE_IN_MB_2)
+                                 "/data/test2", DATA_SIZE_IN_MB_1)
 
-    snap2 = create_snapshot(client, std_volume_name)
-
+    backup_volume = client.by_id_backupVolume(std_volume_name)
     backup_volume.backupDelete(name=b1.name)
 
-    try:
-        std_volume.snapshotBackup(name=snap2.name)
-    except Exception as e:
-        assert e.error.status == 500
+    snap2 = create_snapshot(client, std_volume_name)
+    std_volume.snapshotBackup(name=snap2.name)
 
     wait_for_backup_delete(client, volume_name, b1.name)
-    try:
-        _, b2 = common.find_backup(client, std_volume_name, snap2.name)
-    except AssertionError:
-        b2 = None
-    assert b2 is None
+    wait_for_backup_completion(client, std_volume_name, snap2.name)
 
-    backupstore_wait_for_lock_expiration()
+    try:
+        _, b1 = common.find_backup(client, std_volume_name, snap1.name)
+    except AssertionError:
+        b1 = None
+    assert b1 is None
+    _, b2 = common.find_backup(client, std_volume_name, snap2.name)
 
 
 @pytest.mark.skip(reason="This test takes more than 20 mins to run")  # NOQA
