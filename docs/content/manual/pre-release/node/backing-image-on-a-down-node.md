@@ -3,18 +3,18 @@ title: Backing Image on a down node
 ---
 
 1. Update the settings:
-   1. Disable Node Soft Anti-affinity.
-   2. Set Replica Replenishment Wait Interval to a relatively long value.
-2. Create a backing image:
+   1. Disable `Node Soft Anti-affinity`.
+   2. Set `Replica Replenishment Wait Interval` to a relatively long value.
+2. Create a backing image. Wait for the backing image being ready in the 1st disk.
 3. Create 2 volumes with the backing image and attach them on different nodes. Verify: 
    - the disk state map of the backing image contains the disks of all replicas, and the state is running for all disks.
-   - the backing image content is correct
+   - the backing image content is correct.
 4. Write random data to the volumes.
 5. Power off 2 nodes. One node should contain one volume engine. Verify that
-   - the related disk download state in the backing image will become `unknown`.
-   - the volume on the running node still works fine but is state `Degraded`, and the content is correct in the volume.
+   - the related disk file state in the backing image will become `Unknown`.
+   - the volume on the running node still works fine but is state `Degraded`, and the content is correct.
    - the volume on the down node become `Unknown`.
-6. Power on the 1st node. Verify
+6. Power on the node that contains one volume engine. Verify
    - the failed replica of the `Degraded` volume can be reused.
    - the volume on the down node will be recovered automatically. And the data is correct.
    - the backing image will be recovered automatically.

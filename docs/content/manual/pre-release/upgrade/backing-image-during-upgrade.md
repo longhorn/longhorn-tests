@@ -4,26 +4,28 @@ title: Test Backing Image during Longhorn upgrade
 
 ## System upgrade with compatible backing image manager image
 1. Deploy Longhorn. Then set `Concurrent Automatic Engine Upgrade Per Node Limit` to a positive value to enable volume engine auto upgrade.
-2. Create 2 backing images: a large one and a small one.
-3. Create and attach volumes with the small backing image.
-4. Wait for volumes attachment. Then verify the backing image content then write random data in the volumes.
-5. Create and attach one more volume with the large backing image.
-6. Before the large backing image is downloaded and the volume becomes attached, upgrade the whole Longhorn system:
+2. Create 2 backing images: a large one and a small one. Longhorn will start preparing the 1st file for both backing image immediately via launching backing image data source pods.
+3. Wait for the small backing image being ready in the 1st disk. Then create and attach volumes with the backing image.
+4. Wait for volumes attachment. Verify the backing image content then write random data in the volumes.
+5. Wait for the large backing image being ready in the 1st disk. Then create and attach one more volume with this large backing image.
+6. Before the large backing image is synced to other nodes and the volume becomes attached, upgrade the whole Longhorn system:
     1. A new engine image will be used.
     2. The default backing image manager image will be updated.
     3. The new longhorn manager is compatible with the old backing image manager.
 7. Wait for system upgrade complete. Then verify:
     1. All old backing image manager and the related pod will be cleaned up automatically after the current downloading is complete. And the existing backing image files won't be removed.
-    2. New default backing image manager will take over all backing image ownerships and show the info in the status map. 
+    2. New default backing image manager will take over all backing image ownerships and show the info in the status map: 
+        1. For the small backing image, the new backing image manager will directly take over all ready files.
+        2. For the large backing image, the new backing image manager will take over the only ready file and mark all in-progress files as failed first. Then it will re-sync the files after the backoff window.  
     3. All attached volumes still work fine without replica crash, and the content is correct in the volumes during/after the upgrade.
     4. The last volume get attached successfully without replica crash, and the content is correct.
 8. Verify volumes and backing images can be deleted.
 
 ## System upgrade with incompatible backing image manager image
 1. Deploy Longhorn.
-2. Create a backing images.
+2. Create a backing images. Wait for the backing image being ready in the 1st disk.
 3. Create and attach volumes with the backing image.
-4. Wait for volumes attachment. Then verify the backing image content then write random data in the volumes.
+4. Wait for volumes attachment. Verify the backing image content then write random data in the volumes.
 5. Upgrade the whole Longhorn system:
     1. The default backing image manager image will be updated.
     2. The new longhorn manager is not compatible with the old backing image manager.
