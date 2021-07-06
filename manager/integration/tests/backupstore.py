@@ -12,12 +12,14 @@ from urllib.parse import urlparse
 
 from common import SETTING_BACKUP_TARGET
 from common import SETTING_BACKUP_TARGET_CREDENTIAL_SECRET
+from common import SETTING_BACKUPSTORE_POLL_INTERVAL
 from common import LONGHORN_NAMESPACE
 from common import is_backupTarget_s3
 from common import is_backupTarget_nfs
 from common import get_longhorn_api_client
 from common import delete_backup_volume
 from common import get_backupstore_url
+from common import get_backupstore_poll_interval
 
 BACKUPSTORE_BV_PREFIX = "/backupstore/volumes/"
 BACKUPSTORE_LOCK_DURATION = 150
@@ -61,11 +63,15 @@ def reset_backupstore_setting(client):
     backup_target_credential_setting = client.by_id_setting(
         SETTING_BACKUP_TARGET_CREDENTIAL_SECRET)
     client.update(backup_target_credential_setting, value="")
+    backup_store_poll_interval = client.by_id_setting(
+        SETTING_BACKUPSTORE_POLL_INTERVAL)
+    client.update(backup_store_poll_interval, value="300")
 
 
 def set_backupstore_s3(client):
     backup_target_setting = client.by_id_setting(SETTING_BACKUP_TARGET)
     backupstores = get_backupstore_url()
+    poll_interval = get_backupstore_poll_interval()
     for backupstore in backupstores:
         if is_backupTarget_s3(backupstore):
             backupsettings = backupstore.split("$")
@@ -79,12 +85,19 @@ def set_backupstore_s3(client):
                 client.update(backup_target_credential_setting,
                               value=backupsettings[1])
             assert backup_target_credential_setting.value == backupsettings[1]
+
+            backup_store_poll_interval_setting = client.by_id_setting(
+                SETTING_BACKUPSTORE_POLL_INTERVAL)
+            backup_target_poll_interal_setting = client.update(
+                backup_store_poll_interval_setting, value=poll_interval)
+            assert backup_target_poll_interal_setting.value == poll_interval
             break
 
 
 def set_backupstore_nfs(client):
     backup_target_setting = client.by_id_setting(SETTING_BACKUP_TARGET)
     backupstores = get_backupstore_url()
+    poll_interval = get_backupstore_poll_interval()
     for backupstore in backupstores:
         if is_backupTarget_nfs(backupstore):
             backup_target_setting = client.update(backup_target_setting,
@@ -95,6 +108,12 @@ def set_backupstore_nfs(client):
             backup_target_credential_setting = \
                 client.update(backup_target_credential_setting, value="")
             assert backup_target_credential_setting.value == ""
+
+            backup_store_poll_interval_setting = client.by_id_setting(
+                SETTING_BACKUPSTORE_POLL_INTERVAL)
+            backup_target_poll_interal_setting = client.update(
+                backup_store_poll_interval_setting, value=poll_interval)
+            assert backup_target_poll_interal_setting.value == poll_interval
             break
 
 

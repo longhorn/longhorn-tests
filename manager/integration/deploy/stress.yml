@@ -50,6 +50,8 @@ spec:
         env:
         - name: LONGHORN_BACKUPSTORES
           value: "s3://backupbucket@us-east-1/backupstore$minio-secret, nfs://longhorn-test-nfs-svc.default:/opt/backupstore"
+        - name: LONGHORN_BACKUPSTORE_POLL_INTERVAL
+          value: "30"
         - name: NODE_NAME
           valueFrom:
             fieldRef:
