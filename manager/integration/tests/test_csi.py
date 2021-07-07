@@ -31,7 +31,7 @@ from common import get_self_host_id, get_volume_endpoint
 from common import wait_for_volume_healthy, wait_for_volume_delete
 from common import fail_replica_expansion, wait_for_expansion_failure
 from common import check_volume_data
-
+from backupstore import set_random_backupstore  # NOQA
 
 # Using a StorageClass because GKE is using the default StorageClass if not
 # specified. Volumes are still being manually created and not provisioned.
@@ -181,7 +181,7 @@ def csi_io_test(client, core_api, csi_pv, pvc, pod_make, backing_image=""):  # N
 
 
 @pytest.mark.csi  # NOQA
-def test_csi_backup(client, core_api, csi_pv, pvc, pod_make):  # NOQA
+def test_csi_backup(set_random_backupstore, client, core_api, csi_pv, pvc, pod_make):  # NOQA
     """
     Test that backup/restore works with volumes created by CSI driver.
 
@@ -202,31 +202,8 @@ def csi_backup_test(client, core_api, csi_pv, pvc, pod_make, backing_image=""): 
         pod_name, client, core_api, csi_pv, pvc, pod_make, backing_image, "")
     test_data = generate_random_data(VOLUME_RWTEST_SIZE)
 
-    setting = client.by_id_setting(common.SETTING_BACKUP_TARGET)
-    # test backupTarget for multiple settings
-    backupstores = common.get_backupstore_url()
-    i = 1
-    for backupstore in backupstores:
-        if common.is_backupTarget_s3(backupstore):
-            backupsettings = backupstore.split("$")
-            setting = client.update(setting, value=backupsettings[0])
-            assert setting.value == backupsettings[0]
-
-            credential = client.by_id_setting(
-                common.SETTING_BACKUP_TARGET_CREDENTIAL_SECRET)
-            credential = client.update(credential, value=backupsettings[1])
-            assert credential.value == backupsettings[1]
-        else:
-            setting = client.update(setting, value=backupstore)
-            assert setting.value == backupstore
-            credential = client.by_id_setting(
-                common.SETTING_BACKUP_TARGET_CREDENTIAL_SECRET)
-            credential = client.update(credential, value="")
-            assert credential.value == ""
-
-        backupstore_test(client, core_api, csi_pv, pvc, pod_make, pod_name,
-                         vol_name, backing_image, test_data, i)
-        i += 1
+    backupstore_test(client, core_api, csi_pv, pvc, pod_make, pod_name,
+                     vol_name, backing_image, test_data)
 
     delete_and_wait_pod(core_api, pod_name)
     delete_and_wait_pvc(core_api, vol_name)
@@ -243,7 +220,7 @@ def backupstore_test(client, core_api, csi_pv, pvc, pod_make, pod_name, vol_name
     common.wait_for_backup_completion(client, vol_name, snap.name)
     bv, b = common.find_backup(client, vol_name, snap.name)
 
-    pod2_name = 'csi-backup-test-' + str(i)
+    pod2_name = 'csi-backup-test-2'
     vol2_name = create_and_wait_csi_pod(
         pod2_name, client, core_api, csi_pv, pvc, pod_make,
         backing_image, b.url)
