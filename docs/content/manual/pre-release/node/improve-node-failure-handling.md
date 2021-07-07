@@ -21,22 +21,13 @@ title: Improve Node Failure Handling By Automatically Force Delete Terminating P
 - Verify that you can access/read/write the volume on the new pod
 
 #### Deployment
-##### if `NodeDownPodDeletionPolicy ` is set to `do-nothing ` | `delete-statefulset-pod` AND `Volume Attachment Recovery Policy` is `never`
+##### if `NodeDownPodDeletionPolicy ` is set to `do-nothing ` | `delete-statefulset-pod`
 - wait till the `pod.deletionTimestamp` has passed
 - replacement pod will be stuck in `Pending` state forever
 - force delete the terminating pod
 - wait till replacement pod is running
 - verify that you can access `vol1` via the `shell` replacement pod under `/mnt/vol1` once it is in the running state
-##### if `NodeDownPodDeletionPolicy ` is set to `do-nothing ` | `delete-statefulset-pod` AND `Volume Attachment Recovery Policy` is `wait`
-- wait till replacement pod is generated (default is around 6 minutes, kubernetes setting)
-- wait till the `pod.deletionTimestamp` has passed
-- verify that you can access `vol1` via the `shell` replacement pod under `/mnt/vol1` once it is in the running state
-- verify that the original `shell` pod is stuck in `Pending` state forever
-##### if `NodeDownPodDeletionPolicy ` is set to `do-nothing ` | `delete-statefulset-pod` AND `Volume Attachment Recovery Policy` is `immediate`
-- wait till replacement pod is generated (default is around 6 minutes, kubernetes setting)
-- verify that you can access `vol1` via the `shell` replacement pod under `/mnt/vol1` once it is in the running state
-- verify that the original `shell` pod is stuck in `Pending` state forever
-##### if `NodeDownPodDeletionPolicy ` is set to `delete-deployment-pod ` | `delete-both-statefulset-and-deployment-pod` AND `Volume Attachment Recovery Policy` is `never`| `wait`|`immediate`
+##### if `NodeDownPodDeletionPolicy ` is set to `delete-deployment-pod ` | `delete-both-statefulset-and-deployment-pod`
 - wait till the `pod.deletionTimestamp` has passed
 - verify that the pod is deleted and there is a new running replacement pod. 
 - verify that you can access `vol1` via the `shell` replacement pod under `/mnt/vol1`
