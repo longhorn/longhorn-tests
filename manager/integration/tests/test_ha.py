@@ -378,7 +378,7 @@ def ha_salvage_test(client, core_api, # NOQA
     cleanup_volume(client, volume)
 
 # https://github.com/rancher/longhorn/issues/253
-def test_ha_backup_deletion_recovery(client, volume_name):  # NOQA
+def test_ha_backup_deletion_recovery(set_random_backupstore, client, volume_name):  # NOQA
     """
     [HA] Test deleting the restored snapshot and rebuild
 
@@ -407,76 +407,53 @@ def ha_backup_deletion_recovery_test(client, volume_name, size, backing_image=""
     volume = volume.attach(hostId=host_id)
     volume = common.wait_for_volume_healthy(client, volume_name)
 
-    setting = client.by_id_setting(common.SETTING_BACKUP_TARGET)
-    # test backupTarget for multiple settings
-    backupstores = common.get_backupstore_url()
-    for backupstore in backupstores:
-        if common.is_backupTarget_s3(backupstore):
-            backupsettings = backupstore.split("$")
-            setting = client.update(setting, value=backupsettings[0])
-            assert setting.value == backupsettings[0]
+    data = write_volume_random_data(volume)
+    snap2 = create_snapshot(client, volume_name)
+    create_snapshot(client, volume_name)
 
-            credential = client.by_id_setting(
-                    common.SETTING_BACKUP_TARGET_CREDENTIAL_SECRET)
-            credential = client.update(credential, value=backupsettings[1])
-            assert credential.value == backupsettings[1]
-        else:
-            setting = client.update(setting, value=backupstore)
-            assert setting.value == backupstore
-            credential = client.by_id_setting(
-                    common.SETTING_BACKUP_TARGET_CREDENTIAL_SECRET)
-            credential = client.update(credential, value="")
-            assert credential.value == ""
+    volume.snapshotBackup(name=snap2.name)
+    wait_for_backup_completion(client, volume_name, snap2.name)
+    _, b = common.find_backup(client, volume_name, snap2.name)
 
-        data = write_volume_random_data(volume)
-        snap2 = create_snapshot(client, volume_name)
-        create_snapshot(client, volume_name)
+    res_name = common.generate_volume_name()
+    res_volume = client.create_volume(name=res_name, size=size,
+                                      numberOfReplicas=2,
+                                      fromBackup=b.url)
+    res_volume = common.wait_for_volume_restoration_completed(
+        client, res_name)
+    res_volume = common.wait_for_volume_detached(client, res_name)
+    res_volume = res_volume.attach(hostId=host_id)
+    res_volume = common.wait_for_volume_healthy(client, res_name)
+    check_volume_data(res_volume, data)
 
-        volume.snapshotBackup(name=snap2.name)
-        wait_for_backup_completion(client, volume_name, snap2.name)
-        _, b = common.find_backup(client, volume_name, snap2.name)
+    snapshots = res_volume.snapshotList()
+    # only the backup snapshot + volume-head
+    assert len(snapshots) == 2
+    backup_snapshot = ""
+    for snap in snapshots:
+        if snap.name != "volume-head":
+            backup_snapshot = snap.name
+    assert backup_snapshot != ""
 
-        res_name = common.generate_volume_name()
-        res_volume = client.create_volume(name=res_name, size=size,
-                                          numberOfReplicas=2,
-                                          fromBackup=b.url)
-        res_volume = common.wait_for_volume_restoration_completed(
-            client, res_name)
-        res_volume = common.wait_for_volume_detached(client, res_name)
-        res_volume = res_volume.attach(hostId=host_id)
-        res_volume = common.wait_for_volume_healthy(client, res_name)
-        check_volume_data(res_volume, data)
+    create_snapshot(client, res_name)
+    snapshots = res_volume.snapshotList()
+    assert len(snapshots) == 3
 
-        snapshots = res_volume.snapshotList()
-        # only the backup snapshot + volume-head
-        assert len(snapshots) == 2
-        backup_snapshot = ""
-        for snap in snapshots:
-            if snap.name != "volume-head":
-                backup_snapshot = snap.name
-        assert backup_snapshot != ""
+    res_volume.snapshotDelete(name=backup_snapshot)
+    res_volume.snapshotPurge()
+    res_volume = wait_for_snapshot_purge(client, res_name,
+                                         backup_snapshot)
 
-        create_snapshot(client, res_name)
-        snapshots = res_volume.snapshotList()
-        assert len(snapshots) == 3
+    snapshots = res_volume.snapshotList()
+    assert len(snapshots) == 2
 
-        res_volume.snapshotDelete(name=backup_snapshot)
-        res_volume.snapshotPurge()
-        res_volume = wait_for_snapshot_purge(client, res_name,
-                                             backup_snapshot)
+    ha_rebuild_replica_test(client, res_name)
 
-        snapshots = res_volume.snapshotList()
-        assert len(snapshots) == 2
+    res_volume = res_volume.detach(hostId="")
+    res_volume = common.wait_for_volume_detached(client, res_name)
 
-        ha_rebuild_replica_test(client, res_name)
-
-        res_volume = res_volume.detach(hostId="")
-        res_volume = common.wait_for_volume_detached(client, res_name)
-
-        client.delete(res_volume)
-        common.wait_for_volume_delete(client, res_name)
-
-    cleanup_volume(client, volume)
+    client.delete(res_volume)
+    common.wait_for_volume_delete(client, res_name)
 
 
 # https://github.com/rancher/longhorn/issues/415

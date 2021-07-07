@@ -494,7 +494,7 @@ def snapshot_test(client, volume_name, backing_image):  # NOQA
     cleanup_volume(client, volume)
 
 
-def test_backup_status_for_unavailable_replicas(client, volume_name):    # NOQA
+def test_backup_status_for_unavailable_replicas(set_random_backupstore, client, volume_name):    # NOQA
     """
     Test backup status for unavailable replicas
 
@@ -539,79 +539,56 @@ def backup_status_for_unavailable_replicas_test(client, volume_name,  # NOQA
     volume = volume.attach(hostId=lht_hostId)
     volume = common.wait_for_volume_healthy(client, volume_name)
 
-    setting = client.by_id_setting(common.SETTING_BACKUP_TARGET)
-    # test backupTarget for multiple settings
-    backupstores = common.get_backupstore_url()
-    for backupstore in backupstores:
-        if common.is_backupTarget_s3(backupstore):
-            backupsettings = backupstore.split("$")
-            setting = client.update(setting, value=backupsettings[0])
-            assert setting.value == backupsettings[0]
+    # create a successful backup
+    bv, b, _, _ = create_backup(client, volume_name)
+    backup_id = b.id
 
-            credential = client.by_id_setting(
-                common.SETTING_BACKUP_TARGET_CREDENTIAL_SECRET)
-            credential = client.update(credential, value=backupsettings[1])
-            assert credential.value == backupsettings[1]
-        else:
-            setting = client.update(setting, value=backupstore)
-            assert setting.value == backupstore
-            credential = client.by_id_setting(
-                common.SETTING_BACKUP_TARGET_CREDENTIAL_SECRET)
-            credential = client.update(credential, value="")
-            assert credential.value == ""
+    # find the replica for this backup
+    volume = client.by_id_volume(volume_name)
+    for status in volume.backupStatus:
+        if status.id == backup_id:
+            replica_name = status.replica
+    assert replica_name
 
-        # create a successful backup
-        bv, b, _, _ = create_backup(client, volume_name)
-        backup_id = b.id
+    # disable scheduling on that node
+    volume = client.by_id_volume(volume_name)
+    for r in volume.replicas:
+        if r.name == replica_name:
+            node = client.by_id_node(r.hostId)
+            node = client.update(node, allowScheduling=False)
+            common.wait_for_node_update(client, node.id,
+                                        "allowScheduling", False)
+    assert node
 
-        # find the replica for this backup
-        volume = client.by_id_volume(volume_name)
-        for status in volume.backupStatus:
-            if status.id == backup_id:
-                replica_name = status.replica
-        assert replica_name
+    # remove the replica with the backup
+    volume.replicaRemove(name=replica_name)
+    volume = common.wait_for_volume_degraded(client, volume_name)
 
-        # disable scheduling on that node
-        volume = client.by_id_volume(volume_name)
-        for r in volume.replicas:
-            if r.name == replica_name:
-                node = client.by_id_node(r.hostId)
-                node = client.update(node, allowScheduling=False)
-                common.wait_for_node_update(client, node.id,
-                                            "allowScheduling", False)
-        assert node
+    # now the backup status should be error unknown replica
+    def backup_failure_predicate(b):
+        return b.id == backup_id and "unknown replica" in b.error
+    volume = common.wait_for_backup_state(client, volume_name,
+                                          backup_failure_predicate)
 
-        # remove the replica with the backup
-        volume.replicaRemove(name=replica_name)
-        volume = common.wait_for_volume_degraded(client, volume_name)
+    # re enable scheduling on the previously disabled node
+    node = client.by_id_node(node.id)
+    node = client.update(node, allowScheduling=True)
+    common.wait_for_node_update(client, node.id,
+                                "allowScheduling", True)
 
-        # now the backup status should be error unknown replica
-        def backup_failure_predicate(b):
-            return b.id == backup_id and "unknown replica" in b.error
-        volume = common.wait_for_backup_state(client, volume_name,
-                                              backup_failure_predicate)
+    # delete the old backup
+    delete_backup(client, bv.name, b.name)
+    volume = wait_for_volume_status(client, volume_name,
+                                    "lastBackup", "")
+    assert volume.lastBackupAt == ""
 
-        # re enable scheduling on the previously disabled node
-        node = client.by_id_node(node.id)
-        node = client.update(node, allowScheduling=True)
-        common.wait_for_node_update(client, node.id,
-                                    "allowScheduling", True)
+    # check that we can create another successful backup
+    bv, b, _, _ = create_backup(client, volume_name)
 
-        # delete the old backup
-        delete_backup(client, bv.name, b.name)
-        volume = wait_for_volume_status(client, volume_name,
-                                        "lastBackup", "")
-        assert volume.lastBackupAt == ""
-
-        # check that we can create another successful backup
-        bv, b, _, _ = create_backup(client, volume_name)
-
-        # delete the new backup
-        delete_backup(client, bv.name, b.name)
-        volume = wait_for_volume_status(client, volume_name, "lastBackup", "")
-        assert volume.lastBackupAt == ""
-
-    cleanup_volume(client, volume)
+    # delete the new backup
+    delete_backup(client, bv.name, b.name)
+    volume = wait_for_volume_status(client, volume_name, "lastBackup", "")
+    assert volume.lastBackupAt == ""
 
 
 def test_backup_block_deletion(set_random_backupstore, client, core_api, volume_name):  # NOQA
@@ -1200,7 +1177,7 @@ def test_backup_metadata_deletion(set_random_backupstore, client, core_api, volu
 
 
 @pytest.mark.coretest   # NOQA
-def test_backup(client, volume_name):  # NOQA
+def test_backup(set_random_backupstore, client, volume_name):  # NOQA
     """
     Test basic backup
 
@@ -1230,30 +1207,7 @@ def backup_test(client, volume_name, size, backing_image=""):  # NOQA
     volume = volume.attach(hostId=lht_hostId)
     volume = common.wait_for_volume_healthy(client, volume_name)
 
-    setting = client.by_id_setting(common.SETTING_BACKUP_TARGET)
-    # test backupTarget for multiple settings
-    backupstores = common.get_backupstore_url()
-    for backupstore in backupstores:
-        if common.is_backupTarget_s3(backupstore):
-            backupsettings = backupstore.split("$")
-            setting = client.update(setting, value=backupsettings[0])
-            assert setting.value == backupsettings[0]
-
-            credential = client.by_id_setting(
-                common.SETTING_BACKUP_TARGET_CREDENTIAL_SECRET)
-            credential = client.update(credential, value=backupsettings[1])
-            assert credential.value == backupsettings[1]
-        else:
-            setting = client.update(setting, value=backupstore)
-            assert setting.value == backupstore
-            credential = client.by_id_setting(
-                common.SETTING_BACKUP_TARGET_CREDENTIAL_SECRET)
-            credential = client.update(credential, value="")
-            assert credential.value == ""
-
-        backupstore_test(client, lht_hostId, volume_name, size)
-
-    cleanup_volume(client, volume)
+    backupstore_test(client, lht_hostId, volume_name, size)
 
 
 def backupstore_test(client, host_id, volname, size):  # NOQA
@@ -1289,7 +1243,7 @@ def backupstore_test(client, host_id, volname, size):  # NOQA
 
 
 @pytest.mark.coretest  # NOQA
-def test_backup_labels(client, random_labels, volume_name):  # NOQA
+def test_backup_labels(set_random_backupstore, client, random_labels, volume_name):  # NOQA
     """
     Test that the proper Labels are applied when creating a Backup manually.
 
@@ -1310,38 +1264,15 @@ def backup_labels_test(client, random_labels, volume_name, size=SIZE, backing_im
     volume.attach(hostId=host_id)
     volume = common.wait_for_volume_healthy(client, volume_name)
 
-    setting = client.by_id_setting(common.SETTING_BACKUP_TARGET)
-    # test backupTarget for multiple settings
-    backupstores = common.get_backupstore_url()
-    for backupstore in backupstores:
-        if common.is_backupTarget_s3(backupstore):
-            backupsettings = backupstore.split("$")
-            setting = client.update(setting, value=backupsettings[0])
-            assert setting.value == backupsettings[0]
-
-            credential = client.by_id_setting(
-                common.SETTING_BACKUP_TARGET_CREDENTIAL_SECRET)
-            credential = client.update(credential, value=backupsettings[1])
-            assert credential.value == backupsettings[1]
-        else:
-            setting = client.update(setting, value=backupstore)
-            assert setting.value == backupstore
-            credential = client.by_id_setting(
-                common.SETTING_BACKUP_TARGET_CREDENTIAL_SECRET)
-            credential = client.update(credential, value="")
-            assert credential.value == ""
-
-        bv, b, _, _ = create_backup(client, volume_name, labels=random_labels)
-        # If we're running the test with a BackingImage,
-        # check field `volumeBackingImageName` is set properly.
-        backup = bv.backupGet(name=b.name)
-        if backing_image:
-            assert backup.volumeBackingImageName == \
-                   backing_image
-            assert backup.volumeBackingImageURL != ""
-        assert len(backup.labels) == len(random_labels)
-
-    cleanup_volume(client, volume)
+    bv, b, _, _ = create_backup(client, volume_name, labels=random_labels)
+    # If we're running the test with a BackingImage,
+    # check field `volumeBackingImageName` is set properly.
+    backup = bv.backupGet(name=b.name)
+    if backing_image:
+        assert backup.volumeBackingImageName == \
+            backing_image
+        assert backup.volumeBackingImageURL != ""
+    assert len(backup.labels) == len(random_labels)
 
 
 @pytest.mark.coretest   # NOQA
