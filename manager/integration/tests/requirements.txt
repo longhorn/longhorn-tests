@@ -7,3 +7,4 @@ pytest-repeat==0.9.1
 requests==2.25.1
 six==1.12.0
 minio==5.0.10
+boto3==1.17.91

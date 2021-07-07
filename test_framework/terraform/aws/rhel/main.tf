@@ -216,6 +216,14 @@ resource "random_password" "k3s_cluster_secret" {
   special = false
 }
 
+# Create a random string suffix for instance names
+resource "random_string" "random_suffix" {
+  length           = 8
+  special          = false
+  lower            = true
+  upper            = false
+}
+
 # Create controlplane instances
 resource "aws_instance" "lh_aws_instance_controlplane" {
  depends_on = [
@@ -243,7 +251,7 @@ resource "aws_instance" "lh_aws_instance_controlplane" {
   user_data = var.arch == "arm64" ? data.template_file.provision_arm64_server.rendered : file("${path.module}/user-data-scripts/provision_amd64.sh")
 
   tags = {
-    Name = "${var.lh_aws_instance_name_controlplane}-${count.index}"
+    Name = "${var.lh_aws_instance_name_controlplane}-${count.index}-${random_string.random_suffix.id}"
   }
 }
 
@@ -293,7 +301,7 @@ resource "aws_instance" "lh_aws_instance_worker" {
   user_data = var.arch == "arm64" ? data.template_file.provision_arm64_agent.rendered : file("${path.module}/user-data-scripts/provision_amd64.sh")
 
   tags = {
-    Name = "${var.lh_aws_instance_name_worker}-${count.index}"
+    Name = "${var.lh_aws_instance_name_worker}-${count.index}-${random_string.random_suffix.id}"
   }
 }
 

@@ -11,7 +11,7 @@ from common import check_longhorn, check_csi_expansion
 
 SKIP_BACKING_IMAGE_OPT = "--skip-backing-image-test"
 SKIP_RECURRING_JOB_OPT = "--skip-recurring-job-test"
-INCLUDE_INFRA_OPT = "--include-infra-test"
+SKIP_INFRA_OPT = "--skip-infra-test"
 INCLUDE_STRESS_OPT = "--include-stress-test"
 INCLUDE_UPGRADE_OPT = "--include-upgrade-test"
 
@@ -33,9 +33,9 @@ def pytest_addoption(parser):
                      default=False,
                      help="skip recurring job test or not")
 
-    parser.addoption(INCLUDE_INFRA_OPT, action="store_true",
+    parser.addoption(SKIP_INFRA_OPT, action="store_true",
                      default=False,
-                     help="include infra tests (default: False)")
+                     help="skip infra tests (default: False)")
 
     parser.addoption(INCLUDE_STRESS_OPT, action="store_true",
                      default=False,
@@ -147,9 +147,9 @@ def pytest_collection_modifyitems(config, items):
             if "mountdisk" in item.keywords:
                 item.add_marker(skip_node)
 
-    if not config.getoption(INCLUDE_INFRA_OPT):
-        skip_infra = pytest.mark.skip(reason="include " +
-                                      INCLUDE_INFRA_OPT +
+    if config.getoption(SKIP_INFRA_OPT):
+        skip_infra = pytest.mark.skip(reason="remove " +
+                                      SKIP_INFRA_OPT +
                                       " option to run")
 
         for item in items:
