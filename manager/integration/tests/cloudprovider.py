@@ -1,13 +1,13 @@
 class cloudprovider:
 
-    def node_id(self):
+    def instance_id(self):
         pass
 
-    def node_shutdown(self):
+    def instance_stop(self):
         pass
 
-    def node_start(self):
+    def instance_start(self):
         pass
 
-    def node_status(self):
+    def instance_status(self):
         pass

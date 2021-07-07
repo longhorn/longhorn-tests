@@ -78,10 +78,6 @@ spec:
       valueFrom:
         fieldRef:
           fieldPath: spec.nodeName
-    - name: ENV_DO_API_TOKEN
-      value: DO_API_TOKEN_VALUE
-    - name: CLOUDPROVIDER
-      value: CLOUDPROVIDER_NAME
     volumeMounts:
     - name: dev
       mountPath: /dev
