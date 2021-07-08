@@ -622,7 +622,7 @@ def test_allow_volume_creation_with_degraded_availability_csi(
     data_path = "/data/test"
     pod = common.wait_and_get_any_deployment_pod(core_api, deployment_name)
     common.write_pod_volume_random_data(core_api, pod.metadata.name,
-                                        data_path, common.DATA_SIZE_IN_MB_1)
+                                        data_path, common.DATA_SIZE_IN_MB_2)
     created_md5sum = get_pod_data_md5sum(core_api, pod.metadata.name,
                                          data_path)
 
