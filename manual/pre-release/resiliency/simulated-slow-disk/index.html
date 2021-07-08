@@ -437,80 +437,59 @@
 </aside>
 
 <main style="padding: 1%; width: 70%;">
-  <h1 id="title">Longhorn installation multiple times</h1>
+  <h1 id="title"><a href="https://github.com/longhorn/longhorn/issues/2206">#2206</a> Fix the spinning disk on Longhorn</h1>
   <div>
     <article id="content">
-       <ol>
-<li>Create a cluster(3 worker nodes and 1 etc/control plane).</li>
-<li>Deploy the longhorn app.</li>
-<li>Once longhorn deployed successfully, uninstall longhorn.</li>
-<li>Repeat the steps 2 and 3 multiple times.</li>
-<li>Run the below script to install and uninstall longhorn continuously for some time.</li>
+       <p>This case requires the creation of a slow virtual disk with <code>dmsetup</code>.</p>
+<ol>
+<li>
+<p>Make a slow disk:</p>
+<ul>
+<li>Make a disk image file: <code>truncate -s 10g slow.img</code></li>
+<li>Create a loopback device: <code>losetup --show -P -f slow.img</code></li>
+<li>Get the block size of the loopback device: <code>blockdev --getsize /dev/loopX</code></li>
+<li>Create slow device: <code>echo &quot;0 &lt;blocksize&gt; delay /dev/loopX 0 500&quot; | dmsetup create dm-slow</code></li>
+<li>Format slow device: <code>mkfs.ext4 /dev/mapper/dm-slow</code></li>
+<li>Mount slow device: <code>mount /dev/mapper/dm-slow /mnt</code></li>
+</ul>
+</li>
+<li>
+<p>Build longhorn-engine and run it on the slow disk.</p>
+<ul>
+<li><code>make</code> or use a tag from docker hub in next step.</li>
+<li><code>docker run --privileged -v /dev:/host/dev -v /proc:/host/proc -v /mnt:/volume longhornio/longhorn-engine:&lt;tag&gt; launch-simple-longhorn slow-vol 10g tgt-blockdev</code></li>
+</ul>
+</li>
+<li>
+<p>Perform intense I/O on the block device and verify that it doesn&rsquo;t fail.</p>
+<ul>
+<li>This uses an iodepth of 16 to maximize the number of threads in tgtd.  An iodepth of 16 or more will maximize the number of threads in tgtd. <code>fio --name=random-writers --ioengine=libaio --rw=randwrite --bs=1280k --direct=1 --size=3000m --numjobs=1 --filename=/dev/longhorn/slow-vol --iodepth=16 --verify=sha256</code></li>
+<li>This exceeds the number of operations tgtd and longhorn can handle simultaneously. <code>fio --name=random-writers --ioengine=libaio --rw=randwrite --bs=16k --direct=1 --size=10m --numjobs=4 --filename=/dev/longhorn/slow-vol --iodepth=128 --verify=sha256</code></li>
+<li>This tests performing one I/O operation at a time: <code>fio --name=random-writers --ioengine=libaio --rw=randwrite --bs=4k --direct=1 --size=10m --numjobs=1 --filename=/dev/longhorn/slow-vol --iodepth=1 --verify=sha256</code></li>
+<li>This tests with skipping 4k blocks: <code>fio --name=sparse-writers --ioengine=libaio --rw=write:4k --bs=4k --direct=1 --size=10m --numjobs=1 --filename=/dev/longhorn/slow-vol --iodepth=128 --verify=sha256</code></li>
+</ul>
+</li>
+<li>
+<p>Perform intense I/O on a filesystem and verify that it doesn&rsquo;t fail.</p>
+<ul>
+<li><code>mkfs.ext4 /dev/longhorn/slow-vol</code></li>
+<li><code>mkdir /slow-mnt</code></li>
+<li><code>mount /dev/longhorn/slow-vol /slow-mnt</code></li>
+<li>Run tests similar to the block device tests:
+<ul>
+<li><code>fio --name=random-writers --ioengine=libaio --rw=randwrite --bs=1280k --direct=1 --size=3000m --numjobs=1 --filename=/slow-mnt/file.dat --iodepth=16 --verify=sha256</code></li>
+<li><code>fio --name=random-writers --ioengine=libaio --rw=randwrite --bs=16k --direct=1 --size=10m --numjobs=4 --filename=/slow-mnt/file.dat --iodepth=128 --verify=sha256</code></li>
+<li><code>fio --name=random-writers --ioengine=libaio --rw=randwrite --bs=4k --direct=1 --size=10m --numjobs=1 --filename=/slow-mnt/file.dat --iodepth=1 --verify=sha256</code></li>
+<li><code>fio --name=sparse-writers --ioengine=libaio --rw=write:4k --bs=4k --direct=1 --size=10m --numjobs=1 --filename=/slow-mnt/file.dat --iodepth=128 --verify=sha256</code></li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
+<p>Repeat with different filesystems, i.e use <code>mkfs.xfs</code> instead of <code>mkfs.ext4</code>.</p>
+</li>
 </ol>
-<pre><code>installcount=0
-while true;
- echo `date`
- do
-  kubectl apply -f https://raw.githubusercontent.com/longhorn/longhorn/master/deploy/longhorn.yaml
 
-  pod=`kubectl get pods -n longhorn-system | grep -i 'longhorn-manager' | grep -i 'running' | awk -F ' ' '{print $2}' | grep '1/1' | wc -l`
-  count=0
-  while [ $pod != 3 ];
-   do
-    sleep 5
-    pod=`kubectl get pods -n longhorn-system | grep -i 'longhorn-manager' | grep -i 'running' | awk -F ' ' '{print $2}' | grep '1/1' | wc -l`
-    echo `kubectl get pods -n longhorn-system | grep -i 'longhorn-manager'`
-    count=$((count+1))
-    if [ $count -gt 59 ]
-     then
-      echo 'longhorn installation failed'
-      exit
-    fi
-  done
-
-  sleep 30
- 
-  kubectl create -f https://raw.githubusercontent.com/longhorn/longhorn/master/uninstall/uninstall.yaml
-
-  poduninstall=`kubectl get job/longhorn-uninstall | grep '1/1' | wc -l`
-  uninstall=0
- while [ $poduninstall = 0 ];
-  do
-   sleep 10
-   poduninstall=`kubectl get job/longhorn-uninstall | grep '1/1' | wc -l`
-   echo `kubectl get job/longhorn-uninstall`
-   uninstall=$((uninstall+1))
-   if [ $uninstall -gt 24 ]  
-    then
-     echo 'Problem in unistall'
-     exit
-   fi
- done
- 
- kubectl delete -f https://raw.githubusercontent.com/longhorn/longhorn/master/deploy/longhorn.yaml
- sleep 3
-
- kubectl delete -f https://raw.githubusercontent.com/longhorn/longhorn/master/uninstall/uninstall.yaml
-
- nscount=0
- longhornns=`kubectl get namespace | grep -i 'longhorn-system' | wc -l`l
- while [ $longhornns != 0 ];
-  do
-   sleep 10
-   longhornns=`kubectl get namespace | grep -i 'longhorn-system' | wc -l`
-   nscount=$((nscount+1))
-   if [ $nscount -gt 18 ]
-    then
-     echo 'longhorn-system termination stuck'
-     exit
-   fi
- done
-
- installcount=$((installcount+1))
- echo 'Installation count = '
- echo $installcount
-done
-</code></pre>
     </article>
   </div>
 </main>

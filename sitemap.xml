@@ -16,6 +16,8 @@
   </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/backup-block-deletion/</loc>
   </url><url>
+    <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/resiliency/simulated-slow-disk/</loc>
+  </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/air-gap/</loc>
   </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/air-gap/air-gap-installation/</loc>
@@ -102,6 +104,8 @@
   </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/ha/replica-rebuilding/</loc>
   </url><url>
+    <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/resiliency/</loc>
+  </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.1/error-fail-remount/</loc>
   </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/reusing-failed-replica-for-rebuilding/</loc>
@@ -167,6 +171,8 @@
     <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/upgrade-with-new-instance-manager/</loc>
   </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/system-upgrade-with-deprecated-cpu-setting/</loc>
+  </url><url>
+    <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/resiliency/timeout/</loc>
   </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/uninstallation/</loc>
   </url><url>
