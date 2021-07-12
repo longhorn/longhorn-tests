@@ -2226,12 +2226,14 @@ def get_host_disk_size(disk):
            '{"path":"%n","fsid":"%i","type":"%T","freeBlock":%f,'
            '"totalBlock":%b,"blockSize":%S}',
            disk]
+    # As the disk available storage is rounded off to 100Mb
+    truncate_to = 100 * 1024 * 1024
     output = subprocess.check_output(cmd)
     disk_info = json.loads(output)
     block_size = disk_info["blockSize"]
     free_blk = disk_info["freeBlock"]
     total_blk = disk_info["totalBlock"]
-    free = (free_blk * block_size)
+    free = int((free_blk * block_size) / truncate_to) * truncate_to
     total = (total_blk * block_size)
     return free, total
 
