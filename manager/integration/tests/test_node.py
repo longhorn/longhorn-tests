@@ -963,7 +963,7 @@ def test_node_controller_sync_storage_scheduled(client):  # NOQA
 
 @pytest.mark.coretest   # NOQA
 @pytest.mark.node  # NOQA
-@pytest.mark.mountdisk # NOQA
+@pytest.mark.mountdisk  # NOQA
 def test_node_controller_sync_storage_available(client):  # NOQA
     """
     Test node controller sync storage available correctly
@@ -1204,7 +1204,7 @@ def test_node_default_disk_added_back_with_extra_disk_unmounted(client):  # NOQA
 
 
 @pytest.mark.node  # NOQA
-@pytest.mark.mountdisk # NOQA
+@pytest.mark.mountdisk  # NOQA
 def test_node_umount_disk(client):  # NOQA
     """
     [Node] Test umount and delete the extra disk on the node
@@ -1212,7 +1212,7 @@ def test_node_umount_disk(client):  # NOQA
     1. Create host disk and attach it to the current node
     2. Disable the existing disk's scheduling on the current node
     3. Add the disk to the current node
-    4. Wait for node to recongize the disk
+    4. Wait for node to recognize the disk
     5. Create a volume with "number of nodes" replicas
     6. Umount the disk from the host
     7. Verify the disk `READY` condition become false.
@@ -1531,9 +1531,8 @@ def test_replica_datapath_cleanup(client):  # NOQA
     cleanup_host_disk(client, 'extra-disk')
 
 
-@pytest.mark.node
-def test_node_default_disk_labeled(client, core_api, random_disk_path,  reset_default_disk_label,  # NOQA
-                                   reset_disk_settings):  # NOQA
+@pytest.mark.node  # NOQA
+def test_node_default_disk_labeled(client, core_api, random_disk_path,  reset_default_disk_label,  reset_disk_settings):  # NOQA
     """
     Test node feature: create default Disk according to the node label
 
@@ -1611,11 +1610,8 @@ def test_node_default_disk_labeled(client, core_api, random_disk_path,  reset_de
     assert len(node.disks) == 0
 
 
-@pytest.mark.node
-def test_node_config_annotation(client, core_api,  # NOQA
-                                reset_default_disk_label,  # NOQA
-                                reset_disk_and_tag_annotations,  # NOQA
-                                reset_disk_settings):  # NOQA
+@pytest.mark.node  # NOQA
+def test_node_config_annotation(client, core_api, reset_default_disk_label, reset_disk_and_tag_annotations, reset_disk_settings):  # NOQA
     """
     Test node feature: default disks/node configuration
 
@@ -1709,11 +1705,8 @@ def test_node_config_annotation(client, core_api,  # NOQA
         break
 
 
-@pytest.mark.node
-def test_node_config_annotation_invalid(client, core_api,  # NOQA
-                                        reset_default_disk_label,  # NOQA
-                                        reset_disk_and_tag_annotations,  # NOQA
-                                        reset_disk_settings):  # NOQA
+@pytest.mark.node  # NOQA
+def test_node_config_annotation_invalid(client, core_api, reset_default_disk_label, reset_disk_and_tag_annotations, reset_disk_settings):  # NOQA
     """
     Test invalid node annotations for default disks/node configuration
 
@@ -1985,11 +1978,8 @@ def test_node_config_annotation_invalid(client, core_api,  # NOQA
     cleanup_host_disk(client, 'vol-disk-1')
 
 
-@pytest.mark.node
-def test_node_config_annotation_missing(client, core_api,  # NOQA
-                                        reset_default_disk_label,  # NOQA
-                                        reset_disk_and_tag_annotations,  # NOQA
-                                        reset_disk_settings):  # NOQA
+@pytest.mark.node  # NOQA
+def test_node_config_annotation_missing(client, core_api, reset_default_disk_label, reset_disk_and_tag_annotations, reset_disk_settings):  # NOQA
     """
     Test node labeled for configuration but no annotation
 
