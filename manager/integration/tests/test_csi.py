@@ -210,7 +210,7 @@ def csi_backup_test(client, core_api, csi_pv, pvc, pod_make, backing_image=""): 
     delete_and_wait_pv(core_api, vol_name)
 
 
-def backupstore_test(client, core_api, csi_pv, pvc, pod_make, pod_name, vol_name, backing_image, test_data, i):  # NOQA
+def backupstore_test(client, core_api, csi_pv, pvc, pod_make, pod_name, vol_name, backing_image, test_data):  # NOQA
     write_pod_volume_data(core_api, pod_name, test_data)
 
     volume = client.by_id_volume(vol_name)
