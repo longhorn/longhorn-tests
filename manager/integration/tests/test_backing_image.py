@@ -207,7 +207,7 @@ def test_snapshot_with_backing_image(client, volume_name):  # NOQA
 
 @pytest.mark.coretest   # NOQA
 @pytest.mark.backing_image  # NOQA
-def test_backup_with_backing_image(client, volume_name):  # NOQA
+def test_backup_with_backing_image(set_random_backupstore, client, volume_name):  # NOQA
     for bi_url in (BACKING_IMAGE_QCOW2_URL, BACKING_IMAGE_RAW_URL):
         create_backing_image_with_matching_url(
             client, BACKING_IMAGE_NAME, bi_url)
@@ -219,7 +219,7 @@ def test_backup_with_backing_image(client, volume_name):  # NOQA
 
 @pytest.mark.coretest   # NOQA
 @pytest.mark.backing_image  # NOQA
-def test_backup_labels_with_backing_image(client, random_labels, volume_name):  # NOQA
+def test_backup_labels_with_backing_image(set_random_backupstore, client, random_labels, volume_name):  # NOQA
     for bi_url in (BACKING_IMAGE_QCOW2_URL, BACKING_IMAGE_RAW_URL):
         create_backing_image_with_matching_url(
             client, BACKING_IMAGE_NAME, bi_url)
@@ -252,9 +252,8 @@ def test_ha_salvage_with_backing_image(client, core_api, disable_auto_salvage, v
         cleanup_all_backing_images(client)
 
 
-
 @pytest.mark.backing_image  # NOQA
-def test_ha_backup_deletion_recovery(client, volume_name):  # NOQA
+def test_ha_backup_deletion_recovery(set_random_backupstore, client, volume_name):  # NOQA
     for bi_url in (BACKING_IMAGE_QCOW2_URL, BACKING_IMAGE_RAW_URL):
         create_backing_image_with_matching_url(
             client, BACKING_IMAGE_NAME, bi_url)
@@ -328,7 +327,7 @@ def test_csi_io_with_backing_image(client, core_api, csi_pv_backingimage, pvc_ba
 @pytest.mark.coretest  # NOQA
 @pytest.mark.backing_image  # NOQA
 @pytest.mark.csi  # NOQA
-def test_csi_backup_with_backing_image(client, core_api, csi_pv, pvc, pod_make):  # NOQA
+def test_csi_backup_with_backing_image(set_random_backupstore, client, core_api, csi_pv, pvc, pod_make):  # NOQA
     for bi_url in (BACKING_IMAGE_QCOW2_URL, BACKING_IMAGE_RAW_URL):
         create_backing_image_with_matching_url(
             client, BACKING_IMAGE_NAME, bi_url)
