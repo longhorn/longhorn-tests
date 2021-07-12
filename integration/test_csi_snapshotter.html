@@ -476,8 +476,7 @@ def test_csi_volumesnapshot_basic(set_random_backupstore, # NOQA
     for snapshot in snapshots:
         if snapshot[&#34;name&#34;] == &#34;snapshot-&#34; + csivolsnap[&#34;metadata&#34;][&#34;uid&#34;]:
             lh_snapshot = snapshot
-
-        assert lh_snapshot is not None
+    assert lh_snapshot is not None
 
     wait_for_volumesnapshot_ready(csivolsnap[&#34;metadata&#34;][&#34;name&#34;],
                                   csivolsnap[&#34;metadata&#34;][&#34;namespace&#34;])
@@ -888,8 +887,7 @@ def test_csi_volumesnapshot_basic(set_random_backupstore, # NOQA
     for snapshot in snapshots:
         if snapshot[&#34;name&#34;] == &#34;snapshot-&#34; + csivolsnap[&#34;metadata&#34;][&#34;uid&#34;]:
             lh_snapshot = snapshot
-
-        assert lh_snapshot is not None
+    assert lh_snapshot is not None
 
     wait_for_volumesnapshot_ready(csivolsnap[&#34;metadata&#34;][&#34;name&#34;],
                                   csivolsnap[&#34;metadata&#34;][&#34;namespace&#34;])
