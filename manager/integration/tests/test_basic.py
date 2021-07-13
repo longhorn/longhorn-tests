@@ -56,9 +56,7 @@ from common import wait_for_volume_condition_toomanysnapshots
 from common import wait_for_volume_degraded, wait_for_volume_healthy
 from common import VOLUME_FRONTEND_BLOCKDEV, VOLUME_FRONTEND_ISCSI
 from common import VOLUME_CONDITION_SCHEDULED
-from common import MESSAGE_TYPE_ERROR
 from common import DATA_SIZE_IN_MB_1
-from common import update_setting
 from common import SETTING_REPLICA_NODE_SOFT_ANTI_AFFINITY
 from common import SETTING_REPLICA_REPLENISHMENT_WAIT_INTERVAL
 from common import CONDITION_REASON_SCHEDULING_FAILURE
