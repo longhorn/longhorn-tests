@@ -2579,3 +2579,37 @@ def test_engine_image_missing_on_some_nodes():
     2. Delete the new-ei
     """
     pass
+
+
+@pytest.mark.skip(reason="TODO") # NOQA
+def test_autosalvage_with_data_locality_enabled():
+    """
+    This e2e test follows the manual test steps at:
+    https://github.com/longhorn/longhorn/issues/2778#issue-939331805
+
+    Preparation:
+    1. Let's call the 3 nodes: node-1, node-2, node-3
+
+    Steps:
+    1. Add the tag `node-1` to `node-1`
+    2. Create a volume with 1 replica, data-locality set to best-effort,
+       and tag set to `node-1`
+    3. Create PV/PVC from the volume.
+    4. Create a pod that uses the PVC. Set node selector for the pod so that
+       it will be schedule on to `node-2`. This makes sure that there is a
+       failed-to-scheduled local replica
+    5. Wait for the pod to be in running state.
+    6. Kill the instance manager r on `node-1`.
+    7. In a 3-min retry loop, verify that Longhorn salvage the volume
+       and the workload pod is restarted. Exec into the workload pod.
+       Verify that read/write to the volume is ok
+    8. Exec into the longhorn manager pod on `node-2`.
+       Running `ss -a -n | grep :8500 | wc -l` to find the number of socket
+       connections from this manager pod to instance manager pods.
+       In a 2-min loop, verify that the number of socket connection is <= 20
+
+    Cleaning up:
+    1. Clean up the node tag
+    """
+    pass
+
