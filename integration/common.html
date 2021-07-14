@@ -2254,12 +2254,14 @@ def get_host_disk_size(disk):
            &#39;{&#34;path&#34;:&#34;%n&#34;,&#34;fsid&#34;:&#34;%i&#34;,&#34;type&#34;:&#34;%T&#34;,&#34;freeBlock&#34;:%f,&#39;
            &#39;&#34;totalBlock&#34;:%b,&#34;blockSize&#34;:%S}&#39;,
            disk]
+    # As the disk available storage is rounded off to 100Mb
+    truncate_to = 100 * 1024 * 1024
     output = subprocess.check_output(cmd)
     disk_info = json.loads(output)
     block_size = disk_info[&#34;blockSize&#34;]
     free_blk = disk_info[&#34;freeBlock&#34;]
     total_blk = disk_info[&#34;totalBlock&#34;]
-    free = (free_blk * block_size)
+    free = int((free_blk * block_size) / truncate_to) * truncate_to
     total = (total_blk * block_size)
     return free, total
 
@@ -6279,12 +6281,14 @@ been completed successfully</p></div>
            &#39;{&#34;path&#34;:&#34;%n&#34;,&#34;fsid&#34;:&#34;%i&#34;,&#34;type&#34;:&#34;%T&#34;,&#34;freeBlock&#34;:%f,&#39;
            &#39;&#34;totalBlock&#34;:%b,&#34;blockSize&#34;:%S}&#39;,
            disk]
+    # As the disk available storage is rounded off to 100Mb
+    truncate_to = 100 * 1024 * 1024
     output = subprocess.check_output(cmd)
     disk_info = json.loads(output)
     block_size = disk_info[&#34;blockSize&#34;]
     free_blk = disk_info[&#34;freeBlock&#34;]
     total_blk = disk_info[&#34;totalBlock&#34;]
-    free = (free_blk * block_size)
+    free = int((free_blk * block_size) / truncate_to) * truncate_to
     total = (total_blk * block_size)
     return free, total</code></pre>
 </details>
