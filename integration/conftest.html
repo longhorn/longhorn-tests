@@ -39,7 +39,7 @@ from common import check_longhorn, check_csi_expansion
 
 SKIP_BACKING_IMAGE_OPT = &#34;--skip-backing-image-test&#34;
 SKIP_RECURRING_JOB_OPT = &#34;--skip-recurring-job-test&#34;
-INCLUDE_INFRA_OPT = &#34;--include-infra-test&#34;
+SKIP_INFRA_OPT = &#34;--skip-infra-test&#34;
 INCLUDE_STRESS_OPT = &#34;--include-stress-test&#34;
 INCLUDE_UPGRADE_OPT = &#34;--include-upgrade-test&#34;
 
@@ -61,9 +61,9 @@ def pytest_addoption(parser):
                      default=False,
                      help=&#34;skip recurring job test or not&#34;)
 
-    parser.addoption(INCLUDE_INFRA_OPT, action=&#34;store_true&#34;,
+    parser.addoption(SKIP_INFRA_OPT, action=&#34;store_true&#34;,
                      default=False,
-                     help=&#34;include infra tests (default: False)&#34;)
+                     help=&#34;skip infra tests (default: False)&#34;)
 
     parser.addoption(INCLUDE_STRESS_OPT, action=&#34;store_true&#34;,
                      default=False,
@@ -175,9 +175,9 @@ def pytest_collection_modifyitems(config, items):
             if &#34;mountdisk&#34; in item.keywords:
                 item.add_marker(skip_node)
 
-    if not config.getoption(INCLUDE_INFRA_OPT):
-        skip_infra = pytest.mark.skip(reason=&#34;include &#34; +
-                                      INCLUDE_INFRA_OPT +
+    if config.getoption(SKIP_INFRA_OPT):
+        skip_infra = pytest.mark.skip(reason=&#34;remove &#34; +
+                                      SKIP_INFRA_OPT +
                                       &#34; option to run&#34;)
 
         for item in items:
@@ -227,9 +227,9 @@ def pytest_collection_modifyitems(config, items):
                      default=False,
                      help=&#34;skip recurring job test or not&#34;)
 
-    parser.addoption(INCLUDE_INFRA_OPT, action=&#34;store_true&#34;,
+    parser.addoption(SKIP_INFRA_OPT, action=&#34;store_true&#34;,
                      default=False,
-                     help=&#34;include infra tests (default: False)&#34;)
+                     help=&#34;skip infra tests (default: False)&#34;)
 
     parser.addoption(INCLUDE_STRESS_OPT, action=&#34;store_true&#34;,
                      default=False,
@@ -350,9 +350,9 @@ def pytest_collection_modifyitems(config, items):
             if &#34;mountdisk&#34; in item.keywords:
                 item.add_marker(skip_node)
 
-    if not config.getoption(INCLUDE_INFRA_OPT):
-        skip_infra = pytest.mark.skip(reason=&#34;include &#34; +
-                                      INCLUDE_INFRA_OPT +
+    if config.getoption(SKIP_INFRA_OPT):
+        skip_infra = pytest.mark.skip(reason=&#34;remove &#34; +
+                                      SKIP_INFRA_OPT +
                                       &#34; option to run&#34;)
 
         for item in items:
