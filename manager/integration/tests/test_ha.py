@@ -2612,4 +2612,3 @@ def test_autosalvage_with_data_locality_enabled():
     1. Clean up the node tag
     """
     pass
-
