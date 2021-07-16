@@ -36,8 +36,14 @@ VOLUME_INVALID_POS = -1
 BACKING_IMAGE_NAME = "bi-test"
 BACKING_IMAGE_QCOW2_URL = \
     "https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2"
+BACKING_IMAGE_QCOW2_CHECKSUM = \
+    "bd79ab9e6d45abf4f3f0adf552a868074dd235c4698ce7258d521160e0ad79ffe555b94" \
+    "e7d4007add6e1a25f4526885eb25c53ce38f7d344dd4925b9f2cb5d3b"
 BACKING_IMAGE_RAW_URL = \
     "https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.raw"
+BACKING_IMAGE_RAW_CHECKSUM = \
+    "304f3ed30ca6878e9056ee6f1b02b328239f0d0c2c1272840998212f9734b196371560b" \
+    "3b939037e4f4c2884ce457c2cbc9f0621f4f5d1ca983983c8cdf8cd9a"
 BACKING_IMAGE_EXT4_SIZE = 32 * Mi
 
 PORT = ":9500"
@@ -3980,17 +3986,24 @@ def create_backing_image_with_matching_url(client, name, url):
             wait_for_backing_image_delete(client, name)
             found = False
     if not found:
+        expected_checksum = ""
+        # Only the following 2 URLs will be used in the integration tests
+        # for now.
+        if url == BACKING_IMAGE_RAW_URL:
+            expected_checksum = BACKING_IMAGE_RAW_CHECKSUM
+        elif url == BACKING_IMAGE_QCOW2_URL:
+            expected_checksum = BACKING_IMAGE_QCOW2_CHECKSUM
         bi = client.create_backing_image(
             name=name, sourceType=BACKING_IMAGE_SOURCE_TYPE_DOWNLOAD,
-            parameters={"url": url})
+            parameters={"url": url}, expectedChecksum=expected_checksum)
     assert bi
 
     is_ready = False
     for i in range(RETRY_COUNTS):
         bi = client.by_id_backing_image(name)
-        if len(bi.diskStateMap) == 1 and bi.currentChecksum != "":
-            for disk, state in iter(bi.diskStateMap.items()):
-                if state == "ready":
+        if len(bi.diskFileStatusMap) == 1 and bi.currentChecksum != "":
+            for disk, status in iter(bi.diskFileStatusMap.items()):
+                if status.state == "ready":
                     is_ready = True
                     break
             if is_ready:
@@ -4005,7 +4018,7 @@ def wait_for_backing_image_disk_cleanup(client, bi_name, disk_id):
     for i in range(RETRY_COUNTS):
         found = False
         bi = client.by_id_backing_image(bi_name)
-        for disk, state in iter(bi.diskStateMap.items()):
+        for disk, status in iter(bi.diskFileStatusMap.items()):
             if disk == disk_id:
                 found = True
                 break
