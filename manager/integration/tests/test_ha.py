@@ -93,7 +93,7 @@ def ha_simple_recovery_test(client, volume_name, size, backing_image=""):  # NOQ
 
     ha_rebuild_replica_test(client, volume_name)
 
-    cleanup_volume(client, volume)
+    cleanupVolume(client, volume)
 
 
 def ha_rebuild_replica_test(client, volname):   # NOQA
