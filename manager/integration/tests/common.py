@@ -54,6 +54,7 @@ RETRY_INTERVAL = 0.5
 RETRY_INTERVAL_LONG = 2
 RETRY_BACKUP_COUNTS = 300
 RETRY_BACKUP_INTERVAL = 1
+RETRY_SNAPSHOT_INTERVAL = 1
 RETRY_EXEC_COUNTS = 30
 RETRY_EXEC_INTERVAL = 5
 
@@ -212,6 +213,8 @@ K8S_ZONE_LABEL = "topology.kubernetes.io/zone"
 
 BACKING_IMAGE_SOURCE_TYPE_DOWNLOAD = "download"
 
+JOB_LABEL = "recurring-job.longhorn.io"
+
 
 def load_k8s_config():
     c = Configuration()
@@ -297,7 +300,6 @@ def cleanup_all_volumes(client):
         except Exception as e:
             print("\nException when cleanup volume ", v)
             print(e)
-            pass
     for i in range(RETRY_COUNTS):
         volumes = client.list_volume()
         if len(volumes) == 0:
@@ -352,6 +354,16 @@ def create_backup(client, volname, data={}, labels={}):
     assert volume.lastBackupAt != ""
 
     return bv, b, snap, data
+
+
+def wait_for_backup_count(backup_volume, number, retry_counts=120):
+    ok = False
+    for _ in range(retry_counts):
+        if len(backup_volume.backupList()) == number:
+            ok = True
+            break
+        time.sleep(RETRY_BACKUP_INTERVAL)
+    assert ok
 
 
 def delete_backup(client, volume_name, backup_name):
@@ -953,6 +965,22 @@ def apps_api(request):
     return apps_api
 
 
+@pytest.fixture
+def batch_v1_beta_api(request):
+    """
+    Create a new BatchV1beta1Api instance.
+    Returns:
+        A new BatchV1beta1Api Instance.
+    """
+    c = Configuration()
+    c.assert_hostname = False
+    Configuration.set_default(c)
+    k8sconfig.load_incluster_config()
+    api = k8sclient.BatchV1beta1Api()
+
+    return api
+
+
 def get_pv_manifest(request):
     volume_name = generate_volume_name()
     pv_manifest = {
@@ -1318,6 +1346,8 @@ def cleanup_client():
     # cleanup test disks
     cleanup_test_disks(client)
 
+    cleanup_all_recurring_jobs(client)
+
     cleanup_all_volumes(client)
 
     if backing_image_feature_supported(client):
@@ -1536,7 +1566,7 @@ def wait_for_volume_delete(client, name):
 
 
 def wait_for_backup_volume_delete(client, name):
-    for _ in range(RETRY_COUNTS):
+    for _ in range(RETRY_BACKUP_COUNTS):
         bvs = client.list_backupVolume()
         found = False
         for bv in bvs:
@@ -1545,7 +1575,7 @@ def wait_for_backup_volume_delete(client, name):
                 break
         if not found:
             break
-        time.sleep(RETRY_INTERVAL)
+        time.sleep(RETRY_BACKUP_INTERVAL)
     assert not found
 
 
@@ -3335,6 +3365,20 @@ def create_snapshot(longhorn_api_client, volume_name):
     return snap
 
 
+def wait_for_snapshot_count(volume, number, retry_counts=120):
+    ok = False
+    for _ in range(retry_counts):
+        count = 0
+        for snapshot in volume.snapshotList():
+            if snapshot.removed is False:
+                count += 1
+        if count == number:
+            ok = True
+            break
+        time.sleep(RETRY_SNAPSHOT_INTERVAL)
+    assert ok
+
+
 def wait_and_get_pv_for_pvc(api, pvc_name):
     found = False
     for i in range(RETRY_COUNTS):
@@ -4058,7 +4102,6 @@ def cleanup_all_backing_images(client):
         except Exception as e:
             print("\nException when cleanup backing image ", bi)
             print(e)
-            pass
     for i in range(RETRY_COUNTS):
         backing_images = client.list_backing_image()
         if len(backing_images) == 0:
@@ -4076,6 +4119,26 @@ def backing_image_feature_supported(client):
         return False
 
 
+def cleanup_all_recurring_jobs(client):
+    recurring_jobs = client.list_recurring_job()
+    for recurring_job in recurring_jobs:
+        try:
+            client.delete(recurring_job)
+        except Exception as e:
+            print("\nException when cleanup recurring job ", recurring_job)
+            print(e)
+    wait_for_recurring_jobs_cleanup(client)
+
+
+def wait_for_recurring_jobs_cleanup(client):
+    for _ in range(RETRY_COUNTS):
+        policies = client.list_recurring_job()
+        if len(policies) == 0:
+            break
+        time.sleep(RETRY_INTERVAL)
+    assert len(client.list_recurring_job()) == 0
+
+
 # get correct engine image status based on Longhorn version
 # Longhorn <= v1.1.0   ei.status == "ready"
 # Longhorn >= v1.1.1   ei.status == "deployed"
@@ -4089,3 +4152,118 @@ def get_engine_image_status_value(client, ei_name):
 def update_setting(client, name, value):
     setting = client.by_id_setting(name)
     client.update(setting, value=value)
+
+
+def create_recurring_jobs(client, recurring_jobs):
+    for name, spec in recurring_jobs.items():
+        client.create_recurring_job(Name=name,
+                                    Task=spec["task"],
+                                    Groups=spec["groups"],
+                                    Cron=spec["cron"],
+                                    Retain=spec["retain"],
+                                    Concurrency=spec["concurrency"],
+                                    Labels=spec["labels"])
+
+
+def check_recurring_jobs(client, recurring_jobs):
+    for name, spec in recurring_jobs.items():
+        recurring_job = client.by_id_recurring_job(name)
+        assert recurring_job.name == name
+        assert recurring_job.task == spec["task"]
+        assert recurring_job.groups == spec["groups"]
+        assert recurring_job.cron == spec["cron"]
+        assert recurring_job.retain == spec["retain"]
+        assert recurring_job.concurrency == spec["concurrency"]
+
+
+def update_recurring_job(client, name, groups, labels, # NOQA
+                         cron="", retain=0, concurrency=0):
+    recurringJob = client.by_id_recurring_job(name)
+
+    update_groups = groups
+    update_labels = labels
+    update_cron = cron if len(cron) != 0 else recurringJob["cron"]
+    update_retain = retain if retain != 0 else recurringJob["retain"]
+    update_concurrency = \
+        concurrency if concurrency != 0 else recurringJob["concurrency"]
+
+    client.update(recurringJob,
+                  groups=update_groups,
+                  task=recurringJob["task"],
+                  cron=update_cron,
+                  retain=update_retain,
+                  concurrency=update_concurrency,
+                  labels=update_labels)
+
+
+def get_volume_recurring_jobs_and_groups(volume):
+    volumeJobs = volume.recurringJobList()
+    jobs = []
+    groups = []
+    for volumeJob in volumeJobs:
+        if volumeJob['isGroup']:
+            groups.append(volumeJob['name'])
+        else:
+            jobs.append(volumeJob['name'])
+    return jobs, groups
+
+
+def wait_for_volume_recurring_job_update(volume, jobs=[], groups=[]):
+    ok = False
+    for _ in range(RETRY_COUNTS):
+        volumeJobs, volumeGroups = get_volume_recurring_jobs_and_groups(volume)
+        try:
+            assert len(volumeGroups) == len(groups)
+            for group in groups:
+                assert group in volumeGroups
+
+            assert len(volumeJobs) == len(jobs)
+            for job in jobs:
+                assert job in volumeJobs
+
+            ok = True
+            break
+        except AssertionError:
+            time.sleep(RETRY_INTERVAL)
+    assert ok
+
+
+def wait_for_cron_job_create(batch_v1_beta_api, label="",
+                             retry_counts=RETRY_COUNTS):
+    exist = False
+    for _ in range(retry_counts):
+        job = batch_v1_beta_api.list_namespaced_cron_job('longhorn-system',
+                                                         label_selector=label)
+        if len(job.items) != 0:
+            exist = True
+            break
+        time.sleep(RETRY_INTERVAL)
+
+    assert exist
+
+
+def wait_for_cron_job_delete(batch_v1_beta_api, label="",
+                             retry_counts=RETRY_COUNTS):
+    exist = True
+    for _ in range(retry_counts):
+        job = batch_v1_beta_api.list_namespaced_cron_job('longhorn-system',
+                                                         label_selector=label)
+        if len(job.items) == 0:
+            exist = False
+            break
+        time.sleep(RETRY_INTERVAL)
+
+    assert not exist
+
+
+def wait_for_cron_job_count(batch_v1_beta_api, number, label="",
+                            retry_counts=RETRY_COUNTS):
+    ok = False
+    for _ in range(retry_counts):
+        jobs = batch_v1_beta_api.list_namespaced_cron_job('longhorn-system',
+                                                          label_selector=label)
+        if len(jobs.items) == number:
+            ok = True
+            break
+        time.sleep(RETRY_INTERVAL)
+    assert ok
