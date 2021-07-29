@@ -436,7 +436,7 @@
 <li>Wait for Longhorn to finish the installation.</li>
 <li>deploy <code>s3-secret</code> to <code>longhorn-system</code> namespace and setup backupstore target to point to your s3 bucket. Create a volume, attach to a pod, write some data into it, and create a backup. At this time, everything should work fine because the EC2 node still has access to the public internet. The <code>s3-secret</code> must have HTTP_PROXY, HTTPS_PROXY, and NO_PROXY as below (remember to convert the values to base64):</li>
 </ol>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">AWS_ACCESS_KEY_ID: &lt;your_aws_access_key_id&gt;
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">AWS_ACCESS_KEY_ID: &lt;your_aws_access_key_id&gt;
 AWS_SECRET_ACCESS_KEY: &lt;your_aws_secret_access_key&gt;
 HTTP_PROXY: <span style="color:#e6db74">&#34;http://proxy_ip:proxy_port&#34;</span>
 HTTPS_PROXY: <span style="color:#e6db74">&#34;http://proxy_ip:proxy_port&#34;</span>

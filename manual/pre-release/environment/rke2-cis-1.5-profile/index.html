@@ -434,7 +434,7 @@
 <li>Prepare 1 control plane node and 3 worker nodes</li>
 <li>Install RKE2 with CIS-1.5 profile on 1 control plane node</li>
 </ol>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">sudo su -
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">sudo su -
 
 systemctl disable firewalld
 systemctl stop firewalld
@@ -464,7 +464,7 @@ SERVER_NODE_TOKEN<span style="color:#f92672">=</span><span style="color:#e6db74"
 </code></pre></div><ol start="3">
 <li>Install RKE2 with CIS-1.5 profile on 3 worker nodes</li>
 </ol>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">sudo su -
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">sudo su -
 
 systemctl disable firewalld
 systemctl stop firewalld
@@ -492,7 +492,7 @@ systemctl start rke2-agent.service
 </code></pre></div><ol start="4">
 <li>Test install Longhorn by helm without problem</li>
 </ol>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">helm repo add longhorn https://charts.longhorn.io
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">helm repo add longhorn https://charts.longhorn.io
 helm repo update
 
 helm install longhorn/longhorn <span style="color:#ae81ff">\
@@ -502,28 +502,28 @@ helm install longhorn/longhorn <span style="color:#ae81ff">\
 </code></pre></div><ol start="5">
 <li>Prepare the longhorn-values.yaml</li>
 </ol>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#f92672">ingress</span>:
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#f92672">ingress</span>:
   <span style="color:#f92672">enabled</span>: <span style="color:#66d9ef">true</span>
   <span style="color:#f92672">annotations</span>:
     <span style="color:#f92672">foo</span>: <span style="color:#ae81ff">bar</span>
 </code></pre></div><ol start="6">
 <li>Test upgrade Longhorn by helm without problem</li>
 </ol>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">helm upgrade longhorn longhorn/longhorn <span style="color:#ae81ff">\
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">helm upgrade longhorn longhorn/longhorn <span style="color:#ae81ff">\
 </span><span style="color:#ae81ff"></span>    --namespace longhorn-system <span style="color:#ae81ff">\
 </span><span style="color:#ae81ff"></span>    --values longhorn-values.yaml
 </code></pre></div><ol start="7">
 <li>Test uninstall Longhorn by helm without problem</li>
 </ol>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">helm uninstall longhorn --namespace longhorn-system
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">helm uninstall longhorn --namespace longhorn-system
 </code></pre></div><ol start="8">
 <li>Test install Longhorn by kubectl without problem</li>
 </ol>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">kubectl apply -f https://raw.githubusercontent.com/longhorn/longhorn/v1.1.1/deploy/longhorn.yaml
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">kubectl apply -f https://raw.githubusercontent.com/longhorn/longhorn/v1.1.1/deploy/longhorn.yaml
 </code></pre></div><ol start="9">
 <li>Test uninstall Longhorn by kubectl without problem</li>
 </ol>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">kubectl create -f https://raw.githubusercontent.com/longhorn/longhorn/v1.1.1/uninstall/uninstall.yaml
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">kubectl create -f https://raw.githubusercontent.com/longhorn/longhorn/v1.1.1/uninstall/uninstall.yaml
 kubectl delete -f https://raw.githubusercontent.com/longhorn/longhorn/v1.1.1/deploy/longhorn.yaml
 kubectl delete -f https://raw.githubusercontent.com/longhorn/longhorn/v1.1.1/uninstall/uninstall.yaml
 </code></pre></div>

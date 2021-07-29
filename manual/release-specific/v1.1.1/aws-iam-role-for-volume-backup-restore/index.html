@@ -433,14 +433,14 @@
 <ol>
 <li>Install AWS CLI and configure your AWS credentials</li>
 </ol>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">curl <span style="color:#e6db74">&#34;https://s3.amazonaws.com/aws-cli/awscli-bundle.zip&#34;</span> -o <span style="color:#e6db74">&#34;awscli-bundle.zip&#34;</span>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">curl <span style="color:#e6db74">&#34;https://s3.amazonaws.com/aws-cli/awscli-bundle.zip&#34;</span> -o <span style="color:#e6db74">&#34;awscli-bundle.zip&#34;</span>
 unzip awscli-bundle.zip
 ./awscli-bundle/install -b ~/bin/aws
 ~/bin/aws configure
 </code></pre></div><ol start="2">
 <li>Create AWS S3 bucket</li>
 </ol>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">S3_BUCKET_NAME<span style="color:#f92672">=</span>&lt;bucket-name&gt;
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">S3_BUCKET_NAME<span style="color:#f92672">=</span>&lt;bucket-name&gt;
 
 ~/bin/aws s3api create-bucket <span style="color:#ae81ff">\
 </span><span style="color:#ae81ff"></span>    --bucket $S3_BUCKET_NAME <span style="color:#ae81ff">\
@@ -449,7 +449,7 @@ unzip awscli-bundle.zip
 </code></pre></div><ol start="3">
 <li>Create a new IAM instance profile <code>NodeInstanceProfile</code></li>
 </ol>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">cat &gt; node-instance-assume-role-policy.json <span style="color:#e6db74">&lt;&lt;EOF
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">cat &gt; node-instance-assume-role-policy.json <span style="color:#e6db74">&lt;&lt;EOF
 </span><span style="color:#e6db74">{
 </span><span style="color:#e6db74">  &#34;Version&#34;: &#34;2012-10-17&#34;,
 </span><span style="color:#e6db74">  &#34;Statement&#34;: [
@@ -478,7 +478,7 @@ unzip awscli-bundle.zip
 <li>Install RKE2 with CNI canal on top of AWS with IAM instance profile name <code>NodeInstanceProfile</code></li>
 <li>Prepare kube2iam-values.yaml</li>
 </ol>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#f92672">host</span>:
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#f92672">host</span>:
   <span style="color:#f92672">iptables</span>: <span style="color:#66d9ef">true</span>
   <span style="color:#f92672">interface</span>: <span style="color:#e6db74">&#34;cali+&#34;</span>
   <span style="color:#f92672">port</span>: <span style="color:#ae81ff">8080</span>
@@ -488,7 +488,7 @@ unzip awscli-bundle.zip
 </code></pre></div><ol start="6">
 <li>Install kube2iam on namespace kube2iam</li>
 </ol>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">helm repo add kube2iam https://jtblin.github.io/kube2iam/
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">helm repo add kube2iam https://jtblin.github.io/kube2iam/
 helm repo update
 helm upgrade --install kube2iam kube2iam/kube2iam <span style="color:#ae81ff">\
 </span><span style="color:#ae81ff"></span>    -f kube2iam-values.yaml <span style="color:#ae81ff">\
@@ -497,7 +497,7 @@ helm upgrade --install kube2iam kube2iam/kube2iam <span style="color:#ae81ff">\
 </code></pre></div><ol start="7">
 <li>Create a new IAM role <code>k8s-longhorn</code> and attach a trust policy to it</li>
 </ol>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">NODE_INSTANCE_ROLE<span style="color:#f92672">=</span><span style="color:#e6db74">`</span>~/bin/aws iam get-role --role-name NodeInstanceRole | jq -r <span style="color:#e6db74">&#39;.Role.Arn&#39;</span><span style="color:#e6db74">`</span>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">NODE_INSTANCE_ROLE<span style="color:#f92672">=</span><span style="color:#e6db74">`</span>~/bin/aws iam get-role --role-name NodeInstanceRole | jq -r <span style="color:#e6db74">&#39;.Role.Arn&#39;</span><span style="color:#e6db74">`</span>
 
 cat &gt; node-trust-policy.json <span style="color:#e6db74">&lt;&lt;EOF
 </span><span style="color:#e6db74">{
@@ -555,7 +555,7 @@ cat &gt; s3-longhorn-policy.json <span style="color:#e6db74">&lt;&lt;EOF
 </code></pre></div><ol start="8">
 <li>Create the secret <code>aws-secret</code> to longhorn-system</li>
 </ol>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">K8S_LONGHORN_ROLE<span style="color:#f92672">=</span><span style="color:#e6db74">`</span>~/bin/aws iam get-role --role-name k8s-longhorn | jq -r <span style="color:#e6db74">&#39;.Role.Arn&#39;</span><span style="color:#e6db74">`</span>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">K8S_LONGHORN_ROLE<span style="color:#f92672">=</span><span style="color:#e6db74">`</span>~/bin/aws iam get-role --role-name k8s-longhorn | jq -r <span style="color:#e6db74">&#39;.Role.Arn&#39;</span><span style="color:#e6db74">`</span>
 
 kubectl create secret generic aws-secret <span style="color:#ae81ff">\
 </span><span style="color:#ae81ff"></span>    --from-literal<span style="color:#f92672">=</span>AWS_IAM_ROLE_ARN<span style="color:#f92672">=</span>$K8S_LONGHORN_ROLE <span style="color:#ae81ff">\
@@ -563,11 +563,11 @@ kubectl create secret generic aws-secret <span style="color:#ae81ff">\
 </code></pre></div><ol start="9">
 <li>On the Longhorn UI, click Settings. In the Backup section, set Backup Target to:</li>
 </ol>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">s3://&lt;your-bucket-name&gt;@&lt;your-aws-region&gt;/
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">s3://&lt;your-bucket-name&gt;@&lt;your-aws-region&gt;/
 </code></pre></div><ol start="10">
 <li>In the Backup section, set Backup Target Credential Secret to:</li>
 </ol>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">aws-secret
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">aws-secret
 </code></pre></div><ol start="11">
 <li>Verify that the user is able to create/list/restore/delete backups.</li>
 </ol>
