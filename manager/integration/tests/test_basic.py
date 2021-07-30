@@ -1450,8 +1450,6 @@ def restore_inc_test(client, core_api, volume_name, pod):  # NOQA
         client, volume_name,
         {'len': BACKUP_BLOCK_SIZE, 'pos': 0,
          'content': zero_string * BACKUP_BLOCK_SIZE})
-    # use this api to update field `last backup`
-    client.list_backupVolume()
     check_volume_last_backup(client, sb_volume1_name, backup1.name)
     activate_standby_volume(client, sb_volume1_name)
     sb_volume1 = client.by_id_volume(sb_volume1_name)
@@ -1469,9 +1467,6 @@ def restore_inc_test(client, core_api, volume_name, pod):  # NOQA
              'content': common.generate_random_data(data2_len)}
     _, backup2, _, data2 = create_backup(client, volume_name, data2)
 
-    # HACK: #558 we use a side effect of the list call
-    # to update the volumes last backup field
-    client.list_backupVolume()
     check_volume_last_backup(client, sb_volume2_name, backup2.name)
     activate_standby_volume(client, sb_volume2_name)
     sb_volume2 = client.by_id_volume(sb_volume2_name)
@@ -2283,7 +2278,6 @@ def test_restore_inc_with_expansion(set_random_backupstore, client, core_api, vo
     bv, backup1, _, data1 = create_backup(
         client, volume_name, data1)
 
-    client.list_backupVolume()
     check_volume_last_backup(client, dr_volume1_name, backup1.name)
     activate_standby_volume(client, dr_volume1_name)
     dr_volume1 = client.by_id_volume(dr_volume1_name)
@@ -2298,7 +2292,6 @@ def test_restore_inc_with_expansion(set_random_backupstore, client, core_api, vo
         client, volume_name, data2)
     assert backup2.volumeSize == EXPAND_SIZE
 
-    client.list_backupVolume()
     wait_for_dr_volume_expansion(client, dr_volume2_name, EXPAND_SIZE)
     check_volume_last_backup(client, dr_volume2_name, backup2.name)
     activate_standby_volume(client, dr_volume2_name)
