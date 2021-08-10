@@ -107,6 +107,9 @@
   
     <ul>
 
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/ha/backing-image-error-reporting-and-retry/">Backing Image Error Reporting and Retry</a></li>
+  
+
   <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/ha/disk-migration-in-aws-asg/">Disk migration in AWS ASG</a></li>
   
 
@@ -429,26 +432,26 @@
        <ol>
 <li>Update the settings:
 <ol>
-<li>Disable Node Soft Anti-affinity.</li>
-<li>Set Replica Replenishment Wait Interval to a relatively long value.</li>
+<li>Disable <code>Node Soft Anti-affinity</code>.</li>
+<li>Set <code>Replica Replenishment Wait Interval</code> to a relatively long value.</li>
 </ol>
 </li>
-<li>Create a backing image:</li>
+<li>Create a backing image. Wait for the backing image being ready in the 1st disk.</li>
 <li>Create 2 volumes with the backing image and attach them on different nodes. Verify:
 <ul>
 <li>the disk state map of the backing image contains the disks of all replicas, and the state is running for all disks.</li>
-<li>the backing image content is correct</li>
+<li>the backing image content is correct.</li>
 </ul>
 </li>
 <li>Write random data to the volumes.</li>
 <li>Power off 2 nodes. One node should contain one volume engine. Verify that
 <ul>
-<li>the related disk download state in the backing image will become <code>unknown</code>.</li>
-<li>the volume on the running node still works fine but is state <code>Degraded</code>, and the content is correct in the volume.</li>
+<li>the related disk file state in the backing image will become <code>Unknown</code>.</li>
+<li>the volume on the running node still works fine but is state <code>Degraded</code>, and the content is correct.</li>
 <li>the volume on the down node become <code>Unknown</code>.</li>
 </ul>
 </li>
-<li>Power on the 1st node. Verify
+<li>Power on the node that contains one volume engine. Verify
 <ul>
 <li>the failed replica of the <code>Degraded</code> volume can be reused.</li>
 <li>the volume on the down node will be recovered automatically. And the data is correct.</li>

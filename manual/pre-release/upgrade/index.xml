@@ -52,7 +52,7 @@ Test with K8s upgrade  Create a K8s (Immediate prior version) cluster with 3 wor
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/backing-image-during-upgrade/</guid>
-      <description>System upgrade with compatible backing image manager image  Deploy Longhorn. Then set Concurrent Automatic Engine Upgrade Per Node Limit to a positive value to enable volume engine auto upgrade. Create 2 backing images: a large one and a small one. Create and attach volumes with the small backing image. Wait for volumes attachment. Then verify the backing image content then write random data in the volumes. Create and attach one more volume with the large backing image.</description>
+      <description>System upgrade with compatible backing image manager image  Deploy Longhorn. Then set Concurrent Automatic Engine Upgrade Per Node Limit to a positive value to enable volume engine auto upgrade. Create 2 backing images: a large one and a small one. Longhorn will start preparing the 1st file for both backing image immediately via launching backing image data source pods. Wait for the small backing image being ready in the 1st disk.</description>
     </item>
     
     <item>

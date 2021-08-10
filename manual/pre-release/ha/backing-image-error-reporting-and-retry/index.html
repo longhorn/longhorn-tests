@@ -426,30 +426,28 @@
 </aside>
 
 <main style="padding: 1%; width: 70%;">
-  <h1 id="title">Test Frontend Web-socket Data Transfer When Resource Not Updated</h1>
+  <h1 id="title">Backing Image Error Reporting and Retry</h1>
   <div>
     <article id="content">
-       <h2 id="related-issue">Related issue</h2>
-<p><a href="https://github.com/longhorn/longhorn-manager/pull/918">https://github.com/longhorn/longhorn-manager/pull/918</a>
-<a href="https://github.com/longhorn/longhorn/issues/2646">https://github.com/longhorn/longhorn/issues/2646</a>
-<a href="https://github.com/longhorn/longhorn/issues/2591">https://github.com/longhorn/longhorn/issues/2591</a></p>
-<h2 id="test-data-send-over-web-socket-when-no-resource-updated">Test Data Send Over Web-socket When No Resource Updated</h2>
-<p><strong>Given</strong> 1 PVC/Pod created.
-<em>And</em> the Pod is not writing to the mounted volume.</p>
-<p><strong>When</strong> monitor network traffic with browser inspect tool.</p>
-<p><strong>Then</strong> wait for 3 mins
-<em>And</em> should not see data send over web-socket when there are no updates to the resources.</p>
-<h2 id="test-data-send-over-web-socket-resource-updated">Test Data Send Over Web-socket Resource Updated</h2>
-<p><strong>Given</strong> monitor network traffic with browser inspect tool.</p>
-<p><strong>When</strong> 1 PVC/Pod created.</p>
-<p><strong>Then</strong> should see data send over event log web-socket.
-<em>And</em> should see data send over volume web-socket.</p>
-<h2 id="test-web-socket-keep-alive">Test Web-socket Keep-alive</h2>
-<p><strong>Given</strong> monitor network traffic with browser inspect tool.</p>
-<p><strong>When</strong> wait for 6 minutes.</p>
-<p><strong>Then</strong> should show web-socket connected.
-<em>And</em> create 1 PVC/Pod.
-<em>And</em> should see data send over volume web-socket.</p>
+       <h2 id="backing-image-with-an-invalid-url-schema">Backing image with an invalid URL schema</h2>
+<ol>
+<li>Create a backing image via a invalid download URL. e.g., <code>httpsinvalid://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2</code>, <code>https://longhorn-backing-image.s3-us-west-1.amazonaws.invalid.com/parrot.raw</code>.</li>
+<li>Wait for the download start. The backing image data source pod, which is used to download the file from the URL, should become <code>Failed</code> then be cleaned up immediately.</li>
+<li>The corresponding and only entry in the disk file status should be <code>failed</code>. The error message in this entry should explain why the downloading or the pod becomes failed.</li>
+<li>Check if there is a backoff window for the downloading retry. The initial duration is 1 minute. The max interval is 5 minute. This can be verified by checking the timestamp of the error message or the logs in the longhorn manager pods.</li>
+</ol>
+<h2 id="backing-image-with-sync-failure">Backing image with sync failure</h2>
+<ol>
+<li>Create a backing image. Then create and attach a volume using this backing image.</li>
+<li>Exec into the host of a worker node. remove the content of the backing image work directory then set the directory as immutable. This operation should fail one file of the backing image as well as keeping failing the following sync retries.
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">rm -r /var/lib/longhorn/backing-images/&lt;backing image name&gt;-&lt;backing image UUID&gt;/
+chattr +i /var/lib/longhorn/backing-images/&lt;backing image name&gt;-&lt;backing image UUID&gt;/
+</code></pre></div></li>
+<li>Monitor the backing image manager pod log. Verify the backoff works for the sync retry as well.</li>
+<li>Unset the immutable flag for the backing image directory. Then the retry should succeed, and the volume should become <code>healthy</code> again after the backing image re-sync complete.
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">chattr -i /var/lib/longhorn/backing-images/&lt;backing image name&gt;-&lt;backing image UUID&gt;/
+</code></pre></div></li>
+</ol>
 
     </article>
   </div>

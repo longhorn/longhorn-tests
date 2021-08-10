@@ -107,6 +107,9 @@
   
     <ul>
 
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/ha/backing-image-error-reporting-and-retry/">Backing Image Error Reporting and Retry</a></li>
+  
+
   <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/ha/disk-migration-in-aws-asg/">Disk migration in AWS ASG</a></li>
   
 
@@ -429,11 +432,11 @@
        <h2 id="system-upgrade-with-compatible-backing-image-manager-image">System upgrade with compatible backing image manager image</h2>
 <ol>
 <li>Deploy Longhorn. Then set <code>Concurrent Automatic Engine Upgrade Per Node Limit</code> to a positive value to enable volume engine auto upgrade.</li>
-<li>Create 2 backing images: a large one and a small one.</li>
-<li>Create and attach volumes with the small backing image.</li>
-<li>Wait for volumes attachment. Then verify the backing image content then write random data in the volumes.</li>
-<li>Create and attach one more volume with the large backing image.</li>
-<li>Before the large backing image is downloaded and the volume becomes attached, upgrade the whole Longhorn system:
+<li>Create 2 backing images: a large one and a small one. Longhorn will start preparing the 1st file for both backing image immediately via launching backing image data source pods.</li>
+<li>Wait for the small backing image being ready in the 1st disk. Then create and attach volumes with the backing image.</li>
+<li>Wait for volumes attachment. Verify the backing image content then write random data in the volumes.</li>
+<li>Wait for the large backing image being ready in the 1st disk. Then create and attach one more volume with this large backing image.</li>
+<li>Before the large backing image is synced to other nodes and the volume becomes attached, upgrade the whole Longhorn system:
 <ol>
 <li>A new engine image will be used.</li>
 <li>The default backing image manager image will be updated.</li>
@@ -443,7 +446,12 @@
 <li>Wait for system upgrade complete. Then verify:
 <ol>
 <li>All old backing image manager and the related pod will be cleaned up automatically after the current downloading is complete. And the existing backing image files won&rsquo;t be removed.</li>
-<li>New default backing image manager will take over all backing image ownerships and show the info in the status map.</li>
+<li>New default backing image manager will take over all backing image ownerships and show the info in the status map:
+<ol>
+<li>For the small backing image, the new backing image manager will directly take over all ready files.</li>
+<li>For the large backing image, the new backing image manager will take over the only ready file and mark all in-progress files as failed first. Then it will re-sync the files after the backoff window.</li>
+</ol>
+</li>
 <li>All attached volumes still work fine without replica crash, and the content is correct in the volumes during/after the upgrade.</li>
 <li>The last volume get attached successfully without replica crash, and the content is correct.</li>
 </ol>
@@ -453,9 +461,9 @@
 <h2 id="system-upgrade-with-incompatible-backing-image-manager-image">System upgrade with incompatible backing image manager image</h2>
 <ol>
 <li>Deploy Longhorn.</li>
-<li>Create a backing images.</li>
+<li>Create a backing images. Wait for the backing image being ready in the 1st disk.</li>
 <li>Create and attach volumes with the backing image.</li>
-<li>Wait for volumes attachment. Then verify the backing image content then write random data in the volumes.</li>
+<li>Wait for volumes attachment. Verify the backing image content then write random data in the volumes.</li>
 <li>Upgrade the whole Longhorn system:
 <ol>
 <li>The default backing image manager image will be updated.</li>
