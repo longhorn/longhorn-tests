@@ -429,38 +429,20 @@
 </aside>
 
 <main style="padding: 1%; width: 70%;">
-  <h1 id="title">Longhorn with engine is not deployed on all the nodes</h1>
+  <h1 id="title">Test backing image upload</h1>
   <div>
     <article id="content">
-       <h2 id="related-issue">Related Issue</h2>
-<p><a href="https://github.com/longhorn/longhorn/issues/2081">https://github.com/longhorn/longhorn/issues/2081</a></p>
-<h2 id="scenarios">Scenarios:</h2>
-<h3 id="case-1-test-volume-operations-when-some-of-the-engine-image-daemonset-pods-are-miss-scheduled">Case 1: Test volume operations when some of the engine image DaemonSet pods are miss scheduled</h3>
-<ol>
-<li>Install Longhorn in a 3-node cluster: <code>node-1</code>, <code>node-2</code>, <code>node-3</code></li>
-<li>Create a volume, <code>vol-1</code>, of 3 replicas</li>
-<li>Create another volume, <code>vol-2</code>, of 3 replicas</li>
-<li>Taint <code>node-1</code> with the taint: <code>key=value:NoSchedule</code></li>
-<li>Check that all functions (attach, detach, snapshot, backup, expand, restore, creating DR volume, &hellip; ) are working ok for <code>vol-1</code></li>
-</ol>
-<h3 id="case-2-test-volume-operations-when-some-of-the-engine-image-daemonset-pods-are-not-fully-deployed">Case 2: Test volume operations when some of the engine image DaemonSet pods are not fully deployed</h3>
-<ol>
-<li>Continue from case 1</li>
-<li>Attach <code>vol-1</code> to <code>node-1</code>. Change the number of replicas of <code>vol-1</code> to 2. Delete the replica on <code>node-1</code></li>
-<li>Delete the pod on <code>node-1</code> of the engine image DaemonSet. Or delete the engine image DaemonSet and wait for Longhorn to automatically recreates it.</li>
-<li>Notice that the engine image CR state become deploying</li>
-<li>Verify that functions (detach, snapshot, backup) are working ok for <code>vol-1</code></li>
-<li>Detach <code>vol-1</code></li>
-<li>Verify that Longhorn cannot attach <code>vol-1</code> to <code>node-1</code> since there is no engine image on <code>node-1</code></li>
-<li>Check that all functions (attach to other nodes, detach, snapshot, backup, expand, restore, creating DR volume, &hellip; ) are working ok for <code>vol-1</code></li>
-<li>Verify that <code>vol-2</code> cannot be attached to any nodes because one of its replica is sitting on the <code>node-1</code> which doesn&rsquo;t have the engine image</li>
-</ol>
-<h3 id="case-3-test-engine-upgrade-when-some-of-the-engine-image-daemonset-pods-are-not-fully-deployed">Case 3: Test engine upgrade when some of the engine image DaemonSet pods are not fully deployed</h3>
-<ol>
-<li>Continue from case 2</li>
-<li>Deploy a new engine image, <code>newEI</code></li>
-<li>Verify that you can upgrade <code>vol-1</code> to <code>newEI</code> (both live and offline upgrade)</li>
-<li>Verify that you can not upgrade <code>vol-2</code> to <code>newEI</code></li>
+       <ol>
+<li>Prepare a large backing image file (make sure the size is greater than 1Gi and the uploading time is longer than 1 minute) in local.</li>
+<li>Click the backing image creation button in UI, choose <code>Upload From Local</code>, select the file then start upload.</li>
+<li>Wait for the initialization complete. Then the upload progress will be shown.</li>
+<li>During the uploading, verify the corresponding backing image data source pod won&rsquo;t use too many CPU (50 ~ 200m) and memory(50 ~ 200Mi) resources.</li>
+<li>Open another backing image UI page, the progress can be still found in the backing image detail page.</li>
+<li>When the upload is in progress, refresh the UI page to interrupt the upload.</li>
+<li>Verified that the upload failed without retry (typically the retry will happen after 1~2 minute). And there is a message indicates the failure.</li>
+<li>Delete the failed one then restart the uploading by creating a new backing image.</li>
+<li>Create and attach a volume with the backing image. Verify the data content is correct.</li>
+<li>Do cleanup.</li>
 </ol>
 
     </article>
