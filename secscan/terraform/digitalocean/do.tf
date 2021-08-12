@@ -37,7 +37,7 @@ resource "digitalocean_ssh_key" "do-ssh-key" {
 
 resource "digitalocean_droplet" "longhorn-tests" {
   count    = var.instance_count
-  image    = "ubuntu-18-04-x64"
+  image    = "ubuntu-20-04-x64"
   name     = "${var.hostname_prefix}-0${count.index}"
   region   = "nyc3"
   size     = "s-4vcpu-8gb"
