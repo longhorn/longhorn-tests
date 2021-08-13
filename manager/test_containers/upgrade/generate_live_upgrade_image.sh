@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # make sure IMAGE wasn't used by any releases
-IMAGE="longhornio/longhorn-engine:live-upgrade-4-3-1"
+IMAGE="longhornio/longhorn-engine:live-upgrade-5-3-1"
 
 version=`docker run $IMAGE longhorn version --client-only`
 echo Image version output: $version
