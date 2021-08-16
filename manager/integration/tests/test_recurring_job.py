@@ -907,7 +907,6 @@ def test_recurring_jobs_when_volume_detached_unexpectedly(
     # backupstore lock will still be present, so we need
     # to wait till the lock is expired, before we can delete
     # the backups
-    # vol.recurringUpdate(jobs=[])
     volume.recurringJobDelete(name=RECURRING_JOB_NAME, isGroup=False)
     backupstore.backupstore_wait_for_lock_expiration()
 
