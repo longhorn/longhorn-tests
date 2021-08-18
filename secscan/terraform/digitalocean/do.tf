@@ -42,7 +42,8 @@ resource "digitalocean_droplet" "longhorn-tests" {
   region   = "nyc3"
   size     = "s-4vcpu-8gb"
   ssh_keys = [digitalocean_ssh_key.do-ssh-key.fingerprint]
-  tags     = ["longhorn-secscan"]
+  tags     = ["longhorn-secscan", "DoNotDelete"]
+  user_data = "apt-get update -y && apt-get dist-upgrade -yyq"
 
 }
 
