@@ -10,4 +10,4 @@ fi
 sleep 30
 
 cd "${TF_VAR_tf_workspace}/terraform/digitalocean"
-terraform destroy -auto-approve -var-file=do.tfvars .
+terraform destroy -auto-approve -var-file=do.tfvars 
