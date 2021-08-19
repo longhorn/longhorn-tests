@@ -7,12 +7,12 @@
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language><atom:link href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.2.0/index.xml" rel="self" type="application/rss+xml" />
     <item>
-      <title>Test backing image upload</title>
+      <title>Test backing image</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.2.0/test-backing-image-upload/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.2.0/test-backing-image-upload/</guid>
-      <description>Prepare a large backing image file (make sure the size is greater than 1Gi and the uploading time is longer than 1 minute) in local. Click the backing image creation button in UI, choose Upload From Local, select the file then start upload. Wait for the initialization complete. Then the upload progress will be shown. During the uploading, verify the corresponding backing image data source pod won&amp;rsquo;t use too many CPU (50 ~ 200m) and memory(50 ~ 200Mi) resources.</description>
+      <description>Test upload  Prepare a large backing image file (make sure the size is greater than 1Gi and the uploading time is longer than 1 minute) in local. Click the backing image creation button in UI, choose Upload From Local, select the file then start upload. Wait for the initialization complete. Then the upload progress will be shown. During the uploading, verify the corresponding backing image data source pod won&amp;rsquo;t use too many CPU (50 ~ 200m) and memory(50 ~ 200Mi) resources.</description>
     </item>
     
   </channel>

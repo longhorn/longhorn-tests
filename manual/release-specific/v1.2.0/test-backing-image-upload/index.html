@@ -412,7 +412,7 @@
   
     <ul>
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.2.0/test-backing-image-upload/">Test backing image upload</a></li>
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.2.0/test-backing-image-upload/">Test backing image</a></li>
   
 
 </ul>
@@ -429,10 +429,11 @@
 </aside>
 
 <main style="padding: 1%; width: 70%;">
-  <h1 id="title">Test backing image upload</h1>
+  <h1 id="title">Test backing image</h1>
   <div>
     <article id="content">
-       <ol>
+       <h2 id="test-upload">Test upload</h2>
+<ol>
 <li>Prepare a large backing image file (make sure the size is greater than 1Gi and the uploading time is longer than 1 minute) in local.</li>
 <li>Click the backing image creation button in UI, choose <code>Upload From Local</code>, select the file then start upload.</li>
 <li>Wait for the initialization complete. Then the upload progress will be shown.</li>
@@ -444,6 +445,39 @@
 <li>Create and attach a volume with the backing image. Verify the data content is correct.</li>
 <li>Do cleanup.</li>
 </ol>
+<h2 id="test-csi-backing-image">Test CSI backing image</h2>
+<ol>
+<li>Create a valid backing image</li>
+<li>Create a StorageClass, which use the same backing image name but different data source type/parameters.</li>
+<li>Create a PVC with the StorageClass.
+==&gt; The corresponding creation should fail. The longhorn-csi-plugin will repeatly print out error logs like this <code>existing backing image %v data source is different from the parameters in the creation request or StorageClass</code>.</li>
+<li>Delete the PVC and the StorageClass.</li>
+<li>Recreate a StorageClass in which the backing image fields match the existing backing image.</li>
+<li>Create a PVC with the StorageClass.
+==&gt; The corresponding volume creation should succeed.</li>
+<li>Delete the PVC and the backing image.</li>
+<li>ReCreate a PVC with the StorageClass.
+==&gt; Longhorn will create a backing image then create the corresponding volume.</li>
+<li>Do cleanup.</li>
+</ol>
+<h2 id="test-backing-image-creation-via-yaml">Test backing image creation via YAML</h2>
+<ol>
+<li>Run
+<pre><code>echo &quot;
+apiVersion: longhorn.io/v1beta1
+kind: BackingImage
+metadata:
+  name: bi-test
+  namespace: longhorn-system
+spec:
+  sourceType: download
+  sourceParameters:
+    url: https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2
+&quot; | kubectl -n longhorn-system apply -f -
+</code></pre></li>
+<li>Verify the backing image is created and ready for use.</li>
+</ol>
+<p>Notice: It&rsquo;s better not to create a backing image with type <code>upload</code> via YAML. Otherwise, you need to find a way to send the upload HTTP request manually.</p>
 
     </article>
   </div>

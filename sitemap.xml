@@ -126,9 +126,9 @@
   </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/additional-printer-columns/</loc>
   </url><url>
-    <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/backing-image-during-upgrade/</loc>
-  </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.2.0/test-backing-image-upload/</loc>
+  </url><url>
+    <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/backing-image-during-upgrade/</loc>
   </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/stress/backup-listing/</loc>
   </url><url>
