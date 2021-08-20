@@ -82,6 +82,7 @@ RETRY_INTERVAL = 0.5
 RETRY_INTERVAL_LONG = 2
 RETRY_BACKUP_COUNTS = 300
 RETRY_BACKUP_INTERVAL = 1
+RETRY_SNAPSHOT_INTERVAL = 1
 RETRY_EXEC_COUNTS = 30
 RETRY_EXEC_INTERVAL = 5
 
@@ -240,6 +241,8 @@ K8S_ZONE_LABEL = &#34;topology.kubernetes.io/zone&#34;
 
 BACKING_IMAGE_SOURCE_TYPE_DOWNLOAD = &#34;download&#34;
 
+JOB_LABEL = &#34;recurring-job.longhorn.io&#34;
+
 
 def load_k8s_config():
     c = Configuration()
@@ -325,7 +328,6 @@ def cleanup_all_volumes(client):
         except Exception as e:
             print(&#34;\nException when cleanup volume &#34;, v)
             print(e)
-            pass
     for i in range(RETRY_COUNTS):
         volumes = client.list_volume()
         if len(volumes) == 0:
@@ -380,6 +382,16 @@ def create_backup(client, volname, data={}, labels={}):
     assert volume.lastBackupAt != &#34;&#34;
 
     return bv, b, snap, data
+
+
+def wait_for_backup_count(backup_volume, number, retry_counts=120):
+    ok = False
+    for _ in range(retry_counts):
+        if len(backup_volume.backupList()) == number:
+            ok = True
+            break
+        time.sleep(RETRY_BACKUP_INTERVAL)
+    assert ok
 
 
 def delete_backup(client, volume_name, backup_name):
@@ -981,6 +993,22 @@ def apps_api(request):
     return apps_api
 
 
+@pytest.fixture
+def batch_v1_beta_api(request):
+    &#34;&#34;&#34;
+    Create a new BatchV1beta1Api instance.
+    Returns:
+        A new BatchV1beta1Api Instance.
+    &#34;&#34;&#34;
+    c = Configuration()
+    c.assert_hostname = False
+    Configuration.set_default(c)
+    k8sconfig.load_incluster_config()
+    api = k8sclient.BatchV1beta1Api()
+
+    return api
+
+
 def get_pv_manifest(request):
     volume_name = generate_volume_name()
     pv_manifest = {
@@ -1346,6 +1374,8 @@ def cleanup_client():
     # cleanup test disks
     cleanup_test_disks(client)
 
+    cleanup_all_recurring_jobs(client)
+
     cleanup_all_volumes(client)
 
     if backing_image_feature_supported(client):
@@ -1564,7 +1594,7 @@ def wait_for_volume_delete(client, name):
 
 
 def wait_for_backup_volume_delete(client, name):
-    for _ in range(RETRY_COUNTS):
+    for _ in range(RETRY_BACKUP_COUNTS):
         bvs = client.list_backupVolume()
         found = False
         for bv in bvs:
@@ -1573,7 +1603,7 @@ def wait_for_backup_volume_delete(client, name):
                 break
         if not found:
             break
-        time.sleep(RETRY_INTERVAL)
+        time.sleep(RETRY_BACKUP_INTERVAL)
     assert not found
 
 
@@ -3363,6 +3393,20 @@ def create_snapshot(longhorn_api_client, volume_name):
     return snap
 
 
+def wait_for_snapshot_count(volume, number, retry_counts=120):
+    ok = False
+    for _ in range(retry_counts):
+        count = 0
+        for snapshot in volume.snapshotList():
+            if snapshot.removed is False:
+                count += 1
+        if count == number:
+            ok = True
+            break
+        time.sleep(RETRY_SNAPSHOT_INTERVAL)
+    assert ok
+
+
 def wait_and_get_pv_for_pvc(api, pvc_name):
     found = False
     for i in range(RETRY_COUNTS):
@@ -4086,7 +4130,6 @@ def cleanup_all_backing_images(client):
         except Exception as e:
             print(&#34;\nException when cleanup backing image &#34;, bi)
             print(e)
-            pass
     for i in range(RETRY_COUNTS):
         backing_images = client.list_backing_image()
         if len(backing_images) == 0:
@@ -4104,6 +4147,26 @@ def backing_image_feature_supported(client):
         return False
 
 
+def cleanup_all_recurring_jobs(client):
+    recurring_jobs = client.list_recurring_job()
+    for recurring_job in recurring_jobs:
+        try:
+            client.delete(recurring_job)
+        except Exception as e:
+            print(&#34;\nException when cleanup recurring job &#34;, recurring_job)
+            print(e)
+    wait_for_recurring_jobs_cleanup(client)
+
+
+def wait_for_recurring_jobs_cleanup(client):
+    for _ in range(RETRY_COUNTS):
+        policies = client.list_recurring_job()
+        if len(policies) == 0:
+            break
+        time.sleep(RETRY_INTERVAL)
+    assert len(client.list_recurring_job()) == 0
+
+
 # get correct engine image status based on Longhorn version
 # Longhorn &lt;= v1.1.0   ei.status == &#34;ready&#34;
 # Longhorn &gt;= v1.1.1   ei.status == &#34;deployed&#34;
@@ -4116,7 +4179,122 @@ def get_engine_image_status_value(client, ei_name):
 
 def update_setting(client, name, value):
     setting = client.by_id_setting(name)
-    client.update(setting, value=value)</code></pre>
+    client.update(setting, value=value)
+
+
+def create_recurring_jobs(client, recurring_jobs):
+    for name, spec in recurring_jobs.items():
+        client.create_recurring_job(Name=name,
+                                    Task=spec[&#34;task&#34;],
+                                    Groups=spec[&#34;groups&#34;],
+                                    Cron=spec[&#34;cron&#34;],
+                                    Retain=spec[&#34;retain&#34;],
+                                    Concurrency=spec[&#34;concurrency&#34;],
+                                    Labels=spec[&#34;labels&#34;])
+
+
+def check_recurring_jobs(client, recurring_jobs):
+    for name, spec in recurring_jobs.items():
+        recurring_job = client.by_id_recurring_job(name)
+        assert recurring_job.name == name
+        assert recurring_job.task == spec[&#34;task&#34;]
+        assert recurring_job.groups == spec[&#34;groups&#34;]
+        assert recurring_job.cron == spec[&#34;cron&#34;]
+        assert recurring_job.retain == spec[&#34;retain&#34;]
+        assert recurring_job.concurrency == spec[&#34;concurrency&#34;]
+
+
+def update_recurring_job(client, name, groups, labels, # NOQA
+                         cron=&#34;&#34;, retain=0, concurrency=0):
+    recurringJob = client.by_id_recurring_job(name)
+
+    update_groups = groups
+    update_labels = labels
+    update_cron = cron if len(cron) != 0 else recurringJob[&#34;cron&#34;]
+    update_retain = retain if retain != 0 else recurringJob[&#34;retain&#34;]
+    update_concurrency = \
+        concurrency if concurrency != 0 else recurringJob[&#34;concurrency&#34;]
+
+    client.update(recurringJob,
+                  groups=update_groups,
+                  task=recurringJob[&#34;task&#34;],
+                  cron=update_cron,
+                  retain=update_retain,
+                  concurrency=update_concurrency,
+                  labels=update_labels)
+
+
+def get_volume_recurring_jobs_and_groups(volume):
+    volumeJobs = volume.recurringJobList()
+    jobs = []
+    groups = []
+    for volumeJob in volumeJobs:
+        if volumeJob[&#39;isGroup&#39;]:
+            groups.append(volumeJob[&#39;name&#39;])
+        else:
+            jobs.append(volumeJob[&#39;name&#39;])
+    return jobs, groups
+
+
+def wait_for_volume_recurring_job_update(volume, jobs=[], groups=[]):
+    ok = False
+    for _ in range(RETRY_COUNTS):
+        volumeJobs, volumeGroups = get_volume_recurring_jobs_and_groups(volume)
+        try:
+            assert len(volumeGroups) == len(groups)
+            for group in groups:
+                assert group in volumeGroups
+
+            assert len(volumeJobs) == len(jobs)
+            for job in jobs:
+                assert job in volumeJobs
+
+            ok = True
+            break
+        except AssertionError:
+            time.sleep(RETRY_INTERVAL)
+    assert ok
+
+
+def wait_for_cron_job_create(batch_v1_beta_api, label=&#34;&#34;,
+                             retry_counts=RETRY_COUNTS):
+    exist = False
+    for _ in range(retry_counts):
+        job = batch_v1_beta_api.list_namespaced_cron_job(&#39;longhorn-system&#39;,
+                                                         label_selector=label)
+        if len(job.items) != 0:
+            exist = True
+            break
+        time.sleep(RETRY_INTERVAL)
+
+    assert exist
+
+
+def wait_for_cron_job_delete(batch_v1_beta_api, label=&#34;&#34;,
+                             retry_counts=RETRY_COUNTS):
+    exist = True
+    for _ in range(retry_counts):
+        job = batch_v1_beta_api.list_namespaced_cron_job(&#39;longhorn-system&#39;,
+                                                         label_selector=label)
+        if len(job.items) == 0:
+            exist = False
+            break
+        time.sleep(RETRY_INTERVAL)
+
+    assert not exist
+
+
+def wait_for_cron_job_count(batch_v1_beta_api, number, label=&#34;&#34;,
+                            retry_counts=RETRY_COUNTS):
+    ok = False
+    for _ in range(retry_counts):
+        jobs = batch_v1_beta_api.list_namespaced_cron_job(&#39;longhorn-system&#39;,
+                                                          label_selector=label)
+        if len(jobs.items) == number:
+            ok = True
+            break
+        time.sleep(RETRY_INTERVAL)
+    assert ok</code></pre>
 </details>
 </section>
 <section>
@@ -4232,6 +4410,33 @@ def apps_api(request):
         return True
     else:
         return False</code></pre>
+</details>
+</dd>
+<dt id="tests.common.batch_v1_beta_api"><code class="name flex">
+<span>def <span class="ident">batch_v1_beta_api</span></span>(<span>request)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Create a new BatchV1beta1Api instance.</p>
+<h2 id="returns">Returns</h2>
+<p>A new BatchV1beta1Api Instance.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@pytest.fixture
+def batch_v1_beta_api(request):
+    &#34;&#34;&#34;
+    Create a new BatchV1beta1Api instance.
+    Returns:
+        A new BatchV1beta1Api Instance.
+    &#34;&#34;&#34;
+    c = Configuration()
+    c.assert_hostname = False
+    Configuration.set_default(c)
+    k8sconfig.load_incluster_config()
+    api = k8sclient.BatchV1beta1Api()
+
+    return api</code></pre>
 </details>
 </dd>
 <dt id="tests.common.check_block_device_size"><code class="name flex">
@@ -4461,6 +4666,26 @@ def apps_api(request):
     return False</code></pre>
 </details>
 </dd>
+<dt id="tests.common.check_recurring_jobs"><code class="name flex">
+<span>def <span class="ident">check_recurring_jobs</span></span>(<span>client, recurring_jobs)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def check_recurring_jobs(client, recurring_jobs):
+    for name, spec in recurring_jobs.items():
+        recurring_job = client.by_id_recurring_job(name)
+        assert recurring_job.name == name
+        assert recurring_job.task == spec[&#34;task&#34;]
+        assert recurring_job.groups == spec[&#34;groups&#34;]
+        assert recurring_job.cron == spec[&#34;cron&#34;]
+        assert recurring_job.retain == spec[&#34;retain&#34;]
+        assert recurring_job.concurrency == spec[&#34;concurrency&#34;]</code></pre>
+</details>
+</dd>
 <dt id="tests.common.check_statefulset_existence"><code class="name flex">
 <span>def <span class="ident">check_statefulset_existence</span></span>(<span>api, ss_name, namespace='default')</span>
 </code></dt>
@@ -4606,13 +4831,32 @@ properly.
         except Exception as e:
             print(&#34;\nException when cleanup backing image &#34;, bi)
             print(e)
-            pass
     for i in range(RETRY_COUNTS):
         backing_images = client.list_backing_image()
         if len(backing_images) == 0:
             break
         time.sleep(RETRY_INTERVAL)
     assert len(client.list_backing_image()) == 0</code></pre>
+</details>
+</dd>
+<dt id="tests.common.cleanup_all_recurring_jobs"><code class="name flex">
+<span>def <span class="ident">cleanup_all_recurring_jobs</span></span>(<span>client)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def cleanup_all_recurring_jobs(client):
+    recurring_jobs = client.list_recurring_job()
+    for recurring_job in recurring_jobs:
+        try:
+            client.delete(recurring_job)
+        except Exception as e:
+            print(&#34;\nException when cleanup recurring job &#34;, recurring_job)
+            print(e)
+    wait_for_recurring_jobs_cleanup(client)</code></pre>
 </details>
 </dd>
 <dt id="tests.common.cleanup_all_volumes"><code class="name flex">
@@ -4639,7 +4883,6 @@ properly.
         except Exception as e:
             print(&#34;\nException when cleanup volume &#34;, v)
             print(e)
-            pass
     for i in range(RETRY_COUNTS):
         volumes = client.list_volume()
         if len(volumes) == 0:
@@ -4663,6 +4906,8 @@ properly.
     client = get_longhorn_api_client()
     # cleanup test disks
     cleanup_test_disks(client)
+
+    cleanup_all_recurring_jobs(client)
 
     cleanup_all_volumes(client)
 
@@ -5310,6 +5555,26 @@ created using a storage class).</p></div>
             &#39;readOnly&#39;: False
         }
     }</code></pre>
+</details>
+</dd>
+<dt id="tests.common.create_recurring_jobs"><code class="name flex">
+<span>def <span class="ident">create_recurring_jobs</span></span>(<span>client, recurring_jobs)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def create_recurring_jobs(client, recurring_jobs):
+    for name, spec in recurring_jobs.items():
+        client.create_recurring_job(Name=name,
+                                    Task=spec[&#34;task&#34;],
+                                    Groups=spec[&#34;groups&#34;],
+                                    Cron=spec[&#34;cron&#34;],
+                                    Retain=spec[&#34;retain&#34;],
+                                    Concurrency=spec[&#34;concurrency&#34;],
+                                    Labels=spec[&#34;labels&#34;])</code></pre>
 </details>
 </dd>
 <dt id="tests.common.create_snapshot"><code class="name flex">
@@ -6871,6 +7136,27 @@ been completed successfully</p></div>
     return claim.spec.volume_name</code></pre>
 </details>
 </dd>
+<dt id="tests.common.get_volume_recurring_jobs_and_groups"><code class="name flex">
+<span>def <span class="ident">get_volume_recurring_jobs_and_groups</span></span>(<span>volume)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_volume_recurring_jobs_and_groups(volume):
+    volumeJobs = volume.recurringJobList()
+    jobs = []
+    groups = []
+    for volumeJob in volumeJobs:
+        if volumeJob[&#39;isGroup&#39;]:
+            groups.append(volumeJob[&#39;name&#39;])
+        else:
+            jobs.append(volumeJob[&#39;name&#39;])
+    return jobs, groups</code></pre>
+</details>
+</dd>
 <dt id="tests.common.is_backupTarget_nfs"><code class="name flex">
 <span>def <span class="ident">is_backupTarget_nfs</span></span>(<span>s)</span>
 </code></dt>
@@ -8046,6 +8332,35 @@ def sts_name(request):
     subprocess.check_call(cmd)</code></pre>
 </details>
 </dd>
+<dt id="tests.common.update_recurring_job"><code class="name flex">
+<span>def <span class="ident">update_recurring_job</span></span>(<span>client, name, groups, labels, cron='', retain=0, concurrency=0)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def update_recurring_job(client, name, groups, labels, # NOQA
+                         cron=&#34;&#34;, retain=0, concurrency=0):
+    recurringJob = client.by_id_recurring_job(name)
+
+    update_groups = groups
+    update_labels = labels
+    update_cron = cron if len(cron) != 0 else recurringJob[&#34;cron&#34;]
+    update_retain = retain if retain != 0 else recurringJob[&#34;retain&#34;]
+    update_concurrency = \
+        concurrency if concurrency != 0 else recurringJob[&#34;concurrency&#34;]
+
+    client.update(recurringJob,
+                  groups=update_groups,
+                  task=recurringJob[&#34;task&#34;],
+                  cron=update_cron,
+                  retain=update_retain,
+                  concurrency=update_concurrency,
+                  labels=update_labels)</code></pre>
+</details>
+</dd>
 <dt id="tests.common.update_setting"><code class="name flex">
 <span>def <span class="ident">update_setting</span></span>(<span>client, name, value)</span>
 </code></dt>
@@ -8411,6 +8726,25 @@ def volume_name(request):
     return v</code></pre>
 </details>
 </dd>
+<dt id="tests.common.wait_for_backup_count"><code class="name flex">
+<span>def <span class="ident">wait_for_backup_count</span></span>(<span>backup_volume, number, retry_counts=120)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def wait_for_backup_count(backup_volume, number, retry_counts=120):
+    ok = False
+    for _ in range(retry_counts):
+        if len(backup_volume.backupList()) == number:
+            ok = True
+            break
+        time.sleep(RETRY_BACKUP_INTERVAL)
+    assert ok</code></pre>
+</details>
+</dd>
 <dt id="tests.common.wait_for_backup_delete"><code class="name flex">
 <span>def <span class="ident">wait_for_backup_delete</span></span>(<span>client, volume_name, backup_name)</span>
 </code></dt>
@@ -8532,7 +8866,7 @@ def volume_name(request):
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def wait_for_backup_volume_delete(client, name):
-    for _ in range(RETRY_COUNTS):
+    for _ in range(RETRY_BACKUP_COUNTS):
         bvs = client.list_backupVolume()
         found = False
         for bv in bvs:
@@ -8541,8 +8875,76 @@ def volume_name(request):
                 break
         if not found:
             break
-        time.sleep(RETRY_INTERVAL)
+        time.sleep(RETRY_BACKUP_INTERVAL)
     assert not found</code></pre>
+</details>
+</dd>
+<dt id="tests.common.wait_for_cron_job_count"><code class="name flex">
+<span>def <span class="ident">wait_for_cron_job_count</span></span>(<span>batch_v1_beta_api, number, label='', retry_counts=300)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def wait_for_cron_job_count(batch_v1_beta_api, number, label=&#34;&#34;,
+                            retry_counts=RETRY_COUNTS):
+    ok = False
+    for _ in range(retry_counts):
+        jobs = batch_v1_beta_api.list_namespaced_cron_job(&#39;longhorn-system&#39;,
+                                                          label_selector=label)
+        if len(jobs.items) == number:
+            ok = True
+            break
+        time.sleep(RETRY_INTERVAL)
+    assert ok</code></pre>
+</details>
+</dd>
+<dt id="tests.common.wait_for_cron_job_create"><code class="name flex">
+<span>def <span class="ident">wait_for_cron_job_create</span></span>(<span>batch_v1_beta_api, label='', retry_counts=300)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def wait_for_cron_job_create(batch_v1_beta_api, label=&#34;&#34;,
+                             retry_counts=RETRY_COUNTS):
+    exist = False
+    for _ in range(retry_counts):
+        job = batch_v1_beta_api.list_namespaced_cron_job(&#39;longhorn-system&#39;,
+                                                         label_selector=label)
+        if len(job.items) != 0:
+            exist = True
+            break
+        time.sleep(RETRY_INTERVAL)
+
+    assert exist</code></pre>
+</details>
+</dd>
+<dt id="tests.common.wait_for_cron_job_delete"><code class="name flex">
+<span>def <span class="ident">wait_for_cron_job_delete</span></span>(<span>batch_v1_beta_api, label='', retry_counts=300)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def wait_for_cron_job_delete(batch_v1_beta_api, label=&#34;&#34;,
+                             retry_counts=RETRY_COUNTS):
+    exist = True
+    for _ in range(retry_counts):
+        job = batch_v1_beta_api.list_namespaced_cron_job(&#39;longhorn-system&#39;,
+                                                         label_selector=label)
+        if len(job.items) == 0:
+            exist = False
+            break
+        time.sleep(RETRY_INTERVAL)
+
+    assert not exist</code></pre>
 </details>
 </dd>
 <dt id="tests.common.wait_for_device_login"><code class="name flex">
@@ -9149,6 +9551,24 @@ def volume_name(request):
     return status.fromReplica, status.replica</code></pre>
 </details>
 </dd>
+<dt id="tests.common.wait_for_recurring_jobs_cleanup"><code class="name flex">
+<span>def <span class="ident">wait_for_recurring_jobs_cleanup</span></span>(<span>client)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def wait_for_recurring_jobs_cleanup(client):
+    for _ in range(RETRY_COUNTS):
+        policies = client.list_recurring_job()
+        if len(policies) == 0:
+            break
+        time.sleep(RETRY_INTERVAL)
+    assert len(client.list_recurring_job()) == 0</code></pre>
+</details>
+</dd>
 <dt id="tests.common.wait_for_replica_directory"><code class="name flex">
 <span>def <span class="ident">wait_for_replica_directory</span></span>(<span>)</span>
 </code></dt>
@@ -9274,6 +9694,29 @@ def volume_name(request):
     assert unexpect_fail == 0
     assert len(volume.replicas) == expect_success + expect_fail
     return volume</code></pre>
+</details>
+</dd>
+<dt id="tests.common.wait_for_snapshot_count"><code class="name flex">
+<span>def <span class="ident">wait_for_snapshot_count</span></span>(<span>volume, number, retry_counts=120)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def wait_for_snapshot_count(volume, number, retry_counts=120):
+    ok = False
+    for _ in range(retry_counts):
+        count = 0
+        for snapshot in volume.snapshotList():
+            if snapshot.removed is False:
+                count += 1
+        if count == number:
+            ok = True
+            break
+        time.sleep(RETRY_SNAPSHOT_INTERVAL)
+    assert ok</code></pre>
 </details>
 </dd>
 <dt id="tests.common.wait_for_snapshot_purge"><code class="name flex">
@@ -9702,6 +10145,35 @@ def volume_name(request):
         time.sleep(RETRY_INTERVAL)
     assert ready
     return v</code></pre>
+</details>
+</dd>
+<dt id="tests.common.wait_for_volume_recurring_job_update"><code class="name flex">
+<span>def <span class="ident">wait_for_volume_recurring_job_update</span></span>(<span>volume, jobs=[], groups=[])</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def wait_for_volume_recurring_job_update(volume, jobs=[], groups=[]):
+    ok = False
+    for _ in range(RETRY_COUNTS):
+        volumeJobs, volumeGroups = get_volume_recurring_jobs_and_groups(volume)
+        try:
+            assert len(volumeGroups) == len(groups)
+            for group in groups:
+                assert group in volumeGroups
+
+            assert len(volumeJobs) == len(jobs)
+            for job in jobs:
+                assert job in volumeJobs
+
+            ok = True
+            break
+        except AssertionError:
+            time.sleep(RETRY_INTERVAL)
+    assert ok</code></pre>
 </details>
 </dd>
 <dt id="tests.common.wait_for_volume_replica_auto_balance_update"><code class="name flex">
@@ -10287,6 +10759,7 @@ volume. Trigger a failed assertion of one is detected.
 <li><code><a title="tests.common.apps_api" href="#tests.common.apps_api">apps_api</a></code></li>
 <li><code><a title="tests.common.assert_backup_state" href="#tests.common.assert_backup_state">assert_backup_state</a></code></li>
 <li><code><a title="tests.common.backing_image_feature_supported" href="#tests.common.backing_image_feature_supported">backing_image_feature_supported</a></code></li>
+<li><code><a title="tests.common.batch_v1_beta_api" href="#tests.common.batch_v1_beta_api">batch_v1_beta_api</a></code></li>
 <li><code><a title="tests.common.check_block_device_size" href="#tests.common.check_block_device_size">check_block_device_size</a></code></li>
 <li><code><a title="tests.common.check_csi" href="#tests.common.check_csi">check_csi</a></code></li>
 <li><code><a title="tests.common.check_csi_expansion" href="#tests.common.check_csi_expansion">check_csi_expansion</a></code></li>
@@ -10295,6 +10768,7 @@ volume. Trigger a failed assertion of one is detected.
 <li><code><a title="tests.common.check_pod_existence" href="#tests.common.check_pod_existence">check_pod_existence</a></code></li>
 <li><code><a title="tests.common.check_pv_existence" href="#tests.common.check_pv_existence">check_pv_existence</a></code></li>
 <li><code><a title="tests.common.check_pvc_existence" href="#tests.common.check_pvc_existence">check_pvc_existence</a></code></li>
+<li><code><a title="tests.common.check_recurring_jobs" href="#tests.common.check_recurring_jobs">check_recurring_jobs</a></code></li>
 <li><code><a title="tests.common.check_statefulset_existence" href="#tests.common.check_statefulset_existence">check_statefulset_existence</a></code></li>
 <li><code><a title="tests.common.check_volume_data" href="#tests.common.check_volume_data">check_volume_data</a></code></li>
 <li><code><a title="tests.common.check_volume_endpoint" href="#tests.common.check_volume_endpoint">check_volume_endpoint</a></code></li>
@@ -10302,6 +10776,7 @@ volume. Trigger a failed assertion of one is detected.
 <li><code><a title="tests.common.check_volume_last_backup" href="#tests.common.check_volume_last_backup">check_volume_last_backup</a></code></li>
 <li><code><a title="tests.common.check_volume_replicas" href="#tests.common.check_volume_replicas">check_volume_replicas</a></code></li>
 <li><code><a title="tests.common.cleanup_all_backing_images" href="#tests.common.cleanup_all_backing_images">cleanup_all_backing_images</a></code></li>
+<li><code><a title="tests.common.cleanup_all_recurring_jobs" href="#tests.common.cleanup_all_recurring_jobs">cleanup_all_recurring_jobs</a></code></li>
 <li><code><a title="tests.common.cleanup_all_volumes" href="#tests.common.cleanup_all_volumes">cleanup_all_volumes</a></code></li>
 <li><code><a title="tests.common.cleanup_client" href="#tests.common.cleanup_client">cleanup_client</a></code></li>
 <li><code><a title="tests.common.cleanup_host_disk" href="#tests.common.cleanup_host_disk">cleanup_host_disk</a></code></li>
@@ -10324,6 +10799,7 @@ volume. Trigger a failed assertion of one is detected.
 <li><code><a title="tests.common.create_pvc" href="#tests.common.create_pvc">create_pvc</a></code></li>
 <li><code><a title="tests.common.create_pvc_for_volume" href="#tests.common.create_pvc_for_volume">create_pvc_for_volume</a></code></li>
 <li><code><a title="tests.common.create_pvc_spec" href="#tests.common.create_pvc_spec">create_pvc_spec</a></code></li>
+<li><code><a title="tests.common.create_recurring_jobs" href="#tests.common.create_recurring_jobs">create_recurring_jobs</a></code></li>
 <li><code><a title="tests.common.create_snapshot" href="#tests.common.create_snapshot">create_snapshot</a></code></li>
 <li><code><a title="tests.common.create_storage_class" href="#tests.common.create_storage_class">create_storage_class</a></code></li>
 <li><code><a title="tests.common.csi_pv" href="#tests.common.csi_pv">csi_pv</a></code></li>
@@ -10395,6 +10871,7 @@ volume. Trigger a failed assertion of one is detected.
 <li><code><a title="tests.common.get_volume_endpoint" href="#tests.common.get_volume_endpoint">get_volume_endpoint</a></code></li>
 <li><code><a title="tests.common.get_volume_engine" href="#tests.common.get_volume_engine">get_volume_engine</a></code></li>
 <li><code><a title="tests.common.get_volume_name" href="#tests.common.get_volume_name">get_volume_name</a></code></li>
+<li><code><a title="tests.common.get_volume_recurring_jobs_and_groups" href="#tests.common.get_volume_recurring_jobs_and_groups">get_volume_recurring_jobs_and_groups</a></code></li>
 <li><code><a title="tests.common.is_backupTarget_nfs" href="#tests.common.is_backupTarget_nfs">is_backupTarget_nfs</a></code></li>
 <li><code><a title="tests.common.is_backupTarget_s3" href="#tests.common.is_backupTarget_s3">is_backupTarget_s3</a></code></li>
 <li><code><a title="tests.common.iscsi_login" href="#tests.common.iscsi_login">iscsi_login</a></code></li>
@@ -10434,6 +10911,7 @@ volume. Trigger a failed assertion of one is detected.
 <li><code><a title="tests.common.storage_class" href="#tests.common.storage_class">storage_class</a></code></li>
 <li><code><a title="tests.common.sts_name" href="#tests.common.sts_name">sts_name</a></code></li>
 <li><code><a title="tests.common.umount_disk" href="#tests.common.umount_disk">umount_disk</a></code></li>
+<li><code><a title="tests.common.update_recurring_job" href="#tests.common.update_recurring_job">update_recurring_job</a></code></li>
 <li><code><a title="tests.common.update_setting" href="#tests.common.update_setting">update_setting</a></code></li>
 <li><code><a title="tests.common.update_statefulset_manifests" href="#tests.common.update_statefulset_manifests">update_statefulset_manifests</a></code></li>
 <li><code><a title="tests.common.volume_name" href="#tests.common.volume_name">volume_name</a></code></li>
@@ -10451,11 +10929,15 @@ volume. Trigger a failed assertion of one is detected.
 <li><code><a title="tests.common.wait_for_backing_image_delete" href="#tests.common.wait_for_backing_image_delete">wait_for_backing_image_delete</a></code></li>
 <li><code><a title="tests.common.wait_for_backing_image_disk_cleanup" href="#tests.common.wait_for_backing_image_disk_cleanup">wait_for_backing_image_disk_cleanup</a></code></li>
 <li><code><a title="tests.common.wait_for_backup_completion" href="#tests.common.wait_for_backup_completion">wait_for_backup_completion</a></code></li>
+<li><code><a title="tests.common.wait_for_backup_count" href="#tests.common.wait_for_backup_count">wait_for_backup_count</a></code></li>
 <li><code><a title="tests.common.wait_for_backup_delete" href="#tests.common.wait_for_backup_delete">wait_for_backup_delete</a></code></li>
 <li><code><a title="tests.common.wait_for_backup_restore_completed" href="#tests.common.wait_for_backup_restore_completed">wait_for_backup_restore_completed</a></code></li>
 <li><code><a title="tests.common.wait_for_backup_state" href="#tests.common.wait_for_backup_state">wait_for_backup_state</a></code></li>
 <li><code><a title="tests.common.wait_for_backup_to_start" href="#tests.common.wait_for_backup_to_start">wait_for_backup_to_start</a></code></li>
 <li><code><a title="tests.common.wait_for_backup_volume_delete" href="#tests.common.wait_for_backup_volume_delete">wait_for_backup_volume_delete</a></code></li>
+<li><code><a title="tests.common.wait_for_cron_job_count" href="#tests.common.wait_for_cron_job_count">wait_for_cron_job_count</a></code></li>
+<li><code><a title="tests.common.wait_for_cron_job_create" href="#tests.common.wait_for_cron_job_create">wait_for_cron_job_create</a></code></li>
+<li><code><a title="tests.common.wait_for_cron_job_delete" href="#tests.common.wait_for_cron_job_delete">wait_for_cron_job_delete</a></code></li>
 <li><code><a title="tests.common.wait_for_device_login" href="#tests.common.wait_for_device_login">wait_for_device_login</a></code></li>
 <li><code><a title="tests.common.wait_for_disk_conditions" href="#tests.common.wait_for_disk_conditions">wait_for_disk_conditions</a></code></li>
 <li><code><a title="tests.common.wait_for_disk_status" href="#tests.common.wait_for_disk_status">wait_for_disk_status</a></code></li>
@@ -10479,10 +10961,12 @@ volume. Trigger a failed assertion of one is detected.
 <li><code><a title="tests.common.wait_for_pvc_phase" href="#tests.common.wait_for_pvc_phase">wait_for_pvc_phase</a></code></li>
 <li><code><a title="tests.common.wait_for_rebuild_complete" href="#tests.common.wait_for_rebuild_complete">wait_for_rebuild_complete</a></code></li>
 <li><code><a title="tests.common.wait_for_rebuild_start" href="#tests.common.wait_for_rebuild_start">wait_for_rebuild_start</a></code></li>
+<li><code><a title="tests.common.wait_for_recurring_jobs_cleanup" href="#tests.common.wait_for_recurring_jobs_cleanup">wait_for_recurring_jobs_cleanup</a></code></li>
 <li><code><a title="tests.common.wait_for_replica_directory" href="#tests.common.wait_for_replica_directory">wait_for_replica_directory</a></code></li>
 <li><code><a title="tests.common.wait_for_replica_failed" href="#tests.common.wait_for_replica_failed">wait_for_replica_failed</a></code></li>
 <li><code><a title="tests.common.wait_for_replica_running" href="#tests.common.wait_for_replica_running">wait_for_replica_running</a></code></li>
 <li><code><a title="tests.common.wait_for_replica_scheduled" href="#tests.common.wait_for_replica_scheduled">wait_for_replica_scheduled</a></code></li>
+<li><code><a title="tests.common.wait_for_snapshot_count" href="#tests.common.wait_for_snapshot_count">wait_for_snapshot_count</a></code></li>
 <li><code><a title="tests.common.wait_for_snapshot_purge" href="#tests.common.wait_for_snapshot_purge">wait_for_snapshot_purge</a></code></li>
 <li><code><a title="tests.common.wait_for_volume_attached" href="#tests.common.wait_for_volume_attached">wait_for_volume_attached</a></code></li>
 <li><code><a title="tests.common.wait_for_volume_condition_restore" href="#tests.common.wait_for_volume_condition_restore">wait_for_volume_condition_restore</a></code></li>
@@ -10502,6 +10986,7 @@ volume. Trigger a failed assertion of one is detected.
 <li><code><a title="tests.common.wait_for_volume_healthy_no_frontend" href="#tests.common.wait_for_volume_healthy_no_frontend">wait_for_volume_healthy_no_frontend</a></code></li>
 <li><code><a title="tests.common.wait_for_volume_migration_node" href="#tests.common.wait_for_volume_migration_node">wait_for_volume_migration_node</a></code></li>
 <li><code><a title="tests.common.wait_for_volume_migration_ready" href="#tests.common.wait_for_volume_migration_ready">wait_for_volume_migration_ready</a></code></li>
+<li><code><a title="tests.common.wait_for_volume_recurring_job_update" href="#tests.common.wait_for_volume_recurring_job_update">wait_for_volume_recurring_job_update</a></code></li>
 <li><code><a title="tests.common.wait_for_volume_replica_auto_balance_update" href="#tests.common.wait_for_volume_replica_auto_balance_update">wait_for_volume_replica_auto_balance_update</a></code></li>
 <li><code><a title="tests.common.wait_for_volume_replica_count" href="#tests.common.wait_for_volume_replica_count">wait_for_volume_replica_count</a></code></li>
 <li><code><a title="tests.common.wait_for_volume_replicas_mode" href="#tests.common.wait_for_volume_replicas_mode">wait_for_volume_replicas_mode</a></code></li>

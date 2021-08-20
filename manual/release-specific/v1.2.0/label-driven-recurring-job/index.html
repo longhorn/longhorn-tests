@@ -432,47 +432,38 @@
 </aside>
 
 <main style="padding: 1%; width: 70%;">
-  <h1 id="title">Backing Image on a down node</h1>
+  <h1 id="title">Test Label-driven Recurring Job</h1>
   <div>
     <article id="content">
-       <ol>
-<li>Update the settings:
-<ol>
-<li>Disable <code>Node Soft Anti-affinity</code>.</li>
-<li>Set <code>Replica Replenishment Wait Interval</code> to a relatively long value.</li>
-</ol>
-</li>
-<li>Create a backing image. Wait for the backing image being ready in the 1st disk.</li>
-<li>Create 2 volumes with the backing image and attach them on different nodes. Verify:
-<ul>
-<li>the disk state map of the backing image contains the disks of all replicas, and the state is running for all disks.</li>
-<li>the backing image content is correct.</li>
-</ul>
-</li>
-<li>Write random data to the volumes.</li>
-<li>Power off 2 nodes. One node should contain one volume engine. Verify that
-<ul>
-<li>the related disk file state in the backing image will become <code>Unknown</code>.</li>
-<li>the volume on the running node still works fine but is state <code>Degraded</code>, and the content is correct.</li>
-<li>the volume on the down node become <code>Unknown</code>.</li>
-</ul>
-</li>
-<li>Power on the node that contains one volume engine. Verify
-<ul>
-<li>the failed replica of the <code>Degraded</code> volume can be reused.</li>
-<li>the volume on the down node will be recovered automatically. And the data is correct.</li>
-<li>the backing image will be recovered automatically.</li>
-<li>the backing image file on this node will be reused when the related backing image manager pod is recovered (by check the pod log).</li>
-</ul>
-</li>
-<li>Delete all volumes and the backing image. Verify the backing image manager can be deleted once forcing removing the related terminating pod.</li>
-</ol>
-<h4 id="available-test-backing-image-urls">Available test backing image URLs:</h4>
-<pre><code>https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2
-https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.raw
-https://cloud-images.ubuntu.com/minimal/releases/focal/release-20200729/ubuntu-20.04-minimal-cloudimg-amd64.img
-https://github.com/rancher/k3os/releases/download/v0.11.0/k3os-amd64.iso 
-</code></pre>
+       <h2 id="related-issue">Related issue</h2>
+<p><a href="https://github.com/longhorn/longhorn/issues/467">https://github.com/longhorn/longhorn/issues/467</a></p>
+<h2 id="test-recurring-job-concurrency">Test Recurring Job Concurrency</h2>
+<p><strong>Given</strong> create <code>snapshot</code> recurring job with <code>concurrency</code> set to <code>2</code> and include <code>snapshot</code> recurring job <code>default</code> in groups.</p>
+<p><strong>When</strong> create volume <code>test-job-1</code>.<br>
+<em>And</em> create volume <code>test-job-2</code>.<br>
+<em>And</em> create volume <code>test-job-3</code>.<br>
+<em>And</em> create volume <code>test-job-4</code>.<br>
+<em>And</em> create volume <code>test-job-5</code>.</p>
+<p><strong>Then</strong> moniter the cron job pod log.<br>
+<em>And</em> should see 2 jobs created concurrently.</p>
+<p><strong>When</strong> update <code>snapshot1</code> recurring job with <code>concurrency</code> set to <code>3</code>.<br>
+<strong>Then</strong> moniter the cron job pod log.
+<em>And</em> should see 3 jobs created concurrently.</p>
+<h2 id="test-upgrade-migration-for-recurring-job">Test Upgrade Migration For Recurring Job</h2>
+<p><strong>Given</strong> cluster with Longhorn version prior to v1.2.0.<br>
+<em>And</em> storageclass with recurring job <code>snapshot</code> and <code>backup</code>.<br>
+<em>And</em> volume <code>test-job-1</code> created, and attached.</p>
+<p><strong>When</strong> upgrade Longhorn to v1.2.0.</p>
+<p><strong>Then</strong> should have new recurring job CR created with format <code>&lt;jobTask&gt;-&lt;jobRetain&gt;-&lt;hash(jobCron)&gt;-&lt;hash(jobLabelJSON)&gt;</code>.<br>
+<em>And</em> volume should be labeled with <code>recurring-job.longhorn.io/&lt;jobTask&gt;-&lt;jobRetain&gt;-&lt;hash(jobCron)&gt;-&lt;hash(jobLabelJSON)&gt;: enabled</code>.<br>
+<em>And</em> recurringJob should be removed in volume spec.
+<em>And</em> storageClass in <code>longhorn-storageclass</code> configMap should not have <code>recurringJobs</code>.<br>
+<em>And</em> storageClass in <code>longhorn-storageclass</code> configMap should     have <code>recurringJobSelector</code>.</p>
+<pre><code>recurringJobSelector:{&quot;name&quot;:&quot;snapshot-1-97893a05-77074ba4&quot;,&quot;isGroup&quot;:fals{&quot;name&quot;:&quot;backup-1-954b3c8c-59467025&quot;,&quot;isGroup&quot;:false}]'
+</code></pre><p>When create new PVC.<br>
+And volume should be labeled with items in <code>recurringJobSelector</code>.<br>
+And recurringJob should not exist in volume spec.</p>
+
     </article>
   </div>
 </main>

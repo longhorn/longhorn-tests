@@ -609,6 +609,25 @@ Case 1: Kubelet restart on RKE1 multi node cluster:  Create a RKE1 cluster with 
     </item>
     
     <item>
+      <title>Test Label-driven Recurring Job</title>
+      <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.2.0/label-driven-recurring-job/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.2.0/label-driven-recurring-job/</guid>
+      <description>Related issue https://github.com/longhorn/longhorn/issues/467
+Test Recurring Job Concurrency Given create snapshot recurring job with concurrency set to 2 and include snapshot recurring job default in groups.
+When create volume test-job-1.
+And create volume test-job-2.
+And create volume test-job-3.
+And create volume test-job-4.
+And create volume test-job-5.
+Then moniter the cron job pod log.
+And should see 2 jobs created concurrently.
+When update snapshot1 recurring job with concurrency set to 3.
+Then moniter the cron job pod log.</description>
+    </item>
+    
+    <item>
       <title>Test Longhorn Deployment on RKE2 with CIS-1.5 profile</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/environment/rke2-cis-1.5-profile/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>

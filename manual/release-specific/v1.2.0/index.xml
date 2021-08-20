@@ -15,5 +15,24 @@
       <description>Test upload  Prepare a large backing image file (make sure the size is greater than 1Gi and the uploading time is longer than 1 minute) in local. Click the backing image creation button in UI, choose Upload From Local, select the file then start upload. Wait for the initialization complete. Then the upload progress will be shown. During the uploading, verify the corresponding backing image data source pod won&amp;rsquo;t use too many CPU (50 ~ 200m) and memory(50 ~ 200Mi) resources.</description>
     </item>
     
+    <item>
+      <title>Test Label-driven Recurring Job</title>
+      <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.2.0/label-driven-recurring-job/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.2.0/label-driven-recurring-job/</guid>
+      <description>Related issue https://github.com/longhorn/longhorn/issues/467
+Test Recurring Job Concurrency Given create snapshot recurring job with concurrency set to 2 and include snapshot recurring job default in groups.
+When create volume test-job-1.
+And create volume test-job-2.
+And create volume test-job-3.
+And create volume test-job-4.
+And create volume test-job-5.
+Then moniter the cron job pod log.
+And should see 2 jobs created concurrently.
+When update snapshot1 recurring job with concurrency set to 3.
+Then moniter the cron job pod log.</description>
+    </item>
+    
   </channel>
 </rss>
