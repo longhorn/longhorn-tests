@@ -1379,13 +1379,13 @@ def test_recurring_job_multiple_volumes(set_random_backupstore, client, batch_v1
         `backup2` cron job exist.
     And write data to  `test-job-1` volume.
     And 2 snapshot exist in `test-job-1` volume.
-    And 1 backup   exist in `test-job-2` volume.
+    And 1 backup   exist in `test-job-1` volume.
 
     When create and attach volume `test-job-2`.
          wait for volume `test-job-2` to be healthy.
     And `default` group exist in `test-job-2` volume recurring job label.
     And write data to  `test-job-1` volume.
-    Then 2 snapshot exist in `test-job-1` volume.
+    Then 2 snapshot exist in `test-job-2` volume.
          1 backup   exist in `test-job-2` volume.
 
     When add `backup2` in `test-job-2` volume label.
@@ -2799,13 +2799,13 @@ And &lt;code&gt;backup1&lt;/code&gt; cron job exist.
 And write data to</code>test-job-1<code>volume.
 And 2 snapshot exist in</code>test-job-1<code>volume.
 And 1 backup
-exist in</code>test-job-2` volume.</p>
+exist in</code>test-job-1` volume.</p>
 <p>When create and attach volume <code>test-job-2</code>.
 wait for volume <code>test-job-2</code> to be healthy.
 And <code>default</code> group exist in <code>test-job-2</code> volume recurring job label.
 And write data to
 <code>test-job-1</code> volume.
-Then 2 snapshot exist in <code>test-job-1</code> volume.
+Then 2 snapshot exist in <code>test-job-2</code> volume.
 1 backup
 exist in <code>test-job-2</code> volume.</p>
 <p>When add <code>backup2</code> in <code>test-job-2</code> volume label.
@@ -2834,13 +2834,13 @@ def test_recurring_job_multiple_volumes(set_random_backupstore, client, batch_v1
         `backup2` cron job exist.
     And write data to  `test-job-1` volume.
     And 2 snapshot exist in `test-job-1` volume.
-    And 1 backup   exist in `test-job-2` volume.
+    And 1 backup   exist in `test-job-1` volume.
 
     When create and attach volume `test-job-2`.
          wait for volume `test-job-2` to be healthy.
     And `default` group exist in `test-job-2` volume recurring job label.
     And write data to  `test-job-1` volume.
-    Then 2 snapshot exist in `test-job-1` volume.
+    Then 2 snapshot exist in `test-job-2` volume.
          1 backup   exist in `test-job-2` volume.
 
     When add `backup2` in `test-job-2` volume label.
