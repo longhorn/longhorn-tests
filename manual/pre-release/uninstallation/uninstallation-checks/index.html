@@ -435,37 +435,25 @@
 </aside>
 
 <main style="padding: 1%; width: 70%;">
-  <h1 id="title">Replica Rebuilding</h1>
+  <h1 id="title">Uninstallation Checks</h1>
   <div>
     <article id="content">
-       <ol>
-<li>Create and attach a volume.</li>
-<li>Write a large amount of data to the volume.</li>
-<li>Disable disk scheduling and the node scheduling for one replica.</li>
-<li>Crash the replica progress. Verify
+       <h3 id="prerequisites">Prerequisites</h3>
 <ol>
-<li>the corresponding replica will become ERROR.</li>
-<li>the volume will keep robustness Degraded.</li>
+<li>Have a setup of Longhorn installed on a kubernetes cluster.</li>
+<li>Have few volumes backups stored on S3/NFS backup store.</li>
+<li>Have one DR volume created (not activated) in another cluster with a volume in current cluster.</li>
 </ol>
-</li>
-<li>Enable the disk scheduling. Verify nothing changes.</li>
-<li>Enable the node scheduling. Verify.
+<h3 id="test-steps">Test steps</h3>
 <ol>
-<li>the failed replica is reused by Longhorn.</li>
-<li>the rebuilding progress in UI page looks good.</li>
-<li>the data content is correct after rebuilding.</li>
-<li>volume r/w works fine.</li>
+<li>Uninstall Longhorn.</li>
+<li>Check the logs of the job <code>longhorn-uninstall</code>, make sure there is no error.</li>
+<li>Check all the components of Longhorn from the namespace longhorn-system are uninstalled. E.g. Longhorn manager, Longhorn driver, Longhorn UI, instance manager, engine image, CSI driver etc.</li>
+<li>Check all the CRDs are removed <code>kubectl get crds | grep longhorn</code>.</li>
+<li>Check the backup stores, the backups taken should NOT be removed.</li>
+<li>Activate the DR volume in the other cluster and check the data.</li>
 </ol>
-</li>
-<li>Direct delete one replica via UI. Verify
-<ol>
-<li>a new replica will be replenished immediately.</li>
-<li>the rebuilding progress in UI page looks good.</li>
-<li>the data content is correct after rebuilding.</li>
-<li>volume r/w works fine.</li>
-</ol>
-</li>
-</ol>
+<p><strong>Note:</strong> If uninstalling from Rancher cluster using cluster explorer, uninstall Longhorn first then the crds.</p>
 
     </article>
   </div>
