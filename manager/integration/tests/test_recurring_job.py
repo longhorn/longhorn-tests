@@ -1351,13 +1351,13 @@ def test_recurring_job_multiple_volumes(set_random_backupstore, client, batch_v1
         `backup2` cron job exist.
     And write data to  `test-job-1` volume.
     And 2 snapshot exist in `test-job-1` volume.
-    And 1 backup   exist in `test-job-2` volume.
+    And 1 backup   exist in `test-job-1` volume.
 
     When create and attach volume `test-job-2`.
          wait for volume `test-job-2` to be healthy.
     And `default` group exist in `test-job-2` volume recurring job label.
     And write data to  `test-job-1` volume.
-    Then 2 snapshot exist in `test-job-1` volume.
+    Then 2 snapshot exist in `test-job-2` volume.
          1 backup   exist in `test-job-2` volume.
 
     When add `backup2` in `test-job-2` volume label.
