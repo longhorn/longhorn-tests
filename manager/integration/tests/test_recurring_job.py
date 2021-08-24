@@ -44,6 +44,7 @@ from common import check_pod_existence
 
 from common import crash_engine_process_with_sigkill
 
+from common import wait_for_backup_volume
 from common import wait_for_backup_completion
 from common import wait_for_backup_count
 from common import wait_for_backup_to_start
@@ -492,10 +493,7 @@ def recurring_job_labels_test(client, labels, volume_name, size=SIZE, backing_im
     assert b.labels.get(RECURRING_JOB_LABEL) == RECURRING_JOB_NAME
     # One extra Label from RecurringJob.
     assert len(b.labels) == len(labels) + 1
-    if backing_image:
-        assert bv.backingImageName == backing_image
-        assert bv.backingImageChecksum != ""
-        assert b.volumeBackingImageName == backing_image
+    wait_for_backup_volume(client, volume_name, backing_image)
 
 
 @pytest.mark.csi  # NOQA

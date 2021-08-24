@@ -2850,6 +2850,19 @@ def is_backupTarget_nfs(s):
     return s.startswith("nfs://")
 
 
+def wait_for_backup_volume(client, vol_name, backing_image=""):
+    for _ in range(RETRY_BACKUP_COUNTS):
+        bv = client.by_id_backupVolume(vol_name)
+        if bv is not None:
+            if backing_image == "":
+                break
+            if bv.backingImageName == backing_image \
+                    and bv.backingImageChecksum != "":
+                break
+        time.sleep(RETRY_BACKUP_INTERVAL)
+    assert bv is not None, "failed to find backup volume " + vol_name
+
+
 def find_backup(client, vol_name, snap_name):
     """
     find_backup will look for a backup on the backupstore
