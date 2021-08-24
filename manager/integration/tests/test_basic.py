@@ -1690,6 +1690,9 @@ def test_listing_backup_volume(client, backing_image=""):   # NOQA
     bv5, b5 = common.find_backup(client, volume3_name, snap5.name)
     common.delete_backup(client, volume3_name, b5.name)
 
+    common.delete_backup_volume(client, volume3_name)
+    common.wait_for_backup_volume_delete(client, volume3_name)
+
     volume1.detach(hostId="")
     volume1 = common.wait_for_volume_detached(client, volume1_name)
     client.delete(volume1)
