@@ -1,19 +1,21 @@
 #!/bin/bash
 
+set -x
+
 SEVERITY=${1}
 
 mkdir -p /junit-reports /templates
 
-REPO="longhornio"
-IMAGES=("longhorn-manager" "longhorn-engine" "longhorn-instance-manager" "longhorn-ui" "longhorn-share-manager" "backing-image-manager")
-TAG="master-head"
+wget https://raw.githubusercontent.com/longhorn/longhorn-manager/master/deploy/longhorn-images.txt
+IMAGES=($(< longhorn-images.txt))
 
 wget -O /templates/junit.tpl https://raw.githubusercontent.com/longhorn/longhorn-tests/master/secscan/templates/junit.tpl
 
 for IMAGE in ${IMAGES[@]}; do
-	sed "s/LONGHORN_IMAGE_NAME/${IMAGE}/" /templates/junit.tpl > /templates/junit-${IMAGE}.tpl
+	IMAGE_NAME=`echo "${IMAGE}" | awk -F"/" '{print $2}' | tr ':' '-'`
+	sed "s/LONGHORN_IMAGE_NAME/${IMAGE_NAME}/" /templates/junit.tpl > /templates/junit-${IMAGE_NAME}.tpl
 
-	docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v /templates/junit-${IMAGE}.tpl:/contrib/junit.tpl -v /junit-reports:/root/ aquasec/trivy image  --severity ${SEVERITY} --format template --template "@/contrib/junit.tpl" -o /root/${IMAGE}-junit-report.xml ${REPO}/${IMAGE}:${TAG}
+	docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v /templates/junit-${IMAGE_NAME}.tpl:/contrib/junit.tpl -v /junit-reports:/root/ aquasec/trivy image  --severity ${SEVERITY} --format template --template "@/contrib/junit.tpl" -o /root/${IMAGE_NAME}-junit-report.xml ${IMAGE}
 
 done
 
