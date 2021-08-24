@@ -438,83 +438,22 @@
 </aside>
 
 <main style="padding: 1%; width: 70%;">
-  <h1 id="title">Test RWX share-mount ownership reset</h1>
+  <h1 id="title">Test instance manager cleanup during uninstall</h1>
   <div>
     <article id="content">
-       <h2 id="related-issue">Related issue</h2>
-<p><a href="https://github.com/longhorn/longhorn/issues/2357">https://github.com/longhorn/longhorn/issues/2357</a></p>
-<h2 id="test-rwx-share-mount-ownership">Test RWX share-mount ownership</h2>
-<p><strong>Given</strong> Setup one of cluster node to use host FQDN.</p>
-<pre><code>root@ip-172-30-0-139:/home/ubuntu# cat /etc/hosts
-127.0.0.1 localhost
-54.255.224.72 ip-172-30-0-139.lan ip-172-30-0-139
+       <ol>
+<li>Deploy Longhorn v1.1.2</li>
+<li>Launch some running volumes.</li>
+<li>Upgrade to v1.2.0. ==&gt; All old unused engine managers should be cleaned up automatically.</li>
+<li>Make sure all running volumes keep state <code>running</code>.</li>
+<li>Upgrade all volumes. ==&gt; All old replica managers should be cleaned up automatically.</li>
+<li>Detach all running volumes. ==&gt; All old engine managers should be cleaned up automatically.</li>
+<li>do offline upgrade then reattach these volumes.</li>
+<li>Directly uninstall the Longhorn system.
+And use <code>kubectl -n longhorn-system get lhim -w</code> to verify that the system doesn&rsquo;t loop in instance manager cleanup-recreation.
+==&gt; The uninstaller should work fine.</li>
+</ol>
 
-root@ip-172-30-0-139:/home/ubuntu# hostname
-ip-172-30-0-139
-
-root@ip-172-30-0-139:/home/ubuntu# hostname -f
-ip-172-30-0-139.lan
-</code></pre><p><em>And</em> <code>Domain = localdomain</code> is commented out in <code>/etc/idmapd.conf</code> on cluster hosts.
-This is to ensure <code>localdomain</code> is not enforce to sync between server and client.
-Ref: <a href="https://github.com/longhorn/website/pull/279">https://github.com/longhorn/website/pull/279</a></p>
-<pre><code>root@ip-172-30-0-139:~# cat /etc/idmapd.conf 
-[General]
-
-Verbosity = 0
-Pipefs-Directory = /run/rpc_pipefs
-# set your own domain here, if it differs from FQDN minus hostname
-# Domain = localdomain
-
-[Mapping]
-
-Nobody-User = nobody
-Nobody-Group = nogroup
-</code></pre><p><em>And</em> pod with rwx pvc deployed to the node with host FQDN.
-Here need to update <code>nodeSelector.kubernetes.io/hostname</code> below to match
-the node name.</p>
-<pre><code>apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: longhorn-volv-pvc
-  namespace: default
-spec:
-  accessModes:
-    - ReadWriteMany
-  storageClassName: longhorn
-  resources:
-    requests:
-      storage: 2Gi
----
-apiVersion: v1
-kind: Pod
-metadata:
-  name: volume-test
-  namespace: default
-spec:
-  securityContext:
-    runAsUser: 0
-    runAsGroup: 0
-  restartPolicy: Always
-  containers:
-  - name: volume-test
-    image: busybox
-    imagePullPolicy: IfNotPresent
-    command: [ &quot;sh&quot;, &quot;-c&quot;, &quot;while :; do date &gt; /data/date.txt; sleep 10; done&quot;]
-    volumeMounts:
-    - name: volv
-      mountPath: /data
-  nodeSelector:
-    kubernetes.io/hostname: ip-172-30-0-139
-  volumes:
-  - name: volv
-    persistentVolumeClaim:
-      claimName: longhorn-volv-pvc
-</code></pre><p><strong>When</strong> check file and directory permission of mounted path.</p>
-<pre><code>root@ip-172-30-0-139:/home/ubuntu# kubectl exec -it volume-test -- ls -l /data
-</code></pre><p><strong>Then</strong> should not see ownership changed to nobody.</p>
-<pre><code>-rw-r--r--    1 root     root            29 Apr  6 14:07 date.txt
-drwx------    2 root     root         16384 Apr  6 14:06 lost+found
-</code></pre>
     </article>
   </div>
 </main>

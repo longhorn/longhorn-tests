@@ -16,6 +16,15 @@
     </item>
     
     <item>
+      <title>Test instance manager cleanup during uninstall</title>
+      <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.2.0/test-instance-manager-cleanup-during-uninstall/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.2.0/test-instance-manager-cleanup-during-uninstall/</guid>
+      <description>Deploy Longhorn v1.1.2 Launch some running volumes. Upgrade to v1.2.0. ==&amp;gt; All old unused engine managers should be cleaned up automatically. Make sure all running volumes keep state running. Upgrade all volumes. ==&amp;gt; All old replica managers should be cleaned up automatically. Detach all running volumes. ==&amp;gt; All old engine managers should be cleaned up automatically. do offline upgrade then reattach these volumes. Directly uninstall the Longhorn system. And use kubectl -n longhorn-system get lhim -w to verify that the system doesn&amp;rsquo;t loop in instance manager cleanup-recreation.</description>
+    </item>
+    
+    <item>
       <title>Test Label-driven Recurring Job</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.2.0/label-driven-recurring-job/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
