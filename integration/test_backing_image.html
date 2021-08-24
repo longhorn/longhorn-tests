@@ -53,6 +53,7 @@ from common import create_backing_image_with_matching_url, \
     wait_for_backing_image_disk_cleanup, cleanup_all_backing_images
 from common import get_volume_endpoint, mount_disk, cleanup_host_disk
 from common import write_volume_random_data, check_volume_data
+from common import cleanup_all_recurring_jobs
 
 from common import BACKING_IMAGE_NAME, BACKING_IMAGE_QCOW2_URL, \
     BACKING_IMAGE_RAW_URL, BACKING_IMAGE_EXT4_SIZE, \
@@ -382,6 +383,7 @@ def test_recurring_job_labels_with_backing_image(set_random_backupstore, client,
         recurring_job_labels_test(client, random_labels, volume_name,
                                   str(BACKING_IMAGE_EXT4_SIZE),
                                   BACKING_IMAGE_NAME)
+        cleanup_all_recurring_jobs(client)
         cleanup_all_volumes(client)
         cleanup_all_backing_images(client)
         backupstore_cleanup(client)
@@ -981,6 +983,7 @@ def test_recurring_job_labels_with_backing_image(set_random_backupstore, client,
         recurring_job_labels_test(client, random_labels, volume_name,
                                   str(BACKING_IMAGE_EXT4_SIZE),
                                   BACKING_IMAGE_NAME)
+        cleanup_all_recurring_jobs(client)
         cleanup_all_volumes(client)
         cleanup_all_backing_images(client)
         backupstore_cleanup(client)</code></pre>
