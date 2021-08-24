@@ -2878,6 +2878,19 @@ def is_backupTarget_nfs(s):
     return s.startswith(&#34;nfs://&#34;)
 
 
+def wait_for_backup_volume(client, vol_name, backing_image=&#34;&#34;):
+    for _ in range(RETRY_BACKUP_COUNTS):
+        bv = client.by_id_backupVolume(vol_name)
+        if bv is not None:
+            if backing_image == &#34;&#34;:
+                break
+            if bv.backingImageName == backing_image \
+                    and bv.backingImageChecksum != &#34;&#34;:
+                break
+        time.sleep(RETRY_BACKUP_INTERVAL)
+    assert bv is not None, &#34;failed to find backup volume &#34; + vol_name
+
+
 def find_backup(client, vol_name, snap_name):
     &#34;&#34;&#34;
     find_backup will look for a backup on the backupstore
@@ -8856,6 +8869,28 @@ def volume_name(request):
     return v</code></pre>
 </details>
 </dd>
+<dt id="tests.common.wait_for_backup_volume"><code class="name flex">
+<span>def <span class="ident">wait_for_backup_volume</span></span>(<span>client, vol_name, backing_image='')</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def wait_for_backup_volume(client, vol_name, backing_image=&#34;&#34;):
+    for _ in range(RETRY_BACKUP_COUNTS):
+        bv = client.by_id_backupVolume(vol_name)
+        if bv is not None:
+            if backing_image == &#34;&#34;:
+                break
+            if bv.backingImageName == backing_image \
+                    and bv.backingImageChecksum != &#34;&#34;:
+                break
+        time.sleep(RETRY_BACKUP_INTERVAL)
+    assert bv is not None, &#34;failed to find backup volume &#34; + vol_name</code></pre>
+</details>
+</dd>
 <dt id="tests.common.wait_for_backup_volume_delete"><code class="name flex">
 <span>def <span class="ident">wait_for_backup_volume_delete</span></span>(<span>client, name)</span>
 </code></dt>
@@ -10934,6 +10969,7 @@ volume. Trigger a failed assertion of one is detected.
 <li><code><a title="tests.common.wait_for_backup_restore_completed" href="#tests.common.wait_for_backup_restore_completed">wait_for_backup_restore_completed</a></code></li>
 <li><code><a title="tests.common.wait_for_backup_state" href="#tests.common.wait_for_backup_state">wait_for_backup_state</a></code></li>
 <li><code><a title="tests.common.wait_for_backup_to_start" href="#tests.common.wait_for_backup_to_start">wait_for_backup_to_start</a></code></li>
+<li><code><a title="tests.common.wait_for_backup_volume" href="#tests.common.wait_for_backup_volume">wait_for_backup_volume</a></code></li>
 <li><code><a title="tests.common.wait_for_backup_volume_delete" href="#tests.common.wait_for_backup_volume_delete">wait_for_backup_volume_delete</a></code></li>
 <li><code><a title="tests.common.wait_for_cron_job_count" href="#tests.common.wait_for_cron_job_count">wait_for_cron_job_count</a></code></li>
 <li><code><a title="tests.common.wait_for_cron_job_create" href="#tests.common.wait_for_cron_job_create">wait_for_cron_job_create</a></code></li>
