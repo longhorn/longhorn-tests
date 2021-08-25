@@ -6,9 +6,9 @@ This repo hosts the manual and automated end-to-end test cases for Longhorn.
 Some scenarios are hard to test using the automation tests and are documented as manual test cases that need to be verified before release.
 The manual test cases are accessible [here](https://longhorn.github.io/longhorn-tests/manual/).
 
-The manual test case pages can be edited under `website/content/manual/`.
+The manual test case pages can be edited under `docs/content/manual/`.
 
-To categorize tests, place them in sub-directories under `website/content/manual/`.
+To categorize tests, place them in sub-directories under `docs/content/manual/`.
 These sub-directories must contain a file named `_index.md` with the following:
 ```markdown
 ---
