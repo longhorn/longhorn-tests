@@ -12,7 +12,7 @@ IMAGES=($(< longhorn-images.txt))
 wget -O /templates/junit.tpl https://raw.githubusercontent.com/longhorn/longhorn-tests/master/secscan/templates/junit.tpl
 
 for IMAGE in ${IMAGES[@]}; do
-	IMAGE_NAME=`echo "${IMAGE}" | awk -F"/" '{print $2}' | tr ':' '-'`
+	IMAGE_NAME=`echo "${IMAGE}" | awk -F"/" '{print $NF}' | tr ':' '-'`
 	sed "s/LONGHORN_IMAGE_NAME/${IMAGE_NAME}/" /templates/junit.tpl > /templates/junit-${IMAGE_NAME}.tpl
 
 	docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v /templates/junit-${IMAGE_NAME}.tpl:/contrib/junit.tpl -v /junit-reports:/root/ aquasec/trivy image  --severity ${SEVERITY} --format template --template "@/contrib/junit.tpl" -o /root/${IMAGE_NAME}-junit-report.xml ${IMAGE}
