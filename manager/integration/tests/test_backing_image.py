@@ -400,3 +400,24 @@ def test_backing_image_with_disk_migration():  # NOQA
         6. The related download pod will be recreated.
     11. Do cleanup.
     """
+
+
+@pytest.mark.skip(reason="TODO") # NOQA
+@pytest.mark.backing_image  # NOQA
+def test_exporting_backing_image_from_volume():  # NOQA
+    """
+    1. Create and attach the 1st volume.
+    2. Make a filesystem for the 1st volume.
+    3. Export this volume to the 1st backing image
+       via the backing image creation HTTP API. And the export type is qcow2.
+    4. Create and attach the 2nd volume which uses the 1st backing image.
+    5. Make sure the 2nd volume can be directly mount.
+    6. Write random data to the mount point then get the checksum.
+    7. Unmount and detach the 2nd volume.
+    8. Export the 2nd volume as the 2nd backing image.
+       Remember to set the export type to qcow2.
+    9. Create and attach the 3rd volume which uses the 2nd backing image.
+    10. Directly mount the 3rd volume. Then verify the data in the 3rd volume
+        is the same as that of the 2nd volume.
+    11. Do cleanup.
+    """
