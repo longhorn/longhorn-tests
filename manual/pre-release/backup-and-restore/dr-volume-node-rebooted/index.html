@@ -48,7 +48,7 @@
   <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/restore-volume-node-down/">#1355 The node the restore volume attached to is down</a></li>
   
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/dr-volume-node-down-rebooted/">#1366 &amp;&amp; #1328 The node the DR volume attached to is down/rebooted</a></li>
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/dr-volume-node-rebooted/">#1366 &amp;&amp; #1328 The node the DR volume attached to is rebooted</a></li>
   
 
   <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/google-cloud-s3-interop-backups/">#1404 test backup functionality on google cloud and other s3 interop providers.</a></li>
@@ -438,7 +438,7 @@
 </aside>
 
 <main style="padding: 1%; width: 70%;">
-  <h1 id="title"><a href="https://github.com/longhorn/longhorn/issues/1366">#1366</a> &amp;&amp; <a href="https://github.com/longhorn/longhorn/issues/1328">#1328</a> The node the DR volume attached to is down/rebooted</h1>
+  <h1 id="title"><a href="https://github.com/longhorn/longhorn/issues/1366">#1366</a> &amp;&amp; <a href="https://github.com/longhorn/longhorn/issues/1328">#1328</a> The node the DR volume attached to is rebooted</h1>
   <div>
     <article id="content">
        <h4 id="scenario-1">Scenario 1</h4>
@@ -447,7 +447,7 @@
 <li>Write data to the volume and get the md5sum.</li>
 <li>Create the 1st backup for the volume.</li>
 <li>Create a DR volume from the backup.</li>
-<li>Wait for the DR volume starting the initial restore. Then power off/reboot the DR volume attached node immediately.</li>
+<li>Wait for the DR volume starting the initial restore. Then reboot the DR volume attached node immediately.</li>
 <li>Wait for the DR volume detached then reattached.</li>
 <li>Wait for the DR volume restore complete after the reattachment.</li>
 <li>Activate the DR volume and check the data md5sum.</li>
@@ -461,7 +461,7 @@
 <li>Wait for the DR volume to complete the initial restore.</li>
 <li>Write more data to the original volume and get the md5sum.</li>
 <li>Create the 2nd backup for the volume.</li>
-<li>Wait for the DR volume incremental restore getting triggered. Then power off/reboot the DR volume attached node immediately.</li>
+<li>Wait for the DR volume incremental restore getting triggered. Then reboot the DR volume attached node immediately.</li>
 <li>Wait for the DR volume detached then reattached.</li>
 <li>Wait for the DR volume restore complete after the reattachment.</li>
 <li>Activate the DR volume and check the data md5sum.</li>
