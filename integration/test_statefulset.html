@@ -42,6 +42,8 @@ from common import check_csi
 from common import create_and_wait_statefulset, wait_statefulset
 from common import update_statefulset_manifests, create_storage_class
 from common import create_snapshot
+from common import create_recurring_jobs
+from common import check_recurring_jobs
 
 from backupstore import set_random_backupstore # NOQA
 
@@ -301,15 +303,30 @@ def test_statefulset_backup(set_random_backupstore, client, core_api, storage_cl
 def test_statefulset_recurring_backup(client, core_api, storage_class,  # NOQA
                                       statefulset):  # NOQA
     &#34;&#34;&#34;
-    Test that recurring backups on StatefulSets work properly.
+    Scenario : test recurring backups on StatefulSets
 
-    1. Create a StatefulSet with VolumeClaimTemplate and Longhorn.
-    2. Wait for pods to run.
-    3. Write some data to every pod
-    4. Schedule recurring jobs for volumes using Longhorn API
-    5. Wait for 5 minutes
-    6. Verify the snapshots created by the recurring jobs.
+    Given 1 default backup recurring jobs created.
+
+    When create a statefulset.
+    And write data to every statefulset pod.
+    And wait for 5 minutes.
+
+    Then 2 snapshots created for every statefulset pod.
     &#34;&#34;&#34;
+
+    # backup every minute
+    recurring_jobs = {
+        &#34;backup&#34;: {
+            &#34;task&#34;: &#34;backup&#34;,
+            &#34;groups&#34;: [&#34;default&#34;],
+            &#34;cron&#34;: &#34;* * * * *&#34;,
+            &#34;retain&#34;: 2,
+            &#34;concurrency&#34;: 2,
+            &#34;labels&#34;: {},
+        },
+    }
+    create_recurring_jobs(client, recurring_jobs)
+    check_recurring_jobs(client, recurring_jobs)
 
     statefulset_name = &#39;statefulset-backup-test&#39;
     update_statefulset_manifests(statefulset, storage_class, statefulset_name)
@@ -317,9 +334,6 @@ def test_statefulset_recurring_backup(client, core_api, storage_class,  # NOQA
     create_storage_class(storage_class)
     create_and_wait_statefulset(statefulset)
 
-    # backup every minute
-    job_backup = {&#34;name&#34;: &#34;backup&#34;, &#34;cron&#34;: &#34;* * * * *&#34;,
-                  &#34;task&#34;: &#34;backup&#34;, &#34;retain&#34;: 2}
     pod_data = get_statefulset_pod_info(core_api, statefulset)
     for pod in pod_data:
         pod[&#39;data&#39;] = generate_random_data(VOLUME_RWTEST_SIZE)
@@ -328,14 +342,12 @@ def test_statefulset_recurring_backup(client, core_api, storage_class,  # NOQA
     for pod in pod_data:
         volume = client.by_id_volume(pod[&#39;pv_name&#39;])
         write_pod_volume_data(core_api, pod[&#39;pod_name&#39;], pod[&#39;data&#39;])
-        volume.recurringUpdate(jobs=[job_backup])
 
     time.sleep(150)
 
     for pod in pod_data:
         volume = client.by_id_volume(pod[&#39;pv_name&#39;])
         write_pod_volume_data(core_api, pod[&#39;pod_name&#39;], pod[&#39;data&#39;])
-        volume.recurringUpdate(jobs=[job_backup])
 
     time.sleep(150)
 
@@ -723,15 +735,12 @@ def test_statefulset_pod_deletion(core_api, storage_class, statefulset):  # NOQA
 <span>def <span class="ident">test_statefulset_recurring_backup</span></span>(<span>client, core_api, storage_class, statefulset)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Test that recurring backups on StatefulSets work properly.</p>
-<ol>
-<li>Create a StatefulSet with VolumeClaimTemplate and Longhorn.</li>
-<li>Wait for pods to run.</li>
-<li>Write some data to every pod</li>
-<li>Schedule recurring jobs for volumes using Longhorn API</li>
-<li>Wait for 5 minutes</li>
-<li>Verify the snapshots created by the recurring jobs.</li>
-</ol></div>
+<div class="desc"><p>Scenario : test recurring backups on StatefulSets</p>
+<p>Given 1 default backup recurring jobs created.</p>
+<p>When create a statefulset.
+And write data to every statefulset pod.
+And wait for 5 minutes.</p>
+<p>Then 2 snapshots created for every statefulset pod.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -740,15 +749,30 @@ def test_statefulset_pod_deletion(core_api, storage_class, statefulset):  # NOQA
 def test_statefulset_recurring_backup(client, core_api, storage_class,  # NOQA
                                       statefulset):  # NOQA
     &#34;&#34;&#34;
-    Test that recurring backups on StatefulSets work properly.
+    Scenario : test recurring backups on StatefulSets
 
-    1. Create a StatefulSet with VolumeClaimTemplate and Longhorn.
-    2. Wait for pods to run.
-    3. Write some data to every pod
-    4. Schedule recurring jobs for volumes using Longhorn API
-    5. Wait for 5 minutes
-    6. Verify the snapshots created by the recurring jobs.
+    Given 1 default backup recurring jobs created.
+
+    When create a statefulset.
+    And write data to every statefulset pod.
+    And wait for 5 minutes.
+
+    Then 2 snapshots created for every statefulset pod.
     &#34;&#34;&#34;
+
+    # backup every minute
+    recurring_jobs = {
+        &#34;backup&#34;: {
+            &#34;task&#34;: &#34;backup&#34;,
+            &#34;groups&#34;: [&#34;default&#34;],
+            &#34;cron&#34;: &#34;* * * * *&#34;,
+            &#34;retain&#34;: 2,
+            &#34;concurrency&#34;: 2,
+            &#34;labels&#34;: {},
+        },
+    }
+    create_recurring_jobs(client, recurring_jobs)
+    check_recurring_jobs(client, recurring_jobs)
 
     statefulset_name = &#39;statefulset-backup-test&#39;
     update_statefulset_manifests(statefulset, storage_class, statefulset_name)
@@ -756,9 +780,6 @@ def test_statefulset_recurring_backup(client, core_api, storage_class,  # NOQA
     create_storage_class(storage_class)
     create_and_wait_statefulset(statefulset)
 
-    # backup every minute
-    job_backup = {&#34;name&#34;: &#34;backup&#34;, &#34;cron&#34;: &#34;* * * * *&#34;,
-                  &#34;task&#34;: &#34;backup&#34;, &#34;retain&#34;: 2}
     pod_data = get_statefulset_pod_info(core_api, statefulset)
     for pod in pod_data:
         pod[&#39;data&#39;] = generate_random_data(VOLUME_RWTEST_SIZE)
@@ -767,14 +788,12 @@ def test_statefulset_recurring_backup(client, core_api, storage_class,  # NOQA
     for pod in pod_data:
         volume = client.by_id_volume(pod[&#39;pv_name&#39;])
         write_pod_volume_data(core_api, pod[&#39;pod_name&#39;], pod[&#39;data&#39;])
-        volume.recurringUpdate(jobs=[job_backup])
 
     time.sleep(150)
 
     for pod in pod_data:
         volume = client.by_id_volume(pod[&#39;pv_name&#39;])
         write_pod_volume_data(core_api, pod[&#39;pod_name&#39;], pod[&#39;data&#39;])
-        volume.recurringUpdate(jobs=[job_backup])
 
     time.sleep(150)
 
