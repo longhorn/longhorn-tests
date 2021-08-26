@@ -427,6 +427,27 @@ def test_backing_image_with_disk_migration():  # NOQA
         5. The download state in the backing image will become `downloaded`.
         6. The related download pod will be recreated.
     11. Do cleanup.
+    &#34;&#34;&#34;
+
+
+@pytest.mark.skip(reason=&#34;TODO&#34;) # NOQA
+@pytest.mark.backing_image  # NOQA
+def test_exporting_backing_image_from_volume():  # NOQA
+    &#34;&#34;&#34;
+    1. Create and attach the 1st volume.
+    2. Make a filesystem for the 1st volume.
+    3. Export this volume to the 1st backing image
+       via the backing image creation HTTP API. And the export type is qcow2.
+    4. Create and attach the 2nd volume which uses the 1st backing image.
+    5. Make sure the 2nd volume can be directly mount.
+    6. Write random data to the mount point then get the checksum.
+    7. Unmount and detach the 2nd volume.
+    8. Export the 2nd volume as the 2nd backing image.
+       Remember to set the export type to qcow2.
+    9. Create and attach the 3rd volume which uses the 2nd backing image.
+    10. Directly mount the 3rd volume. Then verify the data in the 3rd volume
+        is the same as that of the 2nd volume.
+    11. Do cleanup.
     &#34;&#34;&#34;</code></pre>
 </details>
 </section>
@@ -902,6 +923,51 @@ def test_engine_offline_upgrade_with_backing_image(client, core_api, volume_name
         cleanup_all_backing_images(client)</code></pre>
 </details>
 </dd>
+<dt id="tests.test_backing_image.test_exporting_backing_image_from_volume"><code class="name flex">
+<span>def <span class="ident">test_exporting_backing_image_from_volume</span></span>(<span>)</span>
+</code></dt>
+<dd>
+<div class="desc"><ol>
+<li>Create and attach the 1st volume.</li>
+<li>Make a filesystem for the 1st volume.</li>
+<li>Export this volume to the 1st backing image
+via the backing image creation HTTP API. And the export type is qcow2.</li>
+<li>Create and attach the 2nd volume which uses the 1st backing image.</li>
+<li>Make sure the 2nd volume can be directly mount.</li>
+<li>Write random data to the mount point then get the checksum.</li>
+<li>Unmount and detach the 2nd volume.</li>
+<li>Export the 2nd volume as the 2nd backing image.
+Remember to set the export type to qcow2.</li>
+<li>Create and attach the 3rd volume which uses the 2nd backing image.</li>
+<li>Directly mount the 3rd volume. Then verify the data in the 3rd volume
+is the same as that of the 2nd volume.</li>
+<li>Do cleanup.</li>
+</ol></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@pytest.mark.skip(reason=&#34;TODO&#34;) # NOQA
+@pytest.mark.backing_image  # NOQA
+def test_exporting_backing_image_from_volume():  # NOQA
+    &#34;&#34;&#34;
+    1. Create and attach the 1st volume.
+    2. Make a filesystem for the 1st volume.
+    3. Export this volume to the 1st backing image
+       via the backing image creation HTTP API. And the export type is qcow2.
+    4. Create and attach the 2nd volume which uses the 1st backing image.
+    5. Make sure the 2nd volume can be directly mount.
+    6. Write random data to the mount point then get the checksum.
+    7. Unmount and detach the 2nd volume.
+    8. Export the 2nd volume as the 2nd backing image.
+       Remember to set the export type to qcow2.
+    9. Create and attach the 3rd volume which uses the 2nd backing image.
+    10. Directly mount the 3rd volume. Then verify the data in the 3rd volume
+        is the same as that of the 2nd volume.
+    11. Do cleanup.
+    &#34;&#34;&#34;</code></pre>
+</details>
+</dd>
 <dt id="tests.test_backing_image.test_ha_backup_deletion_recovery"><code class="name flex">
 <span>def <span class="ident">test_ha_backup_deletion_recovery</span></span>(<span>set_random_backupstore, client, volume_name)</span>
 </code></dt>
@@ -1080,6 +1146,7 @@ def test_volume_iscsi_basic_with_backing_image(client, volume_name):  # NOQA
 <li><code><a title="tests.test_backing_image.test_engine_live_upgrade_rollback_with_backing_image" href="#tests.test_backing_image.test_engine_live_upgrade_rollback_with_backing_image">test_engine_live_upgrade_rollback_with_backing_image</a></code></li>
 <li><code><a title="tests.test_backing_image.test_engine_live_upgrade_with_backing_image" href="#tests.test_backing_image.test_engine_live_upgrade_with_backing_image">test_engine_live_upgrade_with_backing_image</a></code></li>
 <li><code><a title="tests.test_backing_image.test_engine_offline_upgrade_with_backing_image" href="#tests.test_backing_image.test_engine_offline_upgrade_with_backing_image">test_engine_offline_upgrade_with_backing_image</a></code></li>
+<li><code><a title="tests.test_backing_image.test_exporting_backing_image_from_volume" href="#tests.test_backing_image.test_exporting_backing_image_from_volume">test_exporting_backing_image_from_volume</a></code></li>
 <li><code><a title="tests.test_backing_image.test_ha_backup_deletion_recovery" href="#tests.test_backing_image.test_ha_backup_deletion_recovery">test_ha_backup_deletion_recovery</a></code></li>
 <li><code><a title="tests.test_backing_image.test_ha_salvage_with_backing_image" href="#tests.test_backing_image.test_ha_salvage_with_backing_image">test_ha_salvage_with_backing_image</a></code></li>
 <li><code><a title="tests.test_backing_image.test_ha_simple_recovery_with_backing_image" href="#tests.test_backing_image.test_ha_simple_recovery_with_backing_image">test_ha_simple_recovery_with_backing_image</a></code></li>
