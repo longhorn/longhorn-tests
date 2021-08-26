@@ -32,12 +32,12 @@ while true;
  
   kubectl create -f https://raw.githubusercontent.com/longhorn/longhorn/master/uninstall/uninstall.yaml
 
-  poduninstall=`kubectl get job/longhorn-uninstall | grep '1/1' | wc -l`
+  poduninstall=`kubectl get job/longhorn-uninstall -n default | grep '1/1' | wc -l`
   uninstall=0
  while [ $poduninstall = 0 ];
   do
    sleep 10
-   poduninstall=`kubectl get job/longhorn-uninstall | grep '1/1' | wc -l`
+   poduninstall=`kubectl get job/longhorn-uninstall -n default | grep '1/1' | wc -l`
    echo `kubectl get job/longhorn-uninstall`
    uninstall=$((uninstall+1))
    if [ $uninstall -gt 24 ]  
@@ -53,7 +53,7 @@ while true;
  kubectl delete -f https://raw.githubusercontent.com/longhorn/longhorn/master/uninstall/uninstall.yaml
 
  nscount=0
- longhornns=`kubectl get namespace | grep -i 'longhorn-system' | wc -l`l
+ longhornns=`kubectl get namespace | grep -i 'longhorn-system' | wc -l`
  while [ $longhornns != 0 ];
   do
    sleep 10
