@@ -442,7 +442,7 @@
   <div>
     <article id="content">
        <ol>
-<li>Launch Longhorn v1.0.1.</li>
+<li>Launch Longhorn at the previous version.</li>
 <li>Launch a pod with Longhorn volume.</li>
 <li>Write data to the volume and take the 1st backup.</li>
 <li>Create 2 DR volumes from the 1st backup.</li>
@@ -452,10 +452,10 @@
 <li>Trigger incremental restore for the DR volumes by listing the backup volumes, and wait for restore complete.</li>
 <li>Upgrade Longhorn to the latest version.</li>
 <li>Crash one random replica for the 1st DR volume .</li>
-<li>Verify the 1st DR volume won&rsquo;t rebuild replicas and keep state <code>Degraded</code>.</li>
+<li>Verify the 1st DR volume rebuild replicas and state change from <code>Degraded</code> to <code>Healthy</code>.</li>
 <li>Write data to the original volume and take the 3rd backup.</li>
 <li>Trigger incremental restore for the DR volumes, and wait for restore complete.</li>
-<li>Do live upgrade for the 1st DR volume. This live upgrade call should fail and nothing gets changed.</li>
+<li>Do live upgrade for the 1st DR volume. This live upgrade call should success.</li>
 <li>Activate the 1st DR volume.</li>
 <li>Launch a pod for the 1st activated volume, and verify the restored data is correct.</li>
 <li>Do live upgrade for the original volume and the 2nd DR volumes.</li>

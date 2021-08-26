@@ -12,7 +12,7 @@
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/dr-volume-live-upgrade-and-rebuild/</guid>
-      <description>Launch Longhorn v1.0.1. Launch a pod with Longhorn volume. Write data to the volume and take the 1st backup. Create 2 DR volumes from the 1st backup. Shutdown the pod and wait for the original volume detached. Expand the original volume and wait for the expansion complete. Write data to the original volume and take the 2nd backup. (Make sure the total data size is larger than the original volume size so that there is date written to the expanded part.</description>
+      <description>Launch Longhorn at the previous version. Launch a pod with Longhorn volume. Write data to the volume and take the 1st backup. Create 2 DR volumes from the 1st backup. Shutdown the pod and wait for the original volume detached. Expand the original volume and wait for the expansion complete. Write data to the original volume and take the 2nd backup. (Make sure the total data size is larger than the original volume size so that there is date written to the expanded part.</description>
     </item>
     
     <item>
