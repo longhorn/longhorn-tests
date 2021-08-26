@@ -1,7 +1,7 @@
 ---
 title: "[#1279](https://github.com/longhorn/longhorn/issues/1279) DR volume live upgrade and rebuild"
 ---
-1. Launch Longhorn v1.0.1.
+1. Launch Longhorn at the previous version.
 2. Launch a pod with Longhorn volume.
 3. Write data to the volume and take the 1st backup.
 4. Create 2 DR volumes from the 1st backup.
@@ -11,10 +11,10 @@ title: "[#1279](https://github.com/longhorn/longhorn/issues/1279) DR volume live
 8. Trigger incremental restore for the DR volumes by listing the backup volumes, and wait for restore complete.
 9. Upgrade Longhorn to the latest version.
 10. Crash one random replica for the 1st DR volume .
-11. Verify the 1st DR volume won't rebuild replicas and keep state `Degraded`.
+11. Verify the 1st DR volume rebuild replicas and state change from `Degraded` to `Healthy`.
 12. Write data to the original volume and take the 3rd backup.
 13. Trigger incremental restore for the DR volumes, and wait for restore complete.
-14. Do live upgrade for the 1st DR volume. This live upgrade call should fail and nothing gets changed.
+14. Do live upgrade for the 1st DR volume. This live upgrade call should success.
 15. Activate the 1st DR volume. 
 16. Launch a pod for the 1st activated volume, and verify the restored data is correct.
 17. Do live upgrade for the original volume and the 2nd DR volumes.
