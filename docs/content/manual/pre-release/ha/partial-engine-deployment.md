@@ -22,7 +22,7 @@ https://github.com/longhorn/longhorn/issues/2081
 1. Detach `vol-1`
 1. Verify that Longhorn cannot attach `vol-1` to `node-1` since there is no engine image on `node-1`
 1. Check that all functions (attach to other nodes, detach, snapshot, backup, expand, restore, creating DR volume, ... ) are working ok for `vol-1`
-1. Verify that `vol-2` cannot be attached to any nodes because one of its replica is sitting on the `node-1` which doesn't have the engine image
+1. Verify that `vol-2` can be attached to any nodes except for `node-1`
 
 ### Case 3: Test engine upgrade when some of the engine image DaemonSet pods are not fully deployed
 1. Continue from case 2
