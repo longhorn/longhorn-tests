@@ -25,15 +25,6 @@
     </item>
     
     <item>
-      <title>Instance manager pod recovery [[#870](https://github.com/longhorn/longhorn/issues/870)]</title>
-      <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/ha/instance-manager-pod-recovery/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/ha/instance-manager-pod-recovery/</guid>
-      <description>Create and attach a volume. Set an invalid value (Too large to crash the instance manager pods. e.g., 10) for Guaranteed Engine CPU. Verify instance(engine/replica) manager pods will be recreated again and again. Check the managers&#39; log. (Use kubetail longhorn-manager -n longhorn-system). Make sure there is no NPE error logs like:  [longhorn-manager-67nhs] E1112 21:58:14.037140 1 runtime.go:69] Observed a panic: &amp;quot;send on closed channel&amp;quot; (send on closed channel) [longhorn-manager-67nhs] /go/src/github.</description>
-    </item>
-    
-    <item>
       <title>Longhorn with engine is not deployed on all the nodes</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/ha/partial-engine-deployment/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>

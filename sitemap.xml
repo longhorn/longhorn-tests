@@ -56,8 +56,6 @@
   </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/node/improve-node-failure-handling/</loc>
   </url><url>
-    <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/ha/instance-manager-pod-recovery/</loc>
-  </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/kubernetes-upgrade-test/</loc>
   </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/stability/multiple-installation/</loc>
