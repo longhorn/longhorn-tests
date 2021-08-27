@@ -462,7 +462,7 @@
 <li>Detach <code>vol-1</code></li>
 <li>Verify that Longhorn cannot attach <code>vol-1</code> to <code>node-1</code> since there is no engine image on <code>node-1</code></li>
 <li>Check that all functions (attach to other nodes, detach, snapshot, backup, expand, restore, creating DR volume, &hellip; ) are working ok for <code>vol-1</code></li>
-<li>Verify that <code>vol-2</code> cannot be attached to any nodes because one of its replica is sitting on the <code>node-1</code> which doesn&rsquo;t have the engine image</li>
+<li>Verify that <code>vol-2</code> can be attached to any nodes except for <code>node-1</code></li>
 </ol>
 <h3 id="case-3-test-engine-upgrade-when-some-of-the-engine-image-daemonset-pods-are-not-fully-deployed">Case 3: Test engine upgrade when some of the engine image DaemonSet pods are not fully deployed</h3>
 <ol>
