@@ -441,48 +441,23 @@
 </aside>
 
 <main style="padding: 1%; width: 70%;">
-  <header class="homepage-header">
-    <h1>v1.1.0</h1>
-    
-  </header>
-  <div class="homepage-content">
-    
-  </div>
+  <h1 id="title">Test Backup Creation With Old Engine Image</h1>
   <div>
-    <ul>
+    <article id="content">
+       <h2 id="related-issue">Related issue</h2>
+<p><a href="https://github.com/longhorn/longhorn/issues/2897">https://github.com/longhorn/longhorn/issues/2897</a></p>
+<h2 id="test-step">Test Step</h2>
+<p><strong>Given</strong> with Longhorn v1.2.0-rc2 or above.
+<em>And</em> deploy engine image <code>oldEI</code> older than v1.2.0 (for example: <code>longhornio/longhorn-engine:v1.1.2</code>).
+<em>And</em> create volume <code>vol-old-engine</code>.
+<em>And</em> attach volume <code>vol-old-engine</code> to one of a node.
+<em>And</em> upgrade volume <code>vol-old-engine</code> to engine image <code>oldEI</code>.</p>
+<p><strong>When</strong> create backup of volume <code>vol-old-engine</code>.</p>
+<p><strong>Then</strong> watch kubectl <code>kubectl get backups.longhorn.io -l backup-volume=vol-old-engine -w</code>.
+<em>And</em> should see 2 two backups temporarily (in transition state). One with state <code>Completed</code>, the other one with state <code>Ready</code>.
+<em>And</em> should see the backup with state <code>Completed</code> be clean up, only the backup with state <code>Ready</code> be left.</p>
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/prometheus_support/">Prometheus Support</a></li>
-  
-
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/recurring-backup-job-interruptions/">Recurring backup job interruptions</a></li>
-  
-
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/reusing-failed-replica-for-rebuilding/">Reusing failed replica for rebuilding</a></li>
-  
-
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/kubelet_volume_metrics/">Support Kubelet Volume Metrics</a></li>
-  
-
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/additional-printer-columns/">Test Additional Printer Columns</a></li>
-  
-
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/instance-manager-ip-sync/">Test Instance Manager IP Sync</a></li>
-  
-
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/iscsi_installation/">Test ISCSI Installation on EKS</a></li>
-  
-
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/rwx_feature/">Test Read Write Many Feature</a></li>
-  
-
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/uninstallation/">Test uninstallation</a></li>
-  
-
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/upgrade_with_modified_storageclass/">Upgrade Longhorn with modified Storage Class</a></li>
-  
-
-</ul>
-
+    </article>
   </div>
 </main>
 
