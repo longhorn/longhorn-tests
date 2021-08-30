@@ -1346,7 +1346,8 @@ def cleanup_client():
     # cleanup test disks
     cleanup_test_disks(client)
 
-    cleanup_all_recurring_jobs(client)
+    if recurring_job_feature_supported(client):
+        cleanup_all_recurring_jobs(client)
 
     cleanup_all_volumes(client)
 
@@ -4127,6 +4128,15 @@ def cleanup_all_backing_images(client):
 # for the case of test_upgrade starting from Longhorn <= v1.1.0
 def backing_image_feature_supported(client):
     if hasattr(client.by_id_schema("backingImage"), "id"):
+        return True
+    else:
+        return False
+
+
+# this function will check if recurring job feature is supported, and is added
+# for the case of test_upgrade starting from Longhorn >= v1.2.0
+def recurring_job_feature_supported(client):
+    if hasattr(client.by_id_schema("volumeRecurringJob"), "id"):
         return True
     else:
         return False
