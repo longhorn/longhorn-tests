@@ -331,7 +331,7 @@ def restore_csi_volume_snapshot(core_api, client, csivolsnap, pvc_name, pvc_requ
     restore_pvc_name = restore_pvc["metadata"]["name"]
     for i in range(RETRY_COUNTS):
         restore_pvc = \
-            core_api.read_namespaced_persistent_volume_claim_status(
+            core_api.read_namespaced_persistent_volume_claim(
                 name=restore_pvc_name,
                 namespace="default")
 
