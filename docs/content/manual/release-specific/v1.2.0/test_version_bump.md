@@ -1,5 +1,5 @@
 ---
-title: Test Version Bump: Bump Kubernetes, API version group, CSI component's dependency version
+title: Test Version Bump of Kubernetes, API version group, CSI component's dependency version
 ---
 
 GitHub issue: https://github.com/longhorn/longhorn/issues/2757
