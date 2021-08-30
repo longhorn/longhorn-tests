@@ -773,6 +773,16 @@ Test step  Deploy a cluster that each node has different CPUs. Launch Longhorn v
     </item>
     
     <item>
+      <title>Test Version Bump of Kubernetes, API version group, CSI component&#39;s dependency version</title>
+      <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.2.0/test_version_bump/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.2.0/test_version_bump/</guid>
+      <description>GitHub issue: https://github.com/longhorn/longhorn/issues/2757
+Test with specific Kubernetes version  For each Kubernetes version (1.18, 1.19, 1.20, 1.21, 1.22), test basic functionalities of Longhorn v1.2.0 (create/attach/detach/delete volume/backup/snapshot using yaml/UI)  Test Kubernetes and Longhorn upgrade  Deploy K3s v1.21 Deploy Longhorn v1.1.2 Create some workload pods using Longhorn volumes Upgrade Longhorn to v1.2.0 Verify that everything is OK Upgrade K3s to v1.22 Verify that everything is OK  Retest the Upgrade Lease Lock We remove the client-go patch https://github.</description>
+    </item>
+    
+    <item>
       <title>Test Volume Backup and Restore by AWS IAM role</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/aws-iam-role-for-volume-backup-restore/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>

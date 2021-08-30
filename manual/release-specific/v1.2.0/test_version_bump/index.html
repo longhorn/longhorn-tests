@@ -441,15 +441,31 @@
 </aside>
 
 <main style="padding: 1%; width: 70%;">
-  <h1 id="title">Change imagePullPolicy to IfNotPresent Test</h1>
+  <h1 id="title">Test Version Bump of Kubernetes, API version group, CSI component&rsquo;s dependency version</h1>
   <div>
     <article id="content">
-       <ol>
-<li>Install Longhorn using Helm chart with the new <code>longhorn master</code></li>
-<li>Verify that Engine Image daemonset, Manager daemonset, UI deployment, Driver Deployer deployment has the field <code>spec.template.spec.containers.imagePullPolicy</code> set to <code>IfNotPresent</code></li>
-<li>run the bash script <code>dev/scripts/update-image-pull-policy.sh</code> inside <code>longhorn</code> repo</li>
-<li>Verify that Engine Image daemonset, Manager daemonset, UI deployment, Driver Deployer deployment has the field <code>spec.template.spec.containers.imagePullPolicy</code> set back to <code>Always</code></li>
+       <p>GitHub issue: <a href="https://github.com/longhorn/longhorn/issues/2757">https://github.com/longhorn/longhorn/issues/2757</a></p>
+<h1 id="test-with-specific-kubernetes-version">Test with specific Kubernetes version</h1>
+<ol>
+<li>For each Kubernetes version (1.18, 1.19, 1.20, 1.21, 1.22), test basic functionalities of Longhorn v1.2.0
+(create/attach/detach/delete volume/backup/snapshot using yaml/UI)</li>
 </ol>
+<h1 id="test-kubernetes-and-longhorn-upgrade">Test Kubernetes and Longhorn upgrade</h1>
+<ol>
+<li>Deploy K3s v1.21</li>
+<li>Deploy Longhorn v1.1.2</li>
+<li>Create some workload pods using Longhorn volumes</li>
+<li>Upgrade Longhorn to v1.2.0</li>
+<li>Verify that everything is OK</li>
+<li>Upgrade K3s to v1.22</li>
+<li>Verify that everything is OK</li>
+</ol>
+<h1 id="retest-the-upgrade-lease-lock">Retest the Upgrade Lease Lock</h1>
+<p>We remove the client-go patch <a href="https://github.com/longhorn/longhorn-manager/pull/639#issuecomment-905030885,">https://github.com/longhorn/longhorn-manager/pull/639#issuecomment-905030885,</a>
+so we need to retest the test ../v1.0.2/upgrade-lease-lock.md</p>
+<blockquote>
+<p>Note: Longhorn versions prior to v1.2.0 will not work on k8s/k3s v1.22</p>
+</blockquote>
 
     </article>
   </div>

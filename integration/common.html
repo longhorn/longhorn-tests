@@ -1374,7 +1374,8 @@ def cleanup_client():
     # cleanup test disks
     cleanup_test_disks(client)
 
-    cleanup_all_recurring_jobs(client)
+    if recurring_job_feature_supported(client):
+        cleanup_all_recurring_jobs(client)
 
     cleanup_all_volumes(client)
 
@@ -4160,6 +4161,15 @@ def backing_image_feature_supported(client):
         return False
 
 
+# this function will check if recurring job feature is supported, and is added
+# for the case of test_upgrade starting from Longhorn &gt;= v1.2.0
+def recurring_job_feature_supported(client):
+    if hasattr(client.by_id_schema(&#34;volumeRecurringJob&#34;), &#34;id&#34;):
+        return True
+    else:
+        return False
+
+
 def cleanup_all_recurring_jobs(client):
     recurring_jobs = client.list_recurring_job()
     for recurring_job in recurring_jobs:
@@ -4920,7 +4930,8 @@ properly.
     # cleanup test disks
     cleanup_test_disks(client)
 
-    cleanup_all_recurring_jobs(client)
+    if recurring_job_feature_supported(client):
+        cleanup_all_recurring_jobs(client)
 
     cleanup_all_volumes(client)
 
@@ -7887,6 +7898,22 @@ def random_labels():
             api.connect_get_namespaced_pod_exec, pod_name, &#39;default&#39;,
             command=read_command, stderr=True, stdin=False, stdout=True,
             tty=False)</code></pre>
+</details>
+</dd>
+<dt id="tests.common.recurring_job_feature_supported"><code class="name flex">
+<span>def <span class="ident">recurring_job_feature_supported</span></span>(<span>client)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def recurring_job_feature_supported(client):
+    if hasattr(client.by_id_schema(&#34;volumeRecurringJob&#34;), &#34;id&#34;):
+        return True
+    else:
+        return False</code></pre>
 </details>
 </dd>
 <dt id="tests.common.reset_disks_for_all_nodes"><code class="name flex">
@@ -10931,6 +10958,7 @@ volume. Trigger a failed assertion of one is detected.
 <li><code><a title="tests.common.random_labels" href="#tests.common.random_labels">random_labels</a></code></li>
 <li><code><a title="tests.common.read_pod_block_volume_data" href="#tests.common.read_pod_block_volume_data">read_pod_block_volume_data</a></code></li>
 <li><code><a title="tests.common.read_volume_data" href="#tests.common.read_volume_data">read_volume_data</a></code></li>
+<li><code><a title="tests.common.recurring_job_feature_supported" href="#tests.common.recurring_job_feature_supported">recurring_job_feature_supported</a></code></li>
 <li><code><a title="tests.common.reset_disks_for_all_nodes" href="#tests.common.reset_disks_for_all_nodes">reset_disks_for_all_nodes</a></code></li>
 <li><code><a title="tests.common.reset_engine_image" href="#tests.common.reset_engine_image">reset_engine_image</a></code></li>
 <li><code><a title="tests.common.reset_longhorn_node_zone" href="#tests.common.reset_longhorn_node_zone">reset_longhorn_node_zone</a></code></li>
