@@ -444,74 +444,15 @@
 </aside>
 
 <main style="padding: 1%; width: 70%;">
-  <h1 id="title">Test Backing Image during Longhorn upgrade</h1>
+  <h1 id="title">Cluster using customize kubelet root directory</h1>
   <div>
     <article id="content">
-       <h2 id="system-upgrade-with-compatible-backing-image-manager-image">System upgrade with compatible backing image manager image</h2>
-<ol>
-<li>Deploy Longhorn. Then set <code>Concurrent Automatic Engine Upgrade Per Node Limit</code> to a positive value to enable volume engine auto upgrade.</li>
-<li>Create 2 backing images: a large one and a small one. Longhorn will start preparing the 1st file for both backing image immediately via launching backing image data source pods.</li>
-<li>Wait for the small backing image being ready in the 1st disk. Then create and attach volumes with the backing image.</li>
-<li>Wait for volumes attachment. Verify the backing image content then write random data in the volumes.</li>
-<li>Wait for the large backing image being ready in the 1st disk. Then create and attach one more volume with this large backing image.</li>
-<li>Before the large backing image is synced to other nodes and the volume becomes attached, upgrade the whole Longhorn system:
-<ol>
-<li>A new engine image will be used.</li>
-<li>The default backing image manager image will be updated.</li>
-<li>The new longhorn manager is compatible with the old backing image manager.</li>
-</ol>
-</li>
-<li>Wait for system upgrade complete. Then verify:
-<ol>
-<li>All old backing image manager and the related pod will be cleaned up automatically after the current downloading is complete. And the existing backing image files won&rsquo;t be removed.</li>
-<li>New default backing image manager will take over all backing image ownerships and show the info in the status map:
-<ol>
-<li>For the small backing image, the new backing image manager will directly take over all ready files.</li>
-<li>For the large backing image, the new backing image manager will take over the only ready file and mark all in-progress files as failed first. Then it will re-sync the files after the backoff window.</li>
-</ol>
-</li>
-<li>All attached volumes still work fine without replica crash, and the content is correct in the volumes during/after the upgrade.</li>
-<li>The last volume get attached successfully without replica crash, and the content is correct.</li>
-</ol>
-</li>
-<li>Verify volumes and backing images can be deleted.</li>
-</ol>
-<h2 id="system-upgrade-with-incompatible-backing-image-manager-image">System upgrade with incompatible backing image manager image</h2>
-<ol>
-<li>Deploy Longhorn.</li>
-<li>Create a backing images. Wait for the backing image being ready in the 1st disk.</li>
-<li>Create and attach volumes with the backing image.</li>
-<li>Wait for volumes attachment. Verify the backing image content then write random data in the volumes.</li>
-<li>Upgrade the whole Longhorn system:
-<ol>
-<li>The default backing image manager image will be updated.</li>
-<li>The new longhorn manager is not compatible with the old backing image manager.</li>
-</ol>
-</li>
-<li>Wait for system upgrade complete. Then verify:
-<ol>
-<li>All old incompatible backing image manager and the related pod will be cleaned up automatically.</li>
-<li>New default backing image manager will take over all backing image ownerships and show the info in the status map.</li>
-<li>All attached volumes still work fine without replica crash, and the content is correct in the volumes during/after the upgrade.</li>
-</ol>
-</li>
-</ol>
-<h4 id="available-test-backing-image-urls">Available test backing image URLs:</h4>
-<pre><code>https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2
-https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.raw
-https://cloud-images.ubuntu.com/minimal/releases/focal/release-20200729/ubuntu-20.04-minimal-cloudimg-amd64.img
-https://github.com/rancher/k3os/releases/download/v0.11.0/k3os-amd64.iso 
-</code></pre><h4 id="the-way-to-generate-a-longhorn-manager-image-with-higher-api-version">The way to generate a longhorn-manager image with higher API version</h4>
-<ol>
-<li>Download longhorn manager repo with command <code>git clone https://github.com/longhorn/longhorn-manager.git</code>.</li>
-<li>Increase the constant <code>CurrentBackingImageManagerAPIVersion</code> in <code>longhorn-manager/engineapi/backing_image_manager.go</code> by 1.</li>
-<li>Run <code>make</code> to build a longhorn-manager image then push it to docker hub.</li>
-</ol>
-<h4 id="the-way-to-generate-a-backing-image-manager-image-with-higher-api-version">The way to generate a backing-image-manager image with higher API version</h4>
-<ol>
-<li>Download backing image manager repo with command <code>git clone https://github.com/longhorn/backing-image-manager.git</code>.</li>
-<li>Increase the constants <code>BackingImageManagerAPIVersion</code> and <code>BackingImageManagerAPIMinVersion</code> in <code>backing-image-manager/pkg/meta/version.go</code> by 1.</li>
-<li>Run <code>make</code> to build a longhorn-manager image then push it to docker hub.</li>
+       <ol>
+<li>Set up a cluster using a customized kubelet root directory.
+e.g., launching k3s <code>k3s server --kubelet-arg &quot;--root-dir=/var/lib/longhorn-test&quot; &amp;</code></li>
+<li>Install <code>Longhorn</code> with env <code>KUBELET_ROOT_DIR</code> in <code>longhorn-driver-deployer</code> being set to the corresponding value.</li>
+<li>Launch a pod using Longhorn volumes via StorageClass. Everything should work fine.</li>
+<li>Delete the pod and the PVC. Everything should be cleaned up.</li>
 </ol>
 
     </article>
