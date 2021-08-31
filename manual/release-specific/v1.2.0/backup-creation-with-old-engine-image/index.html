@@ -454,8 +454,8 @@
 <em>And</em> upgrade volume <code>vol-old-engine</code> to engine image <code>oldEI</code>.</p>
 <p><strong>When</strong> create backup of volume <code>vol-old-engine</code>.</p>
 <p><strong>Then</strong> watch kubectl <code>kubectl get backups.longhorn.io -l backup-volume=vol-old-engine -w</code>.
-<em>And</em> should see 2 two backups temporarily (in transition state). One with state <code>Completed</code>, the other one with state <code>Ready</code>.
-<em>And</em> should see the backup with state <code>Completed</code> be clean up, only the backup with state <code>Ready</code> be left.</p>
+<em>And</em> should see two backups temporarily (in transition state).
+<em>And</em> should see only one backup be left after a while.</p>
 
     </article>
   </div>
