@@ -151,7 +151,7 @@ Test basic upgrade  Install old Longhorn version. E.g., &amp;lt;= v1.0.2 Create 
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/environment/cluster-using-customized-kubelet-root-directory/</guid>
-      <description> Set up a cluster using a customized kubelet root directory. e.g., launching k3s k3s server --kubelet-arg &amp;quot;--root-dir=/var/lib/longhorn-test&amp;quot; &amp;amp; Install Longhorn with env KUBELET_ROOT_DIR in longhorn-driver-deployer being set to the corresponding value. Launch a pod using Longhorn volumes via StorageClass. Everything should work fine. Delete the pod and the PVC. Everything should be cleaned up.  </description>
+      <description> Set up a cluster using a customized kubelet root directory. e.g., launching k3s k3s server --kubelet-arg &amp;quot;root-dir=/var/lib/longhorn-test&amp;quot; &amp;amp; Install Longhorn with env KUBELET_ROOT_DIR in longhorn-driver-deployer being set to the corresponding value. Launch a pod using Longhorn volumes via StorageClass. Everything should work fine. Delete the pod and the PVC. Everything should be cleaned up.  </description>
     </item>
     
     <item>

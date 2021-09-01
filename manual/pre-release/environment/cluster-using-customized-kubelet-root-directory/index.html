@@ -449,7 +449,7 @@
     <article id="content">
        <ol>
 <li>Set up a cluster using a customized kubelet root directory.
-e.g., launching k3s <code>k3s server --kubelet-arg &quot;--root-dir=/var/lib/longhorn-test&quot; &amp;</code></li>
+e.g., launching k3s <code>k3s server --kubelet-arg &quot;root-dir=/var/lib/longhorn-test&quot; &amp;</code></li>
 <li>Install <code>Longhorn</code> with env <code>KUBELET_ROOT_DIR</code> in <code>longhorn-driver-deployer</code> being set to the corresponding value.</li>
 <li>Launch a pod using Longhorn volumes via StorageClass. Everything should work fine.</li>
 <li>Delete the pod and the PVC. Everything should be cleaned up.</li>
