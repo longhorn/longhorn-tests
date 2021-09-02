@@ -60,5 +60,9 @@ def notifyBuild(String buildStatus = 'STARTED') {
   }
 
   // Send notifications
-  slackSend (color: colorCode, message: summary, channel: 'C01PM0C376V',  teamDomain: 'rancher',  tokenCredentialId: 'longhorn-tests-slack-token')
+  slackSend (color: colorCode, message: summary, channel: 'C02DR3N5T24',  teamDomain: 'suse',  tokenCredentialId: 'longhorn-tests-slack-token')
+  }
+
+  // Send notifications
+  slackSend (color: colorCode, message: summary, channel: 'C02D99TKA68', teamDomain: 'suse', tokenCredentialId: 'longhorn-tests-slack-token')
 }
