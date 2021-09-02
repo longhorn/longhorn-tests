@@ -3701,3 +3701,25 @@ def test_expand_pvc_with_size_round_up(client, core_api, volume_name):  # NOQA
 
     client.delete(volume)
     wait_for_volume_delete(client, volume_name)
+
+@pytest.mark.skip(reason="TODO") # NOQA
+def test_workload_with_fsgroup():  # NOQA
+    """
+    1. Deploy a StatefulSet workload that uses Longhorn volume and has
+       securityContext set:
+       ```
+        securityContext:
+            runAsUser: 1000
+            runAsGroup: 1000
+            fsGroup: 1000
+        ```
+       See
+       https://github.com/longhorn/longhorn/issues/2964#issuecomment-910117570
+       for an example.
+    2. Wait for the workload pod to be running
+    3. Exec into the workload pod, cd into the mount point of the volume.
+    4. Verify that the mount point has correct filesystem permission (e.g.,
+       running `ls -l` on the mount point should return the permission in
+       the format ****rw****
+    5. Verify that we can read/write files.
+    """
