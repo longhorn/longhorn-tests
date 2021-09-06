@@ -452,7 +452,7 @@
 <li>Launch longhorn system</li>
 <li>Create and attach a volume</li>
 <li>Follow this <a href="https://github.com/longhorn/longhorn/wiki/dev:-How-to-modify-the-status-subresource-with-%60kubectl-edit%60-(CRD)">doc</a> to manually modify the IP of one instance-manager-r. e.g.,
-<pre><code>curl -k -XPATCH -H &quot;Accept: application/json&quot; -H &quot;Content-Type: application/merge-patch+json&quot; -H &quot;Authorization: Bearer kubeconfig-xxxxxx&quot; --data '{&quot;status&quot;:{&quot;ip&quot;:&quot;1.1.1.1&quot;}}' https://172.104.72.64/k8s/clusters/c-znrxc/apis/longhorn.io/v1beta1/namespaces/longhorn-system/instancemanagers/instance-manager-r-63ece607/status
+<pre tabindex="0"><code>curl -k -XPATCH -H &quot;Accept: application/json&quot; -H &quot;Content-Type: application/merge-patch+json&quot; -H &quot;Authorization: Bearer kubeconfig-xxxxxx&quot; --data '{&quot;status&quot;:{&quot;ip&quot;:&quot;1.1.1.1&quot;}}' https://172.104.72.64/k8s/clusters/c-znrxc/apis/longhorn.io/v1beta1/namespaces/longhorn-system/instancemanagers/instance-manager-r-63ece607/status
 </code></pre><ol>
 <li>Notice that the bearer token <code>kubeconfig-xxx</code> can be found in your kube config file</li>
 <li>Remember to add <code>/status</code> at the end of the URL</li>

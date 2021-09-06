@@ -496,8 +496,19 @@
 </ol>
 </li>
 </ol>
+<h3 id="system-upgrade-with-the-same-backing-image-manager-image">System upgrade with the same backing image manager image</h3>
+<ol>
+<li>Deploy Longhorn.</li>
+<li>Create a backing images. Wait for the backing image being ready in the 1st disk.</li>
+<li>Create and attach volumes with the backing image. Wait for all disk files of the backing image being ready.</li>
+<li>Run <code>kubectl -n longhorn system get pod -w</code> in a seperate session.</li>
+<li>Upgrade Longhorn manager but with the backing image manager image unchanged. (Actually we can mock this upgrade by removing all longhorn manager pods simultaneously.)</li>
+<li>Check if all disk file status of the backing image becomes <code>unknown</code> then <code>ready</code> during the longhorn manager pods termination and restart. (May need to refresh the UI page after restart.)</li>
+<li>After the longhorn manager pods restart, Verify there is no backing image data source pod launched for the backing image in the output of step4.</li>
+<li>Repeat step4 ~ step8 for 10 times.</li>
+</ol>
 <h4 id="available-test-backing-image-urls">Available test backing image URLs:</h4>
-<pre><code>https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2
+<pre tabindex="0"><code>https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2
 https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.raw
 https://cloud-images.ubuntu.com/minimal/releases/focal/release-20200729/ubuntu-20.04-minimal-cloudimg-amd64.img
 https://github.com/rancher/k3os/releases/download/v0.11.0/k3os-amd64.iso 

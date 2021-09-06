@@ -453,7 +453,7 @@
 <p><strong>Given</strong> 100 pvc created.</p>
 <p><em>And</em> all pvcs deployed and detached.</p>
 <p><strong>When</strong> monitor traffic in frontend pod with nload.</p>
-<pre><code>apk add nload
+<pre tabindex="0"><code>apk add nload
 nload
 </code></pre><p><strong>Then</strong> should not see a continuing large amount of traffic when there is no operation happening. The smaller spikes are mostly coming from event resources which possibly could be enhanced later (<a href="https://github.com/longhorn/longhorn/issues/2433)">https://github.com/longhorn/longhorn/issues/2433)</a>.</p>
 

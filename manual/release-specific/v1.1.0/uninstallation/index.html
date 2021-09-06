@@ -457,7 +457,7 @@
 <ul>
 <li>e.g., putting the following python test into the manager integration test directory and run it:</li>
 </ul>
-<pre><code>from common import get_apps_api_client # NOQA
+<pre tabindex="0"><code>from common import get_apps_api_client # NOQA
 
 
 def test_uninstall_script():
@@ -523,7 +523,7 @@ def ds_manifest(name):
 <li>Uninstall longhorn v1.1.0.</li>
 <li>Uninstallation should be completed somewhere between ~(1-2) min which was observed between ~(2-3) min in similar set up with Longhorn v1.0.2.</li>
 <li>There should not be repeated log messages like below:
-<pre><code>time=&quot;2020-07-31T20:25:54Z&quot; level=info msg=&quot;2 instance managers remaining&quot;
+<pre tabindex="0"><code>time=&quot;2020-07-31T20:25:54Z&quot; level=info msg=&quot;2 instance managers remaining&quot;
 time=&quot;2020-07-31T20:25:55Z&quot; level=info msg=&quot;2 instance managers remaining&quot;
 time=&quot;2020-07-31T20:25:56Z&quot; level=info msg=&quot;2 instance managers remaining&quot;
 time=&quot;2020-07-31T20:25:57Z&quot; level=info msg=&quot;2 instance managers remaining&quot;
@@ -538,7 +538,7 @@ time=&quot;2020-07-31T20:26:03Z&quot; level=info msg=&quot;2 instance managers r
 time=&quot;2020-07-31T20:26:04Z&quot; level=info msg=&quot;2 instance managers remaining&quot;
 </code></pre></li>
 <li>Also, Below logs should not be present anymore:
-<pre><code>time=&quot;2020-08-06T18:35:05Z&quot; level=debug msg=&quot;Instance Manager Controller longhorn-node-1 picked up instance-manager-e-1e97de2b&quot;
+<pre tabindex="0"><code>time=&quot;2020-08-06T18:35:05Z&quot; level=debug msg=&quot;Instance Manager Controller longhorn-node-1 picked up instance-manager-e-1e97de2b&quot;
 time=&quot;2020-08-06T18:35:05Z&quot; level=debug msg=&quot;Instance Manager Controller longhorn-node-1 picked up instance-manager-e-b7b0e26c&quot;
 time=&quot;2020-08-06T18:35:07Z&quot; level=debug msg=&quot;Instance Manager Controller longhorn-node-1 picked up instance-manager-e-c597a586&quot;
 time=&quot;2020-08-06T18:35:07Z&quot; level=debug msg=&quot;Instance Manager Controller longhorn-node-1 picked up instance-manager-e-1e97de2b&quot;

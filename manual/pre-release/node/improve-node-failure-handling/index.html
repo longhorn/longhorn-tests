@@ -451,7 +451,7 @@
 <li>Setup a cluster of 3 worker nodes</li>
 <li>Install Longhorn and set <code>Default Replica Count = 2</code> (because we will turn off one node)</li>
 <li>Create a StatefulSet with 2 pods using the command:
-<pre><code>kubectl create -f https://raw.githubusercontent.com/longhorn/longhorn/master/examples/statefulset.yaml
+<pre tabindex="0"><code>kubectl create -f https://raw.githubusercontent.com/longhorn/longhorn/master/examples/statefulset.yaml
 </code></pre></li>
 <li>Create a volume + pv + pvc named <code>vol1</code> and create a deployment(1 pod) of default ubuntu named <code>shell</code> with the usage of pvc <code>vol1</code> mounted under <code>/mnt/vol1</code></li>
 <li>Find the node which contains one pod of the StatefulSet/Deployment. Power off the node</li>

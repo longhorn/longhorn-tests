@@ -455,7 +455,7 @@
 <ol>
 <li>Install Kubernetes</li>
 <li>Disable IPv6 on all the worker nodes using the following
-<pre><code>Go to the folder /etc/default
+<pre tabindex="0"><code>Go to the folder /etc/default
 In the grub file, edit the value GRUB_CMDLINE_LINUX_DEFAULT=&quot;ipv6.disable=1&quot;
 Once the file is saved update by the command update-grub
 Reboot the node and once the node becomes active, 
@@ -468,7 +468,7 @@ Use the command cat /proc/cmdline to verify &quot;ipv6.disable=1&quot; is reflec
 </ol>
 </li>
 <li>Re-enable ipv6 on all the nodes using:
-<pre><code>By deleting the &quot;ipv6.disable=1&quot; from the GRUB_CMDLINE_LINUX_DEFAULT accessing grub file from /etc/default
+<pre tabindex="0"><code>By deleting the &quot;ipv6.disable=1&quot; from the GRUB_CMDLINE_LINUX_DEFAULT accessing grub file from /etc/default
 Perform a reboot and once the node comes active
 Use the command cat /proc/cmdline to verify &quot;ipv6.disable=1&quot; is not reflected in the values
 </code></pre></li>

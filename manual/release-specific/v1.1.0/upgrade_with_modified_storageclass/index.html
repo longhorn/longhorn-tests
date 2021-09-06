@@ -455,12 +455,12 @@
 <h3 id="kubectl-apply--f">Kubectl apply -f</h3>
 <ol>
 <li>Install Longhorn v1.0.2
-<pre><code>kubectl apply -f https://raw.githubusercontent.com/longhorn/longhorn/v1.0.2/deploy/longhorn.yaml
+<pre tabindex="0"><code>kubectl apply -f https://raw.githubusercontent.com/longhorn/longhorn/v1.0.2/deploy/longhorn.yaml
 </code></pre></li>
 <li>Create a statefulset using <code>longhorn</code> storageclass for PVCs. Set the scale to 1.</li>
 <li>Observe that there is a workload pod (<code>pod-1</code>) is using 1 volume (<code>vol-1</code>) with 3 replicas.</li>
 <li>In Longhorn repo, on <code>master</code> branch. Modify <code>numberOfReplicas: &quot;1&quot;</code> in <code>https://raw.githubusercontent.com/longhorn/longhorn/master/deploy/longhorn.yaml</code>. Upgrade Longhorn to master by running
-<pre><code>kubectl apply -f https://raw.githubusercontent.com/longhorn/longhorn/master/deploy/longhorn.yaml
+<pre tabindex="0"><code>kubectl apply -f https://raw.githubusercontent.com/longhorn/longhorn/master/deploy/longhorn.yaml
 </code></pre></li>
 <li>Verify that <code>longhorn</code> storage class now has the field <code>numberOfReplicas: 1</code>.</li>
 <li>Scale up the deployment to 2. Verify that:
@@ -489,7 +489,7 @@
 </li>
 <li>
 <p>Clone the longhorn chart in local system and checkout to Longhorn repo, upgrade Longhorn to the master version by running:</p>
-<pre><code>helm upgrade longhorn chart/ -n longhorn-system --set persistence.defaultClassReplicaCount=1,image.longhorn.manager.tag=master
+<pre tabindex="0"><code>helm upgrade longhorn chart/ -n longhorn-system --set persistence.defaultClassReplicaCount=1,image.longhorn.manager.tag=master
 </code></pre></li>
 <li>
 <p>Verify that no error occurs.</p>
@@ -513,7 +513,7 @@
 </li>
 <li>
 <p>Upgrade Longhorn again by running:</p>
-<pre><code>helm upgrade longhorn chart/ -n longhorn-system --set persistence.defaultClassReplicaCount=2,image.longhorn.manager.tag=master
+<pre tabindex="0"><code>helm upgrade longhorn chart/ -n longhorn-system --set persistence.defaultClassReplicaCount=2,image.longhorn.manager.tag=master
 </code></pre></li>
 <li>
 <p>Verify that no error occurs.</p>
@@ -531,11 +531,11 @@
 </li>
 <li>
 <p>See the current Longhorn release&rsquo;s <code>revision</code>:</p>
-<pre><code>helm list -n longhorn-system
+<pre tabindex="0"><code>helm list -n longhorn-system
 </code></pre></li>
 <li>
 <p>Rollback to the previous version by:</p>
-<pre><code>helm rollback longhorn &lt;REVISION - 1&gt; -n longhorn-system
+<pre tabindex="0"><code>helm rollback longhorn &lt;REVISION - 1&gt; -n longhorn-system
 </code></pre></li>
 <li>
 <p>Verify that no error occurs.</p>
@@ -554,11 +554,11 @@
 </li>
 <li>
 <p>Rollback to the very first version by:</p>
-<pre><code>helm rollback longhorn 1 -n longhorn-system
+<pre tabindex="0"><code>helm rollback longhorn 1 -n longhorn-system
 </code></pre></li>
 <li>
 <p>See the error:</p>
-<pre><code>Error: no StorageClass with the name &quot;longhorn&quot; found
+<pre tabindex="0"><code>Error: no StorageClass with the name &quot;longhorn&quot; found
 </code></pre><p>This is because the Longhorn master version already replaced the initial <code>longhorn</code> storage class by a different version. Users have to manually delete <code>longhorn</code> storage class before they can rollback. In the future (e.g. when upgrade/rollback between v.1.1 +) this issue will not happen because the versions after v1.1+ we don&rsquo;t use Helm template for <code>longhorn</code> storage class</p>
 </li>
 </ol>

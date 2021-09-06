@@ -451,12 +451,12 @@
 <li>This test case should be tested on both yaml installation, chart installation (Helm and Rancher UI), as well as upgrade scenarios</li>
 <li>After install Longhorn using on of the above method, ssh into a worker node that has a longhorn-manager pod running</li>
 <li>check the mount point <code>/run/secrets/kubernetes.io/serviceaccount</code> by running:
-<pre><code>root@node-1:~# findmnt  /run/secrets/kubernetes.io/serviceaccount
+<pre tabindex="0"><code>root@node-1:~# findmnt  /run/secrets/kubernetes.io/serviceaccount
 </code></pre></li>
 <li>Verify that there is no such mount point</li>
 <li>Kill the longhorn-manager pod on the above node and wait for it to be recreated and running</li>
 <li>check the mount point <code>/run/secrets/kubernetes.io/serviceaccount</code> by running:
-<pre><code>root@node-1:~# findmnt  /run/secrets/kubernetes.io/serviceaccount
+<pre tabindex="0"><code>root@node-1:~# findmnt  /run/secrets/kubernetes.io/serviceaccount
 </code></pre></li>
 <li>Verify that there is no such mount point</li>
 <li>Repeat the step 5 to 7 a few times</li>

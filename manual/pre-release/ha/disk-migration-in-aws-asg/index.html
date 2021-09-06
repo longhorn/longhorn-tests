@@ -465,11 +465,11 @@
 <li>Deploy Longhorn v1.1.0 on the cluster and Set <code>ReplicaReplenishmentWaitInterval</code>. Make sure it&rsquo;s longer than the time needs for node replacement.</li>
 <li>Deploy some workloads using Longhorn volumes.</li>
 <li>Modify launch template of ASG and provide mount command for EBS.
-<pre><code>sudo mkdir -p /data
+<pre tabindex="0"><code>sudo mkdir -p /data
 sudo mount /dev/xvdh /data
 </code></pre></li>
 <li>Trigger ASG instance refresh with below script using AWS Cli, which will attach the existing EBS volume to the new instance.
-<pre><code>AWS_REGION=&lt;Your aws region&gt;
+<pre tabindex="0"><code>AWS_REGION=&lt;Your aws region&gt;
 INSTANCE_NAME=&lt;Instance name&gt;
 VOLUME_STATUS=''
 INSTANCE_ID=$(aws --region=$AWS_REGION ec2 describe-instances --filters 'Name=tag:Name,Values=$INSTANCE_NAME' | jq -r '.Reservations[].Instances[].InstanceId')

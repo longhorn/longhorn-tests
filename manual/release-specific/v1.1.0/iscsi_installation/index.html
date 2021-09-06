@@ -453,16 +453,16 @@
 <li>Create an EKS cluster with 3 nodes.</li>
 <li>Run the following command to install iscsi on every nodes.</li>
 </ol>
-<pre><code>kubectl apply -f https://raw.githubusercontent.com/longhorn/longhorn/master/deploy/iscsi/longhorn-iscsi-installation.yaml
+<pre tabindex="0"><code>kubectl apply -f https://raw.githubusercontent.com/longhorn/longhorn/master/deploy/iscsi/longhorn-iscsi-installation.yaml
 </code></pre><ol start="3">
 <li>In Longhorn Manager Repo Directory run:</li>
 </ol>
-<pre><code>kubectl apply -Rf ./deploy/install/
+<pre tabindex="0"><code>kubectl apply -Rf ./deploy/install/
 </code></pre><ol start="4">
 <li>Longhorn should be able installed successfully.</li>
 <li>Try to create a pod with a pvc:</li>
 </ol>
-<pre><code>kubectl apply -f https://raw.githubusercontent.com/longhorn/longhorn/master/examples/simple_pvc.yaml
+<pre tabindex="0"><code>kubectl apply -f https://raw.githubusercontent.com/longhorn/longhorn/master/examples/simple_pvc.yaml
 kubectl apply -f https://raw.githubusercontent.com/longhorn/longhorn/master/examples/simple_pod.yaml
 </code></pre><ol start="6">
 <li>Check the pod is created successfully with a valid Longhorn volume mounted.</li>

@@ -451,13 +451,13 @@
 <ol>
 <li>Install <code>Longhorn</code> with no <code>priority-class</code> set in the default settings. The <code>Priority Class</code> setting should be empty after the installation completes according to the <code>longhorn-ui</code>, and the default <code>Priority</code> of all <code>Pods</code> in the <code>longhorn-system</code> namespace should be <code>0</code>:</li>
 </ol>
-<pre><code>~ kubectl -n longhorn-system describe pods | grep Priority
+<pre tabindex="0"><code>~ kubectl -n longhorn-system describe pods | grep Priority
 # should be repeated many times
 Priority:     0
 </code></pre><ol start="2">
 <li>Install <code>Longhorn</code> with a nonexistent <code>priority-class</code> in the default settings. The system should fail to come online. The <code>Priority Class</code> setting should be set and the status of the <code>Daemon Set</code> for the <code>longhorn-manager</code> should indicate that the reason it failed was due to an invalid <code>Priority Class</code>:</li>
 </ol>
-<pre><code>~ kubectl -n longhorn-system describe lhs priority-class
+<pre tabindex="0"><code>~ kubectl -n longhorn-system describe lhs priority-class
 Name:         priority-class
 ...
 Value:                 nonexistent-priority-class
@@ -479,7 +479,7 @@ Events:
 </code></pre><ol start="3">
 <li>Install <code>Longhorn</code> with a valid <code>priority-class</code> in the default settings. The <code>Priority Class</code> setting should be set according to the <code>longhorn-ui</code>, and all the <code>Pods</code> in the <code>longhorn-system</code> namespace should have the right <code>Priority</code> set:</li>
 </ol>
-<pre><code>~ kubectl -n longhorn-system describe pods | grep Priority
+<pre tabindex="0"><code>~ kubectl -n longhorn-system describe pods | grep Priority
 # should be repeated many times
 Priority:             2000001000
 Priority Class Name:  system-node-critical

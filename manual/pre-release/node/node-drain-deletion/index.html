@@ -465,11 +465,11 @@
 <li>Cordon the node. Longhorn will automatically disable the node scheduling when a Kubernetes node is cordoned.</li>
 <li>Evict all the replicas from the node.</li>
 <li>Run the following command to drain the node with <code>force</code> flag set to false.
-<pre><code>kubectl drain &lt;Node name&gt; --delete-local-data=true --force=false --grace-period=-1 --ignore-daemonsets=true --timeout=&lt;Desired timeout in secs&gt;
+<pre tabindex="0"><code>kubectl drain &lt;Node name&gt; --delete-local-data=true --force=false --grace-period=-1 --ignore-daemonsets=true --timeout=&lt;Desired timeout in secs&gt;
 </code></pre></li>
 <li>Observe that the workloads move to another node. The volumes should first detach and attach to workloads once they move to another node.</li>
 <li>Observe the logs, one by one all the pods should get evicted.
-<pre><code>node/&lt;node-name&gt; already cordoned
+<pre tabindex="0"><code>node/&lt;node-name&gt; already cordoned
 WARNING: ignoring DaemonSet-managed Pods: ingress-nginx/nginx-ingress-controller-bpf2t, kube-system/canal-hwk6v, longhorn-system/engine-image-ei-605a0f3e-8gb8l, longhorn-system/longhorn-csi-plugin-flq84, longhorn-system/longhorn-manager-tps6v
 evicting pod longhorn-system/instance-manager-r-1aebab59
 evicting pod kube-system/coredns-849545576b-v54vn
@@ -490,7 +490,7 @@ kubectl cordon <span style="color:#e6db74">${</span>NODE<span style="color:#e6db
 kubectl drain --force --ignore-daemonsets --delete-emptydir-data --grace-period<span style="color:#f92672">=</span><span style="color:#ae81ff">10</span> <span style="color:#e6db74">${</span>NODE<span style="color:#e6db74">}</span>
 </code></pre></div><p><strong>Then</strong> all node should successfully drain.</p>
 <p>NOTE: We might still 1 or 2 times of the pod&rsquo;s disruption budget message, but will drain successfully in the end.</p>
-<pre><code class="language-log" data-lang="log">evicting pod longhorn-system/instance-manager-r-xxxxxxxx
+<pre tabindex="0"><code class="language-log" data-lang="log">evicting pod longhorn-system/instance-manager-r-xxxxxxxx
 error when evicting pods/&quot;instance-manager-r-xxxxxxxx&quot; -n &quot;longhorn-system&quot; (will retry after 5s): Cannot evict pod as it would violate the pod's disruption budget.
 </code></pre>
     </article>

@@ -451,7 +451,7 @@
 <p><a href="https://github.com/longhorn/longhorn/issues/2357">https://github.com/longhorn/longhorn/issues/2357</a></p>
 <h2 id="test-rwx-share-mount-ownership">Test RWX share-mount ownership</h2>
 <p><strong>Given</strong> Setup one of cluster node to use host FQDN.</p>
-<pre><code>root@ip-172-30-0-139:/home/ubuntu# cat /etc/hosts
+<pre tabindex="0"><code>root@ip-172-30-0-139:/home/ubuntu# cat /etc/hosts
 127.0.0.1 localhost
 54.255.224.72 ip-172-30-0-139.lan ip-172-30-0-139
 
@@ -463,7 +463,7 @@ ip-172-30-0-139.lan
 </code></pre><p><em>And</em> <code>Domain = localdomain</code> is commented out in <code>/etc/idmapd.conf</code> on cluster hosts.
 This is to ensure <code>localdomain</code> is not enforce to sync between server and client.
 Ref: <a href="https://github.com/longhorn/website/pull/279">https://github.com/longhorn/website/pull/279</a></p>
-<pre><code>root@ip-172-30-0-139:~# cat /etc/idmapd.conf 
+<pre tabindex="0"><code>root@ip-172-30-0-139:~# cat /etc/idmapd.conf 
 [General]
 
 Verbosity = 0
@@ -478,7 +478,7 @@ Nobody-Group = nogroup
 </code></pre><p><em>And</em> pod with rwx pvc deployed to the node with host FQDN.
 Here need to update <code>nodeSelector.kubernetes.io/hostname</code> below to match
 the node name.</p>
-<pre><code>apiVersion: v1
+<pre tabindex="0"><code>apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: longhorn-volv-pvc
@@ -516,9 +516,9 @@ spec:
     persistentVolumeClaim:
       claimName: longhorn-volv-pvc
 </code></pre><p><strong>When</strong> check file and directory permission of mounted path.</p>
-<pre><code>root@ip-172-30-0-139:/home/ubuntu# kubectl exec -it volume-test -- ls -l /data
+<pre tabindex="0"><code>root@ip-172-30-0-139:/home/ubuntu# kubectl exec -it volume-test -- ls -l /data
 </code></pre><p><strong>Then</strong> should not see ownership changed to nobody.</p>
-<pre><code>-rw-r--r--    1 root     root            29 Apr  6 14:07 date.txt
+<pre tabindex="0"><code>-rw-r--r--    1 root     root            29 Apr  6 14:07 date.txt
 drwx------    2 root     root         16384 Apr  6 14:06 lost+found
 </code></pre>
     </article>

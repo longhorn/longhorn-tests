@@ -453,7 +453,7 @@
 <ol>
 <li>For test convenience, manually launch the backing image manager pods:</li>
 </ol>
-<pre><code>apiVersion: apps/v1
+<pre tabindex="0"><code>apiVersion: apps/v1
 kind: DaemonSet
 metadata:
   labels:
@@ -495,24 +495,24 @@ spec:
 </code></pre><ol start="2">
 <li>Download a backing image in the first pod:</li>
 </ol>
-<pre><code># alias bm=&quot;backing-image-manager backing-image&quot;
+<pre tabindex="0"><code># alias bm=&quot;backing-image-manager backing-image&quot;
 # bm pull --name bi-test --uuid uuid-bi-test --download-url https://cloud-images.ubuntu.com/minimal/releases/focal/release-20200729/ubuntu-20.04-minimal-cloudimg-amd64.img
 # bm ls
 </code></pre><ol start="3">
 <li>In the 2nd pod, limit the bandwidth first so that the downloading won&rsquo;t be done within several seconds</li>
 </ol>
-<pre><code>tc qdisc del dev eth0 root
+<pre tabindex="0"><code>tc qdisc del dev eth0 root
 tc qdisc add dev eth0 root tbf rate 500kbit latency 0.1ms burst 1000kbit
 </code></pre><ol start="4">
 <li>Then start to get the backing image file from the 1st BIM pod</li>
 </ol>
-<pre><code># alias bm=&quot;backing-image-manager backing-image&quot;
+<pre tabindex="0"><code># alias bm=&quot;backing-image-manager backing-image&quot;
 # bm sync --name bi-test --uuid uuid-bi-test --download-url https://cloud-images.ubuntu.com/minimal/releases/focal/release-20200729/ubuntu-20.04-minimal-cloudimg-amd64.img --size 208601088 --from-host &lt;the IP of 1st BIM pod&gt; --to-host &lt;the IP of 2nd BIM pod&gt;
 # bm ls
 </code></pre><ol start="5">
 <li>During the syncing, directly deleting the downloading backing image in the 2nd pod</li>
 </ol>
-<pre><code># bm delete bi-test
+<pre tabindex="0"><code># bm delete bi-test
 </code></pre><ol start="6">
 <li>Wait 1 minute and check the log of the 2nd pod. Make sure there is no download/sync (failure) related logs after the deletion. Then restarting sync without deletion, the backing image can be downloaded successfully.</li>
 </ol>
