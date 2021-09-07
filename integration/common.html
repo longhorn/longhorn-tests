@@ -120,7 +120,7 @@ DEFAULT_BACKUP_TIMEOUT = 100
 DEFAULT_POD_INTERVAL = 1
 DEFAULT_POD_TIMEOUT = 180
 
-DEFAULT_STATEFULSET_INTERVAL = 5
+DEFAULT_STATEFULSET_INTERVAL = 1
 DEFAULT_STATEFULSET_TIMEOUT = 180
 
 DEFAULT_DEPLOYMENT_INTERVAL = 1
@@ -1139,7 +1139,8 @@ def statefulset(request):
         &#39;apiVersion&#39;: &#39;apps/v1&#39;,
         &#39;kind&#39;: &#39;StatefulSet&#39;,
         &#39;metadata&#39;: {
-            &#39;name&#39;: &#39;test-statefulset&#39;
+            &#39;name&#39;: &#39;test-statefulset&#39;,
+            &#39;namespace&#39;: &#39;default&#39;,
         },
         &#39;spec&#39;: {
             &#39;selector&#39;: {
@@ -1381,6 +1382,8 @@ def cleanup_client():
 
     if backing_image_feature_supported(client):
         cleanup_all_backing_images(client)
+
+    cleanup_storage_class()
 
     # enable nodes scheduling
     reset_node(client)
@@ -3031,6 +3034,16 @@ def check_csi_expansion(core_api):
     return csi_expansion_enabled
 
 
+def create_statefulset(statefulset_manifest):
+    &#34;&#34;&#34;
+    Create a new StatefulSet for testing.
+    &#34;&#34;&#34;
+    api = get_apps_api_client()
+    api.create_namespaced_stateful_set(
+        body=statefulset_manifest,
+        namespace=&#39;default&#39;)
+
+
 def create_and_wait_statefulset(statefulset_manifest):
     &#34;&#34;&#34;
     Create a new StatefulSet for testing.
@@ -3038,10 +3051,7 @@ def create_and_wait_statefulset(statefulset_manifest):
     This function will block until all replicas in the StatefulSet are online
     or it times out, whichever occurs first.
     &#34;&#34;&#34;
-    api = get_apps_api_client()
-    api.create_namespaced_stateful_set(
-        body=statefulset_manifest,
-        namespace=&#39;default&#39;)
+    create_statefulset(statefulset_manifest)
     wait_statefulset(statefulset_manifest)
 
 
@@ -3071,6 +3081,29 @@ def delete_storage_class(sc_name):
         api.delete_storage_class(sc_name, body=k8sclient.V1DeleteOptions())
     except ApiException as e:
         assert e.status == 404
+
+
+def cleanup_storage_class():
+    skip_sc_deletes = [&#34;longhorn&#34;, &#34;local-path&#34;]
+    api = get_storage_api_client()
+    ret = api.list_storage_class()
+    for sc in ret.items:
+        if sc.metadata.name in skip_sc_deletes:
+            continue
+        delete_storage_class(sc.metadata.name)
+
+    ok = False
+    for _ in range(RETRY_COUNTS):
+        ok = True
+        ret = api.list_storage_class()
+        for sc in ret.items:
+            if sc.metadata.name not in skip_sc_deletes:
+                ok = False
+                break
+        if ok:
+            break
+        time.sleep(RETRY_INTERVAL)
+    assert ok
 
 
 def create_pvc(pvc_manifest):
@@ -3135,7 +3168,7 @@ def check_statefulset_existence(api, ss_name, namespace=&#34;default&#34;):
     return False
 
 
-def delete_and_wait_pvc(api, pvc_name):
+def delete_and_wait_pvc(api, pvc_name, retry_counts=RETRY_COUNTS):
     try:
         api.delete_namespaced_persistent_volume_claim(
             name=pvc_name, namespace=&#39;default&#39;,
@@ -3143,11 +3176,11 @@ def delete_and_wait_pvc(api, pvc_name):
     except ApiException as e:
         assert e.status == 404
 
-    wait_delete_pvc(api, pvc_name)
+    wait_delete_pvc(api, pvc_name, retry_counts=retry_counts)
 
 
-def wait_delete_pvc(api, pvc_name):
-    for i in range(RETRY_COUNTS):
+def wait_delete_pvc(api, pvc_name, retry_counts=RETRY_COUNTS):
+    for _ in range(retry_counts):
         found = False
         ret = api.list_namespaced_persistent_volume_claim(namespace=&#39;default&#39;)
         for item in ret.items:
@@ -3990,6 +4023,35 @@ def wait_for_pod_phase(core_api, pod_name, pod_phase, namespace=&#34;default&#34
 
         time.sleep(RETRY_INTERVAL_LONG)
     assert is_phase
+
+
+def wait_for_pods_volume_state(client, pod_list, field, value,  # NOQA
+                               retry_counts=RETRY_COUNTS):
+    for _ in range(retry_counts):
+        volume_names = []
+        volumes = client.list_volume()
+        for v in volumes:
+            for p in pod_list:
+                if v.name == p[&#39;pv_name&#39;] and v[field] == value:
+                    volume_names.append(v.name)
+                    break
+        time.sleep(RETRY_INTERVAL)
+    return len(volume_names) == len(pod_list)
+
+
+def wait_for_pods_volume_delete(client, pod_list,  # NOQA
+                                retry_counts=RETRY_BACKUP_COUNTS):
+    volume_deleted = False
+    for _ in range(retry_counts):
+        volume_deleted = True
+        volumes = client.list_volume()
+        for v in volumes:
+            for p in pod_list:
+                if v.name == p[&#39;pv_name&#39;]:
+                    volume_deleted = False
+                    break
+        time.sleep(RETRY_INTERVAL)
+    assert volume_deleted is True
 
 
 def wait_for_instance_manager_desire_state(client, core_api, im_name,
@@ -4938,6 +5000,8 @@ properly.
     if backing_image_feature_supported(client):
         cleanup_all_backing_images(client)
 
+    cleanup_storage_class()
+
     # enable nodes scheduling
     reset_node(client)
     reset_settings(client)
@@ -4986,6 +5050,38 @@ properly.
     node.diskUpdate(disks=update_disks)
     node.diskUpdate(disks={})
     return wait_for_disk_update(client, node_name, 0)</code></pre>
+</details>
+</dd>
+<dt id="tests.common.cleanup_storage_class"><code class="name flex">
+<span>def <span class="ident">cleanup_storage_class</span></span>(<span>)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def cleanup_storage_class():
+    skip_sc_deletes = [&#34;longhorn&#34;, &#34;local-path&#34;]
+    api = get_storage_api_client()
+    ret = api.list_storage_class()
+    for sc in ret.items:
+        if sc.metadata.name in skip_sc_deletes:
+            continue
+        delete_storage_class(sc.metadata.name)
+
+    ok = False
+    for _ in range(RETRY_COUNTS):
+        ok = True
+        ret = api.list_storage_class()
+        for sc in ret.items:
+            if sc.metadata.name not in skip_sc_deletes:
+                ok = False
+                break
+        if ok:
+            break
+        time.sleep(RETRY_INTERVAL)
+    assert ok</code></pre>
 </details>
 </dd>
 <dt id="tests.common.cleanup_test_disks"><code class="name flex">
@@ -5372,10 +5468,7 @@ or it times out, whichever occurs first.</p></div>
     This function will block until all replicas in the StatefulSet are online
     or it times out, whichever occurs first.
     &#34;&#34;&#34;
-    api = get_apps_api_client()
-    api.create_namespaced_stateful_set(
-        body=statefulset_manifest,
-        namespace=&#39;default&#39;)
+    create_statefulset(statefulset_manifest)
     wait_statefulset(statefulset_manifest)</code></pre>
 </details>
 </dd>
@@ -5632,6 +5725,25 @@ created using a storage class).</p></div>
     return snap</code></pre>
 </details>
 </dd>
+<dt id="tests.common.create_statefulset"><code class="name flex">
+<span>def <span class="ident">create_statefulset</span></span>(<span>statefulset_manifest)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Create a new StatefulSet for testing.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def create_statefulset(statefulset_manifest):
+    &#34;&#34;&#34;
+    Create a new StatefulSet for testing.
+    &#34;&#34;&#34;
+    api = get_apps_api_client()
+    api.create_namespaced_stateful_set(
+        body=statefulset_manifest,
+        namespace=&#39;default&#39;)</code></pre>
+</details>
+</dd>
 <dt id="tests.common.create_storage_class"><code class="name flex">
 <span>def <span class="ident">create_storage_class</span></span>(<span>sc_manifest)</span>
 </code></dt>
@@ -5820,7 +5932,7 @@ if a nonexistent Pod is specified.</p>
 </details>
 </dd>
 <dt id="tests.common.delete_and_wait_pvc"><code class="name flex">
-<span>def <span class="ident">delete_and_wait_pvc</span></span>(<span>api, pvc_name)</span>
+<span>def <span class="ident">delete_and_wait_pvc</span></span>(<span>api, pvc_name, retry_counts=300)</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -5828,7 +5940,7 @@ if a nonexistent Pod is specified.</p>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def delete_and_wait_pvc(api, pvc_name):
+<pre><code class="python">def delete_and_wait_pvc(api, pvc_name, retry_counts=RETRY_COUNTS):
     try:
         api.delete_namespaced_persistent_volume_claim(
             name=pvc_name, namespace=&#39;default&#39;,
@@ -5836,7 +5948,7 @@ if a nonexistent Pod is specified.</p>
     except ApiException as e:
         assert e.status == 404
 
-    wait_delete_pvc(api, pvc_name)</code></pre>
+    wait_delete_pvc(api, pvc_name, retry_counts=retry_counts)</code></pre>
 </details>
 </dd>
 <dt id="tests.common.delete_and_wait_statefulset"><code class="name flex">
@@ -8240,7 +8352,8 @@ def statefulset(request):
         &#39;apiVersion&#39;: &#39;apps/v1&#39;,
         &#39;kind&#39;: &#39;StatefulSet&#39;,
         &#39;metadata&#39;: {
-            &#39;name&#39;: &#39;test-statefulset&#39;
+            &#39;name&#39;: &#39;test-statefulset&#39;,
+            &#39;namespace&#39;: &#39;default&#39;,
         },
         &#39;spec&#39;: {
             &#39;selector&#39;: {
@@ -8619,7 +8732,7 @@ def volume_name(request):
 </details>
 </dd>
 <dt id="tests.common.wait_delete_pvc"><code class="name flex">
-<span>def <span class="ident">wait_delete_pvc</span></span>(<span>api, pvc_name)</span>
+<span>def <span class="ident">wait_delete_pvc</span></span>(<span>api, pvc_name, retry_counts=300)</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -8627,8 +8740,8 @@ def volume_name(request):
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def wait_delete_pvc(api, pvc_name):
-    for i in range(RETRY_COUNTS):
+<pre><code class="python">def wait_delete_pvc(api, pvc_name, retry_counts=RETRY_COUNTS):
+    for _ in range(retry_counts):
         found = False
         ret = api.list_namespaced_persistent_volume_claim(namespace=&#39;default&#39;)
         for item in ret.items:
@@ -9523,6 +9636,53 @@ def volume_name(request):
 
         time.sleep(RETRY_INTERVAL)
     assert pod_restarted</code></pre>
+</details>
+</dd>
+<dt id="tests.common.wait_for_pods_volume_delete"><code class="name flex">
+<span>def <span class="ident">wait_for_pods_volume_delete</span></span>(<span>client, pod_list, retry_counts=300)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def wait_for_pods_volume_delete(client, pod_list,  # NOQA
+                                retry_counts=RETRY_BACKUP_COUNTS):
+    volume_deleted = False
+    for _ in range(retry_counts):
+        volume_deleted = True
+        volumes = client.list_volume()
+        for v in volumes:
+            for p in pod_list:
+                if v.name == p[&#39;pv_name&#39;]:
+                    volume_deleted = False
+                    break
+        time.sleep(RETRY_INTERVAL)
+    assert volume_deleted is True</code></pre>
+</details>
+</dd>
+<dt id="tests.common.wait_for_pods_volume_state"><code class="name flex">
+<span>def <span class="ident">wait_for_pods_volume_state</span></span>(<span>client, pod_list, field, value, retry_counts=300)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def wait_for_pods_volume_state(client, pod_list, field, value,  # NOQA
+                               retry_counts=RETRY_COUNTS):
+    for _ in range(retry_counts):
+        volume_names = []
+        volumes = client.list_volume()
+        for v in volumes:
+            for p in pod_list:
+                if v.name == p[&#39;pv_name&#39;] and v[field] == value:
+                    volume_names.append(v.name)
+                    break
+        time.sleep(RETRY_INTERVAL)
+    return len(volume_names) == len(pod_list)</code></pre>
 </details>
 </dd>
 <dt id="tests.common.wait_for_pvc_phase"><code class="name flex">
@@ -10843,6 +11003,7 @@ volume. Trigger a failed assertion of one is detected.
 <li><code><a title="tests.common.cleanup_client" href="#tests.common.cleanup_client">cleanup_client</a></code></li>
 <li><code><a title="tests.common.cleanup_host_disk" href="#tests.common.cleanup_host_disk">cleanup_host_disk</a></code></li>
 <li><code><a title="tests.common.cleanup_node_disks" href="#tests.common.cleanup_node_disks">cleanup_node_disks</a></code></li>
+<li><code><a title="tests.common.cleanup_storage_class" href="#tests.common.cleanup_storage_class">cleanup_storage_class</a></code></li>
 <li><code><a title="tests.common.cleanup_test_disks" href="#tests.common.cleanup_test_disks">cleanup_test_disks</a></code></li>
 <li><code><a title="tests.common.cleanup_volume" href="#tests.common.cleanup_volume">cleanup_volume</a></code></li>
 <li><code><a title="tests.common.client" href="#tests.common.client">client</a></code></li>
@@ -10863,6 +11024,7 @@ volume. Trigger a failed assertion of one is detected.
 <li><code><a title="tests.common.create_pvc_spec" href="#tests.common.create_pvc_spec">create_pvc_spec</a></code></li>
 <li><code><a title="tests.common.create_recurring_jobs" href="#tests.common.create_recurring_jobs">create_recurring_jobs</a></code></li>
 <li><code><a title="tests.common.create_snapshot" href="#tests.common.create_snapshot">create_snapshot</a></code></li>
+<li><code><a title="tests.common.create_statefulset" href="#tests.common.create_statefulset">create_statefulset</a></code></li>
 <li><code><a title="tests.common.create_storage_class" href="#tests.common.create_storage_class">create_storage_class</a></code></li>
 <li><code><a title="tests.common.csi_pv" href="#tests.common.csi_pv">csi_pv</a></code></li>
 <li><code><a title="tests.common.csi_pv_backingimage" href="#tests.common.csi_pv_backingimage">csi_pv_backingimage</a></code></li>
@@ -11022,6 +11184,8 @@ volume. Trigger a failed assertion of one is detected.
 <li><code><a title="tests.common.wait_for_pod_phase" href="#tests.common.wait_for_pod_phase">wait_for_pod_phase</a></code></li>
 <li><code><a title="tests.common.wait_for_pod_remount" href="#tests.common.wait_for_pod_remount">wait_for_pod_remount</a></code></li>
 <li><code><a title="tests.common.wait_for_pod_restart" href="#tests.common.wait_for_pod_restart">wait_for_pod_restart</a></code></li>
+<li><code><a title="tests.common.wait_for_pods_volume_delete" href="#tests.common.wait_for_pods_volume_delete">wait_for_pods_volume_delete</a></code></li>
+<li><code><a title="tests.common.wait_for_pods_volume_state" href="#tests.common.wait_for_pods_volume_state">wait_for_pods_volume_state</a></code></li>
 <li><code><a title="tests.common.wait_for_pvc_phase" href="#tests.common.wait_for_pvc_phase">wait_for_pvc_phase</a></code></li>
 <li><code><a title="tests.common.wait_for_rebuild_complete" href="#tests.common.wait_for_rebuild_complete">wait_for_rebuild_complete</a></code></li>
 <li><code><a title="tests.common.wait_for_rebuild_start" href="#tests.common.wait_for_rebuild_start">wait_for_rebuild_start</a></code></li>
