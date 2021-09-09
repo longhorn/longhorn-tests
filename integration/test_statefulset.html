@@ -300,8 +300,7 @@ def test_statefulset_backup(set_random_backupstore, client, core_api, storage_cl
 
 
 @pytest.mark.recurring_job  # NOQA
-def test_statefulset_recurring_backup(client, core_api, storage_class,  # NOQA
-                                      statefulset):  # NOQA
+def test_statefulset_recurring_backup(set_random_backupstore, client, core_api, storage_class, statefulset):  # NOQA
     &#34;&#34;&#34;
     Scenario : test recurring backups on StatefulSets
 
@@ -359,7 +358,7 @@ def test_statefulset_recurring_backup(client, core_api, storage_class,  # NOQA
             if snapshot.removed is False:
                 count += 1
 
-        # one backups + volume-head
+        # one backup + volume-head
         assert count == 2
 
 
@@ -732,7 +731,7 @@ def test_statefulset_pod_deletion(core_api, storage_class, statefulset):  # NOQA
 </details>
 </dd>
 <dt id="tests.test_statefulset.test_statefulset_recurring_backup"><code class="name flex">
-<span>def <span class="ident">test_statefulset_recurring_backup</span></span>(<span>client, core_api, storage_class, statefulset)</span>
+<span>def <span class="ident">test_statefulset_recurring_backup</span></span>(<span>set_random_backupstore, client, core_api, storage_class, statefulset)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Scenario : test recurring backups on StatefulSets</p>
@@ -746,8 +745,7 @@ And wait for 5 minutes.</p>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">@pytest.mark.recurring_job  # NOQA
-def test_statefulset_recurring_backup(client, core_api, storage_class,  # NOQA
-                                      statefulset):  # NOQA
+def test_statefulset_recurring_backup(set_random_backupstore, client, core_api, storage_class, statefulset):  # NOQA
     &#34;&#34;&#34;
     Scenario : test recurring backups on StatefulSets
 
@@ -805,7 +803,7 @@ def test_statefulset_recurring_backup(client, core_api, storage_class,  # NOQA
             if snapshot.removed is False:
                 count += 1
 
-        # one backups + volume-head
+        # one backup + volume-head
         assert count == 2</code></pre>
 </details>
 </dd>
