@@ -12,7 +12,7 @@ REPLICA_COUNT = 2
 @pytest.mark.migration # NOQA
 def test_migration_confirm(clients, volume_name):  # NOQA
     """
-    Test that a migratabale RWX volume can be live migrated
+    Test that a migratable RWX volume can be live migrated
     from one node to another.
 
     1. Creates a new RWX migratable volume.
@@ -57,7 +57,7 @@ def migration_confirm_test(clients, volume_name, backing_image=""):  # NOQA
 @pytest.mark.migration # NOQA
 def test_migration_rollback(clients, volume_name):  # NOQA
     """
-    Test that a migratabale RWX volume can be rolled back
+    Test that a migratable RWX volume can be rolled back
     to initial node.
 
     1. Creates a new RWX migratable volume.
@@ -96,6 +96,84 @@ def migration_rollback_test(clients, volume_name, backing_image=""):  # NOQA
 
     client.delete(volume)
     wait_for_volume_delete(client, volume_name)
+
+
+@pytest.mark.coretest  # NOQA
+@pytest.mark.migration # NOQA
+@pytest.mark.skip(reason="TODO") # NOQA
+def test_migration_with_unscheduled_replica(clients, volume_name):  # NOQA
+    """
+    Test that a degraded migratable RWX volume that contain an unscheduled
+    replica can be migrated.
+
+    1. Disable the scheduling for one node.
+    2. Create a new RWX migratable volume.
+    3. Attach to test node to write some test data on it.
+    4. Detach from test node.
+    5. Get set of nodes excluding the test node.
+    6. Attach volume to node 1 (initial node).
+       The volume should be Degraded with an unscheduled replica.
+    7. Attach volume to node 2 (migration target)
+    8. Wait for migration ready (engine running on node 2).
+       The newly created migration replica count should be the same as
+       that of the current replicas.
+       And there is one migration replica not scheduled, either.
+    9. Detach volume from node 1.
+    10. Observe volume migrated to node 2 (single active engine)
+    11. Enable the scheduling for the node and wait for rebuilding complete.
+    12. Validate initially written test data.
+    """
+    return
+
+
+@pytest.mark.coretest  # NOQA
+@pytest.mark.migration # NOQA
+@pytest.mark.skip(reason="TODO") # NOQA
+def test_migration_with_failed_replica(clients, volume_name):  # NOQA
+    """
+    Test that a degraded migratable RWX volume that contain an failed replica
+    can be migrated.
+
+    1. Create a new RWX migratable volume.
+    2. Attach to node 1 to write some test data on it.
+    3. Remove the replica directory (/var/lib/longhorn/replicas) for one node.
+       This makes one volume replica stay failed.
+    4. Attach volume to node 2 (migration target).
+    5. Wait for migration ready (engine running on node 2).
+       The newly created migration replica count should be the same as
+       that of the healthy current replicas.
+    6. Detach volume from node 1.
+    7. Observe volume migrated to node 2 (single active engine).
+       And the old failed replica will be cleaned up.
+    8. Validate initially written test data.
+    """
+    return
+
+
+@pytest.mark.coretest  # NOQA
+@pytest.mark.migration # NOQA
+@pytest.mark.skip(reason="TODO") # NOQA
+def test_migration_with_rebuilding_replica(clients, volume_name):  # NOQA
+    """
+    Test that a degraded migratable RWX volume that contain a rebuilding
+    replica can be migrated.
+
+    1. Create a new RWX migratable volume.
+    2. Attach to node 1, then write a large amount if data on it so that
+       the following rebuilding will take a while.
+    3. Remove one healthy replica to trigger rebuilding.
+    4. Immediately attach volume to node 2 (migration target) once
+       the rebuilding starts.
+       There should be no replica created before rebuilding complete.
+    5. Wait for rebuilding complete then migration ready
+       (engine running on node 2).
+       The newly created migration replica count should be the same as
+       that of the current replicas.
+    6. Detach volume from node 1.
+    7. Observe volume migrated to node 2 (single active engine).
+    8. Validate initially written test data.
+    """
+    return
 
 
 def get_hosts_for_migration_test(clients): # NOQA
