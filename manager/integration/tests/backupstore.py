@@ -69,52 +69,49 @@ def reset_backupstore_setting(client):
 
 
 def set_backupstore_s3(client):
-    backup_target_setting = client.by_id_setting(SETTING_BACKUP_TARGET)
     backupstores = get_backupstore_url()
     poll_interval = get_backupstore_poll_interval()
     for backupstore in backupstores:
         if is_backupTarget_s3(backupstore):
             backupsettings = backupstore.split("$")
-            backup_target_setting = client.update(backup_target_setting,
-                                                  value=backupsettings[0])
-            assert backup_target_setting.value == backupsettings[0]
-
-            backup_target_credential_setting = client.by_id_setting(
-                SETTING_BACKUP_TARGET_CREDENTIAL_SECRET)
-            backup_target_credential_setting = \
-                client.update(backup_target_credential_setting,
-                              value=backupsettings[1])
-            assert backup_target_credential_setting.value == backupsettings[1]
-
-            backup_store_poll_interval_setting = client.by_id_setting(
-                SETTING_BACKUPSTORE_POLL_INTERVAL)
-            backup_target_poll_interal_setting = client.update(
-                backup_store_poll_interval_setting, value=poll_interval)
-            assert backup_target_poll_interal_setting.value == poll_interval
+            set_backupstore_url(client, backupsettings[0])
+            set_backupstore_credential_secret(client, backupsettings[1])
+            set_backupstore_poll_interval(client, poll_interval)
             break
 
 
 def set_backupstore_nfs(client):
-    backup_target_setting = client.by_id_setting(SETTING_BACKUP_TARGET)
     backupstores = get_backupstore_url()
     poll_interval = get_backupstore_poll_interval()
     for backupstore in backupstores:
         if is_backupTarget_nfs(backupstore):
-            backup_target_setting = client.update(backup_target_setting,
-                                                  value=backupstore)
-            assert backup_target_setting.value == backupstore
-            backup_target_credential_setting = client.by_id_setting(
-                SETTING_BACKUP_TARGET_CREDENTIAL_SECRET)
-            backup_target_credential_setting = \
-                client.update(backup_target_credential_setting, value="")
-            assert backup_target_credential_setting.value == ""
-
-            backup_store_poll_interval_setting = client.by_id_setting(
-                SETTING_BACKUPSTORE_POLL_INTERVAL)
-            backup_target_poll_interal_setting = client.update(
-                backup_store_poll_interval_setting, value=poll_interval)
-            assert backup_target_poll_interal_setting.value == poll_interval
+            set_backupstore_url(client, backupstore)
+            set_backupstore_credential_secret(client, "")
+            set_backupstore_poll_interval(client, poll_interval)
             break
+
+
+def set_backupstore_url(client, url):
+    backup_target_setting = client.by_id_setting(SETTING_BACKUP_TARGET)
+    backup_target_setting = client.update(backup_target_setting,
+                                          value=url)
+    assert backup_target_setting.value == url
+
+
+def set_backupstore_credential_secret(client, credential_secret):
+    backup_target_credential_setting = client.by_id_setting(
+        SETTING_BACKUP_TARGET_CREDENTIAL_SECRET)
+    backup_target_credential_setting = client.update(
+        backup_target_credential_setting, value=credential_secret)
+    assert backup_target_credential_setting.value == credential_secret
+
+
+def set_backupstore_poll_interval(client, poll_interval):
+    backup_store_poll_interval_setting = client.by_id_setting(
+        SETTING_BACKUPSTORE_POLL_INTERVAL)
+    backup_target_poll_interal_setting = client.update(
+        backup_store_poll_interval_setting, value=poll_interval)
+    assert backup_target_poll_interal_setting.value == poll_interval
 
 
 def mount_nfs_backupstore(client, mount_path="/mnt/nfs"):
