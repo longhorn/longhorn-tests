@@ -27,6 +27,7 @@ node {
                                    --env LONGHORN_TEST_CLOUDPROVIDER=${LONGHORN_TEST_CLOUDPROVIDER} \
                                    --env LONGHORN_UPGRADE_TEST=${LONGHORN_UPGRADE_TEST} \
                                    --env PYTEST_CUSTOM_OPTIONS="${PYTEST_CUSTOM_OPTIONS}" \
+                                   --env BACKUP_STORE_TYPE="${BACKUP_STORE_TYPE}" \
                                    --env TF_VAR_arch=${ARCH} \
                                    --env TF_VAR_aws_availability_zone=${AWS_AVAILABILITY_ZONE} \
                                    --env TF_VAR_aws_region=${AWS_REGION} \
