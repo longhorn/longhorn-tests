@@ -72,6 +72,7 @@ from common import DATA_SIZE_IN_MB_2, DATA_SIZE_IN_MB_3
 from common import wait_for_backup_to_start
 from common import SETTING_DEFAULT_LONGHORN_STATIC_SC
 from common import wait_for_backup_volume
+from common import create_and_wait_statefulset
 
 from backupstore import backupstore_delete_volume_cfg_file
 from backupstore import backupstore_cleanup
@@ -776,8 +777,7 @@ def test_dr_volume_with_backup_block_deletion(set_random_backupstore, client, co
     check_volume_data(dr_vol, final_data, False)
 
 
-def test_dr_volume_with_backup_block_deletion_abort_during_backup_in_progress(
-    set_random_backupstore, client, core_api, volume_name):  # NOQA
+def test_dr_volume_with_backup_block_deletion_abort_during_backup_in_progress(set_random_backupstore, client, core_api, volume_name):  # NOQA
     """
     Test DR volume last backup after block deletion aborted. This will set the
     last backup to be empty.
@@ -874,8 +874,7 @@ def test_dr_volume_with_backup_block_deletion_abort_during_backup_in_progress(
     check_volume_data(dr_vol, final_data, False)
 
 
-def test_dr_volume_with_all_backup_blocks_deleted(
-    set_random_backupstore, client, core_api, volume_name):  # NOQA
+def test_dr_volume_with_all_backup_blocks_deleted(set_random_backupstore, client, core_api, volume_name):  # NOQA
     """
     Test DR volume can be activate after delete all backups.
 
@@ -3060,7 +3059,7 @@ def test_backup_lock_restoration_during_deletion(set_random_backupstore, client,
     assert b2 is None
 
 
-@pytest.mark.coretest
+@pytest.mark.coretest  # NOQA
 def test_allow_volume_creation_with_degraded_availability(client, volume_name):  # NOQA
     """
     Test Allow Volume Creation with Degraded Availability (API)
@@ -3167,9 +3166,8 @@ def test_allow_volume_creation_with_degraded_availability(client, volume_name): 
     check_volume_data(volume, data)
 
 
-@pytest.mark.coretest
-def test_allow_volume_creation_with_degraded_availability_error(
-        client, volume_name):  # NOQA
+@pytest.mark.coretest  # NOQA
+def test_allow_volume_creation_with_degraded_availability_error(client, volume_name):  # NOQA
     """
     Test Allow Volume Creation with Degraded Availability (API)
 
@@ -3247,8 +3245,7 @@ def test_allow_volume_creation_with_degraded_availability_error(
     check_volume_data(volume, data)
 
 
-def test_multiple_volumes_creation_with_degraded_availability(
-    set_random_backupstore, client, core_api, apps_api, storage_class, statefulset):  # NOQA
+def test_multiple_volumes_creation_with_degraded_availability(set_random_backupstore, client, core_api, apps_api, storage_class, statefulset):  # NOQA
     """
     Scenario: verify multiple volumes with degraded availability can be
               created, attached, detached, and deleted at nearly the same time.
@@ -3307,8 +3304,7 @@ def test_multiple_volumes_creation_with_degraded_availability(
                                        retry_counts=retry_counts)
 
 
-def test_allow_volume_creation_with_degraded_availability_restore(
-        set_random_backupstore, client, core_api, volume_name, csi_pv, pvc, pod, pod_make):  # NOQA
+def test_allow_volume_creation_with_degraded_availability_restore(set_random_backupstore, client, core_api, volume_name, csi_pv, pvc, pod, pod_make):  # NOQA
     """
     Test Allow Volume Creation with Degraded Availability (Restore)
 
@@ -3421,8 +3417,7 @@ def test_allow_volume_creation_with_degraded_availability_restore(
     assert src_md5sum == dst_md5sum
 
 
-def test_allow_volume_creation_with_degraded_availability_dr(
-        set_random_backupstore, client, core_api, volume_name, csi_pv, pvc, pod, pod_make):  # NOQA
+def test_allow_volume_creation_with_degraded_availability_dr(set_random_backupstore, client, core_api, volume_name, csi_pv, pvc, pod, pod_make):  # NOQA
     """
     Test Allow Volume Creation with Degraded Availability (Restore)
 
@@ -3702,8 +3697,8 @@ def test_expand_pvc_with_size_round_up(client, core_api, volume_name):  # NOQA
     client.delete(volume)
     wait_for_volume_delete(client, volume_name)
 
-@pytest.mark.skip(reason="TODO") # NOQA
-def test_workload_with_fsgroup():  # NOQA
+
+def test_workload_with_fsgroup(core_api, statefulset):  # NOQA
     """
     1. Deploy a StatefulSet workload that uses Longhorn volume and has
        securityContext set:
@@ -3723,3 +3718,25 @@ def test_workload_with_fsgroup():  # NOQA
        the format ****rw****
     5. Verify that we can read/write files.
     """
+    statefulset_name = 'statefulset-non-root-access'
+    pod_name = statefulset_name + '-0'
+
+    statefulset['metadata']['name'] = \
+        statefulset['spec']['selector']['matchLabels']['app'] = \
+        statefulset['spec']['serviceName'] = \
+        statefulset['spec']['template']['metadata']['labels']['app'] = \
+        statefulset_name
+    statefulset['spec']['replicas'] = 1
+    statefulset['spec']['volumeClaimTemplates'][0]['spec']['storageClassName']\
+        = 'longhorn'
+    statefulset['spec']['template']['spec']['securityContext'] = {
+                        'runAsUser': 1000,
+                        'runAsGroup': 1000,
+                        'fsGroup': 1000
+                    }
+
+    create_and_wait_statefulset(statefulset)
+
+    write_pod_volume_random_data(core_api, pod_name, "/data/test",
+                                 DATA_SIZE_IN_MB_1)
+    get_pod_data_md5sum(core_api, pod_name, "/data/test")
