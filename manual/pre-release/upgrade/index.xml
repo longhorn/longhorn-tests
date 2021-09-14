@@ -79,9 +79,7 @@ Test with K8s upgrade  Create a K8s (Immediate prior version) cluster with 3 wor
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/upgrade-conflict-handling/</guid>
-      <description>New installation:  create a large cluster of many nodes (about 30 nodes) Install Longhorn master  Upgrading from old version:  create a large cluster of many nodes (about 30 nodes) Install Longhorn v1.0.0 Upgrade Longhorn to master  Success if: install/upgrade successfully after maximum 15 minutes.
-Fail if: The upgrading is blocked after about 17-20 managers are up.
-Note: This is a race condition, so we need to try multiple times to validate the fix.</description>
+      <description>New installation:  Create a large cluster of many nodes (about 30 nodes) Install Longhorn master Create 100 volumes using volume template claim in statefulSet. Have the backup store configured and create some backups. Set some recurring jobs in the cluster every 1 minute. Observe the setup for 1/2 an hr. Do some operation like attaching detaching the volumes. Verify there is no error in the Longhorn manager.  Upgrading from old version:  Repeat the steps from above test case with Longhorn Prior version.</description>
     </item>
     
   </channel>

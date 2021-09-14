@@ -449,18 +449,23 @@
     <article id="content">
        <h3 id="new-installation">New installation:</h3>
 <ol>
-<li>create a large cluster of many nodes (about 30 nodes)</li>
+<li>Create a large cluster of many nodes (about 30 nodes)</li>
 <li>Install Longhorn <code>master</code></li>
+<li>Create 100 volumes using volume template claim in statefulSet.</li>
+<li>Have the backup store configured and create some backups.</li>
+<li>Set some recurring jobs in the cluster every 1 minute.</li>
+<li>Observe the setup for 1/2 an hr. Do some operation like attaching detaching the volumes.</li>
+<li>Verify there is no error in the Longhorn manager.</li>
 </ol>
 <h3 id="upgrading-from-old-version">Upgrading from old version:</h3>
 <ol>
-<li>create a large cluster of many nodes (about 30 nodes)</li>
-<li>Install Longhorn v1.0.0</li>
-<li>Upgrade Longhorn to <code>master</code></li>
+<li>Repeat the steps from above test case with Longhorn Prior version.</li>
+<li>Upgrade Longhorn to <code>master</code>.</li>
+<li>Do some operation like attaching and detaching the volumes.</li>
+<li>Verify there is no error in the Longhorn manager.</li>
 </ol>
 <p><strong>Success if:</strong> install/upgrade successfully after maximum 15 minutes.</p>
 <p><strong>Fail if:</strong> The upgrading is blocked after about 17-20 managers are up.</p>
-<p><strong>Note:</strong> This is a race condition, so we need to try multiple times to validate the fix.</p>
 
     </article>
   </div>
