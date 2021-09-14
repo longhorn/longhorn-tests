@@ -658,3 +658,54 @@ def test_setting_backing_image_auto_cleanup():  # NOQA
        and all entries will be removed from the map later.
     9. Delete the backing image.
     """
+
+
+@pytest.mark.skip(reason="TODO")
+def test_setting_concurrent_rebuild_limit():  # NOQA
+    """
+    Test if setting Concurrent Replica Rebuild Per Node Limit works correctly.
+
+    The default setting value is 0, which means no limit.
+
+    Case 1 - the setting will limit the rebuilding correctly:
+    1. Set `ConcurrentReplicaRebuildPerNodeLimit` to 1.
+    2. Create 2 volumes then attach both volumes.
+    3. Write a large amount of data into both volumes,
+       so that the rebuilding will take a while.
+    4. Delete one replica for volume 1 then the replica on the same node for
+       volume 2 to trigger (concurrent) rebuilding.
+    5. Verify the new replica of volume 2 won't be started until volume 1
+       rebuilding complete.
+       And the new replica of volume 2 will be started immediately once
+       the 1st rebuilding is done.
+    6. Wait for rebuilding complete then repeat step 4.
+    7. Set `ConcurrentReplicaRebuildPerNodeLimit` to 0 or 2 while the volume 1
+       rebuilding is still in progress.
+       Then the new replica of volume 2 will be started immediately before
+       the 1st rebuilding is done.
+    8. Wait for rebuilding complete then repeat step 4.
+    9. Set `ConcurrentReplicaRebuildPerNodeLimit` to 1
+    10. Crash the replica process of volume 1 while the rebuilding is
+        in progress.
+        Then the rebuilding of volume 2 will be started, and the rebuilding of
+        volume 1 will wait for the volume 2 becoming healthy.
+
+   (There is no need to clean up the above 2 volumes.)
+
+    Case 2 - the setting won't intervene normal attachment:
+    1. Set `ConcurrentReplicaRebuildPerNodeLimit` to 1.
+    2. Make volume 1 state attached and healthy while volume 2 is detached.
+    3. Delete one replica for volume 1 to trigger the rebuilding.
+    4. Attach then detach volume 2. The attachment/detachment should succeed
+       even if the rebuilding in volume 1 is still in progress.
+
+   Case 3 - the setting won't affect volume live upgrade:
+    1. Set `ConcurrentReplicaRebuildPerNodeLimit` to 1.
+    2. Deploy a compatible engine image and wait for ready.
+    3. Make volume 1 and volume 2 state attached and healthy.
+    4. Delete one replica for volume 1 to trigger the rebuilding.
+    5. Do live upgrade for volume 2. The upgrade should work fine
+       even if the rebuilding in volume 1 is still in progress.
+    (Not sure if we need to put this specific case as a separate test in
+     test_engine_upgrade.py)
+   """
