@@ -2864,6 +2864,22 @@ def wait_for_backup_volume(client, vol_name, backing_image=""):
     assert bv is not None, "failed to find backup volume " + vol_name
 
 
+def wait_for_backup_target_available(client, available):
+    def find_backup_target_default(client):
+        bt = client.list_backup_target()
+        assert bt is not None
+        return bt.data[0]
+
+    for _ in range(RETRY_COUNTS):
+        bt = find_backup_target_default(client)
+        if bt.available == available:
+            break
+        time.sleep(RETRY_INTERVAL)
+    if bt.available != available:
+        raise Exception(
+            'BackupTarget status.available should be {}', available)
+
+
 def find_backup(client, vol_name, snap_name):
     """
     find_backup will look for a backup on the backupstore
