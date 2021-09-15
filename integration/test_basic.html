@@ -100,6 +100,7 @@ from common import DATA_SIZE_IN_MB_2, DATA_SIZE_IN_MB_3
 from common import wait_for_backup_to_start
 from common import SETTING_DEFAULT_LONGHORN_STATIC_SC
 from common import wait_for_backup_volume
+from common import create_and_wait_statefulset
 
 from backupstore import backupstore_delete_volume_cfg_file
 from backupstore import backupstore_cleanup
@@ -804,8 +805,7 @@ def test_dr_volume_with_backup_block_deletion(set_random_backupstore, client, co
     check_volume_data(dr_vol, final_data, False)
 
 
-def test_dr_volume_with_backup_block_deletion_abort_during_backup_in_progress(
-    set_random_backupstore, client, core_api, volume_name):  # NOQA
+def test_dr_volume_with_backup_block_deletion_abort_during_backup_in_progress(set_random_backupstore, client, core_api, volume_name):  # NOQA
     &#34;&#34;&#34;
     Test DR volume last backup after block deletion aborted. This will set the
     last backup to be empty.
@@ -902,8 +902,7 @@ def test_dr_volume_with_backup_block_deletion_abort_during_backup_in_progress(
     check_volume_data(dr_vol, final_data, False)
 
 
-def test_dr_volume_with_all_backup_blocks_deleted(
-    set_random_backupstore, client, core_api, volume_name):  # NOQA
+def test_dr_volume_with_all_backup_blocks_deleted(set_random_backupstore, client, core_api, volume_name):  # NOQA
     &#34;&#34;&#34;
     Test DR volume can be activate after delete all backups.
 
@@ -3088,7 +3087,7 @@ def test_backup_lock_restoration_during_deletion(set_random_backupstore, client,
     assert b2 is None
 
 
-@pytest.mark.coretest
+@pytest.mark.coretest  # NOQA
 def test_allow_volume_creation_with_degraded_availability(client, volume_name):  # NOQA
     &#34;&#34;&#34;
     Test Allow Volume Creation with Degraded Availability (API)
@@ -3195,9 +3194,8 @@ def test_allow_volume_creation_with_degraded_availability(client, volume_name): 
     check_volume_data(volume, data)
 
 
-@pytest.mark.coretest
-def test_allow_volume_creation_with_degraded_availability_error(
-        client, volume_name):  # NOQA
+@pytest.mark.coretest  # NOQA
+def test_allow_volume_creation_with_degraded_availability_error(client, volume_name):  # NOQA
     &#34;&#34;&#34;
     Test Allow Volume Creation with Degraded Availability (API)
 
@@ -3275,8 +3273,7 @@ def test_allow_volume_creation_with_degraded_availability_error(
     check_volume_data(volume, data)
 
 
-def test_multiple_volumes_creation_with_degraded_availability(
-    set_random_backupstore, client, core_api, apps_api, storage_class, statefulset):  # NOQA
+def test_multiple_volumes_creation_with_degraded_availability(set_random_backupstore, client, core_api, apps_api, storage_class, statefulset):  # NOQA
     &#34;&#34;&#34;
     Scenario: verify multiple volumes with degraded availability can be
               created, attached, detached, and deleted at nearly the same time.
@@ -3335,8 +3332,7 @@ def test_multiple_volumes_creation_with_degraded_availability(
                                        retry_counts=retry_counts)
 
 
-def test_allow_volume_creation_with_degraded_availability_restore(
-        set_random_backupstore, client, core_api, volume_name, csi_pv, pvc, pod, pod_make):  # NOQA
+def test_allow_volume_creation_with_degraded_availability_restore(set_random_backupstore, client, core_api, volume_name, csi_pv, pvc, pod, pod_make):  # NOQA
     &#34;&#34;&#34;
     Test Allow Volume Creation with Degraded Availability (Restore)
 
@@ -3449,8 +3445,7 @@ def test_allow_volume_creation_with_degraded_availability_restore(
     assert src_md5sum == dst_md5sum
 
 
-def test_allow_volume_creation_with_degraded_availability_dr(
-        set_random_backupstore, client, core_api, volume_name, csi_pv, pvc, pod, pod_make):  # NOQA
+def test_allow_volume_creation_with_degraded_availability_dr(set_random_backupstore, client, core_api, volume_name, csi_pv, pvc, pod, pod_make):  # NOQA
     &#34;&#34;&#34;
     Test Allow Volume Creation with Degraded Availability (Restore)
 
@@ -3730,8 +3725,8 @@ def test_expand_pvc_with_size_round_up(client, core_api, volume_name):  # NOQA
     client.delete(volume)
     wait_for_volume_delete(client, volume_name)
 
-@pytest.mark.skip(reason=&#34;TODO&#34;) # NOQA
-def test_workload_with_fsgroup():  # NOQA
+
+def test_workload_with_fsgroup(core_api, statefulset):  # NOQA
     &#34;&#34;&#34;
     1. Deploy a StatefulSet workload that uses Longhorn volume and has
        securityContext set:
@@ -3750,7 +3745,29 @@ def test_workload_with_fsgroup():  # NOQA
        running `ls -l` on the mount point should return the permission in
        the format ****rw****
     5. Verify that we can read/write files.
-    &#34;&#34;&#34;</code></pre>
+    &#34;&#34;&#34;
+    statefulset_name = &#39;statefulset-non-root-access&#39;
+    pod_name = statefulset_name + &#39;-0&#39;
+
+    statefulset[&#39;metadata&#39;][&#39;name&#39;] = \
+        statefulset[&#39;spec&#39;][&#39;selector&#39;][&#39;matchLabels&#39;][&#39;app&#39;] = \
+        statefulset[&#39;spec&#39;][&#39;serviceName&#39;] = \
+        statefulset[&#39;spec&#39;][&#39;template&#39;][&#39;metadata&#39;][&#39;labels&#39;][&#39;app&#39;] = \
+        statefulset_name
+    statefulset[&#39;spec&#39;][&#39;replicas&#39;] = 1
+    statefulset[&#39;spec&#39;][&#39;volumeClaimTemplates&#39;][0][&#39;spec&#39;][&#39;storageClassName&#39;]\
+        = &#39;longhorn&#39;
+    statefulset[&#39;spec&#39;][&#39;template&#39;][&#39;spec&#39;][&#39;securityContext&#39;] = {
+                        &#39;runAsUser&#39;: 1000,
+                        &#39;runAsGroup&#39;: 1000,
+                        &#39;fsGroup&#39;: 1000
+                    }
+
+    create_and_wait_statefulset(statefulset)
+
+    write_pod_volume_random_data(core_api, pod_name, &#34;/data/test&#34;,
+                                 DATA_SIZE_IN_MB_1)
+    get_pod_data_md5sum(core_api, pod_name, &#34;/data/test&#34;)</code></pre>
 </details>
 </section>
 <section>
@@ -4292,7 +4309,7 @@ def test_workload_with_fsgroup():  # NOQA
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">@pytest.mark.coretest
+<pre><code class="python">@pytest.mark.coretest  # NOQA
 def test_allow_volume_creation_with_degraded_availability(client, volume_name):  # NOQA
     &#34;&#34;&#34;
     Test Allow Volume Creation with Degraded Availability (API)
@@ -4423,8 +4440,7 @@ def test_allow_volume_creation_with_degraded_availability(client, volume_name): 
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def test_allow_volume_creation_with_degraded_availability_dr(
-        set_random_backupstore, client, core_api, volume_name, csi_pv, pvc, pod, pod_make):  # NOQA
+<pre><code class="python">def test_allow_volume_creation_with_degraded_availability_dr(set_random_backupstore, client, core_api, volume_name, csi_pv, pvc, pod, pod_make):  # NOQA
     &#34;&#34;&#34;
     Test Allow Volume Creation with Degraded Availability (Restore)
 
@@ -4563,9 +4579,8 @@ def test_allow_volume_creation_with_degraded_availability(client, volume_name): 
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">@pytest.mark.coretest
-def test_allow_volume_creation_with_degraded_availability_error(
-        client, volume_name):  # NOQA
+<pre><code class="python">@pytest.mark.coretest  # NOQA
+def test_allow_volume_creation_with_degraded_availability_error(client, volume_name):  # NOQA
     &#34;&#34;&#34;
     Test Allow Volume Creation with Degraded Availability (API)
 
@@ -4670,8 +4685,7 @@ Replica scheduling to node 3 fail.
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def test_allow_volume_creation_with_degraded_availability_restore(
-        set_random_backupstore, client, core_api, volume_name, csi_pv, pvc, pod, pod_make):  # NOQA
+<pre><code class="python">def test_allow_volume_creation_with_degraded_availability_restore(set_random_backupstore, client, core_api, volume_name, csi_pv, pvc, pod, pod_make):  # NOQA
     &#34;&#34;&#34;
     Test Allow Volume Creation with Degraded Availability (Restore)
 
@@ -5969,8 +5983,7 @@ verify backup list contains no error messages for volume(1,2)
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def test_dr_volume_with_all_backup_blocks_deleted(
-    set_random_backupstore, client, core_api, volume_name):  # NOQA
+<pre><code class="python">def test_dr_volume_with_all_backup_blocks_deleted(set_random_backupstore, client, core_api, volume_name):  # NOQA
     &#34;&#34;&#34;
     Test DR volume can be activate after delete all backups.
 
@@ -6196,8 +6209,7 @@ data2["content"] + data0["content"][BACKUP_BLOCK_SIZE:].</li>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def test_dr_volume_with_backup_block_deletion_abort_during_backup_in_progress(
-    set_random_backupstore, client, core_api, volume_name):  # NOQA
+<pre><code class="python">def test_dr_volume_with_backup_block_deletion_abort_during_backup_in_progress(set_random_backupstore, client, core_api, volume_name):  # NOQA
     &#34;&#34;&#34;
     Test DR volume last backup after block deletion aborted. This will set the
     last backup to be empty.
@@ -7152,8 +7164,7 @@ Then all 10 volumes are deleted in 1 minute.</p></div>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def test_multiple_volumes_creation_with_degraded_availability(
-    set_random_backupstore, client, core_api, apps_api, storage_class, statefulset):  # NOQA
+<pre><code class="python">def test_multiple_volumes_creation_with_degraded_availability(set_random_backupstore, client, core_api, apps_api, storage_class, statefulset):  # NOQA
     &#34;&#34;&#34;
     Scenario: verify multiple volumes with degraded availability can be
               created, attached, detached, and deleted at nearly the same time.
@@ -8341,7 +8352,7 @@ def test_volume_update_replica_count(client, volume_name):  # NOQA
 </details>
 </dd>
 <dt id="tests.test_basic.test_workload_with_fsgroup"><code class="name flex">
-<span>def <span class="ident">test_workload_with_fsgroup</span></span>(<span>)</span>
+<span>def <span class="ident">test_workload_with_fsgroup</span></span>(<span>core_api, statefulset)</span>
 </code></dt>
 <dd>
 <div class="desc"><ol>
@@ -8365,8 +8376,7 @@ the format <strong><em>*rw</em></strong>*</li>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">@pytest.mark.skip(reason=&#34;TODO&#34;) # NOQA
-def test_workload_with_fsgroup():  # NOQA
+<pre><code class="python">def test_workload_with_fsgroup(core_api, statefulset):  # NOQA
     &#34;&#34;&#34;
     1. Deploy a StatefulSet workload that uses Longhorn volume and has
        securityContext set:
@@ -8385,7 +8395,29 @@ def test_workload_with_fsgroup():  # NOQA
        running `ls -l` on the mount point should return the permission in
        the format ****rw****
     5. Verify that we can read/write files.
-    &#34;&#34;&#34;</code></pre>
+    &#34;&#34;&#34;
+    statefulset_name = &#39;statefulset-non-root-access&#39;
+    pod_name = statefulset_name + &#39;-0&#39;
+
+    statefulset[&#39;metadata&#39;][&#39;name&#39;] = \
+        statefulset[&#39;spec&#39;][&#39;selector&#39;][&#39;matchLabels&#39;][&#39;app&#39;] = \
+        statefulset[&#39;spec&#39;][&#39;serviceName&#39;] = \
+        statefulset[&#39;spec&#39;][&#39;template&#39;][&#39;metadata&#39;][&#39;labels&#39;][&#39;app&#39;] = \
+        statefulset_name
+    statefulset[&#39;spec&#39;][&#39;replicas&#39;] = 1
+    statefulset[&#39;spec&#39;][&#39;volumeClaimTemplates&#39;][0][&#39;spec&#39;][&#39;storageClassName&#39;]\
+        = &#39;longhorn&#39;
+    statefulset[&#39;spec&#39;][&#39;template&#39;][&#39;spec&#39;][&#39;securityContext&#39;] = {
+                        &#39;runAsUser&#39;: 1000,
+                        &#39;runAsGroup&#39;: 1000,
+                        &#39;fsGroup&#39;: 1000
+                    }
+
+    create_and_wait_statefulset(statefulset)
+
+    write_pod_volume_random_data(core_api, pod_name, &#34;/data/test&#34;,
+                                 DATA_SIZE_IN_MB_1)
+    get_pod_data_md5sum(core_api, pod_name, &#34;/data/test&#34;)</code></pre>
 </details>
 </dd>
 <dt id="tests.test_basic.volume_basic_test"><code class="name flex">
