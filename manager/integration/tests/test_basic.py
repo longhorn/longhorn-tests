@@ -39,9 +39,9 @@ from common import create_storage_class
 from common import wait_for_backup_restore_completed
 from common import wait_for_volume_restoration_completed
 from common import read_volume_data
-from common import pvc_name # NOQA
-from common import storage_class # NOQA
-from common import pod_make, csi_pv, pvc # NOQA
+from common import pvc_name  # NOQA
+from common import storage_class  # NOQA
+from common import pod_make, csi_pv, pvc  # NOQA
 from common import create_snapshot
 from common import expand_attached_volume
 from common import wait_for_dr_volume_expansion
@@ -81,10 +81,13 @@ from backupstore import backupstore_create_dummy_in_progress_backup
 from backupstore import backupstore_delete_dummy_in_progress_backup
 from backupstore import backupstore_create_file
 from backupstore import backupstore_delete_file
-from backupstore import set_random_backupstore # NOQA
+from backupstore import set_random_backupstore  # NOQA
 from backupstore import backupstore_get_backup_volume_prefix
+from backupstore import set_backupstore_url, set_backupstore_credential_secret, set_backupstore_poll_interval  # NOQA
+from backupstore import reset_backupstore_setting  # NOQA
 
 from kubernetes import client as k8sclient
+
 
 @pytest.mark.coretest   # NOQA
 def test_hosts(client):  # NOQA
@@ -3566,7 +3569,7 @@ def test_cleanup_system_generated_snapshots(client, core_api, volume_name, csi_p
     assert md5sum1 == read_md5sum1
 
 
-def test_volume_toomanysnapshots_condition(client, core_api, volume_name): # NOQA
+def test_volume_toomanysnapshots_condition(client, core_api, volume_name):  # NOQA
     """
     Test Volume TooManySnapshots Condition
 
@@ -3730,13 +3733,86 @@ def test_workload_with_fsgroup(core_api, statefulset):  # NOQA
     statefulset['spec']['volumeClaimTemplates'][0]['spec']['storageClassName']\
         = 'longhorn'
     statefulset['spec']['template']['spec']['securityContext'] = {
-                        'runAsUser': 1000,
-                        'runAsGroup': 1000,
-                        'fsGroup': 1000
-                    }
+        'runAsUser': 1000,
+        'runAsGroup': 1000,
+        'fsGroup': 1000
+    }
 
     create_and_wait_statefulset(statefulset)
 
     write_pod_volume_random_data(core_api, pod_name, "/data/test",
                                  DATA_SIZE_IN_MB_1)
     get_pod_data_md5sum(core_api, pod_name, "/data/test")
+
+
+def test_backuptarget_available_during_engine_image_not_ready(client, apps_api):  # NOQA
+    """
+    Test backup target available during engine image not ready
+
+    1. Set backup target URL to S3 and NFS respectively
+    2. Set poll interval to 0 and 300 respectively
+    3. Scale down the engine image DaemonSet
+    4. Check engine image in deploying state
+    5. Configures backup target during engine image in not ready state
+    6. Check backup target status.available=false
+    7. Scale up the engine image DaemonSet
+    8. Check backup target status.available=true
+    9. Reset backup target setting
+    10. Check backup target status.available=false
+    """
+    backupstores = common.get_backupstore_url()
+    for backupstore in backupstores:
+        url = ""
+        cred_secret = ""
+        if common.is_backupTarget_s3(backupstore):
+            backupsettings = backupstore.split("$")
+            url = backupsettings[0]
+            cred_secret = backupsettings[1]
+        elif common.is_backupTarget_nfs(backupstore):
+            url = backupstore
+            cred_secret = ""
+        else:
+            raise NotImplementedError
+
+        poll_intervals = ["0", "300"]
+        for poll_interval in poll_intervals:
+            set_backupstore_poll_interval(client, poll_interval)
+
+            default_img = common.get_default_engine_image(client)
+            ds_name = "engine-image-" + default_img.name
+
+            # Scale down the engine image DaemonSet
+            daemonset = apps_api.read_namespaced_daemon_set(
+                name=ds_name, namespace='longhorn-system')
+            daemonset.spec.template.spec.node_selector = {'foo': 'bar'}
+            apps_api.patch_namespaced_daemon_set(
+                name=ds_name, namespace='longhorn-system', body=daemonset)
+
+            # Check engine image in deploying state
+            common.wait_for_engine_image_state(
+                client, default_img.name, "deploying")
+            deploying = False
+            for _ in range(RETRY_COUNTS):
+                default_img = client.by_id_engine_image(default_img.name)
+                if not any(default_img.nodeDeploymentMap.values()):
+                    deploying = True
+                    break
+                time.sleep(RETRY_INTERVAL)
+            assert deploying is True
+
+            # Set valid backup target during
+            # the engine image in not ready state
+            set_backupstore_url(client, url)
+            set_backupstore_credential_secret(client, cred_secret)
+            common.wait_for_backup_target_available(client, False)
+
+            # Scale up the engine image DaemonSet
+            body = [{"op": "remove",
+                     "path": "/spec/template/spec/nodeSelector/foo"}]
+            apps_api.patch_namespaced_daemon_set(
+                name=ds_name, namespace='longhorn-system', body=body)
+            common.wait_for_backup_target_available(client, True)
+
+            # Reset backup store setting
+            reset_backupstore_setting(client)
+            common.wait_for_backup_target_available(client, False)
