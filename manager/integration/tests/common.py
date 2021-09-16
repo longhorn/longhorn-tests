@@ -4193,7 +4193,8 @@ def check_recurring_jobs(client, recurring_jobs):
         recurring_job = client.by_id_recurring_job(name)
         assert recurring_job.name == name
         assert recurring_job.task == spec["task"]
-        assert recurring_job.groups == spec["groups"]
+        if len(spec["groups"]) > 0:
+            assert recurring_job.groups == spec["groups"]
         assert recurring_job.cron == spec["cron"]
         assert recurring_job.retain == spec["retain"]
         assert recurring_job.concurrency == spec["concurrency"]
