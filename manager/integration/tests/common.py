@@ -3184,6 +3184,8 @@ def wait_for_engine_image_deletion(client, core_api, engine_image_name):
         if len(ei_pod_list) != 0:
             deleted = False
             continue
+        if deleted:
+            break
 
     assert deleted
 
