@@ -3,7 +3,13 @@
 DOCKER_VERSION=20.10
 
 systemctl stop apt-daily.service
+systemctl disable apt-daily.service
+systemctl disable apt-daily.timer
+
 systemctl stop apt-daily-upgrade.service
+systemctl disable apt-daily-upgrade.service
+systemctl disable apt-daily-upgrade.timer
+
 systemctl kill --kill-who=all apt-daily.service
 systemctl kill --kill-who=all apt-daily-upgrade.service
 
@@ -17,6 +23,8 @@ do
   sleep 1;
 done
 
-apt-get update && apt-get install -y build-essential git
+apt-get update
+apt-get dist-upgrade
+apt-get install -y build-essential git
 
 curl https://releases.rancher.com/install-docker/${DOCKER_VERSION}.sh | sh
