@@ -2895,6 +2895,22 @@ def wait_for_backup_volume(client, vol_name, backing_image=&#34;&#34;):
     assert bv is not None, &#34;failed to find backup volume &#34; + vol_name
 
 
+def wait_for_backup_target_available(client, available):
+    def find_backup_target_default(client):
+        bt = client.list_backup_target()
+        assert bt is not None
+        return bt.data[0]
+
+    for _ in range(RETRY_COUNTS):
+        bt = find_backup_target_default(client)
+        if bt.available == available:
+            break
+        time.sleep(RETRY_INTERVAL)
+    if bt.available != available:
+        raise Exception(
+            &#39;BackupTarget status.available should be {}&#39;, available)
+
+
 def find_backup(client, vol_name, snap_name):
     &#34;&#34;&#34;
     find_backup will look for a backup on the backupstore
@@ -8982,6 +8998,31 @@ def volume_name(request):
     return v</code></pre>
 </details>
 </dd>
+<dt id="tests.common.wait_for_backup_target_available"><code class="name flex">
+<span>def <span class="ident">wait_for_backup_target_available</span></span>(<span>client, available)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def wait_for_backup_target_available(client, available):
+    def find_backup_target_default(client):
+        bt = client.list_backup_target()
+        assert bt is not None
+        return bt.data[0]
+
+    for _ in range(RETRY_COUNTS):
+        bt = find_backup_target_default(client)
+        if bt.available == available:
+            break
+        time.sleep(RETRY_INTERVAL)
+    if bt.available != available:
+        raise Exception(
+            &#39;BackupTarget status.available should be {}&#39;, available)</code></pre>
+</details>
+</dd>
 <dt id="tests.common.wait_for_backup_to_start"><code class="name flex">
 <span>def <span class="ident">wait_for_backup_to_start</span></span>(<span>client, volume_name, snapshot_name=None, retry_count=300, chk_progress=0)</span>
 </code></dt>
@@ -11160,6 +11201,7 @@ volume. Trigger a failed assertion of one is detected.
 <li><code><a title="tests.common.wait_for_backup_delete" href="#tests.common.wait_for_backup_delete">wait_for_backup_delete</a></code></li>
 <li><code><a title="tests.common.wait_for_backup_restore_completed" href="#tests.common.wait_for_backup_restore_completed">wait_for_backup_restore_completed</a></code></li>
 <li><code><a title="tests.common.wait_for_backup_state" href="#tests.common.wait_for_backup_state">wait_for_backup_state</a></code></li>
+<li><code><a title="tests.common.wait_for_backup_target_available" href="#tests.common.wait_for_backup_target_available">wait_for_backup_target_available</a></code></li>
 <li><code><a title="tests.common.wait_for_backup_to_start" href="#tests.common.wait_for_backup_to_start">wait_for_backup_to_start</a></code></li>
 <li><code><a title="tests.common.wait_for_backup_volume" href="#tests.common.wait_for_backup_volume">wait_for_backup_volume</a></code></li>
 <li><code><a title="tests.common.wait_for_backup_volume_delete" href="#tests.common.wait_for_backup_volume_delete">wait_for_backup_volume_delete</a></code></li>
