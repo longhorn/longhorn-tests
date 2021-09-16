@@ -4283,7 +4283,8 @@ def check_recurring_jobs(client, recurring_jobs):
         recurring_job = client.by_id_recurring_job(name)
         assert recurring_job.name == name
         assert recurring_job.task == spec[&#34;task&#34;]
-        assert recurring_job.groups == spec[&#34;groups&#34;]
+        if len(spec[&#34;groups&#34;]) &gt; 0:
+            assert recurring_job.groups == spec[&#34;groups&#34;]
         assert recurring_job.cron == spec[&#34;cron&#34;]
         assert recurring_job.retain == spec[&#34;retain&#34;]
         assert recurring_job.concurrency == spec[&#34;concurrency&#34;]
@@ -4765,7 +4766,8 @@ def batch_v1_beta_api(request):
         recurring_job = client.by_id_recurring_job(name)
         assert recurring_job.name == name
         assert recurring_job.task == spec[&#34;task&#34;]
-        assert recurring_job.groups == spec[&#34;groups&#34;]
+        if len(spec[&#34;groups&#34;]) &gt; 0:
+            assert recurring_job.groups == spec[&#34;groups&#34;]
         assert recurring_job.cron == spec[&#34;cron&#34;]
         assert recurring_job.retain == spec[&#34;retain&#34;]
         assert recurring_job.concurrency == spec[&#34;concurrency&#34;]</code></pre>
