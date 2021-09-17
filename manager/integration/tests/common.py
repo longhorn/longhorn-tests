@@ -4371,3 +4371,25 @@ def wait_for_cron_job_count(batch_v1_beta_api, number, label="",
             break
         time.sleep(RETRY_INTERVAL)
     assert ok
+
+
+def wait_for_pod_annotation(core_api,
+                            label_selector, anno_key, anno_val):
+    matches = False
+    for _ in range(RETRY_COUNTS):
+        pods = core_api.list_namespaced_pod(
+            namespace='longhorn-system', label_selector=label_selector)
+        if anno_val is None:
+            if any(pod.metadata.annotations is None or
+                   pod.metadata.annotations.get(anno_key, None) is None
+                   for pod in pods.items):
+                matches = True
+                break
+        else:
+            if any(pod.metadata.annotations is not None and
+                    pod.metadata.annotations.get(anno_key, None) == anno_val
+                   for pod in pods.items):
+                matches = True
+                break
+        time.sleep(RETRY_INTERVAL)
+    assert matches is True
