@@ -84,6 +84,7 @@ from backupstore import set_random_backupstore  # NOQA
 from backupstore import backupstore_get_backup_volume_prefix
 from backupstore import set_backupstore_url, set_backupstore_credential_secret, set_backupstore_poll_interval  # NOQA
 from backupstore import reset_backupstore_setting  # NOQA
+from backupstore import set_backupstore_s3, backupstore_get_secret  # NOQA
 
 
 @pytest.mark.coretest   # NOQA
@@ -3778,3 +3779,69 @@ def test_backuptarget_available_during_engine_image_not_ready(client, apps_api):
             # Reset backup store setting
             reset_backupstore_setting(client)
             common.wait_for_backup_target_available(client, False)
+
+
+def test_aws_iam_role_arn(client, core_api):  # NOQA
+    """
+    Test AWS IAM Role ARN
+
+    1. Set backup target to S3
+    2. Check longhorn manager and replica instance manager Pods
+       without 'iam.amazonaws.com/role' annotation
+    3. Add AWS_IAM_ROLE_ARN to secret
+    4. Check longhorn manager and replica instance manager Pods
+       with 'iam.amazonaws.com/role' annotation
+       and matches to AWS_IAM_ROLE_ARN in secret
+    5. Update AWS_IAM_ROLE_ARN from secret
+    6. Check longhorn manager and replica instance manager Pods
+       with 'iam.amazonaws.com/role' annotation
+       and matches to AWS_IAM_ROLE_ARN in secret
+    7. Remove AWS_IAM_ROLE_ARN from secret
+    8. Check longhorn manager and replica instance manager Pods
+       without 'iam.amazonaws.com/role' annotation
+    """
+    set_backupstore_s3(client)
+
+    lh_label = 'app=longhorn-manager'
+    replica_im_label = 'longhorn.io/instance-manager-type=replica'
+    anno_key = 'iam.amazonaws.com/role'
+    secret_name = backupstore_get_secret(client)
+
+    common.wait_for_pod_annotation(
+        core_api, lh_label, anno_key, None)
+    common.wait_for_pod_annotation(
+        core_api, replica_im_label, anno_key, None)
+
+    # Add secret key AWS_IAM_ROLE_ARN value test-aws-iam-role-arn
+    secret = core_api.read_namespaced_secret(
+        name=secret_name, namespace='longhorn-system')
+    secret.data['AWS_IAM_ROLE_ARN'] = 'dGVzdC1hd3MtaWFtLXJvbGUtYXJu'
+    core_api.patch_namespaced_secret(
+        name=secret_name, namespace='longhorn-system', body=secret)
+
+    common.wait_for_pod_annotation(
+        core_api, lh_label, anno_key, 'test-aws-iam-role-arn')
+    common.wait_for_pod_annotation(
+        core_api, replica_im_label, anno_key, 'test-aws-iam-role-arn')
+
+    # Update secret key AWS_IAM_ROLE_ARN value test-aws-iam-role-arn-2
+    secret = core_api.read_namespaced_secret(
+        name=secret_name, namespace='longhorn-system')
+    secret.data['AWS_IAM_ROLE_ARN'] = 'dGVzdC1hd3MtaWFtLXJvbGUtYXJuLTI='
+    core_api.patch_namespaced_secret(
+        name=secret_name, namespace='longhorn-system', body=secret)
+
+    common.wait_for_pod_annotation(
+        core_api, lh_label, anno_key, 'test-aws-iam-role-arn-2')
+    common.wait_for_pod_annotation(
+        core_api, replica_im_label, anno_key, 'test-aws-iam-role-arn-2')
+
+    # Remove secret key AWS_IAM_ROLE_ARN
+    body = [{"op": "remove", "path": "/data/AWS_IAM_ROLE_ARN"}]
+    core_api.patch_namespaced_secret(
+        name=secret_name, namespace='longhorn-system', body=body)
+
+    common.wait_for_pod_annotation(
+        core_api, lh_label, anno_key, None)
+    common.wait_for_pod_annotation(
+        core_api, replica_im_label, anno_key, None)
