@@ -1359,6 +1359,7 @@ def cleanup_client():
     reset_settings(client)
     reset_disks_for_all_nodes(client)
     reset_engine_image(client)
+    wait_for_all_instance_manager_running(client)
 
     # check replica subdirectory of default disk path
     if not os.path.exists(DEFAULT_REPLICA_DIRECTORY):
@@ -2760,13 +2761,6 @@ def reset_settings(client):
                 print(s)
                 print(e)
 
-    instance_managers = client.list_instance_manager()
-    core_api = get_core_api_client()
-    # Wait for the current instance manager running
-    for im in instance_managers:
-        wait_for_instance_manager_desire_state(client, core_api,
-                                               im.name, "Running", True)
-
 
 def reset_engine_image(client):
     core_api = get_core_api_client()
@@ -2788,6 +2782,35 @@ def reset_engine_image(client):
         time.sleep(RETRY_INTERVAL)
 
     assert ready
+
+
+def wait_for_all_instance_manager_running(client):
+    core_api = get_core_api_client()
+
+    nodes = client.list_node()
+
+    for i in range(RETRY_COUNTS):
+        instance_managers = client.list_instance_manager()
+        node_to_engine_manager_map, node_to_replica_manager_map = {}, {}
+        for im in instance_managers:
+            if im.managerType == "engine" and im.currentState == "running":
+                node_to_engine_manager_map[im.nodeID] = im
+            elif im.managerType == "replica" and im.currentState == "running":
+                node_to_replica_manager_map[im.nodeID] = im
+            else:
+                print("\nFound unknown instance manager:", im)
+        if len(node_to_engine_manager_map) != len(nodes) or \
+                len(node_to_replica_manager_map) != len(nodes):
+            time.sleep(RETRY_INTERVAL)
+            continue
+
+        for _, im in node_to_engine_manager_map.items():
+            wait_for_instance_manager_desire_state(client, core_api,
+                                                   im.name, "Running", True)
+        for _, im in node_to_replica_manager_map.items():
+            wait_for_instance_manager_desire_state(client, core_api,
+                                                   im.name, "Running", True)
+        break
 
 
 def wait_for_node_mountpropagation_condition(client, name):
