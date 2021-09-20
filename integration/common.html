@@ -1390,6 +1390,7 @@ def cleanup_client():
     reset_settings(client)
     reset_disks_for_all_nodes(client)
     reset_engine_image(client)
+    wait_for_all_instance_manager_running(client)
 
     # check replica subdirectory of default disk path
     if not os.path.exists(DEFAULT_REPLICA_DIRECTORY):
@@ -2791,13 +2792,6 @@ def reset_settings(client):
                 print(s)
                 print(e)
 
-    instance_managers = client.list_instance_manager()
-    core_api = get_core_api_client()
-    # Wait for the current instance manager running
-    for im in instance_managers:
-        wait_for_instance_manager_desire_state(client, core_api,
-                                               im.name, &#34;Running&#34;, True)
-
 
 def reset_engine_image(client):
     core_api = get_core_api_client()
@@ -2819,6 +2813,35 @@ def reset_engine_image(client):
         time.sleep(RETRY_INTERVAL)
 
     assert ready
+
+
+def wait_for_all_instance_manager_running(client):
+    core_api = get_core_api_client()
+
+    nodes = client.list_node()
+
+    for i in range(RETRY_COUNTS):
+        instance_managers = client.list_instance_manager()
+        node_to_engine_manager_map, node_to_replica_manager_map = {}, {}
+        for im in instance_managers:
+            if im.managerType == &#34;engine&#34; and im.currentState == &#34;running&#34;:
+                node_to_engine_manager_map[im.nodeID] = im
+            elif im.managerType == &#34;replica&#34; and im.currentState == &#34;running&#34;:
+                node_to_replica_manager_map[im.nodeID] = im
+            else:
+                print(&#34;\nFound unknown instance manager:&#34;, im)
+        if len(node_to_engine_manager_map) != len(nodes) or \
+                len(node_to_replica_manager_map) != len(nodes):
+            time.sleep(RETRY_INTERVAL)
+            continue
+
+        for _, im in node_to_engine_manager_map.items():
+            wait_for_instance_manager_desire_state(client, core_api,
+                                                   im.name, &#34;Running&#34;, True)
+        for _, im in node_to_replica_manager_map.items():
+            wait_for_instance_manager_desire_state(client, core_api,
+                                                   im.name, &#34;Running&#34;, True)
+        break
 
 
 def wait_for_node_mountpropagation_condition(client, name):
@@ -5027,6 +5050,7 @@ properly.
     reset_settings(client)
     reset_disks_for_all_nodes(client)
     reset_engine_image(client)
+    wait_for_all_instance_manager_running(client)
 
     # check replica subdirectory of default disk path
     if not os.path.exists(DEFAULT_REPLICA_DIRECTORY):
@@ -8207,14 +8231,7 @@ def random_labels():
                       &#34; to value: &#34;,
                       setting_default_value)
                 print(s)
-                print(e)
-
-    instance_managers = client.list_instance_manager()
-    core_api = get_core_api_client()
-    # Wait for the current instance manager running
-    for im in instance_managers:
-        wait_for_instance_manager_desire_state(client, core_api,
-                                               im.name, &#34;Running&#34;, True)</code></pre>
+                print(e)</code></pre>
 </details>
 </dd>
 <dt id="tests.common.scheduling_api"><code class="name flex">
@@ -8819,6 +8836,44 @@ def volume_name(request):
             break
 
         time.sleep(DEFAULT_DEPLOYMENT_INTERVAL)</code></pre>
+</details>
+</dd>
+<dt id="tests.common.wait_for_all_instance_manager_running"><code class="name flex">
+<span>def <span class="ident">wait_for_all_instance_manager_running</span></span>(<span>client)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def wait_for_all_instance_manager_running(client):
+    core_api = get_core_api_client()
+
+    nodes = client.list_node()
+
+    for i in range(RETRY_COUNTS):
+        instance_managers = client.list_instance_manager()
+        node_to_engine_manager_map, node_to_replica_manager_map = {}, {}
+        for im in instance_managers:
+            if im.managerType == &#34;engine&#34; and im.currentState == &#34;running&#34;:
+                node_to_engine_manager_map[im.nodeID] = im
+            elif im.managerType == &#34;replica&#34; and im.currentState == &#34;running&#34;:
+                node_to_replica_manager_map[im.nodeID] = im
+            else:
+                print(&#34;\nFound unknown instance manager:&#34;, im)
+        if len(node_to_engine_manager_map) != len(nodes) or \
+                len(node_to_replica_manager_map) != len(nodes):
+            time.sleep(RETRY_INTERVAL)
+            continue
+
+        for _, im in node_to_engine_manager_map.items():
+            wait_for_instance_manager_desire_state(client, core_api,
+                                                   im.name, &#34;Running&#34;, True)
+        for _, im in node_to_replica_manager_map.items():
+            wait_for_instance_manager_desire_state(client, core_api,
+                                                   im.name, &#34;Running&#34;, True)
+        break</code></pre>
 </details>
 </dd>
 <dt id="tests.common.wait_for_backing_image_delete"><code class="name flex">
@@ -11198,6 +11253,7 @@ volume. Trigger a failed assertion of one is detected.
 <li><code><a title="tests.common.wait_delete_pvc" href="#tests.common.wait_delete_pvc">wait_delete_pvc</a></code></li>
 <li><code><a title="tests.common.wait_delete_volume_attachment" href="#tests.common.wait_delete_volume_attachment">wait_delete_volume_attachment</a></code></li>
 <li><code><a title="tests.common.wait_deployment_replica_ready" href="#tests.common.wait_deployment_replica_ready">wait_deployment_replica_ready</a></code></li>
+<li><code><a title="tests.common.wait_for_all_instance_manager_running" href="#tests.common.wait_for_all_instance_manager_running">wait_for_all_instance_manager_running</a></code></li>
 <li><code><a title="tests.common.wait_for_backing_image_delete" href="#tests.common.wait_for_backing_image_delete">wait_for_backing_image_delete</a></code></li>
 <li><code><a title="tests.common.wait_for_backing_image_disk_cleanup" href="#tests.common.wait_for_backing_image_disk_cleanup">wait_for_backing_image_disk_cleanup</a></code></li>
 <li><code><a title="tests.common.wait_for_backup_completion" href="#tests.common.wait_for_backup_completion">wait_for_backup_completion</a></code></li>
