@@ -30,7 +30,7 @@ variable "arch" {
 
 variable "distro_version" {
   type        = string
-  default     = "15-sp2-v20201211"
+  default     = "15-sp3-v20210622"
 }
 
 variable "aws_ami_sles_account_number" {
