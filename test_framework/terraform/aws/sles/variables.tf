@@ -51,7 +51,7 @@ variable "lh_aws_instance_count_worker" {
 
 variable "lh_aws_instance_name_controlplane" {
   type        = string
-  default     = "longhorn-tests-controlplane"
+  default     = "lh-tests-controlplane"
 }
 
 variable "lh_aws_instance_type_controlplane" {
@@ -81,7 +81,7 @@ variable "aws_ssh_private_key_file_path" {
 
 variable "lh_aws_instance_name_worker" {
   type        = string
-  default     = "longhorn-tests-worker"
+  default     = "lh-tests-worker"
 }
 
 variable "lh_aws_instance_root_block_device_size_worker" {
