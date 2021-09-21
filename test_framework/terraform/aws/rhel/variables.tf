@@ -30,7 +30,7 @@ variable "arch" {
 
 variable "distro_version" {
   type        = string
-  default     = "8.3.0"
+  default     = "8.4.0"
 }
 
 variable "aws_ami_rhel_account_number" {
