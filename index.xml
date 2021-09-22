@@ -320,7 +320,7 @@ Case 1:  Disable the setting auto-salvage. Create and attach a volume. Keep writ
       
       <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/node/node-drain-deletion/</guid>
       <description>Drain with force Make sure the volumes on the drained/removed node can be detached or recovered correctly. The related issue: https://github.com/longhorn/longhorn/issues/1214
- Deploy a cluster contains 3 worker nodes N1, N2, N3. Deploy Longhorn. Create a 1-replica deployment with a 3-replica Longhorn volume. The volume is attached to N1. Write some data to the volume and get the md5sum. Force drain and remove N2, which contains one replica only. Wait for the volume Degraded.</description>
+ Deploy a cluster contains 3 worker nodes N1, N2, N3. Deploy Longhorn. Create a 1-replica deployment with a 3-replica Longhorn volume. The volume is attached to N1. Write some data to the volume and get the md5sum. Force drain and remove N2, which contains one replica only. kubectl drain &amp;lt;Node name&amp;gt; --delete-emptydir-data=true --force=true --grace-period=-1 --ignore-daemonsets=true --timeout=&amp;lt;Desired timeout in secs&amp;gt;  Wait for the volume Degraded.</description>
     </item>
     
     <item>

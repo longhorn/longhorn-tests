@@ -454,9 +454,13 @@
 <li>Deploy Longhorn.</li>
 <li>Create a 1-replica deployment with a 3-replica Longhorn volume. The volume is attached to N1.</li>
 <li>Write some data to the volume and get the md5sum.</li>
-<li>Force drain and remove N2, which contains one replica only.</li>
+<li>Force drain and remove N2, which contains one replica only.
+<pre tabindex="0"><code>kubectl drain &lt;Node name&gt; --delete-emptydir-data=true --force=true --grace-period=-1 --ignore-daemonsets=true --timeout=&lt;Desired timeout in secs&gt;
+</code></pre></li>
 <li>Wait for the volume Degraded.</li>
-<li>Force drain and remove N1, which is the node the volume is attached to.</li>
+<li>Force drain and remove N1, which is the node the volume is attached to.
+<pre tabindex="0"><code>kubectl drain &lt;Node name&gt; --delete-emptydir-data=true --force=true --grace-period=-1 --ignore-daemonsets=true --timeout=&lt;Desired timeout in secs&gt;
+</code></pre></li>
 <li>Wait for the volume detaching then being recovered. Will get attached to the workload/node.</li>
 <li>Validate the volume content. The data is intact.</li>
 </ol>
