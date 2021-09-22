@@ -465,7 +465,7 @@
 <li>Cordon the node. Longhorn will automatically disable the node scheduling when a Kubernetes node is cordoned.</li>
 <li>Evict all the replicas from the node.</li>
 <li>Run the following command to drain the node with <code>force</code> flag set to false.
-<pre tabindex="0"><code>kubectl drain &lt;Node name&gt; --delete-local-data=true --force=false --grace-period=-1 --ignore-daemonsets=true --timeout=&lt;Desired timeout in secs&gt;
+<pre tabindex="0"><code>kubectl drain &lt;Node name&gt; --delete-emptydir-data --force=false --grace-period=-1 --ignore-daemonsets=true --timeout=&lt;Desired timeout in secs&gt;
 </code></pre></li>
 <li>Observe that the workloads move to another node. The volumes should first detach and attach to workloads once they move to another node.</li>
 <li>Observe the logs, one by one all the pods should get evicted.
