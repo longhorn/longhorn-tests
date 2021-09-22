@@ -8,8 +8,14 @@ Make sure the volumes on the drained/removed node can be detached or recovered c
 3. Create a 1-replica deployment with a 3-replica Longhorn volume. The volume is attached to N1.
 4. Write some data to the volume and get the md5sum.
 5. Force drain and remove N2, which contains one replica only.
+   ```
+   kubectl drain <Node name> --delete-emptydir-data=true --force=true --grace-period=-1 --ignore-daemonsets=true --timeout=<Desired timeout in secs>
+   ```
 6. Wait for the volume Degraded.
 7. Force drain and remove N1, which is the node the volume is attached to.
+   ```
+   kubectl drain <Node name> --delete-emptydir-data=true --force=true --grace-period=-1 --ignore-daemonsets=true --timeout=<Desired timeout in secs>
+   ```
 8. Wait for the volume detaching then being recovered. Will get attached to the workload/node.
 9. Validate the volume content. The data is intact.
 
