@@ -18,7 +18,7 @@ Make sure the volumes on the drained/removed node can be detached or recovered c
 2. Evict all the replicas from the node.
 3. Run the following command to drain the node with ```force``` flag set to false.
     ```
-    kubectl drain <Node name> --delete-local-data=true --force=false --grace-period=-1 --ignore-daemonsets=true --timeout=<Desired timeout in secs>
+    kubectl drain <Node name> --delete-emptydir-data --force=false --grace-period=-1 --ignore-daemonsets=true --timeout=<Desired timeout in secs>
     ```
 4. Observe that the workloads move to another node. The volumes should first detach and attach to workloads once they move to another node.
 5. Observe the logs, one by one all the pods should get evicted.
