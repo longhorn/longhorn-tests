@@ -61,7 +61,7 @@ Case 1:  Disable the setting auto-salvage. Create and attach a volume. Keep writ
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/node/physical-node-down/</guid>
-      <description>One physical node down should result in the state of that node change to Down When using with CSI driver, one node with controller and pod down should result in Kubernetes migrate the pod to another node, and Longhorn volume should be able to be used on that node as well. Test scenarios for this are documented here Reboot the node that the controller attached to. After reboot complete, the volume should be reattached to the node.</description>
+      <description>One physical node down should result in the state of that node change to Down. When using with CSI driver, one node with controller (StatefulSet/Deployment) and pod down should result in Kubernetes migrate the pod to another node, and Longhorn volume should be able to be used on that node as well. Test scenarios for this are documented here. Reboot the node that the controller attached to. After reboot complete, the volume should be reattached to the node.</description>
     </item>
     
     <item>
