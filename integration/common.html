@@ -4421,7 +4421,29 @@ def wait_for_cron_job_count(batch_v1_beta_api, number, label=&#34;&#34;,
             ok = True
             break
         time.sleep(RETRY_INTERVAL)
-    assert ok</code></pre>
+    assert ok
+
+
+def wait_for_pod_annotation(core_api,
+                            label_selector, anno_key, anno_val):
+    matches = False
+    for _ in range(RETRY_COUNTS):
+        pods = core_api.list_namespaced_pod(
+            namespace=&#39;longhorn-system&#39;, label_selector=label_selector)
+        if anno_val is None:
+            if any(pod.metadata.annotations is None or
+                   pod.metadata.annotations.get(anno_key, None) is None
+                   for pod in pods.items):
+                matches = True
+                break
+        else:
+            if any(pod.metadata.annotations is not None and
+                    pod.metadata.annotations.get(anno_key, None) == anno_val
+                   for pod in pods.items):
+                matches = True
+                break
+        time.sleep(RETRY_INTERVAL)
+    assert matches is True</code></pre>
 </details>
 </section>
 <section>
@@ -9655,6 +9677,37 @@ def volume_name(request):
     return node</code></pre>
 </details>
 </dd>
+<dt id="tests.common.wait_for_pod_annotation"><code class="name flex">
+<span>def <span class="ident">wait_for_pod_annotation</span></span>(<span>core_api, label_selector, anno_key, anno_val)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def wait_for_pod_annotation(core_api,
+                            label_selector, anno_key, anno_val):
+    matches = False
+    for _ in range(RETRY_COUNTS):
+        pods = core_api.list_namespaced_pod(
+            namespace=&#39;longhorn-system&#39;, label_selector=label_selector)
+        if anno_val is None:
+            if any(pod.metadata.annotations is None or
+                   pod.metadata.annotations.get(anno_key, None) is None
+                   for pod in pods.items):
+                matches = True
+                break
+        else:
+            if any(pod.metadata.annotations is not None and
+                    pod.metadata.annotations.get(anno_key, None) == anno_val
+                   for pod in pods.items):
+                matches = True
+                break
+        time.sleep(RETRY_INTERVAL)
+    assert matches is True</code></pre>
+</details>
+</dd>
 <dt id="tests.common.wait_for_pod_phase"><code class="name flex">
 <span>def <span class="ident">wait_for_pod_phase</span></span>(<span>core_api, pod_name, pod_phase, namespace='default')</span>
 </code></dt>
@@ -11285,6 +11338,7 @@ volume. Trigger a failed assertion of one is detected.
 <li><code><a title="tests.common.wait_for_node_schedulable_condition" href="#tests.common.wait_for_node_schedulable_condition">wait_for_node_schedulable_condition</a></code></li>
 <li><code><a title="tests.common.wait_for_node_tag_update" href="#tests.common.wait_for_node_tag_update">wait_for_node_tag_update</a></code></li>
 <li><code><a title="tests.common.wait_for_node_update" href="#tests.common.wait_for_node_update">wait_for_node_update</a></code></li>
+<li><code><a title="tests.common.wait_for_pod_annotation" href="#tests.common.wait_for_pod_annotation">wait_for_pod_annotation</a></code></li>
 <li><code><a title="tests.common.wait_for_pod_phase" href="#tests.common.wait_for_pod_phase">wait_for_pod_phase</a></code></li>
 <li><code><a title="tests.common.wait_for_pod_remount" href="#tests.common.wait_for_pod_remount">wait_for_pod_remount</a></code></li>
 <li><code><a title="tests.common.wait_for_pod_restart" href="#tests.common.wait_for_pod_restart">wait_for_pod_restart</a></code></li>

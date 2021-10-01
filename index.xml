@@ -792,17 +792,6 @@ Test with specific Kubernetes version  For each Kubernetes version (1.18, 1.19, 
     </item>
     
     <item>
-      <title>Test Volume Backup and Restore by AWS IAM role</title>
-      <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/aws-iam-role-for-volume-backup-restore/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/aws-iam-role-for-volume-backup-restore/</guid>
-      <description>Related issue https://github.com/longhorn/longhorn/issues/1526
-Longhorn v1.1.1 should work with volume backup and restore by AWS IAM role
-Scenario  Install AWS CLI and configure your AWS credentials  curl &amp;#34;https://s3.amazonaws.com/aws-cli/awscli-bundle.zip&amp;#34; -o &amp;#34;awscli-bundle.zip&amp;#34; unzip awscli-bundle.zip ./awscli-bundle/install -b ~/bin/aws ~/bin/aws configure Create AWS S3 bucket  S3_BUCKET_NAME=&amp;lt;bucket-name&amp;gt; ~/bin/aws s3api create-bucket \  --bucket $S3_BUCKET_NAME \  --region us-west-2 \  --create-bucket-configuration LocationConstraint=us-west-2 Create a new IAM instance profile NodeInstanceProfile  cat &amp;gt; node-instance-assume-role-policy.json &amp;lt;&amp;lt;EOF { &amp;#34;Version&amp;#34;: &amp;#34;2012-10-17&amp;#34;, &amp;#34;Statement&amp;#34;: [ { &amp;#34;Effect&amp;#34;: &amp;#34;Allow&amp;#34;, &amp;#34;Principal&amp;#34;: { &amp;#34;Service&amp;#34;: &amp;#34;ec2.</description>
-    </item>
-    
-    <item>
       <title>Testing ext4 with custom fs params1 (no 64bit, no metadata_csum)</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.0/suse-sles12sp3/ext4-custom-fs-params-1/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
