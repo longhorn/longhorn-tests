@@ -447,7 +447,8 @@
   <h1 id="title">Node disconnection test</h1>
   <div>
     <article id="content">
-       <p><a href="https://github.com/longhorn/longhorn/issues/1545">https://github.com/longhorn/longhorn/issues/1545</a></p>
+       <p><a href="https://github.com/longhorn/longhorn/issues/1545">https://github.com/longhorn/longhorn/issues/1545</a>
+For disconnect node : <a href="https://github.com/longhorn/longhorn/files/4864127/network_down.sh.zip">https://github.com/longhorn/longhorn/files/4864127/network_down.sh.zip</a></p>
 <h3 id="case-1">Case 1:</h3>
 <ol>
 <li>Disable the setting auto-salvage.</li>
@@ -459,11 +460,11 @@
 <h3 id="case-2">Case 2:</h3>
 <ol>
 <li>Launch Longhorn.</li>
-<li>Launch a pod with the volume and write some data. (Remember to set liveness probe for the volume mount point.)</li>
+<li>Use statefulset launch a pod with the volume and write some data.</li>
 <li>Disconnect the node that the volume attached to for 100 seconds.</li>
 <li>Wait for the node back and the volume reattachment.</li>
+<li>After the volume is reattached, the pod will be automatically deleted and recreate.</li>
 <li>Verify the data and the pod still works fine.</li>
-<li>Delete the pod and wait for the volume deleted/detached.</li>
 <li>Repeat step 2~6 for 3 times.</li>
 <li>Create, Attach, and detach other volumes to the recovered node. All volumes should work fine.</li>
 <li>Remove Longhorn and repeat step 1~9 for 3 times.</li>

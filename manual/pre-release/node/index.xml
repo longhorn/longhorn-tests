@@ -41,8 +41,8 @@ Volume creation using UI with degraded availability and added node Start with on
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/node/node-disconnection/</guid>
-      <description>https://github.com/longhorn/longhorn/issues/1545
-Case 1:  Disable the setting auto-salvage. Create and attach a volume. Keep writing data to the volume. Disconnect the node that the volume attached to for 100 seconds during the data writing. Wait for the node back. The volume will be detached then reattached automatically. And there are some replicas still running after the reattachment.  Case 2:  Launch Longhorn. Launch a pod with the volume and write some data.</description>
+      <description>https://github.com/longhorn/longhorn/issues/1545 For disconnect node : https://github.com/longhorn/longhorn/files/4864127/network_down.sh.zip
+Case 1:  Disable the setting auto-salvage. Create and attach a volume. Keep writing data to the volume. Disconnect the node that the volume attached to for 100 seconds during the data writing. Wait for the node back. The volume will be detached then reattached automatically. And there are some replicas still running after the reattachment.  Case 2:  Launch Longhorn. Use statefulset launch a pod with the volume and write some data.</description>
     </item>
     
     <item>
