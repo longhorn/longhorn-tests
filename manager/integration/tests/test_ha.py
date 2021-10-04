@@ -925,8 +925,7 @@ def test_rebuild_with_inc_restoration(set_random_backupstore, client, core_api, 
     create_and_wait_pod(core_api, dr_pod)
 
     dr_volume = client.by_id_volume(dr_volume_name)
-    assert dr_volume[VOLUME_FIELD_ROBUSTNESS] == \
-           VOLUME_ROBUSTNESS_HEALTHY
+    assert dr_volume[VOLUME_FIELD_ROBUSTNESS] == VOLUME_ROBUSTNESS_HEALTHY
 
     md5sum1 = get_pod_data_md5sum(core_api, dr_pod_name, data_path1)
     assert std_md5sum1 == md5sum1
@@ -1537,8 +1536,7 @@ def test_single_replica_restore_failure(set_random_backupstore, client, core_api
     create_and_wait_pod(core_api, res_pod)
 
     res_volume = client.by_id_volume(res_name)
-    assert res_volume[VOLUME_FIELD_ROBUSTNESS] == \
-           VOLUME_ROBUSTNESS_HEALTHY
+    assert res_volume[VOLUME_FIELD_ROBUSTNESS] == VOLUME_ROBUSTNESS_HEALTHY
 
     res_md5sum = get_pod_data_md5sum(core_api, res_pod_name, data_path)
     assert md5sum == res_md5sum
@@ -1748,8 +1746,7 @@ def test_engine_crash_for_restore_volume(set_random_backupstore, client, core_ap
     create_and_wait_pod(core_api, res_pod)
 
     res_volume = client.by_id_volume(res_name)
-    assert res_volume[VOLUME_FIELD_ROBUSTNESS] == \
-           VOLUME_ROBUSTNESS_HEALTHY
+    assert res_volume[VOLUME_FIELD_ROBUSTNESS] == VOLUME_ROBUSTNESS_HEALTHY
 
     res_md5sum = get_pod_data_md5sum(core_api, res_pod_name, data_path)
     assert md5sum == res_md5sum
@@ -1865,8 +1862,7 @@ def test_engine_crash_for_dr_volume(set_random_backupstore, client, core_api, vo
     create_and_wait_pod(core_api, dr_pod)
 
     dr_volume = client.by_id_volume(dr_volume_name)
-    assert dr_volume[VOLUME_FIELD_ROBUSTNESS] == \
-           VOLUME_ROBUSTNESS_HEALTHY
+    assert dr_volume[VOLUME_FIELD_ROBUSTNESS] == VOLUME_ROBUSTNESS_HEALTHY
 
     dr_md5sum1 = get_pod_data_md5sum(core_api, dr_pod_name, data_path)
     assert md5sum1 == dr_md5sum1
@@ -2583,7 +2579,7 @@ def test_engine_image_missing_on_some_nodes():
     pass
 
 
-@pytest.mark.skip(reason="TODO") # NOQA
+@pytest.mark.skip(reason="TODO")  # NOQA
 def test_autosalvage_with_data_locality_enabled():
     """
     This e2e test follows the manual test steps at:
@@ -2614,3 +2610,28 @@ def test_autosalvage_with_data_locality_enabled():
     1. Clean up the node tag
     """
     pass
+
+
+@pytest.mark.skip(reason="TODO")  # NOQA
+def test_recovery_from_im_deletion():
+    """
+    Related issue :
+    https://github.com/longhorn/longhorn/issues/3070
+
+    Steps:
+    1. Create a volume and PV/PVC.
+    2. Create a deployment with 1 pod having below in command section on node-1
+       and attach to the volume.
+       command:
+          - "/bin/sh"
+          - "-ec"
+          - |
+            touch /data/test
+            tail -f /data/test
+    3. Wait for the pod to become healthy.
+    4. Write small(100MB) data.
+    4. Kill the instance-manager-e on node-1.
+    5. Wait for the instance-manager-e pod to become healthy.
+    6. Wait for pod to get terminated and recreated.
+    7. Read and write in the pod to verify the pod is accessible.
+    """
