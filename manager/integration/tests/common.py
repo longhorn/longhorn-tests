@@ -2795,26 +2795,28 @@ def wait_for_all_instance_manager_running(client):
     for i in range(RETRY_COUNTS):
         instance_managers = client.list_instance_manager()
         node_to_engine_manager_map, node_to_replica_manager_map = {}, {}
-        for im in instance_managers:
-            if im.managerType == "engine" and im.currentState == "running":
-                node_to_engine_manager_map[im.nodeID] = im
-            elif im.managerType == "replica" and im.currentState == "running":
-                node_to_replica_manager_map[im.nodeID] = im
-            else:
-                print("\nFound unknown instance manager:", im)
-        if len(node_to_engine_manager_map) != len(nodes) or \
-                len(node_to_replica_manager_map) != len(nodes):
-            time.sleep(RETRY_INTERVAL)
+        try:
+            for im in instance_managers:
+                if im.managerType == "engine" and im.currentState == "running":
+                    node_to_engine_manager_map[im.nodeID] = im
+                elif im.managerType == "replica" and im.currentState == "running":
+                    node_to_replica_manager_map[im.nodeID] = im
+                else:
+                    print("\nFound unknown instance manager:", im)
+            if len(node_to_engine_manager_map) != len(nodes) or \
+                    len(node_to_replica_manager_map) != len(nodes):
+                time.sleep(RETRY_INTERVAL)
+                continue
+
+            for _, im in node_to_engine_manager_map.items():
+                wait_for_instance_manager_desire_state(client, core_api,
+                                                       im.name, "Running", True)
+            for _, im in node_to_replica_manager_map.items():
+                wait_for_instance_manager_desire_state(client, core_api,
+                                                       im.name, "Running", True)
+            break
+        except:
             continue
-
-        for _, im in node_to_engine_manager_map.items():
-            wait_for_instance_manager_desire_state(client, core_api,
-                                                   im.name, "Running", True)
-        for _, im in node_to_replica_manager_map.items():
-            wait_for_instance_manager_desire_state(client, core_api,
-                                                   im.name, "Running", True)
-        break
-
 
 def wait_for_node_mountpropagation_condition(client, name):
     for i in range(RETRY_COUNTS):
