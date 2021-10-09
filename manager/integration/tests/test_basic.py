@@ -50,7 +50,7 @@ from common import wait_for_volume_expansion
 from common import fail_replica_expansion, wait_for_expansion_failure
 from common import wait_for_volume_restoration_start
 from common import write_pod_volume_random_data, get_pod_data_md5sum
-from common import prepare_pod_with_data_in_mb
+from common import prepare_pod_with_data_in_mb, exec_command_in_pod
 from common import crash_replica_processes
 from common import wait_for_volume_condition_scheduled
 from common import wait_for_volume_condition_toomanysnapshots
@@ -3883,3 +3883,210 @@ def test_aws_iam_role_arn(client, core_api):  # NOQA
         core_api, lh_label, anno_key, None)
     common.wait_for_pod_annotation(
         core_api, replica_im_label, anno_key, None)
+
+
+@pytest.mark.coretest   # NOQA
+def test_restore_basic(set_random_backupstore, client, core_api, volume_name, pod):  # NOQA
+    """
+    Steps:
+
+    1. Create a volume and attach to a pod.
+    2. Write some data into the volume and compute the checksum m1.
+    3. Create a backup say b1.
+    4. Write some more data into the volume and compute the checksum m2.
+    5. Create a backup say b2.
+    6. Delete all the data from the volume.
+    7. Write some more data into the volume and compute the checksum m3.
+    8. Create a backup say b3.
+    9. Restore backup b1 and verify the data with m1.
+    10. Restore backup b2 and verify the data with m1 and m2.
+    11. Restore backup b3 and verify the data with m3.
+    12. Delete the backup b2.
+    13. restore the backup b3 and verify the data with m3.
+    """
+
+    data_path1 = "/data/test1"
+    data_path2 = "/data/test2"
+    data_path3 = "/data/test3"
+    test_pv_name = "pv-" + volume_name
+    test_pvc_name = "pvc-" + volume_name
+    test_pod_name = "pod-" + volume_name
+    restore_volume_name1 = volume_name + "-restore1"
+    restore_volume_name2 = volume_name + "-restore2"
+    restore_volume_name3 = volume_name + "-restore3"
+
+    volume = create_and_check_volume(client, volume_name, size=str(2 * Gi))
+    create_pv_for_volume(client, core_api, volume, test_pv_name)
+    create_pvc_for_volume(client, core_api, volume, test_pvc_name)
+
+    pod['metadata']['name'] = test_pod_name
+    pod['spec']['volumes'] = [{
+        'name': pod['spec']['containers'][0]['volumeMounts'][0]['name'],
+        'persistentVolumeClaim': {
+            'claimName': test_pvc_name,
+        },
+    }]
+    create_and_wait_pod(core_api, pod)
+    wait_for_volume_healthy(client, volume_name)
+
+    # Write 1st data and take backup
+    write_pod_volume_random_data(core_api, test_pod_name,
+                                 data_path1, DATA_SIZE_IN_MB_1)
+    md5sum1 = get_pod_data_md5sum(core_api, test_pod_name, data_path1)
+
+    snap1 = create_snapshot(client, volume_name)
+    volume = client.by_id_volume(volume_name)
+    volume.snapshotBackup(name=snap1.name)
+    wait_for_backup_completion(client, volume_name, snap1.name)
+    bv, b1 = find_backup(client, volume_name, snap1.name)
+
+    # Write 2nd data and take backup
+    write_pod_volume_random_data(core_api, test_pod_name,
+                                 data_path2, DATA_SIZE_IN_MB_1)
+    md5sum2 = get_pod_data_md5sum(core_api, test_pod_name, data_path2)
+
+    snap2 = create_snapshot(client, volume_name)
+    volume = client.by_id_volume(volume_name)
+    volume.snapshotBackup(name=snap2.name)
+    wait_for_backup_completion(client, volume_name, snap2.name)
+    bv, b2 = find_backup(client, volume_name, snap2.name)
+
+    # Remove test1 and test2 files
+    command = 'rm ' + data_path1 + ' ' + data_path2
+    exec_command_in_pod(core_api, command, test_pod_name, 'default')
+
+    # Write 3rd data and take backup
+    write_pod_volume_random_data(core_api, test_pod_name,
+                                 data_path3, DATA_SIZE_IN_MB_1)
+    md5sum3 = get_pod_data_md5sum(core_api, test_pod_name, data_path3)
+
+    snap3 = create_snapshot(client, volume_name)
+    volume = client.by_id_volume(volume_name)
+    volume.snapshotBackup(name=snap3.name)
+    wait_for_backup_completion(client, volume_name, snap3.name)
+    bv, b3 = find_backup(client, volume_name, snap3.name)
+
+    delete_and_wait_pod(core_api, test_pod_name)
+
+    # restore 1st backup and assert with md5sum1
+    restore_pod_name1 = restore_volume_name1 + "-pod"
+    restore_pv_name1 = restore_volume_name1 + "-pv"
+    restore_pvc_name1 = restore_volume_name1 + "-pvc"
+
+    volume = client.create_volume(name=restore_volume_name1, size=str(2 * Gi),
+                                  fromBackup=b1.url)
+    volume = wait_for_volume_detached(client, restore_volume_name1)
+    create_pv_for_volume(client, core_api, volume, restore_pv_name1)
+    create_pvc_for_volume(client, core_api, volume, restore_pvc_name1)
+    pod['metadata']['name'] = restore_pod_name1
+    pod['spec']['volumes'] = [{
+        'name': pod['spec']['containers'][0]['volumeMounts'][0]['name'],
+        'persistentVolumeClaim': {
+            'claimName': restore_pvc_name1,
+        },
+    }]
+    create_and_wait_pod(core_api, pod)
+
+    restore_volume = client.by_id_volume(restore_volume_name1)
+    assert restore_volume[VOLUME_FIELD_ROBUSTNESS] == VOLUME_ROBUSTNESS_HEALTHY
+    restore_md5sum1 = get_pod_data_md5sum(core_api, restore_pod_name1,
+                                          data_path1)
+    assert md5sum1 == restore_md5sum1
+
+    delete_and_wait_pod(core_api, restore_pod_name1)
+
+    # restore 2nd backup and assert with mdsum1 and md5sum2
+    restore_pod_name2 = restore_volume_name2 + "-pod"
+    restore_pv_name2 = restore_volume_name2 + "-pv"
+    restore_pvc_name2 = restore_volume_name2 + "-pvc"
+
+    volume = client.create_volume(name=restore_volume_name2, size=str(2 * Gi),
+                                  fromBackup=b2.url)
+    volume = wait_for_volume_detached(client, restore_volume_name2)
+    create_pv_for_volume(client, core_api, volume, restore_pv_name2)
+    create_pvc_for_volume(client, core_api, volume, restore_pvc_name2)
+    pod['metadata']['name'] = restore_pod_name2
+    pod['spec']['volumes'] = [{
+        'name': pod['spec']['containers'][0]['volumeMounts'][0]['name'],
+        'persistentVolumeClaim': {
+            'claimName': restore_pvc_name2,
+        },
+    }]
+    create_and_wait_pod(core_api, pod)
+
+    restore_volume = client.by_id_volume(restore_volume_name2)
+    assert restore_volume[VOLUME_FIELD_ROBUSTNESS] == VOLUME_ROBUSTNESS_HEALTHY
+    restore_md5sum1 = get_pod_data_md5sum(core_api, restore_pod_name2,
+                                          data_path1)
+    assert md5sum1 == restore_md5sum1
+    restore_md5sum2 = get_pod_data_md5sum(core_api, restore_pod_name2,
+                                          data_path2)
+    assert md5sum2 == restore_md5sum2
+
+    delete_and_wait_pod(core_api, restore_pod_name2)
+
+    # restore 3rd backup and assert with md5sum3
+    restore_pod_name3 = restore_volume_name3 + "-pod"
+    restore_pv_name3 = restore_volume_name3 + "-pv"
+    restore_pvc_name3 = restore_volume_name3 + "-pvc"
+
+    volume = client.create_volume(name=restore_volume_name3, size=str(2 * Gi),
+                                  fromBackup=b3.url)
+    volume = wait_for_volume_detached(client, restore_volume_name3)
+    create_pv_for_volume(client, core_api, volume, restore_pv_name3)
+    create_pvc_for_volume(client, core_api, volume, restore_pvc_name3)
+    pod['metadata']['name'] = restore_pod_name3
+    pod['spec']['volumes'] = [{
+        'name': pod['spec']['containers'][0]['volumeMounts'][0]['name'],
+        'persistentVolumeClaim': {
+            'claimName': restore_pvc_name3,
+        },
+    }]
+    create_and_wait_pod(core_api, pod)
+
+    restore_volume = client.by_id_volume(restore_volume_name3)
+    assert restore_volume[VOLUME_FIELD_ROBUSTNESS] == VOLUME_ROBUSTNESS_HEALTHY
+    restore_md5sum3 = get_pod_data_md5sum(core_api, restore_pod_name3,
+                                          data_path3)
+    assert md5sum3 == restore_md5sum3
+
+    command = r"ls /data | grep 'test1\|test2'"
+    output = exec_command_in_pod(core_api, command, restore_pod_name3,
+                                 'default')
+    assert output == ''
+
+    delete_and_wait_pod(core_api, restore_pod_name3)
+
+    # Delete the 2nd backup
+    delete_backup(client, bv.name, b2.name)
+
+    # restore 3rd backup again
+    restore_volume_name4 = volume_name + "restore4"
+    restore_pod_name4 = restore_volume_name4 + "-pod"
+    restore_pv_name4 = restore_volume_name4 + "-pv"
+    restore_pvc_name4 = restore_volume_name4 + "-pvc"
+
+    volume = client.create_volume(name=restore_volume_name4, size=str(2 * Gi),
+                                  fromBackup=b3.url)
+    volume = wait_for_volume_detached(client, restore_volume_name4)
+    create_pv_for_volume(client, core_api, volume, restore_pv_name4)
+    create_pvc_for_volume(client, core_api, volume, restore_pvc_name4)
+    pod['metadata']['name'] = restore_pod_name4
+    pod['spec']['volumes'] = [{
+        'name': pod['spec']['containers'][0]['volumeMounts'][0]['name'],
+        'persistentVolumeClaim': {
+            'claimName': restore_pvc_name4,
+        },
+    }]
+    create_and_wait_pod(core_api, pod)
+
+    restore_volume = client.by_id_volume(restore_volume_name4)
+    assert restore_volume[VOLUME_FIELD_ROBUSTNESS] == VOLUME_ROBUSTNESS_HEALTHY
+    restore_md5sum3 = get_pod_data_md5sum(core_api, restore_pod_name4,
+                                          data_path3)
+    assert md5sum3 == restore_md5sum3
+
+    command = r"ls /data | grep 'test1\|test2'"
+    output = exec_command_in_pod(core_api, command, restore_pod_name4,
+                                 'default')
+    assert output == ''
