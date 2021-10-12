@@ -252,6 +252,8 @@ resource "aws_instance" "lh_aws_instance_controlplane" {
 
   tags = {
     Name = "${var.lh_aws_instance_name_controlplane}-${count.index}-${random_string.random_suffix.id}"
+    DoNotDelete	= "true"
+    Owner = "longhorn-infra"
   }
 }
 
@@ -302,6 +304,8 @@ resource "aws_instance" "lh_aws_instance_worker" {
 
   tags = {
     Name = "${var.lh_aws_instance_name_worker}-${count.index}-${random_string.random_suffix.id}"
+    DoNotDelete	= "true"
+    Owner = "longhorn-infra"
   }
 }
 
