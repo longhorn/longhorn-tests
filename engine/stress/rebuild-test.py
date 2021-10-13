@@ -235,7 +235,7 @@ workers = []
 
 nthreads = 10
 
-for thread in xrange(nthreads):
+for thread in range(nthreads):
   p = Process(target = read_write, args = (thread + 1, 100000))
   workers.append(p)
   p.start()

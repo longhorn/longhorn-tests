@@ -2,6 +2,7 @@ from common_fixtures import *  # NOQA
 import websocket as ws
 import base64
 
+import pytest
 
 VOLUME_DRIVER = "rancher-longhorn"
 

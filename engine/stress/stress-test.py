@@ -177,7 +177,7 @@ snapshots["livedata"] = 0
 
 workers = []
 
-for i in xrange(10):
+for i in range(10):
   p = Process(target = random_write, args = (snapshots, testdata, 2000000))
   workers.append(p)
   p.start()

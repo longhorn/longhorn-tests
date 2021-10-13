@@ -197,7 +197,7 @@ def run_test(thread, iterations):
 
 workers = []
 
-for thread in xrange(20):
+for thread in range(20):
   p = Process(target = run_test, args = (thread + 1, 1000))
   workers.append(p)
   p.start()
