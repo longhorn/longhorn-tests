@@ -327,7 +327,8 @@ def test_rwx_statefulset_scale_down_up(core_api, statefulset):  # NOQA
         pod_names = []
         for item in pods.items:
             pod_names.append(item.metadata.name)
-        if share_manager_name[0] not in pod_names and share_manager_name[1] not in pod_names:
+        if share_manager_name[0] not in pod_names and  \
+                share_manager_name[1] not in pod_names:
             found = False
             break
         time.sleep(RETRY_INTERVAL)
