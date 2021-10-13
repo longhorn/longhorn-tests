@@ -14,6 +14,24 @@ title: Test backing image
 9. Create and attach a volume with the backing image. Verify the data content is correct.
 10. Do cleanup.
 
+### Upload via Rancher URI
+<sup>Related issue: [3129](https://github.com/longhorn/longhorn/issues/3129)</sup>
+1. Create or import cluster into Rancher
+2. Go into the cluster
+3. Click Longhorn from the left sidebar
+4. Open Longhorn UI from the Rancher UI
+   - An example URL: <small>`https://rancer.server.domain/k8s/clusters/CLUSTER-ID/api/v1/namespaces/longhorn-system/services/http:longhorn-frontend:80/proxy/#/backingImage`</small>
+5. Create a new backing image with **Upload From Local**
+6. Verify the uploaded image matches its size or checksum
+
+### Upload via Ingress Controller
+<sup>Related issue: [2937](https://github.com/longhorn/longhorn/issues/2937)</sup>
+1. Install and create Ingress Loadbalancer with proper hostname configuration
+   - On Rancher v2.6.0 Explorer > into Cluster > Service and Discovery > Ingresses
+2. Access Longhorn UI with the hostname URL
+3. Create a new backing image with **Upload From Local**
+4. Verify the uploaded image matches its size or checksum
+
 ## Test CSI backing image
 1. Create a valid backing image
 2. Create a StorageClass, which use the same backing image name but different data source type/parameters.
