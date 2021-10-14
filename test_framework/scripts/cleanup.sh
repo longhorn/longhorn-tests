@@ -3,7 +3,7 @@
 # terminate any terraform processes
 TERRAFORM_PIDS=( `ps aux | grep -i terraform | grep -v grep | awk '{printf("%s ",$1)}'` )
 if [[ -n ${TERRAFORM_PIDS[@]} ]] ; then
-	for PID in ${TERRAFORM_PIDS[@]}; do
+	for PID in "${TERRAFORM_PIDS[@]}"; do
 		kill "${TERRAFORM_PIDS}"
 	done
 fi

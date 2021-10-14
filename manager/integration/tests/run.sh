@@ -1,7 +1,7 @@
 #!/bin/bash
 
 if [[ $@ =~ "--junitxml=" ]] ; then 
-  pytest -v $@ > /tmp/longhorn-pytest 2>&1
+  pytest -v "$@" > /tmp/longhorn-pytest 2>&1
   
   cat ${LONGHORN_JUNIT_REPORT_PATH}
 else 
@@ -9,5 +9,5 @@ else
   
   flake8
 
-  pytest -v $@
+  pytest -v "$@"
 fi 

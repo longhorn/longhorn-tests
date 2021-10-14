@@ -231,7 +231,7 @@ run_longhorn_tests(){
 	if [[ -n ${PYTEST_CUSTOM_OPTIONS} ]]; then
         PYTEST_CUSTOM_OPTIONS=(${PYTEST_CUSTOM_OPTIONS})
 
-        for OPT in ${PYTEST_CUSTOM_OPTIONS[@]}; do
+        for OPT in "${PYTEST_CUSTOM_OPTIONS[@]}"; do
             PYTEST_COMMAND_ARGS=${PYTEST_COMMAND_ARGS}', "'${OPT}'"'
         done
     fi
