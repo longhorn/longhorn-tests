@@ -15,17 +15,18 @@ title: Test backing image
 10. Do cleanup.
 
 ### Upload via Rancher URI
-<sup>Related issue: [3129](https://github.com/longhorn/longhorn/issues/3129)</sup>
-1. Create or import cluster into Rancher
+<sup>Related issue: [3129](https://github.com/longhorn/longhorn/issues/3129) with fix in Longhorn v1.3.0+</sup>
+1. With Rancher v2.6.x create a cluster and install Longhorn
+   - or import an existing cluster with Longhorn installed
 2. Go into the cluster
-3. Click Longhorn from the left sidebar
-4. Open Longhorn UI from the Rancher UI
+3. Click Longhorn from the Rancher menu, the sidebar on the left
+4. Click on the Longhorn app to open the UI
    - An example URL: <small>`https://rancer.server.domain/k8s/clusters/CLUSTER-ID/api/v1/namespaces/longhorn-system/services/http:longhorn-frontend:80/proxy/#/backingImage`</small>
 5. Create a new backing image with **Upload From Local**
 6. Verify the uploaded image matches its size or checksum
 
 ### Upload via Ingress Controller
-<sup>Related issue: [2937](https://github.com/longhorn/longhorn/issues/2937)</sup>
+<sup>Related issue: [2937](https://github.com/longhorn/longhorn/issues/2937) with fix in v1.2.0+</sup>
 1. Install and create Ingress Loadbalancer with proper hostname configuration
    - On Rancher v2.6.0 Explorer > into Cluster > Service and Discovery > Ingresses
 2. Access Longhorn UI with the hostname URL
