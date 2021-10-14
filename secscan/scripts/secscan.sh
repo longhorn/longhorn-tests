@@ -11,7 +11,7 @@ IMAGES=($(< longhorn-images.txt))
 
 wget -O /templates/junit.tpl https://raw.githubusercontent.com/longhorn/longhorn-tests/master/secscan/templates/junit.tpl
 
-for IMAGE in ${IMAGES[@]}; do
+for IMAGE in "${IMAGES[@]}"; do
 	IMAGE_NAME=`echo "${IMAGE}" | awk -F"/" '{print $NF}' | tr ':' '-'`
 	sed "s/LONGHORN_IMAGE_NAME/${IMAGE_NAME}/" /templates/junit.tpl > /templates/junit-${IMAGE_NAME}.tpl
 
