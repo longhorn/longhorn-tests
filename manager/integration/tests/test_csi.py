@@ -543,7 +543,7 @@ def test_csi_expansion_with_replica_failure(client, core_api, storage_class, pvc
     assert resp == test_data
 
 
-@pytest.mark.coretest
+@pytest.mark.coretest  # NOQA
 def test_allow_volume_creation_with_degraded_availability_csi(
         client, core_api, apps_api, make_deployment_with_pvc):  # NOQA
     """
