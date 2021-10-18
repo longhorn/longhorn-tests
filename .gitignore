@@ -5,6 +5,8 @@ __pycache__
 MANIFEST
 validationTestsJunit.xml
 .bash_history
+*.DS_Store
+
 
 # build files
 .dapper

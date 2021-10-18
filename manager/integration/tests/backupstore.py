@@ -20,24 +20,12 @@ from common import get_longhorn_api_client
 from common import delete_backup_volume
 from common import get_backupstore_url
 from common import get_backupstore_poll_interval
+from common import get_backupstores
 
 BACKUPSTORE_BV_PREFIX = "/backupstore/volumes/"
 BACKUPSTORE_LOCK_DURATION = 150
 
 TEMP_FILE_PATH = "/tmp/temp_file"
-
-
-def get_backupstores():
-    backupstore = os.environ['LONGHORN_BACKUPSTORES']
-    backupstore = backupstore.replace(" ", "")
-    try:
-        backupstores = backupstore.split(",")
-        for i in range(len(backupstores)):
-            backupstores[i] = backupstores[i].split(":")[0]
-    except ValueError:
-        backupstores = backupstore.split(":")[0]
-    return backupstores
-
 
 BACKUPSTORE = get_backupstores()
 
