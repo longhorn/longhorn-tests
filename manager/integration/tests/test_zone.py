@@ -491,8 +491,7 @@ def test_replica_auto_balance_zone_best_effort(client, core_api, volume_name):  
     assert z3_r_count == 2
 
 
-def test_replica_auto_balance_zone_best_effort_with_data_locality(
-        client, core_api, volume_name, pod):  # NOQA
+def test_replica_auto_balance_zone_best_effort_with_data_locality(client, core_api, volume_name, pod):  # NOQA
     """
     Background:
     Given set `replica-soft-anti-affinity` to `true`.
@@ -714,8 +713,7 @@ def test_replica_auto_balance_node_duplicates_in_multiple_zones(client, core_api
 
 
 @pytest.mark.skip(reason="REQUIRE_5_NODES")
-def test_replica_auto_balance_zone_best_effort_with_uneven_node_in_zones(
-        client, core_api, volume_name, pod):  # NOQA
+def test_replica_auto_balance_zone_best_effort_with_uneven_node_in_zones(client, core_api, volume_name, pod):  # NOQA
     """
     Given set `replica-soft-anti-affinity` to `true`.
     And set `replica-zone-soft-anti-affinity` to `true`.

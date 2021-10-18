@@ -377,8 +377,7 @@ def test_hard_anti_affinity_offline_rebuild(client, volume_name):  # NOQA
     cleanup_volume(client, volume)
 
 
-def test_replica_rebuild_per_volume_limit(
-    client, core_api, storage_class, sts_name, statefulset):  # NOQA
+def test_replica_rebuild_per_volume_limit(client, core_api, storage_class, sts_name, statefulset):  # NOQA
     """
     Test the volume always only have one replica scheduled for rebuild
 
