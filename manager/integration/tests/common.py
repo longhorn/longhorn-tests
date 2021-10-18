@@ -1407,7 +1407,12 @@ def get_backupstore_poll_interval():
 
 
 def get_backupstores():
-    backupstore = os.environ['LONGHORN_BACKUPSTORES']
+    # The try is added to avoid the pdoc3 error while publishing this on
+    # https://longhorn.github.io/longhorn-tests
+    try:
+        backupstore = os.environ['LONGHORN_BACKUPSTORES']
+    except KeyError:
+        return None
     backupstore = backupstore.replace(" ", "")
     try:
         backupstores = backupstore.split(",")
