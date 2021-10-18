@@ -1406,6 +1406,18 @@ def get_backupstore_poll_interval():
     return poll_interval
 
 
+def get_backupstores():
+    backupstore = os.environ['LONGHORN_BACKUPSTORES']
+    backupstore = backupstore.replace(" ", "")
+    try:
+        backupstores = backupstore.split(",")
+        for i in range(len(backupstores)):
+            backupstores[i] = backupstores[i].split(":")[0]
+    except ValueError:
+        backupstores = backupstore.split(":")[0]
+    return backupstores
+
+
 def get_clients(hosts):
     clients = {}
     for host in hosts:

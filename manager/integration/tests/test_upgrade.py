@@ -98,7 +98,7 @@ def longhorn_upgrade(longhorn_manager_repo,
     return longhorn_upgraded
 
 
-@pytest.mark.upgrade
+@pytest.mark.upgrade  # NOQA
 def test_upgrade(upgrade_longhorn_manager_repo_url,
                  upgrade_longhorn_manager_repo_branch,
                  upgrade_longhorn_manager_image,

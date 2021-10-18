@@ -514,7 +514,7 @@ def test_pvc_creation_with_default_sc_set(
     delete_and_wait_pv(core_api, pv_name)
 
 
-@pytest.mark.csi
+@pytest.mark.csi  # NOQA
 def test_backup_kubernetes_status(set_random_backupstore, client, core_api, pod):  # NOQA
     """
     Test that Backups have KubernetesStatus stored properly when there is an
@@ -726,7 +726,7 @@ def test_backup_kubernetes_status(set_random_backupstore, client, core_api, pod)
     cleanup_volume(client, volume)
 
 
-@pytest.mark.csi
+@pytest.mark.csi  # NOQA
 def test_delete_with_static_pv(client, core_api, volume_name): # NOQA
     """
     Test that deleting a Volume with related static Persistent Volume and
@@ -763,7 +763,7 @@ def test_delete_with_static_pv(client, core_api, volume_name): # NOQA
     wait_delete_pvc(core_api, pvc_name)
 
 
-@pytest.mark.csi
+@pytest.mark.csi  # NOQA
 def test_delete_with_provisioned_pv(client, core_api, storage_class, pvc): # NOQA
     """
     Test that deleting a Volume with dynamically provisioned Persistent Volume
@@ -789,7 +789,7 @@ def test_delete_with_provisioned_pv(client, core_api, storage_class, pvc): # NOQ
     wait_delete_pvc(core_api, pvc['metadata']['name'])
 
 
-@pytest.mark.csi
+@pytest.mark.csi  # NOQA
 def test_delete_provisioned_pvc(client, core_api,  storage_class, pvc): # NOQA
     """
     Test that deleting the Persistent Volume Claim for a dynamically

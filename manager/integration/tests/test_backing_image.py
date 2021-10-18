@@ -346,8 +346,8 @@ def test_csi_backup_with_backing_image(set_random_backupstore, client, core_api,
         backupstore_cleanup(client)
 
 
-@pytest.mark.backing_image
-@pytest.mark.recurring_job
+@pytest.mark.backing_image  # NOQA
+@pytest.mark.recurring_job  # NOQA
 def test_recurring_job_labels_with_backing_image(set_random_backupstore, client, random_labels, volume_name):  # NOQA
     for bi_url in (BACKING_IMAGE_QCOW2_URL, BACKING_IMAGE_RAW_URL):
         create_backing_image_with_matching_url(

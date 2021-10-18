@@ -799,8 +799,7 @@ def test_recurring_jobs_allow_detached_volume(set_random_backupstore, client, co
     common.wait_for_pod_phase(core_api, pod_names[0], pod_phase="Running")
 
 
-def test_recurring_jobs_when_volume_detached_unexpectedly(
-    set_random_backupstore, client, core_api, apps_api, volume_name, make_deployment_with_pvc):  # NOQA
+def test_recurring_jobs_when_volume_detached_unexpectedly(set_random_backupstore, client, core_api, apps_api, volume_name, make_deployment_with_pvc):  # NOQA
     """
     Scenario: test recurring jobs when volume detached unexpectedly
 
