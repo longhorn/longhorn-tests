@@ -2,3 +2,10 @@ baseURL = "https://longhorn.github.io/longhorn-tests/"
 languageCode = "en-us"
 title = "Longhorn Manual Test Cases"
 disableKinds = ["taxonomyTerm"]
+
+[markup]
+    defaultMarkdownHandler = "goldmark"
+
+  [markup.goldmark]
+    [markup.goldmark.renderer]
+      unsafe = true
