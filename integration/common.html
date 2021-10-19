@@ -1434,6 +1434,23 @@ def get_backupstore_poll_interval():
     return poll_interval
 
 
+def get_backupstores():
+    # The try is added to avoid the pdoc3 error while publishing this on
+    # https://longhorn.github.io/longhorn-tests
+    try:
+        backupstore = os.environ[&#39;LONGHORN_BACKUPSTORES&#39;]
+    except KeyError:
+        return None
+    backupstore = backupstore.replace(&#34; &#34;, &#34;&#34;)
+    try:
+        backupstores = backupstore.split(&#34;,&#34;)
+        for i in range(len(backupstores)):
+            backupstores[i] = backupstores[i].split(&#34;:&#34;)[0]
+    except ValueError:
+        backupstores = backupstore.split(&#34;:&#34;)[0]
+    return backupstores
+
+
 def get_clients(hosts):
     clients = {}
     for host in hosts:
@@ -2823,25 +2840,31 @@ def wait_for_all_instance_manager_running(client):
     for i in range(RETRY_COUNTS):
         instance_managers = client.list_instance_manager()
         node_to_engine_manager_map, node_to_replica_manager_map = {}, {}
-        for im in instance_managers:
-            if im.managerType == &#34;engine&#34; and im.currentState == &#34;running&#34;:
-                node_to_engine_manager_map[im.nodeID] = im
-            elif im.managerType == &#34;replica&#34; and im.currentState == &#34;running&#34;:
-                node_to_replica_manager_map[im.nodeID] = im
-            else:
-                print(&#34;\nFound unknown instance manager:&#34;, im)
-        if len(node_to_engine_manager_map) != len(nodes) or \
-                len(node_to_replica_manager_map) != len(nodes):
-            time.sleep(RETRY_INTERVAL)
-            continue
+        try:
+            for im in instance_managers:
+                if im.managerType == &#34;engine&#34; and im.currentState == &#34;running&#34;:
+                    node_to_engine_manager_map[im.nodeID] = im
+                elif im.managerType == &#34;replica&#34; and \
+                        im.currentState == &#34;running&#34;:
+                    node_to_replica_manager_map[im.nodeID] = im
+                else:
+                    print(&#34;\nFound unknown instance manager:&#34;, im)
+            if len(node_to_engine_manager_map) != len(nodes) or \
+                    len(node_to_replica_manager_map) != len(nodes):
+                time.sleep(RETRY_INTERVAL)
+                continue
 
-        for _, im in node_to_engine_manager_map.items():
-            wait_for_instance_manager_desire_state(client, core_api,
-                                                   im.name, &#34;Running&#34;, True)
-        for _, im in node_to_replica_manager_map.items():
-            wait_for_instance_manager_desire_state(client, core_api,
-                                                   im.name, &#34;Running&#34;, True)
-        break
+            for _, im in node_to_engine_manager_map.items():
+                wait_for_instance_manager_desire_state(client, core_api,
+                                                       im.name, &#34;Running&#34;,
+                                                       True)
+            for _, im in node_to_replica_manager_map.items():
+                wait_for_instance_manager_desire_state(client, core_api,
+                                                       im.name, &#34;Running&#34;,
+                                                       True)
+            break
+        except ApiException:
+            continue
 
 
 def wait_for_node_mountpropagation_condition(client, name):
@@ -6656,6 +6679,32 @@ been completed successfully</p></div>
     return backupstores</code></pre>
 </details>
 </dd>
+<dt id="tests.common.get_backupstores"><code class="name flex">
+<span>def <span class="ident">get_backupstores</span></span>(<span>)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_backupstores():
+    # The try is added to avoid the pdoc3 error while publishing this on
+    # https://longhorn.github.io/longhorn-tests
+    try:
+        backupstore = os.environ[&#39;LONGHORN_BACKUPSTORES&#39;]
+    except KeyError:
+        return None
+    backupstore = backupstore.replace(&#34; &#34;, &#34;&#34;)
+    try:
+        backupstores = backupstore.split(&#34;,&#34;)
+        for i in range(len(backupstores)):
+            backupstores[i] = backupstores[i].split(&#34;:&#34;)[0]
+    except ValueError:
+        backupstores = backupstore.split(&#34;:&#34;)[0]
+    return backupstores</code></pre>
+</details>
+</dd>
 <dt id="tests.common.get_client"><code class="name flex">
 <span>def <span class="ident">get_client</span></span>(<span>address)</span>
 </code></dt>
@@ -8877,25 +8926,31 @@ def volume_name(request):
     for i in range(RETRY_COUNTS):
         instance_managers = client.list_instance_manager()
         node_to_engine_manager_map, node_to_replica_manager_map = {}, {}
-        for im in instance_managers:
-            if im.managerType == &#34;engine&#34; and im.currentState == &#34;running&#34;:
-                node_to_engine_manager_map[im.nodeID] = im
-            elif im.managerType == &#34;replica&#34; and im.currentState == &#34;running&#34;:
-                node_to_replica_manager_map[im.nodeID] = im
-            else:
-                print(&#34;\nFound unknown instance manager:&#34;, im)
-        if len(node_to_engine_manager_map) != len(nodes) or \
-                len(node_to_replica_manager_map) != len(nodes):
-            time.sleep(RETRY_INTERVAL)
-            continue
+        try:
+            for im in instance_managers:
+                if im.managerType == &#34;engine&#34; and im.currentState == &#34;running&#34;:
+                    node_to_engine_manager_map[im.nodeID] = im
+                elif im.managerType == &#34;replica&#34; and \
+                        im.currentState == &#34;running&#34;:
+                    node_to_replica_manager_map[im.nodeID] = im
+                else:
+                    print(&#34;\nFound unknown instance manager:&#34;, im)
+            if len(node_to_engine_manager_map) != len(nodes) or \
+                    len(node_to_replica_manager_map) != len(nodes):
+                time.sleep(RETRY_INTERVAL)
+                continue
 
-        for _, im in node_to_engine_manager_map.items():
-            wait_for_instance_manager_desire_state(client, core_api,
-                                                   im.name, &#34;Running&#34;, True)
-        for _, im in node_to_replica_manager_map.items():
-            wait_for_instance_manager_desire_state(client, core_api,
-                                                   im.name, &#34;Running&#34;, True)
-        break</code></pre>
+            for _, im in node_to_engine_manager_map.items():
+                wait_for_instance_manager_desire_state(client, core_api,
+                                                       im.name, &#34;Running&#34;,
+                                                       True)
+            for _, im in node_to_replica_manager_map.items():
+                wait_for_instance_manager_desire_state(client, core_api,
+                                                       im.name, &#34;Running&#34;,
+                                                       True)
+            break
+        except ApiException:
+            continue</code></pre>
 </details>
 </dd>
 <dt id="tests.common.wait_for_backing_image_delete"><code class="name flex">
@@ -11216,6 +11271,7 @@ volume. Trigger a failed assertion of one is detected.
 <li><code><a title="tests.common.get_apps_api_client" href="#tests.common.get_apps_api_client">get_apps_api_client</a></code></li>
 <li><code><a title="tests.common.get_backupstore_poll_interval" href="#tests.common.get_backupstore_poll_interval">get_backupstore_poll_interval</a></code></li>
 <li><code><a title="tests.common.get_backupstore_url" href="#tests.common.get_backupstore_url">get_backupstore_url</a></code></li>
+<li><code><a title="tests.common.get_backupstores" href="#tests.common.get_backupstores">get_backupstores</a></code></li>
 <li><code><a title="tests.common.get_client" href="#tests.common.get_client">get_client</a></code></li>
 <li><code><a title="tests.common.get_clients" href="#tests.common.get_clients">get_clients</a></code></li>
 <li><code><a title="tests.common.get_compatibility_test_image" href="#tests.common.get_compatibility_test_image">get_compatibility_test_image</a></code></li>

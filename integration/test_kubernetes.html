@@ -542,7 +542,7 @@ def test_pvc_creation_with_default_sc_set(
     delete_and_wait_pv(core_api, pv_name)
 
 
-@pytest.mark.csi
+@pytest.mark.csi  # NOQA
 def test_backup_kubernetes_status(set_random_backupstore, client, core_api, pod):  # NOQA
     &#34;&#34;&#34;
     Test that Backups have KubernetesStatus stored properly when there is an
@@ -754,7 +754,7 @@ def test_backup_kubernetes_status(set_random_backupstore, client, core_api, pod)
     cleanup_volume(client, volume)
 
 
-@pytest.mark.csi
+@pytest.mark.csi  # NOQA
 def test_delete_with_static_pv(client, core_api, volume_name): # NOQA
     &#34;&#34;&#34;
     Test that deleting a Volume with related static Persistent Volume and
@@ -791,7 +791,7 @@ def test_delete_with_static_pv(client, core_api, volume_name): # NOQA
     wait_delete_pvc(core_api, pvc_name)
 
 
-@pytest.mark.csi
+@pytest.mark.csi  # NOQA
 def test_delete_with_provisioned_pv(client, core_api, storage_class, pvc): # NOQA
     &#34;&#34;&#34;
     Test that deleting a Volume with dynamically provisioned Persistent Volume
@@ -817,7 +817,7 @@ def test_delete_with_provisioned_pv(client, core_api, storage_class, pvc): # NOQ
     wait_delete_pvc(core_api, pvc[&#39;metadata&#39;][&#39;name&#39;])
 
 
-@pytest.mark.csi
+@pytest.mark.csi  # NOQA
 def test_delete_provisioned_pvc(client, core_api,  storage_class, pvc): # NOQA
     &#34;&#34;&#34;
     Test that deleting the Persistent Volume Claim for a dynamically
@@ -972,7 +972,7 @@ time</li>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">@pytest.mark.csi
+<pre><code class="python">@pytest.mark.csi  # NOQA
 def test_backup_kubernetes_status(set_random_backupstore, client, core_api, pod):  # NOQA
     &#34;&#34;&#34;
     Test that Backups have KubernetesStatus stored properly when there is an
@@ -1204,7 +1204,7 @@ be updated correctly.</li>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">@pytest.mark.csi
+<pre><code class="python">@pytest.mark.csi  # NOQA
 def test_delete_provisioned_pvc(client, core_api,  storage_class, pvc): # NOQA
     &#34;&#34;&#34;
     Test that deleting the Persistent Volume Claim for a dynamically
@@ -1248,7 +1248,7 @@ be updated correctly.</li>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">@pytest.mark.csi
+<pre><code class="python">@pytest.mark.csi  # NOQA
 def test_delete_with_provisioned_pv(client, core_api, storage_class, pvc): # NOQA
     &#34;&#34;&#34;
     Test that deleting a Volume with dynamically provisioned Persistent Volume
@@ -1294,7 +1294,7 @@ resources.</li>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">@pytest.mark.csi
+<pre><code class="python">@pytest.mark.csi  # NOQA
 def test_delete_with_static_pv(client, core_api, volume_name): # NOQA
     &#34;&#34;&#34;
     Test that deleting a Volume with related static Persistent Volume and

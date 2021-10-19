@@ -48,11 +48,14 @@ from common import get_longhorn_api_client
 from common import delete_backup_volume
 from common import get_backupstore_url
 from common import get_backupstore_poll_interval
+from common import get_backupstores
 
 BACKUPSTORE_BV_PREFIX = &#34;/backupstore/volumes/&#34;
 BACKUPSTORE_LOCK_DURATION = 150
 
 TEMP_FILE_PATH = &#34;/tmp/temp_file&#34;
+
+BACKUPSTORE = get_backupstores()
 
 
 @pytest.fixture
@@ -69,7 +72,7 @@ def backupstore_nfs(client):
     reset_backupstore_setting(client)
 
 
-@pytest.fixture(params=[&#34;s3&#34;, &#34;nfs&#34;])
+@pytest.fixture(params=BACKUPSTORE)
 def set_random_backupstore(request, client):
     if request.param == &#34;s3&#34;:
         set_backupstore_s3(client)
@@ -1821,7 +1824,7 @@ we can switch to removing the locks directly</p></div>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">@pytest.fixture(params=[&#34;s3&#34;, &#34;nfs&#34;])
+<pre><code class="python">@pytest.fixture(params=BACKUPSTORE)
 def set_random_backupstore(request, client):
     if request.param == &#34;s3&#34;:
         set_backupstore_s3(client)

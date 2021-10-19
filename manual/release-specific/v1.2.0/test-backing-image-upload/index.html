@@ -457,6 +457,36 @@
 <li>Create and attach a volume with the backing image. Verify the data content is correct.</li>
 <li>Do cleanup.</li>
 </ol>
+<h3 id="upload-via-rancher-uri">Upload via Rancher URI</h3>
+<p><!-- raw HTML omitted -->Related issue: <a href="https://github.com/longhorn/longhorn/issues/3129">3129</a> with fix in Longhorn v1.3.0+<!-- raw HTML omitted --></p>
+<ol>
+<li>With Rancher v2.6.x create a cluster and install Longhorn from <em>Apps &amp; Marketplace</em>
+<ul>
+<li>or import an existing cluster with Longhorn installed</li>
+</ul>
+</li>
+<li>Open the cluster from Cluster Explorer via Rancher UI</li>
+<li>Open Longhorn from the Cluster Explorer navigation menu</li>
+<li>Click on the Longhorn app to open the UI
+<ul>
+<li>An example URL: <!-- raw HTML omitted --><code>https://rancer.server.domain/k8s/clusters/CLUSTER-ID/api/v1/namespaces/longhorn-system/services/http:longhorn-frontend:80/proxy/#/backingImage</code><!-- raw HTML omitted --></li>
+</ul>
+</li>
+<li>Create a new backing image with <strong>Upload From Local</strong></li>
+<li>Verify the uploaded image matches its size or checksum</li>
+</ol>
+<h3 id="upload-via-ingress-controller">Upload via Ingress Controller</h3>
+<p><!-- raw HTML omitted -->Related issue: <a href="https://github.com/longhorn/longhorn/issues/2937">2937</a> with fix in v1.2.0+<!-- raw HTML omitted --></p>
+<ol>
+<li>Install and create Ingress Loadbalancer with proper hostname configuration
+<ul>
+<li>On Rancher v2.6.x Cluster Explorer &gt; open the cluster under testing &gt; Service and Discovery &gt; Ingresses</li>
+</ul>
+</li>
+<li>Access Longhorn UI with the hostname URL</li>
+<li>Create a new backing image with <strong>Upload From Local</strong></li>
+<li>Verify the uploaded image matches its size or checksum</li>
+</ol>
 <h2 id="test-csi-backing-image">Test CSI backing image</h2>
 <ol>
 <li>Create a valid backing image</li>

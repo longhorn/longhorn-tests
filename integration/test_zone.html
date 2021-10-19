@@ -519,8 +519,7 @@ def test_replica_auto_balance_zone_best_effort(client, core_api, volume_name):  
     assert z3_r_count == 2
 
 
-def test_replica_auto_balance_zone_best_effort_with_data_locality(
-        client, core_api, volume_name, pod):  # NOQA
+def test_replica_auto_balance_zone_best_effort_with_data_locality(client, core_api, volume_name, pod):  # NOQA
     &#34;&#34;&#34;
     Background:
     Given set `replica-soft-anti-affinity` to `true`.
@@ -742,8 +741,7 @@ def test_replica_auto_balance_node_duplicates_in_multiple_zones(client, core_api
 
 
 @pytest.mark.skip(reason=&#34;REQUIRE_5_NODES&#34;)
-def test_replica_auto_balance_zone_best_effort_with_uneven_node_in_zones(
-        client, core_api, volume_name, pod):  # NOQA
+def test_replica_auto_balance_zone_best_effort_with_uneven_node_in_zones(client, core_api, volume_name, pod):  # NOQA
     &#34;&#34;&#34;
     Given set `replica-soft-anti-affinity` to `true`.
     And set `replica-zone-soft-anti-affinity` to `true`.
@@ -1277,8 +1275,7 @@ To ensure no addition scheduling is happening.
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def test_replica_auto_balance_zone_best_effort_with_data_locality(
-        client, core_api, volume_name, pod):  # NOQA
+<pre><code class="python">def test_replica_auto_balance_zone_best_effort_with_data_locality(client, core_api, volume_name, pod):  # NOQA
     &#34;&#34;&#34;
     Background:
     Given set `replica-soft-anti-affinity` to `true`.
@@ -1467,8 +1464,7 @@ And 2 replica running on zode-1.
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">@pytest.mark.skip(reason=&#34;REQUIRE_5_NODES&#34;)
-def test_replica_auto_balance_zone_best_effort_with_uneven_node_in_zones(
-        client, core_api, volume_name, pod):  # NOQA
+def test_replica_auto_balance_zone_best_effort_with_uneven_node_in_zones(client, core_api, volume_name, pod):  # NOQA
     &#34;&#34;&#34;
     Given set `replica-soft-anti-affinity` to `true`.
     And set `replica-zone-soft-anti-affinity` to `true`.
