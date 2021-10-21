@@ -92,7 +92,7 @@ DEFAULT_BACKUP_TIMEOUT = 100
 DEFAULT_POD_INTERVAL = 1
 DEFAULT_POD_TIMEOUT = 180
 
-DEFAULT_STATEFULSET_INTERVAL = 5
+DEFAULT_STATEFULSET_INTERVAL = 1
 DEFAULT_STATEFULSET_TIMEOUT = 180
 
 DEFAULT_DEPLOYMENT_INTERVAL = 1
@@ -1111,7 +1111,8 @@ def statefulset(request):
         'apiVersion': 'apps/v1',
         'kind': 'StatefulSet',
         'metadata': {
-            'name': 'test-statefulset'
+            'name': 'test-statefulset',
+            'namespace': 'default',
         },
         'spec': {
             'selector': {
@@ -1403,6 +1404,23 @@ def get_backupstore_poll_interval():
     poll_interval = os.environ['LONGHORN_BACKUPSTORE_POLL_INTERVAL']
     assert len(poll_interval) != 0
     return poll_interval
+
+
+def get_backupstores():
+    # The try is added to avoid the pdoc3 error while publishing this on
+    # https://longhorn.github.io/longhorn-tests
+    try:
+        backupstore = os.environ['LONGHORN_BACKUPSTORES']
+    except KeyError:
+        return None
+    backupstore = backupstore.replace(" ", "")
+    try:
+        backupstores = backupstore.split(",")
+        for i in range(len(backupstores)):
+            backupstores[i] = backupstores[i].split(":")[0]
+    except ValueError:
+        backupstores = backupstore.split(":")[0]
+    return backupstores
 
 
 def get_clients(hosts):
@@ -2763,13 +2781,6 @@ def reset_settings(client):
                 print(s)
                 print(e)
 
-    instance_managers = client.list_instance_manager()
-    core_api = get_core_api_client()
-    # Wait for the current instance manager running
-    for im in instance_managers:
-        wait_for_instance_manager_desire_state(client, core_api,
-                                               im.name, "Running", True)
-
 
 def reset_engine_image(client):
     core_api = get_core_api_client()
@@ -3057,6 +3068,16 @@ def check_csi_expansion(core_api):
     return csi_expansion_enabled
 
 
+def create_statefulset(statefulset_manifest):
+    """
+    Create a new StatefulSet for testing.
+    """
+    api = get_apps_api_client()
+    api.create_namespaced_stateful_set(
+        body=statefulset_manifest,
+        namespace='default')
+
+
 def create_and_wait_statefulset(statefulset_manifest):
     """
     Create a new StatefulSet for testing.
@@ -3064,10 +3085,7 @@ def create_and_wait_statefulset(statefulset_manifest):
     This function will block until all replicas in the StatefulSet are online
     or it times out, whichever occurs first.
     """
-    api = get_apps_api_client()
-    api.create_namespaced_stateful_set(
-        body=statefulset_manifest,
-        namespace='default')
+    create_statefulset(statefulset_manifest)
     wait_statefulset(statefulset_manifest)
 
 
@@ -3184,7 +3202,7 @@ def check_statefulset_existence(api, ss_name, namespace="default"):
     return False
 
 
-def delete_and_wait_pvc(api, pvc_name):
+def delete_and_wait_pvc(api, pvc_name, retry_counts=RETRY_COUNTS):
     try:
         api.delete_namespaced_persistent_volume_claim(
             name=pvc_name, namespace='default',
@@ -3192,11 +3210,11 @@ def delete_and_wait_pvc(api, pvc_name):
     except ApiException as e:
         assert e.status == 404
 
-    wait_delete_pvc(api, pvc_name)
+    wait_delete_pvc(api, pvc_name, retry_counts=retry_counts)
 
 
-def wait_delete_pvc(api, pvc_name):
-    for i in range(RETRY_COUNTS):
+def wait_delete_pvc(api, pvc_name, retry_counts=RETRY_COUNTS):
+    for _ in range(retry_counts):
         found = False
         ret = api.list_namespaced_persistent_volume_claim(namespace='default')
         for item in ret.items:
@@ -4043,6 +4061,35 @@ def wait_for_pod_phase(core_api, pod_name, pod_phase, namespace="default"):
     assert is_phase
 
 
+def wait_for_pods_volume_state(client, pod_list, field, value,  # NOQA
+                               retry_counts=RETRY_COUNTS):
+    for _ in range(retry_counts):
+        volume_names = []
+        volumes = client.list_volume()
+        for v in volumes:
+            for p in pod_list:
+                if v.name == p['pv_name'] and v[field] == value:
+                    volume_names.append(v.name)
+                    break
+        time.sleep(RETRY_INTERVAL)
+    return len(volume_names) == len(pod_list)
+
+
+def wait_for_pods_volume_delete(client, pod_list,  # NOQA
+                                retry_counts=RETRY_BACKUP_COUNTS):
+    volume_deleted = False
+    for _ in range(retry_counts):
+        volume_deleted = True
+        volumes = client.list_volume()
+        for v in volumes:
+            for p in pod_list:
+                if v.name == p['pv_name']:
+                    volume_deleted = False
+                    break
+        time.sleep(RETRY_INTERVAL)
+    assert volume_deleted is True
+
+
 def wait_for_instance_manager_desire_state(client, core_api, im_name,
                                            state, desire=True):
     for i in range(RETRY_COUNTS):
@@ -4370,3 +4417,25 @@ def wait_for_cron_job_count(batch_v1_beta_api, number, label="",
             break
         time.sleep(RETRY_INTERVAL)
     assert ok
+
+
+def wait_for_pod_annotation(core_api,
+                            label_selector, anno_key, anno_val):
+    matches = False
+    for _ in range(RETRY_COUNTS):
+        pods = core_api.list_namespaced_pod(
+            namespace='longhorn-system', label_selector=label_selector)
+        if anno_val is None:
+            if any(pod.metadata.annotations is None or
+                   pod.metadata.annotations.get(anno_key, None) is None
+                   for pod in pods.items):
+                matches = True
+                break
+        else:
+            if any(pod.metadata.annotations is not None and
+                    pod.metadata.annotations.get(anno_key, None) == anno_val
+                   for pod in pods.items):
+                matches = True
+                break
+        time.sleep(RETRY_INTERVAL)
+    assert matches is True
