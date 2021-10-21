@@ -1,0 +1,1181 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>
+      Longhorn Manual Test Cases
+    </title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/4.0.0/github-markdown.min.css">
+  </head>
+  <body class="markdown-body" style="display: flex; padding: 1%;">
+    
+<aside style="width: 30%; padding: 1%; border-right: 1px solid lightgray;">
+  <a href="https://longhorn.github.io/longhorn-tests/manual"><h2>Manual Test Cases</h2></a>
+  
+  <ul>
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/">End-to-end test cases</a></li>
+  
+    <ul>
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/deployment/"> Deployment of Longhorn  </a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/ui/">UI  </a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/volume/">Volume  </a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/high-availability/">High Availability  </a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/kubernetes/">Kubernetes  </a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/backup/">Backup  </a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/node/">Node  </a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/scheduling/">Scheduling  </a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/upgrade/">Upgrade  </a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/monitoring/">Monitoring</a></li>
+  
+
+</ul>
+
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/">Pre-release tests</a></li>
+  
+    <ul>
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/air-gap/">Air Gap</a></li>
+  
+    <ul>
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/air-gap/air-gap-installation/">Air gap installation</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/air-gap/air-gap-instance-manager-name/">Air gap installation with an instance-manager-image name longer than 63 characters</a></li>
+  
+
+</ul>
+
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/">Backup &amp; Restore tests</a></li>
+  
+    <ul>
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/dr-volume-live-upgrade-and-rebuild/">#1279 DR volume live upgrade and rebuild</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/concurrent-backup-creation-deletion/">#1326 concurrent backup creation &amp; deletion</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/concurrent-backup/">#1341 concurrent backup test</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/restore-volume-node-down/">#1355 The node the restore volume attached to is down</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/dr-volume-node-rebooted/">#1366 &amp;&amp; #1328 The node the DR volume attached to is rebooted</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/google-cloud-s3-interop-backups/">#1404 test backup functionality on google cloud and other s3 interop providers.</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/backup-block-deletion/">#1431 backup block deletion test</a></li>
+  
+
+</ul>
+
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/basic-operations-parallelism/">Basic operations parallelism</a></li>
+  
+    <ul>
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/basic-operations-parallelism/snapshot-while-writing-data/">Snapshot while writing data in the volume</a></li>
+  
+
+</ul>
+
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/cluster-restore/">Cluster Restore</a></li>
+  
+    <ul>
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/cluster-restore/system-upgrade-with-restore/">Longhorn system upgrade with restore</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/cluster-restore/node-creation-deletion-with-restore/">Node creation and deletion with restore</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/cluster-restore/recover-volumes-after-restore/">Recover Longhorn volumes after Rancher cluster restore</a></li>
+  
+
+</ul>
+
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/environment/">Environment</a></li>
+  
+    <ul>
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/environment/cluster-using-customized-kubelet-root-directory/">Cluster using customize kubelet root directory</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/environment/k3s-selinux-compatibility/">Compatibility with k3s and SELinux</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/environment/rke2-cis-1.5-profile/">Test Longhorn Deployment on RKE2 with CIS-1.5 profile</a></li>
+  
+
+</ul>
+
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/ha/">HA</a></li>
+  
+    <ul>
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/ha/backing-image-error-reporting-and-retry/">Backing Image Error Reporting and Retry</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/ha/disk-migration-in-aws-asg/">Disk migration in AWS ASG</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/ha/partial-engine-deployment/">Longhorn with engine is not deployed on all the nodes</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/ha/replica-rebuilding/">Replica Rebuilding</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/ha/single-replica-node-down/">Single replica node down</a></li>
+  
+
+</ul>
+
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node/">Node</a></li>
+  
+    <ul>
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node/backing-image-on-a-down-node/">Backing Image on a down node</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node/degraded-availability/">Degraded availability with added nodes</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node/improve-node-failure-handling/">Improve Node Failure Handling By Automatically Force Delete Terminating Pods of StatefulSet/Deployment On Downed Node</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node/node-disconnection/">Node disconnection test</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node/node-drain-deletion/">Node drain and deletion test</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node/physical-node-down/">Physical node down</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node/kubelet-restart-on-a-node/">Test kubelet restart on a node of the cluster</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node/node-deletion/">Test node deletion</a></li>
+  
+
+</ul>
+
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/resiliency/">Resiliency</a></li>
+  
+    <ul>
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/resiliency/simulated-slow-disk/">#2206 Fix the spinning disk on Longhorn</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/resiliency/timeout/">Test timeout on loss of network connectivity</a></li>
+  
+
+</ul>
+
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/stability/">Stability</a></li>
+  
+    <ul>
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/stability/multiple-installation/">Longhorn installation multiple times</a></li>
+  
+
+</ul>
+
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/stress/backup-listing/">Test backup listing S3/NFS</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/uninstallation/uninstallation-checks/">Uninstallation Checks</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/">Upgrade</a></li>
+  
+    <ul>
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/auto-upgrade-engine/">Automatically Upgrading Longhorn Engine Test</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/kubernetes-upgrade-test/">Kubernetes upgrade test</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/longhorn-upgrade-test/">Longhorn Upgrade test</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/update_csi_components_when_images_change/">Re-deploy CSI components when their images change</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/backing-image-during-upgrade/">Test Backing Image during Longhorn upgrade</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/engine-crash-during-live-upgrade/">Test Engine Crash During Live Upgrade</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/upgrade-with-new-instance-manager/">Test System Upgrade with New Instance Manager</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/upgrade-conflict-handling/">Upgrade Conflict Handling test</a></li>
+  
+
+</ul>
+
+  
+
+</ul>
+
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/">Release specific tests</a></li>
+  
+    <ul>
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.0/">v1.0.0</a></li>
+  
+    <ul>
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.0/new-node-custom-data-directory/">New Node with Custom Data Directory</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.0/suse-sles12sp3/">Operating System specific tests for SUSE SLES12SP3</a></li>
+  
+    <ul>
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.0/suse-sles12sp3/ext4-custom-fs-params-1/">Testing ext4 with custom fs params1 (no 64bit, no metadata_csum)</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.0/suse-sles12sp3/ext4-custom-fs-params-2/">Testing ext4 with custom fs params2 (no metadata_csum)</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.0/suse-sles12sp3/ext4-no-custom-fs-params/">Testing ext4 without custom fs params</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.0/suse-sles12sp3/xfs-after-custom-fs-params/">Testing xfs after custom fs params (xfs should ignore the custom fs params)</a></li>
+  
+
+</ul>
+
+  
+
+</ul>
+
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.1/">v1.0.1</a></li>
+  
+    <ul>
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.1/besteffort-recurring-job/">BestEffort Recurring Job Cleanup</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.1/change-imagepullpolicy/">Change imagePullPolicy to IfNotPresent Test</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.1/dr-volume-latest-backup-deletion/">DR volume related latest backup deletion test</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.1/nfsv4-enforcement/">NFSv4 Enforcement (No NFSv3 Fallback)</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.1/priorityclass-default-setting/">Priority Class Default Setting</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.1/error-fail-remount/">Return an error when fail to remount a volume</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.1/test-s3-access-style/">Test access style for S3 compatible backupstore</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.1/test-s3-backupstore/">Test S3 backupstore in a cluster sitting behind a Http Proxy</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.1/ui-volume-deletion/">Volume Deletion UI Warnings</a></li>
+  
+
+</ul>
+
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.2/">v1.0.2</a></li>
+  
+    <ul>
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.2/upgrade-lease-lock/">Upgrade Lease Lock</a></li>
+  
+
+</ul>
+
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/">v1.1.0</a></li>
+  
+    <ul>
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/prometheus_support/">Prometheus Support</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/recurring-backup-job-interruptions/">Recurring backup job interruptions</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/reusing-failed-replica-for-rebuilding/">Reusing failed replica for rebuilding</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/kubelet_volume_metrics/">Support Kubelet Volume Metrics</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/additional-printer-columns/">Test Additional Printer Columns</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/instance-manager-ip-sync/">Test Instance Manager IP Sync</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/iscsi_installation/">Test ISCSI Installation on EKS</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/rwx_feature/">Test Read Write Many Feature</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/uninstallation/">Test uninstallation</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/upgrade_with_modified_storageclass/">Upgrade Longhorn with modified Storage Class</a></li>
+  
+
+</ul>
+
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/">v1.1.1</a></li>
+  
+    <ul>
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/csi-sanity-check/">CSI Sanity Check</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/partial-engine-deployment/">Longhorn with engine is not deployed on all the nodes</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/tolerations_priorityclass_setting/">Set Tolerations/PriorityClass For System Components</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/disable_ipv6/">Test Disable IPv6</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/test-file-sync-cancellation/">Test File Sync Cancellation</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/ws-traffic-flood/">Test Frontend Traffic</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/delete-node/">Test Node Delete</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/test-node-selector/">Test Node Selector</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/rwx-mount-ownership-reset/">Test RWX share-mount ownership reset</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/test-service-account-mount/">Test Service Account mount on host</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/snapshot-purge-error-handling/">Test Snapshot Purge Error Handling</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/system-upgrade-with-deprecated-cpu-setting/">Test system upgrade with the deprecated CPU setting</a></li>
+  
+
+</ul>
+
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.2/">v1.1.2</a></li>
+  
+    <ul>
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.2/delete-cronjob-for-detached-volumes/">Test CronJob For Volumes That Are Detached For A Long Time</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.2/full-ws-data-tranfer-when-no-updates/">Test Frontend Web-socket Data Transfer When Resource Not Updated</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.2/instance-manager-streaming-connection-recovery/">Test Instance Manager Streaming Connection Recovery</a></li>
+  
+
+</ul>
+
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.2.0/">v1.2.0</a></li>
+  
+    <ul>
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.2.0/test-backing-image-upload/">Test backing image</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.2.0/backup-creation-with-old-engine-image/">Test Backup Creation With Old Engine Image</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.2.0/test-instance-manager-cleanup-during-uninstall/">Test instance manager cleanup during uninstall</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.2.0/label-driven-recurring-job/">Test Label-driven Recurring Job</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.2.0/test_version_bump/">Test Version Bump of Kubernetes, API version group, CSI component&rsquo;s dependency version</a></li>
+  
+
+</ul>
+
+  
+
+</ul>
+
+  
+
+</ul>
+
+  
+</aside>
+
+<main style="padding: 1%; width: 70%;">
+  <h1 id="title"><ol start="6">
+<li>Backup</li>
+</ol>
+</h1>
+  <div>
+    <article id="content">
+       <h2 id="automation-tests">Automation Tests</h2>
+<table>
+<thead>
+<tr>
+<th><strong>#</strong></th>
+<th><strong>Test name</strong></th>
+<th><strong>Description</strong></th>
+<th><strong>tag</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>test_backup</td>
+<td>Test basic backup<br><br>Setup:<br><br>1.  Create a volume and attach to the current node<br>2.  Run the test for all the available backupstores.<br><br>Steps:<br><br>1.  Create a backup of volume<br>2.  Restore the backup to a new volume<br>3.  Attach the new volume and make sure the data is the same as the old one<br>4.  Detach the volume and delete the backup.<br>5.  Wait for the restored volume&rsquo;s <code>lastBackup</code> to be cleaned (due to remove the backup)<br>6.  Delete the volume</td>
+<td>Backup</td>
+</tr>
+<tr>
+<td>2</td>
+<td>test_backup_labels</td>
+<td>Test that the proper Labels are applied when creating a Backup manually.<br><br>1.  Create a volume<br>2.  Run the following steps on all backupstores<br>3.  Create a backup with some random labels<br>4.  Get backup from backupstore, verify the labels are set on the backups</td>
+<td>Backup</td>
+</tr>
+<tr>
+<td>3</td>
+<td>test_deleting_backup_volume</td>
+<td>Test deleting backup volumes<br><br>1.  Create volume and create backup<br>2.  Delete the backup and make sure it&rsquo;s gone in the backupstore</td>
+<td>Backup</td>
+</tr>
+<tr>
+<td>4</td>
+<td>test_listing_backup_volume</td>
+<td>Test listing backup volumes<br><br>1.  Create three volumes: <code>volume1/2/3</code><br>2.  Setup NFS backupstore since we can manipulate the content easily<br>3.  Create snapshots for all three volumes<br>4.  Rename <code>volume1</code>&lsquo;s <code>volume.cfg</code> to <code>volume.cfg.tmp</code> in backupstore<br>5.  List backup volumes. Make sure <code>volume1</code> errors out but found other two<br>6.  Restore <code>volume1</code>&lsquo;s <code>volume.cfg</code>.<br>7.  Make sure now backup volume <code>volume1</code> can be found and deleted<br>8.  Delete backups for <code>volume2/3</code>, make sure they cannot be found later</td>
+<td>Backup</td>
+</tr>
+<tr>
+<td>5</td>
+<td>test_ha_backup_deletion_recovery</td>
+<td>[HA] Test deleting the restored snapshot and rebuild<br><br>Backupstore: all<br><br>1.  Create volume and attach it to the current node.<br>2.  Write <code>data</code> to the volume and create snapshot <code>snap2</code><br>3.  Backup <code>snap2</code> to create a backup.<br>4.  Create volume <code>res_volume</code> from the backup. Check volume <code>data</code>.<br>5.  Check snapshot chain, make sure <code>backup_snapshot</code> exists.<br>6.  Delete the <code>backup_snapshot</code> and purge snapshots.<br>7.  After purge complete, delete one replica to verify rebuild works.</td>
+<td>Backup</td>
+</tr>
+<tr>
+<td>6</td>
+<td>test_backup_kubernetes_status</td>
+<td>Test that Backups have KubernetesStatus stored properly when there is an associated PersistentVolumeClaim and Pod.<br><br>1.  Setup a random backupstore<br>2.  Set settings Longhorn Static StorageClass to <code>longhorn-static-test</code><br>3.  Create a volume and PV/PVC. Verify the StorageClass of PVC<br>4.  Create a Pod using the PVC.<br>5.  Check volume&rsquo;s Kubernetes status to reflect PV/PVC/Pod correctly.<br>6.  Create a backup for the volume.<br>7.  Verify the labels of created backup reflect PV/PVC/Pod status.<br>8.  Restore the backup to a volume. Wait for restoration to complete.<br>9.  Check the volume&rsquo;s Kubernetes Status<br>    1.  Make sure the <code>lastPodRefAt</code> and <code>lastPVCRefAt</code> is snapshot created time<br>        <br>10.  Delete the backup and restored volume.<br>11.  Delete PV/PVC/Pod.<br>12.  Verify volume&rsquo;s Kubernetes Status updated to reflect history data.<br>13.  Attach the volume and create another backup. Verify the labels<br>14.  Verify the volume&rsquo;s Kubernetes status.<br>15.  Restore the previous backup to a new volume. Wait for restoration.<br>16.  Verify the restored volume&rsquo;s Kubernetes status.<br>    1.  Make sure <code>lastPodRefAt</code> and <code>lastPVCRefAt</code> matched volume on step 12</td>
+<td>Backup</td>
+</tr>
+<tr>
+<td>7</td>
+<td>test_restore_inc</td>
+<td>Test restore from disaster recovery volume (incremental restore)<br><br>Run test against all the backupstores<br><br>1.  Create a volume and attach to the current node<br>2.  Generate <code>data0</code>, write to the volume, make a backup <code>backup0</code><br>3.  Create three DR(standby) volumes from the backup: <code>sb_volume0/1/2</code><br>4.  Wait for all three DR volumes to finish the initial restoration<br>5.  Verify DR volumes&rsquo;s <code>lastBackup</code> is <code>backup0</code><br>6.  Verify snapshot/pv/pvc/change backup target are not allowed as long as the DR volume exists<br>7.  Activate standby <code>sb_volume0</code> and attach it to check the volume data<br>8.  Generate <code>data1</code> and write to the original volume and create <code>backup1</code><br>9.  Make sure <code>sb_volume1</code>&lsquo;s <code>lastBackup</code> field has been updated to <code>backup1</code><br>10.  Wait for <code>sb_volume1</code> to finish incremental restoration then activate<br>11.  Attach and check <code>sb_volume1</code>&rsquo;s data<br>12.  Generate <code>data2</code> and write to the original volume and create <code>backup2</code><br>13.  Make sure <code>sb_volume2</code>&lsquo;s <code>lastBackup</code> field has been updated to <code>backup1</code><br>14.  Wait for <code>sb_volume2</code> to finish incremental restoration then activate<br>15.  Attach and check <code>sb_volume2</code>&rsquo;s data<br>16.  Create PV, PVC and Pod to use <code>sb_volume2</code>, check PV/PVC/POD are good</td>
+<td>Backup: Disaster Recovery</td>
+</tr>
+<tr>
+<td>8</td>
+<td>test_recurring_job</td>
+<td>Test recurring job<br><br>1.  Setup a random backupstore<br>2.  Create a volume.<br>3.  Create two jobs 1 job 1: snapshot every one minute, retain 2 1 job 2: backup every two minutes, retain 1<br>4.  Attach the volume.<br>5.  Sleep for 5 minutes<br>6.  Verify we have 4 snapshots total<br>    1.  2 snapshots, 1 backup, 1 volume-head<br>        <br>7.  Update jobs to replace the backup job<br>    1.  New backup job run every one minute, retain 2<br>        <br>8.  Sleep for 5 minutes.<br>9.  We should have 6 snapshots<br>    1.  2 from job_snap, 1 from job_backup, 2 from job_backup2, 1 volume-head<br>        <br>10.  Make sure we have no more than 5 backups.<br>    1.  old backup job may have at most 1 backups<br>        <br>    2.  new backup job may have at most 3 backups<br>        <br>11.  Make sure we have no more than 2 backups in progress</td>
+<td>Backup: Recurring Job</td>
+</tr>
+<tr>
+<td>9</td>
+<td>test_recurring_job_in_storageclass</td>
+<td>Test create volume with StorageClass contains recurring jobs<br><br>1.  Create a StorageClass with recurring jobs<br>2.  Create a StatefulSet with PVC template and StorageClass<br>3.  Verify the recurring jobs run correctly.</td>
+<td>Backup: Recurring Job<br><br>Kubernetes</td>
+</tr>
+<tr>
+<td>10</td>
+<td>test_recurring_job_in_volume_creation</td>
+<td>Test create volume with recurring jobs<br><br>1.  Create volume with recurring jobs though Longhorn API<br>2.  Verify the recurring jobs run correctly</td>
+<td>Backup: Recurring Job</td>
+</tr>
+<tr>
+<td>11</td>
+<td>test_recurring_job_kubernetes_status</td>
+<td>Test RecurringJob properly backs up the KubernetesStatus<br><br>1.  Setup a random backupstore.<br>2.  Create a volume.<br>3.  Create a PV from the volume, and verify the PV status.<br>4.  Create a backup recurring job to run every 2 minutes.<br>5.  Verify the recurring job runs correctly.<br>6.  Verify the backup contains the Kubernetes Status labels</td>
+<td>Backup: Recurring Job<br><br>Volume: Kubernetes Status</td>
+</tr>
+<tr>
+<td>12</td>
+<td>test_recurring_job_labels</td>
+<td>Test a RecurringJob with labels<br><br>1.  Set a random backupstore<br>2.  Create a backup recurring job with labels<br>3.  Verify the recurring jobs runs correctly.<br>4.  Verify the labels on the backup is correct</td>
+<td>Backup: Recurring Job</td>
+</tr>
+<tr>
+<td>13</td>
+<td>test_recurring_jobs_maximum_retain</td>
+<td>Test recurring jobs&rsquo; maximum retain<br><br>1.  Create two jobs, with retain 30 and 21.<br>2.  Try to apply the jobs to a volume. It should fail.<br>3.  Reduce retain to 30 and 20.<br>4.  Now the jobs can be applied the volume</td>
+<td>Backup: Recurring Job</td>
+</tr>
+</tbody>
+</table>
+<h2 id="backup-create-operations-test-cases">Backup create operations test cases</h2>
+<table>
+<thead>
+<tr>
+<th><strong>Test Case</strong></th>
+<th><strong>Test Instructions</strong></th>
+<th><strong>Expected Results</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Create backup from existing snapshot</td>
+<td><strong>Prerequisite:</strong><br><br>*   Backup target is set to NFS server, or S3 compatible target.<br><br>1.  Create a workload using Longhorn volume<br>2.  Write data to volume, compute it’s checksum (checksum#1)<br>3.  Create a snapshot (snapshot#1)<br>4.  Create a backup from (snapshot#1)<br>5.  Restore backup to a different volume<br>6.  Attach volume to a node and check it’s data, and compute it’s checksum</td>
+<td>*   Backup should be created<br>*   Restored volume data checksum should match (checksum#1)</td>
+</tr>
+<tr>
+<td>Create volume backup for a volume attached to a node</td>
+<td><strong>Prerequisite:</strong><br><br>*   Backup target is set to NFS server, or S3 compatible target.<br><br>1.  Create a volume, attach it to a node<br>2.  Format volume using ext4/xfs filesystem and mount it to a directory on the node<br>3.  Write data to volume, compute it’s checksum (checksum#1)<br>4.  Create a backup<br>5.  Restore backup to a different volume<br>6.  Attach volume to a node and check it’s data, and compute it’s checksum<br>7.  Check volume backup labels</td>
+<td>*   Backup should be created<br>*   Restored volume data checksum should match (checksum#1)<br>*   backup should have no backup labels</td>
+</tr>
+<tr>
+<td>Create volume backup used by Kubernetes workload</td>
+<td><strong>Prerequisite:</strong><br><br>*   Backup target is set to NFS server, or S3 compatible target.<br><br>1.  Create a deployment workload with <code>nReplicas = 1</code> using Longhorn volume<br>2.  Write data to volume, compute it’s checksum (checksum#1)<br>3.  Create a backup<br>4.  Check backup labels<br>5.  Scale down deployment <code>nReplicas = 0</code><br>6.  Delete Longhorn volume<br>7.  Restore backup to a volume with the same deleted volume name<br>8.  Scale back deployment <code>nReplicas = 1</code><br>9.  Check volume data checksum</td>
+<td>*   Backup labels should contain the following informations about workload that was using the volume at time of backup.<br>    *   Namespace<br>        <br>    *   PV Name<br>        <br>    *   PVC Name<br>        <br>    *   PV Status<br>        <br>    *   Workloads Status<br>        <br>        *   Pod Name  <br>            Workload Name  <br>            Workload Type  <br>            Pod Status<br>            <br>*   After volume restore, data checksum should match (checksum#1)</td>
+</tr>
+<tr>
+<td>Create volume backup with customized labels</td>
+<td><strong>Prerequisite:</strong><br><br>*   Backup target is set to NFS server, or S3 compatible target.<br><br>1.  Create a volume, attach it to a node<br>2.  Create a backup, add customized labels  <br>    key: <code>K1</code> value: <code>V1</code><br>3.  Check volume backup labels</td>
+<td>*   Backup should be created with customized labels</td>
+</tr>
+<tr>
+<td>Create recurring backups</td>
+<td>1.  Create a deployment workload with <code>nReplicas = 1</code> using Longhorn volume<br>2.  Write data to volume , compute it’s checksum (checksum#1)<br>3.  Create a recurring backup <code>every 5 minutes</code>. and set retain count to <code>5</code><br>4.  add customized labels key: <code>K1</code> value: <code>V1</code><br>5.  Wait for recurring backup to triggered (backup#1, backup#2 )<br>6.  Scale down deployment <code>nReplicas = 0</code><br>7.  Delete the volume.<br>8.  Restore backup to a volume with the same deleted volume name<br>9.  Scale back deployment <code>nReplicas = 1</code><br>10.  Check volume data checksum</td>
+<td>*   backups should be created with Kubernetes status labels and customized labels<br>*   After volume restore, data checksum should match (checksum#1)<br>*   after restoring the backup recurring backups should continue to be created</td>
+</tr>
+<tr>
+<td>Backup created using Longhorn behind proxy</td>
+<td><strong>Prerequisite:</strong><br><br>*   Setup a Proxy on an instance (Optional: use squid)<br>*   Create a single node cluster in EC2<br>*   Deploy Longhorn<br><br>1.  Block outgoing traffic except for the proxy instance.<br>2.  Create AWS secret in longhorn.<br>3.  In UI Settings page, set backupstore target and backupstore credential secret<br>4.  Create a volume, attach it to a node, format the volume, and mount it to a directory.<br>5.  Write some data to the volume, and create a backup.</td>
+<td>*   Ensure backup is created</td>
+</tr>
+<tr>
+<td>Backup created in a backup store supports Virtual Hosted Style</td>
+<td>1.  Create an OSS bucket in Alibaba Cloud(Aliyun)<br>2.  Create a secret without <code>VIRTUAL_HOSTED_STYLE</code> for the OSS bucket.<br>3.  Set backup target and the secret in Longhorn UI.</td>
+<td></td>
+</tr>
+<tr>
+<td>Backup created in a backup store supports both Virtual Hosted style and traditional</td>
+<td>1.  Create an S3 bucket in AWS.<br>2.  Create a secret without <code>VIRTUAL_HOSTED_STYLE</code> for the S3 bucket.<br>3.  Set backup target and the secret in Longhorn UI.<br>4.  Verify backup list/create/delete/restore work fine without the configuration.</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h2 id="backup-restore-operations-test-cases">Backup restore operations test cases</h2>
+<table>
+<thead>
+<tr>
+<th><strong>#</strong></th>
+<th><strong>Test Case</strong></th>
+<th><strong>Test Instructions</strong></th>
+<th><strong>Expected Results</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>Filter backup using backup name</td>
+<td><strong>Prerequisite:</strong><br><br>*   One or more backup is created for multiple volume.<br><br>1.  Filter backups by volume name</td>
+<td>*   volumes should be filtered using full/partial volume names</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Restore last backup with different name</td>
+<td><strong>Prerequisite:</strong><br><br>*   Create a Volume, attach it to a node, write some data (300MB+), compute it’s checksum and create a backup (repeat for 3 times).<br>*   Volume now has multiple backups (backup#1, backup#2, backup#3) respectively.<br><br>1.  Restore latest volume backup using **different** name than it’s original<br>2.  After restore complete, attach the volume to a node, and check data checksum</td>
+<td>*   New Volume should be created and attached to a node in maintenance mode<br>*   Restore process should be triggered restoring latest backup content to the volume<br>*   After restore is completed, volume is detached from the node<br>*   data checksum should match data checksum for (backup#3)</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Restore specific with different name</td>
+<td><strong>Prerequisite:</strong><br><br>*   Create a Volume, attach it to a node, write some data (300MB+), compute it’s checksum and create a backup (repeat for 3 times).<br>*   Volume now has multiple backups (backup#1, backup#2, backup#3) respectively.<br><br>1.  Restore restore the second backup (backup#2) using **different** name than it’s original<br>2.  After restore complete, attach the volume to a node, and check data checksum</td>
+<td>*   New Volume should be created and attached to a node in maintenance mode<br>*   Restore process should be triggered restoring latest backup content to the volume<br>*   After restore is completed, volume is detached from the node<br>*   data checksum should match data checksum for (backup#2)</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Volume backup URL</td>
+<td><strong>Prerequisite:</strong><br><br>*   One or more backup is created for multiple volume.<br><br>1.  get backup URL</td>
+<td>*   Backup URL should point to a link to backup on configured backupstore</td>
+</tr>
+<tr>
+<td>5</td>
+<td>Restore backup with different number of replicas</td>
+<td><strong>Prerequisite:</strong><br><br>*   One or more backup is created for multiple volume.<br><br>1.  Restore a backup and set different number of replicas</td>
+<td>*   Restored volume replica count should match the number in restore backup request</td>
+</tr>
+<tr>
+<td>6</td>
+<td>Restore backup with Different Node tags</td>
+<td><strong>Prerequisite:</strong><br><br>*   One or more backup is created for multiple volume.<br>*   Longhorn Nodes should have Node Tags<br><br>1.  Restore a backup and set node tags</td>
+<td>*   Restored volume replicas should scheduled only to nodes have Node Tags match Tags specified in restore backup request</td>
+</tr>
+<tr>
+<td>7</td>
+<td>Restore backup with Different Disk Tags</td>
+<td><strong>Prerequisite:</strong><br><br>*   One or more backup is created for multiple volume.<br>*   Longhorn Nodes Disks should have Disk Tags<br><br>1.  Restore a backup and set disk tags</td>
+<td>*   Restored volume replicas should scheduled only to disks have Disk Tags match Tags specified in restore backup request</td>
+</tr>
+<tr>
+<td>8</td>
+<td>Restore backup with both Node and Disk Tags</td>
+<td><strong>Prerequisite:</strong><br><br>*   One or more backup is created for multiple volume.<br>*   Longhorn Nodes should have Node Tags<br>*   Longhorn Nodes Disks should have Disk Tags<br><br>1.  Restore a backup and set both Node and Disk tags</td>
+<td>*   Restored volume replicas should scheduled only to nodes that have both Node and Disk tags specified in restore backup request.</td>
+</tr>
+<tr>
+<td>9</td>
+<td>Restore last backup with same previous name (Volume already exists)</td>
+<td><strong>Prerequisite:</strong><br><br>*   Create a Volume, attach it to a node, write some data (300MB+), compute it’s checksum and create a backup (repeat for 3 times).<br>*   Volume now has multiple backups (backup#1, backup#2, backup#3) respectively.<br><br>1.  Restore latest volume backup using **same** original volume name</td>
+<td>*   Volume can’t be restored</td>
+</tr>
+<tr>
+<td>10</td>
+<td>Restore last backup with same previous name</td>
+<td><strong>Prerequisite:</strong><br><br>*   Create a Volume, attach it to a node, write some data (300MB+), compute it’s checksum and create a backup (repeat for 3 times).<br>*   Volume now has multiple backups (backup#1, backup#2, backup#3) respectively.<br>*   Detach and delete volume<br><br>1.  Restore latest volume backup using **same** original volume name<br>2.  After restore complete, attach the volume to a node, and check data checksum</td>
+<td>*   New Volume with same old name should be created and attached to a node in maintenance mode<br>*   Restore process should be triggered restoring latest backup content to the volume<br>*   After restore is completed, volume is detached from the node<br>*   data checksum should match data checksum for (backup#3)</td>
+</tr>
+<tr>
+<td>11</td>
+<td>Restore volume used by Kubernetes workload with same previous name</td>
+<td><strong>Prerequisite:</strong><br><br>*   Create a deployment workload using a Longhorn volume, write some data (300MB+), compute it’s checksum and create a backup (repeat for 3 times).<br>*   Volume now has multiple backups (backup#1, backup#2, backup#3) respectively.<br>*   Scale down the deployment to zero<br>*   Delete volume<br><br>1.  Restore latest volume backup using **same** original volume name<br>2.  After restore complete, scale up the deployment</td>
+<td>*   New Volume with same old name should be created and attached to a node in maintenance mode<br>*   Restore process should be triggered restoring latest backup content to the volume<br>*   After restore is completed, volume is detached from the node<br>*   Old <code>PV/PVC , Namespace &amp; Attached To</code> information should be restored<br>*   Volume should be accessible from the deployment pod<br>*   Data checksum should match data checksum for (backup#3)</td>
+</tr>
+<tr>
+<td>12</td>
+<td>Restore volume used by Kubernetes workload with different name</td>
+<td><strong>Prerequisite:</strong><br><br>*   Create a deployment workload using a Longhorn volume, write some data (300MB+), compute it’s checksum and create a backup (repeat for 3 times).<br>*   Volume now has multiple backups (backup#1, backup#2, backup#3) respectively.<br>*   Scale down the deployment to zero<br>*   Delete volume<br><br>1.  Restore latest volume backup using **different** name than its original<br>2.  After restore complete<br>    1.  Delete old PVC<br>        <br>    2.  Create a new PV for volume<br>        <br>    3.  Create a new PVC with same old PVC name<br>        <br>3.  scale up the deployment</td>
+<td>*   New Volume with same old name should be created and attached to a node in maintenance mode<br>*   Restore process should be triggered restoring latest backup content to the volume<br>*   After restore is completed, volume is detached from the node<br>*   Old <code>Namespace &amp; Attached To</code> information should be restored<br>*   <code>PV/PVC</code> information should be empty after restore completed  <br>    old PV <code>spec.csi.volumeHandle</code>will not match the new volume name<br>*   After New PV/PVC is created, deployment pod should be able to claim the new PVC and access volume with new name.<br>*   Data checksum should match data checksum for (backup#3)</td>
+</tr>
+<tr>
+<td>13</td>
+<td>Restore last backup (batch operation)</td>
+<td><strong>Prerequisite:</strong><br><br>*   One or more backup is created for multiple volume.<br><br>1.  select multiple volumes, restore the latest backup for all of them</td>
+<td>*   New volumes with same old volume names should be created, attached to nodes and restore process should be triggered<br>*   <code>PV/PVC</code> information should be restored for volumes that had PV/PVC created<br>*   <code>Namespace &amp; Attached To</code> information should be restored for volumes that had been used by kubnernetes workload at the time of backup</td>
+</tr>
+<tr>
+<td>14</td>
+<td>Delete All Volume Backups</td>
+<td><strong>Prerequisite:</strong><br><br>*   One or more backup is created for multiple volume.<br><br>1.  Delete All backups for a volume<br>2.  Check backupstore, and confirm backups has been deleted</td>
+<td>*   Backups should not be delete from Longhorn UI, and also from backupstore.</td>
+</tr>
+<tr>
+<td>15</td>
+<td>Restore backup created using Longhorn behind proxy.</td>
+<td><strong>Prerequisite:</strong><br><br>*   Setup a Proxy on an instance (Optional: use squid)<br>*   Create a single node cluster in EC2<br>*   Deploy Longhorn<br><br>1.  Block outgoing traffic except for the proxy instance.<br>2.  Create AWS secret in longhorn as follows:<br>3.  In UI Settings page, set backupstore target and backupstore credential secret<br>4.  Create a volume, attach it to a node, format the volume, and mount it to a directory.<br>5.  Write some data to the volume, and create a backup.<br>6.  Wait for backup to complete, and the try to restore the backup to a volume with different name.</td>
+<td>*   Volume should get restored successfully.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="disaster-recovery-test-cases">Disaster Recovery test cases</h2>
+<p><strong>Tests Prerequisite</strong></p>
+<ul>
+<li>
+<p>One Kubernetes cluster.</p>
+</li>
+<li>
+<p>Backup Target set to internal Minio or NFS</p>
+</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th><strong>Test Case</strong></th>
+<th><strong>Test Instructions</strong></th>
+<th><strong>Expected Results</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Last Backup #1</td>
+<td>*   Create a new volume<br>*   Attach the volume<br>*   Create a backup of the volume</td>
+<td>*   Volume&rsquo;s LastBackup and LastBackupAt should be updated<br>*   Backups can be seen from `volume-&gt;backups` in the volume list page, action menu<br>*   Backups can be seen from `volume-&gt;backups` in the volume detail page, action menu</td>
+</tr>
+<tr>
+<td>Last Backup #2</td>
+<td>[follow Last Backup #1]<br><br>*   Create another backup</td>
+<td>*   Volume&rsquo;s LastBackup and LastBackupAt should be updated<br>*   Backups can be seen from `volume-&gt;backups` in the volume list page, action menu<br>*   Backups can be seen from `volume-&gt;backups` in the volume detail page, action menu</td>
+</tr>
+<tr>
+<td>Last Backup #3</td>
+<td>[follow Last Backup #2]<br><br>*   Delete the last backup in the backup list</td>
+<td>*   Volume&rsquo;s LastBackup and LastBackupAt should be updated to empty<br>*   Backups can be seen from `volume-&gt;backups` in the volume list page, action menu<br>*   Backups can be seen from `volume-&gt;backups` in the volume detail page, action menu</td>
+</tr>
+<tr>
+<td>Last Backup #4</td>
+<td>[follow Last Backup #3]<br><br>*   Create a new backup for the volume</td>
+<td>*   Volume&rsquo;s LastBackup and LastBackupAt should be updated to the last backup<br>*   Backups can be seen from `volume-&gt;backups` in the volume list page, action menu<br>*   Backups can be seen from `volume-&gt;backups` in the volume detail page, action menu</td>
+</tr>
+<tr>
+<td>DR volume #1</td>
+<td>*   Create volume X<br>*   Attach the volume X<br>*   Create a backup of X<br>*   Backup Volume list page, click `Create Disaster Recovery Volume` from volume dropdown<br>*   Create the DR volume Xdr<br>*   Attach the volume to any node</td>
+<td>*   DR volume should be successfully created and attached<br>*   DR volume.LastBackup should be updated<br>*   Cannot create backup with Xdr.<br>*   Cannot create snapshot with Xdr.<br>*   Cannot change backup target when DR volume exists with tooltip &lsquo;Disaster Recovery volume&rsquo;<br>*   DR icon shows next to the volume name</td>
+</tr>
+<tr>
+<td>DR volume #2</td>
+<td>[Follow #1]<br><br>*   Format volume X on the attached node<br>*   Mount the volume on the node, write a empty file to it<br>*   Make a backup of Volume X</td>
+<td>*   DR volume&rsquo;s last backup should be updated automatically<br>*   DR volume.LastBackup should be different from DR volume&rsquo;s controller[0].LastRestoredBackup temporarily (it&rsquo;s restoring the last backup)<br>*   During the restoration, DR volume cannot be activated.<br>*   Eventually, DR volume.LastBackup should equal to controller[0].LastRestoredBackup.</td>
+</tr>
+<tr>
+<td>DR volume #3</td>
+<td>[Follow #2]<br><br>*   Activate the volume Xdr</td>
+<td>*   Volume Xdr should be detached automatically</td>
+</tr>
+<tr>
+<td>DR volume #4</td>
+<td>[Follow #3]<br><br>*   Attach the volume to a node<br>*   Mount the volume to a local directory<br>*   Check the file</td>
+<td>*   Mount should be successful<br>*   File should exist</td>
+</tr>
+<tr>
+<td>DR volume #5</td>
+<td>*   Create volume Y<br>*   Attach the volume Y<br>*   Create a backup of Y<br>*   Backup Volume list page, click `Create Disaster Recovery Volume` from volume dropdown<br>*   Create two DR volumes Ydr1 and Ydr2.<br>*   Mount the volume Y on the node<br>*   Write a file of 10Mb into it, use `/dev/urandom` to generate the file<br>*   Calculate the checksum of the file<br>*   Make a Backup<br>*   Attach Ydr1 and Ydr2 to any nodes</td>
+<td>*   DR volume&rsquo;s last backup should be updated automatically<br>*   DR volume.LastBackup should be different from DR volume&rsquo;s controller[0].LastRestoredBackup temporarily (it&rsquo;s restoring the last backup)<br>*   During the restoration, DR volume cannot be activated.<br>*   Eventually, DR volume.LastBackup should equal to controller[0].LastRestoredBackup.</td>
+</tr>
+<tr>
+<td>DR volume #6</td>
+<td>[follow #5]<br><br>*   In the directory mounted volume Y, write a new file of 100Mb.<br>*   Record the checksum of the file<br>*   Create a backup of volume Y<br>*   Wait for restoration of volume Ydr1 and Ydr2 to complete<br>*   Activate Ydr1<br>*   Attach it to one node and verify the content</td>
+<td>*   DR volume&rsquo;s last backup should be updated automatically<br>*   Eventually, DR volume.LastBackup should equal to controller[0].LastRestoredBackup.<br>*   Ydr1 should have the same file checksum of volume Y</td>
+</tr>
+<tr>
+<td>DR volume #7</td>
+<td>[follow #6]<br><br>*   In the directory mounted volume Y, remove all the files. Write a file of 50Mb<br>*   Record the checksum of the file<br>*   Create a backup of volume Y<br>*   Activate Ydr2<br>*   Attach it to one node and verify the content</td>
+<td>*   Both Ydr1 and Ydr2 volume&rsquo;s last backup should be updated automatically<br>*   Eventually, Ydr2&rsquo;s volume.LastBackup should equal to controller[0].LastRestoredBackup.<br>*   Ydr2 should have the same file checksum of volume Y</td>
+</tr>
+<tr>
+<td>DR volume #8</td>
+<td>*   Create volume Z<br>*   Attach the volume Z<br>*   Create a backup (z1) of Z<br>*   Backup Volume list page, click `Create Disaster Recovery Volume` from volume dropdown<br>*   Create a DR volume Zdr<br>*   Mount the volume Z on the node<br>*   Write a file of 10Mb into it<br>*   Make a Backup (z2)<br>*   Attach Zdr to any node<br>*   Confirm that Zdr complete the restoration (by observing the last restored backup to z2)<br>*   Delete the backup z2 from the backup list<br>*   Create a backup z3<br>*   Delete all the files before. Write another file of 10Mb into Z, use `/dev/urandom` to generate the file. Record the checksum<br>*   Confirm that Zdr complete the restoration (by observing the last restored backup to z3)<br>*   Activate Zdr and attach it<br>*   Verify the file content</td>
+<td>*   File content checksum with Zdr should be the same as Z</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Tests Prerequisite</strong></p>
+<ul>
+<li>
+<p>Two Kubernetes clusters, <strong>cluster A</strong> and <strong>cluster B</strong></p>
+</li>
+<li>
+<p>Backup Target set to Amazon S3</p>
+</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th><strong>Test Case</strong></th>
+<th><strong>Test Instructions</strong></th>
+<th><strong>Expected Results</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Backup Poll Interval #1</td>
+<td>*   Change the setting.BackupPoolInterval to -1</td>
+<td>Change shouldn&rsquo;t be allowed</td>
+</tr>
+<tr>
+<td>Backup Poll Interval #2</td>
+<td>*   Change the setting.BackupPoolInterval to 0</td>
+<td>Change should be allowed</td>
+</tr>
+<tr>
+<td>DR volume across the cluster #1</td>
+<td>Cluster A<br><br>*   Create volume XA<br>*   Attach the volume XA<br>*   Create a backup of XA<br><br>Cluster B<br><br>*   Backup Volume list page, click `Create Disaster Recovery Volume` from volume dropdown<br>*   Create the DR volume XB (which should be the same name as XA)<br>*   Attach the volume to any node</td>
+<td>*   DR volume should be successfully created and attached<br>*   DR volume.LastBackup should be updated, after settings.BackupPollInterval passed.<br>*   Cannot create backup with XB<br>*   Cannot create snapshot with XB.<br>*   DR icon shows next to the volume name</td>
+</tr>
+<tr>
+<td>DR volume across the cluster #2</td>
+<td>[Follow #1]  <br>Cluster A<br><br>*   Format volume XA on the attached node<br>*   Mount the volume on the node, write a empty file to it<br>*   Make a backup of Volume XA</td>
+<td>Cluster B<br><br>*   DR volume&rsquo;s last backup should be updated automatically, after settings.BackupPollInterval passed.<br>*   DR volume.LastBackup should be different from DR volume&rsquo;s controller[0].LastRestoredBackup temporarily (it&rsquo;s restoring the last backup)<br>*   During the restoration, DR volume cannot be activated.<br>*   Eventually, DR volume.LastBackup should equal to controller[0].LastRestoredBackup.</td>
+</tr>
+<tr>
+<td>DR volume across the cluster #3</td>
+<td>[Follow #2]<br><br>*   Activate the volume XB</td>
+<td>*   Volume XB should be detached automatically</td>
+</tr>
+<tr>
+<td>DR volume across the cluster #4</td>
+<td>[Follow #3]  <br>Cluster B:<br><br>*   Attach the volume XB to a node<br>*   Mount the volume XB to a local directory<br>*   Check the file on XB</td>
+<td>*   Mount should be successful<br>*   File should exist</td>
+</tr>
+<tr>
+<td>DR volume across the cluster #5</td>
+<td>Cluster A:<br><br>*   Create volume Y<br>*   Attach the volume Y<br>*   Create a backup of Y<br><br>Cluster B:<br><br>*   Backup Volume list page, click `Create Disaster Recovery Volume` from volume dropdown<br>*   Create two DR volumes Ydr1 and Ydr2.<br>*   Attach the volume Y to any node<br>*   Mount the volume Y on the node<br>*   Write a file of 10Mb into it, use `/dev/urandom` to generate the file<br>*   Calculate the checksum of the file<br>*   Make a Backup<br>*   Attach Ydr1 and Ydr2 to any nodes</td>
+<td>*   DR volume&rsquo;s last backup should be updated automatically, after settings.BackupPollInterval passed.<br>*   DR volume.LastBackup should be different from DR volume&rsquo;s controller[0].LastRestoredBackup temporarily (it&rsquo;s restoring the last backup)<br>*   During the restoration, DR volume cannot be activated.<br>*   Eventually, DR volume.LastBackup should equal to controller[0].LastRestoredBackup.</td>
+</tr>
+<tr>
+<td>DR volume across the cluster #6</td>
+<td>[follow #5]  <br>Cluster A:<br><br>*   In the directory mounted volume Y, write a new file of 100Mb.<br>*   Record the checksum of the file<br>*   Create a backup of volume Y<br><br>Cluster B:<br><br>*   Wait for restoration of volume Ydr1 and Ydr2 to complete<br>*   Activate Ydr1<br>*   Attach it to one node and verify the content</td>
+<td>*   DR volume&rsquo;s last backup should be updated automatically, after settings.BackupPollInterval passed.<br>*   Eventually, DR volume.LastBackup should equal to controller[0].LastRestoredBackup.<br>*   Ydr1 should have the same file checksum of volume Y</td>
+</tr>
+<tr>
+<td>DR volume across the cluster #7</td>
+<td>[follow #6]  <br>Cluster A<br><br>*   In the directory mounted volume Y, remove all the files. Write a file of 50Mb<br>*   Record the checksum of the file<br><br>Cluster B<br><br>*   Change setting.BackupPollInterval to longer e.g. 1h<br><br>Cluster A<br><br>*   Create a backup of volume Y<br><br>Cluster B  <br>[DO NOT CLICK BACKUP PAGE, which will update last backup as a side effect]<br><br>*   Before Ydr2&rsquo;s last backup updated, activate Ydr2</td>
+<td>*   YBdr2&rsquo;s last backup should be immediately updated to the last backup of volume Y<br>*   Activate should fail due to restoration is in progress</td>
+</tr>
+<tr>
+<td>DR volume across the cluster #8</td>
+<td>Cluster A<br><br>*   Create volume Z<br>*   Attach the volume Z<br>*   Create a backup of Z<br><br>Cluster B<br><br>*   Backup Volume list page, click `Create Disaster Recovery Volume` from volume dropdown<br>*   Create DR volumes Zdr1, Zdr2 and Zdr3<br>*   Attach the volume Zdr1, Zdr2 and Zdr3 to any node<br>*   Change setting.BackupPollInterval to approriate interval for multiple backups e.g. 15min<br>*   Make sure LastBackup of Zdr is consistent with that of Z<br><br>Cluster A<br><br>*   Create multiple backups for volume Z before Zdr&rsquo;s last backup updated. For each backup, write or modify at least one file then record the cheksum.<br><br>Cluster B<br><br>*   Wait for restoration of volume Zdr1 to complete<br>*   Activate Zdr1<br>*   Attach it to one node and verify the content</td>
+<td>*   Zdr1&rsquo;s last backup should be updated after settings.BackupPollInterval passed.<br>*   Zdr1 should have the same files with the the same checksums of volume Z</td>
+</tr>
+<tr>
+<td>DR volume across the cluster #9</td>
+<td>[follow #8]  <br>Cluster A<br><br>*   Delete the latest backup of Volume Z</td>
+<td>*   Last backup of Zdr2 and Zdr3 should be empty after settings.BackupPollInterval passed. Field controller[0].LastRestoredBackup and controller[0].RequestedBackupRestore should retain.</td>
+</tr>
+<tr>
+<td>DR volume across the cluster #10</td>
+<td>[follow #9]  <br>Cluster B<br><br>*   Activate Zdr2<br>*   Attach it to one node and verify the content</td>
+<td>*   Zdr2 should have the same files with the the same checksums of volume Z</td>
+</tr>
+<tr>
+<td>DR volume across the cluster #11</td>
+<td>[follow #10]  <br>Cluster A<br><br>*   Create one more backup with at least one file modified.<br><br>Cluster B<br><br>*   Wait for restoration of volume Zdr3 to complete<br>*   Activate Zdr3<br>*   Attach it to one node and verify the content</td>
+<td>*   Zdr3 should have the same files with the the same checksums of volume Z</td>
+</tr>
+</tbody>
+</table>
+<h2 id="additional-tests"><strong>Additional tests</strong></h2>
+<table>
+<thead>
+<tr>
+<th><strong>#</strong></th>
+<th><strong>Scenario</strong></th>
+<th><strong>Steps</strong></th>
+<th><strong>Expected result</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>Create backup from existing snapshot when multiple snapshots exist</td>
+<td>1.  Create a workload using Longhorn volume<br>2.  Write data to volume, compute it’s checksum (checksum#1)<br>3.  Create a snapshot S1<br>4.  Write data to volume, compute it’s checksum (checksum#2)<br>5.  Create a snapshot S2<br>6.  Create a backup from (snapshot#2)<br>7.  Restore backup to a different volume<br>8.  Attach volume to a node and check it’s data, and compute it’s checksum</td>
+<td>Verify the checksum of the restored volume is same as checksum#2</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Create backups, after deleting snapshots</td>
+<td>1.  Create a workload using Longhorn volume<br>2.  Write data to volume, compute it’s checksum (checksum#1)<br>3.  Create a snapshot S1<br>4.  Write data to volume, compute it’s checksum (checksum#2)<br>5.  Create a snapshot S2<br>6.  Write data to volume, compute it’s checksum (checksum#3)<br>7.  Create a snapshot S3<br>8.  Delete S2<br>9.  Create a backup b1 from S3<br>10.  Restore backup to a different volume<br>11.  Attach volume to a node and check it’s data, and compute it’s checksum</td>
+<td>Verify the checksum of the restored volume is same as checksum#3</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Backup from Snapshots</td>
+<td>1.  Create a workload using Longhorn volume<br>2.  Write data to volume, compute it’s checksum (checksum#1)<br>3.  Create a snapshot S1<br>4.  Write data to volume, compute it’s checksum (checksum#2)<br>5.  Create a snapshot S2<br>6.  Create a backup b1 from snapshot S2<br>7.  Restore backup to a different volume<br>8.  Attach volume to a node and check it’s data, and compute it’s checksum</td>
+<td>Verify the checksum of the restored volume is same as checksum#2</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Manual and recurring snapshots count - recurring backups should not delete any manual backups taken</td>
+<td>1.  Enable recurring backups on a volume - every minute, retain count = 5<br>2.  After 2 minutes, after 2 recurring backups have been taken, create a couple of manual backups on the volume.<br>3.  Verify the volumes in the backup page for volume.<br>4.  After 5 minutes, verify 2 manual backups and 5 recurring backups are available in the backup page<br>5.  After 6th minute, verify one of the recurring backups - the oldest one is removed and new one is available in the backup page.</td>
+<td>Verify recurring backups should not delete any manual backups taken</td>
+</tr>
+<tr>
+<td>5</td>
+<td>Restore with invalid node tag/disk tag</td>
+<td>Volume v1 - with backups - b1, b2, b3 exist<br><br>1.  Restore from b1 - specify an invalid node tag and click on OK<br>2.  Verify volume is NOT restored and an error is seen - <code>specified node tag &lt;name&gt; does not exist</code><br>3.  Restore from b1 - specify an invalid disk tag and click on OK<br>4.  Verify volume is NOT restored and an error is seen - <code>specified disk tag &lt;name&gt; does not exist</code></td>
+<td>Volume should NOT be restored.<br><br>Error should be seen on the UI</td>
+</tr>
+<tr>
+<td>6</td>
+<td>Use Volume backup URL in a storage class</td>
+<td>1.  Get backup URL from a backup created for a volume.<br>2.  Use the URL StorageClass <code>fromBackup</code><br>3.  Create a PVC from the storage class and attach to volume on a workload<br>4.  workload should be deployed successfully/</td>
+<td></td>
+</tr>
+<tr>
+<td>7</td>
+<td>Recurring snapshots/backups of volume in “Detached” mode</td>
+<td>1.  Create a volume/PV/PVC<br>2.  Deploy it to a workload.<br>3.  Enable recurring backups for every minute<br>4.  Verify recurring backups happen on the volume.<br>5.  From the longhorn UI, detach the volume.<br>6.  Verify the Recurring snapshots/backups do not happen</td>
+<td></td>
+</tr>
+<tr>
+<td>8</td>
+<td>Disabling recurring backups</td>
+<td>Precondition:<br><br>*   Volume is created and deployed to a workload<br><br>Steps:<br><br>1.  Enable recurring backups ex - every minute<br>2.  Wait for a couple of minutes. 2 backups should be available for the volume.<br>3.  Disable recurring backups. for this volume<br>4.  Verify that the recurring backups should stop happening for the volume</td>
+<td>*   Recurring backups should be STOPPED for the volume.</td>
+</tr>
+<tr>
+<td>9</td>
+<td>Backup corruption in S3/nfs backup store - Rename config file for the volume</td>
+<td><strong>Pre condition:</strong><br><br>*   Volume v1, v2 exists<br>*   v1 has backups - b1, b2, b3 and v2 has backups - b4,b5<br><br>**Steps:**<br><br>1.  Rename config file for the v1 in S3 volume.cfg file to volume.cfg.tmp<br>2.  Verify that the backup list does not list the backups for that volume<br>3.  Verify an error message is displayed on the UI<br>4.  Verify user is able to list the backups of v2</td>
+<td>*   User should be able to see an error message in the UI when it failed to fetch the backups for the backup for volume v1<br>*   User should be able to list the backups of volume v2</td>
+</tr>
+<tr>
+<td>10</td>
+<td>Delete a volume backup when it is corrupted in S3/nfs backup store</td>
+<td><strong>Pre condition:</strong><br><br>*   Volume v1, v2 exists<br>*   v1 has backups - b1, b2, b3 and v2 has backups - b4,b5<br><br>**Steps:**<br><br>1.  Rename config file for the v1 volume.cfg file to volume.cfg.tmp<br>2.  Verify that the backup list does not list the backups for that volume<br>3.  Verify an error message is displayed on the UI<br>4.  Verify user is able to delete the backup of v1 from the backup page</td>
+<td>*   User should be able to delete the corrupted backup for volume v1 by clicking on delete all backups.<br>*   User should be able to list the backups of volume v2</td>
+</tr>
+<tr>
+<td>11</td>
+<td>Backup corruption in S3/nfs backup store - Rename config file of the</td>
+<td><strong>Pre condition:</strong><br><br>*   Volume v1, v2 exists<br>*   v1 has backups - b1, b2, b3 and v2 has backups - b4,b5<br><br>**Steps:**<br><br>1.  Rename the backup b1.cfg to b1.cfg.tmp<br>2.  Verify the backup page lists the volumes v1 and v2<br>3.  Verify backup list page for v1 is able to fetch all the backups except the b1 - b1 SHOULD NOT be listed<br>4.  verify user is able to restore from b2 and b3<br>5.  Verify the data after restoration is correct<br>6.  Verify user is able to list b4 and b5 for volume v2 also.</td>
+<td>*   User should be able to list b2 and b3.<br>*   User should be able to restore from b2 and b3<br>*   User should be able to see an error for b1 - b1 SHOULD NOT be listed<br>*   User should be able to list the backups of volume v2</td>
+</tr>
+<tr>
+<td>12</td>
+<td>Backup corruption in S3/nfs backup store - Edit data of a backup</td>
+<td><strong>Pre condition:</strong><br><br>*   Volume v1, v2 exists<br>*   v1 has backups - b1, b2, b3 and v2 has backups - b4,b5<br><br>**Steps:**<br><br>1.  Edit data (remove some checksum value) of back up b1 and upload to S3<br>2.  Verify the backup page lists the volumes v1 and v2 and all the backups<br>3.  Verify user is able to restore from b1<br>4.  Verify the restored data is not the same as the original data (check the checksums)<br>5.  Take b4, b5 for <code>v1</code><br>6.  User should be able to restore from b4 and b5</td>
+<td>User should be able to list b1<br><br>User should be able to restore from b1<br><br>Other backups for v1 - b2 and b3 should be available<br><br>Backups for v2 - b4 and b5 should be available</td>
+</tr>
+<tr>
+<td>13</td>
+<td>Delete all backups and create backups for same volumes</td>
+<td>1.  Create vol-1, use it to a workload and write data to the volume<br>2.  Take backups b1, b2<br>3.  Delete all backups for the volume<br>4.  verify volume is deleted from the S3 backup store and the Longhorn UI in backup page.<br>5.  Take a backup for volume vol-1 b3<br>6.  Verify b3 is saved in S3 and is available in abckup list page for the volume vol-1</td>
+<td></td>
+</tr>
+<tr>
+<td>14</td>
+<td>Delete Backup verify blocks deleted from backupstore</td>
+<td>1.  Create a volume, attach to a pod and write into it.<br>2.  Set up a S3 backup store.<br>3.  Take a backup. Wait for it to complete.<br>4.  Check the size of backup in backup store.<br>5.  Delete the backup.<br>6.  Check the size in the backup storage. It is same as earlier.<br>7.  Blocks should be deleted.</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h2 id="additional-ui-test-cases">Additional UI test cases</h2>
+<table>
+<thead>
+<tr>
+<th><strong>#</strong></th>
+<th><strong>Scenario</strong></th>
+<th><strong>Steps</strong></th>
+<th><strong>Expected Results</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>Column sort</td>
+<td>1.  Navigate to Backup page<br>2.  Verify column sort works for all the columns</td>
+<td>Column sorting should. work</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Column sort</td>
+<td>1.  Navigate to Backup page<br>2.  Click on a volume v1<br>3.  User will be navigate to Backup/v1 page<br>4.  Verify column sort works for all the columns</td>
+<td>Column sorting should. work</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Workload Pod status</td>
+<td>1.  Navigate to Backup page<br>2.  Click on a volume v1<br>3.  User will be navigate to Backup/v1 page<br>4.  In the workload/Pod column, click on a pod for a backup<br>5.  Verify a window pops up with the pod details</td>
+<td>Pod details should be available</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Labels</td>
+<td>1.  Navigate to Backup page<br>2.  Click on a volume v1<br>3.  User will be navigate to Backup/v1 page<br>4.  For a backup click on the labels icon<br>5.  Verify labels should be present for the backup</td>
+<td>1.  Related labels should be available for the backup</td>
+</tr>
+</tbody>
+</table>
+<h2 id="csi-snapshot-support-test-cases">CSI Snapshot Support Test cases</h2>
+<p>The setup requirements:</p>
+<ol>
+<li>Deploy the snapshotter crds <a href="https://github.com/kubernetes-csi/external-snapshotter/tree/release-4.0/client/config/crd">https://github.com/kubernetes-csi/external-snapshotter/tree/release-4.0/client/config/crd</a></li>
+<li>Deploy the snapshot controller <a href="https://github.com/kubernetes-csi/external-snapshotter/tree/release-4.0/deploy/kubernetes/snapshot-controller">https://github.com/kubernetes-csi/external-snapshotter/tree/release-4.0/deploy/kubernetes/snapshot-controller</a></li>
+<li>Deploy the volumeSnapshotClass.<br><pre>kind: VolumeSnapshotClass<br>apiVersion:<br> snapshot.storage.k8s.io/v1beta1<br>metadata:<br>  name: longhorn<br>driver: driver.longhorn.io<br>deletionPolicy: Delete</li>
+</ol>
+<table>
+<thead>
+<tr>
+<th><strong>#</strong></th>
+<th><strong>Test Scenario</strong></th>
+<th><strong>Test Steps</strong></th>
+<th><strong>Expected Results</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>Create a snapshot using <code>VolumeSnapshot</code></td>
+<td>1.  Create a volume test-vol and write into it.<br>    1.  Compute the md5sum<br>        <br>2.  Create the below <code>VolumeSnapshot</code> object<br> <pre>apiVersion: snapshot.storage.k8s.io/v1beta1<br>kind: VolumeSnapshot<br>metadata:<br>  name: test<br>vol-snapshot<br>spec:<br>  volumeSnapshotClassName: longhorn<br>  source:<br>    persistentVolumeClaimName: test-vol</pre></td>
+<td>1.  A longhorn snapshot should be created.<br>2.  A backup of that snapshot should be available on the backup store.<br>3.  A <code>volumesnapshotContent</code> should also get created referring to <code>test-snapshot-pvc</code></td>
+</tr>
+<tr>
+<td>2</td>
+<td>Restore a backup from a snapshot</td>
+<td>1.  Create a volume and take backup following the steps from test scenario 1.<br>2.  Create a <code>PVC</code> where datasource is referring to the <code>VolumeSnapshot</code><br><pre>apiVersion: v1<br>kind: PersistentVolumeClaim<br>metadata:<br>  name: test-vol-restore<br>spec:<br>  storageClassName: longhorn<br>  dataSource:<br>    name: test-vol-snapshot<br>    kind: VolumeSnapshot<br>    apiGroup: snapshot.storage.k8s.io<br>  accessModes:<br>    - ReadWriteOnce<br>  resources:<br>    requests:<br>      storage: 2Gi</pre>3.  Attach the <code>PVC</code> to a pod.<br>4.  Verify the data</td>
+<td>1.  The PVC should be created successfully.<br>2.  A volume should be created bound to the PVC created.<br>3.  The data should be the same as created in test scenario 1</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Restore a backup from longhorn.</td>
+<td>1.  Create a volume and attach it to a pod.  <br>    Compute the md5sum of the data.<br>2.  Take a backup in the longhorn.<br>3.  Create the below <code>VolumeSnapshotterContent</code> <br> Change the snapshotHandle to point to the backup to restore<br><pre>apiVersion: snapshot.storage.k8s.io/v1beta1<br>kind: VolumeSnapshotContent<br>metadata:<br>  name: test-existing-backup<br>spec:<br>  volumeSnapshotClassName: longhorn<br>  driver: driver.longhorn.io<br>  deletionPolicy: Delete<br>  source:<br>    # NOTE: change this to point to an existing backup on the backupstore<br>    snapshotHandle: bs://test-vol<br>backup-625159fb469e492e<br>  volumeSnapshotRef:<br>    name: test-snapshot-existing-backup<br>    namespace: default</pre>4.  Create the below <code>VolumeSnapshot</code> referring to the above <code>VolumeSnapshotContent</code><br><pre>apiVersion: snapshot.storage.k8s.io/v1beta1<br>kind: VolumeSnapshot<br>metadata:<br>  name: test-snapshot-existing-backup<br>spec:<br>  volumeSnapshotClassName: longhorn<br>  source:<br>    volumeSnapshotContentName: test-existing-backup</pre>5.  Create the below <code>PVC</code> referring to the above <code>VolumeSnapshot</code><br><pre>apiVersion: v1<br>kind: PersistentVolumeClaim<br>metadata:<br>  name: test-restore-existing-backup<br>spec:<br>  storageClassName: longhorn<br>  dataSource:<br>    name: test-snapshot-existing-backup<br>    kind: VolumeSnapshot<br>    apiGroup: snapshot.storage.k8s.io<br>  accessModes:<br>    - ReadWriteOnce<br>  resources:<br>    requests:<br>      storage: 2Gi</pre>6.  Attach to a pod, verify the data.  <br>    Compute md5sum of the data.</td>
+<td>1.  The <code>VolumeSnapshotterContent</code> should reflect the size of the backup volume.<br>2.  The data should be intact, compare the md5sum of step 1 and step 6.</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Delete the backup with <code>DeletionPolicy</code> as delete</td>
+<td>1.  Repeat the steps from test scenario 1.<br>2.  Delete the <code>VolumeSnapshot</code> using <code>kubectl delete volumesnapshots test-snapshot-pvc</code></td>
+<td>1.  The <code>VolumeSnapshot</code> should be deleted.<br>2.  By default the <code>DeletionPolicy</code> is delete, so the <code>VolumeSnapshotContent</code> should be deleted.<br>3.  Verify in the backup store, the backup should be deleted.</td>
+</tr>
+<tr>
+<td>5</td>
+<td>Delete the backup with <code>DeletionPolicy</code> as retain</td>
+<td>1.  Create a <code>VolumeSnapshotClass</code> class with <code>deletionPolicy</code> as Retain<br><pre>kind: VolumeSnapshotClass<br>apiVersion: snapshot.storage.k8s.io/v1beta1<br>metadata:<br>  name: longhorn<br>driver: driver.longhorn.io<br>deletionPolicy: Retain</pre>2.  Repeat the steps from test scenario 1.<br>3.  Delete the <code>VolumeSnapshot</code> using <code>kubectl delete volumesnapshots test-snapshot-pvc</code></td>
+<td>1.  The <code>VolumeSnapshot</code> should be deleted.<br>2.  <code>VolumeSnapshotContent</code> should NOT be deleted.<br>3.  Verify in the backup store, the backup should NOT be deleted.</td>
+</tr>
+<tr>
+<td>6</td>
+<td>Take a backup from longhorn of a snapshot created by csi snapshotter.</td>
+<td>1.  Create a volume test-vol and write into it.<br>    1.  Compute the md5sum<br>        <br>2.  Create the below <code>VolumeSnapshot</code> object<br><pre>apiVersion: snapshot.storage.k8s.io/v1beta1<br>kind: VolumeSnapshot<br>metadata:<br>  name: test-snapshot-pvc<br>spec:<br>  volumeSnapshotClassName: longhorn<br>  source:<br>    persistentVolumeClaimName: test-vol</pre>3.  Go to longhorn UI and click on the snapshot created and take another backup</td>
+<td>1.  On creating a <code>VolumeSnapshot</code>, a backup should be created in the backup store.<br>2.  On creating another backup from longhorn UI, one more backup should be created in backup store.</td>
+</tr>
+<tr>
+<td>7</td>
+<td>Delete the <code>csi plugin</code> while a backup is in progress.</td>
+<td>1.  Create a volume and write into it.  <br>    Compute the md5sum of the data.<br>2.  Create the below <code>VolumeSnapshot</code> object<br><pre>apiVersion: snapshot.storage.k8s.io/v1beta1<br>kind: VolumeSnapshot<br>metadata:<br> <br>name: test-snapshot-pvc<br>spec:<br>  volumeSnapshotClassName: longhorn<br>  source:<br>    persistentVolumeClaimName: test-vol</pre>3.  While the backup is in progress, delete the <code>csi plugin</code></td>
+<td>On deleting <code>csi plugin</code> , a new pod of <code>csi plugin</code> should get created and the bacup should continue to complete.</td>
+</tr>
+<tr>
+<td>8</td>
+<td>Take a backup using csi snapshotter with backup store as NFS server.</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>9</td>
+<td>Restore from NFS backup store.</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>10</td>
+<td>Delete from NFS backup store.</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>11</td>
+<td>Parallel backups using csi snapshotter</td>
+<td>1.  Create a volume and write into it.  <br>    Compute the md5sum of the data.<br>2.  Create two <code>VolumeSnapshot</code> object with different names<br><pre>apiVersion: snapshot.storage.k8s.io/v1beta1<br>kind: VolumeSnapshot<br>metadata:<br>  name: test-snapshot-pvc<br>spec:<br>  volumeSnapshotClassName: longhorn<br>  source:<br>    persistentVolumeClaimName: test-vol</pre>3.  <code>kubectl apply -f volumeSnapshot</code> together.<br>4.  Verify two parallel backups creation is triggered.</td>
+<td>1.  Parallel backup creation should start<br>2.  Data should be intact.<br>3.  Verify after restoring the data</td>
+</tr>
+<tr>
+<td>12</td>
+<td>Parallel deletion using csi snapshotter</td>
+<td>1.  Create multiple backups using csi snapshotter with <code>Deletionpolicy</code>is <code>Delete</code><br>2.  Delete two or more <code>volumeSnapshot</code> at once<br>3.  Verify the backup store</td>
+<td>1.  All the backup pertaining to deleted <code>volumesnapshot</code> should get deleted.</td>
+</tr>
+<tr>
+<td>13</td>
+<td>Take backup and delete the <code>VolumeSnapshot</code> when the backup is in progress.</td>
+<td>1.  Create a <code>volumesnapshot</code><br>2.  Delete the same <code>volumesnapshot</code> when it is progress<br>3.  Take another <code>volumesnapshot</code><br>4.  Let it get completed and verify the data.</td>
+<td>1.  The backup doesn’t get created after the step 2<br>2.  The backup data should be intact.</td>
+</tr>
+<tr>
+<td>14</td>
+<td>Backup on a backup store with <code>VIRTUAL_HOSTED_STYLE</code></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>15</td>
+<td>Backup with invalid Backupstore</td>
+<td>1.  Give invalid backupstore details in the setting of longhorn.<br>2.  Create a volume, write into it.<br>3.  Create a <code>volumesnapshot</code><br>4.  Verify the longhorn UI</td>
+<td>1.  No backup should get triggered.<br>2.  No snapshot should appear on the longhorn UI.</td>
+</tr>
+<tr>
+<td>16</td>
+<td>Restore from longhorn backup volume where there are multiple backups</td>
+<td>1.  Create a volume and attach it to a pod.  <br>    Compute the md5sum of the data.<br>2.  Take a backup in the longhorn.<br>3.  Write more in the volume and take backup.<br>4.  Create the <code>VolumeSnapshotterContent</code>, the snapshotHandle should point to the 2nd backup to restore.<br>5.  Create the referring <code>volumesnapshot</code><br>6.  Verify the data</td>
+<td></td>
+</tr>
+<tr>
+<td>17</td>
+<td>Restore with invalid backup name</td>
+<td>1.  Create a volume and attach it to a pod.  <br>    Compute the md5sum of the data.<br>2.  Create the <code>VolumeSnapshotterContent</code>, the snapshotHandle should point to an invalid backup to restore.<br>3.  Create the referring <code>volumesnapshot</code><br>4.  Create the PVC and attach to a pod.</td>
+<td>1.  The <code>volumesnapshot and volumesnapshotcontent</code> should show False status in <code>ReadytoUse</code>.<br>2.  Pvc should fail to attach to pod, it should not create the volume in longhorn.</td>
+</tr>
+<tr>
+<td>18</td>
+<td>Create a DR volume with the backup created using CSI snapshotter.</td>
+<td>1.  Give valid backupstore details in the setting of longhorn.<br>2.  Create a volume, write into it.<br>3.  Create a <code>volumesnapshot</code><br>4.  Create a DR volume of the backup which got created in step3.<br>5.  Write more data into it.<br>6.  Take backup using <code>volumesnaphot</code><br>7.  Activate the DR volume</td>
+<td>The DR volume should have the latest data updated.</td>
+</tr>
+<tr>
+<td>19</td>
+<td>Same #uid from a prior snapshot -  <br>with longhorn snapshot still present, but the backup deleted.</td>
+<td>1.  Create a volume, write into it. Compute the md5sum.<br>2.  Create a <code>volumesnapshot</code> like below<br><pre>apiVersion: snapshot.storage.k8s.io/v1beta1<br>kind: VolumeSnapshot<br>metadata:<br>  name: test-snapshot-existing-backup<br>  uid: # copy uid from a prior snapshot, that you created, since the uid is how the longhorn snapshot will be named.<br>spec:<br>  volumeSnapshotClassName: longhorn<br>  source:<br>    persistentVolumeClaimName: test-vol</pre>3.  After the backup is completed, delete the snapshot from longhorn UI.<br>4.  Create a <code>volumesnapshot</code></td>
+<td>1.  A new snapshot gets created overriding the uid given in the metadata.<br>2.  A new backup gets created.</td>
+</tr>
+<tr>
+<td>20</td>
+<td>Same #uid from a prior snapshot -  <br>with backup still present but longhorn snapshot deleted</td>
+<td>1.  Create a volume, write into it. Compute the md5sum.<br>2.  Create a <code>volumesnapshot</code> like below<br><pre>apiVersion: snapshot.storage.k8s.io/v1beta1<br>kind: VolumeSnapshot<br>metadata:<br>  name: test-snapshot-existing-backup<br>  uid: # copy uid from a prior snapshot, that you created, since the uid is how the longhorn snapshot will be named.<br>spec:<br>  volumeSnapshotClassName: longhorn<br>  source:<br>    persistentVolumeClaimName: test-vol</pre>3.  After the backup is completed, delete the backup from backup store.<br>4.  Create a <code>volumesnapshot</code></td>
+<td>1.  A new snapshot gets created overriding the uid given in the metadata.<br>2.  A new backup gets created.</td>
+</tr>
+</tbody>
+</table>
+
+    </article>
+  </div>
+</main>
+
+    
+    
+  </body>
+</html>

@@ -14,6 +14,44 @@
   
   <ul>
 
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/">End-to-end test cases</a></li>
+  
+    <ul>
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/deployment/"> Deployment of Longhorn  </a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/ui/">UI  </a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/volume/">Volume  </a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/high-availability/">High Availability  </a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/kubernetes/">Kubernetes  </a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/backup/">Backup  </a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/node/">Node  </a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/scheduling/">Scheduling  </a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/upgrade/">Upgrade  </a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/monitoring/">Monitoring</a></li>
+  
+
+</ul>
+
+  
+
   <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/">Pre-release tests</a></li>
   
     <ul>
@@ -460,7 +498,7 @@ HTTP_PROXY: <span style="color:#e6db74">&#34;http://proxy_ip:proxy_port&#34;</sp
 HTTPS_PROXY: <span style="color:#e6db74">&#34;http://proxy_ip:proxy_port&#34;</span>
 NO_PROXY: <span style="color:#e6db74">&#34;localhost,127.0.0.1,0.0.0.0,10.0.0.0/8,192.168.0.0/16&#34;</span>
 </code></pre></div></li>
-<li>Next, we will simulate the setup in the issue by blocking all the outbound traffic from the EC2 instance. Navigate to AWS EC2 console and find the EC2 instance of the cluster. Open the security group for the EC2. Set the outbound traffic as below:<!-- raw HTML omitted -->
+<li>Next, we will simulate the setup in the issue by blocking all the outbound traffic from the EC2 instance. Navigate to AWS EC2 console and find the EC2 instance of the cluster. Open the security group for the EC2. Set the outbound traffic as below:<img width="1637" alt="Screen Shot 2020-07-09 at 8 16 00 PM" src="https://user-images.githubusercontent.com/22139961/87112575-0ca3eb80-c221-11ea-86ef-91ed5f8384cc.png">
 <ol>
 <li>Now the cluster is isolated from the outside world. It can only send outgoing traffic to your personal computer, the rancher node server, and the Http_Proxy. Therefore, the only way to access the internet is through the Proxy because only the Proxy forwards the packets.</li>
 <li>Go back and check the <code>backup</code> in Longhorn UI. We should see that Longhorn UI successfully to retrieve the backup list.</li>

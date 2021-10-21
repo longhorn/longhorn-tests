@@ -1,0 +1,862 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>
+      Longhorn Manual Test Cases
+    </title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/4.0.0/github-markdown.min.css">
+  </head>
+  <body class="markdown-body" style="display: flex; padding: 1%;">
+    
+<aside style="width: 30%; padding: 1%; border-right: 1px solid lightgray;">
+  <a href="https://longhorn.github.io/longhorn-tests/manual"><h2>Manual Test Cases</h2></a>
+  
+  <ul>
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/">End-to-end test cases</a></li>
+  
+    <ul>
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/deployment/"> Deployment of Longhorn  </a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/ui/">UI  </a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/volume/">Volume  </a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/high-availability/">High Availability  </a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/kubernetes/">Kubernetes  </a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/backup/">Backup  </a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/node/">Node  </a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/scheduling/">Scheduling  </a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/upgrade/">Upgrade  </a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/monitoring/">Monitoring</a></li>
+  
+
+</ul>
+
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/">Pre-release tests</a></li>
+  
+    <ul>
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/air-gap/">Air Gap</a></li>
+  
+    <ul>
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/air-gap/air-gap-installation/">Air gap installation</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/air-gap/air-gap-instance-manager-name/">Air gap installation with an instance-manager-image name longer than 63 characters</a></li>
+  
+
+</ul>
+
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/">Backup &amp; Restore tests</a></li>
+  
+    <ul>
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/dr-volume-live-upgrade-and-rebuild/">#1279 DR volume live upgrade and rebuild</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/concurrent-backup-creation-deletion/">#1326 concurrent backup creation &amp; deletion</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/concurrent-backup/">#1341 concurrent backup test</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/restore-volume-node-down/">#1355 The node the restore volume attached to is down</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/dr-volume-node-rebooted/">#1366 &amp;&amp; #1328 The node the DR volume attached to is rebooted</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/google-cloud-s3-interop-backups/">#1404 test backup functionality on google cloud and other s3 interop providers.</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/backup-block-deletion/">#1431 backup block deletion test</a></li>
+  
+
+</ul>
+
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/basic-operations-parallelism/">Basic operations parallelism</a></li>
+  
+    <ul>
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/basic-operations-parallelism/snapshot-while-writing-data/">Snapshot while writing data in the volume</a></li>
+  
+
+</ul>
+
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/cluster-restore/">Cluster Restore</a></li>
+  
+    <ul>
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/cluster-restore/system-upgrade-with-restore/">Longhorn system upgrade with restore</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/cluster-restore/node-creation-deletion-with-restore/">Node creation and deletion with restore</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/cluster-restore/recover-volumes-after-restore/">Recover Longhorn volumes after Rancher cluster restore</a></li>
+  
+
+</ul>
+
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/environment/">Environment</a></li>
+  
+    <ul>
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/environment/cluster-using-customized-kubelet-root-directory/">Cluster using customize kubelet root directory</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/environment/k3s-selinux-compatibility/">Compatibility with k3s and SELinux</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/environment/rke2-cis-1.5-profile/">Test Longhorn Deployment on RKE2 with CIS-1.5 profile</a></li>
+  
+
+</ul>
+
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/ha/">HA</a></li>
+  
+    <ul>
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/ha/backing-image-error-reporting-and-retry/">Backing Image Error Reporting and Retry</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/ha/disk-migration-in-aws-asg/">Disk migration in AWS ASG</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/ha/partial-engine-deployment/">Longhorn with engine is not deployed on all the nodes</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/ha/replica-rebuilding/">Replica Rebuilding</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/ha/single-replica-node-down/">Single replica node down</a></li>
+  
+
+</ul>
+
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node/">Node</a></li>
+  
+    <ul>
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node/backing-image-on-a-down-node/">Backing Image on a down node</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node/degraded-availability/">Degraded availability with added nodes</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node/improve-node-failure-handling/">Improve Node Failure Handling By Automatically Force Delete Terminating Pods of StatefulSet/Deployment On Downed Node</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node/node-disconnection/">Node disconnection test</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node/node-drain-deletion/">Node drain and deletion test</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node/physical-node-down/">Physical node down</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node/kubelet-restart-on-a-node/">Test kubelet restart on a node of the cluster</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node/node-deletion/">Test node deletion</a></li>
+  
+
+</ul>
+
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/resiliency/">Resiliency</a></li>
+  
+    <ul>
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/resiliency/simulated-slow-disk/">#2206 Fix the spinning disk on Longhorn</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/resiliency/timeout/">Test timeout on loss of network connectivity</a></li>
+  
+
+</ul>
+
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/stability/">Stability</a></li>
+  
+    <ul>
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/stability/multiple-installation/">Longhorn installation multiple times</a></li>
+  
+
+</ul>
+
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/stress/backup-listing/">Test backup listing S3/NFS</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/uninstallation/uninstallation-checks/">Uninstallation Checks</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/">Upgrade</a></li>
+  
+    <ul>
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/auto-upgrade-engine/">Automatically Upgrading Longhorn Engine Test</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/kubernetes-upgrade-test/">Kubernetes upgrade test</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/longhorn-upgrade-test/">Longhorn Upgrade test</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/update_csi_components_when_images_change/">Re-deploy CSI components when their images change</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/backing-image-during-upgrade/">Test Backing Image during Longhorn upgrade</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/engine-crash-during-live-upgrade/">Test Engine Crash During Live Upgrade</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/upgrade-with-new-instance-manager/">Test System Upgrade with New Instance Manager</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/upgrade-conflict-handling/">Upgrade Conflict Handling test</a></li>
+  
+
+</ul>
+
+  
+
+</ul>
+
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/">Release specific tests</a></li>
+  
+    <ul>
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.0/">v1.0.0</a></li>
+  
+    <ul>
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.0/new-node-custom-data-directory/">New Node with Custom Data Directory</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.0/suse-sles12sp3/">Operating System specific tests for SUSE SLES12SP3</a></li>
+  
+    <ul>
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.0/suse-sles12sp3/ext4-custom-fs-params-1/">Testing ext4 with custom fs params1 (no 64bit, no metadata_csum)</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.0/suse-sles12sp3/ext4-custom-fs-params-2/">Testing ext4 with custom fs params2 (no metadata_csum)</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.0/suse-sles12sp3/ext4-no-custom-fs-params/">Testing ext4 without custom fs params</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.0/suse-sles12sp3/xfs-after-custom-fs-params/">Testing xfs after custom fs params (xfs should ignore the custom fs params)</a></li>
+  
+
+</ul>
+
+  
+
+</ul>
+
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.1/">v1.0.1</a></li>
+  
+    <ul>
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.1/besteffort-recurring-job/">BestEffort Recurring Job Cleanup</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.1/change-imagepullpolicy/">Change imagePullPolicy to IfNotPresent Test</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.1/dr-volume-latest-backup-deletion/">DR volume related latest backup deletion test</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.1/nfsv4-enforcement/">NFSv4 Enforcement (No NFSv3 Fallback)</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.1/priorityclass-default-setting/">Priority Class Default Setting</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.1/error-fail-remount/">Return an error when fail to remount a volume</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.1/test-s3-access-style/">Test access style for S3 compatible backupstore</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.1/test-s3-backupstore/">Test S3 backupstore in a cluster sitting behind a Http Proxy</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.1/ui-volume-deletion/">Volume Deletion UI Warnings</a></li>
+  
+
+</ul>
+
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.2/">v1.0.2</a></li>
+  
+    <ul>
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.2/upgrade-lease-lock/">Upgrade Lease Lock</a></li>
+  
+
+</ul>
+
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/">v1.1.0</a></li>
+  
+    <ul>
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/prometheus_support/">Prometheus Support</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/recurring-backup-job-interruptions/">Recurring backup job interruptions</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/reusing-failed-replica-for-rebuilding/">Reusing failed replica for rebuilding</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/kubelet_volume_metrics/">Support Kubelet Volume Metrics</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/additional-printer-columns/">Test Additional Printer Columns</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/instance-manager-ip-sync/">Test Instance Manager IP Sync</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/iscsi_installation/">Test ISCSI Installation on EKS</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/rwx_feature/">Test Read Write Many Feature</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/uninstallation/">Test uninstallation</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/upgrade_with_modified_storageclass/">Upgrade Longhorn with modified Storage Class</a></li>
+  
+
+</ul>
+
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/">v1.1.1</a></li>
+  
+    <ul>
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/csi-sanity-check/">CSI Sanity Check</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/partial-engine-deployment/">Longhorn with engine is not deployed on all the nodes</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/tolerations_priorityclass_setting/">Set Tolerations/PriorityClass For System Components</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/disable_ipv6/">Test Disable IPv6</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/test-file-sync-cancellation/">Test File Sync Cancellation</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/ws-traffic-flood/">Test Frontend Traffic</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/delete-node/">Test Node Delete</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/test-node-selector/">Test Node Selector</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/rwx-mount-ownership-reset/">Test RWX share-mount ownership reset</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/test-service-account-mount/">Test Service Account mount on host</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/snapshot-purge-error-handling/">Test Snapshot Purge Error Handling</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/system-upgrade-with-deprecated-cpu-setting/">Test system upgrade with the deprecated CPU setting</a></li>
+  
+
+</ul>
+
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.2/">v1.1.2</a></li>
+  
+    <ul>
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.2/delete-cronjob-for-detached-volumes/">Test CronJob For Volumes That Are Detached For A Long Time</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.2/full-ws-data-tranfer-when-no-updates/">Test Frontend Web-socket Data Transfer When Resource Not Updated</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.2/instance-manager-streaming-connection-recovery/">Test Instance Manager Streaming Connection Recovery</a></li>
+  
+
+</ul>
+
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.2.0/">v1.2.0</a></li>
+  
+    <ul>
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.2.0/test-backing-image-upload/">Test backing image</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.2.0/backup-creation-with-old-engine-image/">Test Backup Creation With Old Engine Image</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.2.0/test-instance-manager-cleanup-during-uninstall/">Test instance manager cleanup during uninstall</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.2.0/label-driven-recurring-job/">Test Label-driven Recurring Job</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.2.0/test_version_bump/">Test Version Bump of Kubernetes, API version group, CSI component&rsquo;s dependency version</a></li>
+  
+
+</ul>
+
+  
+
+</ul>
+
+  
+
+</ul>
+
+  
+</aside>
+
+<main style="padding: 1%; width: 70%;">
+  <h1 id="title"><ol start="7">
+<li>Node</li>
+</ol>
+</h1>
+  <div>
+    <article id="content">
+       <h2 id="ui-specific-test-cases"><strong>UI specific test cases</strong></h2>
+<table>
+<thead>
+<tr>
+<th><strong>#</strong></th>
+<th><strong>Test Case</strong></th>
+<th><strong>Test Instructions</strong></th>
+<th><strong>Expected Results</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>Storage details</td>
+<td>*   <strong>Prerequisites</strong><br>    *   Longhorn Installed<br>        <br><br>1.  Verify the allocated/used storage show the right data in node details page.<br>2.  Create a volume of 20 GB and attach to a pod and verify the storage allocated/used is shown correctly.</td>
+<td>Without any volume, allocated should be 0 and on creating new volume it should be updated as per volume present.</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Filters applied to node list</td>
+<td>*   <strong>Prerequisites</strong><br>    *   Longhorn Installed<br>        <br><br>1.  In longhorn UI node tab- Change the filter based on name/status etc. Verify the nodes are appearing properly.</td>
+<td>Nodes satisfying filter should only get displayed on page.</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Sort the nodes view</td>
+<td>*   <strong>Prerequisites</strong><br>    *   Longhorn Installed<br>        <br><br>1.  In longhorn UI node tab- Click title to sort the nodes appearing based on status/name etc</td>
+<td>Nodes list should get sorted ascending/descending based on status/name stc</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Expand All</td>
+<td>*   <strong>Prerequisites</strong><br>    *   Longhorn Installed<br>        <br><br>1.  In longhorn UI node tab- Click ‘expand all’ button.</td>
+<td>All nodes should get expanded and show disks details</td>
+</tr>
+</tbody>
+</table>
+<h2 id="additional-tests-for-ui">Additional Tests for UI</h2>
+<table>
+<thead>
+<tr>
+<th><strong>#</strong></th>
+<th><strong>Scenario</strong></th>
+<th><strong>Steps</strong></th>
+<th><strong>Expected Results</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>Readiness column</td>
+<td>1.  Click On a node’s readiness state say “Ready”<br>2.  Verify components window opens<br>3.  Verify Engine image and instance manager details are seen</td>
+<td>Components window should open with details of Engine image and instance manager</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Replicas column</td>
+<td>1.  Click on the count (number of replicas) for a node in the replica column<br>2.  Verify the list of replicas on the node is available<br>3.  Verify user is able to delete a replica on the node by selecting the replica and clicking on delete<br>4.  Verify the replica is deleted by navigating to the specific Volume → Volume details page → replicas</td>
+<td>*   User should be able to view all the replicas on the node<br>*   User should be able to delete replica on the node<br>*   User should be able to see the replica deleted in the volume → Volume details page → replicas page</td>
+</tr>
+</tbody>
+</table>
+<h2 id="automation-tests">Automation Tests</h2>
+<table>
+<thead>
+<tr>
+<th><strong>#</strong></th>
+<th><strong>Test name</strong></th>
+<th><strong>Description</strong></th>
+<th><strong>Tags</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>test_hosts</td>
+<td>Check node name and IP</td>
+<td>Node</td>
+</tr>
+<tr>
+<td>2</td>
+<td>test_offline_node</td>
+<td>Test offline node<br><br>1.  Bring down one of the nodes in Kuberntes cluster (avoid current node)<br>2.  Make sure the Longhorn node state become <code>down</code></td>
+<td>Node</td>
+</tr>
+<tr>
+<td>3</td>
+<td>test_node_controller_sync_disk_state</td>
+<td>Test node controller to sync disk state<br><br>1.  Set setting <code>StorageMinimalAvailablePercentage</code> to 100<br>2.  All the disks will become <code>unschedulable</code>.<br>3.  Restore setting <code>StorageMinimalAvailablePercentage</code> to previous<br>4.  All the disks will become <code>schedulable</code>.</td>
+<td>Node</td>
+</tr>
+<tr>
+<td>4</td>
+<td>test_node_controller_sync_storage_available</td>
+<td>Test node controller sync storage available correctly<br><br>1.  Create a host disk <code>test_disk</code> on the current node<br>2.  Write 1MiB data to the disk, and run <code>sync</code><br>3.  Verify the disk <code>storageAvailable</code> will update to include the file</td>
+<td>Node</td>
+</tr>
+<tr>
+<td>5</td>
+<td>test_node_controller_sync_storage_scheduled</td>
+<td>Test node controller sync storage scheduled correctly<br><br>1.  Wait until no disk has anything scheduled<br>2.  Create a volume with &ldquo;number of nodes&rdquo; replicas<br>3.  Confirm that each disks now has &ldquo;volume size&rdquo; scheduled<br>4.  Confirm every disks are still schedulable.</td>
+<td>Node</td>
+</tr>
+<tr>
+<td>6</td>
+<td>test_node_disk_update</td>
+<td>Test update node disks<br><br>The test will use Longhorn to create disks on the node.<br><br>1.  Get the current node<br>2.  Try to delete all the disks. It should fail due to scheduling is enabled<br>3.  Create two disks <code>disk1</code> and <code>disk2</code>, attach them to the current node.<br>4.  Add two disks to the current node.<br>5.  Verify two extra disks have been added to the node<br>6.  Disbale the two disks' scheduling, and set StorageReserved<br>7.  Update the two disks.<br>8.  Validate all the disks properties.<br>9.  Delete other two disks. Validate deletion works</td>
+<td>Node</td>
+</tr>
+<tr>
+<td>7</td>
+<td>test_node_umount_disk</td>
+<td>[Node] Test umount and delete the extra disk on the node<br><br>1.  Create host disk and attach it to the current node<br>2.  Disable the existing disk&rsquo;s scheduling on the current node<br>3.  Add the disk to the current node<br>4.  Wait for node to recongize the disk<br>5.  Create a volume with &ldquo;number of nodes&rdquo; replicas<br>6.  Umount the disk from the host<br>7.  Verify the disk <code>READY</code> condition become false.<br>    1.  Maximum and available storage become zero.<br>        <br>    2.  No change to storage scheduled and storage reserved.<br>        <br>8.  Try to delete the extra disk, it should fail due to need to disable scheduling first<br>9.  Update the other disk on the node to be allow scheduling. Disable the scheduling for the extra disk<br>10.  Mount the disk back<br>11.  Verify the disk <code>READY</code> condition become true, and other states<br>12.  Umount and delete the disk.</td>
+<td>Node</td>
+</tr>
+<tr>
+<td>8</td>
+<td>test_update_node</td>
+<td>Test update node scheduling<br><br>1.  Get list of nodes<br>2.  Update scheduling to false for current node<br>3.  Read back to verify<br>4.  Update scheduling to true for current node<br>5.  Read back to verify</td>
+<td>Node</td>
+</tr>
+<tr>
+<td>9</td>
+<td>test_invalid_node_annotations</td>
+<td>Test invalid node annotations for default disks/node configuration<br><br>Case1: The invalid disk annotation shouldn&rsquo;t intervene the node controller.<br><br>1.  Set invalid disk annotation<br>2.  The node tag or disks won&rsquo;t be updated<br>3.  Create a new disk. It will be updated by the node controller.<br><br>Case2: The existing node disks keep unchanged even if the annotation is corrected.<br><br>1.  Set valid disk annotation but set <code>allowScheduling</code> to false, etc.<br>2.  Make sure the current disk won&rsquo;t change<br><br>Case3: the correct annotation should be applied after cleaning up all disks<br><br>1.  Delete all the disks on the node<br>2.  Wait for the config from disk annotation applied<br><br>Case4: The invalid tag annotation shouldn&rsquo;t intervene the node controller.<br><br>1.  Cleanup the node annotation and remove the node disks/tags<br>2.  Set invalid tag annotation<br>3.  Disk and tags configuration will not be applied<br>4.  Disk and tags can still be updated on the node<br><br>Case5: The existing node keep unchanged even if the tag annotation is fixed up.<br><br>1.  With existing tags, change tag annotation.<br>2.  It won&rsquo;t change the current node&rsquo;s tag<br><br>Case6: Clean up all node tags then the correct annotation should be applied<br><br>1.  Clean the current tags<br>2.  New tags from node annotation should be applied</td>
+<td>Node: Default Disks and Node Configuration</td>
+</tr>
+<tr>
+<td>10</td>
+<td>test_no_node_annotation</td>
+<td>Test node labeled for configuration but no annotation<br><br>1.  Set setting <code>create default disk labeled nodes</code> to true<br>2.  Set the config label on node 0 but leave annotation empty<br>3.  Verify disk update works.<br>4.  Verify tag update works<br>5.  Verify using tag annotation for configuration works.<br>6.  After remove the tag annotaion, verify unset tag node works fine.<br>7.  Set tag annotation again. Verify node updated for the tag.</td>
+<td>Node: Default Disks and Node Configuration</td>
+</tr>
+<tr>
+<td>11</td>
+<td>test_node_config_annotations</td>
+<td>Test node feature: default disks/node configuration<br><br>1.  Set node 0 label and annotation.<br>2.  Set node 1 label but with invalid annotation (invalid path and tag)<br>3.  Cleanup disks on node 0 and 1.<br>    1.  The initial default disk will not be recreated.<br>        <br>4.  Enable setting <code>create default disk labeled nodes</code><br>5.  Wait for node tag to update on node 0.<br>6.  Verify node 0 has correct disk and tags set.<br>7.  Verify node 1 has no disk or tag.<br>8.  Update node 1&rsquo;s label and tag to be valid<br>9.  Verify now node 1 has correct disk and tags set</td>
+<td>Node: Default Disks and Node Configuration</td>
+</tr>
+<tr>
+<td>12</td>
+<td>test_node_default_disk_labeled</td>
+<td>Test node feature: create default Disk according to the node label<br><br>Makes sure the created Disk matches the Default Data Path Setting.<br><br>1.  Add labels to node 0 and 1, don&rsquo;t add label to node 2.<br>2.  Remove all the disks on node 1 and 2.<br>    1.  The initial default disk will not be recreated.<br>        <br>3.  Set setting <code>default disk path</code> to a random disk path.<br>4.  Set setting <code>create default disk labeled node</code> to true.<br>5.  Check node 0. It should still use the previous default disk path.<br>    1.  Due to we didn&rsquo;t remove the disk from node 0.<br>        <br>6.  Check node 1. A new disk should be created at the random disk path.<br>7.  Check node 2. There is still no disks</td>
+<td>Node: Default Disks and Node Configuration</td>
+</tr>
+</tbody>
+</table>
+<h2 id="test-cases">Test cases</h2>
+<table>
+<thead>
+<tr>
+<th></th>
+<th><strong>Test Case</strong></th>
+<th><strong>Test Instructions</strong></th>
+<th><strong>Expected Results</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>Node scheduling</td>
+<td>*   <strong>Prerequisites:</strong><br>    *   Longhorn Deployed with 3 nodes<br>        <br><br>1.  Disable Node Scheduling on a node<br>2.  Create a volume with 3 replicas, and attach it to a node<br>3.  Re-enabled node scheduling on the node</td>
+<td>*   Volume should be created and attached<br>*   Volume replicas should be scheduled to Schedulable nodes only<br>*   Re-enabling node scheduling will not affect existing scheduled replicas, it will only affect new replicas being created, or rebuilt.</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Disk Scheduling</td>
+<td>*   <strong>Prerequisites:</strong><br>    *   Longhorn Deployed with 3 nodes<br>        <br>    *   Add additional disk (Disk#1) ,attach it and mounted to Node-01.<br>        <br><br>1.  Create a New Disk, Keep Disk Scheduling disabled<br>2.  Create a volume (vol#1), set replica count to <code>4</code> and attach it to a node<br>3.  Check (vol#1) replica paths<br>4.  Enable Scheduling on (disk#1)<br>5.  Create a volume (vol#2), set replica count to <code>4</code> and attach it to a node<br>6.  Check (vol#2) replica paths</td>
+<td>*   (vol#1) replicas should be scheduled only to Disks withe Scheduling enabled, no replicas should be scheduled to (disk#1)<br>*   One of (vol#2) replica paths will be scheduled to (disk#1)</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Volume Created with Node Tags</td>
+<td>*   <strong>Prerequisites:</strong><br>    *   Longhorn Deployed with 3 nodes<br>        <br><br>1.  Create Node tags as follows:<br>    1.  Node-01: fast<br>        <br>    2.  Node-02: slow<br>        <br>    3.  Node-02: fast<br>        <br>2.  Create a volume (vol#1), set Node tags to slow<br>3.  Create a volume (vol#2), set Node tags to fast<br>4.  Check Volumes replicas paths<br>5.  Check Volume detail <code>Node Tags</code></td>
+<td>*   vol#1 replicas should only be scheduled to Node-02<br>*   vol#2 replicas should only be scheduled to Node-01 and Node-03<br>*   Node Tag volume detail should contain Node tag specified in volume creation request.</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Volumes created with Disk Tags</td>
+<td>*   <strong>Prerequisites:</strong><br>    *   Longhorn Deployed with 3 nodes, with default disks (disk#01-1, disk#02-1, disk#03-1)<br>        <br>    *   <code>disk#0X-Y</code> indicate that disk is attached to <code>Node-0X</code> , and it is disk number <code>Y</code> on that node.<br>        <br>*   Create 3 additional disks (disk#01-2, disk#02-2, disk#03-2), attach each one to a different node, and mount it to a directory on that node.<br><br>1.  Create Disk tags as follows:<br>    1.  disk#01-1: fast<br>        <br>    2.  disk#01-2: fast<br>        <br>    3.  disk#02-1: slow<br>        <br>    4.  disk#02-2: slow<br>        <br>    5.  disk#03-1: fast<br>        <br>    6.  disk#01-2: fast<br>        <br>2.  Create a volume (vol#1), set Disk tags to slow<br>3.  Create a volume (vol#2), set Disk tags to fast<br>4.  Check Volumes replicas paths<br>5.  Check Volume detail <code>Disk Tags</code></td>
+<td>*   vol#1 replicas should only be scheduled to disks have slow tag (disk#02-1 and disk#02-2)<br>*   vol#2 replicas should can be scheduled to disks have fast Tag  <br>    (disk#01-1, disk#01-2, disk#03-1, disk#03-2)<br>*   Disk Tag volume detail should contain Disk tag specified in volume creation request.</td>
+</tr>
+<tr>
+<td>5</td>
+<td>Volumes created with both DIsk and Node Tags</td>
+<td>*   Create a volume, set Disk and node tags, and attach it to a node</td>
+<td>*   Volume replicas should be scheduled only to node that have Node tags, and only on disks that have Disk tags specified on volume creation request<br>*   If No Node match both Node and Disk tags, volume replicas will not be created.</td>
+</tr>
+<tr>
+<td>6</td>
+<td>Remove Disk From Node</td>
+<td>*   <strong>Prerequisites:</strong><br>    *   Longhorn Deployed with 3 nodes<br>        <br>    *   Add additional disk (Disk#1) ,attach it and mounted to Node-01.<br>        <br>    *   Some replicas should be scheduled to Disk#1<br>        <br><br>1.  Disable Scheduling on disk#1<br>2.  Delete all replicas scheduled to disk#1, replicas should start to rebuild on other disks<br>3.  Delete disk from node</td>
+<td>*   Stopping Disk scheduling will prevent replicas to be scheduled on it<br>*   Disk can’t be deleted if at least one replicas is still scheduled to it.<br>*   Disk can be delete only after all replica have been rescheduled to other disks.</td>
+</tr>
+<tr>
+<td>7</td>
+<td>Power off a node</td>
+<td>1.  Power off a node</td>
+<td>*   Node should report down on Node page</td>
+</tr>
+<tr>
+<td>8</td>
+<td>Delete Longhorn Node</td>
+<td>1.  Disable Scheduling on the node<br>2.  Delete all replicas on the node to be rescheduled to another nodes<br>3.  Detach all volume attached to the node, re-attach them on other nodes<br>4.  Delete Node from Kubernetes<br>5.  Delete Node From Longhorn</td>
+<td>*   Node can’t be deleted if Node Scheduling is enabled on that node<br>*   Node can’t be deleted unless it all replicas are deleted from that node<br>*   Node can’t be deleted unless it all attached volumes get detached from that node<br>*   Node can’t be deleted unless it has been deleted from Kubernetes first<br>*   After node is deleted from Kubernetes, node should report down on Longhorn<br>*   Node should be deleted from Longhorn</td>
+</tr>
+<tr>
+<td>9</td>
+<td>Default Disk on Labeled Nodes</td>
+<td>*   <strong>Prerequisites:</strong><br>    *   Create 3 node k8s cluster<br>        <br>    *   Create <code>/home/longhorn</code> directory on all 3 nodes<br>        <br>    *   Add new disk to each node, format it with <code>ext4</code>, and mount it to <code>/mnt/disk</code><br>        <br>*   Use the following label and annotations for nodes<br><br>Node-01 &amp; Node-03<br><br><code>labels:</code><br><br><code>node.longhorn.io/create-``default``-disk:</code> <code>&quot;config&quot;</code><br><br><code>annotations:</code><br><br><code>node.longhorn.io/``default``-disks-config:</code><br><br><code>'[{``&quot;path&quot;``:``&quot;/home/longhorn&quot;``,``&quot;allowScheduling&quot;``:``true``,</code> <code>&quot;tags&quot;``:[``&quot;ssd&quot;``,</code> <code>&quot;fast&quot;``]},</code><br><br><code>{``&quot;path&quot;``:``&quot;/mnt/disk&quot;``,``&quot;allowScheduling&quot;``:``true``,``&quot;storageReserved&quot;``:``1024``,``&quot;tags&quot;``:[``&quot;ssd&quot;``,``&quot;fast&quot;``]}]'</code><br><br><code>node.longhorn.io/``default``-node-tags:</code> <code>'[&quot;fast&quot;, &quot;storage&quot;]'</code><br><br>Node-02<br><br> <code>labels:</code><br><br><code>node.longhorn.io/create-``default``-disk:</code> <code>&quot;config&quot;</code><br><br><code>annotations:</code><br><br><code>node.longhorn.io/``default``-disks-config:</code><br><br><code>'[{``&quot;path&quot;``:``&quot;/home/longhorn&quot;``,``&quot;allowScheduling&quot;``:``true``,</code> <code>&quot;tags&quot;``:[``&quot;hdd&quot;``,</code> <code>&quot;slow&quot;``]},</code><br><br><code>{``&quot;path&quot;``:``&quot;/mnt/disk&quot;``,``&quot;allowScheduling&quot;``:``true``,``&quot;storageReserved&quot;``:``1024``,``&quot;tags&quot;``:[``&quot;hdd&quot;``,``&quot;slow&quot;``]}]'</code><br><br><code>node.longhorn.io/``default``-node-tags:</code> <code>'[&quot;slow&quot;, &quot;storage&quot;]'</code> <br><br>1.  Set <code>create-default-disk-labeled-nodes: True</code> in <code>longhorn-default-setting</code> config map<br>2.  Deploy Longhorn</td>
+<td>*   Longhorn Should be deployed successfully<br>*   Node-01 &amp; Node-03<br>    *   should be tagged with <code>fast</code> and <code>storage</code> tags<br>        <br>    *   Disk scheduling should be allowed on both disks<br>        <br>    *   Disks should be tagged with <code>ssd</code> and <code>fast</code> tags<br>        <br>    *   1024 MB is reserved storage on <code>/mnt/disk</code><br>        <br>*   Node-02<br>    *   should be tagged with <code>Slow</code> and <code>storage</code> tags<br>        <br>    *   should be tagged with <code>slow</code> and <code>storage</code> tags<br>        <br>    *   Disk scheduling should be allowed on both disks<br>        <br>    *   Disks should be tagged with <code>hdd</code> and <code>slow</code> tags<br>        <br>    *   1024 MB is reserved storage on <code>/mnt/disk</code></td>
+</tr>
+<tr>
+<td>10</td>
+<td>Default Data Path</td>
+<td><strong>Prerequisites:</strong><br><br>*   Create 3 node k8s cluster<br>*   Create <code>/home/longhorn</code> directory on all 3 nodes<br><br>  <br><br>1.  Set <code>defaultDataPath</code> to <code>/home/longhorn/</code> in <code>longhorn-default-setting</code> ConfigMap<br>2.  Deploy Longhorn<br>3.  Create a volume, attach it to a node</td>
+<td>*   In Longhorn Setting, <code>Default Data Path</code> should be <code>/home/longhorn</code><br>*   All volumes replicas paths should begin with <code>/home/longhorn</code> prefix</td>
+</tr>
+<tr>
+<td>11</td>
+<td>Update Taint Toleration Setting</td>
+<td><strong>Prerequisites</strong><br><br>*   All Longhorn volumes should be detached then Longhorn components will be restarted to apply new tolerations.<br>*   Notice that &ldquo;<a href="http://kubernetes.io">kubernetes.io</a>&rdquo; is used as the key of all Kubernetes default tolerations, please do not contain this substring in your toleration setting.<br>*   In Longhorn taint tolerations are column separated<br><br>1.  Using Kubernetes, taint **Some** nodes  <br>    For example, <code>key1=value1:NoSchedule</code> <code>key2=value2:NoExecute</code><br>2.  Update Taint Toleration Setting with <code>key1=value1:NoSchedule;key2:NoExecute</code></td>
+<td>*   Longhorn Components will be restarted<br>*   Longhorn Components should be rescheduled to tainted nodes nodes only.</td>
+</tr>
+<tr>
+<td>12</td>
+<td>Default Taint Toleration Setting</td>
+<td><strong>Prerequisites</strong><br><br>*   Create 3 node k8s cluster<br>*   Using Kubernetes, taint **Some** nodes  <br>    For example, <code>key1=value1:NoSchedule</code> <code>key2=value2:NoExecute</code><br><br>1.  Set <code>taint-toleration</code> to <code>key1=value1:NoSchedule;key2:NoExecute</code> in <code>longhorn-default-setting</code> ConfigMap<br>2.  Deploy Longhorn</td>
+<td>*   Longhorn components should be only deployed to tainted nodes</td>
+</tr>
+<tr>
+<td>13</td>
+<td>Node Readiness</td>
+<td>*   Delete the following Longhorn components pods<br>    *   Engine image<br>        <br>    *   Instance Manager (engine)<br>        <br>    *   Instance Manager (replica)</td>
+<td>*   Deleting any components should be reflected on node Readiness<br>*   Deleted component must be redeployed</td>
+</tr>
+<tr>
+<td>14</td>
+<td>Storage Minimal Available Percentage Setting</td>
+<td>*   <strong>Prerequisites</strong><br>    *   Longhorn Installed<br>        <br><br>1.  Change Storage Minimal Available Percentage to <code>50%</code><br>2.  Fill up node disk up to 55% of it’s capacity</td>
+<td>*   Storage Minimal Available Percentage <strong>default value</strong> is <code>25%</code><br>*   Filled Disk Should be <code>Unschedulable</code><br>*   If Node has only one disk, Node also should be <code>Unschedulable</code></td>
+</tr>
+<tr>
+<td>15</td>
+<td>Storage Over Provisioning Percentage</td>
+<td>*   <strong>Prerequisites</strong><br>    *   Longhorn Installed<br>        <br>    *   Assume Nodes has disks with 100GB size<br>        <br><br>1.  Change <code>Storage Over Provisioning Percentage</code> to <code>300</code><br>2.  Check Node Disks available size for allocation</td>
+<td>*   Storage Over Provisioning Percentage default value is <code>200</code><br>*   Disk storage that can be allocated relative to the hard drive&rsquo;s capacity should be 3x disk size == <code>300 GB</code></td>
+</tr>
+</tbody>
+</table>
+<h2 id="additional-tests">Additional Tests</h2>
+<table>
+<thead>
+<tr>
+<th><strong>#</strong></th>
+<th><strong>Scenario</strong></th>
+<th><strong>Steps</strong></th>
+<th><strong>Expected Results</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>Create Default Disk on Labeled Nodes - True</td>
+<td>1.  In Longhorn Setting - set Create Default Disk on Labeled Nodes - True<br>2.  Scale up the number of worker nodes in Rancher<br>3.  The node is displayed in Longhorn UI when it comes up “Active” in rancher.<br>4.  Verify the node’s status is “Disabled”<br>5.  Verify the default disk is NOT created in → Node → Edit Node and Disk<br>6.  Add label <code>node.longhorn.io/create-default-disk=true</code> on the node<br>7.  Verify the node is seen as “Schedulable” on longhorn UI. Verify Node → Edit Node and Disk, the default disk is created<br>8.  Add a node tag to this node n1<br>9.  Create a volume - volume-1, add node tag n1<br>10.  Attach it to the same node<br>11.  Verify the replica is running successfully.</td>
+<td>1.  Create Default Disk on Labeled Nodes should be set to True<br>2.  When a new node is added, the node should show up as disabled on Longhorn UI<br>3.  The node should NOT have any default disk<br>4.  Label should be added on the node.<br>5.  The node status changes to “Schedulable” and default disk is created on the node.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="nodedisk-eviction-test-cases">Node/Disk Eviction Test cases</h2>
+<table>
+<thead>
+<tr>
+<th><strong>#</strong></th>
+<th><strong>Scenario</strong></th>
+<th><strong>Test Steps</strong></th>
+<th><strong>Expected Results</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>Attached volume replica evict from node</td>
+<td><strong>Pre-requisite:</strong><br>1.  Longhorn installed in set up of 3 worker nodes and 1 etc/control plane<br><br><strong>Test Steps:</strong><br>1.  Create a volume (3 replicas), attach it to a pod.<br>2.  Write data to it and compute md5sum.<br>3.  Enable soft anti-affinity to True.<br>4.  Evict replicas from one node<br>5.  Verify the data after the replica is evited.</td>
+<td>1.  A replica should be rebuilt in any other node except the evicted node.<br>2.  The replica from the evicted node should be removed.<br>3.  Data should be intact.</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Interrupt the rebuild after the eviction of replica from node</td>
+<td><strong>Pre-requisite:</strong><br>1.  Longhorn installed in set up of 3 worker nodes and 1 etc/control plane<br><br><strong>Test Steps:</strong><br>1.  Create a volume (3 replicas), attach it to a pod.<br>2.  Write data to it and compute md5sum.<br>3.  Enable soft anti-affinity to True.<br>4.  Evict replicas from one node<br>5.  When the replica is rebuilding, delete it.</td>
+<td>1.  A replica should be rebuilt in any other node except the evicted node.<br>2.  On the deletion of the replica, the system should start to rebuild a new replica.<br>3.  The replica from the evicted node will be removed.<br>4.  Data should be intact.</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Node evicted while restore rebuilding is in progress</td>
+<td><strong>Pre-requisite:</strong><br>1.  Longhorn installed in set up of 3 worker nodes and 1 etc/control plane<br><br><strong>Test Steps:</strong><br>1.  Restore a volume (3 replicas).<br>2.  While it is restoring, evict replicas from one node.<br>3.  When the replica is rebuilding, delete it.<br>1.  The rebuilding replica should be completed and then a new replica should get created on another node.<br>2.  The replica from the evicted node should be removed.<br>3.  Data should be intact.</td>
+<td></td>
+</tr>
+<tr>
+<td>4</td>
+<td>Evict node with multiple replicas of the same volume</td>
+<td><strong>Pre-requisite:</strong><br>1.  Longhorn installed in set up of 3 worker nodes and 1 etc/control plane<br><br><strong>Test Steps:</strong><br>1.  Enable soft anti-affinity to True.<br>2.  Create a volume (3 replicas) and make sure two replicas exist on the same node.<br>3.  Write data to it and compute md5sum.<br>4.  Evict replicas from the node where the two replicas exist.<br>5.  Verify the data after the replicas are evicted.</td>
+<td>1.  Two replicas should be rebuilt in any other node except the evicted node.<br>2.  The replica from the evicted node should be removed.<br>3.  Data should be intact</td>
+</tr>
+<tr>
+<td>5</td>
+<td>Evict node with soft anti-affinity as false</td>
+<td><strong>Pre-requisite:</strong><br>1.  Longhorn installed in set up of 3 worker nodes and 1 etc/control plane<br><br><strong>Test Steps:</strong><br>1.  Create a volume (3 replicas), attach it to a pod.<br>2.  Write data to it and compute md5sum.<br>3.  Evict replicas from one node<br>4.  Verify the data after the replica is evited.</td>
+<td>1.  Eviction should stuck.<br>2.  Volume scheduling should fail.<br>3.  There should be logs like <pre><code>[longhorn-manager-dkn9c] time=``&quot;2020-09-09T00:23:56Z&quot;</code> <code>level=debug msg=``&quot;Creating one more replica for eviction&quot;</code><br><code>[longhorn-manager-dkn9c] time=``&quot;2020-09-09T00:23:56Z&quot;</code> <code>level=error msg=``&quot;There's no available disk for replica vol-1-r-6268393a, size 2147483648&quot;</code><br><code>[longhorn-manager-dkn9c] time=``&quot;2020-09-09T00:23:56Z&quot;</code> <code>level=error msg=``&quot;unable to schedule replica vol-1-r-6268393a of volume vol-1&quot;</code></pre></td>
+</tr>
+<tr>
+<td>6</td>
+<td>Add node after evicting node with soft anti-affinity as false</td>
+<td><strong>Pre-requisite:</strong><br>1.  Longhorn installed in set up of 3 worker nodes and 1 etc/control plane<br><br><strong>Test Steps:</strong><br>1.  Create a volume (3 replicas), attach it to a pod.<br>2.  Write data to it and compute md5sum.<br>3.  Evict replicas from one node<br>4.  Add a worker node to the cluster.</td>
+<td>1.  Eviction should stuck but recover after the additional node is available for scheduling.<br>2.  Volume scheduling should fail initially but should be successful once the additional node is available.</td>
+</tr>
+<tr>
+<td>7</td>
+<td>Multi operation</td>
+<td><strong>Pre-requisite:</strong><br>1.  Longhorn installed in set up of 3 worker nodes and 1 etc/control plane<br><br><strong>Test Steps:</strong><br><br>1.  Create a volume (3 replicas), attach it to a pod.<br>2.  Write data to it and compute md5sum.<br>3.  Enable soft anti-affinity to True.<br>4.  Select two nodes and evict replicas from them.</td>
+<td>1.  Replica eviction should happen one by one from nodes</td>
+</tr>
+<tr>
+<td>8</td>
+<td>Replica eviction from disk with soft anti-affinity as True.</td>
+<td><strong>Pre-requisite:</strong><br><br>1.  Longhorn installed in set up of 3 worker nodes and 1 etc/control plane<br><br><strong>Test Steps:</strong><br><br>1.  Add an additional disk to a node.<br>2.  Create a volume (3 replicas), attach it to a pod.<br>3.  Write data to it and compute md5sum.<br>4.  Enable soft anti-affinity to True.<br>5.  Evict from the additional disk.</td>
+<td>1.  A replica should be rebuilt in any other node except the evicted node.<br>2.  The replica from the evicted node should be removed.<br>3.  Data should be intact</td>
+</tr>
+<tr>
+<td>9</td>
+<td>Replica eviction from disk with soft anti-affinity as False.</td>
+<td><strong>Pre-requisite:</strong><br><br>1.  Longhorn installed in set up of 3 worker nodes and 1 etc/control plane<br><br><strong>Test Steps:</strong><br><br>1.  Add an additional disk to a node.<br>2.  Create a volume (3 replicas), attach it to a pod.<br>3.  Write data to it and compute md5sum.<br>4.  Enable soft anti-affinity to True.<br>5.  Evict from the additional disk.</td>
+<td>1.  A replica should be rebuilt in another disk on the same node.<br>2.  The replica from the evicted node should be removed.<br>3.  Data should be intact</td>
+</tr>
+<tr>
+<td>10</td>
+<td>Interrupt eviction</td>
+<td><strong>Pre-requisite:</strong><br><br>1.  Longhorn installed in set up of 3 worker nodes and 1 etc/control plane<br><br><strong>Test Steps:</strong><br><br>1.  Create a volume (3 replicas), attach it to a pod.<br>2.  Write data to it and compute md5sum.<br>3.  Enable soft anti-affinity to True.<br>4.  Evict replicas from one node<br>5.  Stop eviction.</td>
+<td>1.  The replicas should evict one by one and once the eviction</td>
+</tr>
+<tr>
+<td>11</td>
+<td>Evict replica of volume with DR volume</td>
+<td><strong>Pre-requisite:</strong><br><br>1.  Longhorn installed in set up of 3 worker nodes and 1 etc/control plane<br><br><strong>Test Steps:</strong><br><br>1.  Create a DR volume (3 replicas)<br>2.  Write data to it and compute md5sum.<br>3.  Enable soft anti-affinity to True.<br>4.  Evict replicas from one node<br>5.  Verify the data after the replica is evited.</td>
+<td>1.  A replica should be rebuilt in any other node except the evicted node.<br>2.  The replica from the evicted node should be removed.<br>3.  Data should be intact.</td>
+</tr>
+<tr>
+<td>12</td>
+<td>Evict replica of volume with the restored volume</td>
+<td><strong>Pre-requisite:</strong><br><br>1.  Longhorn installed in set up of 3 worker nodes and 1 etc/control plane<br><br><strong>Test Steps:</strong><br><br>1.  Restore a volume (3 replicas) from backup, attach it to a pod.<br>2.  Enable soft anti-affinity to True.<br>3.  Evict replicas from one node<br>4.  Verify the data after the replica is evited.</td>
+<td>1.  A replica should be rebuilt in any other node except the evicted node.<br>2.  The replica from the evicted node should be removed.<br>3.  Data should be intact.</td>
+</tr>
+<tr>
+<td>13</td>
+<td>Evict replica of volume with the detached volume</td>
+<td><strong>Pre-requisite:</strong><br><br>1.  Longhorn installed in set up of 3 worker nodes and 1 etc/control plane<br><br><strong>Test Steps:</strong><br><br>1.  Restore a volume (3 replicas) from backup.<br>2.  Write data to it and compute md5sum.<br>3.  Enable soft anti-affinity to True.<br>4.  Evict replicas from one node<br>5.  Verify the data after the replica is evited.</td>
+<td>1.  The volume should get attached to a node.<br>2.  A replica should be rebuilt in any other node except the evicted node.<br>3.  The replica from the evicted node should be removed.<br>4.  The volume should get detached.<br>5.  Data should be intact.</td>
+</tr>
+<tr>
+<td>14</td>
+<td>On upgraded setup</td>
+<td><strong>Pre-requisite:</strong><br><br>1.  Longhorn v1.0.2 installed in set up of 4 worker nodes and 1 etc/control plane<br>2.  Create a volume, restored volume and DR volume<br><br><strong>Test Steps:</strong><br><br>1.  Upgrade the longhorn to master.<br>2.  Create a volume and attach it to a pod.<br>3.  Write data to it and compute md5sum.<br>4.  Evict replicas from one node<br>5.  Verify the data after the replica is evited.</td>
+<td>1.  The replicas of volumes with v1.0.2 engine should also get evicted except the DR volume.</td>
+</tr>
+</tbody>
+</table>
+
+    </article>
+  </div>
+</main>
+
+    
+    
+  </body>
+</html>

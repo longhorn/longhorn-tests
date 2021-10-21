@@ -2,6 +2,24 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
   xmlns:xhtml="http://www.w3.org/1999/xhtml">
   <url>
+    <loc>https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/deployment/</loc>
+  </url><url>
+    <loc>https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/ui/</loc>
+  </url><url>
+    <loc>https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/volume/</loc>
+  </url><url>
+    <loc>https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/high-availability/</loc>
+  </url><url>
+    <loc>https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/kubernetes/</loc>
+  </url><url>
+    <loc>https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/backup/</loc>
+  </url><url>
+    <loc>https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/node/</loc>
+  </url><url>
+    <loc>https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/scheduling/</loc>
+  </url><url>
+    <loc>https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/upgrade/</loc>
+  </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/dr-volume-live-upgrade-and-rebuild/</loc>
   </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/concurrent-backup-creation-deletion/</loc>
@@ -52,6 +70,8 @@
   </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.1/dr-volume-latest-backup-deletion/</loc>
   </url><url>
+    <loc>https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/</loc>
+  </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/environment/</loc>
   </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/ha/</loc>
@@ -73,6 +93,8 @@
     <loc>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/partial-engine-deployment/</loc>
   </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/</loc>
+  </url><url>
+    <loc>https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/monitoring/</loc>
   </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.0/new-node-custom-data-directory/</loc>
   </url><url>

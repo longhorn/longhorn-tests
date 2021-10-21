@@ -1,0 +1,735 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>
+      Longhorn Manual Test Cases
+    </title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/4.0.0/github-markdown.min.css">
+  </head>
+  <body class="markdown-body" style="display: flex; padding: 1%;">
+    
+<aside style="width: 30%; padding: 1%; border-right: 1px solid lightgray;">
+  <a href="https://longhorn.github.io/longhorn-tests/manual"><h2>Manual Test Cases</h2></a>
+  
+  <ul>
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/">End-to-end test cases</a></li>
+  
+    <ul>
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/deployment/"> Deployment of Longhorn  </a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/ui/">UI  </a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/volume/">Volume  </a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/high-availability/">High Availability  </a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/kubernetes/">Kubernetes  </a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/backup/">Backup  </a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/node/">Node  </a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/scheduling/">Scheduling  </a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/upgrade/">Upgrade  </a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/monitoring/">Monitoring</a></li>
+  
+
+</ul>
+
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/">Pre-release tests</a></li>
+  
+    <ul>
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/air-gap/">Air Gap</a></li>
+  
+    <ul>
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/air-gap/air-gap-installation/">Air gap installation</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/air-gap/air-gap-instance-manager-name/">Air gap installation with an instance-manager-image name longer than 63 characters</a></li>
+  
+
+</ul>
+
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/">Backup &amp; Restore tests</a></li>
+  
+    <ul>
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/dr-volume-live-upgrade-and-rebuild/">#1279 DR volume live upgrade and rebuild</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/concurrent-backup-creation-deletion/">#1326 concurrent backup creation &amp; deletion</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/concurrent-backup/">#1341 concurrent backup test</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/restore-volume-node-down/">#1355 The node the restore volume attached to is down</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/dr-volume-node-rebooted/">#1366 &amp;&amp; #1328 The node the DR volume attached to is rebooted</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/google-cloud-s3-interop-backups/">#1404 test backup functionality on google cloud and other s3 interop providers.</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/backup-block-deletion/">#1431 backup block deletion test</a></li>
+  
+
+</ul>
+
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/basic-operations-parallelism/">Basic operations parallelism</a></li>
+  
+    <ul>
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/basic-operations-parallelism/snapshot-while-writing-data/">Snapshot while writing data in the volume</a></li>
+  
+
+</ul>
+
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/cluster-restore/">Cluster Restore</a></li>
+  
+    <ul>
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/cluster-restore/system-upgrade-with-restore/">Longhorn system upgrade with restore</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/cluster-restore/node-creation-deletion-with-restore/">Node creation and deletion with restore</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/cluster-restore/recover-volumes-after-restore/">Recover Longhorn volumes after Rancher cluster restore</a></li>
+  
+
+</ul>
+
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/environment/">Environment</a></li>
+  
+    <ul>
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/environment/cluster-using-customized-kubelet-root-directory/">Cluster using customize kubelet root directory</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/environment/k3s-selinux-compatibility/">Compatibility with k3s and SELinux</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/environment/rke2-cis-1.5-profile/">Test Longhorn Deployment on RKE2 with CIS-1.5 profile</a></li>
+  
+
+</ul>
+
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/ha/">HA</a></li>
+  
+    <ul>
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/ha/backing-image-error-reporting-and-retry/">Backing Image Error Reporting and Retry</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/ha/disk-migration-in-aws-asg/">Disk migration in AWS ASG</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/ha/partial-engine-deployment/">Longhorn with engine is not deployed on all the nodes</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/ha/replica-rebuilding/">Replica Rebuilding</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/ha/single-replica-node-down/">Single replica node down</a></li>
+  
+
+</ul>
+
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node/">Node</a></li>
+  
+    <ul>
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node/backing-image-on-a-down-node/">Backing Image on a down node</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node/degraded-availability/">Degraded availability with added nodes</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node/improve-node-failure-handling/">Improve Node Failure Handling By Automatically Force Delete Terminating Pods of StatefulSet/Deployment On Downed Node</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node/node-disconnection/">Node disconnection test</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node/node-drain-deletion/">Node drain and deletion test</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node/physical-node-down/">Physical node down</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node/kubelet-restart-on-a-node/">Test kubelet restart on a node of the cluster</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node/node-deletion/">Test node deletion</a></li>
+  
+
+</ul>
+
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/resiliency/">Resiliency</a></li>
+  
+    <ul>
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/resiliency/simulated-slow-disk/">#2206 Fix the spinning disk on Longhorn</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/resiliency/timeout/">Test timeout on loss of network connectivity</a></li>
+  
+
+</ul>
+
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/stability/">Stability</a></li>
+  
+    <ul>
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/stability/multiple-installation/">Longhorn installation multiple times</a></li>
+  
+
+</ul>
+
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/stress/backup-listing/">Test backup listing S3/NFS</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/uninstallation/uninstallation-checks/">Uninstallation Checks</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/">Upgrade</a></li>
+  
+    <ul>
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/auto-upgrade-engine/">Automatically Upgrading Longhorn Engine Test</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/kubernetes-upgrade-test/">Kubernetes upgrade test</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/longhorn-upgrade-test/">Longhorn Upgrade test</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/update_csi_components_when_images_change/">Re-deploy CSI components when their images change</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/backing-image-during-upgrade/">Test Backing Image during Longhorn upgrade</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/engine-crash-during-live-upgrade/">Test Engine Crash During Live Upgrade</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/upgrade-with-new-instance-manager/">Test System Upgrade with New Instance Manager</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/upgrade-conflict-handling/">Upgrade Conflict Handling test</a></li>
+  
+
+</ul>
+
+  
+
+</ul>
+
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/">Release specific tests</a></li>
+  
+    <ul>
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.0/">v1.0.0</a></li>
+  
+    <ul>
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.0/new-node-custom-data-directory/">New Node with Custom Data Directory</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.0/suse-sles12sp3/">Operating System specific tests for SUSE SLES12SP3</a></li>
+  
+    <ul>
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.0/suse-sles12sp3/ext4-custom-fs-params-1/">Testing ext4 with custom fs params1 (no 64bit, no metadata_csum)</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.0/suse-sles12sp3/ext4-custom-fs-params-2/">Testing ext4 with custom fs params2 (no metadata_csum)</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.0/suse-sles12sp3/ext4-no-custom-fs-params/">Testing ext4 without custom fs params</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.0/suse-sles12sp3/xfs-after-custom-fs-params/">Testing xfs after custom fs params (xfs should ignore the custom fs params)</a></li>
+  
+
+</ul>
+
+  
+
+</ul>
+
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.1/">v1.0.1</a></li>
+  
+    <ul>
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.1/besteffort-recurring-job/">BestEffort Recurring Job Cleanup</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.1/change-imagepullpolicy/">Change imagePullPolicy to IfNotPresent Test</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.1/dr-volume-latest-backup-deletion/">DR volume related latest backup deletion test</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.1/nfsv4-enforcement/">NFSv4 Enforcement (No NFSv3 Fallback)</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.1/priorityclass-default-setting/">Priority Class Default Setting</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.1/error-fail-remount/">Return an error when fail to remount a volume</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.1/test-s3-access-style/">Test access style for S3 compatible backupstore</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.1/test-s3-backupstore/">Test S3 backupstore in a cluster sitting behind a Http Proxy</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.1/ui-volume-deletion/">Volume Deletion UI Warnings</a></li>
+  
+
+</ul>
+
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.2/">v1.0.2</a></li>
+  
+    <ul>
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.2/upgrade-lease-lock/">Upgrade Lease Lock</a></li>
+  
+
+</ul>
+
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/">v1.1.0</a></li>
+  
+    <ul>
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/prometheus_support/">Prometheus Support</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/recurring-backup-job-interruptions/">Recurring backup job interruptions</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/reusing-failed-replica-for-rebuilding/">Reusing failed replica for rebuilding</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/kubelet_volume_metrics/">Support Kubelet Volume Metrics</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/additional-printer-columns/">Test Additional Printer Columns</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/instance-manager-ip-sync/">Test Instance Manager IP Sync</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/iscsi_installation/">Test ISCSI Installation on EKS</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/rwx_feature/">Test Read Write Many Feature</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/uninstallation/">Test uninstallation</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/upgrade_with_modified_storageclass/">Upgrade Longhorn with modified Storage Class</a></li>
+  
+
+</ul>
+
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/">v1.1.1</a></li>
+  
+    <ul>
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/csi-sanity-check/">CSI Sanity Check</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/partial-engine-deployment/">Longhorn with engine is not deployed on all the nodes</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/tolerations_priorityclass_setting/">Set Tolerations/PriorityClass For System Components</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/disable_ipv6/">Test Disable IPv6</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/test-file-sync-cancellation/">Test File Sync Cancellation</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/ws-traffic-flood/">Test Frontend Traffic</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/delete-node/">Test Node Delete</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/test-node-selector/">Test Node Selector</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/rwx-mount-ownership-reset/">Test RWX share-mount ownership reset</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/test-service-account-mount/">Test Service Account mount on host</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/snapshot-purge-error-handling/">Test Snapshot Purge Error Handling</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/system-upgrade-with-deprecated-cpu-setting/">Test system upgrade with the deprecated CPU setting</a></li>
+  
+
+</ul>
+
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.2/">v1.1.2</a></li>
+  
+    <ul>
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.2/delete-cronjob-for-detached-volumes/">Test CronJob For Volumes That Are Detached For A Long Time</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.2/full-ws-data-tranfer-when-no-updates/">Test Frontend Web-socket Data Transfer When Resource Not Updated</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.2/instance-manager-streaming-connection-recovery/">Test Instance Manager Streaming Connection Recovery</a></li>
+  
+
+</ul>
+
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.2.0/">v1.2.0</a></li>
+  
+    <ul>
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.2.0/test-backing-image-upload/">Test backing image</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.2.0/backup-creation-with-old-engine-image/">Test Backup Creation With Old Engine Image</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.2.0/test-instance-manager-cleanup-during-uninstall/">Test instance manager cleanup during uninstall</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.2.0/label-driven-recurring-job/">Test Label-driven Recurring Job</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.2.0/test_version_bump/">Test Version Bump of Kubernetes, API version group, CSI component&rsquo;s dependency version</a></li>
+  
+
+</ul>
+
+  
+
+</ul>
+
+  
+
+</ul>
+
+  
+</aside>
+
+<main style="padding: 1%; width: 70%;">
+  <h1 id="title">Monitoring</h1>
+  <div>
+    <article id="content">
+       <h2 id="prometheus-support-test-cases">Prometheus Support test cases</h2>
+<ol>
+<li>Install the Prometheus Operator (include a role and service account for it). For example:<pre>apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+name: prometheus-operator
+namespace: default
+roleRef:
+apiGroup: rbac.authorization.k8s.io
+kind: ClusterRole
+name: prometheus-operator
+subjects:<br>  - kind: ServiceAccount
+name: prometheus-operator
+namespace: default<br>&ndash;
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+name: prometheus-operator
+namespace: default
+rules:<br>  - apiGroups:<br>      - extensions
+resources:<br>      - thirdpartyresources
+verbs: [&quot;<em>&quot;]<br>  - apiGroups:<br>      - apiextensions.k8s.io
+resources:<br>      - customresourcedefinitions
+verbs: [&quot;</em>&quot;]<br>  - apiGroups:<br>      - monitoring.coreos.com
+resources:<br>      - alertmanagers<br>      - prometheuses<br>      - prometheuses/finalizers<br>      - servicemonitors<br>      - prometheusrules<br>      - podmonitors
+verbs: [&quot;<em>&quot;]<br>  - apiGroups:<br>      - apps
+resources:<br>      - statefulsets
+verbs: [&quot;</em>&quot;]<br>  - apiGroups: [&quot;&quot;]
+resources:<br>      - configmaps<br>      - secrets
+verbs: [&quot;*&quot;]<br>  - apiGroups: [&quot;&quot;]
+resources:<br>      - pods
+verbs: [&ldquo;list&rdquo;, &ldquo;delete&rdquo;]<br>  - apiGroups: [&quot;&quot;]
+resources:<br>      - services<br>      - endpoints
+verbs: [&ldquo;get&rdquo;, &ldquo;create&rdquo;, &ldquo;update&rdquo;]<br>  - apiGroups: [&quot;&quot;]
+resources:<br>      - nodes
+verbs: [&ldquo;list&rdquo;, &ldquo;watch&rdquo;]<br>  - apiGroups: [&quot;&quot;]
+resources:<br>      - namespaces
+verbs: [&ldquo;list&rdquo;, &ldquo;watch&rdquo;]</pre></li>
+</ol>
+<pre>
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: prometheus-operator
+  namespace: default
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: prometheus-operator
+  name: prometheus-operator
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: prometheus-operator
+  template:
+    metadata:
+      labels:
+        app: prometheus-operator
+    spec:
+      containers:
+        - args:
+            - --kubelet-service=kube-system/kubelet
+            - --config-reloader-image=quay.io/coreos/configmap-reload:v0.0.1
+          image: quay.io/coreos/prometheus-operator:v0.36.0
+          name: prometheus-operator
+          ports:
+            - containerPort: 8080
+              name: http
+          resources:
+            limits:
+              cpu: 200m
+              memory: 100Mi
+            requests:
+              cpu: 100m
+              memory: 50Mi
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65534
+      serviceAccountName: prometheus-operator</pre>
+<ol start="2">
+<li>Install a Service Monitor pointing to <code>longhon-backend</code> service by selecting <code>app: longhorn-manager</code> label. For example:<pre>apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+name: longhorn-backend
+labels:
+team: backend
+spec:
+selector:
+matchLabels:
+app: longhorn-manager
+namespaceSelector:
+matchNames:<br>    - longhorn-system
+endpoints:<br>  - port: manager</pre></li>
+<li>Install Prometheus (include a role and service account for it). Include the above <code>service monitor</code> in the Prometheus&rsquo;s config. Expose to the Prometheus instance to outside using a service of type NodePort. For example:<pre>apiVersion: v1
+kind: ServiceAccount
+metadata:
+name: prometheus<br>&mdash;
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+name: prometheus
+rules:<br>  - apiGroups: [&quot;&quot;]
+resources:<br>      - nodes<br>      - services<br>      - endpoints<br>      - pods<br>    verbs: [&ldquo;get&rdquo;, &ldquo;list&rdquo;, &ldquo;watch&rdquo;]<br>  - apiGroups: [&quot;&quot;]
+resources:<br>      - configmaps
+verbs: [&ldquo;get&rdquo;]<br>  - nonResourceURLs: [&quot;/metrics&quot;, &ldquo;/federate&rdquo;]
+verbs: [&ldquo;get&rdquo;]<br>&mdash;
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+name: prometheus
+roleRef:
+apiGroup: rbac.authorization.k8s.io
+kind: ClusterRole
+name: prometheus
+subjects:<br>  - kind: ServiceAccount
+name: prometheus
+namespace: default<br>&mdash;
+apiVersion: monitoring.coreos.com/v1
+kind: Prometheus
+metadata:
+name: prometheus
+spec:
+serviceAccountName: prometheus
+serviceMonitorSelector:
+matchLabels:
+team: backend<br>&mdash;
+apiVersion: v1
+kind: Service
+metadata:
+name: prometheus
+spec:
+type: NodePort
+ports:<br>  - name: web
+port: 9090
+protocol: TCP
+targetPort: web
+ports:<br>    - port: 9090
+selector:
+prometheus: prometheus</pre></li>
+<li>Find the <code>prometheus</code> service and access Prometheus web UI using the nodeIP and the port</li>
+</ol>
+<table>
+<thead>
+<tr>
+<th></th>
+<th><strong>Test Scenario</strong></th>
+<th><strong>Test Steps</strong></th>
+<th><strong>Expected results</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>All the Metrics are present</td>
+<td><strong>Pre-requisite:</strong><br><br>1.  Prometheus is setup is done and Prometheus web UI is accessible.&lt;/pre<br><br><strong>Test Steps:</strong><br><br>1.  Go to Prometheus web UI.&lt;/pre<br>2.  Verify the metrics are available.</td>
+<td>The below metrics should be available:<br><br>1.  longhorn_volume_capacity_bytes&lt;/pre<br>2.  longhorn_volume_usage_bytes&lt;/pre<br>3.  longhorn_node_status&lt;/pre<br>4.  onghorn_instance_manager_cpu_requests_millicpu&lt;/pre<br>5.  longhorn_instance_manager_cpu_usage_millicpu&lt;/pre<br>6.  longhorn_instance_manager_memory_requests_bytes&lt;/pre<br>7.  longhorn_instance_manager_memory_usage_bytes&lt;/pre<br>8.  longhorn_manager_cpu_usage_millicpu&lt;/pre<br>9.  longhorn_manager_memory_usage_bytes&lt;/pre<br>10.  longhorn_disk_capacity_bytes&lt;/pre<br>11.  longhorn_disk_usage_bytes&lt;/pre<br>12.  longhorn_node_capacity_bytes&lt;/pre<br>13.  longhorn_node_usage_bytes</td>
+</tr>
+<tr>
+<td>2</td>
+<td>longhorn_volume_capacity_bytes</td>
+<td><strong>Pre-requisite:</strong><br><br>1.  Prometheus is setup is done and Prometheus web UI is accessible.&lt;/pre<br><br><strong>Test Steps:</strong><br><br>1.  Create 4 volumes of different sizes. (2, 3, 4, 5 Gi)&lt;/pre<br>2.  Attach 1st volume to a pod and write 1 Gi data into it.&lt;/pre<br>3.  Attach 2nd volume to a pod and don’t write into.&lt;/pre<br>4.  Leave the 3rd volume to the detached state.&lt;/pre<br>5.  Attach the 4th volume to pod and write 1.5 Gi data into it. Detach the volume.&lt;/pre<br>6.  Go to Prometheus web UI.&lt;/pre<br>7.  Select <code>longhorn_volume_capacity_bytes</code> and execute.</td>
+<td>1.  All the volumes should be identified by Prometheus&lt;/pre<br>2.  All the volumes should show the capacity as 2 Gi</td>
+</tr>
+<tr>
+<td>3</td>
+<td>longhorn_volume_usage_bytes</td>
+<td><strong>Pre-requisite:</strong><br><br>1.  Prometheus is setup is done and Prometheus web UI is accessible.&lt;/pre<br><br><strong>Test Steps:</strong><br><br>1.  Create 4 volumes of different sizes. (2, 3, 4, 5 Gi)&lt;/pre<br>2.  Attach 1st volume to a pod and write 1 Gi data into it.&lt;/pre<br>3.  Attach 2nd volume to a pod and don’t write into.&lt;/pre<br>4.  Leave the 3rd volume to the detached state.&lt;/pre<br>5.  Attach the 4th volume to pod and write 1.5 Gi data into it. Detach the volume.&lt;/pre<br>6.  Go to Prometheus web UI.&lt;/pre<br>7.  Select <code>longhorn_volume_usage_bytes</code> and execute.</td>
+<td>1.  All the volumes should be identified by Prometheus&lt;/pre<br>2.  Volume-1 should show 1 Gi&lt;/pre<br>3.  Volume-2 should show 0 Gi&lt;/pre<br>4.  Volume-3 should show 0 Gi&lt;/pre<br>5.  Volume-4 should show 1.5 Gi</td>
+</tr>
+<tr>
+<td>4</td>
+<td>longhorn_node_status</td>
+<td><strong>Pre-requisite:</strong><br><br>1.  Prometheus is setup is done and Prometheus web UI is accessible.&lt;/pre<br><br><strong>Test Steps:</strong><br><br>1.  Power down a node.&lt;/pre<br>2.  Disable a node.&lt;/pre<br>3.  Add a new node in the cluster.&lt;/pre<br>4.  Delete a node from the cluster.&lt;/pre<br>5.  Go to Prometheus web UI.&lt;/pre<br>6.  Select <code>longhorn_node_status</code> and execute.</td>
+<td>1.  All the nodes should be identified by Prometheus and one node should be shown in 3 rows based on the condition - <code>mountpropagation, ready, schedulable</code>&lt;/pre<br>2.  The correct status should be shown on Prometheus UI.</td>
+</tr>
+<tr>
+<td>5</td>
+<td>longhorn_instance_manager_cpu_requests_millicpu</td>
+<td><strong>Pre-requisite:</strong><br><br>1.  Prometheus is setup is done and Prometheus web UI is accessible.&lt;/pre<br><br><strong>Test Steps:</strong><br><br>1.  Create a volume and attach it to a pod.&lt;/pre<br>2.  Write 1 Gi data into it.&lt;/pre<br>3.  Set multiple recurring backup on the volume.&lt;/pre<br>4.  Go to Prometheus web UI.&lt;/pre<br>5.  Select <code>longhorn_instance_manager_cpu_requests_millicpu</code> and execute.</td>
+<td>1.  The reading of cpu_requests should go up for the attached instance manager.&lt;/pre<br>2.  The reading of other instance managers should not get impacted.</td>
+</tr>
+<tr>
+<td>6</td>
+<td>longhorn_instance_manager_cpu_usage_millicpu</td>
+<td><strong>Pre-requisite:</strong><br><br>1.  Prometheus is setup is done and Prometheus web UI is accessible.&lt;/pre<br><br><strong>Test Steps:</strong><br><br>1.  Create a volume and attach it to a pod.&lt;/pre<br>2.  Write 1 Gi data into it.&lt;/pre<br>3.  Set multiple recurring backup on the volume.&lt;/pre<br>4.  Go to Prometheus web UI.&lt;/pre<br>5.  Select <code>longhorn_instance_manager_cpu_usage_millicpu</code> and execute.</td>
+<td>1.  The reading of cpu_usage should be shown correctly&lt;/pre<br>2.  The reading of other instance managers should not get impacted.</td>
+</tr>
+<tr>
+<td>7</td>
+<td>longhorn_instance_manager_memory_requests_bytes</td>
+<td><strong>Pre-requisite:</strong><br><br>1.  Prometheus is setup is done and Prometheus web UI is accessible.&lt;/pre<br><br><strong>Test Steps:</strong><br><br>1.  Create a volume and attach it to a pod.&lt;/pre<br>2.  Write 1 Gi data into it.&lt;/pre<br>3.  Set multiple recurring backup on the volume.&lt;/pre<br>4.  Go to Prometheus web UI.&lt;/pre<br>5.  Select <code>longhorn_instance_manager_memory_requests_bytes</code> and execute.</td>
+<td>1.  The reading of memory_requests should go up for the attached instance manager.&lt;/pre<br>2.  The reading of other instance managers should not get impacted.</td>
+</tr>
+<tr>
+<td>8</td>
+<td>longhorn_instance_manager_memory_usage_bytes</td>
+<td><strong>Pre-requisite:</strong><br><br>1.  Prometheus is setup is done and Prometheus web UI is accessible.&lt;/pre<br><br><strong>Test Steps:</strong><br><br>1.  Create a volume and attach it to a pod.&lt;/pre<br>2.  Write 1 Gi data into it.&lt;/pre<br>3.  Set multiple recurring backup on the volume.&lt;/pre<br>4.  Go to Prometheus web UI.&lt;/pre<br>5.  Select <code>longhorn_instance_manager_memory_usage_bytes</code> and execute.</td>
+<td>1.  The reading of memory_usage should go up for the attached instance manager.&lt;/pre<br>2.  The reading of other instance managers should not get impacted.</td>
+</tr>
+<tr>
+<td>9</td>
+<td>longhorn_manager_cpu_usage_millicpu</td>
+<td><strong>Pre-requisite:</strong><br><br>1.  Prometheus is setup is done and Prometheus web UI is accessible.&lt;/pre<br><br><strong>Test Steps:</strong><br><br>1.  Create 3 volumes of different sizes.&lt;/pre<br>2.  Attach 1st volume to a pod and write 1 Gi data into it.&lt;/pre<br>3.  Leave the 2rd volume to the detached state.&lt;/pre<br>4.  Attach the 3th volume to pod and write 1.5 Gi data into it. Attach the volume in maintenance mode.&lt;/pre<br>5.  Set a recurring backup on volume 1st.&lt;/pre<br>6.  Perform revert to snapshot with 3rd volume.&lt;/pre<br>7.  Go to Prometheus web UI.&lt;/pre<br>8.  Select <code>longhorn_manager_cpu_usage_millicpu</code> and execute.</td>
+<td>1.  Monitor the graph and the console on the Prometheus server, the cpu_usage should go up.</td>
+</tr>
+<tr>
+<td>10</td>
+<td>longhorn_manager_memory_usage_bytes</td>
+<td><strong>Pre-requisite:</strong><br><br>1.  Prometheus is setup is done and Prometheus web UI is accessible.&lt;/pre<br><br><strong>Test Steps:</strong><br><br>1.  Create 3 volumes of different sizes.&lt;/pre<br>2.  Attach 1st volume to a pod and write 1 Gi data into it.&lt;/pre<br>3.  Leave the 2rd volume to the detached state.&lt;/pre<br>4.  Attach the 3th volume to pod and write 1.5 Gi data into it. Attach the volume in maintenance mode.&lt;/pre<br>5.  Set a recurring backup on volume 1st.&lt;/pre<br>6.  Perform revert to snapshot with 3rd volume.&lt;/pre<br>7.  Try to make disk full of a node where <code>longhorn-manager</code> is running.&lt;/pre<br>8.  Go to Prometheus web UI.&lt;/pre<br>9.  Select <code>longhorn_manager_memory_usage_bytes</code> and execute.</td>
+<td>1.  Monitor the graph and the console on the Prometheus server, the memory_usage should go up.</td>
+</tr>
+<tr>
+<td>11</td>
+<td>longhorn_disk_capacity_bytes</td>
+<td><strong>Pre-requisite:</strong><br><br>1.  Prometheus is setup is done and Prometheus web UI is accessible.&lt;/pre<br><br><strong>Test Steps:</strong><br><br>1.  Create volumes and attach them to each node.&lt;/pre<br>2.  Add an additional disk to all the nodes. (Different size)&lt;/pre<br>3.  Write into the volumes.&lt;/pre<br>4.  Power down a node.&lt;/pre<br>5.  Disable a node.&lt;/pre<br>6.  Add a new node in the cluster.&lt;/pre<br>7.  Delete a node from the cluster.&lt;/pre<br>8.  Go to Prometheus web UI.&lt;/pre<br>9.  Select <code>longhorn_disk_capacity_bytes</code> and execute.</td>
+<td>1.  All the disks should be identified by Prometheus.&lt;/pre<br>2.  All the disks should show the correct total size of the disks.</td>
+</tr>
+<tr>
+<td>12</td>
+<td>longhorn_disk_usage_bytes</td>
+<td><strong>Pre-requisite:</strong><br><br>1.  Prometheus is setup is done and Prometheus web UI is accessible.&lt;/pre<br><br><strong>Test Steps:</strong><br><br>1.  Create volumes and attach them to each node.&lt;/pre<br>2.  Add an additional disk to all the nodes. (Different size)&lt;/pre<br>3.  Write into the volumes.&lt;/pre<br>4.  Power down a node.&lt;/pre<br>5.  Disable a node.&lt;/pre<br>6.  Add a new node in the cluster.&lt;/pre<br>7.  Delete a node from the cluster.&lt;/pre<br>8.  Go to Prometheus web UI.&lt;/pre<br>9.  Select <code>longhorn_disk_usage_bytes</code> and execute.</td>
+<td>1.  All the disks should be identified by Prometheus.&lt;/pre<br>2.  All the disks should show the occupied size of the disks.</td>
+</tr>
+<tr>
+<td>13</td>
+<td>longhorn_node_capacity_bytes</td>
+<td><strong>Pre-requisite:</strong><br><br>1.  Prometheus is setup is done and Prometheus web UI is accessible.&lt;/pre<br><br><strong>Test Steps:</strong><br><br>1.  Create volumes and attach them to each node.&lt;/pre<br>2.  Add an additional disk to all the nodes. (Different size)&lt;/pre<br>3.  Write into the volumes.&lt;/pre<br>4.  Power down a node.&lt;/pre<br>5.  Disable a node.&lt;/pre<br>6.  Add a new node in the cluster.&lt;/pre<br>7.  Delete a node from the cluster.&lt;/pre<br>8.  Go to Prometheus web UI.&lt;/pre<br>9.  Select <code>longhorn_node_capacity_bytes</code> and execute.</td>
+<td>1.  All the nodes should be identified by Prometheus.&lt;/pre<br>2.  All the nodes should show the total capacity available of disks available.</td>
+</tr>
+<tr>
+<td>14</td>
+<td>longhorn_node_usage_bytes</td>
+<td><strong>Pre-requisite:</strong><br><br>1.  Prometheus is setup is done and Prometheus web UI is accessible.&lt;/pre<br><br><strong>Test Steps:</strong><br><br>1.  Create volumes and attach them to each node.&lt;/pre<br>2.  Add an additional disk to all the nodes. (Different size)&lt;/pre<br>3.  Write into the volumes.&lt;/pre<br>4.  Power down a node.&lt;/pre<br>5.  Disable a node.&lt;/pre<br>6.  Add a new node in the cluster.&lt;/pre<br>7.  Delete a node from the cluster.&lt;/pre<br>8.  Go to Prometheus web UI.&lt;/pre<br>9.  Select <code>longhorn_node_usage_bytes</code> and execute.</td>
+<td>1.  All the nodes should be identified by Prometheus&lt;/pre<br>2.  All the nodes should show the occupied space on all disks attached to the node.</td>
+</tr>
+</tbody>
+</table>
+<p>Note: More details can be found on <a href="https://longhorn.io/docs/1.2.2/monitoring/">https://longhorn.io/docs/1.2.2/monitoring/</a></p>
+
+    </article>
+  </div>
+</main>
+
+    
+    
+  </body>
+</html>

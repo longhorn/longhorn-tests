@@ -14,6 +14,44 @@
   
   <ul>
 
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/">End-to-end test cases</a></li>
+  
+    <ul>
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/deployment/"> Deployment of Longhorn  </a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/ui/">UI  </a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/volume/">Volume  </a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/high-availability/">High Availability  </a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/kubernetes/">Kubernetes  </a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/backup/">Backup  </a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/node/">Node  </a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/scheduling/">Scheduling  </a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/upgrade/">Upgrade  </a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/monitoring/">Monitoring</a></li>
+  
+
+</ul>
+
+  
+
   <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/">Pre-release tests</a></li>
   
     <ul>
@@ -458,7 +496,7 @@
 <li>Do cleanup.</li>
 </ol>
 <h3 id="upload-via-rancher-uri">Upload via Rancher URI</h3>
-<p><!-- raw HTML omitted -->Related issue: <a href="https://github.com/longhorn/longhorn/issues/3129">3129</a> with fix in Longhorn v1.3.0+<!-- raw HTML omitted --></p>
+<p><sup>Related issue: <a href="https://github.com/longhorn/longhorn/issues/3129">3129</a> with fix in Longhorn v1.3.0+</sup></p>
 <ol>
 <li>With Rancher v2.6.x create a cluster and install Longhorn from <em>Apps &amp; Marketplace</em>
 <ul>
@@ -469,14 +507,14 @@
 <li>Open Longhorn from the Cluster Explorer navigation menu</li>
 <li>Click on the Longhorn app to open the UI
 <ul>
-<li>An example URL: <!-- raw HTML omitted --><code>https://rancer.server.domain/k8s/clusters/CLUSTER-ID/api/v1/namespaces/longhorn-system/services/http:longhorn-frontend:80/proxy/#/backingImage</code><!-- raw HTML omitted --></li>
+<li>An example URL: <small><code>https://rancer.server.domain/k8s/clusters/CLUSTER-ID/api/v1/namespaces/longhorn-system/services/http:longhorn-frontend:80/proxy/#/backingImage</code></small></li>
 </ul>
 </li>
 <li>Create a new backing image with <strong>Upload From Local</strong></li>
 <li>Verify the uploaded image matches its size or checksum</li>
 </ol>
 <h3 id="upload-via-ingress-controller">Upload via Ingress Controller</h3>
-<p><!-- raw HTML omitted -->Related issue: <a href="https://github.com/longhorn/longhorn/issues/2937">2937</a> with fix in v1.2.0+<!-- raw HTML omitted --></p>
+<p><sup>Related issue: <a href="https://github.com/longhorn/longhorn/issues/2937">2937</a> with fix in v1.2.0+</sup></p>
 <ol>
 <li>Install and create Ingress Loadbalancer with proper hostname configuration
 <ul>

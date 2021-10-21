@@ -1,0 +1,765 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>
+      Longhorn Manual Test Cases
+    </title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/4.0.0/github-markdown.min.css">
+  </head>
+  <body class="markdown-body" style="display: flex; padding: 1%;">
+    
+<aside style="width: 30%; padding: 1%; border-right: 1px solid lightgray;">
+  <a href="https://longhorn.github.io/longhorn-tests/manual"><h2>Manual Test Cases</h2></a>
+  
+  <ul>
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/">End-to-end test cases</a></li>
+  
+    <ul>
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/deployment/"> Deployment of Longhorn  </a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/ui/">UI  </a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/volume/">Volume  </a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/high-availability/">High Availability  </a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/kubernetes/">Kubernetes  </a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/backup/">Backup  </a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/node/">Node  </a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/scheduling/">Scheduling  </a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/upgrade/">Upgrade  </a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/monitoring/">Monitoring</a></li>
+  
+
+</ul>
+
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/">Pre-release tests</a></li>
+  
+    <ul>
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/air-gap/">Air Gap</a></li>
+  
+    <ul>
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/air-gap/air-gap-installation/">Air gap installation</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/air-gap/air-gap-instance-manager-name/">Air gap installation with an instance-manager-image name longer than 63 characters</a></li>
+  
+
+</ul>
+
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/">Backup &amp; Restore tests</a></li>
+  
+    <ul>
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/dr-volume-live-upgrade-and-rebuild/">#1279 DR volume live upgrade and rebuild</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/concurrent-backup-creation-deletion/">#1326 concurrent backup creation &amp; deletion</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/concurrent-backup/">#1341 concurrent backup test</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/restore-volume-node-down/">#1355 The node the restore volume attached to is down</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/dr-volume-node-rebooted/">#1366 &amp;&amp; #1328 The node the DR volume attached to is rebooted</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/google-cloud-s3-interop-backups/">#1404 test backup functionality on google cloud and other s3 interop providers.</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/backup-block-deletion/">#1431 backup block deletion test</a></li>
+  
+
+</ul>
+
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/basic-operations-parallelism/">Basic operations parallelism</a></li>
+  
+    <ul>
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/basic-operations-parallelism/snapshot-while-writing-data/">Snapshot while writing data in the volume</a></li>
+  
+
+</ul>
+
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/cluster-restore/">Cluster Restore</a></li>
+  
+    <ul>
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/cluster-restore/system-upgrade-with-restore/">Longhorn system upgrade with restore</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/cluster-restore/node-creation-deletion-with-restore/">Node creation and deletion with restore</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/cluster-restore/recover-volumes-after-restore/">Recover Longhorn volumes after Rancher cluster restore</a></li>
+  
+
+</ul>
+
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/environment/">Environment</a></li>
+  
+    <ul>
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/environment/cluster-using-customized-kubelet-root-directory/">Cluster using customize kubelet root directory</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/environment/k3s-selinux-compatibility/">Compatibility with k3s and SELinux</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/environment/rke2-cis-1.5-profile/">Test Longhorn Deployment on RKE2 with CIS-1.5 profile</a></li>
+  
+
+</ul>
+
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/ha/">HA</a></li>
+  
+    <ul>
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/ha/backing-image-error-reporting-and-retry/">Backing Image Error Reporting and Retry</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/ha/disk-migration-in-aws-asg/">Disk migration in AWS ASG</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/ha/partial-engine-deployment/">Longhorn with engine is not deployed on all the nodes</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/ha/replica-rebuilding/">Replica Rebuilding</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/ha/single-replica-node-down/">Single replica node down</a></li>
+  
+
+</ul>
+
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node/">Node</a></li>
+  
+    <ul>
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node/backing-image-on-a-down-node/">Backing Image on a down node</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node/degraded-availability/">Degraded availability with added nodes</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node/improve-node-failure-handling/">Improve Node Failure Handling By Automatically Force Delete Terminating Pods of StatefulSet/Deployment On Downed Node</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node/node-disconnection/">Node disconnection test</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node/node-drain-deletion/">Node drain and deletion test</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node/physical-node-down/">Physical node down</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node/kubelet-restart-on-a-node/">Test kubelet restart on a node of the cluster</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node/node-deletion/">Test node deletion</a></li>
+  
+
+</ul>
+
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/resiliency/">Resiliency</a></li>
+  
+    <ul>
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/resiliency/simulated-slow-disk/">#2206 Fix the spinning disk on Longhorn</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/resiliency/timeout/">Test timeout on loss of network connectivity</a></li>
+  
+
+</ul>
+
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/stability/">Stability</a></li>
+  
+    <ul>
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/stability/multiple-installation/">Longhorn installation multiple times</a></li>
+  
+
+</ul>
+
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/stress/backup-listing/">Test backup listing S3/NFS</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/uninstallation/uninstallation-checks/">Uninstallation Checks</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/">Upgrade</a></li>
+  
+    <ul>
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/auto-upgrade-engine/">Automatically Upgrading Longhorn Engine Test</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/kubernetes-upgrade-test/">Kubernetes upgrade test</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/longhorn-upgrade-test/">Longhorn Upgrade test</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/update_csi_components_when_images_change/">Re-deploy CSI components when their images change</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/backing-image-during-upgrade/">Test Backing Image during Longhorn upgrade</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/engine-crash-during-live-upgrade/">Test Engine Crash During Live Upgrade</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/upgrade-with-new-instance-manager/">Test System Upgrade with New Instance Manager</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/upgrade-conflict-handling/">Upgrade Conflict Handling test</a></li>
+  
+
+</ul>
+
+  
+
+</ul>
+
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/">Release specific tests</a></li>
+  
+    <ul>
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.0/">v1.0.0</a></li>
+  
+    <ul>
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.0/new-node-custom-data-directory/">New Node with Custom Data Directory</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.0/suse-sles12sp3/">Operating System specific tests for SUSE SLES12SP3</a></li>
+  
+    <ul>
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.0/suse-sles12sp3/ext4-custom-fs-params-1/">Testing ext4 with custom fs params1 (no 64bit, no metadata_csum)</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.0/suse-sles12sp3/ext4-custom-fs-params-2/">Testing ext4 with custom fs params2 (no metadata_csum)</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.0/suse-sles12sp3/ext4-no-custom-fs-params/">Testing ext4 without custom fs params</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.0/suse-sles12sp3/xfs-after-custom-fs-params/">Testing xfs after custom fs params (xfs should ignore the custom fs params)</a></li>
+  
+
+</ul>
+
+  
+
+</ul>
+
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.1/">v1.0.1</a></li>
+  
+    <ul>
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.1/besteffort-recurring-job/">BestEffort Recurring Job Cleanup</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.1/change-imagepullpolicy/">Change imagePullPolicy to IfNotPresent Test</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.1/dr-volume-latest-backup-deletion/">DR volume related latest backup deletion test</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.1/nfsv4-enforcement/">NFSv4 Enforcement (No NFSv3 Fallback)</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.1/priorityclass-default-setting/">Priority Class Default Setting</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.1/error-fail-remount/">Return an error when fail to remount a volume</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.1/test-s3-access-style/">Test access style for S3 compatible backupstore</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.1/test-s3-backupstore/">Test S3 backupstore in a cluster sitting behind a Http Proxy</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.1/ui-volume-deletion/">Volume Deletion UI Warnings</a></li>
+  
+
+</ul>
+
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.2/">v1.0.2</a></li>
+  
+    <ul>
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.2/upgrade-lease-lock/">Upgrade Lease Lock</a></li>
+  
+
+</ul>
+
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/">v1.1.0</a></li>
+  
+    <ul>
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/prometheus_support/">Prometheus Support</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/recurring-backup-job-interruptions/">Recurring backup job interruptions</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/reusing-failed-replica-for-rebuilding/">Reusing failed replica for rebuilding</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/kubelet_volume_metrics/">Support Kubelet Volume Metrics</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/additional-printer-columns/">Test Additional Printer Columns</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/instance-manager-ip-sync/">Test Instance Manager IP Sync</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/iscsi_installation/">Test ISCSI Installation on EKS</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/rwx_feature/">Test Read Write Many Feature</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/uninstallation/">Test uninstallation</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/upgrade_with_modified_storageclass/">Upgrade Longhorn with modified Storage Class</a></li>
+  
+
+</ul>
+
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/">v1.1.1</a></li>
+  
+    <ul>
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/csi-sanity-check/">CSI Sanity Check</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/partial-engine-deployment/">Longhorn with engine is not deployed on all the nodes</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/tolerations_priorityclass_setting/">Set Tolerations/PriorityClass For System Components</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/disable_ipv6/">Test Disable IPv6</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/test-file-sync-cancellation/">Test File Sync Cancellation</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/ws-traffic-flood/">Test Frontend Traffic</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/delete-node/">Test Node Delete</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/test-node-selector/">Test Node Selector</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/rwx-mount-ownership-reset/">Test RWX share-mount ownership reset</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/test-service-account-mount/">Test Service Account mount on host</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/snapshot-purge-error-handling/">Test Snapshot Purge Error Handling</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/system-upgrade-with-deprecated-cpu-setting/">Test system upgrade with the deprecated CPU setting</a></li>
+  
+
+</ul>
+
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.2/">v1.1.2</a></li>
+  
+    <ul>
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.2/delete-cronjob-for-detached-volumes/">Test CronJob For Volumes That Are Detached For A Long Time</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.2/full-ws-data-tranfer-when-no-updates/">Test Frontend Web-socket Data Transfer When Resource Not Updated</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.2/instance-manager-streaming-connection-recovery/">Test Instance Manager Streaming Connection Recovery</a></li>
+  
+
+</ul>
+
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.2.0/">v1.2.0</a></li>
+  
+    <ul>
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.2.0/test-backing-image-upload/">Test backing image</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.2.0/backup-creation-with-old-engine-image/">Test Backup Creation With Old Engine Image</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.2.0/test-instance-manager-cleanup-during-uninstall/">Test instance manager cleanup during uninstall</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.2.0/label-driven-recurring-job/">Test Label-driven Recurring Job</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.2.0/test_version_bump/">Test Version Bump of Kubernetes, API version group, CSI component&rsquo;s dependency version</a></li>
+  
+
+</ul>
+
+  
+
+</ul>
+
+  
+
+</ul>
+
+  
+</aside>
+
+<main style="padding: 1%; width: 70%;">
+  <h1 id="title"><ol start="8">
+<li>Scheduling</li>
+</ol>
+</h1>
+  <div>
+    <article id="content">
+       <h2 id="manual-test">Manual Test</h2>
+<table>
+<thead>
+<tr>
+<th><strong>Test name</strong></th>
+<th><strong>Prerequisite</strong></th>
+<th><strong>Expectation</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>EKS across zone scheduling</td>
+<td><strong>Prerequisite</strong>:<br><br>*   EKS Cluster with 3 nodes across two AWS zones (zone#1, zone#2)<br><br>1.  Create a volume with 2 replicas, and attach it to a node.<br>2.  Delete a replica scheduled to each zone, repeat it few times<br>3.  Scale volume replicas = 3<br>4.  Scale volume replicas to 4</td>
+<td>*   Volume replicas should be scheduled one per AWS zone<br>*   Deleting a replica in a zone should trigger a replica rebuild<br>*   new rebuilding replica should be scheduled to the same zone as the deleted replica<br>*   Scaling volume replicas to 3 will distribute replicas across all nodes<br>*   Scaling volume replicas to 4 will be governed by soft anti-affinity rule, so no guarantee on which node the new replica should be scheduled.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="automation-tests">Automation tests</h2>
+<table>
+<thead>
+<tr>
+<th></th>
+<th><strong>Test name</strong></th>
+<th><strong>Description</strong></th>
+<th><strong>Tags</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>test_volume_scheduling_failure</td>
+<td>Test fail to schedule by disable scheduling for all the nodes<br><br>Also test cannot attach a scheduling failed volume<br><br>1.  Disable allowScheduling for all nodes<br>2.  Create a volume.<br>3.  Verify the volume condition Scheduled is false<br>4.  Verify attaching the volume will result in error<br>5.  Enable allowScheduling for all nodes<br>6.  Volume should be automatically scheduled (condition become true)<br>7.  Volume can be attached now</td>
+<td>Scheduling</td>
+</tr>
+<tr>
+<td>2</td>
+<td>test_replica_scheduler_exceed_over_provisioning</td>
+<td>Test replica scheduler: exceeding overprovisioning parameter<br><br>1.  Set setting <code>overprovisioning</code> to 100<br>2.  Update every disks to set 1G available for scheduling<br>3.  Try to schedule a volume of 2G. Volume scheduled condition should be false</td>
+<td>Scheduling: Space</td>
+</tr>
+<tr>
+<td>3</td>
+<td>test_replica_scheduler_just_under_over_provisioning</td>
+<td>Test replica scheduler: just under overprovisioning parameter<br><br>1.  Set setting <code>overprovisioning</code> to 100<br>2.  Get the maximum size of all the disks<br>3.  Create a volume using maximum_size - 2MiB as the volume size.<br>4.  Volume scheduled condition should be true.<br>5.  Make sure every replica landed on different nodes&rsquo;s default disk.</td>
+<td>Scheduling: Space</td>
+</tr>
+<tr>
+<td>4</td>
+<td>test_replica_scheduler_large_volume_fit_small_disk</td>
+<td>Test replica scheduler: not schedule a large volume to small disk<br><br>1.  Create a host disk <code>small_disk</code> and attach i to the current node.<br>2.  Create a new large volume.<br>3.  Verify the volume wasn&rsquo;t scheduled on the <code>small_disk</code></td>
+<td>Scheduling: Space</td>
+</tr>
+<tr>
+<td>5</td>
+<td>test_replica_scheduler_no_disks</td>
+<td>Test replica scheduler with no disks available<br><br>1.  Delete all the disks on all the nodes<br>2.  Create a volume.<br>3.  Wait for volume condition <code>scheduled</code> to be false</td>
+<td>Scheduling: Space</td>
+</tr>
+<tr>
+<td>6</td>
+<td>test_replica_scheduler_rebuild_restore_is_too_big</td>
+<td>Test replica scheduler: rebuild/restore can be too big to fit a disk<br><br>1.  Create a small host disk with <code>SIZE</code> and add it to the current node.<br>2.  Create a volume with size <code>SIZE</code>.<br>3.  Disable all scheduling except for the small disk.<br>4.  Write a data size <code>SIZE * 0.9</code> to the volume and make a backup<br>5.  Create a restored volume with 1 replica from backup.<br>    1.  Verify the restored volume cannot be scheduled since the existing data cannot fit in the small disk<br>        <br>6.  Delete a replica of volume.<br>    1.  Verify the volume reports <code>scheduled = false</code> due to unable to find a suitable disk for rebuliding replica, since the replica with the existing data cannot fit in the small disk<br>        <br>7.  Enable the scheduling for other disks, disable scheduling for small disk<br>8.  Verify the volume reports <code>scheduled = true</code>. And verify the data.<br>9.  Cleanup the volume.<br>10.  Verify the restored volume reports <code>scheduled = true</code>.<br>11.  Wait for the restored volume to complete restoration, then check data.</td>
+<td>Scheduling: Space<br><br>Backup</td>
+</tr>
+<tr>
+<td>7</td>
+<td>test_replica_scheduler_too_large_volume_fit_any_disks</td>
+<td>Test replica scheduler: volume is too large to fit any disks<br><br>1.  Disable all default disks on all nodes by setting storageReserved to maximum size<br>2.  Create volume.<br>3.  Verify the volume scheduled condition is false.<br>4.  Reduce the storageReserved on all the disks to just enough for one replica.<br>5.  The volume should automatically change scheduled condition to true<br>6.  Attach the volume.<br>7.  Make sure every replica landed on different nodes&rsquo;s default disk</td>
+<td>Scheduling: Space</td>
+</tr>
+<tr>
+<td>8</td>
+<td>test_replica_scheduler_update_minimal_available</td>
+<td>Test replica scheduler: update setting <code>minimal available</code><br><br>1.  Set setting <code>minimal available</code> to 100% (means no one can schedule)<br>2.  Verify for all disks' schedulable condition to become false.<br>3.  Create a volume. Verify it&rsquo;s unschedulable.<br>4.  Set setting <code>minimal available</code> back to default setting<br>5.  Disk should become schedulable now.<br>6.  Volume should be scheduled now.<br>7.  Attach the volume.<br>8.  Make sure every replica landed on different nodes&rsquo;s default disk.</td>
+<td>Scheduling: Space</td>
+</tr>
+<tr>
+<td>9</td>
+<td>test_replica_scheduler_update_over_provisioning</td>
+<td>Test replica scheduler: update overprovisioning setting<br><br>1.  Set setting <code>overprovisioning</code> to 0. (disable all scheduling)<br>2.  Create a new volume. Verify volume&rsquo;s <code>scheduled</code> condition is false.<br>3.  Set setting <code>over provisioning</code> to 100%.<br>4.  Verify volume&rsquo;s <code>scheduled</code> condition now become true.<br>5.  Attach the volume.<br>6.  Make sure every replica landed on different nodes&rsquo;s default disk.</td>
+<td>Scheduling: Space</td>
+</tr>
+<tr>
+<td>10</td>
+<td>test_hard_anti_affinity_detach</td>
+<td>Test that volumes with Hard Anti-Affinity are still able to detach and reattach to a node properly, even in degraded state.<br><br>1.  Create a volume and attach to the current node<br>2.  Generate and write <code>data</code> to the volume.<br>3.  Set <code>soft anti-affinity</code> to false<br>4.  Disable current node&rsquo;s scheduling.<br>5.  Remove the replica on the current node<br>    1.  Verify volume will be in degraded state.<br>        <br>    2.  Verify volume reports condition <code>scheduled == false</code><br>        <br>6.  Detach the volume.<br>7.  Verify that volume only have 2 replicas<br>    1.  Unhealthy replica will be removed upon detach.<br>        <br>8.  Attach the volume again.<br>    1.  Verify volume will be in degraded state.<br>        <br>    2.  Verify volume reports condition <code>scheduled == false</code><br>        <br>    3.  Verify only two of three replicas of volume are healthy.<br>        <br>    4.  Verify the remaining replica doesn&rsquo;t have <code>replica.HostID</code>, meaning it&rsquo;s unscheduled<br>        <br>9.  Check volume <code>data</code></td>
+<td>Scheduling: Anti-affinity</td>
+</tr>
+<tr>
+<td>11</td>
+<td>test_hard_anti_affinity_live_rebuild</td>
+<td>Test that volumes with Hard Anti-Affinity can build new replicas live once a valid node is available.<br><br>If no nodes without existing replicas are available, the volume should remain in &ldquo;Degraded&rdquo; state. However, once one is available, the replica should now be scheduled successfully, with the volume returning to &ldquo;Healthy&rdquo; state.<br><br>1.  Create a volume and attach to the current node<br>2.  Generate and write <code>data</code> to the volume.<br>3.  Set <code>soft anti-affinity</code> to false<br>4.  Disable current node&rsquo;s scheduling.<br>5.  Remove the replica on the current node<br>    1.  Verify volume will be in degraded state.<br>        <br>    2.  Verify volume reports condition <code>scheduled == false</code><br>        <br>6.  Enable the current node&rsquo;s scheduling<br>7.  Wait for volume to start rebuilding and become healthy again<br>8.  Check volume <code>data</code></td>
+<td>Scheduling: Anti-affinity</td>
+</tr>
+<tr>
+<td>12</td>
+<td>test_hard_anti_affinity_offline_rebuild</td>
+<td>Test that volumes with Hard Anti-Affinity can build new replicas during the attaching process once a valid node is available.<br><br>Once a new replica has been built as part of the attaching process, the volume should be Healthy again.<br><br>1.  Create a volume and attach to the current node<br>2.  Generate and write <code>data</code> to the volume.<br>3.  Set <code>soft anti-affinity</code> to false<br>4.  Disable current node&rsquo;s scheduling.<br>5.  Remove the replica on the current node<br>    1.  Verify volume will be in degraded state.<br>        <br>    2.  Verify volume reports condition <code>scheduled == false</code><br>        <br>6.  Detach the volume.<br>7.  Enable current node&rsquo;s scheduling.<br>8.  Attach the volume again.<br>9.  Wait for volume to become healthy with 3 replicas<br>10.  Check volume <code>data</code></td>
+<td>Scheduling: Anti-affinity</td>
+</tr>
+<tr>
+<td>13</td>
+<td>test_hard_anti_affinity_scheduling</td>
+<td>Test that volumes with Hard Anti-Affinity work as expected.<br><br>With Hard Anti-Affinity, scheduling on nodes with existing replicas should be forbidden, resulting in &ldquo;Degraded&rdquo; state.<br><br>1.  Create a volume and attach to the current node<br>2.  Generate and write <code>data</code> to the volume.<br>3.  Set <code>soft anti-affinity</code> to false<br>4.  Disable current node&rsquo;s scheduling.<br>5.  Remove the replica on the current node<br>    1.  Verify volume will be in degraded state.<br>        <br>    2.  Verify volume reports condition <code>scheduled == false</code><br>        <br>    3.  Verify only two of three replicas of volume are healthy.<br>        <br>    4.  Verify the remaining replica doesn&rsquo;t have <code>replica.HostID</code>, meaning it&rsquo;s unscheduled<br>        <br>6.  Check volume <code>data</code></td>
+<td>Scheduling: Anti-affinity</td>
+</tr>
+<tr>
+<td>14</td>
+<td>test_soft_anti_affinity_detach</td>
+<td>Test that volumes with Soft Anti-Affinity can detach and reattach to a node properly.<br><br>1.  Create a volume and attach to the current node.<br>2.  Generate and write <code>data</code> to the volume<br>3.  Set <code>soft anti-affinity</code> to true<br>4.  Disable current node&rsquo;s scheduling.<br>5.  Remove the replica on the current node<br>6.  Wait for the new replica to be rebuilt<br>7.  Detach the volume.<br>8.  Verify there are 3 replicas<br>9.  Attach the volume again. Verify there are still 3 replicas<br>10.  Verify the <code>data</code></td>
+<td>Scheduling: Anti-affinity</td>
+</tr>
+<tr>
+<td>15</td>
+<td>test_soft_anti_affinity_scheduling</td>
+<td>Test that volumes with Soft Anti-Affinity work as expected.<br><br>With Soft Anti-Affinity, a new replica should still be scheduled on a node with an existing replica, which will result in &ldquo;Healthy&rdquo; state but limited redundancy.<br><br>1.  Create a volume and attach to the current node<br>2.  Generate and write <code>data</code> to the volume.<br>3.  Set <code>soft anti-affinity</code> to true<br>4.  Disable current node&rsquo;s scheduling.<br>5.  Remove the replica on the current node<br>6.  Wait for the volume to complete rebuild. Volume should have 3 replicas.<br>7.  Verify <code>data</code></td>
+<td>Scheduling: Anti-affinity</td>
+</tr>
+<tr>
+<td>16</td>
+<td>test_tag_basic</td>
+<td>Test that applying Tags to Nodes/Disks and retrieving them work as expected. Ensures that Tags are properly validated when updated.<br><br>1.  Generate tags and apply to the disk and nodes<br>2.  Make sure the tags are applied<br>3.  Try to apply invalid tags to the disk and node. Action will fail.</td>
+<td>Scheduling: Tag</td>
+</tr>
+<tr>
+<td>17</td>
+<td>test_tag_scheduling</td>
+<td>Test success scheduling with tags<br><br>Case 1: Don&rsquo;t specify any tags, replica should be scheduled to 3 disks.<br><br>Case 2: Use disk tags to select two nodes for all replicas.<br><br>Case 3: Use node tags to select two nodes for all replicas.<br><br>Case 4: Combine node and disk tags to schedule all replicas on one node.</td>
+<td>Scheduling: Tag</td>
+</tr>
+<tr>
+<td>18</td>
+<td>test_tag_scheduling_failure</td>
+<td>Test that scheduling fails if no Nodes/Disks with the requested Tags are available.<br><br>Case 1: Validate that if specifying nonexist tags in volume, API call will fail.<br><br>Case 2:<br><br>1.  Specify existing but no node or disk can unsatisfied tags.<br>2.  Validate the volume will failed the scheduling</td>
+<td>Scheduling: Tag</td>
+</tr>
+<tr>
+<td>19</td>
+<td>test_tag_scheduling_on_update</td>
+<td>Test that Replicas get scheduled if a Node/Disk disks updated with the proper Tags.<br><br>1.  Create volume with tags that can not be satisfied<br>2.  Wait for volume to fail scheduling<br>3.  Update the node and disk with extra tags to satisify the volume<br>4.  Verify now volume has been scheduled<br>5.  Attach the volume and check the replicas has been scheduled properly</td>
+<td>Scheduling: Tag</td>
+</tr>
+<tr>
+<td>20</td>
+<td>test_zone_tags</td>
+<td>Test anti affinity zone feature<br><br>1.  Add Kubernetes zone labels to the nodes<br>    1.  Only two zones now: zone1 and zone2<br>        <br>2.  Create a volume with two replicas<br>3.  Verify zone1 and zone2 either has one replica.<br>4.  Remove a random replica and wait for volume to finish rebuild<br>5.  Verify zone1 and zone2 either has one replica.<br>6.  Repeat step 4-5 a few times.<br>7.  Update volume to 3 replicas, make sure they&rsquo;re scheduled on 3 nodes<br>8.  Remove a random replica and wait for volume to finish rebuild<br>9.  Make sure replicas are on different nodes<br>10.  Repeat step 8-9 a few times</td>
+<td>Scheduling: Zone</td>
+</tr>
+</tbody>
+</table>
+<h2 id="anti-affinity-test">Anti-affinity test</h2>
+<table>
+<thead>
+<tr>
+<th><strong>#</strong></th>
+<th><strong>Test case</strong></th>
+<th><strong>Steps</strong></th>
+<th><strong>Expectation</strong></th>
+<th><strong>Automation test case</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>Replica scheduling (soft anti-affinity enabled)</td>
+<td><strong>Prerequisite:</strong><br>*   **Replica Soft Anti-Affinity** setting is **Enabled**<br>1.  Create a volume<br>2.  Attach volume to a node<br>3.  Increase replica count to exceed the number of Longhorn node count</td>
+<td>*   New replicas will be scheduled to node<br>*   Volume Status will be <code>Healthy</code>, with limited node redundancy hint icon<br><code>Limited node redundancy: at least one healthy replica is running at the same node as another</code></td>
+<td>test_soft_anti_affinity_scheduling</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Replica scheduling (soft anti-affinity disabled)</td>
+<td><strong>Prerequisite:</strong><br>*   **Replica Soft Anti-Affinity** setting is **Enabled**<br>1.  Create a volume<br>2.  Attach volume to a node<br>3.  Increase replica count to exceed the number of Longhorn node count<br>4.  Disable **Replica Soft Anti-Affinity** setting<br>5.  Delete a replica<br>6.  Re-Enable **Replica Soft Anti-Affinity** setting</td>
+<td>*   Replicas won’t be removed after disabling <strong>Replica Soft Anti-Affinity</strong><br>*   when **Replica Soft Anti-Affinity** setting is disabled New Replicas will not be scheduled to nodes.<br>*   when **Replica Soft Anti-Affinity** setting is re-enabled, New Replicas can be scheduled to nodes.</td>
+<td>test_hard_anti_affinity_scheduling</td>
+</tr>
+</tbody>
+</table>
+<h2 id="additional-tests">Additional Tests</h2>
+<table>
+<thead>
+<tr>
+<th><strong>#</strong></th>
+<th><strong>Scenario</strong></th>
+<th><strong>Steps</strong></th>
+<th><strong>Expected Results</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>Add Disk disk1, Disable scheduling for default disk -1</td>
+<td>1.  By default the disk on a node is 0 default disk in in path - <code>/var/lib/longhorn/</code><br>2.  Add disk1 on the node<br>3.  Disable scheduling for the default disk<br>4.  Create a volume in Longhorn<br>5.  Verify the replicas are scheduled on disk1</td>
+<td></td>
+</tr>
+<tr>
+<td>2</td>
+<td>Add Disk disk1, Disable scheduling for default disk -2</td>
+<td>Cluster spec - 3 worker nodes<br><br>1.  Create a volume - 3 replicas in <code>/var/lib/longhorn/</code> - default disk<br>2.  Add disk 1 on <code>/mnt/vol2</code>on node 1<br>3.  Disable scheduling for the default disk<br>4.  enable scheduling for disk1<br>5.  Update the replicas to count = 4<br>6.  Say a replica is built on Node 2<br>7.  Delete the replica on node 1<br>8.  a new replica is rebuilt on node 1<br>9.  Verify replica is now available in <code>/mnt/vol2</code></td>
+<td>Replica when rebuilt on node 1 should be available on disk 1 - <code>/mnt/vol2</code></td>
+</tr>
+<tr>
+<td><strong>Disable Scheduling On Cordoned Node</strong></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>3</td>
+<td>Disable Scheduling On Cordoned Node: <strong>True</strong><br><br><strong>New volume</strong></td>
+<td>1.  There are 4 worker nodes - custom cluster<br>2.  Cordon a node W1<br>3.  Create a new volume with 4 replicas<br>4.  Verify the volume <code>vol-1</code> is in detached state with error <code>Scheduling Failure Replica Scheduling Failure</code>with the 4th replica in N/A state<br>5.  Add a new worker node W5 to the cluster<br>6.  <code>vol-1</code> should become healthy.<br>7.  Attach it to a workload and verify data can be written into the volume</td>
+<td>1.  <code>vol-1</code> should be in detached state with error <code>Scheduling Failure Replica Scheduling Failure</code><br>2.  vol-1 should become healthy and should be used in a workload to write data into the volume</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Disable Scheduling On Cordoned Node: <strong>True</strong><br><br><strong>Existing volume</strong></td>
+<td>1.  There are 4 worker nodes - custom cluster<br>2.  Create a new volume with 4 replicas<br>3.  Volume vol-1 should be in a healthy detached state<br>4.  Attach it to a workload and verify data can be written into the volume<br>5.  cordon a worker node<br>6.  Use the. volume to a workload<br>7.  All the three replicas will be in running healthy state<br>8.  Delete replica on cordoned worker node<br>9.  Verify the volume <code>vol-1</code> is in degraded state with error <code>Scheduling Failure Replica Scheduling Failure</code>with the 4th replica in N/A state<br>10.  Add a new worker node W5 to the cluster<br>11.  Verify the repliica failed will be in rebuilding state now<br>12.  <code>vol-1</code> should become healthy.<br>13.  Verify the data is consistent</td>
+<td></td>
+</tr>
+<tr>
+<td>5</td>
+<td>Disable Scheduling On Cordoned Node: <strong>False</strong><br><br><strong>New volume</strong></td>
+<td>1.  There are 4 worker nodes - custom cluster<br>2.  Cordon a node W1<br>3.  Create a new volume with 4 replicas<br>4.  <code>vol-1</code> should be in healthy.<br>5.  Verify a replica is created on the cordoned worker node<br>6.  Attach it to a workload and verify data can be written into the volume</td>
+<td></td>
+</tr>
+<tr>
+<td>6</td>
+<td>Disable Scheduling On Cordoned Node: <strong>False</strong><br><br><strong>Existing volume</strong></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>7</td>
+<td>Disable Scheduling On Cordoned Node: <strong>True</strong><br><br>Backup restore</td>
+<td>1.  There are 4 worker nodes - custom cluster<br>2.  Cordon a node W1<br>3.  Create a backup restore volume from an existing backup.<br>4.  Give in the number of replicas - 4, volume name: <code>vol-2</code><br>5.  Verify the volume <code>vol-2</code> is in detached state with error <code>Scheduling Failure Replica Scheduling Failure</code>with the 4th replica in N/A state<br>6.  Verify no restoring should happen on the replicas.<br>7.  Add a new worker node W5 to the cluster<br>8.  <code>vol-2</code> should start restoring now<br>9.  <code>vol-2</code> should be in detached healthy state.<br>10.  attach to a workload and verify the checksum of data with that of the original one</td>
+<td></td>
+</tr>
+<tr>
+<td>8</td>
+<td>Disable Scheduling On Cordoned Node: <strong>False</strong><br><br>Backup restore</td>
+<td>1.  There are 4 worker nodes - custom cluster<br>2.  Cordon a node W1<br>3.  Create a backup restore volume from an existing backup.<br>4.  Give in the number of replicas - 4, volume name: <code>vol-2</code><br>5.  Verify volume is in attached state and restoring should happen on the replicas<br>6.  <code>vol-2</code> should be in detached healthy state. after restoration is complete<br>7.  attach to a workload and verify the checksum of data with that of the original one</td>
+<td></td>
+</tr>
+<tr>
+<td>7</td>
+<td>Disable Scheduling On Cordoned Node: <strong>True</strong><br><br>Create DR volume</td>
+<td>1.  There are 4 worker nodes - custom cluster<br>2.  Cordon a node W1<br>3.  Create a <code>DRV</code> from an existing backup.<br>4.  Give in the number of replicas - 4<br>5.  Verify the <code>DRV</code> is in detached state with error <code>Scheduling Failure Replica Scheduling Failure</code>with the 4th replica in N/A state<br>6.  Verify no restoring should happen on the replicas.<br>7.  Add a new worker node W5 to the cluster<br>8.  <code>DRV</code> should start restoring now<br>9.  <code>DRV</code> should be in healthy state.<br>10.  Activate the <code>DRV</code> and verify it is in detached state<br>11.  attach to a workload and verify the checksum of data with that of the original one</td>
+<td></td>
+</tr>
+<tr>
+<td>8</td>
+<td>Disable Scheduling On Cordoned Node: <strong>False</strong><br><br>Create DR volume</td>
+<td>1.  There are 4 worker nodes - custom cluster<br>2.  Cordon a node W1<br>3.  Create a <code>DRV</code> from an existing backup.<br>4.  Give in the number of replicas - 4<br>5.  <code>DRV</code> should start restoring now<br>6.  <code>DRV</code> should be in healthy state.<br>7.  Activate the <code>DRV</code> and verify it is in detached state<br>8.  attach to a workload and verify the checksum of data with that of the original one</td>
+<td></td>
+</tr>
+<tr>
+<td>9</td>
+<td>Replica node level soft anti affinity: <strong>False</strong><br><br><strong>New volume</strong></td>
+<td>1.  There are 3 worker nodes - custom cluster<br>2.  Create a volume with replicas - 4<br>3.  Volume should be in detached state with error - <code>Scheduling Failure Replica Scheduling Failure</code>with the 4th replica in N/A state<br>4.  Add a worker node<br>5.  the volume should be in healthy state<br>6.  User should be able to use the volume on the workload</td>
+<td></td>
+</tr>
+<tr>
+<td>10</td>
+<td>Replica node level soft anti affinity: <strong>True</strong><br><br><strong>New volume</strong></td>
+<td>1.  There are 3 worker nodes - custom cluster<br>2.  Create a volume with replicas - 4<br>3.  the volume should be in healthy state. two replicas should be on the same host<br>4.  User should be able to use the volume on the workload</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+
+    </article>
+  </div>
+</main>
+
+    
+    
+  </body>
+</html>

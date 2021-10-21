@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>
+      Longhorn Manual Test Cases
+    </title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/4.0.0/github-markdown.min.css">
+  </head>
+  <body class="markdown-body" style="display: flex; padding: 1%;">
+    
+<aside style="width: 30%; padding: 1%; border-right: 1px solid lightgray;">
+  <a href="https://longhorn.github.io/longhorn-tests/manual"><h2>Manual Test Cases</h2></a>
+  
+  <ul>
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/">End-to-end test cases</a></li>
+  
+    <ul>
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/deployment/"> Deployment of Longhorn  </a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/ui/">UI  </a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/volume/">Volume  </a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/high-availability/">High Availability  </a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/kubernetes/">Kubernetes  </a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/backup/">Backup  </a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/node/">Node  </a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/scheduling/">Scheduling  </a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/upgrade/">Upgrade  </a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/monitoring/">Monitoring</a></li>
+  
+
+</ul>
+
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/">Pre-release tests</a></li>
+  
+    <ul>
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/air-gap/">Air Gap</a></li>
+  
+    <ul>
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/air-gap/air-gap-installation/">Air gap installation</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/air-gap/air-gap-instance-manager-name/">Air gap installation with an instance-manager-image name longer than 63 characters</a></li>
+  
+
+</ul>
+
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/">Backup &amp; Restore tests</a></li>
+  
+    <ul>
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/dr-volume-live-upgrade-and-rebuild/">#1279 DR volume live upgrade and rebuild</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/concurrent-backup-creation-deletion/">#1326 concurrent backup creation &amp; deletion</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/concurrent-backup/">#1341 concurrent backup test</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/restore-volume-node-down/">#1355 The node the restore volume attached to is down</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/dr-volume-node-rebooted/">#1366 &amp;&amp; #1328 The node the DR volume attached to is rebooted</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/google-cloud-s3-interop-backups/">#1404 test backup functionality on google cloud and other s3 interop providers.</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/backup-block-deletion/">#1431 backup block deletion test</a></li>
+  
+
+</ul>
+
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/basic-operations-parallelism/">Basic operations parallelism</a></li>
+  
+    <ul>
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/basic-operations-parallelism/snapshot-while-writing-data/">Snapshot while writing data in the volume</a></li>
+  
+
+</ul>
+
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/cluster-restore/">Cluster Restore</a></li>
+  
+    <ul>
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/cluster-restore/system-upgrade-with-restore/">Longhorn system upgrade with restore</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/cluster-restore/node-creation-deletion-with-restore/">Node creation and deletion with restore</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/cluster-restore/recover-volumes-after-restore/">Recover Longhorn volumes after Rancher cluster restore</a></li>
+  
+
+</ul>
+
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/environment/">Environment</a></li>
+  
+    <ul>
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/environment/cluster-using-customized-kubelet-root-directory/">Cluster using customize kubelet root directory</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/environment/k3s-selinux-compatibility/">Compatibility with k3s and SELinux</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/environment/rke2-cis-1.5-profile/">Test Longhorn Deployment on RKE2 with CIS-1.5 profile</a></li>
+  
+
+</ul>
+
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/ha/">HA</a></li>
+  
+    <ul>
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/ha/backing-image-error-reporting-and-retry/">Backing Image Error Reporting and Retry</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/ha/disk-migration-in-aws-asg/">Disk migration in AWS ASG</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/ha/partial-engine-deployment/">Longhorn with engine is not deployed on all the nodes</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/ha/replica-rebuilding/">Replica Rebuilding</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/ha/single-replica-node-down/">Single replica node down</a></li>
+  
+
+</ul>
+
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node/">Node</a></li>
+  
+    <ul>
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node/backing-image-on-a-down-node/">Backing Image on a down node</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node/degraded-availability/">Degraded availability with added nodes</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node/improve-node-failure-handling/">Improve Node Failure Handling By Automatically Force Delete Terminating Pods of StatefulSet/Deployment On Downed Node</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node/node-disconnection/">Node disconnection test</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node/node-drain-deletion/">Node drain and deletion test</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node/physical-node-down/">Physical node down</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node/kubelet-restart-on-a-node/">Test kubelet restart on a node of the cluster</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node/node-deletion/">Test node deletion</a></li>
+  
+
+</ul>
+
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/resiliency/">Resiliency</a></li>
+  
+    <ul>
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/resiliency/simulated-slow-disk/">#2206 Fix the spinning disk on Longhorn</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/resiliency/timeout/">Test timeout on loss of network connectivity</a></li>
+  
+
+</ul>
+
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/stability/">Stability</a></li>
+  
+    <ul>
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/stability/multiple-installation/">Longhorn installation multiple times</a></li>
+  
+
+</ul>
+
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/stress/backup-listing/">Test backup listing S3/NFS</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/uninstallation/uninstallation-checks/">Uninstallation Checks</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/">Upgrade</a></li>
+  
+    <ul>
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/auto-upgrade-engine/">Automatically Upgrading Longhorn Engine Test</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/kubernetes-upgrade-test/">Kubernetes upgrade test</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/longhorn-upgrade-test/">Longhorn Upgrade test</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/update_csi_components_when_images_change/">Re-deploy CSI components when their images change</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/backing-image-during-upgrade/">Test Backing Image during Longhorn upgrade</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/engine-crash-during-live-upgrade/">Test Engine Crash During Live Upgrade</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/upgrade-with-new-instance-manager/">Test System Upgrade with New Instance Manager</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/upgrade-conflict-handling/">Upgrade Conflict Handling test</a></li>
+  
+
+</ul>
+
+  
+
+</ul>
+
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/">Release specific tests</a></li>
+  
+    <ul>
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.0/">v1.0.0</a></li>
+  
+    <ul>
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.0/new-node-custom-data-directory/">New Node with Custom Data Directory</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.0/suse-sles12sp3/">Operating System specific tests for SUSE SLES12SP3</a></li>
+  
+    <ul>
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.0/suse-sles12sp3/ext4-custom-fs-params-1/">Testing ext4 with custom fs params1 (no 64bit, no metadata_csum)</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.0/suse-sles12sp3/ext4-custom-fs-params-2/">Testing ext4 with custom fs params2 (no metadata_csum)</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.0/suse-sles12sp3/ext4-no-custom-fs-params/">Testing ext4 without custom fs params</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.0/suse-sles12sp3/xfs-after-custom-fs-params/">Testing xfs after custom fs params (xfs should ignore the custom fs params)</a></li>
+  
+
+</ul>
+
+  
+
+</ul>
+
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.1/">v1.0.1</a></li>
+  
+    <ul>
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.1/besteffort-recurring-job/">BestEffort Recurring Job Cleanup</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.1/change-imagepullpolicy/">Change imagePullPolicy to IfNotPresent Test</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.1/dr-volume-latest-backup-deletion/">DR volume related latest backup deletion test</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.1/nfsv4-enforcement/">NFSv4 Enforcement (No NFSv3 Fallback)</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.1/priorityclass-default-setting/">Priority Class Default Setting</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.1/error-fail-remount/">Return an error when fail to remount a volume</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.1/test-s3-access-style/">Test access style for S3 compatible backupstore</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.1/test-s3-backupstore/">Test S3 backupstore in a cluster sitting behind a Http Proxy</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.1/ui-volume-deletion/">Volume Deletion UI Warnings</a></li>
+  
+
+</ul>
+
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.2/">v1.0.2</a></li>
+  
+    <ul>
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.2/upgrade-lease-lock/">Upgrade Lease Lock</a></li>
+  
+
+</ul>
+
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/">v1.1.0</a></li>
+  
+    <ul>
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/prometheus_support/">Prometheus Support</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/recurring-backup-job-interruptions/">Recurring backup job interruptions</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/reusing-failed-replica-for-rebuilding/">Reusing failed replica for rebuilding</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/kubelet_volume_metrics/">Support Kubelet Volume Metrics</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/additional-printer-columns/">Test Additional Printer Columns</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/instance-manager-ip-sync/">Test Instance Manager IP Sync</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/iscsi_installation/">Test ISCSI Installation on EKS</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/rwx_feature/">Test Read Write Many Feature</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/uninstallation/">Test uninstallation</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/upgrade_with_modified_storageclass/">Upgrade Longhorn with modified Storage Class</a></li>
+  
+
+</ul>
+
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/">v1.1.1</a></li>
+  
+    <ul>
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/csi-sanity-check/">CSI Sanity Check</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/partial-engine-deployment/">Longhorn with engine is not deployed on all the nodes</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/tolerations_priorityclass_setting/">Set Tolerations/PriorityClass For System Components</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/disable_ipv6/">Test Disable IPv6</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/test-file-sync-cancellation/">Test File Sync Cancellation</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/ws-traffic-flood/">Test Frontend Traffic</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/delete-node/">Test Node Delete</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/test-node-selector/">Test Node Selector</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/rwx-mount-ownership-reset/">Test RWX share-mount ownership reset</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/test-service-account-mount/">Test Service Account mount on host</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/snapshot-purge-error-handling/">Test Snapshot Purge Error Handling</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/system-upgrade-with-deprecated-cpu-setting/">Test system upgrade with the deprecated CPU setting</a></li>
+  
+
+</ul>
+
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.2/">v1.1.2</a></li>
+  
+    <ul>
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.2/delete-cronjob-for-detached-volumes/">Test CronJob For Volumes That Are Detached For A Long Time</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.2/full-ws-data-tranfer-when-no-updates/">Test Frontend Web-socket Data Transfer When Resource Not Updated</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.2/instance-manager-streaming-connection-recovery/">Test Instance Manager Streaming Connection Recovery</a></li>
+  
+
+</ul>
+
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.2.0/">v1.2.0</a></li>
+  
+    <ul>
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.2.0/test-backing-image-upload/">Test backing image</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.2.0/backup-creation-with-old-engine-image/">Test Backup Creation With Old Engine Image</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.2.0/test-instance-manager-cleanup-during-uninstall/">Test instance manager cleanup during uninstall</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.2.0/label-driven-recurring-job/">Test Label-driven Recurring Job</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.2.0/test_version_bump/">Test Version Bump of Kubernetes, API version group, CSI component&rsquo;s dependency version</a></li>
+  
+
+</ul>
+
+  
+
+</ul>
+
+  
+
+</ul>
+
+  
+</aside>
+
+<main style="padding: 1%; width: 70%;">
+  <h1 id="title"><ol start="2">
+<li>UI</li>
+</ol>
+</h1>
+  <div>
+    <article id="content">
+       <h2 id="accessibility-of-longhorn-ui">Accessibility of Longhorn UI</h2>
+<table>
+<thead>
+<tr>
+<th><strong>#</strong></th>
+<th><strong>Test Case</strong></th>
+<th><strong>Test Instructions</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1.</td>
+<td>Access Longhorn UI using rancher proxy</td>
+<td>1.  Create a cluster (3 worker nodes and 1 etcd/control plane) in rancher, Go to the default project.<br>2.  Go to App, Click the launch app.<br>3.  Select longhorn.<br>4.  Select <code>Rancher-Proxy</code> under the Longhorn UI service.<br>5.  Once the app is deployed successfully, click the <a href="https://173.255.255.35/k8s/clusters/c-qnl4b/api/v1/namespaces/longhorn-system/services/http:longhorn-frontend:80/proxy/">/index.html</a> link appears in App page.<br>6.  The page should redirect to longhorn UI - <a href="https://173.255.255.35/k8s/clusters/c-qnl4b/api/v1/namespaces/longhorn-system/services/http:longhorn-frontend:80/proxy/#/dashboard">https://rancher/k8s/clusters/c-aaaa/api/v1/namespaces/longhorn-system/services/http:longhorn-frontend:80/proxy/#/dashboard</a><br>7.  Verify all the pages, refresh each page and verify. Create a volume and check the volume detail page also.</td>
+</tr>
+<tr>
+<td>2.</td>
+<td>Access Longhorn UI under Kubectl proxy</td>
+<td>1.  Create a cluster (3 worker nodes and 1 etcd/control plane) using rke.<br>2.  Start kubectl proxy by command <code>kubectl proxy</code>.<br>3.  It should start proxy locally on 8001 port.<br>4.  Navigate to <a href="http://localhost:8001/api/v1/namespaces/longhorn-system/services/http:longhorn-frontend:http/proxy/">http://localhost:8001/api/v1/namespaces/longhorn-system/services/http:longhorn-frontend:http/proxy/</a><br>5.  The above link should open the longhorn UI.<br>6.  Verify all the pages, refresh each page and verify. Create a volume and check the volume detail page also.</td>
+</tr>
+<tr>
+<td>3.</td>
+<td>Access Longhorn UI with node port</td>
+<td>1.  Create a cluster (3 worker nodes and 1 etcd/control plane) in rancher, Go to the default project.<br>2.  Go to App, Click the launch app.<br>3.  Select longhorn.<br>4.  Select <code>NodePort</code> under the Longhorn UI service.<br>5.  Once the app is deployed successfully, click the link like <a href="http://104.131.80.163:32059/">32059/tcp</a> appears in App page.<br>6.  The page should redirect to longhorn UI - <a href="http://104.131.80.163:32059/#/dashboard">http://node-ip:32059/#/dashboard</a><br>7.  Verify all the pages, refresh each page and verify. Create a volume and check the volume detail page also.</td>
+</tr>
+<tr>
+<td>4.</td>
+<td>Access Longhorn UI with ingress controller</td>
+<td>1.  Create a cluster(3 worker nodes and 1 etcd/control plane).<br>2.  Deploy longhorn.<br>3.  Create ingress controller. refer <a href="https://longhorn.io/docs/1.0.1/deploy/accessing-the-ui/longhorn-ingress/">https://longhorn.io/docs/1.0.1/deploy/accessing-the-ui/longhorn-ingress/</a><br>4.  If cluster is imported/created in rancher create ingress using rancher UI by selecting <code>Target Backend</code> as <code>longhorn frontend</code> and path <code>/</code><br>5.  Access the ingress. It should redirect to longhorn UI.<br>6.  Verify all the pages, refresh each page and verify. Create a volume and check the volume detail page also.</td>
+</tr>
+<tr>
+<td>5.</td>
+<td>Access Longhorn UI with a load balancer</td>
+<td>1.  Create a cluster (3 worker nodes and 1 etcd/control plane) in rancher.<br>2.  Create a route 53 entry pointing to worker nodes of the cluster in AWS.<br>3.  Deploy longhorn from catalog library and mention the route 53 entry in the load balancer.<br>4.  Go to the link that appears on the app page for the longhorn app.<br>5.  The page to redirect to longhorn UI with URL as route 53 entry.<br>6.  Verify all the pages, refresh each page and verify. Create a volume and check the volume detail page also.</td>
+</tr>
+<tr>
+<td>6.</td>
+<td>Access Longhorn UI with reverse proxy</td>
+<td>1.  Create a cluster (3 worker nodes and 1 etcd/control plane) in rancher, Go to the default project.<br>2.  Go to App, Click the launch app.<br>3.  Select longhorn.<br>4.  Select <code>NodePort</code> under the Longhorn UI service.<br>5.  Install nginx in local system.<br>6.  Set the <code>proxy_pass</code> of <a href="http://104.131.80.163:32059/#/dashboard">http://node-ip:32059</a> in ngnix.conf file as per below example.<br>7.  Start nginx<br>8.  Access the port given in <code>listen</code> parameter from nginx.conf. ex - //localhost:822<br>9.  The page should redirect to longhorn UI<br>10.  Verify all the pages, refresh each page and verify. Create a volume and check the volume detail page also.</td>
+</tr>
+</tbody>
+</table>
+<p>nginx.conf example</p>
+<pre><code>`events { worker_connections` `1024``; }`
+
+`http {`
+
+`server {`
+
+`gzip on;`
+
+`gzip_min_length 1k;`
+
+`gzip_comp_level` `2``;`
+
+`gzip_types text/plain application/javascript application/x-javascript text/css application/xml text/javascript application/x-httpd-php image/jpeg image/gif image/png image/svg+xml;`
+
+`gzip_vary on;`
+
+`gzip_disable` `&quot;MSIE [1-6]\.&quot;``;`
+
+`listen` `8223``;`
+
+`proxy_http_version` `1.1``;`
+
+`proxy_set_header Upgrade $http_upgrade;`
+
+`proxy_set_header Connection` `&quot;upgrade&quot;``;`
+
+`proxy_redirect   off;`
+
+`proxy_set_header  Host       $http_host;`
+
+`proxy_set_header  X-Real-IP    $remote_addr;`
+
+`proxy_set_header  X-Forwarded-For $proxy_add_x_forwarded_for;`
+
+`proxy_next_upstream error timeout invalid_header http_500 http_502 http_503 http_504;`
+
+`proxy_max_temp_file_size` `0``;`
+
+`proxy_connect_timeout  ` `90``;`
+
+`proxy_send_timeout    ` `90``;`
+
+`proxy_read_timeout    ` `90``;`
+
+`proxy_buffer_size     1024k;`
+
+`proxy_buffers      ` `8` `1024k;`
+
+`proxy_busy_buffers_size  1024k;`
+
+`proxy_temp_file_write_size 1024k;`
+
+`location / {`
+
+`proxy_pass` `&quot;[http://node-ip:32059/](http://node-ip:32059/)&quot;``;`
+
+`}`
+
+`}`
+
+`}`
+</code></pre>
+<h2 id="dashboard">Dashboard</h2>
+<ol>
+<li>
+<p>Make sure the volume diagram matches the volume list page</p>
+</li>
+<li>
+<p>Make sure the storage diagram matches the node list page</p>
+</li>
+<li>
+<p>Make sure the node diagram matches the node list page</p>
+</li>
+<li>
+<p>Make sure the event log shows up.</p>
+</li>
+</ol>
+<table>
+<thead>
+<tr>
+<th><strong>#</strong></th>
+<th><strong>Test Case</strong></th>
+<th><strong>Test Instructions</strong></th>
+<th><strong>Expected Results</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>Volume Diagram</td>
+<td>*   Verify Volume Diagram</td>
+<td>*   At all time, Volume Diagram should correctly reflect the number and state of Longhorn Volumes (Healthy, Degraded, In Progress, Fault, Detached)</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Storage Diagram</td>
+<td>*   Verify Storage Diagram</td>
+<td>*   At all time, Storage Diagram should correctly reflect Disks Storage status (Schedulable, Reserved, Used, Disabled)</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Node Diagram</td>
+<td>*   Verify Node Diagram</td>
+<td>*   At all time, Volume Diagram should correctly reflect the number and state of Longhorn Nodes (Schedulable, Unschedulable, Down, Disabled)</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Event Logs</td>
+<td>*   Verify Event Logs</td>
+<td>*   Make sure Longhorn events shows up in Event Logs.</td>
+</tr>
+<tr>
+<td>5</td>
+<td>Longhorn Version</td>
+<td>*   Verify the version</td>
+<td>*   Make sure the version is correct</td>
+</tr>
+<tr>
+<td>6</td>
+<td>Support Bundle Link</td>
+<td>*   Click the SupportBundle link</td>
+<td>*   A pop up to enter issue id and description should appear.<br>*   On saving the form, the support bundle file should be generated and downloaded</td>
+</tr>
+<tr>
+<td>7</td>
+<td>Other links at bottom of the page</td>
+<td>*   Click links Documentation, File an issue and Slack</td>
+<td>*   Make sure the navigation of the Document, File an issue and Slack are correct.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="additional-tests">Additional Tests</h2>
+<table>
+<thead>
+<tr>
+<th><strong>Test case</strong></th>
+<th><strong>Steps</strong></th>
+<th><strong>Expected Results</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Sort in the columns</td>
+<td>Verify sorting happens correctly in the columns</td>
+<td></td>
+</tr>
+<tr>
+<td>Filter</td>
+<td>Verify Filter on different columns work</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+
+    </article>
+  </div>
+</main>
+
+    
+    
+  </body>
+</html>
