@@ -2863,7 +2863,7 @@ def wait_for_all_instance_manager_running(client):
                                                        im.name, &#34;Running&#34;,
                                                        True)
             break
-        except ApiException:
+        except Exception:
             continue
 
 
@@ -8949,7 +8949,7 @@ def volume_name(request):
                                                        im.name, &#34;Running&#34;,
                                                        True)
             break
-        except ApiException:
+        except Exception:
             continue</code></pre>
 </details>
 </dd>
