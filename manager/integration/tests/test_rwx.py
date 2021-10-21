@@ -16,6 +16,7 @@ from common import wait_delete_pod, wait_for_pod_remount
 from common import get_core_api_client, write_pod_volume_random_data
 from common import create_pvc_spec, make_deployment_with_pvc  # NOQA
 from common import core_api, statefulset, pvc, pod, client  # NOQA
+from common import RETRY_COUNTS, RETRY_INTERVAL
 from backupstore import set_random_backupstore # NOQA
 from multiprocessing import Pool
 
@@ -295,14 +296,17 @@ def test_rwx_statefulset_scale_down_up(core_api, statefulset):  # NOQA
             break
         time.sleep(DEFAULT_STATEFULSET_INTERVAL)
 
-    pods = core_api.list_namespaced_pod(namespace=LONGHORN_NAMESPACE)
-
-    found = False
-    for item in pods.items:
-        if item.metadata.name == share_manager_name[0] or \
-                item.metadata.name == share_manager_name[1]:
-            found = True
+    found = True
+    for i in range(RETRY_COUNTS):
+        pods = core_api.list_namespaced_pod(namespace=LONGHORN_NAMESPACE)
+        pod_names = []
+        for item in pods.items:
+            pod_names.append(item.metadata.name)
+        if share_manager_name[0] not in pod_names and  \
+                share_manager_name[1] not in pod_names:
+            found = False
             break
+        time.sleep(RETRY_INTERVAL)
 
     assert not found
 
