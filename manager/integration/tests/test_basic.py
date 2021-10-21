@@ -61,7 +61,7 @@ from common import DATA_SIZE_IN_MB_1
 from common import SETTING_REPLICA_NODE_SOFT_ANTI_AFFINITY
 from common import SETTING_REPLICA_REPLENISHMENT_WAIT_INTERVAL
 from common import CONDITION_REASON_SCHEDULING_FAILURE
-from common import delete_backup
+from common import delete_backup, get_backupstores
 from common import delete_backup_volume
 from common import BACKUP_BLOCK_SIZE
 from common import assert_backup_state
@@ -88,6 +88,8 @@ from backupstore import reset_backupstore_setting  # NOQA
 from backupstore import set_backupstore_s3, backupstore_get_secret  # NOQA
 
 from kubernetes import client as k8sclient
+
+BACKUPSTORE = get_backupstores()
 
 
 @pytest.mark.coretest   # NOQA
@@ -1551,6 +1553,7 @@ def test_deleting_backup_volume(set_random_backupstore, client, volume_name):  #
 
 
 @pytest.mark.coretest   # NOQA
+@pytest.mark.skipif('nfs' not in BACKUPSTORE, reason='This test is only applicable for nfs')  # NOQA
 def test_listing_backup_volume(client, backing_image=""):   # NOQA
     """
     Test listing backup volumes
@@ -3819,6 +3822,7 @@ def test_backuptarget_available_during_engine_image_not_ready(client, apps_api):
             common.wait_for_backup_target_available(client, False)
 
 
+@pytest.mark.skipif('s3' not in BACKUPSTORE, reason='This test is only applicable for s3')  # NOQA
 def test_aws_iam_role_arn(client, core_api):  # NOQA
     """
     Test AWS IAM Role ARN
