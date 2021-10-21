@@ -2815,7 +2815,7 @@ def wait_for_all_instance_manager_running(client):
                                                        im.name, "Running",
                                                        True)
             break
-        except ApiException:
+        except Exception:
             continue
 
 
