@@ -2824,8 +2824,9 @@ def wait_for_all_instance_manager_running(client):
                                                        im.name, "Running",
                                                        True)
             break
-        except ApiException:
+        except Exception:
             continue
+
 
 def wait_for_node_mountpropagation_condition(client, name):
     for i in range(RETRY_COUNTS):
@@ -3097,6 +3098,7 @@ def delete_storage_class(sc_name):
     except ApiException as e:
         assert e.status == 404
 
+
 def cleanup_storage_class():
     skip_sc_deletes = ["longhorn", "local-path"]
     api = get_storage_api_client()
@@ -3118,6 +3120,7 @@ def cleanup_storage_class():
             break
         time.sleep(RETRY_INTERVAL)
     assert ok
+
 
 def create_pvc(pvc_manifest):
     api = get_core_api_client()
