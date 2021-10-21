@@ -1354,11 +1354,14 @@ def cleanup_client():
     if backing_image_feature_supported(client):
         cleanup_all_backing_images(client)
 
+    cleanup_storage_class()
+
     # enable nodes scheduling
     reset_node(client)
     reset_settings(client)
     reset_disks_for_all_nodes(client)
     reset_engine_image(client)
+    wait_for_all_instance_manager_running(client)
 
     # check replica subdirectory of default disk path
     if not os.path.exists(DEFAULT_REPLICA_DIRECTORY):
@@ -2790,6 +2793,40 @@ def reset_engine_image(client):
     assert ready
 
 
+def wait_for_all_instance_manager_running(client):
+    core_api = get_core_api_client()
+
+    nodes = client.list_node()
+
+    for i in range(RETRY_COUNTS):
+        instance_managers = client.list_instance_manager()
+        node_to_engine_manager_map, node_to_replica_manager_map = {}, {}
+        try:
+            for im in instance_managers:
+                if im.managerType == "engine" and im.currentState == "running":
+                    node_to_engine_manager_map[im.nodeID] = im
+                elif im.managerType == "replica" and \
+                        im.currentState == "running":
+                    node_to_replica_manager_map[im.nodeID] = im
+                else:
+                    print("\nFound unknown instance manager:", im)
+            if len(node_to_engine_manager_map) != len(nodes) or \
+                    len(node_to_replica_manager_map) != len(nodes):
+                time.sleep(RETRY_INTERVAL)
+                continue
+
+            for _, im in node_to_engine_manager_map.items():
+                wait_for_instance_manager_desire_state(client, core_api,
+                                                       im.name, "Running",
+                                                       True)
+            for _, im in node_to_replica_manager_map.items():
+                wait_for_instance_manager_desire_state(client, core_api,
+                                                       im.name, "Running",
+                                                       True)
+            break
+        except ApiException:
+            continue
+
 def wait_for_node_mountpropagation_condition(client, name):
     for i in range(RETRY_COUNTS):
         node = client.by_id_node(name)
@@ -3060,6 +3097,27 @@ def delete_storage_class(sc_name):
     except ApiException as e:
         assert e.status == 404
 
+def cleanup_storage_class():
+    skip_sc_deletes = ["longhorn", "local-path"]
+    api = get_storage_api_client()
+    ret = api.list_storage_class()
+    for sc in ret.items:
+        if sc.metadata.name in skip_sc_deletes:
+            continue
+        delete_storage_class(sc.metadata.name)
+
+    ok = False
+    for _ in range(RETRY_COUNTS):
+        ok = True
+        ret = api.list_storage_class()
+        for sc in ret.items:
+            if sc.metadata.name not in skip_sc_deletes:
+                ok = False
+                break
+        if ok:
+            break
+        time.sleep(RETRY_INTERVAL)
+    assert ok
 
 def create_pvc(pvc_manifest):
     api = get_core_api_client()
