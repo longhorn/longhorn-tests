@@ -34,7 +34,7 @@ from common import wait_for_backup_restore_completed
 from common import wait_for_volume_restoration_completed
 from common import check_volume_last_backup
 from common import activate_standby_volume
-from common import create_backup
+from common import create_backup, get_backupstores
 from common import wait_for_volume_faulted
 from common import wait_for_volume_delete
 from common import SETTING_AUTO_SALVAGE
@@ -67,6 +67,7 @@ from backupstore import backupstore_s3  # NOQA
 from test_node import create_host_disk
 
 SMALL_RETRY_COUNTS = 30
+BACKUPSTORE = get_backupstores()
 
 
 @pytest.mark.coretest   # NOQA
@@ -1309,6 +1310,7 @@ def test_single_replica_failed_during_engine_start(client, core_api, volume_name
     assert snapMap[snap4.name].removed is False
 
 
+@pytest.mark.skipif('s3' not in BACKUPSTORE, reason='This test is only applicable for s3')  # NOQA
 def test_restore_volume_with_invalid_backupstore(client, volume_name, backupstore_s3): # NOQA
     """
     [HA] Test if the invalid backup target will lead to to volume restore.

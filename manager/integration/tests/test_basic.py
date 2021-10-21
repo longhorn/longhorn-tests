@@ -60,7 +60,7 @@ from common import DATA_SIZE_IN_MB_1
 from common import SETTING_REPLICA_NODE_SOFT_ANTI_AFFINITY
 from common import SETTING_REPLICA_REPLENISHMENT_WAIT_INTERVAL
 from common import CONDITION_REASON_SCHEDULING_FAILURE
-from common import delete_backup
+from common import delete_backup, get_backupstores
 from common import delete_backup_volume
 from common import BACKUP_BLOCK_SIZE
 from common import assert_backup_state
@@ -86,6 +86,8 @@ from backupstore import set_random_backupstore  # NOQA
 from backupstore import backupstore_get_backup_volume_prefix
 from backupstore import set_backupstore_url, set_backupstore_credential_secret, set_backupstore_poll_interval  # NOQA
 from backupstore import reset_backupstore_setting  # NOQA
+
+BACKUPSTORE = get_backupstores()
 
 
 @pytest.mark.coretest   # NOQA
@@ -1549,6 +1551,7 @@ def test_deleting_backup_volume(set_random_backupstore, client, volume_name):  #
 
 
 @pytest.mark.coretest   # NOQA
+@pytest.mark.skipif('nfs' not in BACKUPSTORE, reason='This test is only applicable for nfs')  # NOQA
 def test_listing_backup_volume(client, backing_image=""):   # NOQA
     """
     Test listing backup volumes
