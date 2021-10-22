@@ -2812,6 +2812,7 @@ def wait_for_all_instance_manager_running(client):
     for i in range(RETRY_COUNTS):
         instance_managers = client.list_instance_manager()
         node_to_engine_manager_map, node_to_replica_manager_map = {}, {}
+        reset_map = False
         try:
             for im in instance_managers:
                 if im.managerType == "engine" and im.currentState == "running":
@@ -2831,9 +2832,13 @@ def wait_for_all_instance_manager_running(client):
                                                        im.name, "Running",
                                                        True)
             for _, im in node_to_replica_manager_map.items():
-                wait_for_instance_manager_desire_state(client, core_api,
-                                                       im.name, "Running",
-                                                       True)
+                im = wait_for_instance_manager_desire_state(client, core_api,
+                                                            im.name, "Running",
+                                                            True)
+                if im is None:
+                    reset_map = True
+            if reset_map:
+                continue
             break
         except Exception:
             continue
@@ -4093,7 +4098,10 @@ def wait_for_pods_volume_delete(client, pod_list,  # NOQA
 def wait_for_instance_manager_desire_state(client, core_api, im_name,
                                            state, desire=True):
     for i in range(RETRY_COUNTS):
-        im = client.by_id_instance_manager(im_name)
+        try:
+            im = client.by_id_instance_manager(im_name)
+        except ApiException:
+            return None
         try:
             pod = core_api.read_namespaced_pod(name=im_name,
                                                namespace=LONGHORN_NAMESPACE)
