@@ -1440,9 +1440,9 @@ def get_backupstores():
     try:
         backupstore = os.environ[&#39;LONGHORN_BACKUPSTORES&#39;]
     except KeyError:
-        return None
-    backupstore = backupstore.replace(&#34; &#34;, &#34;&#34;)
+        return []
     try:
+        backupstore = backupstore.replace(&#34; &#34;, &#34;&#34;)
         backupstores = backupstore.split(&#34;,&#34;)
         for i in range(len(backupstores)):
             backupstores[i] = backupstores[i].split(&#34;:&#34;)[0]
@@ -6694,9 +6694,9 @@ been completed successfully</p></div>
     try:
         backupstore = os.environ[&#39;LONGHORN_BACKUPSTORES&#39;]
     except KeyError:
-        return None
-    backupstore = backupstore.replace(&#34; &#34;, &#34;&#34;)
+        return []
     try:
+        backupstore = backupstore.replace(&#34; &#34;, &#34;&#34;)
         backupstores = backupstore.split(&#34;,&#34;)
         for i in range(len(backupstores)):
             backupstores[i] = backupstores[i].split(&#34;:&#34;)[0]
