@@ -1412,9 +1412,9 @@ def get_backupstores():
     try:
         backupstore = os.environ['LONGHORN_BACKUPSTORES']
     except KeyError:
-        return None
-    backupstore = backupstore.replace(" ", "")
+        return []
     try:
+        backupstore = backupstore.replace(" ", "")
         backupstores = backupstore.split(",")
         for i in range(len(backupstores)):
             backupstores[i] = backupstores[i].split(":")[0]
