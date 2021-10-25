@@ -490,22 +490,50 @@
 </aside>
 
 <main style="padding: 1%; width: 70%;">
-  <h1 id="title">Test System Upgrade with New Instance Manager</h1>
+  <h1 id="title">Test backing image space usage with sparse files</h1>
   <div>
     <article id="content">
-       <ol>
-<li>Prepare 3 sets of longhorn-manager and longhorn-instance-manager images.</li>
-<li>Deploy Longhorn with the 1st set of images.</li>
-<li>Set <code>Guaranteed Engine Manager CPU</code> and <code>Guaranteed Replica Manager CPU</code> to 15 and 24, respectively.
-Then wait for the instance manager recreation.</li>
-<li>Create and attach a volume to a node (node1).</li>
-<li>Upgrade the Longhorn system with the 2nd set of images.
-Verify the CPU requests in the pods of both instance managers match the settings.</li>
-<li>Create and attach one more volume to node1.</li>
-<li>Upgrade the Longhorn system with the 3rd set of images.</li>
-<li>Verify the pods of the 3rd instance manager cannot be launched on node1 since there is no available CPU for the allocation.</li>
-<li>Detach the volume in the 1st instance manager pod.
-Verify the related instance manager pods will be cleaned up and the new instance manager pod can be launched on node1.</li>
+       <h3 id="prerequisite">Prerequisite</h3>
+<p>A sparse file should be prepared before test. e.g.:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">~ touch empty-filesystem.raw
+~ truncate -s 500M empty-filesystem.raw
+~ mkfs.ext4 empty-filesystem.raw
+mke2fs 1.46.1 <span style="color:#f92672">(</span>9-Feb-2021<span style="color:#f92672">)</span>
+Creating filesystem with <span style="color:#ae81ff">512000</span> 1k blocks and <span style="color:#ae81ff">128016</span> inodes
+Filesystem UUID: fe6cfb58-134a-42b3-afab-59474d9515e0
+Superblock backups stored on blocks:
+	8193, 24577, 40961, 57345, 73729, 204801, 221185, <span style="color:#ae81ff">401409</span>
+
+Allocating group tables: <span style="color:#66d9ef">done</span>
+Writing inode tables: <span style="color:#66d9ef">done</span>
+Creating journal <span style="color:#f92672">(</span><span style="color:#ae81ff">8192</span> blocks<span style="color:#f92672">)</span>: <span style="color:#66d9ef">done</span>
+Writing superblocks and filesystem accounting information: <span style="color:#66d9ef">done</span>
+
+~ shasum -a <span style="color:#ae81ff">512</span> empty-filesystem.raw
+4277f6174bf43d1f03f328eaf507f4baf84a645d79239b3ef4593a87b5127ceb097d540281e1f3557d9ad1d2591135bbcf24db480c1bd732b633b93cf4fe50c9  empty-filesystem.raw
+</code></pre></div><p>For convenience, the above example file is already uploaded to the S3 server. The URL is <code>https://longhorn-backing-image.s3.us-west-1.amazonaws.com/empty-filesystem.raw</code>.</p>
+<p>Of course, you can generate your own test file as well.</p>
+<h3 id="test-step">Test step</h3>
+<ol>
+<li>Create a backing image via one of the following ways:
+<ol>
+<li>Select source type <code>Download From URL</code> and input the S3 URL of your test file.</li>
+<li>Upload your test file to the cluster as the backing image.</li>
+</ol>
+</li>
+<li>Wait for the backing image ready.</li>
+<li>Enter into the backing image manager pod. Verify the following of the backing image file:
+<ol>
+<li>the apparent size is the same as that of the test file.</li>
+<li>the actual size is much smaller than the apparent size.</li>
+<li>the SHA512 checksum matches.</li>
+</ol>
+</li>
+<li>Create a volume using this backing image file.</li>
+<li>Attach the volume then verify the content.
+For the example backing image, you can verify it by directly mounting the volume without making a filesystem and see if the volume already contains an empty EXT4 filesystem</li>
+<li>Verify the volume work fine.</li>
+<li>Do cleanup.</li>
 </ol>
 
     </article>
