@@ -3346,6 +3346,7 @@ def test_allow_volume_creation_with_degraded_availability_restore(set_random_bac
     common.wait_for_replica_scheduled(client, dst_vol_name,
                                       to_nodes=[node1.name],
                                       expect_success=1,
+                                      expect_fail=2,
                                       chk_vol_healthy=False,
                                       chk_replica_running=False)
 
