@@ -58,9 +58,9 @@ def notifyBuild(String buildStatus = 'STARTED') {
     color = 'RED'
     colorCode = '#FF0000'
     // Send failed notifications
-    slackSend (color: colorCode, message: summary, channel: 'C01G91NUHFY',  teamDomain: 'rancher',  tokenCredentialId: 'longhorn-tests-slack-token')
+    slackSend (color: colorCode, message: summary,  tokenCredentialId: 'longhorn-tests-slack-token')
   }
 
   // Send notifications
-  slackSend (color: colorCode, message: summary, channel: 'C01PM0C376V', teamDomain: 'rancher', tokenCredentialId: 'longhorn-tests-slack-token')
+  slackSend (color: colorCode, message: summary, tokenCredentialId: 'longhorn-tests-slack-token')
 }
