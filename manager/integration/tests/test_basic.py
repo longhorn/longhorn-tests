@@ -49,7 +49,7 @@ from common import wait_for_volume_expansion
 from common import fail_replica_expansion, wait_for_expansion_failure
 from common import wait_for_volume_restoration_start
 from common import write_pod_volume_random_data, get_pod_data_md5sum
-from common import prepare_pod_with_data_in_mb
+from common import prepare_pod_with_data_in_mb, exec_command_in_pod
 from common import crash_replica_processes
 from common import wait_for_volume_condition_scheduled
 from common import wait_for_volume_condition_toomanysnapshots
@@ -72,6 +72,8 @@ from common import wait_for_backup_to_start
 from common import SETTING_DEFAULT_LONGHORN_STATIC_SC
 from common import wait_for_backup_volume
 from common import create_and_wait_statefulset
+from common import create_backup_from_volume_attached_to_pod
+from common import restore_backup_and_get_data_checksum
 
 from backupstore import backupstore_delete_volume_cfg_file
 from backupstore import backupstore_cleanup
@@ -3778,3 +3780,168 @@ def test_backuptarget_available_during_engine_image_not_ready(client, apps_api):
             # Reset backup store setting
             reset_backupstore_setting(client)
             common.wait_for_backup_target_available(client, False)
+
+
+@pytest.mark.skipif('s3' not in BACKUPSTORE, reason='This test is only applicable for s3')  # NOQA
+def test_aws_iam_role_arn(client, core_api):  # NOQA
+    """
+    Test AWS IAM Role ARN
+
+    1. Set backup target to S3
+    2. Check longhorn manager and replica instance manager Pods
+       without 'iam.amazonaws.com/role' annotation
+    3. Add AWS_IAM_ROLE_ARN to secret
+    4. Check longhorn manager and replica instance manager Pods
+       with 'iam.amazonaws.com/role' annotation
+       and matches to AWS_IAM_ROLE_ARN in secret
+    5. Update AWS_IAM_ROLE_ARN from secret
+    6. Check longhorn manager and replica instance manager Pods
+       with 'iam.amazonaws.com/role' annotation
+       and matches to AWS_IAM_ROLE_ARN in secret
+    7. Remove AWS_IAM_ROLE_ARN from secret
+    8. Check longhorn manager and replica instance manager Pods
+       without 'iam.amazonaws.com/role' annotation
+    """
+    set_backupstore_s3(client)
+
+    lh_label = 'app=longhorn-manager'
+    replica_im_label = 'longhorn.io/instance-manager-type=replica'
+    anno_key = 'iam.amazonaws.com/role'
+    secret_name = backupstore_get_secret(client)
+
+    common.wait_for_pod_annotation(
+        core_api, lh_label, anno_key, None)
+    common.wait_for_pod_annotation(
+        core_api, replica_im_label, anno_key, None)
+
+    # Add secret key AWS_IAM_ROLE_ARN value test-aws-iam-role-arn
+    secret = core_api.read_namespaced_secret(
+        name=secret_name, namespace='longhorn-system')
+    secret.data['AWS_IAM_ROLE_ARN'] = 'dGVzdC1hd3MtaWFtLXJvbGUtYXJu'
+    core_api.patch_namespaced_secret(
+        name=secret_name, namespace='longhorn-system', body=secret)
+
+    common.wait_for_pod_annotation(
+        core_api, lh_label, anno_key, 'test-aws-iam-role-arn')
+    common.wait_for_pod_annotation(
+        core_api, replica_im_label, anno_key, 'test-aws-iam-role-arn')
+
+    # Update secret key AWS_IAM_ROLE_ARN value test-aws-iam-role-arn-2
+    secret = core_api.read_namespaced_secret(
+        name=secret_name, namespace='longhorn-system')
+    secret.data['AWS_IAM_ROLE_ARN'] = 'dGVzdC1hd3MtaWFtLXJvbGUtYXJuLTI='
+    core_api.patch_namespaced_secret(
+        name=secret_name, namespace='longhorn-system', body=secret)
+
+    common.wait_for_pod_annotation(
+        core_api, lh_label, anno_key, 'test-aws-iam-role-arn-2')
+    common.wait_for_pod_annotation(
+        core_api, replica_im_label, anno_key, 'test-aws-iam-role-arn-2')
+
+    # Remove secret key AWS_IAM_ROLE_ARN
+    body = [{"op": "remove", "path": "/data/AWS_IAM_ROLE_ARN"}]
+    core_api.patch_namespaced_secret(
+        name=secret_name, namespace='longhorn-system', body=body)
+
+    common.wait_for_pod_annotation(
+        core_api, lh_label, anno_key, None)
+    common.wait_for_pod_annotation(
+        core_api, replica_im_label, anno_key, None)
+
+
+@pytest.mark.coretest   # NOQA
+def test_restore_basic(set_random_backupstore, client, core_api, volume_name, pod):  # NOQA
+    """
+    Steps:
+    1. Create a volume and attach to a pod.
+    2. Write some data into the volume and compute the checksum m1.
+    3. Create a backup say b1.
+    4. Write some more data into the volume and compute the checksum m2.
+    5. Create a backup say b2.
+    6. Delete all the data from the volume.
+    7. Write some more data into the volume and compute the checksum m3.
+    8. Create a backup say b3.
+    9. Restore backup b1 and verify the data with m1.
+    10. Restore backup b2 and verify the data with m1 and m2.
+    11. Restore backup b3 and verify the data with m3.
+    12. Delete the backup b2.
+    13. restore the backup b3 and verify the data with m3.
+    """
+
+    test_pv_name = "pv-" + volume_name
+    test_pvc_name = "pvc-" + volume_name
+    test_pod_name = "pod-" + volume_name
+
+    volume = create_and_check_volume(client, volume_name, size=str(1 * Gi))
+    create_pv_for_volume(client, core_api, volume, test_pv_name)
+    create_pvc_for_volume(client, core_api, volume, test_pvc_name)
+    pod['metadata']['name'] = test_pod_name
+    pod['spec']['volumes'] = [{
+        'name': pod['spec']['containers'][0]['volumeMounts'][0]['name'],
+        'persistentVolumeClaim': {
+            'claimName': test_pvc_name,
+        },
+    }]
+    create_and_wait_pod(core_api, pod)
+    wait_for_volume_healthy(client, volume_name)
+
+    # Write 1st data and take backup
+    backup_volume, backup1, data_checksum_1 = \
+        create_backup_from_volume_attached_to_pod(client, core_api,
+                                                  volume_name, test_pod_name,
+                                                  data_path='/data/test1')
+
+    # Write 2nd data and take backup
+    backup_volume, backup2, data_checksum_2 = \
+        create_backup_from_volume_attached_to_pod(client, core_api,
+                                                  volume_name, test_pod_name,
+                                                  data_path='/data/test2')
+
+    # Remove test1 and test2 files
+    command = 'rm /data/test1 /data/test2'
+    exec_command_in_pod(core_api, command, test_pod_name, 'default')
+
+    # Write 3rd data and take backup
+    backup_volume, backup3, data_checksum_3 = \
+        create_backup_from_volume_attached_to_pod(client, core_api,
+                                                  volume_name, test_pod_name,
+                                                  data_path='/data/test3')
+
+    delete_and_wait_pod(core_api, test_pod_name)
+
+    # restore 1st backup and assert with data_checksum_1
+    restored_data_checksum1, output, restore_pod_name = \
+        restore_backup_and_get_data_checksum(client, core_api, backup1, pod,
+                                             file_name='test1')
+    assert data_checksum_1 == restored_data_checksum1['test1']
+
+    delete_and_wait_pod(core_api, restore_pod_name)
+
+    # restore 2nd backup and assert with data_checksum_1 and data_checksum_2
+    restored_data_checksum2, output, restore_pod_name = \
+        restore_backup_and_get_data_checksum(client, core_api, backup2, pod)
+    assert data_checksum_1 == restored_data_checksum2['test1']
+    assert data_checksum_2 == restored_data_checksum2['test2']
+
+    delete_and_wait_pod(core_api, restore_pod_name)
+
+    # restore 3rd backup and assert with data_checksum_3
+    restored_data_checksum3, output, restore_pod_name = \
+        restore_backup_and_get_data_checksum(client, core_api, backup3, pod,
+                                             file_name='test3',
+                                             command=r"ls /data | grep 'test1\|test2'")  # NOQA
+    assert data_checksum_3 == restored_data_checksum3['test3']
+    assert output == ''
+
+    delete_and_wait_pod(core_api, restore_pod_name)
+
+    # Delete the 2nd backup
+    delete_backup(client, backup_volume.name, backup2.name)
+
+    # restore 3rd backup again
+    restored_data_checksum3, output, restore_pod_name = \
+        restore_backup_and_get_data_checksum(client, core_api, backup3, pod,
+                                             file_name='test3',
+                                             command=r"ls /data | grep 'test1\|test2'")  # NOQA
+    assert data_checksum_3 == restored_data_checksum3['test3']
+    assert output == ''
