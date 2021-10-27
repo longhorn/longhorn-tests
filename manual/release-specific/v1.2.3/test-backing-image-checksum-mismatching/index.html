@@ -493,37 +493,40 @@
 </aside>
 
 <main style="padding: 1%; width: 70%;">
-  <h1 id="title">Test Label-driven Recurring Job</h1>
+  <h1 id="title">Test backing image checksum mismatching</h1>
   <div>
     <article id="content">
-       <h2 id="related-issue">Related issue</h2>
-<p><a href="https://github.com/longhorn/longhorn/issues/467">https://github.com/longhorn/longhorn/issues/467</a></p>
-<h2 id="test-recurring-job-concurrency">Test Recurring Job Concurrency</h2>
-<p><strong>Given</strong> create <code>snapshot</code> recurring job with <code>concurrency</code> set to <code>2</code> and include <code>snapshot</code> recurring job <code>default</code> in groups.</p>
-<p><strong>When</strong> create volume <code>test-job-1</code>.<br>
-<em>And</em> create volume <code>test-job-2</code>.<br>
-<em>And</em> create volume <code>test-job-3</code>.<br>
-<em>And</em> create volume <code>test-job-4</code>.<br>
-<em>And</em> create volume <code>test-job-5</code>.</p>
-<p><strong>Then</strong> moniter the cron job pod log.<br>
-<em>And</em> should see 2 jobs created concurrently.</p>
-<p><strong>When</strong> update <code>snapshot1</code> recurring job with <code>concurrency</code> set to <code>3</code>.<br>
-<strong>Then</strong> moniter the cron job pod log.
-<em>And</em> should see 3 jobs created concurrently.</p>
-<h2 id="test-upgrade-migration-for-recurring-job">Test Upgrade Migration For Recurring Job</h2>
-<p><strong>Given</strong> cluster with Longhorn version prior to v1.2.0.<br>
-<em>And</em> storageclass with recurring job <code>snapshot</code> and <code>backup</code>.<br>
-<em>And</em> volume <code>test-job-1</code> created, and attached.</p>
-<p><strong>When</strong> upgrade Longhorn to v1.2.0.</p>
-<p><strong>Then</strong> should have new recurring job CR created with format <code>&lt;jobTask&gt;-&lt;jobRetain&gt;-&lt;hash(jobCron)&gt;-&lt;hash(jobLabelJSON)&gt;</code>.<br>
-<em>And</em> volume should be labeled with <code>recurring-job.longhorn.io/&lt;jobTask&gt;-&lt;jobRetain&gt;-&lt;hash(jobCron)&gt;-&lt;hash(jobLabelJSON)&gt;: enabled</code>.<br>
-<em>And</em> recurringJob should be removed in volume spec.
-<em>And</em> storageClass in <code>longhorn-storageclass</code> configMap should not have <code>recurringJobs</code>.<br>
-<em>And</em> storageClass in <code>longhorn-storageclass</code> configMap should     have <code>recurringJobSelector</code>.</p>
-<pre tabindex="0"><code>recurringJobSelector:{&quot;name&quot;:&quot;snapshot-1-97893a05-77074ba4&quot;,&quot;isGroup&quot;:fals{&quot;name&quot;:&quot;backup-1-954b3c8c-59467025&quot;,&quot;isGroup&quot;:false}]'
-</code></pre><p>When create new PVC.<br>
-And volume should be labeled with items in <code>recurringJobSelector</code>.<br>
-And recurringJob should not exist in volume spec.</p>
+       <h3 id="test-step">Test step</h3>
+<ol>
+<li>Modify setting <code>Backing Image Recovery Wait Interval</code> to a shorter value so that the backing image will start auto recovery eariler.</li>
+<li>Create a backing image file with type <code>Download From URL</code>.</li>
+<li>Launch a volume using the backing image file so that there are 2 disk records for the backing image.</li>
+<li>Modify one disk file for the backing image and make sure the file size is not changed. This will lead to data inconsistency/corruption later. e.g.,</li>
+</ol>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">root@shuo-cluster-worker-2:/# echo test &gt; /var/lib/longhorn/backing-images/bi-test-5cea928b/backing 
+root@shuo-cluster-worker-2:/# truncate -s 500M /var/lib/longhorn/backing-images/bi-test-5cea928b/backing
+</code></pre></div><ol start="5">
+<li>Remove another disk file then crash backing image manager processes for <strong>both</strong> files <strong>immediately and simultaneously</strong>. e.g.</li>
+</ol>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">root@shuo-cluster-worker-2:/var/lib/longhorn/backing-images# ps aux | grep backing
+root      <span style="color:#ae81ff">577081</span>  0.1  0.2 <span style="color:#ae81ff">1454408</span> <span style="color:#ae81ff">20740</span> ?       SLsl 10:00   0:06 backing-image-manager --debug daemon --listen 0.0.0.0:8000
+root      <span style="color:#ae81ff">650943</span>  1.5  0.8 <span style="color:#ae81ff">745556</span> <span style="color:#ae81ff">71096</span> ?        SLsl 11:11   0:01 longhorn-manager -d daemon --engine-image longhornio/longhorn-engine:master-head --instance-manager-image longhornio/longhorn-instance-manager:v1_20210731 --share-manager-image longhornio/longhorn-share-manager:v1_20211020 --backing-image-manager-image shuowu/backing-image-manager:v2_20211025-1 --manager-image shuowu/longhorn-manager:4a8782e4-dirty-2 --service-account longhorn-service-account
+root      <span style="color:#ae81ff">653188</span>  0.0  0.0   <span style="color:#ae81ff">6432</span>   <span style="color:#ae81ff">740</span> pts/1    S+   11:13   0:00 grep --color<span style="color:#f92672">=</span>auto backing
+</code></pre></div><div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">root@shuo-cluster-worker-3:~# ps aux | grep backing
+root     <span style="color:#ae81ff">2198716</span>  0.0  0.2 <span style="color:#ae81ff">1528140</span> <span style="color:#ae81ff">20600</span> ?       SLsl 10:00   0:03 backing-image-manager --debug daemon --listen 0.0.0.0:8000
+root     <span style="color:#ae81ff">2290980</span>  1.5  0.9 <span style="color:#ae81ff">745556</span> <span style="color:#ae81ff">76248</span> ?        SLsl 11:11   0:01 longhorn-manager -d daemon --engine-image longhornio/longhorn-engine:master-head --instance-manager-image longhornio/longhorn-instance-manager:v1_20210731 --share-manager-image longhornio/longhorn-share-manager:v1_20211020 --backing-image-manager-image shuowu/backing-image-manager:v2_20211025-1 --manager-image shuowu/longhorn-manager:4a8782e4-dirty-2 --service-account longhorn-service-account
+root     <span style="color:#ae81ff">2293575</span>  0.0  0.0   <span style="color:#ae81ff">6432</span>   <span style="color:#ae81ff">676</span> pts/1    S+   11:13   0:00 grep --color<span style="color:#f92672">=</span>auto backing
+root@shuo-cluster-worker-3:~# rm /var/lib/longhorn/backing-images/bi-test-5cea928b/backing <span style="color:#f92672">&amp;&amp;</span> kill -9 <span style="color:#ae81ff">2198716</span>
+</code></pre></div><ol start="6">
+<li>Check the backing image:
+<ol>
+<li>The state of both files will become <code>unknown</code> then <code>failed</code>.</li>
+<li>The error message of the modified file is like <code>backing image expected checksum xxx doesn't match the existing file checksum xxxx</code>) then <code>stat /data/backing-images/xxx/backing: no such file or directory</code>.</li>
+<li>The current checksum of the backing image keeps unchanged.</li>
+</ol>
+</li>
+<li>Wait for a while then there will be a backing image data source pod restarting the download. After re-downloading, the backing image will get recovered.</li>
+</ol>
 
     </article>
   </div>

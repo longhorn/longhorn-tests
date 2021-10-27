@@ -150,6 +150,8 @@
   </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.2.0/test-backing-image-upload/</loc>
   </url><url>
+    <loc>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.2.3/test-backing-image-checksum-mismatching/</loc>
+  </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/backing-image-during-upgrade/</loc>
   </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.2.3/test-backing-image-space-usage/</loc>

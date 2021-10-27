@@ -7,6 +7,15 @@
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language><atom:link href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.2.3/index.xml" rel="self" type="application/rss+xml" />
     <item>
+      <title>Test backing image checksum mismatching</title>
+      <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.2.3/test-backing-image-checksum-mismatching/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.2.3/test-backing-image-checksum-mismatching/</guid>
+      <description>Test step  Modify setting Backing Image Recovery Wait Interval to a shorter value so that the backing image will start auto recovery eariler. Create a backing image file with type Download From URL. Launch a volume using the backing image file so that there are 2 disk records for the backing image. Modify one disk file for the backing image and make sure the file size is not changed. This will lead to data inconsistency/corruption later.</description>
+    </item>
+    
+    <item>
       <title>Test backing image space usage with sparse files</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.2.3/test-backing-image-space-usage/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>

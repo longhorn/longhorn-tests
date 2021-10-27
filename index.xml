@@ -627,6 +627,15 @@ kubectl get &amp;lt;LONGHORN-CRD&amp;gt; -n longhorn-system Verify that the outp
     </item>
     
     <item>
+      <title>Test backing image checksum mismatching</title>
+      <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.2.3/test-backing-image-checksum-mismatching/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.2.3/test-backing-image-checksum-mismatching/</guid>
+      <description>Test step  Modify setting Backing Image Recovery Wait Interval to a shorter value so that the backing image will start auto recovery eariler. Create a backing image file with type Download From URL. Launch a volume using the backing image file so that there are 2 disk records for the backing image. Modify one disk file for the backing image and make sure the file size is not changed. This will lead to data inconsistency/corruption later.</description>
+    </item>
+    
+    <item>
       <title>Test Backing Image during Longhorn upgrade</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/backing-image-during-upgrade/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
