@@ -4460,3 +4460,97 @@ def wait_for_pod_annotation(core_api,
                 break
         time.sleep(RETRY_INTERVAL)
     assert matches is True
+
+
+def create_backup_from_volume_attached_to_pod(client, core_api,
+                                              volume_name, pod_name,
+                                              data_path='/data/test',
+                                              data_size=DATA_SIZE_IN_MB_1):
+    """
+        Write data in the pod and take a backup.
+        Args:
+            client: The Longhorn client to use in the request.
+            core_api: An instance of CoreV1API.
+            pod_name: The name of the Pod.
+            volume_name: The volume name which is attached to the pod.
+            data_path: File name suffixed to the mount point. e.g /data/file
+            data_size: Size of the data to be written in the pod.
+        Returns:
+            The backup volume name, backup, checksum of data written in the
+            backup
+    """
+    write_pod_volume_random_data(core_api, pod_name,
+                                 data_path, data_size)
+    data_checksum = get_pod_data_md5sum(core_api, pod_name, data_path)
+
+    snap = create_snapshot(client, volume_name)
+    volume = client.by_id_volume(volume_name)
+    volume.snapshotBackup(name=snap.name)
+    wait_for_backup_completion(client, volume_name, snap.name)
+    backup_volume, backup = find_backup(client, volume_name, snap.name)
+
+    return backup_volume, backup, data_checksum
+
+
+def restore_backup_and_get_data_checksum(client, core_api, backup, pod,
+                                         file_name='', command=''):
+    """
+        Restore the backup in a pod and get the checksum of all the files
+        or checksum of a particular file.
+        Args:
+            client: The Longhorn client to use in the request.
+            core_api: An instance of CoreV1API.
+            backup: The backup to be restored.
+            pod: Pod fixture.
+            file_name: Optional - File whose checksum to be computed.
+            command: Optional - command to be executed in the pod.
+        Returns:
+            The checksum as a dictionary as in file_name=checksum and the
+            output of the command executed in the pod.
+    """
+    restore_volume_name = generate_volume_name() + "-restore"
+    restore_pod_name = restore_volume_name + "-pod"
+    restore_pv_name = restore_volume_name + "-pv"
+    restore_pvc_name = restore_volume_name + "-pvc"
+    data_checksum = {}
+
+    client.create_volume(name=restore_volume_name, size=str(1 * Gi),
+                         fromBackup=backup.url)
+    volume = wait_for_volume_detached(client, restore_volume_name)
+    create_pv_for_volume(client, core_api, volume, restore_pv_name)
+    create_pvc_for_volume(client, core_api, volume, restore_pvc_name)
+    pod['metadata']['name'] = restore_pod_name
+    pod['spec']['volumes'] = [{
+        'name': pod['spec']['containers'][0]['volumeMounts'][0]['name'],
+        'persistentVolumeClaim': {
+            'claimName': restore_pvc_name,
+        },
+    }]
+    create_and_wait_pod(core_api, pod)
+
+    restore_volume = client.by_id_volume(restore_volume_name)
+    assert restore_volume[VOLUME_FIELD_ROBUSTNESS] == VOLUME_ROBUSTNESS_HEALTHY
+
+    if file_name == '':
+        file_list = exec_command_in_pod(core_api, 'ls /data', restore_pod_name,
+                                        'default')
+        file_list = file_list.strip()
+        file_list = file_list.split('\n')
+        if len(file_list) > 0:
+            for file_name in file_list:
+                data_path = '/data/' + file_name
+                data_checksum[file_name] = \
+                    get_pod_data_md5sum(core_api, restore_pod_name, data_path)
+    else:
+        data_path = '/data/' + file_name
+        data_checksum[file_name] = get_pod_data_md5sum(core_api,
+                                                       restore_pod_name,
+                                                       data_path)
+
+    # This is optional, if you want to execute any command and get the output
+    output = ''
+    if command != '':
+        output = exec_command_in_pod(core_api, command, restore_pod_name,
+                                     'default')
+
+    return data_checksum, output, restore_pod_name
