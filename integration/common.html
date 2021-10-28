@@ -4473,7 +4473,101 @@ def wait_for_pod_annotation(core_api,
                 matches = True
                 break
         time.sleep(RETRY_INTERVAL)
-    assert matches is True</code></pre>
+    assert matches is True
+
+
+def create_backup_from_volume_attached_to_pod(client, core_api,
+                                              volume_name, pod_name,
+                                              data_path=&#39;/data/test&#39;,
+                                              data_size=DATA_SIZE_IN_MB_1):
+    &#34;&#34;&#34;
+        Write data in the pod and take a backup.
+        Args:
+            client: The Longhorn client to use in the request.
+            core_api: An instance of CoreV1API.
+            pod_name: The name of the Pod.
+            volume_name: The volume name which is attached to the pod.
+            data_path: File name suffixed to the mount point. e.g /data/file
+            data_size: Size of the data to be written in the pod.
+        Returns:
+            The backup volume name, backup, checksum of data written in the
+            backup
+    &#34;&#34;&#34;
+    write_pod_volume_random_data(core_api, pod_name,
+                                 data_path, data_size)
+    data_checksum = get_pod_data_md5sum(core_api, pod_name, data_path)
+
+    snap = create_snapshot(client, volume_name)
+    volume = client.by_id_volume(volume_name)
+    volume.snapshotBackup(name=snap.name)
+    wait_for_backup_completion(client, volume_name, snap.name)
+    backup_volume, backup = find_backup(client, volume_name, snap.name)
+
+    return backup_volume, backup, data_checksum
+
+
+def restore_backup_and_get_data_checksum(client, core_api, backup, pod,
+                                         file_name=&#39;&#39;, command=&#39;&#39;):
+    &#34;&#34;&#34;
+        Restore the backup in a pod and get the checksum of all the files
+        or checksum of a particular file.
+        Args:
+            client: The Longhorn client to use in the request.
+            core_api: An instance of CoreV1API.
+            backup: The backup to be restored.
+            pod: Pod fixture.
+            file_name: Optional - File whose checksum to be computed.
+            command: Optional - command to be executed in the pod.
+        Returns:
+            The checksum as a dictionary as in file_name=checksum and the
+            output of the command executed in the pod.
+    &#34;&#34;&#34;
+    restore_volume_name = generate_volume_name() + &#34;-restore&#34;
+    restore_pod_name = restore_volume_name + &#34;-pod&#34;
+    restore_pv_name = restore_volume_name + &#34;-pv&#34;
+    restore_pvc_name = restore_volume_name + &#34;-pvc&#34;
+    data_checksum = {}
+
+    client.create_volume(name=restore_volume_name, size=str(1 * Gi),
+                         fromBackup=backup.url)
+    volume = wait_for_volume_detached(client, restore_volume_name)
+    create_pv_for_volume(client, core_api, volume, restore_pv_name)
+    create_pvc_for_volume(client, core_api, volume, restore_pvc_name)
+    pod[&#39;metadata&#39;][&#39;name&#39;] = restore_pod_name
+    pod[&#39;spec&#39;][&#39;volumes&#39;] = [{
+        &#39;name&#39;: pod[&#39;spec&#39;][&#39;containers&#39;][0][&#39;volumeMounts&#39;][0][&#39;name&#39;],
+        &#39;persistentVolumeClaim&#39;: {
+            &#39;claimName&#39;: restore_pvc_name,
+        },
+    }]
+    create_and_wait_pod(core_api, pod)
+
+    restore_volume = client.by_id_volume(restore_volume_name)
+    assert restore_volume[VOLUME_FIELD_ROBUSTNESS] == VOLUME_ROBUSTNESS_HEALTHY
+
+    if file_name == &#39;&#39;:
+        file_list = exec_command_in_pod(core_api, &#39;ls /data&#39;, restore_pod_name,
+                                        &#39;default&#39;)
+        file_list = file_list.strip()
+        file_list = file_list.split(&#39;\n&#39;)
+        if len(file_list) &gt; 0:
+            for file_name in file_list:
+                data_path = &#39;/data/&#39; + file_name
+                data_checksum[file_name] = \
+                    get_pod_data_md5sum(core_api, restore_pod_name, data_path)
+    else:
+        data_path = &#39;/data/&#39; + file_name
+        data_checksum[file_name] = get_pod_data_md5sum(core_api,
+                                                       restore_pod_name,
+                                                       data_path)
+
+    # This is optional, if you want to execute any command and get the output
+    output = &#39;&#39;
+    if command != &#39;&#39;:
+        output = exec_command_in_pod(core_api, command, restore_pod_name,
+                                     &#39;default&#39;)
+
+    return data_checksum, output, restore_pod_name</code></pre>
 </details>
 </section>
 <section>
@@ -5673,6 +5767,63 @@ or it times out, whichever occurs first.</p></div>
     assert volume.lastBackupAt != &#34;&#34;
 
     return bv, b, snap, data</code></pre>
+</details>
+</dd>
+<dt id="tests.common.create_backup_from_volume_attached_to_pod"><code class="name flex">
+<span>def <span class="ident">create_backup_from_volume_attached_to_pod</span></span>(<span>client, core_api, volume_name, pod_name, data_path='/data/test', data_size=100)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Write data in the pod and take a backup.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>client</code></strong></dt>
+<dd>The Longhorn client to use in the request.</dd>
+<dt><strong><code>core_api</code></strong></dt>
+<dd>An instance of CoreV1API.</dd>
+<dt><strong><code>pod_name</code></strong></dt>
+<dd>The name of the Pod.</dd>
+<dt><strong><code>volume_name</code></strong></dt>
+<dd>The volume name which is attached to the pod.</dd>
+<dt><strong><code>data_path</code></strong></dt>
+<dd>File name suffixed to the mount point. e.g /data/file</dd>
+<dt><strong><code>data_size</code></strong></dt>
+<dd>Size of the data to be written in the pod.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>The backup volume name, backup, checksum of data written in the
+backup</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def create_backup_from_volume_attached_to_pod(client, core_api,
+                                              volume_name, pod_name,
+                                              data_path=&#39;/data/test&#39;,
+                                              data_size=DATA_SIZE_IN_MB_1):
+    &#34;&#34;&#34;
+        Write data in the pod and take a backup.
+        Args:
+            client: The Longhorn client to use in the request.
+            core_api: An instance of CoreV1API.
+            pod_name: The name of the Pod.
+            volume_name: The volume name which is attached to the pod.
+            data_path: File name suffixed to the mount point. e.g /data/file
+            data_size: Size of the data to be written in the pod.
+        Returns:
+            The backup volume name, backup, checksum of data written in the
+            backup
+    &#34;&#34;&#34;
+    write_pod_volume_random_data(core_api, pod_name,
+                                 data_path, data_size)
+    data_checksum = get_pod_data_md5sum(core_api, pod_name, data_path)
+
+    snap = create_snapshot(client, volume_name)
+    volume = client.by_id_volume(volume_name)
+    volume.snapshotBackup(name=snap.name)
+    wait_for_backup_completion(client, volume_name, snap.name)
+    backup_volume, backup = find_backup(client, volume_name, snap.name)
+
+    return backup_volume, backup, data_checksum</code></pre>
 </details>
 </dd>
 <dt id="tests.common.create_pv_for_volume"><code class="name flex">
@@ -8310,6 +8461,98 @@ def random_labels():
                       setting_default_value)
                 print(s)
                 print(e)</code></pre>
+</details>
+</dd>
+<dt id="tests.common.restore_backup_and_get_data_checksum"><code class="name flex">
+<span>def <span class="ident">restore_backup_and_get_data_checksum</span></span>(<span>client, core_api, backup, pod, file_name='', command='')</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Restore the backup in a pod and get the checksum of all the files
+or checksum of a particular file.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>client</code></strong></dt>
+<dd>The Longhorn client to use in the request.</dd>
+<dt><strong><code>core_api</code></strong></dt>
+<dd>An instance of CoreV1API.</dd>
+<dt><strong><code>backup</code></strong></dt>
+<dd>The backup to be restored.</dd>
+<dt><strong><code>pod</code></strong></dt>
+<dd>Pod fixture.</dd>
+<dt><strong><code>file_name</code></strong></dt>
+<dd>Optional - File whose checksum to be computed.</dd>
+<dt><strong><code>command</code></strong></dt>
+<dd>Optional - command to be executed in the pod.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>The checksum as a dictionary as in file_name=checksum and the
+output of the command executed in the pod.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def restore_backup_and_get_data_checksum(client, core_api, backup, pod,
+                                         file_name=&#39;&#39;, command=&#39;&#39;):
+    &#34;&#34;&#34;
+        Restore the backup in a pod and get the checksum of all the files
+        or checksum of a particular file.
+        Args:
+            client: The Longhorn client to use in the request.
+            core_api: An instance of CoreV1API.
+            backup: The backup to be restored.
+            pod: Pod fixture.
+            file_name: Optional - File whose checksum to be computed.
+            command: Optional - command to be executed in the pod.
+        Returns:
+            The checksum as a dictionary as in file_name=checksum and the
+            output of the command executed in the pod.
+    &#34;&#34;&#34;
+    restore_volume_name = generate_volume_name() + &#34;-restore&#34;
+    restore_pod_name = restore_volume_name + &#34;-pod&#34;
+    restore_pv_name = restore_volume_name + &#34;-pv&#34;
+    restore_pvc_name = restore_volume_name + &#34;-pvc&#34;
+    data_checksum = {}
+
+    client.create_volume(name=restore_volume_name, size=str(1 * Gi),
+                         fromBackup=backup.url)
+    volume = wait_for_volume_detached(client, restore_volume_name)
+    create_pv_for_volume(client, core_api, volume, restore_pv_name)
+    create_pvc_for_volume(client, core_api, volume, restore_pvc_name)
+    pod[&#39;metadata&#39;][&#39;name&#39;] = restore_pod_name
+    pod[&#39;spec&#39;][&#39;volumes&#39;] = [{
+        &#39;name&#39;: pod[&#39;spec&#39;][&#39;containers&#39;][0][&#39;volumeMounts&#39;][0][&#39;name&#39;],
+        &#39;persistentVolumeClaim&#39;: {
+            &#39;claimName&#39;: restore_pvc_name,
+        },
+    }]
+    create_and_wait_pod(core_api, pod)
+
+    restore_volume = client.by_id_volume(restore_volume_name)
+    assert restore_volume[VOLUME_FIELD_ROBUSTNESS] == VOLUME_ROBUSTNESS_HEALTHY
+
+    if file_name == &#39;&#39;:
+        file_list = exec_command_in_pod(core_api, &#39;ls /data&#39;, restore_pod_name,
+                                        &#39;default&#39;)
+        file_list = file_list.strip()
+        file_list = file_list.split(&#39;\n&#39;)
+        if len(file_list) &gt; 0:
+            for file_name in file_list:
+                data_path = &#39;/data/&#39; + file_name
+                data_checksum[file_name] = \
+                    get_pod_data_md5sum(core_api, restore_pod_name, data_path)
+    else:
+        data_path = &#39;/data/&#39; + file_name
+        data_checksum[file_name] = get_pod_data_md5sum(core_api,
+                                                       restore_pod_name,
+                                                       data_path)
+
+    # This is optional, if you want to execute any command and get the output
+    output = &#39;&#39;
+    if command != &#39;&#39;:
+        output = exec_command_in_pod(core_api, command, restore_pod_name,
+                                     &#39;default&#39;)
+
+    return data_checksum, output, restore_pod_name</code></pre>
 </details>
 </dd>
 <dt id="tests.common.scheduling_api"><code class="name flex">
@@ -11242,6 +11485,7 @@ volume. Trigger a failed assertion of one is detected.
 <li><code><a title="tests.common.create_and_wait_statefulset" href="#tests.common.create_and_wait_statefulset">create_and_wait_statefulset</a></code></li>
 <li><code><a title="tests.common.create_backing_image_with_matching_url" href="#tests.common.create_backing_image_with_matching_url">create_backing_image_with_matching_url</a></code></li>
 <li><code><a title="tests.common.create_backup" href="#tests.common.create_backup">create_backup</a></code></li>
+<li><code><a title="tests.common.create_backup_from_volume_attached_to_pod" href="#tests.common.create_backup_from_volume_attached_to_pod">create_backup_from_volume_attached_to_pod</a></code></li>
 <li><code><a title="tests.common.create_pv_for_volume" href="#tests.common.create_pv_for_volume">create_pv_for_volume</a></code></li>
 <li><code><a title="tests.common.create_pvc" href="#tests.common.create_pvc">create_pvc</a></code></li>
 <li><code><a title="tests.common.create_pvc_for_volume" href="#tests.common.create_pvc_for_volume">create_pvc_for_volume</a></code></li>
@@ -11351,6 +11595,7 @@ volume. Trigger a failed assertion of one is detected.
 <li><code><a title="tests.common.reset_longhorn_node_zone" href="#tests.common.reset_longhorn_node_zone">reset_longhorn_node_zone</a></code></li>
 <li><code><a title="tests.common.reset_node" href="#tests.common.reset_node">reset_node</a></code></li>
 <li><code><a title="tests.common.reset_settings" href="#tests.common.reset_settings">reset_settings</a></code></li>
+<li><code><a title="tests.common.restore_backup_and_get_data_checksum" href="#tests.common.restore_backup_and_get_data_checksum">restore_backup_and_get_data_checksum</a></code></li>
 <li><code><a title="tests.common.scheduling_api" href="#tests.common.scheduling_api">scheduling_api</a></code></li>
 <li><code><a title="tests.common.set_k8s_node_zone_label" href="#tests.common.set_k8s_node_zone_label">set_k8s_node_zone_label</a></code></li>
 <li><code><a title="tests.common.set_node_scheduling" href="#tests.common.set_node_scheduling">set_node_scheduling</a></code></li>

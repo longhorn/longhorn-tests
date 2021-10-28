@@ -78,7 +78,7 @@ from common import wait_for_volume_expansion
 from common import fail_replica_expansion, wait_for_expansion_failure
 from common import wait_for_volume_restoration_start
 from common import write_pod_volume_random_data, get_pod_data_md5sum
-from common import prepare_pod_with_data_in_mb
+from common import prepare_pod_with_data_in_mb, exec_command_in_pod
 from common import crash_replica_processes
 from common import wait_for_volume_condition_scheduled
 from common import wait_for_volume_condition_toomanysnapshots
@@ -101,6 +101,8 @@ from common import wait_for_backup_to_start
 from common import SETTING_DEFAULT_LONGHORN_STATIC_SC
 from common import wait_for_backup_volume
 from common import create_and_wait_statefulset
+from common import create_backup_from_volume_attached_to_pod
+from common import restore_backup_and_get_data_checksum
 
 from backupstore import backupstore_delete_volume_cfg_file
 from backupstore import backupstore_cleanup
@@ -3915,7 +3917,105 @@ def test_aws_iam_role_arn(client, core_api):  # NOQA
     common.wait_for_pod_annotation(
         core_api, lh_label, anno_key, None)
     common.wait_for_pod_annotation(
-        core_api, replica_im_label, anno_key, None)</code></pre>
+        core_api, replica_im_label, anno_key, None)
+
+
+@pytest.mark.coretest   # NOQA
+def test_restore_basic(set_random_backupstore, client, core_api, volume_name, pod):  # NOQA
+    &#34;&#34;&#34;
+    Steps:
+    1. Create a volume and attach to a pod.
+    2. Write some data into the volume and compute the checksum m1.
+    3. Create a backup say b1.
+    4. Write some more data into the volume and compute the checksum m2.
+    5. Create a backup say b2.
+    6. Delete all the data from the volume.
+    7. Write some more data into the volume and compute the checksum m3.
+    8. Create a backup say b3.
+    9. Restore backup b1 and verify the data with m1.
+    10. Restore backup b2 and verify the data with m1 and m2.
+    11. Restore backup b3 and verify the data with m3.
+    12. Delete the backup b2.
+    13. restore the backup b3 and verify the data with m3.
+    &#34;&#34;&#34;
+
+    test_pv_name = &#34;pv-&#34; + volume_name
+    test_pvc_name = &#34;pvc-&#34; + volume_name
+    test_pod_name = &#34;pod-&#34; + volume_name
+
+    volume = create_and_check_volume(client, volume_name, size=str(1 * Gi))
+    create_pv_for_volume(client, core_api, volume, test_pv_name)
+    create_pvc_for_volume(client, core_api, volume, test_pvc_name)
+    pod[&#39;metadata&#39;][&#39;name&#39;] = test_pod_name
+    pod[&#39;spec&#39;][&#39;volumes&#39;] = [{
+        &#39;name&#39;: pod[&#39;spec&#39;][&#39;containers&#39;][0][&#39;volumeMounts&#39;][0][&#39;name&#39;],
+        &#39;persistentVolumeClaim&#39;: {
+            &#39;claimName&#39;: test_pvc_name,
+        },
+    }]
+    create_and_wait_pod(core_api, pod)
+    wait_for_volume_healthy(client, volume_name)
+
+    # Write 1st data and take backup
+    backup_volume, backup1, data_checksum_1 = \
+        create_backup_from_volume_attached_to_pod(client, core_api,
+                                                  volume_name, test_pod_name,
+                                                  data_path=&#39;/data/test1&#39;)
+
+    # Write 2nd data and take backup
+    backup_volume, backup2, data_checksum_2 = \
+        create_backup_from_volume_attached_to_pod(client, core_api,
+                                                  volume_name, test_pod_name,
+                                                  data_path=&#39;/data/test2&#39;)
+
+    # Remove test1 and test2 files
+    command = &#39;rm /data/test1 /data/test2&#39;
+    exec_command_in_pod(core_api, command, test_pod_name, &#39;default&#39;)
+
+    # Write 3rd data and take backup
+    backup_volume, backup3, data_checksum_3 = \
+        create_backup_from_volume_attached_to_pod(client, core_api,
+                                                  volume_name, test_pod_name,
+                                                  data_path=&#39;/data/test3&#39;)
+
+    delete_and_wait_pod(core_api, test_pod_name)
+
+    # restore 1st backup and assert with data_checksum_1
+    restored_data_checksum1, output, restore_pod_name = \
+        restore_backup_and_get_data_checksum(client, core_api, backup1, pod,
+                                             file_name=&#39;test1&#39;)
+    assert data_checksum_1 == restored_data_checksum1[&#39;test1&#39;]
+
+    delete_and_wait_pod(core_api, restore_pod_name)
+
+    # restore 2nd backup and assert with data_checksum_1 and data_checksum_2
+    restored_data_checksum2, output, restore_pod_name = \
+        restore_backup_and_get_data_checksum(client, core_api, backup2, pod)
+    assert data_checksum_1 == restored_data_checksum2[&#39;test1&#39;]
+    assert data_checksum_2 == restored_data_checksum2[&#39;test2&#39;]
+
+    delete_and_wait_pod(core_api, restore_pod_name)
+
+    # restore 3rd backup and assert with data_checksum_3
+    restored_data_checksum3, output, restore_pod_name = \
+        restore_backup_and_get_data_checksum(client, core_api, backup3, pod,
+                                             file_name=&#39;test3&#39;,
+                                             command=r&#34;ls /data | grep &#39;test1\|test2&#39;&#34;)  # NOQA
+    assert data_checksum_3 == restored_data_checksum3[&#39;test3&#39;]
+    assert output == &#39;&#39;
+
+    delete_and_wait_pod(core_api, restore_pod_name)
+
+    # Delete the 2nd backup
+    delete_backup(client, backup_volume.name, backup2.name)
+
+    # restore 3rd backup again
+    restored_data_checksum3, output, restore_pod_name = \
+        restore_backup_and_get_data_checksum(client, core_api, backup3, pod,
+                                             file_name=&#39;test3&#39;,
+                                             command=r&#34;ls /data | grep &#39;test1\|test2&#39;&#34;)  # NOQA
+    assert data_checksum_3 == restored_data_checksum3[&#39;test3&#39;]
+    assert output == &#39;&#39;</code></pre>
 </details>
 </section>
 <section>
@@ -7559,6 +7659,126 @@ Then all 10 volumes are deleted in 1 minute.</p></div>
                                        retry_counts=retry_counts)</code></pre>
 </details>
 </dd>
+<dt id="tests.test_basic.test_restore_basic"><code class="name flex">
+<span>def <span class="ident">test_restore_basic</span></span>(<span>set_random_backupstore, client, core_api, volume_name, pod)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Steps:
+1. Create a volume and attach to a pod.
+2. Write some data into the volume and compute the checksum m1.
+3. Create a backup say b1.
+4. Write some more data into the volume and compute the checksum m2.
+5. Create a backup say b2.
+6. Delete all the data from the volume.
+7. Write some more data into the volume and compute the checksum m3.
+8. Create a backup say b3.
+9. Restore backup b1 and verify the data with m1.
+10. Restore backup b2 and verify the data with m1 and m2.
+11. Restore backup b3 and verify the data with m3.
+12. Delete the backup b2.
+13. restore the backup b3 and verify the data with m3.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@pytest.mark.coretest   # NOQA
+def test_restore_basic(set_random_backupstore, client, core_api, volume_name, pod):  # NOQA
+    &#34;&#34;&#34;
+    Steps:
+    1. Create a volume and attach to a pod.
+    2. Write some data into the volume and compute the checksum m1.
+    3. Create a backup say b1.
+    4. Write some more data into the volume and compute the checksum m2.
+    5. Create a backup say b2.
+    6. Delete all the data from the volume.
+    7. Write some more data into the volume and compute the checksum m3.
+    8. Create a backup say b3.
+    9. Restore backup b1 and verify the data with m1.
+    10. Restore backup b2 and verify the data with m1 and m2.
+    11. Restore backup b3 and verify the data with m3.
+    12. Delete the backup b2.
+    13. restore the backup b3 and verify the data with m3.
+    &#34;&#34;&#34;
+
+    test_pv_name = &#34;pv-&#34; + volume_name
+    test_pvc_name = &#34;pvc-&#34; + volume_name
+    test_pod_name = &#34;pod-&#34; + volume_name
+
+    volume = create_and_check_volume(client, volume_name, size=str(1 * Gi))
+    create_pv_for_volume(client, core_api, volume, test_pv_name)
+    create_pvc_for_volume(client, core_api, volume, test_pvc_name)
+    pod[&#39;metadata&#39;][&#39;name&#39;] = test_pod_name
+    pod[&#39;spec&#39;][&#39;volumes&#39;] = [{
+        &#39;name&#39;: pod[&#39;spec&#39;][&#39;containers&#39;][0][&#39;volumeMounts&#39;][0][&#39;name&#39;],
+        &#39;persistentVolumeClaim&#39;: {
+            &#39;claimName&#39;: test_pvc_name,
+        },
+    }]
+    create_and_wait_pod(core_api, pod)
+    wait_for_volume_healthy(client, volume_name)
+
+    # Write 1st data and take backup
+    backup_volume, backup1, data_checksum_1 = \
+        create_backup_from_volume_attached_to_pod(client, core_api,
+                                                  volume_name, test_pod_name,
+                                                  data_path=&#39;/data/test1&#39;)
+
+    # Write 2nd data and take backup
+    backup_volume, backup2, data_checksum_2 = \
+        create_backup_from_volume_attached_to_pod(client, core_api,
+                                                  volume_name, test_pod_name,
+                                                  data_path=&#39;/data/test2&#39;)
+
+    # Remove test1 and test2 files
+    command = &#39;rm /data/test1 /data/test2&#39;
+    exec_command_in_pod(core_api, command, test_pod_name, &#39;default&#39;)
+
+    # Write 3rd data and take backup
+    backup_volume, backup3, data_checksum_3 = \
+        create_backup_from_volume_attached_to_pod(client, core_api,
+                                                  volume_name, test_pod_name,
+                                                  data_path=&#39;/data/test3&#39;)
+
+    delete_and_wait_pod(core_api, test_pod_name)
+
+    # restore 1st backup and assert with data_checksum_1
+    restored_data_checksum1, output, restore_pod_name = \
+        restore_backup_and_get_data_checksum(client, core_api, backup1, pod,
+                                             file_name=&#39;test1&#39;)
+    assert data_checksum_1 == restored_data_checksum1[&#39;test1&#39;]
+
+    delete_and_wait_pod(core_api, restore_pod_name)
+
+    # restore 2nd backup and assert with data_checksum_1 and data_checksum_2
+    restored_data_checksum2, output, restore_pod_name = \
+        restore_backup_and_get_data_checksum(client, core_api, backup2, pod)
+    assert data_checksum_1 == restored_data_checksum2[&#39;test1&#39;]
+    assert data_checksum_2 == restored_data_checksum2[&#39;test2&#39;]
+
+    delete_and_wait_pod(core_api, restore_pod_name)
+
+    # restore 3rd backup and assert with data_checksum_3
+    restored_data_checksum3, output, restore_pod_name = \
+        restore_backup_and_get_data_checksum(client, core_api, backup3, pod,
+                                             file_name=&#39;test3&#39;,
+                                             command=r&#34;ls /data | grep &#39;test1\|test2&#39;&#34;)  # NOQA
+    assert data_checksum_3 == restored_data_checksum3[&#39;test3&#39;]
+    assert output == &#39;&#39;
+
+    delete_and_wait_pod(core_api, restore_pod_name)
+
+    # Delete the 2nd backup
+    delete_backup(client, backup_volume.name, backup2.name)
+
+    # restore 3rd backup again
+    restored_data_checksum3, output, restore_pod_name = \
+        restore_backup_and_get_data_checksum(client, core_api, backup3, pod,
+                                             file_name=&#39;test3&#39;,
+                                             command=r&#34;ls /data | grep &#39;test1\|test2&#39;&#34;)  # NOQA
+    assert data_checksum_3 == restored_data_checksum3[&#39;test3&#39;]
+    assert output == &#39;&#39;</code></pre>
+</details>
+</dd>
 <dt id="tests.test_basic.test_restore_inc"><code class="name flex">
 <span>def <span class="ident">test_restore_inc</span></span>(<span>set_random_backupstore, client, core_api, volume_name, pod)</span>
 </code></dt>
@@ -8946,6 +9166,7 @@ the format <strong><em>*rw</em></strong>*</li>
 <li><code><a title="tests.test_basic.test_hosts" href="#tests.test_basic.test_hosts">test_hosts</a></code></li>
 <li><code><a title="tests.test_basic.test_listing_backup_volume" href="#tests.test_basic.test_listing_backup_volume">test_listing_backup_volume</a></code></li>
 <li><code><a title="tests.test_basic.test_multiple_volumes_creation_with_degraded_availability" href="#tests.test_basic.test_multiple_volumes_creation_with_degraded_availability">test_multiple_volumes_creation_with_degraded_availability</a></code></li>
+<li><code><a title="tests.test_basic.test_restore_basic" href="#tests.test_basic.test_restore_basic">test_restore_basic</a></code></li>
 <li><code><a title="tests.test_basic.test_restore_inc" href="#tests.test_basic.test_restore_inc">test_restore_inc</a></code></li>
 <li><code><a title="tests.test_basic.test_restore_inc_with_expansion" href="#tests.test_basic.test_restore_inc_with_expansion">test_restore_inc_with_expansion</a></code></li>
 <li><code><a title="tests.test_basic.test_running_volume_with_scheduling_failure" href="#tests.test_basic.test_running_volume_with_scheduling_failure">test_running_volume_with_scheduling_failure</a></code></li>
