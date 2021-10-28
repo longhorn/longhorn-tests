@@ -359,7 +359,14 @@ def create_backup(client, volname, data={}, labels={}):
 def wait_for_backup_count(backup_volume, number, retry_counts=120):
     ok = False
     for _ in range(retry_counts):
-        if len(backup_volume.backupList()) == number:
+
+        complete_backup_cnt = 0
+        for single_backup in backup_volume.backupList():
+            if single_backup.state == "Completed" and \
+                                        int(single_backup.volumeSize) > 0:
+                complete_backup_cnt = complete_backup_cnt + 1
+
+        if complete_backup_cnt == number:
             ok = True
             break
         time.sleep(RETRY_BACKUP_INTERVAL)
