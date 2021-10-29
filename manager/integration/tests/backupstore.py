@@ -27,6 +27,21 @@ BACKUPSTORE_LOCK_DURATION = 150
 TEMP_FILE_PATH = "/tmp/temp_file"
 
 
+def get_backupstores():
+    backupstore = os.environ['LONGHORN_BACKUPSTORES']
+    backupstore = backupstore.replace(" ", "")
+    try:
+        backupstores = backupstore.split(",")
+        for i in range(len(backupstores)):
+            backupstores[i] = backupstores[i].split(":")[0]
+    except ValueError:
+        backupstores = backupstore.split(":")[0]
+    return backupstores
+
+
+BACKUPSTORE = get_backupstores()
+
+
 @pytest.fixture
 def backupstore_s3(client):
     set_backupstore_s3(client)
@@ -41,7 +56,7 @@ def backupstore_nfs(client):
     reset_backupstore_setting(client)
 
 
-@pytest.fixture(params=["s3", "nfs"])
+@pytest.fixture(params=BACKUPSTORE)
 def set_random_backupstore(request, client):
     if request.param == "s3":
         set_backupstore_s3(client)
