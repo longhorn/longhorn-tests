@@ -75,6 +75,7 @@ from common import wait_for_backup_volume
 from common import create_and_wait_statefulset
 from common import create_backup_from_volume_attached_to_pod
 from common import restore_backup_and_get_data_checksum
+from common import RETRY_EXEC_INTERVAL
 
 from backupstore import backupstore_delete_volume_cfg_file
 from backupstore import backupstore_cleanup
@@ -2410,13 +2411,15 @@ def test_engine_image_daemonset_restart(client, apps_api, volume_name):  # NOQA
     # The engine image DaemonSet will be recreated/restarted automatically
     apps_api.delete_namespaced_daemon_set(ds_name, common.LONGHORN_NAMESPACE)
 
+    # Let DaemonSet really restarted
+    time.sleep(RETRY_EXEC_INTERVAL)
+
     # The Longhorn volume is still available
     # during the engine image DaemonSet restarting
     check_volume_data(volume, snap1_data)
 
     # Wait for the restart complete
-    ei_state = common.get_engine_image_status_value(client, default_img.name)
-    common.wait_for_engine_image_state(client, default_img.name, ei_state)
+    common.wait_for_engine_image_condition(client, default_img.name, "True")
 
     # Longhorn is still able to use the corresponding engine binary to
     # operate snapshot

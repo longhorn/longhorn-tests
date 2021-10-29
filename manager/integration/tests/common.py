@@ -1784,6 +1784,20 @@ def wait_for_engine_image_state(client, image_name, state):
     return image
 
 
+def wait_for_engine_image_condition(client, image_name, state):
+    """
+    state: "True", "False"
+    """
+    for i in range(RETRY_COUNTS):
+        wait_for_engine_image_creation(client, image_name)
+        image = client.by_id_engine_image(image_name)
+        if image['conditions']['ready']['status'] == state:
+            break
+        time.sleep(RETRY_INTERVAL_LONG)
+    assert image['conditions']['ready']['status'] == state
+    return image
+
+
 def wait_for_engine_image_ref_count(client, image_name, count):
     wait_for_engine_image_creation(client, image_name)
     for i in range(RETRY_COUNTS):
