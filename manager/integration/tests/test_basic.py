@@ -2404,13 +2404,15 @@ def test_engine_image_daemonset_restart(client, apps_api, volume_name):  # NOQA
     # The engine image DaemonSet will be recreated/restarted automatically
     apps_api.delete_namespaced_daemon_set(ds_name, common.LONGHORN_NAMESPACE)
 
+    # Let DaemonSet really restarted
+    common.wait_for_engine_image_condition(client, default_img.name, "False")
+
     # The Longhorn volume is still available
     # during the engine image DaemonSet restarting
     check_volume_data(volume, snap1_data)
 
     # Wait for the restart complete
-    ei_state = common.get_engine_image_status_value(client, default_img.name)
-    common.wait_for_engine_image_state(client, default_img.name, ei_state)
+    common.wait_for_engine_image_condition(client, default_img.name, "True")
 
     # Longhorn is still able to use the corresponding engine binary to
     # operate snapshot
