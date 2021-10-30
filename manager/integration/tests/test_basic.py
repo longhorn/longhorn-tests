@@ -2412,7 +2412,7 @@ def test_engine_image_daemonset_restart(client, apps_api, volume_name):  # NOQA
     apps_api.delete_namespaced_daemon_set(ds_name, common.LONGHORN_NAMESPACE)
 
     # Let DaemonSet really restarted
-    time.sleep(RETRY_EXEC_INTERVAL)
+    common.wait_for_engine_image_condition(client, default_img.name, "False")
 
     # The Longhorn volume is still available
     # during the engine image DaemonSet restarting
