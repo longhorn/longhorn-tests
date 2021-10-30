@@ -2225,6 +2225,7 @@ def test_disk_migration(client):  # NOQA
     for fsid, disk in iter(update_disks.items()):
         disk.allowScheduling = False
         update_disks[fsid] = disk
+    node.diskUpdate(disks=update_disks)
     disk_vol_name = 'vol-disk'
     extra_disk_name = "extra-disk"
     extra_disk_path = create_host_disk(
