@@ -75,7 +75,6 @@ from common import wait_for_backup_volume
 from common import create_and_wait_statefulset
 from common import create_backup_from_volume_attached_to_pod
 from common import restore_backup_and_get_data_checksum
-from common import RETRY_EXEC_INTERVAL
 
 from backupstore import backupstore_delete_volume_cfg_file
 from backupstore import backupstore_cleanup
