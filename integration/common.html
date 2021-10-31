@@ -1812,6 +1812,20 @@ def wait_for_engine_image_state(client, image_name, state):
     return image
 
 
+def wait_for_engine_image_condition(client, image_name, state):
+    &#34;&#34;&#34;
+    state: &#34;True&#34;, &#34;False&#34;
+    &#34;&#34;&#34;
+    for i in range(RETRY_COUNTS):
+        wait_for_engine_image_creation(client, image_name)
+        image = client.by_id_engine_image(image_name)
+        if image[&#39;conditions&#39;][&#39;ready&#39;][&#39;status&#39;] == state:
+            break
+        time.sleep(RETRY_INTERVAL_LONG)
+    assert image[&#39;conditions&#39;][&#39;ready&#39;][&#39;status&#39;] == state
+    return image
+
+
 def wait_for_engine_image_ref_count(client, image_name, count):
     wait_for_engine_image_creation(client, image_name)
     for i in range(RETRY_COUNTS):
@@ -9729,6 +9743,29 @@ def volume_name(request):
     assert complete</code></pre>
 </details>
 </dd>
+<dt id="tests.common.wait_for_engine_image_condition"><code class="name flex">
+<span>def <span class="ident">wait_for_engine_image_condition</span></span>(<span>client, image_name, state)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>state: "True", "False"</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def wait_for_engine_image_condition(client, image_name, state):
+    &#34;&#34;&#34;
+    state: &#34;True&#34;, &#34;False&#34;
+    &#34;&#34;&#34;
+    for i in range(RETRY_COUNTS):
+        wait_for_engine_image_creation(client, image_name)
+        image = client.by_id_engine_image(image_name)
+        if image[&#39;conditions&#39;][&#39;ready&#39;][&#39;status&#39;] == state:
+            break
+        time.sleep(RETRY_INTERVAL_LONG)
+    assert image[&#39;conditions&#39;][&#39;ready&#39;][&#39;status&#39;] == state
+    return image</code></pre>
+</details>
+</dd>
 <dt id="tests.common.wait_for_engine_image_creation"><code class="name flex">
 <span>def <span class="ident">wait_for_engine_image_creation</span></span>(<span>client, image_name)</span>
 </code></dt>
@@ -11643,6 +11680,7 @@ volume. Trigger a failed assertion of one is detected.
 <li><code><a title="tests.common.wait_for_disk_update" href="#tests.common.wait_for_disk_update">wait_for_disk_update</a></code></li>
 <li><code><a title="tests.common.wait_for_disk_uuid" href="#tests.common.wait_for_disk_uuid">wait_for_disk_uuid</a></code></li>
 <li><code><a title="tests.common.wait_for_dr_volume_expansion" href="#tests.common.wait_for_dr_volume_expansion">wait_for_dr_volume_expansion</a></code></li>
+<li><code><a title="tests.common.wait_for_engine_image_condition" href="#tests.common.wait_for_engine_image_condition">wait_for_engine_image_condition</a></code></li>
 <li><code><a title="tests.common.wait_for_engine_image_creation" href="#tests.common.wait_for_engine_image_creation">wait_for_engine_image_creation</a></code></li>
 <li><code><a title="tests.common.wait_for_engine_image_deletion" href="#tests.common.wait_for_engine_image_deletion">wait_for_engine_image_deletion</a></code></li>
 <li><code><a title="tests.common.wait_for_engine_image_ref_count" href="#tests.common.wait_for_engine_image_ref_count">wait_for_engine_image_ref_count</a></code></li>
