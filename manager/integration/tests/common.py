@@ -1413,13 +1413,30 @@ def get_backupstore_poll_interval():
     return poll_interval
 
 
+def check_backupstore_config():
+    try:
+        return os.environ.get('BACKUP_STORE_TYPE')
+    except KeyError:
+        return None
+
+
 def get_backupstores():
     # The try is added to avoid the pdoc3 error while publishing this on
     # https://longhorn.github.io/longhorn-tests
+    backupstores = []
     try:
-        backupstore = os.environ['LONGHORN_BACKUPSTORES']
+        backupstore_config = check_backupstore_config()
+        if backupstore_config == 'nfs':
+            backupstores[0] = "nfs"
+            return backupstores
+        elif backupstore_config == 's3':
+            backupstores[0] = "s3"
+            return backupstores
+        else:
+            backupstore = os.environ['LONGHORN_BACKUPSTORES']
     except KeyError:
         return []
+
     try:
         backupstore = backupstore.replace(" ", "")
         backupstores = backupstore.split(",")
