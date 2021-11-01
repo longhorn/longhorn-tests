@@ -2453,8 +2453,9 @@ def test_replica_failure_during_attaching(settings_reset, client, core_api, volu
 
     time.sleep(10)
     wait_for_volume_replica_count(client, volume_name_2, 4)
+    common.wait_for_volume_condition_scheduled(client, volume_name_2,
+                                               "status", "False")
     volume_2 = client.by_id_volume(volume_name_2)
-    assert volume_2.conditions.scheduled.status == "False"
     assert volume_2.conditions.scheduled.reason == "ReplicaSchedulingFailure"
 
     update_disks[default_disk_name].allowScheduling = True
