@@ -2481,8 +2481,9 @@ def test_replica_failure_during_attaching(settings_reset, client, core_api, volu
 
     time.sleep(10)
     wait_for_volume_replica_count(client, volume_name_2, 4)
+    common.wait_for_volume_condition_scheduled(client, volume_name_2,
+                                               &#34;status&#34;, &#34;False&#34;)
     volume_2 = client.by_id_volume(volume_name_2)
-    assert volume_2.conditions.scheduled.status == &#34;False&#34;
     assert volume_2.conditions.scheduled.reason == &#34;ReplicaSchedulingFailure&#34;
 
     update_disks[default_disk_name].allowScheduling = True
@@ -5290,8 +5291,9 @@ and make sure the extra disk is the only available disk on the node.
 
     time.sleep(10)
     wait_for_volume_replica_count(client, volume_name_2, 4)
+    common.wait_for_volume_condition_scheduled(client, volume_name_2,
+                                               &#34;status&#34;, &#34;False&#34;)
     volume_2 = client.by_id_volume(volume_name_2)
-    assert volume_2.conditions.scheduled.status == &#34;False&#34;
     assert volume_2.conditions.scheduled.reason == &#34;ReplicaSchedulingFailure&#34;
 
     update_disks[default_disk_name].allowScheduling = True
