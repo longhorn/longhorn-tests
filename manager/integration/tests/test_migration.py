@@ -176,6 +176,26 @@ def test_migration_with_rebuilding_replica(clients, volume_name):  # NOQA
     return
 
 
+@pytest.mark.coretest  # NOQA
+@pytest.mark.migration # NOQA
+@pytest.mark.skip(reason="TODO") # NOQA
+def test_migration_with_restore_volume(clients, volume_name):  # NOQA
+    """
+    Test that a restored volume can be migrated.
+
+    1. Prepare one backup.
+    2. Create a StorageClass with `migratable` being enabled and
+       `fromBackup` pointing to the above backup.
+    3. Create a new RWX migratable volume using the StorageClass.
+    2. Attach to node 1, then write some data.
+    4. Attach the volume to node 2 (migration target).
+    5. Wait for the migration ready. Verify that field
+       `volume.controllers[0].requestedBackupRestore` is empty.
+    6. Confirm the migration then validate the data.
+    """
+    return
+
+
 def get_hosts_for_migration_test(clients): # NOQA
     """
     Filters out the current node from the returned hosts list
