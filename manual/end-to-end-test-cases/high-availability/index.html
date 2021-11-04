@@ -589,14 +589,14 @@
 <td>2</td>
 <td>Volume Automatic Recovery Disabled (Automatic salvage setting)</td>
 <td>*   <strong>Prerequisite:</strong><br>    *   Disable Volume <code>Automatic salvage</code> Setting<br>        <br>    *   A pod is running and using Longhorn volume.<br>        <br><br>1.  Write some data to volume and compute its checksum (checksum#1)<br>2.  Stop all the replicas of the longhorn volume at the SAME time.<br>3.  Manually salvage faulted volume from one of the replicas<br>4.  Delete and recreate the pod.</td>
-<td>*   Volume state should be faulted<br>*   All Volume replicas should be faulted<br>*   Volume **automatic recovery** will **NOT** be activated<br>*   After manual salvage is done, volume state should be detached and reattached<br>*   After pod recreated, volume should be reattached and accessible to pod, data checksum of the data should match (checksum#1)</td>
+<td>*   Volume state should be faulted<br>*   All Volume replicas should be faulted<br>*   Volume <strong>automatic recovery</strong> will <strong>NOT</strong> be activated<br>*   After manual salvage is done, volume state should be detached and reattached<br>*   After pod recreated, volume should be reattached and accessible to pod, data checksum of the data should match (checksum#1)</td>
 <td>test_ha_salvage</td>
 </tr>
 <tr>
 <td>3</td>
 <td>Volume Automatic Recovery Enabled (Automatic salvage setting)</td>
 <td>*   <strong>Prerequisite:</strong><br>    *   Enable Volume <code>Automatic salvage</code> Setting<br>        <br>    *   A pod is running and using Longhorn volume.<br>        <br><br>1.  Write some data to volume and compute its checksum (checksum#1)<br>2.  Stop all the replicas of the longhorn volume at the SAME time.<br>3.  Restart the pod to re-mount the volume directory</td>
-<td>*   Volume state should be faulted<br>*   All Volume replicas should be faulted<br>*   Volume **automatic recovery** will be activated<br>*   Volume should be detached and re-attached after **automatic recovery** is triggered.<br>*   After pod restart, volume should be accessible, data checksum of the data should match (checksum#1).</td>
+<td>*   Volume state should be faulted<br>*   All Volume replicas should be faulted<br>*   Volume <strong>automatic recovery</strong> will be activated<br>*   Volume should be detached and re-attached after <strong>automatic recovery</strong> is triggered.<br>*   After pod restart, volume should be accessible, data checksum of the data should match (checksum#1).</td>
 <td>test_salvage_auto_crash_all_replicas</td>
 </tr>
 </tbody>

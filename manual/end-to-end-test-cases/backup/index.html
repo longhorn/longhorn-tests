@@ -662,13 +662,13 @@
 <tr>
 <td>2</td>
 <td>Restore last backup with different name</td>
-<td><strong>Prerequisite:</strong><br><br>*   Create a Volume, attach it to a node, write some data (300MB+), compute it’s checksum and create a backup (repeat for 3 times).<br>*   Volume now has multiple backups (backup#1, backup#2, backup#3) respectively.<br><br>1.  Restore latest volume backup using **different** name than it’s original<br>2.  After restore complete, attach the volume to a node, and check data checksum</td>
+<td><strong>Prerequisite:</strong><br><br>*   Create a Volume, attach it to a node, write some data (300MB+), compute it’s checksum and create a backup (repeat for 3 times).<br>*   Volume now has multiple backups (backup#1, backup#2, backup#3) respectively.<br><br>1.  Restore latest volume backup using <strong>different</strong> name than it’s original<br>2.  After restore complete, attach the volume to a node, and check data checksum</td>
 <td>*   New Volume should be created and attached to a node in maintenance mode<br>*   Restore process should be triggered restoring latest backup content to the volume<br>*   After restore is completed, volume is detached from the node<br>*   data checksum should match data checksum for (backup#3)</td>
 </tr>
 <tr>
 <td>3</td>
 <td>Restore specific with different name</td>
-<td><strong>Prerequisite:</strong><br><br>*   Create a Volume, attach it to a node, write some data (300MB+), compute it’s checksum and create a backup (repeat for 3 times).<br>*   Volume now has multiple backups (backup#1, backup#2, backup#3) respectively.<br><br>1.  Restore restore the second backup (backup#2) using **different** name than it’s original<br>2.  After restore complete, attach the volume to a node, and check data checksum</td>
+<td><strong>Prerequisite:</strong><br><br>*   Create a Volume, attach it to a node, write some data (300MB+), compute it’s checksum and create a backup (repeat for 3 times).<br>*   Volume now has multiple backups (backup#1, backup#2, backup#3) respectively.<br><br>1.  Restore restore the second backup (backup#2) using <strong>different</strong> name than it’s original<br>2.  After restore complete, attach the volume to a node, and check data checksum</td>
 <td>*   New Volume should be created and attached to a node in maintenance mode<br>*   Restore process should be triggered restoring latest backup content to the volume<br>*   After restore is completed, volume is detached from the node<br>*   data checksum should match data checksum for (backup#2)</td>
 </tr>
 <tr>
@@ -704,25 +704,25 @@
 <tr>
 <td>9</td>
 <td>Restore last backup with same previous name (Volume already exists)</td>
-<td><strong>Prerequisite:</strong><br><br>*   Create a Volume, attach it to a node, write some data (300MB+), compute it’s checksum and create a backup (repeat for 3 times).<br>*   Volume now has multiple backups (backup#1, backup#2, backup#3) respectively.<br><br>1.  Restore latest volume backup using **same** original volume name</td>
+<td><strong>Prerequisite:</strong><br><br>*   Create a Volume, attach it to a node, write some data (300MB+), compute it’s checksum and create a backup (repeat for 3 times).<br>*   Volume now has multiple backups (backup#1, backup#2, backup#3) respectively.<br><br>1.  Restore latest volume backup using <strong>same</strong> original volume name</td>
 <td>*   Volume can’t be restored</td>
 </tr>
 <tr>
 <td>10</td>
 <td>Restore last backup with same previous name</td>
-<td><strong>Prerequisite:</strong><br><br>*   Create a Volume, attach it to a node, write some data (300MB+), compute it’s checksum and create a backup (repeat for 3 times).<br>*   Volume now has multiple backups (backup#1, backup#2, backup#3) respectively.<br>*   Detach and delete volume<br><br>1.  Restore latest volume backup using **same** original volume name<br>2.  After restore complete, attach the volume to a node, and check data checksum</td>
+<td><strong>Prerequisite:</strong><br><br>*   Create a Volume, attach it to a node, write some data (300MB+), compute it’s checksum and create a backup (repeat for 3 times).<br>*   Volume now has multiple backups (backup#1, backup#2, backup#3) respectively.<br>*   Detach and delete volume<br><br>1.  Restore latest volume backup using <strong>same</strong> original volume name<br>2.  After restore complete, attach the volume to a node, and check data checksum</td>
 <td>*   New Volume with same old name should be created and attached to a node in maintenance mode<br>*   Restore process should be triggered restoring latest backup content to the volume<br>*   After restore is completed, volume is detached from the node<br>*   data checksum should match data checksum for (backup#3)</td>
 </tr>
 <tr>
 <td>11</td>
 <td>Restore volume used by Kubernetes workload with same previous name</td>
-<td><strong>Prerequisite:</strong><br><br>*   Create a deployment workload using a Longhorn volume, write some data (300MB+), compute it’s checksum and create a backup (repeat for 3 times).<br>*   Volume now has multiple backups (backup#1, backup#2, backup#3) respectively.<br>*   Scale down the deployment to zero<br>*   Delete volume<br><br>1.  Restore latest volume backup using **same** original volume name<br>2.  After restore complete, scale up the deployment</td>
+<td><strong>Prerequisite:</strong><br><br>*   Create a deployment workload using a Longhorn volume, write some data (300MB+), compute it’s checksum and create a backup (repeat for 3 times).<br>*   Volume now has multiple backups (backup#1, backup#2, backup#3) respectively.<br>*   Scale down the deployment to zero<br>*   Delete volume<br><br>1.  Restore latest volume backup using <strong>same</strong> original volume name<br>2.  After restore complete, scale up the deployment</td>
 <td>*   New Volume with same old name should be created and attached to a node in maintenance mode<br>*   Restore process should be triggered restoring latest backup content to the volume<br>*   After restore is completed, volume is detached from the node<br>*   Old <code>PV/PVC , Namespace &amp; Attached To</code> information should be restored<br>*   Volume should be accessible from the deployment pod<br>*   Data checksum should match data checksum for (backup#3)</td>
 </tr>
 <tr>
 <td>12</td>
 <td>Restore volume used by Kubernetes workload with different name</td>
-<td><strong>Prerequisite:</strong><br><br>*   Create a deployment workload using a Longhorn volume, write some data (300MB+), compute it’s checksum and create a backup (repeat for 3 times).<br>*   Volume now has multiple backups (backup#1, backup#2, backup#3) respectively.<br>*   Scale down the deployment to zero<br>*   Delete volume<br><br>1.  Restore latest volume backup using **different** name than its original<br>2.  After restore complete<br>    1.  Delete old PVC<br>        <br>    2.  Create a new PV for volume<br>        <br>    3.  Create a new PVC with same old PVC name<br>        <br>3.  scale up the deployment</td>
+<td><strong>Prerequisite:</strong><br><br>*   Create a deployment workload using a Longhorn volume, write some data (300MB+), compute it’s checksum and create a backup (repeat for 3 times).<br>*   Volume now has multiple backups (backup#1, backup#2, backup#3) respectively.<br>*   Scale down the deployment to zero<br>*   Delete volume<br><br>1.  Restore latest volume backup using <strong>different</strong> name than its original<br>2.  After restore complete<br>    1.  Delete old PVC<br>        <br>    2.  Create a new PV for volume<br>        <br>    3.  Create a new PVC with same old PVC name<br>        <br>3.  scale up the deployment</td>
 <td>*   New Volume with same old name should be created and attached to a node in maintenance mode<br>*   Restore process should be triggered restoring latest backup content to the volume<br>*   After restore is completed, volume is detached from the node<br>*   Old <code>Namespace &amp; Attached To</code> information should be restored<br>*   <code>PV/PVC</code> information should be empty after restore completed  <br>    old PV <code>spec.csi.volumeHandle</code>will not match the new volume name<br>*   After New PV/PVC is created, deployment pod should be able to claim the new PVC and access volume with new name.<br>*   Data checksum should match data checksum for (backup#3)</td>
 </tr>
 <tr>
@@ -973,25 +973,25 @@
 <tr>
 <td>9</td>
 <td>Backup corruption in S3/nfs backup store - Rename config file for the volume</td>
-<td><strong>Pre condition:</strong><br><br>*   Volume v1, v2 exists<br>*   v1 has backups - b1, b2, b3 and v2 has backups - b4,b5<br><br>**Steps:**<br><br>1.  Rename config file for the v1 in S3 volume.cfg file to volume.cfg.tmp<br>2.  Verify that the backup list does not list the backups for that volume<br>3.  Verify an error message is displayed on the UI<br>4.  Verify user is able to list the backups of v2</td>
+<td><strong>Pre condition:</strong><br><br>*   Volume v1, v2 exists<br>*   v1 has backups - b1, b2, b3 and v2 has backups - b4,b5<br><br><strong>Steps:</strong><br><br>1.  Rename config file for the v1 in S3 volume.cfg file to volume.cfg.tmp<br>2.  Verify that the backup list does not list the backups for that volume<br>3.  Verify an error message is displayed on the UI<br>4.  Verify user is able to list the backups of v2</td>
 <td>*   User should be able to see an error message in the UI when it failed to fetch the backups for the backup for volume v1<br>*   User should be able to list the backups of volume v2</td>
 </tr>
 <tr>
 <td>10</td>
 <td>Delete a volume backup when it is corrupted in S3/nfs backup store</td>
-<td><strong>Pre condition:</strong><br><br>*   Volume v1, v2 exists<br>*   v1 has backups - b1, b2, b3 and v2 has backups - b4,b5<br><br>**Steps:**<br><br>1.  Rename config file for the v1 volume.cfg file to volume.cfg.tmp<br>2.  Verify that the backup list does not list the backups for that volume<br>3.  Verify an error message is displayed on the UI<br>4.  Verify user is able to delete the backup of v1 from the backup page</td>
+<td><strong>Pre condition:</strong><br><br>*   Volume v1, v2 exists<br>*   v1 has backups - b1, b2, b3 and v2 has backups - b4,b5<br><br><strong>Steps:</strong><br><br>1.  Rename config file for the v1 volume.cfg file to volume.cfg.tmp<br>2.  Verify that the backup list does not list the backups for that volume<br>3.  Verify an error message is displayed on the UI<br>4.  Verify user is able to delete the backup of v1 from the backup page</td>
 <td>*   User should be able to delete the corrupted backup for volume v1 by clicking on delete all backups.<br>*   User should be able to list the backups of volume v2</td>
 </tr>
 <tr>
 <td>11</td>
 <td>Backup corruption in S3/nfs backup store - Rename config file of the</td>
-<td><strong>Pre condition:</strong><br><br>*   Volume v1, v2 exists<br>*   v1 has backups - b1, b2, b3 and v2 has backups - b4,b5<br><br>**Steps:**<br><br>1.  Rename the backup b1.cfg to b1.cfg.tmp<br>2.  Verify the backup page lists the volumes v1 and v2<br>3.  Verify backup list page for v1 is able to fetch all the backups except the b1 - b1 SHOULD NOT be listed<br>4.  verify user is able to restore from b2 and b3<br>5.  Verify the data after restoration is correct<br>6.  Verify user is able to list b4 and b5 for volume v2 also.</td>
+<td><strong>Pre condition:</strong><br><br>*   Volume v1, v2 exists<br>*   v1 has backups - b1, b2, b3 and v2 has backups - b4,b5<br><br><strong>Steps:</strong><br><br>1.  Rename the backup b1.cfg to b1.cfg.tmp<br>2.  Verify the backup page lists the volumes v1 and v2<br>3.  Verify backup list page for v1 is able to fetch all the backups except the b1 - b1 SHOULD NOT be listed<br>4.  verify user is able to restore from b2 and b3<br>5.  Verify the data after restoration is correct<br>6.  Verify user is able to list b4 and b5 for volume v2 also.</td>
 <td>*   User should be able to list b2 and b3.<br>*   User should be able to restore from b2 and b3<br>*   User should be able to see an error for b1 - b1 SHOULD NOT be listed<br>*   User should be able to list the backups of volume v2</td>
 </tr>
 <tr>
 <td>12</td>
 <td>Backup corruption in S3/nfs backup store - Edit data of a backup</td>
-<td><strong>Pre condition:</strong><br><br>*   Volume v1, v2 exists<br>*   v1 has backups - b1, b2, b3 and v2 has backups - b4,b5<br><br>**Steps:**<br><br>1.  Edit data (remove some checksum value) of back up b1 and upload to S3<br>2.  Verify the backup page lists the volumes v1 and v2 and all the backups<br>3.  Verify user is able to restore from b1<br>4.  Verify the restored data is not the same as the original data (check the checksums)<br>5.  Take b4, b5 for <code>v1</code><br>6.  User should be able to restore from b4 and b5</td>
+<td><strong>Pre condition:</strong><br><br>*   Volume v1, v2 exists<br>*   v1 has backups - b1, b2, b3 and v2 has backups - b4,b5<br><br><strong>Steps:</strong><br><br>1.  Edit data (remove some checksum value) of back up b1 and upload to S3<br>2.  Verify the backup page lists the volumes v1 and v2 and all the backups<br>3.  Verify user is able to restore from b1<br>4.  Verify the restored data is not the same as the original data (check the checksums)<br>5.  Take b4, b5 for <code>v1</code><br>6.  User should be able to restore from b4 and b5</td>
 <td>User should be able to list b1<br><br>User should be able to restore from b1<br><br>Other backups for v1 - b2 and b3 should be available<br><br>Backups for v2 - b4 and b5 should be available</td>
 </tr>
 <tr>

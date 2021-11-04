@@ -664,15 +664,15 @@
 <tr>
 <td>1</td>
 <td>Replica scheduling (soft anti-affinity enabled)</td>
-<td><strong>Prerequisite:</strong><br>*   **Replica Soft Anti-Affinity** setting is **Enabled**<br>1.  Create a volume<br>2.  Attach volume to a node<br>3.  Increase replica count to exceed the number of Longhorn node count</td>
+<td><strong>Prerequisite:</strong><br>*   <strong>Replica Soft Anti-Affinity</strong> setting is <strong>Enabled</strong><br>1.  Create a volume<br>2.  Attach volume to a node<br>3.  Increase replica count to exceed the number of Longhorn node count</td>
 <td>*   New replicas will be scheduled to node<br>*   Volume Status will be <code>Healthy</code>, with limited node redundancy hint icon<br><code>Limited node redundancy: at least one healthy replica is running at the same node as another</code></td>
 <td>test_soft_anti_affinity_scheduling</td>
 </tr>
 <tr>
 <td>2</td>
 <td>Replica scheduling (soft anti-affinity disabled)</td>
-<td><strong>Prerequisite:</strong><br>*   **Replica Soft Anti-Affinity** setting is **Enabled**<br>1.  Create a volume<br>2.  Attach volume to a node<br>3.  Increase replica count to exceed the number of Longhorn node count<br>4.  Disable **Replica Soft Anti-Affinity** setting<br>5.  Delete a replica<br>6.  Re-Enable **Replica Soft Anti-Affinity** setting</td>
-<td>*   Replicas won’t be removed after disabling <strong>Replica Soft Anti-Affinity</strong><br>*   when **Replica Soft Anti-Affinity** setting is disabled New Replicas will not be scheduled to nodes.<br>*   when **Replica Soft Anti-Affinity** setting is re-enabled, New Replicas can be scheduled to nodes.</td>
+<td><strong>Prerequisite:</strong><br>*   <strong>Replica Soft Anti-Affinity</strong> setting is <strong>Enabled</strong><br>1.  Create a volume<br>2.  Attach volume to a node<br>3.  Increase replica count to exceed the number of Longhorn node count<br>4.  Disable <strong>Replica Soft Anti-Affinity</strong> setting<br>5.  Delete a replica<br>6.  Re-Enable <strong>Replica Soft Anti-Affinity</strong> setting</td>
+<td>*   Replicas won’t be removed after disabling <strong>Replica Soft Anti-Affinity</strong><br>*   when <strong>Replica Soft Anti-Affinity</strong> setting is disabled New Replicas will not be scheduled to nodes.<br>*   when <strong>Replica Soft Anti-Affinity</strong> setting is re-enabled, New Replicas can be scheduled to nodes.</td>
 <td>test_hard_anti_affinity_scheduling</td>
 </tr>
 </tbody>

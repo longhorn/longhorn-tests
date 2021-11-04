@@ -720,13 +720,13 @@
 <tr>
 <td>11</td>
 <td>Update Taint Toleration Setting</td>
-<td><strong>Prerequisites</strong><br><br>*   All Longhorn volumes should be detached then Longhorn components will be restarted to apply new tolerations.<br>*   Notice that &ldquo;<a href="http://kubernetes.io">kubernetes.io</a>&rdquo; is used as the key of all Kubernetes default tolerations, please do not contain this substring in your toleration setting.<br>*   In Longhorn taint tolerations are column separated<br><br>1.  Using Kubernetes, taint **Some** nodes  <br>    For example, <code>key1=value1:NoSchedule</code> <code>key2=value2:NoExecute</code><br>2.  Update Taint Toleration Setting with <code>key1=value1:NoSchedule;key2:NoExecute</code></td>
+<td><strong>Prerequisites</strong><br><br>*   All Longhorn volumes should be detached then Longhorn components will be restarted to apply new tolerations.<br>*   Notice that &ldquo;<a href="http://kubernetes.io">kubernetes.io</a>&rdquo; is used as the key of all Kubernetes default tolerations, please do not contain this substring in your toleration setting.<br>*   In Longhorn taint tolerations are column separated<br><br>1.  Using Kubernetes, taint <strong>Some</strong> nodes  <br>    For example, <code>key1=value1:NoSchedule</code> <code>key2=value2:NoExecute</code><br>2.  Update Taint Toleration Setting with <code>key1=value1:NoSchedule;key2:NoExecute</code></td>
 <td>*   Longhorn Components will be restarted<br>*   Longhorn Components should be rescheduled to tainted nodes nodes only.</td>
 </tr>
 <tr>
 <td>12</td>
 <td>Default Taint Toleration Setting</td>
-<td><strong>Prerequisites</strong><br><br>*   Create 3 node k8s cluster<br>*   Using Kubernetes, taint **Some** nodes  <br>    For example, <code>key1=value1:NoSchedule</code> <code>key2=value2:NoExecute</code><br><br>1.  Set <code>taint-toleration</code> to <code>key1=value1:NoSchedule;key2:NoExecute</code> in <code>longhorn-default-setting</code> ConfigMap<br>2.  Deploy Longhorn</td>
+<td><strong>Prerequisites</strong><br><br>*   Create 3 node k8s cluster<br>*   Using Kubernetes, taint <strong>Some</strong> nodes  <br>    For example, <code>key1=value1:NoSchedule</code> <code>key2=value2:NoExecute</code><br><br>1.  Set <code>taint-toleration</code> to <code>key1=value1:NoSchedule;key2:NoExecute</code> in <code>longhorn-default-setting</code> ConfigMap<br>2.  Deploy Longhorn</td>
 <td>*   Longhorn components should be only deployed to tainted nodes</td>
 </tr>
 <tr>

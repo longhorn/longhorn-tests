@@ -753,20 +753,20 @@
 <tr>
 <td>1</td>
 <td>Storage Class: Create a Longhorn storage class</td>
-<td><strong>Pre condition:</strong><br><br>*   Longhorn is deployed in the cluster<br><br>**Steps:**<br><br>1.  Go to cluster → Storage → Storage Classes<br>2.  Click on Add class<br>3.  Select Provisioner **Longhorn**<br>4.  Give in other required parameters including replica count.<br>5.  Click on **Save**.<br>6.  Verify **test-1** storage class is created<br>7.  Go to Cluster → Project (default) → Workloads<br>8.  Deploy a workload<br>9.  In the Volumes section → Add a New Volume Claim → Use a Storage Class to provision a new persistent volume → Select **test-1** from Storage class dropdown.<br>10.  Enter capacity and Name. Click on Define<br>11.  Enter Mount Point.<br>12.  Click on create workload<br>13.  Verify workload is created successfully.<br>14.  Volume gets attached to the pod in the workload<br>15.  Navigate to Longhorn UI.<br>16.  Verify user is able to view the volume attached to the workload in the UI<br>17.  Navigate to volume details page of the volume and Verify the replica count mentioned in Step 4 is available</td>
+<td><strong>Pre condition:</strong><br><br>*   Longhorn is deployed in the cluster<br><br><strong>Steps:</strong><br><br>1.  Go to cluster → Storage → Storage Classes<br>2.  Click on Add class<br>3.  Select Provisioner <strong>Longhorn</strong><br>4.  Give in other required parameters including replica count.<br>5.  Click on <strong>Save</strong>.<br>6.  Verify <strong>test-1</strong> storage class is created<br>7.  Go to Cluster → Project (default) → Workloads<br>8.  Deploy a workload<br>9.  In the Volumes section → Add a New Volume Claim → Use a Storage Class to provision a new persistent volume → Select <strong>test-1</strong> from Storage class dropdown.<br>10.  Enter capacity and Name. Click on Define<br>11.  Enter Mount Point.<br>12.  Click on create workload<br>13.  Verify workload is created successfully.<br>14.  Volume gets attached to the pod in the workload<br>15.  Navigate to Longhorn UI.<br>16.  Verify user is able to view the volume attached to the workload in the UI<br>17.  Navigate to volume details page of the volume and Verify the replica count mentioned in Step 4 is available</td>
 <td>*   Longhorn storage class should be created<br>*   Workload should be deployed with the volume mounted from the storage class<br>*   Verify volume is available on the Longhorn UI.<br>*   Verify the replica count is as mentioned during storage class creation.</td>
 </tr>
 <tr>
 <td>2</td>
 <td>Persistent Volume: Create a PV</td>
-<td><strong>Pre condition:</strong><br><br>*   Longhorn is deployed in the cluster<br><br>**Steps:**<br><br>1.  Create a Volume in Longhorn UI <code>test-volume</code><br>2.  Go to cluster → Storage → Persistent Volumes<br>3.  Click on Add PV<br>4.  Select Volume Plugin **Longhorn**<br>5.  Give in other required parameters including replica count.<br>6.  Give in Volume Plugin - <code>test-volume</code> which an existing volume in longhorn<br>7.  Click on **Save**.<br>8.  Verify **test-1** PV is created<br>9.  Go to Cluster → Project (default) → Workloads<br>10.  Deploy a workload<br>11.  In the Volumes section → Add a New Volume Claim → Use an existing persistent volume → Select **test-1** from PV dropdown.<br>12.  Click on Define<br>13.  Enter Mount Point.<br>14.  Click on create workload<br>15.  Verify workload is created successfully.<br>16.  Volume gets attached to the pod in the workload<br>17.  Navigate to Longhorn UI.<br>18.  Verify user is able to view the volume attached to the workload in the UI<br>19.  Navigate to volume details page of the volume and Verify the replica count mentioned in Step 4 is available</td>
+<td><strong>Pre condition:</strong><br><br>*   Longhorn is deployed in the cluster<br><br><strong>Steps:</strong><br><br>1.  Create a Volume in Longhorn UI <code>test-volume</code><br>2.  Go to cluster → Storage → Persistent Volumes<br>3.  Click on Add PV<br>4.  Select Volume Plugin <strong>Longhorn</strong><br>5.  Give in other required parameters including replica count.<br>6.  Give in Volume Plugin - <code>test-volume</code> which an existing volume in longhorn<br>7.  Click on <strong>Save</strong>.<br>8.  Verify <strong>test-1</strong> PV is created<br>9.  Go to Cluster → Project (default) → Workloads<br>10.  Deploy a workload<br>11.  In the Volumes section → Add a New Volume Claim → Use an existing persistent volume → Select <strong>test-1</strong> from PV dropdown.<br>12.  Click on Define<br>13.  Enter Mount Point.<br>14.  Click on create workload<br>15.  Verify workload is created successfully.<br>16.  Volume gets attached to the pod in the workload<br>17.  Navigate to Longhorn UI.<br>18.  Verify user is able to view the volume attached to the workload in the UI<br>19.  Navigate to volume details page of the volume and Verify the replica count mentioned in Step 4 is available</td>
 <td>*   Longhorn PV should be created<br>*   Workload should be deployed with the volume mounted from the PV<br>*   Verify volume is available on the Longhorn UI.<br>*   Verify the replica count is as mentioned during storage class creation.</td>
 </tr>
 <tr>
 <td>3</td>
 <td>Create Storage class in Rancher; From Longhorn create volumes from this storage class.</td>
-<td><strong>Pre condition:</strong><br><br>*   Longhorn is deployed in the cluster<br><br>**Steps:**<br><br>1.  Go to cluster → Storage → Storage Classes<br>2.  Click on Add class<br>3.  Select Provisioner **Longhorn**<br>4.  Give in other required parameters including replica count.<br>5.  Click on **Save**.<br>6.  Verify **test-1** storage class is created<br>7.  Go to Longhorn UI<br>8.  In the Settings page for “Default Longhorn Static StorageClass Name”, give in the value: “test-1”<br>9.  Go to Volumes page, click on create volume.<br>10.  Create a volume name : v1<br>11.  Verify v1 is created<br>12.  using kubectl -<br>13.  kubectl get pv <volume-name> -o yaml<br>14.  Verify “storageClassName:” &mdash;&gt; test-1</td>
-<td>*   Longhorn storage class should be created<br>*   Value of Default Longhorn Static StorageClass Name should be changed in the settings page<br>*   volume should be created in longhorn UI<br>*   “storageClassName:” value should be **test-1**</td>
+<td><strong>Pre condition:</strong><br><br>*   Longhorn is deployed in the cluster<br><br><strong>Steps:</strong><br><br>1.  Go to cluster → Storage → Storage Classes<br>2.  Click on Add class<br>3.  Select Provisioner <strong>Longhorn</strong><br>4.  Give in other required parameters including replica count.<br>5.  Click on <strong>Save</strong>.<br>6.  Verify <strong>test-1</strong> storage class is created<br>7.  Go to Longhorn UI<br>8.  In the Settings page for “Default Longhorn Static StorageClass Name”, give in the value: “test-1”<br>9.  Go to Volumes page, click on create volume.<br>10.  Create a volume name : v1<br>11.  Verify v1 is created<br>12.  using kubectl -<br>13.  kubectl get pv <volume-name> -o yaml<br>14.  Verify “storageClassName:” &mdash;&gt; test-1</td>
+<td>*   Longhorn storage class should be created<br>*   Value of Default Longhorn Static StorageClass Name should be changed in the settings page<br>*   volume should be created in longhorn UI<br>*   “storageClassName:” value should be <strong>test-1</strong></td>
 </tr>
 <tr>
 <td>4</td>
@@ -777,31 +777,31 @@
 <tr>
 <td>5</td>
 <td>Create Storage class - by using different values for the input list of paramters</td>
-<td><strong>Pre condition:</strong><br><br>*   Longhorn is deployed in the cluster<br><br>**Steps:**<br><br>1.  Go to cluster → Storage → Storage Classes<br>2.  Click on Add class<br>3.  Select Provisioner **Longhorn**<br>4.  Give in other required parameters.<br>5.  Click on **Save**.<br>6.  Use this storage class to create a PVC and deploy in a workload.<br>7.  Verify the parameters of the volume created.</td>
+<td><strong>Pre condition:</strong><br><br>*   Longhorn is deployed in the cluster<br><br><strong>Steps:</strong><br><br>1.  Go to cluster → Storage → Storage Classes<br>2.  Click on Add class<br>3.  Select Provisioner <strong>Longhorn</strong><br>4.  Give in other required parameters.<br>5.  Click on <strong>Save</strong>.<br>6.  Use this storage class to create a PVC and deploy in a workload.<br>7.  Verify the parameters of the volume created.</td>
 <td>Volume parameters should match the storage class paramaters.</td>
 </tr>
 <tr>
 <td>6</td>
 <td>StorageClass with <code>reclaimPolicy</code> parameter set to <code>Delete</code> - PVC from storage class</td>
-<td><strong>Pre conditions:</strong><br><br>*   Create PVC from “Longhorn” storage class in rancher.<br>*   It will have a dynamic PV bound<br><br>**Steps**:<br><br>1.  &lsquo;Delete PVC from Rancher<br>2.  Verify PVC is deleted<br>3.  Verify PV bound to this PVC is deleted - Rancher → Cluster → Storage → PV<br>4.  Verify the volume(Dynamic PV) in Longhorn is deleted</td>
+<td><strong>Pre conditions:</strong><br><br>*   Create PVC from “Longhorn” storage class in rancher.<br>*   It will have a dynamic PV bound<br><br><strong>Steps</strong>:<br><br>1.  &lsquo;Delete PVC from Rancher<br>2.  Verify PVC is deleted<br>3.  Verify PV bound to this PVC is deleted - Rancher → Cluster → Storage → PV<br>4.  Verify the volume(Dynamic PV) in Longhorn is deleted</td>
 <td></td>
 </tr>
 <tr>
 <td>7</td>
 <td>Volume/PV/PVC created in Longhorn</td>
-<td><strong>Pre conditions:</strong><br><br>*   Create volume, PV, PVC in longhorn<br><br>**Steps:**<br><br>1.  &lsquo;Delete PVC from Rancher<br>2.  Verify PVC is deleted<br>3.  PV will NOT. be deleted but be in “released” state in Rancher UI<br>4.  Verify Volume does not get deleted</td>
+<td><strong>Pre conditions:</strong><br><br>*   Create volume, PV, PVC in longhorn<br><br><strong>Steps:</strong><br><br>1.  &lsquo;Delete PVC from Rancher<br>2.  Verify PVC is deleted<br>3.  PV will NOT. be deleted but be in “released” state in Rancher UI<br>4.  Verify Volume does not get deleted</td>
 <td></td>
 </tr>
 <tr>
 <td>8</td>
 <td>StorageClass with <code>reclaimPolicy</code> parameter set to <code>Retain</code> - PVC from storage class</td>
-<td><strong>Pre conditions:</strong><br><br>*   Create PVC from “Longhorn” storage class in rancher.<br>*   It will have a dynamic PV bound<br><br>**Steps**:<br><br>1.  &lsquo;Delete PVC from Rancher<br>2.  Verify PVC is deleted<br>3.  Verify PV bound to this PVC is NOT deleted - Rancher → Cluster → Storage → PV<br>4.  Verify the volume(Dynamic PV) in Longhorn is NOT deleted</td>
+<td><strong>Pre conditions:</strong><br><br>*   Create PVC from “Longhorn” storage class in rancher.<br>*   It will have a dynamic PV bound<br><br><strong>Steps</strong>:<br><br>1.  &lsquo;Delete PVC from Rancher<br>2.  Verify PVC is deleted<br>3.  Verify PV bound to this PVC is NOT deleted - Rancher → Cluster → Storage → PV<br>4.  Verify the volume(Dynamic PV) in Longhorn is NOT deleted</td>
 <td></td>
 </tr>
 <tr>
 <td>9</td>
 <td>StorageClass with <code>reclaimPolicy</code> parameter set to <code>Retain</code> - Volume/PV/PVC created in Longhorn</td>
-<td><strong>Pre conditions:</strong><br><br>*   Create volume, PV, PVC in longhorn<br><br>**Steps:**<br><br>1.  &lsquo;Delete PVC from Rancher<br>2.  Verify PVC is deleted<br>3.  PV will NOT. be deleted but be in “released” state in Rancher UI<br>4.  Verify Volume does not get deleted</td>
+<td><strong>Pre conditions:</strong><br><br>*   Create volume, PV, PVC in longhorn<br><br><strong>Steps:</strong><br><br>1.  &lsquo;Delete PVC from Rancher<br>2.  Verify PVC is deleted<br>3.  PV will NOT. be deleted but be in “released” state in Rancher UI<br>4.  Verify Volume does not get deleted</td>
 <td></td>
 </tr>
 <tr>
