@@ -879,12 +879,15 @@ root@ip-172-30-0-139:~# cat /etc/idmapd.conf [General] Verbosity = 0 Pipefs-Dire
     </item>
     
     <item>
-      <title>Test S3 backupstore in a cluster sitting behind a Http Proxy</title>
+      <title>Test S3 backupstore in a cluster sitting behind a HTTP proxy</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.1/test-s3-backupstore/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.1/test-s3-backupstore/</guid>
-      <description>Create a new instance on Linode and setup an Http Proxy server on the instance as in this instruction (you will have to log in to see the instruction) Create a cluster using Rancher as below:  Choose AWS EC2 t2.medium as the node template. The reason to chose EC2 is that its security group makes our lives easier to block the outgoing traffic from the instance and all k8s Pods running inside the instance.</description>
+      <description>Related issue: 3136
+Requirement:
+ Set up a stand alone Squid, HTTP web proxy  To configure Squid proxy: a comment about squid config If setting up instance on AWS: a EC2 security group setting   S3 with existing backups  Steps:
+ Create credential for Backup Target    $ secret_name=&amp;#34;aws-secret-proxy&amp;#34; $ proxy_ip=123.123.123.123 $ no_proxy_params=&amp;#34;localhost,127.0.0.1,0.0.0.0,10.0.0.0/8,192.168.0.0/16&amp;#34; $ kubectl create secret generic $secret_name \  --from-literal=AWS_ACCESS_KEY_ID=$AWS_ID \  --from-literal=AWS_SECRET_ACCESS_KEY=$AWS_KEY \  --from-literal=HTTP_PROXY=$proxy_ip:3128 \  --from-literal=HTTPS_PROXY=$proxy_ip:3128 \  --from-literal=NO_PROXY=$no_proxy_params \  -n longhorn-system   Open Longhorn UI Click on Setting Scroll down to Backup Target Credential Secret Fill in $secret_name assigned in step 1.</description>
     </item>
     
     <item>

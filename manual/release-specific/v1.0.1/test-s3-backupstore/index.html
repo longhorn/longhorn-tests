@@ -326,7 +326,7 @@
   <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.1/test-s3-access-style/">Test access style for S3 compatible backupstore</a></li>
   
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.1/test-s3-backupstore/">Test S3 backupstore in a cluster sitting behind a Http Proxy</a></li>
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.1/test-s3-backupstore/">Test S3 backupstore in a cluster sitting behind a HTTP proxy</a></li>
   
 
   <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.1/ui-volume-deletion/">Volume Deletion UI Warnings</a></li>
@@ -493,33 +493,46 @@
 </aside>
 
 <main style="padding: 1%; width: 70%;">
-  <h1 id="title">Test S3 backupstore in a cluster sitting behind a Http Proxy</h1>
+  <h1 id="title">Test S3 backupstore in a cluster sitting behind a HTTP proxy</h1>
   <div>
     <article id="content">
-       <ol>
-<li>Create a new instance on Linode and setup an Http Proxy server on the instance as in <a href="https://rancher.atlassian.net/wiki/spaces/EN/pages/92831879/Proxy+Setup">this instruction</a> (you will have to log in to see the instruction)</li>
-<li>Create a cluster using Rancher as below:
-<ol>
-<li>Choose AWS EC2 <code>t2.medium</code> as the node template. The reason to chose EC2 is that its <code>security group</code> makes our lives easier to block the outgoing traffic from the instance and all k8s Pods running inside the instance. I tried Linode and was able to manually block outbound traffic from the host, but fail to block the outbound traffic from k8s&rsquo;s pods. I would be very thankful if somebody can explain to me how to do it on Linode :D.</li>
-<li>Using the template, create a cluster of 1 node. Again, having only 1 node make it easier to block outgoing traffic from k8s pods.</li>
-<li>Install Longhorn to the cluster. Remember to change the <code>#replica</code> to 1 bc we only have 1 node in the cluster.</li>
-<li>Wait for Longhorn to finish the installation.</li>
-<li>deploy <code>s3-secret</code> to <code>longhorn-system</code> namespace and setup backupstore target to point to your s3 bucket. Create a volume, attach to a pod, write some data into it, and create a backup. At this time, everything should work fine because the EC2 node still has access to the public internet. The <code>s3-secret</code> must have HTTP_PROXY, HTTPS_PROXY, and NO_PROXY as below (remember to convert the values to base64):</li>
-</ol>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">AWS_ACCESS_KEY_ID: &lt;your_aws_access_key_id&gt;
-AWS_SECRET_ACCESS_KEY: &lt;your_aws_secret_access_key&gt;
-HTTP_PROXY: <span style="color:#e6db74">&#34;http://proxy_ip:proxy_port&#34;</span>
-HTTPS_PROXY: <span style="color:#e6db74">&#34;http://proxy_ip:proxy_port&#34;</span>
-NO_PROXY: <span style="color:#e6db74">&#34;localhost,127.0.0.1,0.0.0.0,10.0.0.0/8,192.168.0.0/16&#34;</span>
-</code></pre></div></li>
-<li>Next, we will simulate the setup in the issue by blocking all the outbound traffic from the EC2 instance. Navigate to AWS EC2 console and find the EC2 instance of the cluster. Open the security group for the EC2. Set the outbound traffic as below:<img width="1637" alt="Screen Shot 2020-07-09 at 8 16 00 PM" src="https://user-images.githubusercontent.com/22139961/87112575-0ca3eb80-c221-11ea-86ef-91ed5f8384cc.png">
-<ol>
-<li>Now the cluster is isolated from the outside world. It can only send outgoing traffic to your personal computer, the rancher node server, and the Http_Proxy. Therefore, the only way to access the internet is through the Proxy because only the Proxy forwards the packets.</li>
-<li>Go back and check the <code>backup</code> in Longhorn UI. We should see that Longhorn UI successfully to retrieve the backup list.</li>
-<li>Try to create a new backup, we should see that the operation success</li>
-<li>If we check the log of the proxy server, we can see every request which was sent by longhorn <code>manager</code> and longhorn <code>engine</code> sent to AWS S3.</li>
-</ol>
+       <p><sup>Related issue: <a href="https://github.com/longhorn/longhorn/issues/3136">3136</a></sup></p>
+<p>Requirement:</p>
+<ul>
+<li>Set up a stand alone Squid, HTTP web proxy
+<ul>
+<li>To configure Squid proxy: <a href="https://github.com/longhorn/longhorn/issues/1967#issuecomment-736959332">a comment about squid config</a></li>
+<li>If setting up instance on AWS: <a href="https://user-images.githubusercontent.com/22139961/87112575-0ca3eb80-c221-11ea-86ef-91ed5f8384cc.png">a EC2 security group setting</a></li>
+</ul>
 </li>
+<li>S3 with existing backups</li>
+</ul>
+<p>Steps:</p>
+<ol>
+<li>Create credential for <strong>Backup Target</strong></li>
+</ol>
+<ul>
+<li>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell"> $ secret_name<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;aws-secret-proxy&#34;</span>
+ $ proxy_ip<span style="color:#f92672">=</span>123.123.123.123
+ $ no_proxy_params<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;localhost,127.0.0.1,0.0.0.0,10.0.0.0/8,192.168.0.0/16&#34;</span>
+
+ $ kubectl create secret generic $secret_name <span style="color:#ae81ff">\
+</span><span style="color:#ae81ff"></span> --from-literal<span style="color:#f92672">=</span>AWS_ACCESS_KEY_ID<span style="color:#f92672">=</span>$AWS_ID <span style="color:#ae81ff">\
+</span><span style="color:#ae81ff"></span> --from-literal<span style="color:#f92672">=</span>AWS_SECRET_ACCESS_KEY<span style="color:#f92672">=</span>$AWS_KEY <span style="color:#ae81ff">\
+</span><span style="color:#ae81ff"></span> --from-literal<span style="color:#f92672">=</span>HTTP_PROXY<span style="color:#f92672">=</span>$proxy_ip:3128 <span style="color:#ae81ff">\
+</span><span style="color:#ae81ff"></span> --from-literal<span style="color:#f92672">=</span>HTTPS_PROXY<span style="color:#f92672">=</span>$proxy_ip:3128 <span style="color:#ae81ff">\
+</span><span style="color:#ae81ff"></span> --from-literal<span style="color:#f92672">=</span>NO_PROXY<span style="color:#f92672">=</span>$no_proxy_params <span style="color:#ae81ff">\
+</span><span style="color:#ae81ff"></span> -n longhorn-system
+</code></pre></div></li>
+</ul>
+<ol start="2">
+<li>Open Longhorn UI</li>
+<li>Click on <em>Setting</em></li>
+<li>Scroll down to <em>Backup Target Credential Secret</em></li>
+<li>Fill in <code>$secret_name</code> assigned in step 1. and save setting</li>
+<li>Go to <em>Backup</em></li>
+<li>Restore from existing backups and watch the volume become ready</li>
 </ol>
 
     </article>
