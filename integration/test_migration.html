@@ -204,6 +204,26 @@ def test_migration_with_rebuilding_replica(clients, volume_name):  # NOQA
     return
 
 
+@pytest.mark.coretest  # NOQA
+@pytest.mark.migration # NOQA
+@pytest.mark.skip(reason=&#34;TODO&#34;) # NOQA
+def test_migration_with_restore_volume(clients, volume_name):  # NOQA
+    &#34;&#34;&#34;
+    Test that a restored volume can be migrated.
+
+    1. Prepare one backup.
+    2. Create a StorageClass with `migratable` being enabled and
+       `fromBackup` pointing to the above backup.
+    3. Create a new RWX migratable volume using the StorageClass.
+    2. Attach to node 1, then write some data.
+    4. Attach the volume to node 2 (migration target).
+    5. Wait for the migration ready. Verify that field
+       `volume.controllers[0].requestedBackupRestore` is empty.
+    6. Confirm the migration then validate the data.
+    &#34;&#34;&#34;
+    return
+
+
 def get_hosts_for_migration_test(clients): # NOQA
     &#34;&#34;&#34;
     Filters out the current node from the returned hosts list
@@ -601,6 +621,46 @@ def test_migration_with_rebuilding_replica(clients, volume_name):  # NOQA
     return</code></pre>
 </details>
 </dd>
+<dt id="tests.test_migration.test_migration_with_restore_volume"><code class="name flex">
+<span>def <span class="ident">test_migration_with_restore_volume</span></span>(<span>clients, volume_name)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test that a restored volume can be migrated.</p>
+<ol>
+<li>Prepare one backup.</li>
+<li>Create a StorageClass with <code>migratable</code> being enabled and
+<code>fromBackup</code> pointing to the above backup.</li>
+<li>Create a new RWX migratable volume using the StorageClass.</li>
+<li>Attach to node 1, then write some data.</li>
+<li>Attach the volume to node 2 (migration target).</li>
+<li>Wait for the migration ready. Verify that field
+<code>volume.controllers[0].requestedBackupRestore</code> is empty.</li>
+<li>Confirm the migration then validate the data.</li>
+</ol></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@pytest.mark.coretest  # NOQA
+@pytest.mark.migration # NOQA
+@pytest.mark.skip(reason=&#34;TODO&#34;) # NOQA
+def test_migration_with_restore_volume(clients, volume_name):  # NOQA
+    &#34;&#34;&#34;
+    Test that a restored volume can be migrated.
+
+    1. Prepare one backup.
+    2. Create a StorageClass with `migratable` being enabled and
+       `fromBackup` pointing to the above backup.
+    3. Create a new RWX migratable volume using the StorageClass.
+    2. Attach to node 1, then write some data.
+    4. Attach the volume to node 2 (migration target).
+    5. Wait for the migration ready. Verify that field
+       `volume.controllers[0].requestedBackupRestore` is empty.
+    6. Confirm the migration then validate the data.
+    &#34;&#34;&#34;
+    return</code></pre>
+</details>
+</dd>
 <dt id="tests.test_migration.test_migration_with_unscheduled_replica"><code class="name flex">
 <span>def <span class="ident">test_migration_with_unscheduled_replica</span></span>(<span>clients, volume_name)</span>
 </code></dt>
@@ -684,6 +744,7 @@ def test_migration_with_unscheduled_replica(clients, volume_name):  # NOQA
 <li><code><a title="tests.test_migration.test_migration_rollback" href="#tests.test_migration.test_migration_rollback">test_migration_rollback</a></code></li>
 <li><code><a title="tests.test_migration.test_migration_with_failed_replica" href="#tests.test_migration.test_migration_with_failed_replica">test_migration_with_failed_replica</a></code></li>
 <li><code><a title="tests.test_migration.test_migration_with_rebuilding_replica" href="#tests.test_migration.test_migration_with_rebuilding_replica">test_migration_with_rebuilding_replica</a></code></li>
+<li><code><a title="tests.test_migration.test_migration_with_restore_volume" href="#tests.test_migration.test_migration_with_restore_volume">test_migration_with_restore_volume</a></code></li>
 <li><code><a title="tests.test_migration.test_migration_with_unscheduled_replica" href="#tests.test_migration.test_migration_with_unscheduled_replica">test_migration_with_unscheduled_replica</a></code></li>
 </ul>
 </li>
