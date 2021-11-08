@@ -1441,27 +1441,11 @@ def get_backupstore_poll_interval():
     return poll_interval
 
 
-def get_backupstore_config():
-    try:
-        return os.environ.get(&#39;BACKUP_STORE_TYPE&#39;)
-    except KeyError:
-        return None
-
-
 def get_backupstores():
     # The try is added to avoid the pdoc3 error while publishing this on
     # https://longhorn.github.io/longhorn-tests
-    backupstores = []
     try:
-        backupstore_config = get_backupstore_config()
-        if backupstore_config == &#39;nfs&#39;:
-            backupstores[0] = &#34;nfs&#34;
-            return backupstores
-        elif backupstore_config == &#39;s3&#39;:
-            backupstores[0] = &#34;s3&#34;
-            return backupstores
-        else:
-            backupstore = os.environ[&#39;LONGHORN_BACKUPSTORES&#39;]
+        backupstore = os.environ[&#39;LONGHORN_BACKUPSTORES&#39;]
     except KeyError:
         return []
 
@@ -6835,22 +6819,6 @@ been completed successfully</p></div>
     return k8sclient.AppsV1Api()</code></pre>
 </details>
 </dd>
-<dt id="tests.common.get_backupstore_config"><code class="name flex">
-<span>def <span class="ident">get_backupstore_config</span></span>(<span>)</span>
-</code></dt>
-<dd>
-<div class="desc"></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def get_backupstore_config():
-    try:
-        return os.environ.get(&#39;BACKUP_STORE_TYPE&#39;)
-    except KeyError:
-        return None</code></pre>
-</details>
-</dd>
 <dt id="tests.common.get_backupstore_poll_interval"><code class="name flex">
 <span>def <span class="ident">get_backupstore_poll_interval</span></span>(<span>)</span>
 </code></dt>
@@ -6896,17 +6864,8 @@ been completed successfully</p></div>
 <pre><code class="python">def get_backupstores():
     # The try is added to avoid the pdoc3 error while publishing this on
     # https://longhorn.github.io/longhorn-tests
-    backupstores = []
     try:
-        backupstore_config = get_backupstore_config()
-        if backupstore_config == &#39;nfs&#39;:
-            backupstores[0] = &#34;nfs&#34;
-            return backupstores
-        elif backupstore_config == &#39;s3&#39;:
-            backupstores[0] = &#34;s3&#34;
-            return backupstores
-        else:
-            backupstore = os.environ[&#39;LONGHORN_BACKUPSTORES&#39;]
+        backupstore = os.environ[&#39;LONGHORN_BACKUPSTORES&#39;]
     except KeyError:
         return []
 
@@ -11607,7 +11566,6 @@ volume. Trigger a failed assertion of one is detected.
 <li><code><a title="tests.common.generate_sts_name" href="#tests.common.generate_sts_name">generate_sts_name</a></code></li>
 <li><code><a title="tests.common.generate_volume_name" href="#tests.common.generate_volume_name">generate_volume_name</a></code></li>
 <li><code><a title="tests.common.get_apps_api_client" href="#tests.common.get_apps_api_client">get_apps_api_client</a></code></li>
-<li><code><a title="tests.common.get_backupstore_config" href="#tests.common.get_backupstore_config">get_backupstore_config</a></code></li>
 <li><code><a title="tests.common.get_backupstore_poll_interval" href="#tests.common.get_backupstore_poll_interval">get_backupstore_poll_interval</a></code></li>
 <li><code><a title="tests.common.get_backupstore_url" href="#tests.common.get_backupstore_url">get_backupstore_url</a></code></li>
 <li><code><a title="tests.common.get_backupstores" href="#tests.common.get_backupstores">get_backupstores</a></code></li>
