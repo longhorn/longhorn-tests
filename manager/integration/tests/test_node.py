@@ -2485,7 +2485,8 @@ def test_node_eviction_soft_anti_affinity(client, core_api, csi_pv, pvc, pod_mak
     common.wait_for_volume_healthy(client, volume_name)
 
     common.wait_for_replica_scheduled(client, volume_name,
-                                      to_nodes=[node1.name, node3.name])
+                                      to_nodes=[node1.name, node3.name],
+                                      chk_vol_healthy=False)
 
     expect_md5sum = get_pod_data_md5sum(core_api, pod_name, data_path)
     assert expect_md5sum == created_md5sum
