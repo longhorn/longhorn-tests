@@ -215,6 +215,12 @@ BACKING_IMAGE_SOURCE_TYPE_DOWNLOAD = "download"
 
 JOB_LABEL = "recurring-job.longhorn.io"
 
+LONGHORN_NFS_INSTALLATION_URL = \
+    "https://raw.githubusercontent.com/longhorn/" \
+    "longhorn/master/deploy/prerequisite/longhorn" \
+    "-nfs-installation.yaml"
+LONGHORN_NFS_DAEMONSET_NAME = "longhorn-nfs-installation"
+
 
 def load_k8s_config():
     c = Configuration()
@@ -4555,3 +4561,42 @@ def restore_backup_and_get_data_checksum(client, core_api, backup, pod,
                                      'default')
 
     return data_checksum, output, restore_pod_name
+
+
+@pytest.fixture
+def nfs(request):
+
+    api = get_core_api_client()
+    apps_api = get_apps_api_client()
+
+    cmd = ["kubectl", "apply", "-f", LONGHORN_NFS_INSTALLATION_URL]
+    subprocess.check_output(cmd)
+
+    node_list = api.list_node()
+    for i in range(RETRY_COUNTS):
+        nfs_pods = {}
+        pod_list = api.list_namespaced_pod("default")
+
+        for pod in pod_list.items:
+            pod_name = pod.metadata.name
+            if "longhorn-nfs" in pod_name:
+                nfs_pods[pod_name] = \
+                    api.read_namespaced_pod(name=pod_name,
+                                            namespace='default').status.phase
+
+        if len(nfs_pods) == len(node_list.items):
+            if all(value == "Running" for value in nfs_pods.values()):
+                break
+
+        time.sleep(RETRY_INTERVAL)
+
+    if not \
+            all(value == "Running" for value in nfs_pods.values()) \
+            or len(nfs_pods) == 0:
+        raise Exception("Longhorn-nfs not installed on all nodes")
+
+    def finalizer():
+        apps_api.delete_namespaced_daemon_set(name=LONGHORN_NFS_DAEMONSET_NAME,
+                                              namespace='default')
+
+    request.addfinalizer(finalizer)
