@@ -15,7 +15,7 @@ from common import DEFAULT_STATEFULSET_TIMEOUT, DEFAULT_STATEFULSET_INTERVAL
 from common import wait_delete_pod, wait_for_pod_remount
 from common import get_core_api_client, write_pod_volume_random_data
 from common import create_pvc_spec, make_deployment_with_pvc  # NOQA
-from common import core_api, statefulset, pvc, pod, client  # NOQA
+from common import core_api, statefulset, pvc, pod, client, nfs  # NOQA
 from common import RETRY_COUNTS, RETRY_INTERVAL
 from backupstore import set_random_backupstore # NOQA
 from multiprocessing import Pool
@@ -30,7 +30,7 @@ def write_data_into_pod(pod_name_and_data_path):
                                  DATA_SIZE_IN_MB_3)
 
 
-def test_rwx_with_statefulset_multi_pods(core_api, statefulset):  # NOQA
+def test_rwx_with_statefulset_multi_pods(nfs, core_api, statefulset):  # NOQA
     """
     Test creation of share manager pod and rwx volumes from 2 pods.
 
@@ -96,7 +96,7 @@ def test_rwx_with_statefulset_multi_pods(core_api, statefulset):  # NOQA
         assert pod_data == md5sum_pod[i]
 
 
-def test_rwx_multi_statefulset_with_same_pvc(core_api, pvc, statefulset, pod):  # NOQA
+def test_rwx_multi_statefulset_with_same_pvc(nfs, core_api, pvc, statefulset, pod):  # NOQA
     """
     Test writing of data into a volume from multiple pods using same PVC
 
@@ -159,7 +159,7 @@ def test_rwx_multi_statefulset_with_same_pvc(core_api, pvc, statefulset, pod):  
         core_api, command2, share_manager_name, LONGHORN_NAMESPACE)
 
 
-def test_rwx_parallel_writing(core_api, statefulset, pod):  # NOQA
+def test_rwx_parallel_writing(nfs, core_api, statefulset, pod):  # NOQA
     """
     Test parallel writing of data
 
@@ -224,7 +224,7 @@ def test_rwx_parallel_writing(core_api, statefulset, pod):  # NOQA
     assert md5sum2 == share_manager_data2
 
 
-def test_rwx_statefulset_scale_down_up(core_api, statefulset):  # NOQA
+def test_rwx_statefulset_scale_down_up(nfs, core_api, statefulset):  # NOQA
     """
     Test Scaling up and down of pods attached to rwx volume.
 
@@ -331,7 +331,7 @@ def test_rwx_statefulset_scale_down_up(core_api, statefulset):  # NOQA
         assert pod_data == md5sum_pod[i]
 
 
-def test_rwx_delete_share_manager_pod(core_api, statefulset):  # NOQA
+def test_rwx_delete_share_manager_pod(nfs, core_api, statefulset):  # NOQA
     """
     Test moving of Share manager pod from one node to another.
 
@@ -393,7 +393,7 @@ def test_rwx_delete_share_manager_pod(core_api, statefulset):  # NOQA
     assert test_data_2 == share_manager_data_2
 
 
-def test_rwx_deployment_with_multi_pods(core_api, pvc, make_deployment_with_pvc):  # NOQA
+def test_rwx_deployment_with_multi_pods(nfs, core_api, pvc, make_deployment_with_pvc):  # NOQA
     """
     Test deployment of 2 pods with same PVC.
 
@@ -455,7 +455,7 @@ def test_rwx_deployment_with_multi_pods(core_api, pvc, make_deployment_with_pvc)
     assert test_data_2 == share_manager_data_2
 
 
-def test_restore_rwo_volume_to_rwx(set_random_backupstore, client, core_api, volume_name, pvc, csi_pv, pod_make, make_deployment_with_pvc):  # NOQA
+def test_restore_rwo_volume_to_rwx(nfs, set_random_backupstore, client, core_api, volume_name, pvc, csi_pv, pod_make, make_deployment_with_pvc):  # NOQA
     """
     Test restoring a rwo to a rwx volume.
 
