@@ -4573,8 +4573,8 @@ def nfs(request):
     subprocess.check_output(cmd)
 
     node_list = api.list_node()
-    cmd = ["kubectl get pod -l app=longhorn-nfs-installation | "
-           "awk 'NR>1 {print $1}'"]
+    cmd = ["kubectl get pod -l app={} | "
+           "awk 'NR>1 {{print $1}}'".format(LONGHORN_NFS_DAEMONSET_NAME)]
     for i in range(RETRY_COUNTS):
         nfs_pods = {}
         pod_list = \
