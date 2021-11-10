@@ -4563,7 +4563,7 @@ def restore_backup_and_get_data_checksum(client, core_api, backup, pod,
     return data_checksum, output, restore_pod_name
 
 
-@pytest.fixture
+@pytest.fixture(scope="module", autouse="True")
 def nfs(request):
 
     api = get_core_api_client()
@@ -4573,16 +4573,17 @@ def nfs(request):
     subprocess.check_output(cmd)
 
     node_list = api.list_node()
+    cmd = ["kubectl get pod -l app=longhorn-nfs-installation | "
+           "awk 'NR>1 {print $1}'"]
     for i in range(RETRY_COUNTS):
         nfs_pods = {}
-        pod_list = api.list_namespaced_pod("default")
+        pod_list = \
+            subprocess.check_output(cmd, shell=True).decode("utf-8").split()
 
-        for pod in pod_list.items:
-            pod_name = pod.metadata.name
-            if "longhorn-nfs" in pod_name:
-                nfs_pods[pod_name] = \
-                    api.read_namespaced_pod(name=pod_name,
-                                            namespace='default').status.phase
+        for pod_name in pod_list:
+            nfs_pods[pod_name] = \
+                api.read_namespaced_pod(name=pod_name,
+                                        namespace='default').status.phase
 
         if len(nfs_pods) == len(node_list.items):
             if all(value == "Running" for value in nfs_pods.values()):
