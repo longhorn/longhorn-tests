@@ -4593,7 +4593,7 @@ def nfs(request):
 
     if not \
             all(value == "Running" for value in nfs_pods.values()) \
-            or len(nfs_pods) == len(node_list.items):
+            or not len(nfs_pods) == len(node_list.items):
         raise Exception("Longhorn-nfs not installed on all nodes")
 
     def finalizer():
