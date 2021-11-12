@@ -3,15 +3,15 @@
 set -x
 
 if [[ ${TF_VAR_arch} == "amd64" ]]; then
-	terraform init  ${TF_VAR_tf_workspace}/terraform/aws/${DISTRO}
-	terraform apply -auto-approve -no-color ${TF_VAR_tf_workspace}/terraform/aws/${DISTRO}
-	terraform refresh ${TF_VAR_tf_workspace}/terraform/aws/${DISTRO}
-	terraform output rke_config > ${TF_VAR_tf_workspace}/rke.yml
+	terraform -chdir=${TF_VAR_tf_workspace}/terraform/aws/${DISTRO} init
+	terraform -chdir=${TF_VAR_tf_workspace}/terraform/aws/${DISTRO} apply -auto-approve -no-color
+    terraform -chdir=${TF_VAR_tf_workspace}/terraform/aws/${DISTRO} apply -auto-approve -no-color -refresh-only
+	terraform -chdir=${TF_VAR_tf_workspace}/terraform/aws/${DISTRO} output rke_config > ${TF_VAR_tf_workspace}/rke.yml
 	sleep 30
 	rke up --config ${TF_VAR_tf_workspace}/rke.yml
-	exit $?
 else
-	terraform init  ${TF_VAR_tf_workspace}/terraform/aws/${DISTRO}
-	terraform apply -auto-approve -no-color ${TF_VAR_tf_workspace}/terraform/aws/${DISTRO}
-	exit $?
+	terraform -chdir=${TF_VAR_tf_workspace}/terraform/aws/${DISTRO} init
+	terraform -chdir=${TF_VAR_tf_workspace}/terraform/aws/${DISTRO} apply -auto-approve -no-color
 fi
+
+exit $?
