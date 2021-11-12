@@ -49,6 +49,14 @@ from backupstore import set_random_backupstore # NOQA
 from multiprocessing import Pool
 
 import time
+import pytest
+import subprocess
+
+LONGHORN_NFS_INSTALLATION_URL = \
+    &#34;https://raw.githubusercontent.com/longhorn/&#34; \
+    &#34;longhorn/master/deploy/prerequisite/longhorn&#34; \
+    &#34;-nfs-installation.yaml&#34;
+LONGHORN_NFS_DAEMONSET_NAME = &#34;longhorn-nfs-installation&#34;
 
 
 def write_data_into_pod(pod_name_and_data_path):
@@ -56,6 +64,46 @@ def write_data_into_pod(pod_name_and_data_path):
     core_api = get_core_api_client()  # NOQA
     write_pod_volume_random_data(core_api, pod_info[0], pod_info[1],
                                  DATA_SIZE_IN_MB_3)
+
+
+@pytest.fixture(scope=&#34;module&#34;, autouse=&#34;True&#34;)
+def nfs(request):
+
+    api = get_core_api_client()
+    apps_api = get_apps_api_client()
+
+    cmd = [&#34;kubectl&#34;, &#34;apply&#34;, &#34;-f&#34;, LONGHORN_NFS_INSTALLATION_URL]
+    subprocess.check_output(cmd)
+
+    node_list = api.list_node()
+    cmd = [&#34;kubectl get pod -l app={} | &#34;
+           &#34;awk &#39;NR&gt;1 {{print $1}}&#39;&#34;.format(LONGHORN_NFS_DAEMONSET_NAME)]
+    for i in range(RETRY_COUNTS):
+        nfs_pods = {}
+        pod_list = \
+            subprocess.check_output(cmd, shell=True).decode(&#34;utf-8&#34;).split()
+
+        for pod_name in pod_list:
+            nfs_pods[pod_name] = \
+                api.read_namespaced_pod(name=pod_name,
+                                        namespace=&#39;default&#39;).status.phase
+
+        if len(nfs_pods) == len(node_list.items):
+            if all(value == &#34;Running&#34; for value in nfs_pods.values()):
+                break
+
+        time.sleep(RETRY_INTERVAL)
+
+    if not \
+            all(value == &#34;Running&#34; for value in nfs_pods.values()) \
+            or not len(nfs_pods) == len(node_list.items):
+        raise Exception(&#34;Longhorn-nfs not installed on all nodes&#34;)
+
+    def finalizer():
+        apps_api.delete_namespaced_daemon_set(name=LONGHORN_NFS_DAEMONSET_NAME,
+                                              namespace=&#39;default&#39;)
+
+    request.addfinalizer(finalizer)
 
 
 def test_rwx_with_statefulset_multi_pods(core_api, statefulset):  # NOQA
@@ -551,6 +599,55 @@ def test_restore_rwo_volume_to_rwx(set_random_backupstore, client, core_api, vol
 <section>
 <h2 class="section-title" id="header-functions">Functions</h2>
 <dl>
+<dt id="tests.test_rwx.nfs"><code class="name flex">
+<span>def <span class="ident">nfs</span></span>(<span>request)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@pytest.fixture(scope=&#34;module&#34;, autouse=&#34;True&#34;)
+def nfs(request):
+
+    api = get_core_api_client()
+    apps_api = get_apps_api_client()
+
+    cmd = [&#34;kubectl&#34;, &#34;apply&#34;, &#34;-f&#34;, LONGHORN_NFS_INSTALLATION_URL]
+    subprocess.check_output(cmd)
+
+    node_list = api.list_node()
+    cmd = [&#34;kubectl get pod -l app={} | &#34;
+           &#34;awk &#39;NR&gt;1 {{print $1}}&#39;&#34;.format(LONGHORN_NFS_DAEMONSET_NAME)]
+    for i in range(RETRY_COUNTS):
+        nfs_pods = {}
+        pod_list = \
+            subprocess.check_output(cmd, shell=True).decode(&#34;utf-8&#34;).split()
+
+        for pod_name in pod_list:
+            nfs_pods[pod_name] = \
+                api.read_namespaced_pod(name=pod_name,
+                                        namespace=&#39;default&#39;).status.phase
+
+        if len(nfs_pods) == len(node_list.items):
+            if all(value == &#34;Running&#34; for value in nfs_pods.values()):
+                break
+
+        time.sleep(RETRY_INTERVAL)
+
+    if not \
+            all(value == &#34;Running&#34; for value in nfs_pods.values()) \
+            or not len(nfs_pods) == len(node_list.items):
+        raise Exception(&#34;Longhorn-nfs not installed on all nodes&#34;)
+
+    def finalizer():
+        apps_api.delete_namespaced_daemon_set(name=LONGHORN_NFS_DAEMONSET_NAME,
+                                              namespace=&#39;default&#39;)
+
+    request.addfinalizer(finalizer)</code></pre>
+</details>
+</dd>
 <dt id="tests.test_rwx.test_restore_rwo_volume_to_rwx"><code class="name flex">
 <span>def <span class="ident">test_restore_rwo_volume_to_rwx</span></span>(<span>set_random_backupstore, client, core_api, volume_name, pvc, csi_pv, pod_make, make_deployment_with_pvc)</span>
 </code></dt>
@@ -1211,6 +1308,7 @@ path <code>/export</code></li>
 </li>
 <li><h3><a href="#header-functions">Functions</a></h3>
 <ul class="">
+<li><code><a title="tests.test_rwx.nfs" href="#tests.test_rwx.nfs">nfs</a></code></li>
 <li><code><a title="tests.test_rwx.test_restore_rwo_volume_to_rwx" href="#tests.test_rwx.test_restore_rwo_volume_to_rwx">test_restore_rwo_volume_to_rwx</a></code></li>
 <li><code><a title="tests.test_rwx.test_rwx_delete_share_manager_pod" href="#tests.test_rwx.test_rwx_delete_share_manager_pod">test_rwx_delete_share_manager_pod</a></code></li>
 <li><code><a title="tests.test_rwx.test_rwx_deployment_with_multi_pods" href="#tests.test_rwx.test_rwx_deployment_with_multi_pods">test_rwx_deployment_with_multi_pods</a></code></li>
