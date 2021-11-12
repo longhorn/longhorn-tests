@@ -20,6 +20,7 @@ from kubernetes.client import Configuration
 from kubernetes.stream import stream
 
 from kubernetes.client.rest import ApiException
+from datetime import datetime
 
 Ki = 1024
 Mi = (1024 * 1024)
@@ -4326,6 +4327,12 @@ def update_setting(client, name, value):
 
 
 def create_recurring_jobs(client, recurring_jobs):
+    for i in range(60):
+        current_time = datetime.utcnow()
+        if current_time.second == 0:
+            break
+        time.sleep(1)
+
     for name, spec in recurring_jobs.items():
         client.create_recurring_job(Name=name,
                                     Task=spec["task"],
