@@ -421,7 +421,7 @@ def test_recurring_job_in_storageclass(set_random_backupstore, client, core_api,
     for pod_name in pod_names:
         write_pod_volume_random_data(core_api, pod_name, volume_data_path, 2)
 
-    time.sleep(150)  # 2.5 minutes
+    time.sleep(140)  # 2.5 minutes - 10 secends
 
     for volume_name in volume_info:  # NOQA
         volume = client.by_id_volume(volume_name)
@@ -471,7 +471,7 @@ def recurring_job_labels_test(client, labels, volume_name, size=SIZE, backing_im
 
     write_volume_random_data(volume)
 
-    time.sleep(75)  # 1 minute 15 second
+    time.sleep(65)  # 1 minute 15 second
     labels["we-added-this-label"] = "definitely"
     update_recurring_job(client, RECURRING_JOB_NAME,
                          recurring_jobs[RECURRING_JOB_NAME][GROUPS],
@@ -658,9 +658,7 @@ def test_recurring_job_detached_volume(client, batch_v1_beta_api, volume_name): 
     check_recurring_jobs(client, recurring_jobs)
     wait_for_cron_job_count(batch_v1_beta_api, 1)
 
-    time.sleep(60 * 2)
-    wait_until_begin_of_a_minute()
-    time.sleep(5)
+    time.sleep(60 * 2 - 10)
     volume.attach(hostId=self_host)
     volume = wait_for_volume_healthy(client, volume_name)
     wait_for_snapshot_count(volume, 1)
@@ -1017,10 +1015,9 @@ def test_recurring_job_groups(set_random_backupstore, client, batch_v1_beta_api)
 
     wait_for_cron_job_count(batch_v1_beta_api, 2)
 
-    wait_until_begin_of_a_minute()
     write_volume_random_data(volume1)
     write_volume_random_data(volume2)
-    time.sleep(60 * 2)
+    time.sleep(60 * 2 - 10)
     write_volume_random_data(volume1)
     write_volume_random_data(volume2)
     time.sleep(60)
@@ -1423,7 +1420,7 @@ def test_recurring_job_multiple_volumes(set_random_backupstore, client, batch_v1
 
     write_volume_random_data(volume1)
     write_volume_random_data(volume2)
-    time.sleep(70)
+    time.sleep(60)
     wait_for_backup_count(client.by_id_backupVolume(volume2_name), 2)
     wait_for_backup_count(client.by_id_backupVolume(volume1_name), 1)
 
@@ -1554,7 +1551,7 @@ def test_recurring_job_backup(set_random_backupstore, client, batch_v1_beta_api)
     # 1st job
     write_volume_random_data(volume1)
     write_volume_random_data(volume2)
-    time.sleep(60)
+    time.sleep(50)
     wait_for_backup_count(client.by_id_backupVolume(volume1_name), 1)
     wait_for_backup_count(client.by_id_backupVolume(volume2_name), 1)
 
