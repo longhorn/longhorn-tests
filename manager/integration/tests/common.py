@@ -4327,11 +4327,7 @@ def update_setting(client, name, value):
 
 
 def create_recurring_jobs(client, recurring_jobs):
-    for i in range(60):
-        current_time = datetime.utcnow()
-        if current_time.second == 0:
-            break
-        time.sleep(1)
+    time.sleep(60 - datetime.utcnow().second)
 
     for name, spec in recurring_jobs.items():
         client.create_recurring_job(Name=name,
