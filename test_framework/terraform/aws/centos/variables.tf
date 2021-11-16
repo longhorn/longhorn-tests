@@ -20,7 +20,7 @@ variable "aws_availability_zone" {
 
 variable "lh_aws_vpc_name" {
   type        = string
-  default     = "vpc-meldafrawi-lh-test"
+  default     = "vpc-lh-test"
 }
 
 variable "arch" {
