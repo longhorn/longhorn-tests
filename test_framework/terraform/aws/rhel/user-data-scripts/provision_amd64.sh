@@ -1,6 +1,6 @@
 #!/bin/bash
 
-DOCKER_VERSION=19.03
+DOCKER_VERSION=20.10
 
 sudo yum update -y
 sudo yum group install -y "Development Tools"

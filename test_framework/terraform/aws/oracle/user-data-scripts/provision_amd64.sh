@@ -1,6 +1,6 @@
 #!/bin/bash
 
-DOCKER_VERSION=19.03
+DOCKER_VERSION=20.10
 
 sudo systemctl stop firewalld
 sudo systemctl disable firewalld
