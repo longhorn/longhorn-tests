@@ -11,4 +11,4 @@ fi
 # wait 30 seconds for graceful terraform termination
 sleep 30
 
-terraform destroy -auto-approve -no-color ${TF_VAR_tf_workspace}/terraform/aws/${DISTRO}
+terraform chdri=${TF_VAR_tf_workspace}/terraform/aws/${DISTRO} destroy -auto-approve -no-color
