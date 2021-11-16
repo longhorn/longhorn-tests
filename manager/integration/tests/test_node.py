@@ -2597,3 +2597,19 @@ def test_node_eviction_multiple_volume(client, core_api, csi_pv, pvc, pod_make, 
 
     expect_md5sum = get_pod_data_md5sum(core_api, pod2_name, data_path)
     assert expect_md5sum == created_md5sum2
+
+
+@pytest.mark.skip(reason="TODO") # NOQA
+def test_disk_eviction_with_node_level_soft_anti_affinity_disabled(): # NOQA
+    """
+    Steps:
+
+    1. Disable the setting `Replica Node Level Soft Anti-affinity`
+    2. Create a volume. Make sure there is a replica on each worker node.
+    3. Write some data to the volume.
+    4. Add a new schedulable disk to node-1.
+    5. Disable the scheduling and enable eviction for the old disk on node-1.
+    6. Verify that the replica on the old disk move to the new disk
+    7. Make replica count as 1, Delete the replicas on other 2 nodes.
+       Verify the data from the volume.
+    """
