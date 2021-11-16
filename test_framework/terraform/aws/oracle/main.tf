@@ -13,12 +13,20 @@ provider "aws" {
   secret_key = var.lh_aws_secret_key
 }
 
+# Create a random string suffix for instance names
+resource "random_string" "random_suffix" {
+  length           = 8
+  special          = false
+  lower            = true
+  upper            = false
+}
+
 # Create a VPC
 resource "aws_vpc" "lh_aws_vpc" {
   cidr_block = "10.0.0.0/16"
 
   tags = {
-    Name = var.lh_aws_vpc_name
+    Name = "${var.lh_aws_vpc_name}-${random_string.random_suffix.id}"
   }
 }
 
@@ -70,7 +78,7 @@ resource "aws_security_group" "lh_aws_secgrp_controlplane" {
   }
 
   tags = {
-    Name = "lh_aws_sec_grp_controlplane"
+    Name = "lh_aws_sec_grp_controlplane-${random_string.random_suffix.id}"
   }
 }
 
@@ -97,7 +105,7 @@ resource "aws_security_group" "lh_aws_secgrp_worker" {
   }
 
   tags = {
-    Name = "lh_aws_sec_grp_worker"
+    Name = "lh_aws_sec_grp_worker-${random_string.random_suffix.id}"
   }
 }
 
@@ -109,7 +117,7 @@ resource "aws_subnet" "lh_aws_public_subnet" {
   cidr_block = "10.0.1.0/24"
 
   tags = {
-    Name = "lh_public_subnet"
+    Name = "lh_public_subnet-${random_string.random_suffix.id}"
   }
 }
 
@@ -120,7 +128,7 @@ resource "aws_subnet" "lh_aws_private_subnet" {
   cidr_block = "10.0.2.0/24"
 
   tags = {
-    Name = "lh_private_subnet"
+    Name = "lh_private_subnet-${random_string.random_suffix.id}"
   }
 }
 
@@ -129,7 +137,7 @@ resource "aws_eip" "lh_aws_eip_nat_gw" {
   vpc      = true
 
   tags = {
-    Name = "lh_eip_nat_gw"
+    Name = "lh_eip_nat_gw-${random_string.random_suffix.id}"
   }
 }
 
@@ -143,6 +151,10 @@ resource "aws_nat_gateway" "lh_aws_nat_gw" {
 
   allocation_id = aws_eip.lh_aws_eip_nat_gw.id
   subnet_id     = aws_subnet.lh_aws_public_subnet.id
+
+  tags = {
+    Name = "lh_eip_nat_gw-${random_string.random_suffix.id}"
+  }
 }
 
 
@@ -160,7 +172,7 @@ resource "aws_route_table" "lh_aws_public_rt" {
   }
 
   tags = {
-    Name = "lh_aws_public_rt"
+    Name = "lh_aws_public_rt-${random_string.random_suffix.id}"
   }
 }
 
@@ -178,7 +190,7 @@ resource "aws_route_table" "lh_aws_private_rt" {
   }
 
   tags = {
-    Name = "lh_aws_private_rt"
+    Name = "lh_aws_private_rt-${random_string.random_suffix.id}"
   }
 }
 
@@ -216,13 +228,6 @@ resource "random_password" "k3s_cluster_secret" {
   special = false
 }
 
-# Create a random string suffix for instance names
-resource "random_string" "random_suffix" {
-  length           = 8
-  special          = false
-  lower            = true
-  upper            = false
-}
 
 # Create controlplane instances
 resource "aws_instance" "lh_aws_instance_controlplane" {
