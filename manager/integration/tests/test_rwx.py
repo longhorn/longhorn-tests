@@ -47,7 +47,12 @@ def nfs(request):
     cmd = ["kubectl", "apply", "-f", LONGHORN_NFS_INSTALLATION_URL]
     subprocess.check_output(cmd)
 
+    worker_cnt = 0
     node_list = api.list_node()
+    for node in node_list.items:
+        if "csi.volume.kubernetes.io/nodeid" in node.metadata.annotations:
+            worker_cnt = worker_cnt + 1
+
     cmd = ["kubectl get pod -l app={} | "
            "awk 'NR>1 {{print $1}}'".format(LONGHORN_NFS_DAEMONSET_NAME)]
     for i in range(RETRY_COUNTS):
@@ -60,7 +65,7 @@ def nfs(request):
                 api.read_namespaced_pod(name=pod_name,
                                         namespace='default').status.phase
 
-        if len(nfs_pods) == len(node_list.items):
+        if len(nfs_pods) == worker_cnt:
             if all(value == "Running" for value in nfs_pods.values()):
                 break
 
@@ -68,7 +73,7 @@ def nfs(request):
 
     if not \
             all(value == "Running" for value in nfs_pods.values()) \
-            or not len(nfs_pods) == len(node_list.items):
+            or not len(nfs_pods) == worker_cnt:
         raise Exception("Longhorn-nfs not installed on all nodes")
 
     def finalizer():
