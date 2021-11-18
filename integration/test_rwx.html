@@ -69,39 +69,16 @@ def write_data_into_pod(pod_name_and_data_path):
 @pytest.fixture(scope=&#34;module&#34;, autouse=&#34;True&#34;)
 def nfs(request):
 
-    api = get_core_api_client()
-    apps_api = get_apps_api_client()
-
     cmd = [&#34;kubectl&#34;, &#34;apply&#34;, &#34;-f&#34;, LONGHORN_NFS_INSTALLATION_URL]
     subprocess.check_output(cmd)
 
-    node_list = api.list_node()
-    cmd = [&#34;kubectl get pod -l app={} | &#34;
-           &#34;awk &#39;NR&gt;1 {{print $1}}&#39;&#34;.format(LONGHORN_NFS_DAEMONSET_NAME)]
-    for i in range(RETRY_COUNTS):
-        nfs_pods = {}
-        pod_list = \
-            subprocess.check_output(cmd, shell=True).decode(&#34;utf-8&#34;).split()
-
-        for pod_name in pod_list:
-            nfs_pods[pod_name] = \
-                api.read_namespaced_pod(name=pod_name,
-                                        namespace=&#39;default&#39;).status.phase
-
-        if len(nfs_pods) == len(node_list.items):
-            if all(value == &#34;Running&#34; for value in nfs_pods.values()):
-                break
-
-        time.sleep(RETRY_INTERVAL)
-
-    if not \
-            all(value == &#34;Running&#34; for value in nfs_pods.values()) \
-            or not len(nfs_pods) == len(node_list.items):
-        raise Exception(&#34;Longhorn-nfs not installed on all nodes&#34;)
+    cmd = [&#34;kubectl&#34;, &#34;rollout&#34;, &#34;status&#34;,
+           &#34;ds/{}&#34;.format(LONGHORN_NFS_DAEMONSET_NAME), &#34;--timeout=5m&#34;]
+    subprocess.check_output(cmd)
 
     def finalizer():
-        apps_api.delete_namespaced_daemon_set(name=LONGHORN_NFS_DAEMONSET_NAME,
-                                              namespace=&#39;default&#39;)
+        cmd = [&#34;kubectl&#34;, &#34;delete&#34;, &#34;-f&#34;, LONGHORN_NFS_INSTALLATION_URL]
+        subprocess.check_output(cmd)
 
     request.addfinalizer(finalizer)
 
@@ -611,39 +588,16 @@ def test_restore_rwo_volume_to_rwx(set_random_backupstore, client, core_api, vol
 <pre><code class="python">@pytest.fixture(scope=&#34;module&#34;, autouse=&#34;True&#34;)
 def nfs(request):
 
-    api = get_core_api_client()
-    apps_api = get_apps_api_client()
-
     cmd = [&#34;kubectl&#34;, &#34;apply&#34;, &#34;-f&#34;, LONGHORN_NFS_INSTALLATION_URL]
     subprocess.check_output(cmd)
 
-    node_list = api.list_node()
-    cmd = [&#34;kubectl get pod -l app={} | &#34;
-           &#34;awk &#39;NR&gt;1 {{print $1}}&#39;&#34;.format(LONGHORN_NFS_DAEMONSET_NAME)]
-    for i in range(RETRY_COUNTS):
-        nfs_pods = {}
-        pod_list = \
-            subprocess.check_output(cmd, shell=True).decode(&#34;utf-8&#34;).split()
-
-        for pod_name in pod_list:
-            nfs_pods[pod_name] = \
-                api.read_namespaced_pod(name=pod_name,
-                                        namespace=&#39;default&#39;).status.phase
-
-        if len(nfs_pods) == len(node_list.items):
-            if all(value == &#34;Running&#34; for value in nfs_pods.values()):
-                break
-
-        time.sleep(RETRY_INTERVAL)
-
-    if not \
-            all(value == &#34;Running&#34; for value in nfs_pods.values()) \
-            or not len(nfs_pods) == len(node_list.items):
-        raise Exception(&#34;Longhorn-nfs not installed on all nodes&#34;)
+    cmd = [&#34;kubectl&#34;, &#34;rollout&#34;, &#34;status&#34;,
+           &#34;ds/{}&#34;.format(LONGHORN_NFS_DAEMONSET_NAME), &#34;--timeout=5m&#34;]
+    subprocess.check_output(cmd)
 
     def finalizer():
-        apps_api.delete_namespaced_daemon_set(name=LONGHORN_NFS_DAEMONSET_NAME,
-                                              namespace=&#39;default&#39;)
+        cmd = [&#34;kubectl&#34;, &#34;delete&#34;, &#34;-f&#34;, LONGHORN_NFS_INSTALLATION_URL]
+        subprocess.check_output(cmd)
 
     request.addfinalizer(finalizer)</code></pre>
 </details>
