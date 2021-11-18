@@ -16,7 +16,6 @@ from common import wait_delete_pod, wait_for_pod_remount
 from common import get_core_api_client, write_pod_volume_random_data
 from common import create_pvc_spec, make_deployment_with_pvc  # NOQA
 from common import core_api, statefulset, pvc, pod, client  # NOQA
-from common import RETRY_COUNTS, RETRY_INTERVAL
 from backupstore import set_random_backupstore # NOQA
 from multiprocessing import Pool
 
