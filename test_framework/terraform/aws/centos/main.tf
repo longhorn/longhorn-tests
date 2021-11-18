@@ -144,6 +144,7 @@ resource "aws_eip" "lh_aws_eip_nat_gw" {
 # Create nat gateway
 resource "aws_nat_gateway" "lh_aws_nat_gw" {
   depends_on = [
+    aws_internet_gateway.lh_aws_igw,
     aws_eip.lh_aws_eip_nat_gw,
     aws_subnet.lh_aws_public_subnet,
     aws_subnet.lh_aws_private_subnet
@@ -283,6 +284,7 @@ resource "aws_eip_association" "lh_aws_eip_assoc" {
 # Create worker instances
 resource "aws_instance" "lh_aws_instance_worker" {
   depends_on = [
+    aws_internet_gateway.lh_aws_igw,
     aws_subnet.lh_aws_private_subnet,
     aws_instance.lh_aws_instance_controlplane
   ]
