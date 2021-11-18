@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
-<meta name="generator" content="pdoc 0.9.2" />
+<meta name="generator" content="pdoc 0.10.0" />
 <title>tests.test_recurring_job API documentation</title>
 <meta name="description" content="" />
 <link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
@@ -113,6 +113,8 @@ CONCURRENCY = &#34;concurrency&#34;
 LABELS = &#34;labels&#34;
 DEFAULT = &#34;default&#34;
 SCHEDULE_1MIN = &#34;* * * * *&#34;
+
+WRITE_DATA_INTERVAL = 10
 
 
 def wait_until_begin_of_a_minute():
@@ -499,7 +501,7 @@ def recurring_job_labels_test(client, labels, volume_name, size=SIZE, backing_im
 
     write_volume_random_data(volume)
 
-    time.sleep(75)  # 1 minute 15 second
+    time.sleep(75 - WRITE_DATA_INTERVAL)  # 1 minute 15 second
     labels[&#34;we-added-this-label&#34;] = &#34;definitely&#34;
     update_recurring_job(client, RECURRING_JOB_NAME,
                          recurring_jobs[RECURRING_JOB_NAME][GROUPS],
@@ -686,9 +688,7 @@ def test_recurring_job_detached_volume(client, batch_v1_beta_api, volume_name): 
     check_recurring_jobs(client, recurring_jobs)
     wait_for_cron_job_count(batch_v1_beta_api, 1)
 
-    time.sleep(60 * 2)
-    wait_until_begin_of_a_minute()
-    time.sleep(5)
+    time.sleep(60 * 2 - WRITE_DATA_INTERVAL)
     volume.attach(hostId=self_host)
     volume = wait_for_volume_healthy(client, volume_name)
     wait_for_snapshot_count(volume, 1)
@@ -1045,10 +1045,9 @@ def test_recurring_job_groups(set_random_backupstore, client, batch_v1_beta_api)
 
     wait_for_cron_job_count(batch_v1_beta_api, 2)
 
-    wait_until_begin_of_a_minute()
     write_volume_random_data(volume1)
     write_volume_random_data(volume2)
-    time.sleep(60 * 2)
+    time.sleep(60 * 2 - WRITE_DATA_INTERVAL)
     write_volume_random_data(volume1)
     write_volume_random_data(volume2)
     time.sleep(60)
@@ -1451,7 +1450,7 @@ def test_recurring_job_multiple_volumes(set_random_backupstore, client, batch_v1
 
     write_volume_random_data(volume1)
     write_volume_random_data(volume2)
-    time.sleep(70)
+    time.sleep(70 - WRITE_DATA_INTERVAL)
     wait_for_backup_count(client.by_id_backupVolume(volume2_name), 2)
     wait_for_backup_count(client.by_id_backupVolume(volume1_name), 1)
 
@@ -1582,14 +1581,14 @@ def test_recurring_job_backup(set_random_backupstore, client, batch_v1_beta_api)
     # 1st job
     write_volume_random_data(volume1)
     write_volume_random_data(volume2)
-    time.sleep(60)
+    time.sleep(60 - WRITE_DATA_INTERVAL)
     wait_for_backup_count(client.by_id_backupVolume(volume1_name), 1)
     wait_for_backup_count(client.by_id_backupVolume(volume2_name), 1)
 
     # 2nd job
     write_volume_random_data(volume1)
     write_volume_random_data(volume2)
-    time.sleep(60)
+    time.sleep(60 - WRITE_DATA_INTERVAL)
     wait_for_backup_count(client.by_id_backupVolume(volume1_name), 2)
     wait_for_backup_count(client.by_id_backupVolume(volume2_name), 2)</code></pre>
 </details>
@@ -1632,7 +1631,7 @@ def test_recurring_job_backup(set_random_backupstore, client, batch_v1_beta_api)
 
     write_volume_random_data(volume)
 
-    time.sleep(75)  # 1 minute 15 second
+    time.sleep(75 - WRITE_DATA_INTERVAL)  # 1 minute 15 second
     labels[&#34;we-added-this-label&#34;] = &#34;definitely&#34;
     update_recurring_job(client, RECURRING_JOB_NAME,
                          recurring_jobs[RECURRING_JOB_NAME][GROUPS],
@@ -1897,14 +1896,14 @@ def test_recurring_job_backup(set_random_backupstore, client, batch_v1_beta_api)
     # 1st job
     write_volume_random_data(volume1)
     write_volume_random_data(volume2)
-    time.sleep(60)
+    time.sleep(60 - WRITE_DATA_INTERVAL)
     wait_for_backup_count(client.by_id_backupVolume(volume1_name), 1)
     wait_for_backup_count(client.by_id_backupVolume(volume2_name), 1)
 
     # 2nd job
     write_volume_random_data(volume1)
     write_volume_random_data(volume2)
-    time.sleep(60)
+    time.sleep(60 - WRITE_DATA_INTERVAL)
     wait_for_backup_count(client.by_id_backupVolume(volume1_name), 2)
     wait_for_backup_count(client.by_id_backupVolume(volume2_name), 2)</code></pre>
 </details>
@@ -2305,9 +2304,7 @@ def test_recurring_job_detached_volume(client, batch_v1_beta_api, volume_name): 
     check_recurring_jobs(client, recurring_jobs)
     wait_for_cron_job_count(batch_v1_beta_api, 1)
 
-    time.sleep(60 * 2)
-    wait_until_begin_of_a_minute()
-    time.sleep(5)
+    time.sleep(60 * 2 - WRITE_DATA_INTERVAL)
     volume.attach(hostId=self_host)
     volume = wait_for_volume_healthy(client, volume_name)
     wait_for_snapshot_count(volume, 1)
@@ -2455,10 +2452,9 @@ def test_recurring_job_groups(set_random_backupstore, client, batch_v1_beta_api)
 
     wait_for_cron_job_count(batch_v1_beta_api, 2)
 
-    wait_until_begin_of_a_minute()
     write_volume_random_data(volume1)
     write_volume_random_data(volume2)
-    time.sleep(60 * 2)
+    time.sleep(60 * 2 - WRITE_DATA_INTERVAL)
     write_volume_random_data(volume1)
     write_volume_random_data(volume2)
     time.sleep(60)
@@ -2903,7 +2899,7 @@ def test_recurring_job_multiple_volumes(set_random_backupstore, client, batch_v1
 
     write_volume_random_data(volume1)
     write_volume_random_data(volume2)
-    time.sleep(70)
+    time.sleep(70 - WRITE_DATA_INTERVAL)
     wait_for_backup_count(client.by_id_backupVolume(volume2_name), 2)
     wait_for_backup_count(client.by_id_backupVolume(volume1_name), 1)</code></pre>
 </details>
@@ -3691,7 +3687,7 @@ Then the data exist in the deployment pod.</p></div>
 </nav>
 </main>
 <footer id="footer">
-<p>Generated by <a href="https://pdoc3.github.io/pdoc"><cite>pdoc</cite> 0.9.2</a>.</p>
+<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.10.0</a>.</p>
 </footer>
 </body>
 </html>
