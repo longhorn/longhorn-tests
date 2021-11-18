@@ -41,8 +41,6 @@ def write_data_into_pod(pod_name_and_data_path):
 @pytest.fixture(scope="module", autouse="True")
 def nfs(request):
 
-    apps_api = get_apps_api_client()
-
     cmd = ["kubectl", "apply", "-f", LONGHORN_NFS_INSTALLATION_URL]
     subprocess.check_output(cmd)
 
@@ -51,8 +49,8 @@ def nfs(request):
     subprocess.check_output(cmd)
 
     def finalizer():
-        apps_api.delete_namespaced_daemon_set(name=LONGHORN_NFS_DAEMONSET_NAME,
-                                              namespace='default')
+        cmd = ["kubectl", "delete", "-f", LONGHORN_NFS_INSTALLATION_URL]
+        subprocess.check_output(cmd)
 
     request.addfinalizer(finalizer)
 
