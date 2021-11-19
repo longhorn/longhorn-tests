@@ -21,7 +21,7 @@ set_kubeconfig_envvar(){
     if [[ ${ARCH} == "amd64" ]] ; then
         export KUBECONFIG="${BASEDIR}/kube_config_rke.yml"
     elif [[ ${ARCH} == "arm64"  ]]; then
-        export KUBECONFIG="${BASEDIR}/../k3s.yaml"
+		export KUBECONFIG="${BASEDIR}/terraform/aws/${DISTRO}/k3s.yaml"
     fi
 }
 
