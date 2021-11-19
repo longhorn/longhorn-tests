@@ -177,11 +177,11 @@ def test_settings(client):  # NOQA
         if name == common.SETTING_STORAGE_OVER_PROVISIONING_PERCENTAGE:
             with pytest.raises(Exception) as e:
                 client.update(setting, value=&#34;-100&#34;)
-            assert &#34;with invalid &#34;+name in \
+            assert name+&#34; with invalid value &#34; in \
                    str(e.value)
             with pytest.raises(Exception) as e:
                 client.update(setting, value=&#34;testvalue&#34;)
-            assert &#34;with invalid &#34;+name in \
+            assert name+&#34; with invalid value &#34; in \
                    str(e.value)
             setting = client.update(setting, value=&#34;200&#34;)
             assert setting.value == &#34;200&#34;
@@ -190,15 +190,15 @@ def test_settings(client):  # NOQA
         elif name == common.SETTING_STORAGE_MINIMAL_AVAILABLE_PERCENTAGE:
             with pytest.raises(Exception) as e:
                 client.update(setting, value=&#34;300&#34;)
-            assert &#34;with invalid &#34;+name in \
+            assert name+&#34; with invalid value &#34; in \
                    str(e.value)
             with pytest.raises(Exception) as e:
                 client.update(setting, value=&#34;-30&#34;)
-            assert &#34;with invalid &#34;+name in \
+            assert name+&#34; with invalid value &#34; in \
                    str(e.value)
             with pytest.raises(Exception) as e:
                 client.update(setting, value=&#34;testvalue&#34;)
-            assert &#34;with invalid &#34;+name in \
+            assert name+&#34; with invalid value &#34; in \
                    str(e.value)
             setting = client.update(setting, value=&#34;30&#34;)
             assert setting.value == &#34;30&#34;
@@ -207,7 +207,7 @@ def test_settings(client):  # NOQA
         elif name == common.SETTING_BACKUP_TARGET:
             with pytest.raises(Exception) as e:
                 client.update(setting, value=&#34;testvalue$test&#34;)
-            assert &#34;with invalid &#34;+name in \
+            assert name+&#34; with invalid value &#34; in \
                    str(e.value)
             setting = client.update(setting, value=&#34;nfs://test&#34;)
             assert setting.value == &#34;nfs://test&#34;
@@ -221,15 +221,15 @@ def test_settings(client):  # NOQA
         elif name == common.SETTING_DEFAULT_REPLICA_COUNT:
             with pytest.raises(Exception) as e:
                 client.update(setting, value=&#34;-1&#34;)
-            assert &#34;with invalid &#34;+name in \
+            assert name+&#34; with invalid value &#34; in \
                    str(e.value)
             with pytest.raises(Exception) as e:
                 client.update(setting, value=&#34;testvalue&#34;)
-            assert &#34;with invalid &#34;+name in \
+            assert name+&#34; with invalid value &#34; in \
                    str(e.value)
             with pytest.raises(Exception) as e:
                 client.update(setting, value=&#34;21&#34;)
-            assert &#34;with invalid &#34;+name in \
+            assert name+&#34; with invalid value &#34; in \
                    str(e.value)
             setting = client.update(setting, value=&#34;2&#34;)
             assert setting.value == &#34;2&#34;
@@ -8337,11 +8337,11 @@ def test_settings(client):  # NOQA
         if name == common.SETTING_STORAGE_OVER_PROVISIONING_PERCENTAGE:
             with pytest.raises(Exception) as e:
                 client.update(setting, value=&#34;-100&#34;)
-            assert &#34;with invalid &#34;+name in \
+            assert name+&#34; with invalid value &#34; in \
                    str(e.value)
             with pytest.raises(Exception) as e:
                 client.update(setting, value=&#34;testvalue&#34;)
-            assert &#34;with invalid &#34;+name in \
+            assert name+&#34; with invalid value &#34; in \
                    str(e.value)
             setting = client.update(setting, value=&#34;200&#34;)
             assert setting.value == &#34;200&#34;
@@ -8350,15 +8350,15 @@ def test_settings(client):  # NOQA
         elif name == common.SETTING_STORAGE_MINIMAL_AVAILABLE_PERCENTAGE:
             with pytest.raises(Exception) as e:
                 client.update(setting, value=&#34;300&#34;)
-            assert &#34;with invalid &#34;+name in \
+            assert name+&#34; with invalid value &#34; in \
                    str(e.value)
             with pytest.raises(Exception) as e:
                 client.update(setting, value=&#34;-30&#34;)
-            assert &#34;with invalid &#34;+name in \
+            assert name+&#34; with invalid value &#34; in \
                    str(e.value)
             with pytest.raises(Exception) as e:
                 client.update(setting, value=&#34;testvalue&#34;)
-            assert &#34;with invalid &#34;+name in \
+            assert name+&#34; with invalid value &#34; in \
                    str(e.value)
             setting = client.update(setting, value=&#34;30&#34;)
             assert setting.value == &#34;30&#34;
@@ -8367,7 +8367,7 @@ def test_settings(client):  # NOQA
         elif name == common.SETTING_BACKUP_TARGET:
             with pytest.raises(Exception) as e:
                 client.update(setting, value=&#34;testvalue$test&#34;)
-            assert &#34;with invalid &#34;+name in \
+            assert name+&#34; with invalid value &#34; in \
                    str(e.value)
             setting = client.update(setting, value=&#34;nfs://test&#34;)
             assert setting.value == &#34;nfs://test&#34;
@@ -8381,15 +8381,15 @@ def test_settings(client):  # NOQA
         elif name == common.SETTING_DEFAULT_REPLICA_COUNT:
             with pytest.raises(Exception) as e:
                 client.update(setting, value=&#34;-1&#34;)
-            assert &#34;with invalid &#34;+name in \
+            assert name+&#34; with invalid value &#34; in \
                    str(e.value)
             with pytest.raises(Exception) as e:
                 client.update(setting, value=&#34;testvalue&#34;)
-            assert &#34;with invalid &#34;+name in \
+            assert name+&#34; with invalid value &#34; in \
                    str(e.value)
             with pytest.raises(Exception) as e:
                 client.update(setting, value=&#34;21&#34;)
-            assert &#34;with invalid &#34;+name in \
+            assert name+&#34; with invalid value &#34; in \
                    str(e.value)
             setting = client.update(setting, value=&#34;2&#34;)
             assert setting.value == &#34;2&#34;
