@@ -2,6 +2,9 @@
 
 DOCKER_VERSION=20.10
 
+sudo systemctl stop firewalld
+sudo systemctl disable firewalld
+
 sudo yum update -y
 sudo yum group install -y "Development Tools"
 sudo yum install -y iscsi-initiator-utils nfs-utils nfs4-acl-tools

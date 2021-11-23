@@ -15,12 +15,12 @@ variable "aws_region" {
 
 variable "aws_availability_zone" {
   type        = string
-  default     = "us-east-2a"
+  default     = "us-east-2c"
 }
 
 variable "lh_aws_vpc_name" {
   type        = string
-  default     = "vpc-lh-tests"
+  default     = "vpc-lh-test"
 }
 
 variable "arch" {
@@ -30,12 +30,12 @@ variable "arch" {
 
 variable "distro_version" {
   type        = string
-  default     = "8.4.0"
+  default     = "8.4"
 }
 
-variable "aws_ami_rhel_account_number" {
+variable "aws_ami_centos_account_number" {
   type        = string
-  default     = "309956199498"
+  default     = "125523088429"
 }
 
 variable "lh_aws_instance_count_controlplane" {
@@ -50,7 +50,7 @@ variable "lh_aws_instance_count_worker" {
 
 variable "lh_aws_instance_name_controlplane" {
   type        = string
-  default     = "lh-tests-controlplane"
+  default     = "meldafrawi-lh-test-controlplane"
 }
 
 variable "lh_aws_instance_type_controlplane" {
@@ -80,7 +80,7 @@ variable "aws_ssh_private_key_file_path" {
 
 variable "lh_aws_instance_name_worker" {
   type        = string
-  default     = "lh-tests-worker"
+  default     = "meldafrawi-lh-test-worker"
 }
 
 variable "lh_aws_instance_root_block_device_size_worker" {
