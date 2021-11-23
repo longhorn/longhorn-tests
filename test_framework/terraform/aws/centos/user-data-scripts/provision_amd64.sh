@@ -13,4 +13,4 @@ until (curl https://releases.rancher.com/install-docker/${DOCKER_VERSION}.sh | s
   sleep 2
 done
 
-sudo usermod -aG docker ec2-user
+sudo usermod -aG docker centos

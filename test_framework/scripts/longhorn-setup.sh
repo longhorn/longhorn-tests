@@ -21,7 +21,7 @@ set_kubeconfig_envvar(){
     if [[ ${ARCH} == "amd64" ]] ; then
         export KUBECONFIG="${BASEDIR}/kube_config_rke.yml"
     elif [[ ${ARCH} == "arm64"  ]]; then
-        export KUBECONFIG="${BASEDIR}/../k3s.yaml"
+		export KUBECONFIG="${BASEDIR}/terraform/aws/${DISTRO}/k3s.yaml"
     fi
 }
 
@@ -217,6 +217,7 @@ run_longhorn_tests(){
 	LONGHORH_TESTS_REPO_BASEDIR=${1}
 
 	LONGHORN_TESTS_CUSTOM_IMAGE=${LONGHORN_TESTS_CUSTOM_IMAGE:-"longhornio/longhorn-manager-test:master-head"}
+
 	LONGHORN_TESTS_MANIFEST_FILE_PATH="${LONGHORH_TESTS_REPO_BASEDIR}/manager/integration/deploy/test.yaml"
 
 	LONGHORN_JUNIT_REPORT_PATH=`yq e '.spec.containers[0].env[] | select(.name == "LONGHORN_JUNIT_REPORT_PATH").value' "${LONGHORN_TESTS_MANIFEST_FILE_PATH}"`
@@ -225,7 +226,7 @@ run_longhorn_tests(){
 	if [[ -n ${PYTEST_CUSTOM_OPTIONS} ]]; then
         PYTEST_CUSTOM_OPTIONS=(${PYTEST_CUSTOM_OPTIONS})
 
-        for OPT in ${PYTEST_CUSTOM_OPTIONS[@]}; do
+        for OPT in "${PYTEST_CUSTOM_OPTIONS[@]}"; do
             PYTEST_COMMAND_ARGS=${PYTEST_COMMAND_ARGS}', "'${OPT}'"'
         done
     fi

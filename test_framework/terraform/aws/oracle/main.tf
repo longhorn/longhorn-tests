@@ -240,7 +240,7 @@ resource "aws_instance" "lh_aws_instance_controlplane" {
 
   availability_zone = var.aws_availability_zone
 
-  ami           = data.aws_ami.aws_ami_rhel.id
+  ami           = data.aws_ami.aws_ami_oraclelinux.id
   instance_type = var.lh_aws_instance_type_controlplane
 
   subnet_id = aws_subnet.lh_aws_public_subnet.id
@@ -293,7 +293,7 @@ resource "aws_instance" "lh_aws_instance_worker" {
 
   availability_zone = var.aws_availability_zone
 
-  ami           = data.aws_ami.aws_ami_rhel.id
+  ami = data.aws_ami.aws_ami_oraclelinux.id
   instance_type = var.lh_aws_instance_type_worker
 
   subnet_id = aws_subnet.lh_aws_private_subnet.id
@@ -386,6 +386,6 @@ resource "null_resource" "rsync_kubeconfig_file" {
   }
 
   provisioner "local-exec" {
-    command = var.arch == "arm64" ? "rsync -aPvz --rsync-path=\"sudo rsync\" -e \"ssh -o StrictHostKeyChecking=no -l ec2-user -i ${var.aws_ssh_private_key_file_path}\" ${aws_eip.lh_aws_eip_controlplane[0].public_ip}:/etc/rancher/k3s/k3s.yaml .  && sed -i 's#https://127.0.0.1:6443#https://${aws_eip.lh_aws_eip_controlplane[0].public_ip}:6443#' k3s.yaml"  : "echo \"amd64 arch.. skipping\""
+    command = var.arch == "arm64" ? "rsync -aPvz --rsync-path=\"sudo rsync\" -e \"ssh -o StrictHostKeyChecking=no-l ec2-user -i ${var.aws_ssh_private_key_file_path}\" ${aws_eip.lh_aws_eip_controlplane[0].public_ip}:/etc/rancher/k3s/k3s.yaml .  && sed -i 's#https://127.0.0.1:6443#https://${aws_eip.lh_aws_eip_controlplane[0].public_ip}:6443#' k3s.yaml"  : "echo \"amd64 arch.. skipping\""
   }
 }
