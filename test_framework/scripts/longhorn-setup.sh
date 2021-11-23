@@ -21,7 +21,7 @@ set_kubeconfig_envvar(){
     if [[ ${ARCH} == "amd64" ]] ; then
         export KUBECONFIG="${BASEDIR}/kube_config_rke.yml"
     elif [[ ${ARCH} == "arm64"  ]]; then
-        export KUBECONFIG="${BASEDIR}/../k3s.yaml"
+		export KUBECONFIG="${BASEDIR}/terraform/aws/${DISTRO}/k3s.yaml"
     fi
 }
 
@@ -144,6 +144,19 @@ install_backupstores(){
 }
 
 
+create_aws_secret(){
+	AWS_ACCESS_KEY_ID_BASE64=`echo -n "${TF_VAR_lh_aws_access_key}" | base64`
+	AWS_SECRET_ACCESS_KEY_BASE64=`echo -n "${TF_VAR_lh_aws_secret_key}" | base64`
+	AWS_DEFAULT_REGION_BASE64=`echo -n "${TF_VAR_aws_region}" | base64`
+
+	yq e -i '.data.AWS_ACCESS_KEY_ID |= "'${AWS_ACCESS_KEY_ID_BASE64}'"' "${TF_VAR_tf_workspace}/templates/aws_cred_secrets.yml"
+	yq e -i '.data.AWS_SECRET_ACCESS_KEY |= "'${AWS_SECRET_ACCESS_KEY_BASE64}'"' "${TF_VAR_tf_workspace}/templates/aws_cred_secrets.yml"
+	yq e -i '.data.AWS_DEFAULT_REGION |= "'${AWS_DEFAULT_REGION_BASE64}'"' "${TF_VAR_tf_workspace}/templates/aws_cred_secrets.yml"
+
+	kubectl apply -f "${TF_VAR_tf_workspace}/templates/aws_cred_secrets.yml"
+}
+
+
 run_longhorn_upgrade_test(){
 	LONGHORH_TESTS_REPO_BASEDIR=${1}
 
@@ -170,8 +183,16 @@ run_longhorn_upgrade_test(){
 
 	## generate upgrade_test pod manifest
     yq e 'select(.spec.containers[0] != null).spec.containers[0].args=['"${PYTEST_COMMAND_ARGS}"']' "${LONGHORN_TESTS_MANIFEST_FILE_PATH}" > ${LONGHORN_UPGRADE_TESTS_MANIFEST_FILE_PATH}
-	yq e -i 'select(.spec.containers[0] != null).spec.containers[0].image="'${LONGHORN_TESTS_CUSTOM_IMAGE}'"' ${LONGHORN_UPGRADE_TESTS_MANIFEST_FILE_PATH}
-	yq e -i 'select(.spec.containers[0] != null).metadata.name="'${LONGHORN_UPGRADE_TEST_POD_NAME}'"' ${LONGHORN_UPGRADE_TESTS_MANIFEST_FILE_PATH}
+    yq e -i 'select(.spec.containers[0] != null).spec.containers[0].image="'${LONGHORN_TESTS_CUSTOM_IMAGE}'"' ${LONGHORN_UPGRADE_TESTS_MANIFEST_FILE_PATH}
+    yq e -i 'select(.spec.containers[0] != null).metadata.name="'${LONGHORN_UPGRADE_TEST_POD_NAME}'"' ${LONGHORN_UPGRADE_TESTS_MANIFEST_FILE_PATH}
+
+    if [[ $BACKUP_STORE_TYPE = "s3" ]]; then
+        BACKUP_STORE_FOR_TEST=`yq e 'select(.spec.containers[0] != null).spec.containers[0].env[1].value' ${LONGHORN_UPGRADE_TESTS_MANIFEST_FILE_PATH} | awk -F ',' '{print $1}' | sed 's/ *//'`
+        yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env[1].value="'${BACKUP_STORE_FOR_TEST}'"' ${LONGHORN_UPGRADE_TESTS_MANIFEST_FILE_PATH}
+      elif [[ $BACKUP_STORE_TYPE = "nfs" ]]; then
+        BACKUP_STORE_FOR_TEST=`yq e 'select(.spec.containers[0] != null).spec.containers[0].env[1].value' ${LONGHORN_UPGRADE_TESTS_MANIFEST_FILE_PATH} | awk -F ',' '{print $2}' | sed 's/ *//'`
+        yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env[1].value="'${BACKUP_STORE_FOR_TEST}'"' ${LONGHORN_UPGRADE_TESTS_MANIFEST_FILE_PATH}
+      fi
 
 	kubectl apply -f ${LONGHORN_UPGRADE_TESTS_MANIFEST_FILE_PATH}
 
@@ -196,6 +217,7 @@ run_longhorn_tests(){
 	LONGHORH_TESTS_REPO_BASEDIR=${1}
 
 	LONGHORN_TESTS_CUSTOM_IMAGE=${LONGHORN_TESTS_CUSTOM_IMAGE:-"longhornio/longhorn-manager-test:master-head"}
+
 	LONGHORN_TESTS_MANIFEST_FILE_PATH="${LONGHORH_TESTS_REPO_BASEDIR}/manager/integration/deploy/test.yaml"
 
 	LONGHORN_JUNIT_REPORT_PATH=`yq e '.spec.containers[0].env[] | select(.name == "LONGHORN_JUNIT_REPORT_PATH").value' "${LONGHORN_TESTS_MANIFEST_FILE_PATH}"`
@@ -204,7 +226,7 @@ run_longhorn_tests(){
 	if [[ -n ${PYTEST_CUSTOM_OPTIONS} ]]; then
         PYTEST_CUSTOM_OPTIONS=(${PYTEST_CUSTOM_OPTIONS})
 
-        for OPT in ${PYTEST_CUSTOM_OPTIONS[@]}; do
+        for OPT in "${PYTEST_CUSTOM_OPTIONS[@]}"; do
             PYTEST_COMMAND_ARGS=${PYTEST_COMMAND_ARGS}', "'${OPT}'"'
         done
     fi
@@ -212,6 +234,23 @@ run_longhorn_tests(){
 	## generate test pod manifest
     yq e -i 'select(.spec.containers[0] != null).spec.containers[0].args=['"${PYTEST_COMMAND_ARGS}"']' "${LONGHORN_TESTS_MANIFEST_FILE_PATH}"
     yq e -i 'select(.spec.containers[0] != null).spec.containers[0].image="'${LONGHORN_TESTS_CUSTOM_IMAGE}'"' ${LONGHORN_TESTS_MANIFEST_FILE_PATH}
+
+    if [[ $BACKUP_STORE_TYPE = "s3" ]]; then
+      BACKUP_STORE_FOR_TEST=`yq e 'select(.spec.containers[0] != null).spec.containers[0].env[1].value' ${LONGHORN_TESTS_MANIFEST_FILE_PATH} | awk -F ',' '{print $1}' | sed 's/ *//'`
+      yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env[1].value="'${BACKUP_STORE_FOR_TEST}'"' ${LONGHORN_TESTS_MANIFEST_FILE_PATH}
+    elif [[ $BACKUP_STORE_TYPE = "nfs" ]]; then
+      BACKUP_STORE_FOR_TEST=`yq e 'select(.spec.containers[0] != null).spec.containers[0].env[1].value' ${LONGHORN_TESTS_MANIFEST_FILE_PATH} | awk -F ',' '{print $2}' | sed 's/ *//'`
+      yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env[1].value="'${BACKUP_STORE_FOR_TEST}'"' ${LONGHORN_TESTS_MANIFEST_FILE_PATH}
+    fi
+
+	set +x
+	## inject aws cloudprovider and credentials env variables from created secret
+	yq e -i 'select(.spec.containers[0].env != null).spec.containers[0].env += {"name": "CLOUDPROVIDER", "value": "aws"}' "${LONGHORN_TESTS_MANIFEST_FILE_PATH}"
+	yq e -i 'select(.spec.containers[0].env != null).spec.containers[0].env += {"name": "AWS_ACCESS_KEY_ID", "valueFrom": {"secretKeyRef": {"name": "aws-cred-secret", "key": "AWS_ACCESS_KEY_ID"}}}' "${LONGHORN_TESTS_MANIFEST_FILE_PATH}"
+	yq e -i 'select(.spec.containers[0].env != null).spec.containers[0].env += {"name": "AWS_SECRET_ACCESS_KEY", "valueFrom": {"secretKeyRef": {"name": "aws-cred-secret", "key": "AWS_SECRET_ACCESS_KEY"}}}' "${LONGHORN_TESTS_MANIFEST_FILE_PATH}"
+	yq e -i 'select(.spec.containers[0].env != null).spec.containers[0].env += {"name": "AWS_DEFAULT_REGION", "valueFrom": {"secretKeyRef": {"name": "aws-cred-secret", "key": "AWS_DEFAULT_REGION"}}}' "${LONGHORN_TESTS_MANIFEST_FILE_PATH}"
+	set -x
+
 	LONGHORN_TEST_POD_NAME=`yq e 'select(.spec.containers[0] != null).metadata.name' ${LONGHORN_TESTS_MANIFEST_FILE_PATH}`
 
 	kubectl apply -f ${LONGHORN_TESTS_MANIFEST_FILE_PATH}
@@ -241,6 +280,7 @@ main(){
 	set_kubeconfig_envvar ${TF_VAR_arch} ${TF_VAR_tf_workspace}
 	create_longhorn_namespace
 	install_backupstores
+	create_aws_secret
 	install_csi_snapshotter_crds
 	generate_longhorn_yaml_manifest "${TF_VAR_tf_workspace}"
 

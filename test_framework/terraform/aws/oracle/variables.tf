@@ -26,16 +26,17 @@ variable "lh_aws_vpc_name" {
 variable "arch" {
   type        = string
   description = "available values (amd64, arm64)"
+  default = "amd64"
 }
 
 variable "distro_version" {
   type        = string
-  default     = "8.4.0"
+  default     = "8.3"
 }
 
-variable "aws_ami_rhel_account_number" {
+variable "aws_ami_oraclelinux_account_number" {
   type        = string
-  default     = "309956199498"
+  default     = "131827586825"
 }
 
 variable "lh_aws_instance_count_controlplane" {

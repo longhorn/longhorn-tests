@@ -240,7 +240,7 @@ resource "aws_instance" "lh_aws_instance_controlplane" {
 
   availability_zone = var.aws_availability_zone
 
-  ami           = data.aws_ami.aws_ami_rhel.id
+  ami           = data.aws_ami.aws_ami_rockylinux.id
   instance_type = var.lh_aws_instance_type_controlplane
 
   subnet_id = aws_subnet.lh_aws_public_subnet.id
@@ -293,7 +293,7 @@ resource "aws_instance" "lh_aws_instance_worker" {
 
   availability_zone = var.aws_availability_zone
 
-  ami           = data.aws_ami.aws_ami_rhel.id
+  ami = data.aws_ami.aws_ami_rockylinux.id
   instance_type = var.lh_aws_instance_type_worker
 
   subnet_id = aws_subnet.lh_aws_private_subnet.id
@@ -333,7 +333,7 @@ resource "null_resource" "wait_for_docker_start_controlplane" {
 
     connection {
       type     = "ssh"
-      user     = "ec2-user"
+      user     = "rocky"
       host     = element(aws_eip.lh_aws_eip_controlplane, count.index).public_ip
       private_key = file(var.aws_ssh_private_key_file_path)
     }
@@ -356,10 +356,10 @@ resource "null_resource" "wait_for_docker_start_worker" {
 
     connection {
       type     = "ssh"
-      user     = "ec2-user"
+      user     = "rocky"
       host     = element(aws_instance.lh_aws_instance_worker, count.index).private_ip
       private_key = file(var.aws_ssh_private_key_file_path)
-      bastion_user     = "ec2-user"
+      bastion_user     = "rocky"
       bastion_host     = aws_eip.lh_aws_eip_controlplane[0].public_ip
       bastion_private_key = file(var.aws_ssh_private_key_file_path)
     }
@@ -379,13 +379,13 @@ resource "null_resource" "rsync_kubeconfig_file" {
 
     connection {
       type     = "ssh"
-      user     = "ec2-user"
+      user     = "rocky"
       host     = aws_eip.lh_aws_eip_controlplane[0].public_ip
       private_key = file(var.aws_ssh_private_key_file_path)
     }
   }
 
   provisioner "local-exec" {
-    command = var.arch == "arm64" ? "rsync -aPvz --rsync-path=\"sudo rsync\" -e \"ssh -o StrictHostKeyChecking=no -l ec2-user -i ${var.aws_ssh_private_key_file_path}\" ${aws_eip.lh_aws_eip_controlplane[0].public_ip}:/etc/rancher/k3s/k3s.yaml .  && sed -i 's#https://127.0.0.1:6443#https://${aws_eip.lh_aws_eip_controlplane[0].public_ip}:6443#' k3s.yaml"  : "echo \"amd64 arch.. skipping\""
+    command = var.arch == "arm64" ? "rsync -aPvz --rsync-path=\"sudo rsync\" -e \"ssh -o StrictHostKeyChecking=no -l root -i ${var.aws_ssh_private_key_file_path}\" ${aws_eip.lh_aws_eip_controlplane[0].public_ip}:/etc/rancher/k3s/k3s.yaml .  && sed -i 's#https://127.0.0.1:6443#https://${aws_eip.lh_aws_eip_controlplane[0].public_ip}:6443#' k3s.yaml"  : "echo \"amd64 arch.. skipping\""
   }
 }
