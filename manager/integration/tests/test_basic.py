@@ -3822,6 +3822,10 @@ def test_backuptarget_available_during_engine_image_not_ready(client, apps_api):
                 name=ds_name, namespace='longhorn-system', body=body)
             common.wait_for_backup_target_available(client, True)
 
+            # Sleep 1 second to prevent the same time
+            # of BackupTarget CR spec.SyncRequestedAt
+            time.sleep(1)
+
             # Reset backup store setting
             reset_backupstore_setting(client)
             common.wait_for_backup_target_available(client, False)
