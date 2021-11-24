@@ -2476,7 +2476,7 @@ def wait_for_backup_completion(client, volume_name, snapshot_name=None,
         for b in v.backupStatus:
             if snapshot_name is not None and b.snapshot != snapshot_name:
                 continue
-            if b.state == "complete":
+            if b.state == "Completed":
                 assert b.progress == 100
                 assert b.error == ""
                 completed = True
@@ -2494,7 +2494,7 @@ def wait_pod_auto_attach_after_first_backup_completion(
     for _ in range(RETRY_BACKUP_COUNTS):
         vol = client.by_id_volume(volume_name)
         for b in vol.backupStatus:
-            if b.state == 'complete':
+            if b.state == 'Completed':
                 assert b.progress == 100
                 assert b.error == ''
                 completed = True
@@ -2526,7 +2526,7 @@ def wait_for_backup_to_start(client, volume_name, snapshot_name=None,
         for b in v.backupStatus:
             if snapshot_name is not None and b.snapshot != snapshot_name:
                 continue
-            if b.state == "in_progress" and b.progress > chk_progress:
+            if b.state == "InProgress" and b.progress > chk_progress:
                 assert b.error == ""
                 in_progress = True
                 break
