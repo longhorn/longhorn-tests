@@ -496,21 +496,102 @@
 </aside>
 
 <main style="padding: 1%; width: 70%;">
-  <header class="homepage-header">
-    <h1>Basic operations parallelism</h1>
-    
-  </header>
-  <div class="homepage-content">
-    
-  </div>
+  <h1 id="title">HA Volume Migration</h1>
   <div>
-    <ul>
+    <article id="content">
+       <ol>
+<li>
+<p>Create a migratable volume:</p>
+<ol>
+<li>Deploy a migratable StorageClass. e.g., <a href="https://github.com/longhorn/longhorn/blob/master/examples/rwx/storageclass-migratable.yaml">https://github.com/longhorn/longhorn/blob/master/examples/rwx/storageclass-migratable.yaml</a></li>
+<li>Create a PVC with access mode <code>ReadWriteMany</code> via this StorageClass.</li>
+</ol>
+</li>
+<li>
+<p>Attach a volume to a node and wait for volume running. Then write some data into the volume. Here I would recommend directly restoring a volume (set <code>fromBackup</code> in the StorageClass) and attach it instead.</p>
+</li>
+<li>
+<p>Start the migration by request attaching to another node for the volume.</p>
+</li>
+<li>
+<p>Trigger the following scenarios then confirm or rollback the migration:</p>
+<hr>
+<table>
+<thead>
+<tr>
+<th><strong>#</strong></th>
+<th><strong>Scenario</strong></th>
+<th><strong>Migration Confirmation</strong></th>
+<th><strong>Migration Rollback</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>New engine crash</td>
+<td>If the request is successfully sent before the migration engine &amp; replicas being removed, the volume should be auto reattached after migration. <br> Otherwise, the request will be rejected until the volume is reattached and restarts the migration components</td>
+<td>Should succeed</td>
+</tr>
+<tr>
+<td>2</td>
+<td>All new replica crash</td>
+<td>If the request is successfully sent before the migration engine &amp; replicas being removed, the volume should keep running (then may start rebuilding) after migration. <br> Otherwise, the request will be rejected until the volume is reattached and restarts the migration components</td>
+<td>Should succeed</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Old engine crash</td>
+<td>If the request is successfully sent before the volume becoming Faulted, the volume should keep running after migration. <br> Otherwise, the request will be rejected until the volume is reattached and restarts the migration components</td>
+<td>Should succeed</td>
+</tr>
+<tr>
+<td>4</td>
+<td>All old replica crash</td>
+<td>If the request is successfully sent before the volume becoming Faulted, the volume should keep running (then may start rebuilding) after migration. <br> Otherwise, the request will be rejected until the volume is reattached and restarts the migration components</td>
+<td>Should succeed</td>
+</tr>
+<tr>
+<td>5</td>
+<td>Degraded volume</td>
+<td>Should succeed</td>
+<td>Should succeed</td>
+</tr>
+<tr>
+<td>6</td>
+<td>One replica node down</td>
+<td>Should succeed</td>
+<td>Should succeed</td>
+</tr>
+<tr>
+<td>7</td>
+<td>New engine node down</td>
+<td>The request should be rejected</td>
+<td>Should succeed</td>
+</tr>
+<tr>
+<td>8</td>
+<td>Old engine node down</td>
+<td>The request should be rejected</td>
+<td>The request should be accepted. But the volume should keep state Unknown after the rollback since it&rsquo;s on a down node.</td>
+</tr>
+</tbody>
+</table>
+<p>Note:</p>
+<ol>
+<li>Scenario 1-5 can be handled by integration test. But we need to manually test them before the the implementation.</li>
+<li>For Scenario 1-4, Longhorn may behave differently based on when the request is sent to the backend. To verify if there are race conditions, I would recommend repeating those cases multiple times. Please be aware that the timing of sending requests is important. You can choose different timing when you repeatedly test those cases.
+For migration confirmation, as I mentioned above, the migration should succeed once the request is received before Longhorn updating the volume to an unavailable status. Otherwise, the request will be rejected until the auto recovery is done.
+For migration rollback, it&rsquo;s better to verify the rollback always works and won&rsquo;t affect the volume auto recovery no matter when the request is received. e.g., the request can be accepted while the volume is in detaching or attaching (both are parts of the auto reattachment flow).</li>
+<li>Migration confirmation/rollback success does not mean the volume should keep running. Instead, it means the volume won&rsquo;t be stuck in a buggy state and can be automatically recovered in the end. As for the exact expect behaviors, please follow the above table.</li>
+</ol>
+</li>
+<li>
+<p>Check if the volume works fine on the desired node after migration confirmation/rollback. And there is no extra process in instance manager pods.
+You can enter into the instance manager pods, list all engine/replicas processes, and verify if there is a corresponding engine/replica CR for each process.</p>
+</li>
+</ol>
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/basic-operations-parallelism/snapshot-while-writing-data/">Snapshot while writing data in the volume</a></li>
-  
-
-</ul>
-
+    </article>
   </div>
 </main>
 
