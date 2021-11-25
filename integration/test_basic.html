@@ -3850,6 +3850,10 @@ def test_backuptarget_available_during_engine_image_not_ready(client, apps_api):
                 name=ds_name, namespace=&#39;longhorn-system&#39;, body=body)
             common.wait_for_backup_target_available(client, True)
 
+            # Sleep 1 second to prevent the same time
+            # of BackupTarget CR spec.SyncRequestedAt
+            time.sleep(1)
+
             # Reset backup store setting
             reset_backupstore_setting(client)
             common.wait_for_backup_target_available(client, False)
@@ -6307,6 +6311,10 @@ verify backup list contains no error messages for volume(1,2)
             apps_api.patch_namespaced_daemon_set(
                 name=ds_name, namespace=&#39;longhorn-system&#39;, body=body)
             common.wait_for_backup_target_available(client, True)
+
+            # Sleep 1 second to prevent the same time
+            # of BackupTarget CR spec.SyncRequestedAt
+            time.sleep(1)
 
             # Reset backup store setting
             reset_backupstore_setting(client)
