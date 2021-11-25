@@ -507,15 +507,8 @@ def test_backup_status_for_unavailable_replicas(set_random_backupstore, client, 
 
     Context:
 
-    We want to make sure that we do not try to retrieve the backup status
-    of no longer valid replicas (offline, deleted, etc). The reason for
-    this is that trying to establish a tcp connection with an old replica
-    address `(tcp://ip:port)` could block the engine retrieval process,
-    since we will wait upto 1 minute for each individual backup status.
-    When this happens for a lot of different statuses the manager will
-    terminate the started engine retrieval process since the process would
-    not have returned in the maximum allowed time. This would then lead
-    to no longer being able to show newly created backups in the UI.
+    We want to make sure that during the backup creation, once the responsible
+    replica gone, the backup should in Error state and with the error message.
 
     Setup:
 
@@ -528,13 +521,13 @@ def test_backup_status_for_unavailable_replicas(set_random_backupstore, client, 
     2. Find the replica for that backup
     3. Disable scheduling on the node of that replica
     4. Delete the replica
-    5. Wait for volume backup status state to go to error
-    6. Verify backup status error contains `unknown replica`
-    7. Create a new backup
-    8. Verify new backup was successful
-    9. Cleanup (delete backups, delete volume)
+    5. Verify backup status with Error state and with an error message
+    6. Create a new backup
+    7. Verify new backup was successful
+    8. Cleanup (delete backups, delete volume)
     """
-    backup_status_for_unavailable_replicas_test(client, volume_name, SIZE)
+    backup_status_for_unavailable_replicas_test(
+        client, volume_name, size=str(512 * Mi))
 
 
 def backup_status_for_unavailable_replicas_test(client, volume_name,  # NOQA
@@ -546,8 +539,17 @@ def backup_status_for_unavailable_replicas_test(client, volume_name,  # NOQA
     volume = volume.attach(hostId=lht_hostId)
     volume = common.wait_for_volume_healthy(client, volume_name)
 
-    # create a successful backup
-    bv, b, _, _ = create_backup(client, volume_name)
+    # write data to the volume
+    data = {
+        'pos': 0,
+        'content': common.generate_random_data(int(size)),
+    }
+    write_volume_data(volume, data)
+
+    # create a snapshot and backup
+    snap = create_snapshot(client, volume_name)
+    volume.snapshotBackup(name=snap.name)
+    bv, b = find_backup(client, volume_name, snap.name)
     backup_id = b.id
 
     # find the replica for this backup
@@ -571,9 +573,9 @@ def backup_status_for_unavailable_replicas_test(client, volume_name,  # NOQA
     volume.replicaRemove(name=replica_name)
     volume = common.wait_for_volume_degraded(client, volume_name)
 
-    # now the backup status should be error unknown replica
+    # now the backup status should in an Error state and with an error message
     def backup_failure_predicate(b):
-        return b.id == backup_id and "unknown replica" in b.error
+        return b.id == backup_id and "Error" in b.state and b.error != ""
     volume = common.wait_for_backup_state(client, volume_name,
                                           backup_failure_predicate)
 
