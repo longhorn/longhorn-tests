@@ -34,8 +34,8 @@ node {
                                    --env TF_VAR_distro_version=${DISTRO_VERSION} \
                                    --env TF_VAR_do_token=${env.TF_VAR_do_token} \
                                    --env TF_VAR_lh_aws_access_key=${AWS_ACCESS_KEY} \
-                                   --env TF_VAR_lh_aws_instance_name_controlplane="${JOB_BASE_NAME}-controlplane" \
-                                   --env TF_VAR_lh_aws_instance_name_worker="${JOB_BASE_NAME}-worker" \
+                                   --env TF_VAR_lh_aws_instance_name_controlplane="${JOB_BASE_NAME}-ctrl" \
+                                   --env TF_VAR_lh_aws_instance_name_worker="${JOB_BASE_NAME}-wrk" \
                                    --env TF_VAR_lh_aws_instance_type_controlplane=${CONTROLPLANE_INSTANCE_TYPE} \
                                    --env TF_VAR_lh_aws_instance_type_worker=${WORKER_INSTANCE_TYPE}\
                                    --env TF_VAR_lh_aws_secret_key=${AWS_SECRET_KEY} \
