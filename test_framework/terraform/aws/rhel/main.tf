@@ -219,7 +219,7 @@ resource "aws_route_table_association" "lh_aws_private_subnet_rt_association" {
 
 # Create AWS key pair
 resource "aws_key_pair" "lh_aws_pair_key" {
-  key_name   = format("%s_%s", "lh_aws_key_pair", md5(timestamp()))
+  key_name   = format("%s_%s", "lh_aws_key_pair", "${random_string.random_suffix.id}")
   public_key = file(var.aws_ssh_public_key_file_path)
 }
 
