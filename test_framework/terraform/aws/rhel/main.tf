@@ -254,7 +254,7 @@ resource "aws_instance" "lh_aws_instance_controlplane" {
   }
 
   key_name = aws_key_pair.lh_aws_pair_key.key_name
-  user_data = var.arch == "arm64" ? data.template_file.provision_arm64_server.rendered : file("${path.module}/user-data-scripts/provision_amd64.sh")
+  user_data = var.arch == "arm64" ? data.template_file.provision_arm64_server.rendered : data.template_file.provision_amd64.rendered
 
   tags = {
     Name = "${var.lh_aws_instance_name_controlplane}-${count.index}-${random_string.random_suffix.id}"
@@ -307,7 +307,7 @@ resource "aws_instance" "lh_aws_instance_worker" {
   }
 
   key_name = aws_key_pair.lh_aws_pair_key.key_name
-  user_data = var.arch == "arm64" ? data.template_file.provision_arm64_agent.rendered : file("${path.module}/user-data-scripts/provision_amd64.sh")
+  user_data = var.arch == "arm64" ? data.template_file.provision_arm64_agent.rendered : data.template_file.provision_amd64.rendered
 
   tags = {
     Name = "${var.lh_aws_instance_name_worker}-${count.index}-${random_string.random_suffix.id}"
