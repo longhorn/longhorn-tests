@@ -1,5 +1,13 @@
 #!/bin/bash 
 
+sudo sed -i 's#^SELINUX=.*$#SELINUX='"${selinux_mode}"'#' /etc/selinux/config
+
+if [[ ${selinux_mode} == "enforcing" ]] ; then
+    sudo setenforce  1
+elif [[  ${selinux_mode} == "permissive" ]]; then
+    sudo setenforce  0
+fi
+
 sudo yum update -y                                                              
 sudo yum group install -y "Development Tools"                                   
 sudo yum install -y iscsi-initiator-utils nfs-utils nfs4-acl-tools
@@ -15,4 +23,3 @@ until (kubectl get pods -A | grep 'Running'); do
   echo 'Waiting for k3s startup'
   sleep 5
 done
-

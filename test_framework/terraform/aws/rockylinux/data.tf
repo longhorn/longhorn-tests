@@ -1,6 +1,6 @@
 # Query AWS for RHEL AMI
 locals {
-  aws_ami_rockylinux_arch = var.arch == "amd64" ? "x86_64" : var.arch
+  aws_ami_rockylinux_arch = var.arch == "amd64" ? "x86_64" : "aarch64"
 }
 
 data "aws_ami" "aws_ami_rockylinux" {

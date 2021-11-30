@@ -1,6 +1,6 @@
 # Query AWS for RHEL AMI
 locals {
-  aws_ami_rhel_arch = var.arch == "amd64" ? "x86_64" : var.arch
+  aws_ami_centos_arch = var.arch == "amd64" ? "x86_64" : var.arch
 }
 
 data "aws_ami" "aws_ami_rhel" {
@@ -14,6 +14,13 @@ data "aws_ami" "aws_ami_rhel" {
   }
 }
 
+# Generate template file for RKE
+data "template_file" "provision_amd64" {
+  template = var.arch == "amd64" ? file("${path.module}/user-data-scripts/provision_amd64.sh.tpl") : null
+  vars = {
+    selinux_mode = var.selinux_mode
+  }
+}
 
 # Generate template file for k3s server on arm64
 data "template_file" "provision_arm64_server" {
@@ -22,6 +29,7 @@ data "template_file" "provision_arm64_server" {
     k3s_cluster_secret = random_password.k3s_cluster_secret.result
     k3s_server_public_ip = aws_eip.lh_aws_eip_controlplane[0].public_ip
     k3s_version =  var.k3s_version
+    selinux_mode = var.selinux_mode
   }
 }
 
@@ -32,6 +40,7 @@ data "template_file" "provision_arm64_agent" {
     k3s_server_url = "https://${aws_eip.lh_aws_eip_controlplane[0].public_ip}:6443"
     k3s_cluster_secret = random_password.k3s_cluster_secret.result
     k3s_version =  var.k3s_version
+    selinux_mode = var.selinux_mode
+
   }
 }
-

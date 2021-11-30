@@ -1,5 +1,13 @@
 #!/bin/bash
 
+sed -i 's#^SELINUX=.*$#SELINUX='"${selinux_mode}"'#' /etc/selinux/config
+
+if [[ ${selinux_mode} == "enforcing" ]] ; then
+    setenforce  1
+elif [[  ${selinux_mode} == "permissive" ]]; then
+    setenforce  0
+fi
+
 sudo yum update -y
 sudo yum group install -y "Development Tools"
 sudo yum install -y iscsi-initiator-utils nfs-utils nfs4-acl-tools

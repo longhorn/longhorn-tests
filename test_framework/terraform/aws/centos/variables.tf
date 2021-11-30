@@ -99,3 +99,9 @@ variable "k3s_version" {
   default     = "v1.20.8+k3s1"
   description = "K3s version that will be deployed in case of arch=arm64"
 }
+
+variable "selinux_mode" {
+  type        = string
+  default     = "permissive"
+  description = "SELINUX mode [permissive | enforcing] (available only for CentOS and RedHat)"
+}
