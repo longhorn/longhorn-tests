@@ -2,6 +2,10 @@ def imageName = "${JOB_BASE_NAME}-${env.BUILD_NUMBER}"
 def summary
 def BUILD_TRIGGER_BY = "\n${currentBuild.getBuildCauses()[0].shortDescription}"
 
+// define optional parameters
+def SELINUX_MODE = params.SELINUX_MODE ? "SELINUX_MODE=${params.SELINUX_MODE}" : ""
+
+
 node {
 
 	if(params.SEND_SLACK_NOTIFICATION){
