@@ -902,6 +902,18 @@ Requirement:
     </item>
     
     <item>
+      <title>Test scalability with backing image</title>
+      <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.2.3/test-scalability-with-backing-image/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.2.3/test-scalability-with-backing-image/</guid>
+      <description>Test step   Deploy a cluster with 3 worker nodes. The recommended nodes is 4v cores CPU + 8G memory at least.
+  Deploy Longhorn.
+  Launch 10 backing images with the following YAML:
+apiVersion: longhorn.io/v1beta1 kind: BackingImage metadata: name: bi-test1 namespace: longhorn-system spec: sourceType: download sourceParameters: url: https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2 --- apiVersion: longhorn.io/v1beta1 kind: BackingImage metadata: name: bi-test2 namespace: longhorn-system spec: sourceType: download sourceParameters: url: https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2 --- apiVersion: longhorn.</description>
+    </item>
+    
+    <item>
       <title>Test Service Account mount on host</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/test-service-account-mount/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
