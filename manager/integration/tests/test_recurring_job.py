@@ -259,12 +259,11 @@ def test_recurring_job(set_random_backupstore, client, volume_name):  # NOQA
         elif "backup2-" in b.snapshot:
             complete_backup_2_count += 1
 
-    # 2 completed backups from backup1
-    # 2 or more completed backups from backup2
+    # 1 completed backups from backup1
+    # 2 completed backups from backup2
     # NOTE: NFS backup can be slow sometimes and error prone
-    assert complete_backup_1_count == 2
-    assert complete_backup_2_count >= 2
-    assert complete_backup_2_count < 4
+    assert complete_backup_1_count == 1
+    assert complete_backup_2_count == 2
 
 
 @pytest.mark.recurring_job  # NOQA
