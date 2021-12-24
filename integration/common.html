@@ -1821,10 +1821,10 @@ def wait_for_engine_image_condition(client, image_name, state):
     for i in range(RETRY_COUNTS):
         wait_for_engine_image_creation(client, image_name)
         image = client.by_id_engine_image(image_name)
-        if image[&#39;conditions&#39;][&#39;ready&#39;][&#39;status&#39;] == state:
+        if image[&#39;conditions&#39;][0][&#39;status&#39;] == state:
             break
         time.sleep(RETRY_INTERVAL_LONG)
-    assert image[&#39;conditions&#39;][&#39;ready&#39;][&#39;status&#39;] == state
+    assert image[&#39;conditions&#39;][0][&#39;status&#39;] == state
     return image
 
 
@@ -9766,10 +9766,10 @@ def volume_name(request):
     for i in range(RETRY_COUNTS):
         wait_for_engine_image_creation(client, image_name)
         image = client.by_id_engine_image(image_name)
-        if image[&#39;conditions&#39;][&#39;ready&#39;][&#39;status&#39;] == state:
+        if image[&#39;conditions&#39;][0][&#39;status&#39;] == state:
             break
         time.sleep(RETRY_INTERVAL_LONG)
-    assert image[&#39;conditions&#39;][&#39;ready&#39;][&#39;status&#39;] == state
+    assert image[&#39;conditions&#39;][0][&#39;status&#39;] == state
     return image</code></pre>
 </details>
 </dd>
