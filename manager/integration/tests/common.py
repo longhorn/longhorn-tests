@@ -1793,10 +1793,10 @@ def wait_for_engine_image_condition(client, image_name, state):
     for i in range(RETRY_COUNTS):
         wait_for_engine_image_creation(client, image_name)
         image = client.by_id_engine_image(image_name)
-        if image['conditions']['ready']['status'] == state:
+        if image['conditions'][0]['status'] == state:
             break
         time.sleep(RETRY_INTERVAL_LONG)
-    assert image['conditions']['ready']['status'] == state
+    assert image['conditions'][0]['status'] == state
     return image
 
 
