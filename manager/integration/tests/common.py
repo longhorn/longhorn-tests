@@ -4558,3 +4558,14 @@ def restore_backup_and_get_data_checksum(client, core_api, backup, pod,
                                      'default')
 
     return data_checksum, output, restore_pod_name
+
+def restart_k3s_agent():
+    cmd = ['service k3s-agent restart']
+    subprocess.check_call(cmd)
+
+def check_k3s_agent_log(keyword):
+    cmd = ['journalctl -u k3s-agent']
+    output = subprocess.check_output(cmd)
+    if keyword in output:
+        return True
+    return False
