@@ -602,7 +602,8 @@ def test_recurring_jobs_maximum_retain(client, core_api, volume_name): # NOQA
     }
     with pytest.raises(Exception) as e:
         create_recurring_jobs(client, recurring_jobs)
-    assert "Job Can\\'t retain more than 50 snapshots" in str(e.value)
+    assert "Job Can\\'t retain more than 50 snapshots".upper()\
+        in str(e.value).upper()
 
     recurring_jobs[RECURRING_JOB_NAME][RETAIN] = 50
     create_recurring_jobs(client, recurring_jobs)
@@ -612,7 +613,8 @@ def test_recurring_jobs_maximum_retain(client, core_api, volume_name): # NOQA
     with pytest.raises(Exception) as e:
         update_recurring_job(client, RECURRING_JOB_NAME,
                              groups=[], labels={}, retain=51)
-    assert "Job Can\\'t retain more than 50 snapshots" in str(e.value)
+    assert "Job Can\\'t retain more than 50 snapshots".upper()\
+        in str(e.value).upper()
 
 
 @pytest.mark.recurring_job  # NOQA
