@@ -2141,6 +2141,23 @@ def test_auto_remount_with_subpath(client, core_api, storage_class, sts_name, st
     assert expect_md5sum == md5sum
 
 
+@pytest.mark.skip(reason="WAIT_FOR_UPSTREAM_FIX") # NOQA
+@pytest.mark.skipif( "k3s" not in k8s_api_client.status.node_info.kubelet_version, reason='This test is only compaitable with k3s')  # NOQA
+def test_restart_kubelete_when_pod_with_subpath():
+    """
+    Related issue 3080:
+    https://github.com/longhorn/longhorn/issues/3080
+
+    Steps:
+    0. Check if the cluster runs with k3s
+    1. Create deployment with subpath with pods on the same targeting-node
+    2. Wait for pods become Running
+    3. Restart k3s kubelet-agent service
+    4. Wait for new pods become Running
+    5. Check kubelet log from the targeting-node
+    """
+
+
 def test_reuse_failed_replica(client, core_api, volume_name): # NOQA
     """
     Steps:
