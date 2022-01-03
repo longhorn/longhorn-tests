@@ -5,7 +5,7 @@ import random
 import subprocess
 import os
 
-from common import client, core_api, volume_name  # NOQA
+from common import client, core_api, make_deployment_with_pvc, restart_k3s_agent, volume_name  # NOQA
 from common import sts_name, statefulset, storage_class  # NOQA
 from common import DATA_SIZE_IN_MB_1, DATA_SIZE_IN_MB_2, DATA_SIZE_IN_MB_3
 from common import DATA_SIZE_IN_MB_4, Ki
@@ -2157,7 +2157,30 @@ def test_restart_kubelete_when_pod_with_subpath():
     5. Check kubelet log from the targeting-node
     """
 
+    # Get first worker node
+    node = k8s_api_client.list_node().items[0]
 
+    # Add label to the node
+    node.metadata.labels['targeting-node'] = 'True'
+
+    # Create deployment with subpath
+    deployment = make_deployment_with_pvc("deployment-with-subpath", "pvc1", replicas=1)
+    deployment.spec.template.spec.containers[0].volume_mounts[0].sub_path = "sub"
+
+    # Wait for deployment become ready
+    wait_for_deployment_ready(k8s_api_client, deployment)
+    pod_name = deployment.spec.template.metadata.name
+
+    # TODO: Specify node to run the command
+
+    common.restart_k3s_agent
+    common.wait_for_pod_phase(core_api, pod_name, pod_phase="Running")
+
+    # Check kubelet log from the targeting-node
+    expect_restult = not common.check_k3s_agent_log("Path does not exist", 60*5)
+    assert expect_restult == True
+
+    
 def test_reuse_failed_replica(client, core_api, volume_name): # NOQA
     """
     Steps:
