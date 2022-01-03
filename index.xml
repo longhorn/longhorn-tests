@@ -376,16 +376,6 @@ Test with K8s upgrade  Create a K8s (Immediate prior version) cluster with 3 wor
     </item>
     
     <item>
-      <title>Longhorn system upgrade with restore</title>
-      <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/cluster-restore/system-upgrade-with-restore/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/cluster-restore/system-upgrade-with-restore/</guid>
-      <description>Notice that the behaviors will be different if the cluster node roles are different. e.g., A cluster contains 1 dedicated master node + 3 worker node is different from a cluster contains 3 nodes which are both master and worker. This test may need to be validated for both kind of cluster.
- Install Longhorn system. Deploy one more compatible engine image. Deploy some workloads using Longhorn volumes then write some data.</description>
-    </item>
-    
-    <item>
       <title>Longhorn Upgrade test</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/longhorn-upgrade-test/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
@@ -451,16 +441,6 @@ Scenarios: Case 1: Test volume operations when some of the engine image DaemonSe
     </item>
     
     <item>
-      <title>Node creation and deletion with restore</title>
-      <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/cluster-restore/node-creation-deletion-with-restore/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/cluster-restore/node-creation-deletion-with-restore/</guid>
-      <description>Notice that the behaviors will be different if the cluster node roles are different. e.g., A cluster contains 1 dedicated master node + 3 worker node is different from a cluster contains 3 nodes which are both master and worker. This test may need to be validated for both kind of cluster.
- Deploy a 3-worker-node cluster then install Longhorn system. Deploy some workloads using Longhorn volumes then write some data.</description>
-    </item>
-    
-    <item>
       <title>Node disconnection test</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/node/node-disconnection/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
@@ -519,16 +499,6 @@ Monitor longhorn  Deploy the Prometheus-operator, ServiceMonitor pointing to lon
     </item>
     
     <item>
-      <title>Recover Longhorn volumes after Rancher cluster restore</title>
-      <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/cluster-restore/recover-volumes-after-restore/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/cluster-restore/recover-volumes-after-restore/</guid>
-      <description>Notice that the behaviors will be different if the cluster node roles are different. e.g., A cluster contains 1 dedicated master node + 3 worker node is different from a cluster contains 3 nodes which are both master and worker. This test may need to be validated for both kind of cluster.
- Launch a Longhorn system. Deploy one more compatible engine image. Prepare some volumes with workloads:  Create and attach volume A via UI.</description>
-    </item>
-    
-    <item>
       <title>Recurring backup job interruptions</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/recurring-backup-job-interruptions/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
@@ -545,6 +515,25 @@ Scenario 1- Allow Recurring Job While Volume Is Detached disabled, attached pod 
       
       <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/ha/replica-rebuilding/</guid>
       <description>Create and attach a volume. Write a large amount of data to the volume. Disable disk scheduling and the node scheduling for one replica. Crash the replica progress. Verify  the corresponding replica will become ERROR. the volume will keep robustness Degraded.   Enable the disk scheduling. Verify nothing changes. Enable the node scheduling. Verify.  the failed replica is reused by Longhorn. the rebuilding progress in UI page looks good.</description>
+    </item>
+    
+    <item>
+      <title>Restore to a new cluster</title>
+      <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/cluster-restore/restore-to-a-new-cluster/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/cluster-restore/restore-to-a-new-cluster/</guid>
+      <description>Back up the old cluster  Deploy the 1st cluster then install Longhorn system and Velero. Deploy some workloads using Longhorn volumes then write some data:  A simple pod using multiple volumes. And some volumes are using backing images. A StatefulSet. A Deployment with a RWX volume.   Config some recurring policies for the volumes. Create backups for all volumes. Create a cluster backup via Velero. velero backup create lh-cluster --exclude-resources persistentvolumes,persistentvolumeclaims,backuptargets.</description>
+    </item>
+    
+    <item>
+      <title>Restore to an old cluster</title>
+      <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/cluster-restore/restore-to-an-old-cluster/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/cluster-restore/restore-to-an-old-cluster/</guid>
+      <description>Notice that the behaviors will be different if the cluster node roles are different. e.g., A cluster contains 1 dedicated master node + 3 worker node is different from a cluster contains 3 nodes which are both master and worker. This test may need to be validated for both kind of cluster.
+Node creation and deletion  Deploy a 3-worker-node cluster then install Longhorn system. Deploy some workloads using Longhorn volumes then write some data.</description>
     </item>
     
     <item>
