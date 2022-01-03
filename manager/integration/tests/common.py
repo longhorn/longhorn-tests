@@ -4563,9 +4563,12 @@ def restart_k3s_agent():
     cmd = ['service k3s-agent restart']
     subprocess.check_call(cmd)
 
-def check_k3s_agent_log(keyword):
-    cmd = ['journalctl -u k3s-agent']
-    output = subprocess.check_output(cmd)
-    if keyword in output:
-        return True
+def check_k3s_agent_log(keyword, minutes=60*3):
+    # Check the keyword in k3s-agent log for x minutes every second of the output
+    cmd = ['journalctl -u k3s-agent | grep -i ' + keyword]
+    for _ in range(minutes*60):
+        output = subprocess.check_output(cmd)
+        if keyword in output:
+            return True
+        time.sleep(1)
     return False
