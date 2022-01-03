@@ -761,6 +761,15 @@ Test Data Send Over Web-socket Resource Updated Given monitor network traffic wi
     </item>
     
     <item>
+      <title>Test instance manager NPE</title>
+      <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.3.0/test-instance-manager-npe/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.3.0/test-instance-manager-npe/</guid>
+      <description>Test step  Create and attach a 1-replica volume. Create 2 snapshots with large amount of data so that rebuilding each snapshot would take some time. Disable the scheduling for the nodes so that there is one node could accept new replicas of the volume. Update the replica count to 2 for the volume and wait for the rebuilding start. While syncing the 1st snapshot file, create a directory with the name of another snapshot meta file.</description>
+    </item>
+    
+    <item>
       <title>Test Instance Manager Streaming Connection Recovery</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.2/instance-manager-streaming-connection-recovery/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>

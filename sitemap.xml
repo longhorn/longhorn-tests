@@ -176,6 +176,8 @@
   </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/instance-manager-ip-sync/</loc>
   </url><url>
+    <loc>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.3.0/test-instance-manager-npe/</loc>
+  </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.2/instance-manager-streaming-connection-recovery/</loc>
   </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/iscsi_installation/</loc>
@@ -247,6 +249,8 @@
     <loc>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.2.0/</loc>
   </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.2.3/</loc>
+  </url><url>
+    <loc>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.3.0/</loc>
   </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.1/ui-volume-deletion/</loc>
   </url>

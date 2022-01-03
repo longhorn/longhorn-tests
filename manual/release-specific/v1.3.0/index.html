@@ -507,39 +507,21 @@
 </aside>
 
 <main style="padding: 1%; width: 70%;">
-  <h1 id="title">Replica Rebuilding</h1>
+  <header class="homepage-header">
+    <h1>v1.3.0</h1>
+    
+  </header>
+  <div class="homepage-content">
+    
+  </div>
   <div>
-    <article id="content">
-       <ol>
-<li>Create and attach a volume.</li>
-<li>Write a large amount of data to the volume.</li>
-<li>Disable disk scheduling and the node scheduling for one replica.</li>
-<li>Crash the replica progress. Verify
-<ol>
-<li>the corresponding replica will become ERROR.</li>
-<li>the volume will keep robustness Degraded.</li>
-</ol>
-</li>
-<li>Enable the disk scheduling. Verify nothing changes.</li>
-<li>Enable the node scheduling. Verify.
-<ol>
-<li>the failed replica is reused by Longhorn.</li>
-<li>the rebuilding progress in UI page looks good.</li>
-<li>the data content is correct after rebuilding.</li>
-<li>volume r/w works fine.</li>
-</ol>
-</li>
-<li>Direct delete one replica via UI. Verify
-<ol>
-<li>a new replica will be replenished immediately.</li>
-<li>the rebuilding progress in UI page looks good.</li>
-<li>the data content is correct after rebuilding.</li>
-<li>volume r/w works fine.</li>
-</ol>
-</li>
-</ol>
+    <ul>
 
-    </article>
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.3.0/test-instance-manager-npe/">Test instance manager NPE</a></li>
+  
+
+</ul>
+
   </div>
 </main>
 

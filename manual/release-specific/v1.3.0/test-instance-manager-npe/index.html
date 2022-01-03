@@ -507,37 +507,42 @@
 </aside>
 
 <main style="padding: 1%; width: 70%;">
-  <h1 id="title">Replica Rebuilding</h1>
+  <h1 id="title">Test instance manager NPE</h1>
   <div>
     <article id="content">
-       <ol>
-<li>Create and attach a volume.</li>
-<li>Write a large amount of data to the volume.</li>
-<li>Disable disk scheduling and the node scheduling for one replica.</li>
-<li>Crash the replica progress. Verify
+       <h3 id="test-step">Test step</h3>
 <ol>
-<li>the corresponding replica will become ERROR.</li>
-<li>the volume will keep robustness Degraded.</li>
+<li>Create and attach a 1-replica volume.</li>
+<li>Create 2 snapshots with large amount of data so that rebuilding each snapshot would take some time.</li>
+<li>Disable the scheduling for the nodes so that there is one node could accept new replicas of the volume.</li>
+<li>Update the replica count to 2 for the volume and wait for the rebuilding start.</li>
+<li>While syncing the 1st snapshot file, create a directory with the name of <strong>another snapshot meta file</strong>.
+Later the rebuilding replica will fail to create this meta file then error out.</li>
+<li>Verify there is no NPE issue (no following log) in the instance manager pod when the failure mentioned above is triggered.
+<pre tabindex="0"><code class="language-log" data-lang="log">2021/12/24 16:29:02 http: panic serving 10.42.2.251:42464: runtime error: invalid memory address or nil pointer dereference
+goroutine 88514 [running]:
+net/http.(*conn).serve.func1(0xc00032e000)
+    /usr/local/go/src/net/http/server.go:1772 +0x139
+panic(0xd73a40, 0x168d100)
+    /usr/local/go/src/runtime/panic.go:975 +0x3e3
+github.com/longhorn/sparse-tools/sparse/rest.(*SyncServer).close(0xc00041c050, 0x108cf60, 0xc00015c000, 0xc000364200)
+    /go/src/github.com/longhorn/longhorn-engine/vendor/github.com/longhorn/sparse-tools/sparse/rest/handlers.go:119 +0x63
+net/http.HandlerFunc.ServeHTTP(0xc0001f6830, 0x108cf60, 0xc00015c000, 0xc000364200)
+    /usr/local/go/src/net/http/server.go:2012 +0x44
+github.com/gorilla/mux.(*Router).ServeHTTP(0xc0004f6000, 0x108cf60, 0xc00015c000, 0xc00020a300)
+    /go/src/github.com/longhorn/longhorn-engine/vendor/github.com/gorilla/mux/mux.go:212 +0xe2
+net/http.serverHandler.ServeHTTP(0xc000428000, 0x108cf60, 0xc00015c000, 0xc00020a300)
+    /usr/local/go/src/net/http/server.go:2807 +0xa3
+net/http.(*conn).serve(0xc00032e000, 0x10915a0, 0xc0003ae240)
+    /usr/local/go/src/net/http/server.go:1895 +0x86c
+created by net/http.(*Server).Serve
+    /usr/local/go/src/net/http/server.go:2933 +0x35c
+</code></pre></li>
+<li>Verify the rebuilding will be restarted and succeed.</li>
+<li>Verify the data of the volume.</li>
 </ol>
-</li>
-<li>Enable the disk scheduling. Verify nothing changes.</li>
-<li>Enable the node scheduling. Verify.
-<ol>
-<li>the failed replica is reused by Longhorn.</li>
-<li>the rebuilding progress in UI page looks good.</li>
-<li>the data content is correct after rebuilding.</li>
-<li>volume r/w works fine.</li>
-</ol>
-</li>
-<li>Direct delete one replica via UI. Verify
-<ol>
-<li>a new replica will be replenished immediately.</li>
-<li>the rebuilding progress in UI page looks good.</li>
-<li>the data content is correct after rebuilding.</li>
-<li>volume r/w works fine.</li>
-</ol>
-</li>
-</ol>
+<hr>
+<p>GitHub Issue: <a href="https://github.com/longhorn/longhorn/issues/2820">https://github.com/longhorn/longhorn/issues/2820</a></p>
 
     </article>
   </div>
