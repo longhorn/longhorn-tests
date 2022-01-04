@@ -5,7 +5,7 @@ import random
 import subprocess
 import os
 
-from common import client, core_api, make_deployment_with_pvc, restart_k3s_agent, volume_name  # NOQA
+from common import client, core_api, volume_name # NOQA
 from common import sts_name, statefulset, storage_class  # NOQA
 from common import DATA_SIZE_IN_MB_1, DATA_SIZE_IN_MB_2, DATA_SIZE_IN_MB_3
 from common import DATA_SIZE_IN_MB_4, Ki
@@ -2142,8 +2142,8 @@ def test_auto_remount_with_subpath(client, core_api, storage_class, sts_name, st
 
 
 @pytest.mark.skip(reason="WAIT_FOR_UPSTREAM_FIX") # NOQA
-@pytest.mark.skipif( "k3s" not in k8s_api_client.status.node_info.kubelet_version, reason='This test is only compaitable with k3s')  # NOQA
-def test_restart_kubelete_when_pod_with_subpath():
+@pytest.mark.skipif("k3s" not in os.environ.get("KUBERNETES_VERSION"),reason="Only run on k3s")
+def test_restart_kubelet_when_pod_with_subpath():
     """
     Related issue 3080:
     https://github.com/longhorn/longhorn/issues/3080
@@ -2157,20 +2157,42 @@ def test_restart_kubelete_when_pod_with_subpath():
     5. Check kubelet log from the targeting-node
     """
 
+    # TODO: following implentation is WIP and not tested yet
+
     # Get first worker node
     node = k8s_api_client.list_node().items[0]
 
     # Add label to the node
     node.metadata.labels['targeting-node'] = 'True'
 
-    # Create deployment with subpath
-    deployment = make_deployment_with_pvc("deployment-with-subpath", "pvc1", replicas=1)
-    deployment.spec.template.spec.containers[0].volume_mounts[0].sub_path = "sub"
+    # Create workload with pod uses subpath
+    statefulset['metadata']['name'] = 'workload-with-subpath'
+    statefulset['spec']['replicas'] = 5
+    statefulset['spec']['nodeSelector'] = '"targeting-node": True'
+    
+    # Workdload: container name mysql with image mysql
+    statefulset['spec']['template']['spec']['containers'][0]['name'] = 'mysql'
+    statefulset['spec']['template']['spec']['containers'][0]['image'] = 'mysql'
+    statefulset['spec']['template']['spec']['containers'][0]['command'] = ['/bin/sh', '-c', 'while true; do dd if=/dev/urandom of=/var/lib/mysql/t bs=1M count=1500 oflag=dsync && rm /var/lib/mysql/t; done']
+    statefulset['spec']['template']['spec']['containers'][0]['env'][0]['name'] = 'MYSQL_ROOT_PASSWORD'
+    statefulset['spec']['template']['spec']['containers'][0]['env'][0]['value'] = 'rootpasswd'
+    statefulset['spec']['template']['spec']['containers'][0]['volumeMounts'][0]['mountPath'] = '/var/lib/mysql'
+    statefulset['spec']['template']['spec']['containers'][0]['volumeMounts'][0]['name'] = 'site-data'
+    statefulset['spec']['template']['spec']['containers'][0]['volumeMounts'][0]['subPath'] = 'mysql'
 
-    # Wait for deployment become ready
-    wait_for_deployment_ready(k8s_api_client, deployment)
-    pod_name = deployment.spec.template.metadata.name
+    # Workload: container name php with image php:7.0-apache
+    statefulset['spec']['template']['spec']['containers'][1]['name'] = 'php'
+    statefulset['spec']['template']['spec']['containers'][1]['image'] = 'php:7.0-apache'
+    statefulset['spec']['template']['spec']['containers'][1]['command'] = ['/bin/sh', '-c', 'sleep infinity']
+    statefulset['spec']['template']['spec']['containers'][1]['volumeMounts'][0]['mountPath'] = '/var/www/html'
+    statefulset['spec']['template']['spec']['containers'][1]['volumeMounts'][0]['name'] = 'site-data'
 
+    # Workload: Volume template
+    statefulset['spec']['template']['spec']['volumes'][0]['name'] = 'site-data'
+    statefulset['spec']['template']['spec']['volumes'][0]['persistentVolumeClaim']['claimName'] = 'mysql-pvc'
+
+    create_and_wait_statefulset(statefulset)
+        
     # TODO: Specify node to run the command
 
     common.restart_k3s_agent
@@ -2180,7 +2202,7 @@ def test_restart_kubelete_when_pod_with_subpath():
     expect_restult = not common.check_k3s_agent_log("Path does not exist", 60*5)
     assert expect_restult == True
 
-    
+
 def test_reuse_failed_replica(client, core_api, volume_name): # NOQA
     """
     Steps:
