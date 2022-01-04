@@ -97,7 +97,8 @@ def create_and_test_backups(api, cli, pod_info):
         for i in range(DEFAULT_BACKUP_TIMEOUT):
             backups = bv.backupList().data
             for b in backups:
-                if b[&#39;snapshotName&#39;] == pod[&#39;backup_snapshot&#39;][&#39;name&#39;]:
+                if b[&#39;snapshotName&#39;] == pod[&#39;backup_snapshot&#39;][&#39;name&#39;]\
+                        and b[&#39;state&#39;] == &#39;Completed&#39;:
                     found = True
                     break
             if found:
@@ -550,7 +551,8 @@ located in common.py.</dd>
         for i in range(DEFAULT_BACKUP_TIMEOUT):
             backups = bv.backupList().data
             for b in backups:
-                if b[&#39;snapshotName&#39;] == pod[&#39;backup_snapshot&#39;][&#39;name&#39;]:
+                if b[&#39;snapshotName&#39;] == pod[&#39;backup_snapshot&#39;][&#39;name&#39;]\
+                        and b[&#39;state&#39;] == &#39;Completed&#39;:
                     found = True
                     break
             if found:
