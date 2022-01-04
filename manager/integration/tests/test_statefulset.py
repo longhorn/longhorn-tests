@@ -70,7 +70,7 @@ def create_and_test_backups(api, cli, pod_info):
             backups = bv.backupList().data
             for b in backups:
                 if b['snapshotName'] == pod['backup_snapshot']['name']\
-                                     and len(b.url) > 0:
+                        and b['state'] == 'Completed':
                     found = True
                     break
             if found:
