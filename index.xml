@@ -834,6 +834,15 @@ Scenario  Prepare 1 control plane node and 3 worker nodes Install RKE2 with CIS-
     </item>
     
     <item>
+      <title>Test longhorn manager NPE caused by backup creation</title>
+      <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.3.0/test-longhorn-manager-npe/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.3.0/test-longhorn-manager-npe/</guid>
+      <description>Test step  Add the following rule to the ClusterRole longhorn-test-role:  - apiGroups: [&amp;#34;longhorn.io&amp;#34;] resources: [&amp;#34;*&amp;#34;] verbs: [&amp;#34;*&amp;#34;] Put the below test case into the integration test work directory then run it.  import random import string import time import common from common import client, volume_name # NOQA from backupstore import set_random_backupstore # NOQA Mi = (1024 * 1024) Gi = (1024 * Mi) LH_API_GROUP = &amp;#34;longhorn.io&amp;#34; LH_API_VERSION = &amp;#34;v1beta1&amp;#34; LH_NAMESPACE = &amp;#34;longhorn-system&amp;#34; LHE_PLURAL = &amp;#34;engines&amp;#34; LHB_PLURAL = &amp;#34;backups&amp;#34; def test_backup_npe(client, volume_name, set_random_backupstore): # NOQA host_id = common.</description>
+    </item>
+    
+    <item>
       <title>Test Node Delete</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/delete-node/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
