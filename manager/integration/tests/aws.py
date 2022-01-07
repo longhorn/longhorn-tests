@@ -31,6 +31,18 @@ class aws(cloudprovider):
             aws_secret_access_key=secret_access_key,
             region_name=default_region)
 
+    def instance_id_by_ip(self, instance_ip):
+        response = aws.ec2_client.describe_instances(
+            Filters=[
+                {
+                    'Name': 'private-ip-address',
+                    'Values': [instance_ip]
+                },
+            ],
+        )
+
+        return response['Reservations'][0]['Instances'][0]['InstanceId']
+
     def instance_id(self, instance_name):
         response = aws.ec2_client.describe_instances(
             Filters=[
