@@ -16,8 +16,9 @@ Make sure the volumes on the drained/removed node can be detached or recovered c
    ```
    kubectl drain <Node name> --delete-emptydir-data=true --force=true --grace-period=-1 --ignore-daemonsets=true --timeout=<Desired timeout in secs>
    ```
-8. Wait for the volume detaching then being recovered. Will get attached to the workload/node.
-9. Validate the volume content. The data is intact.
+8. Verify the instance manager pods are gone and not recreated after the drain.
+9. Wait for the volume detaching then being recovered. Will get attached to the workload/node.
+10. Validate the volume content. The data is intact.
 
 # Drain without force
 1. Cordon the node. Longhorn will automatically disable the node scheduling when a Kubernetes node is cordoned.
@@ -39,6 +40,7 @@ Make sure the volumes on the drained/removed node can be detached or recovered c
     pod/coredns-849545576b-v54vn evicted
     node/<node-name> evicted
     ```
+6. Verify the instance manager pods are gone and not recreated after the drain.
 
 Note: ```--ignore-daemonsets``` should be set to true to ignore some DaemonSets that exist on node such as Longhorn manager, Longhorn CSI plugin, engine image in a Longhorn deployed cluster.
 
