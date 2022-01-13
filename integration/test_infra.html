@@ -29,6 +29,7 @@
 <pre><code class="python">import os
 import pytest
 import time
+import subprocess
 
 from aws import aws
 
@@ -122,38 +123,90 @@ def wait_for_node_down_longhorn(node_name, longhorn_api_client):
     return longhorn_node_down
 
 
+def wait_for_node_down_aws(cloudprovider, node):
+
+    aws_node_down = False
+    for i in range(RETRY_COUNTS):
+        if cloudprovider.instance_status(node) == &#39;stopped&#39;:
+            aws_node_down = True
+            break
+        else:
+            time.sleep(RETRY_INTERVAL)
+            continue
+
+    return aws_node_down
+
+
+def wait_for_node_up_aws(cloudprovider, node):
+
+    aws_node_up = False
+    for i in range(RETRY_COUNTS):
+        if cloudprovider.instance_status(node) == &#39;running&#39;:
+            aws_node_up = True
+            break
+        else:
+            time.sleep(RETRY_INTERVAL)
+            continue
+
+    return aws_node_up
+
+
+def is_infra_k3s():
+
+    exec_cmd = [&#34;kubectl&#34;, &#34;version&#34;]
+    if &#34;k3s&#34; in str(subprocess.check_output(exec_cmd)):
+        return True
+    else:
+        return False
+
+
 @pytest.fixture
 def reset_cluster_ready_status(request):
     yield
     node_worker_label = &#39;node-role.kubernetes.io/worker&#39;
+    node_controlplane_label = &#39;node-role.kubernetes.io/control-plane&#39;
+    node_ip_annotation = &#34;flannel.alpha.coreos.com/public-ip&#34;
 
     k8s_api_client = get_core_api_client()
     longhorn_api_client = get_longhorn_api_client()
     cloudprovider = detect_cloudprovider()
 
+    k3s = is_infra_k3s()
+
     for node_item in k8s_api_client.list_node().items:
-        if node_worker_label in node_item.metadata.labels and \
-                node_item.metadata.labels[node_worker_label] == &#39;true&#39;:
-            node_name = node_item.metadata.name
 
-            if is_node_ready_k8s(node_name, k8s_api_client) is False:
-                node = cloudprovider.instance_id(node_name)
-
-                cloudprovider.instance_start(node)
-
-                node_up_k8s = wait_for_node_up_k8s(node_name,
-                                                   k8s_api_client)
-
-                assert node_up_k8s
-
+        if k3s is True:
+            if node_controlplane_label not in node_item.metadata.labels:
+                node_name = node_item.metadata.name
+                node_ip = node_item.metadata.annotations[node_ip_annotation]
+                node = cloudprovider.instance_id_by_ip(node_ip)
             else:
                 continue
 
-            node_up_longhorn =\
-                wait_for_node_up_longhorn(node_name,
-                                          longhorn_api_client)
+        else:
+            if node_worker_label in node_item.metadata.labels and \
+                    node_item.metadata.labels[node_worker_label] == &#39;true&#39;:
+                node_name = node_item.metadata.name
+                node = cloudprovider.instance_id(node_name)
+            else:
+                continue
 
-            assert node_up_longhorn
+        if is_node_ready_k8s(node_name, k8s_api_client) is False:
+
+            cloudprovider.instance_start(node)
+            wait_for_node_up_aws(cloudprovider, node)
+            node_up_k8s =\
+                wait_for_node_up_k8s(node_name, k8s_api_client)
+
+            assert node_up_k8s
+
+        else:
+            continue
+
+        node_up_longhorn =\
+            wait_for_node_up_longhorn(node_name, longhorn_api_client)
+
+        assert node_up_longhorn
 
 
 @pytest.mark.infra
@@ -166,6 +219,8 @@ def test_offline_node(reset_cluster_ready_status):
     &#34;&#34;&#34;
     node_worker_label = &#39;node-role.kubernetes.io/worker&#39;
     pod_lable_selector = &#34;longhorn-test=test-job&#34;
+    node_controlplane_label = &#39;node-role.kubernetes.io/control-plane&#39;
+    node_ip_annotation = &#34;flannel.alpha.coreos.com/public-ip&#34;
 
     k8s_api_client = get_core_api_client()
     longhorn_api_client = get_longhorn_api_client()
@@ -177,19 +232,30 @@ def test_offline_node(reset_cluster_ready_status):
         if pod.metadata.name == &#34;longhorn-test&#34;:
             longhorn_test_node_name = pod.spec.node_name
 
-    for node_item in k8s_api_client.list_node().items:
-        if node_worker_label in node_item.metadata.labels and \
-                node_item.metadata.labels[node_worker_label] == &#39;true&#39;:
-            node_name = node_item.metadata.name
-            if node_name == longhorn_test_node_name:
-                continue
-            else:
-                break
+    k3s = is_infra_k3s()
 
-    node = cloudprovider.instance_id(node_name)
+    for node_item in k8s_api_client.list_node().items:
+        if k3s is True:
+            if node_controlplane_label not in node_item.metadata.labels:
+                node_name = node_item.metadata.name
+                node_ip = node_item.metadata.annotations[node_ip_annotation]
+                if node_name == longhorn_test_node_name:
+                    continue
+                else:
+                    node = cloudprovider.instance_id_by_ip(node_ip)
+                    break
+        else:
+            if node_worker_label in node_item.metadata.labels and \
+                    node_item.metadata.labels[node_worker_label] == &#39;true&#39;:
+                node_name = node_item.metadata.name
+                if node_name == longhorn_test_node_name:
+                    continue
+                else:
+                    node = cloudprovider.instance_id(node_name)
+                    break
 
     cloudprovider.instance_stop(node)
-
+    wait_for_node_down_aws(cloudprovider, node)
     k8s_node_down = wait_for_node_down_k8s(node_name, k8s_api_client)
 
     assert k8s_node_down
@@ -225,6 +291,24 @@ def test_offline_node(reset_cluster_ready_status):
         return cloudprovider
     else:
         assert False</code></pre>
+</details>
+</dd>
+<dt id="tests.test_infra.is_infra_k3s"><code class="name flex">
+<span>def <span class="ident">is_infra_k3s</span></span>(<span>)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def is_infra_k3s():
+
+    exec_cmd = [&#34;kubectl&#34;, &#34;version&#34;]
+    if &#34;k3s&#34; in str(subprocess.check_output(exec_cmd)):
+        return True
+    else:
+        return False</code></pre>
 </details>
 </dd>
 <dt id="tests.test_infra.is_node_ready_k8s"><code class="name flex">
@@ -282,34 +366,49 @@ def test_offline_node(reset_cluster_ready_status):
 def reset_cluster_ready_status(request):
     yield
     node_worker_label = &#39;node-role.kubernetes.io/worker&#39;
+    node_controlplane_label = &#39;node-role.kubernetes.io/control-plane&#39;
+    node_ip_annotation = &#34;flannel.alpha.coreos.com/public-ip&#34;
 
     k8s_api_client = get_core_api_client()
     longhorn_api_client = get_longhorn_api_client()
     cloudprovider = detect_cloudprovider()
 
+    k3s = is_infra_k3s()
+
     for node_item in k8s_api_client.list_node().items:
-        if node_worker_label in node_item.metadata.labels and \
-                node_item.metadata.labels[node_worker_label] == &#39;true&#39;:
-            node_name = node_item.metadata.name
 
-            if is_node_ready_k8s(node_name, k8s_api_client) is False:
-                node = cloudprovider.instance_id(node_name)
-
-                cloudprovider.instance_start(node)
-
-                node_up_k8s = wait_for_node_up_k8s(node_name,
-                                                   k8s_api_client)
-
-                assert node_up_k8s
-
+        if k3s is True:
+            if node_controlplane_label not in node_item.metadata.labels:
+                node_name = node_item.metadata.name
+                node_ip = node_item.metadata.annotations[node_ip_annotation]
+                node = cloudprovider.instance_id_by_ip(node_ip)
             else:
                 continue
 
-            node_up_longhorn =\
-                wait_for_node_up_longhorn(node_name,
-                                          longhorn_api_client)
+        else:
+            if node_worker_label in node_item.metadata.labels and \
+                    node_item.metadata.labels[node_worker_label] == &#39;true&#39;:
+                node_name = node_item.metadata.name
+                node = cloudprovider.instance_id(node_name)
+            else:
+                continue
 
-            assert node_up_longhorn</code></pre>
+        if is_node_ready_k8s(node_name, k8s_api_client) is False:
+
+            cloudprovider.instance_start(node)
+            wait_for_node_up_aws(cloudprovider, node)
+            node_up_k8s =\
+                wait_for_node_up_k8s(node_name, k8s_api_client)
+
+            assert node_up_k8s
+
+        else:
+            continue
+
+        node_up_longhorn =\
+            wait_for_node_up_longhorn(node_name, longhorn_api_client)
+
+        assert node_up_longhorn</code></pre>
 </details>
 </dd>
 <dt id="tests.test_infra.test_offline_node"><code class="name flex">
@@ -335,6 +434,8 @@ def test_offline_node(reset_cluster_ready_status):
     &#34;&#34;&#34;
     node_worker_label = &#39;node-role.kubernetes.io/worker&#39;
     pod_lable_selector = &#34;longhorn-test=test-job&#34;
+    node_controlplane_label = &#39;node-role.kubernetes.io/control-plane&#39;
+    node_ip_annotation = &#34;flannel.alpha.coreos.com/public-ip&#34;
 
     k8s_api_client = get_core_api_client()
     longhorn_api_client = get_longhorn_api_client()
@@ -346,19 +447,30 @@ def test_offline_node(reset_cluster_ready_status):
         if pod.metadata.name == &#34;longhorn-test&#34;:
             longhorn_test_node_name = pod.spec.node_name
 
-    for node_item in k8s_api_client.list_node().items:
-        if node_worker_label in node_item.metadata.labels and \
-                node_item.metadata.labels[node_worker_label] == &#39;true&#39;:
-            node_name = node_item.metadata.name
-            if node_name == longhorn_test_node_name:
-                continue
-            else:
-                break
+    k3s = is_infra_k3s()
 
-    node = cloudprovider.instance_id(node_name)
+    for node_item in k8s_api_client.list_node().items:
+        if k3s is True:
+            if node_controlplane_label not in node_item.metadata.labels:
+                node_name = node_item.metadata.name
+                node_ip = node_item.metadata.annotations[node_ip_annotation]
+                if node_name == longhorn_test_node_name:
+                    continue
+                else:
+                    node = cloudprovider.instance_id_by_ip(node_ip)
+                    break
+        else:
+            if node_worker_label in node_item.metadata.labels and \
+                    node_item.metadata.labels[node_worker_label] == &#39;true&#39;:
+                node_name = node_item.metadata.name
+                if node_name == longhorn_test_node_name:
+                    continue
+                else:
+                    node = cloudprovider.instance_id(node_name)
+                    break
 
     cloudprovider.instance_stop(node)
-
+    wait_for_node_down_aws(cloudprovider, node)
     k8s_node_down = wait_for_node_down_k8s(node_name, k8s_api_client)
 
     assert k8s_node_down
@@ -368,6 +480,29 @@ def test_offline_node(reset_cluster_ready_status):
                                                      longhorn_api_client)
 
     assert longhorn_node_down</code></pre>
+</details>
+</dd>
+<dt id="tests.test_infra.wait_for_node_down_aws"><code class="name flex">
+<span>def <span class="ident">wait_for_node_down_aws</span></span>(<span>cloudprovider, node)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def wait_for_node_down_aws(cloudprovider, node):
+
+    aws_node_down = False
+    for i in range(RETRY_COUNTS):
+        if cloudprovider.instance_status(node) == &#39;stopped&#39;:
+            aws_node_down = True
+            break
+        else:
+            time.sleep(RETRY_INTERVAL)
+            continue
+
+    return aws_node_down</code></pre>
 </details>
 </dd>
 <dt id="tests.test_infra.wait_for_node_down_k8s"><code class="name flex">
@@ -411,6 +546,29 @@ def test_offline_node(reset_cluster_ready_status):
             continue
 
     return longhorn_node_down</code></pre>
+</details>
+</dd>
+<dt id="tests.test_infra.wait_for_node_up_aws"><code class="name flex">
+<span>def <span class="ident">wait_for_node_up_aws</span></span>(<span>cloudprovider, node)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def wait_for_node_up_aws(cloudprovider, node):
+
+    aws_node_up = False
+    for i in range(RETRY_COUNTS):
+        if cloudprovider.instance_status(node) == &#39;running&#39;:
+            aws_node_up = True
+            break
+        else:
+            time.sleep(RETRY_INTERVAL)
+            continue
+
+    return aws_node_up</code></pre>
 </details>
 </dd>
 <dt id="tests.test_infra.wait_for_node_up_k8s"><code class="name flex">
@@ -475,12 +633,15 @@ def test_offline_node(reset_cluster_ready_status):
 <li><h3><a href="#header-functions">Functions</a></h3>
 <ul class="">
 <li><code><a title="tests.test_infra.detect_cloudprovider" href="#tests.test_infra.detect_cloudprovider">detect_cloudprovider</a></code></li>
+<li><code><a title="tests.test_infra.is_infra_k3s" href="#tests.test_infra.is_infra_k3s">is_infra_k3s</a></code></li>
 <li><code><a title="tests.test_infra.is_node_ready_k8s" href="#tests.test_infra.is_node_ready_k8s">is_node_ready_k8s</a></code></li>
 <li><code><a title="tests.test_infra.is_node_ready_longhorn" href="#tests.test_infra.is_node_ready_longhorn">is_node_ready_longhorn</a></code></li>
 <li><code><a title="tests.test_infra.reset_cluster_ready_status" href="#tests.test_infra.reset_cluster_ready_status">reset_cluster_ready_status</a></code></li>
 <li><code><a title="tests.test_infra.test_offline_node" href="#tests.test_infra.test_offline_node">test_offline_node</a></code></li>
+<li><code><a title="tests.test_infra.wait_for_node_down_aws" href="#tests.test_infra.wait_for_node_down_aws">wait_for_node_down_aws</a></code></li>
 <li><code><a title="tests.test_infra.wait_for_node_down_k8s" href="#tests.test_infra.wait_for_node_down_k8s">wait_for_node_down_k8s</a></code></li>
 <li><code><a title="tests.test_infra.wait_for_node_down_longhorn" href="#tests.test_infra.wait_for_node_down_longhorn">wait_for_node_down_longhorn</a></code></li>
+<li><code><a title="tests.test_infra.wait_for_node_up_aws" href="#tests.test_infra.wait_for_node_up_aws">wait_for_node_up_aws</a></code></li>
 <li><code><a title="tests.test_infra.wait_for_node_up_k8s" href="#tests.test_infra.wait_for_node_up_k8s">wait_for_node_up_k8s</a></code></li>
 <li><code><a title="tests.test_infra.wait_for_node_up_longhorn" href="#tests.test_infra.wait_for_node_up_longhorn">wait_for_node_up_longhorn</a></code></li>
 </ul>
