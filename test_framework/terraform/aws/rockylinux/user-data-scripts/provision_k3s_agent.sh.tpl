@@ -1,8 +1,8 @@
 #!/bin/bash
 
-sudo yum update -y
-sudo yum group install -y "Development Tools"
-sudo yum install -y iscsi-initiator-utils nfs-utils nfs4-acl-tools
+sudo dnf update -y
+sudo dnf group install -y "Development Tools"
+sudo dnf install -y iscsi-initiator-utils nfs-utils nfs4-acl-tools
 sudo systemctl -q enable iscsid
 sudo systemctl start iscsid
 
