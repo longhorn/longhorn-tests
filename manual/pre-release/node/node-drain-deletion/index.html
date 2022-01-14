@@ -527,6 +527,7 @@
 <li>Force drain and remove N1, which is the node the volume is attached to.
 <pre tabindex="0"><code>kubectl drain &lt;Node name&gt; --delete-emptydir-data=true --force=true --grace-period=-1 --ignore-daemonsets=true --timeout=&lt;Desired timeout in secs&gt;
 </code></pre></li>
+<li>Verify the instance manager pods are gone and not recreated after the drain.</li>
 <li>Wait for the volume detaching then being recovered. Will get attached to the workload/node.</li>
 <li>Validate the volume content. The data is intact.</li>
 </ol>
@@ -549,6 +550,7 @@ pod/instance-manager-e-e591dbce evicted
 pod/coredns-849545576b-v54vn evicted
 node/&lt;node-name&gt; evicted
 </code></pre></li>
+<li>Verify the instance manager pods are gone and not recreated after the drain.</li>
 </ol>
 <p>Note: <code>--ignore-daemonsets</code> should be set to true to ignore some DaemonSets that exist on node such as Longhorn manager, Longhorn CSI plugin, engine image in a Longhorn deployed cluster.</p>
 <h2 id="test-kubectl-drain-nodes-for-pvcpvlhv-is-created-through-longhorn-uihttpsgithubcomlonghornlonghornissues2673"><a href="https://github.com/longhorn/longhorn/issues/2673">Test kubectl drain nodes for PVC/PV/LHV is created through Longhorn UI</a></h2>
