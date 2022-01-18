@@ -1578,7 +1578,8 @@ def wait_for_volume_status(client, name, key, value):
         if volume[key] == value:
             break
         time.sleep(RETRY_INTERVAL)
-    assert volume[key] == value
+    assert volume[key] == value, f" value={value}\n. \
+            volume[key]={volume[key]}\n. volume={volume}"
     return volume
 
 
