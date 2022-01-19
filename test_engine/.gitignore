@@ -1,0 +1,18 @@
+.tox
+.cache
+__pycache__
+*.pyc
+MANIFEST
+validationTestsJunit.xml
+.bash_history
+*.DS_Store
+terraform/aws/ubuntu/*.hcl
+terraform/aws/ubuntu/*.tfstate
+
+# build files
+.dapper
+
+# ignores all goland project folders and files
+.idea/
+*.iml
+*.ipr
