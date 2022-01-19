@@ -4,17 +4,17 @@ import yaml
 import os
 import pathlib
 
-docker_id = "chanow"
-docker_pwd = "tt2252"
+docker_id = ""
+docker_pwd = ""
 docker_repo = "chanow/longhorn-engine"
 docker_tag = "0119-test"
 
 os.environ['TF_VAR_tf_workspace'] \
     = str(pathlib.Path(__file__).parent.absolute())
 os.environ['TF_VAR_build_engine_aws_access_key'] \
-    = "AKIAZKQ2ZGMOAKJCJC7Z"
+    = ""
 os.environ['TF_VAR_build_engine_aws_secret_key'] \
-    = "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"
+    = ""
 
 
 def add_manifest():

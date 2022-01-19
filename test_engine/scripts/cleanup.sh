@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 
 if [[ ! -v TF_VAR_build_engine_aws_access_key ]]; then
-	export TF_VAR_build_engine_aws_access_key="AKIAZKQ2ZGMOAKJCJC7Z"
+	export TF_VAR_build_engine_aws_access_key=""
 fi
 
 if [[ ! -v TF_VAR_build_engine_aws_secret_key ]]; then
-	export TF_VAR_build_engine_aws_secret_key="tMgFT0Xgt56RLtoQ9q6VZY8a3g4V97g/V3qu22gZ"
+	export TF_VAR_build_engine_aws_secret_key=""
 fi
 
 if [[ ! -v TF_VAR_tf_workspace ]]; then
