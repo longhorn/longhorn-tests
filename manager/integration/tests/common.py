@@ -79,6 +79,9 @@ VOLUME_ROBUSTNESS_UNKNOWN = "unknown"
 VOLUME_FIELD_RESTOREREQUIRED = "restoreRequired"
 VOLUME_FIELD_READY = "ready"
 
+VOLUME_FIELD_CLONE_STATUS = "cloneStatus"
+VOLUME_FIELD_CLONE_COMPLETED = "completed"
+
 VOLUME_REPLICA_WO_LIMIT = 1
 
 DEFAULT_STORAGECLASS_NAME = 'longhorn-test'
@@ -1983,6 +1986,11 @@ def generate_sts_name():
     return STATEFULSET_NAME + "-" + \
         ''.join(random.choice(string.ascii_lowercase + string.digits)
                 for _ in range(6))
+
+
+def generate_random_suffix():
+    return "-" + ''.join(random.choice(string.ascii_lowercase + string.digits)
+                         for _ in range(6))
 
 
 def get_default_engine_image(client):
@@ -4465,6 +4473,30 @@ def wait_for_pod_annotation(core_api,
                 break
         time.sleep(RETRY_INTERVAL)
     assert matches is True
+
+
+def wait_for_volume_clone_status(client, name, key, value):
+    for _ in range(RETRY_COUNTS):
+        volume = client.by_id_volume(name)
+        if volume[VOLUME_FIELD_CLONE_STATUS][key] == value:
+            break
+        time.sleep(RETRY_INTERVAL)
+    assert volume[VOLUME_FIELD_CLONE_STATUS][key] == value, \
+        f" Expected value={value}\n. " \
+        f" Got volume[{VOLUME_FIELD_CLONE_STATUS}][{key}]= " \
+        f"{volume[VOLUME_FIELD_CLONE_STATUS][key]}\n. volume={volume}"
+    return volume
+
+
+def get_clone_volume_name(client, source_volume_name):
+    for _ in range(RETRY_EXEC_COUNTS):
+        volumes = client.list_volume()
+        for volume in volumes:
+            if volume['cloneStatus']['sourceVolume'] == \
+                    source_volume_name:
+                return volume.name
+        time.sleep(RETRY_INTERVAL_LONG)
+    return None
 
 
 def create_backup_from_volume_attached_to_pod(client, core_api,
