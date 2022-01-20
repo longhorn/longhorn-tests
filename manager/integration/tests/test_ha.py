@@ -57,6 +57,10 @@ from common import wait_for_volume_replica_count, wait_for_replica_failed
 from common import settings_reset # NOQA
 from common import set_node_tags, set_node_scheduling # NOQA
 from common import SETTING_DISABLE_REVISION_COUNTER
+from common import create_and_wait_deployment, wait_deployment_replica_ready
+from common import clients, get_apps_api_client, timeout, STREAM_EXEC_TIMEOUT
+
+from kubernetes.stream import stream
 
 from backupstore import set_random_backupstore # NOQA
 from backupstore import backupstore_cleanup
@@ -2142,65 +2146,189 @@ def test_auto_remount_with_subpath(client, core_api, storage_class, sts_name, st
 
 
 @pytest.mark.skip(reason="WAIT_FOR_UPSTREAM_FIX") # NOQA
-@pytest.mark.skipif("k3s" not in os.environ.get("KUBERNETES_VERSION"),reason="Only run on k3s")
-def test_restart_kubelet_when_pod_with_subpath():
+@pytest.mark.skipif('k3s' not in str(subprocess.check_call(
+                    "kubectl get node "+os.environ["NODE_NAME"], shell=True)),
+                    reason="This test only works on k3s") # NOQA
+def test_restart_kubelet_when_pod_with_subpath(clients, core_api):
     """
     Related issue 3080:
     https://github.com/longhorn/longhorn/issues/3080
 
     Steps:
-    0. Check if the cluster runs with k3s
-    1. Create deployment with subpath with pods on the same targeting-node
-    2. Wait for pods become Running
-    3. Restart k3s kubelet-agent service
-    4. Wait for new pods become Running
-    5. Check kubelet log from the targeting-node
+    0. Check if the all nodes runs with k3s
+    1. Label one worker node with "targeting-node: true"
+    2. Create deployment with subpath and deploy to the targeting-node
+    3. Wait for pods become ready
+    4. Write some random data to the volume
+    5. Restart k3s kubelet-agent service
+    6. Wait for new pods become ready
+    7. Check kubelet log from the targeting-node
+    8. Verify the data wrote to the volume
     """
+    assert all(["k3s" in node.status.node_info.kubelet_version
+                for node in core_api.list_node().items]) is True
 
-    # TODO: following implentation is WIP and not tested yet
+    # Find the first none-controlplane node and label it for the workload
+    for node in core_api.list_node().items:
+        if 'node-role.kubernetes.io/master' not in node.metadata.labels.keys():
+            print("Patching label to node: " + node.metadata.name)
+            core_api.patch_node(node.metadata.name, {
+                    "metadata": {
+                        "labels": {
+                            "targeting-node": "true"
+                        }
+                    }
+                })
+            targeting_node = node.metadata.name
+            break
+    client1 = clients.get(targeting_node)
 
-    # Get first worker node
-    node = k8s_api_client.list_node().items[0]
+    create_and_check_volume(client1, volume_name="mysql", size=str(1 * Gi))
+    wait_for_volume_creation(client1, "mysql")
 
-    # Add label to the node
-    node.metadata.labels['targeting-node'] = 'True'
+    volume_mysql = client1.by_id_volume("mysql")
+    create_pv_for_volume(
+        client1, core_api, volume=volume_mysql, pv_name="mysql-pv")
+    create_pvc_for_volume(
+        client1, core_api, volume=volume_mysql, pvc_name="mysql-pvc")
 
-    # Create workload with pod uses subpath
-    statefulset['metadata']['name'] = 'workload-with-subpath'
-    statefulset['spec']['replicas'] = 5
-    statefulset['spec']['nodeSelector'] = '"targeting-node": True'
-    
-    # Workdload: container name mysql with image mysql
-    statefulset['spec']['template']['spec']['containers'][0]['name'] = 'mysql'
-    statefulset['spec']['template']['spec']['containers'][0]['image'] = 'mysql'
-    statefulset['spec']['template']['spec']['containers'][0]['command'] = ['/bin/sh', '-c', 'while true; do dd if=/dev/urandom of=/var/lib/mysql/t bs=1M count=1500 oflag=dsync && rm /var/lib/mysql/t; done']
-    statefulset['spec']['template']['spec']['containers'][0]['env'][0]['name'] = 'MYSQL_ROOT_PASSWORD'
-    statefulset['spec']['template']['spec']['containers'][0]['env'][0]['value'] = 'rootpasswd'
-    statefulset['spec']['template']['spec']['containers'][0]['volumeMounts'][0]['mountPath'] = '/var/lib/mysql'
-    statefulset['spec']['template']['spec']['containers'][0]['volumeMounts'][0]['name'] = 'site-data'
-    statefulset['spec']['template']['spec']['containers'][0]['volumeMounts'][0]['subPath'] = 'mysql'
+    deployment = {
+        "apiVersion": "apps/v1",
+        "kind": "Deployment",
+        "metadata": {
+            "name": "mysql",
+            "labels": {
+                "app": "mysql"
+            },
+            "namespace": "default"
+        },
+        "spec": {
+            "replicas": 3,
+            "selector": {
+                "matchLabels": {
+                    "app": "mysql"
+                }
+            },
+            "strategy": {
+                "type": "Recreate"
+            },
+            "template": {
+                "metadata": {
+                    "labels": {
+                        "app": "mysql"
+                    }
+                },
+                "spec": {
+                    "nodeSelector": {
+                        "targeting-node": "true"
+                    },
+                    "restartPolicy": "Always",
+                    "containers": [
+                        {
+                            "name": "mysql",
+                            "image": "mysql",
+                            "command": [
+                                "sh",
+                                "-c",
+                                "while true; do dd if=/dev/urandom of=/var/lib/mysql/t bs=1M count=1500 oflag=dsync && rm /var/lib/mysql/t; done"
+                            ],
+                            "env": [
+                                {
+                                    "name": "MYSQL_ROOT_PASSWORD",
+                                    "value": "rootpasswd"
+                                }
+                            ],
+                            "volumeMounts": [
+                                {
+                                    "mountPath": "/var/lib/mysql",
+                                    "name": "site-data",
+                                    "subPath": "mysql"
+                                }
+                            ]
+                        },
+                        {
+                            "name": "php",
+                            "image": "php:7.0-apache",
+                            "command": [
+                                "sh",
+                                "-c",
+                                "sleep infinity"
+                            ],
+                            "volumeMounts": [
+                                {
+                                    "mountPath": "/var/www/html",
+                                    "name": "site-data"
+                                }
+                            ]
+                        }
+                    ],
+                    "volumes": [
+                        {
+                            "name": "site-data",
+                            "persistentVolumeClaim": {
+                                "claimName": "mysql-pvc"
+                                }
+                            }
+                        ]
+                    }
+                }
+            }
+        }
 
-    # Workload: container name php with image php:7.0-apache
-    statefulset['spec']['template']['spec']['containers'][1]['name'] = 'php'
-    statefulset['spec']['template']['spec']['containers'][1]['image'] = 'php:7.0-apache'
-    statefulset['spec']['template']['spec']['containers'][1]['command'] = ['/bin/sh', '-c', 'sleep infinity']
-    statefulset['spec']['template']['spec']['containers'][1]['volumeMounts'][0]['mountPath'] = '/var/www/html'
-    statefulset['spec']['template']['spec']['containers'][1]['volumeMounts'][0]['name'] = 'site-data'
+    apps_api = get_apps_api_client()
+    create_and_wait_deployment(apps_api, deployment_manifest=deployment)
+    wait_deployment_replica_ready(apps_api, "mysql", 3)
+    wait_for_volume_healthy(client1, "mysql")
 
-    # Workload: Volume template
-    statefulset['spec']['template']['spec']['volumes'][0]['name'] = 'site-data'
-    statefulset['spec']['template']['spec']['volumes'][0]['persistentVolumeClaim']['claimName'] = 'mysql-pvc'
+    def get_list_of_pods_by_name(name, namespace="default"):
+        return [p.metadata.name
+                for p in core_api.list_namespaced_pod(namespace).items
+                if name in p.metadata.name]
 
-    create_and_wait_statefulset(statefulset)
-        
-    # TODO: Specify node to run the command
+    def write_container_volume_data(api, pod_name, test_data,
+                                    path, filename='test', container_name=''):
+        write_command = [
+            '/bin/sh',
+            '-c',
+            'echo -ne ' + test_data + ' > ' + path + filename
+        ]
+        with timeout(seconds=STREAM_EXEC_TIMEOUT,
+                     error_message='Timeout on executing stream write'):
+            return stream(
+                api.connect_get_namespaced_pod_exec, pod_name, 'default',
+                container=container_name,
+                command=write_command, stderr=True, stdin=False, stdout=True,
+                tty=False)
 
-    common.restart_k3s_agent
-    common.wait_for_pod_phase(core_api, pod_name, pod_phase="Running")
+    def get_container_data_md5sum(api, pod_name, path, container_name=''):
+        md5sum_command = [
+            '/bin/sh', '-c', 'md5sum ' + path + " | awk '{print $1}'"
+        ]
+        with timeout(seconds=STREAM_EXEC_TIMEOUT * 3,
+                     error_message='Timeout on executing stream md5sum'):
+            return stream(
+                api.connect_get_namespaced_pod_exec, pod_name, 'default',
+                container=container_name,
+                command=md5sum_command, stderr=True, stdin=False, stdout=True,
+                tty=False)
 
-    # Check kubelet log from the targeting-node
-    expect_restult = not common.check_k3s_agent_log("Path does not exist", 60*5)
-    assert expect_restult == True
+    mysql_pods = get_list_of_pods_by_name("mysql")
+    path = "/var/lib/mysql/"
+    test_data = generate_random_data(DATA_SIZE_IN_MB_3)
+    filename = "test"
+    write_container_volume_data(core_api, mysql_pods[0], test_data, path,
+                                filename, container_name="mysql")
+    md5sum = get_container_data_md5sum(
+        core_api, mysql_pods[0], path + filename, container_name="mysql")
+
+    # TODO: restart kubelet/k3s-agent
+    for mysql_pod in mysql_pods:
+        delete_and_wait_pod(core_api, mysql_pod)
+
+    wait_deployment_replica_ready(apps_api, "mysql", 3)
+    mysql_pods = get_list_of_pods_by_name("mysql")
+    assert get_container_data_md5sum(core_api, mysql_pods[0], path + "test",
+                                     container_name="mysql") == md5sum
 
 
 def test_reuse_failed_replica(client, core_api, volume_name): # NOQA
