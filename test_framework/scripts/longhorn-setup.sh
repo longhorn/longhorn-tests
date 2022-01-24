@@ -19,10 +19,14 @@ set_kubeconfig_envvar(){
 	BASEDIR=${2}
 
     if [[ ${ARCH} == "amd64" ]] ; then
-        export KUBECONFIG="${BASEDIR}/kube_config_rke.yml"
-    elif [[ ${ARCH} == "arm64"  ]]; then
+		if [[ ${TF_VAR_k8s_distro_name} =~ [rR][kK][eE] ]]; then
+			export KUBECONFIG="${BASEDIR}/kube_config_rke.yml"
+		else
+			export KUBECONFIG="${BASEDIR}/terraform/aws/${DISTRO}/k3s.yaml"
+		fi
+	elif [[ ${ARCH} == "arm64"  ]]; then
 		export KUBECONFIG="${BASEDIR}/terraform/aws/${DISTRO}/k3s.yaml"
-    fi
+	fi
 }
 
 
