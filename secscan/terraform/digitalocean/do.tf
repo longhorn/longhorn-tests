@@ -57,8 +57,12 @@ resource "null_resource" "provision" {
       private_key  = file("~/.ssh/id_rsa")
     }
 
-    scripts = [
-      "${var.tf_workspace}/scripts/provision.sh",
+    inline = [
+      "apt-get update",
+      "apt-get dist-upgrade -y",
+      "apt-get install build-essentials",
+      "curl https://releases.rancher.com/install-docker/20.10.sh | sh",
+      "curl -sSL https://repos.insights.digitalocean.com/install.sh | sudo bash",
     ]
   }
 
