@@ -1,8 +1,8 @@
 #!/bin/bash 
 
 sudo dnf update -y                                                              
-sudo dnf group install -y "Development Tools"                                   
-sudo dnf install -y iscsi-initiator-utils nfs-utils nfs4-acl-tools
+sudo dnf group install -y "Development Tools"
+sudo dnf install -y iscsi-initiator-utils nfs-utils nfs4-acl-tools jq
 sudo systemctl -q enable iscsid                                                 
 sudo systemctl start iscsid
 
