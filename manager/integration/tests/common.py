@@ -14,6 +14,8 @@ import socket
 import pytest
 
 import longhorn
+import requests
+import warnings
 
 from kubernetes import client as k8sclient, config as k8sconfig
 from kubernetes.client import Configuration
@@ -218,6 +220,8 @@ K8S_ZONE_LABEL = "topology.kubernetes.io/zone"
 BACKING_IMAGE_SOURCE_TYPE_DOWNLOAD = "download"
 
 JOB_LABEL = "recurring-job.longhorn.io"
+
+MAX_SUPPORT_BINDLE_NUMBER = 20
 
 
 def load_k8s_config():
@@ -4598,3 +4602,55 @@ def restore_backup_and_get_data_checksum(client, core_api, backup, pod,
                                      'default')
 
     return data_checksum, output, restore_pod_name
+
+
+def generate_support_bundle(case_name):
+    """
+        Generate support bundle into folder ./support_bundle/case_name.zip
+
+        Won't generate support bundle if current support bundle count
+        greate than MAX_SUPPORT_BINDLE_NUMBER.
+        Args:
+            case_name: support bundle will named case_name.zip
+    """
+
+    os.makedirs("support_bundle", exist_ok=True)
+    file_cnt = len(os.listdir("support_bundle"))
+
+    if file_cnt >= MAX_SUPPORT_BINDLE_NUMBER:
+        warnings.warn("Ignoring the bundle download because of \
+                            avoiding overwhelming the disk usage.")
+        return
+
+    # Use API gen support bundle
+    client = get_longhorn_api_client()
+    url = client._url.replace('schemas', 'supportbundles')
+    data = {'description': case_name, 'issueURL': case_name}
+    res = requests.post(url, json=data).json()
+
+    id = res['id']
+    name = res['name']
+
+    support_bundle_url = '{}/{}/{}'.format(url, id, name)
+    for i in range(RETRY_EXEC_COUNTS):
+        res = requests.get(support_bundle_url).json()
+
+        if res['progressPercentage'] == 100:
+            break
+        else:
+            time.sleep(RETRY_INTERVAL_LONG)
+
+    if res['progressPercentage'] != 100:
+        warnings.warn("Timeout to wait support bundle ready, skip download")
+        return
+
+    # Download support bundle
+    download_url = '{}/download'.format(support_bundle_url)
+    try:
+        r = requests.get(download_url, allow_redirects=True, timeout=300)
+        r.raise_for_status()
+        with open('./support_bundle/{0}.zip'.format(case_name), 'wb') as f:
+            f.write(r.content)
+    except Exception as e:
+        warnings.warn("Error occured while downloading support bundle {}.zip\n\
+            The error was {}".format(case_name, e))
