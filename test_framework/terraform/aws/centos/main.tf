@@ -69,6 +69,13 @@ resource "aws_security_group" "lh_aws_secgrp_controlplane" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
+  ingress {
+    description = "Allow UDP connection for longhorn-webhooks"
+    from_port   = 0
+    to_port     = 65535
+    protocol    = "udp"
+    cidr_blocks = ["10.0.0.0/8"]
+  }
 
   egress {
     from_port   = 0
@@ -223,9 +230,9 @@ resource "aws_key_pair" "lh_aws_pair_key" {
   public_key = file(var.aws_ssh_public_key_file_path)
 }
 
-# Create cluster secret (used for k3s on arm64 only)
+# Create cluster secret (used for k3s on k3s only)
 resource "random_password" "k3s_cluster_secret" {
-  length = var.arch == "arm64" ? 64 : 0
+  length = var.k8s_distro_name == "k3s" ? 64 : 0
   special = false
 }
 
@@ -254,7 +261,7 @@ resource "aws_instance" "lh_aws_instance_controlplane" {
   }
 
   key_name = aws_key_pair.lh_aws_pair_key.key_name
-  user_data = var.arch == "arm64" ? data.template_file.provision_arm64_server.rendered : file("${path.module}/user-data-scripts/provision_amd64.sh")
+  user_data = var.k8s_distro_name == "k3s" ? data.template_file.provision_k3s_server.rendered : data.template_file.provision_rke.rendered
 
   tags = {
     Name = "${var.lh_aws_instance_name_controlplane}-${count.index}-${random_string.random_suffix.id}"
@@ -307,7 +314,7 @@ resource "aws_instance" "lh_aws_instance_worker" {
   }
 
   key_name = aws_key_pair.lh_aws_pair_key.key_name
-  user_data = var.arch == "arm64" ? data.template_file.provision_arm64_agent.rendered : file("${path.module}/user-data-scripts/provision_amd64.sh")
+  user_data = var.k8s_distro_name == "k3s" ? data.template_file.provision_k3s_agent.rendered : data.template_file.provision_rke.rendered
 
   tags = {
     Name = "${var.lh_aws_instance_name_worker}-${count.index}-${random_string.random_suffix.id}"
@@ -316,7 +323,7 @@ resource "aws_instance" "lh_aws_instance_worker" {
   }
 }
 
-# wait for docker to start on controlplane instances (for rke on amd64 only)
+# wait for docker to start on controlplane instances (for rke on rke only)
 resource "null_resource" "wait_for_docker_start_controlplane" {
   depends_on = [
     aws_instance.lh_aws_instance_controlplane,
@@ -329,7 +336,7 @@ resource "null_resource" "wait_for_docker_start_controlplane" {
 
   provisioner "remote-exec" {
 
-    inline = var.arch == "amd64" ? ["until( systemctl is-active docker.service ); do echo \"waiting for docker to start \"; sleep 2; done"] : null
+    inline = var.k8s_distro_name == "rke" ? ["until( systemctl is-active docker.service ); do echo \"waiting for docker to start \"; sleep 2; done"] : null
 
     connection {
       type     = "ssh"
@@ -340,7 +347,7 @@ resource "null_resource" "wait_for_docker_start_controlplane" {
   }
 }
 
-# wait for docker to start on worker instances (for rke on amd64 only)
+# wait for docker to start on worker instances (for rke on rke only)
 resource "null_resource" "wait_for_docker_start_worker" {
   depends_on = [
     aws_instance.lh_aws_instance_controlplane,
@@ -352,7 +359,7 @@ resource "null_resource" "wait_for_docker_start_worker" {
   count = var.lh_aws_instance_count_worker
 
   provisioner "remote-exec" {
-    inline = var.arch == "amd64" ? ["until( systemctl is-active docker.service ); do echo \"waiting for docker to start \"; sleep 2; done"] : null
+    inline = var.k8s_distro_name == "rke" ? ["until( systemctl is-active docker.service ); do echo \"waiting for docker to start \"; sleep 2; done"] : null
 
     connection {
       type     = "ssh"
@@ -367,7 +374,7 @@ resource "null_resource" "wait_for_docker_start_worker" {
   }
 }
 
-# Download KUBECONFIG file (for k3s arm64 only)
+# Download KUBECONFIG file (for k3s only)
 resource "null_resource" "rsync_kubeconfig_file" {
   depends_on = [
     aws_instance.lh_aws_instance_controlplane,
@@ -376,7 +383,7 @@ resource "null_resource" "rsync_kubeconfig_file" {
   ]
 
   provisioner "remote-exec" {
-    inline = var.arch == "arm64" ? ["until([ -f /etc/rancher/k3s/k3s.yaml ] && [ `sudo /usr/local/bin/kubectl get nodes --no-headers | grep -v \"NotReady\" | wc -l` -eq ${var.lh_aws_instance_count_worker} ]); do echo \"waiting for k3s cluster nodes to be running\"; sleep 2; done"] : null
+    inline = var.k8s_distro_name == "k3s" ? ["until([ -f /etc/rancher/k3s/k3s.yaml ] && [ `sudo /usr/local/bin/kubectl get node -o jsonpath='{.items[*].status.conditions}'  | jq '.[] | select(.type  == \"Ready\").status' | grep -cvi true` -eq 0 ]); do echo \"waiting for k3s cluster nodes to be running\"; sleep 2; done"] : null
 
     connection {
       type     = "ssh"
@@ -387,6 +394,6 @@ resource "null_resource" "rsync_kubeconfig_file" {
   }
 
   provisioner "local-exec" {
-    command = var.arch == "arm64" ? "rsync -aPvz --rsync-path=\"sudo rsync\" -e \"ssh -o StrictHostKeyChecking=no -l centos -i ${var.aws_ssh_private_key_file_path}\" ${aws_eip.lh_aws_eip_controlplane[0].public_ip}:/etc/rancher/k3s/k3s.yaml .  && sed -i 's#https://127.0.0.1:6443#https://${aws_eip.lh_aws_eip_controlplane[0].public_ip}:6443#' k3s.yaml"  : "echo \"amd64 arch.. skipping\""
+    command = var.k8s_distro_name == "k3s" ? "rsync -aPvz --rsync-path=\"sudo rsync\" -e \"ssh -o StrictHostKeyChecking=no -l centos -i ${var.aws_ssh_private_key_file_path}\" ${aws_eip.lh_aws_eip_controlplane[0].public_ip}:/etc/rancher/k3s/k3s.yaml .  && sed -i 's#https://127.0.0.1:6443#https://${aws_eip.lh_aws_eip_controlplane[0].public_ip}:6443#' k3s.yaml"  : "echo \"rke arch.. skipping\""
   }
 }

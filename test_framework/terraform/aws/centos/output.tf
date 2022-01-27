@@ -9,8 +9,8 @@ output "rke_config" {
     null_resource.wait_for_docker_start_worker
   ]
 
-  value = var.arch == "amd64" ? yamlencode({
-    "kubernetes_version": var.rke_k8s_version,
+  value = var.k8s_distro_name == "rke" ? yamlencode({
+    "kubernetes_version": var.k8s_distro_version,
     "nodes": concat(
      [
       for controlplane_instance in aws_instance.lh_aws_instance_controlplane : {
