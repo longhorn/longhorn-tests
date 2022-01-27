@@ -7,7 +7,7 @@ from common import get_longhorn_api_client, \
     NODE_CONDITION_MOUNTPROPAGATION, CONDITION_STATUS_TRUE
 from common import wait_for_node_mountpropagation_condition
 from common import check_longhorn, check_csi_expansion
-
+from common import generate_support_bundle
 
 SKIP_BACKING_IMAGE_OPT = "--skip-backing-image-test"
 SKIP_RECURRING_JOB_OPT = "--skip-recurring-job-test"
@@ -173,3 +173,16 @@ def pytest_collection_modifyitems(config, items):
         for item in items:
             if "upgrade" in item.keywords:
                 item.add_marker(skip_upgrade)
+
+
+def pytest_exception_interact(call, report):
+
+    # Only work on TestReport, not on CollectReport
+    if type(report).__name__ != "TestReport":
+        return
+
+    # Get case name
+    case_name = str(report).split()[1]
+    case_name = case_name.split('/')[1].replace('\'', '')
+
+    generate_support_bundle(case_name)
