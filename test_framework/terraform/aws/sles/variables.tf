@@ -28,7 +28,7 @@ variable "arch" {
   description = "available values (amd64, arm64)"
 }
 
-variable "distro_version" {
+variable "os_distro_version" {
   type        = string
   default     = "15-sp3-v20210622"
 }
@@ -89,13 +89,18 @@ variable "lh_aws_instance_root_block_device_size_worker" {
   default     = 40
 }
 
-variable "rke_k8s_version" {
+variable "k8s_distro_name" {
   type        = string
-  default     = "v1.20.8-rancher1-1"
-  description = "RKE k8s version will be used to generate RKE config file output"
+  default     = "k3s"
+  description = "kubernetes distro version to install [rke, k3s]  (default: k3s)"
 }
 
-variable "k3s_version" {
+variable "k8s_distro_version" {
   type        = string
-  default     = "v1.20.8+k3s1"
+  default     = "v1.21.9+k3s1"
+  description = <<-EOT
+    kubernetes version that will be deployed
+    rke: (default: v1.21.8-rancher1-1)
+    k3s: (default: v1.21.9+k3s1)
+  EOT
 }
