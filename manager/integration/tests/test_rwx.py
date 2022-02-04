@@ -21,8 +21,8 @@ from backupstore import set_random_backupstore # NOQA
 from multiprocessing import Pool
 
 import time
-import pytest
-import subprocess
+# import pytest
+# import subprocess
 
 LONGHORN_NFS_INSTALLATION_URL = \
     "https://raw.githubusercontent.com/longhorn/" \
@@ -38,21 +38,21 @@ def write_data_into_pod(pod_name_and_data_path):
                                  DATA_SIZE_IN_MB_3)
 
 
-@pytest.fixture(scope="module", autouse="True")
-def nfs(request):
-
-    cmd = ["kubectl", "apply", "-f", LONGHORN_NFS_INSTALLATION_URL]
-    subprocess.check_output(cmd)
-
-    cmd = ["kubectl", "rollout", "status",
-           "ds/{}".format(LONGHORN_NFS_DAEMONSET_NAME), "--timeout=5m"]
-    subprocess.check_output(cmd)
-
-    def finalizer():
-        cmd = ["kubectl", "delete", "-f", LONGHORN_NFS_INSTALLATION_URL]
-        subprocess.check_output(cmd)
-
-    request.addfinalizer(finalizer)
+# @pytest.fixture(scope="module", autouse="True")
+# def nfs(request):
+#
+#     cmd = ["kubectl", "apply", "-f", LONGHORN_NFS_INSTALLATION_URL]
+#     subprocess.check_output(cmd)
+#
+#     cmd = ["kubectl", "rollout", "status",
+#            "ds/{}".format(LONGHORN_NFS_DAEMONSET_NAME), "--timeout=5m"]
+#     subprocess.check_output(cmd)
+#
+#     def finalizer():
+#         cmd = ["kubectl", "delete", "-f", LONGHORN_NFS_INSTALLATION_URL]
+#         subprocess.check_output(cmd)
+#
+#     request.addfinalizer(finalizer)
 
 
 def test_rwx_with_statefulset_multi_pods(core_api, statefulset):  # NOQA
