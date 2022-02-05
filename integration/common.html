@@ -1486,7 +1486,9 @@ def wait_scheduling_failure(client, volume_name):
         if scheduling_failure:
             break
         time.sleep(RETRY_INTERVAL)
-    assert scheduling_failure
+    assert scheduling_failure, f&#34; Scheduled Status = &#34; \
+        f&#34;{v.conditions.scheduled.status}, Scheduled reason = &#34; \
+        f&#34;{v.conditions.scheduled.reason}, volume = {v}&#34;
 
 
 def wait_for_device_login(dest_path, name):
@@ -1963,9 +1965,10 @@ def wait_for_replica_scheduled(client, volume_name, to_nodes,
 
         time.sleep(RETRY_INTERVAL)
 
-    assert scheduled == expect_success
-    assert unexpect_fail == 0
-    assert len(volume.replicas) == expect_success + expect_fail
+    assert scheduled == expect_success, f&#34; Volume = {volume}&#34;
+    assert unexpect_fail == 0, f&#34; Volume = {volume}&#34;
+    assert len(volume.replicas) == expect_success + expect_fail, \
+        f&#34; Volume = {volume}&#34;
     return volume
 
 
@@ -2301,7 +2304,10 @@ def wait_for_volume_condition_scheduled(client, name, key, value):
             break
         time.sleep(RETRY_INTERVAL)
     conditions = volume.conditions
-    assert conditions[VOLUME_CONDITION_SCHEDULED][key] == value
+    assert conditions[VOLUME_CONDITION_SCHEDULED][key] == value, \
+        f&#34; Expected value = {value}, &#34; \
+        f&#34;Conditions[{VOLUME_CONDITION_SCHEDULED}][{key}] = &#34; \
+        f&#34;conditions[VOLUME_CONDITION_SCHEDULED][key], Volume = {volume}&#34;
     return volume
 
 
@@ -2513,7 +2519,8 @@ def wait_for_backup_completion(client, volume_name, snapshot_name=None,
         if completed:
             break
         time.sleep(RETRY_BACKUP_INTERVAL)
-    assert completed is True
+    assert completed is True, f&#34; Backup status = {b.state},&#34; \
+                              f&#34; Backup Progress = {b.progress}, Volume = {v}&#34;
     return v
 
 
@@ -9299,7 +9306,8 @@ def volume_name(request):
         if completed:
             break
         time.sleep(RETRY_BACKUP_INTERVAL)
-    assert completed is True
+    assert completed is True, f&#34; Backup status = {b.state},&#34; \
+                              f&#34; Backup Progress = {b.progress}, Volume = {v}&#34;
     return v</code></pre>
 </details>
 </dd>
@@ -10424,9 +10432,10 @@ def volume_name(request):
 
         time.sleep(RETRY_INTERVAL)
 
-    assert scheduled == expect_success
-    assert unexpect_fail == 0
-    assert len(volume.replicas) == expect_success + expect_fail
+    assert scheduled == expect_success, f&#34; Volume = {volume}&#34;
+    assert unexpect_fail == 0, f&#34; Volume = {volume}&#34;
+    assert len(volume.replicas) == expect_success + expect_fail, \
+        f&#34; Volume = {volume}&#34;
     return volume</code></pre>
 </details>
 </dd>
@@ -10571,7 +10580,10 @@ def volume_name(request):
             break
         time.sleep(RETRY_INTERVAL)
     conditions = volume.conditions
-    assert conditions[VOLUME_CONDITION_SCHEDULED][key] == value
+    assert conditions[VOLUME_CONDITION_SCHEDULED][key] == value, \
+        f&#34; Expected value = {value}, &#34; \
+        f&#34;Conditions[{VOLUME_CONDITION_SCHEDULED}][{key}] = &#34; \
+        f&#34;conditions[VOLUME_CONDITION_SCHEDULED][key], Volume = {volume}&#34;
     return volume</code></pre>
 </details>
 </dd>
@@ -11214,7 +11226,9 @@ volume. Trigger a failed assertion of one is detected.
         if scheduling_failure:
             break
         time.sleep(RETRY_INTERVAL)
-    assert scheduling_failure</code></pre>
+    assert scheduling_failure, f&#34; Scheduled Status = &#34; \
+        f&#34;{v.conditions.scheduled.status}, Scheduled reason = &#34; \
+        f&#34;{v.conditions.scheduled.reason}, volume = {v}&#34;</code></pre>
 </details>
 </dd>
 <dt id="tests.common.wait_statefulset"><code class="name flex">
