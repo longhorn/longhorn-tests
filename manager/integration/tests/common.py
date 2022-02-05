@@ -1458,7 +1458,9 @@ def wait_scheduling_failure(client, volume_name):
         if scheduling_failure:
             break
         time.sleep(RETRY_INTERVAL)
-    assert scheduling_failure
+    assert scheduling_failure, f" Scheduled Status = " \
+        f"{v.conditions.scheduled.status}, Scheduled reason = " \
+        f"{v.conditions.scheduled.reason}, volume = {v}"
 
 
 def wait_for_device_login(dest_path, name):
@@ -1935,9 +1937,10 @@ def wait_for_replica_scheduled(client, volume_name, to_nodes,
 
         time.sleep(RETRY_INTERVAL)
 
-    assert scheduled == expect_success
-    assert unexpect_fail == 0
-    assert len(volume.replicas) == expect_success + expect_fail
+    assert scheduled == expect_success, f" Volume = {volume}"
+    assert unexpect_fail == 0, f" Volume = {volume}"
+    assert len(volume.replicas) == expect_success + expect_fail, \
+        f" Volume = {volume}"
     return volume
 
 
@@ -2273,7 +2276,10 @@ def wait_for_volume_condition_scheduled(client, name, key, value):
             break
         time.sleep(RETRY_INTERVAL)
     conditions = volume.conditions
-    assert conditions[VOLUME_CONDITION_SCHEDULED][key] == value
+    assert conditions[VOLUME_CONDITION_SCHEDULED][key] == value, \
+        f" Expected value = {value}, " \
+        f"Conditions[{VOLUME_CONDITION_SCHEDULED}][{key}] = " \
+        f"conditions[VOLUME_CONDITION_SCHEDULED][key], Volume = {volume}"
     return volume
 
 
@@ -2485,7 +2491,8 @@ def wait_for_backup_completion(client, volume_name, snapshot_name=None,
         if completed:
             break
         time.sleep(RETRY_BACKUP_INTERVAL)
-    assert completed is True
+    assert completed is True, f" Backup status = {b.state}," \
+                              f" Backup Progress = {b.progress}, Volume = {v}"
     return v
 
 
