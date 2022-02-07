@@ -843,6 +843,15 @@ Scenario  Prepare 1 control plane node and 3 worker nodes Install RKE2 with CIS-
     </item>
     
     <item>
+      <title>Test longhorn manager pod starting scalability</title>
+      <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.3.0/test-longhorn-manager-starting-scalability/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.3.0/test-longhorn-manager-starting-scalability/</guid>
+      <description>Test step  Deploy a cluster with multiple nodes. e.g., 20 worker nodes. Launch an old Longhorn version without the fix PR. e.g., Longhorn version v1.2.3. Create and attach multiple volumes on different nodes. e.g.,: apiVersion: longhorn.io/v1beta2 kind: BackingImage metadata: name: bi-test1 namespace: longhorn-system spec: sourceType: download sourceParameters: url: https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2 --- kind: StorageClass apiVersion: storage.k8s.io/v1 metadata: name: longhorn-test1 provisioner: driver.longhorn.io allowVolumeExpansion: true reclaimPolicy: Delete volumeBindingMode: Immediate parameters: numberOfReplicas: &amp;#34;3&amp;#34; staleReplicaTimeout: &amp;#34;2880&amp;#34; fromBackup: &amp;#34;&amp;#34; fsType: &amp;#34;ext4&amp;#34; backingImage: &amp;#34;bi-test1&amp;#34; --- apiVersion: v1 kind: Service metadata: name: nginx labels: app: nginx spec: ports: - port: 80 name: web selector: app: nginx type: NodePort --- apiVersion: apps/v1 kind: StatefulSet metadata: name: bi-scalability-test namespace: default spec: selector: matchLabels: app: nginx serviceName: &amp;#34;nginx&amp;#34; replicas: 20 podManagementPolicy: Parallel template: metadata: labels: app: nginx spec: restartPolicy: Always terminationGracePeriodSeconds: 10 containers: - name: nginx image: k8s.</description>
+    </item>
+    
+    <item>
       <title>Test Node Delete</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/delete-node/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>

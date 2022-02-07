@@ -513,89 +513,190 @@
 </aside>
 
 <main style="padding: 1%; width: 70%;">
-  <h1 id="title">Restore to an old cluster</h1>
+  <h1 id="title">Test longhorn manager pod starting scalability</h1>
   <div>
     <article id="content">
-       <p>Notice that the behaviors will be different if the cluster node roles are different. e.g., A cluster contains 1 dedicated master node + 3 worker node is different from a cluster contains 3 nodes which are both master and worker.
-This test may need to be validated for both kind of cluster.</p>
-<h2 id="node-creation-and-deletion">Node creation and deletion</h2>
+       <h3 id="test-step">Test step</h3>
 <ol>
-<li>Deploy a 3-worker-node cluster then install Longhorn system.</li>
-<li>Deploy some workloads using Longhorn volumes then write some data.</li>
-<li>Create a cluster snapshot via Rancher.</li>
-<li>Add a new worker node for this cluster. Deploy workloads on this node.</li>
-<li>Restore the cluster.</li>
-<li>Follow the doc after the restore. Verify:
-<ol>
-<li>The new node is still in the Longhorn system. All necessary longhorn workloads will be on the node.</li>
-<li>The workloads and the volumes created in step 2 work fine after restarting.</li>
-<li>The data of the volumes created in step 4 can be recovered.</li>
-</ol>
-</li>
-<li>Create one more cluster snapshot.</li>
-<li>Delete one node all related volumes/replicas on the node.</li>
-<li>Restore the cluster.</li>
-<li>Follow the doc after the restore. Verify:
-<ol>
-<li>There is no corresponding Longhorn node CR.</li>
-<li>The Longhorn pods on the deleted node will be restored but they will become <code>Terminating</code> after several minutes. Users need to force deleting them.</li>
-<li>The volumes or replicas CRs on the gone node will be restored. Users can clean up them.</li>
-<li>The workloads and the volumes not on the removed node work fine after restarting.</li>
-</ol>
-</li>
-</ol>
-<h2 id="longhorn-volume-recovery">Longhorn volume recovery</h2>
-<ol>
-<li>Launch a Longhorn system. Deploy one more compatible engine image.</li>
-<li>Prepare some volumes with workloads:
-<ol>
-<li>Create and attach volume A via UI. Write some data and do some snapshot operations. (Validate 1 case: The volume deleted after the cluster snapshot will be restored but is invalid)</li>
-<li>Deploy a single pod with volume B. Write some data, do some snapshot operations, and create some backups. (Validate 3 cases: &lt;1&gt; data modification won&rsquo;t crash the whole volume; &lt;2&gt; backup info will be resynced; &lt;3&gt; users need to manual restart the single pod)</li>
-<li>Deploy a StatefulSet with volume C. Write some data and do some snapshot operations. (Validate 1 case: Users need to manually recover the volume if all existing replicas are replaced by new replicas)</li>
-<li>Deploy a StatefulSet with volume D. Write some data and do some snapshot operations. (Validate 2 cases: &lt;1&gt; volume can be recovered automatically if some replicas are removed and some new replicas are replenished; &lt;2&gt; snapshot info will be resynced;)</li>
-<li>Deploy a Deployment with volume E. Write some data and do some snapshot operations. (Validate 4 cases: &lt;1&gt; engine upgrade; &lt;2&gt; offline expansion)</li>
-</ol>
-</li>
-<li>Create a cluster snapshot via Rancher.</li>
-<li>Do the followings before the restore:
-<ol>
-<li>Delete volume A.</li>
-<li>Write more data to volume B and create more backups.</li>
-<li>Remove all current replicas one by one for volume C. Then all replicas of volume C are new replicas.</li>
-<li>Remove some replicas for volume D. Do snapshot creation, deletion, and revert.</li>
-<li>Scale down the workload. Upgrade volume E from the default image to another engine image. And do expansion.</li>
-<li>Create and attach volume F via UI. Write some data and do some snapshot operations. (Validate 1 case: Users need to manuall recover the volume if it&rsquo;s created after the cluster snapshot)</li>
-</ol>
-</li>
-<li>Restore the cluster.</li>
-<li>Check the followings according to the doc:
-<ol>
-<li>Volume A is back. But there is no data in it. And users can re-delete it.</li>
-<li>Volume B can be reattached or keep attached with correct data. The backup info of volume B is resynced when the volume is reattahed. The pod can use the volume after restart.</li>
-<li>All old removed replicas are back and all newly rebuilt replicas in step4-3 disappear for volume C. There is no data in volume C. The data directories of the disappeared replicas are still on the node. Hence the data are be recovered by exporting a single replica volume.</li>
-<li>The old removed replicas are back and the newly rebuilt replicas in step4-4 disappear for volume D. The restored replicas will become failed then get rebuilt with correct data. The data directories of the disappeared replicas are still on the node.</li>
-<li>Volume E re-uses the default engine image, and gets stuck in shrinking the expanded size to the original size. By re-scaling down the workload, re-upgrade and re-expand the volume. The volume can work fine then.</li>
-<li>Volume F will disappear. The data directories of the disappeared replicas are still on the node. Hence the data are be recovered by exporting a single replica volume.</li>
-</ol>
-</li>
-</ol>
-<h2 id="longhorn-system-upgrade">Longhorn system upgrade</h2>
-<ol>
-<li>Install Longhorn system. Deploy one more compatible engine image.</li>
-<li>Deploy some workloads using Longhorn volumes then write some data.</li>
-<li>Create a cluster snapshot via Rancher.</li>
-<li>Upgrade the Longhorn system to a newer version. Then modify the settings or node configs (especially the configs introduced in the new version).</li>
-<li>Restore the cluster.</li>
-<li>Follow the doc after the restore. Verify:
-<ol>
-<li>The system re-upgrade should succeed.</li>
-<li>The modifications for the settings or configs in step 4 won&rsquo;t be back. But users can re-modify them.</li>
-<li>The workloads and the volumes created in step 2 work fine after restarting.</li>
-</ol>
-</li>
+<li>Deploy a cluster with multiple nodes. e.g., 20 worker nodes.</li>
+<li>Launch an old Longhorn version without the fix PR. e.g., Longhorn version v1.2.3.</li>
+<li>Create and attach multiple volumes on different nodes. e.g.,:
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#f92672">apiVersion</span>: <span style="color:#ae81ff">longhorn.io/v1beta2</span>
+<span style="color:#f92672">kind</span>: <span style="color:#ae81ff">BackingImage</span>
+<span style="color:#f92672">metadata</span>:
+  <span style="color:#f92672">name</span>: <span style="color:#ae81ff">bi-test1</span>
+  <span style="color:#f92672">namespace</span>: <span style="color:#ae81ff">longhorn-system</span>
+<span style="color:#f92672">spec</span>:
+  <span style="color:#f92672">sourceType</span>: <span style="color:#ae81ff">download</span>
+  <span style="color:#f92672">sourceParameters</span>:
+    <span style="color:#f92672">url</span>: <span style="color:#ae81ff">https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2</span>
+---
+<span style="color:#f92672">kind</span>: <span style="color:#ae81ff">StorageClass</span>
+<span style="color:#f92672">apiVersion</span>: <span style="color:#ae81ff">storage.k8s.io/v1</span>
+<span style="color:#f92672">metadata</span>:
+  <span style="color:#f92672">name</span>: <span style="color:#ae81ff">longhorn-test1</span>
+<span style="color:#f92672">provisioner</span>: <span style="color:#ae81ff">driver.longhorn.io</span>
+<span style="color:#f92672">allowVolumeExpansion</span>: <span style="color:#66d9ef">true</span>
+<span style="color:#f92672">reclaimPolicy</span>: <span style="color:#ae81ff">Delete</span>
+<span style="color:#f92672">volumeBindingMode</span>: <span style="color:#ae81ff">Immediate</span>
+<span style="color:#f92672">parameters</span>:
+  <span style="color:#f92672">numberOfReplicas</span>: <span style="color:#e6db74">&#34;3&#34;</span>
+  <span style="color:#f92672">staleReplicaTimeout</span>: <span style="color:#e6db74">&#34;2880&#34;</span>
+  <span style="color:#f92672">fromBackup</span>: <span style="color:#e6db74">&#34;&#34;</span>
+  <span style="color:#f92672">fsType</span>: <span style="color:#e6db74">&#34;ext4&#34;</span>
+  <span style="color:#f92672">backingImage</span>: <span style="color:#e6db74">&#34;bi-test1&#34;</span>
+---
+<span style="color:#f92672">apiVersion</span>: <span style="color:#ae81ff">v1</span>
+<span style="color:#f92672">kind</span>: <span style="color:#ae81ff">Service</span>
+<span style="color:#f92672">metadata</span>:
+  <span style="color:#f92672">name</span>: <span style="color:#ae81ff">nginx</span>
+  <span style="color:#f92672">labels</span>:
+    <span style="color:#f92672">app</span>: <span style="color:#ae81ff">nginx</span>
+<span style="color:#f92672">spec</span>:
+  <span style="color:#f92672">ports</span>:
+    - <span style="color:#f92672">port</span>: <span style="color:#ae81ff">80</span>
+      <span style="color:#f92672">name</span>: <span style="color:#ae81ff">web</span>
+  <span style="color:#f92672">selector</span>:
+    <span style="color:#f92672">app</span>: <span style="color:#ae81ff">nginx</span>
+  <span style="color:#f92672">type</span>: <span style="color:#ae81ff">NodePort</span>
+---
+<span style="color:#f92672">apiVersion</span>: <span style="color:#ae81ff">apps/v1</span>
+<span style="color:#f92672">kind</span>: <span style="color:#ae81ff">StatefulSet</span>
+<span style="color:#f92672">metadata</span>:
+  <span style="color:#f92672">name</span>: <span style="color:#ae81ff">bi-scalability-test</span>
+  <span style="color:#f92672">namespace</span>: <span style="color:#ae81ff">default</span>
+<span style="color:#f92672">spec</span>:
+  <span style="color:#f92672">selector</span>:
+    <span style="color:#f92672">matchLabels</span>:
+      <span style="color:#f92672">app</span>: <span style="color:#ae81ff">nginx</span>
+  <span style="color:#f92672">serviceName</span>: <span style="color:#e6db74">&#34;nginx&#34;</span>
+  <span style="color:#f92672">replicas</span>: <span style="color:#ae81ff">20</span>
+  <span style="color:#f92672">podManagementPolicy</span>: <span style="color:#ae81ff">Parallel</span>
+  <span style="color:#f92672">template</span>:
+    <span style="color:#f92672">metadata</span>:
+      <span style="color:#f92672">labels</span>:
+        <span style="color:#f92672">app</span>: <span style="color:#ae81ff">nginx</span>
+    <span style="color:#f92672">spec</span>:
+      <span style="color:#f92672">restartPolicy</span>: <span style="color:#ae81ff">Always</span>
+      <span style="color:#f92672">terminationGracePeriodSeconds</span>: <span style="color:#ae81ff">10</span>
+      <span style="color:#f92672">containers</span>:
+        - <span style="color:#f92672">name</span>: <span style="color:#ae81ff">nginx</span>
+          <span style="color:#f92672">image</span>: <span style="color:#ae81ff">k8s.gcr.io/nginx-slim:0.8</span>
+          <span style="color:#f92672">ports</span>:
+            - <span style="color:#f92672">containerPort</span>: <span style="color:#ae81ff">80</span>
+              <span style="color:#f92672">name</span>: <span style="color:#ae81ff">web</span>
+          <span style="color:#f92672">volumeMounts</span>:
+            - <span style="color:#f92672">name</span>: <span style="color:#ae81ff">www1</span>
+              <span style="color:#f92672">mountPath</span>: <span style="color:#ae81ff">/usr/share/nginx/html</span>
+            - <span style="color:#f92672">name</span>: <span style="color:#ae81ff">www2</span>
+              <span style="color:#f92672">mountPath</span>: <span style="color:#ae81ff">/usr/share/nginx/html2</span>
+            - <span style="color:#f92672">name</span>: <span style="color:#ae81ff">www3</span>
+              <span style="color:#f92672">mountPath</span>: <span style="color:#ae81ff">/usr/share/nginx/html3</span>
+            - <span style="color:#f92672">name</span>: <span style="color:#ae81ff">www4</span>
+              <span style="color:#f92672">mountPath</span>: <span style="color:#ae81ff">/usr/share/nginx/html4</span>
+            - <span style="color:#f92672">name</span>: <span style="color:#ae81ff">www5</span>
+              <span style="color:#f92672">mountPath</span>: <span style="color:#ae81ff">/usr/share/nginx/html5</span>
+            - <span style="color:#f92672">name</span>: <span style="color:#ae81ff">www6</span>
+              <span style="color:#f92672">mountPath</span>: <span style="color:#ae81ff">/usr/share/nginx/html6</span>
+            - <span style="color:#f92672">name</span>: <span style="color:#ae81ff">www7</span>
+              <span style="color:#f92672">mountPath</span>: <span style="color:#ae81ff">/usr/share/nginx/html7</span>
+            - <span style="color:#f92672">name</span>: <span style="color:#ae81ff">www8</span>
+              <span style="color:#f92672">mountPath</span>: <span style="color:#ae81ff">/usr/share/nginx/html8</span>
+            - <span style="color:#f92672">name</span>: <span style="color:#ae81ff">www9</span>
+              <span style="color:#f92672">mountPath</span>: <span style="color:#ae81ff">/usr/share/nginx/html9</span>
+            - <span style="color:#f92672">name</span>: <span style="color:#ae81ff">www10</span>
+              <span style="color:#f92672">mountPath</span>: <span style="color:#ae81ff">/usr/share/nginx/html10</span>
+  <span style="color:#f92672">volumeClaimTemplates</span>:
+    - <span style="color:#f92672">metadata</span>:
+        <span style="color:#f92672">name</span>: <span style="color:#ae81ff">www1</span>
+      <span style="color:#f92672">spec</span>:
+        <span style="color:#f92672">accessModes</span>: [ <span style="color:#e6db74">&#34;ReadWriteOnce&#34;</span> ]
+        <span style="color:#f92672">storageClassName</span>: <span style="color:#e6db74">&#34;longhorn-test1&#34;</span>
+        <span style="color:#f92672">resources</span>:
+          <span style="color:#f92672">requests</span>:
+            <span style="color:#f92672">storage</span>: <span style="color:#ae81ff">32Mi</span>
+    - <span style="color:#f92672">metadata</span>:
+        <span style="color:#f92672">name</span>: <span style="color:#ae81ff">www2</span>
+      <span style="color:#f92672">spec</span>:
+        <span style="color:#f92672">accessModes</span>: [ <span style="color:#e6db74">&#34;ReadWriteOnce&#34;</span> ]
+        <span style="color:#f92672">storageClassName</span>: <span style="color:#e6db74">&#34;longhorn-test1&#34;</span>
+        <span style="color:#f92672">resources</span>:
+          <span style="color:#f92672">requests</span>:
+            <span style="color:#f92672">storage</span>: <span style="color:#ae81ff">32Mi</span>
+    - <span style="color:#f92672">metadata</span>:
+        <span style="color:#f92672">name</span>: <span style="color:#ae81ff">www3</span>
+      <span style="color:#f92672">spec</span>:
+        <span style="color:#f92672">accessModes</span>: [ <span style="color:#e6db74">&#34;ReadWriteOnce&#34;</span> ]
+        <span style="color:#f92672">storageClassName</span>: <span style="color:#e6db74">&#34;longhorn-test1&#34;</span>
+        <span style="color:#f92672">resources</span>:
+          <span style="color:#f92672">requests</span>:
+            <span style="color:#f92672">storage</span>: <span style="color:#ae81ff">32Mi</span>
+    - <span style="color:#f92672">metadata</span>:
+        <span style="color:#f92672">name</span>: <span style="color:#ae81ff">www4</span>
+      <span style="color:#f92672">spec</span>:
+        <span style="color:#f92672">accessModes</span>: [ <span style="color:#e6db74">&#34;ReadWriteOnce&#34;</span> ]
+        <span style="color:#f92672">storageClassName</span>: <span style="color:#e6db74">&#34;longhorn-test1&#34;</span>
+        <span style="color:#f92672">resources</span>:
+          <span style="color:#f92672">requests</span>:
+            <span style="color:#f92672">storage</span>: <span style="color:#ae81ff">32Mi</span>
+    - <span style="color:#f92672">metadata</span>:
+        <span style="color:#f92672">name</span>: <span style="color:#ae81ff">www5</span>
+      <span style="color:#f92672">spec</span>:
+        <span style="color:#f92672">accessModes</span>: [ <span style="color:#e6db74">&#34;ReadWriteOnce&#34;</span> ]
+        <span style="color:#f92672">storageClassName</span>: <span style="color:#e6db74">&#34;longhorn-test1&#34;</span>
+        <span style="color:#f92672">resources</span>:
+          <span style="color:#f92672">requests</span>:
+            <span style="color:#f92672">storage</span>: <span style="color:#ae81ff">32Mi</span>
+    - <span style="color:#f92672">metadata</span>:
+        <span style="color:#f92672">name</span>: <span style="color:#ae81ff">www6</span>
+      <span style="color:#f92672">spec</span>:
+        <span style="color:#f92672">accessModes</span>: [ <span style="color:#e6db74">&#34;ReadWriteOnce&#34;</span> ]
+        <span style="color:#f92672">storageClassName</span>: <span style="color:#e6db74">&#34;longhorn-test1&#34;</span>
+        <span style="color:#f92672">resources</span>:
+          <span style="color:#f92672">requests</span>:
+            <span style="color:#f92672">storage</span>: <span style="color:#ae81ff">32Mi</span>
+    - <span style="color:#f92672">metadata</span>:
+        <span style="color:#f92672">name</span>: <span style="color:#ae81ff">www7</span>
+      <span style="color:#f92672">spec</span>:
+        <span style="color:#f92672">accessModes</span>: [ <span style="color:#e6db74">&#34;ReadWriteOnce&#34;</span> ]
+        <span style="color:#f92672">storageClassName</span>: <span style="color:#e6db74">&#34;longhorn-test1&#34;</span>
+        <span style="color:#f92672">resources</span>:
+          <span style="color:#f92672">requests</span>:
+            <span style="color:#f92672">storage</span>: <span style="color:#ae81ff">32Mi</span>
+    - <span style="color:#f92672">metadata</span>:
+        <span style="color:#f92672">name</span>: <span style="color:#ae81ff">www8</span>
+      <span style="color:#f92672">spec</span>:
+        <span style="color:#f92672">accessModes</span>: [ <span style="color:#e6db74">&#34;ReadWriteOnce&#34;</span> ]
+        <span style="color:#f92672">storageClassName</span>: <span style="color:#e6db74">&#34;longhorn-test1&#34;</span>
+        <span style="color:#f92672">resources</span>:
+          <span style="color:#f92672">requests</span>:
+            <span style="color:#f92672">storage</span>: <span style="color:#ae81ff">32Mi</span>
+    - <span style="color:#f92672">metadata</span>:
+        <span style="color:#f92672">name</span>: <span style="color:#ae81ff">www9</span>
+      <span style="color:#f92672">spec</span>:
+        <span style="color:#f92672">accessModes</span>: [ <span style="color:#e6db74">&#34;ReadWriteOnce&#34;</span> ]
+        <span style="color:#f92672">storageClassName</span>: <span style="color:#e6db74">&#34;longhorn-test1&#34;</span>
+        <span style="color:#f92672">resources</span>:
+          <span style="color:#f92672">requests</span>:
+            <span style="color:#f92672">storage</span>: <span style="color:#ae81ff">32Mi</span>
+    - <span style="color:#f92672">metadata</span>:
+        <span style="color:#f92672">name</span>: <span style="color:#ae81ff">www10</span>
+      <span style="color:#f92672">spec</span>:
+        <span style="color:#f92672">accessModes</span>: [ <span style="color:#e6db74">&#34;ReadWriteOnce&#34;</span> ]
+        <span style="color:#f92672">storageClassName</span>: <span style="color:#e6db74">&#34;longhorn-test1&#34;</span>
+        <span style="color:#f92672">resources</span>:
+          <span style="color:#f92672">requests</span>:
+            <span style="color:#f92672">storage</span>: <span style="color:#ae81ff">32Mi</span>
+</code></pre></div></li>
+<li>Delete DaemonSet <code>longhorn-manager</code> and wait for all pods cleanup.</li>
+<li>Recreate DaemonSet <code>longhorn-manager</code> and record the time elapsed when all pods become running and ready. This should take a long time.</li>
+<li>Upgrade Longhorn to another version that does not contain the fix (the old upgrade path). Then record the time elapsed when all pods become running and ready. This should take a long time as well.</li>
+<li>Upgrade Longhorn to the version that contains the fix (the new upgrade path) and record the time. This should take a relatively short time.</li>
+<li>Delete DaemonSet <code>longhorn-manager</code> and wait for all pods cleanup.</li>
+<li>Recreate DaemonSet <code>longhorn-manager</code> and record the time. This should take a relatively short time, too.</li>
 </ol>
 <hr>
-<p>GitHub issue link: <a href="https://github.com/longhorn/longhorn/issues/2228">https://github.com/longhorn/longhorn/issues/2228</a></p>
+<p>GitHub Issue: <a href="https://github.com/longhorn/longhorn/issues/3087">https://github.com/longhorn/longhorn/issues/3087</a></p>
 
     </article>
   </div>
