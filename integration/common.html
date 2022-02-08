@@ -107,6 +107,9 @@ VOLUME_ROBUSTNESS_UNKNOWN = &#34;unknown&#34;
 VOLUME_FIELD_RESTOREREQUIRED = &#34;restoreRequired&#34;
 VOLUME_FIELD_READY = &#34;ready&#34;
 
+VOLUME_FIELD_CLONE_STATUS = &#34;cloneStatus&#34;
+VOLUME_FIELD_CLONE_COMPLETED = &#34;completed&#34;
+
 VOLUME_REPLICA_WO_LIMIT = 1
 
 DEFAULT_STORAGECLASS_NAME = &#39;longhorn-test&#39;
@@ -2014,6 +2017,11 @@ def generate_sts_name():
     return STATEFULSET_NAME + &#34;-&#34; + \
         &#39;&#39;.join(random.choice(string.ascii_lowercase + string.digits)
                 for _ in range(6))
+
+
+def generate_random_suffix():
+    return &#34;-&#34; + &#39;&#39;.join(random.choice(string.ascii_lowercase + string.digits)
+                         for _ in range(6))
 
 
 def get_default_engine_image(client):
@@ -4502,6 +4510,30 @@ def wait_for_pod_annotation(core_api,
     assert matches is True
 
 
+def wait_for_volume_clone_status(client, name, key, value):
+    for _ in range(RETRY_COUNTS):
+        volume = client.by_id_volume(name)
+        if volume[VOLUME_FIELD_CLONE_STATUS][key] == value:
+            break
+        time.sleep(RETRY_INTERVAL)
+    assert volume[VOLUME_FIELD_CLONE_STATUS][key] == value, \
+        f&#34; Expected value={value}\n. &#34; \
+        f&#34; Got volume[{VOLUME_FIELD_CLONE_STATUS}][{key}]= &#34; \
+        f&#34;{volume[VOLUME_FIELD_CLONE_STATUS][key]}\n. volume={volume}&#34;
+    return volume
+
+
+def get_clone_volume_name(client, source_volume_name):
+    for _ in range(RETRY_EXEC_COUNTS):
+        volumes = client.list_volume()
+        for volume in volumes:
+            if volume[&#39;cloneStatus&#39;][&#39;sourceVolume&#39;] == \
+                    source_volume_name:
+                return volume.name
+        time.sleep(RETRY_INTERVAL_LONG)
+    return None
+
+
 def create_backup_from_volume_attached_to_pod(client, core_api,
                                               volume_name, pod_name,
                                               data_path=&#39;/data/test&#39;,
@@ -6788,6 +6820,20 @@ been completed successfully</p></div>
     return pos</code></pre>
 </details>
 </dd>
+<dt id="tests.common.generate_random_suffix"><code class="name flex">
+<span>def <span class="ident">generate_random_suffix</span></span>(<span>)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def generate_random_suffix():
+    return &#34;-&#34; + &#39;&#39;.join(random.choice(string.ascii_lowercase + string.digits)
+                         for _ in range(6))</code></pre>
+</details>
+</dd>
 <dt id="tests.common.generate_sts_name"><code class="name flex">
 <span>def <span class="ident">generate_sts_name</span></span>(<span>)</span>
 </code></dt>
@@ -6923,6 +6969,26 @@ been completed successfully</p></div>
         assert host.address is not None
         clients[host.name] = get_client(host.address + PORT)
     return clients</code></pre>
+</details>
+</dd>
+<dt id="tests.common.get_clone_volume_name"><code class="name flex">
+<span>def <span class="ident">get_clone_volume_name</span></span>(<span>client, source_volume_name)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_clone_volume_name(client, source_volume_name):
+    for _ in range(RETRY_EXEC_COUNTS):
+        volumes = client.list_volume()
+        for volume in volumes:
+            if volume[&#39;cloneStatus&#39;][&#39;sourceVolume&#39;] == \
+                    source_volume_name:
+                return volume.name
+        time.sleep(RETRY_INTERVAL_LONG)
+    return None</code></pre>
 </details>
 </dd>
 <dt id="tests.common.get_compatibility_test_image"><code class="name flex">
@@ -10532,6 +10598,28 @@ def volume_name(request):
                                   VOLUME_STATE_ATTACHED)</code></pre>
 </details>
 </dd>
+<dt id="tests.common.wait_for_volume_clone_status"><code class="name flex">
+<span>def <span class="ident">wait_for_volume_clone_status</span></span>(<span>client, name, key, value)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def wait_for_volume_clone_status(client, name, key, value):
+    for _ in range(RETRY_COUNTS):
+        volume = client.by_id_volume(name)
+        if volume[VOLUME_FIELD_CLONE_STATUS][key] == value:
+            break
+        time.sleep(RETRY_INTERVAL)
+    assert volume[VOLUME_FIELD_CLONE_STATUS][key] == value, \
+        f&#34; Expected value={value}\n. &#34; \
+        f&#34; Got volume[{VOLUME_FIELD_CLONE_STATUS}][{key}]= &#34; \
+        f&#34;{volume[VOLUME_FIELD_CLONE_STATUS][key]}\n. volume={volume}&#34;
+    return volume</code></pre>
+</details>
+</dd>
 <dt id="tests.common.wait_for_volume_condition_restore"><code class="name flex">
 <span>def <span class="ident">wait_for_volume_condition_restore</span></span>(<span>client, name, key, value)</span>
 </code></dt>
@@ -11584,6 +11672,7 @@ volume. Trigger a failed assertion of one is detected.
 <li><code><a title="tests.common.generate_pod_with_pvc_manifest" href="#tests.common.generate_pod_with_pvc_manifest">generate_pod_with_pvc_manifest</a></code></li>
 <li><code><a title="tests.common.generate_random_data" href="#tests.common.generate_random_data">generate_random_data</a></code></li>
 <li><code><a title="tests.common.generate_random_pos" href="#tests.common.generate_random_pos">generate_random_pos</a></code></li>
+<li><code><a title="tests.common.generate_random_suffix" href="#tests.common.generate_random_suffix">generate_random_suffix</a></code></li>
 <li><code><a title="tests.common.generate_sts_name" href="#tests.common.generate_sts_name">generate_sts_name</a></code></li>
 <li><code><a title="tests.common.generate_volume_name" href="#tests.common.generate_volume_name">generate_volume_name</a></code></li>
 <li><code><a title="tests.common.get_apps_api_client" href="#tests.common.get_apps_api_client">get_apps_api_client</a></code></li>
@@ -11592,6 +11681,7 @@ volume. Trigger a failed assertion of one is detected.
 <li><code><a title="tests.common.get_backupstores" href="#tests.common.get_backupstores">get_backupstores</a></code></li>
 <li><code><a title="tests.common.get_client" href="#tests.common.get_client">get_client</a></code></li>
 <li><code><a title="tests.common.get_clients" href="#tests.common.get_clients">get_clients</a></code></li>
+<li><code><a title="tests.common.get_clone_volume_name" href="#tests.common.get_clone_volume_name">get_clone_volume_name</a></code></li>
 <li><code><a title="tests.common.get_compatibility_test_image" href="#tests.common.get_compatibility_test_image">get_compatibility_test_image</a></code></li>
 <li><code><a title="tests.common.get_core_api_client" href="#tests.common.get_core_api_client">get_core_api_client</a></code></li>
 <li><code><a title="tests.common.get_custom_object_api_client" href="#tests.common.get_custom_object_api_client">get_custom_object_api_client</a></code></li>
@@ -11731,6 +11821,7 @@ volume. Trigger a failed assertion of one is detected.
 <li><code><a title="tests.common.wait_for_snapshot_count" href="#tests.common.wait_for_snapshot_count">wait_for_snapshot_count</a></code></li>
 <li><code><a title="tests.common.wait_for_snapshot_purge" href="#tests.common.wait_for_snapshot_purge">wait_for_snapshot_purge</a></code></li>
 <li><code><a title="tests.common.wait_for_volume_attached" href="#tests.common.wait_for_volume_attached">wait_for_volume_attached</a></code></li>
+<li><code><a title="tests.common.wait_for_volume_clone_status" href="#tests.common.wait_for_volume_clone_status">wait_for_volume_clone_status</a></code></li>
 <li><code><a title="tests.common.wait_for_volume_condition_restore" href="#tests.common.wait_for_volume_condition_restore">wait_for_volume_condition_restore</a></code></li>
 <li><code><a title="tests.common.wait_for_volume_condition_scheduled" href="#tests.common.wait_for_volume_condition_scheduled">wait_for_volume_condition_scheduled</a></code></li>
 <li><code><a title="tests.common.wait_for_volume_condition_toomanysnapshots" href="#tests.common.wait_for_volume_condition_toomanysnapshots">wait_for_volume_condition_toomanysnapshots</a></code></li>
