@@ -49,8 +49,8 @@ from backupstore import set_random_backupstore # NOQA
 from multiprocessing import Pool
 
 import time
-import pytest
-import subprocess
+# import pytest
+# import subprocess
 
 LONGHORN_NFS_INSTALLATION_URL = \
     &#34;https://raw.githubusercontent.com/longhorn/&#34; \
@@ -66,21 +66,21 @@ def write_data_into_pod(pod_name_and_data_path):
                                  DATA_SIZE_IN_MB_3)
 
 
-@pytest.fixture(scope=&#34;module&#34;, autouse=&#34;True&#34;)
-def nfs(request):
-
-    cmd = [&#34;kubectl&#34;, &#34;apply&#34;, &#34;-f&#34;, LONGHORN_NFS_INSTALLATION_URL]
-    subprocess.check_output(cmd)
-
-    cmd = [&#34;kubectl&#34;, &#34;rollout&#34;, &#34;status&#34;,
-           &#34;ds/{}&#34;.format(LONGHORN_NFS_DAEMONSET_NAME), &#34;--timeout=5m&#34;]
-    subprocess.check_output(cmd)
-
-    def finalizer():
-        cmd = [&#34;kubectl&#34;, &#34;delete&#34;, &#34;-f&#34;, LONGHORN_NFS_INSTALLATION_URL]
-        subprocess.check_output(cmd)
-
-    request.addfinalizer(finalizer)
+# @pytest.fixture(scope=&#34;module&#34;, autouse=&#34;True&#34;)
+# def nfs(request):
+#
+#     cmd = [&#34;kubectl&#34;, &#34;apply&#34;, &#34;-f&#34;, LONGHORN_NFS_INSTALLATION_URL]
+#     subprocess.check_output(cmd)
+#
+#     cmd = [&#34;kubectl&#34;, &#34;rollout&#34;, &#34;status&#34;,
+#            &#34;ds/{}&#34;.format(LONGHORN_NFS_DAEMONSET_NAME), &#34;--timeout=5m&#34;]
+#     subprocess.check_output(cmd)
+#
+#     def finalizer():
+#         cmd = [&#34;kubectl&#34;, &#34;delete&#34;, &#34;-f&#34;, LONGHORN_NFS_INSTALLATION_URL]
+#         subprocess.check_output(cmd)
+#
+#     request.addfinalizer(finalizer)
 
 
 def test_rwx_with_statefulset_multi_pods(core_api, statefulset):  # NOQA
@@ -576,32 +576,6 @@ def test_restore_rwo_volume_to_rwx(set_random_backupstore, client, core_api, vol
 <section>
 <h2 class="section-title" id="header-functions">Functions</h2>
 <dl>
-<dt id="tests.test_rwx.nfs"><code class="name flex">
-<span>def <span class="ident">nfs</span></span>(<span>request)</span>
-</code></dt>
-<dd>
-<div class="desc"></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">@pytest.fixture(scope=&#34;module&#34;, autouse=&#34;True&#34;)
-def nfs(request):
-
-    cmd = [&#34;kubectl&#34;, &#34;apply&#34;, &#34;-f&#34;, LONGHORN_NFS_INSTALLATION_URL]
-    subprocess.check_output(cmd)
-
-    cmd = [&#34;kubectl&#34;, &#34;rollout&#34;, &#34;status&#34;,
-           &#34;ds/{}&#34;.format(LONGHORN_NFS_DAEMONSET_NAME), &#34;--timeout=5m&#34;]
-    subprocess.check_output(cmd)
-
-    def finalizer():
-        cmd = [&#34;kubectl&#34;, &#34;delete&#34;, &#34;-f&#34;, LONGHORN_NFS_INSTALLATION_URL]
-        subprocess.check_output(cmd)
-
-    request.addfinalizer(finalizer)</code></pre>
-</details>
-</dd>
 <dt id="tests.test_rwx.test_restore_rwo_volume_to_rwx"><code class="name flex">
 <span>def <span class="ident">test_restore_rwo_volume_to_rwx</span></span>(<span>set_random_backupstore, client, core_api, volume_name, pvc, csi_pv, pod_make, make_deployment_with_pvc)</span>
 </code></dt>
@@ -1262,7 +1236,6 @@ path <code>/export</code></li>
 </li>
 <li><h3><a href="#header-functions">Functions</a></h3>
 <ul class="">
-<li><code><a title="tests.test_rwx.nfs" href="#tests.test_rwx.nfs">nfs</a></code></li>
 <li><code><a title="tests.test_rwx.test_restore_rwo_volume_to_rwx" href="#tests.test_rwx.test_restore_rwo_volume_to_rwx">test_restore_rwo_volume_to_rwx</a></code></li>
 <li><code><a title="tests.test_rwx.test_rwx_delete_share_manager_pod" href="#tests.test_rwx.test_rwx_delete_share_manager_pod">test_rwx_delete_share_manager_pod</a></code></li>
 <li><code><a title="tests.test_rwx.test_rwx_deployment_with_multi_pods" href="#tests.test_rwx.test_rwx_deployment_with_multi_pods">test_rwx_deployment_with_multi_pods</a></code></li>
