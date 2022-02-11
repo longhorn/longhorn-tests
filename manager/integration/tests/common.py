@@ -3039,6 +3039,9 @@ def reset_settings(client):
         setting_default_value = setting.definition.default
         setting_readonly = setting.definition.readOnly
 
+        if setting_name == "storage-network":
+            continue
+
         s = client.by_id_setting(setting_name)
         if s.value != setting_default_value and not setting_readonly:
             try:
