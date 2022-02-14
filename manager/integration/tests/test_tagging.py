@@ -43,8 +43,8 @@ def test_tag_basic(client):  # NOQA
     node = client.by_id_node(host_id)
     disks = get_update_disks(node.disks)
     assert len(node.disks) == 1
-    assert node.disks[list(node.disks)[0]].tags is None
-    assert node.tags is None
+    assert len(node.disks[list(node.disks)[0]].tags) == 0, f" disks = {disks}"
+    assert len(node.tags) == 0
 
     unsorted_disk, sorted_disk = generate_unordered_tag_names()
     unsorted_node, sorted_node = generate_unordered_tag_names()
@@ -79,10 +79,10 @@ def test_tag_basic(client):  # NOQA
     update_disks[list(update_disks)[0]].tags = []
     node = node.diskUpdate(disks=update_disks)
     disks = get_update_disks(node.disks)
-    assert node.disks[list(node.disks)[0]].tags is None
+    assert len(node.disks[list(node.disks)[0]].tags) == 0, f"disks = {disks}"
 
     node = set_node_tags(client, node)
-    assert node.tags is None
+    assert len(node.tags) == 0
 
 
 def test_tag_scheduling(client, node_default_tags):  # NOQA
@@ -222,7 +222,7 @@ def test_tag_scheduling_on_update(client, node_default_tags, volume_name):  # NO
 
     1. Create volume with tags that can not be satisfied
     2. Wait for volume to fail scheduling
-    3. Update the node and disk with extra tags to satisify the volume
+    3. Update the node and disk with extra tags to satisfy the volume
     4. Verify now volume has been scheduled
     5. Attach the volume and check the replicas has been scheduled properly
     """
