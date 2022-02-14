@@ -1286,10 +1286,11 @@ def node_default_tags():
         update_disks[list(update_disks)[0]].tags = []
         new_node = node.diskUpdate(disks=update_disks)
         disks = get_update_disks(new_node.disks)
-        assert disks[list(new_node.disks)[0]].tags is None
+        assert len(disks[list(new_node.disks)[0]].tags) == 0, \
+            f" disk = {disks}"
 
         new_node = set_node_tags(client, node)
-        assert new_node.tags is None
+        assert len(new_node.tags) == 0, f" Node = {new_node}"
 
 
 @pytest.fixture
@@ -2286,8 +2287,8 @@ def wait_for_volume_condition_scheduled(client, name, key, value):
     conditions = volume.conditions
     assert conditions[VOLUME_CONDITION_SCHEDULED][key] == value, \
         f" Expected value = {value}, " \
-        f"Conditions[{VOLUME_CONDITION_SCHEDULED}][{key}] = " \
-        f"conditions[VOLUME_CONDITION_SCHEDULED][key], Volume = {volume}"
+        f" Conditions[{VOLUME_CONDITION_SCHEDULED}][{key}] = " \
+        f"{conditions[VOLUME_CONDITION_SCHEDULED][key]}, Volume = {volume}"
     return volume
 
 
