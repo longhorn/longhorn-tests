@@ -2505,7 +2505,7 @@ def wait_for_backup_completion(client, volume_name, snapshot_name=None,
     return v
 
 
-def wait_pod_auto_attach_after_first_backup_completion(
+def wait_pod_attach_after_first_backup_completion(
         client, core_api, volume_name, label_name):
     completed = False
     for _ in range(RETRY_BACKUP_COUNTS):
@@ -2517,7 +2517,6 @@ def wait_pod_auto_attach_after_first_backup_completion(
                 completed = True
                 break
         if completed:
-            wait_for_volume_detached(client, vol.name)
             wait_for_volume_frontend_disabled(client, vol.name, False)
             wait_for_volume_attached(client, vol.name)
             break
