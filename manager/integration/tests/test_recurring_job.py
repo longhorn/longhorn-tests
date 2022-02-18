@@ -791,7 +791,7 @@ def test_recurring_jobs_allow_detached_volume(set_random_backupstore, client, co
                                          name=deployment["metadata"]["name"])
 
     deployment_label_name = deployment["metadata"]["labels"]["name"]
-    common.wait_pod_auto_attach_after_first_backup_completion(
+    common.wait_pod_attach_after_first_backup_completion(
         client, core_api, volume.name, deployment_label_name)
 
     cleanup_all_recurring_jobs(client)
