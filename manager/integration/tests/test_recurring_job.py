@@ -1372,6 +1372,87 @@ def test_recurring_job_delete_should_remove_volume_label(client, batch_v1_beta_a
 
 
 @pytest.mark.recurring_job  # NOQA
+def test_recurring_job_volume_label_when_job_and_group_use_same_name(client, volume_name):  # NOQA
+    """
+    Scenario: test volume label recurring job when recurring job and
+              job-group uses the same name.
+
+    Given volume-1 created.
+          volume-2 created.
+          volume-3 created.
+    And  create `snapshot1` recurring job with `snapshot-1` in groups.
+         create `snapshot2` recurring job with `snapshot-1` in groups.
+    And  `snapshot1` job-group applied to volume-1.
+         `snapshot1` job       applied to volume-2.
+         `snapshot2` job       applied to volume-3.
+    And  `snapshot1` job-group exist in volume-1 recurring job label.
+         `snapshot1` job       exist in volume-2 recurring job label.
+         `snapshot2` job       exist in volume-3 recurring job label.
+
+    When delete `snapshot1` recurring job.
+    Then `snapshot1` job-group     exist in volume-1 recurring job label.
+         `snapshot1` job       not exist in volume-2 recurring job label.
+         `snapshot2` job           exist in volume-3 recurring job label.
+
+    When delete `snapshot2` recurring job.
+    Then `snapshot1` job-group not exist in volume-1 recurring job label.
+         `snapshot2` job       not exist in volume-3 recurring job label.
+    """
+    volume1_name = volume_name + "-1"
+    volume2_name = volume_name + "-2"
+    volume3_name = volume_name + "-3"
+    client.create_volume(name=volume1_name, size=SIZE)
+    client.create_volume(name=volume2_name, size=SIZE)
+    client.create_volume(name=volume3_name, size=SIZE)
+    volume1 = wait_for_volume_detached(client, volume1_name)
+    volume2 = wait_for_volume_detached(client, volume2_name)
+    volume3 = wait_for_volume_detached(client, volume3_name)
+
+    snap1 = SNAPSHOT + "1"
+    snap2 = SNAPSHOT + "2"
+    snapshot = {
+        TASK: SNAPSHOT,
+        GROUPS: [snap1],
+        CRON: SCHEDULE_1MIN,
+        RETAIN: 1,
+        CONCURRENCY: 2,
+        LABELS: {},
+    }
+    recurring_jobs = {
+        snap1: snapshot,
+        snap2: snapshot,
+    }
+    create_recurring_jobs(client, recurring_jobs)
+    check_recurring_jobs(client, recurring_jobs)
+
+    # Delete recurring job should correctly remove volume label
+    volume1.recurringJobAdd(name=snap1, isGroup=True)
+    volume2.recurringJobAdd(name=snap1, isGroup=False)
+    volume3.recurringJobAdd(name=snap2, isGroup=False)
+    wait_for_volume_recurring_job_update(volume1,
+                                         jobs=[], groups=[snap1, DEFAULT])
+    wait_for_volume_recurring_job_update(volume2,
+                                         jobs=[snap1], groups=[DEFAULT])
+    wait_for_volume_recurring_job_update(volume3,
+                                         jobs=[snap2], groups=[DEFAULT])
+
+    snap1_recurring_job = client.by_id_recurring_job(snap1)
+    snap2_recurring_job = client.by_id_recurring_job(snap2)
+    client.delete(snap1_recurring_job)
+    wait_for_volume_recurring_job_update(volume2,
+                                         jobs=[], groups=[DEFAULT])
+    wait_for_volume_recurring_job_update(volume1,
+                                         jobs=[], groups=[snap1, DEFAULT])
+    wait_for_volume_recurring_job_update(volume3,
+                                         jobs=[snap2], groups=[DEFAULT])
+    client.delete(snap2_recurring_job)
+    wait_for_volume_recurring_job_update(volume1,
+                                         jobs=[], groups=[DEFAULT])
+    wait_for_volume_recurring_job_update(volume3,
+                                         jobs=[], groups=[DEFAULT])
+
+
+@pytest.mark.recurring_job  # NOQA
 def test_recurring_job_multiple_volumes(set_random_backupstore, client, batch_v1_beta_api):  # NOQA
     """
     Scenario: test recurring job with multiple volumes
