@@ -24,7 +24,6 @@ variable "aws_availability_zone" {
 
 variable "build_engine_aws_vpc_name" {
   type        = string
-  #default     = "vpc-lh-tests"
   default     = "vpc-build-test-engine"
 }
 

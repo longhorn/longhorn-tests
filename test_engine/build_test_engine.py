@@ -163,7 +163,6 @@ def build_images(arch, upgrade_image, version_image1, version_image2):
             git config --global user.email "mock@gmail.com";\
             git config --global user.name "mock";\
             git commit -a -m "make commit number diff";\
-            sudo usermod -aG docker ubuntu;\
             sudo make build;\
             sudo make package'.format(arch)
 
