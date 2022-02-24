@@ -7,19 +7,20 @@ import common
 from common import client # NOQA
 from common import core_api  # NOQA
 from common import pvc, pod  # NOQA
+from common import volume_name # NOQA
 from common import create_and_check_volume
 from common import get_self_host_id
-from common import RETRY_COUNTS
-from common import RETRY_INTERVAL
-from common import volume_name # NOQA
 from common import wait_for_volume_degraded
 from common import wait_for_volume_healthy
 from common import wait_for_volume_replica_count
 from common import get_k8s_zone_label
 from common import set_k8s_node_zone_label
-from common import CONDITION_STATUS_TRUE
 from common import wait_for_volume_condition_scheduled
 from common import wait_for_volume_delete
+from common import RETRY_COUNTS
+from common import RETRY_INTERVAL
+from common import RETRY_INTERVAL_LONG
+from common import CONDITION_STATUS_TRUE
 from common import SETTING_REPLICA_NODE_SOFT_ANTI_AFFINITY
 from common import SETTING_REPLICA_ZONE_SOFT_ANTI_AFFINITY
 from common import SETTING_REPLICA_AUTO_BALANCE
@@ -467,7 +468,7 @@ def test_replica_auto_balance_zone_best_effort(client, core_api, volume_name):  
         if z1_r_count == z2_r_count == 3 and z3_r_count == 0:
             break
 
-        time.sleep(RETRY_INTERVAL)
+        time.sleep(RETRY_INTERVAL_LONG)
     assert z1_r_count == 3
     assert z2_r_count == 3
     assert z3_r_count == 0
@@ -485,7 +486,7 @@ def test_replica_auto_balance_zone_best_effort(client, core_api, volume_name):  
         if z1_r_count == z2_r_count == z3_r_count == 2:
             break
 
-        time.sleep(RETRY_INTERVAL)
+        time.sleep(RETRY_INTERVAL_LONG)
     assert z1_r_count == 2
     assert z2_r_count == 2
     assert z3_r_count == 2
