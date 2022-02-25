@@ -2533,7 +2533,7 @@ def wait_for_backup_completion(client, volume_name, snapshot_name=None,
     return v
 
 
-def wait_pod_auto_attach_after_first_backup_completion(
+def wait_pod_attach_after_first_backup_completion(
         client, core_api, volume_name, label_name):
     completed = False
     for _ in range(RETRY_BACKUP_COUNTS):
@@ -2545,7 +2545,6 @@ def wait_pod_auto_attach_after_first_backup_completion(
                 completed = True
                 break
         if completed:
-            wait_for_volume_detached(client, vol.name)
             wait_for_volume_frontend_disabled(client, vol.name, False)
             wait_for_volume_attached(client, vol.name)
             break
@@ -11249,8 +11248,8 @@ def volume_name(request):
     assert pod is not None and pod.status.phase == &#39;Running&#39;</code></pre>
 </details>
 </dd>
-<dt id="tests.common.wait_pod_auto_attach_after_first_backup_completion"><code class="name flex">
-<span>def <span class="ident">wait_pod_auto_attach_after_first_backup_completion</span></span>(<span>client, core_api, volume_name, label_name)</span>
+<dt id="tests.common.wait_pod_attach_after_first_backup_completion"><code class="name flex">
+<span>def <span class="ident">wait_pod_attach_after_first_backup_completion</span></span>(<span>client, core_api, volume_name, label_name)</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -11258,7 +11257,7 @@ def volume_name(request):
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def wait_pod_auto_attach_after_first_backup_completion(
+<pre><code class="python">def wait_pod_attach_after_first_backup_completion(
         client, core_api, volume_name, label_name):
     completed = False
     for _ in range(RETRY_BACKUP_COUNTS):
@@ -11270,7 +11269,6 @@ def volume_name(request):
                 completed = True
                 break
         if completed:
-            wait_for_volume_detached(client, vol.name)
             wait_for_volume_frontend_disabled(client, vol.name, False)
             wait_for_volume_attached(client, vol.name)
             break
@@ -11851,7 +11849,7 @@ volume. Trigger a failed assertion of one is detected.
 <li><code><a title="tests.common.wait_for_volume_status" href="#tests.common.wait_for_volume_status">wait_for_volume_status</a></code></li>
 <li><code><a title="tests.common.wait_longhorn_node_zone_reset" href="#tests.common.wait_longhorn_node_zone_reset">wait_longhorn_node_zone_reset</a></code></li>
 <li><code><a title="tests.common.wait_pod" href="#tests.common.wait_pod">wait_pod</a></code></li>
-<li><code><a title="tests.common.wait_pod_auto_attach_after_first_backup_completion" href="#tests.common.wait_pod_auto_attach_after_first_backup_completion">wait_pod_auto_attach_after_first_backup_completion</a></code></li>
+<li><code><a title="tests.common.wait_pod_attach_after_first_backup_completion" href="#tests.common.wait_pod_attach_after_first_backup_completion">wait_pod_attach_after_first_backup_completion</a></code></li>
 <li><code><a title="tests.common.wait_scheduling_failure" href="#tests.common.wait_scheduling_failure">wait_scheduling_failure</a></code></li>
 <li><code><a title="tests.common.wait_statefulset" href="#tests.common.wait_statefulset">wait_statefulset</a></code></li>
 <li><code><a title="tests.common.wait_volume_kubernetes_status" href="#tests.common.wait_volume_kubernetes_status">wait_volume_kubernetes_status</a></code></li>
