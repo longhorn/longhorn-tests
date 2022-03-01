@@ -521,7 +521,7 @@
 <h2 id="test-step">Test Step</h2>
 <p><strong>Given</strong> A cluster with Longhorn</p>
 <p><em>And</em> create a volume and attach it to a pod.</p>
-<p><em>And</em> <code>exec</code> into a longhorn manager pod and kill the connection with an engine or replica instance manager pod. The connections are instance manager pods' IP with port <code>8500</code>.</p>
+<p><em>And</em> <code>exec</code> into a longhorn manager pod and kill the connection with an engine or replica instance manager pod. The connections are instance manager pods&rsquo; IP with port <code>8500</code>.</p>
 <pre tabindex="0"><code>$ kl exec -it longhorn-manager-5z8zn -- bash
 
 root@longhorn-manager-5z8zn:/# ss
@@ -535,9 +535,9 @@ Netid                    State                     Recv-Q                     Se
 tcp                      ESTAB                     0                          0                                                   10.42.1.124:34124                                            10.42.1.122:8500
 root@longhorn-manager-5z8zn:/# exit
 </code></pre><p><strong>Then</strong> Check the longhorn manager pod log. There must be following logs:</p>
-<pre tabindex="0"><code>[longhorn-manager-5z8zn] time=&quot;2021-06-17T11:16:37Z&quot; level=error msg=&quot;error receiving next item in engine watch: rpc error: code = Unavailable desc = transport is closing&quot; controller=longhorn-instance-manager instance manager=instance-manager-e-285962e9 node=shuo-cluster-0-worker-3
+<pre tabindex="0"><code>[longhorn-manager-5z8zn] time=&#34;2021-06-17T11:16:37Z&#34; level=error msg=&#34;error receiving next item in engine watch: rpc error: code = Unavailable desc = transport is closing&#34; controller=longhorn-instance-manager instance manager=instance-manager-e-285962e9 node=shuo-cluster-0-worker-3
 ......
-[longhorn-manager-5z8zn] time=&quot;2021-06-17T11:16:38Z&quot; level=error msg=&quot;instance manager monitor streaming continuously errors receiving items for 10 times, will stop the monitor itself&quot; controller=longhorn-instance-manager instance manager=instance-manager-e-285962e9 node=shuo-cluster-0-worker-3
+[longhorn-manager-5z8zn] time=&#34;2021-06-17T11:16:38Z&#34; level=error msg=&#34;instance manager monitor streaming continuously errors receiving items for 10 times, will stop the monitor itself&#34; controller=longhorn-instance-manager instance manager=instance-manager-e-285962e9 node=shuo-cluster-0-worker-3
 </code></pre><p><em>And</em> verify the volume still works fine.</p>
 <p><em>And</em> verify the volume can be detached and reattached.</p>
 

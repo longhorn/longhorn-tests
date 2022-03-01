@@ -32,7 +32,7 @@
       <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/environment/rke2-cis-1.5-profile/</guid>
       <description>Related issue https://github.com/longhorn/longhorn/issues/2292
 Longhorn v1.1.1 should work on RKE2 with CIS-1.5 profile
-Scenario  Prepare 1 control plane node and 3 worker nodes Install RKE2 with CIS-1.5 profile on 1 control plane node  sudo su - systemctl disable firewalld systemctl stop firewalld curl -sfL https://get.rke2.io | sh - systemctl enable rke2-server.service cat &amp;lt;&amp;lt; EOF &amp;gt; /etc/sysctl.d/60-rke2-cis.conf vm.panic_on_oom=0 vm.overcommit_memory=1 kernel.panic=10 kernel.panic_on_oops=1 EOF sudo systemctl restart systemd-sysctl useradd -r -c &amp;#34;etcd user&amp;#34; -s /sbin/nologin -M etcd mkdir -p /etc/rancher/rke2/ cat &amp;lt;&amp;lt; EOF &amp;gt; /etc/rancher/rke2/config.</description>
+Scenario  Prepare 1 control plane node and 3 worker nodes Install RKE2 with CIS-1.5 profile on 1 control plane node  sudo su -  systemctl disable firewalld systemctl stop firewalld  curl -sfL https://get.rke2.io | sh -  systemctl enable rke2-server.service  cat &amp;lt;&amp;lt; EOF &amp;gt; /etc/sysctl.d/60-rke2-cis.conf vm.panic_on_oom=0 vm.overcommit_memory=1 kernel.panic=10 kernel.panic_on_oops=1 EOF sudo systemctl restart systemd-sysctl  useradd -r -c &amp;#34;etcd user&amp;#34; -s /sbin/nologin -M etcd  mkdir -p /etc/rancher/rke2/ cat &amp;lt;&amp;lt; EOF &amp;gt; /etc/rancher/rke2/config.</description>
     </item>
     
   </channel>

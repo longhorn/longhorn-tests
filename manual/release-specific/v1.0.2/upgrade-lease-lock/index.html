@@ -522,13 +522,13 @@
 <li>Check the logs for the Longhorn Manager Pods and note the timestamps for the first line in the log and the timestamp for when the upgrade has completed.
 For example, in this log, the relevant timestamps are <code>2020-08-03T22:55:39Z</code> and <code>2020-08-03T22:56:24Z</code>:</li>
 </ol>
-<pre tabindex="0"><code>time=&quot;2020-08-03T22:55:39Z&quot; level=info msg=&quot;Start overwriting built-in settings with customized values&quot;
-E0803 22:55:40.141071       1 leaderelection.go:310] error initially creating leader election record: leases.coordination.k8s.io &quot;longhorn-manager-upgrade-lock&quot; already exists
-time=&quot;2020-08-03T22:55:43Z&quot; level=info msg=&quot;New upgrade leader elected: 74.207.240.60&quot;
-time=&quot;2020-08-03T22:56:01Z&quot; level=info msg=&quot;New upgrade leader elected: 96.126.101.152&quot;
-time=&quot;2020-08-03T22:56:24Z&quot; level=info msg=&quot;Start upgrading&quot;
-time=&quot;2020-08-03T22:56:24Z&quot; level=info msg=&quot;No API version upgrade is needed&quot;
-time=&quot;2020-08-03T22:56:24Z&quot; level=info msg=&quot;Finish upgrading&quot;
+<pre tabindex="0"><code>time=&#34;2020-08-03T22:55:39Z&#34; level=info msg=&#34;Start overwriting built-in settings with customized values&#34;
+E0803 22:55:40.141071       1 leaderelection.go:310] error initially creating leader election record: leases.coordination.k8s.io &#34;longhorn-manager-upgrade-lock&#34; already exists
+time=&#34;2020-08-03T22:55:43Z&#34; level=info msg=&#34;New upgrade leader elected: 74.207.240.60&#34;
+time=&#34;2020-08-03T22:56:01Z&#34; level=info msg=&#34;New upgrade leader elected: 96.126.101.152&#34;
+time=&#34;2020-08-03T22:56:24Z&#34; level=info msg=&#34;Start upgrading&#34;
+time=&#34;2020-08-03T22:56:24Z&#34; level=info msg=&#34;No API version upgrade is needed&#34;
+time=&#34;2020-08-03T22:56:24Z&#34; level=info msg=&#34;Finish upgrading&#34;
 </code></pre><ol start="3">
 <li>Calculate the amount of time between the two timestamps.
 If the lock was released successfully, then it should take no longer than about 15 seconds for the upgrade process to complete on each Pod:</li>

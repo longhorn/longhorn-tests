@@ -554,12 +554,12 @@
 <li>Detach from the pod by scaling down the statefulSet.</li>
 <li>The attached node to volume is power down when the recurring job backup was in progress.</li>
 <li>Another cron job pod gets created with logs in the previous pod as below.
-<pre tabindex="0"><code>time=&quot;2020-11-09T07:39:10Z&quot; level=info msg=&quot;Automatically attach volume volume-test-2 to node node-1&quot;
-time=&quot;2020-11-09T07:39:12Z&quot; level=info msg=&quot;Volume volume-test-2 is in state attached&quot;
-time=&quot;2020-11-09T07:39:12Z&quot; level=info msg=&quot;Running recurring backup for volume volume-test-2&quot;
-time=&quot;2020-11-09T07:39:22Z&quot; level=debug msg=&quot;Creating backup , current progress 0&quot;
-time=&quot;2020-11-09T07:39:27Z&quot; level=debug msg=&quot;Creating backup , current progress 4&quot;
-time=&quot;2020-11-09T07:40:42Z&quot; level=info msg=&quot;Automatically detach the volume volume-test-2&quot;
+<pre tabindex="0"><code>time=&#34;2020-11-09T07:39:10Z&#34; level=info msg=&#34;Automatically attach volume volume-test-2 to node node-1&#34;
+time=&#34;2020-11-09T07:39:12Z&#34; level=info msg=&#34;Volume volume-test-2 is in state attached&#34;
+time=&#34;2020-11-09T07:39:12Z&#34; level=info msg=&#34;Running recurring backup for volume volume-test-2&#34;
+time=&#34;2020-11-09T07:39:22Z&#34; level=debug msg=&#34;Creating backup , current progress 0&#34;
+time=&#34;2020-11-09T07:39:27Z&#34; level=debug msg=&#34;Creating backup , current progress 4&#34;
+time=&#34;2020-11-09T07:40:42Z&#34; level=info msg=&#34;Automatically detach the volume volume-test-2&#34;
 </code></pre></li>
 <li>Verify the volume get attached to another node and once the job is completed, volume gets detached.</li>
 </ol>

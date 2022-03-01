@@ -81,7 +81,7 @@ Case 1:  Create a volume and take multiple backups for the same. Delete the late
       <description>Related issue: 3136
 Requirement:
  Set up a stand alone Squid, HTTP web proxy  To configure Squid proxy: a comment about squid config If setting up instance on AWS: a EC2 security group setting   S3 with existing backups  Steps:
- Create credential for Backup Target    $ secret_name=&amp;#34;aws-secret-proxy&amp;#34; $ proxy_ip=123.123.123.123 $ no_proxy_params=&amp;#34;localhost,127.0.0.1,0.0.0.0,10.0.0.0/8,192.168.0.0/16&amp;#34; $ kubectl create secret generic $secret_name \  --from-literal=AWS_ACCESS_KEY_ID=$AWS_ID \  --from-literal=AWS_SECRET_ACCESS_KEY=$AWS_KEY \  --from-literal=HTTP_PROXY=$proxy_ip:3128 \  --from-literal=HTTPS_PROXY=$proxy_ip:3128 \  --from-literal=NO_PROXY=$no_proxy_params \  -n longhorn-system   Open Longhorn UI Click on Setting Scroll down to Backup Target Credential Secret Fill in $secret_name assigned in step 1.</description>
+ Create credential for Backup Target     $ secret_name=&amp;#34;aws-secret-proxy&amp;#34;  $ proxy_ip=123.123.123.123  $ no_proxy_params=&amp;#34;localhost,127.0.0.1,0.0.0.0,10.0.0.0/8,192.168.0.0/16&amp;#34;   $ kubectl create secret generic $secret_name \  --from-literal=AWS_ACCESS_KEY_ID=$AWS_ID \  --from-literal=AWS_SECRET_ACCESS_KEY=$AWS_KEY \  --from-literal=HTTP_PROXY=$proxy_ip:3128 \  --from-literal=HTTPS_PROXY=$proxy_ip:3128 \  --from-literal=NO_PROXY=$no_proxy_params \  -n longhorn-system   Open Longhorn UI Click on Setting Scroll down to Backup Target Credential Secret Fill in $secret_name assigned in step 1.</description>
     </item>
     
     <item>

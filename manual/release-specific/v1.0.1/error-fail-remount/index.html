@@ -529,7 +529,7 @@
 <li>After bringing up the instance manager e, Longhorn manager will try to remount the volume <code>terminate-immediatly</code>. The remounting should fail bc we already destroyed the filesystem of the volume.</li>
 <li>We should see this log message</li>
 </ol>
-<pre tabindex="0"><code>[longhorn-manager-xv5th] time=&quot;2020-06-23T18:13:15Z&quot; level=info msg=&quot;Event(v1.ObjectReference{Kind:\&quot;Volume\&quot;, Namespace:\&quot;longhorn-system\&quot;, Name:\&quot;terminate-immediatly\&quot;, UID:\&quot;de6ae587-fc7c-40bd-b513-47175ddddf97\&quot;, APIVersion:\&quot;longhorn.io/v1beta1\&quot;, ResourceVersion:\&quot;4088981\&quot;, FieldPath:\&quot;\&quot;}): type: 'Warning' reason: 'Remount' cannot proceed to remount terminate-immediatly on phan-cluster-v3-worker1: cannot get the filesystem type by using the command blkid /dev/longhorn/terminate-immediatly | sed 's/.*TYPE=//g'&quot;
+<pre tabindex="0"><code>[longhorn-manager-xv5th] time=&#34;2020-06-23T18:13:15Z&#34; level=info msg=&#34;Event(v1.ObjectReference{Kind:\&#34;Volume\&#34;, Namespace:\&#34;longhorn-system\&#34;, Name:\&#34;terminate-immediatly\&#34;, UID:\&#34;de6ae587-fc7c-40bd-b513-47175ddddf97\&#34;, APIVersion:\&#34;longhorn.io/v1beta1\&#34;, ResourceVersion:\&#34;4088981\&#34;, FieldPath:\&#34;\&#34;}): type: &#39;Warning&#39; reason: &#39;Remount&#39; cannot proceed to remount terminate-immediatly on phan-cluster-v3-worker1: cannot get the filesystem type by using the command blkid /dev/longhorn/terminate-immediatly | sed &#39;s/.*TYPE=//g&#39;&#34;
 </code></pre><h3 id="case-2-volume-with-no-filesystem-try-to-remount">Case 2: Volume with no filesystem try to remount</h3>
 <ol>
 <li>Create a volume of size 1GB, say <code>terminate-immediatly</code> volume.</li>

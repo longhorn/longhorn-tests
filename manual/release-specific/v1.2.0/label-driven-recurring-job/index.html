@@ -540,7 +540,7 @@
 <em>And</em> recurringJob should be removed in volume spec.
 <em>And</em> storageClass in <code>longhorn-storageclass</code> configMap should not have <code>recurringJobs</code>.<br>
 <em>And</em> storageClass in <code>longhorn-storageclass</code> configMap should     have <code>recurringJobSelector</code>.</p>
-<pre tabindex="0"><code>recurringJobSelector:{&quot;name&quot;:&quot;snapshot-1-97893a05-77074ba4&quot;,&quot;isGroup&quot;:fals{&quot;name&quot;:&quot;backup-1-954b3c8c-59467025&quot;,&quot;isGroup&quot;:false}]'
+<pre tabindex="0"><code>recurringJobSelector:{&#34;name&#34;:&#34;snapshot-1-97893a05-77074ba4&#34;,&#34;isGroup&#34;:fals{&#34;name&#34;:&#34;backup-1-954b3c8c-59467025&#34;,&#34;isGroup&#34;:false}]&#39;
 </code></pre><p>When create new PVC.<br>
 And volume should be labeled with items in <code>recurringJobSelector</code>.<br>
 And recurringJob should not exist in volume spec.</p>

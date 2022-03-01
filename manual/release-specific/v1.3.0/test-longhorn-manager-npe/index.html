@@ -520,96 +520,96 @@
 <ol>
 <li>Add the following rule to the ClusterRole <code>longhorn-test-role</code>:</li>
 </ol>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">- <span style="color:#f92672">apiGroups</span>: [<span style="color:#e6db74">&#34;longhorn.io&#34;</span>]
-  <span style="color:#f92672">resources</span>: [<span style="color:#e6db74">&#34;*&#34;</span>]
-  <span style="color:#f92672">verbs</span>: [<span style="color:#e6db74">&#34;*&#34;</span>]
-</code></pre></div><ol start="2">
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span>- <span style="color:#f92672">apiGroups</span>: [<span style="color:#e6db74">&#34;longhorn.io&#34;</span>]
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">resources</span>: [<span style="color:#e6db74">&#34;*&#34;</span>]
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">verbs</span>: [<span style="color:#e6db74">&#34;*&#34;</span>]
+</span></span></code></pre></div><ol start="2">
 <li>Put the below test case into the integration test work directory then run it.</li>
 </ol>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">import</span> random
-<span style="color:#f92672">import</span> string
-<span style="color:#f92672">import</span> time
-
-<span style="color:#f92672">import</span> common
-
-<span style="color:#f92672">from</span> common <span style="color:#f92672">import</span> client, volume_name  <span style="color:#75715e"># NOQA</span>
-<span style="color:#f92672">from</span> backupstore <span style="color:#f92672">import</span> set_random_backupstore <span style="color:#75715e"># NOQA</span>
-
-
-Mi <span style="color:#f92672">=</span> (<span style="color:#ae81ff">1024</span> <span style="color:#f92672">*</span> <span style="color:#ae81ff">1024</span>)
-Gi <span style="color:#f92672">=</span> (<span style="color:#ae81ff">1024</span> <span style="color:#f92672">*</span> Mi)
-
-LH_API_GROUP <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;longhorn.io&#34;</span>
-LH_API_VERSION <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;v1beta1&#34;</span>
-LH_NAMESPACE <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;longhorn-system&#34;</span>
-LHE_PLURAL <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;engines&#34;</span>
-LHB_PLURAL <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;backups&#34;</span>
-
-<span style="color:#66d9ef">def</span> <span style="color:#a6e22e">test_backup_npe</span>(client, volume_name, set_random_backupstore):  <span style="color:#75715e"># NOQA</span>
-    host_id <span style="color:#f92672">=</span> common<span style="color:#f92672">.</span>get_self_host_id()
-
-    client<span style="color:#f92672">.</span>create_volume(name<span style="color:#f92672">=</span>volume_name, size<span style="color:#f92672">=</span>str(<span style="color:#ae81ff">2</span><span style="color:#f92672">*</span>Gi), numberOfReplicas<span style="color:#f92672">=</span><span style="color:#ae81ff">3</span>)
-    volume <span style="color:#f92672">=</span> common<span style="color:#f92672">.</span>wait_for_volume_detached(client, volume_name)
-
-    volume<span style="color:#f92672">.</span>attach(hostId<span style="color:#f92672">=</span>host_id)
-    volume <span style="color:#f92672">=</span> common<span style="color:#f92672">.</span>wait_for_volume_healthy(client, volume_name)
-
-    common<span style="color:#f92672">.</span>create_backup(client, volume_name)
-
-    volume<span style="color:#f92672">.</span>detach()
-    common<span style="color:#f92672">.</span>wait_for_volume_detached(client, volume_name)
-
-    snap_name <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;non-existing-snapshot&#34;</span>
-
-    cr_api <span style="color:#f92672">=</span> common<span style="color:#f92672">.</span>get_custom_object_api_client()
-
-    lhb_name <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;backup-test-&#34;</span> <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;&#34;</span><span style="color:#f92672">.</span>join(random<span style="color:#f92672">.</span>choice(
-        string<span style="color:#f92672">.</span>ascii_lowercase <span style="color:#f92672">+</span> string<span style="color:#f92672">.</span>digits) <span style="color:#66d9ef">for</span> _ <span style="color:#f92672">in</span> range(<span style="color:#ae81ff">6</span>))
-    lhb_manifest <span style="color:#f92672">=</span> {
-        <span style="color:#e6db74">&#39;kind&#39;</span>: <span style="color:#e6db74">&#39;Backup&#39;</span>,
-        <span style="color:#e6db74">&#39;apiVersion&#39;</span>: LH_API_GROUP<span style="color:#f92672">+</span><span style="color:#e6db74">&#39;/&#39;</span><span style="color:#f92672">+</span>LH_API_VERSION,
-        <span style="color:#e6db74">&#39;metadata&#39;</span>: {
-            <span style="color:#e6db74">&#39;name&#39;</span>: lhb_name,
-            <span style="color:#e6db74">&#39;labels&#39;</span>: {
-                <span style="color:#e6db74">&#39;backup-volume&#39;</span>: volume_name,
-            },
-            <span style="color:#e6db74">&#39;namespace&#39;</span>: LH_NAMESPACE,
-        },
-        <span style="color:#e6db74">&#39;spec&#39;</span>: {
-            <span style="color:#e6db74">&#39;snapshotName&#39;</span>: snap_name,
-        },
-    }
-
-    <span style="color:#66d9ef">for</span> i <span style="color:#f92672">in</span> range(<span style="color:#ae81ff">50</span>):
-        volume <span style="color:#f92672">=</span> client<span style="color:#f92672">.</span>by_id_volume(volume_name)
-        engine_name <span style="color:#f92672">=</span> common<span style="color:#f92672">.</span>get_volume_engine(volume)<span style="color:#f92672">.</span>name
-        <span style="color:#66d9ef">try</span>:
-            cr_api<span style="color:#f92672">.</span>create_namespaced_custom_object(group<span style="color:#f92672">=</span>LH_API_GROUP,
-                                                   version<span style="color:#f92672">=</span>LH_API_VERSION,
-                                                   namespace<span style="color:#f92672">=</span>LH_NAMESPACE,
-                                                   plural<span style="color:#f92672">=</span>LHB_PLURAL,
-                                                   body<span style="color:#f92672">=</span>lhb_manifest)
-            cr_api<span style="color:#f92672">.</span>delete_namespaced_custom_object(group<span style="color:#f92672">=</span>LH_API_GROUP,
-                                                   version<span style="color:#f92672">=</span>LH_API_VERSION,
-                                                   namespace<span style="color:#f92672">=</span>LH_NAMESPACE,
-                                                   plural<span style="color:#f92672">=</span>LHE_PLURAL,
-                                                   name<span style="color:#f92672">=</span>engine_name)
-        <span style="color:#66d9ef">except</span> <span style="color:#a6e22e">Exception</span> <span style="color:#66d9ef">as</span> e:
-            print(<span style="color:#e6db74">&#34;exception creating lhb or deleting lhe </span><span style="color:#e6db74">%s</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">&#34;</span> <span style="color:#f92672">%</span> e)
-        time<span style="color:#f92672">.</span>sleep(<span style="color:#ae81ff">1</span>)
-        <span style="color:#66d9ef">try</span>:
-            cr_api<span style="color:#f92672">.</span>delete_namespaced_custom_object(group<span style="color:#f92672">=</span>LH_API_GROUP,
-                                                   version<span style="color:#f92672">=</span>LH_API_VERSION,
-                                                   namespace<span style="color:#f92672">=</span>LH_NAMESPACE,
-                                                   plural<span style="color:#f92672">=</span>LHB_PLURAL,
-                                                   name<span style="color:#f92672">=</span>lhb_name)
-        <span style="color:#66d9ef">except</span> <span style="color:#a6e22e">Exception</span> <span style="color:#66d9ef">as</span> e:
-            print(<span style="color:#e6db74">&#34;exception deleting lhb </span><span style="color:#e6db74">%s</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">&#34;</span> <span style="color:#f92672">%</span> e)
-        time<span style="color:#f92672">.</span>sleep(<span style="color:#ae81ff">1</span>)
-
-    common<span style="color:#f92672">.</span>delete_backup_volume(client, volume_name)
-    client<span style="color:#f92672">.</span>delete(volume)
-</code></pre></div><p>Notice:
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-python" data-lang="python"><span style="display:flex;"><span><span style="color:#f92672">import</span> random
+</span></span><span style="display:flex;"><span><span style="color:#f92672">import</span> string
+</span></span><span style="display:flex;"><span><span style="color:#f92672">import</span> time
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">import</span> common
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">from</span> common <span style="color:#f92672">import</span> client, volume_name  <span style="color:#75715e"># NOQA</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">from</span> backupstore <span style="color:#f92672">import</span> set_random_backupstore <span style="color:#75715e"># NOQA</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>Mi <span style="color:#f92672">=</span> (<span style="color:#ae81ff">1024</span> <span style="color:#f92672">*</span> <span style="color:#ae81ff">1024</span>)
+</span></span><span style="display:flex;"><span>Gi <span style="color:#f92672">=</span> (<span style="color:#ae81ff">1024</span> <span style="color:#f92672">*</span> Mi)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>LH_API_GROUP <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;longhorn.io&#34;</span>
+</span></span><span style="display:flex;"><span>LH_API_VERSION <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;v1beta1&#34;</span>
+</span></span><span style="display:flex;"><span>LH_NAMESPACE <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;longhorn-system&#34;</span>
+</span></span><span style="display:flex;"><span>LHE_PLURAL <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;engines&#34;</span>
+</span></span><span style="display:flex;"><span>LHB_PLURAL <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;backups&#34;</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">def</span> <span style="color:#a6e22e">test_backup_npe</span>(client, volume_name, set_random_backupstore):  <span style="color:#75715e"># NOQA</span>
+</span></span><span style="display:flex;"><span>    host_id <span style="color:#f92672">=</span> common<span style="color:#f92672">.</span>get_self_host_id()
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    client<span style="color:#f92672">.</span>create_volume(name<span style="color:#f92672">=</span>volume_name, size<span style="color:#f92672">=</span>str(<span style="color:#ae81ff">2</span><span style="color:#f92672">*</span>Gi), numberOfReplicas<span style="color:#f92672">=</span><span style="color:#ae81ff">3</span>)
+</span></span><span style="display:flex;"><span>    volume <span style="color:#f92672">=</span> common<span style="color:#f92672">.</span>wait_for_volume_detached(client, volume_name)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    volume<span style="color:#f92672">.</span>attach(hostId<span style="color:#f92672">=</span>host_id)
+</span></span><span style="display:flex;"><span>    volume <span style="color:#f92672">=</span> common<span style="color:#f92672">.</span>wait_for_volume_healthy(client, volume_name)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    common<span style="color:#f92672">.</span>create_backup(client, volume_name)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    volume<span style="color:#f92672">.</span>detach()
+</span></span><span style="display:flex;"><span>    common<span style="color:#f92672">.</span>wait_for_volume_detached(client, volume_name)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    snap_name <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;non-existing-snapshot&#34;</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    cr_api <span style="color:#f92672">=</span> common<span style="color:#f92672">.</span>get_custom_object_api_client()
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    lhb_name <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;backup-test-&#34;</span> <span style="color:#f92672">+</span> <span style="color:#e6db74">&#34;&#34;</span><span style="color:#f92672">.</span>join(random<span style="color:#f92672">.</span>choice(
+</span></span><span style="display:flex;"><span>        string<span style="color:#f92672">.</span>ascii_lowercase <span style="color:#f92672">+</span> string<span style="color:#f92672">.</span>digits) <span style="color:#66d9ef">for</span> _ <span style="color:#f92672">in</span> range(<span style="color:#ae81ff">6</span>))
+</span></span><span style="display:flex;"><span>    lhb_manifest <span style="color:#f92672">=</span> {
+</span></span><span style="display:flex;"><span>        <span style="color:#e6db74">&#39;kind&#39;</span>: <span style="color:#e6db74">&#39;Backup&#39;</span>,
+</span></span><span style="display:flex;"><span>        <span style="color:#e6db74">&#39;apiVersion&#39;</span>: LH_API_GROUP<span style="color:#f92672">+</span><span style="color:#e6db74">&#39;/&#39;</span><span style="color:#f92672">+</span>LH_API_VERSION,
+</span></span><span style="display:flex;"><span>        <span style="color:#e6db74">&#39;metadata&#39;</span>: {
+</span></span><span style="display:flex;"><span>            <span style="color:#e6db74">&#39;name&#39;</span>: lhb_name,
+</span></span><span style="display:flex;"><span>            <span style="color:#e6db74">&#39;labels&#39;</span>: {
+</span></span><span style="display:flex;"><span>                <span style="color:#e6db74">&#39;backup-volume&#39;</span>: volume_name,
+</span></span><span style="display:flex;"><span>            },
+</span></span><span style="display:flex;"><span>            <span style="color:#e6db74">&#39;namespace&#39;</span>: LH_NAMESPACE,
+</span></span><span style="display:flex;"><span>        },
+</span></span><span style="display:flex;"><span>        <span style="color:#e6db74">&#39;spec&#39;</span>: {
+</span></span><span style="display:flex;"><span>            <span style="color:#e6db74">&#39;snapshotName&#39;</span>: snap_name,
+</span></span><span style="display:flex;"><span>        },
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">for</span> i <span style="color:#f92672">in</span> range(<span style="color:#ae81ff">50</span>):
+</span></span><span style="display:flex;"><span>        volume <span style="color:#f92672">=</span> client<span style="color:#f92672">.</span>by_id_volume(volume_name)
+</span></span><span style="display:flex;"><span>        engine_name <span style="color:#f92672">=</span> common<span style="color:#f92672">.</span>get_volume_engine(volume)<span style="color:#f92672">.</span>name
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">try</span>:
+</span></span><span style="display:flex;"><span>            cr_api<span style="color:#f92672">.</span>create_namespaced_custom_object(group<span style="color:#f92672">=</span>LH_API_GROUP,
+</span></span><span style="display:flex;"><span>                                                   version<span style="color:#f92672">=</span>LH_API_VERSION,
+</span></span><span style="display:flex;"><span>                                                   namespace<span style="color:#f92672">=</span>LH_NAMESPACE,
+</span></span><span style="display:flex;"><span>                                                   plural<span style="color:#f92672">=</span>LHB_PLURAL,
+</span></span><span style="display:flex;"><span>                                                   body<span style="color:#f92672">=</span>lhb_manifest)
+</span></span><span style="display:flex;"><span>            cr_api<span style="color:#f92672">.</span>delete_namespaced_custom_object(group<span style="color:#f92672">=</span>LH_API_GROUP,
+</span></span><span style="display:flex;"><span>                                                   version<span style="color:#f92672">=</span>LH_API_VERSION,
+</span></span><span style="display:flex;"><span>                                                   namespace<span style="color:#f92672">=</span>LH_NAMESPACE,
+</span></span><span style="display:flex;"><span>                                                   plural<span style="color:#f92672">=</span>LHE_PLURAL,
+</span></span><span style="display:flex;"><span>                                                   name<span style="color:#f92672">=</span>engine_name)
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">except</span> <span style="color:#a6e22e">Exception</span> <span style="color:#66d9ef">as</span> e:
+</span></span><span style="display:flex;"><span>            print(<span style="color:#e6db74">&#34;exception creating lhb or deleting lhe </span><span style="color:#e6db74">%s</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">&#34;</span> <span style="color:#f92672">%</span> e)
+</span></span><span style="display:flex;"><span>        time<span style="color:#f92672">.</span>sleep(<span style="color:#ae81ff">1</span>)
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">try</span>:
+</span></span><span style="display:flex;"><span>            cr_api<span style="color:#f92672">.</span>delete_namespaced_custom_object(group<span style="color:#f92672">=</span>LH_API_GROUP,
+</span></span><span style="display:flex;"><span>                                                   version<span style="color:#f92672">=</span>LH_API_VERSION,
+</span></span><span style="display:flex;"><span>                                                   namespace<span style="color:#f92672">=</span>LH_NAMESPACE,
+</span></span><span style="display:flex;"><span>                                                   plural<span style="color:#f92672">=</span>LHB_PLURAL,
+</span></span><span style="display:flex;"><span>                                                   name<span style="color:#f92672">=</span>lhb_name)
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">except</span> <span style="color:#a6e22e">Exception</span> <span style="color:#66d9ef">as</span> e:
+</span></span><span style="display:flex;"><span>            print(<span style="color:#e6db74">&#34;exception deleting lhb </span><span style="color:#e6db74">%s</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">&#34;</span> <span style="color:#f92672">%</span> e)
+</span></span><span style="display:flex;"><span>        time<span style="color:#f92672">.</span>sleep(<span style="color:#ae81ff">1</span>)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    common<span style="color:#f92672">.</span>delete_backup_volume(client, volume_name)
+</span></span><span style="display:flex;"><span>    client<span style="color:#f92672">.</span>delete(volume)
+</span></span></code></pre></div><p>Notice:
 If you want to run this test in v1.2.x, please modify <code>LH_API_VERSION</code> from <code>v1beta2</code> to <code>v1beta1</code>.</p>
 <hr>
 <p>GitHub Issue: <a href="https://github.com/longhorn/longhorn/issues/3484">https://github.com/longhorn/longhorn/issues/3484</a></p>

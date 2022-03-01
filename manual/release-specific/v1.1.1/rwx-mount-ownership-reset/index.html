@@ -574,7 +574,7 @@ spec:
   - name: volume-test
     image: busybox
     imagePullPolicy: IfNotPresent
-    command: [ &quot;sh&quot;, &quot;-c&quot;, &quot;while :; do date &gt; /data/date.txt; sleep 10; done&quot;]
+    command: [ &#34;sh&#34;, &#34;-c&#34;, &#34;while :; do date &gt; /data/date.txt; sleep 10; done&#34;]
     volumeMounts:
     - name: volv
       mountPath: /data

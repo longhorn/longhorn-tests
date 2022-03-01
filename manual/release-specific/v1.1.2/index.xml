@@ -38,7 +38,7 @@ Test Data Send Over Web-socket Resource Updated Given monitor network traffic wi
       <description>Related issue https://github.com/longhorn/longhorn/issues/2561
 Test Step Given A cluster with Longhorn
 And create a volume and attach it to a pod.
-And exec into a longhorn manager pod and kill the connection with an engine or replica instance manager pod. The connections are instance manager pods&#39; IP with port 8500.
+And exec into a longhorn manager pod and kill the connection with an engine or replica instance manager pod. The connections are instance manager pods&amp;rsquo; IP with port 8500.
 $ kl exec -it longhorn-manager-5z8zn -- bash root@longhorn-manager-5z8zn:/# ss Netid State Recv-Q Send-Q Local Address:Port Peer Address:Port tcp ESTAB 0 0 10.</description>
     </item>
     

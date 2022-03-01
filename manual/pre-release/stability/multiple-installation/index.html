@@ -529,17 +529,17 @@ while true;
  do
   kubectl apply -f https://raw.githubusercontent.com/longhorn/longhorn/master/deploy/longhorn.yaml
 
-  pod=`kubectl get pods -n longhorn-system | grep -i 'longhorn-manager' | grep -i 'running' | awk -F ' ' '{print $2}' | grep '1/1' | wc -l`
+  pod=`kubectl get pods -n longhorn-system | grep -i &#39;longhorn-manager&#39; | grep -i &#39;running&#39; | awk -F &#39; &#39; &#39;{print $2}&#39; | grep &#39;1/1&#39; | wc -l`
   count=0
   while [ $pod != 3 ];
    do
     sleep 5
-    pod=`kubectl get pods -n longhorn-system | grep -i 'longhorn-manager' | grep -i 'running' | awk -F ' ' '{print $2}' | grep '1/1' | wc -l`
-    echo `kubectl get pods -n longhorn-system | grep -i 'longhorn-manager'`
+    pod=`kubectl get pods -n longhorn-system | grep -i &#39;longhorn-manager&#39; | grep -i &#39;running&#39; | awk -F &#39; &#39; &#39;{print $2}&#39; | grep &#39;1/1&#39; | wc -l`
+    echo `kubectl get pods -n longhorn-system | grep -i &#39;longhorn-manager&#39;`
     count=$((count+1))
     if [ $count -gt 59 ]
      then
-      echo 'longhorn installation failed'
+      echo &#39;longhorn installation failed&#39;
       exit
     fi
   done
@@ -548,17 +548,17 @@ while true;
  
   kubectl create -f https://raw.githubusercontent.com/longhorn/longhorn/master/uninstall/uninstall.yaml
 
-  poduninstall=`kubectl get job/longhorn-uninstall -n default | grep '1/1' | wc -l`
+  poduninstall=`kubectl get job/longhorn-uninstall -n default | grep &#39;1/1&#39; | wc -l`
   uninstall=0
  while [ $poduninstall = 0 ];
   do
    sleep 10
-   poduninstall=`kubectl get job/longhorn-uninstall -n default | grep '1/1' | wc -l`
+   poduninstall=`kubectl get job/longhorn-uninstall -n default | grep &#39;1/1&#39; | wc -l`
    echo `kubectl get job/longhorn-uninstall`
    uninstall=$((uninstall+1))
    if [ $uninstall -gt 24 ]  
     then
-     echo 'Problem in unistall'
+     echo &#39;Problem in unistall&#39;
      exit
    fi
  done
@@ -569,21 +569,21 @@ while true;
  kubectl delete -f https://raw.githubusercontent.com/longhorn/longhorn/master/uninstall/uninstall.yaml
 
  nscount=0
- longhornns=`kubectl get namespace | grep -i 'longhorn-system' | wc -l`
+ longhornns=`kubectl get namespace | grep -i &#39;longhorn-system&#39; | wc -l`
  while [ $longhornns != 0 ];
   do
    sleep 10
-   longhornns=`kubectl get namespace | grep -i 'longhorn-system' | wc -l`
+   longhornns=`kubectl get namespace | grep -i &#39;longhorn-system&#39; | wc -l`
    nscount=$((nscount+1))
    if [ $nscount -gt 18 ]
     then
-     echo 'longhorn-system termination stuck'
+     echo &#39;longhorn-system termination stuck&#39;
      exit
    fi
  done
 
  installcount=$((installcount+1))
- echo 'Installation count = '
+ echo &#39;Installation count = &#39;
  echo $installcount
 done
 </code></pre>

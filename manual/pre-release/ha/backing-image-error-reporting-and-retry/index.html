@@ -527,13 +527,13 @@
 <ol>
 <li>Create a backing image. Then create and attach a volume using this backing image.</li>
 <li>Exec into the host of a worker node. remove the content of the backing image work directory then set the directory as immutable. This operation should fail one file of the backing image as well as keeping failing the following sync retries.
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">rm -r /var/lib/longhorn/backing-images/&lt;backing image name&gt;-&lt;backing image UUID&gt;/
-chattr +i /var/lib/longhorn/backing-images/&lt;backing image name&gt;-&lt;backing image UUID&gt;/
-</code></pre></div></li>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>rm -r /var/lib/longhorn/backing-images/&lt;backing image name&gt;-&lt;backing image UUID&gt;/
+</span></span><span style="display:flex;"><span>chattr +i /var/lib/longhorn/backing-images/&lt;backing image name&gt;-&lt;backing image UUID&gt;/
+</span></span></code></pre></div></li>
 <li>Monitor the backing image manager pod log. Verify the backoff works for the sync retry as well.</li>
 <li>Unset the immutable flag for the backing image directory. Then the retry should succeed, and the volume should become <code>healthy</code> again after the backing image re-sync complete.
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">chattr -i /var/lib/longhorn/backing-images/&lt;backing image name&gt;-&lt;backing image UUID&gt;/
-</code></pre></div></li>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>chattr -i /var/lib/longhorn/backing-images/&lt;backing image name&gt;-&lt;backing image UUID&gt;/
+</span></span></code></pre></div></li>
 </ol>
 
     </article>

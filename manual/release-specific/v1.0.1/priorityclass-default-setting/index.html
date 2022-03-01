@@ -544,7 +544,7 @@ Events:
   Normal   SuccessfulDelete  17s                daemonset-controller  Deleted pod: longhorn-manager-9s7mg
   Normal   SuccessfulDelete  17s                daemonset-controller  Deleted pod: longhorn-manager-gbskd
   Normal   SuccessfulDelete  17s                daemonset-controller  Deleted pod: longhorn-manager-gtl2j
-  Warning  FailedCreate      4s (x14 over 15s)  daemonset-controller  Error creating: pods &quot;longhorn-manager-&quot; is forbidden: no PriorityClass with name nonexistent-priority-class was found
+  Warning  FailedCreate      4s (x14 over 15s)  daemonset-controller  Error creating: pods &#34;longhorn-manager-&#34; is forbidden: no PriorityClass with name nonexistent-priority-class was found
 </code></pre><ol start="3">
 <li>Install <code>Longhorn</code> with a valid <code>priority-class</code> in the default settings. The <code>Priority Class</code> setting should be set according to the <code>longhorn-ui</code>, and all the <code>Pods</code> in the <code>longhorn-system</code> namespace should have the right <code>Priority</code> set:</li>
 </ol>

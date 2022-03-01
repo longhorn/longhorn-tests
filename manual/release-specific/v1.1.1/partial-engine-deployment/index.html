@@ -563,8 +563,8 @@
 <p>With the engine image is missing on <code>node-1</code>, we need  to re-verify the manual test for feature <code>auto upgrade engine</code> <a href="https://github.com/longhorn/longhorn-tests/blob/master/docs/content/manual/pre-release/upgrade/auto-upgrade-engine.md">https://github.com/longhorn/longhorn-tests/blob/master/docs/content/manual/pre-release/upgrade/auto-upgrade-engine.md</a>
 Make sure that Longhorn automatically upgrades engine image for volumes that are either:</p>
 <ol>
-<li>in the detached state, and has the new engine image on all replicas' node</li>
-<li>in the attached state, and has the new engine image on all replicas' node and attaching node</li>
+<li>in the detached state, and has the new engine image on all replicas&rsquo; node</li>
+<li>in the attached state, and has the new engine image on all replicas&rsquo; node and attaching node</li>
 </ol>
 <h3 id="case-7-test-auto-attach-volume-for-recurring-backup-job-feature-when-some-of-the-engine-image-daemonset-pods-are-not-fully-deployed">Case 7: Test <code>auto attach volume for recurring backup job</code> feature when some of the engine image DaemonSet pods are not fully deployed</h3>
 <p>Verify that the recurring backup job only attaches the volume to a node that has the engine image deployed.</p>

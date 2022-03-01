@@ -540,18 +540,18 @@ sudo mount /dev/xvdh /data
 <li>Trigger ASG instance refresh with below script using AWS Cli, which will attach the existing EBS volume to the new instance.
 <pre tabindex="0"><code>AWS_REGION=&lt;Your aws region&gt;
 INSTANCE_NAME=&lt;Instance name&gt;
-VOLUME_STATUS=''
-INSTANCE_ID=$(aws --region=$AWS_REGION ec2 describe-instances --filters 'Name=tag:Name,Values=$INSTANCE_NAME' | jq -r '.Reservations[].Instances[].InstanceId')
-VOLUME_ID= $(aws --region=$AWS_REGION ec2 describe-volumes --filters 'Name='attachment.instance-id',Values='$INSTANCE_ID'' | jq -r '.Volumes[1].VolumeId')
+VOLUME_STATUS=&#39;&#39;
+INSTANCE_ID=$(aws --region=$AWS_REGION ec2 describe-instances --filters &#39;Name=tag:Name,Values=$INSTANCE_NAME&#39; | jq -r &#39;.Reservations[].Instances[].InstanceId&#39;)
+VOLUME_ID= $(aws --region=$AWS_REGION ec2 describe-volumes --filters &#39;Name=&#39;attachment.instance-id&#39;,Values=&#39;$INSTANCE_ID&#39;&#39; | jq -r &#39;.Volumes[1].VolumeId&#39;)
 
-aws autoscaling start-instance-refresh --auto-scaling-group-name my-asg --preferences '{&quot;InstanceWarmup&quot;: 300, &quot;MinHealthyPercentage&quot;: 90}'
+aws autoscaling start-instance-refresh --auto-scaling-group-name my-asg --preferences &#39;{&#34;InstanceWarmup&#34;: 300, &#34;MinHealthyPercentage&#34;: 90}&#39;
 
-until [ &quot;x$VOLUME_STATUS&quot; == &quot;xattached&quot; ]; do
-    VOL_STATUS=$(aws ec2 describe-volumes --volume-ids $VOL_ID --query 'Volumes[0].State')
+until [ &#34;x$VOLUME_STATUS&#34; == &#34;xattached&#34; ]; do
+    VOL_STATUS=$(aws ec2 describe-volumes --volume-ids $VOL_ID --query &#39;Volumes[0].State&#39;)
     sleep 5
 done
-INSTANCE_ID=$(aws --region=$AWS_REGION ec2 describe-instances --filters 'Name=tag:Name,Values=$INSTANCE_NAME' | jq -r '.Reservations[].Instances[].InstanceId')
-aws ec2 attach-volume --volume-id $VOLUME_ID --instance-id $INSTANCE_ID --device /dev/sdh'
+INSTANCE_ID=$(aws --region=$AWS_REGION ec2 describe-instances --filters &#39;Name=tag:Name,Values=$INSTANCE_NAME&#39; | jq -r &#39;.Reservations[].Instances[].InstanceId&#39;)
+aws ec2 attach-volume --volume-id $VOLUME_ID --instance-id $INSTANCE_ID --device /dev/sdh&#39;
 </code></pre></li>
 <li>Add the disk in longhorn to make the existing replica available to be identified by Longhorn.</li>
 <li>Verify new replicas won&rsquo;t be created before reaching <code>ReplicaReplenishmentWaitInterval</code>.</li>

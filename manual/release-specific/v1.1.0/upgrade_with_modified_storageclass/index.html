@@ -627,7 +627,7 @@
 </code></pre></li>
 <li>
 <p>See the error:</p>
-<pre tabindex="0"><code>Error: no StorageClass with the name &quot;longhorn&quot; found
+<pre tabindex="0"><code>Error: no StorageClass with the name &#34;longhorn&#34; found
 </code></pre><p>This is because the Longhorn master version already replaced the initial <code>longhorn</code> storage class by a different version. Users have to manually delete <code>longhorn</code> storage class before they can rollback. In the future (e.g. when upgrade/rollback between v.1.1 +) this issue will not happen because the versions after v1.1+ we don&rsquo;t use Helm template for <code>longhorn</code> storage class</p>
 </li>
 </ol>

@@ -577,7 +577,7 @@
 <h2 id="test-backing-image-creation-via-yaml">Test backing image creation via YAML</h2>
 <ol>
 <li>Run
-<pre tabindex="0"><code>echo &quot;
+<pre tabindex="0"><code>echo &#34;
 apiVersion: longhorn.io/v1beta1
 kind: BackingImage
 metadata:
@@ -587,7 +587,7 @@ spec:
   sourceType: download
   sourceParameters:
     url: https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2
-&quot; | kubectl -n longhorn-system apply -f -
+&#34; | kubectl -n longhorn-system apply -f -
 </code></pre></li>
 <li>Verify the backing image is created and ready for use.</li>
 </ol>

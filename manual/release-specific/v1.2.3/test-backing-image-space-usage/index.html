@@ -518,23 +518,23 @@
     <article id="content">
        <h3 id="prerequisite">Prerequisite</h3>
 <p>A sparse file should be prepared before test. e.g.:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">~ touch empty-filesystem.raw
-~ truncate -s 500M empty-filesystem.raw
-~ mkfs.ext4 empty-filesystem.raw
-mke2fs 1.46.1 <span style="color:#f92672">(</span>9-Feb-2021<span style="color:#f92672">)</span>
-Creating filesystem with <span style="color:#ae81ff">512000</span> 1k blocks and <span style="color:#ae81ff">128016</span> inodes
-Filesystem UUID: fe6cfb58-134a-42b3-afab-59474d9515e0
-Superblock backups stored on blocks:
-	8193, 24577, 40961, 57345, 73729, 204801, 221185, <span style="color:#ae81ff">401409</span>
-
-Allocating group tables: <span style="color:#66d9ef">done</span>
-Writing inode tables: <span style="color:#66d9ef">done</span>
-Creating journal <span style="color:#f92672">(</span><span style="color:#ae81ff">8192</span> blocks<span style="color:#f92672">)</span>: <span style="color:#66d9ef">done</span>
-Writing superblocks and filesystem accounting information: <span style="color:#66d9ef">done</span>
-
-~ shasum -a <span style="color:#ae81ff">512</span> empty-filesystem.raw
-4277f6174bf43d1f03f328eaf507f4baf84a645d79239b3ef4593a87b5127ceb097d540281e1f3557d9ad1d2591135bbcf24db480c1bd732b633b93cf4fe50c9  empty-filesystem.raw
-</code></pre></div><p>For convenience, the above example file is already uploaded to the S3 server. The URL is <code>https://longhorn-backing-image.s3.us-west-1.amazonaws.com/empty-filesystem.raw</code>.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>~ touch empty-filesystem.raw
+</span></span><span style="display:flex;"><span>~ truncate -s 500M empty-filesystem.raw
+</span></span><span style="display:flex;"><span>~ mkfs.ext4 empty-filesystem.raw
+</span></span><span style="display:flex;"><span>mke2fs 1.46.1 <span style="color:#f92672">(</span>9-Feb-2021<span style="color:#f92672">)</span>
+</span></span><span style="display:flex;"><span>Creating filesystem with <span style="color:#ae81ff">512000</span> 1k blocks and <span style="color:#ae81ff">128016</span> inodes
+</span></span><span style="display:flex;"><span>Filesystem UUID: fe6cfb58-134a-42b3-afab-59474d9515e0
+</span></span><span style="display:flex;"><span>Superblock backups stored on blocks:
+</span></span><span style="display:flex;"><span>	8193, 24577, 40961, 57345, 73729, 204801, 221185, <span style="color:#ae81ff">401409</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>Allocating group tables: <span style="color:#66d9ef">done</span>
+</span></span><span style="display:flex;"><span>Writing inode tables: <span style="color:#66d9ef">done</span>
+</span></span><span style="display:flex;"><span>Creating journal <span style="color:#f92672">(</span><span style="color:#ae81ff">8192</span> blocks<span style="color:#f92672">)</span>: <span style="color:#66d9ef">done</span>
+</span></span><span style="display:flex;"><span>Writing superblocks and filesystem accounting information: <span style="color:#66d9ef">done</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>~ shasum -a <span style="color:#ae81ff">512</span> empty-filesystem.raw
+</span></span><span style="display:flex;"><span>4277f6174bf43d1f03f328eaf507f4baf84a645d79239b3ef4593a87b5127ceb097d540281e1f3557d9ad1d2591135bbcf24db480c1bd732b633b93cf4fe50c9  empty-filesystem.raw
+</span></span></code></pre></div><p>For convenience, the above example file is already uploaded to the S3 server. The URL is <code>https://longhorn-backing-image.s3.us-west-1.amazonaws.com/empty-filesystem.raw</code>.</p>
 <p>Of course, you can generate your own test file as well.</p>
 <h3 id="test-step">Test step</h3>
 <ol>

@@ -526,324 +526,324 @@
 </li>
 <li>
 <p>Launch 10 backing images with the following YAML:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#f92672">apiVersion</span>: <span style="color:#ae81ff">longhorn.io/v1beta1</span>
-<span style="color:#f92672">kind</span>: <span style="color:#ae81ff">BackingImage</span>
-<span style="color:#f92672">metadata</span>:
-  <span style="color:#f92672">name</span>: <span style="color:#ae81ff">bi-test1</span>
-  <span style="color:#f92672">namespace</span>: <span style="color:#ae81ff">longhorn-system</span>
-<span style="color:#f92672">spec</span>:
-  <span style="color:#f92672">sourceType</span>: <span style="color:#ae81ff">download</span>
-  <span style="color:#f92672">sourceParameters</span>:
-    <span style="color:#f92672">url</span>: <span style="color:#ae81ff">https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2</span>
----
-<span style="color:#f92672">apiVersion</span>: <span style="color:#ae81ff">longhorn.io/v1beta1</span>
-<span style="color:#f92672">kind</span>: <span style="color:#ae81ff">BackingImage</span>
-<span style="color:#f92672">metadata</span>:
-  <span style="color:#f92672">name</span>: <span style="color:#ae81ff">bi-test2</span>
-  <span style="color:#f92672">namespace</span>: <span style="color:#ae81ff">longhorn-system</span>
-<span style="color:#f92672">spec</span>:
-  <span style="color:#f92672">sourceType</span>: <span style="color:#ae81ff">download</span>
-  <span style="color:#f92672">sourceParameters</span>:
-    <span style="color:#f92672">url</span>: <span style="color:#ae81ff">https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2</span>
----
-<span style="color:#f92672">apiVersion</span>: <span style="color:#ae81ff">longhorn.io/v1beta1</span>
-<span style="color:#f92672">kind</span>: <span style="color:#ae81ff">BackingImage</span>
-<span style="color:#f92672">metadata</span>:
-  <span style="color:#f92672">name</span>: <span style="color:#ae81ff">bi-test3</span>
-  <span style="color:#f92672">namespace</span>: <span style="color:#ae81ff">longhorn-system</span>
-<span style="color:#f92672">spec</span>:
-  <span style="color:#f92672">sourceType</span>: <span style="color:#ae81ff">download</span>
-  <span style="color:#f92672">sourceParameters</span>:
-    <span style="color:#f92672">url</span>: <span style="color:#ae81ff">https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2</span>
----
-<span style="color:#f92672">apiVersion</span>: <span style="color:#ae81ff">longhorn.io/v1beta1</span>
-<span style="color:#f92672">kind</span>: <span style="color:#ae81ff">BackingImage</span>
-<span style="color:#f92672">metadata</span>:
-  <span style="color:#f92672">name</span>: <span style="color:#ae81ff">bi-test4</span>
-  <span style="color:#f92672">namespace</span>: <span style="color:#ae81ff">longhorn-system</span>
-<span style="color:#f92672">spec</span>:
-  <span style="color:#f92672">sourceType</span>: <span style="color:#ae81ff">download</span>
-  <span style="color:#f92672">sourceParameters</span>:
-    <span style="color:#f92672">url</span>: <span style="color:#ae81ff">https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2</span>
----
-<span style="color:#f92672">apiVersion</span>: <span style="color:#ae81ff">longhorn.io/v1beta1</span>
-<span style="color:#f92672">kind</span>: <span style="color:#ae81ff">BackingImage</span>
-<span style="color:#f92672">metadata</span>:
-  <span style="color:#f92672">name</span>: <span style="color:#ae81ff">bi-test5</span>
-  <span style="color:#f92672">namespace</span>: <span style="color:#ae81ff">longhorn-system</span>
-<span style="color:#f92672">spec</span>:
-  <span style="color:#f92672">sourceType</span>: <span style="color:#ae81ff">download</span>
-  <span style="color:#f92672">sourceParameters</span>:
-    <span style="color:#f92672">url</span>: <span style="color:#ae81ff">https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2</span>
----
-<span style="color:#f92672">apiVersion</span>: <span style="color:#ae81ff">longhorn.io/v1beta1</span>
-<span style="color:#f92672">kind</span>: <span style="color:#ae81ff">BackingImage</span>
-<span style="color:#f92672">metadata</span>:
-  <span style="color:#f92672">name</span>: <span style="color:#ae81ff">bi-test6</span>
-  <span style="color:#f92672">namespace</span>: <span style="color:#ae81ff">longhorn-system</span>
-<span style="color:#f92672">spec</span>:
-  <span style="color:#f92672">sourceType</span>: <span style="color:#ae81ff">download</span>
-  <span style="color:#f92672">sourceParameters</span>:
-    <span style="color:#f92672">url</span>: <span style="color:#ae81ff">https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2</span>
----
-<span style="color:#f92672">apiVersion</span>: <span style="color:#ae81ff">longhorn.io/v1beta1</span>
-<span style="color:#f92672">kind</span>: <span style="color:#ae81ff">BackingImage</span>
-<span style="color:#f92672">metadata</span>:
-  <span style="color:#f92672">name</span>: <span style="color:#ae81ff">bi-test7</span>
-  <span style="color:#f92672">namespace</span>: <span style="color:#ae81ff">longhorn-system</span>
-<span style="color:#f92672">spec</span>:
-  <span style="color:#f92672">sourceType</span>: <span style="color:#ae81ff">download</span>
-  <span style="color:#f92672">sourceParameters</span>:
-    <span style="color:#f92672">url</span>: <span style="color:#ae81ff">https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2</span>
----
-<span style="color:#f92672">apiVersion</span>: <span style="color:#ae81ff">longhorn.io/v1beta1</span>
-<span style="color:#f92672">kind</span>: <span style="color:#ae81ff">BackingImage</span>
-<span style="color:#f92672">metadata</span>:
-  <span style="color:#f92672">name</span>: <span style="color:#ae81ff">bi-test8</span>
-  <span style="color:#f92672">namespace</span>: <span style="color:#ae81ff">longhorn-system</span>
-<span style="color:#f92672">spec</span>:
-  <span style="color:#f92672">sourceType</span>: <span style="color:#ae81ff">download</span>
-  <span style="color:#f92672">sourceParameters</span>:
-    <span style="color:#f92672">url</span>: <span style="color:#ae81ff">https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2</span>
----
-<span style="color:#f92672">apiVersion</span>: <span style="color:#ae81ff">longhorn.io/v1beta1</span>
-<span style="color:#f92672">kind</span>: <span style="color:#ae81ff">BackingImage</span>
-<span style="color:#f92672">metadata</span>:
-  <span style="color:#f92672">name</span>: <span style="color:#ae81ff">bi-test9</span>
-  <span style="color:#f92672">namespace</span>: <span style="color:#ae81ff">longhorn-system</span>
-<span style="color:#f92672">spec</span>:
-  <span style="color:#f92672">sourceType</span>: <span style="color:#ae81ff">download</span>
-  <span style="color:#f92672">sourceParameters</span>:
-    <span style="color:#f92672">url</span>: <span style="color:#ae81ff">https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2</span>
----
-<span style="color:#f92672">apiVersion</span>: <span style="color:#ae81ff">longhorn.io/v1beta1</span>
-<span style="color:#f92672">kind</span>: <span style="color:#ae81ff">BackingImage</span>
-<span style="color:#f92672">metadata</span>:
-  <span style="color:#f92672">name</span>: <span style="color:#ae81ff">bi-test10</span>
-  <span style="color:#f92672">namespace</span>: <span style="color:#ae81ff">longhorn-system</span>
-<span style="color:#f92672">spec</span>:
-  <span style="color:#f92672">sourceType</span>: <span style="color:#ae81ff">download</span>
-  <span style="color:#f92672">sourceParameters</span>:
-    <span style="color:#f92672">url</span>: <span style="color:#ae81ff">https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2</span>
-</code></pre></div></li>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#f92672">apiVersion</span>: <span style="color:#ae81ff">longhorn.io/v1beta1</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">kind</span>: <span style="color:#ae81ff">BackingImage</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">metadata</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">name</span>: <span style="color:#ae81ff">bi-test1</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">namespace</span>: <span style="color:#ae81ff">longhorn-system</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">spec</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">sourceType</span>: <span style="color:#ae81ff">download</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">sourceParameters</span>:
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">url</span>: <span style="color:#ae81ff">https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2</span>
+</span></span><span style="display:flex;"><span>---
+</span></span><span style="display:flex;"><span><span style="color:#f92672">apiVersion</span>: <span style="color:#ae81ff">longhorn.io/v1beta1</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">kind</span>: <span style="color:#ae81ff">BackingImage</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">metadata</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">name</span>: <span style="color:#ae81ff">bi-test2</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">namespace</span>: <span style="color:#ae81ff">longhorn-system</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">spec</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">sourceType</span>: <span style="color:#ae81ff">download</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">sourceParameters</span>:
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">url</span>: <span style="color:#ae81ff">https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2</span>
+</span></span><span style="display:flex;"><span>---
+</span></span><span style="display:flex;"><span><span style="color:#f92672">apiVersion</span>: <span style="color:#ae81ff">longhorn.io/v1beta1</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">kind</span>: <span style="color:#ae81ff">BackingImage</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">metadata</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">name</span>: <span style="color:#ae81ff">bi-test3</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">namespace</span>: <span style="color:#ae81ff">longhorn-system</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">spec</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">sourceType</span>: <span style="color:#ae81ff">download</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">sourceParameters</span>:
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">url</span>: <span style="color:#ae81ff">https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2</span>
+</span></span><span style="display:flex;"><span>---
+</span></span><span style="display:flex;"><span><span style="color:#f92672">apiVersion</span>: <span style="color:#ae81ff">longhorn.io/v1beta1</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">kind</span>: <span style="color:#ae81ff">BackingImage</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">metadata</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">name</span>: <span style="color:#ae81ff">bi-test4</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">namespace</span>: <span style="color:#ae81ff">longhorn-system</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">spec</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">sourceType</span>: <span style="color:#ae81ff">download</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">sourceParameters</span>:
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">url</span>: <span style="color:#ae81ff">https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2</span>
+</span></span><span style="display:flex;"><span>---
+</span></span><span style="display:flex;"><span><span style="color:#f92672">apiVersion</span>: <span style="color:#ae81ff">longhorn.io/v1beta1</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">kind</span>: <span style="color:#ae81ff">BackingImage</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">metadata</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">name</span>: <span style="color:#ae81ff">bi-test5</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">namespace</span>: <span style="color:#ae81ff">longhorn-system</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">spec</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">sourceType</span>: <span style="color:#ae81ff">download</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">sourceParameters</span>:
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">url</span>: <span style="color:#ae81ff">https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2</span>
+</span></span><span style="display:flex;"><span>---
+</span></span><span style="display:flex;"><span><span style="color:#f92672">apiVersion</span>: <span style="color:#ae81ff">longhorn.io/v1beta1</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">kind</span>: <span style="color:#ae81ff">BackingImage</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">metadata</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">name</span>: <span style="color:#ae81ff">bi-test6</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">namespace</span>: <span style="color:#ae81ff">longhorn-system</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">spec</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">sourceType</span>: <span style="color:#ae81ff">download</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">sourceParameters</span>:
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">url</span>: <span style="color:#ae81ff">https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2</span>
+</span></span><span style="display:flex;"><span>---
+</span></span><span style="display:flex;"><span><span style="color:#f92672">apiVersion</span>: <span style="color:#ae81ff">longhorn.io/v1beta1</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">kind</span>: <span style="color:#ae81ff">BackingImage</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">metadata</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">name</span>: <span style="color:#ae81ff">bi-test7</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">namespace</span>: <span style="color:#ae81ff">longhorn-system</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">spec</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">sourceType</span>: <span style="color:#ae81ff">download</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">sourceParameters</span>:
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">url</span>: <span style="color:#ae81ff">https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2</span>
+</span></span><span style="display:flex;"><span>---
+</span></span><span style="display:flex;"><span><span style="color:#f92672">apiVersion</span>: <span style="color:#ae81ff">longhorn.io/v1beta1</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">kind</span>: <span style="color:#ae81ff">BackingImage</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">metadata</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">name</span>: <span style="color:#ae81ff">bi-test8</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">namespace</span>: <span style="color:#ae81ff">longhorn-system</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">spec</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">sourceType</span>: <span style="color:#ae81ff">download</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">sourceParameters</span>:
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">url</span>: <span style="color:#ae81ff">https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2</span>
+</span></span><span style="display:flex;"><span>---
+</span></span><span style="display:flex;"><span><span style="color:#f92672">apiVersion</span>: <span style="color:#ae81ff">longhorn.io/v1beta1</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">kind</span>: <span style="color:#ae81ff">BackingImage</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">metadata</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">name</span>: <span style="color:#ae81ff">bi-test9</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">namespace</span>: <span style="color:#ae81ff">longhorn-system</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">spec</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">sourceType</span>: <span style="color:#ae81ff">download</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">sourceParameters</span>:
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">url</span>: <span style="color:#ae81ff">https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2</span>
+</span></span><span style="display:flex;"><span>---
+</span></span><span style="display:flex;"><span><span style="color:#f92672">apiVersion</span>: <span style="color:#ae81ff">longhorn.io/v1beta1</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">kind</span>: <span style="color:#ae81ff">BackingImage</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">metadata</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">name</span>: <span style="color:#ae81ff">bi-test10</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">namespace</span>: <span style="color:#ae81ff">longhorn-system</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">spec</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">sourceType</span>: <span style="color:#ae81ff">download</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">sourceParameters</span>:
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">url</span>: <span style="color:#ae81ff">https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2</span>
+</span></span></code></pre></div></li>
 <li>
 <p>Use the following YAML to launch some workloads with 250 volumes. Each volume uses 1 backing image and contains 3 replicas.</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#f92672">kind</span>: <span style="color:#ae81ff">StorageClass</span>
-<span style="color:#f92672">apiVersion</span>: <span style="color:#ae81ff">storage.k8s.io/v1</span>
-<span style="color:#f92672">metadata</span>:
-   <span style="color:#f92672">name</span>: <span style="color:#ae81ff">longhorn-test1</span>
-<span style="color:#f92672">provisioner</span>: <span style="color:#ae81ff">driver.longhorn.io</span>
-<span style="color:#f92672">allowVolumeExpansion</span>: <span style="color:#66d9ef">true</span>
-<span style="color:#f92672">reclaimPolicy</span>: <span style="color:#ae81ff">Delete</span>
-<span style="color:#f92672">volumeBindingMode</span>: <span style="color:#ae81ff">Immediate</span>
-<span style="color:#f92672">parameters</span>:
-   <span style="color:#f92672">numberOfReplicas</span>: <span style="color:#e6db74">&#34;3&#34;</span>
-   <span style="color:#f92672">staleReplicaTimeout</span>: <span style="color:#e6db74">&#34;2880&#34;</span>
-   <span style="color:#f92672">fromBackup</span>: <span style="color:#e6db74">&#34;&#34;</span>
-   <span style="color:#f92672">fsType</span>: <span style="color:#e6db74">&#34;ext4&#34;</span>
-   <span style="color:#f92672">backingImage</span>: <span style="color:#e6db74">&#34;bi-test1&#34;</span>
----
-<span style="color:#f92672">kind</span>: <span style="color:#ae81ff">StorageClass</span>
-<span style="color:#f92672">apiVersion</span>: <span style="color:#ae81ff">storage.k8s.io/v1</span>
-<span style="color:#f92672">metadata</span>:
-   <span style="color:#f92672">name</span>: <span style="color:#ae81ff">longhorn-test2</span>
-<span style="color:#f92672">provisioner</span>: <span style="color:#ae81ff">driver.longhorn.io</span>
-<span style="color:#f92672">allowVolumeExpansion</span>: <span style="color:#66d9ef">true</span>
-<span style="color:#f92672">reclaimPolicy</span>: <span style="color:#ae81ff">Delete</span>
-<span style="color:#f92672">volumeBindingMode</span>: <span style="color:#ae81ff">Immediate</span>
-<span style="color:#f92672">parameters</span>:
-   <span style="color:#f92672">numberOfReplicas</span>: <span style="color:#e6db74">&#34;3&#34;</span>
-   <span style="color:#f92672">staleReplicaTimeout</span>: <span style="color:#e6db74">&#34;2880&#34;</span>
-   <span style="color:#f92672">fromBackup</span>: <span style="color:#e6db74">&#34;&#34;</span>
-   <span style="color:#f92672">fsType</span>: <span style="color:#e6db74">&#34;ext4&#34;</span>
-   <span style="color:#f92672">backingImage</span>: <span style="color:#e6db74">&#34;bi-test2&#34;</span>
----
-<span style="color:#f92672">kind</span>: <span style="color:#ae81ff">StorageClass</span>
-<span style="color:#f92672">apiVersion</span>: <span style="color:#ae81ff">storage.k8s.io/v1</span>
-<span style="color:#f92672">metadata</span>:
-   <span style="color:#f92672">name</span>: <span style="color:#ae81ff">longhorn-test3</span>
-<span style="color:#f92672">provisioner</span>: <span style="color:#ae81ff">driver.longhorn.io</span>
-<span style="color:#f92672">allowVolumeExpansion</span>: <span style="color:#66d9ef">true</span>
-<span style="color:#f92672">reclaimPolicy</span>: <span style="color:#ae81ff">Delete</span>
-<span style="color:#f92672">volumeBindingMode</span>: <span style="color:#ae81ff">Immediate</span>
-<span style="color:#f92672">parameters</span>:
-   <span style="color:#f92672">numberOfReplicas</span>: <span style="color:#e6db74">&#34;3&#34;</span>
-   <span style="color:#f92672">staleReplicaTimeout</span>: <span style="color:#e6db74">&#34;2880&#34;</span>
-   <span style="color:#f92672">fromBackup</span>: <span style="color:#e6db74">&#34;&#34;</span>
-   <span style="color:#f92672">fsType</span>: <span style="color:#e6db74">&#34;ext4&#34;</span>
-   <span style="color:#f92672">backingImage</span>: <span style="color:#e6db74">&#34;bi-test3&#34;</span>
----
-<span style="color:#f92672">kind</span>: <span style="color:#ae81ff">StorageClass</span>
-<span style="color:#f92672">apiVersion</span>: <span style="color:#ae81ff">storage.k8s.io/v1</span>
-<span style="color:#f92672">metadata</span>:
-   <span style="color:#f92672">name</span>: <span style="color:#ae81ff">longhorn-test4</span>
-<span style="color:#f92672">provisioner</span>: <span style="color:#ae81ff">driver.longhorn.io</span>
-<span style="color:#f92672">allowVolumeExpansion</span>: <span style="color:#66d9ef">true</span>
-<span style="color:#f92672">reclaimPolicy</span>: <span style="color:#ae81ff">Delete</span>
-<span style="color:#f92672">volumeBindingMode</span>: <span style="color:#ae81ff">Immediate</span>
-<span style="color:#f92672">parameters</span>:
-   <span style="color:#f92672">numberOfReplicas</span>: <span style="color:#e6db74">&#34;3&#34;</span>
-   <span style="color:#f92672">staleReplicaTimeout</span>: <span style="color:#e6db74">&#34;2880&#34;</span>
-   <span style="color:#f92672">fromBackup</span>: <span style="color:#e6db74">&#34;&#34;</span>
-   <span style="color:#f92672">fsType</span>: <span style="color:#e6db74">&#34;ext4&#34;</span>
-   <span style="color:#f92672">backingImage</span>: <span style="color:#e6db74">&#34;bi-test4&#34;</span>
----
-<span style="color:#f92672">kind</span>: <span style="color:#ae81ff">StorageClass</span>
-<span style="color:#f92672">apiVersion</span>: <span style="color:#ae81ff">storage.k8s.io/v1</span>
-<span style="color:#f92672">metadata</span>:
-   <span style="color:#f92672">name</span>: <span style="color:#ae81ff">longhorn-test5</span>
-<span style="color:#f92672">provisioner</span>: <span style="color:#ae81ff">driver.longhorn.io</span>
-<span style="color:#f92672">allowVolumeExpansion</span>: <span style="color:#66d9ef">true</span>
-<span style="color:#f92672">reclaimPolicy</span>: <span style="color:#ae81ff">Delete</span>
-<span style="color:#f92672">volumeBindingMode</span>: <span style="color:#ae81ff">Immediate</span>
-<span style="color:#f92672">parameters</span>:
-   <span style="color:#f92672">numberOfReplicas</span>: <span style="color:#e6db74">&#34;3&#34;</span>
-   <span style="color:#f92672">staleReplicaTimeout</span>: <span style="color:#e6db74">&#34;2880&#34;</span>
-   <span style="color:#f92672">fromBackup</span>: <span style="color:#e6db74">&#34;&#34;</span>
-   <span style="color:#f92672">fsType</span>: <span style="color:#e6db74">&#34;ext4&#34;</span>
-   <span style="color:#f92672">backingImage</span>: <span style="color:#e6db74">&#34;bi-test5&#34;</span>
-</code></pre></div><div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#f92672">apiVersion</span>: <span style="color:#ae81ff">v1</span>
-<span style="color:#f92672">kind</span>: <span style="color:#ae81ff">Service</span>
-<span style="color:#f92672">metadata</span>:
-  <span style="color:#f92672">name</span>: <span style="color:#ae81ff">nginx</span>
-  <span style="color:#f92672">labels</span>:
-    <span style="color:#f92672">app</span>: <span style="color:#ae81ff">nginx</span>
-<span style="color:#f92672">spec</span>:
-  <span style="color:#f92672">ports</span>:
-    - <span style="color:#f92672">port</span>: <span style="color:#ae81ff">80</span>
-      <span style="color:#f92672">name</span>: <span style="color:#ae81ff">web</span>
-  <span style="color:#f92672">selector</span>:
-    <span style="color:#f92672">app</span>: <span style="color:#ae81ff">nginx</span>
-  <span style="color:#f92672">type</span>: <span style="color:#ae81ff">NodePort</span>
----
-<span style="color:#f92672">apiVersion</span>: <span style="color:#ae81ff">apps/v1</span>
-<span style="color:#f92672">kind</span>: <span style="color:#ae81ff">StatefulSet</span>
-<span style="color:#f92672">metadata</span>:
-  <span style="color:#f92672">name</span>: <span style="color:#ae81ff">bi-scalability-test</span>
-  <span style="color:#f92672">namespace</span>: <span style="color:#ae81ff">default</span>
-<span style="color:#f92672">spec</span>:
-  <span style="color:#f92672">selector</span>:
-    <span style="color:#f92672">matchLabels</span>:
-      <span style="color:#f92672">app</span>: <span style="color:#ae81ff">nginx</span>
-  <span style="color:#f92672">serviceName</span>: <span style="color:#e6db74">&#34;nginx&#34;</span>
-  <span style="color:#f92672">replicas</span>: <span style="color:#ae81ff">25</span>
-  <span style="color:#f92672">podManagementPolicy</span>: <span style="color:#ae81ff">Parallel</span>
-  <span style="color:#f92672">template</span>:
-    <span style="color:#f92672">metadata</span>:
-      <span style="color:#f92672">labels</span>:
-        <span style="color:#f92672">app</span>: <span style="color:#ae81ff">nginx</span>
-    <span style="color:#f92672">spec</span>:
-      <span style="color:#f92672">restartPolicy</span>: <span style="color:#ae81ff">Always</span>
-      <span style="color:#f92672">terminationGracePeriodSeconds</span>: <span style="color:#ae81ff">10</span>
-      <span style="color:#f92672">containers</span>:
-      - <span style="color:#f92672">name</span>: <span style="color:#ae81ff">nginx</span>
-        <span style="color:#f92672">image</span>: <span style="color:#ae81ff">k8s.gcr.io/nginx-slim:0.8</span>
-        <span style="color:#f92672">ports</span>:
-        - <span style="color:#f92672">containerPort</span>: <span style="color:#ae81ff">80</span>
-          <span style="color:#f92672">name</span>: <span style="color:#ae81ff">web</span>
-        <span style="color:#f92672">volumeMounts</span>:
-        - <span style="color:#f92672">name</span>: <span style="color:#ae81ff">www1</span>
-          <span style="color:#f92672">mountPath</span>: <span style="color:#ae81ff">/usr/share/nginx/html</span>
-        - <span style="color:#f92672">name</span>: <span style="color:#ae81ff">www2</span>
-          <span style="color:#f92672">mountPath</span>: <span style="color:#ae81ff">/usr/share/nginx/html2</span>
-        - <span style="color:#f92672">name</span>: <span style="color:#ae81ff">www3</span>
-          <span style="color:#f92672">mountPath</span>: <span style="color:#ae81ff">/usr/share/nginx/html3</span>
-        - <span style="color:#f92672">name</span>: <span style="color:#ae81ff">www4</span>
-          <span style="color:#f92672">mountPath</span>: <span style="color:#ae81ff">/usr/share/nginx/html4</span>
-        - <span style="color:#f92672">name</span>: <span style="color:#ae81ff">www5</span>
-          <span style="color:#f92672">mountPath</span>: <span style="color:#ae81ff">/usr/share/nginx/html5</span>
-        - <span style="color:#f92672">name</span>: <span style="color:#ae81ff">www6</span>
-          <span style="color:#f92672">mountPath</span>: <span style="color:#ae81ff">/usr/share/nginx/html6</span>
-        - <span style="color:#f92672">name</span>: <span style="color:#ae81ff">www7</span>
-          <span style="color:#f92672">mountPath</span>: <span style="color:#ae81ff">/usr/share/nginx/html7</span>
-        - <span style="color:#f92672">name</span>: <span style="color:#ae81ff">www8</span>
-          <span style="color:#f92672">mountPath</span>: <span style="color:#ae81ff">/usr/share/nginx/html8</span>
-        - <span style="color:#f92672">name</span>: <span style="color:#ae81ff">www9</span>
-          <span style="color:#f92672">mountPath</span>: <span style="color:#ae81ff">/usr/share/nginx/html9</span>
-        - <span style="color:#f92672">name</span>: <span style="color:#ae81ff">www10</span>
-          <span style="color:#f92672">mountPath</span>: <span style="color:#ae81ff">/usr/share/nginx/html10</span>
-  <span style="color:#f92672">volumeClaimTemplates</span>:
-  - <span style="color:#f92672">metadata</span>:
-      <span style="color:#f92672">name</span>: <span style="color:#ae81ff">www1</span>
-    <span style="color:#f92672">spec</span>:
-      <span style="color:#f92672">accessModes</span>: [ <span style="color:#e6db74">&#34;ReadWriteOnce&#34;</span> ]
-      <span style="color:#f92672">storageClassName</span>: <span style="color:#e6db74">&#34;longhorn-test1&#34;</span>
-      <span style="color:#f92672">resources</span>:
-        <span style="color:#f92672">requests</span>:
-          <span style="color:#f92672">storage</span>: <span style="color:#ae81ff">32Mi</span>
-  - <span style="color:#f92672">metadata</span>:
-      <span style="color:#f92672">name</span>: <span style="color:#ae81ff">www2</span>
-    <span style="color:#f92672">spec</span>:
-      <span style="color:#f92672">accessModes</span>: [ <span style="color:#e6db74">&#34;ReadWriteOnce&#34;</span> ]
-      <span style="color:#f92672">storageClassName</span>: <span style="color:#e6db74">&#34;longhorn-test1&#34;</span>
-      <span style="color:#f92672">resources</span>:
-        <span style="color:#f92672">requests</span>:
-          <span style="color:#f92672">storage</span>: <span style="color:#ae81ff">32Mi</span>
-  - <span style="color:#f92672">metadata</span>:
-      <span style="color:#f92672">name</span>: <span style="color:#ae81ff">www3</span>
-    <span style="color:#f92672">spec</span>:
-      <span style="color:#f92672">accessModes</span>: [ <span style="color:#e6db74">&#34;ReadWriteOnce&#34;</span> ]
-      <span style="color:#f92672">storageClassName</span>: <span style="color:#e6db74">&#34;longhorn-test1&#34;</span>
-      <span style="color:#f92672">resources</span>:
-        <span style="color:#f92672">requests</span>:
-          <span style="color:#f92672">storage</span>: <span style="color:#ae81ff">32Mi</span>
-  - <span style="color:#f92672">metadata</span>:
-      <span style="color:#f92672">name</span>: <span style="color:#ae81ff">www4</span>
-    <span style="color:#f92672">spec</span>:
-      <span style="color:#f92672">accessModes</span>: [ <span style="color:#e6db74">&#34;ReadWriteOnce&#34;</span> ]
-      <span style="color:#f92672">storageClassName</span>: <span style="color:#e6db74">&#34;longhorn-test1&#34;</span>
-      <span style="color:#f92672">resources</span>:
-        <span style="color:#f92672">requests</span>:
-          <span style="color:#f92672">storage</span>: <span style="color:#ae81ff">32Mi</span>
-  - <span style="color:#f92672">metadata</span>:
-      <span style="color:#f92672">name</span>: <span style="color:#ae81ff">www5</span>
-    <span style="color:#f92672">spec</span>:
-      <span style="color:#f92672">accessModes</span>: [ <span style="color:#e6db74">&#34;ReadWriteOnce&#34;</span> ]
-      <span style="color:#f92672">storageClassName</span>: <span style="color:#e6db74">&#34;longhorn-test1&#34;</span>
-      <span style="color:#f92672">resources</span>:
-        <span style="color:#f92672">requests</span>:
-          <span style="color:#f92672">storage</span>: <span style="color:#ae81ff">32Mi</span>
-  - <span style="color:#f92672">metadata</span>:
-      <span style="color:#f92672">name</span>: <span style="color:#ae81ff">www6</span>
-    <span style="color:#f92672">spec</span>:
-      <span style="color:#f92672">accessModes</span>: [ <span style="color:#e6db74">&#34;ReadWriteOnce&#34;</span> ]
-      <span style="color:#f92672">storageClassName</span>: <span style="color:#e6db74">&#34;longhorn-test1&#34;</span>
-      <span style="color:#f92672">resources</span>:
-        <span style="color:#f92672">requests</span>:
-          <span style="color:#f92672">storage</span>: <span style="color:#ae81ff">32Mi</span>
-  - <span style="color:#f92672">metadata</span>:
-      <span style="color:#f92672">name</span>: <span style="color:#ae81ff">www7</span>
-    <span style="color:#f92672">spec</span>:
-      <span style="color:#f92672">accessModes</span>: [ <span style="color:#e6db74">&#34;ReadWriteOnce&#34;</span> ]
-      <span style="color:#f92672">storageClassName</span>: <span style="color:#e6db74">&#34;longhorn-test2&#34;</span>
-      <span style="color:#f92672">resources</span>:
-        <span style="color:#f92672">requests</span>:
-          <span style="color:#f92672">storage</span>: <span style="color:#ae81ff">32Mi</span>
-  - <span style="color:#f92672">metadata</span>:
-      <span style="color:#f92672">name</span>: <span style="color:#ae81ff">www8</span>
-    <span style="color:#f92672">spec</span>:
-      <span style="color:#f92672">accessModes</span>: [ <span style="color:#e6db74">&#34;ReadWriteOnce&#34;</span> ]
-      <span style="color:#f92672">storageClassName</span>: <span style="color:#e6db74">&#34;longhorn-test3&#34;</span>
-      <span style="color:#f92672">resources</span>:
-        <span style="color:#f92672">requests</span>:
-          <span style="color:#f92672">storage</span>: <span style="color:#ae81ff">32Mi</span>
-  - <span style="color:#f92672">metadata</span>:
-      <span style="color:#f92672">name</span>: <span style="color:#ae81ff">www9</span>
-    <span style="color:#f92672">spec</span>:
-      <span style="color:#f92672">accessModes</span>: [ <span style="color:#e6db74">&#34;ReadWriteOnce&#34;</span> ]
-      <span style="color:#f92672">storageClassName</span>: <span style="color:#e6db74">&#34;longhorn-test4&#34;</span>
-      <span style="color:#f92672">resources</span>:
-        <span style="color:#f92672">requests</span>:
-          <span style="color:#f92672">storage</span>: <span style="color:#ae81ff">32Mi</span>
-  - <span style="color:#f92672">metadata</span>:
-      <span style="color:#f92672">name</span>: <span style="color:#ae81ff">www10</span>
-    <span style="color:#f92672">spec</span>:
-      <span style="color:#f92672">accessModes</span>: [ <span style="color:#e6db74">&#34;ReadWriteOnce&#34;</span> ]
-      <span style="color:#f92672">storageClassName</span>: <span style="color:#e6db74">&#34;longhorn-test5&#34;</span>
-      <span style="color:#f92672">resources</span>:
-        <span style="color:#f92672">requests</span>:
-          <span style="color:#f92672">storage</span>: <span style="color:#ae81ff">32Mi</span>
-</code></pre></div><p>Notice:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#f92672">kind</span>: <span style="color:#ae81ff">StorageClass</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">apiVersion</span>: <span style="color:#ae81ff">storage.k8s.io/v1</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">metadata</span>:
+</span></span><span style="display:flex;"><span>   <span style="color:#f92672">name</span>: <span style="color:#ae81ff">longhorn-test1</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">provisioner</span>: <span style="color:#ae81ff">driver.longhorn.io</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">allowVolumeExpansion</span>: <span style="color:#66d9ef">true</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">reclaimPolicy</span>: <span style="color:#ae81ff">Delete</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">volumeBindingMode</span>: <span style="color:#ae81ff">Immediate</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">parameters</span>:
+</span></span><span style="display:flex;"><span>   <span style="color:#f92672">numberOfReplicas</span>: <span style="color:#e6db74">&#34;3&#34;</span>
+</span></span><span style="display:flex;"><span>   <span style="color:#f92672">staleReplicaTimeout</span>: <span style="color:#e6db74">&#34;2880&#34;</span>
+</span></span><span style="display:flex;"><span>   <span style="color:#f92672">fromBackup</span>: <span style="color:#e6db74">&#34;&#34;</span>
+</span></span><span style="display:flex;"><span>   <span style="color:#f92672">fsType</span>: <span style="color:#e6db74">&#34;ext4&#34;</span>
+</span></span><span style="display:flex;"><span>   <span style="color:#f92672">backingImage</span>: <span style="color:#e6db74">&#34;bi-test1&#34;</span>
+</span></span><span style="display:flex;"><span>---
+</span></span><span style="display:flex;"><span><span style="color:#f92672">kind</span>: <span style="color:#ae81ff">StorageClass</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">apiVersion</span>: <span style="color:#ae81ff">storage.k8s.io/v1</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">metadata</span>:
+</span></span><span style="display:flex;"><span>   <span style="color:#f92672">name</span>: <span style="color:#ae81ff">longhorn-test2</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">provisioner</span>: <span style="color:#ae81ff">driver.longhorn.io</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">allowVolumeExpansion</span>: <span style="color:#66d9ef">true</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">reclaimPolicy</span>: <span style="color:#ae81ff">Delete</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">volumeBindingMode</span>: <span style="color:#ae81ff">Immediate</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">parameters</span>:
+</span></span><span style="display:flex;"><span>   <span style="color:#f92672">numberOfReplicas</span>: <span style="color:#e6db74">&#34;3&#34;</span>
+</span></span><span style="display:flex;"><span>   <span style="color:#f92672">staleReplicaTimeout</span>: <span style="color:#e6db74">&#34;2880&#34;</span>
+</span></span><span style="display:flex;"><span>   <span style="color:#f92672">fromBackup</span>: <span style="color:#e6db74">&#34;&#34;</span>
+</span></span><span style="display:flex;"><span>   <span style="color:#f92672">fsType</span>: <span style="color:#e6db74">&#34;ext4&#34;</span>
+</span></span><span style="display:flex;"><span>   <span style="color:#f92672">backingImage</span>: <span style="color:#e6db74">&#34;bi-test2&#34;</span>
+</span></span><span style="display:flex;"><span>---
+</span></span><span style="display:flex;"><span><span style="color:#f92672">kind</span>: <span style="color:#ae81ff">StorageClass</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">apiVersion</span>: <span style="color:#ae81ff">storage.k8s.io/v1</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">metadata</span>:
+</span></span><span style="display:flex;"><span>   <span style="color:#f92672">name</span>: <span style="color:#ae81ff">longhorn-test3</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">provisioner</span>: <span style="color:#ae81ff">driver.longhorn.io</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">allowVolumeExpansion</span>: <span style="color:#66d9ef">true</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">reclaimPolicy</span>: <span style="color:#ae81ff">Delete</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">volumeBindingMode</span>: <span style="color:#ae81ff">Immediate</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">parameters</span>:
+</span></span><span style="display:flex;"><span>   <span style="color:#f92672">numberOfReplicas</span>: <span style="color:#e6db74">&#34;3&#34;</span>
+</span></span><span style="display:flex;"><span>   <span style="color:#f92672">staleReplicaTimeout</span>: <span style="color:#e6db74">&#34;2880&#34;</span>
+</span></span><span style="display:flex;"><span>   <span style="color:#f92672">fromBackup</span>: <span style="color:#e6db74">&#34;&#34;</span>
+</span></span><span style="display:flex;"><span>   <span style="color:#f92672">fsType</span>: <span style="color:#e6db74">&#34;ext4&#34;</span>
+</span></span><span style="display:flex;"><span>   <span style="color:#f92672">backingImage</span>: <span style="color:#e6db74">&#34;bi-test3&#34;</span>
+</span></span><span style="display:flex;"><span>---
+</span></span><span style="display:flex;"><span><span style="color:#f92672">kind</span>: <span style="color:#ae81ff">StorageClass</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">apiVersion</span>: <span style="color:#ae81ff">storage.k8s.io/v1</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">metadata</span>:
+</span></span><span style="display:flex;"><span>   <span style="color:#f92672">name</span>: <span style="color:#ae81ff">longhorn-test4</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">provisioner</span>: <span style="color:#ae81ff">driver.longhorn.io</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">allowVolumeExpansion</span>: <span style="color:#66d9ef">true</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">reclaimPolicy</span>: <span style="color:#ae81ff">Delete</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">volumeBindingMode</span>: <span style="color:#ae81ff">Immediate</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">parameters</span>:
+</span></span><span style="display:flex;"><span>   <span style="color:#f92672">numberOfReplicas</span>: <span style="color:#e6db74">&#34;3&#34;</span>
+</span></span><span style="display:flex;"><span>   <span style="color:#f92672">staleReplicaTimeout</span>: <span style="color:#e6db74">&#34;2880&#34;</span>
+</span></span><span style="display:flex;"><span>   <span style="color:#f92672">fromBackup</span>: <span style="color:#e6db74">&#34;&#34;</span>
+</span></span><span style="display:flex;"><span>   <span style="color:#f92672">fsType</span>: <span style="color:#e6db74">&#34;ext4&#34;</span>
+</span></span><span style="display:flex;"><span>   <span style="color:#f92672">backingImage</span>: <span style="color:#e6db74">&#34;bi-test4&#34;</span>
+</span></span><span style="display:flex;"><span>---
+</span></span><span style="display:flex;"><span><span style="color:#f92672">kind</span>: <span style="color:#ae81ff">StorageClass</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">apiVersion</span>: <span style="color:#ae81ff">storage.k8s.io/v1</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">metadata</span>:
+</span></span><span style="display:flex;"><span>   <span style="color:#f92672">name</span>: <span style="color:#ae81ff">longhorn-test5</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">provisioner</span>: <span style="color:#ae81ff">driver.longhorn.io</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">allowVolumeExpansion</span>: <span style="color:#66d9ef">true</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">reclaimPolicy</span>: <span style="color:#ae81ff">Delete</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">volumeBindingMode</span>: <span style="color:#ae81ff">Immediate</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">parameters</span>:
+</span></span><span style="display:flex;"><span>   <span style="color:#f92672">numberOfReplicas</span>: <span style="color:#e6db74">&#34;3&#34;</span>
+</span></span><span style="display:flex;"><span>   <span style="color:#f92672">staleReplicaTimeout</span>: <span style="color:#e6db74">&#34;2880&#34;</span>
+</span></span><span style="display:flex;"><span>   <span style="color:#f92672">fromBackup</span>: <span style="color:#e6db74">&#34;&#34;</span>
+</span></span><span style="display:flex;"><span>   <span style="color:#f92672">fsType</span>: <span style="color:#e6db74">&#34;ext4&#34;</span>
+</span></span><span style="display:flex;"><span>   <span style="color:#f92672">backingImage</span>: <span style="color:#e6db74">&#34;bi-test5&#34;</span>
+</span></span></code></pre></div><div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#f92672">apiVersion</span>: <span style="color:#ae81ff">v1</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">kind</span>: <span style="color:#ae81ff">Service</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">metadata</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">name</span>: <span style="color:#ae81ff">nginx</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">labels</span>:
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">app</span>: <span style="color:#ae81ff">nginx</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">spec</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">ports</span>:
+</span></span><span style="display:flex;"><span>    - <span style="color:#f92672">port</span>: <span style="color:#ae81ff">80</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">name</span>: <span style="color:#ae81ff">web</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">selector</span>:
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">app</span>: <span style="color:#ae81ff">nginx</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">type</span>: <span style="color:#ae81ff">NodePort</span>
+</span></span><span style="display:flex;"><span>---
+</span></span><span style="display:flex;"><span><span style="color:#f92672">apiVersion</span>: <span style="color:#ae81ff">apps/v1</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">kind</span>: <span style="color:#ae81ff">StatefulSet</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">metadata</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">name</span>: <span style="color:#ae81ff">bi-scalability-test</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">namespace</span>: <span style="color:#ae81ff">default</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">spec</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">selector</span>:
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">matchLabels</span>:
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">app</span>: <span style="color:#ae81ff">nginx</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">serviceName</span>: <span style="color:#e6db74">&#34;nginx&#34;</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">replicas</span>: <span style="color:#ae81ff">25</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">podManagementPolicy</span>: <span style="color:#ae81ff">Parallel</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">template</span>:
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">metadata</span>:
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">labels</span>:
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">app</span>: <span style="color:#ae81ff">nginx</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">spec</span>:
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">restartPolicy</span>: <span style="color:#ae81ff">Always</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">terminationGracePeriodSeconds</span>: <span style="color:#ae81ff">10</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">containers</span>:
+</span></span><span style="display:flex;"><span>      - <span style="color:#f92672">name</span>: <span style="color:#ae81ff">nginx</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">image</span>: <span style="color:#ae81ff">k8s.gcr.io/nginx-slim:0.8</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">ports</span>:
+</span></span><span style="display:flex;"><span>        - <span style="color:#f92672">containerPort</span>: <span style="color:#ae81ff">80</span>
+</span></span><span style="display:flex;"><span>          <span style="color:#f92672">name</span>: <span style="color:#ae81ff">web</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">volumeMounts</span>:
+</span></span><span style="display:flex;"><span>        - <span style="color:#f92672">name</span>: <span style="color:#ae81ff">www1</span>
+</span></span><span style="display:flex;"><span>          <span style="color:#f92672">mountPath</span>: <span style="color:#ae81ff">/usr/share/nginx/html</span>
+</span></span><span style="display:flex;"><span>        - <span style="color:#f92672">name</span>: <span style="color:#ae81ff">www2</span>
+</span></span><span style="display:flex;"><span>          <span style="color:#f92672">mountPath</span>: <span style="color:#ae81ff">/usr/share/nginx/html2</span>
+</span></span><span style="display:flex;"><span>        - <span style="color:#f92672">name</span>: <span style="color:#ae81ff">www3</span>
+</span></span><span style="display:flex;"><span>          <span style="color:#f92672">mountPath</span>: <span style="color:#ae81ff">/usr/share/nginx/html3</span>
+</span></span><span style="display:flex;"><span>        - <span style="color:#f92672">name</span>: <span style="color:#ae81ff">www4</span>
+</span></span><span style="display:flex;"><span>          <span style="color:#f92672">mountPath</span>: <span style="color:#ae81ff">/usr/share/nginx/html4</span>
+</span></span><span style="display:flex;"><span>        - <span style="color:#f92672">name</span>: <span style="color:#ae81ff">www5</span>
+</span></span><span style="display:flex;"><span>          <span style="color:#f92672">mountPath</span>: <span style="color:#ae81ff">/usr/share/nginx/html5</span>
+</span></span><span style="display:flex;"><span>        - <span style="color:#f92672">name</span>: <span style="color:#ae81ff">www6</span>
+</span></span><span style="display:flex;"><span>          <span style="color:#f92672">mountPath</span>: <span style="color:#ae81ff">/usr/share/nginx/html6</span>
+</span></span><span style="display:flex;"><span>        - <span style="color:#f92672">name</span>: <span style="color:#ae81ff">www7</span>
+</span></span><span style="display:flex;"><span>          <span style="color:#f92672">mountPath</span>: <span style="color:#ae81ff">/usr/share/nginx/html7</span>
+</span></span><span style="display:flex;"><span>        - <span style="color:#f92672">name</span>: <span style="color:#ae81ff">www8</span>
+</span></span><span style="display:flex;"><span>          <span style="color:#f92672">mountPath</span>: <span style="color:#ae81ff">/usr/share/nginx/html8</span>
+</span></span><span style="display:flex;"><span>        - <span style="color:#f92672">name</span>: <span style="color:#ae81ff">www9</span>
+</span></span><span style="display:flex;"><span>          <span style="color:#f92672">mountPath</span>: <span style="color:#ae81ff">/usr/share/nginx/html9</span>
+</span></span><span style="display:flex;"><span>        - <span style="color:#f92672">name</span>: <span style="color:#ae81ff">www10</span>
+</span></span><span style="display:flex;"><span>          <span style="color:#f92672">mountPath</span>: <span style="color:#ae81ff">/usr/share/nginx/html10</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">volumeClaimTemplates</span>:
+</span></span><span style="display:flex;"><span>  - <span style="color:#f92672">metadata</span>:
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">name</span>: <span style="color:#ae81ff">www1</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">spec</span>:
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">accessModes</span>: [ <span style="color:#e6db74">&#34;ReadWriteOnce&#34;</span> ]
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">storageClassName</span>: <span style="color:#e6db74">&#34;longhorn-test1&#34;</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">resources</span>:
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">requests</span>:
+</span></span><span style="display:flex;"><span>          <span style="color:#f92672">storage</span>: <span style="color:#ae81ff">32Mi</span>
+</span></span><span style="display:flex;"><span>  - <span style="color:#f92672">metadata</span>:
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">name</span>: <span style="color:#ae81ff">www2</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">spec</span>:
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">accessModes</span>: [ <span style="color:#e6db74">&#34;ReadWriteOnce&#34;</span> ]
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">storageClassName</span>: <span style="color:#e6db74">&#34;longhorn-test1&#34;</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">resources</span>:
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">requests</span>:
+</span></span><span style="display:flex;"><span>          <span style="color:#f92672">storage</span>: <span style="color:#ae81ff">32Mi</span>
+</span></span><span style="display:flex;"><span>  - <span style="color:#f92672">metadata</span>:
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">name</span>: <span style="color:#ae81ff">www3</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">spec</span>:
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">accessModes</span>: [ <span style="color:#e6db74">&#34;ReadWriteOnce&#34;</span> ]
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">storageClassName</span>: <span style="color:#e6db74">&#34;longhorn-test1&#34;</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">resources</span>:
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">requests</span>:
+</span></span><span style="display:flex;"><span>          <span style="color:#f92672">storage</span>: <span style="color:#ae81ff">32Mi</span>
+</span></span><span style="display:flex;"><span>  - <span style="color:#f92672">metadata</span>:
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">name</span>: <span style="color:#ae81ff">www4</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">spec</span>:
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">accessModes</span>: [ <span style="color:#e6db74">&#34;ReadWriteOnce&#34;</span> ]
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">storageClassName</span>: <span style="color:#e6db74">&#34;longhorn-test1&#34;</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">resources</span>:
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">requests</span>:
+</span></span><span style="display:flex;"><span>          <span style="color:#f92672">storage</span>: <span style="color:#ae81ff">32Mi</span>
+</span></span><span style="display:flex;"><span>  - <span style="color:#f92672">metadata</span>:
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">name</span>: <span style="color:#ae81ff">www5</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">spec</span>:
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">accessModes</span>: [ <span style="color:#e6db74">&#34;ReadWriteOnce&#34;</span> ]
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">storageClassName</span>: <span style="color:#e6db74">&#34;longhorn-test1&#34;</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">resources</span>:
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">requests</span>:
+</span></span><span style="display:flex;"><span>          <span style="color:#f92672">storage</span>: <span style="color:#ae81ff">32Mi</span>
+</span></span><span style="display:flex;"><span>  - <span style="color:#f92672">metadata</span>:
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">name</span>: <span style="color:#ae81ff">www6</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">spec</span>:
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">accessModes</span>: [ <span style="color:#e6db74">&#34;ReadWriteOnce&#34;</span> ]
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">storageClassName</span>: <span style="color:#e6db74">&#34;longhorn-test1&#34;</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">resources</span>:
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">requests</span>:
+</span></span><span style="display:flex;"><span>          <span style="color:#f92672">storage</span>: <span style="color:#ae81ff">32Mi</span>
+</span></span><span style="display:flex;"><span>  - <span style="color:#f92672">metadata</span>:
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">name</span>: <span style="color:#ae81ff">www7</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">spec</span>:
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">accessModes</span>: [ <span style="color:#e6db74">&#34;ReadWriteOnce&#34;</span> ]
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">storageClassName</span>: <span style="color:#e6db74">&#34;longhorn-test2&#34;</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">resources</span>:
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">requests</span>:
+</span></span><span style="display:flex;"><span>          <span style="color:#f92672">storage</span>: <span style="color:#ae81ff">32Mi</span>
+</span></span><span style="display:flex;"><span>  - <span style="color:#f92672">metadata</span>:
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">name</span>: <span style="color:#ae81ff">www8</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">spec</span>:
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">accessModes</span>: [ <span style="color:#e6db74">&#34;ReadWriteOnce&#34;</span> ]
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">storageClassName</span>: <span style="color:#e6db74">&#34;longhorn-test3&#34;</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">resources</span>:
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">requests</span>:
+</span></span><span style="display:flex;"><span>          <span style="color:#f92672">storage</span>: <span style="color:#ae81ff">32Mi</span>
+</span></span><span style="display:flex;"><span>  - <span style="color:#f92672">metadata</span>:
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">name</span>: <span style="color:#ae81ff">www9</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">spec</span>:
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">accessModes</span>: [ <span style="color:#e6db74">&#34;ReadWriteOnce&#34;</span> ]
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">storageClassName</span>: <span style="color:#e6db74">&#34;longhorn-test4&#34;</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">resources</span>:
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">requests</span>:
+</span></span><span style="display:flex;"><span>          <span style="color:#f92672">storage</span>: <span style="color:#ae81ff">32Mi</span>
+</span></span><span style="display:flex;"><span>  - <span style="color:#f92672">metadata</span>:
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">name</span>: <span style="color:#ae81ff">www10</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">spec</span>:
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">accessModes</span>: [ <span style="color:#e6db74">&#34;ReadWriteOnce&#34;</span> ]
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">storageClassName</span>: <span style="color:#e6db74">&#34;longhorn-test5&#34;</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">resources</span>:
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">requests</span>:
+</span></span><span style="display:flex;"><span>          <span style="color:#f92672">storage</span>: <span style="color:#ae81ff">32Mi</span>
+</span></span></code></pre></div><p>Notice:</p>
 <ul>
 <li>Each replica/pod of this StatefulSet contains 10 volumes. You just adjust the volume count by scaling this StatefulSet.</li>
 <li>Launching this StatefulSet will take a long time.</li>

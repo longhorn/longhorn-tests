@@ -22,7 +22,7 @@
       
       <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.2.3/test-backing-image-space-usage/</guid>
       <description>Prerequisite A sparse file should be prepared before test. e.g.:
-~ touch empty-filesystem.raw ~ truncate -s 500M empty-filesystem.raw ~ mkfs.ext4 empty-filesystem.raw mke2fs 1.46.1 (9-Feb-2021) Creating filesystem with 512000 1k blocks and 128016 inodes Filesystem UUID: fe6cfb58-134a-42b3-afab-59474d9515e0 Superblock backups stored on blocks: 8193, 24577, 40961, 57345, 73729, 204801, 221185, 401409 Allocating group tables: done Writing inode tables: done Creating journal (8192 blocks): done Writing superblocks and filesystem accounting information: done ~ shasum -a 512 empty-filesystem.</description>
+~ touch empty-filesystem.raw ~ truncate -s 500M empty-filesystem.raw ~ mkfs.ext4 empty-filesystem.raw mke2fs 1.46.1 (9-Feb-2021) Creating filesystem with 512000 1k blocks and 128016 inodes Filesystem UUID: fe6cfb58-134a-42b3-afab-59474d9515e0 Superblock backups stored on blocks: 	8193, 24577, 40961, 57345, 73729, 204801, 221185, 401409  Allocating group tables: done Writing inode tables: done Creating journal (8192 blocks): done Writing superblocks and filesystem accounting information: done  ~ shasum -a 512 empty-filesystem.</description>
     </item>
     
     <item>
@@ -34,7 +34,7 @@
       <description>Test step   Deploy a cluster with 3 worker nodes. The recommended nodes is 4v cores CPU + 8G memory at least.
   Deploy Longhorn.
   Launch 10 backing images with the following YAML:
-apiVersion: longhorn.io/v1beta1 kind: BackingImage metadata: name: bi-test1 namespace: longhorn-system spec: sourceType: download sourceParameters: url: https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2 --- apiVersion: longhorn.io/v1beta1 kind: BackingImage metadata: name: bi-test2 namespace: longhorn-system spec: sourceType: download sourceParameters: url: https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2 --- apiVersion: longhorn.</description>
+apiVersion: longhorn.io/v1beta1 kind: BackingImage metadata:  name: bi-test1  namespace: longhorn-system spec:  sourceType: download  sourceParameters:  url: https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2 --- apiVersion: longhorn.io/v1beta1 kind: BackingImage metadata:  name: bi-test2  namespace: longhorn-system spec:  sourceType: download  sourceParameters:  url: https://longhorn-backing-image.</description>
     </item>
     
   </channel>
