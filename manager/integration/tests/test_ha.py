@@ -2264,7 +2264,7 @@ def test_reuse_failed_replica(client, core_api, volume_name): # NOQA
 
 def set_tags_for_node_and_its_disks(client, node, tags): # NOQA
     if len(tags) == 0:
-        expected_tags = None
+        expected_tags = []
     else:
         expected_tags = list(tags)
 
