@@ -1,4 +1,4 @@
-# Query AWS for RHEL AMI
+# Query AWS for oraclelinux AMI
 locals {
   aws_ami_oraclelinux_arch = var.arch == "amd64" ? "x86_64" : var.arch
 }
@@ -40,3 +40,22 @@ data "template_file" "provision_k3s_agent" {
   }
 }
 
+# Generate template file for rke2 server
+data "template_file" "provision_rke2_server" {
+  template = var.k8s_distro_name == "rke2" ? file("${path.module}/user-data-scripts/provision_rke2_server.sh.tpl") : null
+  vars = {
+    rke2_cluster_secret = random_password.rke2_cluster_secret.result
+    rke2_server_public_ip = aws_eip.lh_aws_eip_controlplane[0].public_ip
+    rke2_version =  var.k8s_distro_version
+  }
+}
+
+# Generate template file for rke2 agent
+data "template_file" "provision_rke2_agent" {
+  template = var.k8s_distro_name == "rke2" ? file("${path.module}/user-data-scripts/provision_rke2_agent.sh.tpl") : null
+  vars = {
+    rke2_server_url = "https://${aws_eip.lh_aws_eip_controlplane[0].public_ip}:9345"
+    rke2_cluster_secret = random_password.rke2_cluster_secret.result
+    rke2_version =  var.k8s_distro_version
+  }
+}
