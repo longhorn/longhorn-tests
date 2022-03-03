@@ -2,10 +2,7 @@
 
 sudo zypper ref
 sudo zypper install -y -t pattern devel_basis
-sudo zypper install -y open-iscsi docker nfs-client jq
-sudo usermod -aG docker ec2-user
-sudo systemctl enable docker
-sudo systemctl start docker
+sudo zypper install -y open-iscsi nfs-client jq
 sudo systemctl -q enable iscsid
 sudo systemctl start iscsid
 

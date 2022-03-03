@@ -92,7 +92,7 @@ variable "lh_aws_instance_root_block_device_size_worker" {
 variable "k8s_distro_name" {
   type        = string
   default     = "k3s"
-  description = "kubernetes distro version to install [rke, k3s]  (default: k3s)"
+  description = "kubernetes distro version to install [rke, k3s, rke2]  (default: k3s)"
 }
 
 variable "k8s_distro_version" {
@@ -102,5 +102,6 @@ variable "k8s_distro_version" {
     kubernetes version that will be deployed
     rke: (default: v1.22.5-rancher1-1)
     k3s: (default: v1.23.1+k3s2)
+    rke2: (default: v1.23.3+rke2r1)
   EOT
 }
