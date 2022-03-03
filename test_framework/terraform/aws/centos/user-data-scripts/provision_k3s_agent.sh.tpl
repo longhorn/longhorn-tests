@@ -8,6 +8,10 @@ elif [[  ${selinux_mode} == "permissive" ]]; then
     setenforce  0
 fi
 
+# upgrade to CentOS Stream repos
+sed -i 's/mirrorlist/#mirrorlist/g' /etc/yum.repos.d/CentOS-*
+sed -i 's|#baseurl=http://mirror.centos.org|baseurl=http://vault.centos.org|g' /etc/yum.repos.d/CentOS-*
+
 sudo yum update -y
 sudo yum group install -y "Development Tools"
 sudo yum install -y iscsi-initiator-utils nfs-utils nfs4-acl-tools
