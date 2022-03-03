@@ -62,12 +62,30 @@ resource "aws_security_group" "lh_aws_secgrp_controlplane" {
   }
 
   ingress {
+    description = "Allow k8s API server port for rke2"
+    from_port   = 9345
+    to_port     = 9345
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+
+  ingress {
     description = "Allow k8s API server port"
     from_port   = 2379
     to_port     = 2379
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
+
+  ingress {
+    description = "Allow UDP connection for longhorn-webhooks"
+    from_port   = 0
+    to_port     = 65535
+    protocol    = "tcp"
+    cidr_blocks = ["10.0.0.0/8"]
+  }
+
 
   ingress {
     description = "Allow UDP connection for longhorn-webhooks"
@@ -230,171 +248,7 @@ resource "aws_key_pair" "lh_aws_pair_key" {
   public_key = file(var.aws_ssh_public_key_file_path)
 }
 
-# Create cluster secret (used for k3s on k3s only)
-resource "random_password" "k3s_cluster_secret" {
-  length = var.k8s_distro_name == "k3s" ? 64 : 0
-  special = false
-}
-
-
-# Create controlplane instances
-resource "aws_instance" "lh_aws_instance_controlplane" {
- depends_on = [
-    aws_subnet.lh_aws_public_subnet,
-  ]
-
-  count = var.lh_aws_instance_count_controlplane
-
-  availability_zone = var.aws_availability_zone
-
-  ami           = data.aws_ami.aws_ami_ubuntu.id
-  instance_type = var.lh_aws_instance_type_controlplane
-
-  subnet_id = aws_subnet.lh_aws_public_subnet.id
-  vpc_security_group_ids = [
-    aws_security_group.lh_aws_secgrp_controlplane.id
-  ]
-
-  root_block_device {
-    delete_on_termination = true
-    volume_size = var.lh_aws_instance_root_block_device_size_controlplane
-  }
-
-  key_name = aws_key_pair.lh_aws_pair_key.key_name
-  user_data = var.k8s_distro_name == "k3s" ? data.template_file.provision_k3s_server.rendered : file("${path.module}/user-data-scripts/provision_rke.sh")
-
-  tags = {
-    Name = "${var.lh_aws_instance_name_controlplane}-${count.index}-${random_string.random_suffix.id}"
-    DoNotDelete	= "true"
-    Owner = "longhorn-infra"
-  }
-}
-
 resource "aws_eip" "lh_aws_eip_controlplane" {
   count    = var.lh_aws_instance_count_controlplane
   vpc      = true
-}
-
-# Associate every EIP with controlplane instance
-resource "aws_eip_association" "lh_aws_eip_assoc" {
-  depends_on = [
-    aws_instance.lh_aws_instance_controlplane,
-    aws_eip.lh_aws_eip_controlplane
-  ]
-
-  count    = var.lh_aws_instance_count_controlplane
-
-  instance_id   = element(aws_instance.lh_aws_instance_controlplane, count.index).id
-  allocation_id = element(aws_eip.lh_aws_eip_controlplane, count.index).id
-}
-
-# Create worker instances
-resource "aws_instance" "lh_aws_instance_worker" {
-  depends_on = [
-    aws_internet_gateway.lh_aws_igw,
-    aws_subnet.lh_aws_private_subnet,
-    aws_instance.lh_aws_instance_controlplane
-  ]
-
-  count = var.lh_aws_instance_count_worker
-
-  availability_zone = var.aws_availability_zone
-
-  ami           = data.aws_ami.aws_ami_ubuntu.id
-  instance_type = var.lh_aws_instance_type_worker
-
-  subnet_id = aws_subnet.lh_aws_private_subnet.id
-  vpc_security_group_ids = [
-    aws_security_group.lh_aws_secgrp_worker.id
-  ]
-
-  root_block_device {
-    delete_on_termination = true
-    volume_size = var.lh_aws_instance_root_block_device_size_worker
-  }
-
-  key_name = aws_key_pair.lh_aws_pair_key.key_name
-
-  user_data = var.k8s_distro_name == "k3s" ? data.template_file.provision_k3s_agent.rendered : file("${path.module}/user-data-scripts/provision_rke.sh")
-
-  tags = {
-    Name = "${var.lh_aws_instance_name_worker}-${count.index}-${random_string.random_suffix.id}"
-    DoNotDelete	= "true"
-    Owner = "longhorn-infra"
-  }
-}
-
-# wait for docker to start on controlplane instances (for rke on rke only)
-resource "null_resource" "wait_for_docker_start_controlplane" {
-  depends_on = [
-    aws_instance.lh_aws_instance_controlplane,
-    aws_instance.lh_aws_instance_worker,
-    aws_eip.lh_aws_eip_controlplane,
-    aws_eip_association.lh_aws_eip_assoc
-  ]
-
-  count = var.lh_aws_instance_count_controlplane
-
-  provisioner "remote-exec" {
-
-    inline = var.k8s_distro_name == "rke" ? ["until( systemctl is-active docker.service ); do echo \"waiting for docker to start \"; sleep 2; done"] : null
-
-    connection {
-      type     = "ssh"
-      user     = "ubuntu"
-      host     = element(aws_eip.lh_aws_eip_controlplane, count.index).public_ip
-      private_key = file(var.aws_ssh_private_key_file_path)
-    }
-  }
-}
-
-# wait for docker to start on worker instances (for rke on rke only)
-resource "null_resource" "wait_for_docker_start_worker" {
-  depends_on = [
-    aws_instance.lh_aws_instance_controlplane,
-    aws_instance.lh_aws_instance_worker,
-    aws_eip.lh_aws_eip_controlplane,
-    aws_eip_association.lh_aws_eip_assoc
-  ]
-
-  count = var.lh_aws_instance_count_worker
-
-  provisioner "remote-exec" {
-    inline = var.k8s_distro_name == "rke" ? ["until( systemctl is-active docker.service ); do echo \"waiting for docker to start \"; sleep 2; done"] : null
-
-    connection {
-      type     = "ssh"
-      user     = "ubuntu"
-      host     = element(aws_instance.lh_aws_instance_worker, count.index).private_ip
-      private_key = file(var.aws_ssh_private_key_file_path)
-      bastion_user     = "ubuntu"
-      bastion_host     = aws_eip.lh_aws_eip_controlplane[0].public_ip
-      bastion_private_key = file(var.aws_ssh_private_key_file_path)
-    }
-  }
-}
-
-# Download KUBECONFIG file (for k3s k3s only)
-resource "null_resource" "rsync_kubeconfig_file" {
-  depends_on = [
-    aws_instance.lh_aws_instance_controlplane,
-    aws_eip.lh_aws_eip_controlplane,
-    aws_eip_association.lh_aws_eip_assoc
-  ]
-
-  provisioner "remote-exec" {
-    inline = var.k8s_distro_name == "k3s" ? ["until([ -f /etc/rancher/k3s/k3s.yaml ] && [ `sudo /usr/local/bin/kubectl get node -o jsonpath='{.items[*].status.conditions}'  | jq '.[] | select(.type  == \"Ready\").status' | grep -ci true` -eq 4 ]); do echo \"waiting for k3s cluster nodes to be running\"; sleep 2; done"] : null
-
-
-    connection {
-      type     = "ssh"
-      user     = "ubuntu"
-      host     = aws_eip.lh_aws_eip_controlplane[0].public_ip
-      private_key = file(var.aws_ssh_private_key_file_path)
-    }
-  }
-
-  provisioner "local-exec" {
-    command = var.k8s_distro_name == "k3s" ? "rsync -aPvz --rsync-path=\"sudo rsync\" -e \"ssh -o StrictHostKeyChecking=no -l ubuntu -i ${var.aws_ssh_private_key_file_path}\" ${aws_eip.lh_aws_eip_controlplane[0].public_ip}:/etc/rancher/k3s/k3s.yaml .  && sed -i 's#https://127.0.0.1:6443#https://${aws_eip.lh_aws_eip_controlplane[0].public_ip}:6443#' k3s.yaml"  : "echo \"rke ... skipping\""
-  }
 }

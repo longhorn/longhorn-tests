@@ -102,5 +102,6 @@ variable "k8s_distro_version" {
     kubernetes version that will be deployed
     rke: (default: v1.22.5-rancher1-1)
     k3s: (default: v1.23.1+k3s2)
+    rke2: (default: v1.23.3+rke2r1)
   EOT
 }
