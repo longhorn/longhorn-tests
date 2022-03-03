@@ -1,3 +1,6 @@
+#!/usr/bin/env python3
+
+import os
 from os import times
 from typing import Dict
 from matplotlib.pyplot import get
@@ -15,7 +18,7 @@ NAMESPACE = "default"
 TEMPLATE_FILE = "statefulset.yaml"
 STS_PREFIX = "sts-"
 IMAGE = "phanle1010/ubuntu:fio"
-KUBE_CONFIG = None
+KUBE_CONFIG = os.environ.get('KUBECONFIG')
 KUBE_CONTEXT = None
 MAX_POD_STARTING_TIME = 300 # in seconds
 MAX_POD_CRASHING_COUNT = 0
