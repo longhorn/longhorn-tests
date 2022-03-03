@@ -14,9 +14,70 @@ provider "aws" {
   secret_key = var.lh_aws_secret_key
 }
 
+# Create a non-default VPC
+resource "aws_vpc" "lh_aws_vpc" {
+  cidr_block = "10.0.0.0/16"
+
+  tags = {
+    Name = "lh_aws_vpc-${random_string.random_suffix.id}"
+  }
+}
+
+# Create internet gateway
+resource "aws_internet_gateway" "lh_aws_igw" {
+  vpc_id = aws_vpc.lh_aws_vpc.id
+
+  tags = {
+    Name = "lh_igw-${random_string.random_suffix.id}"
+  }
+}
+
+# Create a subnet
+resource "aws_subnet" "lh_aws_subnet" {
+  vpc_id            = aws_vpc.lh_aws_vpc.id
+  availability_zone = var.aws_availability_zone
+  cidr_block        = "10.0.1.0/24"
+  map_public_ip_on_launch = true
+
+  tags = {
+    Name = "lh_aws_subnet-${random_string.random_suffix.id}"
+  }
+}
+
+# Create a route table
+resource "aws_route_table" "lh_aws_rt" {
+  depends_on = [
+    aws_internet_gateway.lh_aws_igw,
+  ]
+
+  vpc_id = aws_vpc.lh_aws_vpc.id
+
+  route {
+    cidr_block = "0.0.0.0/0"
+    gateway_id = aws_internet_gateway.lh_aws_igw.id
+  }
+
+  tags = {
+    Name = "lh_aws_rt-${random_string.random_suffix.id}"
+  }
+}
+
+# Assciate the subnet with the route table
+resource "aws_route_table_association" "lh_aws_subnet_rt_assoc" {
+  depends_on = [
+    aws_subnet.lh_aws_subnet,
+    aws_route_table.lh_aws_rt
+  ]
+
+  subnet_id      = aws_subnet.lh_aws_subnet.id
+  route_table_id = aws_route_table.lh_aws_rt.id
+}
+
+# Create security group for instances
 resource "aws_security_group" "lh_aws_secgrp" {
   name        = "lh_aws_secgrp"
   description = "Allow all inbound traffic"
+  vpc_id      = aws_vpc.lh_aws_vpc.id
   ingress {
     description = "Allow All Traffic"
     from_port   = 0
@@ -67,6 +128,7 @@ resource "aws_instance" "lh_aws_instance_first_controlplane" {
   vpc_security_group_ids = [
     aws_security_group.lh_aws_secgrp.id
   ]
+  subnet_id = aws_subnet.lh_aws_subnet.id
 
   root_block_device {
     delete_on_termination = true
@@ -137,6 +199,7 @@ resource "aws_instance" "lh_aws_instance_additional_controlplane" {
   vpc_security_group_ids = [
     aws_security_group.lh_aws_secgrp.id
   ]
+  subnet_id = aws_subnet.lh_aws_subnet.id
 
   root_block_device {
     delete_on_termination = true
@@ -167,6 +230,7 @@ resource "aws_instance" "lh_aws_instance_worker" {
   vpc_security_group_ids = [
     aws_security_group.lh_aws_secgrp.id
   ]
+  subnet_id = aws_subnet.lh_aws_subnet.id
 
   root_block_device {
     delete_on_termination = true
@@ -202,7 +266,7 @@ resource "null_resource" "rsync_kubeconfig_file" {
   ]
 
   provisioner "remote-exec" {
-    inline = ["until([ -f /etc/rancher/rke2/rke2.yaml ] && [ `sudo /var/lib/rancher/rke2/bin/kubectl --kubeconfig=/etc/rancher/rke2/rke2.yaml get nodes --no-headers | grep -v \"NotReady\" | wc -l` -eq ${var.lh_aws_instance_count_worker + var.lh_aws_instance_count_controlplane} ]); do echo \"waiting for rke2 cluster nodes to be running\"; sleep 2; done"]
+    inline = ["until([ -f /etc/rancher/rke2/rke2.yaml ] && [ `sudo /var/lib/rancher/rke2/bin/kubectl --kubeconfig=/etc/rancher/rke2/rke2.yaml get nodes --no-headers | grep -v \"NotReady\" | wc -l` -eq ${var.lh_aws_instance_count_worker + length(aws_instance.lh_aws_instance_additional_controlplane)} ]); do echo \"waiting for rke2 cluster nodes to be running\"; sleep 2; done"]
 
     connection {
       type        = "ssh"
