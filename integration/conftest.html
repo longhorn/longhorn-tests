@@ -35,7 +35,7 @@ from common import get_longhorn_api_client, \
     NODE_CONDITION_MOUNTPROPAGATION, CONDITION_STATUS_TRUE
 from common import wait_for_node_mountpropagation_condition
 from common import check_longhorn, check_csi_expansion
-
+from common import generate_support_bundle
 
 SKIP_BACKING_IMAGE_OPT = &#34;--skip-backing-image-test&#34;
 SKIP_RECURRING_JOB_OPT = &#34;--skip-recurring-job-test&#34;
@@ -200,7 +200,20 @@ def pytest_collection_modifyitems(config, items):
 
         for item in items:
             if &#34;upgrade&#34; in item.keywords:
-                item.add_marker(skip_upgrade)</code></pre>
+                item.add_marker(skip_upgrade)
+
+
+def pytest_exception_interact(call, report):
+
+    # Only work on TestReport, not on CollectReport
+    if type(report).__name__ != &#34;TestReport&#34;:
+        return
+
+    # Get case name
+    case_name = str(report).split()[1]
+    case_name = case_name.split(&#39;/&#39;)[1].replace(&#39;\&#39;&#39;, &#39;&#39;)
+
+    generate_support_bundle(case_name)</code></pre>
 </details>
 </section>
 <section>
@@ -378,6 +391,28 @@ def pytest_collection_modifyitems(config, items):
                 item.add_marker(skip_upgrade)</code></pre>
 </details>
 </dd>
+<dt id="tests.conftest.pytest_exception_interact"><code class="name flex">
+<span>def <span class="ident">pytest_exception_interact</span></span>(<span>call, report)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def pytest_exception_interact(call, report):
+
+    # Only work on TestReport, not on CollectReport
+    if type(report).__name__ != &#34;TestReport&#34;:
+        return
+
+    # Get case name
+    case_name = str(report).split()[1]
+    case_name = case_name.split(&#39;/&#39;)[1].replace(&#39;\&#39;&#39;, &#39;&#39;)
+
+    generate_support_bundle(case_name)</code></pre>
+</details>
+</dd>
 </dl>
 </section>
 <section>
@@ -398,6 +433,7 @@ def pytest_collection_modifyitems(config, items):
 <ul class="">
 <li><code><a title="tests.conftest.pytest_addoption" href="#tests.conftest.pytest_addoption">pytest_addoption</a></code></li>
 <li><code><a title="tests.conftest.pytest_collection_modifyitems" href="#tests.conftest.pytest_collection_modifyitems">pytest_collection_modifyitems</a></code></li>
+<li><code><a title="tests.conftest.pytest_exception_interact" href="#tests.conftest.pytest_exception_interact">pytest_exception_interact</a></code></li>
 </ul>
 </li>
 </ul>

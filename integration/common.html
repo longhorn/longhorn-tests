@@ -42,6 +42,8 @@ import socket
 import pytest
 
 import longhorn
+import requests
+import warnings
 
 from kubernetes import client as k8sclient, config as k8sconfig
 from kubernetes.client import Configuration
@@ -246,6 +248,8 @@ K8S_ZONE_LABEL = &#34;topology.kubernetes.io/zone&#34;
 BACKING_IMAGE_SOURCE_TYPE_DOWNLOAD = &#34;download&#34;
 
 JOB_LABEL = &#34;recurring-job.longhorn.io&#34;
+
+MAX_SUPPORT_BINDLE_NUMBER = 20
 
 
 def load_k8s_config():
@@ -4625,7 +4629,59 @@ def restore_backup_and_get_data_checksum(client, core_api, backup, pod,
         output = exec_command_in_pod(core_api, command, restore_pod_name,
                                      &#39;default&#39;)
 
-    return data_checksum, output, restore_pod_name</code></pre>
+    return data_checksum, output, restore_pod_name
+
+
+def generate_support_bundle(case_name):
+    &#34;&#34;&#34;
+        Generate support bundle into folder ./support_bundle/case_name.zip
+
+        Won&#39;t generate support bundle if current support bundle count
+        greate than MAX_SUPPORT_BINDLE_NUMBER.
+        Args:
+            case_name: support bundle will named case_name.zip
+    &#34;&#34;&#34;
+
+    os.makedirs(&#34;support_bundle&#34;, exist_ok=True)
+    file_cnt = len(os.listdir(&#34;support_bundle&#34;))
+
+    if file_cnt &gt;= MAX_SUPPORT_BINDLE_NUMBER:
+        warnings.warn(&#34;Ignoring the bundle download because of \
+                            avoiding overwhelming the disk usage.&#34;)
+        return
+
+    # Use API gen support bundle
+    client = get_longhorn_api_client()
+    url = client._url.replace(&#39;schemas&#39;, &#39;supportbundles&#39;)
+    data = {&#39;description&#39;: case_name, &#39;issueURL&#39;: case_name}
+    res = requests.post(url, json=data).json()
+
+    id = res[&#39;id&#39;]
+    name = res[&#39;name&#39;]
+
+    support_bundle_url = &#39;{}/{}/{}&#39;.format(url, id, name)
+    for i in range(RETRY_EXEC_COUNTS):
+        res = requests.get(support_bundle_url).json()
+
+        if res[&#39;progressPercentage&#39;] == 100:
+            break
+        else:
+            time.sleep(RETRY_INTERVAL_LONG)
+
+    if res[&#39;progressPercentage&#39;] != 100:
+        warnings.warn(&#34;Timeout to wait support bundle ready, skip download&#34;)
+        return
+
+    # Download support bundle
+    download_url = &#39;{}/download&#39;.format(support_bundle_url)
+    try:
+        r = requests.get(download_url, allow_redirects=True, timeout=300)
+        r.raise_for_status()
+        with open(&#39;./support_bundle/{0}.zip&#39;.format(case_name), &#39;wb&#39;) as f:
+            f.write(r.content)
+    except Exception as e:
+        warnings.warn(&#34;Error occured while downloading support bundle {}.zip\n\
+            The error was {}&#34;.format(case_name, e))</code></pre>
 </details>
 </section>
 <section>
@@ -6847,6 +6903,74 @@ been completed successfully</p></div>
     return STATEFULSET_NAME + &#34;-&#34; + \
         &#39;&#39;.join(random.choice(string.ascii_lowercase + string.digits)
                 for _ in range(6))</code></pre>
+</details>
+</dd>
+<dt id="tests.common.generate_support_bundle"><code class="name flex">
+<span>def <span class="ident">generate_support_bundle</span></span>(<span>case_name)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Generate support bundle into folder ./support_bundle/case_name.zip</p>
+<p>Won't generate support bundle if current support bundle count
+greate than MAX_SUPPORT_BINDLE_NUMBER.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>case_name</code></strong></dt>
+<dd>support bundle will named case_name.zip</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def generate_support_bundle(case_name):
+    &#34;&#34;&#34;
+        Generate support bundle into folder ./support_bundle/case_name.zip
+
+        Won&#39;t generate support bundle if current support bundle count
+        greate than MAX_SUPPORT_BINDLE_NUMBER.
+        Args:
+            case_name: support bundle will named case_name.zip
+    &#34;&#34;&#34;
+
+    os.makedirs(&#34;support_bundle&#34;, exist_ok=True)
+    file_cnt = len(os.listdir(&#34;support_bundle&#34;))
+
+    if file_cnt &gt;= MAX_SUPPORT_BINDLE_NUMBER:
+        warnings.warn(&#34;Ignoring the bundle download because of \
+                            avoiding overwhelming the disk usage.&#34;)
+        return
+
+    # Use API gen support bundle
+    client = get_longhorn_api_client()
+    url = client._url.replace(&#39;schemas&#39;, &#39;supportbundles&#39;)
+    data = {&#39;description&#39;: case_name, &#39;issueURL&#39;: case_name}
+    res = requests.post(url, json=data).json()
+
+    id = res[&#39;id&#39;]
+    name = res[&#39;name&#39;]
+
+    support_bundle_url = &#39;{}/{}/{}&#39;.format(url, id, name)
+    for i in range(RETRY_EXEC_COUNTS):
+        res = requests.get(support_bundle_url).json()
+
+        if res[&#39;progressPercentage&#39;] == 100:
+            break
+        else:
+            time.sleep(RETRY_INTERVAL_LONG)
+
+    if res[&#39;progressPercentage&#39;] != 100:
+        warnings.warn(&#34;Timeout to wait support bundle ready, skip download&#34;)
+        return
+
+    # Download support bundle
+    download_url = &#39;{}/download&#39;.format(support_bundle_url)
+    try:
+        r = requests.get(download_url, allow_redirects=True, timeout=300)
+        r.raise_for_status()
+        with open(&#39;./support_bundle/{0}.zip&#39;.format(case_name), &#39;wb&#39;) as f:
+            f.write(r.content)
+    except Exception as e:
+        warnings.warn(&#34;Error occured while downloading support bundle {}.zip\n\
+            The error was {}&#34;.format(case_name, e))</code></pre>
 </details>
 </dd>
 <dt id="tests.common.generate_volume_name"><code class="name flex">
@@ -11674,6 +11798,7 @@ volume. Trigger a failed assertion of one is detected.
 <li><code><a title="tests.common.generate_random_pos" href="#tests.common.generate_random_pos">generate_random_pos</a></code></li>
 <li><code><a title="tests.common.generate_random_suffix" href="#tests.common.generate_random_suffix">generate_random_suffix</a></code></li>
 <li><code><a title="tests.common.generate_sts_name" href="#tests.common.generate_sts_name">generate_sts_name</a></code></li>
+<li><code><a title="tests.common.generate_support_bundle" href="#tests.common.generate_support_bundle">generate_support_bundle</a></code></li>
 <li><code><a title="tests.common.generate_volume_name" href="#tests.common.generate_volume_name">generate_volume_name</a></code></li>
 <li><code><a title="tests.common.get_apps_api_client" href="#tests.common.get_apps_api_client">get_apps_api_client</a></code></li>
 <li><code><a title="tests.common.get_backupstore_poll_interval" href="#tests.common.get_backupstore_poll_interval">get_backupstore_poll_interval</a></code></li>
