@@ -61,6 +61,13 @@ node {
             stage ('longhorn setup & tests') {
                 sh  " docker exec ${JOB_BASE_NAME}-${BUILD_NUMBER} ${TF_VAR_tf_workspace}/scripts/longhorn-setup.sh"
             }
+
+            stage ('download support bundle') {
+                sh "docker exec ${JOB_BASE_NAME}-${BUILD_NUMBER} ${TF_VAR_tf_workspace}/scripts/download-support-bundle.sh  ${JOB_BASE_NAME}-${BUILD_NUMBER}-bundle.zip"
+                sh "docker cp ${JOB_BASE_NAME}-${BUILD_NUMBER}:${TF_VAR_tf_workspace}/${JOB_BASE_NAME}-${BUILD_NUMBER}-bundle.zip ."
+				archiveArtifacts allowEmptyArchive: true, artifacts: '**/*.zip'', followSymlinks: false
+			}
+
             stage ('report generation') {
                 sh "docker cp ${JOB_BASE_NAME}-${BUILD_NUMBER}:${TF_VAR_tf_workspace}/longhorn-test-junit-report.xml ."
 
@@ -78,7 +85,7 @@ node {
             throw e
         } finally {
             stage('releasing resources') {
-                sh  " docker exec ${JOB_BASE_NAME}-${BUILD_NUMBER} ${TF_VAR_tf_workspace}/scripts/cleanup.sh"
+                sh "docker exec ${JOB_BASE_NAME}-${BUILD_NUMBER} ${TF_VAR_tf_workspace}/scripts/cleanup.sh"
                 sh "docker stop ${JOB_BASE_NAME}-${BUILD_NUMBER}"
                 sh "docker rm -v ${JOB_BASE_NAME}-${BUILD_NUMBER}"
                 sh "docker rmi ${imageName}"
