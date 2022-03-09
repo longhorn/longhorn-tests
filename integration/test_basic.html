@@ -3352,7 +3352,8 @@ def test_allow_volume_creation_with_degraded_availability_restore(set_random_bac
     Requirement:
     1. Set `allow-volume-creation-with-degraded-availability` to true.
     2. `node-level-soft-anti-affinity` to false.
-    3. Create a backup of 800MB.
+    3. `replica-replenishment-wait-interval` to 0.
+    4. Create a backup of 800MB.
 
     Steps:
     (restore)
@@ -3378,6 +3379,10 @@ def test_allow_volume_creation_with_degraded_availability_restore(set_random_bac
     replica_soft_anti_affinity_setting = \
         client.by_id_setting(SETTING_REPLICA_NODE_SOFT_ANTI_AFFINITY)
     client.update(replica_soft_anti_affinity_setting, value=&#34;false&#34;)
+
+    replenish_wait_setting = \
+        client.by_id_setting(SETTING_REPLICA_REPLENISHMENT_WAIT_INTERVAL)
+    client.update(replenish_wait_setting, value=&#34;0&#34;)
 
     # create a backup
     backupstore_cleanup(client)
@@ -4931,7 +4936,8 @@ def test_allow_volume_creation_with_degraded_availability_error(client, volume_n
 <p>Requirement:
 1. Set <code>allow-volume-creation-with-degraded-availability</code> to true.
 2. <code>node-level-soft-anti-affinity</code> to false.
-3. Create a backup of 800MB.</p>
+3. <code>replica-replenishment-wait-interval</code> to 0.
+4. Create a backup of 800MB.</p>
 <p>Steps:
 (restore)
 1. Disable scheduling for node 2 and 3.
@@ -4957,7 +4963,8 @@ Replica scheduling to node 3 fail.
     Requirement:
     1. Set `allow-volume-creation-with-degraded-availability` to true.
     2. `node-level-soft-anti-affinity` to false.
-    3. Create a backup of 800MB.
+    3. `replica-replenishment-wait-interval` to 0.
+    4. Create a backup of 800MB.
 
     Steps:
     (restore)
@@ -4983,6 +4990,10 @@ Replica scheduling to node 3 fail.
     replica_soft_anti_affinity_setting = \
         client.by_id_setting(SETTING_REPLICA_NODE_SOFT_ANTI_AFFINITY)
     client.update(replica_soft_anti_affinity_setting, value=&#34;false&#34;)
+
+    replenish_wait_setting = \
+        client.by_id_setting(SETTING_REPLICA_REPLENISHMENT_WAIT_INTERVAL)
+    client.update(replenish_wait_setting, value=&#34;0&#34;)
 
     # create a backup
     backupstore_cleanup(client)
