@@ -4681,7 +4681,34 @@ def generate_support_bundle(case_name):
             f.write(r.content)
     except Exception as e:
         warnings.warn(&#34;Error occured while downloading support bundle {}.zip\n\
-            The error was {}&#34;.format(case_name, e))</code></pre>
+            The error was {}&#34;.format(case_name, e))
+
+
+@pytest.fixture
+def deploy_csi_snapshot_and_classes(request):
+
+    &#34;&#34;&#34;
+    Deploy the CSI snapshot CRDs, Controller as instructed at
+    https://longhorn.io/docs/1.2.3/snapshots-and-backups/csi-snapshot-support
+    /enable-csi-snapshot-support/
+    &#34;&#34;&#34;
+
+    # depoly CSI snapshot CRDs, Controller
+
+    # Deploy 3 VolumeSnapshotClass
+    #   longhorn-backup (type=bak)
+    #   longhorn-snapshot (type=snap)
+    #   invalid (type=invalid)
+
+    def finalizer():
+
+        # Delete 4 VolumeSnapshotClass
+        #   longhorn-backup (type=bak)
+        #   longhorn-snapshot (type=snap)
+        #   invalid (type=invalid)
+        pass
+
+    request.addfinalizer(finalizer)</code></pre>
 </details>
 </section>
 <section>
@@ -6465,6 +6492,44 @@ if a nonexistent Pod is specified.</p>
         api.delete_storage_class(sc_name, body=k8sclient.V1DeleteOptions())
     except ApiException as e:
         assert e.status == 404</code></pre>
+</details>
+</dd>
+<dt id="tests.common.deploy_csi_snapshot_and_classes"><code class="name flex">
+<span>def <span class="ident">deploy_csi_snapshot_and_classes</span></span>(<span>request)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Deploy the CSI snapshot CRDs, Controller as instructed at
+<a href="https://longhorn.io/docs/1.2.3/snapshots-and-backups/csi-snapshot-support">https://longhorn.io/docs/1.2.3/snapshots-and-backups/csi-snapshot-support</a>
+/enable-csi-snapshot-support/</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@pytest.fixture
+def deploy_csi_snapshot_and_classes(request):
+
+    &#34;&#34;&#34;
+    Deploy the CSI snapshot CRDs, Controller as instructed at
+    https://longhorn.io/docs/1.2.3/snapshots-and-backups/csi-snapshot-support
+    /enable-csi-snapshot-support/
+    &#34;&#34;&#34;
+
+    # depoly CSI snapshot CRDs, Controller
+
+    # Deploy 3 VolumeSnapshotClass
+    #   longhorn-backup (type=bak)
+    #   longhorn-snapshot (type=snap)
+    #   invalid (type=invalid)
+
+    def finalizer():
+
+        # Delete 4 VolumeSnapshotClass
+        #   longhorn-backup (type=bak)
+        #   longhorn-snapshot (type=snap)
+        #   invalid (type=invalid)
+        pass
+
+    request.addfinalizer(finalizer)</code></pre>
 </details>
 </dd>
 <dt id="tests.common.dev_read"><code class="name flex">
@@ -11780,6 +11845,7 @@ volume. Trigger a failed assertion of one is detected.
 <li><code><a title="tests.common.delete_backup_volume" href="#tests.common.delete_backup_volume">delete_backup_volume</a></code></li>
 <li><code><a title="tests.common.delete_replica_processes" href="#tests.common.delete_replica_processes">delete_replica_processes</a></code></li>
 <li><code><a title="tests.common.delete_storage_class" href="#tests.common.delete_storage_class">delete_storage_class</a></code></li>
+<li><code><a title="tests.common.deploy_csi_snapshot_and_classes" href="#tests.common.deploy_csi_snapshot_and_classes">deploy_csi_snapshot_and_classes</a></code></li>
 <li><code><a title="tests.common.dev_read" href="#tests.common.dev_read">dev_read</a></code></li>
 <li><code><a title="tests.common.dev_write" href="#tests.common.dev_write">dev_write</a></code></li>
 <li><code><a title="tests.common.disable_auto_salvage" href="#tests.common.disable_auto_salvage">disable_auto_salvage</a></code></li>
