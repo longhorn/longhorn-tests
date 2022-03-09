@@ -3356,7 +3356,8 @@ def test_allow_volume_creation_with_degraded_availability_restore(
     Requirement:
     1. Set `allow-volume-creation-with-degraded-availability` to true.
     2. `node-level-soft-anti-affinity` to false.
-    3. Create a backup of 800MB.
+    3. `replica-replenishment-wait-interval` to 0.
+    4. Create a backup of 800MB.
 
     Steps:
     (restore)
@@ -3382,6 +3383,10 @@ def test_allow_volume_creation_with_degraded_availability_restore(
     replica_soft_anti_affinity_setting = \
         client.by_id_setting(SETTING_REPLICA_NODE_SOFT_ANTI_AFFINITY)
     client.update(replica_soft_anti_affinity_setting, value="false")
+
+    replenish_wait_setting = \
+        client.by_id_setting(SETTING_REPLICA_REPLENISHMENT_WAIT_INTERVAL)
+    client.update(replenish_wait_setting, value="0")
 
     # create a backup
     backupstore_cleanup(client)
