@@ -336,6 +336,16 @@ Case 1:  Create a volume and take multiple backups for the same. Delete the late
     </item>
     
     <item>
+      <title>Extended CSI snapshot support to Longhorn snapshot</title>
+      <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.3.0/extend_csi_snapshot_support/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.3.0/extend_csi_snapshot_support/</guid>
+      <description>Related issue https://github.com/longhorn/longhorn/issues/2534
+Test Setup  Deploy the CSI snapshot CRDs, Controller as instructed at https://longhorn.io/docs/1.2.3/snapshots-and-backups/csi-snapshot-support/enable-csi-snapshot-support/ Deploy 4 VolumeSnapshotClass: kind: VolumeSnapshotClass apiVersion: snapshot.storage.k8s.io/v1beta1 metadata:  name: longhorn-backup-1 driver: driver.longhorn.io deletionPolicy: Delete kind: VolumeSnapshotClass apiVersion: snapshot.storage.k8s.io/v1beta1 metadata:  name: longhorn-backup-2 driver: driver.longhorn.io deletionPolicy: Delete parameters:  type: bak kind: VolumeSnapshotClass apiVersion: snapshot.storage.k8s.io/v1beta1 metadata:  name: longhorn-snapshot driver: driver.longhorn.io deletionPolicy: Delete parameters:  type: snap kind: VolumeSnapshotClass apiVersion: snapshot.storage.k8s.io/v1beta1 metadata:  name: invalid-class driver: driver.</description>
+    </item>
+    
+    <item>
       <title>HA Volume Migration</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/ha/ha-volume-migration/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
