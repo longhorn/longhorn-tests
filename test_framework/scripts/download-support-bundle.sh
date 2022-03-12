@@ -4,6 +4,27 @@ SUPPORT_BUNDLE_FILE_NAME=${1:-"lh-support-bundle.zip"}
 SUPPORT_BUNDLE_ISSUE_URL=${2:-""}
 SUPPORT_BUNDLE_ISSUE_DESC=${3:-"Auto-generated support buundle"}
 
+
+set_kubeconfig_envvar(){
+    local ARCH=${1}
+    local BASEDIR=${2}
+
+    if [[ ${ARCH} == "amd64" ]] ; then
+        if [[ ${TF_VAR_k8s_distro_name} == [rR][kK][eE] ]]; then
+            export KUBECONFIG="${BASEDIR}/kube_config_rke.yml"
+        elif [[ ${TF_VAR_k8s_distro_name} == [rR][kK][eE]2 ]]; then
+            export KUBECONFIG="${BASEDIR}/terraform/aws/${DISTRO}/rke2.yaml"
+        else
+            export KUBECONFIG="${BASEDIR}/terraform/aws/${DISTRO}/k3s.yaml"
+        fi
+    elif [[ ${ARCH} == "arm64"  ]]; then
+        export KUBECONFIG="${BASEDIR}/terraform/aws/${DISTRO}/k3s.yaml"
+    fi
+}
+
+
+set_kubeconfig_envvar ${TF_VAR_arch} ${TF_VAR_tf_workspace}
+
 LH_FRONTEND_ADDR=`kubectl get svc -n longhorn-system longhorn-frontend -o json | jq -r '.spec.clusterIP + ":" + (.spec.ports[0].port|tostring)'`
 
 JSON_PAYLOAD="{\"issueURL\": \"${SUPPORT_BUNDLE_ISSUE_DESC}\", \"description\": \"${SUPPORT_BUNDLE_ISSUE_DESC}\"}"
