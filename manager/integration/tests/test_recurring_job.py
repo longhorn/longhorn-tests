@@ -55,7 +55,6 @@ from common import check_recurring_jobs
 from common import cleanup_all_recurring_jobs
 from common import create_recurring_jobs
 from common import update_recurring_job
-from common import wait_for_recurring_jobs_cleanup
 
 from common import wait_for_cron_job_count
 from common import wait_for_cron_job_create
@@ -791,7 +790,7 @@ def test_recurring_jobs_allow_detached_volume(set_random_backupstore, client, co
                                          name=deployment["metadata"]["name"])
 
     deployment_label_name = deployment["metadata"]["labels"]["name"]
-    common.wait_pod_auto_attach_after_first_backup_completion(
+    common.wait_pod_attach_after_first_backup_completion(
         client, core_api, volume.name, deployment_label_name)
 
     cleanup_all_recurring_jobs(client)
@@ -1057,7 +1056,7 @@ def test_recurring_job_default(client, batch_v1_beta_api, volume_name):  # NOQA
     # Remove all volume recurring job labels should bring in default
     When delete all recurring jobs in volume label.
     Then volume should not have `snapshot`  job   in job label.
-         volume should     have `deault`    group in job label.
+         volume should     have `default`   group in job label.
     """
     client.create_volume(name=volume_name, size=SIZE)
     volume = wait_for_volume_detached(client, volume_name)
@@ -1119,20 +1118,6 @@ def test_recurring_job_delete(client, batch_v1_beta_api, volume_name):  # NOQA
          default `backup1`   cron job should not exist.
          default `backup2`   cron job should not exist.
                  `backup3`   cron job should not exist.
-
-     # Should be able to delete recurring job while existing in volume label
-     When add `snapshot1` recurring job to volume label.
-          add `snapshot3` recurring job to volume label.
-     And default `snapshot1` cron job should     exist.
-         default `snapshot2` cron job should not exist.
-                 `snapshot3` cron job should     exist.
-     And delete `snapshot1` recurring job.
-         delete `snapshot3` recurring job.
-     Then default `snapshot1` cron job should not exist.
-          default `snapshot2` cron job should not exist.
-                  `snapshot3` cron job should not exist.
-     And `snapshot1` job should exist in volume recurring job label.
-         `snapshot2` job should exist in volume recurring job label.
     """
     client.create_volume(name=volume_name, size=SIZE)
     volume = wait_for_volume_detached(client, volume_name)
@@ -1239,66 +1224,108 @@ def test_recurring_job_delete(client, batch_v1_beta_api, volume_name):  # NOQA
     wait_for_cron_job_delete(batch_v1_beta_api, JOB_LABEL+"="+back2)
     wait_for_cron_job_delete(batch_v1_beta_api, JOB_LABEL+"="+back3)
 
-    # Should be able to delete recurring job while existing in volume label
-    volume.recurringJobAdd(name=snap1, isGroup=False)
-    volume.recurringJobAdd(name=snap3, isGroup=False)
-    wait_for_volume_recurring_job_update(volume,
-                                         jobs=[snap1, snap3], groups=[DEFAULT])
-    wait_for_cron_job_count(batch_v1_beta_api, 2)
-    # snapshot
-    wait_for_cron_job_create(batch_v1_beta_api, JOB_LABEL+"="+snap1)
-    wait_for_cron_job_delete(batch_v1_beta_api, JOB_LABEL+"="+snap2)
-    wait_for_cron_job_create(batch_v1_beta_api, JOB_LABEL+"="+snap3)
-
-    snap1_recurring_job = client.by_id_recurring_job(snap1)
-    snap3_recurring_job = client.by_id_recurring_job(snap3)
-    client.delete(snap1_recurring_job)
-    client.delete(snap3_recurring_job)
-    wait_for_cron_job_count(batch_v1_beta_api, 0)
-    wait_for_volume_recurring_job_update(volume,
-                                         jobs=[snap1, snap3], groups=[DEFAULT])
-
 
 @pytest.mark.recurring_job  # NOQA
-def test_recurring_job_volume_labeled_none_existing_recurring_job(client, batch_v1_beta_api, volume_name):  # NOQA
+def test_recurring_job_delete_should_remove_volume_label(client, batch_v1_beta_api, volume_name):  # NOQA
     """
-    Scenario: test volume with a none-existing recurring job label
-              and later on added back.
+    Scenario: test delete recurring job should remove volume labels
 
-    Given create `snapshot` recurring job.
-          create `backup`   recurring job.
-    And 1 volume created, attached, and healthy.
-    And add `snapshot` recurring job to volume label.
-        add `backup`   recurring job to volume label.
-    And `snapshot1` cron job exist.
-        `backup1`   cron job exist.
+    Given 1 volume created.
+    And  create `snapshot1` recurring job.
+         create `backup1`   recurring job.
+    And  `snapshot1` job applied to the volume.
+         `backup1`   job applied to the volume.
+    And  `snapshot1` job exist in volume recurring job label.
+         `backup1`   job exist in volume recurring job label.
 
-    When delete `snapshot` recurring job.
-         delete `backup`   recurring job.
-    Then `snapshot` cron job should not exist.
-         `backup`   cron job should not exist.
-    And `snapshot` job  should exist in volume recurring job label.
-        `backup`   job  should exist in volume recurring job label.
-        `default` group should exist in volume recurring job label.
+    When delete `snapshot1` recurring job.
+    Then `snapshot1` job not exist in volume recurring job label.
+         `backup1`   job     exist in volume recurring job label.
 
-    # Add back the recurring jobs.
-    When create `snapshot` recurring job.
-         create `backup`   recurring job.
-    Then `snapshot` cron job should exist.
-         `backup`   cron job should exist.
+    When delete `backup1` recurring job.
+    Then `snapshot1` job not exist in volume recurring job label.
+         `backup1`   job not exist in volume recurring job label.
+
+    Given create `snapshot1` recurring job with `group-1` in groups.
+    And   create `snapshot2` recurring job with `group-1` in groups.
+    And   create `backup1`   recurring job with `group-1` in groups.
+    And   create `backup2`   recurring job with `default` in groups.
+    // The default job-group automatically applies to the volumes
+    // with no recurring job. We want to keep the test focused on the
+    // behavior so removing the default job-group assignment first.
+    And   remove volume recurring job label `default` job-group.
+    And  `group-1` job-group applied to the volume.
+    And  `group-1` job-group     exist in volume recurring job label.
+         `default` job-group not exist in volume recurring job label.
+
+    When delete `snapshot1` recurring job.
+    Then `group-1` job-group exist in volume recurring job label.
+
+    When delete `snapshot2` recurring job.
+    Then `group-1` job-group exist in volume recurring job label.
+
+    When delete `back1` recurring job.
+    Then `group-1` job-group not exist in volume recurring job label.
+    And  `default` job-group     exist in volume recurring job label.
+
+    When delete `back2` recurring job.
+    Then should not remove `default` job-group in volume.
     """
+    client.create_volume(name=volume_name, size=SIZE)
+    volume = wait_for_volume_detached(client, volume_name)
+
+    snap1 = SNAPSHOT + "1"
+    snap2 = SNAPSHOT + "2"
+    back1 = BACKUP + "1"
+    back2 = BACKUP + "2"
+    group1 = "group-1"
+    snap_job = {
+        TASK: SNAPSHOT,
+        GROUPS: [group1],
+        CRON: SCHEDULE_1MIN,
+        RETAIN: 1,
+        CONCURRENCY: 2,
+        LABELS: {},
+    }
+    back_job = {
+        TASK: BACKUP,
+        GROUPS: [group1],
+        CRON: SCHEDULE_1MIN,
+        RETAIN: 1,
+        CONCURRENCY: 2,
+        LABELS: {},
+    }
     recurring_jobs = {
-        SNAPSHOT: {
-            TASK: SNAPSHOT,
-            GROUPS: [],
-            CRON: SCHEDULE_1MIN,
-            RETAIN: 1,
-            CONCURRENCY: 2,
-            LABELS: {},
-        },
-        BACKUP: {
+        snap1: snap_job,
+        back1: back_job,
+    }
+    create_recurring_jobs(client, recurring_jobs)
+    check_recurring_jobs(client, recurring_jobs)
+
+    # Delete recurring job should remove volume label
+    volume.recurringJobAdd(name=snap1, isGroup=False)
+    volume.recurringJobAdd(name=back1, isGroup=False)
+    wait_for_volume_recurring_job_update(volume,
+                                         jobs=[snap1, back1], groups=[DEFAULT])
+
+    snap1_recurring_job = client.by_id_recurring_job(snap1)
+    back1_recurring_job = client.by_id_recurring_job(back1)
+    client.delete(snap1_recurring_job)
+    wait_for_volume_recurring_job_update(volume,
+                                         jobs=[back1], groups=[DEFAULT])
+    client.delete(back1_recurring_job)
+    wait_for_volume_recurring_job_update(volume,
+                                         jobs=[], groups=[DEFAULT])
+
+    # Delete recurring job-group in-use by other recurring-job
+    # should not remove the volume label
+    recurring_jobs = {
+        snap1: snap_job,
+        snap2: snap_job,
+        back1: back_job,
+        back2: {
             TASK: BACKUP,
-            GROUPS: [],
+            GROUPS: [DEFAULT],
             CRON: SCHEDULE_1MIN,
             RETAIN: 1,
             CONCURRENCY: 2,
@@ -1308,31 +1335,121 @@ def test_recurring_job_volume_labeled_none_existing_recurring_job(client, batch_
     create_recurring_jobs(client, recurring_jobs)
     check_recurring_jobs(client, recurring_jobs)
 
-    client.create_volume(name=volume_name, size=SIZE)
-    volume = wait_for_volume_detached(client, volume_name)
-    volume.attach(hostId=get_self_host_id())
-    volume = wait_for_volume_healthy(client, volume_name)
-    volume.recurringJobAdd(name=SNAPSHOT, isGroup=False)
-    volume.recurringJobAdd(name=BACKUP, isGroup=False)
-    wait_for_cron_job_create(batch_v1_beta_api, JOB_LABEL+"="+SNAPSHOT)
-    wait_for_cron_job_create(batch_v1_beta_api, JOB_LABEL+"="+BACKUP)
-
-    snap1_recurring_job = client.by_id_recurring_job(SNAPSHOT)
-    back1_recurring_job = client.by_id_recurring_job(BACKUP)
-    client.delete(snap1_recurring_job)
-    client.delete(back1_recurring_job)
-    wait_for_cron_job_count(batch_v1_beta_api, 0)
+    volume.recurringJobAdd(name=group1, isGroup=True)
     wait_for_volume_recurring_job_update(volume,
-                                         jobs=[SNAPSHOT, BACKUP],
-                                         groups=[DEFAULT])
-    wait_for_recurring_jobs_cleanup(client)
+                                         jobs=[], groups=[group1, DEFAULT])
+    volume.recurringJobDelete(name=DEFAULT, isGroup=True)
+    wait_for_volume_recurring_job_update(volume,
+                                         jobs=[], groups=[group1])
 
-    # Add back the recurring jobs.
+    snap1_recurring_job = client.by_id_recurring_job(snap1)
+    client.delete(snap1_recurring_job)
+    time.sleep(5)
+    wait_for_volume_recurring_job_update(volume,
+                                         jobs=[], groups=[group1])
+
+    snap2_recurring_job = client.by_id_recurring_job(snap2)
+    client.delete(snap2_recurring_job)
+    time.sleep(5)
+    wait_for_volume_recurring_job_update(volume,
+                                         jobs=[], groups=[group1])
+
+    # Delete last recurring job of the group would clean up that job-group
+    # for all volumes.
+    back1_recurring_job = client.by_id_recurring_job(back1)
+    client.delete(back1_recurring_job)
+    time.sleep(5)
+    wait_for_volume_recurring_job_update(volume,
+                                         jobs=[], groups=[DEFAULT])
+
+    # Delete recurring job in default job-group should not effect on the
+    # default job-group auto-assignment
+    back2_recurring_job = client.by_id_recurring_job(back2)
+    client.delete(back2_recurring_job)
+    time.sleep(5)
+    wait_for_volume_recurring_job_update(volume,
+                                         jobs=[], groups=[DEFAULT])
+
+
+@pytest.mark.recurring_job  # NOQA
+def test_recurring_job_volume_label_when_job_and_group_use_same_name(client, volume_name):  # NOQA
+    """
+    Scenario: test volume label recurring job when recurring job and
+              job-group uses the same name.
+
+    Given volume-1 created.
+          volume-2 created.
+          volume-3 created.
+    And  create `snapshot1` recurring job with `snapshot-1` in groups.
+         create `snapshot2` recurring job with `snapshot-1` in groups.
+    And  `snapshot1` job-group applied to volume-1.
+         `snapshot1` job       applied to volume-2.
+         `snapshot2` job       applied to volume-3.
+    And  `snapshot1` job-group exist in volume-1 recurring job label.
+         `snapshot1` job       exist in volume-2 recurring job label.
+         `snapshot2` job       exist in volume-3 recurring job label.
+
+    When delete `snapshot1` recurring job.
+    Then `snapshot1` job-group     exist in volume-1 recurring job label.
+         `snapshot1` job       not exist in volume-2 recurring job label.
+         `snapshot2` job           exist in volume-3 recurring job label.
+
+    When delete `snapshot2` recurring job.
+    Then `snapshot1` job-group not exist in volume-1 recurring job label.
+         `snapshot2` job       not exist in volume-3 recurring job label.
+    """
+    volume1_name = volume_name + "-1"
+    volume2_name = volume_name + "-2"
+    volume3_name = volume_name + "-3"
+    client.create_volume(name=volume1_name, size=SIZE)
+    client.create_volume(name=volume2_name, size=SIZE)
+    client.create_volume(name=volume3_name, size=SIZE)
+    volume1 = wait_for_volume_detached(client, volume1_name)
+    volume2 = wait_for_volume_detached(client, volume2_name)
+    volume3 = wait_for_volume_detached(client, volume3_name)
+
+    snap1 = SNAPSHOT + "1"
+    snap2 = SNAPSHOT + "2"
+    snapshot = {
+        TASK: SNAPSHOT,
+        GROUPS: [snap1],
+        CRON: SCHEDULE_1MIN,
+        RETAIN: 1,
+        CONCURRENCY: 2,
+        LABELS: {},
+    }
+    recurring_jobs = {
+        snap1: snapshot,
+        snap2: snapshot,
+    }
     create_recurring_jobs(client, recurring_jobs)
     check_recurring_jobs(client, recurring_jobs)
-    wait_for_cron_job_count(batch_v1_beta_api, 2)
-    wait_for_cron_job_create(batch_v1_beta_api, JOB_LABEL+"="+SNAPSHOT)
-    wait_for_cron_job_create(batch_v1_beta_api, JOB_LABEL+"="+BACKUP)
+
+    # Delete recurring job should correctly remove volume label
+    volume1.recurringJobAdd(name=snap1, isGroup=True)
+    volume2.recurringJobAdd(name=snap1, isGroup=False)
+    volume3.recurringJobAdd(name=snap2, isGroup=False)
+    wait_for_volume_recurring_job_update(volume1,
+                                         jobs=[], groups=[snap1, DEFAULT])
+    wait_for_volume_recurring_job_update(volume2,
+                                         jobs=[snap1], groups=[DEFAULT])
+    wait_for_volume_recurring_job_update(volume3,
+                                         jobs=[snap2], groups=[DEFAULT])
+
+    snap1_recurring_job = client.by_id_recurring_job(snap1)
+    snap2_recurring_job = client.by_id_recurring_job(snap2)
+    client.delete(snap1_recurring_job)
+    wait_for_volume_recurring_job_update(volume2,
+                                         jobs=[], groups=[DEFAULT])
+    wait_for_volume_recurring_job_update(volume1,
+                                         jobs=[], groups=[snap1, DEFAULT])
+    wait_for_volume_recurring_job_update(volume3,
+                                         jobs=[snap2], groups=[DEFAULT])
+    client.delete(snap2_recurring_job)
+    wait_for_volume_recurring_job_update(volume1,
+                                         jobs=[], groups=[DEFAULT])
+    wait_for_volume_recurring_job_update(volume3,
+                                         jobs=[], groups=[DEFAULT])
 
 
 @pytest.mark.recurring_job  # NOQA

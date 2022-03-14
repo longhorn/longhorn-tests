@@ -583,3 +583,124 @@ def test_csi_volumesnapshot_restore_existing_backup(set_random_backupstore, # NO
         find_backup(client, volume_name, b["snapshotName"])
     else:
         wait_for_backup_delete(client, volume_name, b["name"])
+
+
+@pytest.mark.skip(reason="TODO") # NOQA
+def test_csi_snapshot_with_bak_param(client, volume_name): # NOQA
+    """
+    Context:
+
+    After deploy the CSI snapshot CRDs, Controller at
+    https://longhorn.io/docs/1.2.3/snapshots-and-backups/
+    csi-snapshot-support/enable-csi-snapshot-support/
+
+    Create VolumeSnapshotClass with type=bak
+      - longhorn-backup (type=bak)
+
+    Test the extend CSI snapshot type=bak support to Longhorn snapshot
+
+    Steps:
+
+    0. Create Longhorn volume test-vol
+        - Size 5GB
+        - Create PV/PVC/Workload for the Longhorn volume
+        - Write data into volume
+        - Setup backup store
+    1. Test create CSI snapshot
+        - Create VolumeSnapshot with class longhorn-backup
+        - Should have backup generated
+    2. Test create new volume from CSI snapshot
+        - Create PVC from VolumeSnapshot generated in step 1
+        - Attach PVC and verify data
+    3. Test delete CSI snapshot
+        - Delete VolumeSnapshot
+        - The backup should deleted as well
+    """
+
+
+@pytest.mark.skip(reason="TODO") # NOQA
+def test_csi_snapshot_with_snap_param(client, volume_name): # NOQA
+    """
+    Context:
+
+    After deploy the CSI snapshot CRDs, Controller at
+    https://longhorn.io/docs/1.2.3/snapshots-and-backups/
+    csi-snapshot-support/enable-csi-snapshot-support/
+
+    Create VolumeSnapshotClass with type=snap
+      - longhorn-snapshot (type=snap)
+
+    Test the extend CSI snapshot type=snap support to Longhorn snapshot
+
+    Steps:
+
+    0. Create Longhorn volume test-vol
+        - Size 5GB
+        - Create PV/PVC/Workload for the Longhorn volume
+        - Write data into volume
+        - Setup backup store
+    1. Test create CSI snapshot
+        - Volume is in detached state
+            - Scale down the workload
+            - Create VolumeSnapshot with class longhorn-snap
+            - Verify that the volumesnapshot object is not ready
+        - Volume is in attached state
+            - Scale up the workload
+            - Verify the Longhorn snapshot generated
+    2. Test create new volume from CSI snapshot
+        - Create volume from longhorn-snapshot
+            - Source volume is attached && Longhorn snapshot exist
+                - Create PVC from snapshot generated from step 1
+                - Attach the PVC and verify data
+            - Source volume is detached
+                - Scale down the workload
+                - Create PVC from VolumeSnapshot generated from step 1
+                - Verify PVC provision failed
+            - Source volume is attached && Longhorn snapshot doesn’t exist
+                - Scale up the workload
+                - Use VolumeSnapshotContent.snapshotHandle to
+                  specify Longhorn snapshot generated in step 1
+                - Delete the Longhorn snapshot
+                - Create PVC from VolumeSnapshot generated from step 1
+                - PVC should be stuck in provisioning state
+    3. Test delete CSI snapshot
+        - Type is snap
+            - volume is attached && snapshot doesn’t exist
+                - Delete the VolumeSnapshot
+                - VolumeSnapshot is deleted
+            - volume is attached && snapshot exist
+                - Verify the creation of Longhorn snapshot with the name in
+                  the field VolumeSnapshotContent.snapshotHandle
+                - Delete the VolumeSnapshot
+                - Verify that Longhorn snapshot is removed or marked as removed
+                - Verify that the VolumeSnapshot is deleted.
+            - volume is detached
+                - Delete the VolumeSnapshot
+                - Verify that VolumeSnapshot is stuck in deleting
+    """
+
+@pytest.mark.skip(reason="TODO") # NOQA
+def test_csi_snapshot_with_invalid_param(client, volume_name): # NOQA
+    """
+    Context:
+
+    After deploy the CSI snapshot CRDs, Controller at
+    https://longhorn.io/docs/1.2.3/snapshots-and-backups/
+    csi-snapshot-support/enable-csi-snapshot-support/
+
+    Create VolumeSnapshotClass with type=invalid
+      - invalid (type=invalid)
+
+    Test the extend CSI snapshot type=invalid behavior to Longhorn snapshot
+
+    Steps:
+
+    0. Create Longhorn volume test-vol
+        - Size 5GB
+        - Create PV/PVC for the Longhorn volume
+        - Write data into volume
+        - Setup backup store
+    1. Test create CSI snapshot
+        - Create VolumeSnapshot with class invalid
+        - Verify that the volumesnapshot object is not ready
+    """

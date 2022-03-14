@@ -2,7 +2,7 @@ From alpine:latest
 
 ARG KUBECTL_VERSION=v1.20.2
 
-ARG RKE_VERSION=v1.2.9
+ARG RKE_VERSION=v1.3.4
 
 ARG TERRAFORM_VERSION=1.0.11
 
@@ -25,7 +25,7 @@ RUN wget -q https://storage.googleapis.com/kubernetes-release/release/$KUBECTL_V
     wget -q "https://github.com/mikefarah/yq/releases/download/${YQ_VERSION}/yq_linux_amd64" && \
     mv yq_linux_amd64 /usr/local/bin/yq && \
     chmod +x /usr/local/bin/yq && \
-    apk add openssh-client ca-certificates git rsync bash && \
+    apk add openssh-client ca-certificates git rsync bash curl jq && \
     ssh-keygen -t rsa -b 4096 -N "" -f ~/.ssh/id_rsa
 
 

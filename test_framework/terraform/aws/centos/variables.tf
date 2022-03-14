@@ -88,20 +88,25 @@ variable "lh_aws_instance_root_block_device_size_worker" {
   default     = 40
 }
 
-variable "rke_k8s_version" {
+variable "k8s_distro_name" {
   type        = string
-  default     = "v1.20.8-rancher1-1"
-  description = "RKE k8s version will be used to generate RKE config file output in case of arch=amd64"
+  default     = "k3s"
+  description = "kubernetes distro version to install [rke, k3s, rke2]  (default: k3s)"
 }
 
-variable "k3s_version" {
+variable "k8s_distro_version" {
   type        = string
-  default     = "v1.20.8+k3s1"
-  description = "K3s version that will be deployed in case of arch=arm64"
+  default     = "v1.23.1+k3s2"
+  description = <<-EOT
+    kubernetes version that will be deployed
+    rke: (default: v1.22.5-rancher1-1)
+    k3s: (default: v1.23.1+k3s2)
+    rke2: (default: v1.23.3+rke2r1)
+  EOT
 }
 
 variable "selinux_mode" {
   type        = string
   default     = "permissive"
-  description = "SELINUX mode [permissive | enforcing] (available only for CentOS and RedHat)"
+  description = "SELINUX mode [permissive | enforcing] (available only for CentOS, RedHat and RockyLinux)"
 }

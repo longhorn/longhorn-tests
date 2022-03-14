@@ -4,12 +4,15 @@
 ## Integration test
 
 Requirement:
-1. A Kubernetes cluster with at least 3 nodes
+1. A Kubernetes cluster with at least 3 worker nodes.
+   - And control node(s) with following taints:
+      - `node-role.kubernetes.io/master=true:NoExecute`
+      - `node-role.kubernetes.io/master=true:NoSchedule` 
 2. Longhorn system has already been successfully deployed in the cluster.
 3. No volume exists in the Longhorn system.
 4. Need kubernetes 1.10 or higher.
 5. Make sure MountPropagation feature gate is enabled
-   5.1 For RKE before v0.1.9, you would need the extra parameter feature-gates: `MountPropagation=true` for kube-api and kubelet to enable the feature gate.
+   - For RKE before v0.1.9, you would need the extra parameter feature-gates: `MountPropagation=true` for kube-api and kubelet to enable the feature gate.
 6. Make sure `nfs-common` or equivalent has been installed on the node to allow the NFS client to work.
 
 Run the test:

@@ -14,6 +14,8 @@ import socket
 import pytest
 
 import longhorn
+import requests
+import warnings
 
 from kubernetes import client as k8sclient, config as k8sconfig
 from kubernetes.client import Configuration
@@ -78,6 +80,9 @@ VOLUME_ROBUSTNESS_UNKNOWN = "unknown"
 
 VOLUME_FIELD_RESTOREREQUIRED = "restoreRequired"
 VOLUME_FIELD_READY = "ready"
+
+VOLUME_FIELD_CLONE_STATUS = "cloneStatus"
+VOLUME_FIELD_CLONE_COMPLETED = "completed"
 
 VOLUME_REPLICA_WO_LIMIT = 1
 
@@ -215,6 +220,8 @@ K8S_ZONE_LABEL = "topology.kubernetes.io/zone"
 BACKING_IMAGE_SOURCE_TYPE_DOWNLOAD = "download"
 
 JOB_LABEL = "recurring-job.longhorn.io"
+
+MAX_SUPPORT_BINDLE_NUMBER = 20
 
 
 def load_k8s_config():
@@ -1283,10 +1290,11 @@ def node_default_tags():
         update_disks[list(update_disks)[0]].tags = []
         new_node = node.diskUpdate(disks=update_disks)
         disks = get_update_disks(new_node.disks)
-        assert disks[list(new_node.disks)[0]].tags is None
+        assert len(disks[list(new_node.disks)[0]].tags) == 0, \
+            f" disk = {disks}"
 
         new_node = set_node_tags(client, node)
-        assert new_node.tags is None
+        assert len(new_node.tags) == 0, f" Node = {new_node}"
 
 
 @pytest.fixture
@@ -1458,7 +1466,9 @@ def wait_scheduling_failure(client, volume_name):
         if scheduling_failure:
             break
         time.sleep(RETRY_INTERVAL)
-    assert scheduling_failure
+    assert scheduling_failure, f" Scheduled Status = " \
+        f"{v.conditions.scheduled.status}, Scheduled reason = " \
+        f"{v.conditions.scheduled.reason}, volume = {v}"
 
 
 def wait_for_device_login(dest_path, name):
@@ -1935,9 +1945,10 @@ def wait_for_replica_scheduled(client, volume_name, to_nodes,
 
         time.sleep(RETRY_INTERVAL)
 
-    assert scheduled == expect_success
-    assert unexpect_fail == 0
-    assert len(volume.replicas) == expect_success + expect_fail
+    assert scheduled == expect_success, f" Volume = {volume}"
+    assert unexpect_fail == 0, f" Volume = {volume}"
+    assert len(volume.replicas) == expect_success + expect_fail, \
+        f" Volume = {volume}"
     return volume
 
 
@@ -1983,6 +1994,11 @@ def generate_sts_name():
     return STATEFULSET_NAME + "-" + \
         ''.join(random.choice(string.ascii_lowercase + string.digits)
                 for _ in range(6))
+
+
+def generate_random_suffix():
+    return "-" + ''.join(random.choice(string.ascii_lowercase + string.digits)
+                         for _ in range(6))
 
 
 def get_default_engine_image(client):
@@ -2273,7 +2289,10 @@ def wait_for_volume_condition_scheduled(client, name, key, value):
             break
         time.sleep(RETRY_INTERVAL)
     conditions = volume.conditions
-    assert conditions[VOLUME_CONDITION_SCHEDULED][key] == value
+    assert conditions[VOLUME_CONDITION_SCHEDULED][key] == value, \
+        f" Expected value = {value}, " \
+        f" Conditions[{VOLUME_CONDITION_SCHEDULED}][{key}] = " \
+        f"{conditions[VOLUME_CONDITION_SCHEDULED][key]}, Volume = {volume}"
     return volume
 
 
@@ -2485,11 +2504,12 @@ def wait_for_backup_completion(client, volume_name, snapshot_name=None,
         if completed:
             break
         time.sleep(RETRY_BACKUP_INTERVAL)
-    assert completed is True
+    assert completed is True, f" Backup status = {b.state}," \
+                              f" Backup Progress = {b.progress}, Volume = {v}"
     return v
 
 
-def wait_pod_auto_attach_after_first_backup_completion(
+def wait_pod_attach_after_first_backup_completion(
         client, core_api, volume_name, label_name):
     completed = False
     for _ in range(RETRY_BACKUP_COUNTS):
@@ -2501,7 +2521,6 @@ def wait_pod_auto_attach_after_first_backup_completion(
                 completed = True
                 break
         if completed:
-            wait_for_volume_detached(client, vol.name)
             wait_for_volume_frontend_disabled(client, vol.name, False)
             wait_for_volume_attached(client, vol.name)
             break
@@ -4467,6 +4486,30 @@ def wait_for_pod_annotation(core_api,
     assert matches is True
 
 
+def wait_for_volume_clone_status(client, name, key, value):
+    for _ in range(RETRY_COUNTS):
+        volume = client.by_id_volume(name)
+        if volume[VOLUME_FIELD_CLONE_STATUS][key] == value:
+            break
+        time.sleep(RETRY_INTERVAL)
+    assert volume[VOLUME_FIELD_CLONE_STATUS][key] == value, \
+        f" Expected value={value}\n. " \
+        f" Got volume[{VOLUME_FIELD_CLONE_STATUS}][{key}]= " \
+        f"{volume[VOLUME_FIELD_CLONE_STATUS][key]}\n. volume={volume}"
+    return volume
+
+
+def get_clone_volume_name(client, source_volume_name):
+    for _ in range(RETRY_EXEC_COUNTS):
+        volumes = client.list_volume()
+        for volume in volumes:
+            if volume['cloneStatus']['sourceVolume'] == \
+                    source_volume_name:
+                return volume.name
+        time.sleep(RETRY_INTERVAL_LONG)
+    return None
+
+
 def create_backup_from_volume_attached_to_pod(client, core_api,
                                               volume_name, pod_name,
                                               data_path='/data/test',
@@ -4559,3 +4602,82 @@ def restore_backup_and_get_data_checksum(client, core_api, backup, pod,
                                      'default')
 
     return data_checksum, output, restore_pod_name
+
+
+def generate_support_bundle(case_name):
+    """
+        Generate support bundle into folder ./support_bundle/case_name.zip
+
+        Won't generate support bundle if current support bundle count
+        greate than MAX_SUPPORT_BINDLE_NUMBER.
+        Args:
+            case_name: support bundle will named case_name.zip
+    """
+
+    os.makedirs("support_bundle", exist_ok=True)
+    file_cnt = len(os.listdir("support_bundle"))
+
+    if file_cnt >= MAX_SUPPORT_BINDLE_NUMBER:
+        warnings.warn("Ignoring the bundle download because of \
+                            avoiding overwhelming the disk usage.")
+        return
+
+    # Use API gen support bundle
+    client = get_longhorn_api_client()
+    url = client._url.replace('schemas', 'supportbundles')
+    data = {'description': case_name, 'issueURL': case_name}
+    res = requests.post(url, json=data).json()
+
+    id = res['id']
+    name = res['name']
+
+    support_bundle_url = '{}/{}/{}'.format(url, id, name)
+    for i in range(RETRY_EXEC_COUNTS):
+        res = requests.get(support_bundle_url).json()
+
+        if res['progressPercentage'] == 100:
+            break
+        else:
+            time.sleep(RETRY_INTERVAL_LONG)
+
+    if res['progressPercentage'] != 100:
+        warnings.warn("Timeout to wait support bundle ready, skip download")
+        return
+
+    # Download support bundle
+    download_url = '{}/download'.format(support_bundle_url)
+    try:
+        r = requests.get(download_url, allow_redirects=True, timeout=300)
+        r.raise_for_status()
+        with open('./support_bundle/{0}.zip'.format(case_name), 'wb') as f:
+            f.write(r.content)
+    except Exception as e:
+        warnings.warn("Error occured while downloading support bundle {}.zip\n\
+            The error was {}".format(case_name, e))
+
+
+@pytest.fixture
+def deploy_csi_snapshot_and_classes(request):
+
+    """
+    Deploy the CSI snapshot CRDs, Controller as instructed at
+    https://longhorn.io/docs/1.2.3/snapshots-and-backups/csi-snapshot-support
+    /enable-csi-snapshot-support/
+    """
+
+    # depoly CSI snapshot CRDs, Controller
+
+    # Deploy 3 VolumeSnapshotClass
+    #   longhorn-backup (type=bak)
+    #   longhorn-snapshot (type=snap)
+    #   invalid (type=invalid)
+
+    def finalizer():
+
+        # Delete 4 VolumeSnapshotClass
+        #   longhorn-backup (type=bak)
+        #   longhorn-snapshot (type=snap)
+        #   invalid (type=invalid)
+        pass
+
+    request.addfinalizer(finalizer)
