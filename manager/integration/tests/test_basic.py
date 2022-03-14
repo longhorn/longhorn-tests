@@ -3,6 +3,7 @@ import pytest
 import os
 import subprocess
 import time
+import random
 
 import common
 from common import client, random_labels, volume_name  # NOQA
@@ -27,7 +28,7 @@ from common import RETRY_COUNTS, RETRY_INTERVAL, RETRY_COMMAND_COUNT
 from common import DEFAULT_POD_TIMEOUT, DEFAULT_POD_INTERVAL
 from common import cleanup_volume, create_and_check_volume, create_backup
 from common import DEFAULT_VOLUME_SIZE
-from common import Gi, Mi
+from common import Gi, Mi, Ki
 from common import wait_for_volume_detached
 from common import create_pvc_spec
 from common import generate_random_data, write_volume_data
@@ -45,7 +46,7 @@ from common import pod_make, csi_pv, pvc  # NOQA
 from common import create_snapshot
 from common import expand_attached_volume
 from common import wait_for_dr_volume_expansion
-from common import check_block_device_size
+from common import check_block_device_size, get_device_checksum
 from common import wait_for_volume_expansion
 from common import fail_replica_expansion, wait_for_expansion_failure
 from common import wait_for_volume_restoration_start
@@ -75,6 +76,8 @@ from common import wait_for_backup_volume
 from common import create_and_wait_statefulset
 from common import create_backup_from_volume_attached_to_pod
 from common import restore_backup_and_get_data_checksum
+from common import write_volume_dev_random_mb_data
+from common import VOLUME_HEAD_NAME
 
 from backupstore import backupstore_delete_volume_cfg_file
 from backupstore import backupstore_cleanup
@@ -4019,3 +4022,189 @@ def test_default_storage_class_syncup():  # NOQA
     8. Revert the modifications of the ConfigMaps. Then wait for the
        StorageClass sync-up.
     """
+
+
+@pytest.mark.coretest   # NOQA
+def test_snapshot_prune(client, volume_name, backing_image=""):  # NOQA
+    """
+    Test removing the snapshot directly behinds the volume head would trigger
+    snapshot prune. Snapshot pruning means removing the overlapping part from
+    the snapshot based on the volume head content.
+
+
+    1.  Create a volume and attach to the node
+    2.  Generate and write data `snap1_data`, then create `snap1`
+    3.  Generate and write data `snap2_data` with the same offset.
+    4.  Mark `snap1` as removed.
+        Make sure volume's data didn't change.
+        But all data of the `snap1` will be pruned.
+    5.  Detach and expand the volume, then wait for the expansion done.
+        This will implicitly create a new snapshot `snap2`.
+    6.  Attach the volume.
+        Make sure there is a system snapshot with the old size.
+    7.  Generate and write data `snap3_data` which is partially overlapped with
+       `snap2_data`, plus one extra data chunk in the expanded part.
+    8.  Mark `snap2` as removed then do snapshot purge.
+        Make sure volume's data didn't change.
+        But the overlapping part of `snap2` will be pruned.
+    9.  Create `snap3`.
+    10. Do snapshot purge for the volume. Make sure `snap2` will be removed.
+    11. Generate and write data `snap4_data` which has no overlapping with
+        `snap3_data`.
+    12. Mark `snap3` as removed.
+        Make sure volume's data didn't change.
+        But there is no change for `snap3`.
+    13. Create `snap4`.
+    14. Generate and write data `snap5_data`, then create `snap5`.
+    15. Detach and reattach the volume in maintenance mode.
+    16. Make sure the volume frontend is still `blockdev` but disabled
+    17. Revert to `snap4`
+    18. Detach and reattach the volume with frontend enabled
+    19. Make sure volume's data is correct.
+    20. List snapshot. Make sure `volume-head` is now `snap4`'s child
+    """
+    snapshot_prune_test(client, volume_name, backing_image)
+
+
+def snapshot_prune_test(client, volume_name, backing_image):  # NOQA
+    # For this test, the fiemap size should not greater than 1Mi
+    fiemap_max_size = 4 * Ki
+    snap_data_size_in_mb = 4
+    volume = create_and_check_volume(client, volume_name,
+                                     backing_image=backing_image)
+
+    lht_hostId = get_self_host_id()
+    volume.attach(hostId=lht_hostId)
+    volume = common.wait_for_volume_healthy(client, volume_name)
+    volume_endpoint = get_volume_endpoint(volume)
+
+    # Prepare and write snap1_data
+    snap1_offset = 1
+    write_volume_dev_random_mb_data(volume_endpoint,
+                                    snap1_offset, snap_data_size_in_mb)
+    snap1_before = create_snapshot(client, volume_name)
+
+    # Prepare and write snap2_data,
+    # which would completely overwrite snap1 content.
+    snap2_offset = 1
+    write_volume_dev_random_mb_data(volume_endpoint,
+                                    snap2_offset, snap_data_size_in_mb)
+    cksum_before = get_device_checksum(volume_endpoint)
+
+    # All data in snap1 should be pruned.
+    volume.snapshotDelete(name=snap1_before.name)
+    volume.snapshotPurge()
+    volume = wait_for_snapshot_purge(client, volume_name, snap1_before.name)
+    snap1_after = volume.snapshotGet(name=snap1_before.name)
+    volume_head1 = volume.snapshotGet(name=VOLUME_HEAD_NAME)
+    snap1_after_size = int(snap1_after.size)
+    cksum_after = get_device_checksum(volume_endpoint)
+    assert snap1_after.removed
+    assert snap1_after_size == 0
+    assert cksum_before == cksum_after
+
+    # Expansion will implicitly created a system snapshot `snap2`
+    expand_attached_volume(client, volume_name)
+    volume = client.by_id_volume(volume_name)
+    for snap in volume.snapshotList(volume=volume_name):
+        # In the future, there may be an automatic purge operation
+        # after expansion
+        if snap.name == snap1_before.name:
+            assert snap.name == snap1_before.name
+            assert snap.removed
+            assert VOLUME_HEAD_NAME not in snap.children.keys()
+            continue
+        if snap.name != VOLUME_HEAD_NAME:
+            snap2_before = snap
+            assert not snap.usercreated
+            assert snap.size == volume_head1.size
+            assert snap.parent == snap1_before.name
+            assert VOLUME_HEAD_NAME in snap.children.keys()
+            continue
+    assert snap2_before
+    snap2_before_size = int(snap2_before.size)
+
+    # Prepare and write snap3_data,
+    # which would partially overwrite snap2 content, plus one extra data chunk
+    # in the expanded part.
+    snap3_offset1 = random.randrange(snap2_offset,
+                                     snap2_offset + snap_data_size_in_mb, 1)
+    write_volume_dev_random_mb_data(volume_endpoint,
+                                    snap3_offset1, snap_data_size_in_mb)
+    snap3_offset2 = random.randrange(
+        int(SIZE)/Mi + snap_data_size_in_mb,
+        int(EXPAND_SIZE)/Mi - snap_data_size_in_mb, 1)
+    write_volume_dev_random_mb_data(volume_endpoint,
+                                    snap3_offset2, snap_data_size_in_mb)
+    cksum_before = get_device_checksum(volume_endpoint)
+
+    # Pruning snap2 as well as coalescing snap1 with snap2
+    volume.snapshotDelete(name=snap2_before.name)
+    volume.snapshotPurge()
+    volume = wait_for_snapshot_purge(client, volume_name, snap2_before.name)
+    snap2_after = volume.snapshotGet(name=snap2_before.name)
+    snap2_after_size = int(snap2_after.size)
+    cksum_after = get_device_checksum(volume_endpoint)
+    assert snap2_after.removed
+    assert snap2_before_size >= snap2_after_size - snap1_after_size - \
+           fiemap_max_size + \
+           (snap2_offset + snap_data_size_in_mb - snap3_offset1) * Mi
+
+    assert cksum_before == cksum_after
+
+    snap3_before = create_snapshot(client, volume_name)
+    snap3_before_size = int(snap3_before.size)
+
+    # Prepare and write snap4_data which has no overlapping part with snap3.
+    snap4_offset = random.randrange(snap3_offset1 + snap_data_size_in_mb,
+                                    int(SIZE)/Mi + snap_data_size_in_mb, 1)
+    write_volume_dev_random_mb_data(volume_endpoint,
+                                    snap4_offset, snap_data_size_in_mb)
+    cksum_before = get_device_checksum(volume_endpoint)
+    # Pruning snap3 then coalescing snap2 with snap3
+    volume.snapshotDelete(name=snap3_before.name)
+    volume.snapshotPurge()
+    volume = wait_for_snapshot_purge(client, volume_name, snap3_before.name)
+    snap3_after = volume.snapshotGet(name=snap3_before.name)
+    snap3_after_size = int(snap3_after.size)
+    cksum_after = get_device_checksum(volume_endpoint)
+    assert snap3_after.removed
+    assert snap3_before_size >= snap3_after_size - snap2_after_size - \
+           fiemap_max_size
+    assert cksum_before == cksum_after
+
+    snap4 = create_snapshot(client, volume_name)
+
+    # We don't care the exact content of snap5
+    snap5_offset = random.randrange(
+        0, int(EXPAND_SIZE)/Mi - snap_data_size_in_mb, 1)
+    write_volume_dev_random_mb_data(volume_endpoint,
+                                    snap5_offset, snap_data_size_in_mb)
+    create_snapshot(client, volume_name)
+
+    # Prepare to do revert
+    volume.detach(hostId="")
+    volume = common.wait_for_volume_detached(client, volume_name)
+    volume.attach(hostId=lht_hostId, disableFrontend=True)
+    volume = common.wait_for_volume_healthy_no_frontend(client, volume_name)
+    assert volume.disableFrontend is True
+    assert volume.frontend == VOLUME_FRONTEND_BLOCKDEV
+    check_volume_endpoint(volume)
+    # Reverting to a removed snapshot should fail
+    with pytest.raises(Exception):
+        volume.snapshotRevert(name=snap3_after.name)
+    # Reverting to snap4 should succeed
+    volume.snapshotRevert(name=snap4.name)
+    volume.detach(hostId="")
+    volume = common.wait_for_volume_detached(client, volume_name)
+    volume.attach(hostId=lht_hostId, disableFrontend=False)
+    common.wait_for_volume_healthy(client, volume_name)
+
+    volume = client.by_id_volume(volume_name)
+    assert volume.disableFrontend is False
+    assert volume.frontend == VOLUME_FRONTEND_BLOCKDEV
+
+    cksum_revert = get_device_checksum(volume_endpoint)
+    assert cksum_before == cksum_revert
+
+    cleanup_volume(client, volume)
