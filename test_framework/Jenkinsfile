@@ -64,7 +64,7 @@ node {
 
             stage ('download support bundle') {
                 sh "docker exec ${JOB_BASE_NAME}-${BUILD_NUMBER} ${TF_VAR_tf_workspace}/scripts/download-support-bundle.sh  ${JOB_BASE_NAME}-${BUILD_NUMBER}-bundle.zip"
-                sh "docker cp ${JOB_BASE_NAME}-${BUILD_NUMBER}:${TF_VAR_tf_workspace}/${JOB_BASE_NAME}-${BUILD_NUMBER}-bundle.zip ."
+                sh "docker cp ${JOB_BASE_NAME}-${BUILD_NUMBER}:${TF_VAR_tf_workspace}/../${JOB_BASE_NAME}-${BUILD_NUMBER}-bundle.zip ."
 				archiveArtifacts allowEmptyArchive: true, artifacts: '**/*.zip', followSymlinks: false
 			}
 
