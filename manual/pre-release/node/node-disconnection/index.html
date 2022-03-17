@@ -521,15 +521,33 @@
     <article id="content">
        <p><a href="https://github.com/longhorn/longhorn/issues/1545">https://github.com/longhorn/longhorn/issues/1545</a>
 For disconnect node : <a href="https://github.com/longhorn/longhorn/files/4864127/network_down.sh.zip">https://github.com/longhorn/longhorn/files/4864127/network_down.sh.zip</a></p>
+<p>If auto-salvage is disabled, the auto-reattachment behavior after the node disconnection depends on all replicas are in ERROR state or not.</p>
+<p>(1) If all replicas are in ERROR state, the volume would remain in detached/faulted state if auto-salvage is disabled.</p>
+<p>(2) If there is any healthy replica, the volume would be auto-reattached even though auto-salvage is disabled.</p>
+<p>What makes all replicas in ERROR state? If there is data writing during the disconnection, due to the engine process not able to talk with other replicas, the engine process will mark all other replicas as ERROR.</p>
+<p>So we have 2 test cases for node disconnection + disabled auto-salvage:</p>
+<p>(Case 1) data writing during the disconnection -&gt; all replicas become ERROR -&gt; no auto-reattach after the disconnection</p>
+<p>(Case 2) no data writing during the disconnection -&gt; other replicas are still healthy -&gt; auto-reattach after the disconnection</p>
 <h3 id="case-1">Case 1:</h3>
 <ol>
-<li>Disable the setting auto-salvage.</li>
-<li>Create and attach a volume.</li>
-<li>Keep writing data to the volume. Disconnect the node that the volume attached to for 100 seconds during the data writing.</li>
+<li>Disable auto-salvage.</li>
+<li>Create a volume named test-1.</li>
+<li>Attach the volume to a node.</li>
+<li>Keep writing data directly to the volume. (sudo dd if=/dev/urandom of=/dev/longhorn/test-1 bs=2M count=2048)</li>
+<li>Disconnect the network of the node that the volume attached to for 100 seconds during the data writing. (sudo nohup ./network_down.sh 100)</li>
 <li>Wait for the node back.</li>
-<li>The volume will be detached then reattached automatically. And there are some replicas still running after the reattachment.</li>
+<li>The volume should remain detached, and all replicas remain in ERROR state.</li>
 </ol>
 <h3 id="case-2">Case 2:</h3>
+<ol>
+<li>Disable auto-salvage.</li>
+<li>Create a volume named test-1.</li>
+<li>Attach the volume to a node.</li>
+<li>No need to write data to the volume. Directly disconnect the network of the node that the volume attached to for 100 seconds. (sudo nohup ./network_down.sh 100)</li>
+<li>Wait for the node back.</li>
+<li>The volume will be detached then reattached automatically, and replicas should still be in RUNNING state.</li>
+</ol>
+<h3 id="case-3">Case 3:</h3>
 <ol>
 <li>Launch Longhorn.</li>
 <li>Use statefulset launch a pod with the volume and write some data.</li>
