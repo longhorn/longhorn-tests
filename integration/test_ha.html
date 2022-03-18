@@ -85,6 +85,10 @@ from common import wait_for_volume_replica_count, wait_for_replica_failed
 from common import settings_reset # NOQA
 from common import set_node_tags, set_node_scheduling # NOQA
 from common import SETTING_DISABLE_REVISION_COUNTER
+from common import make_deployment_with_pvc # NOQA
+from common import get_apps_api_client, create_and_wait_deployment
+from common import wait_delete_pod
+from common import wait_pod, exec_command_in_pod
 
 from backupstore import set_random_backupstore # NOQA
 from backupstore import backupstore_cleanup
@@ -2643,8 +2647,7 @@ def test_autosalvage_with_data_locality_enabled():
     pass
 
 
-@pytest.mark.skip(reason=&#34;TODO&#34;)  # NOQA
-def test_recovery_from_im_deletion():
+def test_recovery_from_im_deletion(client, core_api, volume_name, make_deployment_with_pvc, pvc): # NOQA
     &#34;&#34;&#34;
     Related issue :
     https://github.com/longhorn/longhorn/issues/3070
@@ -2661,11 +2664,60 @@ def test_recovery_from_im_deletion():
             tail -f /data/test
     3. Wait for the pod to become healthy.
     4. Write small(100MB) data.
-    4. Kill the instance-manager-e on node-1.
-    5. Wait for the instance-manager-e pod to become healthy.
-    6. Wait for pod to get terminated and recreated.
-    7. Read and write in the pod to verify the pod is accessible.
-    &#34;&#34;&#34;</code></pre>
+    5. Kill the instance-manager-e on node-1.
+    6. Wait for the instance-manager-e pod to become healthy.
+    7. Wait for pod to get terminated and recreated.
+    8. Read and write in the pod to verify the pod is accessible.
+    &#34;&#34;&#34;
+
+    # Step1
+    client.create_volume(name=volume_name, size=str(1 * Gi))
+    volume = wait_for_volume_detached(client, volume_name)
+    pvc_name = volume_name + &#34;-pvc&#34;
+    create_pv_for_volume(client, core_api, volume, volume_name)
+    create_pvc_for_volume(client, core_api, volume, pvc_name)
+
+    # Step2
+    command = [
+        &#34;/bin/sh&#34;,
+        &#34;-ec&#34;,
+        &#34;touch /data/test\ntail -f /data/test\n&#34;
+        ]
+    deployment_name = volume_name + &#34;-dep&#34;
+    deployment = make_deployment_with_pvc(deployment_name, pvc_name)
+    deployment[&#34;spec&#34;][&#34;template&#34;][&#34;spec&#34;][&#34;containers&#34;][0][&#34;command&#34;] \
+        = command
+
+    # Step3
+    apps_api = get_apps_api_client()
+    create_and_wait_deployment(apps_api, deployment)
+
+    # Step4
+    pod_names = common.get_deployment_pod_names(core_api, deployment)
+    test_data = generate_random_data(VOLUME_RWTEST_SIZE)
+    write_pod_volume_data(core_api, pod_names[0], test_data, filename=&#39;test&#39;)
+    create_snapshot(client, volume_name)
+
+    # Step5, 6
+    volume = client.by_id_volume(volume_name)
+    im_name = volume[&#34;controllers&#34;][0][&#34;instanceManagerName&#34;]
+    exec_cmd = [&#34;kubectl&#34;, &#34;delete&#34;, &#34;pod&#34;,  im_name, &#34;-n&#34;, &#34;longhorn-system&#34;]
+    subprocess.check_output(exec_cmd)
+
+    target_pod = \
+        core_api.read_namespaced_pod(name=pod_names[0], namespace=&#39;default&#39;)
+    wait_delete_pod(core_api, target_pod.metadata.uid)
+
+    # Step7
+    pod_names = common.get_deployment_pod_names(core_api, deployment)
+    wait_pod(pod_names[0])
+
+    command = &#39;cat /data/test&#39;
+    to_be_verified_data = exec_command_in_pod(
+        core_api, command, pod_names[0], &#39;default&#39;)
+
+    # Step8
+    assert test_data == to_be_verified_data</code></pre>
 </details>
 </section>
 <section>
@@ -5147,7 +5199,7 @@ after the attachment.
 </details>
 </dd>
 <dt id="tests.test_ha.test_recovery_from_im_deletion"><code class="name flex">
-<span>def <span class="ident">test_recovery_from_im_deletion</span></span>(<span>)</span>
+<span>def <span class="ident">test_recovery_from_im_deletion</span></span>(<span>client, core_api, volume_name, make_deployment_with_pvc, pvc)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Related issue :
@@ -5164,16 +5216,15 @@ touch /data/test
 tail -f /data/test
 3. Wait for the pod to become healthy.
 4. Write small(100MB) data.
-4. Kill the instance-manager-e on node-1.
-5. Wait for the instance-manager-e pod to become healthy.
-6. Wait for pod to get terminated and recreated.
-7. Read and write in the pod to verify the pod is accessible.</p></div>
+5. Kill the instance-manager-e on node-1.
+6. Wait for the instance-manager-e pod to become healthy.
+7. Wait for pod to get terminated and recreated.
+8. Read and write in the pod to verify the pod is accessible.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">@pytest.mark.skip(reason=&#34;TODO&#34;)  # NOQA
-def test_recovery_from_im_deletion():
+<pre><code class="python">def test_recovery_from_im_deletion(client, core_api, volume_name, make_deployment_with_pvc, pvc): # NOQA
     &#34;&#34;&#34;
     Related issue :
     https://github.com/longhorn/longhorn/issues/3070
@@ -5190,11 +5241,60 @@ def test_recovery_from_im_deletion():
             tail -f /data/test
     3. Wait for the pod to become healthy.
     4. Write small(100MB) data.
-    4. Kill the instance-manager-e on node-1.
-    5. Wait for the instance-manager-e pod to become healthy.
-    6. Wait for pod to get terminated and recreated.
-    7. Read and write in the pod to verify the pod is accessible.
-    &#34;&#34;&#34;</code></pre>
+    5. Kill the instance-manager-e on node-1.
+    6. Wait for the instance-manager-e pod to become healthy.
+    7. Wait for pod to get terminated and recreated.
+    8. Read and write in the pod to verify the pod is accessible.
+    &#34;&#34;&#34;
+
+    # Step1
+    client.create_volume(name=volume_name, size=str(1 * Gi))
+    volume = wait_for_volume_detached(client, volume_name)
+    pvc_name = volume_name + &#34;-pvc&#34;
+    create_pv_for_volume(client, core_api, volume, volume_name)
+    create_pvc_for_volume(client, core_api, volume, pvc_name)
+
+    # Step2
+    command = [
+        &#34;/bin/sh&#34;,
+        &#34;-ec&#34;,
+        &#34;touch /data/test\ntail -f /data/test\n&#34;
+        ]
+    deployment_name = volume_name + &#34;-dep&#34;
+    deployment = make_deployment_with_pvc(deployment_name, pvc_name)
+    deployment[&#34;spec&#34;][&#34;template&#34;][&#34;spec&#34;][&#34;containers&#34;][0][&#34;command&#34;] \
+        = command
+
+    # Step3
+    apps_api = get_apps_api_client()
+    create_and_wait_deployment(apps_api, deployment)
+
+    # Step4
+    pod_names = common.get_deployment_pod_names(core_api, deployment)
+    test_data = generate_random_data(VOLUME_RWTEST_SIZE)
+    write_pod_volume_data(core_api, pod_names[0], test_data, filename=&#39;test&#39;)
+    create_snapshot(client, volume_name)
+
+    # Step5, 6
+    volume = client.by_id_volume(volume_name)
+    im_name = volume[&#34;controllers&#34;][0][&#34;instanceManagerName&#34;]
+    exec_cmd = [&#34;kubectl&#34;, &#34;delete&#34;, &#34;pod&#34;,  im_name, &#34;-n&#34;, &#34;longhorn-system&#34;]
+    subprocess.check_output(exec_cmd)
+
+    target_pod = \
+        core_api.read_namespaced_pod(name=pod_names[0], namespace=&#39;default&#39;)
+    wait_delete_pod(core_api, target_pod.metadata.uid)
+
+    # Step7
+    pod_names = common.get_deployment_pod_names(core_api, deployment)
+    wait_pod(pod_names[0])
+
+    command = &#39;cat /data/test&#39;
+    to_be_verified_data = exec_command_in_pod(
+        core_api, command, pod_names[0], &#39;default&#39;)
+
+    # Step8
+    assert test_data == to_be_verified_data</code></pre>
 </details>
 </dd>
 <dt id="tests.test_ha.test_replica_failure_during_attaching"><code class="name flex">
