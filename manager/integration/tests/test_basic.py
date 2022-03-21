@@ -4208,3 +4208,91 @@ def snapshot_prune_test(client, volume_name, backing_image):  # NOQA
     assert cksum_before == cksum_revert
 
     cleanup_volume(client, volume)
+
+
+@pytest.mark.coretest   # NOQA
+def test_snapshot_prune_and_coalesce_simultaneously(client, volume_name, backing_image=""):  # NOQA
+    """
+    Test the prune for the snapshot directly behinds the volume head would be
+    handled after all snapshot coalescing done.
+
+
+    1. Create a volume and attach to the node
+    2. Generate and write 1st data chunk `snap1_data`, then create `snap1`
+    3. Generate and write 2nd data chunk `snap2_data`, then create `snap2`
+    4. Generate and write 3rd data chunk `snap3_data`, then create `snap3`
+    5. Generate and write 4th data chunk `snap4_data`, then create `snap4`
+    6. Overwrite all existing data chunks in the volume head.
+    7. Mark all snapshots as `Removed`,
+       then start snapshot purge and wait for complete.
+    8. List snapshot.
+       Make sure there are only 2 snapshots left: `volume-head` and `snap4`.
+       And `snap4` is an empty snapshot.
+    9. Make sure volume's data is correct.
+    """
+    snapshot_prune_and_coalesce_simultaneously(
+        client, volume_name, backing_image)
+
+
+def snapshot_prune_and_coalesce_simultaneously(client, volume_name, backing_image):  # NOQA
+    snap_data_size_in_mb = 2
+    volume = create_and_check_volume(client, volume_name,
+                                     backing_image=backing_image)
+
+    lht_hostId = get_self_host_id()
+    volume.attach(hostId=lht_hostId)
+    volume = common.wait_for_volume_healthy(client, volume_name)
+    volume_endpoint = get_volume_endpoint(volume)
+
+    # Take snapshots4 without overlapping
+    write_volume_dev_random_mb_data(
+        volume_endpoint, 0*snap_data_size_in_mb, snap_data_size_in_mb)
+    snap1 = create_snapshot(client, volume_name)
+
+    write_volume_dev_random_mb_data(
+        volume_endpoint, 1*snap_data_size_in_mb, snap_data_size_in_mb)
+    snap2 = create_snapshot(client, volume_name)
+
+    write_volume_dev_random_mb_data(
+        volume_endpoint, 2*snap_data_size_in_mb, snap_data_size_in_mb)
+    snap3 = create_snapshot(client, volume_name)
+
+    write_volume_dev_random_mb_data(
+        volume_endpoint, 3*snap_data_size_in_mb, snap_data_size_in_mb)
+    snap4 = create_snapshot(client, volume_name)
+
+    # Overwrite the existing data in the volume head
+    write_volume_dev_random_mb_data(
+        volume_endpoint, 0*snap_data_size_in_mb, 4*snap_data_size_in_mb)
+    cksum_before = get_device_checksum(volume_endpoint)
+    volume_head_before = volume.snapshotGet(name=VOLUME_HEAD_NAME)
+
+    # Simultaneous snapshot coalescing & pruning
+    volume.snapshotDelete(name=snap1.name)
+    volume.snapshotDelete(name=snap2.name)
+    volume.snapshotDelete(name=snap3.name)
+    volume.snapshotDelete(name=snap4.name)
+    volume.snapshotPurge()
+    wait_for_snapshot_purge(client, volume_name, snap1.name)
+    wait_for_snapshot_purge(client, volume_name, snap2.name)
+    wait_for_snapshot_purge(client, volume_name, snap3.name)
+    wait_for_snapshot_purge(client, volume_name, snap4.name)
+
+    # List and validate snap info
+    volume = client.by_id_volume(volume_name)
+    snaps = volume.snapshotList(volume=volume_name)
+    assert len(snaps) == 2
+    for snap in snaps:
+        if snap.name == VOLUME_HEAD_NAME:
+            assert snap.size == volume_head_before.size
+            assert snap.parent == snap4.name
+        else:
+            assert snap.name == snap4.name
+            assert int(snap.size) == 0
+            assert snap.parent == ""
+            assert VOLUME_HEAD_NAME in snap.children.keys()
+            continue
+
+    # Verify the data
+    cksum_after = get_device_checksum(volume_endpoint)
+    assert cksum_after == cksum_before
