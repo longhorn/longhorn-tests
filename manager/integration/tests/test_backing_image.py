@@ -9,8 +9,10 @@ from common import csi_pv, pvc, pod_make  # NOQA
 from common import csi_pv_backingimage, pvc_backingimage  # NOQA
 from common import disable_auto_salvage  # NOQA
 
-from test_basic import volume_basic_test, volume_iscsi_basic_test,\
-    snapshot_test, snapshot_prune_test, backup_test, backup_labels_test
+from test_basic import volume_basic_test, volume_iscsi_basic_test, \
+    snapshot_test, snapshot_prune_test, \
+    snapshot_prune_and_coalesce_simultaneously, \
+    backup_test, backup_labels_test
 from test_engine_upgrade import engine_offline_upgrade_test, \
     engine_live_upgrade_test, engine_live_upgrade_rollback_test
 from test_ha import ha_simple_recovery_test, ha_salvage_test, \
@@ -219,6 +221,18 @@ def test_snapshot_prune_with_backing_image(client, volume_name):  # NOQA
         create_backing_image_with_matching_url(
             client, BACKING_IMAGE_NAME, bi_url)
         snapshot_prune_test(client, volume_name, BACKING_IMAGE_NAME)
+        cleanup_all_volumes(client)
+        cleanup_all_backing_images(client)
+
+
+@pytest.mark.coretest   # NOQA
+@pytest.mark.backing_image  # NOQA
+def test_snapshot_prune_and_coalesce_simultaneously_with_backing_image(client, volume_name):  # NOQA
+    for bi_url in (BACKING_IMAGE_QCOW2_URL, BACKING_IMAGE_RAW_URL):
+        create_backing_image_with_matching_url(
+            client, BACKING_IMAGE_NAME, bi_url)
+        snapshot_prune_and_coalesce_simultaneously(
+            client, volume_name, BACKING_IMAGE_NAME)
         cleanup_all_volumes(client)
         cleanup_all_backing_images(client)
 
