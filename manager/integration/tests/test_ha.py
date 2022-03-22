@@ -61,6 +61,7 @@ from common import make_deployment_with_pvc # NOQA
 from common import get_apps_api_client, create_and_wait_deployment
 from common import wait_delete_pod
 from common import wait_pod, exec_command_in_pod
+from common import RETRY_EXEC_COUNTS, RETRY_EXEC_INTERVAL
 
 from backupstore import set_random_backupstore # NOQA
 from backupstore import backupstore_cleanup
@@ -2586,8 +2587,7 @@ def test_engine_image_missing_on_some_nodes():
     pass
 
 
-@pytest.mark.skip(reason="TODO")  # NOQA
-def test_autosalvage_with_data_locality_enabled():
+def test_autosalvage_with_data_locality_enabled(client, core_api, make_deployment_with_pvc, volume_name, pvc): # NOQA
     """
     This e2e test follows the manual test steps at:
     https://github.com/longhorn/longhorn/issues/2778#issue-939331805
@@ -2616,7 +2616,84 @@ def test_autosalvage_with_data_locality_enabled():
     Cleaning up:
     1. Clean up the node tag
     """
-    pass
+
+    # Step1
+    nodes = client.list_node()
+    assert len(nodes) == 3
+    node_1, node_2, node_3 = nodes
+    tags = ["node-1"]
+    node_1 = common.set_node_tags(client, node_1, tags)
+
+    # Step2
+    client.create_volume(
+        name=volume_name, size=SIZE, numberOfReplicas=1,
+        nodeSelector=tags, dataLocality="best-effort"
+        )
+
+    volume = common.wait_for_volume_detached(client, volume_name)
+    assert volume.nodeSelector == tags
+
+    # Step3
+    pvc_name = volume_name + "-pvc"
+    create_pv_for_volume(client, core_api, volume, volume_name)
+    create_pvc_for_volume(client, core_api, volume, pvc_name)
+
+    # Step4
+    deployment_name = volume_name + "-dep"
+    deployment = make_deployment_with_pvc(deployment_name, pvc_name)
+    deployment["spec"]["template"]["spec"]["nodeSelector"] \
+        = {"kubernetes.io/hostname": node_2.name}
+
+    # Step5
+    apps_api = get_apps_api_client()
+    create_and_wait_deployment(apps_api, deployment)
+
+    pod_names = common.get_deployment_pod_names(core_api, deployment)
+    test_data = generate_random_data(VOLUME_RWTEST_SIZE)
+    write_pod_volume_data(core_api, pod_names[0], test_data, filename='test')
+    create_snapshot(client, volume_name)
+
+    # Step6
+    labels = "longhorn.io/node={}\
+            , longhorn.io/instance-manager-type=replica"\
+            .format(node_1["name"])
+
+    ret = core_api.list_namespaced_pod(
+            namespace="longhorn-system", label_selector=labels)
+    imr_name = ret.items[0].metadata.name
+
+    delete_and_wait_pod(core_api, pod_name=imr_name,
+                        namespace='longhorn-system')
+
+    # Step7
+    target_pod = \
+        core_api.read_namespaced_pod(name=pod_names[0], namespace='default')
+    wait_delete_pod(core_api, target_pod.metadata.uid)
+    pod_names = common.get_deployment_pod_names(core_api, deployment)
+    wait_pod(pod_names[0])
+
+    command = 'cat /data/test'
+    verified_data = exec_command_in_pod(
+        core_api, command, pod_names[0], 'default')
+
+    assert test_data == verified_data
+
+    # Step8
+    labels = "app=longhorn-manager"
+    selector = "spec.nodeName=={}".format(node_2["name"])
+    ret = core_api.list_namespaced_pod(
+                namespace="longhorn-system", field_selector=selector,
+                label_selector=labels)
+
+    mgr_name = ret.items[0].metadata.name
+
+    command = 'ss -a -n | grep :8500 | wc -l'
+    for i in range(RETRY_EXEC_COUNTS):
+        socket_cnt = exec_command_in_pod(
+            core_api, command, mgr_name, 'longhorn-system')
+        assert int(socket_cnt) < 20
+
+        time.sleep(RETRY_EXEC_INTERVAL)
 
 
 def test_recovery_from_im_deletion(client, core_api, volume_name, make_deployment_with_pvc, pvc): # NOQA
