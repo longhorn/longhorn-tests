@@ -203,19 +203,16 @@ run_longhorn_upgrade_test(){
 	kubectl apply -f ${LONGHORN_UPGRADE_TESTS_MANIFEST_FILE_PATH}
 
 	# wait upgrade test pod to start running
-    while [[ -n "`kubectl get pods longhorn-test-upgrade --no-headers=true | awk '{print $3}' | grep -v \"Running\|Completed\"`"  ]]; do
+    while [[ -n "`kubectl get pod longhorn-test-upgrade -o=jsonpath='{.status.containerStatuses[?(@.name=="longhorn-test")].state}' | grep -v \"running\|terminated\"`"  ]]; do
 		echo "waiting upgrade test pod to be in running state ... rechecking in 10s"
 		sleep 10s
     done
 
     # wait upgrade test to complete
-    while [[ -z "`kubectl get pods longhorn-test-upgrade --no-headers=true | awk '{print $3}' | grep -v Running`"  ]]; do
-        echo "upgrade test still running ... rechecking in 30s"
-        sleep 30s
-    done
+    kubectl logs ${LONGHORN_UPGRADE_TEST_POD_NAME} -c longhorn-test -f
 
 	# get upgrade test junit xml report
-	kubectl logs ${LONGHORN_UPGRADE_TEST_POD_NAME} >> "${TF_VAR_tf_workspace}/longhorn-test-upgrade-junit-report.xml"
+  kubectl cp ${LONGHORN_UPGRADE_TEST_POD_NAME}:${LONGHORN_JUNIT_REPORT_PATH} "${TF_VAR_tf_workspace}/longhorn-test-upgrade-junit-report.xml" -c longhorn-test-report
 }
 
 
@@ -264,7 +261,7 @@ run_longhorn_tests(){
 	local RETRY_COUNTS=60
 	local RETRIES=0
 	# wait longhorn tests pod to start running
-    while [[ -n "`kubectl get pods "${LONGHORN_TEST_POD_NAME}" --no-headers=true | awk '{print $3}' | grep -v \"Running\|Completed\"`"  ]]; do
+    while [[ -n "`kubectl get pod longhorn-test -o=jsonpath='{.status.containerStatuses[?(@.name=="longhorn-test")].state}' | grep -v \"running\|terminated\"`"  ]]; do
         echo "waiting longhorn test pod to be in running state ... rechecking in 10s"
         sleep 10s
 		RETRIES=$((RETRIES+1))
@@ -273,12 +270,9 @@ run_longhorn_tests(){
     done
 
     # wait longhorn tests to complete
-    while [[ -z "`kubectl get pods ${LONGHORN_TEST_POD_NAME} --no-headers=true | awk '{print $3}' | grep -v Running`"  ]]; do
-        echo "Longhorn tests still running ... rechecking in 5m"
-        sleep 5m
-    done
+    kubectl logs ${LONGHORN_TEST_POD_NAME} -c longhorn-test -f
 
-	kubectl logs ${LONGHORN_TEST_POD_NAME}  >> "${TF_VAR_tf_workspace}/longhorn-test-junit-report.xml"
+  kubectl cp ${LONGHORN_TEST_POD_NAME}:${LONGHORN_JUNIT_REPORT_PATH} "${TF_VAR_tf_workspace}/longhorn-test-junit-report.xml" -c longhorn-test-report
 }
 
 
