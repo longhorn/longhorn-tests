@@ -62,6 +62,7 @@ from common import get_apps_api_client, create_and_wait_deployment
 from common import wait_delete_pod
 from common import wait_pod, exec_command_in_pod
 from common import RETRY_EXEC_COUNTS, RETRY_EXEC_INTERVAL
+from common import get_volume_running_replica_cnt
 
 from backupstore import set_random_backupstore # NOQA
 from backupstore import backupstore_cleanup
@@ -70,6 +71,7 @@ from backupstore import backupstore_wait_for_lock_expiration
 from backupstore import backupstore_s3  # NOQA
 
 from test_node import create_host_disk
+from test_scheduling import get_host_replica
 
 SMALL_RETRY_COUNTS = 30
 BACKUPSTORE = get_backupstores()
@@ -2017,14 +2019,13 @@ def test_extra_replica_cleanup(client, volume_name, settings_reset): # NOQA
     check_volume_data(volume, data)
 
 
-@pytest.mark.skip(reason="TODO") # NOQA
-def test_disable_replica_rebuild():
+def test_disable_replica_rebuild(client, volume_name):  # NOQA
     """
     Test disable replica rebuild
 
     1. Disable node scheduling on node-2 and node-3. To make sure
     replica scheduled on node-1.
-    2. Set 'Disable Replica Rebuild' to true.
+    2. Set 'Concurrent Replica Rebuild Per Node Limit' to 0.
     3. Create a volume with 1 replica and attach it to node-1.
     4. Enable scheduling on node-2 and node-3. Set node-1 scheduling to
     'Disable' and 'Enable' eviction on node-1.
@@ -2037,16 +2038,105 @@ def test_disable_replica_rebuild():
     10. Attach the volume to node-2 and update the replica number to 2.
     11. Wait for 30 seconds, and no new replica scheduled and volume is
     at 'degraded' state.
-    12. Set 'Disable Replica Rebuild' to false, and wait for replica
-    rebuild and volume becomes 'healthy' state with 2 replicas.
-    13. Set 'Disable Replica Rebuild' to True, delete one replica.
+    12. Set 'Concurrent Replica Rebuild Per Node Limit' to 5, and wait for
+    replica rebuild and volume becomes 'healthy' state with 2 replicas.
+    13. Set 'Concurrent Replica Rebuild Per Node Limit' to 0, delete one
+    replica.
     14. Wait for 30 seconds, no rebuild should get triggered. The volume
     should stay in 'degraded' state with 1 replica.
-    15. Set 'Disable Replica Rebuild' to false, and wait for replica
-    rebuild and volume becomes 'healthy' state with 2 replicas.
+    15. Set 'Concurrent Replica Rebuild Per Node Limit' to 5, and wait for
+    replica rebuild and volume becomes 'healthy' state with 2 replicas.
     16. Clean up the volume.
     """
-    pass
+    # Step1
+    node_1, node_2, node_3 = client.list_node()
+    client.update(node_2, allowScheduling=False)
+    client.update(node_3, allowScheduling=False)
+
+    # Step2
+    concurrent_replica_rebuild_per_node_limit = \
+        client.by_id_setting("concurrent-replica-rebuild-per-node-limit")
+
+    client.update(concurrent_replica_rebuild_per_node_limit, value="0")
+
+    # Step3
+    volume = client.create_volume(name=volume_name, size=SIZE,
+                                  numberOfReplicas=1)
+    volume = wait_for_volume_detached(client, volume_name)
+    volume = volume.attach(hostId=node_1.name)
+    volume = wait_for_volume_healthy(client, volume_name)
+
+    # Step4
+    client.update(node_1, allowScheduling=False)
+    client.update(node_1, evictionRequested=True)
+    client.update(node_2, allowScheduling=True)
+    client.update(node_3, allowScheduling=True)
+
+    # Step5
+    for _ in range(RETRY_EXEC_COUNTS):
+        node1_r_cnt = common.get_host_replica_count(
+            client, volume_name, node_1.name, chk_running=True)
+
+        assert node1_r_cnt == 1
+        time.sleep(RETRY_INTERVAL_LONG)
+
+    # Step6
+    client.update(node_1, evictionRequested=False)
+    client.update(node_1, allowScheduling=True)
+
+    # Step7
+    volume = wait_for_volume_healthy(client, volume_name)
+    volume.detach(hostId=node_1.name)
+    volume = wait_for_volume_detached(client, volume_name)
+    volume.updateDataLocality(dataLocality="best-effort")
+
+    # Step8
+    volume = volume.attach(hostId=node_2.name)
+    for _ in range(RETRY_EXEC_COUNTS):
+        node2_r_cnt = common.get_host_replica_count(
+            client, volume_name, node_2.name, chk_running=True)
+
+        assert node2_r_cnt == 0
+        time.sleep(RETRY_INTERVAL_LONG)
+
+    # Step9
+    volume.detach(hostId=node_2.name)
+    volume = wait_for_volume_detached(client, volume_name)
+    volume.updateDataLocality(dataLocality="disabled")
+
+    # Step10
+    volume = volume.attach(hostId=node_2.name)
+    volume = wait_for_volume_healthy(client, volume_name)
+    volume.updateReplicaCount(replicaCount=2)
+
+    # Step11
+    for _ in range(RETRY_EXEC_COUNTS):
+        assert get_volume_running_replica_cnt(client, volume_name) == 1
+        time.sleep(RETRY_INTERVAL_LONG)
+
+    # Step12
+    client.update(concurrent_replica_rebuild_per_node_limit, value="5")
+    volume = wait_for_volume_healthy(client, volume_name)
+    assert get_volume_running_replica_cnt(client, volume_name) == 2
+
+    # Step13
+    client.update(concurrent_replica_rebuild_per_node_limit, value="0")
+    host_replica = get_host_replica(volume, host_id=node_1.name)
+    volume.replicaRemove(name=host_replica.name)
+    for _ in range(RETRY_EXEC_COUNTS):
+        if get_volume_running_replica_cnt(client, volume_name) == 1:
+            break
+        time.sleep(RETRY_INTERVAL_LONG)
+
+    # Step14
+    for _ in range(RETRY_EXEC_COUNTS):
+        assert get_volume_running_replica_cnt(client, volume_name) == 1
+        time.sleep(RETRY_INTERVAL_LONG)
+
+    # Step15
+    client.update(concurrent_replica_rebuild_per_node_limit, value="5")
+    volume = wait_for_volume_healthy(client, volume_name)
+    assert get_volume_running_replica_cnt(client, volume_name) == 2
 
 
 def test_auto_remount_with_subpath(client, core_api, storage_class, sts_name, statefulset):  # NOQA
