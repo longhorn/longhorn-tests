@@ -4681,3 +4681,13 @@ def deploy_csi_snapshot_and_classes(request):
         pass
 
     request.addfinalizer(finalizer)
+
+def get_volume_running_replica_cnt(client, volume_name):  # NOQA
+    nodes = client.list_node()
+    cnt = 0
+
+    for node in nodes:
+        cnt = cnt + get_host_replica_count(
+            client, volume_name, node.name, chk_running=True)
+
+    return cnt
