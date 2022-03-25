@@ -4604,3 +4604,14 @@ def restore_backup_and_get_data_checksum(client, core_api, backup, pod,
                                      'default')
 
     return data_checksum, output, restore_pod_name
+
+
+def get_volume_running_replica_cnt(client, volume_name):  # NOQA
+    nodes = client.list_node()
+    cnt = 0
+
+    for node in nodes:
+        cnt = cnt + get_host_replica_count(
+            client, volume_name, node.name, chk_running=True)
+
+    return cnt
