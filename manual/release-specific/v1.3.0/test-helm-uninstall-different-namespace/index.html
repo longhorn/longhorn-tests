@@ -519,41 +519,17 @@
 </aside>
 
 <main style="padding: 1%; width: 70%;">
-  <h1 id="title">Restore to a new cluster</h1>
+  <h1 id="title">Test Helm uninstall Longhorn in different namespace</h1>
   <div>
     <article id="content">
-       <h4 id="back-up-the-old-cluster">Back up the old cluster</h4>
-<ol>
-<li>Deploy the 1st cluster then install Longhorn system and Velero.</li>
-<li>Deploy some workloads using Longhorn volumes then write some data:
-<ol>
-<li>A simple pod using multiple volumes. And some volumes are using backing images.</li>
-<li>A StatefulSet.</li>
-<li>A Deployment with a RWX volume.</li>
-</ol>
-</li>
-<li>Config some recurring policies for the volumes.</li>
-<li>Create backups for all volumes.</li>
-<li>Create a cluster backup via Velero.
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>velero backup create lh-cluster --exclude-resources persistentvolumes,persistentvolumeclaims,backuptargets.longhorn.io,backupvolumes.longhorn.io,backups.longhorn.io,nodes.longhorn.io,volumes.longhorn.io,engines.longhorn.io,replicas.longhorn.io,backingimagedatasources.longhorn.io,backingimagemanagers.longhorn.io,backingimages.longhorn.io,sharemanagers.longhorn.io,instancemanagers.longhorn.io,engineimages.longhorn.io
-</span></span></code></pre></div></li>
-</ol>
-<h4 id="restore-to-a-new-cluster">Restore to a new cluster</h4>
-<ol>
-<li>Deploy the 2nd cluster then install Velero only. You can try with different cluster config (more nodes or disks) here.</li>
-<li>Restore the cluster backup. e.g.,
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>velero restore create --from-backup lh-cluster
-</span></span></code></pre></div></li>
-<li>Removing all old instance manager pods and backing image manager pods from namespace <code>longhorn-system</code>. Since there is no corresponding InstanceManager CR or BackingImageManager CR for these old pods.</li>
-<li>Re-config nodes and disks for the restored Longhorn system if necessary.</li>
-<li>Re-create backing images.</li>
-<li>Restore all Longhorn volumes from the remote backup target.</li>
-<li>Update the access mode to <code>ReadWriteMany</code> since all restored volumes are mode <code>ReadWriteOnce</code> by default.</li>
-<li>Create PVCs and PVs with previous names for the restored volumes.</li>
-<li>Verify all workloads work fine with correct data.</li>
-</ol>
-<hr>
-<p>GitHub issue link: <a href="https://github.com/longhorn/longhorn/issues/3367">https://github.com/longhorn/longhorn/issues/3367</a></p>
+       <hr>
+<p>title: Test Label-driven Recurring Job</p>
+<h2 id="related-issue">Related issue</h2>
+<p><a href="https://github.com/longhorn/longhorn/issues/467">https://github.com/longhorn/longhorn/issues/467</a></p>
+<h2 id="test">Test</h2>
+<p><strong>Given</strong> helm install Longhorn in different namespace</p>
+<p><strong>When</strong> helm uninstall Longhorn</p>
+<p><strong>Then</strong> Longhorn should complete uninstalling.</p>
 
     </article>
   </div>
