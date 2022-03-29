@@ -207,7 +207,9 @@ run_longhorn_upgrade_test(){
     done
 
     # wait upgrade test to complete
-    kubectl logs ${LONGHORN_UPGRADE_TEST_POD_NAME} -c longhorn-test -f
+  while [[ -n "`kubectl get pod longhorn-test-upgrade -o=jsonpath='{.status.containerStatuses[?(@.name=="longhorn-test")].state}' | grep \"running\"`"  ]]; do
+    kubectl logs ${LONGHORN_UPGRADE_TEST_POD_NAME} -c longhorn-test -f --since=10s
+  done
 
 	# get upgrade test junit xml report
   kubectl cp ${LONGHORN_UPGRADE_TEST_POD_NAME}:${LONGHORN_JUNIT_REPORT_PATH} "${TF_VAR_tf_workspace}/longhorn-test-upgrade-junit-report.xml" -c longhorn-test-report
@@ -268,7 +270,9 @@ run_longhorn_tests(){
     done
 
     # wait longhorn tests to complete
-    kubectl logs ${LONGHORN_TEST_POD_NAME} -c longhorn-test -f
+  while [[ -n "`kubectl get pod longhorn-test -o=jsonpath='{.status.containerStatuses[?(@.name=="longhorn-test")].state}' | grep \"running\"`"  ]]; do
+    kubectl logs ${LONGHORN_TEST_POD_NAME} -c longhorn-test -f --since=10s
+  done
 
   kubectl cp ${LONGHORN_TEST_POD_NAME}:${LONGHORN_JUNIT_REPORT_PATH} "${TF_VAR_tf_workspace}/longhorn-test-junit-report.xml" -c longhorn-test-report
 }
