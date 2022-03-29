@@ -2,12 +2,8 @@
 title: Test Helm uninstall Longhorn in different namespace
 ---
 
----
-title: Test Label-driven Recurring Job
-
-
 ## Related issue
-https://github.com/longhorn/longhorn/issues/467
+https://github.com/longhorn/longhorn/issues/2034
 
 ## Test
 
