@@ -57,8 +57,10 @@ from common import cleanup_all_recurring_jobs
 
 from common import BACKING_IMAGE_NAME, BACKING_IMAGE_QCOW2_URL, \
     BACKING_IMAGE_RAW_URL, BACKING_IMAGE_EXT4_SIZE, \
-    DIRECTORY_PATH, BACKING_IMAGE_SOURCE_TYPE_DOWNLOAD
+    DIRECTORY_PATH, BACKING_IMAGE_SOURCE_TYPE_DOWNLOAD, \
+    BACKING_IMAGE_SOURCE_TYPE_FROM_VOLUME, Gi
 
+from common import wait_for_volume_detached
 
 @pytest.mark.coretest   # NOQA
 @pytest.mark.backing_image  # NOQA
@@ -430,9 +432,8 @@ def test_backing_image_with_disk_migration():  # NOQA
     &#34;&#34;&#34;
 
 
-@pytest.mark.skip(reason=&#34;TODO&#34;) # NOQA
 @pytest.mark.backing_image  # NOQA
-def test_exporting_backing_image_from_volume():  # NOQA
+def test_exporting_backing_image_from_volume(client, volume_name):  # NOQA
     &#34;&#34;&#34;
     1. Create and attach the 1st volume.
     2. Make a filesystem for the 1st volume.
@@ -448,7 +449,57 @@ def test_exporting_backing_image_from_volume():  # NOQA
     10. Directly mount the 3rd volume. Then verify the data in the 3rd volume
         is the same as that of the 2nd volume.
     11. Do cleanup.
-    &#34;&#34;&#34;</code></pre>
+    &#34;&#34;&#34;
+
+    # Step1, Step2
+    hostId = get_self_host_id()
+    volume1_name = &#34;vol1&#34;
+    volume1 = create_and_check_volume(
+        client, volume_name=volume1_name, size=str(1 * Gi))
+
+    volume1 = volume1.attach(hostId=hostId)
+    volume1 = wait_for_volume_healthy(client, volume1_name)
+
+    # Step3
+    backing_img1_name = &#39;bi-test1&#39;
+    backing_img1 = client.create_backing_image(
+            name=backing_img1_name,
+            sourceType=BACKING_IMAGE_SOURCE_TYPE_FROM_VOLUME,
+            parameters={&#34;export-type&#34;: &#34;qcow2&#34;, &#34;volume-name&#34;: volume1_name},
+            expectedChecksum=&#34;&#34;)
+
+    # Step4
+    volume2_name = &#34;vol2&#34;
+    volume2 = create_and_check_volume(
+        client, volume_name=volume2_name, size=str(1 * Gi),
+        backing_image=backing_img1[&#34;name&#34;])
+    volume2 = volume2.attach(hostId=hostId)
+    volume2 = wait_for_volume_healthy(client, volume2_name)
+
+    # Step5, 6
+    data2 = write_volume_random_data(volume2)
+
+    # Step7
+    volume2.detach(hostId=&#34;&#34;)
+    volume2 = wait_for_volume_detached(client, volume2_name)
+
+    # Step8
+    backing_img2 = client.create_backing_image(
+            name=&#34;bi-test2&#34;,
+            sourceType=BACKING_IMAGE_SOURCE_TYPE_FROM_VOLUME,
+            parameters={&#34;export-type&#34;: &#34;qcow2&#34;, &#34;volume-name&#34;: volume2_name},
+            expectedChecksum=&#34;&#34;)
+
+    # Step9
+    volume3_name = &#34;vol3&#34;
+    volume3 = create_and_check_volume(
+        client, volume_name=volume3_name, size=str(1 * Gi),
+        backing_image=backing_img2[&#34;name&#34;])
+    volume3 = volume3.attach(hostId=hostId)
+    volume3 = wait_for_volume_healthy(client, volume3_name)
+
+    # Step10
+    check_volume_data(volume3, data2)</code></pre>
 </details>
 </section>
 <section>
@@ -924,7 +975,7 @@ def test_engine_offline_upgrade_with_backing_image(client, core_api, volume_name
 </details>
 </dd>
 <dt id="tests.test_backing_image.test_exporting_backing_image_from_volume"><code class="name flex">
-<span>def <span class="ident">test_exporting_backing_image_from_volume</span></span>(<span>)</span>
+<span>def <span class="ident">test_exporting_backing_image_from_volume</span></span>(<span>client, volume_name)</span>
 </code></dt>
 <dd>
 <div class="desc"><ol>
@@ -947,9 +998,8 @@ is the same as that of the 2nd volume.</li>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">@pytest.mark.skip(reason=&#34;TODO&#34;) # NOQA
-@pytest.mark.backing_image  # NOQA
-def test_exporting_backing_image_from_volume():  # NOQA
+<pre><code class="python">@pytest.mark.backing_image  # NOQA
+def test_exporting_backing_image_from_volume(client, volume_name):  # NOQA
     &#34;&#34;&#34;
     1. Create and attach the 1st volume.
     2. Make a filesystem for the 1st volume.
@@ -965,7 +1015,57 @@ def test_exporting_backing_image_from_volume():  # NOQA
     10. Directly mount the 3rd volume. Then verify the data in the 3rd volume
         is the same as that of the 2nd volume.
     11. Do cleanup.
-    &#34;&#34;&#34;</code></pre>
+    &#34;&#34;&#34;
+
+    # Step1, Step2
+    hostId = get_self_host_id()
+    volume1_name = &#34;vol1&#34;
+    volume1 = create_and_check_volume(
+        client, volume_name=volume1_name, size=str(1 * Gi))
+
+    volume1 = volume1.attach(hostId=hostId)
+    volume1 = wait_for_volume_healthy(client, volume1_name)
+
+    # Step3
+    backing_img1_name = &#39;bi-test1&#39;
+    backing_img1 = client.create_backing_image(
+            name=backing_img1_name,
+            sourceType=BACKING_IMAGE_SOURCE_TYPE_FROM_VOLUME,
+            parameters={&#34;export-type&#34;: &#34;qcow2&#34;, &#34;volume-name&#34;: volume1_name},
+            expectedChecksum=&#34;&#34;)
+
+    # Step4
+    volume2_name = &#34;vol2&#34;
+    volume2 = create_and_check_volume(
+        client, volume_name=volume2_name, size=str(1 * Gi),
+        backing_image=backing_img1[&#34;name&#34;])
+    volume2 = volume2.attach(hostId=hostId)
+    volume2 = wait_for_volume_healthy(client, volume2_name)
+
+    # Step5, 6
+    data2 = write_volume_random_data(volume2)
+
+    # Step7
+    volume2.detach(hostId=&#34;&#34;)
+    volume2 = wait_for_volume_detached(client, volume2_name)
+
+    # Step8
+    backing_img2 = client.create_backing_image(
+            name=&#34;bi-test2&#34;,
+            sourceType=BACKING_IMAGE_SOURCE_TYPE_FROM_VOLUME,
+            parameters={&#34;export-type&#34;: &#34;qcow2&#34;, &#34;volume-name&#34;: volume2_name},
+            expectedChecksum=&#34;&#34;)
+
+    # Step9
+    volume3_name = &#34;vol3&#34;
+    volume3 = create_and_check_volume(
+        client, volume_name=volume3_name, size=str(1 * Gi),
+        backing_image=backing_img2[&#34;name&#34;])
+    volume3 = volume3.attach(hostId=hostId)
+    volume3 = wait_for_volume_healthy(client, volume3_name)
+
+    # Step10
+    check_volume_data(volume3, data2)</code></pre>
 </details>
 </dd>
 <dt id="tests.test_backing_image.test_ha_backup_deletion_recovery"><code class="name flex">
