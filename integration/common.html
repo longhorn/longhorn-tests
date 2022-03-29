@@ -4708,7 +4708,17 @@ def deploy_csi_snapshot_and_classes(request):
         #   invalid (type=invalid)
         pass
 
-    request.addfinalizer(finalizer)</code></pre>
+    request.addfinalizer(finalizer)
+
+def get_volume_running_replica_cnt(client, volume_name):  # NOQA
+    nodes = client.list_node()
+    cnt = 0
+
+    for node in nodes:
+        cnt = cnt + get_host_replica_count(
+            client, volume_name, node.name, chk_running=True)
+
+    return cnt</code></pre>
 </details>
 </section>
 <section>
@@ -7848,6 +7858,26 @@ greate than MAX_SUPPORT_BINDLE_NUMBER.</p>
         else:
             jobs.append(volumeJob[&#39;name&#39;])
     return jobs, groups</code></pre>
+</details>
+</dd>
+<dt id="tests.common.get_volume_running_replica_cnt"><code class="name flex">
+<span>def <span class="ident">get_volume_running_replica_cnt</span></span>(<span>client, volume_name)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_volume_running_replica_cnt(client, volume_name):  # NOQA
+    nodes = client.list_node()
+    cnt = 0
+
+    for node in nodes:
+        cnt = cnt + get_host_replica_count(
+            client, volume_name, node.name, chk_running=True)
+
+    return cnt</code></pre>
 </details>
 </dd>
 <dt id="tests.common.is_backupTarget_nfs"><code class="name flex">
@@ -11906,6 +11936,7 @@ volume. Trigger a failed assertion of one is detected.
 <li><code><a title="tests.common.get_volume_engine" href="#tests.common.get_volume_engine">get_volume_engine</a></code></li>
 <li><code><a title="tests.common.get_volume_name" href="#tests.common.get_volume_name">get_volume_name</a></code></li>
 <li><code><a title="tests.common.get_volume_recurring_jobs_and_groups" href="#tests.common.get_volume_recurring_jobs_and_groups">get_volume_recurring_jobs_and_groups</a></code></li>
+<li><code><a title="tests.common.get_volume_running_replica_cnt" href="#tests.common.get_volume_running_replica_cnt">get_volume_running_replica_cnt</a></code></li>
 <li><code><a title="tests.common.is_backupTarget_nfs" href="#tests.common.is_backupTarget_nfs">is_backupTarget_nfs</a></code></li>
 <li><code><a title="tests.common.is_backupTarget_s3" href="#tests.common.is_backupTarget_s3">is_backupTarget_s3</a></code></li>
 <li><code><a title="tests.common.iscsi_login" href="#tests.common.iscsi_login">iscsi_login</a></code></li>
