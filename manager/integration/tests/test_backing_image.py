@@ -29,8 +29,10 @@ from common import cleanup_all_recurring_jobs
 
 from common import BACKING_IMAGE_NAME, BACKING_IMAGE_QCOW2_URL, \
     BACKING_IMAGE_RAW_URL, BACKING_IMAGE_EXT4_SIZE, \
-    DIRECTORY_PATH, BACKING_IMAGE_SOURCE_TYPE_DOWNLOAD
+    DIRECTORY_PATH, BACKING_IMAGE_SOURCE_TYPE_DOWNLOAD, \
+    BACKING_IMAGE_SOURCE_TYPE_FROM_VOLUME, Gi
 
+from common import wait_for_volume_detached
 
 @pytest.mark.coretest   # NOQA
 @pytest.mark.backing_image  # NOQA
@@ -402,9 +404,8 @@ def test_backing_image_with_disk_migration():  # NOQA
     """
 
 
-@pytest.mark.skip(reason="TODO") # NOQA
 @pytest.mark.backing_image  # NOQA
-def test_exporting_backing_image_from_volume():  # NOQA
+def test_exporting_backing_image_from_volume(client, volume_name):  # NOQA
     """
     1. Create and attach the 1st volume.
     2. Make a filesystem for the 1st volume.
@@ -421,3 +422,53 @@ def test_exporting_backing_image_from_volume():  # NOQA
         is the same as that of the 2nd volume.
     11. Do cleanup.
     """
+
+    # Step1, Step2
+    hostId = get_self_host_id()
+    volume1_name = "vol1"
+    volume1 = create_and_check_volume(
+        client, volume_name=volume1_name, size=str(1 * Gi))
+
+    volume1 = volume1.attach(hostId=hostId)
+    volume1 = wait_for_volume_healthy(client, volume1_name)
+
+    # Step3
+    backing_img1_name = 'bi-test1'
+    backing_img1 = client.create_backing_image(
+            name=backing_img1_name,
+            sourceType=BACKING_IMAGE_SOURCE_TYPE_FROM_VOLUME,
+            parameters={"export-type": "qcow2", "volume-name": volume1_name},
+            expectedChecksum="")
+
+    # Step4
+    volume2_name = "vol2"
+    volume2 = create_and_check_volume(
+        client, volume_name=volume2_name, size=str(1 * Gi),
+        backing_image=backing_img1["name"])
+    volume2 = volume2.attach(hostId=hostId)
+    volume2 = wait_for_volume_healthy(client, volume2_name)
+
+    # Step5, 6
+    data2 = write_volume_random_data(volume2)
+
+    # Step7
+    volume2.detach(hostId="")
+    volume2 = wait_for_volume_detached(client, volume2_name)
+
+    # Step8
+    backing_img2 = client.create_backing_image(
+            name="bi-test2",
+            sourceType=BACKING_IMAGE_SOURCE_TYPE_FROM_VOLUME,
+            parameters={"export-type": "qcow2", "volume-name": volume2_name},
+            expectedChecksum="")
+
+    # Step9
+    volume3_name = "vol3"
+    volume3 = create_and_check_volume(
+        client, volume_name=volume3_name, size=str(1 * Gi),
+        backing_image=backing_img2["name"])
+    volume3 = volume3.attach(hostId=hostId)
+    volume3 = wait_for_volume_healthy(client, volume3_name)
+
+    # Step10
+    check_volume_data(volume3, data2)
