@@ -218,6 +218,7 @@ DEPRECATED_K8S_ZONE_LABEL = "failure-domain.beta.kubernetes.io/zone"
 K8S_ZONE_LABEL = "topology.kubernetes.io/zone"
 
 BACKING_IMAGE_SOURCE_TYPE_DOWNLOAD = "download"
+BACKING_IMAGE_SOURCE_TYPE_FROM_VOLUME = "export-from-volume"
 
 JOB_LABEL = "recurring-job.longhorn.io"
 
