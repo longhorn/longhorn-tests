@@ -14,6 +14,7 @@ from common import delete_and_wait_pvc, wait_for_volume_attached
 from common import generate_random_suffix, wait_for_volume_endpoint
 from common import wait_for_snapshot_count, DATA_SIZE_IN_MB_3
 from common import get_clone_volume_name
+from common import create_storage_class, storage_class  # NOQA
 
 
 # Kept some fixtures specifically for volume cloning module to avoid cleaning
@@ -60,7 +61,7 @@ def clone_pod(request):
 
 
 @pytest.mark.cloning  # NOQA
-def test_cloning_basic(client, core_api, pvc, pod, clone_pvc, clone_pod):  # NOQA
+def test_cloning_basic(client, core_api, pvc, pod, clone_pvc, clone_pod, storage_class_name='longhorn'):  # NOQA
     """
     1. Create a PVC:
         ```yaml
@@ -107,7 +108,7 @@ def test_cloning_basic(client, core_api, pvc, pod, clone_pvc, clone_pod):  # NOQ
     # Step-1
     source_pvc_name = 'source-pvc' + generate_random_suffix()
     pvc['metadata']['name'] = source_pvc_name
-    pvc['spec']['storageClassName'] = 'longhorn'
+    pvc['spec']['storageClassName'] = storage_class_name
     core_api.create_namespaced_persistent_volume_claim(
         body=pvc, namespace='default')
     wait_for_pvc_phase(core_api, source_pvc_name, "Bound")
@@ -126,7 +127,7 @@ def test_cloning_basic(client, core_api, pvc, pod, clone_pvc, clone_pod):  # NOQ
     # Step-4
     clone_pvc_name = 'clone-pvc' + generate_random_suffix()
     clone_pvc['metadata']['name'] = clone_pvc_name
-    clone_pvc['spec']['storageClassName'] = 'longhorn'
+    clone_pvc['spec']['storageClassName'] = storage_class_name
     clone_pvc['spec']['dataSource'] = {
         'name': source_pvc_name,
         'kind': 'PersistentVolumeClaim'
@@ -265,9 +266,8 @@ def test_cloning_with_detached_source_volume(client, core_api, pvc, clone_pvc): 
     wait_for_volume_healthy(client, clone_volume_name)
 
 
-@pytest.mark.skip(reason="TODO")  # NOQA
 @pytest.mark.cloning  # NOQA
-def test_cloning_with_backing_image():  # NOQA
+def test_cloning_with_backing_image(client, core_api, pvc, pod, clone_pvc, clone_pod, storage_class):  # NOQA
     """
     1. Deploy a storage class that has backing image parameter
       ```yaml
@@ -288,6 +288,18 @@ def test_cloning_with_backing_image():  # NOQA
        `longhorn` storageclass
     3. Clean up the test
     """
+
+    # Create storage class with backing image
+    backing_img_storage_class_name = 'longhorn-bi-parrot'
+    storage_class['metadata']['name'] = backing_img_storage_class_name
+    storage_class['parameters']['backingImage'] = 'bi-parrot'
+    storage_class['parameters']['backingImageURL'] = \
+        'https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2' # NOQA
+    storage_class['reclaimPolicy'] = 'Delete'
+
+    create_storage_class(storage_class)
+    test_cloning_basic(client, core_api, pvc, pod, clone_pvc, clone_pod,
+                       storage_class_name=backing_img_storage_class_name)
 
 
 @pytest.mark.cloning  # NOQA
