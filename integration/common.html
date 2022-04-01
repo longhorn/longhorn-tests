@@ -3030,6 +3030,20 @@ def find_backup(client, vol_name, snap_name):
                   &#34; for volume &#34; + vol_name
 
 
+def find_replica_for_backup(client, volume_name, backup_id):
+    replica_name = None
+    for _ in range(RETRY_EXEC_COUNTS):
+        volume = client.by_id_volume(volume_name)
+        for status in volume.backupStatus:
+            if status.id == backup_id:
+                replica_name = status.replica
+        if replica_name:
+            return replica_name
+        else:
+            time.sleep(RETRY_BACKUP_INTERVAL)
+    assert replica_name
+
+
 def check_longhorn(core_api):
     ready = False
     has_engine_image = False
@@ -6845,6 +6859,29 @@ been completed successfully</p></div>
 </summary>
 <pre><code class="python">def find_dockerd_pid():
     return find_ancestor_process_by_name(&#34;dockerd&#34;)</code></pre>
+</details>
+</dd>
+<dt id="tests.common.find_replica_for_backup"><code class="name flex">
+<span>def <span class="ident">find_replica_for_backup</span></span>(<span>client, volume_name, backup_id)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def find_replica_for_backup(client, volume_name, backup_id):
+    replica_name = None
+    for _ in range(RETRY_EXEC_COUNTS):
+        volume = client.by_id_volume(volume_name)
+        for status in volume.backupStatus:
+            if status.id == backup_id:
+                replica_name = status.replica
+        if replica_name:
+            return replica_name
+        else:
+            time.sleep(RETRY_BACKUP_INTERVAL)
+    assert replica_name</code></pre>
 </details>
 </dd>
 <dt id="tests.common.find_self"><code class="name flex">
@@ -11889,6 +11926,7 @@ volume. Trigger a failed assertion of one is detected.
 <li><code><a title="tests.common.find_ancestor_process_by_name" href="#tests.common.find_ancestor_process_by_name">find_ancestor_process_by_name</a></code></li>
 <li><code><a title="tests.common.find_backup" href="#tests.common.find_backup">find_backup</a></code></li>
 <li><code><a title="tests.common.find_dockerd_pid" href="#tests.common.find_dockerd_pid">find_dockerd_pid</a></code></li>
+<li><code><a title="tests.common.find_replica_for_backup" href="#tests.common.find_replica_for_backup">find_replica_for_backup</a></code></li>
 <li><code><a title="tests.common.find_self" href="#tests.common.find_self">find_self</a></code></li>
 <li><code><a title="tests.common.generate_pod_with_pvc_manifest" href="#tests.common.generate_pod_with_pvc_manifest">generate_pod_with_pvc_manifest</a></code></li>
 <li><code><a title="tests.common.generate_random_data" href="#tests.common.generate_random_data">generate_random_data</a></code></li>
