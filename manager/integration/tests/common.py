@@ -3002,6 +3002,20 @@ def find_backup(client, vol_name, snap_name):
                   " for volume " + vol_name
 
 
+def find_replica_for_backup(client, volume_name, backup_id):
+    replica_name = None
+    for _ in range(RETRY_EXEC_COUNTS):
+        volume = client.by_id_volume(volume_name)
+        for status in volume.backupStatus:
+            if status.id == backup_id:
+                replica_name = status.replica
+        if replica_name:
+            return replica_name
+        else:
+            time.sleep(RETRY_BACKUP_INTERVAL)
+    assert replica_name
+
+
 def check_longhorn(core_api):
     ready = False
     has_engine_image = False
