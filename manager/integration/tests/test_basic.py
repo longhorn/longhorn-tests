@@ -33,7 +33,7 @@ from common import create_pvc_spec
 from common import generate_random_data, write_volume_data
 from common import VOLUME_RWTEST_SIZE
 from common import write_pod_volume_data
-from common import find_backup
+from common import find_backup, find_replica_for_backup
 from common import wait_for_backup_completion
 from common import create_storage_class
 from common import wait_for_backup_restore_completed
@@ -553,11 +553,7 @@ def backup_status_for_unavailable_replicas_test(client, volume_name,  # NOQA
     backup_id = b.id
 
     # find the replica for this backup
-    volume = client.by_id_volume(volume_name)
-    for status in volume.backupStatus:
-        if status.id == backup_id:
-            replica_name = status.replica
-    assert replica_name
+    replica_name = find_replica_for_backup(client, volume_name, backup_id)
 
     # disable scheduling on that node
     volume = client.by_id_volume(volume_name)
