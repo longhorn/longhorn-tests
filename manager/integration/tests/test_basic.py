@@ -3997,3 +3997,25 @@ def test_restore_basic(set_random_backupstore, client, core_api, volume_name, po
                                              command=r"ls /data | grep 'test1\|test2'")  # NOQA
     assert data_checksum_3 == restored_data_checksum3['test3']
     assert output == ''
+
+
+@pytest.mark.skip(reason="TODO") # NOQA
+@pytest.mark.coretest   # NOQA
+def test_default_storage_class_syncup():  # NOQA
+    """
+    Steps:
+    1. Record the current Longhorn-StorageClass-related ConfigMap
+       `longhorn-storageclass`.
+    2. Modify the default Longhorn StorageClass `longhorn`.
+       e.g., update `reclaimPolicy` from `Delete` to `Retain`.
+    3. Verify that the change is reverted immediately and the manifest is the
+       same as the record in ConfigMap `longhorn-storageclass`.
+    4. Delete the default Longhorn StorageClass `longhorn`.
+    5. Verify that the StorageClass is recreated immediately with the manifest
+       the same as the record in ConfigMap `longhorn-storageclass`.
+    6. Modify the content of ConfigMap `longhorn-storageclass`.
+    7. Verify that the modifications will be applied to the default Longhorn
+       StorageClass `longhorn` immediately.
+    8. Revert the modifications of the ConfigMaps. Then wait for the
+       StorageClass sync-up.
+    """
