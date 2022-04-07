@@ -599,10 +599,13 @@ def test_recurring_jobs_maximum_retain(client, core_api, volume_name): # NOQA
             LABELS: {},
         },
     }
+
+    validator_error = \
+        "retain" + " in body should be less than or equal to " + "50"
+
     with pytest.raises(Exception) as e:
         create_recurring_jobs(client, recurring_jobs)
-    assert "spec.retain in body should be less than or equal to 50".upper()\
-        in str(e.value).upper()
+    assert validator_error.upper() in str(e.value).upper()
 
     recurring_jobs[RECURRING_JOB_NAME][RETAIN] = 50
     create_recurring_jobs(client, recurring_jobs)
@@ -612,8 +615,7 @@ def test_recurring_jobs_maximum_retain(client, core_api, volume_name): # NOQA
     with pytest.raises(Exception) as e:
         update_recurring_job(client, RECURRING_JOB_NAME,
                              groups=[], labels={}, retain=51)
-    assert "spec.retain in body should be less than or equal to 50".upper()\
-        in str(e.value).upper()
+    assert validator_error.upper() in str(e.value).upper()
 
 
 @pytest.mark.recurring_job  # NOQA
