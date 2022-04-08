@@ -627,10 +627,12 @@ def test_recurring_jobs_maximum_retain(client, core_api, volume_name): # NOQA
             LABELS: {},
         },
     }
+
+    validator_error = &#34;retain in body should be less than or equal to 50&#34;
+
     with pytest.raises(Exception) as e:
         create_recurring_jobs(client, recurring_jobs)
-    assert &#34;spec.retain in body should be less than or equal to 50&#34;.upper()\
-        in str(e.value).upper()
+    assert validator_error.upper() in str(e.value).upper()
 
     recurring_jobs[RECURRING_JOB_NAME][RETAIN] = 50
     create_recurring_jobs(client, recurring_jobs)
@@ -640,8 +642,7 @@ def test_recurring_jobs_maximum_retain(client, core_api, volume_name): # NOQA
     with pytest.raises(Exception) as e:
         update_recurring_job(client, RECURRING_JOB_NAME,
                              groups=[], labels={}, retain=51)
-    assert &#34;spec.retain in body should be less than or equal to 50&#34;.upper()\
-        in str(e.value).upper()
+    assert validator_error.upper() in str(e.value).upper()
 
 
 @pytest.mark.recurring_job  # NOQA
@@ -3610,10 +3611,12 @@ Then should fail.</p></div>
             LABELS: {},
         },
     }
+
+    validator_error = &#34;retain in body should be less than or equal to 50&#34;
+
     with pytest.raises(Exception) as e:
         create_recurring_jobs(client, recurring_jobs)
-    assert &#34;spec.retain in body should be less than or equal to 50&#34;.upper()\
-        in str(e.value).upper()
+    assert validator_error.upper() in str(e.value).upper()
 
     recurring_jobs[RECURRING_JOB_NAME][RETAIN] = 50
     create_recurring_jobs(client, recurring_jobs)
@@ -3623,8 +3626,7 @@ Then should fail.</p></div>
     with pytest.raises(Exception) as e:
         update_recurring_job(client, RECURRING_JOB_NAME,
                              groups=[], labels={}, retain=51)
-    assert &#34;spec.retain in body should be less than or equal to 50&#34;.upper()\
-        in str(e.value).upper()</code></pre>
+    assert validator_error.upper() in str(e.value).upper()</code></pre>
 </details>
 </dd>
 <dt id="tests.test_recurring_job.test_recurring_jobs_on_nodes_with_taints"><code class="name flex">
