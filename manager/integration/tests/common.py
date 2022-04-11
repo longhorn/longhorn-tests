@@ -1947,6 +1947,17 @@ def volume_read(v, start, count):
     return dev_read(dev, start, count)
 
 
+def get_host_replica_count(client, volume_name, host_id, chk_running=False):
+    volume = client.by_id_volume(volume_name)
+    replica_count = 0
+    for replica in volume.replicas:
+        if chk_running and not replica.running:
+            continue
+        if replica.hostId == host_id:
+            replica_count += 1
+    return replica_count
+
+
 def dev_read(dev, start, count):
     r_data = ""
     fdev = open(dev, 'rb')
@@ -3967,3 +3978,14 @@ def get_engine_image_status_value(client, ei_name):
 def update_setting(client, name, value):
     setting = client.by_id_setting(name)
     client.update(setting, value=value)
+
+
+def get_volume_running_replica_cnt(client, volume_name):  # NOQA
+    nodes = client.list_node()
+    cnt = 0
+
+    for node in nodes:
+        cnt = cnt + get_host_replica_count(
+            client, volume_name, node.name, chk_running=True)
+
+    return cnt
