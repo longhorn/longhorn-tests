@@ -60,7 +60,7 @@ def volumesnapshotclass(request):
         manifests = []
 
         @staticmethod
-        def create_volumesnapshotclass(name, deletepolicy):
+        def create_volumesnapshotclass(name, deletepolicy, snapshot_type=None):
             manifest = {
                 &#39;kind&#39;: &#39;VolumeSnapshotClass&#39;,
                 &#39;apiVersion&#39;: &#39;snapshot.storage.k8s.io/v1beta1&#39;,
@@ -70,6 +70,9 @@ def volumesnapshotclass(request):
                 &#39;driver&#39;: &#39;driver.longhorn.io&#39;,
                 &#39;deletionPolicy&#39;: deletepolicy
             }
+
+            if snapshot_type is not None:
+                manifest.update({&#39;parameters&#39;: {&#39;type&#39;: snapshot_type}})
 
             VolumeSnapshotClassFactory.manifests.append(manifest)
 
@@ -388,7 +391,8 @@ def test_csi_volumesnapshot_basic(set_random_backupstore, # NOQA
                                   pvc, # NOQA
                                   pod_make, # NOQA
                                   volsnapshotclass_delete_policy, # NOQA
-                                  backup_is_deleted): # NOQA
+                                  backup_is_deleted,
+                                  csi_snapshot_type=None): # NOQA
     &#34;&#34;&#34;
     Test creation / restoration / deletion of a backup via the csi snapshotter
 
@@ -448,7 +452,8 @@ def test_csi_volumesnapshot_basic(set_random_backupstore, # NOQA
 
     csisnapclass = \
         volumesnapshotclass(name=&#34;snapshotclass&#34;,
-                            deletepolicy=volsnapshotclass_delete_policy)
+                            deletepolicy=volsnapshotclass_delete_policy,
+                            snapshot_type=csi_snapshot_type)
 
     pod_name, pv_name, pvc_name, md5sum = \
         prepare_pod_with_data_in_mb(client, core_api,
@@ -613,8 +618,18 @@ def test_csi_volumesnapshot_restore_existing_backup(set_random_backupstore, # NO
         wait_for_backup_delete(client, volume_name, b[&#34;name&#34;])
 
 
-@pytest.mark.skip(reason=&#34;TODO&#34;) # NOQA
-def test_csi_snapshot_with_bak_param(client, volume_name): # NOQA
+@pytest.mark.parametrize(&#34;volsnapshotclass_delete_policy,backup_is_deleted&#34;, [(&#34;Delete&#34;, True)]) # NOQA
+def test_csi_snapshot_with_bak_param(set_random_backupstore, # NOQA
+                                  volumesnapshotclass, # NOQA
+                                  volumesnapshot, # NOQA
+                                  client, # NOQA
+                                  core_api, # NOQA
+                                  volume_name, # NOQA
+                                  csi_pv, # NOQA
+                                  pvc, # NOQA
+                                  pod_make, # NOQA
+                                  volsnapshotclass_delete_policy, # NOQA
+                                  backup_is_deleted): # NOQA
     &#34;&#34;&#34;
     Context:
 
@@ -644,6 +659,18 @@ def test_csi_snapshot_with_bak_param(client, volume_name): # NOQA
         - Delete VolumeSnapshot
         - The backup should deleted as well
     &#34;&#34;&#34;
+    test_csi_volumesnapshot_basic(set_random_backupstore, # NOQA
+                                  volumesnapshotclass, # NOQA
+                                  volumesnapshot, # NOQA
+                                  client, # NOQA
+                                  core_api, # NOQA
+                                  volume_name, # NOQA
+                                  csi_pv, # NOQA
+                                  pvc, # NOQA
+                                  pod_make, # NOQA
+                                  volsnapshotclass_delete_policy, # NOQA
+                                  backup_is_deleted, # NOQA
+                                  csi_snapshot_type=&#39;bak&#39;)
 
 
 @pytest.mark.skip(reason=&#34;TODO&#34;) # NOQA
@@ -853,7 +880,7 @@ def test_csi_snapshot_with_invalid_param(client, volume_name): # NOQA
 </details>
 </dd>
 <dt id="tests.test_csi_snapshotter.test_csi_snapshot_with_bak_param"><code class="name flex">
-<span>def <span class="ident">test_csi_snapshot_with_bak_param</span></span>(<span>client, volume_name)</span>
+<span>def <span class="ident">test_csi_snapshot_with_bak_param</span></span>(<span>set_random_backupstore, volumesnapshotclass, volumesnapshot, client, core_api, volume_name, csi_pv, pvc, pod_make, volsnapshotclass_delete_policy, backup_is_deleted)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Context:</p>
@@ -892,8 +919,18 @@ csi-snapshot-support/enable-csi-snapshot-support/</p>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">@pytest.mark.skip(reason=&#34;TODO&#34;) # NOQA
-def test_csi_snapshot_with_bak_param(client, volume_name): # NOQA
+<pre><code class="python">@pytest.mark.parametrize(&#34;volsnapshotclass_delete_policy,backup_is_deleted&#34;, [(&#34;Delete&#34;, True)]) # NOQA
+def test_csi_snapshot_with_bak_param(set_random_backupstore, # NOQA
+                                  volumesnapshotclass, # NOQA
+                                  volumesnapshot, # NOQA
+                                  client, # NOQA
+                                  core_api, # NOQA
+                                  volume_name, # NOQA
+                                  csi_pv, # NOQA
+                                  pvc, # NOQA
+                                  pod_make, # NOQA
+                                  volsnapshotclass_delete_policy, # NOQA
+                                  backup_is_deleted): # NOQA
     &#34;&#34;&#34;
     Context:
 
@@ -922,7 +959,19 @@ def test_csi_snapshot_with_bak_param(client, volume_name): # NOQA
     3. Test delete CSI snapshot
         - Delete VolumeSnapshot
         - The backup should deleted as well
-    &#34;&#34;&#34;</code></pre>
+    &#34;&#34;&#34;
+    test_csi_volumesnapshot_basic(set_random_backupstore, # NOQA
+                                  volumesnapshotclass, # NOQA
+                                  volumesnapshot, # NOQA
+                                  client, # NOQA
+                                  core_api, # NOQA
+                                  volume_name, # NOQA
+                                  csi_pv, # NOQA
+                                  pvc, # NOQA
+                                  pod_make, # NOQA
+                                  volsnapshotclass_delete_policy, # NOQA
+                                  backup_is_deleted, # NOQA
+                                  csi_snapshot_type=&#39;bak&#39;)</code></pre>
 </details>
 </dd>
 <dt id="tests.test_csi_snapshotter.test_csi_snapshot_with_invalid_param"><code class="name flex">
@@ -1134,7 +1183,7 @@ def test_csi_snapshot_with_snap_param(client, volume_name): # NOQA
 </details>
 </dd>
 <dt id="tests.test_csi_snapshotter.test_csi_volumesnapshot_basic"><code class="name flex">
-<span>def <span class="ident">test_csi_volumesnapshot_basic</span></span>(<span>set_random_backupstore, volumesnapshotclass, volumesnapshot, client, core_api, volume_name, csi_pv, pvc, pod_make, volsnapshotclass_delete_policy, backup_is_deleted)</span>
+<span>def <span class="ident">test_csi_volumesnapshot_basic</span></span>(<span>set_random_backupstore, volumesnapshotclass, volumesnapshot, client, core_api, volume_name, csi_pv, pvc, pod_make, volsnapshotclass_delete_policy, backup_is_deleted, csi_snapshot_type=None)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Test creation / restoration / deletion of a backup via the csi snapshotter</p>
@@ -1201,7 +1250,8 @@ def test_csi_volumesnapshot_basic(set_random_backupstore, # NOQA
                                   pvc, # NOQA
                                   pod_make, # NOQA
                                   volsnapshotclass_delete_policy, # NOQA
-                                  backup_is_deleted): # NOQA
+                                  backup_is_deleted,
+                                  csi_snapshot_type=None): # NOQA
     &#34;&#34;&#34;
     Test creation / restoration / deletion of a backup via the csi snapshotter
 
@@ -1261,7 +1311,8 @@ def test_csi_volumesnapshot_basic(set_random_backupstore, # NOQA
 
     csisnapclass = \
         volumesnapshotclass(name=&#34;snapshotclass&#34;,
-                            deletepolicy=volsnapshotclass_delete_policy)
+                            deletepolicy=volsnapshotclass_delete_policy,
+                            snapshot_type=csi_snapshot_type)
 
     pod_name, pv_name, pvc_name, md5sum = \
         prepare_pod_with_data_in_mb(client, core_api,
@@ -1561,7 +1612,7 @@ def volumesnapshotclass(request):
         manifests = []
 
         @staticmethod
-        def create_volumesnapshotclass(name, deletepolicy):
+        def create_volumesnapshotclass(name, deletepolicy, snapshot_type=None):
             manifest = {
                 &#39;kind&#39;: &#39;VolumeSnapshotClass&#39;,
                 &#39;apiVersion&#39;: &#39;snapshot.storage.k8s.io/v1beta1&#39;,
@@ -1571,6 +1622,9 @@ def volumesnapshotclass(request):
                 &#39;driver&#39;: &#39;driver.longhorn.io&#39;,
                 &#39;deletionPolicy&#39;: deletepolicy
             }
+
+            if snapshot_type is not None:
+                manifest.update({&#39;parameters&#39;: {&#39;type&#39;: snapshot_type}})
 
             VolumeSnapshotClassFactory.manifests.append(manifest)
 
