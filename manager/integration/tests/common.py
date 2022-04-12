@@ -69,6 +69,8 @@ RETRY_BACKUP_INTERVAL = 1
 RETRY_SNAPSHOT_INTERVAL = 1
 RETRY_EXEC_COUNTS = 30
 RETRY_EXEC_INTERVAL = 5
+RETRY_AUTOSCALER_INTERVAL = 30
+RETRY_AUTOSCALER_COUNTS = 10*60//RETRY_AUTOSCALER_INTERVAL  # 10 minutes
 
 LONGHORN_NAMESPACE = "longhorn-system"
 
@@ -195,6 +197,8 @@ SETTING_SNAPSHOT_FAST_REPLICA_REBUILD_ENABLED = "fast-replica-rebuild-enabled"
 SETTING_CONCURRENT_VOLUME_BACKUP_RESTORE = \
     "concurrent-volume-backup-restore-per-node-limit"
 SETTING_NODE_SELECTOR = "system-managed-components-node-selector"
+SETTING_K8S_CLUSTER_AUTOSCALER_ENABLED = \
+    "kubernetes-cluster-autoscaler-enabled"
 
 SNAPSHOT_DATA_INTEGRITY_IGNORED = "ignored"
 SNAPSHOT_DATA_INTEGRITY_DISABLED = "disabled"
@@ -245,6 +249,11 @@ BACKUP_BLOCK_SIZE = 2 * Mi
 DEPRECATED_K8S_ZONE_LABEL = "failure-domain.beta.kubernetes.io/zone"
 
 K8S_ZONE_LABEL = "topology.kubernetes.io/zone"
+
+K8S_CLUSTER_AUTOSCALER_EVICT_KEY = \
+    "cluster-autoscaler.kubernetes.io/safe-to-evict"
+K8S_CLUSTER_AUTOSCALER_SCALE_DOWN_DISABLED_KEY = \
+    "cluster-autoscaler.kubernetes.io/scale-down-disabled"
 
 BACKING_IMAGE_SOURCE_TYPE_DOWNLOAD = "download"
 BACKING_IMAGE_SOURCE_TYPE_FROM_VOLUME = "export-from-volume"
@@ -3001,7 +3010,9 @@ def reset_node(client, core_api):
             print("\nException when reset node scheduling and tags", node)
             print(e)
 
-    reset_longhorn_node_zone(client)
+    managed_k8s_cluster = os.getenv("MANAGED_K8S_CLUSTER").lower() == 'true'
+    if not managed_k8s_cluster:
+        reset_longhorn_node_zone(client)
 
 
 def reset_longhorn_node_zone(client):
@@ -3014,7 +3025,6 @@ def reset_longhorn_node_zone(client):
 
 
 def wait_longhorn_node_zone_reset(client):
-
     lh_nodes = client.list_node()
     node_names = map(lambda node: node.name, lh_nodes)
 
@@ -4308,6 +4318,69 @@ def make_deployment_with_pvc(request):
     request.addfinalizer(finalizer)
 
     return _generate_deployment_with_pvc_manifest
+
+
+@pytest.fixture
+def make_deployment_cpu_request(request):
+    def _generate_deployment_cpu_request_manifest(deployment_name, cpu_request, replicas=1): # NOQA
+        make_deployment_cpu_request.deployment_manifest = {
+            "apiVersion": "apps/v1",
+            "kind": "Deployment",
+            "metadata": {
+               "name": deployment_name,
+               "labels": {
+                  "name": deployment_name
+               }
+            },
+            "spec": {
+               "replicas": replicas,
+               "selector": {
+                  "matchLabels": {
+                     "name": deployment_name
+                  }
+               },
+               "template": {
+                  "metadata": {
+                     "labels": {
+                        "name": deployment_name
+                     }
+                  },
+                  "spec": {
+                     "containers": [
+                        {
+                           "name": deployment_name,
+                           "image": "nginx:stable-alpine",
+                           "resources": {
+                               "limits": {
+                                   "cpu": str(cpu_request * 2)+"m",
+                                   "memory": "30Mi",
+                               },
+                               "requests": {
+                                   "cpu": str(cpu_request)+"m",
+                                   "memory": "15Mi",
+                               }
+                           }
+                        }
+                     ],
+                  }
+               }
+            }
+        }
+
+        return make_deployment_cpu_request.deployment_manifest
+
+    def finalizer():
+        apps_api = get_apps_api_client()
+        deployment_name = \
+            make_deployment_cpu_request.deployment_manifest["metadata"]["name"]
+        delete_and_wait_deployment(
+            apps_api,
+            deployment_name
+        )
+
+    request.addfinalizer(finalizer)
+
+    return _generate_deployment_cpu_request_manifest
 
 
 def wait_deployment_replica_ready(apps_api, deployment_name,
