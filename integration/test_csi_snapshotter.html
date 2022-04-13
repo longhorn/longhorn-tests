@@ -308,7 +308,7 @@ def delete_volumesnapshot(name, namespace):
         assert e.status == 404
 
 
-def wait_for_volumesnapshot_ready(volumesnapshot_name, namespace):
+def wait_for_volumesnapshot_ready(volumesnapshot_name, namespace, ready_to_use=True): # NOQA
     api = get_custom_object_api_client()
     api_group = &#34;snapshot.storage.k8s.io&#34;
     api_version = &#34;v1beta1&#34;
@@ -326,7 +326,7 @@ def wait_for_volumesnapshot_ready(volumesnapshot_name, namespace):
 
         time.sleep(RETRY_INTERVAL)
 
-    assert v[&#34;status&#34;][&#34;readyToUse&#34;] is True
+    assert v[&#34;status&#34;][&#34;readyToUse&#34;] is ready_to_use
     return v
 
 
@@ -734,13 +734,22 @@ def test_csi_snapshot_with_snap_param(client, volume_name): # NOQA
                 - Verify that VolumeSnapshot is stuck in deleting
     &#34;&#34;&#34;
 
-@pytest.mark.skip(reason=&#34;TODO&#34;) # NOQA
-def test_csi_snapshot_with_invalid_param(client, volume_name): # NOQA
+
+def test_csi_snapshot_with_invalid_param(
+                                  volumesnapshotclass, # NOQA
+                                  volumesnapshot, # NOQA
+                                  client, # NOQA
+                                  core_api, # NOQA
+                                  volume_name, # NOQA
+                                  csi_pv, # NOQA
+                                  pvc, # NOQA
+                                  pod_make, # NOQA
+                                  request): # NOQA
     &#34;&#34;&#34;
     Context:
 
     After deploy the CSI snapshot CRDs, Controller at
-    https://longhorn.io/docs/1.2.3/snapshots-and-backups/
+    https://longhorn.io/docs/1.2.4/snapshots-and-backups/
     csi-snapshot-support/enable-csi-snapshot-support/
 
     Create VolumeSnapshotClass with type=invalid
@@ -758,7 +767,37 @@ def test_csi_snapshot_with_invalid_param(client, volume_name): # NOQA
     1. Test create CSI snapshot
         - Create VolumeSnapshot with class invalid
         - Verify that the volumesnapshot object is not ready
-    &#34;&#34;&#34;</code></pre>
+    &#34;&#34;&#34;
+    # Step 0
+    csi_snapshot_type = &#34;invalid&#34;
+    csisnapclass = \
+        volumesnapshotclass(name=&#34;snapshotclass-invalid&#34;,
+                            deletepolicy=&#34;Delete&#34;,
+                            snapshot_type=csi_snapshot_type)
+
+    pod_name, pv_name, pvc_name, md5sum = \
+        prepare_pod_with_data_in_mb(client, core_api,
+                                    csi_pv, pvc, pod_make,
+                                    volume_name,
+                                    data_path=&#34;/data/test&#34;)
+
+    # Step 1
+    csivolsnap = volumesnapshot(volume_name + &#34;-volumesnapshot&#34;,
+                                &#34;default&#34;,
+                                csisnapclass[&#34;metadata&#34;][&#34;name&#34;],
+                                &#34;persistentVolumeClaimName&#34;,
+                                pvc_name)
+
+    wait_for_volumesnapshot_ready(
+                            volumesnapshot_name=csivolsnap[&#34;metadata&#34;][&#34;name&#34;],
+                            namespace=&#39;default&#39;,
+                            ready_to_use=False)
+
+    def finalizer():
+        delete_volumesnapshot(csivolsnap[&#34;metadata&#34;][&#34;name&#34;],
+                              &#39;default&#39;)
+
+    request.addfinalizer(finalizer)</code></pre>
 </details>
 </section>
 <section>
@@ -975,12 +1014,12 @@ def test_csi_snapshot_with_bak_param(set_random_backupstore, # NOQA
 </details>
 </dd>
 <dt id="tests.test_csi_snapshotter.test_csi_snapshot_with_invalid_param"><code class="name flex">
-<span>def <span class="ident">test_csi_snapshot_with_invalid_param</span></span>(<span>client, volume_name)</span>
+<span>def <span class="ident">test_csi_snapshot_with_invalid_param</span></span>(<span>volumesnapshotclass, volumesnapshot, client, core_api, volume_name, csi_pv, pvc, pod_make, request)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Context:</p>
 <p>After deploy the CSI snapshot CRDs, Controller at
-<a href="https://longhorn.io/docs/1.2.3/snapshots-and-backups/">https://longhorn.io/docs/1.2.3/snapshots-and-backups/</a>
+<a href="https://longhorn.io/docs/1.2.4/snapshots-and-backups/">https://longhorn.io/docs/1.2.4/snapshots-and-backups/</a>
 csi-snapshot-support/enable-csi-snapshot-support/</p>
 <p>Create VolumeSnapshotClass with type=invalid
 - invalid (type=invalid)</p>
@@ -1004,13 +1043,21 @@ csi-snapshot-support/enable-csi-snapshot-support/</p>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">@pytest.mark.skip(reason=&#34;TODO&#34;) # NOQA
-def test_csi_snapshot_with_invalid_param(client, volume_name): # NOQA
+<pre><code class="python">def test_csi_snapshot_with_invalid_param(
+                                  volumesnapshotclass, # NOQA
+                                  volumesnapshot, # NOQA
+                                  client, # NOQA
+                                  core_api, # NOQA
+                                  volume_name, # NOQA
+                                  csi_pv, # NOQA
+                                  pvc, # NOQA
+                                  pod_make, # NOQA
+                                  request): # NOQA
     &#34;&#34;&#34;
     Context:
 
     After deploy the CSI snapshot CRDs, Controller at
-    https://longhorn.io/docs/1.2.3/snapshots-and-backups/
+    https://longhorn.io/docs/1.2.4/snapshots-and-backups/
     csi-snapshot-support/enable-csi-snapshot-support/
 
     Create VolumeSnapshotClass with type=invalid
@@ -1028,7 +1075,37 @@ def test_csi_snapshot_with_invalid_param(client, volume_name): # NOQA
     1. Test create CSI snapshot
         - Create VolumeSnapshot with class invalid
         - Verify that the volumesnapshot object is not ready
-    &#34;&#34;&#34;</code></pre>
+    &#34;&#34;&#34;
+    # Step 0
+    csi_snapshot_type = &#34;invalid&#34;
+    csisnapclass = \
+        volumesnapshotclass(name=&#34;snapshotclass-invalid&#34;,
+                            deletepolicy=&#34;Delete&#34;,
+                            snapshot_type=csi_snapshot_type)
+
+    pod_name, pv_name, pvc_name, md5sum = \
+        prepare_pod_with_data_in_mb(client, core_api,
+                                    csi_pv, pvc, pod_make,
+                                    volume_name,
+                                    data_path=&#34;/data/test&#34;)
+
+    # Step 1
+    csivolsnap = volumesnapshot(volume_name + &#34;-volumesnapshot&#34;,
+                                &#34;default&#34;,
+                                csisnapclass[&#34;metadata&#34;][&#34;name&#34;],
+                                &#34;persistentVolumeClaimName&#34;,
+                                pvc_name)
+
+    wait_for_volumesnapshot_ready(
+                            volumesnapshot_name=csivolsnap[&#34;metadata&#34;][&#34;name&#34;],
+                            namespace=&#39;default&#39;,
+                            ready_to_use=False)
+
+    def finalizer():
+        delete_volumesnapshot(csivolsnap[&#34;metadata&#34;][&#34;name&#34;],
+                              &#39;default&#39;)
+
+    request.addfinalizer(finalizer)</code></pre>
 </details>
 </dd>
 <dt id="tests.test_csi_snapshotter.test_csi_snapshot_with_snap_param"><code class="name flex">
@@ -1756,7 +1833,7 @@ def volumesnapshotcontent(request):
 </details>
 </dd>
 <dt id="tests.test_csi_snapshotter.wait_for_volumesnapshot_ready"><code class="name flex">
-<span>def <span class="ident">wait_for_volumesnapshot_ready</span></span>(<span>volumesnapshot_name, namespace)</span>
+<span>def <span class="ident">wait_for_volumesnapshot_ready</span></span>(<span>volumesnapshot_name, namespace, ready_to_use=True)</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -1764,7 +1841,7 @@ def volumesnapshotcontent(request):
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def wait_for_volumesnapshot_ready(volumesnapshot_name, namespace):
+<pre><code class="python">def wait_for_volumesnapshot_ready(volumesnapshot_name, namespace, ready_to_use=True): # NOQA
     api = get_custom_object_api_client()
     api_group = &#34;snapshot.storage.k8s.io&#34;
     api_version = &#34;v1beta1&#34;
@@ -1782,7 +1859,7 @@ def volumesnapshotcontent(request):
 
         time.sleep(RETRY_INTERVAL)
 
-    assert v[&#34;status&#34;][&#34;readyToUse&#34;] is True
+    assert v[&#34;status&#34;][&#34;readyToUse&#34;] is ready_to_use
     return v</code></pre>
 </details>
 </dd>
