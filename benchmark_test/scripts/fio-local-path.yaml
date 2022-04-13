@@ -1,0 +1,52 @@
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: kbench-pvc
+spec:
+  volumeMode: Filesystem
+  #volumeMode: Block
+  #storageClassName: longhorn  # replace with your storage class
+  storageClassName: local-path
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 55Gi
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: kbench
+spec:
+  template:
+    metadata:
+      labels:
+        kbench: fio
+    spec:
+      containers:
+      - name: kbench
+        image: yangchiu/kbench:latest
+        imagePullPolicy: Always
+        env:
+        #- name: QUICK_MODE  # for debugging
+        #  value: "1"
+        - name: TEST_NAME
+          value: local-path-provisioner
+        - name: FILE_NAME
+          value: "/volume/test"
+        - name: SIZE
+          value: "50G" # must be 10% smaller than the PVC size due to filesystem also took space
+        - name: CPU_IDLE_PROF
+          value: "disabled" # must be "enabled" or "disabled"
+        volumeMounts:
+        - name: vol
+          mountPath: /volume/
+        #volumeDevices:
+        #- name: vol
+        #  devicePath: /volume/test
+      restartPolicy: Never
+      volumes:
+      - name: vol
+        persistentVolumeClaim:
+          claimName: kbench-pvc
+  backoffLimit: 0

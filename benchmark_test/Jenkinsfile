@@ -1,0 +1,99 @@
+def imageName = "${JOB_BASE_NAME}-${env.BUILD_NUMBER}"
+def summary
+def BUILD_TRIGGER_BY = "\n${currentBuild.getBuildCauses()[0].shortDescription}"
+
+// define optional parameters
+def SELINUX_MODE = params.SELINUX_MODE ? "SELINUX_MODE=${params.SELINUX_MODE}" : ""
+
+
+node {
+
+	if(params.SEND_SLACK_NOTIFICATION){
+		notifyBuild('STARTED', BUILD_TRIGGER_BY, params.NOTIFY_SLACK_CHANNEL)
+	}
+
+    checkout scm
+
+    withCredentials([usernamePassword(credentialsId: 'AWS_CREDS', passwordVariable: 'AWS_SECRET_KEY', usernameVariable: 'AWS_ACCESS_KEY')]) {
+        stage('build') {
+            sh "benchmark_test/scripts/build.sh"
+
+            sh """ docker run -itd --name ${JOB_BASE_NAME}-${BUILD_NUMBER} \
+                                   --env TEST_SIZE=${TEST_SIZE} \
+                                   --env LONGHORN_VERSION=${LONGHORN_VERSION} \
+                                   --env LONGHORN_TESTS_CUSTOM_IMAGE=${LONGHORN_TESTS_CUSTOM_IMAGE} \
+                                   --env DISTRO=${DISTRO} \
+                                   --env LONGHORN_TEST_CLOUDPROVIDER=${LONGHORN_TEST_CLOUDPROVIDER} \
+                                   --env TF_VAR_arch=${ARCH} \
+                                   --env TF_VAR_k8s_distro_name=${K8S_DISTRO_NAME} \
+                                   --env TF_VAR_k8s_distro_version=${K8S_DISTRO_VERSION} \
+                                   --env TF_VAR_aws_availability_zone=${AWS_AVAILABILITY_ZONE} \
+                                   --env TF_VAR_aws_region=${AWS_REGION} \
+                                   --env TF_VAR_distro_version=${DISTRO_VERSION} \
+                                   --env TF_VAR_lh_aws_access_key=${AWS_ACCESS_KEY} \
+                                   --env TF_VAR_lh_aws_instance_name_controlplane="${JOB_BASE_NAME}-ctrl" \
+                                   --env TF_VAR_lh_aws_instance_name_worker="${JOB_BASE_NAME}-wrk" \
+                                   --env TF_VAR_lh_aws_instance_type_controlplane=${CONTROLPLANE_INSTANCE_TYPE} \
+                                   --env TF_VAR_lh_aws_instance_type_worker=${WORKER_INSTANCE_TYPE}\
+                                   --env TF_VAR_lh_aws_secret_key=${AWS_SECRET_KEY} \
+                                   --env TF_VAR_tf_workspace=${TF_VAR_tf_workspace} \
+                                   --env TF_VAR_tf_selinux_mode=${SELINUX_MODE} \
+                                   ${imageName}
+            """
+        }
+
+        try {
+            timeout(60) {
+                stage ('terraform') {
+                    sh  " docker exec ${JOB_BASE_NAME}-${BUILD_NUMBER} ${TF_VAR_tf_workspace}/scripts/terraform-setup.sh"
+                }
+			}
+
+            stage ('longhorn setup & tests') {
+                sh  " docker exec ${JOB_BASE_NAME}-${BUILD_NUMBER} ${TF_VAR_tf_workspace}/scripts/benchmark-test-setup.sh"
+            }
+
+        } catch(e) {
+            currentBuild.result = "FAILED"
+            throw e
+        } finally {
+            stage('releasing resources') {
+                sh "docker exec ${JOB_BASE_NAME}-${BUILD_NUMBER} ${TF_VAR_tf_workspace}/scripts/cleanup.sh"
+                sh "docker stop ${JOB_BASE_NAME}-${BUILD_NUMBER}"
+                sh "docker rm -v ${JOB_BASE_NAME}-${BUILD_NUMBER}"
+                sh "docker rmi ${imageName}"
+
+				if(params.SEND_SLACK_NOTIFICATION){
+					notifyBuild(currentBuild.result, "build completed", params.NOTIFY_SLACK_CHANNEL)
+				}
+            }
+        }
+    }
+}
+
+
+def notifyBuild(String buildStatus = 'STARTED', String summary_msg, String slack_channel) {
+  // build status of null means successful
+  buildStatus =  buildStatus ?: 'SUCCESSFUL'
+
+  // Default values
+  def colorName = 'RED'
+  def colorCode = '#FF0000'
+  def subject = "${buildStatus}: Job '${env.JOB_BASE_NAME} [${env.BUILD_NUMBER}]'"
+  def summary = "${subject} (${env.BUILD_URL})" + summary_msg
+
+  // Override default values based on build status
+  if (buildStatus == 'STARTED') {
+    color = 'YELLOW'
+    colorCode = '#FFFF00'
+  } else if (buildStatus == 'SUCCESSFUL') {
+    color = 'GREEN'
+    colorCode = '#00FF00'
+  } else {
+    color = 'RED'
+    colorCode = '#FF0000'
+  }
+
+  // Send notifications
+  slackSend (color: colorCode, message: summary, channel: slack_channel,  tokenCredentialId: 'longhorn-tests-slack-token')
+}
