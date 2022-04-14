@@ -15,9 +15,11 @@ from common import get_longhorn_api_client
 from common import get_self_host_id
 from common import update_setting
 
+from common import cleanup_all_backing_images
 from common import create_and_check_volume
 from common import create_and_wait_deployment
 from common import create_and_wait_pod
+from common import create_backing_image_with_matching_url
 from common import create_pv_for_volume
 from common import create_pvc_for_volume
 from common import create_pvc_spec
@@ -31,6 +33,8 @@ from common import write_pod_volume_data
 
 from common import Ki
 
+from common import BACKING_IMAGE_NAME
+from common import BACKING_IMAGE_QCOW2_URL
 from common import K8S_CLUSTER_AUTOSCALER_EVICT_KEY
 from common import K8S_CLUSTER_AUTOSCALER_SCALE_DOWN_DISABLED_KEY
 from common import RETRY_AUTOSCALER_COUNTS
@@ -206,6 +210,89 @@ def test_cluster_autoscaler_all_nodes_with_volume_replicas(client, core_api, app
     create_and_wait_pod(core_api, pod_manifest)
     resp = read_volume_data(core_api, pod_name)
     assert resp == data
+
+
+@pytest.mark.skip(reason="require K8s cluster-autoscaler")
+@pytest.mark.cluster_autoscaler  # NOQA
+@pytest.mark.backing_image  # NOQA
+def test_cluster_autoscaler_backing_image(client, core_api, apps_api, make_deployment_cpu_request, request):  # NOQA
+    """
+    Scenario: Test CA scale down with backing image
+
+    Given Cluster with Kubernetes cluster-autoscaler.
+    And Longhorn installed.
+    And Set `kubernetes-cluster-autoscaler-enabled` to `true`.
+    And Create backing image.
+    And Create deployment with cpu request.
+
+    When Trigger CA to scale-up by increase deployment replicas.
+         (double the node number, not including host node)
+    Then Cluster should have double the node number.
+
+    When Annotate new nodes with
+         `cluster-autoscaler.kubernetes.io/scale-down-disabled`.
+         (this ensures scale-down only the old nodes)
+    And Trigger CA to scale-down by decrease deployment replicas.
+    Then Cluster should have original node number + 1 blocked node.
+
+    When Remove backing image.
+    Then Cluster should scale-down to original node number.
+    """
+    # Cleanup
+    def finalizer():
+        configure_node_scale_down(core_api, client.list_node(), disable="")
+    request.addfinalizer(finalizer)
+
+    host_id = get_self_host_id()
+    host_node = client.by_id_node(host_id)
+    configure_node_scale_down(core_api, [host_node], disable="true")
+    set_node_cordon(core_api, host_id, True)
+
+    update_setting(client, SETTING_REPLICA_REPLENISHMENT_WAIT_INTERVAL, "0")
+    update_setting(client, SETTING_K8S_CLUSTER_AUTOSCALER_ENABLED, "true")
+
+    nodes = client.list_node()
+    scale_size = len(nodes)-1
+
+    create_backing_image_with_matching_url(
+            client, BACKING_IMAGE_NAME, BACKING_IMAGE_QCOW2_URL)
+
+    scale_up_replica = get_replica_count_to_scale_up(
+        core_api, scale_size, CPU_REQUEST
+    )
+
+    deployment_name = "autoscale-control"
+    deployment = make_deployment_cpu_request(deployment_name, CPU_REQUEST)
+    create_and_wait_deployment(apps_api, deployment)
+
+    deployment["spec"]["replicas"] = scale_up_replica
+    apps_api.patch_namespaced_deployment(body=deployment,
+                                         namespace='default',
+                                         name=deployment_name)
+
+    wait_cluster_autoscale_up(client, nodes, scale_size)
+
+    new_nodes = get_new_nodes(client, old_nodes=nodes)
+    configure_node_scale_down(core_api, new_nodes, disable="true")
+
+    scale_down_replica = 0
+    deployment["spec"]["replicas"] = scale_down_replica
+    apps_api.patch_namespaced_deployment(body=deployment,
+                                         namespace='default',
+                                         name=deployment_name)
+    nodes = client.list_node()
+    is_blocked = False
+    try:
+        client = wait_cluster_autoscale_down(client, core_api, nodes,
+                                             scale_size)
+    except AssertionError:
+        client = wait_cluster_autoscale_down(client, core_api, nodes,
+                                             scale_size-1)
+        is_blocked = True
+    assert is_blocked
+
+    cleanup_all_backing_images(client)
+    client = wait_cluster_autoscale_down(client, core_api, nodes, scale_size)
 
 
 def configure_node_scale_down(core_api, nodes, disable):  # NOQA
