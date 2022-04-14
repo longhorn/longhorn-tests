@@ -33,7 +33,7 @@ from common import create_pvc_spec
 from common import generate_random_data, write_volume_data
 from common import VOLUME_RWTEST_SIZE
 from common import write_pod_volume_data
-from common import find_backup
+from common import find_backup, find_replica_for_backup
 from common import wait_for_backup_completion
 from common import create_storage_class
 from common import wait_for_backup_restore_completed
@@ -553,11 +553,7 @@ def backup_status_for_unavailable_replicas_test(client, volume_name,  # NOQA
     backup_id = b.id
 
     # find the replica for this backup
-    volume = client.by_id_volume(volume_name)
-    for status in volume.backupStatus:
-        if status.id == backup_id:
-            replica_name = status.replica
-    assert replica_name
+    replica_name = find_replica_for_backup(client, volume_name, backup_id)
 
     # disable scheduling on that node
     volume = client.by_id_volume(volume_name)
@@ -4001,3 +3997,25 @@ def test_restore_basic(set_random_backupstore, client, core_api, volume_name, po
                                              command=r"ls /data | grep 'test1\|test2'")  # NOQA
     assert data_checksum_3 == restored_data_checksum3['test3']
     assert output == ''
+
+
+@pytest.mark.skip(reason="TODO") # NOQA
+@pytest.mark.coretest   # NOQA
+def test_default_storage_class_syncup():  # NOQA
+    """
+    Steps:
+    1. Record the current Longhorn-StorageClass-related ConfigMap
+       `longhorn-storageclass`.
+    2. Modify the default Longhorn StorageClass `longhorn`.
+       e.g., update `reclaimPolicy` from `Delete` to `Retain`.
+    3. Verify that the change is reverted immediately and the manifest is the
+       same as the record in ConfigMap `longhorn-storageclass`.
+    4. Delete the default Longhorn StorageClass `longhorn`.
+    5. Verify that the StorageClass is recreated immediately with the manifest
+       the same as the record in ConfigMap `longhorn-storageclass`.
+    6. Modify the content of ConfigMap `longhorn-storageclass`.
+    7. Verify that the modifications will be applied to the default Longhorn
+       StorageClass `longhorn` immediately.
+    8. Revert the modifications of the ConfigMaps. Then wait for the
+       StorageClass sync-up.
+    """

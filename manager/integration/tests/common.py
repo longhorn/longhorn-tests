@@ -3002,6 +3002,20 @@ def find_backup(client, vol_name, snap_name):
                   " for volume " + vol_name
 
 
+def find_replica_for_backup(client, volume_name, backup_id):
+    replica_name = None
+    for _ in range(RETRY_EXEC_COUNTS):
+        volume = client.by_id_volume(volume_name)
+        for status in volume.backupStatus:
+            if status.id == backup_id:
+                replica_name = status.replica
+        if replica_name:
+            return replica_name
+        else:
+            time.sleep(RETRY_BACKUP_INTERVAL)
+    assert replica_name
+
+
 def check_longhorn(core_api):
     ready = False
     has_engine_image = False
@@ -4656,32 +4670,6 @@ def generate_support_bundle(case_name):
         warnings.warn("Error occured while downloading support bundle {}.zip\n\
             The error was {}".format(case_name, e))
 
-
-@pytest.fixture
-def deploy_csi_snapshot_and_classes(request):
-
-    """
-    Deploy the CSI snapshot CRDs, Controller as instructed at
-    https://longhorn.io/docs/1.2.3/snapshots-and-backups/csi-snapshot-support
-    /enable-csi-snapshot-support/
-    """
-
-    # depoly CSI snapshot CRDs, Controller
-
-    # Deploy 3 VolumeSnapshotClass
-    #   longhorn-backup (type=bak)
-    #   longhorn-snapshot (type=snap)
-    #   invalid (type=invalid)
-
-    def finalizer():
-
-        # Delete 4 VolumeSnapshotClass
-        #   longhorn-backup (type=bak)
-        #   longhorn-snapshot (type=snap)
-        #   invalid (type=invalid)
-        pass
-
-    request.addfinalizer(finalizer)
 
 def get_volume_running_replica_cnt(client, volume_name):  # NOQA
     nodes = client.list_node()
