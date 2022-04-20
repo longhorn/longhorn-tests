@@ -4250,6 +4250,25 @@ def create_backing_image_with_matching_url(client, name, url):
     return bi
 
 
+def check_backing_image_disk_map_status(client, bi_name, expect_cnt, expect_disk_state): # NOQA
+    # Number of expect_cnt should equal to number of disk map
+    # that have expect_disk_state
+
+    for i in range(RETRY_COUNTS):
+        backing_image = client.by_id_backing_image(BACKING_IMAGE_NAME)
+
+        count = 0
+        for disk_id, status in iter(backing_image.diskFileStatusMap.items()):
+            if status.state == expect_disk_state:
+                count = count + 1
+
+        if expect_cnt == count:
+            break
+        time.sleep(RETRY_INTERVAL)
+
+    assert expect_cnt == count
+
+
 def wait_for_backing_image_disk_cleanup(client, bi_name, disk_id):
     found = False
     for i in range(RETRY_COUNTS):
