@@ -1,4 +1,6 @@
-#!/bin/bash 
+#!/bin/bash
+
+set -e
 
 sudo sed -i 's#^SELINUX=.*$#SELINUX='"${selinux_mode}"'#' /etc/selinux/config
 
