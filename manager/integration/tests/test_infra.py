@@ -191,6 +191,7 @@ def reset_cluster_ready_status(request):
 
 
 @pytest.mark.infra
+@pytest.mark.order(-1)
 def test_offline_node(reset_cluster_ready_status):
     """
     Test offline node
