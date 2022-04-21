@@ -1,5 +1,6 @@
 #!/bin/bash 
 
+set -e
 
 apt-get update
 apt-get install -y nfs-common jq
