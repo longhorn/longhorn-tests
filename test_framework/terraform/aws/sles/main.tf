@@ -382,7 +382,11 @@ resource "null_resource" "rsync_kubeconfig_file" {
   ]
 
   provisioner "remote-exec" {
-    inline = var.k8s_distro_name == "k3s" ? ["until([ -f /etc/rancher/k3s/k3s.yaml ] && [ `sudo /usr/local/bin/kubectl get node -o jsonpath='{.items[*].status.conditions}'  | jq '.[] | select(.type  == \"Ready\").status' | grep -ci true` -eq 4 ]); do echo \"waiting for k3s cluster nodes to be running\"; sleep 2; done"] : null
+    inline = var.k8s_distro_name == "k3s" ? [
+      "cloud-init status --wait",
+      "if [ \"`cloud-init status | grep error`\" ]; then cat /var/log/cloud-init-output.log; fi",
+      "until([ -f /etc/rancher/k3s/k3s.yaml ] && [ `sudo /usr/local/bin/kubectl get node -o jsonpath='{.items[*].status.conditions}'  | jq '.[] | select(.type  == \"Ready\").status' | grep -ci true` -eq 4 ]); do echo \"waiting for k3s cluster nodes to be running\"; sleep 2; done"
+    ] : null
 
 
     connection {

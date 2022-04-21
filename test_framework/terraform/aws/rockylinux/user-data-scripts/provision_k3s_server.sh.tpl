@@ -1,4 +1,6 @@
-#!/bin/bash 
+#!/bin/bash
+
+set -e
 
 sudo dnf update -y                                                              
 sudo dnf group install -y "Development Tools"
