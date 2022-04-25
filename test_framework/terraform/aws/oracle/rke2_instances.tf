@@ -1,9 +1,3 @@
-# Create cluster secret for rke2
-resource "random_password" "rke2_cluster_secret" {
-  length = var.k8s_distro_name == "rke2" ? 64 : 0
-  special = false
-}
-
 # Create controlplane instances for rke2
 resource "aws_instance" "lh_aws_instance_controlplane_rke2" {
  depends_on = [

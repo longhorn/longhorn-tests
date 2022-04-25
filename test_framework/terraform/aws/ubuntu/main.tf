@@ -21,6 +21,12 @@ resource "random_string" "random_suffix" {
   upper            = false
 }
 
+# Create a random string for the cluster secret
+resource "random_password" "cluster_secret" {
+  length = 64
+  special = false
+}
+
 # Create a VPC
 resource "aws_vpc" "lh_aws_vpc" {
   cidr_block = "10.0.0.0/16"

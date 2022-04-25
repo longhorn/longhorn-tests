@@ -1,9 +1,3 @@
-# Create cluster secret for k3s
-resource "random_password" "k3s_cluster_secret" {
-  length = var.k8s_distro_name == "k3s" ? 64 : 0
-  special = false
-}
-
 # Create controlplane instances for k3s
 resource "aws_instance" "lh_aws_instance_controlplane_k3s" {
  depends_on = [
