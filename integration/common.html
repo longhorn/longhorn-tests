@@ -64,6 +64,8 @@ DEV_PATH = &#34;/dev/longhorn/&#34;
 VOLUME_RWTEST_SIZE = 512
 VOLUME_INVALID_POS = -1
 
+VOLUME_HEAD_NAME = &#34;volume-head&#34;
+
 BACKING_IMAGE_NAME = &#34;bi-test&#34;
 BACKING_IMAGE_QCOW2_URL = \
     &#34;https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2&#34;
@@ -782,6 +784,30 @@ def copy_pod_volume_data(api, pod_name, src_path, dest_path):
         api.connect_get_namespaced_pod_exec, pod_name, &#39;default&#39;,
         command=write_cmd, stderr=True, stdin=False, stdout=True,
         tty=False)
+
+
+def write_volume_dev_random_mb_data(path, offset_in_mb, length_in_mb):
+    write_cmd = [
+        &#39;/bin/sh&#39;,
+        &#39;-c&#39;,
+        &#39;dd if=/dev/urandom of=%s bs=1M seek=%d count=%d&#39; %
+        (path, offset_in_mb, length_in_mb)
+    ]
+    with timeout(seconds=STREAM_EXEC_TIMEOUT * 3,
+                 error_message=&#39;Timeout on writing dev&#39;):
+        subprocess.check_call(write_cmd)
+
+
+def get_volume_dev_mb_data_md5sum(path, offset_in_mb, length_in_mb):
+    md5sum_command = [
+        &#39;/bin/sh&#39;, &#39;-c&#39;,
+        &#39;dd if=%s bs=1M skip=%d count=%d | md5sum | awk \&#39;{print $1}\&#39;&#39; %
+        (path, offset_in_mb, length_in_mb)
+    ]
+
+    with timeout(seconds=STREAM_EXEC_TIMEOUT * 5,
+                 error_message=&#39;Timeout on computing dev md5sum&#39;):
+        return subprocess.check_output(md5sum_command).strip().decode(&#39;utf-8&#39;)
 
 
 def size_to_string(volume_size):
@@ -1782,7 +1808,7 @@ def wait_for_snapshot_purge(client, volume_name, *snaps):
     assert completed == len(purge_status)
 
     # Now that the purge has been reported to be completed, the Snapshots
-    # should should be removed or &#34;marked as removed&#34; in the case of
+    # should be removed or &#34;marked as removed&#34; in the case of
     # the latest snapshot.
     found = False
     snapshots = v.snapshotList(volume=volume_name)
@@ -3542,7 +3568,6 @@ def wait_for_engine_image_deletion(client, core_api, engine_image_name):
 
 def create_snapshot(longhorn_api_client, volume_name):
     volume = longhorn_api_client.by_id_volume(volume_name)
-    snapshots = volume.snapshotList(volume=volume_name)
     snap = volume.snapshotCreate()
     snap_name = snap.name
 
@@ -3995,13 +4020,13 @@ def wait_for_pod_remount(core_api, pod_name, chk_path=&#34;/data/lost+found&#34;
     assert ready
 
 
-def expand_attached_volume(client, volume_name):
+def expand_attached_volume(client, volume_name, size=EXPAND_SIZE):
     volume = wait_for_volume_healthy(client, volume_name)
     engine = get_volume_engine(volume)
 
     volume.detach(hostId=&#34;&#34;)
     volume = wait_for_volume_detached(client, volume.name)
-    volume.expand(size=EXPAND_SIZE)
+    volume.expand(size=size)
     wait_for_volume_expansion(client, volume.name)
     volume.attach(hostId=engine.hostId, disableFrontend=False)
     wait_for_volume_healthy(client, volume_name)
@@ -6094,7 +6119,6 @@ created using a storage class).</p></div>
 </summary>
 <pre><code class="python">def create_snapshot(longhorn_api_client, volume_name):
     volume = longhorn_api_client.by_id_volume(volume_name)
-    snapshots = volume.snapshotList(volume=volume_name)
     snap = volume.snapshotCreate()
     snap_name = snap.name
 
@@ -6669,7 +6693,7 @@ def disable_auto_salvage(client):
 </details>
 </dd>
 <dt id="tests.common.expand_attached_volume"><code class="name flex">
-<span>def <span class="ident">expand_attached_volume</span></span>(<span>client, volume_name)</span>
+<span>def <span class="ident">expand_attached_volume</span></span>(<span>client, volume_name, size='33554432')</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -6677,13 +6701,13 @@ def disable_auto_salvage(client):
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def expand_attached_volume(client, volume_name):
+<pre><code class="python">def expand_attached_volume(client, volume_name, size=EXPAND_SIZE):
     volume = wait_for_volume_healthy(client, volume_name)
     engine = get_volume_engine(volume)
 
     volume.detach(hostId=&#34;&#34;)
     volume = wait_for_volume_detached(client, volume.name)
-    volume.expand(size=EXPAND_SIZE)
+    volume.expand(size=size)
     wait_for_volume_expansion(client, volume.name)
     volume.attach(hostId=engine.hostId, disableFrontend=False)
     wait_for_volume_healthy(client, volume_name)</code></pre>
@@ -7763,6 +7787,27 @@ greate than MAX_SUPPORT_BINDLE_NUMBER.</p>
 <pre><code class="python">def get_version_api_client():
     load_k8s_config()
     return k8sclient.VersionApi()</code></pre>
+</details>
+</dd>
+<dt id="tests.common.get_volume_dev_mb_data_md5sum"><code class="name flex">
+<span>def <span class="ident">get_volume_dev_mb_data_md5sum</span></span>(<span>path, offset_in_mb, length_in_mb)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_volume_dev_mb_data_md5sum(path, offset_in_mb, length_in_mb):
+    md5sum_command = [
+        &#39;/bin/sh&#39;, &#39;-c&#39;,
+        &#39;dd if=%s bs=1M skip=%d count=%d | md5sum | awk \&#39;{print $1}\&#39;&#39; %
+        (path, offset_in_mb, length_in_mb)
+    ]
+
+    with timeout(seconds=STREAM_EXEC_TIMEOUT * 5,
+                 error_message=&#39;Timeout on computing dev md5sum&#39;):
+        return subprocess.check_output(md5sum_command).strip().decode(&#39;utf-8&#39;)</code></pre>
 </details>
 </dd>
 <dt id="tests.common.get_volume_endpoint"><code class="name flex">
@@ -10758,7 +10803,7 @@ def volume_name(request):
     assert completed == len(purge_status)
 
     # Now that the purge has been reported to be completed, the Snapshots
-    # should should be removed or &#34;marked as removed&#34; in the case of
+    # should be removed or &#34;marked as removed&#34; in the case of
     # the latest snapshot.
     found = False
     snapshots = v.snapshotList(volume=volume_name)
@@ -11707,6 +11752,27 @@ volume. Trigger a failed assertion of one is detected.
     }</code></pre>
 </details>
 </dd>
+<dt id="tests.common.write_volume_dev_random_mb_data"><code class="name flex">
+<span>def <span class="ident">write_volume_dev_random_mb_data</span></span>(<span>path, offset_in_mb, length_in_mb)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def write_volume_dev_random_mb_data(path, offset_in_mb, length_in_mb):
+    write_cmd = [
+        &#39;/bin/sh&#39;,
+        &#39;-c&#39;,
+        &#39;dd if=/dev/urandom of=%s bs=1M seek=%d count=%d&#39; %
+        (path, offset_in_mb, length_in_mb)
+    ]
+    with timeout(seconds=STREAM_EXEC_TIMEOUT * 3,
+                 error_message=&#39;Timeout on writing dev&#39;):
+        subprocess.check_call(write_cmd)</code></pre>
+</details>
+</dd>
 <dt id="tests.common.write_volume_random_data"><code class="name flex">
 <span>def <span class="ident">write_volume_random_data</span></span>(<span>volume, position={})</span>
 </code></dt>
@@ -11906,6 +11972,7 @@ volume. Trigger a failed assertion of one is detected.
 <li><code><a title="tests.common.get_update_disks" href="#tests.common.get_update_disks">get_update_disks</a></code></li>
 <li><code><a title="tests.common.get_upgrade_test_image" href="#tests.common.get_upgrade_test_image">get_upgrade_test_image</a></code></li>
 <li><code><a title="tests.common.get_version_api_client" href="#tests.common.get_version_api_client">get_version_api_client</a></code></li>
+<li><code><a title="tests.common.get_volume_dev_mb_data_md5sum" href="#tests.common.get_volume_dev_mb_data_md5sum">get_volume_dev_mb_data_md5sum</a></code></li>
 <li><code><a title="tests.common.get_volume_endpoint" href="#tests.common.get_volume_endpoint">get_volume_endpoint</a></code></li>
 <li><code><a title="tests.common.get_volume_engine" href="#tests.common.get_volume_engine">get_volume_engine</a></code></li>
 <li><code><a title="tests.common.get_volume_name" href="#tests.common.get_volume_name">get_volume_name</a></code></li>
@@ -12054,6 +12121,7 @@ volume. Trigger a failed assertion of one is detected.
 <li><code><a title="tests.common.write_pod_volume_data" href="#tests.common.write_pod_volume_data">write_pod_volume_data</a></code></li>
 <li><code><a title="tests.common.write_pod_volume_random_data" href="#tests.common.write_pod_volume_random_data">write_pod_volume_random_data</a></code></li>
 <li><code><a title="tests.common.write_volume_data" href="#tests.common.write_volume_data">write_volume_data</a></code></li>
+<li><code><a title="tests.common.write_volume_dev_random_mb_data" href="#tests.common.write_volume_dev_random_mb_data">write_volume_dev_random_mb_data</a></code></li>
 <li><code><a title="tests.common.write_volume_random_data" href="#tests.common.write_volume_random_data">write_volume_random_data</a></code></li>
 </ul>
 </li>

@@ -522,80 +522,28 @@
 </aside>
 
 <main style="padding: 1%; width: 70%;">
-  <h1 id="title">Longhorn installation multiple times</h1>
+  <h1 id="title">Test snapshot purge retry</h1>
   <div>
     <article id="content">
-       <ol>
-<li>Create a cluster(3 worker nodes and 1 etc/control plane).</li>
-<li>Deploy the longhorn app.</li>
-<li>Once longhorn deployed successfully, uninstall longhorn.</li>
-<li>Repeat the steps 2 and 3 multiple times.</li>
-<li>Run the below script to install and uninstall longhorn continuously for some time.</li>
+       <h2 id="scenario">Scenario</h2>
+<ol>
+<li>Create and attach a Longhorn volumes.</li>
+<li>Write some data to the volume then create the 1st snapshot. e.g.
+<pre tabindex="0"><code>dd if=/dev/urandom of=/dev/longhorn/&lt;Longhorn volume name&gt; bs=1M count=100
+</code></pre></li>
+<li>Try to delete the 1st snapshot. The snapshot will be marked as <code>Removed</code> then hidden on the volume detail page.</li>
+<li>Write some non-overlapping data to the volume then create the 2nd snapshot. e.g.
+<pre tabindex="0"><code>dd if=/dev/urandom of=/dev/longhorn/&lt;Longhorn volume name&gt; bs=1M count=100 seek=100
+</code></pre></li>
+<li>Re-try deleting the 1st snapshot via UI.</li>
+<li>Verify snapshot purge is triggered:
+<ol>
+<li>The 1st snapshot will be coalesced with the 2nd one, which means the size should be 200Mi.</li>
+<li>The final snapshot name is the name of the 2nd one.</li>
 </ol>
-<pre tabindex="0"><code>installcount=0
-while true;
- echo `date`
- do
-  kubectl apply -f https://raw.githubusercontent.com/longhorn/longhorn/master/deploy/longhorn.yaml
+</li>
+</ol>
 
-  pod=`kubectl get pods -n longhorn-system | grep -i &#39;longhorn-manager&#39; | grep -i &#39;running&#39; | awk -F &#39; &#39; &#39;{print $2}&#39; | grep &#39;1/1&#39; | wc -l`
-  count=0
-  while [ $pod != 3 ];
-   do
-    sleep 5
-    pod=`kubectl get pods -n longhorn-system | grep -i &#39;longhorn-manager&#39; | grep -i &#39;running&#39; | awk -F &#39; &#39; &#39;{print $2}&#39; | grep &#39;1/1&#39; | wc -l`
-    echo `kubectl get pods -n longhorn-system | grep -i &#39;longhorn-manager&#39;`
-    count=$((count+1))
-    if [ $count -gt 59 ]
-     then
-      echo &#39;longhorn installation failed&#39;
-      exit
-    fi
-  done
-
-  sleep 30
- 
-  kubectl create -f https://raw.githubusercontent.com/longhorn/longhorn/master/uninstall/uninstall.yaml
-
-  poduninstall=`kubectl get job/longhorn-uninstall -n default | grep &#39;1/1&#39; | wc -l`
-  uninstall=0
- while [ $poduninstall = 0 ];
-  do
-   sleep 10
-   poduninstall=`kubectl get job/longhorn-uninstall -n default | grep &#39;1/1&#39; | wc -l`
-   echo `kubectl get job/longhorn-uninstall`
-   uninstall=$((uninstall+1))
-   if [ $uninstall -gt 24 ]  
-    then
-     echo &#39;Problem in unistall&#39;
-     exit
-   fi
- done
- 
- kubectl delete -f https://raw.githubusercontent.com/longhorn/longhorn/master/deploy/longhorn.yaml
- sleep 3
-
- kubectl delete -f https://raw.githubusercontent.com/longhorn/longhorn/master/uninstall/uninstall.yaml
-
- nscount=0
- longhornns=`kubectl get namespace | grep -i &#39;longhorn-system&#39; | wc -l`
- while [ $longhornns != 0 ];
-  do
-   sleep 10
-   longhornns=`kubectl get namespace | grep -i &#39;longhorn-system&#39; | wc -l`
-   nscount=$((nscount+1))
-   if [ $nscount -gt 18 ]
-    then
-     echo &#39;longhorn-system termination stuck&#39;
-     exit
-   fi
- done
-
- installcount=$((installcount+1))
- echo &#39;Installation count = &#39;
- echo $installcount
-done
-</code></pre>
     </article>
   </div>
 </main>

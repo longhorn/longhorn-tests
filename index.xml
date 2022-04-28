@@ -975,6 +975,15 @@ Scenario-1  Create a volume with 3 replicas and attach to a pod. Write some data
     </item>
     
     <item>
+      <title>Test snapshot purge retry</title>
+      <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.3.0/test-snapshot-purge-retry/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.3.0/test-snapshot-purge-retry/</guid>
+      <description>Scenario  Create and attach a Longhorn volumes. Write some data to the volume then create the 1st snapshot. e.g. dd if=/dev/urandom of=/dev/longhorn/&amp;lt;Longhorn volume name&amp;gt; bs=1M count=100  Try to delete the 1st snapshot. The snapshot will be marked as Removed then hidden on the volume detail page. Write some non-overlapping data to the volume then create the 2nd snapshot. e.g. dd if=/dev/urandom of=/dev/longhorn/&amp;lt;Longhorn volume name&amp;gt; bs=1M count=100 seek=100  Re-try deleting the 1st snapshot via UI.</description>
+    </item>
+    
+    <item>
       <title>Test System Upgrade with New Instance Manager</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/upgrade-with-new-instance-manager/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>

@@ -214,6 +214,8 @@
   </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/snapshot-purge-error-handling/</loc>
   </url><url>
+    <loc>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.3.0/test-snapshot-purge-retry/</loc>
+  </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/upgrade-with-new-instance-manager/</loc>
   </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/system-upgrade-with-deprecated-cpu-setting/</loc>
