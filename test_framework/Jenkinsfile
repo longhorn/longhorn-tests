@@ -5,6 +5,7 @@ def BUILD_TRIGGER_BY = "\n${currentBuild.getBuildCauses()[0].shortDescription}"
 // define optional parameters
 def SELINUX_MODE = params.SELINUX_MODE ? "SELINUX_MODE=${params.SELINUX_MODE}" : ""
 
+def CREDS_ID = JOB_BASE_NAME == "longhorn-tests-regression" ? "AWS_CREDS_RANCHER_QA" : "AWS_CREDS"
 
 node {
 
@@ -14,8 +15,11 @@ node {
 
     checkout scm
 
-    withCredentials([usernamePassword(credentialsId: 'AWS_CREDS', passwordVariable: 'AWS_SECRET_KEY', usernameVariable: 'AWS_ACCESS_KEY')]) {
+    withCredentials([usernamePassword(credentialsId: CREDS_ID, passwordVariable: 'AWS_SECRET_KEY', usernameVariable: 'AWS_ACCESS_KEY')]) {
         stage('build') {
+
+            echo "Using credentials: $CREDS_ID"
+
             sh "test_framework/scripts/build.sh"
 
             sh """ docker run -itd --name ${JOB_BASE_NAME}-${BUILD_NUMBER} \
