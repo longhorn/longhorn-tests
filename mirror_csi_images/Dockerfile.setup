@@ -1,0 +1,11 @@
+From alpine:latest
+
+ENV WORKSPACE /src/longhorn-tests
+
+WORKDIR $WORKSPACE
+
+RUN apk add --no-cache skopeo docker jq bash grep
+
+COPY --from=docker/buildx-bin:latest /buildx /usr/libexec/docker/cli-plugins/docker-buildx
+
+COPY [".", "$WORKSPACE"]
