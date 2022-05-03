@@ -3560,17 +3560,19 @@ def create_snapshot(longhorn_api_client, volume_name):
 
 
 def wait_for_snapshot_count(volume, number, retry_counts=120):
-    ok = False
     for _ in range(retry_counts):
         count = 0
         for snapshot in volume.snapshotList():
             if snapshot.removed is False:
                 count += 1
         if count == number:
-            ok = True
-            break
+            return
         time.sleep(RETRY_SNAPSHOT_INTERVAL)
-    assert ok
+
+    assert False, \
+        f"failed to wait for snapshot.\n" \
+        f"Expect count={number}\n" \
+        f"Got count={count}"
 
 
 def wait_and_get_pv_for_pvc(api, pvc_name):
