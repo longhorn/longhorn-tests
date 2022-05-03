@@ -634,7 +634,7 @@ def test_recurring_job_detached_volume(client, batch_v1_beta_api, volume_name): 
 
     Then the volume should have 1 snapshot
 
-    When wait for 1 minute.
+    When wait for 2 minute.
     Then then volume should have only 2 snapshots.
     """
     client.create_volume(name=volume_name, size=SIZE)
@@ -660,12 +660,13 @@ def test_recurring_job_detached_volume(client, batch_v1_beta_api, volume_name): 
     check_recurring_jobs(client, recurring_jobs)
     wait_for_cron_job_count(batch_v1_beta_api, 1)
 
-    time.sleep(60 * 2 - WRITE_DATA_INTERVAL)
+    time.sleep(60 * 2)
     volume.attach(hostId=self_host)
     volume = wait_for_volume_healthy(client, volume_name)
+
     wait_for_snapshot_count(volume, 1)
 
-    time.sleep(60)
+    time.sleep(60 * 2)
     wait_for_snapshot_count(volume, 2)
 
 
