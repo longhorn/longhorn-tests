@@ -4316,6 +4316,25 @@ def create_backing_image_with_matching_url(client, name, url):
     return bi
 
 
+def check_backing_image_disk_map_status(client, bi_name, expect_cnt, expect_disk_state): # NOQA
+    # Number of expect_cnt should equal to number of disk map
+    # that have expect_disk_state
+
+    for i in range(RETRY_COUNTS):
+        backing_image = client.by_id_backing_image(BACKING_IMAGE_NAME)
+
+        count = 0
+        for disk_id, status in iter(backing_image.diskFileStatusMap.items()):
+            if status.state == expect_disk_state:
+                count = count + 1
+
+        if expect_cnt == count:
+            break
+        time.sleep(RETRY_INTERVAL)
+
+    assert expect_cnt == count
+
+
 def wait_for_backing_image_disk_cleanup(client, bi_name, disk_id):
     found = False
     for i in range(RETRY_COUNTS):
@@ -4877,6 +4896,34 @@ def batch_v1_beta_api(request):
     api = k8sclient.BatchV1beta1Api()
 
     return api</code></pre>
+</details>
+</dd>
+<dt id="tests.common.check_backing_image_disk_map_status"><code class="name flex">
+<span>def <span class="ident">check_backing_image_disk_map_status</span></span>(<span>client, bi_name, expect_cnt, expect_disk_state)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def check_backing_image_disk_map_status(client, bi_name, expect_cnt, expect_disk_state): # NOQA
+    # Number of expect_cnt should equal to number of disk map
+    # that have expect_disk_state
+
+    for i in range(RETRY_COUNTS):
+        backing_image = client.by_id_backing_image(BACKING_IMAGE_NAME)
+
+        count = 0
+        for disk_id, status in iter(backing_image.diskFileStatusMap.items()):
+            if status.state == expect_disk_state:
+                count = count + 1
+
+        if expect_cnt == count:
+            break
+        time.sleep(RETRY_INTERVAL)
+
+    assert expect_cnt == count</code></pre>
 </details>
 </dd>
 <dt id="tests.common.check_block_device_size"><code class="name flex">
@@ -11860,6 +11907,7 @@ volume. Trigger a failed assertion of one is detected.
 <li><code><a title="tests.common.assert_backup_state" href="#tests.common.assert_backup_state">assert_backup_state</a></code></li>
 <li><code><a title="tests.common.backing_image_feature_supported" href="#tests.common.backing_image_feature_supported">backing_image_feature_supported</a></code></li>
 <li><code><a title="tests.common.batch_v1_beta_api" href="#tests.common.batch_v1_beta_api">batch_v1_beta_api</a></code></li>
+<li><code><a title="tests.common.check_backing_image_disk_map_status" href="#tests.common.check_backing_image_disk_map_status">check_backing_image_disk_map_status</a></code></li>
 <li><code><a title="tests.common.check_block_device_size" href="#tests.common.check_block_device_size">check_block_device_size</a></code></li>
 <li><code><a title="tests.common.check_csi" href="#tests.common.check_csi">check_csi</a></code></li>
 <li><code><a title="tests.common.check_csi_expansion" href="#tests.common.check_csi_expansion">check_csi_expansion</a></code></li>
