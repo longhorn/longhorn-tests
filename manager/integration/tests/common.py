@@ -173,6 +173,7 @@ SETTING_TAINT_TOLERATION = "taint-toleration"
 SETTING_BACKING_IMAGE_CLEANUP_WAIT_INTERVAL = \
     "backing-image-cleanup-wait-interval"
 SETTING_DISABLE_REVISION_COUNTER = "disable-revision-counter"
+SETTING_ORPHAN_AUTO_DELETION = "orphan-auto-deletion"
 
 CSI_UNKNOWN = 0
 CSI_TRUE = 1
