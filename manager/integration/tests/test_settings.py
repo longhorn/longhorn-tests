@@ -635,44 +635,39 @@ def test_setting_backing_image_auto_cleanup(client, core_api, volume_name):  # N
     """
     Test that the Backing Image Cleanup Wait Interval setting works correctly.
 
-    The default setting value is 60.
+    The default value of setting `BackingImageCleanupWaitInterval` is 60.
 
-    1. Set `BackingImageCleanupWaitInterval` to default value.
-    2. Create a backing image.
-    3. Create multiple volumes using the backing image.
-    4. Attach all volumes, Then:
+    1. Create a backing image.
+    2. Create multiple volumes using the backing image.
+    3. Attach all volumes, Then:
         1. Wait for all volumes can become running.
         2. Verify the correct in all volumes.
         3. Verify the backing image disk status map.
         4. Verify the only backing image file in each disk is reused by
            multiple replicas. The backing image file path is
            `<Data path>/<The backing image name>/backing`
-    5. Unschedule test node to guarantee when replica removed from test node,
+    4. Unschedule test node to guarantee when replica removed from test node,
        no new replica can be rebuilt on the test node.
-    6. Remove all replicas in one disk.
+    5. Remove all replicas in one disk.
        Wait for 50 seconds.
        Then verify nothing changes in the backing image disk state map
        (before the cleanup wait interval is passed).
-    7. Modify `BackingImageCleanupWaitInterval` to a small value. Then verify:
+    6. Modify `BackingImageCleanupWaitInterval` to a small value. Then verify:
         1. The download state of the disk containing no replica becomes
            terminating first, and the entry will be removed from the map later.
         2. The related backing image file is removed.
         3. The download state of other disks keep unchanged.
            All volumes still work fine.
-    8. Delete all volumes. Verify that there will only remain 1 entry in the
+    7. Delete all volumes. Verify that there will only remain 1 entry in the
        backing image disk map
-    9. Delete the backing image.
+    8. Delete the backing image.
     """
-    # Step 1
-    update_setting(client,
-                   "backing-image-cleanup-wait-interval",
-                   BACKING_IMAGE_CLEANUP_WAIT_INTERVAL)
 
-    # Step 2
+    # Step 1
     create_backing_image_with_matching_url(
             client, BACKING_IMAGE_NAME, BACKING_IMAGE_QCOW2_URL)
 
-    # Step 3
+    # Step 2
     volume_names = [
         volume_name + "-1",
         volume_name + "-2",
@@ -685,7 +680,7 @@ def test_setting_backing_image_auto_cleanup(client, core_api, volume_name):  # N
                             str(BACKING_IMAGE_EXT4_SIZE),
                             BACKING_IMAGE_NAME)
 
-    # Step 4
+    # Step 3
     lht_host_id = get_self_host_id()
     for volume_name in volume_names:
         volume = client.by_id_volume(volume_name)
@@ -705,30 +700,31 @@ def test_setting_backing_image_auto_cleanup(client, core_api, volume_name):  # N
     assert os.path.exists("/var/lib/longhorn/backing-images/{}/backing.cfg"
                           .format(backing_images_in_disk[0]))
 
-    # Step 5
+    # Step 4
     current_host = client.by_id_node(id=lht_host_id)
     client.update(current_host, allowScheduling=False)
     wait_for_node_update(client, lht_host_id, "allowScheduling", False)
 
-    # Step 6
+    # Step 5
     for volume_name in volume_names:
         volume = client.by_id_volume(volume_name)
         for replica in volume.replicas:
             if replica.hostId == lht_host_id:
                 replica_name = replica.name
         volume.replicaRemove(name=replica_name)
-
+    # This wait interval should be smaller than the setting value.
+    # Otherwise, the backing image files may be cleaned up.
     time.sleep(int(BACKING_IMAGE_CLEANUP_WAIT_INTERVAL))
     check_backing_image_disk_map_status(client, BACKING_IMAGE_NAME, 3, "ready")
 
-    # Step 7
+    # Step 6
     update_setting(client, "backing-image-cleanup-wait-interval", "1")
     check_backing_image_disk_map_status(client, BACKING_IMAGE_NAME, 2, "ready")
 
     backing_images_in_disk = os.listdir("/var/lib/longhorn/backing-images")
     assert len(backing_images_in_disk) == 0
 
-    # Step 8
+    # Step 7
     for volume_name in volume_names:
         volume = client.by_id_volume(volume_name)
         client.delete(volume)
