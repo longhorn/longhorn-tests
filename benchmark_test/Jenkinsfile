@@ -20,8 +20,13 @@ node {
 
             sh """ docker run -itd --name ${JOB_BASE_NAME}-${BUILD_NUMBER} \
                                    --env TEST_SIZE=${TEST_SIZE} \
-                                   --env LONGHORN_VERSION=${LONGHORN_VERSION} \
-                                   --env LONGHORN_TESTS_CUSTOM_IMAGE=${LONGHORN_TESTS_CUSTOM_IMAGE} \
+                                   --env LONGHORN_MANAGER_REPO_URI=${LONGHORN_MANAGER_REPO_URI} \
+                                   --env LONGHORN_MANAGER_BRANCH=${LONGHORN_MANAGER_BRANCH} \
+                                   --env CUSTOM_LONGHORN_MANAGER_IMAGE=${CUSTOM_LONGHORN_MANAGER_IMAGE} \
+                                   --env CUSTOM_LONGHORN_ENGINE_IMAGE=${CUSTOM_LONGHORN_ENGINE_IMAGE} \
+                                   --env CUSTOM_LONGHORN_INSTANCE_MANAGER_IMAGE=${CUSTOM_LONGHORN_INSTANCE_MANAGER_IMAGE} \
+                                   --env CUSTOM_LONGHORN_SHARE_MANAGER_IMAGE=${CUSTOM_LONGHORN_SHARE_MANAGER_IMAGE} \
+                                   --env CUSTOM_LONGHORN_BACKING_IMAGE_MANAGER_IMAGE=${CUSTOM_LONGHORN_BACKING_IMAGE_MANAGER_IMAGE} \
                                    --env DISTRO=${DISTRO} \
                                    --env LONGHORN_TEST_CLOUDPROVIDER=${LONGHORN_TEST_CLOUDPROVIDER} \
                                    --env TF_VAR_arch=${ARCH} \

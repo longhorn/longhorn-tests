@@ -3,7 +3,6 @@
 set -x
 set -e
 
-
 set_kubeconfig_envvar(){
   ARCH=${1}
   BASEDIR=${2}
@@ -43,6 +42,65 @@ install_local_path_provisioner(){
 }
 
 
+generate_longhorn_yaml_manifest(){
+  MANIFEST_BASEDIR="${1}"
+
+  LONGHORN_MANAGER_REPO_URI=${LONGHORN_MANAGER_REPO_URI:-"https://github.com/longhorn/longhorn-manager.git"}
+  LONGHORN_MANAGER_BRANCH=${LONGHORN_MANAGER_BRANCH:-"master"}
+  LONGHORN_MANAGER_REPO_DIR="${TMPDIR}/longhorn-manager"
+
+  CUSTOM_LONGHORN_MANAGER_IMAGE=${CUSTOM_LONGHORN_MANAGER_IMAGE:-"longhornio/longhorn-manager:master-head"}
+  CUSTOM_LONGHORN_ENGINE_IMAGE=${CUSTOM_LONGHORN_ENGINE_IMAGE:-"longhornio/longhorn-engine:master-head"}
+
+  CUSTOM_LONGHORN_INSTANCE_MANAGER_IMAGE=${CUSTOM_LONGHORN_INSTANCE_MANAGER_IMAGE:-""}
+  CUSTOM_LONGHORN_SHARE_MANAGER_IMAGE=${CUSTOM_LONGHORN_SHARE_MANAGER_IMAGE:-""}
+  CUSTOM_LONGHORN_BACKING_IMAGE_MANAGER_IMAGE=${CUSTOM_LONGHORN_BACKING_IMAGE_MANAGER_IMAGE:-""}
+
+  git clone --single-branch \
+            --branch ${LONGHORN_MANAGER_BRANCH} \
+            ${LONGHORN_MANAGER_REPO_URI} \
+            ${LONGHORN_MANAGER_REPO_DIR}
+
+  for FILE in `find "${LONGHORN_MANAGER_REPO_DIR}/deploy/install" -type f -name "*\.yaml" | sort`; do
+    cat ${FILE} >> "${MANIFEST_BASEDIR}/longhorn.yaml"
+    echo "---"  >> "${MANIFEST_BASEDIR}/longhorn.yaml"
+  done
+
+  # get longhorn default images from yaml manifest
+  LONGHORN_MANAGER_IMAGE=`grep -io "longhornio\/longhorn-manager:.*$" "${MANIFEST_BASEDIR}/longhorn.yaml"| head -1`
+  LONGHORN_ENGINE_IMAGE=`grep -io "longhornio\/longhorn-engine:.*$" "${MANIFEST_BASEDIR}/longhorn.yaml"| head -1`
+  LONGHORN_INSTANCE_MANAGER_IMAGE=`grep -io "longhornio\/longhorn-instance-manager:.*$" "${MANIFEST_BASEDIR}/longhorn.yaml"| head -1`
+  LONGHORN_SHARE_MANAGER_IMAGE=`grep -io "longhornio\/longhorn-share-manager:.*$" "${MANIFEST_BASEDIR}/longhorn.yaml"| head -1`
+  LONGHORN_BACKING_IMAGE_MANAGER_IMAGE=`grep -io "longhornio\/backing-image-manager:.*$" "${MANIFEST_BASEDIR}/longhorn.yaml"| head -1`
+
+  # replace longhorn images with custom images
+  sed -i 's#'${LONGHORN_MANAGER_IMAGE}'#'${CUSTOM_LONGHORN_MANAGER_IMAGE}'#' "${MANIFEST_BASEDIR}/longhorn.yaml"
+  sed -i 's#'${LONGHORN_ENGINE_IMAGE}'#'${CUSTOM_LONGHORN_ENGINE_IMAGE}'#' "${MANIFEST_BASEDIR}/longhorn.yaml"
+
+  # replace images if custom image is specified.
+  if [[ ! -z ${CUSTOM_LONGHORN_INSTANCE_MANAGER_IMAGE} ]]; then
+    sed -i 's#'${LONGHORN_INSTANCE_MANAGER_IMAGE}'#'${CUSTOM_LONGHORN_INSTANCE_MANAGER_IMAGE}'#' "${MANIFEST_BASEDIR}/longhorn.yaml"
+  else
+    # use instance-manager image specified in yaml file if custom image is not specified
+    CUSTOM_LONGHORN_INSTANCE_MANAGER_IMAGE=${LONGHORN_INSTANCE_MANAGER_IMAGE}
+  fi
+
+  if [[ ! -z ${CUSTOM_LONGHORN_SHARE_MANAGER_IMAGE} ]]; then
+    sed -i 's#'${LONGHORN_SHARE_MANAGER_IMAGE}'#'${CUSTOM_LONGHORN_SHARE_MANAGER_IMAGE}'#' "${MANIFEST_BASEDIR}/longhorn.yaml"
+  else
+    # use share-manager image specified in yaml file if custom image is not specified
+    CUSTOM_LONGHORN_SHARE_MANAGER_IMAGE=${LONGHORN_SHARE_MANAGER_IMAGE}
+  fi
+
+  if [[ ! -z ${CUSTOM_LONGHORN_BACKING_IMAGE_MANAGER_IMAGE} ]]; then
+    sed -i 's#'${LONGHORN_BACKING_IMAGE_MANAGER_IMAGE}'#'${CUSTOM_LONGHORN_BACKING_IMAGE_MANAGER_IMAGE}'#' "${MANIFEST_BASEDIR}/longhorn.yaml"
+  else
+    # use backing-image-manager image specified in yaml file if custom image is not specified
+    CUSTOM_LONGHORN_BACKING_IMAGE_MANAGER_IMAGE=${LONGHORN_BACKING_IMAGE_MANAGER_IMAGE}
+  fi
+}
+
+
 wait_longhorn_status_running(){
   local RETRY_COUNTS=10  # in minutes
   local RETRY_INTERVAL="1m"
@@ -59,8 +117,9 @@ wait_longhorn_status_running(){
 
 
 install_longhorn(){
-  wget "https://raw.githubusercontent.com/longhorn/longhorn/${LONGHORN_VERSION}/deploy/longhorn.yaml" -P ${TF_VAR_tf_workspace}
-  kubectl apply -f "${TF_VAR_tf_workspace}/longhorn.yaml"
+  LONGHORN_MANIFEST_FILE_PATH="${1}"
+
+  kubectl apply -f "${LONGHORN_MANIFEST_FILE_PATH}"
   wait_longhorn_status_running
 }
 
@@ -136,7 +195,9 @@ main(){
   adjust_test_size
 
   install_local_path_provisioner
-  install_longhorn
+
+  generate_longhorn_yaml_manifest "${TF_VAR_tf_workspace}"
+  install_longhorn "${TF_VAR_tf_workspace}/longhorn.yaml"
 
   run_fio_local_path_test
 
