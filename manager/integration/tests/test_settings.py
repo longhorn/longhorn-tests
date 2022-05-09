@@ -1,5 +1,6 @@
 import time
 import pytest
+import os
 
 from common import (  # NOQA
     get_longhorn_api_client, get_self_host_id,
@@ -23,11 +24,16 @@ from common import (  # NOQA
     SETTING_GUARANTEED_REPLICA_MANAGER_CPU,
     SETTING_PRIORITY_CLASS,
     SIZE, RETRY_COUNTS, RETRY_INTERVAL, RETRY_INTERVAL_LONG,
+    update_setting, BACKING_IMAGE_QCOW2_URL, BACKING_IMAGE_NAME,
+    create_backing_image_with_matching_url, BACKING_IMAGE_EXT4_SIZE,
+    check_backing_image_disk_map_status, wait_for_volume_delete,
+    SETTING_REPLICA_NODE_SOFT_ANTI_AFFINITY, wait_for_node_update,
 )
 
 from test_infra import wait_for_node_up_longhorn
 
 KUBERNETES_DEFAULT_TOLERATION = "kubernetes.io"
+BACKING_IMAGE_CLEANUP_WAIT_INTERVAL = "50"
 
 
 def check_workload_update(core_api, apps_api, count):  # NOQA
@@ -624,40 +630,107 @@ def wait_for_priority_class_update(core_api, apps_api, count, priority_class=Non
     assert updated
 
 
-@pytest.mark.skip(reason="TODO")
 @pytest.mark.backing_image  # NOQA
-def test_setting_backing_image_auto_cleanup():  # NOQA
+def test_setting_backing_image_auto_cleanup(client, core_api, volume_name):  # NOQA
     """
     Test that the Backing Image Cleanup Wait Interval setting works correctly.
 
-    The default setting value is 60.
+    The default value of setting `BackingImageCleanupWaitInterval` is 60.
 
-    1. Set `BackingImageCleanupWaitInterval` to default value.
-    2. Create a backing image.
-    3. Create multiple volumes using the backing image.
-    4. Attach all volumes, Then:
+    1. Create a backing image.
+    2. Create multiple volumes using the backing image.
+    3. Attach all volumes, Then:
         1. Wait for all volumes can become running.
         2. Verify the correct in all volumes.
         3. Verify the backing image disk status map.
         4. Verify the only backing image file in each disk is reused by
            multiple replicas. The backing image file path is
            `<Data path>/<The backing image name>/backing`
-    5. Decrease the replica count by 1 for all volumes.
-    6. Remove all replicas in one disk.
-       Wait for 1 minute.
+    4. Unschedule test node to guarantee when replica removed from test node,
+       no new replica can be rebuilt on the test node.
+    5. Remove all replicas in one disk.
+       Wait for 50 seconds.
        Then verify nothing changes in the backing image disk state map
        (before the cleanup wait interval is passed).
-    7. Modify `BackingImageCleanupWaitInterval` to a small value. Then verify:
+    6. Modify `BackingImageCleanupWaitInterval` to a small value. Then verify:
         1. The download state of the disk containing no replica becomes
            terminating first, and the entry will be removed from the map later.
         2. The related backing image file is removed.
         3. The download state of other disks keep unchanged.
            All volumes still work fine.
-    8. Delete all volumes. Verify that all states in the backing image disk map
-       will become terminating first,
-       and all entries will be removed from the map later.
-    9. Delete the backing image.
+    7. Delete all volumes. Verify that there will only remain 1 entry in the
+       backing image disk map
+    8. Delete the backing image.
     """
+
+    # Step 1
+    create_backing_image_with_matching_url(
+            client, BACKING_IMAGE_NAME, BACKING_IMAGE_QCOW2_URL)
+
+    # Step 2
+    volume_names = [
+        volume_name + "-1",
+        volume_name + "-2",
+        volume_name + "-3"
+    ]
+
+    for volume_name in volume_names:
+        volume = create_and_check_volume(
+                            client, volume_name, 3,
+                            str(BACKING_IMAGE_EXT4_SIZE),
+                            BACKING_IMAGE_NAME)
+
+    # Step 3
+    lht_host_id = get_self_host_id()
+    for volume_name in volume_names:
+        volume = client.by_id_volume(volume_name)
+        volume.attach(hostId=lht_host_id)
+        wait_for_volume_healthy(client, volume_name)
+        assert volume.backingImage == BACKING_IMAGE_NAME
+
+    backing_image = client.by_id_backing_image(BACKING_IMAGE_NAME)
+    assert len(backing_image.diskFileStatusMap) == 3
+    for disk_id, status in iter(backing_image.diskFileStatusMap.items()):
+        assert status.state == "ready"
+
+    backing_images_in_disk = os.listdir("/var/lib/longhorn/backing-images")
+    assert len(backing_images_in_disk) == 1
+    assert os.path.exists("/var/lib/longhorn/backing-images/{}/backing"
+                          .format(backing_images_in_disk[0]))
+    assert os.path.exists("/var/lib/longhorn/backing-images/{}/backing.cfg"
+                          .format(backing_images_in_disk[0]))
+
+    # Step 4
+    current_host = client.by_id_node(id=lht_host_id)
+    client.update(current_host, allowScheduling=False)
+    wait_for_node_update(client, lht_host_id, "allowScheduling", False)
+
+    # Step 5
+    for volume_name in volume_names:
+        volume = client.by_id_volume(volume_name)
+        for replica in volume.replicas:
+            if replica.hostId == lht_host_id:
+                replica_name = replica.name
+        volume.replicaRemove(name=replica_name)
+    # This wait interval should be smaller than the setting value.
+    # Otherwise, the backing image files may be cleaned up.
+    time.sleep(int(BACKING_IMAGE_CLEANUP_WAIT_INTERVAL))
+    check_backing_image_disk_map_status(client, BACKING_IMAGE_NAME, 3, "ready")
+
+    # Step 6
+    update_setting(client, "backing-image-cleanup-wait-interval", "1")
+    check_backing_image_disk_map_status(client, BACKING_IMAGE_NAME, 2, "ready")
+
+    backing_images_in_disk = os.listdir("/var/lib/longhorn/backing-images")
+    assert len(backing_images_in_disk) == 0
+
+    # Step 7
+    for volume_name in volume_names:
+        volume = client.by_id_volume(volume_name)
+        client.delete(volume)
+        wait_for_volume_delete(client, volume_name)
+
+    check_backing_image_disk_map_status(client, BACKING_IMAGE_NAME, 1, "ready")
 
 
 @pytest.mark.skip(reason="TODO")

@@ -36,6 +36,8 @@ DEV_PATH = "/dev/longhorn/"
 VOLUME_RWTEST_SIZE = 512
 VOLUME_INVALID_POS = -1
 
+VOLUME_HEAD_NAME = "volume-head"
+
 BACKING_IMAGE_NAME = "bi-test"
 BACKING_IMAGE_QCOW2_URL = \
     "https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2"
@@ -754,6 +756,30 @@ def copy_pod_volume_data(api, pod_name, src_path, dest_path):
         api.connect_get_namespaced_pod_exec, pod_name, 'default',
         command=write_cmd, stderr=True, stdin=False, stdout=True,
         tty=False)
+
+
+def write_volume_dev_random_mb_data(path, offset_in_mb, length_in_mb):
+    write_cmd = [
+        '/bin/sh',
+        '-c',
+        'dd if=/dev/urandom of=%s bs=1M seek=%d count=%d' %
+        (path, offset_in_mb, length_in_mb)
+    ]
+    with timeout(seconds=STREAM_EXEC_TIMEOUT * 3,
+                 error_message='Timeout on writing dev'):
+        subprocess.check_call(write_cmd)
+
+
+def get_volume_dev_mb_data_md5sum(path, offset_in_mb, length_in_mb):
+    md5sum_command = [
+        '/bin/sh', '-c',
+        'dd if=%s bs=1M skip=%d count=%d | md5sum | awk \'{print $1}\'' %
+        (path, offset_in_mb, length_in_mb)
+    ]
+
+    with timeout(seconds=STREAM_EXEC_TIMEOUT * 5,
+                 error_message='Timeout on computing dev md5sum'):
+        return subprocess.check_output(md5sum_command).strip().decode('utf-8')
 
 
 def size_to_string(volume_size):
@@ -1754,7 +1780,7 @@ def wait_for_snapshot_purge(client, volume_name, *snaps):
     assert completed == len(purge_status)
 
     # Now that the purge has been reported to be completed, the Snapshots
-    # should should be removed or "marked as removed" in the case of
+    # should be removed or "marked as removed" in the case of
     # the latest snapshot.
     found = False
     snapshots = v.snapshotList(volume=volume_name)
@@ -3514,7 +3540,6 @@ def wait_for_engine_image_deletion(client, core_api, engine_image_name):
 
 def create_snapshot(longhorn_api_client, volume_name):
     volume = longhorn_api_client.by_id_volume(volume_name)
-    snapshots = volume.snapshotList(volume=volume_name)
     snap = volume.snapshotCreate()
     snap_name = snap.name
 
@@ -3535,17 +3560,19 @@ def create_snapshot(longhorn_api_client, volume_name):
 
 
 def wait_for_snapshot_count(volume, number, retry_counts=120):
-    ok = False
     for _ in range(retry_counts):
         count = 0
         for snapshot in volume.snapshotList():
             if snapshot.removed is False:
                 count += 1
         if count == number:
-            ok = True
-            break
+            return
         time.sleep(RETRY_SNAPSHOT_INTERVAL)
-    assert ok
+
+    assert False, \
+        f"failed to wait for snapshot.\n" \
+        f"Expect count={number}\n" \
+        f"Got count={count}"
 
 
 def wait_and_get_pv_for_pvc(api, pvc_name):
@@ -3967,13 +3994,13 @@ def wait_for_pod_remount(core_api, pod_name, chk_path="/data/lost+found"):
     assert ready
 
 
-def expand_attached_volume(client, volume_name):
+def expand_attached_volume(client, volume_name, size=EXPAND_SIZE):
     volume = wait_for_volume_healthy(client, volume_name)
     engine = get_volume_engine(volume)
 
     volume.detach(hostId="")
     volume = wait_for_volume_detached(client, volume.name)
-    volume.expand(size=EXPAND_SIZE)
+    volume.expand(size=size)
     wait_for_volume_expansion(client, volume.name)
     volume.attach(hostId=engine.hostId, disableFrontend=False)
     wait_for_volume_healthy(client, volume_name)
@@ -4259,6 +4286,25 @@ def create_backing_image_with_matching_url(client, name, url):
         time.sleep(RETRY_INTERVAL)
 
     return bi
+
+
+def check_backing_image_disk_map_status(client, bi_name, expect_cnt, expect_disk_state): # NOQA
+    # Number of expect_cnt should equal to number of disk map
+    # that have expect_disk_state
+
+    for i in range(RETRY_COUNTS):
+        backing_image = client.by_id_backing_image(BACKING_IMAGE_NAME)
+
+        count = 0
+        for disk_id, status in iter(backing_image.diskFileStatusMap.items()):
+            if status.state == expect_disk_state:
+                count = count + 1
+
+        if expect_cnt == count:
+            break
+        time.sleep(RETRY_INTERVAL)
+
+    assert expect_cnt == count
 
 
 def wait_for_backing_image_disk_cleanup(client, bi_name, disk_id):

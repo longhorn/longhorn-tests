@@ -1,12 +1,13 @@
-FROM python:3.9-buster
+FROM registry.suse.com/bci/python:3.9
 
 ARG KUBECTL_VERSION=v1.17.0
 ARG ARCH=amd64
 
-RUN apt-get update && \
-    apt-get install -y vim-tiny nfs-common xfsprogs
+RUN zypper ref -f
+RUN zypper in -y vim-small nfs-client xfsprogs e2fsprogs util-linux-systemd gcc python39-devel && \
+    rm -rf /var/cache/zypp/*
 
-RUN wget -q https://storage.googleapis.com/kubernetes-release/release/$KUBECTL_VERSION/bin/linux/${ARCH}/kubectl && \
+RUN curl -sO https://storage.googleapis.com/kubernetes-release/release/$KUBECTL_VERSION/bin/linux/${ARCH}/kubectl && \
     mv kubectl /usr/local/bin/kubectl && \
     chmod +x /usr/local/bin/kubectl
 

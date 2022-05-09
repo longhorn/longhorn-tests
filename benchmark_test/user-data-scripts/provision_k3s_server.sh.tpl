@@ -1,7 +1,5 @@
 #!/bin/bash
 
-set -e
-
 sudo zypper ref
 sudo zypper install -y -t pattern devel_basis
 sudo zypper install -y open-iscsi nfs-client jq

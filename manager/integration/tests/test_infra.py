@@ -6,7 +6,7 @@ import subprocess
 from aws import aws
 
 from common import get_core_api_client, get_longhorn_api_client
-from common import RETRY_COUNTS, RETRY_INTERVAL
+from common import RETRY_COUNTS, RETRY_INTERVAL, RETRY_INTERVAL_LONG
 from common import core_api # NOQA
 from common import client # NOQA
 
@@ -22,9 +22,15 @@ def detect_cloudprovider():
 
 
 def is_node_ready_k8s(node_name, k8s_api_client):
+
+    print(f'==> check node {node_name} is ready ...')
+
     node_status_k8s = k8s_api_client.read_node_status(node_name)
 
     for node_condition in node_status_k8s.status.conditions:
+        if node_condition.type == "Ready":
+            print(f'type = {node_condition.type}, '
+                  f'status = {node_condition.status}')
         if node_condition.type == "Ready" and \
            node_condition.status == "True":
             node_ready = True
@@ -110,16 +116,16 @@ def wait_for_node_down_aws(cloudprovider, node):
 
 
 def wait_for_node_up_aws(cloudprovider, node):
-
     aws_node_up = False
     for i in range(RETRY_COUNTS):
-        if cloudprovider.instance_status(node) == 'running':
+        status = cloudprovider.instance_status(node)
+        print(f'instance status = {status}')
+        if status == 'running':
             aws_node_up = True
             break
         else:
-            time.sleep(RETRY_INTERVAL)
+            time.sleep(RETRY_INTERVAL_LONG)
             continue
-
     return aws_node_up
 
 
@@ -145,6 +151,8 @@ def reset_cluster_ready_status(request):
 
     k3s = is_infra_k3s()
 
+    print('==> test completed! reset cluster ready status ...')
+
     for node_item in k8s_api_client.list_node().items:
 
         if k3s is True:
@@ -166,9 +174,10 @@ def reset_cluster_ready_status(request):
         if is_node_ready_k8s(node_name, k8s_api_client) is False:
 
             cloudprovider.instance_start(node)
-            wait_for_node_up_aws(cloudprovider, node)
-            node_up_k8s =\
-                wait_for_node_up_k8s(node_name, k8s_api_client)
+            print(f'==> wait for aws node {node_name} up ...')
+            aws_node_up = wait_for_node_up_aws(cloudprovider, node)
+            assert aws_node_up, f'expect aws node {node_name} up'
+            node_up_k8s = wait_for_node_up_k8s(node_name, k8s_api_client)
 
             assert node_up_k8s
 
@@ -182,6 +191,7 @@ def reset_cluster_ready_status(request):
 
 
 @pytest.mark.infra
+@pytest.mark.order(-1)
 def test_offline_node(reset_cluster_ready_status):
     """
     Test offline node
@@ -225,6 +235,8 @@ def test_offline_node(reset_cluster_ready_status):
                 else:
                     node = cloudprovider.instance_id(node_name)
                     break
+
+    print(f'==> stop node: {node_name}')
 
     cloudprovider.instance_stop(node)
     wait_for_node_down_aws(cloudprovider, node)

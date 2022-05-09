@@ -5,7 +5,6 @@ def BUILD_TRIGGER_BY = "\n${currentBuild.getBuildCauses()[0].shortDescription}"
 // define optional parameters
 def SELINUX_MODE = params.SELINUX_MODE ? "SELINUX_MODE=${params.SELINUX_MODE}" : ""
 
-def CREDS_ID = JOB_BASE_NAME == "longhorn-tests-regression" ? "AWS_CREDS_RANCHER_QA" : "AWS_CREDS"
 
 node {
 
@@ -15,34 +14,27 @@ node {
 
     checkout scm
 
-    withCredentials([usernamePassword(credentialsId: CREDS_ID, passwordVariable: 'AWS_SECRET_KEY', usernameVariable: 'AWS_ACCESS_KEY')]) {
+    withCredentials([usernamePassword(credentialsId: 'AWS_CREDS', passwordVariable: 'AWS_SECRET_KEY', usernameVariable: 'AWS_ACCESS_KEY')]) {
         stage('build') {
-
-            echo "Using credentials: $CREDS_ID"
-
-            sh "test_framework/scripts/build.sh"
+            sh "benchmark_test/scripts/build.sh"
 
             sh """ docker run -itd --name ${JOB_BASE_NAME}-${BUILD_NUMBER} \
-                                   --env CUSTOM_LONGHORN_ENGINE_IMAGE=${CUSTOM_LONGHORN_ENGINE_IMAGE} \
-                                   --env CUSTOM_LONGHORN_INSTANCE_MANAGER_IMAGE=${CUSTOM_LONGHORN_INSTANCE_MANAGER_IMAGE} \
-                                   --env CUSTOM_LONGHORN_MANAGER_IMAGE=${CUSTOM_LONGHORN_MANAGER_IMAGE} \
-                                   --env CUSTOM_LONGHORN_SHARE_MANAGER_IMAGE=${CUSTOM_LONGHORN_SHARE_MANAGER_IMAGE} \
-                                   --env LONGHORN_TESTS_CUSTOM_IMAGE=${LONGHORN_TESTS_CUSTOM_IMAGE} \
-                                   --env DISTRO=${DISTRO} \
+                                   --env TEST_SIZE=${TEST_SIZE} \
                                    --env LONGHORN_MANAGER_REPO_URI=${LONGHORN_MANAGER_REPO_URI} \
                                    --env LONGHORN_MANAGER_BRANCH=${LONGHORN_MANAGER_BRANCH} \
-                                   --env LONGHORN_STABLE_VERSION=${LONGHORN_STABLE_VERSION} \
+                                   --env CUSTOM_LONGHORN_MANAGER_IMAGE=${CUSTOM_LONGHORN_MANAGER_IMAGE} \
+                                   --env CUSTOM_LONGHORN_ENGINE_IMAGE=${CUSTOM_LONGHORN_ENGINE_IMAGE} \
+                                   --env CUSTOM_LONGHORN_INSTANCE_MANAGER_IMAGE=${CUSTOM_LONGHORN_INSTANCE_MANAGER_IMAGE} \
+                                   --env CUSTOM_LONGHORN_SHARE_MANAGER_IMAGE=${CUSTOM_LONGHORN_SHARE_MANAGER_IMAGE} \
+                                   --env CUSTOM_LONGHORN_BACKING_IMAGE_MANAGER_IMAGE=${CUSTOM_LONGHORN_BACKING_IMAGE_MANAGER_IMAGE} \
+                                   --env DISTRO=${DISTRO} \
                                    --env LONGHORN_TEST_CLOUDPROVIDER=${LONGHORN_TEST_CLOUDPROVIDER} \
-                                   --env LONGHORN_UPGRADE_TEST=${LONGHORN_UPGRADE_TEST} \
-                                   --env PYTEST_CUSTOM_OPTIONS="${PYTEST_CUSTOM_OPTIONS}" \
-                                   --env BACKUP_STORE_TYPE="${BACKUP_STORE_TYPE}" \
                                    --env TF_VAR_arch=${ARCH} \
                                    --env TF_VAR_k8s_distro_name=${K8S_DISTRO_NAME} \
                                    --env TF_VAR_k8s_distro_version=${K8S_DISTRO_VERSION} \
                                    --env TF_VAR_aws_availability_zone=${AWS_AVAILABILITY_ZONE} \
                                    --env TF_VAR_aws_region=${AWS_REGION} \
                                    --env TF_VAR_distro_version=${DISTRO_VERSION} \
-                                   --env TF_VAR_do_token=${env.TF_VAR_do_token} \
                                    --env TF_VAR_lh_aws_access_key=${AWS_ACCESS_KEY} \
                                    --env TF_VAR_lh_aws_instance_name_controlplane="${JOB_BASE_NAME}-ctrl" \
                                    --env TF_VAR_lh_aws_instance_name_worker="${JOB_BASE_NAME}-wrk" \
@@ -63,25 +55,7 @@ node {
 			}
 
             stage ('longhorn setup & tests') {
-                sh  " docker exec ${JOB_BASE_NAME}-${BUILD_NUMBER} ${TF_VAR_tf_workspace}/scripts/longhorn-setup.sh"
-            }
-
-            stage ('download support bundle') {
-                sh "docker exec ${JOB_BASE_NAME}-${BUILD_NUMBER} ${TF_VAR_tf_workspace}/scripts/download-support-bundle.sh  ${JOB_BASE_NAME}-${BUILD_NUMBER}-bundle.zip"
-                sh "docker cp ${JOB_BASE_NAME}-${BUILD_NUMBER}:${TF_VAR_tf_workspace}/../${JOB_BASE_NAME}-${BUILD_NUMBER}-bundle.zip ."
-				archiveArtifacts allowEmptyArchive: true, artifacts: '**/*.zip', followSymlinks: false
-			}
-
-            stage ('report generation') {
-                sh "docker cp ${JOB_BASE_NAME}-${BUILD_NUMBER}:${TF_VAR_tf_workspace}/longhorn-test-junit-report.xml ."
-
-                if(params.LONGHORN_UPGRADE_TEST) {
-                    sh "docker cp ${JOB_BASE_NAME}-${BUILD_NUMBER}:${TF_VAR_tf_workspace}/longhorn-test-upgrade-junit-report.xml ."
-                    summary = junit 'longhorn-test-upgrade-junit-report.xml, longhorn-test-junit-report.xml'
-                }
-                else {
-                    summary = junit 'longhorn-test-junit-report.xml'
-                }
+                sh  " docker exec ${JOB_BASE_NAME}-${BUILD_NUMBER} ${TF_VAR_tf_workspace}/scripts/benchmark-test-setup.sh"
             }
 
         } catch(e) {
@@ -93,15 +67,9 @@ node {
                 sh "docker stop ${JOB_BASE_NAME}-${BUILD_NUMBER}"
                 sh "docker rm -v ${JOB_BASE_NAME}-${BUILD_NUMBER}"
                 sh "docker rmi ${imageName}"
-                if(summary){
-                    summary_msg = "\nTest Summary - Failures: ${summary.failCount}, Skipped: ${summary.skipCount}, Passed: ${summary.passCount}  -- Job completed in ${currentBuild.durationString.replace(' and counting', '')}"
-                }
-                else{
-                    summary_msg = "\n Test Failed: No Junit report"
-                }
 
 				if(params.SEND_SLACK_NOTIFICATION){
-					notifyBuild(currentBuild.result, summary_msg, params.NOTIFY_SLACK_CHANNEL)
+					notifyBuild(currentBuild.result, "build completed", params.NOTIFY_SLACK_CHANNEL)
 				}
             }
         }
