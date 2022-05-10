@@ -106,6 +106,7 @@ from common import create_backup_from_volume_attached_to_pod
 from common import restore_backup_and_get_data_checksum
 from common import write_volume_dev_random_mb_data
 from common import VOLUME_HEAD_NAME
+from common import set_node_scheduling
 
 from backupstore import backupstore_delete_volume_cfg_file
 from backupstore import backupstore_cleanup
@@ -591,7 +592,7 @@ def backup_status_for_unavailable_replicas_test(client, volume_name,  # NOQA
     for r in volume.replicas:
         if r.name == replica_name:
             node = client.by_id_node(r.hostId)
-            node = client.update(node, allowScheduling=False)
+            node = set_node_scheduling(client, node, allowScheduling=False)
             common.wait_for_node_update(client, node.id,
                                         &#34;allowScheduling&#34;, False)
     assert node
@@ -608,7 +609,7 @@ def backup_status_for_unavailable_replicas_test(client, volume_name,  # NOQA
 
     # re enable scheduling on the previously disabled node
     node = client.by_id_node(node.id)
-    node = client.update(node, allowScheduling=True)
+    node = set_node_scheduling(client, node, allowScheduling=True)
     common.wait_for_node_update(client, node.id,
                                 &#34;allowScheduling&#34;, True)
 
@@ -1802,7 +1803,7 @@ def test_volume_scheduling_failure(client, volume_name):  # NOQA
     assert len(nodes) &gt; 0
 
     for node in nodes:
-        node = client.update(node, allowScheduling=False)
+        node = set_node_scheduling(client, node, allowScheduling=False)
         node = common.wait_for_node_update(client, node.id,
                                            &#34;allowScheduling&#34;, False)
 
@@ -1820,7 +1821,7 @@ def test_volume_scheduling_failure(client, volume_name):  # NOQA
     assert &#34;unable to attach volume&#34; in str(e.value)
 
     for node in nodes:
-        node = client.update(node, allowScheduling=True)
+        node = set_node_scheduling(client, node, allowScheduling=True)
         node = common.wait_for_node_update(client, node.id,
                                            &#34;allowScheduling&#34;, True)
 
@@ -2614,7 +2615,7 @@ def test_running_volume_with_scheduling_failure(
     for r in volume.replicas:
         existing_replicas[r.name] = r
     node = client.by_id_node(volume.replicas[0].hostId)
-    node = client.update(node, allowScheduling=False)
+    node = set_node_scheduling(client, node, allowScheduling=False)
     common.wait_for_node_update(client, node.id,
                                 &#34;allowScheduling&#34;, False)
 
@@ -2750,7 +2751,7 @@ def test_expansion_with_scheduling_failure(
         old_replicas[r.name] = r
     failed_replica = volume.replicas[0]
     node = client.by_id_node(failed_replica.hostId)
-    node = client.update(node, allowScheduling=False)
+    node = set_node_scheduling(client, node, allowScheduling=False)
     common.wait_for_node_update(client, node.id,
                                 &#34;allowScheduling&#34;, False)
 
@@ -2822,7 +2823,7 @@ def test_expansion_with_scheduling_failure(
     original_md5sum3 = get_pod_data_md5sum(core_api, test_pod_name, data_path3)
 
     node = client.by_id_node(failed_replica.hostId)
-    client.update(node, allowScheduling=True)
+    set_node_scheduling(client, node, allowScheduling=True)
     wait_for_volume_healthy(client, volume_name)
 
     md5sum3 = get_pod_data_md5sum(core_api, test_pod_name, data_path3)
@@ -4398,7 +4399,7 @@ def snapshot_prune_and_coalesce_simultaneously(client, volume_name, backing_imag
     for r in volume.replicas:
         if r.name == replica_name:
             node = client.by_id_node(r.hostId)
-            node = client.update(node, allowScheduling=False)
+            node = set_node_scheduling(client, node, allowScheduling=False)
             common.wait_for_node_update(client, node.id,
                                         &#34;allowScheduling&#34;, False)
     assert node
@@ -4415,7 +4416,7 @@ def snapshot_prune_and_coalesce_simultaneously(client, volume_name, backing_imag
 
     # re enable scheduling on the previously disabled node
     node = client.by_id_node(node.id)
-    node = client.update(node, allowScheduling=True)
+    node = set_node_scheduling(client, node, allowScheduling=True)
     common.wait_for_node_update(client, node.id,
                                 &#34;allowScheduling&#34;, True)
 
@@ -7855,7 +7856,7 @@ def test_expansion_with_scheduling_failure(
         old_replicas[r.name] = r
     failed_replica = volume.replicas[0]
     node = client.by_id_node(failed_replica.hostId)
-    node = client.update(node, allowScheduling=False)
+    node = set_node_scheduling(client, node, allowScheduling=False)
     common.wait_for_node_update(client, node.id,
                                 &#34;allowScheduling&#34;, False)
 
@@ -7927,7 +7928,7 @@ def test_expansion_with_scheduling_failure(
     original_md5sum3 = get_pod_data_md5sum(core_api, test_pod_name, data_path3)
 
     node = client.by_id_node(failed_replica.hostId)
-    client.update(node, allowScheduling=True)
+    set_node_scheduling(client, node, allowScheduling=True)
     wait_for_volume_healthy(client, volume_name)
 
     md5sum3 = get_pod_data_md5sum(core_api, test_pod_name, data_path3)
@@ -8777,7 +8778,7 @@ def test_running_volume_with_scheduling_failure(
     for r in volume.replicas:
         existing_replicas[r.name] = r
     node = client.by_id_node(volume.replicas[0].hostId)
-    node = client.update(node, allowScheduling=False)
+    node = set_node_scheduling(client, node, allowScheduling=False)
     common.wait_for_node_update(client, node.id,
                                 &#34;allowScheduling&#34;, False)
 
@@ -9450,7 +9451,7 @@ def test_volume_scheduling_failure(client, volume_name):  # NOQA
     assert len(nodes) &gt; 0
 
     for node in nodes:
-        node = client.update(node, allowScheduling=False)
+        node = set_node_scheduling(client, node, allowScheduling=False)
         node = common.wait_for_node_update(client, node.id,
                                            &#34;allowScheduling&#34;, False)
 
@@ -9468,7 +9469,7 @@ def test_volume_scheduling_failure(client, volume_name):  # NOQA
     assert &#34;unable to attach volume&#34; in str(e.value)
 
     for node in nodes:
-        node = client.update(node, allowScheduling=True)
+        node = set_node_scheduling(client, node, allowScheduling=True)
         node = common.wait_for_node_update(client, node.id,
                                            &#34;allowScheduling&#34;, True)
 

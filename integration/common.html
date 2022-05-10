@@ -254,6 +254,10 @@ JOB_LABEL = &#34;recurring-job.longhorn.io&#34;
 
 MAX_SUPPORT_BINDLE_NUMBER = 20
 
+NODE_UPDATE_RETRY_INTERVAL = 6
+NODE_UPDATE_RETRY_COUNT = 30
+retry_error = &#34;cannot finish API request due to too many error retries&#34;
+
 
 def load_k8s_config():
     c = Configuration()
@@ -867,23 +871,85 @@ def check_volume_replicas(volume, spec, tag_mapping):
 # Default argument is mutable on this function, but it&#39;s fine since we&#39;re only
 # using it as an empty tag list to pass to the server and will never actually
 # modify it.
-def set_node_tags(client, node, tags=[]):  # NOQA
+def set_node_tags(client, node, tags=[], retry=False):  # NOQA
     &#34;&#34;&#34;
     Set the tags on a node without modifying its scheduling status.
+    Retry if &#34;too many retries error&#34; happened.
     :param client: The Longhorn client to use in the request.
     :param node: The Node to update.
     :param tags: The tags to set on the node.
     :return: The updated Node.
     &#34;&#34;&#34;
-    return client.update(node, allowScheduling=node.allowScheduling,
-                         tags=tags)
+    if not retry:
+        return client.update(node, allowScheduling=node.allowScheduling,
+                             tags=tags)
+
+    for _ in range(NODE_UPDATE_RETRY_COUNT):
+        try:
+            node = client.update(node,
+                                 allowScheduling=node.allowScheduling,
+                                 tags=tags)
+        except Exception as e:
+            if retry_error in str(e.error.message):
+                time.sleep(NODE_UPDATE_RETRY_INTERVAL)
+                continue
+            print(e)
+            raise
+        else:
+            break
+
+    return node
 
 
-def set_node_scheduling(client, node, allowScheduling):
+def set_node_scheduling(client, node, allowScheduling, retry=False):
     if node.tags is None:
         node.tags = []
-    return client.update(node, allowScheduling=allowScheduling,
-                         tags=node.tags)
+
+    if not retry:
+        return client.update(node, allowScheduling=allowScheduling,
+                             tags=node.tags)
+
+    # Retry if &#34;too many retries error&#34; happened.
+    for _ in range(NODE_UPDATE_RETRY_COUNT):
+        try:
+            node = client.update(node, allowScheduling=allowScheduling,
+                                 tags=node.tags)
+        except Exception as e:
+            if retry_error in str(e.error.message):
+                time.sleep(NODE_UPDATE_RETRY_INTERVAL)
+                continue
+            print(e)
+            raise
+        else:
+            break
+
+    return node
+
+def set_node_scheduling_eviction(client, node, allowScheduling, evictionRequested, retry=False):  # NOQA
+    if node.tags is None:
+        node.tags = []
+
+    if not retry:
+        node = client.update(node,
+                             allowScheduling=allowScheduling,
+                             evictionRequested=evictionRequested)
+
+    # Retry if &#34;too many retries error&#34; happened.
+    for _ in range(NODE_UPDATE_RETRY_COUNT):
+        try:
+            node = client.update(node,
+                                 allowScheduling=allowScheduling,
+                                 evictionRequested=evictionRequested)
+        except Exception as e:
+            if retry_error in str(e.error.message):
+                time.sleep(NODE_UPDATE_RETRY_INTERVAL)
+                continue
+            print(e)
+            raise
+        else:
+            break
+
+    return node
 
 
 @pytest.fixture
@@ -1328,7 +1394,8 @@ def node_default_tags():
 
         update_disks = get_update_disks(node.disks)
         update_disks[list(update_disks)[0]].tags = tags[&#34;disk&#34;]
-        new_node = node.diskUpdate(disks=update_disks)
+        new_node = update_node_disks(client, node.name, disks=update_disks,
+                                     retry=True)
         disks = get_update_disks(new_node.disks)
         assert disks[list(new_node.disks)[0]].tags == tags[&#34;disk&#34;]
 
@@ -1343,7 +1410,8 @@ def node_default_tags():
     for node in nodes:
         update_disks = get_update_disks(node.disks)
         update_disks[list(update_disks)[0]].tags = []
-        new_node = node.diskUpdate(disks=update_disks)
+        new_node = update_node_disks(client, node.name, disks=update_disks,
+                                     retry=True)
         disks = get_update_disks(new_node.disks)
         assert len(disks[list(new_node.disks)[0]].tags) == 0, \
             f&#34; disk = {disks}&#34;
@@ -2512,8 +2580,37 @@ def cleanup_node_disks(client, node_name):
         disk.allowScheduling = False
     update_disks = get_update_disks(disks)
     node = client.by_id_node(node_name)
-    node.diskUpdate(disks=update_disks)
-    node.diskUpdate(disks={})
+
+    # Retry if &#34;too many retries error&#34; happened.
+    for _ in range(NODE_UPDATE_RETRY_COUNT):
+        try:
+            node.diskUpdate(disks=update_disks)
+        except Exception as e:
+            if retry_error in str(e.error.message):
+                time.sleep(NODE_UPDATE_RETRY_INTERVAL)
+                continue
+            print(e)
+            raise
+        else:
+            break
+
+    for name, disk in iter(disks.items()):
+        wait_for_disk_status(client, node_name,
+                             name, &#34;allowScheduling&#34;, False)
+
+    # Retry if &#34;too many retries error&#34; happened.
+    for _ in range(NODE_UPDATE_RETRY_COUNT):
+        try:
+            node.diskUpdate(disks={})
+        except Exception as e:
+            if retry_error in str(e.error.message):
+                time.sleep(NODE_UPDATE_RETRY_INTERVAL)
+                continue
+            print(e)
+            raise
+        else:
+            break
+
     return wait_for_disk_update(client, node_name, 0)
 
 
@@ -2696,13 +2793,13 @@ def reset_node(client):
     nodes = client.list_node()
     for node in nodes:
         try:
-            node = client.update(node, tags=[])
+            node = set_node_tags(client, node, tags=[])
             node = wait_for_node_tag_update(client, node.id, [])
-            node = client.update(node, allowScheduling=True)
+            node = set_node_scheduling(client, node, allowScheduling=True)
             wait_for_node_update(client, node.id,
                                  &#34;allowScheduling&#34;, True)
         except Exception as e:
-            print(&#34;\nException when reset node schedulding and tags&#34;, node)
+            print(&#34;\nException when reset node scheduling and tags&#34;, node)
             print(e)
 
     reset_longhorn_node_zone(client)
@@ -2773,19 +2870,27 @@ def cleanup_test_disks(client):
             if dir_path == disk.path:
                 disk.allowScheduling = False
     update_disks = get_update_disks(disks)
-    try:
-        node = node.diskUpdate(disks=update_disks)
-        disks = node.disks
-        for name, disk in iter(disks.items()):
-            for del_dir in del_dirs:
-                dir_path = os.path.join(DIRECTORY_PATH, del_dir)
-                if dir_path == disk.path:
-                    wait_for_disk_status(client, host_id, name,
-                                         &#34;allowScheduling&#34;, False)
-    except Exception as e:
-        print(&#34;\nException when update node disks&#34;, node)
-        print(e)
-        pass
+
+    # Retry if &#34;too many retries error&#34; happened.
+    for _ in range(NODE_UPDATE_RETRY_COUNT):
+        try:
+            node = node.diskUpdate(disks=update_disks)
+            disks = node.disks
+            for name, disk in iter(disks.items()):
+                for del_dir in del_dirs:
+                    dir_path = os.path.join(DIRECTORY_PATH, del_dir)
+                    if dir_path == disk.path:
+                        wait_for_disk_status(client, host_id, name,
+                                             &#34;allowScheduling&#34;, False)
+        except Exception as e:
+            if retry_error in str(e.error.message):
+                time.sleep(NODE_UPDATE_RETRY_INTERVAL)
+                continue
+            print(&#34;\nException when update node disks&#34;, node)
+            print(e)
+            raise
+        else:
+            break
 
     # delete test disks
     disks = node.disks
@@ -2793,13 +2898,20 @@ def cleanup_test_disks(client):
     for name, disk in iter(disks.items()):
         if disk.allowScheduling:
             update_disks[name] = disk
-    try:
-        node.diskUpdate(disks=update_disks)
-        wait_for_disk_update(client, host_id, len(update_disks))
-    except Exception as e:
-        print(&#34;\nException when delete node test disks&#34;, node)
-        print(e)
-        pass
+    # Retry if &#34;too many retries error&#34; happened.
+    for _ in range(NODE_UPDATE_RETRY_COUNT):
+        try:
+            node.diskUpdate(disks=update_disks)
+            wait_for_disk_update(client, host_id, len(update_disks))
+        except Exception as e:
+            if retry_error in str(e.error.message):
+                time.sleep(NODE_UPDATE_RETRY_INTERVAL)
+                continue
+            print(&#34;\nException when delete node test disks&#34;, node)
+            print(e)
+            raise
+        else:
+            break
     # cleanup host disks
     for del_dir in del_dirs:
         try:
@@ -2827,15 +2939,18 @@ def reset_disks_for_all_nodes(client):  # NOQA
             for disk_name, disk in iter(update_disks.items()):
                 disk.allowScheduling = False
                 update_disks[disk_name] = disk
-                node = node.diskUpdate(disks=update_disks)
+                node = update_node_disks(client, node.name, disks=update_disks,
+                                         retry=True)
             update_disks = {}
-            node = node.diskUpdate(disks=update_disks)
+            node = update_node_disks(client, node.name, disks=update_disks,
+                                     retry=True)
             node = wait_for_disk_update(client, node.name, 0)
         if len(node.disks) == 0:
             default_disk = {&#34;default-disk&#34;:
                             {&#34;path&#34;: DEFAULT_DISK_PATH,
                              &#34;allowScheduling&#34;: True}}
-            node = node.diskUpdate(disks=default_disk)
+            node = update_node_disks(client, node.name, disks=default_disk,
+                                     retry=True)
             node = wait_for_disk_update(client, node.name, 1)
             assert len(node.disks) == 1
         # wait for node controller to update disk status
@@ -2848,7 +2963,8 @@ def reset_disks_for_all_nodes(client):  # NOQA
                 int(update_disk.storageMaximum * 30 / 100)
             update_disk.tags = []
             update_disks[name] = update_disk
-        node = node.diskUpdate(disks=update_disks)
+        node = update_node_disks(client, node.name, disks=update_disks,
+                                 retry=True)
         for name, disk in iter(node.disks.items()):
             # wait for node controller update disk status
             wait_for_disk_status(client, node.name, name,
@@ -4753,7 +4869,83 @@ def get_volume_running_replica_cnt(client, volume_name):  # NOQA
         cnt = cnt + get_host_replica_count(
             client, volume_name, node.name, chk_running=True)
 
-    return cnt</code></pre>
+    return cnt
+
+
+def create_volume(client, vol_name, size, node_id, r_num):
+    volume = client.create_volume(name=vol_name, size=size,
+                                  numberOfReplicas=r_num)
+    assert volume.numberOfReplicas == r_num
+    assert volume.frontend == VOLUME_FRONTEND_BLOCKDEV
+
+    volume = wait_for_volume_detached(client, vol_name)
+    assert len(volume.replicas) == r_num
+
+    assert volume.state == &#34;detached&#34;
+    assert volume.created != &#34;&#34;
+
+    volumeByName = client.by_id_volume(vol_name)
+    assert volumeByName.name == volume.name
+    assert volumeByName.size == volume.size
+    assert volumeByName.numberOfReplicas == volume.numberOfReplicas
+    assert volumeByName.state == volume.state
+    assert volumeByName.created == volume.created
+
+    volume.attach(hostId=node_id)
+    volume = wait_for_volume_healthy(client, vol_name)
+
+    return volume
+
+
+def cleanup_volume_by_name(client, vol_name):
+    volume = client.by_id_volume(vol_name)
+    volume.detach(hostId=&#34;&#34;)
+    client.delete(volume)
+    wait_for_volume_delete(client, vol_name)
+
+
+def create_host_disk(client, vol_name, size, node_id):
+    # create a single replica volume and attach it to node
+    volume = create_volume(client, vol_name, size, node_id, 1)
+
+    mkfs_ext4_settings = client.by_id_setting(SETTING_MKFS_EXT4_PARAMS)
+    mkfs_ext4_options = mkfs_ext4_settings.value
+
+    # prepare the disk in the host filesystem
+    disk_path = prepare_host_disk(get_volume_endpoint(volume),
+                                  volume.name,
+                                  mkfs_ext4_options)
+    return disk_path
+
+
+def cleanup_host_disks(client, *args):
+    # clean disk
+    for vol_name in args:
+        # umount disk
+        cleanup_host_disk(vol_name)
+        # clean volume
+        cleanup_volume_by_name(client, vol_name)
+
+
+def update_node_disks(client, node_name, disks, retry=False):
+    node = client.by_id_node(node_name)
+
+    if not retry:
+        return node.diskUpdate(disks=disks)
+
+    # Retry if &#34;too many retries error&#34; happened.
+    for _ in range(NODE_UPDATE_RETRY_COUNT):
+        try:
+            node = node.diskUpdate(disks=disks)
+        except Exception as e:
+            if retry_error in str(e.error.message):
+                time.sleep(NODE_UPDATE_RETRY_INTERVAL)
+                continue
+            print(e)
+            raise
+        else:
+            break
+    return node</code></pre>
 </details>
 </section>
 <section>
@@ -5435,6 +5627,24 @@ properly.
     subprocess.check_call(cmd)</code></pre>
 </details>
 </dd>
+<dt id="tests.common.cleanup_host_disks"><code class="name flex">
+<span>def <span class="ident">cleanup_host_disks</span></span>(<span>client, *args)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def cleanup_host_disks(client, *args):
+    # clean disk
+    for vol_name in args:
+        # umount disk
+        cleanup_host_disk(vol_name)
+        # clean volume
+        cleanup_volume_by_name(client, vol_name)</code></pre>
+</details>
+</dd>
 <dt id="tests.common.cleanup_node_disks"><code class="name flex">
 <span>def <span class="ident">cleanup_node_disks</span></span>(<span>client, node_name)</span>
 </code></dt>
@@ -5451,8 +5661,37 @@ properly.
         disk.allowScheduling = False
     update_disks = get_update_disks(disks)
     node = client.by_id_node(node_name)
-    node.diskUpdate(disks=update_disks)
-    node.diskUpdate(disks={})
+
+    # Retry if &#34;too many retries error&#34; happened.
+    for _ in range(NODE_UPDATE_RETRY_COUNT):
+        try:
+            node.diskUpdate(disks=update_disks)
+        except Exception as e:
+            if retry_error in str(e.error.message):
+                time.sleep(NODE_UPDATE_RETRY_INTERVAL)
+                continue
+            print(e)
+            raise
+        else:
+            break
+
+    for name, disk in iter(disks.items()):
+        wait_for_disk_status(client, node_name,
+                             name, &#34;allowScheduling&#34;, False)
+
+    # Retry if &#34;too many retries error&#34; happened.
+    for _ in range(NODE_UPDATE_RETRY_COUNT):
+        try:
+            node.diskUpdate(disks={})
+        except Exception as e:
+            if retry_error in str(e.error.message):
+                time.sleep(NODE_UPDATE_RETRY_INTERVAL)
+                continue
+            print(e)
+            raise
+        else:
+            break
+
     return wait_for_disk_update(client, node_name, 0)</code></pre>
 </details>
 </dd>
@@ -5508,19 +5747,27 @@ properly.
             if dir_path == disk.path:
                 disk.allowScheduling = False
     update_disks = get_update_disks(disks)
-    try:
-        node = node.diskUpdate(disks=update_disks)
-        disks = node.disks
-        for name, disk in iter(disks.items()):
-            for del_dir in del_dirs:
-                dir_path = os.path.join(DIRECTORY_PATH, del_dir)
-                if dir_path == disk.path:
-                    wait_for_disk_status(client, host_id, name,
-                                         &#34;allowScheduling&#34;, False)
-    except Exception as e:
-        print(&#34;\nException when update node disks&#34;, node)
-        print(e)
-        pass
+
+    # Retry if &#34;too many retries error&#34; happened.
+    for _ in range(NODE_UPDATE_RETRY_COUNT):
+        try:
+            node = node.diskUpdate(disks=update_disks)
+            disks = node.disks
+            for name, disk in iter(disks.items()):
+                for del_dir in del_dirs:
+                    dir_path = os.path.join(DIRECTORY_PATH, del_dir)
+                    if dir_path == disk.path:
+                        wait_for_disk_status(client, host_id, name,
+                                             &#34;allowScheduling&#34;, False)
+        except Exception as e:
+            if retry_error in str(e.error.message):
+                time.sleep(NODE_UPDATE_RETRY_INTERVAL)
+                continue
+            print(&#34;\nException when update node disks&#34;, node)
+            print(e)
+            raise
+        else:
+            break
 
     # delete test disks
     disks = node.disks
@@ -5528,13 +5775,20 @@ properly.
     for name, disk in iter(disks.items()):
         if disk.allowScheduling:
             update_disks[name] = disk
-    try:
-        node.diskUpdate(disks=update_disks)
-        wait_for_disk_update(client, host_id, len(update_disks))
-    except Exception as e:
-        print(&#34;\nException when delete node test disks&#34;, node)
-        print(e)
-        pass
+    # Retry if &#34;too many retries error&#34; happened.
+    for _ in range(NODE_UPDATE_RETRY_COUNT):
+        try:
+            node.diskUpdate(disks=update_disks)
+            wait_for_disk_update(client, host_id, len(update_disks))
+        except Exception as e:
+            if retry_error in str(e.error.message):
+                time.sleep(NODE_UPDATE_RETRY_INTERVAL)
+                continue
+            print(&#34;\nException when delete node test disks&#34;, node)
+            print(e)
+            raise
+        else:
+            break
     # cleanup host disks
     for del_dir in del_dirs:
         try:
@@ -5568,6 +5822,22 @@ properly.
     wait_for_volume_delete(client, volume.name)
     volumes = client.list_volume()
     assert len(volumes) == 0</code></pre>
+</details>
+</dd>
+<dt id="tests.common.cleanup_volume_by_name"><code class="name flex">
+<span>def <span class="ident">cleanup_volume_by_name</span></span>(<span>client, vol_name)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def cleanup_volume_by_name(client, vol_name):
+    volume = client.by_id_volume(vol_name)
+    volume.detach(hostId=&#34;&#34;)
+    client.delete(volume)
+    wait_for_volume_delete(client, vol_name)</code></pre>
 </details>
 </dd>
 <dt id="tests.common.client"><code class="name flex">
@@ -6040,6 +6310,29 @@ backup</p></div>
     return backup_volume, backup, data_checksum</code></pre>
 </details>
 </dd>
+<dt id="tests.common.create_host_disk"><code class="name flex">
+<span>def <span class="ident">create_host_disk</span></span>(<span>client, vol_name, size, node_id)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def create_host_disk(client, vol_name, size, node_id):
+    # create a single replica volume and attach it to node
+    volume = create_volume(client, vol_name, size, node_id, 1)
+
+    mkfs_ext4_settings = client.by_id_setting(SETTING_MKFS_EXT4_PARAMS)
+    mkfs_ext4_options = mkfs_ext4_settings.value
+
+    # prepare the disk in the host filesystem
+    disk_path = prepare_host_disk(get_volume_endpoint(volume),
+                                  volume.name,
+                                  mkfs_ext4_options)
+    return disk_path</code></pre>
+</details>
+</dd>
 <dt id="tests.common.create_pv_for_volume"><code class="name flex">
 <span>def <span class="ident">create_pv_for_volume</span></span>(<span>client, core_api, volume, pv_name, fs_type='ext4')</span>
 </code></dt>
@@ -6219,6 +6512,40 @@ created using a storage class).</p></div>
     api = get_storage_api_client()
     api.create_storage_class(
         body=sc_manifest)</code></pre>
+</details>
+</dd>
+<dt id="tests.common.create_volume"><code class="name flex">
+<span>def <span class="ident">create_volume</span></span>(<span>client, vol_name, size, node_id, r_num)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def create_volume(client, vol_name, size, node_id, r_num):
+    volume = client.create_volume(name=vol_name, size=size,
+                                  numberOfReplicas=r_num)
+    assert volume.numberOfReplicas == r_num
+    assert volume.frontend == VOLUME_FRONTEND_BLOCKDEV
+
+    volume = wait_for_volume_detached(client, vol_name)
+    assert len(volume.replicas) == r_num
+
+    assert volume.state == &#34;detached&#34;
+    assert volume.created != &#34;&#34;
+
+    volumeByName = client.by_id_volume(vol_name)
+    assert volumeByName.name == volume.name
+    assert volumeByName.size == volume.size
+    assert volumeByName.numberOfReplicas == volume.numberOfReplicas
+    assert volumeByName.state == volume.state
+    assert volumeByName.created == volume.created
+
+    volume.attach(hostId=node_id)
+    volume = wait_for_volume_healthy(client, vol_name)
+
+    return volume</code></pre>
 </details>
 </dd>
 <dt id="tests.common.csi_pv"><code class="name flex">
@@ -8211,7 +8538,8 @@ def node_default_tags():
 
         update_disks = get_update_disks(node.disks)
         update_disks[list(update_disks)[0]].tags = tags[&#34;disk&#34;]
-        new_node = node.diskUpdate(disks=update_disks)
+        new_node = update_node_disks(client, node.name, disks=update_disks,
+                                     retry=True)
         disks = get_update_disks(new_node.disks)
         assert disks[list(new_node.disks)[0]].tags == tags[&#34;disk&#34;]
 
@@ -8226,7 +8554,8 @@ def node_default_tags():
     for node in nodes:
         update_disks = get_update_disks(node.disks)
         update_disks[list(update_disks)[0]].tags = []
-        new_node = node.diskUpdate(disks=update_disks)
+        new_node = update_node_disks(client, node.name, disks=update_disks,
+                                     retry=True)
         disks = get_update_disks(new_node.disks)
         assert len(disks[list(new_node.disks)[0]].tags) == 0, \
             f&#34; disk = {disks}&#34;
@@ -8710,15 +9039,18 @@ def random_labels():
             for disk_name, disk in iter(update_disks.items()):
                 disk.allowScheduling = False
                 update_disks[disk_name] = disk
-                node = node.diskUpdate(disks=update_disks)
+                node = update_node_disks(client, node.name, disks=update_disks,
+                                         retry=True)
             update_disks = {}
-            node = node.diskUpdate(disks=update_disks)
+            node = update_node_disks(client, node.name, disks=update_disks,
+                                     retry=True)
             node = wait_for_disk_update(client, node.name, 0)
         if len(node.disks) == 0:
             default_disk = {&#34;default-disk&#34;:
                             {&#34;path&#34;: DEFAULT_DISK_PATH,
                              &#34;allowScheduling&#34;: True}}
-            node = node.diskUpdate(disks=default_disk)
+            node = update_node_disks(client, node.name, disks=default_disk,
+                                     retry=True)
             node = wait_for_disk_update(client, node.name, 1)
             assert len(node.disks) == 1
         # wait for node controller to update disk status
@@ -8731,7 +9063,8 @@ def random_labels():
                 int(update_disk.storageMaximum * 30 / 100)
             update_disk.tags = []
             update_disks[name] = update_disk
-        node = node.diskUpdate(disks=update_disks)
+        node = update_node_disks(client, node.name, disks=update_disks,
+                                 retry=True)
         for name, disk in iter(node.disks.items()):
             # wait for node controller update disk status
             wait_for_disk_status(client, node.name, name,
@@ -8805,13 +9138,13 @@ def random_labels():
     nodes = client.list_node()
     for node in nodes:
         try:
-            node = client.update(node, tags=[])
+            node = set_node_tags(client, node, tags=[])
             node = wait_for_node_tag_update(client, node.id, [])
-            node = client.update(node, allowScheduling=True)
+            node = set_node_scheduling(client, node, allowScheduling=True)
             wait_for_node_update(client, node.id,
                                  &#34;allowScheduling&#34;, True)
         except Exception as e:
-            print(&#34;\nException when reset node schedulding and tags&#34;, node)
+            print(&#34;\nException when reset node scheduling and tags&#34;, node)
             print(e)
 
     reset_longhorn_node_zone(client)</code></pre>
@@ -8988,7 +9321,7 @@ def scheduling_api(request):
 </details>
 </dd>
 <dt id="tests.common.set_node_scheduling"><code class="name flex">
-<span>def <span class="ident">set_node_scheduling</span></span>(<span>client, node, allowScheduling)</span>
+<span>def <span class="ident">set_node_scheduling</span></span>(<span>client, node, allowScheduling, retry=False)</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -8996,18 +9329,73 @@ def scheduling_api(request):
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def set_node_scheduling(client, node, allowScheduling):
+<pre><code class="python">def set_node_scheduling(client, node, allowScheduling, retry=False):
     if node.tags is None:
         node.tags = []
-    return client.update(node, allowScheduling=allowScheduling,
-                         tags=node.tags)</code></pre>
+
+    if not retry:
+        return client.update(node, allowScheduling=allowScheduling,
+                             tags=node.tags)
+
+    # Retry if &#34;too many retries error&#34; happened.
+    for _ in range(NODE_UPDATE_RETRY_COUNT):
+        try:
+            node = client.update(node, allowScheduling=allowScheduling,
+                                 tags=node.tags)
+        except Exception as e:
+            if retry_error in str(e.error.message):
+                time.sleep(NODE_UPDATE_RETRY_INTERVAL)
+                continue
+            print(e)
+            raise
+        else:
+            break
+
+    return node</code></pre>
+</details>
+</dd>
+<dt id="tests.common.set_node_scheduling_eviction"><code class="name flex">
+<span>def <span class="ident">set_node_scheduling_eviction</span></span>(<span>client, node, allowScheduling, evictionRequested, retry=False)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def set_node_scheduling_eviction(client, node, allowScheduling, evictionRequested, retry=False):  # NOQA
+    if node.tags is None:
+        node.tags = []
+
+    if not retry:
+        node = client.update(node,
+                             allowScheduling=allowScheduling,
+                             evictionRequested=evictionRequested)
+
+    # Retry if &#34;too many retries error&#34; happened.
+    for _ in range(NODE_UPDATE_RETRY_COUNT):
+        try:
+            node = client.update(node,
+                                 allowScheduling=allowScheduling,
+                                 evictionRequested=evictionRequested)
+        except Exception as e:
+            if retry_error in str(e.error.message):
+                time.sleep(NODE_UPDATE_RETRY_INTERVAL)
+                continue
+            print(e)
+            raise
+        else:
+            break
+
+    return node</code></pre>
 </details>
 </dd>
 <dt id="tests.common.set_node_tags"><code class="name flex">
-<span>def <span class="ident">set_node_tags</span></span>(<span>client, node, tags=[])</span>
+<span>def <span class="ident">set_node_tags</span></span>(<span>client, node, tags=[], retry=False)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Set the tags on a node without modifying its scheduling status.
+Retry if "too many retries error" happened.
 :param client: The Longhorn client to use in the request.
 :param node: The Node to update.
 :param tags: The tags to set on the node.
@@ -9016,16 +9404,34 @@ def scheduling_api(request):
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def set_node_tags(client, node, tags=[]):  # NOQA
+<pre><code class="python">def set_node_tags(client, node, tags=[], retry=False):  # NOQA
     &#34;&#34;&#34;
     Set the tags on a node without modifying its scheduling status.
+    Retry if &#34;too many retries error&#34; happened.
     :param client: The Longhorn client to use in the request.
     :param node: The Node to update.
     :param tags: The tags to set on the node.
     :return: The updated Node.
     &#34;&#34;&#34;
-    return client.update(node, allowScheduling=node.allowScheduling,
-                         tags=tags)</code></pre>
+    if not retry:
+        return client.update(node, allowScheduling=node.allowScheduling,
+                             tags=tags)
+
+    for _ in range(NODE_UPDATE_RETRY_COUNT):
+        try:
+            node = client.update(node,
+                                 allowScheduling=node.allowScheduling,
+                                 tags=tags)
+        except Exception as e:
+            if retry_error in str(e.error.message):
+                time.sleep(NODE_UPDATE_RETRY_INTERVAL)
+                continue
+            print(e)
+            raise
+        else:
+            break
+
+    return node</code></pre>
 </details>
 </dd>
 <dt id="tests.common.settings_reset"><code class="name flex">
@@ -9224,6 +9630,36 @@ def sts_name(request):
 <pre><code class="python">def umount_disk(mount_path):
     cmd = [&#39;umount&#39;, mount_path]
     subprocess.check_call(cmd)</code></pre>
+</details>
+</dd>
+<dt id="tests.common.update_node_disks"><code class="name flex">
+<span>def <span class="ident">update_node_disks</span></span>(<span>client, node_name, disks, retry=False)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def update_node_disks(client, node_name, disks, retry=False):
+    node = client.by_id_node(node_name)
+
+    if not retry:
+        return node.diskUpdate(disks=disks)
+
+    # Retry if &#34;too many retries error&#34; happened.
+    for _ in range(NODE_UPDATE_RETRY_COUNT):
+        try:
+            node = node.diskUpdate(disks=disks)
+        except Exception as e:
+            if retry_error in str(e.error.message):
+                time.sleep(NODE_UPDATE_RETRY_INTERVAL)
+                continue
+            print(e)
+            raise
+        else:
+            break
+    return node</code></pre>
 </details>
 </dd>
 <dt id="tests.common.update_recurring_job"><code class="name flex">
@@ -11928,10 +12364,12 @@ volume. Trigger a failed assertion of one is detected.
 <li><code><a title="tests.common.cleanup_all_volumes" href="#tests.common.cleanup_all_volumes">cleanup_all_volumes</a></code></li>
 <li><code><a title="tests.common.cleanup_client" href="#tests.common.cleanup_client">cleanup_client</a></code></li>
 <li><code><a title="tests.common.cleanup_host_disk" href="#tests.common.cleanup_host_disk">cleanup_host_disk</a></code></li>
+<li><code><a title="tests.common.cleanup_host_disks" href="#tests.common.cleanup_host_disks">cleanup_host_disks</a></code></li>
 <li><code><a title="tests.common.cleanup_node_disks" href="#tests.common.cleanup_node_disks">cleanup_node_disks</a></code></li>
 <li><code><a title="tests.common.cleanup_storage_class" href="#tests.common.cleanup_storage_class">cleanup_storage_class</a></code></li>
 <li><code><a title="tests.common.cleanup_test_disks" href="#tests.common.cleanup_test_disks">cleanup_test_disks</a></code></li>
 <li><code><a title="tests.common.cleanup_volume" href="#tests.common.cleanup_volume">cleanup_volume</a></code></li>
+<li><code><a title="tests.common.cleanup_volume_by_name" href="#tests.common.cleanup_volume_by_name">cleanup_volume_by_name</a></code></li>
 <li><code><a title="tests.common.client" href="#tests.common.client">client</a></code></li>
 <li><code><a title="tests.common.clients" href="#tests.common.clients">clients</a></code></li>
 <li><code><a title="tests.common.copy_pod_volume_data" href="#tests.common.copy_pod_volume_data">copy_pod_volume_data</a></code></li>
@@ -11945,6 +12383,7 @@ volume. Trigger a failed assertion of one is detected.
 <li><code><a title="tests.common.create_backing_image_with_matching_url" href="#tests.common.create_backing_image_with_matching_url">create_backing_image_with_matching_url</a></code></li>
 <li><code><a title="tests.common.create_backup" href="#tests.common.create_backup">create_backup</a></code></li>
 <li><code><a title="tests.common.create_backup_from_volume_attached_to_pod" href="#tests.common.create_backup_from_volume_attached_to_pod">create_backup_from_volume_attached_to_pod</a></code></li>
+<li><code><a title="tests.common.create_host_disk" href="#tests.common.create_host_disk">create_host_disk</a></code></li>
 <li><code><a title="tests.common.create_pv_for_volume" href="#tests.common.create_pv_for_volume">create_pv_for_volume</a></code></li>
 <li><code><a title="tests.common.create_pvc" href="#tests.common.create_pvc">create_pvc</a></code></li>
 <li><code><a title="tests.common.create_pvc_for_volume" href="#tests.common.create_pvc_for_volume">create_pvc_for_volume</a></code></li>
@@ -11953,6 +12392,7 @@ volume. Trigger a failed assertion of one is detected.
 <li><code><a title="tests.common.create_snapshot" href="#tests.common.create_snapshot">create_snapshot</a></code></li>
 <li><code><a title="tests.common.create_statefulset" href="#tests.common.create_statefulset">create_statefulset</a></code></li>
 <li><code><a title="tests.common.create_storage_class" href="#tests.common.create_storage_class">create_storage_class</a></code></li>
+<li><code><a title="tests.common.create_volume" href="#tests.common.create_volume">create_volume</a></code></li>
 <li><code><a title="tests.common.csi_pv" href="#tests.common.csi_pv">csi_pv</a></code></li>
 <li><code><a title="tests.common.csi_pv_backingimage" href="#tests.common.csi_pv_backingimage">csi_pv_backingimage</a></code></li>
 <li><code><a title="tests.common.csi_pvc_name" href="#tests.common.csi_pvc_name">csi_pvc_name</a></code></li>
@@ -12064,6 +12504,7 @@ volume. Trigger a failed assertion of one is detected.
 <li><code><a title="tests.common.scheduling_api" href="#tests.common.scheduling_api">scheduling_api</a></code></li>
 <li><code><a title="tests.common.set_k8s_node_zone_label" href="#tests.common.set_k8s_node_zone_label">set_k8s_node_zone_label</a></code></li>
 <li><code><a title="tests.common.set_node_scheduling" href="#tests.common.set_node_scheduling">set_node_scheduling</a></code></li>
+<li><code><a title="tests.common.set_node_scheduling_eviction" href="#tests.common.set_node_scheduling_eviction">set_node_scheduling_eviction</a></code></li>
 <li><code><a title="tests.common.set_node_tags" href="#tests.common.set_node_tags">set_node_tags</a></code></li>
 <li><code><a title="tests.common.settings_reset" href="#tests.common.settings_reset">settings_reset</a></code></li>
 <li><code><a title="tests.common.size_to_string" href="#tests.common.size_to_string">size_to_string</a></code></li>
@@ -12071,6 +12512,7 @@ volume. Trigger a failed assertion of one is detected.
 <li><code><a title="tests.common.storage_class" href="#tests.common.storage_class">storage_class</a></code></li>
 <li><code><a title="tests.common.sts_name" href="#tests.common.sts_name">sts_name</a></code></li>
 <li><code><a title="tests.common.umount_disk" href="#tests.common.umount_disk">umount_disk</a></code></li>
+<li><code><a title="tests.common.update_node_disks" href="#tests.common.update_node_disks">update_node_disks</a></code></li>
 <li><code><a title="tests.common.update_recurring_job" href="#tests.common.update_recurring_job">update_recurring_job</a></code></li>
 <li><code><a title="tests.common.update_setting" href="#tests.common.update_setting">update_setting</a></code></li>
 <li><code><a title="tests.common.update_statefulset_manifests" href="#tests.common.update_statefulset_manifests">update_statefulset_manifests</a></code></li>
