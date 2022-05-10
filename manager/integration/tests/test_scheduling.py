@@ -28,6 +28,7 @@ from common import wait_for_rebuild_start
 from common import delete_and_wait_pod
 from common import crash_engine_process_with_sigkill
 from common import wait_for_replica_running
+from common import set_node_scheduling
 
 from time import sleep
 
@@ -38,7 +39,7 @@ def reset_settings():
     client = get_longhorn_api_client()  # NOQA
     host_id = get_self_host_id()
     node = client.by_id_node(host_id)
-    client.update(node, allowScheduling=True)
+    node = set_node_scheduling(client, node, allowScheduling=True)
     setting = client.by_id_setting(SETTING_REPLICA_NODE_SOFT_ANTI_AFFINITY)
     client.update(setting, value="true")
 
@@ -111,7 +112,7 @@ def test_soft_anti_affinity_scheduling(client, volume_name):  # NOQA
     setting = client.by_id_setting(SETTING_REPLICA_NODE_SOFT_ANTI_AFFINITY)
     client.update(setting, value="true")
     node = client.by_id_node(host_id)
-    client.update(node, allowScheduling=False)
+    node = set_node_scheduling(client, node, allowScheduling=False)
     replica_names = list(map(lambda replica: replica.name, volume.replicas))
     host_replica = get_host_replica(volume, host_id)
 
@@ -150,7 +151,7 @@ def test_soft_anti_affinity_detach(client, volume_name):  # NOQA
     setting = client.by_id_setting(SETTING_REPLICA_NODE_SOFT_ANTI_AFFINITY)
     client.update(setting, value="true")
     node = client.by_id_node(host_id)
-    client.update(node, allowScheduling=False)
+    set_node_scheduling(client, node, allowScheduling=False)
     replica_names = list(map(lambda replica: replica.name, volume.replicas))
     host_replica = get_host_replica(volume, host_id)
 
@@ -198,7 +199,7 @@ def test_hard_anti_affinity_scheduling(client, volume_name):  # NOQA
     setting = client.by_id_setting(SETTING_REPLICA_NODE_SOFT_ANTI_AFFINITY)
     client.update(setting, value="false")
     node = client.by_id_node(host_id)
-    client.update(node, allowScheduling=False)
+    set_node_scheduling(client, node, allowScheduling=False)
     host_replica = get_host_replica(volume, host_id)
 
     volume.replicaRemove(name=host_replica.name)
@@ -255,7 +256,7 @@ def test_hard_anti_affinity_detach(client, volume_name):  # NOQA
     setting = client.by_id_setting(SETTING_REPLICA_NODE_SOFT_ANTI_AFFINITY)
     client.update(setting, value="false")
     node = client.by_id_node(host_id)
-    client.update(node, allowScheduling=False)
+    set_node_scheduling(client, node, allowScheduling=False)
     host_replica = get_host_replica(volume, host_id)
 
     volume.replicaRemove(name=host_replica.name)
@@ -310,7 +311,7 @@ def test_hard_anti_affinity_live_rebuild(client, volume_name):  # NOQA
     setting = client.by_id_setting(SETTING_REPLICA_NODE_SOFT_ANTI_AFFINITY)
     client.update(setting, value="false")
     node = client.by_id_node(host_id)
-    client.update(node, allowScheduling=False)
+    set_node_scheduling(client, node, allowScheduling=False)
     replica_names = map(lambda replica: replica.name, volume.replicas)
     host_replica = get_host_replica(volume, host_id)
 
@@ -318,7 +319,7 @@ def test_hard_anti_affinity_live_rebuild(client, volume_name):  # NOQA
     wait_for_volume_degraded(client, volume_name)
     wait_scheduling_failure(client, volume_name)
     # Allow scheduling on host node again
-    client.update(node, allowScheduling=True)
+    set_node_scheduling(client, node, allowScheduling=True)
     wait_new_replica_ready(client, volume_name, replica_names)
     volume = wait_for_volume_healthy(client, volume_name)
     assert len(volume.replicas) == 3
@@ -358,7 +359,7 @@ def test_hard_anti_affinity_offline_rebuild(client, volume_name):  # NOQA
     setting = client.by_id_setting(SETTING_REPLICA_NODE_SOFT_ANTI_AFFINITY)
     client.update(setting, value="false")
     node = client.by_id_node(host_id)
-    client.update(node, allowScheduling=False)
+    set_node_scheduling(client, node, allowScheduling=False)
     replica_names = map(lambda replica: replica.name, volume.replicas)
     host_replica = get_host_replica(volume, host_id)
 
@@ -367,7 +368,7 @@ def test_hard_anti_affinity_offline_rebuild(client, volume_name):  # NOQA
     wait_scheduling_failure(client, volume_name)
     volume.detach(hostId="")
     volume = wait_for_volume_detached(client, volume_name)
-    client.update(node, allowScheduling=True)
+    set_node_scheduling(client, node, allowScheduling=True)
     volume.attach(hostId=host_id)
     wait_new_replica_ready(client, volume_name, replica_names)
     volume = wait_for_volume_healthy(client, volume_name)

@@ -7,6 +7,7 @@ from common import check_volume_replicas, cleanup_volume, \
     generate_volume_name, get_self_host_id, get_update_disks, set_node_tags, \
     wait_for_volume_delete, wait_for_volume_detached, \
     wait_for_volume_healthy, wait_scheduling_failure
+from common import update_node_disks
 
 from time import sleep
 
@@ -50,7 +51,7 @@ def test_tag_basic(client):  # NOQA
     unsorted_node, sorted_node = generate_unordered_tag_names()
     update_disks = get_update_disks(node.disks)
     update_disks[list(update_disks)[0]].tags = unsorted_disk
-    node = node.diskUpdate(disks=update_disks)
+    node = update_node_disks(client, node.name, disks=update_disks)
     disks = get_update_disks(node.disks)
     assert disks[list(disks)[0]].tags == sorted_disk
 
@@ -71,13 +72,13 @@ def test_tag_basic(client):  # NOQA
         with pytest.raises(Exception) as e:
             update_disks = get_update_disks(node.disks)
             update_disks[list(update_disks)[0]].tags = tags
-            node.diskUpdate(disks=update_disks)
+            update_node_disks(client, node.name, disks=update_disks)
         assert "at least one error encountered while validating tags" in \
                str(e.value)
 
     update_disks = get_update_disks(node.disks)
     update_disks[list(update_disks)[0]].tags = []
-    node = node.diskUpdate(disks=update_disks)
+    node = update_node_disks(client, node.name, disks=update_disks)
     disks = get_update_disks(node.disks)
     assert len(node.disks[list(node.disks)[0]].tags) == 0, f"disks = {disks}"
 
@@ -248,7 +249,7 @@ def test_tag_scheduling_on_update(client, node_default_tags, volume_name):  # NO
     node = client.by_id_node(host_id)
     update_disks = get_update_disks(node.disks)
     update_disks[list(update_disks)[0]].tags = tag_spec["disk"]
-    node = node.diskUpdate(disks=update_disks)
+    node = update_node_disks(client, node.name, disks=update_disks)
     set_node_tags(client, node, tag_spec["node"])
     scheduled = False
     for i in range(RETRY_COUNTS):

@@ -63,6 +63,7 @@ from common import wait_delete_pod
 from common import wait_pod, exec_command_in_pod
 from common import RETRY_EXEC_COUNTS, RETRY_EXEC_INTERVAL
 from common import get_volume_running_replica_cnt
+from common import update_node_disks
 
 from backupstore import set_random_backupstore # NOQA
 from backupstore import backupstore_cleanup
@@ -729,7 +730,7 @@ def test_rebuild_replica_and_from_replica_on_the_same_node(client, core_api, vol
     for node in nodes:
         if node.name == available_node_name:
             continue
-        node = client.update(node, allowScheduling=False)
+        node = set_node_scheduling(client, node, allowScheduling=False)
         common.wait_for_node_update(client, node.id,
                                     "allowScheduling", False)
 
@@ -2365,7 +2366,7 @@ def set_tags_for_node_and_its_disks(client, node, tags): # NOQA
 
     for disk_name in node.disks.keys():
         node.disks[disk_name].tags = tags
-    node = node.diskUpdate(disks=node.disks)
+    node = update_node_disks(client, node.name, disks=node.disks)
     for disk_name in node.disks.keys():
         assert node.disks[disk_name].tags == expected_tags
 
@@ -2424,8 +2425,8 @@ def test_reuse_failed_replica_with_scheduling_check(client, core_api, volume_nam
     nodes = client.list_node()
     assert len(nodes) == 3
     node_1, node_2, node_3 = nodes
-    common.set_node_scheduling(client, node_1, False)
-    common.set_node_scheduling(client, node_2, False)
+    set_node_scheduling(client, node_1, allowScheduling=False)
+    set_node_scheduling(client, node_2, allowScheduling=False)
 
     vol = client.by_id_volume(volume_name)
     replica_1, replica_2, replica_3 = None, None, None
@@ -2456,8 +2457,8 @@ def test_reuse_failed_replica_with_scheduling_check(client, core_api, volume_nam
 
     node_1 = set_tags_for_node_and_its_disks(client, node_1, [])
 
-    common.set_node_scheduling(client, node_1, True)
-    common.set_node_scheduling(client, node_2, True)
+    set_node_scheduling(client, node_1, allowScheduling=True)
+    set_node_scheduling(client, node_2, allowScheduling=True)
 
     # Wait for rebuilding to finish
     # It should take less than 1 minute since the replica is small
@@ -2523,7 +2524,7 @@ def test_replica_failure_during_attaching(settings_reset, client, core_api, volu
     update_disks["extra-disk"] = extra_disk
     update_disks[default_disk_name].allowScheduling = False
 
-    node = node.diskUpdate(disks=update_disks)
+    node = update_node_disks(client, node.name, disks=update_disks)
     node = common.wait_for_disk_update(client, node.name, len(update_disks))
 
     volume_name_2 = volume_name + '-2'
@@ -2556,7 +2557,7 @@ def test_replica_failure_during_attaching(settings_reset, client, core_api, volu
     update_disks[default_disk_name].allowScheduling = True
     update_disks["extra-disk"]["allowScheduling"] = False
 
-    node = node.diskUpdate(disks=update_disks)
+    node = update_node_disks(client, node.name, disks=update_disks)
     common.wait_for_disk_update(client, node.name, len(update_disks))
 
     common.wait_for_volume_status(client, volume_name_2,
@@ -2567,7 +2568,7 @@ def test_replica_failure_during_attaching(settings_reset, client, core_api, volu
     write_volume_random_data(volume_2)
 
     del update_disks["extra-disk"]
-    node.diskUpdate(disks=update_disks)
+    update_node_disks(client, node.name, disks=update_disks)
     common.wait_for_disk_update(client, node.name, 1)
 
 
