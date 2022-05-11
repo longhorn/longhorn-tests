@@ -256,7 +256,7 @@ MAX_SUPPORT_BINDLE_NUMBER = 20
 
 NODE_UPDATE_RETRY_INTERVAL = 6
 NODE_UPDATE_RETRY_COUNT = 30
-retry_error = &#34;cannot finish API request due to too many error retries&#34;
+disk_being_syncing = &#34;being syncing and please retry later&#34;
 
 
 def load_k8s_config():
@@ -890,7 +890,7 @@ def set_node_tags(client, node, tags=[], retry=False):  # NOQA
                                  allowScheduling=node.allowScheduling,
                                  tags=tags)
         except Exception as e:
-            if retry_error in str(e.error.message):
+            if disk_being_syncing in str(e.error.message):
                 time.sleep(NODE_UPDATE_RETRY_INTERVAL)
                 continue
             print(e)
@@ -915,7 +915,7 @@ def set_node_scheduling(client, node, allowScheduling, retry=False):
             node = client.update(node, allowScheduling=allowScheduling,
                                  tags=node.tags)
         except Exception as e:
-            if retry_error in str(e.error.message):
+            if disk_being_syncing in str(e.error.message):
                 time.sleep(NODE_UPDATE_RETRY_INTERVAL)
                 continue
             print(e)
@@ -941,7 +941,7 @@ def set_node_scheduling_eviction(client, node, allowScheduling, evictionRequeste
                                  allowScheduling=allowScheduling,
                                  evictionRequested=evictionRequested)
         except Exception as e:
-            if retry_error in str(e.error.message):
+            if disk_being_syncing in str(e.error.message):
                 time.sleep(NODE_UPDATE_RETRY_INTERVAL)
                 continue
             print(e)
@@ -2586,7 +2586,7 @@ def cleanup_node_disks(client, node_name):
         try:
             node.diskUpdate(disks=update_disks)
         except Exception as e:
-            if retry_error in str(e.error.message):
+            if disk_being_syncing in str(e.error.message):
                 time.sleep(NODE_UPDATE_RETRY_INTERVAL)
                 continue
             print(e)
@@ -2603,7 +2603,7 @@ def cleanup_node_disks(client, node_name):
         try:
             node.diskUpdate(disks={})
         except Exception as e:
-            if retry_error in str(e.error.message):
+            if disk_being_syncing in str(e.error.message):
                 time.sleep(NODE_UPDATE_RETRY_INTERVAL)
                 continue
             print(e)
@@ -2883,7 +2883,7 @@ def cleanup_test_disks(client):
                         wait_for_disk_status(client, host_id, name,
                                              &#34;allowScheduling&#34;, False)
         except Exception as e:
-            if retry_error in str(e.error.message):
+            if disk_being_syncing in str(e.error.message):
                 time.sleep(NODE_UPDATE_RETRY_INTERVAL)
                 continue
             print(&#34;\nException when update node disks&#34;, node)
@@ -2904,7 +2904,7 @@ def cleanup_test_disks(client):
             node.diskUpdate(disks=update_disks)
             wait_for_disk_update(client, host_id, len(update_disks))
         except Exception as e:
-            if retry_error in str(e.error.message):
+            if disk_being_syncing in str(e.error.message):
                 time.sleep(NODE_UPDATE_RETRY_INTERVAL)
                 continue
             print(&#34;\nException when delete node test disks&#34;, node)
@@ -4938,7 +4938,7 @@ def update_node_disks(client, node_name, disks, retry=False):
         try:
             node = node.diskUpdate(disks=disks)
         except Exception as e:
-            if retry_error in str(e.error.message):
+            if disk_being_syncing in str(e.error.message):
                 time.sleep(NODE_UPDATE_RETRY_INTERVAL)
                 continue
             print(e)
@@ -5667,7 +5667,7 @@ properly.
         try:
             node.diskUpdate(disks=update_disks)
         except Exception as e:
-            if retry_error in str(e.error.message):
+            if disk_being_syncing in str(e.error.message):
                 time.sleep(NODE_UPDATE_RETRY_INTERVAL)
                 continue
             print(e)
@@ -5684,7 +5684,7 @@ properly.
         try:
             node.diskUpdate(disks={})
         except Exception as e:
-            if retry_error in str(e.error.message):
+            if disk_being_syncing in str(e.error.message):
                 time.sleep(NODE_UPDATE_RETRY_INTERVAL)
                 continue
             print(e)
@@ -5760,7 +5760,7 @@ properly.
                         wait_for_disk_status(client, host_id, name,
                                              &#34;allowScheduling&#34;, False)
         except Exception as e:
-            if retry_error in str(e.error.message):
+            if disk_being_syncing in str(e.error.message):
                 time.sleep(NODE_UPDATE_RETRY_INTERVAL)
                 continue
             print(&#34;\nException when update node disks&#34;, node)
@@ -5781,7 +5781,7 @@ properly.
             node.diskUpdate(disks=update_disks)
             wait_for_disk_update(client, host_id, len(update_disks))
         except Exception as e:
-            if retry_error in str(e.error.message):
+            if disk_being_syncing in str(e.error.message):
                 time.sleep(NODE_UPDATE_RETRY_INTERVAL)
                 continue
             print(&#34;\nException when delete node test disks&#34;, node)
@@ -9343,7 +9343,7 @@ def scheduling_api(request):
             node = client.update(node, allowScheduling=allowScheduling,
                                  tags=node.tags)
         except Exception as e:
-            if retry_error in str(e.error.message):
+            if disk_being_syncing in str(e.error.message):
                 time.sleep(NODE_UPDATE_RETRY_INTERVAL)
                 continue
             print(e)
@@ -9379,7 +9379,7 @@ def scheduling_api(request):
                                  allowScheduling=allowScheduling,
                                  evictionRequested=evictionRequested)
         except Exception as e:
-            if retry_error in str(e.error.message):
+            if disk_being_syncing in str(e.error.message):
                 time.sleep(NODE_UPDATE_RETRY_INTERVAL)
                 continue
             print(e)
@@ -9423,7 +9423,7 @@ Retry if "too many retries error" happened.
                                  allowScheduling=node.allowScheduling,
                                  tags=tags)
         except Exception as e:
-            if retry_error in str(e.error.message):
+            if disk_being_syncing in str(e.error.message):
                 time.sleep(NODE_UPDATE_RETRY_INTERVAL)
                 continue
             print(e)
@@ -9652,7 +9652,7 @@ def sts_name(request):
         try:
             node = node.diskUpdate(disks=disks)
         except Exception as e:
-            if retry_error in str(e.error.message):
+            if disk_being_syncing in str(e.error.message):
                 time.sleep(NODE_UPDATE_RETRY_INTERVAL)
                 continue
             print(e)
