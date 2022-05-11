@@ -14,7 +14,7 @@ WORKDIR $WORKSPACE
 
 RUN wget -q https://storage.googleapis.com/kubernetes-release/release/$KUBECTL_VERSION/bin/linux/amd64/kubectl && \
     mv kubectl /usr/local/bin/kubectl && \
-    chmod +x /usr/local/bin/kubectl && \
+    chmod +x /usr/local/bin/kubectl  && \
     wget -q https://github.com/rancher/rke/releases/download/$RKE_VERSION/rke_linux-amd64 && \
     mv rke_linux-amd64 /usr/bin/rke && \
     chmod +x /usr/bin/rke && \
@@ -25,11 +25,7 @@ RUN wget -q https://storage.googleapis.com/kubernetes-release/release/$KUBECTL_V
     wget -q "https://github.com/mikefarah/yq/releases/download/${YQ_VERSION}/yq_linux_amd64" && \
     mv yq_linux_amd64 /usr/local/bin/yq && \
     chmod +x /usr/local/bin/yq && \
-    apk add openssl openssh-client ca-certificates git rsync bash curl jq && \
-    ssh-keygen -t rsa -b 4096 -N "" -f ~/.ssh/id_rsa && \
-    curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 && \
-    chmod 700 get_helm.sh && \
-    ./get_helm.sh
-
+    apk add openssh-client ca-certificates git rsync bash curl jq && \
+    ssh-keygen -t rsa -b 4096 -N "" -f ~/.ssh/id_rsa
 
 COPY [".", "$WORKSPACE"]
