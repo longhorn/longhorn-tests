@@ -2937,15 +2937,25 @@ def reset_disks_for_all_nodes(client):  # NOQA
             update_disks[name] = update_disk
         node = update_node_disks(client, node.name, disks=update_disks,
                                  retry=True)
-        for name, disk in iter(node.disks.items()):
-            # wait for node controller update disk status
-            wait_for_disk_status(client, node.name, name,
-                                 "allowScheduling", True)
-            wait_for_disk_status(client, node.name, name,
-                                 "storageScheduled", 0)
-            wait_for_disk_status(client, node.name, name,
-                                 "storageReserved",
-                                 int(update_disk.storageMaximum * 30 / 100))
+        for _ in range(NODE_UPDATE_RETRY_COUNT):
+            try:
+                for name, disk in iter(node.disks.items()):
+                    # wait for node controller update disk status
+                    wait_for_disk_status(client, node.name, name,
+                                         "allowScheduling", True)
+                    wait_for_disk_status(client, node.name, name,
+                                         "storageScheduled", 0)
+                    wait_for_disk_status(client, node.name, name,
+                                         "storageReserved",
+                                         int(update_disk.storageMaximum *
+                                             30 / 100))
+            except Exception as e:
+                if disk_being_syncing in str(e.error.message):
+                    time.sleep(NODE_UPDATE_RETRY_INTERVAL)
+                    continue
+                print(e)
+                raise
+            break
 
 
 def reset_settings(client):
