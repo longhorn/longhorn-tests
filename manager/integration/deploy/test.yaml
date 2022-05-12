@@ -29,7 +29,7 @@ rules:
   resources: ["customresourcedefinitions"]
   verbs: ["*"]
 - apiGroups: ["policy"]
-  resources: ["podsecuritypolicies"]
+  resources: ["podsecuritypolicies", "poddisruptionbudgets"]
   verbs: ["*"]
 - apiGroups: ["snapshot.storage.k8s.io"]
   resources: ["*"]
