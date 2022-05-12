@@ -17,6 +17,7 @@ from common import cleanup_volume_by_name
 from common import create_host_disk, cleanup_host_disks
 from common import wait_for_node_update
 from common import wait_for_disk_status
+from common import update_node_disks
 
 
 def generate_random_id(num_bytes):
@@ -40,7 +41,8 @@ def crate_disks_on_host(client, disk_names, request):  # NOQA
         update_disks[name] = disk
         disk_paths.append(disk_path)
 
-    node = node.diskUpdate(disks=update_disks)
+    node = update_node_disks(client, node.name, disks=update_disks,
+                             retry=True)
     node = wait_for_disk_update(client, node.name, len(update_disks))
 
     def finalizer():
