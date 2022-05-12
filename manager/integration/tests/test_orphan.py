@@ -25,7 +25,7 @@ def generate_random_id(num_bytes):
                    for _ in range(num_bytes))
 
 
-def crate_disks_on_host(client, disk_names, request):  # NOQA
+def create_disks_on_host(client, disk_names, request):  # NOQA
     disk_paths = []
 
     lht_hostId = get_self_host_id()
@@ -175,7 +175,7 @@ def test_orphaned_dirs_with_wrong_naming_format(client, volume_name, request):  
     # Step 1
     lht_hostId = get_self_host_id()
     cleanup_node_disks(client, lht_hostId)
-    disk_paths = crate_disks_on_host(client, disk_names, request)
+    disk_paths = create_disks_on_host(client, disk_names, request)
 
     # Step 2
     volume = create_volume_with_replica_on_host(client, volume_name)
@@ -241,7 +241,7 @@ def test_delete_orphans(client, volume_name, request):  # NOQA
     # Step 1
     lht_hostId = get_self_host_id()
     cleanup_node_disks(client, lht_hostId)
-    disk_paths = crate_disks_on_host(client, disk_names, request)
+    disk_paths = create_disks_on_host(client, disk_names, request)
 
     # Step 2
     volume = create_volume_with_replica_on_host(client, volume_name)
@@ -291,7 +291,7 @@ def test_orphaned_replica_dir_missing(client, volume_name, request):  # NOQA
     # Step 1
     lht_hostId = get_self_host_id()
     cleanup_node_disks(client, lht_hostId)
-    disk_paths = crate_disks_on_host(client, disk_names, request)
+    disk_paths = create_disks_on_host(client, disk_names, request)
 
     # Step 2
     volume = create_volume_with_replica_on_host(client, volume_name)
@@ -337,7 +337,7 @@ def test_delete_orphan_after_orphaned_dir_is_deleted(client, volume_name, reques
     # Step 1
     lht_hostId = get_self_host_id()
     cleanup_node_disks(client, lht_hostId)
-    disk_paths = crate_disks_on_host(client, disk_names, request)
+    disk_paths = create_disks_on_host(client, disk_names, request)
 
     # Step 2
     volume = create_volume_with_replica_on_host(client, volume_name)
@@ -389,7 +389,7 @@ def test_disk_evicted(client, volume_name, request):  # NOQA
 
     # Step 1
     cleanup_node_disks(client, lht_hostId)
-    disk_paths = crate_disks_on_host(client, disk_names, request)
+    disk_paths = create_disks_on_host(client, disk_names, request)
 
     # Step 2
     volume = create_volume_with_replica_on_host(client, volume_name)
@@ -461,7 +461,7 @@ def test_node_evicted(client, volume_name, request):  # NOQA
     # Step 1
     lht_hostId = get_self_host_id()
     cleanup_node_disks(client, lht_hostId)
-    disk_paths = crate_disks_on_host(client, disk_names, request)
+    disk_paths = create_disks_on_host(client, disk_names, request)
 
     # Step 2
     volume = create_volume_with_replica_on_host(client, volume_name)
@@ -528,7 +528,7 @@ def test_orphaned_dirs_in_duplicated_disks(client, volume_name, request):  # NOQ
 
     lht_hostId = get_self_host_id()
     cleanup_node_disks(client, lht_hostId)
-    disk_paths = crate_disks_on_host(client, [disk_names[0]], request)
+    disk_paths = create_disks_on_host(client, [disk_names[0]], request)
 
     # Step 2: create duplicated disks for node
     node = client.by_id_node(lht_hostId)
@@ -596,7 +596,7 @@ def test_orphan_with_same_orphaned_dir_name_in_another_disk(client, volume_name,
     volume = create_volume_with_replica_on_host(client, volume_name)
 
     # Step 2
-    disk_paths = crate_disks_on_host(client, disk_names, request)
+    disk_paths = create_disks_on_host(client, disk_names, request)
 
     # Step 3
     create_orphaned_directories_on_host(volume, disk_paths, 1)
@@ -636,7 +636,7 @@ def test_orphan_creation_and_deletion_in_multiple_disks(client, volume_name, req
     # Step 1
     lht_hostId = get_self_host_id()
     cleanup_node_disks(client, lht_hostId)
-    disk_paths = crate_disks_on_host(client, disk_names, request)
+    disk_paths = create_disks_on_host(client, disk_names, request)
 
     # Step 2
     volume = create_volume_with_replica_on_host(client, volume_name)
@@ -691,7 +691,7 @@ def test_orphan_creation_and_background_deletion_in_multiple_disks(client, volum
     # Step 1
     lht_hostId = get_self_host_id()
     cleanup_node_disks(client, lht_hostId)
-    disk_paths = crate_disks_on_host(client, disk_names, request)
+    disk_paths = create_disks_on_host(client, disk_names, request)
 
     # Step 2
     volume = create_volume_with_replica_on_host(client, volume_name)
@@ -739,7 +739,7 @@ def test_orphan_auto_deletion(client, volume_name, request):  # NOQA
     # Step 1
     lht_hostId = get_self_host_id()
     cleanup_node_disks(client, lht_hostId)
-    disk_paths = crate_disks_on_host(client, disk_names, request)
+    disk_paths = create_disks_on_host(client, disk_names, request)
 
     # Step 2
     volume = create_volume_with_replica_on_host(client, volume_name)
