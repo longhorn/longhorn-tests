@@ -18,6 +18,20 @@
   </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/resiliency/simulated-slow-disk/</loc>
   </url><url>
+    <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/managed-kubernetes-clusters/eks/add-extra-volume/</loc>
+  </url><url>
+    <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/managed-kubernetes-clusters/aks/expand-volume/</loc>
+  </url><url>
+    <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/managed-kubernetes-clusters/eks/expand-volume/</loc>
+  </url><url>
+    <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/managed-kubernetes-clusters/gke/expand-volume/</loc>
+  </url><url>
+    <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/managed-kubernetes-clusters/aks/upgrade-k8s/</loc>
+  </url><url>
+    <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/managed-kubernetes-clusters/eks/upgrade-k8s/</loc>
+  </url><url>
+    <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/managed-kubernetes-clusters/gke/upgrade-k8s/</loc>
+  </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/deployment/</loc>
   </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/ui/</loc>
@@ -41,6 +55,8 @@
     <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/air-gap/air-gap-installation/</loc>
   </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/air-gap/air-gap-instance-manager-name/</loc>
+  </url><url>
+    <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/managed-kubernetes-clusters/aks/</loc>
   </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/auto-upgrade-engine/</loc>
   </url><url>
@@ -70,11 +86,15 @@
   </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.1/dr-volume-latest-backup-deletion/</loc>
   </url><url>
+    <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/managed-kubernetes-clusters/eks/</loc>
+  </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/</loc>
   </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/environment/</loc>
   </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.3.0/extend_csi_snapshot_support/</loc>
+  </url><url>
+    <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/managed-kubernetes-clusters/gke/</loc>
   </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/ha/</loc>
   </url><url>
@@ -93,6 +113,8 @@
     <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/ha/partial-engine-deployment/</loc>
   </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/partial-engine-deployment/</loc>
+  </url><url>
+    <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/managed-kubernetes-clusters/</loc>
   </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/</loc>
   </url><url>
