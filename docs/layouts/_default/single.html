@@ -1,11 +1,12 @@
 {{ define "main" }}
 {{ partial "sidebar.html" . }}
+{{ $editUrl := printf "https://github.com/longhorn/longhorn-tests/edit/master/docs/content/%s" .File.Path }}
 <main style="padding: 1%; width: 70%;">
   <h1 id="title">{{ .Title | markdownify }}</h1>
   <div>
     <article id="content">
        {{ .Content }}
     </article>
+  <a href="{{ $editUrl }}" target="_blank" title="Edit on Github" style="font-size:smaller;float:right;padding-right:3%">[Edit]</a>
   </div>
-</main>
 {{ end }}
