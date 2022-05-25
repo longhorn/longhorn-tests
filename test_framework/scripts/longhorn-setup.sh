@@ -34,7 +34,7 @@ set_kubeconfig_envvar(){
 
 install_csi_snapshotter_crds(){
     CSI_SNAPSHOTTER_REPO_URL="https://github.com/kubernetes-csi/external-snapshotter.git"
-    CSI_SNAPSHOTTER_REPO_BRANCH="master"
+    CSI_SNAPSHOTTER_REPO_BRANCH="release-4.0"
     CSI_SNAPSHOTTER_REPO_DIR="${TMPDIR}/k8s-csi-external-snapshotter"
 
     git clone --single-branch \
