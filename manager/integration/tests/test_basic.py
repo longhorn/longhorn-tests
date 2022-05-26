@@ -3761,7 +3761,7 @@ def test_workload_with_fsgroup(core_api, statefulset):  # NOQA
     get_pod_data_md5sum(core_api, pod_name, "/data/test")
 
 
-def test_backuptarget_available_during_engine_image_not_ready(client, apps_api):  # NOQA
+def test_backuptarget_available_during_engine_image_not_ready(client, apps_api, request):  # NOQA
     """
     Test backup target available during engine image not ready
 
@@ -3776,6 +3776,18 @@ def test_backuptarget_available_during_engine_image_not_ready(client, apps_api):
     9. Reset backup target setting
     10. Check backup target status.available=false
     """
+    def finalizer():
+        default_img = common.get_default_engine_image(client)
+        ds_name = "engine-image-" + default_img.name
+        body = [{
+            "op": "remove",
+            "path": "/spec/template/spec/nodeSelector/foo"
+        }]
+        apps_api.patch_namespaced_daemon_set(
+            name=ds_name, namespace='longhorn-system', body=body)
+
+    request.addfinalizer(finalizer)
+
     backupstores = common.get_backupstore_url()
     for backupstore in backupstores:
         url = ""
