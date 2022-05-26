@@ -3789,7 +3789,7 @@ def test_workload_with_fsgroup(core_api, statefulset):  # NOQA
     get_pod_data_md5sum(core_api, pod_name, &#34;/data/test&#34;)
 
 
-def test_backuptarget_available_during_engine_image_not_ready(client, apps_api):  # NOQA
+def test_backuptarget_available_during_engine_image_not_ready(client, apps_api, request):  # NOQA
     &#34;&#34;&#34;
     Test backup target available during engine image not ready
 
@@ -3804,6 +3804,18 @@ def test_backuptarget_available_during_engine_image_not_ready(client, apps_api):
     9. Reset backup target setting
     10. Check backup target status.available=false
     &#34;&#34;&#34;
+    def finalizer():
+        default_img = common.get_default_engine_image(client)
+        ds_name = &#34;engine-image-&#34; + default_img.name
+        body = [{
+            &#34;op&#34;: &#34;remove&#34;,
+            &#34;path&#34;: &#34;/spec/template/spec/nodeSelector/foo&#34;
+        }]
+        apps_api.patch_namespaced_daemon_set(
+            name=ds_name, namespace=&#39;longhorn-system&#39;, body=body)
+
+    request.addfinalizer(finalizer)
+
     backupstores = common.get_backupstore_url()
     for backupstore in backupstores:
         url = &#34;&#34;
@@ -6749,7 +6761,7 @@ verify backup list contains no error messages for volume(1,2)
 </details>
 </dd>
 <dt id="tests.test_basic.test_backuptarget_available_during_engine_image_not_ready"><code class="name flex">
-<span>def <span class="ident">test_backuptarget_available_during_engine_image_not_ready</span></span>(<span>client, apps_api)</span>
+<span>def <span class="ident">test_backuptarget_available_during_engine_image_not_ready</span></span>(<span>client, apps_api, request)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Test backup target available during engine image not ready</p>
@@ -6769,7 +6781,7 @@ verify backup list contains no error messages for volume(1,2)
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def test_backuptarget_available_during_engine_image_not_ready(client, apps_api):  # NOQA
+<pre><code class="python">def test_backuptarget_available_during_engine_image_not_ready(client, apps_api, request):  # NOQA
     &#34;&#34;&#34;
     Test backup target available during engine image not ready
 
@@ -6784,6 +6796,18 @@ verify backup list contains no error messages for volume(1,2)
     9. Reset backup target setting
     10. Check backup target status.available=false
     &#34;&#34;&#34;
+    def finalizer():
+        default_img = common.get_default_engine_image(client)
+        ds_name = &#34;engine-image-&#34; + default_img.name
+        body = [{
+            &#34;op&#34;: &#34;remove&#34;,
+            &#34;path&#34;: &#34;/spec/template/spec/nodeSelector/foo&#34;
+        }]
+        apps_api.patch_namespaced_daemon_set(
+            name=ds_name, namespace=&#39;longhorn-system&#39;, body=body)
+
+    request.addfinalizer(finalizer)
+
     backupstores = common.get_backupstore_url()
     for backupstore in backupstores:
         url = &#34;&#34;
