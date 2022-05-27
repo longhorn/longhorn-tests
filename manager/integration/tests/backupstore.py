@@ -14,6 +14,7 @@ from common import SETTING_BACKUP_TARGET
 from common import SETTING_BACKUP_TARGET_CREDENTIAL_SECRET
 from common import SETTING_BACKUPSTORE_POLL_INTERVAL
 from common import LONGHORN_NAMESPACE
+from common import cleanup_all_volumes
 from common import is_backupTarget_s3
 from common import is_backupTarget_nfs
 from common import get_longhorn_api_client
@@ -53,6 +54,7 @@ def set_random_backupstore(request, client):
         mount_nfs_backupstore(client)
 
     yield
+    cleanup_all_volumes(client)
     backupstore_cleanup(client)
     reset_backupstore_setting(client)
 
