@@ -28,6 +28,7 @@ from common import wait_for_disk_status, wait_for_disk_update, \
     cleanup_node_disks, wait_for_disk_storage_available, \
     wait_for_disk_uuid, wait_for_node_schedulable_condition
 from common import exec_nsenter
+from common import update_node_disks
 
 from common import SETTING_REPLICA_NODE_SOFT_ANTI_AFFINITY
 from common import SETTING_MKFS_EXT4_PARAMS
@@ -2597,3 +2598,89 @@ def test_node_eviction_multiple_volume(client, core_api, csi_pv, pvc, pod_make, 
 
     expect_md5sum = get_pod_data_md5sum(core_api, pod2_name, data_path)
     assert expect_md5sum == created_md5sum2
+
+
+def test_disk_eviction_with_node_level_soft_anti_affinity_disabled(client, # NOQA
+                                                                   volume_name, # NOQA
+                                                                   request, # NOQA
+                                                                   settings_reset, # NOQA
+                                                                   reset_disk_settings): # NOQA
+    """
+    Steps:
+
+    1. Disable the setting `Replica Node Level Soft Anti-affinity`
+    2. Create a volume. Make sure there is a replica on each worker node.
+    3. Write some data to the volume.
+    4. Add a new schedulable disk to node-1.
+    5. Disable the scheduling and enable eviction for the old disk on node-1.
+    6. Verify that the replica on the old disk move to the new disk
+    7. Make replica count as 1, Delete the replicas on other 2 nodes.
+       Verify the data from the volume.
+    """
+    # Step 1
+    node_soft_anti_affinity_setting = \
+        client.by_id_setting(SETTING_REPLICA_NODE_SOFT_ANTI_AFFINITY)
+    client.update(node_soft_anti_affinity_setting, value="false")
+
+    # Step 2
+    nodes = client.list_node()
+    vol_name = common.generate_volume_name()
+    volume = client.create_volume(name=vol_name,
+                                  size=SIZE, numberOfReplicas=len(nodes))
+    common.wait_for_volume_detached(client, vol_name)
+
+    lht_hostId = get_self_host_id()
+    volume.attach(hostId=lht_hostId)
+    volume = common.wait_for_volume_healthy(client, vol_name)
+
+    # Step 3
+    data = common.write_volume_random_data(volume)
+    common.check_volume_data(volume, data)
+
+    # Step 4
+    node = client.by_id_node(lht_hostId)
+    test_disk_path = create_host_disk(client, "vol-test", str(Gi), lht_hostId)
+    test_disk = {"path": test_disk_path, "allowScheduling": True}
+
+    update_disks = get_update_disks(node.disks)
+    update_disks["test-disk"] = test_disk
+    node = update_node_disks(client, node.name, disks=update_disks,
+                             retry=True)
+    node = common.wait_for_disk_update(client, lht_hostId, len(update_disks))
+    assert len(node.disks) == len(update_disks)
+
+    # Step 5
+    for disk in update_disks.values():
+        if disk["path"] != test_disk_path:
+            disk.allowScheduling = False
+            disk.evictionRequested = True
+
+    node = update_node_disks(client, node.name, disks=update_disks, retry=True)
+
+    # Step 6
+    replica_path = test_disk_path + '/replicas'
+    assert os.path.isdir(replica_path)
+
+    for i in range(common.RETRY_COMMAND_COUNT):
+        if len(os.listdir(replica_path)) > 0:
+            break
+        time.sleep(common.RETRY_EXEC_INTERVAL)
+    assert len(os.listdir(replica_path)) > 0
+
+    # Step 7
+    replica_count = 1
+    volume = client.by_id_volume(vol_name)
+    volume = volume.updateReplicaCount(replicaCount=replica_count)
+    volume = common.wait_for_volume_healthy(client, vol_name)
+
+    for r in volume.replicas:
+        if r.hostId != lht_hostId:
+            volume.replicaRemove(name=r.name)
+
+    common.check_volume_data(volume, data)
+
+    # Remove volumes let no volume mounted to extra disk
+    def finalizer():
+        common.cleanup_all_volumes(client)
+
+    request.addfinalizer(finalizer)
