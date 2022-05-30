@@ -1456,6 +1456,8 @@ def clients(request):
 
 def cleanup_client():
     client = get_longhorn_api_client()
+    enable_default_disk(client)
+
     # cleanup test disks
     cleanup_test_disks(client)
 
@@ -4920,3 +4922,15 @@ def update_node_disks(client, node_name, disks, retry=False):
         else:
             break
     return node
+
+
+def enable_default_disk(client):
+    lht_hostId = get_self_host_id()
+    node = client.by_id_node(lht_hostId)
+    disks = get_update_disks(node.disks)
+    for disk in disks.values():
+        if disk["path"] == DEFAULT_DISK_PATH:
+            disk.allowScheduling = True
+            disk.evictionRequested = False
+
+    update_node_disks(client, node.name, disks=disks, retry=True)
