@@ -331,15 +331,8 @@ def ha_salvage_test(client, core_api, # NOQA
 
     crash_replica_processes(client, core_api, volume_name)
 
-    # FIXME: This is a workaround because crash_replica_processes is checked
-    #        sequentially, We should be able to catch the intermediate state
-    #        when crash_replica_processes is checked in parallel.
-    #        https://github.com/longhorn/longhorn/issues/4045
-    try:
-        volume = common.wait_for_volume_faulted(client, volume_name)
-        assert len(volume.replicas) == 3
-    except AssertionError:
-        pass
+    volume = common.wait_for_volume_faulted(client, volume_name)
+    assert len(volume.replicas) == 3
 
     volume = common.wait_for_volume_healthy(client, volume_name)
     assert len(volume.replicas) == 3
@@ -380,14 +373,7 @@ def ha_salvage_test(client, core_api, # NOQA
 
     crash_replica_processes(client, core_api, volume_name)
 
-    # FIXME: This is a workaround because crash_replica_processes is checked
-    #        sequentially, We should be able to catch the intermediate state
-    #        when crash_replica_processes is checked in parallel.
-    #        https://github.com/longhorn/longhorn/issues/4045
-    try:
-        common.wait_for_volume_faulted(client, volume_name)
-    except AssertionError:
-        pass
+    common.wait_for_volume_faulted(client, volume_name)
 
     common.wait_for_volume_healthy(client, volume_name)
 
