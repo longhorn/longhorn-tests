@@ -1978,8 +1978,9 @@ def crash_replica_processes(client, api, volname, replicas=None,
                        &#34;&#39; | grep -v grep | awk &#39;{print $2}&#39;`&#34;
         exec_instance_manager(api, r.instanceManagerName, kill_command)
 
-    if wait_to_fail is True:
-        for r in replicas:
+        # FIXME: this is a work around, should check this in-parallel.
+        #        https://github.com/longhorn/longhorn/issues/4045
+        if wait_to_fail is True:
             wait_for_replica_failed(client, volname, r[&#39;name&#39;])
 
 
@@ -6002,8 +6003,9 @@ def core_api(request):
                        &#34;&#39; | grep -v grep | awk &#39;{print $2}&#39;`&#34;
         exec_instance_manager(api, r.instanceManagerName, kill_command)
 
-    if wait_to_fail is True:
-        for r in replicas:
+        # FIXME: this is a work around, should check this in-parallel.
+        #        https://github.com/longhorn/longhorn/issues/4045
+        if wait_to_fail is True:
             wait_for_replica_failed(client, volname, r[&#39;name&#39;])</code></pre>
 </details>
 </dd>
