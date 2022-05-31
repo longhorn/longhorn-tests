@@ -1950,8 +1950,9 @@ def crash_replica_processes(client, api, volname, replicas=None,
                        "' | grep -v grep | awk '{print $2}'`"
         exec_instance_manager(api, r.instanceManagerName, kill_command)
 
-    if wait_to_fail is True:
-        for r in replicas:
+        # FIXME: this is a work around, should check this in-parallel.
+        #        https://github.com/longhorn/longhorn/issues/4045
+        if wait_to_fail is True:
             wait_for_replica_failed(client, volname, r['name'])
 
 
