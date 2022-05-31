@@ -15,6 +15,7 @@ from common import generate_random_suffix, wait_for_volume_endpoint
 from common import wait_for_snapshot_count, DATA_SIZE_IN_MB_3
 from common import get_clone_volume_name
 from common import create_storage_class, storage_class  # NOQA
+from common import wait_for_volume_degraded
 
 
 # Kept some fixtures specifically for volume cloning module to avoid cleaning
@@ -387,6 +388,7 @@ def test_cloning_interrupted(client, core_api, pvc, pod, clone_pvc, clone_pod): 
                                  'initiated')
 
     # Step-6
+    wait_for_volume_degraded(client, clone_volume_name)
     crash_replica_processes(client, core_api, source_volume_name)
 
     # Step-7
