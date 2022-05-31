@@ -4656,9 +4656,14 @@ def wait_for_pod_annotation(core_api,
 def wait_for_volume_clone_status(client, name, key, value):
     for _ in range(RETRY_COUNTS):
         volume = client.by_id_volume(name)
-        if volume[VOLUME_FIELD_CLONE_STATUS][key] == value:
-            break
-        time.sleep(RETRY_INTERVAL)
+        try:
+            if volume[VOLUME_FIELD_CLONE_STATUS][key] == value:
+                break
+        except Exception as e:
+            print("\nVOLUME_FIELD_CLONE_STATUS is not ready")
+            print(e)
+        finally:
+            time.sleep(RETRY_INTERVAL)
     assert volume[VOLUME_FIELD_CLONE_STATUS][key] == value, \
         f" Expected value={value}\n. " \
         f" Got volume[{VOLUME_FIELD_CLONE_STATUS}][{key}]= " \
