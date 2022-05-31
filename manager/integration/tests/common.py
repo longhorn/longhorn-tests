@@ -56,8 +56,8 @@ BACKING_IMAGE_EXT4_SIZE = 32 * Mi
 PORT = ":9500"
 
 RETRY_COMMAND_COUNT = 3
-RETRY_COUNTS = 300
-RETRY_INTERVAL = 0.5
+RETRY_COUNTS = 150
+RETRY_INTERVAL = 1
 RETRY_INTERVAL_LONG = 2
 RETRY_BACKUP_COUNTS = 300
 RETRY_BACKUP_INTERVAL = 1
@@ -1656,13 +1656,13 @@ def wait_for_volume_detached_unknown(client, name):
     return wait_for_volume_detached(client, name)
 
 
-def wait_for_volume_healthy(client, name):
+def wait_for_volume_healthy(client, name, retry_count=RETRY_COUNTS):
     wait_for_volume_status(client, name,
                            VOLUME_FIELD_STATE,
-                           VOLUME_STATE_ATTACHED)
+                           VOLUME_STATE_ATTACHED, retry_count)
     wait_for_volume_status(client, name,
                            VOLUME_FIELD_ROBUSTNESS,
-                           VOLUME_ROBUSTNESS_HEALTHY)
+                           VOLUME_ROBUSTNESS_HEALTHY, retry_count)
     return wait_for_volume_endpoint(client, name)
 
 
@@ -1693,9 +1693,10 @@ def wait_for_volume_faulted(client, name):
                                   VOLUME_ROBUSTNESS_FAULTED)
 
 
-def wait_for_volume_status(client, name, key, value):
+def wait_for_volume_status(client, name, key, value,
+                           retry_count=RETRY_COUNTS):
     wait_for_volume_creation(client, name)
-    for i in range(RETRY_COUNTS):
+    for i in range(retry_count):
         volume = client.by_id_volume(name)
         if volume[key] == value:
             break
