@@ -21,9 +21,7 @@
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/node/degraded-availability/</guid>
-      <description>https://github.com/longhorn/longhorn/issues/1701
-Volume creation using UI with degraded availability and added node Start with one node cluster.
-Create a Deployment Pod with a volume and three replicas. After the volume is attached, scheduling error should be seen from the UI. But no functional impact. Write data to the Pod. Scale down the deployment to 0 to detach the volume. scheduling error should be gone. Scale up the deployment back to 1 verify the data.</description>
+      <description>Volume creation using UI with degraded availability and added node Related Issue: https://github.com/longhorn/longhorn/issues/1701 Prerequisites: Start with 1 node cluster. Double check if &amp;ldquo;Allow Volume Creation with Degraded Availability&amp;rdquo; is ticked or return true with following command: kubectl get settings.longhorn.io/allow-volume-creation-with-degraded-availability -n longhorn-system Steps: Create a Deployment Pod with a volume and three replicas. After the volume is attached, on Volume page it should be displayed as Degraded Hover the crusor to the red circle exclamation mark, the tooltip will says, &amp;ldquo;The volume cannot be scheduled&amp;rdquo;.</description>
     </item>
     
     <item>
