@@ -93,6 +93,8 @@ from backupstore import set_backupstore_url, set_backupstore_credential_secret, 
 from backupstore import reset_backupstore_setting  # NOQA
 from backupstore import set_backupstore_s3, backupstore_get_secret  # NOQA
 
+from test_node import set_node_cordon
+
 from kubernetes import client as k8sclient
 
 BACKUPSTORE = get_backupstores()
@@ -3004,6 +3006,166 @@ def test_backup_lock_creation_during_deletion(set_random_backupstore, client, co
         b1 = None
     assert b1 is None
     _, b2 = common.find_backup(client, std_volume_name, snap2.name)
+
+
+def backup_ownership_transfer_when_instance_manager_is_down(client, core_api, volume_name, request, recover=False):  # NOQA
+    """
+    Scenario: test backup ownership transfer when the engine instance
+              manager is down.
+
+    Context: longhorn/longhorn#4064
+
+    Given a volume created, and attached.
+    And some data written to the volume.
+    And backup created.
+
+    When cordon the node with backup.
+    And delete the backup engine instance manager pod.
+        engine instance manager is in error state.
+
+    Then backup ownerID should change.
+    And wait for backup to complete.
+    And detach volume.
+    """
+    backupstore_cleanup(client)
+
+    volume_size = str(100 * Mi)
+    volume_replicas = 2
+    volume = create_and_check_volume(
+        client, volume_name, volume_replicas, size=volume_size
+    )
+
+    host_id = get_self_host_id()
+    volume = volume.attach(hostId=host_id)
+    volume = common.wait_for_volume_healthy(client, volume.name)
+
+    new_data = {
+        'pos': 0,
+        'content': generate_random_data(20 * Mi),
+    }
+
+    _, backup, snapshot, written_data = create_backup(
+        client, volume_name, data=new_data)
+
+    original_ownerID = get_backup_ownerID(backup.name)
+
+    instance_managers = client.list_instance_manager()
+    engine_instance_manager = None
+    for im in instance_managers:
+        if im.managerType == "engine" and im.nodeID == original_ownerID:
+            engine_instance_manager = im
+            break
+    assert engine_instance_manager is not None, \
+        f'expect to find engine instance manager for {backup.name}'
+
+    def finalizer():
+        set_node_cordon(core_api, engine_instance_manager.nodeID, False)
+
+    request.addfinalizer(finalizer)
+
+    set_node_cordon(core_api, engine_instance_manager.nodeID, True)
+
+    delete_and_wait_pod(
+        core_api,
+        engine_instance_manager.name,
+        namespace=common.LONGHORN_NAMESPACE
+    )
+
+    for _ in range(RETRY_COUNTS):
+        engine_instance_manager = client.by_id_instance_manager(
+            engine_instance_manager.name
+        )
+        if engine_instance_manager.currentState == "error":
+            break
+        time.sleep(RETRY_INTERVAL)
+    assert engine_instance_manager.currentState == "error"
+
+    for _ in range(RETRY_COUNTS):
+        if get_backup_ownerID(backup.name) != original_ownerID:
+            break
+        time.sleep(RETRY_INTERVAL)
+
+    assert get_backup_ownerID(backup.name) != original_ownerID, \
+        f'expecting {backup.name} ownerID {original_ownerID} to change'
+
+    wait_for_backup_completion(client, volume.name, snapshot.name)
+    volume.detach(hostId="")
+
+    if recover:
+        set_node_cordon(core_api, engine_instance_manager.nodeID, False)
+
+    backup_volume, backup = find_backup(client, volume.name, snapshot.name)
+    return volume, snapshot, backup, backup_volume, written_data
+
+
+def get_backup_ownerID(backup_name):
+    return subprocess.Popen(
+        "kubectl get backup " + backup_name + " -n longhorn-system -o jsonpath='{.status.ownerID}'",  # NOQA,
+        shell=True,
+        stdout=subprocess.PIPE
+    ).communicate()[0].decode('utf-8').strip()
+
+
+def test_backup_delete_when_instance_manager_is_down(set_random_backupstore, client, core_api, volume_name, request):  # NOQA
+    """
+    Scenario: test backup delete when the engine instance manager is down.
+
+    Given backup_ownership_transfer_when_instance_manager_is_down
+
+    When delete backup
+
+    Then back should not exist
+    """
+    volume, snapshot, backup, _, _ = \
+        backup_ownership_transfer_when_instance_manager_is_down(
+            client, core_api, volume_name, request,
+        )
+
+    common.delete_backup(client, volume.name, backup.name)
+
+    try:
+        _, backup = common.find_backup(client, volume.name, snapshot.name)
+    except AssertionError:
+        backup = None
+    assert backup is None
+
+
+def test_backup_restore_when_instance_manager_is_down(set_random_backupstore, client, core_api, volume_name, request):  # NOQA
+    """
+    Scenario: test backup restore when the engine instance manager is down.
+
+    Given backup_ownership_transfer_when_instance_manager_is_down
+    And uncordon node
+
+    When create volume from backup.
+    And wait for restore to complete.
+    And wait for volume to detach.
+
+    Then attach volume.
+    And backup data should exist in volume
+    """
+    volume, _, backup, _, written_data = \
+        backup_ownership_transfer_when_instance_manager_is_down(
+            client, core_api, volume_name, request,
+            recover=True,
+        )
+
+    volume_size = str(100 * Mi)
+    volume_replicas = 2
+
+    restore_name = volume.name + "-restore"
+    restore_volume = client.create_volume(name=restore_name, size=volume_size,
+                                          numberOfReplicas=volume_replicas,
+                                          fromBackup=backup.url)
+
+    common.wait_for_volume_restoration_completed(client, restore_name)
+    common.wait_for_volume_detached(client, restore_name)
+
+    restore_volume.attach(hostId=get_self_host_id())
+    restore_volume = common.wait_for_volume_healthy(client, restore_name)
+    check_volume_data(restore_volume, written_data)
+    restore_volume.detach(hostId="")
+    common.wait_for_volume_detached(client, restore_name)
 
 
 @pytest.mark.skip(reason="This test takes more than 20 mins to run")  # NOQA
