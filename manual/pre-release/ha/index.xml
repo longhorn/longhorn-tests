@@ -12,7 +12,7 @@
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/ha/backing-image-error-reporting-and-retry/</guid>
-      <description>Backing image with an invalid URL schema  Create a backing image via a invalid download URL. e.g., httpsinvalid://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2, https://longhorn-backing-image.s3-us-west-1.amazonaws.invalid.com/parrot.raw. Wait for the download start. The backing image data source pod, which is used to download the file from the URL, should become Failed then be cleaned up immediately. The corresponding and only entry in the disk file status should be failed. The error message in this entry should explain why the downloading or the pod becomes failed.</description>
+      <description>Backing image with an invalid URL schema Create a backing image via a invalid download URL. e.g., httpsinvalid://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2, https://longhorn-backing-image.s3-us-west-1.amazonaws.invalid.com/parrot.raw. Wait for the download start. The backing image data source pod, which is used to download the file from the URL, should become Failed then be cleaned up immediately. The corresponding and only entry in the disk file status should be failed. The error message in this entry should explain why the downloading or the pod becomes failed.</description>
     </item>
     
     <item>
@@ -21,7 +21,7 @@
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/ha/disk-migration-in-aws-asg/</guid>
-      <description>Some Longhorn worker nodes in AWS Auto Scaling group is in replacement  Launch a Kubernetes cluster with the nodes in AWS Auto Scaling group. Make sure there is an additional EBS attached to instance with setting Delete on Termination disabled. Deploy Longhorn v1.1.0 on the cluster and Set ReplicaReplenishmentWaitInterval. Make sure it&amp;rsquo;s longer than the time needs for node replacement. Deploy some workloads using Longhorn volumes. Trigger the ASG instance refresh in AWS.</description>
+      <description>Some Longhorn worker nodes in AWS Auto Scaling group is in replacement Launch a Kubernetes cluster with the nodes in AWS Auto Scaling group. Make sure there is an additional EBS attached to instance with setting Delete on Termination disabled. Deploy Longhorn v1.1.0 on the cluster and Set ReplicaReplenishmentWaitInterval. Make sure it&amp;rsquo;s longer than the time needs for node replacement. Deploy some workloads using Longhorn volumes. Trigger the ASG instance refresh in AWS.</description>
     </item>
     
     <item>
@@ -31,8 +31,9 @@
       
       <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/ha/ha-volume-migration/</guid>
       <description>Create a migratable volume:
- Deploy a migratable StorageClass. e.g., https://github.com/longhorn/longhorn/blob/master/examples/rwx/storageclass-migratable.yaml Create a PVC with access mode ReadWriteMany via this StorageClass.    Attach a volume to a node and wait for volume running. Then write some data into the volume. Here I would recommend directly restoring a volume (set fromBackup in the StorageClass) and attach it instead.
-  Start the migration by request attaching to another node for the volume.</description>
+Deploy a migratable StorageClass. e.g., https://github.com/longhorn/longhorn/blob/master/examples/rwx/storageclass-migratable.yaml Create a PVC with access mode ReadWriteMany via this StorageClass. Attach a volume to a node and wait for volume running. Then write some data into the volume. Here I would recommend directly restoring a volume (set fromBackup in the StorageClass) and attach it instead.
+Start the migration by request attaching to another node for the volume.
+Trigger the following scenarios then confirm or rollback the migration:</description>
     </item>
     
     <item>
@@ -42,7 +43,7 @@
       
       <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/ha/partial-engine-deployment/</guid>
       <description>Related Issue https://github.com/longhorn/longhorn/issues/2081
-Scenarios: Case 1: Test volume operations when some of the engine image DaemonSet pods are miss scheduled  Install Longhorn in a 3-node cluster: node-1, node-2, node-3 Create a volume, vol-1, of 3 replicas Create another volume, vol-2, of 3 replicas Taint node-1 with the taint: key=value:NoSchedule Check that all functions (attach, detach, snapshot, backup, expand, restore, creating DR volume, &amp;hellip; ) are working ok for vol-1  Case 2: Test volume operations when some of the engine image DaemonSet pods are not fully deployed  Continue from case 1 Attach vol-1 to node-1.</description>
+Scenarios: Case 1: Test volume operations when some of the engine image DaemonSet pods are miss scheduled Install Longhorn in a 3-node cluster: node-1, node-2, node-3 Create a volume, vol-1, of 3 replicas Create another volume, vol-2, of 3 replicas Taint node-1 with the taint: key=value:NoSchedule Check that all functions (attach, detach, snapshot, backup, expand, restore, creating DR volume, &amp;hellip; ) are working ok for vol-1 Case 2: Test volume operations when some of the engine image DaemonSet pods are not fully deployed Continue from case 1 Attach vol-1 to node-1.</description>
     </item>
     
     <item>
@@ -51,7 +52,7 @@ Scenarios: Case 1: Test volume operations when some of the engine image DaemonSe
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/ha/replica-rebuilding/</guid>
-      <description>Create and attach a volume. Write a large amount of data to the volume. Disable disk scheduling and the node scheduling for one replica. Crash the replica progress. Verify  the corresponding replica will become ERROR. the volume will keep robustness Degraded.   Enable the disk scheduling. Verify nothing changes. Enable the node scheduling. Verify.  the failed replica is reused by Longhorn. the rebuilding progress in UI page looks good.</description>
+      <description>Create and attach a volume. Write a large amount of data to the volume. Disable disk scheduling and the node scheduling for one replica. Crash the replica progress. Verify the corresponding replica will become ERROR. the volume will keep robustness Degraded. Enable the disk scheduling. Verify nothing changes. Enable the node scheduling. Verify. the failed replica is reused by Longhorn. the rebuilding progress in UI page looks good. the data content is correct after rebuilding.</description>
     </item>
     
     <item>
@@ -62,7 +63,7 @@ Scenarios: Case 1: Test volume operations when some of the engine image DaemonSe
       <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/ha/single-replica-node-down/</guid>
       <description>Related Issues https://github.com/longhorn/longhorn/issues/2329 https://github.com/longhorn/longhorn/issues/2309
 Default Setting Automatic salvage is enabled.
-Node restart/down scenario with Pod Deletion Policy When Node is Down set to default value do-nothing.  Create RWO|RWX volume with replica count = 1 &amp;amp; data locality = enabled|disabled. Create deployment|statefulset for volume. Power down node of volume/replica. The workload pod will get stuck in the unknown state. Volume will fail to attach since volume is not ready (i.e remains faulted, since single replica is on downed node).</description>
+Node restart/down scenario with Pod Deletion Policy When Node is Down set to default value do-nothing. Create RWO|RWX volume with replica count = 1 &amp;amp; data locality = enabled|disabled. Create deployment|statefulset for volume. Power down node of volume/replica. The workload pod will get stuck in the unknown state. Volume will fail to attach since volume is not ready (i.e remains faulted, since single replica is on downed node).</description>
     </item>
     
   </channel>

@@ -21,7 +21,7 @@
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/air-gap/air-gap-instance-manager-name/</guid>
-      <description>Host instance manager image under a name more than 63 characters in Docker hub Update longhorn-manager deployment flag &amp;ndash;instance-manager-image to that value Try to create a new volume and attach it.  Expected behavior:There should be no error.</description>
+      <description>Host instance manager image under a name more than 63 characters in Docker hub Update longhorn-manager deployment flag &amp;ndash;instance-manager-image to that value Try to create a new volume and attach it. Expected behavior:There should be no error.</description>
     </item>
     
   </channel>

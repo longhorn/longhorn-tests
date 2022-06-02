@@ -22,7 +22,7 @@
       
       <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/concurrent-backup-creation-deletion/</guid>
       <description>This one is a special case, were the volume only contains 1 backup, which the user requests to delete while the user has another backup in progress. In this case, as the another backup is in progress a lock mechanism will be applied to it and blocks the deletion of the backup.
- create vol dak and attach to the same node vol bak is attached connect to node via ssh and issue dd if=/dev/urandom of=/dev/longhorn/dak status=progress wait for a bunch of data to be written (1GB) take a backup(1) wait for a bunch of data to be written (1GB) take a backup(2) immediately request deletion of backup(1) verify that backup(2) completes successfully.</description>
+create vol dak and attach to the same node vol bak is attached connect to node via ssh and issue dd if=/dev/urandom of=/dev/longhorn/dak status=progress wait for a bunch of data to be written (1GB) take a backup(1) wait for a bunch of data to be written (1GB) take a backup(2) immediately request deletion of backup(1) verify that backup(2) completes successfully.</description>
     </item>
     
     <item>
@@ -31,7 +31,7 @@
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/concurrent-backup/</guid>
-      <description> Take a manual backup of the volume bak while a recurring backup is running verify that backup got created verify that backup sticks around even when recurring backups are cleaned up  </description>
+      <description> Take a manual backup of the volume bak while a recurring backup is running verify that backup got created verify that backup sticks around even when recurring backups are cleaned up </description>
     </item>
     
     <item>
@@ -40,7 +40,7 @@
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/restore-volume-node-down/</guid>
-      <description> Create a backup. Create a restore volume from the backup. Power off the volume attached node during the restoring. Wait for the Longhorn node down. Wait for the restore volume being reattached and starting restoring volume with state Degraded. Wait for the restore complete. Attach the volume and verify the restored data. Verify the volume works fine.  </description>
+      <description> Create a backup. Create a restore volume from the backup. Power off the volume attached node during the restoring. Wait for the Longhorn node down. Wait for the restore volume being reattached and starting restoring volume with state Degraded. Wait for the restore complete. Attach the volume and verify the restored data. Verify the volume works fine. </description>
     </item>
     
     <item>
@@ -49,7 +49,7 @@
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/dr-volume-node-rebooted/</guid>
-      <description>Scenario 1  Create a pod with Longhorn volume. Write data to the volume and get the md5sum. Create the 1st backup for the volume. Create a DR volume from the backup. Wait for the DR volume starting the initial restore. Then reboot the DR volume attached node immediately. Wait for the DR volume detached then reattached. Wait for the DR volume restore complete after the reattachment. Activate the DR volume and check the data md5sum.</description>
+      <description>Scenario 1 Create a pod with Longhorn volume. Write data to the volume and get the md5sum. Create the 1st backup for the volume. Create a DR volume from the backup. Wait for the DR volume starting the initial restore. Then reboot the DR volume attached node immediately. Wait for the DR volume detached then reattached. Wait for the DR volume restore complete after the reattachment. Activate the DR volume and check the data md5sum.</description>
     </item>
     
     <item>
@@ -58,7 +58,7 @@
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/google-cloud-s3-interop-backups/</guid>
-      <description> create vol s3-testand mount to a node on /mnt/s3-test via pvc write some data on vol s3-test take backup(1) write new data on vol s3-test take backup(2) restore backup(1) verify data is consistent with backup(1) restore backup(2) verify data is consistent with backup(2) delete backup(1) delete backup(2) delete backup volume s3-test verify volume path is removed  </description>
+      <description> create vol s3-testand mount to a node on /mnt/s3-test via pvc write some data on vol s3-test take backup(1) write new data on vol s3-test take backup(2) restore backup(1) verify data is consistent with backup(1) restore backup(2) verify data is consistent with backup(2) delete backup(1) delete backup(2) delete backup volume s3-test verify volume path is removed </description>
     </item>
     
     <item>
@@ -77,8 +77,8 @@
       
       <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/resiliency/simulated-slow-disk/</guid>
       <description>This case requires the creation of a slow virtual disk with dmsetup.
-  Make a slow disk:
- Make a disk image file: truncate -s 10g slow.img Create a loopback device: losetup --show -P -f slow.img Get the block size of the loopback device: blockdev --getsize /dev/loopX Create slow device: echo &amp;quot;0 &amp;lt;blocksize&amp;gt; delay /dev/loopX 0 500&amp;quot; | dmsetup create dm-slow Format slow device: mkfs.ext4 /dev/mapper/dm-slow Mount slow device: mount /dev/mapper/dm-slow /mnt    Build longhorn-engine and run it on the slow disk.</description>
+Make a slow disk:
+Make a disk image file: truncate -s 10g slow.img Create a loopback device: losetup --show -P -f slow.img Get the block size of the loopback device: blockdev --getsize /dev/loopX Create slow device: echo &amp;quot;0 &amp;lt;blocksize&amp;gt; delay /dev/loopX 0 500&amp;quot; | dmsetup create dm-slow Format slow device: mkfs.ext4 /dev/mapper/dm-slow Mount slow device: mount /dev/mapper/dm-slow /mnt Build longhorn-engine and run it on the slow disk.</description>
     </item>
     
     <item>
@@ -97,10 +97,10 @@
       
       <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/managed-kubernetes-clusters/aks/expand-volume/</guid>
       <description>Create AKS cluster with 3 nodes and install Longhorn.
-  Create deployment and write some data to it.
-  In Longhorn, set replica-replenishment-wait-interval to 0.
-  Add a new node-pool. Later Longhorn components will be automatically deployed on the nodes in this pool.
-AKS_NODEPOOL_NAME_NEW=&amp;lt;new-nodepool-name&amp;gt; AKS_RESOURCE_GROUP=&amp;lt;aks-resource-group&amp;gt; AKS_CLUSTER_NAME=&amp;lt;aks-cluster-name&amp;gt; AKS_DISK_SIZE_NEW=&amp;lt;new-disk-size-in-gb&amp;gt; AKS_NODE_NUM=&amp;lt;number-of-nodes&amp;gt; AKS_K8S_VERSION=&amp;lt;kubernetes-version&amp;gt; az aks nodepool add \ --resource-group ${AKS_RESOURCE_GROUP} \ --cluster-name ${AKS_CLUSTER_NAME} \ --name ${AKS_NODEPOOL_NAME_NEW} \ --node-count ${AKS_NODE_NUM} \ --node-osdisk-size ${AKS_DISK_SIZE_NEW} \ --kubernetes-version ${AKS_K8S_VERSION} \ --mode System   Using Longhorn UI to disable the disk scheduling and request eviction for nodes in the old node-pool.</description>
+Create deployment and write some data to it.
+In Longhorn, set replica-replenishment-wait-interval to 0.
+Add a new node-pool. Later Longhorn components will be automatically deployed on the nodes in this pool.
+AKS_NODEPOOL_NAME_NEW=&amp;lt;new-nodepool-name&amp;gt; AKS_RESOURCE_GROUP=&amp;lt;aks-resource-group&amp;gt; AKS_CLUSTER_NAME=&amp;lt;aks-cluster-name&amp;gt; AKS_DISK_SIZE_NEW=&amp;lt;new-disk-size-in-gb&amp;gt; AKS_NODE_NUM=&amp;lt;number-of-nodes&amp;gt; AKS_K8S_VERSION=&amp;lt;kubernetes-version&amp;gt; az aks nodepool add \ --resource-group ${AKS_RESOURCE_GROUP} \ --cluster-name ${AKS_CLUSTER_NAME} \ --name ${AKS_NODEPOOL_NAME_NEW} \ --node-count ${AKS_NODE_NUM} \ --node-osdisk-size ${AKS_DISK_SIZE_NEW} \ --kubernetes-version ${AKS_K8S_VERSION} \ --mode System Using Longhorn UI to disable the disk scheduling and request eviction for nodes in the old node-pool.</description>
     </item>
     
     <item>
@@ -119,10 +119,10 @@ AKS_NODEPOOL_NAME_NEW=&amp;lt;new-nodepool-name&amp;gt; AKS_RESOURCE_GROUP=&amp;
       
       <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/managed-kubernetes-clusters/gke/expand-volume/</guid>
       <description>Create GKE cluster with 3 nodes and install Longhorn.
-  Create deployment and write some data to it.
-  In Longhorn, set replica-replenishment-wait-interval to 0.
-  Add a new node-pool. Later Longhorn components will be automatically deployed on the nodes in this pool.
-GKE_NODEPOOL_NAME_NEW=&amp;lt;new-nodepool-name&amp;gt; GKE_REGION=&amp;lt;gke-region&amp;gt; GKE_CLUSTER_NAME=&amp;lt;gke-cluster-name&amp;gt; GKE_IMAGE_TYPE=Ubuntu GKE_MACHINE_TYPE=&amp;lt;gcp-machine-type&amp;gt; GKE_DISK_SIZE_NEW=&amp;lt;new-disk-size-in-gb&amp;gt; GKE_NODE_NUM=&amp;lt;number-of-nodes&amp;gt; gcloud container node-pools create ${GKE_NODEPOOL_NAME_NEW} \ --region ${GKE_REGION} \ --cluster ${GKE_CLUSTER_NAME} \ --image-type ${GKE_IMAGE_TYPE} \ --machine-type ${GKE_MACHINE_TYPE} \ --disk-size ${GKE_DISK_SIZE_NEW} \ --num-nodes ${GKE_NODE_NUM} gcloud container node-pools list \ --zone ${GKE_REGION} \ --cluster ${GKE_CLUSTER_NAME}   Using Longhorn UI to disable the disk scheduling and request eviction for nodes in the old node-pool.</description>
+Create deployment and write some data to it.
+In Longhorn, set replica-replenishment-wait-interval to 0.
+Add a new node-pool. Later Longhorn components will be automatically deployed on the nodes in this pool.
+GKE_NODEPOOL_NAME_NEW=&amp;lt;new-nodepool-name&amp;gt; GKE_REGION=&amp;lt;gke-region&amp;gt; GKE_CLUSTER_NAME=&amp;lt;gke-cluster-name&amp;gt; GKE_IMAGE_TYPE=Ubuntu GKE_MACHINE_TYPE=&amp;lt;gcp-machine-type&amp;gt; GKE_DISK_SIZE_NEW=&amp;lt;new-disk-size-in-gb&amp;gt; GKE_NODE_NUM=&amp;lt;number-of-nodes&amp;gt; gcloud container node-pools create ${GKE_NODEPOOL_NAME_NEW} \ --region ${GKE_REGION} \ --cluster ${GKE_CLUSTER_NAME} \ --image-type ${GKE_IMAGE_TYPE} \ --machine-type ${GKE_MACHINE_TYPE} \ --disk-size ${GKE_DISK_SIZE_NEW} \ --num-nodes ${GKE_NODE_NUM} gcloud container node-pools list \ --zone ${GKE_REGION} \ --cluster ${GKE_CLUSTER_NAME} Using Longhorn UI to disable the disk scheduling and request eviction for nodes in the old node-pool.</description>
     </item>
     
     <item>
@@ -132,11 +132,11 @@ GKE_NODEPOOL_NAME_NEW=&amp;lt;new-nodepool-name&amp;gt; GKE_REGION=&amp;lt;gke-r
       
       <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/managed-kubernetes-clusters/aks/upgrade-k8s/</guid>
       <description>Create AKS cluster with 3 nodes and install Longhorn.
-  Create deployment and write some data to it.
-  In Longhorn, set replica-replenishment-wait-interval to 0.
-  Upgrade AKS control plane.
-AKS_RESOURCE_GROUP=&amp;lt;aks-resource-group&amp;gt; AKS_CLUSTER_NAME=&amp;lt;aks-cluster-name&amp;gt; AKS_K8S_VERSION_UPGRADE=&amp;lt;aks-k8s-version&amp;gt; az aks upgrade \ --resource-group ${AKS_RESOURCE_GROUP} \ --name ${AKS_CLUSTER_NAME} \ --kubernetes-version ${AKS_K8S_VERSION_UPGRADE} \ --control-plane-only   Add a new node-pool.
-AKS_NODEPOOL_NAME_NEW=&amp;lt;new-nodepool-name&amp;gt; AKS_DISK_SIZE=&amp;lt;disk-size-in-gb&amp;gt; AKS_NODE_NUM=&amp;lt;number-of-nodes&amp;gt; az aks nodepool add \ --resource-group ${AKS_RESOURCE_GROUP} \ --cluster-name ${AKS_CLUSTER_NAME} \ --name ${AKS_NODEPOOL_NAME_NEW} \ --node-count ${AKS_NODE_NUM} \ --node-osdisk-size ${AKS_DISK_SIZE} \ --kubernetes-version ${AKS_K8S_VERSION_UPGRADE} \ --mode System   Using Longhorn UI to disable the disk scheduling and request eviction for nodes in the old node-pool.</description>
+Create deployment and write some data to it.
+In Longhorn, set replica-replenishment-wait-interval to 0.
+Upgrade AKS control plane.
+AKS_RESOURCE_GROUP=&amp;lt;aks-resource-group&amp;gt; AKS_CLUSTER_NAME=&amp;lt;aks-cluster-name&amp;gt; AKS_K8S_VERSION_UPGRADE=&amp;lt;aks-k8s-version&amp;gt; az aks upgrade \ --resource-group ${AKS_RESOURCE_GROUP} \ --name ${AKS_CLUSTER_NAME} \ --kubernetes-version ${AKS_K8S_VERSION_UPGRADE} \ --control-plane-only Add a new node-pool.
+AKS_NODEPOOL_NAME_NEW=&amp;lt;new-nodepool-name&amp;gt; AKS_DISK_SIZE=&amp;lt;disk-size-in-gb&amp;gt; AKS_NODE_NUM=&amp;lt;number-of-nodes&amp;gt; az aks nodepool add \ --resource-group ${AKS_RESOURCE_GROUP} \ --cluster-name ${AKS_CLUSTER_NAME} \ --name ${AKS_NODEPOOL_NAME_NEW} \ --node-count ${AKS_NODE_NUM} \ --node-osdisk-size ${AKS_DISK_SIZE} \ --kubernetes-version ${AKS_K8S_VERSION_UPGRADE} \ --mode System Using Longhorn UI to disable the disk scheduling and request eviction for nodes in the old node-pool.</description>
     </item>
     
     <item>
@@ -145,7 +145,7 @@ AKS_NODEPOOL_NAME_NEW=&amp;lt;new-nodepool-name&amp;gt; AKS_DISK_SIZE=&amp;lt;di
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/managed-kubernetes-clusters/eks/upgrade-k8s/</guid>
-      <description> Create EKS cluster with 3 nodes and install Longhorn. Create deployment and write some data to it. In Longhorn, set replica-replenishment-wait-interval to 0. Following instructions to upgrade the cluster. Check the deployment in step 2 still running and data exist.  </description>
+      <description> Create EKS cluster with 3 nodes and install Longhorn. Create deployment and write some data to it. In Longhorn, set replica-replenishment-wait-interval to 0. Following instructions to upgrade the cluster. Check the deployment in step 2 still running and data exist. </description>
     </item>
     
     <item>
@@ -154,7 +154,7 @@ AKS_NODEPOOL_NAME_NEW=&amp;lt;new-nodepool-name&amp;gt; AKS_DISK_SIZE=&amp;lt;di
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/managed-kubernetes-clusters/gke/upgrade-k8s/</guid>
-      <description> Create GKE cluster with 3 nodes and install Longhorn. Create deployment and write some data to it. In Longhorn, set replica-replenishment-wait-interval to 0. See Upgrading the cluster and Upgrading node pools for instructions. Check the deployment in step 2 still running and data exist.  </description>
+      <description> Create GKE cluster with 3 nodes and install Longhorn. Create deployment and write some data to it. In Longhorn, set replica-replenishment-wait-interval to 0. See Upgrading the cluster and Upgrading node pools for instructions. Check the deployment in step 2 still running and data exist. </description>
     </item>
     
     <item>
@@ -165,11 +165,12 @@ AKS_NODEPOOL_NAME_NEW=&amp;lt;new-nodepool-name&amp;gt; AKS_DISK_SIZE=&amp;lt;di
       <guid>https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/deployment/</guid>
       <description>Installation Longhorn v1.1.2 and above - Support Kubernetes 1.18+
 Longhorn v1.0.0 to v1.1.1 - Support Kubernetes 1.14+. Default 1.16+
-  Install using Rancher Apps &amp;amp; MarketPlace App (Default)
-  Install using Helm chart from https://github.com/longhorn/longhorn/tree/master/chart
-  Install using YAML from https://github.com/longhorn/longhorn/blob/master/deploy/longhorn.yaml
-  Note: Longhorn UI can scale to multiple instances for HA purposes.
-Uninstallation Make sure all the CRDs and other resources are cleaned up, following the uninstallation instruction.</description>
+Install using Rancher Apps &amp;amp; MarketPlace App (Default)
+Install using Helm chart from https://github.com/longhorn/longhorn/tree/master/chart
+Install using YAML from https://github.com/longhorn/longhorn/blob/master/deploy/longhorn.yaml
+Note: Longhorn UI can scale to multiple instances for HA purposes.
+Uninstallation Make sure all the CRDs and other resources are cleaned up, following the uninstallation instruction. https://longhorn.io/docs/1.2.2/deploy/uninstall/
+Customizable Default Settings https://longhorn.io/docs/1.2.2/references/settings/</description>
     </item>
     
     <item>
@@ -178,11 +179,12 @@ Uninstallation Make sure all the CRDs and other resources are cleaned up, follow
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/ui/</guid>
-      <description>Accessibility of Longhorn UI    # Test Case Test Instructions     1. Access Longhorn UI using rancher proxy 1. Create a cluster (3 worker nodes and 1 etcd/control plane) in rancher, Go to the default project.
+      <description>Accessibility of Longhorn UI # Test Case Test Instructions 1. Access Longhorn UI using rancher proxy 1. Create a cluster (3 worker nodes and 1 etcd/control plane) in rancher, Go to the default project.
 2. Go to App, Click the launch app.
 3. Select longhorn.
 4. Select Rancher-Proxy under the Longhorn UI service.
-5. Once the app is deployed successfully, click the /index.html link appears in App page.</description>
+5. Once the app is deployed successfully, click the /index.html link appears in App page.
+6. The page should redirect to longhorn UI - https://rancher/k8s/clusters/c-aaaa/api/v1/namespaces/longhorn-system/services/http:longhorn-frontend:80/proxy/#/dashboard</description>
     </item>
     
     <item>
@@ -191,14 +193,16 @@ Uninstallation Make sure all the CRDs and other resources are cleaned up, follow
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/volume/</guid>
-      <description>Test cases for Volume    # Test Case Test Instructions Expected Results     1 Check volume Details Prerequisite:
+      <description>Test cases for Volume # Test Case Test Instructions Expected Results 1 Check volume Details Prerequisite:
 * Longhorn Nodes has node tags
 * Node Disks has disk tags
 * Backup target is set to NFS server, or S3 compatible target
 1. Create a workload using Longhorn volume
 2. Check volume details page
 3. Create volume backup * Volume Details
-* State should be Attached</description>
+* State should be Attached
+* Health should be healthy
+* Frontend should be Block Device</description>
     </item>
     
     <item>
@@ -207,13 +211,14 @@ Uninstallation Make sure all the CRDs and other resources are cleaned up, follow
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/high-availability/</guid>
-      <description>Automation Tests    # Test Name Description Tags     1 test_engine_image_daemonset_restart Test restarting engine image daemonset
+      <description>Automation Tests # Test Name Description Tags 1 test_engine_image_daemonset_restart Test restarting engine image daemonset
 1. Get the default engine image
 2. Create a volume and attach to the current node
 3. Write random data to the volume and create a snapshot
 4. Delete the engine image daemonset
 5. Engine image daemonset should be recreated
-6. In the meantime, validate the volume data to prove it&amp;rsquo;s still functional</description>
+6. In the meantime, validate the volume data to prove it&amp;rsquo;s still functional
+7. Wait for the engine image to become ready again</description>
     </item>
     
     <item>
@@ -222,10 +227,11 @@ Uninstallation Make sure all the CRDs and other resources are cleaned up, follow
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/kubernetes/</guid>
-      <description>Dynamic provisioning with StorageClass   Can create and use volume using StorageClass
-  Can create a new StorageClass use new parameters and it will take effect on the volume created by the storage class.
-  If the PV reclaim policy is delete, once PVC and PV are deleted, Longhorn volume should be deleted.
-  Static provisioning using Longhorn created PV/PVC   PVC can be used by the new workload</description>
+      <description>Dynamic provisioning with StorageClass Can create and use volume using StorageClass
+Can create a new StorageClass use new parameters and it will take effect on the volume created by the storage class.
+If the PV reclaim policy is delete, once PVC and PV are deleted, Longhorn volume should be deleted.
+Static provisioning using Longhorn created PV/PVC PVC can be used by the new workload
+Delete the PVC will not result in PV deletion</description>
     </item>
     
     <item>
@@ -234,14 +240,15 @@ Uninstallation Make sure all the CRDs and other resources are cleaned up, follow
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/backup/</guid>
-      <description>Automation Tests    # Test name Description tag     1 test_backup Test basic backup
+      <description>Automation Tests # Test name Description tag 1 test_backup Test basic backup
 Setup:
 1. Create a volume and attach to the current node
 2. Run the test for all the available backupstores.
 Steps:
 1. Create a backup of volume
 2. Restore the backup to a new volume
-3. Attach the new volume and make sure the data is the same as the old one</description>
+3. Attach the new volume and make sure the data is the same as the old one
+4. Detach the volume and delete the backup.</description>
     </item>
     
     <item>
@@ -250,7 +257,7 @@ Steps:
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/node/</guid>
-      <description>UI specific test cases    # Test Case Test Instructions Expected Results     1 Storage details * Prerequisites
+      <description>UI specific test cases # Test Case Test Instructions Expected Results 1 Storage details * Prerequisites
 * Longhorn Installed
 1. Verify the allocated/used storage show the right data in node details page.
 2. Create a volume of 20 GB and attach to a pod and verify the storage allocated/used is shown correctly. Without any volume, allocated should be 0 and on creating new volume it should be updated as per volume present.</description>
@@ -262,7 +269,7 @@ Steps:
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/scheduling/</guid>
-      <description>Manual Test    Test name Prerequisite Expectation     EKS across zone scheduling Prerequisite:
+      <description>Manual Test Test name Prerequisite Expectation EKS across zone scheduling Prerequisite:
 * EKS Cluster with 3 nodes across two AWS zones (zone#1, zone#2)
 1. Create a volume with 2 replicas, and attach it to a node.
 2. Delete a replica scheduled to each zone, repeat it few times
@@ -277,13 +284,14 @@ Steps:
       
       <guid>https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/upgrade/</guid>
       <description>Automation tests
-   # Test name Description Tags     1 test_upgrade Test Longhorn upgrade
+# Test name Description Tags 1 test_upgrade Test Longhorn upgrade
 1. Find the upgrade image tag
 2. Create a volume, generate and write data into the volume.
 3. Keep the volume attached, then upgrade Longhorn system.
 4. Detach the volume.
 5. Upgrade the volume to the updated engine image.
-6. Attach the volume and verify data Upgrade   2 test_engine_image Test Engine Image deployment</description>
+6. Attach the volume and verify data Upgrade 2 test_engine_image Test Engine Image deployment
+1. List Engine Images and validate basic properities.</description>
     </item>
     
     <item>
@@ -301,7 +309,7 @@ Steps:
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/air-gap/air-gap-instance-manager-name/</guid>
-      <description>Host instance manager image under a name more than 63 characters in Docker hub Update longhorn-manager deployment flag &amp;ndash;instance-manager-image to that value Try to create a new volume and attach it.  Expected behavior:There should be no error.</description>
+      <description>Host instance manager image under a name more than 63 characters in Docker hub Update longhorn-manager deployment flag &amp;ndash;instance-manager-image to that value Try to create a new volume and attach it. Expected behavior:There should be no error.</description>
     </item>
     
     <item>
@@ -310,8 +318,8 @@ Steps:
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/auto-upgrade-engine/</guid>
-      <description>Longhorn version = 1.1.1  Reference ticket 2152
-Test basic upgrade  Install old Longhorn version. E.g., &amp;lt;= v1.0.2 Create a volume, attach it to a pod, write some data. Create a DR volume and leave it in the detached state. Upgrade to Longhorn master Set setting concurrent automatic engine upgrade per node limit to 3 Verify that volumes&amp;rsquo; engines are upgraded automatically.  Test concurrent upgrade  Create a StatefulSet of scale 10 using 10 Longhorn volume.</description>
+      <description>Longhorn version &gt;= 1.1.1 Reference ticket 2152
+Test basic upgrade Install old Longhorn version. E.g., &amp;lt;= v1.0.2 Create a volume, attach it to a pod, write some data. Create a DR volume and leave it in the detached state. Upgrade to Longhorn master Set setting concurrent automatic engine upgrade per node limit to 3 Verify that volumes&amp;rsquo; engines are upgraded automatically. Test concurrent upgrade Create a StatefulSet of scale 10 using 10 Longhorn volume.</description>
     </item>
     
     <item>
@@ -320,7 +328,7 @@ Test basic upgrade  Install old Longhorn version. E.g., &amp;lt;= v1.0.2 Create 
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/ha/backing-image-error-reporting-and-retry/</guid>
-      <description>Backing image with an invalid URL schema  Create a backing image via a invalid download URL. e.g., httpsinvalid://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2, https://longhorn-backing-image.s3-us-west-1.amazonaws.invalid.com/parrot.raw. Wait for the download start. The backing image data source pod, which is used to download the file from the URL, should become Failed then be cleaned up immediately. The corresponding and only entry in the disk file status should be failed. The error message in this entry should explain why the downloading or the pod becomes failed.</description>
+      <description>Backing image with an invalid URL schema Create a backing image via a invalid download URL. e.g., httpsinvalid://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2, https://longhorn-backing-image.s3-us-west-1.amazonaws.invalid.com/parrot.raw. Wait for the download start. The backing image data source pod, which is used to download the file from the URL, should become Failed then be cleaned up immediately. The corresponding and only entry in the disk file status should be failed. The error message in this entry should explain why the downloading or the pod becomes failed.</description>
     </item>
     
     <item>
@@ -329,7 +337,7 @@ Test basic upgrade  Install old Longhorn version. E.g., &amp;lt;= v1.0.2 Create 
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/node/backing-image-on-a-down-node/</guid>
-      <description>Update the settings:  Disable Node Soft Anti-affinity. Set Replica Replenishment Wait Interval to a relatively long value.   Create a backing image. Wait for the backing image being ready in the 1st disk. Create 2 volumes with the backing image and attach them on different nodes. Verify:  the disk state map of the backing image contains the disks of all replicas, and the state is running for all disks.</description>
+      <description>Update the settings: Disable Node Soft Anti-affinity. Set Replica Replenishment Wait Interval to a relatively long value. Create a backing image. Wait for the backing image being ready in the 1st disk. Create 2 volumes with the backing image and attach them on different nodes. Verify: the disk state map of the backing image contains the disks of all replicas, and the state is running for all disks. the backing image content is correct.</description>
     </item>
     
     <item>
@@ -338,7 +346,7 @@ Test basic upgrade  Install old Longhorn version. E.g., &amp;lt;= v1.0.2 Create 
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.1/besteffort-recurring-job/</guid>
-      <description>Set up a BackupStore anywhere (since the cleanup fails at the Engine level, any BackupStore can be used. Add both of the Engine Images listed here:   quay.io/ttpcodes/longhorn-engine:no-cleanup - Snapshot and Backup deletion are both set to return an error. If the Snapshot part of a Backup fails, that will error out first and Backup deletion will not be reached. quay.io/ttpcodes/longhorn-engine:no-cleanup-backup - Only Backup deletion is set to return an error.</description>
+      <description>Set up a BackupStore anywhere (since the cleanup fails at the Engine level, any BackupStore can be used. Add both of the Engine Images listed here: quay.io/ttpcodes/longhorn-engine:no-cleanup - Snapshot and Backup deletion are both set to return an error. If the Snapshot part of a Backup fails, that will error out first and Backup deletion will not be reached. quay.io/ttpcodes/longhorn-engine:no-cleanup-backup - Only Backup deletion is set to return an error.</description>
     </item>
     
     <item>
@@ -347,7 +355,7 @@ Test basic upgrade  Install old Longhorn version. E.g., &amp;lt;= v1.0.2 Create 
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.1/change-imagepullpolicy/</guid>
-      <description> Install Longhorn using Helm chart with the new longhorn master Verify that Engine Image daemonset, Manager daemonset, UI deployment, Driver Deployer deployment has the field spec.template.spec.containers.imagePullPolicy set to IfNotPresent run the bash script dev/scripts/update-image-pull-policy.sh inside longhorn repo Verify that Engine Image daemonset, Manager daemonset, UI deployment, Driver Deployer deployment has the field spec.template.spec.containers.imagePullPolicy set back to Always  </description>
+      <description> Install Longhorn using Helm chart with the new longhorn master Verify that Engine Image daemonset, Manager daemonset, UI deployment, Driver Deployer deployment has the field spec.template.spec.containers.imagePullPolicy set to IfNotPresent run the bash script dev/scripts/update-image-pull-policy.sh inside longhorn repo Verify that Engine Image daemonset, Manager daemonset, UI deployment, Driver Deployer deployment has the field spec.template.spec.containers.imagePullPolicy set back to Always </description>
     </item>
     
     <item>
@@ -356,7 +364,7 @@ Test basic upgrade  Install old Longhorn version. E.g., &amp;lt;= v1.0.2 Create 
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/environment/cluster-using-customized-kubelet-root-directory/</guid>
-      <description> Set up a cluster using a customized kubelet root directory. e.g., launching k3s k3s server --kubelet-arg &amp;quot;root-dir=/var/lib/longhorn-test&amp;quot; &amp;amp; Install Longhorn with env KUBELET_ROOT_DIR in longhorn-driver-deployer being set to the corresponding value. Launch a pod using Longhorn volumes via StorageClass. Everything should work fine. Delete the pod and the PVC. Everything should be cleaned up.  </description>
+      <description> Set up a cluster using a customized kubelet root directory. e.g., launching k3s k3s server --kubelet-arg &amp;quot;root-dir=/var/lib/longhorn-test&amp;quot; &amp;amp; Install Longhorn with env KUBELET_ROOT_DIR in longhorn-driver-deployer being set to the corresponding value. Launch a pod using Longhorn volumes via StorageClass. Everything should work fine. Delete the pod and the PVC. Everything should be cleaned up. </description>
     </item>
     
     <item>
@@ -365,7 +373,7 @@ Test basic upgrade  Install old Longhorn version. E.g., &amp;lt;= v1.0.2 Create 
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/environment/k3s-selinux-compatibility/</guid>
-      <description>Set up a node with CentOS and make sure that the output of sestatus indicates that SELinux is enabled and set to Enforcing. Run the k3s installation script. Install Longhorn. The system should come up successfully. The logs of the Engine Image pod should only say installed, and the system should be able to deploy a Volume successfully from the UI.  Note: There appears to be some problems with running k3s on CentOS, presumably due to the firewalld rules.</description>
+      <description>Set up a node with CentOS and make sure that the output of sestatus indicates that SELinux is enabled and set to Enforcing. Run the k3s installation script. Install Longhorn. The system should come up successfully. The logs of the Engine Image pod should only say installed, and the system should be able to deploy a Volume successfully from the UI. Note: There appears to be some problems with running k3s on CentOS, presumably due to the firewalld rules.</description>
     </item>
     
     <item>
@@ -375,10 +383,10 @@ Test basic upgrade  Install old Longhorn version. E.g., &amp;lt;= v1.0.2 Create 
       
       <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/csi-sanity-check/</guid>
       <description>Related issue https://github.com/longhorn/longhorn/issues/2076
-Run csi-sanity   Prepare Longhorn cluster and setup backup target.
-  Make csi-sanity binary from csi-test.
-  On one of the cluster node, run csi-sanity binary.
-csi-sanity -csi.endpoint /var/lib/kubelet/obsoleted-longhorn-plugins/driver.longhorn.io/csi.sock -ginkgo.skip=&amp;#34;should create volume from an existing source snapshot|should return appropriate values|should succeed when creating snapshot with maximum-length name|should succeed when requesting to create a snapshot with already existing name and same source volume ID|should fail when requesting to create a snapshot with already existing name and different source volume ID&amp;#34;  NOTE</description>
+Run csi-sanity Prepare Longhorn cluster and setup backup target.
+Make csi-sanity binary from csi-test.
+On one of the cluster node, run csi-sanity binary.
+csi-sanity -csi.endpoint /var/lib/kubelet/obsoleted-longhorn-plugins/driver.longhorn.io/csi.sock -ginkgo.skip=&amp;#34;should create volume from an existing source snapshot|should return appropriate values|should succeed when creating snapshot with maximum-length name|should succeed when requesting to create a snapshot with already existing name and same source volume ID|should fail when requesting to create a snapshot with already existing name and different source volume ID&amp;#34; NOTE</description>
     </item>
     
     <item>
@@ -389,7 +397,7 @@ csi-sanity -csi.endpoint /var/lib/kubelet/obsoleted-longhorn-plugins/driver.long
       <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/node/degraded-availability/</guid>
       <description>https://github.com/longhorn/longhorn/issues/1701
 Volume creation using UI with degraded availability and added node Start with one node cluster.
- Create a Deployment Pod with a volume and three replicas.  After the volume is attached, scheduling error should be seen from the UI. But no functional impact.   Write data to the Pod. Scale down the deployment to 0 to detach the volume.  scheduling error should be gone.   Scale up the deployment back to 1 verify the data.</description>
+Create a Deployment Pod with a volume and three replicas. After the volume is attached, scheduling error should be seen from the UI. But no functional impact. Write data to the Pod. Scale down the deployment to 0 to detach the volume. scheduling error should be gone. Scale up the deployment back to 1 verify the data.</description>
     </item>
     
     <item>
@@ -398,7 +406,7 @@ Volume creation using UI with degraded availability and added node Start with on
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/ha/disk-migration-in-aws-asg/</guid>
-      <description>Some Longhorn worker nodes in AWS Auto Scaling group is in replacement  Launch a Kubernetes cluster with the nodes in AWS Auto Scaling group. Make sure there is an additional EBS attached to instance with setting Delete on Termination disabled. Deploy Longhorn v1.1.0 on the cluster and Set ReplicaReplenishmentWaitInterval. Make sure it&amp;rsquo;s longer than the time needs for node replacement. Deploy some workloads using Longhorn volumes. Trigger the ASG instance refresh in AWS.</description>
+      <description>Some Longhorn worker nodes in AWS Auto Scaling group is in replacement Launch a Kubernetes cluster with the nodes in AWS Auto Scaling group. Make sure there is an additional EBS attached to instance with setting Delete on Termination disabled. Deploy Longhorn v1.1.0 on the cluster and Set ReplicaReplenishmentWaitInterval. Make sure it&amp;rsquo;s longer than the time needs for node replacement. Deploy some workloads using Longhorn volumes. Trigger the ASG instance refresh in AWS.</description>
     </item>
     
     <item>
@@ -408,7 +416,7 @@ Volume creation using UI with degraded availability and added node Start with on
       
       <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.1/dr-volume-latest-backup-deletion/</guid>
       <description>DR volume keeps getting the latest update from the related backups. Edge cases where the latest backup is deleted can be test as below.
-Case 1:  Create a volume and take multiple backups for the same. Delete the latest backup. Create another cluster and set the same backup store to access the backups created in step 1. Go to backup page and click on the backup. Verify the Create Disaster Recovery option is enabled for it.</description>
+Case 1: Create a volume and take multiple backups for the same. Delete the latest backup. Create another cluster and set the same backup store to access the backups created in step 1. Go to backup page and click on the backup. Verify the Create Disaster Recovery option is enabled for it.</description>
     </item>
     
     <item>
@@ -418,7 +426,7 @@ Case 1:  Create a volume and take multiple backups for the same. Delete the late
       
       <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.3.0/extend_csi_snapshot_support/</guid>
       <description>Related issue https://github.com/longhorn/longhorn/issues/2534
-Test Setup  Deploy the CSI snapshot CRDs, Controller as instructed at https://longhorn.io/docs/1.2.3/snapshots-and-backups/csi-snapshot-support/enable-csi-snapshot-support/ Deploy 4 VolumeSnapshotClass: kind: VolumeSnapshotClass apiVersion: snapshot.storage.k8s.io/v1beta1 metadata:  name: longhorn-backup-1 driver: driver.longhorn.io deletionPolicy: Delete kind: VolumeSnapshotClass apiVersion: snapshot.storage.k8s.io/v1beta1 metadata:  name: longhorn-backup-2 driver: driver.longhorn.io deletionPolicy: Delete parameters:  type: bak kind: VolumeSnapshotClass apiVersion: snapshot.storage.k8s.io/v1beta1 metadata:  name: longhorn-snapshot driver: driver.longhorn.io deletionPolicy: Delete parameters:  type: snap kind: VolumeSnapshotClass apiVersion: snapshot.storage.k8s.io/v1beta1 metadata:  name: invalid-class driver: driver.</description>
+Test Setup Deploy the CSI snapshot CRDs, Controller as instructed at https://longhorn.io/docs/1.2.3/snapshots-and-backups/csi-snapshot-support/enable-csi-snapshot-support/ Deploy 4 VolumeSnapshotClass: kind: VolumeSnapshotClass apiVersion: snapshot.storage.k8s.io/v1beta1 metadata: name: longhorn-backup-1 driver: driver.longhorn.io deletionPolicy: Delete kind: VolumeSnapshotClass apiVersion: snapshot.storage.k8s.io/v1beta1 metadata: name: longhorn-backup-2 driver: driver.longhorn.io deletionPolicy: Delete parameters: type: bak kind: VolumeSnapshotClass apiVersion: snapshot.storage.k8s.io/v1beta1 metadata: name: longhorn-snapshot driver: driver.longhorn.io deletionPolicy: Delete parameters: type: snap kind: VolumeSnapshotClass apiVersion: snapshot.storage.k8s.io/v1beta1 metadata: name: invalid-class driver: driver.longhorn.io deletionPolicy: Delete parameters: type: invalid Create Longhorn volume test-vol of 5GB.</description>
     </item>
     
     <item>
@@ -428,8 +436,9 @@ Test Setup  Deploy the CSI snapshot CRDs, Controller as instructed at https://lo
       
       <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/ha/ha-volume-migration/</guid>
       <description>Create a migratable volume:
- Deploy a migratable StorageClass. e.g., https://github.com/longhorn/longhorn/blob/master/examples/rwx/storageclass-migratable.yaml Create a PVC with access mode ReadWriteMany via this StorageClass.    Attach a volume to a node and wait for volume running. Then write some data into the volume. Here I would recommend directly restoring a volume (set fromBackup in the StorageClass) and attach it instead.
-  Start the migration by request attaching to another node for the volume.</description>
+Deploy a migratable StorageClass. e.g., https://github.com/longhorn/longhorn/blob/master/examples/rwx/storageclass-migratable.yaml Create a PVC with access mode ReadWriteMany via this StorageClass. Attach a volume to a node and wait for volume running. Then write some data into the volume. Here I would recommend directly restoring a volume (set fromBackup in the StorageClass) and attach it instead.
+Start the migration by request attaching to another node for the volume.
+Trigger the following scenarios then confirm or rollback the migration:</description>
     </item>
     
     <item>
@@ -438,7 +447,7 @@ Test Setup  Deploy the CSI snapshot CRDs, Controller as instructed at https://lo
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/node/improve-node-failure-handling/</guid>
-      <description>Setup a cluster of 3 worker nodes Install Longhorn and set Default Replica Count = 2 (because we will turn off one node) Create a StatefulSet with 2 pods using the command: kubectl create -f https://raw.githubusercontent.com/longhorn/longhorn/master/examples/statefulset.yaml  Create a volume + pv + pvc named vol1 and create a deployment(1 pod) of default ubuntu named shell with the usage of pvc vol1 mounted under /mnt/vol1 Find the node which contains one pod of the StatefulSet/Deployment.</description>
+      <description>Setup a cluster of 3 worker nodes Install Longhorn and set Default Replica Count = 2 (because we will turn off one node) Create a StatefulSet with 2 pods using the command: kubectl create -f https://raw.githubusercontent.com/longhorn/longhorn/master/examples/statefulset.yaml Create a volume + pv + pvc named vol1 and create a deployment(1 pod) of default ubuntu named shell with the usage of pvc vol1 mounted under /mnt/vol1 Find the node which contains one pod of the StatefulSet/Deployment.</description>
     </item>
     
     <item>
@@ -449,7 +458,7 @@ Test Setup  Deploy the CSI snapshot CRDs, Controller as instructed at https://lo
       <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/kubernetes-upgrade-test/</guid>
       <description>We also need to cover the Kubernetes upgrade process for supported Kubernetes version, make sure pod and volumes works after a major version upgrade.
 Related Issue https://github.com/longhorn/longhorn/issues/2566
-Test with K8s upgrade  Create a K8s (Immediate prior version) cluster with 3 worker nodes and 1 control plane. Deploy Longhorn version (Immediate prior version) on the cluster. Create a volume and attach to a pod. Write data to the volume and compute the checksum.</description>
+Test with K8s upgrade Create a K8s (Immediate prior version) cluster with 3 worker nodes and 1 control plane. Deploy Longhorn version (Immediate prior version) on the cluster. Create a volume and attach to a pod. Write data to the volume and compute the checksum.</description>
     </item>
     
     <item>
@@ -458,7 +467,7 @@ Test with K8s upgrade  Create a K8s (Immediate prior version) cluster with 3 wor
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/stability/multiple-installation/</guid>
-      <description>Create a cluster(3 worker nodes and 1 etc/control plane). Deploy the longhorn app. Once longhorn deployed successfully, uninstall longhorn. Repeat the steps 2 and 3 multiple times. Run the below script to install and uninstall longhorn continuously for some time.  installcount=0 while true; echo `date` do kubectl apply -f https://raw.githubusercontent.com/longhorn/longhorn/master/deploy/longhorn.yaml pod=`kubectl get pods -n longhorn-system | grep -i &amp;#39;longhorn-manager&amp;#39; | grep -i &amp;#39;running&amp;#39; | awk -F &amp;#39; &amp;#39; &amp;#39;{print $2}&amp;#39; | grep &amp;#39;1/1&amp;#39; | wc -l` count=0 while [ $pod !</description>
+      <description>Create a cluster(3 worker nodes and 1 etc/control plane). Deploy the longhorn app. Once longhorn deployed successfully, uninstall longhorn. Repeat the steps 2 and 3 multiple times. Run the below script to install and uninstall longhorn continuously for some time. installcount=0 while true; echo `date` do kubectl apply -f https://raw.githubusercontent.com/longhorn/longhorn/master/deploy/longhorn.yaml pod=`kubectl get pods -n longhorn-system | grep -i &amp;#39;longhorn-manager&amp;#39; | grep -i &amp;#39;running&amp;#39; | awk -F &amp;#39; &amp;#39; &amp;#39;{print $2}&amp;#39; | grep &amp;#39;1/1&amp;#39; | wc -l` count=0 while [ $pod !</description>
     </item>
     
     <item>
@@ -467,8 +476,8 @@ Test with K8s upgrade  Create a K8s (Immediate prior version) cluster with 3 wor
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/longhorn-upgrade-test/</guid>
-      <description>Setup  2 attached volumes with data. 2 detached volumes with data. 2 new volumes without data. 2 deployments of one pod. 1 statefulset of 10 pods. Auto Salvage set to disable.  Test After upgrade:
- Make sure the existing instance managers didn&amp;rsquo;t restart. Make sure pods didn&amp;rsquo;t restart. Check the contents of the volumes. If the Engine API version is incompatible, manager cannot do anything about the attached volumes except detaching it.</description>
+      <description>Setup 2 attached volumes with data. 2 detached volumes with data. 2 new volumes without data. 2 deployments of one pod. 1 statefulset of 10 pods. Auto Salvage set to disable. Test After upgrade:
+Make sure the existing instance managers didn&amp;rsquo;t restart. Make sure pods didn&amp;rsquo;t restart. Check the contents of the volumes. If the Engine API version is incompatible, manager cannot do anything about the attached volumes except detaching it.</description>
     </item>
     
     <item>
@@ -478,7 +487,7 @@ Test with K8s upgrade  Create a K8s (Immediate prior version) cluster with 3 wor
       
       <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/ha/partial-engine-deployment/</guid>
       <description>Related Issue https://github.com/longhorn/longhorn/issues/2081
-Scenarios: Case 1: Test volume operations when some of the engine image DaemonSet pods are miss scheduled  Install Longhorn in a 3-node cluster: node-1, node-2, node-3 Create a volume, vol-1, of 3 replicas Create another volume, vol-2, of 3 replicas Taint node-1 with the taint: key=value:NoSchedule Check that all functions (attach, detach, snapshot, backup, expand, restore, creating DR volume, &amp;hellip; ) are working ok for vol-1  Case 2: Test volume operations when some of the engine image DaemonSet pods are not fully deployed  Continue from case 1 Attach vol-1 to node-1.</description>
+Scenarios: Case 1: Test volume operations when some of the engine image DaemonSet pods are miss scheduled Install Longhorn in a 3-node cluster: node-1, node-2, node-3 Create a volume, vol-1, of 3 replicas Create another volume, vol-2, of 3 replicas Taint node-1 with the taint: key=value:NoSchedule Check that all functions (attach, detach, snapshot, backup, expand, restore, creating DR volume, &amp;hellip; ) are working ok for vol-1 Case 2: Test volume operations when some of the engine image DaemonSet pods are not fully deployed Continue from case 1 Attach vol-1 to node-1.</description>
     </item>
     
     <item>
@@ -488,7 +497,7 @@ Scenarios: Case 1: Test volume operations when some of the engine image DaemonSe
       
       <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/partial-engine-deployment/</guid>
       <description>Related Issue https://github.com/longhorn/longhorn/issues/2081
-Scenarios: Case 1: Test volume operations when some of the engine image DaemonSet pods are miss scheduled  Install Longhorn in a 3-node cluster: node-1, node-2, node-3 Create a volume, vol-1, of 3 replicas Create another volume, vol-2, of 3 replicas Taint node-1 with the taint: key=value:NoSchedule Check that all functions (attach, detach, snapshot, backup, expand, restore, creating DR volume, &amp;hellip; ) are working ok for vol-1  Case 2: Test volume operations when some of engine image DaemonSet pods are not fully deployed  Continue from case 1 Attach vol-1 to node-1.</description>
+Scenarios: Case 1: Test volume operations when some of the engine image DaemonSet pods are miss scheduled Install Longhorn in a 3-node cluster: node-1, node-2, node-3 Create a volume, vol-1, of 3 replicas Create another volume, vol-2, of 3 replicas Taint node-1 with the taint: key=value:NoSchedule Check that all functions (attach, detach, snapshot, backup, expand, restore, creating DR volume, &amp;hellip; ) are working ok for vol-1 Case 2: Test volume operations when some of engine image DaemonSet pods are not fully deployed Continue from case 1 Attach vol-1 to node-1.</description>
     </item>
     
     <item>
@@ -497,7 +506,7 @@ Scenarios: Case 1: Test volume operations when some of the engine image DaemonSe
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/monitoring/</guid>
-      <description>Prometheus Support test cases  Install the Prometheus Operator (include a role and service account for it). For example:apiVersion: rbac.authorization.k8s.io/v1 kind: ClusterRoleBinding metadata: name: prometheus-operator namespace: default roleRef: apiGroup: rbac.authorization.k8s.io kind: ClusterRole name: prometheus-operator subjects:
+      <description>Prometheus Support test cases Install the Prometheus Operator (include a role and service account for it). For example:apiVersion: rbac.authorization.k8s.io/v1 kind: ClusterRoleBinding metadata: name: prometheus-operator namespace: default roleRef: apiGroup: rbac.authorization.k8s.io kind: ClusterRole name: prometheus-operator subjects:
 - kind: ServiceAccount name: prometheus-operator namespace: default
 &amp;ndash; apiVersion: rbac.authorization.k8s.io/v1 kind: ClusterRole metadata: name: prometheus-operator namespace: default rules:
 - apiGroups:
@@ -546,7 +555,7 @@ What makes all replicas in ERROR state? If there is data writing during the disc
       
       <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/node/node-drain-deletion/</guid>
       <description>Drain with force Make sure the volumes on the drained/removed node can be detached or recovered correctly. The related issue: https://github.com/longhorn/longhorn/issues/1214
- Deploy a cluster contains 3 worker nodes N1, N2, N3. Deploy Longhorn. Create a 1-replica deployment with a 3-replica Longhorn volume. The volume is attached to N1. Write some data to the volume and get the md5sum. Force drain and remove N2, which contains one replica only. kubectl drain &amp;lt;Node name&amp;gt; --delete-emptydir-data=true --force=true --grace-period=-1 --ignore-daemonsets=true --timeout=&amp;lt;Desired timeout in secs&amp;gt;  Wait for the volume Degraded.</description>
+Deploy a cluster contains 3 worker nodes N1, N2, N3. Deploy Longhorn. Create a 1-replica deployment with a 3-replica Longhorn volume. The volume is attached to N1. Write some data to the volume and get the md5sum. Force drain and remove N2, which contains one replica only. kubectl drain &amp;lt;Node name&amp;gt; --delete-emptydir-data=true --force=true --grace-period=-1 --ignore-daemonsets=true --timeout=&amp;lt;Desired timeout in secs&amp;gt; Wait for the volume Degraded.</description>
     </item>
     
     <item>
@@ -565,7 +574,7 @@ What makes all replicas in ERROR state? If there is data writing during the disc
       
       <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.1/priorityclass-default-setting/</guid>
       <description>There are three different cases we need to test when the user inputs a default setting for Priority Class:
- Install Longhorn with no priority-class set in the default settings. The Priority Class setting should be empty after the installation completes according to the longhorn-ui, and the default Priority of all Pods in the longhorn-system namespace should be 0:  ~ kubectl -n longhorn-system describe pods | grep Priority # should be repeated many times Priority: 0 Install Longhorn with a nonexistent priority-class in the default settings.</description>
+Install Longhorn with no priority-class set in the default settings. The Priority Class setting should be empty after the installation completes according to the longhorn-ui, and the default Priority of all Pods in the longhorn-system namespace should be 0: ~ kubectl -n longhorn-system describe pods | grep Priority # should be repeated many times Priority: 0 Install Longhorn with a nonexistent priority-class in the default settings.</description>
     </item>
     
     <item>
@@ -575,7 +584,7 @@ What makes all replicas in ERROR state? If there is data writing during the disc
       
       <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/prometheus_support/</guid>
       <description>Prometheus Support allows user to monitor the longhorn metrics. The details are available at https://longhorn.io/docs/1.1.0/monitoring/
-Monitor longhorn  Deploy the Prometheus-operator, ServiceMonitor pointing to longhorn-backend and Prometheus as mentioned in the doc. Create an ingress pointing to Prometheus service. Access the Prometheus web UI using the ingress created in the step 2. Select the metrics from below to monitor the longhorn resources.  longhorn_volume_actual_size_bytes longhorn_volume_capacity_bytes longhorn_volume_robustness longhorn_volume_state longhorn_instance_manager_cpu_requests_millicpu longhorn_instance_manager_cpu_usage_millicpu longhorn_instance_manager_memory_requests_bytes longhorn_instance_manager_memory_usage_bytes longhorn_manager_cpu_usage_millicpu longhorn_manager_memory_usage_bytes longhorn_node_count_total longhorn_node_status longhorn_node_cpu_capacity_millicpu longhorn_node_cpu_usage_millicpu longhorn_node_memory_capacity_bytes longhorn_node_memory_usage_bytes longhorn_node_storage_capacity_bytes longhorn_node_storage_reservation_bytes longhorn_node_storage_usage_bytes longhorn_disk_capacity_bytes longhorn_disk_reservation_bytes longhorn_disk_usage_bytes   Deploy workloads which use Longhorn volumes into the cluster.</description>
+Monitor longhorn Deploy the Prometheus-operator, ServiceMonitor pointing to longhorn-backend and Prometheus as mentioned in the doc. Create an ingress pointing to Prometheus service. Access the Prometheus web UI using the ingress created in the step 2. Select the metrics from below to monitor the longhorn resources. longhorn_volume_actual_size_bytes longhorn_volume_capacity_bytes longhorn_volume_robustness longhorn_volume_state longhorn_instance_manager_cpu_requests_millicpu longhorn_instance_manager_cpu_usage_millicpu longhorn_instance_manager_memory_requests_bytes longhorn_instance_manager_memory_usage_bytes longhorn_manager_cpu_usage_millicpu longhorn_manager_memory_usage_bytes longhorn_node_count_total longhorn_node_status longhorn_node_cpu_capacity_millicpu longhorn_node_cpu_usage_millicpu longhorn_node_memory_capacity_bytes longhorn_node_memory_usage_bytes longhorn_node_storage_capacity_bytes longhorn_node_storage_reservation_bytes longhorn_node_storage_usage_bytes longhorn_disk_capacity_bytes longhorn_disk_reservation_bytes longhorn_disk_usage_bytes Deploy workloads which use Longhorn volumes into the cluster.</description>
     </item>
     
     <item>
@@ -584,7 +593,7 @@ Monitor longhorn  Deploy the Prometheus-operator, ServiceMonitor pointing to lon
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/update_csi_components_when_images_change/</guid>
-      <description> Install Longhorn Change the longhorn-driver-deployer yaml at https://github.com/longhorn/longhorn-manager/blob/c2ceb9f3f991810f811601d8c41c09b67fb50746/deploy/install/02-components/04-driver.yaml#L50 to use the new images for some CSI components Kubectl apply -f the longhorn-driver-deployer yaml Verify that only CSI components with the new images are re-deployed and have new images Redeploy longhorn-driver-deployer without changing the images. Verify that no CSI component is re-deployed  </description>
+      <description> Install Longhorn Change the longhorn-driver-deployer yaml at https://github.com/longhorn/longhorn-manager/blob/c2ceb9f3f991810f811601d8c41c09b67fb50746/deploy/install/02-components/04-driver.yaml#L50 to use the new images for some CSI components Kubectl apply -f the longhorn-driver-deployer yaml Verify that only CSI components with the new images are re-deployed and have new images Redeploy longhorn-driver-deployer without changing the images. Verify that no CSI component is re-deployed </description>
     </item>
     
     <item>
@@ -594,7 +603,7 @@ Monitor longhorn  Deploy the Prometheus-operator, ServiceMonitor pointing to lon
       
       <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/recurring-backup-job-interruptions/</guid>
       <description>Related Issue https://github.com/longhorn/longhorn/issues/1882
-Scenario 1- Allow Recurring Job While Volume Is Detached disabled, attached pod scaled down while the recurring backup was in progress.  Create a volume, attach to a pod of a statefulSet, and write 800 Mi data into it. Set a recurring job. While the recurring job is in progress, scale down the pod to 0 of the statefulSet. Volume first detached and cron job gets finished saying unable to complete the backup.</description>
+Scenario 1- Allow Recurring Job While Volume Is Detached disabled, attached pod scaled down while the recurring backup was in progress. Create a volume, attach to a pod of a statefulSet, and write 800 Mi data into it. Set a recurring job. While the recurring job is in progress, scale down the pod to 0 of the statefulSet. Volume first detached and cron job gets finished saying unable to complete the backup.</description>
     </item>
     
     <item>
@@ -603,7 +612,7 @@ Scenario 1- Allow Recurring Job While Volume Is Detached disabled, attached pod 
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/ha/replica-rebuilding/</guid>
-      <description>Create and attach a volume. Write a large amount of data to the volume. Disable disk scheduling and the node scheduling for one replica. Crash the replica progress. Verify  the corresponding replica will become ERROR. the volume will keep robustness Degraded.   Enable the disk scheduling. Verify nothing changes. Enable the node scheduling. Verify.  the failed replica is reused by Longhorn. the rebuilding progress in UI page looks good.</description>
+      <description>Create and attach a volume. Write a large amount of data to the volume. Disable disk scheduling and the node scheduling for one replica. Crash the replica progress. Verify the corresponding replica will become ERROR. the volume will keep robustness Degraded. Enable the disk scheduling. Verify nothing changes. Enable the node scheduling. Verify. the failed replica is reused by Longhorn. the rebuilding progress in UI page looks good. the data content is correct after rebuilding.</description>
     </item>
     
     <item>
@@ -612,7 +621,7 @@ Scenario 1- Allow Recurring Job While Volume Is Detached disabled, attached pod 
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/cluster-restore/restore-to-a-new-cluster/</guid>
-      <description>Back up the old cluster  Deploy the 1st cluster then install Longhorn system and Velero. Deploy some workloads using Longhorn volumes then write some data:  A simple pod using multiple volumes. And some volumes are using backing images. A StatefulSet. A Deployment with a RWX volume.   Config some recurring policies for the volumes. Create backups for all volumes. Create a cluster backup via Velero. velero backup create lh-cluster --exclude-resources persistentvolumes,persistentvolumeclaims,backuptargets.</description>
+      <description>Back up the old cluster Deploy the 1st cluster then install Longhorn system and Velero. Deploy some workloads using Longhorn volumes then write some data: A simple pod using multiple volumes. And some volumes are using backing images. A StatefulSet. A Deployment with a RWX volume. Config some recurring policies for the volumes. Create backups for all volumes. Create a cluster backup via Velero. velero backup create lh-cluster --exclude-resources persistentvolumes,persistentvolumeclaims,backuptargets.longhorn.io,backupvolumes.longhorn.io,backups.longhorn.io,nodes.longhorn.io,volumes.longhorn.io,engines.longhorn.io,replicas.longhorn.io,backingimagedatasources.longhorn.io,backingimagemanagers.longhorn.io,backingimages.longhorn.io,sharemanagers.longhorn.io,instancemanagers.longhorn.io,engineimages.longhorn.io Restore to a new cluster Deploy the 2nd cluster then install Velero only.</description>
     </item>
     
     <item>
@@ -622,7 +631,7 @@ Scenario 1- Allow Recurring Job While Volume Is Detached disabled, attached pod 
       
       <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/cluster-restore/restore-to-an-old-cluster/</guid>
       <description>Notice that the behaviors will be different if the cluster node roles are different. e.g., A cluster contains 1 dedicated master node + 3 worker node is different from a cluster contains 3 nodes which are both master and worker. This test may need to be validated for both kind of cluster.
-Node creation and deletion  Deploy a 3-worker-node cluster then install Longhorn system. Deploy some workloads using Longhorn volumes then write some data.</description>
+Node creation and deletion Deploy a 3-worker-node cluster then install Longhorn system. Deploy some workloads using Longhorn volumes then write some data.</description>
     </item>
     
     <item>
@@ -632,7 +641,7 @@ Node creation and deletion  Deploy a 3-worker-node cluster then install Longhorn
       
       <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.1/error-fail-remount/</guid>
       <description>Case 1: Volume with a corrupted filesystem try to remount Steps to reproduce bug:
- Create a volume of size 1GB, say terminate-immediatly volume. Create PV/PVC from the volume terminate-immediatly Create a deployment of 1 pod with image ubuntu:xenial and the PVC terminate-immediatly in default namespace Find the node on which the pod is scheduled to. Let&amp;rsquo;s say the node is Node-1 ssh into Node-1 destroy the filesystem of terminate-immediatly by running command dd if=/dev/zero of=/dev/longhorn/terminate-immediatly Find and kill the engine instance manager in Node-X.</description>
+Create a volume of size 1GB, say terminate-immediatly volume. Create PV/PVC from the volume terminate-immediatly Create a deployment of 1 pod with image ubuntu:xenial and the PVC terminate-immediatly in default namespace Find the node on which the pod is scheduled to. Let&amp;rsquo;s say the node is Node-1 ssh into Node-1 destroy the filesystem of terminate-immediatly by running command dd if=/dev/zero of=/dev/longhorn/terminate-immediatly Find and kill the engine instance manager in Node-X.</description>
     </item>
     
     <item>
@@ -641,7 +650,7 @@ Node creation and deletion  Deploy a 3-worker-node cluster then install Longhorn
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/reusing-failed-replica-for-rebuilding/</guid>
-      <description>Longhorn upgrade with node down and removal  Launch Longhorn v1.0.x Create and attach a volume, then write data to the volume. Directly remove a Kubernetes node, and shut down a node. Wait for the related replicas failure. Then record replica.Spec.DiskID for the failed replicas. Upgrade to Longhorn master Verify the Longhorn node related to the removed node is gone. Verify  replica.Spec.DiskID on the down node is updated and the field of the replica on the gone node is unchanged.</description>
+      <description>Longhorn upgrade with node down and removal Launch Longhorn v1.0.x Create and attach a volume, then write data to the volume. Directly remove a Kubernetes node, and shut down a node. Wait for the related replicas failure. Then record replica.Spec.DiskID for the failed replicas. Upgrade to Longhorn master Verify the Longhorn node related to the removed node is gone. Verify replica.Spec.DiskID on the down node is updated and the field of the replica on the gone node is unchanged.</description>
     </item>
     
     <item>
@@ -652,7 +661,7 @@ Node creation and deletion  Deploy a 3-worker-node cluster then install Longhorn
       <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/tolerations_priorityclass_setting/</guid>
       <description>Related issue https://github.com/longhorn/longhorn/issues/2120
 Manual Tests:
-Case 1: Existing Longhorn installation  Install Longhorn master. Change toleration in UI setting Verify that longhorn.io/last-applied-tolerations annotation and toleration of manager, drive deployer, UI are not changed. Verify that longhorn.io/last-applied-tolerations annotation and toleration for managed components (CSI components, IM pods, share manager pod, EI daemonset, backing-image-manager, cronjob) are updated correctly  Case 2: New installation by Helm  Install Longhorn master, set tolerations like:  defaultSettings:  taintToleration: &amp;#34;key=value:NoSchedule&amp;#34;  longhornManager:  priorityClass: ~  tolerations:  - key: key  operator: Equal  value: value  effect: NoSchedule  longhornDriver:  priorityClass: ~  tolerations:  - key: key  operator: Equal  value: value  effect: NoSchedule  longhornUI:  priorityClass: ~  tolerations:  - key: key  operator: Equal  value: value  effect: NoSchedule  Verify that the toleration is added for: IM pods, Share Manager pods, CSI deployments, CSI daemonset, the backup jobs, manager, drive deployer, UI Uninstall the Helm release.</description>
+Case 1: Existing Longhorn installation Install Longhorn master. Change toleration in UI setting Verify that longhorn.io/last-applied-tolerations annotation and toleration of manager, drive deployer, UI are not changed. Verify that longhorn.io/last-applied-tolerations annotation and toleration for managed components (CSI components, IM pods, share manager pod, EI daemonset, backing-image-manager, cronjob) are updated correctly Case 2: New installation by Helm Install Longhorn master, set tolerations like: defaultSettings: taintToleration: &amp;#34;key=value:NoSchedule&amp;#34; longhornManager: priorityClass: ~ tolerations: - key: key operator: Equal value: value effect: NoSchedule longhornDriver: priorityClass: ~ tolerations: - key: key operator: Equal value: value effect: NoSchedule longhornUI: priorityClass: ~ tolerations: - key: key operator: Equal value: value effect: NoSchedule Verify that the toleration is added for: IM pods, Share Manager pods, CSI deployments, CSI daemonset, the backup jobs, manager, drive deployer, UI Uninstall the Helm release.</description>
     </item>
     
     <item>
@@ -663,7 +672,7 @@ Case 1: Existing Longhorn installation  Install Longhorn master. Change tolerati
       <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/ha/single-replica-node-down/</guid>
       <description>Related Issues https://github.com/longhorn/longhorn/issues/2329 https://github.com/longhorn/longhorn/issues/2309
 Default Setting Automatic salvage is enabled.
-Node restart/down scenario with Pod Deletion Policy When Node is Down set to default value do-nothing.  Create RWO|RWX volume with replica count = 1 &amp;amp; data locality = enabled|disabled. Create deployment|statefulset for volume. Power down node of volume/replica. The workload pod will get stuck in the unknown state. Volume will fail to attach since volume is not ready (i.e remains faulted, since single replica is on downed node).</description>
+Node restart/down scenario with Pod Deletion Policy When Node is Down set to default value do-nothing. Create RWO|RWX volume with replica count = 1 &amp;amp; data locality = enabled|disabled. Create deployment|statefulset for volume. Power down node of volume/replica. The workload pod will get stuck in the unknown state. Volume will fail to attach since volume is not ready (i.e remains faulted, since single replica is on downed node).</description>
     </item>
     
     <item>
@@ -673,7 +682,7 @@ Node restart/down scenario with Pod Deletion Policy When Node is Down set to def
       
       <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/basic-operations-parallelism/snapshot-while-writing-data/</guid>
       <description>Related issue: https://github.com/longhorn/longhorn/issues/2187
-Scenario  Create a kubernetes pod + pvc that mounts a Longhorn volume. Write 5 Gib into the pod using dd if=/dev/urandom of=/mnt/&amp;lt;volume&amp;gt; count=5000 bs=1M conv=fsync status=progress While running the above command initiate a snapshot. Verify the logs of the instance-manager using kubetail instance-manager -n longhorn-system. There should some logs related to freezing and unfreezing the filesystem. Like Froze filesystem of volume mounted ... Verify snapshot succeeded and dd operation will complete.</description>
+Scenario Create a kubernetes pod + pvc that mounts a Longhorn volume. Write 5 Gib into the pod using dd if=/dev/urandom of=/mnt/&amp;lt;volume&amp;gt; count=5000 bs=1M conv=fsync status=progress While running the above command initiate a snapshot. Verify the logs of the instance-manager using kubetail instance-manager -n longhorn-system. There should some logs related to freezing and unfreezing the filesystem. Like Froze filesystem of volume mounted ... Verify snapshot succeeded and dd operation will complete.</description>
     </item>
     
     <item>
@@ -683,7 +692,7 @@ Scenario  Create a kubernetes pod + pvc that mounts a Longhorn volume. Write 5 G
       
       <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/kubelet_volume_metrics/</guid>
       <description>Intro Kubelet exposes kubelet_volume_stats_* metrics. Those metrics measure PVC&amp;rsquo;s filesystem related information inside a Longhorn block device.
-Test steps:  Create a cluster and set up this monitoring system: https://github.com/prometheus-community/helm-charts/tree/main/charts/kube-prometheus-stack Install Longhorn. Deploy some workloads using Longhorn volumes. Make sure there are some workloads using Longhorn PVCs in volumeMode: Block and some workloads using Longhorn PVCs in volumeMode: Filesystem. See https://longhorn.io/docs/1.0.2/references/examples/ for examples. Create ingress to Prometheus server and Grafana. Navigate to Prometheus server, verify that all Longhorn PVCs in volumeMode: Filesystem show up in metrics: kubelet_volume_stats_capacity_bytes kubelet_volume_stats_available_bytes kubelet_volume_stats_used_bytes kubelet_volume_stats_inodes kubelet_volume_stats_inodes_free kubelet_volume_stats_inodes_used.</description>
+Test steps: Create a cluster and set up this monitoring system: https://github.com/prometheus-community/helm-charts/tree/main/charts/kube-prometheus-stack Install Longhorn. Deploy some workloads using Longhorn volumes. Make sure there are some workloads using Longhorn PVCs in volumeMode: Block and some workloads using Longhorn PVCs in volumeMode: Filesystem. See https://longhorn.io/docs/1.0.2/references/examples/ for examples. Create ingress to Prometheus server and Grafana. Navigate to Prometheus server, verify that all Longhorn PVCs in volumeMode: Filesystem show up in metrics: kubelet_volume_stats_capacity_bytes kubelet_volume_stats_available_bytes kubelet_volume_stats_used_bytes kubelet_volume_stats_inodes kubelet_volume_stats_inodes_free kubelet_volume_stats_inodes_used.</description>
     </item>
     
     <item>
@@ -692,7 +701,7 @@ Test steps:  Create a cluster and set up this monitoring system: https://github.
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.1/test-s3-access-style/</guid>
-      <description>Case 1: Using Alibaba Cloud OSS bucket as backupstore  Create an OSS bucket within Region China in Alibaba Cloud(Aliyun). Create a secret without VIRTUAL_HOSTED_STYLE for the OSS bucket. Set backup target and the secret in Longhorn UI. Try to list backup. Then the error error: AWS Error: SecondLevelDomainForbidden Please use virtual hosted style to access. is triggered. Add VIRTUAL_HOSTED_STYLE: dHJ1ZQ== # true to the secret. Backup list/create/delete/restore work fine after the configuration.</description>
+      <description>Case 1: Using Alibaba Cloud OSS bucket as backupstore Create an OSS bucket within Region China in Alibaba Cloud(Aliyun). Create a secret without VIRTUAL_HOSTED_STYLE for the OSS bucket. Set backup target and the secret in Longhorn UI. Try to list backup. Then the error error: AWS Error: SecondLevelDomainForbidden Please use virtual hosted style to access. is triggered. Add VIRTUAL_HOSTED_STYLE: dHJ1ZQ== # true to the secret. Backup list/create/delete/restore work fine after the configuration.</description>
     </item>
     
     <item>
@@ -702,7 +711,7 @@ Test steps:  Create a cluster and set up this monitoring system: https://github.
       
       <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/additional-printer-columns/</guid>
       <description>For each of the case below:
- Fresh installation of Longhorn. (make sure to delete all Longhorn CRDs before installation) Upgrade from older version.  Run:
+Fresh installation of Longhorn. (make sure to delete all Longhorn CRDs before installation) Upgrade from older version. Run:
 kubectl get &amp;lt;LONGHORN-CRD&amp;gt; -n longhorn-system Verify that the output contains information as specify in the additionalPrinerColumns at here</description>
     </item>
     
@@ -712,7 +721,7 @@ kubectl get &amp;lt;LONGHORN-CRD&amp;gt; -n longhorn-system Verify that the outp
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.2.0/test-backing-image-upload/</guid>
-      <description>Test upload  Prepare a large backing image file (make sure the size is greater than 1Gi and the uploading time is longer than 1 minute) in local. Click the backing image creation button in UI, choose Upload From Local, select the file then start upload. Wait for the initialization complete. Then the upload progress will be shown. During the uploading, verify the corresponding backing image data source pod won&amp;rsquo;t use too many CPU (50 ~ 200m) and memory(50 ~ 200Mi) resources.</description>
+      <description>Test upload Prepare a large backing image file (make sure the size is greater than 1Gi and the uploading time is longer than 1 minute) in local. Click the backing image creation button in UI, choose Upload From Local, select the file then start upload. Wait for the initialization complete. Then the upload progress will be shown. During the uploading, verify the corresponding backing image data source pod won&amp;rsquo;t use too many CPU (50 ~ 200m) and memory(50 ~ 200Mi) resources.</description>
     </item>
     
     <item>
@@ -721,7 +730,16 @@ kubectl get &amp;lt;LONGHORN-CRD&amp;gt; -n longhorn-system Verify that the outp
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.2.3/test-backing-image-checksum-mismatching/</guid>
-      <description>Test step  Modify setting Backing Image Recovery Wait Interval to a shorter value so that the backing image will start auto recovery eariler. Create a backing image file with type Download From URL. Launch a volume using the backing image file so that there are 2 disk records for the backing image. Modify one disk file for the backing image and make sure the file size is not changed. This will lead to data inconsistency/corruption later.</description>
+      <description>Test step Modify setting Backing Image Recovery Wait Interval to a shorter value so that the backing image will start auto recovery eariler. Create a backing image file with type Download From URL. Launch a volume using the backing image file so that there are 2 disk records for the backing image. Modify one disk file for the backing image and make sure the file size is not changed. This will lead to data inconsistency/corruption later.</description>
+    </item>
+    
+    <item>
+      <title>Test backing image download to local</title>
+      <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.3.0/test-backing-image-download-to-local/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.3.0/test-backing-image-download-to-local/</guid>
+      <description>Test step Create and attach a volume (recommended volume size &amp;gt; 1Gi). Write some data into the file then calculate the SHA512 checksum of the volume block device. Create a backing image from the above volume. And wait for the 1st backing image file ready. Download the backing image to local via UI (Clicking button Download in Operation list of the backing image). =&amp;gt; Verify the downloaded file checksum is the same as the volume checksum &amp;amp; the backing image current checksum (when Exported Backing Image Type is raw).</description>
     </item>
     
     <item>
@@ -730,7 +748,7 @@ kubectl get &amp;lt;LONGHORN-CRD&amp;gt; -n longhorn-system Verify that the outp
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/backing-image-during-upgrade/</guid>
-      <description>System upgrade with compatible backing image manager image  Deploy Longhorn. Then set Concurrent Automatic Engine Upgrade Per Node Limit to a positive value to enable volume engine auto upgrade. Create 2 backing images: a large one and a small one. Longhorn will start preparing the 1st file for both backing image immediately via launching backing image data source pods. Wait for the small backing image being ready in the 1st disk.</description>
+      <description>System upgrade with compatible backing image manager image Deploy Longhorn. Then set Concurrent Automatic Engine Upgrade Per Node Limit to a positive value to enable volume engine auto upgrade. Create 2 backing images: a large one and a small one. Longhorn will start preparing the 1st file for both backing image immediately via launching backing image data source pods. Wait for the small backing image being ready in the 1st disk.</description>
     </item>
     
     <item>
@@ -740,7 +758,7 @@ kubectl get &amp;lt;LONGHORN-CRD&amp;gt; -n longhorn-system Verify that the outp
       
       <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.2.3/test-backing-image-space-usage/</guid>
       <description>Prerequisite A sparse file should be prepared before test. e.g.:
-~ touch empty-filesystem.raw ~ truncate -s 500M empty-filesystem.raw ~ mkfs.ext4 empty-filesystem.raw mke2fs 1.46.1 (9-Feb-2021) Creating filesystem with 512000 1k blocks and 128016 inodes Filesystem UUID: fe6cfb58-134a-42b3-afab-59474d9515e0 Superblock backups stored on blocks: 	8193, 24577, 40961, 57345, 73729, 204801, 221185, 401409  Allocating group tables: done Writing inode tables: done Creating journal (8192 blocks): done Writing superblocks and filesystem accounting information: done  ~ shasum -a 512 empty-filesystem.</description>
+~ touch empty-filesystem.raw ~ truncate -s 500M empty-filesystem.raw ~ mkfs.ext4 empty-filesystem.raw mke2fs 1.46.1 (9-Feb-2021) Creating filesystem with 512000 1k blocks and 128016 inodes Filesystem UUID: fe6cfb58-134a-42b3-afab-59474d9515e0 Superblock backups stored on blocks: 8193, 24577, 40961, 57345, 73729, 204801, 221185, 401409 Allocating group tables: done Writing inode tables: done Creating journal (8192 blocks): done Writing superblocks and filesystem accounting information: done ~ shasum -a 512 empty-filesystem.</description>
     </item>
     
     <item>
@@ -761,7 +779,7 @@ Then watch kubectl kubectl get backups.longhorn.io -l backup-volume=vol-old-engi
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/stress/backup-listing/</guid>
-      <description>1. Backup listing with more than 1000 backups - S3  Deploy Longhorn on a kubernetes cluster. Set up S3 backupStore. Create a volume of 2Gi and attach it to a pod. Write some data into it and compute md5sum. Open browser developer tool. Create one backup by clicking LH GUI (It&amp;rsquo;ll call snapshotCreate and snapshotBackup APIs). Copy the snapshotBackup API call, right click Copy -&amp;gt; Copy as cURL. Run the curl command over 1k times in the Shell.</description>
+      <description>1. Backup listing with more than 1000 backups - S3 Deploy Longhorn on a kubernetes cluster. Set up S3 backupStore. Create a volume of 2Gi and attach it to a pod. Write some data into it and compute md5sum. Open browser developer tool. Create one backup by clicking LH GUI (It&amp;rsquo;ll call snapshotCreate and snapshotBackup APIs). Copy the snapshotBackup API call, right click Copy -&amp;gt; Copy as cURL. Run the curl command over 1k times in the Shell.</description>
     </item>
     
     <item>
@@ -771,7 +789,7 @@ Then watch kubectl kubectl get backups.longhorn.io -l backup-volume=vol-old-engi
       
       <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.2/delete-cronjob-for-detached-volumes/</guid>
       <description>Related issue https://github.com/longhorn/longhorn/issues/2513
-Steps  Make sure the setting Allow Recurring Job While Volume Is Detached is disabled Create a volume. Attach to a node. Create a recurring backup job that run every minute. Wait for the cronjob to be scheduled a few times. Detach the volume. Verify that the CronJob get deleted. Wait 2 hours (&amp;gt; 100 mins). Attach the volume to a node. Verify that the CronJob get created.</description>
+Steps Make sure the setting Allow Recurring Job While Volume Is Detached is disabled Create a volume. Attach to a node. Create a recurring backup job that run every minute. Wait for the cronjob to be scheduled a few times. Detach the volume. Verify that the CronJob get deleted. Wait 2 hours (&amp;gt; 100 mins). Attach the volume to a node. Verify that the CronJob get created. Verify that Kubernetes schedules a run for the CronJob at the beginning of the next minute.</description>
     </item>
     
     <item>
@@ -783,7 +801,7 @@ Steps  Make sure the setting Allow Recurring Job While Volume Is Detached is dis
       <description>Related issue https://github.com/longhorn/longhorn/issues/2136
 https://github.com/longhorn/longhorn/issues/2197
 Longhorn v1.1.1 should work with IPv6 disabled.
-Scenario  Install Kubernetes Disable IPv6 on all the worker nodes using the following Go to the folder /etc/default In the grub file, edit the value GRUB_CMDLINE_LINUX_DEFAULT=&amp;#34;ipv6.disable=1&amp;#34; Once the file is saved update by the command update-grub Reboot the node and once the node becomes active, Use the command cat /proc/cmdline to verify &amp;#34;ipv6.disable=1&amp;#34; is reflected in the values  Deploy Longhorn and test basic use cases.</description>
+Scenario Install Kubernetes Disable IPv6 on all the worker nodes using the following Go to the folder /etc/default In the grub file, edit the value GRUB_CMDLINE_LINUX_DEFAULT=&amp;#34;ipv6.disable=1&amp;#34; Once the file is saved update by the command update-grub Reboot the node and once the node becomes active, Use the command cat /proc/cmdline to verify &amp;#34;ipv6.disable=1&amp;#34; is reflected in the values Deploy Longhorn and test basic use cases.</description>
     </item>
     
     <item>
@@ -792,7 +810,7 @@ Scenario  Install Kubernetes Disable IPv6 on all the worker nodes using the foll
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/engine-crash-during-live-upgrade/</guid>
-      <description> Create and attach a volume. Deploy an extra engine image. Send live upgrade request then immediately delete the related engine manager pod/engine process (The new replicas are not in active in this case). Verify the volume will detach then reattach automatically. Verify the upgrade is done during the reattachment. (It actually becomes offline upgrade.)  </description>
+      <description> Create and attach a volume. Deploy an extra engine image. Send live upgrade request then immediately delete the related engine manager pod/engine process (The new replicas are not in active in this case). Verify the volume will detach then reattach automatically. Verify the upgrade is done during the reattachment. (It actually becomes offline upgrade.) </description>
     </item>
     
     <item>
@@ -802,7 +820,7 @@ Scenario  Install Kubernetes Disable IPv6 on all the worker nodes using the foll
       
       <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/test-file-sync-cancellation/</guid>
       <description>Related issue https://github.com/longhorn/longhorn/issues/2416
-Test step  For test convenience, manually launch the backing image manager pods:  apiVersion: apps/v1 kind: DaemonSet metadata: labels: app: backing-image-manager name: backing-image-manager namespace: longhorn-system spec: selector: matchLabels: app: backing-image-manager template: metadata: labels: app: backing-image-manager spec: containers: - name: backing-image-manager image: longhornio/backing-image-manager:master imagePullPolicy: Always securityContext: privileged: true command: - backing-image-manager - --debug - daemon - --listen - 0.0.0.0:8000 readinessProbe: tcpSocket: port: 8000 volumeMounts: - name: disk-path mountPath: /data volumes: - name: disk-path hostPath: path: /var/lib/longhorn/ serviceAccountName: longhorn-service-account Download a backing image in the first pod:  # alias bm=&amp;#34;backing-image-manager backing-image&amp;#34; # bm pull --name bi-test --uuid uuid-bi-test --download-url https://cloud-images.</description>
+Test step For test convenience, manually launch the backing image manager pods: apiVersion: apps/v1 kind: DaemonSet metadata: labels: app: backing-image-manager name: backing-image-manager namespace: longhorn-system spec: selector: matchLabels: app: backing-image-manager template: metadata: labels: app: backing-image-manager spec: containers: - name: backing-image-manager image: longhornio/backing-image-manager:master imagePullPolicy: Always securityContext: privileged: true command: - backing-image-manager - --debug - daemon - --listen - 0.0.0.0:8000 readinessProbe: tcpSocket: port: 8000 volumeMounts: - name: disk-path mountPath: /data volumes: - name: disk-path hostPath: path: /var/lib/longhorn/ serviceAccountName: longhorn-service-account Download a backing image in the first pod: # alias bm=&amp;#34;backing-image-manager backing-image&amp;#34; # bm pull --name bi-test --uuid uuid-bi-test --download-url https://cloud-images.</description>
     </item>
     
     <item>
@@ -858,7 +876,7 @@ Then Longhorn should complete uninstalling.</description>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/instance-manager-ip-sync/</guid>
-      <description>Test step:  Launch longhorn system Create and attach a volume Follow this doc to manually modify the IP of one instance-manager-r. e.g., curl -k -XPATCH -H &amp;#34;Accept: application/json&amp;#34; -H &amp;#34;Content-Type: application/merge-patch+json&amp;#34; -H &amp;#34;Authorization: Bearer kubeconfig-xxxxxx&amp;#34; --data &amp;#39;{&amp;#34;status&amp;#34;:{&amp;#34;ip&amp;#34;:&amp;#34;1.1.1.1&amp;#34;}}&amp;#39; https://172.104.72.64/k8s/clusters/c-znrxc/apis/longhorn.io/v1beta1/namespaces/longhorn-system/instancemanagers/instance-manager-r-63ece607/status  Notice that the bearer token kubeconfig-xxx can be found in your kube config file Remember to add /status at the end of the URL   Verify the IP of the instance manager still matches the pod IP Verify the volume can be detached.</description>
+      <description>Test step: Launch longhorn system Create and attach a volume Follow this doc to manually modify the IP of one instance-manager-r. e.g., curl -k -XPATCH -H &amp;#34;Accept: application/json&amp;#34; -H &amp;#34;Content-Type: application/merge-patch+json&amp;#34; -H &amp;#34;Authorization: Bearer kubeconfig-xxxxxx&amp;#34; --data &amp;#39;{&amp;#34;status&amp;#34;:{&amp;#34;ip&amp;#34;:&amp;#34;1.1.1.1&amp;#34;}}&amp;#39; https://172.104.72.64/k8s/clusters/c-znrxc/apis/longhorn.io/v1beta1/namespaces/longhorn-system/instancemanagers/instance-manager-r-63ece607/status Notice that the bearer token kubeconfig-xxx can be found in your kube config file Remember to add /status at the end of the URL Verify the IP of the instance manager still matches the pod IP Verify the volume can be detached.</description>
     </item>
     
     <item>
@@ -867,7 +885,7 @@ Then Longhorn should complete uninstalling.</description>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.3.0/test-instance-manager-npe/</guid>
-      <description>Test step  Create and attach a 1-replica volume. Create 2 snapshots with large amount of data so that rebuilding each snapshot would take some time. Disable the scheduling for the nodes so that there is one node could accept new replicas of the volume. Update the replica count to 2 for the volume and wait for the rebuilding start. While syncing the 1st snapshot file, create a directory with the name of another snapshot meta file.</description>
+      <description>Test step Create and attach a 1-replica volume. Create 2 snapshots with large amount of data so that rebuilding each snapshot would take some time. Disable the scheduling for the nodes so that there is one node could accept new replicas of the volume. Update the replica count to 2 for the volume and wait for the rebuilding start. While syncing the 1st snapshot file, create a directory with the name of another snapshot meta file.</description>
     </item>
     
     <item>
@@ -891,7 +909,7 @@ $ kl exec -it longhorn-manager-5z8zn -- bash root@longhorn-manager-5z8zn:/# ss N
       <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/iscsi_installation/</guid>
       <description>This is for EKS or similar users who doesn&amp;rsquo;t need to log into each host to install &amp;lsquo;ISCSI&amp;rsquo; individually.
 Test steps:
- Create an EKS cluster with 3 nodes. Run the following command to install iscsi on every nodes.  kubectl apply -f https://raw.githubusercontent.com/longhorn/longhorn/master/deploy/iscsi/longhorn-iscsi-installation.yaml In Longhorn Manager Repo Directory run:  kubectl apply -Rf ./deploy/install/ Longhorn should be able installed successfully. Try to create a pod with a pvc:  kubectl apply -f https://raw.</description>
+Create an EKS cluster with 3 nodes. Run the following command to install iscsi on every nodes. kubectl apply -f https://raw.githubusercontent.com/longhorn/longhorn/master/deploy/iscsi/longhorn-iscsi-installation.yaml In Longhorn Manager Repo Directory run: kubectl apply -Rf ./deploy/install/ Longhorn should be able installed successfully. Try to create a pod with a pvc: kubectl apply -f https://raw.githubusercontent.com/longhorn/longhorn/master/examples/simple_pvc.yaml kubectl apply -f https://raw.</description>
     </item>
     
     <item>
@@ -901,7 +919,7 @@ Test steps:
       
       <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/node/kubelet-restart-on-a-node/</guid>
       <description>Related issues: https://github.com/longhorn/longhorn/issues/2629
-Case 1: Kubelet restart on RKE1 multi node cluster:  Create a RKE1 cluster with config of 1 etcd/control plane and 3 worker nodes. Deploy Longhorn on the cluster. Deploy prometheus monitoring app on the cluster which is using Longhorn storage class or deploy a statefulSet with Longhorn volume. Write some data into the mount point and compute the md5sum. Restart the kubelet on the node where the statefulSet or Prometheus pod is running using the command sudo docker restart kubelet Observe the volume.</description>
+Case 1: Kubelet restart on RKE1 multi node cluster: Create a RKE1 cluster with config of 1 etcd/control plane and 3 worker nodes. Deploy Longhorn on the cluster. Deploy prometheus monitoring app on the cluster which is using Longhorn storage class or deploy a statefulSet with Longhorn volume. Write some data into the mount point and compute the md5sum. Restart the kubelet on the node where the statefulSet or Prometheus pod is running using the command sudo docker restart kubelet Observe the volume.</description>
     </item>
     
     <item>
@@ -931,7 +949,7 @@ Then moniter the cron job pod log.</description>
       <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/environment/rke2-cis-1.5-profile/</guid>
       <description>Related issue https://github.com/longhorn/longhorn/issues/2292
 Longhorn v1.1.1 should work on RKE2 with CIS-1.5 profile
-Scenario  Prepare 1 control plane node and 3 worker nodes Install RKE2 with CIS-1.5 profile on 1 control plane node  sudo su -  systemctl disable firewalld systemctl stop firewalld  curl -sfL https://get.rke2.io | sh -  systemctl enable rke2-server.service  cat &amp;lt;&amp;lt; EOF &amp;gt; /etc/sysctl.d/60-rke2-cis.conf vm.panic_on_oom=0 vm.overcommit_memory=1 kernel.panic=10 kernel.panic_on_oops=1 EOF sudo systemctl restart systemd-sysctl  useradd -r -c &amp;#34;etcd user&amp;#34; -s /sbin/nologin -M etcd  mkdir -p /etc/rancher/rke2/ cat &amp;lt;&amp;lt; EOF &amp;gt; /etc/rancher/rke2/config.</description>
+Scenario Prepare 1 control plane node and 3 worker nodes Install RKE2 with CIS-1.5 profile on 1 control plane node sudo su - systemctl disable firewalld systemctl stop firewalld curl -sfL https://get.rke2.io | sh - systemctl enable rke2-server.service cat &amp;lt;&amp;lt; EOF &amp;gt; /etc/sysctl.d/60-rke2-cis.conf vm.panic_on_oom=0 vm.overcommit_memory=1 kernel.panic=10 kernel.panic_on_oops=1 EOF sudo systemctl restart systemd-sysctl useradd -r -c &amp;#34;etcd user&amp;#34; -s /sbin/nologin -M etcd mkdir -p /etc/rancher/rke2/ cat &amp;lt;&amp;lt; EOF &amp;gt; /etc/rancher/rke2/config.</description>
     </item>
     
     <item>
@@ -940,7 +958,7 @@ Scenario  Prepare 1 control plane node and 3 worker nodes Install RKE2 with CIS-
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.3.0/test-longhorn-manager-npe/</guid>
-      <description>Test step  Add the following rule to the ClusterRole longhorn-test-role:  - apiGroups: [&amp;#34;longhorn.io&amp;#34;]  resources: [&amp;#34;*&amp;#34;]  verbs: [&amp;#34;*&amp;#34;] Put the below test case into the integration test work directory then run it.  import random import string import time  import common  from common import client, volume_name # NOQA from backupstore import set_random_backupstore # NOQA   Mi = (1024 * 1024) Gi = (1024 * Mi)  LH_API_GROUP = &amp;#34;longhorn.</description>
+      <description>Test step Add the following rule to the ClusterRole longhorn-test-role: - apiGroups: [&amp;#34;longhorn.io&amp;#34;] resources: [&amp;#34;*&amp;#34;] verbs: [&amp;#34;*&amp;#34;] Put the below test case into the integration test work directory then run it. import random import string import time import common from common import client, volume_name # NOQA from backupstore import set_random_backupstore # NOQA Mi = (1024 * 1024) Gi = (1024 * Mi) LH_API_GROUP = &amp;#34;longhorn.io&amp;#34; LH_API_VERSION = &amp;#34;v1beta1&amp;#34; LH_NAMESPACE = &amp;#34;longhorn-system&amp;#34; LHE_PLURAL = &amp;#34;engines&amp;#34; LHB_PLURAL = &amp;#34;backups&amp;#34; def test_backup_npe(client, volume_name, set_random_backupstore): # NOQA host_id = common.</description>
     </item>
     
     <item>
@@ -949,7 +967,7 @@ Scenario  Prepare 1 control plane node and 3 worker nodes Install RKE2 with CIS-
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.3.0/test-longhorn-manager-starting-scalability/</guid>
-      <description>Test step  Deploy a cluster with multiple nodes. e.g., 20 worker nodes. Launch an old Longhorn version without the fix PR. e.g., Longhorn version v1.2.3. Create and attach multiple volumes on different nodes. e.g.,: apiVersion: longhorn.io/v1beta2 kind: BackingImage metadata:  name: bi-test1  namespace: longhorn-system spec:  sourceType: download  sourceParameters:  url: https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2 --- kind: StorageClass apiVersion: storage.k8s.io/v1 metadata:  name: longhorn-test1 provisioner: driver.longhorn.io allowVolumeExpansion: true reclaimPolicy: Delete volumeBindingMode: Immediate parameters:  numberOfReplicas: &amp;#34;3&amp;#34;  staleReplicaTimeout: &amp;#34;2880&amp;#34;  fromBackup: &amp;#34;&amp;#34;  fsType: &amp;#34;ext4&amp;#34;  backingImage: &amp;#34;bi-test1&amp;#34; --- apiVersion: v1 kind: Service metadata:  name: nginx  labels:  app: nginx spec:  ports:  - port: 80  name: web  selector:  app: nginx  type: NodePort --- apiVersion: apps/v1 kind: StatefulSet metadata:  name: bi-scalability-test  namespace: default spec:  selector:  matchLabels:  app: nginx  serviceName: &amp;#34;nginx&amp;#34;  replicas: 20  podManagementPolicy: Parallel  template:  metadata:  labels:  app: nginx  spec:  restartPolicy: Always  terminationGracePeriodSeconds: 10  containers:  - name: nginx  image: k8s.</description>
+      <description>Test step Deploy a cluster with multiple nodes. e.g., 20 worker nodes. Launch an old Longhorn version without the fix PR. e.g., Longhorn version v1.2.3. Create and attach multiple volumes on different nodes. e.g.,: apiVersion: longhorn.io/v1beta2 kind: BackingImage metadata: name: bi-test1 namespace: longhorn-system spec: sourceType: download sourceParameters: url: https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2 --- kind: StorageClass apiVersion: storage.k8s.io/v1 metadata: name: longhorn-test1 provisioner: driver.longhorn.io allowVolumeExpansion: true reclaimPolicy: Delete volumeBindingMode: Immediate parameters: numberOfReplicas: &amp;#34;3&amp;#34; staleReplicaTimeout: &amp;#34;2880&amp;#34; fromBackup: &amp;#34;&amp;#34; fsType: &amp;#34;ext4&amp;#34; backingImage: &amp;#34;bi-test1&amp;#34; --- apiVersion: v1 kind: Service metadata: name: nginx labels: app: nginx spec: ports: - port: 80 name: web selector: app: nginx type: NodePort --- apiVersion: apps/v1 kind: StatefulSet metadata: name: bi-scalability-test namespace: default spec: selector: matchLabels: app: nginx serviceName: &amp;#34;nginx&amp;#34; replicas: 20 podManagementPolicy: Parallel template: metadata: labels: app: nginx spec: restartPolicy: Always terminationGracePeriodSeconds: 10 containers: - name: nginx image: k8s.</description>
     </item>
     
     <item>
@@ -960,7 +978,7 @@ Scenario  Prepare 1 control plane node and 3 worker nodes Install RKE2 with CIS-
       <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/delete-node/</guid>
       <description>Related issue https://github.com/longhorn/longhorn/issues/2186 https://github.com/longhorn/longhorn/issues/2462
 Delete Method Should verify with both of the delete methods.
- Bulk Delete - This is the Delete on the Node page. Node Delete - This is the Remove Node for each node Operation drop-down list.  Test Node Delete - should grey out when node not down Given node not Down.
+Bulk Delete - This is the Delete on the Node page. Node Delete - This is the Remove Node for each node Operation drop-down list. Test Node Delete - should grey out when node not down Given node not Down.
 When Try to delete any node.
 Then Should see button greyed out.
 Test Node Delete Given pod with pvc created.</description>
@@ -972,7 +990,7 @@ Test Node Delete Given pod with pvc created.</description>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/node/node-deletion/</guid>
-      <description>Case 1: Delete multiple kinds of nodes:  Deploy Longhorn. Shut down the VM for one node and wait for the node Down. Disable another node. Delete the above 2 nodes. Make sure the corresponding Kubernetes node object is deleted. &amp;ndash;&amp;gt; The related Longhorn node objects will be cleaned up immediately, too. Add new nodes with the same names for the cluster. &amp;ndash;&amp;gt; The new nodes are available.  Case 2: Delete nodes when there are running volumes:  Deploy Longhorn.</description>
+      <description>Case 1: Delete multiple kinds of nodes: Deploy Longhorn. Shut down the VM for one node and wait for the node Down. Disable another node. Delete the above 2 nodes. Make sure the corresponding Kubernetes node object is deleted. &amp;ndash;&amp;gt; The related Longhorn node objects will be cleaned up immediately, too. Add new nodes with the same names for the cluster. &amp;ndash;&amp;gt; The new nodes are available. Case 2: Delete nodes when there are running volumes: Deploy Longhorn.</description>
     </item>
     
     <item>
@@ -981,8 +999,8 @@ Test Node Delete Given pod with pvc created.</description>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/test-node-selector/</guid>
-      <description>Prepare the cluster  Using Rancher RKE to create a cluster of 2 Windows worker nodes and 3 Linux worker nodes. Rancher will add the taint cattle.io/os=linux:NoSchedule to Linux nodes Kubernetes will add label kubernetes.io/os:linux to Linux nodes  Test steps Repeat the following steps for each type of Longhorn installation: Rancher, Helm, Kubectl:
- Follow the Longhorn document at the PR https://github.com/longhorn/website/pull/287 to install Longhorn with toleration cattle.io/os=linux:NoSchedule and node selector kubernetes.</description>
+      <description>Prepare the cluster Using Rancher RKE to create a cluster of 2 Windows worker nodes and 3 Linux worker nodes. Rancher will add the taint cattle.io/os=linux:NoSchedule to Linux nodes Kubernetes will add label kubernetes.io/os:linux to Linux nodes Test steps Repeat the following steps for each type of Longhorn installation: Rancher, Helm, Kubectl:
+Follow the Longhorn document at the PR https://github.com/longhorn/website/pull/287 to install Longhorn with toleration cattle.io/os=linux:NoSchedule and node selector kubernetes.io/os:linux Verify that Longhorn get deployed successfully on the 3 Linux nodes Verify all volume basic functionalities is working ok Create a volume of 3 replica named vol-1 Add label longhorn.</description>
     </item>
     
     <item>
@@ -991,7 +1009,7 @@ Test Node Delete Given pod with pvc created.</description>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/rwx_feature/</guid>
-      <description>Prerequisite:  Set up a Cluster of 4 nodes (1 etc/control plane and 3 workers) Deploy Latest Longhorn-master  Create StatefulSet/Deployment with single pod with volume attached in RWX mode.  Create a PVC with RWX mode using longhorn class by selecting the option read write many. Attach the PVC to a StatefulSet/Deployment with 1 pod. Verify that a PVC, ShareManger pod, CRD and volume in Longhorn get created. Verify share-manager pod come up healthy.</description>
+      <description>Prerequisite: Set up a Cluster of 4 nodes (1 etc/control plane and 3 workers) Deploy Latest Longhorn-master Create StatefulSet/Deployment with single pod with volume attached in RWX mode. Create a PVC with RWX mode using longhorn class by selecting the option read write many. Attach the PVC to a StatefulSet/Deployment with 1 pod. Verify that a PVC, ShareManger pod, CRD and volume in Longhorn get created. Verify share-manager pod come up healthy.</description>
     </item>
     
     <item>
@@ -1014,8 +1032,8 @@ root@ip-172-30-0-139:~# cat /etc/idmapd.conf [General] Verbosity = 0 Pipefs-Dire
       <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.1/test-s3-backupstore/</guid>
       <description>Related issue: 3136
 Requirement:
- Set up a stand alone Squid, HTTP web proxy  To configure Squid proxy: a comment about squid config If setting up instance on AWS: a EC2 security group setting   S3 with existing backups  Steps:
- Create credential for Backup Target     $ secret_name=&amp;#34;aws-secret-proxy&amp;#34;  $ proxy_ip=123.123.123.123  $ no_proxy_params=&amp;#34;localhost,127.0.0.1,0.0.0.0,10.0.0.0/8,192.168.0.0/16&amp;#34;   $ kubectl create secret generic $secret_name \  --from-literal=AWS_ACCESS_KEY_ID=$AWS_ID \  --from-literal=AWS_SECRET_ACCESS_KEY=$AWS_KEY \  --from-literal=HTTP_PROXY=$proxy_ip:3128 \  --from-literal=HTTPS_PROXY=$proxy_ip:3128 \  --from-literal=NO_PROXY=$no_proxy_params \  -n longhorn-system   Open Longhorn UI Click on Setting Scroll down to Backup Target Credential Secret Fill in $secret_name assigned in step 1.</description>
+Set up a stand alone Squid, HTTP web proxy To configure Squid proxy: a comment about squid config If setting up instance on AWS: a EC2 security group setting S3 with existing backups Steps:
+Create credential for Backup Target $ secret_name=&amp;#34;aws-secret-proxy&amp;#34; $ proxy_ip=123.123.123.123 $ no_proxy_params=&amp;#34;localhost,127.0.0.1,0.0.0.0,10.0.0.0/8,192.168.0.0/16&amp;#34; $ kubectl create secret generic $secret_name \ --from-literal=AWS_ACCESS_KEY_ID=$AWS_ID \ --from-literal=AWS_SECRET_ACCESS_KEY=$AWS_KEY \ --from-literal=HTTP_PROXY=$proxy_ip:3128 \ --from-literal=HTTPS_PROXY=$proxy_ip:3128 \ --from-literal=NO_PROXY=$no_proxy_params \ -n longhorn-system Open Longhorn UI Click on Setting Scroll down to Backup Target Credential Secret Fill in $secret_name assigned in step 1.</description>
     </item>
     
     <item>
@@ -1024,10 +1042,10 @@ Requirement:
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.2.3/test-scalability-with-backing-image/</guid>
-      <description>Test step   Deploy a cluster with 3 worker nodes. The recommended nodes is 4v cores CPU + 8G memory at least.
-  Deploy Longhorn.
-  Launch 10 backing images with the following YAML:
-apiVersion: longhorn.io/v1beta1 kind: BackingImage metadata:  name: bi-test1  namespace: longhorn-system spec:  sourceType: download  sourceParameters:  url: https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2 --- apiVersion: longhorn.io/v1beta1 kind: BackingImage metadata:  name: bi-test2  namespace: longhorn-system spec:  sourceType: download  sourceParameters:  url: https://longhorn-backing-image.</description>
+      <description>Test step Deploy a cluster with 3 worker nodes. The recommended nodes is 4v cores CPU + 8G memory at least.
+Deploy Longhorn.
+Launch 10 backing images with the following YAML:
+apiVersion: longhorn.io/v1beta1 kind: BackingImage metadata: name: bi-test1 namespace: longhorn-system spec: sourceType: download sourceParameters: url: https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2 --- apiVersion: longhorn.io/v1beta1 kind: BackingImage metadata: name: bi-test2 namespace: longhorn-system spec: sourceType: download sourceParameters: url: https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2 --- apiVersion: longhorn.io/v1beta1 kind: BackingImage metadata: name: bi-test3 namespace: longhorn-system spec: sourceType: download sourceParameters: url: https://longhorn-backing-image.</description>
     </item>
     
     <item>
@@ -1036,7 +1054,7 @@ apiVersion: longhorn.io/v1beta1 kind: BackingImage metadata:  name: bi-test1  na
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/test-service-account-mount/</guid>
-      <description>This test case should be tested on both yaml installation, chart installation (Helm and Rancher UI), as well as upgrade scenarios After install Longhorn using on of the above method, ssh into a worker node that has a longhorn-manager pod running check the mount point /run/secrets/kubernetes.io/serviceaccount by running: root@node-1:~# findmnt /run/secrets/kubernetes.io/serviceaccount  Verify that there is no such mount point Kill the longhorn-manager pod on the above node and wait for it to be recreated and running check the mount point /run/secrets/kubernetes.</description>
+      <description>This test case should be tested on both yaml installation, chart installation (Helm and Rancher UI), as well as upgrade scenarios After install Longhorn using on of the above method, ssh into a worker node that has a longhorn-manager pod running check the mount point /run/secrets/kubernetes.io/serviceaccount by running: root@node-1:~# findmnt /run/secrets/kubernetes.io/serviceaccount Verify that there is no such mount point Kill the longhorn-manager pod on the above node and wait for it to be recreated and running check the mount point /run/secrets/kubernetes.</description>
     </item>
     
     <item>
@@ -1047,7 +1065,7 @@ apiVersion: longhorn.io/v1beta1 kind: BackingImage metadata:  name: bi-test1  na
       <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/snapshot-purge-error-handling/</guid>
       <description>Related issue https://github.com/longhorn/longhorn/issues/1895
 Longhorn v1.1.1 handles the error during snapshot purge better and reports to Longhorn-manager.
-Scenario-1  Create a volume with 3 replicas and attach to a pod. Write some data into the volume and take a snapshot. Delete a replica that will result in creating a system generated snapshot. Wait for replica to finish and take another snapshot. ssh into a node and resize the latest snapshot. (e.g dd if=/dev/urandom count=50 bs=1M of=&amp;lt;SNAPSHOT-NAME&amp;gt;.</description>
+Scenario-1 Create a volume with 3 replicas and attach to a pod. Write some data into the volume and take a snapshot. Delete a replica that will result in creating a system generated snapshot. Wait for replica to finish and take another snapshot. ssh into a node and resize the latest snapshot. (e.g dd if=/dev/urandom count=50 bs=1M of=&amp;lt;SNAPSHOT-NAME&amp;gt;.</description>
     </item>
     
     <item>
@@ -1056,7 +1074,7 @@ Scenario-1  Create a volume with 3 replicas and attach to a pod. Write some data
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.3.0/test-snapshot-purge-retry/</guid>
-      <description>Scenario  Create and attach a Longhorn volumes. Write some data to the volume then create the 1st snapshot. e.g. dd if=/dev/urandom of=/dev/longhorn/&amp;lt;Longhorn volume name&amp;gt; bs=1M count=100  Try to delete the 1st snapshot. The snapshot will be marked as Removed then hidden on the volume detail page. Write some non-overlapping data to the volume then create the 2nd snapshot. e.g. dd if=/dev/urandom of=/dev/longhorn/&amp;lt;Longhorn volume name&amp;gt; bs=1M count=100 seek=100  Re-try deleting the 1st snapshot via UI.</description>
+      <description>Scenario Create and attach a Longhorn volumes. Write some data to the volume then create the 1st snapshot. e.g. dd if=/dev/urandom of=/dev/longhorn/&amp;lt;Longhorn volume name&amp;gt; bs=1M count=100 Try to delete the 1st snapshot. The snapshot will be marked as Removed then hidden on the volume detail page. Write some non-overlapping data to the volume then create the 2nd snapshot. e.g. dd if=/dev/urandom of=/dev/longhorn/&amp;lt;Longhorn volume name&amp;gt; bs=1M count=100 seek=100 Re-try deleting the 1st snapshot via UI.</description>
     </item>
     
     <item>
@@ -1075,7 +1093,7 @@ Scenario-1  Create a volume with 3 replicas and attach to a pod. Write some data
       
       <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/system-upgrade-with-deprecated-cpu-setting/</guid>
       <description>Related issue https://github.com/longhorn/longhorn/issues/2207
-Test step  Deploy a cluster that each node has different CPUs. Launch Longhorn v1.1.0. Deploy some workloads using Longhorn volumes. Upgrade to the latest Longhorn version. Validate:  all workloads work fine and no instance manager pod crash during the upgrade. The fields node.Spec.EngineManagerCPURequest and node.Spec.ReplicaManagerCPURequest of each node are the same as the setting Guaranteed Engine CPU value in the old version * 1000. The old setting Guaranteed Engine CPU is deprecated with an empty value.</description>
+Test step Deploy a cluster that each node has different CPUs. Launch Longhorn v1.1.0. Deploy some workloads using Longhorn volumes. Upgrade to the latest Longhorn version. Validate: all workloads work fine and no instance manager pod crash during the upgrade. The fields node.Spec.EngineManagerCPURequest and node.Spec.ReplicaManagerCPURequest of each node are the same as the setting Guaranteed Engine CPU value in the old version * 1000. The old setting Guaranteed Engine CPU is deprecated with an empty value.</description>
     </item>
     
     <item>
@@ -1084,7 +1102,7 @@ Test step  Deploy a cluster that each node has different CPUs. Launch Longhorn v
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/resiliency/timeout/</guid>
-      <description>Ping Timeout  Create a docker network:  docker network create -d bridge --subnet 192.168.22.0/24 longhorn-network Start a replica:  docker run --net longhorn-network --ip 192.168.22.2 \  -v /volume longhornio/longhorn-engine:&amp;lt;tag&amp;gt; \  longhorn replica --listen 192.168.22.2:9502 --size 10g /volume Start another replica:  docker run --net longhorn-network --ip 192.168.22.3 \  -v /volume longhornio/longhorn-engine:&amp;lt;tag&amp;gt; \  longhorn replica --listen 192.168.22.3:9502 --size 10g /volume In another terminal, start the controller:  docker run --net longhorn-network --ip 192.</description>
+      <description>Ping Timeout Create a docker network: docker network create -d bridge --subnet 192.168.22.0/24 longhorn-network Start a replica: docker run --net longhorn-network --ip 192.168.22.2 \ -v /volume longhornio/longhorn-engine:&amp;lt;tag&amp;gt; \ longhorn replica --listen 192.168.22.2:9502 --size 10g /volume Start another replica: docker run --net longhorn-network --ip 192.168.22.3 \ -v /volume longhornio/longhorn-engine:&amp;lt;tag&amp;gt; \ longhorn replica --listen 192.168.22.3:9502 --size 10g /volume In another terminal, start the controller: docker run --net longhorn-network --ip 192.168.22.4 --privileged \ -v /dev:/dev -v /proc:/host/proc \ longhornio/longhorn-engine:&amp;lt;tag&amp;gt; \ longhorn controller --replica tcp://192.</description>
     </item>
     
     <item>
@@ -1093,9 +1111,9 @@ Test step  Deploy a cluster that each node has different CPUs. Launch Longhorn v
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/uninstallation/</guid>
-      <description>Stability of uninstallation   Launch Longhorn system.
-  Use scripts to continuously create then delete multiple DaemonSets.
- e.g., putting the following python test into the manager integration test directory and run it:  from common import get_apps_api_client # NOQA def test_uninstall_script(): apps_api = get_apps_api_client() while True: for i in range(10): name = &amp;#34;ds-&amp;#34; + str(i) try: ds = apps_api.read_namespaced_daemon_set(name, &amp;#34;default&amp;#34;) if ds.status.number_ready == ds.status.number_ready: apps_api.delete_namespaced_daemon_set(name, &amp;#34;default&amp;#34;) except Exception: apps_api.</description>
+      <description>Stability of uninstallation Launch Longhorn system.
+Use scripts to continuously create then delete multiple DaemonSets.
+e.g., putting the following python test into the manager integration test directory and run it: from common import get_apps_api_client # NOQA def test_uninstall_script(): apps_api = get_apps_api_client() while True: for i in range(10): name = &amp;#34;ds-&amp;#34; + str(i) try: ds = apps_api.read_namespaced_daemon_set(name, &amp;#34;default&amp;#34;) if ds.status.number_ready == ds.status.number_ready: apps_api.delete_namespaced_daemon_set(name, &amp;#34;default&amp;#34;) except Exception: apps_api.create_namespaced_daemon_set( &amp;#34;default&amp;#34;, ds_manifest(name)) def ds_manifest(name): return { &amp;#39;apiVersion&amp;#39;: &amp;#39;apps/v1&amp;#39;, &amp;#39;kind&amp;#39;: &amp;#39;DaemonSet&amp;#39;, &amp;#39;metadata&amp;#39;: { &amp;#39;name&amp;#39;: name }, &amp;#39;spec&amp;#39;: { &amp;#39;selector&amp;#39;: { &amp;#39;matchLabels&amp;#39;: { &amp;#39;app&amp;#39;: name } }, &amp;#39;template&amp;#39;: { &amp;#39;metadata&amp;#39;: { &amp;#39;labels&amp;#39;: { &amp;#39;app&amp;#39;: name } }, &amp;#39;spec&amp;#39;: { &amp;#39;terminationGracePeriodSeconds&amp;#39;: 10, &amp;#39;containers&amp;#39;: [{ &amp;#39;image&amp;#39;: &amp;#39;busybox&amp;#39;, &amp;#39;imagePullPolicy&amp;#39;: &amp;#39;IfNotPresent&amp;#39;, &amp;#39;name&amp;#39;: &amp;#39;sleep&amp;#39;, &amp;#39;args&amp;#39;: [ &amp;#39;/bin/sh&amp;#39;, &amp;#39;-c&amp;#39;, &amp;#39;while true;do date;sleep 5; done&amp;#39; ], }] } }, } } Start to uninstall longhorn.</description>
     </item>
     
     <item>
@@ -1105,7 +1123,7 @@ Test step  Deploy a cluster that each node has different CPUs. Launch Longhorn v
       
       <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.2.0/test_version_bump/</guid>
       <description>GitHub issue: https://github.com/longhorn/longhorn/issues/2757
-Test with specific Kubernetes version  For each Kubernetes version (1.18, 1.19, 1.20, 1.21, 1.22), test basic functionalities of Longhorn v1.2.0 (create/attach/detach/delete volume/backup/snapshot using yaml/UI)  Test Kubernetes and Longhorn upgrade  Deploy K3s v1.21 Deploy Longhorn v1.1.2 Create some workload pods using Longhorn volumes Upgrade Longhorn to v1.2.0 Verify that everything is OK Upgrade K3s to v1.22 Verify that everything is OK  Retest the Upgrade Lease Lock We remove the client-go patch https://github.</description>
+Test with specific Kubernetes version For each Kubernetes version (1.18, 1.19, 1.20, 1.21, 1.22), test basic functionalities of Longhorn v1.2.0 (create/attach/detach/delete volume/backup/snapshot using yaml/UI) Test Kubernetes and Longhorn upgrade Deploy K3s v1.21 Deploy Longhorn v1.1.2 Create some workload pods using Longhorn volumes Upgrade Longhorn to v1.2.0 Verify that everything is OK Upgrade K3s to v1.22 Verify that everything is OK Retest the Upgrade Lease Lock We remove the client-go patch https://github.</description>
     </item>
     
     <item>
@@ -1114,7 +1132,7 @@ Test with specific Kubernetes version  For each Kubernetes version (1.18, 1.19, 
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.0/suse-sles12sp3/ext4-custom-fs-params-1/</guid>
-      <description> set the following filesystem parameters: -O ^64bit,^metadata_csum create a volume + pv + pvc with filesystem ext4 named ext4-no-ck-no-64 create a deployment that uses ext4-no-ck-no-64 verify that the pod enters running state and the volume is accessible  </description>
+      <description> set the following filesystem parameters: -O ^64bit,^metadata_csum create a volume + pv + pvc with filesystem ext4 named ext4-no-ck-no-64 create a deployment that uses ext4-no-ck-no-64 verify that the pod enters running state and the volume is accessible </description>
     </item>
     
     <item>
@@ -1123,7 +1141,7 @@ Test with specific Kubernetes version  For each Kubernetes version (1.18, 1.19, 
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.0/suse-sles12sp3/ext4-custom-fs-params-2/</guid>
-      <description> set the following filesystem parameters: -O ^metadata_csum create a volume + pv + pvc with filesystem ext4 named ext4-no-ck create a deployment that uses ext4-no-ck verify that the pod enters running state and the volume is accessible  </description>
+      <description> set the following filesystem parameters: -O ^metadata_csum create a volume + pv + pvc with filesystem ext4 named ext4-no-ck create a deployment that uses ext4-no-ck verify that the pod enters running state and the volume is accessible </description>
     </item>
     
     <item>
@@ -1132,7 +1150,7 @@ Test with specific Kubernetes version  For each Kubernetes version (1.18, 1.19, 
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.0/suse-sles12sp3/ext4-no-custom-fs-params/</guid>
-      <description> create a volume + pv + pvc with filesystem ext4 named ext-ck-fail create a deployment that uses ext-ck-fail verify MountVolume.SetUp failed for volume &amp;quot;ext4-ck-fails&amp;quot; is part of the pod events verify that the pod does not enter running state  </description>
+      <description> create a volume + pv + pvc with filesystem ext4 named ext-ck-fail create a deployment that uses ext-ck-fail verify MountVolume.SetUp failed for volume &amp;quot;ext4-ck-fails&amp;quot; is part of the pod events verify that the pod does not enter running state </description>
     </item>
     
     <item>
@@ -1141,7 +1159,7 @@ Test with specific Kubernetes version  For each Kubernetes version (1.18, 1.19, 
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.0/suse-sles12sp3/xfs-after-custom-fs-params/</guid>
-      <description> create a volume + pv + pvc with filesystem xfs named xfs-ignores create a deployment that uses xfs-ignores verify that the pod enters running state and the volume is accessible  </description>
+      <description> create a volume + pv + pvc with filesystem xfs named xfs-ignores create a deployment that uses xfs-ignores verify that the pod enters running state and the volume is accessible </description>
     </item>
     
     <item>
@@ -1150,7 +1168,7 @@ Test with specific Kubernetes version  For each Kubernetes version (1.18, 1.19, 
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/uninstallation/uninstallation-checks/</guid>
-      <description>Prerequisites  Have a setup of Longhorn installed on a kubernetes cluster. Have few volumes backups stored on S3/NFS backup store. Have one DR volume created (not activated) in another cluster with a volume in current cluster.  Test steps  Uninstall Longhorn. Check the logs of the job longhorn-uninstall, make sure there is no error. Check all the components of Longhorn from the namespace longhorn-system are uninstalled. E.g. Longhorn manager, Longhorn driver, Longhorn UI, instance manager, engine image, CSI driver etc.</description>
+      <description>Prerequisites Have a setup of Longhorn installed on a kubernetes cluster. Have few volumes backups stored on S3/NFS backup store. Have one DR volume created (not activated) in another cluster with a volume in current cluster. Test steps Uninstall Longhorn. Check the logs of the job longhorn-uninstall, make sure there is no error. Check all the components of Longhorn from the namespace longhorn-system are uninstalled. E.g. Longhorn manager, Longhorn driver, Longhorn UI, instance manager, engine image, CSI driver etc.</description>
     </item>
     
     <item>
@@ -1159,7 +1177,7 @@ Test with specific Kubernetes version  For each Kubernetes version (1.18, 1.19, 
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/upgrade-conflict-handling/</guid>
-      <description>New installation:  Create a large cluster of many nodes (about 30 nodes) Install Longhorn master Create 100 volumes using volume template claim in statefulSet. Have the backup store configured and create some backups. Set some recurring jobs in the cluster every 1 minute. Observe the setup for 1/2 an hr. Do some operation like attaching detaching the volumes. Verify there is no error in the Longhorn manager.  Upgrading from old version:  Repeat the steps from above test case with Longhorn Prior version.</description>
+      <description>New installation: Create a large cluster of many nodes (about 30 nodes) Install Longhorn master Create 100 volumes using volume template claim in statefulSet. Have the backup store configured and create some backups. Set some recurring jobs in the cluster every 1 minute. Observe the setup for 1/2 an hr. Do some operation like attaching detaching the volumes. Verify there is no error in the Longhorn manager. Upgrading from old version: Repeat the steps from above test case with Longhorn Prior version.</description>
     </item>
     
     <item>
@@ -1169,7 +1187,7 @@ Test with specific Kubernetes version  For each Kubernetes version (1.18, 1.19, 
       
       <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.2/upgrade-lease-lock/</guid>
       <description>The time it takes between the Longhorn Manager starting up and the upgrade completing for that Longhorn Manager can be used to determine if the upgrade lock was released correctly:
- Create a fresh Longhorn installation or delete all of the Longhorn Manager Pods in the existing installation. Check the logs for the Longhorn Manager Pods and note the timestamps for the first line in the log and the timestamp for when the upgrade has completed.</description>
+Create a fresh Longhorn installation or delete all of the Longhorn Manager Pods in the existing installation. Check the logs for the Longhorn Manager Pods and note the timestamps for the first line in the log and the timestamp for when the upgrade has completed.</description>
     </item>
     
     <item>
@@ -1180,7 +1198,7 @@ Test with specific Kubernetes version  For each Kubernetes version (1.18, 1.19, 
       <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/upgrade_with_modified_storageclass/</guid>
       <description>Intro Longhorn can be upgraded with modified Storage Class.
 Related Issue https://github.com/longhorn/longhorn/issues/1527
-Test steps: Kubectl apply -f  Install Longhorn v1.0.2 kubectl apply -f https://raw.githubusercontent.com/longhorn/longhorn/v1.0.2/deploy/longhorn.yaml  Create a statefulset using longhorn storageclass for PVCs. Set the scale to 1. Observe that there is a workload pod (pod-1) is using 1 volume (vol-1) with 3 replicas. In Longhorn repo, on master branch. Modify numberOfReplicas: &amp;quot;1&amp;quot; in https://raw.githubusercontent.com/longhorn/longhorn/master/deploy/longhorn.yaml. Upgrade Longhorn to master by running kubectl apply -f https://raw.</description>
+Test steps: Kubectl apply -f Install Longhorn v1.0.2 kubectl apply -f https://raw.githubusercontent.com/longhorn/longhorn/v1.0.2/deploy/longhorn.yaml Create a statefulset using longhorn storageclass for PVCs. Set the scale to 1. Observe that there is a workload pod (pod-1) is using 1 volume (vol-1) with 3 replicas. In Longhorn repo, on master branch. Modify numberOfReplicas: &amp;quot;1&amp;quot; in https://raw.githubusercontent.com/longhorn/longhorn/master/deploy/longhorn.yaml. Upgrade Longhorn to master by running kubectl apply -f https://raw.</description>
     </item>
     
     <item>
@@ -1190,7 +1208,7 @@ Test steps: Kubectl apply -f  Install Longhorn v1.0.2 kubectl apply -f https://r
       
       <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.1/ui-volume-deletion/</guid>
       <description>A number of cases need to be manually tested in longhorn-ui. To test these cases, create the Volume with the specified conditions in each case, and then try to delete it. What is observed should match what is described in the test case:
- A regular Volume. Only the default deletion prompt should show up asking to confirm deletion. A Volume with a Persistent Volume. The deletion prompt should tell the user that there is a Persistent Volume that will be deleted along with the Volume.</description>
+A regular Volume. Only the default deletion prompt should show up asking to confirm deletion. A Volume with a Persistent Volume. The deletion prompt should tell the user that there is a Persistent Volume that will be deleted along with the Volume.</description>
     </item>
     
   </channel>

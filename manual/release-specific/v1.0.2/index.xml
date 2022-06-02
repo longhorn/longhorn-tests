@@ -13,7 +13,7 @@
       
       <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.2/upgrade-lease-lock/</guid>
       <description>The time it takes between the Longhorn Manager starting up and the upgrade completing for that Longhorn Manager can be used to determine if the upgrade lock was released correctly:
- Create a fresh Longhorn installation or delete all of the Longhorn Manager Pods in the existing installation. Check the logs for the Longhorn Manager Pods and note the timestamps for the first line in the log and the timestamp for when the upgrade has completed.</description>
+Create a fresh Longhorn installation or delete all of the Longhorn Manager Pods in the existing installation. Check the logs for the Longhorn Manager Pods and note the timestamps for the first line in the log and the timestamp for when the upgrade has completed.</description>
     </item>
     
   </channel>

@@ -12,8 +12,8 @@
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/auto-upgrade-engine/</guid>
-      <description>Longhorn version = 1.1.1  Reference ticket 2152
-Test basic upgrade  Install old Longhorn version. E.g., &amp;lt;= v1.0.2 Create a volume, attach it to a pod, write some data. Create a DR volume and leave it in the detached state. Upgrade to Longhorn master Set setting concurrent automatic engine upgrade per node limit to 3 Verify that volumes&amp;rsquo; engines are upgraded automatically.  Test concurrent upgrade  Create a StatefulSet of scale 10 using 10 Longhorn volume.</description>
+      <description>Longhorn version &gt;= 1.1.1 Reference ticket 2152
+Test basic upgrade Install old Longhorn version. E.g., &amp;lt;= v1.0.2 Create a volume, attach it to a pod, write some data. Create a DR volume and leave it in the detached state. Upgrade to Longhorn master Set setting concurrent automatic engine upgrade per node limit to 3 Verify that volumes&amp;rsquo; engines are upgraded automatically. Test concurrent upgrade Create a StatefulSet of scale 10 using 10 Longhorn volume.</description>
     </item>
     
     <item>
@@ -24,7 +24,7 @@ Test basic upgrade  Install old Longhorn version. E.g., &amp;lt;= v1.0.2 Create 
       <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/kubernetes-upgrade-test/</guid>
       <description>We also need to cover the Kubernetes upgrade process for supported Kubernetes version, make sure pod and volumes works after a major version upgrade.
 Related Issue https://github.com/longhorn/longhorn/issues/2566
-Test with K8s upgrade  Create a K8s (Immediate prior version) cluster with 3 worker nodes and 1 control plane. Deploy Longhorn version (Immediate prior version) on the cluster. Create a volume and attach to a pod. Write data to the volume and compute the checksum.</description>
+Test with K8s upgrade Create a K8s (Immediate prior version) cluster with 3 worker nodes and 1 control plane. Deploy Longhorn version (Immediate prior version) on the cluster. Create a volume and attach to a pod. Write data to the volume and compute the checksum.</description>
     </item>
     
     <item>
@@ -33,8 +33,8 @@ Test with K8s upgrade  Create a K8s (Immediate prior version) cluster with 3 wor
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/longhorn-upgrade-test/</guid>
-      <description>Setup  2 attached volumes with data. 2 detached volumes with data. 2 new volumes without data. 2 deployments of one pod. 1 statefulset of 10 pods. Auto Salvage set to disable.  Test After upgrade:
- Make sure the existing instance managers didn&amp;rsquo;t restart. Make sure pods didn&amp;rsquo;t restart. Check the contents of the volumes. If the Engine API version is incompatible, manager cannot do anything about the attached volumes except detaching it.</description>
+      <description>Setup 2 attached volumes with data. 2 detached volumes with data. 2 new volumes without data. 2 deployments of one pod. 1 statefulset of 10 pods. Auto Salvage set to disable. Test After upgrade:
+Make sure the existing instance managers didn&amp;rsquo;t restart. Make sure pods didn&amp;rsquo;t restart. Check the contents of the volumes. If the Engine API version is incompatible, manager cannot do anything about the attached volumes except detaching it.</description>
     </item>
     
     <item>
@@ -43,7 +43,7 @@ Test with K8s upgrade  Create a K8s (Immediate prior version) cluster with 3 wor
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/update_csi_components_when_images_change/</guid>
-      <description> Install Longhorn Change the longhorn-driver-deployer yaml at https://github.com/longhorn/longhorn-manager/blob/c2ceb9f3f991810f811601d8c41c09b67fb50746/deploy/install/02-components/04-driver.yaml#L50 to use the new images for some CSI components Kubectl apply -f the longhorn-driver-deployer yaml Verify that only CSI components with the new images are re-deployed and have new images Redeploy longhorn-driver-deployer without changing the images. Verify that no CSI component is re-deployed  </description>
+      <description> Install Longhorn Change the longhorn-driver-deployer yaml at https://github.com/longhorn/longhorn-manager/blob/c2ceb9f3f991810f811601d8c41c09b67fb50746/deploy/install/02-components/04-driver.yaml#L50 to use the new images for some CSI components Kubectl apply -f the longhorn-driver-deployer yaml Verify that only CSI components with the new images are re-deployed and have new images Redeploy longhorn-driver-deployer without changing the images. Verify that no CSI component is re-deployed </description>
     </item>
     
     <item>
@@ -52,7 +52,7 @@ Test with K8s upgrade  Create a K8s (Immediate prior version) cluster with 3 wor
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/backing-image-during-upgrade/</guid>
-      <description>System upgrade with compatible backing image manager image  Deploy Longhorn. Then set Concurrent Automatic Engine Upgrade Per Node Limit to a positive value to enable volume engine auto upgrade. Create 2 backing images: a large one and a small one. Longhorn will start preparing the 1st file for both backing image immediately via launching backing image data source pods. Wait for the small backing image being ready in the 1st disk.</description>
+      <description>System upgrade with compatible backing image manager image Deploy Longhorn. Then set Concurrent Automatic Engine Upgrade Per Node Limit to a positive value to enable volume engine auto upgrade. Create 2 backing images: a large one and a small one. Longhorn will start preparing the 1st file for both backing image immediately via launching backing image data source pods. Wait for the small backing image being ready in the 1st disk.</description>
     </item>
     
     <item>
@@ -61,7 +61,7 @@ Test with K8s upgrade  Create a K8s (Immediate prior version) cluster with 3 wor
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/engine-crash-during-live-upgrade/</guid>
-      <description> Create and attach a volume. Deploy an extra engine image. Send live upgrade request then immediately delete the related engine manager pod/engine process (The new replicas are not in active in this case). Verify the volume will detach then reattach automatically. Verify the upgrade is done during the reattachment. (It actually becomes offline upgrade.)  </description>
+      <description> Create and attach a volume. Deploy an extra engine image. Send live upgrade request then immediately delete the related engine manager pod/engine process (The new replicas are not in active in this case). Verify the volume will detach then reattach automatically. Verify the upgrade is done during the reattachment. (It actually becomes offline upgrade.) </description>
     </item>
     
     <item>
@@ -79,7 +79,7 @@ Test with K8s upgrade  Create a K8s (Immediate prior version) cluster with 3 wor
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/upgrade-conflict-handling/</guid>
-      <description>New installation:  Create a large cluster of many nodes (about 30 nodes) Install Longhorn master Create 100 volumes using volume template claim in statefulSet. Have the backup store configured and create some backups. Set some recurring jobs in the cluster every 1 minute. Observe the setup for 1/2 an hr. Do some operation like attaching detaching the volumes. Verify there is no error in the Longhorn manager.  Upgrading from old version:  Repeat the steps from above test case with Longhorn Prior version.</description>
+      <description>New installation: Create a large cluster of many nodes (about 30 nodes) Install Longhorn master Create 100 volumes using volume template claim in statefulSet. Have the backup store configured and create some backups. Set some recurring jobs in the cluster every 1 minute. Observe the setup for 1/2 an hr. Do some operation like attaching detaching the volumes. Verify there is no error in the Longhorn manager. Upgrading from old version: Repeat the steps from above test case with Longhorn Prior version.</description>
     </item>
     
   </channel>

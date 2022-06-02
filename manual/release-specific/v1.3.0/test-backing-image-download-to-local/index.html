@@ -579,36 +579,24 @@
 
 
 <main style="padding: 1%; width: 70%;">
-  <h1 id="title">Test Instance Manager Streaming Connection Recovery</h1>
+  <h1 id="title">Test backing image download to local</h1>
   <div>
     <article id="content">
-       <h2 id="related-issue">Related issue</h2>
-<p><a href="https://github.com/longhorn/longhorn/issues/2561">https://github.com/longhorn/longhorn/issues/2561</a></p>
-<h2 id="test-step">Test Step</h2>
-<p><strong>Given</strong> A cluster with Longhorn</p>
-<p><em>And</em> create a volume and attach it to a pod.</p>
-<p><em>And</em> <code>exec</code> into a longhorn manager pod and kill the connection with an engine or replica instance manager pod. The connections are instance manager pods&rsquo; IP with port <code>8500</code>.</p>
-<pre tabindex="0"><code>$ kl exec -it longhorn-manager-5z8zn -- bash
-
-root@longhorn-manager-5z8zn:/# ss
-Netid                    State                     Recv-Q                     Send-Q                                           Local Address:Port                                            Peer Address:Port
-tcp                      ESTAB                     0                          0                                                  10.42.1.124:59414                                            10.42.1.123:8500
-tcp                      ESTAB                     0                          0                                                  10.42.1.124:39096                                           52.36.54.134:https
-tcp                      ESTAB                     0                          0                                                  10.42.1.124:45302                                              10.43.0.1:https
-tcp                      ESTAB                     0                          0                                                  10.42.1.124:34124                                            10.42.1.122:8500
-root@longhorn-manager-5z8zn:/# ss -K dst 10.42.1.122:8500
-Netid                    State                     Recv-Q                     Send-Q                                            Local Address:Port                                            Peer Address:Port
-tcp                      ESTAB                     0                          0                                                   10.42.1.124:34124                                            10.42.1.122:8500
-root@longhorn-manager-5z8zn:/# exit
-</code></pre><p><strong>Then</strong> Check the longhorn manager pod log. There must be following logs:</p>
-<pre tabindex="0"><code>[longhorn-manager-5z8zn] time=&#34;2021-06-17T11:16:37Z&#34; level=error msg=&#34;error receiving next item in engine watch: rpc error: code = Unavailable desc = transport is closing&#34; controller=longhorn-instance-manager instance manager=instance-manager-e-285962e9 node=shuo-cluster-0-worker-3
-......
-[longhorn-manager-5z8zn] time=&#34;2021-06-17T11:16:38Z&#34; level=error msg=&#34;instance manager monitor streaming continuously errors receiving items for 10 times, will stop the monitor itself&#34; controller=longhorn-instance-manager instance manager=instance-manager-e-285962e9 node=shuo-cluster-0-worker-3
-</code></pre><p><em>And</em> verify the volume still works fine.</p>
-<p><em>And</em> verify the volume can be detached and reattached.</p>
+       <h3 id="test-step">Test step</h3>
+<ol>
+<li>Create and attach a volume (recommended volume size &gt; 1Gi).</li>
+<li>Write some data into the file then calculate the SHA512 checksum of the volume block device.</li>
+<li>Create a backing image from the above volume. And wait for the 1st backing image file ready.</li>
+<li>Download the backing image to local via UI (Clicking button <code>Download</code> in <code>Operation</code> list of the backing image).
+=&gt; Verify the downloaded file checksum is the same as the volume checksum &amp; the backing image current checksum (when <code>Exported Backing Image Type</code> is raw).</li>
+<li>Create and attach the volume with the backing image. Wait for the attachment complete.</li>
+<li>Re-download the backing image to local. =&gt; Verify the downloaded file checksum still matches.</li>
+</ol>
+<hr>
+<p>GitHub Issue: <a href="https://github.com/longhorn/longhorn/issues/3155">https://github.com/longhorn/longhorn/issues/3155</a></p>
 
     </article>
-  <a href="https://github.com/longhorn/longhorn-tests/edit/master/docs/content/manual/release-specific/v1.1.2/instance-manager-streaming-connection-recovery.md" target="_blank" title="Edit on Github" style="font-size:smaller;float:right;padding-right:3%">[Edit]</a>
+  <a href="https://github.com/longhorn/longhorn-tests/edit/master/docs/content/manual/release-specific/v1.3.0/test-backing-image-download-to-local.md" target="_blank" title="Edit on Github" style="font-size:smaller;float:right;padding-right:3%">[Edit]</a>
   </div>
 
     

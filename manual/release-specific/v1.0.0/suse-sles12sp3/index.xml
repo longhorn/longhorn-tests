@@ -12,7 +12,7 @@
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.0/suse-sles12sp3/ext4-custom-fs-params-1/</guid>
-      <description> set the following filesystem parameters: -O ^64bit,^metadata_csum create a volume + pv + pvc with filesystem ext4 named ext4-no-ck-no-64 create a deployment that uses ext4-no-ck-no-64 verify that the pod enters running state and the volume is accessible  </description>
+      <description> set the following filesystem parameters: -O ^64bit,^metadata_csum create a volume + pv + pvc with filesystem ext4 named ext4-no-ck-no-64 create a deployment that uses ext4-no-ck-no-64 verify that the pod enters running state and the volume is accessible </description>
     </item>
     
     <item>
@@ -21,7 +21,7 @@
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.0/suse-sles12sp3/ext4-custom-fs-params-2/</guid>
-      <description> set the following filesystem parameters: -O ^metadata_csum create a volume + pv + pvc with filesystem ext4 named ext4-no-ck create a deployment that uses ext4-no-ck verify that the pod enters running state and the volume is accessible  </description>
+      <description> set the following filesystem parameters: -O ^metadata_csum create a volume + pv + pvc with filesystem ext4 named ext4-no-ck create a deployment that uses ext4-no-ck verify that the pod enters running state and the volume is accessible </description>
     </item>
     
     <item>
@@ -30,7 +30,7 @@
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.0/suse-sles12sp3/ext4-no-custom-fs-params/</guid>
-      <description> create a volume + pv + pvc with filesystem ext4 named ext-ck-fail create a deployment that uses ext-ck-fail verify MountVolume.SetUp failed for volume &amp;quot;ext4-ck-fails&amp;quot; is part of the pod events verify that the pod does not enter running state  </description>
+      <description> create a volume + pv + pvc with filesystem ext4 named ext-ck-fail create a deployment that uses ext-ck-fail verify MountVolume.SetUp failed for volume &amp;quot;ext4-ck-fails&amp;quot; is part of the pod events verify that the pod does not enter running state </description>
     </item>
     
     <item>
@@ -39,7 +39,7 @@
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.0/suse-sles12sp3/xfs-after-custom-fs-params/</guid>
-      <description> create a volume + pv + pvc with filesystem xfs named xfs-ignores create a deployment that uses xfs-ignores verify that the pod enters running state and the volume is accessible  </description>
+      <description> create a volume + pv + pvc with filesystem xfs named xfs-ignores create a deployment that uses xfs-ignores verify that the pod enters running state and the volume is accessible </description>
     </item>
     
   </channel>

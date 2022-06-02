@@ -30,7 +30,7 @@
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/managed-kubernetes-clusters/eks/upgrade-k8s/</guid>
-      <description> Create EKS cluster with 3 nodes and install Longhorn. Create deployment and write some data to it. In Longhorn, set replica-replenishment-wait-interval to 0. Following instructions to upgrade the cluster. Check the deployment in step 2 still running and data exist.  </description>
+      <description> Create EKS cluster with 3 nodes and install Longhorn. Create deployment and write some data to it. In Longhorn, set replica-replenishment-wait-interval to 0. Following instructions to upgrade the cluster. Check the deployment in step 2 still running and data exist. </description>
     </item>
     
   </channel>

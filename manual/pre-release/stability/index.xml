@@ -12,7 +12,7 @@
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/stability/multiple-installation/</guid>
-      <description>Create a cluster(3 worker nodes and 1 etc/control plane). Deploy the longhorn app. Once longhorn deployed successfully, uninstall longhorn. Repeat the steps 2 and 3 multiple times. Run the below script to install and uninstall longhorn continuously for some time.  installcount=0 while true; echo `date` do kubectl apply -f https://raw.githubusercontent.com/longhorn/longhorn/master/deploy/longhorn.yaml pod=`kubectl get pods -n longhorn-system | grep -i &amp;#39;longhorn-manager&amp;#39; | grep -i &amp;#39;running&amp;#39; | awk -F &amp;#39; &amp;#39; &amp;#39;{print $2}&amp;#39; | grep &amp;#39;1/1&amp;#39; | wc -l` count=0 while [ $pod !</description>
+      <description>Create a cluster(3 worker nodes and 1 etc/control plane). Deploy the longhorn app. Once longhorn deployed successfully, uninstall longhorn. Repeat the steps 2 and 3 multiple times. Run the below script to install and uninstall longhorn continuously for some time. installcount=0 while true; echo `date` do kubectl apply -f https://raw.githubusercontent.com/longhorn/longhorn/master/deploy/longhorn.yaml pod=`kubectl get pods -n longhorn-system | grep -i &amp;#39;longhorn-manager&amp;#39; | grep -i &amp;#39;running&amp;#39; | awk -F &amp;#39; &amp;#39; &amp;#39;{print $2}&amp;#39; | grep &amp;#39;1/1&amp;#39; | wc -l` count=0 while [ $pod !</description>
     </item>
     
   </channel>

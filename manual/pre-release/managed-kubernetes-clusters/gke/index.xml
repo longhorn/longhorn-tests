@@ -13,10 +13,10 @@
       
       <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/managed-kubernetes-clusters/gke/expand-volume/</guid>
       <description>Create GKE cluster with 3 nodes and install Longhorn.
-  Create deployment and write some data to it.
-  In Longhorn, set replica-replenishment-wait-interval to 0.
-  Add a new node-pool. Later Longhorn components will be automatically deployed on the nodes in this pool.
-GKE_NODEPOOL_NAME_NEW=&amp;lt;new-nodepool-name&amp;gt; GKE_REGION=&amp;lt;gke-region&amp;gt; GKE_CLUSTER_NAME=&amp;lt;gke-cluster-name&amp;gt; GKE_IMAGE_TYPE=Ubuntu GKE_MACHINE_TYPE=&amp;lt;gcp-machine-type&amp;gt; GKE_DISK_SIZE_NEW=&amp;lt;new-disk-size-in-gb&amp;gt; GKE_NODE_NUM=&amp;lt;number-of-nodes&amp;gt; gcloud container node-pools create ${GKE_NODEPOOL_NAME_NEW} \ --region ${GKE_REGION} \ --cluster ${GKE_CLUSTER_NAME} \ --image-type ${GKE_IMAGE_TYPE} \ --machine-type ${GKE_MACHINE_TYPE} \ --disk-size ${GKE_DISK_SIZE_NEW} \ --num-nodes ${GKE_NODE_NUM} gcloud container node-pools list \ --zone ${GKE_REGION} \ --cluster ${GKE_CLUSTER_NAME}   Using Longhorn UI to disable the disk scheduling and request eviction for nodes in the old node-pool.</description>
+Create deployment and write some data to it.
+In Longhorn, set replica-replenishment-wait-interval to 0.
+Add a new node-pool. Later Longhorn components will be automatically deployed on the nodes in this pool.
+GKE_NODEPOOL_NAME_NEW=&amp;lt;new-nodepool-name&amp;gt; GKE_REGION=&amp;lt;gke-region&amp;gt; GKE_CLUSTER_NAME=&amp;lt;gke-cluster-name&amp;gt; GKE_IMAGE_TYPE=Ubuntu GKE_MACHINE_TYPE=&amp;lt;gcp-machine-type&amp;gt; GKE_DISK_SIZE_NEW=&amp;lt;new-disk-size-in-gb&amp;gt; GKE_NODE_NUM=&amp;lt;number-of-nodes&amp;gt; gcloud container node-pools create ${GKE_NODEPOOL_NAME_NEW} \ --region ${GKE_REGION} \ --cluster ${GKE_CLUSTER_NAME} \ --image-type ${GKE_IMAGE_TYPE} \ --machine-type ${GKE_MACHINE_TYPE} \ --disk-size ${GKE_DISK_SIZE_NEW} \ --num-nodes ${GKE_NODE_NUM} gcloud container node-pools list \ --zone ${GKE_REGION} \ --cluster ${GKE_CLUSTER_NAME} Using Longhorn UI to disable the disk scheduling and request eviction for nodes in the old node-pool.</description>
     </item>
     
     <item>
@@ -25,7 +25,7 @@ GKE_NODEPOOL_NAME_NEW=&amp;lt;new-nodepool-name&amp;gt; GKE_REGION=&amp;lt;gke-r
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/managed-kubernetes-clusters/gke/upgrade-k8s/</guid>
-      <description> Create GKE cluster with 3 nodes and install Longhorn. Create deployment and write some data to it. In Longhorn, set replica-replenishment-wait-interval to 0. See Upgrading the cluster and Upgrading node pools for instructions. Check the deployment in step 2 still running and data exist.  </description>
+      <description> Create GKE cluster with 3 nodes and install Longhorn. Create deployment and write some data to it. In Longhorn, set replica-replenishment-wait-interval to 0. See Upgrading the cluster and Upgrading node pools for instructions. Check the deployment in step 2 still running and data exist. </description>
     </item>
     
   </channel>

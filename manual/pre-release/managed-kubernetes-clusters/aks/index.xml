@@ -13,10 +13,10 @@
       
       <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/managed-kubernetes-clusters/aks/expand-volume/</guid>
       <description>Create AKS cluster with 3 nodes and install Longhorn.
-  Create deployment and write some data to it.
-  In Longhorn, set replica-replenishment-wait-interval to 0.
-  Add a new node-pool. Later Longhorn components will be automatically deployed on the nodes in this pool.
-AKS_NODEPOOL_NAME_NEW=&amp;lt;new-nodepool-name&amp;gt; AKS_RESOURCE_GROUP=&amp;lt;aks-resource-group&amp;gt; AKS_CLUSTER_NAME=&amp;lt;aks-cluster-name&amp;gt; AKS_DISK_SIZE_NEW=&amp;lt;new-disk-size-in-gb&amp;gt; AKS_NODE_NUM=&amp;lt;number-of-nodes&amp;gt; AKS_K8S_VERSION=&amp;lt;kubernetes-version&amp;gt; az aks nodepool add \ --resource-group ${AKS_RESOURCE_GROUP} \ --cluster-name ${AKS_CLUSTER_NAME} \ --name ${AKS_NODEPOOL_NAME_NEW} \ --node-count ${AKS_NODE_NUM} \ --node-osdisk-size ${AKS_DISK_SIZE_NEW} \ --kubernetes-version ${AKS_K8S_VERSION} \ --mode System   Using Longhorn UI to disable the disk scheduling and request eviction for nodes in the old node-pool.</description>
+Create deployment and write some data to it.
+In Longhorn, set replica-replenishment-wait-interval to 0.
+Add a new node-pool. Later Longhorn components will be automatically deployed on the nodes in this pool.
+AKS_NODEPOOL_NAME_NEW=&amp;lt;new-nodepool-name&amp;gt; AKS_RESOURCE_GROUP=&amp;lt;aks-resource-group&amp;gt; AKS_CLUSTER_NAME=&amp;lt;aks-cluster-name&amp;gt; AKS_DISK_SIZE_NEW=&amp;lt;new-disk-size-in-gb&amp;gt; AKS_NODE_NUM=&amp;lt;number-of-nodes&amp;gt; AKS_K8S_VERSION=&amp;lt;kubernetes-version&amp;gt; az aks nodepool add \ --resource-group ${AKS_RESOURCE_GROUP} \ --cluster-name ${AKS_CLUSTER_NAME} \ --name ${AKS_NODEPOOL_NAME_NEW} \ --node-count ${AKS_NODE_NUM} \ --node-osdisk-size ${AKS_DISK_SIZE_NEW} \ --kubernetes-version ${AKS_K8S_VERSION} \ --mode System Using Longhorn UI to disable the disk scheduling and request eviction for nodes in the old node-pool.</description>
     </item>
     
     <item>
@@ -26,11 +26,11 @@ AKS_NODEPOOL_NAME_NEW=&amp;lt;new-nodepool-name&amp;gt; AKS_RESOURCE_GROUP=&amp;
       
       <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/managed-kubernetes-clusters/aks/upgrade-k8s/</guid>
       <description>Create AKS cluster with 3 nodes and install Longhorn.
-  Create deployment and write some data to it.
-  In Longhorn, set replica-replenishment-wait-interval to 0.
-  Upgrade AKS control plane.
-AKS_RESOURCE_GROUP=&amp;lt;aks-resource-group&amp;gt; AKS_CLUSTER_NAME=&amp;lt;aks-cluster-name&amp;gt; AKS_K8S_VERSION_UPGRADE=&amp;lt;aks-k8s-version&amp;gt; az aks upgrade \ --resource-group ${AKS_RESOURCE_GROUP} \ --name ${AKS_CLUSTER_NAME} \ --kubernetes-version ${AKS_K8S_VERSION_UPGRADE} \ --control-plane-only   Add a new node-pool.
-AKS_NODEPOOL_NAME_NEW=&amp;lt;new-nodepool-name&amp;gt; AKS_DISK_SIZE=&amp;lt;disk-size-in-gb&amp;gt; AKS_NODE_NUM=&amp;lt;number-of-nodes&amp;gt; az aks nodepool add \ --resource-group ${AKS_RESOURCE_GROUP} \ --cluster-name ${AKS_CLUSTER_NAME} \ --name ${AKS_NODEPOOL_NAME_NEW} \ --node-count ${AKS_NODE_NUM} \ --node-osdisk-size ${AKS_DISK_SIZE} \ --kubernetes-version ${AKS_K8S_VERSION_UPGRADE} \ --mode System   Using Longhorn UI to disable the disk scheduling and request eviction for nodes in the old node-pool.</description>
+Create deployment and write some data to it.
+In Longhorn, set replica-replenishment-wait-interval to 0.
+Upgrade AKS control plane.
+AKS_RESOURCE_GROUP=&amp;lt;aks-resource-group&amp;gt; AKS_CLUSTER_NAME=&amp;lt;aks-cluster-name&amp;gt; AKS_K8S_VERSION_UPGRADE=&amp;lt;aks-k8s-version&amp;gt; az aks upgrade \ --resource-group ${AKS_RESOURCE_GROUP} \ --name ${AKS_CLUSTER_NAME} \ --kubernetes-version ${AKS_K8S_VERSION_UPGRADE} \ --control-plane-only Add a new node-pool.
+AKS_NODEPOOL_NAME_NEW=&amp;lt;new-nodepool-name&amp;gt; AKS_DISK_SIZE=&amp;lt;disk-size-in-gb&amp;gt; AKS_NODE_NUM=&amp;lt;number-of-nodes&amp;gt; az aks nodepool add \ --resource-group ${AKS_RESOURCE_GROUP} \ --cluster-name ${AKS_CLUSTER_NAME} \ --name ${AKS_NODEPOOL_NAME_NEW} \ --node-count ${AKS_NODE_NUM} \ --node-osdisk-size ${AKS_DISK_SIZE} \ --kubernetes-version ${AKS_K8S_VERSION_UPGRADE} \ --mode System Using Longhorn UI to disable the disk scheduling and request eviction for nodes in the old node-pool.</description>
     </item>
     
   </channel>

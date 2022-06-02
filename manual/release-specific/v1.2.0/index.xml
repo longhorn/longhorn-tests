@@ -12,7 +12,7 @@
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.2.0/test-backing-image-upload/</guid>
-      <description>Test upload  Prepare a large backing image file (make sure the size is greater than 1Gi and the uploading time is longer than 1 minute) in local. Click the backing image creation button in UI, choose Upload From Local, select the file then start upload. Wait for the initialization complete. Then the upload progress will be shown. During the uploading, verify the corresponding backing image data source pod won&amp;rsquo;t use too many CPU (50 ~ 200m) and memory(50 ~ 200Mi) resources.</description>
+      <description>Test upload Prepare a large backing image file (make sure the size is greater than 1Gi and the uploading time is longer than 1 minute) in local. Click the backing image creation button in UI, choose Upload From Local, select the file then start upload. Wait for the initialization complete. Then the upload progress will be shown. During the uploading, verify the corresponding backing image data source pod won&amp;rsquo;t use too many CPU (50 ~ 200m) and memory(50 ~ 200Mi) resources.</description>
     </item>
     
     <item>
@@ -62,7 +62,7 @@ Then moniter the cron job pod log.</description>
       
       <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.2.0/test_version_bump/</guid>
       <description>GitHub issue: https://github.com/longhorn/longhorn/issues/2757
-Test with specific Kubernetes version  For each Kubernetes version (1.18, 1.19, 1.20, 1.21, 1.22), test basic functionalities of Longhorn v1.2.0 (create/attach/detach/delete volume/backup/snapshot using yaml/UI)  Test Kubernetes and Longhorn upgrade  Deploy K3s v1.21 Deploy Longhorn v1.1.2 Create some workload pods using Longhorn volumes Upgrade Longhorn to v1.2.0 Verify that everything is OK Upgrade K3s to v1.22 Verify that everything is OK  Retest the Upgrade Lease Lock We remove the client-go patch https://github.</description>
+Test with specific Kubernetes version For each Kubernetes version (1.18, 1.19, 1.20, 1.21, 1.22), test basic functionalities of Longhorn v1.2.0 (create/attach/detach/delete volume/backup/snapshot using yaml/UI) Test Kubernetes and Longhorn upgrade Deploy K3s v1.21 Deploy Longhorn v1.1.2 Create some workload pods using Longhorn volumes Upgrade Longhorn to v1.2.0 Verify that everything is OK Upgrade K3s to v1.22 Verify that everything is OK Retest the Upgrade Lease Lock We remove the client-go patch https://github.</description>
     </item>
     
   </channel>

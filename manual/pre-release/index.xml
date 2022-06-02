@@ -12,7 +12,7 @@
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/stress/backup-listing/</guid>
-      <description>1. Backup listing with more than 1000 backups - S3  Deploy Longhorn on a kubernetes cluster. Set up S3 backupStore. Create a volume of 2Gi and attach it to a pod. Write some data into it and compute md5sum. Open browser developer tool. Create one backup by clicking LH GUI (It&amp;rsquo;ll call snapshotCreate and snapshotBackup APIs). Copy the snapshotBackup API call, right click Copy -&amp;gt; Copy as cURL. Run the curl command over 1k times in the Shell.</description>
+      <description>1. Backup listing with more than 1000 backups - S3 Deploy Longhorn on a kubernetes cluster. Set up S3 backupStore. Create a volume of 2Gi and attach it to a pod. Write some data into it and compute md5sum. Open browser developer tool. Create one backup by clicking LH GUI (It&amp;rsquo;ll call snapshotCreate and snapshotBackup APIs). Copy the snapshotBackup API call, right click Copy -&amp;gt; Copy as cURL. Run the curl command over 1k times in the Shell.</description>
     </item>
     
     <item>
@@ -21,7 +21,7 @@
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/uninstallation/uninstallation-checks/</guid>
-      <description>Prerequisites  Have a setup of Longhorn installed on a kubernetes cluster. Have few volumes backups stored on S3/NFS backup store. Have one DR volume created (not activated) in another cluster with a volume in current cluster.  Test steps  Uninstall Longhorn. Check the logs of the job longhorn-uninstall, make sure there is no error. Check all the components of Longhorn from the namespace longhorn-system are uninstalled. E.g. Longhorn manager, Longhorn driver, Longhorn UI, instance manager, engine image, CSI driver etc.</description>
+      <description>Prerequisites Have a setup of Longhorn installed on a kubernetes cluster. Have few volumes backups stored on S3/NFS backup store. Have one DR volume created (not activated) in another cluster with a volume in current cluster. Test steps Uninstall Longhorn. Check the logs of the job longhorn-uninstall, make sure there is no error. Check all the components of Longhorn from the namespace longhorn-system are uninstalled. E.g. Longhorn manager, Longhorn driver, Longhorn UI, instance manager, engine image, CSI driver etc.</description>
     </item>
     
   </channel>
