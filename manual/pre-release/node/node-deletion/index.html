@@ -6,6 +6,9 @@
       Longhorn Manual Test Cases
     </title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/4.0.0/github-markdown.min.css">
+    <style>
+      ol > li { list-style-type: decimal; }
+    </style>
   </head>
   <body class="markdown-body" style="display: flex; padding: 1%;">
     
@@ -606,15 +609,29 @@
 </li>
 <li>Delete multiple nodes in the cluster simultaneously. Make sure the corresponding Kubernetes node object is deleted. &ndash;&gt; The related Longhorn node objects will be cleaned up immediately, too.</li>
 <li>For each deleted node:
-1.Verify the volume Health state  &ndash;&gt;
-1. The 1st volume should become <code>Faulted</code>.
-2. The 2nd volume should keep <code>Unknown</code>.
-3. The 3rd and the 4th volume should become <code>Degraded</code>.
-2. Delete the 1st volume. &ndash;&gt; The volume can be deleted.
-3. Detach then reattach the 2nd volume. &ndash;&gt; The volume works fine and the data is correct.
-4. Crash all replicas of the 3rd volume and trigger the auto salvage. &ndash;&gt; The auto salvage should work. The volume works fine and the data is correct after the salvage.
-5. Disabled the auto salvage setting. Then crash all replicas of the 3rd volume again. &ndash;&gt; The replica on the deleted node cannot be salvaged manually, too. The salvage feature still works fine.
-6. Deleted the replica on the deleted node for the 4th volume. &ndash;&gt; The replica can be deleted.</li>
+<ol>
+<li>Verify the volume Health state  &ndash;&gt;
+<ol>
+<li>The 1st volume should become <code>Faulted</code>.</li>
+<li>The 2nd volume should keep <code>Unknown</code>.</li>
+<li>The 3rd and the 4th volume should become <code>Degraded</code>.</li>
+</ol>
+</li>
+<li>Delete the 1st volume. &ndash;&gt; The volume can be deleted.</li>
+<li>Detach then reattach the 2nd volume. &ndash;&gt; The volume works fine and the data is correct.</li>
+<li>Crash all replicas of the 3rd volume and trigger the auto salvage. &ndash;&gt; The auto salvage should work. The volume works fine and the data is correct after the salvage.
+<ul>
+<li>An example to crash every volume replica instance manager pods with kubectl:
+<ul>
+<li><code>kubectl delete pods -l longhorn.io/instance-manager-type=replica -n longhorn-system --wait</code></li>
+</ul>
+</li>
+</ul>
+</li>
+<li>Disabled the auto salvage setting. Then crash all replicas of the 3rd volume again. &ndash;&gt; The replica on the deleted node cannot be salvaged manually, too. The salvage feature still works fine.</li>
+<li>Deleted the replica on the deleted node for the 4th volume. &ndash;&gt; The replica can be deleted.</li>
+</ol>
+</li>
 </ol>
 
     </article>
