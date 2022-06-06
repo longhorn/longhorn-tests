@@ -17,6 +17,21 @@ Test Setup Deploy the CSI snapshot CRDs, Controller as instructed at https://lon
     </item>
     
     <item>
+      <title>Setup and test storage network</title>
+      <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.3.0/test-storage-network/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.3.0/test-storage-network/</guid>
+      <description>Related issue https://github.com/longhorn/longhorn/issues/2285
+Test storage network Create AWS instances Given Create VPC.
+VPC only IPv4 CIDR 10.0.0.0/16 And Create an internet gateway.
+Attach to VPC And Add the internet gateway to the VPC Main route table, Routes.
+Destination 0.0.0.0/0 And Create 2 subnets in the VPC.
+Subnet-1: 10.0.1.0/24 Subnet-2: 10.0.2.0/24 And Launch 3 EC2 instances.
+Use the created VPC Use subnet-1 for network interface 1 Use subnet-2 for network interface 2 Disable Auto-assign public IP Add security group inbound rule to allow All traffic from Anywhere-IPv4 Stop Source/destination check And Create 3 elastic IPs.</description>
+    </item>
+    
+    <item>
       <title>Test backing image download to local</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.3.0/test-backing-image-download-to-local/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
