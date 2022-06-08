@@ -3175,7 +3175,7 @@ def test_allow_volume_creation_with_degraded_availability(client, volume_name): 
     volume = common.wait_for_volume_detached(client, volume_name)
 
     volume.attach(hostId=self_host)
-    volume = common.wait_for_volume_degraded(client, volume_name)
+    volume = common.wait_for_volume_healthy(client, volume_name)
     check_volume_data(volume, data)
 
 
