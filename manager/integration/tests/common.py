@@ -1158,6 +1158,18 @@ def csi_pv_backingimage(request):
     return pv_manifest
 
 
+def check_pvc_in_specific_status(api, pvc_name, status):
+    for i in range(RETRY_EXEC_COUNTS):
+        claim = \
+            api.read_namespaced_persistent_volume_claim(name=pvc_name,
+                                                        namespace='default')
+        if claim.status.phase == "bound":
+            break
+        time.sleep(RETRY_INTERVAL)
+
+    assert claim.status.phase == status
+
+
 def get_pvc_manifest(request):
     pvc_manifest = {
         'apiVersion': 'v1',
