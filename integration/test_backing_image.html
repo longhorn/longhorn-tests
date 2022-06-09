@@ -524,7 +524,21 @@ def test_exporting_backing_image_from_volume(client, volume_name):  # NOQA
     volume3 = wait_for_volume_healthy(client, volume3_name)
 
     # Step10
-    check_volume_data(volume3, data2)</code></pre>
+    check_volume_data(volume3, data2)
+
+
+@pytest.mark.skip(reason=&#34;TODO&#34;) # NOQA
+@pytest.mark.backing_image  # NOQA
+def test_backing_image_auto_resync(client, volume_name):  # NOQA
+    &#34;&#34;&#34;
+    1. Create a backing image.
+    2. Create and attach a 3-replica volume using the backing image.
+    3. Wait for the attachment complete.
+    4. Manually remove the backing image on the current node.
+    5. Wait for the file state in the disk/on this node become failed.
+    6. Wait for the file recovering automatically.
+    7. Validate the volume.
+    &#34;&#34;&#34;</code></pre>
 </details>
 </section>
 <section>
@@ -696,6 +710,37 @@ step 4.</li>
     assert output2 == output1
 
     cleanup_host_disk(volume_name2)</code></pre>
+</details>
+</dd>
+<dt id="tests.test_backing_image.test_backing_image_auto_resync"><code class="name flex">
+<span>def <span class="ident">test_backing_image_auto_resync</span></span>(<span>client, volume_name)</span>
+</code></dt>
+<dd>
+<div class="desc"><ol>
+<li>Create a backing image.</li>
+<li>Create and attach a 3-replica volume using the backing image.</li>
+<li>Wait for the attachment complete.</li>
+<li>Manually remove the backing image on the current node.</li>
+<li>Wait for the file state in the disk/on this node become failed.</li>
+<li>Wait for the file recovering automatically.</li>
+<li>Validate the volume.</li>
+</ol></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@pytest.mark.skip(reason=&#34;TODO&#34;) # NOQA
+@pytest.mark.backing_image  # NOQA
+def test_backing_image_auto_resync(client, volume_name):  # NOQA
+    &#34;&#34;&#34;
+    1. Create a backing image.
+    2. Create and attach a 3-replica volume using the backing image.
+    3. Wait for the attachment complete.
+    4. Manually remove the backing image on the current node.
+    5. Wait for the file state in the disk/on this node become failed.
+    6. Wait for the file recovering automatically.
+    7. Validate the volume.
+    &#34;&#34;&#34;</code></pre>
 </details>
 </dd>
 <dt id="tests.test_backing_image.test_backing_image_basic_operation"><code class="name flex">
@@ -1301,6 +1346,7 @@ def test_volume_iscsi_basic_with_backing_image(client, volume_name):  # NOQA
 <ul class="">
 <li><code><a title="tests.test_backing_image.backing_image_basic_operation_test" href="#tests.test_backing_image.backing_image_basic_operation_test">backing_image_basic_operation_test</a></code></li>
 <li><code><a title="tests.test_backing_image.backing_image_content_test" href="#tests.test_backing_image.backing_image_content_test">backing_image_content_test</a></code></li>
+<li><code><a title="tests.test_backing_image.test_backing_image_auto_resync" href="#tests.test_backing_image.test_backing_image_auto_resync">test_backing_image_auto_resync</a></code></li>
 <li><code><a title="tests.test_backing_image.test_backing_image_basic_operation" href="#tests.test_backing_image.test_backing_image_basic_operation">test_backing_image_basic_operation</a></code></li>
 <li><code><a title="tests.test_backing_image.test_backing_image_content" href="#tests.test_backing_image.test_backing_image_content">test_backing_image_content</a></code></li>
 <li><code><a title="tests.test_backing_image.test_backing_image_with_disk_migration" href="#tests.test_backing_image.test_backing_image_with_disk_migration">test_backing_image_with_disk_migration</a></code></li>
