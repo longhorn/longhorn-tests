@@ -80,6 +80,18 @@ Then Longhorn should complete uninstalling.</description>
     </item>
     
     <item>
+      <title>Test NPE when longhorn UI deployment CR not exist</title>
+      <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.3.0/test-npe-when-longhorn-ui-deployment-not-exist/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.3.0/test-npe-when-longhorn-ui-deployment-not-exist/</guid>
+      <description>Related issue https://github.com/longhorn/longhorn/issues/4065
+Test Given helm install Longhorn
+When delete deployment/longhorn-ui And update setting/kubernetes-cluster-autoscaler-enabled to true or false
+Then longhorn-manager pods should still be Running.</description>
+    </item>
+    
+    <item>
       <title>Test snapshot purge retry</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.3.0/test-snapshot-purge-retry/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
