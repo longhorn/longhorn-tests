@@ -4,6 +4,7 @@ import subprocess
 import random
 
 import common
+import time
 from common import client, core_api, apps_api # NOQA
 from common import csi_pv, pod_make, pvc, storage_class  # NOQA
 from common import make_deployment_with_pvc  # NOQA
@@ -620,15 +621,25 @@ def test_allow_volume_creation_with_degraded_availability_csi(
                                   common.VOLUME_STATE_ATTACHED)
     common.wait_for_volume_condition_scheduled(client, vol.name, "status",
                                                common.CONDITION_STATUS_FALSE)
-    pod = common.wait_and_get_any_deployment_pod(core_api, deployment_name)
-    assert created_md5sum == get_pod_data_md5sum(core_api,
-                                                 pod.metadata.name,
-                                                 data_path)
+
+    # This is a workaround, this flaky step is because sometimes, pod
+    # just changed to running state can not get data
+    # https://github.com/longhorn/longhorn-tests/pull/999#discussion_r902125882 # NOQA
+    for i in range(common.RETRY_COMMAND_COUNT):
+        try:
+            pod = common.wait_and_get_any_deployment_pod(core_api,
+                                                         deployment_name)
+            pod_md5 = get_pod_data_md5sum(core_api,
+                                          pod.metadata.name,
+                                          data_path)
+        except Exception as e:
+            print(e)
+            time.sleep(common.RETRY_INTERVAL)
+            continue
+    assert created_md5sum == pod_md5
 
     client.update(node3, allowScheduling=True)
-    common.wait_for_rebuild_start(client, vol.name)
     vol = client.by_id_volume(vol.name)
-    assert vol.conditions[VOLUME_CONDITION_SCHEDULED]['status'] == "True"
     common.wait_for_rebuild_complete(client, vol.name)
 
     deployment['spec']['replicas'] = 0
@@ -642,8 +653,8 @@ def test_allow_volume_creation_with_degraded_availability_csi(
                                          namespace='default',
                                          name=deployment_name)
     common.wait_for_volume_status(client, vol.name,
-                                  common.VOLUME_FIELD_STATE,
-                                  common.VOLUME_STATE_ATTACHED)
+                                  common.VOLUME_FIELD_ROBUSTNESS,
+                                  common.VOLUME_ROBUSTNESS_HEALTHY)
 
     pod = common.wait_and_get_any_deployment_pod(core_api, deployment_name)
     assert created_md5sum == get_pod_data_md5sum(core_api,
