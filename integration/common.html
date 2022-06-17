@@ -37,6 +37,8 @@ import subprocess
 import json
 import hashlib
 import signal
+import types
+import threading
 
 import socket
 import pytest
@@ -1965,8 +1967,72 @@ def delete_replica_processes(client, api, volname):
         exec_instance_manager(api, rm_name, delete_command)
 
 
+class AssertErrorCheckThread(threading.Thread):
+    &#34;&#34;&#34;
+        This class is used for catching exception caused in threads,
+        especially for AssertionError now.
+
+        Parameters:
+            target  :       The threading function.
+            args    :       Arguments of the target fucntion.
+    &#34;&#34;&#34;
+    def __init__(self, target, args):
+        threading.Thread.__init__(self)
+        self.target = target
+        self.args = args
+        self.asserted = None
+
+    def run(self):
+        try:
+            self.target(*self.args)
+        except AssertionError as e:
+            self.asserted = e
+
+    def join(self):
+        threading.Thread.join(self)
+        if self.asserted:
+            raise self.asserted
+
+
+def create_assert_error_check_thread(func, *args):
+    &#34;&#34;&#34;
+        Do func by threading with arguments
+
+        Parameters:
+            func:   function that want to do things in parallel.
+            args:   arguments for function.
+    &#34;&#34;&#34;
+    assert isinstance(func, types.FunctionType), &#34;First arg is not a function.&#34;
+
+    t = AssertErrorCheckThread(target=func, args=args)
+    t.start()
+
+    return t
+
+
+def assert_from_assert_error_check_threads(thrd_list):
+    &#34;&#34;&#34;
+        Check all threads in thrd_list are done and their status
+
+        Parameters:
+            thrd_list: thread list created by create_assert_error_check_thread.
+    &#34;&#34;&#34;
+    assert isinstance(thrd_list, list), &#34;thrd_list is not a list&#34;
+
+    err_list = []
+    for t in thrd_list:
+        try:
+            t.join()
+        except AssertionError as e:
+            print(e)
+            err_list.append(e)
+    if err_list:
+        assert False, err_list
+
+
 def crash_replica_processes(client, api, volname, replicas=None,
                             wait_to_fail=True):
+    threads = []
 
     if replicas is None:
         volume = client.by_id_volume(volname)
@@ -1978,10 +2044,15 @@ def crash_replica_processes(client, api, volname, replicas=None,
                        &#34;&#39; | grep -v grep | awk &#39;{print $2}&#39;`&#34;
         exec_instance_manager(api, r.instanceManagerName, kill_command)
 
-        # FIXME: this is a work around, should check this in-parallel.
-        #        https://github.com/longhorn/longhorn/issues/4045
         if wait_to_fail is True:
-            wait_for_replica_failed(client, volname, r[&#39;name&#39;])
+            thread = create_assert_error_check_thread(
+                wait_for_replica_failed,
+                client, volname, r[&#39;name&#39;], RETRY_COUNTS*2, RETRY_INTERVAL/2
+            )
+            threads.append(thread)
+
+    if wait_to_fail:
+        assert_from_assert_error_check_threads(threads)
 
 
 def exec_instance_manager(api, im_name, cmd):
@@ -1995,27 +2066,38 @@ def exec_instance_manager(api, im_name, cmd):
                stderr=True, stdin=False, stdout=True, tty=False)
 
 
-def wait_for_replica_failed(client, volname, replica_name):
+def wait_for_replica_failed(client, volname, replica_name,
+                            retry_cnts=RETRY_COUNTS, retry_ivl=RETRY_INTERVAL):
     failed = True
-    for i in range(RETRY_COUNTS):
-        time.sleep(RETRY_INTERVAL)
+    debug_replica_not_failed = None
+    debug_replica_in_im = None
+
+    for i in range(retry_cnts):
         failed = True
+        debug_replica_not_failed = None
+        debug_replica_in_im = None
         volume = client.by_id_volume(volname)
         for r in volume.replicas:
             if r[&#39;name&#39;] != replica_name:
                 continue
             if r[&#39;running&#39;] or r[&#39;failedAt&#39;] == &#34;&#34;:
                 failed = False
+                debug_replica_not_failed = r
                 break
             if r[&#39;instanceManagerName&#39;] != &#34;&#34;:
-                im = client.by_id_instance_manager(
-                    r[&#39;instanceManagerName&#39;])
+                im = client.by_id_instance_manager(r[&#39;instanceManagerName&#39;])
                 if r[&#39;name&#39;] in im[&#39;instances&#39;]:
                     failed = False
+                    debug_replica_in_im = im
                     break
         if failed:
             break
-    assert failed
+        time.sleep(retry_ivl)
+
+    err_msg = &#34;Vol({}), Replica({}): {}, Instance_Manager: {}&#34;.format(
+        volname, replica_name, debug_replica_not_failed, debug_replica_in_im
+    )
+    assert failed, err_msg
 
 
 def wait_for_replica_running(client, volname, replica_name):
@@ -5049,6 +5131,37 @@ def apps_api(request):
     assert b_expected.messages == b_actual.messages is None</code></pre>
 </details>
 </dd>
+<dt id="tests.common.assert_from_assert_error_check_threads"><code class="name flex">
+<span>def <span class="ident">assert_from_assert_error_check_threads</span></span>(<span>thrd_list)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Check all threads in thrd_list are done and their status</p>
+<h2 id="parameters">Parameters</h2>
+<p>thrd_list: thread list created by create_assert_error_check_thread.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def assert_from_assert_error_check_threads(thrd_list):
+    &#34;&#34;&#34;
+        Check all threads in thrd_list are done and their status
+
+        Parameters:
+            thrd_list: thread list created by create_assert_error_check_thread.
+    &#34;&#34;&#34;
+    assert isinstance(thrd_list, list), &#34;thrd_list is not a list&#34;
+
+    err_list = []
+    for t in thrd_list:
+        try:
+            t.join()
+        except AssertionError as e:
+            print(e)
+            err_list.append(e)
+    if err_list:
+        assert False, err_list</code></pre>
+</details>
+</dd>
 <dt id="tests.common.backing_image_feature_supported"><code class="name flex">
 <span>def <span class="ident">backing_image_feature_supported</span></span>(<span>client)</span>
 </code></dt>
@@ -5992,6 +6105,7 @@ def core_api(request):
 </summary>
 <pre><code class="python">def crash_replica_processes(client, api, volname, replicas=None,
                             wait_to_fail=True):
+    threads = []
 
     if replicas is None:
         volume = client.by_id_volume(volname)
@@ -6003,10 +6117,15 @@ def core_api(request):
                        &#34;&#39; | grep -v grep | awk &#39;{print $2}&#39;`&#34;
         exec_instance_manager(api, r.instanceManagerName, kill_command)
 
-        # FIXME: this is a work around, should check this in-parallel.
-        #        https://github.com/longhorn/longhorn/issues/4045
         if wait_to_fail is True:
-            wait_for_replica_failed(client, volname, r[&#39;name&#39;])</code></pre>
+            thread = create_assert_error_check_thread(
+                wait_for_replica_failed,
+                client, volname, r[&#39;name&#39;], RETRY_COUNTS*2, RETRY_INTERVAL/2
+            )
+            threads.append(thread)
+
+    if wait_to_fail:
+        assert_from_assert_error_check_threads(threads)</code></pre>
 </details>
 </dd>
 <dt id="tests.common.create_and_check_volume"><code class="name flex">
@@ -6147,6 +6266,36 @@ or it times out, whichever occurs first.</p></div>
     &#34;&#34;&#34;
     create_statefulset(statefulset_manifest)
     wait_statefulset(statefulset_manifest)</code></pre>
+</details>
+</dd>
+<dt id="tests.common.create_assert_error_check_thread"><code class="name flex">
+<span>def <span class="ident">create_assert_error_check_thread</span></span>(<span>func, *args)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Do func by threading with arguments</p>
+<h2 id="parameters">Parameters</h2>
+<p>func:
+function that want to do things in parallel.
+args:
+arguments for function.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def create_assert_error_check_thread(func, *args):
+    &#34;&#34;&#34;
+        Do func by threading with arguments
+
+        Parameters:
+            func:   function that want to do things in parallel.
+            args:   arguments for function.
+    &#34;&#34;&#34;
+    assert isinstance(func, types.FunctionType), &#34;First arg is not a function.&#34;
+
+    t = AssertErrorCheckThread(target=func, args=args)
+    t.start()
+
+    return t</code></pre>
 </details>
 </dd>
 <dt id="tests.common.create_backing_image_with_matching_url"><code class="name flex">
@@ -11124,7 +11273,7 @@ def volume_name(request):
 </details>
 </dd>
 <dt id="tests.common.wait_for_replica_failed"><code class="name flex">
-<span>def <span class="ident">wait_for_replica_failed</span></span>(<span>client, volname, replica_name)</span>
+<span>def <span class="ident">wait_for_replica_failed</span></span>(<span>client, volname, replica_name, retry_cnts=300, retry_ivl=0.5)</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -11132,27 +11281,38 @@ def volume_name(request):
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def wait_for_replica_failed(client, volname, replica_name):
+<pre><code class="python">def wait_for_replica_failed(client, volname, replica_name,
+                            retry_cnts=RETRY_COUNTS, retry_ivl=RETRY_INTERVAL):
     failed = True
-    for i in range(RETRY_COUNTS):
-        time.sleep(RETRY_INTERVAL)
+    debug_replica_not_failed = None
+    debug_replica_in_im = None
+
+    for i in range(retry_cnts):
         failed = True
+        debug_replica_not_failed = None
+        debug_replica_in_im = None
         volume = client.by_id_volume(volname)
         for r in volume.replicas:
             if r[&#39;name&#39;] != replica_name:
                 continue
             if r[&#39;running&#39;] or r[&#39;failedAt&#39;] == &#34;&#34;:
                 failed = False
+                debug_replica_not_failed = r
                 break
             if r[&#39;instanceManagerName&#39;] != &#34;&#34;:
-                im = client.by_id_instance_manager(
-                    r[&#39;instanceManagerName&#39;])
+                im = client.by_id_instance_manager(r[&#39;instanceManagerName&#39;])
                 if r[&#39;name&#39;] in im[&#39;instances&#39;]:
                     failed = False
+                    debug_replica_in_im = im
                     break
         if failed:
             break
-    assert failed</code></pre>
+        time.sleep(retry_ivl)
+
+    err_msg = &#34;Vol({}), Replica({}): {}, Instance_Manager: {}&#34;.format(
+        volname, replica_name, debug_replica_not_failed, debug_replica_in_im
+    )
+    assert failed, err_msg</code></pre>
 </details>
 </dd>
 <dt id="tests.common.wait_for_replica_running"><code class="name flex">
@@ -12282,6 +12442,121 @@ volume. Trigger a failed assertion of one is detected.
 <section>
 <h2 class="section-title" id="header-classes">Classes</h2>
 <dl>
+<dt id="tests.common.AssertErrorCheckThread"><code class="flex name class">
+<span>class <span class="ident">AssertErrorCheckThread</span></span>
+<span>(</span><span>target, args)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>This class is used for catching exception caused in threads,
+especially for AssertionError now.</p>
+<h2 id="parameters">Parameters</h2>
+<p>target
+:
+The threading function.
+args
+:
+Arguments of the target fucntion.</p>
+<p>This constructor should always be called with keyword arguments. Arguments are:</p>
+<p><em>group</em> should be None; reserved for future extension when a ThreadGroup
+class is implemented.</p>
+<p><em>target</em> is the callable object to be invoked by the run()
+method. Defaults to None, meaning nothing is called.</p>
+<p><em>name</em> is the thread name. By default, a unique name is constructed of
+the form "Thread-N" where N is a small decimal number.</p>
+<p><em>args</em> is the argument tuple for the target invocation. Defaults to ().</p>
+<p><em>kwargs</em> is a dictionary of keyword arguments for the target
+invocation. Defaults to {}.</p>
+<p>If a subclass overrides the constructor, it must make sure to invoke
+the base class constructor (Thread.<strong>init</strong>()) before doing anything
+else to the thread.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class AssertErrorCheckThread(threading.Thread):
+    &#34;&#34;&#34;
+        This class is used for catching exception caused in threads,
+        especially for AssertionError now.
+
+        Parameters:
+            target  :       The threading function.
+            args    :       Arguments of the target fucntion.
+    &#34;&#34;&#34;
+    def __init__(self, target, args):
+        threading.Thread.__init__(self)
+        self.target = target
+        self.args = args
+        self.asserted = None
+
+    def run(self):
+        try:
+            self.target(*self.args)
+        except AssertionError as e:
+            self.asserted = e
+
+    def join(self):
+        threading.Thread.join(self)
+        if self.asserted:
+            raise self.asserted</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li>threading.Thread</li>
+</ul>
+<h3>Methods</h3>
+<dl>
+<dt id="tests.common.AssertErrorCheckThread.join"><code class="name flex">
+<span>def <span class="ident">join</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Wait until the thread terminates.</p>
+<p>This blocks the calling thread until the thread whose join() method is
+called terminates &ndash; either normally or through an unhandled exception
+or until the optional timeout occurs.</p>
+<p>When the timeout argument is present and not None, it should be a
+floating point number specifying a timeout for the operation in seconds
+(or fractions thereof). As join() always returns None, you must call
+is_alive() after join() to decide whether a timeout happened &ndash; if the
+thread is still alive, the join() call timed out.</p>
+<p>When the timeout argument is not present or None, the operation will
+block until the thread terminates.</p>
+<p>A thread can be join()ed many times.</p>
+<p>join() raises a RuntimeError if an attempt is made to join the current
+thread as that would cause a deadlock. It is also an error to join() a
+thread before it has been started and attempts to do so raises the same
+exception.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def join(self):
+    threading.Thread.join(self)
+    if self.asserted:
+        raise self.asserted</code></pre>
+</details>
+</dd>
+<dt id="tests.common.AssertErrorCheckThread.run"><code class="name flex">
+<span>def <span class="ident">run</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Method representing the thread's activity.</p>
+<p>You may override this method in a subclass. The standard run() method
+invokes the callable object passed to the object's constructor as the
+target argument, if any, with sequential and keyword arguments taken
+from the args and kwargs arguments, respectively.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def run(self):
+    try:
+        self.target(*self.args)
+    except AssertionError as e:
+        self.asserted = e</code></pre>
+</details>
+</dd>
+</dl>
+</dd>
 <dt id="tests.common.timeout"><code class="flex name class">
 <span>class <span class="ident">timeout</span></span>
 <span>(</span><span>seconds=1, error_message='Timeout')</span>
@@ -12344,6 +12619,7 @@ volume. Trigger a failed assertion of one is detected.
 <li><code><a title="tests.common.activate_standby_volume" href="#tests.common.activate_standby_volume">activate_standby_volume</a></code></li>
 <li><code><a title="tests.common.apps_api" href="#tests.common.apps_api">apps_api</a></code></li>
 <li><code><a title="tests.common.assert_backup_state" href="#tests.common.assert_backup_state">assert_backup_state</a></code></li>
+<li><code><a title="tests.common.assert_from_assert_error_check_threads" href="#tests.common.assert_from_assert_error_check_threads">assert_from_assert_error_check_threads</a></code></li>
 <li><code><a title="tests.common.backing_image_feature_supported" href="#tests.common.backing_image_feature_supported">backing_image_feature_supported</a></code></li>
 <li><code><a title="tests.common.batch_v1_beta_api" href="#tests.common.batch_v1_beta_api">batch_v1_beta_api</a></code></li>
 <li><code><a title="tests.common.check_backing_image_disk_map_status" href="#tests.common.check_backing_image_disk_map_status">check_backing_image_disk_map_status</a></code></li>
@@ -12383,6 +12659,7 @@ volume. Trigger a failed assertion of one is detected.
 <li><code><a title="tests.common.create_and_wait_deployment" href="#tests.common.create_and_wait_deployment">create_and_wait_deployment</a></code></li>
 <li><code><a title="tests.common.create_and_wait_pod" href="#tests.common.create_and_wait_pod">create_and_wait_pod</a></code></li>
 <li><code><a title="tests.common.create_and_wait_statefulset" href="#tests.common.create_and_wait_statefulset">create_and_wait_statefulset</a></code></li>
+<li><code><a title="tests.common.create_assert_error_check_thread" href="#tests.common.create_assert_error_check_thread">create_assert_error_check_thread</a></code></li>
 <li><code><a title="tests.common.create_backing_image_with_matching_url" href="#tests.common.create_backing_image_with_matching_url">create_backing_image_with_matching_url</a></code></li>
 <li><code><a title="tests.common.create_backup" href="#tests.common.create_backup">create_backup</a></code></li>
 <li><code><a title="tests.common.create_backup_from_volume_attached_to_pod" href="#tests.common.create_backup_from_volume_attached_to_pod">create_backup_from_volume_attached_to_pod</a></code></li>
@@ -12624,6 +12901,13 @@ volume. Trigger a failed assertion of one is detected.
 </li>
 <li><h3><a href="#header-classes">Classes</a></h3>
 <ul>
+<li>
+<h4><code><a title="tests.common.AssertErrorCheckThread" href="#tests.common.AssertErrorCheckThread">AssertErrorCheckThread</a></code></h4>
+<ul class="">
+<li><code><a title="tests.common.AssertErrorCheckThread.join" href="#tests.common.AssertErrorCheckThread.join">join</a></code></li>
+<li><code><a title="tests.common.AssertErrorCheckThread.run" href="#tests.common.AssertErrorCheckThread.run">run</a></code></li>
+</ul>
+</li>
 <li>
 <h4><code><a title="tests.common.timeout" href="#tests.common.timeout">timeout</a></code></h4>
 <ul class="">
