@@ -859,11 +859,26 @@ def set_node_tags(client, node, tags=[]):  # NOQA
                          tags=tags)
 
 
-def set_node_scheduling(client, node, allowScheduling):
+def set_node_scheduling(client, node, allowScheduling, retry=False):
     if node.tags is None:
         node.tags = []
-    return client.update(node, allowScheduling=allowScheduling,
-                         tags=node.tags)
+    if not retry:
+        return client.update(node, allowScheduling=allowScheduling,
+                             tags=node.tags)
+    # Retry if "too many retries error" happened.
+    for _ in range(NODE_UPDATE_RETRY_COUNT):
+        try:
+            node = client.update(node, allowScheduling=allowScheduling,
+                                 tags=node.tags)
+        except Exception as e:
+            if disk_being_syncing in str(e.error.message):
+                time.sleep(NODE_UPDATE_RETRY_INTERVAL)
+                continue
+            print(e)
+            raise
+        else:
+            break
+    return node
 
 
 @pytest.fixture

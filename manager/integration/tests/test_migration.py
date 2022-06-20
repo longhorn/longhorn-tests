@@ -1,5 +1,5 @@
 import pytest
-
+import subprocess
 import common
 from common import clients, volume_name, wait_for_volume_healthy  # NOQA
 from common import get_random_client
@@ -53,7 +53,7 @@ def migration_confirm_test(clients, volume_name, backing_image=""):  # NOQA
     volume = common.wait_for_volume_detached(client, volume_name)
 
     # verify test data
-    check_volume_data(client, volume_name, data)
+    check_detached_volume_data(client, volume_name, data)
 
     client.delete(volume)
     wait_for_volume_delete(client, volume_name)
@@ -98,7 +98,7 @@ def migration_rollback_test(clients, volume_name, backing_image=""):  # NOQA
     volume = common.wait_for_volume_detached(client, volume_name)
 
     # verify test data
-    check_volume_data(client, volume_name, data)
+    check_detached_volume_data(client, volume_name, data)
 
     client.delete(volume)
     wait_for_volume_delete(client, volume_name)
@@ -200,8 +200,7 @@ def test_migration_with_unscheduled_replica(clients, volume_name):  # NOQA
 
 @pytest.mark.coretest  # NOQA
 @pytest.mark.migration # NOQA
-@pytest.mark.skip(reason="TODO") # NOQA
-def test_migration_with_failed_replica(clients, volume_name):  # NOQA
+def test_migration_with_failed_replica(clients, request, volume_name):  # NOQA
     """
     Test that a degraded migratable RWX volume that contain an failed replica
     can be migrated.
@@ -219,7 +218,55 @@ def test_migration_with_failed_replica(clients, volume_name):  # NOQA
        And the old failed replica will be cleaned up.
     8. Validate initially written test data.
     """
-    return
+    def finalizer():
+        exec_cmd = ["mkdir", "-p", "/var/lib/longhorn/replicas"]
+        subprocess.check_output(exec_cmd)
+
+    request.addfinalizer(finalizer)
+
+    client, volume, data = setup_migration_test(clients,
+                                                volume_name,
+                                                replica_cnt=3)
+
+    current_node = common.get_self_host_id()
+    hosts = get_hosts_for_migration_test(clients)
+    migrate_target = hosts[0]
+    volume.attach(hostId=current_node)
+    volume = common.wait_for_volume_healthy(client, volume_name)
+
+    old_replicas = []
+    for replica in volume.replicas:
+        old_replicas.append(replica.name)
+
+    exec_cmd = ["rm", "-rf",  "/var/lib/longhorn/replicas"]
+    subprocess.check_output(exec_cmd)
+    volume = common.wait_for_volume_degraded(client, volume_name)
+
+    volume.attach(hostId=migrate_target)
+    volume = common.wait_for_volume_migration_ready(client, volume_name)
+
+    new_replicas = 0
+    for replica in volume.replicas:
+        if replica.hostId == current_node:
+            assert replica.running is False
+        else:
+            assert replica.running is True
+            if replica.name not in old_replicas:
+                new_replicas = new_replicas + 1
+    assert new_replicas == 2
+
+    volume.detach(hostId=current_node)
+
+    volume = common.wait_for_volume_migration_node(client,
+                                                   volume_name,
+                                                   migrate_target)
+
+    volume.updateReplicaCount(replicaCount=2)
+    volume = common.wait_for_volume_healthy(client, volume_name)
+    volume.detach(hostId="")
+    volume = common.wait_for_volume_detached(client, volume_name)
+    volume = client.by_id_volume(volume_name)
+    check_detached_volume_data(client, volume_name, data)
 
 
 @pytest.mark.coretest  # NOQA
@@ -314,12 +361,12 @@ def get_hosts_for_migration_test(clients): # NOQA
     hosts = []
     current_host = common.get_self_host_id()
     for host in list(clients):
-        if host is not current_host:
+        if host != current_host:
             hosts.append(host)
     return hosts[0], hosts[1]
 
 
-def check_volume_data(client, volume_name, data): # NOQA
+def check_detached_volume_data(client, volume_name, data): # NOQA
     """
     Attaches the volume to the current node
     then compares the volumes data
@@ -334,14 +381,14 @@ def check_volume_data(client, volume_name, data): # NOQA
     volume = common.wait_for_volume_detached(client, volume_name)
 
 
-def setup_migration_test(clients, volume_name, backing_image=""): # NOQA
+def setup_migration_test(clients, volume_name, backing_image="", replica_cnt=REPLICA_COUNT): # NOQA
     """
     Creates a new migratable volume then attaches it to the
     current node to write some test data on it.
     """
     client = get_random_client(clients)
     volume = client.create_volume(name=volume_name, size=SIZE,
-                                  numberOfReplicas=REPLICA_COUNT,
+                                  numberOfReplicas=replica_cnt,
                                   backingImage=backing_image,
                                   accessMode="rwx", migratable=True)
     volume = common.wait_for_volume_detached(client, volume_name)
