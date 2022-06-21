@@ -2625,8 +2625,11 @@ def test_node_eviction_multiple_volume(client, core_api, csi_pv, pvc, pod_make, 
     assert expect_md5sum == created_md5sum2
 
 
-@pytest.mark.skip(reason=&#34;TODO&#34;) # NOQA
-def test_disk_eviction_with_node_level_soft_anti_affinity_disabled(): # NOQA
+def test_disk_eviction_with_node_level_soft_anti_affinity_disabled(client, # NOQA
+                                                                   volume_name, # NOQA
+                                                                   request, # NOQA
+                                                                   settings_reset, # NOQA
+                                                                   reset_disk_settings): # NOQA
     &#34;&#34;&#34;
     Steps:
 
@@ -2638,7 +2641,74 @@ def test_disk_eviction_with_node_level_soft_anti_affinity_disabled(): # NOQA
     6. Verify that the replica on the old disk move to the new disk
     7. Make replica count as 1, Delete the replicas on other 2 nodes.
        Verify the data from the volume.
-    &#34;&#34;&#34;</code></pre>
+    &#34;&#34;&#34;
+    # Step 1
+    node_soft_anti_affinity_setting = \
+        client.by_id_setting(SETTING_REPLICA_NODE_SOFT_ANTI_AFFINITY)
+    client.update(node_soft_anti_affinity_setting, value=&#34;false&#34;)
+
+    # Step 2
+    nodes = client.list_node()
+    vol_name = common.generate_volume_name()
+    volume = client.create_volume(name=vol_name,
+                                  size=SIZE, numberOfReplicas=len(nodes))
+    common.wait_for_volume_detached(client, vol_name)
+
+    lht_hostId = get_self_host_id()
+    volume.attach(hostId=lht_hostId)
+    volume = common.wait_for_volume_healthy(client, vol_name)
+
+    # Step 3
+    data = common.write_volume_random_data(volume)
+    common.check_volume_data(volume, data)
+
+    # Step 4
+    node = client.by_id_node(lht_hostId)
+    test_disk_path = create_host_disk(client, &#34;vol-test&#34;, str(Gi), lht_hostId)
+    test_disk = {&#34;path&#34;: test_disk_path, &#34;allowScheduling&#34;: True}
+
+    update_disks = get_update_disks(node.disks)
+    update_disks[&#34;test-disk&#34;] = test_disk
+    node = update_node_disks(client, node.name, disks=update_disks,
+                             retry=True)
+    node = common.wait_for_disk_update(client, lht_hostId, len(update_disks))
+    assert len(node.disks) == len(update_disks)
+
+    # Step 5
+    for disk in update_disks.values():
+        if disk[&#34;path&#34;] != test_disk_path:
+            disk.allowScheduling = False
+            disk.evictionRequested = True
+
+    node = update_node_disks(client, node.name, disks=update_disks, retry=True)
+
+    # Step 6
+    replica_path = test_disk_path + &#39;/replicas&#39;
+    assert os.path.isdir(replica_path)
+
+    for i in range(common.RETRY_COMMAND_COUNT):
+        if len(os.listdir(replica_path)) &gt; 0:
+            break
+        time.sleep(common.RETRY_EXEC_INTERVAL)
+    assert len(os.listdir(replica_path)) &gt; 0
+
+    # Step 7
+    replica_count = 1
+    volume = client.by_id_volume(vol_name)
+    volume = volume.updateReplicaCount(replicaCount=replica_count)
+    volume = common.wait_for_volume_healthy(client, vol_name)
+
+    for r in volume.replicas:
+        if r.hostId != lht_hostId:
+            volume.replicaRemove(name=r.name)
+
+    common.check_volume_data(volume, data)
+
+    # Remove volumes let no volume mounted to extra disk
+    def finalizer():
+        common.cleanup_all_volumes(client)
+
+    request.addfinalizer(finalizer)</code></pre>
 </details>
 </section>
 <section>
@@ -2893,7 +2963,7 @@ def test_disable_scheduling_on_cordoned_node(client,  # NOQA
 </details>
 </dd>
 <dt id="tests.test_node.test_disk_eviction_with_node_level_soft_anti_affinity_disabled"><code class="name flex">
-<span>def <span class="ident">test_disk_eviction_with_node_level_soft_anti_affinity_disabled</span></span>(<span>)</span>
+<span>def <span class="ident">test_disk_eviction_with_node_level_soft_anti_affinity_disabled</span></span>(<span>client, volume_name, request, settings_reset, reset_disk_settings)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Steps:</p>
@@ -2911,8 +2981,11 @@ Verify the data from the volume.</li>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">@pytest.mark.skip(reason=&#34;TODO&#34;) # NOQA
-def test_disk_eviction_with_node_level_soft_anti_affinity_disabled(): # NOQA
+<pre><code class="python">def test_disk_eviction_with_node_level_soft_anti_affinity_disabled(client, # NOQA
+                                                                   volume_name, # NOQA
+                                                                   request, # NOQA
+                                                                   settings_reset, # NOQA
+                                                                   reset_disk_settings): # NOQA
     &#34;&#34;&#34;
     Steps:
 
@@ -2924,7 +2997,74 @@ def test_disk_eviction_with_node_level_soft_anti_affinity_disabled(): # NOQA
     6. Verify that the replica on the old disk move to the new disk
     7. Make replica count as 1, Delete the replicas on other 2 nodes.
        Verify the data from the volume.
-    &#34;&#34;&#34;</code></pre>
+    &#34;&#34;&#34;
+    # Step 1
+    node_soft_anti_affinity_setting = \
+        client.by_id_setting(SETTING_REPLICA_NODE_SOFT_ANTI_AFFINITY)
+    client.update(node_soft_anti_affinity_setting, value=&#34;false&#34;)
+
+    # Step 2
+    nodes = client.list_node()
+    vol_name = common.generate_volume_name()
+    volume = client.create_volume(name=vol_name,
+                                  size=SIZE, numberOfReplicas=len(nodes))
+    common.wait_for_volume_detached(client, vol_name)
+
+    lht_hostId = get_self_host_id()
+    volume.attach(hostId=lht_hostId)
+    volume = common.wait_for_volume_healthy(client, vol_name)
+
+    # Step 3
+    data = common.write_volume_random_data(volume)
+    common.check_volume_data(volume, data)
+
+    # Step 4
+    node = client.by_id_node(lht_hostId)
+    test_disk_path = create_host_disk(client, &#34;vol-test&#34;, str(Gi), lht_hostId)
+    test_disk = {&#34;path&#34;: test_disk_path, &#34;allowScheduling&#34;: True}
+
+    update_disks = get_update_disks(node.disks)
+    update_disks[&#34;test-disk&#34;] = test_disk
+    node = update_node_disks(client, node.name, disks=update_disks,
+                             retry=True)
+    node = common.wait_for_disk_update(client, lht_hostId, len(update_disks))
+    assert len(node.disks) == len(update_disks)
+
+    # Step 5
+    for disk in update_disks.values():
+        if disk[&#34;path&#34;] != test_disk_path:
+            disk.allowScheduling = False
+            disk.evictionRequested = True
+
+    node = update_node_disks(client, node.name, disks=update_disks, retry=True)
+
+    # Step 6
+    replica_path = test_disk_path + &#39;/replicas&#39;
+    assert os.path.isdir(replica_path)
+
+    for i in range(common.RETRY_COMMAND_COUNT):
+        if len(os.listdir(replica_path)) &gt; 0:
+            break
+        time.sleep(common.RETRY_EXEC_INTERVAL)
+    assert len(os.listdir(replica_path)) &gt; 0
+
+    # Step 7
+    replica_count = 1
+    volume = client.by_id_volume(vol_name)
+    volume = volume.updateReplicaCount(replicaCount=replica_count)
+    volume = common.wait_for_volume_healthy(client, vol_name)
+
+    for r in volume.replicas:
+        if r.hostId != lht_hostId:
+            volume.replicaRemove(name=r.name)
+
+    common.check_volume_data(volume, data)
+
+    # Remove volumes let no volume mounted to extra disk
+    def finalizer():
+        common.cleanup_all_volumes(client)
+
+    request.addfinalizer(finalizer)</code></pre>
 </details>
 </dd>
 <dt id="tests.test_node.test_disk_migration"><code class="name flex">

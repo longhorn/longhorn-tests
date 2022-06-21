@@ -1486,6 +1486,8 @@ def clients(request):
 
 def cleanup_client():
     client = get_longhorn_api_client()
+    enable_default_disk(client)
+
     # cleanup test disks
     cleanup_test_disks(client)
 
@@ -5029,7 +5031,19 @@ def update_node_disks(client, node_name, disks, retry=False):
             raise
         else:
             break
-    return node</code></pre>
+    return node
+
+
+def enable_default_disk(client):
+    lht_hostId = get_self_host_id()
+    node = client.by_id_node(lht_hostId)
+    disks = get_update_disks(node.disks)
+    for disk in disks.values():
+        if disk[&#34;path&#34;] == DEFAULT_DISK_PATH:
+            disk.allowScheduling = True
+            disk.evictionRequested = False
+
+    update_node_disks(client, node.name, disks=disks, retry=True)</code></pre>
 </details>
 </section>
 <section>
@@ -5699,6 +5713,8 @@ properly.
 </summary>
 <pre><code class="python">def cleanup_client():
     client = get_longhorn_api_client()
+    enable_default_disk(client)
+
     # cleanup test disks
     cleanup_test_disks(client)
 
@@ -7109,6 +7125,27 @@ def disable_auto_salvage(client):
 
     assert setting.name == SETTING_AUTO_SALVAGE
     assert setting.value == &#34;true&#34;</code></pre>
+</details>
+</dd>
+<dt id="tests.common.enable_default_disk"><code class="name flex">
+<span>def <span class="ident">enable_default_disk</span></span>(<span>client)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def enable_default_disk(client):
+    lht_hostId = get_self_host_id()
+    node = client.by_id_node(lht_hostId)
+    disks = get_update_disks(node.disks)
+    for disk in disks.values():
+        if disk[&#34;path&#34;] == DEFAULT_DISK_PATH:
+            disk.allowScheduling = True
+            disk.evictionRequested = False
+
+    update_node_disks(client, node.name, disks=disks, retry=True)</code></pre>
 </details>
 </dd>
 <dt id="tests.common.exec_command_in_pod"><code class="name flex">
@@ -12690,6 +12727,7 @@ from the args and kwargs arguments, respectively.</p></div>
 <li><code><a title="tests.common.dev_read" href="#tests.common.dev_read">dev_read</a></code></li>
 <li><code><a title="tests.common.dev_write" href="#tests.common.dev_write">dev_write</a></code></li>
 <li><code><a title="tests.common.disable_auto_salvage" href="#tests.common.disable_auto_salvage">disable_auto_salvage</a></code></li>
+<li><code><a title="tests.common.enable_default_disk" href="#tests.common.enable_default_disk">enable_default_disk</a></code></li>
 <li><code><a title="tests.common.exec_command_in_pod" href="#tests.common.exec_command_in_pod">exec_command_in_pod</a></code></li>
 <li><code><a title="tests.common.exec_instance_manager" href="#tests.common.exec_instance_manager">exec_instance_manager</a></code></li>
 <li><code><a title="tests.common.exec_nsenter" href="#tests.common.exec_nsenter">exec_nsenter</a></code></li>
