@@ -1186,6 +1186,18 @@ def csi_pv_backingimage(request):
     return pv_manifest
 
 
+def check_pvc_in_specific_status(api, pvc_name, status):
+    for i in range(RETRY_EXEC_COUNTS):
+        claim = \
+            api.read_namespaced_persistent_volume_claim(name=pvc_name,
+                                                        namespace=&#39;default&#39;)
+        if claim.status.phase == &#34;bound&#34;:
+            break
+        time.sleep(RETRY_INTERVAL)
+
+    assert claim.status.phase == status
+
+
 def get_pvc_manifest(request):
     pvc_manifest = {
         &#39;apiVersion&#39;: &#39;v1&#39;,
@@ -5472,6 +5484,27 @@ def batch_v1_beta_api(request):
                 pvc.metadata.deletion_timestamp:
             return True
     return False</code></pre>
+</details>
+</dd>
+<dt id="tests.common.check_pvc_in_specific_status"><code class="name flex">
+<span>def <span class="ident">check_pvc_in_specific_status</span></span>(<span>api, pvc_name, status)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def check_pvc_in_specific_status(api, pvc_name, status):
+    for i in range(RETRY_EXEC_COUNTS):
+        claim = \
+            api.read_namespaced_persistent_volume_claim(name=pvc_name,
+                                                        namespace=&#39;default&#39;)
+        if claim.status.phase == &#34;bound&#34;:
+            break
+        time.sleep(RETRY_INTERVAL)
+
+    assert claim.status.phase == status</code></pre>
 </details>
 </dd>
 <dt id="tests.common.check_recurring_jobs"><code class="name flex">
@@ -12668,6 +12701,7 @@ from the args and kwargs arguments, respectively.</p></div>
 <li><code><a title="tests.common.check_pod_existence" href="#tests.common.check_pod_existence">check_pod_existence</a></code></li>
 <li><code><a title="tests.common.check_pv_existence" href="#tests.common.check_pv_existence">check_pv_existence</a></code></li>
 <li><code><a title="tests.common.check_pvc_existence" href="#tests.common.check_pvc_existence">check_pvc_existence</a></code></li>
+<li><code><a title="tests.common.check_pvc_in_specific_status" href="#tests.common.check_pvc_in_specific_status">check_pvc_in_specific_status</a></code></li>
 <li><code><a title="tests.common.check_recurring_jobs" href="#tests.common.check_recurring_jobs">check_recurring_jobs</a></code></li>
 <li><code><a title="tests.common.check_statefulset_existence" href="#tests.common.check_statefulset_existence">check_statefulset_existence</a></code></li>
 <li><code><a title="tests.common.check_volume_data" href="#tests.common.check_volume_data">check_volume_data</a></code></li>
