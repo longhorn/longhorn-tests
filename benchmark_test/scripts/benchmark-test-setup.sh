@@ -3,6 +3,10 @@
 set -x
 set -e
 
+# create and clean tmpdir
+TMPDIR="/tmp/longhorn"
+mkdir -p ${TMPDIR}
+
 set_kubeconfig_envvar(){
   ARCH=${1}
   BASEDIR=${2}
@@ -201,14 +205,16 @@ main(){
 
   run_fio_local_path_test
 
-  adjust_replica_count 1
-  run_fio_longhorn_test 1
-
-  adjust_replica_count 2
-  run_fio_longhorn_test 2
-
   adjust_replica_count 3
   run_fio_longhorn_test 3
+
+  adjust_replica_count 2
+  kubectl cordon "$(kubectl get nodes | awk 'NR!=1 && $3!~/control-plane/ {print $1}' | awk 'NR==3')"
+  run_fio_longhorn_test 2
+
+  adjust_replica_count 1
+  kubectl cordon "$(kubectl get nodes | awk 'NR!=1 && $3!~/control-plane/ {print $1}' | awk 'NR==2')"
+  run_fio_longhorn_test 1
 
 }
 
