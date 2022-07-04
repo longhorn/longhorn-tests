@@ -14,7 +14,7 @@ node {
 
     checkout scm
 
-    withCredentials([usernamePassword(credentialsId: 'AWS_CREDS', passwordVariable: 'AWS_SECRET_KEY', usernameVariable: 'AWS_ACCESS_KEY')]) {
+    withCredentials([usernamePassword(credentialsId: 'AWS_CREDS_RANCHER_QA', passwordVariable: 'AWS_SECRET_KEY', usernameVariable: 'AWS_ACCESS_KEY')]) {
         stage('build') {
             sh "benchmark_test/scripts/build.sh"
 
