@@ -2432,7 +2432,10 @@ def wait_for_disk_status(client, node_name, disk_name, key, value):
         time.sleep(RETRY_INTERVAL)
     assert len(disks) != 0
     assert disk_name in disks
-    assert disks[disk_name][key] == value
+    assert disks[disk_name][key] == value, \
+        f"Wrong disk({disk_name}) {key} status.\n" \
+        f"Expect={value}\n" \
+        f"Got={disks[disk_name][key]}\n"
     return node
 
 
