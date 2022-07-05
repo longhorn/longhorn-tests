@@ -1942,6 +1942,18 @@ def json_string_go_to_python(str):
         replace("True", "true").replace("False", "false")
 
 
+def delete_replica_on_test_node(client, volume_name): # NOQA
+
+    lht_host_id = get_self_host_id()
+
+    volume = client.by_id_volume(volume_name)
+    for replica in volume.replicas:
+        if replica.hostId == lht_host_id:
+            replica_name = replica.name
+    volume.replicaRemove(name=replica_name)
+    wait_for_volume_degraded(client, volume_name)
+
+
 def delete_replica_processes(client, api, volname):
     replica_map = {}
     volume = client.by_id_volume(volname)
