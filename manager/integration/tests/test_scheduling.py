@@ -16,6 +16,7 @@ from common import SETTING_REPLICA_NODE_SOFT_ANTI_AFFINITY
 from common import SETTING_REPLICA_AUTO_BALANCE
 from common import SETTING_DEFAULT_DATA_LOCALITY
 from common import VOLUME_FIELD_ROBUSTNESS, VOLUME_ROBUSTNESS_HEALTHY
+from common import DEFAULT_DISK_PATH
 from common import create_pv_for_volume
 from common import create_pvc_for_volume
 from common import write_pod_volume_random_data
@@ -28,6 +29,11 @@ from common import wait_for_rebuild_start
 from common import delete_and_wait_pod
 from common import crash_engine_process_with_sigkill
 from common import wait_for_replica_running
+from common import create_host_disk
+from common import get_update_disks
+from common import update_node_disks
+from common import wait_for_disk_status
+from common import cleanup_node_disks
 
 from time import sleep
 
@@ -1329,3 +1335,74 @@ def test_data_locality_basic(client, core_api, volume_name, pod, settings_reset)
     assert v4_node1_replica_count == 1
     assert v4_node2_replica_count == 1
     assert v4_node3_replica_count == 0
+
+def test_replica_schedule_to_disk_with_most_usable_storage(client, volume_name, request):  # NOQA
+    """
+    Scenario : test replica schedule to disk with the most usable storage
+
+    Given default disk 3/4 storage is reserved on the current node.
+    And disk-1 with 1/4 of default disk space + 50 Gi.
+    And add disk-1 to the current node.
+
+    When create and attach volume.
+
+    Then volume replica     on the current node scheduled to disk-1.
+         volume replica not on the current node scheduled to default disk.
+    """
+    # Remove volumes let no volume mounted to extra disk
+    def finalizer():
+        common.cleanup_all_volumes(client)
+    request.addfinalizer(finalizer)
+
+    default_disk_available = 0
+    self_host_id = get_self_host_id()
+    cleanup_node_disks(client, self_host_id)
+    node = client.by_id_node(self_host_id)
+    disks = node.disks
+    update_disks = get_update_disks(disks)
+    for disk in update_disks.values():
+        if disk.path != DEFAULT_DISK_PATH:
+            continue
+
+        default_disk_available = int(disk.storageMaximum/4)
+        disk.storageReserved = disk.storageMaximum-default_disk_available
+        break
+
+    node = update_node_disks(client, node.name, disks=update_disks,
+                             retry=True)
+    disks = node.disks
+    for name, disk in iter(disks.items()):
+        wait_for_disk_status(client, node.name,
+                             name, "storageReserved",
+                             disk.storageMaximum-default_disk_available)
+
+    disk_path = create_host_disk(client, 'disk-1',
+                                 str(50 * Gi + default_disk_available),
+                                 node.name)
+    disk = {"path": disk_path, "allowScheduling": True}
+    update_disks = get_update_disks(disks)
+    update_disks["disk1"] = disk
+    node = update_node_disks(client, node.name, disks=update_disks,
+                             retry=True)
+
+    node = common.wait_for_disk_update(client, node.name,
+                                       len(update_disks))
+    assert len(node.disks) == len(update_disks)
+
+    volume = create_and_check_volume(client, volume_name)
+    volume.attach(hostId=get_self_host_id())
+    volume = wait_for_volume_healthy(client, volume_name)
+
+    expect_scheduled_disk = {}
+    nodes = client.list_node()
+    for node in nodes:
+        for _, disk in iter(node.disks.items()):
+            if node.name == self_host_id and disk.path != DEFAULT_DISK_PATH:
+                expect_scheduled_disk[node.name] = disk
+            elif node.name != self_host_id and disk.path == DEFAULT_DISK_PATH:
+                expect_scheduled_disk[node.name] = disk
+
+    volume = client.by_id_volume(volume_name)
+    for replica in volume.replicas:
+        hostId = replica.hostId
+        assert replica.diskID == expect_scheduled_disk[hostId].diskUUID
