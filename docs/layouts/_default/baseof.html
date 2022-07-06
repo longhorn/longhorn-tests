@@ -6,6 +6,9 @@
       {{ .Site.Title }}
     {{ end }}</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/4.0.0/github-markdown.min.css">
+    <style>
+      ol > li { list-style-type: decimal; }
+    </style>
   </head>
   <body class="markdown-body" style="display: flex; padding: 1%;">
     {{ block "main" . }}

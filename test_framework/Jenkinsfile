@@ -18,6 +18,10 @@ node {
     withCredentials([usernamePassword(credentialsId: CREDS_ID, passwordVariable: 'AWS_SECRET_KEY', usernameVariable: 'AWS_ACCESS_KEY')]) {
         stage('build') {
 
+           if(JOB_BASE_NAME == "longhorn-tests-regression") {
+               manager.addShortText(BUILD_TRIGGER_BY.replace("\nStarted by user ", ""), "grey", "white", "0px", "white")
+           }
+
             echo "Using credentials: $CREDS_ID"
 
             sh "test_framework/scripts/build.sh"
@@ -41,7 +45,7 @@ node {
                                    --env TF_VAR_k8s_distro_version=${K8S_DISTRO_VERSION} \
                                    --env TF_VAR_aws_availability_zone=${AWS_AVAILABILITY_ZONE} \
                                    --env TF_VAR_aws_region=${AWS_REGION} \
-                                   --env TF_VAR_distro_version=${DISTRO_VERSION} \
+                                   --env TF_VAR_os_distro_version=${DISTRO_VERSION} \
                                    --env TF_VAR_do_token=${env.TF_VAR_do_token} \
                                    --env TF_VAR_lh_aws_access_key=${AWS_ACCESS_KEY} \
                                    --env TF_VAR_lh_aws_instance_name_controlplane="${JOB_BASE_NAME}-ctrl" \
@@ -82,6 +86,18 @@ node {
                 else {
                     summary = junit 'longhorn-test-junit-report.xml'
                 }
+
+                sh 'docker pull ${CUSTOM_LONGHORN_MANAGER_IMAGE}'
+                LONGHORN_MANAGER_VERSION = sh (
+                    script: "docker inspect --format '{{ index .Config.Labels \"org.opencontainers.image.revision\" }}' ${CUSTOM_LONGHORN_MANAGER_IMAGE}",
+                    returnStdout: true
+                )
+                sh 'docker pull ${CUSTOM_LONGHORN_ENGINE_IMAGE}'
+                LONGHORN_ENGINE_VERSION = sh (
+                    script: "docker inspect --format '{{ index .Config.Labels \"org.opencontainers.image.revision\" }}' ${CUSTOM_LONGHORN_ENGINE_IMAGE}",
+                    returnStdout: true
+                )
+                manager.createSummary("info.gif").appendText("<p>longhorn-manager version: $LONGHORN_MANAGER_VERSION</p><p>longhorn-engine version: $LONGHORN_ENGINE_VERSION</p>", false, false, false, "black")
             }
 
         } catch(e) {

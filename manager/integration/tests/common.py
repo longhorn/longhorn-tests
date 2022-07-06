@@ -9,6 +9,8 @@ import subprocess
 import json
 import hashlib
 import signal
+import types
+import threading
 
 import socket
 import pytest
@@ -1156,6 +1158,18 @@ def csi_pv_backingimage(request):
     return pv_manifest
 
 
+def check_pvc_in_specific_status(api, pvc_name, status):
+    for i in range(RETRY_EXEC_COUNTS):
+        claim = \
+            api.read_namespaced_persistent_volume_claim(name=pvc_name,
+                                                        namespace='default')
+        if claim.status.phase == "bound":
+            break
+        time.sleep(RETRY_INTERVAL)
+
+    assert claim.status.phase == status
+
+
 def get_pvc_manifest(request):
     pvc_manifest = {
         'apiVersion': 'v1',
@@ -1456,6 +1470,8 @@ def clients(request):
 
 def cleanup_client():
     client = get_longhorn_api_client()
+    enable_default_disk(client)
+
     # cleanup test disks
     cleanup_test_disks(client)
 
@@ -1937,8 +1953,72 @@ def delete_replica_processes(client, api, volname):
         exec_instance_manager(api, rm_name, delete_command)
 
 
+class AssertErrorCheckThread(threading.Thread):
+    """
+        This class is used for catching exception caused in threads,
+        especially for AssertionError now.
+
+        Parameters:
+            target  :       The threading function.
+            args    :       Arguments of the target fucntion.
+    """
+    def __init__(self, target, args):
+        threading.Thread.__init__(self)
+        self.target = target
+        self.args = args
+        self.asserted = None
+
+    def run(self):
+        try:
+            self.target(*self.args)
+        except AssertionError as e:
+            self.asserted = e
+
+    def join(self):
+        threading.Thread.join(self)
+        if self.asserted:
+            raise self.asserted
+
+
+def create_assert_error_check_thread(func, *args):
+    """
+        Do func by threading with arguments
+
+        Parameters:
+            func:   function that want to do things in parallel.
+            args:   arguments for function.
+    """
+    assert isinstance(func, types.FunctionType), "First arg is not a function."
+
+    t = AssertErrorCheckThread(target=func, args=args)
+    t.start()
+
+    return t
+
+
+def assert_from_assert_error_check_threads(thrd_list):
+    """
+        Check all threads in thrd_list are done and their status
+
+        Parameters:
+            thrd_list: thread list created by create_assert_error_check_thread.
+    """
+    assert isinstance(thrd_list, list), "thrd_list is not a list"
+
+    err_list = []
+    for t in thrd_list:
+        try:
+            t.join()
+        except AssertionError as e:
+            print(e)
+            err_list.append(e)
+    if err_list:
+        assert False, err_list
+
+
 def crash_replica_processes(client, api, volname, replicas=None,
                             wait_to_fail=True):
+    threads = []
 
     if replicas is None:
         volume = client.by_id_volume(volname)
@@ -1950,10 +2030,15 @@ def crash_replica_processes(client, api, volname, replicas=None,
                        "' | grep -v grep | awk '{print $2}'`"
         exec_instance_manager(api, r.instanceManagerName, kill_command)
 
-        # FIXME: this is a work around, should check this in-parallel.
-        #        https://github.com/longhorn/longhorn/issues/4045
         if wait_to_fail is True:
-            wait_for_replica_failed(client, volname, r['name'])
+            thread = create_assert_error_check_thread(
+                wait_for_replica_failed,
+                client, volname, r['name'], RETRY_COUNTS*2, RETRY_INTERVAL/2
+            )
+            threads.append(thread)
+
+    if wait_to_fail:
+        assert_from_assert_error_check_threads(threads)
 
 
 def exec_instance_manager(api, im_name, cmd):
@@ -1967,27 +2052,38 @@ def exec_instance_manager(api, im_name, cmd):
                stderr=True, stdin=False, stdout=True, tty=False)
 
 
-def wait_for_replica_failed(client, volname, replica_name):
+def wait_for_replica_failed(client, volname, replica_name,
+                            retry_cnts=RETRY_COUNTS, retry_ivl=RETRY_INTERVAL):
     failed = True
-    for i in range(RETRY_COUNTS):
-        time.sleep(RETRY_INTERVAL)
+    debug_replica_not_failed = None
+    debug_replica_in_im = None
+
+    for i in range(retry_cnts):
         failed = True
+        debug_replica_not_failed = None
+        debug_replica_in_im = None
         volume = client.by_id_volume(volname)
         for r in volume.replicas:
             if r['name'] != replica_name:
                 continue
             if r['running'] or r['failedAt'] == "":
                 failed = False
+                debug_replica_not_failed = r
                 break
             if r['instanceManagerName'] != "":
-                im = client.by_id_instance_manager(
-                    r['instanceManagerName'])
+                im = client.by_id_instance_manager(r['instanceManagerName'])
                 if r['name'] in im['instances']:
                     failed = False
+                    debug_replica_in_im = im
                     break
         if failed:
             break
-    assert failed
+        time.sleep(retry_ivl)
+
+    err_msg = "Vol({}), Replica({}): {}, Instance_Manager: {}".format(
+        volname, replica_name, debug_replica_not_failed, debug_replica_in_im
+    )
+    assert failed, err_msg
 
 
 def wait_for_replica_running(client, volname, replica_name):
@@ -4920,3 +5016,15 @@ def update_node_disks(client, node_name, disks, retry=False):
         else:
             break
     return node
+
+
+def enable_default_disk(client):
+    lht_hostId = get_self_host_id()
+    node = client.by_id_node(lht_hostId)
+    disks = get_update_disks(node.disks)
+    for disk in disks.values():
+        if disk["path"] == DEFAULT_DISK_PATH:
+            disk.allowScheduling = True
+            disk.evictionRequested = False
+
+    update_node_disks(client, node.name, disks=disks, retry=True)

@@ -497,3 +497,17 @@ def test_exporting_backing_image_from_volume(client, volume_name):  # NOQA
 
     # Step10
     check_volume_data(volume3, data2)
+
+
+@pytest.mark.skip(reason="TODO") # NOQA
+@pytest.mark.backing_image  # NOQA
+def test_backing_image_auto_resync(client, volume_name):  # NOQA
+    """
+    1. Create a backing image.
+    2. Create and attach a 3-replica volume using the backing image.
+    3. Wait for the attachment complete.
+    4. Manually remove the backing image on the current node.
+    5. Wait for the file state in the disk/on this node become failed.
+    6. Wait for the file recovering automatically.
+    7. Validate the volume.
+    """
