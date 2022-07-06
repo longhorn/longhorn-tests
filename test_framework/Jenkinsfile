@@ -18,6 +18,10 @@ node {
     withCredentials([usernamePassword(credentialsId: CREDS_ID, passwordVariable: 'AWS_SECRET_KEY', usernameVariable: 'AWS_ACCESS_KEY')]) {
         stage('build') {
 
+           if(JOB_BASE_NAME == "longhorn-tests-regression") {
+               manager.addShortText(BUILD_TRIGGER_BY.replace("\nStarted by user ", ""), "grey", "white", "0px", "white")
+           }
+
             echo "Using credentials: $CREDS_ID"
 
             sh "test_framework/scripts/build.sh"
