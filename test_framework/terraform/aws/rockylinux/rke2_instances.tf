@@ -66,7 +66,17 @@ resource "aws_instance" "lh_aws_instance_worker_rke2" {
     DoNotDelete = "true"
     Owner = "longhorn-infra"
   }
-} 
+}
+
+resource "aws_volume_attachment" "lh_aws_hdd_volume_att_rke2" {
+
+  count = var.use_hdd && var.k8s_distro_name == "rke2" ? var.lh_aws_instance_count_worker : 0
+
+  device_name  = "/dev/xvdh"
+  volume_id    = aws_ebs_volume.lh_aws_hdd_volume[count.index].id
+  instance_id  = aws_instance.lh_aws_instance_worker_rke2[count.index].id
+  force_detach = true
+}
 
 # Associate every EIP with controlplane instance
 resource "aws_eip_association" "lh_aws_eip_assoc_rke2" {
