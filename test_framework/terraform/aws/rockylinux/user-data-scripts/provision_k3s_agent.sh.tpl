@@ -6,6 +6,12 @@ sudo dnf install -y iscsi-initiator-utils nfs-utils nfs4-acl-tools
 sudo systemctl -q enable iscsid
 sudo systemctl start iscsid
 
+if [ -b "/dev/xvdh" ]; then
+  mkfs.ext4 -E nodiscard /dev/xvdh
+  mkdir /var/lib/longhorn
+  mount /dev/xvdh /var/lib/longhorn
+fi
+
 sed -i 's#^SELINUX=.*$#SELINUX='"${selinux_mode}"'#' /etc/selinux/config
 
 if [[ ${selinux_mode} == "enforcing" ]] ; then

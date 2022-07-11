@@ -110,3 +110,8 @@ variable "selinux_mode" {
   default     = "permissive"
   description = "SELINUX mode [permissive | enforcing] (available only for CentOS, RedHat, and RockyLinux)"
 }
+
+variable "use_hdd" {
+  type    = bool
+  default = false
+}

@@ -22,3 +22,9 @@ sudo systemctl start docker
 sudo systemctl enable docker
 
 sudo usermod -aG docker rocky
+
+if [ -b "/dev/xvdh" ]; then
+  mkfs.ext4 -E nodiscard /dev/xvdh
+  mkdir /var/lib/longhorn
+  mount /dev/xvdh /var/lib/longhorn
+fi

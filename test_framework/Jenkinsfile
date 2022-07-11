@@ -40,6 +40,7 @@ node {
                                    --env LONGHORN_UPGRADE_TEST=${LONGHORN_UPGRADE_TEST} \
                                    --env PYTEST_CUSTOM_OPTIONS="${PYTEST_CUSTOM_OPTIONS}" \
                                    --env BACKUP_STORE_TYPE="${BACKUP_STORE_TYPE}" \
+                                   --env TF_VAR_use_hdd=${USE_HDD} \
                                    --env TF_VAR_arch=${ARCH} \
                                    --env TF_VAR_k8s_distro_name=${K8S_DISTRO_NAME} \
                                    --env TF_VAR_k8s_distro_version=${K8S_DISTRO_VERSION} \

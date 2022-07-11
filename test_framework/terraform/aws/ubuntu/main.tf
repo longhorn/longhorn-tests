@@ -258,3 +258,16 @@ resource "aws_eip" "lh_aws_eip_controlplane" {
   count    = var.lh_aws_instance_count_controlplane
   vpc      = true
 }
+
+resource "aws_ebs_volume" "lh_aws_hdd_volume" {
+
+  count = var.use_hdd ? var.lh_aws_instance_count_worker : 0
+
+  availability_zone = var.aws_availability_zone
+  size              = 160
+  type              = "st1"
+
+  tags = {
+    Name = "lh-aws-hdd-volume-${random_string.random_suffix.id}-${count.index}"
+  }
+}

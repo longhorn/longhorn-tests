@@ -14,6 +14,12 @@ sudo dnf install -y iscsi-initiator-utils nfs-utils nfs4-acl-tools jq nmap-ncat
 sudo systemctl -q enable iscsid
 sudo systemctl start iscsid
 
+if [ -b "/dev/xvdh" ]; then
+  mkfs.ext4 -E nodiscard /dev/xvdh
+  mkdir /var/lib/longhorn
+  mount /dev/xvdh /var/lib/longhorn
+fi
+
 RKE_SERVER_IP=`echo ${rke2_server_url} | sed 's#https://##' | awk -F ":" '{print $1}'`
 RKE_SERVER_PORT=`echo ${rke2_server_url} | sed 's#https://##' | awk -F ":" '{print $2}'`
 
