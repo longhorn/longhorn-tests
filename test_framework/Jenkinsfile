@@ -8,15 +8,15 @@ def SELINUX_MODE = params.SELINUX_MODE ? "SELINUX_MODE=${params.SELINUX_MODE}" :
 def CREDS_ID = JOB_BASE_NAME == "longhorn-tests-regression" ? "AWS_CREDS_RANCHER_QA" : "AWS_CREDS"
 
 // parameters for air gap installation
-def AIR_GAP_INSTALLATION = false
-def LONGHORN_INSTALL_VERSION = "master"
-def LONGHORN_INSTALL_METHOD = "custom"
+def AIR_GAP_INSTALLATION = params.AIR_GAP_INSTALLATION ? params.AIR_GAP_INSTALLATION : false
+def LONGHORN_INSTALL_VERSION = params.LONGHORN_INSTALL_VERSION ? params.LONGHORN_INSTALL_VERSION : "master"
+def LONGHORN_INSTALL_METHOD = params.LONGHORN_INSTALL_METHOD ? params.LONGHORN_INSTALL_METHOD : "custom"
 def REGISTRY_URL
 def REGISTRY_USERNAME
 def REGISTRY_PASSWORD
 
 // parameter for hdd test
-def USE_HDD = false
+def USE_HDD = params.USE_HDD ? params.USE_HDD : false
 
 node {
 
