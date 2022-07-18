@@ -11,6 +11,7 @@ def CREDS_ID = JOB_BASE_NAME == "longhorn-tests-regression" ? "AWS_CREDS_RANCHER
 def AIR_GAP_INSTALLATION = params.AIR_GAP_INSTALLATION ? params.AIR_GAP_INSTALLATION : false
 def LONGHORN_INSTALL_VERSION = params.LONGHORN_INSTALL_VERSION ? params.LONGHORN_INSTALL_VERSION : "master"
 def LONGHORN_INSTALL_METHOD = params.LONGHORN_INSTALL_METHOD ? params.LONGHORN_INSTALL_METHOD : "custom"
+def CREATE_LOAD_BALANCER = params.LONGHORN_INSTALL_METHOD == "rancher" ? true : false
 def REGISTRY_URL
 def REGISTRY_USERNAME
 def REGISTRY_PASSWORD
@@ -81,6 +82,10 @@ node {
                                        --env REGISTRY_PASSWORD=${REGISTRY_PASSWORD} \
                                        --env LONGHORN_INSTALL_VERSION=${LONGHORN_INSTALL_VERSION} \
                                        --env LONGHORN_INSTALL_METHOD=${LONGHORN_INSTALL_METHOD} \
+                                       --env TF_VAR_create_load_balancer=${CREATE_LOAD_BALANCER} \
+                                       --env RANCHER_CHART_GIT_REPO=${RANCHER_CHART_GIT_REPO} \
+                                       --env RANCHER_CHART_GIT_BRANCH=${RANCHER_CHART_GIT_BRANCH} \
+                                       --env RANCHER_CHART_INSTALL_VERSION=${RANCHER_CHART_INSTALL_VERSION} \
                                        --env CUSTOM_LONGHORN_ENGINE_IMAGE=${CUSTOM_LONGHORN_ENGINE_IMAGE} \
                                        --env CUSTOM_LONGHORN_INSTANCE_MANAGER_IMAGE=${CUSTOM_LONGHORN_INSTANCE_MANAGER_IMAGE} \
                                        --env CUSTOM_LONGHORN_MANAGER_IMAGE=${CUSTOM_LONGHORN_MANAGER_IMAGE} \

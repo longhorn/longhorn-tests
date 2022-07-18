@@ -121,6 +121,22 @@ resource "aws_security_group" "lh_aws_secgrp_worker" {
   vpc_id      = aws_vpc.lh_aws_vpc.id
 
   ingress {
+    description = "Allow HTTP"
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    description = "Allow HTTPS"
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
     description = "Allow All Traffic from VPC CIDR block"
     from_port   = 0
     to_port     = 0
@@ -270,4 +286,70 @@ resource "aws_ebs_volume" "lh_aws_hdd_volume" {
   tags = {
     Name = "lh-aws-hdd-volume-${random_string.random_suffix.id}-${count.index}"
   }
+}
+
+# Create load balancer for rancher
+resource "aws_lb_target_group" "lh_aws_lb_tg_443" {
+
+  count = var.create_load_balancer ? 1 : 0
+
+  name     = "lh-aws-lb-tg-443-${random_string.random_suffix.id}"
+  port     = 443
+  protocol = "TCP"
+  vpc_id   = aws_vpc.lh_aws_vpc.id
+  health_check {
+    protocol = "TCP"
+    port = "80"
+    healthy_threshold = 3
+    unhealthy_threshold = 3
+    interval = 10
+  }
+
+  tags = {
+    Name = "lh-aws-lb-tg-443-${random_string.random_suffix.id}"
+  }
+}
+
+resource "aws_lb" "lh_aws_lb" {
+
+  count = var.create_load_balancer ? 1 : 0
+
+  depends_on = [
+    aws_internet_gateway.lh_aws_igw
+  ]
+
+  name               = "lh-aws-lb-${random_string.random_suffix.id}"
+  internal           = false
+  load_balancer_type = "network"
+  subnets            = [
+    aws_subnet.lh_aws_public_subnet.id
+  ]
+
+  tags = {
+    Name = "lh-aws-lb-${random_string.random_suffix.id}"
+  }
+}
+
+resource "aws_lb_listener" "lh_aws_lb_listener_443" {
+
+  count = var.create_load_balancer ? 1 : 0
+
+  depends_on = [
+    aws_lb.lh_aws_lb,
+    aws_lb_target_group.lh_aws_lb_tg_443
+  ]
+
+  load_balancer_arn = aws_lb.lh_aws_lb[0].arn
+  port              = "443"
+  protocol          = "TCP"
+
+  default_action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.lh_aws_lb_tg_443[0].arn
+  }
+
+  tags = {
+    Name = "lh-aws-lb-listener-443-${random_string.random_suffix.id}"
+  }
+
 }
