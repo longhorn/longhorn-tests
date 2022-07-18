@@ -54,6 +54,49 @@ install_csi_snapshotter_crds(){
 }
 
 
+install_rancher() {
+
+  RANCHER_HOSTNAME=`cat "${TF_VAR_tf_workspace}/load_balancer_url"`
+  RANCHER_BOOTSTRAP_PASSWORD='p@ssw0rd'
+
+  kubectl apply --validate=false -f https://github.com/jetstack/cert-manager/releases/download/v1.0.4/cert-manager.crds.yaml
+  kubectl create namespace cert-manager
+  helm repo add jetstack https://charts.jetstack.io
+  helm repo update
+  helm install cert-manager jetstack/cert-manager --namespace cert-manager --version v1.4.0
+  kubectl get pods --namespace cert-manager
+
+  helm repo add rancher-latest https://releases.rancher.com/server-charts/latest
+  kubectl create namespace cattle-system
+  helm install rancher rancher-latest/rancher --namespace cattle-system --set bootstrapPassword="${RANCHER_BOOTSTRAP_PASSWORD}" --set hostname="${RANCHER_HOSTNAME}" --set replicas=3 --set ingress.tls.source=letsEncrypt --set letsEncrypt.email=yang.chiu@suse.com
+  kubectl -n cattle-system rollout status deploy/rancher
+}
+
+
+get_rancher_api_key() {
+  python3 "${TF_VAR_tf_workspace}/scripts/rancher/webdriver/main.py" "${RANCHER_HOSTNAME}" "${RANCHER_BOOTSTRAP_PASSWORD}"
+  RANCHER_ACCESS_KEY=`cat "${PWD}/access_key"`
+  RANCHER_SECRET_KEY=`cat "${PWD}/secret_key"`
+}
+
+
+install_longhorn_by_rancher() {
+  terraform -chdir="${TF_VAR_tf_workspace}/scripts/rancher/terraform" init
+  terraform -chdir="${TF_VAR_tf_workspace}/scripts/rancher/terraform" apply \
+            -var="api_url=https://${RANCHER_HOSTNAME}" \
+            -var="access_key=${RANCHER_ACCESS_KEY}" \
+            -var="secret_key=${RANCHER_SECRET_KEY}" \
+            -var="rancher_chart_git_repo=${RANCHER_CHART_GIT_REPO}" \
+            -var="rancher_chart_git_branch=${RANCHER_CHART_GIT_BRANCH}" \
+            -var="rancher_chart_install_version=${RANCHER_CHART_INSTALL_VERSION}" \
+            -var="registry_url=${REGISTRY_URL}" \
+            -var="registry_user=${REGISTRY_USERNAME}" \
+            -var="registry_passwd=${REGISTRY_PASSWORD}" \
+            -var="registry_secret=docker-registry-secret" \
+            -auto-approve -no-color
+}
+
+
 wait_longhorn_status_running(){
   local RETRY_COUNTS=10 # in minutes
   local RETRY_INTERVAL="1m"
@@ -340,15 +383,20 @@ main(){
 	install_csi_snapshotter_crds
 
   if [[ "${AIR_GAP_INSTALLATION}" == true ]]; then
-    create_registry_secret
     if [[ "${LONGHORN_INSTALL_METHOD}" == "manifest-file" ]]; then
+      create_registry_secret
       get_longhorn_manifest
       customize_longhorn_manifest_for_airgap
       install_longhorn_by_manifest "${TF_VAR_tf_workspace}/longhorn.yaml"
     elif [[ "${LONGHORN_INSTALL_METHOD}" == "helm-chart" ]]; then
+      create_registry_secret
       get_longhorn_chart
       customize_longhorn_chart_for_airgap
       install_longhorn_by_chart
+    elif [[ "${LONGHORN_INSTALL_METHOD}" == "rancher" ]]; then
+      install_rancher
+      get_rancher_api_key
+      install_longhorn_by_rancher
     fi
     run_longhorn_tests ${WORKSPACE}
   elif [[ "${LONGHORN_UPGRADE_TEST}" == true || "${LONGHORN_UPGRADE_TEST}" == True ]]; then

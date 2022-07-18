@@ -231,6 +231,11 @@ resource "aws_instance" "lh_registry_aws_instance" {
     aws_security_group.lh_registry_aws_secgrp.id
   ]
 
+  root_block_device {
+    delete_on_termination = true
+    volume_size = 40
+  }
+
   key_name = aws_key_pair.lh_registry_aws_pair_key.key_name
 
   tags = {

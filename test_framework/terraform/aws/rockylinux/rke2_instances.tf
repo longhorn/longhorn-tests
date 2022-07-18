@@ -78,6 +78,18 @@ resource "aws_volume_attachment" "lh_aws_hdd_volume_att_rke2" {
   force_detach = true
 }
 
+resource "aws_lb_target_group_attachment" "lh_aws_lb_tg_443_attachment_rke2" {
+
+  depends_on = [
+    aws_lb_target_group.lh_aws_lb_tg_443,
+    aws_instance.lh_aws_instance_worker_rke2
+  ]
+
+  count            = var.create_load_balancer ? length(aws_instance.lh_aws_instance_worker_rke2) : 0
+  target_group_arn = aws_lb_target_group.lh_aws_lb_tg_443[0].arn
+  target_id        = aws_instance.lh_aws_instance_worker_rke2[count.index].id
+}
+
 # Associate every EIP with controlplane instance
 resource "aws_eip_association" "lh_aws_eip_assoc_rke2" {
   depends_on = [

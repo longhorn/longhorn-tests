@@ -110,3 +110,8 @@ variable "use_hdd" {
   type    = bool
   default = false
 }
+
+variable "create_load_balancer" {
+  type    = bool
+  default = false
+}
