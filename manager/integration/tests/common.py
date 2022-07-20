@@ -4510,7 +4510,7 @@ def check_backing_image_disk_map_status(client, bi_name, expect_cnt, expect_disk
     # that have expect_disk_state
 
     for i in range(RETRY_COUNTS):
-        backing_image = client.by_id_backing_image(BACKING_IMAGE_NAME)
+        backing_image = client.by_id_backing_image(bi_name)
 
         count = 0
         for disk_id, status in iter(backing_image.diskFileStatusMap.items()):
