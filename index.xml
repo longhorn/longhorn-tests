@@ -1054,6 +1054,22 @@ Then longhorn-manager pods should still be Running.</description>
     </item>
     
     <item>
+      <title>Test replica scale-down warning</title>
+      <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.4.0/test-storage-network/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.4.0/test-storage-network/</guid>
+      <description>Related issue https://github.com/longhorn/longhorn/issues/4120
+Steps Given Replica Auto Balance set to least-effort or best-effort.
+And Volume with 3 replicas created.
+And Volume attached to node-1.
+And Monitor node-1 manager pod events.
+kubectl alpha events -n longhorn-system pod &amp;lt;node-1 manager pod&amp;gt; -w When Update replica count to 1.
+Then Should see Normal replice delete event.
+Normal Delete Engine/t1-e-6a846a7a Removed unknown replica tcp://10.42.2.94:10000 from engine And Should not see Warning unknown replica detect event.</description>
+    </item>
+    
+    <item>
       <title>Test RWX share-mount ownership reset</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/rwx-mount-ownership-reset/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
