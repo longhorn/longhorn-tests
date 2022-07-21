@@ -84,8 +84,8 @@ BACKING_IMAGE_EXT4_SIZE = 32 * Mi
 PORT = &#34;:9500&#34;
 
 RETRY_COMMAND_COUNT = 3
-RETRY_COUNTS = 300
-RETRY_INTERVAL = 0.5
+RETRY_COUNTS = 150
+RETRY_INTERVAL = 1
 RETRY_INTERVAL_LONG = 2
 RETRY_BACKUP_COUNTS = 300
 RETRY_BACKUP_INTERVAL = 1
@@ -1684,13 +1684,13 @@ def wait_for_volume_detached_unknown(client, name):
     return wait_for_volume_detached(client, name)
 
 
-def wait_for_volume_healthy(client, name):
+def wait_for_volume_healthy(client, name, retry_count=RETRY_COUNTS):
     wait_for_volume_status(client, name,
                            VOLUME_FIELD_STATE,
-                           VOLUME_STATE_ATTACHED)
+                           VOLUME_STATE_ATTACHED, retry_count)
     wait_for_volume_status(client, name,
                            VOLUME_FIELD_ROBUSTNESS,
-                           VOLUME_ROBUSTNESS_HEALTHY)
+                           VOLUME_ROBUSTNESS_HEALTHY, retry_count)
     return wait_for_volume_endpoint(client, name)
 
 
@@ -1721,9 +1721,10 @@ def wait_for_volume_faulted(client, name):
                                   VOLUME_ROBUSTNESS_FAULTED)
 
 
-def wait_for_volume_status(client, name, key, value):
+def wait_for_volume_status(client, name, key, value,
+                           retry_count=RETRY_COUNTS):
     wait_for_volume_creation(client, name)
-    for i in range(RETRY_COUNTS):
+    for i in range(retry_count):
         volume = client.by_id_volume(name)
         if volume[key] == value:
             break
@@ -6933,7 +6934,7 @@ if a nonexistent Pod is specified.</p>
 </details>
 </dd>
 <dt id="tests.common.delete_and_wait_pvc"><code class="name flex">
-<span>def <span class="ident">delete_and_wait_pvc</span></span>(<span>api, pvc_name, retry_counts=300)</span>
+<span>def <span class="ident">delete_and_wait_pvc</span></span>(<span>api, pvc_name, retry_counts=150)</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -10145,7 +10146,7 @@ def volume_name(request):
 </details>
 </dd>
 <dt id="tests.common.wait_delete_pvc"><code class="name flex">
-<span>def <span class="ident">wait_delete_pvc</span></span>(<span>api, pvc_name, retry_counts=300)</span>
+<span>def <span class="ident">wait_delete_pvc</span></span>(<span>api, pvc_name, retry_counts=150)</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -10545,7 +10546,7 @@ def volume_name(request):
 </details>
 </dd>
 <dt id="tests.common.wait_for_cron_job_count"><code class="name flex">
-<span>def <span class="ident">wait_for_cron_job_count</span></span>(<span>batch_v1_beta_api, number, label='', retry_counts=300)</span>
+<span>def <span class="ident">wait_for_cron_job_count</span></span>(<span>batch_v1_beta_api, number, label='', retry_counts=150)</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -10567,7 +10568,7 @@ def volume_name(request):
 </details>
 </dd>
 <dt id="tests.common.wait_for_cron_job_create"><code class="name flex">
-<span>def <span class="ident">wait_for_cron_job_create</span></span>(<span>batch_v1_beta_api, label='', retry_counts=300)</span>
+<span>def <span class="ident">wait_for_cron_job_create</span></span>(<span>batch_v1_beta_api, label='', retry_counts=150)</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -10590,7 +10591,7 @@ def volume_name(request):
 </details>
 </dd>
 <dt id="tests.common.wait_for_cron_job_delete"><code class="name flex">
-<span>def <span class="ident">wait_for_cron_job_delete</span></span>(<span>batch_v1_beta_api, label='', retry_counts=300)</span>
+<span>def <span class="ident">wait_for_cron_job_delete</span></span>(<span>batch_v1_beta_api, label='', retry_counts=150)</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -11212,7 +11213,7 @@ def volume_name(request):
 </details>
 </dd>
 <dt id="tests.common.wait_for_pods_volume_state"><code class="name flex">
-<span>def <span class="ident">wait_for_pods_volume_state</span></span>(<span>client, pod_list, field, value, retry_counts=300)</span>
+<span>def <span class="ident">wait_for_pods_volume_state</span></span>(<span>client, pod_list, field, value, retry_counts=150)</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -11360,7 +11361,7 @@ def volume_name(request):
 </details>
 </dd>
 <dt id="tests.common.wait_for_replica_failed"><code class="name flex">
-<span>def <span class="ident">wait_for_replica_failed</span></span>(<span>client, volname, replica_name, retry_cnts=300, retry_ivl=0.5)</span>
+<span>def <span class="ident">wait_for_replica_failed</span></span>(<span>client, volname, replica_name, retry_cnts=150, retry_ivl=1)</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -11876,7 +11877,7 @@ def volume_name(request):
 </details>
 </dd>
 <dt id="tests.common.wait_for_volume_healthy"><code class="name flex">
-<span>def <span class="ident">wait_for_volume_healthy</span></span>(<span>client, name)</span>
+<span>def <span class="ident">wait_for_volume_healthy</span></span>(<span>client, name, retry_count=150)</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -11884,13 +11885,13 @@ def volume_name(request):
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def wait_for_volume_healthy(client, name):
+<pre><code class="python">def wait_for_volume_healthy(client, name, retry_count=RETRY_COUNTS):
     wait_for_volume_status(client, name,
                            VOLUME_FIELD_STATE,
-                           VOLUME_STATE_ATTACHED)
+                           VOLUME_STATE_ATTACHED, retry_count)
     wait_for_volume_status(client, name,
                            VOLUME_FIELD_ROBUSTNESS,
-                           VOLUME_ROBUSTNESS_HEALTHY)
+                           VOLUME_ROBUSTNESS_HEALTHY, retry_count)
     return wait_for_volume_endpoint(client, name)</code></pre>
 </details>
 </dd>
@@ -12161,7 +12162,7 @@ def volume_name(request):
 </details>
 </dd>
 <dt id="tests.common.wait_for_volume_status"><code class="name flex">
-<span>def <span class="ident">wait_for_volume_status</span></span>(<span>client, name, key, value)</span>
+<span>def <span class="ident">wait_for_volume_status</span></span>(<span>client, name, key, value, retry_count=150)</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -12169,9 +12170,10 @@ def volume_name(request):
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def wait_for_volume_status(client, name, key, value):
+<pre><code class="python">def wait_for_volume_status(client, name, key, value,
+                           retry_count=RETRY_COUNTS):
     wait_for_volume_creation(client, name)
-    for i in range(RETRY_COUNTS):
+    for i in range(retry_count):
         volume = client.by_id_volume(name)
         if volume[key] == value:
             break
