@@ -4798,9 +4798,14 @@ def wait_for_pod_annotation(core_api,
 def wait_for_volume_clone_status(client, name, key, value):
     for _ in range(RETRY_COUNTS):
         volume = client.by_id_volume(name)
-        if volume[VOLUME_FIELD_CLONE_STATUS][key] == value:
-            break
-        time.sleep(RETRY_INTERVAL)
+        try:
+            if volume[VOLUME_FIELD_CLONE_STATUS][key] == value:
+                break
+        except Exception as e:
+            print(&#34;\nVOLUME_FIELD_CLONE_STATUS is not ready&#34;)
+            print(e)
+        finally:
+            time.sleep(RETRY_INTERVAL)
     assert volume[VOLUME_FIELD_CLONE_STATUS][key] == value, \
         f&#34; Expected value={value}\n. &#34; \
         f&#34; Got volume[{VOLUME_FIELD_CLONE_STATUS}][{key}]= &#34; \
@@ -11581,9 +11586,14 @@ def volume_name(request):
 <pre><code class="python">def wait_for_volume_clone_status(client, name, key, value):
     for _ in range(RETRY_COUNTS):
         volume = client.by_id_volume(name)
-        if volume[VOLUME_FIELD_CLONE_STATUS][key] == value:
-            break
-        time.sleep(RETRY_INTERVAL)
+        try:
+            if volume[VOLUME_FIELD_CLONE_STATUS][key] == value:
+                break
+        except Exception as e:
+            print(&#34;\nVOLUME_FIELD_CLONE_STATUS is not ready&#34;)
+            print(e)
+        finally:
+            time.sleep(RETRY_INTERVAL)
     assert volume[VOLUME_FIELD_CLONE_STATUS][key] == value, \
         f&#34; Expected value={value}\n. &#34; \
         f&#34; Got volume[{VOLUME_FIELD_CLONE_STATUS}][{key}]= &#34; \
