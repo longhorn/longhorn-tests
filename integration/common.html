@@ -1970,6 +1970,18 @@ def json_string_go_to_python(str):
         replace(&#34;True&#34;, &#34;true&#34;).replace(&#34;False&#34;, &#34;false&#34;)
 
 
+def delete_replica_on_test_node(client, volume_name): # NOQA
+
+    lht_host_id = get_self_host_id()
+
+    volume = client.by_id_volume(volume_name)
+    for replica in volume.replicas:
+        if replica.hostId == lht_host_id:
+            replica_name = replica.name
+    volume.replicaRemove(name=replica_name)
+    wait_for_volume_degraded(client, volume_name)
+
+
 def delete_replica_processes(client, api, volname):
     replica_map = {}
     volume = client.by_id_volume(volname)
@@ -7066,6 +7078,27 @@ if a nonexistent Pod is specified.</p>
     bv = client.by_id_backupVolume(volume_name)
     client.delete(bv)
     wait_for_backup_volume_delete(client, volume_name)</code></pre>
+</details>
+</dd>
+<dt id="tests.common.delete_replica_on_test_node"><code class="name flex">
+<span>def <span class="ident">delete_replica_on_test_node</span></span>(<span>client, volume_name)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def delete_replica_on_test_node(client, volume_name): # NOQA
+
+    lht_host_id = get_self_host_id()
+
+    volume = client.by_id_volume(volume_name)
+    for replica in volume.replicas:
+        if replica.hostId == lht_host_id:
+            replica_name = replica.name
+    volume.replicaRemove(name=replica_name)
+    wait_for_volume_degraded(client, volume_name)</code></pre>
 </details>
 </dd>
 <dt id="tests.common.delete_replica_processes"><code class="name flex">
@@ -12780,6 +12813,7 @@ from the args and kwargs arguments, respectively.</p></div>
 <li><code><a title="tests.common.delete_and_wait_volume_attachment" href="#tests.common.delete_and_wait_volume_attachment">delete_and_wait_volume_attachment</a></code></li>
 <li><code><a title="tests.common.delete_backup" href="#tests.common.delete_backup">delete_backup</a></code></li>
 <li><code><a title="tests.common.delete_backup_volume" href="#tests.common.delete_backup_volume">delete_backup_volume</a></code></li>
+<li><code><a title="tests.common.delete_replica_on_test_node" href="#tests.common.delete_replica_on_test_node">delete_replica_on_test_node</a></code></li>
 <li><code><a title="tests.common.delete_replica_processes" href="#tests.common.delete_replica_processes">delete_replica_processes</a></code></li>
 <li><code><a title="tests.common.delete_storage_class" href="#tests.common.delete_storage_class">delete_storage_class</a></code></li>
 <li><code><a title="tests.common.dev_read" href="#tests.common.dev_read">dev_read</a></code></li>

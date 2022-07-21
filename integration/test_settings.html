@@ -57,6 +57,12 @@ from common import (  # NOQA
     create_backing_image_with_matching_url, BACKING_IMAGE_EXT4_SIZE,
     check_backing_image_disk_map_status, wait_for_volume_delete,
     SETTING_REPLICA_NODE_SOFT_ANTI_AFFINITY, wait_for_node_update,
+    crash_replica_processes, wait_for_engine_image_ref_count,
+    get_volume_engine, wait_for_volume_current_image,
+    wait_for_rebuild_start, wait_for_rebuild_complete,
+    wait_for_volume_degraded, Gi, write_volume_dev_random_mb_data,
+    get_volume_endpoint, RETRY_EXEC_COUNTS, RETRY_SNAPSHOT_INTERVAL,
+    delete_replica_on_test_node
 )
 
 from test_infra import wait_for_node_up_longhorn
@@ -767,8 +773,7 @@ def test_setting_backing_image_auto_cleanup(client, core_api, volume_name):  # N
     check_backing_image_disk_map_status(client, BACKING_IMAGE_NAME, 1, &#34;ready&#34;)
 
 
-@pytest.mark.skip(reason=&#34;TODO&#34;)
-def test_setting_concurrent_rebuild_limit():  # NOQA
+def test_setting_concurrent_rebuild_limit(client, core_api, volume_name):  # NOQA
     &#34;&#34;&#34;
     Test if setting Concurrent Replica Rebuild Per Node Limit works correctly.
 
@@ -805,17 +810,162 @@ def test_setting_concurrent_rebuild_limit():  # NOQA
     3. Delete one replica for volume 1 to trigger the rebuilding.
     4. Attach then detach volume 2. The attachment/detachment should succeed
        even if the rebuilding in volume 1 is still in progress.
+   &#34;&#34;&#34;
+    # Step 1-1
+    update_setting(client,
+                   &#34;concurrent-replica-rebuild-per-node-limit&#34;,
+                   &#34;1&#34;)
 
-   Case 3 - the setting won&#39;t affect volume live upgrade:
-    1. Set `ConcurrentReplicaRebuildPerNodeLimit` to 1.
-    2. Deploy a compatible engine image and wait for ready.
-    3. Make volume 1 and volume 2 state attached and healthy.
-    4. Delete one replica for volume 1 to trigger the rebuilding.
-    5. Do live upgrade for volume 2. The upgrade should work fine
-       even if the rebuilding in volume 1 is still in progress.
-    (Not sure if we need to put this specific case as a separate test in
-     test_engine_upgrade.py)
-   &#34;&#34;&#34;</code></pre>
+    # Step 1-2
+    volume1_name = &#34;test-vol-1&#34;  # NOQA
+    volume1 = create_and_check_volume(client, volume1_name, size=str(4 * Gi))
+    volume1.attach(hostId=get_self_host_id())
+    volume1 = wait_for_volume_healthy(client, volume1_name)
+
+    volume2_name = &#34;test-vol-2&#34;  # NOQA
+    volume2 = create_and_check_volume(client, volume2_name, size=str(4 * Gi))
+    volume2.attach(hostId=get_self_host_id())
+    volume2 = wait_for_volume_healthy(client, volume2_name)
+
+    # Step 1-3
+    volume1_endpoint = get_volume_endpoint(volume1)
+    volume2_endpoint = get_volume_endpoint(volume2)
+    write_volume_dev_random_mb_data(volume1_endpoint,
+                                    1, 3500)
+    write_volume_dev_random_mb_data(volume2_endpoint,
+                                    1, 3500)
+
+    # Step 1-4, 1-5
+    delete_replica_on_test_node(client, volume1_name)
+    wait_for_rebuild_start(client, volume1_name)
+    delete_replica_on_test_node(client, volume2_name)
+
+    for i in range(RETRY_COUNTS):
+        volume1 = client.by_id_volume(volume1_name)
+        volume2 = client.by_id_volume(volume2_name)
+
+        if volume1.rebuildStatus == []:
+            break
+
+        assert volume1.rebuildStatus[0].state == &#34;in_progress&#34;
+        assert volume2.rebuildStatus == []
+
+        time.sleep(RETRY_INTERVAL)
+
+    wait_for_rebuild_complete(client, volume1_name)
+    wait_for_rebuild_start(client, volume2_name)
+    wait_for_rebuild_complete(client, volume2_name)
+
+    # Step 1-6
+    wait_for_volume_healthy(client, volume1_name)
+    wait_for_volume_healthy(client, volume2_name)
+
+    # Step 1-7
+    delete_replica_on_test_node(client, volume1_name)
+    delete_replica_on_test_node(client, volume2_name)
+    update_setting(client,
+                   &#34;concurrent-replica-rebuild-per-node-limit&#34;,
+                   &#34;2&#34;)
+
+    # In a 2 minutes retry loop:
+    # verify that volume 2 start rebuilding while volume 1 is still rebuilding
+    concourent_build = False
+    for i in range(RETRY_EXEC_COUNTS):
+        volume1 = client.by_id_volume(volume1_name)
+        volume2 = client.by_id_volume(volume2_name)
+        try:
+            if volume1.rebuildStatus[0].state == &#34;in_progress&#34; and \
+                    volume2.rebuildStatus[0].state == &#34;in_progress&#34;:
+                concourent_build = True
+                break
+        except: # NOQA
+            pass
+        time.sleep(RETRY_SNAPSHOT_INTERVAL)
+    assert concourent_build is True
+
+    # Step 1-8
+    wait_for_rebuild_complete(client, volume1_name)
+    wait_for_rebuild_complete(client, volume2_name)
+
+    # Step 1-9
+    update_setting(client,
+                   &#34;concurrent-replica-rebuild-per-node-limit&#34;,
+                   &#34;1&#34;)
+
+    # Step 1-10
+    delete_replica_on_test_node(client, volume1_name)
+    wait_for_rebuild_start(client, volume1_name)
+    volume1 = client.by_id_volume(volume1_name)
+    current_node = get_self_host_id()
+    replicas = []
+    for r in volume1.replicas:
+        if r[&#34;hostId&#34;] == current_node:
+            replicas.append(r)
+
+    assert len(replicas) &gt; 0
+    crash_replica_processes(client, core_api, volume1_name, replicas)
+    delete_replica_on_test_node(client, volume2_name)
+
+    # While volume 2 is rebuilding, verify that volume 1 is not
+    # rebuilding and stuck in degrading state
+    wait_for_rebuild_start(client, volume2_name)
+    for i in range(RETRY_COUNTS):
+        volume1 = client.by_id_volume(volume1_name)
+        volume2 = client.by_id_volume(volume2_name)
+
+        if volume2.rebuildStatus == []:
+            break
+
+        assert volume2.rebuildStatus[0].state == &#34;in_progress&#34;
+        assert volume1.rebuildStatus == []
+
+        time.sleep(RETRY_INTERVAL)
+
+    wait_for_rebuild_complete(client, volume2_name)
+    wait_for_rebuild_start(client, volume1_name)
+    wait_for_rebuild_complete(client, volume1_name)
+
+    # Step 2-1
+    # Step 2-2
+    wait_for_volume_healthy(client, volume1_name)
+    wait_for_volume_healthy(client, volume2_name)
+
+    volume2 = client.by_id_volume(volume2_name)
+    lht_host_id = get_self_host_id()
+    volume2.detach(hostId=lht_host_id)
+
+    # Step 2-2
+    delete_replica_on_test_node(client, volume1_name)
+    wait_for_rebuild_start(client, volume1_name)
+
+    # Step 2-3
+    volume2 = client.by_id_volume(volume2_name)
+    volume2.attach(hostId=lht_host_id)
+
+    # In a 2 minutes retry loop:
+    # verify that we can see the case: volume2 becomes healthy while
+    # volume1 is rebuilding
+    expect_case = False
+    for i in range(RETRY_COUNTS):
+        volume1 = client.by_id_volume(volume1_name)
+        volume2 = client.by_id_volume(volume2_name)
+
+        try:
+            if volume1.rebuildStatus[0].state == &#34;in_progress&#34; and \
+                    volume2[&#34;robustness&#34;] == &#34;healthy&#34;:
+                expect_case = True
+                break
+        except: # NOQA
+            pass
+        time.sleep(RETRY_INTERVAL)
+    assert expect_case is True
+
+    wait_for_volume_healthy(client, volume1_name)
+    volume2.detach(hostId=lht_host_id)
+    wait_for_volume_detached(client, volume2_name)
+
+    volume2.attach(hostId=lht_host_id)
+    wait_for_volume_healthy(client, volume2_name)</code></pre>
 </details>
 </section>
 <section>
@@ -1280,7 +1430,7 @@ def test_setting_backing_image_auto_cleanup(client, core_api, volume_name):  # N
 </details>
 </dd>
 <dt id="tests.test_settings.test_setting_concurrent_rebuild_limit"><code class="name flex">
-<span>def <span class="ident">test_setting_concurrent_rebuild_limit</span></span>(<span>)</span>
+<span>def <span class="ident">test_setting_concurrent_rebuild_limit</span></span>(<span>client, core_api, volume_name)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Test if setting Concurrent Replica Rebuild Per Node Limit works correctly.</p>
@@ -1313,22 +1463,12 @@ volume 1 will wait for the volume 2 becoming healthy.</p>
 2. Make volume 1 state attached and healthy while volume 2 is detached.
 3. Delete one replica for volume 1 to trigger the rebuilding.
 4. Attach then detach volume 2. The attachment/detachment should succeed
-even if the rebuilding in volume 1 is still in progress.</p>
-<p>Case 3 - the setting won't affect volume live upgrade:
-1. Set <code>ConcurrentReplicaRebuildPerNodeLimit</code> to 1.
-2. Deploy a compatible engine image and wait for ready.
-3. Make volume 1 and volume 2 state attached and healthy.
-4. Delete one replica for volume 1 to trigger the rebuilding.
-5. Do live upgrade for volume 2. The upgrade should work fine
-even if the rebuilding in volume 1 is still in progress.
-(Not sure if we need to put this specific case as a separate test in
-test_engine_upgrade.py)</p></div>
+even if the rebuilding in volume 1 is still in progress.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">@pytest.mark.skip(reason=&#34;TODO&#34;)
-def test_setting_concurrent_rebuild_limit():  # NOQA
+<pre><code class="python">def test_setting_concurrent_rebuild_limit(client, core_api, volume_name):  # NOQA
     &#34;&#34;&#34;
     Test if setting Concurrent Replica Rebuild Per Node Limit works correctly.
 
@@ -1365,17 +1505,162 @@ def test_setting_concurrent_rebuild_limit():  # NOQA
     3. Delete one replica for volume 1 to trigger the rebuilding.
     4. Attach then detach volume 2. The attachment/detachment should succeed
        even if the rebuilding in volume 1 is still in progress.
+   &#34;&#34;&#34;
+    # Step 1-1
+    update_setting(client,
+                   &#34;concurrent-replica-rebuild-per-node-limit&#34;,
+                   &#34;1&#34;)
 
-   Case 3 - the setting won&#39;t affect volume live upgrade:
-    1. Set `ConcurrentReplicaRebuildPerNodeLimit` to 1.
-    2. Deploy a compatible engine image and wait for ready.
-    3. Make volume 1 and volume 2 state attached and healthy.
-    4. Delete one replica for volume 1 to trigger the rebuilding.
-    5. Do live upgrade for volume 2. The upgrade should work fine
-       even if the rebuilding in volume 1 is still in progress.
-    (Not sure if we need to put this specific case as a separate test in
-     test_engine_upgrade.py)
-   &#34;&#34;&#34;</code></pre>
+    # Step 1-2
+    volume1_name = &#34;test-vol-1&#34;  # NOQA
+    volume1 = create_and_check_volume(client, volume1_name, size=str(4 * Gi))
+    volume1.attach(hostId=get_self_host_id())
+    volume1 = wait_for_volume_healthy(client, volume1_name)
+
+    volume2_name = &#34;test-vol-2&#34;  # NOQA
+    volume2 = create_and_check_volume(client, volume2_name, size=str(4 * Gi))
+    volume2.attach(hostId=get_self_host_id())
+    volume2 = wait_for_volume_healthy(client, volume2_name)
+
+    # Step 1-3
+    volume1_endpoint = get_volume_endpoint(volume1)
+    volume2_endpoint = get_volume_endpoint(volume2)
+    write_volume_dev_random_mb_data(volume1_endpoint,
+                                    1, 3500)
+    write_volume_dev_random_mb_data(volume2_endpoint,
+                                    1, 3500)
+
+    # Step 1-4, 1-5
+    delete_replica_on_test_node(client, volume1_name)
+    wait_for_rebuild_start(client, volume1_name)
+    delete_replica_on_test_node(client, volume2_name)
+
+    for i in range(RETRY_COUNTS):
+        volume1 = client.by_id_volume(volume1_name)
+        volume2 = client.by_id_volume(volume2_name)
+
+        if volume1.rebuildStatus == []:
+            break
+
+        assert volume1.rebuildStatus[0].state == &#34;in_progress&#34;
+        assert volume2.rebuildStatus == []
+
+        time.sleep(RETRY_INTERVAL)
+
+    wait_for_rebuild_complete(client, volume1_name)
+    wait_for_rebuild_start(client, volume2_name)
+    wait_for_rebuild_complete(client, volume2_name)
+
+    # Step 1-6
+    wait_for_volume_healthy(client, volume1_name)
+    wait_for_volume_healthy(client, volume2_name)
+
+    # Step 1-7
+    delete_replica_on_test_node(client, volume1_name)
+    delete_replica_on_test_node(client, volume2_name)
+    update_setting(client,
+                   &#34;concurrent-replica-rebuild-per-node-limit&#34;,
+                   &#34;2&#34;)
+
+    # In a 2 minutes retry loop:
+    # verify that volume 2 start rebuilding while volume 1 is still rebuilding
+    concourent_build = False
+    for i in range(RETRY_EXEC_COUNTS):
+        volume1 = client.by_id_volume(volume1_name)
+        volume2 = client.by_id_volume(volume2_name)
+        try:
+            if volume1.rebuildStatus[0].state == &#34;in_progress&#34; and \
+                    volume2.rebuildStatus[0].state == &#34;in_progress&#34;:
+                concourent_build = True
+                break
+        except: # NOQA
+            pass
+        time.sleep(RETRY_SNAPSHOT_INTERVAL)
+    assert concourent_build is True
+
+    # Step 1-8
+    wait_for_rebuild_complete(client, volume1_name)
+    wait_for_rebuild_complete(client, volume2_name)
+
+    # Step 1-9
+    update_setting(client,
+                   &#34;concurrent-replica-rebuild-per-node-limit&#34;,
+                   &#34;1&#34;)
+
+    # Step 1-10
+    delete_replica_on_test_node(client, volume1_name)
+    wait_for_rebuild_start(client, volume1_name)
+    volume1 = client.by_id_volume(volume1_name)
+    current_node = get_self_host_id()
+    replicas = []
+    for r in volume1.replicas:
+        if r[&#34;hostId&#34;] == current_node:
+            replicas.append(r)
+
+    assert len(replicas) &gt; 0
+    crash_replica_processes(client, core_api, volume1_name, replicas)
+    delete_replica_on_test_node(client, volume2_name)
+
+    # While volume 2 is rebuilding, verify that volume 1 is not
+    # rebuilding and stuck in degrading state
+    wait_for_rebuild_start(client, volume2_name)
+    for i in range(RETRY_COUNTS):
+        volume1 = client.by_id_volume(volume1_name)
+        volume2 = client.by_id_volume(volume2_name)
+
+        if volume2.rebuildStatus == []:
+            break
+
+        assert volume2.rebuildStatus[0].state == &#34;in_progress&#34;
+        assert volume1.rebuildStatus == []
+
+        time.sleep(RETRY_INTERVAL)
+
+    wait_for_rebuild_complete(client, volume2_name)
+    wait_for_rebuild_start(client, volume1_name)
+    wait_for_rebuild_complete(client, volume1_name)
+
+    # Step 2-1
+    # Step 2-2
+    wait_for_volume_healthy(client, volume1_name)
+    wait_for_volume_healthy(client, volume2_name)
+
+    volume2 = client.by_id_volume(volume2_name)
+    lht_host_id = get_self_host_id()
+    volume2.detach(hostId=lht_host_id)
+
+    # Step 2-2
+    delete_replica_on_test_node(client, volume1_name)
+    wait_for_rebuild_start(client, volume1_name)
+
+    # Step 2-3
+    volume2 = client.by_id_volume(volume2_name)
+    volume2.attach(hostId=lht_host_id)
+
+    # In a 2 minutes retry loop:
+    # verify that we can see the case: volume2 becomes healthy while
+    # volume1 is rebuilding
+    expect_case = False
+    for i in range(RETRY_COUNTS):
+        volume1 = client.by_id_volume(volume1_name)
+        volume2 = client.by_id_volume(volume2_name)
+
+        try:
+            if volume1.rebuildStatus[0].state == &#34;in_progress&#34; and \
+                    volume2[&#34;robustness&#34;] == &#34;healthy&#34;:
+                expect_case = True
+                break
+        except: # NOQA
+            pass
+        time.sleep(RETRY_INTERVAL)
+    assert expect_case is True
+
+    wait_for_volume_healthy(client, volume1_name)
+    volume2.detach(hostId=lht_host_id)
+    wait_for_volume_detached(client, volume2_name)
+
+    volume2.attach(hostId=lht_host_id)
+    wait_for_volume_healthy(client, volume2_name)</code></pre>
 </details>
 </dd>
 <dt id="tests.test_settings.test_setting_priority_class"><code class="name flex">
