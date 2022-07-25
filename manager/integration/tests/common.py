@@ -222,6 +222,10 @@ BACKING_IMAGE_SOURCE_TYPE_FROM_VOLUME = "export-from-volume"
 
 JOB_LABEL = "recurring-job.longhorn.io"
 
+NODE_UPDATE_RETRY_INTERVAL = 6
+NODE_UPDATE_RETRY_COUNT = 30
+disk_being_syncing = "being syncing and please retry later"
+
 
 def load_k8s_config():
     c = Configuration()
@@ -4723,3 +4727,63 @@ def get_volume_running_replica_cnt(client, volume_name):  # NOQA
             client, volume_name, node.name, chk_running=True)
 
     return cnt
+
+
+def create_volume(client, vol_name, size, node_id, r_num):
+    volume = client.create_volume(name=vol_name, size=size,
+                                  numberOfReplicas=r_num)
+    assert volume.numberOfReplicas == r_num
+    assert volume.frontend == VOLUME_FRONTEND_BLOCKDEV
+
+    volume = wait_for_volume_detached(client, vol_name)
+    assert len(volume.replicas) == r_num
+
+    assert volume.state == "detached"
+    assert volume.created != ""
+
+    volumeByName = client.by_id_volume(vol_name)
+    assert volumeByName.name == volume.name
+    assert volumeByName.size == volume.size
+    assert volumeByName.numberOfReplicas == volume.numberOfReplicas
+    assert volumeByName.state == volume.state
+    assert volumeByName.created == volume.created
+
+    volume.attach(hostId=node_id)
+    volume = wait_for_volume_healthy(client, vol_name)
+
+    return volume
+
+
+def create_host_disk(client, vol_name, size, node_id):
+    # create a single replica volume and attach it to node
+    volume = create_volume(client, vol_name, size, node_id, 1)
+
+    mkfs_ext4_settings = client.by_id_setting(SETTING_MKFS_EXT4_PARAMS)
+    mkfs_ext4_options = mkfs_ext4_settings.value
+
+    # prepare the disk in the host filesystem
+    disk_path = prepare_host_disk(get_volume_endpoint(volume),
+                                  volume.name,
+                                  mkfs_ext4_options)
+    return disk_path
+
+
+def update_node_disks(client, node_name, disks, retry=False):
+    node = client.by_id_node(node_name)
+
+    if not retry:
+        return node.diskUpdate(disks=disks)
+
+    # Retry if "too many retries error" happened.
+    for _ in range(NODE_UPDATE_RETRY_COUNT):
+        try:
+            node = node.diskUpdate(disks=disks)
+        except Exception as e:
+            if disk_being_syncing in str(e.error.message):
+                time.sleep(NODE_UPDATE_RETRY_INTERVAL)
+                continue
+            print(e)
+            raise
+        else:
+            break
+    return node
