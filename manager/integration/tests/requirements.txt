@@ -9,3 +9,4 @@ requests==2.25.1
 six==1.12.0
 minio==5.0.10
 boto3==1.17.91
+pyyaml==5.3.1
