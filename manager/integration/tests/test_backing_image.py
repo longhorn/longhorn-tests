@@ -511,3 +511,18 @@ def test_backing_image_auto_resync(client, volume_name):  # NOQA
     6. Wait for the file recovering automatically.
     7. Validate the volume.
     """
+
+
+@pytest.mark.skip(reason="TODO") # NOQA
+@pytest.mark.backing_image  # NOQA
+def test_backing_image_cleanup(client, volume_name):  # NOQA
+    """
+    1. Create multiple backing image.
+    2. Create and attach multiple 3-replica volume using those backing image.
+    3. Wait for the attachment complete.
+    4. Delete the volumes then the backing images.
+    5. Verify all backing image manager pods will be terminated when the last
+       backing image is gone.
+    6. Repeat step1 to step5 for multiple times. Make sure each time the test
+       is using the same the backing image namings.
+    """
