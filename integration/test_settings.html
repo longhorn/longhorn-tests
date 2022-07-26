@@ -30,6 +30,7 @@
 import pytest
 import os
 import subprocess
+import yaml
 
 from common import (  # NOQA
     get_longhorn_api_client, get_self_host_id,
@@ -45,6 +46,8 @@ from common import (  # NOQA
     client, core_api, settings_reset,
     apps_api, scheduling_api, priority_class, volume_name,
     get_engine_image_status_value,
+    create_volume, cleanup_volume_by_name,
+    Gi,
 
     LONGHORN_NAMESPACE,
     SETTING_TAINT_TOLERATION,
@@ -52,6 +55,8 @@ from common import (  # NOQA
     SETTING_GUARANTEED_ENGINE_MANAGER_CPU,
     SETTING_GUARANTEED_REPLICA_MANAGER_CPU,
     SETTING_PRIORITY_CLASS,
+    SETTING_DEFAULT_REPLICA_COUNT,
+    SETTING_BACKUP_TARGET,
     SIZE, RETRY_COUNTS, RETRY_INTERVAL, RETRY_INTERVAL_LONG,
     update_setting, BACKING_IMAGE_QCOW2_URL, BACKING_IMAGE_NAME,
     create_backing_image_with_matching_url, BACKING_IMAGE_EXT4_SIZE,
@@ -965,7 +970,201 @@ def test_setting_concurrent_rebuild_limit(client, core_api, volume_name):  # NOQ
     wait_for_volume_detached(client, volume2_name)
 
     volume2.attach(hostId=lht_host_id)
-    wait_for_volume_healthy(client, volume2_name)</code></pre>
+    wait_for_volume_healthy(client, volume2_name)
+
+
+def config_map_with_value(configmap_name, setting_names, setting_values):
+    setting = {}
+    num_settings = len(setting_names)
+    if num_settings &gt; 0:
+        for i in range(num_settings):
+            setting.update({setting_names[i]: setting_values[i]})
+    return {
+        &#34;apiVersion&#34;: &#34;v1&#34;,
+        &#34;kind&#34;: &#34;ConfigMap&#34;,
+        &#34;metadata&#34;: {
+            &#34;name&#34;: configmap_name,
+        },
+        &#34;data&#34;: {
+            &#34;default-setting.yaml&#34;: yaml.dump(setting),
+        }
+    }
+
+
+def wait_for_setting_updated(client, name, expected_value):  # NOQA
+    for _ in range(RETRY_COUNTS):
+        setting = client.by_id_setting(name)
+        if setting.value == expected_value:
+            return True
+        time.sleep(RETRY_INTERVAL)
+    return False
+
+
+def retry_setting_update(client, setting_name, setting_value):  # NOQA
+    for i in range(RETRY_COUNTS):
+        try:
+            update_setting(client, setting_name, setting_value)
+        except Exception as e:
+            if i &lt; RETRY_COUNTS:
+                time.sleep(RETRY_INTERVAL)
+                continue
+            print(e)
+            raise
+        else:
+            break
+
+
+def init_longhorn_default_setting_configmap(core_api, client): # NOQA
+    core_api.delete_namespaced_config_map(name=&#34;longhorn-default-setting&#34;,
+                                          namespace=&#39;longhorn-system&#39;)
+
+    configmap_body = config_map_with_value(&#34;longhorn-default-setting&#34;, [], [])
+    core_api.create_namespaced_config_map(body=configmap_body,
+                                          namespace=&#39;longhorn-system&#39;)
+
+
+def update_settings_via_configmap(core_api, client, setting_names, setting_values, request):  # NOQA
+    configmap_body = config_map_with_value(&#34;longhorn-default-setting&#34;,
+                                           setting_names,
+                                           setting_values)
+    core_api.patch_namespaced_config_map(name=&#34;longhorn-default-setting&#34;,
+                                         namespace=&#39;longhorn-system&#39;,
+                                         body=configmap_body)
+
+    def reset_default_settings():
+        configmap_body = config_map_with_value(&#34;longhorn-default-setting&#34;,
+                                               [SETTING_DEFAULT_REPLICA_COUNT,
+                                                SETTING_BACKUP_TARGET,
+                                                SETTING_TAINT_TOLERATION],
+                                               [&#34;3&#34;,
+                                                &#34;&#34;,
+                                                &#34;&#34;])
+        core_api.patch_namespaced_config_map(name=&#34;longhorn-default-setting&#34;,
+                                             namespace=&#39;longhorn-system&#39;,
+                                             body=configmap_body)
+    request.addfinalizer(reset_default_settings)
+
+
+def validate_settings(core_api, client, setting_names, setting_values):  # NOQA
+    num_settings = len(setting_names)
+    for i in range(num_settings):
+        name = setting_names[i]
+        value = setting_values[i]
+        assert wait_for_setting_updated(client, name, value)
+
+
+def test_setting_replica_count_update_via_configmap(core_api, request):  # NOQA
+    &#34;&#34;&#34;
+    Test the default-replica-count setting via configmap
+    1. Get default-replica-count value
+    2. Initialize longhorn-default-setting configmap
+    3. Verify default-replica-count is not changed
+    4. Update longhorn-default-setting configmap with a new
+       default-replica-count value
+    5. Verify the updated settings
+    6. Update default-replica-count setting CR with the old value
+    &#34;&#34;&#34;
+
+    # Step 1
+    client = get_longhorn_api_client()  # NOQA
+    old_setting = client.by_id_setting(SETTING_DEFAULT_REPLICA_COUNT)
+
+    # Step 2
+    init_longhorn_default_setting_configmap(core_api, client)
+
+    # Step 3
+    assert wait_for_setting_updated(client,
+                                    SETTING_DEFAULT_REPLICA_COUNT,
+                                    old_setting.value)
+
+    # Step 4
+    replica_count = &#34;1&#34;
+    update_settings_via_configmap(core_api,
+                                  client,
+                                  [SETTING_DEFAULT_REPLICA_COUNT],
+                                  [replica_count],
+                                  request)
+    # Step 5
+    validate_settings(core_api,
+                      client,
+                      [SETTING_DEFAULT_REPLICA_COUNT],
+                      [replica_count])
+    # Step 6
+    retry_setting_update(client,
+                         SETTING_DEFAULT_REPLICA_COUNT,
+                         old_setting.definition.default)
+
+
+def test_setting_backup_target_update_via_configmap(core_api, request):  # NOQA
+    &#34;&#34;&#34;
+    Test the backup target setting via configmap
+    1. Initialize longhorn-default-setting configmap
+    2. Update longhorn-default-setting configmap with a new backup-target
+       value
+    3. Verify the updated settings
+    &#34;&#34;&#34;
+
+    # Step 1
+    client = get_longhorn_api_client()  # NOQA
+    init_longhorn_default_setting_configmap(core_api, client)
+
+    # Step 2
+    target = &#34;s3://backupbucket-invalid@us-east-1/backupstore&#34;
+    update_settings_via_configmap(core_api,
+                                  client,
+                                  [SETTING_BACKUP_TARGET],
+                                  [target],
+                                  request)
+    # Step 3
+    validate_settings(core_api,
+                      client,
+                      [SETTING_BACKUP_TARGET],
+                      [target])
+
+
+def test_setting_update_with_invalid_value_via_configmap(core_api, request):  # NOQA
+    &#34;&#34;&#34;
+    Test the default settings update with invalid value via configmap
+    1. Create an attached volume
+    2. Initialize longhorn-default-setting configmap containing
+       valid and invalid settings
+    3. Update longhorn-default-setting configmap with invalid settings.
+       The invalid settings SETTING_TAINT_TOLERATION will be ingored
+       when there is an attached volume.
+    4. Validate the default settings values.
+    &#34;&#34;&#34;
+
+    # Step 1
+    client = get_longhorn_api_client() # NOQA
+    lht_hostId = get_self_host_id()
+
+    vol_name = generate_volume_name()
+    volume = create_volume(client, vol_name, str(Gi), lht_hostId, 3)
+
+    volume.attach(hostId=lht_hostId)
+    volume = wait_for_volume_healthy(client, vol_name)
+
+    # Step 2
+    init_longhorn_default_setting_configmap(core_api, client)
+
+    # Step 3
+    target = &#34;s3://backupbucket-invalid@us-east-1/backupstore&#34;
+    update_settings_via_configmap(core_api,
+                                  client,
+                                  [SETTING_BACKUP_TARGET,
+                                   SETTING_TAINT_TOLERATION],
+                                  [target,
+                                   &#34;key1=value1:NoSchedule&#34;],
+                                  request)
+    # Step 4
+    validate_settings(core_api,
+                      client,
+                      [SETTING_BACKUP_TARGET,
+                       SETTING_TAINT_TOLERATION],
+                      [target,
+                       &#34;&#34;])
+
+    cleanup_volume_by_name(client, vol_name)</code></pre>
 </details>
 </section>
 <section>
@@ -1063,6 +1262,33 @@ def test_setting_concurrent_rebuild_limit(client, core_api, volume_name):  # NOQ
     return True</code></pre>
 </details>
 </dd>
+<dt id="tests.test_settings.config_map_with_value"><code class="name flex">
+<span>def <span class="ident">config_map_with_value</span></span>(<span>configmap_name, setting_names, setting_values)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def config_map_with_value(configmap_name, setting_names, setting_values):
+    setting = {}
+    num_settings = len(setting_names)
+    if num_settings &gt; 0:
+        for i in range(num_settings):
+            setting.update({setting_names[i]: setting_values[i]})
+    return {
+        &#34;apiVersion&#34;: &#34;v1&#34;,
+        &#34;kind&#34;: &#34;ConfigMap&#34;,
+        &#34;metadata&#34;: {
+            &#34;name&#34;: configmap_name,
+        },
+        &#34;data&#34;: {
+            &#34;default-setting.yaml&#34;: yaml.dump(setting),
+        }
+    }</code></pre>
+</details>
+</dd>
 <dt id="tests.test_settings.guaranteed_engine_cpu_setting_check"><code class="name flex">
 <span>def <span class="ident">guaranteed_engine_cpu_setting_check</span></span>(<span>client, core_api, instance_managers, state, desire, cpu_val)</span>
 </code></dt>
@@ -1103,6 +1329,47 @@ e.g. 'Pending', 'OutofCPU', 'Terminating' they are all 'Not Running'.</p></div>
                         cpu_val)
             else:
                 assert (not pod.spec.containers[0].resources.requests)</code></pre>
+</details>
+</dd>
+<dt id="tests.test_settings.init_longhorn_default_setting_configmap"><code class="name flex">
+<span>def <span class="ident">init_longhorn_default_setting_configmap</span></span>(<span>core_api, client)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def init_longhorn_default_setting_configmap(core_api, client): # NOQA
+    core_api.delete_namespaced_config_map(name=&#34;longhorn-default-setting&#34;,
+                                          namespace=&#39;longhorn-system&#39;)
+
+    configmap_body = config_map_with_value(&#34;longhorn-default-setting&#34;, [], [])
+    core_api.create_namespaced_config_map(body=configmap_body,
+                                          namespace=&#39;longhorn-system&#39;)</code></pre>
+</details>
+</dd>
+<dt id="tests.test_settings.retry_setting_update"><code class="name flex">
+<span>def <span class="ident">retry_setting_update</span></span>(<span>client, setting_name, setting_value)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def retry_setting_update(client, setting_name, setting_value):  # NOQA
+    for i in range(RETRY_COUNTS):
+        try:
+            update_setting(client, setting_name, setting_value)
+        except Exception as e:
+            if i &lt; RETRY_COUNTS:
+                time.sleep(RETRY_INTERVAL)
+                continue
+            print(e)
+            raise
+        else:
+            break</code></pre>
 </details>
 </dd>
 <dt id="tests.test_settings.test_instance_manager_cpu_reservation"><code class="name flex">
@@ -1427,6 +1694,46 @@ def test_setting_backing_image_auto_cleanup(client, core_api, volume_name):  # N
         wait_for_volume_delete(client, volume_name)
 
     check_backing_image_disk_map_status(client, BACKING_IMAGE_NAME, 1, &#34;ready&#34;)</code></pre>
+</details>
+</dd>
+<dt id="tests.test_settings.test_setting_backup_target_update_via_configmap"><code class="name flex">
+<span>def <span class="ident">test_setting_backup_target_update_via_configmap</span></span>(<span>core_api, request)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test the backup target setting via configmap
+1. Initialize longhorn-default-setting configmap
+2. Update longhorn-default-setting configmap with a new backup-target
+value
+3. Verify the updated settings</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def test_setting_backup_target_update_via_configmap(core_api, request):  # NOQA
+    &#34;&#34;&#34;
+    Test the backup target setting via configmap
+    1. Initialize longhorn-default-setting configmap
+    2. Update longhorn-default-setting configmap with a new backup-target
+       value
+    3. Verify the updated settings
+    &#34;&#34;&#34;
+
+    # Step 1
+    client = get_longhorn_api_client()  # NOQA
+    init_longhorn_default_setting_configmap(core_api, client)
+
+    # Step 2
+    target = &#34;s3://backupbucket-invalid@us-east-1/backupstore&#34;
+    update_settings_via_configmap(core_api,
+                                  client,
+                                  [SETTING_BACKUP_TARGET],
+                                  [target],
+                                  request)
+    # Step 3
+    validate_settings(core_api,
+                      client,
+                      [SETTING_BACKUP_TARGET],
+                      [target])</code></pre>
 </details>
 </dd>
 <dt id="tests.test_settings.test_setting_concurrent_rebuild_limit"><code class="name flex">
@@ -1783,6 +2090,64 @@ deployer</p></div>
     cleanup_volume(client, volume)</code></pre>
 </details>
 </dd>
+<dt id="tests.test_settings.test_setting_replica_count_update_via_configmap"><code class="name flex">
+<span>def <span class="ident">test_setting_replica_count_update_via_configmap</span></span>(<span>core_api, request)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test the default-replica-count setting via configmap
+1. Get default-replica-count value
+2. Initialize longhorn-default-setting configmap
+3. Verify default-replica-count is not changed
+4. Update longhorn-default-setting configmap with a new
+default-replica-count value
+5. Verify the updated settings
+6. Update default-replica-count setting CR with the old value</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def test_setting_replica_count_update_via_configmap(core_api, request):  # NOQA
+    &#34;&#34;&#34;
+    Test the default-replica-count setting via configmap
+    1. Get default-replica-count value
+    2. Initialize longhorn-default-setting configmap
+    3. Verify default-replica-count is not changed
+    4. Update longhorn-default-setting configmap with a new
+       default-replica-count value
+    5. Verify the updated settings
+    6. Update default-replica-count setting CR with the old value
+    &#34;&#34;&#34;
+
+    # Step 1
+    client = get_longhorn_api_client()  # NOQA
+    old_setting = client.by_id_setting(SETTING_DEFAULT_REPLICA_COUNT)
+
+    # Step 2
+    init_longhorn_default_setting_configmap(core_api, client)
+
+    # Step 3
+    assert wait_for_setting_updated(client,
+                                    SETTING_DEFAULT_REPLICA_COUNT,
+                                    old_setting.value)
+
+    # Step 4
+    replica_count = &#34;1&#34;
+    update_settings_via_configmap(core_api,
+                                  client,
+                                  [SETTING_DEFAULT_REPLICA_COUNT],
+                                  [replica_count],
+                                  request)
+    # Step 5
+    validate_settings(core_api,
+                      client,
+                      [SETTING_DEFAULT_REPLICA_COUNT],
+                      [replica_count])
+    # Step 6
+    retry_setting_update(client,
+                         SETTING_DEFAULT_REPLICA_COUNT,
+                         old_setting.definition.default)</code></pre>
+</details>
+</dd>
 <dt id="tests.test_settings.test_setting_toleration"><code class="name flex">
 <span>def <span class="ident">test_setting_toleration</span></span>(<span>)</span>
 </code></dt>
@@ -2049,6 +2414,115 @@ deployer</p></div>
         chk_removed_tolerations = setting[&#34;expect&#34;]</code></pre>
 </details>
 </dd>
+<dt id="tests.test_settings.test_setting_update_with_invalid_value_via_configmap"><code class="name flex">
+<span>def <span class="ident">test_setting_update_with_invalid_value_via_configmap</span></span>(<span>core_api, request)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test the default settings update with invalid value via configmap
+1. Create an attached volume
+2. Initialize longhorn-default-setting configmap containing
+valid and invalid settings
+3. Update longhorn-default-setting configmap with invalid settings.
+The invalid settings SETTING_TAINT_TOLERATION will be ingored
+when there is an attached volume.
+4. Validate the default settings values.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def test_setting_update_with_invalid_value_via_configmap(core_api, request):  # NOQA
+    &#34;&#34;&#34;
+    Test the default settings update with invalid value via configmap
+    1. Create an attached volume
+    2. Initialize longhorn-default-setting configmap containing
+       valid and invalid settings
+    3. Update longhorn-default-setting configmap with invalid settings.
+       The invalid settings SETTING_TAINT_TOLERATION will be ingored
+       when there is an attached volume.
+    4. Validate the default settings values.
+    &#34;&#34;&#34;
+
+    # Step 1
+    client = get_longhorn_api_client() # NOQA
+    lht_hostId = get_self_host_id()
+
+    vol_name = generate_volume_name()
+    volume = create_volume(client, vol_name, str(Gi), lht_hostId, 3)
+
+    volume.attach(hostId=lht_hostId)
+    volume = wait_for_volume_healthy(client, vol_name)
+
+    # Step 2
+    init_longhorn_default_setting_configmap(core_api, client)
+
+    # Step 3
+    target = &#34;s3://backupbucket-invalid@us-east-1/backupstore&#34;
+    update_settings_via_configmap(core_api,
+                                  client,
+                                  [SETTING_BACKUP_TARGET,
+                                   SETTING_TAINT_TOLERATION],
+                                  [target,
+                                   &#34;key1=value1:NoSchedule&#34;],
+                                  request)
+    # Step 4
+    validate_settings(core_api,
+                      client,
+                      [SETTING_BACKUP_TARGET,
+                       SETTING_TAINT_TOLERATION],
+                      [target,
+                       &#34;&#34;])
+
+    cleanup_volume_by_name(client, vol_name)</code></pre>
+</details>
+</dd>
+<dt id="tests.test_settings.update_settings_via_configmap"><code class="name flex">
+<span>def <span class="ident">update_settings_via_configmap</span></span>(<span>core_api, client, setting_names, setting_values, request)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def update_settings_via_configmap(core_api, client, setting_names, setting_values, request):  # NOQA
+    configmap_body = config_map_with_value(&#34;longhorn-default-setting&#34;,
+                                           setting_names,
+                                           setting_values)
+    core_api.patch_namespaced_config_map(name=&#34;longhorn-default-setting&#34;,
+                                         namespace=&#39;longhorn-system&#39;,
+                                         body=configmap_body)
+
+    def reset_default_settings():
+        configmap_body = config_map_with_value(&#34;longhorn-default-setting&#34;,
+                                               [SETTING_DEFAULT_REPLICA_COUNT,
+                                                SETTING_BACKUP_TARGET,
+                                                SETTING_TAINT_TOLERATION],
+                                               [&#34;3&#34;,
+                                                &#34;&#34;,
+                                                &#34;&#34;])
+        core_api.patch_namespaced_config_map(name=&#34;longhorn-default-setting&#34;,
+                                             namespace=&#39;longhorn-system&#39;,
+                                             body=configmap_body)
+    request.addfinalizer(reset_default_settings)</code></pre>
+</details>
+</dd>
+<dt id="tests.test_settings.validate_settings"><code class="name flex">
+<span>def <span class="ident">validate_settings</span></span>(<span>core_api, client, setting_names, setting_values)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def validate_settings(core_api, client, setting_names, setting_values):  # NOQA
+    num_settings = len(setting_names)
+    for i in range(num_settings):
+        name = setting_names[i]
+        value = setting_values[i]
+        assert wait_for_setting_updated(client, name, value)</code></pre>
+</details>
+</dd>
 <dt id="tests.test_settings.wait_for_longhorn_node_ready"><code class="name flex">
 <span>def <span class="ident">wait_for_longhorn_node_ready</span></span>(<span>)</span>
 </code></dt>
@@ -2105,6 +2579,24 @@ deployer</p></div>
             break
 
     assert updated</code></pre>
+</details>
+</dd>
+<dt id="tests.test_settings.wait_for_setting_updated"><code class="name flex">
+<span>def <span class="ident">wait_for_setting_updated</span></span>(<span>client, name, expected_value)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def wait_for_setting_updated(client, name, expected_value):  # NOQA
+    for _ in range(RETRY_COUNTS):
+        setting = client.by_id_setting(name)
+        if setting.value == expected_value:
+            return True
+        time.sleep(RETRY_INTERVAL)
+    return False</code></pre>
 </details>
 </dd>
 <dt id="tests.test_settings.wait_for_toleration_update"><code class="name flex">
@@ -2179,15 +2671,24 @@ deployer</p></div>
 <li><code><a title="tests.test_settings.check_priority_class" href="#tests.test_settings.check_priority_class">check_priority_class</a></code></li>
 <li><code><a title="tests.test_settings.check_tolerations_set" href="#tests.test_settings.check_tolerations_set">check_tolerations_set</a></code></li>
 <li><code><a title="tests.test_settings.check_workload_update" href="#tests.test_settings.check_workload_update">check_workload_update</a></code></li>
+<li><code><a title="tests.test_settings.config_map_with_value" href="#tests.test_settings.config_map_with_value">config_map_with_value</a></code></li>
 <li><code><a title="tests.test_settings.guaranteed_engine_cpu_setting_check" href="#tests.test_settings.guaranteed_engine_cpu_setting_check">guaranteed_engine_cpu_setting_check</a></code></li>
+<li><code><a title="tests.test_settings.init_longhorn_default_setting_configmap" href="#tests.test_settings.init_longhorn_default_setting_configmap">init_longhorn_default_setting_configmap</a></code></li>
+<li><code><a title="tests.test_settings.retry_setting_update" href="#tests.test_settings.retry_setting_update">retry_setting_update</a></code></li>
 <li><code><a title="tests.test_settings.test_instance_manager_cpu_reservation" href="#tests.test_settings.test_instance_manager_cpu_reservation">test_instance_manager_cpu_reservation</a></code></li>
 <li><code><a title="tests.test_settings.test_setting_backing_image_auto_cleanup" href="#tests.test_settings.test_setting_backing_image_auto_cleanup">test_setting_backing_image_auto_cleanup</a></code></li>
+<li><code><a title="tests.test_settings.test_setting_backup_target_update_via_configmap" href="#tests.test_settings.test_setting_backup_target_update_via_configmap">test_setting_backup_target_update_via_configmap</a></code></li>
 <li><code><a title="tests.test_settings.test_setting_concurrent_rebuild_limit" href="#tests.test_settings.test_setting_concurrent_rebuild_limit">test_setting_concurrent_rebuild_limit</a></code></li>
 <li><code><a title="tests.test_settings.test_setting_priority_class" href="#tests.test_settings.test_setting_priority_class">test_setting_priority_class</a></code></li>
+<li><code><a title="tests.test_settings.test_setting_replica_count_update_via_configmap" href="#tests.test_settings.test_setting_replica_count_update_via_configmap">test_setting_replica_count_update_via_configmap</a></code></li>
 <li><code><a title="tests.test_settings.test_setting_toleration" href="#tests.test_settings.test_setting_toleration">test_setting_toleration</a></code></li>
 <li><code><a title="tests.test_settings.test_setting_toleration_extra" href="#tests.test_settings.test_setting_toleration_extra">test_setting_toleration_extra</a></code></li>
+<li><code><a title="tests.test_settings.test_setting_update_with_invalid_value_via_configmap" href="#tests.test_settings.test_setting_update_with_invalid_value_via_configmap">test_setting_update_with_invalid_value_via_configmap</a></code></li>
+<li><code><a title="tests.test_settings.update_settings_via_configmap" href="#tests.test_settings.update_settings_via_configmap">update_settings_via_configmap</a></code></li>
+<li><code><a title="tests.test_settings.validate_settings" href="#tests.test_settings.validate_settings">validate_settings</a></code></li>
 <li><code><a title="tests.test_settings.wait_for_longhorn_node_ready" href="#tests.test_settings.wait_for_longhorn_node_ready">wait_for_longhorn_node_ready</a></code></li>
 <li><code><a title="tests.test_settings.wait_for_priority_class_update" href="#tests.test_settings.wait_for_priority_class_update">wait_for_priority_class_update</a></code></li>
+<li><code><a title="tests.test_settings.wait_for_setting_updated" href="#tests.test_settings.wait_for_setting_updated">wait_for_setting_updated</a></code></li>
 <li><code><a title="tests.test_settings.wait_for_toleration_update" href="#tests.test_settings.wait_for_toleration_update">wait_for_toleration_update</a></code></li>
 </ul>
 </li>
