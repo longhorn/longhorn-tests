@@ -603,30 +603,115 @@
   
 </aside>
 
+
 <main style="padding: 1%; width: 70%;">
-  <header class="homepage-header">
-    <h1>v1.1.2</h1>
-    
-  </header>
-  <div class="homepage-content">
-    
-  </div>
+  <h1 id="title">Test helm on Rancher deployed Windows Cluster</h1>
   <div>
-    <ul>
+    <article id="content">
+       <h2 id="related-issue">Related issue</h2>
+<p><a href="https://github.com/longhorn/longhorn/issues/4246">https://github.com/longhorn/longhorn/issues/4246</a></p>
+<h2 id="test-install">Test Install</h2>
+<p><strong>Given</strong> Rancher cluster.</p>
+<p><em>And</em> 3 new instances for the Windows cluster following <a href="https://rancher.com/docs/rancher/v2.6/en/cluster-provisioning/rke-clusters/windows-clusters/#architecture-requirements">Architecture Requirements</a>.</p>
+<p><em>And</em> docker installed on the 3 Windows cluster instances.</p>
+<p><em>And</em> <a href="https://rancher.com/docs/rancher/v2.6/en/cluster-provisioning/rke-clusters/windows-clusters/host-gateway-requirements/#disabling-private-ip-address-checks">Disabled Private IP Address Checks</a> for the 3 Windows cluster instances.</p>
+<p><em>And</em> Created new <code>Custom</code> Windows cluster with Rancher.</p>
+<blockquote>
+<p>Select <code>Flannel</code> for <code>Network Provider</code> <br>
+Enable <code>Windows Support</code></p>
+</blockquote>
+<p><em>And</em> Added the 3 nodes to the Rancher Windows cluster.</p>
+<blockquote>
+<p><a href="https://rancher.com/docs/rancher/v2.6/en/cluster-provisioning/rke-clusters/windows-clusters/#add-linux-master-node">Add Linux Master Node</a><br>
+<a href="https://rancher.com/docs/rancher/v2.6/en/cluster-provisioning/rke-clusters/windows-clusters/#add-linux-master-node">Add Linux Worker Node</a><br>
+<a href="https://rancher.com/docs/rancher/v2.6/en/cluster-provisioning/rke-clusters/windows-clusters/#add-a-windows-worker-node">Add Windows Worker Node</a></p>
+</blockquote>
+<p><strong>When</strong> helm install longhorn with <code>global.cattle.windowsCluster.enabled=true</code>.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>kubectl create namespace longhorn-system <span style="color:#f92672">&amp;&amp;</span> <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>helm install longhorn ./chart/ --namespace longhorn-system <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>  --set global.cattle.windowsCluster.enabled<span style="color:#f92672">=</span>true
+</span></span></code></pre></div><p><strong>Then</strong> All longhorn components should only run on the Linux worker node.</p>
+<p><em>And</em> All longhorn component should be <code>Running</code>.</p>
+<h2 id="test-basic-operation">Test Basic Operation</h2>
+<p><strong>Given</strong> Rancher deployed Windows cluster.</p>
+<p><em>And</em> Longhorn deployed and running.</p>
+<p><em>And</em> <code>Replica Node Level Soft Anti-Affinity</code> enabled.</p>
+<p><em>And</em> Snapshot recurring job in default group.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#f92672">apiVersion</span>: <span style="color:#ae81ff">longhorn.io/v1beta2</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">kind</span>: <span style="color:#ae81ff">RecurringJob</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">metadata</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">name</span>: <span style="color:#ae81ff">sample</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">namespace</span>: <span style="color:#ae81ff">longhorn-system</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">spec</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">concurrency</span>: <span style="color:#ae81ff">1</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">cron</span>: <span style="color:#e6db74">&#39;* * * * *&#39;</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">groups</span>:
+</span></span><span style="display:flex;"><span>  - <span style="color:#ae81ff">default</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">labels</span>: {}
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">name</span>: <span style="color:#ae81ff">sample</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">retain</span>: <span style="color:#ae81ff">1</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">task</span>: <span style="color:#ae81ff">snapshot</span>
+</span></span></code></pre></div><p><strong>When</strong> Create Pod with PVC.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#f92672">apiVersion</span>: <span style="color:#ae81ff">v1</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">kind</span>: <span style="color:#ae81ff">PersistentVolumeClaim</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">metadata</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">name</span>: <span style="color:#ae81ff">longhorn-volv-pvc</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">spec</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">accessModes</span>:
+</span></span><span style="display:flex;"><span>    - <span style="color:#ae81ff">ReadWriteOnce</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">storageClassName</span>: <span style="color:#ae81ff">longhorn</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">resources</span>:
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">requests</span>:
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">storage</span>: <span style="color:#ae81ff">1Gi</span>
+</span></span><span style="display:flex;"><span>---
+</span></span><span style="display:flex;"><span><span style="color:#f92672">apiVersion</span>: <span style="color:#ae81ff">v1</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">kind</span>: <span style="color:#ae81ff">Pod</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">metadata</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">name</span>: <span style="color:#ae81ff">volume-test</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">namespace</span>: <span style="color:#ae81ff">default</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">spec</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">nodeSelector</span>:
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">kubernetes.io/os</span>: <span style="color:#e6db74">&#34;linux&#34;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">node-role.kubernetes.io/worker</span>: <span style="color:#e6db74">&#34;true&#34;</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">restartPolicy</span>: <span style="color:#ae81ff">Always</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">tolerations</span>:
+</span></span><span style="display:flex;"><span>    - <span style="color:#f92672">effect</span>: <span style="color:#ae81ff">NoSchedule</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">key</span>: <span style="color:#ae81ff">cattle.io/os</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">operator</span>: <span style="color:#ae81ff">Equal</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">value</span>: <span style="color:#ae81ff">linux</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">containers</span>:
+</span></span><span style="display:flex;"><span>  - <span style="color:#f92672">name</span>: <span style="color:#ae81ff">volume-test</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">image</span>: <span style="color:#ae81ff">nginx:stable-alpine</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">imagePullPolicy</span>: <span style="color:#ae81ff">IfNotPresent</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">livenessProbe</span>:
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">exec</span>:
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">command</span>:
+</span></span><span style="display:flex;"><span>          - <span style="color:#ae81ff">ls</span>
+</span></span><span style="display:flex;"><span>          - <span style="color:#ae81ff">/data/lost+found</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">initialDelaySeconds</span>: <span style="color:#ae81ff">5</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">periodSeconds</span>: <span style="color:#ae81ff">5</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">volumeMounts</span>:
+</span></span><span style="display:flex;"><span>    - <span style="color:#f92672">name</span>: <span style="color:#ae81ff">volv</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">mountPath</span>: <span style="color:#ae81ff">/data</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">ports</span>:
+</span></span><span style="display:flex;"><span>    - <span style="color:#f92672">containerPort</span>: <span style="color:#ae81ff">80</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">volumes</span>:
+</span></span><span style="display:flex;"><span>  - <span style="color:#f92672">name</span>: <span style="color:#ae81ff">volv</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">persistentVolumeClaim</span>:
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">claimName</span>: <span style="color:#ae81ff">longhorn-volv-pvc</span>
+</span></span></code></pre></div><p><em>And</em> Write some data to the Pod.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>kubectl exec -it volume-test -- /bin/sh -c <span style="color:#e6db74">&#34;echo foo &gt; /data/bar &amp;&amp; cat /data/bar&#34;</span>
+</span></span></code></pre></div><p><strong>Then</strong> Volume snapshot should get created after the recurring job scheduled time.</p>
+<h2 id="test-uninstall">Test Uninstall</h2>
+<p><strong>Given</strong> Rancher deployed Windows cluster.</p>
+<p><em>And</em> Longhorn deployed and running.</p>
+<p><strong>When</strong> Helm uninstall longhorn.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>helm uninstall longhorn --namespace longhorn-system
+</span></span></code></pre></div><p><strong>Then</strong> Longhorn should uninstall successfully.</p>
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.2/delete-cronjob-for-detached-volumes/">Test CronJob For Volumes That Are Detached For A Long Time</a></li>
-  
-
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.2/full-ws-data-tranfer-when-no-updates/">Test Frontend Web-socket Data Transfer When Resource Not Updated</a></li>
-  
-
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.2/instance-manager-streaming-connection-recovery/">Test Instance Manager Streaming Connection Recovery</a></li>
-  
-
-</ul>
-
+    </article>
+  <a href="https://github.com/longhorn/longhorn-tests/edit/master/docs/content/manual/release-specific/v1.4.0/test-helm-install-on-rancher-deployed-windows-cluster.md" target="_blank" title="Edit on Github" style="font-size:smaller;float:right;padding-right:3%">[Edit]</a>
   </div>
-</main>
 
     
     

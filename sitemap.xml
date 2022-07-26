@@ -200,6 +200,8 @@
   </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.2/full-ws-data-tranfer-when-no-updates/</loc>
   </url><url>
+    <loc>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.4.0/test-helm-install-on-rancher-deployed-windows-cluster/</loc>
+  </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.3.0/test-helm-uninstall-different-namespace/</loc>
   </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.3.0/test-grpc-proxy/</loc>
