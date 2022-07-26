@@ -2478,6 +2478,7 @@ def test_node_eviction_soft_anti_affinity(client, core_api, csi_pv, pvc, pod_mak
     assert expect_md5sum == created_md5sum
 
 
+@pytest.mark.order(-2)
 def test_node_eviction_multiple_volume(client, core_api, csi_pv, pvc, pod_make, volume_name): # NOQA
     """
     Test node eviction (assuming this is a 3 nodes cluster)
