@@ -538,6 +538,21 @@ def test_backing_image_auto_resync(client, volume_name):  # NOQA
     5. Wait for the file state in the disk/on this node become failed.
     6. Wait for the file recovering automatically.
     7. Validate the volume.
+    &#34;&#34;&#34;
+
+
+@pytest.mark.skip(reason=&#34;TODO&#34;) # NOQA
+@pytest.mark.backing_image  # NOQA
+def test_backing_image_cleanup(client, volume_name):  # NOQA
+    &#34;&#34;&#34;
+    1. Create multiple backing image.
+    2. Create and attach multiple 3-replica volume using those backing image.
+    3. Wait for the attachment complete.
+    4. Delete the volumes then the backing images.
+    5. Verify all backing image manager pods will be terminated when the last
+       backing image is gone.
+    6. Repeat step1 to step5 for multiple times. Make sure each time the test
+       is using the same the backing image namings.
     &#34;&#34;&#34;</code></pre>
 </details>
 </section>
@@ -762,6 +777,39 @@ def test_backing_image_basic_operation(client, volume_name):  # NOQA
             client, volume_name, BACKING_IMAGE_NAME, bi_url)
         cleanup_all_volumes(client)
         cleanup_all_backing_images(client)</code></pre>
+</details>
+</dd>
+<dt id="tests.test_backing_image.test_backing_image_cleanup"><code class="name flex">
+<span>def <span class="ident">test_backing_image_cleanup</span></span>(<span>client, volume_name)</span>
+</code></dt>
+<dd>
+<div class="desc"><ol>
+<li>Create multiple backing image.</li>
+<li>Create and attach multiple 3-replica volume using those backing image.</li>
+<li>Wait for the attachment complete.</li>
+<li>Delete the volumes then the backing images.</li>
+<li>Verify all backing image manager pods will be terminated when the last
+backing image is gone.</li>
+<li>Repeat step1 to step5 for multiple times. Make sure each time the test
+is using the same the backing image namings.</li>
+</ol></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@pytest.mark.skip(reason=&#34;TODO&#34;) # NOQA
+@pytest.mark.backing_image  # NOQA
+def test_backing_image_cleanup(client, volume_name):  # NOQA
+    &#34;&#34;&#34;
+    1. Create multiple backing image.
+    2. Create and attach multiple 3-replica volume using those backing image.
+    3. Wait for the attachment complete.
+    4. Delete the volumes then the backing images.
+    5. Verify all backing image manager pods will be terminated when the last
+       backing image is gone.
+    6. Repeat step1 to step5 for multiple times. Make sure each time the test
+       is using the same the backing image namings.
+    &#34;&#34;&#34;</code></pre>
 </details>
 </dd>
 <dt id="tests.test_backing_image.test_backing_image_content"><code class="name flex">
@@ -1348,6 +1396,7 @@ def test_volume_iscsi_basic_with_backing_image(client, volume_name):  # NOQA
 <li><code><a title="tests.test_backing_image.backing_image_content_test" href="#tests.test_backing_image.backing_image_content_test">backing_image_content_test</a></code></li>
 <li><code><a title="tests.test_backing_image.test_backing_image_auto_resync" href="#tests.test_backing_image.test_backing_image_auto_resync">test_backing_image_auto_resync</a></code></li>
 <li><code><a title="tests.test_backing_image.test_backing_image_basic_operation" href="#tests.test_backing_image.test_backing_image_basic_operation">test_backing_image_basic_operation</a></code></li>
+<li><code><a title="tests.test_backing_image.test_backing_image_cleanup" href="#tests.test_backing_image.test_backing_image_cleanup">test_backing_image_cleanup</a></code></li>
 <li><code><a title="tests.test_backing_image.test_backing_image_content" href="#tests.test_backing_image.test_backing_image_content">test_backing_image_content</a></code></li>
 <li><code><a title="tests.test_backing_image.test_backing_image_with_disk_migration" href="#tests.test_backing_image.test_backing_image_with_disk_migration">test_backing_image_with_disk_migration</a></code></li>
 <li><code><a title="tests.test_backing_image.test_backup_labels_with_backing_image" href="#tests.test_backing_image.test_backup_labels_with_backing_image">test_backup_labels_with_backing_image</a></code></li>
