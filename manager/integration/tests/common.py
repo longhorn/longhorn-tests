@@ -297,6 +297,13 @@ def cleanup_volume(client, volume):
     assert len(volumes) == 0
 
 
+def cleanup_volume_by_name(client, vol_name):
+    volume = client.by_id_volume(vol_name)
+    volume.detach(hostId="")
+    client.delete(volume)
+    wait_for_volume_delete(client, vol_name)
+
+
 def cleanup_all_volumes(client):
     """
     Clean up all volumes
