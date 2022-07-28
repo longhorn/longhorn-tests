@@ -1725,6 +1725,11 @@ def wait_for_volume_replicas_running_on_hosts(client, volume_name, host_ids,
     return volume
 
 
+def is_replica_available(r):
+    return r is not None and r.running and not \
+        r.failedAt and r.mode == 'RW'
+
+
 def wait_for_volume_frontend_disabled(client, volume_name, state=True):
     for _ in range(RETRY_COUNTS):
         vol = client.by_id_volume(volume_name)
