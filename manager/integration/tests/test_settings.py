@@ -738,8 +738,13 @@ def test_setting_backing_image_auto_cleanup(client, core_api, volume_name):  # N
     update_setting(client, "backing-image-cleanup-wait-interval", "1")
     check_backing_image_disk_map_status(client, BACKING_IMAGE_NAME, 2, "ready")
 
-    backing_images_in_disk = os.listdir("/var/lib/longhorn/backing-images")
-    assert len(backing_images_in_disk) == 0
+    for i in range(RETRY_EXEC_COUNTS):
+        try:
+            backing_images_in_disk = os.listdir(
+                "/var/lib/longhorn/backing-images")
+            assert len(backing_images_in_disk) == 0
+        except Exception:
+            time.sleep(RETRY_INTERVAL)
 
     # Step 8
     for volume_name in volume_names:
