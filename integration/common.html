@@ -1857,6 +1857,11 @@ def wait_for_volume_replicas_running_on_hosts(client, volume_name, host_ids,
     return volume
 
 
+def is_replica_available(r):
+    return r is not None and r.running and not \
+        r.failedAt and r.mode == &#39;RW&#39;
+
+
 def wait_for_volume_frontend_disabled(client, volume_name, state=True):
     for _ in range(RETRY_COUNTS):
         vol = client.by_id_volume(volume_name)
@@ -8568,6 +8573,20 @@ greate than MAX_SUPPORT_BINDLE_NUMBER.</p>
     return s.startswith(&#34;s3://&#34;)</code></pre>
 </details>
 </dd>
+<dt id="tests.common.is_replica_available"><code class="name flex">
+<span>def <span class="ident">is_replica_available</span></span>(<span>r)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def is_replica_available(r):
+    return r is not None and r.running and not \
+        r.failedAt and r.mode == &#39;RW&#39;</code></pre>
+</details>
+</dd>
 <dt id="tests.common.iscsi_login"><code class="name flex">
 <span>def <span class="ident">iscsi_login</span></span>(<span>iscsi_ep)</span>
 </code></dt>
@@ -12882,6 +12901,7 @@ from the args and kwargs arguments, respectively.</p></div>
 <li><code><a title="tests.common.get_volume_running_replica_cnt" href="#tests.common.get_volume_running_replica_cnt">get_volume_running_replica_cnt</a></code></li>
 <li><code><a title="tests.common.is_backupTarget_nfs" href="#tests.common.is_backupTarget_nfs">is_backupTarget_nfs</a></code></li>
 <li><code><a title="tests.common.is_backupTarget_s3" href="#tests.common.is_backupTarget_s3">is_backupTarget_s3</a></code></li>
+<li><code><a title="tests.common.is_replica_available" href="#tests.common.is_replica_available">is_replica_available</a></code></li>
 <li><code><a title="tests.common.iscsi_login" href="#tests.common.iscsi_login">iscsi_login</a></code></li>
 <li><code><a title="tests.common.iscsi_logout" href="#tests.common.iscsi_logout">iscsi_logout</a></code></li>
 <li><code><a title="tests.common.json_string_go_to_python" href="#tests.common.json_string_go_to_python">json_string_go_to_python</a></code></li>

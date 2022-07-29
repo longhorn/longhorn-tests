@@ -64,6 +64,7 @@ from common import create_and_wait_pod
 from common import get_pod_data_md5sum
 from common import wait_for_volume_healthy
 from common import wait_for_volume_replica_count
+from common import is_replica_available
 from common import delete_and_wait_pod
 from common import wait_for_volume_detached
 from common import RETRY_COUNTS, RETRY_INTERVAL
@@ -2649,14 +2650,13 @@ def test_disk_eviction_with_node_level_soft_anti_affinity_disabled(client, # NOQ
 
     # Step 2
     nodes = client.list_node()
-    vol_name = common.generate_volume_name()
-    volume = client.create_volume(name=vol_name,
+    volume = client.create_volume(name=volume_name,
                                   size=SIZE, numberOfReplicas=len(nodes))
-    common.wait_for_volume_detached(client, vol_name)
+    common.wait_for_volume_detached(client, volume_name)
 
     lht_hostId = get_self_host_id()
     volume.attach(hostId=lht_hostId)
-    volume = common.wait_for_volume_healthy(client, vol_name)
+    volume = common.wait_for_volume_healthy(client, volume_name)
 
     # Step 3
     data = common.write_volume_random_data(volume)
@@ -2691,16 +2691,35 @@ def test_disk_eviction_with_node_level_soft_anti_affinity_disabled(client, # NOQ
             break
         time.sleep(common.RETRY_EXEC_INTERVAL)
     assert len(os.listdir(replica_path)) &gt; 0
+    volume = wait_for_volume_healthy(client, volume_name)
 
     # Step 7
     replica_count = 1
-    volume = client.by_id_volume(vol_name)
-    volume = volume.updateReplicaCount(replicaCount=replica_count)
-    volume = common.wait_for_volume_healthy(client, vol_name)
+    volume.updateReplicaCount(replicaCount=replica_count)
+    volume = wait_for_volume_healthy(client, volume_name)
 
-    for r in volume.replicas:
-        if r.hostId != lht_hostId:
-            volume.replicaRemove(name=r.name)
+    done = False
+    for i in range(RETRY_COUNTS):
+        other_replicas_deleted = True
+        new_replica_available = False
+        volume = client.by_id_volume(volume_name)
+        for r in volume.replicas:
+            if r.hostId != lht_hostId:
+                try:
+                    volume.replicaRemove(name=r.name)
+                except Exception:
+                    other_replicas_deleted = False
+                    break
+            else:
+                if r.diskPath == test_disk_path and is_replica_available(r):
+                    new_replica_available = True
+
+        if other_replicas_deleted and \
+                len(volume.replicas) == 1 and new_replica_available:
+            done = True
+            break
+        time.sleep(RETRY_INTERVAL)
+    assert done
 
     common.check_volume_data(volume, data)
 
@@ -3005,14 +3024,13 @@ Verify the data from the volume.</li>
 
     # Step 2
     nodes = client.list_node()
-    vol_name = common.generate_volume_name()
-    volume = client.create_volume(name=vol_name,
+    volume = client.create_volume(name=volume_name,
                                   size=SIZE, numberOfReplicas=len(nodes))
-    common.wait_for_volume_detached(client, vol_name)
+    common.wait_for_volume_detached(client, volume_name)
 
     lht_hostId = get_self_host_id()
     volume.attach(hostId=lht_hostId)
-    volume = common.wait_for_volume_healthy(client, vol_name)
+    volume = common.wait_for_volume_healthy(client, volume_name)
 
     # Step 3
     data = common.write_volume_random_data(volume)
@@ -3047,16 +3065,35 @@ Verify the data from the volume.</li>
             break
         time.sleep(common.RETRY_EXEC_INTERVAL)
     assert len(os.listdir(replica_path)) &gt; 0
+    volume = wait_for_volume_healthy(client, volume_name)
 
     # Step 7
     replica_count = 1
-    volume = client.by_id_volume(vol_name)
-    volume = volume.updateReplicaCount(replicaCount=replica_count)
-    volume = common.wait_for_volume_healthy(client, vol_name)
+    volume.updateReplicaCount(replicaCount=replica_count)
+    volume = wait_for_volume_healthy(client, volume_name)
 
-    for r in volume.replicas:
-        if r.hostId != lht_hostId:
-            volume.replicaRemove(name=r.name)
+    done = False
+    for i in range(RETRY_COUNTS):
+        other_replicas_deleted = True
+        new_replica_available = False
+        volume = client.by_id_volume(volume_name)
+        for r in volume.replicas:
+            if r.hostId != lht_hostId:
+                try:
+                    volume.replicaRemove(name=r.name)
+                except Exception:
+                    other_replicas_deleted = False
+                    break
+            else:
+                if r.diskPath == test_disk_path and is_replica_available(r):
+                    new_replica_available = True
+
+        if other_replicas_deleted and \
+                len(volume.replicas) == 1 and new_replica_available:
+            done = True
+            break
+        time.sleep(RETRY_INTERVAL)
+    assert done
 
     common.check_volume_data(volume, data)
 
