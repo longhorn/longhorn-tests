@@ -1838,7 +1838,12 @@ def test_engine_crash_for_dr_volume(set_random_backupstore, client, core_api, vo
     client.list_backupVolume()
     wait_for_volume_restoration_start(client, dr_volume_name, b2.name)
     crash_engine_process_with_sigkill(client, core_api, dr_volume_name)
-    wait_for_volume_detached(client, dr_volume_name)
+    # From https://github.com/longhorn/longhorn/issues/4309#issuecomment-1197897496 # NOQA
+    # The complete state transition would be like:
+    # detaching -> detached -> attaching -> attached -> restore -> detached .
+    # Now the state change too fast, script eventually caught final detach
+    # So temporaly comment out below line of code
+    # wait_for_volume_detached(client, dr_volume_name)
 
     # Check if the DR volume is auto reattached then continue
     # restoring data.
