@@ -28,7 +28,8 @@ from common import (  # NOQA
     SETTING_PRIORITY_CLASS,
     SETTING_DEFAULT_REPLICA_COUNT,
     SETTING_BACKUP_TARGET,
-    SIZE, RETRY_COUNTS, RETRY_INTERVAL, RETRY_INTERVAL_LONG,
+    SIZE, RETRY_COUNTS, RETRY_EXEC_COUNTS,
+    RETRY_INTERVAL, RETRY_INTERVAL_LONG,
     update_setting, BACKING_IMAGE_QCOW2_URL, BACKING_IMAGE_NAME,
     create_backing_image_with_matching_url, BACKING_IMAGE_EXT4_SIZE,
     check_backing_image_disk_map_status, wait_for_volume_delete,
@@ -730,8 +731,13 @@ def test_setting_backing_image_auto_cleanup(client, core_api, volume_name):  # N
     update_setting(client, "backing-image-cleanup-wait-interval", "1")
     check_backing_image_disk_map_status(client, BACKING_IMAGE_NAME, 2, "ready")
 
-    backing_images_in_disk = os.listdir("/var/lib/longhorn/backing-images")
-    assert len(backing_images_in_disk) == 0
+    for i in range(RETRY_EXEC_COUNTS):
+        try:
+            backing_images_in_disk = os.listdir(
+                "/var/lib/longhorn/backing-images")
+            assert len(backing_images_in_disk) == 0
+        except Exception:
+            time.sleep(RETRY_INTERVAL)
 
     # Step 8
     for volume_name in volume_names:
