@@ -766,8 +766,13 @@ def test_setting_backing_image_auto_cleanup(client, core_api, volume_name):  # N
     update_setting(client, &#34;backing-image-cleanup-wait-interval&#34;, &#34;1&#34;)
     check_backing_image_disk_map_status(client, BACKING_IMAGE_NAME, 2, &#34;ready&#34;)
 
-    backing_images_in_disk = os.listdir(&#34;/var/lib/longhorn/backing-images&#34;)
-    assert len(backing_images_in_disk) == 0
+    for i in range(RETRY_EXEC_COUNTS):
+        try:
+            backing_images_in_disk = os.listdir(
+                &#34;/var/lib/longhorn/backing-images&#34;)
+            assert len(backing_images_in_disk) == 0
+        except Exception:
+            time.sleep(RETRY_INTERVAL)
 
     # Step 8
     for volume_name in volume_names:
@@ -1684,8 +1689,13 @@ def test_setting_backing_image_auto_cleanup(client, core_api, volume_name):  # N
     update_setting(client, &#34;backing-image-cleanup-wait-interval&#34;, &#34;1&#34;)
     check_backing_image_disk_map_status(client, BACKING_IMAGE_NAME, 2, &#34;ready&#34;)
 
-    backing_images_in_disk = os.listdir(&#34;/var/lib/longhorn/backing-images&#34;)
-    assert len(backing_images_in_disk) == 0
+    for i in range(RETRY_EXEC_COUNTS):
+        try:
+            backing_images_in_disk = os.listdir(
+                &#34;/var/lib/longhorn/backing-images&#34;)
+            assert len(backing_images_in_disk) == 0
+        except Exception:
+            time.sleep(RETRY_INTERVAL)
 
     # Step 8
     for volume_name in volume_names:
