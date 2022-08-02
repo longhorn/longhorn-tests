@@ -4242,7 +4242,7 @@ def wait_for_instance_manager_desire_state(client, core_api, im_name,
                 continue
             # Report any other error
             else:
-                assert(not e)
+                assert (not e)
         if desire:
             if im.currentState == state.lower() and pod.status.phase == state:
                 break
