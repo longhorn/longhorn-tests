@@ -160,7 +160,12 @@ def engine_offline_upgrade_test(client, core_api, volume_name, backing_image="")
                                   numberOfReplicas=REPLICA_COUNT,
                                   backingImage=backing_image)
     volume = common.wait_for_volume_detached(client, volume_name)
-    default_img = wait_for_engine_image_ref_count(client, default_img_name, 1)
+
+    # expected refCount is equal to 1 volume + 1 engine + number of replicas
+    expect_ref_count = 2 + REPLICA_COUNT
+    default_img = wait_for_engine_image_ref_count(client,
+                                                  default_img_name,
+                                                  expect_ref_count)
 
     original_engine_image = default_img.image
 
@@ -183,7 +188,9 @@ def engine_offline_upgrade_test(client, core_api, volume_name, backing_image="")
     volume = wait_for_volume_current_image(client, volume_name,
                                            engine_upgrade_image)
     default_img = wait_for_engine_image_ref_count(client, default_img_name, 0)
-    new_img = wait_for_engine_image_ref_count(client, new_img_name, 1)
+    new_img = wait_for_engine_image_ref_count(client,
+                                              new_img_name,
+                                              expect_ref_count)
 
     # cannot delete a image in use
     with pytest.raises(Exception) as e:
@@ -214,7 +221,9 @@ def engine_offline_upgrade_test(client, core_api, volume_name, backing_image="")
     for replica in volume.replicas:
         assert replica.engineImage == original_engine_image
 
-    default_img = wait_for_engine_image_ref_count(client, default_img_name, 1)
+    default_img = wait_for_engine_image_ref_count(client,
+                                                  default_img_name,
+                                                  expect_ref_count)
     new_img = wait_for_engine_image_ref_count(client, new_img_name, 0)
 
     volume = volume.attach(hostId=host_id)
@@ -290,9 +299,15 @@ def engine_live_upgrade_test(client, core_api, volume_name, backing_image=""):  
     default_img_name = default_img.name
 
     client.create_volume(name=volume_name, size=SIZE,
-                         numberOfReplicas=2, backingImage=backing_image)
+                         numberOfReplicas=REPLICA_COUNT,
+                         backingImage=backing_image)
     volume = common.wait_for_volume_detached(client, volume_name)
-    wait_for_engine_image_ref_count(client, default_img_name, 1)
+
+    # ei refCount is equal to 1 volume + 1 engine and REPLICA_COUNT replicas
+    expected_ref_count = 2 + len(volume.replicas)
+    wait_for_engine_image_ref_count(client,
+                                    default_img_name,
+                                    expected_ref_count)
 
     assert volume.name == volume_name
     assert volume.backingImage == backing_image
@@ -323,7 +338,12 @@ def engine_live_upgrade_test(client, core_api, volume_name, backing_image=""):  
     check_volume_endpoint(volume)
 
     wait_for_engine_image_ref_count(client, default_img_name, 0)
-    wait_for_engine_image_ref_count(client, new_img_name, 1)
+
+    # ei refCount is equal to 1 volume + 1 engine and REPLICA_COUNT replicas
+    expected_ref_count = 2 + len(volume.replicas)
+    wait_for_engine_image_ref_count(client,
+                                    new_img_name,
+                                    expected_ref_count)
 
     count = 0
     # old replica may be in deletion process
@@ -367,7 +387,11 @@ def engine_live_upgrade_test(client, core_api, volume_name, backing_image=""):  
     assert engine.currentImage == original_engine_image
     check_volume_endpoint(volume)
 
-    wait_for_engine_image_ref_count(client, default_img_name, 1)
+    # ei refCount is equal to 1 volume + 1 engine and REPLICA_COUNT replicas
+    expected_ref_count = 2 + len(volume.replicas)
+    wait_for_engine_image_ref_count(client,
+                                    default_img_name,
+                                    expected_ref_count)
     new_img = wait_for_engine_image_ref_count(client, new_img_name, 0)
 
     assert volume.engineImage == original_engine_image
@@ -495,9 +519,15 @@ def engine_live_upgrade_rollback_test(client, core_api, volume_name, backing_ima
     default_img_name = default_img.name
 
     client.create_volume(name=volume_name, size=SIZE,
-                         numberOfReplicas=2, backingImage=backing_image)
+                         numberOfReplicas=REPLICA_COUNT,
+                         backingImage=backing_image)
     volume = common.wait_for_volume_detached(client, volume_name)
-    wait_for_engine_image_ref_count(client, default_img_name, 1)
+
+    # ei refCount is 1 volume + 1 engine + REPLICA_COUNT replicas
+    expected_ref_count = 2 + len(volume.replicas)
+    wait_for_engine_image_ref_count(client,
+                                    default_img_name,
+                                    expected_ref_count)
     assert volume.backingImage == backing_image
 
     original_engine_image = volume.engineImage
@@ -683,7 +713,10 @@ def test_engine_live_upgrade_with_intensive_data_writing(client, core_api, volum
     check_volume_endpoint(volume)
 
     wait_for_engine_image_ref_count(client, default_img_name, 0)
-    wait_for_engine_image_ref_count(client, new_img_name, 1)
+
+    # ei refCount is equal to 1 volume + 1 engine + the number of replicas
+    expected_ref_count = 2 + len(volume.replicas)
+    wait_for_engine_image_ref_count(client, new_img_name, expected_ref_count)
 
     volume_file_md5sum1 = get_pod_data_md5sum(
         core_api, pod_name, data_path1)
@@ -825,7 +858,13 @@ def test_engine_live_upgrade_while_replica_concurrent_rebuild(client, # NOQA
 
     default_img = common.get_default_engine_image(client)
     default_img_name = default_img.name
-    default_img = wait_for_engine_image_ref_count(client, default_img_name, 2)
+
+    # Total ei.refCount of the two volumes is
+    # 2 volumes + 2 engines + all replicas
+    expected_ref_count = 4 + len(volume1.replicas) + len(volume2.replicas)
+    default_img = wait_for_engine_image_ref_count(client,
+                                                  default_img_name,
+                                                  expected_ref_count)
     cli_v = default_img.cliAPIVersion
     cli_minv = default_img.cliAPIMinVersion
     ctl_v = default_img.controllerAPIVersion
@@ -904,8 +943,16 @@ def test_engine_live_upgrade_while_replica_concurrent_rebuild(client, # NOQA
     assert engine.engineImage == engine_upgrade_image
     wait_for_rebuild_complete(client, volume1_name)
 
-    wait_for_engine_image_ref_count(client, default_img_name, 1)
-    wait_for_engine_image_ref_count(client, new_img_name, 1)
+    # Total ei.refCount of one volumes is equal to
+    # 1 volumes + 1 engine + all replicas
+    expected_ref_count = 2 + len(volume1.replicas)
+    wait_for_engine_image_ref_count(client,
+                                    default_img_name,
+                                    expected_ref_count)
+    expected_ref_count = 2 + len(volume2.replicas)
+    wait_for_engine_image_ref_count(client,
+                                    new_img_name,
+                                    expected_ref_count)
 
     for replica in volume2.replicas:
         assert replica.engineImage == engine_upgrade_image
