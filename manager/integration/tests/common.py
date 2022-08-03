@@ -233,6 +233,13 @@ NODE_UPDATE_RETRY_INTERVAL = 6
 NODE_UPDATE_RETRY_COUNT = 30
 disk_being_syncing = "being syncing and please retry later"
 
+# customize the timeout for HDD
+disktype = os.environ['LONGHORN_DISK_TYPE']
+if disktype == "hdd":
+    RETRY_COUNTS *= 32
+    DEFAULT_DEPLOYMENT_TIMEOUT *= 32
+    STREAM_EXEC_TIMEOUT *= 32
+
 
 def load_k8s_config():
     c = Configuration()
@@ -4027,7 +4034,9 @@ def wait_for_volume_restoration_start(client, volume_name, backup_name,
 @pytest.fixture
 def make_deployment_with_pvc(request):
     def _generate_deployment_with_pvc_manifest(deployment_name, pvc_name, replicas=1): # NOQA
-        make_deployment_with_pvc.deployment_manifest = {
+        if not hasattr(make_deployment_with_pvc, 'deployment_manifests'):
+            make_deployment_with_pvc.deployment_manifests = []
+        make_deployment_with_pvc.deployment_manifests.append({
             "apiVersion": "apps/v1",
             "kind": "Deployment",
             "metadata": {
@@ -4073,18 +4082,19 @@ def make_deployment_with_pvc(request):
                   }
                }
             }
-        }
+        })
 
-        return make_deployment_with_pvc.deployment_manifest
+        return make_deployment_with_pvc.deployment_manifests[-1]
 
     def finalizer():
         apps_api = get_apps_api_client()
-        deployment_name = \
-            make_deployment_with_pvc.deployment_manifest["metadata"]["name"]
-        delete_and_wait_deployment(
-            apps_api,
-            deployment_name
-        )
+        for deployment_manifest in \
+                make_deployment_with_pvc.deployment_manifests:
+            deployment_name = deployment_manifest["metadata"]["name"]
+            delete_and_wait_deployment(
+                apps_api,
+                deployment_name
+            )
 
     request.addfinalizer(finalizer)
 
