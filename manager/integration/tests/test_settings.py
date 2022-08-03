@@ -852,7 +852,7 @@ def test_setting_concurrent_rebuild_limit(client, core_api, volume_name):  # NOQ
     # In a 2 minutes retry loop:
     # verify that volume 2 start rebuilding while volume 1 is still rebuilding
     concourent_build = False
-    for i in range(RETRY_EXEC_COUNTS):
+    for i in range(RETRY_COUNTS):
         volume1 = client.by_id_volume(volume1_name)
         volume2 = client.by_id_volume(volume2_name)
         try:
