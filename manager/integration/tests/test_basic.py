@@ -4312,3 +4312,41 @@ def snapshot_prune_and_coalesce_simultaneously(client, volume_name, backing_imag
     # Verify the data
     cksum_after = get_device_checksum(volume_endpoint)
     assert cksum_after == cksum_before
+
+
+@pytest.mark.skip(reason="TODO")  # NOQA
+def test_space_usage_for_rebuilding_only_volume():  # NOQA
+    """
+    Test the space usage of a volume with rebuilding only.
+
+    Prepare:
+    1. Create a 7Gi volume and attach to the node.
+    2. Make a filesystem then mount this volume.
+    3. Make this volume as a disk of the node, and disable the scheduling for
+       the default disk.
+
+    Case 1: the worst scenario
+    1. Create a new volume with 2Gi spec size.
+    2. Write 2Gi data (using `dd`) to the volume.
+    3. Take a snapshot then mark this snapshot as Removed.
+       (this snapshot won't be deleted immediately.)
+    4. Write 2Gi data (using `dd`) to the volume again.
+    5. Delete a random replica to trigger the rebuilding.
+    6. Write 2Gi data once the rebuilding is trigger (new replica is created).
+    7. Wait for the rebuilding complete. And verify the volume actual size
+       won't be greater than 3x of the volume spec size.
+    8. Delete the volume.
+
+    Case 2: the normal scenario
+    1. Create a new volume with 3Gi spec size.
+    2. Write 3Gi data (using `dd`) to the volume.
+    3. Take a snapshot then mark this snapshot as Removed.
+       (this snapshot won't be deleted immediately.)
+    4. Write 3Gi data (using `dd`) to the volume again.
+    5. Delete a random replica to trigger the rebuilding.
+    6. Wait for the rebuilding complete. And verify the volume actual size
+       won't be greater than 2x of the volume spec size.
+    7. Delete the volume.
+
+    """
+    pass

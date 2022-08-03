@@ -16,6 +16,12 @@ sudo yum install -y iscsi-initiator-utils nfs-utils nfs4-acl-tools
 sudo systemctl -q enable iscsid
 sudo systemctl start iscsid
 
+if [ -b "/dev/xvdh" ]; then
+  mkfs.ext4 -E nodiscard /dev/xvdh
+  mkdir /var/lib/longhorn
+  mount /dev/xvdh /var/lib/longhorn
+fi
+
 until (curl https://releases.rancher.com/install-docker/$${DOCKER_VERSION}.sh | sudo sh); do
   echo 'docker did not install correctly'
   sleep 2

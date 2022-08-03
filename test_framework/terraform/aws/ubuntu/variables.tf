@@ -105,3 +105,8 @@ variable "k8s_distro_version" {
     rke2: (default: v1.23.3+rke2r1)
   EOT
 }
+
+variable "use_hdd" {
+  type    = bool
+  default = false
+}

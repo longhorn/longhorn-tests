@@ -2,6 +2,7 @@ import time
 import pytest
 import os
 import subprocess
+import yaml
 
 from common import (  # NOQA
     get_longhorn_api_client, get_self_host_id,
@@ -17,6 +18,8 @@ from common import (  # NOQA
     client, core_api, settings_reset,
     apps_api, scheduling_api, priority_class, volume_name,
     get_engine_image_status_value,
+    create_volume, cleanup_volume_by_name,
+    Gi,
 
     LONGHORN_NAMESPACE,
     SETTING_TAINT_TOLERATION,
@@ -24,11 +27,19 @@ from common import (  # NOQA
     SETTING_GUARANTEED_ENGINE_MANAGER_CPU,
     SETTING_GUARANTEED_REPLICA_MANAGER_CPU,
     SETTING_PRIORITY_CLASS,
+    SETTING_DEFAULT_REPLICA_COUNT,
+    SETTING_BACKUP_TARGET,
     SIZE, RETRY_COUNTS, RETRY_INTERVAL, RETRY_INTERVAL_LONG,
     update_setting, BACKING_IMAGE_QCOW2_URL, BACKING_IMAGE_NAME,
     create_backing_image_with_matching_url, BACKING_IMAGE_EXT4_SIZE,
     check_backing_image_disk_map_status, wait_for_volume_delete,
     SETTING_REPLICA_NODE_SOFT_ANTI_AFFINITY, wait_for_node_update,
+    crash_replica_processes, wait_for_engine_image_ref_count,
+    get_volume_engine, wait_for_volume_current_image,
+    wait_for_rebuild_start, wait_for_rebuild_complete,
+    wait_for_volume_degraded, Gi, write_volume_dev_random_mb_data,
+    get_volume_endpoint, RETRY_EXEC_COUNTS, RETRY_SNAPSHOT_INTERVAL,
+    delete_replica_on_test_node
 )
 
 from test_infra import wait_for_node_up_longhorn
@@ -727,8 +738,13 @@ def test_setting_backing_image_auto_cleanup(client, core_api, volume_name):  # N
     update_setting(client, "backing-image-cleanup-wait-interval", "1")
     check_backing_image_disk_map_status(client, BACKING_IMAGE_NAME, 2, "ready")
 
-    backing_images_in_disk = os.listdir("/var/lib/longhorn/backing-images")
-    assert len(backing_images_in_disk) == 0
+    for i in range(RETRY_EXEC_COUNTS):
+        try:
+            backing_images_in_disk = os.listdir(
+                "/var/lib/longhorn/backing-images")
+            assert len(backing_images_in_disk) == 0
+        except Exception:
+            time.sleep(RETRY_INTERVAL)
 
     # Step 8
     for volume_name in volume_names:
@@ -739,8 +755,7 @@ def test_setting_backing_image_auto_cleanup(client, core_api, volume_name):  # N
     check_backing_image_disk_map_status(client, BACKING_IMAGE_NAME, 1, "ready")
 
 
-@pytest.mark.skip(reason="TODO")
-def test_setting_concurrent_rebuild_limit():  # NOQA
+def test_setting_concurrent_rebuild_limit(client, core_api, volume_name):  # NOQA
     """
     Test if setting Concurrent Replica Rebuild Per Node Limit works correctly.
 
@@ -777,14 +792,353 @@ def test_setting_concurrent_rebuild_limit():  # NOQA
     3. Delete one replica for volume 1 to trigger the rebuilding.
     4. Attach then detach volume 2. The attachment/detachment should succeed
        even if the rebuilding in volume 1 is still in progress.
-
-   Case 3 - the setting won't affect volume live upgrade:
-    1. Set `ConcurrentReplicaRebuildPerNodeLimit` to 1.
-    2. Deploy a compatible engine image and wait for ready.
-    3. Make volume 1 and volume 2 state attached and healthy.
-    4. Delete one replica for volume 1 to trigger the rebuilding.
-    5. Do live upgrade for volume 2. The upgrade should work fine
-       even if the rebuilding in volume 1 is still in progress.
-    (Not sure if we need to put this specific case as a separate test in
-     test_engine_upgrade.py)
    """
+    # Step 1-1
+    update_setting(client,
+                   "concurrent-replica-rebuild-per-node-limit",
+                   "1")
+
+    # Step 1-2
+    volume1_name = "test-vol-1"  # NOQA
+    volume1 = create_and_check_volume(client, volume1_name, size=str(4 * Gi))
+    volume1.attach(hostId=get_self_host_id())
+    volume1 = wait_for_volume_healthy(client, volume1_name)
+
+    volume2_name = "test-vol-2"  # NOQA
+    volume2 = create_and_check_volume(client, volume2_name, size=str(4 * Gi))
+    volume2.attach(hostId=get_self_host_id())
+    volume2 = wait_for_volume_healthy(client, volume2_name)
+
+    # Step 1-3
+    volume1_endpoint = get_volume_endpoint(volume1)
+    volume2_endpoint = get_volume_endpoint(volume2)
+    write_volume_dev_random_mb_data(volume1_endpoint,
+                                    1, 3500)
+    write_volume_dev_random_mb_data(volume2_endpoint,
+                                    1, 3500)
+
+    # Step 1-4, 1-5
+    delete_replica_on_test_node(client, volume1_name)
+    wait_for_rebuild_start(client, volume1_name)
+    delete_replica_on_test_node(client, volume2_name)
+
+    for i in range(RETRY_COUNTS):
+        volume1 = client.by_id_volume(volume1_name)
+        volume2 = client.by_id_volume(volume2_name)
+
+        if volume1.rebuildStatus == []:
+            break
+
+        assert volume1.rebuildStatus[0].state == "in_progress"
+        assert volume2.rebuildStatus == []
+
+        time.sleep(RETRY_INTERVAL)
+
+    wait_for_rebuild_complete(client, volume1_name)
+    wait_for_rebuild_start(client, volume2_name)
+    wait_for_rebuild_complete(client, volume2_name)
+
+    # Step 1-6
+    wait_for_volume_healthy(client, volume1_name)
+    wait_for_volume_healthy(client, volume2_name)
+
+    # Step 1-7
+    delete_replica_on_test_node(client, volume1_name)
+    delete_replica_on_test_node(client, volume2_name)
+    update_setting(client,
+                   "concurrent-replica-rebuild-per-node-limit",
+                   "2")
+
+    # In a 2 minutes retry loop:
+    # verify that volume 2 start rebuilding while volume 1 is still rebuilding
+    concourent_build = False
+    for i in range(RETRY_COUNTS):
+        volume1 = client.by_id_volume(volume1_name)
+        volume2 = client.by_id_volume(volume2_name)
+        try:
+            if volume1.rebuildStatus[0].state == "in_progress" and \
+                    volume2.rebuildStatus[0].state == "in_progress":
+                concourent_build = True
+                break
+        except: # NOQA
+            pass
+        time.sleep(RETRY_SNAPSHOT_INTERVAL)
+    assert concourent_build is True
+
+    # Step 1-8
+    wait_for_rebuild_complete(client, volume1_name)
+    wait_for_rebuild_complete(client, volume2_name)
+
+    # Step 1-9
+    update_setting(client,
+                   "concurrent-replica-rebuild-per-node-limit",
+                   "1")
+
+    # Step 1-10
+    delete_replica_on_test_node(client, volume1_name)
+    wait_for_rebuild_start(client, volume1_name)
+    volume1 = client.by_id_volume(volume1_name)
+    current_node = get_self_host_id()
+    replicas = []
+    for r in volume1.replicas:
+        if r["hostId"] == current_node:
+            replicas.append(r)
+
+    assert len(replicas) > 0
+    crash_replica_processes(client, core_api, volume1_name, replicas)
+    delete_replica_on_test_node(client, volume2_name)
+
+    # While volume 2 is rebuilding, verify that volume 1 is not
+    # rebuilding and stuck in degrading state
+    wait_for_rebuild_start(client, volume2_name)
+    for i in range(RETRY_COUNTS):
+        volume1 = client.by_id_volume(volume1_name)
+        volume2 = client.by_id_volume(volume2_name)
+
+        if volume2.rebuildStatus == []:
+            break
+
+        assert volume2.rebuildStatus[0].state == "in_progress"
+        assert volume1.rebuildStatus == []
+
+        time.sleep(RETRY_INTERVAL)
+
+    wait_for_rebuild_complete(client, volume2_name)
+    wait_for_rebuild_start(client, volume1_name)
+    wait_for_rebuild_complete(client, volume1_name)
+
+    # Step 2-1
+    # Step 2-2
+    wait_for_volume_healthy(client, volume1_name)
+    wait_for_volume_healthy(client, volume2_name)
+
+    volume2 = client.by_id_volume(volume2_name)
+    lht_host_id = get_self_host_id()
+    volume2.detach(hostId=lht_host_id)
+
+    # Step 2-2
+    delete_replica_on_test_node(client, volume1_name)
+    wait_for_rebuild_start(client, volume1_name)
+
+    # Step 2-3
+    volume2 = client.by_id_volume(volume2_name)
+    volume2.attach(hostId=lht_host_id)
+
+    # In a 2 minutes retry loop:
+    # verify that we can see the case: volume2 becomes healthy while
+    # volume1 is rebuilding
+    expect_case = False
+    for i in range(RETRY_COUNTS):
+        volume1 = client.by_id_volume(volume1_name)
+        volume2 = client.by_id_volume(volume2_name)
+
+        try:
+            if volume1.rebuildStatus[0].state == "in_progress" and \
+                    volume2["robustness"] == "healthy":
+                expect_case = True
+                break
+        except: # NOQA
+            pass
+        time.sleep(RETRY_INTERVAL)
+    assert expect_case is True
+
+    wait_for_volume_healthy(client, volume1_name)
+    volume2.detach(hostId=lht_host_id)
+    wait_for_volume_detached(client, volume2_name)
+
+    volume2.attach(hostId=lht_host_id)
+    wait_for_volume_healthy(client, volume2_name)
+
+
+def config_map_with_value(configmap_name, setting_names, setting_values):
+    setting = {}
+    num_settings = len(setting_names)
+    if num_settings > 0:
+        for i in range(num_settings):
+            setting.update({setting_names[i]: setting_values[i]})
+    return {
+        "apiVersion": "v1",
+        "kind": "ConfigMap",
+        "metadata": {
+            "name": configmap_name,
+        },
+        "data": {
+            "default-setting.yaml": yaml.dump(setting),
+        }
+    }
+
+
+def wait_for_setting_updated(client, name, expected_value):  # NOQA
+    for _ in range(RETRY_COUNTS):
+        setting = client.by_id_setting(name)
+        if setting.value == expected_value:
+            return True
+        time.sleep(RETRY_INTERVAL)
+    return False
+
+
+def retry_setting_update(client, setting_name, setting_value):  # NOQA
+    for i in range(RETRY_COUNTS):
+        try:
+            update_setting(client, setting_name, setting_value)
+        except Exception as e:
+            if i < RETRY_COUNTS:
+                time.sleep(RETRY_INTERVAL)
+                continue
+            print(e)
+            raise
+        else:
+            break
+
+
+def init_longhorn_default_setting_configmap(core_api, client): # NOQA
+    core_api.delete_namespaced_config_map(name="longhorn-default-setting",
+                                          namespace='longhorn-system')
+
+    configmap_body = config_map_with_value("longhorn-default-setting", [], [])
+    core_api.create_namespaced_config_map(body=configmap_body,
+                                          namespace='longhorn-system')
+
+
+def update_settings_via_configmap(core_api, client, setting_names, setting_values, request):  # NOQA
+    configmap_body = config_map_with_value("longhorn-default-setting",
+                                           setting_names,
+                                           setting_values)
+    core_api.patch_namespaced_config_map(name="longhorn-default-setting",
+                                         namespace='longhorn-system',
+                                         body=configmap_body)
+
+    def reset_default_settings():
+        configmap_body = config_map_with_value("longhorn-default-setting",
+                                               [SETTING_DEFAULT_REPLICA_COUNT,
+                                                SETTING_BACKUP_TARGET,
+                                                SETTING_TAINT_TOLERATION],
+                                               ["3",
+                                                "",
+                                                ""])
+        core_api.patch_namespaced_config_map(name="longhorn-default-setting",
+                                             namespace='longhorn-system',
+                                             body=configmap_body)
+    request.addfinalizer(reset_default_settings)
+
+
+def validate_settings(core_api, client, setting_names, setting_values):  # NOQA
+    num_settings = len(setting_names)
+    for i in range(num_settings):
+        name = setting_names[i]
+        value = setting_values[i]
+        assert wait_for_setting_updated(client, name, value)
+
+
+def test_setting_replica_count_update_via_configmap(core_api, request):  # NOQA
+    """
+    Test the default-replica-count setting via configmap
+    1. Get default-replica-count value
+    2. Initialize longhorn-default-setting configmap
+    3. Verify default-replica-count is not changed
+    4. Update longhorn-default-setting configmap with a new
+       default-replica-count value
+    5. Verify the updated settings
+    6. Update default-replica-count setting CR with the old value
+    """
+
+    # Step 1
+    client = get_longhorn_api_client()  # NOQA
+    old_setting = client.by_id_setting(SETTING_DEFAULT_REPLICA_COUNT)
+
+    # Step 2
+    init_longhorn_default_setting_configmap(core_api, client)
+
+    # Step 3
+    assert wait_for_setting_updated(client,
+                                    SETTING_DEFAULT_REPLICA_COUNT,
+                                    old_setting.value)
+
+    # Step 4
+    replica_count = "1"
+    update_settings_via_configmap(core_api,
+                                  client,
+                                  [SETTING_DEFAULT_REPLICA_COUNT],
+                                  [replica_count],
+                                  request)
+    # Step 5
+    validate_settings(core_api,
+                      client,
+                      [SETTING_DEFAULT_REPLICA_COUNT],
+                      [replica_count])
+    # Step 6
+    retry_setting_update(client,
+                         SETTING_DEFAULT_REPLICA_COUNT,
+                         old_setting.definition.default)
+
+
+def test_setting_backup_target_update_via_configmap(core_api, request):  # NOQA
+    """
+    Test the backup target setting via configmap
+    1. Initialize longhorn-default-setting configmap
+    2. Update longhorn-default-setting configmap with a new backup-target
+       value
+    3. Verify the updated settings
+    """
+
+    # Step 1
+    client = get_longhorn_api_client()  # NOQA
+    init_longhorn_default_setting_configmap(core_api, client)
+
+    # Step 2
+    target = "s3://backupbucket-invalid@us-east-1/backupstore"
+    update_settings_via_configmap(core_api,
+                                  client,
+                                  [SETTING_BACKUP_TARGET],
+                                  [target],
+                                  request)
+    # Step 3
+    validate_settings(core_api,
+                      client,
+                      [SETTING_BACKUP_TARGET],
+                      [target])
+
+
+def test_setting_update_with_invalid_value_via_configmap(core_api, request):  # NOQA
+    """
+    Test the default settings update with invalid value via configmap
+    1. Create an attached volume
+    2. Initialize longhorn-default-setting configmap containing
+       valid and invalid settings
+    3. Update longhorn-default-setting configmap with invalid settings.
+       The invalid settings SETTING_TAINT_TOLERATION will be ingored
+       when there is an attached volume.
+    4. Validate the default settings values.
+    """
+
+    # Step 1
+    client = get_longhorn_api_client() # NOQA
+    lht_hostId = get_self_host_id()
+
+    vol_name = generate_volume_name()
+    volume = create_volume(client, vol_name, str(Gi), lht_hostId, 3)
+
+    volume.attach(hostId=lht_hostId)
+    volume = wait_for_volume_healthy(client, vol_name)
+
+    # Step 2
+    init_longhorn_default_setting_configmap(core_api, client)
+
+    # Step 3
+    target = "s3://backupbucket-invalid@us-east-1/backupstore"
+    update_settings_via_configmap(core_api,
+                                  client,
+                                  [SETTING_BACKUP_TARGET,
+                                   SETTING_TAINT_TOLERATION],
+                                  [target,
+                                   "key1=value1:NoSchedule"],
+                                  request)
+    # Step 4
+    validate_settings(core_api,
+                      client,
+                      [SETTING_BACKUP_TARGET,
+                       SETTING_TAINT_TOLERATION],
+                      [target,
+                       ""])
+
+    cleanup_volume_by_name(client, vol_name)

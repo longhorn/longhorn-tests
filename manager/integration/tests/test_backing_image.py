@@ -471,7 +471,7 @@ def test_exporting_backing_image_from_volume(client, volume_name):  # NOQA
         client, volume_name=volume2_name, size=str(1 * Gi),
         backing_image=backing_img1["name"])
     volume2 = volume2.attach(hostId=hostId)
-    volume2 = wait_for_volume_healthy(client, volume2_name)
+    volume2 = wait_for_volume_healthy(client, volume2_name, 300)
 
     # Step5, 6
     data2 = write_volume_random_data(volume2)
@@ -493,7 +493,7 @@ def test_exporting_backing_image_from_volume(client, volume_name):  # NOQA
         client, volume_name=volume3_name, size=str(1 * Gi),
         backing_image=backing_img2["name"])
     volume3 = volume3.attach(hostId=hostId)
-    volume3 = wait_for_volume_healthy(client, volume3_name)
+    volume3 = wait_for_volume_healthy(client, volume3_name, 300)
 
     # Step10
     check_volume_data(volume3, data2)
@@ -510,4 +510,19 @@ def test_backing_image_auto_resync(client, volume_name):  # NOQA
     5. Wait for the file state in the disk/on this node become failed.
     6. Wait for the file recovering automatically.
     7. Validate the volume.
+    """
+
+
+@pytest.mark.skip(reason="TODO") # NOQA
+@pytest.mark.backing_image  # NOQA
+def test_backing_image_cleanup(client, volume_name):  # NOQA
+    """
+    1. Create multiple backing image.
+    2. Create and attach multiple 3-replica volume using those backing image.
+    3. Wait for the attachment complete.
+    4. Delete the volumes then the backing images.
+    5. Verify all backing image manager pods will be terminated when the last
+       backing image is gone.
+    6. Repeat step1 to step5 for multiple times. Make sure each time the test
+       is using the same the backing image namings.
     """

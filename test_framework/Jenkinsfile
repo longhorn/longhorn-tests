@@ -7,67 +7,121 @@ def SELINUX_MODE = params.SELINUX_MODE ? "SELINUX_MODE=${params.SELINUX_MODE}" :
 
 def CREDS_ID = JOB_BASE_NAME == "longhorn-tests-regression" ? "AWS_CREDS_RANCHER_QA" : "AWS_CREDS"
 
+// parameters for air gap installation
+def AIR_GAP_INSTALLATION = params.AIR_GAP_INSTALLATION ? params.AIR_GAP_INSTALLATION : false
+def LONGHORN_INSTALL_VERSION = params.LONGHORN_INSTALL_VERSION ? params.LONGHORN_INSTALL_VERSION : "master"
+def LONGHORN_INSTALL_METHOD = params.LONGHORN_INSTALL_METHOD ? params.LONGHORN_INSTALL_METHOD : "custom"
+def REGISTRY_URL
+def REGISTRY_USERNAME
+def REGISTRY_PASSWORD
+
+// parameter for hdd test
+def USE_HDD = params.USE_HDD ? params.USE_HDD : false
+
 node {
 
-	if(params.SEND_SLACK_NOTIFICATION){
-		notifyBuild('STARTED', BUILD_TRIGGER_BY, params.NOTIFY_SLACK_CHANNEL)
-	}
+    withCredentials([
+        usernamePassword(credentialsId: CREDS_ID, passwordVariable: 'AWS_SECRET_KEY', usernameVariable: 'AWS_ACCESS_KEY'),
+        string(credentialsId: 'DO_CREDS', variable: 'DO_TOKEN')
+    ]) {
 
-    checkout scm
-
-    withCredentials([usernamePassword(credentialsId: CREDS_ID, passwordVariable: 'AWS_SECRET_KEY', usernameVariable: 'AWS_ACCESS_KEY')]) {
-        stage('build') {
-
-           if(JOB_BASE_NAME == "longhorn-tests-regression") {
-               manager.addShortText(BUILD_TRIGGER_BY.replace("\nStarted by user ", ""), "grey", "white", "0px", "white")
-           }
-
-            echo "Using credentials: $CREDS_ID"
-
-            sh "test_framework/scripts/build.sh"
-
-            sh """ docker run -itd --name ${JOB_BASE_NAME}-${BUILD_NUMBER} \
-                                   --env CUSTOM_LONGHORN_ENGINE_IMAGE=${CUSTOM_LONGHORN_ENGINE_IMAGE} \
-                                   --env CUSTOM_LONGHORN_INSTANCE_MANAGER_IMAGE=${CUSTOM_LONGHORN_INSTANCE_MANAGER_IMAGE} \
-                                   --env CUSTOM_LONGHORN_MANAGER_IMAGE=${CUSTOM_LONGHORN_MANAGER_IMAGE} \
-                                   --env CUSTOM_LONGHORN_SHARE_MANAGER_IMAGE=${CUSTOM_LONGHORN_SHARE_MANAGER_IMAGE} \
-                                   --env LONGHORN_TESTS_CUSTOM_IMAGE=${LONGHORN_TESTS_CUSTOM_IMAGE} \
-                                   --env DISTRO=${DISTRO} \
-                                   --env LONGHORN_MANAGER_REPO_URI=${LONGHORN_MANAGER_REPO_URI} \
-                                   --env LONGHORN_MANAGER_BRANCH=${LONGHORN_MANAGER_BRANCH} \
-                                   --env LONGHORN_STABLE_VERSION=${LONGHORN_STABLE_VERSION} \
-                                   --env LONGHORN_TEST_CLOUDPROVIDER=${LONGHORN_TEST_CLOUDPROVIDER} \
-                                   --env LONGHORN_UPGRADE_TEST=${LONGHORN_UPGRADE_TEST} \
-                                   --env PYTEST_CUSTOM_OPTIONS="${PYTEST_CUSTOM_OPTIONS}" \
-                                   --env BACKUP_STORE_TYPE="${BACKUP_STORE_TYPE}" \
-                                   --env TF_VAR_arch=${ARCH} \
-                                   --env TF_VAR_k8s_distro_name=${K8S_DISTRO_NAME} \
-                                   --env TF_VAR_k8s_distro_version=${K8S_DISTRO_VERSION} \
-                                   --env TF_VAR_aws_availability_zone=${AWS_AVAILABILITY_ZONE} \
-                                   --env TF_VAR_aws_region=${AWS_REGION} \
-                                   --env TF_VAR_os_distro_version=${DISTRO_VERSION} \
-                                   --env TF_VAR_do_token=${env.TF_VAR_do_token} \
-                                   --env TF_VAR_lh_aws_access_key=${AWS_ACCESS_KEY} \
-                                   --env TF_VAR_lh_aws_instance_name_controlplane="${JOB_BASE_NAME}-ctrl" \
-                                   --env TF_VAR_lh_aws_instance_name_worker="${JOB_BASE_NAME}-wrk" \
-                                   --env TF_VAR_lh_aws_instance_type_controlplane=${CONTROLPLANE_INSTANCE_TYPE} \
-                                   --env TF_VAR_lh_aws_instance_type_worker=${WORKER_INSTANCE_TYPE}\
-                                   --env TF_VAR_lh_aws_secret_key=${AWS_SECRET_KEY} \
-                                   --env TF_VAR_tf_workspace=${TF_VAR_tf_workspace} \
-                                   --env TF_VAR_tf_selinux_mode=${SELINUX_MODE} \
-                                   ${imageName}
-            """
+        if (params.SEND_SLACK_NOTIFICATION) {
+            notifyBuild('STARTED', BUILD_TRIGGER_BY, params.NOTIFY_SLACK_CHANNEL)
         }
 
+        checkout scm
+
         try {
+
+            if (params.AIR_GAP_INSTALLATION) {
+
+                stage('airgap build') {
+                    sh "airgap/scripts/build.sh"
+                    sh """ docker run -itd --name airgap-${JOB_BASE_NAME}-${BUILD_NUMBER} \
+                                           --env TF_VAR_longhorn_version=${LONGHORN_INSTALL_VERSION} \
+                                           --env TF_VAR_do_token=${DO_TOKEN} \
+                                           --env TF_VAR_aws_access_key=${AWS_ACCESS_KEY} \
+                                           --env TF_VAR_aws_secret_key=${AWS_SECRET_KEY} \
+                                           airgap-${JOB_BASE_NAME}-${BUILD_NUMBER}
+                    """
+                }
+
+                stage ('airgap setup') {
+                    sh "docker exec airgap-${JOB_BASE_NAME}-${BUILD_NUMBER} ./airgap/scripts/terraform-setup.sh"
+                    REGISTRY_URL = sh (
+                        script: "docker exec airgap-${JOB_BASE_NAME}-${BUILD_NUMBER} terraform -chdir=./airgap/terraform output -raw registry_url",
+                        returnStdout: true
+                    )
+                    println REGISTRY_URL
+                    REGISTRY_USERNAME = sh (
+                        script: "docker exec airgap-${JOB_BASE_NAME}-${BUILD_NUMBER} terraform -chdir=./airgap/terraform output -raw registry_username",
+                        returnStdout: true
+                    )
+                    REGISTRY_PASSWORD = sh (
+                        script: "docker exec airgap-${JOB_BASE_NAME}-${BUILD_NUMBER} terraform -chdir=./airgap/terraform output -raw registry_password",
+                        returnStdout: true
+                    )
+                }
+
+            }
+
+            stage('build') {
+
+                if(JOB_BASE_NAME == "longhorn-tests-regression") {
+                    manager.addShortText(BUILD_TRIGGER_BY.replace("\nStarted by user ", ""), "grey", "white", "0px", "white")
+                }
+
+                echo "Using credentials: $CREDS_ID"
+
+                sh "test_framework/scripts/build.sh"
+                sh """ docker run -itd --name ${JOB_BASE_NAME}-${BUILD_NUMBER} \
+                                       --env AIR_GAP_INSTALLATION=${AIR_GAP_INSTALLATION} \
+                                       --env REGISTRY_URL=${REGISTRY_URL} \
+                                       --env REGISTRY_USERNAME=${REGISTRY_USERNAME} \
+                                       --env REGISTRY_PASSWORD=${REGISTRY_PASSWORD} \
+                                       --env LONGHORN_INSTALL_VERSION=${LONGHORN_INSTALL_VERSION} \
+                                       --env LONGHORN_INSTALL_METHOD=${LONGHORN_INSTALL_METHOD} \
+                                       --env CUSTOM_LONGHORN_ENGINE_IMAGE=${CUSTOM_LONGHORN_ENGINE_IMAGE} \
+                                       --env CUSTOM_LONGHORN_INSTANCE_MANAGER_IMAGE=${CUSTOM_LONGHORN_INSTANCE_MANAGER_IMAGE} \
+                                       --env CUSTOM_LONGHORN_MANAGER_IMAGE=${CUSTOM_LONGHORN_MANAGER_IMAGE} \
+                                       --env CUSTOM_LONGHORN_SHARE_MANAGER_IMAGE=${CUSTOM_LONGHORN_SHARE_MANAGER_IMAGE} \
+                                       --env LONGHORN_TESTS_CUSTOM_IMAGE=${LONGHORN_TESTS_CUSTOM_IMAGE} \
+                                       --env DISTRO=${DISTRO} \
+                                       --env LONGHORN_MANAGER_REPO_URI=${LONGHORN_MANAGER_REPO_URI} \
+                                       --env LONGHORN_MANAGER_BRANCH=${LONGHORN_MANAGER_BRANCH} \
+                                       --env LONGHORN_STABLE_VERSION=${LONGHORN_STABLE_VERSION} \
+                                       --env LONGHORN_TEST_CLOUDPROVIDER=${LONGHORN_TEST_CLOUDPROVIDER} \
+                                       --env LONGHORN_UPGRADE_TEST=${LONGHORN_UPGRADE_TEST} \
+                                       --env PYTEST_CUSTOM_OPTIONS="${PYTEST_CUSTOM_OPTIONS}" \
+                                       --env BACKUP_STORE_TYPE="${BACKUP_STORE_TYPE}" \
+                                       --env TF_VAR_use_hdd=${USE_HDD} \
+                                       --env TF_VAR_arch=${ARCH} \
+                                       --env TF_VAR_k8s_distro_name=${K8S_DISTRO_NAME} \
+                                       --env TF_VAR_k8s_distro_version=${K8S_DISTRO_VERSION} \
+                                       --env TF_VAR_aws_availability_zone=${AWS_AVAILABILITY_ZONE} \
+                                       --env TF_VAR_aws_region=${AWS_REGION} \
+                                       --env TF_VAR_os_distro_version=${DISTRO_VERSION} \
+                                       --env TF_VAR_do_token=${env.TF_VAR_do_token} \
+                                       --env TF_VAR_lh_aws_access_key=${AWS_ACCESS_KEY} \
+                                       --env TF_VAR_lh_aws_instance_name_controlplane="${JOB_BASE_NAME}-ctrl" \
+                                       --env TF_VAR_lh_aws_instance_name_worker="${JOB_BASE_NAME}-wrk" \
+                                       --env TF_VAR_lh_aws_instance_type_controlplane=${CONTROLPLANE_INSTANCE_TYPE} \
+                                       --env TF_VAR_lh_aws_instance_type_worker=${WORKER_INSTANCE_TYPE}\
+                                       --env TF_VAR_lh_aws_secret_key=${AWS_SECRET_KEY} \
+                                       --env TF_VAR_tf_workspace=${TF_VAR_tf_workspace} \
+                                       --env TF_VAR_tf_selinux_mode=${SELINUX_MODE} \
+                                       ${imageName}
+                """
+            }
+
             timeout(60) {
                 stage ('terraform') {
-                    sh  " docker exec ${JOB_BASE_NAME}-${BUILD_NUMBER} ${TF_VAR_tf_workspace}/scripts/terraform-setup.sh"
+                    sh "docker exec ${JOB_BASE_NAME}-${BUILD_NUMBER} ${TF_VAR_tf_workspace}/scripts/terraform-setup.sh"
                 }
 			}
 
             stage ('longhorn setup & tests') {
-                sh  " docker exec ${JOB_BASE_NAME}-${BUILD_NUMBER} ${TF_VAR_tf_workspace}/scripts/longhorn-setup.sh"
+                sh "docker exec ${JOB_BASE_NAME}-${BUILD_NUMBER} ${TF_VAR_tf_workspace}/scripts/longhorn-setup.sh"
             }
 
             stage ('download support bundle') {
@@ -87,41 +141,53 @@ node {
                     summary = junit 'longhorn-test-junit-report.xml'
                 }
 
-                sh 'docker pull ${CUSTOM_LONGHORN_MANAGER_IMAGE}'
-                LONGHORN_MANAGER_VERSION = sh (
-                    script: "docker inspect --format '{{ index .Config.Labels \"org.opencontainers.image.revision\" }}' ${CUSTOM_LONGHORN_MANAGER_IMAGE}",
-                    returnStdout: true
-                )
-                sh 'docker pull ${CUSTOM_LONGHORN_ENGINE_IMAGE}'
-                LONGHORN_ENGINE_VERSION = sh (
-                    script: "docker inspect --format '{{ index .Config.Labels \"org.opencontainers.image.revision\" }}' ${CUSTOM_LONGHORN_ENGINE_IMAGE}",
-                    returnStdout: true
-                )
-                manager.createSummary("info.gif").appendText("<p>longhorn-manager version: $LONGHORN_MANAGER_VERSION</p><p>longhorn-engine version: $LONGHORN_ENGINE_VERSION</p>", false, false, false, "black")
+                if(LONGHORN_INSTALL_METHOD == "custom") {
+                    sh 'docker pull ${CUSTOM_LONGHORN_MANAGER_IMAGE}'
+                    LONGHORN_MANAGER_VERSION = sh (
+                        script: "docker inspect --format '{{ index .Config.Labels \"org.opencontainers.image.revision\" }}' ${CUSTOM_LONGHORN_MANAGER_IMAGE}",
+                        returnStdout: true
+                    )
+                    sh 'docker pull ${CUSTOM_LONGHORN_ENGINE_IMAGE}'
+                    LONGHORN_ENGINE_VERSION = sh (
+                        script: "docker inspect --format '{{ index .Config.Labels \"org.opencontainers.image.revision\" }}' ${CUSTOM_LONGHORN_ENGINE_IMAGE}",
+                        returnStdout: true
+                    )
+                    manager.createSummary("info.gif").appendText("<p>longhorn-manager version: $LONGHORN_MANAGER_VERSION</p><p>longhorn-engine version: $LONGHORN_ENGINE_VERSION</p>", false, false, false, "black")
+                }
             }
 
-        } catch(e) {
+        } catch (e) {
             currentBuild.result = "FAILED"
             throw e
         } finally {
-            stage('releasing resources') {
-                sh "docker exec ${JOB_BASE_NAME}-${BUILD_NUMBER} ${TF_VAR_tf_workspace}/scripts/cleanup.sh"
-                sh "docker stop ${JOB_BASE_NAME}-${BUILD_NUMBER}"
-                sh "docker rm -v ${JOB_BASE_NAME}-${BUILD_NUMBER}"
-                sh "docker rmi ${imageName}"
-                if(summary){
-                    summary_msg = "\nTest Summary - Failures: ${summary.failCount}, Skipped: ${summary.skipCount}, Passed: ${summary.passCount}  -- Job completed in ${currentBuild.durationString.replace(' and counting', '')}"
+            stage ('releasing resources') {
+                if (sh (script: "docker container inspect airgap-${JOB_BASE_NAME}-${BUILD_NUMBER} > /dev/null 2>&1", returnStatus: true) == 0) {
+                    sh "docker exec airgap-${JOB_BASE_NAME}-${BUILD_NUMBER} ./airgap/scripts/cleanup.sh"
+                    sh "docker stop airgap-${JOB_BASE_NAME}-${BUILD_NUMBER}"
+                    sh "docker rm -v airgap-${JOB_BASE_NAME}-${BUILD_NUMBER}"
+                    sh "docker rmi airgap-${JOB_BASE_NAME}-${BUILD_NUMBER}"
                 }
-                else{
+
+                if (sh (script: "docker container inspect ${JOB_BASE_NAME}-${BUILD_NUMBER} > /dev/null 2>&1", returnStatus: true) == 0) {
+                    sh "docker exec ${JOB_BASE_NAME}-${BUILD_NUMBER} ${TF_VAR_tf_workspace}/scripts/cleanup.sh"
+                    sh "docker stop ${JOB_BASE_NAME}-${BUILD_NUMBER}"
+                    sh "docker rm -v ${JOB_BASE_NAME}-${BUILD_NUMBER}"
+                    sh "docker rmi ${imageName}"
+                }
+
+                if (summary) {
+                    summary_msg = "\nTest Summary - Failures: ${summary.failCount}, Skipped: ${summary.skipCount}, Passed: ${summary.passCount}  -- Job completed in ${currentBuild.durationString.replace(' and counting', '')}"
+                } else {
                     summary_msg = "\n Test Failed: No Junit report"
                 }
 
-				if(params.SEND_SLACK_NOTIFICATION){
-					notifyBuild(currentBuild.result, summary_msg, params.NOTIFY_SLACK_CHANNEL)
-				}
+                if(params.SEND_SLACK_NOTIFICATION){
+                    notifyBuild(currentBuild.result, summary_msg, params.NOTIFY_SLACK_CHANNEL)
+                }
             }
         }
     }
+
 }
 
 

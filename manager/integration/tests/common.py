@@ -56,8 +56,8 @@ BACKING_IMAGE_EXT4_SIZE = 32 * Mi
 PORT = ":9500"
 
 RETRY_COMMAND_COUNT = 3
-RETRY_COUNTS = 300
-RETRY_INTERVAL = 0.5
+RETRY_COUNTS = 150
+RETRY_INTERVAL = 1
 RETRY_INTERVAL_LONG = 2
 RETRY_BACKUP_COUNTS = 300
 RETRY_BACKUP_INTERVAL = 1
@@ -1656,13 +1656,13 @@ def wait_for_volume_detached_unknown(client, name):
     return wait_for_volume_detached(client, name)
 
 
-def wait_for_volume_healthy(client, name):
+def wait_for_volume_healthy(client, name, retry_count=RETRY_COUNTS):
     wait_for_volume_status(client, name,
                            VOLUME_FIELD_STATE,
-                           VOLUME_STATE_ATTACHED)
+                           VOLUME_STATE_ATTACHED, retry_count)
     wait_for_volume_status(client, name,
                            VOLUME_FIELD_ROBUSTNESS,
-                           VOLUME_ROBUSTNESS_HEALTHY)
+                           VOLUME_ROBUSTNESS_HEALTHY, retry_count)
     return wait_for_volume_endpoint(client, name)
 
 
@@ -1693,9 +1693,10 @@ def wait_for_volume_faulted(client, name):
                                   VOLUME_ROBUSTNESS_FAULTED)
 
 
-def wait_for_volume_status(client, name, key, value):
+def wait_for_volume_status(client, name, key, value,
+                           retry_count=RETRY_COUNTS):
     wait_for_volume_creation(client, name)
-    for i in range(RETRY_COUNTS):
+    for i in range(retry_count):
         volume = client.by_id_volume(name)
         if volume[key] == value:
             break
@@ -1828,6 +1829,11 @@ def wait_for_volume_replicas_running_on_hosts(client, volume_name, host_ids,
     return volume
 
 
+def is_replica_available(r):
+    return r is not None and r.running and not \
+        r.failedAt and r.mode == 'RW'
+
+
 def wait_for_volume_frontend_disabled(client, volume_name, state=True):
     for _ in range(RETRY_COUNTS):
         vol = client.by_id_volume(volume_name)
@@ -1939,6 +1945,18 @@ def wait_for_engine_image_ref_count(client, image_name, count):
 def json_string_go_to_python(str):
     return str.replace("u\'", "\"").replace("\'", "\""). \
         replace("True", "true").replace("False", "false")
+
+
+def delete_replica_on_test_node(client, volume_name): # NOQA
+
+    lht_host_id = get_self_host_id()
+
+    volume = client.by_id_volume(volume_name)
+    for replica in volume.replicas:
+        if replica.hostId == lht_host_id:
+            replica_name = replica.name
+    volume.replicaRemove(name=replica_name)
+    wait_for_volume_degraded(client, volume_name)
 
 
 def delete_replica_processes(client, api, volname):
@@ -2553,7 +2571,10 @@ def wait_for_disk_status(client, node_name, disk_name, key, value):
         time.sleep(RETRY_INTERVAL)
     assert len(disks) != 0
     assert disk_name in disks
-    assert disks[disk_name][key] == value
+    assert disks[disk_name][key] == value, \
+        f"Wrong disk({disk_name}) {key} status.\n" \
+        f"Expect={value}\n" \
+        f"Got={disks[disk_name][key]}\n"
     return node
 
 
@@ -3052,6 +3073,9 @@ def reset_settings(client):
         setting_name = setting.name
         setting_default_value = setting.definition.default
         setting_readonly = setting.definition.readOnly
+
+        if setting_name == "storage-network":
+            continue
 
         s = client.by_id_setting(setting_name)
         if s.value != setting_default_value and not setting_readonly:
@@ -4403,7 +4427,7 @@ def wait_for_instance_manager_desire_state(client, core_api, im_name,
                 continue
             # Report any other error
             else:
-                assert(not e)
+                assert (not e)
         if desire:
             if im.currentState == state.lower() and pod.status.phase == state:
                 break
@@ -4507,7 +4531,7 @@ def check_backing_image_disk_map_status(client, bi_name, expect_cnt, expect_disk
     # that have expect_disk_state
 
     for i in range(RETRY_COUNTS):
-        backing_image = client.by_id_backing_image(BACKING_IMAGE_NAME)
+        backing_image = client.by_id_backing_image(bi_name)
 
         count = 0
         for disk_id, status in iter(backing_image.diskFileStatusMap.items()):
@@ -4764,9 +4788,14 @@ def wait_for_pod_annotation(core_api,
 def wait_for_volume_clone_status(client, name, key, value):
     for _ in range(RETRY_COUNTS):
         volume = client.by_id_volume(name)
-        if volume[VOLUME_FIELD_CLONE_STATUS][key] == value:
-            break
-        time.sleep(RETRY_INTERVAL)
+        try:
+            if volume[VOLUME_FIELD_CLONE_STATUS][key] == value:
+                break
+        except Exception as e:
+            print("\nVOLUME_FIELD_CLONE_STATUS is not ready")
+            print(e)
+        finally:
+            time.sleep(RETRY_INTERVAL)
     assert volume[VOLUME_FIELD_CLONE_STATUS][key] == value, \
         f" Expected value={value}\n. " \
         f" Got volume[{VOLUME_FIELD_CLONE_STATUS}][{key}]= " \

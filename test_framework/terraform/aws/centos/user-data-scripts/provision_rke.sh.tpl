@@ -22,3 +22,9 @@ until (curl https://releases.rancher.com/install-docker/$${DOCKER_VERSION}.sh | 
 done
 
 sudo usermod -aG docker centos
+
+if [ -b "/dev/xvdh" ]; then
+  mkfs.ext4 -E nodiscard /dev/xvdh
+  mkdir /var/lib/longhorn
+  mount /dev/xvdh /var/lib/longhorn
+fi

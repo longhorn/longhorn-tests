@@ -1,0 +1,62 @@
+def imageName = "${JOB_BASE_NAME}-${env.BUILD_NUMBER}"
+def summary
+def BUILD_TRIGGER_BY = "\n${currentBuild.getBuildCauses()[0].shortDescription}"
+def TF_VAR_tf_workspace="/src/longhorn-tests/build_engine_test_images"
+
+node {
+
+	if(params.SEND_SLACK_NOTIFICATION){
+		notifyBuild('STARTED', BUILD_TRIGGER_BY, params.NOTIFY_SLACK_CHANNEL)
+	}
+
+  checkout scm
+
+  withCredentials([
+    usernamePassword(credentialsId: 'DOCKER_CREDS', passwordVariable: 'DOCKER_PASSWORD', usernameVariable: 'DOCKER_USERNAME'),
+    usernamePassword(credentialsId: 'AWS_CREDS', passwordVariable: 'AWS_SECRET_KEY', usernameVariable: 'AWS_ACCESS_KEY')
+  ]) {
+        stage('build') {      
+            
+            sh "build_engine_test_images/scripts/build.sh"
+
+            sh """ docker run -itd --name ${JOB_BASE_NAME}-${BUILD_NUMBER} \
+                                   --env TF_VAR_build_engine_aws_access_key=${AWS_ACCESS_KEY} \
+                                   --env TF_VAR_build_engine_aws_secret_key=${AWS_SECRET_KEY} \
+                                   --env TF_VAR_docker_id=${DOCKER_USERNAME} \
+                                   --env TF_VAR_docker_password=${DOCKER_PASSWORD} \
+                                   --env TF_VAR_docker_repo=${DOCKER_REPO} \
+                                   --env TF_VAR_tf_workspace=${TF_VAR_tf_workspace} \
+                                   ${imageName}
+            """
+
+            sh "docker exec -w ${TF_VAR_tf_workspace} ${JOB_BASE_NAME}-${BUILD_NUMBER} ./run.sh"
+            }
+        }
+    }
+
+
+def notifyBuild(String buildStatus = 'STARTED', String summary_msg, String slack_channel) {
+  // build status of null means successful
+  buildStatus =  buildStatus ?: 'SUCCESSFUL'
+
+  // Default values
+  def colorName = 'RED'
+  def colorCode = '#FF0000'
+  def subject = "${buildStatus}: Job '${env.JOB_BASE_NAME} [${env.BUILD_NUMBER}]'"
+  def summary = "${subject} (${env.BUILD_URL})" + summary_msg
+
+  // Override default values based on build status
+  if (buildStatus == 'STARTED') {
+    color = 'YELLOW'
+    colorCode = '#FFFF00'
+  } else if (buildStatus == 'SUCCESSFUL') {
+    color = 'GREEN'
+    colorCode = '#00FF00'
+  } else {
+    color = 'RED'
+    colorCode = '#FF0000'
+  }
+
+  // Send notifications
+  slackSend (color: colorCode, message: summary, channel: slack_channel,  tokenCredentialId: 'longhorn-tests-slack-token')
+}
