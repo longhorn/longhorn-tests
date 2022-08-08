@@ -1673,9 +1673,11 @@ def wait_for_volume_degraded(client, name):
 
 
 def wait_for_volume_faulted(client, name):
-    wait_for_volume_status(client, name,
-                           VOLUME_FIELD_STATE,
-                           VOLUME_STATE_DETACHED)
+    # Comment out detach status check because status transition
+    # were too fast recently
+    # wait_for_volume_status(client, name,
+    #                       VOLUME_FIELD_STATE,
+    #                       VOLUME_STATE_DETACHED)
     return wait_for_volume_status(client, name,
                                   VOLUME_FIELD_ROBUSTNESS,
                                   VOLUME_ROBUSTNESS_FAULTED)
