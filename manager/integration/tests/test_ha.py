@@ -1420,6 +1420,7 @@ def test_all_replica_restore_failure(set_random_backupstore, client, core_api, v
     assert res_volume.ready is False
 
     wait_for_volume_faulted(client, res_name)
+    wait_for_volume_detached(client, res_name)
 
     res_volume = client.by_id_volume(res_name)
     assert res_volume.conditions['restore'].status == "False"
