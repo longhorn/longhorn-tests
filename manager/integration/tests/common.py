@@ -234,7 +234,7 @@ NODE_UPDATE_RETRY_COUNT = 30
 disk_being_syncing = "being syncing and please retry later"
 
 # customize the timeout for HDD
-disktype = os.environ['LONGHORN_DISK_TYPE']
+disktype = os.environ.get('LONGHORN_DISK_TYPE')
 if disktype == "hdd":
     RETRY_COUNTS *= 32
     DEFAULT_DEPLOYMENT_TIMEOUT *= 32
