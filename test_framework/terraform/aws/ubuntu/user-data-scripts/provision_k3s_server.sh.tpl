@@ -2,9 +2,6 @@
 
 set -e
 
-echo PubkeyAcceptedKeyTypes=+ssh-rsa >> /etc/ssh/sshd_config
-service ssh reload
-
 apt-get update
 apt-get install -y nfs-common jq
 
