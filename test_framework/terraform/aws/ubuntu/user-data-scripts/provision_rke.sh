@@ -2,6 +2,9 @@
 
 DOCKER_VERSION=20.10
 
+echo PubkeyAcceptedKeyTypes=+ssh-rsa >> /etc/ssh/sshd_config
+service ssh reload
+
 sudo apt-get update 
 sudo apt-get install -y build-essential git nfs-common
 
