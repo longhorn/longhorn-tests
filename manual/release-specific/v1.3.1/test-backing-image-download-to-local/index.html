@@ -616,26 +616,192 @@
 
 
 <main style="padding: 1%; width: 70%;">
-  <h1 id="title">Test Service Account mount on host</h1>
+  <h1 id="title">Test transient error in engine status during eviction</h1>
   <div>
     <article id="content">
-       <ol>
-<li>This test case should be tested on both yaml installation, chart installation (Helm and Rancher UI), as well as upgrade scenarios</li>
-<li>After install Longhorn using on of the above method, ssh into a worker node that has a longhorn-manager pod running</li>
-<li>check the mount point <code>/run/secrets/kubernetes.io/serviceaccount</code> by running:
-<pre tabindex="0"><code>root@node-1:~# findmnt  /run/secrets/kubernetes.io/serviceaccount
-</code></pre></li>
-<li>Verify that there is no such mount point</li>
-<li>Kill the longhorn-manager pod on the above node and wait for it to be recreated and running</li>
-<li>check the mount point <code>/run/secrets/kubernetes.io/serviceaccount</code> by running:
-<pre tabindex="0"><code>root@node-1:~# findmnt  /run/secrets/kubernetes.io/serviceaccount
-</code></pre></li>
-<li>Verify that there is no such mount point</li>
-<li>Repeat the step 5 to 7 a few times</li>
+       <h3 id="test-step">Test step</h3>
+<ol>
+<li>Create and attach a multi-replica volume.</li>
+<li>Prepare one extra disk for a node that contains at least one volume replica.</li>
+<li>Keep monitoring the engine YAML. e.g., <code>watch -n  &quot;kubectl -n longhorn-system get lhe &lt;engine name&gt;&quot;</code>.</li>
+<li>Evicting the old disk for node. =&gt; Verify that there is no transient error in engine Status during eviction. A counter example is like:</li>
 </ol>
+<pre tabindex="0"><code>apiVersion: longhorn.io/v1beta2
+kind: Engine
+metadata:
+  creationTimestamp: &#34;2022-07-27T04:46:03Z&#34;
+  finalizers:
+  - longhorn.io
+  generation: 4
+  labels:
+    longhornnode: shuo-k8s-worker-1
+    longhornvolume: vol1
+  name: vol1-e-998b62c7
+  namespace: longhorn-system
+  ownerReferences:
+  - apiVersion: longhorn.io/v1beta2
+    kind: Volume
+    name: vol1
+    uid: fe656464-78af-4abf-8068-0742ba247fef
+  resourceVersion: &#34;34220387&#34;
+  uid: f6a339e2-d606-479f-910f-c787f9efa906
+spec:
+  active: true
+  backupVolume: &#34;&#34;
+  desireState: running
+  disableFrontend: false
+  engineImage: longhornio/longhorn-engine:master-head
+  frontend: blockdev
+  logRequested: false
+  nodeID: shuo-k8s-worker-1
+  replicaAddressMap:
+    vol1-r-769e039f: 10.42.4.30:10000
+    vol1-r-56144d78: 10.42.2.81:10000
+    vol1-r-8724804e: 10.42.1.59:10000
+  requestedBackupRestore: &#34;&#34;
+  requestedDataSource: &#34;&#34;
+  revisionCounterDisabled: false
+  salvageRequested: false
+  upgradedReplicaAddressMap: {}
+  volumeName: vol1
+  volumeSize: &#34;1073741824&#34;
+status:
+  backupStatus: null
+  cloneStatus:
+    tcp://10.42.1.59:10000:
+      error: &#34;&#34;
+      fromReplicaAddress: &#34;&#34;
+      isCloning: false
+      progress: 0
+      snapshotName: &#34;&#34;
+      state: &#34;&#34;
+    tcp://10.42.2.81:10000:
+      error: &#34;&#34;
+      fromReplicaAddress: &#34;&#34;
+      isCloning: false
+      progress: 0
+      snapshotName: &#34;&#34;
+      state: &#34;&#34;
+    tcp://10.42.4.30:10000:
+      error: &#34;&#34;
+      fromReplicaAddress: &#34;&#34;
+      isCloning: false
+      progress: 0
+      snapshotName: &#34;&#34;
+      state: &#34;&#34;
+    tcp://10.42.4.30:10015:
+      error: &#39;failed to get snapshot clone status of tcp://10.42.4.30:10015: failed
+        to get snapshot clone status: rpc error: code = Unavailable desc = all SubConns
+        are in TransientFailure, latest connection error: connection error: desc =
+        &#34;transport: Error while dialing dial tcp 10.42.4.30:10017: connect: connection
+        refused&#34;&#39;
+      fromReplicaAddress: &#34;&#34;
+      isCloning: false
+      progress: 0
+      snapshotName: &#34;&#34;
+      state: &#34;&#34;
+  currentImage: longhornio/longhorn-engine:master-head
+  currentReplicaAddressMap:
+    vol1-r-769e039f: 10.42.4.30:10000
+    vol1-r-56144d78: 10.42.2.81:10000
+    vol1-r-8724804e: 10.42.1.59:10000
+  currentSize: &#34;1073741824&#34;
+  currentState: running
+  endpoint: /dev/longhorn/vol1
+  instanceManagerName: instance-manager-e-3bdc3f00
+  ip: 10.42.4.31
+  isExpanding: false
+  lastExpansionError: &#34;&#34;
+  lastExpansionFailedAt: &#34;&#34;
+  lastRestoredBackup: &#34;&#34;
+  logFetched: false
+  ownerID: shuo-k8s-worker-1
+  port: 10001
+  purgeStatus:
+    tcp://10.42.1.59:10000:
+      error: &#34;&#34;
+      isPurging: false
+      progress: 0
+      state: &#34;&#34;
+    tcp://10.42.2.81:10000:
+      error: &#34;&#34;
+      isPurging: false
+      progress: 0
+      state: &#34;&#34;
+    tcp://10.42.4.30:10000:
+      error: &#34;&#34;
+      isPurging: false
+      progress: 0
+      state: &#34;&#34;
+    tcp://10.42.4.30:10015:
+      error: &#34;&#34;
+      isPurging: false
+      progress: 0
+      state: &#34;&#34;
+  rebuildStatus: {}
+  replicaModeMap:
+    vol1-r-769e039f: RW
+    vol1-r-47418d68: RW
+    vol1-r-56144d78: RW
+    vol1-r-8724804e: RW
+  restoreStatus:
+    tcp://10.42.1.59:10000:
+      backupURL: &#34;&#34;
+      currentRestoringBackup: &#34;&#34;
+      isRestoring: false
+      lastRestored: &#34;&#34;
+      state: &#34;&#34;
+    tcp://10.42.2.81:10000:
+      backupURL: &#34;&#34;
+      currentRestoringBackup: &#34;&#34;
+      isRestoring: false
+      lastRestored: &#34;&#34;
+      state: &#34;&#34;
+    tcp://10.42.4.30:10000:
+      backupURL: &#34;&#34;
+      currentRestoringBackup: &#34;&#34;
+      isRestoring: false
+      lastRestored: &#34;&#34;
+      state: &#34;&#34;
+    tcp://10.42.4.30:10015:
+      backupURL: &#34;&#34;
+      currentRestoringBackup: &#34;&#34;
+      error: &#39;Failed to get restoring status on tcp://10.42.4.30:10015: failed to
+        get restore status: rpc error: code = Unavailable desc = all SubConns are
+        in TransientFailure, latest connection error: connection error: desc = &#34;transport:
+        Error while dialing dial tcp 10.42.4.30:10017: connect: connection refused&#34;&#39;
+      isRestoring: false
+      lastRestored: &#34;&#34;
+      state: &#34;&#34;
+  salvageExecuted: false
+  snapshots:
+    35491870-d26d-4083-abf5-8fe36453eaec:
+      children:
+        volume-head: true
+      created: &#34;2022-07-27T04:50:53Z&#34;
+      labels: {}
+      name: 35491870-d26d-4083-abf5-8fe36453eaec
+      parent: &#34;&#34;
+      removed: false
+      size: &#34;0&#34;
+      usercreated: false
+    volume-head:
+      children: {}
+      created: &#34;2022-07-27T04:50:53Z&#34;
+      labels: {}
+      name: volume-head
+      parent: 35491870-d26d-4083-abf5-8fe36453eaec
+      removed: false
+      size: &#34;0&#34;
+      usercreated: false
+  snapshotsError: &#34;&#34;
+  started: true
+  storageIP: 10.42.4.31
+</code></pre><hr>
+<p>GitHub Issue: <a href="https://github.com/longhorn/longhorn/issues/4294">https://github.com/longhorn/longhorn/issues/4294</a></p>
 
     </article>
-  <a href="https://github.com/longhorn/longhorn-tests/edit/master/docs/content/manual/release-specific/v1.1.1/test-service-account-mount.md" target="_blank" title="Edit on Github" style="font-size:smaller;float:right;padding-right:3%">[Edit]</a>
+  <a href="https://github.com/longhorn/longhorn-tests/edit/master/docs/content/manual/release-specific/v1.3.1/test-backing-image-download-to-local.md" target="_blank" title="Edit on Github" style="font-size:smaller;float:right;padding-right:3%">[Edit]</a>
   </div>
 
     

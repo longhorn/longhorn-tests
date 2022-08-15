@@ -1180,6 +1180,15 @@ Test step Deploy a cluster that each node has different CPUs. Launch Longhorn v1
     </item>
     
     <item>
+      <title>Test transient error in engine status during eviction</title>
+      <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.3.1/test-backing-image-download-to-local/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.3.1/test-backing-image-download-to-local/</guid>
+      <description>Test step Create and attach a multi-replica volume. Prepare one extra disk for a node that contains at least one volume replica. Keep monitoring the engine YAML. e.g., watch -n &amp;quot;kubectl -n longhorn-system get lhe &amp;lt;engine name&amp;gt;&amp;quot;. Evicting the old disk for node. =&amp;gt; Verify that there is no transient error in engine Status during eviction. A counter example is like: apiVersion: longhorn.io/v1beta2 kind: Engine metadata: creationTimestamp: &amp;#34;2022-07-27T04:46:03Z&amp;#34; finalizers: - longhorn.</description>
+    </item>
+    
+    <item>
       <title>Test uninstallation</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/uninstallation/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
