@@ -4,6 +4,7 @@ import os
 import subprocess
 import time
 import random
+import yaml
 
 import common
 from common import client, random_labels, volume_name  # NOQA
@@ -4018,9 +4019,8 @@ def test_restore_basic(set_random_backupstore, client, core_api, volume_name, po
     assert output == ''
 
 
-@pytest.mark.skip(reason="TODO") # NOQA
 @pytest.mark.coretest   # NOQA
-def test_default_storage_class_syncup():  # NOQA
+def test_default_storage_class_syncup(core_api, request):  # NOQA
     """
     Steps:
     1. Record the current Longhorn-StorageClass-related ConfigMap
@@ -4038,6 +4038,94 @@ def test_default_storage_class_syncup():  # NOQA
     8. Revert the modifications of the ConfigMaps. Then wait for the
        StorageClass sync-up.
     """
+    def edit_configmap_allow_vol_exp(allow_exp):
+        """
+        allow_exp : bool, set allowVolumeExpansion
+        """
+        config_map = core_api.read_namespaced_config_map(
+                                                "longhorn-storageclass",
+                                                "longhorn-system")
+        config_map_data = yaml.safe_load(config_map.data["storageclass.yaml"])
+        config_map_data["allowVolumeExpansion"] = allow_exp
+        config_map.data["storageclass.yaml"] = yaml.dump(config_map_data)
+        core_api.patch_namespaced_config_map("longhorn-storageclass",
+                                             "longhorn-system",
+                                             config_map)
+
+        for i in range(RETRY_COMMAND_COUNT):
+            try:
+                longhorn_storage_class = storage_api.read_storage_class(
+                                                     "longhorn")
+                assert longhorn_storage_class.allow_volume_expansion is allow_exp # NOQA
+                break
+            except Exception as e:
+                print(e)
+            finally:
+                time.sleep(RETRY_INTERVAL)
+        longhorn_storage_class = storage_api.read_storage_class("longhorn")
+        assert longhorn_storage_class.allow_volume_expansion is allow_exp
+
+    def finalizer():
+
+        edit_configmap_allow_vol_exp(True)
+
+    request.addfinalizer(finalizer)
+
+    # step 1
+    storage_api = common.get_storage_api_client()
+    config_map = core_api.read_namespaced_config_map("longhorn-storageclass",
+                                                     "longhorn-system")
+    config_map_data = yaml.safe_load(config_map.data["storageclass.yaml"])
+
+    # step 2
+    longhorn_storage_class = storage_api.read_storage_class("longhorn")
+    storage_class_data = \
+        yaml.safe_load(longhorn_storage_class.
+                       metadata.
+                       annotations["longhorn.io/last-applied-configmap"])
+    storage_class_data["reclaimPolicy"] = "Retain"
+    longhorn_storage_class.\
+        metadata.annotations["longhorn.io/last-applied-configmap"] =\
+        yaml.dump(storage_class_data)
+
+    storage_api.patch_storage_class("longhorn", longhorn_storage_class)
+
+    # step 3
+    for i in range(RETRY_COMMAND_COUNT):
+        longhorn_storage_class = storage_api.read_storage_class("longhorn")
+        storage_class_data = \
+            yaml.safe_load(longhorn_storage_class.
+                           metadata.
+                           annotations["longhorn.io/last-applied-configmap"])
+
+        if storage_class_data["reclaimPolicy"] == \
+                config_map_data["reclaimPolicy"]:
+            break
+
+        time.sleep(RETRY_INTERVAL)
+
+    assert storage_class_data["reclaimPolicy"] == \
+        config_map_data["reclaimPolicy"]
+
+    # step 4
+    storage_api.delete_storage_class("longhorn")
+    for item in storage_api.list_storage_class().items:
+        assert item.metadata.name != "longhorn"
+
+    # step 5
+    storage_class_recreated = False
+    for i in range(RETRY_COMMAND_COUNT):
+        for item in storage_api.list_storage_class().items:
+            if item.metadata.name == "longhorn":
+                storage_class_recreated = True
+                break
+        time.sleep(RETRY_INTERVAL)
+    assert storage_class_recreated is True
+
+    # step 6, 7
+    edit_configmap_allow_vol_exp(False)
+
+    # step 8 in finalizer
 
 
 @pytest.mark.coretest   # NOQA
