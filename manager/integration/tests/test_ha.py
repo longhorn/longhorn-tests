@@ -334,6 +334,11 @@ def ha_salvage_test(client, core_api, # NOQA
     data = write_volume_random_data(volume)
 
     crash_replica_processes(client, core_api, volume_name)
+    # This is a workaround, since in some case it's hard to
+    # catch faulted volume status
+    common.wait_for_volume_status(client, volume_name,
+                                  common.VOLUME_FIELD_STATE,
+                                  'attaching')
 
     volume = common.wait_for_volume_healthy(client, volume_name)
     assert len(volume.replicas) == 3
@@ -373,6 +378,11 @@ def ha_salvage_test(client, core_api, # NOQA
     data = write_volume_random_data(volume)
 
     crash_replica_processes(client, core_api, volume_name)
+    # This is a workaround, since in some case it's hard to
+    # catch faulted volume status
+    common.wait_for_volume_status(client, volume_name,
+                                  common.VOLUME_FIELD_STATE,
+                                  'attaching')
 
     volume = common.wait_for_volume_healthy(client, volume_name)
     assert len(volume.replicas) == 3
