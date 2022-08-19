@@ -362,6 +362,11 @@ def ha_salvage_test(client, core_api, # NOQA
     data = write_volume_random_data(volume)
 
     crash_replica_processes(client, core_api, volume_name)
+    # This is a workaround, since in some case it&#39;s hard to
+    # catch faulted volume status
+    common.wait_for_volume_status(client, volume_name,
+                                  common.VOLUME_FIELD_STATE,
+                                  &#39;attaching&#39;)
 
     volume = common.wait_for_volume_healthy(client, volume_name)
     assert len(volume.replicas) == 3
@@ -401,6 +406,11 @@ def ha_salvage_test(client, core_api, # NOQA
     data = write_volume_random_data(volume)
 
     crash_replica_processes(client, core_api, volume_name)
+    # This is a workaround, since in some case it&#39;s hard to
+    # catch faulted volume status
+    common.wait_for_volume_status(client, volume_name,
+                                  common.VOLUME_FIELD_STATE,
+                                  &#39;attaching&#39;)
 
     volume = common.wait_for_volume_healthy(client, volume_name)
     assert len(volume.replicas) == 3
@@ -3152,6 +3162,11 @@ def test_recovery_from_im_deletion(client, core_api, volume_name, make_deploymen
     data = write_volume_random_data(volume)
 
     crash_replica_processes(client, core_api, volume_name)
+    # This is a workaround, since in some case it&#39;s hard to
+    # catch faulted volume status
+    common.wait_for_volume_status(client, volume_name,
+                                  common.VOLUME_FIELD_STATE,
+                                  &#39;attaching&#39;)
 
     volume = common.wait_for_volume_healthy(client, volume_name)
     assert len(volume.replicas) == 3
@@ -3191,6 +3206,11 @@ def test_recovery_from_im_deletion(client, core_api, volume_name, make_deploymen
     data = write_volume_random_data(volume)
 
     crash_replica_processes(client, core_api, volume_name)
+    # This is a workaround, since in some case it&#39;s hard to
+    # catch faulted volume status
+    common.wait_for_volume_status(client, volume_name,
+                                  common.VOLUME_FIELD_STATE,
+                                  &#39;attaching&#39;)
 
     volume = common.wait_for_volume_healthy(client, volume_name)
     assert len(volume.replicas) == 3
