@@ -32,6 +32,7 @@ import os
 import subprocess
 import time
 import random
+import yaml
 
 import common
 from common import client, random_labels, volume_name  # NOQA
@@ -4046,9 +4047,8 @@ def test_restore_basic(set_random_backupstore, client, core_api, volume_name, po
     assert output == &#39;&#39;
 
 
-@pytest.mark.skip(reason=&#34;TODO&#34;) # NOQA
 @pytest.mark.coretest   # NOQA
-def test_default_storage_class_syncup():  # NOQA
+def test_default_storage_class_syncup(core_api, request):  # NOQA
     &#34;&#34;&#34;
     Steps:
     1. Record the current Longhorn-StorageClass-related ConfigMap
@@ -4066,6 +4066,94 @@ def test_default_storage_class_syncup():  # NOQA
     8. Revert the modifications of the ConfigMaps. Then wait for the
        StorageClass sync-up.
     &#34;&#34;&#34;
+    def edit_configmap_allow_vol_exp(allow_exp):
+        &#34;&#34;&#34;
+        allow_exp : bool, set allowVolumeExpansion
+        &#34;&#34;&#34;
+        config_map = core_api.read_namespaced_config_map(
+                                                &#34;longhorn-storageclass&#34;,
+                                                &#34;longhorn-system&#34;)
+        config_map_data = yaml.safe_load(config_map.data[&#34;storageclass.yaml&#34;])
+        config_map_data[&#34;allowVolumeExpansion&#34;] = allow_exp
+        config_map.data[&#34;storageclass.yaml&#34;] = yaml.dump(config_map_data)
+        core_api.patch_namespaced_config_map(&#34;longhorn-storageclass&#34;,
+                                             &#34;longhorn-system&#34;,
+                                             config_map)
+
+        for i in range(RETRY_COMMAND_COUNT):
+            try:
+                longhorn_storage_class = storage_api.read_storage_class(
+                                                     &#34;longhorn&#34;)
+                assert longhorn_storage_class.allow_volume_expansion is allow_exp # NOQA
+                break
+            except Exception as e:
+                print(e)
+            finally:
+                time.sleep(RETRY_INTERVAL)
+        longhorn_storage_class = storage_api.read_storage_class(&#34;longhorn&#34;)
+        assert longhorn_storage_class.allow_volume_expansion is allow_exp
+
+    def finalizer():
+
+        edit_configmap_allow_vol_exp(True)
+
+    request.addfinalizer(finalizer)
+
+    # step 1
+    storage_api = common.get_storage_api_client()
+    config_map = core_api.read_namespaced_config_map(&#34;longhorn-storageclass&#34;,
+                                                     &#34;longhorn-system&#34;)
+    config_map_data = yaml.safe_load(config_map.data[&#34;storageclass.yaml&#34;])
+
+    # step 2
+    longhorn_storage_class = storage_api.read_storage_class(&#34;longhorn&#34;)
+    storage_class_data = \
+        yaml.safe_load(longhorn_storage_class.
+                       metadata.
+                       annotations[&#34;longhorn.io/last-applied-configmap&#34;])
+    storage_class_data[&#34;reclaimPolicy&#34;] = &#34;Retain&#34;
+    longhorn_storage_class.\
+        metadata.annotations[&#34;longhorn.io/last-applied-configmap&#34;] =\
+        yaml.dump(storage_class_data)
+
+    storage_api.patch_storage_class(&#34;longhorn&#34;, longhorn_storage_class)
+
+    # step 3
+    for i in range(RETRY_COMMAND_COUNT):
+        longhorn_storage_class = storage_api.read_storage_class(&#34;longhorn&#34;)
+        storage_class_data = \
+            yaml.safe_load(longhorn_storage_class.
+                           metadata.
+                           annotations[&#34;longhorn.io/last-applied-configmap&#34;])
+
+        if storage_class_data[&#34;reclaimPolicy&#34;] == \
+                config_map_data[&#34;reclaimPolicy&#34;]:
+            break
+
+        time.sleep(RETRY_INTERVAL)
+
+    assert storage_class_data[&#34;reclaimPolicy&#34;] == \
+        config_map_data[&#34;reclaimPolicy&#34;]
+
+    # step 4
+    storage_api.delete_storage_class(&#34;longhorn&#34;)
+    for item in storage_api.list_storage_class().items:
+        assert item.metadata.name != &#34;longhorn&#34;
+
+    # step 5
+    storage_class_recreated = False
+    for i in range(RETRY_COMMAND_COUNT):
+        for item in storage_api.list_storage_class().items:
+            if item.metadata.name == &#34;longhorn&#34;:
+                storage_class_recreated = True
+                break
+        time.sleep(RETRY_INTERVAL)
+    assert storage_class_recreated is True
+
+    # step 6, 7
+    edit_configmap_allow_vol_exp(False)
+
+    # step 8 in finalizer
 
 
 @pytest.mark.coretest   # NOQA
@@ -6963,7 +7051,7 @@ def test_backuptarget_available_during_engine_image_not_ready(client, apps_api, 
 </details>
 </dd>
 <dt id="tests.test_basic.test_default_storage_class_syncup"><code class="name flex">
-<span>def <span class="ident">test_default_storage_class_syncup</span></span>(<span>)</span>
+<span>def <span class="ident">test_default_storage_class_syncup</span></span>(<span>core_api, request)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Steps:
@@ -6985,9 +7073,8 @@ StorageClass sync-up.</p></div>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">@pytest.mark.skip(reason=&#34;TODO&#34;) # NOQA
-@pytest.mark.coretest   # NOQA
-def test_default_storage_class_syncup():  # NOQA
+<pre><code class="python">@pytest.mark.coretest   # NOQA
+def test_default_storage_class_syncup(core_api, request):  # NOQA
     &#34;&#34;&#34;
     Steps:
     1. Record the current Longhorn-StorageClass-related ConfigMap
@@ -7004,7 +7091,95 @@ def test_default_storage_class_syncup():  # NOQA
        StorageClass `longhorn` immediately.
     8. Revert the modifications of the ConfigMaps. Then wait for the
        StorageClass sync-up.
-    &#34;&#34;&#34;</code></pre>
+    &#34;&#34;&#34;
+    def edit_configmap_allow_vol_exp(allow_exp):
+        &#34;&#34;&#34;
+        allow_exp : bool, set allowVolumeExpansion
+        &#34;&#34;&#34;
+        config_map = core_api.read_namespaced_config_map(
+                                                &#34;longhorn-storageclass&#34;,
+                                                &#34;longhorn-system&#34;)
+        config_map_data = yaml.safe_load(config_map.data[&#34;storageclass.yaml&#34;])
+        config_map_data[&#34;allowVolumeExpansion&#34;] = allow_exp
+        config_map.data[&#34;storageclass.yaml&#34;] = yaml.dump(config_map_data)
+        core_api.patch_namespaced_config_map(&#34;longhorn-storageclass&#34;,
+                                             &#34;longhorn-system&#34;,
+                                             config_map)
+
+        for i in range(RETRY_COMMAND_COUNT):
+            try:
+                longhorn_storage_class = storage_api.read_storage_class(
+                                                     &#34;longhorn&#34;)
+                assert longhorn_storage_class.allow_volume_expansion is allow_exp # NOQA
+                break
+            except Exception as e:
+                print(e)
+            finally:
+                time.sleep(RETRY_INTERVAL)
+        longhorn_storage_class = storage_api.read_storage_class(&#34;longhorn&#34;)
+        assert longhorn_storage_class.allow_volume_expansion is allow_exp
+
+    def finalizer():
+
+        edit_configmap_allow_vol_exp(True)
+
+    request.addfinalizer(finalizer)
+
+    # step 1
+    storage_api = common.get_storage_api_client()
+    config_map = core_api.read_namespaced_config_map(&#34;longhorn-storageclass&#34;,
+                                                     &#34;longhorn-system&#34;)
+    config_map_data = yaml.safe_load(config_map.data[&#34;storageclass.yaml&#34;])
+
+    # step 2
+    longhorn_storage_class = storage_api.read_storage_class(&#34;longhorn&#34;)
+    storage_class_data = \
+        yaml.safe_load(longhorn_storage_class.
+                       metadata.
+                       annotations[&#34;longhorn.io/last-applied-configmap&#34;])
+    storage_class_data[&#34;reclaimPolicy&#34;] = &#34;Retain&#34;
+    longhorn_storage_class.\
+        metadata.annotations[&#34;longhorn.io/last-applied-configmap&#34;] =\
+        yaml.dump(storage_class_data)
+
+    storage_api.patch_storage_class(&#34;longhorn&#34;, longhorn_storage_class)
+
+    # step 3
+    for i in range(RETRY_COMMAND_COUNT):
+        longhorn_storage_class = storage_api.read_storage_class(&#34;longhorn&#34;)
+        storage_class_data = \
+            yaml.safe_load(longhorn_storage_class.
+                           metadata.
+                           annotations[&#34;longhorn.io/last-applied-configmap&#34;])
+
+        if storage_class_data[&#34;reclaimPolicy&#34;] == \
+                config_map_data[&#34;reclaimPolicy&#34;]:
+            break
+
+        time.sleep(RETRY_INTERVAL)
+
+    assert storage_class_data[&#34;reclaimPolicy&#34;] == \
+        config_map_data[&#34;reclaimPolicy&#34;]
+
+    # step 4
+    storage_api.delete_storage_class(&#34;longhorn&#34;)
+    for item in storage_api.list_storage_class().items:
+        assert item.metadata.name != &#34;longhorn&#34;
+
+    # step 5
+    storage_class_recreated = False
+    for i in range(RETRY_COMMAND_COUNT):
+        for item in storage_api.list_storage_class().items:
+            if item.metadata.name == &#34;longhorn&#34;:
+                storage_class_recreated = True
+                break
+        time.sleep(RETRY_INTERVAL)
+    assert storage_class_recreated is True
+
+    # step 6, 7
+    edit_configmap_allow_vol_exp(False)
+
+    # step 8 in finalizer</code></pre>
 </details>
 </dd>
 <dt id="tests.test_basic.test_deleting_backup_volume"><code class="name flex">
