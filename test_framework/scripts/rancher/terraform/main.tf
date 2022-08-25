@@ -30,7 +30,7 @@ resource "rancher2_app_v2" "longhorn_app" {
   chart_version = var.rancher_chart_install_version
   values = <<-EOF
 privateRegistry:
-  createSecret: true
+  createSecret: ${var.create_secret}
   registryUrl: ${var.registry_url}
   registryUser: ${var.registry_user}
   registryPasswd: ${var.registry_passwd}

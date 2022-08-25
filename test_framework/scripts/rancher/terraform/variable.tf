@@ -22,6 +22,10 @@ variable "rancher_chart_install_version" {
   type = string
 }
 
+variable "create_secret" {
+  type = string
+}
+
 variable "registry_url" {
   type = string
 }

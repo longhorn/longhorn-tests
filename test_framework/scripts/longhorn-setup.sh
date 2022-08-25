@@ -89,6 +89,7 @@ install_longhorn_by_rancher() {
             -var="rancher_chart_git_repo=${RANCHER_CHART_GIT_REPO}" \
             -var="rancher_chart_git_branch=${RANCHER_CHART_GIT_BRANCH}" \
             -var="rancher_chart_install_version=${RANCHER_CHART_INSTALL_VERSION}" \
+            -var="create_secret=${CREATE_PRIVATE_REGISTRY_SECRET}" \
             -var="registry_url=${REGISTRY_URL}" \
             -var="registry_user=${REGISTRY_USERNAME}" \
             -var="registry_passwd=${REGISTRY_PASSWORD}" \
@@ -143,8 +144,10 @@ customize_longhorn_manifest_for_airgap(){
 
 customize_longhorn_chart_for_airgap(){
   # specify private registry secret in chart/values.yaml
-  yq -i '.privateRegistry.createSecret=false' "${LONGHORN_REPO_DIR}/chart/values.yaml"
+  yq -i ".privateRegistry.createSecret=${CREATE_PRIVATE_REGISTRY_SECRET}" "${LONGHORN_REPO_DIR}/chart/values.yaml"
   yq -i ".privateRegistry.registryUrl=\"${REGISTRY_URL}\"" "${LONGHORN_REPO_DIR}/chart/values.yaml"
+  yq -i ".privateRegistry.registryUser=\"${REGISTRY_USERNAME}\"" "${LONGHORN_REPO_DIR}/chart/values.yaml"
+  yq -i ".privateRegistry.registryPasswd=\"${REGISTRY_PASSWORD}\"" "${LONGHORN_REPO_DIR}/chart/values.yaml"
   yq -i '.privateRegistry.registrySecret="docker-registry-secret"' "${LONGHORN_REPO_DIR}/chart/values.yaml"
 }
 
@@ -393,11 +396,16 @@ main(){
       customize_longhorn_manifest_for_airgap
       install_longhorn_by_manifest "${TF_VAR_tf_workspace}/longhorn.yaml"
     elif [[ "${LONGHORN_INSTALL_METHOD}" == "helm-chart" ]]; then
-      create_registry_secret
+      if [[ "${CREATE_PRIVATE_REGISTRY_SECRET}" == false ]]; then
+        create_registry_secret
+      fi
       get_longhorn_chart
       customize_longhorn_chart_for_airgap
       install_longhorn_by_chart
     elif [[ "${LONGHORN_INSTALL_METHOD}" == "rancher" ]]; then
+      if [[ "${CREATE_PRIVATE_REGISTRY_SECRET}" == false ]]; then
+        create_registry_secret
+      fi
       install_rancher
       get_rancher_api_key
       install_longhorn_by_rancher
