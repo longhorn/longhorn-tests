@@ -11,3 +11,5 @@ https://github.com/longhorn/longhorn/issues/2187
 4. Verify the logs of the instance-manager using `kubetail instance-manager -n longhorn-system`. There should some logs related to freezing and unfreezing the filesystem. Like `Froze filesystem of volume mounted ...`
 5. Verify snapshot succeeded and `dd` operation will complete.
 6. Create another snapshot/backup and verify the data.
+
+Note: The above issue is still open and the scenario will not work.
