@@ -114,6 +114,7 @@ wait_longhorn_status_running(){
 
 get_longhorn_manifest(){
   wget ${LONGHORN_MANIFEST_URL} -P ${TF_VAR_tf_workspace}
+  sed -i ':a;N;$!ba;s/---\n---/---/g' "${TF_VAR_tf_workspace}/longhorn.yaml"
 }
 
 
@@ -171,7 +172,9 @@ generate_longhorn_yaml_manifest() {
 
     for FILE in `find "${LONGHORN_MANAGER_REPO_DIR}/deploy/install" -type f -name "*\.yaml" | sort`; do
       cat ${FILE} >> "${MANIFEST_BASEDIR}/longhorn.yaml"
-      echo "---"  >> "${MANIFEST_BASEDIR}/longhorn.yaml"
+      if [[ `tail -1 "${MANIFEST_BASEDIR}/longhorn.yaml"` != "---" ]]; then
+        echo "---"  >> "${MANIFEST_BASEDIR}/longhorn.yaml"
+      fi
     done
 
 	# get longhorn default images from yaml manifest
