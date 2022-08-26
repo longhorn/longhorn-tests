@@ -9,13 +9,14 @@ from common import wait_for_volume_clone_status, VOLUME_FIELD_STATE
 from common import VOLUME_FIELD_CLONE_COMPLETED, wait_for_pvc_phase
 from common import get_self_host_id, write_volume_random_data
 from common import wait_for_volume_detached, check_volume_data
-from common import crash_replica_processes, wait_for_volume_faulted
+from common import crash_replica_processes
 from common import delete_and_wait_pvc, wait_for_volume_attached
 from common import generate_random_suffix, wait_for_volume_endpoint
 from common import wait_for_snapshot_count, DATA_SIZE_IN_MB_3
 from common import get_clone_volume_name
 from common import create_storage_class, storage_class  # NOQA
 from common import wait_for_volume_degraded
+from common import wait_for_volume_status
 
 
 # Kept some fixtures specifically for volume cloning module to avoid cleaning
@@ -392,7 +393,11 @@ def test_cloning_interrupted(client, core_api, pvc, pod, clone_pvc, clone_pod): 
     crash_replica_processes(client, core_api, source_volume_name)
 
     # Step-7
-    wait_for_volume_faulted(client, source_volume_name)
+    # This is a workaround, since in some case it's hard to
+    # catch faulted volume status
+    wait_for_volume_status(client, source_volume_name,
+                           VOLUME_FIELD_STATE,
+                           'attaching')
     wait_for_volume_clone_status(client, clone_volume_name, VOLUME_FIELD_STATE,
                                  'failed')
 
