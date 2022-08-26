@@ -75,6 +75,7 @@ from common import wait_for_backup_volume
 from common import create_and_wait_statefulset
 from common import create_backup_from_volume_attached_to_pod
 from common import restore_backup_and_get_data_checksum
+from common import SETTING_FAILED_BACKUP_TTL
 
 from backupstore import backupstore_delete_volume_cfg_file
 from backupstore import backupstore_cleanup
@@ -4036,3 +4037,122 @@ def test_space_usage_for_rebuilding_only_volume():  # NOQA
 
     """
     pass
+
+
+def backup_failed_cleanup(client, core_api, volume_name, volume_size,  # NOQA
+                          failed_backup_ttl="3"):  # NOQA
+    """
+    Setup the failed backup cleanup
+    """
+    bt_poll_interval = "60"
+
+    # set backupstore poll interval to 60 sec
+    set_backupstore_poll_interval(client, bt_poll_interval)
+
+    # set failed backup time to live, default: 3 min, disabled: 0
+    failed_backup_ttl_setting = client.by_id_setting(SETTING_FAILED_BACKUP_TTL)
+    new_failed_backup_ttl_setting = client.update(
+        failed_backup_ttl_setting, value=failed_backup_ttl)
+    assert new_failed_backup_ttl_setting.value == failed_backup_ttl
+
+    backupstore_cleanup(client)
+
+    # create a volume
+    vol = create_and_check_volume(client, volume_name,
+                                  num_of_replicas=2, size=str(volume_size))
+
+    # attach the volume
+    vol.attach(hostId=get_self_host_id())
+    vol = wait_for_volume_healthy(client, volume_name)
+
+    # create a snapshot and
+    # a successful backup to make sure the backup volume created
+    snap = create_snapshot(client, volume_name)
+    vol.snapshotBackup(name=snap.name)
+
+    # write some data to the volume
+    data = {
+        'pos': 0,
+        'content': common.generate_random_data(volume_size),
+    }
+    write_volume_data(vol, data)
+
+    # create a snapshot and a backup
+    snap = create_snapshot(client, volume_name)
+    vol.snapshotBackup(name=snap.name)
+
+    # check backup status is in an InProgress state
+    _, backup = find_backup(client, volume_name, snap.name)
+    backup_id = backup.id
+    backup_name = backup.name
+
+    def backup_inprogress_predicate(b):
+        return b.id == backup_id and "InProgress" in b.state
+    common.wait_for_backup_state(client, volume_name,
+                                 backup_inprogress_predicate)
+
+    # crash all replicas of the volume
+    try:
+        crash_replica_processes(client, core_api, volume_name)
+    except AssertionError:
+        crash_replica_processes(client, core_api, volume_name)
+
+    # backup status should be in an Error state and with an error message
+    def backup_failure_predicate(b):
+        return b.id == backup_id and "Error" in b.state and b.error != ""
+    common.wait_for_backup_state(client, volume_name,
+                                 backup_failure_predicate)
+
+    return backup_name
+
+
+@pytest.mark.coretest  # NOQA
+def test_backup_failed_enable_auto_cleanup(set_random_backupstore,  # NOQA
+                                        client, core_api, volume_name):  # NOQA
+    """
+    Test the failed backup would be automatically deleted.
+
+    1.   Set the default setting `backupstore-poll-interval` to 60 (seconds)
+    2.   Set the default setting `failed-backup-ttl` to 3 (minutes)
+    3.   Create a volume and attach to the current node
+    4.   Create a empty backup for creating the backup volume
+    5.   Write some data to the volume
+    6.   Create a backup of the volume
+    7.   Crash all replicas
+    8.   Wait and check if the backup failed
+    9.   Wait and check if the backup was deleted automatically
+    10.  Cleanup
+    """
+    backup_name = backup_failed_cleanup(client, core_api, volume_name, 256*Mi)
+
+    # wait in 5 minutes for automatic failed backup cleanup
+    wait_for_backup_delete(client, volume_name, backup_name)
+
+
+@pytest.mark.coretest  # NOQA
+def test_backup_failed_disable_auto_cleanup(set_random_backupstore,  # NOQA
+                                        client, core_api, volume_name):  # NOQA
+    """
+    Test the failed backup would be automatically deleted.
+
+    1.    Set the default setting `backupstore-poll-interval` to 60 (seconds)
+    2.    Set the default setting `failed-backup-ttl` to 0
+    3.    Create a volume and attach to the current node
+    4.    Create a empty backup for creating the backup volume
+    5.    Write some data to the volume
+    6.    Create a backup of the volume
+    7.    Crash all replicas
+    8.    Wait and check if the backup failed
+    9.    Wait and check if the backup was not deleted.
+    10.   Cleanup
+    """
+    backup_name = backup_failed_cleanup(client, core_api, volume_name, 256*Mi,
+                                        failed_backup_ttl="0")
+
+    # wait for 5 minutes to check if the failed backup exists
+    try:
+        wait_for_backup_delete(client, volume_name, backup_name)
+        assert False, "backup " + backup_name + " for volume " \
+                      + volume_name + " is deleted"
+    except AssertionError:
+        pass
