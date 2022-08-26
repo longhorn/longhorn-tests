@@ -176,6 +176,7 @@ SETTING_BACKING_IMAGE_CLEANUP_WAIT_INTERVAL = \
     "backing-image-cleanup-wait-interval"
 SETTING_DISABLE_REVISION_COUNTER = "disable-revision-counter"
 SETTING_ORPHAN_AUTO_DELETION = "orphan-auto-deletion"
+SETTING_FAILED_BACKUP_TTL = "failed-backup-ttl"
 
 CSI_UNKNOWN = 0
 CSI_TRUE = 1
