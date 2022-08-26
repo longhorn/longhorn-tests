@@ -786,7 +786,8 @@ def test_rebuild_with_restoration(set_random_backupstore, client, core_api, volu
     original_pod_name, original_pv_name, original_pvc_name, original_md5sum = \
         prepare_pod_with_data_in_mb(
             client, core_api, csi_pv, pvc, pod_make, original_volume_name,
-            data_path=data_path, data_size_in_mb=DATA_SIZE_IN_MB_3)
+            volume_size=str(2*Gi), data_path=data_path,
+            data_size_in_mb=3*DATA_SIZE_IN_MB_3)
 
     original_volume = client.by_id_volume(original_volume_name)
     snap = create_snapshot(client, original_volume_name)
@@ -798,7 +799,7 @@ def test_rebuild_with_restoration(set_random_backupstore, client, core_api, volu
     bv, b = find_backup(client, original_volume_name, snap.name)
 
     restore_volume_name = volume_name + "-restore"
-    client.create_volume(name=restore_volume_name, size=str(1 * Gi),
+    client.create_volume(name=restore_volume_name, size=str(2 * Gi),
                          numberOfReplicas=3, fromBackup=b.url)
     wait_for_volume_creation(client, restore_volume_name)
 
