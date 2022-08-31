@@ -144,8 +144,10 @@ customize_longhorn_manifest_for_airgap(){
 
 customize_longhorn_chart_for_airgap(){
   # specify private registry secret in chart/values.yaml
-  yq -i '.privateRegistry.createSecret=false' "${LONGHORN_REPO_DIR}/chart/values.yaml"
+  yq -i '.privateRegistry.createSecret=true' "${LONGHORN_REPO_DIR}/chart/values.yaml"
   yq -i ".privateRegistry.registryUrl=\"${REGISTRY_URL}\"" "${LONGHORN_REPO_DIR}/chart/values.yaml"
+  yq -i ".privateRegistry.registryUser=\"${REGISTRY_USERNAME}\"" "${LONGHORN_REPO_DIR}/chart/values.yaml"
+  yq -i ".privateRegistry.registryPasswd=\"${REGISTRY_PASSWORD}\"" "${LONGHORN_REPO_DIR}/chart/values.yaml"
   yq -i '.privateRegistry.registrySecret="docker-registry-secret"' "${LONGHORN_REPO_DIR}/chart/values.yaml"
 }
 
@@ -396,7 +398,6 @@ main(){
       customize_longhorn_manifest_for_airgap
       install_longhorn_by_manifest "${TF_VAR_tf_workspace}/longhorn.yaml"
     elif [[ "${LONGHORN_INSTALL_METHOD}" == "helm-chart" ]]; then
-      create_registry_secret
       get_longhorn_chart
       customize_longhorn_chart_for_airgap
       install_longhorn_by_chart
