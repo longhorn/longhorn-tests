@@ -5,6 +5,7 @@ from common import clients, volume_name  # NOQA
 from common import get_random_client
 from common import SIZE
 from common import wait_for_volume_delete
+from common import set_node_scheduling
 
 REPLICA_COUNT = 2
 
@@ -100,7 +101,6 @@ def migration_rollback_test(clients, volume_name, backing_image=""):  # NOQA
 
 @pytest.mark.coretest  # NOQA
 @pytest.mark.migration # NOQA
-@pytest.mark.skip(reason="TODO") # NOQA
 def test_migration_with_unscheduled_replica(clients, volume_name):  # NOQA
     """
     Test that a degraded migratable RWX volume that contain an unscheduled
@@ -123,7 +123,74 @@ def test_migration_with_unscheduled_replica(clients, volume_name):  # NOQA
     11. Enable the scheduling for the node and wait for rebuilding complete.
     12. Validate initially written test data.
     """
-    return
+    # Step 1
+    client = get_random_client(clients) # NOQA
+
+    # local_node : write data / migrate target
+    # hosts[0] : migrate initial node
+    # hosts[1] : node to schedule on/off
+    local_node = common.get_self_host_id()
+    hosts = get_hosts_for_migration_test(clients)
+    schedule_node = client.by_id_node(hosts[1])
+
+    set_node_scheduling(client, schedule_node,
+                        allowScheduling=False, retry=True)
+
+    # Step 2,3,4
+    volume = client.create_volume(name=volume_name, size=SIZE,
+                                  numberOfReplicas=3,
+                                  backingImage="",
+                                  accessMode="rwx", migratable=True)
+    volume = common.wait_for_volume_detached(client, volume_name)
+    volume.attach(hostId=local_node)
+    volume = common.wait_for_volume_degraded(client, volume_name)
+
+    data = common.write_volume_random_data(volume)
+    common.check_volume_data(volume, data)
+
+    volume.detach(hostId="")
+    volume = common.wait_for_volume_detached(client, volume_name)
+    old_replicas = []
+    v = client.by_id_volume(volume_name)
+    replicas = v.replicas
+    for r in replicas:
+        old_replicas.append(r.name)
+
+    # Step 6
+    volume.attach(hostId=hosts[0])
+    volume = common.wait_for_volume_degraded(client, volume_name)
+
+    # Step 7
+    volume.attach(hostId=local_node)
+
+    # Step 8
+    volume = common.wait_for_volume_migration_ready(client, volume_name)
+    volume = common.wait_for_volume_degraded(client, volume_name)
+
+    new_replicas = []
+    v = client.by_id_volume(volume_name)
+    replicas = v.replicas
+    for r in replicas:
+        if r.name not in old_replicas:
+            new_replicas.append(r.name)
+
+    assert len(old_replicas) == len(new_replicas)
+
+    # Step 9
+    volume.detach(hostId=hosts[0])
+
+    # Step 10
+    volume = common.wait_for_volume_migration_node(client,
+                                                   volume_name,
+                                                   local_node)
+
+    # Step 11
+    set_node_scheduling(client, schedule_node,
+                        allowScheduling=True, retry=True)
+    volume = common.wait_for_volume_healthy(client, volume_name)
+
+    # Step 12
+    common.check_volume_data(volume, data)
 
 
 @pytest.mark.coretest  # NOQA
