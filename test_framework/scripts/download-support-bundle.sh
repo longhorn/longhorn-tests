@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+set -eo pipefail
+
 SUPPORT_BUNDLE_FILE_NAME=${1:-"lh-support-bundle.zip"}
 SUPPORT_BUNDLE_ISSUE_URL=${2:-""}
 SUPPORT_BUNDLE_ISSUE_DESC=${3:-"Auto-generated support buundle"}
