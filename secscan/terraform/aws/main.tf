@@ -198,7 +198,7 @@ resource "null_resource" "secscan" {
 
     inline = [
       "chmod +x /home/ubuntu/secscan.sh",
-      "sudo /home/ubuntu/secscan.sh \"${var.severity}\"",
+      "sudo /home/ubuntu/secscan.sh \"${var.severity}\" \"${var.longhorn_version}\"",
     ]
   }
 

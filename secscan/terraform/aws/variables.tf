@@ -73,3 +73,8 @@ variable "aws_ssh_private_key_file_path" {
 variable "severity" {
   type        = string
 }
+
+variable "longhorn_version" {
+  type        = string
+  default     = "master"
+}

@@ -3,10 +3,11 @@
 set -x
 
 SEVERITY=${1}
+LONGHORN_VERSION=${2}
 
 mkdir -p /junit-reports /templates
 
-wget https://raw.githubusercontent.com/longhorn/longhorn-manager/master/deploy/longhorn-images.txt
+wget "https://raw.githubusercontent.com/longhorn/longhorn/${LONGHORN_VERSION}/deploy/longhorn-images.txt"
 IMAGES=($(< longhorn-images.txt))
 
 wget -O /templates/junit.tpl https://raw.githubusercontent.com/longhorn/longhorn-tests/master/secscan/templates/junit.tpl

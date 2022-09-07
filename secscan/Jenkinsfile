@@ -12,6 +12,7 @@ node {
                              --name ${JOB_BASE_NAME}${BUILD_NUMBER} \
                              --env TF_VAR_tf_workspace=${TF_VAR_tf_workspace} \
                              --env TF_VAR_severity=${TF_VAR_SEVERITY} \
+                             --env TF_VAR_longhorn_version=${TF_VAR_LONGHORN_VERSION} \
                              --env TF_VAR_lh_aws_access_key=${AWS_ACCESS_KEY} \
                              --env TF_VAR_lh_aws_secret_key=${AWS_SECRET_KEY} \
                              ${imageName}
