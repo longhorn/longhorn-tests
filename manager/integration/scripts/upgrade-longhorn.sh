@@ -1,14 +1,14 @@
 #!/bin/bash 
 
-LONGHORN_MANAGER_REPO_URI="${1}"
-LONGHORN_MANAGER_BRANCH="${2}"
+LONGHORN_REPO_URI="${1}"
+LONGHORN_REPO_BRANCH="${2}"
 CUSTOM_LONGHORN_MANAGER_IMAGE="${3}"
 CUSTOM_LONGHORN_ENGINE_IMAGE="${4}"
 CUSTOM_LONGHORN_INSTANCE_MANAGER_IMAGE="${5}"
 CUSTOM_LONGHORN_SHARE_MANAGER_IMAGE="${6}"
 CUSTOM_LONGHORN_BACKING_IMAGE_MANAGER_IMAGE="${7}"
 
-LONGHORN_MANAGER_REPO_DIR="/tmp/longhorn-manager"
+LONGHORN_REPO_DIR="/tmp/longhorn"
 LONGHORN_MANIFEST="/tmp/longhorn.yml"
 
 LONGHORN_NAMESPACE="longhorn-system"
@@ -32,20 +32,18 @@ wait_longhorn_status_running(){
 }
 
 git clone --single-branch \
-          --branch ${LONGHORN_MANAGER_BRANCH} \
-          ${LONGHORN_MANAGER_REPO_URI} \
-          ${LONGHORN_MANAGER_REPO_DIR}
+          --branch ${LONGHORN_REPO_BRANCH} \
+          ${LONGHORN_REPO_URI} \
+          ${LONGHORN_REPO_DIR}
 
-for FILE in `find "${LONGHORN_MANAGER_REPO_DIR}/deploy/install" -type f -name "*\.yaml" | sort`; do
-  cat ${FILE} >> "${LONGHORN_MANIFEST}"
-  echo "---"  >> "${LONGHORN_MANIFEST}"
-done
+cat "${LONGHORN_REPO_DIR}/deploy/longhorn.yaml" > "${LONGHORN_MANIFEST}"
+sed -i ':a;N;$!ba;s/---\n---/---/g' "${LONGHORN_MANIFEST}"
 
-LONGHORN_MANAGER_IMAGE=`grep -io "longhornio\/longhorn-manager:.*$" "${LONGHORN_MANIFEST}"| head -1`
-LONGHORN_ENGINE_IMAGE=`grep -io "longhornio\/longhorn-engine:.*$" "${LONGHORN_MANIFEST}"| head -1`
-LONGHORN_INSTANCE_MANAGER_IMAGE=`grep -io "longhornio\/longhorn-instance-manager:.*$" "${LONGHORN_MANIFEST}"| head -1`
-LONGHORN_SHARE_MANAGER_IMAGE=`grep -io "longhornio\/longhorn-share-manager:.*$" "${LONGHORN_MANIFEST}"| head -1`
-LONGHORN_BACKING_IMAGE_MANAGER_IMAGE=`grep -io "longhornio\/backing-image-manager:.*$" "${LONGHORN_MANIFEST}"| head -1`
+LONGHORN_MANAGER_IMAGE=`grep -io "longhornio\/longhorn-manager:.*$" "${LONGHORN_MANIFEST}"| head -1 | sed -e 's/^"//' -e 's/"$//'`
+LONGHORN_ENGINE_IMAGE=`grep -io "longhornio\/longhorn-engine:.*$" "${LONGHORN_MANIFEST}"| head -1 | sed -e 's/^"//' -e 's/"$//'`
+LONGHORN_INSTANCE_MANAGER_IMAGE=`grep -io "longhornio\/longhorn-instance-manager:.*$" "${LONGHORN_MANIFEST}"| head -1 | sed -e 's/^"//' -e 's/"$//'`
+LONGHORN_SHARE_MANAGER_IMAGE=`grep -io "longhornio\/longhorn-share-manager:.*$" "${LONGHORN_MANIFEST}"| head -1 | sed -e 's/^"//' -e 's/"$//'`
+LONGHORN_BACKING_IMAGE_MANAGER_IMAGE=`grep -io "longhornio\/backing-image-manager:.*$" "${LONGHORN_MANIFEST}"| head -1 | sed -e 's/^"//' -e 's/"$//'`
 
 # replace longhorn images with custom images
 sed -i 's#'${LONGHORN_MANAGER_IMAGE}'#'${CUSTOM_LONGHORN_MANAGER_IMAGE}'#' "${LONGHORN_MANIFEST}"
