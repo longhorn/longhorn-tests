@@ -1304,7 +1304,11 @@ def backup_labels_test(client, random_labels, volume_name, size=SIZE, backing_im
     # If we're running the test with a BackingImage,
     # check field `volumeBackingImageName` is set properly.
     backup = bv.backupGet(name=b.name)
-    assert len(backup.labels) == len(random_labels)
+    # Longhorn will automatically add a label `longhorn.io/volume-access-mode`
+    # to a newly created backup
+    assert len(backup.labels) == len(random_labels) + 1
+    assert random_labels["key"] == backup.labels["key"]
+    assert "longhorn.io/volume-access-mode" in backup.labels.keys()
     wait_for_backup_volume(client, volume_name, backing_image)
 
 
