@@ -63,9 +63,9 @@ wait_longhorn_status_running(){
 generate_longhorn_yaml_manifest() {
 	MANIFEST_BASEDIR="${1}"
 
-	LONGHORN_MANAGER_REPO_URI=${LONGHORN_MANAGER_REPO_URI:-"https://github.com/longhorn/longhorn-manager.git"}
-	LONGHORN_MANAGER_BRANCH=${LONGHORN_MANAGER_BRANCH:-"master"}
-	LONGHORN_MANAGER_REPO_DIR="${TMPDIR}/longhorn-manager"
+	LONGHORN_REPO_URI=${LONGHORN_REPO_URI:-"https://github.com/longhorn/longhorn.git"}
+	LONGHORN_REPO_BRANCH=${LONGHORN_REPO_BRANCH:-"master"}
+	LONGHORN_REPO_DIR="${TMPDIR}/longhorn"
 
     CUSTOM_LONGHORN_MANAGER_IMAGE=${CUSTOM_LONGHORN_MANAGER_IMAGE:-"longhornio/longhorn-manager:master-head"}
     CUSTOM_LONGHORN_ENGINE_IMAGE=${CUSTOM_LONGHORN_ENGINE_IMAGE:-"longhornio/longhorn-engine:master-head"}
@@ -76,21 +76,19 @@ generate_longhorn_yaml_manifest() {
 
 
 	git clone --single-branch \
-		      --branch ${LONGHORN_MANAGER_BRANCH} \
-			  ${LONGHORN_MANAGER_REPO_URI} \
-			  ${LONGHORN_MANAGER_REPO_DIR}
+		      --branch ${LONGHORN_REPO_BRANCH} \
+			  ${LONGHORN_REPO_URI} \
+			  ${LONGHORN_REPO_DIR}
 
-    for FILE in `find "${LONGHORN_MANAGER_REPO_DIR}/deploy/install" -type f -name "*\.yaml" | sort`; do
-      cat ${FILE} >> "${MANIFEST_BASEDIR}/longhorn.yaml"
-      echo "---"  >> "${MANIFEST_BASEDIR}/longhorn.yaml"
-    done
+  cat "${LONGHORN_REPO_DIR}/deploy/longhorn.yaml" > "${MANIFEST_BASEDIR}/longhorn.yaml"
+  sed -i ':a;N;$!ba;s/---\n---/---/g' "${MANIFEST_BASEDIR}/longhorn.yaml"
 
 	# get longhorn default images from yaml manifest
-    LONGHORN_MANAGER_IMAGE=`grep -io "longhornio\/longhorn-manager:.*$" "${MANIFEST_BASEDIR}/longhorn.yaml"| head -1`
-    LONGHORN_ENGINE_IMAGE=`grep -io "longhornio\/longhorn-engine:.*$" "${MANIFEST_BASEDIR}/longhorn.yaml"| head -1`
-    LONGHORN_INSTANCE_MANAGER_IMAGE=`grep -io "longhornio\/longhorn-instance-manager:.*$" "${MANIFEST_BASEDIR}/longhorn.yaml"| head -1`
-    LONGHORN_SHARE_MANAGER_IMAGE=`grep -io "longhornio\/longhorn-share-manager:.*$" "${MANIFEST_BASEDIR}/longhorn.yaml"| head -1`
-    LONGHORN_BACKING_IMAGE_MANAGER_IMAGE=`grep -io "longhornio\/backing-image-manager:.*$" "${MANIFEST_BASEDIR}/longhorn.yaml"| head -1`
+    LONGHORN_MANAGER_IMAGE=`grep -io "longhornio\/longhorn-manager:.*$" "${MANIFEST_BASEDIR}/longhorn.yaml"| head -1 | sed -e 's/^"//' -e 's/"$//'`
+    LONGHORN_ENGINE_IMAGE=`grep -io "longhornio\/longhorn-engine:.*$" "${MANIFEST_BASEDIR}/longhorn.yaml"| head -1 | sed -e 's/^"//' -e 's/"$//'`
+    LONGHORN_INSTANCE_MANAGER_IMAGE=`grep -io "longhornio\/longhorn-instance-manager:.*$" "${MANIFEST_BASEDIR}/longhorn.yaml"| head -1 | sed -e 's/^"//' -e 's/"$//'`
+    LONGHORN_SHARE_MANAGER_IMAGE=`grep -io "longhornio\/longhorn-share-manager:.*$" "${MANIFEST_BASEDIR}/longhorn.yaml"| head -1 | sed -e 's/^"//' -e 's/"$//'`
+    LONGHORN_BACKING_IMAGE_MANAGER_IMAGE=`grep -io "longhornio\/backing-image-manager:.*$" "${MANIFEST_BASEDIR}/longhorn.yaml"| head -1 | sed -e 's/^"//' -e 's/"$//'`
 
 	# replace longhorn images with custom images
     sed -i 's#'${LONGHORN_MANAGER_IMAGE}'#'${CUSTOM_LONGHORN_MANAGER_IMAGE}'#' "${MANIFEST_BASEDIR}/longhorn.yaml"
@@ -171,13 +169,13 @@ run_longhorn_upgrade_test(){
 	LONGHORN_UPGRADE_TESTS_MANIFEST_FILE_PATH="${LONGHORH_TESTS_REPO_BASEDIR}/manager/integration/deploy/upgrade_test.yaml"
 
 	LONGHORN_JUNIT_REPORT_PATH=`yq e '.spec.containers[0].env[] | select(.name == "LONGHORN_JUNIT_REPORT_PATH").value' "${LONGHORN_TESTS_MANIFEST_FILE_PATH}"`
-	
+
 	local PYTEST_COMMAND_ARGS='''"-s",
                                  "--junitxml='${LONGHORN_JUNIT_REPORT_PATH}'",
                                  "--include-upgrade-test",
                                  "-k", "test_upgrade",
-                                 "--upgrade-lh-manager-repo-url", "'${LONGHORN_MANAGER_REPO_URI}'",
-                                 "--upgrade-lh-manager-repo-branch", "'${LONGHORN_MANAGER_BRANCH}'",
+                                 "--upgrade-lh-repo-url", "'${LONGHORN_REPO_URI}'",
+                                 "--upgrade-lh-repo-branch", "'${LONGHORN_REPO_BRANCH}'",
                                  "--upgrade-lh-manager-image", "'${CUSTOM_LONGHORN_MANAGER_IMAGE}'",
                                  "--upgrade-lh-engine-image", "'${CUSTOM_LONGHORN_ENGINE_IMAGE}'",
                                  "--upgrade-lh-instance-manager-image", "'${CUSTOM_LONGHORN_INSTANCE_MANAGER_IMAGE}'",
