@@ -25,8 +25,8 @@ node {
                                    --env CUSTOM_LONGHORN_SHARE_MANAGER_IMAGE=${CUSTOM_LONGHORN_SHARE_MANAGER_IMAGE} \
                                    --env LONGHORN_TESTS_CUSTOM_IMAGE=${LONGHORN_TESTS_CUSTOM_IMAGE} \
                                    --env DISTRO=${DISTRO} \
-                                   --env LONGHORN_MANAGER_REPO_URI=${LONGHORN_MANAGER_REPO_URI} \
-                                   --env LONGHORN_MANAGER_BRANCH=${LONGHORN_MANAGER_BRANCH} \
+                                   --env LONGHORN_REPO_URI=${LONGHORN_REPO_URI} \
+                                   --env LONGHORN_REPO_BRANCH=${LONGHORN_REPO_BRANCH} \
                                    --env LONGHORN_STABLE_VERSION=${LONGHORN_STABLE_VERSION} \
                                    --env LONGHORN_TEST_CLOUDPROVIDER=${LONGHORN_TEST_CLOUDPROVIDER} \
                                    --env LONGHORN_UPGRADE_TEST=${LONGHORN_UPGRADE_TEST} \
