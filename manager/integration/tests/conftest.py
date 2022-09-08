@@ -15,8 +15,8 @@ SKIP_INFRA_OPT = "--skip-infra-test"
 INCLUDE_STRESS_OPT = "--include-stress-test"
 INCLUDE_UPGRADE_OPT = "--include-upgrade-test"
 
-UPGRADE_LH_MANAGER_REPO_URL = "--upgrade-lh-manager-repo-url"
-UPGRADE_LH_MANAGER_REPO_BRANCH = "--upgrade-lh-manager-repo-branch"
+UPGRADE_LH_REPO_URL = "--upgrade-lh-repo-url"
+UPGRADE_LH_REPO_BRANCH = "--upgrade-lh-repo-branch"
 UPGRADE_LH_MANAGER_IMAGE = "--upgrade-lh-manager-image"
 UPGRADE_LH_ENGINE_IMAGE = "--upgrade-lh-engine-image"
 UPGRADE_LH_INSTANCE_MANAGER_IMAGE = "--upgrade-lh-instance-manager-image"
@@ -45,18 +45,18 @@ def pytest_addoption(parser):
                      default=False,
                      help="include upgrade tests (default: False)")
 
-    longhorn_manager_repo_url =\
-        "https://github.com/longhorn/longhorn-manager.git"
-    parser.addoption(UPGRADE_LH_MANAGER_REPO_URL, action="store",
-                     default=longhorn_manager_repo_url,
-                     help='''set longhorn-manger repo url, this will be used
+    longhorn_repo_url =\
+        "https://github.com/longhorn/longhorn.git"
+    parser.addoption(UPGRADE_LH_REPO_URL, action="store",
+                     default=longhorn_repo_url,
+                     help='''set longhorn repo url, this will be used
                      to generate longhorn yaml manifest for test_upgrade
                      (default:
-                     https://github.com/longhorn/longhorn-manager.git)''')
+                     https://github.com/longhorn/longhorn.git)''')
 
-    parser.addoption(UPGRADE_LH_MANAGER_REPO_BRANCH, action="store",
+    parser.addoption(UPGRADE_LH_REPO_BRANCH, action="store",
                      default="master",
-                     help='''set longhorn-manger repo branch, this will be used
+                     help='''set longhorn repo branch, this will be used
                      to generate longhorn yaml manifest for test_upgrade
                      (default: master)''')
 
