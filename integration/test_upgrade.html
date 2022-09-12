@@ -64,13 +64,13 @@ from common import client, core_api # NOQA
 
 
 @pytest.fixture
-def upgrade_longhorn_manager_repo_url(request):
-    return request.config.getoption(&#34;--upgrade-lh-manager-repo-url&#34;)
+def upgrade_longhorn_repo_url(request):
+    return request.config.getoption(&#34;--upgrade-lh-repo-url&#34;)
 
 
 @pytest.fixture
-def upgrade_longhorn_manager_repo_branch(request):
-    return request.config.getoption(&#34;--upgrade-lh-manager-repo-branch&#34;)
+def upgrade_longhorn_repo_branch(request):
+    return request.config.getoption(&#34;--upgrade-lh-repo-branch&#34;)
 
 
 @pytest.fixture
@@ -98,8 +98,8 @@ def upgrade_longhorn_backing_image_manager_image(request):
     return request.config.getoption(&#34;--upgrade-lh-backing-image-manager-image&#34;)
 
 
-def longhorn_upgrade(longhorn_manager_repo,
-                     longhorn_manager_branch,
+def longhorn_upgrade(longhorn_repo_url,
+                     longhorn_repo_branch,
                      longhorn_manager_image,
                      longhorn_engine_image,
                      longhorn_instance_manager_image,
@@ -108,8 +108,8 @@ def longhorn_upgrade(longhorn_manager_repo,
 
     command = &#34;../scripts/upgrade-longhorn.sh&#34;
     process = subprocess.Popen([command,
-                                longhorn_manager_repo,
-                                longhorn_manager_branch,
+                                longhorn_repo_url,
+                                longhorn_repo_branch,
                                 longhorn_manager_image,
                                 longhorn_engine_image,
                                 longhorn_instance_manager_image,
@@ -127,8 +127,8 @@ def longhorn_upgrade(longhorn_manager_repo,
 
 
 @pytest.mark.upgrade  # NOQA
-def test_upgrade(upgrade_longhorn_manager_repo_url,
-                 upgrade_longhorn_manager_repo_branch,
+def test_upgrade(upgrade_longhorn_repo_url,
+                 upgrade_longhorn_repo_branch,
                  upgrade_longhorn_manager_image,
                  upgrade_longhorn_engine_image,
                  upgrade_longhorn_instance_manager_image,
@@ -165,8 +165,8 @@ def test_upgrade(upgrade_longhorn_manager_repo_url,
     13. Attach the volume, and recreate Pod, and StatefulSet
     14. Check All volumes data
     &#34;&#34;&#34;
-    longhorn_manager_repo = upgrade_longhorn_manager_repo_url
-    longhorn_manager_branch = upgrade_longhorn_manager_repo_branch
+    longhorn_repo_url = upgrade_longhorn_repo_url
+    longhorn_repo_branch = upgrade_longhorn_repo_branch
     longhorn_manager_image = upgrade_longhorn_manager_image
     longhorn_engine_image = upgrade_longhorn_engine_image
     longhorn_instance_manager_image = upgrade_longhorn_instance_manager_image
@@ -216,8 +216,8 @@ def test_upgrade(upgrade_longhorn_manager_repo_url,
                               sspod_info[&#39;data&#39;])
 
     # upgrade Longhorn
-    assert longhorn_upgrade(longhorn_manager_repo,
-                            longhorn_manager_branch,
+    assert longhorn_upgrade(longhorn_repo_url,
+                            longhorn_repo_branch,
                             longhorn_manager_image,
                             longhorn_engine_image,
                             longhorn_instance_manager_image,
@@ -333,7 +333,7 @@ def test_upgrade(upgrade_longhorn_manager_repo_url,
 <h2 class="section-title" id="header-functions">Functions</h2>
 <dl>
 <dt id="tests.test_upgrade.longhorn_upgrade"><code class="name flex">
-<span>def <span class="ident">longhorn_upgrade</span></span>(<span>longhorn_manager_repo, longhorn_manager_branch, longhorn_manager_image, longhorn_engine_image, longhorn_instance_manager_image, longhorn_share_manager_image, longhorn_backing_image_manager_image)</span>
+<span>def <span class="ident">longhorn_upgrade</span></span>(<span>longhorn_repo_url, longhorn_repo_branch, longhorn_manager_image, longhorn_engine_image, longhorn_instance_manager_image, longhorn_share_manager_image, longhorn_backing_image_manager_image)</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -341,8 +341,8 @@ def test_upgrade(upgrade_longhorn_manager_repo_url,
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def longhorn_upgrade(longhorn_manager_repo,
-                     longhorn_manager_branch,
+<pre><code class="python">def longhorn_upgrade(longhorn_repo_url,
+                     longhorn_repo_branch,
                      longhorn_manager_image,
                      longhorn_engine_image,
                      longhorn_instance_manager_image,
@@ -351,8 +351,8 @@ def test_upgrade(upgrade_longhorn_manager_repo_url,
 
     command = &#34;../scripts/upgrade-longhorn.sh&#34;
     process = subprocess.Popen([command,
-                                longhorn_manager_repo,
-                                longhorn_manager_branch,
+                                longhorn_repo_url,
+                                longhorn_repo_branch,
                                 longhorn_manager_image,
                                 longhorn_engine_image,
                                 longhorn_instance_manager_image,
@@ -370,7 +370,7 @@ def test_upgrade(upgrade_longhorn_manager_repo_url,
 </details>
 </dd>
 <dt id="tests.test_upgrade.test_upgrade"><code class="name flex">
-<span>def <span class="ident">test_upgrade</span></span>(<span>upgrade_longhorn_manager_repo_url, upgrade_longhorn_manager_repo_branch, upgrade_longhorn_manager_image, upgrade_longhorn_engine_image, upgrade_longhorn_instance_manager_image, upgrade_longhorn_share_manager_image, upgrade_longhorn_backing_image_manager_image, client, core_api, volume_name, csi_pv, pvc, pod_make, statefulset, storage_class)</span>
+<span>def <span class="ident">test_upgrade</span></span>(<span>upgrade_longhorn_repo_url, upgrade_longhorn_repo_branch, upgrade_longhorn_manager_image, upgrade_longhorn_engine_image, upgrade_longhorn_instance_manager_image, upgrade_longhorn_share_manager_image, upgrade_longhorn_backing_image_manager_image, client, core_api, volume_name, csi_pv, pvc, pod_make, statefulset, storage_class)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Test Longhorn upgrade</p>
@@ -410,8 +410,8 @@ StatefulSet to detach theirvolumes</li>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">@pytest.mark.upgrade  # NOQA
-def test_upgrade(upgrade_longhorn_manager_repo_url,
-                 upgrade_longhorn_manager_repo_branch,
+def test_upgrade(upgrade_longhorn_repo_url,
+                 upgrade_longhorn_repo_branch,
                  upgrade_longhorn_manager_image,
                  upgrade_longhorn_engine_image,
                  upgrade_longhorn_instance_manager_image,
@@ -448,8 +448,8 @@ def test_upgrade(upgrade_longhorn_manager_repo_url,
     13. Attach the volume, and recreate Pod, and StatefulSet
     14. Check All volumes data
     &#34;&#34;&#34;
-    longhorn_manager_repo = upgrade_longhorn_manager_repo_url
-    longhorn_manager_branch = upgrade_longhorn_manager_repo_branch
+    longhorn_repo_url = upgrade_longhorn_repo_url
+    longhorn_repo_branch = upgrade_longhorn_repo_branch
     longhorn_manager_image = upgrade_longhorn_manager_image
     longhorn_engine_image = upgrade_longhorn_engine_image
     longhorn_instance_manager_image = upgrade_longhorn_instance_manager_image
@@ -499,8 +499,8 @@ def test_upgrade(upgrade_longhorn_manager_repo_url,
                               sspod_info[&#39;data&#39;])
 
     # upgrade Longhorn
-    assert longhorn_upgrade(longhorn_manager_repo,
-                            longhorn_manager_branch,
+    assert longhorn_upgrade(longhorn_repo_url,
+                            longhorn_repo_branch,
                             longhorn_manager_image,
                             longhorn_engine_image,
                             longhorn_instance_manager_image,
@@ -664,8 +664,8 @@ def upgrade_longhorn_manager_image(request):
     return request.config.getoption(&#34;--upgrade-lh-manager-image&#34;)</code></pre>
 </details>
 </dd>
-<dt id="tests.test_upgrade.upgrade_longhorn_manager_repo_branch"><code class="name flex">
-<span>def <span class="ident">upgrade_longhorn_manager_repo_branch</span></span>(<span>request)</span>
+<dt id="tests.test_upgrade.upgrade_longhorn_repo_branch"><code class="name flex">
+<span>def <span class="ident">upgrade_longhorn_repo_branch</span></span>(<span>request)</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -674,12 +674,12 @@ def upgrade_longhorn_manager_image(request):
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">@pytest.fixture
-def upgrade_longhorn_manager_repo_branch(request):
-    return request.config.getoption(&#34;--upgrade-lh-manager-repo-branch&#34;)</code></pre>
+def upgrade_longhorn_repo_branch(request):
+    return request.config.getoption(&#34;--upgrade-lh-repo-branch&#34;)</code></pre>
 </details>
 </dd>
-<dt id="tests.test_upgrade.upgrade_longhorn_manager_repo_url"><code class="name flex">
-<span>def <span class="ident">upgrade_longhorn_manager_repo_url</span></span>(<span>request)</span>
+<dt id="tests.test_upgrade.upgrade_longhorn_repo_url"><code class="name flex">
+<span>def <span class="ident">upgrade_longhorn_repo_url</span></span>(<span>request)</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -688,8 +688,8 @@ def upgrade_longhorn_manager_repo_branch(request):
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">@pytest.fixture
-def upgrade_longhorn_manager_repo_url(request):
-    return request.config.getoption(&#34;--upgrade-lh-manager-repo-url&#34;)</code></pre>
+def upgrade_longhorn_repo_url(request):
+    return request.config.getoption(&#34;--upgrade-lh-repo-url&#34;)</code></pre>
 </details>
 </dd>
 <dt id="tests.test_upgrade.upgrade_longhorn_share_manager_image"><code class="name flex">
@@ -730,8 +730,8 @@ def upgrade_longhorn_share_manager_image(request):
 <li><code><a title="tests.test_upgrade.upgrade_longhorn_engine_image" href="#tests.test_upgrade.upgrade_longhorn_engine_image">upgrade_longhorn_engine_image</a></code></li>
 <li><code><a title="tests.test_upgrade.upgrade_longhorn_instance_manager_image" href="#tests.test_upgrade.upgrade_longhorn_instance_manager_image">upgrade_longhorn_instance_manager_image</a></code></li>
 <li><code><a title="tests.test_upgrade.upgrade_longhorn_manager_image" href="#tests.test_upgrade.upgrade_longhorn_manager_image">upgrade_longhorn_manager_image</a></code></li>
-<li><code><a title="tests.test_upgrade.upgrade_longhorn_manager_repo_branch" href="#tests.test_upgrade.upgrade_longhorn_manager_repo_branch">upgrade_longhorn_manager_repo_branch</a></code></li>
-<li><code><a title="tests.test_upgrade.upgrade_longhorn_manager_repo_url" href="#tests.test_upgrade.upgrade_longhorn_manager_repo_url">upgrade_longhorn_manager_repo_url</a></code></li>
+<li><code><a title="tests.test_upgrade.upgrade_longhorn_repo_branch" href="#tests.test_upgrade.upgrade_longhorn_repo_branch">upgrade_longhorn_repo_branch</a></code></li>
+<li><code><a title="tests.test_upgrade.upgrade_longhorn_repo_url" href="#tests.test_upgrade.upgrade_longhorn_repo_url">upgrade_longhorn_repo_url</a></code></li>
 <li><code><a title="tests.test_upgrade.upgrade_longhorn_share_manager_image" href="#tests.test_upgrade.upgrade_longhorn_share_manager_image">upgrade_longhorn_share_manager_image</a></code></li>
 </ul>
 </li>
