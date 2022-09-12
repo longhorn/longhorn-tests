@@ -39,5 +39,16 @@ Then Should see Normal replice delete event.
 Normal Delete Engine/t1-e-6a846a7a Removed unknown replica tcp://10.42.2.94:10000 from engine And Should not see Warning unknown replica detect event.</description>
     </item>
     
+    <item>
+      <title>Test upgrade for migrated Longhorn on Rancher</title>
+      <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.4.0/test-upgrade-for-migrated-longhorn/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.4.0/test-upgrade-for-migrated-longhorn/</guid>
+      <description>Related discussion https://github.com/longhorn/longhorn/discussions/4198
+Context: since few customers used our broken chart longhorn 100.2.1+up1.3.1 on Rancher (Now fixed) with the workaround. We would like to verify the future upgrade path for those customers.
+Steps Set up a cluster of Kubernetes 1.20. Adding this repo to the apps section in new rancher UI repo: https://github.com/PhanLe1010/charts.git branch: release-v2.6-longhorn-1.3.1. Access old rancher UI by navigating to &amp;lt;your-rancher-url&amp;gt;/g. Install Longhorn 1.0.2. Create/attach some volumes. Create a few recurring snapshot/backup job that run every minutes.</description>
+    </item>
+    
   </channel>
 </rss>

@@ -617,45 +617,44 @@
   
 </aside>
 
+
 <main style="padding: 1%; width: 70%;">
-  <header class="homepage-header">
-    <h1>Node</h1>
-    
-  </header>
-  <div class="homepage-content">
-    
-  </div>
+  <h1 id="title">Test upgrade for migrated Longhorn on Rancher</h1>
   <div>
-    <ul>
+    <article id="content">
+       <h2 id="related-discussion">Related discussion</h2>
+<p><a href="https://github.com/longhorn/longhorn/discussions/4198">https://github.com/longhorn/longhorn/discussions/4198</a></p>
+<p><strong>Context</strong>: since few customers used our broken chart longhorn 100.2.1+up1.3.1 on Rancher (Now fixed) with the workaround. We would like to verify the future upgrade path for those customers.</p>
+<h2 id="steps">Steps</h2>
+<ol>
+<li>Set up a cluster of Kubernetes 1.20.</li>
+<li>Adding this repo to the apps section in new rancher UI
+<ol>
+<li>repo: <a href="https://github.com/PhanLe1010/charts.git">https://github.com/PhanLe1010/charts.git</a></li>
+<li>branch: release-v2.6-longhorn-1.3.1.</li>
+</ol>
+</li>
+<li>Access old rancher UI by navigating to <code>&lt;your-rancher-url&gt;/g</code>.</li>
+<li>Install Longhorn 1.0.2.</li>
+<li>Create/attach some volumes. Create a few recurring snapshot/backup job that run every minutes.</li>
+<li>Upgrade Longhorn to v1.2.4.</li>
+<li>Migrate Longhorn to new chart in new rancher UI <a href="https://longhorn.io/kb/how-to-migrate-longhorn-chart-installed-in-old-rancher-ui-to-the-chart-in-new-rancher-ui/">https://longhorn.io/kb/how-to-migrate-longhorn-chart-installed-in-old-rancher-ui-to-the-chart-in-new-rancher-ui/</a>.</li>
+<li>Upgrade to longhorn 100.2.1+up1.3.1 in the UI.</li>
+<li>Verify the upgrade would be stuck at with error:
+<pre tabindex="0"><code>Patch CustomResourceDefinition &#34;volumes.longhorn.io&#34; in namespace
+error updating the resource &#34;volumes.longhorn.io&#34;:
+         cannot patch &#34;volumes.longhorn.io&#34; with kind CustomResourceDefinition: CustomResourceDefinition.apiextensions.k8s.io &#34;volumes.longhorn.io&#34; is invalid: spec.conversion.strategy: Invalid value: &#34;Webhook&#34;: must be None if spec.preserveUnknownFields is true
+Error: UPGRADE FAILED: cannot patch &#34;engineimages.longhorn.io&#34; with kind CustomResourceDefinition: CustomResourceDefinition.apiextensions.k8s.io &#34;engineimages.longhorn.io&#34; is invalid: spec.conversion.strategy: Invalid value: &#34;Webhook&#34;: must be None if spec.preserveUnknownFields is true &amp;&amp; cannot patch &#34;nodes.longhorn.io&#34; with kind CustomResourceDefinition: CustomResourceDefinition.apiextensions.k8s.io &#34;nodes.longhorn.io&#34; is invalid: spec.conversion.strategy: Invalid value: &#34;Webhook&#34;: must be None if spec.preserveUnknownFields is true &amp;&amp; cannot patch &#34;volumes.longhorn.io&#34; with kind CustomResourceDefinition: CustomResourceDefinition.apiextensions.k8s.io &#34;volumes.longhorn.io&#34; is invalid: spec.conversion.strategy: Invalid value: &#34;Webhook&#34;: must be None if spec.preserveUnknownFields is true
+</code></pre></li>
+<li>Apply the <a href="https://github.com/longhorn/longhorn/pull/4237#issuecomment-1195339461">workaround</a></li>
+<li>Retry upgrade to longhorn 100.2.1+up1.3.1 in the UI.</li>
+<li>Verify the upgrade is ok.</li>
+<li>Verify that the user can successfully upgrade to future chart releases (e.g., Longhorn v1.3.2) from this version longhorn 100.2.1+up1.3.1.</li>
+</ol>
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node/backing-image-on-a-down-node/">Backing Image on a down node</a></li>
-  
-
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node/degraded-availability/">Degraded availability with added nodes</a></li>
-  
-
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node/improve-node-failure-handling/">Improve Node Failure Handling By Automatically Force Delete Terminating Pods of StatefulSet/Deployment On Downed Node</a></li>
-  
-
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node/node-disconnection/">Node disconnection test</a></li>
-  
-
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node/node-drain-deletion/">Node drain and deletion test</a></li>
-  
-
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node/physical-node-down/">Physical node down</a></li>
-  
-
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node/kubelet-restart-on-a-node/">Test kubelet restart on a node of the cluster</a></li>
-  
-
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node/node-deletion/">Test node deletion</a></li>
-  
-
-</ul>
-
+    </article>
+  <a href="https://github.com/longhorn/longhorn-tests/edit/master/docs/content/manual/release-specific/v1.4.0/test-upgrade-for-migrated-longhorn.md" target="_blank" title="Edit on Github" style="font-size:smaller;float:right;padding-right:3%">[Edit]</a>
   </div>
-</main>
 
     
     
