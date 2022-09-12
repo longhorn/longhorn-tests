@@ -7,7 +7,7 @@ import random
 import yaml
 
 import common
-from common import client, random_labels, volume_name  # NOQA
+from common import client, random_labels, volume_name, clients  # NOQA
 from common import core_api, apps_api, pod, statefulset   # NOQA
 from common import SIZE, EXPAND_SIZE
 from common import check_device_data, write_device_random_data
@@ -81,6 +81,7 @@ from common import write_volume_dev_random_mb_data
 from common import VOLUME_HEAD_NAME
 from common import set_node_scheduling
 from common import SETTING_FAILED_BACKUP_TTL
+from common import wait_for_volume_creation
 
 from backupstore import backupstore_delete_volume_cfg_file
 from backupstore import backupstore_cleanup
@@ -4558,3 +4559,59 @@ def test_backup_failed_disable_auto_cleanup(set_random_backupstore,  # NOQA
                       + volume_name + " is deleted"
     except AssertionError:
         pass
+
+
+@pytest.mark.parametrize(
+    "access_mode,overridden_restored_access_mode",
+    [
+        pytest.param("rwx", "rwo"),
+        pytest.param("rwo", "rwx")
+    ],
+)
+def test_backup_volume_restore_with_access_mode(set_random_backupstore, # NOQA
+                                                client, # NOQA
+                                                access_mode, # NOQA
+                                       overridden_restored_access_mode): # NOQA
+    """
+    Test the backup w/ the volume access mode, then restore a volume w/ the
+     original access mode or being overridden.
+
+    1. Prepare a healthy volume
+    2. Create a backup for the volume
+    3. Restore a volume from the backup w/o specifying the access mode
+       => Validate the access mode should be the same the volume
+    4. Restore a volume from the backup w/ specifying the access mode
+       => Validate the access mode should be the same as the specified
+    """
+    # Step 1
+    test_volume_name = generate_volume_name()
+    client.create_volume(name=test_volume_name,
+                         size=str(DEFAULT_VOLUME_SIZE * Gi),
+                         numberOfReplicas=2,
+                         accessMode=access_mode)
+    wait_for_volume_creation(client, test_volume_name)
+    volume = wait_for_volume_detached(client, test_volume_name)
+    volume.attach(hostId=common.get_self_host_id())
+    volume = common.wait_for_volume_healthy(client, test_volume_name)
+
+    # Step 2
+    _, b, _, _ = create_backup(client, test_volume_name)
+
+    # Step 3
+    volume_name_ori_access_mode = test_volume_name + '-default-access-mode'
+    client.create_volume(name=volume_name_ori_access_mode,
+                         size=str(DEFAULT_VOLUME_SIZE * Gi),
+                         numberOfReplicas=2,
+                         fromBackup=b.url)
+    volume_ori_access_mode = client.by_id_volume(volume_name_ori_access_mode)
+    assert volume_ori_access_mode.accessMode == access_mode
+
+    # Step 4
+    volume_name_sp_access_mode = test_volume_name + '-specified-access-mode'
+    client.create_volume(name=volume_name_sp_access_mode,
+                         size=str(DEFAULT_VOLUME_SIZE * Gi),
+                         numberOfReplicas=2,
+                         accessMode=overridden_restored_access_mode,
+                         fromBackup=b.url)
+    volume_sp_access_mode = client.by_id_volume(volume_name_sp_access_mode)
+    assert volume_sp_access_mode.accessMode == overridden_restored_access_mode
