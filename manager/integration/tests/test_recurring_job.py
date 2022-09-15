@@ -491,7 +491,9 @@ def recurring_job_labels_test(client, labels, volume_name, size=SIZE, backing_im
     for key, val in iter(labels.items()):
         assert b.labels.get(key) == val
     assert b.labels.get(RECURRING_JOB_LABEL) == RECURRING_JOB_NAME
-    # One extra Label from RecurringJob.
+    # One extra Label from RecurringJob.and
+    # Longhorn will automatically add a label `longhorn.io/volume-access-mode`
+    # to a newly created backup
     assert len(b.labels) == len(labels) + 1
     wait_for_backup_volume(client, volume_name, backing_image)
 
@@ -554,7 +556,7 @@ def test_recurring_job_kubernetes_status(set_random_backupstore, client, core_ap
     # Verify the Labels on the actual Backup.
     bv = client.by_id_backupVolume(volume_name)
     backups = bv.backupList().data
-    assert len(backups) == 1
+    wait_for_backup_count(bv, 1)
 
     b = bv.backupGet(name=backups[0].name)
     status = json.loads(b.labels.get(KUBERNETES_STATUS_LABEL))
@@ -568,8 +570,10 @@ def test_recurring_job_kubernetes_status(set_random_backupstore, client, core_ap
         'pvStatus': 'Available',
         'workloadsStatus': None
     }
-    # Two Labels: KubernetesStatus and RecurringJob.
-    assert len(b.labels) == 2
+    # Two Labels: KubernetesStatus and RecurringJob additional 1
+    # Longhorn will automatically add a label `longhorn.io/volume-access-mode`
+    # to a newly created backup
+    assert len(b.labels) == 3
 
 
 def test_recurring_jobs_maximum_retain(client, core_api, volume_name): # NOQA
