@@ -53,6 +53,7 @@ resource "aws_vpc" "lh_registry_aws_vpc" {
 
   tags = {
     Name = "lh-registry-vpc-${random_string.random_suffix.id}"
+    Owner = "longhorn-infra"
   }
 }
 
@@ -62,6 +63,7 @@ resource "aws_internet_gateway" "lh_registry_aws_igw" {
 
   tags = {
     Name = "lh-registry-igw-${random_string.random_suffix.id}"
+    Owner = "longhorn-infra"
   }
 }
 
@@ -120,6 +122,7 @@ resource "aws_security_group" "lh_registry_aws_secgrp" {
 
   tags = {
     Name = "lh-registry-secgrp-${random_string.random_suffix.id}"
+    Owner = "longhorn-infra"
   }
 }
 
@@ -133,6 +136,7 @@ resource "aws_subnet" "lh_registry_aws_public_subnet" {
 
   tags = {
     Name = "lh-registry-public-subnet-${random_string.random_suffix.id}"
+    Owner = "longhorn-infra"
   }
 }
 
@@ -146,6 +150,7 @@ resource "aws_subnet" "lh_registry_aws_private_subnet" {
 
   tags = {
     Name = "lh-registry-private-subnet-${random_string.random_suffix.id}"
+    Owner = "longhorn-infra"
   }
 }
 
@@ -164,6 +169,7 @@ resource "aws_route_table" "lh_registry_aws_public_rt" {
 
   tags = {
     Name = "lh-registry-aws-public-rt-${random_string.random_suffix.id}"
+    Owner = "longhorn-infra"
   }
 }
 
@@ -182,6 +188,7 @@ resource "aws_route_table" "lh_registry_aws_private_rt" {
 
   tags = {
     Name = "lh-registry-aws-private-rt-${random_string.random_suffix.id}"
+    Owner = "longhorn-infra"
   }
 }
 
@@ -211,6 +218,11 @@ resource "aws_route_table_association" "lh_registry_aws_private_subnet_rt_associ
 resource "aws_key_pair" "lh_registry_aws_pair_key" {
   key_name   = format("%s_%s", "lh_registry_aws_key_pair", random_string.random_suffix.id)
   public_key = file(var.aws_ssh_public_key_file_path)
+
+  tags = {
+    Name = "lh_registry_aws_key_pair-${random_string.random_suffix.id}"
+    Owner = "longhorn-infra"
+  }
 }
 
 # Create instance for registry
@@ -240,6 +252,8 @@ resource "aws_instance" "lh_registry_aws_instance" {
 
   tags = {
     Name = "lh-registry-${random_string.random_suffix.id}"
+    DoNotDelete = "true"
+    Owner = "longhorn-infra"
   }
 }
 
