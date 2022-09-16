@@ -18,6 +18,7 @@ resource "aws_vpc" "lh-secscan_aws_vpc" {
 
   tags = {
     Name = "${var.lh-secscan_aws_vpc_name}-${random_string.random_suffix.id}"
+    Owner = "longhorn-infra"
   }
 }
 
@@ -26,7 +27,8 @@ resource "aws_internet_gateway" "lh-secscan_aws_igw" {
   vpc_id = aws_vpc.lh-secscan_aws_vpc.id
 
   tags = {
-    Name = "lh-secscan_igw"
+    Name = "lh-secscan_igw-${random_string.random_suffix.id}"
+    Owner = "longhorn-infra"
   }
 }
 
@@ -53,6 +55,7 @@ resource "aws_security_group" "lh-secscan_aws_secgrp" {
 
   tags = {
     Name = "lh-secscan_aws_sec_grp_secscan-${random_string.random_suffix.id}"
+    Owner = "longhorn-infra"
   }
 }
 
@@ -64,6 +67,7 @@ resource "aws_subnet" "lh-secscan_aws_public_subnet" {
 
   tags = {
     Name = "lh-secscan_public_subnet-${random_string.random_suffix.id}"
+    Owner = "longhorn-infra"
   }
 }
 
@@ -82,6 +86,7 @@ resource "aws_route_table" "lh-secscan_aws_public_rt" {
 
   tags = {
     Name = "lh-secscan_aws_public_rt-${random_string.random_suffix.id}"
+    Owner = "longhorn-infra"
   }
 }
 
@@ -100,6 +105,11 @@ resource "aws_route_table_association" "lh-secscan_aws_public_subnet_rt_associat
 resource "aws_key_pair" "lh-secscan_aws_pair_key" {
   key_name   = format("%s_%s", "lh-secscan_aws_key_pair", "${random_string.random_suffix.id}")
   public_key = file(var.aws_ssh_public_key_file_path)
+
+  tags = {
+    Name = "lh-secscan_aws_key_pair-${random_string.random_suffix.id}"
+    Owner = "longhorn-infra"
+  }
 }
 
 # Create aws instance
@@ -135,6 +145,11 @@ resource "aws_instance" "lh-secscan_aws_instance" {
 
 resource "aws_eip" "lh-secscan_aws_eip_secscan" {
   vpc      = true
+
+  tags = {
+    Name = "lh-secscan_aws_eip-${random_string.random_suffix.id}"
+    Owner = "longhorn-infra"
+  }
 }
 
 # Associate every EIP with secscan instance

@@ -27,6 +27,7 @@ resource "aws_vpc" "build_engine_aws_vpc" {
 
   tags = {
     Name = "${var.build_engine_aws_vpc_name}-${random_string.random_suffix.id}"
+    Owner = "longhorn-infra"
   }
 }
 
@@ -35,7 +36,8 @@ resource "aws_internet_gateway" "build_engine_aws_igw" {
   vpc_id = aws_vpc.build_engine_aws_vpc.id
 
   tags = {
-    Name = "build_engine_igw"
+    Name = "build_engine_igw-${random_string.random_suffix.id}"
+    Owner = "longhorn-infra"
   }
 }
 
@@ -62,6 +64,7 @@ resource "aws_security_group" "build_engine_aws_secgrp" {
 
   tags = {
     Name = "build_engine_aws_sec_grp_build_node-${random_string.random_suffix.id}"
+    Owner = "longhorn-infra"
   }
 }
 
@@ -73,6 +76,7 @@ resource "aws_subnet" "build_engine_aws_public_subnet" {
 
   tags = {
     Name = "build_engine_public_subnet-${random_string.random_suffix.id}"
+    Owner = "longhorn-infra"
   }
 }
 
@@ -91,6 +95,7 @@ resource "aws_route_table" "build_engine_aws_public_rt" {
 
   tags = {
     Name = "build_engine_aws_public_rt-${random_string.random_suffix.id}"
+    Owner = "longhorn-infra"
   }
 }
 
@@ -109,6 +114,11 @@ resource "aws_route_table_association" "build_engine_aws_public_subnet_rt_associ
 resource "aws_key_pair" "build_engine_aws_pair_key" {
   key_name   = format("%s_%s", "build_engine_aws_key_pair", "${random_string.random_suffix.id}")
   public_key = file(var.aws_ssh_public_key_file_path)
+
+  tags = {
+    Name = "build_engine_aws_key_pair-${random_string.random_suffix.id}"
+    Owner = "longhorn-infra"
+  }
 }
 
 # Create build_node instances
@@ -147,6 +157,11 @@ resource "aws_instance" "build_engine_aws_instance" {
 resource "aws_eip" "build_engine_aws_eip_build_node" {
   count    = var.build_engine_aws_instance_count
   vpc      = true
+
+  tags = {
+    Name = "build_engine_aws_eip_build_node-${count.index}-${random_string.random_suffix.id}"
+    Owner = "longhorn-infra"
+  }
 }
 
 # Associate every EIP with build_node instance
