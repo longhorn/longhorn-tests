@@ -1,11 +1,16 @@
 import pytest
 
 import common
-from common import clients, volume_name  # NOQA
+from common import clients, volume_name, wait_for_volume_healthy  # NOQA
 from common import get_random_client
 from common import SIZE
 from common import wait_for_volume_delete
 from common import set_node_scheduling
+from common import get_volume_endpoint, write_volume_dev_random_mb_data
+from common import get_device_checksum
+from common import wait_for_rebuild_start, wait_for_rebuild_complete
+from common import Gi
+from test_scheduling import get_host_replica
 
 REPLICA_COUNT = 2
 
@@ -219,7 +224,6 @@ def test_migration_with_failed_replica(clients, volume_name):  # NOQA
 
 @pytest.mark.coretest  # NOQA
 @pytest.mark.migration # NOQA
-@pytest.mark.skip(reason="TODO") # NOQA
 def test_migration_with_rebuilding_replica(clients, volume_name):  # NOQA
     """
     Test that a degraded migratable RWX volume that contain a rebuilding
@@ -240,7 +244,64 @@ def test_migration_with_rebuilding_replica(clients, volume_name):  # NOQA
     7. Observe volume migrated to node 2 (single active engine).
     8. Validate initially written test data.
     """
-    return
+    # Step 1
+    client = get_random_client(clients)  # NOQA
+    current_host = common.get_self_host_id()
+    host1, host2 = get_hosts_for_migration_test(clients)
+
+    # Step 2
+    volume = client.create_volume(name=volume_name, size=str(2 * Gi),
+                                  numberOfReplicas=3,
+                                  backingImage="",
+                                  accessMode="rwx", migratable=True)
+    volume = common.wait_for_volume_detached(client, volume_name)
+    volume.attach(hostId=current_host)
+    volume = common.wait_for_volume_healthy(client, volume_name)
+    old_replicas = volume.replicas
+
+    volume_endpoint = get_volume_endpoint(volume)
+    write_volume_dev_random_mb_data(volume_endpoint,
+                                    1, 1500)
+    data = get_device_checksum(volume_endpoint)
+
+    # Step 3
+    host_replica = get_host_replica(volume, host_id=current_host)
+    volume.replicaRemove(name=host_replica.name)
+
+    # Step 4
+    wait_for_rebuild_start(client, volume_name)
+
+    volume.attach(hostId=host1)
+    volume = client.by_id_volume(volume_name)
+    assert len(volume.replicas) == len(old_replicas)
+
+    wait_for_rebuild_complete(client, volume_name)
+
+    # Step 5
+    volume = common.wait_for_volume_migration_ready(client, volume_name)
+    new_replicas = volume.replicas
+    assert len(old_replicas) == (len(new_replicas) - len(old_replicas))
+
+    # Step 6
+    volume.detach(hostId=current_host)
+
+    # Step 7
+    volume = common.wait_for_volume_migration_node(client,
+                                                   volume_name,
+                                                   host1)
+    volume = common.wait_for_volume_healthy(client, volume_name)
+
+    replicas = volume.replicas
+    assert len(replicas) == len(old_replicas)
+
+    # Step 8
+    volume.detach(hostId=host1)
+
+    volume = common.wait_for_volume_detached(client, volume_name)
+    volume.attach(hostId=current_host)
+    volume = common.wait_for_volume_healthy(client, volume_name)
+    volume_endpoint = get_volume_endpoint(volume)
+    assert data == get_device_checksum(volume_endpoint)
 
 
 def get_hosts_for_migration_test(clients): # NOQA
