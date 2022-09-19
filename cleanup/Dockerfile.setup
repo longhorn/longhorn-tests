@@ -1,0 +1,9 @@
+From alpine:latest
+
+ENV WORKSPACE /src/longhorn-tests
+
+WORKDIR $WORKSPACE
+
+RUN apk add --no-cache docker aws-cli jq bash grep
+
+COPY [".", "$WORKSPACE"]

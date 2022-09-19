@@ -1,0 +1,74 @@
+def imageName = "${JOB_BASE_NAME}-${env.BUILD_NUMBER}"
+def summary
+def BUILD_TRIGGER_BY = "\n${currentBuild.getBuildCauses()[0].shortDescription}"
+
+node {
+
+  if (params.SEND_SLACK_NOTIFICATION) {
+    notifyBuild('STARTED', BUILD_TRIGGER_BY, params.NOTIFY_SLACK_CHANNEL)
+  }
+
+  checkout scm
+
+  withCredentials([usernamePassword(credentialsId: 'AWS_CREDS_RANCHER_QA', passwordVariable: 'AWS_SECRET_KEY', usernameVariable: 'AWS_ACCESS_KEY')]) {
+
+    stage('build') {
+      sh "cleanup/scripts/build.sh"
+      sh """ docker run -itd --name ${JOB_BASE_NAME}-${BUILD_NUMBER} \
+                             --env AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY} \
+                             --env AWS_SECRET_ACCESS_KEY=${AWS_SECRET_KEY} \
+                             --env AWS_DEFAULT_REGION=us-east-1 \
+                             ${imageName}
+         """
+    }
+
+    try {
+      stage('cleanup') {
+        sh "docker exec ${JOB_BASE_NAME}-${BUILD_NUMBER} ${TF_VAR_tf_workspace}/scripts/cleanup.sh"
+      }
+    } catch (e) {
+        currentBuild.result = "FAILED"
+        throw e
+    } finally {
+      stage('releasing resources') {
+
+        sh "docker stop ${JOB_BASE_NAME}-${BUILD_NUMBER}"
+        sh "docker rm -v ${JOB_BASE_NAME}-${BUILD_NUMBER}"
+        sh "docker rmi ${imageName}"
+
+        if (params.SEND_SLACK_NOTIFICATION) {
+          notifyBuild(currentBuild.result, "", params.NOTIFY_SLACK_CHANNEL)
+        }
+      }
+    }
+
+  }
+
+}
+
+
+def notifyBuild(String buildStatus = 'STARTED', String summary_msg, String slack_channel) {
+  // build status of null means successful
+  buildStatus =  buildStatus ?: 'SUCCESSFUL'
+
+  // Default values
+  def colorName = 'RED'
+  def colorCode = '#FF0000'
+  def subject = "${buildStatus}: Job '${env.JOB_BASE_NAME} [${env.BUILD_NUMBER}]'"
+  def summary = "${subject} (${env.BUILD_URL})" + summary_msg
+
+  // Override default values based on build status
+  if (buildStatus == 'STARTED') {
+    color = 'YELLOW'
+    colorCode = '#FFFF00'
+  } else if (buildStatus == 'SUCCESSFUL') {
+    color = 'GREEN'
+    colorCode = '#00FF00'
+  } else {
+    color = 'RED'
+    colorCode = '#FF0000'
+  }
+
+  // Send notifications
+  slackSend (color: colorCode, message: summary, channel: slack_channel,  tokenCredentialId: 'longhorn-tests-slack-token')
+}
