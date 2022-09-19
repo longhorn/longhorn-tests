@@ -858,7 +858,13 @@ def test_engine_live_upgrade_while_replica_concurrent_rebuild(client, # NOQA
 
     default_img = common.get_default_engine_image(client)
     default_img_name = default_img.name
-    default_img = wait_for_engine_image_ref_count(client, default_img_name, 2)
+
+    # Total ei.refCount of the two volumes is
+    # 2 volumes + 2 engines + all replicas
+    expected_ref_count = 4 + len(volume1.replicas) + len(volume2.replicas)
+    default_img = wait_for_engine_image_ref_count(client,
+                                                  default_img_name,
+                                                  expected_ref_count)
     cli_v = default_img.cliAPIVersion
     cli_minv = default_img.cliAPIMinVersion
     ctl_v = default_img.controllerAPIVersion
@@ -937,8 +943,16 @@ def test_engine_live_upgrade_while_replica_concurrent_rebuild(client, # NOQA
     assert engine.engineImage == engine_upgrade_image
     wait_for_rebuild_complete(client, volume1_name)
 
-    wait_for_engine_image_ref_count(client, default_img_name, 1)
-    wait_for_engine_image_ref_count(client, new_img_name, 1)
+    # Total ei.refCount of one volumes is equal to
+    # 1 volumes + 1 engine + all replicas
+    expected_ref_count = 2 + len(volume1.replicas)
+    wait_for_engine_image_ref_count(client,
+                                    default_img_name,
+                                    expected_ref_count)
+    expected_ref_count = 2 + len(volume2.replicas)
+    wait_for_engine_image_ref_count(client,
+                                    new_img_name,
+                                    expected_ref_count)
 
     for replica in volume2.replicas:
         assert replica.engineImage == engine_upgrade_image
