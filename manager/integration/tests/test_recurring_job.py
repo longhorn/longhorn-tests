@@ -491,10 +491,10 @@ def recurring_job_labels_test(client, labels, volume_name, size=SIZE, backing_im
     for key, val in iter(labels.items()):
         assert b.labels.get(key) == val
     assert b.labels.get(RECURRING_JOB_LABEL) == RECURRING_JOB_NAME
-    # One extra Label from RecurringJob.and
+    # One extra Label from RecurringJob and another one below
     # Longhorn will automatically add a label `longhorn.io/volume-access-mode`
     # to a newly created backup
-    assert len(b.labels) == len(labels) + 1
+    assert len(b.labels) == len(labels) + 2
     wait_for_backup_volume(client, volume_name, backing_image)
 
 
