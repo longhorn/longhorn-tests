@@ -35,6 +35,9 @@ from common import BACKING_IMAGE_NAME, BACKING_IMAGE_QCOW2_URL, \
     BACKING_IMAGE_SOURCE_TYPE_FROM_VOLUME, Gi
 
 from common import wait_for_volume_detached
+from common import wait_for_backing_image_ready
+from common import wait_for_backing_image_in_disk_fail
+from common import get_disk_uuid
 
 @pytest.mark.coretest   # NOQA
 @pytest.mark.backing_image  # NOQA
@@ -498,10 +501,9 @@ def test_exporting_backing_image_from_volume(client, volume_name):  # NOQA
     # Step10
     check_volume_data(volume3, data2)
 
-
-@pytest.mark.skip(reason="TODO") # NOQA
 @pytest.mark.backing_image  # NOQA
-def test_backing_image_auto_resync(client, volume_name):  # NOQA
+@pytest.mark.parametrize("bi_url", [BACKING_IMAGE_QCOW2_URL, BACKING_IMAGE_RAW_URL]) # NOQA
+def test_backing_image_auto_resync(bi_url, client, volume_name):  # NOQA
     """
     1. Create a backing image.
     2. Create and attach a 3-replica volume using the backing image.
@@ -511,6 +513,37 @@ def test_backing_image_auto_resync(client, volume_name):  # NOQA
     6. Wait for the file recovering automatically.
     7. Validate the volume.
     """
+    # Step 1
+    create_backing_image_with_matching_url(
+              client, BACKING_IMAGE_NAME, bi_url)
+
+    # Step 2
+    volume = create_and_check_volume(
+                                     client, volume_name, 3,
+                                     str(BACKING_IMAGE_EXT4_SIZE),
+                                     BACKING_IMAGE_NAME)
+
+    # Step 3
+    lht_host_id = get_self_host_id()
+    volume.attach(hostId=lht_host_id)
+    volume = wait_for_volume_healthy(client, volume_name)
+    assert volume.backingImage == BACKING_IMAGE_NAME
+    assert volume.size == str(BACKING_IMAGE_EXT4_SIZE)
+
+    # Step 4
+    subprocess.check_output(['rm', '-rf', '/var/lib/longhorn/backing-images/'])
+
+    # Step 5
+    disk_uuid = get_disk_uuid()
+    wait_for_backing_image_in_disk_fail(client, BACKING_IMAGE_NAME, disk_uuid)
+
+    # Step 6
+    wait_for_backing_image_ready(client, BACKING_IMAGE_NAME)
+
+    # Step 7
+    volume = wait_for_volume_healthy(client, volume_name)
+    assert volume.backingImage == BACKING_IMAGE_NAME
+    assert volume.size == str(BACKING_IMAGE_EXT4_SIZE)
 
 
 @pytest.mark.skip(reason="TODO") # NOQA
