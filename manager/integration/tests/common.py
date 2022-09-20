@@ -5070,3 +5070,42 @@ def enable_default_disk(client):
             disk.evictionRequested = False
 
     update_node_disks(client, node.name, disks=disks, retry=True)
+
+
+def wait_for_backing_image_ready(client, backing_img_name):
+
+    for i in range(RETRY_EXEC_COUNTS):
+        backing_image = client.by_id_backing_image(backing_img_name)
+        try:
+            for _, status in iter(backing_image.diskFileStatusMap.items()):
+                assert status.state == "ready"
+            break
+        except Exception as e:
+            print(e)
+            time.sleep(RETRY_INTERVAL)
+
+    for _, status in iter(backing_image.diskFileStatusMap.items()):
+        assert status.state == "ready"
+
+
+def wait_for_backing_image_in_disk_fail(client, backing_img_name, disk_uuid):
+
+    failed = False
+    for i in range(RETRY_BACKUP_COUNTS):
+        if failed is False:
+            backing_image = client.by_id_backing_image(backing_img_name)
+            for uuid, status in iter(backing_image.diskFileStatusMap.items()):
+                if uuid == disk_uuid and status.state == "failed":
+                    failed = True
+        if failed is True:
+            break
+        time.sleep(0.1)
+    assert failed is True
+
+
+def get_disk_uuid():
+
+    f = open('/var/lib/longhorn/longhorn-disk.cfg')
+    data = json.load(f)
+
+    return data["diskUUID"]
