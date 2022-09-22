@@ -1211,6 +1211,17 @@ def get_pvc_manifest(request):
     return pvc_manifest
 
 
+def check_pvc_in_specific_status(api, pvc_name, status):
+    for i in range(RETRY_EXEC_COUNTS):
+        claim = \
+            api.read_namespaced_persistent_volume_claim(name=pvc_name,
+                                                        namespace='default')
+        if claim.status.phase == "bound":
+            break
+        time.sleep(RETRY_INTERVAL)
+    assert claim.status.phase == status
+
+
 @pytest.fixture
 def pvc(request):
     return get_pvc_manifest(request)
@@ -4970,6 +4981,50 @@ def get_volume_running_replica_cnt(client, volume_name):  # NOQA
             client, volume_name, node.name, chk_running=True)
 
     return cnt
+
+
+def create_rwx_volume_with_storageclass(client,
+                                        core_api,
+                                        storage_class):
+
+    VOLUME_SIZE = str(DEFAULT_VOLUME_SIZE * Gi)
+
+    pvc_name = generate_volume_name()
+
+    pvc_spec = {
+        "apiVersion": "v1",
+        "kind": "PersistentVolumeClaim",
+        "metadata": {
+                "name": pvc_name,
+        },
+        "spec": {
+            "accessModes": [
+                "ReadWriteMany"
+            ],
+            "storageClassName": storage_class['metadata']['name'],
+            "resources": {
+                "requests": {
+                    "storage": VOLUME_SIZE
+                }
+            }
+        }
+    }
+
+    core_api.create_namespaced_persistent_volume_claim(
+        'default',
+        pvc_spec
+    )
+
+    check_pvc_in_specific_status(core_api, pvc_name, 'Bound')
+
+    volume_name = get_volume_name(core_api, pvc_name)
+
+    wait_for_volume_creation(client, volume_name)
+    if storage_class['parameters']['fromBackup'] != "":
+        wait_for_volume_restoration_completed(client, volume_name)
+    wait_for_volume_detached(client, volume_name)
+
+    return volume_name
 
 
 def create_volume(client, vol_name, size, node_id, r_num):

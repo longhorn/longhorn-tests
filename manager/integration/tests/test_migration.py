@@ -11,6 +11,12 @@ from common import get_device_checksum
 from common import wait_for_rebuild_start, wait_for_rebuild_complete
 from common import Gi
 from test_scheduling import get_host_replica
+from common import DEFAULT_VOLUME_SIZE
+from common import client, core_api, storage_class, pvc_name # NOQA
+from common import get_self_host_id, create_and_check_volume, create_backup
+from common import create_storage_class, get_volume_engine
+from common import create_rwx_volume_with_storageclass
+from backupstore import set_random_backupstore # NOQA
 
 REPLICA_COUNT = 2
 
@@ -36,7 +42,7 @@ def test_migration_confirm(clients, volume_name):  # NOQA
 
 
 def migration_confirm_test(clients, volume_name, backing_image=""):  # NOQA
-    client, volume, data = setup_migration_test(clients, volume_name,
+    client, volume, data = setup_migration_test(clients, volume_name, # NOQA
                                                 backing_image)
     host1, host2 = get_hosts_for_migration_test(clients)
 
@@ -81,7 +87,7 @@ def test_migration_rollback(clients, volume_name):  # NOQA
 
 
 def migration_rollback_test(clients, volume_name, backing_image=""):  # NOQA
-    client, volume, data = setup_migration_test(clients, volume_name,
+    client, volume, data = setup_migration_test(clients, volume_name, # NOQA
                                                 backing_image)
     host1, host2 = get_hosts_for_migration_test(clients)
 
@@ -224,7 +230,7 @@ def test_migration_with_failed_replica(clients, request, volume_name):  # NOQA
 
     request.addfinalizer(finalizer)
 
-    client, volume, data = setup_migration_test(clients,
+    client, volume, data = setup_migration_test(clients, # NOQA
                                                 volume_name,
                                                 replica_cnt=3)
 
@@ -292,7 +298,7 @@ def test_migration_with_rebuilding_replica(clients, volume_name):  # NOQA
     8. Validate initially written test data.
     """
     # Step 1
-    client = get_random_client(clients)  # NOQA
+    client = get_random_client(clients) # NOQA
     current_host = common.get_self_host_id()
     host1, host2 = get_hosts_for_migration_test(clients)
 
@@ -353,22 +359,83 @@ def test_migration_with_rebuilding_replica(clients, volume_name):  # NOQA
 
 @pytest.mark.coretest  # NOQA
 @pytest.mark.migration # NOQA
-@pytest.mark.skip(reason="TODO") # NOQA
-def test_migration_with_restore_volume(clients, volume_name):  # NOQA
+def test_migration_with_restore_volume(core_api, # NOQA
+                                       client, # NOQA
+                                       clients, # NOQA
+                                       volume_name, # NOQA
+                                       storage_class, # NOQA
+                                       pvc_name, # NOQA
+                                       set_random_backupstore):  # NOQA
     """
     Test that a restored volume can be migrated.
-
     1. Prepare one backup.
     2. Create a StorageClass with `migratable` being enabled and
        `fromBackup` pointing to the above backup.
     3. Create a new RWX migratable volume using the StorageClass.
-    2. Attach to node 1, then write some data.
-    4. Attach the volume to node 2 (migration target).
-    5. Wait for the migration ready. Verify that field
+    4. Attach to node 1, then write some data.
+    5. Attach the volume to node 2 (migration target).
+    6. Wait for the migration ready. Verify that field
        `volume.controllers[0].requestedBackupRestore` is empty.
-    6. Confirm the migration then validate the data.
+    7. Confirm the migration then validate the data.
     """
-    return
+    # Step 1
+    lht_host_id = get_self_host_id()
+    volume = create_and_check_volume(client,
+                                     volume_name,
+                                     REPLICA_COUNT,
+                                     size=str(DEFAULT_VOLUME_SIZE * Gi))
+
+    volume.attach(hostId=lht_host_id)
+    volume = common.wait_for_volume_healthy(client, volume_name)
+    common.write_volume_random_data(volume)
+    bv, b, _, _ = create_backup(client, volume_name)
+
+    # Step 2
+    storage_class['metadata']['name'] = "longhorn-from-backup"
+    storage_class['parameters']['fromBackup'] = b.url
+    storage_class['parameters']['migratable'] = "true"
+
+    create_storage_class(storage_class)
+
+    # Stpe 3
+    backup_volume_name = \
+        create_rwx_volume_with_storageclass(client,
+                                            core_api,
+                                            storage_class)
+
+    restored_volume = client.by_id_volume(backup_volume_name)
+    volume_engine = get_volume_engine(restored_volume)
+    assert volume_engine.requestedBackupRestore == ""
+
+    # Step 4
+    lht_host_id = common.get_self_host_id()
+    host1, host2 = get_hosts_for_migration_test(clients)
+
+    volume = client.by_id_volume(backup_volume_name)
+    volume.attach(hostId=lht_host_id)
+    volume = common.wait_for_volume_healthy(client, backup_volume_name)
+
+    data = common.write_volume_random_data(volume)
+    volume.detach(hostId="")
+    volume = common.wait_for_volume_detached(client, backup_volume_name)
+
+    # Step 5, 6
+    volume.attach(hostId=host1)
+    volume = common.wait_for_volume_healthy(client, backup_volume_name)
+
+    volume.attach(hostId=host2)
+    volume = common.wait_for_volume_migration_ready(client, backup_volume_name)
+
+    volume.detach(hostId=host1)
+    volume = common.wait_for_volume_migration_node(client,
+                                                   backup_volume_name,
+                                                   host2)
+
+    volume.detach(hostId="")
+    volume = common.wait_for_volume_detached(client, backup_volume_name)
+
+    # verify test data
+    check_detached_volume_data(client, backup_volume_name, data)
 
 
 def get_hosts_for_migration_test(clients): # NOQA
@@ -406,7 +473,7 @@ def setup_migration_test(clients, volume_name, backing_image="", replica_cnt=REP
     Creates a new migratable volume then attaches it to the
     current node to write some test data on it.
     """
-    client = get_random_client(clients)
+    client = get_random_client(clients) # NOQA
     volume = client.create_volume(name=volume_name, size=SIZE,
                                   numberOfReplicas=replica_cnt,
                                   backingImage=backing_image,
