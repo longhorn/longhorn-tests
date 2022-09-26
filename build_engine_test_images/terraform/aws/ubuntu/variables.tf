@@ -94,3 +94,9 @@ variable "docker_repo" {
   description = "read from TF_VAR_docker_repo"
   default     = ""
 }
+
+variable "commit_id" {
+  type        = string
+  description = "read from TF_VAR_commit_id"
+  default     = ""
+}

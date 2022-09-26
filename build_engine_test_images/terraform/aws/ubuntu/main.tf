@@ -208,7 +208,7 @@ resource "null_resource" "build_images" {
   provisioner "remote-exec" {
     inline = [
         "sudo chmod +x /tmp/generate_images.sh",
-        "sudo /tmp/generate_images.sh ${var.build_engine_arch} ${var.docker_id} ${var.docker_password} ${var.docker_repo}"
+        "sudo /tmp/generate_images.sh ${var.build_engine_arch} ${var.docker_id} ${var.docker_password} ${var.docker_repo} ${var.commit_id}"
     ]
 
     connection {

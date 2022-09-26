@@ -4,6 +4,7 @@ arch=$1
 docker_id=$2
 docker_password=$3
 docker_repo=$4
+commit_id=$5
 
 function build_version_test_images() {
   # 1~6 API number
@@ -18,12 +19,24 @@ function build_version_test_images() {
   fi
 }
 
-# Get API information
-docker pull longhornio/longhorn-engine:master-head
-IMAGE="longhornio/longhorn-engine:master-head"
+# Build and get API information
+if [ ${commit_id} != '' ]
+then
+  git clone https://github.com/longhorn/longhorn-engine.git --branch ${commit_id} --single-branch
+else
+  git clone https://github.com/longhorn/longhorn-engine.git
+fi
+sed -i "s/.*ARG DAPPER_HOST_ARCH=.*/ARG DAPPER_HOST_ARCH=${arch}/" longhorn-engine/Dockerfile.dapper
+cd longhorn-engine
+echo -en test >> README.md
+git config --global user.email mock@gmail.com
+git config --global user.name mock
+git commit -a -m "make commit number diff"
+sudo make build
+base_image=$(sudo make package | grep "Successfully tagged longhornio/longhorn-engine:" | cut -d ' ' -f3)
+echo $base_image
 
-version=`docker run $IMAGE longhorn version --client-only`
-
+version=`docker run ${base_image} longhorn version --client-only`
 export CLIAPIVersion=`echo $version|jq -r ".clientVersion.cliAPIVersion"`
 export CLIAPIMinVersion=`echo $version|jq -r ".clientVersion.cliAPIMinVersion"`
 export ControllerAPIVersion=`echo $version|jq -r ".clientVersion.controllerAPIVersion"`
@@ -35,16 +48,6 @@ export DataFormatMinVersion=`echo $version|jq -r ".clientVersion.dataFormatMinVe
 upgrade_image="${docker_repo}:upgrade-test.$CLIAPIVersion-$CLIAPIMinVersion"\
 ".$ControllerAPIVersion-$ControllerAPIMinVersion"\
 ".$DataFormatVersion-$DataFormatMinVersion"
-
-git clone https://github.com/longhorn/longhorn-engine.git
-sed -i "s/.*ARG DAPPER_HOST_ARCH=.*/ARG DAPPER_HOST_ARCH=${arch}/" longhorn-engine/Dockerfile.dapper
-cd longhorn-engine
-echo -en test >> README.md
-git config --global user.email mock@gmail.com
-git config --global user.name mock
-git commit -a -m "make commit number diff"
-sudo make build
-sudo make package
 
 docker login -u=${docker_id} -p=${docker_password}
 image_info=($(docker images | grep "longhornio/longhorn-engine"))
