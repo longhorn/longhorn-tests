@@ -10,7 +10,7 @@ data "aws_ami" "aws_ami_rockylinux" {
 
   filter {
     name   = "name"
-    values = ["Rocky Linux ${var.os_distro_version}*"]
+    values = ["*RockyLinux-${var.os_distro_version}*"]
   }
 
   filter {
