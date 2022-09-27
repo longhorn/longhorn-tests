@@ -28,6 +28,8 @@ from common import SETTING_DEFAULT_DATA_LOCALITY
 
 from test_scheduling import wait_new_replica_ready
 
+from test_node import set_node_cordon
+
 ZONE1 = "lh-zone1"
 ZONE2 = "lh-zone2"
 ZONE3 = "lh-zone3"
@@ -490,6 +492,95 @@ def test_replica_auto_balance_zone_best_effort(client, core_api, volume_name):  
     assert z1_r_count == 2
     assert z2_r_count == 2
     assert z3_r_count == 2
+
+
+def test_replica_auto_balance_when_replica_on_unschedulable_node(client, core_api, volume_name, request):  # NOQA
+    """
+    Scenario: replica auto-balance when replica already running on
+              an unschedulable node.
+
+    Issue: https://github.com/longhorn/longhorn/issues/4502
+
+    Given set `replica-soft-anti-affinity` to `true`.
+    And set `replica-zone-soft-anti-affinity` to `true`.
+    And set volume spec `replicaAutoBalance` to `least-effort`.
+    And set node-1 to zone-1.
+        set node-2 to zone-2.
+        set node-3 to zone-3.
+    And node-2 tagged `AVAIL`.
+        node-3 tagged `AVAIL`.
+    And create a volume with 2 replicas and nodeSelector `AVAIL`.
+    And attach the volume to self-node.
+    And 0 replicas running in zone-1.
+        1 replicas running in zone-2.
+        1 replicas running in zone-3.
+
+    When cordone node-2.
+    Then replicas should remain balanced with,
+         0 replicas running in zone-1.
+         1 replicas running in zone-2.
+         1 replicas running in zone-3.
+    """
+    common.update_setting(client,
+                          SETTING_REPLICA_NODE_SOFT_ANTI_AFFINITY, "true")
+    common.update_setting(client,
+                          SETTING_REPLICA_ZONE_SOFT_ANTI_AFFINITY, "true")
+    common.update_setting(client,
+                          SETTING_REPLICA_AUTO_BALANCE, "least-effort")
+
+    n1, n2, n3 = client.list_node()
+
+    set_k8s_node_zone_label(core_api, n1.name, ZONE1)
+    set_k8s_node_zone_label(core_api, n2.name, ZONE2)
+    set_k8s_node_zone_label(core_api, n3.name, ZONE3)
+    wait_longhorn_node_zone_updated(client)
+
+    client.update(n2, allowScheduling=True, tags=["AVAIL"])
+    client.update(n3, allowScheduling=True, tags=["AVAIL"])
+
+    n_replicas = 2
+    volume = client.create_volume(name=volume_name,
+                                  numberOfReplicas=n_replicas,
+                                  nodeSelector=["AVAIL"],
+                                  dataLocality="best-effort")
+
+    volume = common.wait_for_volume_detached(client, volume_name)
+    volume.attach(hostId=get_self_host_id())
+
+    for _ in range(RETRY_COUNTS):
+        z1_r_count = get_zone_replica_count(
+            client, volume_name, ZONE1, chk_running=True)
+        z2_r_count = get_zone_replica_count(
+            client, volume_name, ZONE2, chk_running=True)
+        z3_r_count = get_zone_replica_count(
+            client, volume_name, ZONE3, chk_running=True)
+
+        if z1_r_count == 0 and (z2_r_count and z3_r_count == 1):
+            break
+        time.sleep(RETRY_INTERVAL)
+    assert z1_r_count == 0 and (z2_r_count and z3_r_count == 1)
+
+    # Set cordon on node
+    def finalizer():
+        set_node_cordon(core_api, n2.name, False)
+    request.addfinalizer(finalizer)
+
+    set_node_cordon(core_api, n2.name, True)
+
+    for _ in range(RETRY_COUNTS):
+        z1_r_count = get_zone_replica_count(
+            client, volume_name, ZONE1, chk_running=True)
+        z2_r_count = get_zone_replica_count(
+            client, volume_name, ZONE2, chk_running=True)
+        z3_r_count = get_zone_replica_count(
+            client, volume_name, ZONE3, chk_running=True)
+        assert z1_r_count == 0 and (z2_r_count and z3_r_count == 1)
+
+        volume = client.by_id_volume(volume_name)
+        for status in volume.rebuildStatus:
+            assert not status.isRebuilding
+
+        time.sleep(RETRY_INTERVAL)
 
 
 def test_replica_auto_balance_zone_best_effort_with_data_locality(client, core_api, volume_name, pod):  # NOQA
