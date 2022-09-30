@@ -21,7 +21,7 @@ variable "tf_workspace" {
 
 variable "aws_availability_zone" {
   type        = string
-  default     = "us-east-1b"
+  default     = "us-east-1c"
 }
 
 variable "build_engine_aws_vpc_name" {
