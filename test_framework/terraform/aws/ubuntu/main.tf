@@ -27,6 +27,7 @@ resource "aws_vpc" "lh_aws_vpc" {
 
   tags = {
     Name = "${var.lh_aws_vpc_name}-${random_string.random_suffix.id}"
+    Owner = "longhorn-infra"
   }
 }
 
@@ -35,7 +36,8 @@ resource "aws_internet_gateway" "lh_aws_igw" {
   vpc_id = aws_vpc.lh_aws_vpc.id
 
   tags = {
-    Name = "lh_igw"
+    Name = "lh_igw-${random_string.random_suffix.id}"
+    Owner = "longhorn-infra"
   }
 }
 
@@ -86,6 +88,7 @@ resource "aws_security_group" "lh_aws_secgrp_controlplane" {
 
   tags = {
     Name = "lh_aws_sec_grp_controlplane-${random_string.random_suffix.id}"
+    Owner = "longhorn-infra"
   }
 }
 
@@ -113,6 +116,7 @@ resource "aws_security_group" "lh_aws_secgrp_worker" {
 
   tags = {
     Name = "lh_aws_sec_grp_worker-${random_string.random_suffix.id}"
+    Owner = "longhorn-infra"
   }
 }
 
@@ -125,6 +129,7 @@ resource "aws_subnet" "lh_aws_public_subnet" {
 
   tags = {
     Name = "lh_public_subnet-${random_string.random_suffix.id}"
+    Owner = "longhorn-infra"
   }
 }
 
@@ -136,6 +141,7 @@ resource "aws_subnet" "lh_aws_private_subnet" {
 
   tags = {
     Name = "lh_private_subnet-${random_string.random_suffix.id}"
+    Owner = "longhorn-infra"
   }
 }
 
@@ -145,6 +151,7 @@ resource "aws_eip" "lh_aws_eip_nat_gw" {
 
   tags = {
     Name = "lh_eip_nat_gw-${random_string.random_suffix.id}"
+    Owner = "longhorn-infra"
   }
 }
 
@@ -162,6 +169,7 @@ resource "aws_nat_gateway" "lh_aws_nat_gw" {
 
   tags = {
     Name = "lh_eip_nat_gw-${random_string.random_suffix.id}"
+    Owner = "longhorn-infra"
   }
 }
 
@@ -181,6 +189,7 @@ resource "aws_route_table" "lh_aws_public_rt" {
 
   tags = {
     Name = "lh_aws_public_rt-${random_string.random_suffix.id}"
+    Owner = "longhorn-infra"
   }
 }
 
@@ -199,6 +208,7 @@ resource "aws_route_table" "lh_aws_private_rt" {
 
   tags = {
     Name = "lh_aws_private_rt-${random_string.random_suffix.id}"
+    Owner = "longhorn-infra"
   }
 }
 
@@ -228,6 +238,11 @@ resource "aws_route_table_association" "lh_aws_private_subnet_rt_association" {
 resource "aws_key_pair" "lh_aws_pair_key" {
   key_name   = format("%s_%s", "lh_aws_key_pair", "${random_string.random_suffix.id}")
   public_key = file(var.aws_ssh_public_key_file_path)
+
+  tags = {
+    Name = "lh_aws_key_pair-${random_string.random_suffix.id}"
+    Owner = "longhorn-infra"
+  }
 }
 
 # Create cluster secret (used for k3s on k3s only)
@@ -273,6 +288,11 @@ resource "aws_instance" "lh_aws_instance_controlplane" {
 resource "aws_eip" "lh_aws_eip_controlplane" {
   count    = var.lh_aws_instance_count_controlplane
   vpc      = true
+
+  tags = {
+    Name = "lh_aws_eip_controlplane-${count.index}-${random_string.random_suffix.id}"
+    Owner = "longhorn-infra"
+  }
 }
 
 # Associate every EIP with controlplane instance
