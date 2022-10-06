@@ -38,10 +38,11 @@ So we have 2 test cases for node disconnection + disabled auto-salvage:
 ### Case 3:
 1. Launch Longhorn.
 2. Use statefulset launch a pod with the volume and write some data.
-3. Disconnect the node that the volume attached to for 100 seconds.
-4. Wait for the node back and the volume reattachment.
-5. After the volume is reattached, the pod will be automatically deleted and recreate.
-6. Verify the data and the pod still works fine.
-7. Repeat step 2~6 for 3 times.
-8. Create, Attach, and detach other volumes to the recovered node. All volumes should work fine.
-9. Remove Longhorn and repeat step 1~9 for 3 times.
+3. Run command 'sync' in pod, make sure data fulshed.
+4. Disconnect the node that the volume attached to for 100 seconds.
+5. Wait for the node back and the volume reattachment.
+6. After the volume is reattached, the pod will be automatically deleted and recreate.
+7. Verify the data and the pod still works fine.
+8. Repeat step 2~6 for 3 times.
+9. Create, Attach, and detach other volumes to the recovered node. All volumes should work fine.
+10. Remove Longhorn and repeat step 1~9 for 3 times.
