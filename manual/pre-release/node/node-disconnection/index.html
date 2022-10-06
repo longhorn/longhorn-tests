@@ -654,6 +654,7 @@ For disconnect node : <a href="https://github.com/longhorn/longhorn/files/486412
 <ol>
 <li>Launch Longhorn.</li>
 <li>Use statefulset launch a pod with the volume and write some data.</li>
+<li>Run command &lsquo;sync&rsquo; in pod, make sure data fulshed.</li>
 <li>Disconnect the node that the volume attached to for 100 seconds.</li>
 <li>Wait for the node back and the volume reattachment.</li>
 <li>After the volume is reattached, the pod will be automatically deleted and recreate.</li>
