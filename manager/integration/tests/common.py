@@ -946,7 +946,7 @@ def pod_make(request):
             },
             'spec': {
                 'containers': [{
-                    'image': 'busybox',
+                    'image': 'busybox:1.34.0',
                     'imagePullPolicy': 'IfNotPresent',
                     'name': 'sleep',
                     "args": [
@@ -1010,7 +1010,7 @@ def pod(request):
         },
         'spec': {
             'containers': [{
-                'image': 'busybox',
+                'image': 'busybox:1.34.0',
                 'imagePullPolicy': 'IfNotPresent',
                 'name': 'sleep',
                 "args": [
@@ -1262,7 +1262,7 @@ def statefulset(request):
                 'spec': {
                     'terminationGracePeriodSeconds': 10,
                     'containers': [{
-                        'image': 'busybox',
+                        'image': 'busybox:1.34.0',
                         'imagePullPolicy': 'IfNotPresent',
                         'name': 'sleep',
                         'args': [
