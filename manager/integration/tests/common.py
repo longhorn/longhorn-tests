@@ -238,7 +238,9 @@ disk_being_syncing = "being syncing and please retry later"
 disktype = os.environ.get('LONGHORN_DISK_TYPE')
 if disktype == "hdd":
     RETRY_COUNTS *= 32
+    DEFAULT_POD_TIMEOUT *= 32
     DEFAULT_DEPLOYMENT_TIMEOUT *= 32
+    DEFAULT_STATEFULSET_TIMEOUT *= 32
     STREAM_EXEC_TIMEOUT *= 32
 
 
