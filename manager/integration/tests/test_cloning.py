@@ -36,7 +36,7 @@ def clone_pod(request):
         },
         'spec': {
             'containers': [{
-                'image': 'busybox',
+                'image': 'busybox:1.34.0',
                 'imagePullPolicy': 'IfNotPresent',
                 'name': 'sleep',
                 "args": [
