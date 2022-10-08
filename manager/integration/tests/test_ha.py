@@ -2202,7 +2202,7 @@ def test_auto_remount_with_subpath(client, core_api, storage_class, sts_name, st
     statefulset['spec']['replicas'] = 1
     statefulset['spec']['template']['spec']['containers'] = \
         [{
-            'image': 'busybox',
+            'image': 'busybox:1.34.0',
             'imagePullPolicy': 'IfNotPresent',
             'name': 'sleep',
             'args': [
