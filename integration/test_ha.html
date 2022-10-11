@@ -2230,7 +2230,7 @@ def test_auto_remount_with_subpath(client, core_api, storage_class, sts_name, st
     statefulset[&#39;spec&#39;][&#39;replicas&#39;] = 1
     statefulset[&#39;spec&#39;][&#39;template&#39;][&#39;spec&#39;][&#39;containers&#39;] = \
         [{
-            &#39;image&#39;: &#39;busybox&#39;,
+            &#39;image&#39;: &#39;busybox:1.34.0&#39;,
             &#39;imagePullPolicy&#39;: &#39;IfNotPresent&#39;,
             &#39;name&#39;: &#39;sleep&#39;,
             &#39;args&#39;: [
@@ -3468,7 +3468,7 @@ Then verify the file checksum.</li>
     statefulset[&#39;spec&#39;][&#39;replicas&#39;] = 1
     statefulset[&#39;spec&#39;][&#39;template&#39;][&#39;spec&#39;][&#39;containers&#39;] = \
         [{
-            &#39;image&#39;: &#39;busybox&#39;,
+            &#39;image&#39;: &#39;busybox:1.34.0&#39;,
             &#39;imagePullPolicy&#39;: &#39;IfNotPresent&#39;,
             &#39;name&#39;: &#39;sleep&#39;,
             &#39;args&#39;: [
