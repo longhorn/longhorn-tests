@@ -4602,7 +4602,7 @@ def test_backup_volume_restore_with_access_mode(set_random_backupstore, # NOQA
     _, b, _, _ = create_backup(client, test_volume_name)
 
     # Step 3
-    volume_name_ori_access_mode = test_volume_name + '-default-access-mode'
+    volume_name_ori_access_mode = test_volume_name + '-default-access'
     client.create_volume(name=volume_name_ori_access_mode,
                          size=str(DEFAULT_VOLUME_SIZE * Gi),
                          numberOfReplicas=2,
@@ -4611,7 +4611,7 @@ def test_backup_volume_restore_with_access_mode(set_random_backupstore, # NOQA
     assert volume_ori_access_mode.accessMode == access_mode
 
     # Step 4
-    volume_name_sp_access_mode = test_volume_name + '-specified-access-mode'
+    volume_name_sp_access_mode = test_volume_name + '-specified-access'
     client.create_volume(name=volume_name_sp_access_mode,
                          size=str(DEFAULT_VOLUME_SIZE * Gi),
                          numberOfReplicas=2,
