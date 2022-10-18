@@ -64,6 +64,7 @@ from common import wait_pod, exec_command_in_pod
 from common import RETRY_EXEC_COUNTS, RETRY_EXEC_INTERVAL
 from common import get_volume_running_replica_cnt
 from common import update_node_disks
+from common import RETRY_COMMAND_COUNT
 
 from backupstore import set_random_backupstore # NOQA
 from backupstore import backupstore_cleanup
@@ -2782,11 +2783,17 @@ def test_autosalvage_with_data_locality_enabled(client, core_api, make_deploymen
     pod_names = common.get_deployment_pod_names(core_api, deployment)
     wait_pod(pod_names[0])
 
-    command = 'cat /data/test'
-    verified_data = exec_command_in_pod(
-        core_api, command, pod_names[0], 'default')
+    for i in range(RETRY_COMMAND_COUNT):
+        try:
+            command = 'cat /data/test'
+            verified_data = exec_command_in_pod(
+                core_api, command, pod_names[0], 'default')
 
-    assert test_data == verified_data
+            assert test_data == verified_data
+        except Exception as err:
+            print(err)
+            time.sleep(RETRY_INTERVAL)
+            continue
 
     # Step8
     labels = "app=longhorn-manager"
