@@ -5014,6 +5014,50 @@ def get_volume_running_replica_cnt(client, volume_name):  # NOQA
     return cnt
 
 
+def create_rwx_volume_with_storageclass(client,
+                                        core_api,
+                                        storage_class):
+
+    VOLUME_SIZE = str(DEFAULT_VOLUME_SIZE * Gi)
+
+    pvc_name = generate_volume_name()
+
+    pvc_spec = {
+        &#34;apiVersion&#34;: &#34;v1&#34;,
+        &#34;kind&#34;: &#34;PersistentVolumeClaim&#34;,
+        &#34;metadata&#34;: {
+                &#34;name&#34;: pvc_name,
+        },
+        &#34;spec&#34;: {
+            &#34;accessModes&#34;: [
+                &#34;ReadWriteMany&#34;
+            ],
+            &#34;storageClassName&#34;: storage_class[&#39;metadata&#39;][&#39;name&#39;],
+            &#34;resources&#34;: {
+                &#34;requests&#34;: {
+                    &#34;storage&#34;: VOLUME_SIZE
+                }
+            }
+        }
+    }
+
+    core_api.create_namespaced_persistent_volume_claim(
+        &#39;default&#39;,
+        pvc_spec
+    )
+
+    check_pvc_in_specific_status(core_api, pvc_name, &#39;Bound&#39;)
+
+    volume_name = get_volume_name(core_api, pvc_name)
+
+    wait_for_volume_creation(client, volume_name)
+    if storage_class[&#39;parameters&#39;][&#39;fromBackup&#39;] != &#34;&#34;:
+        wait_for_volume_restoration_completed(client, volume_name)
+    wait_for_volume_detached(client, volume_name)
+
+    return volume_name
+
+
 def create_volume(client, vol_name, size, node_id, r_num):
     volume = client.create_volume(name=vol_name, size=size,
                                   numberOfReplicas=r_num)
@@ -6693,6 +6737,59 @@ created using a storage class).</p></div>
                                     Retain=spec[&#34;retain&#34;],
                                     Concurrency=spec[&#34;concurrency&#34;],
                                     Labels=spec[&#34;labels&#34;])</code></pre>
+</details>
+</dd>
+<dt id="tests.common.create_rwx_volume_with_storageclass"><code class="name flex">
+<span>def <span class="ident">create_rwx_volume_with_storageclass</span></span>(<span>client, core_api, storage_class)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def create_rwx_volume_with_storageclass(client,
+                                        core_api,
+                                        storage_class):
+
+    VOLUME_SIZE = str(DEFAULT_VOLUME_SIZE * Gi)
+
+    pvc_name = generate_volume_name()
+
+    pvc_spec = {
+        &#34;apiVersion&#34;: &#34;v1&#34;,
+        &#34;kind&#34;: &#34;PersistentVolumeClaim&#34;,
+        &#34;metadata&#34;: {
+                &#34;name&#34;: pvc_name,
+        },
+        &#34;spec&#34;: {
+            &#34;accessModes&#34;: [
+                &#34;ReadWriteMany&#34;
+            ],
+            &#34;storageClassName&#34;: storage_class[&#39;metadata&#39;][&#39;name&#39;],
+            &#34;resources&#34;: {
+                &#34;requests&#34;: {
+                    &#34;storage&#34;: VOLUME_SIZE
+                }
+            }
+        }
+    }
+
+    core_api.create_namespaced_persistent_volume_claim(
+        &#39;default&#39;,
+        pvc_spec
+    )
+
+    check_pvc_in_specific_status(core_api, pvc_name, &#39;Bound&#39;)
+
+    volume_name = get_volume_name(core_api, pvc_name)
+
+    wait_for_volume_creation(client, volume_name)
+    if storage_class[&#39;parameters&#39;][&#39;fromBackup&#39;] != &#34;&#34;:
+        wait_for_volume_restoration_completed(client, volume_name)
+    wait_for_volume_detached(client, volume_name)
+
+    return volume_name</code></pre>
 </details>
 </dd>
 <dt id="tests.common.create_snapshot"><code class="name flex">
@@ -12836,6 +12933,7 @@ from the args and kwargs arguments, respectively.</p></div>
 <li><code><a title="tests.common.create_pvc_for_volume" href="#tests.common.create_pvc_for_volume">create_pvc_for_volume</a></code></li>
 <li><code><a title="tests.common.create_pvc_spec" href="#tests.common.create_pvc_spec">create_pvc_spec</a></code></li>
 <li><code><a title="tests.common.create_recurring_jobs" href="#tests.common.create_recurring_jobs">create_recurring_jobs</a></code></li>
+<li><code><a title="tests.common.create_rwx_volume_with_storageclass" href="#tests.common.create_rwx_volume_with_storageclass">create_rwx_volume_with_storageclass</a></code></li>
 <li><code><a title="tests.common.create_snapshot" href="#tests.common.create_snapshot">create_snapshot</a></code></li>
 <li><code><a title="tests.common.create_statefulset" href="#tests.common.create_statefulset">create_statefulset</a></code></li>
 <li><code><a title="tests.common.create_storage_class" href="#tests.common.create_storage_class">create_storage_class</a></code></li>
