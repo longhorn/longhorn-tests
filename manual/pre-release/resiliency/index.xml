@@ -18,6 +18,16 @@ Make a disk image file: truncate -s 10g slow.img Create a loopback device: loset
     </item>
     
     <item>
+      <title>PVC provisioning with insufficient storage</title>
+      <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/resiliency/pvc_provisioning_with_insufficient_storage/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/resiliency/pvc_provisioning_with_insufficient_storage/</guid>
+      <description>Related Issue: https://github.com/longhorn/longhorn/issues/4654 https://github.com/longhorn/longhorn/issues/3529 Root Cause Analysis https://github.com/longhorn/longhorn/issues/4654#issuecomment-1264870672 This case need to be tested on both RWO/RWX volumes
+Create a PVC with size larger than 8589934591 GiB. Deployment keep in pending status, RWO/RWX volume will keep in a create -&amp;gt; delete loop. Create a PVC with size &amp;lt;= 8589934591 GiB, but greater than the actual available space size. RWO/RWX volume will be created, and volume will have annotation &amp;ldquo;longhorn.io/volume-scheduling-error&amp;rdquo;: &amp;ldquo;insufficient storage volume scheduling failure&amp;rdquo; in it.</description>
+    </item>
+    
+    <item>
       <title>Test timeout on loss of network connectivity</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/resiliency/timeout/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
