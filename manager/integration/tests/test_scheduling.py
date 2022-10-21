@@ -694,6 +694,101 @@ def test_replica_auto_balance_node_best_effort(client, volume_name):  # NOQA
     check_volume_data(volume, data)
 
 
+@pytest.mark.skip(reason="corner case") # NOQA
+def test_replica_auto_balance_with_data_locality(client, volume_name):  # NOQA
+    """
+    Scenario: replica auto-balance should not cause rebuild loop.
+              - replica auto-balance set to `best-effort`
+              - volume data locality set to `best-effort`
+              - volume has 1 replica
+
+    Issue: https://github.com/longhorn/longhorn/issues/4761
+
+    Given no existing volume in the cluster.
+    And set `replica-auto-balance` to `best-effort`.
+    And create a volume:
+        - set data locality to `best-effort`
+        - 1 replica
+
+    When attach the volume to self-node.
+    And wait for the volume to be healthy.
+    Then the only volume replica should be already on the self-node or
+         get rebuilt one time onto the self-node.
+    And volume have 1 replica only and it should be on the self-node.
+         - check 15 times with 1 second wait interval
+
+    When repeat the test for 10 times.
+    Then should pass.
+    """
+    # Repeat tests since there is a possibility that we might miss this.
+    # Because when the replica is built onto the correct node the first time,
+    # there will be no rebuild by data locality, hence we will not see the
+    # loop.
+    for i in range(10):
+        replica_auto_balance_with_data_locality_test(
+            client, f'{volume_name}-{i}'
+        )
+
+
+def replica_auto_balance_with_data_locality_test(client, volume_name):  # NOQA
+    common.cleanup_all_volumes(client)
+
+    common.update_setting(client,
+                          SETTING_REPLICA_AUTO_BALANCE, "best-effort")
+
+    self_node = get_self_host_id()
+    number_of_replicas = 1
+    volume = client.create_volume(name=volume_name,
+                                  size=str(200 * Mi),
+                                  numberOfReplicas=number_of_replicas,
+                                  dataLocality="best-effort")
+    volume = common.wait_for_volume_detached(client, volume_name)
+
+    volume.attach(hostId=self_node)
+    volume = wait_for_volume_healthy(client, volume_name)
+
+    # wait for replica to be on the self_node
+    for _ in range(30):
+        volume = client.by_id_volume(volume_name)
+        if len(volume.replicas) == number_of_replicas and \
+                volume.replicas[0]['hostId'] == self_node:
+            break
+        try:
+            if len(volume.replicas) == number_of_replicas + 1:
+                is_rebuilded = True
+            assert len(volume.replicas) == number_of_replicas
+            assert volume.replicas[0]['hostId'] == self_node
+            assert volume[VOLUME_FIELD_ROBUSTNESS] == VOLUME_ROBUSTNESS_HEALTHY
+            break
+        except AssertionError:
+            # Breaking this for loop asserts we are only checking the result
+            # of the first rebuild. Without this break, the rebuild could
+            # happen multiple times, and one of the rebuilt replica names
+            # eventually ends up alphabetically smaller. Hence the miss-catch
+            # the looping issue.
+            if is_rebuilded and len(volume.replicas) == number_of_replicas:
+                break
+            time.sleep(RETRY_INTERVAL)
+
+    assert len(volume.replicas) == number_of_replicas, \
+        f"Unexpected replica count for volume {volume_name}.\n"
+    assert volume.replicas[0]['hostId'] == self_node, \
+        f"Unexpected replica host ID for volume {volume_name}.\n"
+    assert volume[VOLUME_FIELD_ROBUSTNESS] == VOLUME_ROBUSTNESS_HEALTHY
+
+    # loop to assert there sholud be no more replica rebuildings
+    for _ in range(15):
+        time.sleep(RETRY_INTERVAL)
+
+        volume = client.by_id_volume(volume_name)
+        assert len(volume.replicas) == number_of_replicas, \
+            f"Not expecting scheduling for volume {volume_name}.\n"
+        assert volume.replicas[0]['hostId'] == self_node, \
+            f"Unexpected replica host ID for volume {volume_name}.\n" \
+            f"Expect={self_node}\n" \
+            f"Got={volume.replicas[0]['hostId']}\n"
+
+
 def test_replica_auto_balance_disabled_volume_spec_enabled(client, volume_name):  # NOQA
     """
     Scenario: replica should auto-balance individual volume when
