@@ -2231,6 +2231,7 @@ def test_auto_remount_with_subpath(client, core_api, storage_class, sts_name, st
                             namespace='longhorn-system',
                             wait=True)
         wait_for_volume_healthy(client, vol_name)
+        common.wait_for_pod_phase(core_api, pod_name, pod_phase="Pending")
         common.wait_for_pod_remount(core_api, pod_name, chk_path=data_path)
         expect_md5sum = get_pod_data_md5sum(core_api, pod_name, data_path)
         assert expect_md5sum == md5sum
