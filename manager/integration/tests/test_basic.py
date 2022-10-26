@@ -82,8 +82,6 @@ from common import VOLUME_HEAD_NAME
 from common import set_node_scheduling
 from common import SETTING_FAILED_BACKUP_TTL
 from common import wait_for_volume_creation
-from common import get_apps_api_client, create_and_wait_deployment
-from common import make_deployment_with_pvc # NOQA
 
 from backupstore import backupstore_delete_volume_cfg_file
 from backupstore import backupstore_cleanup
@@ -4578,8 +4576,7 @@ def test_backup_volume_restore_with_access_mode(core_api, # NOQA
                                                 set_random_backupstore, # NOQA
                                                 client, # NOQA
                                                 access_mode, # NOQA
-                                       overridden_restored_access_mode, # NOQA
-                                       make_deployment_with_pvc): # NOQA
+                                       overridden_restored_access_mode): # NOQA
 
     """
     Test the backup w/ the volume access mode, then restore a volume w/ the
@@ -4597,29 +4594,12 @@ def test_backup_volume_restore_with_access_mode(core_api, # NOQA
     client.create_volume(name=test_volume_name,
                          size=str(DEFAULT_VOLUME_SIZE * Gi),
                          numberOfReplicas=2,
-                         accessMode=access_mode)
+                         accessMode=access_mode,
+                         migratable=True if access_mode == "rwx" else False)
     wait_for_volume_creation(client, test_volume_name)
     volume = wait_for_volume_detached(client, test_volume_name)
-
-    # Since RWX volumes can only be manually attached in maintenance mode,
-    # the volume should be created by PVC and PV instead
-    # to ensure the volume attach/deattach successfully.
-    if access_mode == "rwx":
-        test_pv_name = test_volume_name + "-pv"
-        test_pvc_name = test_volume_name + "-pvc"
-
-        create_pv_for_volume(client, core_api, volume, test_pv_name)
-        create_pvc_for_volume(client, core_api, volume, test_pvc_name)
-
-        test_deployment_name = test_volume_name + "-dep"
-        deployment = make_deployment_with_pvc(
-            test_deployment_name, test_pvc_name, replicas=2)
-
-        apps_api = get_apps_api_client() # NOQA
-        create_and_wait_deployment(apps_api, deployment)
-    else:
-        volume.attach(hostId=common.get_self_host_id())
-        volume = common.wait_for_volume_healthy(client, test_volume_name)
+    volume.attach(hostId=common.get_self_host_id())
+    volume = common.wait_for_volume_healthy(client, test_volume_name)
 
     # Step 2
     _, b, _, _ = create_backup(client, test_volume_name)
