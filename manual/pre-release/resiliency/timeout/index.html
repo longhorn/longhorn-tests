@@ -625,7 +625,7 @@
   <h1 id="title">Test timeout on loss of network connectivity</h1>
   <div>
     <article id="content">
-       <h2 id="ping-timeout">Ping Timeout</h2>
+       <h2 id="rw-timeout-block-device">R/W Timeout Block Device</h2>
 <ol>
 <li>Create a docker network:</li>
 </ol>
@@ -652,6 +652,12 @@
 </span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>         --replica tcp://192.168.22.3:9502 <span style="color:#ae81ff">\
 </span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>         --frontend tgt-blockdev timeout-test
 </span></span></code></pre></div><ol start="5">
+<li>In another terminal, perform I/O:</li>
+</ol>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>fio --name<span style="color:#f92672">=</span>random-writers --ioengine<span style="color:#f92672">=</span>libaio --rw<span style="color:#f92672">=</span>randwrite --bs<span style="color:#f92672">=</span>16k <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>           --direct<span style="color:#f92672">=</span><span style="color:#ae81ff">1</span> --size<span style="color:#f92672">=</span>1000m --numjobs<span style="color:#f92672">=</span><span style="color:#ae81ff">1</span> <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>           --filename<span style="color:#f92672">=</span>/dev/longhorn/timeout-test --iodepth<span style="color:#f92672">=</span><span style="color:#ae81ff">1</span>
+</span></span></code></pre></div><ol start="6">
 <li>
 <p>In another terminal, find the name of the container running the replica with <code>docker ps</code></p>
 </li>
@@ -660,25 +666,7 @@
 </li>
 </ol>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>docker network disconnect longhorn-network &lt;container id/name&gt;
-</span></span></code></pre></div><ol start="7">
-<li>Note that the controller output displays &ldquo;Backend tcp://192.168.22.2:9502 monitoring failed, mark as ERR: ping timeout&rdquo; after eight seconds.</li>
-</ol>
-<h2 id="rw-timeout-block-device">R/W Timeout Block Device</h2>
-<ol>
-<li>
-<p>Perform steps 2-4 from the Ping Timeout Section.</p>
-</li>
-<li>
-<p>In another terminal, perform I/O:</p>
-</li>
-</ol>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>fio --name<span style="color:#f92672">=</span>random-writers --ioengine<span style="color:#f92672">=</span>libaio --rw<span style="color:#f92672">=</span>randwrite --bs<span style="color:#f92672">=</span>16k <span style="color:#ae81ff">\
-</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>           --direct<span style="color:#f92672">=</span><span style="color:#ae81ff">1</span> --size<span style="color:#f92672">=</span>1000m --numjobs<span style="color:#f92672">=</span><span style="color:#ae81ff">1</span> <span style="color:#ae81ff">\
-</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>           --filename<span style="color:#f92672">=</span>/dev/longhorn/timeout-test --iodepth<span style="color:#f92672">=</span><span style="color:#ae81ff">1</span>
-</span></span></code></pre></div><ol start="3">
-<li>
-<p>Stop the network on the replica with steps 5-6 in the Ping Timeout Section.</p>
-</li>
+</span></span></code></pre></div><ol start="8">
 <li>
 <p>Note that the controller output displays &ldquo;Setting replica tcp://192.168.22.2:9502 to ERR due to: r/w timeout&rdquo; after eight seconds.</p>
 </li>
@@ -689,7 +677,7 @@
 <h2 id="rw-timeout-filesystem">R/W Timeout Filesystem</h2>
 <ol>
 <li>
-<p>Perform steps 2-4 from the Ping Timeout Section.</p>
+<p>Perform steps 2-4 from the R/W Timeout Block Device section</p>
 </li>
 <li>
 <p>In another terminal, perform I/O:</p>
@@ -703,7 +691,7 @@
 </span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>           --filename<span style="color:#f92672">=</span>/timeout-test/fio.dat --iodepth<span style="color:#f92672">=</span><span style="color:#ae81ff">1</span>
 </span></span></code></pre></div><ol start="3">
 <li>
-<p>Stop the network on the replica with steps 5-6 in the Ping Timeout Section.</p>
+<p>Stop the network on the replica with steps 6-7 in the R/W Timeout Block Device section.</p>
 </li>
 <li>
 <p>Note that the controller output displays &ldquo;Setting replica tcp://192.168.22.2:9502 to ERR due to: r/w timeout&rdquo; after eight seconds.</p>
