@@ -181,6 +181,7 @@ SETTING_FAILED_BACKUP_TTL = "failed-backup-ttl"
 SETTING_CONCURRENT_AUTO_ENGINE_UPGRADE_NODE_LIMIT = \
     "concurrent-automatic-engine-upgrade-per-node-limit"
 SETTING_SUPPORT_BUNDLE_FAILED_LIMIT = "support-bundle-failed-history-limit"
+SETTING_RESTORE_RECURRING_JOBS = "restore-volume-recurring-jobs"
 
 CSI_UNKNOWN = 0
 CSI_TRUE = 1
