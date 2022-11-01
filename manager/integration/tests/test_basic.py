@@ -3395,8 +3395,7 @@ def test_allow_volume_creation_with_degraded_availability_restore(set_random_bac
                          numberOfReplicas=3, fromBackup=backup.url)
     common.wait_for_volume_replica_count(client, dst_vol_name, 3)
     common.wait_for_volume_restoration_start(client, dst_vol_name, backup.name)
-    wait_for_volume_condition_scheduled(client, dst_vol_name,
-                                        "status", "True")
+    common.wait_for_volume_degraded(client, dst_vol_name)
 
     # check only 1 replica scheduled successfully
     common.wait_for_replica_scheduled(client, dst_vol_name,
