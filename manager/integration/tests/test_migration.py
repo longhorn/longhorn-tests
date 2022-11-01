@@ -159,13 +159,15 @@ def test_migration_with_unscheduled_replica(clients, volume_name):  # NOQA
     data = common.write_volume_random_data(volume)
     common.check_volume_data(volume, data)
 
-    volume.detach(hostId="")
-    volume = common.wait_for_volume_detached(client, volume_name)
+    # collect replicas name before detaching,
+    # unscheduled replica would be deleted.
     old_replicas = []
     v = client.by_id_volume(volume_name)
     replicas = v.replicas
     for r in replicas:
         old_replicas.append(r.name)
+    volume.detach(hostId="")
+    volume = common.wait_for_volume_detached(client, volume_name)
 
     # Step 6
     volume.attach(hostId=hosts[0])
