@@ -60,6 +60,8 @@ from common import wait_for_cron_job_count
 from common import wait_for_cron_job_create
 from common import wait_for_cron_job_delete
 
+from common import find_backup
+
 from common import JOB_LABEL
 from common import KUBERNETES_STATUS_LABEL
 from common import LONGHORN_NAMESPACE
@@ -67,6 +69,7 @@ from common import RETRY_BACKUP_COUNTS
 from common import RETRY_BACKUP_INTERVAL
 from common import SETTING_RECURRING_JOB_WHILE_VOLUME_DETACHED
 from common import SIZE, Mi, Gi
+from common import SETTING_RESTORE_RECURRING_JOBS
 
 
 RECURRING_JOB_LABEL = "RecurringJob"
@@ -1687,3 +1690,120 @@ def test_recurring_job_backup(set_random_backupstore, client, batch_v1_api):  # 
     time.sleep(60 - WRITE_DATA_INTERVAL)
     wait_for_backup_count(client.by_id_backupVolume(volume1_name), 2)
     wait_for_backup_count(client.by_id_backupVolume(volume2_name), 2)
+
+
+@pytest.mark.recurring_job  # NOQA
+def test_recurring_job_restored_from_backup_target(set_random_backupstore, client, batch_v1_api):  # NOQA
+    """
+    Scenario: test recurring job backup (S3/NFS)
+
+    1. Create a volume and attach it to a node or a workload.
+    2. Create some recurring jobs (some are in groups)
+    3. Label the volume with created recurring jobs (some are in groups)
+    4. Create a backup or wait for a recurring job starting
+    5. Wait for backup creation completed.
+    6. Check if recurring jobs/groups information is stored in
+       the backup volume configuration on the backup target
+
+    7. Create a volume from the backup just created.
+    8. Check the volume if it has labels of recurring jobs and groups.
+
+    9. Delete recurring jobs that are already stored in the backup volume
+       on the backup.
+    10. Create a volume from the backup just created.
+    11. Check if recurring jobs have been created.
+    12. Check if restoring volume has labels of recurring jobs and groups.
+    """
+    SCHEDULE_1WEEK = "0 0 * * 0"
+    SCHEDULE_2MIN = "*/2 * * * *"
+    snap1 = SNAPSHOT + "1"
+    back1 = BACKUP + "1"
+    back2 = BACKUP + "2"
+    group1 = "group01"
+    volume_name1 = "record-recurring-job"
+    rvolume_name1 = "restore-record-recurring-job-01"
+    rvolume_name2 = "restore-record-recurring-job-02"
+
+    recurring_jobs = {
+        back1: {
+            TASK: BACKUP,
+            GROUPS: [DEFAULT],
+            CRON: SCHEDULE_2MIN,
+            RETAIN: 1,
+            CONCURRENCY: 1,
+            LABELS: {},
+        },
+        snap1: {
+            TASK: SNAPSHOT,
+            GROUPS: [],
+            CRON: SCHEDULE_1MIN,
+            RETAIN: 2,
+            CONCURRENCY: 1,
+            LABELS: {},
+        },
+        back2: {
+            TASK: BACKUP,
+            GROUPS: [group1],
+            CRON: SCHEDULE_1WEEK,
+            RETAIN: 3,
+            CONCURRENCY: 3,
+            LABELS: {},
+        },
+    }
+
+    common.update_setting(client,
+                          SETTING_RESTORE_RECURRING_JOBS, "true")
+
+    create_recurring_jobs(client, recurring_jobs)
+    check_recurring_jobs(client, recurring_jobs)
+
+    volume = client.create_volume(name=volume_name1, size=SIZE,
+                                  numberOfReplicas=2)
+    volume = wait_for_volume_detached(client, volume_name1)
+    volume = volume.attach(hostId=get_self_host_id())
+    volume = wait_for_volume_healthy(client, volume_name1)
+    volume.recurringJobAdd(name=snap1, isGroup=False)
+    volume.recurringJobAdd(name=back1, isGroup=False)
+    volume.recurringJobAdd(name=group1, isGroup=True)
+    wait_for_volume_recurring_job_update(volume,
+                                         jobs=[snap1, back1],
+                                         groups=[DEFAULT, group1])
+
+    write_volume_random_data(volume)
+    time.sleep(120)
+
+    # 2 from job_snap, 1 from job_backup, 1 volume-head
+    wait_for_snapshot_count(volume, 4)
+
+    complete_backup_1_count = 0
+    restore_snapshot_name = ""
+    volume = client.by_id_volume(volume_name1)
+    wait_for_backup_completion(client, volume_name1)
+    for b in volume.backupStatus:
+        if back1+"-" in b.snapshot:
+            complete_backup_1_count += 1
+            restore_snapshot_name = b.snapshot
+
+    assert complete_backup_1_count == 1
+
+    volume.detach()
+
+    # create a volume from the backup with recurring jobs exist
+    _, backup = find_backup(client, volume_name1, restore_snapshot_name)
+    client.create_volume(name=rvolume_name1,
+                         size=SIZE,
+                         fromBackup=backup.url)
+    rvolume1 = wait_for_volume_detached(client, rvolume_name1)
+    wait_for_volume_recurring_job_update(rvolume1,
+                                         jobs=[snap1, back1],
+                                         groups=[DEFAULT, group1])
+
+    # create a volume from the backup with recurring jobs do not exist
+    cleanup_all_recurring_jobs(client)
+    client.create_volume(name=rvolume_name2,
+                         size=SIZE,
+                         fromBackup=backup.url)
+    rvolume2 = wait_for_volume_detached(client, rvolume_name2)
+    wait_for_volume_recurring_job_update(rvolume2,
+                                         jobs=[snap1, back1],
+                                         groups=[DEFAULT, group1])
