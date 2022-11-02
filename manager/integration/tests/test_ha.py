@@ -3023,7 +3023,7 @@ def test_autosalvage_with_data_locality_enabled(client, core_api, make_deploymen
 
     # Step2
     client.create_volume(
-        name=volume_name, size=SIZE, numberOfReplicas=1,
+        name=volume_name, size=str(1 * Gi), numberOfReplicas=1,
         nodeSelector=tags, dataLocality="best-effort"
         )
 
@@ -3046,8 +3046,14 @@ def test_autosalvage_with_data_locality_enabled(client, core_api, make_deploymen
     create_and_wait_deployment(apps_api, deployment)
 
     pod_names = common.get_deployment_pod_names(core_api, deployment)
-    test_data = generate_random_data(VOLUME_RWTEST_SIZE)
-    write_pod_volume_data(core_api, pod_names[0], test_data, filename='test')
+    data_path = '/data/test'
+    write_pod_volume_random_data(core_api,
+                                 pod_names[0],
+                                 data_path,
+                                 DATA_SIZE_IN_MB_1)
+    expected_test_data_checksum = get_pod_data_md5sum(core_api,
+                                                      pod_names[0],
+                                                      data_path)
     create_snapshot(client, volume_name)
 
     # Step6
@@ -3066,14 +3072,14 @@ def test_autosalvage_with_data_locality_enabled(client, core_api, make_deploymen
     target_pod = \
         core_api.read_namespaced_pod(name=pod_names[0], namespace='default')
     wait_delete_pod(core_api, target_pod.metadata.uid)
-    pod_names = common.get_deployment_pod_names(core_api, deployment)
-    wait_pod(pod_names[0])
+    deployment_pod = common.wait_and_get_any_deployment_pod(core_api,
+                                                            deployment_name)
 
-    command = 'cat /data/test'
-    verified_data = exec_command_in_pod(
-        core_api, command, pod_names[0], 'default')
+    test_data_checksum = get_pod_data_md5sum(core_api,
+                                             deployment_pod.metadata.name,
+                                             data_path)
 
-    assert test_data == verified_data
+    assert expected_test_data_checksum == test_data_checksum
 
     # Step8
     labels = "app=longhorn-manager"
