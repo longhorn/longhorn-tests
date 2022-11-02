@@ -107,6 +107,7 @@ DEFAULT_STATEFULSET_TIMEOUT = 180
 
 DEFAULT_DEPLOYMENT_INTERVAL = 1
 DEFAULT_DEPLOYMENT_TIMEOUT = 120
+WAIT_FOR_POD_STABLE_MAX_RETRY = 30
 
 
 DEFAULT_VOLUME_SIZE = 3  # In Gi
@@ -4138,13 +4139,31 @@ def create_and_wait_deployment(apps_api, deployment_manifest):
 
 def wait_and_get_any_deployment_pod(core_api, deployment_name,
                                     is_phase="Running"):
+    """
+    Add mechanism to wait for a stable running pod when deployment restarts its
+    workload, since Longhorn manager could create/delete the new workload pod
+    multiple times, it's possible that we get an unstable pod which will be
+    deleted immediately, so add a wait mechanism to get a stable running pod.
+    ref: https://github.com/longhorn/longhorn/issues/4814
+    """
+    stable_pod = None
+    wait_for_stable_retry = 0
+
     for _ in range(DEFAULT_DEPLOYMENT_TIMEOUT):
         label_selector = "name=" + deployment_name
         pods = core_api.list_namespaced_pod(namespace="default",
                                             label_selector=label_selector)
         for pod in pods.items:
             if pod.status.phase == is_phase:
-                return pod
+                if stable_pod is None or \
+                        stable_pod.metadata.name != pod.metadata.name:
+                    stable_pod = pod
+                    wait_for_stable_retry = 0
+                    break
+                else:
+                    wait_for_stable_retry += 1
+                    if wait_for_stable_retry == WAIT_FOR_POD_STABLE_MAX_RETRY:
+                        return stable_pod
 
         time.sleep(DEFAULT_DEPLOYMENT_INTERVAL)
     assert False
