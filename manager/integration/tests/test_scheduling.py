@@ -2,7 +2,7 @@ import common
 import pytest
 import time
 
-from common import RETRY_COUNTS, RETRY_INTERVAL
+from common import RETRY_COUNTS, RETRY_INTERVAL, RETRY_INTERVAL_LONG
 from common import client, core_api, apps_api  # NOQA
 from common import storage_class, statefulset, pvc, pod  # NOQA
 from common import sts_name, volume_name  # NOQA
@@ -674,7 +674,7 @@ def test_replica_auto_balance_node_best_effort(client, volume_name):  # NOQA
 
         if n1_r_count == n2_r_count == n3_r_count == 2:
             break
-        time.sleep(RETRY_INTERVAL)
+        time.sleep(RETRY_INTERVAL_LONG)
     assert n1_r_count == 2
     assert n2_r_count == 2
     assert n3_r_count == 2
