@@ -10,7 +10,7 @@ import backupstore
 from backupstore import set_random_backupstore  # NOQA
 
 import common
-from common import client, core_api, apps_api, batch_v1_beta_api  # NOQA
+from common import client, core_api, apps_api, batch_v1_api  # NOQA
 from common import random_labels, volume_name  # NOQA
 from common import storage_class, statefulset, pvc  # NOQA
 from common import make_deployment_with_pvc  # NOQA
@@ -622,7 +622,7 @@ def test_recurring_jobs_maximum_retain(client, core_api, volume_name): # NOQA
 
 
 @pytest.mark.recurring_job  # NOQA
-def test_recurring_job_detached_volume(client, batch_v1_beta_api, volume_name):  # NOQA
+def test_recurring_job_detached_volume(client, batch_v1_api, volume_name):  # NOQA
     """
     Scenario: test recurring job while volume is detached
 
@@ -663,7 +663,7 @@ def test_recurring_job_detached_volume(client, batch_v1_beta_api, volume_name): 
     }
     create_recurring_jobs(client, recurring_jobs)
     check_recurring_jobs(client, recurring_jobs)
-    wait_for_cron_job_count(batch_v1_beta_api, 1)
+    wait_for_cron_job_count(batch_v1_api, 1)
 
     time.sleep(60 * 2)
     volume.attach(hostId=self_host)
@@ -955,7 +955,7 @@ def test_recurring_jobs_on_nodes_with_taints():  # NOQA
 
 
 @pytest.mark.recurring_job  # NOQA
-def test_recurring_job_groups(set_random_backupstore, client, batch_v1_beta_api):  # NOQA
+def test_recurring_job_groups(set_random_backupstore, client, batch_v1_api):  # NOQA
     """
     Scenario: test recurring job groups (S3/NFS)
 
@@ -1021,7 +1021,7 @@ def test_recurring_job_groups(set_random_backupstore, client, batch_v1_beta_api)
     volume1.recurringJobAdd(name=group1, isGroup=True)
     volume2.recurringJobAdd(name=group2, isGroup=True)
 
-    wait_for_cron_job_count(batch_v1_beta_api, 2)
+    wait_for_cron_job_count(batch_v1_api, 2)
 
     write_volume_random_data(volume1)
     write_volume_random_data(volume2)
@@ -1043,7 +1043,7 @@ def test_recurring_job_groups(set_random_backupstore, client, batch_v1_beta_api)
 
 
 @pytest.mark.recurring_job  # NOQA
-def test_recurring_job_default(client, batch_v1_beta_api, volume_name):  # NOQA
+def test_recurring_job_default(client, batch_v1_api, volume_name):  # NOQA
     """
     Scenario: test recurring job set with default in groups
 
@@ -1086,7 +1086,7 @@ def test_recurring_job_default(client, batch_v1_beta_api, volume_name):  # NOQA
 
 
 @pytest.mark.recurring_job  # NOQA
-def test_recurring_job_delete(client, batch_v1_beta_api, volume_name):  # NOQA
+def test_recurring_job_delete(client, batch_v1_api, volume_name):  # NOQA
     """
     Scenario: test delete recurring job
 
@@ -1189,29 +1189,29 @@ def test_recurring_job_delete(client, batch_v1_beta_api, volume_name):  # NOQA
     }
     create_recurring_jobs(client, recurring_jobs)
     check_recurring_jobs(client, recurring_jobs)
-    wait_for_cron_job_count(batch_v1_beta_api, 6)
+    wait_for_cron_job_count(batch_v1_api, 6)
 
     # snapshot
-    wait_for_cron_job_create(batch_v1_beta_api, JOB_LABEL+"="+snap1)
-    wait_for_cron_job_create(batch_v1_beta_api, JOB_LABEL+"="+snap2)
-    wait_for_cron_job_create(batch_v1_beta_api, JOB_LABEL+"="+snap3)
+    wait_for_cron_job_create(batch_v1_api, JOB_LABEL+"="+snap1)
+    wait_for_cron_job_create(batch_v1_api, JOB_LABEL+"="+snap2)
+    wait_for_cron_job_create(batch_v1_api, JOB_LABEL+"="+snap3)
     # backup
-    wait_for_cron_job_create(batch_v1_beta_api, JOB_LABEL+"="+back1)
-    wait_for_cron_job_create(batch_v1_beta_api, JOB_LABEL+"="+back2)
-    wait_for_cron_job_create(batch_v1_beta_api, JOB_LABEL+"="+back3)
+    wait_for_cron_job_create(batch_v1_api, JOB_LABEL+"="+back1)
+    wait_for_cron_job_create(batch_v1_api, JOB_LABEL+"="+back2)
+    wait_for_cron_job_create(batch_v1_api, JOB_LABEL+"="+back3)
 
     # Delete `snapshot2` recurring job should delete the cron job
     snap2_recurring_job = client.by_id_recurring_job(snap2)
     client.delete(snap2_recurring_job)
-    wait_for_cron_job_count(batch_v1_beta_api, 5)
+    wait_for_cron_job_count(batch_v1_api, 5)
     # snapshot
-    wait_for_cron_job_create(batch_v1_beta_api, JOB_LABEL+"="+snap1)
-    wait_for_cron_job_delete(batch_v1_beta_api, JOB_LABEL+"="+snap2)
-    wait_for_cron_job_create(batch_v1_beta_api, JOB_LABEL+"="+snap3)
+    wait_for_cron_job_create(batch_v1_api, JOB_LABEL+"="+snap1)
+    wait_for_cron_job_delete(batch_v1_api, JOB_LABEL+"="+snap2)
+    wait_for_cron_job_create(batch_v1_api, JOB_LABEL+"="+snap3)
     # backup
-    wait_for_cron_job_create(batch_v1_beta_api, JOB_LABEL+"="+back1)
-    wait_for_cron_job_create(batch_v1_beta_api, JOB_LABEL+"="+back2)
-    wait_for_cron_job_create(batch_v1_beta_api, JOB_LABEL+"="+back3)
+    wait_for_cron_job_create(batch_v1_api, JOB_LABEL+"="+back1)
+    wait_for_cron_job_create(batch_v1_api, JOB_LABEL+"="+back2)
+    wait_for_cron_job_create(batch_v1_api, JOB_LABEL+"="+back3)
 
     # Delete multiple recurring jobs should reflect on the cron jobs.
     back1_recurring_job = client.by_id_recurring_job(back1)
@@ -1220,19 +1220,19 @@ def test_recurring_job_delete(client, batch_v1_beta_api, volume_name):  # NOQA
     client.delete(back1_recurring_job)
     client.delete(back2_recurring_job)
     client.delete(back3_recurring_job)
-    wait_for_cron_job_count(batch_v1_beta_api, 2)
+    wait_for_cron_job_count(batch_v1_api, 2)
     # snapshot
-    wait_for_cron_job_create(batch_v1_beta_api, JOB_LABEL+"="+snap1)
-    wait_for_cron_job_delete(batch_v1_beta_api, JOB_LABEL+"="+snap2)
-    wait_for_cron_job_create(batch_v1_beta_api, JOB_LABEL+"="+snap3)
+    wait_for_cron_job_create(batch_v1_api, JOB_LABEL+"="+snap1)
+    wait_for_cron_job_delete(batch_v1_api, JOB_LABEL+"="+snap2)
+    wait_for_cron_job_create(batch_v1_api, JOB_LABEL+"="+snap3)
     # backup
-    wait_for_cron_job_delete(batch_v1_beta_api, JOB_LABEL+"="+back1)
-    wait_for_cron_job_delete(batch_v1_beta_api, JOB_LABEL+"="+back2)
-    wait_for_cron_job_delete(batch_v1_beta_api, JOB_LABEL+"="+back3)
+    wait_for_cron_job_delete(batch_v1_api, JOB_LABEL+"="+back1)
+    wait_for_cron_job_delete(batch_v1_api, JOB_LABEL+"="+back2)
+    wait_for_cron_job_delete(batch_v1_api, JOB_LABEL+"="+back3)
 
 
 @pytest.mark.recurring_job  # NOQA
-def test_recurring_job_delete_should_remove_volume_label(client, batch_v1_beta_api, volume_name):  # NOQA
+def test_recurring_job_delete_should_remove_volume_label(client, batch_v1_api, volume_name):  # NOQA
     """
     Scenario: test delete recurring job should remove volume labels
 
@@ -1459,7 +1459,7 @@ def test_recurring_job_volume_label_when_job_and_group_use_same_name(client, vol
 
 
 @pytest.mark.recurring_job  # NOQA
-def test_recurring_job_multiple_volumes(set_random_backupstore, client, batch_v1_beta_api):  # NOQA
+def test_recurring_job_multiple_volumes(set_random_backupstore, client, batch_v1_api):  # NOQA
     """
     Scenario: test recurring job with multiple volumes
 
@@ -1519,9 +1519,9 @@ def test_recurring_job_multiple_volumes(set_random_backupstore, client, batch_v1
     create_recurring_jobs(client, recurring_jobs)
     check_recurring_jobs(client, recurring_jobs)
     wait_for_volume_recurring_job_update(volume1, jobs=[], groups=[DEFAULT])
-    wait_for_cron_job_count(batch_v1_beta_api, 2)
-    wait_for_cron_job_create(batch_v1_beta_api, JOB_LABEL+"="+back1)
-    wait_for_cron_job_create(batch_v1_beta_api, JOB_LABEL+"="+back2)
+    wait_for_cron_job_count(batch_v1_api, 2)
+    wait_for_cron_job_create(batch_v1_api, JOB_LABEL+"="+back1)
+    wait_for_cron_job_create(batch_v1_api, JOB_LABEL+"="+back2)
 
     write_volume_random_data(volume1)
     wait_for_snapshot_count(volume1, 2)
@@ -1552,7 +1552,7 @@ def test_recurring_job_multiple_volumes(set_random_backupstore, client, batch_v1
 
 
 @pytest.mark.recurring_job  # NOQA
-def test_recurring_job_snapshot(client, batch_v1_beta_api):  # NOQA
+def test_recurring_job_snapshot(client, batch_v1_api):  # NOQA
     """
     Scenario: test recurring job snapshot
 
@@ -1602,7 +1602,7 @@ def test_recurring_job_snapshot(client, batch_v1_beta_api):  # NOQA
     }
     create_recurring_jobs(client, recurring_jobs)
     check_recurring_jobs(client, recurring_jobs)
-    wait_for_cron_job_count(batch_v1_beta_api, 1)
+    wait_for_cron_job_count(batch_v1_api, 1)
 
     # volume-head
     wait_for_snapshot_count(volume1, 1)
@@ -1625,7 +1625,7 @@ def test_recurring_job_snapshot(client, batch_v1_beta_api):  # NOQA
 
 
 @pytest.mark.recurring_job  # NOQA
-def test_recurring_job_backup(set_random_backupstore, client, batch_v1_beta_api):  # NOQA
+def test_recurring_job_backup(set_random_backupstore, client, batch_v1_api):  # NOQA
     """
     Scenario: test recurring job backup (S3/NFS)
 
@@ -1672,7 +1672,7 @@ def test_recurring_job_backup(set_random_backupstore, client, batch_v1_beta_api)
     }
     create_recurring_jobs(client, recurring_jobs)
     check_recurring_jobs(client, recurring_jobs)
-    wait_for_cron_job_count(batch_v1_beta_api, 1)
+    wait_for_cron_job_count(batch_v1_api, 1)
 
     # 1st job
     write_volume_random_data(volume1)

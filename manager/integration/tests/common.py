@@ -1087,17 +1087,17 @@ def apps_api(request):
 
 
 @pytest.fixture
-def batch_v1_beta_api(request):
+def batch_v1_api(request):
     """
-    Create a new BatchV1beta1Api instance.
+    Create a new BatchV1Api instance.
     Returns:
-        A new BatchV1beta1Api Instance.
+        A new BatchV1Api Instance.
     """
     c = Configuration()
     c.assert_hostname = False
     Configuration.set_default(c)
     k8sconfig.load_incluster_config()
-    api = k8sclient.BatchV1beta1Api()
+    api = k8sclient.BatchV1Api()
 
     return api
 
@@ -4737,12 +4737,12 @@ def wait_for_volume_recurring_job_update(volume, jobs=[], groups=[]):
     assert ok
 
 
-def wait_for_cron_job_create(batch_v1_beta_api, label="",
+def wait_for_cron_job_create(batch_v1_api, label="",
                              retry_counts=RETRY_COUNTS):
     exist = False
     for _ in range(retry_counts):
-        job = batch_v1_beta_api.list_namespaced_cron_job('longhorn-system',
-                                                         label_selector=label)
+        job = batch_v1_api.list_namespaced_cron_job('longhorn-system',
+                                                    label_selector=label)
         if len(job.items) != 0:
             exist = True
             break
@@ -4751,12 +4751,12 @@ def wait_for_cron_job_create(batch_v1_beta_api, label="",
     assert exist
 
 
-def wait_for_cron_job_delete(batch_v1_beta_api, label="",
+def wait_for_cron_job_delete(batch_v1_api, label="",
                              retry_counts=RETRY_COUNTS):
     exist = True
     for _ in range(retry_counts):
-        job = batch_v1_beta_api.list_namespaced_cron_job('longhorn-system',
-                                                         label_selector=label)
+        job = batch_v1_api.list_namespaced_cron_job('longhorn-system',
+                                                    label_selector=label)
         if len(job.items) == 0:
             exist = False
             break
@@ -4765,12 +4765,12 @@ def wait_for_cron_job_delete(batch_v1_beta_api, label="",
     assert not exist
 
 
-def wait_for_cron_job_count(batch_v1_beta_api, number, label="",
+def wait_for_cron_job_count(batch_v1_api, number, label="",
                             retry_counts=RETRY_COUNTS):
     ok = False
     for _ in range(retry_counts):
-        jobs = batch_v1_beta_api.list_namespaced_cron_job('longhorn-system',
-                                                          label_selector=label)
+        jobs = batch_v1_api.list_namespaced_cron_job('longhorn-system',
+                                                     label_selector=label)
         if len(jobs.items) == number:
             ok = True
             break
