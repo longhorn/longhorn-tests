@@ -3769,8 +3769,7 @@ def test_workload_with_fsgroup(core_api, statefulset):  # NOQA
 # After introducing the gRPC proxy, the backup target controller is relying on
 # the gRPC server availability instead of the engine binary availability.
 # https://github.com/longhorn/longhorn/issues/4033
-@pytest.mark.skip(reason="TODO")  # NOQA
-def test_backuptarget_available_during_engine_image_not_ready(client, apps_api, request):  # NOQA
+def test_backuptarget_available_during_engine_image_not_ready(client, apps_api):  # NOQA
     """
     Test backup target available during engine image not ready
 
@@ -3785,18 +3784,6 @@ def test_backuptarget_available_during_engine_image_not_ready(client, apps_api, 
     9. Reset backup target setting
     10. Check backup target status.available=false
     """
-    def finalizer():
-        default_img = common.get_default_engine_image(client)
-        ds_name = "engine-image-" + default_img.name
-        body = [{
-            "op": "remove",
-            "path": "/spec/template/spec/nodeSelector/foo"
-        }]
-        apps_api.patch_namespaced_daemon_set(
-            name=ds_name, namespace='longhorn-system', body=body)
-
-    request.addfinalizer(finalizer)
-
     backupstores = common.get_backupstore_url()
     for backupstore in backupstores:
         url = ""
