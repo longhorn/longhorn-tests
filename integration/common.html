@@ -135,6 +135,7 @@ DEFAULT_STATEFULSET_TIMEOUT = 180
 
 DEFAULT_DEPLOYMENT_INTERVAL = 1
 DEFAULT_DEPLOYMENT_TIMEOUT = 120
+WAIT_FOR_POD_STABLE_MAX_RETRY = 30
 
 
 DEFAULT_VOLUME_SIZE = 3  # In Gi
@@ -1115,17 +1116,17 @@ def apps_api(request):
 
 
 @pytest.fixture
-def batch_v1_beta_api(request):
+def batch_v1_api(request):
     &#34;&#34;&#34;
-    Create a new BatchV1beta1Api instance.
+    Create a new BatchV1Api instance.
     Returns:
-        A new BatchV1beta1Api Instance.
+        A new BatchV1Api Instance.
     &#34;&#34;&#34;
     c = Configuration()
     c.assert_hostname = False
     Configuration.set_default(c)
     k8sconfig.load_incluster_config()
-    api = k8sclient.BatchV1beta1Api()
+    api = k8sclient.BatchV1Api()
 
     return api
 
@@ -4166,13 +4167,31 @@ def create_and_wait_deployment(apps_api, deployment_manifest):
 
 def wait_and_get_any_deployment_pod(core_api, deployment_name,
                                     is_phase=&#34;Running&#34;):
+    &#34;&#34;&#34;
+    Add mechanism to wait for a stable running pod when deployment restarts its
+    workload, since Longhorn manager could create/delete the new workload pod
+    multiple times, it&#39;s possible that we get an unstable pod which will be
+    deleted immediately, so add a wait mechanism to get a stable running pod.
+    ref: https://github.com/longhorn/longhorn/issues/4814
+    &#34;&#34;&#34;
+    stable_pod = None
+    wait_for_stable_retry = 0
+
     for _ in range(DEFAULT_DEPLOYMENT_TIMEOUT):
         label_selector = &#34;name=&#34; + deployment_name
         pods = core_api.list_namespaced_pod(namespace=&#34;default&#34;,
                                             label_selector=label_selector)
         for pod in pods.items:
             if pod.status.phase == is_phase:
-                return pod
+                if stable_pod is None or \
+                        stable_pod.metadata.name != pod.metadata.name:
+                    stable_pod = pod
+                    wait_for_stable_retry = 0
+                    break
+                else:
+                    wait_for_stable_retry += 1
+                    if wait_for_stable_retry == WAIT_FOR_POD_STABLE_MAX_RETRY:
+                        return stable_pod
 
         time.sleep(DEFAULT_DEPLOYMENT_INTERVAL)
     assert False
@@ -4765,12 +4784,12 @@ def wait_for_volume_recurring_job_update(volume, jobs=[], groups=[]):
     assert ok
 
 
-def wait_for_cron_job_create(batch_v1_beta_api, label=&#34;&#34;,
+def wait_for_cron_job_create(batch_v1_api, label=&#34;&#34;,
                              retry_counts=RETRY_COUNTS):
     exist = False
     for _ in range(retry_counts):
-        job = batch_v1_beta_api.list_namespaced_cron_job(&#39;longhorn-system&#39;,
-                                                         label_selector=label)
+        job = batch_v1_api.list_namespaced_cron_job(&#39;longhorn-system&#39;,
+                                                    label_selector=label)
         if len(job.items) != 0:
             exist = True
             break
@@ -4779,12 +4798,12 @@ def wait_for_cron_job_create(batch_v1_beta_api, label=&#34;&#34;,
     assert exist
 
 
-def wait_for_cron_job_delete(batch_v1_beta_api, label=&#34;&#34;,
+def wait_for_cron_job_delete(batch_v1_api, label=&#34;&#34;,
                              retry_counts=RETRY_COUNTS):
     exist = True
     for _ in range(retry_counts):
-        job = batch_v1_beta_api.list_namespaced_cron_job(&#39;longhorn-system&#39;,
-                                                         label_selector=label)
+        job = batch_v1_api.list_namespaced_cron_job(&#39;longhorn-system&#39;,
+                                                    label_selector=label)
         if len(job.items) == 0:
             exist = False
             break
@@ -4793,12 +4812,12 @@ def wait_for_cron_job_delete(batch_v1_beta_api, label=&#34;&#34;,
     assert not exist
 
 
-def wait_for_cron_job_count(batch_v1_beta_api, number, label=&#34;&#34;,
+def wait_for_cron_job_count(batch_v1_api, number, label=&#34;&#34;,
                             retry_counts=RETRY_COUNTS):
     ok = False
     for _ in range(retry_counts):
-        jobs = batch_v1_beta_api.list_namespaced_cron_job(&#39;longhorn-system&#39;,
-                                                          label_selector=label)
+        jobs = batch_v1_api.list_namespaced_cron_job(&#39;longhorn-system&#39;,
+                                                     label_selector=label)
         if len(jobs.items) == number:
             ok = True
             break
@@ -5331,29 +5350,29 @@ def apps_api(request):
         return False</code></pre>
 </details>
 </dd>
-<dt id="tests.common.batch_v1_beta_api"><code class="name flex">
-<span>def <span class="ident">batch_v1_beta_api</span></span>(<span>request)</span>
+<dt id="tests.common.batch_v1_api"><code class="name flex">
+<span>def <span class="ident">batch_v1_api</span></span>(<span>request)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Create a new BatchV1beta1Api instance.</p>
+<div class="desc"><p>Create a new BatchV1Api instance.</p>
 <h2 id="returns">Returns</h2>
-<p>A new BatchV1beta1Api Instance.</p></div>
+<p>A new BatchV1Api Instance.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">@pytest.fixture
-def batch_v1_beta_api(request):
+def batch_v1_api(request):
     &#34;&#34;&#34;
-    Create a new BatchV1beta1Api instance.
+    Create a new BatchV1Api instance.
     Returns:
-        A new BatchV1beta1Api Instance.
+        A new BatchV1Api Instance.
     &#34;&#34;&#34;
     c = Configuration()
     c.assert_hostname = False
     Configuration.set_default(c)
     k8sconfig.load_incluster_config()
-    api = k8sclient.BatchV1beta1Api()
+    api = k8sclient.BatchV1Api()
 
     return api</code></pre>
 </details>
@@ -10247,20 +10266,42 @@ def volume_name(request):
 <span>def <span class="ident">wait_and_get_any_deployment_pod</span></span>(<span>core_api, deployment_name, is_phase='Running')</span>
 </code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>Add mechanism to wait for a stable running pod when deployment restarts its
+workload, since Longhorn manager could create/delete the new workload pod
+multiple times, it's possible that we get an unstable pod which will be
+deleted immediately, so add a wait mechanism to get a stable running pod.
+ref: <a href="https://github.com/longhorn/longhorn/issues/4814">https://github.com/longhorn/longhorn/issues/4814</a></p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def wait_and_get_any_deployment_pod(core_api, deployment_name,
                                     is_phase=&#34;Running&#34;):
+    &#34;&#34;&#34;
+    Add mechanism to wait for a stable running pod when deployment restarts its
+    workload, since Longhorn manager could create/delete the new workload pod
+    multiple times, it&#39;s possible that we get an unstable pod which will be
+    deleted immediately, so add a wait mechanism to get a stable running pod.
+    ref: https://github.com/longhorn/longhorn/issues/4814
+    &#34;&#34;&#34;
+    stable_pod = None
+    wait_for_stable_retry = 0
+
     for _ in range(DEFAULT_DEPLOYMENT_TIMEOUT):
         label_selector = &#34;name=&#34; + deployment_name
         pods = core_api.list_namespaced_pod(namespace=&#34;default&#34;,
                                             label_selector=label_selector)
         for pod in pods.items:
             if pod.status.phase == is_phase:
-                return pod
+                if stable_pod is None or \
+                        stable_pod.metadata.name != pod.metadata.name:
+                    stable_pod = pod
+                    wait_for_stable_retry = 0
+                    break
+                else:
+                    wait_for_stable_retry += 1
+                    if wait_for_stable_retry == WAIT_FOR_POD_STABLE_MAX_RETRY:
+                        return stable_pod
 
         time.sleep(DEFAULT_DEPLOYMENT_INTERVAL)
     assert False</code></pre>
@@ -10818,7 +10859,7 @@ def volume_name(request):
 </details>
 </dd>
 <dt id="tests.common.wait_for_cron_job_count"><code class="name flex">
-<span>def <span class="ident">wait_for_cron_job_count</span></span>(<span>batch_v1_beta_api, number, label='', retry_counts=150)</span>
+<span>def <span class="ident">wait_for_cron_job_count</span></span>(<span>batch_v1_api, number, label='', retry_counts=150)</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -10826,12 +10867,12 @@ def volume_name(request):
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def wait_for_cron_job_count(batch_v1_beta_api, number, label=&#34;&#34;,
+<pre><code class="python">def wait_for_cron_job_count(batch_v1_api, number, label=&#34;&#34;,
                             retry_counts=RETRY_COUNTS):
     ok = False
     for _ in range(retry_counts):
-        jobs = batch_v1_beta_api.list_namespaced_cron_job(&#39;longhorn-system&#39;,
-                                                          label_selector=label)
+        jobs = batch_v1_api.list_namespaced_cron_job(&#39;longhorn-system&#39;,
+                                                     label_selector=label)
         if len(jobs.items) == number:
             ok = True
             break
@@ -10840,7 +10881,7 @@ def volume_name(request):
 </details>
 </dd>
 <dt id="tests.common.wait_for_cron_job_create"><code class="name flex">
-<span>def <span class="ident">wait_for_cron_job_create</span></span>(<span>batch_v1_beta_api, label='', retry_counts=150)</span>
+<span>def <span class="ident">wait_for_cron_job_create</span></span>(<span>batch_v1_api, label='', retry_counts=150)</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -10848,12 +10889,12 @@ def volume_name(request):
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def wait_for_cron_job_create(batch_v1_beta_api, label=&#34;&#34;,
+<pre><code class="python">def wait_for_cron_job_create(batch_v1_api, label=&#34;&#34;,
                              retry_counts=RETRY_COUNTS):
     exist = False
     for _ in range(retry_counts):
-        job = batch_v1_beta_api.list_namespaced_cron_job(&#39;longhorn-system&#39;,
-                                                         label_selector=label)
+        job = batch_v1_api.list_namespaced_cron_job(&#39;longhorn-system&#39;,
+                                                    label_selector=label)
         if len(job.items) != 0:
             exist = True
             break
@@ -10863,7 +10904,7 @@ def volume_name(request):
 </details>
 </dd>
 <dt id="tests.common.wait_for_cron_job_delete"><code class="name flex">
-<span>def <span class="ident">wait_for_cron_job_delete</span></span>(<span>batch_v1_beta_api, label='', retry_counts=150)</span>
+<span>def <span class="ident">wait_for_cron_job_delete</span></span>(<span>batch_v1_api, label='', retry_counts=150)</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -10871,12 +10912,12 @@ def volume_name(request):
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def wait_for_cron_job_delete(batch_v1_beta_api, label=&#34;&#34;,
+<pre><code class="python">def wait_for_cron_job_delete(batch_v1_api, label=&#34;&#34;,
                              retry_counts=RETRY_COUNTS):
     exist = True
     for _ in range(retry_counts):
-        job = batch_v1_beta_api.list_namespaced_cron_job(&#39;longhorn-system&#39;,
-                                                         label_selector=label)
+        job = batch_v1_api.list_namespaced_cron_job(&#39;longhorn-system&#39;,
+                                                    label_selector=label)
         if len(job.items) == 0:
             exist = False
             break
@@ -12989,7 +13030,7 @@ from the args and kwargs arguments, respectively.</p></div>
 <li><code><a title="tests.common.assert_backup_state" href="#tests.common.assert_backup_state">assert_backup_state</a></code></li>
 <li><code><a title="tests.common.assert_from_assert_error_check_threads" href="#tests.common.assert_from_assert_error_check_threads">assert_from_assert_error_check_threads</a></code></li>
 <li><code><a title="tests.common.backing_image_feature_supported" href="#tests.common.backing_image_feature_supported">backing_image_feature_supported</a></code></li>
-<li><code><a title="tests.common.batch_v1_beta_api" href="#tests.common.batch_v1_beta_api">batch_v1_beta_api</a></code></li>
+<li><code><a title="tests.common.batch_v1_api" href="#tests.common.batch_v1_api">batch_v1_api</a></code></li>
 <li><code><a title="tests.common.check_backing_image_disk_map_status" href="#tests.common.check_backing_image_disk_map_status">check_backing_image_disk_map_status</a></code></li>
 <li><code><a title="tests.common.check_block_device_size" href="#tests.common.check_block_device_size">check_block_device_size</a></code></li>
 <li><code><a title="tests.common.check_csi" href="#tests.common.check_csi">check_csi</a></code></li>
