@@ -2,7 +2,7 @@ import pytest
 
 import common
 import time
-from common import client, core_api, volume_name  # NOQA
+from common import client, core_api, volume_name # NOQA
 from common import SIZE
 from common import check_volume_data, get_self_host_id
 from common import wait_for_volume_current_image, wait_for_volume_delete
@@ -25,7 +25,10 @@ from common import update_setting, wait_for_volume_healthy
 from common import get_volume_endpoint, write_volume_dev_random_mb_data
 from common import wait_for_rebuild_complete, RETRY_COUNTS, RETRY_INTERVAL
 from common import wait_for_rebuild_start
+from common import create_backup, wait_for_backup_restore_completed
+from common import SETTING_CONCURRENT_AUTO_ENGINE_UPGRADE_NODE_LIMIT
 from test_settings import delete_replica_on_test_node
+from backupstore import set_random_backupstore # NOQA
 
 REPLICA_COUNT = 2
 ENGINE_IMAGE_TEST_REPEAT_COUNT = 5
@@ -747,8 +750,51 @@ def test_engine_live_upgrade_with_intensive_data_writing(client, core_api, volum
     assert volume_file_md5sum2 == original_md5sum2
 
 
-@pytest.mark.skip(reason="TODO") # NOQA
-def test_auto_upgrade_engine_to_default_version():
+def prepare_auto_upgrade_engine_to_default_version(client): # NOQA
+    default_img = common.get_default_engine_image(client)
+    default_img_name = default_img.name
+    default_img = wait_for_engine_image_ref_count(client, default_img_name, 0)
+    cli_v = default_img.cliAPIVersion
+    cli_minv = default_img.cliAPIMinVersion
+    ctl_v = default_img.controllerAPIVersion
+    ctl_minv = default_img.controllerAPIMinVersion
+    data_v = default_img.dataFormatVersion
+    data_minv = default_img.dataFormatMinVersion
+    engine_upgrade_image = common.get_upgrade_test_image(cli_v, cli_minv,
+                                                         ctl_v, ctl_minv,
+                                                         data_v, data_minv)
+
+    compatible_img = client.create_engine_image(image=engine_upgrade_image)
+    compatible_img_name = compatible_img.name
+    ei_status_value = get_engine_image_status_value(client,
+                                                    compatible_img_name)
+    compatible_img = wait_for_engine_image_state(client,
+                                                 compatible_img_name,
+                                                 ei_status_value)
+    assert compatible_img.refCount == 0
+    assert compatible_img.noRefSince != ""
+
+    return default_img, default_img_name, engine_upgrade_image, \
+        compatible_img, compatible_img_name
+
+
+def check_replica_engine(volume, engineimage):
+
+    for replica in volume.replicas:
+        if volume["state"] == "attached":
+            if volume["robustness"] != "degraded":
+                assert replica.running is True
+
+            if replica.running is True:
+                assert replica.engineImage == engineimage
+                assert replica.currentImage == engineimage
+        elif volume["state"] == "detached":
+            assert replica.running is False
+            assert replica.engineImage == engineimage
+            assert replica.currentImage == ""
+
+
+def test_auto_upgrade_engine_to_default_version(client): # NOQA
     """
     Steps:
 
@@ -756,52 +802,218 @@ def test_auto_upgrade_engine_to_default_version():
     1. set up a backup store
     2. Deploy a compatible new engine image
 
-    Case 1: Concurrent engine upgrade
-    1. Create 10 volumes each of 1Gb.
-    2. Attach 5 volumes vol-0 to vol-4. Write data to it
+    Test auto upgrade to default engine in attached / detached volume:
+    1. Create 2 volumes each of 0.5Gb.
+    2. Attach 1 volumes vol-1. Write data to it
     3. Upgrade all volumes to the new engine image
     4. Wait until the upgrades are completed (volumes' engine image changed,
        replicas' mode change to RW for attached volumes, reference count of the
        new engine image changed, all engine and replicas' engine image changed)
     5. Set concurrent-automatic-engine-upgrade-per-node-limit setting to 3
-    6. In a retry loop, verify that the number of volumes who
-       is upgrading engine is always smaller or equal to 3
-    7. Wait until the upgrades are completed (volumes' engine image changed,
+    6. Wait until the upgrades are completed (volumes' engine image changed,
        replica mode change to RW for attached volumes, reference count of the
        new engine image changed, all engine and replicas' engine image changed,
        etc ...)
-    8. verify the volumes' data
+    7. verify the volumes' data
+    """
+    # Precondition
+    default_img, default_img_name, engine_upgrade_image, \
+        _, compatible_img_name = \
+        prepare_auto_upgrade_engine_to_default_version(client)
 
-    Case 2: DR volume
-    1. Create a backup for vol-0. Create a DR volume from the backup
-    2. Try to upgrade the DR volume engine's image to the new engine image
-    3. Verify that the Longhorn API returns error. Upgrade fails.
-    4. Set concurrent-automatic-engine-upgrade-per-node-limit setting to 0
-    5. Try to upgrade the DR volume engine's image to the new engine image
-    6. Wait until the upgrade are completed (volumes' engine image changed,
+    # Test auto upgrade to default engine in attached / detached volume
+    volume1 = client.create_volume(name="vol-1", size=str(1 * Gi),
+                                   numberOfReplicas=REPLICA_COUNT)
+    volume2 = client.create_volume(name="vol-2", size=str(1 * Gi),
+                                   numberOfReplicas=REPLICA_COUNT)
+    volume1 = common.wait_for_volume_detached(client, volume1.name)
+    volume2 = common.wait_for_volume_detached(client, volume2.name)
+
+    volume1.attach(hostId=get_self_host_id())
+    volume1 = wait_for_volume_healthy(client, volume1.name)
+    data = write_volume_random_data(volume1)
+
+    volume1.engineUpgrade(image=engine_upgrade_image)
+    volume2.engineUpgrade(image=engine_upgrade_image)
+
+    volume1 = wait_for_volume_current_image(client, volume1.name,
+                                            engine_upgrade_image)
+    volume2 = wait_for_volume_current_image(client, volume2.name,
+                                            engine_upgrade_image)
+
+    volume1 = wait_for_volume_replicas_mode(client, volume1.name, "RW")
+
+    wait_for_engine_image_ref_count(client, default_img_name, 0)
+
+    update_setting(client,
+                   SETTING_CONCURRENT_AUTO_ENGINE_UPGRADE_NODE_LIMIT,
+                   "3")
+
+    wait_for_engine_image_ref_count(client, compatible_img_name, 0)
+
+    wait_for_volume_healthy(client, volume1.name)
+    check_volume_data(volume1, data)
+
+    volume1 = client.by_id_volume(volume1.name)
+    volume2 = client.by_id_volume(volume2.name)
+    assert volume1.engineImage == default_img.image
+    assert volume2.engineImage == default_img.image
+    check_replica_engine(volume1, default_img.image)
+    check_replica_engine(volume2, default_img.image)
+
+
+def test_auto_upgrade_engine_to_default_version_dr_volume(client, set_random_backupstore): # NOQA
+    """
+    Steps:
+
+    Preparation:
+    1. set up a backup store
+    2. Deploy a compatible new engine image
+
+    Test auto upgrade engine to default version in DR volume:
+    1. Create a backup for vol-1. Create a DR volume from the backup
+    2. Set concurrent-automatic-engine-upgrade-per-node-limit setting to 3
+    3. Try to upgrade the DR volume engine's image to the new engine image
+    4. Verify that the Longhorn API returns error. Upgrade fails.
+    5. Set concurrent-automatic-engine-upgrade-per-node-limit setting to 0
+    6. Try to upgrade the DR volume engine's image to the new engine image
+    7. Wait until the upgrade are completed (volumes' engine image changed,
        replicas' mode change to RW, reference count of the new engine image
        changed, engine and replicas' engine image changed)
-    7. Wait for the DR volume to finish restoring
-    8. Set concurrent-automatic-engine-upgrade-per-node-limit setting to 3
-    9. In a 2-min retry loop, verify that Longhorn doesn't automatically
+    8. Wait for the DR volume to finish restoring
+    9. Set concurrent-automatic-engine-upgrade-per-node-limit setting to 3
+    10. In a 2-min retry loop, verify that Longhorn doesn't automatically
        upgrade engine image for DR volume.
+    """
+    # Precondition
+    _, default_img_name, engine_upgrade_image, compatible_img, _ = \
+        prepare_auto_upgrade_engine_to_default_version(client)
 
-    Case 3: Expanding volume
+    volume1 = client.create_volume(name="vol-1", size=str(1 * Gi),
+                                   numberOfReplicas=REPLICA_COUNT)
+    volume1 = common.wait_for_volume_detached(client, volume1.name)
+    volume1.attach(hostId=get_self_host_id())
+    volume1 = wait_for_volume_healthy(client, volume1.name)
+
+    write_volume_random_data(volume1)
+
+    _, b, _, _ = create_backup(client, volume1.name)
+
+    common.cleanup_all_volumes(client)
+
+    # Test auto upgrade engine to default version in DR volume
+    dr_volume_name = "dr-expand-" + volume1.name
+    dr_volume = client.create_volume(name=dr_volume_name, size=SIZE,
+                                     numberOfReplicas=3, fromBackup=b.url,
+                                     frontend="", standby=True)
+
+    wait_for_backup_restore_completed(client, dr_volume_name, b.name)
+
+    dr_volume = common.wait_for_volume_healthy_no_frontend(client,
+                                                           dr_volume_name)
+    update_setting(client,
+                   SETTING_CONCURRENT_AUTO_ENGINE_UPGRADE_NODE_LIMIT,
+                   "3")
+
+    try:
+        dr_volume.engineUpgrade(image=engine_upgrade_image)
+        raise ("Engine upgrade should fail when \
+               'Concurrent Automatic Engine Upgrade Per Node Limit` \
+               is greater than 0")
+    except Exception as err:
+        print(err)
+
+    update_setting(client,
+                   SETTING_CONCURRENT_AUTO_ENGINE_UPGRADE_NODE_LIMIT,
+                   "0")
+
+    dr_volume.engineUpgrade(image=engine_upgrade_image)
+    dr_volume = wait_for_volume_current_image(client, dr_volume.name,
+                                              engine_upgrade_image)
+    dr_volume = wait_for_volume_replicas_mode(client, dr_volume.name, "RW")
+
+    wait_for_engine_image_ref_count(client, default_img_name, 0)
+
+    update_setting(client,
+                   SETTING_CONCURRENT_AUTO_ENGINE_UPGRADE_NODE_LIMIT,
+                   "3")
+
+    for i in range(RETRY_COUNTS):
+        dr_volume = client.by_id_volume(dr_volume.name)
+        assert dr_volume.engineImage == compatible_img.image
+        time.sleep(RETRY_INTERVAL)
+
+    check_replica_engine(dr_volume, compatible_img.image)
+
+
+def test_auto_upgrade_engine_to_default_version_expanding_volume(client): # NOQA
+    """
+    Steps:
+
+    Preparation:
+    1. set up a backup store
+    2. Deploy a compatible new engine image
+
+    Test auto upgrade engine to default version in expanding volume:
     1. set concurrent-automatic-engine-upgrade-per-node-limit setting to 0
-    2. Upgrade vol-0 to the new engine image
+    2. Upgrade vol-1 to the new engine image
     3. Wait until the upgrade are completed (volumes' engine image changed,
        replicas' mode change to RW, reference count of the new engine image
        changed, engine and replicas' engine image changed)
-    4. Detach vol-0
-    5. Expand the vol-0 from 1Gb to 5GB
-    6. Wait for the vol-0 to start expanding
-    7. Set concurrent-automatic-engine-upgrade-per-node-limit setting to 3
-    8. While vol-0 is expanding, verify that its engine is not upgraded to
+    4. Expand the vol-0 from 1Gb to 5GB
+    5. Wait for the vol-0 to start expanding
+    6. Set concurrent-automatic-engine-upgrade-per-node-limit setting to 3
+    7. While vol-0 is expanding, verify that its engine is not upgraded to
        the default engine image
-    9. Wait for the expansion to finish and vol-0 is detached
-    10. Verify that Longhorn upgrades vol-0's engine to the default version
+    8. Wait for the expansion to finish and vol-0 is detached
+    9. Verify that Longhorn upgrades vol-0's engine to the default version
+    """
+    # Precondition
+    default_img, default_img_name, engine_upgrade_image, \
+        compatible_img, compatible_img_name = \
+        prepare_auto_upgrade_engine_to_default_version(client)
 
-    Case 4: Degraded volume
+    # Test auto upgrade engine to default version in expanding volume
+    update_setting(client,
+                   SETTING_CONCURRENT_AUTO_ENGINE_UPGRADE_NODE_LIMIT,
+                   "0")
+
+    volume1 = client.create_volume(name="vol-1", size=str(1 * Gi),
+                                   numberOfReplicas=REPLICA_COUNT)
+    volume1 = common.wait_for_volume_detached(client, volume1.name)
+    volume1.engineUpgrade(image=engine_upgrade_image)
+    wait_for_engine_image_ref_count(client, default_img_name, 0)
+    volume1.expand(size=str(5 * Gi))
+
+    update_setting(client,
+                   SETTING_CONCURRENT_AUTO_ENGINE_UPGRADE_NODE_LIMIT,
+                   "3")
+
+    # check volume is expanding
+    for i in range(RETRY_COUNTS):
+        volume1 = client.by_id_volume(volume1.name)
+        engine = get_volume_engine(volume1)
+        assert volume1.engineImage == compatible_img.image
+
+        if engine.size != volume1.size and volume1.state == "detached":
+            break
+
+        time.sleep(RETRY_INTERVAL)
+
+    wait_for_engine_image_ref_count(client, compatible_img_name, 0)
+    volume1 = client.by_id_volume(volume1.name)
+    assert volume1.engineImage == default_img.image
+
+
+def test_auto_upgrade_engine_to_default_version_degraded_volume(client): # NOQA
+    """
+    Steps:
+
+    Preparation:
+    1. set up a backup store
+    2. Deploy a compatible new engine image
+
+    Test auto upgrade engine to default version in degraded volume:
     1. set concurrent-automatic-engine-upgrade-per-node-limit setting to 0
     2. Upgrade vol-1 (an healthy attached volume) to the new engine image
     3. Wait until the upgrade are completed (volumes' engine image changed,
@@ -811,13 +1023,39 @@ def test_auto_upgrade_engine_to_default_version():
     5. Set concurrent-automatic-engine-upgrade-per-node-limit setting to 3
     6. In a 2-min retry loop, verify that Longhorn doesn't automatically
        upgrade engine image for vol-1.
-
-    Cleaning up:
-    1. Clean up volumes
-    2. Reset automatically-upgrade-engine-to-default-version setting in
-       the client fixture
     """
-    pass
+    # Precondition
+    _, default_img_name, engine_upgrade_image, compatible_img, _ = \
+        prepare_auto_upgrade_engine_to_default_version(client)
+
+    # Test auto upgrade engine to default version in degraded volume
+    update_setting(client,
+                   SETTING_CONCURRENT_AUTO_ENGINE_UPGRADE_NODE_LIMIT,
+                   "0")
+
+    volume1 = client.create_volume(name="vol-1", size=str(1 * Gi),
+                                   numberOfReplicas=REPLICA_COUNT)
+    volume1 = common.wait_for_volume_detached(client, volume1.name)
+    volume1.engineUpgrade(image=engine_upgrade_image)
+    volume1 = wait_for_volume_current_image(client, volume1.name,
+                                            engine_upgrade_image)
+    wait_for_engine_image_ref_count(client, default_img_name, 0)
+
+    volume1.attach(hostId=get_self_host_id())
+    volume1 = wait_for_volume_healthy(client, volume1.name)
+    volume1.updateReplicaCount(replicaCount=4)
+    volume1 = common.wait_for_volume_degraded(client, volume1.name)
+
+    update_setting(client,
+                   SETTING_CONCURRENT_AUTO_ENGINE_UPGRADE_NODE_LIMIT,
+                   "3")
+
+    for i in range(RETRY_COUNTS):
+        volume1 = client.by_id_volume(volume1.name)
+        assert volume1.engineImage == compatible_img.image
+        time.sleep(RETRY_INTERVAL)
+
+    check_replica_engine(volume1, compatible_img.image)
 
 
 def test_engine_live_upgrade_while_replica_concurrent_rebuild(client, # NOQA
