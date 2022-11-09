@@ -107,6 +107,7 @@ DEFAULT_STATEFULSET_TIMEOUT = 180
 
 DEFAULT_DEPLOYMENT_INTERVAL = 1
 DEFAULT_DEPLOYMENT_TIMEOUT = 120
+WAIT_FOR_POD_STABLE_MAX_RETRY = 30
 
 
 DEFAULT_VOLUME_SIZE = 3  # In Gi
@@ -1087,17 +1088,17 @@ def apps_api(request):
 
 
 @pytest.fixture
-def batch_v1_beta_api(request):
+def batch_v1_api(request):
     """
-    Create a new BatchV1beta1Api instance.
+    Create a new BatchV1Api instance.
     Returns:
-        A new BatchV1beta1Api Instance.
+        A new BatchV1Api Instance.
     """
     c = Configuration()
     c.assert_hostname = False
     Configuration.set_default(c)
     k8sconfig.load_incluster_config()
-    api = k8sclient.BatchV1beta1Api()
+    api = k8sclient.BatchV1Api()
 
     return api
 
@@ -4138,13 +4139,31 @@ def create_and_wait_deployment(apps_api, deployment_manifest):
 
 def wait_and_get_any_deployment_pod(core_api, deployment_name,
                                     is_phase="Running"):
+    """
+    Add mechanism to wait for a stable running pod when deployment restarts its
+    workload, since Longhorn manager could create/delete the new workload pod
+    multiple times, it's possible that we get an unstable pod which will be
+    deleted immediately, so add a wait mechanism to get a stable running pod.
+    ref: https://github.com/longhorn/longhorn/issues/4814
+    """
+    stable_pod = None
+    wait_for_stable_retry = 0
+
     for _ in range(DEFAULT_DEPLOYMENT_TIMEOUT):
         label_selector = "name=" + deployment_name
         pods = core_api.list_namespaced_pod(namespace="default",
                                             label_selector=label_selector)
         for pod in pods.items:
             if pod.status.phase == is_phase:
-                return pod
+                if stable_pod is None or \
+                        stable_pod.metadata.name != pod.metadata.name:
+                    stable_pod = pod
+                    wait_for_stable_retry = 0
+                    break
+                else:
+                    wait_for_stable_retry += 1
+                    if wait_for_stable_retry == WAIT_FOR_POD_STABLE_MAX_RETRY:
+                        return stable_pod
 
         time.sleep(DEFAULT_DEPLOYMENT_INTERVAL)
     assert False
@@ -4737,12 +4756,12 @@ def wait_for_volume_recurring_job_update(volume, jobs=[], groups=[]):
     assert ok
 
 
-def wait_for_cron_job_create(batch_v1_beta_api, label="",
+def wait_for_cron_job_create(batch_v1_api, label="",
                              retry_counts=RETRY_COUNTS):
     exist = False
     for _ in range(retry_counts):
-        job = batch_v1_beta_api.list_namespaced_cron_job('longhorn-system',
-                                                         label_selector=label)
+        job = batch_v1_api.list_namespaced_cron_job('longhorn-system',
+                                                    label_selector=label)
         if len(job.items) != 0:
             exist = True
             break
@@ -4751,12 +4770,12 @@ def wait_for_cron_job_create(batch_v1_beta_api, label="",
     assert exist
 
 
-def wait_for_cron_job_delete(batch_v1_beta_api, label="",
+def wait_for_cron_job_delete(batch_v1_api, label="",
                              retry_counts=RETRY_COUNTS):
     exist = True
     for _ in range(retry_counts):
-        job = batch_v1_beta_api.list_namespaced_cron_job('longhorn-system',
-                                                         label_selector=label)
+        job = batch_v1_api.list_namespaced_cron_job('longhorn-system',
+                                                    label_selector=label)
         if len(job.items) == 0:
             exist = False
             break
@@ -4765,12 +4784,12 @@ def wait_for_cron_job_delete(batch_v1_beta_api, label="",
     assert not exist
 
 
-def wait_for_cron_job_count(batch_v1_beta_api, number, label="",
+def wait_for_cron_job_count(batch_v1_api, number, label="",
                             retry_counts=RETRY_COUNTS):
     ok = False
     for _ in range(retry_counts):
-        jobs = batch_v1_beta_api.list_namespaced_cron_job('longhorn-system',
-                                                          label_selector=label)
+        jobs = batch_v1_api.list_namespaced_cron_job('longhorn-system',
+                                                     label_selector=label)
         if len(jobs.items) == number:
             ok = True
             break
