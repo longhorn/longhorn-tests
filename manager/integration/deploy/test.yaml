@@ -81,6 +81,8 @@ spec:
       value: "30"
     - name: LONGHORN_DISK_TYPE
       value: "ssd"
+    - name: LONGHORN_UPGRADE_TYPE
+      value: "from_stable"
     - name: NODE_NAME
       valueFrom:
         fieldRef:

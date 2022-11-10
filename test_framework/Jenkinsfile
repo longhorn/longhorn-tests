@@ -15,6 +15,7 @@ def CREATE_LOAD_BALANCER = params.LONGHORN_INSTALL_METHOD == "rancher" ? true : 
 def RANCHER_CHART_GIT_REPO = params.RANCHER_CHART_GIT_REPO ? params.RANCHER_CHART_GIT_REPO : ""
 def RANCHER_CHART_GIT_BRANCH = params.RANCHER_CHART_GIT_BRANCH ? params.RANCHER_CHART_GIT_BRANCH : ""
 def RANCHER_CHART_INSTALL_VERSION = params.RANCHER_CHART_INSTALL_VERSION ? params.RANCHER_CHART_INSTALL_VERSION : ""
+def LONGHORN_TRANSIENT_VERSION = params.LONGHORN_TRANSIENT_VERSION ? params.LONGHORN_TRANSIENT_VERSION : ""
 def REGISTRY_URL
 def REGISTRY_USERNAME
 def REGISTRY_PASSWORD
@@ -98,6 +99,7 @@ node {
                                        --env LONGHORN_REPO_URI=${LONGHORN_REPO_URI} \
                                        --env LONGHORN_REPO_BRANCH=${LONGHORN_REPO_BRANCH} \
                                        --env LONGHORN_STABLE_VERSION=${LONGHORN_STABLE_VERSION} \
+                                       --env LONGHORN_TRANSIENT_VERSION=${LONGHORN_TRANSIENT_VERSION} \
                                        --env LONGHORN_TEST_CLOUDPROVIDER=${LONGHORN_TEST_CLOUDPROVIDER} \
                                        --env LONGHORN_UPGRADE_TEST=${LONGHORN_UPGRADE_TEST} \
                                        --env PYTEST_CUSTOM_OPTIONS="${PYTEST_CUSTOM_OPTIONS}" \
@@ -141,9 +143,14 @@ node {
             stage ('report generation') {
                 sh "docker cp ${JOB_BASE_NAME}-${BUILD_NUMBER}:${TF_VAR_tf_workspace}/longhorn-test-junit-report.xml ."
 
-                if(params.LONGHORN_UPGRADE_TEST) {
-                    sh "docker cp ${JOB_BASE_NAME}-${BUILD_NUMBER}:${TF_VAR_tf_workspace}/longhorn-test-upgrade-junit-report.xml ."
-                    summary = junit 'longhorn-test-upgrade-junit-report.xml, longhorn-test-junit-report.xml'
+                if(params.LONGHORN_UPGRADE_TEST && params.LONGHORN_TRANSIENT_VERSION) {
+                    sh "docker cp ${JOB_BASE_NAME}-${BUILD_NUMBER}:${TF_VAR_tf_workspace}/longhorn-test-upgrade-from-stable-junit-report.xml ."
+                    sh "docker cp ${JOB_BASE_NAME}-${BUILD_NUMBER}:${TF_VAR_tf_workspace}/longhorn-test-upgrade-from-transient-junit-report.xml ."
+                    summary = junit 'longhorn-test-upgrade-from-stable-junit-report.xml, longhorn-test-upgrade-from-transient-junit-report.xml, longhorn-test-junit-report.xml'
+                }
+                else if(params.LONGHORN_UPGRADE_TEST) {
+                    sh "docker cp ${JOB_BASE_NAME}-${BUILD_NUMBER}:${TF_VAR_tf_workspace}/longhorn-test-upgrade-from-stable-junit-report.xml ."
+                    summary = junit 'longhorn-test-upgrade-from-stable-junit-report.xml, longhorn-test-junit-report.xml'
                 }
                 else {
                     summary = junit 'longhorn-test-junit-report.xml'
