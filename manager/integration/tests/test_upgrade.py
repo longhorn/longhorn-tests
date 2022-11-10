@@ -1,3 +1,4 @@
+import os
 import pytest
 import subprocess
 import time
@@ -70,6 +71,17 @@ def upgrade_longhorn_backing_image_manager_image(request):
     return request.config.getoption("--upgrade-lh-backing-image-manager-image")
 
 
+def get_longhorn_upgrade_type():
+    return [os.environ['LONGHORN_UPGRADE_TYPE']]
+
+
+@pytest.fixture(params=get_longhorn_upgrade_type())
+def longhorn_upgrade_type():
+    # add parameter "from_stable" or "from_transient" to test_upgrade test case
+    # to distinguish them in the junit report.
+    pass
+
+
 def longhorn_upgrade(longhorn_repo_url,
                      longhorn_repo_branch,
                      longhorn_manager_image,
@@ -99,7 +111,8 @@ def longhorn_upgrade(longhorn_repo_url,
 
 
 @pytest.mark.upgrade  # NOQA
-def test_upgrade(upgrade_longhorn_repo_url,
+def test_upgrade(longhorn_upgrade_type,
+                 upgrade_longhorn_repo_url,
                  upgrade_longhorn_repo_branch,
                  upgrade_longhorn_manager_image,
                  upgrade_longhorn_engine_image,
