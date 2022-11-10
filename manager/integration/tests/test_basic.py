@@ -3766,9 +3766,7 @@ def test_workload_with_fsgroup(core_api, statefulset):  # NOQA
                                  DATA_SIZE_IN_MB_1)
     get_pod_data_md5sum(core_api, pod_name, "/data/test")
 
-# After introducing the gRPC proxy, the backup target controller is relying on
-# the gRPC server availability instead of the engine binary availability.
-# https://github.com/longhorn/longhorn/issues/4033
+
 def test_backuptarget_available_during_engine_image_not_ready(client, apps_api):  # NOQA
     """
     Test backup target available during engine image not ready
