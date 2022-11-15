@@ -20,6 +20,7 @@ node {
 
             sh """ docker run -itd --name ${JOB_BASE_NAME}-${BUILD_NUMBER} \
                                    --env TEST_SIZE=${TEST_SIZE} \
+                                   --env LONGHORN_PREVIOUS_VERSION=${LONGHORN_PREVIOUS_VERSION} \
                                    --env LONGHORN_REPO_URI=${LONGHORN_REPO_URI} \
                                    --env LONGHORN_REPO_BRANCH=${LONGHORN_REPO_BRANCH} \
                                    --env CUSTOM_LONGHORN_MANAGER_IMAGE=${CUSTOM_LONGHORN_MANAGER_IMAGE} \
