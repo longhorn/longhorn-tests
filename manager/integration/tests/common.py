@@ -3949,10 +3949,10 @@ def wait_for_expansion_failure(client, volume_name, last_failed_at=""):
     assert failed
 
 
-def wait_for_rebuild_complete(client, volume_name):
+def wait_for_rebuild_complete(client, volume_name, retry_count=RETRY_COUNTS):
     completed = 0
     rebuild_statuses = {}
-    for i in range(RETRY_COUNTS):
+    for i in range(retry_count):
         completed = 0
         v = client.by_id_volume(volume_name)
         rebuild_statuses = v.rebuildStatus
