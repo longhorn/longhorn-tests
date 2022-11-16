@@ -70,5 +70,14 @@ create vol dak and attach to the same node vol bak is attached connect to node v
       <description>create vol blkand mount to a node on /mnt/blk take backup(1) dd if=/dev/urandom of=/mnt/blk/data2 bs=2097152 count=10 status=progress take backup(2) dd if=/dev/urandom of=/mnt/blk/data3 bs=2097152 count=10 status=progress take backup(3) diff backup(2) backup(3) (run through json beautifier for easier comparison) delete backup(2) verify that the blocks solely used by backup(2) are deleted verify that the shared blocks between backup(2) and backup(3) are retained delete backup(3) wait delete backup(1) wait verify no more blocks verify volume.</description>
     </item>
     
+    <item>
+      <title>[#4637](https://github.com/longhorn/longhorn/issues/4637) pull backup created by another Longhorn system</title>
+      <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/pull-backup-created-by-another-longhorn/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/pull-backup-created-by-another-longhorn/</guid>
+      <description>Prepare 2 k8s clusters: cluster A and cluster B. Install previous version of Longhorn which doesn&amp;rsquo;t include this fix e.g v1.3.1, v1.2.5 on cluster A. Install the release version of Longhorn on cluster B. Set the same backup target on both cluster A and cluster B. Create volume, write some data, and take backup on cluster A. Wait for backup target polling update on cluster B. Make sure the backup created by cluster A can be pulled on cluster B.</description>
+    </item>
+    
   </channel>
 </rss>

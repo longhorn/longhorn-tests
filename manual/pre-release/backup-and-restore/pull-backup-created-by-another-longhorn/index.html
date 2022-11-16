@@ -622,49 +622,23 @@
 
 
 <main style="padding: 1%; width: 70%;">
-  <h1 id="title">Backing Image on a down node</h1>
+  <h1 id="title"><a href="https://github.com/longhorn/longhorn/issues/4637">#4637</a> pull backup created by another Longhorn system</h1>
   <div>
     <article id="content">
        <ol>
-<li>Update the settings:
-<ol>
-<li>Disable <code>Node Soft Anti-affinity</code>.</li>
-<li>Set <code>Replica Replenishment Wait Interval</code> to a relatively long value.</li>
+<li>Prepare 2 k8s clusters: cluster A and cluster B.</li>
+<li>Install previous version of Longhorn which doesn&rsquo;t include this fix e.g v1.3.1, v1.2.5 on cluster A.</li>
+<li>Install the release version of Longhorn on cluster B.</li>
+<li>Set the same backup target on both cluster A and cluster B.</li>
+<li>Create volume, write some data, and take backup on cluster A.</li>
+<li>Wait for backup target polling update on cluster B.</li>
+<li>Make sure the backup created by cluster A can be pulled on cluster B.</li>
+<li>Restore the pulled backup and verify the data on cluster B.</li>
+<li>Repeat the test with both clusters installed the release version of Longhorn.</li>
 </ol>
-</li>
-<li>Create a backing image. Wait for the backing image being ready in the 1st disk.</li>
-<li>Create 2 volumes with the backing image and attach them on different nodes. Verify:
-<ul>
-<li>the disk state map of the backing image contains the disks of all replicas, and the state is running for all disks.</li>
-<li>the backing image content is correct.</li>
-</ul>
-</li>
-<li>Write random data to the volumes.</li>
-<li>Power off 2 nodes. One node should contain one volume engine. Verify that
-<ul>
-<li>the related disk file state in the backing image will become <code>Unknown</code>.</li>
-<li>the volume on the running node still works fine but is state <code>Degraded</code>, and the content is correct.</li>
-<li>the volume on the down node become <code>Unknown</code>.</li>
-</ul>
-</li>
-<li>Power on the node that contains one volume engine. Verify
-<ul>
-<li>the failed replica of the <code>Degraded</code> volume can be reused.</li>
-<li>the volume on the down node will be recovered automatically. And the data is correct.</li>
-<li>the backing image will be recovered automatically.</li>
-<li>the backing image file on this node will be reused when the related backing image manager pod is recovered (by check the pod log).</li>
-</ul>
-</li>
-<li>Delete all volumes and the backing image. Verify the backing image manager can be deleted once forcing removing the related terminating pod.</li>
-</ol>
-<h4 id="available-test-backing-image-urls">Available test backing image URLs:</h4>
-<pre tabindex="0"><code>https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2
-https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.raw
-https://cloud-images.ubuntu.com/minimal/releases/focal/release-20200729/ubuntu-20.04-minimal-cloudimg-amd64.img
-https://github.com/rancher/k3os/releases/download/v0.11.0/k3os-amd64.iso 
-</code></pre>
+
     </article>
-  <a href="https://github.com/longhorn/longhorn-tests/edit/master/docs/content/manual/pre-release/node/backing-image-on-a-down-node.md" target="_blank" title="Edit on Github" style="font-size:smaller;float:right;padding-right:3%">[Edit]</a>
+  <a href="https://github.com/longhorn/longhorn-tests/edit/master/docs/content/manual/pre-release/backup-and-restore/pull-backup-created-by-another-longhorn.md" target="_blank" title="Edit on Github" style="font-size:smaller;float:right;padding-right:3%">[Edit]</a>
   </div>
 
     
