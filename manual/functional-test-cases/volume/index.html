@@ -17,38 +17,35 @@
   
   <ul>
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/">End-to-end test cases</a></li>
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/">Functional test cases</a></li>
   
     <ul>
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/deployment/"> Deployment of Longhorn </a></li>
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/deployment/"> Deployment of Longhorn </a></li>
   
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/ui/"> UI </a></li>
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/ui/"> UI </a></li>
   
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/volume/"> Volume </a></li>
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/volume/"> Volume </a></li>
   
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/high-availability/"> High Availability </a></li>
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/kubernetes/"> Kubernetes </a></li>
   
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/kubernetes/"> Kubernetes </a></li>
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/backup/"> Backup </a></li>
   
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/backup/"> Backup </a></li>
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/node/"> Node </a></li>
   
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/node/"> Node </a></li>
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/scheduling/"> Scheduling </a></li>
   
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/scheduling/"> Scheduling </a></li>
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/upgrade/"> Upgrade </a></li>
   
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/upgrade/"> Upgrade </a></li>
-  
-
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/monitoring/">Monitoring</a></li>
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/monitoring/">Monitoring</a></li>
   
 
 </ul>
@@ -713,85 +710,6 @@
 </tr>
 </tbody>
 </table>
-<h2 id="automation-tests">Automation Tests</h2>
-<table>
-<thead>
-<tr>
-<th><strong>#</strong></th>
-<th><strong>Test name</strong></th>
-<th><strong>Description</strong></th>
-<th><strong>Tags</strong></th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>1</td>
-<td>test_attach_without_frontend</td>
-<td>Test attach in maintenance mode (without frontend)<br><br>1.  Create a volume and attach to the current node with enabled frontend<br>2.  Check volume has <code>blockdev</code><br>3.  Write <code>snap1_data</code> into volume and create snapshot <code>snap1</code><br>4.  Write more random data into volume and create another anspshot<br>5.  Detach the volume and reattach with disabled frontend<br>6.  Check volume still has <code>blockdev</code> as frontend but no endpoint<br>7.  Revert back to <code>snap1</code><br>8.  Detach and reattach the volume with enabled frontend<br>9.  Check volume contains data <code>snap1_data</code></td>
-<td>Volume</td>
-</tr>
-<tr>
-<td>2</td>
-<td>test_volume_basic</td>
-<td>Test basic volume operations:<br><br>1.  Check volume name and parameter<br>2.  Create a volume and attach to the current node, then check volume states<br>3.  Check soft anti-affinity rule<br>4.  Write then read back to check volume data</td>
-<td>Volume</td>
-</tr>
-<tr>
-<td>3</td>
-<td>test_volume_iscsi_basic</td>
-<td>Test basic volume operations with iscsi frontend<br><br>1.  Create and attach a volume with iscsi frontend<br>2.  Check the volume endpoint and connect it using the iscsi initator on the node.<br>3.  Write then read back volume data for validation</td>
-<td>Volume</td>
-</tr>
-<tr>
-<td>4</td>
-<td>test_volume_multinode</td>
-<td>Test the volume can be attached on multiple nodes<br><br>1.  Create one volume<br>2.  Attach it on every node once, verify the state, then detach it</td>
-<td>Volume</td>
-</tr>
-<tr>
-<td>5</td>
-<td>test_volume_update_replica_count</td>
-<td>Test updating volume&rsquo;s replica count<br><br>1.  Create a volume with 3 replicas<br>2.  Attach the volume<br>3.  Increase the replica to 5.<br>4.  Volume will become degraded and start rebuilding<br>5.  Wait for rebuilding to complete<br>6.  Update the replica count to 2. Volume should remain healthy<br>7.  Remove 3 replicas, so there will be 2 replicas in the volume<br>8.  Verify the volume is still healthy</td>
-<td>Volume</td>
-</tr>
-<tr>
-<td>6</td>
-<td>test_ha_prohibit_deleting_last_replica</td>
-<td>Test prohibiting deleting the last replica<br><br>1.  Create volume with one replica and attach to the current node.<br>2.  Try to delete the replica. It should error out</td>
-<td>Volume</td>
-</tr>
-<tr>
-<td>7</td>
-<td>test_replica_datapath_cleanup</td>
-<td>Test replicas data path cleanup<br><br>1.  Create host disk <code>extra_disk</code> and add it to the current node.<br>2.  Disable all the disks except for the ones on the current node.<br>3.  Create a volume with 5 replicas (soft anti-affinity on)<br>    1.  To make sure both default disk and extra disk can have one replica<br>    2.  Current we don&rsquo;t have anti-affinity for disks on the same node<br>4.  Verify the data path for replicas are created.<br>5.  Delete the volume.<br>6.  Verify the data path for replicas are deleted.</td>
-<td>Volume</td>
-</tr>
-<tr>
-<td>8</td>
-<td>test_expansion_basic</td>
-<td>Test volume expansion using Longhorn API<br><br>1.  Create volume and attach to the current node<br>2.  Generate data <code>snap1_data</code> and write it to the volume<br>3.  Create snapshot <code>snap1</code><br>4.  Expand the volume (volume will be detached, expanded, then attached)<br>5.  Verify the volume has been expanded<br>6.  Generate data <code>snap2_data</code> and write it to the volume<br>7.  Create snapshot <code>snap2</code><br>8.  Gerneate data <code>snap3_data</code> and write it after the original size<br>9.  Create snapshot <code>snap3</code> and verify the <code>snap3_data</code> with location<br>10.  Detach and reattach the volume.<br>11.  Verify the volume is still expanded, and <code>snap3_data</code> remain valid<br>12.  Detach the volume.<br>13.  Reattach the volume in maintence mode<br>14.  Revert to <code>snap2</code> and detach.<br>15.  Attach the volume and check data <code>snap2_data</code><br>16.  Generate <code>snap4_data</code> and write it after the original size<br>17.  Create snapshot <code>snap4</code> and verify <code>snap4_data</code>.<br>18.  Detach the volume and revert to <code>snap1</code><br>19.  Validate <code>snap1_data</code></td>
-<td>Volume: Expansion</td>
-</tr>
-<tr>
-<td>9</td>
-<td>test_restore_inc_with_expansion</td>
-<td>Run test against a random backupstores<br><br>1.  Create a volume and attach to the current node<br>2.  Generate <code>data0</code>, write to the volume, make a backup <code>backup0</code><br>3.  Create three DR(standby) volumes from the backup: <code>dr_volume0/1/2</code><br>4.  Wait for all three DR volumes to finish the initial restoration<br>5.  Verify DR volumes&rsquo;s <code>lastBackup</code> is <code>backup0</code><br>6.  Verify snapshot/pv/pvc/change backup target are not allowed as long as the DR volume exists<br>7.  Activate standby <code>dr_volume0</code> and attach it to check the volume data<br>8.  Expand the original volume. Make sure the expansion is successful.<br>9.  Generate <code>data1</code> and write to the original volume and create <code>backup1</code><br>10.  Make sure <code>dr_volume1</code>&lsquo;s <code>lastBackup</code> field has been updated to <code>backup1</code><br>11.  Activate <code>dr_volume1</code> and check data <code>data0</code> and <code>data1</code><br>12.  Generate <code>data2</code> and write to the original volume after original SIZE<br>13.  Create <code>backup2</code><br>14.  Wait for <code>dr_volume2</code> to finish expansion, show <code>backup2</code> as latest<br>15.  Activate <code>dr_volume2</code> and verify <code>data2</code><br>16.  Detach <code>dr_volume2</code><br>17.  Create PV, PVC and Pod to use <code>sb_volume2</code>, check PV/PVC/POD are good</td>
-<td>Volume: Expansion<br><br>Backup: Disaster Recovery</td>
-</tr>
-<tr>
-<td>10</td>
-<td>test_snapshot</td>
-<td>Test snapshot operations<br><br>1.  Create a volume and attach to the node<br>2.  Create the empty snapshot <code>snap1</code><br>3.  Generate and write data <code>snap2_data</code>, then create <code>snap2</code><br>4.  Generate and write data <code>snap3_data</code>, then create <code>snap3</code><br>5.  List snapshot. Validate the snapshot chain relationship<br>6.  Mark <code>snap3</code> as removed. Make sure volume&rsquo;s data didn&rsquo;t change<br>7.  List snapshot. Make sure <code>snap3</code> is marked as removed<br>8.  Detach and reattach the volume in maintenance mode.<br>9.  Make sure the volume frontend is still <code>blockdev</code> but disabled<br>10.  Revert to <code>snap2</code><br>11.  Detach and reattach the volume with frontend enabled<br>12.  Make sure volume&rsquo;s data is <code>snap2_data</code><br>13.  List snapshot. Make sure <code>volume-head</code> is now <code>snap2</code>&rsquo;s child<br>14.  Delete <code>snap1</code> and <code>snap2</code><br>15.  Purge the snapshot.<br>16.  List the snapshot, make sure <code>snap1</code> and <code>snap3</code> are gone. <code>snap2</code> is marked as removed.<br>17.  Check volume data, make sure it&rsquo;s still <code>snap2_data</code>.</td>
-<td>Volume: Snapshot</td>
-</tr>
-<tr>
-<td>11</td>
-<td>test_kubernetes_status</td>
-<td>Test Volume feature: Kubernetes Status<br><br>1.  Create StorageClass with <code>reclaimPolicy = Retain</code><br>2.  Create a statefulset <code>kubernetes-status-test</code> with the StorageClass<br>    1.  The statefulset has scale of 2.<br>3.  Get the volume name from the SECOND pod of the StateufulSet pod and create an <code>extra_pod</code> with the same volume on the same node<br>4.  Check the volumes that used by the StatefulSet<br>    1.  The volume used by the FIRST StatefulSet pod will have one workload<br>    2.  The volume used by the SECOND StatefulSet pod will have two workloads<br>    3.  Validate related status, e.g. pv/pod name/state, workload name/type<br>5.  Check the volumes again<br>    1.  PV/PVC should still be bound<br>    2.  The volume used by the FIRST pod should have history data<br>    3.  The volume used by the SECOND and extra pod should have current data point to the extra pod<br>6.  Delete the extra pod<br>    1.  Now all the volume&rsquo;s should only have history data(<code>lastPodRefAt</code> set)<br>7.  Delete the PVC<br>    1.  PVC should be updated with status <code>Released</code> and become history data<br>8.  Delete PV<br>    1.  All the Kubernetes status information should be cleaned up.<br>9.  Reuse the two Longhorn volumes to create new pods<br>    1.  Since the <code>reclaimPolicy == Retain</code>, volume won&rsquo;t be deleted by Longhorn<br>    2.  Check the Kubernetes status now updated, with pod info but empty workload<br>    3.  Default Longhorn Static StorageClass will remove the PV with PVC, but leave Longhorn volume</td>
-<td>Volume: Kubernetes Status</td>
-</tr>
-</tbody>
-</table>
 <h2 id="replica">Replica</h2>
 <table>
 <thead>
@@ -1138,7 +1056,7 @@
 </table>
 
     </article>
-  <a href="https://github.com/longhorn/longhorn-tests/edit/master/docs/content/manual/end-to-end-test-cases/volume.md" target="_blank" title="Edit on Github" style="font-size:smaller;float:right;padding-right:3%">[Edit]</a>
+  <a href="https://github.com/longhorn/longhorn-tests/edit/master/docs/content/manual/functional-test-cases/volume.md" target="_blank" title="Edit on Github" style="font-size:smaller;float:right;padding-right:3%">[Edit]</a>
   </div>
 
     

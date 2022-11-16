@@ -1,17 +1,17 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
-    <title>End-to-end test cases on Longhorn Manual Test Cases</title>
-    <link>https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/</link>
-    <description>Recent content in End-to-end test cases on Longhorn Manual Test Cases</description>
+    <title>Functional test cases on Longhorn Manual Test Cases</title>
+    <link>https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/</link>
+    <description>Recent content in Functional test cases on Longhorn Manual Test Cases</description>
     <generator>Hugo -- gohugo.io</generator>
-    <language>en-us</language><atom:link href="https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/index.xml" rel="self" type="application/rss+xml" />
+    <language>en-us</language><atom:link href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/index.xml" rel="self" type="application/rss+xml" />
     <item>
       <title>1. Deployment of Longhorn</title>
-      <link>https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/deployment/</link>
+      <link>https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/deployment/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
-      <guid>https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/deployment/</guid>
+      <guid>https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/deployment/</guid>
       <description>Installation Longhorn v1.1.2 and above - Support Kubernetes 1.18+
 Longhorn v1.0.0 to v1.1.1 - Support Kubernetes 1.14+. Default 1.16+
 Install using Rancher Apps &amp;amp; MarketPlace App (Default)
@@ -24,10 +24,10 @@ Customizable Default Settings https://longhorn.io/docs/1.2.2/references/settings
     
     <item>
       <title>2. UI</title>
-      <link>https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/ui/</link>
+      <link>https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/ui/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
-      <guid>https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/ui/</guid>
+      <guid>https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/ui/</guid>
       <description>Accessibility of Longhorn UI # Test Case Test Instructions 1. Access Longhorn UI using rancher proxy 1. Create a cluster (3 worker nodes and 1 etcd/control plane) in rancher, Go to the default project.
 2. Go to App, Click the launch app.
 3. Select longhorn.
@@ -38,10 +38,10 @@ Customizable Default Settings https://longhorn.io/docs/1.2.2/references/settings
     
     <item>
       <title>3. Volume</title>
-      <link>https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/volume/</link>
+      <link>https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/volume/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
-      <guid>https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/volume/</guid>
+      <guid>https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/volume/</guid>
       <description>Test cases for Volume # Test Case Test Instructions Expected Results 1 Check volume Details Prerequisite:
 * Longhorn Nodes has node tags
 * Node Disks has disk tags
@@ -55,27 +55,11 @@ Customizable Default Settings https://longhorn.io/docs/1.2.2/references/settings
     </item>
     
     <item>
-      <title>4. High Availability</title>
-      <link>https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/high-availability/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/high-availability/</guid>
-      <description>Automation Tests # Test Name Description Tags 1 test_engine_image_daemonset_restart Test restarting engine image daemonset
-1. Get the default engine image
-2. Create a volume and attach to the current node
-3. Write random data to the volume and create a snapshot
-4. Delete the engine image daemonset
-5. Engine image daemonset should be recreated
-6. In the meantime, validate the volume data to prove it&amp;rsquo;s still functional
-7. Wait for the engine image to become ready again</description>
-    </item>
-    
-    <item>
       <title>5. Kubernetes</title>
-      <link>https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/kubernetes/</link>
+      <link>https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/kubernetes/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
-      <guid>https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/kubernetes/</guid>
+      <guid>https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/kubernetes/</guid>
       <description>Dynamic provisioning with StorageClass Can create and use volume using StorageClass
 Can create a new StorageClass use new parameters and it will take effect on the volume created by the storage class.
 If the PV reclaim policy is delete, once PVC and PV are deleted, Longhorn volume should be deleted.
@@ -85,10 +69,10 @@ Delete the PVC will not result in PV deletion</description>
     
     <item>
       <title>6. Backup</title>
-      <link>https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/backup/</link>
+      <link>https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/backup/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
-      <guid>https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/backup/</guid>
+      <guid>https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/backup/</guid>
       <description>Automation Tests # Test name Description tag 1 test_backup Test basic backup
 Setup:
 1. Create a volume and attach to the current node
@@ -102,10 +86,10 @@ Steps:
     
     <item>
       <title>7. Node</title>
-      <link>https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/node/</link>
+      <link>https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/node/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
-      <guid>https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/node/</guid>
+      <guid>https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/node/</guid>
       <description>UI specific test cases # Test Case Test Instructions Expected Results 1 Storage details * Prerequisites
 * Longhorn Installed
 1. Verify the allocated/used storage show the right data in node details page.
@@ -114,10 +98,10 @@ Steps:
     
     <item>
       <title>8. Scheduling</title>
-      <link>https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/scheduling/</link>
+      <link>https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/scheduling/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
-      <guid>https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/scheduling/</guid>
+      <guid>https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/scheduling/</guid>
       <description>Manual Test Test name Prerequisite Expectation EKS across zone scheduling Prerequisite:
 * EKS Cluster with 3 nodes across two AWS zones (zone#1, zone#2)
 1. Create a volume with 2 replicas, and attach it to a node.
@@ -128,27 +112,27 @@ Steps:
     
     <item>
       <title>9. Upgrade</title>
-      <link>https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/upgrade/</link>
+      <link>https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/upgrade/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
-      <guid>https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/upgrade/</guid>
-      <description>Automation tests
-# Test name Description Tags 1 test_upgrade Test Longhorn upgrade
-1. Find the upgrade image tag
-2. Create a volume, generate and write data into the volume.
-3. Keep the volume attached, then upgrade Longhorn system.
-4. Detach the volume.
-5. Upgrade the volume to the updated engine image.
-6. Attach the volume and verify data Upgrade 2 test_engine_image Test Engine Image deployment
-1. List Engine Images and validate basic properities.</description>
+      <guid>https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/upgrade/</guid>
+      <description># Test name Description 1 Higher version of Longhorn engine and lower version of volume Test Longhorn upgrade
+1. Create a volume, generate and write data into the volume.
+2. Keep the volume attached, then upgrade Longhorn system.
+3. Write data in volume.
+4. Take snapshot#1. Compute the checksum#1
+5. Write data to volume. Compute the checksum#2
+6. Take backup
+7. Revert to snapshot#1
+8. Restore the backup. 2 Restore the backup taken with older engine version 1.</description>
     </item>
     
     <item>
       <title>Monitoring</title>
-      <link>https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/monitoring/</link>
+      <link>https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/monitoring/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
-      <guid>https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/monitoring/</guid>
+      <guid>https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/monitoring/</guid>
       <description>Prometheus Support test cases Install the Prometheus Operator (include a role and service account for it). For example:apiVersion: rbac.authorization.k8s.io/v1 kind: ClusterRoleBinding metadata: name: prometheus-operator namespace: default roleRef: apiGroup: rbac.authorization.k8s.io kind: ClusterRole name: prometheus-operator subjects:
 - kind: ServiceAccount name: prometheus-operator namespace: default
 &amp;ndash; apiVersion: rbac.authorization.k8s.io/v1 kind: ClusterRole metadata: name: prometheus-operator namespace: default rules:

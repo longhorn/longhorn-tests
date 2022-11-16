@@ -17,38 +17,35 @@
   
   <ul>
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/">End-to-end test cases</a></li>
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/">Functional test cases</a></li>
   
     <ul>
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/deployment/"> Deployment of Longhorn </a></li>
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/deployment/"> Deployment of Longhorn </a></li>
   
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/ui/"> UI </a></li>
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/ui/"> UI </a></li>
   
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/volume/"> Volume </a></li>
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/volume/"> Volume </a></li>
   
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/high-availability/"> High Availability </a></li>
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/kubernetes/"> Kubernetes </a></li>
   
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/kubernetes/"> Kubernetes </a></li>
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/backup/"> Backup </a></li>
   
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/backup/"> Backup </a></li>
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/node/"> Node </a></li>
   
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/node/"> Node </a></li>
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/scheduling/"> Scheduling </a></li>
   
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/scheduling/"> Scheduling </a></li>
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/upgrade/"> Upgrade </a></li>
   
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/upgrade/"> Upgrade </a></li>
-  
-
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/monitoring/">Monitoring</a></li>
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/monitoring/">Monitoring</a></li>
   
 
 </ul>
@@ -645,139 +642,6 @@
 </tr>
 </tbody>
 </table>
-<h2 id="automation-tests">Automation tests</h2>
-<table>
-<thead>
-<tr>
-<th></th>
-<th><strong>Test name</strong></th>
-<th><strong>Description</strong></th>
-<th><strong>Tags</strong></th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>1</td>
-<td>test_volume_scheduling_failure</td>
-<td>Test fail to schedule by disable scheduling for all the nodes<br><br>Also test cannot attach a scheduling failed volume<br><br>1.  Disable allowScheduling for all nodes<br>2.  Create a volume.<br>3.  Verify the volume condition Scheduled is false<br>4.  Verify attaching the volume will result in error<br>5.  Enable allowScheduling for all nodes<br>6.  Volume should be automatically scheduled (condition become true)<br>7.  Volume can be attached now</td>
-<td>Scheduling</td>
-</tr>
-<tr>
-<td>2</td>
-<td>test_replica_scheduler_exceed_over_provisioning</td>
-<td>Test replica scheduler: exceeding overprovisioning parameter<br><br>1.  Set setting <code>overprovisioning</code> to 100<br>2.  Update every disks to set 1G available for scheduling<br>3.  Try to schedule a volume of 2G. Volume scheduled condition should be false</td>
-<td>Scheduling: Space</td>
-</tr>
-<tr>
-<td>3</td>
-<td>test_replica_scheduler_just_under_over_provisioning</td>
-<td>Test replica scheduler: just under overprovisioning parameter<br><br>1.  Set setting <code>overprovisioning</code> to 100<br>2.  Get the maximum size of all the disks<br>3.  Create a volume using maximum_size - 2MiB as the volume size.<br>4.  Volume scheduled condition should be true.<br>5.  Make sure every replica landed on different nodes&rsquo;s default disk.</td>
-<td>Scheduling: Space</td>
-</tr>
-<tr>
-<td>4</td>
-<td>test_replica_scheduler_large_volume_fit_small_disk</td>
-<td>Test replica scheduler: not schedule a large volume to small disk<br><br>1.  Create a host disk <code>small_disk</code> and attach i to the current node.<br>2.  Create a new large volume.<br>3.  Verify the volume wasn&rsquo;t scheduled on the <code>small_disk</code></td>
-<td>Scheduling: Space</td>
-</tr>
-<tr>
-<td>5</td>
-<td>test_replica_scheduler_no_disks</td>
-<td>Test replica scheduler with no disks available<br><br>1.  Delete all the disks on all the nodes<br>2.  Create a volume.<br>3.  Wait for volume condition <code>scheduled</code> to be false</td>
-<td>Scheduling: Space</td>
-</tr>
-<tr>
-<td>6</td>
-<td>test_replica_scheduler_rebuild_restore_is_too_big</td>
-<td>Test replica scheduler: rebuild/restore can be too big to fit a disk<br><br>1.  Create a small host disk with <code>SIZE</code> and add it to the current node.<br>2.  Create a volume with size <code>SIZE</code>.<br>3.  Disable all scheduling except for the small disk.<br>4.  Write a data size <code>SIZE * 0.9</code> to the volume and make a backup<br>5.  Create a restored volume with 1 replica from backup.<br>    1.  Verify the restored volume cannot be scheduled since the existing data cannot fit in the small disk<br>        <br>6.  Delete a replica of volume.<br>    1.  Verify the volume reports <code>scheduled = false</code> due to unable to find a suitable disk for rebuliding replica, since the replica with the existing data cannot fit in the small disk<br>        <br>7.  Enable the scheduling for other disks, disable scheduling for small disk<br>8.  Verify the volume reports <code>scheduled = true</code>. And verify the data.<br>9.  Cleanup the volume.<br>10.  Verify the restored volume reports <code>scheduled = true</code>.<br>11.  Wait for the restored volume to complete restoration, then check data.</td>
-<td>Scheduling: Space<br><br>Backup</td>
-</tr>
-<tr>
-<td>7</td>
-<td>test_replica_scheduler_too_large_volume_fit_any_disks</td>
-<td>Test replica scheduler: volume is too large to fit any disks<br><br>1.  Disable all default disks on all nodes by setting storageReserved to maximum size<br>2.  Create volume.<br>3.  Verify the volume scheduled condition is false.<br>4.  Reduce the storageReserved on all the disks to just enough for one replica.<br>5.  The volume should automatically change scheduled condition to true<br>6.  Attach the volume.<br>7.  Make sure every replica landed on different nodes&rsquo;s default disk</td>
-<td>Scheduling: Space</td>
-</tr>
-<tr>
-<td>8</td>
-<td>test_replica_scheduler_update_minimal_available</td>
-<td>Test replica scheduler: update setting <code>minimal available</code><br><br>1.  Set setting <code>minimal available</code> to 100% (means no one can schedule)<br>2.  Verify for all disks&rsquo; schedulable condition to become false.<br>3.  Create a volume. Verify it&rsquo;s unschedulable.<br>4.  Set setting <code>minimal available</code> back to default setting<br>5.  Disk should become schedulable now.<br>6.  Volume should be scheduled now.<br>7.  Attach the volume.<br>8.  Make sure every replica landed on different nodes&rsquo;s default disk.</td>
-<td>Scheduling: Space</td>
-</tr>
-<tr>
-<td>9</td>
-<td>test_replica_scheduler_update_over_provisioning</td>
-<td>Test replica scheduler: update overprovisioning setting<br><br>1.  Set setting <code>overprovisioning</code> to 0. (disable all scheduling)<br>2.  Create a new volume. Verify volume&rsquo;s <code>scheduled</code> condition is false.<br>3.  Set setting <code>over provisioning</code> to 100%.<br>4.  Verify volume&rsquo;s <code>scheduled</code> condition now become true.<br>5.  Attach the volume.<br>6.  Make sure every replica landed on different nodes&rsquo;s default disk.</td>
-<td>Scheduling: Space</td>
-</tr>
-<tr>
-<td>10</td>
-<td>test_hard_anti_affinity_detach</td>
-<td>Test that volumes with Hard Anti-Affinity are still able to detach and reattach to a node properly, even in degraded state.<br><br>1.  Create a volume and attach to the current node<br>2.  Generate and write <code>data</code> to the volume.<br>3.  Set <code>soft anti-affinity</code> to false<br>4.  Disable current node&rsquo;s scheduling.<br>5.  Remove the replica on the current node<br>    1.  Verify volume will be in degraded state.<br>        <br>    2.  Verify volume reports condition <code>scheduled == false</code><br>        <br>6.  Detach the volume.<br>7.  Verify that volume only have 2 replicas<br>    1.  Unhealthy replica will be removed upon detach.<br>        <br>8.  Attach the volume again.<br>    1.  Verify volume will be in degraded state.<br>        <br>    2.  Verify volume reports condition <code>scheduled == false</code><br>        <br>    3.  Verify only two of three replicas of volume are healthy.<br>        <br>    4.  Verify the remaining replica doesn&rsquo;t have <code>replica.HostID</code>, meaning it&rsquo;s unscheduled<br>        <br>9.  Check volume <code>data</code></td>
-<td>Scheduling: Anti-affinity</td>
-</tr>
-<tr>
-<td>11</td>
-<td>test_hard_anti_affinity_live_rebuild</td>
-<td>Test that volumes with Hard Anti-Affinity can build new replicas live once a valid node is available.<br><br>If no nodes without existing replicas are available, the volume should remain in &ldquo;Degraded&rdquo; state. However, once one is available, the replica should now be scheduled successfully, with the volume returning to &ldquo;Healthy&rdquo; state.<br><br>1.  Create a volume and attach to the current node<br>2.  Generate and write <code>data</code> to the volume.<br>3.  Set <code>soft anti-affinity</code> to false<br>4.  Disable current node&rsquo;s scheduling.<br>5.  Remove the replica on the current node<br>    1.  Verify volume will be in degraded state.<br>        <br>    2.  Verify volume reports condition <code>scheduled == false</code><br>        <br>6.  Enable the current node&rsquo;s scheduling<br>7.  Wait for volume to start rebuilding and become healthy again<br>8.  Check volume <code>data</code></td>
-<td>Scheduling: Anti-affinity</td>
-</tr>
-<tr>
-<td>12</td>
-<td>test_hard_anti_affinity_offline_rebuild</td>
-<td>Test that volumes with Hard Anti-Affinity can build new replicas during the attaching process once a valid node is available.<br><br>Once a new replica has been built as part of the attaching process, the volume should be Healthy again.<br><br>1.  Create a volume and attach to the current node<br>2.  Generate and write <code>data</code> to the volume.<br>3.  Set <code>soft anti-affinity</code> to false<br>4.  Disable current node&rsquo;s scheduling.<br>5.  Remove the replica on the current node<br>    1.  Verify volume will be in degraded state.<br>        <br>    2.  Verify volume reports condition <code>scheduled == false</code><br>        <br>6.  Detach the volume.<br>7.  Enable current node&rsquo;s scheduling.<br>8.  Attach the volume again.<br>9.  Wait for volume to become healthy with 3 replicas<br>10.  Check volume <code>data</code></td>
-<td>Scheduling: Anti-affinity</td>
-</tr>
-<tr>
-<td>13</td>
-<td>test_hard_anti_affinity_scheduling</td>
-<td>Test that volumes with Hard Anti-Affinity work as expected.<br><br>With Hard Anti-Affinity, scheduling on nodes with existing replicas should be forbidden, resulting in &ldquo;Degraded&rdquo; state.<br><br>1.  Create a volume and attach to the current node<br>2.  Generate and write <code>data</code> to the volume.<br>3.  Set <code>soft anti-affinity</code> to false<br>4.  Disable current node&rsquo;s scheduling.<br>5.  Remove the replica on the current node<br>    1.  Verify volume will be in degraded state.<br>        <br>    2.  Verify volume reports condition <code>scheduled == false</code><br>        <br>    3.  Verify only two of three replicas of volume are healthy.<br>        <br>    4.  Verify the remaining replica doesn&rsquo;t have <code>replica.HostID</code>, meaning it&rsquo;s unscheduled<br>        <br>6.  Check volume <code>data</code></td>
-<td>Scheduling: Anti-affinity</td>
-</tr>
-<tr>
-<td>14</td>
-<td>test_soft_anti_affinity_detach</td>
-<td>Test that volumes with Soft Anti-Affinity can detach and reattach to a node properly.<br><br>1.  Create a volume and attach to the current node.<br>2.  Generate and write <code>data</code> to the volume<br>3.  Set <code>soft anti-affinity</code> to true<br>4.  Disable current node&rsquo;s scheduling.<br>5.  Remove the replica on the current node<br>6.  Wait for the new replica to be rebuilt<br>7.  Detach the volume.<br>8.  Verify there are 3 replicas<br>9.  Attach the volume again. Verify there are still 3 replicas<br>10.  Verify the <code>data</code></td>
-<td>Scheduling: Anti-affinity</td>
-</tr>
-<tr>
-<td>15</td>
-<td>test_soft_anti_affinity_scheduling</td>
-<td>Test that volumes with Soft Anti-Affinity work as expected.<br><br>With Soft Anti-Affinity, a new replica should still be scheduled on a node with an existing replica, which will result in &ldquo;Healthy&rdquo; state but limited redundancy.<br><br>1.  Create a volume and attach to the current node<br>2.  Generate and write <code>data</code> to the volume.<br>3.  Set <code>soft anti-affinity</code> to true<br>4.  Disable current node&rsquo;s scheduling.<br>5.  Remove the replica on the current node<br>6.  Wait for the volume to complete rebuild. Volume should have 3 replicas.<br>7.  Verify <code>data</code></td>
-<td>Scheduling: Anti-affinity</td>
-</tr>
-<tr>
-<td>16</td>
-<td>test_tag_basic</td>
-<td>Test that applying Tags to Nodes/Disks and retrieving them work as expected. Ensures that Tags are properly validated when updated.<br><br>1.  Generate tags and apply to the disk and nodes<br>2.  Make sure the tags are applied<br>3.  Try to apply invalid tags to the disk and node. Action will fail.</td>
-<td>Scheduling: Tag</td>
-</tr>
-<tr>
-<td>17</td>
-<td>test_tag_scheduling</td>
-<td>Test success scheduling with tags<br><br>Case 1: Don&rsquo;t specify any tags, replica should be scheduled to 3 disks.<br><br>Case 2: Use disk tags to select two nodes for all replicas.<br><br>Case 3: Use node tags to select two nodes for all replicas.<br><br>Case 4: Combine node and disk tags to schedule all replicas on one node.</td>
-<td>Scheduling: Tag</td>
-</tr>
-<tr>
-<td>18</td>
-<td>test_tag_scheduling_failure</td>
-<td>Test that scheduling fails if no Nodes/Disks with the requested Tags are available.<br><br>Case 1: Validate that if specifying nonexist tags in volume, API call will fail.<br><br>Case 2:<br><br>1.  Specify existing but no node or disk can unsatisfied tags.<br>2.  Validate the volume will failed the scheduling</td>
-<td>Scheduling: Tag</td>
-</tr>
-<tr>
-<td>19</td>
-<td>test_tag_scheduling_on_update</td>
-<td>Test that Replicas get scheduled if a Node/Disk disks updated with the proper Tags.<br><br>1.  Create volume with tags that can not be satisfied<br>2.  Wait for volume to fail scheduling<br>3.  Update the node and disk with extra tags to satisify the volume<br>4.  Verify now volume has been scheduled<br>5.  Attach the volume and check the replicas has been scheduled properly</td>
-<td>Scheduling: Tag</td>
-</tr>
-<tr>
-<td>20</td>
-<td>test_zone_tags</td>
-<td>Test anti affinity zone feature<br><br>1.  Add Kubernetes zone labels to the nodes<br>    1.  Only two zones now: zone1 and zone2<br>        <br>2.  Create a volume with two replicas<br>3.  Verify zone1 and zone2 either has one replica.<br>4.  Remove a random replica and wait for volume to finish rebuild<br>5.  Verify zone1 and zone2 either has one replica.<br>6.  Repeat step 4-5 a few times.<br>7.  Update volume to 3 replicas, make sure they&rsquo;re scheduled on 3 nodes<br>8.  Remove a random replica and wait for volume to finish rebuild<br>9.  Make sure replicas are on different nodes<br>10.  Repeat step 8-9 a few times</td>
-<td>Scheduling: Zone</td>
-</tr>
-</tbody>
-</table>
 <h2 id="anti-affinity-test">Anti-affinity test</h2>
 <table>
 <thead>
@@ -899,7 +763,7 @@
 </table>
 
     </article>
-  <a href="https://github.com/longhorn/longhorn-tests/edit/master/docs/content/manual/end-to-end-test-cases/scheduling.md" target="_blank" title="Edit on Github" style="font-size:smaller;float:right;padding-right:3%">[Edit]</a>
+  <a href="https://github.com/longhorn/longhorn-tests/edit/master/docs/content/manual/functional-test-cases/scheduling.md" target="_blank" title="Edit on Github" style="font-size:smaller;float:right;padding-right:3%">[Edit]</a>
   </div>
 
     

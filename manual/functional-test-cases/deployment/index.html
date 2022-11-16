@@ -17,38 +17,35 @@
   
   <ul>
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/">End-to-end test cases</a></li>
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/">Functional test cases</a></li>
   
     <ul>
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/deployment/"> Deployment of Longhorn </a></li>
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/deployment/"> Deployment of Longhorn </a></li>
   
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/ui/"> UI </a></li>
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/ui/"> UI </a></li>
   
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/volume/"> Volume </a></li>
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/volume/"> Volume </a></li>
   
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/high-availability/"> High Availability </a></li>
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/kubernetes/"> Kubernetes </a></li>
   
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/kubernetes/"> Kubernetes </a></li>
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/backup/"> Backup </a></li>
   
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/backup/"> Backup </a></li>
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/node/"> Node </a></li>
   
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/node/"> Node </a></li>
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/scheduling/"> Scheduling </a></li>
   
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/scheduling/"> Scheduling </a></li>
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/upgrade/"> Upgrade </a></li>
   
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/upgrade/"> Upgrade </a></li>
-  
-
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/monitoring/">Monitoring</a></li>
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/monitoring/">Monitoring</a></li>
   
 
 </ul>
@@ -622,117 +619,67 @@
 
 
 <main style="padding: 1%; width: 70%;">
-  <h1 id="title"><ol start="4">
-<li>High Availability</li>
+  <h1 id="title"><ol>
+<li>Deployment of Longhorn</li>
 </ol>
 </h1>
   <div>
     <article id="content">
-       <h2 id="automation-tests">Automation Tests</h2>
+       <h2 id="installation">Installation</h2>
+<p>Longhorn v1.1.2 and above - Support Kubernetes 1.18+</p>
+<p>Longhorn v1.0.0 to v1.1.1 - Support Kubernetes 1.14+. Default 1.16+</p>
+<ol>
+<li>
+<p>Install using Rancher Apps &amp; MarketPlace App (Default)</p>
+</li>
+<li>
+<p>Install using Helm chart from <a href="https://github.com/longhorn/longhorn/tree/master/chart">https://github.com/longhorn/longhorn/tree/master/chart</a></p>
+</li>
+<li>
+<p>Install using YAML from <a href="https://github.com/longhorn/longhorn/blob/master/deploy/longhorn.yaml">https://github.com/longhorn/longhorn/blob/master/deploy/longhorn.yaml</a></p>
+</li>
+</ol>
+<p>Note: Longhorn UI can scale to multiple instances for HA purposes.</p>
+<h2 id="uninstallation">Uninstallation</h2>
+<p>Make sure all the CRDs and other resources are cleaned up, following the uninstallation instruction.
+<a href="https://longhorn.io/docs/1.2.2/deploy/uninstall/">https://longhorn.io/docs/1.2.2/deploy/uninstall/</a></p>
+<h2 id="customizable-default-settings">Customizable Default Settings</h2>
+<p><a href="https://longhorn.io/docs/1.2.2/references/settings/">https://longhorn.io/docs/1.2.2/references/settings/</a></p>
+<p>Make sure the settings are updated if it’s the fresh installation of Longhorn.</p>
+<h2 id="tests">Tests</h2>
 <table>
 <thead>
 <tr>
-<th><strong>#</strong></th>
-<th><strong>Test Name</strong></th>
-<th><strong>Description</strong></th>
-<th><strong>Tags</strong></th>
+<th><strong>S.No</strong></th>
+<th><strong>Scenario</strong></th>
+<th><strong>Steps</strong></th>
+<th><strong>Expected Result</strong></th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td>1</td>
-<td>test_engine_image_daemonset_restart</td>
-<td>Test restarting engine image daemonset<br><br>1.  Get the default engine image<br>2.  Create a volume and attach to the current node<br>3.  Write random data to the volume and create a snapshot<br>4.  Delete the engine image daemonset<br>5.  Engine image daemonset should be recreated<br>6.  In the meantime, validate the volume data to prove it&rsquo;s still functional<br>7.  Wait for the engine image to become <code>ready</code> again<br>8.  Check the volume data again.<br>9.  Write some data and create a new snapshot.<br>    1.  Since create snapshot will use engine image binary.<br>        <br>10.  Check the volume data again</td>
-<td>High Availablity</td>
+<td>Deploy Longhorn using Yaml</td>
+<td>1.  Create a k8s/k3s cluster with 3 workers nodes.<br>2.  Deploy Longhorn using the Yaml file available <a href="https://github.com/longhorn/longhorn/blob/master/deploy/longhorn.yaml">https://github.com/longhorn/longhorn/blob/master/deploy/longhorn.yaml</a>  <br>    <code>kubectl apply -f [https://raw.githubusercontent.com/longhorn/longhorn/master/deploy/longhorn.yaml](https://raw.githubusercontent.com/longhorn/longhorn/master/deploy/longhorn.yaml)</code><br>3.  Verify the app gets deployed successfully.  <br>    <code>kubectl get pods n longhorn system</code></td>
+<td>*  The below daemonset should be deployed successfully. <pre>engine-image-ei- , longhorn-csi-plugin, longhorn-manager</pre>*   The below deployment should be deployed successfully.  <pre>    csi-attacher, csi-provisioner, csi-resizer, csi-snapshotter, longhorn-driver-deployer, longhorn-ui</pre>*   The Instance-manager-e, Instance-manager-r pods should be deployed on the each worker node.<br>*   The below services should be deployed  <pre>    csi-attacher, csi-provisioner, csi-resizer, csi-snapshotter, longhorn-backend, longhorn-frontend</pre>*   The below crds should be deployed.  <br>    <a href="http://backingimagedatasources.longhorn.io">backingimagedatasources.longhorn.io</a>  <br>    <a href="http://backingimagemanagers.longhorn.io">backingimagemanagers.longhorn.io</a>  <br>    <a href="http://backingimages.longhorn.io">backingimages.longhorn.io</a>  <br>    <a href="http://backups.longhorn.io">backups.longhorn.io</a>  <br>    <a href="http://backuptargets.longhorn.io">backuptargets.longhorn.io</a>  <br>    <a href="http://backupvolumes.longhorn.io">backupvolumes.longhorn.io</a>  <br>    <a href="http://engineimages.longhorn.io">engineimages.longhorn.io</a>  <br>    <a href="http://engines.longhorn.io">engines.longhorn.io</a>  <br>    <a href="http://instancemanagers.longhorn.io">instancemanagers.longhorn.io</a>  <br>    <a href="http://nodes.longhorn.io">nodes.longhorn.io</a>  <br>    <a href="http://recurringjobs.longhorn.io">recurringjobs.longhorn.io</a>  <br>    <a href="http://replicas.longhorn.io">replicas.longhorn.io</a>  <br>    <a href="http://settings.longhorn.io">settings.longhorn.io</a>  <br>    <a href="http://sharemanagers.longhorn.io">sharemanagers.longhorn.io</a>  <br>    <a href="http://volumes.longhorn.io">volumes.longhorn.io</a></td>
 </tr>
 <tr>
 <td>2</td>
-<td>test_ha_recovery_with_expansion</td>
-<td>[HA] Test recovery with volume expansion<br><br>1.  Create a volume length <code>SIZE</code> and attach to the current node.<br>2.  Write <code>data1</code> to the volume<br>3.  Expand the volume to <code>EXPAND_SIZE</code>, and check volume has been expanded<br>4.  Write <code>data2</code> starting from <code>SIZE</code>.<br>5.  Remove replica0 from volume<br>6.  Wait volume to start rebuilding and complete<br>7.  Check the <code>data1</code> and <code>data2</code></td>
-<td>High Availability<br><br>Volume: Expansion</td>
+<td>Deploy Longhorn using Helm chart</td>
+<td>1.  Create a k8s/k3s cluster with 3 workers nodes.<br>2.  As per the instructions <a href="https://github.com/longhorn/longhorn/tree/master/chart">https://github.com/longhorn/longhorn/tree/master/chart</a> deploy the Longhorn app.</td>
+<td>*  The below daemonset should be deployed successfully. <pre>engine-image-ei- , longhorn-csi-plugin, longhorn-manager</pre>*   The below deployment should be deployed successfully.  <pre>    csi-attacher, csi-provisioner, csi-resizer, csi-snapshotter, longhorn-driver-deployer, longhorn-ui</pre>*   The Instance-manager-e, Instance-manager-r pods should be deployed on the each worker node.<br>*   The below services should be deployed  <pre>    csi-attacher, csi-provisioner, csi-resizer, csi-snapshotter, longhorn-backend, longhorn-frontend</pre>*   The below crds should be deployed.  <br>    <a href="http://backingimagedatasources.longhorn.io">backingimagedatasources.longhorn.io</a>  <br>    <a href="http://backingimagemanagers.longhorn.io">backingimagemanagers.longhorn.io</a>  <br>    <a href="http://backingimages.longhorn.io">backingimages.longhorn.io</a>  <br>    <a href="http://backups.longhorn.io">backups.longhorn.io</a>  <br>    <a href="http://backuptargets.longhorn.io">backuptargets.longhorn.io</a>  <br>    <a href="http://backupvolumes.longhorn.io">backupvolumes.longhorn.io</a>  <br>    <a href="http://engineimages.longhorn.io">engineimages.longhorn.io</a>  <br>    <a href="http://engines.longhorn.io">engines.longhorn.io</a>  <br>    <a href="http://instancemanagers.longhorn.io">instancemanagers.longhorn.io</a>  <br>    <a href="http://nodes.longhorn.io">nodes.longhorn.io</a>  <br>    <a href="http://recurringjobs.longhorn.io">recurringjobs.longhorn.io</a>  <br>    <a href="http://replicas.longhorn.io">replicas.longhorn.io</a>  <br>    <a href="http://settings.longhorn.io">settings.longhorn.io</a>  <br>    <a href="http://sharemanagers.longhorn.io">sharemanagers.longhorn.io</a>  <br>    <a href="http://volumes.longhorn.io">volumes.longhorn.io</a></td>
 </tr>
 <tr>
 <td>3</td>
-<td>test_ha_salvage</td>
-<td>[HA] Test salvage when volume faulted<br><br>Setting: Disable auto salvage<br><br><strong>Case 1:</strong> Delete all replica processes using instance manager<br><br>1.  Create volume and attach to the current node<br>2.  Write <code>data</code> to the volume.<br>3.  Crash all the replicas using Instance Manager API<br>    1.  Cannot do it using Longhorn API since a. it will delete data, b. the last replica is not allowed to be deleted<br>        <br>4.  Make sure volume detached automatically and changed into <code>faulted</code> state<br>5.  Make sure both replicas reports <code>failedAt</code> timestamp.<br>6.  Salvage the volume<br>7.  Verify that volume is in <code>detached</code> <code>unknown</code> state. No longer <code>faulted</code><br>8.  Verify that all the replicas&rsquo; <code>failedAt</code> timestamp cleaned.<br>9.  Attach the volume and check <code>data</code><br><br><strong>Case 2:</strong> Crash all replica processes<br><br>Same steps as Case 1 except on step 3, use SIGTERM to crash the processes</td>
-<td>High Availability</td>
-</tr>
-<tr>
-<td>4</td>
-<td>test_ha_simple_recovery</td>
-<td>[HA] Test recovering from one replica failure<br><br>1.  Create volume and attach to the current node<br>2.  Write <code>data</code> to the volume.<br>3.  Remove one of the replica using Longhorn API<br>4.  Wait for a new replica to be rebuilt.<br>5.  Check the volume data</td>
-<td>High Availability</td>
-</tr>
-<tr>
-<td>5</td>
-<td>test_rebuild_with_intensive_data</td>
-<td>[HA] Test rebuild with intensive data writing<br><br>1.  Create PV/PVC/POD with livenss check<br>2.  Create volume and wait for pod to start<br>3.  Write data to <code>/data/test1</code> inside the pod and get <code>original_checksum_1</code><br>4.  Write data to <code>/data/test2</code> inside the pod and get <code>original_checksum_2</code><br>5.  Find running replicas of the volume<br>6.  Crash one of the running replicas.<br>7.  Wait for the replica rebuild to start<br>8.  Crash another running replicas<br>9.  Wait for volume to finish two rebuilds and become healthy<br>10.  Check md5sum for both data location<br>11.  Go back step 5 and repeat for <code>REBUILD_RETRY_COUNT</code> times.</td>
-<td>High Availability</td>
-</tr>
-<tr>
-<td>6</td>
-<td>test_salvage_auto_crash_all_replicas</td>
-<td>[HA] Test automatic salvage feature by crashing all the replicas<br><br>1.  Create PV/PVC/POD. Make sure POD has liveness check. Start the pod<br>2.  Generate <code>test_data</code> and write to the pod.<br>3.  Run <code>sync</code> command inside the pod to make sure data flush to the volume.<br>4.  Crash all replica processes using SIGTERM<br>5.  Wait for volume to <code>faulted</code>, then <code>detached</code> <code>unknown</code>, then <code>healthy</code><br>6.  Check replica <code>failedAt</code> has been cleared.<br>7.  Wait for pod to be restarted.<br>8.  Check pod <code>test_data</code>.</td>
-<td>High Availability: Automatic salvage</td>
-</tr>
-<tr>
-<td>7</td>
-<td>test_salvage_auto_crash_replicas_long_wait</td>
-<td>[HA] Test automatic salvage feature, with replica building pending<br><br>1.  Create a PV/PVC/Pod with liveness check.<br>2.  Create volume and start the pod.<br>3.  Generate <code>test_data</code> and write to the pod.<br>4.  Run <code>sync</code> command inside the pod to make sure data flush to the volume.<br>5.  Crash one of the replica. Wait for 60 seconds.<br>6.  Crash all the replicas.<br>7.  Make sure volume and Pod recovers.<br>8.  Check <code>test_data</code> in the Pod.</td>
-<td>High Availability: Automatic salvage</td>
-</tr>
-<tr>
-<td>8</td>
-<td>test_salvage_auto_crash_replicas_short_wait</td>
-<td>[HA] Test automatic salvage feature, with replica building pending<br><br>1.  Create a PV/PVC/Pod with liveness check.<br>2.  Create volume and start the pod.<br>3.  Generate <code>test_data</code> and write to the pod.<br>4.  Run <code>sync</code> command inside the pod to make sure data flush to the volume.<br>5.  Crash one of the replica. Wait for 5 seconds.<br>6.  Crash all the replicas.<br>7.  Make sure volume and Pod recovers.<br>8.  Check <code>test_data</code> in the Pod.</td>
-<td>High Availability: Automatic salvage</td>
-</tr>
-<tr>
-<td>9</td>
-<td>test_offline_node_with_attached_volume_and_pod</td>
-<td>Test offline node with attached volume and pod<br><br>1.  Create PV/PVC/Deployment manifest.<br>2.  Update deployment&rsquo;s tolerations to 20 seconds to speed up test<br>3.  Update deployment&rsquo;s node affinity rule to avoid the current node<br>4.  Create volume, PV/PVC and deployment.<br>5.  Find the pod in the deployment and write <code>test_data</code> into it<br>6.  Shutdown the node pod is running on<br>7.  Wait for deployment to delete the pod<br>    1.  Deployment cannot delete the pod here because kubelet doesn&rsquo;t response<br>        <br>8.  Force delete the terminating pod<br>9.  Wait for the new pod to be created and the volume attached<br>10.  Check <code>test_data</code> in the new pod</td>
-<td>High Availability</td>
-</tr>
-</tbody>
-</table>
-<h2 id="test-related-to-replica-scheduling-and-volume-recovery-salvage"><strong>Test related to replica scheduling and volume recovery (salvage)</strong></h2>
-<table>
-<thead>
-<tr>
-<th><strong>#</strong></th>
-<th><strong>Test Case</strong></th>
-<th><strong>Test Instructions</strong></th>
-<th><strong>Expected Results</strong></th>
-<th><strong>Automated ? / test name</strong></th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>1</td>
-<td>Rebuilding replica</td>
-<td>1.  Create a volume and attach it to a node<br>2.  Delete a replica</td>
-<td>*   New system hidden snapshot should be created<br>*   A new replica should be created<br>*   New replicas should be <code>Running</code> &amp; <code>Rebuilding</code></td>
-<td>test_ha_simple_recovery</td>
-</tr>
-<tr>
-<td>2</td>
-<td>Volume Automatic Recovery Disabled (Automatic salvage setting)</td>
-<td>*   <strong>Prerequisite:</strong><br>    *   Disable Volume <code>Automatic salvage</code> Setting<br>        <br>    *   A pod is running and using Longhorn volume.<br>        <br><br>1.  Write some data to volume and compute its checksum (checksum#1)<br>2.  Stop all the replicas of the longhorn volume at the SAME time.<br>3.  Manually salvage faulted volume from one of the replicas<br>4.  Delete and recreate the pod.</td>
-<td>*   Volume state should be faulted<br>*   All Volume replicas should be faulted<br>*   Volume <strong>automatic recovery</strong> will <strong>NOT</strong> be activated<br>*   After manual salvage is done, volume state should be detached and reattached<br>*   After pod recreated, volume should be reattached and accessible to pod, data checksum of the data should match (checksum#1)</td>
-<td>test_ha_salvage</td>
-</tr>
-<tr>
-<td>3</td>
-<td>Volume Automatic Recovery Enabled (Automatic salvage setting)</td>
-<td>*   <strong>Prerequisite:</strong><br>    *   Enable Volume <code>Automatic salvage</code> Setting<br>        <br>    *   A pod is running and using Longhorn volume.<br>        <br><br>1.  Write some data to volume and compute its checksum (checksum#1)<br>2.  Stop all the replicas of the longhorn volume at the SAME time.<br>3.  Restart the pod to re-mount the volume directory</td>
-<td>*   Volume state should be faulted<br>*   All Volume replicas should be faulted<br>*   Volume <strong>automatic recovery</strong> will be activated<br>*   Volume should be detached and re-attached after <strong>automatic recovery</strong> is triggered.<br>*   After pod restart, volume should be accessible, data checksum of the data should match (checksum#1).</td>
-<td>test_salvage_auto_crash_all_replicas</td>
+<td>Deploy Longhorn in Rancher</td>
+<td>1.  Create a k8s/k3s cluster with 3 workers nodes on Rancher cluster.<br>2.  Go to Apps and marketplace and deploy Longhorn with default values</td>
+<td>*   The Longhorn and Longhorn CRDs should be installed as two packages.<br>*   The Longhorn app should start display on the cluster explorer.<br>*   The Link to access the Longhorn UI should work properly.<br>*   Verify all the components are available by clicking on the installed apps.</td>
 </tr>
 </tbody>
 </table>
 
     </article>
-  <a href="https://github.com/longhorn/longhorn-tests/edit/master/docs/content/manual/end-to-end-test-cases/high-availability.md" target="_blank" title="Edit on Github" style="font-size:smaller;float:right;padding-right:3%">[Edit]</a>
+  <a href="https://github.com/longhorn/longhorn-tests/edit/master/docs/content/manual/functional-test-cases/deployment.md" target="_blank" title="Edit on Github" style="font-size:smaller;float:right;padding-right:3%">[Edit]</a>
   </div>
 
     

@@ -17,38 +17,35 @@
   
   <ul>
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/">End-to-end test cases</a></li>
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/">Functional test cases</a></li>
   
     <ul>
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/deployment/"> Deployment of Longhorn </a></li>
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/deployment/"> Deployment of Longhorn </a></li>
   
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/ui/"> UI </a></li>
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/ui/"> UI </a></li>
   
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/volume/"> Volume </a></li>
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/volume/"> Volume </a></li>
   
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/high-availability/"> High Availability </a></li>
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/kubernetes/"> Kubernetes </a></li>
   
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/kubernetes/"> Kubernetes </a></li>
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/backup/"> Backup </a></li>
   
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/backup/"> Backup </a></li>
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/node/"> Node </a></li>
   
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/node/"> Node </a></li>
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/scheduling/"> Scheduling </a></li>
   
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/scheduling/"> Scheduling </a></li>
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/upgrade/"> Upgrade </a></li>
   
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/upgrade/"> Upgrade </a></li>
-  
-
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/monitoring/">Monitoring</a></li>
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/monitoring/">Monitoring</a></li>
   
 
 </ul>
@@ -622,86 +619,255 @@
 
 
 <main style="padding: 1%; width: 70%;">
-  <h1 id="title"><ol start="9">
-<li>Upgrade</li>
+  <h1 id="title"><ol start="5">
+<li>Kubernetes</li>
 </ol>
 </h1>
   <div>
     <article id="content">
-       <p><strong>Automation tests</strong></p>
+       <h3 id="dynamic-provisioning-with-storageclass">Dynamic provisioning with StorageClass</h3>
+<ol>
+<li>
+<p>Can create and use volume using StorageClass</p>
+</li>
+<li>
+<p>Can create a new StorageClass use new parameters and it will take effect on the volume created by the storage class.</p>
+</li>
+<li>
+<p>If the PV reclaim policy is delete, once PVC and PV are deleted, Longhorn volume should be deleted.</p>
+</li>
+</ol>
+<h3 id="static-provisioning-using-longhorn-created-pvpvc">Static provisioning using Longhorn created PV/PVC</h3>
+<ol>
+<li>
+<p>PVC can be used by the new workload</p>
+</li>
+<li>
+<p>Delete the PVC will not result in PV deletion</p>
+</li>
+<li>
+<p>Delete the PV will not result in Longhorn volume deletion and data loss.</p>
+</li>
+</ol>
+<h3 id="test-cases-using-kubectl">Test cases using kubectl</h3>
 <table>
 <thead>
 <tr>
 <th><strong>#</strong></th>
-<th><strong>Test name</strong></th>
-<th><strong>Description</strong></th>
-<th><strong>Tags</strong></th>
+<th><strong>Test Case</strong></th>
+<th><strong>Test Instructions</strong></th>
+<th><strong>Expected Results</strong></th>
+<th><strong>Automated ? / test name</strong></th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td>1</td>
-<td>test_upgrade</td>
-<td>Test Longhorn upgrade<br><br>1.  Find the upgrade image tag<br>2.  Create a volume, generate and write <code>data</code> into the volume.<br>3.  Keep the volume attached, then upgrade Longhorn system.<br>4.  Detach the volume.<br>5.  Upgrade the volume to the updated engine image.<br>6.  Attach the volume and verify <code>data</code></td>
-<td>Upgrade</td>
+<td>Disable Volume Expansion for volumes dynamically provisioned by a new StorageClass<br><br>  <br><br><a href="https://github.com/longhorn/longhorn/blob/master/examples/storageclass.yaml">StorageClass example manifest</a></td>
+<td>1.  Create a new StorageClass with <code>allowVolumeExpansion: false</code><br>2.  Create a PVC with using the new StorageClass</td>
+<td>*   New Storage class should be created<br>*   Volume should be dynamically provisioned, it’s PV/PVC should be <code>Bound</code><br>*   Volume expansion feature should be disabled for all Volumes using the new Storage Class</td>
+<td></td>
 </tr>
 <tr>
 <td>2</td>
-<td>test_engine_image</td>
-<td>Test Engine Image deployment<br><br>1.  List Engine Images and validate basic properities.<br>2.  Try deleting default engine image and it should fail.<br>3.  Try creating a duplicate engine image as default and it should fail<br>4.  Get upgrade test image for the same versions<br>5.  Test if the upgrade test image can be deployed and deleted correctly</td>
-<td>Upgrade: Engine</td>
+<td>Number of volume replicas volumes dynamically provisioned by a new StorageClass</td>
+<td>1.  Create a new StorageClass, update<code>numberOfReplicas</code> parameter<br>2.  Create a PVC with using the new StorageClass</td>
+<td>*   New Storage class should be created<br>*   Volume should be dynamically provisioned, it’s PV/PVC should be <code>Bound</code><br>*   Volume number of replicas should match <code>numberOfReplicas</code> specified in storagecalss parameter</td>
+<td></td>
 </tr>
 <tr>
 <td>3</td>
-<td>test_engine_image_incompatible</td>
-<td>Test incompatible engine images<br><br>1.  Deploy incompatible engine images<br>2.  Make sure their state are <code>incompatible</code> once deployed.</td>
-<td>Upgrade: Engine</td>
+<td>StorageClass <code>frombackup</code> parameter</td>
+<td><strong>Prerequisite:</strong><br><br>*   Longhorn setting is set for Backup Target and Backup Target Credential Secret<br>*   Backup store should contain a previous volume backup<br>*   volume data checksum should be know at the time of volume backups (checksum#1)<br><br>1.  Create a StorageClass, and set <code>frombackup</code> parameter to volume backup URL in the backup store<br>2.  Create a PVC using the new StorageClass, and it’s size should be the original volume size<br>3.  Attach the new Volume to a node and check it’s data checksum</td>
+<td>*   Volume should be dynamically provisioned, it’s PV/PVC should be <code>Bound</code><br>*   Restore from backup process should be triggered<br>*   New volume should contain data restored from the backup, data checksum should match (checksum#1)</td>
+<td>test_storage_class_from_backup</td>
 </tr>
 <tr>
 <td>4</td>
-<td>test_engine_live_upgrade</td>
-<td>Test engine live upgrade<br><br>1.  Deploy a compatible new engine image<br>2.  Create a volume (with the old default engine image)<br>3.  Attach the volume and write <code>data</code> to it<br>4.  Upgrade the volume when it&rsquo;s attached, to the new engine image<br>5.  Wait until the upgrade completed, verify the volume engine image changed<br>6.  Verify the reference count of the new engine image changed<br>7.  Verify all engine and replicas&rsquo; engine image changed<br>8.  Check volume <code>data</code><br>9.  Detach the volume. Check engine and replicas&rsquo;s engine image again.<br>10.  Attach the volume.<br>11.  Check engine/replica engine image. Check data after reattach.<br>12.  Live upgrade to the original engine image<br>13.  Check old and new engine image reference count (new 0, old 1)<br>14.  Verify all the engine and replica images should be the old image<br>15.  Check volume data<br>16.  Detach the volume. Make sure engine and replica images are old image</td>
-<td>Upgrade: Engine</td>
+<td>StorageClass <code>diskSelector</code> parameter</td>
+<td><strong>Prerequisite:</strong><br><br>*   Longhorn Disks should have tags<br><br>1.  Create a new StorageClass, set <code>diskSelector</code> parameter<br>2.  Create a PVC with using the new StorageClass</td>
+<td>*   New Storage class should be created<br>*   Volume should be dynamically provisioned, it’s PV/PVC should be <code>Bound</code>, volume replicas should only scheduled to Disks with tags that match <code>diskSelector</code> parameter tags</td>
+<td></td>
 </tr>
 <tr>
 <td>5</td>
-<td>test_engine_live_upgrade_rollback</td>
-<td>Test engine live upgrade rollback<br><br>1.  Deploy <code>wrong_engine_upgrade_image</code> compatible upgrade engine image<br>    1.  It&rsquo;s not functional but compatible per metadata.<br>        <br>2.  Create a volume with default engine image<br>3.  Attach it and write <code>data</code> into it.<br>4.  Live upgrade to the <code>wrong_engine_upgrade_image</code><br>5.  Try to wait for the engine upgrade to complete. Expect it to timeout.<br>6.  Rollback by upgrading to the <code>original_engine_image</code><br>7.  Make sure the rollback succeed and volume/engine engines are rolled back<br>8.  Check the volume <code>data</code>.<br>9.  Live upgrade to the <code>wrong_engine_upgrade_image</code> again.<br>10.  Live upgrade will still fail.<br>11.  Detach the volume.<br>12.  The engine image for the volume will now be upgraded (since the <code>wrong</code> image is still compatible)<br>13.  Upgrade to the <code>original_engine_image</code> when detached<br>14.  Attach the volume and check states and <code>data</code>.</td>
-<td>Upgrade: Engine</td>
+<td>StorageClass <code>nodeSelector</code> parameter</td>
+<td><strong>Prerequisite:</strong><br><br>*   Longhorn Node should have tags<br><br>1.  Create a new StorageClass, set <code>nodeSelector</code> parameter<br>2.  Create a PVC with using the new StorageClass</td>
+<td>*   New Storage class should be created<br>*   Volume should be dynamically provisioned, it’s PV/PVC should be <code>Bound</code>, volume replicas should only scheduled to Nodes with tags that match <code>nodeSelector</code> parameter tags</td>
+<td></td>
 </tr>
 <tr>
 <td>6</td>
-<td>test_engine_offline_upgrade</td>
-<td>Test engine offline upgrade<br><br>1.  Get a compatible engine image with the default engine image, and deploy<br>2.  Create a volume using the default engine image<br>3.  Attach the volume and write <code>data</code> into it<br>4.  Detach the volume and upgrade the volume engine to the new engine image<br>5.  Make sure the new engine image reference count has increased to 1<br>6.  Make sure we cannot delete the new engine image now (due to reference)<br>7.  Attach the volume and verify it&rsquo;s using the new image<br>8.  Verify the data. And verify engine and replicas&rsquo; engine image changed<br>9.  Detach the volume<br>10.  Upgrade to the old engine image<br>11.  Verify the volume&rsquo;s engine image has been upgraded<br>12.  Attach the volume and verify the <code>data</code></td>
-<td>Upgrade: Engine</td>
+<td>StorageClass <code>recurringJobs</code> parameter</td>
+<td>1.  Create a new StorageClass, set <code>recurringJobs</code> parameter<br>2.  Create a PVC with using the new StorageClass<br>3.  Create a pod that consumes the created PVC<br>4.  Check Volume recurring jobs</td>
+<td>*   New Storage class should be created<br>*   Volume should be dynamically provisioned, it’s PV/PVC should be <code>Bound</code> and attached to the pod<br>*   Volume should have recurring snapshots and backups matches ones specified in <code>recurringJobs</code> StorageClass parameter</td>
+<td>test_statefulset_recurring_backup</td>
+</tr>
+<tr>
+<td>7</td>
+<td>StorageClass with <code>reclaimPolicy</code> parameter set to <code>Delete</code></td>
+<td>1.  Create a new StorageClass, set <code>reclaimPolicy</code> parameter to <code>Delete</code><br>2.  Create a PVC with using the new StorageClass<br>3.  Delete the PVC</td>
+<td>*   Volume should be dynamically provisioned, it’s PV/PVC should be <code>Bound</code><br>*   Deleting PVC would trigger Volume delete</td>
+<td></td>
+</tr>
+<tr>
+<td>8</td>
+<td>StorageClass with <code>reclaimPolicy</code> parameter set to <code>Retain</code></td>
+<td>1.  Create a new StorageClass, set <code>reclaimPolicy</code> parameter to <code>Delete</code><br>2.  Create a PVC with using the new StorageClass<br>3.  Delete PVC<br>4.  Delete PV</td>
+<td>*   Volume should be dynamically provisioned, it’s PV/PVC should be <code>Bound</code><br>*   Deleting PVC and PV will not delete longhorn volume.</td>
+<td>test_kubernetes_status</td>
+</tr>
+<tr>
+<td>9</td>
+<td>Static provisioning using <code>Default Longhorn Static StorageClass Name</code> Setting</td>
+<td>1.  Update <code>Default Longhorn Static StorageClass Name</code> setting, set a new StorageClass Name, StorageClass doesn’t have to exist or be created.<br>2.  Create a Volume<br>3.  From Longhorn, Create a PV/PVC for the volume<br>4.  Check created PV <code>persistentVolumeReclaimPolicy: Retain</code><br>5.  Create a pod consuming created PVC<br>6.  Delete the pod<br>7.  Delete PV<br>8.  Delete PVC</td>
+<td>*   Volume should be created<br>*   Volume PV should be created using new StorageClass Name defined in <code>Default Longhorn Static StorageClass Name</code> setting<br>*   PVC should be consumed by the pod, volume should be accessible in the pod, write/read operations should work normally.<br>*   Deleting PV/PVC will not trigger volume delete.</td>
+<td>test_pvc_creation_with_default_sc_set</td>
 </tr>
 </tbody>
 </table>
-<p><strong>Additional Test cases</strong></p>
+<h3 id="additional-tests-to-be-executed-from-rancher">Additional Tests to be executed from Rancher</h3>
 <table>
 <thead>
 <tr>
 <th><strong>#</strong></th>
-<th><strong>Test name</strong></th>
-<th><strong>Description</strong></th>
+<th><strong>Scenario</strong></th>
+<th><strong>Steps</strong></th>
+<th><strong>Expected Results</strong></th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td>1</td>
-<td>Higher version of Longhorn engine and lower version of volume</td>
-<td>Test Longhorn upgrade<br><br>1.  Create a volume, generate and write <code>data</code> into the volume.<br>2.  Keep the volume attached, then upgrade Longhorn system.<br>3.  Write data in volume.<br>4.  Take snapshot#1. Compute the checksum#1<br>5.  Write data to volume. Compute the checksum#2<br>6.  Take backup<br>7.  Revert to snapshot#1<br>8.  Restore the backup.</td>
+<td>Storage Class: Create a Longhorn storage class</td>
+<td><strong>Pre condition:</strong><br><br>*   Longhorn is deployed in the cluster<br><br><strong>Steps:</strong><br><br>1.  Go to cluster → Storage → Storage Classes<br>2.  Click on Add class<br>3.  Select Provisioner <strong>Longhorn</strong><br>4.  Give in other required parameters including replica count.<br>5.  Click on <strong>Save</strong>.<br>6.  Verify <strong>test-1</strong> storage class is created<br>7.  Go to Cluster → Project (default) → Workloads<br>8.  Deploy a workload<br>9.  In the Volumes section → Add a New Volume Claim → Use a Storage Class to provision a new persistent volume → Select <strong>test-1</strong> from Storage class dropdown.<br>10.  Enter capacity and Name. Click on Define<br>11.  Enter Mount Point.<br>12.  Click on create workload<br>13.  Verify workload is created successfully.<br>14.  Volume gets attached to the pod in the workload<br>15.  Navigate to Longhorn UI.<br>16.  Verify user is able to view the volume attached to the workload in the UI<br>17.  Navigate to volume details page of the volume and Verify the replica count mentioned in Step 4 is available</td>
+<td>*   Longhorn storage class should be created<br>*   Workload should be deployed with the volume mounted from the storage class<br>*   Verify volume is available on the Longhorn UI.<br>*   Verify the replica count is as mentioned during storage class creation.</td>
 </tr>
 <tr>
 <td>2</td>
-<td>Restore the backup taken with older engine version</td>
-<td>1.  Create a volume, attach to a pod and write data into the volume. Compute md5sum of data<br>2.  Take a backup.<br>3.  Upgrade engine.<br>4.  Make the upgraded engine as default.<br>5.  Restore the backup, verify the checksum</td>
+<td>Persistent Volume: Create a PV</td>
+<td><strong>Pre condition:</strong><br><br>*   Longhorn is deployed in the cluster<br><br><strong>Steps:</strong><br><br>1.  Create a Volume in Longhorn UI <code>test-volume</code><br>2.  Go to cluster → Storage → Persistent Volumes<br>3.  Click on Add PV<br>4.  Select Volume Plugin <strong>Longhorn</strong><br>5.  Give in other required parameters including replica count.<br>6.  Give in Volume Plugin - <code>test-volume</code> which an existing volume in longhorn<br>7.  Click on <strong>Save</strong>.<br>8.  Verify <strong>test-1</strong> PV is created<br>9.  Go to Cluster → Project (default) → Workloads<br>10.  Deploy a workload<br>11.  In the Volumes section → Add a New Volume Claim → Use an existing persistent volume → Select <strong>test-1</strong> from PV dropdown.<br>12.  Click on Define<br>13.  Enter Mount Point.<br>14.  Click on create workload<br>15.  Verify workload is created successfully.<br>16.  Volume gets attached to the pod in the workload<br>17.  Navigate to Longhorn UI.<br>18.  Verify user is able to view the volume attached to the workload in the UI<br>19.  Navigate to volume details page of the volume and Verify the replica count mentioned in Step 4 is available</td>
+<td>*   Longhorn PV should be created<br>*   Workload should be deployed with the volume mounted from the PV<br>*   Verify volume is available on the Longhorn UI.<br>*   Verify the replica count is as mentioned during storage class creation.</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Create Storage class in Rancher; From Longhorn create volumes from this storage class.</td>
+<td><strong>Pre condition:</strong><br><br>*   Longhorn is deployed in the cluster<br><br><strong>Steps:</strong><br><br>1.  Go to cluster → Storage → Storage Classes<br>2.  Click on Add class<br>3.  Select Provisioner <strong>Longhorn</strong><br>4.  Give in other required parameters including replica count.<br>5.  Click on <strong>Save</strong>.<br>6.  Verify <strong>test-1</strong> storage class is created<br>7.  Go to Longhorn UI<br>8.  In the Settings page for “Default Longhorn Static StorageClass Name”, give in the value: “test-1”<br>9.  Go to Volumes page, click on create volume.<br>10.  Create a volume name : v1<br>11.  Verify v1 is created<br>12.  using kubectl -<br>13.  kubectl get pv <volume-name> -o yaml<br>14.  Verify “storageClassName:” &mdash;&gt; test-1</td>
+<td>*   Longhorn storage class should be created<br>*   Value of Default Longhorn Static StorageClass Name should be changed in the settings page<br>*   volume should be created in longhorn UI<br>*   “storageClassName:” value should be <strong>test-1</strong></td>
+</tr>
+<tr>
+<td>4</td>
+<td>Create Storage Class using backup URL</td>
+<td>1.  Create volume and PV/PVC/POD in Longhorn<br>2.  Write <code>test_data</code> into pod<br>3.  Create a snapshot and back it up. Get the backup URL<br>4.  Create a new StorageClass <code>longhorn-from-backup</code> in rancher and set backup URL.<br>5.  Use <code>longhorn-from-backup</code> to create a new PVC<br>6.  Wait for the volume to be created and complete the restoration.<br>7.  Create the pod using the PVC. Verify the data</td>
+<td></td>
+</tr>
+<tr>
+<td>5</td>
+<td>Create Storage class - by using different values for the input list of paramters</td>
+<td><strong>Pre condition:</strong><br><br>*   Longhorn is deployed in the cluster<br><br><strong>Steps:</strong><br><br>1.  Go to cluster → Storage → Storage Classes<br>2.  Click on Add class<br>3.  Select Provisioner <strong>Longhorn</strong><br>4.  Give in other required parameters.<br>5.  Click on <strong>Save</strong>.<br>6.  Use this storage class to create a PVC and deploy in a workload.<br>7.  Verify the parameters of the volume created.</td>
+<td>Volume parameters should match the storage class paramaters.</td>
+</tr>
+<tr>
+<td>6</td>
+<td>StorageClass with <code>reclaimPolicy</code> parameter set to <code>Delete</code> - PVC from storage class</td>
+<td><strong>Pre conditions:</strong><br><br>*   Create PVC from “Longhorn” storage class in rancher.<br>*   It will have a dynamic PV bound<br><br><strong>Steps</strong>:<br><br>1.  &lsquo;Delete PVC from Rancher<br>2.  Verify PVC is deleted<br>3.  Verify PV bound to this PVC is deleted - Rancher → Cluster → Storage → PV<br>4.  Verify the volume(Dynamic PV) in Longhorn is deleted</td>
+<td></td>
+</tr>
+<tr>
+<td>7</td>
+<td>Volume/PV/PVC created in Longhorn</td>
+<td><strong>Pre conditions:</strong><br><br>*   Create volume, PV, PVC in longhorn<br><br><strong>Steps:</strong><br><br>1.  &lsquo;Delete PVC from Rancher<br>2.  Verify PVC is deleted<br>3.  PV will NOT. be deleted but be in “released” state in Rancher UI<br>4.  Verify Volume does not get deleted</td>
+<td></td>
+</tr>
+<tr>
+<td>8</td>
+<td>StorageClass with <code>reclaimPolicy</code> parameter set to <code>Retain</code> - PVC from storage class</td>
+<td><strong>Pre conditions:</strong><br><br>*   Create PVC from “Longhorn” storage class in rancher.<br>*   It will have a dynamic PV bound<br><br><strong>Steps</strong>:<br><br>1.  &lsquo;Delete PVC from Rancher<br>2.  Verify PVC is deleted<br>3.  Verify PV bound to this PVC is NOT deleted - Rancher → Cluster → Storage → PV<br>4.  Verify the volume(Dynamic PV) in Longhorn is NOT deleted</td>
+<td></td>
+</tr>
+<tr>
+<td>9</td>
+<td>StorageClass with <code>reclaimPolicy</code> parameter set to <code>Retain</code> - Volume/PV/PVC created in Longhorn</td>
+<td><strong>Pre conditions:</strong><br><br>*   Create volume, PV, PVC in longhorn<br><br><strong>Steps:</strong><br><br>1.  &lsquo;Delete PVC from Rancher<br>2.  Verify PVC is deleted<br>3.  PV will NOT. be deleted but be in “released” state in Rancher UI<br>4.  Verify Volume does not get deleted</td>
+<td></td>
+</tr>
+<tr>
+<td>10</td>
+<td>Power down node</td>
+<td>1.  Power down<br>2.  Replica migrates<br>3.  Power back on<br>4.  Verify if the replicas in the node have been deleted</td>
+<td>*   When a node is powered down, the replica is rebuilt on the 4th wrker node.<br>*   When the node is powered back on, and the replica on the powered down node is not available in Longhorn UI anymore, there is no data in <code>/var/lib/longhorn/replicas</code> folder in the powered on node.</td>
+</tr>
+<tr>
+<td>11</td>
+<td>Power down node with. Node tag/disk tag</td>
+<td>1.  Add a node tag/disk tag<br>2.  Power down<br>3.  Replica cannot migrate<br>4.  Power back on<br>5.  Replica should get rebuilt on this node</td>
+<td>*   When a node is powered down, the replica is rebuilt on the 4th wrker node.<br>*   When the node is powered back on, and the replica on the powered down node is not available in Longhorn UI anymore, there is no data in <code>/var/lib/longhorn/replicas</code> folder in the powered on node.<br>*   The new replica is rebuilt on a node which has a tag.</td>
+</tr>
+<tr>
+<td>12</td>
+<td>Drain a node</td>
+<td>1.  Drain use case — drain a worker node <br>2.  Check if the State of the node reflects in the Longhorn UI —&gt; Node<br>3.  Verify if replica is rebuilt on another node? <br>4.  Verify if the pod migrates<br>5.  And the volume get migrated</td>
+<td>All the components should be successfully drained.</td>
+</tr>
+<tr>
+<td>13</td>
+<td>kubectl - force drain</td>
+<td>Using kubectl - force drain a node where the pod with the volume attached is available<br><br>Have snapshots before<br><br>Verify data after pod migrates</td>
+<td>Volume attaches on the new pod<br><br>2 of the 3 replicas are in “Stopped” state - Caused replica rebuild.</td>
+</tr>
+<tr>
+<td>14</td>
+<td>Cordon a node</td>
+<td>1.  Cordon state - cordon a worker node</td>
+<td></td>
+</tr>
+<tr>
+<td>15</td>
+<td>Delete node where the pods/workload exists<br><br><strong>workload type: deployment</strong></td>
+<td>Verify the pods migrate to another node and verify the volume also re attaches on the pod on the other node</td>
+<td>*   Create a workload with volume attached on n1<br>*   write data to volume<br>*   Delete node n1<br>*   The workload gets reattached to another node n2.<br>*   The volume gets attached after a minute<br>*   The volume is accessible.<br>*   data is accessible</td>
+</tr>
+<tr>
+<td>16</td>
+<td>Power down node where the pods/workload exists<br><br><strong>workload type: deployment</strong></td>
+<td>Verify the pods migrate to another node and verify the volume also re attaches on the pod on the other node</td>
+<td>host A → Pod a – Unknown – &gt; Not able to unmount<br><br>host b → pod b - Creating – fails to attach here</td>
+</tr>
+<tr>
+<td>17</td>
+<td>Delete node where the pods/workload exists<br><br><strong>workload type: stateful set</strong></td>
+<td>*   Create a workload, scale - 2 with volume attached on n1<br>*   write data to volume<br>*   Delete node n1, and n2</td>
+<td>*   The workload gets reattached to another node n3 and n4.<br>*   The volume gets attached after sometime<br>*   The volume is accessible.<br>*   data is accessible</td>
+</tr>
+<tr>
+<td>18</td>
+<td>Power down node where the pods/workload exists<br><br><strong>workload type: stateful set</strong></td>
+<td>*   Create a workload, attach to a volume.<br>*   Write some data<br>*   Power down the node where the pod is running.</td>
+<td>*   The pod should get recreated on another node.<br>*   The volume should get reattached.<br>*   The mount point should be accessible to read and write.</td>
+</tr>
+<tr>
+<td>19</td>
+<td>Delete worker node one by one</td>
+<td></td>
+<td>*   The volume should get reattach to healthy node.</td>
+</tr>
+<tr>
+<td>20</td>
+<td>Upgrade cluster - drain set - false</td>
+<td>1.  In Rancher - upgrade a cluster by changing the max-pods value<br>2.  The cluster will go into “Updating” state<br>3.  Verify upgrade completes successfully</td>
+<td>Upgrade should finish successfully</td>
+</tr>
+<tr>
+<td>21</td>
+<td>Upgrade cluster - drain set - true</td>
+<td>1.  In Rancher - upgrade a cluster by changing the max-pods value<br>2.  The cluster will go into “Updating” state<br>3.  Verify upgrade completes successfully</td>
+<td>Upgrade should finish successfully</td>
 </tr>
 </tbody>
 </table>
 
     </article>
-  <a href="https://github.com/longhorn/longhorn-tests/edit/master/docs/content/manual/end-to-end-test-cases/upgrade.md" target="_blank" title="Edit on Github" style="font-size:smaller;float:right;padding-right:3%">[Edit]</a>
+  <a href="https://github.com/longhorn/longhorn-tests/edit/master/docs/content/manual/functional-test-cases/kubernetes.md" target="_blank" title="Edit on Github" style="font-size:smaller;float:right;padding-right:3%">[Edit]</a>
   </div>
 
     

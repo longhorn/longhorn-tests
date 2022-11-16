@@ -17,38 +17,35 @@
   
   <ul>
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/">End-to-end test cases</a></li>
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/">Functional test cases</a></li>
   
     <ul>
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/deployment/"> Deployment of Longhorn </a></li>
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/deployment/"> Deployment of Longhorn </a></li>
   
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/ui/"> UI </a></li>
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/ui/"> UI </a></li>
   
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/volume/"> Volume </a></li>
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/volume/"> Volume </a></li>
   
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/high-availability/"> High Availability </a></li>
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/kubernetes/"> Kubernetes </a></li>
   
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/kubernetes/"> Kubernetes </a></li>
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/backup/"> Backup </a></li>
   
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/backup/"> Backup </a></li>
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/node/"> Node </a></li>
   
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/node/"> Node </a></li>
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/scheduling/"> Scheduling </a></li>
   
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/scheduling/"> Scheduling </a></li>
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/upgrade/"> Upgrade </a></li>
   
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/upgrade/"> Upgrade </a></li>
-  
-
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/end-to-end-test-cases/monitoring/">Monitoring</a></li>
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/monitoring/">Monitoring</a></li>
   
 
 </ul>
@@ -622,67 +619,211 @@
 
 
 <main style="padding: 1%; width: 70%;">
-  <h1 id="title"><ol>
-<li>Deployment of Longhorn</li>
+  <h1 id="title"><ol start="2">
+<li>UI</li>
 </ol>
 </h1>
   <div>
     <article id="content">
-       <h2 id="installation">Installation</h2>
-<p>Longhorn v1.1.2 and above - Support Kubernetes 1.18+</p>
-<p>Longhorn v1.0.0 to v1.1.1 - Support Kubernetes 1.14+. Default 1.16+</p>
-<ol>
-<li>
-<p>Install using Rancher Apps &amp; MarketPlace App (Default)</p>
-</li>
-<li>
-<p>Install using Helm chart from <a href="https://github.com/longhorn/longhorn/tree/master/chart">https://github.com/longhorn/longhorn/tree/master/chart</a></p>
-</li>
-<li>
-<p>Install using YAML from <a href="https://github.com/longhorn/longhorn/blob/master/deploy/longhorn.yaml">https://github.com/longhorn/longhorn/blob/master/deploy/longhorn.yaml</a></p>
-</li>
-</ol>
-<p>Note: Longhorn UI can scale to multiple instances for HA purposes.</p>
-<h2 id="uninstallation">Uninstallation</h2>
-<p>Make sure all the CRDs and other resources are cleaned up, following the uninstallation instruction.
-<a href="https://longhorn.io/docs/1.2.2/deploy/uninstall/">https://longhorn.io/docs/1.2.2/deploy/uninstall/</a></p>
-<h2 id="customizable-default-settings">Customizable Default Settings</h2>
-<p><a href="https://longhorn.io/docs/1.2.2/references/settings/">https://longhorn.io/docs/1.2.2/references/settings/</a></p>
-<p>Make sure the settings are updated if it’s the fresh installation of Longhorn.</p>
-<h2 id="tests">Tests</h2>
+       <h2 id="accessibility-of-longhorn-ui">Accessibility of Longhorn UI</h2>
 <table>
 <thead>
 <tr>
-<th><strong>S.No</strong></th>
-<th><strong>Scenario</strong></th>
-<th><strong>Steps</strong></th>
-<th><strong>Expected Result</strong></th>
+<th><strong>#</strong></th>
+<th><strong>Test Case</strong></th>
+<th><strong>Test Instructions</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1.</td>
+<td>Access Longhorn UI using rancher proxy</td>
+<td>1.  Create a cluster (3 worker nodes and 1 etcd/control plane) in rancher, Go to the default project.<br>2.  Go to App, Click the launch app.<br>3.  Select longhorn.<br>4.  Select <code>Rancher-Proxy</code> under the Longhorn UI service.<br>5.  Once the app is deployed successfully, click the <a href="https://173.255.255.35/k8s/clusters/c-qnl4b/api/v1/namespaces/longhorn-system/services/http:longhorn-frontend:80/proxy/">/index.html</a> link appears in App page.<br>6.  The page should redirect to longhorn UI - <a href="https://173.255.255.35/k8s/clusters/c-qnl4b/api/v1/namespaces/longhorn-system/services/http:longhorn-frontend:80/proxy/#/dashboard">https://rancher/k8s/clusters/c-aaaa/api/v1/namespaces/longhorn-system/services/http:longhorn-frontend:80/proxy/#/dashboard</a><br>7.  Verify all the pages, refresh each page and verify. Create a volume and check the volume detail page also.</td>
+</tr>
+<tr>
+<td>2.</td>
+<td>Access Longhorn UI under Kubectl proxy</td>
+<td>1.  Create a cluster (3 worker nodes and 1 etcd/control plane) using rke.<br>2.  Start kubectl proxy by command <code>kubectl proxy</code>.<br>3.  It should start proxy locally on 8001 port.<br>4.  Navigate to <a href="http://localhost:8001/api/v1/namespaces/longhorn-system/services/http:longhorn-frontend:http/proxy/">http://localhost:8001/api/v1/namespaces/longhorn-system/services/http:longhorn-frontend:http/proxy/</a><br>5.  The above link should open the longhorn UI.<br>6.  Verify all the pages, refresh each page and verify. Create a volume and check the volume detail page also.</td>
+</tr>
+<tr>
+<td>3.</td>
+<td>Access Longhorn UI with node port</td>
+<td>1.  Create a cluster (3 worker nodes and 1 etcd/control plane) in rancher, Go to the default project.<br>2.  Go to App, Click the launch app.<br>3.  Select longhorn.<br>4.  Select <code>NodePort</code> under the Longhorn UI service.<br>5.  Once the app is deployed successfully, click the link like <a href="http://104.131.80.163:32059/">32059/tcp</a> appears in App page.<br>6.  The page should redirect to longhorn UI - <a href="http://104.131.80.163:32059/#/dashboard">http://node-ip:32059/#/dashboard</a><br>7.  Verify all the pages, refresh each page and verify. Create a volume and check the volume detail page also.</td>
+</tr>
+<tr>
+<td>4.</td>
+<td>Access Longhorn UI with ingress controller</td>
+<td>1.  Create a cluster(3 worker nodes and 1 etcd/control plane).<br>2.  Deploy longhorn.<br>3.  Create ingress controller. refer <a href="https://longhorn.io/docs/1.0.1/deploy/accessing-the-ui/longhorn-ingress/">https://longhorn.io/docs/1.0.1/deploy/accessing-the-ui/longhorn-ingress/</a><br>4.  If cluster is imported/created in rancher create ingress using rancher UI by selecting <code>Target Backend</code> as <code>longhorn frontend</code> and path <code>/</code><br>5.  Access the ingress. It should redirect to longhorn UI.<br>6.  Verify all the pages, refresh each page and verify. Create a volume and check the volume detail page also.</td>
+</tr>
+<tr>
+<td>5.</td>
+<td>Access Longhorn UI with a load balancer</td>
+<td>1.  Create a cluster (3 worker nodes and 1 etcd/control plane) in rancher.<br>2.  Create a route 53 entry pointing to worker nodes of the cluster in AWS.<br>3.  Deploy longhorn from catalog library and mention the route 53 entry in the load balancer.<br>4.  Go to the link that appears on the app page for the longhorn app.<br>5.  The page to redirect to longhorn UI with URL as route 53 entry.<br>6.  Verify all the pages, refresh each page and verify. Create a volume and check the volume detail page also.</td>
+</tr>
+<tr>
+<td>6.</td>
+<td>Access Longhorn UI with reverse proxy</td>
+<td>1.  Create a cluster (3 worker nodes and 1 etcd/control plane) in rancher, Go to the default project.<br>2.  Go to App, Click the launch app.<br>3.  Select longhorn.<br>4.  Select <code>NodePort</code> under the Longhorn UI service.<br>5.  Install nginx in local system.<br>6.  Set the <code>proxy_pass</code> of <a href="http://104.131.80.163:32059/#/dashboard">http://node-ip:32059</a> in ngnix.conf file as per below example.<br>7.  Start nginx<br>8.  Access the port given in <code>listen</code> parameter from nginx.conf. ex - //localhost:822<br>9.  The page should redirect to longhorn UI<br>10.  Verify all the pages, refresh each page and verify. Create a volume and check the volume detail page also.</td>
+</tr>
+</tbody>
+</table>
+<p>nginx.conf example</p>
+<pre><code>`events { worker_connections` `1024``; }`
+
+`http {`
+
+`server {`
+
+`gzip on;`
+
+`gzip_min_length 1k;`
+
+`gzip_comp_level` `2``;`
+
+`gzip_types text/plain application/javascript application/x-javascript text/css application/xml text/javascript application/x-httpd-php image/jpeg image/gif image/png image/svg+xml;`
+
+`gzip_vary on;`
+
+`gzip_disable` `&quot;MSIE [1-6]\.&quot;``;`
+
+`listen` `8223``;`
+
+`proxy_http_version` `1.1``;`
+
+`proxy_set_header Upgrade $http_upgrade;`
+
+`proxy_set_header Connection` `&quot;upgrade&quot;``;`
+
+`proxy_redirect   off;`
+
+`proxy_set_header  Host       $http_host;`
+
+`proxy_set_header  X-Real-IP    $remote_addr;`
+
+`proxy_set_header  X-Forwarded-For $proxy_add_x_forwarded_for;`
+
+`proxy_next_upstream error timeout invalid_header http_500 http_502 http_503 http_504;`
+
+`proxy_max_temp_file_size` `0``;`
+
+`proxy_connect_timeout  ` `90``;`
+
+`proxy_send_timeout    ` `90``;`
+
+`proxy_read_timeout    ` `90``;`
+
+`proxy_buffer_size     1024k;`
+
+`proxy_buffers      ` `8` `1024k;`
+
+`proxy_busy_buffers_size  1024k;`
+
+`proxy_temp_file_write_size 1024k;`
+
+`location / {`
+
+`proxy_pass` `&quot;[http://node-ip:32059/](http://node-ip:32059/)&quot;``;`
+
+`}`
+
+`}`
+
+`}`
+</code></pre>
+<h2 id="dashboard">Dashboard</h2>
+<ol>
+<li>
+<p>Make sure the volume diagram matches the volume list page</p>
+</li>
+<li>
+<p>Make sure the storage diagram matches the node list page</p>
+</li>
+<li>
+<p>Make sure the node diagram matches the node list page</p>
+</li>
+<li>
+<p>Make sure the event log shows up.</p>
+</li>
+</ol>
+<table>
+<thead>
+<tr>
+<th><strong>#</strong></th>
+<th><strong>Test Case</strong></th>
+<th><strong>Test Instructions</strong></th>
+<th><strong>Expected Results</strong></th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td>1</td>
-<td>Deploy Longhorn using Yaml</td>
-<td>1.  Create a k8s/k3s cluster with 3 workers nodes.<br>2.  Deploy Longhorn using the Yaml file available <a href="https://github.com/longhorn/longhorn/blob/master/deploy/longhorn.yaml">https://github.com/longhorn/longhorn/blob/master/deploy/longhorn.yaml</a>  <br>    <code>kubectl apply -f [https://raw.githubusercontent.com/longhorn/longhorn/master/deploy/longhorn.yaml](https://raw.githubusercontent.com/longhorn/longhorn/master/deploy/longhorn.yaml)</code><br>3.  Verify the app gets deployed successfully.  <br>    <code>kubectl get pods n longhorn system</code></td>
-<td>*  The below daemonset should be deployed successfully. <pre>engine-image-ei- , longhorn-csi-plugin, longhorn-manager</pre>*   The below deployment should be deployed successfully.  <pre>    csi-attacher, csi-provisioner, csi-resizer, csi-snapshotter, longhorn-driver-deployer, longhorn-ui</pre>*   The Instance-manager-e, Instance-manager-r pods should be deployed on the each worker node.<br>*   The below services should be deployed  <pre>    csi-attacher, csi-provisioner, csi-resizer, csi-snapshotter, longhorn-backend, longhorn-frontend</pre>*   The below crds should be deployed.  <br>    <a href="http://backingimagedatasources.longhorn.io">backingimagedatasources.longhorn.io</a>  <br>    <a href="http://backingimagemanagers.longhorn.io">backingimagemanagers.longhorn.io</a>  <br>    <a href="http://backingimages.longhorn.io">backingimages.longhorn.io</a>  <br>    <a href="http://backups.longhorn.io">backups.longhorn.io</a>  <br>    <a href="http://backuptargets.longhorn.io">backuptargets.longhorn.io</a>  <br>    <a href="http://backupvolumes.longhorn.io">backupvolumes.longhorn.io</a>  <br>    <a href="http://engineimages.longhorn.io">engineimages.longhorn.io</a>  <br>    <a href="http://engines.longhorn.io">engines.longhorn.io</a>  <br>    <a href="http://instancemanagers.longhorn.io">instancemanagers.longhorn.io</a>  <br>    <a href="http://nodes.longhorn.io">nodes.longhorn.io</a>  <br>    <a href="http://recurringjobs.longhorn.io">recurringjobs.longhorn.io</a>  <br>    <a href="http://replicas.longhorn.io">replicas.longhorn.io</a>  <br>    <a href="http://settings.longhorn.io">settings.longhorn.io</a>  <br>    <a href="http://sharemanagers.longhorn.io">sharemanagers.longhorn.io</a>  <br>    <a href="http://volumes.longhorn.io">volumes.longhorn.io</a></td>
+<td>Volume Diagram</td>
+<td>*   Verify Volume Diagram</td>
+<td>*   At all time, Volume Diagram should correctly reflect the number and state of Longhorn Volumes (Healthy, Degraded, In Progress, Fault, Detached)</td>
 </tr>
 <tr>
 <td>2</td>
-<td>Deploy Longhorn using Helm chart</td>
-<td>1.  Create a k8s/k3s cluster with 3 workers nodes.<br>2.  As per the instructions <a href="https://github.com/longhorn/longhorn/tree/master/chart">https://github.com/longhorn/longhorn/tree/master/chart</a> deploy the Longhorn app.</td>
-<td>*  The below daemonset should be deployed successfully. <pre>engine-image-ei- , longhorn-csi-plugin, longhorn-manager</pre>*   The below deployment should be deployed successfully.  <pre>    csi-attacher, csi-provisioner, csi-resizer, csi-snapshotter, longhorn-driver-deployer, longhorn-ui</pre>*   The Instance-manager-e, Instance-manager-r pods should be deployed on the each worker node.<br>*   The below services should be deployed  <pre>    csi-attacher, csi-provisioner, csi-resizer, csi-snapshotter, longhorn-backend, longhorn-frontend</pre>*   The below crds should be deployed.  <br>    <a href="http://backingimagedatasources.longhorn.io">backingimagedatasources.longhorn.io</a>  <br>    <a href="http://backingimagemanagers.longhorn.io">backingimagemanagers.longhorn.io</a>  <br>    <a href="http://backingimages.longhorn.io">backingimages.longhorn.io</a>  <br>    <a href="http://backups.longhorn.io">backups.longhorn.io</a>  <br>    <a href="http://backuptargets.longhorn.io">backuptargets.longhorn.io</a>  <br>    <a href="http://backupvolumes.longhorn.io">backupvolumes.longhorn.io</a>  <br>    <a href="http://engineimages.longhorn.io">engineimages.longhorn.io</a>  <br>    <a href="http://engines.longhorn.io">engines.longhorn.io</a>  <br>    <a href="http://instancemanagers.longhorn.io">instancemanagers.longhorn.io</a>  <br>    <a href="http://nodes.longhorn.io">nodes.longhorn.io</a>  <br>    <a href="http://recurringjobs.longhorn.io">recurringjobs.longhorn.io</a>  <br>    <a href="http://replicas.longhorn.io">replicas.longhorn.io</a>  <br>    <a href="http://settings.longhorn.io">settings.longhorn.io</a>  <br>    <a href="http://sharemanagers.longhorn.io">sharemanagers.longhorn.io</a>  <br>    <a href="http://volumes.longhorn.io">volumes.longhorn.io</a></td>
+<td>Storage Diagram</td>
+<td>*   Verify Storage Diagram</td>
+<td>*   At all time, Storage Diagram should correctly reflect Disks Storage status (Schedulable, Reserved, Used, Disabled)</td>
 </tr>
 <tr>
 <td>3</td>
-<td>Deploy Longhorn in Rancher</td>
-<td>1.  Create a k8s/k3s cluster with 3 workers nodes on Rancher cluster.<br>2.  Go to Apps and marketplace and deploy Longhorn with default values</td>
-<td>*   The Longhorn and Longhorn CRDs should be installed as two packages.<br>*   The Longhorn app should start display on the cluster explorer.<br>*   The Link to access the Longhorn UI should work properly.<br>*   Verify all the components are available by clicking on the installed apps.</td>
+<td>Node Diagram</td>
+<td>*   Verify Node Diagram</td>
+<td>*   At all time, Volume Diagram should correctly reflect the number and state of Longhorn Nodes (Schedulable, Unschedulable, Down, Disabled)</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Event Logs</td>
+<td>*   Verify Event Logs</td>
+<td>*   Make sure Longhorn events shows up in Event Logs.</td>
+</tr>
+<tr>
+<td>5</td>
+<td>Longhorn Version</td>
+<td>*   Verify the version</td>
+<td>*   Make sure the version is correct</td>
+</tr>
+<tr>
+<td>6</td>
+<td>Support Bundle Link</td>
+<td>*   Click the SupportBundle link</td>
+<td>*   A pop up to enter issue id and description should appear.<br>*   On saving the form, the support bundle file should be generated and downloaded</td>
+</tr>
+<tr>
+<td>7</td>
+<td>Other links at bottom of the page</td>
+<td>*   Click links Documentation, File an issue and Slack</td>
+<td>*   Make sure the navigation of the Document, File an issue and Slack are correct.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="additional-tests">Additional Tests</h2>
+<table>
+<thead>
+<tr>
+<th><strong>Test case</strong></th>
+<th><strong>Steps</strong></th>
+<th><strong>Expected Results</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Sort in the columns</td>
+<td>Verify sorting happens correctly in the columns</td>
+<td></td>
+</tr>
+<tr>
+<td>Filter</td>
+<td>Verify Filter on different columns work</td>
+<td></td>
 </tr>
 </tbody>
 </table>
 
     </article>
-  <a href="https://github.com/longhorn/longhorn-tests/edit/master/docs/content/manual/end-to-end-test-cases/deployment.md" target="_blank" title="Edit on Github" style="font-size:smaller;float:right;padding-right:3%">[Edit]</a>
+  <a href="https://github.com/longhorn/longhorn-tests/edit/master/docs/content/manual/functional-test-cases/ui.md" target="_blank" title="Edit on Github" style="font-size:smaller;float:right;padding-right:3%">[Edit]</a>
   </div>
 
     
