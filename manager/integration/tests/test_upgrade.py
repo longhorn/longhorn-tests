@@ -72,7 +72,7 @@ def upgrade_longhorn_backing_image_manager_image(request):
 
 
 def get_longhorn_upgrade_type():
-    return [os.environ['LONGHORN_UPGRADE_TYPE']]
+    return [os.environ.get('LONGHORN_UPGRADE_TYPE', '')]
 
 
 @pytest.fixture(params=get_longhorn_upgrade_type())
