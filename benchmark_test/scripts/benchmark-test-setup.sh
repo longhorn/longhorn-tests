@@ -8,19 +8,10 @@ TMPDIR="/tmp/longhorn"
 mkdir -p ${TMPDIR}
 
 set_kubeconfig_envvar(){
-  ARCH=${1}
-  BASEDIR=${2}
-
-  if [[ ${ARCH} == "amd64" ]] ; then
-    if [[ ${TF_VAR_k8s_distro_name} == [rR][kK][eE] ]]; then
-      export KUBECONFIG="${BASEDIR}/kube_config_rke.yml"
-    elif [[ ${TF_VAR_k8s_distro_name} == [rR][kK][eE]2 ]]; then
-      export KUBECONFIG="${BASEDIR}/terraform/aws/${DISTRO}/rke2.yaml"
-    else
-      export KUBECONFIG="${BASEDIR}/terraform/aws/${DISTRO}/k3s.yaml"
-    fi
-  elif [[ ${ARCH} == "arm64"  ]]; then
-    export KUBECONFIG="${BASEDIR}/terraform/aws/${DISTRO}/k3s.yaml"
+  if [[ "${TF_VAR_k8s_distro_name}" == "rke2" ]]; then
+    export KUBECONFIG="${WORKSPACE}/test_framework/terraform/${LONGHORN_TEST_CLOUDPROVIDER}/${DISTRO}/rke2.yaml"
+  else
+    export KUBECONFIG="${WORKSPACE}/test_framework/terraform/${LONGHORN_TEST_CLOUDPROVIDER}/${DISTRO}/k3s.yaml"
   fi
 }
 
@@ -130,6 +121,8 @@ wait_longhorn_resources_deleted(){
 
     if [[ ${RETRIES} -eq ${RETRY_COUNTS} ]]; then echo "Error: longhorn deletion timeout"; exit 1 ; fi
   done
+
+  kubectl delete ns longhorn-system || true
 }
 
 
@@ -207,7 +200,7 @@ run_fio_longhorn_test(){
 
 
 main(){
-  set_kubeconfig_envvar ${TF_VAR_arch} ${TF_VAR_tf_workspace}
+  set_kubeconfig_envvar
 
   adjust_test_size
 

@@ -6,7 +6,19 @@ sudo zypper install -y open-iscsi nfs-client
 sudo systemctl -q enable iscsid
 sudo systemctl start iscsid
 
-if [ -b "/dev/xvdh" ]; then
+if [ -b "/dev/nvme1n1" ]; then
+  mkfs.ext4 -E nodiscard /dev/nvme1n1
+  mkdir /mnt/sda1
+  mount /dev/nvme1n1 /mnt/sda1
+
+  mkdir /mnt/sda1/local
+  mkdir /opt/local-path-provisioner
+  mount --bind /mnt/sda1/local /opt/local-path-provisioner
+
+  mkdir /mnt/sda1/longhorn
+  mkdir /var/lib/longhorn
+  mount --bind /mnt/sda1/longhorn /var/lib/longhorn
+elif [ -b "/dev/xvdh" ]; then
   mkfs.ext4 -E nodiscard /dev/xvdh
   mkdir /var/lib/longhorn
   mount /dev/xvdh /var/lib/longhorn
