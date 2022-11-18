@@ -36,6 +36,9 @@ from common import wait_for_volume_detached
 from common import wait_for_backing_image_ready
 from common import wait_for_backing_image_in_disk_fail
 from common import get_disk_uuid
+from common import LONGHORN_NAMESPACE, RETRY_EXEC_COUNTS, RETRY_INTERVAL
+import time
+
 
 @pytest.mark.coretest   # NOQA
 @pytest.mark.backing_image  # NOQA
@@ -522,9 +525,8 @@ def test_backing_image_auto_resync(bi_url, client, volume_name):  # NOQA
     assert volume.size == str(BACKING_IMAGE_EXT4_SIZE)
 
 
-@pytest.mark.skip(reason="TODO") # NOQA
 @pytest.mark.backing_image  # NOQA
-def test_backing_image_cleanup(client, volume_name):  # NOQA
+def test_backing_image_cleanup(core_api, client):  # NOQA
     """
     1. Create multiple backing image.
     2. Create and attach multiple 3-replica volume using those backing image.
@@ -535,3 +537,52 @@ def test_backing_image_cleanup(client, volume_name):  # NOQA
     6. Repeat step1 to step5 for multiple times. Make sure each time the test
        is using the same the backing image namings.
     """
+    for i in range(3):
+        backing_image_cleanup(core_api, client)
+
+
+def backing_image_cleanup(core_api, client): # NOQA
+    # Step 1
+    backing_img1_name = 'bi-test1'
+    create_backing_image_with_matching_url(
+            client, backing_img1_name, BACKING_IMAGE_QCOW2_URL)
+
+    backing_img2_name = 'bi-test2'
+    create_backing_image_with_matching_url(
+            client, backing_img2_name, BACKING_IMAGE_RAW_URL)
+
+    # Step 2
+    lht_host_id = get_self_host_id()
+    volume1 = create_and_check_volume(
+        client, volume_name="vol-1", size=str(1 * Gi),
+        backing_image=backing_img1_name)
+
+    volume2 = create_and_check_volume(
+        client, volume_name="vol-2", size=str(1 * Gi),
+        backing_image=backing_img2_name)
+
+    # Step 3
+    volume1.attach(hostId=lht_host_id)
+    volume1 = wait_for_volume_healthy(client, volume1.name)
+    volume2.attach(hostId=lht_host_id)
+    volume2 = wait_for_volume_healthy(client, volume2.name)
+    assert volume1.backingImage == backing_img1_name
+    assert volume2.backingImage == backing_img2_name
+
+    # Step 4
+    cleanup_all_volumes(client)
+    cleanup_all_backing_images(client)
+
+    # Step 5
+    for i in range(RETRY_EXEC_COUNTS):
+        exist = False
+        pods = core_api.list_namespaced_pod(LONGHORN_NAMESPACE)
+        for pod in pods.items:
+            if "backing-image-manager" in pod.metadata.name:
+                exist = True
+                time.sleep(RETRY_INTERVAL)
+                continue
+        if exist is False:
+            break
+
+    assert exist is False
