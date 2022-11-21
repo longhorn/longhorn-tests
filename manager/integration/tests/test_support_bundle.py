@@ -88,6 +88,46 @@ def test_support_bundle_failed_limit(client, apps_api):  # NOQA
         pass
 
 
+@pytest.mark.support_bundle   # NOQA
+def test_support_bundle_purge(client, apps_api):  # NOQA
+    """
+    Scenario: test support bundle
+
+    Issue: https://github.com/longhorn/longhorn/issues/2759
+
+    Given support-bundle-failed-history-limit setting is 2
+    And 2 failed support bundle created
+
+    When set support-bundle-failed-history-limit setting to 0
+    Then failed support bundles should be deleted
+    And support bundle managers should be deleted
+
+    When create a failed support bundle
+    Then failed support bundle should be deleted
+    And support bundle manager should be deleted
+
+    """
+    update_setting(client, SETTING_SUPPORT_BUNDLE_FAILED_LIMIT, "2")
+    create_failed_support_bundles(client, apps_api, number=2)
+
+    support_bundles = client.list_support_bundle()
+    assert len(support_bundles) == 2
+
+    update_setting(client, SETTING_SUPPORT_BUNDLE_FAILED_LIMIT, "0")
+    wait_for_support_bundle_cleanup(client)
+    check_all_support_bundle_managers_deleted()
+
+    # Will try to catch the Error state here because it is an intermediate
+    # state
+    try:
+        create_failed_support_bundles(client, apps_api, number=1)
+    except AssertionError:
+        pass
+
+    wait_for_support_bundle_cleanup(client)
+    check_all_support_bundle_managers_deleted()
+
+
 def create_failed_support_bundles(client, apps_api, number=1):  # NOQA
     for _ in range(0, number):
         resp = create_support_bundle(client)
