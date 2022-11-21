@@ -63,6 +63,31 @@ def test_support_bundle_should_error_when_failed(client, apps_api):  # NOQA
     create_failed_support_bundles(client, apps_api)
 
 
+@pytest.mark.support_bundle   # NOQA
+def test_support_bundle_failed_limit(client, apps_api):  # NOQA
+    """
+    Scenario: test support bundle failed limit
+
+    Issue: https://github.com/longhorn/longhorn/issues/2759
+
+    Given support-bundle-failed-history-limit setting is 2
+    And 2 failed support bundle created
+
+    When create support bundle
+    Then should fail to create
+
+    """
+    update_setting(client, SETTING_SUPPORT_BUNDLE_FAILED_LIMIT, "3")
+    create_failed_support_bundles(client, apps_api, number=2)
+
+    try:
+        create_failed_support_bundles(client, apps_api, number=1)
+        assert False, \
+            f'expect to fail exceeding {SETTING_SUPPORT_BUNDLE_FAILED_LIMIT}'
+    except Exception:
+        pass
+
+
 def create_failed_support_bundles(client, apps_api, number=1):  # NOQA
     for _ in range(0, number):
         resp = create_support_bundle(client)
