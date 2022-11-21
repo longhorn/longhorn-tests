@@ -180,6 +180,7 @@ SETTING_ORPHAN_AUTO_DELETION = "orphan-auto-deletion"
 SETTING_FAILED_BACKUP_TTL = "failed-backup-ttl"
 SETTING_CONCURRENT_AUTO_ENGINE_UPGRADE_NODE_LIMIT = \
     "concurrent-automatic-engine-upgrade-per-node-limit"
+SETTING_SUPPORT_BUNDLE_FAILED_LIMIT = "support-bundle-failed-history-limit"
 
 CSI_UNKNOWN = 0
 CSI_TRUE = 1
@@ -1498,6 +1499,8 @@ def cleanup_client():
         cleanup_all_backing_images(client)
 
     cleanup_storage_class()
+
+    cleanup_all_support_bundles(client)
 
     # enable nodes scheduling
     reset_node(client)
@@ -3091,7 +3094,25 @@ def reset_settings(client):
         setting_default_value = setting.definition.default
         setting_readonly = setting.definition.readOnly
 
+        # We don't provide the setup for the storage network, hence there is no
+        # default value. We need to skip here to avoid test failure when
+        # resetting this to an empty default value.
         if setting_name == "storage-network":
+            continue
+
+        # The version of the support bundle kit will be specified by a command
+        # option when starting the manager. And setting requires a value.
+        #
+        # Longhorn has a default version for each release provided to the
+        # manager when starting. Meaning this setting doesn't have a default
+        # value.
+        #
+        # The design grants the ability to update later by cases for
+        # troubleshooting purposes. Meaning this setting is editable.
+        #
+        # So we need to skip here to avoid test failure when resetting this to
+        # an empty default value.
+        if setting_name == "support-bundle-manager-image":
             continue
 
         s = client.by_id_setting(setting_name)
@@ -4193,9 +4214,9 @@ def wait_and_get_any_deployment_pod(core_api, deployment_name,
     assert False
 
 
-def wait_delete_deployment(apps_api, deployment_name):
+def wait_delete_deployment(apps_api, deployment_name, namespace='default'):
     for i in range(DEFAULT_DEPLOYMENT_TIMEOUT):
-        ret = apps_api.list_namespaced_deployment(namespace='default')
+        ret = apps_api.list_namespaced_deployment(namespace=namespace)
         found = False
         for item in ret.items:
             if item.metadata.name == deployment_name:
@@ -4216,7 +4237,7 @@ def delete_and_wait_deployment(apps_api, deployment_name, namespace='default'):
     except ApiException as e:
         assert e.status == 404
 
-    wait_delete_deployment(apps_api, deployment_name)
+    wait_delete_deployment(apps_api, deployment_name, namespace)
 
 
 def get_deployment_pod_names(core_api, deployment):
@@ -4966,7 +4987,111 @@ def restore_backup_and_get_data_checksum(client, core_api, backup, pod,
     return data_checksum, output, restore_pod_name
 
 
-def generate_support_bundle(case_name):
+def cleanup_all_support_bundles(client):
+    """
+    Clean up all support bundles
+    :param client: The Longhorn client to use in the request.
+    """
+
+    support_bundles = client.list_support_bundle()
+    for support_bundle in support_bundles:
+        id = support_bundle['id']
+        name = support_bundle['name']
+        # ignore the error when clean up
+        try:
+            delete_support_bundle(id, name, client)
+        except Exception as e:
+            print("\nException when cleanup support_bundle ", support_bundle)
+            print(e)
+
+    ok = False
+    for _ in range(RETRY_COUNTS):
+        support_bundles = client.list_support_bundle()
+        if len(support_bundles) == 0:
+            ok = True
+            break
+        time.sleep(RETRY_INTERVAL)
+    assert ok
+
+
+def check_all_support_bundle_managers_deleted():
+    apps_api = get_apps_api_client()
+    deployments = get_all_support_bundle_manager_deployments(apps_api)
+    for support_bundle_manager in deployments:
+        wait_delete_deployment(apps_api, support_bundle_manager.metadata.name,
+                               namespace=LONGHORN_NAMESPACE)
+
+    assert len(get_all_support_bundle_manager_deployments(apps_api)) == 0
+
+
+def create_support_bundle(client):  # NOQA
+    data = {'description': 'Test', 'issueURL': ""}
+    return requests.post(get_support_bundle_url(client), json=data).json()
+
+
+def delete_support_bundle(node_id, name, client):
+    url = get_support_bundle_url(client)
+    support_bundle_url = '{}/{}/{}'.format(url, node_id, name)
+    return requests.delete(support_bundle_url)
+
+
+def download_support_bundle(node_id, name, client):  # NOQA
+    url = get_support_bundle_url(client)
+    support_bundle_url = '{}/{}/{}'.format(url, node_id, name)
+    download_url = '{}/download'.format(support_bundle_url)
+    r = requests.get(download_url, allow_redirects=True, timeout=300)
+    r.raise_for_status()
+
+
+def get_all_support_bundle_manager_deployments(apps_api):  # NOQA
+    name_prefix = 'longhorn-support-bundle-manager'
+    support_bundle_managers = []
+
+    deployments = apps_api.list_namespaced_deployment(LONGHORN_NAMESPACE)
+    for deployment in deployments.items:
+        if deployment.metadata.name.startswith(name_prefix):
+            support_bundle_managers.append(deployment)
+
+    return support_bundle_managers
+
+
+def get_support_bundle_url(client):  # NOQA
+    return client._url.replace('schemas', 'supportbundles')
+
+
+def get_support_bundle(node_id, name, client):  # NOQA
+    url = get_support_bundle_url(client)
+    support_bundle_url = '{}/{}/{}'.format(url, node_id, name)
+    return requests.get(support_bundle_url).json()
+
+
+def wait_for_support_bundle_cleanup(client):  # NOQA
+    ok = False
+    for _ in range(RETRY_COUNTS):
+        support_bundles = client.list_support_bundle()
+        if len(support_bundles) == 0:
+            ok = True
+            break
+
+        time.sleep(RETRY_INTERVAL)
+    assert ok
+
+
+def wait_for_support_bundle_state(state, node_id, name, client):  # NOQA
+    ok = False
+    for _ in range(RETRY_COUNTS):
+        support_bundle = get_support_bundle(node_id, name, client)
+        try:
+            assert support_bundle['state'] == state
+            ok = True
+            break
+        except Exception:
+            time.sleep(RETRY_INTERVAL)
+
+    assert ok
+
+
+def generate_support_bundle(case_name):  # NOQA
     """
         Generate support bundle into folder ./support_bundle/case_name.zip
 
@@ -4986,10 +5111,11 @@ def generate_support_bundle(case_name):
 
     # Use API gen support bundle
     client = get_longhorn_api_client()
+    cleanup_all_support_bundles(client)
+
     url = client._url.replace('schemas', 'supportbundles')
     data = {'description': case_name, 'issueURL': case_name}
     res = requests.post(url, json=data).json()
-
     id = res['id']
     name = res['name']
 
