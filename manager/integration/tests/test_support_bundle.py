@@ -8,8 +8,11 @@ from common import create_support_bundle
 from common import delete_and_wait_deployment
 from common import download_support_bundle
 from common import get_all_support_bundle_manager_deployments
+from common import update_setting
 from common import wait_for_support_bundle_cleanup
 from common import wait_for_support_bundle_state
+
+from common import SETTING_SUPPORT_BUNDLE_FAILED_LIMIT
 
 
 @pytest.mark.support_bundle   # NOQA
@@ -38,6 +41,26 @@ def test_support_bundle_should_delete_after_download(client):  # NOQA
 
     wait_for_support_bundle_cleanup(client)
     check_all_support_bundle_managers_deleted()
+
+
+@pytest.mark.support_bundle   # NOQA
+def test_support_bundle_should_error_when_failed(client, apps_api):  # NOQA
+    """
+    Scenario: test support bundle should error when failed
+
+    Issue: https://github.com/longhorn/longhorn/issues/2759
+
+    Given support-bundle-failed-history-limit setting is 1
+    And support bundle created
+    And support bundle is in Generating state
+
+    When delete support bundle manager deployment
+    Then support bundle should be in state Error
+
+    """
+    update_setting(client, SETTING_SUPPORT_BUNDLE_FAILED_LIMIT, "1")
+
+    create_failed_support_bundles(client, apps_api)
 
 
 def create_failed_support_bundles(client, apps_api, number=1):  # NOQA
