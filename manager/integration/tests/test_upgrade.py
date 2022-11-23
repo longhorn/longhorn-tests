@@ -308,3 +308,20 @@ def test_upgrade(longhorn_upgrade_type,
     assert res_pod_md5sum == pod_md5sum
 
     check_volume_data(volume1, volume1_data)
+
+
+# Need add this test case into test_upgrade()
+# https://github.com/longhorn/longhorn/issues/4726
+@pytest.mark.skip(reason="TODO")  # NOQA
+def test_upgrade_with_auto_upgrade_latest_engine_enabled():
+    """
+    1. Deploy Longhorn stable version
+    2. Set Concurrent Automatic Engine Upgrade Per Node Limit to > 0
+    3. Create a volume and attach it
+    4. Deploy longhornio/longhorn-engine:master-head and wait for it
+       to be deployed. This step is to make sure to expose the race condition
+       that Longhorn tries auto engine upgrade while the new default IM is
+       still starting
+    5. Upgrade Longhorn to master-head
+    6. Observe volume engine image upgrade success.
+    """
