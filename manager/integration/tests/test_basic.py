@@ -4621,3 +4621,32 @@ def test_backup_volume_restore_with_access_mode(core_api, # NOQA
                          fromBackup=b.url)
     volume_sp_access_mode = client.by_id_volume(volume_name_sp_access_mode)
     assert volume_sp_access_mode.accessMode == overridden_restored_access_mode
+
+
+@pytest.mark.skip(reason="TODO")  # NOQA
+def test_delete_backup_during_restoring_volume():  # NOQA
+    """
+    Test delete backup during restoring volume
+
+    Context:
+
+    The volume robustness should be faulted if the backup was deleted during
+    restoring the volume.
+
+    Setup:
+
+    1. Create a volume v1 and attach to a node
+    2. Write some data (>100M) to volume v1
+
+    Steps:
+
+    1. Create a backup of volume v1
+    2. Wait for that backup is completed
+    3. Start to restore a volume v2 from this backup
+       (Not wait for restoration completed)
+    4. Delete the backup immediately
+    5. Check that volume v2 "robustness" is "faulted" and
+       the status of volume restore condition is "False",
+       the reason of volume restore condition is "RestoreFailure"
+    """
+    pass
