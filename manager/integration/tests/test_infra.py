@@ -59,7 +59,7 @@ def wait_for_node_down_k8s(node_name, k8s_api_client):
             node_down = True
             break
         else:
-            time.sleep(RETRY_INTERVAL)
+            time.sleep(RETRY_INTERVAL_LONG)
             continue
     return node_down
 
@@ -109,7 +109,7 @@ def wait_for_node_down_aws(cloudprovider, node):
             aws_node_down = True
             break
         else:
-            time.sleep(RETRY_INTERVAL)
+            time.sleep(RETRY_INTERVAL_LONG)
             continue
 
     return aws_node_down
@@ -239,9 +239,9 @@ def test_offline_node(reset_cluster_ready_status):
     print(f'==> stop node: {node_name}')
 
     cloudprovider.instance_stop(node)
-    wait_for_node_down_aws(cloudprovider, node)
+    aws_node_down = wait_for_node_down_aws(cloudprovider, node)
+    assert aws_node_down
     k8s_node_down = wait_for_node_down_k8s(node_name, k8s_api_client)
-
     assert k8s_node_down
 
     longhorn_api_client = get_longhorn_api_client()
