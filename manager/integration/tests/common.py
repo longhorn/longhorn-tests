@@ -1513,6 +1513,7 @@ def cleanup_client():
         cleanup_all_backing_images(client)
 
     cleanup_storage_class()
+    system_restores_cleanup(client)
 
     cleanup_all_support_bundles(client)
 
@@ -5364,3 +5365,96 @@ def create_volume_and_write_data(client, volume_name, volume_size=SIZE):
     volume_data = write_volume_random_data(volume)
 
     return volume, volume_data
+
+
+def system_backups_cleanup(client):
+    """
+    Clean up all system backups
+    :param client: The Longhorn client to use in the request.
+    """
+
+    system_backups = client.list_system_backup()
+    for system_backup in system_backups:
+        # ignore the error when clean up
+        try:
+            client.delete(system_backup)
+        except Exception as e:
+            name = system_backup['name']
+            print("\nException when cleanup system backup ", name)
+            print(e)
+
+    ok = False
+    for _ in range(RETRY_COUNTS):
+        system_backups = client.list_system_backup()
+        if len(system_backups) == 0:
+            ok = True
+            break
+        time.sleep(RETRY_INTERVAL)
+    assert ok
+
+
+def system_backup_random_name():
+    return "test-system-backup-" + \
+        ''.join(random.choice(string.ascii_lowercase + string.digits)
+                for _ in range(6))
+
+
+def system_backup_wait_for_state(state, name, client):  # NOQA
+    ok = False
+    for _ in range(RETRY_COUNTS):
+        try:
+            system_backup = client.by_id_system_backup(name)
+            assert system_backup.state == state
+            ok = True
+            break
+        except Exception:
+            time.sleep(RETRY_INTERVAL)
+
+    assert ok
+
+
+def system_restores_cleanup(client):
+    """
+    Clean up all system restores
+    :param client: The Longhorn client to use in the request.
+    """
+
+    system_restores = client.list_system_restore()
+    for system_restore in system_restores:
+        # ignore the error when clean up
+        try:
+            client.delete(system_restore)
+        except Exception as e:
+            name = system_restore['name']
+            print("\nException when cleanup system restore ", name)
+            print(e)
+
+    ok = False
+    for _ in range(RETRY_COUNTS):
+        system_restores = client.list_system_restore()
+        if len(system_restores) == 0:
+            ok = True
+            break
+        time.sleep(RETRY_INTERVAL)
+    assert ok
+
+
+def system_restore_random_name():
+    return "test-system-restore-" + \
+        ''.join(random.choice(string.ascii_lowercase + string.digits)
+                for _ in range(6))
+
+
+def system_restore_wait_for_state(state, name, client):  # NOQA
+    ok = False
+    for _ in range(RETRY_COUNTS):
+        system_restore = client.by_id_system_restore(name)
+        try:
+            system_restore = client.by_id_system_restore(name)
+            assert system_restore.state == state
+            ok = True
+            break
+        except Exception:
+            time.sleep(RETRY_INTERVAL_LONG)
+
+    assert ok
