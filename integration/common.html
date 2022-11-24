@@ -1528,6 +1528,7 @@ def cleanup_client():
     reset_node(client)
     reset_settings(client)
     reset_disks_for_all_nodes(client)
+    scale_up_engine_image_daemonset(client)
     reset_engine_image(client)
     wait_for_all_instance_manager_running(client)
 
@@ -3151,6 +3152,26 @@ def reset_engine_image(client):
         time.sleep(RETRY_INTERVAL)
 
     assert ready
+
+
+# ensure that the engine image daemonset scale up for longhorn
+# after scaling down daemonset
+def scale_up_engine_image_daemonset(client):
+    apps_api = get_apps_api_client()
+    default_img = get_default_engine_image(client)
+    ds_name = &#34;engine-image-&#34; + default_img.name
+    body = [{
+        &#34;op&#34;: &#34;replace&#34;,
+        &#34;path&#34;: &#34;/spec/template/spec/nodeSelector&#34;,
+        &#34;value&#34;: None
+    }]
+    try:
+        apps_api.patch_namespaced_daemon_set(
+            name=ds_name, namespace=&#39;longhorn-system&#39;, body=body)
+    except ApiException as e:
+        # for scaling up a running daemond set,
+        # the status_code is 422 server error.
+        assert e.status == 422
 
 
 def wait_for_all_instance_manager_running(client):
@@ -5911,6 +5932,7 @@ properly.
     reset_node(client)
     reset_settings(client)
     reset_disks_for_all_nodes(client)
+    scale_up_engine_image_daemonset(client)
     reset_engine_image(client)
     wait_for_all_instance_manager_running(client)
 
@@ -9750,6 +9772,33 @@ output of the command executed in the pod.</p></div>
     return data_checksum, output, restore_pod_name</code></pre>
 </details>
 </dd>
+<dt id="tests.common.scale_up_engine_image_daemonset"><code class="name flex">
+<span>def <span class="ident">scale_up_engine_image_daemonset</span></span>(<span>client)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def scale_up_engine_image_daemonset(client):
+    apps_api = get_apps_api_client()
+    default_img = get_default_engine_image(client)
+    ds_name = &#34;engine-image-&#34; + default_img.name
+    body = [{
+        &#34;op&#34;: &#34;replace&#34;,
+        &#34;path&#34;: &#34;/spec/template/spec/nodeSelector&#34;,
+        &#34;value&#34;: None
+    }]
+    try:
+        apps_api.patch_namespaced_daemon_set(
+            name=ds_name, namespace=&#39;longhorn-system&#39;, body=body)
+    except ApiException as e:
+        # for scaling up a running daemond set,
+        # the status_code is 422 server error.
+        assert e.status == 422</code></pre>
+</details>
+</dd>
 <dt id="tests.common.scheduling_api"><code class="name flex">
 <span>def <span class="ident">scheduling_api</span></span>(<span>request)</span>
 </code></dt>
@@ -13196,6 +13245,7 @@ from the args and kwargs arguments, respectively.</p></div>
 <li><code><a title="tests.common.reset_node" href="#tests.common.reset_node">reset_node</a></code></li>
 <li><code><a title="tests.common.reset_settings" href="#tests.common.reset_settings">reset_settings</a></code></li>
 <li><code><a title="tests.common.restore_backup_and_get_data_checksum" href="#tests.common.restore_backup_and_get_data_checksum">restore_backup_and_get_data_checksum</a></code></li>
+<li><code><a title="tests.common.scale_up_engine_image_daemonset" href="#tests.common.scale_up_engine_image_daemonset">scale_up_engine_image_daemonset</a></code></li>
 <li><code><a title="tests.common.scheduling_api" href="#tests.common.scheduling_api">scheduling_api</a></code></li>
 <li><code><a title="tests.common.set_k8s_node_zone_label" href="#tests.common.set_k8s_node_zone_label">set_k8s_node_zone_label</a></code></li>
 <li><code><a title="tests.common.set_node_scheduling" href="#tests.common.set_node_scheduling">set_node_scheduling</a></code></li>
