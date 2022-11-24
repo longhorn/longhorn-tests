@@ -1496,6 +1496,7 @@ def cleanup_client():
     reset_node(client)
     reset_settings(client)
     reset_disks_for_all_nodes(client)
+    scale_up_engine_image_daemonset(client)
     reset_engine_image(client)
     wait_for_all_instance_manager_running(client)
 
@@ -3119,6 +3120,26 @@ def reset_engine_image(client):
         time.sleep(RETRY_INTERVAL)
 
     assert ready
+
+
+# ensure that the engine image daemonset scale up for longhorn
+# after scaling down daemonset
+def scale_up_engine_image_daemonset(client):
+    apps_api = get_apps_api_client()
+    default_img = get_default_engine_image(client)
+    ds_name = "engine-image-" + default_img.name
+    body = [{
+        "op": "replace",
+        "path": "/spec/template/spec/nodeSelector",
+        "value": None
+    }]
+    try:
+        apps_api.patch_namespaced_daemon_set(
+            name=ds_name, namespace='longhorn-system', body=body)
+    except ApiException as e:
+        # for scaling up a running daemond set,
+        # the status_code is 422 server error.
+        assert e.status == 422
 
 
 def wait_for_all_instance_manager_running(client):
