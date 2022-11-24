@@ -58,6 +58,8 @@ image:
       repository: longhornio/longhorn-manager
     shareManager:
       repository: longhornio/longhorn-share-manager
+    supportBundleManager
+      repository: longhornio/support-bundle-kit
     ui:
       repository: longhornio/longhorn-ui
 EOF
