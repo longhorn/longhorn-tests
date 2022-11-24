@@ -335,7 +335,24 @@ def test_upgrade(longhorn_upgrade_type,
     res_pod_md5sum = get_pod_data_md5sum(core_api, pod_name, pod_data_path)
     assert res_pod_md5sum == pod_md5sum
 
-    check_volume_data(volume1, volume1_data)</code></pre>
+    check_volume_data(volume1, volume1_data)
+
+
+# Need add this test case into test_upgrade()
+# https://github.com/longhorn/longhorn/issues/4726
+@pytest.mark.skip(reason=&#34;TODO&#34;)  # NOQA
+def test_upgrade_with_auto_upgrade_latest_engine_enabled():
+    &#34;&#34;&#34;
+    1. Deploy Longhorn stable version
+    2. Set Concurrent Automatic Engine Upgrade Per Node Limit to &gt; 0
+    3. Create a volume and attach it
+    4. Deploy longhornio/longhorn-engine:master-head and wait for it
+       to be deployed. This step is to make sure to expose the race condition
+       that Longhorn tries auto engine upgrade while the new default IM is
+       still starting
+    5. Upgrade Longhorn to master-head
+    6. Observe volume engine image upgrade success.
+    &#34;&#34;&#34;</code></pre>
 </details>
 </section>
 <section>
@@ -651,6 +668,40 @@ def test_upgrade(longhorn_upgrade_type,
     check_volume_data(volume1, volume1_data)</code></pre>
 </details>
 </dd>
+<dt id="tests.test_upgrade.test_upgrade_with_auto_upgrade_latest_engine_enabled"><code class="name flex">
+<span>def <span class="ident">test_upgrade_with_auto_upgrade_latest_engine_enabled</span></span>(<span>)</span>
+</code></dt>
+<dd>
+<div class="desc"><ol>
+<li>Deploy Longhorn stable version</li>
+<li>Set Concurrent Automatic Engine Upgrade Per Node Limit to &gt; 0</li>
+<li>Create a volume and attach it</li>
+<li>Deploy longhornio/longhorn-engine:master-head and wait for it
+to be deployed. This step is to make sure to expose the race condition
+that Longhorn tries auto engine upgrade while the new default IM is
+still starting</li>
+<li>Upgrade Longhorn to master-head</li>
+<li>Observe volume engine image upgrade success.</li>
+</ol></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@pytest.mark.skip(reason=&#34;TODO&#34;)  # NOQA
+def test_upgrade_with_auto_upgrade_latest_engine_enabled():
+    &#34;&#34;&#34;
+    1. Deploy Longhorn stable version
+    2. Set Concurrent Automatic Engine Upgrade Per Node Limit to &gt; 0
+    3. Create a volume and attach it
+    4. Deploy longhornio/longhorn-engine:master-head and wait for it
+       to be deployed. This step is to make sure to expose the race condition
+       that Longhorn tries auto engine upgrade while the new default IM is
+       still starting
+    5. Upgrade Longhorn to master-head
+    6. Observe volume engine image upgrade success.
+    &#34;&#34;&#34;</code></pre>
+</details>
+</dd>
 <dt id="tests.test_upgrade.upgrade_longhorn_backing_image_manager_image"><code class="name flex">
 <span>def <span class="ident">upgrade_longhorn_backing_image_manager_image</span></span>(<span>request)</span>
 </code></dt>
@@ -771,6 +822,7 @@ def upgrade_longhorn_share_manager_image(request):
 <li><code><a title="tests.test_upgrade.longhorn_upgrade" href="#tests.test_upgrade.longhorn_upgrade">longhorn_upgrade</a></code></li>
 <li><code><a title="tests.test_upgrade.longhorn_upgrade_type" href="#tests.test_upgrade.longhorn_upgrade_type">longhorn_upgrade_type</a></code></li>
 <li><code><a title="tests.test_upgrade.test_upgrade" href="#tests.test_upgrade.test_upgrade">test_upgrade</a></code></li>
+<li><code><a title="tests.test_upgrade.test_upgrade_with_auto_upgrade_latest_engine_enabled" href="#tests.test_upgrade.test_upgrade_with_auto_upgrade_latest_engine_enabled">test_upgrade_with_auto_upgrade_latest_engine_enabled</a></code></li>
 <li><code><a title="tests.test_upgrade.upgrade_longhorn_backing_image_manager_image" href="#tests.test_upgrade.upgrade_longhorn_backing_image_manager_image">upgrade_longhorn_backing_image_manager_image</a></code></li>
 <li><code><a title="tests.test_upgrade.upgrade_longhorn_engine_image" href="#tests.test_upgrade.upgrade_longhorn_engine_image">upgrade_longhorn_engine_image</a></code></li>
 <li><code><a title="tests.test_upgrade.upgrade_longhorn_instance_manager_image" href="#tests.test_upgrade.upgrade_longhorn_instance_manager_image">upgrade_longhorn_instance_manager_image</a></code></li>
