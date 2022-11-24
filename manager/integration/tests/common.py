@@ -326,6 +326,7 @@ def cleanup_all_volumes(client):
         # ignore the error when clean up
         try:
             client.delete(v)
+            wait_for_volume_delete(client, v.name)
         except Exception as e:
             print("\nException when cleanup volume ", v)
             print(e)
@@ -1483,13 +1484,13 @@ def cleanup_client():
     client = get_longhorn_api_client()
     enable_default_disk(client)
 
+    cleanup_all_volumes(client)
+
     # cleanup test disks
     cleanup_test_disks(client)
 
     if recurring_job_feature_supported(client):
         cleanup_all_recurring_jobs(client)
-
-    cleanup_all_volumes(client)
 
     if backing_image_feature_supported(client):
         cleanup_all_backing_images(client)
