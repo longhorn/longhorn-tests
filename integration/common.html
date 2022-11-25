@@ -4022,10 +4022,10 @@ def wait_for_expansion_failure(client, volume_name, last_failed_at=&#34;&#34;):
     assert failed
 
 
-def wait_for_rebuild_complete(client, volume_name):
+def wait_for_rebuild_complete(client, volume_name, retry_count=RETRY_COUNTS):
     completed = 0
     rebuild_statuses = {}
-    for i in range(RETRY_COUNTS):
+    for i in range(retry_count):
         completed = 0
         v = client.by_id_volume(volume_name)
         rebuild_statuses = v.rebuildStatus
@@ -11925,7 +11925,7 @@ ref: <a href="https://github.com/longhorn/longhorn/issues/4814">https://github.c
 </details>
 </dd>
 <dt id="tests.common.wait_for_rebuild_complete"><code class="name flex">
-<span>def <span class="ident">wait_for_rebuild_complete</span></span>(<span>client, volume_name)</span>
+<span>def <span class="ident">wait_for_rebuild_complete</span></span>(<span>client, volume_name, retry_count=150)</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -11933,10 +11933,10 @@ ref: <a href="https://github.com/longhorn/longhorn/issues/4814">https://github.c
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def wait_for_rebuild_complete(client, volume_name):
+<pre><code class="python">def wait_for_rebuild_complete(client, volume_name, retry_count=RETRY_COUNTS):
     completed = 0
     rebuild_statuses = {}
-    for i in range(RETRY_COUNTS):
+    for i in range(retry_count):
         completed = 0
         v = client.by_id_volume(volume_name)
         rebuild_statuses = v.rebuildStatus
