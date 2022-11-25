@@ -82,6 +82,9 @@ from common import VOLUME_HEAD_NAME
 from common import set_node_scheduling
 from common import SETTING_FAILED_BACKUP_TTL
 from common import wait_for_volume_creation
+from common import create_host_disk, get_update_disks, update_node_disks
+from common import wait_for_disk_status, wait_for_rebuild_start, wait_for_rebuild_complete # NOQA
+from common import RETRY_BACKUP_COUNTS
 
 from backupstore import backupstore_delete_volume_cfg_file
 from backupstore import backupstore_cleanup
@@ -4392,42 +4395,140 @@ def snapshot_prune_and_coalesce_simultaneously(client, volume_name, backing_imag
     assert cksum_after == cksum_before
 
 
-@pytest.mark.skip(reason="TODO")  # NOQA
-def test_space_usage_for_rebuilding_only_volume():  # NOQA
+def prepare_space_usage_for_rebuilding_only_volume(client): # NOQA
     """
-    Test the space usage of a volume with rebuilding only.
-
-    Prepare:
     1. Create a 7Gi volume and attach to the node.
     2. Make a filesystem then mount this volume.
     3. Make this volume as a disk of the node, and disable the scheduling for
        the default disk.
-
-    Case 1: the worst scenario
-    1. Create a new volume with 2Gi spec size.
-    2. Write 2Gi data (using `dd`) to the volume.
-    3. Take a snapshot then mark this snapshot as Removed.
-       (this snapshot won't be deleted immediately.)
-    4. Write 2Gi data (using `dd`) to the volume again.
-    5. Delete a random replica to trigger the rebuilding.
-    6. Write 2Gi data once the rebuilding is trigger (new replica is created).
-    7. Wait for the rebuilding complete. And verify the volume actual size
-       won't be greater than 3x of the volume spec size.
-    8. Delete the volume.
-
-    Case 2: the normal scenario
-    1. Create a new volume with 3Gi spec size.
-    2. Write 3Gi data (using `dd`) to the volume.
-    3. Take a snapshot then mark this snapshot as Removed.
-       (this snapshot won't be deleted immediately.)
-    4. Write 3Gi data (using `dd`) to the volume again.
-    5. Delete a random replica to trigger the rebuilding.
-    6. Wait for the rebuilding complete. And verify the volume actual size
-       won't be greater than 2x of the volume spec size.
-    7. Delete the volume.
-
     """
-    pass
+    disk_volname = "vol-disk"
+    lht_hostId = get_self_host_id()
+    node = client.by_id_node(lht_hostId)
+    extra_disk_path = create_host_disk(client, disk_volname,
+                                       str(7 * Gi), lht_hostId)
+
+    extra_disk = {"path": extra_disk_path, "allowScheduling": True}
+    update_disks = get_update_disks(node.disks)
+    update_disks["extra-disk"] = extra_disk
+    node = update_node_disks(client, node.name, disks=update_disks,
+                             retry=True)
+    node = common.wait_for_disk_update(client, lht_hostId,
+                                       len(update_disks))
+
+    for fsid, disk in iter(node.disks.items()):
+        if disk.path != extra_disk_path:
+            disk.allowScheduling = False
+            update_disks = get_update_disks(node.disks)
+            update_node_disks(client, node.name, disks=update_disks,
+                              retry=True)
+            node = wait_for_disk_status(client, node.name,
+                                        fsid,
+                                        "allowScheduling", False)
+
+            break
+
+
+def test_space_usage_for_rebuilding_only_volume(client, volume_name, request):  # NOQA
+    """
+    Test case: the normal scenario
+    1. Prepare a 7Gi volume as a node disk.
+    2. Create a new volume with 3Gi spec size.
+    3. Write 3Gi data (using `dd`) to the volume.
+    4. Take a snapshot then mark this snapshot as Removed.
+       (this snapshot won't be deleted immediately.)
+    5. Write 3Gi data (using `dd`) to the volume again.
+    6. Delete a random replica to trigger the rebuilding.
+    7. Wait for the rebuilding complete. And verify the volume actual size
+       won't be greater than 2x of the volume spec size.
+    8. Delete the volume.
+    """
+    prepare_space_usage_for_rebuilding_only_volume(client)
+
+    lht_hostId = get_self_host_id()
+    volume = create_and_check_volume(client, volume_name, size=str(3 * Gi))
+    volume.attach(hostId=lht_hostId)
+    volume = common.wait_for_volume_healthy(client, volume_name)
+
+    snap_offset = 1
+    volume_endpoint = get_volume_endpoint(volume)
+    write_volume_dev_random_mb_data(volume_endpoint,
+                                    snap_offset, 3000)
+
+    snap2 = create_snapshot(client, volume_name)
+    volume.snapshotDelete(name=snap2.name)
+    volume.snapshotPurge()
+    wait_for_snapshot_purge(client, volume_name, snap2.name)
+
+    write_volume_dev_random_mb_data(volume_endpoint,
+                                    snap_offset, 3000)
+
+    for r in volume.replicas:
+        if r.hostId != lht_hostId:
+            volume.replicaRemove(name=r.name)
+            break
+
+    wait_for_volume_degraded(client, volume_name)
+    wait_for_rebuild_start(client, volume_name)
+    wait_for_rebuild_complete(client, volume_name, RETRY_BACKUP_COUNTS)
+    volume = client.by_id_volume(volume_name)
+
+    actual_size = int(volume.controllers[0].actualSize)
+    spec_size = int(volume.size)
+
+    assert actual_size/spec_size <= 2
+
+
+def test_space_usage_for_rebuilding_only_volume_worst_scenario(client, volume_name, request):  # NOQA
+    """
+    Test case: worst scenario
+    1. Prepare a 7Gi volume as a node disk.
+    2. Create a new volume with 2Gi spec size.
+    3. Write 2Gi data (using `dd`) to the volume.
+    4. Take a snapshot then mark this snapshot as Removed.
+       (this snapshot won't be deleted immediately.)
+    5. Write 2Gi data (using `dd`) to the volume again.
+    6. Delete a random replica to trigger the rebuilding.
+    7. Write 2Gi data once the rebuilding is trigger (new replica is created).
+    8. Wait for the rebuilding complete. And verify the volume actual size
+       won't be greater than 3x of the volume spec size.
+    9. Delete the volume.
+    """
+    prepare_space_usage_for_rebuilding_only_volume(client)
+
+    lht_hostId = get_self_host_id()
+    volume = create_and_check_volume(client, volume_name, size=str(2 * Gi))
+    volume.attach(hostId=lht_hostId)
+    volume = common.wait_for_volume_healthy(client, volume_name)
+
+    snap_offset = 1
+    volume_endpoint = get_volume_endpoint(volume)
+    write_volume_dev_random_mb_data(volume_endpoint,
+                                    snap_offset, 2000)
+    snap1 = create_snapshot(client, volume_name)
+    volume.snapshotDelete(name=snap1.name)
+    volume.snapshotPurge()
+    wait_for_snapshot_purge(client, volume_name, snap1.name)
+
+    write_volume_dev_random_mb_data(volume_endpoint,
+                                    snap_offset, 2000)
+
+    for r in volume.replicas:
+        if r.hostId != lht_hostId:
+            volume.replicaRemove(name=r.name)
+            break
+
+    wait_for_volume_degraded(client, volume_name)
+    wait_for_rebuild_start(client, volume_name)
+    write_volume_dev_random_mb_data(volume_endpoint,
+                                    snap_offset, 2000)
+
+    wait_for_rebuild_complete(client, volume_name)
+    volume = client.by_id_volume(volume_name)
+
+    actual_size = int(volume.controllers[0].actualSize)
+    spec_size = int(volume.size)
+    assert actual_size/spec_size <= 3
 
 
 def backup_failed_cleanup(client, core_api, volume_name, volume_size,  # NOQA
