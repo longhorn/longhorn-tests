@@ -34,6 +34,9 @@ from common import write_pod_volume_data
 from common import read_volume_data
 from common import settings_reset # NOQA
 from common import client, core_api # NOQA
+from common import update_setting, get_engine_image_status_value
+from common import wait_for_engine_image_state, wait_for_volume_current_image
+from common import SETTING_CONCURRENT_AUTO_ENGINE_UPGRADE_NODE_LIMIT
 
 
 @pytest.fixture
@@ -132,23 +135,28 @@ def test_upgrade(longhorn_upgrade_type,
       - Disable Auto Salvage Setting
 
     1. Find the upgrade image tag
-    2. Create a volume, generate and write data into the volume.
+    2. Set Concurrent Automatic Engine Upgrade Per Node Limit to 3
+    3. Deploy <upgrade_longhorn_engine_image>: and wait for it
+       to be deployed. This step is to make sure to expose the race condition
+       that Longhorn tries auto engine upgrade while the new default IM is
+       still starting
+    4. Create a volume, generate and write data into the volume.
         1. Create a volume with revision counter enabled case.
         2. Create a volume with revision counter disabled case.
-    3. Create a Pod using a volume, generate and write data
-    4. Create a StatefulSet with 2 replicas,
+    5. Create a Pod using a volume, generate and write data
+    6. Create a StatefulSet with 2 replicas,
        generate and write data to their volumes
-    5. Keep all volumes attached
-    6. Upgrade Longhorn system.
-    7. Check Pod and StatefulSet didn't restart after upgrade
-    8. Check All volumes data
-    9. Write data to StatefulSet pods, and Attached volume
-    10. Check data written to StatefulSet pods, and attached volume.
-    11. Detach the volume, and Delete Pod, and
+    7. Keep all volumes attached
+    8. Upgrade Longhorn system.
+    9. Check Pod and StatefulSet didn't restart after upgrade
+    10. Check All volumes data
+    11. Write data to StatefulSet pods, and Attached volume
+    12. Check data written to StatefulSet pods, and attached volume.
+    13. Detach the volume, and Delete Pod, and
         StatefulSet to detach theirvolumes
-    12. Upgrade all volumes engine images.
-    13. Attach the volume, and recreate Pod, and StatefulSet
-    14. Check All volumes data
+    14. Wiat all volumes engine image upgraded
+    15. Attach the volume, and recreate Pod, and StatefulSet
+    16. Check All volumes data
     """
     longhorn_repo_url = upgrade_longhorn_repo_url
     longhorn_repo_branch = upgrade_longhorn_repo_branch
@@ -169,6 +177,22 @@ def test_upgrade(longhorn_upgrade_type,
 
     assert setting.name == SETTING_AUTO_SALVAGE
     assert setting.value == "false"
+
+    update_setting(client,
+                   SETTING_CONCURRENT_AUTO_ENGINE_UPGRADE_NODE_LIMIT,
+                   "3")
+
+    engine_upgrade_image = \
+        client.create_engine_image(image=longhorn_engine_image)
+    engine_upgrade_image_name = engine_upgrade_image.name
+    ei_status_value = get_engine_image_status_value(client,
+                                                    engine_upgrade_image_name)
+    engine_upgrade_image = \
+        wait_for_engine_image_state(client,
+                                    engine_upgrade_image_name,
+                                    ei_status_value)
+    assert engine_upgrade_image.refCount == 0
+    assert engine_upgrade_image.noRefSince != ""
 
     # Create Volume attached to a node.
     volume1 = create_and_check_volume(client,
@@ -267,16 +291,7 @@ def test_upgrade(longhorn_upgrade_type,
     volumes = client.list_volume()
     for v in volumes:
         wait_for_volume_detached(client, v.name)
-
-    engineimages = client.list_engine_image()
-    for ei in engineimages:
-        if ei.image == longhorn_engine_image:
-            new_ei = ei
-
-    volumes = client.list_volume()
-    for v in volumes:
-        volume = client.by_id_volume(v.name)
-        volume.engineUpgrade(image=new_ei.image)
+        wait_for_volume_current_image(client, v.name, longhorn_engine_image)
 
     statefulset['spec']['replicas'] = replicas = 2
     apps_api = get_apps_api_client()
@@ -308,20 +323,3 @@ def test_upgrade(longhorn_upgrade_type,
     assert res_pod_md5sum == pod_md5sum
 
     check_volume_data(volume1, volume1_data)
-
-
-# Need add this test case into test_upgrade()
-# https://github.com/longhorn/longhorn/issues/4726
-@pytest.mark.skip(reason="TODO")  # NOQA
-def test_upgrade_with_auto_upgrade_latest_engine_enabled():
-    """
-    1. Deploy Longhorn stable version
-    2. Set Concurrent Automatic Engine Upgrade Per Node Limit to > 0
-    3. Create a volume and attach it
-    4. Deploy longhornio/longhorn-engine:master-head and wait for it
-       to be deployed. This step is to make sure to expose the race condition
-       that Longhorn tries auto engine upgrade while the new default IM is
-       still starting
-    5. Upgrade Longhorn to master-head
-    6. Observe volume engine image upgrade success.
-    """
