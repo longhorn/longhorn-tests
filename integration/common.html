@@ -208,6 +208,7 @@ SETTING_ORPHAN_AUTO_DELETION = &#34;orphan-auto-deletion&#34;
 SETTING_FAILED_BACKUP_TTL = &#34;failed-backup-ttl&#34;
 SETTING_CONCURRENT_AUTO_ENGINE_UPGRADE_NODE_LIMIT = \
     &#34;concurrent-automatic-engine-upgrade-per-node-limit&#34;
+SETTING_SUPPORT_BUNDLE_FAILED_LIMIT = &#34;support-bundle-failed-history-limit&#34;
 
 CSI_UNKNOWN = 0
 CSI_TRUE = 1
@@ -1526,6 +1527,8 @@ def cleanup_client():
         cleanup_all_backing_images(client)
 
     cleanup_storage_class()
+
+    cleanup_all_support_bundles(client)
 
     # enable nodes scheduling
     reset_node(client)
@@ -3119,7 +3122,25 @@ def reset_settings(client):
         setting_default_value = setting.definition.default
         setting_readonly = setting.definition.readOnly
 
+        # We don&#39;t provide the setup for the storage network, hence there is no
+        # default value. We need to skip here to avoid test failure when
+        # resetting this to an empty default value.
         if setting_name == &#34;storage-network&#34;:
+            continue
+
+        # The version of the support bundle kit will be specified by a command
+        # option when starting the manager. And setting requires a value.
+        #
+        # Longhorn has a default version for each release provided to the
+        # manager when starting. Meaning this setting doesn&#39;t have a default
+        # value.
+        #
+        # The design grants the ability to update later by cases for
+        # troubleshooting purposes. Meaning this setting is editable.
+        #
+        # So we need to skip here to avoid test failure when resetting this to
+        # an empty default value.
+        if setting_name == &#34;support-bundle-manager-image&#34;:
             continue
 
         s = client.by_id_setting(setting_name)
@@ -4221,9 +4242,9 @@ def wait_and_get_any_deployment_pod(core_api, deployment_name,
     assert False
 
 
-def wait_delete_deployment(apps_api, deployment_name):
+def wait_delete_deployment(apps_api, deployment_name, namespace=&#39;default&#39;):
     for i in range(DEFAULT_DEPLOYMENT_TIMEOUT):
-        ret = apps_api.list_namespaced_deployment(namespace=&#39;default&#39;)
+        ret = apps_api.list_namespaced_deployment(namespace=namespace)
         found = False
         for item in ret.items:
             if item.metadata.name == deployment_name:
@@ -4244,7 +4265,7 @@ def delete_and_wait_deployment(apps_api, deployment_name, namespace=&#39;default
     except ApiException as e:
         assert e.status == 404
 
-    wait_delete_deployment(apps_api, deployment_name)
+    wait_delete_deployment(apps_api, deployment_name, namespace)
 
 
 def get_deployment_pod_names(core_api, deployment):
@@ -4994,7 +5015,111 @@ def restore_backup_and_get_data_checksum(client, core_api, backup, pod,
     return data_checksum, output, restore_pod_name
 
 
-def generate_support_bundle(case_name):
+def cleanup_all_support_bundles(client):
+    &#34;&#34;&#34;
+    Clean up all support bundles
+    :param client: The Longhorn client to use in the request.
+    &#34;&#34;&#34;
+
+    support_bundles = client.list_support_bundle()
+    for support_bundle in support_bundles:
+        id = support_bundle[&#39;id&#39;]
+        name = support_bundle[&#39;name&#39;]
+        # ignore the error when clean up
+        try:
+            delete_support_bundle(id, name, client)
+        except Exception as e:
+            print(&#34;\nException when cleanup support_bundle &#34;, support_bundle)
+            print(e)
+
+    ok = False
+    for _ in range(RETRY_COUNTS):
+        support_bundles = client.list_support_bundle()
+        if len(support_bundles) == 0:
+            ok = True
+            break
+        time.sleep(RETRY_INTERVAL)
+    assert ok
+
+
+def check_all_support_bundle_managers_deleted():
+    apps_api = get_apps_api_client()
+    deployments = get_all_support_bundle_manager_deployments(apps_api)
+    for support_bundle_manager in deployments:
+        wait_delete_deployment(apps_api, support_bundle_manager.metadata.name,
+                               namespace=LONGHORN_NAMESPACE)
+
+    assert len(get_all_support_bundle_manager_deployments(apps_api)) == 0
+
+
+def create_support_bundle(client):  # NOQA
+    data = {&#39;description&#39;: &#39;Test&#39;, &#39;issueURL&#39;: &#34;&#34;}
+    return requests.post(get_support_bundle_url(client), json=data).json()
+
+
+def delete_support_bundle(node_id, name, client):
+    url = get_support_bundle_url(client)
+    support_bundle_url = &#39;{}/{}/{}&#39;.format(url, node_id, name)
+    return requests.delete(support_bundle_url)
+
+
+def download_support_bundle(node_id, name, client):  # NOQA
+    url = get_support_bundle_url(client)
+    support_bundle_url = &#39;{}/{}/{}&#39;.format(url, node_id, name)
+    download_url = &#39;{}/download&#39;.format(support_bundle_url)
+    r = requests.get(download_url, allow_redirects=True, timeout=300)
+    r.raise_for_status()
+
+
+def get_all_support_bundle_manager_deployments(apps_api):  # NOQA
+    name_prefix = &#39;longhorn-support-bundle-manager&#39;
+    support_bundle_managers = []
+
+    deployments = apps_api.list_namespaced_deployment(LONGHORN_NAMESPACE)
+    for deployment in deployments.items:
+        if deployment.metadata.name.startswith(name_prefix):
+            support_bundle_managers.append(deployment)
+
+    return support_bundle_managers
+
+
+def get_support_bundle_url(client):  # NOQA
+    return client._url.replace(&#39;schemas&#39;, &#39;supportbundles&#39;)
+
+
+def get_support_bundle(node_id, name, client):  # NOQA
+    url = get_support_bundle_url(client)
+    support_bundle_url = &#39;{}/{}/{}&#39;.format(url, node_id, name)
+    return requests.get(support_bundle_url).json()
+
+
+def wait_for_support_bundle_cleanup(client):  # NOQA
+    ok = False
+    for _ in range(RETRY_COUNTS):
+        support_bundles = client.list_support_bundle()
+        if len(support_bundles) == 0:
+            ok = True
+            break
+
+        time.sleep(RETRY_INTERVAL)
+    assert ok
+
+
+def wait_for_support_bundle_state(state, node_id, name, client):  # NOQA
+    ok = False
+    for _ in range(RETRY_COUNTS):
+        support_bundle = get_support_bundle(node_id, name, client)
+        try:
+            assert support_bundle[&#39;state&#39;] == state
+            ok = True
+            break
+        except Exception:
+            time.sleep(RETRY_INTERVAL)
+
+    assert ok
+
+
+def generate_support_bundle(case_name):  # NOQA
     &#34;&#34;&#34;
         Generate support bundle into folder ./support_bundle/case_name.zip
 
@@ -5014,10 +5139,11 @@ def generate_support_bundle(case_name):
 
     # Use API gen support bundle
     client = get_longhorn_api_client()
+    cleanup_all_support_bundles(client)
+
     url = client._url.replace(&#39;schemas&#39;, &#39;supportbundles&#39;)
     data = {&#39;description&#39;: case_name, &#39;issueURL&#39;: case_name}
     res = requests.post(url, json=data).json()
-
     id = res[&#39;id&#39;]
     name = res[&#39;name&#39;]
 
@@ -5399,6 +5525,25 @@ def batch_v1_api(request):
     api = k8sclient.BatchV1Api()
 
     return api</code></pre>
+</details>
+</dd>
+<dt id="tests.common.check_all_support_bundle_managers_deleted"><code class="name flex">
+<span>def <span class="ident">check_all_support_bundle_managers_deleted</span></span>(<span>)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def check_all_support_bundle_managers_deleted():
+    apps_api = get_apps_api_client()
+    deployments = get_all_support_bundle_manager_deployments(apps_api)
+    for support_bundle_manager in deployments:
+        wait_delete_deployment(apps_api, support_bundle_manager.metadata.name,
+                               namespace=LONGHORN_NAMESPACE)
+
+    assert len(get_all_support_bundle_manager_deployments(apps_api)) == 0</code></pre>
 </details>
 </dd>
 <dt id="tests.common.check_backing_image_disk_map_status"><code class="name flex">
@@ -5871,6 +6016,43 @@ properly.
     wait_for_recurring_jobs_cleanup(client)</code></pre>
 </details>
 </dd>
+<dt id="tests.common.cleanup_all_support_bundles"><code class="name flex">
+<span>def <span class="ident">cleanup_all_support_bundles</span></span>(<span>client)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Clean up all support bundles
+:param client: The Longhorn client to use in the request.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def cleanup_all_support_bundles(client):
+    &#34;&#34;&#34;
+    Clean up all support bundles
+    :param client: The Longhorn client to use in the request.
+    &#34;&#34;&#34;
+
+    support_bundles = client.list_support_bundle()
+    for support_bundle in support_bundles:
+        id = support_bundle[&#39;id&#39;]
+        name = support_bundle[&#39;name&#39;]
+        # ignore the error when clean up
+        try:
+            delete_support_bundle(id, name, client)
+        except Exception as e:
+            print(&#34;\nException when cleanup support_bundle &#34;, support_bundle)
+            print(e)
+
+    ok = False
+    for _ in range(RETRY_COUNTS):
+        support_bundles = client.list_support_bundle()
+        if len(support_bundles) == 0:
+            ok = True
+            break
+        time.sleep(RETRY_INTERVAL)
+    assert ok</code></pre>
+</details>
+</dd>
 <dt id="tests.common.cleanup_all_volumes"><code class="name flex">
 <span>def <span class="ident">cleanup_all_volumes</span></span>(<span>client)</span>
 </code></dt>
@@ -5931,6 +6113,8 @@ properly.
         cleanup_all_backing_images(client)
 
     cleanup_storage_class()
+
+    cleanup_all_support_bundles(client)
 
     # enable nodes scheduling
     reset_node(client)
@@ -6940,6 +7124,20 @@ created using a storage class).</p></div>
         body=sc_manifest)</code></pre>
 </details>
 </dd>
+<dt id="tests.common.create_support_bundle"><code class="name flex">
+<span>def <span class="ident">create_support_bundle</span></span>(<span>client)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def create_support_bundle(client):  # NOQA
+    data = {&#39;description&#39;: &#39;Test&#39;, &#39;issueURL&#39;: &#34;&#34;}
+    return requests.post(get_support_bundle_url(client), json=data).json()</code></pre>
+</details>
+</dd>
 <dt id="tests.common.create_volume"><code class="name flex">
 <span>def <span class="ident">create_volume</span></span>(<span>client, vol_name, size, node_id, r_num)</span>
 </code></dt>
@@ -7049,7 +7247,7 @@ def csi_pvc_name(request):
     except ApiException as e:
         assert e.status == 404
 
-    wait_delete_deployment(apps_api, deployment_name)</code></pre>
+    wait_delete_deployment(apps_api, deployment_name, namespace)</code></pre>
 </details>
 </dd>
 <dt id="tests.common.delete_and_wait_longhorn"><code class="name flex">
@@ -7340,6 +7538,21 @@ if a nonexistent Pod is specified.</p>
         assert e.status == 404</code></pre>
 </details>
 </dd>
+<dt id="tests.common.delete_support_bundle"><code class="name flex">
+<span>def <span class="ident">delete_support_bundle</span></span>(<span>node_id, name, client)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def delete_support_bundle(node_id, name, client):
+    url = get_support_bundle_url(client)
+    support_bundle_url = &#39;{}/{}/{}&#39;.format(url, node_id, name)
+    return requests.delete(support_bundle_url)</code></pre>
+</details>
+</dd>
 <dt id="tests.common.dev_read"><code class="name flex">
 <span>def <span class="ident">dev_read</span></span>(<span>dev, start, count)</span>
 </code></dt>
@@ -7404,6 +7617,23 @@ def disable_auto_salvage(client):
 
     assert setting.name == SETTING_AUTO_SALVAGE
     assert setting.value == &#34;true&#34;</code></pre>
+</details>
+</dd>
+<dt id="tests.common.download_support_bundle"><code class="name flex">
+<span>def <span class="ident">download_support_bundle</span></span>(<span>node_id, name, client)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def download_support_bundle(node_id, name, client):  # NOQA
+    url = get_support_bundle_url(client)
+    support_bundle_url = &#39;{}/{}/{}&#39;.format(url, node_id, name)
+    download_url = &#39;{}/download&#39;.format(support_bundle_url)
+    r = requests.get(download_url, allow_redirects=True, timeout=300)
+    r.raise_for_status()</code></pre>
 </details>
 </dd>
 <dt id="tests.common.enable_default_disk"><code class="name flex">
@@ -7838,7 +8068,7 @@ greate than MAX_SUPPORT_BINDLE_NUMBER.</p>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def generate_support_bundle(case_name):
+<pre><code class="python">def generate_support_bundle(case_name):  # NOQA
     &#34;&#34;&#34;
         Generate support bundle into folder ./support_bundle/case_name.zip
 
@@ -7858,10 +8088,11 @@ greate than MAX_SUPPORT_BINDLE_NUMBER.</p>
 
     # Use API gen support bundle
     client = get_longhorn_api_client()
+    cleanup_all_support_bundles(client)
+
     url = client._url.replace(&#39;schemas&#39;, &#39;supportbundles&#39;)
     data = {&#39;description&#39;: case_name, &#39;issueURL&#39;: case_name}
     res = requests.post(url, json=data).json()
-
     id = res[&#39;id&#39;]
     name = res[&#39;name&#39;]
 
@@ -7903,6 +8134,27 @@ greate than MAX_SUPPORT_BINDLE_NUMBER.</p>
     return VOLUME_NAME + &#34;-&#34; + \
         &#39;&#39;.join(random.choice(string.ascii_lowercase + string.digits)
                 for _ in range(6))</code></pre>
+</details>
+</dd>
+<dt id="tests.common.get_all_support_bundle_manager_deployments"><code class="name flex">
+<span>def <span class="ident">get_all_support_bundle_manager_deployments</span></span>(<span>apps_api)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_all_support_bundle_manager_deployments(apps_api):  # NOQA
+    name_prefix = &#39;longhorn-support-bundle-manager&#39;
+    support_bundle_managers = []
+
+    deployments = apps_api.list_namespaced_deployment(LONGHORN_NAMESPACE)
+    for deployment in deployments.items:
+        if deployment.metadata.name.startswith(name_prefix):
+            support_bundle_managers.append(deployment)
+
+    return support_bundle_managers</code></pre>
 </details>
 </dd>
 <dt id="tests.common.get_apps_api_client"><code class="name flex">
@@ -8600,6 +8852,34 @@ greate than MAX_SUPPORT_BINDLE_NUMBER.</p>
 <pre><code class="python">def get_storage_api_client():
     load_k8s_config()
     return k8sclient.StorageV1Api()</code></pre>
+</details>
+</dd>
+<dt id="tests.common.get_support_bundle"><code class="name flex">
+<span>def <span class="ident">get_support_bundle</span></span>(<span>node_id, name, client)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_support_bundle(node_id, name, client):  # NOQA
+    url = get_support_bundle_url(client)
+    support_bundle_url = &#39;{}/{}/{}&#39;.format(url, node_id, name)
+    return requests.get(support_bundle_url).json()</code></pre>
+</details>
+</dd>
+<dt id="tests.common.get_support_bundle_url"><code class="name flex">
+<span>def <span class="ident">get_support_bundle_url</span></span>(<span>client)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_support_bundle_url(client):  # NOQA
+    return client._url.replace(&#39;schemas&#39;, &#39;supportbundles&#39;)</code></pre>
 </details>
 </dd>
 <dt id="tests.common.get_update_disks"><code class="name flex">
@@ -9668,7 +9948,25 @@ def random_labels():
         setting_default_value = setting.definition.default
         setting_readonly = setting.definition.readOnly
 
+        # We don&#39;t provide the setup for the storage network, hence there is no
+        # default value. We need to skip here to avoid test failure when
+        # resetting this to an empty default value.
         if setting_name == &#34;storage-network&#34;:
+            continue
+
+        # The version of the support bundle kit will be specified by a command
+        # option when starting the manager. And setting requires a value.
+        #
+        # Longhorn has a default version for each release provided to the
+        # manager when starting. Meaning this setting doesn&#39;t have a default
+        # value.
+        #
+        # The design grants the ability to update later by cases for
+        # troubleshooting purposes. Meaning this setting is editable.
+        #
+        # So we need to skip here to avoid test failure when resetting this to
+        # an empty default value.
+        if setting_name == &#34;support-bundle-manager-image&#34;:
             continue
 
         s = client.by_id_setting(setting_name)
@@ -10387,7 +10685,7 @@ ref: <a href="https://github.com/longhorn/longhorn/issues/4814">https://github.c
 </details>
 </dd>
 <dt id="tests.common.wait_delete_deployment"><code class="name flex">
-<span>def <span class="ident">wait_delete_deployment</span></span>(<span>apps_api, deployment_name)</span>
+<span>def <span class="ident">wait_delete_deployment</span></span>(<span>apps_api, deployment_name, namespace='default')</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -10395,9 +10693,9 @@ ref: <a href="https://github.com/longhorn/longhorn/issues/4814">https://github.c
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def wait_delete_deployment(apps_api, deployment_name):
+<pre><code class="python">def wait_delete_deployment(apps_api, deployment_name, namespace=&#39;default&#39;):
     for i in range(DEFAULT_DEPLOYMENT_TIMEOUT):
-        ret = apps_api.list_namespaced_deployment(namespace=&#39;default&#39;)
+        ret = apps_api.list_namespaced_deployment(namespace=namespace)
         found = False
         for item in ret.items:
             if item.metadata.name == deployment_name:
@@ -11926,6 +12224,50 @@ ref: <a href="https://github.com/longhorn/longhorn/issues/4814">https://github.c
     return v</code></pre>
 </details>
 </dd>
+<dt id="tests.common.wait_for_support_bundle_cleanup"><code class="name flex">
+<span>def <span class="ident">wait_for_support_bundle_cleanup</span></span>(<span>client)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def wait_for_support_bundle_cleanup(client):  # NOQA
+    ok = False
+    for _ in range(RETRY_COUNTS):
+        support_bundles = client.list_support_bundle()
+        if len(support_bundles) == 0:
+            ok = True
+            break
+
+        time.sleep(RETRY_INTERVAL)
+    assert ok</code></pre>
+</details>
+</dd>
+<dt id="tests.common.wait_for_support_bundle_state"><code class="name flex">
+<span>def <span class="ident">wait_for_support_bundle_state</span></span>(<span>state, node_id, name, client)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def wait_for_support_bundle_state(state, node_id, name, client):  # NOQA
+    ok = False
+    for _ in range(RETRY_COUNTS):
+        support_bundle = get_support_bundle(node_id, name, client)
+        try:
+            assert support_bundle[&#39;state&#39;] == state
+            ok = True
+            break
+        except Exception:
+            time.sleep(RETRY_INTERVAL)
+
+    assert ok</code></pre>
+</details>
+</dd>
 <dt id="tests.common.wait_for_volume_attached"><code class="name flex">
 <span>def <span class="ident">wait_for_volume_attached</span></span>(<span>client, name)</span>
 </code></dt>
@@ -13084,6 +13426,7 @@ from the args and kwargs arguments, respectively.</p></div>
 <li><code><a title="tests.common.assert_from_assert_error_check_threads" href="#tests.common.assert_from_assert_error_check_threads">assert_from_assert_error_check_threads</a></code></li>
 <li><code><a title="tests.common.backing_image_feature_supported" href="#tests.common.backing_image_feature_supported">backing_image_feature_supported</a></code></li>
 <li><code><a title="tests.common.batch_v1_api" href="#tests.common.batch_v1_api">batch_v1_api</a></code></li>
+<li><code><a title="tests.common.check_all_support_bundle_managers_deleted" href="#tests.common.check_all_support_bundle_managers_deleted">check_all_support_bundle_managers_deleted</a></code></li>
 <li><code><a title="tests.common.check_backing_image_disk_map_status" href="#tests.common.check_backing_image_disk_map_status">check_backing_image_disk_map_status</a></code></li>
 <li><code><a title="tests.common.check_block_device_size" href="#tests.common.check_block_device_size">check_block_device_size</a></code></li>
 <li><code><a title="tests.common.check_csi" href="#tests.common.check_csi">check_csi</a></code></li>
@@ -13103,6 +13446,7 @@ from the args and kwargs arguments, respectively.</p></div>
 <li><code><a title="tests.common.check_volume_replicas" href="#tests.common.check_volume_replicas">check_volume_replicas</a></code></li>
 <li><code><a title="tests.common.cleanup_all_backing_images" href="#tests.common.cleanup_all_backing_images">cleanup_all_backing_images</a></code></li>
 <li><code><a title="tests.common.cleanup_all_recurring_jobs" href="#tests.common.cleanup_all_recurring_jobs">cleanup_all_recurring_jobs</a></code></li>
+<li><code><a title="tests.common.cleanup_all_support_bundles" href="#tests.common.cleanup_all_support_bundles">cleanup_all_support_bundles</a></code></li>
 <li><code><a title="tests.common.cleanup_all_volumes" href="#tests.common.cleanup_all_volumes">cleanup_all_volumes</a></code></li>
 <li><code><a title="tests.common.cleanup_client" href="#tests.common.cleanup_client">cleanup_client</a></code></li>
 <li><code><a title="tests.common.cleanup_host_disk" href="#tests.common.cleanup_host_disk">cleanup_host_disk</a></code></li>
@@ -13136,6 +13480,7 @@ from the args and kwargs arguments, respectively.</p></div>
 <li><code><a title="tests.common.create_snapshot" href="#tests.common.create_snapshot">create_snapshot</a></code></li>
 <li><code><a title="tests.common.create_statefulset" href="#tests.common.create_statefulset">create_statefulset</a></code></li>
 <li><code><a title="tests.common.create_storage_class" href="#tests.common.create_storage_class">create_storage_class</a></code></li>
+<li><code><a title="tests.common.create_support_bundle" href="#tests.common.create_support_bundle">create_support_bundle</a></code></li>
 <li><code><a title="tests.common.create_volume" href="#tests.common.create_volume">create_volume</a></code></li>
 <li><code><a title="tests.common.csi_pv" href="#tests.common.csi_pv">csi_pv</a></code></li>
 <li><code><a title="tests.common.csi_pv_backingimage" href="#tests.common.csi_pv_backingimage">csi_pv_backingimage</a></code></li>
@@ -13152,9 +13497,11 @@ from the args and kwargs arguments, respectively.</p></div>
 <li><code><a title="tests.common.delete_replica_on_test_node" href="#tests.common.delete_replica_on_test_node">delete_replica_on_test_node</a></code></li>
 <li><code><a title="tests.common.delete_replica_processes" href="#tests.common.delete_replica_processes">delete_replica_processes</a></code></li>
 <li><code><a title="tests.common.delete_storage_class" href="#tests.common.delete_storage_class">delete_storage_class</a></code></li>
+<li><code><a title="tests.common.delete_support_bundle" href="#tests.common.delete_support_bundle">delete_support_bundle</a></code></li>
 <li><code><a title="tests.common.dev_read" href="#tests.common.dev_read">dev_read</a></code></li>
 <li><code><a title="tests.common.dev_write" href="#tests.common.dev_write">dev_write</a></code></li>
 <li><code><a title="tests.common.disable_auto_salvage" href="#tests.common.disable_auto_salvage">disable_auto_salvage</a></code></li>
+<li><code><a title="tests.common.download_support_bundle" href="#tests.common.download_support_bundle">download_support_bundle</a></code></li>
 <li><code><a title="tests.common.enable_default_disk" href="#tests.common.enable_default_disk">enable_default_disk</a></code></li>
 <li><code><a title="tests.common.exec_command_in_pod" href="#tests.common.exec_command_in_pod">exec_command_in_pod</a></code></li>
 <li><code><a title="tests.common.exec_instance_manager" href="#tests.common.exec_instance_manager">exec_instance_manager</a></code></li>
@@ -13174,6 +13521,7 @@ from the args and kwargs arguments, respectively.</p></div>
 <li><code><a title="tests.common.generate_sts_name" href="#tests.common.generate_sts_name">generate_sts_name</a></code></li>
 <li><code><a title="tests.common.generate_support_bundle" href="#tests.common.generate_support_bundle">generate_support_bundle</a></code></li>
 <li><code><a title="tests.common.generate_volume_name" href="#tests.common.generate_volume_name">generate_volume_name</a></code></li>
+<li><code><a title="tests.common.get_all_support_bundle_manager_deployments" href="#tests.common.get_all_support_bundle_manager_deployments">get_all_support_bundle_manager_deployments</a></code></li>
 <li><code><a title="tests.common.get_apps_api_client" href="#tests.common.get_apps_api_client">get_apps_api_client</a></code></li>
 <li><code><a title="tests.common.get_backupstore_poll_interval" href="#tests.common.get_backupstore_poll_interval">get_backupstore_poll_interval</a></code></li>
 <li><code><a title="tests.common.get_backupstore_url" href="#tests.common.get_backupstore_url">get_backupstore_url</a></code></li>
@@ -13208,6 +13556,8 @@ from the args and kwargs arguments, respectively.</p></div>
 <li><code><a title="tests.common.get_self_host_id" href="#tests.common.get_self_host_id">get_self_host_id</a></code></li>
 <li><code><a title="tests.common.get_statefulset_pod_info" href="#tests.common.get_statefulset_pod_info">get_statefulset_pod_info</a></code></li>
 <li><code><a title="tests.common.get_storage_api_client" href="#tests.common.get_storage_api_client">get_storage_api_client</a></code></li>
+<li><code><a title="tests.common.get_support_bundle" href="#tests.common.get_support_bundle">get_support_bundle</a></code></li>
+<li><code><a title="tests.common.get_support_bundle_url" href="#tests.common.get_support_bundle_url">get_support_bundle_url</a></code></li>
 <li><code><a title="tests.common.get_update_disks" href="#tests.common.get_update_disks">get_update_disks</a></code></li>
 <li><code><a title="tests.common.get_upgrade_test_image" href="#tests.common.get_upgrade_test_image">get_upgrade_test_image</a></code></li>
 <li><code><a title="tests.common.get_version_api_client" href="#tests.common.get_version_api_client">get_version_api_client</a></code></li>
@@ -13328,6 +13678,8 @@ from the args and kwargs arguments, respectively.</p></div>
 <li><code><a title="tests.common.wait_for_replica_scheduled" href="#tests.common.wait_for_replica_scheduled">wait_for_replica_scheduled</a></code></li>
 <li><code><a title="tests.common.wait_for_snapshot_count" href="#tests.common.wait_for_snapshot_count">wait_for_snapshot_count</a></code></li>
 <li><code><a title="tests.common.wait_for_snapshot_purge" href="#tests.common.wait_for_snapshot_purge">wait_for_snapshot_purge</a></code></li>
+<li><code><a title="tests.common.wait_for_support_bundle_cleanup" href="#tests.common.wait_for_support_bundle_cleanup">wait_for_support_bundle_cleanup</a></code></li>
+<li><code><a title="tests.common.wait_for_support_bundle_state" href="#tests.common.wait_for_support_bundle_state">wait_for_support_bundle_state</a></code></li>
 <li><code><a title="tests.common.wait_for_volume_attached" href="#tests.common.wait_for_volume_attached">wait_for_volume_attached</a></code></li>
 <li><code><a title="tests.common.wait_for_volume_clone_status" href="#tests.common.wait_for_volume_clone_status">wait_for_volume_clone_status</a></code></li>
 <li><code><a title="tests.common.wait_for_volume_condition_restore" href="#tests.common.wait_for_volume_condition_restore">wait_for_volume_condition_restore</a></code></li>
