@@ -87,13 +87,9 @@ from common import create_host_disk, get_update_disks, update_node_disks
 from common import wait_for_disk_status, wait_for_rebuild_start, wait_for_rebuild_complete # NOQA
 from common import RETRY_BACKUP_COUNTS
 from common import LONGHORN_NAMESPACE
-<<<<<<< HEAD
-=======
-from common import wait_for_snapshot_count
 from common import make_deployment_with_pvc # NOQA
 from common import wait_for_volume_option_trim_auto_removing_snapshots
 from common import FS_TYPE_EXT4, FS_TYPE_XFS
->>>>>>> b6fc30f (integration: Add test_filesystem_trim)
 
 from backupstore import backupstore_delete_volume_cfg_file
 from backupstore import backupstore_cleanup
