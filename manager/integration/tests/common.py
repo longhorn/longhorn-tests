@@ -52,6 +52,9 @@ BACKING_IMAGE_RAW_CHECKSUM = \
     "304f3ed30ca6878e9056ee6f1b02b328239f0d0c2c1272840998212f9734b196371560b" \
     "3b939037e4f4c2884ce457c2cbc9f0621f4f5d1ca983983c8cdf8cd9a"
 BACKING_IMAGE_EXT4_SIZE = 32 * Mi
+BACKING_IMAGE_STATE_READY = "ready"
+BACKING_IMAGE_STATE_IN_PROGRESS = "in-progress"
+BACKING_IMAGE_STATE_FAILED = "failed"
 
 PORT = ":9500"
 
@@ -5287,20 +5290,20 @@ def enable_default_disk(client):
     update_node_disks(client, node.name, disks=disks, retry=True)
 
 
-def wait_for_backing_image_ready(client, backing_img_name):
+def wait_for_backing_image_status(client, backing_img_name, image_status):
 
     for i in range(RETRY_EXEC_COUNTS):
         backing_image = client.by_id_backing_image(backing_img_name)
         try:
             for _, status in iter(backing_image.diskFileStatusMap.items()):
-                assert status.state == "ready"
+                assert status.state == image_status
             break
         except Exception as e:
             print(e)
             time.sleep(RETRY_INTERVAL)
 
     for _, status in iter(backing_image.diskFileStatusMap.items()):
-        assert status.state == "ready"
+        assert status.state == image_status
 
 
 def wait_for_backing_image_in_disk_fail(client, backing_img_name, disk_uuid):
