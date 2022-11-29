@@ -1444,11 +1444,6 @@ def test_replica_schedule_to_disk_with_most_usable_storage(client, volume_name, 
     Then volume replica     on the current node scheduled to disk-1.
          volume replica not on the current node scheduled to default disk.
     """
-    # Remove volumes let no volume mounted to extra disk
-    def finalizer():
-        common.cleanup_all_volumes(client)
-    request.addfinalizer(finalizer)
-
     default_disk_available = 0
     self_host_id = get_self_host_id()
     cleanup_node_disks(client, self_host_id)
@@ -1471,7 +1466,7 @@ def test_replica_schedule_to_disk_with_most_usable_storage(client, volume_name, 
                              name, "storageReserved",
                              disk.storageMaximum-default_disk_available)
 
-    disk_path = create_host_disk(client, 'disk-1',
+    disk_path = create_host_disk(client, 'vol-disk-1',
                                  str(50 * Gi + default_disk_available),
                                  node.name)
     disk = {"path": disk_path, "allowScheduling": True}
