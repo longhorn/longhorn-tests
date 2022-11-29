@@ -1473,11 +1473,6 @@ def test_replica_schedule_to_disk_with_most_usable_storage(client, volume_name, 
     Then volume replica     on the current node scheduled to disk-1.
          volume replica not on the current node scheduled to default disk.
     &#34;&#34;&#34;
-    # Remove volumes let no volume mounted to extra disk
-    def finalizer():
-        common.cleanup_all_volumes(client)
-    request.addfinalizer(finalizer)
-
     default_disk_available = 0
     self_host_id = get_self_host_id()
     cleanup_node_disks(client, self_host_id)
@@ -1500,7 +1495,7 @@ def test_replica_schedule_to_disk_with_most_usable_storage(client, volume_name, 
                              name, &#34;storageReserved&#34;,
                              disk.storageMaximum-default_disk_available)
 
-    disk_path = create_host_disk(client, &#39;disk-1&#39;,
+    disk_path = create_host_disk(client, &#39;vol-disk-1&#39;,
                                  str(50 * Gi + default_disk_available),
                                  node.name)
     disk = {&#34;path&#34;: disk_path, &#34;allowScheduling&#34;: True}
@@ -3279,11 +3274,6 @@ volume replica not on the current node scheduled to default disk.</p></div>
     Then volume replica     on the current node scheduled to disk-1.
          volume replica not on the current node scheduled to default disk.
     &#34;&#34;&#34;
-    # Remove volumes let no volume mounted to extra disk
-    def finalizer():
-        common.cleanup_all_volumes(client)
-    request.addfinalizer(finalizer)
-
     default_disk_available = 0
     self_host_id = get_self_host_id()
     cleanup_node_disks(client, self_host_id)
@@ -3306,7 +3296,7 @@ volume replica not on the current node scheduled to default disk.</p></div>
                              name, &#34;storageReserved&#34;,
                              disk.storageMaximum-default_disk_available)
 
-    disk_path = create_host_disk(client, &#39;disk-1&#39;,
+    disk_path = create_host_disk(client, &#39;vol-disk-1&#39;,
                                  str(50 * Gi + default_disk_available),
                                  node.name)
     disk = {&#34;path&#34;: disk_path, &#34;allowScheduling&#34;: True}
