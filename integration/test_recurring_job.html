@@ -88,6 +88,8 @@ from common import wait_for_cron_job_count
 from common import wait_for_cron_job_create
 from common import wait_for_cron_job_delete
 
+from common import find_backup
+
 from common import JOB_LABEL
 from common import KUBERNETES_STATUS_LABEL
 from common import LONGHORN_NAMESPACE
@@ -95,6 +97,7 @@ from common import RETRY_BACKUP_COUNTS
 from common import RETRY_BACKUP_INTERVAL
 from common import SETTING_RECURRING_JOB_WHILE_VOLUME_DETACHED
 from common import SIZE, Mi, Gi
+from common import SETTING_RESTORE_RECURRING_JOBS
 
 
 RECURRING_JOB_LABEL = &#34;RecurringJob&#34;
@@ -1714,7 +1717,124 @@ def test_recurring_job_backup(set_random_backupstore, client, batch_v1_api):  # 
     write_volume_random_data(volume2)
     time.sleep(60 - WRITE_DATA_INTERVAL)
     wait_for_backup_count(client.by_id_backupVolume(volume1_name), 2)
-    wait_for_backup_count(client.by_id_backupVolume(volume2_name), 2)</code></pre>
+    wait_for_backup_count(client.by_id_backupVolume(volume2_name), 2)
+
+
+@pytest.mark.recurring_job  # NOQA
+def test_recurring_job_restored_from_backup_target(set_random_backupstore, client, batch_v1_api):  # NOQA
+    &#34;&#34;&#34;
+    Scenario: test recurring job backup (S3/NFS)
+
+    1. Create a volume and attach it to a node or a workload.
+    2. Create some recurring jobs (some are in groups)
+    3. Label the volume with created recurring jobs (some are in groups)
+    4. Create a backup or wait for a recurring job starting
+    5. Wait for backup creation completed.
+    6. Check if recurring jobs/groups information is stored in
+       the backup volume configuration on the backup target
+
+    7. Create a volume from the backup just created.
+    8. Check the volume if it has labels of recurring jobs and groups.
+
+    9. Delete recurring jobs that are already stored in the backup volume
+       on the backup.
+    10. Create a volume from the backup just created.
+    11. Check if recurring jobs have been created.
+    12. Check if restoring volume has labels of recurring jobs and groups.
+    &#34;&#34;&#34;
+    SCHEDULE_1WEEK = &#34;0 0 * * 0&#34;
+    SCHEDULE_2MIN = &#34;*/2 * * * *&#34;
+    snap1 = SNAPSHOT + &#34;1&#34;
+    back1 = BACKUP + &#34;1&#34;
+    back2 = BACKUP + &#34;2&#34;
+    group1 = &#34;group01&#34;
+    volume_name1 = &#34;record-recurring-job&#34;
+    rvolume_name1 = &#34;restore-record-recurring-job-01&#34;
+    rvolume_name2 = &#34;restore-record-recurring-job-02&#34;
+
+    recurring_jobs = {
+        back1: {
+            TASK: BACKUP,
+            GROUPS: [DEFAULT],
+            CRON: SCHEDULE_2MIN,
+            RETAIN: 1,
+            CONCURRENCY: 1,
+            LABELS: {},
+        },
+        snap1: {
+            TASK: SNAPSHOT,
+            GROUPS: [],
+            CRON: SCHEDULE_1MIN,
+            RETAIN: 2,
+            CONCURRENCY: 1,
+            LABELS: {},
+        },
+        back2: {
+            TASK: BACKUP,
+            GROUPS: [group1],
+            CRON: SCHEDULE_1WEEK,
+            RETAIN: 3,
+            CONCURRENCY: 3,
+            LABELS: {},
+        },
+    }
+
+    common.update_setting(client,
+                          SETTING_RESTORE_RECURRING_JOBS, &#34;true&#34;)
+
+    create_recurring_jobs(client, recurring_jobs)
+    check_recurring_jobs(client, recurring_jobs)
+
+    volume = client.create_volume(name=volume_name1, size=SIZE,
+                                  numberOfReplicas=2)
+    volume = wait_for_volume_detached(client, volume_name1)
+    volume = volume.attach(hostId=get_self_host_id())
+    volume = wait_for_volume_healthy(client, volume_name1)
+    volume.recurringJobAdd(name=snap1, isGroup=False)
+    volume.recurringJobAdd(name=back1, isGroup=False)
+    volume.recurringJobAdd(name=group1, isGroup=True)
+    wait_for_volume_recurring_job_update(volume,
+                                         jobs=[snap1, back1],
+                                         groups=[DEFAULT, group1])
+
+    write_volume_random_data(volume)
+    time.sleep(120)
+
+    # 2 from job_snap, 1 from job_backup, 1 volume-head
+    wait_for_snapshot_count(volume, 4)
+
+    complete_backup_1_count = 0
+    restore_snapshot_name = &#34;&#34;
+    volume = client.by_id_volume(volume_name1)
+    wait_for_backup_completion(client, volume_name1)
+    for b in volume.backupStatus:
+        if back1+&#34;-&#34; in b.snapshot:
+            complete_backup_1_count += 1
+            restore_snapshot_name = b.snapshot
+
+    assert complete_backup_1_count == 1
+
+    volume.detach()
+
+    # create a volume from the backup with recurring jobs exist
+    _, backup = find_backup(client, volume_name1, restore_snapshot_name)
+    client.create_volume(name=rvolume_name1,
+                         size=SIZE,
+                         fromBackup=backup.url)
+    rvolume1 = wait_for_volume_detached(client, rvolume_name1)
+    wait_for_volume_recurring_job_update(rvolume1,
+                                         jobs=[snap1, back1],
+                                         groups=[DEFAULT, group1])
+
+    # create a volume from the backup with recurring jobs do not exist
+    cleanup_all_recurring_jobs(client)
+    client.create_volume(name=rvolume_name2,
+                         size=SIZE,
+                         fromBackup=backup.url)
+    rvolume2 = wait_for_volume_detached(client, rvolume_name2)
+    wait_for_volume_recurring_job_update(rvolume2,
+                                         jobs=[snap1, back1],
+                                         groups=[DEFAULT, group1])</code></pre>
 </details>
 </section>
 <section>
@@ -3192,6 +3312,156 @@ def test_recurring_job_multiple_volumes(set_random_backupstore, client, batch_v1
     wait_for_backup_count(client.by_id_backupVolume(volume1_name), 1)</code></pre>
 </details>
 </dd>
+<dt id="tests.test_recurring_job.test_recurring_job_restored_from_backup_target"><code class="name flex">
+<span>def <span class="ident">test_recurring_job_restored_from_backup_target</span></span>(<span>set_random_backupstore, client, batch_v1_api)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Scenario: test recurring job backup (S3/NFS)</p>
+<ol>
+<li>Create a volume and attach it to a node or a workload.</li>
+<li>Create some recurring jobs (some are in groups)</li>
+<li>Label the volume with created recurring jobs (some are in groups)</li>
+<li>Create a backup or wait for a recurring job starting</li>
+<li>Wait for backup creation completed.</li>
+<li>
+<p>Check if recurring jobs/groups information is stored in
+the backup volume configuration on the backup target</p>
+</li>
+<li>
+<p>Create a volume from the backup just created.</p>
+</li>
+<li>
+<p>Check the volume if it has labels of recurring jobs and groups.</p>
+</li>
+<li>
+<p>Delete recurring jobs that are already stored in the backup volume
+on the backup.</p>
+</li>
+<li>Create a volume from the backup just created.</li>
+<li>Check if recurring jobs have been created.</li>
+<li>Check if restoring volume has labels of recurring jobs and groups.</li>
+</ol></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@pytest.mark.recurring_job  # NOQA
+def test_recurring_job_restored_from_backup_target(set_random_backupstore, client, batch_v1_api):  # NOQA
+    &#34;&#34;&#34;
+    Scenario: test recurring job backup (S3/NFS)
+
+    1. Create a volume and attach it to a node or a workload.
+    2. Create some recurring jobs (some are in groups)
+    3. Label the volume with created recurring jobs (some are in groups)
+    4. Create a backup or wait for a recurring job starting
+    5. Wait for backup creation completed.
+    6. Check if recurring jobs/groups information is stored in
+       the backup volume configuration on the backup target
+
+    7. Create a volume from the backup just created.
+    8. Check the volume if it has labels of recurring jobs and groups.
+
+    9. Delete recurring jobs that are already stored in the backup volume
+       on the backup.
+    10. Create a volume from the backup just created.
+    11. Check if recurring jobs have been created.
+    12. Check if restoring volume has labels of recurring jobs and groups.
+    &#34;&#34;&#34;
+    SCHEDULE_1WEEK = &#34;0 0 * * 0&#34;
+    SCHEDULE_2MIN = &#34;*/2 * * * *&#34;
+    snap1 = SNAPSHOT + &#34;1&#34;
+    back1 = BACKUP + &#34;1&#34;
+    back2 = BACKUP + &#34;2&#34;
+    group1 = &#34;group01&#34;
+    volume_name1 = &#34;record-recurring-job&#34;
+    rvolume_name1 = &#34;restore-record-recurring-job-01&#34;
+    rvolume_name2 = &#34;restore-record-recurring-job-02&#34;
+
+    recurring_jobs = {
+        back1: {
+            TASK: BACKUP,
+            GROUPS: [DEFAULT],
+            CRON: SCHEDULE_2MIN,
+            RETAIN: 1,
+            CONCURRENCY: 1,
+            LABELS: {},
+        },
+        snap1: {
+            TASK: SNAPSHOT,
+            GROUPS: [],
+            CRON: SCHEDULE_1MIN,
+            RETAIN: 2,
+            CONCURRENCY: 1,
+            LABELS: {},
+        },
+        back2: {
+            TASK: BACKUP,
+            GROUPS: [group1],
+            CRON: SCHEDULE_1WEEK,
+            RETAIN: 3,
+            CONCURRENCY: 3,
+            LABELS: {},
+        },
+    }
+
+    common.update_setting(client,
+                          SETTING_RESTORE_RECURRING_JOBS, &#34;true&#34;)
+
+    create_recurring_jobs(client, recurring_jobs)
+    check_recurring_jobs(client, recurring_jobs)
+
+    volume = client.create_volume(name=volume_name1, size=SIZE,
+                                  numberOfReplicas=2)
+    volume = wait_for_volume_detached(client, volume_name1)
+    volume = volume.attach(hostId=get_self_host_id())
+    volume = wait_for_volume_healthy(client, volume_name1)
+    volume.recurringJobAdd(name=snap1, isGroup=False)
+    volume.recurringJobAdd(name=back1, isGroup=False)
+    volume.recurringJobAdd(name=group1, isGroup=True)
+    wait_for_volume_recurring_job_update(volume,
+                                         jobs=[snap1, back1],
+                                         groups=[DEFAULT, group1])
+
+    write_volume_random_data(volume)
+    time.sleep(120)
+
+    # 2 from job_snap, 1 from job_backup, 1 volume-head
+    wait_for_snapshot_count(volume, 4)
+
+    complete_backup_1_count = 0
+    restore_snapshot_name = &#34;&#34;
+    volume = client.by_id_volume(volume_name1)
+    wait_for_backup_completion(client, volume_name1)
+    for b in volume.backupStatus:
+        if back1+&#34;-&#34; in b.snapshot:
+            complete_backup_1_count += 1
+            restore_snapshot_name = b.snapshot
+
+    assert complete_backup_1_count == 1
+
+    volume.detach()
+
+    # create a volume from the backup with recurring jobs exist
+    _, backup = find_backup(client, volume_name1, restore_snapshot_name)
+    client.create_volume(name=rvolume_name1,
+                         size=SIZE,
+                         fromBackup=backup.url)
+    rvolume1 = wait_for_volume_detached(client, rvolume_name1)
+    wait_for_volume_recurring_job_update(rvolume1,
+                                         jobs=[snap1, back1],
+                                         groups=[DEFAULT, group1])
+
+    # create a volume from the backup with recurring jobs do not exist
+    cleanup_all_recurring_jobs(client)
+    client.create_volume(name=rvolume_name2,
+                         size=SIZE,
+                         fromBackup=backup.url)
+    rvolume2 = wait_for_volume_detached(client, rvolume_name2)
+    wait_for_volume_recurring_job_update(rvolume2,
+                                         jobs=[snap1, back1],
+                                         groups=[DEFAULT, group1])</code></pre>
+</details>
+</dd>
 <dt id="tests.test_recurring_job.test_recurring_job_snapshot"><code class="name flex">
 <span>def <span class="ident">test_recurring_job_snapshot</span></span>(<span>client, batch_v1_api)</span>
 </code></dt>
@@ -3969,6 +4239,7 @@ Then the data exist in the deployment pod.</p></div>
 <li><code><a title="tests.test_recurring_job.test_recurring_job_kubernetes_status" href="#tests.test_recurring_job.test_recurring_job_kubernetes_status">test_recurring_job_kubernetes_status</a></code></li>
 <li><code><a title="tests.test_recurring_job.test_recurring_job_labels" href="#tests.test_recurring_job.test_recurring_job_labels">test_recurring_job_labels</a></code></li>
 <li><code><a title="tests.test_recurring_job.test_recurring_job_multiple_volumes" href="#tests.test_recurring_job.test_recurring_job_multiple_volumes">test_recurring_job_multiple_volumes</a></code></li>
+<li><code><a title="tests.test_recurring_job.test_recurring_job_restored_from_backup_target" href="#tests.test_recurring_job.test_recurring_job_restored_from_backup_target">test_recurring_job_restored_from_backup_target</a></code></li>
 <li><code><a title="tests.test_recurring_job.test_recurring_job_snapshot" href="#tests.test_recurring_job.test_recurring_job_snapshot">test_recurring_job_snapshot</a></code></li>
 <li><code><a title="tests.test_recurring_job.test_recurring_job_volume_label_when_job_and_group_use_same_name" href="#tests.test_recurring_job.test_recurring_job_volume_label_when_job_and_group_use_same_name">test_recurring_job_volume_label_when_job_and_group_use_same_name</a></code></li>
 <li><code><a title="tests.test_recurring_job.test_recurring_jobs_allow_detached_volume" href="#tests.test_recurring_job.test_recurring_jobs_allow_detached_volume">test_recurring_jobs_allow_detached_volume</a></code></li>
