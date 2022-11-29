@@ -4993,6 +4993,12 @@ def cleanup_all_support_bundles(client):
     Clean up all support bundles
     :param client: The Longhorn client to use in the request.
     """
+    longhorn_version = client.by_id_setting('current-longhorn-version').value
+    version_doesnt_have_support_bundle_manager = ['v1.1', 'v1.2', 'v1.3']
+    if any(_version in longhorn_version for
+           _version in version_doesnt_have_support_bundle_manager):
+        print(f'{longhorn_version} doesn\'t have support bundle manager')
+        return
 
     support_bundles = client.list_support_bundle()
     for support_bundle in support_bundles:
