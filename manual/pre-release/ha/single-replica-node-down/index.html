@@ -638,7 +638,7 @@
 <li>Create RWO|RWX volume with replica count = 1 &amp; data locality = enabled|disabled.</li>
 <li>Create deployment|statefulset for volume.</li>
 <li>Power down node of volume/replica.</li>
-<li>The workload pod will get stuck in the <code>unknown</code> state.</li>
+<li>The workload pod will get stuck in the <code>terminating</code> state.</li>
 <li>Volume will fail to attach since volume is not ready (i.e remains faulted, since single replica is on downed node).</li>
 <li>Power up node or delete the workload pod so that kubernetes will recreate pod on another node.</li>
 <li>Verify auto salvage finishes (i.e pod completes start).</li>
@@ -650,7 +650,10 @@
 <li>Create deployment|statefulset for volume.</li>
 <li>Power down node of volume/replica.</li>
 <li>Volume will become faulted.</li>
-<li>Wait for pod deletion &amp; recreation on another node. For RWX volume power on the node.</li>
+<li>Wait for pod deletion &amp; recreation on another node.
+The pod recreation will not happen immediately.</li>
+<li>The replacement workload pod will get stuck in the <code>ContainerCreating</code> state.</li>
+<li>Power on node of volume/replica.</li>
 <li>Verify the auto salvage finishes for volumes.</li>
 <li>Verify volume attached &amp; accessible by pod (i.e test data is available).</li>
 </ol>
