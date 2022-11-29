@@ -7,6 +7,22 @@
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language><atom:link href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.4.0/index.xml" rel="self" type="application/rss+xml" />
     <item>
+      <title>Test CSI plugin liveness probe</title>
+      <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.4.0/test-csi-plugin-liveness-probe/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.4.0/test-csi-plugin-liveness-probe/</guid>
+      <description>Related discussion https://github.com/longhorn/longhorn/issues/3907
+Test CSI plugin liveness probe should recover CSI socket file Given healthy Longhorn cluster
+When delete the Longhorn CSI socket file on one of the node(node-1). rm /var/lib/kubelet/plugins/driver.longhorn.io/csi.sock
+Then the longhorn-csi-plugin-* pod on node-1 should be restarted.
+And the csi-provisioner-* pod on node-1 should be restarted.
+And the csi-resizer-* pod on node-1 should be restarted.
+And the csi-snapshotter-* pod on node-1 should be restarted.
+And the csi-attacher-* pod on node-1 should be restarted.</description>
+    </item>
+    
+    <item>
       <title>Test helm on Rancher deployed Windows Cluster</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.4.0/test-helm-install-on-rancher-deployed-windows-cluster/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
@@ -25,10 +41,10 @@ Add Linux Master Node</description>
     
     <item>
       <title>Test replica scale-down warning</title>
-      <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.4.0/test-storage-network/</link>
+      <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.4.0/test-replica-scale-down-warning/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
-      <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.4.0/test-storage-network/</guid>
+      <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.4.0/test-replica-scale-down-warning/</guid>
       <description>Related issue https://github.com/longhorn/longhorn/issues/4120
 Steps Given Replica Auto Balance set to least-effort or best-effort.
 And Volume with 3 replicas created.

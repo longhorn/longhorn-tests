@@ -598,10 +598,13 @@
   
     <ul>
 
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.4.0/test-csi-plugin-liveness-probe/">Test CSI plugin liveness probe</a></li>
+  
+
   <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.4.0/test-helm-install-on-rancher-deployed-windows-cluster/">Test helm on Rancher deployed Windows Cluster</a></li>
   
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.4.0/test-storage-network/">Test replica scale-down warning</a></li>
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.4.0/test-replica-scale-down-warning/">Test replica scale-down warning</a></li>
   
 
   <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.4.0/test-upgrade-for-migrated-longhorn/">Test upgrade for migrated Longhorn on Rancher</a></li>
@@ -622,25 +625,30 @@
 
 
 <main style="padding: 1%; width: 70%;">
-  <h1 id="title">Test replica scale-down warning</h1>
+  <h1 id="title">Test CSI plugin liveness probe</h1>
   <div>
     <article id="content">
-       <h2 id="related-issue">Related issue</h2>
-<p><a href="https://github.com/longhorn/longhorn/issues/4120">https://github.com/longhorn/longhorn/issues/4120</a></p>
-<h2 id="steps">Steps</h2>
-<p><strong>Given</strong> <code>Replica Auto Balance</code> set to <code>least-effort</code> or <code>best-effort</code>.</p>
-<p><em>And</em> Volume with 3 replicas created.</p>
-<p><em>And</em> Volume attached to <code>node-1</code>.</p>
-<p><em>And</em> Monitor <code>node-1</code> manager pod events.</p>
-<pre tabindex="0"><code>kubectl alpha events -n longhorn-system pod &lt;node-1 manager pod&gt; -w
-</code></pre><p><strong>When</strong> Update replica count to 1.</p>
-<p><strong>Then</strong> Should see <code>Normal</code> replice delete event.</p>
-<pre tabindex="0"><code>Normal    Delete                   Engine/t1-e-6a846a7a                                Removed unknown replica tcp://10.42.2.94:10000 from engine
-</code></pre><p><em>And</em> Should not see <code>Warning</code> unknown replica detect event.</p>
-<pre tabindex="0"><code>Warning   Faulted                  Engine/t1-e-6a846a7a                                   Detected replica UNKNOWN-tcp://10.42.1.98:10000 (10.42.1.98:10000) in error
-</code></pre>
+       <h2 id="related-discussion">Related discussion</h2>
+<p><a href="https://github.com/longhorn/longhorn/issues/3907">https://github.com/longhorn/longhorn/issues/3907</a></p>
+<h2 id="test-csi-plugin-liveness-probe-should-recover-csi-socket-file">Test CSI plugin liveness probe should recover CSI socket file</h2>
+<p><strong>Given</strong> healthy Longhorn cluster</p>
+<p><strong>When</strong> delete the Longhorn CSI socket file on one of the node(<code>node-1</code>).
+<code>rm /var/lib/kubelet/plugins/driver.longhorn.io/csi.sock</code></p>
+<p><strong>Then</strong> the <code>longhorn-csi-plugin-*</code> pod on <code>node-1</code> should be restarted.</p>
+<p>And the <code>csi-provisioner-*</code> pod on <code>node-1</code> should be restarted.<br>
+And the <code>csi-resizer-*</code>     pod on <code>node-1</code> should be restarted.<br>
+And the <code>csi-snapshotter-*</code> pod on <code>node-1</code> should be restarted.<br>
+And the <code>csi-attacher-*</code>    pod on <code>node-1</code> should be restarted.</p>
+<blockquote>
+<p><strong>Note:</strong> In <code>node-1</code>, the other pods of the CSI sidecar components restarted
+are triggered by their internal <a href="https://github.com/kubernetes-csi/csi-lib-utils/blob/e085359dea1b0e9e49b02cb6bb30f33a80c6fe02/rpc/common.go#L109">ProbeForever</a>
+to the CSI connection. It is not due to the liveness probe of the
+<code>longhorn-csi-plugin</code>.</p>
+</blockquote>
+<p>And Longhorn CSI socket file should exist.</p>
+
     </article>
-  <a href="https://github.com/longhorn/longhorn-tests/edit/master/docs/content/manual/release-specific/v1.4.0/test-storage-network.md" target="_blank" title="Edit on Github" style="font-size:smaller;float:right;padding-right:3%">[Edit]</a>
+  <a href="https://github.com/longhorn/longhorn-tests/edit/master/docs/content/manual/release-specific/v1.4.0/test-csi-plugin-liveness-probe.md" target="_blank" title="Edit on Github" style="font-size:smaller;float:right;padding-right:3%">[Edit]</a>
   </div>
 
     
