@@ -4453,7 +4453,7 @@ def test_space_usage_for_rebuilding_only_volume(client, volume_name, request):  
     snap_offset = 1
     volume_endpoint = get_volume_endpoint(volume)
     write_volume_dev_random_mb_data(volume_endpoint,
-                                    snap_offset, 3000)
+                                    snap_offset, 3000, 5)
 
     snap2 = create_snapshot(client, volume_name)
     volume.snapshotDelete(name=snap2.name)
@@ -4461,7 +4461,7 @@ def test_space_usage_for_rebuilding_only_volume(client, volume_name, request):  
     wait_for_snapshot_purge(client, volume_name, snap2.name)
 
     write_volume_dev_random_mb_data(volume_endpoint,
-                                    snap_offset, 3000)
+                                    snap_offset, 3000, 5)
 
     for r in volume.replicas:
         if r.hostId != lht_hostId:
