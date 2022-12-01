@@ -809,14 +809,15 @@ def copy_pod_volume_data(api, pod_name, src_path, dest_path):
         tty=False)
 
 
-def write_volume_dev_random_mb_data(path, offset_in_mb, length_in_mb):
+def write_volume_dev_random_mb_data(path, offset_in_mb, length_in_mb,
+                                    timeout_cnt=3):
     write_cmd = [
         &#39;/bin/sh&#39;,
         &#39;-c&#39;,
         &#39;dd if=/dev/urandom of=%s bs=1M seek=%d count=%d&#39; %
         (path, offset_in_mb, length_in_mb)
     ]
-    with timeout(seconds=STREAM_EXEC_TIMEOUT * 3,
+    with timeout(seconds=STREAM_EXEC_TIMEOUT * timeout_cnt,
                  error_message=&#39;Timeout on writing dev&#39;):
         subprocess.check_call(write_cmd)
 
@@ -13220,7 +13221,7 @@ volume. Trigger a failed assertion of one is detected.
 </details>
 </dd>
 <dt id="tests.common.write_volume_dev_random_mb_data"><code class="name flex">
-<span>def <span class="ident">write_volume_dev_random_mb_data</span></span>(<span>path, offset_in_mb, length_in_mb)</span>
+<span>def <span class="ident">write_volume_dev_random_mb_data</span></span>(<span>path, offset_in_mb, length_in_mb, timeout_cnt=3)</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -13228,14 +13229,15 @@ volume. Trigger a failed assertion of one is detected.
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def write_volume_dev_random_mb_data(path, offset_in_mb, length_in_mb):
+<pre><code class="python">def write_volume_dev_random_mb_data(path, offset_in_mb, length_in_mb,
+                                    timeout_cnt=3):
     write_cmd = [
         &#39;/bin/sh&#39;,
         &#39;-c&#39;,
         &#39;dd if=/dev/urandom of=%s bs=1M seek=%d count=%d&#39; %
         (path, offset_in_mb, length_in_mb)
     ]
-    with timeout(seconds=STREAM_EXEC_TIMEOUT * 3,
+    with timeout(seconds=STREAM_EXEC_TIMEOUT * timeout_cnt,
                  error_message=&#39;Timeout on writing dev&#39;):
         subprocess.check_call(write_cmd)</code></pre>
 </details>
