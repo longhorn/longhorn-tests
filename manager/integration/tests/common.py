@@ -781,14 +781,15 @@ def copy_pod_volume_data(api, pod_name, src_path, dest_path):
         tty=False)
 
 
-def write_volume_dev_random_mb_data(path, offset_in_mb, length_in_mb):
+def write_volume_dev_random_mb_data(path, offset_in_mb, length_in_mb,
+                                    timeout_cnt=3):
     write_cmd = [
         '/bin/sh',
         '-c',
         'dd if=/dev/urandom of=%s bs=1M seek=%d count=%d' %
         (path, offset_in_mb, length_in_mb)
     ]
-    with timeout(seconds=STREAM_EXEC_TIMEOUT * 3,
+    with timeout(seconds=STREAM_EXEC_TIMEOUT * timeout_cnt,
                  error_message='Timeout on writing dev'):
         subprocess.check_call(write_cmd)
 
