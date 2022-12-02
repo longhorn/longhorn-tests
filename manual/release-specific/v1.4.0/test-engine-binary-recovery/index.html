@@ -628,18 +628,72 @@
 
 
 <main style="padding: 1%; width: 70%;">
-  <h1 id="title">Testing ext4 with custom fs params1 (no 64bit, no metadata_csum)</h1>
+  <h1 id="title">Test engine binary recovery</h1>
   <div>
     <article id="content">
-       <ul>
-<li>set the following filesystem parameters: <code>-O ^64bit,^metadata_csum</code></li>
-<li>create a volume + pv + pvc with filesystem <code>ext4</code> named <code>ext4-no-ck-no-64</code></li>
-<li>create a deployment that uses <code>ext4-no-ck-no-64</code></li>
-<li>verify that the pod enters running state and the volume is accessible</li>
-</ul>
+       <h2 id="related-issue">Related issue</h2>
+<p><a href="https://github.com/longhorn/longhorn/issues/4380">https://github.com/longhorn/longhorn/issues/4380</a></p>
+<h2 id="steps">Steps</h2>
+<h3 id="test-remove-engine-binary-on-host-should-recover">Test remove engine binary on host should recover</h3>
+<p><strong>Given</strong> EngineImage custom resource deployed</p>
+<pre tabindex="0"><code>&gt; kubectl -n longhorn-system get engineimage
+NAME          STATE      IMAGE                                    REFCOUNT   BUILDDATE   AGE
+ei-b907910b   deployed   longhornio/longhorn-engine:master-head   0          3d23h       2m25s
+</code></pre><p>And engine image pods <code>Ready</code> are <code>1/1</code>.</p>
+<pre tabindex="0"><code>&gt; kubectl -n longhorn-system get pod | grep engine-image
+engine-image-ei-b907910b-g4kpd  1/1   Running   0   2m43s
+engine-image-ei-b907910b-46k6t  1/1   Running   0   2m43s
+engine-image-ei-b907910b-t6wnd  1/1   Running   0   2m43s
+</code></pre><p><strong>When</strong> Delete engine binary on host</p>
+<pre tabindex="0"><code>&gt; rm -rf /var/lib/longhorn/engine-binaries/*
+</code></pre><p><strong>Then</strong> engine image pod restarted
+And engine image pods <code>Ready</code> are <code>1/1</code>.</p>
+<pre tabindex="0"><code>&gt; kubectl -n longhorn-system get pod | grep engine-image
+engine-image-ei-b907910b-g4kpd   1/1   Running   0             4m3s
+engine-image-ei-b907910b-46k6t   1/1   Running   0             4m3s
+engine-image-ei-b907910b-t6wnd   1/1   Running   1 (17s ago)   4m3s
+</code></pre><p>And EngineImage custom resource state <code>deployed</code></p>
+<pre tabindex="0"><code>&gt; kubectl -n longhorn-system get engineimage
+NAME          STATE      IMAGE                                    REFCOUNT   BUILDDATE   AGE
+ei-b907910b   deployed   longhornio/longhorn-engine:master-head   0          3d23h       4m19s
+</code></pre><p>And engine binary exist on host</p>
+<pre tabindex="0"><code>&gt; ls /var/lib/longhorn/engine-binaries/
+longhornio-longhorn-engine-master-head
+&gt; ls /var/lib/longhorn/engine-binaries/longhornio-longhorn-engine-master-head/
+longhorn
+</code></pre><p>And volume can create and attach.</p>
+<h3 id="test-remove-engine-binary-in-engine-image-pod-should-recover">Test remove engine binary in engine image pod should recover</h3>
+<p><strong>Given</strong> EngineImage custom resource deployed</p>
+<pre tabindex="0"><code>&gt; kubectl -n longhorn-system get engineimage
+NAME          STATE      IMAGE                                    REFCOUNT   BUILDDATE   AGE
+ei-b907910b   deployed   longhornio/longhorn-engine:master-head   0          3d23h       14m
+</code></pre><p>And engine image pods <code>Ready</code> are <code>1/1</code>.</p>
+<pre tabindex="0"><code>&gt; kubectl -n longhorn-system get pod | grep engine-image
+engine-image-ei-b907910b-g4kpd   1/1   Running   0             14m
+engine-image-ei-b907910b-46k6t   1/1   Running   0             14m
+engine-image-ei-b907910b-t6wnd   1/1   Running   1 (11m ago)   14m
+</code></pre><p><strong>When</strong> Delete engine binary on in pod</p>
+<pre tabindex="0"><code>&gt; kubectl -n longhorn-system exec -it engine-image-ei-b907910b-46k6t -- rm /data/longhorn
+</code></pre><p><strong>Then</strong> engine image pod restarted
+And engine image pods <code>Ready</code> are <code>1/1</code>.</p>
+<pre tabindex="0"><code>&gt; kubectl -n longhorn-system get pod | grep engine-image
+engine-image-ei-b907910b-g4kpd   1/1   Running   0               18m
+engine-image-ei-b907910b-t6wnd   1/1   Running   1 (14m ago)     18m
+engine-image-ei-b907910b-46k6t   1/1   Running   1 (2m21s ago)   18m
+</code></pre><p>And EngineImage custom resource state <code>deployed</code></p>
+<pre tabindex="0"><code>&gt; kubectl -n longhorn-system get engineimage
+NAME          STATE      IMAGE                                    REFCOUNT   BUILDDATE   AGE
+ei-b907910b   deployed   longhornio/longhorn-engine:master-head   0          3d23h       18m
+</code></pre><p>And engine binary exist in pod</p>
+<pre tabindex="0"><code>&gt; kubectl -n longhorn-system exec -it engine-image-ei-b907910b-46k6t -- ls /data/longhorn
+/data/longhorn
+
+&gt; kubectl -n longhorn-system exec -it engine-image-ei-b907910b-46k6t -- /data/longhorn -v
+longhorn version f0a92283
+</code></pre><p>And volume can create and attach.</p>
 
     </article>
-  <a href="https://github.com/longhorn/longhorn-tests/edit/master/docs/content/manual/release-specific/v1.0.0/suse-sles12sp3/ext4-custom-fs-params-1.md" target="_blank" title="Edit on Github" style="font-size:smaller;float:right;padding-right:3%">[Edit]</a>
+  <a href="https://github.com/longhorn/longhorn-tests/edit/master/docs/content/manual/release-specific/v1.4.0/test-engine-binary-recovery.md" target="_blank" title="Edit on Github" style="font-size:smaller;float:right;padding-right:3%">[Edit]</a>
   </div>
 
     

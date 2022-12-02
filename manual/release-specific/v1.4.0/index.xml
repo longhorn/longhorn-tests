@@ -23,6 +23,18 @@ And the csi-attacher-* pod on node-1 should be restarted.</description>
     </item>
     
     <item>
+      <title>Test engine binary recovery</title>
+      <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.4.0/test-engine-binary-recovery/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.4.0/test-engine-binary-recovery/</guid>
+      <description>Related issue https://github.com/longhorn/longhorn/issues/4380
+Steps Test remove engine binary on host should recover Given EngineImage custom resource deployed
+&amp;gt; kubectl -n longhorn-system get engineimage NAME STATE IMAGE REFCOUNT BUILDDATE AGE ei-b907910b deployed longhornio/longhorn-engine:master-head 0 3d23h 2m25s And engine image pods Ready are 1/1.
+&amp;gt; kubectl -n longhorn-system get pod | grep engine-image engine-image-ei-b907910b-g4kpd 1/1 Running 0 2m43s engine-image-ei-b907910b-46k6t 1/1 Running 0 2m43s engine-image-ei-b907910b-t6wnd 1/1 Running 0 2m43s When Delete engine binary on host</description>
+    </item>
+    
+    <item>
       <title>Test helm on Rancher deployed Windows Cluster</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.4.0/test-helm-install-on-rancher-deployed-windows-cluster/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
