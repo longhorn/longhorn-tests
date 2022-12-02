@@ -236,6 +236,8 @@
   </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/node/node-deletion/</loc>
   </url><url>
+    <loc>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.4.0/test-node-id-change-during-backing-image-creation/</loc>
+  </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/test-node-selector/</loc>
   </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.3.0/test-npe-when-longhorn-ui-deployment-not-exist/</loc>

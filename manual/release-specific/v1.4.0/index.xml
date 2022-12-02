@@ -52,6 +52,21 @@ Add Linux Master Node</description>
     </item>
     
     <item>
+      <title>Test Node ID Change During Backing Image Creation</title>
+      <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.4.0/test-node-id-change-during-backing-image-creation/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.4.0/test-node-id-change-during-backing-image-creation/</guid>
+      <description>Related issue https://github.com/longhorn/longhorn/issues/4887
+Steps Given A relatively large file so that uploading it would take several minutes at least.
+And Upload the file as a backing image.
+And Monitor the longhorn manager pod logs.
+When Add new nodes for the cluster or new disks for the existing Longhorn nodes during the upload.
+Then Should see the upload success.
+And Should not see error messages like below in the longhorn manager pods.</description>
+    </item>
+    
+    <item>
       <title>Test replica scale-down warning</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.4.0/test-replica-scale-down-warning/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>

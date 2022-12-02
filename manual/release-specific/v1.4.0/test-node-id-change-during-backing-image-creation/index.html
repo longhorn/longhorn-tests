@@ -631,21 +631,22 @@
 
 
 <main style="padding: 1%; width: 70%;">
-  <h1 id="title">Test Additional Printer Columns</h1>
+  <h1 id="title">Test Node ID Change During Backing Image Creation</h1>
   <div>
     <article id="content">
-       <p>For each of the case below:</p>
-<ol>
-<li>Fresh installation of Longhorn. (make sure to delete all Longhorn CRDs before installation)</li>
-<li>Upgrade from older version.</li>
-</ol>
-<p>Run:</p>
-<pre tabindex="0"><code>kubectl get &lt;LONGHORN-CRD&gt; -n longhorn-system
-</code></pre><p>Verify that the output contains information as specify in the <code>additionalPrinerColumns</code>
-at <a href="https://github.com/longhorn/longhorn-manager/blob/master/deploy/install/01-prerequisite/03-crd.yaml">here</a></p>
-
+       <h2 id="related-issue">Related issue</h2>
+<p><a href="https://github.com/longhorn/longhorn/issues/4887">https://github.com/longhorn/longhorn/issues/4887</a></p>
+<h2 id="steps">Steps</h2>
+<p><strong>Given</strong> A relatively large file so that uploading it would take several minutes at least.</p>
+<p><em>And</em> Upload the file as a backing image.</p>
+<p><em>And</em> Monitor the longhorn manager pod logs.</p>
+<p><strong>When</strong> Add new nodes for the cluster or new disks for the existing Longhorn nodes during the upload.</p>
+<p><strong>Then</strong> Should see the upload success.</p>
+<p><em>And</em> Should not see error messages like below in the longhorn manager pods.</p>
+<pre tabindex="0"><code>2022-11-07T21:03:30.772022890Z time=&#34;2022-11-07T21:03:30Z&#34; level=error msg=&#34;Backing Image Data Source was state in-progress but the pod became not ready, the state will be updated to failed, message: pod spec node ID vsh01ha doesn&#39;t match the desired node ID vsh01hc&#34; backingImageDataSource=default-image-zxgnk controller=longhorn-backing-image-data-source diskUUID=588588f4-1bec-41c8-9fde-936d5a7bf492 node=vsh01hc nodeID=vsh01hc parameters=&#34;map[url:http://10.89.4.53/wsp.raw]&#34; sourceType=download
+</code></pre>
     </article>
-  <a href="https://github.com/longhorn/longhorn-tests/edit/master/docs/content/manual/release-specific/v1.1.0/additional-printer-columns.md" target="_blank" title="Edit on Github" style="font-size:smaller;float:right;padding-right:3%">[Edit]</a>
+  <a href="https://github.com/longhorn/longhorn-tests/edit/master/docs/content/manual/release-specific/v1.4.0/test-node-id-change-during-backing-image-creation.md" target="_blank" title="Edit on Github" style="font-size:smaller;float:right;padding-right:3%">[Edit]</a>
   </div>
 
     
