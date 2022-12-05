@@ -4,6 +4,8 @@ import os
 import subprocess
 import yaml
 
+from backupstore import set_random_backupstore  # NOQA
+
 from common import (  # NOQA
     get_longhorn_api_client, get_self_host_id,
     get_core_api_client, get_apps_api_client,
@@ -18,8 +20,10 @@ from common import (  # NOQA
     client, core_api, settings_reset,
     apps_api, scheduling_api, priority_class, volume_name,
     get_engine_image_status_value,
-    create_volume, cleanup_volume_by_name,
-    Gi,
+    create_volume, create_volume_and_backup, cleanup_volume_by_name,
+    wait_for_volume_restoration_completed, wait_for_backup_restore_completed,
+    get_engine_host_id,
+    Gi, Mi,
 
     LONGHORN_NAMESPACE,
     SETTING_TAINT_TOLERATION,
@@ -29,6 +33,7 @@ from common import (  # NOQA
     SETTING_PRIORITY_CLASS,
     SETTING_DEFAULT_REPLICA_COUNT,
     SETTING_BACKUP_TARGET,
+    SETTING_CONCURRENT_VOLUME_BACKUP_RESTORE,
     SIZE, RETRY_COUNTS, RETRY_INTERVAL, RETRY_INTERVAL_LONG,
     update_setting, BACKING_IMAGE_QCOW2_URL, BACKING_IMAGE_NAME,
     create_backing_image_with_matching_url, BACKING_IMAGE_EXT4_SIZE,
@@ -37,7 +42,7 @@ from common import (  # NOQA
     crash_replica_processes, wait_for_engine_image_ref_count,
     get_volume_engine, wait_for_volume_current_image,
     wait_for_rebuild_start, wait_for_rebuild_complete,
-    wait_for_volume_degraded, Gi, write_volume_dev_random_mb_data,
+    wait_for_volume_degraded, write_volume_dev_random_mb_data,
     get_volume_endpoint, RETRY_EXEC_COUNTS, RETRY_SNAPSHOT_INTERVAL,
     delete_replica_on_test_node
 )
@@ -948,6 +953,112 @@ def test_setting_concurrent_rebuild_limit(client, core_api, volume_name):  # NOQ
 
     volume2.attach(hostId=lht_host_id)
     wait_for_volume_healthy(client, volume2_name)
+
+
+def setting_concurrent_volume_backup_restore_limit_concurrent_restoring_test(client, volname, is_DR_volumes=False):  # NOQA
+    """
+    Given Setting concurrent-volume-backup-restore-per-node-limit is 3.
+    And Volume (for backup) created.
+    And Volume (for backup) has backup with some data.
+
+    When Create some volumes (num_node * setting value * 3) from backup.
+
+    The Number of restoring volumes per node should be expected base on
+        if they are normal volumes or DR volumes.
+    """
+    concurrent_limit = 2
+    update_setting(client, SETTING_CONCURRENT_VOLUME_BACKUP_RESTORE,
+                   str(concurrent_limit))
+
+    _, backup = create_volume_and_backup(client, volname + "-with-backup",
+                                         500 * Mi, 300 * Mi)
+
+    nodes = client.list_node()
+    restore_volume_names = []
+    for i in range(len(nodes) * concurrent_limit * 3):
+        name = volname + "-restore-" + str(i)
+        restore_volume_names.append(name)
+
+        client.create_volume(name=name, numberOfReplicas=1,
+                             fromBackup=backup.url, standby=is_DR_volumes)
+
+    is_case_tested = False
+    for i in range(RETRY_COUNTS):
+        time.sleep(RETRY_INTERVAL)
+
+        restoring_volume = None
+        for name in restore_volume_names:
+            volume = client.by_id_volume(name)
+            if volume.restoreStatus and volume.restoreStatus[0].progress != 0:
+                restoring_volume = volume
+                break
+
+        if not restoring_volume:
+            continue
+
+        concurrent_count = 0
+        restoring_status = restoring_volume.restoreStatus
+        if len(restoring_status) != 0 and \
+                restoring_status[0].progress != 100:
+
+            restoring_host_id = get_engine_host_id(client,
+                                                   restoring_volume.name)
+
+            for restore_volume_name in restore_volume_names:
+                if restore_volume_name == restoring_volume.name:
+                    concurrent_count += 1
+                    continue
+
+                host_id = get_engine_host_id(client, restore_volume_name)
+                if host_id != restoring_host_id:
+                    continue
+
+                volume = client.by_id_volume(restore_volume_name)
+                restore_status = volume.restoreStatus
+                if len(restore_status) == 0:
+                    continue
+
+                if not restore_status[0].progress or \
+                        restore_status[0].progress == 0:
+                    continue
+
+                concurrent_count += 1
+            if is_DR_volumes:
+                if concurrent_count > concurrent_limit:
+                    is_case_tested = True
+                    break
+            else:
+                if concurrent_count == concurrent_limit:
+                    is_case_tested = True
+                    break
+
+    assert is_case_tested, \
+        f"Unexpected cocurrent count: {concurrent_count}\n"
+
+    for restore_volume_name in restore_volume_names:
+        if is_DR_volumes:
+            wait_for_backup_restore_completed(client, restore_volume_name,
+                                              backup.name)
+            continue
+        wait_for_volume_restoration_completed(client, restore_volume_name)
+
+
+def test_setting_concurrent_volume_backup_restore_limit(set_random_backupstore, client, volume_name):  # NOQA
+    """
+
+    Scenario: setting Concurrent Volume Backup Restore Limit
+              should limit the concurrent volume backup restoring
+
+    Issue: https://github.com/longhorn/longhorn/issues/4558
+
+    Given/When see:
+      setting_concurrent_volume_backup_restore_limit_concurrent_restoring_test
+
+    Then Number of restoring volumes per node not exceed the setting value.
+    """
+    setting_concurrent_volume_backup_restore_limit_concurrent_restoring_test(
+        client, volume_name
+    )
 
 
 def config_map_with_value(configmap_name, setting_names, setting_values):
