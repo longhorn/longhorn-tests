@@ -190,6 +190,8 @@ SETTING_SNAPSHOT_DATA_INTEGRITY_IMMEDIATE_CHECK_AFTER_SNAPSHOT_CREATION = \
     "snapshot-data-integrity-immediate-check-after-snapshot-creation"
 SETTING_SNAPSHOT_DATA_INTEGRITY_CRONJOB = "snapshot-data-integrity-cronjob"
 SETTING_SNAPSHOT_FAST_REPLICA_REBUILD_ENABLED = "fast-replica-rebuild-enabled"
+SETTING_CONCURRENT_VOLUME_BACKUP_RESTORE = \
+    "concurrent-volume-backup-restore-per-node-limit"
 
 SNAPSHOT_DATA_INTEGRITY_IGNORED = "ignored"
 SNAPSHOT_DATA_INTEGRITY_DISABLED = "disabled"
@@ -355,6 +357,23 @@ def cleanup_all_volumes(client):
 
     volumes = client.list_volume()
     assert len(volumes) == 0
+
+
+def create_volume_and_backup(client, vol_name, vol_size, backup_data_size):
+    client.create_volume(name=vol_name,
+                         numberOfReplicas=1,
+                         size=str(vol_size))
+    backup_volume = wait_for_volume_detached(client, vol_name)
+    backup_volume.attach(hostId=get_self_host_id())
+    backup_volume = wait_for_volume_healthy(client, vol_name)
+
+    data = {'pos': 0,
+            'len': backup_data_size,
+            'content': generate_random_data(backup_data_size)}
+
+    _, backup, _, _ = create_backup(client, vol_name, data)
+
+    return backup_volume, backup
 
 
 def create_backup(client, volname, data={}, labels={}):
@@ -5471,3 +5490,13 @@ def system_restore_wait_for_state(state, name, client):  # NOQA
             time.sleep(RETRY_INTERVAL_LONG)
 
     assert ok
+
+
+def get_engine_host_id(client, vol_name):
+    volume = client.by_id_volume(vol_name)
+
+    engines = volume.controllers
+    if len(engines) != 1:
+        return
+
+    return engines[0].hostId
