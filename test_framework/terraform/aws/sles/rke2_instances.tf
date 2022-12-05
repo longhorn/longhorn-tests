@@ -9,7 +9,7 @@ resource "aws_instance" "lh_aws_instance_controlplane_rke2" {
   availability_zone = var.aws_availability_zone
 
   ami           = data.aws_ami.aws_ami_sles.id
-  instance_type = var.lh_aws_instance_type_controlplane
+  instance_type = var.instance_type_controlplane
 
   subnet_id = aws_subnet.lh_aws_public_subnet.id
   vpc_security_group_ids = [
@@ -26,7 +26,7 @@ resource "aws_instance" "lh_aws_instance_controlplane_rke2" {
   user_data = data.template_file.provision_rke2_server.rendered
 
   tags = {
-    Name = "${var.lh_aws_instance_name_controlplane}-${count.index}-${random_string.random_suffix.id}"
+    Name = "${var.instance_name_controlplane}-${count.index}-${random_string.random_suffix.id}"
     DoNotDelete = "true"
     Owner = "longhorn-infra"
   }
@@ -45,7 +45,7 @@ resource "aws_instance" "lh_aws_instance_worker_rke2" {
   availability_zone = var.aws_availability_zone
 
   ami           = data.aws_ami.aws_ami_sles.id
-  instance_type = var.lh_aws_instance_type_worker
+  instance_type = var.instance_type_worker
 
   subnet_id = aws_subnet.lh_aws_private_subnet.id
   vpc_security_group_ids = [
@@ -62,7 +62,7 @@ resource "aws_instance" "lh_aws_instance_worker_rke2" {
   user_data = data.template_file.provision_rke2_agent.rendered
 
   tags = {
-    Name = "${var.lh_aws_instance_name_worker}-${count.index}-${random_string.random_suffix.id}"
+    Name = "${var.instance_name_worker}-${count.index}-${random_string.random_suffix.id}"
     DoNotDelete = "true"
     Owner = "longhorn-infra"
   }

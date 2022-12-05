@@ -13,14 +13,6 @@ data "aws_ami" "aws_ami_centos" {
   }
 }
 
-# Generate template file for RKE
-data "template_file" "provision_rke" {
-  template = var.k8s_distro_name == "rke" ? file("${path.module}/user-data-scripts/provision_rke.sh.tpl") : null
-  vars = {
-    selinux_mode = var.selinux_mode
-  }
-}
-
 # Generate template file for k3s server
 data "template_file" "provision_k3s_server" {
   template = var.k8s_distro_name == "k3s" ? file("${path.module}/user-data-scripts/provision_k3s_server.sh.tpl") : null

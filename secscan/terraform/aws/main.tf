@@ -163,7 +163,7 @@ resource "aws_eip_association" "lh-secscan_aws_eip_assoc" {
   allocation_id = aws_eip.lh-secscan_aws_eip_secscan.id
 }
 
-# wait for docker to start on instances (for rke on amd64 only)
+# wait for docker to start on instances
 resource "null_resource" "wait_for_docker_start" {
   depends_on = [
     aws_instance.lh-secscan_aws_instance,

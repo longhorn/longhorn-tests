@@ -177,7 +177,7 @@ resource "aws_eip_association" "build_engine_aws_eip_assoc" {
   allocation_id = element(aws_eip.build_engine_aws_eip_build_node, count.index).id
 }
 
-# wait for docker to start on instances (for rke on amd64 only)
+# wait for docker to start on instances
 resource "null_resource" "wait_for_docker_start" {
   depends_on = [
     aws_instance.build_engine_aws_instance,

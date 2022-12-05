@@ -8,11 +8,7 @@ TMPDIR="/tmp/longhorn"
 mkdir -p ${TMPDIR}
 
 set_kubeconfig_envvar(){
-  if [[ "${TF_VAR_k8s_distro_name}" == "rke2" ]]; then
-    export KUBECONFIG="${WORKSPACE}/test_framework/terraform/${LONGHORN_TEST_CLOUDPROVIDER}/${DISTRO}/rke2.yaml"
-  else
-    export KUBECONFIG="${WORKSPACE}/test_framework/terraform/${LONGHORN_TEST_CLOUDPROVIDER}/${DISTRO}/k3s.yaml"
-  fi
+  export KUBECONFIG="${WORKSPACE}/test_framework/terraform/${LONGHORN_TEST_CLOUDPROVIDER}/${DISTRO}/${TF_VAR_k8s_distro_name}.yaml"
 }
 
 

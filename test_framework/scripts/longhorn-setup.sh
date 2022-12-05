@@ -22,20 +22,7 @@ LONGHORN_REPO_URL="https://github.com/longhorn/longhorn"
 LONGHORN_REPO_DIR="${TMPDIR}/longhorn"
 
 set_kubeconfig_envvar(){
-  ARCH=${1}
-  BASEDIR=${2}
-
-    if [[ ${ARCH} == "amd64" ]] ; then
-    if [[ ${TF_VAR_k8s_distro_name} == [rR][kK][eE] ]]; then
-      export KUBECONFIG="${BASEDIR}/kube_config_rke.yml"
-    elif [[ ${TF_VAR_k8s_distro_name} == [rR][kK][eE]2 ]]; then
-      export KUBECONFIG="${BASEDIR}/terraform/aws/${DISTRO}/rke2.yaml"
-    else
-      export KUBECONFIG="${BASEDIR}/terraform/aws/${DISTRO}/k3s.yaml"
-    fi
-  elif [[ ${ARCH} == "arm64"  ]]; then
-    export KUBECONFIG="${BASEDIR}/terraform/aws/${DISTRO}/k3s.yaml"
-  fi
+  export KUBECONFIG="${TF_VAR_tf_workspace}/terraform/aws/${DISTRO}/${TF_VAR_k8s_distro_name}.yaml"
 }
 
 
@@ -372,7 +359,7 @@ run_longhorn_tests(){
 
 
 main(){
-  set_kubeconfig_envvar ${TF_VAR_arch} ${TF_VAR_tf_workspace}
+  set_kubeconfig_envvar
   create_longhorn_namespace
   install_backupstores
   # set debugging mode off to avoid leaking aws secrets to the logs.

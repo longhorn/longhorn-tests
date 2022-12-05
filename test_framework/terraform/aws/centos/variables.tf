@@ -10,12 +10,12 @@ variable "lh_aws_secret_key" {
 
 variable "aws_region" {
   type        = string
-  default     = "us-east-2"
+  default     = "us-east-1"
 }
 
 variable "aws_availability_zone" {
   type        = string
-  default     = "us-east-2c"
+  default     = "us-east-1c"
 }
 
 variable "lh_aws_vpc_name" {
@@ -26,6 +26,7 @@ variable "lh_aws_vpc_name" {
 variable "arch" {
   type        = string
   description = "available values (amd64, arm64)"
+  default     = "amd64"
 }
 
 variable "distro_version" {
@@ -48,19 +49,21 @@ variable "lh_aws_instance_count_worker" {
   default     = 3
 }
 
-variable "lh_aws_instance_name_controlplane" {
+variable "instance_name_controlplane" {
   type        = string
-  default     = "meldafrawi-lh-test-controlplane"
+  default     = "lh-tests-controlplane"
 }
 
-variable "lh_aws_instance_type_controlplane" {
+variable "instance_type_controlplane" {
   type        = string
   description = "Recommended instance types t2.xlarge for amd64 & a1.xlarge  for arm64"
+  default     = "t2.xlarge"
 }
 
-variable "lh_aws_instance_type_worker" {
+variable "instance_type_worker" {
   type        = string
   description = "Recommended instance types t2.xlarge for amd64 & a1.xlarge  for arm64"
+  default     = "t2.xlarge"
 }
 
 variable "lh_aws_instance_root_block_device_size_controlplane" {
@@ -78,9 +81,9 @@ variable "aws_ssh_private_key_file_path" {
   default     = "~/.ssh/id_rsa"
 }
 
-variable "lh_aws_instance_name_worker" {
+variable "instance_name_worker" {
   type        = string
-  default     = "meldafrawi-lh-test-worker"
+  default     = "lh-tests-worker"
 }
 
 variable "lh_aws_instance_root_block_device_size_worker" {
@@ -91,7 +94,7 @@ variable "lh_aws_instance_root_block_device_size_worker" {
 variable "k8s_distro_name" {
   type        = string
   default     = "k3s"
-  description = "kubernetes distro version to install [rke, k3s, rke2]  (default: k3s)"
+  description = "kubernetes distro version to install [k3s, rke2]  (default: k3s)"
 }
 
 variable "k8s_distro_version" {
@@ -99,7 +102,6 @@ variable "k8s_distro_version" {
   default     = "v1.25.3+k3s1"
   description = <<-EOT
     kubernetes version that will be deployed
-    rke: (default: v1.22.5-rancher1-1)
     k3s: (default: v1.25.3+k3s1)
     rke2: (default: v1.25.3+rke2r1)
   EOT
