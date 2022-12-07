@@ -50,12 +50,6 @@
   </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/upgrade/</loc>
   </url><url>
-    <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/air-gap/</loc>
-  </url><url>
-    <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/air-gap/air-gap-installation/</loc>
-  </url><url>
-    <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/air-gap/air-gap-instance-manager-name/</loc>
-  </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/managed-kubernetes-clusters/aks/</loc>
   </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/auto-upgrade-engine/</loc>
@@ -225,6 +219,8 @@
     <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/node/kubelet-restart-on-a-node/</loc>
   </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.2.0/label-driven-recurring-job/</loc>
+  </url><url>
+    <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/resiliency/test-longhorn-component-recovery/</loc>
   </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/environment/rke2-cis-1.5-profile/</loc>
   </url><url>

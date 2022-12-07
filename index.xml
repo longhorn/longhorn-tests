@@ -288,24 +288,6 @@ Steps:
     </item>
     
     <item>
-      <title>Air gap installation</title>
-      <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/air-gap/air-gap-installation/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/air-gap/air-gap-installation/</guid>
-      <description>Need to test air gap installation manually for now.</description>
-    </item>
-    
-    <item>
-      <title>Air gap installation with an instance-manager-image name longer than 63 characters</title>
-      <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/air-gap/air-gap-instance-manager-name/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/air-gap/air-gap-instance-manager-name/</guid>
-      <description>Host instance manager image under a name more than 63 characters in Docker hub Update longhorn-manager deployment flag &amp;ndash;instance-manager-image to that value Try to create a new volume and attach it. Expected behavior:There should be no error.</description>
-    </item>
-    
-    <item>
       <title>Automatically Upgrading Longhorn Engine Test</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/auto-upgrade-engine/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
@@ -1016,6 +998,17 @@ Then moniter the cron job pod log.
 And should see 2 jobs created concurrently.
 When update snapshot1 recurring job with concurrency set to 3.
 Then moniter the cron job pod log.</description>
+    </item>
+    
+    <item>
+      <title>Test Longhorn components recovery</title>
+      <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/resiliency/test-longhorn-component-recovery/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/resiliency/test-longhorn-component-recovery/</guid>
+      <description>This is a simple test is check if all the components are recoverable.
+####Test data setup:
+Deploy Longhorn on a 3 nodes cluster. Create a volume vol-1 using Longhorn UI. Create a volume vol-2 using the Longhorn storage class. Create a volume vol-3 with backing image. Create an RWX volume vol-4. Write some data in all the volumes created and compute the md5sum. Have all the volumes in attached state. ####Test steps:</description>
     </item>
     
     <item>
