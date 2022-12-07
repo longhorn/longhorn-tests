@@ -29,6 +29,7 @@ from common import generate_volume_name, Mi, wait_and_get_pv_for_pvc, create_pvc
 from common import make_deployment_with_pvc, apps_api # NOQA
 from common import check_pvc_in_specific_status # NOQA
 from common import wait_for_pvc_phase
+from common import RETRY_COMMAND_COUNT
 
 
 @pytest.fixture
@@ -267,6 +268,32 @@ def get_volumesnapshotcontent(volumesnapshot_uid):
             break
 
     return v
+
+
+def wait_volumesnapshot_deleted(name,
+                                namespace,
+                                retry_counts=RETRY_COMMAND_COUNT,
+                                can_be_deleted=True):
+    api = get_custom_object_api_client()
+    api_group = "snapshot.storage.k8s.io"
+    api_version = "v1beta1"
+    plural = "volumesnapshots"
+
+    deleted = False
+
+    for i in range(retry_counts):
+        try:
+            api.get_namespaced_custom_object(group=api_group,
+                                             version=api_version,
+                                             namespace=namespace,
+                                             plural=plural,
+                                             name=name)
+        except Exception:
+            deleted = True
+            break
+        time.sleep(RETRY_INTERVAL)
+
+    assert deleted == can_be_deleted
 
 
 def delete_volumesnapshot(name, namespace):
@@ -657,11 +684,19 @@ def prepare_test_csi_snapshot(apps_api, # NOQA
                               core_api, # NOQA
                               ): # NOQA
     """
-    0. Create Longhorn volume test-vol
-        - Size 5GB
-        - Create PV/PVC/Workload for the Longhorn volume
-        - Write data into volume
-        - Setup backup store
+    Context:
+
+    After deploy the CSI snapshot CRDs, Controller at
+    https://longhorn.io/docs/<longhorn version>/snapshots-and-backups/
+    csi-snapshot-support/enable-csi-snapshot-support/
+
+    Create VolumeSnapshotClass with type=snap
+      - longhorn-snapshot (type=snap)
+    Create Longhorn volume test-vol
+      - Size 5GB
+      - Create PV/PVC/Workload for the Longhorn volume
+      - Write data into volume
+      - Setup backup store
     """
     csi_snapshot_type = "snap"
     csisnapclass = \
@@ -947,81 +982,147 @@ def test_csi_snapshot_snap_create_volume_from_snapshot(apps_api, # NOQA
                                  new_pvc2['metadata']['name'], "Pending")
 
 
-@pytest.mark.skip(reason="TODO") # NOQA
-def test_csi_snapshot_snap_delete_csi_snapshot():
+def test_csi_snapshot_snap_delete_csi_snapshot_snapshot_exist(apps_api, # NOQA
+                                                              client, # NOQA
+                                                              make_deployment_with_pvc, # NOQA
+                                                              volumesnapshotclass, # NOQA
+                                                              volumesnapshot, # NOQA
+                                                              core_api): # NOQA
     """
-    Context:
-
-    After deploy the CSI snapshot CRDs, Controller at
-    https://longhorn.io/docs/1.2.4/snapshots-and-backups/
-    csi-snapshot-support/enable-csi-snapshot-support/
-
-    Create VolumeSnapshotClass with type=snap
-      - longhorn-snapshot (type=snap)
-
-    Test the extend CSI snapshot type=snap support to Longhorn snapshot
-
-    Steps:
-
-    0. Create Longhorn volume test-vol
+    1. Create volumesnapshotclass with type=snap
+    2. Create Longhorn volume test-vol
         - Size 5GB
         - Create PV/PVC/Workload for the Longhorn volume
         - Write data into volume
         - Setup backup store
-    1. Test delete CSI snapshot
-        - Type is snap
-            - volume is attached && snapshot doesn’t exist
-                - Delete the VolumeSnapshot
-                - VolumeSnapshot is deleted
-            - volume is attached && snapshot exist
-                - Verify the creation of Longhorn snapshot with the name in
-                  the field VolumeSnapshotContent.snapshotHandle
-                - Delete the VolumeSnapshot
-                - Verify that Longhorn snapshot is removed or marked as removed
-                - Verify that the VolumeSnapshot is deleted.
-            - volume is detached
-                - Delete the VolumeSnapshot
-                - Verify that VolumeSnapshot is stuck in deleting
+        - Create volumeSnapshot by volumesnapshotclass in step 1
+    3. Test delete CSI snapshot : Type is snap
+        - volume is attached && snapshot exist
+            - Verify the creation of Longhorn snapshot with the name in
+                the field VolumeSnapshotContent.snapshotHandle
+            - Delete the VolumeSnapshot
+            - Verify that Longhorn snapshot is removed or marked as removed
+            - Verify that the VolumeSnapshot is deleted.
     """
-    pass
+    vol, deployment, csisnapclass, expected_md5sum = \
+        prepare_test_csi_snapshot(apps_api, # NOQA
+                                  client, # NOQA
+                                  make_deployment_with_pvc, # NOQA
+                                  volumesnapshotclass, # NOQA
+                                  core_api) # NOQA
+
+    pvc_name = vol.name + "-pvc"
+    deployment['metadata']['name']
+    csivolsnap = volumesnapshot(vol.name + "-volumesnapshot",
+                                "default",
+                                csisnapclass["metadata"]["name"],
+                                "persistentVolumeClaimName",
+                                pvc_name)
+
+    wait_for_volumesnapshot_ready(
+                            volumesnapshot_name=csivolsnap["metadata"]["name"],
+                            namespace='default',
+                            ready_to_use=True)
+
+    delete_volumesnapshot(csivolsnap["metadata"]["name"], "default")
+
+    wait_volumesnapshot_deleted(csivolsnap["metadata"]["name"], "default")
 
 
-@pytest.mark.skip(reason="TODO") # NOQA
-def test_csi_snapshot_snap_param_delete_csi_snapshot():
+def test_csi_snapshot_snap_delete_csi_snapshot_snapshot_not_exist(apps_api, # NOQA
+                                                                  client, # NOQA
+                                                                  make_deployment_with_pvc, # NOQA
+                                                                  volumesnapshotclass, # NOQA
+                                                                  volumesnapshot, # NOQA
+                                                                  core_api): # NOQA
     """
-    Context:
-
-    After deploy the CSI snapshot CRDs, Controller at
-    https://longhorn.io/docs/1.2.4/snapshots-and-backups/
-    csi-snapshot-support/enable-csi-snapshot-support/
-
-    Create VolumeSnapshotClass with type=snap
-      - longhorn-snapshot (type=snap)
-
-    Test the extend CSI snapshot type=snap support to Longhorn snapshot
-
-    Steps:
-
-    0. Create Longhorn volume test-vol
+    1. Create volumesnapshotclass with type=snap
+    2. Create Longhorn volume test-vol
         - Size 5GB
         - Create PV/PVC/Workload for the Longhorn volume
         - Write data into volume
         - Setup backup store
-    1. Test delete CSI snapshot
-        - Type is snap
-            - volume is attached && snapshot doesn’t exist
-                - Delete the VolumeSnapshot
-                - VolumeSnapshot is deleted
-            - volume is attached && snapshot exist
-                - Verify the creation of Longhorn snapshot with the name in
-                  the field VolumeSnapshotContent.snapshotHandle
-                - Delete the VolumeSnapshot
-                - Verify that Longhorn snapshot is removed or marked as removed
-                - Verify that the VolumeSnapshot is deleted.
-            - volume is detached
-                - Delete the VolumeSnapshot
-                - Verify that VolumeSnapshot is stuck in deleting
+        - Create volumeSnapshot by volumesnapshotclass in step 1
+    3. Test delete CSI snapshot : Type is snap
+        - volume is attached && snapshot doesn’t exist
+            - Delete the VolumeSnapshot
+            - VolumeSnapshot is deleted
     """
+    vol, deployment, csisnapclass, expected_md5sum = \
+        prepare_test_csi_snapshot(apps_api, # NOQA
+                                  client, # NOQA
+                                  make_deployment_with_pvc, # NOQA
+                                  volumesnapshotclass, # NOQA
+                                  core_api) # NOQA
+
+    pvc_name = vol.name + "-pvc"
+    deployment['metadata']['name']
+    csivolsnap = volumesnapshot(vol.name + "-volumesnapshot",
+                                "default",
+                                csisnapclass["metadata"]["name"],
+                                "persistentVolumeClaimName",
+                                pvc_name)
+
+    wait_for_volumesnapshot_ready(
+                            volumesnapshot_name=csivolsnap["metadata"]["name"],
+                            namespace='default',
+                            ready_to_use=True)
+
+    vol = client.by_id_volume(vol.name)
+    snapshots = vol.snapshotList()
+    vol.snapshotDelete(name=snapshots[0].name)
+    vol.snapshotPurge()
+
+    delete_volumesnapshot(csivolsnap["metadata"]["name"], "default")
+
+    wait_volumesnapshot_deleted(csivolsnap["metadata"]["name"], "default")
+
+
+def test_csi_snapshot_snap_delete_csi_snapshot_volume_detached(apps_api, # NOQA
+                                                               client, # NOQA
+                                                               make_deployment_with_pvc, # NOQA
+                                                               volumesnapshotclass, # NOQA
+                                                               volumesnapshot, # NOQA
+                                                               core_api): # NOQA
+    """
+    1. Create volumesnapshotclass with type=snap
+    2. Create Longhorn volume test-vol
+        - Size 5GB
+        - Create PV/PVC/Workload for the Longhorn volume
+        - Write data into volume
+        - Setup backup store
+        - Create volumeSnapshot by volumesnapshotclass in step 1
+    3. Test delete CSI snapshot : Type is snap
+        - volume is detached
+            - Delete the VolumeSnapshot
+            - Verify that VolumeSnapshot is stuck in deleting
+    """
+    vol, deployment, csisnapclass, expected_md5sum = \
+        prepare_test_csi_snapshot(apps_api, # NOQA
+                                  client, # NOQA
+                                  make_deployment_with_pvc, # NOQA
+                                  volumesnapshotclass, # NOQA
+                                  core_api) # NOQA
+
+    pvc_name = vol.name + "-pvc"
+    deployment_name = deployment['metadata']['name']
+    csivolsnap = volumesnapshot(vol.name + "-volumesnapshot-3",
+                                "default",
+                                csisnapclass["metadata"]["name"],
+                                "persistentVolumeClaimName",
+                                pvc_name)
+
+    deployment['spec']['replicas'] = 0
+    apps_api.patch_namespaced_deployment(body=deployment,
+                                         namespace='default',
+                                         name=deployment_name)
+    wait_for_volume_detached(client, vol.name)
+
+    delete_volumesnapshot(csivolsnap["metadata"]["name"], "default")
+
+    wait_volumesnapshot_deleted(csivolsnap["metadata"]["name"],
+                                "default",
+                                can_be_deleted=False)
 
 
 def test_csi_snapshot_with_invalid_param(
