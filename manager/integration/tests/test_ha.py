@@ -64,6 +64,7 @@ from common import wait_pod, exec_command_in_pod
 from common import RETRY_EXEC_COUNTS, RETRY_EXEC_INTERVAL
 from common import get_volume_running_replica_cnt
 from common import update_node_disks
+from common import LONGHORN_NAMESPACE
 
 from backupstore import set_random_backupstore # NOQA
 from backupstore import backupstore_cleanup
@@ -2775,7 +2776,7 @@ def test_autosalvage_with_data_locality_enabled(client, core_api, make_deploymen
             .format(node_1["name"])
 
     ret = core_api.list_namespaced_pod(
-            namespace="longhorn-system", label_selector=labels)
+            namespace=LONGHORN_NAMESPACE, label_selector=labels)
     imr_name = ret.items[0].metadata.name
 
     delete_and_wait_pod(core_api, pod_name=imr_name,
@@ -2798,7 +2799,7 @@ def test_autosalvage_with_data_locality_enabled(client, core_api, make_deploymen
     labels = "app=longhorn-manager"
     selector = "spec.nodeName=={}".format(node_2["name"])
     ret = core_api.list_namespaced_pod(
-                namespace="longhorn-system", field_selector=selector,
+                namespace=LONGHORN_NAMESPACE, field_selector=selector,
                 label_selector=labels)
 
     mgr_name = ret.items[0].metadata.name
@@ -2866,7 +2867,7 @@ def test_recovery_from_im_deletion(client, core_api, volume_name, make_deploymen
     # Step5, 6
     volume = client.by_id_volume(volume_name)
     im_name = volume["controllers"][0]["instanceManagerName"]
-    exec_cmd = ["kubectl", "delete", "pod",  im_name, "-n", "longhorn-system"]
+    exec_cmd = ["kubectl", "delete", "pod",  im_name, "-n", LONGHORN_NAMESPACE]
     subprocess.check_output(exec_cmd)
 
     target_pod = \
