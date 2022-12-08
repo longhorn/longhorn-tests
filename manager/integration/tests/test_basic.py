@@ -85,6 +85,7 @@ from common import wait_for_volume_creation
 from common import create_host_disk, get_update_disks, update_node_disks
 from common import wait_for_disk_status, wait_for_rebuild_start, wait_for_rebuild_complete # NOQA
 from common import RETRY_BACKUP_COUNTS
+from common import LONGHORN_NAMESPACE
 
 from backupstore import backupstore_delete_volume_cfg_file
 from backupstore import backupstore_cleanup
@@ -4037,12 +4038,12 @@ def test_default_storage_class_syncup(core_api, request):  # NOQA
         """
         config_map = core_api.read_namespaced_config_map(
                                                 "longhorn-storageclass",
-                                                "longhorn-system")
+                                                LONGHORN_NAMESPACE)
         config_map_data = yaml.safe_load(config_map.data["storageclass.yaml"])
         config_map_data["allowVolumeExpansion"] = allow_exp
         config_map.data["storageclass.yaml"] = yaml.dump(config_map_data)
         core_api.patch_namespaced_config_map("longhorn-storageclass",
-                                             "longhorn-system",
+                                             LONGHORN_NAMESPACE,
                                              config_map)
 
         for i in range(RETRY_COMMAND_COUNT):
@@ -4067,7 +4068,7 @@ def test_default_storage_class_syncup(core_api, request):  # NOQA
     # step 1
     storage_api = common.get_storage_api_client()
     config_map = core_api.read_namespaced_config_map("longhorn-storageclass",
-                                                     "longhorn-system")
+                                                     LONGHORN_NAMESPACE)
     config_map_data = yaml.safe_load(config_map.data["storageclass.yaml"])
 
     # step 2
