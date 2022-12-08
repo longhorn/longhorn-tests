@@ -957,14 +957,14 @@ def test_setting_concurrent_rebuild_limit(client, core_api, volume_name):  # NOQ
 
 def setting_concurrent_volume_backup_restore_limit_concurrent_restoring_test(client, volname, is_DR_volumes=False):  # NOQA
     """
-    Given Setting concurrent-volume-backup-restore-per-node-limit is 3.
+    Given Setting concurrent-volume-backup-restore-per-node-limit is 2.
     And Volume (for backup) created.
     And Volume (for backup) has backup with some data.
 
     When Create some volumes (num_node * setting value * 3) from backup.
 
-    The Number of restoring volumes per node should be expected base on
-        if they are normal volumes or DR volumes.
+    Then Number of restoring volumes per node should be expected based on
+         if they are normal volumes or DR volumes.
     """
     concurrent_limit = 2
     update_setting(client, SETTING_CONCURRENT_VOLUME_BACKUP_RESTORE,
@@ -1058,6 +1058,24 @@ def test_setting_concurrent_volume_backup_restore_limit(set_random_backupstore, 
     """
     setting_concurrent_volume_backup_restore_limit_concurrent_restoring_test(
         client, volume_name
+    )
+
+
+def test_setting_concurrent_volume_backup_restore_limit_should_not_effect_dr_volumes(set_random_backupstore, client, volume_name):  # NOQA
+    """
+
+    Scenario: setting Concurrent Volume Backup Restore Limit
+              should not effect DR volumes
+
+    Issue: https://github.com/longhorn/longhorn/issues/4558
+
+    Given/When see:
+      setting_concurrent_volume_backup_restore_limit_concurrent_restoring_test
+
+    Then Number of restoring volumes can exceed the setting value.
+    """
+    setting_concurrent_volume_backup_restore_limit_concurrent_restoring_test(
+        client, volume_name, is_DR_volumes=True
     )
 
 
