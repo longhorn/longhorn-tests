@@ -376,6 +376,56 @@ def test_csi_offline_expansion(client, core_api, storage_class, pvc, pod_manifes
     assert volume.size == engine.size
 
 
+@pytest.mark.skip(reason="TODO")  # NOQA
+@pytest.mark.csi  # NOQA
+@pytest.mark.csi_expansion  # NOQA
+def test_csi_block_volume_online_expansion(client, core_api, storage_class, pvc, pod_manifest):  # NOQA
+    """
+    Test CSI feature: online expansion for block volume
+
+    1. Create a new `storage_class` with `allowVolumeExpansion` set
+    2. Create PVC with access mode "block" and Pod with the new StorageClass
+    3. Generate `test_data` in a directory the volume is not mounted on.
+    4. Copy the `test data` to the volume block device asynchronously.
+    5. During the copy, update pvc.spec.resources to expand the volume
+    6. Verify the volume expansion done using Longhorn API
+       and Check the PVC & PV size
+    7. Wait for the copy complete.
+    8. Calculate the checksum for the copied data inside the block volume
+       asynchronously.
+    9. During the calculation, update pvc.spec.resources to expand the volume
+       again.
+    10. Wait for the calculation complete, then compare the checksum.
+    11. Do cleanup: Remove the original `test_data`as well as the pod and PVC.
+    """
+    pass
+
+
+@pytest.mark.skip(reason="TODO")  # NOQA
+@pytest.mark.csi  # NOQA
+@pytest.mark.csi_expansion  # NOQA
+def test_csi_mount_volume_online_expansion(client, core_api, storage_class, pvc, pod_manifest):  # NOQA
+    """
+    Test CSI feature: online expansion for mount volume
+
+    1. Create a new `storage_class` with `allowVolumeExpansion` set
+    2. Create PVC and Pod with the new StorageClass
+    3. Generate `test_data` in a directory the volume is not mounted on.
+    4. Copy the `test data` to the volume mount point asynchronously.
+    5. During the copy, update pvc.spec.resources to expand the volume
+    6. Verify the volume expansion done using Longhorn API
+      and Check the PVC & PV size
+    7. Wait for the copy complete.
+    8. Calculate the checksum for the copied data inside the volume mount point
+      asynchronously.
+    9. During the calculation, update pvc.spec.resources to expand the volume
+      again.
+    10. Wait for the calculation complete, then compare the checksum.
+    11. Do cleanup: Remove the original `test_data`as well as the pod and PVC.
+    """
+    pass
+
+
 def test_xfs_pv(client, core_api, pod_manifest):  # NOQA
     """
     Test create PV with new XFS filesystem
