@@ -14,13 +14,15 @@ from common import delete_replica_processes, crash_replica_processes
 from common import get_self_host_id, check_volume_endpoint
 from common import wait_for_snapshot_purge, write_volume_random_data
 from common import create_snapshot, DIRECTORY_PATH
-from common import expand_attached_volume, check_block_device_size
-from common import write_volume_data, generate_random_data
+from common import check_block_device_size
+from common import generate_random_data
 from common import wait_for_rebuild_complete
 from common import disable_auto_salvage # NOQA
 from common import pod_make, pod, csi_pv, pvc  # NOQA
 from common import create_pv_for_volume, create_pvc_for_volume
-from common import create_pvc_spec, create_and_wait_pod
+from common import create_pvc_spec, create_pvc, create_and_wait_pod
+from common import wait_and_get_pv_for_pvc, expand_and_wait_for_pvc
+from common import create_storage_class
 from common import write_pod_volume_random_data
 from common import wait_for_volume_healthy, wait_for_volume_degraded
 from common import get_pod_data_md5sum
@@ -43,7 +45,7 @@ from common import wait_for_volume_condition_restore
 from common import crash_engine_process_with_sigkill
 from common import wait_for_volume_healthy_no_frontend
 from common import exec_instance_manager
-from common import SIZE, VOLUME_RWTEST_SIZE, EXPAND_SIZE, Gi
+from common import SIZE, VOLUME_RWTEST_SIZE, Gi
 from common import RETRY_COUNTS, RETRY_INTERVAL, RETRY_INTERVAL_LONG
 from common import SETTING_REPLICA_NODE_SOFT_ANTI_AFFINITY
 from common import SETTING_REPLICA_REPLENISHMENT_WAIT_INTERVAL
@@ -51,8 +53,7 @@ from common import write_pod_volume_data
 from common import read_volume_data
 from common import VOLUME_FIELD_ROBUSTNESS, VOLUME_ROBUSTNESS_DEGRADED
 from common import VOLUME_ROBUSTNESS_HEALTHY
-from common import wait_for_volume_expansion
-from common import delete_and_wait_pvc, delete_and_wait_pv
+from common import wait_for_volume_expansion, wait_for_dr_volume_expansion
 from common import wait_for_volume_replica_count, wait_for_replica_failed
 from common import settings_reset # NOQA
 from common import set_node_tags, set_node_scheduling # NOQA
@@ -65,6 +66,10 @@ from common import RETRY_EXEC_COUNTS, RETRY_EXEC_INTERVAL
 from common import get_volume_running_replica_cnt
 from common import update_node_disks
 from common import LONGHORN_NAMESPACE
+from common import get_volume_endpoint
+from common import copy_file_to_volume_dev_mb_data
+from common import write_volume_dev_random_mb_data
+from common import get_volume_dev_mb_data_md5sum
 
 from backupstore import set_random_backupstore # NOQA
 from backupstore import backupstore_cleanup
@@ -499,24 +504,26 @@ def test_ha_prohibit_deleting_last_replica(client, volume_name):  # NOQA
     cleanup_volume(client, volume)
 
 
-def test_ha_recovery_with_expansion(client, volume_name):   # NOQA
+def test_ha_recovery_with_expansion(client, volume_name, request):   # NOQA
     """
     [HA] Test recovery with volume expansion
 
-    1. Create a volume length `SIZE` and attach to the current node.
-    2. Write `data1` to the volume
-    3. Expand the volume to `EXPAND_SIZE`, and check volume has been expanded
-    4. Write `data2` starting from `SIZE`.
-    5. Remove replica0 from volume
-    6. Wait volume to start rebuilding and complete
-    7. Check the `data1` and `data2`
-
-    FIXME: why on step 6, checked volume.replicas >= 2?
+    1. Create a volume and attach it to the current node.
+    2. Write a large amount of data to the volume
+    3. Remove one random replica and wait for the rebuilding starts
+    4. Expand the volume immediately after the rebuilding start
+    5. check and wait for the volume expansion and rebuilding
+    6. Write more data to the volume
+    7. Remove another replica of volume
+    8. Wait volume to start rebuilding and complete
+    9. Check the data intacty
     """
-    volume = create_and_check_volume(client, volume_name, 2, SIZE)
+    original_size = str(1 * Gi)
+    expand_size = str(2 * Gi)
+    volume = create_and_check_volume(client, volume_name, 2, original_size)
 
     host_id = get_self_host_id()
-    volume = volume.attach(hostId=host_id)
+    volume.attach(hostId=host_id)
     volume = common.wait_for_volume_healthy(client, volume_name)
     assert len(volume.replicas) == 2
     replica0 = volume.replicas[0]
@@ -524,48 +531,57 @@ def test_ha_recovery_with_expansion(client, volume_name):   # NOQA
     replica1 = volume.replicas[1]
     assert replica1.name != ""
 
-    data1 = write_volume_random_data(volume)
+    volume_path = get_volume_endpoint(volume)
+    tmp_file_path = "/tmp/test-ha-recovery-during-expansion-data1"
 
-    expand_attached_volume(client, volume_name)
-    volume = client.by_id_volume(volume_name)
-    check_block_device_size(volume, int(EXPAND_SIZE))
+    def finalizer():
+        exec_cmd = ["rm", "-rf", tmp_file_path]
+        subprocess.check_output(exec_cmd)
 
-    data2 = {
-        'pos': int(SIZE),
-        'content': generate_random_data(VOLUME_RWTEST_SIZE),
-    }
-    data2 = write_volume_data(volume, data2)
+    request.addfinalizer(finalizer)
 
+    # Step 2: prepare data then copy it into the volume
+    write_volume_dev_random_mb_data(
+        tmp_file_path, 0, DATA_SIZE_IN_MB_4)
+    cksum1 = get_volume_dev_mb_data_md5sum(
+        tmp_file_path, 0, DATA_SIZE_IN_MB_4)
+    copy_file_to_volume_dev_mb_data(
+        tmp_file_path, volume_path, 0, 0, DATA_SIZE_IN_MB_4)
+
+    # Step 3: Trigger volume rebuilding first
     volume.replicaRemove(name=replica0.name)
-    # wait until we saw a replica starts rebuilding
-    new_replica_found = False
-    for i in range(RETRY_COUNTS):
-        v = client.by_id_volume(volume_name)
-        for r in v.replicas:
-            if r.name != replica0.name and \
-                    r.name != replica1.name:
-                new_replica_found = True
-                break
-        if new_replica_found:
-            break
-        time.sleep(RETRY_INTERVAL)
-    wait_for_rebuild_complete(client, volume_name)
-    assert new_replica_found
+    wait_for_rebuild_start(client, volume_name)
+    # Step 4: Then trigger volume expansion immediately
+    volume.expand(size=expand_size)
+    # Step 5: Wait for volume expansion & rebuilding
+    wait_for_volume_expansion(client, volume.name)
+    wait_for_rebuild_complete(client, volume.name)
+    volume = client.by_id_volume(volume_name)
+    check_block_device_size(volume, int(expand_size))
+
+    write_volume_dev_random_mb_data(
+        tmp_file_path, 0, DATA_SIZE_IN_MB_4)
+    cksum2 = get_volume_dev_mb_data_md5sum(
+        tmp_file_path, 0, DATA_SIZE_IN_MB_4)
+    copy_file_to_volume_dev_mb_data(
+        tmp_file_path, volume_path, 0, 1024, DATA_SIZE_IN_MB_4)
+
+    # Step 7 & 8: Trigger volume rebuilding again after expansion
+    volume.replicaRemove(name=replica1.name)
+    wait_for_rebuild_start(client, volume_name)
+    wait_for_rebuild_complete(client, volume.name)
 
     volume = common.wait_for_volume_healthy(client, volume_name)
-    assert volume.state == common.VOLUME_STATE_ATTACHED
-    assert volume.robustness == common.VOLUME_ROBUSTNESS_HEALTHY
-    assert len(volume.replicas) >= 2
+    assert len(volume.replicas) == 2
+    volume = client.by_id_volume(volume_name)
+    check_block_device_size(volume, int(expand_size))
 
-    found = False
-    for replica in volume.replicas:
-        if replica.name == replica1.name:
-            found = True
-            break
-    assert found
-
-    check_volume_data(volume, data1, False)
-    check_volume_data(volume, data2)
+    volume_cksum1 = get_volume_dev_mb_data_md5sum(
+        volume_path, 0, DATA_SIZE_IN_MB_4)
+    assert cksum1 == volume_cksum1
+    volume_cksum2 = get_volume_dev_mb_data_md5sum(
+        volume_path, 1024, DATA_SIZE_IN_MB_4)
+    assert cksum2 == volume_cksum2
 
     cleanup_volume(client, volume)
 
@@ -954,7 +970,7 @@ def test_rebuild_with_inc_restoration(set_random_backupstore, client, core_api, 
     backupstore_cleanup(client)
 
 
-def test_inc_restoration_with_multiple_rebuild_and_expansion(set_random_backupstore, client, core_api, volume_name, csi_pv, pvc, pod_make): # NOQA
+def test_inc_restoration_with_multiple_rebuild_and_expansion(set_random_backupstore, client, core_api, volume_name, storage_class, csi_pv, pvc, pod_make): # NOQA
     """
     [HA] Test if the rebuild is disabled for the DR volume
     1. Setup a random backupstore.
@@ -963,62 +979,56 @@ def test_inc_restoration_with_multiple_rebuild_and_expansion(set_random_backupst
     4. Create the 1st backup for the volume.
     5. Create a DR volume based on the backup
        and wait for the init restoration complete.
-    6. Shut down the pod and wait for the normal volume detached.
-    7. Expand the normal volume and wait for expansion complete.
-    8. Re-launch a pod for the normal volume.
-    9. Write more data to the normal volume. Make sure there is data in the
+    6. Shutdown the pod and wait for the std volume detached.
+    7. Offline expand the std volume and wait for expansion complete.
+    8. Re-launch a pod for the std volume.
+    9. Write more data to the std volume. Make sure there is data in the
        expanded part.
-    10. Create the 2nd backup and wait for the backup creatiom complete.
-    11. Delete one replica and trigger incremental restore simultaneously.
+    10. Create the 2nd backup and wait for the backup creation complete.
+    11. For the DR volume, delete one replica and trigger incremental restore
+        simultaneously.
     12. Wait for the inc restoration complete and the volume becoming Healthy.
     13. Check the DR volume size and snapshot info. Make sure there is only
         one snapshot in the volume.
-    14. Write data to the normal volume then create the 3rd backup.
-    15. Wait for the 3rd backup creation then trigger the inc restore for the
-        DR volume.
-    16. Wait for the restore complete then activate the DR volume.
-    17. Create PV/PVC/Pod for the activated volume
+    14. Online expand the std volume and wait for expansion complete.
+    15. Write data to the std volume then create the 3rd backup.
+    16. Trigger the inc restore then re-verify the snapshot info.
+    17. Activate the DR volume.
+    18. Create PV/PVC/Pod for the activated volume
         and wait for the pod start.
-    18. Check if the restored volume is state `healthy`
+    19. Check if the restored volume is state `healthy`
         after the attachment.
-    19. Check md5sum of the data in the activated volume.
-    20. Crash one random replica. Then verify the rebuild still works fine for
+    20. Check md5sum of the data in the activated volume.
+    21. Crash one random replica. Then verify the rebuild still works fine for
         the activated volume.
-    21. Do cleanup.
+    22. Do cleanup.
     """
-    data_path1 = "/data/test1"
+    create_storage_class(storage_class)
 
-    std_volume_name = volume_name + "-std"
-    std_pod_name = std_volume_name + "-pod"
-    std_pv_name = std_volume_name + "-pv"
-    std_pvc_name = std_volume_name + "-pvc"
-    size = str(1 * Gi)
-
-    std_pod = pod_make(name=std_pod_name)
-    csi_pv['metadata']['name'] = std_pv_name
-    csi_pv['spec']['csi']['volumeHandle'] = std_volume_name
-    csi_pv['spec']['capacity']['storage'] = size
-    csi_pv['spec']['persistentVolumeReclaimPolicy'] = 'Retain'
+    original_size = 1 * Gi
+    std_pod_name = 'std-pod-for-dr-expansion-and-rebuilding'
+    std_pvc_name = "pvc-" + std_pod_name
     pvc['metadata']['name'] = std_pvc_name
-    pvc['spec']['volumeName'] = std_pv_name
-    pvc['spec']['resources']['requests']['storage'] = size
-    pvc['spec']['storageClassName'] = ''
-    std_pod['spec']['volumes'] = [create_pvc_spec(std_pvc_name)]
+    pvc['spec']['storageClassName'] = storage_class['metadata']['name']
+    pvc['spec']['resources']['requests']['storage'] = \
+        str(original_size)
+    create_pvc(pvc)
 
-    create_and_check_volume(client, std_volume_name,
-                            num_of_replicas=3, size=size)
-    core_api.create_persistent_volume(csi_pv)
-    core_api.create_namespaced_persistent_volume_claim(
-        body=pvc, namespace='default')
-    create_and_wait_pod(core_api, std_pod)
-    wait_for_volume_healthy(client, std_volume_name)
+    std_pod_manifest = pod_make(name=std_pod_name)
+    std_pod_manifest['spec']['volumes'] = [create_pvc_spec(std_pvc_name)]
+    create_and_wait_pod(core_api, std_pod_manifest)
+
+    std_pv = wait_and_get_pv_for_pvc(core_api, std_pvc_name)
+    assert std_pv.status.phase == "Bound"
+    std_volume_name = std_pv.spec.csi.volume_handle
+    std_volume = wait_for_volume_healthy(client, std_volume_name)
 
     # Create the 1st backup.
+    data_path1 = "/data/test1"
     write_pod_volume_random_data(core_api, std_pod_name,
-                                 data_path1, DATA_SIZE_IN_MB_3)
+                                 data_path1, DATA_SIZE_IN_MB_4)
     std_md5sum1 = get_pod_data_md5sum(core_api, std_pod_name, data_path1)
 
-    std_volume = client.by_id_volume(std_volume_name)
     snap1 = create_snapshot(client, std_volume_name)
     std_volume.snapshotBackup(name=snap1.name)
     wait_for_backup_completion(client,
@@ -1036,30 +1046,20 @@ def test_inc_restoration_with_multiple_rebuild_and_expansion(set_random_backupst
     wait_for_volume_healthy_no_frontend(client, dr_volume_name)
     wait_for_backup_restore_completed(client, dr_volume_name, b1.name)
 
-    # Do offline expansion for the volume.
+    # Step 7: Do offline expansion for the std volume.
     delete_and_wait_pod(core_api, std_pod_name)
-    delete_and_wait_pvc(core_api, std_pvc_name)
-    delete_and_wait_pv(core_api, std_pv_name)
-    std_volume = wait_for_volume_detached(client, std_volume_name)
-    expand_size = str(2 * Gi)
-    std_volume.expand(size=str(expand_size))
+    wait_for_volume_detached(client, std_volume_name)
+    expand_size1 = 2 * Gi
+    expand_and_wait_for_pvc(core_api, pvc, expand_size1)
     wait_for_volume_expansion(client, std_volume_name)
+    std_volume = wait_for_volume_detached(client, std_volume_name)
+    assert std_volume.size == str(expand_size1)
 
     # Re-launch the pod
-    csi_pv['spec']['capacity']['storage'] = expand_size
-    pvc['spec']['resources']['requests']['storage'] = expand_size
-    core_api.create_persistent_volume(csi_pv)
-    core_api.create_namespaced_persistent_volume_claim(
-        body=pvc, namespace='default')
-    create_and_wait_pod(core_api, std_pod)
+    create_and_wait_pod(core_api, std_pod_manifest)
     wait_for_volume_healthy(client, std_volume_name)
 
-    dr_volume = client.by_id_volume(dr_volume_name)
-    for r in dr_volume.replicas:
-        failed_replica = r.name
-        break
-    assert failed_replica
-
+    # Step 9:
     # When the total writen data size is more than 1Gi, there must be data in
     # the expanded part.
     data_path2 = "/data/test2"
@@ -1073,13 +1073,19 @@ def test_inc_restoration_with_multiple_rebuild_and_expansion(set_random_backupst
                                retry_count=600)
     bv, b2 = find_backup(client, std_volume_name, snap2.name)
 
-    # Trigger rebuild and the incremental restoration
+    # Step 11:
+    # Pick up a random replica and fail it.
+    # Then trigger rebuild and the incremental restoration
+    dr_volume = client.by_id_volume(dr_volume_name)
+    for r in dr_volume.replicas:
+        failed_replica = r.name
+        break
+    assert failed_replica
     dr_volume.replicaRemove(name=failed_replica)
     client.list_backupVolume()
 
-    wait_for_volume_degraded(client, dr_volume_name)
-
     # Wait for the rebuild start
+    wait_for_volume_degraded(client, dr_volume_name)
     running_replica_count = 0
     for i in range(RETRY_COUNTS):
         running_replica_count = 0
@@ -1093,32 +1099,55 @@ def test_inc_restoration_with_multiple_rebuild_and_expansion(set_random_backupst
     assert running_replica_count == 3
 
     # Wait for inc restoration & rebuild complete
+    wait_for_dr_volume_expansion(client, dr_volume_name, str(expand_size1))
     wait_for_volume_healthy_no_frontend(client, dr_volume_name)
     check_volume_last_backup(client, dr_volume_name, b2.name)
 
     # Verify the snapshot info
     dr_volume = client.by_id_volume(dr_volume_name)
-    assert dr_volume.size == expand_size
+    assert dr_volume.size == str(expand_size1)
     snapshots = dr_volume.snapshotList(volume=dr_volume_name)
     assert len(snapshots) == 2
     for snap in snapshots:
         if snap["name"] != "volume-head":
-            assert snap["name"] == "expand-" + expand_size
+            assert snap["name"] == "expand-" + str(expand_size1)
             assert not snap["usercreated"]
             assert "volume-head" in snap["children"]
 
+    # Step 14: Do online expansion for the std volume.
+    expand_size2 = 3 * Gi
+    expand_and_wait_for_pvc(core_api, pvc, expand_size2)
+    wait_for_volume_expansion(client, std_volume_name)
+
+    # Step 15:
+    # When the total writen data size is more than 2Gi, there must be data in
+    # the 2nd expanded part.
     data_path3 = "/data/test3"
     write_pod_volume_random_data(core_api, std_pod_name,
-                                 data_path3, DATA_SIZE_IN_MB_1)
+                                 data_path3, DATA_SIZE_IN_MB_4)
     std_md5sum3 = get_pod_data_md5sum(core_api, std_pod_name, data_path3)
+    # Then create the 3rd backup for the std volume
     snap3 = create_snapshot(client, std_volume_name)
     std_volume = client.by_id_volume(std_volume_name)
     std_volume.snapshotBackup(name=snap3.name)
     wait_for_backup_completion(client, std_volume_name, snap3.name)
     bv, b3 = find_backup(client, std_volume_name, snap3.name)
 
+    # Step 16:
+    # Trigger the restoration for the DR volume.
     client.list_backupVolume()
     check_volume_last_backup(client, dr_volume_name, b3.name)
+    wait_for_dr_volume_expansion(client, dr_volume_name, str(expand_size2))
+    # Then re-verify the snapshot info
+    dr_volume = client.by_id_volume(dr_volume_name)
+    assert dr_volume.size == str(expand_size2)
+    snapshots = dr_volume.snapshotList(volume=dr_volume_name)
+    assert len(snapshots) == 2
+    for snap in snapshots:
+        if snap["name"] != "volume-head":
+            assert snap["name"] == "expand-" + str(expand_size2)
+            assert not snap["usercreated"]
+            assert "volume-head" in snap["children"]
 
     activate_standby_volume(client, dr_volume_name)
     wait_for_volume_detached(client, dr_volume_name)
@@ -1131,9 +1160,7 @@ def test_inc_restoration_with_multiple_rebuild_and_expansion(set_random_backupst
     create_pvc_for_volume(client, core_api, dr_volume, dr_pvc_name)
     dr_pod['spec']['volumes'] = [create_pvc_spec(dr_pvc_name)]
     create_and_wait_pod(core_api, dr_pod)
-
-    dr_volume = client.by_id_volume(dr_volume_name)
-    assert dr_volume[VOLUME_FIELD_ROBUSTNESS] == VOLUME_ROBUSTNESS_HEALTHY
+    dr_volume = wait_for_volume_healthy(client, dr_volume_name)
 
     md5sum1 = get_pod_data_md5sum(core_api, dr_pod_name, data_path1)
     assert std_md5sum1 == md5sum1
@@ -2610,7 +2637,7 @@ def test_engine_image_missing_on_some_nodes():
     2. Create another volume, vol-2, of 3 replicas
     3. Taint node-1 with the taint: key=value:NoSchedule
     4. Verify that we can attach, take snapshot, take a backup,
-       detach, then expand vol-1
+       expand, then detach vol-1
 
     Case 2: Test volume operations when engine image DaemonSet is not fully
     deployed
@@ -2628,7 +2655,7 @@ def test_engine_image_missing_on_some_nodes():
        node-1 since there is no engine image on node-1. The attach API call
        returns error
     8. Verify that we can attach to another node, take snapshot, take a backup,
-       detach, then expand for vol-1
+       expand, then detach vol-1
     9. Verify that vol-2 cannot be attached to any nodes because one of
        its replicas is sitting on the node-1 which doesn't have the
        engine image. The attach API call returns error

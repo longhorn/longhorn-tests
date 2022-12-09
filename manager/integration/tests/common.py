@@ -819,6 +819,20 @@ def copy_pod_volume_data(api, pod_name, src_path, dest_path):
         tty=False)
 
 
+def copy_file_to_volume_dev_mb_data(src_path, dest_path,
+                                    src_offset, dest_offset, size_in_mb,
+                                    timeout_cnt=5):
+    cmd = [
+        '/bin/sh',
+        '-c',
+        'dd if=%s of=%s bs=1M count=%d skip=%d seek=%d' %
+        (src_path, dest_path, size_in_mb, src_offset, dest_offset)
+    ]
+    with timeout(seconds=STREAM_EXEC_TIMEOUT * timeout_cnt,
+                 error_message='Timeout on copying file to dev'):
+        subprocess.check_call(cmd)
+
+
 def write_volume_dev_random_mb_data(path, offset_in_mb, length_in_mb,
                                     timeout_cnt=3):
     write_cmd = [
@@ -3947,7 +3961,20 @@ def wait_for_volume_expansion(longhorn_api_client, volume_name):
     for i in range(RETRY_COUNTS):
         volume = longhorn_api_client.by_id_volume(volume_name)
         engine = get_volume_engine(volume)
-        if engine.size == volume.size and volume.state == "detached":
+        if engine.size == volume.size:
+            complete = True
+            break
+        time.sleep(RETRY_INTERVAL)
+    assert complete
+
+
+def wait_for_expansion_error_clear(longhorn_api_client, volume_name):
+    complete = False
+    for i in range(RETRY_COUNTS):
+        volume = longhorn_api_client.by_id_volume(volume_name)
+        engine = get_volume_engine(volume)
+        if engine.lastExpansionFailedAt == "" and \
+                engine.lastExpansionError == "":
             complete = True
             break
         time.sleep(RETRY_INTERVAL)
@@ -3974,11 +4001,17 @@ def wait_for_dr_volume_expansion(longhorn_api_client, volume_name, size_str):
             if engine.size == volume.size:
                 complete = True
                 break
-        time.sleep(RETRY_INTERVAL)
+        time.sleep(RETRY_INTERVAL_LONG)
     assert complete
 
 
-def expand_and_wait_for_pvc(api, pvc):
+def expand_and_wait_for_pvc(api, pvc, size):
+    pvc['spec']['resources'] = {
+        'requests': {
+            'storage': size_to_string(size)
+        }
+    }
+
     pvc_name = pvc['metadata']['name']
     api.patch_namespaced_persistent_volume_claim(
         pvc_name, 'default', pvc)
@@ -4029,11 +4062,51 @@ def fail_replica_expansion(client, api, volname, size, replicas=None):
         if not r.instanceManagerName:
             raise Exception(
                 "Should use replica objects in the running volume,"
-                "otherwise the field r.instanceManagerName is emtpy")
+                "otherwise the field r.instanceManagerName is empty")
         stream(api.connect_get_namespaced_pod_exec,
                r.instanceManagerName,
                LONGHORN_NAMESPACE, command=cmd,
                stderr=True, stdin=False, stdout=True, tty=False)
+
+
+def fix_replica_expansion_failure(client, api, volname, size, replicas=None):
+    if replicas is None:
+        volume = client.by_id_volume(volname)
+        replicas = volume.replicas
+
+    for r in replicas:
+        if not r.instanceManagerName:
+            raise Exception(
+                "Should use replica objects in the running volume,"
+                "otherwise the field r.instanceManagerName is empty")
+
+        tmp_meta_file_name = \
+            EXPANSION_SNAP_TMP_META_NAME_PATTERN % size
+        tmp_meta_file_path = \
+            INSTANCE_MANAGER_HOST_PATH_PREFIX + \
+            r.dataPath + "/" + tmp_meta_file_name
+
+        removed = False
+        for i in range(RETRY_COMMAND_COUNT):
+            # os.path.join() cannot deal with the path containing "/"
+            cmd = [
+                '/bin/sh', '-c',
+                'rm -rf %s && sync' % tmp_meta_file_path
+            ]
+            stream(api.connect_get_namespaced_pod_exec,
+                   r.instanceManagerName,
+                   LONGHORN_NAMESPACE, command=cmd,
+                   stderr=True, stdin=False, stdout=True, tty=False)
+            cmd = ['/bin/sh', '-c', 'ls %s' % tmp_meta_file_path]
+            output = stream(
+                api.connect_get_namespaced_pod_exec,
+                r.instanceManagerName, LONGHORN_NAMESPACE, command=cmd,
+                stderr=True, stdin=False, stdout=True, tty=False)
+            if "No such file or directory" in output:
+                removed = True
+                break
+            time.sleep(RETRY_INTERVAL_LONG)
+        assert removed
 
 
 def wait_for_expansion_failure(client, volume_name, last_failed_at=""):
@@ -4367,7 +4440,7 @@ def wait_for_pod_remount(core_api, pod_name, chk_path="/data/lost+found"):
     assert ready
 
 
-def expand_attached_volume(client, volume_name, size=EXPAND_SIZE):
+def offline_expand_attached_volume(client, volume_name, size=EXPAND_SIZE):
     volume = wait_for_volume_healthy(client, volume_name)
     engine = get_volume_engine(volume)
 
@@ -4375,6 +4448,7 @@ def expand_attached_volume(client, volume_name, size=EXPAND_SIZE):
     volume = wait_for_volume_detached(client, volume.name)
     volume.expand(size=size)
     wait_for_volume_expansion(client, volume.name)
+    volume = wait_for_volume_detached(client, volume.name)
     volume.attach(hostId=engine.hostId, disableFrontend=False)
     wait_for_volume_healthy(client, volume_name)
 

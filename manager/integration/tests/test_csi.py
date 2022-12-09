@@ -19,7 +19,7 @@ from common import size_to_string, create_storage_class, create_pvc
 from common import delete_and_wait_pvc, delete_and_wait_pv
 from common import wait_and_get_pv_for_pvc
 from common import generate_random_data, read_volume_data
-from common import write_pod_volume_data, write_volume_random_data
+from common import write_pod_volume_data
 from common import write_pod_block_volume_data, read_pod_block_volume_data
 from common import get_pod_data_md5sum
 from common import generate_volume_name, create_and_check_volume
@@ -29,9 +29,8 @@ from common import expand_and_wait_for_pvc, wait_for_volume_expansion
 from common import get_volume_engine, wait_for_volume_detached
 from common import create_pv_for_volume, create_pvc_for_volume
 from common import get_self_host_id, get_volume_endpoint
-from common import wait_for_volume_healthy, wait_for_volume_delete
-from common import fail_replica_expansion, wait_for_expansion_failure
-from common import check_volume_data
+from common import wait_for_volume_healthy
+from common import fail_replica_expansion
 from backupstore import set_random_backupstore  # NOQA
 
 # Using a StorageClass because GKE is using the default StorageClass if not
@@ -348,13 +347,9 @@ def test_csi_offline_expansion(client, core_api, storage_class, pvc, pod_manifes
     volume_name = pv.spec.csi.volume_handle
     wait_for_volume_detached(client, volume_name)
 
-    pvc['spec']['resources'] = {
-        'requests': {
-            'storage': size_to_string(EXPANDED_VOLUME_SIZE*Gi)
-        }
-    }
-    expand_and_wait_for_pvc(core_api, pvc)
+    expand_and_wait_for_pvc(core_api, pvc, EXPANDED_VOLUME_SIZE*Gi)
     wait_for_volume_expansion(client, volume_name)
+    wait_for_volume_detached(client, volume_name)
     volume = client.by_id_volume(volume_name)
     assert volume.state == "detached"
     assert volume.size == str(EXPANDED_VOLUME_SIZE*Gi)
@@ -468,13 +463,11 @@ def test_csi_expansion_with_replica_failure(client, core_api, storage_class, pvc
     3. Create an empty directory with expansion snapshot tmp meta file path
        for one replica so that the replica expansion will fail
     4. Generate `test_data` and write to the pod
-    5. Delete the pod and wait for volume detachment
-    6. Update pvc.spec.resources to expand the volume
-    7. Check expansion result using Longhorn API. There will be expansion error
+    5. Update pvc.spec.resources to expand the volume
+    6. Check expansion result using Longhorn API. There will be expansion error
        caused by the failed replica but overall the expansion should succeed.
-    8. Create a new pod and
-       check if the volume will reuse the failed replica during rebuilding.
-    9. Validate the volume content, then check if data writing looks fine
+    7. Check if the volume will reuse the failed replica during rebuilding.
+    8. Validate the volume content, then check if data writing looks fine
     """
     replenish_wait_setting = \
         client.by_id_setting(SETTING_REPLICA_REPLENISHMENT_WAIT_INTERVAL)
@@ -508,31 +501,20 @@ def test_csi_expansion_with_replica_failure(client, core_api, storage_class, pvc
     test_data = generate_random_data(VOLUME_RWTEST_SIZE)
     write_pod_volume_data(core_api, pod_name, test_data)
 
-    delete_and_wait_pod(core_api, pod_name)
-    wait_for_volume_detached(client, volume_name)
-
     # There will be replica expansion error info
     # but the expansion should succeed.
-    pvc['spec']['resources'] = {
-        'requests': {
-            'storage': size_to_string(EXPANDED_VOLUME_SIZE*Gi)
-        }
-    }
-    expand_and_wait_for_pvc(core_api, pvc)
-    wait_for_expansion_failure(client, volume_name)
+    # Will not try to capture the transient error info.
+    expand_and_wait_for_pvc(core_api, pvc, EXPANDED_VOLUME_SIZE*Gi)
     wait_for_volume_expansion(client, volume_name)
     volume = client.by_id_volume(volume_name)
-    assert volume.state == "detached"
     assert volume.size == expand_size
+    # May not be able to capture the transient state. Best effort here.
     for r in volume.replicas:
-        if r.name == failed_replica.name:
-            assert r.failedAt != ""
-        else:
-            assert r.failedAt == ""
+        if r.failedAt != "":
+            assert r.name == failed_replica.name
 
     # Check if the failed replica will be reused during rebuilding,
     # and if the volume still works fine.
-    create_and_wait_pod(core_api, pod_manifest)
     volume = wait_for_volume_healthy(client, volume_name)
     for r in volume.replicas:
         assert r.mode == "RW"
@@ -724,55 +706,3 @@ def test_csi_minimal_volume_size(
     write_pod_volume_data(core_api, pod_name, test_data, test_file)
     read_data = read_volume_data(core_api, pod_name, test_file)
     assert read_data == test_data
-
-
-def test_csi_expansion_with_size_round_up(client, core_api):  # NOQA
-    """
-    test expand longhorn volume
-
-    1. Create longhorn volume with size '1Gi'
-    2. Attach, write data, and detach
-    3. Expand volume size to '2000000000/2G' and
-        check if size round up '2000683008'
-    4. Attach, write data, and detach
-    5. Expand volume size to '2Gi' and check if size is '2147483648'
-    6. Attach, write data, and detach
-    """
-
-    volume_name = generate_volume_name()
-    volume = create_and_check_volume(client, volume_name, 2, str(1 * Gi))
-
-    self_hostId = get_self_host_id()
-    volume.attach(hostId=self_hostId, disableFrontend=False)
-    volume = wait_for_volume_healthy(client, volume_name)
-    test_data = write_volume_random_data(volume)
-    volume.detach(hostId="")
-    volume = wait_for_volume_detached(client, volume_name)
-
-    volume.expand(size="2000000000")
-    wait_for_volume_expansion(client, volume_name)
-    volume = client.by_id_volume(volume_name)
-    assert volume.size == "2000683008"
-
-    self_hostId = get_self_host_id()
-    volume.attach(hostId=self_hostId, disableFrontend=False)
-    volume = wait_for_volume_healthy(client, volume_name)
-    check_volume_data(volume, test_data, False)
-    test_data = write_volume_random_data(volume)
-    volume.detach(hostId="")
-    volume = wait_for_volume_detached(client, volume_name)
-
-    volume.expand(size=str(2 * Gi))
-    wait_for_volume_expansion(client, volume_name)
-    volume = client.by_id_volume(volume_name)
-    assert volume.size == "2147483648"
-
-    self_hostId = get_self_host_id()
-    volume.attach(hostId=self_hostId, disableFrontend=False)
-    volume = wait_for_volume_healthy(client, volume_name)
-    check_volume_data(volume, test_data, False)
-    volume.detach(hostId="")
-    volume = wait_for_volume_detached(client, volume_name)
-
-    client.delete(volume)
-    wait_for_volume_delete(client, volume_name)
