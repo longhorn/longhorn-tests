@@ -45,11 +45,12 @@ from common import pvc_name  # NOQA
 from common import storage_class  # NOQA
 from common import pod_make, csi_pv, pvc  # NOQA
 from common import create_snapshot
-from common import expand_attached_volume
+from common import offline_expand_attached_volume
 from common import wait_for_dr_volume_expansion
 from common import check_block_device_size, get_device_checksum
-from common import wait_for_volume_expansion
+from common import wait_for_volume_expansion, wait_for_expansion_error_clear
 from common import fail_replica_expansion, wait_for_expansion_failure
+from common import fix_replica_expansion_failure
 from common import wait_for_volume_restoration_start
 from common import write_pod_volume_random_data, get_pod_data_md5sum
 from common import prepare_pod_with_data_in_mb, exec_command_in_pod
@@ -2087,11 +2088,11 @@ def test_expansion_basic(client, volume_name):  # NOQA
     1. Create volume and attach to the current node
     2. Generate data `snap1_data` and write it to the volume
     3. Create snapshot `snap1`
-    4. Expand the volume (volume will be detached, expanded, then attached)
+    4. Online expand the volume
     5. Verify the volume has been expanded
     6. Generate data `snap2_data` and write it to the volume
     7. Create snapshot `snap2`
-    8. Gerneate data `snap3_data` and write it after the original size
+    8. Generate data `snap3_data` and write it after the original size
     9. Create snapshot `snap3` and verify the `snap3_data` with location
     10. Detach and reattach the volume.
     11. Verify the volume is still expanded, and `snap3_data` remain valid
@@ -2103,6 +2104,8 @@ def test_expansion_basic(client, volume_name):  # NOQA
     17. Create snapshot `snap4` and verify `snap4_data`.
     18. Detach the volume and revert to `snap1`
     19. Validate `snap1_data`
+
+    TODO: Add offline expansion
     """
     volume = create_and_check_volume(client, volume_name)
 
@@ -2117,8 +2120,10 @@ def test_expansion_basic(client, volume_name):  # NOQA
     snap1_data = write_volume_random_data(volume)
     snap1 = create_snapshot(client, volume_name)
 
-    expand_attached_volume(client, volume_name)
+    volume.expand(size=EXPAND_SIZE)
+    wait_for_volume_expansion(client, volume_name)
     volume = client.by_id_volume(volume_name)
+    assert volume.size == EXPAND_SIZE
     check_block_device_size(volume, int(EXPAND_SIZE))
 
     snap2_data = write_volume_random_data(volume)
@@ -2179,10 +2184,52 @@ def test_expansion_basic(client, volume_name):  # NOQA
     wait_for_volume_delete(client, volume_name)
 
 
-@pytest.mark.coretest   # NOQA
-def test_restore_inc_with_expansion(set_random_backupstore, client, core_api, volume_name, pod):  # NOQA
+def test_expansion_with_size_round_up(client, core_api, volume_name):  # NOQA
     """
-    Test restore from disaster recovery volume with volume expansion
+    test expand longhorn volume
+
+    1. Create and attach longhorn volume with size '1Gi'.
+    2. Write data, and offline expand volume size to '2000000000/2G'.
+    3. Check if size round up '2000683008' and the written data.
+    4. Write data, and online expand volume size to '2Gi'.
+    5. Check if size round up '2147483648' and the written data.
+    """
+
+    volume = create_and_check_volume(client, volume_name, 2, str(1 * Gi))
+
+    self_hostId = get_self_host_id()
+    volume.attach(hostId=self_hostId, disableFrontend=False)
+    volume = wait_for_volume_healthy(client, volume_name)
+    test_data = write_volume_random_data(volume)
+
+    # Step 2: Offline expansion
+    volume.detach(hostId="")
+    volume = wait_for_volume_detached(client, volume_name)
+    volume.expand(size="2000000000")
+    wait_for_volume_expansion(client, volume_name)
+    volume = wait_for_volume_detached(client, volume_name)
+    assert volume.size == "2000683008"
+    self_hostId = get_self_host_id()
+    volume.attach(hostId=self_hostId, disableFrontend=False)
+    volume = wait_for_volume_healthy(client, volume_name)
+    check_volume_data(volume, test_data, False)
+
+    # Step 4: Online expansion
+    test_data = write_volume_random_data(volume)
+    volume.expand(size=str(2 * Gi))
+    wait_for_volume_expansion(client, volume_name)
+    volume = client.by_id_volume(volume_name)
+    assert volume.size == "2147483648"
+    check_volume_data(volume, test_data, False)
+
+    client.delete(volume)
+    wait_for_volume_delete(client, volume_name)
+
+
+@pytest.mark.coretest   # NOQA
+def test_restore_inc_with_offline_expansion(set_random_backupstore, client, core_api, volume_name, pod):  # NOQA
+    """
+    Test restore from disaster recovery volume with volume offline expansion
 
     Run test against a random backupstores
 
@@ -2294,7 +2341,7 @@ def test_restore_inc_with_expansion(set_random_backupstore, client, core_api, vo
     dr_volume0 = common.wait_for_volume_healthy(client, dr_volume0_name)
     check_volume_data(dr_volume0, data0, False)
 
-    expand_attached_volume(client, volume_name)
+    offline_expand_attached_volume(client, volume_name)
     std_volume = client.by_id_volume(volume_name)
     check_block_device_size(std_volume, int(EXPAND_SIZE))
 
@@ -2450,17 +2497,19 @@ def test_expansion_canceling(client, core_api, volume_name, pod):  # NOQA
     1. Create a volume, then create the corresponding PV, PVC and Pod.
     2. Generate `test_data` and write to the pod
     3. Create an empty directory with expansion snapshot tmp meta file path
-       so that the following expansion will fail
+       so that the following offline expansion will fail
     4. Delete the pod and wait for volume detachment
-    5. Try to expand the volume using Longhorn API
+    5. Try offline expansion via Longhorn API
     6. Wait for expansion failure then use Longhorn API to cancel it
-    7. Create a new pod and validate the volume content,
-       then re-write random data to the pod
-    8. Delete the pod and wait for volume detachment
-    9. Retry expansion then verify the expansion done using Longhorn API
-    10. Create a new pod
-    11. Validate the volume content, then check if data writing looks fine
-    12. Clean up pod, PVC, and PV
+    7. Create a new pod and validate the volume content
+    8. Create an empty directory with expansion snapshot tmp meta file path
+       so that the following online expansion will fail
+    9. Try online expansion via Longhorn API
+    10. Wait for expansion failure then use Longhorn API to cancel it
+    11. Validate the volume content again, then re-write random data to the pod
+    12. Retry online expansion, then verify the expansion done via Longhorn API
+    13. Validate the volume content, then check if data writing looks fine
+    14. Clean up pod, PVC, and PV
     """
     expansion_pvc_name = "pvc-" + volume_name
     expansion_pv_name = "pv-" + volume_name
@@ -2477,52 +2526,79 @@ def test_expansion_canceling(client, core_api, volume_name, pod):  # NOQA
     }]
     create_and_wait_pod(core_api, pod)
 
+    # Step 3: Prepare to fail offline expansion for one replica
     volume = client.by_id_volume(volume_name)
     replicas = volume.replicas
     fail_replica_expansion(client, core_api,
                            volume_name, EXPAND_SIZE, replicas)
 
-    test_data = generate_random_data(VOLUME_RWTEST_SIZE)
-    write_pod_volume_data(core_api, pod_name, test_data)
+    test_data1 = generate_random_data(VOLUME_RWTEST_SIZE)
+    write_pod_volume_data(core_api, pod_name, test_data1, "test_file1")
 
     delete_and_wait_pod(core_api, pod_name)
     volume = wait_for_volume_detached(client, volume_name)
 
+    # Step 5 & 6: Try offline expansion, wait for the failure, then cancel it
     volume.expand(size=EXPAND_SIZE)
     wait_for_expansion_failure(client, volume_name)
     volume = client.by_id_volume(volume_name)
     volume.cancelExpansion()
     wait_for_volume_expansion(client, volume_name)
+    wait_for_expansion_error_clear(client, volume_name)
+    wait_for_volume_detached(client, volume_name)
     volume = client.by_id_volume(volume_name)
     assert volume.state == "detached"
     assert volume.size == SIZE
+    fix_replica_expansion_failure(client, core_api,
+                                  volume_name, EXPAND_SIZE, replicas)
 
-    # check if the volume still works fine
+    # Step 7: Verify the data after expansion cancellation
     create_and_wait_pod(core_api, pod)
-    resp = read_volume_data(core_api, pod_name)
-    assert resp == test_data
-    test_data = generate_random_data(VOLUME_RWTEST_SIZE)
-    write_pod_volume_data(core_api, pod_name, test_data)
+    resp = read_volume_data(core_api, pod_name, "test_file1")
+    assert resp == test_data1
+    test_data2 = generate_random_data(VOLUME_RWTEST_SIZE)
+    write_pod_volume_data(core_api, pod_name, test_data2, "test_file2")
 
-    # retry expansion
-    delete_and_wait_pod(core_api, pod_name)
-    volume = wait_for_volume_detached(client, volume_name)
+    # Step 8: Prepare to fail online expansion for one replica
+    volume = client.by_id_volume(volume_name)
+    replicas = volume.replicas
+    fail_replica_expansion(client, core_api,
+                           volume_name, EXPAND_SIZE, replicas)
+    # Step 9 & 10: Try online expansion, wait for the failure, then cancel it
+    volume.expand(size=EXPAND_SIZE)
+    wait_for_expansion_failure(client, volume_name)
+    volume = client.by_id_volume(volume_name)
+    volume.cancelExpansion()
+    wait_for_volume_expansion(client, volume_name)
+    wait_for_expansion_error_clear(client, volume_name)
+    volume = client.by_id_volume(volume_name)
+    assert volume.size == SIZE
+    fix_replica_expansion_failure(client, core_api,
+                                  volume_name, EXPAND_SIZE, replicas)
+
+    # Step 11: Validate the data content again
+    resp = read_volume_data(core_api, pod_name, "test_file1")
+    assert resp == test_data1
+    resp = read_volume_data(core_api, pod_name, "test_file2")
+    assert resp == test_data2
+
+    # Step 12: Retry online expansion, should succeed
     volume.expand(size=EXPAND_SIZE)
     wait_for_volume_expansion(client, volume_name)
-    volume = client.by_id_volume(volume_name)
-    assert volume.state == "detached"
-    assert volume.size == str(EXPAND_SIZE)
-
-    create_and_wait_pod(core_api, pod)
     volume = client.by_id_volume(volume_name)
     engine = get_volume_engine(volume)
     assert volume.size == EXPAND_SIZE
     assert volume.size == engine.size
-    resp = read_volume_data(core_api, pod_name)
-    assert resp == test_data
-    write_pod_volume_data(core_api, pod_name, test_data)
-    resp = read_volume_data(core_api, pod_name)
-    assert resp == test_data
+
+    # Step 13: Write more data then re-validate the data content
+    test_data3 = generate_random_data(VOLUME_RWTEST_SIZE)
+    write_pod_volume_data(core_api, pod_name, test_data3, "test_file3")
+    resp = read_volume_data(core_api, pod_name, "test_file1")
+    assert resp == test_data1
+    resp = read_volume_data(core_api, pod_name, "test_file2")
+    assert resp == test_data2
+    resp = read_volume_data(core_api, pod_name, "test_file3")
+    assert resp == test_data3
 
     delete_and_wait_pod(core_api, pod_name)
     delete_and_wait_pvc(core_api, expansion_pvc_name)
@@ -2785,8 +2861,7 @@ def test_expansion_with_scheduling_failure(
     expanded_size = str(400 * Mi)
     volume.expand(size=expanded_size)
     wait_for_volume_expansion(client, volume_name)
-    volume = client.by_id_volume(volume_name)
-    assert volume.state == "detached"
+    volume = wait_for_volume_detached(client, volume_name)
     assert volume.size == expanded_size
     assert len(volume.replicas) == 2
     for r in volume.replicas:
@@ -3903,6 +3978,7 @@ def test_expand_pvc_with_size_round_up(client, core_api, volume_name):  # NOQA
 
     volume.expand(size="2000000000")
     wait_for_volume_expansion(client, volume_name)
+    wait_for_volume_detached(client, volume_name)
 
     for i in range(DEFAULT_POD_TIMEOUT):
         claim = core_api.read_namespaced_persistent_volume_claim(
@@ -3929,6 +4005,7 @@ def test_expand_pvc_with_size_round_up(client, core_api, volume_name):  # NOQA
 
     volume.expand(size=str(2 * Gi))
     wait_for_volume_expansion(client, volume_name)
+    wait_for_volume_detached(client, volume_name)
 
     for i in range(DEFAULT_POD_TIMEOUT):
         claim = core_api.read_namespaced_persistent_volume_claim(
@@ -4431,7 +4508,7 @@ def snapshot_prune_test(client, volume_name, backing_image):  # NOQA
     assert cksum_before == cksum_after
 
     # Expansion will implicitly created a system snapshot `snap2`
-    expand_attached_volume(client, volume_name)
+    offline_expand_attached_volume(client, volume_name)
     volume = client.by_id_volume(volume_name)
     for snap in volume.snapshotList(volume=volume_name):
         # In the future, there may be an automatic purge operation
