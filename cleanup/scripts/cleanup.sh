@@ -4,7 +4,7 @@ set -eo pipefail
 
 CURRENT_TIMESTAMP=$(date -u +%s)
 echo "Current Time: $(date -u)"
-THRESHOLD_IN_SEC=$((86400*3)) # if an instance exists more than 3 days, delete it.
+THRESHOLD_IN_SEC=$((86400)) # if an instance exists more than 1 day, delete it.
 SUFFIX_ARR=()
 
 echo "[Step 1] Get all instances:"
