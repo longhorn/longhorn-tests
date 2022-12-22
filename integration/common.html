@@ -80,6 +80,9 @@ BACKING_IMAGE_RAW_CHECKSUM = \
     &#34;304f3ed30ca6878e9056ee6f1b02b328239f0d0c2c1272840998212f9734b196371560b&#34; \
     &#34;3b939037e4f4c2884ce457c2cbc9f0621f4f5d1ca983983c8cdf8cd9a&#34;
 BACKING_IMAGE_EXT4_SIZE = 32 * Mi
+BACKING_IMAGE_STATE_READY = &#34;ready&#34;
+BACKING_IMAGE_STATE_IN_PROGRESS = &#34;in-progress&#34;
+BACKING_IMAGE_STATE_FAILED = &#34;failed&#34;
 
 PORT = &#34;:9500&#34;
 
@@ -5323,20 +5326,20 @@ def enable_default_disk(client):
     update_node_disks(client, node.name, disks=disks, retry=True)
 
 
-def wait_for_backing_image_ready(client, backing_img_name):
+def wait_for_backing_image_status(client, backing_img_name, image_status):
 
     for i in range(RETRY_EXEC_COUNTS):
         backing_image = client.by_id_backing_image(backing_img_name)
         try:
             for _, status in iter(backing_image.diskFileStatusMap.items()):
-                assert status.state == &#34;ready&#34;
+                assert status.state == image_status
             break
         except Exception as e:
             print(e)
             time.sleep(RETRY_INTERVAL)
 
     for _, status in iter(backing_image.diskFileStatusMap.items()):
-        assert status.state == &#34;ready&#34;
+        assert status.state == image_status
 
 
 def wait_for_backing_image_in_disk_fail(client, backing_img_name, disk_uuid):
@@ -10961,8 +10964,8 @@ ref: <a href="https://github.com/longhorn/longhorn/issues/4814">https://github.c
     assert failed is True</code></pre>
 </details>
 </dd>
-<dt id="tests.common.wait_for_backing_image_ready"><code class="name flex">
-<span>def <span class="ident">wait_for_backing_image_ready</span></span>(<span>client, backing_img_name)</span>
+<dt id="tests.common.wait_for_backing_image_status"><code class="name flex">
+<span>def <span class="ident">wait_for_backing_image_status</span></span>(<span>client, backing_img_name, image_status)</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -10970,20 +10973,20 @@ ref: <a href="https://github.com/longhorn/longhorn/issues/4814">https://github.c
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def wait_for_backing_image_ready(client, backing_img_name):
+<pre><code class="python">def wait_for_backing_image_status(client, backing_img_name, image_status):
 
     for i in range(RETRY_EXEC_COUNTS):
         backing_image = client.by_id_backing_image(backing_img_name)
         try:
             for _, status in iter(backing_image.diskFileStatusMap.items()):
-                assert status.state == &#34;ready&#34;
+                assert status.state == image_status
             break
         except Exception as e:
             print(e)
             time.sleep(RETRY_INTERVAL)
 
     for _, status in iter(backing_image.diskFileStatusMap.items()):
-        assert status.state == &#34;ready&#34;</code></pre>
+        assert status.state == image_status</code></pre>
 </details>
 </dd>
 <dt id="tests.common.wait_for_backup_completion"><code class="name flex">
@@ -13646,7 +13649,7 @@ from the args and kwargs arguments, respectively.</p></div>
 <li><code><a title="tests.common.wait_for_backing_image_delete" href="#tests.common.wait_for_backing_image_delete">wait_for_backing_image_delete</a></code></li>
 <li><code><a title="tests.common.wait_for_backing_image_disk_cleanup" href="#tests.common.wait_for_backing_image_disk_cleanup">wait_for_backing_image_disk_cleanup</a></code></li>
 <li><code><a title="tests.common.wait_for_backing_image_in_disk_fail" href="#tests.common.wait_for_backing_image_in_disk_fail">wait_for_backing_image_in_disk_fail</a></code></li>
-<li><code><a title="tests.common.wait_for_backing_image_ready" href="#tests.common.wait_for_backing_image_ready">wait_for_backing_image_ready</a></code></li>
+<li><code><a title="tests.common.wait_for_backing_image_status" href="#tests.common.wait_for_backing_image_status">wait_for_backing_image_status</a></code></li>
 <li><code><a title="tests.common.wait_for_backup_completion" href="#tests.common.wait_for_backup_completion">wait_for_backup_completion</a></code></li>
 <li><code><a title="tests.common.wait_for_backup_count" href="#tests.common.wait_for_backup_count">wait_for_backup_count</a></code></li>
 <li><code><a title="tests.common.wait_for_backup_delete" href="#tests.common.wait_for_backup_delete">wait_for_backup_delete</a></code></li>

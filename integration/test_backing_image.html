@@ -63,10 +63,12 @@ from common import BACKING_IMAGE_NAME, BACKING_IMAGE_QCOW2_URL, \
     BACKING_IMAGE_SOURCE_TYPE_FROM_VOLUME, Gi
 
 from common import wait_for_volume_detached
-from common import wait_for_backing_image_ready
+from common import wait_for_backing_image_status
 from common import wait_for_backing_image_in_disk_fail
 from common import get_disk_uuid
 from common import LONGHORN_NAMESPACE, RETRY_EXEC_COUNTS, RETRY_INTERVAL
+from common import BACKING_IMAGE_QCOW2_CHECKSUM, BACKING_IMAGE_STATE_FAILED
+from common import BACKING_IMAGE_STATE_READY, BACKING_IMAGE_STATE_IN_PROGRESS
 import time
 
 
@@ -115,7 +117,7 @@ def backing_image_basic_operation_test(client, volume_name, bi_name, bi_url):  #
     assert not backing_image.deletionTimestamp
     assert len(backing_image.diskFileStatusMap) == 3
     for disk_id, status in iter(backing_image.diskFileStatusMap.items()):
-        assert status.state == &#34;ready&#34;
+        assert status.state == BACKING_IMAGE_STATE_READY
         random_disk_id = disk_id
     assert random_disk_id != &#39;&#39;
 
@@ -180,7 +182,7 @@ def backing_image_content_test(client, volume_name_prefix, bi_name, bi_url):  # 
     assert not backing_image.deletionTimestamp
     assert len(backing_image.diskFileStatusMap) == 3
     for disk_id, status in iter(backing_image.diskFileStatusMap.items()):
-        assert status.state == &#34;ready&#34;
+        assert status.state == BACKING_IMAGE_STATE_READY
 
     # Since there is already a filesystem with data in the backing image,
     # we can directly mount and access the volume without `mkfs`.
@@ -569,7 +571,8 @@ def test_backing_image_auto_resync(bi_url, client, volume_name):  # NOQA
     wait_for_backing_image_in_disk_fail(client, BACKING_IMAGE_NAME, disk_uuid)
 
     # Step 6
-    wait_for_backing_image_ready(client, BACKING_IMAGE_NAME)
+    wait_for_backing_image_status(client, BACKING_IMAGE_NAME,
+                                  BACKING_IMAGE_STATE_READY)
 
     # Step 7
     volume = wait_for_volume_healthy(client, volume_name)
@@ -637,7 +640,25 @@ def backing_image_cleanup(core_api, client): # NOQA
         if exist is False:
             break
 
-    assert exist is False</code></pre>
+    assert exist is False
+
+
+@pytest.mark.backing_image  # NOQA
+@pytest.mark.parametrize(&#34;bi_url&#34;, [BACKING_IMAGE_QCOW2_URL, BACKING_IMAGE_RAW_URL]) # NOQA
+def test_backing_image_with_wrong_md5sum(bi_url, client): # NOQA
+
+    backing_image_wrong_checksum = \
+            BACKING_IMAGE_QCOW2_CHECKSUM[1:] + BACKING_IMAGE_QCOW2_CHECKSUM[0]
+
+    client.create_backing_image(name=BACKING_IMAGE_NAME,
+                                sourceType=BACKING_IMAGE_SOURCE_TYPE_DOWNLOAD,
+                                parameters={&#34;url&#34;: bi_url},
+                                expectedChecksum=backing_image_wrong_checksum)
+
+    wait_for_backing_image_status(client, BACKING_IMAGE_NAME,
+                                  BACKING_IMAGE_STATE_IN_PROGRESS)
+    wait_for_backing_image_status(client, BACKING_IMAGE_NAME,
+                                  BACKING_IMAGE_STATE_FAILED)</code></pre>
 </details>
 </section>
 <section>
@@ -701,7 +722,7 @@ but get failed.</li>
     assert not backing_image.deletionTimestamp
     assert len(backing_image.diskFileStatusMap) == 3
     for disk_id, status in iter(backing_image.diskFileStatusMap.items()):
-        assert status.state == &#34;ready&#34;
+        assert status.state == BACKING_IMAGE_STATE_READY
         random_disk_id = disk_id
     assert random_disk_id != &#39;&#39;
 
@@ -832,7 +853,7 @@ step 4.</li>
     assert not backing_image.deletionTimestamp
     assert len(backing_image.diskFileStatusMap) == 3
     for disk_id, status in iter(backing_image.diskFileStatusMap.items()):
-        assert status.state == &#34;ready&#34;
+        assert status.state == BACKING_IMAGE_STATE_READY
 
     # Since there is already a filesystem with data in the backing image,
     # we can directly mount and access the volume without `mkfs`.
@@ -921,7 +942,8 @@ def test_backing_image_auto_resync(bi_url, client, volume_name):  # NOQA
     wait_for_backing_image_in_disk_fail(client, BACKING_IMAGE_NAME, disk_uuid)
 
     # Step 6
-    wait_for_backing_image_ready(client, BACKING_IMAGE_NAME)
+    wait_for_backing_image_status(client, BACKING_IMAGE_NAME,
+                                  BACKING_IMAGE_STATE_READY)
 
     # Step 7
     volume = wait_for_volume_healthy(client, volume_name)
@@ -1090,6 +1112,33 @@ def test_backing_image_with_disk_migration():  # NOQA
         6. The related download pod will be recreated.
     11. Do cleanup.
     &#34;&#34;&#34;</code></pre>
+</details>
+</dd>
+<dt id="tests.test_backing_image.test_backing_image_with_wrong_md5sum"><code class="name flex">
+<span>def <span class="ident">test_backing_image_with_wrong_md5sum</span></span>(<span>bi_url, client)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@pytest.mark.backing_image  # NOQA
+@pytest.mark.parametrize(&#34;bi_url&#34;, [BACKING_IMAGE_QCOW2_URL, BACKING_IMAGE_RAW_URL]) # NOQA
+def test_backing_image_with_wrong_md5sum(bi_url, client): # NOQA
+
+    backing_image_wrong_checksum = \
+            BACKING_IMAGE_QCOW2_CHECKSUM[1:] + BACKING_IMAGE_QCOW2_CHECKSUM[0]
+
+    client.create_backing_image(name=BACKING_IMAGE_NAME,
+                                sourceType=BACKING_IMAGE_SOURCE_TYPE_DOWNLOAD,
+                                parameters={&#34;url&#34;: bi_url},
+                                expectedChecksum=backing_image_wrong_checksum)
+
+    wait_for_backing_image_status(client, BACKING_IMAGE_NAME,
+                                  BACKING_IMAGE_STATE_IN_PROGRESS)
+    wait_for_backing_image_status(client, BACKING_IMAGE_NAME,
+                                  BACKING_IMAGE_STATE_FAILED)</code></pre>
 </details>
 </dd>
 <dt id="tests.test_backing_image.test_backup_labels_with_backing_image"><code class="name flex">
@@ -1572,6 +1621,7 @@ def test_volume_iscsi_basic_with_backing_image(client, volume_name):  # NOQA
 <li><code><a title="tests.test_backing_image.test_backing_image_cleanup" href="#tests.test_backing_image.test_backing_image_cleanup">test_backing_image_cleanup</a></code></li>
 <li><code><a title="tests.test_backing_image.test_backing_image_content" href="#tests.test_backing_image.test_backing_image_content">test_backing_image_content</a></code></li>
 <li><code><a title="tests.test_backing_image.test_backing_image_with_disk_migration" href="#tests.test_backing_image.test_backing_image_with_disk_migration">test_backing_image_with_disk_migration</a></code></li>
+<li><code><a title="tests.test_backing_image.test_backing_image_with_wrong_md5sum" href="#tests.test_backing_image.test_backing_image_with_wrong_md5sum">test_backing_image_with_wrong_md5sum</a></code></li>
 <li><code><a title="tests.test_backing_image.test_backup_labels_with_backing_image" href="#tests.test_backing_image.test_backup_labels_with_backing_image">test_backup_labels_with_backing_image</a></code></li>
 <li><code><a title="tests.test_backing_image.test_backup_with_backing_image" href="#tests.test_backing_image.test_backup_with_backing_image">test_backup_with_backing_image</a></code></li>
 <li><code><a title="tests.test_backing_image.test_csi_backup_with_backing_image" href="#tests.test_backing_image.test_csi_backup_with_backing_image">test_csi_backup_with_backing_image</a></code></li>
