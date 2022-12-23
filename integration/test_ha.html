@@ -92,6 +92,7 @@ from common import wait_pod, exec_command_in_pod
 from common import RETRY_EXEC_COUNTS, RETRY_EXEC_INTERVAL
 from common import get_volume_running_replica_cnt
 from common import update_node_disks
+from common import LONGHORN_NAMESPACE
 
 from backupstore import set_random_backupstore # NOQA
 from backupstore import backupstore_cleanup
@@ -2803,7 +2804,7 @@ def test_autosalvage_with_data_locality_enabled(client, core_api, make_deploymen
             .format(node_1[&#34;name&#34;])
 
     ret = core_api.list_namespaced_pod(
-            namespace=&#34;longhorn-system&#34;, label_selector=labels)
+            namespace=LONGHORN_NAMESPACE, label_selector=labels)
     imr_name = ret.items[0].metadata.name
 
     delete_and_wait_pod(core_api, pod_name=imr_name,
@@ -2826,7 +2827,7 @@ def test_autosalvage_with_data_locality_enabled(client, core_api, make_deploymen
     labels = &#34;app=longhorn-manager&#34;
     selector = &#34;spec.nodeName=={}&#34;.format(node_2[&#34;name&#34;])
     ret = core_api.list_namespaced_pod(
-                namespace=&#34;longhorn-system&#34;, field_selector=selector,
+                namespace=LONGHORN_NAMESPACE, field_selector=selector,
                 label_selector=labels)
 
     mgr_name = ret.items[0].metadata.name
@@ -2894,7 +2895,7 @@ def test_recovery_from_im_deletion(client, core_api, volume_name, make_deploymen
     # Step5, 6
     volume = client.by_id_volume(volume_name)
     im_name = volume[&#34;controllers&#34;][0][&#34;instanceManagerName&#34;]
-    exec_cmd = [&#34;kubectl&#34;, &#34;delete&#34;, &#34;pod&#34;,  im_name, &#34;-n&#34;, &#34;longhorn-system&#34;]
+    exec_cmd = [&#34;kubectl&#34;, &#34;delete&#34;, &#34;pod&#34;,  im_name, &#34;-n&#34;, LONGHORN_NAMESPACE]
     subprocess.check_output(exec_cmd)
 
     target_pod = \
@@ -3637,7 +3638,7 @@ In a 2-min loop, verify that the number of socket connection is &lt;= 20</p>
             .format(node_1[&#34;name&#34;])
 
     ret = core_api.list_namespaced_pod(
-            namespace=&#34;longhorn-system&#34;, label_selector=labels)
+            namespace=LONGHORN_NAMESPACE, label_selector=labels)
     imr_name = ret.items[0].metadata.name
 
     delete_and_wait_pod(core_api, pod_name=imr_name,
@@ -3660,7 +3661,7 @@ In a 2-min loop, verify that the number of socket connection is &lt;= 20</p>
     labels = &#34;app=longhorn-manager&#34;
     selector = &#34;spec.nodeName=={}&#34;.format(node_2[&#34;name&#34;])
     ret = core_api.list_namespaced_pod(
-                namespace=&#34;longhorn-system&#34;, field_selector=selector,
+                namespace=LONGHORN_NAMESPACE, field_selector=selector,
                 label_selector=labels)
 
     mgr_name = ret.items[0].metadata.name
@@ -5661,7 +5662,7 @@ tail -f /data/test
     # Step5, 6
     volume = client.by_id_volume(volume_name)
     im_name = volume[&#34;controllers&#34;][0][&#34;instanceManagerName&#34;]
-    exec_cmd = [&#34;kubectl&#34;, &#34;delete&#34;, &#34;pod&#34;,  im_name, &#34;-n&#34;, &#34;longhorn-system&#34;]
+    exec_cmd = [&#34;kubectl&#34;, &#34;delete&#34;, &#34;pod&#34;,  im_name, &#34;-n&#34;, LONGHORN_NAMESPACE]
     subprocess.check_output(exec_cmd)
 
     target_pod = \
