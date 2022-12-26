@@ -65,6 +65,15 @@ Make sure the existing instance managers didn&amp;rsquo;t restart. Make sure pod
     </item>
     
     <item>
+      <title>Test system upgrade with a new storage class being default</title>
+      <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/upgrade-with-customized-storage-class/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/upgrade-with-customized-storage-class/</guid>
+      <description>Install a previous stable Longhorn on a K8s cluster. Create a storage class &amp;rsquo;longhorn-rep-2&amp;rsquo; with replica 2 and make it default. Create some volumes with the above created storage class and attach them to workloads. Upgrade Longhorn to latest version. Longhorn should be upgraded. Storage class &amp;rsquo;longhorn-rep-2&amp;rsquo; should be the default storage class. Create two volumes, one with &amp;rsquo;longhorn&amp;rsquo; storage class and other with &amp;rsquo;longhorn-rep-2&#39;. Verify the volumes are created as per their storage class.</description>
+    </item>
+    
+    <item>
       <title>Test System Upgrade with New Instance Manager</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/upgrade-with-new-instance-manager/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>

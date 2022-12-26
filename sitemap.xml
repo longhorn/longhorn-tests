@@ -4,8 +4,6 @@
   <url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/dr-volume-live-upgrade-and-rebuild/</loc>
   </url><url>
-    <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/concurrent-backup-creation-deletion/</loc>
-  </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/concurrent-backup/</loc>
   </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/restore-volume-node-down/</loc>
@@ -13,8 +11,6 @@
     <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/dr-volume-node-rebooted/</loc>
   </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/google-cloud-s3-interop-backups/</loc>
-  </url><url>
-    <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/backup-block-deletion/</loc>
   </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/resiliency/simulated-slow-disk/</loc>
   </url><url>
@@ -65,6 +61,8 @@
     <loc>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.1/besteffort-recurring-job/</loc>
   </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.1/change-imagepullpolicy/</loc>
+  </url><url>
+    <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/stability/checksum-enabled-large-volume/</loc>
   </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/cluster-restore/</loc>
   </url><url>
@@ -253,6 +251,8 @@
     <loc>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/snapshot-purge-error-handling/</loc>
   </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.3.0/test-snapshot-purge-retry/</loc>
+  </url><url>
+    <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/upgrade-with-customized-storage-class/</loc>
   </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/upgrade-with-new-instance-manager/</loc>
   </url><url>

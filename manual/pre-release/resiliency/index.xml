@@ -34,8 +34,7 @@ Create a PVC with size larger than 8589934591 GiB. Deployment keep in pending st
       
       <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/resiliency/test-longhorn-component-recovery/</guid>
       <description>This is a simple test is check if all the components are recoverable.
-####Test data setup:
-Deploy Longhorn on a 3 nodes cluster. Create a volume vol-1 using Longhorn UI. Create a volume vol-2 using the Longhorn storage class. Create a volume vol-3 with backing image. Create an RWX volume vol-4. Write some data in all the volumes created and compute the md5sum. Have all the volumes in attached state. ####Test steps:</description>
+Test data setup: Deploy Longhorn on a 3 nodes cluster. Create a volume vol-1 using Longhorn UI. Create a volume vol-2 using the Longhorn storage class. Create a volume vol-3 with backing image. Create an RWX volume vol-4. Write some data in all the volumes created and compute the md5sum. Have all the volumes in attached state. Test steps: Delete the IM-e from every volume and make sure every volume recovers.</description>
     </item>
     
     <item>

@@ -63,9 +63,6 @@
   <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/dr-volume-live-upgrade-and-rebuild/">#1279 DR volume live upgrade and rebuild</a></li>
   
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/concurrent-backup-creation-deletion/">#1326 concurrent backup creation &amp; deletion</a></li>
-  
-
   <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/concurrent-backup/">#1341 concurrent backup test</a></li>
   
 
@@ -76,9 +73,6 @@
   
 
   <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/google-cloud-s3-interop-backups/">#1404 test backup functionality on google cloud and other s3 interop providers.</a></li>
-  
-
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/backup-block-deletion/">#1431 backup block deletion test</a></li>
   
 
   <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/pull-backup-created-by-another-longhorn/">#4637 pull backup created by another Longhorn system</a></li>
@@ -265,6 +259,9 @@
   
     <ul>
 
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/stability/checksum-enabled-large-volume/">Checksum enabled large volume with multiple rebuilding</a></li>
+  
+
   <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/stability/multiple-installation/">Longhorn installation multiple times</a></li>
   
 
@@ -298,6 +295,9 @@
   
 
   <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/engine-crash-during-live-upgrade/">Test Engine Crash During Live Upgrade</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/upgrade-with-customized-storage-class/">Test system upgrade with a new storage class being default</a></li>
   
 
   <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/upgrade-with-new-instance-manager/">Test System Upgrade with New Instance Manager</a></li>
@@ -620,27 +620,22 @@
 
 
 <main style="padding: 1%; width: 70%;">
-  <h1 id="title"><a href="https://github.com/longhorn/longhorn/issues/1326">#1326</a> concurrent backup creation &amp; deletion</h1>
+  <h1 id="title">Test system upgrade with a new storage class being default</h1>
   <div>
     <article id="content">
-       <p>This one is a special case, were the volume only contains 1 backup, which the user requests to delete while the user has another backup in progress. In this case, as the another backup is in progress a lock mechanism will be applied to it and blocks the deletion of the backup.</p>
-<ul>
-<li>create vol <code>dak</code> and attach to the same node vol <code>bak</code> is attached</li>
-<li>connect to node via ssh and issue <code>dd if=/dev/urandom of=/dev/longhorn/dak status=progress</code></li>
-<li>wait for a bunch of data to be written (1GB)</li>
-<li>take a backup(1)</li>
-<li>wait for a bunch of data to be written (1GB)</li>
-<li>take a backup(2)</li>
-<li>immediately request deletion of backup(1)</li>
-<li>verify that backup(2) completes successfully.</li>
-<li>verify that backup(1) has not been deleted.</li>
-<li>verify that all blocks mentioned in the backup(2).cfg file are present in the blocks directory.</li>
-<li>delete backup(1)</li>
-<li>verify that backup(1) has been deleted.</li>
-</ul>
+       <ol>
+<li>Install a previous stable Longhorn on a K8s cluster.</li>
+<li>Create a storage class &rsquo;longhorn-rep-2&rsquo; with replica 2 and make it default.</li>
+<li>Create some volumes with the above created storage class and attach them to workloads.</li>
+<li>Upgrade Longhorn to latest version.</li>
+<li>Longhorn should be upgraded.</li>
+<li>Storage class &rsquo;longhorn-rep-2&rsquo; should be the default storage class.</li>
+<li>Create two volumes, one with &rsquo;longhorn&rsquo; storage class and other with &rsquo;longhorn-rep-2'.</li>
+<li>Verify the volumes are created as per their storage class.</li>
+</ol>
 
     </article>
-  <a href="https://github.com/longhorn/longhorn-tests/edit/master/docs/content/manual/pre-release/backup-and-restore/concurrent-backup-creation-deletion.md" target="_blank" title="Edit on Github" style="font-size:smaller;float:right;padding-right:3%">[Edit]</a>
+  <a href="https://github.com/longhorn/longhorn-tests/edit/master/docs/content/manual/pre-release/upgrade/upgrade-with-customized-storage-class.md" target="_blank" title="Edit on Github" style="font-size:smaller;float:right;padding-right:3%">[Edit]</a>
   </div>
 
     

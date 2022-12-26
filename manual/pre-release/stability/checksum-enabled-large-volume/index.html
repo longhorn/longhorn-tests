@@ -63,9 +63,6 @@
   <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/dr-volume-live-upgrade-and-rebuild/">#1279 DR volume live upgrade and rebuild</a></li>
   
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/concurrent-backup-creation-deletion/">#1326 concurrent backup creation &amp; deletion</a></li>
-  
-
   <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/concurrent-backup/">#1341 concurrent backup test</a></li>
   
 
@@ -76,9 +73,6 @@
   
 
   <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/google-cloud-s3-interop-backups/">#1404 test backup functionality on google cloud and other s3 interop providers.</a></li>
-  
-
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/backup-block-deletion/">#1431 backup block deletion test</a></li>
   
 
   <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/pull-backup-created-by-another-longhorn/">#4637 pull backup created by another Longhorn system</a></li>
@@ -265,6 +259,9 @@
   
     <ul>
 
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/stability/checksum-enabled-large-volume/">Checksum enabled large volume with multiple rebuilding</a></li>
+  
+
   <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/stability/multiple-installation/">Longhorn installation multiple times</a></li>
   
 
@@ -298,6 +295,9 @@
   
 
   <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/engine-crash-during-live-upgrade/">Test Engine Crash During Live Upgrade</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/upgrade-with-customized-storage-class/">Test system upgrade with a new storage class being default</a></li>
   
 
   <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/upgrade-with-new-instance-manager/">Test System Upgrade with New Instance Manager</a></li>
@@ -620,30 +620,22 @@
 
 
 <main style="padding: 1%; width: 70%;">
-  <h1 id="title"><a href="https://github.com/longhorn/longhorn/issues/1431">#1431</a> backup block deletion test</h1>
+  <h1 id="title">Checksum enabled large volume with multiple rebuilding</h1>
   <div>
     <article id="content">
-       <ul>
-<li>create vol <code>blk</code>and mount to a node on <code>/mnt/blk</code></li>
-<li>take backup(1)</li>
-<li><code>dd if=/dev/urandom of=/mnt/blk/data2 bs=2097152 count=10 status=progress</code></li>
-<li>take backup(2)</li>
-<li><code>dd if=/dev/urandom of=/mnt/blk/data3 bs=2097152 count=10 status=progress</code></li>
-<li>take backup(3)</li>
-<li>diff backup(2) backup(3) (run through json beautifier for easier comparison)</li>
-<li>delete backup(2)</li>
-<li>verify that the blocks solely used by backup(2) are deleted</li>
-<li>verify that the shared blocks between backup(2) and backup(3) are retained</li>
-<li>delete backup(3)</li>
-<li>wait</li>
-<li>delete backup(1)</li>
-<li>wait</li>
-<li>verify no more blocks</li>
-<li>verify volume.cfg BlockCount == 0</li>
-</ul>
+       <ol>
+<li>Create a 50 Gi volume. write around 30 Gi data into it.</li>
+<li>Enable the setting <code>Snapshot Data Integrity</code>.</li>
+<li>Keep writing in the volume continuously using dd command like <code>while true; do dd if=/dev/urandom of=t1 bs=512 count=1000 conv=fsync status=progress &amp;&amp; rm t1; done</code>.</li>
+<li>Create a recurring job of backup for every 15 min.</li>
+<li>Delete a replica and wait for the replica rebuilding.</li>
+<li>Compare the performance of replica rebuilding from previous Longhorn version without the setting <code>Snapshot Data Integrity</code>.</li>
+<li>Verify the Longhorn manager logs, no abnormal logs should be present.</li>
+<li>Repeat the steps of deletion of the replica and verify Longhorn doesn&rsquo;t take more time than the first iteration.</li>
+</ol>
 
     </article>
-  <a href="https://github.com/longhorn/longhorn-tests/edit/master/docs/content/manual/pre-release/backup-and-restore/backup-block-deletion.md" target="_blank" title="Edit on Github" style="font-size:smaller;float:right;padding-right:3%">[Edit]</a>
+  <a href="https://github.com/longhorn/longhorn-tests/edit/master/docs/content/manual/pre-release/stability/checksum-enabled-large-volume.md" target="_blank" title="Edit on Github" style="font-size:smaller;float:right;padding-right:3%">[Edit]</a>
   </div>
 
     

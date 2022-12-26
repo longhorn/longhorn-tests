@@ -16,16 +16,6 @@
     </item>
     
     <item>
-      <title>[#1326](https://github.com/longhorn/longhorn/issues/1326) concurrent backup creation &amp; deletion</title>
-      <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/concurrent-backup-creation-deletion/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/concurrent-backup-creation-deletion/</guid>
-      <description>This one is a special case, were the volume only contains 1 backup, which the user requests to delete while the user has another backup in progress. In this case, as the another backup is in progress a lock mechanism will be applied to it and blocks the deletion of the backup.
-create vol dak and attach to the same node vol bak is attached connect to node via ssh and issue dd if=/dev/urandom of=/dev/longhorn/dak status=progress wait for a bunch of data to be written (1GB) take a backup(1) wait for a bunch of data to be written (1GB) take a backup(2) immediately request deletion of backup(1) verify that backup(2) completes successfully.</description>
-    </item>
-    
-    <item>
       <title>[#1341](https://github.com/longhorn/longhorn/issues/1341) concurrent backup test</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/concurrent-backup/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
@@ -40,7 +30,7 @@ create vol dak and attach to the same node vol bak is attached connect to node v
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/restore-volume-node-down/</guid>
-      <description> Create a backup. Create a restore volume from the backup. Power off the volume attached node during the restoring. Wait for the Longhorn node down. Wait for the restore volume being reattached and starting restoring volume with state Degraded. Wait for the restore complete. Attach the volume and verify the restored data. Verify the volume works fine. </description>
+      <description>Case 1: Create a backup. Restore the above backup. Power off the volume attached node during the restoring. Wait for the Longhorn node down. Wait for the restore volume being reattached and starting restoring volume with state Degraded. Wait for the restore complete. Attach the volume and verify the restored data. Verify the volume works fine. Case 2: Repeat the steps from case 1 with an encrypted volume. </description>
     </item>
     
     <item>
@@ -59,15 +49,6 @@ create vol dak and attach to the same node vol bak is attached connect to node v
       
       <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/google-cloud-s3-interop-backups/</guid>
       <description> create vol s3-testand mount to a node on /mnt/s3-test via pvc write some data on vol s3-test take backup(1) write new data on vol s3-test take backup(2) restore backup(1) verify data is consistent with backup(1) restore backup(2) verify data is consistent with backup(2) delete backup(1) delete backup(2) delete backup volume s3-test verify volume path is removed </description>
-    </item>
-    
-    <item>
-      <title>[#1431](https://github.com/longhorn/longhorn/issues/1431) backup block deletion test</title>
-      <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/backup-block-deletion/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/backup-block-deletion/</guid>
-      <description>create vol blkand mount to a node on /mnt/blk take backup(1) dd if=/dev/urandom of=/mnt/blk/data2 bs=2097152 count=10 status=progress take backup(2) dd if=/dev/urandom of=/mnt/blk/data3 bs=2097152 count=10 status=progress take backup(3) diff backup(2) backup(3) (run through json beautifier for easier comparison) delete backup(2) verify that the blocks solely used by backup(2) are deleted verify that the shared blocks between backup(2) and backup(3) are retained delete backup(3) wait delete backup(1) wait verify no more blocks verify volume.</description>
     </item>
     
     <item>
@@ -331,6 +312,15 @@ Test basic upgrade Install old Longhorn version. E.g., &amp;lt;= v1.0.2 Create a
       
       <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.1/change-imagepullpolicy/</guid>
       <description> Install Longhorn using Helm chart with the new longhorn master Verify that Engine Image daemonset, Manager daemonset, UI deployment, Driver Deployer deployment has the field spec.template.spec.containers.imagePullPolicy set to IfNotPresent run the bash script dev/scripts/update-image-pull-policy.sh inside longhorn repo Verify that Engine Image daemonset, Manager daemonset, UI deployment, Driver Deployer deployment has the field spec.template.spec.containers.imagePullPolicy set back to Always </description>
+    </item>
+    
+    <item>
+      <title>Checksum enabled large volume with multiple rebuilding</title>
+      <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/stability/checksum-enabled-large-volume/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/stability/checksum-enabled-large-volume/</guid>
+      <description>Create a 50 Gi volume. write around 30 Gi data into it. Enable the setting Snapshot Data Integrity. Keep writing in the volume continuously using dd command like while true; do dd if=/dev/urandom of=t1 bs=512 count=1000 conv=fsync status=progress &amp;amp;&amp;amp; rm t1; done. Create a recurring job of backup for every 15 min. Delete a replica and wait for the replica rebuilding. Compare the performance of replica rebuilding from previous Longhorn version without the setting Snapshot Data Integrity.</description>
     </item>
     
     <item>
@@ -1007,8 +997,7 @@ Then moniter the cron job pod log.</description>
       
       <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/resiliency/test-longhorn-component-recovery/</guid>
       <description>This is a simple test is check if all the components are recoverable.
-####Test data setup:
-Deploy Longhorn on a 3 nodes cluster. Create a volume vol-1 using Longhorn UI. Create a volume vol-2 using the Longhorn storage class. Create a volume vol-3 with backing image. Create an RWX volume vol-4. Write some data in all the volumes created and compute the md5sum. Have all the volumes in attached state. ####Test steps:</description>
+Test data setup: Deploy Longhorn on a 3 nodes cluster. Create a volume vol-1 using Longhorn UI. Create a volume vol-2 using the Longhorn storage class. Create a volume vol-3 with backing image. Create an RWX volume vol-4. Write some data in all the volumes created and compute the md5sum. Have all the volumes in attached state. Test steps: Delete the IM-e from every volume and make sure every volume recovers.</description>
     </item>
     
     <item>
@@ -1188,6 +1177,15 @@ Scenario-1 Create a volume with 3 replicas and attach to a pod. Write some data 
       
       <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.3.0/test-snapshot-purge-retry/</guid>
       <description>Scenario Create and attach a Longhorn volumes. Write some data to the volume then create the 1st snapshot. e.g. dd if=/dev/urandom of=/dev/longhorn/&amp;lt;Longhorn volume name&amp;gt; bs=1M count=100 Try to delete the 1st snapshot. The snapshot will be marked as Removed then hidden on the volume detail page. Write some non-overlapping data to the volume then create the 2nd snapshot. e.g. dd if=/dev/urandom of=/dev/longhorn/&amp;lt;Longhorn volume name&amp;gt; bs=1M count=100 seek=100 Re-try deleting the 1st snapshot via UI.</description>
+    </item>
+    
+    <item>
+      <title>Test system upgrade with a new storage class being default</title>
+      <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/upgrade-with-customized-storage-class/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/upgrade-with-customized-storage-class/</guid>
+      <description>Install a previous stable Longhorn on a K8s cluster. Create a storage class &amp;rsquo;longhorn-rep-2&amp;rsquo; with replica 2 and make it default. Create some volumes with the above created storage class and attach them to workloads. Upgrade Longhorn to latest version. Longhorn should be upgraded. Storage class &amp;rsquo;longhorn-rep-2&amp;rsquo; should be the default storage class. Create two volumes, one with &amp;rsquo;longhorn&amp;rsquo; storage class and other with &amp;rsquo;longhorn-rep-2&#39;. Verify the volumes are created as per their storage class.</description>
     </item>
     
     <item>
