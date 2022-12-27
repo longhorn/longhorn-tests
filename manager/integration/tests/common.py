@@ -182,6 +182,16 @@ SETTING_CONCURRENT_AUTO_ENGINE_UPGRADE_NODE_LIMIT = \
     "concurrent-automatic-engine-upgrade-per-node-limit"
 SETTING_SUPPORT_BUNDLE_FAILED_LIMIT = "support-bundle-failed-history-limit"
 SETTING_RESTORE_RECURRING_JOBS = "restore-volume-recurring-jobs"
+SETTING_SNAPSHOT_DATA_INTEGRITY = "snapshot-data-integrity"
+SETTING_SNAPSHOT_DATA_INTEGRITY_IMMEDIATE_CHECK_AFTER_SNAPSHOT_CREATION = \
+    "snapshot-data-integrity-immediate-check-after-snapshot-creation"
+SETTING_SNAPSHOT_DATA_INTEGRITY_CRONJOB = "snapshot-data-integrity-cronjob"
+SETTING_SNAPSHOT_FAST_REPLICA_REBUILD_ENABLED = "fast-replica-rebuild-enabled"
+
+SNAPSHOT_DATA_INTEGRITY_IGNORED = "ignored"
+SNAPSHOT_DATA_INTEGRITY_DISABLED = "disabled"
+SNAPSHOT_DATA_INTEGRITY_ENABLED = "enabled"
+SNAPSHOT_DATA_INTEGRITY_FAST_CHECK = "fast-check"
 
 CSI_UNKNOWN = 0
 CSI_TRUE = 1
@@ -421,7 +431,8 @@ def delete_backup_volume(client, volume_name):
 
 def create_and_check_volume(client, volume_name,
                             num_of_replicas=3, size=SIZE, backing_image="",
-                            frontend=VOLUME_FRONTEND_BLOCKDEV):
+                            frontend=VOLUME_FRONTEND_BLOCKDEV,
+                            snapshot_data_integrity=SNAPSHOT_DATA_INTEGRITY_IGNORED): # NOQA
     """
     Create a new volume with the specified parameters. Assert that the new
     volume is detached and that all of the requested parameters match.
@@ -439,7 +450,8 @@ def create_and_check_volume(client, volume_name,
         backing_image = None
     client.create_volume(name=volume_name, size=size,
                          numberOfReplicas=num_of_replicas,
-                         backingImage=backing_image, frontend=frontend)
+                         backingImage=backing_image, frontend=frontend,
+                         snapshotDataIntegrity=snapshot_data_integrity)
     volume = wait_for_volume_detached(client, volume_name)
     assert volume.name == volume_name
     assert volume.size == size
@@ -4025,9 +4037,11 @@ def wait_for_rebuild_complete(client, volume_name, retry_count=RETRY_COUNTS):
     assert completed == len(rebuild_statuses)
 
 
-def wait_for_rebuild_start(client, volume_name):
+def wait_for_rebuild_start(client, volume_name,
+                           retry_count=RETRY_COUNTS,
+                           retry_interval=RETRY_INTERVAL):
     started = False
-    for i in range(RETRY_COUNTS):
+    for i in range(retry_count):
         v = client.by_id_volume(volume_name)
         rebuild_statuses = v.rebuildStatus
         for status in rebuild_statuses:
@@ -4036,7 +4050,7 @@ def wait_for_rebuild_start(client, volume_name):
                 break
         if started:
             break
-        time.sleep(RETRY_INTERVAL)
+        time.sleep(retry_interval)
     assert started
     return status.fromReplica, status.replica
 
