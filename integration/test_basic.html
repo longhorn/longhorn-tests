@@ -114,6 +114,7 @@ from common import create_host_disk, get_update_disks, update_node_disks
 from common import wait_for_disk_status, wait_for_rebuild_start, wait_for_rebuild_complete # NOQA
 from common import RETRY_BACKUP_COUNTS
 from common import LONGHORN_NAMESPACE
+from common import wait_for_snapshot_count
 
 from backupstore import backupstore_delete_volume_cfg_file
 from backupstore import backupstore_cleanup
@@ -3671,6 +3672,234 @@ def test_volume_toomanysnapshots_condition(client, core_api, volume_name):  # NO
                                                &#34;status&#34;, &#34;False&#34;)
 
 
+def prepare_data_volume_metafile(client, core_api, volume_name, csi_pv, pvc, pod, pod_make, data_path, test_writing_data=False, writing_data_path=&#34;/data/writing_data_file&#34;):  # NOQA
+    &#34;&#34;&#34;
+    Prepare volume and snapshot for volume metafile testing
+
+    Setup:
+
+    1. Create a pod using Longhorn volume
+    2. Write some data to the volume then get the md5sum
+    3. Create a snapshot
+    4. Delete the pod and wait for the volume detached
+    5. Pick up a replica on this host and get the replica data path
+    &#34;&#34;&#34;
+    # create the pod with pv, pvc and write some data
+    test_pod_name, _, test_pvc_name, data_md5sum1 = \
+        prepare_pod_with_data_in_mb(
+            client, core_api, csi_pv, pvc, pod_make, volume_name,
+            data_path=data_path)
+
+    pod[&#39;metadata&#39;][&#39;name&#39;] = test_pod_name
+    pod[&#39;spec&#39;][&#39;volumes&#39;] = [{
+        &#39;name&#39;: pod[&#39;spec&#39;][&#39;containers&#39;][0][&#39;volumeMounts&#39;][0][&#39;name&#39;],
+        &#39;persistentVolumeClaim&#39;: {
+            &#39;claimName&#39;: test_pvc_name,
+        },
+    }]
+
+    snap1 = create_snapshot(client, volume_name)
+
+    # choose the replica that is on this host
+    volume = client.by_id_volume(volume_name)
+    host_id = get_self_host_id()
+    for replica in volume.replicas:
+        if replica.hostId == host_id:
+            break
+
+    assert replica is not None, f&#39;hostID: {host_id}, volume replica: {replica}&#39;
+
+    # get the volume metadata file path
+    replica_data_path = replica.dataPath
+    volume_meta_file = replica_data_path + &#34;/volume.meta&#34;
+
+    if test_writing_data:
+        # create random data to the pod in the background
+        command = &#39;dd if=/dev/urandom of=&#39; + writing_data_path + &#39; bs=1M&#39; +\
+                  &#39; count=&#39; + str(common.DATA_SIZE_IN_MB_4) + &#39; &amp;&#39;
+        exec_command_in_pod(core_api, command, test_pod_name, &#39;default&#39;)
+    else:
+        # make the volume detached
+        delete_and_wait_pod(core_api, test_pod_name)
+        wait_for_volume_detached(client, volume_name)
+
+    return snap1, volume_meta_file, test_pod_name, data_md5sum1
+
+
+def check_volume_and_snapshot_after_corrupting_volume_metadata_file(client, core_api, volume_name, pod, test_pod_name, data_path1, data_md5sum1, data_path2, snap): # NOQA
+    &#34;&#34;&#34;
+    Test volume I/O and take/delete a snapshot
+    &#34;&#34;&#34;
+
+    # recreate the pod and check if the volume will become healthy
+    create_and_wait_pod(core_api, pod)
+    volume = wait_for_volume_healthy(client, volume_name)
+
+    # check if the data is not corrupted
+    res_data_md5sum1 = get_pod_data_md5sum(core_api, test_pod_name, data_path1)
+    assert data_md5sum1 == res_data_md5sum1
+
+    # test that r/w is ok after recovering the volume metadata file
+    write_pod_volume_random_data(core_api, test_pod_name,
+                                 data_path2, DATA_SIZE_IN_MB_1)
+    get_pod_data_md5sum(core_api, test_pod_name, data_path2)
+
+    # test that making/deleting a snapshot is ok
+    # after recovering the volume metadata file
+    create_snapshot(client, volume_name)
+    # 1 snap1 1 snap2 1 volume-head
+    wait_for_snapshot_count(volume, 3)
+    volume.snapshotDelete(name=snap.name)
+    # 1 snap2 1 volume-head
+    wait_for_snapshot_count(volume, 2)
+
+
+def test_volume_metafile_deleted(client, core_api, volume_name, csi_pv, pvc, pod, pod_make):  # NOQA
+    &#34;&#34;&#34;
+    Scenario:
+
+    Test volume should still work when the volume meta file is removed
+    in the replica data path.
+
+    Steps:
+
+    1. Delete volume meta file in this replica data path
+    2. Recreate the pod and wait for the volume attached
+    3. Check if the volume is Healthy after the volume attached
+    4. Check volume data
+    5. Check if the volume still works fine by r/w data and
+       creating/removing snapshots
+    &#34;&#34;&#34;
+    data_path1 = &#34;/data/file1&#34;
+    data_path2 = &#34;/data/file2&#34;
+
+    snap1, volume_meta_file, test_pod_name, data_md5sum1 = \
+        prepare_data_volume_metafile(client,
+                                     core_api,
+                                     volume_name,
+                                     csi_pv,
+                                     pvc,
+                                     pod,
+                                     pod_make,
+                                     data_path1)
+
+    # delete the volume metadata file of the volume on this host
+    command = [&#34;rm&#34;, &#34;-f&#34;, volume_meta_file]
+    subprocess.check_call(command)
+
+    # test volume functionality
+    check_volume_and_snapshot_after_corrupting_volume_metadata_file(
+        client,
+        core_api,
+        volume_name,
+        pod,
+        test_pod_name,
+        data_path1,
+        data_md5sum1,
+        data_path2, snap1
+    )
+
+
+def test_volume_metafile_empty(client, core_api, volume_name, csi_pv, pvc, pod, pod_make):  # NOQA
+    &#34;&#34;&#34;
+    Scenario:
+
+    Test volume should still work when there is an invalid volume meta file
+    in the replica data path.
+
+    Steps:
+
+    1. Remove the content of the volume meta file in this replica data path
+    2. Recreate the pod and wait for the volume attached
+    3. Check if the volume is Healthy after the volume attached
+    4. Check volume data
+    5. Check if the volume still works fine by r/w data and
+       creating/removing snapshots
+    &#34;&#34;&#34;
+    data_path1 = &#34;/data/file1&#34;
+    data_path2 = &#34;/data/file2&#34;
+
+    snap1, volume_meta_file, test_pod_name, data_md5sum1 = \
+        prepare_data_volume_metafile(client,
+                                     core_api,
+                                     volume_name,
+                                     csi_pv,
+                                     pvc,
+                                     pod,
+                                     pod_make,
+                                     data_path1)
+
+    # empty the volume metadata file of the volume on this host
+    command = [&#34;truncate&#34;, &#34;--size&#34;, &#34;0&#34;, volume_meta_file]
+    subprocess.check_call(command)
+
+    # test volume functionality
+    check_volume_and_snapshot_after_corrupting_volume_metadata_file(
+        client,
+        core_api,
+        volume_name,
+        pod,
+        test_pod_name,
+        data_path1,
+        data_md5sum1,
+        data_path2,
+        snap1
+    )
+
+
+def test_volume_metafile_deleted_when_writing_data(client, core_api, volume_name, csi_pv, pvc, pod, pod_make):  # NOQA
+    &#34;&#34;&#34;
+    Scenario:
+
+    While writing data, test volume should still work
+    when the volume meta file is deleted in the replica data path.
+
+    Steps:
+
+    1. Create a pod using Longhorn volume
+    2. Delete volume meta file in this replica data path
+    3. Recreate the pod and wait for the volume attached
+    4. Check if the volume is Healthy after the volume attached
+    5. Check volume data
+    6. Check if the volume still works fine by r/w data and
+       creating/removing snapshots
+    &#34;&#34;&#34;
+    data_path1 = &#34;/data/file1&#34;
+    data_path2 = &#34;/data/file2&#34;
+
+    snap1, volume_meta_file, test_pod_name, data_md5sum1 = \
+        prepare_data_volume_metafile(client,
+                                     core_api,
+                                     volume_name,
+                                     csi_pv,
+                                     pvc,
+                                     pod,
+                                     pod_make,
+                                     data_path1,
+                                     test_writing_data=True)
+
+    # delete the volume metadata file of the volume on this host
+    command = [&#34;rm&#34;, &#34;-f&#34;, volume_meta_file]
+    subprocess.check_call(command)
+
+    # make the volume detached and metafile should be reconstructed.
+    delete_and_wait_pod(core_api, test_pod_name)
+    wait_for_volume_detached(client, volume_name)
+
+    # test volume functionality
+    check_volume_and_snapshot_after_corrupting_volume_metadata_file(
+        client,
+        core_api,
+        volume_name,
+        pod,
+        test_pod_name,
+        data_path1,
+        data_md5sum1,
+        data_path2,
+        snap1
+    )
+
+
 def test_expand_pvc_with_size_round_up(client, core_api, volume_name):  # NOQA
     &#34;&#34;&#34;
     test expand longhorn volume with pvc
@@ -5014,6 +5243,114 @@ def test_delete_backup_during_restoring_volume():  # NOQA
 
     client.delete(volume)
     volume = wait_for_volume_delete(client, restore_name)</code></pre>
+</details>
+</dd>
+<dt id="tests.test_basic.check_volume_and_snapshot_after_corrupting_volume_metadata_file"><code class="name flex">
+<span>def <span class="ident">check_volume_and_snapshot_after_corrupting_volume_metadata_file</span></span>(<span>client, core_api, volume_name, pod, test_pod_name, data_path1, data_md5sum1, data_path2, snap)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test volume I/O and take/delete a snapshot</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def check_volume_and_snapshot_after_corrupting_volume_metadata_file(client, core_api, volume_name, pod, test_pod_name, data_path1, data_md5sum1, data_path2, snap): # NOQA
+    &#34;&#34;&#34;
+    Test volume I/O and take/delete a snapshot
+    &#34;&#34;&#34;
+
+    # recreate the pod and check if the volume will become healthy
+    create_and_wait_pod(core_api, pod)
+    volume = wait_for_volume_healthy(client, volume_name)
+
+    # check if the data is not corrupted
+    res_data_md5sum1 = get_pod_data_md5sum(core_api, test_pod_name, data_path1)
+    assert data_md5sum1 == res_data_md5sum1
+
+    # test that r/w is ok after recovering the volume metadata file
+    write_pod_volume_random_data(core_api, test_pod_name,
+                                 data_path2, DATA_SIZE_IN_MB_1)
+    get_pod_data_md5sum(core_api, test_pod_name, data_path2)
+
+    # test that making/deleting a snapshot is ok
+    # after recovering the volume metadata file
+    create_snapshot(client, volume_name)
+    # 1 snap1 1 snap2 1 volume-head
+    wait_for_snapshot_count(volume, 3)
+    volume.snapshotDelete(name=snap.name)
+    # 1 snap2 1 volume-head
+    wait_for_snapshot_count(volume, 2)</code></pre>
+</details>
+</dd>
+<dt id="tests.test_basic.prepare_data_volume_metafile"><code class="name flex">
+<span>def <span class="ident">prepare_data_volume_metafile</span></span>(<span>client, core_api, volume_name, csi_pv, pvc, pod, pod_make, data_path, test_writing_data=False, writing_data_path='/data/writing_data_file')</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Prepare volume and snapshot for volume metafile testing</p>
+<p>Setup:</p>
+<ol>
+<li>Create a pod using Longhorn volume</li>
+<li>Write some data to the volume then get the md5sum</li>
+<li>Create a snapshot</li>
+<li>Delete the pod and wait for the volume detached</li>
+<li>Pick up a replica on this host and get the replica data path</li>
+</ol></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def prepare_data_volume_metafile(client, core_api, volume_name, csi_pv, pvc, pod, pod_make, data_path, test_writing_data=False, writing_data_path=&#34;/data/writing_data_file&#34;):  # NOQA
+    &#34;&#34;&#34;
+    Prepare volume and snapshot for volume metafile testing
+
+    Setup:
+
+    1. Create a pod using Longhorn volume
+    2. Write some data to the volume then get the md5sum
+    3. Create a snapshot
+    4. Delete the pod and wait for the volume detached
+    5. Pick up a replica on this host and get the replica data path
+    &#34;&#34;&#34;
+    # create the pod with pv, pvc and write some data
+    test_pod_name, _, test_pvc_name, data_md5sum1 = \
+        prepare_pod_with_data_in_mb(
+            client, core_api, csi_pv, pvc, pod_make, volume_name,
+            data_path=data_path)
+
+    pod[&#39;metadata&#39;][&#39;name&#39;] = test_pod_name
+    pod[&#39;spec&#39;][&#39;volumes&#39;] = [{
+        &#39;name&#39;: pod[&#39;spec&#39;][&#39;containers&#39;][0][&#39;volumeMounts&#39;][0][&#39;name&#39;],
+        &#39;persistentVolumeClaim&#39;: {
+            &#39;claimName&#39;: test_pvc_name,
+        },
+    }]
+
+    snap1 = create_snapshot(client, volume_name)
+
+    # choose the replica that is on this host
+    volume = client.by_id_volume(volume_name)
+    host_id = get_self_host_id()
+    for replica in volume.replicas:
+        if replica.hostId == host_id:
+            break
+
+    assert replica is not None, f&#39;hostID: {host_id}, volume replica: {replica}&#39;
+
+    # get the volume metadata file path
+    replica_data_path = replica.dataPath
+    volume_meta_file = replica_data_path + &#34;/volume.meta&#34;
+
+    if test_writing_data:
+        # create random data to the pod in the background
+        command = &#39;dd if=/dev/urandom of=&#39; + writing_data_path + &#39; bs=1M&#39; +\
+                  &#39; count=&#39; + str(common.DATA_SIZE_IN_MB_4) + &#39; &amp;&#39;
+        exec_command_in_pod(core_api, command, test_pod_name, &#39;default&#39;)
+    else:
+        # make the volume detached
+        delete_and_wait_pod(core_api, test_pod_name)
+        wait_for_volume_detached(client, volume_name)
+
+    return snap1, volume_meta_file, test_pod_name, data_md5sum1</code></pre>
 </details>
 </dd>
 <dt id="tests.test_basic.prepare_space_usage_for_rebuilding_only_volume"><code class="name flex">
@@ -10388,6 +10725,213 @@ initator on the node.</li>
     volume_iscsi_basic_test(client, volume_name)</code></pre>
 </details>
 </dd>
+<dt id="tests.test_basic.test_volume_metafile_deleted"><code class="name flex">
+<span>def <span class="ident">test_volume_metafile_deleted</span></span>(<span>client, core_api, volume_name, csi_pv, pvc, pod, pod_make)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Scenario:</p>
+<p>Test volume should still work when the volume meta file is removed
+in the replica data path.</p>
+<p>Steps:</p>
+<ol>
+<li>Delete volume meta file in this replica data path</li>
+<li>Recreate the pod and wait for the volume attached</li>
+<li>Check if the volume is Healthy after the volume attached</li>
+<li>Check volume data</li>
+<li>Check if the volume still works fine by r/w data and
+creating/removing snapshots</li>
+</ol></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def test_volume_metafile_deleted(client, core_api, volume_name, csi_pv, pvc, pod, pod_make):  # NOQA
+    &#34;&#34;&#34;
+    Scenario:
+
+    Test volume should still work when the volume meta file is removed
+    in the replica data path.
+
+    Steps:
+
+    1. Delete volume meta file in this replica data path
+    2. Recreate the pod and wait for the volume attached
+    3. Check if the volume is Healthy after the volume attached
+    4. Check volume data
+    5. Check if the volume still works fine by r/w data and
+       creating/removing snapshots
+    &#34;&#34;&#34;
+    data_path1 = &#34;/data/file1&#34;
+    data_path2 = &#34;/data/file2&#34;
+
+    snap1, volume_meta_file, test_pod_name, data_md5sum1 = \
+        prepare_data_volume_metafile(client,
+                                     core_api,
+                                     volume_name,
+                                     csi_pv,
+                                     pvc,
+                                     pod,
+                                     pod_make,
+                                     data_path1)
+
+    # delete the volume metadata file of the volume on this host
+    command = [&#34;rm&#34;, &#34;-f&#34;, volume_meta_file]
+    subprocess.check_call(command)
+
+    # test volume functionality
+    check_volume_and_snapshot_after_corrupting_volume_metadata_file(
+        client,
+        core_api,
+        volume_name,
+        pod,
+        test_pod_name,
+        data_path1,
+        data_md5sum1,
+        data_path2, snap1
+    )</code></pre>
+</details>
+</dd>
+<dt id="tests.test_basic.test_volume_metafile_deleted_when_writing_data"><code class="name flex">
+<span>def <span class="ident">test_volume_metafile_deleted_when_writing_data</span></span>(<span>client, core_api, volume_name, csi_pv, pvc, pod, pod_make)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Scenario:</p>
+<p>While writing data, test volume should still work
+when the volume meta file is deleted in the replica data path.</p>
+<p>Steps:</p>
+<ol>
+<li>Create a pod using Longhorn volume</li>
+<li>Delete volume meta file in this replica data path</li>
+<li>Recreate the pod and wait for the volume attached</li>
+<li>Check if the volume is Healthy after the volume attached</li>
+<li>Check volume data</li>
+<li>Check if the volume still works fine by r/w data and
+creating/removing snapshots</li>
+</ol></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def test_volume_metafile_deleted_when_writing_data(client, core_api, volume_name, csi_pv, pvc, pod, pod_make):  # NOQA
+    &#34;&#34;&#34;
+    Scenario:
+
+    While writing data, test volume should still work
+    when the volume meta file is deleted in the replica data path.
+
+    Steps:
+
+    1. Create a pod using Longhorn volume
+    2. Delete volume meta file in this replica data path
+    3. Recreate the pod and wait for the volume attached
+    4. Check if the volume is Healthy after the volume attached
+    5. Check volume data
+    6. Check if the volume still works fine by r/w data and
+       creating/removing snapshots
+    &#34;&#34;&#34;
+    data_path1 = &#34;/data/file1&#34;
+    data_path2 = &#34;/data/file2&#34;
+
+    snap1, volume_meta_file, test_pod_name, data_md5sum1 = \
+        prepare_data_volume_metafile(client,
+                                     core_api,
+                                     volume_name,
+                                     csi_pv,
+                                     pvc,
+                                     pod,
+                                     pod_make,
+                                     data_path1,
+                                     test_writing_data=True)
+
+    # delete the volume metadata file of the volume on this host
+    command = [&#34;rm&#34;, &#34;-f&#34;, volume_meta_file]
+    subprocess.check_call(command)
+
+    # make the volume detached and metafile should be reconstructed.
+    delete_and_wait_pod(core_api, test_pod_name)
+    wait_for_volume_detached(client, volume_name)
+
+    # test volume functionality
+    check_volume_and_snapshot_after_corrupting_volume_metadata_file(
+        client,
+        core_api,
+        volume_name,
+        pod,
+        test_pod_name,
+        data_path1,
+        data_md5sum1,
+        data_path2,
+        snap1
+    )</code></pre>
+</details>
+</dd>
+<dt id="tests.test_basic.test_volume_metafile_empty"><code class="name flex">
+<span>def <span class="ident">test_volume_metafile_empty</span></span>(<span>client, core_api, volume_name, csi_pv, pvc, pod, pod_make)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Scenario:</p>
+<p>Test volume should still work when there is an invalid volume meta file
+in the replica data path.</p>
+<p>Steps:</p>
+<ol>
+<li>Remove the content of the volume meta file in this replica data path</li>
+<li>Recreate the pod and wait for the volume attached</li>
+<li>Check if the volume is Healthy after the volume attached</li>
+<li>Check volume data</li>
+<li>Check if the volume still works fine by r/w data and
+creating/removing snapshots</li>
+</ol></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def test_volume_metafile_empty(client, core_api, volume_name, csi_pv, pvc, pod, pod_make):  # NOQA
+    &#34;&#34;&#34;
+    Scenario:
+
+    Test volume should still work when there is an invalid volume meta file
+    in the replica data path.
+
+    Steps:
+
+    1. Remove the content of the volume meta file in this replica data path
+    2. Recreate the pod and wait for the volume attached
+    3. Check if the volume is Healthy after the volume attached
+    4. Check volume data
+    5. Check if the volume still works fine by r/w data and
+       creating/removing snapshots
+    &#34;&#34;&#34;
+    data_path1 = &#34;/data/file1&#34;
+    data_path2 = &#34;/data/file2&#34;
+
+    snap1, volume_meta_file, test_pod_name, data_md5sum1 = \
+        prepare_data_volume_metafile(client,
+                                     core_api,
+                                     volume_name,
+                                     csi_pv,
+                                     pvc,
+                                     pod,
+                                     pod_make,
+                                     data_path1)
+
+    # empty the volume metadata file of the volume on this host
+    command = [&#34;truncate&#34;, &#34;--size&#34;, &#34;0&#34;, volume_meta_file]
+    subprocess.check_call(command)
+
+    # test volume functionality
+    check_volume_and_snapshot_after_corrupting_volume_metadata_file(
+        client,
+        core_api,
+        volume_name,
+        pod,
+        test_pod_name,
+        data_path1,
+        data_md5sum1,
+        data_path2,
+        snap1
+    )</code></pre>
+</details>
+</dd>
 <dt id="tests.test_basic.test_volume_multinode"><code class="name flex">
 <span>def <span class="ident">test_volume_multinode</span></span>(<span>client, volume_name)</span>
 </code></dt>
@@ -10873,6 +11417,8 @@ the format <strong><em>*rw</em></strong>*</li>
 <li><code><a title="tests.test_basic.backup_status_for_unavailable_replicas_test" href="#tests.test_basic.backup_status_for_unavailable_replicas_test">backup_status_for_unavailable_replicas_test</a></code></li>
 <li><code><a title="tests.test_basic.backup_test" href="#tests.test_basic.backup_test">backup_test</a></code></li>
 <li><code><a title="tests.test_basic.backupstore_test" href="#tests.test_basic.backupstore_test">backupstore_test</a></code></li>
+<li><code><a title="tests.test_basic.check_volume_and_snapshot_after_corrupting_volume_metadata_file" href="#tests.test_basic.check_volume_and_snapshot_after_corrupting_volume_metadata_file">check_volume_and_snapshot_after_corrupting_volume_metadata_file</a></code></li>
+<li><code><a title="tests.test_basic.prepare_data_volume_metafile" href="#tests.test_basic.prepare_data_volume_metafile">prepare_data_volume_metafile</a></code></li>
 <li><code><a title="tests.test_basic.prepare_space_usage_for_rebuilding_only_volume" href="#tests.test_basic.prepare_space_usage_for_rebuilding_only_volume">prepare_space_usage_for_rebuilding_only_volume</a></code></li>
 <li><code><a title="tests.test_basic.restore_inc_test" href="#tests.test_basic.restore_inc_test">restore_inc_test</a></code></li>
 <li><code><a title="tests.test_basic.snapshot_prune_and_coalesce_simultaneously" href="#tests.test_basic.snapshot_prune_and_coalesce_simultaneously">snapshot_prune_and_coalesce_simultaneously</a></code></li>
@@ -10927,6 +11473,9 @@ the format <strong><em>*rw</em></strong>*</li>
 <li><code><a title="tests.test_basic.test_storage_class_from_backup" href="#tests.test_basic.test_storage_class_from_backup">test_storage_class_from_backup</a></code></li>
 <li><code><a title="tests.test_basic.test_volume_basic" href="#tests.test_basic.test_volume_basic">test_volume_basic</a></code></li>
 <li><code><a title="tests.test_basic.test_volume_iscsi_basic" href="#tests.test_basic.test_volume_iscsi_basic">test_volume_iscsi_basic</a></code></li>
+<li><code><a title="tests.test_basic.test_volume_metafile_deleted" href="#tests.test_basic.test_volume_metafile_deleted">test_volume_metafile_deleted</a></code></li>
+<li><code><a title="tests.test_basic.test_volume_metafile_deleted_when_writing_data" href="#tests.test_basic.test_volume_metafile_deleted_when_writing_data">test_volume_metafile_deleted_when_writing_data</a></code></li>
+<li><code><a title="tests.test_basic.test_volume_metafile_empty" href="#tests.test_basic.test_volume_metafile_empty">test_volume_metafile_empty</a></code></li>
 <li><code><a title="tests.test_basic.test_volume_multinode" href="#tests.test_basic.test_volume_multinode">test_volume_multinode</a></code></li>
 <li><code><a title="tests.test_basic.test_volume_scheduling_failure" href="#tests.test_basic.test_volume_scheduling_failure">test_volume_scheduling_failure</a></code></li>
 <li><code><a title="tests.test_basic.test_volume_toomanysnapshots_condition" href="#tests.test_basic.test_volume_toomanysnapshots_condition">test_volume_toomanysnapshots_condition</a></code></li>
