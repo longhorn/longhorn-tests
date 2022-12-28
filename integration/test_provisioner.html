@@ -221,7 +221,22 @@ def test_provisioner_tags(client, core_api, node_default_tags, storage_class, pv
     assert volumes.data[0].numberOfReplicas == \
         int(storage_class[&#39;parameters&#39;][&#39;numberOfReplicas&#39;])
     assert volumes.data[0].state == &#34;attached&#34;
-    check_volume_replicas(volumes.data[0], tag_spec, node_default_tags)</code></pre>
+    check_volume_replicas(volumes.data[0], tag_spec, node_default_tags)
+
+
+@pytest.mark.skip(reason=&#34;TODO&#34;)
+def test_provisioner_fs_format():
+    &#34;&#34;&#34;
+    Context: https://github.com/longhorn/longhorn/issues/4642
+    This is to test the FS format options are configured as mentioned in
+    the storage class.
+
+    1. Deploy a new storage class &#39;longhorn-test&#39; with mkfsParams param.
+    2. Deploy a PVC and POD with the above storage class.
+    3. A Longhorn volume should get created, verify the Inode size and
+       block size. They should be same as the mkfsParams parameter.
+
+    &#34;&#34;&#34;</code></pre>
 </details>
 </section>
 <section>
@@ -251,6 +266,38 @@ def test_provisioner_tags(client, core_api, node_default_tags, storage_class, pv
     api.create_namespaced_persistent_volume_claim(
         body=pvc_manifest,
         namespace=&#39;default&#39;)</code></pre>
+</details>
+</dd>
+<dt id="tests.test_provisioner.test_provisioner_fs_format"><code class="name flex">
+<span>def <span class="ident">test_provisioner_fs_format</span></span>(<span>)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Context: <a href="https://github.com/longhorn/longhorn/issues/4642">https://github.com/longhorn/longhorn/issues/4642</a>
+This is to test the FS format options are configured as mentioned in
+the storage class.</p>
+<ol>
+<li>Deploy a new storage class 'longhorn-test' with mkfsParams param.</li>
+<li>Deploy a PVC and POD with the above storage class.</li>
+<li>A Longhorn volume should get created, verify the Inode size and
+block size. They should be same as the mkfsParams parameter.</li>
+</ol></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@pytest.mark.skip(reason=&#34;TODO&#34;)
+def test_provisioner_fs_format():
+    &#34;&#34;&#34;
+    Context: https://github.com/longhorn/longhorn/issues/4642
+    This is to test the FS format options are configured as mentioned in
+    the storage class.
+
+    1. Deploy a new storage class &#39;longhorn-test&#39; with mkfsParams param.
+    2. Deploy a PVC and POD with the above storage class.
+    3. A Longhorn volume should get created, verify the Inode size and
+       block size. They should be same as the mkfsParams parameter.
+
+    &#34;&#34;&#34;</code></pre>
 </details>
 </dd>
 <dt id="tests.test_provisioner.test_provisioner_io"><code class="name flex">
@@ -514,6 +561,7 @@ Tags.</p>
 <li><h3><a href="#header-functions">Functions</a></h3>
 <ul class="">
 <li><code><a title="tests.test_provisioner.create_storage" href="#tests.test_provisioner.create_storage">create_storage</a></code></li>
+<li><code><a title="tests.test_provisioner.test_provisioner_fs_format" href="#tests.test_provisioner.test_provisioner_fs_format">test_provisioner_fs_format</a></code></li>
 <li><code><a title="tests.test_provisioner.test_provisioner_io" href="#tests.test_provisioner.test_provisioner_io">test_provisioner_io</a></code></li>
 <li><code><a title="tests.test_provisioner.test_provisioner_mount" href="#tests.test_provisioner.test_provisioner_mount">test_provisioner_mount</a></code></li>
 <li><code><a title="tests.test_provisioner.test_provisioner_params" href="#tests.test_provisioner.test_provisioner_params">test_provisioner_params</a></code></li>
