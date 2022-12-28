@@ -194,3 +194,18 @@ def test_provisioner_tags(client, core_api, node_default_tags, storage_class, pv
         int(storage_class['parameters']['numberOfReplicas'])
     assert volumes.data[0].state == "attached"
     check_volume_replicas(volumes.data[0], tag_spec, node_default_tags)
+
+
+@pytest.mark.skip(reason="TODO")
+def test_provisioner_fs_format():
+    """
+    Context: https://github.com/longhorn/longhorn/issues/4642
+    This is to test the FS format options are configured as mentioned in
+    the storage class.
+
+    1. Deploy a new storage class 'longhorn-test' with mkfsParams param.
+    2. Deploy a PVC and POD with the above storage class.
+    3. A Longhorn volume should get created, verify the Inode size and
+       block size. They should be same as the mkfsParams parameter.
+
+    """
