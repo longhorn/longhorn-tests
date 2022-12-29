@@ -213,6 +213,16 @@ SETTING_CONCURRENT_AUTO_ENGINE_UPGRADE_NODE_LIMIT = \
     &#34;concurrent-automatic-engine-upgrade-per-node-limit&#34;
 SETTING_SUPPORT_BUNDLE_FAILED_LIMIT = &#34;support-bundle-failed-history-limit&#34;
 SETTING_RESTORE_RECURRING_JOBS = &#34;restore-volume-recurring-jobs&#34;
+SETTING_SNAPSHOT_DATA_INTEGRITY = &#34;snapshot-data-integrity&#34;
+SETTING_SNAPSHOT_DATA_INTEGRITY_IMMEDIATE_CHECK_AFTER_SNAPSHOT_CREATION = \
+    &#34;snapshot-data-integrity-immediate-check-after-snapshot-creation&#34;
+SETTING_SNAPSHOT_DATA_INTEGRITY_CRONJOB = &#34;snapshot-data-integrity-cronjob&#34;
+SETTING_SNAPSHOT_FAST_REPLICA_REBUILD_ENABLED = &#34;fast-replica-rebuild-enabled&#34;
+
+SNAPSHOT_DATA_INTEGRITY_IGNORED = &#34;ignored&#34;
+SNAPSHOT_DATA_INTEGRITY_DISABLED = &#34;disabled&#34;
+SNAPSHOT_DATA_INTEGRITY_ENABLED = &#34;enabled&#34;
+SNAPSHOT_DATA_INTEGRITY_FAST_CHECK = &#34;fast-check&#34;
 
 CSI_UNKNOWN = 0
 CSI_TRUE = 1
@@ -452,7 +462,8 @@ def delete_backup_volume(client, volume_name):
 
 def create_and_check_volume(client, volume_name,
                             num_of_replicas=3, size=SIZE, backing_image=&#34;&#34;,
-                            frontend=VOLUME_FRONTEND_BLOCKDEV):
+                            frontend=VOLUME_FRONTEND_BLOCKDEV,
+                            snapshot_data_integrity=SNAPSHOT_DATA_INTEGRITY_IGNORED): # NOQA
     &#34;&#34;&#34;
     Create a new volume with the specified parameters. Assert that the new
     volume is detached and that all of the requested parameters match.
@@ -470,7 +481,8 @@ def create_and_check_volume(client, volume_name,
         backing_image = None
     client.create_volume(name=volume_name, size=size,
                          numberOfReplicas=num_of_replicas,
-                         backingImage=backing_image, frontend=frontend)
+                         backingImage=backing_image, frontend=frontend,
+                         snapshotDataIntegrity=snapshot_data_integrity)
     volume = wait_for_volume_detached(client, volume_name)
     assert volume.name == volume_name
     assert volume.size == size
@@ -4056,9 +4068,11 @@ def wait_for_rebuild_complete(client, volume_name, retry_count=RETRY_COUNTS):
     assert completed == len(rebuild_statuses)
 
 
-def wait_for_rebuild_start(client, volume_name):
+def wait_for_rebuild_start(client, volume_name,
+                           retry_count=RETRY_COUNTS,
+                           retry_interval=RETRY_INTERVAL):
     started = False
-    for i in range(RETRY_COUNTS):
+    for i in range(retry_count):
         v = client.by_id_volume(volume_name)
         rebuild_statuses = v.rebuildStatus
         for status in rebuild_statuses:
@@ -4067,7 +4081,7 @@ def wait_for_rebuild_start(client, volume_name):
                 break
         if started:
             break
-        time.sleep(RETRY_INTERVAL)
+        time.sleep(retry_interval)
     assert started
     return status.fromReplica, status.replica
 
@@ -6551,7 +6565,7 @@ def core_api(request):
 </details>
 </dd>
 <dt id="tests.common.create_and_check_volume"><code class="name flex">
-<span>def <span class="ident">create_and_check_volume</span></span>(<span>client, volume_name, num_of_replicas=3, size='16777216', backing_image='', frontend='blockdev')</span>
+<span>def <span class="ident">create_and_check_volume</span></span>(<span>client, volume_name, num_of_replicas=3, size='16777216', backing_image='', frontend='blockdev', snapshot_data_integrity='ignored')</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Create a new volume with the specified parameters. Assert that the new
@@ -6570,7 +6584,8 @@ of bytes.
 </summary>
 <pre><code class="python">def create_and_check_volume(client, volume_name,
                             num_of_replicas=3, size=SIZE, backing_image=&#34;&#34;,
-                            frontend=VOLUME_FRONTEND_BLOCKDEV):
+                            frontend=VOLUME_FRONTEND_BLOCKDEV,
+                            snapshot_data_integrity=SNAPSHOT_DATA_INTEGRITY_IGNORED): # NOQA
     &#34;&#34;&#34;
     Create a new volume with the specified parameters. Assert that the new
     volume is detached and that all of the requested parameters match.
@@ -6588,7 +6603,8 @@ of bytes.
         backing_image = None
     client.create_volume(name=volume_name, size=size,
                          numberOfReplicas=num_of_replicas,
-                         backingImage=backing_image, frontend=frontend)
+                         backingImage=backing_image, frontend=frontend,
+                         snapshotDataIntegrity=snapshot_data_integrity)
     volume = wait_for_volume_detached(client, volume_name)
     assert volume.name == volume_name
     assert volume.size == size
@@ -11980,7 +11996,7 @@ ref: <a href="https://github.com/longhorn/longhorn/issues/4814">https://github.c
 </details>
 </dd>
 <dt id="tests.common.wait_for_rebuild_start"><code class="name flex">
-<span>def <span class="ident">wait_for_rebuild_start</span></span>(<span>client, volume_name)</span>
+<span>def <span class="ident">wait_for_rebuild_start</span></span>(<span>client, volume_name, retry_count=150, retry_interval=1)</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -11988,9 +12004,11 @@ ref: <a href="https://github.com/longhorn/longhorn/issues/4814">https://github.c
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def wait_for_rebuild_start(client, volume_name):
+<pre><code class="python">def wait_for_rebuild_start(client, volume_name,
+                           retry_count=RETRY_COUNTS,
+                           retry_interval=RETRY_INTERVAL):
     started = False
-    for i in range(RETRY_COUNTS):
+    for i in range(retry_count):
         v = client.by_id_volume(volume_name)
         rebuild_statuses = v.rebuildStatus
         for status in rebuild_statuses:
@@ -11999,7 +12017,7 @@ ref: <a href="https://github.com/longhorn/longhorn/issues/4814">https://github.c
                 break
         if started:
             break
-        time.sleep(RETRY_INTERVAL)
+        time.sleep(retry_interval)
     assert started
     return status.fromReplica, status.replica</code></pre>
 </details>

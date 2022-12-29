@@ -1,0 +1,1577 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
+<meta name="generator" content="pdoc 0.10.0" />
+<title>tests.test_snapshot API documentation</title>
+<meta name="description" content="" />
+<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
+<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/typography.min.css" integrity="sha256-7l/o7C8jubJiy74VsKTidCy1yBkRtiUGbVkYBylBqUg=" crossorigin>
+<link rel="stylesheet preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/styles/github.min.css" crossorigin>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:30px;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:1em 0 .50em 0}h3{font-size:1.4em;margin:25px 0 10px 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .3s ease-in-out}a:hover{color:#e82}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900}pre code{background:#f8f8f8;font-size:.8em;line-height:1.4em}code{background:#f2f2f1;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{background:#f8f8f8;border:0;border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0;padding:1ex}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-weight:bold;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em .5em;margin-bottom:1em}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.item .name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul{padding-left:1.5em}.toc > ul > li{margin-top:.5em}}</style>
+<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/highlight.min.js" integrity="sha256-Uv3H6lx7dJmRfRvH8TH6kJD1TSK1aFcwgx+mdg3epi8=" crossorigin></script>
+<script>window.addEventListener('DOMContentLoaded', () => hljs.initHighlighting())</script>
+</head>
+<body>
+<main>
+<article id="content">
+<header>
+<h1 class="title">Module <code>tests.test_snapshot</code></h1>
+</header>
+<section id="section-intro">
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">import os
+import subprocess
+import time
+import datetime
+import json
+import pandas as pd
+
+from common import client, volume_name  # NOQA
+from common import update_setting
+from common import get_self_host_id
+from common import create_and_check_volume, wait_for_volume_healthy
+from common import wait_for_rebuild_start, wait_for_rebuild_complete
+from common import create_snapshot
+from common import settings_reset # NOQA
+
+from test_basic import get_volume_endpoint
+
+from test_scheduling import get_host_replica, wait_new_replica_ready  # NOQA
+
+from common import Gi, Mi
+from common import RETRY_COUNTS, RETRY_INTERVAL
+from common import SETTING_SNAPSHOT_DATA_INTEGRITY
+from common import SETTING_SNAPSHOT_DATA_INTEGRITY_IMMEDIATE_CHECK_AFTER_SNAPSHOT_CREATION  # NOQA
+from common import SETTING_SNAPSHOT_DATA_INTEGRITY_CRONJOB
+from common import SETTING_SNAPSHOT_FAST_REPLICA_REBUILD_ENABLED
+from common import SNAPSHOT_DATA_INTEGRITY_IGNORED
+from common import SNAPSHOT_DATA_INTEGRITY_ENABLED
+from common import SNAPSHOT_DATA_INTEGRITY_FAST_CHECK
+from common import SNAPSHOT_DATA_INTEGRITY_DISABLED
+
+RETRY_WAIT_CHECKSUM_COUNTS = 600
+SNAPSHOT_CHECK_PERIOD = 300
+
+# For the checksum calculated by periodic check mechanism
+# We cannot precisely know when the event happens,
+# so put a toleration here and check if the time elapsed is expected.
+SNAPSHOT_CHECK_TOLERATION_DELAY = 60
+
+def test_snapshot_hash_global_enabled_with_immediate_hash(client, volume_name, settings_reset):  # NOQA
+    &#34;&#34;&#34;
+    Check snapshots&#39; checksums are immediately calculated when the snapshots
+    are created
+    - global data-integrity is set to enabled
+    - global immediate_hash is enabled
+    &#34;&#34;&#34;
+    prepare_settings_for_snapshot_test(client,
+                                       SNAPSHOT_DATA_INTEGRITY_ENABLED,
+                                       &#34;true&#34;, &#34;true&#34;)
+    check_hashed_and_with_immediate_hash(client, volume_name,
+                                         SNAPSHOT_DATA_INTEGRITY_IGNORED)
+
+
+def test_snapshot_hash_global_enabled_without_immediate_hash(client, volume_name, settings_reset):  # NOQA
+    &#34;&#34;&#34;
+    Check snapshots&#39; checksums are calculated by the periodic checksum check
+    - global data-integrity is set to enabled
+    - global immediate_hash is disabled
+    &#34;&#34;&#34;
+    prepare_settings_for_snapshot_test(client,
+                                       SNAPSHOT_DATA_INTEGRITY_ENABLED,
+                                       &#34;false&#34;, &#34;true&#34;)
+    check_hashed_and_without_immediate_hash(client, volume_name,
+                                            SNAPSHOT_DATA_INTEGRITY_IGNORED)
+
+
+def test_snapshot_hash_global_fast_check_with_immediate_hash(client, volume_name, settings_reset):  # NOQA
+    &#34;&#34;&#34;
+    Check snapshots&#39; checksums are immediately calculated when the snapshots
+    are created
+    - global data-integrity is set to fast-check
+    - global immediate_hash is enabled
+    &#34;&#34;&#34;
+    prepare_settings_for_snapshot_test(client,
+                                       SNAPSHOT_DATA_INTEGRITY_FAST_CHECK,
+                                       &#34;true&#34;, &#34;true&#34;)
+    check_hashed_and_with_immediate_hash(client,
+                                         volume_name,
+                                         SNAPSHOT_DATA_INTEGRITY_IGNORED)
+
+
+def test_snapshot_hash_global_fast_check_without_immediate_hash(client, volume_name, settings_reset):  # NOQA
+    &#34;&#34;&#34;
+    Check snapshots&#39; checksums are calculated by the periodic checksum check
+    - global data-integrity is set to fast-check
+    - global immediate_hash is disabled
+    &#34;&#34;&#34;
+    prepare_settings_for_snapshot_test(client,
+                                       SNAPSHOT_DATA_INTEGRITY_FAST_CHECK,
+                                       &#34;false&#34;,
+                                       &#34;true&#34;)
+    check_hashed_and_without_immediate_hash(client, volume_name,
+                                            SNAPSHOT_DATA_INTEGRITY_IGNORED)  # NOQA
+
+
+def test_snapshot_hash_global_disabled_with_immediate_hash(client, volume_name, settings_reset):  # NOQA
+    &#34;&#34;&#34;
+    Check snapshots&#39; checksums are not calculated when
+    check when
+    - global data-integrity is set to disabled
+    - global immediate_hash is enabled
+    - per-volume data-integrity is set to disabled and follows the
+      global setting
+    &#34;&#34;&#34;
+    prepare_settings_for_snapshot_test(client,
+                                       SNAPSHOT_DATA_INTEGRITY_DISABLED,
+                                       &#34;true&#34;,
+                                       &#34;true&#34;)
+    check_per_volume_hash_disable(client, volume_name,
+                                  SNAPSHOT_DATA_INTEGRITY_IGNORED)
+
+
+def test_snapshot_hash_global_disabled_without_immediate_hash(client, volume_name, settings_reset):  # NOQA
+    &#34;&#34;&#34;
+    Check snapshots&#39; checksums are not calculated when
+    check when
+    - global data-integrity is set to disabled
+    - global immediate_hash is disabled
+    - per-volume data-integrity is set to disabled and follows the
+      global setting
+    &#34;&#34;&#34;
+    prepare_settings_for_snapshot_test(client,
+                                       SNAPSHOT_DATA_INTEGRITY_DISABLED,
+                                       &#34;false&#34;,
+                                       &#34;true&#34;)
+    check_per_volume_hash_disable(client, volume_name,
+                                  SNAPSHOT_DATA_INTEGRITY_IGNORED)
+
+
+def test_snapshot_hash_global_disabled_and_per_volume_enabled_and_with_immediate_hash(client, volume_name, settings_reset):  # NOQA
+    &#34;&#34;&#34;
+    Check snapshots&#39; checksums are immediately calculated when the snapshots
+    check when
+    - global data-integrity is set to disabled
+    - global immediate_hash is enabled
+    - per-volume data-integrity is set to enabled
+    &#34;&#34;&#34;
+    prepare_settings_for_snapshot_test(client,
+                                       SNAPSHOT_DATA_INTEGRITY_DISABLED,
+                                       &#34;true&#34;,
+                                       &#34;true&#34;)
+    check_hashed_and_with_immediate_hash(client, volume_name,
+                                         SNAPSHOT_DATA_INTEGRITY_ENABLED)
+
+
+def test_snapshot_hash_global_disabled_and_per_volume_enabled_and_without_immediate_hash(client, volume_name, settings_reset):  # NOQA
+    &#34;&#34;&#34;
+    Check snapshots&#39; checksums are calculated by the periodic checksum check
+    - global data-integrity is set to disabled
+    - global immediate_hash is disabled
+    - per-volume data-integrity is set to enabled
+    &#34;&#34;&#34;
+    prepare_settings_for_snapshot_test(client,
+                                       SNAPSHOT_DATA_INTEGRITY_DISABLED,
+                                       &#34;false&#34;,
+                                       &#34;true&#34;)
+    check_hashed_and_without_immediate_hash(client, volume_name,
+                                            SNAPSHOT_DATA_INTEGRITY_ENABLED)
+
+
+def test_snapshot_hash_global_enabled_and_per_volume_disable_and_with_immediate_hash(client, volume_name, settings_reset):  # NOQA
+    &#34;&#34;&#34;
+    Check snapshots&#39; checksums are not calculated
+    - global data-integrity is set to enabled
+    - global immediate_hash is enabled
+    - per-volume data-integrity is set to disabled
+    &#34;&#34;&#34;
+    prepare_settings_for_snapshot_test(client,
+                                       SNAPSHOT_DATA_INTEGRITY_ENABLED,
+                                       &#34;true&#34;,
+                                       &#34;true&#34;)
+    check_per_volume_hash_disable(client, volume_name,
+                                  SNAPSHOT_DATA_INTEGRITY_DISABLED)
+
+
+def test_snapshot_hash_global_enabled_and_per_volume_enable_mode_without_immediate_hash(client, volume_name, settings_reset):  # NOQA
+    &#34;&#34;&#34;
+    Check snapshots&#39; checksums are not calculated
+    - global data-integrity is set to enabled
+    - global immediate_hash is disabled
+    - per-volume data-integrity is set to disabled
+    &#34;&#34;&#34;
+    prepare_settings_for_snapshot_test(client,
+                                       SNAPSHOT_DATA_INTEGRITY_ENABLED,
+                                       &#34;false&#34;,
+                                       &#34;true&#34;)
+    check_per_volume_hash_disable(client, volume_name,
+                                  SNAPSHOT_DATA_INTEGRITY_DISABLED)
+
+
+def test_snapshot_hash_detect_corruption_in_global_enabled_mode(client, volume_name, settings_reset):  # NOQA
+    &#34;&#34;&#34;
+    Check the snapshot corruption can be detected and replica is rebuilt
+    - global data-integrity is set to enabled
+    - global immediate_hash is enabled
+    &#34;&#34;&#34;
+    prepare_settings_for_snapshot_test(client,
+                                       SNAPSHOT_DATA_INTEGRITY_ENABLED,
+                                       &#34;true&#34;,
+                                       &#34;false&#34;)
+    detect_and_repair_corrupted_replica(client, volume_name,
+                                        SNAPSHOT_DATA_INTEGRITY_ENABLED)
+
+
+def test_snapshot_hash_detect_corruption_in_global_fast_check_mode(client, volume_name, settings_reset):  # NOQA
+    &#34;&#34;&#34;
+    Check the snapshot corruption can be detected and replica is rebuilt
+    - global data-integrity is set to fast-check
+    - global immediate_hash is enabled
+    &#34;&#34;&#34;
+    prepare_settings_for_snapshot_test(client,
+                                       SNAPSHOT_DATA_INTEGRITY_FAST_CHECK,
+                                       &#34;true&#34;,
+                                       &#34;false&#34;)
+    detect_and_repair_corrupted_replica(client, volume_name,
+                                        SNAPSHOT_DATA_INTEGRITY_FAST_CHECK)
+
+
+def prepare_settings_for_snapshot_test(client, data_integrity, immediate_check, fast_replica_rebuild, period_in_second=SNAPSHOT_CHECK_PERIOD):  # NOQA
+    period_in_minute = period_in_second / 60
+    # Make the next hash time more predictable
+    now = datetime.datetime.now()
+    minute = (now.minute + period_in_minute) % 60
+    hour = now.hour + (now.minute + period_in_minute) / 60
+
+    cronjob = &#34;%d/%d %d * * *&#34; % (minute, period_in_minute, hour)
+
+    update_setting(client,
+                   SETTING_SNAPSHOT_DATA_INTEGRITY,
+                   data_integrity)
+    update_setting(client,
+                   SETTING_SNAPSHOT_DATA_INTEGRITY_IMMEDIATE_CHECK_AFTER_SNAPSHOT_CREATION,  # NOQA
+                   immediate_check)
+    update_setting(client,
+                   SETTING_SNAPSHOT_DATA_INTEGRITY_CRONJOB,
+                   cronjob)
+    update_setting(client,
+                   SETTING_SNAPSHOT_FAST_REPLICA_REBUILD_ENABLED,
+                   fast_replica_rebuild)
+
+
+def detect_and_repair_corrupted_replica(client, volume_name, data_integrity_mode):  # NOQA
+    &#34;&#34;&#34;
+    1. Create and attach a volume
+    2. Create snapshots
+    3. Check snapshots&#39; checksums are calculated and set and also
+       check the checksums of the snapshot disk files are matched
+       with the values from the api
+    4. Corrupt the snapshot of replica on the local host
+    5. Check the replica rebuild is ran correctly
+    6. Check snapshots are repaired
+    &#34;&#34;&#34;
+
+    # Step 1
+    volume = create_and_check_volume(client, volume_name, 3, size=str(2 * Gi))
+
+    lht_hostId = get_self_host_id()
+    volume = volume.attach(hostId=lht_hostId)
+    volume = wait_for_volume_healthy(client, volume_name)
+    volume = client.by_id_volume(volume_name)
+
+    # Step 2
+    create_snapshots(client, volume, 1536, 3)
+
+    # Step 3
+    assert check_snapshot_checksums_and_change_timestamps(volume)
+
+    # Step 4
+    snapshot_name = get_available_snapshot(volume)
+    assert snapshot_name != &#34;&#34;
+
+    assert corrupt_snapshot_on_local_host(volume, snapshot_name)
+
+    # Step 5
+    retry_count = SNAPSHOT_CHECK_PERIOD+SNAPSHOT_CHECK_TOLERATION_DELAY
+    wait_for_rebuild_start(client, volume_name, retry_count, 1)
+
+    volume = client.by_id_volume(volume_name)
+    assert len(volume.replicas) == 3
+
+    wait_for_rebuild_complete(client, volume_name)
+
+    # Step 6
+    # The checksum in checksum file should be updated by the periodic check
+    time.sleep(SNAPSHOT_CHECK_PERIOD+SNAPSHOT_CHECK_TOLERATION_DELAY)
+    assert check_snapshot_checksums_and_change_timestamps(volume)
+
+
+def get_available_snapshot(volume):
+    data_path = get_local_host_replica_data_path(volume)
+    assert data_path != &#34;&#34;
+
+    value = volume.snapshotList()
+    snapshots = value.data
+    for s in snapshots:
+        if s.name != &#34;volume-head&#34; and s.usercreated is True:
+            return s.name
+
+    return &#34;&#34;
+
+
+def corrupt_snapshot_on_local_host(volume, snapshot_name):
+    data_path = get_local_host_replica_data_path(volume)
+    assert data_path != &#34;&#34;
+
+    disk_path = os.path.join(data_path,
+                             &#34;volume-snap-&#34; + snapshot_name + &#34;.img&#34;)
+    exec_cmd = [&#34;dd&#34;, &#34;if=/dev/urandom&#34;, &#34;of=&#34; + disk_path,
+                &#34;bs=1&#34;, &#34;count=10&#34;, &#34;conv=notrunc&#34;]
+    try:
+        subprocess.check_output(exec_cmd)
+    except subprocess.CalledProcessError as e:
+        print(e.output)
+        return False
+    return True
+
+
+def check_snapshot_checksums_and_change_timestamps(volume):
+    data_path = get_local_host_replica_data_path(volume)
+    assert data_path != &#34;&#34;
+
+    for i in range(RETRY_COUNTS):
+        value = volume.snapshotList()
+        snapshots = value.data
+        for s in snapshots:
+            if s.name != &#34;volume-head&#34; and s.usercreated is True:
+                if s.checksum == &#34;&#34;:
+                    break
+
+                # Check checksums in snapshot resource and in checksum file
+                # are matched
+                disk_path = os.path.join(data_path,
+                                         &#34;volume-snap-&#34; + s.name + &#34;.img&#34;)
+                checksum = get_checksum_in_checksum_file(disk_path)
+                print(f&#39;snapshot {s.name}: &#39;
+                      f&#39;checksum in resource={s.checksum}, &#39;
+                      f&#39;checksum recalculated={checksum}&#39;)
+                assert checksum == s.checksum
+
+                # Check checksums in snapshot resource and the calculated value
+                # are matched
+                checksum = get_checksum_from_snapshot_disk_file(data_path,
+                                                                s.name)
+                print(f&#39;snapshot {s.name}: &#39;
+                      f&#39;checksum in resource={s.checksum}, &#39;
+                      f&#39;checksum recorded={checksum}&#39;)
+                assert checksum == s.checksum
+
+                # Check ctime in checksum file and from stat are matched
+                ctime_recorded = get_ctime_in_checksum_file(disk_path)
+                ctime = get_ctime_from_snapshot_disk_file(data_path, s.name)
+
+                print(f&#39;snapshot {s.name}: &#39;
+                      f&#39;ctime recorded={ctime_recorded}, &#39;
+                      f&#39;ctime={ctime}&#39;)
+
+                df = pd.DataFrame({&#39;string&#39;: [ctime_recorded, ctime]})
+                df[&#39;timestamp&#39;] = pd.to_datetime(df[&#39;string&#39;].str.replace(&#34; +0000&#34;, &#34;&#34;, regex=False))  # NOQA
+                assert str(df[&#39;timestamp&#39;][0]) == str(df[&#39;timestamp&#39;][1])
+
+            if snapshots.index(s) == len(snapshots)-1:
+                return True
+
+        time.sleep(RETRY_INTERVAL)
+
+    return False
+
+
+def get_checksum_in_checksum_file(disk_path):
+    checksum_file = disk_path + &#34;.checksum&#34;
+    try:
+        f = open(checksum_file)
+        metadata = json.load(f)
+    except OSError as e:
+        print(e)
+        raise
+
+    return metadata[&#34;checksum&#34;]
+
+
+def get_ctime_in_checksum_file(disk_path):
+    checksum_file = disk_path + &#34;.checksum&#34;
+    try:
+        f = open(checksum_file)
+        metadata = json.load(f)
+    except OSError as e:
+        print(e)
+        raise
+
+    return metadata[&#34;change_time&#34;]
+
+
+def check_snapshot_checksums_set(volume):
+    value = volume.snapshotList()
+    snapshots = value.data
+    for s in snapshots:
+        if s.name == &#34;volume-head&#34;:
+            continue
+        if s.checksum == &#34;&#34;:
+            return False
+
+    for s in snapshots:
+        print(f&#39;Checksum of snapshot {s.name} is {s.checksum}&#39;)
+    return True
+
+
+def get_local_host_replica_data_path(volume):
+    lht_hostId = get_self_host_id()
+
+    dataPath = &#34;&#34;
+    replicas = volume.replicas
+    for r in replicas:
+        if r.hostId == lht_hostId:
+            dataPath = r.dataPath
+            break
+
+    return dataPath
+
+
+def get_checksum_from_snapshot_disk_file(data_path, snapshot_name):
+    exec_cmd = [&#34;java&#34;, &#34;-jar&#34;, &#34;/jacksum.jar&#34;, &#34;-a&#34;, &#34;crc64_go-iso&#34;,
+                os.path.join(data_path,
+                             &#34;volume-snap-&#34; + snapshot_name + &#34;.img&#34;)]
+    try:
+        output = subprocess.check_output(exec_cmd)
+    except subprocess.CalledProcessError as e:
+        print(e.output)
+        return &#34;&#34;
+
+    data = str(output, &#39;utf-8&#39;)
+    fields = data.split(&#39; &#39;)
+    return fields[0]
+
+
+def get_ctime_from_snapshot_disk_file(data_path, snapshot_name):
+    exec_cmd = [&#34;stat&#34;, &#34;-c&#34;, &#34;%z&#34;,
+                os.path.join(data_path,
+                             &#34;volume-snap-&#34; + snapshot_name + &#34;.img&#34;)]
+    try:
+        output = subprocess.check_output(exec_cmd)
+    except subprocess.CalledProcessError as e:
+        print(e.output)
+        return &#34;&#34;
+
+    return str(output, &#39;utf-8&#39;).rstrip(&#39;\n&#39;) + &#34; UTC&#34;
+
+
+def create_snapshots(client, volume, data_size, num_snapshots):  # NOQA
+    dev = get_volume_endpoint(volume)
+
+    snaps = []
+    for i in range(num_snapshots):
+        assert write_device_random_data(dev, data_size)
+        snap = create_snapshot(client, volume.name)
+        snaps.append(snap)
+
+    snapshots = volume.snapshotList()
+    snapMap = {}
+    for snap in snapshots:
+        snapMap[snap.name] = snap
+
+    for i in range(num_snapshots):
+        snap = snaps[i]
+        assert snapMap[snap.name].name == snap.name
+        assert snapMap[snap.name].removed is False
+        if i &gt; 0:
+            prev_snap = snaps[i-1]
+            assert snapMap[snap.name].parent == prev_snap.name
+
+
+def write_device_random_data(dev, size):
+    exec_cmd = [&#34;dd&#34;, &#34;if=/dev/urandom&#34;, &#34;of=&#34; + dev,
+                &#34;bs=1M&#34;, &#34;count=&#34; + str(size)]
+    try:
+        subprocess.check_output(exec_cmd)
+    except subprocess.CalledProcessError as e:
+        print(e.output)
+        return False
+    return True
+
+
+def check_hashed_and_with_immediate_hash(client, volume_name, snapshot_data_integrity, volume_size=16, data_size=1):  # NOQA
+    &#34;&#34;&#34;
+    1. Create and attach a volume
+    2. Create snapshots
+    3. Check snapshots&#39; checksums are calculated and set and also
+       check the checksums of the snapshot disk files are matched
+       with the values from the api
+    &#34;&#34;&#34;
+
+    # Step 1
+    volume = create_and_check_volume(client, volume_name, 3,
+                                     size=str(volume_size * Mi),
+                                     snapshot_data_integrity=snapshot_data_integrity) # NOQA
+
+    lht_hostId = get_self_host_id()
+    volume = volume.attach(hostId=lht_hostId)
+    volume = wait_for_volume_healthy(client, volume_name)
+
+    volume = client.by_id_volume(volume_name)
+
+    # Step 2
+    create_snapshots(client, volume, data_size, 3)
+
+    # Step 3
+    generate_checksums_time = wait_for_snapshot_checksums_generate(volume) # NOQA
+    # The checksum should be calculated after creating the snapshot immediately
+    time_range = range(0, SNAPSHOT_CHECK_TOLERATION_DELAY)
+    assert generate_checksums_time in time_range
+
+
+def check_hashed_and_without_immediate_hash(client, volume_name, snapshot_data_integrity): # NOQA
+    &#34;&#34;&#34;
+    1. Create and attach a volume
+    2. Create snapshots
+    3. Sleep for 120 seconds. Check snapshots&#39; checksums are not calculated
+       and not set, because the immediate hash after snapshot creation feature
+       is disabled
+    4. Check snapshots&#39; checksums are calculated and set by the periodic check
+       mechanism
+    &#34;&#34;&#34;
+
+    # Step 1
+    volume = create_and_check_volume(client, volume_name, 3,
+                                     size=str(16 * Mi),
+                                     snapshot_data_integrity=snapshot_data_integrity) # NOQA
+
+    lht_hostId = get_self_host_id()
+    volume = volume.attach(hostId=lht_hostId)
+    volume = wait_for_volume_healthy(client, volume_name)
+
+    volume = client.by_id_volume(volume_name)
+
+    # Step 2
+    create_snapshots(client, volume, 1, 3)
+
+    # Step 3
+    sleep_time = 120
+    time.sleep(sleep_time)
+    assert not check_snapshot_checksums_set(volume)
+
+    # Step 4
+    generate_checksums_time = wait_for_snapshot_checksums_generate(volume) # NOQA
+    remaining = SNAPSHOT_CHECK_PERIOD - sleep_time
+    time_range = range(remaining-SNAPSHOT_CHECK_TOLERATION_DELAY,
+                       remaining+SNAPSHOT_CHECK_TOLERATION_DELAY)
+    assert generate_checksums_time in time_range
+
+
+def check_per_volume_hash_disable(client, volume_name, snapshot_data_integrity):  # NOQA
+    &#34;&#34;&#34;
+    1. Create and attach a volume
+    2. Create snapshots
+    3. Sleep for SNAPSHOT_CHECK_PERIOD+SNAPSHOT_CHECK_TOLERATION_DELAY seconds.
+       Check snapshots&#39; checksums are calculated
+       and set and also check the checksums of the snapshot disk files
+       are matched with the values from the api
+       Check snapshots&#39; checksums are calculated by periodic snapshot
+       verification mechanism and set and also check the checksums of
+       the snapshot disk files are matched with the values from the api
+    &#34;&#34;&#34;
+
+    # Step 1
+    volume = create_and_check_volume(client, volume_name, 3,
+                                     size=str(16 * Mi),
+                                     snapshot_data_integrity=snapshot_data_integrity)  # NOQA
+
+    lht_hostId = get_self_host_id()
+    volume = volume.attach(hostId=lht_hostId)
+    volume = wait_for_volume_healthy(client, volume_name)
+
+    volume = client.by_id_volume(volume_name)
+
+    # Step 2
+    create_snapshots(client, volume, 1, 3)
+
+    # Step 3
+    time.sleep(SNAPSHOT_CHECK_PERIOD+SNAPSHOT_CHECK_TOLERATION_DELAY)
+    assert not check_snapshot_checksums_set(volume)
+
+
+def wait_for_snapshot_checksums_generate(volume_name):   # NOQA
+    snapshot_checksums_generate = False
+
+    count = 0
+    for count in range(RETRY_WAIT_CHECKSUM_COUNTS):
+        if check_snapshot_checksums_set(volume_name):
+            print(f&#39;All checksums are set in {count} sec&#39;)
+            snapshot_checksums_generate = True
+            break
+        else:
+            time.sleep(RETRY_INTERVAL)
+
+    assert snapshot_checksums_generate
+    return count</code></pre>
+</details>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-functions">Functions</h2>
+<dl>
+<dt id="tests.test_snapshot.check_hashed_and_with_immediate_hash"><code class="name flex">
+<span>def <span class="ident">check_hashed_and_with_immediate_hash</span></span>(<span>client, volume_name, snapshot_data_integrity, volume_size=16, data_size=1)</span>
+</code></dt>
+<dd>
+<div class="desc"><ol>
+<li>Create and attach a volume</li>
+<li>Create snapshots</li>
+<li>Check snapshots' checksums are calculated and set and also
+check the checksums of the snapshot disk files are matched
+with the values from the api</li>
+</ol></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def check_hashed_and_with_immediate_hash(client, volume_name, snapshot_data_integrity, volume_size=16, data_size=1):  # NOQA
+    &#34;&#34;&#34;
+    1. Create and attach a volume
+    2. Create snapshots
+    3. Check snapshots&#39; checksums are calculated and set and also
+       check the checksums of the snapshot disk files are matched
+       with the values from the api
+    &#34;&#34;&#34;
+
+    # Step 1
+    volume = create_and_check_volume(client, volume_name, 3,
+                                     size=str(volume_size * Mi),
+                                     snapshot_data_integrity=snapshot_data_integrity) # NOQA
+
+    lht_hostId = get_self_host_id()
+    volume = volume.attach(hostId=lht_hostId)
+    volume = wait_for_volume_healthy(client, volume_name)
+
+    volume = client.by_id_volume(volume_name)
+
+    # Step 2
+    create_snapshots(client, volume, data_size, 3)
+
+    # Step 3
+    generate_checksums_time = wait_for_snapshot_checksums_generate(volume) # NOQA
+    # The checksum should be calculated after creating the snapshot immediately
+    time_range = range(0, SNAPSHOT_CHECK_TOLERATION_DELAY)
+    assert generate_checksums_time in time_range</code></pre>
+</details>
+</dd>
+<dt id="tests.test_snapshot.check_hashed_and_without_immediate_hash"><code class="name flex">
+<span>def <span class="ident">check_hashed_and_without_immediate_hash</span></span>(<span>client, volume_name, snapshot_data_integrity)</span>
+</code></dt>
+<dd>
+<div class="desc"><ol>
+<li>Create and attach a volume</li>
+<li>Create snapshots</li>
+<li>Sleep for 120 seconds. Check snapshots' checksums are not calculated
+and not set, because the immediate hash after snapshot creation feature
+is disabled</li>
+<li>Check snapshots' checksums are calculated and set by the periodic check
+mechanism</li>
+</ol></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def check_hashed_and_without_immediate_hash(client, volume_name, snapshot_data_integrity): # NOQA
+    &#34;&#34;&#34;
+    1. Create and attach a volume
+    2. Create snapshots
+    3. Sleep for 120 seconds. Check snapshots&#39; checksums are not calculated
+       and not set, because the immediate hash after snapshot creation feature
+       is disabled
+    4. Check snapshots&#39; checksums are calculated and set by the periodic check
+       mechanism
+    &#34;&#34;&#34;
+
+    # Step 1
+    volume = create_and_check_volume(client, volume_name, 3,
+                                     size=str(16 * Mi),
+                                     snapshot_data_integrity=snapshot_data_integrity) # NOQA
+
+    lht_hostId = get_self_host_id()
+    volume = volume.attach(hostId=lht_hostId)
+    volume = wait_for_volume_healthy(client, volume_name)
+
+    volume = client.by_id_volume(volume_name)
+
+    # Step 2
+    create_snapshots(client, volume, 1, 3)
+
+    # Step 3
+    sleep_time = 120
+    time.sleep(sleep_time)
+    assert not check_snapshot_checksums_set(volume)
+
+    # Step 4
+    generate_checksums_time = wait_for_snapshot_checksums_generate(volume) # NOQA
+    remaining = SNAPSHOT_CHECK_PERIOD - sleep_time
+    time_range = range(remaining-SNAPSHOT_CHECK_TOLERATION_DELAY,
+                       remaining+SNAPSHOT_CHECK_TOLERATION_DELAY)
+    assert generate_checksums_time in time_range</code></pre>
+</details>
+</dd>
+<dt id="tests.test_snapshot.check_per_volume_hash_disable"><code class="name flex">
+<span>def <span class="ident">check_per_volume_hash_disable</span></span>(<span>client, volume_name, snapshot_data_integrity)</span>
+</code></dt>
+<dd>
+<div class="desc"><ol>
+<li>Create and attach a volume</li>
+<li>Create snapshots</li>
+<li>Sleep for SNAPSHOT_CHECK_PERIOD+SNAPSHOT_CHECK_TOLERATION_DELAY seconds.
+Check snapshots' checksums are calculated
+and set and also check the checksums of the snapshot disk files
+are matched with the values from the api
+Check snapshots' checksums are calculated by periodic snapshot
+verification mechanism and set and also check the checksums of
+the snapshot disk files are matched with the values from the api</li>
+</ol></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def check_per_volume_hash_disable(client, volume_name, snapshot_data_integrity):  # NOQA
+    &#34;&#34;&#34;
+    1. Create and attach a volume
+    2. Create snapshots
+    3. Sleep for SNAPSHOT_CHECK_PERIOD+SNAPSHOT_CHECK_TOLERATION_DELAY seconds.
+       Check snapshots&#39; checksums are calculated
+       and set and also check the checksums of the snapshot disk files
+       are matched with the values from the api
+       Check snapshots&#39; checksums are calculated by periodic snapshot
+       verification mechanism and set and also check the checksums of
+       the snapshot disk files are matched with the values from the api
+    &#34;&#34;&#34;
+
+    # Step 1
+    volume = create_and_check_volume(client, volume_name, 3,
+                                     size=str(16 * Mi),
+                                     snapshot_data_integrity=snapshot_data_integrity)  # NOQA
+
+    lht_hostId = get_self_host_id()
+    volume = volume.attach(hostId=lht_hostId)
+    volume = wait_for_volume_healthy(client, volume_name)
+
+    volume = client.by_id_volume(volume_name)
+
+    # Step 2
+    create_snapshots(client, volume, 1, 3)
+
+    # Step 3
+    time.sleep(SNAPSHOT_CHECK_PERIOD+SNAPSHOT_CHECK_TOLERATION_DELAY)
+    assert not check_snapshot_checksums_set(volume)</code></pre>
+</details>
+</dd>
+<dt id="tests.test_snapshot.check_snapshot_checksums_and_change_timestamps"><code class="name flex">
+<span>def <span class="ident">check_snapshot_checksums_and_change_timestamps</span></span>(<span>volume)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def check_snapshot_checksums_and_change_timestamps(volume):
+    data_path = get_local_host_replica_data_path(volume)
+    assert data_path != &#34;&#34;
+
+    for i in range(RETRY_COUNTS):
+        value = volume.snapshotList()
+        snapshots = value.data
+        for s in snapshots:
+            if s.name != &#34;volume-head&#34; and s.usercreated is True:
+                if s.checksum == &#34;&#34;:
+                    break
+
+                # Check checksums in snapshot resource and in checksum file
+                # are matched
+                disk_path = os.path.join(data_path,
+                                         &#34;volume-snap-&#34; + s.name + &#34;.img&#34;)
+                checksum = get_checksum_in_checksum_file(disk_path)
+                print(f&#39;snapshot {s.name}: &#39;
+                      f&#39;checksum in resource={s.checksum}, &#39;
+                      f&#39;checksum recalculated={checksum}&#39;)
+                assert checksum == s.checksum
+
+                # Check checksums in snapshot resource and the calculated value
+                # are matched
+                checksum = get_checksum_from_snapshot_disk_file(data_path,
+                                                                s.name)
+                print(f&#39;snapshot {s.name}: &#39;
+                      f&#39;checksum in resource={s.checksum}, &#39;
+                      f&#39;checksum recorded={checksum}&#39;)
+                assert checksum == s.checksum
+
+                # Check ctime in checksum file and from stat are matched
+                ctime_recorded = get_ctime_in_checksum_file(disk_path)
+                ctime = get_ctime_from_snapshot_disk_file(data_path, s.name)
+
+                print(f&#39;snapshot {s.name}: &#39;
+                      f&#39;ctime recorded={ctime_recorded}, &#39;
+                      f&#39;ctime={ctime}&#39;)
+
+                df = pd.DataFrame({&#39;string&#39;: [ctime_recorded, ctime]})
+                df[&#39;timestamp&#39;] = pd.to_datetime(df[&#39;string&#39;].str.replace(&#34; +0000&#34;, &#34;&#34;, regex=False))  # NOQA
+                assert str(df[&#39;timestamp&#39;][0]) == str(df[&#39;timestamp&#39;][1])
+
+            if snapshots.index(s) == len(snapshots)-1:
+                return True
+
+        time.sleep(RETRY_INTERVAL)
+
+    return False</code></pre>
+</details>
+</dd>
+<dt id="tests.test_snapshot.check_snapshot_checksums_set"><code class="name flex">
+<span>def <span class="ident">check_snapshot_checksums_set</span></span>(<span>volume)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def check_snapshot_checksums_set(volume):
+    value = volume.snapshotList()
+    snapshots = value.data
+    for s in snapshots:
+        if s.name == &#34;volume-head&#34;:
+            continue
+        if s.checksum == &#34;&#34;:
+            return False
+
+    for s in snapshots:
+        print(f&#39;Checksum of snapshot {s.name} is {s.checksum}&#39;)
+    return True</code></pre>
+</details>
+</dd>
+<dt id="tests.test_snapshot.corrupt_snapshot_on_local_host"><code class="name flex">
+<span>def <span class="ident">corrupt_snapshot_on_local_host</span></span>(<span>volume, snapshot_name)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def corrupt_snapshot_on_local_host(volume, snapshot_name):
+    data_path = get_local_host_replica_data_path(volume)
+    assert data_path != &#34;&#34;
+
+    disk_path = os.path.join(data_path,
+                             &#34;volume-snap-&#34; + snapshot_name + &#34;.img&#34;)
+    exec_cmd = [&#34;dd&#34;, &#34;if=/dev/urandom&#34;, &#34;of=&#34; + disk_path,
+                &#34;bs=1&#34;, &#34;count=10&#34;, &#34;conv=notrunc&#34;]
+    try:
+        subprocess.check_output(exec_cmd)
+    except subprocess.CalledProcessError as e:
+        print(e.output)
+        return False
+    return True</code></pre>
+</details>
+</dd>
+<dt id="tests.test_snapshot.create_snapshots"><code class="name flex">
+<span>def <span class="ident">create_snapshots</span></span>(<span>client, volume, data_size, num_snapshots)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def create_snapshots(client, volume, data_size, num_snapshots):  # NOQA
+    dev = get_volume_endpoint(volume)
+
+    snaps = []
+    for i in range(num_snapshots):
+        assert write_device_random_data(dev, data_size)
+        snap = create_snapshot(client, volume.name)
+        snaps.append(snap)
+
+    snapshots = volume.snapshotList()
+    snapMap = {}
+    for snap in snapshots:
+        snapMap[snap.name] = snap
+
+    for i in range(num_snapshots):
+        snap = snaps[i]
+        assert snapMap[snap.name].name == snap.name
+        assert snapMap[snap.name].removed is False
+        if i &gt; 0:
+            prev_snap = snaps[i-1]
+            assert snapMap[snap.name].parent == prev_snap.name</code></pre>
+</details>
+</dd>
+<dt id="tests.test_snapshot.detect_and_repair_corrupted_replica"><code class="name flex">
+<span>def <span class="ident">detect_and_repair_corrupted_replica</span></span>(<span>client, volume_name, data_integrity_mode)</span>
+</code></dt>
+<dd>
+<div class="desc"><ol>
+<li>Create and attach a volume</li>
+<li>Create snapshots</li>
+<li>Check snapshots' checksums are calculated and set and also
+check the checksums of the snapshot disk files are matched
+with the values from the api</li>
+<li>Corrupt the snapshot of replica on the local host</li>
+<li>Check the replica rebuild is ran correctly</li>
+<li>Check snapshots are repaired</li>
+</ol></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def detect_and_repair_corrupted_replica(client, volume_name, data_integrity_mode):  # NOQA
+    &#34;&#34;&#34;
+    1. Create and attach a volume
+    2. Create snapshots
+    3. Check snapshots&#39; checksums are calculated and set and also
+       check the checksums of the snapshot disk files are matched
+       with the values from the api
+    4. Corrupt the snapshot of replica on the local host
+    5. Check the replica rebuild is ran correctly
+    6. Check snapshots are repaired
+    &#34;&#34;&#34;
+
+    # Step 1
+    volume = create_and_check_volume(client, volume_name, 3, size=str(2 * Gi))
+
+    lht_hostId = get_self_host_id()
+    volume = volume.attach(hostId=lht_hostId)
+    volume = wait_for_volume_healthy(client, volume_name)
+    volume = client.by_id_volume(volume_name)
+
+    # Step 2
+    create_snapshots(client, volume, 1536, 3)
+
+    # Step 3
+    assert check_snapshot_checksums_and_change_timestamps(volume)
+
+    # Step 4
+    snapshot_name = get_available_snapshot(volume)
+    assert snapshot_name != &#34;&#34;
+
+    assert corrupt_snapshot_on_local_host(volume, snapshot_name)
+
+    # Step 5
+    retry_count = SNAPSHOT_CHECK_PERIOD+SNAPSHOT_CHECK_TOLERATION_DELAY
+    wait_for_rebuild_start(client, volume_name, retry_count, 1)
+
+    volume = client.by_id_volume(volume_name)
+    assert len(volume.replicas) == 3
+
+    wait_for_rebuild_complete(client, volume_name)
+
+    # Step 6
+    # The checksum in checksum file should be updated by the periodic check
+    time.sleep(SNAPSHOT_CHECK_PERIOD+SNAPSHOT_CHECK_TOLERATION_DELAY)
+    assert check_snapshot_checksums_and_change_timestamps(volume)</code></pre>
+</details>
+</dd>
+<dt id="tests.test_snapshot.get_available_snapshot"><code class="name flex">
+<span>def <span class="ident">get_available_snapshot</span></span>(<span>volume)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_available_snapshot(volume):
+    data_path = get_local_host_replica_data_path(volume)
+    assert data_path != &#34;&#34;
+
+    value = volume.snapshotList()
+    snapshots = value.data
+    for s in snapshots:
+        if s.name != &#34;volume-head&#34; and s.usercreated is True:
+            return s.name
+
+    return &#34;&#34;</code></pre>
+</details>
+</dd>
+<dt id="tests.test_snapshot.get_checksum_from_snapshot_disk_file"><code class="name flex">
+<span>def <span class="ident">get_checksum_from_snapshot_disk_file</span></span>(<span>data_path, snapshot_name)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_checksum_from_snapshot_disk_file(data_path, snapshot_name):
+    exec_cmd = [&#34;java&#34;, &#34;-jar&#34;, &#34;/jacksum.jar&#34;, &#34;-a&#34;, &#34;crc64_go-iso&#34;,
+                os.path.join(data_path,
+                             &#34;volume-snap-&#34; + snapshot_name + &#34;.img&#34;)]
+    try:
+        output = subprocess.check_output(exec_cmd)
+    except subprocess.CalledProcessError as e:
+        print(e.output)
+        return &#34;&#34;
+
+    data = str(output, &#39;utf-8&#39;)
+    fields = data.split(&#39; &#39;)
+    return fields[0]</code></pre>
+</details>
+</dd>
+<dt id="tests.test_snapshot.get_checksum_in_checksum_file"><code class="name flex">
+<span>def <span class="ident">get_checksum_in_checksum_file</span></span>(<span>disk_path)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_checksum_in_checksum_file(disk_path):
+    checksum_file = disk_path + &#34;.checksum&#34;
+    try:
+        f = open(checksum_file)
+        metadata = json.load(f)
+    except OSError as e:
+        print(e)
+        raise
+
+    return metadata[&#34;checksum&#34;]</code></pre>
+</details>
+</dd>
+<dt id="tests.test_snapshot.get_ctime_from_snapshot_disk_file"><code class="name flex">
+<span>def <span class="ident">get_ctime_from_snapshot_disk_file</span></span>(<span>data_path, snapshot_name)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_ctime_from_snapshot_disk_file(data_path, snapshot_name):
+    exec_cmd = [&#34;stat&#34;, &#34;-c&#34;, &#34;%z&#34;,
+                os.path.join(data_path,
+                             &#34;volume-snap-&#34; + snapshot_name + &#34;.img&#34;)]
+    try:
+        output = subprocess.check_output(exec_cmd)
+    except subprocess.CalledProcessError as e:
+        print(e.output)
+        return &#34;&#34;
+
+    return str(output, &#39;utf-8&#39;).rstrip(&#39;\n&#39;) + &#34; UTC&#34;</code></pre>
+</details>
+</dd>
+<dt id="tests.test_snapshot.get_ctime_in_checksum_file"><code class="name flex">
+<span>def <span class="ident">get_ctime_in_checksum_file</span></span>(<span>disk_path)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_ctime_in_checksum_file(disk_path):
+    checksum_file = disk_path + &#34;.checksum&#34;
+    try:
+        f = open(checksum_file)
+        metadata = json.load(f)
+    except OSError as e:
+        print(e)
+        raise
+
+    return metadata[&#34;change_time&#34;]</code></pre>
+</details>
+</dd>
+<dt id="tests.test_snapshot.get_local_host_replica_data_path"><code class="name flex">
+<span>def <span class="ident">get_local_host_replica_data_path</span></span>(<span>volume)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_local_host_replica_data_path(volume):
+    lht_hostId = get_self_host_id()
+
+    dataPath = &#34;&#34;
+    replicas = volume.replicas
+    for r in replicas:
+        if r.hostId == lht_hostId:
+            dataPath = r.dataPath
+            break
+
+    return dataPath</code></pre>
+</details>
+</dd>
+<dt id="tests.test_snapshot.prepare_settings_for_snapshot_test"><code class="name flex">
+<span>def <span class="ident">prepare_settings_for_snapshot_test</span></span>(<span>client, data_integrity, immediate_check, fast_replica_rebuild, period_in_second=300)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def prepare_settings_for_snapshot_test(client, data_integrity, immediate_check, fast_replica_rebuild, period_in_second=SNAPSHOT_CHECK_PERIOD):  # NOQA
+    period_in_minute = period_in_second / 60
+    # Make the next hash time more predictable
+    now = datetime.datetime.now()
+    minute = (now.minute + period_in_minute) % 60
+    hour = now.hour + (now.minute + period_in_minute) / 60
+
+    cronjob = &#34;%d/%d %d * * *&#34; % (minute, period_in_minute, hour)
+
+    update_setting(client,
+                   SETTING_SNAPSHOT_DATA_INTEGRITY,
+                   data_integrity)
+    update_setting(client,
+                   SETTING_SNAPSHOT_DATA_INTEGRITY_IMMEDIATE_CHECK_AFTER_SNAPSHOT_CREATION,  # NOQA
+                   immediate_check)
+    update_setting(client,
+                   SETTING_SNAPSHOT_DATA_INTEGRITY_CRONJOB,
+                   cronjob)
+    update_setting(client,
+                   SETTING_SNAPSHOT_FAST_REPLICA_REBUILD_ENABLED,
+                   fast_replica_rebuild)</code></pre>
+</details>
+</dd>
+<dt id="tests.test_snapshot.test_snapshot_hash_detect_corruption_in_global_enabled_mode"><code class="name flex">
+<span>def <span class="ident">test_snapshot_hash_detect_corruption_in_global_enabled_mode</span></span>(<span>client, volume_name, settings_reset)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Check the snapshot corruption can be detected and replica is rebuilt
+- global data-integrity is set to enabled
+- global immediate_hash is enabled</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def test_snapshot_hash_detect_corruption_in_global_enabled_mode(client, volume_name, settings_reset):  # NOQA
+    &#34;&#34;&#34;
+    Check the snapshot corruption can be detected and replica is rebuilt
+    - global data-integrity is set to enabled
+    - global immediate_hash is enabled
+    &#34;&#34;&#34;
+    prepare_settings_for_snapshot_test(client,
+                                       SNAPSHOT_DATA_INTEGRITY_ENABLED,
+                                       &#34;true&#34;,
+                                       &#34;false&#34;)
+    detect_and_repair_corrupted_replica(client, volume_name,
+                                        SNAPSHOT_DATA_INTEGRITY_ENABLED)</code></pre>
+</details>
+</dd>
+<dt id="tests.test_snapshot.test_snapshot_hash_detect_corruption_in_global_fast_check_mode"><code class="name flex">
+<span>def <span class="ident">test_snapshot_hash_detect_corruption_in_global_fast_check_mode</span></span>(<span>client, volume_name, settings_reset)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Check the snapshot corruption can be detected and replica is rebuilt
+- global data-integrity is set to fast-check
+- global immediate_hash is enabled</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def test_snapshot_hash_detect_corruption_in_global_fast_check_mode(client, volume_name, settings_reset):  # NOQA
+    &#34;&#34;&#34;
+    Check the snapshot corruption can be detected and replica is rebuilt
+    - global data-integrity is set to fast-check
+    - global immediate_hash is enabled
+    &#34;&#34;&#34;
+    prepare_settings_for_snapshot_test(client,
+                                       SNAPSHOT_DATA_INTEGRITY_FAST_CHECK,
+                                       &#34;true&#34;,
+                                       &#34;false&#34;)
+    detect_and_repair_corrupted_replica(client, volume_name,
+                                        SNAPSHOT_DATA_INTEGRITY_FAST_CHECK)</code></pre>
+</details>
+</dd>
+<dt id="tests.test_snapshot.test_snapshot_hash_global_disabled_and_per_volume_enabled_and_with_immediate_hash"><code class="name flex">
+<span>def <span class="ident">test_snapshot_hash_global_disabled_and_per_volume_enabled_and_with_immediate_hash</span></span>(<span>client, volume_name, settings_reset)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Check snapshots' checksums are immediately calculated when the snapshots
+check when
+- global data-integrity is set to disabled
+- global immediate_hash is enabled
+- per-volume data-integrity is set to enabled</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def test_snapshot_hash_global_disabled_and_per_volume_enabled_and_with_immediate_hash(client, volume_name, settings_reset):  # NOQA
+    &#34;&#34;&#34;
+    Check snapshots&#39; checksums are immediately calculated when the snapshots
+    check when
+    - global data-integrity is set to disabled
+    - global immediate_hash is enabled
+    - per-volume data-integrity is set to enabled
+    &#34;&#34;&#34;
+    prepare_settings_for_snapshot_test(client,
+                                       SNAPSHOT_DATA_INTEGRITY_DISABLED,
+                                       &#34;true&#34;,
+                                       &#34;true&#34;)
+    check_hashed_and_with_immediate_hash(client, volume_name,
+                                         SNAPSHOT_DATA_INTEGRITY_ENABLED)</code></pre>
+</details>
+</dd>
+<dt id="tests.test_snapshot.test_snapshot_hash_global_disabled_and_per_volume_enabled_and_without_immediate_hash"><code class="name flex">
+<span>def <span class="ident">test_snapshot_hash_global_disabled_and_per_volume_enabled_and_without_immediate_hash</span></span>(<span>client, volume_name, settings_reset)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Check snapshots' checksums are calculated by the periodic checksum check
+- global data-integrity is set to disabled
+- global immediate_hash is disabled
+- per-volume data-integrity is set to enabled</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def test_snapshot_hash_global_disabled_and_per_volume_enabled_and_without_immediate_hash(client, volume_name, settings_reset):  # NOQA
+    &#34;&#34;&#34;
+    Check snapshots&#39; checksums are calculated by the periodic checksum check
+    - global data-integrity is set to disabled
+    - global immediate_hash is disabled
+    - per-volume data-integrity is set to enabled
+    &#34;&#34;&#34;
+    prepare_settings_for_snapshot_test(client,
+                                       SNAPSHOT_DATA_INTEGRITY_DISABLED,
+                                       &#34;false&#34;,
+                                       &#34;true&#34;)
+    check_hashed_and_without_immediate_hash(client, volume_name,
+                                            SNAPSHOT_DATA_INTEGRITY_ENABLED)</code></pre>
+</details>
+</dd>
+<dt id="tests.test_snapshot.test_snapshot_hash_global_disabled_with_immediate_hash"><code class="name flex">
+<span>def <span class="ident">test_snapshot_hash_global_disabled_with_immediate_hash</span></span>(<span>client, volume_name, settings_reset)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Check snapshots' checksums are not calculated when
+check when
+- global data-integrity is set to disabled
+- global immediate_hash is enabled
+- per-volume data-integrity is set to disabled and follows the
+global setting</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def test_snapshot_hash_global_disabled_with_immediate_hash(client, volume_name, settings_reset):  # NOQA
+    &#34;&#34;&#34;
+    Check snapshots&#39; checksums are not calculated when
+    check when
+    - global data-integrity is set to disabled
+    - global immediate_hash is enabled
+    - per-volume data-integrity is set to disabled and follows the
+      global setting
+    &#34;&#34;&#34;
+    prepare_settings_for_snapshot_test(client,
+                                       SNAPSHOT_DATA_INTEGRITY_DISABLED,
+                                       &#34;true&#34;,
+                                       &#34;true&#34;)
+    check_per_volume_hash_disable(client, volume_name,
+                                  SNAPSHOT_DATA_INTEGRITY_IGNORED)</code></pre>
+</details>
+</dd>
+<dt id="tests.test_snapshot.test_snapshot_hash_global_disabled_without_immediate_hash"><code class="name flex">
+<span>def <span class="ident">test_snapshot_hash_global_disabled_without_immediate_hash</span></span>(<span>client, volume_name, settings_reset)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Check snapshots' checksums are not calculated when
+check when
+- global data-integrity is set to disabled
+- global immediate_hash is disabled
+- per-volume data-integrity is set to disabled and follows the
+global setting</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def test_snapshot_hash_global_disabled_without_immediate_hash(client, volume_name, settings_reset):  # NOQA
+    &#34;&#34;&#34;
+    Check snapshots&#39; checksums are not calculated when
+    check when
+    - global data-integrity is set to disabled
+    - global immediate_hash is disabled
+    - per-volume data-integrity is set to disabled and follows the
+      global setting
+    &#34;&#34;&#34;
+    prepare_settings_for_snapshot_test(client,
+                                       SNAPSHOT_DATA_INTEGRITY_DISABLED,
+                                       &#34;false&#34;,
+                                       &#34;true&#34;)
+    check_per_volume_hash_disable(client, volume_name,
+                                  SNAPSHOT_DATA_INTEGRITY_IGNORED)</code></pre>
+</details>
+</dd>
+<dt id="tests.test_snapshot.test_snapshot_hash_global_enabled_and_per_volume_disable_and_with_immediate_hash"><code class="name flex">
+<span>def <span class="ident">test_snapshot_hash_global_enabled_and_per_volume_disable_and_with_immediate_hash</span></span>(<span>client, volume_name, settings_reset)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Check snapshots' checksums are not calculated
+- global data-integrity is set to enabled
+- global immediate_hash is enabled
+- per-volume data-integrity is set to disabled</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def test_snapshot_hash_global_enabled_and_per_volume_disable_and_with_immediate_hash(client, volume_name, settings_reset):  # NOQA
+    &#34;&#34;&#34;
+    Check snapshots&#39; checksums are not calculated
+    - global data-integrity is set to enabled
+    - global immediate_hash is enabled
+    - per-volume data-integrity is set to disabled
+    &#34;&#34;&#34;
+    prepare_settings_for_snapshot_test(client,
+                                       SNAPSHOT_DATA_INTEGRITY_ENABLED,
+                                       &#34;true&#34;,
+                                       &#34;true&#34;)
+    check_per_volume_hash_disable(client, volume_name,
+                                  SNAPSHOT_DATA_INTEGRITY_DISABLED)</code></pre>
+</details>
+</dd>
+<dt id="tests.test_snapshot.test_snapshot_hash_global_enabled_and_per_volume_enable_mode_without_immediate_hash"><code class="name flex">
+<span>def <span class="ident">test_snapshot_hash_global_enabled_and_per_volume_enable_mode_without_immediate_hash</span></span>(<span>client, volume_name, settings_reset)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Check snapshots' checksums are not calculated
+- global data-integrity is set to enabled
+- global immediate_hash is disabled
+- per-volume data-integrity is set to disabled</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def test_snapshot_hash_global_enabled_and_per_volume_enable_mode_without_immediate_hash(client, volume_name, settings_reset):  # NOQA
+    &#34;&#34;&#34;
+    Check snapshots&#39; checksums are not calculated
+    - global data-integrity is set to enabled
+    - global immediate_hash is disabled
+    - per-volume data-integrity is set to disabled
+    &#34;&#34;&#34;
+    prepare_settings_for_snapshot_test(client,
+                                       SNAPSHOT_DATA_INTEGRITY_ENABLED,
+                                       &#34;false&#34;,
+                                       &#34;true&#34;)
+    check_per_volume_hash_disable(client, volume_name,
+                                  SNAPSHOT_DATA_INTEGRITY_DISABLED)</code></pre>
+</details>
+</dd>
+<dt id="tests.test_snapshot.test_snapshot_hash_global_enabled_with_immediate_hash"><code class="name flex">
+<span>def <span class="ident">test_snapshot_hash_global_enabled_with_immediate_hash</span></span>(<span>client, volume_name, settings_reset)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Check snapshots' checksums are immediately calculated when the snapshots
+are created
+- global data-integrity is set to enabled
+- global immediate_hash is enabled</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def test_snapshot_hash_global_enabled_with_immediate_hash(client, volume_name, settings_reset):  # NOQA
+    &#34;&#34;&#34;
+    Check snapshots&#39; checksums are immediately calculated when the snapshots
+    are created
+    - global data-integrity is set to enabled
+    - global immediate_hash is enabled
+    &#34;&#34;&#34;
+    prepare_settings_for_snapshot_test(client,
+                                       SNAPSHOT_DATA_INTEGRITY_ENABLED,
+                                       &#34;true&#34;, &#34;true&#34;)
+    check_hashed_and_with_immediate_hash(client, volume_name,
+                                         SNAPSHOT_DATA_INTEGRITY_IGNORED)</code></pre>
+</details>
+</dd>
+<dt id="tests.test_snapshot.test_snapshot_hash_global_enabled_without_immediate_hash"><code class="name flex">
+<span>def <span class="ident">test_snapshot_hash_global_enabled_without_immediate_hash</span></span>(<span>client, volume_name, settings_reset)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Check snapshots' checksums are calculated by the periodic checksum check
+- global data-integrity is set to enabled
+- global immediate_hash is disabled</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def test_snapshot_hash_global_enabled_without_immediate_hash(client, volume_name, settings_reset):  # NOQA
+    &#34;&#34;&#34;
+    Check snapshots&#39; checksums are calculated by the periodic checksum check
+    - global data-integrity is set to enabled
+    - global immediate_hash is disabled
+    &#34;&#34;&#34;
+    prepare_settings_for_snapshot_test(client,
+                                       SNAPSHOT_DATA_INTEGRITY_ENABLED,
+                                       &#34;false&#34;, &#34;true&#34;)
+    check_hashed_and_without_immediate_hash(client, volume_name,
+                                            SNAPSHOT_DATA_INTEGRITY_IGNORED)</code></pre>
+</details>
+</dd>
+<dt id="tests.test_snapshot.test_snapshot_hash_global_fast_check_with_immediate_hash"><code class="name flex">
+<span>def <span class="ident">test_snapshot_hash_global_fast_check_with_immediate_hash</span></span>(<span>client, volume_name, settings_reset)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Check snapshots' checksums are immediately calculated when the snapshots
+are created
+- global data-integrity is set to fast-check
+- global immediate_hash is enabled</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def test_snapshot_hash_global_fast_check_with_immediate_hash(client, volume_name, settings_reset):  # NOQA
+    &#34;&#34;&#34;
+    Check snapshots&#39; checksums are immediately calculated when the snapshots
+    are created
+    - global data-integrity is set to fast-check
+    - global immediate_hash is enabled
+    &#34;&#34;&#34;
+    prepare_settings_for_snapshot_test(client,
+                                       SNAPSHOT_DATA_INTEGRITY_FAST_CHECK,
+                                       &#34;true&#34;, &#34;true&#34;)
+    check_hashed_and_with_immediate_hash(client,
+                                         volume_name,
+                                         SNAPSHOT_DATA_INTEGRITY_IGNORED)</code></pre>
+</details>
+</dd>
+<dt id="tests.test_snapshot.test_snapshot_hash_global_fast_check_without_immediate_hash"><code class="name flex">
+<span>def <span class="ident">test_snapshot_hash_global_fast_check_without_immediate_hash</span></span>(<span>client, volume_name, settings_reset)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Check snapshots' checksums are calculated by the periodic checksum check
+- global data-integrity is set to fast-check
+- global immediate_hash is disabled</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def test_snapshot_hash_global_fast_check_without_immediate_hash(client, volume_name, settings_reset):  # NOQA
+    &#34;&#34;&#34;
+    Check snapshots&#39; checksums are calculated by the periodic checksum check
+    - global data-integrity is set to fast-check
+    - global immediate_hash is disabled
+    &#34;&#34;&#34;
+    prepare_settings_for_snapshot_test(client,
+                                       SNAPSHOT_DATA_INTEGRITY_FAST_CHECK,
+                                       &#34;false&#34;,
+                                       &#34;true&#34;)
+    check_hashed_and_without_immediate_hash(client, volume_name,
+                                            SNAPSHOT_DATA_INTEGRITY_IGNORED)  # NOQA</code></pre>
+</details>
+</dd>
+<dt id="tests.test_snapshot.wait_for_snapshot_checksums_generate"><code class="name flex">
+<span>def <span class="ident">wait_for_snapshot_checksums_generate</span></span>(<span>volume_name)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def wait_for_snapshot_checksums_generate(volume_name):   # NOQA
+    snapshot_checksums_generate = False
+
+    count = 0
+    for count in range(RETRY_WAIT_CHECKSUM_COUNTS):
+        if check_snapshot_checksums_set(volume_name):
+            print(f&#39;All checksums are set in {count} sec&#39;)
+            snapshot_checksums_generate = True
+            break
+        else:
+            time.sleep(RETRY_INTERVAL)
+
+    assert snapshot_checksums_generate
+    return count</code></pre>
+</details>
+</dd>
+<dt id="tests.test_snapshot.write_device_random_data"><code class="name flex">
+<span>def <span class="ident">write_device_random_data</span></span>(<span>dev, size)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def write_device_random_data(dev, size):
+    exec_cmd = [&#34;dd&#34;, &#34;if=/dev/urandom&#34;, &#34;of=&#34; + dev,
+                &#34;bs=1M&#34;, &#34;count=&#34; + str(size)]
+    try:
+        subprocess.check_output(exec_cmd)
+    except subprocess.CalledProcessError as e:
+        print(e.output)
+        return False
+    return True</code></pre>
+</details>
+</dd>
+</dl>
+</section>
+<section>
+</section>
+</article>
+<nav id="sidebar">
+<h1>Index</h1>
+<div class="toc">
+<ul></ul>
+</div>
+<ul id="index">
+<li><h3>Super-module</h3>
+<ul>
+<li><code><a title="tests" href="index.html">tests</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-functions">Functions</a></h3>
+<ul class="">
+<li><code><a title="tests.test_snapshot.check_hashed_and_with_immediate_hash" href="#tests.test_snapshot.check_hashed_and_with_immediate_hash">check_hashed_and_with_immediate_hash</a></code></li>
+<li><code><a title="tests.test_snapshot.check_hashed_and_without_immediate_hash" href="#tests.test_snapshot.check_hashed_and_without_immediate_hash">check_hashed_and_without_immediate_hash</a></code></li>
+<li><code><a title="tests.test_snapshot.check_per_volume_hash_disable" href="#tests.test_snapshot.check_per_volume_hash_disable">check_per_volume_hash_disable</a></code></li>
+<li><code><a title="tests.test_snapshot.check_snapshot_checksums_and_change_timestamps" href="#tests.test_snapshot.check_snapshot_checksums_and_change_timestamps">check_snapshot_checksums_and_change_timestamps</a></code></li>
+<li><code><a title="tests.test_snapshot.check_snapshot_checksums_set" href="#tests.test_snapshot.check_snapshot_checksums_set">check_snapshot_checksums_set</a></code></li>
+<li><code><a title="tests.test_snapshot.corrupt_snapshot_on_local_host" href="#tests.test_snapshot.corrupt_snapshot_on_local_host">corrupt_snapshot_on_local_host</a></code></li>
+<li><code><a title="tests.test_snapshot.create_snapshots" href="#tests.test_snapshot.create_snapshots">create_snapshots</a></code></li>
+<li><code><a title="tests.test_snapshot.detect_and_repair_corrupted_replica" href="#tests.test_snapshot.detect_and_repair_corrupted_replica">detect_and_repair_corrupted_replica</a></code></li>
+<li><code><a title="tests.test_snapshot.get_available_snapshot" href="#tests.test_snapshot.get_available_snapshot">get_available_snapshot</a></code></li>
+<li><code><a title="tests.test_snapshot.get_checksum_from_snapshot_disk_file" href="#tests.test_snapshot.get_checksum_from_snapshot_disk_file">get_checksum_from_snapshot_disk_file</a></code></li>
+<li><code><a title="tests.test_snapshot.get_checksum_in_checksum_file" href="#tests.test_snapshot.get_checksum_in_checksum_file">get_checksum_in_checksum_file</a></code></li>
+<li><code><a title="tests.test_snapshot.get_ctime_from_snapshot_disk_file" href="#tests.test_snapshot.get_ctime_from_snapshot_disk_file">get_ctime_from_snapshot_disk_file</a></code></li>
+<li><code><a title="tests.test_snapshot.get_ctime_in_checksum_file" href="#tests.test_snapshot.get_ctime_in_checksum_file">get_ctime_in_checksum_file</a></code></li>
+<li><code><a title="tests.test_snapshot.get_local_host_replica_data_path" href="#tests.test_snapshot.get_local_host_replica_data_path">get_local_host_replica_data_path</a></code></li>
+<li><code><a title="tests.test_snapshot.prepare_settings_for_snapshot_test" href="#tests.test_snapshot.prepare_settings_for_snapshot_test">prepare_settings_for_snapshot_test</a></code></li>
+<li><code><a title="tests.test_snapshot.test_snapshot_hash_detect_corruption_in_global_enabled_mode" href="#tests.test_snapshot.test_snapshot_hash_detect_corruption_in_global_enabled_mode">test_snapshot_hash_detect_corruption_in_global_enabled_mode</a></code></li>
+<li><code><a title="tests.test_snapshot.test_snapshot_hash_detect_corruption_in_global_fast_check_mode" href="#tests.test_snapshot.test_snapshot_hash_detect_corruption_in_global_fast_check_mode">test_snapshot_hash_detect_corruption_in_global_fast_check_mode</a></code></li>
+<li><code><a title="tests.test_snapshot.test_snapshot_hash_global_disabled_and_per_volume_enabled_and_with_immediate_hash" href="#tests.test_snapshot.test_snapshot_hash_global_disabled_and_per_volume_enabled_and_with_immediate_hash">test_snapshot_hash_global_disabled_and_per_volume_enabled_and_with_immediate_hash</a></code></li>
+<li><code><a title="tests.test_snapshot.test_snapshot_hash_global_disabled_and_per_volume_enabled_and_without_immediate_hash" href="#tests.test_snapshot.test_snapshot_hash_global_disabled_and_per_volume_enabled_and_without_immediate_hash">test_snapshot_hash_global_disabled_and_per_volume_enabled_and_without_immediate_hash</a></code></li>
+<li><code><a title="tests.test_snapshot.test_snapshot_hash_global_disabled_with_immediate_hash" href="#tests.test_snapshot.test_snapshot_hash_global_disabled_with_immediate_hash">test_snapshot_hash_global_disabled_with_immediate_hash</a></code></li>
+<li><code><a title="tests.test_snapshot.test_snapshot_hash_global_disabled_without_immediate_hash" href="#tests.test_snapshot.test_snapshot_hash_global_disabled_without_immediate_hash">test_snapshot_hash_global_disabled_without_immediate_hash</a></code></li>
+<li><code><a title="tests.test_snapshot.test_snapshot_hash_global_enabled_and_per_volume_disable_and_with_immediate_hash" href="#tests.test_snapshot.test_snapshot_hash_global_enabled_and_per_volume_disable_and_with_immediate_hash">test_snapshot_hash_global_enabled_and_per_volume_disable_and_with_immediate_hash</a></code></li>
+<li><code><a title="tests.test_snapshot.test_snapshot_hash_global_enabled_and_per_volume_enable_mode_without_immediate_hash" href="#tests.test_snapshot.test_snapshot_hash_global_enabled_and_per_volume_enable_mode_without_immediate_hash">test_snapshot_hash_global_enabled_and_per_volume_enable_mode_without_immediate_hash</a></code></li>
+<li><code><a title="tests.test_snapshot.test_snapshot_hash_global_enabled_with_immediate_hash" href="#tests.test_snapshot.test_snapshot_hash_global_enabled_with_immediate_hash">test_snapshot_hash_global_enabled_with_immediate_hash</a></code></li>
+<li><code><a title="tests.test_snapshot.test_snapshot_hash_global_enabled_without_immediate_hash" href="#tests.test_snapshot.test_snapshot_hash_global_enabled_without_immediate_hash">test_snapshot_hash_global_enabled_without_immediate_hash</a></code></li>
+<li><code><a title="tests.test_snapshot.test_snapshot_hash_global_fast_check_with_immediate_hash" href="#tests.test_snapshot.test_snapshot_hash_global_fast_check_with_immediate_hash">test_snapshot_hash_global_fast_check_with_immediate_hash</a></code></li>
+<li><code><a title="tests.test_snapshot.test_snapshot_hash_global_fast_check_without_immediate_hash" href="#tests.test_snapshot.test_snapshot_hash_global_fast_check_without_immediate_hash">test_snapshot_hash_global_fast_check_without_immediate_hash</a></code></li>
+<li><code><a title="tests.test_snapshot.wait_for_snapshot_checksums_generate" href="#tests.test_snapshot.wait_for_snapshot_checksums_generate">wait_for_snapshot_checksums_generate</a></code></li>
+<li><code><a title="tests.test_snapshot.write_device_random_data" href="#tests.test_snapshot.write_device_random_data">write_device_random_data</a></code></li>
+</ul>
+</li>
+</ul>
+</nav>
+</main>
+<footer id="footer">
+<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.10.0</a>.</p>
+</footer>
+</body>
+</html>
