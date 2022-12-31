@@ -27,5 +27,5 @@ kubectl create -f integration/deploy/test.yaml
 
 Then watch the result:
 ```
-kubectl logs -f longhorn-test
+kubectl logs -f longhorn-test -c longhorn-test
 ```
