@@ -3923,12 +3923,15 @@ def create_snapshot(longhorn_api_client, volume_name):
     return snap
 
 
-def wait_for_snapshot_count(volume, number, retry_counts=120):
+def wait_for_snapshot_count(volume, number,
+                            retry_counts=120,
+                            count_removed=False):
     for _ in range(retry_counts):
         count = 0
         for snapshot in volume.snapshotList():
-            if snapshot.removed is False:
+            if snapshot.removed is False or count_removed:
                 count += 1
+
         if count == number:
             return
         time.sleep(RETRY_SNAPSHOT_INTERVAL)
@@ -4884,7 +4887,12 @@ def check_recurring_jobs(client, recurring_jobs):
         if len(spec["groups"]) > 0:
             assert recurring_job.groups == spec["groups"]
         assert recurring_job.cron == spec["cron"]
-        assert recurring_job.retain == spec["retain"]
+
+        expect_retain = spec["retain"]
+        if recurring_job.task == "snapshot-cleanup":
+            expect_retain = 0
+        assert recurring_job.retain == expect_retain
+
         assert recurring_job.concurrency == spec["concurrency"]
 
 
