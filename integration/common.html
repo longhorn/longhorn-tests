@@ -824,6 +824,20 @@ def copy_pod_volume_data(api, pod_name, src_path, dest_path):
         tty=False)
 
 
+def copy_file_to_volume_dev_mb_data(src_path, dest_path,
+                                    src_offset, dest_offset, size_in_mb,
+                                    timeout_cnt=5):
+    cmd = [
+        &#39;/bin/sh&#39;,
+        &#39;-c&#39;,
+        &#39;dd if=%s of=%s bs=1M count=%d skip=%d seek=%d&#39; %
+        (src_path, dest_path, size_in_mb, src_offset, dest_offset)
+    ]
+    with timeout(seconds=STREAM_EXEC_TIMEOUT * timeout_cnt,
+                 error_message=&#39;Timeout on copying file to dev&#39;):
+        subprocess.check_call(cmd)
+
+
 def write_volume_dev_random_mb_data(path, offset_in_mb, length_in_mb,
                                     timeout_cnt=3):
     write_cmd = [
@@ -3938,7 +3952,20 @@ def wait_for_volume_expansion(longhorn_api_client, volume_name):
     for i in range(RETRY_COUNTS):
         volume = longhorn_api_client.by_id_volume(volume_name)
         engine = get_volume_engine(volume)
-        if engine.size == volume.size and volume.state == &#34;detached&#34;:
+        if engine.size == volume.size:
+            complete = True
+            break
+        time.sleep(RETRY_INTERVAL)
+    assert complete
+
+
+def wait_for_expansion_error_clear(longhorn_api_client, volume_name):
+    complete = False
+    for i in range(RETRY_COUNTS):
+        volume = longhorn_api_client.by_id_volume(volume_name)
+        engine = get_volume_engine(volume)
+        if engine.lastExpansionFailedAt == &#34;&#34; and \
+                engine.lastExpansionError == &#34;&#34;:
             complete = True
             break
         time.sleep(RETRY_INTERVAL)
@@ -3965,11 +3992,17 @@ def wait_for_dr_volume_expansion(longhorn_api_client, volume_name, size_str):
             if engine.size == volume.size:
                 complete = True
                 break
-        time.sleep(RETRY_INTERVAL)
+        time.sleep(RETRY_INTERVAL_LONG)
     assert complete
 
 
-def expand_and_wait_for_pvc(api, pvc):
+def expand_and_wait_for_pvc(api, pvc, size):
+    pvc[&#39;spec&#39;][&#39;resources&#39;] = {
+        &#39;requests&#39;: {
+            &#39;storage&#39;: size_to_string(size)
+        }
+    }
+
     pvc_name = pvc[&#39;metadata&#39;][&#39;name&#39;]
     api.patch_namespaced_persistent_volume_claim(
         pvc_name, &#39;default&#39;, pvc)
@@ -4020,11 +4053,51 @@ def fail_replica_expansion(client, api, volname, size, replicas=None):
         if not r.instanceManagerName:
             raise Exception(
                 &#34;Should use replica objects in the running volume,&#34;
-                &#34;otherwise the field r.instanceManagerName is emtpy&#34;)
+                &#34;otherwise the field r.instanceManagerName is empty&#34;)
         stream(api.connect_get_namespaced_pod_exec,
                r.instanceManagerName,
                LONGHORN_NAMESPACE, command=cmd,
                stderr=True, stdin=False, stdout=True, tty=False)
+
+
+def fix_replica_expansion_failure(client, api, volname, size, replicas=None):
+    if replicas is None:
+        volume = client.by_id_volume(volname)
+        replicas = volume.replicas
+
+    for r in replicas:
+        if not r.instanceManagerName:
+            raise Exception(
+                &#34;Should use replica objects in the running volume,&#34;
+                &#34;otherwise the field r.instanceManagerName is empty&#34;)
+
+        tmp_meta_file_name = \
+            EXPANSION_SNAP_TMP_META_NAME_PATTERN % size
+        tmp_meta_file_path = \
+            INSTANCE_MANAGER_HOST_PATH_PREFIX + \
+            r.dataPath + &#34;/&#34; + tmp_meta_file_name
+
+        removed = False
+        for i in range(RETRY_COMMAND_COUNT):
+            # os.path.join() cannot deal with the path containing &#34;/&#34;
+            cmd = [
+                &#39;/bin/sh&#39;, &#39;-c&#39;,
+                &#39;rm -rf %s &amp;&amp; sync&#39; % tmp_meta_file_path
+            ]
+            stream(api.connect_get_namespaced_pod_exec,
+                   r.instanceManagerName,
+                   LONGHORN_NAMESPACE, command=cmd,
+                   stderr=True, stdin=False, stdout=True, tty=False)
+            cmd = [&#39;/bin/sh&#39;, &#39;-c&#39;, &#39;ls %s&#39; % tmp_meta_file_path]
+            output = stream(
+                api.connect_get_namespaced_pod_exec,
+                r.instanceManagerName, LONGHORN_NAMESPACE, command=cmd,
+                stderr=True, stdin=False, stdout=True, tty=False)
+            if &#34;No such file or directory&#34; in output:
+                removed = True
+                break
+            time.sleep(RETRY_INTERVAL_LONG)
+        assert removed
 
 
 def wait_for_expansion_failure(client, volume_name, last_failed_at=&#34;&#34;):
@@ -4358,7 +4431,7 @@ def wait_for_pod_remount(core_api, pod_name, chk_path=&#34;/data/lost+found&#34;
     assert ready
 
 
-def expand_attached_volume(client, volume_name, size=EXPAND_SIZE):
+def offline_expand_attached_volume(client, volume_name, size=EXPAND_SIZE):
     volume = wait_for_volume_healthy(client, volume_name)
     engine = get_volume_engine(volume)
 
@@ -4366,6 +4439,7 @@ def expand_attached_volume(client, volume_name, size=EXPAND_SIZE):
     volume = wait_for_volume_detached(client, volume.name)
     volume.expand(size=size)
     wait_for_volume_expansion(client, volume.name)
+    volume = wait_for_volume_detached(client, volume.name)
     volume.attach(hostId=engine.hostId, disableFrontend=False)
     wait_for_volume_healthy(client, volume_name)
 
@@ -6456,6 +6530,29 @@ def clients(request):
     return clis</code></pre>
 </details>
 </dd>
+<dt id="tests.common.copy_file_to_volume_dev_mb_data"><code class="name flex">
+<span>def <span class="ident">copy_file_to_volume_dev_mb_data</span></span>(<span>src_path, dest_path, src_offset, dest_offset, size_in_mb, timeout_cnt=5)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def copy_file_to_volume_dev_mb_data(src_path, dest_path,
+                                    src_offset, dest_offset, size_in_mb,
+                                    timeout_cnt=5):
+    cmd = [
+        &#39;/bin/sh&#39;,
+        &#39;-c&#39;,
+        &#39;dd if=%s of=%s bs=1M count=%d skip=%d seek=%d&#39; %
+        (src_path, dest_path, size_in_mb, src_offset, dest_offset)
+    ]
+    with timeout(seconds=STREAM_EXEC_TIMEOUT * timeout_cnt,
+                 error_message=&#39;Timeout on copying file to dev&#39;):
+        subprocess.check_call(cmd)</code></pre>
+</details>
+</dd>
 <dt id="tests.common.copy_pod_volume_data"><code class="name flex">
 <span>def <span class="ident">copy_pod_volume_data</span></span>(<span>api, pod_name, src_path, dest_path)</span>
 </code></dt>
@@ -7774,7 +7871,7 @@ def disable_auto_salvage(client):
 </details>
 </dd>
 <dt id="tests.common.expand_and_wait_for_pvc"><code class="name flex">
-<span>def <span class="ident">expand_and_wait_for_pvc</span></span>(<span>api, pvc)</span>
+<span>def <span class="ident">expand_and_wait_for_pvc</span></span>(<span>api, pvc, size)</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -7782,7 +7879,13 @@ def disable_auto_salvage(client):
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def expand_and_wait_for_pvc(api, pvc):
+<pre><code class="python">def expand_and_wait_for_pvc(api, pvc, size):
+    pvc[&#39;spec&#39;][&#39;resources&#39;] = {
+        &#39;requests&#39;: {
+            &#39;storage&#39;: size_to_string(size)
+        }
+    }
+
     pvc_name = pvc[&#39;metadata&#39;][&#39;name&#39;]
     api.patch_namespaced_persistent_volume_claim(
         pvc_name, &#39;default&#39;, pvc)
@@ -7797,27 +7900,6 @@ def disable_auto_salvage(client):
         time.sleep(RETRY_INTERVAL)
     assert complete
     return claim</code></pre>
-</details>
-</dd>
-<dt id="tests.common.expand_attached_volume"><code class="name flex">
-<span>def <span class="ident">expand_attached_volume</span></span>(<span>client, volume_name, size='33554432')</span>
-</code></dt>
-<dd>
-<div class="desc"></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def expand_attached_volume(client, volume_name, size=EXPAND_SIZE):
-    volume = wait_for_volume_healthy(client, volume_name)
-    engine = get_volume_engine(volume)
-
-    volume.detach(hostId=&#34;&#34;)
-    volume = wait_for_volume_detached(client, volume.name)
-    volume.expand(size=size)
-    wait_for_volume_expansion(client, volume.name)
-    volume.attach(hostId=engine.hostId, disableFrontend=False)
-    wait_for_volume_healthy(client, volume_name)</code></pre>
 </details>
 </dd>
 <dt id="tests.common.fail_replica_expansion"><code class="name flex">
@@ -7847,7 +7929,7 @@ def disable_auto_salvage(client):
         if not r.instanceManagerName:
             raise Exception(
                 &#34;Should use replica objects in the running volume,&#34;
-                &#34;otherwise the field r.instanceManagerName is emtpy&#34;)
+                &#34;otherwise the field r.instanceManagerName is empty&#34;)
         stream(api.connect_get_namespaced_pod_exec,
                r.instanceManagerName,
                LONGHORN_NAMESPACE, command=cmd,
@@ -7962,6 +8044,55 @@ been completed successfully</p></div>
 </summary>
 <pre><code class="python">def find_self():
     return get_process_info(&#34;/host/proc/self/status&#34;)</code></pre>
+</details>
+</dd>
+<dt id="tests.common.fix_replica_expansion_failure"><code class="name flex">
+<span>def <span class="ident">fix_replica_expansion_failure</span></span>(<span>client, api, volname, size, replicas=None)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def fix_replica_expansion_failure(client, api, volname, size, replicas=None):
+    if replicas is None:
+        volume = client.by_id_volume(volname)
+        replicas = volume.replicas
+
+    for r in replicas:
+        if not r.instanceManagerName:
+            raise Exception(
+                &#34;Should use replica objects in the running volume,&#34;
+                &#34;otherwise the field r.instanceManagerName is empty&#34;)
+
+        tmp_meta_file_name = \
+            EXPANSION_SNAP_TMP_META_NAME_PATTERN % size
+        tmp_meta_file_path = \
+            INSTANCE_MANAGER_HOST_PATH_PREFIX + \
+            r.dataPath + &#34;/&#34; + tmp_meta_file_name
+
+        removed = False
+        for i in range(RETRY_COMMAND_COUNT):
+            # os.path.join() cannot deal with the path containing &#34;/&#34;
+            cmd = [
+                &#39;/bin/sh&#39;, &#39;-c&#39;,
+                &#39;rm -rf %s &amp;&amp; sync&#39; % tmp_meta_file_path
+            ]
+            stream(api.connect_get_namespaced_pod_exec,
+                   r.instanceManagerName,
+                   LONGHORN_NAMESPACE, command=cmd,
+                   stderr=True, stdin=False, stdout=True, tty=False)
+            cmd = [&#39;/bin/sh&#39;, &#39;-c&#39;, &#39;ls %s&#39; % tmp_meta_file_path]
+            output = stream(
+                api.connect_get_namespaced_pod_exec,
+                r.instanceManagerName, LONGHORN_NAMESPACE, command=cmd,
+                stderr=True, stdin=False, stdout=True, tty=False)
+            if &#34;No such file or directory&#34; in output:
+                removed = True
+                break
+            time.sleep(RETRY_INTERVAL_LONG)
+        assert removed</code></pre>
 </details>
 </dd>
 <dt id="tests.common.generate_pod_with_pvc_manifest"><code class="name flex">
@@ -9377,6 +9508,28 @@ def node_default_tags():
 
         new_node = set_node_tags(client, node)
         assert len(new_node.tags) == 0, f&#34; Node = {new_node}&#34;</code></pre>
+</details>
+</dd>
+<dt id="tests.common.offline_expand_attached_volume"><code class="name flex">
+<span>def <span class="ident">offline_expand_attached_volume</span></span>(<span>client, volume_name, size='33554432')</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def offline_expand_attached_volume(client, volume_name, size=EXPAND_SIZE):
+    volume = wait_for_volume_healthy(client, volume_name)
+    engine = get_volume_engine(volume)
+
+    volume.detach(hostId=&#34;&#34;)
+    volume = wait_for_volume_detached(client, volume.name)
+    volume.expand(size=size)
+    wait_for_volume_expansion(client, volume.name)
+    volume = wait_for_volume_detached(client, volume.name)
+    volume.attach(hostId=engine.hostId, disableFrontend=False)
+    wait_for_volume_healthy(client, volume_name)</code></pre>
 </details>
 </dd>
 <dt id="tests.common.parse_iscsi_endpoint"><code class="name flex">
@@ -11482,7 +11635,7 @@ ref: <a href="https://github.com/longhorn/longhorn/issues/4814">https://github.c
             if engine.size == volume.size:
                 complete = True
                 break
-        time.sleep(RETRY_INTERVAL)
+        time.sleep(RETRY_INTERVAL_LONG)
     assert complete</code></pre>
 </details>
 </dd>
@@ -11609,6 +11762,28 @@ ref: <a href="https://github.com/longhorn/longhorn/issues/4814">https://github.c
         time.sleep(RETRY_INTERVAL)
     assert image.state == state
     return image</code></pre>
+</details>
+</dd>
+<dt id="tests.common.wait_for_expansion_error_clear"><code class="name flex">
+<span>def <span class="ident">wait_for_expansion_error_clear</span></span>(<span>longhorn_api_client, volume_name)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def wait_for_expansion_error_clear(longhorn_api_client, volume_name):
+    complete = False
+    for i in range(RETRY_COUNTS):
+        volume = longhorn_api_client.by_id_volume(volume_name)
+        engine = get_volume_engine(volume)
+        if engine.lastExpansionFailedAt == &#34;&#34; and \
+                engine.lastExpansionError == &#34;&#34;:
+            complete = True
+            break
+        time.sleep(RETRY_INTERVAL)
+    assert complete</code></pre>
 </details>
 </dd>
 <dt id="tests.common.wait_for_expansion_failure"><code class="name flex">
@@ -12575,7 +12750,7 @@ ref: <a href="https://github.com/longhorn/longhorn/issues/4814">https://github.c
     for i in range(RETRY_COUNTS):
         volume = longhorn_api_client.by_id_volume(volume_name)
         engine = get_volume_engine(volume)
-        if engine.size == volume.size and volume.state == &#34;detached&#34;:
+        if engine.size == volume.size:
             complete = True
             break
         time.sleep(RETRY_INTERVAL)
@@ -13494,6 +13669,7 @@ from the args and kwargs arguments, respectively.</p></div>
 <li><code><a title="tests.common.cleanup_volume_by_name" href="#tests.common.cleanup_volume_by_name">cleanup_volume_by_name</a></code></li>
 <li><code><a title="tests.common.client" href="#tests.common.client">client</a></code></li>
 <li><code><a title="tests.common.clients" href="#tests.common.clients">clients</a></code></li>
+<li><code><a title="tests.common.copy_file_to_volume_dev_mb_data" href="#tests.common.copy_file_to_volume_dev_mb_data">copy_file_to_volume_dev_mb_data</a></code></li>
 <li><code><a title="tests.common.copy_pod_volume_data" href="#tests.common.copy_pod_volume_data">copy_pod_volume_data</a></code></li>
 <li><code><a title="tests.common.core_api" href="#tests.common.core_api">core_api</a></code></li>
 <li><code><a title="tests.common.crash_engine_process_with_sigkill" href="#tests.common.crash_engine_process_with_sigkill">crash_engine_process_with_sigkill</a></code></li>
@@ -13543,13 +13719,13 @@ from the args and kwargs arguments, respectively.</p></div>
 <li><code><a title="tests.common.exec_instance_manager" href="#tests.common.exec_instance_manager">exec_instance_manager</a></code></li>
 <li><code><a title="tests.common.exec_nsenter" href="#tests.common.exec_nsenter">exec_nsenter</a></code></li>
 <li><code><a title="tests.common.expand_and_wait_for_pvc" href="#tests.common.expand_and_wait_for_pvc">expand_and_wait_for_pvc</a></code></li>
-<li><code><a title="tests.common.expand_attached_volume" href="#tests.common.expand_attached_volume">expand_attached_volume</a></code></li>
 <li><code><a title="tests.common.fail_replica_expansion" href="#tests.common.fail_replica_expansion">fail_replica_expansion</a></code></li>
 <li><code><a title="tests.common.find_ancestor_process_by_name" href="#tests.common.find_ancestor_process_by_name">find_ancestor_process_by_name</a></code></li>
 <li><code><a title="tests.common.find_backup" href="#tests.common.find_backup">find_backup</a></code></li>
 <li><code><a title="tests.common.find_dockerd_pid" href="#tests.common.find_dockerd_pid">find_dockerd_pid</a></code></li>
 <li><code><a title="tests.common.find_replica_for_backup" href="#tests.common.find_replica_for_backup">find_replica_for_backup</a></code></li>
 <li><code><a title="tests.common.find_self" href="#tests.common.find_self">find_self</a></code></li>
+<li><code><a title="tests.common.fix_replica_expansion_failure" href="#tests.common.fix_replica_expansion_failure">fix_replica_expansion_failure</a></code></li>
 <li><code><a title="tests.common.generate_pod_with_pvc_manifest" href="#tests.common.generate_pod_with_pvc_manifest">generate_pod_with_pvc_manifest</a></code></li>
 <li><code><a title="tests.common.generate_random_data" href="#tests.common.generate_random_data">generate_random_data</a></code></li>
 <li><code><a title="tests.common.generate_random_pos" href="#tests.common.generate_random_pos">generate_random_pos</a></code></li>
@@ -13615,6 +13791,7 @@ from the args and kwargs arguments, respectively.</p></div>
 <li><code><a title="tests.common.monitor_restore_progress" href="#tests.common.monitor_restore_progress">monitor_restore_progress</a></code></li>
 <li><code><a title="tests.common.mount_disk" href="#tests.common.mount_disk">mount_disk</a></code></li>
 <li><code><a title="tests.common.node_default_tags" href="#tests.common.node_default_tags">node_default_tags</a></code></li>
+<li><code><a title="tests.common.offline_expand_attached_volume" href="#tests.common.offline_expand_attached_volume">offline_expand_attached_volume</a></code></li>
 <li><code><a title="tests.common.parse_iscsi_endpoint" href="#tests.common.parse_iscsi_endpoint">parse_iscsi_endpoint</a></code></li>
 <li><code><a title="tests.common.pod" href="#tests.common.pod">pod</a></code></li>
 <li><code><a title="tests.common.pod_make" href="#tests.common.pod_make">pod_make</a></code></li>
@@ -13692,6 +13869,7 @@ from the args and kwargs arguments, respectively.</p></div>
 <li><code><a title="tests.common.wait_for_engine_image_deletion" href="#tests.common.wait_for_engine_image_deletion">wait_for_engine_image_deletion</a></code></li>
 <li><code><a title="tests.common.wait_for_engine_image_ref_count" href="#tests.common.wait_for_engine_image_ref_count">wait_for_engine_image_ref_count</a></code></li>
 <li><code><a title="tests.common.wait_for_engine_image_state" href="#tests.common.wait_for_engine_image_state">wait_for_engine_image_state</a></code></li>
+<li><code><a title="tests.common.wait_for_expansion_error_clear" href="#tests.common.wait_for_expansion_error_clear">wait_for_expansion_error_clear</a></code></li>
 <li><code><a title="tests.common.wait_for_expansion_failure" href="#tests.common.wait_for_expansion_failure">wait_for_expansion_failure</a></code></li>
 <li><code><a title="tests.common.wait_for_instance_manager_desire_state" href="#tests.common.wait_for_instance_manager_desire_state">wait_for_instance_manager_desire_state</a></code></li>
 <li><code><a title="tests.common.wait_for_node_mountpropagation_condition" href="#tests.common.wait_for_node_mountpropagation_condition">wait_for_node_mountpropagation_condition</a></code></li>

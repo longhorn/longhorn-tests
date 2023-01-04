@@ -623,21 +623,57 @@
 
 
 <main style="padding: 1%; width: 70%;">
-  <h1 id="title">Test Additional Printer Columns</h1>
+  <h1 id="title">Test Online Expansion</h1>
   <div>
     <article id="content">
-       <p>For each of the case below:</p>
-<ol>
-<li>Fresh installation of Longhorn. (make sure to delete all Longhorn CRDs before installation)</li>
-<li>Upgrade from older version.</li>
-</ol>
-<p>Run:</p>
-<pre tabindex="0"><code>kubectl get &lt;LONGHORN-CRD&gt; -n longhorn-system
-</code></pre><p>Verify that the output contains information as specify in the <code>additionalPrinerColumns</code>
-at <a href="https://github.com/longhorn/longhorn-manager/blob/master/deploy/install/01-prerequisite/03-crd.yaml">here</a></p>
+       <h2 id="related-issue">Related issue</h2>
+<p><a href="https://github.com/longhorn/longhorn/issues/1674">https://github.com/longhorn/longhorn/issues/1674</a></p>
+<h2 id="test-online-expansion-with-continuous-readingwriting">Test online expansion with continuous reading/writing</h2>
+<p><strong>Given</strong> Prepare a relatively large file (5Gi for example) with the checksum calculated.</p>
+<p><em>And</em> Create and attach a volume.</p>
+<p><em>And</em> Monitor the instance manager pod logs.</p>
+<p><strong>When</strong> Use <code>dd</code> to copy data from the file to the Longhorn block device.</p>
+<pre tabindex="0"><code>dd if=/mnt/data of=/dev/longhorn/vol bs=1M
+</code></pre><p><em>And</em> Do online expansion for the volume during the copying.</p>
+<p><strong>Then</strong> The expansion should success. The corresponding block device on the attached node is expanded.</p>
+<p><em>And</em> Should not see any io or tgt related error logs in the instance manager pods.</p>
+<p><strong>When</strong> Use <code>dd</code> to calculate the data checksum for the Longhorn block device..</p>
+<pre tabindex="0"><code>dd if=/dev/longhorn/vol bs=1M count=5000 status=none | md5sum
+</code></pre><p><em>And</em> Do online expansion for the volume during the calculation.</p>
+<p><strong>Then</strong> The expansion should success. The corresponding block device on the attached node is expanded.</p>
+<p><em>And</em> Should not see any io or tgt related error logs in the instance manager pods.</p>
+<p><em>And</em> The checksum matches.</p>
+<h2 id="test-online-expansion-with-upgrade">Test online expansion with upgrade</h2>
+<p><strong>Given</strong> Deploy an old version Longhorn, v1.3.2 for example.</p>
+<p><em>And</em> Create and attach 2 volumes.</p>
+<p><em>And</em> Upgrade Longhorn to the latest version.</p>
+<p><strong>When</strong> Do online expansion for volume 1.</p>
+<p><strong>Then</strong> The expansion of volume 1 should get stuck. (old engine image + old instance manager)</p>
+<p><em>And</em> The engine CR of volume 1 should contain the expansion error. e.g.,</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#f92672">status</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">lastExpansionError</span>: <span style="color:#ae81ff">cannot do online expansion for the old engine vol-e-b2d9b924</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#ae81ff">with cli API version 6</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">lastExpansionFailedAt</span>: <span style="color:#e6db74">2022-12-29 02:44:15.481809613 +0000</span> <span style="color:#ae81ff">UTC m=+146155.850227034</span>
+</span></span></code></pre></div><p><em>And</em> Expansion can be canceled.</p>
+<p><strong>When</strong> Do live upgrade for volume 1.</p>
+<p><em>And</em> Retry online expansion.</p>
+<p><strong>Then</strong> The expansion should get stuck. (new engine image + old instance manager)</p>
+<p><em>And</em> The engine CR should contain the expansion error.</p>
+<p><em>And</em> The expansion can be canceled.</p>
+<p><strong>When</strong> Detach and reattach volume 1.</p>
+<p><em>And</em> Retry online expansion.</p>
+<p><strong>Then</strong> The expansion should success. The corresponding block device on the attached node is expanded. (new engine image + new instance manager)</p>
+<p><strong>When</strong> Directly detach and reattach volume 2.</p>
+<p><em>And</em> Do online expansion for volume 2.</p>
+<p><strong>Then</strong> The expansion should get stuck. (old engine image + new instance manager)</p>
+<p><em>And</em> The engine CR of volume 2 should contain the expansion error.</p>
+<p><em>And</em> The expansion can be canceled.</p>
+<p><strong>When</strong> Do live upgrade for volume 2.</p>
+<p><em>And</em> Retry online expansion.</p>
+<p><strong>Then</strong> The expansion should success. The corresponding block device on the attached node is expanded. (new engine image + new instance manager)</p>
 
     </article>
-  <a href="https://github.com/longhorn/longhorn-tests/edit/master/docs/content/manual/release-specific/v1.1.0/additional-printer-columns.md" target="_blank" title="Edit on Github" style="font-size:smaller;float:right;padding-right:3%">[Edit]</a>
+  <a href="https://github.com/longhorn/longhorn-tests/edit/master/docs/content/manual/release-specific/v1.4.0/test-online-expansion.md" target="_blank" title="Edit on Github" style="font-size:smaller;float:right;padding-right:3%">[Edit]</a>
   </div>
 
     

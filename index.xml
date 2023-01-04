@@ -1090,6 +1090,21 @@ Then longhorn-manager pods should still be Running.</description>
     </item>
     
     <item>
+      <title>Test Online Expansion</title>
+      <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.4.0/test-online-expansion/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.4.0/test-online-expansion/</guid>
+      <description>Related issue https://github.com/longhorn/longhorn/issues/1674
+Test online expansion with continuous reading/writing Given Prepare a relatively large file (5Gi for example) with the checksum calculated.
+And Create and attach a volume.
+And Monitor the instance manager pod logs.
+When Use dd to copy data from the file to the Longhorn block device.
+dd if=/mnt/data of=/dev/longhorn/vol bs=1M And Do online expansion for the volume during the copying.
+Then The expansion should success. The corresponding block device on the attached node is expanded.</description>
+    </item>
+    
+    <item>
       <title>Test Read Write Many Feature</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/rwx_feature/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>

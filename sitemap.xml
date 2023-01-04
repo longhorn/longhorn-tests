@@ -236,6 +236,8 @@
   </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.3.0/test-npe-when-longhorn-ui-deployment-not-exist/</loc>
   </url><url>
+    <loc>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.4.0/test-online-expansion/</loc>
+  </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/rwx_feature/</loc>
   </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.4.0/test-replica-scale-down-warning/</loc>
