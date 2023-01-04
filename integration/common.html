@@ -218,6 +218,8 @@ SETTING_SNAPSHOT_DATA_INTEGRITY_IMMEDIATE_CHECK_AFTER_SNAPSHOT_CREATION = \
     &#34;snapshot-data-integrity-immediate-check-after-snapshot-creation&#34;
 SETTING_SNAPSHOT_DATA_INTEGRITY_CRONJOB = &#34;snapshot-data-integrity-cronjob&#34;
 SETTING_SNAPSHOT_FAST_REPLICA_REBUILD_ENABLED = &#34;fast-replica-rebuild-enabled&#34;
+SETTING_CONCURRENT_VOLUME_BACKUP_RESTORE = \
+    &#34;concurrent-volume-backup-restore-per-node-limit&#34;
 
 SNAPSHOT_DATA_INTEGRITY_IGNORED = &#34;ignored&#34;
 SNAPSHOT_DATA_INTEGRITY_DISABLED = &#34;disabled&#34;
@@ -383,6 +385,23 @@ def cleanup_all_volumes(client):
 
     volumes = client.list_volume()
     assert len(volumes) == 0
+
+
+def create_volume_and_backup(client, vol_name, vol_size, backup_data_size):
+    client.create_volume(name=vol_name,
+                         numberOfReplicas=1,
+                         size=str(vol_size))
+    backup_volume = wait_for_volume_detached(client, vol_name)
+    backup_volume.attach(hostId=get_self_host_id())
+    backup_volume = wait_for_volume_healthy(client, vol_name)
+
+    data = {&#39;pos&#39;: 0,
+            &#39;len&#39;: backup_data_size,
+            &#39;content&#39;: generate_random_data(backup_data_size)}
+
+    _, backup, _, _ = create_backup(client, vol_name, data)
+
+    return backup_volume, backup
 
 
 def create_backup(client, volname, data={}, labels={}):
@@ -5450,7 +5469,17 @@ def get_disk_uuid():
     f = open(&#39;/var/lib/longhorn/longhorn-disk.cfg&#39;)
     data = json.load(f)
 
-    return data[&#34;diskUUID&#34;]</code></pre>
+    return data[&#34;diskUUID&#34;]
+
+
+def get_engine_host_id(client, vol_name):
+    volume = client.by_id_volume(vol_name)
+
+    engines = volume.controllers
+    if len(engines) != 1:
+        return
+
+    return engines[0].hostId</code></pre>
 </details>
 </section>
 <section>
@@ -7302,6 +7331,32 @@ created using a storage class).</p></div>
     return volume</code></pre>
 </details>
 </dd>
+<dt id="tests.common.create_volume_and_backup"><code class="name flex">
+<span>def <span class="ident">create_volume_and_backup</span></span>(<span>client, vol_name, vol_size, backup_data_size)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def create_volume_and_backup(client, vol_name, vol_size, backup_data_size):
+    client.create_volume(name=vol_name,
+                         numberOfReplicas=1,
+                         size=str(vol_size))
+    backup_volume = wait_for_volume_detached(client, vol_name)
+    backup_volume.attach(hostId=get_self_host_id())
+    backup_volume = wait_for_volume_healthy(client, vol_name)
+
+    data = {&#39;pos&#39;: 0,
+            &#39;len&#39;: backup_data_size,
+            &#39;content&#39;: generate_random_data(backup_data_size)}
+
+    _, backup, _, _ = create_backup(client, vol_name, data)
+
+    return backup_volume, backup</code></pre>
+</details>
+</dd>
 <dt id="tests.common.csi_pv"><code class="name flex">
 <span>def <span class="ident">csi_pv</span></span>(<span>request)</span>
 </code></dt>
@@ -8567,6 +8622,25 @@ greate than MAX_SUPPORT_BINDLE_NUMBER.</p>
     data = json.load(f)
 
     return data[&#34;diskUUID&#34;]</code></pre>
+</details>
+</dd>
+<dt id="tests.common.get_engine_host_id"><code class="name flex">
+<span>def <span class="ident">get_engine_host_id</span></span>(<span>client, vol_name)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_engine_host_id(client, vol_name):
+    volume = client.by_id_volume(vol_name)
+
+    engines = volume.controllers
+    if len(engines) != 1:
+        return
+
+    return engines[0].hostId</code></pre>
 </details>
 </dd>
 <dt id="tests.common.get_engine_image_status_value"><code class="name flex">
@@ -13694,6 +13768,7 @@ from the args and kwargs arguments, respectively.</p></div>
 <li><code><a title="tests.common.create_storage_class" href="#tests.common.create_storage_class">create_storage_class</a></code></li>
 <li><code><a title="tests.common.create_support_bundle" href="#tests.common.create_support_bundle">create_support_bundle</a></code></li>
 <li><code><a title="tests.common.create_volume" href="#tests.common.create_volume">create_volume</a></code></li>
+<li><code><a title="tests.common.create_volume_and_backup" href="#tests.common.create_volume_and_backup">create_volume_and_backup</a></code></li>
 <li><code><a title="tests.common.csi_pv" href="#tests.common.csi_pv">csi_pv</a></code></li>
 <li><code><a title="tests.common.csi_pv_backingimage" href="#tests.common.csi_pv_backingimage">csi_pv_backingimage</a></code></li>
 <li><code><a title="tests.common.csi_pvc_name" href="#tests.common.csi_pvc_name">csi_pvc_name</a></code></li>
@@ -13748,6 +13823,7 @@ from the args and kwargs arguments, respectively.</p></div>
 <li><code><a title="tests.common.get_deployment_pod_names" href="#tests.common.get_deployment_pod_names">get_deployment_pod_names</a></code></li>
 <li><code><a title="tests.common.get_device_checksum" href="#tests.common.get_device_checksum">get_device_checksum</a></code></li>
 <li><code><a title="tests.common.get_disk_uuid" href="#tests.common.get_disk_uuid">get_disk_uuid</a></code></li>
+<li><code><a title="tests.common.get_engine_host_id" href="#tests.common.get_engine_host_id">get_engine_host_id</a></code></li>
 <li><code><a title="tests.common.get_engine_image_status_value" href="#tests.common.get_engine_image_status_value">get_engine_image_status_value</a></code></li>
 <li><code><a title="tests.common.get_host_disk_size" href="#tests.common.get_host_disk_size">get_host_disk_size</a></code></li>
 <li><code><a title="tests.common.get_host_replica_count" href="#tests.common.get_host_replica_count">get_host_replica_count</a></code></li>
