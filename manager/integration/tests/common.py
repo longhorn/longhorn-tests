@@ -1513,7 +1513,8 @@ def cleanup_client():
         cleanup_all_backing_images(client)
 
     cleanup_storage_class()
-    system_restores_cleanup(client)
+    if system_backup_feature_supported(client):
+        system_restores_cleanup(client)
 
     cleanup_all_support_bundles(client)
 
@@ -4701,6 +4702,15 @@ def backing_image_feature_supported(client):
 # for the case of test_upgrade starting from Longhorn >= v1.2.0
 def recurring_job_feature_supported(client):
     if hasattr(client.by_id_schema("volumeRecurringJob"), "id"):
+        return True
+    else:
+        return False
+
+
+# this function will check if system backup feature is supported, and is added
+# for the case of test_upgrade starting from Longhorn >= v1.4.0
+def system_backup_feature_supported(client):
+    if hasattr(client.by_id_schema("systemBackup"), "id"):
         return True
     else:
         return False
