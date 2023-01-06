@@ -1577,6 +1577,7 @@ def cleanup_client():
         cleanup_all_backing_images(client)
 
     cleanup_storage_class()
+    system_restores_cleanup(client)
 
     cleanup_all_support_bundles(client)
 
@@ -5479,7 +5480,100 @@ def get_engine_host_id(client, vol_name):
     if len(engines) != 1:
         return
 
-    return engines[0].hostId</code></pre>
+    return engines[0].hostId
+
+
+def system_backups_cleanup(client):
+    &#34;&#34;&#34;
+    Clean up all system backups
+    :param client: The Longhorn client to use in the request.
+    &#34;&#34;&#34;
+
+    system_backups = client.list_system_backup()
+    for system_backup in system_backups:
+        # ignore the error when clean up
+        try:
+            client.delete(system_backup)
+        except Exception as e:
+            name = system_backup[&#39;name&#39;]
+            print(&#34;\nException when cleanup system backup &#34;, name)
+            print(e)
+
+    ok = False
+    for _ in range(RETRY_COUNTS):
+        system_backups = client.list_system_backup()
+        if len(system_backups) == 0:
+            ok = True
+            break
+        time.sleep(RETRY_INTERVAL)
+    assert ok
+
+
+def system_backup_random_name():
+    return &#34;test-system-backup-&#34; + \
+        &#39;&#39;.join(random.choice(string.ascii_lowercase + string.digits)
+                for _ in range(6))
+
+
+def system_backup_wait_for_state(state, name, client):  # NOQA
+    ok = False
+    for _ in range(RETRY_COUNTS):
+        try:
+            system_backup = client.by_id_system_backup(name)
+            assert system_backup.state == state
+            ok = True
+            break
+        except Exception:
+            time.sleep(RETRY_INTERVAL)
+
+    assert ok
+
+
+def system_restores_cleanup(client):
+    &#34;&#34;&#34;
+    Clean up all system restores
+    :param client: The Longhorn client to use in the request.
+    &#34;&#34;&#34;
+
+    system_restores = client.list_system_restore()
+    for system_restore in system_restores:
+        # ignore the error when clean up
+        try:
+            client.delete(system_restore)
+        except Exception as e:
+            name = system_restore[&#39;name&#39;]
+            print(&#34;\nException when cleanup system restore &#34;, name)
+            print(e)
+
+    ok = False
+    for _ in range(RETRY_COUNTS):
+        system_restores = client.list_system_restore()
+        if len(system_restores) == 0:
+            ok = True
+            break
+        time.sleep(RETRY_INTERVAL)
+    assert ok
+
+
+def system_restore_random_name():
+    return &#34;test-system-restore-&#34; + \
+        &#39;&#39;.join(random.choice(string.ascii_lowercase + string.digits)
+                for _ in range(6))
+
+
+def system_restore_wait_for_state(state, name, client):  # NOQA
+    ok = False
+    for _ in range(RETRY_COUNTS):
+        system_restore = client.by_id_system_restore(name)
+        try:
+            system_restore = client.by_id_system_restore(name)
+            assert system_restore.state == state
+            ok = True
+            break
+        except Exception:
+            time.sleep(RETRY_INTERVAL_LONG)
+
+    assert ok</code></pre>
 </details>
 </section>
 <section>
@@ -6247,6 +6341,7 @@ properly.
         cleanup_all_backing_images(client)
 
     cleanup_storage_class()
+    system_restores_cleanup(client)
 
     cleanup_all_support_bundles(client)
 
@@ -10708,6 +10803,155 @@ def sts_name(request):
     return generate_sts_name()</code></pre>
 </details>
 </dd>
+<dt id="tests.common.system_backup_random_name"><code class="name flex">
+<span>def <span class="ident">system_backup_random_name</span></span>(<span>)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def system_backup_random_name():
+    return &#34;test-system-backup-&#34; + \
+        &#39;&#39;.join(random.choice(string.ascii_lowercase + string.digits)
+                for _ in range(6))</code></pre>
+</details>
+</dd>
+<dt id="tests.common.system_backup_wait_for_state"><code class="name flex">
+<span>def <span class="ident">system_backup_wait_for_state</span></span>(<span>state, name, client)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def system_backup_wait_for_state(state, name, client):  # NOQA
+    ok = False
+    for _ in range(RETRY_COUNTS):
+        try:
+            system_backup = client.by_id_system_backup(name)
+            assert system_backup.state == state
+            ok = True
+            break
+        except Exception:
+            time.sleep(RETRY_INTERVAL)
+
+    assert ok</code></pre>
+</details>
+</dd>
+<dt id="tests.common.system_backups_cleanup"><code class="name flex">
+<span>def <span class="ident">system_backups_cleanup</span></span>(<span>client)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Clean up all system backups
+:param client: The Longhorn client to use in the request.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def system_backups_cleanup(client):
+    &#34;&#34;&#34;
+    Clean up all system backups
+    :param client: The Longhorn client to use in the request.
+    &#34;&#34;&#34;
+
+    system_backups = client.list_system_backup()
+    for system_backup in system_backups:
+        # ignore the error when clean up
+        try:
+            client.delete(system_backup)
+        except Exception as e:
+            name = system_backup[&#39;name&#39;]
+            print(&#34;\nException when cleanup system backup &#34;, name)
+            print(e)
+
+    ok = False
+    for _ in range(RETRY_COUNTS):
+        system_backups = client.list_system_backup()
+        if len(system_backups) == 0:
+            ok = True
+            break
+        time.sleep(RETRY_INTERVAL)
+    assert ok</code></pre>
+</details>
+</dd>
+<dt id="tests.common.system_restore_random_name"><code class="name flex">
+<span>def <span class="ident">system_restore_random_name</span></span>(<span>)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def system_restore_random_name():
+    return &#34;test-system-restore-&#34; + \
+        &#39;&#39;.join(random.choice(string.ascii_lowercase + string.digits)
+                for _ in range(6))</code></pre>
+</details>
+</dd>
+<dt id="tests.common.system_restore_wait_for_state"><code class="name flex">
+<span>def <span class="ident">system_restore_wait_for_state</span></span>(<span>state, name, client)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def system_restore_wait_for_state(state, name, client):  # NOQA
+    ok = False
+    for _ in range(RETRY_COUNTS):
+        system_restore = client.by_id_system_restore(name)
+        try:
+            system_restore = client.by_id_system_restore(name)
+            assert system_restore.state == state
+            ok = True
+            break
+        except Exception:
+            time.sleep(RETRY_INTERVAL_LONG)
+
+    assert ok</code></pre>
+</details>
+</dd>
+<dt id="tests.common.system_restores_cleanup"><code class="name flex">
+<span>def <span class="ident">system_restores_cleanup</span></span>(<span>client)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Clean up all system restores
+:param client: The Longhorn client to use in the request.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def system_restores_cleanup(client):
+    &#34;&#34;&#34;
+    Clean up all system restores
+    :param client: The Longhorn client to use in the request.
+    &#34;&#34;&#34;
+
+    system_restores = client.list_system_restore()
+    for system_restore in system_restores:
+        # ignore the error when clean up
+        try:
+            client.delete(system_restore)
+        except Exception as e:
+            name = system_restore[&#39;name&#39;]
+            print(&#34;\nException when cleanup system restore &#34;, name)
+            print(e)
+
+    ok = False
+    for _ in range(RETRY_COUNTS):
+        system_restores = client.list_system_restore()
+        if len(system_restores) == 0:
+            ok = True
+            break
+        time.sleep(RETRY_INTERVAL)
+    assert ok</code></pre>
+</details>
+</dd>
 <dt id="tests.common.umount_disk"><code class="name flex">
 <span>def <span class="ident">umount_disk</span></span>(<span>mount_path)</span>
 </code></dt>
@@ -13899,6 +14143,12 @@ from the args and kwargs arguments, respectively.</p></div>
 <li><code><a title="tests.common.statefulset" href="#tests.common.statefulset">statefulset</a></code></li>
 <li><code><a title="tests.common.storage_class" href="#tests.common.storage_class">storage_class</a></code></li>
 <li><code><a title="tests.common.sts_name" href="#tests.common.sts_name">sts_name</a></code></li>
+<li><code><a title="tests.common.system_backup_random_name" href="#tests.common.system_backup_random_name">system_backup_random_name</a></code></li>
+<li><code><a title="tests.common.system_backup_wait_for_state" href="#tests.common.system_backup_wait_for_state">system_backup_wait_for_state</a></code></li>
+<li><code><a title="tests.common.system_backups_cleanup" href="#tests.common.system_backups_cleanup">system_backups_cleanup</a></code></li>
+<li><code><a title="tests.common.system_restore_random_name" href="#tests.common.system_restore_random_name">system_restore_random_name</a></code></li>
+<li><code><a title="tests.common.system_restore_wait_for_state" href="#tests.common.system_restore_wait_for_state">system_restore_wait_for_state</a></code></li>
+<li><code><a title="tests.common.system_restores_cleanup" href="#tests.common.system_restores_cleanup">system_restores_cleanup</a></code></li>
 <li><code><a title="tests.common.umount_disk" href="#tests.common.umount_disk">umount_disk</a></code></li>
 <li><code><a title="tests.common.update_node_disks" href="#tests.common.update_node_disks">update_node_disks</a></code></li>
 <li><code><a title="tests.common.update_recurring_job" href="#tests.common.update_recurring_job">update_recurring_job</a></code></li>
