@@ -194,6 +194,8 @@
   </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/test-file-sync-cancellation/</loc>
   </url><url>
+    <loc>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.4.0/test-filesystem-trim/</loc>
+  </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/ws-traffic-flood/</loc>
   </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.2/full-ws-data-tranfer-when-no-updates/</loc>

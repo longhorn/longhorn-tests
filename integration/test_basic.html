@@ -107,6 +107,7 @@ from common import create_and_wait_statefulset
 from common import create_backup_from_volume_attached_to_pod
 from common import restore_backup_and_get_data_checksum
 from common import write_volume_dev_random_mb_data
+from common import get_volume_dev_mb_data_md5sum
 from common import VOLUME_HEAD_NAME
 from common import set_node_scheduling
 from common import SETTING_FAILED_BACKUP_TTL
@@ -116,6 +117,9 @@ from common import wait_for_disk_status, wait_for_rebuild_start, wait_for_rebuil
 from common import RETRY_BACKUP_COUNTS
 from common import LONGHORN_NAMESPACE
 from common import wait_for_snapshot_count
+from common import make_deployment_with_pvc # NOQA
+from common import wait_for_volume_option_trim_auto_removing_snapshots
+from common import FS_TYPE_EXT4, FS_TYPE_XFS
 
 from backupstore import backupstore_delete_volume_cfg_file
 from backupstore import backupstore_cleanup
@@ -5070,7 +5074,283 @@ def test_delete_backup_during_restoring_volume():  # NOQA
        the status of volume restore condition is &#34;False&#34;,
        the reason of volume restore condition is &#34;RestoreFailure&#34;
     &#34;&#34;&#34;
-    pass</code></pre>
+    pass
+
+
+@pytest.mark.parametrize(&#34;fs_type&#34;, [FS_TYPE_EXT4, FS_TYPE_XFS])  # NOQA
+def test_filesystem_trim(client, fs_type):  # NOQA
+    &#34;&#34;&#34;
+    Test the filesystem in the volume can be trimmed correctly.
+
+    1.    Create a volume with option `unmapMarkSnapChainRemoved` enabled,
+          then attach to the current node.
+    2.    Make a filesystem and write file0 into the fs, calculate the
+          checksum, then take snap0.
+    3.    Write file21 and calculate the checksum. Then take snap21.
+    4.    Unmount then reattach the volume without frontend. Revert the volume
+          to snap0.
+    5.    Reattach and mount the volume.
+    6.    Write file11. Then take snap11.
+    7.    Write file12. Then take snap12.
+    8.    Write file13. Then remove file0, file11, file12, and file13.
+          Verify the snapshots and volume head size are not shrunk.
+    9.    Do filesystem trim (via Longhorn API or cmdline).
+          Verify that:
+          1. snap11 and snap12 are marked as removed.
+          2. snap11, snap12, and volume head size are shrunk.
+    10.   Disable option `unmapMarkSnapChainRemoved` for the volume.
+    11.   Write file14. Then take snap14.
+    12.   Write file15. Then remove file14 and file15.
+          Verify that:
+          1. snap14 is not marked as removed and its size is not changed.
+          2. volume head size is shrunk.
+    13.   Unmount and reattach the volume. Then revert to snap21.
+    14.   Reattach and mount the volume. Verify the file0 and file21.
+    15.   Cleanup.
+    &#34;&#34;&#34;
+    test_volume_name = generate_volume_name()
+    client.create_volume(name=test_volume_name,
+                         size=str(DEFAULT_VOLUME_SIZE * Gi),
+                         numberOfReplicas=2,
+                         unmapMarkSnapChainRemoved=&#34;enabled&#34;)
+    wait_for_volume_creation(client, test_volume_name)
+    volume = wait_for_volume_detached(client, test_volume_name)
+
+    host_id = get_self_host_id()
+    volume.attach(hostId=host_id)
+    common.wait_for_volume_healthy(client, test_volume_name)
+
+    dev_path = os.path.join(&#34;/dev/longhorn&#34;, test_volume_name)
+    mnt_path = os.path.join(&#34;/tmp&#34;, &#34;mnt-&#34;+test_volume_name)
+
+    mount_cmd = [&#34;mount&#34;, dev_path, mnt_path]
+    umount_cmd = [&#34;umount&#34;, mnt_path]
+    findmnt_cmd = [&#34;findmnt&#34;, dev_path]
+    trim_cmd = [&#34;fstrim&#34;, mnt_path]
+    if fs_type == FS_TYPE_EXT4:
+        subprocess.check_call([&#34;mkfs.ext4&#34;, dev_path])
+    elif fs_type == FS_TYPE_XFS:
+        subprocess.check_call([&#34;mkfs.xfs&#34;, dev_path])
+    else:
+        raise Exception(&#34;unexpected filesystem type&#34;)
+    subprocess.check_call([&#34;mkdir&#34;, &#34;-p&#34;, mnt_path])
+    subprocess.check_call(mount_cmd)
+    subprocess.check_call(findmnt_cmd)
+    subprocess.check_call([&#34;sync&#34;])
+
+    volume = client.by_id_volume(test_volume_name)
+
+    file0_path = os.path.join(mnt_path, &#34;file0&#34;)
+    write_volume_dev_random_mb_data(file0_path, 0, 100)
+    subprocess.check_call([&#34;sync&#34;])
+    file0_cksum_origin = get_volume_dev_mb_data_md5sum(file0_path, 0, 100)
+    snap0_origin = create_snapshot(client, test_volume_name)
+
+    file21_path = os.path.join(mnt_path, &#34;file21&#34;)
+    write_volume_dev_random_mb_data(file21_path, 0, 100)
+    subprocess.check_call([&#34;sync&#34;])
+    file21_cksum_origin = get_volume_dev_mb_data_md5sum(file21_path, 0, 100)
+    snap21_origin = create_snapshot(client, test_volume_name)
+
+    subprocess.check_call(umount_cmd)
+    volume.detach()
+    volume = wait_for_volume_detached(client, test_volume_name)
+    volume.attach(hostId=host_id, disableFrontend=True)
+    volume = common.wait_for_volume_healthy_no_frontend(
+        client, test_volume_name)
+    volume.snapshotRevert(name=snap0_origin.name)
+
+    volume.detach(hostId=&#34;&#34;)
+    volume = wait_for_volume_detached(client, test_volume_name)
+    volume.attach(hostId=host_id)
+    common.wait_for_volume_healthy(client, test_volume_name)
+    volume = wait_for_volume_option_trim_auto_removing_snapshots(
+        client, test_volume_name, True)
+    subprocess.check_call(mount_cmd)
+    subprocess.check_call(findmnt_cmd)
+    subprocess.check_call([&#34;sync&#34;])
+
+    file11_path = os.path.join(mnt_path, &#34;file11&#34;)
+    write_volume_dev_random_mb_data(file11_path, 0, 100)
+    subprocess.check_call([&#34;sync&#34;])
+    snap11_origin = create_snapshot(client, test_volume_name)
+
+    file12_path = os.path.join(mnt_path, &#34;file12&#34;)
+    write_volume_dev_random_mb_data(file12_path, 0, 100)
+    subprocess.check_call([&#34;sync&#34;])
+    snap12_origin = create_snapshot(client, test_volume_name)
+
+    file13_path = os.path.join(mnt_path, &#34;file13&#34;)
+    write_volume_dev_random_mb_data(file13_path, 0, 100)
+    subprocess.check_call([&#34;sync&#34;])
+
+    # Step 8.
+    # Remove files. Then verify the snapshots before the filesystem trim.
+    subprocess.check_call([&#34;rm&#34;,
+                           file0_path, file11_path, file12_path, file13_path])
+    subprocess.check_call([&#34;sync&#34;])
+
+    snapshots = volume.snapshotList()
+    snapMap = {}
+    for snap in snapshots:
+        snapMap[snap.name] = snap
+
+    assert snapMap[snap0_origin.name].name == snap0_origin.name
+    assert snapMap[snap0_origin.name].removed is False
+    assert snapMap[snap0_origin.name].size == snap0_origin.size
+    assert snapMap[snap0_origin.name].parent == &#34;&#34;
+
+    assert snapMap[snap21_origin.name].name == snap21_origin.name
+    assert snapMap[snap21_origin.name].removed is False
+    assert snapMap[snap21_origin.name].size == snap21_origin.size
+    assert snapMap[snap21_origin.name].parent == snap0_origin.name
+
+    assert snapMap[snap11_origin.name].name == snap11_origin.name
+    assert snapMap[snap11_origin.name].removed is False
+    assert snapMap[snap11_origin.name].size == snap11_origin.size
+    assert snapMap[snap11_origin.name].parent == snap0_origin.name
+
+    assert snapMap[snap12_origin.name].name == snap12_origin.name
+    assert snapMap[snap12_origin.name].removed is False
+    assert snapMap[snap12_origin.name].size == snap12_origin.size
+    assert snapMap[snap12_origin.name].parent == snap11_origin.name
+
+    assert snapMap[VOLUME_HEAD_NAME].name == VOLUME_HEAD_NAME
+    assert int(snapMap[VOLUME_HEAD_NAME].size) &gt;= 100 * Mi
+    assert snapMap[VOLUME_HEAD_NAME].parent == snap12_origin.name
+    volume_head1 = snapMap[VOLUME_HEAD_NAME]
+
+    # Sometimes the current mounting will lose track of the removed file
+    #  mapping info. It&#39;s better to remount the filesystem before trim.
+    subprocess.check_call(umount_cmd)
+    subprocess.check_call(mount_cmd)
+    subprocess.check_call(findmnt_cmd)
+    # Step 9. Verify the snapshots after the filesystem trim.
+    subprocess.check_call(trim_cmd)
+
+    volume = client.by_id_volume(test_volume_name)
+    snapshots = volume.snapshotList()
+    snapMap = {}
+    for snap in snapshots:
+        snapMap[snap.name] = snap
+
+    assert snapMap[snap0_origin.name].name == snap0_origin.name
+    assert snapMap[snap0_origin.name].removed is False
+    assert snapMap[snap0_origin.name].size == snap0_origin.size
+    assert snapMap[snap0_origin.name].parent == &#34;&#34;
+
+    assert snapMap[snap21_origin.name].name == snap21_origin.name
+    assert snapMap[snap21_origin.name].removed is False
+    assert snapMap[snap21_origin.name].size == snap21_origin.size
+    assert snapMap[snap21_origin.name].parent == snap0_origin.name
+
+    assert snapMap[snap11_origin.name].name == snap11_origin.name
+    assert snapMap[snap11_origin.name].removed is True
+    assert int(snapMap[snap11_origin.name].size) &lt;= \
+           int(snap11_origin.size) - 100 * Mi
+    assert snapMap[snap11_origin.name].parent == snap0_origin.name
+
+    assert snapMap[snap12_origin.name].name == snap12_origin.name
+    assert snapMap[snap12_origin.name].removed is True
+    assert int(snapMap[snap12_origin.name].size) &lt;= \
+           int(snap12_origin.size) - 100 * Mi
+    assert snapMap[snap12_origin.name].parent == snap11_origin.name
+
+    # Volume head may record some extra meta info after the file removal.
+    # Hence the size it reduced may be smaller than 100Mi
+    assert snapMap[VOLUME_HEAD_NAME].name == VOLUME_HEAD_NAME
+    assert int(snapMap[VOLUME_HEAD_NAME].size) &lt;= \
+           int(volume_head1.size) - 50 * Mi
+    assert snapMap[VOLUME_HEAD_NAME].parent == snap12_origin.name
+
+    volume = client.by_id_volume(test_volume_name)
+    volume.updateUnmapMarkSnapChainRemoved(
+        unmapMarkSnapChainRemoved=&#34;disabled&#34;)
+    wait_for_volume_option_trim_auto_removing_snapshots(
+        client, test_volume_name, False)
+
+    file14_path = os.path.join(mnt_path, &#34;file14&#34;)
+    write_volume_dev_random_mb_data(file14_path, 0, 100)
+    subprocess.check_call([&#34;sync&#34;])
+    snap14_origin = create_snapshot(client, test_volume_name)
+
+    file15_path = os.path.join(mnt_path, &#34;file15&#34;)
+    write_volume_dev_random_mb_data(file15_path, 0, 100)
+    subprocess.check_call([&#34;sync&#34;])
+
+    subprocess.check_call([&#34;rm&#34;,
+                           file14_path, file15_path])
+    subprocess.check_call([&#34;sync&#34;])
+
+    volume = client.by_id_volume(test_volume_name)
+    snapshots = volume.snapshotList()
+    snap_map = {}
+    for snap in snapshots:
+        snap_map[snap.name] = snap
+
+    assert snap_map[snap14_origin.name].name == snap14_origin.name
+    assert snap_map[snap14_origin.name].removed is False
+    assert snap_map[snap14_origin.name].size == snap14_origin.size
+    assert snap_map[snap14_origin.name].parent == snap12_origin.name
+
+    assert snap_map[VOLUME_HEAD_NAME].name == VOLUME_HEAD_NAME
+    assert int(snap_map[VOLUME_HEAD_NAME].size) &gt;= 100 * Mi
+    assert snap_map[VOLUME_HEAD_NAME].parent == snap14_origin.name
+    volume_head2 = snap_map[VOLUME_HEAD_NAME]
+
+    # Sometimes the current mounting will lose track of the removed file
+    #  mapping info. It&#39;s better to remount the filesystem before trim.
+    subprocess.check_call(umount_cmd)
+    subprocess.check_call(mount_cmd)
+    subprocess.check_call(findmnt_cmd)
+    # Step 12. Verify the snapshots after the filesystem trim.
+    subprocess.check_call(trim_cmd)
+
+    volume = client.by_id_volume(test_volume_name)
+    snapshots = volume.snapshotList()
+    snap_map = {}
+    for snap in snapshots:
+        snap_map[snap.name] = snap
+
+    assert snap_map[snap14_origin.name].name == snap14_origin.name
+    assert snap_map[snap14_origin.name].removed is False
+    assert int(snap_map[snap14_origin.name].size) &lt;= \
+           int(snap14_origin.size) - 100 * Mi
+    assert snap_map[snap14_origin.name].parent == snap12_origin.name
+
+    # Volume head may record some extra meta info after the file removal.
+    # Hence the size it reduced may be smaller than 100Mi
+    assert snap_map[VOLUME_HEAD_NAME].name == VOLUME_HEAD_NAME
+    assert int(snap_map[VOLUME_HEAD_NAME].size) &lt;= \
+           int(volume_head2.size) - 50 * Mi
+    assert snap_map[VOLUME_HEAD_NAME].parent == snap14_origin.name
+
+    subprocess.check_call(umount_cmd)
+    volume.detach()
+    volume = wait_for_volume_detached(client, test_volume_name)
+    volume.attach(hostId=host_id, disableFrontend=True)
+    volume = common.wait_for_volume_healthy_no_frontend(
+        client, test_volume_name)
+    volume.snapshotRevert(name=snap21_origin.name)
+
+    volume.detach(hostId=&#34;&#34;)
+    volume = wait_for_volume_detached(client, test_volume_name)
+    volume.attach(hostId=host_id)
+    common.wait_for_volume_healthy(client, test_volume_name)
+    subprocess.check_call(mount_cmd)
+    subprocess.check_call(findmnt_cmd)
+    subprocess.check_call([&#34;sync&#34;])
+
+    file0_cksum = get_volume_dev_mb_data_md5sum(file0_path, 0, 100)
+    assert file0_cksum_origin == file0_cksum
+    file21_cksum = get_volume_dev_mb_data_md5sum(file21_path, 0, 100)
+    assert file21_cksum_origin == file21_cksum
+
+    subprocess.check_call(umount_cmd)
+    subprocess.check_call([&#34;rm&#34;, &#34;-rf&#34;, mnt_path])
+
+    client.delete(volume)
+    wait_for_volume_delete(client, test_volume_name)</code></pre>
 </details>
 </section>
 <section>
@@ -9330,6 +9610,322 @@ def test_expansion_with_scheduling_failure(
     wait_for_volume_delete(client, volume_name)</code></pre>
 </details>
 </dd>
+<dt id="tests.test_basic.test_filesystem_trim"><code class="name flex">
+<span>def <span class="ident">test_filesystem_trim</span></span>(<span>client, fs_type)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test the filesystem in the volume can be trimmed correctly.</p>
+<ol>
+<li>Create a volume with option <code>unmapMarkSnapChainRemoved</code> enabled,
+then attach to the current node.</li>
+<li>Make a filesystem and write file0 into the fs, calculate the
+checksum, then take snap0.</li>
+<li>Write file21 and calculate the checksum. Then take snap21.</li>
+<li>Unmount then reattach the volume without frontend. Revert the volume
+to snap0.</li>
+<li>Reattach and mount the volume.</li>
+<li>Write file11. Then take snap11.</li>
+<li>Write file12. Then take snap12.</li>
+<li>Write file13. Then remove file0, file11, file12, and file13.
+Verify the snapshots and volume head size are not shrunk.</li>
+<li>Do filesystem trim (via Longhorn API or cmdline).
+Verify that:<ol>
+<li>snap11 and snap12 are marked as removed.</li>
+<li>snap11, snap12, and volume head size are shrunk.</li>
+</ol>
+</li>
+<li>Disable option <code>unmapMarkSnapChainRemoved</code> for the volume.</li>
+<li>Write file14. Then take snap14.</li>
+<li>Write file15. Then remove file14 and file15.
+Verify that:<ol>
+<li>snap14 is not marked as removed and its size is not changed.</li>
+<li>volume head size is shrunk.</li>
+</ol>
+</li>
+<li>Unmount and reattach the volume. Then revert to snap21.</li>
+<li>Reattach and mount the volume. Verify the file0 and file21.</li>
+<li>Cleanup.</li>
+</ol></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@pytest.mark.parametrize(&#34;fs_type&#34;, [FS_TYPE_EXT4, FS_TYPE_XFS])  # NOQA
+def test_filesystem_trim(client, fs_type):  # NOQA
+    &#34;&#34;&#34;
+    Test the filesystem in the volume can be trimmed correctly.
+
+    1.    Create a volume with option `unmapMarkSnapChainRemoved` enabled,
+          then attach to the current node.
+    2.    Make a filesystem and write file0 into the fs, calculate the
+          checksum, then take snap0.
+    3.    Write file21 and calculate the checksum. Then take snap21.
+    4.    Unmount then reattach the volume without frontend. Revert the volume
+          to snap0.
+    5.    Reattach and mount the volume.
+    6.    Write file11. Then take snap11.
+    7.    Write file12. Then take snap12.
+    8.    Write file13. Then remove file0, file11, file12, and file13.
+          Verify the snapshots and volume head size are not shrunk.
+    9.    Do filesystem trim (via Longhorn API or cmdline).
+          Verify that:
+          1. snap11 and snap12 are marked as removed.
+          2. snap11, snap12, and volume head size are shrunk.
+    10.   Disable option `unmapMarkSnapChainRemoved` for the volume.
+    11.   Write file14. Then take snap14.
+    12.   Write file15. Then remove file14 and file15.
+          Verify that:
+          1. snap14 is not marked as removed and its size is not changed.
+          2. volume head size is shrunk.
+    13.   Unmount and reattach the volume. Then revert to snap21.
+    14.   Reattach and mount the volume. Verify the file0 and file21.
+    15.   Cleanup.
+    &#34;&#34;&#34;
+    test_volume_name = generate_volume_name()
+    client.create_volume(name=test_volume_name,
+                         size=str(DEFAULT_VOLUME_SIZE * Gi),
+                         numberOfReplicas=2,
+                         unmapMarkSnapChainRemoved=&#34;enabled&#34;)
+    wait_for_volume_creation(client, test_volume_name)
+    volume = wait_for_volume_detached(client, test_volume_name)
+
+    host_id = get_self_host_id()
+    volume.attach(hostId=host_id)
+    common.wait_for_volume_healthy(client, test_volume_name)
+
+    dev_path = os.path.join(&#34;/dev/longhorn&#34;, test_volume_name)
+    mnt_path = os.path.join(&#34;/tmp&#34;, &#34;mnt-&#34;+test_volume_name)
+
+    mount_cmd = [&#34;mount&#34;, dev_path, mnt_path]
+    umount_cmd = [&#34;umount&#34;, mnt_path]
+    findmnt_cmd = [&#34;findmnt&#34;, dev_path]
+    trim_cmd = [&#34;fstrim&#34;, mnt_path]
+    if fs_type == FS_TYPE_EXT4:
+        subprocess.check_call([&#34;mkfs.ext4&#34;, dev_path])
+    elif fs_type == FS_TYPE_XFS:
+        subprocess.check_call([&#34;mkfs.xfs&#34;, dev_path])
+    else:
+        raise Exception(&#34;unexpected filesystem type&#34;)
+    subprocess.check_call([&#34;mkdir&#34;, &#34;-p&#34;, mnt_path])
+    subprocess.check_call(mount_cmd)
+    subprocess.check_call(findmnt_cmd)
+    subprocess.check_call([&#34;sync&#34;])
+
+    volume = client.by_id_volume(test_volume_name)
+
+    file0_path = os.path.join(mnt_path, &#34;file0&#34;)
+    write_volume_dev_random_mb_data(file0_path, 0, 100)
+    subprocess.check_call([&#34;sync&#34;])
+    file0_cksum_origin = get_volume_dev_mb_data_md5sum(file0_path, 0, 100)
+    snap0_origin = create_snapshot(client, test_volume_name)
+
+    file21_path = os.path.join(mnt_path, &#34;file21&#34;)
+    write_volume_dev_random_mb_data(file21_path, 0, 100)
+    subprocess.check_call([&#34;sync&#34;])
+    file21_cksum_origin = get_volume_dev_mb_data_md5sum(file21_path, 0, 100)
+    snap21_origin = create_snapshot(client, test_volume_name)
+
+    subprocess.check_call(umount_cmd)
+    volume.detach()
+    volume = wait_for_volume_detached(client, test_volume_name)
+    volume.attach(hostId=host_id, disableFrontend=True)
+    volume = common.wait_for_volume_healthy_no_frontend(
+        client, test_volume_name)
+    volume.snapshotRevert(name=snap0_origin.name)
+
+    volume.detach(hostId=&#34;&#34;)
+    volume = wait_for_volume_detached(client, test_volume_name)
+    volume.attach(hostId=host_id)
+    common.wait_for_volume_healthy(client, test_volume_name)
+    volume = wait_for_volume_option_trim_auto_removing_snapshots(
+        client, test_volume_name, True)
+    subprocess.check_call(mount_cmd)
+    subprocess.check_call(findmnt_cmd)
+    subprocess.check_call([&#34;sync&#34;])
+
+    file11_path = os.path.join(mnt_path, &#34;file11&#34;)
+    write_volume_dev_random_mb_data(file11_path, 0, 100)
+    subprocess.check_call([&#34;sync&#34;])
+    snap11_origin = create_snapshot(client, test_volume_name)
+
+    file12_path = os.path.join(mnt_path, &#34;file12&#34;)
+    write_volume_dev_random_mb_data(file12_path, 0, 100)
+    subprocess.check_call([&#34;sync&#34;])
+    snap12_origin = create_snapshot(client, test_volume_name)
+
+    file13_path = os.path.join(mnt_path, &#34;file13&#34;)
+    write_volume_dev_random_mb_data(file13_path, 0, 100)
+    subprocess.check_call([&#34;sync&#34;])
+
+    # Step 8.
+    # Remove files. Then verify the snapshots before the filesystem trim.
+    subprocess.check_call([&#34;rm&#34;,
+                           file0_path, file11_path, file12_path, file13_path])
+    subprocess.check_call([&#34;sync&#34;])
+
+    snapshots = volume.snapshotList()
+    snapMap = {}
+    for snap in snapshots:
+        snapMap[snap.name] = snap
+
+    assert snapMap[snap0_origin.name].name == snap0_origin.name
+    assert snapMap[snap0_origin.name].removed is False
+    assert snapMap[snap0_origin.name].size == snap0_origin.size
+    assert snapMap[snap0_origin.name].parent == &#34;&#34;
+
+    assert snapMap[snap21_origin.name].name == snap21_origin.name
+    assert snapMap[snap21_origin.name].removed is False
+    assert snapMap[snap21_origin.name].size == snap21_origin.size
+    assert snapMap[snap21_origin.name].parent == snap0_origin.name
+
+    assert snapMap[snap11_origin.name].name == snap11_origin.name
+    assert snapMap[snap11_origin.name].removed is False
+    assert snapMap[snap11_origin.name].size == snap11_origin.size
+    assert snapMap[snap11_origin.name].parent == snap0_origin.name
+
+    assert snapMap[snap12_origin.name].name == snap12_origin.name
+    assert snapMap[snap12_origin.name].removed is False
+    assert snapMap[snap12_origin.name].size == snap12_origin.size
+    assert snapMap[snap12_origin.name].parent == snap11_origin.name
+
+    assert snapMap[VOLUME_HEAD_NAME].name == VOLUME_HEAD_NAME
+    assert int(snapMap[VOLUME_HEAD_NAME].size) &gt;= 100 * Mi
+    assert snapMap[VOLUME_HEAD_NAME].parent == snap12_origin.name
+    volume_head1 = snapMap[VOLUME_HEAD_NAME]
+
+    # Sometimes the current mounting will lose track of the removed file
+    #  mapping info. It&#39;s better to remount the filesystem before trim.
+    subprocess.check_call(umount_cmd)
+    subprocess.check_call(mount_cmd)
+    subprocess.check_call(findmnt_cmd)
+    # Step 9. Verify the snapshots after the filesystem trim.
+    subprocess.check_call(trim_cmd)
+
+    volume = client.by_id_volume(test_volume_name)
+    snapshots = volume.snapshotList()
+    snapMap = {}
+    for snap in snapshots:
+        snapMap[snap.name] = snap
+
+    assert snapMap[snap0_origin.name].name == snap0_origin.name
+    assert snapMap[snap0_origin.name].removed is False
+    assert snapMap[snap0_origin.name].size == snap0_origin.size
+    assert snapMap[snap0_origin.name].parent == &#34;&#34;
+
+    assert snapMap[snap21_origin.name].name == snap21_origin.name
+    assert snapMap[snap21_origin.name].removed is False
+    assert snapMap[snap21_origin.name].size == snap21_origin.size
+    assert snapMap[snap21_origin.name].parent == snap0_origin.name
+
+    assert snapMap[snap11_origin.name].name == snap11_origin.name
+    assert snapMap[snap11_origin.name].removed is True
+    assert int(snapMap[snap11_origin.name].size) &lt;= \
+           int(snap11_origin.size) - 100 * Mi
+    assert snapMap[snap11_origin.name].parent == snap0_origin.name
+
+    assert snapMap[snap12_origin.name].name == snap12_origin.name
+    assert snapMap[snap12_origin.name].removed is True
+    assert int(snapMap[snap12_origin.name].size) &lt;= \
+           int(snap12_origin.size) - 100 * Mi
+    assert snapMap[snap12_origin.name].parent == snap11_origin.name
+
+    # Volume head may record some extra meta info after the file removal.
+    # Hence the size it reduced may be smaller than 100Mi
+    assert snapMap[VOLUME_HEAD_NAME].name == VOLUME_HEAD_NAME
+    assert int(snapMap[VOLUME_HEAD_NAME].size) &lt;= \
+           int(volume_head1.size) - 50 * Mi
+    assert snapMap[VOLUME_HEAD_NAME].parent == snap12_origin.name
+
+    volume = client.by_id_volume(test_volume_name)
+    volume.updateUnmapMarkSnapChainRemoved(
+        unmapMarkSnapChainRemoved=&#34;disabled&#34;)
+    wait_for_volume_option_trim_auto_removing_snapshots(
+        client, test_volume_name, False)
+
+    file14_path = os.path.join(mnt_path, &#34;file14&#34;)
+    write_volume_dev_random_mb_data(file14_path, 0, 100)
+    subprocess.check_call([&#34;sync&#34;])
+    snap14_origin = create_snapshot(client, test_volume_name)
+
+    file15_path = os.path.join(mnt_path, &#34;file15&#34;)
+    write_volume_dev_random_mb_data(file15_path, 0, 100)
+    subprocess.check_call([&#34;sync&#34;])
+
+    subprocess.check_call([&#34;rm&#34;,
+                           file14_path, file15_path])
+    subprocess.check_call([&#34;sync&#34;])
+
+    volume = client.by_id_volume(test_volume_name)
+    snapshots = volume.snapshotList()
+    snap_map = {}
+    for snap in snapshots:
+        snap_map[snap.name] = snap
+
+    assert snap_map[snap14_origin.name].name == snap14_origin.name
+    assert snap_map[snap14_origin.name].removed is False
+    assert snap_map[snap14_origin.name].size == snap14_origin.size
+    assert snap_map[snap14_origin.name].parent == snap12_origin.name
+
+    assert snap_map[VOLUME_HEAD_NAME].name == VOLUME_HEAD_NAME
+    assert int(snap_map[VOLUME_HEAD_NAME].size) &gt;= 100 * Mi
+    assert snap_map[VOLUME_HEAD_NAME].parent == snap14_origin.name
+    volume_head2 = snap_map[VOLUME_HEAD_NAME]
+
+    # Sometimes the current mounting will lose track of the removed file
+    #  mapping info. It&#39;s better to remount the filesystem before trim.
+    subprocess.check_call(umount_cmd)
+    subprocess.check_call(mount_cmd)
+    subprocess.check_call(findmnt_cmd)
+    # Step 12. Verify the snapshots after the filesystem trim.
+    subprocess.check_call(trim_cmd)
+
+    volume = client.by_id_volume(test_volume_name)
+    snapshots = volume.snapshotList()
+    snap_map = {}
+    for snap in snapshots:
+        snap_map[snap.name] = snap
+
+    assert snap_map[snap14_origin.name].name == snap14_origin.name
+    assert snap_map[snap14_origin.name].removed is False
+    assert int(snap_map[snap14_origin.name].size) &lt;= \
+           int(snap14_origin.size) - 100 * Mi
+    assert snap_map[snap14_origin.name].parent == snap12_origin.name
+
+    # Volume head may record some extra meta info after the file removal.
+    # Hence the size it reduced may be smaller than 100Mi
+    assert snap_map[VOLUME_HEAD_NAME].name == VOLUME_HEAD_NAME
+    assert int(snap_map[VOLUME_HEAD_NAME].size) &lt;= \
+           int(volume_head2.size) - 50 * Mi
+    assert snap_map[VOLUME_HEAD_NAME].parent == snap14_origin.name
+
+    subprocess.check_call(umount_cmd)
+    volume.detach()
+    volume = wait_for_volume_detached(client, test_volume_name)
+    volume.attach(hostId=host_id, disableFrontend=True)
+    volume = common.wait_for_volume_healthy_no_frontend(
+        client, test_volume_name)
+    volume.snapshotRevert(name=snap21_origin.name)
+
+    volume.detach(hostId=&#34;&#34;)
+    volume = wait_for_volume_detached(client, test_volume_name)
+    volume.attach(hostId=host_id)
+    common.wait_for_volume_healthy(client, test_volume_name)
+    subprocess.check_call(mount_cmd)
+    subprocess.check_call(findmnt_cmd)
+    subprocess.check_call([&#34;sync&#34;])
+
+    file0_cksum = get_volume_dev_mb_data_md5sum(file0_path, 0, 100)
+    assert file0_cksum_origin == file0_cksum
+    file21_cksum = get_volume_dev_mb_data_md5sum(file21_path, 0, 100)
+    assert file21_cksum_origin == file21_cksum
+
+    subprocess.check_call(umount_cmd)
+    subprocess.check_call([&#34;rm&#34;, &#34;-rf&#34;, mnt_path])
+
+    client.delete(volume)
+    wait_for_volume_delete(client, test_volume_name)</code></pre>
+</details>
+</dd>
 <dt id="tests.test_basic.test_hosts"><code class="name flex">
 <span>def <span class="ident">test_hosts</span></span>(<span>client)</span>
 </code></dt>
@@ -11629,6 +12225,7 @@ the format <strong><em>*rw</em></strong>*</li>
 <li><code><a title="tests.test_basic.test_expansion_canceling" href="#tests.test_basic.test_expansion_canceling">test_expansion_canceling</a></code></li>
 <li><code><a title="tests.test_basic.test_expansion_with_scheduling_failure" href="#tests.test_basic.test_expansion_with_scheduling_failure">test_expansion_with_scheduling_failure</a></code></li>
 <li><code><a title="tests.test_basic.test_expansion_with_size_round_up" href="#tests.test_basic.test_expansion_with_size_round_up">test_expansion_with_size_round_up</a></code></li>
+<li><code><a title="tests.test_basic.test_filesystem_trim" href="#tests.test_basic.test_filesystem_trim">test_filesystem_trim</a></code></li>
 <li><code><a title="tests.test_basic.test_hosts" href="#tests.test_basic.test_hosts">test_hosts</a></code></li>
 <li><code><a title="tests.test_basic.test_listing_backup_volume" href="#tests.test_basic.test_listing_backup_volume">test_listing_backup_volume</a></code></li>
 <li><code><a title="tests.test_basic.test_multiple_volumes_creation_with_degraded_availability" href="#tests.test_basic.test_multiple_volumes_creation_with_degraded_availability">test_multiple_volumes_creation_with_degraded_availability</a></code></li>

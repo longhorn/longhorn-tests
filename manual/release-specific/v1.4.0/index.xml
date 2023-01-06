@@ -35,6 +35,21 @@ Steps Test remove engine binary on host should recover Given EngineImage custom 
     </item>
     
     <item>
+      <title>Test filesystem trim</title>
+      <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.4.0/test-filesystem-trim/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.4.0/test-filesystem-trim/</guid>
+      <description>Related issue https://github.com/longhorn/longhorn/issues/836
+Case 1: Test filesystem trim during writing Given A 10G volume created.
+And Volume attached to node-1.
+And Make a filesystem like EXT4 or XFS for the volume.
+And Mount the filesystem on a mount point.
+Then Run the below shell script with the correct mount point specified:
+#!/usr/bin/env bash MOUNT_POINT=${1} dd if=/dev/urandom of=/mnt/data bs=1M count=8000 sync CKSUM=`md5sum /mnt/data | awk &amp;#39;{print $1}&amp;#39;` for INDEX in {1..10..1}; do rm -rf ${MOUNT_POINT}/data dd if=/mnt/data of=${MOUNT_POINT}/data &amp;amp; RAND_SLEEP_INTERVAL=$(($(($RANDOM%50))+10)) sleep ${RAND_SLEEP_INTERVAL} fstrim ${MOUNT_POINT} while [ `ps aux | grep &amp;#34;dd if&amp;#34; | grep -v grep | wc -l` -eq &amp;#34;1&amp;#34; ] do sleep 1 done CUR_CKSUM=`md5sum ${MOUNT_POINT}/data | awk &amp;#39;{print $1}&amp;#39;` if [ $CUR_CKSUM !</description>
+    </item>
+    
+    <item>
       <title>Test helm on Rancher deployed Windows Cluster</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.4.0/test-helm-install-on-rancher-deployed-windows-cluster/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
