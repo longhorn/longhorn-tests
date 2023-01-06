@@ -1559,6 +1559,9 @@ def cleanup_client():
 
     cleanup_all_support_bundles(client)
 
+    # remove nodes taint
+    reset_nodes_taint(client)
+
     # enable nodes scheduling
     reset_node(client)
     reset_settings(client)
@@ -1571,6 +1574,16 @@ def cleanup_client():
     if not os.path.exists(DEFAULT_REPLICA_DIRECTORY):
         subprocess.check_call(
             ["mkdir", "-p", DEFAULT_REPLICA_DIRECTORY])
+
+
+def reset_nodes_taint(client):
+    core_api = get_core_api_client()
+    nodes = client.list_node()
+
+    for node in nodes:
+        core_api.patch_node(node.id, {
+            "spec": {"taints": []}
+        })
 
 
 def get_client(address):
@@ -3235,6 +3248,31 @@ def scale_up_engine_image_daemonset(client):
         # for scaling up a running daemond set,
         # the status_code is 422 server error.
         assert e.status == 422
+
+
+def restart_and_wait_ready_engine_count(client, ready_engine_count): # NOQA
+    """
+    Delete/restart engine daemonset and wait ready engine image count after
+    daemonset restart
+    """
+    apps_api = get_apps_api_client()
+    default_img = get_default_engine_image(client)
+    ds_name = "engine-image-" + default_img.name
+    apps_api.delete_namespaced_daemon_set(ds_name, LONGHORN_NAMESPACE)
+    wait_for_engine_image_condition(client, default_img.name, "False")
+    wait_for_engine_image_state(client, default_img.name, "deploying")
+
+    for i in range(RETRY_COUNTS):
+        daemonset = apps_api.read_namespaced_daemon_set(
+                    name=ds_name, namespace='longhorn-system')
+
+        if daemonset.status.number_ready == ready_engine_count:
+            break
+        time.sleep(RETRY_INTERVAL)
+
+    daemonset = apps_api.read_namespaced_daemon_set(
+                    name=ds_name, namespace='longhorn-system')
+    assert daemonset.status.number_ready == ready_engine_count
 
 
 def wait_for_all_instance_manager_running(client):

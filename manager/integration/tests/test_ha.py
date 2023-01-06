@@ -70,6 +70,7 @@ from common import get_volume_endpoint
 from common import copy_file_to_volume_dev_mb_data
 from common import write_volume_dev_random_mb_data
 from common import get_volume_dev_mb_data_md5sum
+from common import restart_and_wait_ready_engine_count
 
 from backupstore import set_random_backupstore # NOQA
 from backupstore import backupstore_cleanup
@@ -79,6 +80,7 @@ from backupstore import backupstore_s3  # NOQA
 
 from test_node import create_host_disk
 from test_scheduling import get_host_replica
+from test_basic import backupstore_test
 
 SMALL_RETRY_COUNTS = 30
 BACKUPSTORE = get_backupstores()
@@ -2619,7 +2621,7 @@ def test_replica_failure_during_attaching(settings_reset, client, core_api, volu
     common.wait_for_disk_update(client, node.name, 1)
 
 
-def prepare_engine_not_fully_deployed_evnironment():
+def prepare_engine_not_fully_deployed_evnironment(client, core_api): # NOQA
     """
     1. Taint node-1 with the taint: key=value:NoSchedule
     2. Delete the pod on node-1 of the engine image DaemonSet.
@@ -2628,8 +2630,20 @@ def prepare_engine_not_fully_deployed_evnironment():
     3. Wait for the engine image CR state become deploying
     """
 
+    lht_hostId = get_self_host_id()
+    core_api.patch_node(lht_hostId, {
+        "spec": {
+            "taints":
+                [{"effect": "NoSchedule",
+                  "key": "key",
+                  "value": "value"}]
+        }
+    })
 
-def prepare_engine_not_fully_deployed_evnironment_with_volumes():
+    restart_and_wait_ready_engine_count(client, 2)
+
+
+def prepare_engine_not_fully_deployed_evnironment_with_volumes(client, core_api): # NOQA
     """
     1. Create 2 volumes, vol-1 and vol-2 with 3 replicas
     2. Taint node-1 with the taint: key=value:NoSchedule
@@ -2641,9 +2655,37 @@ def prepare_engine_not_fully_deployed_evnironment_with_volumes():
     5. Wait for the engine image CR state become deploying
     """
 
+    volume1 = create_and_check_volume(client, "vol-1", size=str(3 * Gi))
+    volume2 = create_and_check_volume(client, "vol-2", size=str(3 * Gi))
 
-@pytest.mark.skip(reason="TODO") # NOQA
-def test_engine_image_miss_scheduled_perform_volume_operations():
+    lht_hostId = get_self_host_id()
+    core_api.patch_node(lht_hostId, {
+        "spec": {
+            "taints":
+                [{"effect": "NoSchedule",
+                  "key": "key",
+                  "value": "value"}]
+        }
+    })
+
+    volume1.attach(hostId=lht_hostId)
+    volume1 = wait_for_volume_healthy(client, volume1.name)
+    volume1.updateReplicaCount(replicaCount=2)
+
+    for r in volume1.replicas:
+        if r.hostId == lht_hostId:
+            volume1.replicaRemove(name=r.name)
+            break
+
+    restart_and_wait_ready_engine_count(client, 2)
+
+    volume1 = client.by_id_volume(volume1.name)
+    volume2 = client.by_id_volume(volume2.name)
+
+    return volume1, volume2, lht_hostId
+
+
+def test_engine_image_miss_scheduled_perform_volume_operations(core_api, client, set_random_backupstore, volume_name): # NOQA
     """
     Test volume operations when engine image DaemonSet is miss
     scheduled
@@ -2653,7 +2695,52 @@ def test_engine_image_miss_scheduled_perform_volume_operations():
     3. Verify that we can attach, take snapshot, take a backup,
        expand, then detach vol-1
     """
-    pass
+    volume = create_and_check_volume(client, volume_name, size=str(3 * Gi))
+
+    nodes = client.list_node()
+    core_api.patch_node(nodes[0].id, {
+        "spec": {
+            "taints":
+                [{"effect": "NoSchedule",
+                  "key": "key",
+                  "value": "value"}]
+        }
+    })
+
+    lht_hostId = get_self_host_id()
+    volume = volume.attach(hostId=lht_hostId)
+    volume = common.wait_for_volume_healthy(client, volume_name)
+
+    volume = client.by_id_volume(volume_name)
+    positions = {}
+    snap1_data = write_volume_random_data(volume, positions)
+    snap1 = create_snapshot(client, volume_name)
+
+    snapshots = volume.snapshotList()
+    snapMap = {}
+    for snap in snapshots:
+        snapMap[snap.name] = snap
+
+    assert snapMap[snap1.name].name == snap1.name
+    assert snapMap[snap1.name].removed is False
+
+    backupstore_test(client, lht_hostId, volume_name, size=str(3 * Gi))
+
+    volume = client.by_id_volume(volume_name)
+    lht_hostId = get_self_host_id()
+    volume.attach(hostId=lht_hostId, disableFrontend=False)
+    common.wait_for_volume_healthy(client, volume_name)
+
+    snap1_data = write_volume_random_data(volume)
+    create_snapshot(client, volume_name)
+
+    expand_size = str(3 * Gi)
+    volume.expand(size=expand_size)
+    wait_for_volume_expansion(client, volume_name)
+    volume = client.by_id_volume(volume_name)
+    assert volume.size == expand_size
+    check_block_device_size(volume, int(expand_size))
+    check_volume_data(volume, snap1_data, False)
 
 
 @pytest.mark.skip(reason="TODO") # NOQA
