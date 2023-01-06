@@ -62,7 +62,7 @@ from common import make_deployment_with_pvc # NOQA
 from common import get_apps_api_client, create_and_wait_deployment
 from common import wait_delete_pod
 from common import wait_pod, exec_command_in_pod
-from common import RETRY_EXEC_COUNTS, RETRY_EXEC_INTERVAL
+from common import RETRY_EXEC_COUNTS, RETRY_EXEC_INTERVAL, RETRY_COUNTS_SHORT
 from common import get_volume_running_replica_cnt
 from common import update_node_disks
 from common import LONGHORN_NAMESPACE
@@ -70,6 +70,12 @@ from common import get_volume_endpoint
 from common import copy_file_to_volume_dev_mb_data
 from common import write_volume_dev_random_mb_data
 from common import get_volume_dev_mb_data_md5sum
+from common import restart_and_wait_ready_engine_count
+from common import wait_for_deployed_engine_image_count
+from common import wait_for_volume_current_image
+from common import wait_for_engine_image_ref_count
+from common import SETTING_CONCURRENT_AUTO_ENGINE_UPGRADE_NODE_LIMIT
+from common import update_setting
 
 from backupstore import set_random_backupstore # NOQA
 from backupstore import backupstore_cleanup
@@ -79,6 +85,8 @@ from backupstore import backupstore_s3  # NOQA
 
 from test_node import create_host_disk
 from test_scheduling import get_host_replica
+from test_basic import backupstore_test
+from node import taint_non_current_node
 
 SMALL_RETRY_COUNTS = 30
 BACKUPSTORE = get_backupstores()
@@ -104,7 +112,7 @@ def ha_simple_recovery_test(client, volume_name, size, backing_image=""):  # NOQ
 
     host_id = get_self_host_id()
     volume = volume.attach(hostId=host_id)
-    volume = common.wait_for_volume_healthy(client, volume_name)
+    volume = wait_for_volume_healthy(client, volume_name)
 
     ha_rebuild_replica_test(client, volume_name)
 
@@ -141,7 +149,7 @@ def ha_rebuild_replica_test(client, volname):   # NOQA
     wait_for_rebuild_complete(client, volname)
     assert new_replica_found
 
-    volume = common.wait_for_volume_healthy(client, volname)
+    volume = wait_for_volume_healthy(client, volname)
 
     volume = client.by_id_volume(volname)
     assert volume.state == common.VOLUME_STATE_ATTACHED
@@ -239,7 +247,7 @@ def ha_salvage_test(client, core_api, # NOQA
 
     host_id = get_self_host_id()
     volume = volume.attach(hostId=host_id)
-    volume = common.wait_for_volume_healthy(client, volume_name)
+    volume = wait_for_volume_healthy(client, volume_name)
 
     assert len(volume.replicas) == 2
     replica0_name = volume.replicas[0].name
@@ -249,12 +257,12 @@ def ha_salvage_test(client, core_api, # NOQA
 
     delete_replica_processes(client, core_api, volume_name)
 
-    volume = common.wait_for_volume_faulted(client, volume_name)
+    volume = wait_for_volume_faulted(client, volume_name)
     assert len(volume.replicas) == 2
     assert volume.replicas[0].failedAt != ""
     assert volume.replicas[1].failedAt != ""
 
-    volume = common.wait_for_volume_detached(client, volume_name)
+    volume = wait_for_volume_detached(client, volume_name)
 
     volume.salvage(names=[replica0_name, replica1_name])
 
@@ -264,7 +272,7 @@ def ha_salvage_test(client, core_api, # NOQA
     assert volume.replicas[1].failedAt == ""
 
     volume = volume.attach(hostId=host_id)
-    volume = common.wait_for_volume_healthy(client, volume_name)
+    volume = wait_for_volume_healthy(client, volume_name)
 
     check_volume_data(volume, data)
 
@@ -280,7 +288,7 @@ def ha_salvage_test(client, core_api, # NOQA
     volume = create_and_check_volume(client, volume_name, 2,
                                      backing_image=backing_image)
     volume.attach(hostId=host_id)
-    volume = common.wait_for_volume_healthy(client, volume_name)
+    volume = wait_for_volume_healthy(client, volume_name)
 
     assert len(volume.replicas) == 2
     replica0_name = volume.replicas[0].name
@@ -305,7 +313,7 @@ def ha_salvage_test(client, core_api, # NOQA
     assert volume.replicas[1].failedAt == ""
 
     volume.attach(hostId=host_id)
-    volume = common.wait_for_volume_healthy(client, volume_name)
+    volume = wait_for_volume_healthy(client, volume_name)
 
     check_volume_data(volume, data)
 
@@ -330,7 +338,7 @@ def ha_salvage_test(client, core_api, # NOQA
 
     host_id = get_self_host_id()
     volume = volume.attach(hostId=host_id)
-    volume = common.wait_for_volume_healthy(client, volume_name)
+    volume = wait_for_volume_healthy(client, volume_name)
 
     assert len(volume.replicas) == 3
     orig_replica_names = []
@@ -346,7 +354,7 @@ def ha_salvage_test(client, core_api, # NOQA
                                   common.VOLUME_FIELD_STATE,
                                   'attaching')
 
-    volume = common.wait_for_volume_healthy(client, volume_name)
+    volume = wait_for_volume_healthy(client, volume_name)
     assert len(volume.replicas) == 3
 
     for replica in volume.replicas:
@@ -374,7 +382,7 @@ def ha_salvage_test(client, core_api, # NOQA
 
     host_id = get_self_host_id()
     volume = volume.attach(hostId=host_id)
-    volume = common.wait_for_volume_healthy(client, volume_name)
+    volume = wait_for_volume_healthy(client, volume_name)
 
     assert len(volume.replicas) == 3
     orig_replica_names = []
@@ -390,7 +398,7 @@ def ha_salvage_test(client, core_api, # NOQA
                                   common.VOLUME_FIELD_STATE,
                                   'attaching')
 
-    volume = common.wait_for_volume_healthy(client, volume_name)
+    volume = wait_for_volume_healthy(client, volume_name)
     assert len(volume.replicas) == 3
     assert volume.replicas[0].failedAt == ""
     assert volume.replicas[1].failedAt == ""
@@ -423,11 +431,11 @@ def test_ha_backup_deletion_recovery(set_random_backupstore, client, volume_name
 def ha_backup_deletion_recovery_test(client, volume_name, size, backing_image=""):  # NOQA
     client.create_volume(name=volume_name, size=size, numberOfReplicas=2,
                          backingImage=backing_image)
-    volume = common.wait_for_volume_detached(client, volume_name)
+    volume = wait_for_volume_detached(client, volume_name)
 
     host_id = get_self_host_id()
     volume = volume.attach(hostId=host_id)
-    volume = common.wait_for_volume_healthy(client, volume_name)
+    volume = wait_for_volume_healthy(client, volume_name)
 
     data = write_volume_random_data(volume)
     snap2 = create_snapshot(client, volume_name)
@@ -435,17 +443,17 @@ def ha_backup_deletion_recovery_test(client, volume_name, size, backing_image=""
 
     volume.snapshotBackup(name=snap2.name)
     wait_for_backup_completion(client, volume_name, snap2.name)
-    _, b = common.find_backup(client, volume_name, snap2.name)
+    _, b = find_backup(client, volume_name, snap2.name)
 
     res_name = common.generate_volume_name()
     res_volume = client.create_volume(name=res_name, size=size,
                                       numberOfReplicas=2,
                                       fromBackup=b.url)
-    res_volume = common.wait_for_volume_restoration_completed(
+    res_volume = wait_for_volume_restoration_completed(
         client, res_name)
-    res_volume = common.wait_for_volume_detached(client, res_name)
+    res_volume = wait_for_volume_detached(client, res_name)
     res_volume = res_volume.attach(hostId=host_id)
-    res_volume = common.wait_for_volume_healthy(client, res_name)
+    res_volume = wait_for_volume_healthy(client, res_name)
     check_volume_data(res_volume, data)
 
     snapshots = res_volume.snapshotList()
@@ -472,10 +480,10 @@ def ha_backup_deletion_recovery_test(client, volume_name, size, backing_image=""
     ha_rebuild_replica_test(client, res_name)
 
     res_volume = res_volume.detach(hostId="")
-    res_volume = common.wait_for_volume_detached(client, res_name)
+    res_volume = wait_for_volume_detached(client, res_name)
 
     client.delete(res_volume)
-    common.wait_for_volume_delete(client, res_name)
+    wait_for_volume_delete(client, res_name)
 
 
 # https://github.com/rancher/longhorn/issues/415
@@ -492,7 +500,7 @@ def test_ha_prohibit_deleting_last_replica(client, volume_name):  # NOQA
 
     host_id = get_self_host_id()
     volume = volume.attach(hostId=host_id)
-    volume = common.wait_for_volume_healthy(client, volume_name)
+    volume = wait_for_volume_healthy(client, volume_name)
 
     assert len(volume.replicas) == 1
     replica0 = volume.replicas[0]
@@ -524,7 +532,7 @@ def test_ha_recovery_with_expansion(client, volume_name, request):   # NOQA
 
     host_id = get_self_host_id()
     volume.attach(hostId=host_id)
-    volume = common.wait_for_volume_healthy(client, volume_name)
+    volume = wait_for_volume_healthy(client, volume_name)
     assert len(volume.replicas) == 2
     replica0 = volume.replicas[0]
     assert replica0.name != ""
@@ -571,7 +579,7 @@ def test_ha_recovery_with_expansion(client, volume_name, request):   # NOQA
     wait_for_rebuild_start(client, volume_name)
     wait_for_rebuild_complete(client, volume.name)
 
-    volume = common.wait_for_volume_healthy(client, volume_name)
+    volume = wait_for_volume_healthy(client, volume_name)
     assert len(volume.replicas) == 2
     volume = client.by_id_volume(volume_name)
     check_block_device_size(volume, int(expand_size))
@@ -589,7 +597,7 @@ def test_ha_recovery_with_expansion(client, volume_name, request):   # NOQA
 def wait_pod_for_remount_request(client, core_api, volume_name, pod_name, original_md5sum, data_path="/data/test"):  # NOQA
     try:
         # this line may fail if the recovery is too quick
-        common.wait_for_volume_faulted(client, volume_name)
+        wait_for_volume_faulted(client, volume_name)
     except AssertionError:
         print("\nException waiting for volume faulted,"
               "could have missed it")
@@ -1972,7 +1980,7 @@ def test_rebuild_after_replica_file_crash(client, volume_name): # NOQA
     volume = create_and_check_volume(client, volume_name, replica_count)
     host_id = get_self_host_id()
     volume = volume.attach(hostId=host_id)
-    volume = common.wait_for_volume_healthy(client, volume_name)
+    volume = wait_for_volume_healthy(client, volume_name)
     data = write_volume_random_data(volume)
 
     replica = None
@@ -2037,10 +2045,10 @@ def test_extra_replica_cleanup(client, volume_name, settings_reset): # NOQA
               replica_node_soft_anti_affinity_setting)
         print(e)
 
-    hostId = get_self_host_id()
+    host_id = get_self_host_id()
     volume = create_and_check_volume(client, volume_name, num_of_replicas=3)
 
-    volume = volume.attach(hostId=hostId)
+    volume = volume.attach(hostId=host_id)
     volume = wait_for_volume_healthy(client, volume_name)
     data = write_volume_random_data(volume)
     volume = volume.updateReplicaCount(replicaCount=4)
@@ -2259,7 +2267,7 @@ def test_auto_remount_with_subpath(client, core_api, storage_class, sts_name, st
                             namespace='longhorn-system',
                             wait=True)
         wait_for_volume_healthy(client, vol_name)
-        common.wait_for_pod_remount(core_api, pod_name, chk_path=data_path)
+        wait_for_pod_remount(core_api, pod_name, chk_path=data_path)
         expect_md5sum = get_pod_data_md5sum(core_api, pod_name, data_path)
         assert expect_md5sum == md5sum
 
@@ -2273,13 +2281,13 @@ def test_auto_remount_with_subpath(client, core_api, storage_class, sts_name, st
                         namespace='longhorn-system',
                         wait=True)
     wait_for_volume_healthy(client, vol_name)
-    common.wait_for_pod_remount(core_api, pod_name, chk_path=data_path)
+    wait_for_pod_remount(core_api, pod_name, chk_path=data_path)
     expect_md5sum = get_pod_data_md5sum(core_api, pod_name, data_path)
     assert expect_md5sum == md5sum
 
     delete_and_wait_pod(core_api, pod_name, wait=True)
     common.wait_for_pod_phase(core_api, pod_name, pod_phase="Running")
-    common.wait_for_pod_remount(core_api, pod_name, chk_path=data_path)
+    wait_for_pod_remount(core_api, pod_name, chk_path=data_path)
     expect_md5sum = get_pod_data_md5sum(core_api, pod_name, data_path)
     assert expect_md5sum == md5sum
 
@@ -2323,10 +2331,10 @@ def test_reuse_failed_replica(client, core_api, volume_name): # NOQA
     vol = create_and_check_volume(client, volume_name)
     host_id = get_self_host_id()
     vol = vol.attach(hostId=host_id)
-    vol = common.wait_for_volume_healthy(client, volume_name)
+    vol = wait_for_volume_healthy(client, volume_name)
     data = {
         'pos': 0,
-        'content': common.generate_random_data(16*Ki),
+        'content': generate_random_data(16*Ki),
     }
     common.write_volume_data(vol, data)
 
@@ -2397,12 +2405,12 @@ def test_reuse_failed_replica(client, core_api, volume_name): # NOQA
     current_host = client.by_id_node(id=host_id)
     client.update(current_host, allowScheduling=True)
 
-    vol = common.wait_for_volume_healthy(client, volume_name)
+    vol = wait_for_volume_healthy(client, volume_name)
     current_replica_names = set([r.name for r in vol.replicas])
     assert current_replica_names == \
            {replica_1.name, replica_2.name, replica_3.name}
     data = common.write_volume_data(vol, data)
-    common.check_volume_data(vol, data)
+    check_volume_data(vol, data)
 
 
 def set_tags_for_node_and_its_disks(client, node, tags): # NOQA
@@ -2417,7 +2425,7 @@ def set_tags_for_node_and_its_disks(client, node, tags): # NOQA
     for disk_name in node.disks.keys():
         assert node.disks[disk_name].tags == expected_tags
 
-    node = common.set_node_tags(client, node, tags)
+    node = set_node_tags(client, node, tags)
     assert node.tags == expected_tags
 
     return node
@@ -2458,14 +2466,14 @@ def test_reuse_failed_replica_with_scheduling_check(client, core_api, volume_nam
 
     client.create_volume(name=volume_name, size=SIZE, numberOfReplicas=3,
                          diskSelector=tags, nodeSelector=tags)
-    vol = common.wait_for_volume_detached(client, volume_name)
+    vol = wait_for_volume_detached(client, volume_name)
     assert vol.diskSelector == tags
     assert vol.nodeSelector == tags
     vol.attach(hostId=get_self_host_id())
-    vol = common.wait_for_volume_healthy(client, volume_name)
+    vol = wait_for_volume_healthy(client, volume_name)
     data = {
         'pos': 0,
-        'content': common.generate_random_data(16*Ki),
+        'content': generate_random_data(16*Ki),
     }
     common.write_volume_data(vol, data)
 
@@ -2520,12 +2528,12 @@ def test_reuse_failed_replica_with_scheduling_check(client, core_api, volume_nam
 
     node_1 = set_tags_for_node_and_its_disks(client, node_1, tags)
 
-    vol = common.wait_for_volume_healthy(client, volume_name)
+    vol = wait_for_volume_healthy(client, volume_name)
     current_replica_names = set([r.name for r in vol.replicas])
     assert current_replica_names == \
            {replica_1.name, replica_2.name, replica_3.name}
     data = common.write_volume_data(vol, data)
-    common.check_volume_data(vol, data)
+    check_volume_data(vol, data)
 
 
 def test_replica_failure_during_attaching(settings_reset, client, core_api, volume_name):  # NOQA
@@ -2577,7 +2585,7 @@ def test_replica_failure_during_attaching(settings_reset, client, core_api, volu
     volume_name_2 = volume_name + '-2'
     volume_2 = create_and_check_volume(client, volume_name_2, 3, str(1 * Gi))
     volume_2.attach(hostId=host_id)
-    volume_2 = common.wait_for_volume_healthy(client, volume_name_2)
+    volume_2 = wait_for_volume_healthy(client, volume_name_2)
     write_volume_random_data(volume_2)
     volume_2.detach()
     wait_for_volume_detached(client, volume_name_2)
@@ -2619,110 +2627,401 @@ def test_replica_failure_during_attaching(settings_reset, client, core_api, volu
     common.wait_for_disk_update(client, node.name, 1)
 
 
-@pytest.mark.skip(reason="TODO") # NOQA
-def test_engine_image_missing_on_some_nodes():
+def prepare_upgrade_image_not_fully_deployed_environment(client): # NOQA
+    # deploy upgrade image, wait until 2 running pods because 1 node tainted
+    default_img = common.get_default_engine_image(client)
+    default_img = client.by_id_engine_image(default_img.name)
+
+    cli_v = default_img.cliAPIVersion
+    cli_minv = default_img.cliAPIMinVersion
+    ctl_v = default_img.controllerAPIVersion
+    ctl_minv = default_img.controllerAPIMinVersion
+    data_v = default_img.dataFormatVersion
+    data_minv = default_img.dataFormatMinVersion
+
+    engine_upgrade_image = common.get_upgrade_test_image(cli_v, cli_minv,
+                                                         ctl_v, ctl_minv,
+                                                         data_v, data_minv)
+
+    new_img = client.create_engine_image(image=engine_upgrade_image)
+    wait_for_deployed_engine_image_count(client, new_img.name, 2)
+    new_img = client.by_id_engine_image(new_img.name)
+
+    return engine_upgrade_image, new_img
+
+
+def prepare_engine_not_fully_deployed_environment(client, core_api): # NOQA
     """
-    This e2e test follows the manual test steps at:
-    https://github.com/longhorn/longhorn/issues/2081#issuecomment-783747541
-
-    Steps:
-
-    Preparation:
-    1. Set up a backup store
-    2. Let's name the 3 nodes: node-1, node-2, node-3
-
-    Case 1: Test volume operations when engine image DaemonSet is miss
-    scheduled
-    1. Create a volume, vol-1, of 3 replicas
-    2. Create another volume, vol-2, of 3 replicas
-    3. Taint node-1 with the taint: key=value:NoSchedule
-    4. Verify that we can attach, take snapshot, take a backup,
-       expand, then detach vol-1
-
-    Case 2: Test volume operations when engine image DaemonSet is not fully
-    deployed
-    1. Continue from case #1
-    2. Attach vol-1 to node-1. Change the number of replicas of vol-1
-       to 2. Delete the replica on node-1
-    3. Delete the pod on node-1 of the engine image DaemonSet.
+    1. Taint node-1 with the taint: key=value:NoSchedule
+    2. Delete the pod on node-1 of the engine image DaemonSet.
        Or delete the engine image DaemonSet and wait for Longhorn
        to automatically recreates it.
-    4. Wait for the engine image CR state become deploying
-    5. Verify that functions (snapshot, backup, detach) are working ok
+    3. Wait for the engine image CR state become deploying
+    """
+
+    taint_node_id = taint_non_current_node(client, core_api)
+
+    restart_and_wait_ready_engine_count(client, 2)
+
+    return taint_node_id
+
+
+def prepare_engine_not_fully_deployed_environment_with_volumes(client, core_api): # NOQA
+    """
+    1. Create 2 volumes, vol-1 and vol-2 with 3 replicas
+    2. Taint node-1 with the taint: key=value:NoSchedule
+    3. Attach vol-1 to node-1. Change the number of replicas of vol-1
+       to 2. Delete the replica on node-1
+    4. Delete the pod on node-1 of the engine image DaemonSet.
+       Or delete the engine image DaemonSet and wait for Longhorn
+       to automatically recreates it.
+    5. Wait for the engine image CR state become deploying
+    """
+
+    volume1 = create_and_check_volume(client, "vol-1", size=str(3 * Gi))
+    volume2 = create_and_check_volume(client, "vol-2", size=str(3 * Gi))
+
+    taint_node_id = taint_non_current_node(client, core_api)
+
+    volume1.attach(hostId=taint_node_id)
+    volume1 = wait_for_volume_healthy(client, volume1.name)
+    volume1.updateReplicaCount(replicaCount=2)
+
+    for r in volume1.replicas:
+        if r.hostId == taint_node_id:
+            volume1.replicaRemove(name=r.name)
+            break
+
+    restart_and_wait_ready_engine_count(client, 2)
+
+    volume1 = client.by_id_volume(volume1.name)
+    volume2 = client.by_id_volume(volume2.name)
+
+    return volume1, volume2, taint_node_id
+
+
+def test_engine_image_miss_scheduled_perform_volume_operations(core_api, client, set_random_backupstore, volume_name): # NOQA
+    """
+    Test volume operations when engine image DaemonSet is miss
+    scheduled
+    1. Create a volume, vol-1, of 3 replicas
+    2. Taint node-1 with the taint: key=value:NoSchedule
+    3. Verify that we can attach, take snapshot, take a backup,
+       expand, then detach vol-1
+    """
+    volume = create_and_check_volume(client, volume_name, size=str(3 * Gi))
+
+    nodes = client.list_node()
+    core_api.patch_node(nodes[0].id, {
+        "spec": {
+            "taints":
+                [{"effect": "NoSchedule",
+                  "key": "key",
+                  "value": "value"}]
+        }
+    })
+
+    host_id = get_self_host_id()
+    volume = volume.attach(hostId=host_id)
+    volume = wait_for_volume_healthy(client, volume_name)
+
+    snap1_data = write_volume_random_data(volume)
+    snap1 = create_snapshot(client, volume_name)
+
+    snapshots = volume.snapshotList()
+    snapMap = {}
+    for snap in snapshots:
+        snapMap[snap.name] = snap
+
+    assert snapMap[snap1.name].name == snap1.name
+    assert snapMap[snap1.name].removed is False
+
+    backupstore_test(client, host_id, volume_name, size=str(3 * Gi))
+
+    volume = client.by_id_volume(volume_name)
+    volume.attach(hostId=host_id, disableFrontend=False)
+    wait_for_volume_healthy(client, volume_name)
+
+    expand_size = str(4 * Gi)
+    volume.expand(size=expand_size)
+    wait_for_volume_expansion(client, volume_name)
+    volume = client.by_id_volume(volume_name)
+    assert volume.size == expand_size
+    check_block_device_size(volume, int(expand_size))
+    check_volume_data(volume, snap1_data, False)
+
+
+def test_engine_image_not_fully_deployed_perform_volume_operations(client, core_api, set_random_backupstore): # NOQA
+    """
+    Test volume operations when engine image DaemonSet is not fully
+    deployed
+    Prerequisite:
+    Prepare system for the test by calling the method
+    prepare_engine_not_fully_deployed_evnironment_with_volumes to have
+    2 volumes, tainted node and not fully deployed engine.
+    1. Verify that functions (snapshot, backup, detach) are working ok
        for vol-1
-    6. Detach vol-1
-    7. Attach vol-1 to node-1. Verify that Longhorn cannot attach vol-1 to
+    2. Detach vol-1
+    3. Attach vol-1 to node-1. Verify that Longhorn cannot attach vol-1 to
        node-1 since there is no engine image on node-1. The attach API call
        returns error
-    8. Verify that we can attach to another node, take snapshot, take a backup,
+    4. Verify that we can attach to another node, take snapshot, take a backup,
        expand, then detach vol-1
-    9. Verify that vol-2 cannot be attached to any nodes because one of
-       its replicas is sitting on the node-1 which doesn't have the
-       engine image. The attach API call returns error
+    5. Verify that vol-2 cannot be attached to tainted nodes. The attach API
+       call returns error
+    6. Verify that vol-2 can attach to non-tainted node with degrade status
+    """
+    volume1, volume2, tainted_node_id = \
+        prepare_engine_not_fully_deployed_environment_with_volumes(client,
+                                                                   core_api)
 
-    Case 3: Test engine upgrade when engine image DaemonSet is not fully
+    volume1 = client.by_id_volume(volume1.name)
+    volume1 = wait_for_volume_healthy(client, volume1.name)
+
+    # TODO: write data into volume1.
+    # Did not do data write because volume is not attached to self host node
+
+    # High chance get error "cannot get engine client" first time take snapshot
+    for i in range(RETRY_COUNTS_SHORT):
+        try:
+            snap1 = create_snapshot(client, volume1.name)
+            break
+        except Exception:
+            time.sleep(RETRY_INTERVAL_LONG)
+            continue
+
+    snapshots = volume1.snapshotList()
+    snapMap = {}
+    for snap in snapshots:
+        snapMap[snap.name] = snap
+
+    assert snapMap[snap1.name].name == snap1.name
+
+    volume1.detach(hostId="")
+    volume1 = wait_for_volume_detached(client, volume1.name)
+
+    can_not_attach = False
+    try:
+        volume1.attach(hostId=tainted_node_id)
+    except Exception as e:
+        print(e)
+        can_not_attach = True
+
+    assert can_not_attach
+
+    volume1.attach(hostId=get_self_host_id())
+    volume1 = wait_for_volume_healthy(client, volume1.name)
+    snap2_data = write_volume_random_data(volume1)
+    snap2 = create_snapshot(client, volume1.name)
+    snapshots = volume1.snapshotList()
+    snapMap = {}
+    for snap in snapshots:
+        snapMap[snap.name] = snap
+
+    assert snapMap[snap2.name].name == snap2.name
+    check_volume_data(volume1, snap2_data)
+
+    backupstore_test(client, get_self_host_id(), volume1.name,
+                     size=str(3 * Gi))
+
+    expand_size = str(4 * Gi)
+    volume1.expand(size=expand_size)
+    wait_for_volume_expansion(client, volume1.name)
+    volume1 = client.by_id_volume(volume1.name)
+    assert volume1.size == expand_size
+    check_block_device_size(volume1, int(expand_size))
+    check_volume_data(volume1, snap2_data, False)
+
+    can_not_attach = False
+    try:
+        volume2 = client.by_id_volume(volume2.name)
+        volume2.attach(hostId=tainted_node_id)
+    except Exception as e:
+        print(e)
+        can_not_attach = True
+
+    assert can_not_attach
+
+    volume2.attach(hostId=get_self_host_id())
+    volume2 = wait_for_volume_degraded(client, volume2.name)
+
+
+def test_engine_image_not_fully_deployed_perform_engine_upgrade(client, core_api): # NOQA
+    """
+    Test engine upgrade when engine image DaemonSet is not fully
     deployed
-    1. Continue from case #2
-    2. Deploy a new engine image, new-ei
-    3. Detach vol-1
-    4. Verify that you can upgrade vol-1 to new-ei
-    5. Attach vol-1 to node-2
-    6. Verify that you can live upgrade vol-1 to back to default engine image
-    7. Try to upgrade vol-2 to new-ei
-    8. Verify that the engineUpgrade API call returns error
 
-    Case 4: Test replicas scheduling when engine image DaemonSet is not fully
+    Prerequisite:
+    Prepare system for the test by calling the method
+    prepare_engine_not_fully_deployed_evnironment_with_volumes to have
+    2 volumes, tainted node and not fully deployed engine.
+
+    1. Deploy a new engine image, new-ei
+    2. Detach vol-1, verify that you can upgrade vol-1 to new-ei
+    3. Detach then attach vol-1 to node-2
+    4. Verify that you can live upgrade vol-1 to back to default engine image
+    5. Try to upgrade vol-2 to new-ei
+    6. Verify that the engineUpgrade API call returns error
+    """
+    volume1, volume2, tainted_node_id = \
+        prepare_engine_not_fully_deployed_environment_with_volumes(client,
+                                                                   core_api)
+
+    volume1.detach(hostId="")
+    volume1 = wait_for_volume_detached(client, volume1.name)
+
+    engine_upgrade_image, new_img = \
+        prepare_upgrade_image_not_fully_deployed_environment(client)
+
+    # expected refCount: 1 for volume + 1 for engine and number of replicas(2)
+    expect_ref_count = 4
+    new_img_name = new_img.name
+    original_engine_image = volume1.engineImage
+    volume1.engineUpgrade(image=engine_upgrade_image)
+    volume1 = wait_for_volume_current_image(client, volume1.name,
+                                            engine_upgrade_image)
+    new_img = wait_for_engine_image_ref_count(client,
+                                              new_img_name,
+                                              expect_ref_count)
+
+    host_id = get_self_host_id()
+    volume1.attach(hostId=host_id)
+    volume1 = wait_for_volume_healthy(client, volume1.name)
+
+    volume1.engineUpgrade(image=original_engine_image)
+    volume1 = wait_for_volume_current_image(client, volume1.name,
+                                            original_engine_image)
+
+    new_img = wait_for_engine_image_ref_count(client,
+                                              new_img_name,
+                                              0)
+
+    can_not_upgrade = False
+    volume2 = client.by_id_volume(volume2.name)
+    try:
+        volume2.engineUpgrade(image=engine_upgrade_image)
+    except Exception as e:
+        can_not_upgrade = True
+        print(e)
+    assert can_not_upgrade
+
+
+def test_engine_image_not_fully_deployed_perform_replica_scheduling(client, core_api): # NOQA
+    """
+    Test replicas scheduling when engine image DaemonSet is not fully
     deployed
-    1. Continue from case #3
-    2. Create a new volume, vol-3, with 2 replicas
-    3. disable the scheduling for node-2
-    4. Verify that there is one replica fail to be scheduled
-    5. enable the scheduling for node-2
-    6. Verify that replicas are scheduled onto node-2 and node-3
 
-    Case 5: Test auto upgrade engine feature when engine image DaemonSet is
+    Prerequisite:
+    Prepare system for the test by calling the method
+    prepare_engine_not_fully_deployed_evnironment to have
+    tainted node and not fully deployed engine.
+
+    1. Disable the scheduling for node-2
+    2. Create a volume, vol-1, with 2 replicas, attach to node-3
+    3. Verify that there is one replica fail to be scheduled
+    4. enable the scheduling for node-2
+    5. Verify that replicas are scheduled onto node-2 and node-3
+    """
+    tainted_node_id = \
+        prepare_engine_not_fully_deployed_environment(client, core_api)
+
+    # node1: tainted node, node2: self host node, node3: the last one
+    nodes = client.list_node()
+    for node in nodes:
+        if node.id == get_self_host_id():
+            node2 = node
+        elif node.id != tainted_node_id and node.id != get_self_host_id:
+            node3 = node
+
+    node2 = set_node_scheduling(client, node2, allowScheduling=False)
+    node2 = common.wait_for_node_update(client, node2.id, "allowScheduling",
+                                        False)
+
+    volume1 = create_and_check_volume(client, "vol-1", num_of_replicas=2,
+                                      size=str(3 * Gi))
+
+    volume1.attach(hostId=node3.id)
+    volume1 = wait_for_volume_degraded(client, volume1.name)
+
+    node2 = set_node_scheduling(client, node2, allowScheduling=True)
+    node2 = common.wait_for_node_update(client, node2.id,
+                                        "allowScheduling", True)
+
+    volume1 = wait_for_volume_healthy(client, volume1.name)
+    on_node2 = False
+    on_node3 = False
+    on_taint_node = False
+    for replica in volume1.replicas:
+        if replica.hostId == node2.id:
+            on_node2 = True
+        elif replica.hostId == node3.id:
+            on_node3 = True
+        elif replica.hostId == tainted_node_id:
+            on_taint_node = True
+
+    assert on_node2
+    assert on_node3
+    assert not on_taint_node
+
+
+def test_engine_image_not_fully_deployed_perform_auto_upgrade_engine(client, core_api): # NOQA
+    """
+    Test auto upgrade engine feature when engine image DaemonSet is
     not fully deployed
-    1. Continue from case #4
-    2. Detach vol-1 and vol-3
-    3. Upgrade vol-1 and vol-3 to the new-ei
-    4. Attach vol-3 to node node-2
+
+    Prerequisite:
+    Prepare system for the test by calling the method
+    prepare_engine_not_fully_deployed_evnironment to have
+    tainted node and not fully deployed engine.
+
+    1. Create 2 volumes vol-1 and vol-2 with 2 replicas
+    2. Deploy a new engine image, new-ei
+    3. Upgrade vol-1 and vol-2 to the new-ei
+    4. Attach vol-2 to current-node
     5. Set `Concurrent Automatic Engine Upgrade Per Node Limit` setting to 3
     6. In a 2-min retry, verify that Longhorn upgrades the engine image of
-       vol-1 and vol-3 back to the default version and Longhorn doesn't
-       automatically upgrade vol-2's engine image since it has 1 replica
-       sitting on node-1 which doesn't have the engine image deployed
-
-    Case 6: Test DR, restoring, expanding volumes when engine image DaemonSet
-    is not fully deployed
-    1. Continue from case #5
-    2. Create a DR volume (vol-dr) of 2 replicas.
-    3. Verify that 2 replicas are on node-2 and node-3 and the DR volume
-       is attached to either node-2 or node-3.
-       Let's say it is attached to node-x
-    4. Taint node-x with the taint `key=value:NoSchedule`
-    5. Delete the pod of engine image DeamonSet on node-x. Now, the engine
-       image is missing on node-1 and node-x
-    6. Verify that vol-dr is auto-attached node-y.
-    7. Restore a volume from backupstore with name vol-rs and replica count
-       is 1
-    8. Verify that replica is on node-y and the volume successfully restored.
-    9. Wait for vol-rs to finish restoring
-    10. Expand vol-rs.
-    11. Verify that the expansion is ok
-
-    Case 7: Test replicas scheduling when engine image DaemonSet is not fully
-    deployed
-    1. Continue from case #6
-    2. Set `Replica Replenishment Wait Interval` setting to 600
-    3. Crash the replica of vol-3 on node-x. Wait for the replica to fail
-    4. In a 2-min retry verify that Longhorn doesn't create new replica
-       for vol-3 and doesn't reuse the failed replica on node-x
-
-    Cleaning up:
-    1. Remove the taint from node-1 and node-x
-    2. Delete the new-ei
+       vol-1 and vol-2.
     """
-    pass
+    prepare_engine_not_fully_deployed_environment(client, core_api)
+
+    volume1 = create_and_check_volume(client, "vol-1", num_of_replicas=2,
+                                      size=str(3 * Gi))
+
+    volume2 = create_and_check_volume(client, "vol-2", num_of_replicas=2,
+                                      size=str(3 * Gi))
+
+    default_img = common.get_default_engine_image(client)
+    # engine reference =
+    # (1 volume + 1 engine + number of replicas) * volume count
+    wait_for_engine_image_ref_count(client, default_img.name, 8)
+
+    engine_upgrade_image, new_img = \
+        prepare_upgrade_image_not_fully_deployed_environment(client)
+
+    volume1.engineUpgrade(image=engine_upgrade_image)
+    volume2.engineUpgrade(image=engine_upgrade_image)
+    volume1 = wait_for_volume_current_image(client, volume1.name,
+                                            engine_upgrade_image)
+    volume2 = wait_for_volume_current_image(client, volume2.name,
+                                            engine_upgrade_image)
+
+    default_img = common.get_default_engine_image(client)
+    wait_for_engine_image_ref_count(client, default_img.name, 0)
+
+    volume2.attach(hostId=get_self_host_id())
+    volume2 = wait_for_volume_healthy(client, volume2.name)
+
+    update_setting(client,
+                   SETTING_CONCURRENT_AUTO_ENGINE_UPGRADE_NODE_LIMIT,
+                   "3")
+
+    wait_for_engine_image_ref_count(client, new_img.name, 0)
+    wait_for_volume_healthy(client, volume2.name)
+
+    volume1 = client.by_id_volume(volume1.name)
+    volume2 = client.by_id_volume(volume2.name)
+    assert volume1.engineImage == default_img.image
+    assert volume2.engineImage == default_img.image
 
 
 def test_autosalvage_with_data_locality_enabled(client, core_api, make_deployment_with_pvc, volume_name, pvc): # NOQA
