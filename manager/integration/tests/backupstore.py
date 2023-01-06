@@ -22,6 +22,7 @@ from common import delete_backup_volume
 from common import get_backupstore_url
 from common import get_backupstore_poll_interval
 from common import get_backupstores
+from common import system_backups_cleanup
 
 BACKUPSTORE_BV_PREFIX = "/backupstore/volumes/"
 BACKUPSTORE_LOCK_DURATION = 150
@@ -56,6 +57,7 @@ def set_random_backupstore(request, client):
     yield
     cleanup_all_volumes(client)
     backupstore_cleanup(client)
+    system_backups_cleanup(client)
     reset_backupstore_setting(client)
 
     if request.param == "nfs":
