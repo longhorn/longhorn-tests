@@ -4565,11 +4565,12 @@ def backup_failed_cleanup(client, core_api, volume_name, volume_size,  # NOQA
     vol.snapshotBackup(name=snap.name)
 
     # write some data to the volume
-    data = {
-        'pos': 0,
-        'content': common.generate_random_data(volume_size),
-    }
-    write_volume_data(vol, data)
+    volume_endpoint = get_volume_endpoint(vol)
+
+    # Take snapshots4 without overlapping
+    data_size = volume_size/Mi
+    write_volume_dev_random_mb_data(
+        volume_endpoint, 0, data_size)
 
     # create a snapshot and a backup
     snap = create_snapshot(client, volume_name)
@@ -4617,7 +4618,7 @@ def test_backup_failed_enable_auto_cleanup(set_random_backupstore,  # NOQA
     9.   Wait and check if the backup was deleted automatically
     10.  Cleanup
     """
-    backup_name = backup_failed_cleanup(client, core_api, volume_name, 256*Mi)
+    backup_name = backup_failed_cleanup(client, core_api, volume_name, 1024*Mi)
 
     # wait in 5 minutes for automatic failed backup cleanup
     wait_for_backup_delete(client, volume_name, backup_name)
