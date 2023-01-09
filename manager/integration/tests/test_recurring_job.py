@@ -843,7 +843,7 @@ def test_recurring_jobs_when_volume_detached_unexpectedly(set_random_backupstore
     common.update_setting(client,
                           SETTING_RECURRING_JOB_WHILE_VOLUME_DETACHED, "true")
 
-    volume = create_and_check_volume(client, volume_name, size=str(1 * Gi))
+    volume = create_and_check_volume(client, volume_name, size=str(2 * Gi))
     volume = wait_for_volume_detached(client, volume.name)
 
     pv_name = volume_name + "-pv"
@@ -856,7 +856,7 @@ def test_recurring_jobs_when_volume_detached_unexpectedly(set_random_backupstore
     deployment = make_deployment_with_pvc(deployment_name, pvc_name)
     create_and_wait_deployment(apps_api, deployment)
 
-    size_mb = 500
+    size_mb = 1000
     pod_names = common.get_deployment_pod_names(core_api, deployment)
     write_pod_volume_random_data(core_api, pod_names[0], "/data/test",
                                  size_mb)
