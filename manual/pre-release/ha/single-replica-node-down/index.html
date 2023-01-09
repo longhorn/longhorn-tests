@@ -634,23 +634,36 @@
     <article id="content">
        <h2 id="related-issues">Related Issues</h2>
 <p><a href="https://github.com/longhorn/longhorn/issues/2329">https://github.com/longhorn/longhorn/issues/2329</a>
-<a href="https://github.com/longhorn/longhorn/issues/2309">https://github.com/longhorn/longhorn/issues/2309</a></p>
+<a href="https://github.com/longhorn/longhorn/issues/2309">https://github.com/longhorn/longhorn/issues/2309</a>
+<a href="https://github.com/longhorn/longhorn/issues/3957">https://github.com/longhorn/longhorn/issues/3957</a></p>
 <h2 id="default-setting">Default Setting</h2>
 <p><code>Automatic salvage</code> is enabled.</p>
 <h2 id="node-restartdown-scenario-with-pod-deletion-policy-when-node-is-down-set-to-default-value-do-nothing">Node restart/down scenario with <code>Pod Deletion Policy When Node is Down</code> set to default value <code>do-nothing</code>.</h2>
 <ol>
-<li>Create RWO|RWX volume with replica count = 1 &amp; data locality = enabled|disabled.</li>
+<li>Create RWO|RWX volume with replica count = 1 &amp; data locality = enabled|disabled|strict-local.
+<ul>
+<li>For data locality = strict-local, use RWO volume to do test.</li>
+</ul>
+</li>
 <li>Create deployment|statefulset for volume.</li>
 <li>Power down node of volume/replica.</li>
 <li>The workload pod will get stuck in the <code>terminating</code> state.</li>
 <li>Volume will fail to attach since volume is not ready (i.e remains faulted, since single replica is on downed node).</li>
 <li>Power up node or delete the workload pod so that kubernetes will recreate pod on another node.</li>
 <li>Verify auto salvage finishes (i.e pod completes start).</li>
-<li>Verify volume attached &amp; accessible by pod (i.e test data is available).</li>
+<li>Verify volume attached &amp; accessible by pod (i.e test data is available).
+<ul>
+<li>For data locality = strict-local volume, volume wiil keep in detaching, attaching status for about 10 minutes, after volume attached to node which replica located, check volume healthy and pod status.</li>
+</ul>
+</li>
 </ol>
 <h2 id="node-restartdown-scenario-with-pod-deletion-policy-when-node-is-down-set-to-delete-both-statefulset-and-deployment-pod">Node restart/down scenario with <code>Pod Deletion Policy When Node is Down</code> set to <code>delete-both-statefulset-and-deployment-pod</code></h2>
 <ol>
-<li>Create RWO|RWX volume with replica count = 1 &amp; data locality = enabled|disabled.</li>
+<li>Create RWO|RWX volume with replica count = 1 &amp; data locality = enabled|disabled|strict-local.
+<ul>
+<li>For data locality = strict-local, use RWO volume to do test.</li>
+</ul>
+</li>
 <li>Create deployment|statefulset for volume.</li>
 <li>Power down node of volume/replica.</li>
 <li>Volume will become faulted.</li>
