@@ -5599,7 +5599,25 @@ def system_restore_wait_for_state(state, name, client):  # NOQA
         except Exception:
             time.sleep(RETRY_INTERVAL_LONG)
 
-    assert ok</code></pre>
+    assert ok
+
+
+def create_volume_and_write_data(client, volume_name, volume_size=SIZE):
+    &#34;&#34;&#34;
+    1. Create and attach a volume
+    2. Write the data to volume
+    &#34;&#34;&#34;
+    # Step 1
+    volume = create_and_check_volume(client,
+                                     volume_name,
+                                     size=volume_size)
+    volume = volume.attach(hostId=get_self_host_id())
+    volume = wait_for_volume_healthy(client, volume_name)
+
+    # Step 2
+    volume_data = write_volume_random_data(volume)
+
+    return volume, volume_data</code></pre>
 </details>
 </section>
 <section>
@@ -7477,6 +7495,36 @@ created using a storage class).</p></div>
     _, backup, _, _ = create_backup(client, vol_name, data)
 
     return backup_volume, backup</code></pre>
+</details>
+</dd>
+<dt id="tests.common.create_volume_and_write_data"><code class="name flex">
+<span>def <span class="ident">create_volume_and_write_data</span></span>(<span>client, volume_name, volume_size='16777216')</span>
+</code></dt>
+<dd>
+<div class="desc"><ol>
+<li>Create and attach a volume</li>
+<li>Write the data to volume</li>
+</ol></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def create_volume_and_write_data(client, volume_name, volume_size=SIZE):
+    &#34;&#34;&#34;
+    1. Create and attach a volume
+    2. Write the data to volume
+    &#34;&#34;&#34;
+    # Step 1
+    volume = create_and_check_volume(client,
+                                     volume_name,
+                                     size=volume_size)
+    volume = volume.attach(hostId=get_self_host_id())
+    volume = wait_for_volume_healthy(client, volume_name)
+
+    # Step 2
+    volume_data = write_volume_random_data(volume)
+
+    return volume, volume_data</code></pre>
 </details>
 </dd>
 <dt id="tests.common.csi_pv"><code class="name flex">
@@ -14077,6 +14125,7 @@ from the args and kwargs arguments, respectively.</p></div>
 <li><code><a title="tests.common.create_support_bundle" href="#tests.common.create_support_bundle">create_support_bundle</a></code></li>
 <li><code><a title="tests.common.create_volume" href="#tests.common.create_volume">create_volume</a></code></li>
 <li><code><a title="tests.common.create_volume_and_backup" href="#tests.common.create_volume_and_backup">create_volume_and_backup</a></code></li>
+<li><code><a title="tests.common.create_volume_and_write_data" href="#tests.common.create_volume_and_write_data">create_volume_and_write_data</a></code></li>
 <li><code><a title="tests.common.csi_pv" href="#tests.common.csi_pv">csi_pv</a></code></li>
 <li><code><a title="tests.common.csi_pv_backingimage" href="#tests.common.csi_pv_backingimage">csi_pv_backingimage</a></code></li>
 <li><code><a title="tests.common.csi_pvc_name" href="#tests.common.csi_pvc_name">csi_pvc_name</a></code></li>
