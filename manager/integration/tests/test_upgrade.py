@@ -3,9 +3,8 @@ import pytest
 import subprocess
 import time
 
-from common import SIZE
+from common import create_volume_and_write_data
 from common import volume_name  # NOQA
-from common import create_and_check_volume
 from common import get_self_host_id
 from common import wait_for_volume_detached
 from common import wait_for_volume_healthy
@@ -38,6 +37,7 @@ from common import client, core_api # NOQA
 from common import SETTING_DISABLE_REVISION_COUNTER
 from common import update_setting
 from common import delete_replica_on_test_node
+from common import get_volume_engine
 
 
 @pytest.fixture
@@ -77,24 +77,6 @@ def upgrade_longhorn_backing_image_manager_image(request):
 
 def get_longhorn_upgrade_type():
     return [os.environ.get('LONGHORN_UPGRADE_TYPE', '')]
-
-
-def create_volume_and_wrte_date(client, volume_name):  # NOQA
-    """
-    1. Create and attach a volume
-    2. Write the data to volume
-    """
-    # Step 1
-    volume = create_and_check_volume(client,
-                                     volume_name,
-                                     size=SIZE)
-    volume = volume.attach(hostId=get_self_host_id())
-    volume = wait_for_volume_healthy(client, volume_name)
-
-    # Step 2
-    volume_data = write_volume_random_data(volume)
-
-    return volume, volume_data
 
 
 @pytest.fixture(params=get_longhorn_upgrade_type())
@@ -172,9 +154,10 @@ def test_upgrade(longhorn_upgrade_type,
         and Delete Pod, and StatefulSet to detach theirvolumes
     12. Upgrade all volumes engine images
     13. Attach the volume, and recreate Pod, and StatefulSet
-    14. Check All volumes data
-    15. Delete one replica for vol_rebuild to trigger the rebuilding
-    16. Verify the vol_rebuild is still healthy
+    14. Verify the volume's engine image has been upgraded
+    15. Check All volumes data
+    16. Delete one replica for vol_rebuild to trigger the rebuilding
+    17. Verify the vol_rebuild is still healthy
     """
     longhorn_repo_url = upgrade_longhorn_repo_url
     longhorn_repo_branch = upgrade_longhorn_repo_branch
@@ -193,23 +176,23 @@ def test_upgrade(longhorn_upgrade_type,
 
     # 2-1 Create vol_revision_enabled with revision counter enabled
     # attached to a node
-    update_setting(client, SETTING_DISABLE_REVISION_COUNTER, "true")
+    update_setting(client, SETTING_DISABLE_REVISION_COUNTER, "false")
     vol_revision_enabled_name = 'vol-revision-enabled'
     vol_revision_enabled, vol_revision_enabled_data_before_sys_upgrade = \
-        create_volume_and_wrte_date(client, vol_revision_enabled_name)
+        create_volume_and_write_data(client, vol_revision_enabled_name)
 
     # 2-2 Create vol_revision_disabled with revision counter disable
     # attached to a node
-    update_setting(client, SETTING_DISABLE_REVISION_COUNTER, "false")
+    update_setting(client, SETTING_DISABLE_REVISION_COUNTER, "true")
     vol_revision_disabled_name = 'vol-revision-disabled'
     vol_revision_disabled, vol_revision_disabled_data_before_sys_upgrade = \
-        create_volume_and_wrte_date(client, vol_revision_disabled_name)
+        create_volume_and_write_data(client, vol_revision_disabled_name)
 
     # 2-3 Create vol_rebuild for replica rebuilding after system upgrade
     # & engine live upgrade
     vol_rebuild_name = 'vol-rebuild'
     vol_rebuild, vol_rebuild_data_before_sys_upgrade = \
-        create_volume_and_wrte_date(client, vol_rebuild_name)
+        create_volume_and_write_data(client, vol_rebuild_name)
 
     # Create Volume used by Pod
     pod_volume_name = 'lh-vol-pod-test'
@@ -316,6 +299,7 @@ def test_upgrade(longhorn_upgrade_type,
 
     delete_and_wait_pod(core_api, pod_name)
 
+    # Upgrade all volumes engine images
     volumes = client.list_volume()
     for v in volumes:
         if v.name != vol_rebuild_name:
@@ -332,6 +316,7 @@ def test_upgrade(longhorn_upgrade_type,
         volume = client.by_id_volume(v.name)
         volume.engineUpgrade(image=new_ei.image)
 
+    # Recreate Pod, and StatefulSet
     statefulset['spec']['replicas'] = replicas = 2
     apps_api = get_apps_api_client()
 
@@ -350,6 +335,7 @@ def test_upgrade(longhorn_upgrade_type,
     pod['spec']['volumes'] = [create_pvc_spec(pvc_name)]
     create_and_wait_pod(core_api, pod)
 
+    # Attach the volume
     for v in volumes:
         if v.name == vol_revision_enabled_name or \
                 v.name == vol_revision_disabled_name:
@@ -357,6 +343,14 @@ def test_upgrade(longhorn_upgrade_type,
             volume.attach(hostId=host_id)
             wait_for_volume_healthy(client, v.name)
 
+    # Verify volume's engine image has been upgraded
+    for v in volumes:
+        volume = client.by_id_volume(v.name)
+        engine = get_volume_engine(volume)
+        assert engine.engineImage == new_ei.image
+        assert engine.currentImage == new_ei.image
+
+    # Check All volumes data
     for sspod_info in statefulset_pod_info:
         resp = read_volume_data(core_api, sspod_info['pod_name'])
         assert resp == sspod_info['data']
