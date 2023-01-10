@@ -5346,3 +5346,21 @@ def get_disk_uuid():
     data = json.load(f)
 
     return data["diskUUID"]
+
+
+def create_volume_and_write_data(client, volume_name, volume_size=SIZE):
+    """
+    1. Create and attach a volume
+    2. Write the data to volume
+    """
+    # Step 1
+    volume = create_and_check_volume(client,
+                                     volume_name,
+                                     size=volume_size)
+    volume = volume.attach(hostId=get_self_host_id())
+    volume = wait_for_volume_healthy(client, volume_name)
+
+    # Step 2
+    volume_data = write_volume_random_data(volume)
+
+    return volume, volume_data
