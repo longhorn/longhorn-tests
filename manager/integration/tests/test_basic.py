@@ -538,12 +538,12 @@ def test_backup_status_for_unavailable_replicas(set_random_backupstore, client, 
     8. Cleanup (delete backups, delete volume)
     """
     backup_status_for_unavailable_replicas_test(
-        client, volume_name, size=str(512 * Mi))
+        client, volume_name, size=3 * Gi)
 
 
 def backup_status_for_unavailable_replicas_test(client, volume_name,  # NOQA
                                                 size, backing_image=""):  # NOQA
-    volume = create_and_check_volume(client, volume_name, 2, size,
+    volume = create_and_check_volume(client, volume_name, 2, str(size),
                                      backing_image)
 
     lht_hostId = get_self_host_id()
@@ -551,11 +551,12 @@ def backup_status_for_unavailable_replicas_test(client, volume_name,  # NOQA
     volume = common.wait_for_volume_healthy(client, volume_name)
 
     # write data to the volume
-    data = {
-        'pos': 0,
-        'content': common.generate_random_data(int(size)),
-    }
-    write_volume_data(volume, data)
+    volume_endpoint = get_volume_endpoint(volume)
+
+    # Take snapshots without overlapping
+    data_size = size/Mi
+    write_volume_dev_random_mb_data(
+        volume_endpoint, 0, data_size)
 
     # create a snapshot and backup
     snap = create_snapshot(client, volume_name)
