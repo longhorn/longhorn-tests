@@ -56,8 +56,10 @@ from common import write_pod_volume_random_data, get_pod_data_md5sum
 from common import prepare_pod_with_data_in_mb, exec_command_in_pod
 from common import crash_replica_processes
 from common import wait_for_volume_condition_scheduled
+from common import wait_for_volume_condition_restore
 from common import wait_for_volume_condition_toomanysnapshots
 from common import wait_for_volume_degraded, wait_for_volume_healthy
+from common import wait_for_volume_faulted
 from common import VOLUME_FRONTEND_BLOCKDEV, VOLUME_FRONTEND_ISCSI
 from common import VOLUME_CONDITION_SCHEDULED
 from common import DATA_SIZE_IN_MB_1
@@ -5022,8 +5024,7 @@ def test_backup_volume_restore_with_access_mode(core_api, # NOQA
     assert volume_sp_access_mode.accessMode == overridden_restored_access_mode
 
 
-@pytest.mark.skip(reason="TODO")  # NOQA
-def test_delete_backup_during_restoring_volume():  # NOQA
+def test_delete_backup_during_restoring_volume(set_random_backupstore, client):  # NOQA
     """
     Test delete backup during restoring volume
 
@@ -5032,23 +5033,45 @@ def test_delete_backup_during_restoring_volume():  # NOQA
     The volume robustness should be faulted if the backup was deleted during
     restoring the volume.
 
-    Setup:
-
-    1. Create a volume v1 and attach to a node
-    2. Write some data (>100M) to volume v1
-
-    Steps:
-
-    1. Create a backup of volume v1
-    2. Wait for that backup is completed
-    3. Start to restore a volume v2 from this backup
-       (Not wait for restoration completed)
-    4. Delete the backup immediately
-    5. Check that volume v2 "robustness" is "faulted" and
-       the status of volume restore condition is "False",
-       the reason of volume restore condition is "RestoreFailure"
+    1. Given create volume v1 and attach to a node
+       And write data 150M to volume v1
+    2. When create a backup of volume v1
+       And wait for that backup is completed
+       And restore a volume v2 from volume v1 backup
+       And delete the backup immediately
+    3. Then volume v2 "robustness" should be "faulted"
+       And "status" of volume restore condition should be "False",
+       And "reason" of volume restore condition should be "RestoreFailure"
     """
-    pass
+    # Step 1
+    vol_v1_name = "vol-v1"
+    vol_v1 = create_and_check_volume(client, vol_v1_name, size=str(512 * Mi))
+    vol_v1.attach(hostId=get_self_host_id())
+    vol_v1 = wait_for_volume_healthy(client, vol_v1_name)
+
+    vol_v1_endpoint = get_volume_endpoint(vol_v1)
+    write_volume_dev_random_mb_data(vol_v1_endpoint, 1, 150)
+
+    # Step 2
+    bv, b, snap2, data = create_backup(client, vol_v1_name)
+
+    vol_v2_name = "vol-v2"
+    client.create_volume(name=vol_v2_name,
+                         size=str(512 * Mi),
+                         numberOfReplicas=3,
+                         fromBackup=b.url)
+
+    delete_backup(client, bv.name, b.name)
+    volume = wait_for_volume_status(client, vol_v1_name,
+                                    "lastBackup", "")
+    assert volume.lastBackupAt == ""
+
+    # Step 3
+    wait_for_volume_faulted(client, vol_v2_name)
+    wait_for_volume_condition_restore(client, vol_v2_name,
+                                      "status", "False")
+    wait_for_volume_condition_restore(client, vol_v2_name,
+                                      "reason", "RestoreFailure")
 
 
 @pytest.mark.parametrize("fs_type", [FS_TYPE_EXT4, FS_TYPE_XFS])  # NOQA
