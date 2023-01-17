@@ -264,6 +264,8 @@
   </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/system-upgrade-with-deprecated-cpu-setting/</loc>
   </url><url>
+    <loc>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.4.1/test-the-trim-related-option-update-for-old-volumes/</loc>
+  </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/resiliency/timeout/</loc>
   </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.3.1/test-backing-image-download-to-local/</loc>
@@ -313,6 +315,8 @@
     <loc>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.3.1/</loc>
   </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.4.0/</loc>
+  </url><url>
+    <loc>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.4.1/</loc>
   </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.1/ui-volume-deletion/</loc>
   </url>

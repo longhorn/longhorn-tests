@@ -638,64 +638,24 @@
   
 </aside>
 
-
 <main style="padding: 1%; width: 70%;">
-  <h1 id="title">Degraded availability with added nodes</h1>
-  <div>
-    <article id="content">
-       <h4 id="volume-creation-using-ui-with-degraded-availability-and-added-node">Volume creation using UI with degraded availability and added node</h4>
-<h5 id="related-issue">Related Issue:</h5>
-<ul>
-<li><a href="https://github.com/longhorn/longhorn/issues/1701">https://github.com/longhorn/longhorn/issues/1701</a></li>
-</ul>
-<h5 id="prerequisites">Prerequisites:</h5>
-<ul>
-<li>Start with 1 node cluster.</li>
-<li>Double check if &ldquo;Allow Volume Creation with Degraded Availability&rdquo; is ticked or return <strong>true</strong> with following command:
-<ul>
-<li><code>kubectl get settings.longhorn.io/allow-volume-creation-with-degraded-availability -n longhorn-system</code></li>
-</ul>
-</li>
-</ul>
-<h5 id="steps">Steps:</h5>
-<ol>
-<li>Create a Deployment Pod with a volume and three replicas.
-<ol>
-<li>After the volume is attached, on Volume page it should be displayed as <code>Degraded</code></li>
-<li>Hover the crusor to the red circle exclamation mark, the tooltip will says, &ldquo;The volume cannot be scheduled&rdquo;.</li>
-<li>Click into the volume detail page it will display <code>Scheduling Failure</code> but the volume remain fuctional as expected.</li>
-</ol>
-</li>
-<li>Write data to the Pod.</li>
-<li>Scale down the deployment to 0 to detach the volume.
-<ol>
-<li>Volume return to <code>Detached</code> state.</li>
-<li>Both <code>Degraded</code> and <code>Scheduling Failure</code> should be gone.</li>
-</ol>
-</li>
-<li>Scale up the deployment back to 1 verify the data.
-<ol>
-<li><code>Scheduling Failure</code> should be seen again from the UI.</li>
-</ol>
-</li>
-<li>Add another node to the cluster.
-<ol>
-<li>Volume should start rebuilding on the second node soon.</li>
-</ol>
-</li>
-<li>Once the rebuild completed, scale down and back up the deployment to verify the data.</li>
-<li>And the third node to the cluster.
-<ol>
-<li>Volume should start rebuilding on the third node soon.</li>
-<li>Once the rebuilding starts, the <code>Scheduling Failure</code> should be gone.</li>
-</ol>
-</li>
-<li>Scale down and back the deployment to verify the data.</li>
-</ol>
-
-    </article>
-  <a href="https://github.com/longhorn/longhorn-tests/edit/master/docs/content/manual/pre-release/node/degraded-availability.md" target="_blank" title="Edit on Github" style="font-size:smaller;float:right;padding-right:3%">[Edit]</a>
+  <header class="homepage-header">
+    <h1>v1.4.1</h1>
+    
+  </header>
+  <div class="homepage-content">
+    
   </div>
+  <div>
+    <ul>
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.4.1/test-the-trim-related-option-update-for-old-volumes/">Test the trim related option update for old volumes</a></li>
+  
+
+</ul>
+
+  </div>
+</main>
 
     
     
