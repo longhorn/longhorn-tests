@@ -1,29 +1,19 @@
 *** Settings ***
-Documentation    Negative Test Cases
+Documentation    Volume Keywords
 
-Library    ../libs/common.py
-
-*** Test Cases ***
-Replica Rebuilding With Replica Deletion
-    Create a volume 5 GB with 3 replicas
-    Write data to the volume
-    FOR    ${i}    IN RANGE    200
-        Delete replica 0 to trigger replica rebuilding
-        During replica 0 rebuilding, delete replica 1
-        Wait until replica 0 rebuilt, delete replica 2
-        Check data is intact
-    END
+Library    ../libs/keywords/volume_keywords.py
 
 *** Keywords ***
 Create a volume ${size} GB with ${replica_count} replicas
     ${volume_name} =    create_volume   ${size}    ${replica_count}
+    attach_volume    ${volume_name}
     Set Test Variable    ${volume_name}
 
 Write data to the volume
-    ${checksum} =     write_volume_random_data   ${volume_name}    2048
-    Set Test Variable    ${checksum}
+    ${volume_data_checksum} =     write_volume_random_data   ${volume_name}    1024
+    Set Test Variable    ${volume_data_checksum}
 
-Delete replica ${replica_0} to trigger replica rebuilding
+Delete replica ${replica_0} to trigger replica ${replica_0} rebuilding
     delete_replica    ${volume_name}    ${replica_0}
     wait_for_replica_rebuilding_start    ${volume_name}    ${replica_0}
 
@@ -36,4 +26,9 @@ Wait until replica ${replica_0} rebuilt, delete replica ${replica_2}
     delete_replica    ${volume_name}    ${replica_2}
 
 Check data is intact
-    check_data    ${volume_name}    ${checksum}
+    check_data    ${volume_name}    ${volume_data_checksum}
+
+Wait until all replicas rebuilt
+    wait_for_replica_rebuilding_complete    ${volume_name}    0
+    wait_for_replica_rebuilding_complete    ${volume_name}    1
+    wait_for_replica_rebuilding_complete    ${volume_name}    2
