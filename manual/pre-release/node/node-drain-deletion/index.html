@@ -643,7 +643,7 @@
   <h1 id="title">Node drain and deletion test</h1>
   <div>
     <article id="content">
-       <h1 id="drain-with-force">Drain with force</h1>
+       <h2 id="drain-with-force">Drain with force</h2>
 <p>Make sure the volumes on the drained/removed node can be detached or recovered correctly. The related issue: <a href="https://github.com/longhorn/longhorn/issues/1214">https://github.com/longhorn/longhorn/issues/1214</a></p>
 <ol>
 <li>Deploy a cluster contains 3 worker nodes N1, N2, N3.</li>
@@ -661,7 +661,7 @@
 <li>Wait for the volume detaching then being recovered. Will get attached to the workload/node.</li>
 <li>Validate the volume content. The data is intact.</li>
 </ol>
-<h1 id="drain-without-force">Drain without force</h1>
+<h2 id="drain-without-force">Drain without force</h2>
 <ol>
 <li>Cordon the node. Longhorn will automatically disable the node scheduling when a Kubernetes node is cordoned.</li>
 <li>Evict all the replicas from the node.</li>
@@ -694,7 +694,46 @@ node/&lt;node-name&gt; evicted
 <p>NOTE: We might still 1 or 2 times of the pod&rsquo;s disruption budget message, but will drain successfully in the end.</p>
 <pre tabindex="0"><code class="language-log" data-lang="log">evicting pod longhorn-system/instance-manager-r-xxxxxxxx
 error when evicting pods/&#34;instance-manager-r-xxxxxxxx&#34; -n &#34;longhorn-system&#34; (will retry after 5s): Cannot evict pod as it would violate the pod&#39;s disruption budget.
-</code></pre>
+</code></pre><h2 id="stopped-replicas-on-deleted-nodes-should-not-be-counted-as-healthy-replicas-when-draining-nodes">Stopped replicas on deleted nodes should not be counted as healthy replicas when draining nodes</h2>
+<p>When draining a node, the node will be set as unscheduled and all pods should be evicted.</p>
+<p>By Longhorn&rsquo;s default settings, the replica will only be evicted if there is another healthy replica on the running node.</p>
+<h4 id="related-issue">Related Issue:</h4>
+<ul>
+<li><a href="https://github.com/longhorn/longhorn/issues/2237">https://github.com/longhorn/longhorn/issues/2237</a></li>
+</ul>
+<p><strong>Given</strong> Longhorn with 2 nodes cluster: Node_1, Node_2</p>
+<p><em>And</em> Create a 5Gi detached volume with 2 replicas.</p>
+<p><em>And</em> Stop Node_1 that contains one of the replicas.</p>
+<p><em>And</em> Uncheck the <code>Allow Node Drain with the Last Healthy Replica</code> setting and confirm getting <strong>false</strong> with following command:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>kubectl get settings.longhorn.io/allow-node-drain-with-last-healthy-replica -n longhorn-system
+</span></span></code></pre></div><p><strong>When</strong> Attempts to drain Node_2 that contains remaining replica.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>kubectl drain &lt;Node_2 name&gt; --delete-emptydir-data<span style="color:#f92672">=</span>true --force<span style="color:#f92672">=</span>true --grace-period<span style="color:#f92672">=</span>-1 --ignore-daemonsets<span style="color:#f92672">=</span>true
+</span></span></code></pre></div><p><strong>Then</strong> The Node_2 becomes cordoned.</p>
+<p><em>And</em> All pods on Node_2 are evicted except the replica instance manager pod.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>kubectl get pods --field-selector spec.nodeName<span style="color:#f92672">=</span>&lt;Node_2 name&gt; -o wide -n longhorn-system
+</span></span></code></pre></div><p><em>And</em> The message like below keeps appearing.</p>
+<pre tabindex="0"><code>evicting pod longhorn-system/instance-manager-r-xxxxxxxx
+error when evicting pods/&#34;instance-manager-r-xxxxxxxx&#34; -n &#34;longhorn-system&#34; (will retry after 5s): Cannot evict pod as it would violate the pod&#39;s disruption budget.
+</code></pre><p><em>And</em> The last healthy replica exists on the Node_2.</p>
+<h2 id="setting-allow-node-drain-with-the-last-healthy-replica-protects-the-last-healthy-replica-with-pod-disruption-budget-pdb">Setting <code>Allow Node Drain with the Last Healthy Replica</code> protects the last healthy replica with Pod Disruption Budget (PDB)</h2>
+<h4 id="related-issue-1">Related Issue:</h4>
+<ul>
+<li><a href="https://github.com/longhorn/longhorn/issues/2237">https://github.com/longhorn/longhorn/issues/2237</a></li>
+</ul>
+<p><strong>Given</strong> Longhorn with 2 nodes cluster: Node_1, Node_2</p>
+<p><em>And</em> Create a 5Gi detached volume with 2 replicas.</p>
+<p><em>And</em> Stop Node_1 that contains one of the replicas.</p>
+<p><em>And</em> Uncheck the <code>Allow Node Drain with the Last Healthy Replica</code> setting and confirm getting <strong>false</strong> with following command:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>kubectl get settings.longhorn.io/allow-node-drain-with-last-healthy-replica -n longhorn-system
+</span></span></code></pre></div><p><em>And</em> Drain Node_2 so that all pods on Node_2 are evicted, but the replica instance manager pod is still on Node_2 because it is protected by PDB.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>kubectl drain &lt;Node_2 name&gt; --delete-emptydir-data<span style="color:#f92672">=</span>true --force<span style="color:#f92672">=</span>true --grace-period<span style="color:#f92672">=</span>-1 --ignore-daemonsets<span style="color:#f92672">=</span>true
+</span></span></code></pre></div><p><strong>When</strong> Enable the setting <code>Allow Node Drain with the Last Healthy Replica</code> and make sure return <strong>true</strong> with following command:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>kubectl get settings.longhorn.io/allow-node-drain-with-last-healthy-replica -n longhorn-system
+</span></span></code></pre></div><p><strong>Then</strong> The pod <code>longhorn-system/instance-manager-r-xxxxxxxx</code> will be evicted successfully and the following command can be used to ensure that only daemonset pods such as <code>engine-image</code>, <code>longhorn-csi-plugin</code> and <code>longhorn-manager</code> daemonset pods are running on Node_2:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>kubectl get pods --field-selector spec.nodeName<span style="color:#f92672">=</span>&lt;Node_2 name&gt; -o wide -n longhorn-system
+</span></span></code></pre></div><p><em>And</em> The PDB will be deleted and can be verified with the following command:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>kubectl get pdb &lt;replica name, e.g., instance-manager-r-xxxxxxxx&gt; -n longhorn-system
+</span></span></code></pre></div>
     </article>
   <a href="https://github.com/longhorn/longhorn-tests/edit/master/docs/content/manual/pre-release/node/node-drain-deletion.md" target="_blank" title="Edit on Github" style="font-size:smaller;float:right;padding-right:3%">[Edit]</a>
   </div>
