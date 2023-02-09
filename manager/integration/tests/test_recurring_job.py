@@ -1745,6 +1745,70 @@ def test_recurring_job_snapshot_delete(set_random_backupstore, client, batch_v1_
 
 
 @pytest.mark.recurring_job  # NOQA
+def test_recurring_job_snapshot_delete_retain_0(set_random_backupstore, client, batch_v1_api, volume_name):  # NOQA
+    """
+    Scenario: test recurring job snapshot-delete with retain value 0
+
+    Given volume created, attached, and healthy.
+    And 1 snapshots were created.
+    And volume has 2 snapshots.
+        - 1 user-created
+        - 1 volume-test
+
+    When create a recurring job with:
+         - task: snapshot-delete
+         - retain: 0
+    And assign the recurring job to volume.
+    And wait for the cron job scheduled time.
+
+    Then volume should have 1 snapshot.
+         - 0 snapshot retained
+         - 1 volume-head
+    """
+    client.create_volume(name=volume_name, size=SIZE)
+    volume = wait_for_volume_detached(client, volume_name)
+
+    self_host = get_self_host_id()
+    volume.attach(hostId=self_host)
+
+    volume = wait_for_volume_healthy(client, volume_name)
+
+    num_snapshots = 1
+    for _ in range(num_snapshots):
+        create_snapshot(client, volume_name)
+
+    # - 1 new snapshot
+    # - 1 volume-head
+    wait_for_snapshot_count(volume, 2)
+
+    recurring_jobs = {
+        RECURRING_JOB_NAME: {
+            TASK: SNAPSHOT_DELETE,
+            GROUPS: [],
+            CRON: SCHEDULE_1MIN,
+            RETAIN: 0,
+            CONCURRENCY: 1,
+            LABELS: {},
+        },
+    }
+    create_recurring_jobs(client, recurring_jobs)
+    check_recurring_jobs(client, recurring_jobs)
+    wait_for_cron_job_count(batch_v1_api, 1)
+
+    volume = client.by_id_volume(volume_name)
+    volume.recurringJobAdd(name=RECURRING_JOB_NAME, isGroup=False)
+
+    time.sleep(60)
+
+    # - 0 snapshot retained
+    # - 1 volume-head
+    try:
+        wait_for_snapshot_count(volume, 1)
+    except Exception:
+        wait_for_snapshot_count(volume, 1, count_removed=True)
+
+
+@pytest.mark.recurring_job  # NOQA
 def test_recurring_job_snapshot_cleanup(set_random_backupstore, client, batch_v1_api, volume_name):  # NOQA
     """
     Scenario: test recurring job snapshot-cleanup
