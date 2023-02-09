@@ -220,7 +220,7 @@ def prepare_settings_for_snapshot_test(client, data_integrity, immediate_check, 
     # Make the next hash time more predictable
     now = datetime.datetime.now()
     minute = (now.minute + period_in_minute) % 60
-    hour = now.hour + (now.minute + period_in_minute) / 60
+    hour = (now.hour + (now.minute + period_in_minute) / 60) % 24
 
     cronjob = "%d/%d %d * * *" % (minute, period_in_minute, hour)
 
