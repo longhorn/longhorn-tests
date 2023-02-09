@@ -158,6 +158,37 @@ def test_snapshot_hash_global_disabled_and_per_volume_enabled_and_without_immedi
                                             SNAPSHOT_DATA_INTEGRITY_ENABLED)
 
 
+def test_snapshot_hash_global_disabled_and_per_volume_fast_check_and_with_immediate_hash(client, volume_name, settings_reset):  # NOQA
+    """
+    Check snapshots' checksums are immediately calculated when the snapshots
+    check when
+    - global data-integrity is set to disabled
+    - global immediate_hash is enabled
+    - per-volume data-integrity is set to fast-check
+    """
+    prepare_settings_for_snapshot_test(client,
+                                       SNAPSHOT_DATA_INTEGRITY_DISABLED,
+                                       "true",
+                                       "true")
+    check_hashed_and_with_immediate_hash(client, volume_name,
+                                         SNAPSHOT_DATA_INTEGRITY_FAST_CHECK)
+
+
+def test_snapshot_hash_global_disabled_and_per_volume_fast_check_and_without_immediate_hash(client, volume_name, settings_reset):  # NOQA
+    """
+    Check snapshots' checksums are calculated by the periodic checksum check
+    - global data-integrity is set to disabled
+    - global immediate_hash is disabled
+    - per-volume data-integrity is set to fast-check
+    """
+    prepare_settings_for_snapshot_test(client,
+                                       SNAPSHOT_DATA_INTEGRITY_DISABLED,
+                                       "false",
+                                       "true")
+    check_hashed_and_without_immediate_hash(client, volume_name,
+                                            SNAPSHOT_DATA_INTEGRITY_FAST_CHECK)
+
+
 def test_snapshot_hash_global_enabled_and_per_volume_disable_and_with_immediate_hash(client, volume_name, settings_reset):  # NOQA
     """
     Check snapshots' checksums are not calculated
@@ -182,6 +213,36 @@ def test_snapshot_hash_global_enabled_and_per_volume_disable_and_without_immedia
     """
     prepare_settings_for_snapshot_test(client,
                                        SNAPSHOT_DATA_INTEGRITY_ENABLED,
+                                       "false",
+                                       "true")
+    check_per_volume_hash_disable(client, volume_name,
+                                  SNAPSHOT_DATA_INTEGRITY_DISABLED)
+
+
+def test_snapshot_hash_global_fast_check_and_per_volume_disable_and_with_immediate_hash(client, volume_name, settings_reset):  # NOQA
+    """
+    Check snapshots' checksums are not calculated
+    - global data-integrity is set to fast-check
+    - global immediate_hash is enabled
+    - per-volume data-integrity is set to disabled
+    """
+    prepare_settings_for_snapshot_test(client,
+                                       SNAPSHOT_DATA_INTEGRITY_FAST_CHECK,
+                                       "true",
+                                       "true")
+    check_per_volume_hash_disable(client, volume_name,
+                                  SNAPSHOT_DATA_INTEGRITY_DISABLED)
+
+
+def test_snapshot_hash_global_fast_check_and_per_volume_disable_and_without_immediate_hash(client, volume_name, settings_reset):  # NOQA
+    """
+    Check snapshots' checksums are not calculated
+    - global data-integrity is set to fast-check
+    - global immediate_hash is disabled
+    - per-volume data-integrity is set to disabled
+    """
+    prepare_settings_for_snapshot_test(client,
+                                       SNAPSHOT_DATA_INTEGRITY_FAST_CHECK,
                                        "false",
                                        "true")
     check_per_volume_hash_disable(client, volume_name,
