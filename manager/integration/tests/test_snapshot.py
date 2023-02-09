@@ -1,3 +1,4 @@
+import pytest
 import os
 import subprocess
 import time
@@ -172,7 +173,7 @@ def test_snapshot_hash_global_enabled_and_per_volume_disable_and_with_immediate_
                                   SNAPSHOT_DATA_INTEGRITY_DISABLED)
 
 
-def test_snapshot_hash_global_enabled_and_per_volume_enable_mode_without_immediate_hash(client, volume_name, settings_reset):  # NOQA
+def test_snapshot_hash_global_enabled_and_per_volume_disable_and_without_immediate_hash(client, volume_name, settings_reset):  # NOQA
     """
     Check snapshots' checksums are not calculated
     - global data-integrity is set to enabled
@@ -187,6 +188,7 @@ def test_snapshot_hash_global_enabled_and_per_volume_enable_mode_without_immedia
                                   SNAPSHOT_DATA_INTEGRITY_DISABLED)
 
 
+@pytest.mark.long_running
 def test_snapshot_hash_detect_corruption_in_global_enabled_mode(client, volume_name, settings_reset):  # NOQA
     """
     Check the snapshot corruption can be detected and replica is rebuilt
@@ -201,6 +203,7 @@ def test_snapshot_hash_detect_corruption_in_global_enabled_mode(client, volume_n
                                         SNAPSHOT_DATA_INTEGRITY_ENABLED)
 
 
+@pytest.mark.long_running
 def test_snapshot_hash_detect_corruption_in_global_fast_check_mode(client, volume_name, settings_reset):  # NOQA
     """
     Check the snapshot corruption can be detected and replica is rebuilt
