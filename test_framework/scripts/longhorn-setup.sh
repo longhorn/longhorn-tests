@@ -34,6 +34,8 @@ set_kubeconfig_envvar(){
       gcloud container clusters get-credentials `terraform -chdir=${TF_VAR_tf_workspace}/terraform/${LONGHORN_TEST_CLOUDPROVIDER}/${TF_VAR_k8s_distro_name} output -raw cluster_name` --zone `terraform -chdir=${TF_VAR_tf_workspace}/terraform/${LONGHORN_TEST_CLOUDPROVIDER}/${TF_VAR_k8s_distro_name} output -raw cluster_zone` --project ${TF_VAR_gcp_project}
     elif [[ ${TF_VAR_k8s_distro_name} == "aks" ]]; then
       export KUBECONFIG="${BASEDIR}/aks.yml"
+    elif [[ ${TF_VAR_k8s_distro_name} == "eks" ]]; then
+      export KUBECONFIG="${BASEDIR}/eks.yml"
     else
       export KUBECONFIG="${BASEDIR}/terraform/${LONGHORN_TEST_CLOUDPROVIDER}/${DISTRO}/k3s.yaml"
     fi
@@ -42,10 +44,35 @@ set_kubeconfig_envvar(){
       gcloud container clusters get-credentials `terraform -chdir=${TF_VAR_tf_workspace}/terraform/${LONGHORN_TEST_CLOUDPROVIDER}/${TF_VAR_k8s_distro_name} output -raw cluster_name` --zone `terraform -chdir=${TF_VAR_tf_workspace}/terraform/${LONGHORN_TEST_CLOUDPROVIDER}/${TF_VAR_k8s_distro_name} output -raw cluster_zone` --project ${TF_VAR_gcp_project}
     elif [[ ${TF_VAR_k8s_distro_name} == "aks" ]]; then
       export KUBECONFIG="${BASEDIR}/aks.yml"
+    elif [[ ${TF_VAR_k8s_distro_name} == "eks" ]]; then
+      export KUBECONFIG="${BASEDIR}/eks.yml"
     else
       export KUBECONFIG="${BASEDIR}/terraform/${LONGHORN_TEST_CLOUDPROVIDER}/${DISTRO}/k3s.yaml"
     fi
   fi
+}
+
+
+create_admin_service_account(){
+  kubectl apply -f "${TF_VAR_tf_workspace}/templates/kubeconfig_service_account.yaml"
+  TOKEN=$(kubectl -n kube-system get secret/kubeconfig-cluster-admin-token -o=go-template='{{.data.token}}' | base64 -d)
+  yq -i ".users[0].user.token=\"${TOKEN}\""  "${TF_VAR_tf_workspace}/eks.yml"
+}
+
+
+install_iscsi(){
+  kubectl apply -f "https://raw.githubusercontent.com/longhorn/longhorn/master/deploy/prerequisite/longhorn-iscsi-installation.yaml"
+}
+
+
+install_cluster_autoscaler(){
+  curl -o "${TF_VAR_tf_workspace}/templates/cluster_autoscaler.yaml" "https://raw.githubusercontent.com/kubernetes/autoscaler/master/cluster-autoscaler/cloudprovider/aws/examples/cluster-autoscaler-autodiscover.yaml"
+  CLUSTER_NAME=$(kubectl config current-context)
+  sed -i "s/<YOUR CLUSTER NAME>/${CLUSTER_NAME}/g" "${TF_VAR_tf_workspace}/templates/cluster_autoscaler.yaml"
+  yq -i 'select(.kind == "Deployment").spec.template.spec.containers[0].env += [{"name": "AWS_ACCESS_KEY_ID", "valueFrom": {"secretKeyRef": {"name": "aws-cred-secret", "key": "AWS_ACCESS_KEY_ID"}}}]' "${TF_VAR_tf_workspace}/templates/cluster_autoscaler.yaml"
+  yq -i 'select(.kind == "Deployment").spec.template.spec.containers[0].env += [{"name": "AWS_SECRET_ACCESS_KEY", "valueFrom": {"secretKeyRef": {"name": "aws-cred-secret", "key": "AWS_SECRET_ACCESS_KEY"}}}]' "${TF_VAR_tf_workspace}/templates/cluster_autoscaler.yaml"
+  yq -i 'select(.kind == "Deployment").spec.template.spec.containers[0].env += [{"name": "AWS_REGION", "valueFrom": {"secretKeyRef": {"name": "aws-cred-secret", "key": "AWS_DEFAULT_REGION"}}}]' "${TF_VAR_tf_workspace}/templates/cluster_autoscaler.yaml"
+  kubectl apply -f "${TF_VAR_tf_workspace}/templates/cluster_autoscaler.yaml"
 }
 
 
@@ -261,6 +288,7 @@ create_aws_secret(){
   yq e -i '.data.AWS_DEFAULT_REGION |= "'${AWS_DEFAULT_REGION_BASE64}'"' "${TF_VAR_tf_workspace}/templates/aws_cred_secrets.yml"
 
   kubectl apply -f "${TF_VAR_tf_workspace}/templates/aws_cred_secrets.yml"
+  kubectl apply -f "${TF_VAR_tf_workspace}/templates/aws_cred_secrets.yml" -n kube-system
 }
 
 
@@ -388,13 +416,20 @@ run_longhorn_tests(){
 
 main(){
   set_kubeconfig_envvar ${TF_VAR_arch} ${TF_VAR_tf_workspace}
-  create_longhorn_namespace
-  install_backupstores
+
   # set debugging mode off to avoid leaking aws secrets to the logs.
   # DON'T REMOVE!
   set +x
   create_aws_secret
   set -x
+
+  if [[ ${TF_VAR_k8s_distro_name} == "eks" ]]; then
+    create_admin_service_account
+    install_iscsi
+    install_cluster_autoscaler
+  fi
+  create_longhorn_namespace
+  install_backupstores
   install_csi_snapshotter_crds
 
   if [[ "${AIR_GAP_INSTALLATION}" == true ]]; then

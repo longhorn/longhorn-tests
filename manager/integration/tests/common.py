@@ -11,6 +11,7 @@ import hashlib
 import signal
 import types
 import threading
+import re
 
 import socket
 import pytest
@@ -3105,7 +3106,9 @@ def get_k8s_zone_label():
 
     k8s_ver_minor = k8s_ver_data.minor
 
-    if int(k8s_ver_minor) >= 17:
+    # k8s_ver_minor no needs to be an int
+    # it could be "24+" in eks
+    if int(re.sub('\\D', '', k8s_ver_minor)) >= 17:
         k8s_zone_label = K8S_ZONE_LABEL
     else:
         k8s_zone_label = DEPRECATED_K8S_ZONE_LABEL

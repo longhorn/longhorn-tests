@@ -19,6 +19,8 @@ set_kubeconfig_envvar(){
             gcloud container clusters get-credentials `terraform -chdir=${TF_VAR_tf_workspace}/terraform/${LONGHORN_TEST_CLOUDPROVIDER}/${TF_VAR_k8s_distro_name} output -raw cluster_name` --zone `terraform -chdir=${TF_VAR_tf_workspace}/terraform/${LONGHORN_TEST_CLOUDPROVIDER}/${TF_VAR_k8s_distro_name} output -raw cluster_zone` --project ${TF_VAR_gcp_project}
         elif [[ ${TF_VAR_k8s_distro_name} == "aks" ]]; then
             export KUBECONFIG="${BASEDIR}/aks.yml"
+        elif [[ ${TF_VAR_k8s_distro_name} == "eks" ]]; then
+            export KUBECONFIG="${BASEDIR}/eks.yml"
         else
             export KUBECONFIG="${BASEDIR}/terraform/${LONGHORN_TEST_CLOUDPROVIDER}/${DISTRO}/k3s.yaml"
         fi
@@ -27,12 +29,13 @@ set_kubeconfig_envvar(){
             gcloud container clusters get-credentials `terraform -chdir=${TF_VAR_tf_workspace}/terraform/${LONGHORN_TEST_CLOUDPROVIDER}/${TF_VAR_k8s_distro_name} output -raw cluster_name` --zone `terraform -chdir=${TF_VAR_tf_workspace}/terraform/${LONGHORN_TEST_CLOUDPROVIDER}/${TF_VAR_k8s_distro_name} output -raw cluster_zone` --project ${TF_VAR_gcp_project}
         elif [[ ${TF_VAR_k8s_distro_name} == "aks" ]]; then
             export KUBECONFIG="${BASEDIR}/aks.yml"
+        elif [[ ${TF_VAR_k8s_distro_name} == "eks" ]]; then
+            export KUBECONFIG="${BASEDIR}/eks.yml"
         else
             export KUBECONFIG="${BASEDIR}/terraform/${LONGHORN_TEST_CLOUDPROVIDER}/${DISTRO}/k3s.yaml"
         fi
     fi
 }
-
 
 set_kubeconfig_envvar ${TF_VAR_arch} ${TF_VAR_tf_workspace}
 
