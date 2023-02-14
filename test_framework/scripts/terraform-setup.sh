@@ -2,7 +2,7 @@
 
 set -x
 
-if [[ ${TF_VAR_k8s_distro_name} == "gke" ]] || [[ ${TF_VAR_k8s_distro_name} == "aks" ]]; then
+if [[ ${TF_VAR_k8s_distro_name} == "gke" ]] || [[ ${TF_VAR_k8s_distro_name} == "aks" ]] || [[ ${TF_VAR_k8s_distro_name} == "eks" ]]; then
   gcloud auth activate-service-account --project=${TF_VAR_gcp_project} --key-file=${TF_VAR_gcp_auth_file}
   gcloud auth list
   DISTRO=${TF_VAR_k8s_distro_name}
@@ -25,6 +25,10 @@ fi
 if [[ ${TF_VAR_k8s_distro_name} == "aks" ]]; then
   terraform -chdir=${TF_VAR_tf_workspace}/terraform/${LONGHORN_TEST_CLOUDPROVIDER}/${DISTRO} output -raw kubeconfig > ${TF_VAR_tf_workspace}/aks.yml
   sleep 120
+fi
+
+if [[ ${TF_VAR_k8s_distro_name} == "eks" ]]; then
+  terraform -chdir=${TF_VAR_tf_workspace}/terraform/${LONGHORN_TEST_CLOUDPROVIDER}/${DISTRO} output -raw kubeconfig > ${TF_VAR_tf_workspace}/eks.yml
 fi
 
 if [[ "${TF_VAR_create_load_balancer}" == true ]]; then
