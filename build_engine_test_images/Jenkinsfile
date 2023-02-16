@@ -15,11 +15,12 @@ node {
     usernamePassword(credentialsId: 'DOCKER_CREDS', passwordVariable: 'DOCKER_PASSWORD', usernameVariable: 'DOCKER_USERNAME'),
     usernamePassword(credentialsId: 'AWS_CREDS', passwordVariable: 'AWS_SECRET_KEY', usernameVariable: 'AWS_ACCESS_KEY')
   ]) {
-        stage('build') {      
+        stage('build') {
             
             sh "build_engine_test_images/scripts/build.sh"
 
-            sh """ docker run -itd --name ${JOB_BASE_NAME}-${BUILD_NUMBER} \
+            sh """ docker run -itd --privileged -v /var/run/docker.sock:/var/run/docker.sock \
+                                   --name ${JOB_BASE_NAME}-${BUILD_NUMBER} \
                                    --env TF_VAR_build_engine_aws_access_key=${AWS_ACCESS_KEY} \
                                    --env TF_VAR_build_engine_aws_secret_key=${AWS_SECRET_KEY} \
                                    --env TF_VAR_docker_id=${DOCKER_USERNAME} \
