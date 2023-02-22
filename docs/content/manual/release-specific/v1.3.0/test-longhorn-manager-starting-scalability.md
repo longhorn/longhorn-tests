@@ -67,7 +67,7 @@ title: Test longhorn manager pod starting scalability
           terminationGracePeriodSeconds: 10
           containers:
             - name: nginx
-              image: k8s.gcr.io/nginx-slim:0.8
+              image: registry.k8s.io/nginx-slim:0.8
               ports:
                 - containerPort: 80
                   name: web
