@@ -3951,12 +3951,15 @@ def create_snapshot(longhorn_api_client, volume_name):
     return snap
 
 
-def wait_for_snapshot_count(volume, number, retry_counts=120):
+def wait_for_snapshot_count(volume, number,
+                            retry_counts=120,
+                            count_removed=False):
     for _ in range(retry_counts):
         count = 0
         for snapshot in volume.snapshotList():
-            if snapshot.removed is False:
+            if snapshot.removed is False or count_removed:
                 count += 1
+
         if count == number:
             return
         time.sleep(RETRY_SNAPSHOT_INTERVAL)
@@ -4912,7 +4915,12 @@ def check_recurring_jobs(client, recurring_jobs):
         if len(spec[&#34;groups&#34;]) &gt; 0:
             assert recurring_job.groups == spec[&#34;groups&#34;]
         assert recurring_job.cron == spec[&#34;cron&#34;]
-        assert recurring_job.retain == spec[&#34;retain&#34;]
+
+        expect_retain = spec[&#34;retain&#34;]
+        if recurring_job.task == &#34;snapshot-cleanup&#34;:
+            expect_retain = 0
+        assert recurring_job.retain == expect_retain
+
         assert recurring_job.concurrency == spec[&#34;concurrency&#34;]
 
 
@@ -6105,7 +6113,12 @@ def batch_v1_api(request):
         if len(spec[&#34;groups&#34;]) &gt; 0:
             assert recurring_job.groups == spec[&#34;groups&#34;]
         assert recurring_job.cron == spec[&#34;cron&#34;]
-        assert recurring_job.retain == spec[&#34;retain&#34;]
+
+        expect_retain = spec[&#34;retain&#34;]
+        if recurring_job.task == &#34;snapshot-cleanup&#34;:
+            expect_retain = 0
+        assert recurring_job.retain == expect_retain
+
         assert recurring_job.concurrency == spec[&#34;concurrency&#34;]</code></pre>
 </details>
 </dd>
@@ -12766,7 +12779,7 @@ ref: <a href="https://github.com/longhorn/longhorn/issues/4814">https://github.c
 </details>
 </dd>
 <dt id="tests.common.wait_for_snapshot_count"><code class="name flex">
-<span>def <span class="ident">wait_for_snapshot_count</span></span>(<span>volume, number, retry_counts=120)</span>
+<span>def <span class="ident">wait_for_snapshot_count</span></span>(<span>volume, number, retry_counts=120, count_removed=False)</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -12774,12 +12787,15 @@ ref: <a href="https://github.com/longhorn/longhorn/issues/4814">https://github.c
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def wait_for_snapshot_count(volume, number, retry_counts=120):
+<pre><code class="python">def wait_for_snapshot_count(volume, number,
+                            retry_counts=120,
+                            count_removed=False):
     for _ in range(retry_counts):
         count = 0
         for snapshot in volume.snapshotList():
-            if snapshot.removed is False:
+            if snapshot.removed is False or count_removed:
                 count += 1
+
         if count == number:
             return
         time.sleep(RETRY_SNAPSHOT_INTERVAL)

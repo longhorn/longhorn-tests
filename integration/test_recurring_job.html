@@ -54,6 +54,7 @@ from common import create_pvc_for_volume
 from common import create_and_check_volume
 from common import read_volume_data
 from common import wait_for_volume_detached
+from common import wait_for_volume_expansion
 from common import wait_for_volume_healthy
 from common import wait_for_volume_healthy_no_frontend
 from common import wait_for_volume_recurring_job_update
@@ -72,11 +73,13 @@ from common import check_pod_existence
 
 from common import crash_engine_process_with_sigkill
 
+from common import find_backup
 from common import wait_for_backup_volume
 from common import wait_for_backup_completion
 from common import wait_for_backup_count
 from common import wait_for_backup_to_start
 
+from common import create_snapshot
 from common import wait_for_snapshot_count
 
 from common import check_recurring_jobs
@@ -88,8 +91,6 @@ from common import wait_for_cron_job_count
 from common import wait_for_cron_job_create
 from common import wait_for_cron_job_delete
 
-from common import find_backup
-
 from common import JOB_LABEL
 from common import KUBERNETES_STATUS_LABEL
 from common import LONGHORN_NAMESPACE
@@ -98,6 +99,7 @@ from common import RETRY_BACKUP_INTERVAL
 from common import SETTING_RECURRING_JOB_WHILE_VOLUME_DETACHED
 from common import SIZE, Mi, Gi
 from common import SETTING_RESTORE_RECURRING_JOBS
+from common import VOLUME_HEAD_NAME
 
 
 RECURRING_JOB_LABEL = &#34;RecurringJob&#34;
@@ -110,6 +112,8 @@ GROUPS = &#34;groups&#34;
 CRON = &#34;cron&#34;
 RETAIN = &#34;retain&#34;
 SNAPSHOT = &#34;snapshot&#34;
+SNAPSHOT_DELETE = &#34;snapshot-delete&#34;
+SNAPSHOT_CLEANUP = &#34;snapshot-cleanup&#34;
 BACKUP = &#34;backup&#34;
 CONCURRENCY = &#34;concurrency&#34;
 LABELS = &#34;labels&#34;
@@ -1653,6 +1657,264 @@ def test_recurring_job_snapshot(client, batch_v1_api):  # NOQA
     time.sleep(60)
     wait_for_snapshot_count(volume1, 3)
     wait_for_snapshot_count(volume2, 3)
+
+
+@pytest.mark.recurring_job  # NOQA
+def test_recurring_job_snapshot_delete(set_random_backupstore, client, batch_v1_api, volume_name):  # NOQA
+    &#34;&#34;&#34;
+    Scenario: test recurring job snapshot-delete
+
+    Given volume created, attached, and healthy.
+    And 3 snapshots were created.
+    And volume has 4 snapshots.
+        - 3 user-created
+        - 1 volume-test
+
+    When create a recurring job with:
+         - task: snapshot-delete
+         - retain: 1
+    And assign the recurring job to volume.
+    And wait for the cron job scheduled time.
+
+    Then volume should have 2 snapshots.
+         - 1 snapshot retained
+         - 1 volume-head
+
+    When recurring job unassigned to volume.
+    And create 5 snapshots.
+    And volume has 7 snapshots.
+        - 5 new snapshots
+        - 1 old snapshot
+        - 1 volume-head
+    And update recurring job retain to 3.
+    And assign the recurring job to volume.
+    And wait for the cron job scheduled time.
+
+    Then volume should have 4 snapshots
+         - 3 snapshots retained
+         - 1 volume-head
+    &#34;&#34;&#34;
+    client.create_volume(name=volume_name, size=SIZE)
+    volume = wait_for_volume_detached(client, volume_name)
+
+    self_host = get_self_host_id()
+    volume.attach(hostId=self_host)
+
+    volume = wait_for_volume_healthy(client, volume_name)
+
+    num_snapshots = 3
+    for _ in range(num_snapshots):
+        create_snapshot(client, volume_name)
+
+    # - 3 new snapshot
+    # - 1 volume-head
+    wait_for_snapshot_count(volume, 4)
+
+    recurring_jobs = {
+        RECURRING_JOB_NAME: {
+            TASK: SNAPSHOT_DELETE,
+            GROUPS: [],
+            CRON: SCHEDULE_1MIN,
+            RETAIN: 1,
+            CONCURRENCY: 1,
+            LABELS: {},
+        },
+    }
+    create_recurring_jobs(client, recurring_jobs)
+    check_recurring_jobs(client, recurring_jobs)
+    wait_for_cron_job_count(batch_v1_api, 1)
+
+    volume = client.by_id_volume(volume_name)
+    volume.recurringJobAdd(name=RECURRING_JOB_NAME, isGroup=False)
+
+    time.sleep(60)
+
+    # - 1 snapshot retained
+    # - 1 volume-head
+    try:
+        wait_for_snapshot_count(volume, 2)
+    except Exception:
+        wait_for_snapshot_count(volume, 2, count_removed=True)
+
+    volume.recurringJobDelete(name=RECURRING_JOB_NAME, isGroup=False)
+
+    num_snapshots = 5
+
+    for _ in range(num_snapshots):
+        create_snapshot(client, volume_name)
+    volume = client.by_id_volume(volume_name)
+
+    # - 5 new snapshot
+    # - 1 old snapshot
+    # - 1 volume-head
+    try:
+        wait_for_snapshot_count(volume, 7)
+    except Exception:
+        wait_for_snapshot_count(volume, 7, count_removed=True)
+
+    update_recurring_job(client, RECURRING_JOB_NAME,
+                         groups=[], labels={}, retain=3)
+
+    volume.recurringJobAdd(name=RECURRING_JOB_NAME, isGroup=False)
+    time.sleep(60)
+
+    # - 3 snapshot retained
+    # - 1 volume-head
+    try:
+        wait_for_snapshot_count(volume, 4)
+    except Exception:
+        wait_for_snapshot_count(volume, 4, count_removed=True)
+
+
+@pytest.mark.recurring_job  # NOQA
+def test_recurring_job_snapshot_delete_retain_0(set_random_backupstore, client, batch_v1_api, volume_name):  # NOQA
+    &#34;&#34;&#34;
+    Scenario: test recurring job snapshot-delete with retain value 0
+
+    Given volume created, attached, and healthy.
+    And 1 snapshots were created.
+    And volume has 2 snapshots.
+        - 1 user-created
+        - 1 volume-test
+
+    When create a recurring job with:
+         - task: snapshot-delete
+         - retain: 0
+    And assign the recurring job to volume.
+    And wait for the cron job scheduled time.
+
+    Then volume should have 1 snapshot.
+         - 0 snapshot retained
+         - 1 volume-head
+    &#34;&#34;&#34;
+    client.create_volume(name=volume_name, size=SIZE)
+    volume = wait_for_volume_detached(client, volume_name)
+
+    self_host = get_self_host_id()
+    volume.attach(hostId=self_host)
+
+    volume = wait_for_volume_healthy(client, volume_name)
+
+    num_snapshots = 1
+    for _ in range(num_snapshots):
+        create_snapshot(client, volume_name)
+
+    # - 1 new snapshot
+    # - 1 volume-head
+    wait_for_snapshot_count(volume, 2)
+
+    recurring_jobs = {
+        RECURRING_JOB_NAME: {
+            TASK: SNAPSHOT_DELETE,
+            GROUPS: [],
+            CRON: SCHEDULE_1MIN,
+            RETAIN: 0,
+            CONCURRENCY: 1,
+            LABELS: {},
+        },
+    }
+    create_recurring_jobs(client, recurring_jobs)
+    check_recurring_jobs(client, recurring_jobs)
+    wait_for_cron_job_count(batch_v1_api, 1)
+
+    volume = client.by_id_volume(volume_name)
+    volume.recurringJobAdd(name=RECURRING_JOB_NAME, isGroup=False)
+
+    time.sleep(60)
+
+    # - 0 snapshot retained
+    # - 1 volume-head
+    try:
+        wait_for_snapshot_count(volume, 1)
+    except Exception:
+        wait_for_snapshot_count(volume, 1, count_removed=True)
+
+
+@pytest.mark.recurring_job  # NOQA
+def test_recurring_job_snapshot_cleanup(set_random_backupstore, client, batch_v1_api, volume_name):  # NOQA
+    &#34;&#34;&#34;
+    Scenario: test recurring job snapshot-cleanup
+
+    Given volume created, attached, and healthy.
+    And 2 snapshot were created by system.
+    And 1 snapshot were created by user.
+    And volume has 4 snapshots.
+        - 2 system-created
+        - 1 user-created
+        - 1 volume-head
+
+    When create a recurring job with:
+         - task: system-snapshot-delete
+         - retain: 1
+    Then recurring job retain mutated to 0.
+
+    When assign the recurring job to volume.
+    And wait for the cron job scheduled time.
+    Then volume should have 2 snapshots.
+         - 0 system-created
+         - 1 user-created
+         - 1 volume-head
+    &#34;&#34;&#34;
+    client.create_volume(name=volume_name, size=SIZE)
+    volume = wait_for_volume_detached(client, volume_name)
+
+    self_host = get_self_host_id()
+    volume.attach(hostId=self_host)
+
+    volume = wait_for_volume_healthy(client, volume_name)
+
+    expand_size = str(32 * Mi)
+    volume.expand(size=expand_size)
+    wait_for_volume_expansion(client, volume_name)
+    # - 1 new system-created snapshot
+    # - 1 volume-head
+    wait_for_snapshot_count(volume, 2)
+
+    expand_size = str(64 * Mi)
+    volume.expand(size=expand_size)
+    wait_for_volume_expansion(client, volume_name)
+    # - 1 new system-created snapshot
+    # - 1 system-created snapshot
+    # - 1 volume-head
+    wait_for_snapshot_count(volume, 3)
+
+    create_snapshot(client, volume_name)
+
+    # - 1 new system-created snapshot
+    # - 1 system-created snapshot
+    # - 1 user-created snapshot
+    # - 1 volume-head
+    wait_for_snapshot_count(volume, 4)
+
+    recurring_jobs = {
+        RECURRING_JOB_NAME: {
+            TASK: SNAPSHOT_CLEANUP,
+            GROUPS: [],
+            CRON: SCHEDULE_1MIN,
+            RETAIN: 1,
+            CONCURRENCY: 1,
+            LABELS: {},
+        },
+    }
+    create_recurring_jobs(client, recurring_jobs)
+    check_recurring_jobs(client, recurring_jobs)
+    wait_for_cron_job_count(batch_v1_api, 1)
+
+    volume = client.by_id_volume(volume_name)
+    volume.recurringJobAdd(name=RECURRING_JOB_NAME, isGroup=False)
+
+    time.sleep(60)
+
+    # - 0 system-creatd snapshot
+    # - 1 user-created snapshot
+    # - 1 volume-head
+    wait_for_snapshot_count(volume, 2)
+
+    system_created_count = 0
+    for snapshot in volume.snapshotList():
+        if not snapshot.usercreated and snapshot.name != VOLUME_HEAD_NAME:
+            system_created_count += 1
+    assert system_created_count == 0
 
 
 @pytest.mark.recurring_job  # NOQA
@@ -3560,6 +3822,346 @@ def test_recurring_job_snapshot(client, batch_v1_api):  # NOQA
     wait_for_snapshot_count(volume2, 3)</code></pre>
 </details>
 </dd>
+<dt id="tests.test_recurring_job.test_recurring_job_snapshot_cleanup"><code class="name flex">
+<span>def <span class="ident">test_recurring_job_snapshot_cleanup</span></span>(<span>set_random_backupstore, client, batch_v1_api, volume_name)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Scenario: test recurring job snapshot-cleanup</p>
+<p>Given volume created, attached, and healthy.
+And 2 snapshot were created by system.
+And 1 snapshot were created by user.
+And volume has 4 snapshots.
+- 2 system-created
+- 1 user-created
+- 1 volume-head</p>
+<p>When create a recurring job with:
+- task: system-snapshot-delete
+- retain: 1
+Then recurring job retain mutated to 0.</p>
+<p>When assign the recurring job to volume.
+And wait for the cron job scheduled time.
+Then volume should have 2 snapshots.
+- 0 system-created
+- 1 user-created
+- 1 volume-head</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@pytest.mark.recurring_job  # NOQA
+def test_recurring_job_snapshot_cleanup(set_random_backupstore, client, batch_v1_api, volume_name):  # NOQA
+    &#34;&#34;&#34;
+    Scenario: test recurring job snapshot-cleanup
+
+    Given volume created, attached, and healthy.
+    And 2 snapshot were created by system.
+    And 1 snapshot were created by user.
+    And volume has 4 snapshots.
+        - 2 system-created
+        - 1 user-created
+        - 1 volume-head
+
+    When create a recurring job with:
+         - task: system-snapshot-delete
+         - retain: 1
+    Then recurring job retain mutated to 0.
+
+    When assign the recurring job to volume.
+    And wait for the cron job scheduled time.
+    Then volume should have 2 snapshots.
+         - 0 system-created
+         - 1 user-created
+         - 1 volume-head
+    &#34;&#34;&#34;
+    client.create_volume(name=volume_name, size=SIZE)
+    volume = wait_for_volume_detached(client, volume_name)
+
+    self_host = get_self_host_id()
+    volume.attach(hostId=self_host)
+
+    volume = wait_for_volume_healthy(client, volume_name)
+
+    expand_size = str(32 * Mi)
+    volume.expand(size=expand_size)
+    wait_for_volume_expansion(client, volume_name)
+    # - 1 new system-created snapshot
+    # - 1 volume-head
+    wait_for_snapshot_count(volume, 2)
+
+    expand_size = str(64 * Mi)
+    volume.expand(size=expand_size)
+    wait_for_volume_expansion(client, volume_name)
+    # - 1 new system-created snapshot
+    # - 1 system-created snapshot
+    # - 1 volume-head
+    wait_for_snapshot_count(volume, 3)
+
+    create_snapshot(client, volume_name)
+
+    # - 1 new system-created snapshot
+    # - 1 system-created snapshot
+    # - 1 user-created snapshot
+    # - 1 volume-head
+    wait_for_snapshot_count(volume, 4)
+
+    recurring_jobs = {
+        RECURRING_JOB_NAME: {
+            TASK: SNAPSHOT_CLEANUP,
+            GROUPS: [],
+            CRON: SCHEDULE_1MIN,
+            RETAIN: 1,
+            CONCURRENCY: 1,
+            LABELS: {},
+        },
+    }
+    create_recurring_jobs(client, recurring_jobs)
+    check_recurring_jobs(client, recurring_jobs)
+    wait_for_cron_job_count(batch_v1_api, 1)
+
+    volume = client.by_id_volume(volume_name)
+    volume.recurringJobAdd(name=RECURRING_JOB_NAME, isGroup=False)
+
+    time.sleep(60)
+
+    # - 0 system-creatd snapshot
+    # - 1 user-created snapshot
+    # - 1 volume-head
+    wait_for_snapshot_count(volume, 2)
+
+    system_created_count = 0
+    for snapshot in volume.snapshotList():
+        if not snapshot.usercreated and snapshot.name != VOLUME_HEAD_NAME:
+            system_created_count += 1
+    assert system_created_count == 0</code></pre>
+</details>
+</dd>
+<dt id="tests.test_recurring_job.test_recurring_job_snapshot_delete"><code class="name flex">
+<span>def <span class="ident">test_recurring_job_snapshot_delete</span></span>(<span>set_random_backupstore, client, batch_v1_api, volume_name)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Scenario: test recurring job snapshot-delete</p>
+<p>Given volume created, attached, and healthy.
+And 3 snapshots were created.
+And volume has 4 snapshots.
+- 3 user-created
+- 1 volume-test</p>
+<p>When create a recurring job with:
+- task: snapshot-delete
+- retain: 1
+And assign the recurring job to volume.
+And wait for the cron job scheduled time.</p>
+<p>Then volume should have 2 snapshots.
+- 1 snapshot retained
+- 1 volume-head</p>
+<p>When recurring job unassigned to volume.
+And create 5 snapshots.
+And volume has 7 snapshots.
+- 5 new snapshots
+- 1 old snapshot
+- 1 volume-head
+And update recurring job retain to 3.
+And assign the recurring job to volume.
+And wait for the cron job scheduled time.</p>
+<p>Then volume should have 4 snapshots
+- 3 snapshots retained
+- 1 volume-head</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@pytest.mark.recurring_job  # NOQA
+def test_recurring_job_snapshot_delete(set_random_backupstore, client, batch_v1_api, volume_name):  # NOQA
+    &#34;&#34;&#34;
+    Scenario: test recurring job snapshot-delete
+
+    Given volume created, attached, and healthy.
+    And 3 snapshots were created.
+    And volume has 4 snapshots.
+        - 3 user-created
+        - 1 volume-test
+
+    When create a recurring job with:
+         - task: snapshot-delete
+         - retain: 1
+    And assign the recurring job to volume.
+    And wait for the cron job scheduled time.
+
+    Then volume should have 2 snapshots.
+         - 1 snapshot retained
+         - 1 volume-head
+
+    When recurring job unassigned to volume.
+    And create 5 snapshots.
+    And volume has 7 snapshots.
+        - 5 new snapshots
+        - 1 old snapshot
+        - 1 volume-head
+    And update recurring job retain to 3.
+    And assign the recurring job to volume.
+    And wait for the cron job scheduled time.
+
+    Then volume should have 4 snapshots
+         - 3 snapshots retained
+         - 1 volume-head
+    &#34;&#34;&#34;
+    client.create_volume(name=volume_name, size=SIZE)
+    volume = wait_for_volume_detached(client, volume_name)
+
+    self_host = get_self_host_id()
+    volume.attach(hostId=self_host)
+
+    volume = wait_for_volume_healthy(client, volume_name)
+
+    num_snapshots = 3
+    for _ in range(num_snapshots):
+        create_snapshot(client, volume_name)
+
+    # - 3 new snapshot
+    # - 1 volume-head
+    wait_for_snapshot_count(volume, 4)
+
+    recurring_jobs = {
+        RECURRING_JOB_NAME: {
+            TASK: SNAPSHOT_DELETE,
+            GROUPS: [],
+            CRON: SCHEDULE_1MIN,
+            RETAIN: 1,
+            CONCURRENCY: 1,
+            LABELS: {},
+        },
+    }
+    create_recurring_jobs(client, recurring_jobs)
+    check_recurring_jobs(client, recurring_jobs)
+    wait_for_cron_job_count(batch_v1_api, 1)
+
+    volume = client.by_id_volume(volume_name)
+    volume.recurringJobAdd(name=RECURRING_JOB_NAME, isGroup=False)
+
+    time.sleep(60)
+
+    # - 1 snapshot retained
+    # - 1 volume-head
+    try:
+        wait_for_snapshot_count(volume, 2)
+    except Exception:
+        wait_for_snapshot_count(volume, 2, count_removed=True)
+
+    volume.recurringJobDelete(name=RECURRING_JOB_NAME, isGroup=False)
+
+    num_snapshots = 5
+
+    for _ in range(num_snapshots):
+        create_snapshot(client, volume_name)
+    volume = client.by_id_volume(volume_name)
+
+    # - 5 new snapshot
+    # - 1 old snapshot
+    # - 1 volume-head
+    try:
+        wait_for_snapshot_count(volume, 7)
+    except Exception:
+        wait_for_snapshot_count(volume, 7, count_removed=True)
+
+    update_recurring_job(client, RECURRING_JOB_NAME,
+                         groups=[], labels={}, retain=3)
+
+    volume.recurringJobAdd(name=RECURRING_JOB_NAME, isGroup=False)
+    time.sleep(60)
+
+    # - 3 snapshot retained
+    # - 1 volume-head
+    try:
+        wait_for_snapshot_count(volume, 4)
+    except Exception:
+        wait_for_snapshot_count(volume, 4, count_removed=True)</code></pre>
+</details>
+</dd>
+<dt id="tests.test_recurring_job.test_recurring_job_snapshot_delete_retain_0"><code class="name flex">
+<span>def <span class="ident">test_recurring_job_snapshot_delete_retain_0</span></span>(<span>set_random_backupstore, client, batch_v1_api, volume_name)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Scenario: test recurring job snapshot-delete with retain value 0</p>
+<p>Given volume created, attached, and healthy.
+And 1 snapshots were created.
+And volume has 2 snapshots.
+- 1 user-created
+- 1 volume-test</p>
+<p>When create a recurring job with:
+- task: snapshot-delete
+- retain: 0
+And assign the recurring job to volume.
+And wait for the cron job scheduled time.</p>
+<p>Then volume should have 1 snapshot.
+- 0 snapshot retained
+- 1 volume-head</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@pytest.mark.recurring_job  # NOQA
+def test_recurring_job_snapshot_delete_retain_0(set_random_backupstore, client, batch_v1_api, volume_name):  # NOQA
+    &#34;&#34;&#34;
+    Scenario: test recurring job snapshot-delete with retain value 0
+
+    Given volume created, attached, and healthy.
+    And 1 snapshots were created.
+    And volume has 2 snapshots.
+        - 1 user-created
+        - 1 volume-test
+
+    When create a recurring job with:
+         - task: snapshot-delete
+         - retain: 0
+    And assign the recurring job to volume.
+    And wait for the cron job scheduled time.
+
+    Then volume should have 1 snapshot.
+         - 0 snapshot retained
+         - 1 volume-head
+    &#34;&#34;&#34;
+    client.create_volume(name=volume_name, size=SIZE)
+    volume = wait_for_volume_detached(client, volume_name)
+
+    self_host = get_self_host_id()
+    volume.attach(hostId=self_host)
+
+    volume = wait_for_volume_healthy(client, volume_name)
+
+    num_snapshots = 1
+    for _ in range(num_snapshots):
+        create_snapshot(client, volume_name)
+
+    # - 1 new snapshot
+    # - 1 volume-head
+    wait_for_snapshot_count(volume, 2)
+
+    recurring_jobs = {
+        RECURRING_JOB_NAME: {
+            TASK: SNAPSHOT_DELETE,
+            GROUPS: [],
+            CRON: SCHEDULE_1MIN,
+            RETAIN: 0,
+            CONCURRENCY: 1,
+            LABELS: {},
+        },
+    }
+    create_recurring_jobs(client, recurring_jobs)
+    check_recurring_jobs(client, recurring_jobs)
+    wait_for_cron_job_count(batch_v1_api, 1)
+
+    volume = client.by_id_volume(volume_name)
+    volume.recurringJobAdd(name=RECURRING_JOB_NAME, isGroup=False)
+
+    time.sleep(60)
+
+    # - 0 snapshot retained
+    # - 1 volume-head
+    try:
+        wait_for_snapshot_count(volume, 1)
+    except Exception:
+        wait_for_snapshot_count(volume, 1, count_removed=True)</code></pre>
+</details>
+</dd>
 <dt id="tests.test_recurring_job.test_recurring_job_volume_label_when_job_and_group_use_same_name"><code class="name flex">
 <span>def <span class="ident">test_recurring_job_volume_label_when_job_and_group_use_same_name</span></span>(<span>client, volume_name)</span>
 </code></dt>
@@ -4241,6 +4843,9 @@ Then the data exist in the deployment pod.</p></div>
 <li><code><a title="tests.test_recurring_job.test_recurring_job_multiple_volumes" href="#tests.test_recurring_job.test_recurring_job_multiple_volumes">test_recurring_job_multiple_volumes</a></code></li>
 <li><code><a title="tests.test_recurring_job.test_recurring_job_restored_from_backup_target" href="#tests.test_recurring_job.test_recurring_job_restored_from_backup_target">test_recurring_job_restored_from_backup_target</a></code></li>
 <li><code><a title="tests.test_recurring_job.test_recurring_job_snapshot" href="#tests.test_recurring_job.test_recurring_job_snapshot">test_recurring_job_snapshot</a></code></li>
+<li><code><a title="tests.test_recurring_job.test_recurring_job_snapshot_cleanup" href="#tests.test_recurring_job.test_recurring_job_snapshot_cleanup">test_recurring_job_snapshot_cleanup</a></code></li>
+<li><code><a title="tests.test_recurring_job.test_recurring_job_snapshot_delete" href="#tests.test_recurring_job.test_recurring_job_snapshot_delete">test_recurring_job_snapshot_delete</a></code></li>
+<li><code><a title="tests.test_recurring_job.test_recurring_job_snapshot_delete_retain_0" href="#tests.test_recurring_job.test_recurring_job_snapshot_delete_retain_0">test_recurring_job_snapshot_delete_retain_0</a></code></li>
 <li><code><a title="tests.test_recurring_job.test_recurring_job_volume_label_when_job_and_group_use_same_name" href="#tests.test_recurring_job.test_recurring_job_volume_label_when_job_and_group_use_same_name">test_recurring_job_volume_label_when_job_and_group_use_same_name</a></code></li>
 <li><code><a title="tests.test_recurring_job.test_recurring_jobs_allow_detached_volume" href="#tests.test_recurring_job.test_recurring_jobs_allow_detached_volume">test_recurring_jobs_allow_detached_volume</a></code></li>
 <li><code><a title="tests.test_recurring_job.test_recurring_jobs_maximum_retain" href="#tests.test_recurring_job.test_recurring_jobs_maximum_retain">test_recurring_jobs_maximum_retain</a></code></li>
