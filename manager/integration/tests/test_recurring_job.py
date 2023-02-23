@@ -1640,7 +1640,7 @@ def test_recurring_job_snapshot_delete(set_random_backupstore, client, batch_v1_
     And 3 snapshots were created.
     And volume has 4 snapshots.
         - 3 user-created
-        - 1 volume-test
+        - 1 volume-head
 
     When create a recurring job with:
          - task: snapshot-delete
@@ -1747,7 +1747,7 @@ def test_recurring_job_snapshot_delete_retain_0(set_random_backupstore, client, 
     And 1 snapshots were created.
     And volume has 2 snapshots.
         - 1 user-created
-        - 1 volume-test
+        - 1 volume-head
 
     When create a recurring job with:
          - task: snapshot-delete
