@@ -639,7 +639,7 @@ def test_recurring_jobs_maximum_retain(client, core_api, volume_name): # NOQA
         },
     }
 
-    validator_error = &#34;retain in body should be less than or equal to 50&#34;
+    validator_error = &#34;retain value should be less than or equal to 50&#34;
 
     with pytest.raises(Exception) as e:
         create_recurring_jobs(client, recurring_jobs)
@@ -4494,7 +4494,7 @@ Then should fail.</p></div>
         },
     }
 
-    validator_error = &#34;retain in body should be less than or equal to 50&#34;
+    validator_error = &#34;retain value should be less than or equal to 50&#34;
 
     with pytest.raises(Exception) as e:
         create_recurring_jobs(client, recurring_jobs)
