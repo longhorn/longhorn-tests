@@ -1800,6 +1800,7 @@ def test_recurring_job_snapshot_delete_retain_0(set_random_backupstore, client, 
         wait_for_snapshot_count(volume, 1, count_removed=True)
 
 
+@pytest.mark.skip(reason="volume.expand doesn't exist in v1.3.x. Need to test manually") # NOQA
 @pytest.mark.recurring_job  # NOQA
 def test_recurring_job_snapshot_cleanup(set_random_backupstore, client, batch_v1_beta_api, volume_name):  # NOQA
     """
