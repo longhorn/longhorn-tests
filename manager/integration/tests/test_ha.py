@@ -2797,7 +2797,7 @@ def test_autosalvage_with_data_locality_enabled(client, core_api, make_deploymen
        it will be schedule on to `node-2`. This makes sure that there is a
        failed-to-scheduled local replica
     5. Wait for the pod to be in running state.
-    6. Kill the instance manager r on `node-1`.
+    6. Kill the aio instance manager on `node-1`.
     7. In a 3-min retry loop, verify that Longhorn salvage the volume
        and the workload pod is restarted. Exec into the workload pod.
        Verify that read/write to the volume is ok
@@ -2853,9 +2853,8 @@ def test_autosalvage_with_data_locality_enabled(client, core_api, make_deploymen
     create_snapshot(client, volume_name)
 
     # Step6
-    labels = "longhorn.io/node={}\
-            , longhorn.io/instance-manager-type=replica"\
-            .format(node_1["name"])
+    labels = f'longhorn.io/node={node_1["name"]}, \
+               longhorn.io/instance-manager-type=aio'
 
     ret = core_api.list_namespaced_pod(
             namespace=LONGHORN_NAMESPACE, label_selector=labels)
