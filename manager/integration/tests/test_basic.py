@@ -4167,31 +4167,31 @@ def test_aws_iam_role_arn(client, core_api):  # NOQA
     Test AWS IAM Role ARN
 
     1. Set backup target to S3
-    2. Check longhorn manager and replica instance manager Pods
+    2. Check longhorn manager and aio instance manager Pods
        without 'iam.amazonaws.com/role' annotation
     3. Add AWS_IAM_ROLE_ARN to secret
-    4. Check longhorn manager and replica instance manager Pods
+    4. Check longhorn manager and aio instance manager Pods
        with 'iam.amazonaws.com/role' annotation
        and matches to AWS_IAM_ROLE_ARN in secret
     5. Update AWS_IAM_ROLE_ARN from secret
-    6. Check longhorn manager and replica instance manager Pods
+    6. Check longhorn manager and aio instance manager Pods
        with 'iam.amazonaws.com/role' annotation
        and matches to AWS_IAM_ROLE_ARN in secret
     7. Remove AWS_IAM_ROLE_ARN from secret
-    8. Check longhorn manager and replica instance manager Pods
+    8. Check longhorn manager and aio instance manager Pods
        without 'iam.amazonaws.com/role' annotation
     """
     set_backupstore_s3(client)
 
     lh_label = 'app=longhorn-manager'
-    replica_im_label = 'longhorn.io/instance-manager-type=replica'
+    im_label = 'longhorn.io/instance-manager-type=aio'
     anno_key = 'iam.amazonaws.com/role'
     secret_name = backupstore_get_secret(client)
 
     common.wait_for_pod_annotation(
         core_api, lh_label, anno_key, None)
     common.wait_for_pod_annotation(
-        core_api, replica_im_label, anno_key, None)
+        core_api, im_label, anno_key, None)
 
     # Add secret key AWS_IAM_ROLE_ARN value test-aws-iam-role-arn
     secret = core_api.read_namespaced_secret(
@@ -4203,7 +4203,7 @@ def test_aws_iam_role_arn(client, core_api):  # NOQA
     common.wait_for_pod_annotation(
         core_api, lh_label, anno_key, 'test-aws-iam-role-arn')
     common.wait_for_pod_annotation(
-        core_api, replica_im_label, anno_key, 'test-aws-iam-role-arn')
+        core_api, im_label, anno_key, 'test-aws-iam-role-arn')
 
     # Update secret key AWS_IAM_ROLE_ARN value test-aws-iam-role-arn-2
     secret = core_api.read_namespaced_secret(
@@ -4215,7 +4215,7 @@ def test_aws_iam_role_arn(client, core_api):  # NOQA
     common.wait_for_pod_annotation(
         core_api, lh_label, anno_key, 'test-aws-iam-role-arn-2')
     common.wait_for_pod_annotation(
-        core_api, replica_im_label, anno_key, 'test-aws-iam-role-arn-2')
+        core_api, im_label, anno_key, 'test-aws-iam-role-arn-2')
 
     # Remove secret key AWS_IAM_ROLE_ARN
     body = [{"op": "remove", "path": "/data/AWS_IAM_ROLE_ARN"}]
@@ -4225,7 +4225,7 @@ def test_aws_iam_role_arn(client, core_api):  # NOQA
     common.wait_for_pod_annotation(
         core_api, lh_label, anno_key, None)
     common.wait_for_pod_annotation(
-        core_api, replica_im_label, anno_key, None)
+        core_api, im_label, anno_key, None)
 
 
 @pytest.mark.coretest   # NOQA
