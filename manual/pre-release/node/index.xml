@@ -43,7 +43,7 @@
 If auto-salvage is disabled, the auto-reattachment behavior after the node disconnection depends on all replicas are in ERROR state or not.
 (1) If all replicas are in ERROR state, the volume would remain in detached/faulted state if auto-salvage is disabled.
 (2) If there is any healthy replica, the volume would be auto-reattached even though auto-salvage is disabled.
-What makes all replicas in ERROR state? If there is data writing during the disconnection, due to the engine process not able to talk with other replicas, the engine process will mark all other replicas as ERROR.</description>
+What makes all replicas in ERROR state? When there is data writing during the disconnection:</description>
     </item>
     
     <item>
