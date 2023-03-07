@@ -4988,7 +4988,8 @@ def check_recurring_jobs(client, recurring_jobs):
         assert recurring_job.cron == spec["cron"]
 
         expect_retain = spec["retain"]
-        if recurring_job.task == "snapshot-cleanup":
+        if recurring_job.task == "snapshot-cleanup" or \
+                recurring_job.task == "filesystem-trim":
             expect_retain = 0
         assert recurring_job.retain == expect_retain
 

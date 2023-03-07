@@ -11,6 +11,9 @@ from backupstore import set_random_backupstore  # NOQA
 
 import common
 from common import client, core_api, apps_api, batch_v1_api  # NOQA
+from common import csi_pv  # NOQA
+from common import pod_make  # NOQA
+from common import pvc  # NOQA
 from common import random_labels, volume_name  # NOQA
 from common import storage_class, statefulset, pvc  # NOQA
 from common import make_deployment_with_pvc  # NOQA
@@ -42,6 +45,8 @@ from common import get_statefulset_pod_info
 from common import update_statefulset_manifests
 
 from common import check_pod_existence
+from common import exec_command_in_pod
+from common import prepare_pod_with_data_in_mb
 
 from common import crash_engine_process_with_sigkill
 
@@ -87,6 +92,7 @@ SNAPSHOT = "snapshot"
 SNAPSHOT_DELETE = "snapshot-delete"
 SNAPSHOT_CLEANUP = "snapshot-cleanup"
 BACKUP = "backup"
+FILESYSTEM_TRIM = "filesystem-trim"
 CONCURRENCY = "concurrency"
 LABELS = "labels"
 DEFAULT = "default"
@@ -2069,3 +2075,96 @@ def test_recurring_job_restored_from_backup_target(set_random_backupstore, clien
     wait_for_volume_recurring_job_update(rvolume2,
                                          jobs=[snap1, back1],
                                          groups=[DEFAULT, group1])
+
+
+@pytest.mark.recurring_job  # NOQA
+def test_recurring_job_filesystem_trim(client, core_api, batch_v1_api, volume_name, csi_pv, pvc, pod_make):  # NOQA
+    """
+    Scenario: test recurring job filesystem-trim
+
+    Given a workload (volume, pv, pvc, pod).
+    And create 50mb file in volume.
+    And actual size of the volume should increase.
+    And delete the 50mb file in volume.
+    And actual size of the volume should not decrease.
+
+    When create a recurring job with:
+         - task: filesystem-trim
+         - retain: 1
+    Then recurring job retain mutated to 0.
+
+    When assign the recurring job to volume.
+    And wait for the cron job scheduled time.
+    Then volume actual size should decrease 50mb.
+    """
+    pod_name, _, _, _ = \
+        prepare_pod_with_data_in_mb(client, core_api, csi_pv, pvc, pod_make,
+                                    volume_name, data_size_in_mb=10)
+
+    volume = client.by_id_volume(volume_name)
+
+    # Do the first trim to ensure that the final trim size only includes the
+    # created file.
+    volume.trimFilesystem(volume=volume_name)
+    initial_size = wait_for_actual_size_change_mb(client, volume_name, 0)
+
+    file_delete = "/data/trim.test"
+    test_size = 50
+    write_pod_volume_random_data(core_api, pod_name,
+                                 file_delete, test_size)
+
+    size_after_file_created = \
+        wait_for_actual_size_change_mb(client, volume_name, initial_size)
+    assert size_after_file_created - initial_size == test_size
+
+    command = f'rm {file_delete}'
+    exec_command_in_pod(core_api, command, pod_name, 'default')
+
+    try:
+        wait_for_actual_size_change_mb(
+            client, volume_name, size_after_file_created,
+            retry_counts=10,
+            wait_stablize=True
+        )
+        assert False, \
+            f'expecting no change in actual size: {size_after_file_created}'
+    except Exception:
+        pass
+
+    recurring_jobs = {
+        RECURRING_JOB_NAME: {
+            TASK: FILESYSTEM_TRIM,
+            GROUPS: [DEFAULT],
+            CRON: SCHEDULE_1MIN,
+            RETAIN: 1,
+            CONCURRENCY: 1,
+            LABELS: {},
+        },
+    }
+    create_recurring_jobs(client, recurring_jobs)
+    check_recurring_jobs(client, recurring_jobs)
+    wait_for_cron_job_count(batch_v1_api, 1)
+
+    size_after_file_deleted = \
+        wait_for_actual_size_change_mb(client, volume_name,
+                                       size_after_file_created)
+    size_trimmed = size_after_file_created - size_after_file_deleted
+    assert size_trimmed == test_size
+
+
+def wait_for_actual_size_change_mb(client, vol_name, old_size,  # NOQA
+                                   retry_counts=60, wait_stablize=True):
+    size_change = 0
+    for _ in range(retry_counts):
+        time.sleep(5)
+
+        volume = client.by_id_volume(vol_name)
+        new_size = int(int(volume.controllers[0].actualSize) / Mi)
+
+        if wait_stablize and new_size != size_change:
+            size_change = new_size
+            continue
+
+        if new_size != old_size:
+            return new_size
+    assert False, f'expecting actual size change: {old_size} -> {new_size}'
