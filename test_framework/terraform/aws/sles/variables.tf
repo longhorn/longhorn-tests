@@ -10,12 +10,12 @@ variable "lh_aws_secret_key" {
 
 variable "aws_region" {
   type        = string
-  default     = "us-east-2"
+  default     = "us-east-1"
 }
 
 variable "aws_availability_zone" {
   type        = string
-  default     = "us-east-2a"
+  default     = "us-east-1a"
 }
 
 variable "lh_aws_vpc_name" {
@@ -26,18 +26,22 @@ variable "lh_aws_vpc_name" {
 variable "arch" {
   type        = string
   description = "available values (amd64, arm64)"
+  default     = "amd64"
 }
 
 variable "os_distro_version" {
   type        = string
+<<<<<<< HEAD
   default     = "15-sp3-v20210622"
+=======
+  default     = "15-sp4"
+>>>>>>> f7c0d9fb (ci: refine sles ami rule to avoid error from ami being deleted)
 }
 
 variable "aws_ami_sles_account_number" {
   type        = string
   default     = "amazon"
 }
-
 
 variable "lh_aws_instance_count_controlplane" {
   type        = number
@@ -57,11 +61,13 @@ variable "lh_aws_instance_name_controlplane" {
 variable "lh_aws_instance_type_controlplane" {
   type        = string
   description = "Recommended instance types t2.xlarge for amd64 & a1.xlarge  for arm64"
+  default     = "t2.xlarge"
 }
 
 variable "lh_aws_instance_type_worker" {
   type        = string
   description = "Recommended instance types t2.xlarge for amd64 & a1.xlarge  for arm64"
+  default     = "t2.xlarge"
 }
 
 variable "lh_aws_instance_root_block_device_size_controlplane" {
