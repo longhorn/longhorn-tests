@@ -9,7 +9,7 @@ data "aws_ami" "aws_ami_sles" {
 
   filter {
     name   = "name"
-    values = ["suse-sles-${var.os_distro_version}-hvm-ssd-${local.aws_ami_sles_arch}"]
+    values = ["suse-sles-${var.os_distro_version}-v*-hvm-ssd-${local.aws_ami_sles_arch}"]
   }
 }
 
