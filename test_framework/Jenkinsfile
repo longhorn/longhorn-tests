@@ -29,7 +29,9 @@ node {
     withCredentials([
         usernamePassword(credentialsId: CREDS_ID, passwordVariable: 'AWS_SECRET_KEY', usernameVariable: 'AWS_ACCESS_KEY'),
         string(credentialsId: 'DO_CREDS', variable: 'DO_TOKEN'),
-        string(credentialsId: REGISTRATION_CODE_ID, variable: 'REGISTRATION_CODE')
+        string(credentialsId: REGISTRATION_CODE_ID, variable: 'REGISTRATION_CODE'),
+        file(credentialsId: 'GCP_CREDS', variable: 'GCP_CREDS_FILE'),
+        string(credentialsId: 'GCP_PROJECT', variable: 'GCP_PROJECT'),
     ]) {
 
         if (params.SEND_SLACK_NOTIFICATION) {
@@ -124,8 +126,12 @@ node {
                                        --env TF_VAR_tf_workspace=${TF_VAR_tf_workspace} \
                                        --env TF_VAR_tf_selinux_mode=${SELINUX_MODE} \
                                        --env TF_VAR_registration_code=${REGISTRATION_CODE} \
+                                       --env TF_VAR_gcp_project=${GCP_PROJECT} \
+                                       --env TF_VAR_gcp_auth_file=/src/longhorn-tests/gcp_creds.json \
                                        ${imageName}
                 """
+
+                sh "docker cp ${GCP_CREDS_FILE} ${JOB_BASE_NAME}-${BUILD_NUMBER}:/src/longhorn-tests/gcp_creds.json"
             }
 
             timeout(60) {
