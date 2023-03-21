@@ -194,6 +194,7 @@ SETTING_SNAPSHOT_DATA_INTEGRITY_CRONJOB = "snapshot-data-integrity-cronjob"
 SETTING_SNAPSHOT_FAST_REPLICA_REBUILD_ENABLED = "fast-replica-rebuild-enabled"
 SETTING_CONCURRENT_VOLUME_BACKUP_RESTORE = \
     "concurrent-volume-backup-restore-per-node-limit"
+SETTING_NODE_SELECTOR = "system-managed-components-node-selector"
 
 SNAPSHOT_DATA_INTEGRITY_IGNORED = "ignored"
 SNAPSHOT_DATA_INTEGRITY_DISABLED = "disabled"
@@ -3009,17 +3010,21 @@ def wait_longhorn_node_zone_reset(client):
         assert lh_node.zone == ''
 
 
-def set_k8s_node_zone_label(core_api, node_name, zone_name):
-    k8s_zone_label = get_k8s_zone_label()
-
+def set_k8s_node_label(core_api, node_name, key, value):
     payload = {
         "metadata": {
             "labels": {
-                k8s_zone_label: zone_name}
+                key: value}
         }
     }
 
     core_api.patch_node(node_name, body=payload)
+
+
+def set_k8s_node_zone_label(core_api, node_name, zone_name):
+    k8s_zone_label = get_k8s_zone_label()
+
+    set_k8s_node_label(core_api, node_name, k8s_zone_label, zone_name)
 
 
 def get_k8s_zone_label():
@@ -5189,12 +5194,16 @@ def delete_support_bundle(node_id, name, client):
     return requests.delete(support_bundle_url)
 
 
-def download_support_bundle(node_id, name, client):  # NOQA
+def download_support_bundle(node_id, name, client, target_path=""):  # NOQA
     url = get_support_bundle_url(client)
     support_bundle_url = '{}/{}/{}'.format(url, node_id, name)
     download_url = '{}/download'.format(support_bundle_url)
     r = requests.get(download_url, allow_redirects=True, timeout=300)
     r.raise_for_status()
+
+    if target_path != "":
+        with open(target_path, 'wb') as f:
+            f.write(r.content)
 
 
 def get_all_support_bundle_manager_deployments(apps_api):  # NOQA
