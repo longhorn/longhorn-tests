@@ -39,8 +39,9 @@ from common import wait_for_backing_image_status
 from common import wait_for_backing_image_in_disk_fail
 from common import get_disk_uuid
 from common import LONGHORN_NAMESPACE, RETRY_EXEC_COUNTS, RETRY_INTERVAL
-from common import BACKING_IMAGE_QCOW2_CHECKSUM, BACKING_IMAGE_STATE_FAILED
-from common import BACKING_IMAGE_STATE_READY, BACKING_IMAGE_STATE_IN_PROGRESS
+from common import BACKING_IMAGE_QCOW2_CHECKSUM
+from common import BACKING_IMAGE_STATE_READY
+from common import BACKING_IMAGE_STATE_FAILED_AND_CLEANUP
 import time
 
 
@@ -628,6 +629,4 @@ def test_backing_image_with_wrong_md5sum(bi_url, client): # NOQA
                                 expectedChecksum=backing_image_wrong_checksum)
 
     wait_for_backing_image_status(client, BACKING_IMAGE_NAME,
-                                  BACKING_IMAGE_STATE_IN_PROGRESS)
-    wait_for_backing_image_status(client, BACKING_IMAGE_NAME,
-                                  BACKING_IMAGE_STATE_FAILED)
+                                  BACKING_IMAGE_STATE_FAILED_AND_CLEANUP)
