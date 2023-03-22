@@ -5151,19 +5151,22 @@ def enable_default_disk(client):
 
 def wait_for_backing_image_status(client, backing_img_name, image_status):
 
-    for i in range(RETRY_EXEC_COUNTS):
+    status_matched = False
+    for _ in range(RETRY_EXEC_COUNTS):
+        if status_matched:
+            break
+
         backing_image = client.by_id_backing_image(backing_img_name)
         try:
             if backing_image.diskFileStatusMap.items():
                 for _, status in iter(backing_image.diskFileStatusMap.items()):
-                    assert status.state == image_status
-                break
+                    if status.state == image_status:
+                        status_matched = True
         except Exception as e:
             print(e)
-        time.sleep(RETRY_INTERVAL)
+        time.sleep(RETRY_EXEC_INTERVAL)
 
-    for _, status in iter(backing_image.diskFileStatusMap.items()):
-        assert status.state == image_status
+    assert status_matched is True
 
 def wait_for_backing_image_in_disk_fail(client, backing_img_name, disk_uuid):
 
