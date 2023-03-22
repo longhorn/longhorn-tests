@@ -55,6 +55,7 @@ BACKING_IMAGE_EXT4_SIZE = 32 * Mi
 BACKING_IMAGE_STATE_READY = "ready"
 BACKING_IMAGE_STATE_IN_PROGRESS = "in-progress"
 BACKING_IMAGE_STATE_FAILED = "failed"
+BACKING_IMAGE_STATE_FAILED_AND_CLEANUP = "failed-and-cleanup"
 
 PORT = ":9500"
 
@@ -5445,12 +5446,13 @@ def wait_for_backing_image_status(client, backing_img_name, image_status):
     for i in range(RETRY_EXEC_COUNTS):
         backing_image = client.by_id_backing_image(backing_img_name)
         try:
-            for _, status in iter(backing_image.diskFileStatusMap.items()):
-                assert status.state == image_status
-            break
+            if backing_image.diskFileStatusMap.items():
+                for _, status in iter(backing_image.diskFileStatusMap.items()):
+                    assert status.state == image_status
+                break
         except Exception as e:
             print(e)
-            time.sleep(RETRY_INTERVAL)
+        time.sleep(RETRY_INTERVAL)
 
     for _, status in iter(backing_image.diskFileStatusMap.items()):
         assert status.state == image_status
