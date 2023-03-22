@@ -1,9 +1,10 @@
 import pytest
-import time
 import os
 import zipfile
 
 from tempfile import TemporaryDirectory
+
+from node import taint_nodes_exclude_self  # NOQA
 
 from common import apps_api  # NOQA
 from common import client  # NOQA
@@ -21,6 +22,7 @@ from common import wait_for_support_bundle_state
 
 from common import SETTING_NODE_SELECTOR
 from common import SETTING_SUPPORT_BUNDLE_FAILED_LIMIT
+from common import SETTING_TAINT_TOLERATION
 
 
 @pytest.mark.support_bundle   # NOQA
@@ -217,3 +219,46 @@ def check_bundled_nodes_matches(node_names, zip, temp_dir):
         f'Nodes zipped in bundle do not match. \n' \
         f'Expect = {expect_node_zips}\n' \
         f'Got = {node_zips}\n'
+
+
+@pytest.mark.support_bundle   # NOQA
+def test_support_bundle_agent_with_taint_toleration(client, core_api, taint_nodes_exclude_self):  # NOQA
+    """
+    Scenario: support bundle agent should respect taint toleration
+
+    Issue: https://github.com/longhorn/longhorn/issues/5614
+
+    Given there are some tainted nodes in the cluster
+    And Longhorn tolerates the tainted nodes with setting "taint-toleration"
+
+    When a support bundle is generated
+
+    Then should be able to download the support bundle successfully
+    And support bundle should include all tainted nodes in node collection
+
+    """
+    # The taint-toleration is set up to match the "taint_nodes_exclude_self"
+    # fixture.
+    update_setting(client, SETTING_TAINT_TOLERATION,
+                   "foo/bar=test:NoSchedule; foo:NoSchedule")
+
+    resp = create_support_bundle(client)
+    node_id = resp['id']
+    name = resp['name']
+
+    wait_for_support_bundle_state("ReadyForDownload", node_id, name, client)
+
+    # The temporary directory will be automatically deleted outside of the
+    # "with" context manager.
+    with TemporaryDirectory(prefix="supportbundle-") as temp_dir:
+        download_path = f'{temp_dir}/{0}.zip'.format(name)
+        download_support_bundle(node_id, name, client,
+                                target_path=download_path)
+
+        with zipfile.ZipFile(download_path, 'r') as zip:
+            nodes = core_api.list_node()
+            node_names = [f"{node.metadata.name}" for node in nodes.items]
+            check_bundled_nodes_matches(node_names, zip, temp_dir)
+
+    wait_for_support_bundle_cleanup(client)
+    check_all_support_bundle_managers_deleted()
