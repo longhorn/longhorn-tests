@@ -35,16 +35,13 @@ from common import BACKING_IMAGE_NAME, BACKING_IMAGE_QCOW2_URL, \
     BACKING_IMAGE_SOURCE_TYPE_FROM_VOLUME, Gi
 
 from common import wait_for_volume_detached
-from common import wait_for_backing_image_ready
+from common import wait_for_backing_image_status
 from common import wait_for_backing_image_in_disk_fail
 from common import get_disk_uuid
 from common import LONGHORN_NAMESPACE, RETRY_EXEC_COUNTS, RETRY_INTERVAL
-<<<<<<< HEAD
-=======
 from common import BACKING_IMAGE_QCOW2_CHECKSUM
 from common import BACKING_IMAGE_STATE_READY
 from common import BACKING_IMAGE_STATE_FAILED_AND_CLEANUP
->>>>>>> 920cbb46 (fix (backing image): fix wait backing image state function won't wait issue)
 import time
 
 
@@ -547,7 +544,9 @@ def test_backing_image_auto_resync(bi_url, client, volume_name):  # NOQA
     wait_for_backing_image_in_disk_fail(client, BACKING_IMAGE_NAME, disk_uuid)
 
     # Step 6
-    wait_for_backing_image_ready(client, BACKING_IMAGE_NAME)
+    wait_for_backing_image_status(client, BACKING_IMAGE_NAME,
+                                  BACKING_IMAGE_STATE_READY)
+
 
     # Step 7
     volume = wait_for_volume_healthy(client, volume_name)
@@ -616,8 +615,6 @@ def backing_image_cleanup(core_api, client): # NOQA
             break
 
     assert exist is False
-<<<<<<< HEAD
-=======
 
 
 @pytest.mark.backing_image  # NOQA
@@ -634,4 +631,3 @@ def test_backing_image_with_wrong_md5sum(bi_url, client): # NOQA
 
     wait_for_backing_image_status(client, BACKING_IMAGE_NAME,
                                   BACKING_IMAGE_STATE_FAILED_AND_CLEANUP)
->>>>>>> 920cbb46 (fix (backing image): fix wait backing image state function won't wait issue)
