@@ -547,7 +547,6 @@ def test_backing_image_auto_resync(bi_url, client, volume_name):  # NOQA
     wait_for_backing_image_status(client, BACKING_IMAGE_NAME,
                                   BACKING_IMAGE_STATE_READY)
 
-
     # Step 7
     volume = wait_for_volume_healthy(client, volume_name)
     assert volume.backingImage == BACKING_IMAGE_NAME

@@ -5168,6 +5168,7 @@ def wait_for_backing_image_status(client, backing_img_name, image_status):
 
     assert status_matched is True
 
+
 def wait_for_backing_image_in_disk_fail(client, backing_img_name, disk_uuid):
 
     failed = False
