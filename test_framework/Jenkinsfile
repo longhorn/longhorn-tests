@@ -6,12 +6,21 @@ def BUILD_TRIGGER_BY = "\n${currentBuild.getBuildCauses()[0].shortDescription}"
 def SELINUX_MODE = params.SELINUX_MODE ? "SELINUX_MODE=${params.SELINUX_MODE}" : ""
 
 def CREDS_ID = JOB_BASE_NAME == "longhorn-tests-regression" ? "AWS_CREDS_RANCHER_QA" : "AWS_CREDS"
+def REGISTRATION_CODE_ID = params.ARCH == "amd64" ? "REGISTRATION_CODE" : "REGISTRATION_CODE_ARM64"
 
 node {
 
+<<<<<<< HEAD
 	if(params.SEND_SLACK_NOTIFICATION){
 		notifyBuild('STARTED', BUILD_TRIGGER_BY, params.NOTIFY_SLACK_CHANNEL)
 	}
+=======
+    withCredentials([
+        usernamePassword(credentialsId: CREDS_ID, passwordVariable: 'AWS_SECRET_KEY', usernameVariable: 'AWS_ACCESS_KEY'),
+        string(credentialsId: 'DO_CREDS', variable: 'DO_TOKEN'),
+        string(credentialsId: REGISTRATION_CODE_ID, variable: 'REGISTRATION_CODE')
+    ]) {
+>>>>>>> d21bf5f8 (ci: add sle-micro provisioning)
 
     checkout scm
 
@@ -56,6 +65,98 @@ node {
         }
 
         try {
+<<<<<<< HEAD
+=======
+
+            if (params.AIR_GAP_INSTALLATION) {
+
+                stage('airgap build') {
+                    sh "airgap/scripts/build.sh"
+                    sh """ docker run -itd --name airgap-${JOB_BASE_NAME}-${BUILD_NUMBER} \
+                                           --env TF_VAR_longhorn_version=${LONGHORN_INSTALL_VERSION} \
+                                           --env TF_VAR_do_token=${DO_TOKEN} \
+                                           --env TF_VAR_aws_access_key=${AWS_ACCESS_KEY} \
+                                           --env TF_VAR_aws_secret_key=${AWS_SECRET_KEY} \
+                                           airgap-${JOB_BASE_NAME}-${BUILD_NUMBER}
+                    """
+                }
+
+                stage ('airgap setup') {
+                    sh "docker exec airgap-${JOB_BASE_NAME}-${BUILD_NUMBER} ./airgap/scripts/terraform-setup.sh"
+                    REGISTRY_URL = sh (
+                        script: "docker exec airgap-${JOB_BASE_NAME}-${BUILD_NUMBER} terraform -chdir=./airgap/terraform output -raw registry_url",
+                        returnStdout: true
+                    )
+                    println REGISTRY_URL
+                    REGISTRY_USERNAME = sh (
+                        script: "docker exec airgap-${JOB_BASE_NAME}-${BUILD_NUMBER} terraform -chdir=./airgap/terraform output -raw registry_username",
+                        returnStdout: true
+                    )
+                    REGISTRY_PASSWORD = sh (
+                        script: "docker exec airgap-${JOB_BASE_NAME}-${BUILD_NUMBER} terraform -chdir=./airgap/terraform output -raw registry_password",
+                        returnStdout: true
+                    )
+                }
+
+            }
+
+            stage('build') {
+
+                if(JOB_BASE_NAME == "longhorn-tests-regression") {
+                    manager.addShortText(BUILD_TRIGGER_BY.replace("\nStarted by user ", ""), "grey", "white", "0px", "white")
+                }
+
+                echo "Using credentials: $CREDS_ID"
+                echo "Using registration coce: $REGISTRATION_CODE_ID"
+
+                sh "test_framework/scripts/build.sh"
+                sh """ docker run -itd --name ${JOB_BASE_NAME}-${BUILD_NUMBER} \
+                                       --env AIR_GAP_INSTALLATION=${AIR_GAP_INSTALLATION} \
+                                       --env REGISTRY_URL=${REGISTRY_URL} \
+                                       --env REGISTRY_USERNAME=${REGISTRY_USERNAME} \
+                                       --env REGISTRY_PASSWORD=${REGISTRY_PASSWORD} \
+                                       --env LONGHORN_INSTALL_VERSION=${LONGHORN_INSTALL_VERSION} \
+                                       --env LONGHORN_INSTALL_METHOD=${LONGHORN_INSTALL_METHOD} \
+                                       --env TF_VAR_create_load_balancer=${CREATE_LOAD_BALANCER} \
+                                       --env RANCHER_CHART_GIT_REPO=${RANCHER_CHART_GIT_REPO} \
+                                       --env RANCHER_CHART_GIT_BRANCH=${RANCHER_CHART_GIT_BRANCH} \
+                                       --env RANCHER_CHART_INSTALL_VERSION=${RANCHER_CHART_INSTALL_VERSION} \
+                                       --env CUSTOM_LONGHORN_ENGINE_IMAGE=${CUSTOM_LONGHORN_ENGINE_IMAGE} \
+                                       --env CUSTOM_LONGHORN_INSTANCE_MANAGER_IMAGE=${CUSTOM_LONGHORN_INSTANCE_MANAGER_IMAGE} \
+                                       --env CUSTOM_LONGHORN_MANAGER_IMAGE=${CUSTOM_LONGHORN_MANAGER_IMAGE} \
+                                       --env CUSTOM_LONGHORN_SHARE_MANAGER_IMAGE=${CUSTOM_LONGHORN_SHARE_MANAGER_IMAGE} \
+                                       --env LONGHORN_TESTS_CUSTOM_IMAGE=${LONGHORN_TESTS_CUSTOM_IMAGE} \
+                                       --env DISTRO=${DISTRO} \
+                                       --env LONGHORN_REPO_URI=${LONGHORN_REPO_URI} \
+                                       --env LONGHORN_REPO_BRANCH=${LONGHORN_REPO_BRANCH} \
+                                       --env LONGHORN_STABLE_VERSION=${LONGHORN_STABLE_VERSION} \
+                                       --env LONGHORN_TRANSIENT_VERSION=${LONGHORN_TRANSIENT_VERSION} \
+                                       --env LONGHORN_TEST_CLOUDPROVIDER=${LONGHORN_TEST_CLOUDPROVIDER} \
+                                       --env LONGHORN_UPGRADE_TEST=${LONGHORN_UPGRADE_TEST} \
+                                       --env PYTEST_CUSTOM_OPTIONS="${PYTEST_CUSTOM_OPTIONS}" \
+                                       --env BACKUP_STORE_TYPE="${BACKUP_STORE_TYPE}" \
+                                       --env TF_VAR_use_hdd=${USE_HDD} \
+                                       --env TF_VAR_arch=${ARCH} \
+                                       --env TF_VAR_k8s_distro_name=${K8S_DISTRO_NAME} \
+                                       --env TF_VAR_k8s_distro_version=${K8S_DISTRO_VERSION} \
+                                       --env TF_VAR_aws_availability_zone=${AWS_AVAILABILITY_ZONE} \
+                                       --env TF_VAR_aws_region=${AWS_REGION} \
+                                       --env TF_VAR_os_distro_version=${DISTRO_VERSION} \
+                                       --env TF_VAR_do_token=${env.TF_VAR_do_token} \
+                                       --env TF_VAR_lh_aws_access_key=${AWS_ACCESS_KEY} \
+                                       --env TF_VAR_lh_aws_instance_name_controlplane="${JOB_BASE_NAME}-ctrl" \
+                                       --env TF_VAR_lh_aws_instance_name_worker="${JOB_BASE_NAME}-wrk" \
+                                       --env TF_VAR_lh_aws_instance_type_controlplane=${CONTROLPLANE_INSTANCE_TYPE} \
+                                       --env TF_VAR_lh_aws_instance_type_worker=${WORKER_INSTANCE_TYPE}\
+                                       --env TF_VAR_lh_aws_secret_key=${AWS_SECRET_KEY} \
+                                       --env TF_VAR_tf_workspace=${TF_VAR_tf_workspace} \
+                                       --env TF_VAR_tf_selinux_mode=${SELINUX_MODE} \
+                                       --env TF_VAR_registration_code=${REGISTRATION_CODE} \
+                                       ${imageName}
+                """
+            }
+
+>>>>>>> d21bf5f8 (ci: add sle-micro provisioning)
             timeout(60) {
                 stage ('terraform') {
                     sh  " docker exec ${JOB_BASE_NAME}-${BUILD_NUMBER} ${TF_VAR_tf_workspace}/scripts/terraform-setup.sh"
