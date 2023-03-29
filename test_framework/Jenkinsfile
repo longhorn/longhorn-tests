@@ -6,6 +6,7 @@ def BUILD_TRIGGER_BY = "\n${currentBuild.getBuildCauses()[0].shortDescription}"
 def SELINUX_MODE = params.SELINUX_MODE ? "SELINUX_MODE=${params.SELINUX_MODE}" : ""
 
 def CREDS_ID = JOB_BASE_NAME == "longhorn-tests-regression" ? "AWS_CREDS_RANCHER_QA" : "AWS_CREDS"
+def REGISTRATION_CODE_ID = params.ARCH == "amd64" ? "REGISTRATION_CODE" : "REGISTRATION_CODE_ARM64"
 
 // parameters for air gap installation
 def AIR_GAP_INSTALLATION = params.AIR_GAP_INSTALLATION ? params.AIR_GAP_INSTALLATION : false
@@ -27,7 +28,8 @@ node {
 
     withCredentials([
         usernamePassword(credentialsId: CREDS_ID, passwordVariable: 'AWS_SECRET_KEY', usernameVariable: 'AWS_ACCESS_KEY'),
-        string(credentialsId: 'DO_CREDS', variable: 'DO_TOKEN')
+        string(credentialsId: 'DO_CREDS', variable: 'DO_TOKEN'),
+        string(credentialsId: REGISTRATION_CODE_ID, variable: 'REGISTRATION_CODE')
     ]) {
 
         if (params.SEND_SLACK_NOTIFICATION) {
@@ -77,6 +79,7 @@ node {
                 }
 
                 echo "Using credentials: $CREDS_ID"
+                echo "Using registration coce: $REGISTRATION_CODE_ID"
 
                 sh "test_framework/scripts/build.sh"
                 sh """ docker run -itd --name ${JOB_BASE_NAME}-${BUILD_NUMBER} \
@@ -120,6 +123,7 @@ node {
                                        --env TF_VAR_lh_aws_secret_key=${AWS_SECRET_KEY} \
                                        --env TF_VAR_tf_workspace=${TF_VAR_tf_workspace} \
                                        --env TF_VAR_tf_selinux_mode=${SELINUX_MODE} \
+                                       --env TF_VAR_registration_code=${REGISTRATION_CODE} \
                                        ${imageName}
                 """
             }
