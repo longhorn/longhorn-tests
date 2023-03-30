@@ -645,14 +645,36 @@
     <article id="content">
        <h3 id="case-1">Case 1:</h3>
 <ol>
-<li>Create a backup.</li>
-<li>Restore the above backup.</li>
-<li>Power off the volume attached node during the restoring.</li>
-<li>Wait for the Longhorn node down.</li>
-<li>Wait for the restore volume being reattached and starting restoring volume with state <code>Degraded</code>.</li>
-<li>Wait for the restore complete.</li>
-<li>Attach the volume and verify the restored data.</li>
-<li>Verify the volume works fine.</li>
+<li>
+<p>Create a backup.</p>
+</li>
+<li>
+<p>Restore the above backup.</p>
+</li>
+<li>
+<p>Power off the volume attached node during the restoring.</p>
+</li>
+<li>
+<p>Wait for the Longhorn node down.</p>
+</li>
+<li>
+<p>Wait for the restore volume being reattached and starting restoring volume with state <code>Degraded</code>.</p>
+</li>
+<li>
+<p>Wait for the restore complete.</p>
+<blockquote>
+<p><strong>Note:</strong>
+During the restoration process, if the engine process fails to communicate with a replica, all replicas will be marked as <code>ERR</code>, and the volume&rsquo;s <code>RestoreRequired</code> status cannot be set to <code>false</code>. Longhorn relies on the <code>RestoreRequired</code> value to determine the completion of the restoration and whether the failed replicas can be automatically salvaged.</p>
+<p>In this case, the volume would remain in detached/faulted state.</p>
+<p>Ref: <a href="https://github.com/longhorn/longhorn/issues/5666">https://github.com/longhorn/longhorn/issues/5666</a></p>
+</blockquote>
+</li>
+<li>
+<p>Attach the volume and verify the restored data.</p>
+</li>
+<li>
+<p>Verify the volume works fine.</p>
+</li>
 </ol>
 <h3 id="case-2">Case 2:</h3>
 <ol>

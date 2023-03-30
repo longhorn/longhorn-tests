@@ -30,7 +30,13 @@
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/restore-volume-node-down/</guid>
-      <description>Case 1: Create a backup. Restore the above backup. Power off the volume attached node during the restoring. Wait for the Longhorn node down. Wait for the restore volume being reattached and starting restoring volume with state Degraded. Wait for the restore complete. Attach the volume and verify the restored data. Verify the volume works fine. Case 2: Repeat the steps from case 1 with an encrypted volume. </description>
+      <description>Case 1: Create a backup.
+Restore the above backup.
+Power off the volume attached node during the restoring.
+Wait for the Longhorn node down.
+Wait for the restore volume being reattached and starting restoring volume with state Degraded.
+Wait for the restore complete.
+Note: During the restoration process, if the engine process fails to communicate with a replica, all replicas will be marked as ERR, and the volume&amp;rsquo;s RestoreRequired status cannot be set to false.</description>
     </item>
     
     <item>
