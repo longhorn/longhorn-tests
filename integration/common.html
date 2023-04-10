@@ -222,6 +222,7 @@ SETTING_SNAPSHOT_DATA_INTEGRITY_CRONJOB = &#34;snapshot-data-integrity-cronjob&#
 SETTING_SNAPSHOT_FAST_REPLICA_REBUILD_ENABLED = &#34;fast-replica-rebuild-enabled&#34;
 SETTING_CONCURRENT_VOLUME_BACKUP_RESTORE = \
     &#34;concurrent-volume-backup-restore-per-node-limit&#34;
+SETTING_NODE_SELECTOR = &#34;system-managed-components-node-selector&#34;
 
 SNAPSHOT_DATA_INTEGRITY_IGNORED = &#34;ignored&#34;
 SNAPSHOT_DATA_INTEGRITY_DISABLED = &#34;disabled&#34;
@@ -233,6 +234,8 @@ CSI_TRUE = 1
 CSI_FALSE = 2
 
 KUBERNETES_STATUS_LABEL = &#34;KubernetesStatus&#34;
+
+MASTER_NODE_TAINT = &#34;node-role.kubernetes.io/master=true:NoExecute;node-role.kubernetes.io/master=true:NoSchedule&#34;  # NOQA
 
 # https://github.com/kubernetes/kubernetes/blob/a9f0db16614ae62563ead2018f1692407bd93d8f/pkg/apis/scheduling/types.go#L29  # NOQA
 PRIORITY_CLASS_MAX = 1000000000
@@ -3037,17 +3040,21 @@ def wait_longhorn_node_zone_reset(client):
         assert lh_node.zone == &#39;&#39;
 
 
-def set_k8s_node_zone_label(core_api, node_name, zone_name):
-    k8s_zone_label = get_k8s_zone_label()
-
+def set_k8s_node_label(core_api, node_name, key, value):
     payload = {
         &#34;metadata&#34;: {
             &#34;labels&#34;: {
-                k8s_zone_label: zone_name}
+                key: value}
         }
     }
 
     core_api.patch_node(node_name, body=payload)
+
+
+def set_k8s_node_zone_label(core_api, node_name, zone_name):
+    k8s_zone_label = get_k8s_zone_label()
+
+    set_k8s_node_label(core_api, node_name, k8s_zone_label, zone_name)
 
 
 def get_k8s_zone_label():
@@ -3189,6 +3196,9 @@ def reset_settings(client):
     for setting in client.list_setting():
         setting_name = setting.name
         setting_default_value = setting.definition.default
+        if setting_name == &#34;taint-toleration&#34;:
+            setting_default_value = MASTER_NODE_TAINT
+
         setting_readonly = setting.definition.readOnly
 
         # We don&#39;t provide the setup for the storage network, hence there is no
@@ -4892,6 +4902,9 @@ def get_engine_image_status_value(client, ei_name):
 
 def update_setting(client, name, value):
     setting = client.by_id_setting(name)
+    if name == &#34;taint-toleration&#34;:
+        value = value + &#34;;&#34; + MASTER_NODE_TAINT
+
     client.update(setting, value=value)
 
 
@@ -5217,12 +5230,16 @@ def delete_support_bundle(node_id, name, client):
     return requests.delete(support_bundle_url)
 
 
-def download_support_bundle(node_id, name, client):  # NOQA
+def download_support_bundle(node_id, name, client, target_path=&#34;&#34;):  # NOQA
     url = get_support_bundle_url(client)
     support_bundle_url = &#39;{}/{}/{}&#39;.format(url, node_id, name)
     download_url = &#39;{}/download&#39;.format(support_bundle_url)
     r = requests.get(download_url, allow_redirects=True, timeout=300)
     r.raise_for_status()
+
+    if target_path != &#34;&#34;:
+        with open(target_path, &#39;wb&#39;) as f:
+            f.write(r.content)
 
 
 def get_all_support_bundle_manager_deployments(apps_api):  # NOQA
@@ -7993,7 +8010,7 @@ def disable_auto_salvage(client):
 </details>
 </dd>
 <dt id="tests.common.download_support_bundle"><code class="name flex">
-<span>def <span class="ident">download_support_bundle</span></span>(<span>node_id, name, client)</span>
+<span>def <span class="ident">download_support_bundle</span></span>(<span>node_id, name, client, target_path='')</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -8001,12 +8018,16 @@ def disable_auto_salvage(client):
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def download_support_bundle(node_id, name, client):  # NOQA
+<pre><code class="python">def download_support_bundle(node_id, name, client, target_path=&#34;&#34;):  # NOQA
     url = get_support_bundle_url(client)
     support_bundle_url = &#39;{}/{}/{}&#39;.format(url, node_id, name)
     download_url = &#39;{}/download&#39;.format(support_bundle_url)
     r = requests.get(download_url, allow_redirects=True, timeout=300)
-    r.raise_for_status()</code></pre>
+    r.raise_for_status()
+
+    if target_path != &#34;&#34;:
+        with open(target_path, &#39;wb&#39;) as f:
+            f.write(r.content)</code></pre>
 </details>
 </dd>
 <dt id="tests.common.enable_default_disk"><code class="name flex">
@@ -10396,6 +10417,9 @@ def random_labels():
     for setting in client.list_setting():
         setting_name = setting.name
         setting_default_value = setting.definition.default
+        if setting_name == &#34;taint-toleration&#34;:
+            setting_default_value = MASTER_NODE_TAINT
+
         setting_readonly = setting.definition.readOnly
 
         # We don&#39;t provide the setup for the storage network, hence there is no
@@ -10578,6 +10602,26 @@ def scheduling_api(request):
     return scheduling_api</code></pre>
 </details>
 </dd>
+<dt id="tests.common.set_k8s_node_label"><code class="name flex">
+<span>def <span class="ident">set_k8s_node_label</span></span>(<span>core_api, node_name, key, value)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def set_k8s_node_label(core_api, node_name, key, value):
+    payload = {
+        &#34;metadata&#34;: {
+            &#34;labels&#34;: {
+                key: value}
+        }
+    }
+
+    core_api.patch_node(node_name, body=payload)</code></pre>
+</details>
+</dd>
 <dt id="tests.common.set_k8s_node_zone_label"><code class="name flex">
 <span>def <span class="ident">set_k8s_node_zone_label</span></span>(<span>core_api, node_name, zone_name)</span>
 </code></dt>
@@ -10590,14 +10634,7 @@ def scheduling_api(request):
 <pre><code class="python">def set_k8s_node_zone_label(core_api, node_name, zone_name):
     k8s_zone_label = get_k8s_zone_label()
 
-    payload = {
-        &#34;metadata&#34;: {
-            &#34;labels&#34;: {
-                k8s_zone_label: zone_name}
-        }
-    }
-
-    core_api.patch_node(node_name, body=payload)</code></pre>
+    set_k8s_node_label(core_api, node_name, k8s_zone_label, zone_name)</code></pre>
 </details>
 </dd>
 <dt id="tests.common.set_node_scheduling"><code class="name flex">
@@ -11147,6 +11184,9 @@ def sts_name(request):
 </summary>
 <pre><code class="python">def update_setting(client, name, value):
     setting = client.by_id_setting(name)
+    if name == &#34;taint-toleration&#34;:
+        value = value + &#34;;&#34; + MASTER_NODE_TAINT
+
     client.update(setting, value=value)</code></pre>
 </details>
 </dd>
@@ -14272,6 +14312,7 @@ from the args and kwargs arguments, respectively.</p></div>
 <li><code><a title="tests.common.restore_backup_and_get_data_checksum" href="#tests.common.restore_backup_and_get_data_checksum">restore_backup_and_get_data_checksum</a></code></li>
 <li><code><a title="tests.common.scale_up_engine_image_daemonset" href="#tests.common.scale_up_engine_image_daemonset">scale_up_engine_image_daemonset</a></code></li>
 <li><code><a title="tests.common.scheduling_api" href="#tests.common.scheduling_api">scheduling_api</a></code></li>
+<li><code><a title="tests.common.set_k8s_node_label" href="#tests.common.set_k8s_node_label">set_k8s_node_label</a></code></li>
 <li><code><a title="tests.common.set_k8s_node_zone_label" href="#tests.common.set_k8s_node_zone_label">set_k8s_node_zone_label</a></code></li>
 <li><code><a title="tests.common.set_node_scheduling" href="#tests.common.set_node_scheduling">set_node_scheduling</a></code></li>
 <li><code><a title="tests.common.set_node_scheduling_eviction" href="#tests.common.set_node_scheduling_eviction">set_node_scheduling_eviction</a></code></li>

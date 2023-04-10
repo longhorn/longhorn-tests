@@ -27,20 +27,30 @@
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">import pytest
+import os
+import zipfile
+
+from tempfile import TemporaryDirectory
+
+from node import taint_nodes_exclude_self  # NOQA
 
 from common import apps_api  # NOQA
 from common import client  # NOQA
+from common import core_api  # NOQA
 
 from common import check_all_support_bundle_managers_deleted
 from common import create_support_bundle
 from common import delete_and_wait_deployment
 from common import download_support_bundle
 from common import get_all_support_bundle_manager_deployments
+from common import set_k8s_node_label
 from common import update_setting
 from common import wait_for_support_bundle_cleanup
 from common import wait_for_support_bundle_state
 
+from common import SETTING_NODE_SELECTOR
 from common import SETTING_SUPPORT_BUNDLE_FAILED_LIMIT
+from common import SETTING_TAINT_TOLERATION
 
 
 @pytest.mark.support_bundle   # NOQA
@@ -168,7 +178,118 @@ def create_failed_support_bundles(client, apps_api, number=1):  # NOQA
             apps_api, deployments[0].metadata.name,
             namespace=deployments[0].metadata.namespace
         )
-        wait_for_support_bundle_state(&#34;Error&#34;, node_id, name, client)</code></pre>
+        wait_for_support_bundle_state(&#34;Error&#34;, node_id, name, client)
+
+
+@pytest.mark.support_bundle   # NOQA
+def test_support_bundle_agent_with_node_selector(client, core_api, request):  # NOQA
+    &#34;&#34;&#34;
+    Scenario: support bundle agent should respect node selector
+
+    Issue: https://github.com/longhorn/longhorn/issues/5614
+
+    Given there are some nodes labeled
+    And &#34;system-managed-components-node-selector&#34; is set with node label
+
+    When a support bundle is generated
+
+    Then should be able to download the support bundle successfully
+    And support bundle should include only the labeled nodes in node collection
+
+    &#34;&#34;&#34;
+    nodes = client.list_node()
+    labeled_nodes = [nodes[1], nodes[2]]
+    for node in labeled_nodes:
+        set_k8s_node_label(core_api, node.name, &#34;foo&#34;, &#34;bar&#34;)
+
+    def finalizer():
+        for node in labeled_nodes:
+            set_k8s_node_label(core_api, node.name, &#34;foo&#34;, None)
+        update_setting(client, SETTING_NODE_SELECTOR, None)
+    request.addfinalizer(finalizer)
+
+    update_setting(client, SETTING_NODE_SELECTOR, &#34;foo:bar&#34;)
+
+    resp = create_support_bundle(client)
+    node_id = resp[&#39;id&#39;]
+    name = resp[&#39;name&#39;]
+
+    wait_for_support_bundle_state(&#34;ReadyForDownload&#34;, node_id, name, client)
+
+    # The temporary directory will be automatically deleted outside of the
+    # &#34;with&#34; context manager.
+    with TemporaryDirectory(prefix=&#34;supportbundle-&#34;) as temp_dir:
+        download_path = f&#39;{temp_dir}/{0}.zip&#39;.format(name)
+        download_support_bundle(node_id, name, client,
+                                target_path=download_path)
+
+        with zipfile.ZipFile(download_path, &#39;r&#39;) as zip:
+            node_names = [f&#34;{node.name}&#34; for node in labeled_nodes]
+            check_bundled_nodes_matches(node_names, zip, temp_dir)
+
+    wait_for_support_bundle_cleanup(client)
+    check_all_support_bundle_managers_deleted()
+
+
+def check_bundled_nodes_matches(node_names, zip, temp_dir):
+    expect_node_zips = [f&#34;{node}.zip&#34; for node in node_names]
+    bundle_name = os.path.dirname(zip.namelist()[0])
+    bundle_node_dir = f&#39;{bundle_name}/nodes&#39;
+    bundle_nodes = [
+        f for f in zip.namelist() if f.startswith(bundle_node_dir)
+    ]
+
+    for node in bundle_nodes:
+        zip.extract(node, f&#39;{temp_dir}&#39;)
+
+    node_zips = os.listdir(f&#39;{temp_dir}/{bundle_name}/nodes&#39;)
+    assert set(node_zips) == set(expect_node_zips), \
+        f&#39;Nodes zipped in bundle do not match. \n&#39; \
+        f&#39;Expect = {expect_node_zips}\n&#39; \
+        f&#39;Got = {node_zips}\n&#39;
+
+
+@pytest.mark.support_bundle   # NOQA
+def test_support_bundle_agent_with_taint_toleration(client, core_api, taint_nodes_exclude_self):  # NOQA
+    &#34;&#34;&#34;
+    Scenario: support bundle agent should respect taint toleration
+
+    Issue: https://github.com/longhorn/longhorn/issues/5614
+
+    Given there are some tainted nodes in the cluster
+    And Longhorn tolerates the tainted nodes with setting &#34;taint-toleration&#34;
+
+    When a support bundle is generated
+
+    Then should be able to download the support bundle successfully
+    And support bundle should include all tainted nodes in node collection
+
+    &#34;&#34;&#34;
+    # The taint-toleration is set up to match the &#34;taint_nodes_exclude_self&#34;
+    # fixture.
+    update_setting(client, SETTING_TAINT_TOLERATION,
+                   &#34;foo/bar=test:NoSchedule; foo:NoSchedule&#34;)
+
+    resp = create_support_bundle(client)
+    node_id = resp[&#39;id&#39;]
+    name = resp[&#39;name&#39;]
+
+    wait_for_support_bundle_state(&#34;ReadyForDownload&#34;, node_id, name, client)
+
+    # The temporary directory will be automatically deleted outside of the
+    # &#34;with&#34; context manager.
+    with TemporaryDirectory(prefix=&#34;supportbundle-&#34;) as temp_dir:
+        download_path = f&#39;{temp_dir}/{0}.zip&#39;.format(name)
+        download_support_bundle(node_id, name, client,
+                                target_path=download_path)
+
+        with zipfile.ZipFile(download_path, &#39;r&#39;) as zip:
+            nodes = core_api.list_node()
+            node_names = [f&#34;{node.metadata.name}&#34; for node in nodes.items]
+            check_bundled_nodes_matches(node_names, zip, temp_dir)
+
+    wait_for_support_bundle_cleanup(client)
+    check_all_support_bundle_managers_deleted()</code></pre>
 </details>
 </section>
 <section>
@@ -178,6 +299,33 @@ def create_failed_support_bundles(client, apps_api, number=1):  # NOQA
 <section>
 <h2 class="section-title" id="header-functions">Functions</h2>
 <dl>
+<dt id="tests.test_support_bundle.check_bundled_nodes_matches"><code class="name flex">
+<span>def <span class="ident">check_bundled_nodes_matches</span></span>(<span>node_names, zip, temp_dir)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def check_bundled_nodes_matches(node_names, zip, temp_dir):
+    expect_node_zips = [f&#34;{node}.zip&#34; for node in node_names]
+    bundle_name = os.path.dirname(zip.namelist()[0])
+    bundle_node_dir = f&#39;{bundle_name}/nodes&#39;
+    bundle_nodes = [
+        f for f in zip.namelist() if f.startswith(bundle_node_dir)
+    ]
+
+    for node in bundle_nodes:
+        zip.extract(node, f&#39;{temp_dir}&#39;)
+
+    node_zips = os.listdir(f&#39;{temp_dir}/{bundle_name}/nodes&#39;)
+    assert set(node_zips) == set(expect_node_zips), \
+        f&#39;Nodes zipped in bundle do not match. \n&#39; \
+        f&#39;Expect = {expect_node_zips}\n&#39; \
+        f&#39;Got = {node_zips}\n&#39;</code></pre>
+</details>
+</dd>
 <dt id="tests.test_support_bundle.create_failed_support_bundles"><code class="name flex">
 <span>def <span class="ident">create_failed_support_bundles</span></span>(<span>client, apps_api, number=1)</span>
 </code></dt>
@@ -200,6 +348,129 @@ def create_failed_support_bundles(client, apps_api, number=1):  # NOQA
             namespace=deployments[0].metadata.namespace
         )
         wait_for_support_bundle_state(&#34;Error&#34;, node_id, name, client)</code></pre>
+</details>
+</dd>
+<dt id="tests.test_support_bundle.test_support_bundle_agent_with_node_selector"><code class="name flex">
+<span>def <span class="ident">test_support_bundle_agent_with_node_selector</span></span>(<span>client, core_api, request)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Scenario: support bundle agent should respect node selector</p>
+<p>Issue: <a href="https://github.com/longhorn/longhorn/issues/5614">https://github.com/longhorn/longhorn/issues/5614</a></p>
+<p>Given there are some nodes labeled
+And "system-managed-components-node-selector" is set with node label</p>
+<p>When a support bundle is generated</p>
+<p>Then should be able to download the support bundle successfully
+And support bundle should include only the labeled nodes in node collection</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@pytest.mark.support_bundle   # NOQA
+def test_support_bundle_agent_with_node_selector(client, core_api, request):  # NOQA
+    &#34;&#34;&#34;
+    Scenario: support bundle agent should respect node selector
+
+    Issue: https://github.com/longhorn/longhorn/issues/5614
+
+    Given there are some nodes labeled
+    And &#34;system-managed-components-node-selector&#34; is set with node label
+
+    When a support bundle is generated
+
+    Then should be able to download the support bundle successfully
+    And support bundle should include only the labeled nodes in node collection
+
+    &#34;&#34;&#34;
+    nodes = client.list_node()
+    labeled_nodes = [nodes[1], nodes[2]]
+    for node in labeled_nodes:
+        set_k8s_node_label(core_api, node.name, &#34;foo&#34;, &#34;bar&#34;)
+
+    def finalizer():
+        for node in labeled_nodes:
+            set_k8s_node_label(core_api, node.name, &#34;foo&#34;, None)
+        update_setting(client, SETTING_NODE_SELECTOR, None)
+    request.addfinalizer(finalizer)
+
+    update_setting(client, SETTING_NODE_SELECTOR, &#34;foo:bar&#34;)
+
+    resp = create_support_bundle(client)
+    node_id = resp[&#39;id&#39;]
+    name = resp[&#39;name&#39;]
+
+    wait_for_support_bundle_state(&#34;ReadyForDownload&#34;, node_id, name, client)
+
+    # The temporary directory will be automatically deleted outside of the
+    # &#34;with&#34; context manager.
+    with TemporaryDirectory(prefix=&#34;supportbundle-&#34;) as temp_dir:
+        download_path = f&#39;{temp_dir}/{0}.zip&#39;.format(name)
+        download_support_bundle(node_id, name, client,
+                                target_path=download_path)
+
+        with zipfile.ZipFile(download_path, &#39;r&#39;) as zip:
+            node_names = [f&#34;{node.name}&#34; for node in labeled_nodes]
+            check_bundled_nodes_matches(node_names, zip, temp_dir)
+
+    wait_for_support_bundle_cleanup(client)
+    check_all_support_bundle_managers_deleted()</code></pre>
+</details>
+</dd>
+<dt id="tests.test_support_bundle.test_support_bundle_agent_with_taint_toleration"><code class="name flex">
+<span>def <span class="ident">test_support_bundle_agent_with_taint_toleration</span></span>(<span>client, core_api, taint_nodes_exclude_self)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Scenario: support bundle agent should respect taint toleration</p>
+<p>Issue: <a href="https://github.com/longhorn/longhorn/issues/5614">https://github.com/longhorn/longhorn/issues/5614</a></p>
+<p>Given there are some tainted nodes in the cluster
+And Longhorn tolerates the tainted nodes with setting "taint-toleration"</p>
+<p>When a support bundle is generated</p>
+<p>Then should be able to download the support bundle successfully
+And support bundle should include all tainted nodes in node collection</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@pytest.mark.support_bundle   # NOQA
+def test_support_bundle_agent_with_taint_toleration(client, core_api, taint_nodes_exclude_self):  # NOQA
+    &#34;&#34;&#34;
+    Scenario: support bundle agent should respect taint toleration
+
+    Issue: https://github.com/longhorn/longhorn/issues/5614
+
+    Given there are some tainted nodes in the cluster
+    And Longhorn tolerates the tainted nodes with setting &#34;taint-toleration&#34;
+
+    When a support bundle is generated
+
+    Then should be able to download the support bundle successfully
+    And support bundle should include all tainted nodes in node collection
+
+    &#34;&#34;&#34;
+    # The taint-toleration is set up to match the &#34;taint_nodes_exclude_self&#34;
+    # fixture.
+    update_setting(client, SETTING_TAINT_TOLERATION,
+                   &#34;foo/bar=test:NoSchedule; foo:NoSchedule&#34;)
+
+    resp = create_support_bundle(client)
+    node_id = resp[&#39;id&#39;]
+    name = resp[&#39;name&#39;]
+
+    wait_for_support_bundle_state(&#34;ReadyForDownload&#34;, node_id, name, client)
+
+    # The temporary directory will be automatically deleted outside of the
+    # &#34;with&#34; context manager.
+    with TemporaryDirectory(prefix=&#34;supportbundle-&#34;) as temp_dir:
+        download_path = f&#39;{temp_dir}/{0}.zip&#39;.format(name)
+        download_support_bundle(node_id, name, client,
+                                target_path=download_path)
+
+        with zipfile.ZipFile(download_path, &#39;r&#39;) as zip:
+            nodes = core_api.list_node()
+            node_names = [f&#34;{node.metadata.name}&#34; for node in nodes.items]
+            check_bundled_nodes_matches(node_names, zip, temp_dir)
+
+    wait_for_support_bundle_cleanup(client)
+    check_all_support_bundle_managers_deleted()</code></pre>
 </details>
 </dd>
 <dt id="tests.test_support_bundle.test_support_bundle_failed_limit"><code class="name flex">
@@ -396,7 +667,10 @@ def test_support_bundle_should_error_when_failed(client, apps_api):  # NOQA
 </li>
 <li><h3><a href="#header-functions">Functions</a></h3>
 <ul class="">
+<li><code><a title="tests.test_support_bundle.check_bundled_nodes_matches" href="#tests.test_support_bundle.check_bundled_nodes_matches">check_bundled_nodes_matches</a></code></li>
 <li><code><a title="tests.test_support_bundle.create_failed_support_bundles" href="#tests.test_support_bundle.create_failed_support_bundles">create_failed_support_bundles</a></code></li>
+<li><code><a title="tests.test_support_bundle.test_support_bundle_agent_with_node_selector" href="#tests.test_support_bundle.test_support_bundle_agent_with_node_selector">test_support_bundle_agent_with_node_selector</a></code></li>
+<li><code><a title="tests.test_support_bundle.test_support_bundle_agent_with_taint_toleration" href="#tests.test_support_bundle.test_support_bundle_agent_with_taint_toleration">test_support_bundle_agent_with_taint_toleration</a></code></li>
 <li><code><a title="tests.test_support_bundle.test_support_bundle_failed_limit" href="#tests.test_support_bundle.test_support_bundle_failed_limit">test_support_bundle_failed_limit</a></code></li>
 <li><code><a title="tests.test_support_bundle.test_support_bundle_purge" href="#tests.test_support_bundle.test_support_bundle_purge">test_support_bundle_purge</a></code></li>
 <li><code><a title="tests.test_support_bundle.test_support_bundle_should_delete_after_download" href="#tests.test_support_bundle.test_support_bundle_should_delete_after_download">test_support_bundle_should_delete_after_download</a></code></li>
