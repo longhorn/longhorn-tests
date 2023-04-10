@@ -585,44 +585,44 @@ def test_recurring_jobs_maximum_retain(client, core_api, volume_name): # NOQA
     """
     Scenario: test recurring jobs' maximum retain
 
-    Given set a recurring job retain to 51.
+    Given set a recurring job retain to 101.
 
     When create recurring job.
     Then should fail.
 
-    When set recurring job retain to 50.
+    When set recurring job retain to 100.
     And create recurring job.
-    Then recurring job created with retain equals to 50.
+    Then recurring job created with retain equals to 100.
 
-    When update recurring job retain to 51.
+    When update recurring job retain to 101.
     Then should fail.
     """
-    # set max total number of retain to exceed 50
+    # set max total number of retain to exceed 100
     recurring_jobs = {
         RECURRING_JOB_NAME: {
             TASK: BACKUP,
             GROUPS: [],
             CRON: SCHEDULE_1MIN,
-            RETAIN: 51,
+            RETAIN: 101,
             CONCURRENCY: 1,
             LABELS: {},
         },
     }
 
-    validator_error = "retain value should be less than or equal to 50"
+    validator_error = "retain value should be less than or equal to 100"
 
     with pytest.raises(Exception) as e:
         create_recurring_jobs(client, recurring_jobs)
     assert validator_error.upper() in str(e.value).upper()
 
-    recurring_jobs[RECURRING_JOB_NAME][RETAIN] = 50
+    recurring_jobs[RECURRING_JOB_NAME][RETAIN] = 100
     create_recurring_jobs(client, recurring_jobs)
     recurring_job = client.by_id_recurring_job(RECURRING_JOB_NAME)
-    assert recurring_job.retain == 50
+    assert recurring_job.retain == 100
 
     with pytest.raises(Exception) as e:
         update_recurring_job(client, RECURRING_JOB_NAME,
-                             groups=[], labels={}, retain=51)
+                             groups=[], labels={}, retain=101)
     assert validator_error.upper() in str(e.value).upper()
 
 
