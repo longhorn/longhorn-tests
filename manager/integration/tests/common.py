@@ -3572,7 +3572,9 @@ def delete_storage_class(sc_name):
 
 
 def cleanup_storage_class():
-    skip_sc_deletes = ["longhorn", "local-path"]
+    # premium-rwo, standard-rwo and standard are installed in gke by default
+    skip_sc_deletes = ["longhorn", "local-path",
+                       "premium-rwo", "standard-rwo", "standard"]
     api = get_storage_api_client()
     ret = api.list_storage_class()
     for sc in ret.items:
