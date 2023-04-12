@@ -2497,7 +2497,7 @@ def test_engine_image_daemonset_restart(client, apps_api, volume_name):  # NOQA
 
 
 @pytest.mark.coretest  # NOQA
-def test_expansion_canceling(client, core_api, volume_name, pod):  # NOQA
+def test_expansion_canceling(client, core_api, volume_name, pod, pvc, storage_class):  # NOQA
     """
     Test expansion canceling
 
@@ -2518,20 +2518,27 @@ def test_expansion_canceling(client, core_api, volume_name, pod):  # NOQA
     13. Validate the volume content, then check if data writing looks fine
     14. Clean up pod, PVC, and PV
     """
-    expansion_pvc_name = "pvc-" + volume_name
-    expansion_pv_name = "pv-" + volume_name
-    pod_name = "pod-" + volume_name
-    volume = create_and_check_volume(client, volume_name, 2, SIZE)
-    create_pv_for_volume(client, core_api, volume, expansion_pv_name)
-    create_pvc_for_volume(client, core_api, volume, expansion_pvc_name)
+    storage_class['parameters']['numberOfReplicas'] = "2"
+    create_storage_class(storage_class)
+
+    pod_name = 'expand-canceling-test'
+    expansion_pvc_name = pod_name + "-pvc"
+    pvc['metadata']['name'] = expansion_pvc_name
+    pvc['spec']['storageClassName'] = storage_class['metadata']['name']
+    pvc['spec']['resources']['requests']['storage'] = SIZE
+    common.create_pvc(pvc)
+
     pod['metadata']['name'] = pod_name
     pod['spec']['volumes'] = [{
         'name': pod['spec']['containers'][0]['volumeMounts'][0]['name'],
-        'persistentVolumeClaim': {
-            'claimName': expansion_pvc_name,
-        },
+        'persistentVolumeClaim': {'claimName': expansion_pvc_name},
     }]
     create_and_wait_pod(core_api, pod)
+
+    pv = common.wait_and_get_pv_for_pvc(core_api, expansion_pvc_name)
+    assert pv.status.phase == "Bound"
+    expansion_pv_name = pv.metadata.name
+    volume_name = pv.spec.csi.volume_handle
 
     # Step 3: Prepare to fail offline expansion for one replica
     volume = client.by_id_volume(volume_name)
@@ -2745,7 +2752,7 @@ def test_running_volume_with_scheduling_failure(
 
 @pytest.mark.coretest  # NOQA
 def test_expansion_with_scheduling_failure(
-        client, core_api, volume_name, pod):  # NOQA
+        client, core_api, volume_name, pod, pvc, storage_class):  # NOQA
     """
     Test if the running volume with scheduling failure
     can be expanded after the detachment.
@@ -2790,22 +2797,27 @@ def test_expansion_with_scheduling_failure(
     client.update(replica_node_soft_anti_affinity_setting, value="false")
 
     data_path1 = "/data/test1"
-    test_pv_name = "pv-" + volume_name
-    test_pvc_name = "pvc-" + volume_name
-    test_pod_name = "pod-" + volume_name
+    pvc['spec']['resources']['requests']['storage'] = str(300 * Mi)
+    create_storage_class(storage_class)
 
-    volume = create_and_check_volume(client, volume_name, size=str(300 * Mi))
-    create_pv_for_volume(client, core_api, volume, test_pv_name)
-    create_pvc_for_volume(client, core_api, volume, test_pvc_name)
+    test_pod_name = 'expand-scheduling-failed-test'
+    test_pvc_name = test_pod_name + "-pvc"
+    pvc['metadata']['name'] = test_pvc_name
+    pvc['spec']['storageClassName'] = storage_class['metadata']['name']
+    common.create_pvc(pvc)
 
     pod['metadata']['name'] = test_pod_name
     pod['spec']['volumes'] = [{
         'name': pod['spec']['containers'][0]['volumeMounts'][0]['name'],
-        'persistentVolumeClaim': {
-            'claimName': test_pvc_name,
-        },
+        'persistentVolumeClaim': {'claimName': test_pvc_name},
     }]
     create_and_wait_pod(core_api, pod)
+
+    pv = common.wait_and_get_pv_for_pvc(core_api, test_pvc_name)
+    assert pv.status.phase == "Bound"
+    test_pv_name = pv.metadata.name
+    volume_name = pv.spec.csi.volume_handle
+
     wait_for_volume_healthy(client, volume_name)
     write_pod_volume_random_data(core_api, test_pod_name,
                                  data_path1, DATA_SIZE_IN_MB_1)
@@ -2867,7 +2879,7 @@ def test_expansion_with_scheduling_failure(
 
     expanded_size = str(400 * Mi)
     volume.expand(size=expanded_size)
-    wait_for_volume_expansion(client, volume_name)
+    wait_for_volume_expansion(client, volume_name, expanded_size)
     volume = wait_for_volume_detached(client, volume_name)
     assert volume.size == expanded_size
     assert len(volume.replicas) == 2
