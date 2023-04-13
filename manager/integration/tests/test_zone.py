@@ -25,6 +25,7 @@ from common import SETTING_REPLICA_NODE_SOFT_ANTI_AFFINITY
 from common import SETTING_REPLICA_ZONE_SOFT_ANTI_AFFINITY
 from common import SETTING_REPLICA_AUTO_BALANCE
 from common import SETTING_DEFAULT_DATA_LOCALITY
+from common import SIZE
 
 from test_scheduling import wait_new_replica_ready
 
@@ -540,6 +541,7 @@ def test_replica_auto_balance_when_replica_on_unschedulable_node(client, core_ap
 
     n_replicas = 2
     volume = client.create_volume(name=volume_name,
+                                  size=SIZE,
                                   numberOfReplicas=n_replicas,
                                   nodeSelector=["AVAIL"],
                                   dataLocality="best-effort")
