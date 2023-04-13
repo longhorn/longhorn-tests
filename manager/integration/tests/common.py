@@ -207,8 +207,6 @@ CSI_FALSE = 2
 
 KUBERNETES_STATUS_LABEL = "KubernetesStatus"
 
-MASTER_NODE_TAINT = "node-role.kubernetes.io/master=true:NoExecute;node-role.kubernetes.io/master=true:NoSchedule"  # NOQA
-
 # https://github.com/kubernetes/kubernetes/blob/a9f0db16614ae62563ead2018f1692407bd93d8f/pkg/apis/scheduling/types.go#L29  # NOQA
 PRIORITY_CLASS_MAX = 1000000000
 PRIORITY_CLASS_MIN = 1
@@ -3168,9 +3166,6 @@ def reset_settings(client):
     for setting in client.list_setting():
         setting_name = setting.name
         setting_default_value = setting.definition.default
-        if setting_name == "taint-toleration":
-            setting_default_value = MASTER_NODE_TAINT
-
         setting_readonly = setting.definition.readOnly
 
         # We don't provide the setup for the storage network, hence there is no
@@ -4874,9 +4869,6 @@ def get_engine_image_status_value(client, ei_name):
 
 def update_setting(client, name, value):
     setting = client.by_id_setting(name)
-    if name == "taint-toleration":
-        value = value + ";" + MASTER_NODE_TAINT
-
     client.update(setting, value=value)
 
 
