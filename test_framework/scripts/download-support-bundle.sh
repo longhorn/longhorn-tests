@@ -24,10 +24,22 @@ set_kubeconfig_envvar(){
     fi
 }
 
+set_master_node_taint_toleration() {
+    local LH_FRONTEND_ADDR=${1}
+
+    local JSON_PAYLOAD="{\"name\": \"taint-toleration\", \"type\": \"setting\", \"value\": \"node-role.kubernetes.io/master=true:NoExecute;node-role.kubernetes.io/master=true:NoSchedule\"}"
+
+    local CURL_CMD="curl -XPUT http://${LH_FRONTEND_ADDR}/v1/settings/taint-toleration -H 'Content-Type: application/json' -d '"${JSON_PAYLOAD}"'"
+
+    kubectl exec -n longhorn-system svc/longhorn-frontend -- bash -c "${CURL_CMD}"
+}
+
 
 set_kubeconfig_envvar ${TF_VAR_arch} ${TF_VAR_tf_workspace}
 
 LH_FRONTEND_ADDR=`kubectl get svc -n longhorn-system longhorn-frontend -o json | jq -r '.spec.clusterIP + ":" + (.spec.ports[0].port|tostring)'`
+
+set_master_node_taint_toleration ${LH_FRONTEND_ADDR}
 
 JSON_PAYLOAD="{\"issueURL\": \"${SUPPORT_BUNDLE_ISSUE_DESC}\", \"description\": \"${SUPPORT_BUNDLE_ISSUE_DESC}\"}"
 
