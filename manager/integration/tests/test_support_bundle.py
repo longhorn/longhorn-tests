@@ -222,7 +222,7 @@ def check_bundled_nodes_matches(node_names, zip, temp_dir):
 
 
 @pytest.mark.support_bundle   # NOQA
-def test_support_bundle_agent_with_taint_toleration(client, core_api, taint_nodes_exclude_self):  # NOQA
+def test_support_bundle_agent_with_taint_toleration(client, taint_nodes_exclude_self):  # NOQA
     """
     Scenario: support bundle agent should respect taint toleration
 
@@ -256,8 +256,8 @@ def test_support_bundle_agent_with_taint_toleration(client, core_api, taint_node
                                 target_path=download_path)
 
         with zipfile.ZipFile(download_path, 'r') as zip:
-            nodes = core_api.list_node()
-            node_names = [f"{node.metadata.name}" for node in nodes.items]
+            nodes = client.list_node()
+            node_names = [node.name for node in nodes]
             check_bundled_nodes_matches(node_names, zip, temp_dir)
 
     wait_for_support_bundle_cleanup(client)
