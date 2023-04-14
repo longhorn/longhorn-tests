@@ -2,6 +2,7 @@ import pytest
 
 from kubernetes import client as k8sclient
 
+from common import get_longhorn_api_client
 from common import get_self_host_id
 
 
@@ -19,24 +20,28 @@ def taint_nodes_exclude_self(request):
     self_host_id = get_self_host_id()
 
     api = k8sclient.CoreV1Api()
-    node_items = api.list_node().items
+    client = get_longhorn_api_client()  # NOQA
+
+    lh_nodes = client.list_node()
     saved_nodes = []
-    for node in node_items:
-        if node.metadata.name == self_host_id:
+    for lh_node in lh_nodes:
+        if lh_node.name == self_host_id:
             continue
 
-        saved_nodes.append(node)
+        k8s_node = api.read_node(lh_node.name)
 
-        if node.spec.taints is None:
+        saved_nodes.append(k8s_node)
+
+        if k8s_node.spec.taints is None:
             taints = [taint]
         else:
-            taints = node.spec.taints + [taint]
+            taints = k8s_node.spec.taints + [taint]
         payload = {
             "spec": {
                 "taints": taints
             }
         }
-        api.patch_node(node.metadata.name, body=payload)
+        api.patch_node(k8s_node.metadata.name, body=payload)
 
     yield saved_nodes
 
