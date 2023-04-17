@@ -32,6 +32,11 @@ node {
         string(credentialsId: REGISTRATION_CODE_ID, variable: 'REGISTRATION_CODE'),
         file(credentialsId: 'GCP_CREDS', variable: 'GCP_CREDS_FILE'),
         string(credentialsId: 'GCP_PROJECT', variable: 'GCP_PROJECT'),
+        string(credentialsId: 'AZURE_CLIENT_ID', variable: 'AZURE_CLIENT_ID'),
+        file(credentialsId: 'AZURE_CRT_FILE', variable: 'AZURE_CRT_FILE'),
+        string(credentialsId: 'AZURE_CRT_PASSWORD', variable: 'AZURE_CRT_PASSWORD'),
+        string(credentialsId: 'AZURE_TENANT_ID', variable: 'AZURE_TENANT_ID'),
+        string(credentialsId: 'AZURE_SUBSCRIPTION_ID', variable: 'AZURE_SUBSCRIPTION_ID'),
     ]) {
 
         if (params.SEND_SLACK_NOTIFICATION) {
@@ -128,10 +133,16 @@ node {
                                        --env TF_VAR_registration_code=${REGISTRATION_CODE} \
                                        --env TF_VAR_gcp_project=${GCP_PROJECT} \
                                        --env TF_VAR_gcp_auth_file=/src/longhorn-tests/gcp_creds.json \
+                                       --env TF_VAR_azure_client_id=${AZURE_CLIENT_ID} \
+                                       --env TF_VAR_azure_crt_path=/src/longhorn-tests/azure_client.pfx \
+                                       --env TF_VAR_azure_crt_password=${AZURE_CRT_PASSWORD} \
+                                       --env TF_VAR_azure_tenant_id=${AZURE_TENANT_ID} \
+                                       --env TF_VAR_azure_subscription_id=${AZURE_SUBSCRIPTION_ID} \
                                        ${imageName}
                 """
 
                 sh "docker cp ${GCP_CREDS_FILE} ${JOB_BASE_NAME}-${BUILD_NUMBER}:/src/longhorn-tests/gcp_creds.json"
+                sh "docker cp ${AZURE_CRT_FILE} ${JOB_BASE_NAME}-${BUILD_NUMBER}:/src/longhorn-tests/azure_client.pfx"
             }
 
             timeout(60) {

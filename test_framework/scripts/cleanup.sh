@@ -11,7 +11,7 @@ fi
 # wait 30 seconds for graceful terraform termination
 sleep 30
 
-if [[ ${TF_VAR_k8s_distro_name} == "gke" ]]; then
+if [[ ${TF_VAR_k8s_distro_name} == "gke" ]] || [[ ${TF_VAR_k8s_distro_name} == "aks" ]]; then
   DISTRO=${TF_VAR_k8s_distro_name}
 fi
 

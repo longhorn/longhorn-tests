@@ -2,7 +2,7 @@
 
 set -x
 
-if [[ ${TF_VAR_k8s_distro_name} == "gke" ]]; then
+if [[ ${TF_VAR_k8s_distro_name} == "gke" ]] || [[ ${TF_VAR_k8s_distro_name} == "aks" ]]; then
   gcloud auth activate-service-account --project=${TF_VAR_gcp_project} --key-file=${TF_VAR_gcp_auth_file}
   gcloud auth list
   DISTRO=${TF_VAR_k8s_distro_name}
@@ -11,7 +11,6 @@ fi
 if [[ ${TF_VAR_arch} == "amd64" ]]; then
   terraform -chdir=${TF_VAR_tf_workspace}/terraform/${LONGHORN_TEST_CLOUDPROVIDER}/${DISTRO} init
   terraform -chdir=${TF_VAR_tf_workspace}/terraform/${LONGHORN_TEST_CLOUDPROVIDER}/${DISTRO} apply -auto-approve -no-color
-	
   if [[ ${TF_VAR_k8s_distro_name} =~ [rR][kK][eE] ]]; then
     terraform -chdir=${TF_VAR_tf_workspace}/terraform/${LONGHORN_TEST_CLOUDPROVIDER}/${DISTRO} apply -auto-approve -no-color -refresh-only
     terraform -chdir=${TF_VAR_tf_workspace}/terraform/${LONGHORN_TEST_CLOUDPROVIDER}/${DISTRO} output -raw rke_config > ${TF_VAR_tf_workspace}/rke.yml
@@ -21,6 +20,11 @@ if [[ ${TF_VAR_arch} == "amd64" ]]; then
 else
   terraform -chdir=${TF_VAR_tf_workspace}/terraform/${LONGHORN_TEST_CLOUDPROVIDER}/${DISTRO} init
   terraform -chdir=${TF_VAR_tf_workspace}/terraform/${LONGHORN_TEST_CLOUDPROVIDER}/${DISTRO} apply -auto-approve -no-color
+fi
+
+if [[ ${TF_VAR_k8s_distro_name} == "aks" ]]; then
+  terraform -chdir=${TF_VAR_tf_workspace}/terraform/${LONGHORN_TEST_CLOUDPROVIDER}/${DISTRO} output -raw kubeconfig > ${TF_VAR_tf_workspace}/aks.yml
+  sleep 120
 fi
 
 if [[ "${TF_VAR_create_load_balancer}" == true ]]; then
