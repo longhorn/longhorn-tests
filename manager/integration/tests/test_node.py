@@ -42,13 +42,13 @@ from common import wait_for_volume_detached
 from common import RETRY_COUNTS, RETRY_INTERVAL
 from common import create_volume, cleanup_volume_by_name
 from common import create_host_disk, cleanup_host_disks
+from common import set_node_cordon
 from common import set_node_tags, set_node_scheduling
 from common import set_node_scheduling_eviction
 from common import update_node_disks
 
 from backupstore import set_random_backupstore # NOQA
 
-from node import set_node_cordon
 
 CREATE_DEFAULT_DISK_LABEL = "node.longhorn.io/create-default-disk"
 CREATE_DEFAULT_DISK_LABEL_VALUE_CONFIG = "config"

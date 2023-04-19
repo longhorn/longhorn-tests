@@ -1555,7 +1555,9 @@ def clients(request):
 
 
 def cleanup_client():
+    core_api = k8sclient.CoreV1Api()
     client = get_longhorn_api_client()
+
     enable_default_disk(client)
 
     cleanup_all_volumes(client)
@@ -1576,7 +1578,7 @@ def cleanup_client():
     cleanup_all_support_bundles(client)
 
     # enable nodes scheduling
-    reset_node(client)
+    reset_node(client, core_api)
     reset_settings(client)
     reset_disks_for_all_nodes(client)
     scale_up_engine_image_daemonset(client)
@@ -2983,10 +2985,13 @@ def get_update_disks(disks):
     return update_disk
 
 
-def reset_node(client):
+def reset_node(client, core_api):
     nodes = client.list_node()
     for node in nodes:
         try:
+            set_node_cordon(core_api, node.id, False)
+            node = client.by_id_node(node.id)
+
             node = set_node_tags(client, node, tags=[])
             node = wait_for_node_tag_update(client, node.id, [])
             node = set_node_scheduling(client, node, allowScheduling=True)
