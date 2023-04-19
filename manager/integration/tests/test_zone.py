@@ -15,6 +15,7 @@ from common import wait_for_volume_healthy
 from common import wait_for_volume_replica_count
 from common import get_k8s_zone_label
 from common import set_k8s_node_zone_label
+from common import set_node_cordon
 from common import wait_for_volume_condition_scheduled
 from common import wait_for_volume_delete
 from common import RETRY_COUNTS
@@ -28,7 +29,6 @@ from common import SETTING_DEFAULT_DATA_LOCALITY
 
 from test_scheduling import wait_new_replica_ready
 
-from node import set_node_cordon
 
 ZONE1 = "lh-zone1"
 ZONE2 = "lh-zone2"
