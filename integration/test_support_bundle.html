@@ -250,7 +250,7 @@ def check_bundled_nodes_matches(node_names, zip, temp_dir):
 
 
 @pytest.mark.support_bundle   # NOQA
-def test_support_bundle_agent_with_taint_toleration(client, core_api, taint_nodes_exclude_self):  # NOQA
+def test_support_bundle_agent_with_taint_toleration(client, taint_nodes_exclude_self):  # NOQA
     &#34;&#34;&#34;
     Scenario: support bundle agent should respect taint toleration
 
@@ -284,8 +284,8 @@ def test_support_bundle_agent_with_taint_toleration(client, core_api, taint_node
                                 target_path=download_path)
 
         with zipfile.ZipFile(download_path, &#39;r&#39;) as zip:
-            nodes = core_api.list_node()
-            node_names = [f&#34;{node.metadata.name}&#34; for node in nodes.items]
+            nodes = client.list_node()
+            node_names = [node.name for node in nodes]
             check_bundled_nodes_matches(node_names, zip, temp_dir)
 
     wait_for_support_bundle_cleanup(client)
@@ -416,7 +416,7 @@ def test_support_bundle_agent_with_node_selector(client, core_api, request):  # 
 </details>
 </dd>
 <dt id="tests.test_support_bundle.test_support_bundle_agent_with_taint_toleration"><code class="name flex">
-<span>def <span class="ident">test_support_bundle_agent_with_taint_toleration</span></span>(<span>client, core_api, taint_nodes_exclude_self)</span>
+<span>def <span class="ident">test_support_bundle_agent_with_taint_toleration</span></span>(<span>client, taint_nodes_exclude_self)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Scenario: support bundle agent should respect taint toleration</p>
@@ -431,7 +431,7 @@ And support bundle should include all tainted nodes in node collection</p></div>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">@pytest.mark.support_bundle   # NOQA
-def test_support_bundle_agent_with_taint_toleration(client, core_api, taint_nodes_exclude_self):  # NOQA
+def test_support_bundle_agent_with_taint_toleration(client, taint_nodes_exclude_self):  # NOQA
     &#34;&#34;&#34;
     Scenario: support bundle agent should respect taint toleration
 
@@ -465,8 +465,8 @@ def test_support_bundle_agent_with_taint_toleration(client, core_api, taint_node
                                 target_path=download_path)
 
         with zipfile.ZipFile(download_path, &#39;r&#39;) as zip:
-            nodes = core_api.list_node()
-            node_names = [f&#34;{node.metadata.name}&#34; for node in nodes.items]
+            nodes = client.list_node()
+            node_names = [node.name for node in nodes]
             check_bundled_nodes_matches(node_names, zip, temp_dir)
 
     wait_for_support_bundle_cleanup(client)
