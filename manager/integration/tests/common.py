@@ -55,6 +55,7 @@ BACKING_IMAGE_EXT4_SIZE = 32 * Mi
 BACKING_IMAGE_STATE_READY = "ready"
 BACKING_IMAGE_STATE_IN_PROGRESS = "in-progress"
 BACKING_IMAGE_STATE_FAILED = "failed"
+BACKING_IMAGE_STATE_FAILED_AND_CLEANUP = "failed-and-cleanup"
 
 PORT = ":9500"
 
@@ -193,6 +194,7 @@ SETTING_SNAPSHOT_DATA_INTEGRITY_CRONJOB = "snapshot-data-integrity-cronjob"
 SETTING_SNAPSHOT_FAST_REPLICA_REBUILD_ENABLED = "fast-replica-rebuild-enabled"
 SETTING_CONCURRENT_VOLUME_BACKUP_RESTORE = \
     "concurrent-volume-backup-restore-per-node-limit"
+SETTING_NODE_SELECTOR = "system-managed-components-node-selector"
 
 SNAPSHOT_DATA_INTEGRITY_IGNORED = "ignored"
 SNAPSHOT_DATA_INTEGRITY_DISABLED = "disabled"
@@ -3008,17 +3010,21 @@ def wait_longhorn_node_zone_reset(client):
         assert lh_node.zone == ''
 
 
-def set_k8s_node_zone_label(core_api, node_name, zone_name):
-    k8s_zone_label = get_k8s_zone_label()
-
+def set_k8s_node_label(core_api, node_name, key, value):
     payload = {
         "metadata": {
             "labels": {
-                k8s_zone_label: zone_name}
+                key: value}
         }
     }
 
     core_api.patch_node(node_name, body=payload)
+
+
+def set_k8s_node_zone_label(core_api, node_name, zone_name):
+    k8s_zone_label = get_k8s_zone_label()
+
+    set_k8s_node_label(core_api, node_name, k8s_zone_label, zone_name)
 
 
 def get_k8s_zone_label():
@@ -3566,7 +3572,9 @@ def delete_storage_class(sc_name):
 
 
 def cleanup_storage_class():
-    skip_sc_deletes = ["longhorn", "local-path"]
+    # premium-rwo, standard-rwo and standard are installed in gke by default
+    skip_sc_deletes = ["longhorn", "local-path",
+                       "premium-rwo", "standard-rwo", "standard"]
     api = get_storage_api_client()
     ret = api.list_storage_class()
     for sc in ret.items:
@@ -3923,12 +3931,15 @@ def create_snapshot(longhorn_api_client, volume_name):
     return snap
 
 
-def wait_for_snapshot_count(volume, number, retry_counts=120):
+def wait_for_snapshot_count(volume, number,
+                            retry_counts=120,
+                            count_removed=False):
     for _ in range(retry_counts):
         count = 0
         for snapshot in volume.snapshotList():
-            if snapshot.removed is False:
+            if snapshot.removed is False or count_removed:
                 count += 1
+
         if count == number:
             return
         time.sleep(RETRY_SNAPSHOT_INTERVAL)
@@ -4884,7 +4895,12 @@ def check_recurring_jobs(client, recurring_jobs):
         if len(spec["groups"]) > 0:
             assert recurring_job.groups == spec["groups"]
         assert recurring_job.cron == spec["cron"]
-        assert recurring_job.retain == spec["retain"]
+
+        expect_retain = spec["retain"]
+        if recurring_job.task == "snapshot-cleanup":
+            expect_retain = 0
+        assert recurring_job.retain == expect_retain
+
         assert recurring_job.concurrency == spec["concurrency"]
 
 
@@ -5180,12 +5196,16 @@ def delete_support_bundle(node_id, name, client):
     return requests.delete(support_bundle_url)
 
 
-def download_support_bundle(node_id, name, client):  # NOQA
+def download_support_bundle(node_id, name, client, target_path=""):  # NOQA
     url = get_support_bundle_url(client)
     support_bundle_url = '{}/{}/{}'.format(url, node_id, name)
     download_url = '{}/download'.format(support_bundle_url)
     r = requests.get(download_url, allow_redirects=True, timeout=300)
     r.raise_for_status()
+
+    if target_path != "":
+        with open(target_path, 'wb') as f:
+            f.write(r.content)
 
 
 def get_all_support_bundle_manager_deployments(apps_api):  # NOQA
@@ -5434,18 +5454,22 @@ def enable_default_disk(client):
 
 def wait_for_backing_image_status(client, backing_img_name, image_status):
 
-    for i in range(RETRY_EXEC_COUNTS):
+    status_matched = False
+    for _ in range(RETRY_EXEC_COUNTS):
+        if status_matched:
+            break
+
         backing_image = client.by_id_backing_image(backing_img_name)
         try:
-            for _, status in iter(backing_image.diskFileStatusMap.items()):
-                assert status.state == image_status
-            break
+            if backing_image.diskFileStatusMap.items():
+                for _, status in iter(backing_image.diskFileStatusMap.items()):
+                    if status.state == image_status:
+                        status_matched = True
         except Exception as e:
             print(e)
-            time.sleep(RETRY_INTERVAL)
+        time.sleep(RETRY_EXEC_INTERVAL)
 
-    for _, status in iter(backing_image.diskFileStatusMap.items()):
-        assert status.state == image_status
+    assert status_matched is True
 
 
 def wait_for_backing_image_in_disk_fail(client, backing_img_name, disk_uuid):

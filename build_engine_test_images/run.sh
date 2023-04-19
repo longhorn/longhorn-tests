@@ -26,6 +26,30 @@ if [[ -z "$TF_VAR_docker_repo" ]]; then
     exit 1
 fi
 
+# if commit_id is empty, we can directly check longhorn-engine:master-head's api version
+if [[ -z "${TF_VAR_commit_id}" ]]; then
+
+  docker login -u="${TF_VAR_docker_id}" -p="${TF_VAR_docker_password}"
+  docker pull longhornio/longhorn-engine:master-head
+  version=`docker run longhornio/longhorn-engine:master-head longhorn version --client-only`
+  CLIAPIVersion=`echo $version | jq -r ".clientVersion.cliAPIVersion"`
+  CLIAPIMinVersion=`echo $version | jq -r ".clientVersion.cliAPIMinVersion"`
+  ControllerAPIVersion=`echo $version | jq -r ".clientVersion.controllerAPIVersion"`
+  ControllerAPIMinVersion=`echo $version | jq -r ".clientVersion.controllerAPIMinVersion"`
+  DataFormatVersion=`echo $version | jq -r ".clientVersion.dataFormatVersion"`
+  DataFormatMinVersion=`echo $version | jq -r ".clientVersion.dataFormatMinVersion"`
+  echo "latest engine version: ${version}"
+
+  upgrade_image="${TF_VAR_docker_repo}:upgrade-test.$CLIAPIVersion-$CLIAPIMinVersion"\
+".$ControllerAPIVersion-$ControllerAPIMinVersion"\
+".$DataFormatVersion-$DataFormatMinVersion"
+
+  if [[ $(docker manifest inspect "${upgrade_image}") != "" ]]; then
+    echo "latest engine test images have already published"
+    exit 0
+  fi
+fi
+
 trap ./scripts/cleanup.sh EXIT
 
 # Build amd64 images

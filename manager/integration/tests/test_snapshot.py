@@ -1,3 +1,4 @@
+import pytest
 import os
 import subprocess
 import time
@@ -157,6 +158,37 @@ def test_snapshot_hash_global_disabled_and_per_volume_enabled_and_without_immedi
                                             SNAPSHOT_DATA_INTEGRITY_ENABLED)
 
 
+def test_snapshot_hash_global_disabled_and_per_volume_fast_check_and_with_immediate_hash(client, volume_name, settings_reset):  # NOQA
+    """
+    Check snapshots' checksums are immediately calculated when the snapshots
+    check when
+    - global data-integrity is set to disabled
+    - global immediate_hash is enabled
+    - per-volume data-integrity is set to fast-check
+    """
+    prepare_settings_for_snapshot_test(client,
+                                       SNAPSHOT_DATA_INTEGRITY_DISABLED,
+                                       "true",
+                                       "true")
+    check_hashed_and_with_immediate_hash(client, volume_name,
+                                         SNAPSHOT_DATA_INTEGRITY_FAST_CHECK)
+
+
+def test_snapshot_hash_global_disabled_and_per_volume_fast_check_and_without_immediate_hash(client, volume_name, settings_reset):  # NOQA
+    """
+    Check snapshots' checksums are calculated by the periodic checksum check
+    - global data-integrity is set to disabled
+    - global immediate_hash is disabled
+    - per-volume data-integrity is set to fast-check
+    """
+    prepare_settings_for_snapshot_test(client,
+                                       SNAPSHOT_DATA_INTEGRITY_DISABLED,
+                                       "false",
+                                       "true")
+    check_hashed_and_without_immediate_hash(client, volume_name,
+                                            SNAPSHOT_DATA_INTEGRITY_FAST_CHECK)
+
+
 def test_snapshot_hash_global_enabled_and_per_volume_disable_and_with_immediate_hash(client, volume_name, settings_reset):  # NOQA
     """
     Check snapshots' checksums are not calculated
@@ -172,7 +204,7 @@ def test_snapshot_hash_global_enabled_and_per_volume_disable_and_with_immediate_
                                   SNAPSHOT_DATA_INTEGRITY_DISABLED)
 
 
-def test_snapshot_hash_global_enabled_and_per_volume_enable_mode_without_immediate_hash(client, volume_name, settings_reset):  # NOQA
+def test_snapshot_hash_global_enabled_and_per_volume_disable_and_without_immediate_hash(client, volume_name, settings_reset):  # NOQA
     """
     Check snapshots' checksums are not calculated
     - global data-integrity is set to enabled
@@ -187,6 +219,37 @@ def test_snapshot_hash_global_enabled_and_per_volume_enable_mode_without_immedia
                                   SNAPSHOT_DATA_INTEGRITY_DISABLED)
 
 
+def test_snapshot_hash_global_fast_check_and_per_volume_disable_and_with_immediate_hash(client, volume_name, settings_reset):  # NOQA
+    """
+    Check snapshots' checksums are not calculated
+    - global data-integrity is set to fast-check
+    - global immediate_hash is enabled
+    - per-volume data-integrity is set to disabled
+    """
+    prepare_settings_for_snapshot_test(client,
+                                       SNAPSHOT_DATA_INTEGRITY_FAST_CHECK,
+                                       "true",
+                                       "true")
+    check_per_volume_hash_disable(client, volume_name,
+                                  SNAPSHOT_DATA_INTEGRITY_DISABLED)
+
+
+def test_snapshot_hash_global_fast_check_and_per_volume_disable_and_without_immediate_hash(client, volume_name, settings_reset):  # NOQA
+    """
+    Check snapshots' checksums are not calculated
+    - global data-integrity is set to fast-check
+    - global immediate_hash is disabled
+    - per-volume data-integrity is set to disabled
+    """
+    prepare_settings_for_snapshot_test(client,
+                                       SNAPSHOT_DATA_INTEGRITY_FAST_CHECK,
+                                       "false",
+                                       "true")
+    check_per_volume_hash_disable(client, volume_name,
+                                  SNAPSHOT_DATA_INTEGRITY_DISABLED)
+
+
+@pytest.mark.long_running
 def test_snapshot_hash_detect_corruption_in_global_enabled_mode(client, volume_name, settings_reset):  # NOQA
     """
     Check the snapshot corruption can be detected and replica is rebuilt
@@ -201,6 +264,7 @@ def test_snapshot_hash_detect_corruption_in_global_enabled_mode(client, volume_n
                                         SNAPSHOT_DATA_INTEGRITY_ENABLED)
 
 
+@pytest.mark.long_running
 def test_snapshot_hash_detect_corruption_in_global_fast_check_mode(client, volume_name, settings_reset):  # NOQA
     """
     Check the snapshot corruption can be detected and replica is rebuilt
@@ -220,7 +284,7 @@ def prepare_settings_for_snapshot_test(client, data_integrity, immediate_check, 
     # Make the next hash time more predictable
     now = datetime.datetime.now()
     minute = (now.minute + period_in_minute) % 60
-    hour = now.hour + (now.minute + period_in_minute) / 60
+    hour = (now.hour + (now.minute + period_in_minute) / 60) % 24
 
     cronjob = "%d/%d %d * * *" % (minute, period_in_minute, hour)
 

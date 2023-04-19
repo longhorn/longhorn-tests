@@ -1,18 +1,28 @@
 import pytest
+import os
+import zipfile
+
+from tempfile import TemporaryDirectory
+
+from node import taint_nodes_exclude_self  # NOQA
 
 from common import apps_api  # NOQA
 from common import client  # NOQA
+from common import core_api  # NOQA
 
 from common import check_all_support_bundle_managers_deleted
 from common import create_support_bundle
 from common import delete_and_wait_deployment
 from common import download_support_bundle
 from common import get_all_support_bundle_manager_deployments
+from common import set_k8s_node_label
 from common import update_setting
 from common import wait_for_support_bundle_cleanup
 from common import wait_for_support_bundle_state
 
+from common import SETTING_NODE_SELECTOR
 from common import SETTING_SUPPORT_BUNDLE_FAILED_LIMIT
+from common import SETTING_TAINT_TOLERATION
 
 
 @pytest.mark.support_bundle   # NOQA
@@ -141,3 +151,114 @@ def create_failed_support_bundles(client, apps_api, number=1):  # NOQA
             namespace=deployments[0].metadata.namespace
         )
         wait_for_support_bundle_state("Error", node_id, name, client)
+
+
+@pytest.mark.support_bundle   # NOQA
+def test_support_bundle_agent_with_node_selector(client, core_api, request):  # NOQA
+    """
+    Scenario: support bundle agent should respect node selector
+
+    Issue: https://github.com/longhorn/longhorn/issues/5614
+
+    Given there are some nodes labeled
+    And "system-managed-components-node-selector" is set with node label
+
+    When a support bundle is generated
+
+    Then should be able to download the support bundle successfully
+    And support bundle should include only the labeled nodes in node collection
+
+    """
+    nodes = client.list_node()
+    labeled_nodes = [nodes[1], nodes[2]]
+    for node in labeled_nodes:
+        set_k8s_node_label(core_api, node.name, "foo", "bar")
+
+    def finalizer():
+        for node in labeled_nodes:
+            set_k8s_node_label(core_api, node.name, "foo", None)
+        update_setting(client, SETTING_NODE_SELECTOR, None)
+    request.addfinalizer(finalizer)
+
+    update_setting(client, SETTING_NODE_SELECTOR, "foo:bar")
+
+    resp = create_support_bundle(client)
+    node_id = resp['id']
+    name = resp['name']
+
+    wait_for_support_bundle_state("ReadyForDownload", node_id, name, client)
+
+    # The temporary directory will be automatically deleted outside of the
+    # "with" context manager.
+    with TemporaryDirectory(prefix="supportbundle-") as temp_dir:
+        download_path = f'{temp_dir}/{0}.zip'.format(name)
+        download_support_bundle(node_id, name, client,
+                                target_path=download_path)
+
+        with zipfile.ZipFile(download_path, 'r') as zip:
+            node_names = [f"{node.name}" for node in labeled_nodes]
+            check_bundled_nodes_matches(node_names, zip, temp_dir)
+
+    wait_for_support_bundle_cleanup(client)
+    check_all_support_bundle_managers_deleted()
+
+
+def check_bundled_nodes_matches(node_names, zip, temp_dir):
+    expect_node_zips = [f"{node}.zip" for node in node_names]
+    bundle_name = os.path.dirname(zip.namelist()[0])
+    bundle_node_dir = f'{bundle_name}/nodes'
+    bundle_nodes = [
+        f for f in zip.namelist() if f.startswith(bundle_node_dir)
+    ]
+
+    for node in bundle_nodes:
+        zip.extract(node, f'{temp_dir}')
+
+    node_zips = os.listdir(f'{temp_dir}/{bundle_name}/nodes')
+    assert set(node_zips) == set(expect_node_zips), \
+        f'Nodes zipped in bundle do not match. \n' \
+        f'Expect = {expect_node_zips}\n' \
+        f'Got = {node_zips}\n'
+
+
+@pytest.mark.support_bundle   # NOQA
+def test_support_bundle_agent_with_taint_toleration(client, taint_nodes_exclude_self):  # NOQA
+    """
+    Scenario: support bundle agent should respect taint toleration
+
+    Issue: https://github.com/longhorn/longhorn/issues/5614
+
+    Given there are some tainted nodes in the cluster
+    And Longhorn tolerates the tainted nodes with setting "taint-toleration"
+
+    When a support bundle is generated
+
+    Then should be able to download the support bundle successfully
+    And support bundle should include all tainted nodes in node collection
+
+    """
+    # The taint-toleration is set up to match the "taint_nodes_exclude_self"
+    # fixture.
+    update_setting(client, SETTING_TAINT_TOLERATION,
+                   "foo/bar=test:NoSchedule; foo:NoSchedule")
+
+    resp = create_support_bundle(client)
+    node_id = resp['id']
+    name = resp['name']
+
+    wait_for_support_bundle_state("ReadyForDownload", node_id, name, client)
+
+    # The temporary directory will be automatically deleted outside of the
+    # "with" context manager.
+    with TemporaryDirectory(prefix="supportbundle-") as temp_dir:
+        download_path = f'{temp_dir}/{0}.zip'.format(name)
+        download_support_bundle(node_id, name, client,
+                                target_path=download_path)
+
+        with zipfile.ZipFile(download_path, 'r') as zip:
+            nodes = client.list_node()
+            node_names = [node.name for node in nodes]
+            check_bundled_nodes_matches(node_names, zip, temp_dir)
+
+    wait_for_support_bundle_cleanup(client)
+    check_all_support_bundle_managers_deleted()

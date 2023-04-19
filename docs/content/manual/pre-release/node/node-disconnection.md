@@ -10,26 +10,51 @@ If auto-salvage is disabled, the auto-reattachment behavior after the node disco
 
 (2) If there is any healthy replica, the volume would be auto-reattached even though auto-salvage is disabled.
 
-What makes all replicas in ERROR state? If there is data writing during the disconnection, due to the engine process not able to talk with other replicas, the engine process will mark all other replicas as ERROR.
+What makes all replicas in ERROR state? When there is data writing during the disconnection:
 
-So we have 2 test cases for node disconnection + disabled auto-salvage:
+(1) If the engine process is unable to talk with a replica (the engine process and the replica are on the different nodes), the engine process will mark the replica as ERROR. 
 
-(Case 1) data writing during the disconnection -> all replicas become ERROR -> no auto-reattach after the disconnection
+(2) But if the engine process is still able to talk with a replica (the engine process and the replica are on the same node), the engine process will just mark the replica as UNKNOWN state, and the replica will recover to RUNNING state after the network connection is back. Then other replicas can be rebuilt from the replica.
 
-(Case 2) no data writing during the disconnection -> other replicas are still healthy -> auto-reattach after the disconnection
+So we have 2 * 2 test cases for node disconnection + disabled auto-salvage:
 
-### Case 1:
+(Case 1-1) there is no replica on the attached node + data writing during the disconnection -> all replicas become ERROR -> no auto-reattach after the disconnection
+
+(Case 1-2) there is a replica on the attached node + data writing during the disconnection -> one replica can recover to healthy -> auto-reattach after the disconnection
+
+(Case 2-1) there is no replica on the attached node + no data writing during the disconnection -> other replicas are still healthy -> auto-reattach after the disconnection
+
+(Case 2-2) there is a replica on the attached node + no data writing during the disconnection -> other replicas are still healthy -> auto-reattach after the disconnection
+
+### Case 1-1:
 1. Disable auto-salvage.
-2. Create a volume named test-1.
-3. Attach the volume to a node.
+2. Create a volume named test-1 with 2 replicas on the 1st and the 2nd node.
+3. Attach the volume to the 3rd node.
 4. Keep writing data directly to the volume. (sudo dd if=/dev/urandom of=/dev/longhorn/test-1 bs=2M count=2048)
 5. Disconnect the network of the node that the volume attached to for 100 seconds during the data writing. (sudo nohup ./network_down.sh 100)
 6. Wait for the node back.
 7. The volume should remain detached, and all replicas remain in ERROR state.
 
-### Case 2:
+### Case 1-2:
 1. Disable auto-salvage.
-2. Create a volume named test-1.
+2. Create a volume named test-1 with 3 replicas.
+3. Attach the volume to a node.
+4. Keep writing data directly to the volume. (sudo dd if=/dev/urandom of=/dev/longhorn/test-1 bs=2M count=2048)
+5. Disconnect the network of the node that the volume attached to for 100 seconds during the data writing. (sudo nohup ./network_down.sh 100)
+6. Wait for the node back.
+7. The volume will be detached then reattached automatically, and replicas should still be in RUNNING state.
+
+### Case 2-1:
+1. Disable auto-salvage.
+2. Create a volume named test-1 with 2 replicas on the 1st and the 2nd node.
+3. Attach the volume to the 3rd node.
+4. No need to write data to the volume. Directly disconnect the network of the node that the volume attached to for 100 seconds. (sudo nohup ./network_down.sh 100)
+5. Wait for the node back.
+6. The volume will be detached then reattached automatically, and replicas should still be in RUNNING state.
+
+### Case 2-2:
+1. Disable auto-salvage.
+2. Create a volume named test-1 with 3 replicas.
 3. Attach the volume to a node.
 4. No need to write data to the volume. Directly disconnect the network of the node that the volume attached to for 100 seconds. (sudo nohup ./network_down.sh 100)
 5. Wait for the node back.

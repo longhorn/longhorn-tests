@@ -9,10 +9,9 @@ data "aws_ami" "aws_ami_sles" {
 
   filter {
     name   = "name"
-    values = ["suse-sles-${var.os_distro_version}-v*-hvm-ssd-${local.aws_ami_sles_arch}"]
+    values = ["suse-sle-micro-${replace(var.os_distro_version, ".", "-")}-byos-v*-hvm-ssd-${local.aws_ami_sles_arch}"]
   }
 }
-
 
 # Generate template file for k3s server
 data "template_file" "provision_k3s_server" {

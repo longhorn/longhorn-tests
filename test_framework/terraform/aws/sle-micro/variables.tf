@@ -15,7 +15,7 @@ variable "aws_region" {
 
 variable "aws_availability_zone" {
   type        = string
-  default     = "us-east-1a"
+  default     = "us-east-1d"
 }
 
 variable "lh_aws_vpc_name" {
@@ -31,7 +31,7 @@ variable "arch" {
 
 variable "os_distro_version" {
   type        = string
-  default     = "15-sp4"
+  default     = "5.3"
 }
 
 variable "aws_ami_sles_account_number" {
@@ -116,4 +116,9 @@ variable "use_hdd" {
 variable "create_load_balancer" {
   type    = bool
   default = false
+}
+
+variable "registration_code" {
+  type    = string
+  sensitive   = true
 }

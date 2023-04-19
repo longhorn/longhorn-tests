@@ -15,7 +15,7 @@ RUN wget -q https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/terraf
     wget -q "https://github.com/mikefarah/yq/releases/download/${YQ_VERSION}/yq_linux_amd64" && \
     mv yq_linux_amd64 /usr/local/bin/yq && \
     chmod +x /usr/local/bin/yq && \
-    apk add openssh-client ca-certificates git rsync bash curl jq && \
+    apk add openssh-client ca-certificates git rsync bash curl jq docker && \
     ssh-keygen -t rsa -b 4096 -N "" -f ~/.ssh/id_rsa
 
 COPY [".", "$WORKSPACE"]
