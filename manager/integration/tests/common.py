@@ -1000,6 +1000,19 @@ def set_node_scheduling_eviction(client, node, allowScheduling, evictionRequeste
     return node
 
 
+def set_node_cordon(api, node_name, to_cordon):
+    """
+    Set a kubernetes node schedulable status
+    """
+    payload = {
+        "spec": {
+            "unschedulable": to_cordon
+        }
+    }
+
+    api.patch_node(node_name, payload)
+
+
 @pytest.fixture
 def pod_make(request):
     def make_pod(name='test-pod'):

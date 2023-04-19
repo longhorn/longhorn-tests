@@ -48,6 +48,8 @@ from common import update_node_disks
 
 from backupstore import set_random_backupstore # NOQA
 
+from node import set_node_cordon
+
 CREATE_DEFAULT_DISK_LABEL = "node.longhorn.io/create-default-disk"
 CREATE_DEFAULT_DISK_LABEL_VALUE_CONFIG = "config"
 DEFAULT_DISK_CONFIG_ANNOTATION = "node.longhorn.io/default-disks-config"
@@ -55,19 +57,6 @@ DEFAULT_NODE_TAG_ANNOTATION = "node.longhorn.io/default-node-tags"
 SMALL_DISK_SIZE = (2 * 1024 * 1024)
 TEST_FILE = 'test'
 NODE_UPDATE_WAIT_INTERVAL = 2
-
-
-def set_node_cordon(api, node_name, to_cordon):
-    """
-    Set a kubernetes node schedulable status
-    """
-    payload = {
-        "spec": {
-            "unschedulable": to_cordon
-        }
-    }
-
-    api.patch_node(node_name, payload)
 
 
 @pytest.fixture

@@ -28,7 +28,7 @@ from common import SETTING_DEFAULT_DATA_LOCALITY
 
 from test_scheduling import wait_new_replica_ready
 
-from test_node import set_node_cordon
+from node import set_node_cordon
 
 ZONE1 = "lh-zone1"
 ZONE2 = "lh-zone2"
