@@ -893,23 +893,31 @@ def test_setting_concurrent_rebuild_limit(client, core_api, volume_name):  # NOQ
     crash_replica_processes(client, core_api, volume1_name, replicas)
     delete_replica_on_test_node(client, volume2_name)
 
-    # While volume 2 is rebuilding, verify that volume 1 is not
+    # While one volume is rebuilding, verify another volume is not
     # rebuilding and stuck in degrading state
-    wait_for_rebuild_start(client, volume2_name)
+    rebuild_started = False
     for i in range(RETRY_COUNTS):
         volume1 = client.by_id_volume(volume1_name)
         volume2 = client.by_id_volume(volume2_name)
 
-        if volume2.rebuildStatus == []:
+        if volume1.rebuildStatus == [] and \
+                volume2.rebuildStatus == [] and \
+                rebuild_started is False:
+            continue
+        elif volume1.rebuildStatus == [] and \
+                volume2.rebuildStatus == [] and \
+                rebuild_started is True:
             break
-
-        assert volume2.rebuildStatus[0].state == "in_progress"
-        assert volume1.rebuildStatus == []
+        elif volume2.rebuildStatus == []:
+            assert volume1.rebuildStatus[0].state == "in_progress"
+            rebuild_started = True
+        elif volume1.rebuildStatus == []:
+            assert volume2.rebuildStatus[0].state == "in_progress"
+            rebuild_started = True
 
         time.sleep(RETRY_INTERVAL)
 
     wait_for_rebuild_complete(client, volume2_name)
-    wait_for_rebuild_start(client, volume1_name)
     wait_for_rebuild_complete(client, volume1_name)
 
     # Step 2-1
