@@ -31,7 +31,11 @@ from common import create_pv_for_volume, create_pvc_for_volume
 from common import get_self_host_id, get_volume_endpoint
 from common import wait_for_volume_healthy
 from common import fail_replica_expansion
+from common import get_volume_name, get_volume_dev_mb_data_md5sum # NOQA
 from backupstore import set_random_backupstore  # NOQA
+from kubernetes.stream import stream
+from kubernetes import client as k8sclient
+import threading
 
 # Using a StorageClass because GKE is using the default StorageClass if not
 # specified. Volumes are still being manually created and not provisioned.
@@ -369,6 +373,111 @@ def test_csi_offline_expansion(client, core_api, storage_class, pvc, pod_manifes
     engine = get_volume_engine(volume)
     assert volume.size == str(EXPANDED_VOLUME_SIZE*Gi)
     assert volume.size == engine.size
+
+
+@pytest.mark.csi  # NOQA
+@pytest.mark.csi_expansion  # NOQA
+def test_csi_block_volume_online_expansion(client, core_api, storage_class, pvc, pod_manifest):  # NOQA
+    """
+    Test CSI feature: online expansion for block volume
+
+    1. Create a new `storage_class` with `allowVolumeExpansion` set
+    2. Create PVC with access mode "block" and Pod with the new StorageClass
+    3. Use `dd` command copy data into volume block device.
+    4. During the copy, update pvc.spec.resources to expand the volume
+    5. Verify the volume expansion done using Longhorn API
+       and Check the PVC & PV size
+    6. Wait for the copy complete.
+    7. Calculate the checksum for the copied data inside the block volume
+       asynchronously.
+    8. During the calculation, update pvc.spec.resources to expand the volume
+       again.
+    9. Wait for the calculation complete, then compare the checksum.
+    10. Do cleanup: Remove the original `test_data`as well as the pod and PVC.
+    """
+    def md5sum_thread(pod_name, pod_dev_volume_path):
+        # Use a new api instance in thread or when this threading
+        # is still running, execute other k8s command in main thread
+        # will hit error Handshake status 200 OK
+        k8s_api = k8sclient.CoreV1Api()
+
+        command = ["md5sum", pod_dev_volume_path]
+        resp = stream(k8s_api.connect_get_namespaced_pod_exec,
+                      pod_name,
+                      namespace="default",
+                      command=command,
+                      stderr=True,
+                      stdin=False,
+                      stdout=True,
+                      tty=False)
+
+        global resp_object
+        resp_object = resp.strip().split(" ")[0]
+
+    create_storage_class(storage_class)
+    pod_dev_volume_path = "/dev/longhorn/testblk"
+
+    pod_name = "csi-block-volume-online-expansion-test"
+    pvc_name = pod_name + "-pvc"
+    pvc['metadata']['name'] = pvc_name
+    pvc['spec']['storageClassName'] = storage_class['metadata']['name']
+    pvc['spec']['volumeMode'] = "Block"
+    create_pvc(pvc)
+
+    del pod_manifest['spec']['containers'][0]['volumeMounts']
+    pod_manifest['metadata']['name'] = pod_name
+    pod_manifest['spec']['containers'][0]['volumeDevices'] = [{
+        'devicePath': pod_dev_volume_path,
+        'name': 'block-vol'
+    }]
+    pod_manifest['spec']['volumes'] = [{
+        "name": "block-vol",
+        "persistentVolumeClaim": {
+            "claimName": pvc_name
+        }
+    }]
+
+    pod_name = pod_manifest['metadata']['name']
+    pod_manifest['spec']['nodeName'] = get_self_host_id()
+
+    create_and_wait_pod(core_api, pod_manifest)
+    volume_name = get_volume_name(core_api, pvc_name)
+    dev_volume = "/dev/longhorn/{}".format(volume_name)
+
+    cmd = ['dd', 'if=/dev/urandom', 'of=' + dev_volume, 'bs=1M', 'count=2500']
+    process = subprocess.Popen(cmd)
+
+    expand_size = str(EXPANDED_VOLUME_SIZE*Gi)
+    expand_and_wait_for_pvc(core_api, pvc, EXPANDED_VOLUME_SIZE*Gi)
+    wait_for_volume_expansion(client, volume_name)
+    volume = client.by_id_volume(volume_name)
+    assert volume.size == expand_size
+
+    process.wait()
+    if process.returncode == 0:
+        write_data_complete = True
+    else:
+        write_data_complete = False
+    assert write_data_complete
+
+    stream_thread = threading.Thread(target=md5sum_thread,
+                                     args=[pod_name,
+                                           pod_dev_volume_path])
+
+    stream_thread.start()
+    expand_size = str((EXPANDED_VOLUME_SIZE+1)*Gi)
+    expand_and_wait_for_pvc(core_api, pvc, (EXPANDED_VOLUME_SIZE+1)*Gi)
+    wait_for_volume_expansion(client, volume_name)
+    volume = client.by_id_volume(volume_name)
+    assert volume.size == expand_size
+
+    stream_thread.join()
+    pod_dev_md5 = resp_object
+
+    volume_dev_md5 = subprocess.check_output(["md5sum", dev_volume])\
+                               .strip().decode('utf-8').split(" ")[0]
+
+    assert pod_dev_md5 == volume_dev_md5
 
 
 def test_xfs_pv(client, core_api, pod_manifest):  # NOQA
