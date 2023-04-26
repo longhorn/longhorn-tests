@@ -46,6 +46,8 @@
   </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/upgrade/</loc>
   </url><url>
+    <loc>https://longhorn.github.io/longhorn-tests/manual/rancher-integration/access-lh-gui-using-rancher-ui/</loc>
+  </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/managed-kubernetes-clusters/aks/</loc>
   </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/auto-upgrade-engine/</loc>
@@ -78,6 +80,8 @@
   </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.1/dr-volume-latest-backup-deletion/</loc>
   </url><url>
+    <loc>https://longhorn.github.io/longhorn-tests/manual/rancher-integration/drain-using-rancher-ui/</loc>
+  </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/managed-kubernetes-clusters/eks/</loc>
   </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/environment/</loc>
@@ -96,11 +100,15 @@
   </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/kubernetes-upgrade-test/</loc>
   </url><url>
+    <loc>https://longhorn.github.io/longhorn-tests/manual/rancher-integration/lh-hardend-rancher/</loc>
+  </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/stability/multiple-installation/</loc>
   </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/</loc>
   </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/longhorn-upgrade-test/</loc>
+  </url><url>
+    <loc>https://longhorn.github.io/longhorn-tests/manual/rancher-integration/fleet-deploy/</loc>
   </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/ha/partial-engine-deployment/</loc>
   </url><url>
@@ -133,6 +141,8 @@
     <loc>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/prometheus_support/</loc>
   </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/resiliency/pvc_provisioning_with_insufficient_storage/</loc>
+  </url><url>
+    <loc>https://longhorn.github.io/longhorn-tests/manual/rancher-integration/</loc>
   </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/update_csi_components_when_images_change/</loc>
   </url><url>
@@ -289,6 +299,10 @@
     <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/</loc>
   </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/upgrade-conflict-handling/</loc>
+  </url><url>
+    <loc>https://longhorn.github.io/longhorn-tests/manual/rancher-integration/upgrade-using-rancher-ui/</loc>
+  </url><url>
+    <loc>https://longhorn.github.io/longhorn-tests/manual/rancher-integration/upgrade-using-suc/</loc>
   </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.2/upgrade-lease-lock/</loc>
   </url><url>
