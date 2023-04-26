@@ -198,13 +198,13 @@ def test_cloning_with_detached_source_volume(client, core_api, pvc, clone_pvc): 
                   storage: 10Gi
             ```
         6. Wait for `source-pvc` to be attached
-        7. Wait for a new snapshot created in `source-pvc` volume created
-        8. Wait for the `CloneStatus.State` in `cloned-pvc` to be `completed`
-        9. Wait for `source-pvc` to be detached
-        10. Attach the cloned volume to a node
-        11. Verify the data in `cloned-pvc` is the same as in `source-pvc`.
-        12. In 2-min retry loop, verify the volume of the `clone-pvc`
+        7. Wait for the `CloneStatus.State` in `cloned-pvc` to be `completed`
+        8. Wait for `source-pvc` to be detached
+        9. Attach the cloned volume to a node
+        10. Verify the data in `cloned-pvc` is the same as in `source-pvc`.
+        11. In 2-min retry loop, verify the volume of the `clone-pvc`
             eventually becomes healthy.
+        12. Verify snapshot created in `source-pvc` volume because of the clone
     """
     # Step-1
     source_pvc_name = 'source-pvc' + generate_random_suffix()
@@ -244,28 +244,31 @@ def test_cloning_with_detached_source_volume(client, core_api, pvc, clone_pvc): 
     source_volume = wait_for_volume_attached(client, source_volume_name)
 
     # Step-7
-    wait_for_snapshot_count(source_volume, 2)
-
-    # Step-8
     clone_volume_name = get_volume_name(core_api, clone_pvc_name)
     wait_for_volume_clone_status(client, clone_volume_name, VOLUME_FIELD_STATE,
                                  VOLUME_FIELD_CLONE_COMPLETED)
     wait_for_volume_detached(client, clone_volume_name)
 
-    # Step-9
+    # Step-8
     wait_for_volume_detached(client, source_volume_name)
 
-    # Step-10
+    # Step-9
     clone_volume = client.by_id_volume(clone_volume_name)
     clone_volume.attach(hostId=lht_host_id)
     wait_for_volume_attached(client, clone_volume_name)
     clone_volume = wait_for_volume_endpoint(client, clone_volume_name)
 
-    # Step-11
+    # Step-10
     check_volume_data(clone_volume, data)
 
-    # Step-12
+    # Step-11
     wait_for_volume_healthy(client, clone_volume_name)
+
+    # Step-12
+    source_volume = client.by_id_volume(source_volume_name)
+    source_volume.attach(hostId=lht_host_id)
+    source_volume = wait_for_volume_attached(client, source_volume_name)
+    wait_for_snapshot_count(source_volume, 2)
 
 
 @pytest.mark.cloning  # NOQA
