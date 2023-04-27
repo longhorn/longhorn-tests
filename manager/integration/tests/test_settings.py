@@ -28,17 +28,16 @@ from common import (  # NOQA
     LONGHORN_NAMESPACE,
     SETTING_TAINT_TOLERATION,
     SETTING_GUARANTEED_ENGINE_CPU,
-    SETTING_GUARANTEED_ENGINE_MANAGER_CPU,
-    SETTING_GUARANTEED_REPLICA_MANAGER_CPU,
+    SETTING_GUARANTEED_INSTANCE_MANAGER_CPU,
     SETTING_PRIORITY_CLASS,
     SETTING_DEFAULT_REPLICA_COUNT,
     SETTING_BACKUP_TARGET,
     SETTING_CONCURRENT_VOLUME_BACKUP_RESTORE,
-    SIZE, RETRY_COUNTS, RETRY_INTERVAL, RETRY_INTERVAL_LONG,
+    RETRY_COUNTS, RETRY_INTERVAL, RETRY_INTERVAL_LONG,
     update_setting, BACKING_IMAGE_QCOW2_URL, BACKING_IMAGE_NAME,
     create_backing_image_with_matching_url, BACKING_IMAGE_EXT4_SIZE,
     check_backing_image_disk_map_status, wait_for_volume_delete,
-    SETTING_REPLICA_NODE_SOFT_ANTI_AFFINITY, wait_for_node_update,
+    wait_for_node_update,
     crash_replica_processes, wait_for_engine_image_ref_count,
     get_volume_engine, wait_for_volume_current_image,
     wait_for_rebuild_start, wait_for_rebuild_complete,
@@ -368,27 +367,23 @@ def test_instance_manager_cpu_reservation(client, core_api):  # NOQA
 
     1. Try to change the deprecated setting `Guaranteed Engine CPU`.
        --> The setting update should fail.
-    2. Pick up node 1, set `node.engineManagerCPURequest` and
-       `node.replicaManagerCPURequest` to 150 and 250, respectively.
+    2. On node 1, set `node.instanceManagerCPURequest` to 150.
        --> The IM pods on this node will be restarted. And the CPU requests
        of these IM pods matches the above milli value.
-    3. Change the new settings `Guaranteed Engine Manager CPU` and
-       `Guaranteed Replica Manager CPU` to 10 and 20, respectively.
+    3. Change the new setting `Guaranteed Instance Manager CPU` to 10,
        Then wait for all IM pods except for the pods on node 1 restarting.
        --> The CPU requests of the restarted IM pods equals to
            the new setting value multiply the kube node allocatable CPU.
-    4. Set the both new settings to 0.
+    4. Set the new settings to 0.
        --> All IM pods except for the pod on node 1 will be restarted without
         CPU requests.
     5. Set the fields on node 1 to 0.
        --> The IM pods on node 1 will be restarted without CPU requests.
-    6. Set the both new settings to 2 random values,
-       and the sum of the 2 values is small than 40.
+    6. Set the new setting to a values smaller than 40.
        Then wait for all IM pods restarting.
        --> The CPU requests of all IM pods equals to
            the new setting value multiply the kube node allocatable CPU.
-    7. Set the both new settings to 2 random values,
-       and the single value or the sum of the 2 values is greater than 40.
+    7. Set the new setting to a value greater than 40.
        --> The setting update should fail.
     8. Create a volume, verify everything works as normal
 
@@ -402,19 +397,14 @@ def test_instance_manager_cpu_reservation(client, core_api):  # NOQA
 
     host_node_name = get_self_host_id()
     host_node = client.by_id_node(host_node_name)
-    other_ems, other_rms = [], []
+    other_ims = []
     for im in instance_managers:
-        if im.managerType == "engine":
-            if im.nodeID == host_node_name:
-                em_on_host = im
-            else:
-                other_ems.append(im)
+        if im.nodeID == host_node_name:
+            im_on_host = im
         else:
-            if im.nodeID == host_node_name:
-                rm_on_host = im
-            else:
-                other_rms.append(im)
-    assert em_on_host and rm_on_host
+            other_ims.append(im)
+    assert im_on_host
+
     host_kb_node = core_api.read_node(host_node_name)
     if host_kb_node.status.allocatable["cpu"].endswith('m'):
         allocatable_millicpu = int(host_kb_node.status.allocatable["cpu"][:-1])
@@ -422,68 +412,43 @@ def test_instance_manager_cpu_reservation(client, core_api):  # NOQA
         allocatable_millicpu = int(host_kb_node.status.allocatable["cpu"])*1000
 
     client.update(host_node, allowScheduling=True,
-                  engineManagerCPURequest=150, replicaManagerCPURequest=250)
+                  instanceManagerCPURequest=150)
     time.sleep(5)
-    guaranteed_engine_cpu_setting_check(
-        client, core_api, [em_on_host], "Running", True, "150m")
-    guaranteed_engine_cpu_setting_check(
-        client, core_api, [rm_on_host], "Running", True, "250m")
+    guaranteed_instance_manager_cpu_setting_check(
+        client, core_api, [im_on_host], "Running", True, "150m")
 
-    em_setting = client.by_id_setting(SETTING_GUARANTEED_ENGINE_MANAGER_CPU)
-    client.update(em_setting, value="10")
-    rm_setting = client.by_id_setting(SETTING_GUARANTEED_REPLICA_MANAGER_CPU)
-    client.update(rm_setting, value="20")
+    im_setting = client.by_id_setting(SETTING_GUARANTEED_INSTANCE_MANAGER_CPU)
+    client.update(im_setting, value="10")
     time.sleep(5)
-    guaranteed_engine_cpu_setting_check(
-        client, core_api, other_ems, "Running", True,
+    guaranteed_instance_manager_cpu_setting_check(
+        client, core_api, other_ims, "Running", True,
         str(int(allocatable_millicpu*10/100)) + "m")
-    guaranteed_engine_cpu_setting_check(
-        client, core_api, other_rms, "Running", True,
-        str(int(allocatable_millicpu*20/100)) + "m")
 
-    em_setting = client.by_id_setting(SETTING_GUARANTEED_ENGINE_MANAGER_CPU)
-    client.update(em_setting, value="0")
-    rm_setting = client.by_id_setting(SETTING_GUARANTEED_REPLICA_MANAGER_CPU)
-    client.update(rm_setting, value="0")
+    im_setting = client.by_id_setting(SETTING_GUARANTEED_INSTANCE_MANAGER_CPU)
+    client.update(im_setting, value="0")
     time.sleep(5)
-    guaranteed_engine_cpu_setting_check(
-        client, core_api, other_ems, "Running", True, "")
-    guaranteed_engine_cpu_setting_check(
-        client, core_api, other_rms, "Running", True, "")
+    guaranteed_instance_manager_cpu_setting_check(
+        client, core_api, other_ims, "Running", True, "")
 
-    ems, rms = other_ems, other_rms
-    ems.append(em_on_host)
-    rms.append(rm_on_host)
+    ims = other_ims
+    ims.append(im_on_host)
 
     host_node = client.by_id_node(host_node_name)
     client.update(host_node, allowScheduling=True,
-                  engineManagerCPURequest=0, replicaManagerCPURequest=0)
+                  instanceManagerCPURequest=0)
     time.sleep(5)
-    guaranteed_engine_cpu_setting_check(
-        client, core_api, ems, "Running", True, "")
-    guaranteed_engine_cpu_setting_check(
-        client, core_api, rms, "Running", True, "")
+    guaranteed_instance_manager_cpu_setting_check(
+        client, core_api, ims, "Running", True, "")
 
-    client.update(em_setting, value="20")
-    rm_setting = client.by_id_setting(SETTING_GUARANTEED_REPLICA_MANAGER_CPU)
-    client.update(rm_setting, value="15")
+    client.update(im_setting, value="20")
     time.sleep(5)
-    guaranteed_engine_cpu_setting_check(
-        client, core_api, ems, "Running", True,
+    guaranteed_instance_manager_cpu_setting_check(
+        client, core_api, ims, "Running", True,
         str(int(allocatable_millicpu*20/100)) + "m")
-    guaranteed_engine_cpu_setting_check(
-        client, core_api, rms, "Running", True,
-        str(int(allocatable_millicpu*15/100)) + "m")
 
     with pytest.raises(Exception) as e:
-        client.update(em_setting, value="41")
+        client.update(im_setting, value="41")
     assert "should be between 0 to 40" in \
-           str(e.value)
-
-    em_setting = client.by_id_setting(SETTING_GUARANTEED_ENGINE_MANAGER_CPU)
-    with pytest.raises(Exception) as e:
-        client.update(em_setting, value="35")
-    assert "The sum should not be smaller than 0% or greater than 40%" in \
            str(e.value)
 
     # Create a volume to test
@@ -497,7 +462,7 @@ def test_instance_manager_cpu_reservation(client, core_api):  # NOQA
     cleanup_volume(client, volume)
 
 
-def guaranteed_engine_cpu_setting_check(  # NOQA
+def guaranteed_instance_manager_cpu_setting_check(  # NOQA
         client, core_api, instance_managers, state, desire, cpu_val):  # NOQA
     """
     We check if instance managers are in the desired state with
