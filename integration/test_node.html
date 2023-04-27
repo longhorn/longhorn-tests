@@ -70,11 +70,13 @@ from common import wait_for_volume_detached
 from common import RETRY_COUNTS, RETRY_INTERVAL
 from common import create_volume, cleanup_volume_by_name
 from common import create_host_disk, cleanup_host_disks
+from common import set_node_cordon
 from common import set_node_tags, set_node_scheduling
 from common import set_node_scheduling_eviction
 from common import update_node_disks
 
 from backupstore import set_random_backupstore # NOQA
+
 
 CREATE_DEFAULT_DISK_LABEL = &#34;node.longhorn.io/create-default-disk&#34;
 CREATE_DEFAULT_DISK_LABEL_VALUE_CONFIG = &#34;config&#34;
@@ -83,19 +85,6 @@ DEFAULT_NODE_TAG_ANNOTATION = &#34;node.longhorn.io/default-node-tags&#34;
 SMALL_DISK_SIZE = (2 * 1024 * 1024)
 TEST_FILE = &#39;test&#39;
 NODE_UPDATE_WAIT_INTERVAL = 2
-
-
-def set_node_cordon(api, node_name, to_cordon):
-    &#34;&#34;&#34;
-    Set a kubernetes node schedulable status
-    &#34;&#34;&#34;
-    payload = {
-        &#34;spec&#34;: {
-            &#34;unschedulable&#34;: to_cordon
-        }
-    }
-
-    api.patch_node(node_name, payload)
 
 
 @pytest.fixture
@@ -2856,28 +2845,6 @@ def reset_disk_settings():
     api.update(setting, value=&#34;false&#34;)
     setting = api.by_id_setting(SETTING_DEFAULT_DATA_PATH)
     api.update(setting, value=DEFAULT_DISK_PATH)</code></pre>
-</details>
-</dd>
-<dt id="tests.test_node.set_node_cordon"><code class="name flex">
-<span>def <span class="ident">set_node_cordon</span></span>(<span>api, node_name, to_cordon)</span>
-</code></dt>
-<dd>
-<div class="desc"><p>Set a kubernetes node schedulable status</p></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def set_node_cordon(api, node_name, to_cordon):
-    &#34;&#34;&#34;
-    Set a kubernetes node schedulable status
-    &#34;&#34;&#34;
-    payload = {
-        &#34;spec&#34;: {
-            &#34;unschedulable&#34;: to_cordon
-        }
-    }
-
-    api.patch_node(node_name, payload)</code></pre>
 </details>
 </dd>
 <dt id="tests.test_node.test_disable_scheduling_on_cordoned_node"><code class="name flex">
@@ -6027,7 +5994,6 @@ def test_update_node(client):  # NOQA
 <li><code><a title="tests.test_node.reset_default_disk_label" href="#tests.test_node.reset_default_disk_label">reset_default_disk_label</a></code></li>
 <li><code><a title="tests.test_node.reset_disk_and_tag_annotations" href="#tests.test_node.reset_disk_and_tag_annotations">reset_disk_and_tag_annotations</a></code></li>
 <li><code><a title="tests.test_node.reset_disk_settings" href="#tests.test_node.reset_disk_settings">reset_disk_settings</a></code></li>
-<li><code><a title="tests.test_node.set_node_cordon" href="#tests.test_node.set_node_cordon">set_node_cordon</a></code></li>
 <li><code><a title="tests.test_node.test_disable_scheduling_on_cordoned_node" href="#tests.test_node.test_disable_scheduling_on_cordoned_node">test_disable_scheduling_on_cordoned_node</a></code></li>
 <li><code><a title="tests.test_node.test_disk_eviction_with_node_level_soft_anti_affinity_disabled" href="#tests.test_node.test_disk_eviction_with_node_level_soft_anti_affinity_disabled">test_disk_eviction_with_node_level_soft_anti_affinity_disabled</a></code></li>
 <li><code><a title="tests.test_node.test_disk_migration" href="#tests.test_node.test_disk_migration">test_disk_migration</a></code></li>

@@ -97,6 +97,8 @@ RETRY_BACKUP_INTERVAL = 1
 RETRY_SNAPSHOT_INTERVAL = 1
 RETRY_EXEC_COUNTS = 30
 RETRY_EXEC_INTERVAL = 5
+RETRY_AUTOSCALER_INTERVAL = 30
+RETRY_AUTOSCALER_COUNTS = 10*60//RETRY_AUTOSCALER_INTERVAL  # 10 minutes
 
 LONGHORN_NAMESPACE = &#34;longhorn-system&#34;
 
@@ -223,6 +225,8 @@ SETTING_SNAPSHOT_FAST_REPLICA_REBUILD_ENABLED = &#34;fast-replica-rebuild-enable
 SETTING_CONCURRENT_VOLUME_BACKUP_RESTORE = \
     &#34;concurrent-volume-backup-restore-per-node-limit&#34;
 SETTING_NODE_SELECTOR = &#34;system-managed-components-node-selector&#34;
+SETTING_K8S_CLUSTER_AUTOSCALER_ENABLED = \
+    &#34;kubernetes-cluster-autoscaler-enabled&#34;
 
 SNAPSHOT_DATA_INTEGRITY_IGNORED = &#34;ignored&#34;
 SNAPSHOT_DATA_INTEGRITY_DISABLED = &#34;disabled&#34;
@@ -273,6 +277,11 @@ BACKUP_BLOCK_SIZE = 2 * Mi
 DEPRECATED_K8S_ZONE_LABEL = &#34;failure-domain.beta.kubernetes.io/zone&#34;
 
 K8S_ZONE_LABEL = &#34;topology.kubernetes.io/zone&#34;
+
+K8S_CLUSTER_AUTOSCALER_EVICT_KEY = \
+    &#34;cluster-autoscaler.kubernetes.io/safe-to-evict&#34;
+K8S_CLUSTER_AUTOSCALER_SCALE_DOWN_DISABLED_KEY = \
+    &#34;cluster-autoscaler.kubernetes.io/scale-down-disabled&#34;
 
 BACKING_IMAGE_SOURCE_TYPE_DOWNLOAD = &#34;download&#34;
 BACKING_IMAGE_SOURCE_TYPE_FROM_VOLUME = &#34;export-from-volume&#34;
@@ -1028,6 +1037,19 @@ def set_node_scheduling_eviction(client, node, allowScheduling, evictionRequeste
     return node
 
 
+def set_node_cordon(api, node_name, to_cordon):
+    &#34;&#34;&#34;
+    Set a kubernetes node schedulable status
+    &#34;&#34;&#34;
+    payload = {
+        &#34;spec&#34;: {
+            &#34;unschedulable&#34;: to_cordon
+        }
+    }
+
+    api.patch_node(node_name, payload)
+
+
 @pytest.fixture
 def pod_make(request):
     def make_pod(name=&#39;test-pod&#39;):
@@ -1570,7 +1592,9 @@ def clients(request):
 
 
 def cleanup_client():
+    core_api = k8sclient.CoreV1Api()
     client = get_longhorn_api_client()
+
     enable_default_disk(client)
 
     cleanup_all_volumes(client)
@@ -1591,7 +1615,7 @@ def cleanup_client():
     cleanup_all_support_bundles(client)
 
     # enable nodes scheduling
-    reset_node(client)
+    reset_node(client, core_api)
     reset_settings(client)
     reset_disks_for_all_nodes(client)
     scale_up_engine_image_daemonset(client)
@@ -2998,10 +3022,13 @@ def get_update_disks(disks):
     return update_disk
 
 
-def reset_node(client):
+def reset_node(client, core_api):
     nodes = client.list_node()
     for node in nodes:
         try:
+            set_node_cordon(core_api, node.id, False)
+            node = client.by_id_node(node.id)
+
             node = set_node_tags(client, node, tags=[])
             node = wait_for_node_tag_update(client, node.id, [])
             node = set_node_scheduling(client, node, allowScheduling=True)
@@ -3011,7 +3038,9 @@ def reset_node(client):
             print(&#34;\nException when reset node scheduling and tags&#34;, node)
             print(e)
 
-    reset_longhorn_node_zone(client)
+    managed_k8s_cluster = os.getenv(&#34;MANAGED_K8S_CLUSTER&#34;).lower() == &#39;true&#39;
+    if not managed_k8s_cluster:
+        reset_longhorn_node_zone(client)
 
 
 def reset_longhorn_node_zone(client):
@@ -3024,7 +3053,6 @@ def reset_longhorn_node_zone(client):
 
 
 def wait_longhorn_node_zone_reset(client):
-
     lh_nodes = client.list_node()
     node_names = map(lambda node: node.name, lh_nodes)
 
@@ -4318,6 +4346,69 @@ def make_deployment_with_pvc(request):
     request.addfinalizer(finalizer)
 
     return _generate_deployment_with_pvc_manifest
+
+
+@pytest.fixture
+def make_deployment_cpu_request(request):
+    def _generate_deployment_cpu_request_manifest(deployment_name, cpu_request, replicas=1): # NOQA
+        make_deployment_cpu_request.deployment_manifest = {
+            &#34;apiVersion&#34;: &#34;apps/v1&#34;,
+            &#34;kind&#34;: &#34;Deployment&#34;,
+            &#34;metadata&#34;: {
+               &#34;name&#34;: deployment_name,
+               &#34;labels&#34;: {
+                  &#34;name&#34;: deployment_name
+               }
+            },
+            &#34;spec&#34;: {
+               &#34;replicas&#34;: replicas,
+               &#34;selector&#34;: {
+                  &#34;matchLabels&#34;: {
+                     &#34;name&#34;: deployment_name
+                  }
+               },
+               &#34;template&#34;: {
+                  &#34;metadata&#34;: {
+                     &#34;labels&#34;: {
+                        &#34;name&#34;: deployment_name
+                     }
+                  },
+                  &#34;spec&#34;: {
+                     &#34;containers&#34;: [
+                        {
+                           &#34;name&#34;: deployment_name,
+                           &#34;image&#34;: &#34;nginx:stable-alpine&#34;,
+                           &#34;resources&#34;: {
+                               &#34;limits&#34;: {
+                                   &#34;cpu&#34;: str(cpu_request * 2)+&#34;m&#34;,
+                                   &#34;memory&#34;: &#34;30Mi&#34;,
+                               },
+                               &#34;requests&#34;: {
+                                   &#34;cpu&#34;: str(cpu_request)+&#34;m&#34;,
+                                   &#34;memory&#34;: &#34;15Mi&#34;,
+                               }
+                           }
+                        }
+                     ],
+                  }
+               }
+            }
+        }
+
+        return make_deployment_cpu_request.deployment_manifest
+
+    def finalizer():
+        apps_api = get_apps_api_client()
+        deployment_name = \
+            make_deployment_cpu_request.deployment_manifest[&#34;metadata&#34;][&#34;name&#34;]
+        delete_and_wait_deployment(
+            apps_api,
+            deployment_name
+        )
+
+    request.addfinalizer(finalizer)
+
+    return _generate_deployment_cpu_request_manifest
 
 
 def wait_deployment_replica_ready(apps_api, deployment_name,
@@ -6399,7 +6490,9 @@ properly.
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def cleanup_client():
+    core_api = k8sclient.CoreV1Api()
     client = get_longhorn_api_client()
+
     enable_default_disk(client)
 
     cleanup_all_volumes(client)
@@ -6420,7 +6513,7 @@ properly.
     cleanup_all_support_bundles(client)
 
     # enable nodes scheduling
-    reset_node(client)
+    reset_node(client, core_api)
     reset_settings(client)
     reset_disks_for_all_nodes(client)
     scale_up_engine_image_daemonset(client)
@@ -9613,6 +9706,78 @@ greate than MAX_SUPPORT_BINDLE_NUMBER.</p>
     k8sconfig.load_incluster_config()</code></pre>
 </details>
 </dd>
+<dt id="tests.common.make_deployment_cpu_request"><code class="name flex">
+<span>def <span class="ident">make_deployment_cpu_request</span></span>(<span>request)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@pytest.fixture
+def make_deployment_cpu_request(request):
+    def _generate_deployment_cpu_request_manifest(deployment_name, cpu_request, replicas=1): # NOQA
+        make_deployment_cpu_request.deployment_manifest = {
+            &#34;apiVersion&#34;: &#34;apps/v1&#34;,
+            &#34;kind&#34;: &#34;Deployment&#34;,
+            &#34;metadata&#34;: {
+               &#34;name&#34;: deployment_name,
+               &#34;labels&#34;: {
+                  &#34;name&#34;: deployment_name
+               }
+            },
+            &#34;spec&#34;: {
+               &#34;replicas&#34;: replicas,
+               &#34;selector&#34;: {
+                  &#34;matchLabels&#34;: {
+                     &#34;name&#34;: deployment_name
+                  }
+               },
+               &#34;template&#34;: {
+                  &#34;metadata&#34;: {
+                     &#34;labels&#34;: {
+                        &#34;name&#34;: deployment_name
+                     }
+                  },
+                  &#34;spec&#34;: {
+                     &#34;containers&#34;: [
+                        {
+                           &#34;name&#34;: deployment_name,
+                           &#34;image&#34;: &#34;nginx:stable-alpine&#34;,
+                           &#34;resources&#34;: {
+                               &#34;limits&#34;: {
+                                   &#34;cpu&#34;: str(cpu_request * 2)+&#34;m&#34;,
+                                   &#34;memory&#34;: &#34;30Mi&#34;,
+                               },
+                               &#34;requests&#34;: {
+                                   &#34;cpu&#34;: str(cpu_request)+&#34;m&#34;,
+                                   &#34;memory&#34;: &#34;15Mi&#34;,
+                               }
+                           }
+                        }
+                     ],
+                  }
+               }
+            }
+        }
+
+        return make_deployment_cpu_request.deployment_manifest
+
+    def finalizer():
+        apps_api = get_apps_api_client()
+        deployment_name = \
+            make_deployment_cpu_request.deployment_manifest[&#34;metadata&#34;][&#34;name&#34;]
+        delete_and_wait_deployment(
+            apps_api,
+            deployment_name
+        )
+
+    request.addfinalizer(finalizer)
+
+    return _generate_deployment_cpu_request_manifest</code></pre>
+</details>
+</dd>
 <dt id="tests.common.make_deployment_with_pvc"><code class="name flex">
 <span>def <span class="ident">make_deployment_with_pvc</span></span>(<span>request)</span>
 </code></dt>
@@ -10375,7 +10540,7 @@ def random_labels():
 </details>
 </dd>
 <dt id="tests.common.reset_node"><code class="name flex">
-<span>def <span class="ident">reset_node</span></span>(<span>client)</span>
+<span>def <span class="ident">reset_node</span></span>(<span>client, core_api)</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -10383,10 +10548,13 @@ def random_labels():
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def reset_node(client):
+<pre><code class="python">def reset_node(client, core_api):
     nodes = client.list_node()
     for node in nodes:
         try:
+            set_node_cordon(core_api, node.id, False)
+            node = client.by_id_node(node.id)
+
             node = set_node_tags(client, node, tags=[])
             node = wait_for_node_tag_update(client, node.id, [])
             node = set_node_scheduling(client, node, allowScheduling=True)
@@ -10396,7 +10564,9 @@ def random_labels():
             print(&#34;\nException when reset node scheduling and tags&#34;, node)
             print(e)
 
-    reset_longhorn_node_zone(client)</code></pre>
+    managed_k8s_cluster = os.getenv(&#34;MANAGED_K8S_CLUSTER&#34;).lower() == &#39;true&#39;
+    if not managed_k8s_cluster:
+        reset_longhorn_node_zone(client)</code></pre>
 </details>
 </dd>
 <dt id="tests.common.reset_settings"><code class="name flex">
@@ -10628,6 +10798,28 @@ def scheduling_api(request):
     k8s_zone_label = get_k8s_zone_label()
 
     set_k8s_node_label(core_api, node_name, k8s_zone_label, zone_name)</code></pre>
+</details>
+</dd>
+<dt id="tests.common.set_node_cordon"><code class="name flex">
+<span>def <span class="ident">set_node_cordon</span></span>(<span>api, node_name, to_cordon)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Set a kubernetes node schedulable status</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def set_node_cordon(api, node_name, to_cordon):
+    &#34;&#34;&#34;
+    Set a kubernetes node schedulable status
+    &#34;&#34;&#34;
+    payload = {
+        &#34;spec&#34;: {
+            &#34;unschedulable&#34;: to_cordon
+        }
+    }
+
+    api.patch_node(node_name, payload)</code></pre>
 </details>
 </dd>
 <dt id="tests.common.set_node_scheduling"><code class="name flex">
@@ -13598,7 +13790,6 @@ ref: <a href="https://github.com/longhorn/longhorn/issues/4814">https://github.c
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def wait_longhorn_node_zone_reset(client):
-
     lh_nodes = client.list_node()
     node_names = map(lambda node: node.name, lh_nodes)
 
@@ -14275,6 +14466,7 @@ from the args and kwargs arguments, respectively.</p></div>
 <li><code><a title="tests.common.json_string_go_to_python" href="#tests.common.json_string_go_to_python">json_string_go_to_python</a></code></li>
 <li><code><a title="tests.common.lazy_umount_disk" href="#tests.common.lazy_umount_disk">lazy_umount_disk</a></code></li>
 <li><code><a title="tests.common.load_k8s_config" href="#tests.common.load_k8s_config">load_k8s_config</a></code></li>
+<li><code><a title="tests.common.make_deployment_cpu_request" href="#tests.common.make_deployment_cpu_request">make_deployment_cpu_request</a></code></li>
 <li><code><a title="tests.common.make_deployment_with_pvc" href="#tests.common.make_deployment_with_pvc">make_deployment_with_pvc</a></code></li>
 <li><code><a title="tests.common.monitor_restore_progress" href="#tests.common.monitor_restore_progress">monitor_restore_progress</a></code></li>
 <li><code><a title="tests.common.mount_disk" href="#tests.common.mount_disk">mount_disk</a></code></li>
@@ -14304,6 +14496,7 @@ from the args and kwargs arguments, respectively.</p></div>
 <li><code><a title="tests.common.scheduling_api" href="#tests.common.scheduling_api">scheduling_api</a></code></li>
 <li><code><a title="tests.common.set_k8s_node_label" href="#tests.common.set_k8s_node_label">set_k8s_node_label</a></code></li>
 <li><code><a title="tests.common.set_k8s_node_zone_label" href="#tests.common.set_k8s_node_zone_label">set_k8s_node_zone_label</a></code></li>
+<li><code><a title="tests.common.set_node_cordon" href="#tests.common.set_node_cordon">set_node_cordon</a></code></li>
 <li><code><a title="tests.common.set_node_scheduling" href="#tests.common.set_node_scheduling">set_node_scheduling</a></code></li>
 <li><code><a title="tests.common.set_node_scheduling_eviction" href="#tests.common.set_node_scheduling_eviction">set_node_scheduling_eviction</a></code></li>
 <li><code><a title="tests.common.set_node_tags" href="#tests.common.set_node_tags">set_node_tags</a></code></li>
