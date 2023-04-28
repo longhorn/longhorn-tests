@@ -2205,7 +2205,16 @@ def wait_for_replica_failed(client, volname, replica_name,
                 break
             if r['instanceManagerName'] != "":
                 im = client.by_id_instance_manager(r['instanceManagerName'])
-                if r['name'] in im['instances']:
+
+                instance_dict = {}
+                # We still check the 'instances' for backward compatibility
+                # with older versions (<v1.5.x).
+                if im['instances'] is not None:
+                    instance_dict.update(im['instances'])
+                if im['instanceReplicas'] is not None:
+                    instance_dict.update(im['instanceReplicas'])
+
+                if r['name'] in instance_dict:
                     failed = False
                     debug_replica_in_im = im
                     break
@@ -2229,7 +2238,16 @@ def wait_for_replica_running(client, volname, replica_name):
             if r['running'] and r['instanceManagerName'] != "":
                 im = client.by_id_instance_manager(
                     r['instanceManagerName'])
-                if r['name'] in im['instances']:
+
+                instance_dict = {}
+                # We still check the 'instances' for backward compatibility
+                # with older versions (<v1.5.x).
+                if im['instances'] is not None:
+                    instance_dict.update(im['instances'])
+                if im['instanceReplicas'] is not None:
+                    instance_dict.update(im['instanceReplicas'])
+
+                if r['name'] in instance_dict:
                     is_running = True
                     break
         if is_running:
