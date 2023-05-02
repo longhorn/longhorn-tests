@@ -36,6 +36,8 @@ from common import generate_random_data, get_storage_api_client
 from common import get_volume_name, read_volume_data, size_to_string
 from common import write_pod_volume_data, check_volume_replicas
 from common import SETTING_REPLICA_NODE_SOFT_ANTI_AFFINITY
+from common import get_self_host_id
+import subprocess
 
 DEFAULT_STORAGECLASS_NAME = &#34;longhorn-provisioner&#34;
 
@@ -224,19 +226,53 @@ def test_provisioner_tags(client, core_api, node_default_tags, storage_class, pv
     check_volume_replicas(volumes.data[0], tag_spec, node_default_tags)
 
 
-@pytest.mark.skip(reason=&#34;TODO&#34;)
-def test_provisioner_fs_format():
+@pytest.mark.parametrize(
+    &#34;inode_size,block_size&#34;,
+    [
+        pytest.param(&#34;512&#34;, &#34;2048&#34;),
+        pytest.param(&#34;1024&#34;, &#34;1024&#34;)
+    ],
+)
+def test_provisioner_fs_format(client, core_api, storage_class, # NOQA
+                               pvc, pod, inode_size, block_size): # NOQA
     &#34;&#34;&#34;
     Context: https://github.com/longhorn/longhorn/issues/4642
     This is to test the FS format options are configured as mentioned in
     the storage class.
 
-    1. Deploy a new storage class &#39;longhorn-test&#39; with mkfsParams param.
+    1. Deploy a new storage class &#39;longhorn-provisioner&#39; with mkfsParams param.
     2. Deploy a PVC and POD with the above storage class.
     3. A Longhorn volume should get created, verify the Inode size and
        block size. They should be same as the mkfsParams parameter.
 
-    &#34;&#34;&#34;</code></pre>
+    &#34;&#34;&#34;
+    pod_name = &#39;provisioner-fs-test&#39;
+    pod[&#39;metadata&#39;][&#39;name&#39;] = pod_name
+    pod[&#39;spec&#39;][&#39;volumes&#39;] = [
+        create_pvc_spec(pvc[&#39;metadata&#39;][&#39;name&#39;])
+    ]
+    pod[&#39;spec&#39;][&#39;nodeName&#39;] = get_self_host_id()
+    pvc[&#39;spec&#39;][&#39;storageClassName&#39;] = DEFAULT_STORAGECLASS_NAME
+    storage_class[&#39;metadata&#39;][&#39;name&#39;] = DEFAULT_STORAGECLASS_NAME
+    storage_class[&#39;parameters&#39;][&#39;mkfsParams&#39;] = \
+        &#34;-I {} -b {} -O ^metadata_csum,^64bit&#34;.format(inode_size, block_size)
+
+    create_storage(core_api, storage_class, pvc)
+    create_and_wait_pod(core_api, pod)
+    pvc_volume_name = get_volume_name(core_api, pvc[&#39;metadata&#39;][&#39;name&#39;])
+
+    command = &#34;tune2fs -l /dev/longhorn/{} | grep -i &#39;block size:&#39;&#34;\
+        .format(pvc_volume_name)
+    assert block_size in str(subprocess.check_output(command, shell=True))
+
+    command = &#34;tune2fs -l /dev/longhorn/{} | grep -i &#39;inode size:&#39;&#34;\
+        .format(pvc_volume_name)
+    assert inode_size in str(subprocess.check_output(command, shell=True))
+
+    test_data = generate_random_data(VOLUME_RWTEST_SIZE)
+    write_pod_volume_data(core_api, pod_name, test_data)
+    resp = read_volume_data(core_api, pod_name)
+    assert resp == test_data</code></pre>
 </details>
 </section>
 <section>
@@ -269,14 +305,14 @@ def test_provisioner_fs_format():
 </details>
 </dd>
 <dt id="tests.test_provisioner.test_provisioner_fs_format"><code class="name flex">
-<span>def <span class="ident">test_provisioner_fs_format</span></span>(<span>)</span>
+<span>def <span class="ident">test_provisioner_fs_format</span></span>(<span>client, core_api, storage_class, pvc, pod, inode_size, block_size)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Context: <a href="https://github.com/longhorn/longhorn/issues/4642">https://github.com/longhorn/longhorn/issues/4642</a>
 This is to test the FS format options are configured as mentioned in
 the storage class.</p>
 <ol>
-<li>Deploy a new storage class 'longhorn-test' with mkfsParams param.</li>
+<li>Deploy a new storage class 'longhorn-provisioner' with mkfsParams param.</li>
 <li>Deploy a PVC and POD with the above storage class.</li>
 <li>A Longhorn volume should get created, verify the Inode size and
 block size. They should be same as the mkfsParams parameter.</li>
@@ -285,19 +321,53 @@ block size. They should be same as the mkfsParams parameter.</li>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">@pytest.mark.skip(reason=&#34;TODO&#34;)
-def test_provisioner_fs_format():
+<pre><code class="python">@pytest.mark.parametrize(
+    &#34;inode_size,block_size&#34;,
+    [
+        pytest.param(&#34;512&#34;, &#34;2048&#34;),
+        pytest.param(&#34;1024&#34;, &#34;1024&#34;)
+    ],
+)
+def test_provisioner_fs_format(client, core_api, storage_class, # NOQA
+                               pvc, pod, inode_size, block_size): # NOQA
     &#34;&#34;&#34;
     Context: https://github.com/longhorn/longhorn/issues/4642
     This is to test the FS format options are configured as mentioned in
     the storage class.
 
-    1. Deploy a new storage class &#39;longhorn-test&#39; with mkfsParams param.
+    1. Deploy a new storage class &#39;longhorn-provisioner&#39; with mkfsParams param.
     2. Deploy a PVC and POD with the above storage class.
     3. A Longhorn volume should get created, verify the Inode size and
        block size. They should be same as the mkfsParams parameter.
 
-    &#34;&#34;&#34;</code></pre>
+    &#34;&#34;&#34;
+    pod_name = &#39;provisioner-fs-test&#39;
+    pod[&#39;metadata&#39;][&#39;name&#39;] = pod_name
+    pod[&#39;spec&#39;][&#39;volumes&#39;] = [
+        create_pvc_spec(pvc[&#39;metadata&#39;][&#39;name&#39;])
+    ]
+    pod[&#39;spec&#39;][&#39;nodeName&#39;] = get_self_host_id()
+    pvc[&#39;spec&#39;][&#39;storageClassName&#39;] = DEFAULT_STORAGECLASS_NAME
+    storage_class[&#39;metadata&#39;][&#39;name&#39;] = DEFAULT_STORAGECLASS_NAME
+    storage_class[&#39;parameters&#39;][&#39;mkfsParams&#39;] = \
+        &#34;-I {} -b {} -O ^metadata_csum,^64bit&#34;.format(inode_size, block_size)
+
+    create_storage(core_api, storage_class, pvc)
+    create_and_wait_pod(core_api, pod)
+    pvc_volume_name = get_volume_name(core_api, pvc[&#39;metadata&#39;][&#39;name&#39;])
+
+    command = &#34;tune2fs -l /dev/longhorn/{} | grep -i &#39;block size:&#39;&#34;\
+        .format(pvc_volume_name)
+    assert block_size in str(subprocess.check_output(command, shell=True))
+
+    command = &#34;tune2fs -l /dev/longhorn/{} | grep -i &#39;inode size:&#39;&#34;\
+        .format(pvc_volume_name)
+    assert inode_size in str(subprocess.check_output(command, shell=True))
+
+    test_data = generate_random_data(VOLUME_RWTEST_SIZE)
+    write_pod_volume_data(core_api, pod_name, test_data)
+    resp = read_volume_data(core_api, pod_name)
+    assert resp == test_data</code></pre>
 </details>
 </dd>
 <dt id="tests.test_provisioner.test_provisioner_io"><code class="name flex">
