@@ -55,16 +55,5 @@ Scenarios: Case 1: Test volume operations when some of the engine image DaemonSe
       <description>Create and attach a volume. Write a large amount of data to the volume. Disable disk scheduling and the node scheduling for one replica. Crash the replica progress. Verify the corresponding replica will become ERROR. the volume will keep robustness Degraded. Enable the disk scheduling. Verify nothing changes. Enable the node scheduling. Verify. the failed replica is reused by Longhorn. the rebuilding progress in UI page looks good. the data content is correct after rebuilding.</description>
     </item>
     
-    <item>
-      <title>Single replica node down</title>
-      <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/ha/single-replica-node-down/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/ha/single-replica-node-down/</guid>
-      <description>Related Issues https://github.com/longhorn/longhorn/issues/2329 https://github.com/longhorn/longhorn/issues/2309 https://github.com/longhorn/longhorn/issues/3957
-Default Setting Automatic salvage is enabled.
-Node restart/down scenario with Pod Deletion Policy When Node is Down set to default value do-nothing. Create RWO|RWX volume with replica count = 1 &amp;amp; data locality = enabled|disabled|strict-local. For data locality = strict-local, use RWO volume to do test. Create deployment|statefulset for volume. Power down node of volume/replica. The workload pod will get stuck in the terminating state. Volume will fail to attach since volume is not ready (i.</description>
-    </item>
-    
   </channel>
 </rss>

@@ -25,30 +25,6 @@
     </item>
     
     <item>
-      <title>[#1355](https://github.com/longhorn/longhorn/issues/1355) The node the restore volume attached to is down</title>
-      <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/restore-volume-node-down/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/restore-volume-node-down/</guid>
-      <description>Case 1: Create a backup.
-Restore the above backup.
-Power off the volume attached node during the restoring.
-Wait for the Longhorn node down.
-Wait for the restore volume being reattached and starting restoring volume with state Degraded.
-Wait for the restore complete.
-Note: During the restoration process, if the engine process fails to communicate with a replica, all replicas will be marked as ERR, and the volume&amp;rsquo;s RestoreRequired status cannot be set to false.</description>
-    </item>
-    
-    <item>
-      <title>[#1366](https://github.com/longhorn/longhorn/issues/1366) &amp;&amp; [#1328](https://github.com/longhorn/longhorn/issues/1328) The node the DR volume attached to is rebooted</title>
-      <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/dr-volume-node-rebooted/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/dr-volume-node-rebooted/</guid>
-      <description>Scenario 1 Create a pod with Longhorn volume. Write data to the volume and get the md5sum. Create the 1st backup for the volume. Create a DR volume from the backup. Wait for the DR volume starting the initial restore. Then reboot the DR volume attached node immediately. Wait for the DR volume detached then reattached. Wait for the DR volume restore complete after the reattachment. Activate the DR volume and check the data md5sum.</description>
-    </item>
-    
-    <item>
       <title>[#1404](https://github.com/longhorn/longhorn/issues/1404) test backup functionality on google cloud and other s3 interop providers.</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/google-cloud-s3-interop-backups/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>

@@ -6,9 +6,9 @@
   </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/concurrent-backup/</loc>
   </url><url>
-    <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/restore-volume-node-down/</loc>
+    <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/node-not-ready/node-down/restore-volume-node-down/</loc>
   </url><url>
-    <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/dr-volume-node-rebooted/</loc>
+    <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/node-not-ready/node-restart/dr-volume-node-rebooted/</loc>
   </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/google-cloud-s3-interop-backups/</loc>
   </url><url>
@@ -54,7 +54,7 @@
   </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/ha/backing-image-error-reporting-and-retry/</loc>
   </url><url>
-    <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/node/backing-image-on-a-down-node/</loc>
+    <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/node-not-ready/node-down/backing-image-on-a-down-node/</loc>
   </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/</loc>
   </url><url>
@@ -100,6 +100,8 @@
   </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/kubernetes-upgrade-test/</loc>
   </url><url>
+    <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/node-not-ready/kubelet-restart/</loc>
+  </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/rancher-integration/lh-hardend-rancher/</loc>
   </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/stability/multiple-installation/</loc>
@@ -126,13 +128,23 @@
   </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/node/</loc>
   </url><url>
-    <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/node/node-disconnection/</loc>
+    <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/node-not-ready/node-disconnection/</loc>
   </url><url>
-    <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/node/node-drain-deletion/</loc>
+    <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/node-not-ready/node-disconnection/node-disconnection/</loc>
+  </url><url>
+    <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/node-not-ready/node-down/</loc>
+  </url><url>
+    <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/node-not-ready/node-down/node-drain-deletion/</loc>
+  </url><url>
+    <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/node-not-ready/</loc>
+  </url><url>
+    <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/node-not-ready/node-restart/</loc>
   </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.0/suse-sles12sp3/</loc>
   </url><url>
-    <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/node/physical-node-down/</loc>
+    <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/node-not-ready/node-down/physical-node-down/</loc>
+  </url><url>
+    <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/node-not-ready/node-restart/physical-node-reboot/</loc>
   </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/</loc>
   </url><url>
@@ -166,7 +178,7 @@
   </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.3.0/test-storage-network/</loc>
   </url><url>
-    <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/ha/single-replica-node-down/</loc>
+    <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/node-not-ready/node-down/single-replica-node-down/</loc>
   </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/basic-operations-parallelism/snapshot-while-writing-data/</loc>
   </url><url>
@@ -226,7 +238,7 @@
   </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/iscsi_installation/</loc>
   </url><url>
-    <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/node/kubelet-restart-on-a-node/</loc>
+    <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/node-not-ready/kubelet-restart/kubelet-restart-on-a-node/</loc>
   </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.2.0/label-driven-recurring-job/</loc>
   </url><url>
@@ -242,7 +254,7 @@
   </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/delete-node/</loc>
   </url><url>
-    <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/node/node-deletion/</loc>
+    <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/node-not-ready/node-down/node-deletion/</loc>
   </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.4.0/test-node-id-change-during-backing-image-creation/</loc>
   </url><url>

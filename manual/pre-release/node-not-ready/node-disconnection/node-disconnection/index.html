@@ -66,12 +66,6 @@
   <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/concurrent-backup/">#1341 concurrent backup test</a></li>
   
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/restore-volume-node-down/">#1355 The node the restore volume attached to is down</a></li>
-  
-
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/dr-volume-node-rebooted/">#1366 &amp;&amp; #1328 The node the DR volume attached to is rebooted</a></li>
-  
-
   <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/google-cloud-s3-interop-backups/">#1404 test backup functionality on google cloud and other s3 interop providers.</a></li>
   
 
@@ -143,9 +137,6 @@
   <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/ha/replica-rebuilding/">Replica Rebuilding</a></li>
   
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/ha/single-replica-node-down/">Single replica node down</a></li>
-  
-
 </ul>
 
   
@@ -207,28 +198,80 @@
   
     <ul>
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node/backing-image-on-a-down-node/">Backing Image on a down node</a></li>
-  
-
   <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node/degraded-availability/">Degraded availability with added nodes</a></li>
   
 
   <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node/improve-node-failure-handling/">Improve Node Failure Handling By Automatically Force Delete Terminating Pods of StatefulSet/Deployment On Downed Node</a></li>
   
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node/node-disconnection/">Node disconnection test</a></li>
+</ul>
+
   
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node/node-drain-deletion/">Node drain and deletion test</a></li>
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node-not-ready/">Node Not Ready</a></li>
+  
+    <ul>
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node-not-ready/kubelet-restart/">Kubulete Restart</a></li>
+  
+    <ul>
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node-not-ready/kubelet-restart/kubelet-restart-on-a-node/">Test kubelet restart on a node of the cluster</a></li>
   
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node/physical-node-down/">Physical node down</a></li>
+</ul>
+
   
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node/kubelet-restart-on-a-node/">Test kubelet restart on a node of the cluster</a></li>
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node-not-ready/node-disconnection/">Node Disconnection</a></li>
+  
+    <ul>
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node-not-ready/node-disconnection/node-disconnection/">Node disconnection test</a></li>
   
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node/node-deletion/">Test node deletion</a></li>
+</ul>
+
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node-not-ready/node-down/">Node Done</a></li>
+  
+    <ul>
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node-not-ready/node-down/restore-volume-node-down/">#1355 The node the restore volume attached to is down</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node-not-ready/node-down/backing-image-on-a-down-node/">Backing Image on a down node</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node-not-ready/node-down/node-drain-deletion/">Node drain and deletion test</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node-not-ready/node-down/physical-node-down/">Physical node down</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node-not-ready/node-down/single-replica-node-down/">Single replica node down</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node-not-ready/node-down/node-deletion/">Test node deletion</a></li>
+  
+
+</ul>
+
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node-not-ready/node-restart/">Node Restart</a></li>
+  
+    <ul>
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node-not-ready/node-restart/dr-volume-node-rebooted/">#1366 &amp;&amp; #1328 The node the DR volume attached to is rebooted</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node-not-ready/node-restart/physical-node-reboot/">Physical node reboot</a></li>
+  
+
+</ul>
+
   
 
 </ul>
@@ -666,54 +709,76 @@
 
 
 <main style="padding: 1%; width: 70%;">
-  <h1 id="title">Single replica node down</h1>
+  <h1 id="title">Node disconnection test</h1>
   <div>
     <article id="content">
-       <h2 id="related-issues">Related Issues</h2>
-<p><a href="https://github.com/longhorn/longhorn/issues/2329">https://github.com/longhorn/longhorn/issues/2329</a>
-<a href="https://github.com/longhorn/longhorn/issues/2309">https://github.com/longhorn/longhorn/issues/2309</a>
-<a href="https://github.com/longhorn/longhorn/issues/3957">https://github.com/longhorn/longhorn/issues/3957</a></p>
-<h2 id="default-setting">Default Setting</h2>
-<p><code>Automatic salvage</code> is enabled.</p>
-<h2 id="node-restartdown-scenario-with-pod-deletion-policy-when-node-is-down-set-to-default-value-do-nothing">Node restart/down scenario with <code>Pod Deletion Policy When Node is Down</code> set to default value <code>do-nothing</code>.</h2>
+       <p><a href="https://github.com/longhorn/longhorn/issues/1545">https://github.com/longhorn/longhorn/issues/1545</a>
+For disconnect node : <a href="https://github.com/longhorn/longhorn/files/4864127/network_down.sh.zip">https://github.com/longhorn/longhorn/files/4864127/network_down.sh.zip</a></p>
+<p>If auto-salvage is disabled, the auto-reattachment behavior after the node disconnection depends on all replicas are in ERROR state or not.</p>
+<p>(1) If all replicas are in ERROR state, the volume would remain in detached/faulted state if auto-salvage is disabled.</p>
+<p>(2) If there is any healthy replica, the volume would be auto-reattached even though auto-salvage is disabled.</p>
+<p>What makes all replicas in ERROR state? When there is data writing during the disconnection:</p>
+<p>(1) If the engine process is unable to talk with a replica (the engine process and the replica are on the different nodes), the engine process will mark the replica as ERROR.</p>
+<p>(2) But if the engine process is still able to talk with a replica (the engine process and the replica are on the same node), the engine process will just mark the replica as UNKNOWN state, and the replica will recover to RUNNING state after the network connection is back. Then other replicas can be rebuilt from the replica.</p>
+<p>So we have 2 * 2 test cases for node disconnection + disabled auto-salvage:</p>
+<p>(Case 1-1) there is no replica on the attached node + data writing during the disconnection -&gt; all replicas become ERROR -&gt; no auto-reattach after the disconnection</p>
+<p>(Case 1-2) there is a replica on the attached node + data writing during the disconnection -&gt; one replica can recover to healthy -&gt; auto-reattach after the disconnection</p>
+<p>(Case 2-1) there is no replica on the attached node + no data writing during the disconnection -&gt; other replicas are still healthy -&gt; auto-reattach after the disconnection</p>
+<p>(Case 2-2) there is a replica on the attached node + no data writing during the disconnection -&gt; other replicas are still healthy -&gt; auto-reattach after the disconnection</p>
+<h3 id="case-1-1">Case 1-1:</h3>
 <ol>
-<li>Create RWO|RWX volume with replica count = 1 &amp; data locality = enabled|disabled|strict-local.
-<ul>
-<li>For data locality = strict-local, use RWO volume to do test.</li>
-</ul>
-</li>
-<li>Create deployment|statefulset for volume.</li>
-<li>Power down node of volume/replica.</li>
-<li>The workload pod will get stuck in the <code>terminating</code> state.</li>
-<li>Volume will fail to attach since volume is not ready (i.e remains faulted, since single replica is on downed node).</li>
-<li>Power up node or delete the workload pod so that kubernetes will recreate pod on another node.</li>
-<li>Verify auto salvage finishes (i.e pod completes start).</li>
-<li>Verify volume attached &amp; accessible by pod (i.e test data is available).
-<ul>
-<li>For data locality = strict-local volume, volume wiil keep in detaching, attaching status for about 10 minutes, after volume attached to node which replica located, check volume healthy and pod status.</li>
-</ul>
-</li>
+<li>Disable auto-salvage.</li>
+<li>Create a volume named test-1 with 2 replicas on the 1st and the 2nd node.</li>
+<li>Attach the volume to the 3rd node.</li>
+<li>Keep writing data directly to the volume. (sudo dd if=/dev/urandom of=/dev/longhorn/test-1 bs=2M count=2048)</li>
+<li>Disconnect the network of the node that the volume attached to for 100 seconds during the data writing. (sudo nohup ./network_down.sh 100)</li>
+<li>Wait for the node back.</li>
+<li>The volume should remain detached, and all replicas remain in ERROR state.</li>
 </ol>
-<h2 id="node-restartdown-scenario-with-pod-deletion-policy-when-node-is-down-set-to-delete-both-statefulset-and-deployment-pod">Node restart/down scenario with <code>Pod Deletion Policy When Node is Down</code> set to <code>delete-both-statefulset-and-deployment-pod</code></h2>
+<h3 id="case-1-2">Case 1-2:</h3>
 <ol>
-<li>Create RWO|RWX volume with replica count = 1 &amp; data locality = enabled|disabled|strict-local.
-<ul>
-<li>For data locality = strict-local, use RWO volume to do test.</li>
-</ul>
-</li>
-<li>Create deployment|statefulset for volume.</li>
-<li>Power down node of volume/replica.</li>
-<li>Volume will become faulted.</li>
-<li>Wait for pod deletion &amp; recreation on another node.
-The pod recreation will not happen immediately.</li>
-<li>The replacement workload pod will get stuck in the <code>ContainerCreating</code> state.</li>
-<li>Power on node of volume/replica.</li>
-<li>Verify the auto salvage finishes for volumes.</li>
-<li>Verify volume attached &amp; accessible by pod (i.e test data is available).</li>
+<li>Disable auto-salvage.</li>
+<li>Create a volume named test-1 with 3 replicas.</li>
+<li>Attach the volume to a node.</li>
+<li>Keep writing data directly to the volume. (sudo dd if=/dev/urandom of=/dev/longhorn/test-1 bs=2M count=2048)</li>
+<li>Disconnect the network of the node that the volume attached to for 100 seconds during the data writing. (sudo nohup ./network_down.sh 100)</li>
+<li>Wait for the node back.</li>
+<li>The volume will be detached then reattached automatically, and replicas should still be in RUNNING state.</li>
+</ol>
+<h3 id="case-2-1">Case 2-1:</h3>
+<ol>
+<li>Disable auto-salvage.</li>
+<li>Create a volume named test-1 with 2 replicas on the 1st and the 2nd node.</li>
+<li>Attach the volume to the 3rd node.</li>
+<li>No need to write data to the volume. Directly disconnect the network of the node that the volume attached to for 100 seconds. (sudo nohup ./network_down.sh 100)</li>
+<li>Wait for the node back.</li>
+<li>The volume will be detached then reattached automatically, and replicas should still be in RUNNING state.</li>
+</ol>
+<h3 id="case-2-2">Case 2-2:</h3>
+<ol>
+<li>Disable auto-salvage.</li>
+<li>Create a volume named test-1 with 3 replicas.</li>
+<li>Attach the volume to a node.</li>
+<li>No need to write data to the volume. Directly disconnect the network of the node that the volume attached to for 100 seconds. (sudo nohup ./network_down.sh 100)</li>
+<li>Wait for the node back.</li>
+<li>The volume will be detached then reattached automatically, and replicas should still be in RUNNING state.</li>
+</ol>
+<h3 id="case-3">Case 3:</h3>
+<ol>
+<li>Launch Longhorn.</li>
+<li>Use statefulset launch a pod with the volume and write some data.</li>
+<li>Run command &lsquo;sync&rsquo; in pod, make sure data fulshed.</li>
+<li>Disconnect the node that the volume attached to for 100 seconds.</li>
+<li>Wait for the node back and the volume reattachment.</li>
+<li>After the volume is reattached, the pod will be automatically deleted and recreate.</li>
+<li>Verify the data and the pod still works fine.</li>
+<li>Repeat step 2~6 for 3 times.</li>
+<li>Create, Attach, and detach other volumes to the recovered node. All volumes should work fine.</li>
+<li>Remove Longhorn and repeat step 1~9 for 3 times.</li>
 </ol>
 
     </article>
-  <a href="https://github.com/longhorn/longhorn-tests/edit/master/docs/content/manual/pre-release/ha/single-replica-node-down.md" target="_blank" title="Edit on Github" style="font-size:smaller;float:right;padding-right:3%">[Edit]</a>
+  <a href="https://github.com/longhorn/longhorn-tests/edit/master/docs/content/manual/pre-release/node-not-ready/node-disconnection/node-disconnection.md" target="_blank" title="Edit on Github" style="font-size:smaller;float:right;padding-right:3%">[Edit]</a>
   </div>
 
     

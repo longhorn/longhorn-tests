@@ -66,12 +66,6 @@
   <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/concurrent-backup/">#1341 concurrent backup test</a></li>
   
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/restore-volume-node-down/">#1355 The node the restore volume attached to is down</a></li>
-  
-
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/dr-volume-node-rebooted/">#1366 &amp;&amp; #1328 The node the DR volume attached to is rebooted</a></li>
-  
-
   <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/google-cloud-s3-interop-backups/">#1404 test backup functionality on google cloud and other s3 interop providers.</a></li>
   
 
@@ -143,9 +137,6 @@
   <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/ha/replica-rebuilding/">Replica Rebuilding</a></li>
   
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/ha/single-replica-node-down/">Single replica node down</a></li>
-  
-
 </ul>
 
   
@@ -207,28 +198,80 @@
   
     <ul>
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node/backing-image-on-a-down-node/">Backing Image on a down node</a></li>
-  
-
   <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node/degraded-availability/">Degraded availability with added nodes</a></li>
   
 
   <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node/improve-node-failure-handling/">Improve Node Failure Handling By Automatically Force Delete Terminating Pods of StatefulSet/Deployment On Downed Node</a></li>
   
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node/node-disconnection/">Node disconnection test</a></li>
+</ul>
+
   
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node/node-drain-deletion/">Node drain and deletion test</a></li>
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node-not-ready/">Node Not Ready</a></li>
+  
+    <ul>
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node-not-ready/kubelet-restart/">Kubulete Restart</a></li>
+  
+    <ul>
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node-not-ready/kubelet-restart/kubelet-restart-on-a-node/">Test kubelet restart on a node of the cluster</a></li>
   
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node/physical-node-down/">Physical node down</a></li>
+</ul>
+
   
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node/kubelet-restart-on-a-node/">Test kubelet restart on a node of the cluster</a></li>
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node-not-ready/node-disconnection/">Node Disconnection</a></li>
+  
+    <ul>
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node-not-ready/node-disconnection/node-disconnection/">Node disconnection test</a></li>
   
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node/node-deletion/">Test node deletion</a></li>
+</ul>
+
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node-not-ready/node-down/">Node Done</a></li>
+  
+    <ul>
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node-not-ready/node-down/restore-volume-node-down/">#1355 The node the restore volume attached to is down</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node-not-ready/node-down/backing-image-on-a-down-node/">Backing Image on a down node</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node-not-ready/node-down/node-drain-deletion/">Node drain and deletion test</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node-not-ready/node-down/physical-node-down/">Physical node down</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node-not-ready/node-down/single-replica-node-down/">Single replica node down</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node-not-ready/node-down/node-deletion/">Test node deletion</a></li>
+  
+
+</ul>
+
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node-not-ready/node-restart/">Node Restart</a></li>
+  
+    <ul>
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node-not-ready/node-restart/dr-volume-node-rebooted/">#1366 &amp;&amp; #1328 The node the DR volume attached to is rebooted</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node-not-ready/node-restart/physical-node-reboot/">Physical node reboot</a></li>
+  
+
+</ul>
+
   
 
 </ul>
@@ -666,102 +709,54 @@
 
 
 <main style="padding: 1%; width: 70%;">
-  <h1 id="title">Node drain and deletion test</h1>
+  <h1 id="title">Single replica node down</h1>
   <div>
     <article id="content">
-       <h2 id="drain-with-force">Drain with force</h2>
-<p>Make sure the volumes on the drained/removed node can be detached or recovered correctly. The related issue: <a href="https://github.com/longhorn/longhorn/issues/1214">https://github.com/longhorn/longhorn/issues/1214</a></p>
+       <h2 id="related-issues">Related Issues</h2>
+<p><a href="https://github.com/longhorn/longhorn/issues/2329">https://github.com/longhorn/longhorn/issues/2329</a>
+<a href="https://github.com/longhorn/longhorn/issues/2309">https://github.com/longhorn/longhorn/issues/2309</a>
+<a href="https://github.com/longhorn/longhorn/issues/3957">https://github.com/longhorn/longhorn/issues/3957</a></p>
+<h2 id="default-setting">Default Setting</h2>
+<p><code>Automatic salvage</code> is enabled.</p>
+<h2 id="node-restartdown-scenario-with-pod-deletion-policy-when-node-is-down-set-to-default-value-do-nothing">Node restart/down scenario with <code>Pod Deletion Policy When Node is Down</code> set to default value <code>do-nothing</code>.</h2>
 <ol>
-<li>Deploy a cluster contains 3 worker nodes N1, N2, N3.</li>
-<li>Deploy Longhorn.</li>
-<li>Create a 1-replica deployment with a 3-replica Longhorn volume. The volume is attached to N1.</li>
-<li>Write some data to the volume and get the md5sum.</li>
-<li>Force drain and remove N2, which contains one replica only.
-<pre tabindex="0"><code>kubectl drain &lt;Node name&gt; --delete-emptydir-data=true --force=true --grace-period=-1 --ignore-daemonsets=true --timeout=&lt;Desired timeout in secs&gt;
-</code></pre></li>
-<li>Wait for the volume Degraded.</li>
-<li>Force drain and remove N1, which is the node the volume is attached to.
-<pre tabindex="0"><code>kubectl drain &lt;Node name&gt; --delete-emptydir-data=true --force=true --grace-period=-1 --ignore-daemonsets=true --timeout=&lt;Desired timeout in secs&gt;
-</code></pre></li>
-<li>Verify the instance manager pods are gone and not recreated after the drain.</li>
-<li>Wait for the volume detaching then being recovered. Will get attached to the workload/node.</li>
-<li>Validate the volume content. The data is intact.</li>
+<li>Create RWO|RWX volume with replica count = 1 &amp; data locality = enabled|disabled|strict-local.
+<ul>
+<li>For data locality = strict-local, use RWO volume to do test.</li>
+</ul>
+</li>
+<li>Create deployment|statefulset for volume.</li>
+<li>Power down node of volume/replica.</li>
+<li>The workload pod will get stuck in the <code>terminating</code> state.</li>
+<li>Volume will fail to attach since volume is not ready (i.e remains faulted, since single replica is on downed node).</li>
+<li>Power up node or delete the workload pod so that kubernetes will recreate pod on another node.</li>
+<li>Verify auto salvage finishes (i.e pod completes start).</li>
+<li>Verify volume attached &amp; accessible by pod (i.e test data is available).
+<ul>
+<li>For data locality = strict-local volume, volume wiil keep in detaching, attaching status for about 10 minutes, after volume attached to node which replica located, check volume healthy and pod status.</li>
+</ul>
+</li>
 </ol>
-<h2 id="drain-without-force">Drain without force</h2>
+<h2 id="node-restartdown-scenario-with-pod-deletion-policy-when-node-is-down-set-to-delete-both-statefulset-and-deployment-pod">Node restart/down scenario with <code>Pod Deletion Policy When Node is Down</code> set to <code>delete-both-statefulset-and-deployment-pod</code></h2>
 <ol>
-<li>Cordon the node. Longhorn will automatically disable the node scheduling when a Kubernetes node is cordoned.</li>
-<li>Evict all the replicas from the node.</li>
-<li>Run the following command to drain the node with <code>force</code> flag set to false.
-<pre tabindex="0"><code>kubectl drain &lt;Node name&gt; --delete-emptydir-data --force=false --grace-period=-1 --ignore-daemonsets=true --timeout=&lt;Desired timeout in secs&gt;
-</code></pre></li>
-<li>Observe that the workloads move to another node. The volumes should first detach and attach to workloads once they move to another node.</li>
-<li>Observe the logs, one by one all the pods should get evicted.
-<pre tabindex="0"><code>node/&lt;node-name&gt; already cordoned
-WARNING: ignoring DaemonSet-managed Pods: ingress-nginx/nginx-ingress-controller-bpf2t, kube-system/canal-hwk6v, longhorn-system/engine-image-ei-605a0f3e-8gb8l, longhorn-system/longhorn-csi-plugin-flq84, longhorn-system/longhorn-manager-tps6v
-evicting pod longhorn-system/instance-manager-r-1aebab59
-evicting pod kube-system/coredns-849545576b-v54vn
-evicting pod longhorn-system/instance-manager-e-e591dbce
-pod/instance-manager-r-1aebab59 evicted
-pod/instance-manager-e-e591dbce evicted
-pod/coredns-849545576b-v54vn evicted
-node/&lt;node-name&gt; evicted
-</code></pre></li>
-<li>Verify the instance manager pods are gone and not recreated after the drain.</li>
+<li>Create RWO|RWX volume with replica count = 1 &amp; data locality = enabled|disabled|strict-local.
+<ul>
+<li>For data locality = strict-local, use RWO volume to do test.</li>
+</ul>
+</li>
+<li>Create deployment|statefulset for volume.</li>
+<li>Power down node of volume/replica.</li>
+<li>Volume will become faulted.</li>
+<li>Wait for pod deletion &amp; recreation on another node.
+The pod recreation will not happen immediately.</li>
+<li>The replacement workload pod will get stuck in the <code>ContainerCreating</code> state.</li>
+<li>Power on node of volume/replica.</li>
+<li>Verify the auto salvage finishes for volumes.</li>
+<li>Verify volume attached &amp; accessible by pod (i.e test data is available).</li>
 </ol>
-<p>Note: <code>--ignore-daemonsets</code> should be set to true to ignore some DaemonSets that exist on node such as Longhorn manager, Longhorn CSI plugin, engine image in a Longhorn deployed cluster.</p>
-<h2 id="test-kubectl-drain-nodes-for-pvcpvlhv-is-created-through-longhorn-uihttpsgithubcomlonghornlonghornissues2673"><a href="https://github.com/longhorn/longhorn/issues/2673">Test kubectl drain nodes for PVC/PV/LHV is created through Longhorn UI</a></h2>
-<p><strong>Given</strong> 1 PVC/PV/LHV created through Longhorn UI
-<em>And</em> LHV is not yet attached/replicated.</p>
-<p><strong>When</strong> kubectl drain nodes.</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>NODE<span style="color:#f92672">=</span>centos-worker-0
-</span></span><span style="display:flex;"><span>kubectl cordon <span style="color:#e6db74">${</span>NODE<span style="color:#e6db74">}</span>
-</span></span><span style="display:flex;"><span>kubectl drain --force --ignore-daemonsets --delete-emptydir-data --grace-period<span style="color:#f92672">=</span><span style="color:#ae81ff">10</span> <span style="color:#e6db74">${</span>NODE<span style="color:#e6db74">}</span>
-</span></span></code></pre></div><p><strong>Then</strong> all node should successfully drain.</p>
-<p>NOTE: We might still 1 or 2 times of the pod&rsquo;s disruption budget message, but will drain successfully in the end.</p>
-<pre tabindex="0"><code class="language-log" data-lang="log">evicting pod longhorn-system/instance-manager-r-xxxxxxxx
-error when evicting pods/&#34;instance-manager-r-xxxxxxxx&#34; -n &#34;longhorn-system&#34; (will retry after 5s): Cannot evict pod as it would violate the pod&#39;s disruption budget.
-</code></pre><h2 id="stopped-replicas-on-deleted-nodes-should-not-be-counted-as-healthy-replicas-when-draining-nodes">Stopped replicas on deleted nodes should not be counted as healthy replicas when draining nodes</h2>
-<p>When draining a node, the node will be set as unscheduled and all pods should be evicted.</p>
-<p>By Longhorn&rsquo;s default settings, the replica will only be evicted if there is another healthy replica on the running node.</p>
-<h4 id="related-issue">Related Issue:</h4>
-<ul>
-<li><a href="https://github.com/longhorn/longhorn/issues/2237">https://github.com/longhorn/longhorn/issues/2237</a></li>
-</ul>
-<p><strong>Given</strong> Longhorn with 2 nodes cluster: Node_1, Node_2</p>
-<p><em>And</em> Create a 5Gi detached volume with 2 replicas.</p>
-<p><em>And</em> Stop Node_1 that contains one of the replicas.</p>
-<p><em>And</em> Uncheck the <code>Allow Node Drain with the Last Healthy Replica</code> setting and confirm getting <strong>false</strong> with following command:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>kubectl get settings.longhorn.io/allow-node-drain-with-last-healthy-replica -n longhorn-system
-</span></span></code></pre></div><p><strong>When</strong> Attempts to drain Node_2 that contains remaining replica.</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>kubectl drain &lt;Node_2 name&gt; --delete-emptydir-data<span style="color:#f92672">=</span>true --force<span style="color:#f92672">=</span>true --grace-period<span style="color:#f92672">=</span>-1 --ignore-daemonsets<span style="color:#f92672">=</span>true
-</span></span></code></pre></div><p><strong>Then</strong> The Node_2 becomes cordoned.</p>
-<p><em>And</em> All pods on Node_2 are evicted except the replica instance manager pod.</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>kubectl get pods --field-selector spec.nodeName<span style="color:#f92672">=</span>&lt;Node_2 name&gt; -o wide -n longhorn-system
-</span></span></code></pre></div><p><em>And</em> The message like below keeps appearing.</p>
-<pre tabindex="0"><code>evicting pod longhorn-system/instance-manager-r-xxxxxxxx
-error when evicting pods/&#34;instance-manager-r-xxxxxxxx&#34; -n &#34;longhorn-system&#34; (will retry after 5s): Cannot evict pod as it would violate the pod&#39;s disruption budget.
-</code></pre><p><em>And</em> The last healthy replica exists on the Node_2.</p>
-<h2 id="setting-allow-node-drain-with-the-last-healthy-replica-protects-the-last-healthy-replica-with-pod-disruption-budget-pdb">Setting <code>Allow Node Drain with the Last Healthy Replica</code> protects the last healthy replica with Pod Disruption Budget (PDB)</h2>
-<h4 id="related-issue-1">Related Issue:</h4>
-<ul>
-<li><a href="https://github.com/longhorn/longhorn/issues/2237">https://github.com/longhorn/longhorn/issues/2237</a></li>
-</ul>
-<p><strong>Given</strong> Longhorn with 2 nodes cluster: Node_1, Node_2</p>
-<p><em>And</em> Create a 5Gi detached volume with 2 replicas.</p>
-<p><em>And</em> Stop Node_1 that contains one of the replicas.</p>
-<p><em>And</em> Uncheck the <code>Allow Node Drain with the Last Healthy Replica</code> setting and confirm getting <strong>false</strong> with following command:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>kubectl get settings.longhorn.io/allow-node-drain-with-last-healthy-replica -n longhorn-system
-</span></span></code></pre></div><p><em>And</em> Drain Node_2 so that all pods on Node_2 are evicted, but the replica instance manager pod is still on Node_2 because it is protected by PDB.</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>kubectl drain &lt;Node_2 name&gt; --delete-emptydir-data<span style="color:#f92672">=</span>true --force<span style="color:#f92672">=</span>true --grace-period<span style="color:#f92672">=</span>-1 --ignore-daemonsets<span style="color:#f92672">=</span>true
-</span></span></code></pre></div><p><strong>When</strong> Enable the setting <code>Allow Node Drain with the Last Healthy Replica</code> and make sure return <strong>true</strong> with following command:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>kubectl get settings.longhorn.io/allow-node-drain-with-last-healthy-replica -n longhorn-system
-</span></span></code></pre></div><p><strong>Then</strong> The pod <code>longhorn-system/instance-manager-r-xxxxxxxx</code> will be evicted successfully and the following command can be used to ensure that only daemonset pods such as <code>engine-image</code>, <code>longhorn-csi-plugin</code> and <code>longhorn-manager</code> daemonset pods are running on Node_2:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>kubectl get pods --field-selector spec.nodeName<span style="color:#f92672">=</span>&lt;Node_2 name&gt; -o wide -n longhorn-system
-</span></span></code></pre></div><p><em>And</em> The PDB will be deleted and can be verified with the following command:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>kubectl get pdb &lt;replica name, e.g., instance-manager-r-xxxxxxxx&gt; -n longhorn-system
-</span></span></code></pre></div>
+
     </article>
-  <a href="https://github.com/longhorn/longhorn-tests/edit/master/docs/content/manual/pre-release/node/node-drain-deletion.md" target="_blank" title="Edit on Github" style="font-size:smaller;float:right;padding-right:3%">[Edit]</a>
+  <a href="https://github.com/longhorn/longhorn-tests/edit/master/docs/content/manual/pre-release/node-not-ready/node-down/single-replica-node-down.md" target="_blank" title="Edit on Github" style="font-size:smaller;float:right;padding-right:3%">[Edit]</a>
   </div>
 
     

@@ -7,15 +7,6 @@
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language><atom:link href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node/index.xml" rel="self" type="application/rss+xml" />
     <item>
-      <title>Backing Image on a down node</title>
-      <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/node/backing-image-on-a-down-node/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/node/backing-image-on-a-down-node/</guid>
-      <description>Update the settings: Disable Node Soft Anti-affinity. Set Replica Replenishment Wait Interval to a relatively long value. Create a backing image. Wait for the backing image being ready in the 1st disk. Create 2 volumes with the backing image and attach them on different nodes. Verify: the disk state map of the backing image contains the disks of all replicas, and the state is running for all disks. the backing image content is correct.</description>
-    </item>
-    
-    <item>
       <title>Degraded availability with added nodes</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/node/degraded-availability/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
@@ -31,57 +22,6 @@
       
       <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/node/improve-node-failure-handling/</guid>
       <description>Setup a cluster of 3 worker nodes Install Longhorn and set Default Replica Count = 2 (because we will turn off one node) Create a StatefulSet with 2 pods using the command: kubectl create -f https://raw.githubusercontent.com/longhorn/longhorn/master/examples/statefulset.yaml Create a volume + pv + pvc named vol1 and create a deployment(1 pod) of default ubuntu named shell with the usage of pvc vol1 mounted under /mnt/vol1 Find the node which contains one pod of the StatefulSet/Deployment.</description>
-    </item>
-    
-    <item>
-      <title>Node disconnection test</title>
-      <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/node/node-disconnection/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/node/node-disconnection/</guid>
-      <description>https://github.com/longhorn/longhorn/issues/1545 For disconnect node : https://github.com/longhorn/longhorn/files/4864127/network_down.sh.zip
-If auto-salvage is disabled, the auto-reattachment behavior after the node disconnection depends on all replicas are in ERROR state or not.
-(1) If all replicas are in ERROR state, the volume would remain in detached/faulted state if auto-salvage is disabled.
-(2) If there is any healthy replica, the volume would be auto-reattached even though auto-salvage is disabled.
-What makes all replicas in ERROR state? When there is data writing during the disconnection:</description>
-    </item>
-    
-    <item>
-      <title>Node drain and deletion test</title>
-      <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/node/node-drain-deletion/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/node/node-drain-deletion/</guid>
-      <description>Drain with force Make sure the volumes on the drained/removed node can be detached or recovered correctly. The related issue: https://github.com/longhorn/longhorn/issues/1214
-Deploy a cluster contains 3 worker nodes N1, N2, N3. Deploy Longhorn. Create a 1-replica deployment with a 3-replica Longhorn volume. The volume is attached to N1. Write some data to the volume and get the md5sum. Force drain and remove N2, which contains one replica only. kubectl drain &amp;lt;Node name&amp;gt; --delete-emptydir-data=true --force=true --grace-period=-1 --ignore-daemonsets=true --timeout=&amp;lt;Desired timeout in secs&amp;gt; Wait for the volume Degraded.</description>
-    </item>
-    
-    <item>
-      <title>Physical node down</title>
-      <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/node/physical-node-down/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/node/physical-node-down/</guid>
-      <description>One physical node down should result in the state of that node change to Down. When using with CSI driver, one node with controller (StatefulSet/Deployment) and pod down should result in Kubernetes migrate the pod to another node, and Longhorn volume should be able to be used on that node as well. Test scenarios for this are documented here. Reboot the node that the controller attached to. After reboot complete, the volume should be reattached to the node.</description>
-    </item>
-    
-    <item>
-      <title>Test kubelet restart on a node of the cluster</title>
-      <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/node/kubelet-restart-on-a-node/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/node/kubelet-restart-on-a-node/</guid>
-      <description>Related issues: https://github.com/longhorn/longhorn/issues/2629
-Case 1: Kubelet restart on RKE1 multi node cluster: Create a RKE1 cluster with config of 1 etcd/control plane and 3 worker nodes. Deploy Longhorn on the cluster. Deploy prometheus monitoring app on the cluster which is using Longhorn storage class or deploy a statefulSet with Longhorn volume. Write some data into the mount point and compute the md5sum. Restart the kubelet on the node where the statefulSet or Prometheus pod is running using the command sudo docker restart kubelet Observe the volume.</description>
-    </item>
-    
-    <item>
-      <title>Test node deletion</title>
-      <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/node/node-deletion/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/node/node-deletion/</guid>
-      <description>Case 1: Delete multiple kinds of nodes: Deploy Longhorn. Shut down the VM for one node and wait for the node Down. Disable another node. Delete the above 2 nodes. Make sure the corresponding Kubernetes node object is deleted. &amp;ndash;&amp;gt; The related Longhorn node objects will be cleaned up immediately, too. Add new nodes with the same names for the cluster. &amp;ndash;&amp;gt; The new nodes are available. Case 2: Delete nodes when there are running volumes: Deploy Longhorn.</description>
     </item>
     
   </channel>

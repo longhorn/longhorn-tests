@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Node Restart on Longhorn Manual Test Cases</title>
+    <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/node-not-ready/node-restart/</link>
+    <description>Recent content in Node Restart on Longhorn Manual Test Cases</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en-us</language><atom:link href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node-not-ready/node-restart/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>[#1366](https://github.com/longhorn/longhorn/issues/1366) &amp;&amp; [#1328](https://github.com/longhorn/longhorn/issues/1328) The node the DR volume attached to is rebooted</title>
+      <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/node-not-ready/node-restart/dr-volume-node-rebooted/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/node-not-ready/node-restart/dr-volume-node-rebooted/</guid>
+      <description>Scenario 1 Create a pod with Longhorn volume. Write data to the volume and get the md5sum. Create the 1st backup for the volume. Create a DR volume from the backup. Wait for the DR volume starting the initial restore. Then reboot the DR volume attached node immediately. Wait for the DR volume detached then reattached. Wait for the DR volume restore complete after the reattachment. Activate the DR volume and check the data md5sum.</description>
+    </item>
+    
+    <item>
+      <title>Physical node reboot</title>
+      <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/node-not-ready/node-restart/physical-node-reboot/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/node-not-ready/node-restart/physical-node-reboot/</guid>
+      <description> Reboot the node that the controller (StatefulSet/Deployment) attached to. After reboot complete, the volume should be reattached to the node. </description>
+    </item>
+    
+  </channel>
+</rss>

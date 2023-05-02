@@ -66,12 +66,6 @@
   <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/concurrent-backup/">#1341 concurrent backup test</a></li>
   
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/restore-volume-node-down/">#1355 The node the restore volume attached to is down</a></li>
-  
-
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/dr-volume-node-rebooted/">#1366 &amp;&amp; #1328 The node the DR volume attached to is rebooted</a></li>
-  
-
   <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/google-cloud-s3-interop-backups/">#1404 test backup functionality on google cloud and other s3 interop providers.</a></li>
   
 
@@ -143,9 +137,6 @@
   <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/ha/replica-rebuilding/">Replica Rebuilding</a></li>
   
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/ha/single-replica-node-down/">Single replica node down</a></li>
-  
-
 </ul>
 
   
@@ -207,28 +198,80 @@
   
     <ul>
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node/backing-image-on-a-down-node/">Backing Image on a down node</a></li>
-  
-
   <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node/degraded-availability/">Degraded availability with added nodes</a></li>
   
 
   <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node/improve-node-failure-handling/">Improve Node Failure Handling By Automatically Force Delete Terminating Pods of StatefulSet/Deployment On Downed Node</a></li>
   
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node/node-disconnection/">Node disconnection test</a></li>
+</ul>
+
   
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node/node-drain-deletion/">Node drain and deletion test</a></li>
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node-not-ready/">Node Not Ready</a></li>
+  
+    <ul>
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node-not-ready/kubelet-restart/">Kubulete Restart</a></li>
+  
+    <ul>
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node-not-ready/kubelet-restart/kubelet-restart-on-a-node/">Test kubelet restart on a node of the cluster</a></li>
   
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node/physical-node-down/">Physical node down</a></li>
+</ul>
+
   
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node/kubelet-restart-on-a-node/">Test kubelet restart on a node of the cluster</a></li>
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node-not-ready/node-disconnection/">Node Disconnection</a></li>
+  
+    <ul>
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node-not-ready/node-disconnection/node-disconnection/">Node disconnection test</a></li>
   
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node/node-deletion/">Test node deletion</a></li>
+</ul>
+
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node-not-ready/node-down/">Node Done</a></li>
+  
+    <ul>
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node-not-ready/node-down/restore-volume-node-down/">#1355 The node the restore volume attached to is down</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node-not-ready/node-down/backing-image-on-a-down-node/">Backing Image on a down node</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node-not-ready/node-down/node-drain-deletion/">Node drain and deletion test</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node-not-ready/node-down/physical-node-down/">Physical node down</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node-not-ready/node-down/single-replica-node-down/">Single replica node down</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node-not-ready/node-down/node-deletion/">Test node deletion</a></li>
+  
+
+</ul>
+
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node-not-ready/node-restart/">Node Restart</a></li>
+  
+    <ul>
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node-not-ready/node-restart/dr-volume-node-rebooted/">#1366 &amp;&amp; #1328 The node the DR volume attached to is rebooted</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node-not-ready/node-restart/physical-node-reboot/">Physical node reboot</a></li>
+  
+
+</ul>
+
   
 
 </ul>
@@ -666,60 +709,15 @@
 
 
 <main style="padding: 1%; width: 70%;">
-  <h1 id="title">Test node deletion</h1>
+  <h1 id="title">Physical node reboot</h1>
   <div>
     <article id="content">
-       <h3 id="case-1-delete-multiple-kinds-of-nodes">Case 1: Delete multiple kinds of nodes:</h3>
-<ol>
-<li>Deploy Longhorn.</li>
-<li>Shut down the VM for one node and wait for the node <code>Down</code>. Disable another node.</li>
-<li>Delete the above 2 nodes. Make sure the corresponding Kubernetes node object is deleted. &ndash;&gt; The related Longhorn node objects will be cleaned up immediately, too.</li>
-<li>Add new nodes with the same names for the cluster. &ndash;&gt; The new nodes are available.</li>
-</ol>
-<h3 id="case-2-delete-nodes-when-there-are-running-volumes">Case 2: Delete nodes when there are running volumes:</h3>
-<ol>
-<li>Deploy Longhorn.</li>
-<li>For each node that will be deleted later:
-<ol>
-<li>create and attach 4 volumes:
-<ol>
-<li>The 1st volume contains 1 replica only. Both the engines and the replicas are on the pre-delete node. (Attached to the pre-delete node.)</li>
-<li>The 2nd volume contains 1 replica only. The engine is on the pre-delete node and the replica is on another node. (Attached to the pre-delete node.)</li>
-<li>The 3rd and the 4th volume contain 3 replicas. Both volumes are attached to a node except for the pre-delete node.</li>
-</ol>
-</li>
-<li>Write some data to all volumes.</li>
-</ol>
-</li>
-<li>Delete multiple nodes in the cluster simultaneously. Make sure the corresponding Kubernetes node object is deleted. &ndash;&gt; The related Longhorn node objects will be cleaned up immediately, too.</li>
-<li>For each deleted node:
-<ol>
-<li>Verify the volume Health state  &ndash;&gt;
-<ol>
-<li>The 1st volume should become <code>Faulted</code>.</li>
-<li>The 2nd volume should keep <code>Unknown</code>.</li>
-<li>The 3rd and the 4th volume should become <code>Degraded</code>.</li>
-</ol>
-</li>
-<li>Delete the 1st volume. &ndash;&gt; The volume can be deleted.</li>
-<li>Detach then reattach the 2nd volume. &ndash;&gt; The volume works fine and the data is correct.</li>
-<li>Crash all replicas of the 3rd volume and trigger the auto salvage. &ndash;&gt; The auto salvage should work. The volume works fine and the data is correct after the salvage.
-<ul>
-<li>An example to crash every volume replica instance manager pods with kubectl:
-<ul>
-<li><code>kubectl delete pods -l longhorn.io/instance-manager-type=replica -n longhorn-system --wait</code></li>
-</ul>
-</li>
-</ul>
-</li>
-<li>Disabled the auto salvage setting. Then crash all replicas of the 3rd volume again. &ndash;&gt; The replica on the deleted node cannot be salvaged manually, too. The salvage feature still works fine.</li>
-<li>Deleted the replica on the deleted node for the 4th volume. &ndash;&gt; The replica can be deleted.</li>
-</ol>
-</li>
+       <ol>
+<li>Reboot the node that the controller (StatefulSet/Deployment) attached to. After reboot complete, the volume should be reattached to the node.</li>
 </ol>
 
     </article>
-  <a href="https://github.com/longhorn/longhorn-tests/edit/master/docs/content/manual/pre-release/node/node-deletion.md" target="_blank" title="Edit on Github" style="font-size:smaller;float:right;padding-right:3%">[Edit]</a>
+  <a href="https://github.com/longhorn/longhorn-tests/edit/master/docs/content/manual/pre-release/node-not-ready/node-restart/physical-node-reboot.md" target="_blank" title="Edit on Github" style="font-size:smaller;float:right;padding-right:3%">[Edit]</a>
   </div>
 
     

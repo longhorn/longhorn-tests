@@ -66,12 +66,6 @@
   <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/concurrent-backup/">#1341 concurrent backup test</a></li>
   
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/restore-volume-node-down/">#1355 The node the restore volume attached to is down</a></li>
-  
-
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/dr-volume-node-rebooted/">#1366 &amp;&amp; #1328 The node the DR volume attached to is rebooted</a></li>
-  
-
   <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/google-cloud-s3-interop-backups/">#1404 test backup functionality on google cloud and other s3 interop providers.</a></li>
   
 
@@ -143,9 +137,6 @@
   <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/ha/replica-rebuilding/">Replica Rebuilding</a></li>
   
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/ha/single-replica-node-down/">Single replica node down</a></li>
-  
-
 </ul>
 
   
@@ -207,28 +198,80 @@
   
     <ul>
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node/backing-image-on-a-down-node/">Backing Image on a down node</a></li>
-  
-
   <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node/degraded-availability/">Degraded availability with added nodes</a></li>
   
 
   <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node/improve-node-failure-handling/">Improve Node Failure Handling By Automatically Force Delete Terminating Pods of StatefulSet/Deployment On Downed Node</a></li>
   
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node/node-disconnection/">Node disconnection test</a></li>
+</ul>
+
   
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node/node-drain-deletion/">Node drain and deletion test</a></li>
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node-not-ready/">Node Not Ready</a></li>
+  
+    <ul>
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node-not-ready/kubelet-restart/">Kubulete Restart</a></li>
+  
+    <ul>
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node-not-ready/kubelet-restart/kubelet-restart-on-a-node/">Test kubelet restart on a node of the cluster</a></li>
   
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node/physical-node-down/">Physical node down</a></li>
+</ul>
+
   
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node/kubelet-restart-on-a-node/">Test kubelet restart on a node of the cluster</a></li>
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node-not-ready/node-disconnection/">Node Disconnection</a></li>
+  
+    <ul>
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node-not-ready/node-disconnection/node-disconnection/">Node disconnection test</a></li>
   
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node/node-deletion/">Test node deletion</a></li>
+</ul>
+
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node-not-ready/node-down/">Node Done</a></li>
+  
+    <ul>
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node-not-ready/node-down/restore-volume-node-down/">#1355 The node the restore volume attached to is down</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node-not-ready/node-down/backing-image-on-a-down-node/">Backing Image on a down node</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node-not-ready/node-down/node-drain-deletion/">Node drain and deletion test</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node-not-ready/node-down/physical-node-down/">Physical node down</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node-not-ready/node-down/single-replica-node-down/">Single replica node down</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node-not-ready/node-down/node-deletion/">Test node deletion</a></li>
+  
+
+</ul>
+
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node-not-ready/node-restart/">Node Restart</a></li>
+  
+    <ul>
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node-not-ready/node-restart/dr-volume-node-rebooted/">#1366 &amp;&amp; #1328 The node the DR volume attached to is rebooted</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node-not-ready/node-restart/physical-node-reboot/">Physical node reboot</a></li>
+  
+
+</ul>
+
   
 
 </ul>
@@ -666,76 +709,49 @@
 
 
 <main style="padding: 1%; width: 70%;">
-  <h1 id="title">Node disconnection test</h1>
+  <h1 id="title">Backing Image on a down node</h1>
   <div>
     <article id="content">
-       <p><a href="https://github.com/longhorn/longhorn/issues/1545">https://github.com/longhorn/longhorn/issues/1545</a>
-For disconnect node : <a href="https://github.com/longhorn/longhorn/files/4864127/network_down.sh.zip">https://github.com/longhorn/longhorn/files/4864127/network_down.sh.zip</a></p>
-<p>If auto-salvage is disabled, the auto-reattachment behavior after the node disconnection depends on all replicas are in ERROR state or not.</p>
-<p>(1) If all replicas are in ERROR state, the volume would remain in detached/faulted state if auto-salvage is disabled.</p>
-<p>(2) If there is any healthy replica, the volume would be auto-reattached even though auto-salvage is disabled.</p>
-<p>What makes all replicas in ERROR state? When there is data writing during the disconnection:</p>
-<p>(1) If the engine process is unable to talk with a replica (the engine process and the replica are on the different nodes), the engine process will mark the replica as ERROR.</p>
-<p>(2) But if the engine process is still able to talk with a replica (the engine process and the replica are on the same node), the engine process will just mark the replica as UNKNOWN state, and the replica will recover to RUNNING state after the network connection is back. Then other replicas can be rebuilt from the replica.</p>
-<p>So we have 2 * 2 test cases for node disconnection + disabled auto-salvage:</p>
-<p>(Case 1-1) there is no replica on the attached node + data writing during the disconnection -&gt; all replicas become ERROR -&gt; no auto-reattach after the disconnection</p>
-<p>(Case 1-2) there is a replica on the attached node + data writing during the disconnection -&gt; one replica can recover to healthy -&gt; auto-reattach after the disconnection</p>
-<p>(Case 2-1) there is no replica on the attached node + no data writing during the disconnection -&gt; other replicas are still healthy -&gt; auto-reattach after the disconnection</p>
-<p>(Case 2-2) there is a replica on the attached node + no data writing during the disconnection -&gt; other replicas are still healthy -&gt; auto-reattach after the disconnection</p>
-<h3 id="case-1-1">Case 1-1:</h3>
+       <ol>
+<li>Update the settings:
 <ol>
-<li>Disable auto-salvage.</li>
-<li>Create a volume named test-1 with 2 replicas on the 1st and the 2nd node.</li>
-<li>Attach the volume to the 3rd node.</li>
-<li>Keep writing data directly to the volume. (sudo dd if=/dev/urandom of=/dev/longhorn/test-1 bs=2M count=2048)</li>
-<li>Disconnect the network of the node that the volume attached to for 100 seconds during the data writing. (sudo nohup ./network_down.sh 100)</li>
-<li>Wait for the node back.</li>
-<li>The volume should remain detached, and all replicas remain in ERROR state.</li>
+<li>Disable <code>Node Soft Anti-affinity</code>.</li>
+<li>Set <code>Replica Replenishment Wait Interval</code> to a relatively long value.</li>
 </ol>
-<h3 id="case-1-2">Case 1-2:</h3>
-<ol>
-<li>Disable auto-salvage.</li>
-<li>Create a volume named test-1 with 3 replicas.</li>
-<li>Attach the volume to a node.</li>
-<li>Keep writing data directly to the volume. (sudo dd if=/dev/urandom of=/dev/longhorn/test-1 bs=2M count=2048)</li>
-<li>Disconnect the network of the node that the volume attached to for 100 seconds during the data writing. (sudo nohup ./network_down.sh 100)</li>
-<li>Wait for the node back.</li>
-<li>The volume will be detached then reattached automatically, and replicas should still be in RUNNING state.</li>
+</li>
+<li>Create a backing image. Wait for the backing image being ready in the 1st disk.</li>
+<li>Create 2 volumes with the backing image and attach them on different nodes. Verify:
+<ul>
+<li>the disk state map of the backing image contains the disks of all replicas, and the state is running for all disks.</li>
+<li>the backing image content is correct.</li>
+</ul>
+</li>
+<li>Write random data to the volumes.</li>
+<li>Power off 2 nodes. One node should contain one volume engine. Verify that
+<ul>
+<li>the related disk file state in the backing image will become <code>Unknown</code>.</li>
+<li>the volume on the running node still works fine but is state <code>Degraded</code>, and the content is correct.</li>
+<li>the volume on the down node become <code>Unknown</code>.</li>
+</ul>
+</li>
+<li>Power on the node that contains one volume engine. Verify
+<ul>
+<li>the failed replica of the <code>Degraded</code> volume can be reused.</li>
+<li>the volume on the down node will be recovered automatically. And the data is correct.</li>
+<li>the backing image will be recovered automatically.</li>
+<li>the backing image file on this node will be reused when the related backing image manager pod is recovered (by check the pod log).</li>
+</ul>
+</li>
+<li>Delete all volumes and the backing image. Verify the backing image manager can be deleted once forcing removing the related terminating pod.</li>
 </ol>
-<h3 id="case-2-1">Case 2-1:</h3>
-<ol>
-<li>Disable auto-salvage.</li>
-<li>Create a volume named test-1 with 2 replicas on the 1st and the 2nd node.</li>
-<li>Attach the volume to the 3rd node.</li>
-<li>No need to write data to the volume. Directly disconnect the network of the node that the volume attached to for 100 seconds. (sudo nohup ./network_down.sh 100)</li>
-<li>Wait for the node back.</li>
-<li>The volume will be detached then reattached automatically, and replicas should still be in RUNNING state.</li>
-</ol>
-<h3 id="case-2-2">Case 2-2:</h3>
-<ol>
-<li>Disable auto-salvage.</li>
-<li>Create a volume named test-1 with 3 replicas.</li>
-<li>Attach the volume to a node.</li>
-<li>No need to write data to the volume. Directly disconnect the network of the node that the volume attached to for 100 seconds. (sudo nohup ./network_down.sh 100)</li>
-<li>Wait for the node back.</li>
-<li>The volume will be detached then reattached automatically, and replicas should still be in RUNNING state.</li>
-</ol>
-<h3 id="case-3">Case 3:</h3>
-<ol>
-<li>Launch Longhorn.</li>
-<li>Use statefulset launch a pod with the volume and write some data.</li>
-<li>Run command &lsquo;sync&rsquo; in pod, make sure data fulshed.</li>
-<li>Disconnect the node that the volume attached to for 100 seconds.</li>
-<li>Wait for the node back and the volume reattachment.</li>
-<li>After the volume is reattached, the pod will be automatically deleted and recreate.</li>
-<li>Verify the data and the pod still works fine.</li>
-<li>Repeat step 2~6 for 3 times.</li>
-<li>Create, Attach, and detach other volumes to the recovered node. All volumes should work fine.</li>
-<li>Remove Longhorn and repeat step 1~9 for 3 times.</li>
-</ol>
-
+<h4 id="available-test-backing-image-urls">Available test backing image URLs:</h4>
+<pre tabindex="0"><code>https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2
+https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.raw
+https://cloud-images.ubuntu.com/minimal/releases/focal/release-20200729/ubuntu-20.04-minimal-cloudimg-amd64.img
+https://github.com/rancher/k3os/releases/download/v0.11.0/k3os-amd64.iso 
+</code></pre>
     </article>
-  <a href="https://github.com/longhorn/longhorn-tests/edit/master/docs/content/manual/pre-release/node/node-disconnection.md" target="_blank" title="Edit on Github" style="font-size:smaller;float:right;padding-right:3%">[Edit]</a>
+  <a href="https://github.com/longhorn/longhorn-tests/edit/master/docs/content/manual/pre-release/node-not-ready/node-down/backing-image-on-a-down-node.md" target="_blank" title="Edit on Github" style="font-size:smaller;float:right;padding-right:3%">[Edit]</a>
   </div>
 
     
