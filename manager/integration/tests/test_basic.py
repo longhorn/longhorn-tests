@@ -4537,7 +4537,7 @@ def test_backup_failed_disable_auto_cleanup(set_random_backupstore,  # NOQA
     9.    Wait and check if the backup was not deleted.
     10.   Cleanup
     """
-    backup_name = backup_failed_cleanup(client, core_api, volume_name, 256*Mi,
+    backup_name = backup_failed_cleanup(client, core_api, volume_name, 1024*Mi,
                                         failed_backup_ttl="0")
 
     # wait for 5 minutes to check if the failed backup exists
