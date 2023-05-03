@@ -3277,6 +3277,9 @@ def reset_settings(client):
         if setting_name == &#34;support-bundle-manager-image&#34;:
             continue
 
+        if setting_name == &#34;registry-secret&#34;:
+            continue
+
         s = client.by_id_setting(setting_name)
         if s.value != setting_default_value and not setting_readonly:
             try:
@@ -10702,6 +10705,9 @@ def random_labels():
         # So we need to skip here to avoid test failure when resetting this to
         # an empty default value.
         if setting_name == &#34;support-bundle-manager-image&#34;:
+            continue
+
+        if setting_name == &#34;registry-secret&#34;:
             continue
 
         s = client.by_id_setting(setting_name)
