@@ -3189,6 +3189,9 @@ def reset_settings(client):
         if setting_name == "support-bundle-manager-image":
             continue
 
+        if setting_name == "registry-secret":
+            continue
+
         s = client.by_id_setting(setting_name)
         if s.value != setting_default_value and not setting_readonly:
             try:
