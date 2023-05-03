@@ -2825,7 +2825,7 @@ def test_autosalvage_with_data_locality_enabled(client, core_api, make_deploymen
        it will be schedule on to `node-2`. This makes sure that there is a
        failed-to-scheduled local replica
     5. Wait for the pod to be in running state.
-    6. Kill the instance manager r on `node-1`.
+    6. Kill the aio instance manager on `node-1`.
     7. In a 3-min retry loop, verify that Longhorn salvage the volume
        and the workload pod is restarted. Exec into the workload pod.
        Verify that read/write to the volume is ok
@@ -2881,9 +2881,8 @@ def test_autosalvage_with_data_locality_enabled(client, core_api, make_deploymen
     create_snapshot(client, volume_name)
 
     # Step6
-    labels = &#34;longhorn.io/node={}\
-            , longhorn.io/instance-manager-type=replica&#34;\
-            .format(node_1[&#34;name&#34;])
+    labels = f&#39;longhorn.io/node={node_1[&#34;name&#34;]}, \
+               longhorn.io/instance-manager-type=aio&#39;
 
     ret = core_api.list_namespaced_pod(
             namespace=LONGHORN_NAMESPACE, label_selector=labels)
@@ -3684,7 +3683,7 @@ and tag set to <code>node-1</code>
 it will be schedule on to <code>node-2</code>. This makes sure that there is a
 failed-to-scheduled local replica
 5. Wait for the pod to be in running state.
-6. Kill the instance manager r on <code>node-1</code>.
+6. Kill the aio instance manager on <code>node-1</code>.
 7. In a 3-min retry loop, verify that Longhorn salvage the volume
 and the workload pod is restarted. Exec into the workload pod.
 Verify that read/write to the volume is ok
@@ -3715,7 +3714,7 @@ In a 2-min loop, verify that the number of socket connection is &lt;= 20</p>
        it will be schedule on to `node-2`. This makes sure that there is a
        failed-to-scheduled local replica
     5. Wait for the pod to be in running state.
-    6. Kill the instance manager r on `node-1`.
+    6. Kill the aio instance manager on `node-1`.
     7. In a 3-min retry loop, verify that Longhorn salvage the volume
        and the workload pod is restarted. Exec into the workload pod.
        Verify that read/write to the volume is ok
@@ -3771,9 +3770,8 @@ In a 2-min loop, verify that the number of socket connection is &lt;= 20</p>
     create_snapshot(client, volume_name)
 
     # Step6
-    labels = &#34;longhorn.io/node={}\
-            , longhorn.io/instance-manager-type=replica&#34;\
-            .format(node_1[&#34;name&#34;])
+    labels = f&#39;longhorn.io/node={node_1[&#34;name&#34;]}, \
+               longhorn.io/instance-manager-type=aio&#39;
 
     ret = core_api.list_namespaced_pod(
             namespace=LONGHORN_NAMESPACE, label_selector=labels)

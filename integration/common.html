@@ -194,6 +194,7 @@ SETTING_DISABLE_SCHEDULING_ON_CORDONED_NODE = \
 SETTING_GUARANTEED_ENGINE_CPU = &#34;guaranteed-engine-cpu&#34;
 SETTING_GUARANTEED_ENGINE_MANAGER_CPU = &#34;guaranteed-engine-manager-cpu&#34;
 SETTING_GUARANTEED_REPLICA_MANAGER_CPU = &#34;guaranteed-replica-manager-cpu&#34;
+SETTING_GUARANTEED_INSTANCE_MANAGER_CPU = &#34;guaranteed-instance-manager-cpu&#34;
 SETTING_MKFS_EXT4_PARAMS = &#34;mkfs-ext4-parameters&#34;
 SETTING_PRIORITY_CLASS = &#34;priority-class&#34;
 SETTING_RECURRING_JOB_WHILE_VOLUME_DETACHED = \
@@ -2232,7 +2233,16 @@ def wait_for_replica_failed(client, volname, replica_name,
                 break
             if r[&#39;instanceManagerName&#39;] != &#34;&#34;:
                 im = client.by_id_instance_manager(r[&#39;instanceManagerName&#39;])
-                if r[&#39;name&#39;] in im[&#39;instances&#39;]:
+
+                instance_dict = {}
+                # We still check the &#39;instances&#39; for backward compatibility
+                # with older versions (&lt;v1.5.x).
+                if im[&#39;instances&#39;] is not None:
+                    instance_dict.update(im[&#39;instances&#39;])
+                if im[&#39;instanceReplicas&#39;] is not None:
+                    instance_dict.update(im[&#39;instanceReplicas&#39;])
+
+                if r[&#39;name&#39;] in instance_dict:
                     failed = False
                     debug_replica_in_im = im
                     break
@@ -2256,7 +2266,16 @@ def wait_for_replica_running(client, volname, replica_name):
             if r[&#39;running&#39;] and r[&#39;instanceManagerName&#39;] != &#34;&#34;:
                 im = client.by_id_instance_manager(
                     r[&#39;instanceManagerName&#39;])
-                if r[&#39;name&#39;] in im[&#39;instances&#39;]:
+
+                instance_dict = {}
+                # We still check the &#39;instances&#39; for backward compatibility
+                # with older versions (&lt;v1.5.x).
+                if im[&#39;instances&#39;] is not None:
+                    instance_dict.update(im[&#39;instances&#39;])
+                if im[&#39;instanceReplicas&#39;] is not None:
+                    instance_dict.update(im[&#39;instanceReplicas&#39;])
+
+                if r[&#39;name&#39;] in instance_dict:
                     is_running = True
                     break
         if is_running:
@@ -3305,28 +3324,20 @@ def wait_for_all_instance_manager_running(client):
 
     nodes = client.list_node()
 
-    for i in range(RETRY_COUNTS):
+    for _ in range(RETRY_COUNTS):
         instance_managers = client.list_instance_manager()
-        node_to_engine_manager_map, node_to_replica_manager_map = {}, {}
+        node_to_instance_manager_map = {}
         try:
             for im in instance_managers:
-                if im.managerType == &#34;engine&#34; and im.currentState == &#34;running&#34;:
-                    node_to_engine_manager_map[im.nodeID] = im
-                elif im.managerType == &#34;replica&#34; and \
-                        im.currentState == &#34;running&#34;:
-                    node_to_replica_manager_map[im.nodeID] = im
+                if im.managerType == &#34;aio&#34; and im.currentState == &#34;running&#34;:
+                    node_to_instance_manager_map[im.nodeID] = im
                 else:
                     print(&#34;\nFound unknown instance manager:&#34;, im)
-            if len(node_to_engine_manager_map) != len(nodes) or \
-                    len(node_to_replica_manager_map) != len(nodes):
+            if len(node_to_instance_manager_map) != len(nodes):
                 time.sleep(RETRY_INTERVAL)
                 continue
 
-            for _, im in node_to_engine_manager_map.items():
-                wait_for_instance_manager_desire_state(client, core_api,
-                                                       im.name, &#34;Running&#34;,
-                                                       True)
-            for _, im in node_to_replica_manager_map.items():
+            for _, im in node_to_instance_manager_map.items():
                 wait_for_instance_manager_desire_state(client, core_api,
                                                        im.name, &#34;Running&#34;,
                                                        True)
@@ -11683,28 +11694,20 @@ ref: <a href="https://github.com/longhorn/longhorn/issues/4814">https://github.c
 
     nodes = client.list_node()
 
-    for i in range(RETRY_COUNTS):
+    for _ in range(RETRY_COUNTS):
         instance_managers = client.list_instance_manager()
-        node_to_engine_manager_map, node_to_replica_manager_map = {}, {}
+        node_to_instance_manager_map = {}
         try:
             for im in instance_managers:
-                if im.managerType == &#34;engine&#34; and im.currentState == &#34;running&#34;:
-                    node_to_engine_manager_map[im.nodeID] = im
-                elif im.managerType == &#34;replica&#34; and \
-                        im.currentState == &#34;running&#34;:
-                    node_to_replica_manager_map[im.nodeID] = im
+                if im.managerType == &#34;aio&#34; and im.currentState == &#34;running&#34;:
+                    node_to_instance_manager_map[im.nodeID] = im
                 else:
                     print(&#34;\nFound unknown instance manager:&#34;, im)
-            if len(node_to_engine_manager_map) != len(nodes) or \
-                    len(node_to_replica_manager_map) != len(nodes):
+            if len(node_to_instance_manager_map) != len(nodes):
                 time.sleep(RETRY_INTERVAL)
                 continue
 
-            for _, im in node_to_engine_manager_map.items():
-                wait_for_instance_manager_desire_state(client, core_api,
-                                                       im.name, &#34;Running&#34;,
-                                                       True)
-            for _, im in node_to_replica_manager_map.items():
+            for _, im in node_to_instance_manager_map.items():
                 wait_for_instance_manager_desire_state(client, core_api,
                                                        im.name, &#34;Running&#34;,
                                                        True)
@@ -12920,7 +12923,16 @@ ref: <a href="https://github.com/longhorn/longhorn/issues/4814">https://github.c
                 break
             if r[&#39;instanceManagerName&#39;] != &#34;&#34;:
                 im = client.by_id_instance_manager(r[&#39;instanceManagerName&#39;])
-                if r[&#39;name&#39;] in im[&#39;instances&#39;]:
+
+                instance_dict = {}
+                # We still check the &#39;instances&#39; for backward compatibility
+                # with older versions (&lt;v1.5.x).
+                if im[&#39;instances&#39;] is not None:
+                    instance_dict.update(im[&#39;instances&#39;])
+                if im[&#39;instanceReplicas&#39;] is not None:
+                    instance_dict.update(im[&#39;instanceReplicas&#39;])
+
+                if r[&#39;name&#39;] in instance_dict:
                     failed = False
                     debug_replica_in_im = im
                     break
@@ -12953,7 +12965,16 @@ ref: <a href="https://github.com/longhorn/longhorn/issues/4814">https://github.c
             if r[&#39;running&#39;] and r[&#39;instanceManagerName&#39;] != &#34;&#34;:
                 im = client.by_id_instance_manager(
                     r[&#39;instanceManagerName&#39;])
-                if r[&#39;name&#39;] in im[&#39;instances&#39;]:
+
+                instance_dict = {}
+                # We still check the &#39;instances&#39; for backward compatibility
+                # with older versions (&lt;v1.5.x).
+                if im[&#39;instances&#39;] is not None:
+                    instance_dict.update(im[&#39;instances&#39;])
+                if im[&#39;instanceReplicas&#39;] is not None:
+                    instance_dict.update(im[&#39;instanceReplicas&#39;])
+
+                if r[&#39;name&#39;] in instance_dict:
                     is_running = True
                     break
         if is_running:
