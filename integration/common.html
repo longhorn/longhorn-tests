@@ -5016,7 +5016,8 @@ def check_recurring_jobs(client, recurring_jobs):
         assert recurring_job.cron == spec[&#34;cron&#34;]
 
         expect_retain = spec[&#34;retain&#34;]
-        if recurring_job.task == &#34;snapshot-cleanup&#34;:
+        if recurring_job.task == &#34;snapshot-cleanup&#34; or \
+                recurring_job.task == &#34;filesystem-trim&#34;:
             expect_retain = 0
         assert recurring_job.retain == expect_retain
 
@@ -6222,7 +6223,8 @@ def batch_v1_api(request):
         assert recurring_job.cron == spec[&#34;cron&#34;]
 
         expect_retain = spec[&#34;retain&#34;]
-        if recurring_job.task == &#34;snapshot-cleanup&#34;:
+        if recurring_job.task == &#34;snapshot-cleanup&#34; or \
+                recurring_job.task == &#34;filesystem-trim&#34;:
             expect_retain = 0
         assert recurring_job.retain == expect_retain
 
