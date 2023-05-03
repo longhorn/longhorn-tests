@@ -1629,6 +1629,16 @@ def cleanup_client():
             [&#34;mkdir&#34;, &#34;-p&#34;, DEFAULT_REPLICA_DIRECTORY])
 
 
+def reset_nodes_taint(client):
+    core_api = get_core_api_client()
+    nodes = client.list_node()
+
+    for node in nodes:
+        core_api.patch_node(node.id, {
+            &#34;spec&#34;: {&#34;taints&#34;: []}
+        })
+
+
 def get_client(address):
     url = &#39;http://&#39; + address + &#39;/v1/schemas&#39;
     c = longhorn.from_env(url=url)
@@ -3042,6 +3052,9 @@ def get_update_disks(disks):
 
 
 def reset_node(client, core_api):
+    # remove nodes taint
+    reset_nodes_taint(client)
+
     nodes = client.list_node()
     for node in nodes:
         try:
@@ -3317,6 +3330,56 @@ def scale_up_engine_image_daemonset(client):
         # for scaling up a running daemond set,
         # the status_code is 422 server error.
         assert e.status == 422
+
+    # make sure default engine image deployed ready
+    wait_for_deployed_engine_image_count(client, default_img.name, 3)
+
+
+def wait_for_deployed_engine_image_count(client, image_name, expected_cnt):
+    for i in range(RETRY_COUNTS):
+        image = client.by_id_engine_image(image_name)
+        deployed_cnt = 0
+        if image.nodeDeploymentMap is None:
+            continue
+        for item in image.nodeDeploymentMap:
+            if image.nodeDeploymentMap[item] is True:
+                deployed_cnt = deployed_cnt + 1
+        if deployed_cnt == expected_cnt:
+            break
+        time.sleep(RETRY_INTERVAL)
+
+    assert deployed_cnt == expected_cnt
+
+
+def wait_for_running_engine_image_count(image_name, engine_cnt):
+    core_api = get_core_api_client()
+    for i in range(RETRY_COUNTS):
+        exist_engine_cnt = 0
+        longhorn_pod_list = core_api.list_namespaced_pod(&#39;longhorn-system&#39;)
+        for pod in longhorn_pod_list.items:
+            if &#34;engine-image-&#34; + image_name in pod.metadata.name and \
+                    pod.status.phase == &#34;Running&#34;:
+                exist_engine_cnt += 1
+        if exist_engine_cnt == engine_cnt:
+            break
+        time.sleep(RETRY_INTERVAL)
+
+    assert exist_engine_cnt == engine_cnt
+
+
+def restart_and_wait_ready_engine_count(client, ready_engine_count): # NOQA
+    &#34;&#34;&#34;
+    Delete/restart engine daemonset and wait ready engine image count after
+    daemonset restart
+    &#34;&#34;&#34;
+
+    apps_api = get_apps_api_client()
+    default_img = get_default_engine_image(client)
+    ds_name = &#34;engine-image-&#34; + default_img.name
+    apps_api.delete_namespaced_daemon_set(ds_name, LONGHORN_NAMESPACE)
+    wait_for_engine_image_condition(client, default_img.name, &#34;False&#34;)
+    wait_for_engine_image_state(client, default_img.name, &#34;deploying&#34;)
+    wait_for_running_engine_image_count(default_img.name, ready_engine_count)
 
 
 def wait_for_all_instance_manager_running(client):
@@ -10562,6 +10625,9 @@ def random_labels():
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def reset_node(client, core_api):
+    # remove nodes taint
+    reset_nodes_taint(client)
+
     nodes = client.list_node()
     for node in nodes:
         try:
@@ -10580,6 +10646,25 @@ def random_labels():
     managed_k8s_cluster = os.getenv(&#34;MANAGED_K8S_CLUSTER&#34;).lower() == &#39;true&#39;
     if not managed_k8s_cluster:
         reset_longhorn_node_zone(client)</code></pre>
+</details>
+</dd>
+<dt id="tests.common.reset_nodes_taint"><code class="name flex">
+<span>def <span class="ident">reset_nodes_taint</span></span>(<span>client)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def reset_nodes_taint(client):
+    core_api = get_core_api_client()
+    nodes = client.list_node()
+
+    for node in nodes:
+        core_api.patch_node(node.id, {
+            &#34;spec&#34;: {&#34;taints&#34;: []}
+        })</code></pre>
 </details>
 </dd>
 <dt id="tests.common.reset_settings"><code class="name flex">
@@ -10630,6 +10715,31 @@ def random_labels():
                       setting_default_value)
                 print(s)
                 print(e)</code></pre>
+</details>
+</dd>
+<dt id="tests.common.restart_and_wait_ready_engine_count"><code class="name flex">
+<span>def <span class="ident">restart_and_wait_ready_engine_count</span></span>(<span>client, ready_engine_count)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Delete/restart engine daemonset and wait ready engine image count after
+daemonset restart</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def restart_and_wait_ready_engine_count(client, ready_engine_count): # NOQA
+    &#34;&#34;&#34;
+    Delete/restart engine daemonset and wait ready engine image count after
+    daemonset restart
+    &#34;&#34;&#34;
+
+    apps_api = get_apps_api_client()
+    default_img = get_default_engine_image(client)
+    ds_name = &#34;engine-image-&#34; + default_img.name
+    apps_api.delete_namespaced_daemon_set(ds_name, LONGHORN_NAMESPACE)
+    wait_for_engine_image_condition(client, default_img.name, &#34;False&#34;)
+    wait_for_engine_image_state(client, default_img.name, &#34;deploying&#34;)
+    wait_for_running_engine_image_count(default_img.name, ready_engine_count)</code></pre>
 </details>
 </dd>
 <dt id="tests.common.restore_backup_and_get_data_checksum"><code class="name flex">
@@ -10748,7 +10858,10 @@ output of the command executed in the pod.</p></div>
     except ApiException as e:
         # for scaling up a running daemond set,
         # the status_code is 422 server error.
-        assert e.status == 422</code></pre>
+        assert e.status == 422
+
+    # make sure default engine image deployed ready
+    wait_for_deployed_engine_image_count(client, default_img.name, 3)</code></pre>
 </details>
 </dd>
 <dt id="tests.common.scheduling_api"><code class="name flex">
@@ -12123,6 +12236,31 @@ ref: <a href="https://github.com/longhorn/longhorn/issues/4814">https://github.c
     assert not exist</code></pre>
 </details>
 </dd>
+<dt id="tests.common.wait_for_deployed_engine_image_count"><code class="name flex">
+<span>def <span class="ident">wait_for_deployed_engine_image_count</span></span>(<span>client, image_name, expected_cnt)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def wait_for_deployed_engine_image_count(client, image_name, expected_cnt):
+    for i in range(RETRY_COUNTS):
+        image = client.by_id_engine_image(image_name)
+        deployed_cnt = 0
+        if image.nodeDeploymentMap is None:
+            continue
+        for item in image.nodeDeploymentMap:
+            if image.nodeDeploymentMap[item] is True:
+                deployed_cnt = deployed_cnt + 1
+        if deployed_cnt == expected_cnt:
+            break
+        time.sleep(RETRY_INTERVAL)
+
+    assert deployed_cnt == expected_cnt</code></pre>
+</details>
+</dd>
 <dt id="tests.common.wait_for_device_login"><code class="name flex">
 <span>def <span class="ident">wait_for_device_login</span></span>(<span>dest_path, name)</span>
 </code></dt>
@@ -13030,6 +13168,31 @@ ref: <a href="https://github.com/longhorn/longhorn/issues/4814">https://github.c
     assert len(volume.replicas) == expect_success + expect_fail, \
         f&#34; Volume = {volume}&#34;
     return volume</code></pre>
+</details>
+</dd>
+<dt id="tests.common.wait_for_running_engine_image_count"><code class="name flex">
+<span>def <span class="ident">wait_for_running_engine_image_count</span></span>(<span>image_name, engine_cnt)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def wait_for_running_engine_image_count(image_name, engine_cnt):
+    core_api = get_core_api_client()
+    for i in range(RETRY_COUNTS):
+        exist_engine_cnt = 0
+        longhorn_pod_list = core_api.list_namespaced_pod(&#39;longhorn-system&#39;)
+        for pod in longhorn_pod_list.items:
+            if &#34;engine-image-&#34; + image_name in pod.metadata.name and \
+                    pod.status.phase == &#34;Running&#34;:
+                exist_engine_cnt += 1
+        if exist_engine_cnt == engine_cnt:
+            break
+        time.sleep(RETRY_INTERVAL)
+
+    assert exist_engine_cnt == engine_cnt</code></pre>
 </details>
 </dd>
 <dt id="tests.common.wait_for_snapshot_count"><code class="name flex">
@@ -14513,7 +14676,9 @@ from the args and kwargs arguments, respectively.</p></div>
 <li><code><a title="tests.common.reset_engine_image" href="#tests.common.reset_engine_image">reset_engine_image</a></code></li>
 <li><code><a title="tests.common.reset_longhorn_node_zone" href="#tests.common.reset_longhorn_node_zone">reset_longhorn_node_zone</a></code></li>
 <li><code><a title="tests.common.reset_node" href="#tests.common.reset_node">reset_node</a></code></li>
+<li><code><a title="tests.common.reset_nodes_taint" href="#tests.common.reset_nodes_taint">reset_nodes_taint</a></code></li>
 <li><code><a title="tests.common.reset_settings" href="#tests.common.reset_settings">reset_settings</a></code></li>
+<li><code><a title="tests.common.restart_and_wait_ready_engine_count" href="#tests.common.restart_and_wait_ready_engine_count">restart_and_wait_ready_engine_count</a></code></li>
 <li><code><a title="tests.common.restore_backup_and_get_data_checksum" href="#tests.common.restore_backup_and_get_data_checksum">restore_backup_and_get_data_checksum</a></code></li>
 <li><code><a title="tests.common.scale_up_engine_image_daemonset" href="#tests.common.scale_up_engine_image_daemonset">scale_up_engine_image_daemonset</a></code></li>
 <li><code><a title="tests.common.scheduling_api" href="#tests.common.scheduling_api">scheduling_api</a></code></li>
@@ -14569,6 +14734,7 @@ from the args and kwargs arguments, respectively.</p></div>
 <li><code><a title="tests.common.wait_for_cron_job_count" href="#tests.common.wait_for_cron_job_count">wait_for_cron_job_count</a></code></li>
 <li><code><a title="tests.common.wait_for_cron_job_create" href="#tests.common.wait_for_cron_job_create">wait_for_cron_job_create</a></code></li>
 <li><code><a title="tests.common.wait_for_cron_job_delete" href="#tests.common.wait_for_cron_job_delete">wait_for_cron_job_delete</a></code></li>
+<li><code><a title="tests.common.wait_for_deployed_engine_image_count" href="#tests.common.wait_for_deployed_engine_image_count">wait_for_deployed_engine_image_count</a></code></li>
 <li><code><a title="tests.common.wait_for_device_login" href="#tests.common.wait_for_device_login">wait_for_device_login</a></code></li>
 <li><code><a title="tests.common.wait_for_disk_conditions" href="#tests.common.wait_for_disk_conditions">wait_for_disk_conditions</a></code></li>
 <li><code><a title="tests.common.wait_for_disk_status" href="#tests.common.wait_for_disk_status">wait_for_disk_status</a></code></li>
@@ -14602,6 +14768,7 @@ from the args and kwargs arguments, respectively.</p></div>
 <li><code><a title="tests.common.wait_for_replica_failed" href="#tests.common.wait_for_replica_failed">wait_for_replica_failed</a></code></li>
 <li><code><a title="tests.common.wait_for_replica_running" href="#tests.common.wait_for_replica_running">wait_for_replica_running</a></code></li>
 <li><code><a title="tests.common.wait_for_replica_scheduled" href="#tests.common.wait_for_replica_scheduled">wait_for_replica_scheduled</a></code></li>
+<li><code><a title="tests.common.wait_for_running_engine_image_count" href="#tests.common.wait_for_running_engine_image_count">wait_for_running_engine_image_count</a></code></li>
 <li><code><a title="tests.common.wait_for_snapshot_count" href="#tests.common.wait_for_snapshot_count">wait_for_snapshot_count</a></code></li>
 <li><code><a title="tests.common.wait_for_snapshot_purge" href="#tests.common.wait_for_snapshot_purge">wait_for_snapshot_purge</a></code></li>
 <li><code><a title="tests.common.wait_for_support_bundle_cleanup" href="#tests.common.wait_for_support_bundle_cleanup">wait_for_support_bundle_cleanup</a></code></li>

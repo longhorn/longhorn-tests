@@ -86,7 +86,25 @@ def taint_nodes_exclude_self(request):
                 &#34;taints&#34;: taints
             }
         }
-        api.patch_node(node.metadata.name, body=payload)</code></pre>
+        api.patch_node(node.metadata.name, body=payload)
+
+def taint_non_current_node(client, core_api): # NOQA
+    lht_hostId = get_self_host_id()
+    for node in client.list_node():
+        if node.id != lht_hostId:
+            taint_node_id = node.id
+            break
+
+    core_api.patch_node(taint_node_id, {
+        &#34;spec&#34;: {
+            &#34;taints&#34;:
+                [{&#34;effect&#34;: &#34;NoSchedule&#34;,
+                  &#34;key&#34;: &#34;key&#34;,
+                  &#34;value&#34;: &#34;value&#34;}]
+        }
+    })
+
+    return taint_node_id</code></pre>
 </details>
 </section>
 <section>
@@ -160,6 +178,34 @@ def taint_nodes_exclude_self(request):
         api.patch_node(node.metadata.name, body=payload)</code></pre>
 </details>
 </dd>
+<dt id="tests.node.taint_non_current_node"><code class="name flex">
+<span>def <span class="ident">taint_non_current_node</span></span>(<span>client, core_api)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def taint_non_current_node(client, core_api): # NOQA
+    lht_hostId = get_self_host_id()
+    for node in client.list_node():
+        if node.id != lht_hostId:
+            taint_node_id = node.id
+            break
+
+    core_api.patch_node(taint_node_id, {
+        &#34;spec&#34;: {
+            &#34;taints&#34;:
+                [{&#34;effect&#34;: &#34;NoSchedule&#34;,
+                  &#34;key&#34;: &#34;key&#34;,
+                  &#34;value&#34;: &#34;value&#34;}]
+        }
+    })
+
+    return taint_node_id</code></pre>
+</details>
+</dd>
 </dl>
 </section>
 <section>
@@ -179,6 +225,7 @@ def taint_nodes_exclude_self(request):
 <li><h3><a href="#header-functions">Functions</a></h3>
 <ul class="">
 <li><code><a title="tests.node.taint_nodes_exclude_self" href="#tests.node.taint_nodes_exclude_self">taint_nodes_exclude_self</a></code></li>
+<li><code><a title="tests.node.taint_non_current_node" href="#tests.node.taint_non_current_node">taint_non_current_node</a></code></li>
 </ul>
 </li>
 </ul>
