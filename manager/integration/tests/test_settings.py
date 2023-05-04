@@ -66,7 +66,7 @@ def check_workload_update(core_api, apps_api, count):  # NOQA
     im_pod_list = core_api.list_namespaced_pod(
         LONGHORN_NAMESPACE,
         label_selector="longhorn.io/component=instance-manager").items
-    if len(im_pod_list) != 2 * count:
+    if len(im_pod_list) != count:
         return False
 
     for p in im_pod_list:
