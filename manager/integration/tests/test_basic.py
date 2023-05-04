@@ -315,7 +315,7 @@ def volume_basic_test(client, volume_name, backing_image=""):  # NOQA
     volume = client.by_id_volume(volume_name)
     volume_rw_test(get_volume_endpoint(volume))
 
-    volume.detach(hostId="")
+    volume.detach()
     volume = common.wait_for_volume_detached(client, volume_name)
     assert volume.restoreRequired is False
 
@@ -454,7 +454,7 @@ def snapshot_test(client, volume_name, backing_image):  # NOQA
     assert "volume-head" in snap.children.keys()
     assert snap.removed is True
 
-    volume.detach(hostId="")
+    volume.detach()
     volume = common.wait_for_volume_detached(client, volume_name)
 
     volume.attach(hostId=lht_hostId, disableFrontend=True)
@@ -467,7 +467,7 @@ def snapshot_test(client, volume_name, backing_image):  # NOQA
 
     volume.snapshotRevert(name=snap2.name)
 
-    volume.detach(hostId="")
+    volume.detach()
     volume = common.wait_for_volume_detached(client, volume_name)
 
     volume.attach(hostId=lht_hostId, disableFrontend=False)
@@ -1280,7 +1280,7 @@ def backupstore_test(client, host_id, volname, size):  # NOQA
     volume = volume.attach(hostId=host_id)
     volume = common.wait_for_volume_healthy(client, restore_name)
     check_volume_data(volume, data)
-    volume = volume.detach(hostId="")
+    volume = volume.detach()
     volume = common.wait_for_volume_detached(client, restore_name)
 
     delete_backup(client, bv.name, b.name)
@@ -1512,7 +1512,7 @@ def restore_inc_test(client, core_api, volume_name, pod):  # NOQA
     check_volume_data(sb_volume2, data0_modified2, False)
 
     # allocated this active volume to a pod
-    sb_volume2.detach(hostId="")
+    sb_volume2.detach()
     sb_volume2 = common.wait_for_volume_detached(client, sb_volume2_name)
 
     create_pv_for_volume(client, core_api, sb_volume2, sb_volume2_name)
@@ -1723,17 +1723,17 @@ def test_listing_backup_volume(client, backing_image=""):   # NOQA
     common.delete_backup_volume(client, volume3_name)
     common.wait_for_backup_volume_delete(client, volume3_name)
 
-    volume1.detach(hostId="")
+    volume1.detach()
     volume1 = common.wait_for_volume_detached(client, volume1_name)
     client.delete(volume1)
     wait_for_volume_delete(client, volume1_name)
 
-    volume2.detach(hostId="")
+    volume2.detach()
     volume2 = common.wait_for_volume_detached(client, volume2_name)
     client.delete(volume2)
     wait_for_volume_delete(client, volume2_name)
 
-    volume3.detach(hostId="")
+    volume3.detach()
     volume3 = common.wait_for_volume_detached(client, volume3_name)
     client.delete(volume3)
     wait_for_volume_delete(client, volume3_name)
@@ -1764,7 +1764,7 @@ def test_volume_multinode(client, volume_name):  # NOQA
                                                 volume_name)
         engine = get_volume_engine(volume)
         assert engine.hostId == host_id
-        volume = volume.detach(hostId="")
+        volume = volume.detach()
         volume = common.wait_for_volume_detached(client,
                                                  volume_name)
 
@@ -1826,7 +1826,7 @@ def test_volume_scheduling_failure(client, volume_name):  # NOQA
     endpoint = get_volume_endpoint(volume)
     volume_rw_test(endpoint)
 
-    volume = volume.detach(hostId="")
+    volume = volume.detach()
     volume = common.wait_for_volume_detached(client, volume_name)
 
     client.delete(volume)
@@ -1934,7 +1934,7 @@ def test_attach_without_frontend(client, volume_name):  # NOQA
     write_volume_random_data(volume)
     create_snapshot(client, volume_name)
 
-    volume.detach(hostId="")
+    volume.detach()
     volume = common.wait_for_volume_detached(client, volume_name)
 
     volume.attach(hostId=lht_hostId, disableFrontend=True)
@@ -1947,7 +1947,7 @@ def test_attach_without_frontend(client, volume_name):  # NOQA
 
     volume.snapshotRevert(name=snap1.name)
 
-    volume.detach(hostId="")
+    volume.detach()
     volume = common.wait_for_volume_detached(client, volume_name)
 
     volume.attach(hostId=lht_hostId, disableFrontend=False)
@@ -2144,7 +2144,7 @@ def test_expansion_basic(client, volume_name):  # NOQA
     create_snapshot(client, volume_name)
     check_volume_data(volume, snap3_data)
 
-    volume.detach(hostId="")
+    volume.detach()
     volume = common.wait_for_volume_detached(client, volume_name)
 
     volume.attach(hostId=lht_hostId, disableFrontend=False)
@@ -2152,7 +2152,7 @@ def test_expansion_basic(client, volume_name):  # NOQA
     volume = client.by_id_volume(volume_name)
     check_block_device_size(volume, int(EXPAND_SIZE))
     check_volume_data(volume, snap3_data)
-    volume.detach(hostId="")
+    volume.detach()
     volume = common.wait_for_volume_detached(client, volume_name)
 
     volume.attach(hostId=lht_hostId, disableFrontend=True)
@@ -2161,7 +2161,7 @@ def test_expansion_basic(client, volume_name):  # NOQA
     assert volume.frontend == VOLUME_FRONTEND_BLOCKDEV
     check_volume_endpoint(volume)
     volume.snapshotRevert(name=snap2.name)
-    volume.detach(hostId="")
+    volume.detach()
     volume = common.wait_for_volume_detached(client, volume_name)
     volume.attach(hostId=lht_hostId, disableFrontend=False)
     common.wait_for_volume_healthy(client, volume_name)
@@ -2174,13 +2174,13 @@ def test_expansion_basic(client, volume_name):  # NOQA
     snap4_data = write_volume_data(volume, snap4_data)
     create_snapshot(client, volume_name)
     check_volume_data(volume, snap4_data)
-    volume.detach(hostId="")
+    volume.detach()
     volume = common.wait_for_volume_detached(client, volume_name)
 
     volume.attach(hostId=lht_hostId, disableFrontend=True)
     volume = common.wait_for_volume_healthy_no_frontend(client, volume_name)
     volume.snapshotRevert(name=snap1.name)
-    volume.detach(hostId="")
+    volume.detach()
     volume = common.wait_for_volume_detached(client, volume_name)
     volume.attach(hostId=lht_hostId, disableFrontend=False)
     common.wait_for_volume_healthy(client, volume_name)
@@ -2210,7 +2210,7 @@ def test_expansion_with_size_round_up(client, core_api, volume_name):  # NOQA
     test_data = write_volume_random_data(volume)
 
     # Step 2: Offline expansion
-    volume.detach(hostId="")
+    volume.detach()
     volume = wait_for_volume_detached(client, volume_name)
     volume.expand(size="2000000000")
     wait_for_volume_expansion(client, volume_name)
@@ -2380,7 +2380,7 @@ def test_restore_inc_with_offline_expansion(set_random_backupstore, client, core
     check_volume_data(dr_volume2, data2)
 
     # allocated this active volume to a pod
-    dr_volume2.detach(hostId="")
+    dr_volume2.detach()
     dr_volume2 = common.wait_for_volume_detached(client, dr_volume2_name)
 
     create_pv_for_volume(client, core_api, dr_volume2, dr_volume2_name)
@@ -2424,9 +2424,9 @@ def test_restore_inc_with_offline_expansion(set_random_backupstore, client, core
     delete_and_wait_pv(core_api, dr_volume2_name)
 
     # cleanup
-    std_volume.detach(hostId="")
-    dr_volume0.detach(hostId="")
-    dr_volume1.detach(hostId="")
+    std_volume.detach()
+    dr_volume0.detach()
+    dr_volume1.detach()
     std_volume = common.wait_for_volume_detached(client, volume_name)
     dr_volume0 = common.wait_for_volume_detached(client, dr_volume0_name)
     dr_volume1 = common.wait_for_volume_detached(client, dr_volume1_name)
@@ -3261,7 +3261,7 @@ def test_allow_volume_creation_with_degraded_availability(client, volume_name): 
     data = write_volume_random_data(volume, {})
 
     # detach volume
-    volume.detach(hostId="")
+    volume.detach()
     volume = common.wait_for_volume_detached(client, volume_name)
     assert volume.conditions[VOLUME_CONDITION_SCHEDULED]['status'] == "True"
 
@@ -3277,7 +3277,7 @@ def test_allow_volume_creation_with_degraded_availability(client, volume_name): 
                                                "status", "True")
 
     # detach and re-attach the volume to verify the data
-    volume.detach(hostId="")
+    volume.detach()
     volume = common.wait_for_volume_detached(client, volume_name)
 
     volume.attach(hostId=self_host)
@@ -3356,7 +3356,7 @@ def test_allow_volume_creation_with_degraded_availability_error(client, volume_n
     data = write_volume_random_data(volume, {})
 
     # detach and re-attach the volume to verify the data
-    volume.detach(hostId="")
+    volume.detach()
     volume = common.wait_for_volume_detached(client, volume_name)
 
     volume.attach(hostId=self_host)
@@ -3992,7 +3992,7 @@ def test_expand_pvc_with_size_round_up(client, core_api, volume_name):  # NOQA
     volume.attach(hostId=self_hostId, disableFrontend=False)
     volume = wait_for_volume_healthy(client, volume_name)
     test_data = write_volume_random_data(volume)
-    volume.detach(hostId="")
+    volume.detach()
     volume = wait_for_volume_detached(client, volume_name)
 
     volume.expand(size="2000000000")
@@ -4011,7 +4011,7 @@ def test_expand_pvc_with_size_round_up(client, core_api, volume_name):  # NOQA
 
     volume = client.by_id_volume(volume_name)
     assert volume.size == "2000683008"
-    volume.detach(hostId="")
+    volume.detach()
     volume = wait_for_volume_detached(client, volume_name)
 
     self_hostId = get_self_host_id()
@@ -4019,7 +4019,7 @@ def test_expand_pvc_with_size_round_up(client, core_api, volume_name):  # NOQA
     volume = wait_for_volume_healthy(client, volume_name)
     check_volume_data(volume, test_data, False)
     test_data = write_volume_random_data(volume)
-    volume.detach(hostId="")
+    volume.detach()
     volume = wait_for_volume_detached(client, volume_name)
 
     volume.expand(size=str(2 * Gi))
@@ -4038,14 +4038,14 @@ def test_expand_pvc_with_size_round_up(client, core_api, volume_name):  # NOQA
 
     volume = client.by_id_volume(volume_name)
     assert volume.size == "2147483648"
-    volume.detach(hostId="")
+    volume.detach()
     volume = wait_for_volume_detached(client, volume_name)
 
     self_hostId = get_self_host_id()
     volume.attach(hostId=self_hostId, disableFrontend=False)
     volume = wait_for_volume_healthy(client, volume_name)
     check_volume_data(volume, test_data, False)
-    volume.detach(hostId="")
+    volume.detach()
     volume = wait_for_volume_detached(client, volume_name)
 
     client.delete(volume)
@@ -4606,7 +4606,7 @@ def snapshot_prune_test(client, volume_name, backing_image):  # NOQA
     create_snapshot(client, volume_name)
 
     # Prepare to do revert
-    volume.detach(hostId="")
+    volume.detach()
     volume = common.wait_for_volume_detached(client, volume_name)
     volume.attach(hostId=lht_hostId, disableFrontend=True)
     volume = common.wait_for_volume_healthy_no_frontend(client, volume_name)
@@ -4618,7 +4618,7 @@ def snapshot_prune_test(client, volume_name, backing_image):  # NOQA
         volume.snapshotRevert(name=snap3_after.name)
     # Reverting to snap4 should succeed
     volume.snapshotRevert(name=snap4.name)
-    volume.detach(hostId="")
+    volume.detach()
     volume = common.wait_for_volume_detached(client, volume_name)
     volume.attach(hostId=lht_hostId, disableFrontend=False)
     common.wait_for_volume_healthy(client, volume_name)
@@ -5169,7 +5169,7 @@ def test_filesystem_trim(client, fs_type):  # NOQA
         client, test_volume_name)
     volume.snapshotRevert(name=snap0_origin.name)
 
-    volume.detach(hostId="")
+    volume.detach()
     volume = wait_for_volume_detached(client, test_volume_name)
     volume.attach(hostId=host_id)
     common.wait_for_volume_healthy(client, test_volume_name)
@@ -5342,7 +5342,7 @@ def test_filesystem_trim(client, fs_type):  # NOQA
         client, test_volume_name)
     volume.snapshotRevert(name=snap21_origin.name)
 
-    volume.detach(hostId="")
+    volume.detach()
     volume = wait_for_volume_detached(client, test_volume_name)
     volume.attach(hostId=host_id)
     common.wait_for_volume_healthy(client, test_volume_name)
