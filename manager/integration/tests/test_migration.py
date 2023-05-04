@@ -11,7 +11,6 @@ from common import get_device_checksum
 from common import wait_for_rebuild_start, wait_for_rebuild_complete
 from common import Gi
 from test_scheduling import get_host_replica
-from common import DEFAULT_VOLUME_SIZE
 from common import client, core_api, storage_class, pvc_name # NOQA
 from common import get_self_host_id, create_and_check_volume, create_backup
 from common import create_storage_class, get_volume_engine
@@ -46,16 +45,20 @@ def migration_confirm_test(clients, volume_name, backing_image=""):  # NOQA
                                                 backing_image)
     host1, host2 = get_hosts_for_migration_test(clients)
 
-    volume.attach(hostId=host1)
+    attachment_id_1 = common.generate_attachment_ticket_id()
+    volume.attach(attachmentID=attachment_id_1, hostId=host1,
+                  attacherType=common.ATTACHER_TYPE_CSI_ATTACHER)
     volume = common.wait_for_volume_healthy(client, volume_name)
 
-    volume.attach(hostId=host2)
+    attachment_id_2 = common.generate_attachment_ticket_id()
+    volume.attach(attachmentID=attachment_id_2, hostId=host2,
+                  attacherType=common.ATTACHER_TYPE_CSI_ATTACHER)
     volume = common.wait_for_volume_migration_ready(client, volume_name)
 
-    volume.detach(hostId=host1)
+    volume.detach(attachmentID=attachment_id_1)
     volume = common.wait_for_volume_migration_node(client, volume_name, host2)
 
-    volume.detach(hostId="")
+    volume.detach(attachmentID=attachment_id_2)
     volume = common.wait_for_volume_detached(client, volume_name)
 
     # verify test data
@@ -91,16 +94,20 @@ def migration_rollback_test(clients, volume_name, backing_image=""):  # NOQA
                                                 backing_image)
     host1, host2 = get_hosts_for_migration_test(clients)
 
-    volume.attach(hostId=host1)
+    attachment_id_1 = common.generate_attachment_ticket_id()
+    volume.attach(attachmentID=attachment_id_1, hostId=host1,
+                  attacherType=common.ATTACHER_TYPE_CSI_ATTACHER)
     volume = common.wait_for_volume_healthy(client, volume_name)
 
-    volume.attach(hostId=host2)
+    attachment_id_2 = common.generate_attachment_ticket_id()
+    volume.attach(attachmentID=attachment_id_2, hostId=host2,
+                  attacherType=common.ATTACHER_TYPE_CSI_ATTACHER)
     volume = common.wait_for_volume_migration_ready(client, volume_name)
 
-    volume.detach(hostId=host2)
+    volume.detach(attachmentID=attachment_id_2)
     volume = common.wait_for_volume_migration_node(client, volume_name, host1)
 
-    volume.detach(hostId="")
+    volume.detach(attachmentID=attachment_id_1)
     volume = common.wait_for_volume_detached(client, volume_name)
 
     # verify test data
@@ -153,7 +160,8 @@ def test_migration_with_unscheduled_replica(clients, volume_name):  # NOQA
                                   backingImage="",
                                   accessMode="rwx", migratable=True)
     volume = common.wait_for_volume_detached(client, volume_name)
-    volume.attach(hostId=local_node)
+    attachment_id = common.generate_attachment_ticket_id()
+    volume.attach(attachmentID=attachment_id, hostId=local_node)
     volume = common.wait_for_volume_degraded(client, volume_name)
 
     data = common.write_volume_random_data(volume)
@@ -166,15 +174,19 @@ def test_migration_with_unscheduled_replica(clients, volume_name):  # NOQA
     replicas = v.replicas
     for r in replicas:
         old_replicas.append(r.name)
-    volume.detach(hostId="")
+    volume.detach(attachmentID=attachment_id)
     volume = common.wait_for_volume_detached(client, volume_name)
 
     # Step 6
-    volume.attach(hostId=hosts[0])
+    attachment_id_1 = common.generate_attachment_ticket_id()
+    volume.attach(attachmentID=attachment_id_1, hostId=hosts[0],
+                  attacherType=common.ATTACHER_TYPE_CSI_ATTACHER)
     volume = common.wait_for_volume_degraded(client, volume_name)
 
     # Step 7
-    volume.attach(hostId=local_node)
+    attachment_id_2 = common.generate_attachment_ticket_id()
+    volume.attach(attachmentID=attachment_id_2, hostId=local_node,
+                  attacherType=common.ATTACHER_TYPE_CSI_ATTACHER,)
 
     # Step 8
     volume = common.wait_for_volume_migration_ready(client, volume_name)
@@ -190,7 +202,7 @@ def test_migration_with_unscheduled_replica(clients, volume_name):  # NOQA
     assert len(old_replicas) == len(new_replicas)
 
     # Step 9
-    volume.detach(hostId=hosts[0])
+    volume.detach(attachmentID=attachment_id_1)
 
     # Step 10
     volume = common.wait_for_volume_migration_node(client,
@@ -239,7 +251,9 @@ def test_migration_with_failed_replica(clients, request, volume_name):  # NOQA
     current_node = common.get_self_host_id()
     hosts = get_hosts_for_migration_test(clients)
     migrate_target = hosts[0]
-    volume.attach(hostId=current_node)
+    attachment_id_1 = common.generate_attachment_ticket_id()
+    volume.attach(attachmentID=attachment_id_1, hostId=current_node,
+                  attacherType=common.ATTACHER_TYPE_CSI_ATTACHER)
     volume = common.wait_for_volume_healthy(client, volume_name)
 
     old_replicas = []
@@ -250,7 +264,9 @@ def test_migration_with_failed_replica(clients, request, volume_name):  # NOQA
     subprocess.check_output(exec_cmd)
     volume = common.wait_for_volume_degraded(client, volume_name)
 
-    volume.attach(hostId=migrate_target)
+    attachment_id_2 = common.generate_attachment_ticket_id()
+    volume.attach(attachmentID=attachment_id_2, hostId=migrate_target,
+                  attacherType=common.ATTACHER_TYPE_CSI_ATTACHER)
     volume = common.wait_for_volume_migration_ready(client, volume_name)
 
     new_replicas = 0
@@ -263,7 +279,7 @@ def test_migration_with_failed_replica(clients, request, volume_name):  # NOQA
                 new_replicas = new_replicas + 1
     assert new_replicas == 2
 
-    volume.detach(hostId=current_node)
+    volume.detach(attachmentID=attachment_id_1)
 
     volume = common.wait_for_volume_migration_node(client,
                                                    volume_name,
@@ -271,7 +287,8 @@ def test_migration_with_failed_replica(clients, request, volume_name):  # NOQA
 
     volume.updateReplicaCount(replicaCount=2)
     volume = common.wait_for_volume_healthy(client, volume_name)
-    volume.detach(hostId="")
+
+    volume.detach(attachmentID=attachment_id_2)
     volume = common.wait_for_volume_detached(client, volume_name)
     volume = client.by_id_volume(volume_name)
     check_detached_volume_data(client, volume_name, data)
@@ -310,7 +327,9 @@ def test_migration_with_rebuilding_replica(clients, volume_name):  # NOQA
                                   backingImage="",
                                   accessMode="rwx", migratable=True)
     volume = common.wait_for_volume_detached(client, volume_name)
-    volume.attach(hostId=current_host)
+    attachment_id_1 = common.generate_attachment_ticket_id()
+    volume.attach(attachmentID=attachment_id_1, hostId=current_host,
+                  attacherType=common.ATTACHER_TYPE_CSI_ATTACHER)
     volume = common.wait_for_volume_healthy(client, volume_name)
     old_replicas = volume.replicas
 
@@ -326,7 +345,9 @@ def test_migration_with_rebuilding_replica(clients, volume_name):  # NOQA
     # Step 4
     wait_for_rebuild_start(client, volume_name)
 
-    volume.attach(hostId=host1)
+    attachment_id_2 = common.generate_attachment_ticket_id()
+    volume.attach(attachmentID=attachment_id_2, hostId=host1,
+                  attacherType=common.ATTACHER_TYPE_CSI_ATTACHER)
     volume = client.by_id_volume(volume_name)
     assert len(volume.replicas) == len(old_replicas)
 
@@ -338,7 +359,7 @@ def test_migration_with_rebuilding_replica(clients, volume_name):  # NOQA
     assert len(old_replicas) == (len(new_replicas) - len(old_replicas))
 
     # Step 6
-    volume.detach(hostId=current_host)
+    volume.detach(attachmentID=attachment_id_1)
 
     # Step 7
     volume = common.wait_for_volume_migration_node(client,
@@ -350,10 +371,11 @@ def test_migration_with_rebuilding_replica(clients, volume_name):  # NOQA
     assert len(replicas) == len(old_replicas)
 
     # Step 8
-    volume.detach(hostId=host1)
+    volume.detach(attachmentID=attachment_id_2)
 
     volume = common.wait_for_volume_detached(client, volume_name)
-    volume.attach(hostId=current_host)
+    attachment_id = common.generate_attachment_ticket_id()
+    volume.attach(attachmentID=attachment_id, hostId=current_host)
     volume = common.wait_for_volume_healthy(client, volume_name)
     volume_endpoint = get_volume_endpoint(volume)
     assert data == get_device_checksum(volume_endpoint)
@@ -385,9 +407,10 @@ def test_migration_with_restore_volume(core_api, # NOQA
     volume = create_and_check_volume(client,
                                      volume_name,
                                      REPLICA_COUNT,
-                                     size=str(DEFAULT_VOLUME_SIZE * Gi))
+                                     SIZE)
 
-    volume.attach(hostId=lht_host_id)
+    attachment_id = common.generate_attachment_ticket_id()
+    volume.attach(attachmentID=attachment_id, hostId=lht_host_id)
     volume = common.wait_for_volume_healthy(client, volume_name)
     common.write_volume_random_data(volume)
     bv, b, _, _ = create_backup(client, volume_name)
@@ -414,26 +437,31 @@ def test_migration_with_restore_volume(core_api, # NOQA
     host1, host2 = get_hosts_for_migration_test(clients)
 
     volume = client.by_id_volume(backup_volume_name)
-    volume.attach(hostId=lht_host_id)
+    attachment_id = common.generate_attachment_ticket_id()
+    volume.attach(attachmentID=attachment_id, hostId=lht_host_id)
     volume = common.wait_for_volume_healthy(client, backup_volume_name)
 
     data = common.write_volume_random_data(volume)
-    volume.detach(hostId="")
+    volume.detach(attachmentID=attachment_id)
     volume = common.wait_for_volume_detached(client, backup_volume_name)
 
     # Step 5, 6
-    volume.attach(hostId=host1)
+    attachment_id_1 = common.generate_attachment_ticket_id()
+    volume.attach(attachmentID=attachment_id_1, hostId=host1,
+                  attacherType=common.ATTACHER_TYPE_CSI_ATTACHER)
     volume = common.wait_for_volume_healthy(client, backup_volume_name)
 
-    volume.attach(hostId=host2)
+    attachment_id_2 = common.generate_attachment_ticket_id()
+    volume.attach(attachmentID=attachment_id_2, hostId=host2,
+                  attacherType=common.ATTACHER_TYPE_CSI_ATTACHER)
     volume = common.wait_for_volume_migration_ready(client, backup_volume_name)
 
-    volume.detach(hostId=host1)
+    volume.detach(attachmentID=attachment_id_1)
     volume = common.wait_for_volume_migration_node(client,
                                                    backup_volume_name,
                                                    host2)
 
-    volume.detach(hostId="")
+    volume.detach(attachmentID=attachment_id_2)
     volume = common.wait_for_volume_detached(client, backup_volume_name)
 
     # verify test data
@@ -462,11 +490,12 @@ def check_detached_volume_data(client, volume_name, data): # NOQA
     against the passed data.
     """
     volume = client.by_id_volume(volume_name)
-    volume.attach(hostId=common.get_self_host_id())
+    attachment_id = common.generate_attachment_ticket_id()
+    volume.attach(attachmentID=attachment_id, hostId=common.get_self_host_id())
     volume = common.wait_for_volume_healthy(client, volume_name)
     common.check_volume_data(volume, data)
 
-    volume.detach(hostId="")
+    volume.detach(attachmentID=attachment_id)
     volume = common.wait_for_volume_detached(client, volume_name)
 
 
@@ -481,13 +510,14 @@ def setup_migration_test(clients, volume_name, backing_image="", replica_cnt=REP
                                   backingImage=backing_image,
                                   accessMode="rwx", migratable=True)
     volume = common.wait_for_volume_detached(client, volume_name)
-    volume.attach(hostId=common.get_self_host_id())
+    attachment_id = common.generate_attachment_ticket_id()
+    volume.attach(attachmentID=attachment_id, hostId=common.get_self_host_id())
     volume = common.wait_for_volume_healthy(client, volume_name)
 
     # write test data
     data = common.write_volume_random_data(volume)
     common.check_volume_data(volume, data)
 
-    volume.detach(hostId="")
+    volume.detach(attachmentID=attachment_id)
     volume = common.wait_for_volume_detached(client, volume_name)
     return client, volume, data

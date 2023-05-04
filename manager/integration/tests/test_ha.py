@@ -263,15 +263,15 @@ def ha_salvage_test(client, core_api, # NOQA
     assert volume.replicas[1].failedAt != ""
 
     volume = wait_for_volume_detached(client, volume_name)
+    volume = common.wait_for_volume_faulted(client, volume_name)
 
     volume.salvage(names=[replica0_name, replica1_name])
+    volume = client.by_id_volume(volume_name)
 
-    volume = common.wait_for_volume_detached_unknown(client, volume_name)
     assert len(volume.replicas) == 2
     assert volume.replicas[0].failedAt == ""
     assert volume.replicas[1].failedAt == ""
 
-    volume = volume.attach(hostId=host_id)
     volume = wait_for_volume_healthy(client, volume_name)
 
     check_volume_data(volume, data)
@@ -304,15 +304,15 @@ def ha_salvage_test(client, core_api, # NOQA
     assert volume.replicas[1].failedAt != ""
 
     volume = common.wait_for_volume_detached(client, volume_name)
+    volume = common.wait_for_volume_faulted(client, volume_name)
 
     volume.salvage(names=[replica0_name, replica1_name])
+    volume = client.by_id_volume(volume_name)
 
-    volume = common.wait_for_volume_detached_unknown(client, volume_name)
     assert len(volume.replicas) == 2
     assert volume.replicas[0].failedAt == ""
     assert volume.replicas[1].failedAt == ""
 
-    volume.attach(hostId=host_id)
     volume = wait_for_volume_healthy(client, volume_name)
 
     check_volume_data(volume, data)
@@ -479,7 +479,7 @@ def ha_backup_deletion_recovery_test(client, volume_name, size, backing_image=""
 
     ha_rebuild_replica_test(client, res_name)
 
-    res_volume = res_volume.detach(hostId="")
+    res_volume = res_volume.detach()
     res_volume = wait_for_volume_detached(client, res_name)
 
     client.delete(res_volume)
@@ -2800,7 +2800,7 @@ def test_engine_image_not_fully_deployed_perform_volume_operations(client, core_
 
     assert snapMap[snap1.name].name == snap1.name
 
-    volume1.detach(hostId="")
+    volume1.detach()
     volume1 = wait_for_volume_detached(client, volume1.name)
 
     can_not_attach = False
@@ -2870,7 +2870,7 @@ def test_engine_image_not_fully_deployed_perform_engine_upgrade(client, core_api
         prepare_engine_not_fully_deployed_environment_with_volumes(client,
                                                                    core_api)
 
-    volume1.detach(hostId="")
+    volume1.detach()
     volume1 = wait_for_volume_detached(client, volume1.name)
 
     engine_upgrade_image, new_img = \

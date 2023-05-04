@@ -573,7 +573,7 @@ def test_xfs_pv_existing_volume(client, core_api, pod_manifest):  # NOQA
     cmd = ['mkfs.xfs', get_volume_endpoint(volume)]
     subprocess.check_call(cmd)
 
-    volume = volume.detach(hostId="")
+    volume = volume.detach()
 
     volume = wait_for_volume_detached(client, volume_name)
 
