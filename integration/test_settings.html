@@ -94,7 +94,7 @@ def check_workload_update(core_api, apps_api, count):  # NOQA
     im_pod_list = core_api.list_namespaced_pod(
         LONGHORN_NAMESPACE,
         label_selector=&#34;longhorn.io/component=instance-manager&#34;).items
-    if len(im_pod_list) != 2 * count:
+    if len(im_pod_list) != count:
         return False
 
     for p in im_pod_list:
@@ -1352,7 +1352,7 @@ def test_setting_update_with_invalid_value_via_configmap(core_api, request):  # 
     im_pod_list = core_api.list_namespaced_pod(
         LONGHORN_NAMESPACE,
         label_selector=&#34;longhorn.io/component=instance-manager&#34;).items
-    if len(im_pod_list) != 2 * count:
+    if len(im_pod_list) != count:
         return False
 
     for p in im_pod_list:
