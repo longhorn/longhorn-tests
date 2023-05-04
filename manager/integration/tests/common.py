@@ -167,7 +167,6 @@ SETTING_GUARANTEED_ENGINE_CPU = "guaranteed-engine-cpu"
 SETTING_GUARANTEED_ENGINE_MANAGER_CPU = "guaranteed-engine-manager-cpu"
 SETTING_GUARANTEED_REPLICA_MANAGER_CPU = "guaranteed-replica-manager-cpu"
 SETTING_GUARANTEED_INSTANCE_MANAGER_CPU = "guaranteed-instance-manager-cpu"
-SETTING_MKFS_EXT4_PARAMS = "mkfs-ext4-parameters"
 SETTING_PRIORITY_CLASS = "priority-class"
 SETTING_RECURRING_JOB_WHILE_VOLUME_DETACHED = \
     "allow-recurring-job-while-volume-detached"
@@ -2592,11 +2591,8 @@ def get_upgrade_test_image(cli_v, cli_minv,
                                      data_v, data_minv)
 
 
-def prepare_host_disk(dev, vol_name, mkfs_ext4_options=""):
-    if mkfs_ext4_options == "":
-        cmd = ['mkfs.ext4', dev]
-    else:
-        cmd = ['mkfs.ext4', mkfs_ext4_options, dev]
+def prepare_host_disk(dev, vol_name):
+    cmd = ['mkfs.ext4', dev]
     subprocess.check_call(cmd)
 
     mount_path = os.path.join(DIRECTORY_PATH, vol_name)
@@ -5569,13 +5565,8 @@ def create_host_disk(client, vol_name, size, node_id):
     # create a single replica volume and attach it to node
     volume = create_volume(client, vol_name, size, node_id, 1)
 
-    mkfs_ext4_settings = client.by_id_setting(SETTING_MKFS_EXT4_PARAMS)
-    mkfs_ext4_options = mkfs_ext4_settings.value
-
     # prepare the disk in the host filesystem
-    disk_path = prepare_host_disk(get_volume_endpoint(volume),
-                                  volume.name,
-                                  mkfs_ext4_options)
+    disk_path = prepare_host_disk(get_volume_endpoint(volume), volume.name)
     return disk_path
 
 
