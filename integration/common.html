@@ -195,7 +195,6 @@ SETTING_GUARANTEED_ENGINE_CPU = &#34;guaranteed-engine-cpu&#34;
 SETTING_GUARANTEED_ENGINE_MANAGER_CPU = &#34;guaranteed-engine-manager-cpu&#34;
 SETTING_GUARANTEED_REPLICA_MANAGER_CPU = &#34;guaranteed-replica-manager-cpu&#34;
 SETTING_GUARANTEED_INSTANCE_MANAGER_CPU = &#34;guaranteed-instance-manager-cpu&#34;
-SETTING_MKFS_EXT4_PARAMS = &#34;mkfs-ext4-parameters&#34;
 SETTING_PRIORITY_CLASS = &#34;priority-class&#34;
 SETTING_RECURRING_JOB_WHILE_VOLUME_DETACHED = \
     &#34;allow-recurring-job-while-volume-detached&#34;
@@ -2620,11 +2619,8 @@ def get_upgrade_test_image(cli_v, cli_minv,
                                      data_v, data_minv)
 
 
-def prepare_host_disk(dev, vol_name, mkfs_ext4_options=&#34;&#34;):
-    if mkfs_ext4_options == &#34;&#34;:
-        cmd = [&#39;mkfs.ext4&#39;, dev]
-    else:
-        cmd = [&#39;mkfs.ext4&#39;, mkfs_ext4_options, dev]
+def prepare_host_disk(dev, vol_name):
+    cmd = [&#39;mkfs.ext4&#39;, dev]
     subprocess.check_call(cmd)
 
     mount_path = os.path.join(DIRECTORY_PATH, vol_name)
@@ -5597,13 +5593,8 @@ def create_host_disk(client, vol_name, size, node_id):
     # create a single replica volume and attach it to node
     volume = create_volume(client, vol_name, size, node_id, 1)
 
-    mkfs_ext4_settings = client.by_id_setting(SETTING_MKFS_EXT4_PARAMS)
-    mkfs_ext4_options = mkfs_ext4_settings.value
-
     # prepare the disk in the host filesystem
-    disk_path = prepare_host_disk(get_volume_endpoint(volume),
-                                  volume.name,
-                                  mkfs_ext4_options)
+    disk_path = prepare_host_disk(get_volume_endpoint(volume), volume.name)
     return disk_path
 
 
@@ -7382,13 +7373,8 @@ backup</p></div>
     # create a single replica volume and attach it to node
     volume = create_volume(client, vol_name, size, node_id, 1)
 
-    mkfs_ext4_settings = client.by_id_setting(SETTING_MKFS_EXT4_PARAMS)
-    mkfs_ext4_options = mkfs_ext4_settings.value
-
     # prepare the disk in the host filesystem
-    disk_path = prepare_host_disk(get_volume_endpoint(volume),
-                                  volume.name,
-                                  mkfs_ext4_options)
+    disk_path = prepare_host_disk(get_volume_endpoint(volume), volume.name)
     return disk_path</code></pre>
 </details>
 </dd>
@@ -10191,7 +10177,7 @@ def pod_make(request):
 </details>
 </dd>
 <dt id="tests.common.prepare_host_disk"><code class="name flex">
-<span>def <span class="ident">prepare_host_disk</span></span>(<span>dev, vol_name, mkfs_ext4_options='')</span>
+<span>def <span class="ident">prepare_host_disk</span></span>(<span>dev, vol_name)</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -10199,11 +10185,8 @@ def pod_make(request):
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def prepare_host_disk(dev, vol_name, mkfs_ext4_options=&#34;&#34;):
-    if mkfs_ext4_options == &#34;&#34;:
-        cmd = [&#39;mkfs.ext4&#39;, dev]
-    else:
-        cmd = [&#39;mkfs.ext4&#39;, mkfs_ext4_options, dev]
+<pre><code class="python">def prepare_host_disk(dev, vol_name):
+    cmd = [&#39;mkfs.ext4&#39;, dev]
     subprocess.check_call(cmd)
 
     mount_path = os.path.join(DIRECTORY_PATH, vol_name)
