@@ -4096,11 +4096,16 @@ def wait_and_get_pv_for_pvc(api, pvc_name):
     return pv
 
 
-def wait_for_volume_expansion(longhorn_api_client, volume_name):
+def wait_for_volume_expansion(longhorn_api_client,
+                              volume_name,
+                              expected_size=&#34;&#34;):
     complete = False
     for i in range(RETRY_COUNTS):
         volume = longhorn_api_client.by_id_volume(volume_name)
         engine = get_volume_engine(volume)
+        if expected_size != &#34;&#34; and engine.size != expected_size:
+            time.sleep(RETRY_INTERVAL)
+            continue
         if engine.size == volume.size:
             complete = True
             break
@@ -13570,7 +13575,7 @@ ref: <a href="https://github.com/longhorn/longhorn/issues/4814">https://github.c
 </details>
 </dd>
 <dt id="tests.common.wait_for_volume_expansion"><code class="name flex">
-<span>def <span class="ident">wait_for_volume_expansion</span></span>(<span>longhorn_api_client, volume_name)</span>
+<span>def <span class="ident">wait_for_volume_expansion</span></span>(<span>longhorn_api_client, volume_name, expected_size='')</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -13578,11 +13583,16 @@ ref: <a href="https://github.com/longhorn/longhorn/issues/4814">https://github.c
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def wait_for_volume_expansion(longhorn_api_client, volume_name):
+<pre><code class="python">def wait_for_volume_expansion(longhorn_api_client,
+                              volume_name,
+                              expected_size=&#34;&#34;):
     complete = False
     for i in range(RETRY_COUNTS):
         volume = longhorn_api_client.by_id_volume(volume_name)
         engine = get_volume_engine(volume)
+        if expected_size != &#34;&#34; and engine.size != expected_size:
+            time.sleep(RETRY_INTERVAL)
+            continue
         if engine.size == volume.size:
             complete = True
             break

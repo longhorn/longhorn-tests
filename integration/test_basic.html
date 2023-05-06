@@ -2525,7 +2525,7 @@ def test_engine_image_daemonset_restart(client, apps_api, volume_name):  # NOQA
 
 
 @pytest.mark.coretest  # NOQA
-def test_expansion_canceling(client, core_api, volume_name, pod):  # NOQA
+def test_expansion_canceling(client, core_api, volume_name, pod, pvc, storage_class):  # NOQA
     &#34;&#34;&#34;
     Test expansion canceling
 
@@ -2546,20 +2546,27 @@ def test_expansion_canceling(client, core_api, volume_name, pod):  # NOQA
     13. Validate the volume content, then check if data writing looks fine
     14. Clean up pod, PVC, and PV
     &#34;&#34;&#34;
-    expansion_pvc_name = &#34;pvc-&#34; + volume_name
-    expansion_pv_name = &#34;pv-&#34; + volume_name
-    pod_name = &#34;pod-&#34; + volume_name
-    volume = create_and_check_volume(client, volume_name, 2, SIZE)
-    create_pv_for_volume(client, core_api, volume, expansion_pv_name)
-    create_pvc_for_volume(client, core_api, volume, expansion_pvc_name)
+    storage_class[&#39;parameters&#39;][&#39;numberOfReplicas&#39;] = &#34;2&#34;
+    create_storage_class(storage_class)
+
+    pod_name = &#39;expand-canceling-test&#39;
+    expansion_pvc_name = pod_name + &#34;-pvc&#34;
+    pvc[&#39;metadata&#39;][&#39;name&#39;] = expansion_pvc_name
+    pvc[&#39;spec&#39;][&#39;storageClassName&#39;] = storage_class[&#39;metadata&#39;][&#39;name&#39;]
+    pvc[&#39;spec&#39;][&#39;resources&#39;][&#39;requests&#39;][&#39;storage&#39;] = SIZE
+    common.create_pvc(pvc)
+
     pod[&#39;metadata&#39;][&#39;name&#39;] = pod_name
     pod[&#39;spec&#39;][&#39;volumes&#39;] = [{
         &#39;name&#39;: pod[&#39;spec&#39;][&#39;containers&#39;][0][&#39;volumeMounts&#39;][0][&#39;name&#39;],
-        &#39;persistentVolumeClaim&#39;: {
-            &#39;claimName&#39;: expansion_pvc_name,
-        },
+        &#39;persistentVolumeClaim&#39;: {&#39;claimName&#39;: expansion_pvc_name},
     }]
     create_and_wait_pod(core_api, pod)
+
+    pv = common.wait_and_get_pv_for_pvc(core_api, expansion_pvc_name)
+    assert pv.status.phase == &#34;Bound&#34;
+    expansion_pv_name = pv.metadata.name
+    volume_name = pv.spec.csi.volume_handle
 
     # Step 3: Prepare to fail offline expansion for one replica
     volume = client.by_id_volume(volume_name)
@@ -2773,7 +2780,7 @@ def test_running_volume_with_scheduling_failure(
 
 @pytest.mark.coretest  # NOQA
 def test_expansion_with_scheduling_failure(
-        client, core_api, volume_name, pod):  # NOQA
+        client, core_api, volume_name, pod, pvc, storage_class):  # NOQA
     &#34;&#34;&#34;
     Test if the running volume with scheduling failure
     can be expanded after the detachment.
@@ -2818,22 +2825,27 @@ def test_expansion_with_scheduling_failure(
     client.update(replica_node_soft_anti_affinity_setting, value=&#34;false&#34;)
 
     data_path1 = &#34;/data/test1&#34;
-    test_pv_name = &#34;pv-&#34; + volume_name
-    test_pvc_name = &#34;pvc-&#34; + volume_name
-    test_pod_name = &#34;pod-&#34; + volume_name
+    pvc[&#39;spec&#39;][&#39;resources&#39;][&#39;requests&#39;][&#39;storage&#39;] = str(300 * Mi)
+    create_storage_class(storage_class)
 
-    volume = create_and_check_volume(client, volume_name, size=str(300 * Mi))
-    create_pv_for_volume(client, core_api, volume, test_pv_name)
-    create_pvc_for_volume(client, core_api, volume, test_pvc_name)
+    test_pod_name = &#39;expand-scheduling-failed-test&#39;
+    test_pvc_name = test_pod_name + &#34;-pvc&#34;
+    pvc[&#39;metadata&#39;][&#39;name&#39;] = test_pvc_name
+    pvc[&#39;spec&#39;][&#39;storageClassName&#39;] = storage_class[&#39;metadata&#39;][&#39;name&#39;]
+    common.create_pvc(pvc)
 
     pod[&#39;metadata&#39;][&#39;name&#39;] = test_pod_name
     pod[&#39;spec&#39;][&#39;volumes&#39;] = [{
         &#39;name&#39;: pod[&#39;spec&#39;][&#39;containers&#39;][0][&#39;volumeMounts&#39;][0][&#39;name&#39;],
-        &#39;persistentVolumeClaim&#39;: {
-            &#39;claimName&#39;: test_pvc_name,
-        },
+        &#39;persistentVolumeClaim&#39;: {&#39;claimName&#39;: test_pvc_name},
     }]
     create_and_wait_pod(core_api, pod)
+
+    pv = common.wait_and_get_pv_for_pvc(core_api, test_pvc_name)
+    assert pv.status.phase == &#34;Bound&#34;
+    test_pv_name = pv.metadata.name
+    volume_name = pv.spec.csi.volume_handle
+
     wait_for_volume_healthy(client, volume_name)
     write_pod_volume_random_data(core_api, test_pod_name,
                                  data_path1, DATA_SIZE_IN_MB_1)
@@ -2895,7 +2907,7 @@ def test_expansion_with_scheduling_failure(
 
     expanded_size = str(400 * Mi)
     volume.expand(size=expanded_size)
-    wait_for_volume_expansion(client, volume_name)
+    wait_for_volume_expansion(client, volume_name, expanded_size)
     volume = wait_for_volume_detached(client, volume_name)
     assert volume.size == expanded_size
     assert len(volume.replicas) == 2
@@ -9252,7 +9264,7 @@ def test_expansion_basic(client, volume_name):  # NOQA
 </details>
 </dd>
 <dt id="tests.test_basic.test_expansion_canceling"><code class="name flex">
-<span>def <span class="ident">test_expansion_canceling</span></span>(<span>client, core_api, volume_name, pod)</span>
+<span>def <span class="ident">test_expansion_canceling</span></span>(<span>client, core_api, volume_name, pod, pvc, storage_class)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Test expansion canceling</p>
@@ -9279,7 +9291,7 @@ so that the following online expansion will fail</li>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">@pytest.mark.coretest  # NOQA
-def test_expansion_canceling(client, core_api, volume_name, pod):  # NOQA
+def test_expansion_canceling(client, core_api, volume_name, pod, pvc, storage_class):  # NOQA
     &#34;&#34;&#34;
     Test expansion canceling
 
@@ -9300,20 +9312,27 @@ def test_expansion_canceling(client, core_api, volume_name, pod):  # NOQA
     13. Validate the volume content, then check if data writing looks fine
     14. Clean up pod, PVC, and PV
     &#34;&#34;&#34;
-    expansion_pvc_name = &#34;pvc-&#34; + volume_name
-    expansion_pv_name = &#34;pv-&#34; + volume_name
-    pod_name = &#34;pod-&#34; + volume_name
-    volume = create_and_check_volume(client, volume_name, 2, SIZE)
-    create_pv_for_volume(client, core_api, volume, expansion_pv_name)
-    create_pvc_for_volume(client, core_api, volume, expansion_pvc_name)
+    storage_class[&#39;parameters&#39;][&#39;numberOfReplicas&#39;] = &#34;2&#34;
+    create_storage_class(storage_class)
+
+    pod_name = &#39;expand-canceling-test&#39;
+    expansion_pvc_name = pod_name + &#34;-pvc&#34;
+    pvc[&#39;metadata&#39;][&#39;name&#39;] = expansion_pvc_name
+    pvc[&#39;spec&#39;][&#39;storageClassName&#39;] = storage_class[&#39;metadata&#39;][&#39;name&#39;]
+    pvc[&#39;spec&#39;][&#39;resources&#39;][&#39;requests&#39;][&#39;storage&#39;] = SIZE
+    common.create_pvc(pvc)
+
     pod[&#39;metadata&#39;][&#39;name&#39;] = pod_name
     pod[&#39;spec&#39;][&#39;volumes&#39;] = [{
         &#39;name&#39;: pod[&#39;spec&#39;][&#39;containers&#39;][0][&#39;volumeMounts&#39;][0][&#39;name&#39;],
-        &#39;persistentVolumeClaim&#39;: {
-            &#39;claimName&#39;: expansion_pvc_name,
-        },
+        &#39;persistentVolumeClaim&#39;: {&#39;claimName&#39;: expansion_pvc_name},
     }]
     create_and_wait_pod(core_api, pod)
+
+    pv = common.wait_and_get_pv_for_pvc(core_api, expansion_pvc_name)
+    assert pv.status.phase == &#34;Bound&#34;
+    expansion_pv_name = pv.metadata.name
+    volume_name = pv.spec.csi.volume_handle
 
     # Step 3: Prepare to fail offline expansion for one replica
     volume = client.by_id_volume(volume_name)
@@ -9395,7 +9414,7 @@ def test_expansion_canceling(client, core_api, volume_name, pod):  # NOQA
 </details>
 </dd>
 <dt id="tests.test_basic.test_expansion_with_scheduling_failure"><code class="name flex">
-<span>def <span class="ident">test_expansion_with_scheduling_failure</span></span>(<span>client, core_api, volume_name, pod)</span>
+<span>def <span class="ident">test_expansion_with_scheduling_failure</span></span>(<span>client, core_api, volume_name, pod, pvc, storage_class)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Test if the running volume with scheduling failure
@@ -9440,7 +9459,7 @@ those of the case test_running_volume_with_scheduling_failure().</p></div>
 </summary>
 <pre><code class="python">@pytest.mark.coretest  # NOQA
 def test_expansion_with_scheduling_failure(
-        client, core_api, volume_name, pod):  # NOQA
+        client, core_api, volume_name, pod, pvc, storage_class):  # NOQA
     &#34;&#34;&#34;
     Test if the running volume with scheduling failure
     can be expanded after the detachment.
@@ -9485,22 +9504,27 @@ def test_expansion_with_scheduling_failure(
     client.update(replica_node_soft_anti_affinity_setting, value=&#34;false&#34;)
 
     data_path1 = &#34;/data/test1&#34;
-    test_pv_name = &#34;pv-&#34; + volume_name
-    test_pvc_name = &#34;pvc-&#34; + volume_name
-    test_pod_name = &#34;pod-&#34; + volume_name
+    pvc[&#39;spec&#39;][&#39;resources&#39;][&#39;requests&#39;][&#39;storage&#39;] = str(300 * Mi)
+    create_storage_class(storage_class)
 
-    volume = create_and_check_volume(client, volume_name, size=str(300 * Mi))
-    create_pv_for_volume(client, core_api, volume, test_pv_name)
-    create_pvc_for_volume(client, core_api, volume, test_pvc_name)
+    test_pod_name = &#39;expand-scheduling-failed-test&#39;
+    test_pvc_name = test_pod_name + &#34;-pvc&#34;
+    pvc[&#39;metadata&#39;][&#39;name&#39;] = test_pvc_name
+    pvc[&#39;spec&#39;][&#39;storageClassName&#39;] = storage_class[&#39;metadata&#39;][&#39;name&#39;]
+    common.create_pvc(pvc)
 
     pod[&#39;metadata&#39;][&#39;name&#39;] = test_pod_name
     pod[&#39;spec&#39;][&#39;volumes&#39;] = [{
         &#39;name&#39;: pod[&#39;spec&#39;][&#39;containers&#39;][0][&#39;volumeMounts&#39;][0][&#39;name&#39;],
-        &#39;persistentVolumeClaim&#39;: {
-            &#39;claimName&#39;: test_pvc_name,
-        },
+        &#39;persistentVolumeClaim&#39;: {&#39;claimName&#39;: test_pvc_name},
     }]
     create_and_wait_pod(core_api, pod)
+
+    pv = common.wait_and_get_pv_for_pvc(core_api, test_pvc_name)
+    assert pv.status.phase == &#34;Bound&#34;
+    test_pv_name = pv.metadata.name
+    volume_name = pv.spec.csi.volume_handle
+
     wait_for_volume_healthy(client, volume_name)
     write_pod_volume_random_data(core_api, test_pod_name,
                                  data_path1, DATA_SIZE_IN_MB_1)
@@ -9562,7 +9586,7 @@ def test_expansion_with_scheduling_failure(
 
     expanded_size = str(400 * Mi)
     volume.expand(size=expanded_size)
-    wait_for_volume_expansion(client, volume_name)
+    wait_for_volume_expansion(client, volume_name, expanded_size)
     volume = wait_for_volume_detached(client, volume_name)
     assert volume.size == expanded_size
     assert len(volume.replicas) == 2
