@@ -3202,6 +3202,9 @@ def reset_settings(client):
         if setting_name == "support-bundle-manager-image":
             continue
 
+        if setting_name == "registry-secret":
+            continue
+
         s = client.by_id_setting(setting_name)
         if s.value != setting_default_value and not setting_readonly:
             try:
@@ -4028,11 +4031,16 @@ def wait_and_get_pv_for_pvc(api, pvc_name):
     return pv
 
 
-def wait_for_volume_expansion(longhorn_api_client, volume_name):
+def wait_for_volume_expansion(longhorn_api_client,
+                              volume_name,
+                              expected_size=""):
     complete = False
     for i in range(RETRY_COUNTS):
         volume = longhorn_api_client.by_id_volume(volume_name)
         engine = get_volume_engine(volume)
+        if expected_size != "" and engine.size != expected_size:
+            time.sleep(RETRY_INTERVAL)
+            continue
         if engine.size == volume.size:
             complete = True
             break

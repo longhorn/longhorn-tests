@@ -526,8 +526,8 @@ def test_ha_recovery_with_expansion(client, volume_name, request):   # NOQA
     8. Wait volume to start rebuilding and complete
     9. Check the data intacty
     """
-    original_size = str(1 * Gi)
-    expand_size = str(2 * Gi)
+    original_size = str(3 * Gi)
+    expand_size = str(4 * Gi)
     volume = create_and_check_volume(client, volume_name, 2, original_size)
 
     host_id = get_self_host_id()
@@ -550,11 +550,11 @@ def test_ha_recovery_with_expansion(client, volume_name, request):   # NOQA
 
     # Step 2: prepare data then copy it into the volume
     write_volume_dev_random_mb_data(
-        tmp_file_path, 0, DATA_SIZE_IN_MB_4)
+        tmp_file_path, 0, DATA_SIZE_IN_MB_4*3)
     cksum1 = get_volume_dev_mb_data_md5sum(
-        tmp_file_path, 0, DATA_SIZE_IN_MB_4)
+        tmp_file_path, 0, DATA_SIZE_IN_MB_4*3)
     copy_file_to_volume_dev_mb_data(
-        tmp_file_path, volume_path, 0, 0, DATA_SIZE_IN_MB_4)
+        tmp_file_path, volume_path, 0, 0, DATA_SIZE_IN_MB_4*3)
 
     # Step 3: Trigger volume rebuilding first
     volume.replicaRemove(name=replica0.name)
@@ -585,10 +585,10 @@ def test_ha_recovery_with_expansion(client, volume_name, request):   # NOQA
     check_block_device_size(volume, int(expand_size))
 
     volume_cksum1 = get_volume_dev_mb_data_md5sum(
-        volume_path, 0, DATA_SIZE_IN_MB_4)
+        volume_path, 0, DATA_SIZE_IN_MB_4*3)
     assert cksum1 == volume_cksum1
     volume_cksum2 = get_volume_dev_mb_data_md5sum(
-        volume_path, 1024, DATA_SIZE_IN_MB_4)
+        volume_path, 1024, DATA_SIZE_IN_MB_4*3)
     assert cksum2 == volume_cksum2
 
     cleanup_volume(client, volume)
