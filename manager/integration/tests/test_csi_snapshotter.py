@@ -1372,7 +1372,7 @@ def test_csi_volumesnapshot_restore_pre_provision_backing_image():
 @pytest.mark.skip(reason="TODO")
 def test_csi_volumesnapshot_restore_on_demand_backing_image():
     """
-    Test Restore Volume from CSI VolumeSnapshot with existing BackingImage
+    Test Restore Volume from CSI VolumeSnapshot with on-demand BackingImage
 
     Setup
     - Create a VolumeSnapshotClass with type `bi`
