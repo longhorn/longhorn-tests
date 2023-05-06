@@ -1215,7 +1215,271 @@ def test_csi_snapshot_with_invalid_param(
         delete_volumesnapshot(csivolsnap[&#34;metadata&#34;][&#34;name&#34;],
                               &#39;default&#39;)
 
-    request.addfinalizer(finalizer)</code></pre>
+    request.addfinalizer(finalizer)
+
+
+@pytest.mark.skip(reason=&#34;TODO&#34;)
+def test_csi_volumesnapshot_backing_image_basic():
+    &#34;&#34;&#34;
+    Test Create/Delete BackingImage using VolumeSnapshot with a given Volume
+
+    Note [Need to remove once done]:
+    While implementing this we can create a fixture module level to
+    create a volume and have some data.
+    We can use this fixture in other tests too and
+    that will be cleaned up once all the test cases related
+    to csi_snapshotter has run.
+
+    Setup
+    - Create a VolumeSnapshotClass with type `bi`
+        ```
+        kind: VolumeSnapshotClass
+        apiVersion: snapshot.storage.k8s.io/v1
+        metadata:
+            name: longhorn-snapshot-vsc
+        driver: driver.longhorn.io
+        deletionPolicy: Delete
+        parameters:
+            type: bi
+        ```
+
+    Given
+    - The Volume attached to a workload, having data and computed md5sum.
+
+    When
+    - Creating the VolumeSnapshot
+        ```
+        apiVersion: snapshot.storage.k8s.io/v1beta1
+        kind: VolumeSnapshot
+        metadata:
+            name: test-snapshot-backing
+        spec:
+            volumeSnapshotClassName: longhorn-snapshot-vsc
+            source:
+                persistentVolumeClaimName: test-vol
+        ```
+
+    Then
+    - A BackingImage is created with the following properties
+        ```
+        apiVersion: longhorn.io/v1beta2
+        kind: BackingImage
+        metadata:
+            name: `snapshot-${VolumeSnapshot.uuid}`
+            namespace: longhorn-system
+        spec:
+            sourceType: export-from-volume
+            sourceParameters:
+                volume-name: test-vol
+                export-type: raw
+        ```
+
+    When
+    - Creating a PVC with dataSource pointing to the VolumeSnapshot
+        ```
+        apiVersion: v1
+        kind: PersistentVolumeClaim
+        metadata:
+            name: test-restore-pvc
+        spec:
+            storageClassName: longhorn
+            dataSource:
+                name: test-snapshot-backing
+                kind: VolumeSnapshot
+                apiGroup: snapshot.storage.k8s.io
+            accessModes:
+                - ReadWriteOnce
+            resources:
+                requests:
+                storage: 5Gi
+        ```
+
+    Then
+    - A Volume is created using BackingImage snapshot-${VolumeSnapshot.uuid}
+    - Verifying the data and md5sum in the new Volume
+
+    When
+    - Delete the new Volume from the the VolumeSnapshot
+    - Delete the VolumeSnapshot
+        ```
+        &gt; kubectl delete vs/test-snapshot-backing
+        ```
+
+    Then
+    - The BackingImage is deleted as well
+    &#34;&#34;&#34;
+    pass
+
+
+@pytest.mark.skip(reason=&#34;TODO&#34;)
+def test_csi_volumesnapshot_restore_pre_provision_backing_image():
+    &#34;&#34;&#34;
+    Test Restore Volume from CSI VolumeSnapshot with existing BackingImage
+
+    Setup
+    - Create a VolumeSnapshotClass with type `bi`
+        ```
+        kind: VolumeSnapshotClass
+        apiVersion: snapshot.storage.k8s.io/v1
+        metadata:
+            name: longhorn-snapshot-vsc
+        driver: driver.longhorn.io
+        deletionPolicy: Delete
+        parameters:
+            type: bi
+        ```
+
+    Given
+    - Creating a BackingImage
+        ```
+        apiVersion: longhorn.io/v1beta2
+        kind: BackingImage
+        metadata:
+            name: test-bi
+            namespace: longhorn-system
+        spec:
+            sourceType: download
+            sourceParameters:
+                url: https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2  # NOQA
+            checksum: bd79ab9e6d45abf4f3f0adf552a868074dd235c4698ce7258d521160e0ad79ffe555b94e7d4007add6e1a25f4526885eb25c53ce38f7d344dd4925b9f2cb5d3b  # NOQA
+        ```
+    - Creating VolumeSnapshotContent and VolumeSnapshot to associate with the BackingImage
+        ```
+        apiVersion: snapshot.storage.k8s.io/v1
+        kind: VolumeSnapshotContent
+            metadata:
+            name: test-existing-backing
+        spec:
+            volumeSnapshotClassName: longhorn-snapshot-vsc
+            driver: driver.longhorn.io
+            deletionPolicy: Delete
+            source:
+                snapshotHandle: bi://backing?backingImageDataSourceType=download&amp;backingImage=test-bi&amp;url=https%3A%2F%2Flonghorn-backing-image.s3-us-west-1.amazonaws.com%2Fparrot.qcow2&amp;backingImageChecksum=bd79ab9e6d45abf4f3f0adf552a868074dd235c4698ce7258d521160e0ad79ffe555b94e7d4007add6e1a25f4526885eb25c53ce38f7d344dd4925b9f2cb5d3b  # NOQA
+            volumeSnapshotRef:
+                name: test-snapshot-existing-backing
+                namespace: default
+        ```
+
+        ```
+        apiVersion: snapshot.storage.k8s.io/v1beta1
+        kind: VolumeSnapshot
+        metadata:
+            name: test-snapshot-existing-backing
+        spec:
+            volumeSnapshotClassName: longhorn-snapshot-vsc
+            source:
+                volumeSnapshotContentName: test-existing-backing
+        ```
+    When
+    - Creating the PVC
+        ```
+        apiVersion: v1
+        kind: PersistentVolumeClaim
+        metadata:
+            name: test-restore-existing-backing
+        spec:
+            storageClassName: longhorn
+            dataSource:
+                name: test-snapshot-existing-backing
+                kind: VolumeSnapshot
+                apiGroup: snapshot.storage.k8s.io
+            accessModes:
+                - ReadWriteOnce
+            resources:
+                requests:
+                    storage: 5Gi
+        ```
+
+    Then
+    - A Volume is created using the BackingImage `test-bi`
+    - Verify the data (Directories of the backing images) exists in the mount point.
+    &#34;&#34;&#34;
+    pass
+
+
+@pytest.mark.skip(reason=&#34;TODO&#34;)
+def test_csi_volumesnapshot_restore_on_demand_backing_image():
+    &#34;&#34;&#34;
+    Test Restore Volume from CSI VolumeSnapshot with on-demand BackingImage
+
+    Setup
+    - Create a VolumeSnapshotClass with type `bi`
+        ```
+        kind: VolumeSnapshotClass
+        apiVersion: snapshot.storage.k8s.io/v1
+        metadata:
+            name: longhorn-snapshot-vsc
+        driver: driver.longhorn.io
+        deletionPolicy: Delete
+        parameters:
+            type: bi
+        ```
+
+    Given
+    - Creating VolumeSnapshotContent and VolumeSnapshot to associate with the BackingImage  # NOQA
+        ```
+        apiVersion: snapshot.storage.k8s.io/v1
+        kind: VolumeSnapshotContent
+        metadata:
+            name: test-on-demand-backing
+        spec:
+            volumeSnapshotClassName: longhorn-snapshot-vsc
+            driver: driver.longhorn.io
+            deletionPolicy: Delete
+            source:
+                snapshotHandle: bi://backing?backingImageDataSourceType=download&amp;backingImage=test-bi&amp;url=https%3A%2F%2Flonghorn-backing-image.s3-us-west-1.amazonaws.com%2Fparrot.qcow2&amp;backingImageChecksum=bd79ab9e6d45abf4f3f0adf552a868074dd235c4698ce7258d521160e0ad79ffe555b94e7d4007add6e1a25f4526885eb25c53ce38f7d344dd4925b9f2cb5d3b  # NOQA
+            volumeSnapshotRef:
+                name: test-snapshot-on-demand-backing
+                namespace: default
+        ```
+
+        ```
+        apiVersion: snapshot.storage.k8s.io/v1beta1
+        kind: VolumeSnapshot
+        metadata:
+            name: test-snapshot-on-demand-backing
+        spec:
+            volumeSnapshotClassName: longhorn-snapshot-vsc
+            source:
+                volumeSnapshotContentName: test-on-demand-backing
+        ```
+    When
+    - Creating the PVC
+        ```
+        apiVersion: v1
+        kind: PersistentVolumeClaim
+        metadata:
+            name: test-restore-on-demand-backing
+        spec:
+            storageClassName: longhorn
+            dataSource:
+                name: test-snapshot-on-demand-backing
+                kind: VolumeSnapshot
+                apiGroup: snapshot.storage.k8s.io
+            accessModes:
+                - ReadWriteOnce
+            resources:
+                requests:
+                    storage: 5Gi
+        ```
+    Then
+    - A BackingImage is created
+        ```
+        apiVersion: longhorn.io/v1beta2
+        kind: BackingImage
+        metadata:
+            name: test-bi
+            namespace: longhorn-system
+        spec:
+            sourceType: download
+            sourceParameters:
+                url: https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2  # NOQA
+            checksum: bd79ab9e6d45abf4f3f0adf552a868074dd235c4698ce7258d521160e0ad79ffe555b94e7d4007add6e1a25f4526885eb25c53ce38f7d344dd4925b9f2cb5d3b  # NOQA
+        ```
+    - A Volume is created using the BackingImage `test-bi`
+    - Verify the data (Directories of the backing images) exists in the mount point.
+    &#34;&#34;&#34;
+    pass</code></pre>
 </details>
 </section>
 <section>
@@ -2174,6 +2438,174 @@ csi-snapshot-support/enable-csi-snapshot-support/</p>
     request.addfinalizer(finalizer)</code></pre>
 </details>
 </dd>
+<dt id="tests.test_csi_snapshotter.test_csi_volumesnapshot_backing_image_basic"><code class="name flex">
+<span>def <span class="ident">test_csi_volumesnapshot_backing_image_basic</span></span>(<span>)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test Create/Delete BackingImage using VolumeSnapshot with a given Volume</p>
+<p>Note [Need to remove once done]:
+While implementing this we can create a fixture module level to
+create a volume and have some data.
+We can use this fixture in other tests too and
+that will be cleaned up once all the test cases related
+to csi_snapshotter has run.</p>
+<p>Setup
+- Create a VolumeSnapshotClass with type <code>bi</code>
+<code>kind: VolumeSnapshotClass
+apiVersion: snapshot.storage.k8s.io/v1
+metadata:
+name: longhorn-snapshot-vsc
+driver: driver.longhorn.io
+deletionPolicy: Delete
+parameters:
+type: bi</code></p>
+<p>Given
+- The Volume attached to a workload, having data and computed md5sum.</p>
+<p>When
+- Creating the VolumeSnapshot
+<code>apiVersion: snapshot.storage.k8s.io/v1beta1
+kind: VolumeSnapshot
+metadata:
+name: test-snapshot-backing
+spec:
+volumeSnapshotClassName: longhorn-snapshot-vsc
+source:
+persistentVolumeClaimName: test-vol</code></p>
+<p>Then
+- A BackingImage is created with the following properties
+<code>apiVersion: longhorn.io/v1beta2
+kind: BackingImage
+metadata:
+name: `snapshot-${VolumeSnapshot.uuid}`
+namespace: longhorn-system
+spec:
+sourceType: export-from-volume
+sourceParameters:
+volume-name: test-vol
+export-type: raw</code></p>
+<p>When
+- Creating a PVC with dataSource pointing to the VolumeSnapshot
+<code>apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+name: test-restore-pvc
+spec:
+storageClassName: longhorn
+dataSource:
+name: test-snapshot-backing
+kind: VolumeSnapshot
+apiGroup: snapshot.storage.k8s.io
+accessModes:
+- ReadWriteOnce
+resources:
+requests:
+storage: 5Gi</code></p>
+<p>Then
+- A Volume is created using BackingImage snapshot-${VolumeSnapshot.uuid}
+- Verifying the data and md5sum in the new Volume</p>
+<p>When
+- Delete the new Volume from the the VolumeSnapshot
+- Delete the VolumeSnapshot
+<code>&gt; kubectl delete vs/test-snapshot-backing</code></p>
+<p>Then
+- The BackingImage is deleted as well</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@pytest.mark.skip(reason=&#34;TODO&#34;)
+def test_csi_volumesnapshot_backing_image_basic():
+    &#34;&#34;&#34;
+    Test Create/Delete BackingImage using VolumeSnapshot with a given Volume
+
+    Note [Need to remove once done]:
+    While implementing this we can create a fixture module level to
+    create a volume and have some data.
+    We can use this fixture in other tests too and
+    that will be cleaned up once all the test cases related
+    to csi_snapshotter has run.
+
+    Setup
+    - Create a VolumeSnapshotClass with type `bi`
+        ```
+        kind: VolumeSnapshotClass
+        apiVersion: snapshot.storage.k8s.io/v1
+        metadata:
+            name: longhorn-snapshot-vsc
+        driver: driver.longhorn.io
+        deletionPolicy: Delete
+        parameters:
+            type: bi
+        ```
+
+    Given
+    - The Volume attached to a workload, having data and computed md5sum.
+
+    When
+    - Creating the VolumeSnapshot
+        ```
+        apiVersion: snapshot.storage.k8s.io/v1beta1
+        kind: VolumeSnapshot
+        metadata:
+            name: test-snapshot-backing
+        spec:
+            volumeSnapshotClassName: longhorn-snapshot-vsc
+            source:
+                persistentVolumeClaimName: test-vol
+        ```
+
+    Then
+    - A BackingImage is created with the following properties
+        ```
+        apiVersion: longhorn.io/v1beta2
+        kind: BackingImage
+        metadata:
+            name: `snapshot-${VolumeSnapshot.uuid}`
+            namespace: longhorn-system
+        spec:
+            sourceType: export-from-volume
+            sourceParameters:
+                volume-name: test-vol
+                export-type: raw
+        ```
+
+    When
+    - Creating a PVC with dataSource pointing to the VolumeSnapshot
+        ```
+        apiVersion: v1
+        kind: PersistentVolumeClaim
+        metadata:
+            name: test-restore-pvc
+        spec:
+            storageClassName: longhorn
+            dataSource:
+                name: test-snapshot-backing
+                kind: VolumeSnapshot
+                apiGroup: snapshot.storage.k8s.io
+            accessModes:
+                - ReadWriteOnce
+            resources:
+                requests:
+                storage: 5Gi
+        ```
+
+    Then
+    - A Volume is created using BackingImage snapshot-${VolumeSnapshot.uuid}
+    - Verifying the data and md5sum in the new Volume
+
+    When
+    - Delete the new Volume from the the VolumeSnapshot
+    - Delete the VolumeSnapshot
+        ```
+        &gt; kubectl delete vs/test-snapshot-backing
+        ```
+
+    Then
+    - The BackingImage is deleted as well
+    &#34;&#34;&#34;
+    pass</code></pre>
+</details>
+</dd>
 <dt id="tests.test_csi_snapshotter.test_csi_volumesnapshot_basic"><code class="name flex">
 <span>def <span class="ident">test_csi_volumesnapshot_basic</span></span>(<span>set_random_backupstore, volumesnapshotclass, volumesnapshot, client, core_api, volume_name, csi_pv, pvc, pod_make, volsnapshotclass_delete_policy, backup_is_deleted, csi_snapshot_type=None)</span>
 </code></dt>
@@ -2498,6 +2930,336 @@ def test_csi_volumesnapshot_restore_existing_backup(set_random_backupstore, # NO
         find_backup(client, volume_name, b[&#34;snapshotName&#34;])
     else:
         wait_for_backup_delete(client, volume_name, b[&#34;name&#34;])</code></pre>
+</details>
+</dd>
+<dt id="tests.test_csi_snapshotter.test_csi_volumesnapshot_restore_on_demand_backing_image"><code class="name flex">
+<span>def <span class="ident">test_csi_volumesnapshot_restore_on_demand_backing_image</span></span>(<span>)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test Restore Volume from CSI VolumeSnapshot with on-demand BackingImage</p>
+<p>Setup
+- Create a VolumeSnapshotClass with type <code>bi</code>
+<code>kind: VolumeSnapshotClass
+apiVersion: snapshot.storage.k8s.io/v1
+metadata:
+name: longhorn-snapshot-vsc
+driver: driver.longhorn.io
+deletionPolicy: Delete
+parameters:
+type: bi</code></p>
+<p>Given
+- Creating VolumeSnapshotContent and VolumeSnapshot to associate with the BackingImage
+# NOQA
+<code>apiVersion: snapshot.storage.k8s.io/v1
+kind: VolumeSnapshotContent
+metadata:
+name: test-on-demand-backing
+spec:
+volumeSnapshotClassName: longhorn-snapshot-vsc
+driver: driver.longhorn.io
+deletionPolicy: Delete
+source:
+snapshotHandle: bi://backing?backingImageDataSourceType=download&amp;backingImage=test-bi&amp;url=https%3A%2F%2Flonghorn-backing-image.s3-us-west-1.amazonaws.com%2Fparrot.qcow2&amp;backingImageChecksum=bd79ab9e6d45abf4f3f0adf552a868074dd235c4698ce7258d521160e0ad79ffe555b94e7d4007add6e1a25f4526885eb25c53ce38f7d344dd4925b9f2cb5d3b
+# NOQA
+volumeSnapshotRef:
+name: test-snapshot-on-demand-backing
+namespace: default</code></p>
+<pre><code>```
+apiVersion: snapshot.storage.k8s.io/v1beta1
+kind: VolumeSnapshot
+metadata:
+    name: test-snapshot-on-demand-backing
+spec:
+    volumeSnapshotClassName: longhorn-snapshot-vsc
+    source:
+        volumeSnapshotContentName: test-on-demand-backing
+```
+</code></pre>
+<p>When
+- Creating the PVC
+<code>apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+name: test-restore-on-demand-backing
+spec:
+storageClassName: longhorn
+dataSource:
+name: test-snapshot-on-demand-backing
+kind: VolumeSnapshot
+apiGroup: snapshot.storage.k8s.io
+accessModes:
+- ReadWriteOnce
+resources:
+requests:
+storage: 5Gi</code>
+Then
+- A BackingImage is created
+<code>apiVersion: longhorn.io/v1beta2
+kind: BackingImage
+metadata:
+name: test-bi
+namespace: longhorn-system
+spec:
+sourceType: download
+sourceParameters:
+url: &lt;https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2&gt;
+# NOQA
+checksum: bd79ab9e6d45abf4f3f0adf552a868074dd235c4698ce7258d521160e0ad79ffe555b94e7d4007add6e1a25f4526885eb25c53ce38f7d344dd4925b9f2cb5d3b
+# NOQA</code>
+- A Volume is created using the BackingImage <code>test-bi</code>
+- Verify the data (Directories of the backing images) exists in the mount point.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@pytest.mark.skip(reason=&#34;TODO&#34;)
+def test_csi_volumesnapshot_restore_on_demand_backing_image():
+    &#34;&#34;&#34;
+    Test Restore Volume from CSI VolumeSnapshot with on-demand BackingImage
+
+    Setup
+    - Create a VolumeSnapshotClass with type `bi`
+        ```
+        kind: VolumeSnapshotClass
+        apiVersion: snapshot.storage.k8s.io/v1
+        metadata:
+            name: longhorn-snapshot-vsc
+        driver: driver.longhorn.io
+        deletionPolicy: Delete
+        parameters:
+            type: bi
+        ```
+
+    Given
+    - Creating VolumeSnapshotContent and VolumeSnapshot to associate with the BackingImage  # NOQA
+        ```
+        apiVersion: snapshot.storage.k8s.io/v1
+        kind: VolumeSnapshotContent
+        metadata:
+            name: test-on-demand-backing
+        spec:
+            volumeSnapshotClassName: longhorn-snapshot-vsc
+            driver: driver.longhorn.io
+            deletionPolicy: Delete
+            source:
+                snapshotHandle: bi://backing?backingImageDataSourceType=download&amp;backingImage=test-bi&amp;url=https%3A%2F%2Flonghorn-backing-image.s3-us-west-1.amazonaws.com%2Fparrot.qcow2&amp;backingImageChecksum=bd79ab9e6d45abf4f3f0adf552a868074dd235c4698ce7258d521160e0ad79ffe555b94e7d4007add6e1a25f4526885eb25c53ce38f7d344dd4925b9f2cb5d3b  # NOQA
+            volumeSnapshotRef:
+                name: test-snapshot-on-demand-backing
+                namespace: default
+        ```
+
+        ```
+        apiVersion: snapshot.storage.k8s.io/v1beta1
+        kind: VolumeSnapshot
+        metadata:
+            name: test-snapshot-on-demand-backing
+        spec:
+            volumeSnapshotClassName: longhorn-snapshot-vsc
+            source:
+                volumeSnapshotContentName: test-on-demand-backing
+        ```
+    When
+    - Creating the PVC
+        ```
+        apiVersion: v1
+        kind: PersistentVolumeClaim
+        metadata:
+            name: test-restore-on-demand-backing
+        spec:
+            storageClassName: longhorn
+            dataSource:
+                name: test-snapshot-on-demand-backing
+                kind: VolumeSnapshot
+                apiGroup: snapshot.storage.k8s.io
+            accessModes:
+                - ReadWriteOnce
+            resources:
+                requests:
+                    storage: 5Gi
+        ```
+    Then
+    - A BackingImage is created
+        ```
+        apiVersion: longhorn.io/v1beta2
+        kind: BackingImage
+        metadata:
+            name: test-bi
+            namespace: longhorn-system
+        spec:
+            sourceType: download
+            sourceParameters:
+                url: https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2  # NOQA
+            checksum: bd79ab9e6d45abf4f3f0adf552a868074dd235c4698ce7258d521160e0ad79ffe555b94e7d4007add6e1a25f4526885eb25c53ce38f7d344dd4925b9f2cb5d3b  # NOQA
+        ```
+    - A Volume is created using the BackingImage `test-bi`
+    - Verify the data (Directories of the backing images) exists in the mount point.
+    &#34;&#34;&#34;
+    pass</code></pre>
+</details>
+</dd>
+<dt id="tests.test_csi_snapshotter.test_csi_volumesnapshot_restore_pre_provision_backing_image"><code class="name flex">
+<span>def <span class="ident">test_csi_volumesnapshot_restore_pre_provision_backing_image</span></span>(<span>)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test Restore Volume from CSI VolumeSnapshot with existing BackingImage</p>
+<p>Setup
+- Create a VolumeSnapshotClass with type <code>bi</code>
+<code>kind: VolumeSnapshotClass
+apiVersion: snapshot.storage.k8s.io/v1
+metadata:
+name: longhorn-snapshot-vsc
+driver: driver.longhorn.io
+deletionPolicy: Delete
+parameters:
+type: bi</code></p>
+<p>Given
+- Creating a BackingImage
+<code>apiVersion: longhorn.io/v1beta2
+kind: BackingImage
+metadata:
+name: test-bi
+namespace: longhorn-system
+spec:
+sourceType: download
+sourceParameters:
+url: &lt;https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2&gt;
+# NOQA
+checksum: bd79ab9e6d45abf4f3f0adf552a868074dd235c4698ce7258d521160e0ad79ffe555b94e7d4007add6e1a25f4526885eb25c53ce38f7d344dd4925b9f2cb5d3b
+# NOQA</code>
+- Creating VolumeSnapshotContent and VolumeSnapshot to associate with the BackingImage
+<code>apiVersion: snapshot.storage.k8s.io/v1
+kind: VolumeSnapshotContent
+metadata:
+name: test-existing-backing
+spec:
+volumeSnapshotClassName: longhorn-snapshot-vsc
+driver: driver.longhorn.io
+deletionPolicy: Delete
+source:
+snapshotHandle: bi://backing?backingImageDataSourceType=download&amp;backingImage=test-bi&amp;url=https%3A%2F%2Flonghorn-backing-image.s3-us-west-1.amazonaws.com%2Fparrot.qcow2&amp;backingImageChecksum=bd79ab9e6d45abf4f3f0adf552a868074dd235c4698ce7258d521160e0ad79ffe555b94e7d4007add6e1a25f4526885eb25c53ce38f7d344dd4925b9f2cb5d3b
+# NOQA
+volumeSnapshotRef:
+name: test-snapshot-existing-backing
+namespace: default</code></p>
+<pre><code>```
+apiVersion: snapshot.storage.k8s.io/v1beta1
+kind: VolumeSnapshot
+metadata:
+    name: test-snapshot-existing-backing
+spec:
+    volumeSnapshotClassName: longhorn-snapshot-vsc
+    source:
+        volumeSnapshotContentName: test-existing-backing
+```
+</code></pre>
+<p>When
+- Creating the PVC
+<code>apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+name: test-restore-existing-backing
+spec:
+storageClassName: longhorn
+dataSource:
+name: test-snapshot-existing-backing
+kind: VolumeSnapshot
+apiGroup: snapshot.storage.k8s.io
+accessModes:
+- ReadWriteOnce
+resources:
+requests:
+storage: 5Gi</code></p>
+<p>Then
+- A Volume is created using the BackingImage <code>test-bi</code>
+- Verify the data (Directories of the backing images) exists in the mount point.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@pytest.mark.skip(reason=&#34;TODO&#34;)
+def test_csi_volumesnapshot_restore_pre_provision_backing_image():
+    &#34;&#34;&#34;
+    Test Restore Volume from CSI VolumeSnapshot with existing BackingImage
+
+    Setup
+    - Create a VolumeSnapshotClass with type `bi`
+        ```
+        kind: VolumeSnapshotClass
+        apiVersion: snapshot.storage.k8s.io/v1
+        metadata:
+            name: longhorn-snapshot-vsc
+        driver: driver.longhorn.io
+        deletionPolicy: Delete
+        parameters:
+            type: bi
+        ```
+
+    Given
+    - Creating a BackingImage
+        ```
+        apiVersion: longhorn.io/v1beta2
+        kind: BackingImage
+        metadata:
+            name: test-bi
+            namespace: longhorn-system
+        spec:
+            sourceType: download
+            sourceParameters:
+                url: https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2  # NOQA
+            checksum: bd79ab9e6d45abf4f3f0adf552a868074dd235c4698ce7258d521160e0ad79ffe555b94e7d4007add6e1a25f4526885eb25c53ce38f7d344dd4925b9f2cb5d3b  # NOQA
+        ```
+    - Creating VolumeSnapshotContent and VolumeSnapshot to associate with the BackingImage
+        ```
+        apiVersion: snapshot.storage.k8s.io/v1
+        kind: VolumeSnapshotContent
+            metadata:
+            name: test-existing-backing
+        spec:
+            volumeSnapshotClassName: longhorn-snapshot-vsc
+            driver: driver.longhorn.io
+            deletionPolicy: Delete
+            source:
+                snapshotHandle: bi://backing?backingImageDataSourceType=download&amp;backingImage=test-bi&amp;url=https%3A%2F%2Flonghorn-backing-image.s3-us-west-1.amazonaws.com%2Fparrot.qcow2&amp;backingImageChecksum=bd79ab9e6d45abf4f3f0adf552a868074dd235c4698ce7258d521160e0ad79ffe555b94e7d4007add6e1a25f4526885eb25c53ce38f7d344dd4925b9f2cb5d3b  # NOQA
+            volumeSnapshotRef:
+                name: test-snapshot-existing-backing
+                namespace: default
+        ```
+
+        ```
+        apiVersion: snapshot.storage.k8s.io/v1beta1
+        kind: VolumeSnapshot
+        metadata:
+            name: test-snapshot-existing-backing
+        spec:
+            volumeSnapshotClassName: longhorn-snapshot-vsc
+            source:
+                volumeSnapshotContentName: test-existing-backing
+        ```
+    When
+    - Creating the PVC
+        ```
+        apiVersion: v1
+        kind: PersistentVolumeClaim
+        metadata:
+            name: test-restore-existing-backing
+        spec:
+            storageClassName: longhorn
+            dataSource:
+                name: test-snapshot-existing-backing
+                kind: VolumeSnapshot
+                apiGroup: snapshot.storage.k8s.io
+            accessModes:
+                - ReadWriteOnce
+            resources:
+                requests:
+                    storage: 5Gi
+        ```
+
+    Then
+    - A Volume is created using the BackingImage `test-bi`
+    - Verify the data (Directories of the backing images) exists in the mount point.
+    &#34;&#34;&#34;
+    pass</code></pre>
 </details>
 </dd>
 <dt id="tests.test_csi_snapshotter.volumesnapshot"><code class="name flex">
@@ -2842,8 +3604,11 @@ def volumesnapshotcontent(request):
 <li><code><a title="tests.test_csi_snapshotter.test_csi_snapshot_snap_delete_csi_snapshot_volume_detached" href="#tests.test_csi_snapshotter.test_csi_snapshot_snap_delete_csi_snapshot_volume_detached">test_csi_snapshot_snap_delete_csi_snapshot_volume_detached</a></code></li>
 <li><code><a title="tests.test_csi_snapshotter.test_csi_snapshot_with_bak_param" href="#tests.test_csi_snapshotter.test_csi_snapshot_with_bak_param">test_csi_snapshot_with_bak_param</a></code></li>
 <li><code><a title="tests.test_csi_snapshotter.test_csi_snapshot_with_invalid_param" href="#tests.test_csi_snapshotter.test_csi_snapshot_with_invalid_param">test_csi_snapshot_with_invalid_param</a></code></li>
+<li><code><a title="tests.test_csi_snapshotter.test_csi_volumesnapshot_backing_image_basic" href="#tests.test_csi_snapshotter.test_csi_volumesnapshot_backing_image_basic">test_csi_volumesnapshot_backing_image_basic</a></code></li>
 <li><code><a title="tests.test_csi_snapshotter.test_csi_volumesnapshot_basic" href="#tests.test_csi_snapshotter.test_csi_volumesnapshot_basic">test_csi_volumesnapshot_basic</a></code></li>
 <li><code><a title="tests.test_csi_snapshotter.test_csi_volumesnapshot_restore_existing_backup" href="#tests.test_csi_snapshotter.test_csi_volumesnapshot_restore_existing_backup">test_csi_volumesnapshot_restore_existing_backup</a></code></li>
+<li><code><a title="tests.test_csi_snapshotter.test_csi_volumesnapshot_restore_on_demand_backing_image" href="#tests.test_csi_snapshotter.test_csi_volumesnapshot_restore_on_demand_backing_image">test_csi_volumesnapshot_restore_on_demand_backing_image</a></code></li>
+<li><code><a title="tests.test_csi_snapshotter.test_csi_volumesnapshot_restore_pre_provision_backing_image" href="#tests.test_csi_snapshotter.test_csi_volumesnapshot_restore_pre_provision_backing_image">test_csi_volumesnapshot_restore_pre_provision_backing_image</a></code></li>
 <li><code><a title="tests.test_csi_snapshotter.volumesnapshot" href="#tests.test_csi_snapshotter.volumesnapshot">volumesnapshot</a></code></li>
 <li><code><a title="tests.test_csi_snapshotter.volumesnapshotclass" href="#tests.test_csi_snapshotter.volumesnapshotclass">volumesnapshotclass</a></code></li>
 <li><code><a title="tests.test_csi_snapshotter.volumesnapshotcontent" href="#tests.test_csi_snapshotter.volumesnapshotcontent">volumesnapshotcontent</a></code></li>
