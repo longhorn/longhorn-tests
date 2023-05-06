@@ -61,6 +61,7 @@ PORT = ":9500"
 
 RETRY_COMMAND_COUNT = 3
 RETRY_COUNTS = 150
+RETRY_COUNTS_SHORT = 30
 RETRY_INTERVAL = 1
 RETRY_INTERVAL_LONG = 2
 RETRY_BACKUP_COUNTS = 300
@@ -181,6 +182,8 @@ SETTING_BACKING_IMAGE_CLEANUP_WAIT_INTERVAL = \
 SETTING_DISABLE_REVISION_COUNTER = "disable-revision-counter"
 SETTING_ORPHAN_AUTO_DELETION = "orphan-auto-deletion"
 SETTING_FAILED_BACKUP_TTL = "failed-backup-ttl"
+SETTING_CONCURRENT_AUTO_ENGINE_UPGRADE_NODE_LIMIT = \
+    "concurrent-automatic-engine-upgrade-per-node-limit"
 
 CSI_UNKNOWN = 0
 CSI_TRUE = 1
@@ -1498,7 +1501,7 @@ def cleanup_client():
     cleanup_storage_class()
 
     # enable nodes scheduling
-    reset_node(client)
+    reset_node(client, core_api)
     reset_settings(client)
     reset_disks_for_all_nodes(client)
     scale_up_engine_image_daemonset(client)
@@ -1509,6 +1512,16 @@ def cleanup_client():
     if not os.path.exists(DEFAULT_REPLICA_DIRECTORY):
         subprocess.check_call(
             ["mkdir", "-p", DEFAULT_REPLICA_DIRECTORY])
+
+
+def reset_nodes_taint(client):
+    core_api = get_core_api_client()
+    nodes = client.list_node()
+
+    for node in nodes:
+        core_api.patch_node(node.id, {
+            "spec": {"taints": []}
+        })
 
 
 def get_client(address):
@@ -2895,7 +2908,10 @@ def get_update_disks(disks):
     return update_disk
 
 
-def reset_node(client):
+def reset_node(client, core_api):
+    # remove nodes taint
+    reset_nodes_taint(client)
+
     nodes = client.list_node()
     for node in nodes:
         try:
@@ -3145,6 +3161,56 @@ def scale_up_engine_image_daemonset(client):
         # for scaling up a running daemond set,
         # the status_code is 422 server error.
         assert e.status == 422
+
+    # make sure default engine image deployed ready
+    wait_for_deployed_engine_image_count(client, default_img.name, 3)
+
+
+def wait_for_deployed_engine_image_count(client, image_name, expected_cnt):
+    for i in range(RETRY_COUNTS):
+        image = client.by_id_engine_image(image_name)
+        deployed_cnt = 0
+        if image.nodeDeploymentMap is None:
+            continue
+        for item in image.nodeDeploymentMap:
+            if image.nodeDeploymentMap[item] is True:
+                deployed_cnt = deployed_cnt + 1
+        if deployed_cnt == expected_cnt:
+            break
+        time.sleep(RETRY_INTERVAL)
+
+    assert deployed_cnt == expected_cnt
+
+
+def wait_for_running_engine_image_count(image_name, engine_cnt):
+    core_api = get_core_api_client()
+    for i in range(RETRY_COUNTS):
+        exist_engine_cnt = 0
+        longhorn_pod_list = core_api.list_namespaced_pod('longhorn-system')
+        for pod in longhorn_pod_list.items:
+            if "engine-image-" + image_name in pod.metadata.name and \
+                    pod.status.phase == "Running":
+                exist_engine_cnt += 1
+        if exist_engine_cnt == engine_cnt:
+            break
+        time.sleep(RETRY_INTERVAL)
+
+    assert exist_engine_cnt == engine_cnt
+
+
+def restart_and_wait_ready_engine_count(client, ready_engine_count): # NOQA
+    """
+    Delete/restart engine daemonset and wait ready engine image count after
+    daemonset restart
+    """
+
+    apps_api = get_apps_api_client()
+    default_img = get_default_engine_image(client)
+    ds_name = "engine-image-" + default_img.name
+    apps_api.delete_namespaced_daemon_set(ds_name, LONGHORN_NAMESPACE)
+    wait_for_engine_image_condition(client, default_img.name, "False")
+    wait_for_engine_image_state(client, default_img.name, "deploying")
+    wait_for_running_engine_image_count(default_img.name, ready_engine_count)
 
 
 def wait_for_all_instance_manager_running(client):
