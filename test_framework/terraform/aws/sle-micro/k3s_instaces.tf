@@ -164,7 +164,7 @@ resource "null_resource" "package_install_controlplane_k3s" {
   provisioner "remote-exec" {
 
     inline = [
-      "sudo transactional-update pkg install -y open-iscsi nfs-client jq",
+      "sudo transactional-update pkg install -y open-iscsi nfs-client jq apparmor-parser",
       "sudo shutdown -r now",
     ]
 
@@ -191,7 +191,7 @@ resource "null_resource" "package_install_worker_k3s" {
   provisioner "remote-exec" {
 
     inline = [
-      "sudo transactional-update pkg install -y open-iscsi nfs-client jq",
+      "sudo transactional-update pkg install -y open-iscsi nfs-client jq apparmor-parser",
       "sudo shutdown -r now",
     ]
 

@@ -59,3 +59,21 @@ def taint_nodes_exclude_self(request):
             }
         }
         api.patch_node(node.metadata.name, body=payload)
+
+def taint_non_current_node(client, core_api): # NOQA
+    lht_hostId = get_self_host_id()
+    for node in client.list_node():
+        if node.id != lht_hostId:
+            taint_node_id = node.id
+            break
+
+    core_api.patch_node(taint_node_id, {
+        "spec": {
+            "taints":
+                [{"effect": "NoSchedule",
+                  "key": "key",
+                  "value": "value"}]
+        }
+    })
+
+    return taint_node_id

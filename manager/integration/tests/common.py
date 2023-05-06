@@ -166,7 +166,7 @@ SETTING_DISABLE_SCHEDULING_ON_CORDONED_NODE = \
 SETTING_GUARANTEED_ENGINE_CPU = "guaranteed-engine-cpu"
 SETTING_GUARANTEED_ENGINE_MANAGER_CPU = "guaranteed-engine-manager-cpu"
 SETTING_GUARANTEED_REPLICA_MANAGER_CPU = "guaranteed-replica-manager-cpu"
-SETTING_MKFS_EXT4_PARAMS = "mkfs-ext4-parameters"
+SETTING_GUARANTEED_INSTANCE_MANAGER_CPU = "guaranteed-instance-manager-cpu"
 SETTING_PRIORITY_CLASS = "priority-class"
 SETTING_RECURRING_JOB_WHILE_VOLUME_DETACHED = \
     "allow-recurring-job-while-volume-detached"
@@ -1600,6 +1600,16 @@ def cleanup_client():
             ["mkdir", "-p", DEFAULT_REPLICA_DIRECTORY])
 
 
+def reset_nodes_taint(client):
+    core_api = get_core_api_client()
+    nodes = client.list_node()
+
+    for node in nodes:
+        core_api.patch_node(node.id, {
+            "spec": {"taints": []}
+        })
+
+
 def get_client(address):
     url = 'http://' + address + '/v1/schemas'
     c = longhorn.from_env(url=url)
@@ -2204,7 +2214,16 @@ def wait_for_replica_failed(client, volname, replica_name,
                 break
             if r['instanceManagerName'] != "":
                 im = client.by_id_instance_manager(r['instanceManagerName'])
-                if r['name'] in im['instances']:
+
+                instance_dict = {}
+                # We still check the 'instances' for backward compatibility
+                # with older versions (<v1.5.x).
+                if im['instances'] is not None:
+                    instance_dict.update(im['instances'])
+                if im['instanceReplicas'] is not None:
+                    instance_dict.update(im['instanceReplicas'])
+
+                if r['name'] in instance_dict:
                     failed = False
                     debug_replica_in_im = im
                     break
@@ -2228,7 +2247,16 @@ def wait_for_replica_running(client, volname, replica_name):
             if r['running'] and r['instanceManagerName'] != "":
                 im = client.by_id_instance_manager(
                     r['instanceManagerName'])
-                if r['name'] in im['instances']:
+
+                instance_dict = {}
+                # We still check the 'instances' for backward compatibility
+                # with older versions (<v1.5.x).
+                if im['instances'] is not None:
+                    instance_dict.update(im['instances'])
+                if im['instanceReplicas'] is not None:
+                    instance_dict.update(im['instanceReplicas'])
+
+                if r['name'] in instance_dict:
                     is_running = True
                     break
         if is_running:
@@ -2563,11 +2591,8 @@ def get_upgrade_test_image(cli_v, cli_minv,
                                      data_v, data_minv)
 
 
-def prepare_host_disk(dev, vol_name, mkfs_ext4_options=""):
-    if mkfs_ext4_options == "":
-        cmd = ['mkfs.ext4', dev]
-    else:
-        cmd = ['mkfs.ext4', mkfs_ext4_options, dev]
+def prepare_host_disk(dev, vol_name):
+    cmd = ['mkfs.ext4', dev]
     subprocess.check_call(cmd)
 
     mount_path = os.path.join(DIRECTORY_PATH, vol_name)
@@ -2995,6 +3020,9 @@ def get_update_disks(disks):
 
 
 def reset_node(client, core_api):
+    # remove nodes taint
+    reset_nodes_taint(client)
+
     nodes = client.list_node()
     for node in nodes:
         try:
@@ -3217,6 +3245,9 @@ def reset_settings(client):
         if setting_name == "support-bundle-manager-image":
             continue
 
+        if setting_name == "registry-secret":
+            continue
+
         s = client.by_id_setting(setting_name)
         if s.value != setting_default_value and not setting_readonly:
             try:
@@ -3271,34 +3302,76 @@ def scale_up_engine_image_daemonset(client):
         # the status_code is 422 server error.
         assert e.status == 422
 
+    # make sure default engine image deployed ready
+    wait_for_deployed_engine_image_count(client, default_img.name, 3)
+
+
+def wait_for_deployed_engine_image_count(client, image_name, expected_cnt):
+    for i in range(RETRY_COUNTS):
+        image = client.by_id_engine_image(image_name)
+        deployed_cnt = 0
+        if image.nodeDeploymentMap is None:
+            continue
+        for item in image.nodeDeploymentMap:
+            if image.nodeDeploymentMap[item] is True:
+                deployed_cnt = deployed_cnt + 1
+        if deployed_cnt == expected_cnt:
+            break
+        time.sleep(RETRY_INTERVAL)
+
+    assert deployed_cnt == expected_cnt
+
+
+def wait_for_running_engine_image_count(image_name, engine_cnt):
+    core_api = get_core_api_client()
+    for i in range(RETRY_COUNTS):
+        exist_engine_cnt = 0
+        longhorn_pod_list = core_api.list_namespaced_pod('longhorn-system')
+        for pod in longhorn_pod_list.items:
+            if "engine-image-" + image_name in pod.metadata.name and \
+                    pod.status.phase == "Running":
+                exist_engine_cnt += 1
+        if exist_engine_cnt == engine_cnt:
+            break
+        time.sleep(RETRY_INTERVAL)
+
+    assert exist_engine_cnt == engine_cnt
+
+
+def restart_and_wait_ready_engine_count(client, ready_engine_count): # NOQA
+    """
+    Delete/restart engine daemonset and wait ready engine image count after
+    daemonset restart
+    """
+
+    apps_api = get_apps_api_client()
+    default_img = get_default_engine_image(client)
+    ds_name = "engine-image-" + default_img.name
+    apps_api.delete_namespaced_daemon_set(ds_name, LONGHORN_NAMESPACE)
+    wait_for_engine_image_condition(client, default_img.name, "False")
+    wait_for_engine_image_state(client, default_img.name, "deploying")
+    wait_for_running_engine_image_count(default_img.name, ready_engine_count)
+
 
 def wait_for_all_instance_manager_running(client):
     core_api = get_core_api_client()
 
     nodes = client.list_node()
 
-    for i in range(RETRY_COUNTS):
+    for _ in range(RETRY_COUNTS):
         instance_managers = client.list_instance_manager()
-        node_to_engine_manager_map, node_to_replica_manager_map = {}, {}
+        node_to_instance_manager_map = {}
         try:
             for im in instance_managers:
-                if im.managerType == "engine" and im.currentState == "running":
-                    node_to_engine_manager_map[im.nodeID] = im
-                elif im.managerType == "replica" and \
-                        im.currentState == "running":
-                    node_to_replica_manager_map[im.nodeID] = im
+                if im.managerType == "aio" and im.currentState == "running":
+                    node_to_instance_manager_map[im.nodeID] = im
                 else:
                     print("\nFound unknown instance manager:", im)
-            if len(node_to_engine_manager_map) != len(nodes) or \
-                    len(node_to_replica_manager_map) != len(nodes):
+            if len(node_to_instance_manager_map) != len(nodes):
                 time.sleep(RETRY_INTERVAL)
                 continue
 
-            for _, im in node_to_engine_manager_map.items():
-                wait_for_instance_manager_desire_state(client, core_api,
-                                                       im.name, "Running",
-                                                       True)
-            for _, im in node_to_replica_manager_map.items():
+            for _, im in node_to_instance_manager_map.items():
                 wait_for_instance_manager_desire_state(client, core_api,
                                                        im.name, "Running",
                                                        True)
@@ -3995,11 +4068,16 @@ def wait_and_get_pv_for_pvc(api, pvc_name):
     return pv
 
 
-def wait_for_volume_expansion(longhorn_api_client, volume_name):
+def wait_for_volume_expansion(longhorn_api_client,
+                              volume_name,
+                              expected_size=""):
     complete = False
     for i in range(RETRY_COUNTS):
         volume = longhorn_api_client.by_id_volume(volume_name)
         engine = get_volume_engine(volume)
+        if expected_size != "" and engine.size != expected_size:
+            time.sleep(RETRY_INTERVAL)
+            continue
         if engine.size == volume.size:
             complete = True
             break
@@ -4988,7 +5066,8 @@ def check_recurring_jobs(client, recurring_jobs):
         assert recurring_job.cron == spec["cron"]
 
         expect_retain = spec["retain"]
-        if recurring_job.task == "snapshot-cleanup":
+        if recurring_job.task == "snapshot-cleanup" or \
+                recurring_job.task == "filesystem-trim":
             expect_retain = 0
         assert recurring_job.retain == expect_retain
 
@@ -5491,13 +5570,8 @@ def create_host_disk(client, vol_name, size, node_id):
     # create a single replica volume and attach it to node
     volume = create_volume(client, vol_name, size, node_id, 1)
 
-    mkfs_ext4_settings = client.by_id_setting(SETTING_MKFS_EXT4_PARAMS)
-    mkfs_ext4_options = mkfs_ext4_settings.value
-
     # prepare the disk in the host filesystem
-    disk_path = prepare_host_disk(get_volume_endpoint(volume),
-                                  volume.name,
-                                  mkfs_ext4_options)
+    disk_path = prepare_host_disk(get_volume_endpoint(volume), volume.name)
     return disk_path
 
 
