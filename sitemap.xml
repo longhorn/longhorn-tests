@@ -112,8 +112,6 @@
   </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/rancher-integration/fleet-deploy/</loc>
   </url><url>
-    <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/ha/partial-engine-deployment/</loc>
-  </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/partial-engine-deployment/</loc>
   </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/managed-kubernetes-clusters/</loc>
