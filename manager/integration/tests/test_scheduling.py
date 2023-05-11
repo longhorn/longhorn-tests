@@ -1437,7 +1437,7 @@ def test_replica_schedule_to_disk_with_most_usable_storage(client, volume_name, 
     Scenario : test replica schedule to disk with the most usable storage
 
     Given default disk 3/4 storage is reserved on the current node.
-    And disk-1 with 1/4 of default disk space + 50 Gi.
+    And disk-1 with 1/4 of default disk space + 10 Gi.
     And add disk-1 to the current node.
 
     When create and attach volume.
@@ -1468,7 +1468,7 @@ def test_replica_schedule_to_disk_with_most_usable_storage(client, volume_name, 
                              disk.storageMaximum-default_disk_available)
 
     disk_path = create_host_disk(client, 'vol-disk-1',
-                                 str(50 * Gi + default_disk_available),
+                                 str(10 * Gi + default_disk_available),
                                  node.name)
     disk = {"path": disk_path, "allowScheduling": True}
     update_disks = get_update_disks(disks)
