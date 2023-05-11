@@ -1465,7 +1465,7 @@ def test_replica_schedule_to_disk_with_most_usable_storage(client, volume_name, 
     Scenario : test replica schedule to disk with the most usable storage
 
     Given default disk 3/4 storage is reserved on the current node.
-    And disk-1 with 1/4 of default disk space + 50 Gi.
+    And disk-1 with 1/4 of default disk space + 10 Gi.
     And add disk-1 to the current node.
 
     When create and attach volume.
@@ -1496,7 +1496,7 @@ def test_replica_schedule_to_disk_with_most_usable_storage(client, volume_name, 
                              disk.storageMaximum-default_disk_available)
 
     disk_path = create_host_disk(client, &#39;vol-disk-1&#39;,
-                                 str(50 * Gi + default_disk_available),
+                                 str(10 * Gi + default_disk_available),
                                  node.name)
     disk = {&#34;path&#34;: disk_path, &#34;allowScheduling&#34;: True}
     update_disks = get_update_disks(disks)
@@ -3251,7 +3251,7 @@ replicas.</li>
 <dd>
 <div class="desc"><p>Scenario : test replica schedule to disk with the most usable storage</p>
 <p>Given default disk 3/4 storage is reserved on the current node.
-And disk-1 with 1/4 of default disk space + 50 Gi.
+And disk-1 with 1/4 of default disk space + 10 Gi.
 And add disk-1 to the current node.</p>
 <p>When create and attach volume.</p>
 <p>Then volume replica
@@ -3266,7 +3266,7 @@ volume replica not on the current node scheduled to default disk.</p></div>
     Scenario : test replica schedule to disk with the most usable storage
 
     Given default disk 3/4 storage is reserved on the current node.
-    And disk-1 with 1/4 of default disk space + 50 Gi.
+    And disk-1 with 1/4 of default disk space + 10 Gi.
     And add disk-1 to the current node.
 
     When create and attach volume.
@@ -3297,7 +3297,7 @@ volume replica not on the current node scheduled to default disk.</p></div>
                              disk.storageMaximum-default_disk_available)
 
     disk_path = create_host_disk(client, &#39;vol-disk-1&#39;,
-                                 str(50 * Gi + default_disk_available),
+                                 str(10 * Gi + default_disk_available),
                                  node.name)
     disk = {&#34;path&#34;: disk_path, &#34;allowScheduling&#34;: True}
     update_disks = get_update_disks(disks)
