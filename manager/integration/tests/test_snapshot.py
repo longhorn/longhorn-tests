@@ -261,7 +261,8 @@ def test_snapshot_hash_detect_corruption_in_global_enabled_mode(client, volume_n
                                        "true",
                                        "false")
     detect_and_repair_corrupted_replica(client, volume_name,
-                                        SNAPSHOT_DATA_INTEGRITY_ENABLED)
+                                        SNAPSHOT_DATA_INTEGRITY_ENABLED,
+                                        retry_count=SNAPSHOT_CHECK_PERIOD * 2)
 
 
 @pytest.mark.long_running
@@ -276,17 +277,20 @@ def test_snapshot_hash_detect_corruption_in_global_fast_check_mode(client, volum
                                        "true",
                                        "false")
     detect_and_repair_corrupted_replica(client, volume_name,
-                                        SNAPSHOT_DATA_INTEGRITY_FAST_CHECK)
+                                        SNAPSHOT_DATA_INTEGRITY_FAST_CHECK,
+                                        retry_count=SNAPSHOT_CHECK_PERIOD * 2)
 
 
 def prepare_settings_for_snapshot_test(client, data_integrity, immediate_check, fast_replica_rebuild, period_in_second=SNAPSHOT_CHECK_PERIOD):  # NOQA
-    period_in_minute = period_in_second / 60
+    period_in_minute = period_in_second // 60
     # Make the next hash time more predictable
     now = datetime.datetime.now()
-    minute = (now.minute + period_in_minute) % 60
-    hour = (now.hour + (now.minute + period_in_minute) / 60) % 24
+    minutes = ",".join(str(e)
+                       for e in [(now.minute + i) % 60
+                                 for i in range(0, 30, period_in_minute)])
+    hours = str(now.hour) + "," + str((now.hour + 1) % 24)
 
-    cronjob = "%d/%d %d * * *" % (minute, period_in_minute, hour)
+    cronjob = f"{minutes} {hours} * * *"
 
     update_setting(client,
                    SETTING_SNAPSHOT_DATA_INTEGRITY,
@@ -302,7 +306,7 @@ def prepare_settings_for_snapshot_test(client, data_integrity, immediate_check, 
                    fast_replica_rebuild)
 
 
-def detect_and_repair_corrupted_replica(client, volume_name, data_integrity_mode):  # NOQA
+def detect_and_repair_corrupted_replica(client, volume_name, data_integrity_mode, retry_count=SNAPSHOT_CHECK_PERIOD+SNAPSHOT_CHECK_TOLERATION_DELAY):  # NOQA
     """
     1. Create and attach a volume
     2. Create snapshots
@@ -335,7 +339,6 @@ def detect_and_repair_corrupted_replica(client, volume_name, data_integrity_mode
     assert corrupt_snapshot_on_local_host(volume, snapshot_name)
 
     # Step 5
-    retry_count = SNAPSHOT_CHECK_PERIOD+SNAPSHOT_CHECK_TOLERATION_DELAY
     wait_for_rebuild_start(client, volume_name, retry_count, 1)
 
     volume = client.by_id_volume(volume_name)
