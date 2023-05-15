@@ -167,7 +167,6 @@ SETTING_DEGRADED_AVAILABILITY = \
     "allow-volume-creation-with-degraded-availability"
 SETTING_DISABLE_SCHEDULING_ON_CORDONED_NODE = \
     "disable-scheduling-on-cordoned-node"
-SETTING_GUARANTEED_ENGINE_CPU = "guaranteed-engine-cpu"
 SETTING_GUARANTEED_ENGINE_MANAGER_CPU = "guaranteed-engine-manager-cpu"
 SETTING_GUARANTEED_REPLICA_MANAGER_CPU = "guaranteed-replica-manager-cpu"
 SETTING_GUARANTEED_INSTANCE_MANAGER_CPU = "guaranteed-instance-manager-cpu"
