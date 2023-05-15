@@ -61,6 +61,7 @@ Gi = (1024 * Mi)
 SIZE = str(16 * Mi)
 EXPAND_SIZE = str(32 * Mi)
 VOLUME_NAME = &#34;longhorn-testvol&#34;
+ATTACHMENT_TICKET_ID_PREFIX = &#34;test-attachment-ticket&#34;
 STATEFULSET_NAME = &#34;longhorn-teststs&#34;
 DEV_PATH = &#34;/dev/longhorn/&#34;
 VOLUME_RWTEST_SIZE = 512
@@ -90,6 +91,7 @@ PORT = &#34;:9500&#34;
 RETRY_COMMAND_COUNT = 3
 RETRY_COUNTS = 150
 RETRY_COUNTS_SHORT = 30
+RETRY_COUNTS_LONG = 300
 RETRY_INTERVAL = 1
 RETRY_INTERVAL_LONG = 2
 RETRY_BACKUP_COUNTS = 300
@@ -118,6 +120,7 @@ VOLUME_ROBUSTNESS_FAULTED = &#34;faulted&#34;
 VOLUME_ROBUSTNESS_UNKNOWN = &#34;unknown&#34;
 
 VOLUME_FIELD_RESTOREREQUIRED = &#34;restoreRequired&#34;
+VOLUME_FIELD_RESTOREINITIATED = &#34;restoreInitiated&#34;
 VOLUME_FIELD_READY = &#34;ready&#34;
 
 VOLUME_FIELD_CLONE_STATUS = &#34;cloneStatus&#34;
@@ -297,6 +300,10 @@ disk_being_syncing = &#34;being syncing and please retry later&#34;
 FS_TYPE_EXT4 = &#34;ext4&#34;
 FS_TYPE_XFS = &#34;xfs&#34;
 
+ATTACHER_TYPE_CSI_ATTACHER = &#34;csi-attacher&#34;
+ATTACHER_TYPE_LONGHORN_API = &#34;longhorn-api&#34;
+ATTACHER_TYPE_LONGHORN_UPGRADER = &#34;longhorn-upgrader&#34;
+
 # customize the timeout for HDD
 disktype = os.environ.get(&#39;LONGHORN_DISK_TYPE&#39;)
 if disktype == &#34;hdd&#34;:
@@ -369,7 +376,7 @@ def cleanup_volume(client, volume):
     :param client: The Longhorn client to use in the request.
     :param volume: The volume to clean up.
     &#34;&#34;&#34;
-    volume.detach(hostId=&#34;&#34;)
+    volume.detach()
     volume = wait_for_volume_detached(client, volume.name)
     client.delete(volume)
     wait_for_volume_delete(client, volume.name)
@@ -2366,6 +2373,12 @@ def generate_volume_name():
                 for _ in range(6))
 
 
+def generate_attachment_ticket_id():
+    return ATTACHMENT_TICKET_ID_PREFIX + &#34;-&#34; + \
+           &#39;&#39;.join(random.choice(string.ascii_lowercase + string.digits)
+                   for _ in range(6))
+
+
 @pytest.fixture
 def sts_name(request):
     return generate_sts_name()
@@ -4161,14 +4174,14 @@ def expand_and_wait_for_pvc(api, pvc, size):
     api.patch_namespaced_persistent_volume_claim(
         pvc_name, &#39;default&#39;, pvc)
     complete = False
-    for i in range(RETRY_COUNTS):
+    for i in range(RETRY_COUNTS_LONG):
         claim = api.read_namespaced_persistent_volume_claim(
             name=pvc_name, namespace=&#39;default&#39;)
         if claim.spec.resources.requests[&#39;storage&#39;] ==\
                 claim.status.capacity[&#39;storage&#39;]:
             complete = True
             break
-        time.sleep(RETRY_INTERVAL)
+        time.sleep(RETRY_INTERVAL_LONG)
     assert complete
     return claim
 
@@ -4313,8 +4326,15 @@ def wait_for_rebuild_start(client, volume_name,
     return status.fromReplica, status.replica
 
 
+def wait_for_restoration_start(client, name):
+    return wait_for_volume_status(client, name,
+                                  VOLUME_FIELD_RESTOREINITIATED,
+                                  True)
+
+
 def wait_for_volume_restoration_completed(client, name):
     wait_for_volume_creation(client, name)
+    wait_for_restoration_start(client, name)
     monitor_restore_progress(client, name)
     return wait_for_volume_status(client, name,
                                   VOLUME_FIELD_RESTOREREQUIRED,
@@ -4652,7 +4672,7 @@ def offline_expand_attached_volume(client, volume_name, size=EXPAND_SIZE):
     volume = wait_for_volume_healthy(client, volume_name)
     engine = get_volume_engine(volume)
 
-    volume.detach(hostId=&#34;&#34;)
+    volume.detach()
     volume = wait_for_volume_detached(client, volume.name)
     volume.expand(size=size)
     wait_for_volume_expansion(client, volume.name)
@@ -5589,7 +5609,7 @@ def create_volume(client, vol_name, size, node_id, r_num):
 
 def cleanup_volume_by_name(client, vol_name):
     volume = client.by_id_volume(vol_name)
-    volume.detach(hostId=&#34;&#34;)
+    volume.detach()
     client.delete(volume)
     wait_for_volume_delete(client, vol_name)
 
@@ -6809,7 +6829,7 @@ properly.
     :param client: The Longhorn client to use in the request.
     :param volume: The volume to clean up.
     &#34;&#34;&#34;
-    volume.detach(hostId=&#34;&#34;)
+    volume.detach()
     volume = wait_for_volume_detached(client, volume.name)
     client.delete(volume)
     wait_for_volume_delete(client, volume.name)
@@ -6828,7 +6848,7 @@ properly.
 </summary>
 <pre><code class="python">def cleanup_volume_by_name(client, vol_name):
     volume = client.by_id_volume(vol_name)
-    volume.detach(hostId=&#34;&#34;)
+    volume.detach()
     client.delete(volume)
     wait_for_volume_delete(client, vol_name)</code></pre>
 </details>
@@ -8313,14 +8333,14 @@ def disable_auto_salvage(client):
     api.patch_namespaced_persistent_volume_claim(
         pvc_name, &#39;default&#39;, pvc)
     complete = False
-    for i in range(RETRY_COUNTS):
+    for i in range(RETRY_COUNTS_LONG):
         claim = api.read_namespaced_persistent_volume_claim(
             name=pvc_name, namespace=&#39;default&#39;)
         if claim.spec.resources.requests[&#39;storage&#39;] ==\
                 claim.status.capacity[&#39;storage&#39;]:
             complete = True
             break
-        time.sleep(RETRY_INTERVAL)
+        time.sleep(RETRY_INTERVAL_LONG)
     assert complete
     return claim</code></pre>
 </details>
@@ -8516,6 +8536,21 @@ been completed successfully</p></div>
                 break
             time.sleep(RETRY_INTERVAL_LONG)
         assert removed</code></pre>
+</details>
+</dd>
+<dt id="tests.common.generate_attachment_ticket_id"><code class="name flex">
+<span>def <span class="ident">generate_attachment_ticket_id</span></span>(<span>)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def generate_attachment_ticket_id():
+    return ATTACHMENT_TICKET_ID_PREFIX + &#34;-&#34; + \
+           &#39;&#39;.join(random.choice(string.ascii_lowercase + string.digits)
+                   for _ in range(6))</code></pre>
 </details>
 </dd>
 <dt id="tests.common.generate_pod_with_pvc_manifest"><code class="name flex">
@@ -10039,7 +10074,7 @@ def node_default_tags():
     volume = wait_for_volume_healthy(client, volume_name)
     engine = get_volume_engine(volume)
 
-    volume.detach(hostId=&#34;&#34;)
+    volume.detach()
     volume = wait_for_volume_detached(client, volume.name)
     volume.expand(size=size)
     wait_for_volume_expansion(client, volume.name)
@@ -13164,6 +13199,21 @@ ref: <a href="https://github.com/longhorn/longhorn/issues/4814">https://github.c
     return volume</code></pre>
 </details>
 </dd>
+<dt id="tests.common.wait_for_restoration_start"><code class="name flex">
+<span>def <span class="ident">wait_for_restoration_start</span></span>(<span>client, name)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def wait_for_restoration_start(client, name):
+    return wait_for_volume_status(client, name,
+                                  VOLUME_FIELD_RESTOREINITIATED,
+                                  True)</code></pre>
+</details>
+</dd>
 <dt id="tests.common.wait_for_running_engine_image_count"><code class="name flex">
 <span>def <span class="ident">wait_for_running_engine_image_count</span></span>(<span>image_name, engine_cnt)</span>
 </code></dt>
@@ -13905,6 +13955,7 @@ ref: <a href="https://github.com/longhorn/longhorn/issues/4814">https://github.c
 </summary>
 <pre><code class="python">def wait_for_volume_restoration_completed(client, name):
     wait_for_volume_creation(client, name)
+    wait_for_restoration_start(client, name)
     monitor_restore_progress(client, name)
     return wait_for_volume_status(client, name,
                                   VOLUME_FIELD_RESTOREREQUIRED,
@@ -14589,6 +14640,7 @@ from the args and kwargs arguments, respectively.</p></div>
 <li><code><a title="tests.common.find_replica_for_backup" href="#tests.common.find_replica_for_backup">find_replica_for_backup</a></code></li>
 <li><code><a title="tests.common.find_self" href="#tests.common.find_self">find_self</a></code></li>
 <li><code><a title="tests.common.fix_replica_expansion_failure" href="#tests.common.fix_replica_expansion_failure">fix_replica_expansion_failure</a></code></li>
+<li><code><a title="tests.common.generate_attachment_ticket_id" href="#tests.common.generate_attachment_ticket_id">generate_attachment_ticket_id</a></code></li>
 <li><code><a title="tests.common.generate_pod_with_pvc_manifest" href="#tests.common.generate_pod_with_pvc_manifest">generate_pod_with_pvc_manifest</a></code></li>
 <li><code><a title="tests.common.generate_random_data" href="#tests.common.generate_random_data">generate_random_data</a></code></li>
 <li><code><a title="tests.common.generate_random_pos" href="#tests.common.generate_random_pos">generate_random_pos</a></code></li>
@@ -14767,6 +14819,7 @@ from the args and kwargs arguments, respectively.</p></div>
 <li><code><a title="tests.common.wait_for_replica_failed" href="#tests.common.wait_for_replica_failed">wait_for_replica_failed</a></code></li>
 <li><code><a title="tests.common.wait_for_replica_running" href="#tests.common.wait_for_replica_running">wait_for_replica_running</a></code></li>
 <li><code><a title="tests.common.wait_for_replica_scheduled" href="#tests.common.wait_for_replica_scheduled">wait_for_replica_scheduled</a></code></li>
+<li><code><a title="tests.common.wait_for_restoration_start" href="#tests.common.wait_for_restoration_start">wait_for_restoration_start</a></code></li>
 <li><code><a title="tests.common.wait_for_running_engine_image_count" href="#tests.common.wait_for_running_engine_image_count">wait_for_running_engine_image_count</a></code></li>
 <li><code><a title="tests.common.wait_for_snapshot_count" href="#tests.common.wait_for_snapshot_count">wait_for_snapshot_count</a></code></li>
 <li><code><a title="tests.common.wait_for_snapshot_purge" href="#tests.common.wait_for_snapshot_purge">wait_for_snapshot_purge</a></code></li>

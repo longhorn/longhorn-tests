@@ -212,7 +212,7 @@ def engine_offline_upgrade_test(client, core_api, volume_name, backing_image=&#3
 
     data = write_volume_random_data(volume)
 
-    volume = volume.detach(hostId=&#34;&#34;)
+    volume = volume.detach()
     volume = common.wait_for_volume_detached(client, volume_name)
 
     volume.engineUpgrade(image=engine_upgrade_image)
@@ -240,7 +240,7 @@ def engine_offline_upgrade_test(client, core_api, volume_name, backing_image=&#3
 
     check_volume_data(volume, data)
 
-    volume = volume.detach(hostId=&#34;&#34;)
+    volume = volume.detach()
     volume = common.wait_for_volume_detached(client, volume_name)
 
     volume.engineUpgrade(image=original_engine_image)
@@ -385,7 +385,7 @@ def engine_live_upgrade_test(client, core_api, volume_name, backing_image=&#34;&
 
     check_volume_data(volume, data)
 
-    volume.detach(hostId=&#34;&#34;)
+    volume.detach()
     volume = common.wait_for_volume_detached(client, volume_name)
     assert len(volume.replicas) == REPLICA_COUNT
     assert volume.engineImage == engine_upgrade_image
@@ -436,7 +436,7 @@ def engine_live_upgrade_test(client, core_api, volume_name, backing_image=&#34;&
 
     check_volume_data(volume, data)
 
-    volume.detach(hostId=&#34;&#34;)
+    volume.detach()
     volume = common.wait_for_volume_detached(client, volume_name)
     assert len(volume.replicas) == REPLICA_COUNT
 
@@ -610,7 +610,7 @@ def engine_live_upgrade_rollback_test(client, core_api, volume_name, backing_ima
         wait_for_volume_current_image(client, volume_name,
                                       wrong_engine_upgrade_image)
 
-    volume.detach(hostId=&#34;&#34;)
+    volume.detach()
     volume = wait_for_volume_current_image(client, volume_name,
                                            wrong_engine_upgrade_image)
     # all the images would be updated
@@ -1353,7 +1353,7 @@ def test_engine_live_upgrade_while_replica_concurrent_rebuild(client, # NOQA
         wait_for_volume_current_image(client, volume_name,
                                       wrong_engine_upgrade_image)
 
-    volume.detach(hostId=&#34;&#34;)
+    volume.detach()
     volume = wait_for_volume_current_image(client, volume_name,
                                            wrong_engine_upgrade_image)
     # all the images would be updated
@@ -1485,7 +1485,7 @@ def test_engine_live_upgrade_while_replica_concurrent_rebuild(client, # NOQA
 
     check_volume_data(volume, data)
 
-    volume.detach(hostId=&#34;&#34;)
+    volume.detach()
     volume = common.wait_for_volume_detached(client, volume_name)
     assert len(volume.replicas) == REPLICA_COUNT
     assert volume.engineImage == engine_upgrade_image
@@ -1536,7 +1536,7 @@ def test_engine_live_upgrade_while_replica_concurrent_rebuild(client, # NOQA
 
     check_volume_data(volume, data)
 
-    volume.detach(hostId=&#34;&#34;)
+    volume.detach()
     volume = common.wait_for_volume_detached(client, volume_name)
     assert len(volume.replicas) == REPLICA_COUNT
 
@@ -1613,7 +1613,7 @@ def test_engine_live_upgrade_while_replica_concurrent_rebuild(client, # NOQA
 
     data = write_volume_random_data(volume)
 
-    volume = volume.detach(hostId=&#34;&#34;)
+    volume = volume.detach()
     volume = common.wait_for_volume_detached(client, volume_name)
 
     volume.engineUpgrade(image=engine_upgrade_image)
@@ -1641,7 +1641,7 @@ def test_engine_live_upgrade_while_replica_concurrent_rebuild(client, # NOQA
 
     check_volume_data(volume, data)
 
-    volume = volume.detach(hostId=&#34;&#34;)
+    volume = volume.detach()
     volume = common.wait_for_volume_detached(client, volume_name)
 
     volume.engineUpgrade(image=original_engine_image)

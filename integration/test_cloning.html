@@ -203,7 +203,7 @@ def test_cloning_with_detached_source_volume(client, core_api, pvc, clone_pvc): 
                 - ReadWriteOnce
               resources:
                 requests:
-                  storage: 10Gi
+                  storage: 3Gi
             ```
         2. Wait for volume to be created and attach it to a node.
         3. Write some data to the mount path of the volume
@@ -223,16 +223,15 @@ def test_cloning_with_detached_source_volume(client, core_api, pvc, clone_pvc): 
                 - ReadWriteOnce
               resources:
                 requests:
-                  storage: 10Gi
+                  storage: 3Gi
             ```
-        6. Wait for `source-pvc` to be attached
-        7. Wait for the `CloneStatus.State` in `cloned-pvc` to be `completed`
-        8. Wait for `source-pvc` to be detached
-        9. Attach the cloned volume to a node
-        10. Verify the data in `cloned-pvc` is the same as in `source-pvc`.
-        11. In 2-min retry loop, verify the volume of the `clone-pvc`
+        6. Wait for the `CloneStatus.State` in `cloned-pvc` to be `completed`
+        7. Wait for `source-pvc` to be detached
+        8. Attach the cloned volume to a node
+        9. Verify the data in `cloned-pvc` is the same as in `source-pvc`.
+        10. In 2-min retry loop, verify the volume of the `clone-pvc`
             eventually becomes healthy.
-        12. Verify snapshot created in `source-pvc` volume because of the clone
+        11. Verify snapshot created in `source-pvc` volume because of the clone
     &#34;&#34;&#34;
     # Step-1
     source_pvc_name = &#39;source-pvc&#39; + generate_random_suffix()
@@ -253,7 +252,7 @@ def test_cloning_with_detached_source_volume(client, core_api, pvc, clone_pvc): 
     data = write_volume_random_data(source_volume)
 
     # Steps-4
-    source_volume.detach(hostId=lht_host_id)
+    source_volume.detach()
     wait_for_volume_detached(client, source_volume_name)
 
     # Step-5
@@ -269,30 +268,27 @@ def test_cloning_with_detached_source_volume(client, core_api, pvc, clone_pvc): 
     wait_for_pvc_phase(core_api, clone_pvc_name, &#34;Bound&#34;)
 
     # Step-6
-    source_volume = wait_for_volume_attached(client, source_volume_name)
-
-    # Step-7
     clone_volume_name = get_volume_name(core_api, clone_pvc_name)
     wait_for_volume_clone_status(client, clone_volume_name, VOLUME_FIELD_STATE,
                                  VOLUME_FIELD_CLONE_COMPLETED)
     wait_for_volume_detached(client, clone_volume_name)
 
-    # Step-8
+    # Step-7
     wait_for_volume_detached(client, source_volume_name)
 
-    # Step-9
+    # Step-8
     clone_volume = client.by_id_volume(clone_volume_name)
     clone_volume.attach(hostId=lht_host_id)
     wait_for_volume_attached(client, clone_volume_name)
     clone_volume = wait_for_volume_endpoint(client, clone_volume_name)
 
-    # Step-10
+    # Step-9
     check_volume_data(clone_volume, data)
 
-    # Step-11
+    # Step-10
     wait_for_volume_healthy(client, clone_volume_name)
 
-    # Step-12
+    # Step-11
     source_volume = client.by_id_volume(source_volume_name)
     source_volume.attach(hostId=lht_host_id)
     source_volume = wait_for_volume_attached(client, source_volume_name)
@@ -957,7 +953,7 @@ accessModes:
 - ReadWriteOnce
 resources:
 requests:
-storage: 10Gi</code></li>
+storage: 3Gi</code></li>
 <li>Wait for volume to be created and attach it to a node.</li>
 <li>Write some data to the mount path of the volume</li>
 <li>Detach the volume and wait for the volume to be in detached state.</li>
@@ -976,8 +972,7 @@ accessModes:
 - ReadWriteOnce
 resources:
 requests:
-storage: 10Gi</code></li>
-<li>Wait for <code>source-pvc</code> to be attached</li>
+storage: 3Gi</code></li>
 <li>Wait for the <code>CloneStatus.State</code> in <code>cloned-pvc</code> to be <code>completed</code></li>
 <li>Wait for <code>source-pvc</code> to be detached</li>
 <li>Attach the cloned volume to a node</li>
@@ -1005,7 +1000,7 @@ def test_cloning_with_detached_source_volume(client, core_api, pvc, clone_pvc): 
                 - ReadWriteOnce
               resources:
                 requests:
-                  storage: 10Gi
+                  storage: 3Gi
             ```
         2. Wait for volume to be created and attach it to a node.
         3. Write some data to the mount path of the volume
@@ -1025,16 +1020,15 @@ def test_cloning_with_detached_source_volume(client, core_api, pvc, clone_pvc): 
                 - ReadWriteOnce
               resources:
                 requests:
-                  storage: 10Gi
+                  storage: 3Gi
             ```
-        6. Wait for `source-pvc` to be attached
-        7. Wait for the `CloneStatus.State` in `cloned-pvc` to be `completed`
-        8. Wait for `source-pvc` to be detached
-        9. Attach the cloned volume to a node
-        10. Verify the data in `cloned-pvc` is the same as in `source-pvc`.
-        11. In 2-min retry loop, verify the volume of the `clone-pvc`
+        6. Wait for the `CloneStatus.State` in `cloned-pvc` to be `completed`
+        7. Wait for `source-pvc` to be detached
+        8. Attach the cloned volume to a node
+        9. Verify the data in `cloned-pvc` is the same as in `source-pvc`.
+        10. In 2-min retry loop, verify the volume of the `clone-pvc`
             eventually becomes healthy.
-        12. Verify snapshot created in `source-pvc` volume because of the clone
+        11. Verify snapshot created in `source-pvc` volume because of the clone
     &#34;&#34;&#34;
     # Step-1
     source_pvc_name = &#39;source-pvc&#39; + generate_random_suffix()
@@ -1055,7 +1049,7 @@ def test_cloning_with_detached_source_volume(client, core_api, pvc, clone_pvc): 
     data = write_volume_random_data(source_volume)
 
     # Steps-4
-    source_volume.detach(hostId=lht_host_id)
+    source_volume.detach()
     wait_for_volume_detached(client, source_volume_name)
 
     # Step-5
@@ -1071,30 +1065,27 @@ def test_cloning_with_detached_source_volume(client, core_api, pvc, clone_pvc): 
     wait_for_pvc_phase(core_api, clone_pvc_name, &#34;Bound&#34;)
 
     # Step-6
-    source_volume = wait_for_volume_attached(client, source_volume_name)
-
-    # Step-7
     clone_volume_name = get_volume_name(core_api, clone_pvc_name)
     wait_for_volume_clone_status(client, clone_volume_name, VOLUME_FIELD_STATE,
                                  VOLUME_FIELD_CLONE_COMPLETED)
     wait_for_volume_detached(client, clone_volume_name)
 
-    # Step-8
+    # Step-7
     wait_for_volume_detached(client, source_volume_name)
 
-    # Step-9
+    # Step-8
     clone_volume = client.by_id_volume(clone_volume_name)
     clone_volume.attach(hostId=lht_host_id)
     wait_for_volume_attached(client, clone_volume_name)
     clone_volume = wait_for_volume_endpoint(client, clone_volume_name)
 
-    # Step-10
+    # Step-9
     check_volume_data(clone_volume, data)
 
-    # Step-11
+    # Step-10
     wait_for_volume_healthy(client, clone_volume_name)
 
-    # Step-12
+    # Step-11
     source_volume = client.by_id_volume(source_volume_name)
     source_volume.attach(hostId=lht_host_id)
     source_volume = wait_for_volume_attached(client, source_volume_name)

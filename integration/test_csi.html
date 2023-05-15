@@ -601,7 +601,7 @@ def test_xfs_pv_existing_volume(client, core_api, pod_manifest):  # NOQA
     cmd = [&#39;mkfs.xfs&#39;, get_volume_endpoint(volume)]
     subprocess.check_call(cmd)
 
-    volume = volume.detach(hostId=&#34;&#34;)
+    volume = volume.detach()
 
     volume = wait_for_volume_detached(client, volume_name)
 
@@ -1962,7 +1962,7 @@ sure the disk won't be reformatted</p></div>
     cmd = [&#39;mkfs.xfs&#39;, get_volume_endpoint(volume)]
     subprocess.check_call(cmd)
 
-    volume = volume.detach(hostId=&#34;&#34;)
+    volume = volume.detach()
 
     volume = wait_for_volume_detached(client, volume_name)
 
