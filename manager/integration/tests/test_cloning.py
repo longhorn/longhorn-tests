@@ -286,7 +286,11 @@ def test_cloning_with_backing_image(client, core_api, pvc, pod, clone_pvc, clone
         numberOfReplicas: "3"
         staleReplicaTimeout: "2880" # 48 hours in minutes
         backingImage: "bi-parrot"
-        backingImageURL: "https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2" # NOQA
+        backingImageDataSourceType: "download"
+        backing_image_data_source_parameters = (
+          '{"url": "https://backing-image-example.s3-region.amazonaws.com/'
+          'test-backing-image"}'
+        )
       ```
     2. Repeat the `test_cloning_without_backing_image()` test with
        `source-pvc` and `cloned-pvc` use `longhorn-bi-parrot` instead of
@@ -298,8 +302,10 @@ def test_cloning_with_backing_image(client, core_api, pvc, pod, clone_pvc, clone
     backing_img_storage_class_name = 'longhorn-bi-parrot'
     storage_class['metadata']['name'] = backing_img_storage_class_name
     storage_class['parameters']['backingImage'] = 'bi-parrot'
-    storage_class['parameters']['backingImageURL'] = \
-        'https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2' # NOQA
+    storage_class['parameters']['backingImageDataSourceType'] = 'download'
+    storage_class['parameters']['backingImageDataSourceParameters'] = (
+        '{"url": "https://longhorn-backing-image.s3-us-west-1.amazonaws.com/'
+        'parrot.qcow2"}')
     storage_class['reclaimPolicy'] = 'Delete'
 
     create_storage_class(storage_class)
