@@ -710,8 +710,17 @@
   <div>
     <article id="content">
        <ol>
-<li>One physical node down should result in the state of that node change to <code>Down</code>.</li>
-<li>When using with CSI driver, one node with controller (StatefulSet/Deployment) and pod down should result in Kubernetes migrate the pod to another node, and Longhorn volume should be able to be used on that node as well. Test scenarios for this are documented <a href="../improve-node-failure-handling/">here</a>.</li>
+<li>
+<p>One physical node down should result in the state of that node change to <code>Down</code>.</p>
+</li>
+<li>
+<p>When using with CSI driver, one node with controller (StatefulSet/Deployment) and pod down should result in Kubernetes migrate the pod to another node, and Longhorn volume should be able to be used on that node as well. Test scenarios for this are documented <a href="../../../node/improve-node-failure-handling/">here</a>.</p>
+<blockquote>
+<p><strong>Note:</strong></p>
+<p>In this case, RWX should be excluded.</p>
+<p>Ref: <a href="https://github.com/longhorn/longhorn/issues/5900#issuecomment-1541360552">https://github.com/longhorn/longhorn/issues/5900#issuecomment-1541360552</a></p>
+</blockquote>
+</li>
 </ol>
 
     </article>

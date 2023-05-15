@@ -583,7 +583,11 @@ Deploy a cluster contains 3 worker nodes N1, N2, N3. Deploy Longhorn. Create a 1
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/node-not-ready/node-down/physical-node-down/</guid>
-      <description> One physical node down should result in the state of that node change to Down. When using with CSI driver, one node with controller (StatefulSet/Deployment) and pod down should result in Kubernetes migrate the pod to another node, and Longhorn volume should be able to be used on that node as well. Test scenarios for this are documented here. </description>
+      <description>One physical node down should result in the state of that node change to Down.
+When using with CSI driver, one node with controller (StatefulSet/Deployment) and pod down should result in Kubernetes migrate the pod to another node, and Longhorn volume should be able to be used on that node as well. Test scenarios for this are documented here.
+Note:
+In this case, RWX should be excluded.
+Ref: https://github.com/longhorn/longhorn/issues/5900#issuecomment-1541360552</description>
     </item>
     
     <item>
