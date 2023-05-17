@@ -1775,6 +1775,61 @@ def test_volume_multinode(client, volume_name):  # NOQA
     assert len(volumes) == 0
 
 
+@pytest.mark.skip(reason="TODO")
+def test_pvc_storage_class_name_from_backup_volume(): # NOQA
+    """
+    Test the storageClasName of the restored volume's PV/PVC
+    should be from the backup volume
+
+    Given
+    - Create a new StorageClass
+      ```
+      kind: StorageClass
+      apiVersion: storage.k8s.io/v1
+      metadata:
+        name: longhorn-sc-name-recorded
+      provisioner: driver.longhorn.io
+      allowVolumeExpansion: true
+      reclaimPolicy: Delete
+      volumeBindingMode: Immediate
+      parameters:
+        numberOfReplicas: "3"
+        staleReplicaTimeout: "2880"
+      ```
+    - Create a PVC to use this SC
+      ```
+      apiVersion: v1
+      kind: PersistentVolumeClaim
+      metadata:
+        name: test-pvc
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        storageClassName: longhorn-sc-name-recorded
+        resources:
+          requests:
+            storage: 5Gi
+      ```
+    - Attach the Volume and write some data
+
+    When
+    - Backup the Volume
+
+    Then
+    - the backupvolume's status.storageClassName should be
+      longhorn-sc-name-recorded
+
+    When
+    - Restore the backup to a new volume
+    - Create PV/PVC from the new volume with create new PVC option
+
+    Then
+    - The new PVC's storageClassName should still be longhorn-sc-name-recorded
+    - Verify the restored data is the same as original one
+    """
+    pass
+
+
 @pytest.mark.coretest  # NOQA
 def test_volume_scheduling_failure(client, volume_name):  # NOQA
     '''
