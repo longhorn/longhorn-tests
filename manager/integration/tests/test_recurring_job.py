@@ -2266,6 +2266,94 @@ def test_recurring_job_label_on_pvc(client, core_api, volume_name):  # NOQA
     assert unexpected_count == 0
 
 
+@pytest.mark.recurring_job
+def test_recurring_job_source_label(client, core_api, volume_name):  # NOQA
+    """
+    Scenario: test recurring job source label
+
+    Given volume created.
+    And PV created.
+    and PVC created.
+    and Volume default recurring job label exists.
+    and RecurringJob created (recurring-test).
+
+    When add source recurring job label on PVC.
+    And add a recurring job label (recurring-test) on the PVC.
+    And Volume has recurring job label (recurring-test).
+
+    When delete source recurring job label on PVC.
+    And remove PVC recurring job label (recurring-test).
+    Then wait some times for volume controller to resync (30 seconds)
+    And Volume has recurring job label (recurring-test).
+
+    When add source recurring job label on PVC.
+    Then Volume has recurring job label (default).
+    """
+    volume = create_and_check_volume(client, volume_name, size=str(2 * Gi))
+    volume = wait_for_volume_detached(client, volume.name)
+
+    pv_name = volume_name + "-pv"
+    create_pv_for_volume(client, core_api, volume, pv_name)
+
+    pvc_name = volume_name + "-pvc"
+    create_pvc_for_volume(client, core_api, volume, pvc_name)
+
+    recurring_jobs = {
+        RECURRING_JOB_NAME: {
+            TASK: SNAPSHOT,
+            GROUPS: [],
+            CRON: "*/2 * * * *",
+            RETAIN: 1,
+            CONCURRENCY: 1,
+            LABELS: {},
+        },
+    }
+    create_recurring_jobs(client, recurring_jobs)
+    check_recurring_jobs(client, recurring_jobs)
+
+    add_recurring_job_source_to_pvc(pvc_name, core_api)
+
+    claim = core_api.read_namespaced_persistent_volume_claim(
+        name=pvc_name, namespace='default'
+    )
+
+    label_key = f"recurring-job.longhorn.io/{RECURRING_JOB_NAME}"
+    claim.metadata.labels[label_key] = "enabled"
+    core_api.replace_namespaced_persistent_volume_claim(
+        pvc_name, 'default', claim
+    )
+
+    wait_for_volume_recurring_job_update(volume,
+                                         jobs=[RECURRING_JOB_NAME],
+                                         groups=[])
+
+    remove_recurring_job_source_to_pvc(pvc_name, core_api)
+
+    claim = core_api.read_namespaced_persistent_volume_claim(
+        name=pvc_name, namespace='default'
+    )
+
+    del claim.metadata.labels[label_key]
+    core_api.replace_namespaced_persistent_volume_claim(
+        pvc_name, 'default', claim
+    )
+
+    try:
+        wait_for_volume_recurring_job_update(volume,
+                                             jobs=[],
+                                             groups=[DEFAULT])
+        raise Exception("unexpected volume recurring job label update")
+    except Exception:
+        wait_for_volume_recurring_job_update(volume,
+                                             jobs=[RECURRING_JOB_NAME],
+                                             groups=[])
+
+    add_recurring_job_source_to_pvc(pvc_name, core_api)
+    wait_for_volume_recurring_job_update(volume,
+                                         jobs=[],
+                                         groups=[DEFAULT])
+
+
 def add_recurring_job_source_to_pvc(name, core_api):  # NOQA
     claim = core_api.read_namespaced_persistent_volume_claim(
         name=name, namespace='default'
@@ -2275,6 +2363,20 @@ def add_recurring_job_source_to_pvc(name, core_api):  # NOQA
         claim.metadata.labels = {}
 
     claim.metadata.labels["recurring-job.longhorn.io/source"] = "enabled"
+    core_api.replace_namespaced_persistent_volume_claim(
+        name, 'default', claim
+    )
+
+
+def remove_recurring_job_source_to_pvc(name, core_api):  # NOQA
+    claim = core_api.read_namespaced_persistent_volume_claim(
+        name=name, namespace='default'
+    )
+
+    if claim.metadata.labels is None:
+        claim.metadata.labels = {}
+
+    del claim.metadata.labels["recurring-job.longhorn.io/source"]
     core_api.replace_namespaced_persistent_volume_claim(
         name, 'default', claim
     )
