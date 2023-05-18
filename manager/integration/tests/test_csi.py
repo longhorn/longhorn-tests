@@ -51,7 +51,10 @@ def create_pv_storage(api, cli, pv, claim, backing_image, from_backup):
         numberOfReplicas=int(pv['spec']['csi']['volumeAttributes']
                              ['numberOfReplicas']),
         backingImage=backing_image, fromBackup=from_backup)
-    common.wait_for_volume_restoration_completed(cli, pv['metadata']['name'])
+    if from_backup:
+        common.wait_for_volume_restoration_completed(cli,
+                                                     pv['metadata']['name'])
+
     common.wait_for_volume_detached(cli, pv['metadata']['name'])
 
     api.create_persistent_volume(pv)
