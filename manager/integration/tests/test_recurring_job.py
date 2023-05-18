@@ -742,7 +742,7 @@ def test_recurring_jobs_allow_detached_volume(set_random_backupstore, client, co
     # Give sometimes for data to flush to disk
     time.sleep(15)
 
-    volume.detach(hostId="")
+    volume.detach()
     volume = wait_for_volume_detached(client, volume.name)
 
     recurring_jobs = {

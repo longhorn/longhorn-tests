@@ -33,6 +33,7 @@ Gi = (1024 * Mi)
 SIZE = str(16 * Mi)
 EXPAND_SIZE = str(32 * Mi)
 VOLUME_NAME = "longhorn-testvol"
+ATTACHMENT_TICKET_ID_PREFIX = "test-attachment-ticket"
 STATEFULSET_NAME = "longhorn-teststs"
 DEV_PATH = "/dev/longhorn/"
 VOLUME_RWTEST_SIZE = 512
@@ -62,6 +63,7 @@ PORT = ":9500"
 RETRY_COMMAND_COUNT = 3
 RETRY_COUNTS = 150
 RETRY_COUNTS_SHORT = 30
+RETRY_COUNTS_LONG = 300
 RETRY_INTERVAL = 1
 RETRY_INTERVAL_LONG = 2
 RETRY_BACKUP_COUNTS = 300
@@ -90,6 +92,7 @@ VOLUME_ROBUSTNESS_FAULTED = "faulted"
 VOLUME_ROBUSTNESS_UNKNOWN = "unknown"
 
 VOLUME_FIELD_RESTOREREQUIRED = "restoreRequired"
+VOLUME_FIELD_RESTOREINITIATED = "restoreInitiated"
 VOLUME_FIELD_READY = "ready"
 
 VOLUME_FIELD_CLONE_STATUS = "cloneStatus"
@@ -269,6 +272,10 @@ disk_being_syncing = "being syncing and please retry later"
 FS_TYPE_EXT4 = "ext4"
 FS_TYPE_XFS = "xfs"
 
+ATTACHER_TYPE_CSI_ATTACHER = "csi-attacher"
+ATTACHER_TYPE_LONGHORN_API = "longhorn-api"
+ATTACHER_TYPE_LONGHORN_UPGRADER = "longhorn-upgrader"
+
 # customize the timeout for HDD
 disktype = os.environ.get('LONGHORN_DISK_TYPE')
 if disktype == "hdd":
@@ -341,7 +348,7 @@ def cleanup_volume(client, volume):
     :param client: The Longhorn client to use in the request.
     :param volume: The volume to clean up.
     """
-    volume.detach(hostId="")
+    volume.detach()
     volume = wait_for_volume_detached(client, volume.name)
     client.delete(volume)
     wait_for_volume_delete(client, volume.name)
@@ -2338,6 +2345,12 @@ def generate_volume_name():
                 for _ in range(6))
 
 
+def generate_attachment_ticket_id():
+    return ATTACHMENT_TICKET_ID_PREFIX + "-" + \
+           ''.join(random.choice(string.ascii_lowercase + string.digits)
+                   for _ in range(6))
+
+
 @pytest.fixture
 def sts_name(request):
     return generate_sts_name()
@@ -4133,14 +4146,14 @@ def expand_and_wait_for_pvc(api, pvc, size):
     api.patch_namespaced_persistent_volume_claim(
         pvc_name, 'default', pvc)
     complete = False
-    for i in range(RETRY_COUNTS):
+    for i in range(RETRY_COUNTS_LONG):
         claim = api.read_namespaced_persistent_volume_claim(
             name=pvc_name, namespace='default')
         if claim.spec.resources.requests['storage'] ==\
                 claim.status.capacity['storage']:
             complete = True
             break
-        time.sleep(RETRY_INTERVAL)
+        time.sleep(RETRY_INTERVAL_LONG)
     assert complete
     return claim
 
@@ -4285,8 +4298,15 @@ def wait_for_rebuild_start(client, volume_name,
     return status.fromReplica, status.replica
 
 
+def wait_for_restoration_start(client, name):
+    return wait_for_volume_status(client, name,
+                                  VOLUME_FIELD_RESTOREINITIATED,
+                                  True)
+
+
 def wait_for_volume_restoration_completed(client, name):
     wait_for_volume_creation(client, name)
+    wait_for_restoration_start(client, name)
     monitor_restore_progress(client, name)
     return wait_for_volume_status(client, name,
                                   VOLUME_FIELD_RESTOREREQUIRED,
@@ -4624,7 +4644,7 @@ def offline_expand_attached_volume(client, volume_name, size=EXPAND_SIZE):
     volume = wait_for_volume_healthy(client, volume_name)
     engine = get_volume_engine(volume)
 
-    volume.detach(hostId="")
+    volume.detach()
     volume = wait_for_volume_detached(client, volume.name)
     volume.expand(size=size)
     wait_for_volume_expansion(client, volume.name)
@@ -5561,7 +5581,7 @@ def create_volume(client, vol_name, size, node_id, r_num):
 
 def cleanup_volume_by_name(client, vol_name):
     volume = client.by_id_volume(vol_name)
-    volume.detach(hostId="")
+    volume.detach()
     client.delete(volume)
     wait_for_volume_delete(client, vol_name)
 

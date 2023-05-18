@@ -2212,7 +2212,7 @@ def test_disk_migration(client):  # NOQA
     data = common.write_volume_random_data(volume)
     common.check_volume_data(volume, data)
 
-    volume.detach(hostId="")
+    volume.detach()
     volume = common.wait_for_volume_detached(client, vol_name)
 
     # Mount the volume disk to another path

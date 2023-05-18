@@ -25,16 +25,26 @@ set_kubeconfig_envvar(){
   ARCH=${1}
   BASEDIR=${2}
 
-    if [[ ${ARCH} == "amd64" ]] ; then
+  if [[ ${ARCH} == "amd64" ]] ; then
     if [[ ${TF_VAR_k8s_distro_name} == [rR][kK][eE] ]]; then
       export KUBECONFIG="${BASEDIR}/kube_config_rke.yml"
     elif [[ ${TF_VAR_k8s_distro_name} == [rR][kK][eE]2 ]]; then
-      export KUBECONFIG="${BASEDIR}/terraform/aws/${DISTRO}/rke2.yaml"
+      export KUBECONFIG="${BASEDIR}/terraform/${LONGHORN_TEST_CLOUDPROVIDER}/${DISTRO}/rke2.yaml"
+    elif [[ ${TF_VAR_k8s_distro_name} == "gke" ]]; then
+      gcloud container clusters get-credentials `terraform -chdir=${TF_VAR_tf_workspace}/terraform/${LONGHORN_TEST_CLOUDPROVIDER}/${TF_VAR_k8s_distro_name} output -raw cluster_name` --zone `terraform -chdir=${TF_VAR_tf_workspace}/terraform/${LONGHORN_TEST_CLOUDPROVIDER}/${TF_VAR_k8s_distro_name} output -raw cluster_zone` --project ${TF_VAR_gcp_project}
+    elif [[ ${TF_VAR_k8s_distro_name} == "aks" ]]; then
+      export KUBECONFIG="${BASEDIR}/aks.yml"
     else
-      export KUBECONFIG="${BASEDIR}/terraform/aws/${DISTRO}/k3s.yaml"
+      export KUBECONFIG="${BASEDIR}/terraform/${LONGHORN_TEST_CLOUDPROVIDER}/${DISTRO}/k3s.yaml"
     fi
   elif [[ ${ARCH} == "arm64"  ]]; then
-    export KUBECONFIG="${BASEDIR}/terraform/aws/${DISTRO}/k3s.yaml"
+    if [[ ${TF_VAR_k8s_distro_name} == "gke" ]]; then
+      gcloud container clusters get-credentials `terraform -chdir=${TF_VAR_tf_workspace}/terraform/${LONGHORN_TEST_CLOUDPROVIDER}/${TF_VAR_k8s_distro_name} output -raw cluster_name` --zone `terraform -chdir=${TF_VAR_tf_workspace}/terraform/${LONGHORN_TEST_CLOUDPROVIDER}/${TF_VAR_k8s_distro_name} output -raw cluster_zone` --project ${TF_VAR_gcp_project}
+    elif [[ ${TF_VAR_k8s_distro_name} == "aks" ]]; then
+      export KUBECONFIG="${BASEDIR}/aks.yml"
+    else
+      export KUBECONFIG="${BASEDIR}/terraform/${LONGHORN_TEST_CLOUDPROVIDER}/${DISTRO}/k3s.yaml"
+    fi
   fi
 }
 
@@ -102,13 +112,14 @@ wait_longhorn_status_running(){
   local RETRY_INTERVAL="1m"
 
   RETRIES=0
-  while [[ -n `kubectl get pods -n ${LONGHORN_NAMESPACE} --no-headers | awk '{print $3}' | grep -v Running` ]]; do
+  while [[ -n `kubectl get pods -n ${LONGHORN_NAMESPACE} --no-headers 2>&1 | awk '{print $3}' | grep -v Running` ]]; do
     echo "Longhorn is still installing ... re-checking in 1m"
     sleep ${RETRY_INTERVAL}
     RETRIES=$((RETRIES+1))
 
     if [[ ${RETRIES} -eq ${RETRY_COUNTS} ]]; then echo "Error: longhorn installation timeout"; exit 1 ; fi
   done
+
 }
 
 
@@ -339,6 +350,10 @@ run_longhorn_tests(){
     yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env[3].value="hdd"' ${LONGHORN_TESTS_MANIFEST_FILE_PATH}
   fi
 
+  if [[ "${TF_VAR_k8s_distro_name}" == "eks" ]] || [[ "${TF_VAR_k8s_distro_name}" == "gke" ]] || [[ "${TF_VAR_k8s_distro_name}" == "aks" ]]; then
+    yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env[6].value="true"' ${LONGHORN_TESTS_MANIFEST_FILE_PATH}
+  fi
+
   set +x
   ## inject aws cloudprovider and credentials env variables from created secret
   yq e -i 'select(.spec.containers[0].env != null).spec.containers[0].env += {"name": "CLOUDPROVIDER", "value": "aws"}' "${LONGHORN_TESTS_MANIFEST_FILE_PATH}"
@@ -363,7 +378,7 @@ run_longhorn_tests(){
   done
 
   # wait longhorn tests to complete
-  while [[ -n "`kubectl get pod longhorn-test -o=jsonpath='{.status.containerStatuses[?(@.name=="longhorn-test")].state}' | grep \"running\"`"  ]]; do
+  while [[ "`kubectl get pod longhorn-test -o=jsonpath='{.status.containerStatuses[?(@.name=="longhorn-test")].state}' 2>&1 | grep -v \"terminated\"`"  ]]; do
     kubectl logs ${LONGHORN_TEST_POD_NAME} -c longhorn-test -f --since=10s
   done
 

@@ -486,7 +486,7 @@ def test_exporting_backing_image_from_volume(client, volume_name):  # NOQA
     data2 = write_volume_random_data(volume2)
 
     # Step7
-    volume2.detach(hostId="")
+    volume2.detach()
     volume2 = wait_for_volume_detached(client, volume2_name)
 
     # Step8

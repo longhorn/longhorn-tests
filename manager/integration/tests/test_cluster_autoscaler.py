@@ -204,7 +204,7 @@ def test_cluster_autoscaler_all_nodes_with_volume_replicas(client, core_api, app
     volume = client.by_id_volume(volume.name)
     volume = volume.attach(hostId=new_nodes[0].id)
     volume = wait_for_volume_healthy(client, volume_name)
-    volume.detach(hostId="")
+    volume.detach()
 
     client = wait_cluster_autoscale_down(client, core_api, nodes, scale_size)
     create_and_wait_pod(core_api, pod_manifest)
