@@ -6,7 +6,6 @@ SUPPORT_BUNDLE_FILE_NAME=${1:-"lh-support-bundle.zip"}
 SUPPORT_BUNDLE_ISSUE_URL=${2:-""}
 SUPPORT_BUNDLE_ISSUE_DESC=${3:-"Auto-generated support buundle"}
 
-
 set_kubeconfig_envvar(){
     local ARCH=${1}
     local BASEDIR=${2}
@@ -15,12 +14,22 @@ set_kubeconfig_envvar(){
         if [[ ${TF_VAR_k8s_distro_name} == [rR][kK][eE] ]]; then
             export KUBECONFIG="${BASEDIR}/kube_config_rke.yml"
         elif [[ ${TF_VAR_k8s_distro_name} == [rR][kK][eE]2 ]]; then
-            export KUBECONFIG="${BASEDIR}/terraform/aws/${DISTRO}/rke2.yaml"
+            export KUBECONFIG="${BASEDIR}/terraform/${LONGHORN_TEST_CLOUDPROVIDER}/${DISTRO}/rke2.yaml"
+        elif [[ ${TF_VAR_k8s_distro_name} == "gke" ]]; then
+            gcloud container clusters get-credentials `terraform -chdir=${TF_VAR_tf_workspace}/terraform/${LONGHORN_TEST_CLOUDPROVIDER}/${TF_VAR_k8s_distro_name} output -raw cluster_name` --zone `terraform -chdir=${TF_VAR_tf_workspace}/terraform/${LONGHORN_TEST_CLOUDPROVIDER}/${TF_VAR_k8s_distro_name} output -raw cluster_zone` --project ${TF_VAR_gcp_project}
+        elif [[ ${TF_VAR_k8s_distro_name} == "aks" ]]; then
+            export KUBECONFIG="${BASEDIR}/aks.yml"
         else
-            export KUBECONFIG="${BASEDIR}/terraform/aws/${DISTRO}/k3s.yaml"
+            export KUBECONFIG="${BASEDIR}/terraform/${LONGHORN_TEST_CLOUDPROVIDER}/${DISTRO}/k3s.yaml"
         fi
     elif [[ ${ARCH} == "arm64"  ]]; then
-        export KUBECONFIG="${BASEDIR}/terraform/aws/${DISTRO}/k3s.yaml"
+        if [[ ${TF_VAR_k8s_distro_name} == "gke" ]]; then
+            gcloud container clusters get-credentials `terraform -chdir=${TF_VAR_tf_workspace}/terraform/${LONGHORN_TEST_CLOUDPROVIDER}/${TF_VAR_k8s_distro_name} output -raw cluster_name` --zone `terraform -chdir=${TF_VAR_tf_workspace}/terraform/${LONGHORN_TEST_CLOUDPROVIDER}/${TF_VAR_k8s_distro_name} output -raw cluster_zone` --project ${TF_VAR_gcp_project}
+        elif [[ ${TF_VAR_k8s_distro_name} == "aks" ]]; then
+            export KUBECONFIG="${BASEDIR}/aks.yml"
+        else
+            export KUBECONFIG="${BASEDIR}/terraform/${LONGHORN_TEST_CLOUDPROVIDER}/${DISTRO}/k3s.yaml"
+        fi
     fi
 }
 
