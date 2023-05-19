@@ -773,7 +773,7 @@ def test_csi_snapshot_snap_create_csi_snapshot(apps_api, # NOQA
     Context:
 
     After deploy the CSI snapshot CRDs, Controller at
-    https://longhorn.io/docs/1.2.4/snapshots-and-backups/
+    https://longhorn.io/docs/1.4.2/snapshots-and-backups/
     csi-snapshot-support/enable-csi-snapshot-support/
 
     Create VolumeSnapshotClass with type=snap
@@ -792,7 +792,7 @@ def test_csi_snapshot_snap_create_csi_snapshot(apps_api, # NOQA
         - Volume is in detached state
             - Scale down the workload
             - Create VolumeSnapshot with class longhorn-snap
-            - Verify that the volumesnapshot object is not ready
+            - Verify that the volumesnapshot object is ready
         - Volume is in attached state
             - Scale up the workload
             - Verify the Longhorn snapshot generated
@@ -826,7 +826,7 @@ def test_csi_snapshot_snap_create_csi_snapshot(apps_api, # NOQA
     wait_for_volumesnapshot_ready(
                             volumesnapshot_name=csivolsnap[&#34;metadata&#34;][&#34;name&#34;],
                             namespace=&#39;default&#39;,
-                            ready_to_use=False)
+                            ready_to_use=True)
 
     # Volume is in attached state
     deployment[&#39;spec&#39;][&#39;replicas&#39;] = 1
@@ -855,7 +855,7 @@ def test_csi_snapshot_snap_create_volume_from_snapshot(apps_api, # NOQA
     Context:
 
     After deploy the CSI snapshot CRDs, Controller at
-    https://longhorn.io/docs/1.2.4/snapshots-and-backups/
+    https://longhorn.io/docs/1.4.2/snapshots-and-backups/
     csi-snapshot-support/enable-csi-snapshot-support/
 
     Create VolumeSnapshotClass with type=snap
@@ -955,16 +955,6 @@ def test_csi_snapshot_snap_create_volume_from_snapshot(apps_api, # NOQA
     new_pvc1 = pvc
     new_pvc1[&#39;metadata&#39;][&#39;name&#39;] = pvc[&#39;metadata&#39;][&#39;name&#39;] + &#34;new-pvc1&#34;
     create_pvc(new_pvc1)
-    check_pvc_in_specific_status(core_api,
-                                 new_pvc1[&#39;metadata&#39;][&#39;name&#39;], &#34;Pending&#34;)
-
-    deployment[&#34;spec&#34;][&#34;replicas&#34;] = 1
-    apps_api.patch_namespaced_deployment(body=deployment,
-                                         namespace=&#39;default&#39;,
-                                         name=deployment_name)
-    common.wait_for_volume_status(client, vol.name,
-                                  common.VOLUME_FIELD_STATE,
-                                  common.VOLUME_STATE_ATTACHED)
 
     wait_for_pvc_phase(core_api, new_pvc1[&#39;metadata&#39;][&#39;name&#39;], &#34;Bound&#34;)
     pv_name_2 = \
@@ -990,6 +980,13 @@ def test_csi_snapshot_snap_create_volume_from_snapshot(apps_api, # NOQA
     assert expected_md5sum == created_md5sum_2
 
     # Source volume is attached &amp;&amp; Longhorn snapshot doesn’t exist
+    deployment[&#34;spec&#34;][&#34;replicas&#34;] = 1
+    apps_api.patch_namespaced_deployment(body=deployment,
+                                         namespace=&#39;default&#39;,
+                                         name=deployment_name)
+    common.wait_for_volume_status(client, vol.name,
+                                  common.VOLUME_FIELD_STATE,
+                                  common.VOLUME_STATE_ATTACHED)
     vol = client.by_id_volume(vol.name)
     # create new snapshot to avoid the case the volume only has 1
     # snapshot so the snapshot can not deleted
@@ -1150,7 +1147,7 @@ def test_csi_snapshot_snap_delete_csi_snapshot_volume_detached(apps_api, # NOQA
 
     wait_volumesnapshot_deleted(csivolsnap[&#34;metadata&#34;][&#34;name&#34;],
                                 &#34;default&#34;,
-                                can_be_deleted=False)
+                                can_be_deleted=True)
 
 
 def test_csi_snapshot_with_invalid_param(
@@ -1679,7 +1676,7 @@ Create Longhorn volume test-vol
 <dd>
 <div class="desc"><p>Context:</p>
 <p>After deploy the CSI snapshot CRDs, Controller at
-<a href="https://longhorn.io/docs/1.2.4/snapshots-and-backups/">https://longhorn.io/docs/1.2.4/snapshots-and-backups/</a>
+<a href="https://longhorn.io/docs/1.4.2/snapshots-and-backups/">https://longhorn.io/docs/1.4.2/snapshots-and-backups/</a>
 csi-snapshot-support/enable-csi-snapshot-support/</p>
 <p>Create VolumeSnapshotClass with type=snap
 - longhorn-snapshot (type=snap)</p>
@@ -1697,7 +1694,7 @@ csi-snapshot-support/enable-csi-snapshot-support/</p>
 <li>Volume is in detached state<ul>
 <li>Scale down the workload</li>
 <li>Create VolumeSnapshot with class longhorn-snap</li>
-<li>Verify that the volumesnapshot object is not ready</li>
+<li>Verify that the volumesnapshot object is ready</li>
 </ul>
 </li>
 <li>Volume is in attached state<ul>
@@ -1726,7 +1723,7 @@ csi-snapshot-support/enable-csi-snapshot-support/</p>
     Context:
 
     After deploy the CSI snapshot CRDs, Controller at
-    https://longhorn.io/docs/1.2.4/snapshots-and-backups/
+    https://longhorn.io/docs/1.4.2/snapshots-and-backups/
     csi-snapshot-support/enable-csi-snapshot-support/
 
     Create VolumeSnapshotClass with type=snap
@@ -1745,7 +1742,7 @@ csi-snapshot-support/enable-csi-snapshot-support/</p>
         - Volume is in detached state
             - Scale down the workload
             - Create VolumeSnapshot with class longhorn-snap
-            - Verify that the volumesnapshot object is not ready
+            - Verify that the volumesnapshot object is ready
         - Volume is in attached state
             - Scale up the workload
             - Verify the Longhorn snapshot generated
@@ -1779,7 +1776,7 @@ csi-snapshot-support/enable-csi-snapshot-support/</p>
     wait_for_volumesnapshot_ready(
                             volumesnapshot_name=csivolsnap[&#34;metadata&#34;][&#34;name&#34;],
                             namespace=&#39;default&#39;,
-                            ready_to_use=False)
+                            ready_to_use=True)
 
     # Volume is in attached state
     deployment[&#39;spec&#39;][&#39;replicas&#39;] = 1
@@ -1800,7 +1797,7 @@ csi-snapshot-support/enable-csi-snapshot-support/</p>
 <dd>
 <div class="desc"><p>Context:</p>
 <p>After deploy the CSI snapshot CRDs, Controller at
-<a href="https://longhorn.io/docs/1.2.4/snapshots-and-backups/">https://longhorn.io/docs/1.2.4/snapshots-and-backups/</a>
+<a href="https://longhorn.io/docs/1.4.2/snapshots-and-backups/">https://longhorn.io/docs/1.4.2/snapshots-and-backups/</a>
 csi-snapshot-support/enable-csi-snapshot-support/</p>
 <p>Create VolumeSnapshotClass with type=snap
 - longhorn-snapshot (type=snap)</p>
@@ -1866,7 +1863,7 @@ specify Longhorn snapshot generated in step beggining</li>
     Context:
 
     After deploy the CSI snapshot CRDs, Controller at
-    https://longhorn.io/docs/1.2.4/snapshots-and-backups/
+    https://longhorn.io/docs/1.4.2/snapshots-and-backups/
     csi-snapshot-support/enable-csi-snapshot-support/
 
     Create VolumeSnapshotClass with type=snap
@@ -1966,16 +1963,6 @@ specify Longhorn snapshot generated in step beggining</li>
     new_pvc1 = pvc
     new_pvc1[&#39;metadata&#39;][&#39;name&#39;] = pvc[&#39;metadata&#39;][&#39;name&#39;] + &#34;new-pvc1&#34;
     create_pvc(new_pvc1)
-    check_pvc_in_specific_status(core_api,
-                                 new_pvc1[&#39;metadata&#39;][&#39;name&#39;], &#34;Pending&#34;)
-
-    deployment[&#34;spec&#34;][&#34;replicas&#34;] = 1
-    apps_api.patch_namespaced_deployment(body=deployment,
-                                         namespace=&#39;default&#39;,
-                                         name=deployment_name)
-    common.wait_for_volume_status(client, vol.name,
-                                  common.VOLUME_FIELD_STATE,
-                                  common.VOLUME_STATE_ATTACHED)
 
     wait_for_pvc_phase(core_api, new_pvc1[&#39;metadata&#39;][&#39;name&#39;], &#34;Bound&#34;)
     pv_name_2 = \
@@ -2001,6 +1988,13 @@ specify Longhorn snapshot generated in step beggining</li>
     assert expected_md5sum == created_md5sum_2
 
     # Source volume is attached &amp;&amp; Longhorn snapshot doesn’t exist
+    deployment[&#34;spec&#34;][&#34;replicas&#34;] = 1
+    apps_api.patch_namespaced_deployment(body=deployment,
+                                         namespace=&#39;default&#39;,
+                                         name=deployment_name)
+    common.wait_for_volume_status(client, vol.name,
+                                  common.VOLUME_FIELD_STATE,
+                                  common.VOLUME_STATE_ATTACHED)
     vol = client.by_id_volume(vol.name)
     # create new snapshot to avoid the case the volume only has 1
     # snapshot so the snapshot can not deleted
@@ -2245,7 +2239,7 @@ the field VolumeSnapshotContent.snapshotHandle</li>
 
     wait_volumesnapshot_deleted(csivolsnap[&#34;metadata&#34;][&#34;name&#34;],
                                 &#34;default&#34;,
-                                can_be_deleted=False)</code></pre>
+                                can_be_deleted=True)</code></pre>
 </details>
 </dd>
 <dt id="tests.test_csi_snapshotter.test_csi_snapshot_with_bak_param"><code class="name flex">

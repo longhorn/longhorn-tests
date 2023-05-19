@@ -527,6 +527,11 @@ def test_replica_scheduler_too_large_volume_fit_any_disks(client):  # NOQA
     7. Make sure every replica landed on different nodes&#39;s default disk.
     &#34;&#34;&#34;
 
+    over_provisioning_setting = client.by_id_setting(
+        SETTING_STORAGE_OVER_PROVISIONING_PERCENTAGE)
+    client.update(over_provisioning_setting,
+                  value=DEFAULT_STORAGE_OVER_PROVISIONING_PERCENTAGE)
+
     nodes = client.list_node()
     lht_hostId = get_self_host_id()
     expect_node_disk = {}
@@ -5655,6 +5660,11 @@ def test_replica_scheduler_too_large_volume_fit_any_disks(client):  # NOQA
     6. Attach the volume.
     7. Make sure every replica landed on different nodes&#39;s default disk.
     &#34;&#34;&#34;
+
+    over_provisioning_setting = client.by_id_setting(
+        SETTING_STORAGE_OVER_PROVISIONING_PERCENTAGE)
+    client.update(over_provisioning_setting,
+                  value=DEFAULT_STORAGE_OVER_PROVISIONING_PERCENTAGE)
 
     nodes = client.list_node()
     lht_hostId = get_self_host_id()
