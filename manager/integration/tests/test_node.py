@@ -46,6 +46,7 @@ from common import set_node_cordon
 from common import set_node_tags, set_node_scheduling
 from common import set_node_scheduling_eviction
 from common import update_node_disks
+from common import update_setting
 
 from backupstore import set_random_backupstore # NOQA
 
@@ -498,12 +499,6 @@ def test_replica_scheduler_too_large_volume_fit_any_disks(client):  # NOQA
     6. Attach the volume.
     7. Make sure every replica landed on different nodes's default disk.
     """
-
-    over_provisioning_setting = client.by_id_setting(
-        SETTING_STORAGE_OVER_PROVISIONING_PERCENTAGE)
-    client.update(over_provisioning_setting,
-                  value=DEFAULT_STORAGE_OVER_PROVISIONING_PERCENTAGE)
-
     nodes = client.list_node()
     lht_hostId = get_self_host_id()
     expect_node_disk = {}
@@ -582,7 +577,7 @@ def test_replica_scheduler_update_over_provisioning(client):  # NOQA
 
     1. Set setting `overprovisioning` to 0. (disable all scheduling)
     2. Create a new volume. Verify volume's `scheduled` condition is false.
-    3. Set setting `over provisioning` to 100%.
+    3. Set setting `over provisioning` to 200%.
     4. Verify volume's `scheduled` condition now become true.
     5. Attach the volume.
     6. Make sure every replica landed on different nodes's default disk.
@@ -597,14 +592,10 @@ def test_replica_scheduler_update_over_provisioning(client):  # NOQA
                 expect_disk = disk
                 expect_node_disk[node.name] = expect_disk
 
-    over_provisioning_setting = client.by_id_setting(
-        SETTING_STORAGE_OVER_PROVISIONING_PERCENTAGE)
-    old_provisioning_setting = over_provisioning_setting.value
-
     # set storage over provisioning percentage to 0
     # to test all replica couldn't be scheduled
-    over_provisioning_setting = client.update(over_provisioning_setting,
-                                              value="0")
+    update_setting(client, SETTING_STORAGE_OVER_PROVISIONING_PERCENTAGE, "0")
+
     vol_name = common.generate_volume_name()
     volume = client.create_volume(name=vol_name,
                                   size=SIZE, numberOfReplicas=len(nodes))
@@ -612,9 +603,8 @@ def test_replica_scheduler_update_over_provisioning(client):  # NOQA
                                                         "status",
                                                         CONDITION_STATUS_FALSE)
 
-    # set storage over provisioning percentage to 100
-    over_provisioning_setting = client.update(over_provisioning_setting,
-                                              value="100")
+    # set storage over provisioning percentage to 200
+    update_setting(client, SETTING_STORAGE_OVER_PROVISIONING_PERCENTAGE, "200")
 
     # check volume status
     volume = common.wait_for_volume_condition_scheduled(client, vol_name,
@@ -643,8 +633,6 @@ def test_replica_scheduler_update_over_provisioning(client):  # NOQA
 
     # clean volume and disk
     cleanup_volume_by_name(client, vol_name)
-    client.update(over_provisioning_setting,
-                  value=old_provisioning_setting)
 
 
 @pytest.mark.node  # NOQA
@@ -652,18 +640,11 @@ def test_replica_scheduler_exceed_over_provisioning(client):  # NOQA
     """
     Test replica scheduler: exceeding overprovisioning parameter
 
-    1. Set setting `overprovisioning` to 100
+    1. Set setting `overprovisioning` to 100 (default)
     2. Update every disks to set 1G available for scheduling
     3. Try to schedule a volume of 2G. Volume scheduled condition should be
     false
     """
-    over_provisioning_setting = client.by_id_setting(
-        SETTING_STORAGE_OVER_PROVISIONING_PERCENTAGE)
-    old_provisioning_setting = over_provisioning_setting.value
-    # set storage over provisioning percentage to 100
-    over_provisioning_setting = client.update(over_provisioning_setting,
-                                              value="100")
-
     # test exceed over provisioning limit couldn't be scheduled
     nodes = client.list_node()
     for node in nodes:
@@ -689,7 +670,6 @@ def test_replica_scheduler_exceed_over_provisioning(client):  # NOQA
                                                         CONDITION_STATUS_FALSE)
     client.delete(volume)
     common.wait_for_volume_delete(client, vol_name)
-    client.update(over_provisioning_setting, value=old_provisioning_setting)
 
 
 @pytest.mark.node  # NOQA
@@ -697,19 +677,12 @@ def test_replica_scheduler_just_under_over_provisioning(client):  # NOQA
     """
     Test replica scheduler: just under overprovisioning parameter
 
-    1. Set setting `overprovisioning` to 100
+    1. Set setting `overprovisioning` to 100 (default)
     2. Get the maximum size of all the disks
     3. Create a volume using maximum_size - 2MiB as the volume size.
     4. Volume scheduled condition should be true.
     5. Make sure every replica landed on different nodes's default disk.
     """
-    over_provisioning_setting = client.by_id_setting(
-        SETTING_STORAGE_OVER_PROVISIONING_PERCENTAGE)
-    old_provisioning_setting = over_provisioning_setting.value
-    # set storage over provisioning percentage to 100
-    over_provisioning_setting = client.update(over_provisioning_setting,
-                                              value="100")
-
     lht_hostId = get_self_host_id()
     nodes = client.list_node()
     expect_node_disk = {}
@@ -763,7 +736,6 @@ def test_replica_scheduler_just_under_over_provisioning(client):  # NOQA
 
     # clean volume and disk
     cleanup_volume_by_name(client, vol_name)
-    client.update(over_provisioning_setting, value=old_provisioning_setting)
 
 
 @pytest.mark.node  # NOQA
