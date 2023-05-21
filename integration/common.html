@@ -39,6 +39,7 @@ import hashlib
 import signal
 import types
 import threading
+import re
 
 import socket
 import pytest
@@ -3133,7 +3134,9 @@ def get_k8s_zone_label():
 
     k8s_ver_minor = k8s_ver_data.minor
 
-    if int(k8s_ver_minor) &gt;= 17:
+    # k8s_ver_minor no needs to be an int
+    # it could be &#34;24+&#34; in eks
+    if int(re.sub(&#39;\\D&#39;, &#39;&#39;, k8s_ver_minor)) &gt;= 17:
         k8s_zone_label = K8S_ZONE_LABEL
     else:
         k8s_zone_label = DEPRECATED_K8S_ZONE_LABEL
@@ -9185,7 +9188,9 @@ greate than MAX_SUPPORT_BINDLE_NUMBER.</p>
 
     k8s_ver_minor = k8s_ver_data.minor
 
-    if int(k8s_ver_minor) &gt;= 17:
+    # k8s_ver_minor no needs to be an int
+    # it could be &#34;24+&#34; in eks
+    if int(re.sub(&#39;\\D&#39;, &#39;&#39;, k8s_ver_minor)) &gt;= 17:
         k8s_zone_label = K8S_ZONE_LABEL
     else:
         k8s_zone_label = DEPRECATED_K8S_ZONE_LABEL
