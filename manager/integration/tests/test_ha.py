@@ -3028,8 +3028,7 @@ def test_engine_image_not_fully_deployed_perform_auto_upgrade_engine(client, cor
     assert volume2.engineImage == default_img.image
 
 
-@pytest.mark.skip(reason="TODO") # NOQA
-def test_engine_image_not_fully_deployed_perform_dr_restoring_expanding_volume(): # NOQA
+def test_engine_image_not_fully_deployed_perform_dr_restoring_expanding_volume(client, core_api, set_random_backupstore): # NOQA
     """
     Test DR, restoring, expanding volumes when engine image DaemonSet
     is not fully deployed
@@ -3060,7 +3059,132 @@ def test_engine_image_not_fully_deployed_perform_dr_restoring_expanding_volume()
     15. In a 2-min retry verify that Longhorn doesn't create new replica
        for vol-1 and doesn't reuse the failed replica on node-x
     """
-    pass
+    tainted_node_id = \
+        prepare_engine_not_fully_deployed_environment(client, core_api)
+
+    # step 1
+    volume1 = create_and_check_volume(client, "vol-1", num_of_replicas=2,
+                                      size=str(1 * Gi))
+
+    # node1: tainted node, node2: self host node, node3: the last one
+    nodes = client.list_node()
+    for node in nodes:
+        if node.id == get_self_host_id():
+            node2 = node
+        elif node.id != tainted_node_id and node.id != get_self_host_id:
+            node3 = node
+
+    # step 2
+    volume1 = volume1.attach(hostId=node2.id)
+    volume1 = wait_for_volume_healthy(client, volume1.name)
+
+    volume_endpoint = get_volume_endpoint(volume1)
+    snap1_offset = 1
+    snap_data_size_in_mb = 4
+    write_volume_dev_random_mb_data(volume_endpoint,
+                                    snap1_offset, snap_data_size_in_mb)
+
+    snap = create_snapshot(client, volume1.name)
+    volume1.snapshotBackup(name=snap.name)
+    wait_for_backup_completion(client,
+                               volume1.name,
+                               snap.name,
+                               retry_count=600)
+    bv, b1 = find_backup(client, volume1.name, snap.name)
+
+    dr_volume_name = volume1.name + "-dr"
+    client.create_volume(name=dr_volume_name, size=str(1 * Gi),
+                         numberOfReplicas=2, fromBackup=b1.url,
+                         frontend="", standby=True)
+    wait_for_volume_creation(client, dr_volume_name)
+    wait_for_backup_restore_completed(client, dr_volume_name, b1.name)
+    dr_volume = client.by_id_volume(dr_volume_name)
+
+    # step 4
+    on_node2 = False
+    on_node3 = False
+    for replica in dr_volume.replicas:
+        if replica.hostId == node2.id:
+            on_node2 = True
+        if replica.hostId == node3.id:
+            on_node3 = True
+
+    assert on_node2
+    assert on_node3
+
+    # step 5
+    node_x = dr_volume.controllers[0].hostId
+    core_api.patch_node(
+        node_x, {
+            "spec": {
+                "taints":
+                    [{"effect": "NoSchedule",
+                        "key": "key",
+                        "value": "value"}]
+            }
+        })
+
+    # step 6
+    restart_and_wait_ready_engine_count(client, 1)
+
+    # step 7
+    dr_volume = wait_for_volume_degraded(client, dr_volume.name)
+    assert dr_volume.controllers[0].hostId != tainted_node_id
+    assert dr_volume.controllers[0].hostId != node_x
+
+    node_running_latest_enging = dr_volume.controllers[0].hostId
+
+    # step 8, 9 10
+    res_vol_name = "vol-rs"
+
+    client.create_volume(name=res_vol_name, numberOfReplicas=1,
+                         fromBackup=b1.url)
+    wait_for_volume_condition_restore(client, res_vol_name,
+                                      "status", "True")
+    wait_for_volume_condition_restore(client, res_vol_name,
+                                      "reason", "RestoreInProgress")
+
+    res_volume = wait_for_volume_detached(client, res_vol_name)
+    res_volume = client.by_id_volume(res_vol_name)
+
+    assert res_volume.ready is True
+    assert len(res_volume.replicas) == 1
+    assert res_volume.replicas[0].hostId == node_running_latest_enging
+
+    # step 11, 12
+    expand_size = str(2 * Gi)
+    res_volume.expand(size=expand_size)
+    wait_for_volume_expansion(client, res_volume.name)
+    res_volume = wait_for_volume_detached(client, res_volume.name)
+    res_volume.attach(hostId=node_running_latest_enging, disableFrontend=False)
+    res_volume = wait_for_volume_healthy(client, res_volume.name)
+    assert res_volume.size == expand_size
+
+    # step 13
+    replenish_wait_setting = \
+        client.by_id_setting(SETTING_REPLICA_REPLENISHMENT_WAIT_INTERVAL)
+    client.update(replenish_wait_setting, value="600")
+
+    # step 14
+    volume1 = client.by_id_volume(volume1.name)
+    for replica in volume1.replicas:
+        if replica.hostId == node_x:
+            crash_replica_processes(client, core_api, res_volume.name,
+                                    replicas=[replica],
+                                    wait_to_fail=True)
+
+    # step 15
+    volume1 = wait_for_volume_degraded(client, volume1.name)
+    for i in range(RETRY_COUNTS_SHORT * 2):
+        volume1 = client.by_id_volume(volume1.name)
+        assert len(volume1.replicas) == 2
+        for replica in volume1.replicas:
+            if replica.hostId == node_x:
+                assert replica.running is False
+            else:
+                assert replica.running is True
+
+        time.sleep(RETRY_INTERVAL_LONG)
 
 
 def test_autosalvage_with_data_locality_enabled(client, core_api, make_deployment_with_pvc, volume_name, pvc): # NOQA
