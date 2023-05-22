@@ -2,7 +2,7 @@ flake8==2.5.1
 paramiko
 pytest==2.9.2
 pytest-xdist
-requests==2.20.0
+requests==2.31.0
 cattle==0.5.1
 selenium==2.33.0
 websocket-client==0.23.0
