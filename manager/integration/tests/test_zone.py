@@ -28,6 +28,8 @@ from common import get_host_replica_count
 from common import get_k8s_zone_label
 from common import set_k8s_node_zone_label
 from common import set_node_cordon
+from common import set_node_tags
+from common import wait_for_node_tag_update
 
 from common import update_setting
 
@@ -952,3 +954,68 @@ def test_replica_auto_balance_zone_best_effort_with_uneven_node_in_zones(client,
 
     assert z1_r_count == 2
     assert z2_r_count == 2
+
+
+def test_replica_auto_balance_should_respect_node_selector(client, core_api, volume_name, pod):  # NOQA
+    """
+    Background:
+
+    Given Setting (replica-soft-anti-affinity) is (true).
+    And Setting (replica-zone-soft-anti-affinity) is (true).
+    And Node (node-1, node-2) has tag (tag-0).
+    And Node (node-1) is in zone (lh-zone-1).
+        Node (node-2) is in zone (lh-zone-2).
+        Node (node-3) is in zone (should-not-schedule).
+
+    Scenario Outline: replica auto-balance should respect node-selector.
+
+    Issue: https://github.com/longhorn/longhorn/issues/5971
+
+    Given Volume created.
+    And Volume replica number is (3).
+    And Volume has node selector (tag-0).
+    And Volume attached (node-1).
+    And Replica is in zone (lh-zone-1, lh-zone-2).
+
+    When Setting (replica-auto-balance) is (least-effort).
+
+    Then Replica is in zone (lh-zone-1, lh-zone-2) (loop 10 sec).
+    """
+    update_setting(client, SETTING_REPLICA_NODE_SOFT_ANTI_AFFINITY, "true")
+    update_setting(client, SETTING_REPLICA_ZONE_SOFT_ANTI_AFFINITY, "true")
+
+    n1, n2, n3 = client.list_node()
+
+    selected_nodes = [n1, n2]
+
+    node_tag = "tag0"
+    for node in selected_nodes:
+        set_node_tags(client, node, tags=[node_tag])
+        wait_for_node_tag_update(client, node.name, [node_tag])
+
+    set_k8s_node_zone_label(core_api, n1.name, ZONE1)
+    set_k8s_node_zone_label(core_api, n2.name, ZONE2)
+    set_k8s_node_zone_label(core_api, n3.name, "should-not-schedule")
+    wait_longhorn_node_zone_updated(client)
+
+    n_replicas = 3
+    client.create_volume(name=volume_name,
+                         numberOfReplicas=n_replicas,
+                         nodeSelector=[node_tag])
+    volume = wait_for_volume_detached(client, volume_name)
+    volume.attach(hostId=selected_nodes[0].name)
+    z1_r_count = get_zone_replica_count(client, volume_name, ZONE1)
+    z2_r_count = get_zone_replica_count(client, volume_name, ZONE2)
+    assert z1_r_count + z2_r_count == n_replicas
+
+    update_setting(client, SETTING_REPLICA_AUTO_BALANCE, "least-effort")
+
+    # Check over 10 seconds to check for unexpected re-scheduling.
+    for _ in range(10):
+        time.sleep(1)
+
+        check_z1_r_count = get_zone_replica_count(client, volume_name, ZONE1)
+        check_z2_r_count = get_zone_replica_count(client, volume_name, ZONE2)
+
+        assert check_z1_r_count == z1_r_count
+        assert check_z2_r_count == z2_r_count
