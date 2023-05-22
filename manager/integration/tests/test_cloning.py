@@ -175,7 +175,7 @@ def test_cloning_with_detached_source_volume(client, core_api, pvc, clone_pvc): 
                 - ReadWriteOnce
               resources:
                 requests:
-                  storage: 10Gi
+                  storage: 3Gi
             ```
         2. Wait for volume to be created and attach it to a node.
         3. Write some data to the mount path of the volume
@@ -195,16 +195,15 @@ def test_cloning_with_detached_source_volume(client, core_api, pvc, clone_pvc): 
                 - ReadWriteOnce
               resources:
                 requests:
-                  storage: 10Gi
+                  storage: 3Gi
             ```
-        6. Wait for `source-pvc` to be attached
-        7. Wait for the `CloneStatus.State` in `cloned-pvc` to be `completed`
-        8. Wait for `source-pvc` to be detached
-        9. Attach the cloned volume to a node
-        10. Verify the data in `cloned-pvc` is the same as in `source-pvc`.
-        11. In 2-min retry loop, verify the volume of the `clone-pvc`
+        6. Wait for the `CloneStatus.State` in `cloned-pvc` to be `completed`
+        7. Wait for `source-pvc` to be detached
+        8. Attach the cloned volume to a node
+        9. Verify the data in `cloned-pvc` is the same as in `source-pvc`.
+        10. In 2-min retry loop, verify the volume of the `clone-pvc`
             eventually becomes healthy.
-        12. Verify snapshot created in `source-pvc` volume because of the clone
+        11. Verify snapshot created in `source-pvc` volume because of the clone
     """
     # Step-1
     source_pvc_name = 'source-pvc' + generate_random_suffix()
@@ -225,7 +224,7 @@ def test_cloning_with_detached_source_volume(client, core_api, pvc, clone_pvc): 
     data = write_volume_random_data(source_volume)
 
     # Steps-4
-    source_volume.detach(hostId=lht_host_id)
+    source_volume.detach()
     wait_for_volume_detached(client, source_volume_name)
 
     # Step-5
@@ -241,30 +240,27 @@ def test_cloning_with_detached_source_volume(client, core_api, pvc, clone_pvc): 
     wait_for_pvc_phase(core_api, clone_pvc_name, "Bound")
 
     # Step-6
-    source_volume = wait_for_volume_attached(client, source_volume_name)
-
-    # Step-7
     clone_volume_name = get_volume_name(core_api, clone_pvc_name)
     wait_for_volume_clone_status(client, clone_volume_name, VOLUME_FIELD_STATE,
                                  VOLUME_FIELD_CLONE_COMPLETED)
     wait_for_volume_detached(client, clone_volume_name)
 
-    # Step-8
+    # Step-7
     wait_for_volume_detached(client, source_volume_name)
 
-    # Step-9
+    # Step-8
     clone_volume = client.by_id_volume(clone_volume_name)
     clone_volume.attach(hostId=lht_host_id)
     wait_for_volume_attached(client, clone_volume_name)
     clone_volume = wait_for_volume_endpoint(client, clone_volume_name)
 
-    # Step-10
+    # Step-9
     check_volume_data(clone_volume, data)
 
-    # Step-11
+    # Step-10
     wait_for_volume_healthy(client, clone_volume_name)
 
-    # Step-12
+    # Step-11
     source_volume = client.by_id_volume(source_volume_name)
     source_volume.attach(hostId=lht_host_id)
     source_volume = wait_for_volume_attached(client, source_volume_name)
@@ -286,7 +282,11 @@ def test_cloning_with_backing_image(client, core_api, pvc, pod, clone_pvc, clone
         numberOfReplicas: "3"
         staleReplicaTimeout: "2880" # 48 hours in minutes
         backingImage: "bi-parrot"
-        backingImageURL: "https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2" # NOQA
+        backingImageDataSourceType: "download"
+        backing_image_data_source_parameters = (
+          '{"url": "https://backing-image-example.s3-region.amazonaws.com/'
+          'test-backing-image"}'
+        )
       ```
     2. Repeat the `test_cloning_without_backing_image()` test with
        `source-pvc` and `cloned-pvc` use `longhorn-bi-parrot` instead of
@@ -298,8 +298,10 @@ def test_cloning_with_backing_image(client, core_api, pvc, pod, clone_pvc, clone
     backing_img_storage_class_name = 'longhorn-bi-parrot'
     storage_class['metadata']['name'] = backing_img_storage_class_name
     storage_class['parameters']['backingImage'] = 'bi-parrot'
-    storage_class['parameters']['backingImageURL'] = \
-        'https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2' # NOQA
+    storage_class['parameters']['backingImageDataSourceType'] = 'download'
+    storage_class['parameters']['backingImageDataSourceParameters'] = (
+        '{"url": "https://longhorn-backing-image.s3-us-west-1.amazonaws.com/'
+        'parrot.qcow2"}')
     storage_class['reclaimPolicy'] = 'Delete'
 
     create_storage_class(storage_class)

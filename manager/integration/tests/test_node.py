@@ -499,6 +499,11 @@ def test_replica_scheduler_too_large_volume_fit_any_disks(client):  # NOQA
     7. Make sure every replica landed on different nodes's default disk.
     """
 
+    over_provisioning_setting = client.by_id_setting(
+        SETTING_STORAGE_OVER_PROVISIONING_PERCENTAGE)
+    client.update(over_provisioning_setting,
+                  value=DEFAULT_STORAGE_OVER_PROVISIONING_PERCENTAGE)
+
     nodes = client.list_node()
     lht_hostId = get_self_host_id()
     expect_node_disk = {}
@@ -2212,7 +2217,7 @@ def test_disk_migration(client):  # NOQA
     data = common.write_volume_random_data(volume)
     common.check_volume_data(volume, data)
 
-    volume.detach(hostId="")
+    volume.detach()
     volume = common.wait_for_volume_detached(client, vol_name)
 
     # Mount the volume disk to another path

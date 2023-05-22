@@ -6,11 +6,7 @@ locals {
 data "aws_ami" "aws_ami_sles" {
   most_recent      = true
   owners           = [var.aws_ami_sles_account_number]
-
-  filter {
-    name   = "name"
-    values = ["suse-sles-${var.os_distro_version}-v*-hvm-ssd-${local.aws_ami_sles_arch}"]
-  }
+  name_regex       = "^suse-sles-${var.os_distro_version}-v\\d+-hvm-ssd-${local.aws_ami_sles_arch}"
 }
 
 
