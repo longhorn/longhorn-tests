@@ -5473,7 +5473,13 @@ def generate_support_bundle(case_name):  # NOQA
 
     url = client._url.replace('schemas', 'supportbundles')
     data = {'description': case_name, 'issueURL': case_name}
-    res = requests.post(url, json=data).json()
+    try:
+        res_raw = requests.post(url, json=data)
+        res_raw.raise_for_status()
+        res = res_raw.json()
+    except Exception as e:
+        warnings.warn(f"Error while generating support bundle: {e}")
+        return
     id = res['id']
     name = res['name']
 
