@@ -5501,7 +5501,13 @@ def generate_support_bundle(case_name):  # NOQA
 
     url = client._url.replace(&#39;schemas&#39;, &#39;supportbundles&#39;)
     data = {&#39;description&#39;: case_name, &#39;issueURL&#39;: case_name}
-    res = requests.post(url, json=data).json()
+    try:
+        res_raw = requests.post(url, json=data)
+        res_raw.raise_for_status()
+        res = res_raw.json()
+    except Exception as e:
+        warnings.warn(f&#34;Error while generating support bundle: {e}&#34;)
+        return
     id = res[&#39;id&#39;]
     name = res[&#39;name&#39;]
 
@@ -8717,7 +8723,13 @@ greate than MAX_SUPPORT_BINDLE_NUMBER.</p>
 
     url = client._url.replace(&#39;schemas&#39;, &#39;supportbundles&#39;)
     data = {&#39;description&#39;: case_name, &#39;issueURL&#39;: case_name}
-    res = requests.post(url, json=data).json()
+    try:
+        res_raw = requests.post(url, json=data)
+        res_raw.raise_for_status()
+        res = res_raw.json()
+    except Exception as e:
+        warnings.warn(f&#34;Error while generating support bundle: {e}&#34;)
+        return
     id = res[&#39;id&#39;]
     name = res[&#39;name&#39;]
 
