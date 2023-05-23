@@ -2152,6 +2152,134 @@ def test_recurring_job_filesystem_trim(client, core_api, batch_v1_api, volume_na
     assert size_trimmed == test_size
 
 
+@pytest.mark.recurring_job
+def test_recurring_job_label_on_pvc(client, core_api, volume_name):  # NOQA
+    """
+    Scenario: test recurring job label on PVC
+
+    Given volume created.
+    And PV created.
+    and PVC created.
+    and PVC source recurring job label exists.
+    and Volume default recurring job label exists.
+    and RecurringJobs created (recurring-test-1, recurring-test-2).
+    and RecurringJob (recurring-test-2) is in group (recurring-test-2)
+
+    When add a recurring job label (recurring-test-1) on the PVC.
+    And add a recurring job-group label (recurring-test-2) on the PVC.
+    Then Volume has recurring job label (recurring-test-1).
+    And Volume has recurring job-group label (recurring-test-2).
+
+    When remove PVC recurring job label (recurring-test-2).
+    Then Volume has recurring job label (recurring-test-1).
+
+    When delete RecurringJobs (recurring-test-1).
+    Then Volume has recurring job label (default).
+    And PVC has no recurring job.
+    """
+    volume = create_and_check_volume(client, volume_name, size=str(2 * Gi))
+    volume = wait_for_volume_detached(client, volume.name)
+
+    pv_name = volume_name + "-pv"
+    create_pv_for_volume(client, core_api, volume, pv_name)
+
+    pvc_name = volume_name + "-pvc"
+    create_pvc_for_volume(client, core_api, volume, pvc_name)
+    add_recurring_job_source_to_pvc(pvc_name, core_api)
+
+    recurring_job_name_1 = f'{RECURRING_JOB_NAME}-1'
+    recurring_job_name_2 = f'{RECURRING_JOB_NAME}-2'
+    recurring_jobs = {
+        recurring_job_name_1: {
+            TASK: SNAPSHOT,
+            GROUPS: [],
+            CRON: "*/2 * * * *",
+            RETAIN: 1,
+            CONCURRENCY: 1,
+            LABELS: {},
+        },
+        recurring_job_name_2: {
+            TASK: SNAPSHOT,
+            GROUPS: [recurring_job_name_2],
+            CRON: "*/2 * * * *",
+            RETAIN: 1,
+            CONCURRENCY: 1,
+            LABELS: {},
+        },
+    }
+    create_recurring_jobs(client, recurring_jobs)
+    check_recurring_jobs(client, recurring_jobs)
+
+    claim = core_api.read_namespaced_persistent_volume_claim(
+        name=pvc_name, namespace='default'
+    )
+
+    if claim.metadata.labels is None:
+        claim.metadata.labels = {}
+
+    label_key_1 = f"recurring-job.longhorn.io/{recurring_job_name_1}"
+    label_key_2 = f"recurring-job-group.longhorn.io/{recurring_job_name_2}"
+    claim.metadata.labels[label_key_1] = "enabled"
+    claim.metadata.labels[label_key_2] = "enabled"
+    core_api.replace_namespaced_persistent_volume_claim(
+        pvc_name, 'default', claim
+    )
+    wait_for_volume_recurring_job_update(volume,
+                                         jobs=[recurring_job_name_1],
+                                         groups=[recurring_job_name_2])
+
+    claim = core_api.read_namespaced_persistent_volume_claim(
+        name=pvc_name, namespace='default'
+    )
+
+    del claim.metadata.labels[label_key_2]
+    core_api.replace_namespaced_persistent_volume_claim(
+        pvc_name, 'default', claim
+    )
+    wait_for_volume_recurring_job_update(volume,
+                                         jobs=[recurring_job_name_1],
+                                         groups=[])
+
+    recurring_job_1 = client.by_id_recurring_job(recurring_job_name_1)
+    client.delete(recurring_job_1)
+
+    wait_for_volume_recurring_job_update(volume,
+                                         jobs=[],
+                                         groups=[DEFAULT])
+
+    claim = core_api.read_namespaced_persistent_volume_claim(
+        name=pvc_name, namespace='default'
+    )
+
+    if claim.metadata.labels is None:
+        claim.metadata.labels = {}
+
+    unexpected_count = 0
+    for label in claim.metadata.labels:
+        if not label.startswith("recurring-job"):
+            continue
+
+        if label == "recurring-job.longhorn.io/source":
+            continue
+
+        unexpected_count += 1
+    assert unexpected_count == 0
+
+
+def add_recurring_job_source_to_pvc(name, core_api):  # NOQA
+    claim = core_api.read_namespaced_persistent_volume_claim(
+        name=name, namespace='default'
+    )
+
+    if claim.metadata.labels is None:
+        claim.metadata.labels = {}
+
+    claim.metadata.labels["recurring-job.longhorn.io/source"] = "enabled"
+    core_api.replace_namespaced_persistent_volume_claim(
+        name, 'default', claim
+    )
+
+
 def wait_for_actual_size_change_mb(client, vol_name, old_size,  # NOQA
                                    retry_counts=60, wait_stablize=True):
     size_change = 0
