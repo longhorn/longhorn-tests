@@ -1524,7 +1524,67 @@ def test_replica_schedule_to_disk_with_most_usable_storage(client, volume_name, 
     volume = client.by_id_volume(volume_name)
     for replica in volume.replicas:
         hostId = replica.hostId
-        assert replica.diskID == expect_scheduled_disk[hostId].diskUUID</code></pre>
+        assert replica.diskID == expect_scheduled_disk[hostId].diskUUID
+
+
+@pytest.mark.skip(reason=&#34;TODO&#34;)
+def test_soft_anti_affinity_scheduling_volume_enable(): # NOQA
+    &#34;&#34;&#34;
+    Test the global setting will be overwrite
+    if the volume enable the Soft Anti-Affinity
+
+    With Soft Anti-Affinity, a new replica should still be scheduled on a node
+    with an existing replica, which will result in &#34;Healthy&#34; state but limited
+    redundancy.
+
+    Setup
+    - Disable Soft Anti-Affinity in global setting
+
+    Given
+    - Create a volume with replicaSoftAntiAffinity=enabled in the spec
+    - Attach to the current node and Generate and write `data` to the volume
+
+    When
+    - Disable current node&#39;s scheduling.
+    - Remove the replica on the current node
+
+    Then
+    - Wait for the volume to complete rebuild. Volume should have 3 replicas.
+    - Verify `data`
+    &#34;&#34;&#34;
+    pass
+
+
+@pytest.mark.skip(reason=&#34;TODO&#34;)
+def test_soft_anti_affinity_scheduling_volume_disable(): # NOQA
+    &#34;&#34;&#34;
+    Test the global setting will be overwrite
+    if the volume disable the Soft Anti-Affinity
+
+    With Soft Anti-Affinity disabled,
+    scheduling on nodes with existing replicas should be forbidden,
+    resulting in &#34;Degraded&#34; state.
+
+    Setup
+    - Enable Soft Anti-Affinity in global setting
+
+    Given
+    - Create a volume with replicaSoftAntiAffinity=disabled in the spec
+    - Attach to the current node and Generate and write `data` to the volume
+
+    When
+    - Disable current node&#39;s scheduling.
+    - Remove the replica on the current node
+
+    Then
+    - Verify volume will be in degraded state.
+    - Verify volume reports condition `scheduled == false`
+    - Verify only two of three replicas of volume are healthy.
+    - Verify the remaining replica doesn&#39;t have `replica.HostID`,
+      meaning it&#39;s unscheduled
+    - Check volume `data`
+    &#34;&#34;&#34;
+    pass</code></pre>
 </details>
 </section>
 <section>
@@ -3455,6 +3515,118 @@ redundancy.</p>
     cleanup_volume(client, volume)</code></pre>
 </details>
 </dd>
+<dt id="tests.test_scheduling.test_soft_anti_affinity_scheduling_volume_disable"><code class="name flex">
+<span>def <span class="ident">test_soft_anti_affinity_scheduling_volume_disable</span></span>(<span>)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test the global setting will be overwrite
+if the volume disable the Soft Anti-Affinity</p>
+<p>With Soft Anti-Affinity disabled,
+scheduling on nodes with existing replicas should be forbidden,
+resulting in "Degraded" state.</p>
+<p>Setup
+- Enable Soft Anti-Affinity in global setting</p>
+<p>Given
+- Create a volume with replicaSoftAntiAffinity=disabled in the spec
+- Attach to the current node and Generate and write <code>data</code> to the volume</p>
+<p>When
+- Disable current node's scheduling.
+- Remove the replica on the current node</p>
+<p>Then
+- Verify volume will be in degraded state.
+- Verify volume reports condition <code>scheduled == false</code>
+- Verify only two of three replicas of volume are healthy.
+- Verify the remaining replica doesn't have <code>replica.HostID</code>,
+meaning it's unscheduled
+- Check volume <code>data</code></p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@pytest.mark.skip(reason=&#34;TODO&#34;)
+def test_soft_anti_affinity_scheduling_volume_disable(): # NOQA
+    &#34;&#34;&#34;
+    Test the global setting will be overwrite
+    if the volume disable the Soft Anti-Affinity
+
+    With Soft Anti-Affinity disabled,
+    scheduling on nodes with existing replicas should be forbidden,
+    resulting in &#34;Degraded&#34; state.
+
+    Setup
+    - Enable Soft Anti-Affinity in global setting
+
+    Given
+    - Create a volume with replicaSoftAntiAffinity=disabled in the spec
+    - Attach to the current node and Generate and write `data` to the volume
+
+    When
+    - Disable current node&#39;s scheduling.
+    - Remove the replica on the current node
+
+    Then
+    - Verify volume will be in degraded state.
+    - Verify volume reports condition `scheduled == false`
+    - Verify only two of three replicas of volume are healthy.
+    - Verify the remaining replica doesn&#39;t have `replica.HostID`,
+      meaning it&#39;s unscheduled
+    - Check volume `data`
+    &#34;&#34;&#34;
+    pass</code></pre>
+</details>
+</dd>
+<dt id="tests.test_scheduling.test_soft_anti_affinity_scheduling_volume_enable"><code class="name flex">
+<span>def <span class="ident">test_soft_anti_affinity_scheduling_volume_enable</span></span>(<span>)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test the global setting will be overwrite
+if the volume enable the Soft Anti-Affinity</p>
+<p>With Soft Anti-Affinity, a new replica should still be scheduled on a node
+with an existing replica, which will result in "Healthy" state but limited
+redundancy.</p>
+<p>Setup
+- Disable Soft Anti-Affinity in global setting</p>
+<p>Given
+- Create a volume with replicaSoftAntiAffinity=enabled in the spec
+- Attach to the current node and Generate and write <code>data</code> to the volume</p>
+<p>When
+- Disable current node's scheduling.
+- Remove the replica on the current node</p>
+<p>Then
+- Wait for the volume to complete rebuild. Volume should have 3 replicas.
+- Verify <code>data</code></p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@pytest.mark.skip(reason=&#34;TODO&#34;)
+def test_soft_anti_affinity_scheduling_volume_enable(): # NOQA
+    &#34;&#34;&#34;
+    Test the global setting will be overwrite
+    if the volume enable the Soft Anti-Affinity
+
+    With Soft Anti-Affinity, a new replica should still be scheduled on a node
+    with an existing replica, which will result in &#34;Healthy&#34; state but limited
+    redundancy.
+
+    Setup
+    - Disable Soft Anti-Affinity in global setting
+
+    Given
+    - Create a volume with replicaSoftAntiAffinity=enabled in the spec
+    - Attach to the current node and Generate and write `data` to the volume
+
+    When
+    - Disable current node&#39;s scheduling.
+    - Remove the replica on the current node
+
+    Then
+    - Wait for the volume to complete rebuild. Volume should have 3 replicas.
+    - Verify `data`
+    &#34;&#34;&#34;
+    pass</code></pre>
+</details>
+</dd>
 <dt id="tests.test_scheduling.wait_new_replica_ready"><code class="name flex">
 <span>def <span class="ident">wait_new_replica_ready</span></span>(<span>client, volume_name, replica_names)</span>
 </code></dt>
@@ -3525,6 +3697,8 @@ failed assertion if one can't be found.
 <li><code><a title="tests.test_scheduling.test_replica_schedule_to_disk_with_most_usable_storage" href="#tests.test_scheduling.test_replica_schedule_to_disk_with_most_usable_storage">test_replica_schedule_to_disk_with_most_usable_storage</a></code></li>
 <li><code><a title="tests.test_scheduling.test_soft_anti_affinity_detach" href="#tests.test_scheduling.test_soft_anti_affinity_detach">test_soft_anti_affinity_detach</a></code></li>
 <li><code><a title="tests.test_scheduling.test_soft_anti_affinity_scheduling" href="#tests.test_scheduling.test_soft_anti_affinity_scheduling">test_soft_anti_affinity_scheduling</a></code></li>
+<li><code><a title="tests.test_scheduling.test_soft_anti_affinity_scheduling_volume_disable" href="#tests.test_scheduling.test_soft_anti_affinity_scheduling_volume_disable">test_soft_anti_affinity_scheduling_volume_disable</a></code></li>
+<li><code><a title="tests.test_scheduling.test_soft_anti_affinity_scheduling_volume_enable" href="#tests.test_scheduling.test_soft_anti_affinity_scheduling_volume_enable">test_soft_anti_affinity_scheduling_volume_enable</a></code></li>
 <li><code><a title="tests.test_scheduling.wait_new_replica_ready" href="#tests.test_scheduling.wait_new_replica_ready">wait_new_replica_ready</a></code></li>
 </ul>
 </li>

@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>v1.5.0 on Longhorn Manual Test Cases</title>
+    <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.5.0/</link>
+    <description>Recent content in v1.5.0 on Longhorn Manual Test Cases</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en-us</language><atom:link href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.5.0/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Test Volume Replica Zone Soft Anti-Affinity Setting</title>
+      <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.5.0/test-the-volume-replica-scheduling/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.5.0/test-the-volume-replica-scheduling/</guid>
+      <description>Related issue https://github.com/longhorn/longhorn/issues/5358
+Test step - Enable Volume Replica Zone Soft Anti-Affinity Setting Given EKS Cluster with 3 nodes across 2 AWS zones (zone#1, zone#2)
+And Deploy Longhorn v1.5.0
+And Disable global replica zone anti-affinity
+And Create a volume with 2 replicas, replicaZoneSoftAntiAffinity=enabled and attach it to a node.
+When Scale volume replicas to 3
+Then New replica should be scheduled
+And No error messages in the longhorn manager pod logs.</description>
+    </item>
+    
+  </channel>
+</rss>

@@ -1388,6 +1388,22 @@ Test with specific Kubernetes version For each Kubernetes version (1.18, 1.19, 1
     </item>
     
     <item>
+      <title>Test Volume Replica Zone Soft Anti-Affinity Setting</title>
+      <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.5.0/test-the-volume-replica-scheduling/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.5.0/test-the-volume-replica-scheduling/</guid>
+      <description>Related issue https://github.com/longhorn/longhorn/issues/5358
+Test step - Enable Volume Replica Zone Soft Anti-Affinity Setting Given EKS Cluster with 3 nodes across 2 AWS zones (zone#1, zone#2)
+And Deploy Longhorn v1.5.0
+And Disable global replica zone anti-affinity
+And Create a volume with 2 replicas, replicaZoneSoftAntiAffinity=enabled and attach it to a node.
+When Scale volume replicas to 3
+Then New replica should be scheduled
+And No error messages in the longhorn manager pod logs.</description>
+    </item>
+    
+    <item>
       <title>Testing ext4 with custom fs params1 (no 64bit, no metadata_csum)</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.0/suse-sles12sp3/ext4-custom-fs-params-1/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
