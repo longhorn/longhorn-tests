@@ -429,7 +429,9 @@ main(){
     install_cluster_autoscaler
   fi
   create_longhorn_namespace
-  install_backupstores
+  if [[ ${PYTEST_CUSTOM_OPTIONS} != *"--include-cluster-autoscaler-test"* ]]; then
+    install_backupstores
+  fi
   install_csi_snapshotter_crds
 
   if [[ "${AIR_GAP_INSTALLATION}" == true ]]; then
