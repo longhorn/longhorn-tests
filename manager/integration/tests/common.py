@@ -111,9 +111,8 @@ DEFAULT_STATEFULSET_INTERVAL = 1
 DEFAULT_STATEFULSET_TIMEOUT = 180
 
 DEFAULT_DEPLOYMENT_INTERVAL = 1
-DEFAULT_DEPLOYMENT_TIMEOUT = 120
-WAIT_FOR_POD_STABLE_MAX_RETRY = 30
-
+DEFAULT_DEPLOYMENT_TIMEOUT = 240
+WAIT_FOR_POD_STABLE_MAX_RETRY = 90
 
 DEFAULT_VOLUME_SIZE = 3  # In Gi
 EXPANDED_VOLUME_SIZE = 4  # In Gi
@@ -4248,7 +4247,7 @@ def wait_and_get_any_deployment_pod(core_api, deployment_name,
         for pod in pods.items:
             if pod.status.phase == is_phase:
                 if stable_pod is None or \
-                        stable_pod.metadata.name != pod.metadata.name:
+                        stable_pod.status.start_time != pod.status.start_time:
                     stable_pod = pod
                     wait_for_stable_retry = 0
                     break
@@ -4256,7 +4255,6 @@ def wait_and_get_any_deployment_pod(core_api, deployment_name,
                     wait_for_stable_retry += 1
                     if wait_for_stable_retry == WAIT_FOR_POD_STABLE_MAX_RETRY:
                         return stable_pod
-
         time.sleep(DEFAULT_DEPLOYMENT_INTERVAL)
     assert False
 
