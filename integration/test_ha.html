@@ -2264,6 +2264,8 @@ def test_auto_remount_with_subpath(client, core_api, storage_class, sts_name, st
     storage_class[&#39;parameters&#39;][&#39;numberOfReplicas&#39;] = &#34;1&#34;
 
     statefulset[&#39;spec&#39;][&#39;replicas&#39;] = 1
+    statefulset[&#39;spec&#39;][&#39;selector&#39;][&#39;matchLabels&#39;][&#39;name&#39;] = sts_name
+    statefulset[&#39;spec&#39;][&#39;template&#39;][&#39;metadata&#39;][&#39;labels&#39;][&#39;name&#39;] = sts_name
     statefulset[&#39;spec&#39;][&#39;template&#39;][&#39;spec&#39;][&#39;containers&#39;] = \
         [{
             &#39;image&#39;: &#39;busybox:1.34.0&#39;,
@@ -2295,7 +2297,7 @@ def test_auto_remount_with_subpath(client, core_api, storage_class, sts_name, st
                             namespace=&#39;longhorn-system&#39;,
                             wait=True)
         wait_for_volume_healthy(client, vol_name)
-        wait_for_pod_remount(core_api, pod_name, chk_path=data_path)
+        common.wait_and_get_any_deployment_pod(core_api, sts_name)
         expect_md5sum = get_pod_data_md5sum(core_api, pod_name, data_path)
         assert expect_md5sum == md5sum
 
@@ -2309,13 +2311,12 @@ def test_auto_remount_with_subpath(client, core_api, storage_class, sts_name, st
                         namespace=&#39;longhorn-system&#39;,
                         wait=True)
     wait_for_volume_healthy(client, vol_name)
-    wait_for_pod_remount(core_api, pod_name, chk_path=data_path)
+    common.wait_and_get_any_deployment_pod(core_api, sts_name)
     expect_md5sum = get_pod_data_md5sum(core_api, pod_name, data_path)
     assert expect_md5sum == md5sum
 
     delete_and_wait_pod(core_api, pod_name, wait=True)
-    common.wait_for_pod_phase(core_api, pod_name, pod_phase=&#34;Running&#34;)
-    wait_for_pod_remount(core_api, pod_name, chk_path=data_path)
+    common.wait_and_get_any_deployment_pod(core_api, sts_name)
     expect_md5sum = get_pod_data_md5sum(core_api, pod_name, data_path)
     assert expect_md5sum == md5sum
 
@@ -3951,6 +3952,8 @@ Then verify the file checksum.</li>
     storage_class[&#39;parameters&#39;][&#39;numberOfReplicas&#39;] = &#34;1&#34;
 
     statefulset[&#39;spec&#39;][&#39;replicas&#39;] = 1
+    statefulset[&#39;spec&#39;][&#39;selector&#39;][&#39;matchLabels&#39;][&#39;name&#39;] = sts_name
+    statefulset[&#39;spec&#39;][&#39;template&#39;][&#39;metadata&#39;][&#39;labels&#39;][&#39;name&#39;] = sts_name
     statefulset[&#39;spec&#39;][&#39;template&#39;][&#39;spec&#39;][&#39;containers&#39;] = \
         [{
             &#39;image&#39;: &#39;busybox:1.34.0&#39;,
@@ -3982,7 +3985,7 @@ Then verify the file checksum.</li>
                             namespace=&#39;longhorn-system&#39;,
                             wait=True)
         wait_for_volume_healthy(client, vol_name)
-        wait_for_pod_remount(core_api, pod_name, chk_path=data_path)
+        common.wait_and_get_any_deployment_pod(core_api, sts_name)
         expect_md5sum = get_pod_data_md5sum(core_api, pod_name, data_path)
         assert expect_md5sum == md5sum
 
@@ -3996,13 +3999,12 @@ Then verify the file checksum.</li>
                         namespace=&#39;longhorn-system&#39;,
                         wait=True)
     wait_for_volume_healthy(client, vol_name)
-    wait_for_pod_remount(core_api, pod_name, chk_path=data_path)
+    common.wait_and_get_any_deployment_pod(core_api, sts_name)
     expect_md5sum = get_pod_data_md5sum(core_api, pod_name, data_path)
     assert expect_md5sum == md5sum
 
     delete_and_wait_pod(core_api, pod_name, wait=True)
-    common.wait_for_pod_phase(core_api, pod_name, pod_phase=&#34;Running&#34;)
-    wait_for_pod_remount(core_api, pod_name, chk_path=data_path)
+    common.wait_and_get_any_deployment_pod(core_api, sts_name)
     expect_md5sum = get_pod_data_md5sum(core_api, pod_name, data_path)
     assert expect_md5sum == md5sum</code></pre>
 </details>
