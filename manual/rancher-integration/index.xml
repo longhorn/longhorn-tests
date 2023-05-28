@@ -5,7 +5,7 @@
     <link>https://longhorn.github.io/longhorn-tests/manual/rancher-integration/</link>
     <description>Recent content in Rancher integration test cases on Longhorn Manual Test Cases</description>
     <generator>Hugo -- gohugo.io</generator>
-    <language>en-us</language><atom:link href="https://longhorn.github.io/longhorn-tests/manual/rancher-integration/index.xml" rel="self" type="application/rss+xml" />
+    <language>en</language><atom:link href="https://longhorn.github.io/longhorn-tests/manual/rancher-integration/index.xml" rel="self" type="application/rss+xml" />
     <item>
       <title>Access Longhorn GUI using Rancher proxy</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/rancher-integration/access-lh-gui-using-rancher-ui/</link>

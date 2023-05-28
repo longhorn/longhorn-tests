@@ -5,7 +5,7 @@
     <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/basic-operations-parallelism/</link>
     <description>Recent content in Basic operations parallelism on Longhorn Manual Test Cases</description>
     <generator>Hugo -- gohugo.io</generator>
-    <language>en-us</language><atom:link href="https://longhorn.github.io/longhorn-tests/manual/pre-release/basic-operations-parallelism/index.xml" rel="self" type="application/rss+xml" />
+    <language>en</language><atom:link href="https://longhorn.github.io/longhorn-tests/manual/pre-release/basic-operations-parallelism/index.xml" rel="self" type="application/rss+xml" />
     <item>
       <title>Snapshot while writing data in the volume</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/basic-operations-parallelism/snapshot-while-writing-data/</link>

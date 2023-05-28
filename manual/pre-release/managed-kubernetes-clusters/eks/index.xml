@@ -5,7 +5,7 @@
     <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/managed-kubernetes-clusters/eks/</link>
     <description>Recent content in EKS on Longhorn Manual Test Cases</description>
     <generator>Hugo -- gohugo.io</generator>
-    <language>en-us</language><atom:link href="https://longhorn.github.io/longhorn-tests/manual/pre-release/managed-kubernetes-clusters/eks/index.xml" rel="self" type="application/rss+xml" />
+    <language>en</language><atom:link href="https://longhorn.github.io/longhorn-tests/manual/pre-release/managed-kubernetes-clusters/eks/index.xml" rel="self" type="application/rss+xml" />
     <item>
       <title>[Add Extra Volume](https://longhorn.io/docs/1.3.0/advanced-resources/support-managed-k8s-service/manage-node-group-on-eks/#create-additional-volume)</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/managed-kubernetes-clusters/eks/add-extra-volume/</link>
