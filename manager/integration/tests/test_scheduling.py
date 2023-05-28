@@ -1497,3 +1497,63 @@ def test_replica_schedule_to_disk_with_most_usable_storage(client, volume_name, 
     for replica in volume.replicas:
         hostId = replica.hostId
         assert replica.diskID == expect_scheduled_disk[hostId].diskUUID
+
+
+@pytest.mark.skip(reason="TODO")
+def test_soft_anti_affinity_scheduling_volume_enable(): # NOQA
+    """
+    Test the global setting will be overwrite
+    if the volume enable the Soft Anti-Affinity
+
+    With Soft Anti-Affinity, a new replica should still be scheduled on a node
+    with an existing replica, which will result in "Healthy" state but limited
+    redundancy.
+
+    Setup
+    - Disable Soft Anti-Affinity in global setting
+
+    Given
+    - Create a volume with replicaSoftAntiAffinity=enabled in the spec
+    - Attach to the current node and Generate and write `data` to the volume
+
+    When
+    - Disable current node's scheduling.
+    - Remove the replica on the current node
+
+    Then
+    - Wait for the volume to complete rebuild. Volume should have 3 replicas.
+    - Verify `data`
+    """
+    pass
+
+
+@pytest.mark.skip(reason="TODO")
+def test_soft_anti_affinity_scheduling_volume_disable(): # NOQA
+    """
+    Test the global setting will be overwrite
+    if the volume disable the Soft Anti-Affinity
+
+    With Soft Anti-Affinity disabled,
+    scheduling on nodes with existing replicas should be forbidden,
+    resulting in "Degraded" state.
+
+    Setup
+    - Enable Soft Anti-Affinity in global setting
+
+    Given
+    - Create a volume with replicaSoftAntiAffinity=disabled in the spec
+    - Attach to the current node and Generate and write `data` to the volume
+
+    When
+    - Disable current node's scheduling.
+    - Remove the replica on the current node
+
+    Then
+    - Verify volume will be in degraded state.
+    - Verify volume reports condition `scheduled == false`
+    - Verify only two of three replicas of volume are healthy.
+    - Verify the remaining replica doesn't have `replica.HostID`,
+      meaning it's unscheduled
+    - Check volume `data`
+    """
+    pass

@@ -117,8 +117,8 @@ DEFAULT_STATEFULSET_INTERVAL = 1
 DEFAULT_STATEFULSET_TIMEOUT = 180
 
 DEFAULT_DEPLOYMENT_INTERVAL = 1
-DEFAULT_DEPLOYMENT_TIMEOUT = 120
-WAIT_FOR_POD_STABLE_MAX_RETRY = 30
+DEFAULT_DEPLOYMENT_TIMEOUT = 240
+WAIT_FOR_POD_STABLE_MAX_RETRY = 90
 
 
 DEFAULT_VOLUME_SIZE = 3  # In Gi
@@ -4533,7 +4533,7 @@ def wait_and_get_any_deployment_pod(core_api, deployment_name,
         for pod in pods.items:
             if pod.status.phase == is_phase:
                 if stable_pod is None or \
-                        stable_pod.metadata.name != pod.metadata.name:
+                        stable_pod.status.start_time != pod.status.start_time:
                     stable_pod = pod
                     wait_for_stable_retry = 0
                     break
@@ -5473,7 +5473,13 @@ def generate_support_bundle(case_name):  # NOQA
 
     url = client._url.replace('schemas', 'supportbundles')
     data = {'description': case_name, 'issueURL': case_name}
-    res = requests.post(url, json=data).json()
+    try:
+        res_raw = requests.post(url, json=data)
+        res_raw.raise_for_status()
+        res = res_raw.json()
+    except Exception as e:
+        warnings.warn(f"Error while generating support bundle: {e}")
+        return
     id = res['id']
     name = res['name']
 
