@@ -5,7 +5,7 @@
     <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/</link>
     <description>Recent content in Upgrade on Longhorn Manual Test Cases</description>
     <generator>Hugo -- gohugo.io</generator>
-    <language>en</language><atom:link href="https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/index.xml" rel="self" type="application/rss+xml" />
+    <language>en-us</language><atom:link href="https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/index.xml" rel="self" type="application/rss+xml" />
     <item>
       <title>Automatically Upgrading Longhorn Engine Test</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/auto-upgrade-engine/</link>

@@ -5,7 +5,7 @@
     <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.2/</link>
     <description>Recent content in v1.1.2 on Longhorn Manual Test Cases</description>
     <generator>Hugo -- gohugo.io</generator>
-    <language>en</language><atom:link href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.2/index.xml" rel="self" type="application/rss+xml" />
+    <language>en-us</language><atom:link href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.2/index.xml" rel="self" type="application/rss+xml" />
     <item>
       <title>Test CronJob For Volumes That Are Detached For A Long Time</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.2/delete-cronjob-for-detached-volumes/</link>

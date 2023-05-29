@@ -5,7 +5,7 @@
     <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.3.1/</link>
     <description>Recent content in v1.3.1 on Longhorn Manual Test Cases</description>
     <generator>Hugo -- gohugo.io</generator>
-    <language>en</language><atom:link href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.3.1/index.xml" rel="self" type="application/rss+xml" />
+    <language>en-us</language><atom:link href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.3.1/index.xml" rel="self" type="application/rss+xml" />
     <item>
       <title>Test transient error in engine status during eviction</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.3.1/test-backing-image-download-to-local/</link>

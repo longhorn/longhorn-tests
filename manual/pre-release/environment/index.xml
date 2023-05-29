@@ -5,7 +5,7 @@
     <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/environment/</link>
     <description>Recent content in Environment on Longhorn Manual Test Cases</description>
     <generator>Hugo -- gohugo.io</generator>
-    <language>en</language><atom:link href="https://longhorn.github.io/longhorn-tests/manual/pre-release/environment/index.xml" rel="self" type="application/rss+xml" />
+    <language>en-us</language><atom:link href="https://longhorn.github.io/longhorn-tests/manual/pre-release/environment/index.xml" rel="self" type="application/rss+xml" />
     <item>
       <title>Cluster using customize kubelet root directory</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/environment/cluster-using-customized-kubelet-root-directory/</link>

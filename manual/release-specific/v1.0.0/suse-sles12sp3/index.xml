@@ -5,7 +5,7 @@
     <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.0/suse-sles12sp3/</link>
     <description>Recent content in Operating System specific tests for SUSE SLES12SP3 on Longhorn Manual Test Cases</description>
     <generator>Hugo -- gohugo.io</generator>
-    <language>en</language><atom:link href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.0/suse-sles12sp3/index.xml" rel="self" type="application/rss+xml" />
+    <language>en-us</language><atom:link href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.0/suse-sles12sp3/index.xml" rel="self" type="application/rss+xml" />
     <item>
       <title>Testing ext4 with custom fs params1 (no 64bit, no metadata_csum)</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.0/suse-sles12sp3/ext4-custom-fs-params-1/</link>
