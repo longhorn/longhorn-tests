@@ -21,6 +21,7 @@ from backupstore import set_random_backupstore  # NOQA
 
 
 ALWAYS = "always"
+DISABLED = "disabled"
 IF_NOT_PRESENT = "if-not-present"
 
 
@@ -189,3 +190,34 @@ def test_system_backup_with_volume_backup_policy_always(client, volume_name, set
 
     backup_volume = client.by_id_backupVolume(volume_name)
     wait_for_backup_count(backup_volume, 2)
+
+
+@pytest.mark.system_backup_restore   # NOQA
+def test_system_backup_with_volume_backup_policy_disabled(client, volume_name, set_random_backupstore):  # NOQA
+    """
+    Scenario: system backup with volume backup policy (disabled) should not
+              create volume backup.
+
+    Issue: https://github.com/longhorn/longhorn/issues/5011
+
+    Given a volume is created.
+
+    When system backup (system-backup) has volume backup policy (disabled).
+    And system backup (system-backup) created.
+    Then system backup is in state (Ready).
+    And volume has backup count (0).
+    """
+    host_id = get_self_host_id()
+
+    volume = create_and_check_volume(client, volume_name)
+    volume.attach(hostId=host_id)
+    volume = wait_for_volume_healthy(client, volume_name)
+
+    system_backup_name = system_backup_random_name()
+    client.create_system_backup(Name=system_backup_name,
+                                VolumeBackupPolicy=DISABLED)
+
+    system_backup_wait_for_state("Ready", system_backup_name, client)
+
+    backup_volume = client.by_id_backupVolume(volume_name)
+    wait_for_backup_count(backup_volume, 0)
