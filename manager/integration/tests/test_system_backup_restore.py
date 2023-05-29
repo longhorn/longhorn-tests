@@ -20,6 +20,7 @@ from common import wait_for_volume_restoration_completed
 from backupstore import set_random_backupstore  # NOQA
 
 
+ALWAYS = "always"
 IF_NOT_PRESENT = "if-not-present"
 
 
@@ -154,3 +155,37 @@ def test_system_backup_with_volume_backup_policy_if_not_present(client, volume_n
 
     backup_volume = client.by_id_backupVolume(volume_name)
     wait_for_backup_count(backup_volume, 1)
+
+
+@pytest.mark.system_backup_restore   # NOQA
+def test_system_backup_with_volume_backup_policy_always(client, volume_name, set_random_backupstore):  # NOQA
+    """
+    Scenario: system backup with volume backup policy (always) should always
+              create volume backup, regardless of their existing backups.
+
+    Issue: https://github.com/longhorn/longhorn/issues/5011
+
+    Given a volume is created.
+    And volume has backup count (1).
+
+    When system backup (system-backup) has volume backup policy (always).
+    And system backup (system-backup) created.
+    Then system backup is in state (Ready).
+    And volume has backup count (2).
+    """
+    host_id = get_self_host_id()
+
+    volume = create_and_check_volume(client, volume_name)
+    volume.attach(hostId=host_id)
+    volume = wait_for_volume_healthy(client, volume_name)
+
+    create_backup(client, volume_name)
+
+    system_backup_name = system_backup_random_name()
+    client.create_system_backup(Name=system_backup_name,
+                                VolumeBackupPolicy=ALWAYS)
+
+    system_backup_wait_for_state("Ready", system_backup_name, client)
+
+    backup_volume = client.by_id_backupVolume(volume_name)
+    wait_for_backup_count(backup_volume, 2)
