@@ -2180,6 +2180,236 @@ def test_recurring_job_filesystem_trim(client, core_api, batch_v1_api, volume_na
     assert size_trimmed == test_size
 
 
+@pytest.mark.recurring_job
+def test_recurring_job_label_on_pvc(client, core_api, volume_name):  # NOQA
+    &#34;&#34;&#34;
+    Scenario: test recurring job label on PVC
+
+    Given volume created.
+    And PV created.
+    and PVC created.
+    and PVC source recurring job label exists.
+    and Volume default recurring job label exists.
+    and RecurringJobs created (recurring-test-1, recurring-test-2).
+    and RecurringJob (recurring-test-2) is in group (recurring-test-2)
+
+    When add a recurring job label (recurring-test-1) on the PVC.
+    And add a recurring job-group label (recurring-test-2) on the PVC.
+    Then Volume has recurring job label (recurring-test-1).
+    And Volume has recurring job-group label (recurring-test-2).
+
+    When remove PVC recurring job label (recurring-test-2).
+    Then Volume has recurring job label (recurring-test-1).
+
+    When delete RecurringJobs (recurring-test-1).
+    Then Volume has recurring job label (default).
+    And PVC has no recurring job.
+    &#34;&#34;&#34;
+    volume = create_and_check_volume(client, volume_name, size=str(2 * Gi))
+    volume = wait_for_volume_detached(client, volume.name)
+
+    pv_name = volume_name + &#34;-pv&#34;
+    create_pv_for_volume(client, core_api, volume, pv_name)
+
+    pvc_name = volume_name + &#34;-pvc&#34;
+    create_pvc_for_volume(client, core_api, volume, pvc_name)
+    add_recurring_job_source_to_pvc(pvc_name, core_api)
+
+    recurring_job_name_1 = f&#39;{RECURRING_JOB_NAME}-1&#39;
+    recurring_job_name_2 = f&#39;{RECURRING_JOB_NAME}-2&#39;
+    recurring_jobs = {
+        recurring_job_name_1: {
+            TASK: SNAPSHOT,
+            GROUPS: [],
+            CRON: &#34;*/2 * * * *&#34;,
+            RETAIN: 1,
+            CONCURRENCY: 1,
+            LABELS: {},
+        },
+        recurring_job_name_2: {
+            TASK: SNAPSHOT,
+            GROUPS: [recurring_job_name_2],
+            CRON: &#34;*/2 * * * *&#34;,
+            RETAIN: 1,
+            CONCURRENCY: 1,
+            LABELS: {},
+        },
+    }
+    create_recurring_jobs(client, recurring_jobs)
+    check_recurring_jobs(client, recurring_jobs)
+
+    claim = core_api.read_namespaced_persistent_volume_claim(
+        name=pvc_name, namespace=&#39;default&#39;
+    )
+
+    if claim.metadata.labels is None:
+        claim.metadata.labels = {}
+
+    label_key_1 = f&#34;recurring-job.longhorn.io/{recurring_job_name_1}&#34;
+    label_key_2 = f&#34;recurring-job-group.longhorn.io/{recurring_job_name_2}&#34;
+    claim.metadata.labels[label_key_1] = &#34;enabled&#34;
+    claim.metadata.labels[label_key_2] = &#34;enabled&#34;
+    core_api.replace_namespaced_persistent_volume_claim(
+        pvc_name, &#39;default&#39;, claim
+    )
+    wait_for_volume_recurring_job_update(volume,
+                                         jobs=[recurring_job_name_1],
+                                         groups=[recurring_job_name_2])
+
+    claim = core_api.read_namespaced_persistent_volume_claim(
+        name=pvc_name, namespace=&#39;default&#39;
+    )
+
+    del claim.metadata.labels[label_key_2]
+    core_api.replace_namespaced_persistent_volume_claim(
+        pvc_name, &#39;default&#39;, claim
+    )
+    wait_for_volume_recurring_job_update(volume,
+                                         jobs=[recurring_job_name_1],
+                                         groups=[])
+
+    recurring_job_1 = client.by_id_recurring_job(recurring_job_name_1)
+    client.delete(recurring_job_1)
+
+    wait_for_volume_recurring_job_update(volume,
+                                         jobs=[],
+                                         groups=[DEFAULT])
+
+    claim = core_api.read_namespaced_persistent_volume_claim(
+        name=pvc_name, namespace=&#39;default&#39;
+    )
+
+    if claim.metadata.labels is None:
+        claim.metadata.labels = {}
+
+    unexpected_count = 0
+    for label in claim.metadata.labels:
+        if not label.startswith(&#34;recurring-job&#34;):
+            continue
+
+        if label == &#34;recurring-job.longhorn.io/source&#34;:
+            continue
+
+        unexpected_count += 1
+    assert unexpected_count == 0
+
+
+@pytest.mark.recurring_job
+def test_recurring_job_source_label(client, core_api, volume_name):  # NOQA
+    &#34;&#34;&#34;
+    Scenario: test recurring job source label
+
+    Given volume created.
+    And PV created.
+    and PVC created.
+    and Volume default recurring job label exists.
+    and RecurringJob created (recurring-test).
+
+    When add source recurring job label on PVC.
+    And add a recurring job label (recurring-test) on the PVC.
+    And Volume has recurring job label (recurring-test).
+
+    When delete source recurring job label on PVC.
+    And remove PVC recurring job label (recurring-test).
+    Then wait some times for volume controller to resync (30 seconds)
+    And Volume has recurring job label (recurring-test).
+
+    When add source recurring job label on PVC.
+    Then Volume has recurring job label (default).
+    &#34;&#34;&#34;
+    volume = create_and_check_volume(client, volume_name, size=str(2 * Gi))
+    volume = wait_for_volume_detached(client, volume.name)
+
+    pv_name = volume_name + &#34;-pv&#34;
+    create_pv_for_volume(client, core_api, volume, pv_name)
+
+    pvc_name = volume_name + &#34;-pvc&#34;
+    create_pvc_for_volume(client, core_api, volume, pvc_name)
+
+    recurring_jobs = {
+        RECURRING_JOB_NAME: {
+            TASK: SNAPSHOT,
+            GROUPS: [],
+            CRON: &#34;*/2 * * * *&#34;,
+            RETAIN: 1,
+            CONCURRENCY: 1,
+            LABELS: {},
+        },
+    }
+    create_recurring_jobs(client, recurring_jobs)
+    check_recurring_jobs(client, recurring_jobs)
+
+    add_recurring_job_source_to_pvc(pvc_name, core_api)
+
+    claim = core_api.read_namespaced_persistent_volume_claim(
+        name=pvc_name, namespace=&#39;default&#39;
+    )
+
+    label_key = f&#34;recurring-job.longhorn.io/{RECURRING_JOB_NAME}&#34;
+    claim.metadata.labels[label_key] = &#34;enabled&#34;
+    core_api.replace_namespaced_persistent_volume_claim(
+        pvc_name, &#39;default&#39;, claim
+    )
+
+    wait_for_volume_recurring_job_update(volume,
+                                         jobs=[RECURRING_JOB_NAME],
+                                         groups=[])
+
+    remove_recurring_job_source_to_pvc(pvc_name, core_api)
+
+    claim = core_api.read_namespaced_persistent_volume_claim(
+        name=pvc_name, namespace=&#39;default&#39;
+    )
+
+    del claim.metadata.labels[label_key]
+    core_api.replace_namespaced_persistent_volume_claim(
+        pvc_name, &#39;default&#39;, claim
+    )
+
+    try:
+        wait_for_volume_recurring_job_update(volume,
+                                             jobs=[],
+                                             groups=[DEFAULT])
+        raise Exception(&#34;unexpected volume recurring job label update&#34;)
+    except Exception:
+        wait_for_volume_recurring_job_update(volume,
+                                             jobs=[RECURRING_JOB_NAME],
+                                             groups=[])
+
+    add_recurring_job_source_to_pvc(pvc_name, core_api)
+    wait_for_volume_recurring_job_update(volume,
+                                         jobs=[],
+                                         groups=[DEFAULT])
+
+
+def add_recurring_job_source_to_pvc(name, core_api):  # NOQA
+    claim = core_api.read_namespaced_persistent_volume_claim(
+        name=name, namespace=&#39;default&#39;
+    )
+
+    if claim.metadata.labels is None:
+        claim.metadata.labels = {}
+
+    claim.metadata.labels[&#34;recurring-job.longhorn.io/source&#34;] = &#34;enabled&#34;
+    core_api.replace_namespaced_persistent_volume_claim(
+        name, &#39;default&#39;, claim
+    )
+
+
+def remove_recurring_job_source_to_pvc(name, core_api):  # NOQA
+    claim = core_api.read_namespaced_persistent_volume_claim(
+        name=name, namespace=&#39;default&#39;
+    )
+
+    if claim.metadata.labels is None:
+        claim.metadata.labels = {}
+
+    del claim.metadata.labels[&#34;recurring-job.longhorn.io/source&#34;]
+    core_api.replace_namespaced_persistent_volume_claim(
+        name, &#39;default&#39;, claim
+    )
+
+
 def wait_for_actual_size_change_mb(client, vol_name, old_size,  # NOQA
                                    retry_counts=60, wait_stablize=True):
     size_change = 0
@@ -2205,6 +2435,29 @@ def wait_for_actual_size_change_mb(client, vol_name, old_size,  # NOQA
 <section>
 <h2 class="section-title" id="header-functions">Functions</h2>
 <dl>
+<dt id="tests.test_recurring_job.add_recurring_job_source_to_pvc"><code class="name flex">
+<span>def <span class="ident">add_recurring_job_source_to_pvc</span></span>(<span>name, core_api)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def add_recurring_job_source_to_pvc(name, core_api):  # NOQA
+    claim = core_api.read_namespaced_persistent_volume_claim(
+        name=name, namespace=&#39;default&#39;
+    )
+
+    if claim.metadata.labels is None:
+        claim.metadata.labels = {}
+
+    claim.metadata.labels[&#34;recurring-job.longhorn.io/source&#34;] = &#34;enabled&#34;
+    core_api.replace_namespaced_persistent_volume_claim(
+        name, &#39;default&#39;, claim
+    )</code></pre>
+</details>
+</dd>
 <dt id="tests.test_recurring_job.recurring_job_labels_test"><code class="name flex">
 <span>def <span class="ident">recurring_job_labels_test</span></span>(<span>client, labels, volume_name, size='16777216', backing_image='')</span>
 </code></dt>
@@ -2261,6 +2514,29 @@ def wait_for_actual_size_change_mb(client, vol_name, old_size,  # NOQA
     # to a newly created backup
     assert len(b.labels) == len(labels) + 2
     wait_for_backup_volume(client, volume_name, backing_image)</code></pre>
+</details>
+</dd>
+<dt id="tests.test_recurring_job.remove_recurring_job_source_to_pvc"><code class="name flex">
+<span>def <span class="ident">remove_recurring_job_source_to_pvc</span></span>(<span>name, core_api)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def remove_recurring_job_source_to_pvc(name, core_api):  # NOQA
+    claim = core_api.read_namespaced_persistent_volume_claim(
+        name=name, namespace=&#39;default&#39;
+    )
+
+    if claim.metadata.labels is None:
+        claim.metadata.labels = {}
+
+    del claim.metadata.labels[&#34;recurring-job.longhorn.io/source&#34;]
+    core_api.replace_namespaced_persistent_volume_claim(
+        name, &#39;default&#39;, claim
+    )</code></pre>
 </details>
 </dd>
 <dt id="tests.test_recurring_job.test_recurring_job"><code class="name flex">
@@ -3597,6 +3873,145 @@ def test_recurring_job_kubernetes_status(set_random_backupstore, client, core_ap
     assert len(b.labels) == 3</code></pre>
 </details>
 </dd>
+<dt id="tests.test_recurring_job.test_recurring_job_label_on_pvc"><code class="name flex">
+<span>def <span class="ident">test_recurring_job_label_on_pvc</span></span>(<span>client, core_api, volume_name)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Scenario: test recurring job label on PVC</p>
+<p>Given volume created.
+And PV created.
+and PVC created.
+and PVC source recurring job label exists.
+and Volume default recurring job label exists.
+and RecurringJobs created (recurring-test-1, recurring-test-2).
+and RecurringJob (recurring-test-2) is in group (recurring-test-2)</p>
+<p>When add a recurring job label (recurring-test-1) on the PVC.
+And add a recurring job-group label (recurring-test-2) on the PVC.
+Then Volume has recurring job label (recurring-test-1).
+And Volume has recurring job-group label (recurring-test-2).</p>
+<p>When remove PVC recurring job label (recurring-test-2).
+Then Volume has recurring job label (recurring-test-1).</p>
+<p>When delete RecurringJobs (recurring-test-1).
+Then Volume has recurring job label (default).
+And PVC has no recurring job.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@pytest.mark.recurring_job
+def test_recurring_job_label_on_pvc(client, core_api, volume_name):  # NOQA
+    &#34;&#34;&#34;
+    Scenario: test recurring job label on PVC
+
+    Given volume created.
+    And PV created.
+    and PVC created.
+    and PVC source recurring job label exists.
+    and Volume default recurring job label exists.
+    and RecurringJobs created (recurring-test-1, recurring-test-2).
+    and RecurringJob (recurring-test-2) is in group (recurring-test-2)
+
+    When add a recurring job label (recurring-test-1) on the PVC.
+    And add a recurring job-group label (recurring-test-2) on the PVC.
+    Then Volume has recurring job label (recurring-test-1).
+    And Volume has recurring job-group label (recurring-test-2).
+
+    When remove PVC recurring job label (recurring-test-2).
+    Then Volume has recurring job label (recurring-test-1).
+
+    When delete RecurringJobs (recurring-test-1).
+    Then Volume has recurring job label (default).
+    And PVC has no recurring job.
+    &#34;&#34;&#34;
+    volume = create_and_check_volume(client, volume_name, size=str(2 * Gi))
+    volume = wait_for_volume_detached(client, volume.name)
+
+    pv_name = volume_name + &#34;-pv&#34;
+    create_pv_for_volume(client, core_api, volume, pv_name)
+
+    pvc_name = volume_name + &#34;-pvc&#34;
+    create_pvc_for_volume(client, core_api, volume, pvc_name)
+    add_recurring_job_source_to_pvc(pvc_name, core_api)
+
+    recurring_job_name_1 = f&#39;{RECURRING_JOB_NAME}-1&#39;
+    recurring_job_name_2 = f&#39;{RECURRING_JOB_NAME}-2&#39;
+    recurring_jobs = {
+        recurring_job_name_1: {
+            TASK: SNAPSHOT,
+            GROUPS: [],
+            CRON: &#34;*/2 * * * *&#34;,
+            RETAIN: 1,
+            CONCURRENCY: 1,
+            LABELS: {},
+        },
+        recurring_job_name_2: {
+            TASK: SNAPSHOT,
+            GROUPS: [recurring_job_name_2],
+            CRON: &#34;*/2 * * * *&#34;,
+            RETAIN: 1,
+            CONCURRENCY: 1,
+            LABELS: {},
+        },
+    }
+    create_recurring_jobs(client, recurring_jobs)
+    check_recurring_jobs(client, recurring_jobs)
+
+    claim = core_api.read_namespaced_persistent_volume_claim(
+        name=pvc_name, namespace=&#39;default&#39;
+    )
+
+    if claim.metadata.labels is None:
+        claim.metadata.labels = {}
+
+    label_key_1 = f&#34;recurring-job.longhorn.io/{recurring_job_name_1}&#34;
+    label_key_2 = f&#34;recurring-job-group.longhorn.io/{recurring_job_name_2}&#34;
+    claim.metadata.labels[label_key_1] = &#34;enabled&#34;
+    claim.metadata.labels[label_key_2] = &#34;enabled&#34;
+    core_api.replace_namespaced_persistent_volume_claim(
+        pvc_name, &#39;default&#39;, claim
+    )
+    wait_for_volume_recurring_job_update(volume,
+                                         jobs=[recurring_job_name_1],
+                                         groups=[recurring_job_name_2])
+
+    claim = core_api.read_namespaced_persistent_volume_claim(
+        name=pvc_name, namespace=&#39;default&#39;
+    )
+
+    del claim.metadata.labels[label_key_2]
+    core_api.replace_namespaced_persistent_volume_claim(
+        pvc_name, &#39;default&#39;, claim
+    )
+    wait_for_volume_recurring_job_update(volume,
+                                         jobs=[recurring_job_name_1],
+                                         groups=[])
+
+    recurring_job_1 = client.by_id_recurring_job(recurring_job_name_1)
+    client.delete(recurring_job_1)
+
+    wait_for_volume_recurring_job_update(volume,
+                                         jobs=[],
+                                         groups=[DEFAULT])
+
+    claim = core_api.read_namespaced_persistent_volume_claim(
+        name=pvc_name, namespace=&#39;default&#39;
+    )
+
+    if claim.metadata.labels is None:
+        claim.metadata.labels = {}
+
+    unexpected_count = 0
+    for label in claim.metadata.labels:
+        if not label.startswith(&#34;recurring-job&#34;):
+            continue
+
+        if label == &#34;recurring-job.longhorn.io/source&#34;:
+            continue
+
+        unexpected_count += 1
+    assert unexpected_count == 0</code></pre>
+</details>
+</dd>
 <dt id="tests.test_recurring_job.test_recurring_job_labels"><code class="name flex">
 <span>def <span class="ident">test_recurring_job_labels</span></span>(<span>set_random_backupstore, client, random_labels, volume_name)</span>
 </code></dt>
@@ -4357,6 +4772,117 @@ def test_recurring_job_snapshot_delete_retain_0(set_random_backupstore, client, 
         wait_for_snapshot_count(volume, 1, count_removed=True)</code></pre>
 </details>
 </dd>
+<dt id="tests.test_recurring_job.test_recurring_job_source_label"><code class="name flex">
+<span>def <span class="ident">test_recurring_job_source_label</span></span>(<span>client, core_api, volume_name)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Scenario: test recurring job source label</p>
+<p>Given volume created.
+And PV created.
+and PVC created.
+and Volume default recurring job label exists.
+and RecurringJob created (recurring-test).</p>
+<p>When add source recurring job label on PVC.
+And add a recurring job label (recurring-test) on the PVC.
+And Volume has recurring job label (recurring-test).</p>
+<p>When delete source recurring job label on PVC.
+And remove PVC recurring job label (recurring-test).
+Then wait some times for volume controller to resync (30 seconds)
+And Volume has recurring job label (recurring-test).</p>
+<p>When add source recurring job label on PVC.
+Then Volume has recurring job label (default).</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@pytest.mark.recurring_job
+def test_recurring_job_source_label(client, core_api, volume_name):  # NOQA
+    &#34;&#34;&#34;
+    Scenario: test recurring job source label
+
+    Given volume created.
+    And PV created.
+    and PVC created.
+    and Volume default recurring job label exists.
+    and RecurringJob created (recurring-test).
+
+    When add source recurring job label on PVC.
+    And add a recurring job label (recurring-test) on the PVC.
+    And Volume has recurring job label (recurring-test).
+
+    When delete source recurring job label on PVC.
+    And remove PVC recurring job label (recurring-test).
+    Then wait some times for volume controller to resync (30 seconds)
+    And Volume has recurring job label (recurring-test).
+
+    When add source recurring job label on PVC.
+    Then Volume has recurring job label (default).
+    &#34;&#34;&#34;
+    volume = create_and_check_volume(client, volume_name, size=str(2 * Gi))
+    volume = wait_for_volume_detached(client, volume.name)
+
+    pv_name = volume_name + &#34;-pv&#34;
+    create_pv_for_volume(client, core_api, volume, pv_name)
+
+    pvc_name = volume_name + &#34;-pvc&#34;
+    create_pvc_for_volume(client, core_api, volume, pvc_name)
+
+    recurring_jobs = {
+        RECURRING_JOB_NAME: {
+            TASK: SNAPSHOT,
+            GROUPS: [],
+            CRON: &#34;*/2 * * * *&#34;,
+            RETAIN: 1,
+            CONCURRENCY: 1,
+            LABELS: {},
+        },
+    }
+    create_recurring_jobs(client, recurring_jobs)
+    check_recurring_jobs(client, recurring_jobs)
+
+    add_recurring_job_source_to_pvc(pvc_name, core_api)
+
+    claim = core_api.read_namespaced_persistent_volume_claim(
+        name=pvc_name, namespace=&#39;default&#39;
+    )
+
+    label_key = f&#34;recurring-job.longhorn.io/{RECURRING_JOB_NAME}&#34;
+    claim.metadata.labels[label_key] = &#34;enabled&#34;
+    core_api.replace_namespaced_persistent_volume_claim(
+        pvc_name, &#39;default&#39;, claim
+    )
+
+    wait_for_volume_recurring_job_update(volume,
+                                         jobs=[RECURRING_JOB_NAME],
+                                         groups=[])
+
+    remove_recurring_job_source_to_pvc(pvc_name, core_api)
+
+    claim = core_api.read_namespaced_persistent_volume_claim(
+        name=pvc_name, namespace=&#39;default&#39;
+    )
+
+    del claim.metadata.labels[label_key]
+    core_api.replace_namespaced_persistent_volume_claim(
+        pvc_name, &#39;default&#39;, claim
+    )
+
+    try:
+        wait_for_volume_recurring_job_update(volume,
+                                             jobs=[],
+                                             groups=[DEFAULT])
+        raise Exception(&#34;unexpected volume recurring job label update&#34;)
+    except Exception:
+        wait_for_volume_recurring_job_update(volume,
+                                             jobs=[RECURRING_JOB_NAME],
+                                             groups=[])
+
+    add_recurring_job_source_to_pvc(pvc_name, core_api)
+    wait_for_volume_recurring_job_update(volume,
+                                         jobs=[],
+                                         groups=[DEFAULT])</code></pre>
+</details>
+</dd>
 <dt id="tests.test_recurring_job.test_recurring_job_volume_label_when_job_and_group_use_same_name"><code class="name flex">
 <span>def <span class="ident">test_recurring_job_volume_label_when_job_and_group_use_same_name</span></span>(<span>client, volume_name)</span>
 </code></dt>
@@ -5049,7 +5575,9 @@ Then the data exist in the deployment pod.</p></div>
 </li>
 <li><h3><a href="#header-functions">Functions</a></h3>
 <ul class="">
+<li><code><a title="tests.test_recurring_job.add_recurring_job_source_to_pvc" href="#tests.test_recurring_job.add_recurring_job_source_to_pvc">add_recurring_job_source_to_pvc</a></code></li>
 <li><code><a title="tests.test_recurring_job.recurring_job_labels_test" href="#tests.test_recurring_job.recurring_job_labels_test">recurring_job_labels_test</a></code></li>
+<li><code><a title="tests.test_recurring_job.remove_recurring_job_source_to_pvc" href="#tests.test_recurring_job.remove_recurring_job_source_to_pvc">remove_recurring_job_source_to_pvc</a></code></li>
 <li><code><a title="tests.test_recurring_job.test_recurring_job" href="#tests.test_recurring_job.test_recurring_job">test_recurring_job</a></code></li>
 <li><code><a title="tests.test_recurring_job.test_recurring_job_backup" href="#tests.test_recurring_job.test_recurring_job_backup">test_recurring_job_backup</a></code></li>
 <li><code><a title="tests.test_recurring_job.test_recurring_job_default" href="#tests.test_recurring_job.test_recurring_job_default">test_recurring_job_default</a></code></li>
@@ -5062,6 +5590,7 @@ Then the data exist in the deployment pod.</p></div>
 <li><code><a title="tests.test_recurring_job.test_recurring_job_in_storageclass" href="#tests.test_recurring_job.test_recurring_job_in_storageclass">test_recurring_job_in_storageclass</a></code></li>
 <li><code><a title="tests.test_recurring_job.test_recurring_job_in_volume_creation" href="#tests.test_recurring_job.test_recurring_job_in_volume_creation">test_recurring_job_in_volume_creation</a></code></li>
 <li><code><a title="tests.test_recurring_job.test_recurring_job_kubernetes_status" href="#tests.test_recurring_job.test_recurring_job_kubernetes_status">test_recurring_job_kubernetes_status</a></code></li>
+<li><code><a title="tests.test_recurring_job.test_recurring_job_label_on_pvc" href="#tests.test_recurring_job.test_recurring_job_label_on_pvc">test_recurring_job_label_on_pvc</a></code></li>
 <li><code><a title="tests.test_recurring_job.test_recurring_job_labels" href="#tests.test_recurring_job.test_recurring_job_labels">test_recurring_job_labels</a></code></li>
 <li><code><a title="tests.test_recurring_job.test_recurring_job_multiple_volumes" href="#tests.test_recurring_job.test_recurring_job_multiple_volumes">test_recurring_job_multiple_volumes</a></code></li>
 <li><code><a title="tests.test_recurring_job.test_recurring_job_restored_from_backup_target" href="#tests.test_recurring_job.test_recurring_job_restored_from_backup_target">test_recurring_job_restored_from_backup_target</a></code></li>
@@ -5069,6 +5598,7 @@ Then the data exist in the deployment pod.</p></div>
 <li><code><a title="tests.test_recurring_job.test_recurring_job_snapshot_cleanup" href="#tests.test_recurring_job.test_recurring_job_snapshot_cleanup">test_recurring_job_snapshot_cleanup</a></code></li>
 <li><code><a title="tests.test_recurring_job.test_recurring_job_snapshot_delete" href="#tests.test_recurring_job.test_recurring_job_snapshot_delete">test_recurring_job_snapshot_delete</a></code></li>
 <li><code><a title="tests.test_recurring_job.test_recurring_job_snapshot_delete_retain_0" href="#tests.test_recurring_job.test_recurring_job_snapshot_delete_retain_0">test_recurring_job_snapshot_delete_retain_0</a></code></li>
+<li><code><a title="tests.test_recurring_job.test_recurring_job_source_label" href="#tests.test_recurring_job.test_recurring_job_source_label">test_recurring_job_source_label</a></code></li>
 <li><code><a title="tests.test_recurring_job.test_recurring_job_volume_label_when_job_and_group_use_same_name" href="#tests.test_recurring_job.test_recurring_job_volume_label_when_job_and_group_use_same_name">test_recurring_job_volume_label_when_job_and_group_use_same_name</a></code></li>
 <li><code><a title="tests.test_recurring_job.test_recurring_jobs_allow_detached_volume" href="#tests.test_recurring_job.test_recurring_jobs_allow_detached_volume">test_recurring_jobs_allow_detached_volume</a></code></li>
 <li><code><a title="tests.test_recurring_job.test_recurring_jobs_maximum_retain" href="#tests.test_recurring_job.test_recurring_jobs_maximum_retain">test_recurring_jobs_maximum_retain</a></code></li>
