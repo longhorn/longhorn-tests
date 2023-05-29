@@ -15,6 +15,7 @@ SKIP_INFRA_OPT = "--skip-infra-test"
 INCLUDE_STRESS_OPT = "--include-stress-test"
 INCLUDE_UPGRADE_OPT = "--include-upgrade-test"
 INCLUDE_CA_OPT = "--include-cluster-autoscaler-test"
+INCLUDE_UNINSTALL_OPT = "--include-uninstall-test"
 
 UPGRADE_LH_REPO_URL = "--upgrade-lh-repo-url"
 UPGRADE_LH_REPO_BRANCH = "--upgrade-lh-repo-branch"
@@ -24,6 +25,8 @@ UPGRADE_LH_INSTANCE_MANAGER_IMAGE = "--upgrade-lh-instance-manager-image"
 UPGRADE_LH_SHARE_MANAGER_IMAGE = "--upgrade-lh-share-manager-image"
 UPGRADE_LH_BACKING_IMAGE_MANAGER_IMAGE = \
     "--upgrade-lh-backing-image-manager-image"
+UNINSTALL_LH_MANIFEST_URL = "--uninstall-lh-manifest-url"
+DEPLOY_LH_MANIFEST_URL = "--deploy-lh-manifest-url"
 
 
 def pytest_addoption(parser):
@@ -49,6 +52,10 @@ def pytest_addoption(parser):
     parser.addoption(INCLUDE_CA_OPT, action="store_true",
                      default=False,
                      help="include cluster autoscaler tests (default: False)")
+
+    parser.addoption(INCLUDE_UNINSTALL_OPT, action="store_true",
+                     default=False,
+                     help="include uninstall test (default: False)")
 
     longhorn_repo_url =\
         "https://github.com/longhorn/longhorn.git"
@@ -95,6 +102,20 @@ def pytest_addoption(parser):
                      help='''set custom backing-image-manager image, this image
                      will be used in test_upgrade
                      (default: longhornio/backing-image-manager:master-head)''') # NOQA
+
+    parser.addoption(UNINSTALL_LH_MANIFEST_URL, action="store",
+                     default="https://raw.githubusercontent.com/longhorn/"
+                             "longhorn/master/uninstall/uninstall.yaml",
+                     help='''Manifest file to uninstall Longhorn
+                     will be used in test_uninstall
+                     (default: https://raw.githubusercontent.com/longhorn/longhorn/master/uninstall/uninstall.yaml)''') # NOQA
+
+    parser.addoption(DEPLOY_LH_MANIFEST_URL, action="store",
+                     default="https://raw.githubusercontent.com/longhorn/"
+                             "longhorn/master/deploy/longhorn.yaml",
+                     help='''Manifest of deploy Longhorn
+                     will be used in test_uninstall
+                     (default: https://raw.githubusercontent.com/longhorn/longhorn/master/deploy/longhorn.yaml)''') # NOQA
 
 
 def pytest_collection_modifyitems(config, items):
@@ -187,6 +208,15 @@ def pytest_collection_modifyitems(config, items):
         for item in items:
             if "cluster_autoscaler" in item.keywords:
                 item.add_marker(skip_upgrade)
+
+    if not config.getoption(INCLUDE_UNINSTALL_OPT):
+        skip_uninstall = pytest.mark.skip(reason="include " +
+                                          INCLUDE_UNINSTALL_OPT +
+                                          " option to run")
+
+        for item in items:
+            if "uninstall" in item.keywords:
+                item.add_marker(skip_uninstall)
 
 
 def pytest_exception_interact(call, report):

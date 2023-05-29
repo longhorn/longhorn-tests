@@ -21,6 +21,8 @@ def CIS_HARDENING = params.CIS_HARDENING ? params.CIS_HARDENING : false
 def REGISTRY_URL
 def REGISTRY_USERNAME
 def REGISTRY_PASSWORD
+def junitReportFiles
+
 
 // parameter for hdd test
 def USE_HDD = params.USE_HDD ? params.USE_HDD : false
@@ -158,21 +160,32 @@ node {
 				archiveArtifacts allowEmptyArchive: true, artifacts: '**/*.zip', followSymlinks: false
 			}
 
+            if(LONGHORN_INSTALL_METHOD == "custom") {
+                stage('uninstall longhorn') {
+                    sh "docker exec ${JOB_BASE_NAME}-${BUILD_NUMBER} ${TF_VAR_tf_workspace}/scripts/longhorn-uninstall.sh"
+                }
+            }
+
             stage ('report generation') {
                 sh "docker cp ${JOB_BASE_NAME}-${BUILD_NUMBER}:${TF_VAR_tf_workspace}/longhorn-test-junit-report.xml ."
+                junitReportFiles = 'longhorn-test-junit-report.xml'
 
                 if(params.LONGHORN_UPGRADE_TEST && params.LONGHORN_TRANSIENT_VERSION) {
                     sh "docker cp ${JOB_BASE_NAME}-${BUILD_NUMBER}:${TF_VAR_tf_workspace}/longhorn-test-upgrade-from-stable-junit-report.xml ."
                     sh "docker cp ${JOB_BASE_NAME}-${BUILD_NUMBER}:${TF_VAR_tf_workspace}/longhorn-test-upgrade-from-transient-junit-report.xml ."
-                    summary = junit 'longhorn-test-upgrade-from-stable-junit-report.xml, longhorn-test-upgrade-from-transient-junit-report.xml, longhorn-test-junit-report.xml'
+                    junitReportFiles += ', longhorn-test-upgrade-from-stable-junit-report.xml, longhorn-test-upgrade-from-transient-junit-report.xml'
                 }
                 else if(params.LONGHORN_UPGRADE_TEST) {
                     sh "docker cp ${JOB_BASE_NAME}-${BUILD_NUMBER}:${TF_VAR_tf_workspace}/longhorn-test-upgrade-from-stable-junit-report.xml ."
-                    summary = junit 'longhorn-test-upgrade-from-stable-junit-report.xml, longhorn-test-junit-report.xml'
+                    junitReportFiles += ', longhorn-test-upgrade-from-stable-junit-report.xml'
                 }
-                else {
-                    summary = junit 'longhorn-test-junit-report.xml'
+
+                if(LONGHORN_INSTALL_METHOD == "custom") {
+                    sh "docker cp ${JOB_BASE_NAME}-${BUILD_NUMBER}:${TF_VAR_tf_workspace}/longhorn-test-uninstall-junit-report.xml ."
+                    junitReportFiles += ', longhorn-test-uninstall-junit-report.xml'
                 }
+
+                summary = junit junitReportFiles
 
                 if(LONGHORN_INSTALL_METHOD == "custom") {
                     sh 'docker pull ${CUSTOM_LONGHORN_MANAGER_IMAGE}'

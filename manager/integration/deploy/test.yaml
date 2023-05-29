@@ -35,7 +35,7 @@ rules:
   resources: ["*"]
   verbs: ["*"]
 - apiGroups: ["batch"]
-  resources: ["cronjobs"]
+  resources: ["cronjobs", "jobs"]
   verbs: ["*"]
 - apiGroups: ["longhorn.io"]
   resources: ["supportbundles", "supportbundles/status"]
