@@ -12,11 +12,15 @@ from common import system_backup_random_name
 from common import system_backup_wait_for_state
 from common import system_restore_random_name
 from common import system_restore_wait_for_state
+from common import wait_for_backup_count
 from common import wait_for_volume_detached
 from common import wait_for_volume_healthy
 from common import wait_for_volume_restoration_completed
 
 from backupstore import set_random_backupstore  # NOQA
+
+
+IF_NOT_PRESENT = "if-not-present"
 
 
 @pytest.mark.system_backup_restore   # NOQA
@@ -100,3 +104,53 @@ def test_system_backup_and_restore_volume_with_data(client, volume_name, set_ran
     restored_volume = wait_for_volume_healthy(client, volume_name)
 
     check_volume_data(restored_volume, data)
+
+
+@pytest.mark.system_backup_restore   # NOQA
+def test_system_backup_with_volume_backup_policy_if_not_present(client, volume_name, set_random_backupstore):  # NOQA
+    """
+    Scenario: system backup with volume backup policy (if-not-present) should
+              only create volume backup when there is no existing backup in
+              the volume.
+
+    Issue: https://github.com/longhorn/longhorn/issues/5011
+
+    Given a volume is created.
+
+    When system backup (system-backup-1) has no volume backup policy.
+    And system backup (system-backup-1) created.
+    Then system backup has volume backup policy (if-not-present).
+    And system backup is in state (Ready).
+    And volume has backup count (1).
+
+    When system backup (system-backup-2) has volume backup policy
+         (if-not-present).
+    And system backup (system-backup-2) created.
+    Then system backup is in state (Ready).
+    And volume has backup count (1).
+    """
+    host_id = get_self_host_id()
+
+    volume = create_and_check_volume(client, volume_name)
+    volume.attach(hostId=host_id)
+    volume = wait_for_volume_healthy(client, volume_name)
+
+    system_backup_name_1 = system_backup_random_name()
+    client.create_system_backup(Name=system_backup_name_1)
+
+    system_backup = client.by_id_system_backup(system_backup_name_1)
+    assert system_backup.volumeBackupPolicy == IF_NOT_PRESENT
+
+    system_backup_wait_for_state("Ready", system_backup_name_1, client)
+
+    backup_volume = client.by_id_backupVolume(volume_name)
+    wait_for_backup_count(backup_volume, 1)
+
+    system_backup_name_2 = system_backup_random_name()
+    client.create_system_backup(Name=system_backup_name_2,
+                                VolumeBackupPolicy=IF_NOT_PRESENT)
+
+    system_backup_wait_for_state("Ready", system_backup_name_2, client)
+
+    backup_volume = client.by_id_backupVolume(volume_name)
+    wait_for_backup_count(backup_volume, 1)
