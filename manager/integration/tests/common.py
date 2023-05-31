@@ -590,6 +590,27 @@ def delete_and_wait_pod(api, pod_name, namespace='default', wait=True):
         wait_delete_pod(api, target_pod.metadata.uid, namespace=namespace)
 
 
+def delete_statefulset(apps_api, statefulset):
+    ss_name = statefulset['metadata']['name']
+    ss_namespace = statefulset['metadata']['namespace']
+    apps_api.delete_namespaced_stateful_set(
+        name=ss_name, namespace=ss_namespace,
+        body=k8sclient.V1DeleteOptions()
+    )
+
+    for _ in range(DEFAULT_POD_TIMEOUT):
+        ret = apps_api.list_namespaced_stateful_set(namespace=ss_namespace)
+        found = False
+        for item in ret.items:
+            if item.metadata.name == ss_name:
+                found = True
+                break
+        if not found:
+            break
+        time.sleep(DEFAULT_POD_INTERVAL)
+    assert not found
+
+
 def delete_and_wait_statefulset(api, client, statefulset):
     apps_api = get_apps_api_client()
     if not check_statefulset_existence(apps_api,
