@@ -262,3 +262,44 @@ def test_support_bundle_agent_with_taint_toleration(client, taint_nodes_exclude_
 
     wait_for_support_bundle_cleanup(client)
     check_all_support_bundle_managers_deleted()
+
+
+@pytest.mark.support_bundle   # NOQA
+def test_support_bundle_should_replace_existing_ready_support_bundle(client):  # NOQA
+    """
+    Scenario: test support bundle should replace existing ready support bundle
+
+    Issue: https://github.com/longhorn/longhorn/issues/5882
+
+    Given support bundle created
+    And support bundle is in ReadyToDownload state
+    And support bundle is not downloaded
+
+    When new support bundle created
+
+    Then download new support bundle
+    And new support bundle is downloaded
+    And new support bundle should be deleted
+    And old support bundle should be deleted
+    And new support bundle manager should be deleted
+    And old support bundle manager should be deleted
+    """
+    old_sb_resp = create_support_bundle(client)
+    old_sb_node_id = old_sb_resp['id']
+    old_sb_name = old_sb_resp['name']
+
+    wait_for_support_bundle_state("ReadyForDownload",
+                                  old_sb_node_id, old_sb_name, client)
+
+    new_sb_resp = create_support_bundle(client)
+    new_sb_node_id = new_sb_resp['id']
+    new_sb_name = new_sb_resp['name']
+    assert new_sb_name != old_sb_name
+
+    wait_for_support_bundle_state("ReadyForDownload",
+                                  new_sb_node_id, new_sb_name, client)
+
+    download_support_bundle(new_sb_node_id, new_sb_name, client)
+
+    wait_for_support_bundle_cleanup(client)
+    check_all_support_bundle_managers_deleted()
