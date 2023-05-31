@@ -8,6 +8,7 @@ from common import cleanup_volume
 from common import create_and_check_volume
 from common import create_backup
 from common import get_self_host_id
+from common import system_backups_cleanup
 from common import system_backup_random_name
 from common import system_backup_wait_for_state
 from common import system_restore_random_name
@@ -173,6 +174,12 @@ def test_system_backup_with_volume_backup_policy_always(client, volume_name, set
     And system backup (system-backup) created.
     Then system backup is in state (Ready).
     And volume has backup count (2).
+    And system backup (system-backup) deleted.
+
+    When system backup (system-backup) has volume backup policy (always).
+    And system backup (system-backup) created.
+    Then system backup is in state (Ready).
+    And volume has backup count (3).
     """
     host_id = get_self_host_id()
 
@@ -190,6 +197,16 @@ def test_system_backup_with_volume_backup_policy_always(client, volume_name, set
 
     backup_volume = client.by_id_backupVolume(volume_name)
     wait_for_backup_count(backup_volume, 2)
+
+    system_backups_cleanup(client)
+
+    client.create_system_backup(Name=system_backup_name,
+                                VolumeBackupPolicy=ALWAYS)
+
+    system_backup_wait_for_state("Ready", system_backup_name, client)
+
+    backup_volume = client.by_id_backupVolume(volume_name)
+    wait_for_backup_count(backup_volume, 3)
 
 
 @pytest.mark.system_backup_restore   # NOQA
