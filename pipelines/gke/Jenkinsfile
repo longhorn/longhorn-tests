@@ -1,0 +1,137 @@
+def imageName = "${JOB_BASE_NAME}-${env.BUILD_NUMBER}"
+def summary
+def BUILD_TRIGGER_BY = "\n${currentBuild.getBuildCauses()[0].shortDescription}"
+
+node {
+
+    withCredentials([
+        file(credentialsId: 'GCP_CREDS', variable: 'GCP_CREDS_FILE'),
+        string(credentialsId: 'GCP_PROJECT', variable: 'GCP_PROJECT'),
+    ]) {
+
+        if (params.SEND_SLACK_NOTIFICATION) {
+            notifyBuild('STARTED', BUILD_TRIGGER_BY, params.NOTIFY_SLACK_CHANNEL)
+        }
+
+        checkout scm
+
+        try {
+
+            stage('build') {
+
+                sh "pipelines/gke/scripts/build.sh"
+                sh """ docker run -itd --name ${JOB_BASE_NAME}-${BUILD_NUMBER} \
+                                       --env LONGHORN_REPO_URI=${LONGHORN_REPO_URI} \
+                                       --env LONGHORN_REPO_BRANCH=${LONGHORN_REPO_BRANCH} \
+                                       --env CUSTOM_LONGHORN_MANAGER_IMAGE=${CUSTOM_LONGHORN_MANAGER_IMAGE} \
+                                       --env CUSTOM_LONGHORN_ENGINE_IMAGE=${CUSTOM_LONGHORN_ENGINE_IMAGE} \
+                                       --env CUSTOM_LONGHORN_INSTANCE_MANAGER_IMAGE=${CUSTOM_LONGHORN_INSTANCE_MANAGER_IMAGE} \
+                                       --env CUSTOM_LONGHORN_SHARE_MANAGER_IMAGE=${CUSTOM_LONGHORN_SHARE_MANAGER_IMAGE} \
+                                       --env CUSTOM_LONGHORN_BACKING_IMAGE_MANAGER_IMAGE=${CUSTOM_LONGHORN_BACKING_IMAGE_MANAGER_IMAGE} \
+                                       --env LONGHORN_TESTS_CUSTOM_IMAGE=${LONGHORN_TESTS_CUSTOM_IMAGE} \
+                                       --env LONGHORN_STABLE_VERSION=${LONGHORN_STABLE_VERSION} \
+                                       --env LONGHORN_UPGRADE_TEST=${LONGHORN_UPGRADE_TEST} \
+                                       --env PYTEST_CUSTOM_OPTIONS="${PYTEST_CUSTOM_OPTIONS}" \
+                                       --env BACKUP_STORE_TYPE="${BACKUP_STORE_TYPE}" \
+                                       --env TF_VAR_tf_workspace=${TF_VAR_tf_workspace} \
+                                       --env TF_VAR_gcp_project=${GCP_PROJECT} \
+                                       --env TF_VAR_gcp_auth_file=/src/longhorn-tests/gcp_creds.json \
+                                       ${imageName}
+                """
+
+                sh "docker cp ${GCP_CREDS_FILE} ${JOB_BASE_NAME}-${BUILD_NUMBER}:/src/longhorn-tests/gcp_creds.json"
+            }
+
+            timeout(60) {
+                stage ('terraform') {
+                    sh "docker exec ${JOB_BASE_NAME}-${BUILD_NUMBER} ${TF_VAR_tf_workspace}/scripts/terraform-setup.sh"
+                }
+			}
+
+            stage ('longhorn setup & tests') {
+                sh "docker exec ${JOB_BASE_NAME}-${BUILD_NUMBER} ${TF_VAR_tf_workspace}/scripts/longhorn-setup.sh"
+            }
+
+            stage ('download support bundle') {
+                sh "docker exec ${JOB_BASE_NAME}-${BUILD_NUMBER} ${TF_VAR_tf_workspace}/scripts/download-support-bundle.sh  ${JOB_BASE_NAME}-${BUILD_NUMBER}-bundle.zip"
+                sh "docker cp ${JOB_BASE_NAME}-${BUILD_NUMBER}:${TF_VAR_tf_workspace}/../../${JOB_BASE_NAME}-${BUILD_NUMBER}-bundle.zip ."
+				archiveArtifacts allowEmptyArchive: true, artifacts: '**/*.zip', followSymlinks: false
+			}
+
+            stage ('report generation') {
+                sh "docker cp ${JOB_BASE_NAME}-${BUILD_NUMBER}:${TF_VAR_tf_workspace}/longhorn-test-junit-report.xml ."
+
+                if(params.LONGHORN_UPGRADE_TEST) {
+                    sh "docker cp ${JOB_BASE_NAME}-${BUILD_NUMBER}:${TF_VAR_tf_workspace}/longhorn-test-upgrade-from-stable-junit-report.xml ."
+                    summary = junit 'longhorn-test-upgrade-from-stable-junit-report.xml, longhorn-test-junit-report.xml'
+                }
+                else {
+                    summary = junit 'longhorn-test-junit-report.xml'
+                }
+
+                sh 'docker pull ${CUSTOM_LONGHORN_MANAGER_IMAGE}'
+                LONGHORN_MANAGER_VERSION = sh (
+                    script: "docker inspect --format '{{ index .Config.Labels \"org.opencontainers.image.revision\" }}' ${CUSTOM_LONGHORN_MANAGER_IMAGE}",
+                    returnStdout: true
+                )
+                sh 'docker pull ${CUSTOM_LONGHORN_ENGINE_IMAGE}'
+                LONGHORN_ENGINE_VERSION = sh (
+                    script: "docker inspect --format '{{ index .Config.Labels \"org.opencontainers.image.revision\" }}' ${CUSTOM_LONGHORN_ENGINE_IMAGE}",
+                    returnStdout: true
+                )
+                manager.createSummary("info.gif").appendText("<p>longhorn-manager version: $LONGHORN_MANAGER_VERSION</p><p>longhorn-engine version: $LONGHORN_ENGINE_VERSION</p>", false, false, false, "black")
+            }
+
+        } catch (e) {
+            currentBuild.result = "FAILED"
+            throw e
+        } finally {
+            stage ('releasing resources') {
+                if (sh (script: "docker container inspect ${JOB_BASE_NAME}-${BUILD_NUMBER} > /dev/null 2>&1", returnStatus: true) == 0) {
+                    sh "docker exec ${JOB_BASE_NAME}-${BUILD_NUMBER} ${TF_VAR_tf_workspace}/scripts/cleanup.sh"
+                    sh "docker stop ${JOB_BASE_NAME}-${BUILD_NUMBER}"
+                    sh "docker rm -v ${JOB_BASE_NAME}-${BUILD_NUMBER}"
+                    sh "docker rmi ${imageName}"
+                }
+
+                if (summary) {
+                    summary_msg = "\nTest Summary - Failures: ${summary.failCount}, Skipped: ${summary.skipCount}, Passed: ${summary.passCount}  -- Job completed in ${currentBuild.durationString.replace(' and counting', '')}"
+                } else {
+                    summary_msg = "\n Test Failed: No Junit report"
+                }
+
+                if(params.SEND_SLACK_NOTIFICATION){
+                    notifyBuild(currentBuild.result, summary_msg, params.NOTIFY_SLACK_CHANNEL)
+                }
+            }
+        }
+    }
+
+}
+
+
+def notifyBuild(String buildStatus = 'STARTED', String summary_msg, String slack_channel) {
+  // build status of null means successful
+  buildStatus =  buildStatus ?: 'SUCCESSFUL'
+
+  // Default values
+  def colorName = 'RED'
+  def colorCode = '#FF0000'
+  def subject = "${buildStatus}: Job '${env.JOB_BASE_NAME} [${env.BUILD_NUMBER}]'"
+  def summary = "${subject} (${env.BUILD_URL})" + summary_msg
+
+  // Override default values based on build status
+  if (buildStatus == 'STARTED') {
+    color = 'YELLOW'
+    colorCode = '#FFFF00'
+  } else if (buildStatus == 'SUCCESSFUL') {
+    color = 'GREEN'
+    colorCode = '#00FF00'
+  } else {
+    color = 'RED'
+    colorCode = '#FF0000'
+  }
+
+  // Send notifications
+  slackSend (color: colorCode, message: summary, channel: slack_channel,  tokenCredentialId: 'longhorn-tests-slack-token')
+}

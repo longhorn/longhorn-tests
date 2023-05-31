@@ -11,8 +11,4 @@ fi
 # wait 30 seconds for graceful terraform termination
 sleep 30
 
-if [[ ${TF_VAR_k8s_distro_name} == "aks" ]] || [[ ${TF_VAR_k8s_distro_name} == "eks" ]]; then
-  DISTRO=${TF_VAR_k8s_distro_name}
-fi
-
-terraform -chdir=${TF_VAR_tf_workspace}/terraform/${LONGHORN_TEST_CLOUDPROVIDER}/${DISTRO} destroy -auto-approve -no-color
+terraform -chdir=${TF_VAR_tf_workspace}/terraform destroy -auto-approve -no-color
