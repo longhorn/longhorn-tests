@@ -29,40 +29,72 @@
 <pre><code class="python">import common
 import pytest
 import time
+import copy
 
-from common import RETRY_COUNTS, RETRY_INTERVAL, RETRY_INTERVAL_LONG
-from common import client, core_api, apps_api  # NOQA
-from common import storage_class, statefulset, pvc, pod  # NOQA
-from common import sts_name, volume_name  # NOQA
+from common import apps_api  # NOQA
+from common import client  # NOQA
+from common import core_api  # NOQA
 from common import make_deployment_with_pvc  # NOQA
-from common import check_volume_data, cleanup_volume, \
-    create_and_check_volume, get_longhorn_api_client, get_self_host_id, \
-    wait_for_volume_detached, wait_for_volume_degraded, \
-    wait_for_volume_healthy, wait_scheduling_failure, \
-    write_volume_random_data, wait_for_rebuild_complete
-from common import SETTING_REPLICA_NODE_SOFT_ANTI_AFFINITY
-from common import SETTING_REPLICA_AUTO_BALANCE
-from common import SETTING_DEFAULT_DATA_LOCALITY
-from common import VOLUME_FIELD_ROBUSTNESS, VOLUME_ROBUSTNESS_HEALTHY
-from common import DEFAULT_DISK_PATH
-from common import create_pv_for_volume
-from common import create_pvc_for_volume
-from common import write_pod_volume_random_data
-from common import wait_for_volume_replica_count
-
-from common import Mi, Gi, DATA_SIZE_IN_MB_2
-from common import create_and_wait_pod
+from common import pod  # NOQA
+from common import pvc  # NOQA
 from common import settings_reset # NOQA
-from common import wait_for_rebuild_start
-from common import delete_and_wait_pod
-from common import crash_engine_process_with_sigkill
-from common import wait_for_replica_running
-from common import set_node_scheduling
+from common import statefulset  # NOQA
+from common import storage_class  # NOQA
+from common import sts_name  # NOQA
+from common import volume_name  # NOQA
+
+from common import get_longhorn_api_client
+from common import get_self_host_id
+
+from common import cleanup_node_disks
 from common import create_host_disk
 from common import get_update_disks
+from common import set_node_scheduling
 from common import update_node_disks
 from common import wait_for_disk_status
-from common import cleanup_node_disks
+
+from common import check_volume_data
+from common import cleanup_volume
+from common import create_and_check_volume
+from common import wait_for_volume_degraded
+from common import wait_for_volume_detached
+from common import wait_for_volume_healthy
+from common import wait_for_volume_replica_count
+from common import write_volume_random_data
+
+from common import create_and_wait_statefulset
+from common import delete_and_wait_statefulset
+from common import delete_statefulset
+from common import get_statefulset_pod_info
+
+from common import create_and_wait_pod
+from common import delete_and_wait_pod
+from common import wait_delete_pod
+from common import wait_for_pods_volume_state
+from common import write_pod_volume_random_data
+
+from common import create_pv_for_volume
+from common import create_pvc_for_volume
+from common import create_storage_class
+
+from common import wait_scheduling_failure
+from common import wait_for_rebuild_complete
+from common import wait_for_rebuild_start
+from common import wait_for_replica_running
+
+from common import crash_engine_process_with_sigkill
+
+from common import Mi, Gi
+from common import DATA_SIZE_IN_MB_2
+from common import DEFAULT_DISK_PATH
+from common import RETRY_COUNTS
+from common import RETRY_INTERVAL
+from common import RETRY_INTERVAL_LONG
+from common import SETTING_DEFAULT_DATA_LOCALITY
+from common import SETTING_REPLICA_AUTO_BALANCE
+from common import SETTING_REPLICA_NODE_SOFT_ANTI_AFFINITY
+from common import VOLUME_FIELD_ROBUSTNESS
+from common import VOLUME_ROBUSTNESS_HEALTHY
 
 from time import sleep
 
@@ -1584,7 +1616,77 @@ def test_soft_anti_affinity_scheduling_volume_disable(): # NOQA
       meaning it&#39;s unscheduled
     - Check volume `data`
     &#34;&#34;&#34;
-    pass</code></pre>
+    pass
+
+
+def test_data_locality_strict_local_node_affinity(client, core_api, apps_api, storage_class, statefulset, request):  # NOQA
+    &#34;&#34;&#34;
+    Scenario: data-locality (strict-local) should schedule Pod to the same node
+
+    Issue: https://github.com/longhorn/longhorn/issues/5448
+
+    Given a StorageClass (lh-test) has dataLocality (strict-local)
+    And the StorageClass (lh-test) has numberOfReplicas (1)
+    And the StorageClass (lh-test) exists
+
+    And a StatefulSet (test-1) has StorageClass (lh-test)
+    And the StatefulSet (test-1) created.
+    And the StatefulSet (test-1) all Pods are in state (healthy).
+    And the StatefulSet (test-1) is deleted.
+    And the StatefulSet (test-1) PVC exists.
+
+    And a StatefulSet (test-2) has StorageClass (lh-test)
+    And the StatefulSet (test-2) has replicas (2)
+    And the StatefulSet (test-2) created.
+    And the StatefulSet (test-2) all Pods is in state (healthy).
+
+    When the StatefulSet (test-1) created.
+    Then the StatefulSet (test-1) all Pods are in state (healthy).
+    &#34;&#34;&#34;
+
+    def wait_for_statefulset_pods_healthy(statefulset):
+        pod_list = get_statefulset_pod_info(core_api, statefulset)
+        wait_for_pods_volume_state(
+            client, pod_list,
+            VOLUME_FIELD_ROBUSTNESS,
+            VOLUME_ROBUSTNESS_HEALTHY,
+            retry_counts=int(60 / RETRY_INTERVAL)
+        )
+
+    storage_class[&#34;parameters&#34;][&#34;dataLocality&#34;] = &#34;strict-local&#34;
+    storage_class[&#34;parameters&#34;][&#34;numberOfReplicas&#34;] = &#34;1&#34;
+    create_storage_class(storage_class)
+
+    statefulset[&#34;metadata&#34;][&#34;name&#34;] = &#34;test-1&#34;
+    spec = statefulset[&#39;spec&#39;]
+    spec[&#39;replicas&#39;] = 1
+    spec[&#39;volumeClaimTemplates&#39;][0][&#39;spec&#39;][&#39;storageClassName&#39;] = \
+        storage_class[&#39;metadata&#39;][&#39;name&#39;]
+    statefulset[&#39;spec&#39;] = spec
+    create_and_wait_statefulset(statefulset)
+
+    pod_list = get_statefulset_pod_info(core_api, statefulset)
+
+    wait_for_statefulset_pods_healthy(statefulset)
+
+    delete_statefulset(apps_api, statefulset)
+    for sts_pod in pod_list:
+        wait_delete_pod(core_api, sts_pod[&#39;pod_uid&#39;])
+
+    statefulset_2 = copy.deepcopy(statefulset)
+    statefulset_2[&#34;metadata&#34;][&#34;name&#34;] = &#34;test-2&#34;
+    statefulset_2[&#39;spec&#39;][&#39;replicas&#39;] = 2
+    create_and_wait_statefulset(statefulset_2)
+
+    def finalizer():
+        client = get_longhorn_api_client()
+        delete_and_wait_statefulset(core_api, client, statefulset_2)
+    request.addfinalizer(finalizer)
+
+    wait_for_statefulset_pods_healthy(statefulset_2)
+
+    create_and_wait_statefulset(statefulset)
+    wait_for_statefulset_pods_healthy(statefulset)</code></pre>
 </details>
 </section>
 <section>
@@ -2323,6 +2425,100 @@ Verify that the replica set contains: one on node-1, one on node-2</p>
     assert v4_node1_replica_count == 1
     assert v4_node2_replica_count == 1
     assert v4_node3_replica_count == 0</code></pre>
+</details>
+</dd>
+<dt id="tests.test_scheduling.test_data_locality_strict_local_node_affinity"><code class="name flex">
+<span>def <span class="ident">test_data_locality_strict_local_node_affinity</span></span>(<span>client, core_api, apps_api, storage_class, statefulset, request)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Scenario: data-locality (strict-local) should schedule Pod to the same node</p>
+<p>Issue: <a href="https://github.com/longhorn/longhorn/issues/5448">https://github.com/longhorn/longhorn/issues/5448</a></p>
+<p>Given a StorageClass (lh-test) has dataLocality (strict-local)
+And the StorageClass (lh-test) has numberOfReplicas (1)
+And the StorageClass (lh-test) exists</p>
+<p>And a StatefulSet (test-1) has StorageClass (lh-test)
+And the StatefulSet (test-1) created.
+And the StatefulSet (test-1) all Pods are in state (healthy).
+And the StatefulSet (test-1) is deleted.
+And the StatefulSet (test-1) PVC exists.</p>
+<p>And a StatefulSet (test-2) has StorageClass (lh-test)
+And the StatefulSet (test-2) has replicas (2)
+And the StatefulSet (test-2) created.
+And the StatefulSet (test-2) all Pods is in state (healthy).</p>
+<p>When the StatefulSet (test-1) created.
+Then the StatefulSet (test-1) all Pods are in state (healthy).</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def test_data_locality_strict_local_node_affinity(client, core_api, apps_api, storage_class, statefulset, request):  # NOQA
+    &#34;&#34;&#34;
+    Scenario: data-locality (strict-local) should schedule Pod to the same node
+
+    Issue: https://github.com/longhorn/longhorn/issues/5448
+
+    Given a StorageClass (lh-test) has dataLocality (strict-local)
+    And the StorageClass (lh-test) has numberOfReplicas (1)
+    And the StorageClass (lh-test) exists
+
+    And a StatefulSet (test-1) has StorageClass (lh-test)
+    And the StatefulSet (test-1) created.
+    And the StatefulSet (test-1) all Pods are in state (healthy).
+    And the StatefulSet (test-1) is deleted.
+    And the StatefulSet (test-1) PVC exists.
+
+    And a StatefulSet (test-2) has StorageClass (lh-test)
+    And the StatefulSet (test-2) has replicas (2)
+    And the StatefulSet (test-2) created.
+    And the StatefulSet (test-2) all Pods is in state (healthy).
+
+    When the StatefulSet (test-1) created.
+    Then the StatefulSet (test-1) all Pods are in state (healthy).
+    &#34;&#34;&#34;
+
+    def wait_for_statefulset_pods_healthy(statefulset):
+        pod_list = get_statefulset_pod_info(core_api, statefulset)
+        wait_for_pods_volume_state(
+            client, pod_list,
+            VOLUME_FIELD_ROBUSTNESS,
+            VOLUME_ROBUSTNESS_HEALTHY,
+            retry_counts=int(60 / RETRY_INTERVAL)
+        )
+
+    storage_class[&#34;parameters&#34;][&#34;dataLocality&#34;] = &#34;strict-local&#34;
+    storage_class[&#34;parameters&#34;][&#34;numberOfReplicas&#34;] = &#34;1&#34;
+    create_storage_class(storage_class)
+
+    statefulset[&#34;metadata&#34;][&#34;name&#34;] = &#34;test-1&#34;
+    spec = statefulset[&#39;spec&#39;]
+    spec[&#39;replicas&#39;] = 1
+    spec[&#39;volumeClaimTemplates&#39;][0][&#39;spec&#39;][&#39;storageClassName&#39;] = \
+        storage_class[&#39;metadata&#39;][&#39;name&#39;]
+    statefulset[&#39;spec&#39;] = spec
+    create_and_wait_statefulset(statefulset)
+
+    pod_list = get_statefulset_pod_info(core_api, statefulset)
+
+    wait_for_statefulset_pods_healthy(statefulset)
+
+    delete_statefulset(apps_api, statefulset)
+    for sts_pod in pod_list:
+        wait_delete_pod(core_api, sts_pod[&#39;pod_uid&#39;])
+
+    statefulset_2 = copy.deepcopy(statefulset)
+    statefulset_2[&#34;metadata&#34;][&#34;name&#34;] = &#34;test-2&#34;
+    statefulset_2[&#39;spec&#39;][&#39;replicas&#39;] = 2
+    create_and_wait_statefulset(statefulset_2)
+
+    def finalizer():
+        client = get_longhorn_api_client()
+        delete_and_wait_statefulset(core_api, client, statefulset_2)
+    request.addfinalizer(finalizer)
+
+    wait_for_statefulset_pods_healthy(statefulset_2)
+
+    create_and_wait_statefulset(statefulset)
+    wait_for_statefulset_pods_healthy(statefulset)</code></pre>
 </details>
 </dd>
 <dt id="tests.test_scheduling.test_hard_anti_affinity_detach"><code class="name flex">
@@ -3685,6 +3881,7 @@ failed assertion if one can't be found.
 <li><code><a title="tests.test_scheduling.replica_auto_balance_with_data_locality_test" href="#tests.test_scheduling.replica_auto_balance_with_data_locality_test">replica_auto_balance_with_data_locality_test</a></code></li>
 <li><code><a title="tests.test_scheduling.reset_settings" href="#tests.test_scheduling.reset_settings">reset_settings</a></code></li>
 <li><code><a title="tests.test_scheduling.test_data_locality_basic" href="#tests.test_scheduling.test_data_locality_basic">test_data_locality_basic</a></code></li>
+<li><code><a title="tests.test_scheduling.test_data_locality_strict_local_node_affinity" href="#tests.test_scheduling.test_data_locality_strict_local_node_affinity">test_data_locality_strict_local_node_affinity</a></code></li>
 <li><code><a title="tests.test_scheduling.test_hard_anti_affinity_detach" href="#tests.test_scheduling.test_hard_anti_affinity_detach">test_hard_anti_affinity_detach</a></code></li>
 <li><code><a title="tests.test_scheduling.test_hard_anti_affinity_live_rebuild" href="#tests.test_scheduling.test_hard_anti_affinity_live_rebuild">test_hard_anti_affinity_live_rebuild</a></code></li>
 <li><code><a title="tests.test_scheduling.test_hard_anti_affinity_offline_rebuild" href="#tests.test_scheduling.test_hard_anti_affinity_offline_rebuild">test_hard_anti_affinity_offline_rebuild</a></code></li>
