@@ -21,56 +21,9 @@ LONGHORN_MANIFEST_URL="https://raw.githubusercontent.com/longhorn/longhorn/${LON
 LONGHORN_REPO_URL="https://github.com/longhorn/longhorn"
 LONGHORN_REPO_DIR="${TMPDIR}/longhorn"
 
+
 set_kubeconfig_envvar(){
-  ARCH=${1}
-  BASEDIR=${2}
-
-  if [[ ${ARCH} == "amd64" ]] ; then
-    if [[ ${TF_VAR_k8s_distro_name} == [rR][kK][eE] ]]; then
-      export KUBECONFIG="${BASEDIR}/kube_config_rke.yml"
-    elif [[ ${TF_VAR_k8s_distro_name} == [rR][kK][eE]2 ]]; then
-      export KUBECONFIG="${BASEDIR}/terraform/${LONGHORN_TEST_CLOUDPROVIDER}/${DISTRO}/rke2.yaml"
-    elif [[ ${TF_VAR_k8s_distro_name} == "aks" ]]; then
-      export KUBECONFIG="${BASEDIR}/aks.yml"
-    elif [[ ${TF_VAR_k8s_distro_name} == "eks" ]]; then
-      export KUBECONFIG="${BASEDIR}/eks.yml"
-    else
-      export KUBECONFIG="${BASEDIR}/terraform/${LONGHORN_TEST_CLOUDPROVIDER}/${DISTRO}/k3s.yaml"
-    fi
-  elif [[ ${ARCH} == "arm64"  ]]; then
-    if [[ ${TF_VAR_k8s_distro_name} == "aks" ]]; then
-      export KUBECONFIG="${BASEDIR}/aks.yml"
-    elif [[ ${TF_VAR_k8s_distro_name} == "eks" ]]; then
-      export KUBECONFIG="${BASEDIR}/eks.yml"
-    else
-      export KUBECONFIG="${BASEDIR}/terraform/${LONGHORN_TEST_CLOUDPROVIDER}/${DISTRO}/k3s.yaml"
-    fi
-  fi
-}
-
-
-create_admin_service_account(){
-  kubectl apply -f "${TF_VAR_tf_workspace}/templates/kubeconfig_service_account.yaml"
-  TOKEN=$(kubectl -n kube-system get secret/kubeconfig-cluster-admin-token -o=go-template='{{.data.token}}' | base64 -d)
-  yq -i ".users[0].user.token=\"${TOKEN}\""  "${TF_VAR_tf_workspace}/eks.yml"
-}
-
-
-install_iscsi(){
-  kubectl apply -f "https://raw.githubusercontent.com/longhorn/longhorn/master/deploy/prerequisite/longhorn-iscsi-installation.yaml"
-}
-
-
-install_cluster_autoscaler(){
-  curl -o "${TF_VAR_tf_workspace}/templates/cluster_autoscaler.yaml" "https://raw.githubusercontent.com/kubernetes/autoscaler/master/cluster-autoscaler/cloudprovider/aws/examples/cluster-autoscaler-autodiscover.yaml"
-  CLUSTER_NAME=$(kubectl config current-context)
-  sed -i "s/<YOUR CLUSTER NAME>/${CLUSTER_NAME}/g" "${TF_VAR_tf_workspace}/templates/cluster_autoscaler.yaml"
-  yq -i 'select(.kind == "Deployment").spec.template.spec.containers[0].env += [{"name": "AWS_ACCESS_KEY_ID", "valueFrom": {"secretKeyRef": {"name": "aws-cred-secret", "key": "AWS_ACCESS_KEY_ID"}}}]' "${TF_VAR_tf_workspace}/templates/cluster_autoscaler.yaml"
-  yq -i 'select(.kind == "Deployment").spec.template.spec.containers[0].env += [{"name": "AWS_SECRET_ACCESS_KEY", "valueFrom": {"secretKeyRef": {"name": "aws-cred-secret", "key": "AWS_SECRET_ACCESS_KEY"}}}]' "${TF_VAR_tf_workspace}/templates/cluster_autoscaler.yaml"
-  yq -i 'select(.kind == "Deployment").spec.template.spec.containers[0].env += [{"name": "AWS_REGION", "valueFrom": {"secretKeyRef": {"name": "aws-cred-secret", "key": "AWS_DEFAULT_REGION"}}}]' "${TF_VAR_tf_workspace}/templates/cluster_autoscaler.yaml"
-  yq -i 'select(.kind == "Deployment").spec.template.spec.containers[0].command += "--scale-down-unneeded-time=1m"' "${TF_VAR_tf_workspace}/templates/cluster_autoscaler.yaml"
-  yq -i 'select(.kind == "Deployment").spec.template.spec.containers[0].command += "--scale-down-delay-after-add=1m"' "${TF_VAR_tf_workspace}/templates/cluster_autoscaler.yaml"
-  kubectl apply -f "${TF_VAR_tf_workspace}/templates/cluster_autoscaler.yaml"
+    gcloud container clusters get-credentials `terraform -chdir=${TF_VAR_tf_workspace}/terraform output -raw cluster_name` --zone `terraform -chdir=${TF_VAR_tf_workspace}/terraform output -raw cluster_zone` --project ${TF_VAR_gcp_project}
 }
 
 
@@ -86,49 +39,6 @@ install_csi_snapshotter_crds(){
 
     kubectl apply -f ${CSI_SNAPSHOTTER_REPO_DIR}/client/config/crd \
                   -f ${CSI_SNAPSHOTTER_REPO_DIR}/deploy/kubernetes/snapshot-controller
-}
-
-
-install_rancher() {
-
-  RANCHER_HOSTNAME=`cat "${TF_VAR_tf_workspace}/load_balancer_url"`
-  RANCHER_BOOTSTRAP_PASSWORD='p@ssw0rd'
-
-  kubectl apply --validate=false -f https://github.com/jetstack/cert-manager/releases/download/v1.0.4/cert-manager.crds.yaml
-  kubectl create namespace cert-manager
-  helm repo add jetstack https://charts.jetstack.io
-  helm repo update
-  helm install cert-manager jetstack/cert-manager --namespace cert-manager --version v1.4.0
-  kubectl get pods --namespace cert-manager
-
-  helm repo add rancher-latest https://releases.rancher.com/server-charts/latest
-  kubectl create namespace cattle-system
-  helm install rancher rancher-latest/rancher --namespace cattle-system --set bootstrapPassword="${RANCHER_BOOTSTRAP_PASSWORD}" --set hostname="${RANCHER_HOSTNAME}" --set replicas=3 --set ingress.tls.source=letsEncrypt --set letsEncrypt.email=yang.chiu@suse.com
-  kubectl -n cattle-system rollout status deploy/rancher
-}
-
-
-get_rancher_api_key() {
-  python3 "${TF_VAR_tf_workspace}/scripts/rancher/webdriver/main.py" "${RANCHER_HOSTNAME}" "${RANCHER_BOOTSTRAP_PASSWORD}"
-  RANCHER_ACCESS_KEY=`cat "${PWD}/access_key"`
-  RANCHER_SECRET_KEY=`cat "${PWD}/secret_key"`
-}
-
-
-install_longhorn_by_rancher() {
-  terraform -chdir="${TF_VAR_tf_workspace}/scripts/rancher/terraform" init
-  terraform -chdir="${TF_VAR_tf_workspace}/scripts/rancher/terraform" apply \
-            -var="api_url=https://${RANCHER_HOSTNAME}" \
-            -var="access_key=${RANCHER_ACCESS_KEY}" \
-            -var="secret_key=${RANCHER_SECRET_KEY}" \
-            -var="rancher_chart_git_repo=${RANCHER_CHART_GIT_REPO}" \
-            -var="rancher_chart_git_branch=${RANCHER_CHART_GIT_BRANCH}" \
-            -var="rancher_chart_install_version=${RANCHER_CHART_INSTALL_VERSION}" \
-            -var="registry_url=${REGISTRY_URL}" \
-            -var="registry_user=${REGISTRY_USERNAME}" \
-            -var="registry_passwd=${REGISTRY_PASSWORD}" \
-            -var="registry_secret=docker-registry-secret" \
-            -auto-approve -no-color
 }
 
 
@@ -151,40 +61,6 @@ wait_longhorn_status_running(){
 get_longhorn_manifest(){
   wget ${LONGHORN_MANIFEST_URL} -P ${TF_VAR_tf_workspace}
   sed -i ':a;N;$!ba;s/---\n---/---/g' "${TF_VAR_tf_workspace}/longhorn.yaml"
-}
-
-
-get_longhorn_chart(){
-  git clone --single-branch \
-            --branch "${LONGHORN_INSTALL_VERSION}" \
-            "${LONGHORN_REPO_URL}" \
-            "${LONGHORN_REPO_DIR}"
-}
-
-
-create_registry_secret(){
-  kubectl -n ${LONGHORN_NAMESPACE} create secret docker-registry docker-registry-secret --docker-server=${REGISTRY_URL} --docker-username=${REGISTRY_USERNAME} --docker-password=${REGISTRY_PASSWORD}
-}
-
-
-customize_longhorn_manifest_for_airgap(){
-  # (1) add secret name to imagePullSecrets.name
-  yq -i 'select(.kind == "Deployment" and .metadata.name == "longhorn-driver-deployer").spec.template.spec.imagePullSecrets[0].name="docker-registry-secret"' "${TF_VAR_tf_workspace}/longhorn.yaml"
-  yq -i 'select(.kind == "DaemonSet" and .metadata.name == "longhorn-manager").spec.template.spec.imagePullSecrets[0].name="docker-registry-secret"' "${TF_VAR_tf_workspace}/longhorn.yaml"
-  yq -i 'select(.kind == "Deployment" and .metadata.name == "longhorn-ui").spec.template.spec.imagePullSecrets[0].name="docker-registry-secret"' "${TF_VAR_tf_workspace}/longhorn.yaml"
-  yq -i 'select(.kind == "ConfigMap" and .metadata.name == "longhorn-default-setting").data."default-setting.yaml"="registry-secret: docker-registry-secret"' "${TF_VAR_tf_workspace}/longhorn.yaml"
-  # (2) modify images to point to private registry
-  sed -i "s/longhornio\//${REGISTRY_URL}\/longhornio\//g" "${TF_VAR_tf_workspace}/longhorn.yaml"
-}
-
-
-customize_longhorn_chart_for_airgap(){
-  # specify private registry secret in chart/values.yaml
-  yq -i '.privateRegistry.createSecret=true' "${LONGHORN_REPO_DIR}/chart/values.yaml"
-  yq -i ".privateRegistry.registryUrl=\"${REGISTRY_URL}\"" "${LONGHORN_REPO_DIR}/chart/values.yaml"
-  yq -i ".privateRegistry.registryUser=\"${REGISTRY_USERNAME}\"" "${LONGHORN_REPO_DIR}/chart/values.yaml"
-  yq -i ".privateRegistry.registryPasswd=\"${REGISTRY_PASSWORD}\"" "${LONGHORN_REPO_DIR}/chart/values.yaml"
-  yq -i '.privateRegistry.registrySecret="docker-registry-secret"' "${LONGHORN_REPO_DIR}/chart/values.yaml"
 }
 
 
@@ -248,12 +124,6 @@ generate_longhorn_yaml_manifest() {
 install_longhorn_by_manifest(){
   LONGHORN_MANIFEST_FILE_PATH="${1}"
   kubectl apply -f "${LONGHORN_MANIFEST_FILE_PATH}"
-  wait_longhorn_status_running
-}
-
-
-install_longhorn_by_chart(){
-  helm install longhorn "${LONGHORN_REPO_DIR}/chart/" --namespace longhorn-system
   wait_longhorn_status_running
 }
 
@@ -372,13 +242,8 @@ run_longhorn_tests(){
     yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env[1].value="'${BACKUP_STORE_FOR_TEST}'"' ${LONGHORN_TESTS_MANIFEST_FILE_PATH}
   fi
 
-  if [[ "${TF_VAR_use_hdd}" == true ]]; then
-    yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env[3].value="hdd"' ${LONGHORN_TESTS_MANIFEST_FILE_PATH}
-  fi
-
-  if [[ "${TF_VAR_k8s_distro_name}" == "eks" ]] || [[ "${TF_VAR_k8s_distro_name}" == "aks" ]]; then
-    yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env[6].value="true"' ${LONGHORN_TESTS_MANIFEST_FILE_PATH}
-  fi
+  # set MANAGED_K8S_CLUSTER to true
+  yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env[6].value="true"' ${LONGHORN_TESTS_MANIFEST_FILE_PATH}
 
   set +x
   ## inject aws cloudprovider and credentials env variables from created secret
@@ -413,7 +278,7 @@ run_longhorn_tests(){
 
 
 main(){
-  set_kubeconfig_envvar ${TF_VAR_arch} ${TF_VAR_tf_workspace}
+  set_kubeconfig_envvar
 
   # set debugging mode off to avoid leaking aws secrets to the logs.
   # DON'T REMOVE!
@@ -421,46 +286,17 @@ main(){
   create_aws_secret
   set -x
 
-  if [[ ${TF_VAR_k8s_distro_name} == "eks" ]]; then
-    create_admin_service_account
-    install_iscsi
-    install_cluster_autoscaler
-  fi
   create_longhorn_namespace
   if [[ ${PYTEST_CUSTOM_OPTIONS} != *"--include-cluster-autoscaler-test"* ]]; then
     install_backupstores
   fi
   install_csi_snapshotter_crds
 
-  if [[ "${AIR_GAP_INSTALLATION}" == true ]]; then
-    if [[ "${LONGHORN_INSTALL_METHOD}" == "manifest-file" ]]; then
-      create_registry_secret
-      get_longhorn_manifest
-      customize_longhorn_manifest_for_airgap
-      install_longhorn_by_manifest "${TF_VAR_tf_workspace}/longhorn.yaml"
-    elif [[ "${LONGHORN_INSTALL_METHOD}" == "helm-chart" ]]; then
-      get_longhorn_chart
-      customize_longhorn_chart_for_airgap
-      install_longhorn_by_chart
-    elif [[ "${LONGHORN_INSTALL_METHOD}" == "rancher" ]]; then
-      install_rancher
-      get_rancher_api_key
-      install_longhorn_by_rancher
-    fi
-    run_longhorn_tests
-  elif [[ "${LONGHORN_UPGRADE_TEST}" == true ]]; then
+  if [[ "${LONGHORN_UPGRADE_TEST}" == true ]]; then
     generate_longhorn_yaml_manifest "${TF_VAR_tf_workspace}"
     install_longhorn_stable
     LONGHORN_UPGRADE_TYPE="from_stable"
     LONGHORN_UPGRADE_TEST_POD_NAME="longhorn-test-upgrade-from-stable"
-    if [[ -n "${LONGHORN_TRANSIENT_VERSION}" ]]; then
-      UPGRADE_LH_REPO_URL="${LONGHORN_REPO_URI}"
-      UPGRADE_LH_REPO_BRANCH="${LONGHORN_TRANSIENT_VERSION}"
-      UPGRADE_LH_ENGINE_IMAGE="longhornio/longhorn-engine:${LONGHORN_TRANSIENT_VERSION}"
-      run_longhorn_upgrade_test
-      LONGHORN_UPGRADE_TYPE="from_transient"
-      LONGHORN_UPGRADE_TEST_POD_NAME="longhorn-test-upgrade-from-transient"
-    fi
     UPGRADE_LH_REPO_URL="${LONGHORN_REPO_URI}"
     UPGRADE_LH_REPO_BRANCH="${LONGHORN_REPO_BRANCH}"
     UPGRADE_LH_MANAGER_IMAGE="${CUSTOM_LONGHORN_MANAGER_IMAGE}"
