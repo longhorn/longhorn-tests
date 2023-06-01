@@ -200,6 +200,8 @@ SETTING_CONCURRENT_VOLUME_BACKUP_RESTORE = \
 SETTING_NODE_SELECTOR = "system-managed-components-node-selector"
 SETTING_K8S_CLUSTER_AUTOSCALER_ENABLED = \
     "kubernetes-cluster-autoscaler-enabled"
+SETTING_CONCURRENT_REPLICA_REBUILD_PER_NODE_LIMIT = \
+    "concurrent-replica-rebuild-per-node-limit"
 
 SNAPSHOT_DATA_INTEGRITY_IGNORED = "ignored"
 SNAPSHOT_DATA_INTEGRITY_DISABLED = "disabled"
