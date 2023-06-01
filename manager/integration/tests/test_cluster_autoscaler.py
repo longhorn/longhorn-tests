@@ -45,7 +45,6 @@ from common import SETTING_REPLICA_REPLENISHMENT_WAIT_INTERVAL
 CPU_REQUEST = 150
 
 
-@pytest.mark.skip(reason="require K8s cluster-autoscaler")
 @pytest.mark.cluster_autoscaler  # NOQA
 def test_cluster_autoscaler(client, core_api, apps_api, make_deployment_cpu_request, request):  # NOQA
     """
@@ -102,7 +101,6 @@ def test_cluster_autoscaler(client, core_api, apps_api, make_deployment_cpu_requ
     client = wait_cluster_autoscale_down(client, core_api, nodes, scale_size)
 
 
-@pytest.mark.skip(reason="require K8s cluster-autoscaler")
 @pytest.mark.cluster_autoscaler  # NOQA
 def test_cluster_autoscaler_all_nodes_with_volume_replicas(client, core_api, apps_api, make_deployment_cpu_request, volume_name, pod_make, request):  # NOQA
     """
@@ -204,7 +202,7 @@ def test_cluster_autoscaler_all_nodes_with_volume_replicas(client, core_api, app
     volume = client.by_id_volume(volume.name)
     volume = volume.attach(hostId=new_nodes[0].id)
     volume = wait_for_volume_healthy(client, volume_name)
-    volume.detach(hostId="")
+    volume.detach()
 
     client = wait_cluster_autoscale_down(client, core_api, nodes, scale_size)
     create_and_wait_pod(core_api, pod_manifest)
@@ -212,7 +210,6 @@ def test_cluster_autoscaler_all_nodes_with_volume_replicas(client, core_api, app
     assert resp == data
 
 
-@pytest.mark.skip(reason="require K8s cluster-autoscaler")
 @pytest.mark.cluster_autoscaler  # NOQA
 @pytest.mark.backing_image  # NOQA
 def test_cluster_autoscaler_backing_image(client, core_api, apps_api, make_deployment_cpu_request, request):  # NOQA

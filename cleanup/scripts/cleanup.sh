@@ -13,7 +13,7 @@ for INSTANCE in ${ALL_INSTANCES[@]}; do
   INSTANCE_ID=$(echo "${INSTANCE}" | jq '.InstanceId' | tr -d '"')
   echo " * Instance ${INSTANCE_ID} ==>"
   LAUNCH_TIME=$(echo "${INSTANCE}" | jq '.LaunchTime' | tr -d '"')
-  TIMESTAMP=$(date -D "%Y-%m-%dT%H:%M:%S.000Z" -d "${LAUNCH_TIME}" +%s)
+  TIMESTAMP=$(date -D "%Y-%m-%dT%H:%M:%S+00:00" -d "${LAUNCH_TIME}" +%s)
   TIME_DIFF=$((CURRENT_TIMESTAMP-TIMESTAMP))
   echo "   Launch Time: ${LAUNCH_TIME} (${TIMESTAMP}), Diff: ${TIME_DIFF}"
   RESOURCE_SUFFIX=$(echo "$INSTANCE" | jq '.Tags[] | select(.Key == "Name").Value' | tr -d '"' | rev | cut -d- -f1 | rev)

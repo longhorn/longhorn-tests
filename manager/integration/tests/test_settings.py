@@ -27,7 +27,6 @@ from common import (  # NOQA
 
     LONGHORN_NAMESPACE,
     SETTING_TAINT_TOLERATION,
-    SETTING_GUARANTEED_ENGINE_CPU,
     SETTING_GUARANTEED_INSTANCE_MANAGER_CPU,
     SETTING_PRIORITY_CLASS,
     SETTING_DEFAULT_REPLICA_COUNT,
@@ -66,7 +65,7 @@ def check_workload_update(core_api, apps_api, count):  # NOQA
     im_pod_list = core_api.list_namespaced_pod(
         LONGHORN_NAMESPACE,
         label_selector="longhorn.io/component=instance-manager").items
-    if len(im_pod_list) != 2 * count:
+    if len(im_pod_list) != count:
         return False
 
     for p in im_pod_list:
@@ -163,7 +162,7 @@ def test_setting_toleration():
     data1 = write_volume_random_data(volume)
     check_volume_data(volume, data1)
 
-    volume.detach(hostId="")
+    volume.detach()
     wait_for_volume_detached(client, volume_name)
 
     setting = client.update(setting, value=setting_value_str)
@@ -178,7 +177,7 @@ def test_setting_toleration():
     check_volume_data(volume, data1)
     data2 = write_volume_random_data(volume)
     check_volume_data(volume, data2)
-    volume.detach(hostId="")
+    volume.detach()
     wait_for_volume_detached(client, volume_name)
 
     # cleanup
@@ -365,35 +364,30 @@ def test_instance_manager_cpu_reservation(client, core_api):  # NOQA
     Test if the CPU requests of instance manager pods are controlled by
     the settings and the node specs correctly.
 
-    1. Try to change the deprecated setting `Guaranteed Engine CPU`.
-       --> The setting update should fail.
-    2. On node 1, set `node.instanceManagerCPURequest` to 150.
+    1. On node 1, set `node.instanceManagerCPURequest` to 150.
        --> The IM pods on this node will be restarted. And the CPU requests
        of these IM pods matches the above milli value.
-    3. Change the new setting `Guaranteed Instance Manager CPU` to 10,
+    2. Change the new setting `Guaranteed Instance Manager CPU` to 10,
        Then wait for all IM pods except for the pods on node 1 restarting.
        --> The CPU requests of the restarted IM pods equals to
            the new setting value multiply the kube node allocatable CPU.
-    4. Set the new settings to 0.
+    3. Set the new settings to 0.
        --> All IM pods except for the pod on node 1 will be restarted without
         CPU requests.
-    5. Set the fields on node 1 to 0.
+    4. Set the fields on node 1 to 0.
        --> The IM pods on node 1 will be restarted without CPU requests.
-    6. Set the new setting to a values smaller than 40.
+    5. Set the new setting to a values smaller than 40.
        Then wait for all IM pods restarting.
        --> The CPU requests of all IM pods equals to
            the new setting value multiply the kube node allocatable CPU.
-    7. Set the new setting to a value greater than 40.
+    6. Set the new setting to a value greater than 40.
        --> The setting update should fail.
-    8. Create a volume, verify everything works as normal
+    7. Create a volume, verify everything works as normal
 
     Note: use fixture to restore the setting into the original state
     """
 
     instance_managers = client.list_instance_manager()
-    deprecated_setting = client.by_id_setting(SETTING_GUARANTEED_ENGINE_CPU)
-    with pytest.raises(Exception) as e:
-        client.update(deprecated_setting, value="0.1")
 
     host_node_name = get_self_host_id()
     host_node = client.by_id_node(host_node_name)
@@ -541,7 +535,7 @@ def test_setting_priority_class(core_api, apps_api, scheduling_api, priority_cla
     data1 = write_volume_random_data(volume)
     check_volume_data(volume, data1)
 
-    volume.detach(hostId="")
+    volume.detach()
     wait_for_volume_detached(client, volume_name)
 
     setting = client.update(setting, value=name)
@@ -557,7 +551,7 @@ def test_setting_priority_class(core_api, apps_api, scheduling_api, priority_cla
     check_volume_data(volume, data1)
     data2 = write_volume_random_data(volume)
     check_volume_data(volume, data2)
-    volume.detach(hostId="")
+    volume.detach()
     wait_for_volume_detached(client, volume_name)
 
     setting = client.by_id_setting(SETTING_PRIORITY_CLASS)
@@ -783,9 +777,9 @@ def test_setting_concurrent_rebuild_limit(client, core_api, volume_name):  # NOQ
     volume1_endpoint = get_volume_endpoint(volume1)
     volume2_endpoint = get_volume_endpoint(volume2)
     write_volume_dev_random_mb_data(volume1_endpoint,
-                                    1, 3500)
+                                    1, 3500, 5)
     write_volume_dev_random_mb_data(volume2_endpoint,
-                                    1, 3500)
+                                    1, 3500, 5)
 
     # Step 1-4, 1-5
     delete_replica_on_test_node(client, volume1_name)

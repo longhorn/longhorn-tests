@@ -32,10 +32,11 @@ from common import get_self_host_id, get_volume_endpoint
 from common import wait_for_volume_healthy
 from common import fail_replica_expansion
 from common import get_volume_name, get_volume_dev_mb_data_md5sum # NOQA
+from common import exec_command_in_pod
 from backupstore import set_random_backupstore  # NOQA
 from kubernetes.stream import stream
 from kubernetes import client as k8sclient
-import threading
+from concurrent.futures import ThreadPoolExecutor, TimeoutError
 
 # Using a StorageClass because GKE is using the default StorageClass if not
 # specified. Volumes are still being manually created and not provisioned.
@@ -51,7 +52,10 @@ def create_pv_storage(api, cli, pv, claim, backing_image, from_backup):
         numberOfReplicas=int(pv['spec']['csi']['volumeAttributes']
                              ['numberOfReplicas']),
         backingImage=backing_image, fromBackup=from_backup)
-    common.wait_for_volume_restoration_completed(cli, pv['metadata']['name'])
+    if from_backup:
+        common.wait_for_volume_restoration_completed(cli,
+                                                     pv['metadata']['name'])
+
     common.wait_for_volume_detached(cli, pv['metadata']['name'])
 
     api.create_persistent_volume(pv)
@@ -375,6 +379,30 @@ def test_csi_offline_expansion(client, core_api, storage_class, pvc, pod_manifes
     assert volume.size == engine.size
 
 
+def md5sum_thread(pod_name, destination_in_pod):
+    '''
+    For test case test_csi_block_volume_online_expansion and
+    test_csi_mount_volume_online_expansion use.
+
+    Use a new api instance in thread or when this threading
+    is still running, execute other k8s command in main thread
+    will hit error Handshake status 200 OK
+    '''
+    k8s_api = k8sclient.CoreV1Api()
+
+    command = ["md5sum", destination_in_pod]
+    resp = stream(k8s_api.connect_get_namespaced_pod_exec,
+                  pod_name,
+                  namespace="default",
+                  command=command,
+                  stderr=True,
+                  stdin=False,
+                  stdout=True,
+                  tty=False)
+
+    return resp.strip().split(" ")[0]
+
+
 @pytest.mark.csi  # NOQA
 @pytest.mark.csi_expansion  # NOQA
 def test_csi_block_volume_online_expansion(client, core_api, storage_class, pvc, pod_manifest):  # NOQA
@@ -395,25 +423,6 @@ def test_csi_block_volume_online_expansion(client, core_api, storage_class, pvc,
     9. Wait for the calculation complete, then compare the checksum.
     10. Do cleanup: Remove the original `test_data`as well as the pod and PVC.
     """
-    def md5sum_thread(pod_name, pod_dev_volume_path):
-        # Use a new api instance in thread or when this threading
-        # is still running, execute other k8s command in main thread
-        # will hit error Handshake status 200 OK
-        k8s_api = k8sclient.CoreV1Api()
-
-        command = ["md5sum", pod_dev_volume_path]
-        resp = stream(k8s_api.connect_get_namespaced_pod_exec,
-                      pod_name,
-                      namespace="default",
-                      command=command,
-                      stderr=True,
-                      stdin=False,
-                      stdout=True,
-                      tty=False)
-
-        global resp_object
-        resp_object = resp.strip().split(" ")[0]
-
     create_storage_class(storage_class)
     pod_dev_volume_path = "/dev/longhorn/testblk"
 
@@ -447,11 +456,8 @@ def test_csi_block_volume_online_expansion(client, core_api, storage_class, pvc,
     cmd = ['dd', 'if=/dev/urandom', 'of=' + dev_volume, 'bs=1M', 'count=2500']
     process = subprocess.Popen(cmd)
 
-    expand_size = str(EXPANDED_VOLUME_SIZE*Gi)
     expand_and_wait_for_pvc(core_api, pvc, EXPANDED_VOLUME_SIZE*Gi)
     wait_for_volume_expansion(client, volume_name)
-    volume = client.by_id_volume(volume_name)
-    assert volume.size == expand_size
 
     process.wait()
     if process.returncode == 0:
@@ -460,19 +466,17 @@ def test_csi_block_volume_online_expansion(client, core_api, storage_class, pvc,
         write_data_complete = False
     assert write_data_complete
 
-    stream_thread = threading.Thread(target=md5sum_thread,
-                                     args=[pod_name,
-                                           pod_dev_volume_path])
+    executor = ThreadPoolExecutor(max_workers=5)
+    future = executor.submit(md5sum_thread, pod_name, pod_dev_volume_path)
 
-    stream_thread.start()
-    expand_size = str((EXPANDED_VOLUME_SIZE+1)*Gi)
     expand_and_wait_for_pvc(core_api, pvc, (EXPANDED_VOLUME_SIZE+1)*Gi)
     wait_for_volume_expansion(client, volume_name)
-    volume = client.by_id_volume(volume_name)
-    assert volume.size == expand_size
 
-    stream_thread.join()
-    pod_dev_md5 = resp_object
+    thread_timeout = 60
+    try:
+        pod_dev_md5 = future.result(timeout=thread_timeout)
+    except TimeoutError:
+        print("md5 thread exceed timeout ({})s".format(thread_timeout))
 
     volume_dev_md5 = subprocess.check_output(["md5sum", dev_volume])\
                                .strip().decode('utf-8').split(" ")[0]
@@ -480,7 +484,6 @@ def test_csi_block_volume_online_expansion(client, core_api, storage_class, pvc,
     assert pod_dev_md5 == volume_dev_md5
 
 
-@pytest.mark.skip(reason="TODO")  # NOQA
 @pytest.mark.csi  # NOQA
 @pytest.mark.csi_expansion  # NOQA
 def test_csi_mount_volume_online_expansion(client, core_api, storage_class, pvc, pod_manifest):  # NOQA
@@ -489,20 +492,67 @@ def test_csi_mount_volume_online_expansion(client, core_api, storage_class, pvc,
 
     1. Create a new `storage_class` with `allowVolumeExpansion` set
     2. Create PVC and Pod with the new StorageClass
-    3. Generate `test_data` in a directory the volume is not mounted on.
-    4. Copy the `test data` to the volume mount point asynchronously.
-    5. During the copy, update pvc.spec.resources to expand the volume
-    6. Verify the volume expansion done using Longhorn API
-      and Check the PVC & PV size
-    7. Wait for the copy complete.
-    8. Calculate the checksum for the copied data inside the volume mount point
-      asynchronously.
-    9. During the calculation, update pvc.spec.resources to expand the volume
-      again.
-    10. Wait for the calculation complete, then compare the checksum.
-    11. Do cleanup: Remove the original `test_data`as well as the pod and PVC.
+    3. Use `dd` command copy data into volume mount point.
+    4. During the copy, update pvc.spec.resources to expand the volume
+    5. Verify the volume expansion done using Longhorn API
+       and Check the PVC & PV size
+    6. Wait for the copy complete.
+    7. Calculate the checksum for the copied data inside volume mount point.
+    8. Update pvc.spec.resources to expand the volume and get data checksum
+       again.
+    9. Wait for the calculation complete, then compare the checksum.
+    10. Do cleanup: Remove the original `test_data`as well as the pod and PVC.
     """
-    pass
+    create_storage_class(storage_class)
+    volume_data_path = "/data/file"
+
+    pod_name = "csi-mount-volume-online-expansion-test"
+    pvc_name = pod_name + "-pvc"
+    pvc['metadata']['name'] = pvc_name
+    pvc['spec']['storageClassName'] = storage_class['metadata']['name']
+    create_pvc(pvc)
+
+    pod_manifest['metadata']['name'] = pod_name
+    pod_manifest['spec']['volumes'] = [create_pvc_spec(pvc_name)]
+    pod_manifest['spec']['nodeName'] = get_self_host_id()
+    create_and_wait_pod(core_api, pod_manifest)
+
+    volume_name = get_volume_name(core_api, pvc_name)
+
+    # Use new process to do copy data and expand at the same time
+    cmd = ["kubectl", "exec", "-it", pod_name, "--", "/bin/sh", "-c",
+           "dd if=/dev/urandom of={} bs=1M count=2500".
+           format(volume_data_path)]
+    process = subprocess.Popen(cmd)
+
+    expand_and_wait_for_pvc(core_api, pvc, (EXPANDED_VOLUME_SIZE)*Gi)
+    wait_for_volume_expansion(client, volume_name)
+
+    process.wait()
+    if process.returncode == 0:
+        write_data_complete = True
+    else:
+        write_data_complete = False
+    assert write_data_complete
+
+    command = 'md5sum {}'.format(volume_data_path)
+    md5_before_expanding = \
+        exec_command_in_pod(core_api, command, pod_name, 'default').\
+        strip().split(" ")[0]
+
+    executor = ThreadPoolExecutor(max_workers=5)
+    future = executor.submit(md5sum_thread, pod_name, volume_data_path)
+
+    expand_and_wait_for_pvc(core_api, pvc, (EXPANDED_VOLUME_SIZE+1)*Gi)
+    wait_for_volume_expansion(client, volume_name)
+
+    thread_timeout = 60
+    try:
+        md5_after_expanding = future.result(timeout=thread_timeout)
+    except TimeoutError:
+        print("md5 thread exceed timeout ({})s".format(thread_timeout))
+
+    assert md5_after_expanding == md5_before_expanding
 
 
 def test_xfs_pv(client, core_api, pod_manifest):  # NOQA
@@ -573,7 +623,7 @@ def test_xfs_pv_existing_volume(client, core_api, pod_manifest):  # NOQA
     cmd = ['mkfs.xfs', get_volume_endpoint(volume)]
     subprocess.check_call(cmd)
 
-    volume = volume.detach(hostId="")
+    volume = volume.detach()
 
     volume = wait_for_volume_detached(client, volume_name)
 

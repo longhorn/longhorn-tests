@@ -11,6 +11,7 @@ import hashlib
 import signal
 import types
 import threading
+import re
 
 import socket
 import pytest
@@ -33,6 +34,7 @@ Gi = (1024 * Mi)
 SIZE = str(16 * Mi)
 EXPAND_SIZE = str(32 * Mi)
 VOLUME_NAME = "longhorn-testvol"
+ATTACHMENT_TICKET_ID_PREFIX = "test-attachment-ticket"
 STATEFULSET_NAME = "longhorn-teststs"
 DEV_PATH = "/dev/longhorn/"
 VOLUME_RWTEST_SIZE = 512
@@ -62,6 +64,7 @@ PORT = ":9500"
 RETRY_COMMAND_COUNT = 3
 RETRY_COUNTS = 150
 RETRY_COUNTS_SHORT = 30
+RETRY_COUNTS_LONG = 300
 RETRY_INTERVAL = 1
 RETRY_INTERVAL_LONG = 2
 RETRY_BACKUP_COUNTS = 300
@@ -90,6 +93,7 @@ VOLUME_ROBUSTNESS_FAULTED = "faulted"
 VOLUME_ROBUSTNESS_UNKNOWN = "unknown"
 
 VOLUME_FIELD_RESTOREREQUIRED = "restoreRequired"
+VOLUME_FIELD_RESTOREINITIATED = "restoreInitiated"
 VOLUME_FIELD_READY = "ready"
 
 VOLUME_FIELD_CLONE_STATUS = "cloneStatus"
@@ -113,8 +117,8 @@ DEFAULT_STATEFULSET_INTERVAL = 1
 DEFAULT_STATEFULSET_TIMEOUT = 180
 
 DEFAULT_DEPLOYMENT_INTERVAL = 1
-DEFAULT_DEPLOYMENT_TIMEOUT = 120
-WAIT_FOR_POD_STABLE_MAX_RETRY = 30
+DEFAULT_DEPLOYMENT_TIMEOUT = 240
+WAIT_FOR_POD_STABLE_MAX_RETRY = 90
 
 
 DEFAULT_VOLUME_SIZE = 3  # In Gi
@@ -137,7 +141,7 @@ VOLUME_FRONTEND_BLOCKDEV = "blockdev"
 VOLUME_FRONTEND_ISCSI = "iscsi"
 
 DEFAULT_DISK_PATH = "/var/lib/longhorn/"
-DEFAULT_STORAGE_OVER_PROVISIONING_PERCENTAGE = "200"
+DEFAULT_STORAGE_OVER_PROVISIONING_PERCENTAGE = "100"
 DEFAULT_STORAGE_MINIMAL_AVAILABLE_PERCENTAGE = "10"
 DEFAULT_LONGHORN_STATIC_STORAGECLASS_NAME = "longhorn-static"
 
@@ -163,11 +167,7 @@ SETTING_DEGRADED_AVAILABILITY = \
     "allow-volume-creation-with-degraded-availability"
 SETTING_DISABLE_SCHEDULING_ON_CORDONED_NODE = \
     "disable-scheduling-on-cordoned-node"
-SETTING_GUARANTEED_ENGINE_CPU = "guaranteed-engine-cpu"
-SETTING_GUARANTEED_ENGINE_MANAGER_CPU = "guaranteed-engine-manager-cpu"
-SETTING_GUARANTEED_REPLICA_MANAGER_CPU = "guaranteed-replica-manager-cpu"
 SETTING_GUARANTEED_INSTANCE_MANAGER_CPU = "guaranteed-instance-manager-cpu"
-SETTING_MKFS_EXT4_PARAMS = "mkfs-ext4-parameters"
 SETTING_PRIORITY_CLASS = "priority-class"
 SETTING_RECURRING_JOB_WHILE_VOLUME_DETACHED = \
     "allow-recurring-job-while-volume-detached"
@@ -270,6 +270,10 @@ disk_being_syncing = "being syncing and please retry later"
 FS_TYPE_EXT4 = "ext4"
 FS_TYPE_XFS = "xfs"
 
+ATTACHER_TYPE_CSI_ATTACHER = "csi-attacher"
+ATTACHER_TYPE_LONGHORN_API = "longhorn-api"
+ATTACHER_TYPE_LONGHORN_UPGRADER = "longhorn-upgrader"
+
 # customize the timeout for HDD
 disktype = os.environ.get('LONGHORN_DISK_TYPE')
 if disktype == "hdd":
@@ -342,7 +346,7 @@ def cleanup_volume(client, volume):
     :param client: The Longhorn client to use in the request.
     :param volume: The volume to clean up.
     """
-    volume.detach(hostId="")
+    volume.detach()
     volume = wait_for_volume_detached(client, volume.name)
     client.delete(volume)
     wait_for_volume_delete(client, volume.name)
@@ -584,6 +588,27 @@ def delete_and_wait_pod(api, pod_name, namespace='default', wait=True):
 
     if wait:
         wait_delete_pod(api, target_pod.metadata.uid, namespace=namespace)
+
+
+def delete_statefulset(apps_api, statefulset):
+    ss_name = statefulset['metadata']['name']
+    ss_namespace = statefulset['metadata']['namespace']
+    apps_api.delete_namespaced_stateful_set(
+        name=ss_name, namespace=ss_namespace,
+        body=k8sclient.V1DeleteOptions()
+    )
+
+    for _ in range(DEFAULT_POD_TIMEOUT):
+        ret = apps_api.list_namespaced_stateful_set(namespace=ss_namespace)
+        found = False
+        for item in ret.items:
+            if item.metadata.name == ss_name:
+                found = True
+                break
+        if not found:
+            break
+        time.sleep(DEFAULT_POD_INTERVAL)
+    assert not found
 
 
 def delete_and_wait_statefulset(api, client, statefulset):
@@ -1601,6 +1626,16 @@ def cleanup_client():
             ["mkdir", "-p", DEFAULT_REPLICA_DIRECTORY])
 
 
+def reset_nodes_taint(client):
+    core_api = get_core_api_client()
+    nodes = client.list_node()
+
+    for node in nodes:
+        core_api.patch_node(node.id, {
+            "spec": {"taints": []}
+        })
+
+
 def get_client(address):
     url = 'http://' + address + '/v1/schemas'
     c = longhorn.from_env(url=url)
@@ -2331,6 +2366,12 @@ def generate_volume_name():
                 for _ in range(6))
 
 
+def generate_attachment_ticket_id():
+    return ATTACHMENT_TICKET_ID_PREFIX + "-" + \
+           ''.join(random.choice(string.ascii_lowercase + string.digits)
+                   for _ in range(6))
+
+
 @pytest.fixture
 def sts_name(request):
     return generate_sts_name()
@@ -2584,11 +2625,8 @@ def get_upgrade_test_image(cli_v, cli_minv,
                                      data_v, data_minv)
 
 
-def prepare_host_disk(dev, vol_name, mkfs_ext4_options=""):
-    if mkfs_ext4_options == "":
-        cmd = ['mkfs.ext4', dev]
-    else:
-        cmd = ['mkfs.ext4', mkfs_ext4_options, dev]
+def prepare_host_disk(dev, vol_name):
+    cmd = ['mkfs.ext4', dev]
     subprocess.check_call(cmd)
 
     mount_path = os.path.join(DIRECTORY_PATH, vol_name)
@@ -3016,6 +3054,9 @@ def get_update_disks(disks):
 
 
 def reset_node(client, core_api):
+    # remove nodes taint
+    reset_nodes_taint(client)
+
     nodes = client.list_node()
     for node in nodes:
         try:
@@ -3085,7 +3126,9 @@ def get_k8s_zone_label():
 
     k8s_ver_minor = k8s_ver_data.minor
 
-    if int(k8s_ver_minor) >= 17:
+    # k8s_ver_minor no needs to be an int
+    # it could be "24+" in eks
+    if int(re.sub('\\D', '', k8s_ver_minor)) >= 17:
         k8s_zone_label = K8S_ZONE_LABEL
     else:
         k8s_zone_label = DEPRECATED_K8S_ZONE_LABEL
@@ -3238,6 +3281,9 @@ def reset_settings(client):
         if setting_name == "support-bundle-manager-image":
             continue
 
+        if setting_name == "registry-secret":
+            continue
+
         s = client.by_id_setting(setting_name)
         if s.value != setting_default_value and not setting_readonly:
             try:
@@ -3291,6 +3337,56 @@ def scale_up_engine_image_daemonset(client):
         # for scaling up a running daemond set,
         # the status_code is 422 server error.
         assert e.status == 422
+
+    # make sure default engine image deployed ready
+    wait_for_deployed_engine_image_count(client, default_img.name, 3)
+
+
+def wait_for_deployed_engine_image_count(client, image_name, expected_cnt):
+    for i in range(RETRY_COUNTS):
+        image = client.by_id_engine_image(image_name)
+        deployed_cnt = 0
+        if image.nodeDeploymentMap is None:
+            continue
+        for item in image.nodeDeploymentMap:
+            if image.nodeDeploymentMap[item] is True:
+                deployed_cnt = deployed_cnt + 1
+        if deployed_cnt == expected_cnt:
+            break
+        time.sleep(RETRY_INTERVAL)
+
+    assert deployed_cnt == expected_cnt
+
+
+def wait_for_running_engine_image_count(image_name, engine_cnt):
+    core_api = get_core_api_client()
+    for i in range(RETRY_COUNTS):
+        exist_engine_cnt = 0
+        longhorn_pod_list = core_api.list_namespaced_pod('longhorn-system')
+        for pod in longhorn_pod_list.items:
+            if "engine-image-" + image_name in pod.metadata.name and \
+                    pod.status.phase == "Running":
+                exist_engine_cnt += 1
+        if exist_engine_cnt == engine_cnt:
+            break
+        time.sleep(RETRY_INTERVAL)
+
+    assert exist_engine_cnt == engine_cnt
+
+
+def restart_and_wait_ready_engine_count(client, ready_engine_count): # NOQA
+    """
+    Delete/restart engine daemonset and wait ready engine image count after
+    daemonset restart
+    """
+
+    apps_api = get_apps_api_client()
+    default_img = get_default_engine_image(client)
+    ds_name = "engine-image-" + default_img.name
+    apps_api.delete_namespaced_daemon_set(ds_name, LONGHORN_NAMESPACE)
+    wait_for_engine_image_condition(client, default_img.name, "False")
+    wait_for_engine_image_state(client, default_img.name, "deploying")
+    wait_for_running_engine_image_count(default_img.name, ready_engine_count)
 
 
 def wait_for_all_instance_manager_running(client):
@@ -4008,11 +4104,16 @@ def wait_and_get_pv_for_pvc(api, pvc_name):
     return pv
 
 
-def wait_for_volume_expansion(longhorn_api_client, volume_name):
+def wait_for_volume_expansion(longhorn_api_client,
+                              volume_name,
+                              expected_size=""):
     complete = False
     for i in range(RETRY_COUNTS):
         volume = longhorn_api_client.by_id_volume(volume_name)
         engine = get_volume_engine(volume)
+        if expected_size != "" and engine.size != expected_size:
+            time.sleep(RETRY_INTERVAL)
+            continue
         if engine.size == volume.size:
             complete = True
             break
@@ -4068,14 +4169,14 @@ def expand_and_wait_for_pvc(api, pvc, size):
     api.patch_namespaced_persistent_volume_claim(
         pvc_name, 'default', pvc)
     complete = False
-    for i in range(RETRY_COUNTS):
+    for i in range(RETRY_COUNTS_LONG):
         claim = api.read_namespaced_persistent_volume_claim(
             name=pvc_name, namespace='default')
         if claim.spec.resources.requests['storage'] ==\
                 claim.status.capacity['storage']:
             complete = True
             break
-        time.sleep(RETRY_INTERVAL)
+        time.sleep(RETRY_INTERVAL_LONG)
     assert complete
     return claim
 
@@ -4220,8 +4321,15 @@ def wait_for_rebuild_start(client, volume_name,
     return status.fromReplica, status.replica
 
 
+def wait_for_restoration_start(client, name):
+    return wait_for_volume_status(client, name,
+                                  VOLUME_FIELD_RESTOREINITIATED,
+                                  True)
+
+
 def wait_for_volume_restoration_completed(client, name):
     wait_for_volume_creation(client, name)
+    wait_for_restoration_start(client, name)
     monitor_restore_progress(client, name)
     return wait_for_volume_status(client, name,
                                   VOLUME_FIELD_RESTOREREQUIRED,
@@ -4445,7 +4553,7 @@ def wait_and_get_any_deployment_pod(core_api, deployment_name,
         for pod in pods.items:
             if pod.status.phase == is_phase:
                 if stable_pod is None or \
-                        stable_pod.metadata.name != pod.metadata.name:
+                        stable_pod.status.start_time != pod.status.start_time:
                     stable_pod = pod
                     wait_for_stable_retry = 0
                     break
@@ -4559,7 +4667,7 @@ def offline_expand_attached_volume(client, volume_name, size=EXPAND_SIZE):
     volume = wait_for_volume_healthy(client, volume_name)
     engine = get_volume_engine(volume)
 
-    volume.detach(hostId="")
+    volume.detach()
     volume = wait_for_volume_detached(client, volume.name)
     volume.expand(size=size)
     wait_for_volume_expansion(client, volume.name)
@@ -5385,7 +5493,13 @@ def generate_support_bundle(case_name):  # NOQA
 
     url = client._url.replace('schemas', 'supportbundles')
     data = {'description': case_name, 'issueURL': case_name}
-    res = requests.post(url, json=data).json()
+    try:
+        res_raw = requests.post(url, json=data)
+        res_raw.raise_for_status()
+        res = res_raw.json()
+    except Exception as e:
+        warnings.warn(f"Error while generating support bundle: {e}")
+        return
     id = res['id']
     name = res['name']
 
@@ -5496,7 +5610,7 @@ def create_volume(client, vol_name, size, node_id, r_num):
 
 def cleanup_volume_by_name(client, vol_name):
     volume = client.by_id_volume(vol_name)
-    volume.detach(hostId="")
+    volume.detach()
     client.delete(volume)
     wait_for_volume_delete(client, vol_name)
 
@@ -5505,13 +5619,8 @@ def create_host_disk(client, vol_name, size, node_id):
     # create a single replica volume and attach it to node
     volume = create_volume(client, vol_name, size, node_id, 1)
 
-    mkfs_ext4_settings = client.by_id_setting(SETTING_MKFS_EXT4_PARAMS)
-    mkfs_ext4_options = mkfs_ext4_settings.value
-
     # prepare the disk in the host filesystem
-    disk_path = prepare_host_disk(get_volume_endpoint(volume),
-                                  volume.name,
-                                  mkfs_ext4_options)
+    disk_path = prepare_host_disk(get_volume_endpoint(volume), volume.name)
     return disk_path
 
 

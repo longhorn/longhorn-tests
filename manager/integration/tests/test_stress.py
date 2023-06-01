@@ -253,7 +253,7 @@ def revert_random_snapshot(client, core_api, volume_name, pod_manifest, snapshot
 
     volume = client.by_id_volume(volume_name)
 
-    volume.detach(hostId="")
+    volume.detach()
 
     wait_for_volume_detached(client, volume_name)
 
@@ -362,7 +362,7 @@ def restore_and_check_random_backup(client, core_api, volume_name, pod_name, sna
 
     res_volume = client.by_id_volume(res_volume_name)
 
-    res_volume.detach(hostId="")
+    res_volume.detach()
 
     wait_for_volume_detached(client, res_volume_name)
 

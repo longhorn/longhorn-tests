@@ -304,7 +304,7 @@ def test_upgrade(longhorn_upgrade_type,
     for v in volumes:
         if v.name != vol_rebuild_name:
             volume = client.by_id_volume(v.name)
-            volume.detach(hostId="")
+            volume.detach()
             wait_for_volume_detached(client, v.name)
 
     engineimages = client.list_engine_image()

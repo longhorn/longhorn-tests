@@ -14,6 +14,7 @@ SKIP_RECURRING_JOB_OPT = "--skip-recurring-job-test"
 SKIP_INFRA_OPT = "--skip-infra-test"
 INCLUDE_STRESS_OPT = "--include-stress-test"
 INCLUDE_UPGRADE_OPT = "--include-upgrade-test"
+INCLUDE_CA_OPT = "--include-cluster-autoscaler-test"
 
 UPGRADE_LH_REPO_URL = "--upgrade-lh-repo-url"
 UPGRADE_LH_REPO_BRANCH = "--upgrade-lh-repo-branch"
@@ -44,6 +45,10 @@ def pytest_addoption(parser):
     parser.addoption(INCLUDE_UPGRADE_OPT, action="store_true",
                      default=False,
                      help="include upgrade tests (default: False)")
+
+    parser.addoption(INCLUDE_CA_OPT, action="store_true",
+                     default=False,
+                     help="include cluster autoscaler tests (default: False)")
 
     longhorn_repo_url =\
         "https://github.com/longhorn/longhorn.git"
@@ -172,6 +177,15 @@ def pytest_collection_modifyitems(config, items):
 
         for item in items:
             if "upgrade" in item.keywords:
+                item.add_marker(skip_upgrade)
+
+    if not config.getoption(INCLUDE_CA_OPT):
+        skip_upgrade = pytest.mark.skip(reason="include " +
+                                        INCLUDE_CA_OPT +
+                                        " option to run")
+
+        for item in items:
+            if "cluster_autoscaler" in item.keywords:
                 item.add_marker(skip_upgrade)
 
 
