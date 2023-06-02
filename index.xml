@@ -1378,6 +1378,19 @@ Steps Set up a cluster of Kubernetes 1.20. Adding this repo to the apps section 
     </item>
     
     <item>
+      <title>Test upgrade responder collecting extra info</title>
+      <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.5.0/test-upgrade-responder-collect-extra-info/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.5.0/test-upgrade-responder-collect-extra-info/</guid>
+      <description>Related issue https://github.com/longhorn/longhorn/issues/5235
+Test step Given Patch build and deploy Longhorn.
+diff --git a/controller/setting_controller.go b/controller/setting_controller.go index de77b7246..ac6263ac5 100644 --- a/controller/setting_controller.go +++ b/controller/setting_controller.go @@ -49,7 +49,7 @@ const ( var ( upgradeCheckInterval = time.Hour settingControllerResyncPeriod = time.Hour -	checkUpgradeURL = &amp;#34;https://longhorn-upgrade-responder.rancher.io/v1/checkupgrade&amp;#34; +	checkUpgradeURL = &amp;#34;http://longhorn-upgrade-responder.default.svc.cluster.local:8314/v1/checkupgrade&amp;#34; ) type SettingController struct { Match the checkUpgradeURL with the application name: http://&amp;lt;APP_NAME&amp;gt;-upgrade-responder.default.svc.cluster.local:8314/v1/checkupgrade
+And Deploy upgrade responder stack.
+When Wait 1~2 hours for collection data to send to the influxDB database.</description>
+    </item>
+    
+    <item>
       <title>Test Version Bump of Kubernetes, API version group, CSI component&#39;s dependency version</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.2.0/test_version_bump/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
