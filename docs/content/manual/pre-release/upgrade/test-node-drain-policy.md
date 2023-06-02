@@ -4,6 +4,13 @@ title: Test Node Drain Policy Setting
 
 ## With `node-drain-policy` is `block-if-contains-last-replica`
 
+> Note:
+> Starting from v1.5.x, it is not necessary to check for the presence of longhorn-admission-webhook and longhorn-conversion-webhook. 
+> Please refer to the Longhorn issue [#5590](https://github.com/longhorn/longhorn/issues/5590) for more details.
+> 
+> Starting from v1.5.x, observe that the instance-manager-r and instance-manager-e are combined into instance-manager. 
+> Ref [5208](https://github.com/longhorn/longhorn/issues/5208)
+
 ### 1. Basic unit tests
 
 #### 1.1 Single worker node cluster with separate master node
@@ -44,11 +51,10 @@ title: Test Node Drain Policy Setting
 
 1.2.2 Single healthy replicas
 * Given Longhorn with 2 nodes cluster: node-1, node-2
-* Create a 5Gi volume with 2 replicas. 
-* Attached the volume to node-2
-* Stop node-1 that contains one of the replicas.
+* Create a 5Gi volume with 1 replica. Let's say the replica is on node-2 
+* Attached the volume to node-1
 * Set `node-drain-policy` to `block-if-contains-last-replica`
-* Attempts to drain node-2 that contains remaining replica.
+* Attempts to drain node-2 that contains the only replica.
 * The node-2 becomes cordoned.
 * All pods on node-2 are evicted except the replica instance manager pod.
 * The message like below keeps appearing.
