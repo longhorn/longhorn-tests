@@ -806,6 +806,8 @@ def test_rebuild_with_restoration(set_random_backupstore, client, core_api, volu
     11. Check md5sum of the data in the restored volume.
     12. Do cleanup.
     """
+    update_setting(client, common.SETTING_DEGRADED_AVAILABILITY, "false")
+
     original_volume_name = volume_name + "-origin"
     data_path = "/data/test"
     original_pod_name, original_pv_name, original_pvc_name, original_md5sum = \
@@ -897,6 +899,8 @@ def test_rebuild_with_inc_restoration(set_random_backupstore, client, core_api, 
     12. Check md5sum of the data in the activated volume.
     13. Do cleanup.
     """
+    update_setting(client, common.SETTING_DEGRADED_AVAILABILITY, "false")
+
     std_volume_name = volume_name + "-std"
     data_path1 = "/data/test1"
     std_pod_name, std_pv_name, std_pvc_name, std_md5sum1 = \
@@ -1011,6 +1015,7 @@ def test_inc_restoration_with_multiple_rebuild_and_expansion(set_random_backupst
         the activated volume.
     22. Do cleanup.
     """
+    update_setting(client, common.SETTING_DEGRADED_AVAILABILITY, "false")
     create_storage_class(storage_class)
 
     original_size = 1 * Gi
@@ -1524,6 +1529,8 @@ def test_single_replica_restore_failure(set_random_backupstore, client, core_api
     assert auto_salvage_setting.name == SETTING_AUTO_SALVAGE
     assert auto_salvage_setting.value == "true"
 
+    update_setting(client, common.SETTING_DEGRADED_AVAILABILITY, "false")
+
     backupstore_cleanup(client)
 
     data_path = "/data/test"
@@ -1630,6 +1637,8 @@ def test_dr_volume_with_restore_command_error(set_random_backupstore, client, co
     13. Validate the volume content.
     14. Verify Writing data to the activated volume is fine.
     """
+    update_setting(client, common.SETTING_DEGRADED_AVAILABILITY, "false")
+
     std_volume_name = volume_name + "-std"
     data_path1 = "/data/test1"
     std_pod_name, std_pv_name, std_pvc_name, std_md5sum1 = \
@@ -3059,6 +3068,8 @@ def test_engine_image_not_fully_deployed_perform_dr_restoring_expanding_volume(c
     15. In a 2-min retry verify that Longhorn doesn't create new replica
        for vol-1 and doesn't reuse the failed replica on node-x
     """
+    update_setting(client, common.SETTING_DEGRADED_AVAILABILITY, "false")
+
     tainted_node_id = \
         prepare_engine_not_fully_deployed_environment(client, core_api)
 
