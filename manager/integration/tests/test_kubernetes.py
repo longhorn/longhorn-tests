@@ -811,3 +811,21 @@ def test_delete_provisioned_pvc(client, core_api,  storage_class, pvc): # NOQA
     delete_and_wait_pvc(core_api, pvc['metadata']['name'])
     wait_delete_pv(core_api, pv_name)
     wait_for_volume_delete(client, volume_name)
+
+@pytest.mark.skip(reason="TODO") # NOQA
+@pytest.mark.csi  # NOQA
+def test_csi_umount_when_longhorn_block_device_is_disconnected_unexpectedly():  # NOQA
+    """
+    Test CSI umount when Longhorn block device is disconnected unexpectedly
+
+    GitHub ticket: https://github.com/longhorn/longhorn/issues/3778
+
+    1. Deloy a statefulset that has volumeClaimTemplates with
+        volumeMode: Block
+    2. Crash the engine process of the volume to simulate Longhorn block
+        device is disconnected unexpectedly
+    3. Delete the workload pod
+    4. Verify that the pod is able to terminated and a new pod is able
+        start
+    """
+    pass
