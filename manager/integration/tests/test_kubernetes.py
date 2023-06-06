@@ -27,6 +27,9 @@ from common import delete_backup
 from common import create_and_check_volume, create_pvc, \
     wait_and_get_pv_for_pvc, wait_delete_pvc
 from common import volume_name # NOQA
+from common import update_setting
+from common import SETTING_DEGRADED_AVAILABILITY
+
 from backupstore import backupstore_cleanup
 
 from kubernetes import client as k8sclient
@@ -541,6 +544,7 @@ def test_backup_kubernetes_status(set_random_backupstore, client, core_api, pod)
         1. Make sure `lastPodRefAt` and `lastPVCRefAt` matched volume on step
         12
     """
+    update_setting(client, SETTING_DEGRADED_AVAILABILITY, "false")
 
     host_id = get_self_host_id()
     static_sc_name = "longhorn-static-test"
