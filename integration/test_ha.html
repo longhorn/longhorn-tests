@@ -834,6 +834,8 @@ def test_rebuild_with_restoration(set_random_backupstore, client, core_api, volu
     11. Check md5sum of the data in the restored volume.
     12. Do cleanup.
     &#34;&#34;&#34;
+    update_setting(client, common.SETTING_DEGRADED_AVAILABILITY, &#34;false&#34;)
+
     original_volume_name = volume_name + &#34;-origin&#34;
     data_path = &#34;/data/test&#34;
     original_pod_name, original_pv_name, original_pvc_name, original_md5sum = \
@@ -925,6 +927,8 @@ def test_rebuild_with_inc_restoration(set_random_backupstore, client, core_api, 
     12. Check md5sum of the data in the activated volume.
     13. Do cleanup.
     &#34;&#34;&#34;
+    update_setting(client, common.SETTING_DEGRADED_AVAILABILITY, &#34;false&#34;)
+
     std_volume_name = volume_name + &#34;-std&#34;
     data_path1 = &#34;/data/test1&#34;
     std_pod_name, std_pv_name, std_pvc_name, std_md5sum1 = \
@@ -1039,6 +1043,7 @@ def test_inc_restoration_with_multiple_rebuild_and_expansion(set_random_backupst
         the activated volume.
     22. Do cleanup.
     &#34;&#34;&#34;
+    update_setting(client, common.SETTING_DEGRADED_AVAILABILITY, &#34;false&#34;)
     create_storage_class(storage_class)
 
     original_size = 1 * Gi
@@ -1552,6 +1557,8 @@ def test_single_replica_restore_failure(set_random_backupstore, client, core_api
     assert auto_salvage_setting.name == SETTING_AUTO_SALVAGE
     assert auto_salvage_setting.value == &#34;true&#34;
 
+    update_setting(client, common.SETTING_DEGRADED_AVAILABILITY, &#34;false&#34;)
+
     backupstore_cleanup(client)
 
     data_path = &#34;/data/test&#34;
@@ -1658,6 +1665,8 @@ def test_dr_volume_with_restore_command_error(set_random_backupstore, client, co
     13. Validate the volume content.
     14. Verify Writing data to the activated volume is fine.
     &#34;&#34;&#34;
+    update_setting(client, common.SETTING_DEGRADED_AVAILABILITY, &#34;false&#34;)
+
     std_volume_name = volume_name + &#34;-std&#34;
     data_path1 = &#34;/data/test1&#34;
     std_pod_name, std_pv_name, std_pvc_name, std_md5sum1 = \
@@ -3087,6 +3096,8 @@ def test_engine_image_not_fully_deployed_perform_dr_restoring_expanding_volume(c
     15. In a 2-min retry verify that Longhorn doesn&#39;t create new replica
        for vol-1 and doesn&#39;t reuse the failed replica on node-x
     &#34;&#34;&#34;
+    update_setting(client, common.SETTING_DEGRADED_AVAILABILITY, &#34;false&#34;)
+
     tainted_node_id = \
         prepare_engine_not_fully_deployed_environment(client, core_api)
 
@@ -4491,6 +4502,8 @@ and there is one failed replica.</li>
     13. Validate the volume content.
     14. Verify Writing data to the activated volume is fine.
     &#34;&#34;&#34;
+    update_setting(client, common.SETTING_DEGRADED_AVAILABILITY, &#34;false&#34;)
+
     std_volume_name = volume_name + &#34;-std&#34;
     data_path1 = &#34;/data/test1&#34;
     std_pod_name, std_pv_name, std_pvc_name, std_md5sum1 = \
@@ -5074,6 +5087,8 @@ for vol-1 and doesn't reuse the failed replica on node-x</li>
     15. In a 2-min retry verify that Longhorn doesn&#39;t create new replica
        for vol-1 and doesn&#39;t reuse the failed replica on node-x
     &#34;&#34;&#34;
+    update_setting(client, common.SETTING_DEGRADED_AVAILABILITY, &#34;false&#34;)
+
     tainted_node_id = \
         prepare_engine_not_fully_deployed_environment(client, core_api)
 
@@ -5977,6 +5992,7 @@ the activated volume.
         the activated volume.
     22. Do cleanup.
     &#34;&#34;&#34;
+    update_setting(client, common.SETTING_DEGRADED_AVAILABILITY, &#34;false&#34;)
     create_storage_class(storage_class)
 
     original_size = 1 * Gi
@@ -6446,6 +6462,8 @@ after the attachment.
     12. Check md5sum of the data in the activated volume.
     13. Do cleanup.
     &#34;&#34;&#34;
+    update_setting(client, common.SETTING_DEGRADED_AVAILABILITY, &#34;false&#34;)
+
     std_volume_name = volume_name + &#34;-std&#34;
     data_path1 = &#34;/data/test1&#34;
     std_pod_name, std_pv_name, std_pvc_name, std_md5sum1 = \
@@ -6566,6 +6584,8 @@ after the attachment.
     11. Check md5sum of the data in the restored volume.
     12. Do cleanup.
     &#34;&#34;&#34;
+    update_setting(client, common.SETTING_DEGRADED_AVAILABILITY, &#34;false&#34;)
+
     original_volume_name = volume_name + &#34;-origin&#34;
     data_path = &#34;/data/test&#34;
     original_pod_name, original_pv_name, original_pvc_name, original_md5sum = \
@@ -7547,6 +7567,8 @@ after the attachment.</li>
     auto_salvage_setting = client.by_id_setting(SETTING_AUTO_SALVAGE)
     assert auto_salvage_setting.name == SETTING_AUTO_SALVAGE
     assert auto_salvage_setting.value == &#34;true&#34;
+
+    update_setting(client, common.SETTING_DEGRADED_AVAILABILITY, &#34;false&#34;)
 
     backupstore_cleanup(client)
 

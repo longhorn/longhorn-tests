@@ -2961,6 +2961,9 @@ def test_backup_lock_deletion_during_restoration(set_random_backupstore, client,
     10. Assert the data from the restored volume with md5sum.
     11. Assert the backup count in the backup store with 0.
     &#34;&#34;&#34;
+    common.update_setting(client,
+                          common.SETTING_DEGRADED_AVAILABILITY, &#34;false&#34;)
+
     backupstore_cleanup(client)
     std_volume_name = volume_name + &#34;-std&#34;
     restore_volume_name = volume_name + &#34;-restore&#34;
@@ -3029,6 +3032,9 @@ def test_backup_lock_deletion_during_backup(set_random_backupstore, client, core
     11. Restore the latest backup.
     12. Wait for the restoration to be completed. Assert md5sum from step 6.
     &#34;&#34;&#34;
+    common.update_setting(client,
+                          common.SETTING_DEGRADED_AVAILABILITY, &#34;false&#34;)
+
     backupstore_cleanup(client)
     std_volume_name = volume_name + &#34;-std&#34;
     restore_volume_name_1 = volume_name + &#34;-restore-1&#34;
@@ -7498,6 +7504,9 @@ to prevent the following case of concurrent operations.
     11. Restore the latest backup.
     12. Wait for the restoration to be completed. Assert md5sum from step 6.
     &#34;&#34;&#34;
+    common.update_setting(client,
+                          common.SETTING_DEGRADED_AVAILABILITY, &#34;false&#34;)
+
     backupstore_cleanup(client)
     std_volume_name = volume_name + &#34;-std&#34;
     restore_volume_name_1 = volume_name + &#34;-restore-1&#34;
@@ -7602,6 +7611,9 @@ to prevent the following case of concurrent operations.
     10. Assert the data from the restored volume with md5sum.
     11. Assert the backup count in the backup store with 0.
     &#34;&#34;&#34;
+    common.update_setting(client,
+                          common.SETTING_DEGRADED_AVAILABILITY, &#34;false&#34;)
+
     backupstore_cleanup(client)
     std_volume_name = volume_name + &#34;-std&#34;
     restore_volume_name = volume_name + &#34;-restore&#34;
