@@ -14,7 +14,6 @@ sudo dnf config-manager --add-repo=https://download.docker.com/linux/centos/dock
 sudo dnf update -y
 sudo dnf group install -y "Development Tools"
 sudo dnf install -y iscsi-initiator-utils nfs-utils nfs4-acl-tools docker-ce docker-ce-cli containerd.io
-sudo systemctl disable nm-cloud-setup.service nm-cloud-setup.timer
 
 sudo systemctl start iscsid
 sudo systemctl enable iscsid

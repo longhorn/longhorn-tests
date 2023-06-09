@@ -13,7 +13,6 @@ sudo dnf group install -y "Development Tools"
 sudo dnf install -y iscsi-initiator-utils nfs-utils nfs4-acl-tools jq nmap-ncat
 sudo systemctl -q enable iscsid
 sudo systemctl start iscsid
-sudo systemctl disable nm-cloud-setup.service nm-cloud-setup.timer
 
 if [ -b "/dev/xvdh" ]; then
   sudo mkfs.ext4 -E nodiscard /dev/xvdh
