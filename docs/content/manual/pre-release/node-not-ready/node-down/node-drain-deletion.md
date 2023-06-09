@@ -82,9 +82,9 @@ By Longhorn's default settings, the replica will only be evicted if there is ano
 
 *And* Stop Node_1 that contains one of the replicas.
 
-*And* Uncheck the `Allow Node Drain with the Last Healthy Replica` setting and confirm getting **false** with following command:
+*And* Update the `Node Drain Policy` setting to `block-if-contains-last-replica` and confirm with following command:
 ```shell
-kubectl get settings.longhorn.io/allow-node-drain-with-last-healthy-replica -n longhorn-system
+kubectl get settings.longhorn.io/node-drain-policy -n longhorn-system
 ```
 
 **When** Attempts to drain Node_2 that contains remaining replica.
@@ -118,9 +118,9 @@ error when evicting pods/"instance-manager-r-xxxxxxxx" -n "longhorn-system" (wil
 
 *And* Stop Node_1 that contains one of the replicas.
 
-*And* Uncheck the `Allow Node Drain with the Last Healthy Replica` setting and confirm getting **false** with following command:
+*And* Update the `Node Drain Policy` setting to `block-if-contains-last-replica` and confirm with following command:
 ```shell
-kubectl get settings.longhorn.io/allow-node-drain-with-last-healthy-replica -n longhorn-system
+kubectl get settings.longhorn.io/node-drain-policy -n longhorn-system
 ```
 
 *And* Drain Node_2 so that all pods on Node_2 are evicted, but the replica instance manager pod is still on Node_2 because it is protected by PDB. 
@@ -128,9 +128,9 @@ kubectl get settings.longhorn.io/allow-node-drain-with-last-healthy-replica -n l
 kubectl drain <Node_2 name> --delete-emptydir-data=true --force=true --grace-period=-1 --ignore-daemonsets=true
 ```
 
-**When** Enable the setting `Allow Node Drain with the Last Healthy Replica` and make sure return **true** with following command:
+*And* Update the `Node Drain Policy` setting to `always-allow` and confirm with following command:
 ```shell
-kubectl get settings.longhorn.io/allow-node-drain-with-last-healthy-replica -n longhorn-system
+kubectl get settings.longhorn.io/node-drain-policy -n longhorn-system
 ```
 
 **Then** The pod `longhorn-system/instance-manager-r-xxxxxxxx` will be evicted successfully and the following command can be used to ensure that only daemonset pods such as `engine-image`, `longhorn-csi-plugin` and `longhorn-manager` daemonset pods are running on Node_2:
