@@ -1982,6 +1982,9 @@ def test_recurring_job_restored_from_backup_target(set_random_backupstore, clien
     11. Check if recurring jobs have been created.
     12. Check if restoring volume has labels of recurring jobs and groups.
     """
+    common.update_setting(client,
+                          common.SETTING_DEGRADED_AVAILABILITY, "false")
+
     SCHEDULE_1WEEK = "0 0 * * 0"
     SCHEDULE_2MIN = "*/2 * * * *"
     snap1 = SNAPSHOT + "1"

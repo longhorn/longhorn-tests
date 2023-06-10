@@ -7,7 +7,6 @@ sudo dnf group install -y "Development Tools"
 sudo dnf install -y iscsi-initiator-utils nfs-utils nfs4-acl-tools jq
 sudo systemctl -q enable iscsid                                                 
 sudo systemctl start iscsid
-sudo systemctl disable nm-cloud-setup.service nm-cloud-setup.timer
 
 sudo sed -i 's#^SELINUX=.*$#SELINUX='"${selinux_mode}"'#' /etc/selinux/config
 
