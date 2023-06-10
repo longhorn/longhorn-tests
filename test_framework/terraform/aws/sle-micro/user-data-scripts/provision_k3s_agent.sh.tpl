@@ -18,5 +18,5 @@ elif [ -b "/dev/xvdh" ]; then
   sudo mount /dev/xvdh /var/lib/longhorn
 fi
 
-curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="agent --token ${k3s_cluster_secret}" K3S_URL="${k3s_server_url}" INSTALL_K3S_VERSION="${k3s_version}" sh -
+curl -sfL https://get.k3s.io | sudo INSTALL_K3S_EXEC="agent --token ${k3s_cluster_secret}" K3S_URL="${k3s_server_url}" INSTALL_K3S_VERSION="${k3s_version}" sh -
 sudo systemctl start k3s-agent
