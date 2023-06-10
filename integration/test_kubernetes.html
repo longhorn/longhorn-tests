@@ -842,7 +842,25 @@ def test_delete_provisioned_pvc(client, core_api,  storage_class, pvc): # NOQA
 
     delete_and_wait_pvc(core_api, pvc[&#39;metadata&#39;][&#39;name&#39;])
     wait_delete_pv(core_api, pv_name)
-    wait_for_volume_delete(client, volume_name)</code></pre>
+    wait_for_volume_delete(client, volume_name)
+
+@pytest.mark.skip(reason=&#34;TODO&#34;) # NOQA
+@pytest.mark.csi  # NOQA
+def test_csi_umount_when_longhorn_block_device_is_disconnected_unexpectedly():  # NOQA
+    &#34;&#34;&#34;
+    Test CSI umount when Longhorn block device is disconnected unexpectedly
+
+    GitHub ticket: https://github.com/longhorn/longhorn/issues/3778
+
+    1. Deloy a statefulset that has volumeClaimTemplates with
+        volumeMode: Block
+    2. Crash the engine process of the volume to simulate Longhorn block
+        device is disconnected unexpectedly
+    3. Delete the workload pod
+    4. Verify that the pod is able to terminated and a new pod is able
+        start
+    &#34;&#34;&#34;
+    pass</code></pre>
 </details>
 </section>
 <section>
@@ -1187,6 +1205,44 @@ def test_backup_kubernetes_status(set_random_backupstore, client, core_api, pod)
     backupstore_cleanup(client)
     client.delete(restore)
     cleanup_volume(client, volume)</code></pre>
+</details>
+</dd>
+<dt id="tests.test_kubernetes.test_csi_umount_when_longhorn_block_device_is_disconnected_unexpectedly"><code class="name flex">
+<span>def <span class="ident">test_csi_umount_when_longhorn_block_device_is_disconnected_unexpectedly</span></span>(<span>)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test CSI umount when Longhorn block device is disconnected unexpectedly</p>
+<p>GitHub ticket: <a href="https://github.com/longhorn/longhorn/issues/3778">https://github.com/longhorn/longhorn/issues/3778</a></p>
+<ol>
+<li>Deloy a statefulset that has volumeClaimTemplates with
+volumeMode: Block</li>
+<li>Crash the engine process of the volume to simulate Longhorn block
+device is disconnected unexpectedly</li>
+<li>Delete the workload pod</li>
+<li>Verify that the pod is able to terminated and a new pod is able
+start</li>
+</ol></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@pytest.mark.skip(reason=&#34;TODO&#34;) # NOQA
+@pytest.mark.csi  # NOQA
+def test_csi_umount_when_longhorn_block_device_is_disconnected_unexpectedly():  # NOQA
+    &#34;&#34;&#34;
+    Test CSI umount when Longhorn block device is disconnected unexpectedly
+
+    GitHub ticket: https://github.com/longhorn/longhorn/issues/3778
+
+    1. Deloy a statefulset that has volumeClaimTemplates with
+        volumeMode: Block
+    2. Crash the engine process of the volume to simulate Longhorn block
+        device is disconnected unexpectedly
+    3. Delete the workload pod
+    4. Verify that the pod is able to terminated and a new pod is able
+        start
+    &#34;&#34;&#34;
+    pass</code></pre>
 </details>
 </dd>
 <dt id="tests.test_kubernetes.test_delete_provisioned_pvc"><code class="name flex">
@@ -1868,6 +1924,7 @@ def test_pvc_creation_with_default_sc_set(
 <li><code><a title="tests.test_kubernetes.delete_and_wait_statefulset_only" href="#tests.test_kubernetes.delete_and_wait_statefulset_only">delete_and_wait_statefulset_only</a></code></li>
 <li><code><a title="tests.test_kubernetes.provision_and_wait_pv" href="#tests.test_kubernetes.provision_and_wait_pv">provision_and_wait_pv</a></code></li>
 <li><code><a title="tests.test_kubernetes.test_backup_kubernetes_status" href="#tests.test_kubernetes.test_backup_kubernetes_status">test_backup_kubernetes_status</a></code></li>
+<li><code><a title="tests.test_kubernetes.test_csi_umount_when_longhorn_block_device_is_disconnected_unexpectedly" href="#tests.test_kubernetes.test_csi_umount_when_longhorn_block_device_is_disconnected_unexpectedly">test_csi_umount_when_longhorn_block_device_is_disconnected_unexpectedly</a></code></li>
 <li><code><a title="tests.test_kubernetes.test_delete_provisioned_pvc" href="#tests.test_kubernetes.test_delete_provisioned_pvc">test_delete_provisioned_pvc</a></code></li>
 <li><code><a title="tests.test_kubernetes.test_delete_with_provisioned_pv" href="#tests.test_kubernetes.test_delete_with_provisioned_pv">test_delete_with_provisioned_pv</a></code></li>
 <li><code><a title="tests.test_kubernetes.test_delete_with_static_pv" href="#tests.test_kubernetes.test_delete_with_static_pv">test_delete_with_static_pv</a></code></li>
