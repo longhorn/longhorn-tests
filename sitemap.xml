@@ -246,7 +246,9 @@
   </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/resiliency/test-longhorn-component-recovery/</loc>
   </url><url>
-    <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/environment/rke2-cis-1.5-profile/</loc>
+    <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/environment/rke2-cis-1.6-profile/</loc>
+  </url><url>
+    <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/environment/rke2-cis-1.23-profile/</loc>
   </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.3.0/test-longhorn-manager-npe/</loc>
   </url><url>

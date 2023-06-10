@@ -721,27 +721,133 @@
   
 </aside>
 
+
 <main style="padding: 1%; width: 70%;">
-  <header class="homepage-header">
-    <h1>Node</h1>
-    
-  </header>
-  <div class="homepage-content">
-    
-  </div>
+  <h1 id="title">Test Longhorn deployment on RKE2 v1.24- with CIS-1.6 profile</h1>
   <div>
-    <ul>
-
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node/degraded-availability/">Degraded availability with added nodes</a></li>
-  
-
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node/improve-node-failure-handling/">Improve Node Failure Handling By Automatically Force Delete Terminating Pods of StatefulSet/Deployment On Downed Node</a></li>
-  
-
-</ul>
-
+    <article id="content">
+       <h2 id="related-issue">Related issue</h2>
+<p>This test was created in response to <a href="https://github.com/longhorn/longhorn/issues/2292">2292</a>, which used CSI-1.5.
+However, RKE2 generally does not recommend or encourage using CIS-1.5 in favor of CIS1.6.</p>
+<h2 id="scenario">Scenario</h2>
+<ol>
+<li>Prepare 1 control plane node and 3 worker nodes.</li>
+<li>Install RKE2 v1.24 with CIS-1.6 profile on 1 control plane node.</li>
+</ol>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>sudo su -
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>systemctl disable firewalld <span style="color:#75715e"># On a supporting OS.</span>
+</span></span><span style="display:flex;"><span>systemctl stop firewalld <span style="color:#75715e"># On a supporting OS.</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>yum install iscsi-initiator-utils <span style="color:#75715e"># Or the OS equivalent.</span>
+</span></span><span style="display:flex;"><span>systemctl enable --now iscsid
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>curl -sfL https://get.rke2.io | INSTALL_RKE2_CHANNEL<span style="color:#f92672">=</span>v1.24 sh -
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>systemctl enable rke2-server.service
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>cat <span style="color:#e6db74">&lt;&lt; EOF &gt; /etc/sysctl.d/60-rke2-cis.conf
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">vm.panic_on_oom=0
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">vm.overcommit_memory=1
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">kernel.panic=10
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">kernel.panic_on_oops=1
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">EOF</span>
+</span></span><span style="display:flex;"><span>sudo systemctl restart systemd-sysctl
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>useradd -r -c <span style="color:#e6db74">&#34;etcd user&#34;</span> -s /sbin/nologin -M etcd
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>mkdir -p /etc/rancher/rke2/
+</span></span><span style="display:flex;"><span>cat <span style="color:#e6db74">&lt;&lt; EOF &gt; /etc/rancher/rke2/config.yaml
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">profile: &#34;cis-1.6&#34;
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">EOF</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>systemctl start rke2-server.service
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>SERVER_NODE_TOKEN<span style="color:#f92672">=</span><span style="color:#e6db74">`</span>cat /var/lib/rancher/rke2/server/node-token<span style="color:#e6db74">`</span>
+</span></span></code></pre></div><ol start="3">
+<li>Install RKE2 v1.24 with CIS-1.6 profile on 3 worker nodes.</li>
+</ol>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>sudo su -
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>systemctl disable firewalld <span style="color:#75715e"># On a supporting OS.</span>
+</span></span><span style="display:flex;"><span>systemctl stop firewalld <span style="color:#75715e"># On a supporting OS.</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>yum install iscsi-initiator-utils <span style="color:#75715e"># Or the OS equivalent.</span>
+</span></span><span style="display:flex;"><span>systemctl enable --now iscsid
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>curl -sfL https://get.rke2.io | INSTALL_RKE2_CHANNEL<span style="color:#f92672">=</span>v1.24 INSTALL_RKE2_TYPE<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;agent&#34;</span> sh -
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>systemctl enable rke2-agent.service
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>cat <span style="color:#e6db74">&lt;&lt; EOF &gt; /etc/sysctl.d/60-rke2-cis.conf
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">vm.panic_on_oom=0
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">vm.overcommit_memory=1
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">kernel.panic=10
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">kernel.panic_on_oops=1
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">EOF</span>
+</span></span><span style="display:flex;"><span>sudo systemctl restart systemd-sysctl
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>mkdir -p /etc/rancher/rke2/
+</span></span><span style="display:flex;"><span>cat <span style="color:#e6db74">&lt;&lt; EOF &gt; /etc/rancher/rke2/config.yaml
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">server: https://$CONTROL_PLANE_NODE_IP_ADDRESS:9345
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">token: $SERVER_NODE_TOKEN
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">profile: &#34;cis-1.6&#34;
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">EOF</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>systemctl start rke2-agent.service
+</span></span></code></pre></div><ol start="4">
+<li>Prepare the <code>longhorn-values.yaml</code>.</li>
+</ol>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#f92672">enablePSP</span>: <span style="color:#66d9ef">true</span>
+</span></span></code></pre></div><ol start="5">
+<li>Test install Longhorn by helm without problem. (These commands assume a pre-release chart. When testing a released
+chart, use <code>helm repo add</code> etc.)</li>
+</ol>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>git clone https://github.com/longhorn/longhorn.git
+</span></span><span style="display:flex;"><span>cd longhorn
+</span></span><span style="display:flex;"><span>git checkout $VERSION_TO_TEST
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>helm install --namespace longhorn-system longhorn ./chart
+</span></span></code></pre></div><ol start="6">
+<li>Prepare the <code>longhorn-values.yaml</code> again.</li>
+</ol>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#f92672">enablePSP</span>: <span style="color:#66d9ef">true</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">ingress</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">enabled</span>: <span style="color:#66d9ef">true</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">annotations</span>:
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">foo</span>: <span style="color:#ae81ff">bar</span>
+</span></span></code></pre></div><ol start="7">
+<li>Test upgrade Longhorn by helm without problem.</li>
+</ol>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>helm upgrade --namespace longhorn-system --values longhorn-values.yaml longhorn ./chart
+</span></span></code></pre></div><ol start="8">
+<li>Verify the upgrade &ldquo;worked&rdquo; by checking for the deployed ingress.</li>
+</ol>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>kubectl get ingress -n longhorn-system
+</span></span></code></pre></div><ol start="9">
+<li>Test uninstall Longhorn by helm without problem.</li>
+</ol>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>helm uninstall longhorn --namespace longhorn-system
+</span></span></code></pre></div><ol start="10">
+<li>Test install Longhorn by kubectl without problem.</li>
+</ol>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>kubectl apply -f deploy/podsecuritypolicy.yaml
+</span></span><span style="display:flex;"><span>kubectl apply -f deploy/longhorn.yaml
+</span></span></code></pre></div><ol start="11">
+<li>
+<p>Uncomment all Pod Security Policy related lines from deploy/uninstall.yaml.</p>
+</li>
+<li>
+<p>Test uninstall Longhorn by kubectl without problem.</p>
+</li>
+</ol>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>kubectl apply -f uninstall/uninstall.yaml
+</span></span><span style="display:flex;"><span>kubectl delete -f deploy/longhorn.yaml
+</span></span><span style="display:flex;"><span>kubectl delete -f uninstall/uninstall.yaml
+</span></span></code></pre></div>
+    </article>
+  <a href="https://github.com/longhorn/longhorn-tests/edit/master/docs/content/manual/pre-release/environment/rke2-cis-1.6-profile.md" target="_blank" title="Edit on Github" style="font-size:smaller;float:right;padding-right:3%">[Edit]</a>
   </div>
-</main>
 
     
     
