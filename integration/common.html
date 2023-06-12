@@ -2222,8 +2222,7 @@ def crash_replica_processes(client, api, volname, replicas=None,
 
     for r in replicas:
         assert r.instanceManagerName != &#34;&#34;
-        kill_command = &#34;kill `ps aux | grep &#39;&#34; + r[&#39;dataPath&#39;] +\
-                       &#34;&#39; | grep -v grep | awk &#39;{print $2}&#39;`&#34;
+        kill_command = &#34;kill `pgrep -f &#34; + r[&#39;dataPath&#39;] + &#34;`&#34;
         exec_instance_manager(api, r.instanceManagerName, kill_command)
 
         if wait_to_fail is True:
@@ -4800,8 +4799,7 @@ def crash_engine_process_with_sigkill(client, core_api, volume_name):
 
     kill_command = [
             &#39;/bin/sh&#39;, &#39;-c&#39;,
-            &#34;kill -9 `ps aux | grep -i \&#34;controller &#34; +
-            volume_name + &#34;\&#34; | grep -v grep | awk &#39;{print $2}&#39;`&#34;]
+            &#34;kill `pgrep -f \&#34;controller &#34; + volume_name + &#34;\&#34;`&#34;,]
 
     with timeout(seconds=STREAM_EXEC_TIMEOUT,
                  error_message=&#39;Timeout on executing stream read&#39;):
@@ -7031,8 +7029,7 @@ def core_api(request):
 
     kill_command = [
             &#39;/bin/sh&#39;, &#39;-c&#39;,
-            &#34;kill -9 `ps aux | grep -i \&#34;controller &#34; +
-            volume_name + &#34;\&#34; | grep -v grep | awk &#39;{print $2}&#39;`&#34;]
+            &#34;kill `pgrep -f \&#34;controller &#34; + volume_name + &#34;\&#34;`&#34;,]
 
     with timeout(seconds=STREAM_EXEC_TIMEOUT,
                  error_message=&#39;Timeout on executing stream read&#39;):
@@ -7061,8 +7058,7 @@ def core_api(request):
 
     for r in replicas:
         assert r.instanceManagerName != &#34;&#34;
-        kill_command = &#34;kill `ps aux | grep &#39;&#34; + r[&#39;dataPath&#39;] +\
-                       &#34;&#39; | grep -v grep | awk &#39;{print $2}&#39;`&#34;
+        kill_command = &#34;kill `pgrep -f &#34; + r[&#39;dataPath&#39;] + &#34;`&#34;
         exec_instance_manager(api, r.instanceManagerName, kill_command)
 
         if wait_to_fail is True:
