@@ -2,6 +2,7 @@
 
 set -e
 
+sudo zypper update -y kernel-default
 sudo zypper ref
 sudo zypper install -y -t pattern devel_basis
 sudo zypper install -y open-iscsi nfs-client jq
@@ -17,4 +18,3 @@ until (kubectl get pods -A | grep 'Running'); do
   echo 'Waiting for k3s startup'
   sleep 5
 done
-

@@ -1,5 +1,6 @@
 #!/bin/bash
 
+sudo zypper update -y kernel-default
 sudo zypper ref -y
 sudo zypper install -y -t pattern devel_basis
 sudo zypper install -y open-iscsi nfs-client
@@ -28,3 +29,5 @@ until (curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="agent --token ${k3s_clus
   echo 'k3s agent did not install correctly'
   sleep 2
 done
+
+sudo shutdown -r 1 &

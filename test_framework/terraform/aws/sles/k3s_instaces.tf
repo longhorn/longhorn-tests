@@ -130,6 +130,18 @@ resource "null_resource" "rsync_kubeconfig_file" {
   }
 
   provisioner "local-exec" {
-    command = "rsync -aPvz --rsync-path=\"sudo rsync\" -e \"ssh -o StrictHostKeyChecking=no -l ec2-user -i ${var.aws_ssh_private_key_file_path}\" ${aws_eip.lh_aws_eip_controlplane[0].public_ip}:/etc/rancher/k3s/k3s.yaml .  && sed -i 's#https://127.0.0.1:6443#https://${aws_eip.lh_aws_eip_controlplane[0].public_ip}:6443#' k3s.yaml"
+    command = <<-EOT
+      ssh -o StrictHostKeyChecking=no -l ec2-user -i ${var.aws_ssh_private_key_file_path} ${aws_eip.lh_aws_eip_controlplane[0].public_ip} "sudo shutdown -r now" &
+      sleep 5
+      until nc -z -w5 ${aws_eip.lh_aws_eip_controlplane[0].public_ip} 22; do
+        echo "Waiting for ${aws_eip.lh_aws_eip_controlplane[0].id} to be available"
+        sleep 5
+      done
+      until rsync -aPvz --rsync-path="sudo rsync" -e "ssh -o StrictHostKeyChecking=no -l ec2-user -i ${var.aws_ssh_private_key_file_path}" ${aws_eip.lh_aws_eip_controlplane[0].public_ip}:/etc/rancher/k3s/k3s.yaml .; do
+        echo "Retry rsync from ${aws_eip.lh_aws_eip_controlplane[0].id}"
+        sleep 5
+      done
+      sed -i 's#https://127.0.0.1:6443#https://${aws_eip.lh_aws_eip_controlplane[0].public_ip}:6443#' k3s.yaml
+    EOT
   }
 }

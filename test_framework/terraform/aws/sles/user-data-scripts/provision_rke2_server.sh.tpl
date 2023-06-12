@@ -1,5 +1,6 @@
 #!/bin/bash 
 
+sudo zypper update -y kernel-default
 sudo zypper ref -y
 sudo zypper install -y -t pattern devel_basis 
 sudo zypper install -y open-iscsi nfs-client jq
