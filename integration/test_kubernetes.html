@@ -258,24 +258,8 @@ def test_kubernetes_status(client, core_api, storage_class,  # NOQA
         ks_list[i][&#39;lastPVCRefAt&#39;] = &#39;&#39;
         if i == 0:
             ks_list[i][&#39;lastPodRefAt&#39;] = &#39;not empty&#39;
-            ks_list[i][&#39;workloadsStatus&#39;] = [
-                {
-                    &#39;podName&#39;: p[&#39;pod_name&#39;],
-                    &#39;podStatus&#39;: &#39;Running&#39;,
-                    &#39;workloadName&#39;: statefulset_name,
-                    &#39;workloadType&#39;: &#39;StatefulSet&#39;,
-                },
-            ]
         if i == 1:
             ks_list[i][&#39;lastPodRefAt&#39;] = &#39;&#39;
-            ks_list[i][&#39;workloadsStatus&#39;] = [
-                {
-                    &#39;podName&#39;: extra_pod_name,
-                    &#39;podStatus&#39;: &#39;Running&#39;,
-                    &#39;workloadName&#39;: &#39;&#39;,
-                    &#39;workloadType&#39;: &#39;&#39;,
-                }
-            ]
         wait_volume_kubernetes_status(client, volume_name, ks_list[i])
 
     # deleted extra_pod, all volumes have no workload
@@ -691,13 +675,7 @@ def test_backup_kubernetes_status(set_random_backupstore, client, core_api, pod)
         &#39;namespace&#39;: &#39;default&#39;,
         &#39;pvcName&#39;: pvc_name,
         &#39;pvName&#39;: &#39;&#39;,
-        &#39;pvStatus&#39;: &#39;&#39;,
-        &#39;workloadsStatus&#39;: [{
-            &#39;podName&#39;: pod_name,
-            &#39;podStatus&#39;: &#39;Running&#39;,
-            &#39;workloadName&#39;: &#39;&#39;,
-            &#39;workloadType&#39;: &#39;&#39;
-        }]
+        &#39;pvStatus&#39;: &#39;&#39;
     }
     wait_volume_kubernetes_status(client, volume_name, ks)
     volume = wait_for_volume_detached(client, volume_name)
@@ -719,12 +697,6 @@ def test_backup_kubernetes_status(set_random_backupstore, client, core_api, pod)
     assert status[&#39;pvcName&#39;] == pvc_name
     assert status[&#39;pvName&#39;] == &#34;&#34;
     assert status[&#39;pvStatus&#39;] == &#34;&#34;
-    assert status[&#39;workloadsStatus&#39;] == [{
-        &#39;podName&#39;: pod_name,
-        &#39;podStatus&#39;: &#39;Running&#39;,
-        &#39;workloadName&#39;: &#39;&#39;,
-        &#39;workloadType&#39;: &#39;&#39;
-    }]
 
     restore_name = generate_volume_name()
     client.create_volume(name=restore_name, size=SIZE,
@@ -739,13 +711,7 @@ def test_backup_kubernetes_status(set_random_backupstore, client, core_api, pod)
         &#39;namespace&#39;: &#39;default&#39;,
         &#39;pvcName&#39;: pvc_name,
         &#39;pvName&#39;: &#39;&#39;,
-        &#39;pvStatus&#39;: &#39;&#39;,
-        &#39;workloadsStatus&#39;: [{
-            &#39;podName&#39;: pod_name,
-            &#39;podStatus&#39;: &#39;Running&#39;,
-            &#39;workloadName&#39;: &#39;&#39;,
-            &#39;workloadType&#39;: &#39;&#39;
-        }]
+        &#39;pvStatus&#39;: &#39;&#39;
     }
     wait_volume_kubernetes_status(client, restore_name, ks)
     restore = client.by_id_volume(restore_name)
@@ -1140,13 +1106,7 @@ def test_backup_kubernetes_status(set_random_backupstore, client, core_api, pod)
         &#39;namespace&#39;: &#39;default&#39;,
         &#39;pvcName&#39;: pvc_name,
         &#39;pvName&#39;: &#39;&#39;,
-        &#39;pvStatus&#39;: &#39;&#39;,
-        &#39;workloadsStatus&#39;: [{
-            &#39;podName&#39;: pod_name,
-            &#39;podStatus&#39;: &#39;Running&#39;,
-            &#39;workloadName&#39;: &#39;&#39;,
-            &#39;workloadType&#39;: &#39;&#39;
-        }]
+        &#39;pvStatus&#39;: &#39;&#39;
     }
     wait_volume_kubernetes_status(client, volume_name, ks)
     volume = wait_for_volume_detached(client, volume_name)
@@ -1168,12 +1128,6 @@ def test_backup_kubernetes_status(set_random_backupstore, client, core_api, pod)
     assert status[&#39;pvcName&#39;] == pvc_name
     assert status[&#39;pvName&#39;] == &#34;&#34;
     assert status[&#39;pvStatus&#39;] == &#34;&#34;
-    assert status[&#39;workloadsStatus&#39;] == [{
-        &#39;podName&#39;: pod_name,
-        &#39;podStatus&#39;: &#39;Running&#39;,
-        &#39;workloadName&#39;: &#39;&#39;,
-        &#39;workloadType&#39;: &#39;&#39;
-    }]
 
     restore_name = generate_volume_name()
     client.create_volume(name=restore_name, size=SIZE,
@@ -1188,13 +1142,7 @@ def test_backup_kubernetes_status(set_random_backupstore, client, core_api, pod)
         &#39;namespace&#39;: &#39;default&#39;,
         &#39;pvcName&#39;: pvc_name,
         &#39;pvName&#39;: &#39;&#39;,
-        &#39;pvStatus&#39;: &#39;&#39;,
-        &#39;workloadsStatus&#39;: [{
-            &#39;podName&#39;: pod_name,
-            &#39;podStatus&#39;: &#39;Running&#39;,
-            &#39;workloadName&#39;: &#39;&#39;,
-            &#39;workloadType&#39;: &#39;&#39;
-        }]
+        &#39;pvStatus&#39;: &#39;&#39;
     }
     wait_volume_kubernetes_status(client, restore_name, ks)
     restore = client.by_id_volume(restore_name)
@@ -1570,24 +1518,8 @@ def test_kubernetes_status(client, core_api, storage_class,  # NOQA
         ks_list[i][&#39;lastPVCRefAt&#39;] = &#39;&#39;
         if i == 0:
             ks_list[i][&#39;lastPodRefAt&#39;] = &#39;not empty&#39;
-            ks_list[i][&#39;workloadsStatus&#39;] = [
-                {
-                    &#39;podName&#39;: p[&#39;pod_name&#39;],
-                    &#39;podStatus&#39;: &#39;Running&#39;,
-                    &#39;workloadName&#39;: statefulset_name,
-                    &#39;workloadType&#39;: &#39;StatefulSet&#39;,
-                },
-            ]
         if i == 1:
             ks_list[i][&#39;lastPodRefAt&#39;] = &#39;&#39;
-            ks_list[i][&#39;workloadsStatus&#39;] = [
-                {
-                    &#39;podName&#39;: extra_pod_name,
-                    &#39;podStatus&#39;: &#39;Running&#39;,
-                    &#39;workloadName&#39;: &#39;&#39;,
-                    &#39;workloadType&#39;: &#39;&#39;,
-                }
-            ]
         wait_volume_kubernetes_status(client, volume_name, ks_list[i])
 
     # deleted extra_pod, all volumes have no workload
