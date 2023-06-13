@@ -230,24 +230,8 @@ def test_kubernetes_status(client, core_api, storage_class,  # NOQA
         ks_list[i]['lastPVCRefAt'] = ''
         if i == 0:
             ks_list[i]['lastPodRefAt'] = 'not empty'
-            ks_list[i]['workloadsStatus'] = [
-                {
-                    'podName': p['pod_name'],
-                    'podStatus': 'Running',
-                    'workloadName': statefulset_name,
-                    'workloadType': 'StatefulSet',
-                },
-            ]
         if i == 1:
             ks_list[i]['lastPodRefAt'] = ''
-            ks_list[i]['workloadsStatus'] = [
-                {
-                    'podName': extra_pod_name,
-                    'podStatus': 'Running',
-                    'workloadName': '',
-                    'workloadType': '',
-                }
-            ]
         wait_volume_kubernetes_status(client, volume_name, ks_list[i])
 
     # deleted extra_pod, all volumes have no workload
@@ -663,13 +647,7 @@ def test_backup_kubernetes_status(set_random_backupstore, client, core_api, pod)
         'namespace': 'default',
         'pvcName': pvc_name,
         'pvName': '',
-        'pvStatus': '',
-        'workloadsStatus': [{
-            'podName': pod_name,
-            'podStatus': 'Running',
-            'workloadName': '',
-            'workloadType': ''
-        }]
+        'pvStatus': ''
     }
     wait_volume_kubernetes_status(client, volume_name, ks)
     volume = wait_for_volume_detached(client, volume_name)
@@ -691,12 +669,6 @@ def test_backup_kubernetes_status(set_random_backupstore, client, core_api, pod)
     assert status['pvcName'] == pvc_name
     assert status['pvName'] == ""
     assert status['pvStatus'] == ""
-    assert status['workloadsStatus'] == [{
-        'podName': pod_name,
-        'podStatus': 'Running',
-        'workloadName': '',
-        'workloadType': ''
-    }]
 
     restore_name = generate_volume_name()
     client.create_volume(name=restore_name, size=SIZE,
@@ -711,13 +683,7 @@ def test_backup_kubernetes_status(set_random_backupstore, client, core_api, pod)
         'namespace': 'default',
         'pvcName': pvc_name,
         'pvName': '',
-        'pvStatus': '',
-        'workloadsStatus': [{
-            'podName': pod_name,
-            'podStatus': 'Running',
-            'workloadName': '',
-            'workloadType': ''
-        }]
+        'pvStatus': ''
     }
     wait_volume_kubernetes_status(client, restore_name, ks)
     restore = client.by_id_volume(restore_name)
