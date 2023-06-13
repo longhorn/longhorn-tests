@@ -13,7 +13,6 @@ sudo dnf group install -y "Development Tools"
 sudo dnf install -y iscsi-initiator-utils nfs-utils nfs4-acl-tools jq
 sudo systemctl -q enable iscsid
 sudo systemctl start iscsid
-sudo systemctl disable nm-cloud-setup.service nm-cloud-setup.timer
 
 curl -sfL https://get.rke2.io | INSTALL_RKE2_TYPE="server" INSTALL_RKE2_VERSION="${rke2_version}" sh -
 

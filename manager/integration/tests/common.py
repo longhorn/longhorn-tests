@@ -2196,8 +2196,7 @@ def crash_replica_processes(client, api, volname, replicas=None,
 
     for r in replicas:
         assert r.instanceManagerName != ""
-        kill_command = "kill `ps aux | grep '" + r['dataPath'] +\
-                       "' | grep -v grep | awk '{print $2}'`"
+        kill_command = "kill `pgrep -f " + r['dataPath'] + "`"
         exec_instance_manager(api, r.instanceManagerName, kill_command)
 
         if wait_to_fail is True:
@@ -4774,8 +4773,7 @@ def crash_engine_process_with_sigkill(client, core_api, volume_name):
 
     kill_command = [
             '/bin/sh', '-c',
-            "kill -9 `ps aux | grep -i \"controller " +
-            volume_name + "\" | grep -v grep | awk '{print $2}'`"]
+            "kill `pgrep -f \"controller " + volume_name + "\"`",]
 
     with timeout(seconds=STREAM_EXEC_TIMEOUT,
                  error_message='Timeout on executing stream read'):

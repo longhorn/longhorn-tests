@@ -42,6 +42,7 @@ from common import (  # NOQA
     wait_for_rebuild_start, wait_for_rebuild_complete,
     wait_for_volume_degraded, write_volume_dev_random_mb_data,
     get_volume_endpoint, RETRY_EXEC_COUNTS, RETRY_SNAPSHOT_INTERVAL,
+    SETTING_DEGRADED_AVAILABILITY,
     delete_replica_on_test_node
 )
 
@@ -933,6 +934,8 @@ def setting_concurrent_volume_backup_restore_limit_concurrent_restoring_test(cli
     Then Number of restoring volumes per node should be expected based on
          if they are normal volumes or DR volumes.
     """
+    update_setting(client, SETTING_DEGRADED_AVAILABILITY, "false")
+
     concurrent_limit = 2
     update_setting(client, SETTING_CONCURRENT_VOLUME_BACKUP_RESTORE,
                    str(concurrent_limit))
