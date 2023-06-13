@@ -520,7 +520,7 @@ def test_csi_mount_volume_online_expansion(client, core_api, storage_class, pvc,
     volume_name = get_volume_name(core_api, pvc_name)
 
     # Use new process to do copy data and expand at the same time
-    cmd = ["kubectl", "exec", "-it", pod_name, "--", "/bin/sh", "-c",
+    cmd = ["kubectl", "exec", "-i", pod_name, "--", "/bin/sh", "-c",
            "dd if=/dev/urandom of={} bs=1M count=2500".
            format(volume_data_path)]
     process = subprocess.Popen(cmd)
