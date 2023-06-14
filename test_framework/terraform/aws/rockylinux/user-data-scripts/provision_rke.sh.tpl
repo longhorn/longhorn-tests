@@ -5,9 +5,9 @@ DOCKER_VERSION=20.10
 sudo sed -i 's#^SELINUX=.*$#SELINUX='"${selinux_mode}"'#' /etc/selinux/config
 
 if [[ ${selinux_mode} == "enforcing" ]] ; then
-    sudo setenforce  1
+  sudo setenforce  1
 elif [[  ${selinux_mode} == "permissive" ]]; then
-    sudo setenforce  0
+  sudo setenforce  0
 fi
 
 sudo dnf config-manager --add-repo=https://download.docker.com/linux/centos/docker-ce.repo
