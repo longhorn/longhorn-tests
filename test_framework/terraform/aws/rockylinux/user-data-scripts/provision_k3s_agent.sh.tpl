@@ -4,8 +4,6 @@ sudo sed -i 's#^SELINUX=.*$#SELINUX='"${selinux_mode}"'#' /etc/selinux/config
 
 if [[ ${selinux_mode} == "enforcing" ]] ; then
   sudo setenforce  1
-  # k3s-selinux does not have the same fix applied as rke2-selinux.
-  echo '(allow iscsid_t self (capability (dac_override)))' > local_longhorn.cil && sudo semodule -vi local_longhorn.cil
 elif [[  ${selinux_mode} == "permissive" ]]; then
   sudo setenforce  0
 fi
