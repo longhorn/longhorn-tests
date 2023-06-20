@@ -14,6 +14,8 @@ write-kubeconfig-mode: "0644"
 token: ${rke2_cluster_secret}
 tls-san:
   - ${rke2_server_public_ip}
+node-taint:
+  - "node-role.kubernetes.io/control-plane=true:NoSchedule"
 EOF
 
 systemctl enable rke2-server.service

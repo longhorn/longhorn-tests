@@ -1,8 +1,11 @@
 #!/bin/bash
 
+sudo systemctl stop firewalld
+sudo systemctl disable firewalld
+
 sudo yum update -y
 sudo yum group install -y "Development Tools"
-sudo yum install -y iscsi-initiator-utils nfs-utils nfs4-acl-tools jq nc
+sudo yum install -y iscsi-initiator-utils nfs-utils nfs4-acl-tools jq nc rsync
 sudo systemctl -q enable iscsid
 sudo systemctl start iscsid
 
@@ -15,6 +18,8 @@ write-kubeconfig-mode: "0644"
 token: ${rke2_cluster_secret}
 tls-san:
   - ${rke2_server_public_ip}
+node-taint:
+  - "node-role.kubernetes.io/control-plane=true:NoSchedule"
 EOF
 
 systemctl enable rke2-server.service

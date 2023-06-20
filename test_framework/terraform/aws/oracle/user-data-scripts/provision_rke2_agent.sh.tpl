@@ -1,5 +1,8 @@
 #!/bin/bash
 
+sudo systemctl stop firewalld
+sudo systemctl disable firewalld
+
 sudo yum update -y
 sudo yum group install -y "Development Tools"
 sudo yum install -y iscsi-initiator-utils nfs-utils nfs4-acl-tools nc
@@ -15,7 +18,7 @@ fi
 RKE_SERVER_IP=`echo ${rke2_server_url} | sed 's#https://##' | awk -F ":" '{print $1}'`
 RKE_SERVER_PORT=`echo ${rke2_server_url} | sed 's#https://##' | awk -F ":" '{print $2}'`
 
-while ! nc -z $${RKE_SERVER_IP} $${RKE_SERVER_PORT}; do   
+while ! nc -z $${RKE_SERVER_IP} $${RKE_SERVER_PORT}; do
   sleep 10 #
 done
 
@@ -23,7 +26,7 @@ curl -sfL https://get.rke2.io | INSTALL_RKE2_TYPE="agent" INSTALL_RKE2_VERSION="
 
 mkdir -p /etc/rancher/rke2
 
-cat << EOF > /etc/rancher/rke2/config.yaml 
+cat << EOF > /etc/rancher/rke2/config.yaml
 server: ${rke2_server_url}
 token: ${rke2_cluster_secret}
 EOF
