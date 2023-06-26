@@ -26,6 +26,324 @@ index de77b7246..ac6263ac5 100644
 > Match the checkUpgradeURL with the application name: `http://<APP_NAME>-upgrade-responder.default.svc.cluster.local:8314/v1/checkupgrade`
 
 **And** [Deploy upgrade responder stack](https://github.com/longhorn/longhorn/tree/master/dev/upgrade-responder). 
+
+**And** Update `upgrade-responder-configmap-<app_name>-upgrade-responder` ConfigMap `request-schema.json`:
+```bash
+kubectl edit cm/`kubectl get cm | grep upgrade-responder-configmap | awk '{print $1}'`
+```
+```
+  request-schema.json: |-
+    {
+      "appVersionSchema": {
+        "dataType": "string",
+        "maxLen": 200
+      },
+      "extraTagInfoSchema": {
+        "hostKernelRelease": {
+          "dataType": "string",
+          "maxLen": 200
+        },
+        "hostOsDistro": {
+          "dataType": "string",
+          "maxLen": 200
+        },
+        "kubernetesNodeProvider": {
+          "dataType": "string",
+          "maxLen": 200
+        },
+        "kubernetesVersion": {
+          "dataType": "string",
+          "maxLen": 200
+        },
+        "longhornSettingAllowRecurringJobWhileVolumeDetached": {
+          "dataType": "string",
+          "maxLen": 200
+        },
+        "longhornSettingAllowVolumeCreationWithDegradedAvailability": {
+          "dataType": "string",
+          "maxLen": 200
+        },
+        "longhornSettingAutoCleanupSystemGeneratedSnapshot": {
+          "dataType": "string",
+          "maxLen": 200
+        },
+        "longhornSettingAutoDeletePodWhenVolumeDetachedUnexpectedly": {
+          "dataType": "string",
+          "maxLen": 200
+        },
+        "longhornSettingAutoSalvage": {
+          "dataType": "string",
+          "maxLen": 200
+        },
+        "longhornSettingBackupCompressionMethod": {
+          "dataType": "string",
+          "maxLen": 200
+        },
+        "longhornSettingBackupTarget": {
+          "dataType": "string",
+          "maxLen": 200
+        },
+        "longhornSettingCrdApiVersion": {
+          "dataType": "string",
+          "maxLen": 200
+        },
+        "longhornSettingCreateDefaultDiskLabeledNodes": {
+          "dataType": "string",
+          "maxLen": 200
+        },
+        "longhornSettingDefaultDataLocality": {
+          "dataType": "string",
+          "maxLen": 200
+        },
+        "longhornSettingDisableRevisionCounter": {
+          "dataType": "string",
+          "maxLen": 200
+        },
+        "longhornSettingDisableSchedulingOnCordonedNode": {
+          "dataType": "string",
+          "maxLen": 200
+        },
+        "longhornSettingFastReplicaRebuildEnabled": {
+          "dataType": "string",
+          "maxLen": 200
+        },
+        "longhornSettingKubernetesClusterAutoscalerEnabled": {
+          "dataType": "string",
+          "maxLen": 200
+        },
+        "longhornSettingNodeDownPodDeletionPolicy": {
+          "dataType": "string",
+          "maxLen": 200
+        },
+        "longhornSettingNodeDrainPolicy": {
+          "dataType": "string",
+          "maxLen": 200
+        },
+        "longhornSettingOfflineReplicaRebuilding": {
+          "dataType": "string",
+          "maxLen": 200
+        },
+        "longhornSettingOrphanAutoDeletion": {
+          "dataType": "string",
+          "maxLen": 200
+        },
+        "longhornSettingPriorityClass": {
+          "dataType": "string",
+          "maxLen": 200
+        },
+        "longhornSettingRegistrySecret": {
+          "dataType": "string",
+          "maxLen": 200
+        },
+        "longhornSettingRemoveSnapshotsDuringFilesystemTrim": {
+          "dataType": "string",
+          "maxLen": 200
+        },
+        "longhornSettingReplicaAutoBalance": {
+          "dataType": "string",
+          "maxLen": 200
+        },
+        "longhornSettingReplicaSoftAntiAffinity": {
+          "dataType": "string",
+          "maxLen": 200
+        },
+        "longhornSettingReplicaZoneSoftAntiAffinity": {
+          "dataType": "string",
+          "maxLen": 200
+        },
+        "longhornSettingRestoreVolumeRecurringJobs": {
+          "dataType": "string",
+          "maxLen": 200
+        },
+        "longhornSettingSnapshotDataIntegrity": {
+          "dataType": "string",
+          "maxLen": 200
+        },
+        "longhornSettingSnapshotDataIntegrityCronjob": {
+          "dataType": "string",
+          "maxLen": 200
+        },
+        "longhornSettingSnapshotDataIntegrityImmediateCheckAfterSnapshotCreation": {
+          "dataType": "string",
+          "maxLen": 200
+        },
+        "longhornSettingStorageNetwork": {
+          "dataType": "string",
+          "maxLen": 200
+        },
+        "longhornSettingSystemManagedComponentsNodeSelector": {
+          "dataType": "string",
+          "maxLen": 200
+        },
+        "longhornSettingSystemManagedPodsImagePullPolicy": {
+          "dataType": "string",
+          "maxLen": 200
+        },
+        "longhornSettingTaintToleration": {
+          "dataType": "string",
+          "maxLen": 200
+        },
+        "longhornSettingV2DataEngine": {
+          "dataType": "string",
+          "maxLen": 200
+        }
+      },
+      "extraFieldInfoSchema": {
+        "longhornInstanceManagerAverageCpuUsageMilliCores": {
+          "dataType": "float"
+        },
+        "longhornInstanceManagerAverageMemoryUsageBytes": {
+          "dataType": "float"
+        },
+        "longhornManagerAverageCpuUsageMilliCores": {
+          "dataType": "float"
+        },
+        "longhornManagerAverageMemoryUsageBytes": {
+          "dataType": "float"
+        },
+        "longhornNamespaceUid": {
+          "dataType": "string",
+          "maxLen": 200
+        },
+        "longhornNodeCount": {
+          "dataType": "float"
+        },
+        "longhornNodeDiskHDDCount": {
+          "dataType": "float"
+        },
+        "longhornNodeDiskNVMeCount": {
+          "dataType": "float"
+        },
+        "longhornNodeDiskSSDCount": {
+          "dataType": "float"
+        },
+        "longhornSettingBackingImageCleanupWaitInterval": {
+          "dataType": "float"
+        },
+        "longhornSettingBackingImageRecoveryWaitInterval": {
+          "dataType": "float"
+        },
+        "longhornSettingBackupConcurrentLimit": {
+          "dataType": "float"
+        },
+        "longhornSettingBackupstorePollInterval": {
+          "dataType": "float"
+        },
+        "longhornSettingConcurrentAutomaticEngineUpgradePerNodeLimit": {
+          "dataType": "float"
+        },
+        "longhornSettingConcurrentReplicaRebuildPerNodeLimit": {
+          "dataType": "float"
+        },
+        "longhornSettingConcurrentVolumeBackupRestorePerNodeLimit": {
+          "dataType": "float"
+        },
+        "longhornSettingDefaultReplicaCount": {
+          "dataType": "float"
+        },
+        "longhornSettingEngineReplicaTimeout": {
+          "dataType": "float"
+        },
+        "longhornSettingFailedBackupTtl": {
+          "dataType": "float"
+        },
+        "longhornSettingGuaranteedInstanceManagerCpu": {
+          "dataType": "float"
+        },
+        "longhornSettingRecurringFailedJobsHistoryLimit": {
+          "dataType": "float"
+        },
+        "longhornSettingRecurringSuccessfulJobsHistoryLimit": {
+          "dataType": "float"
+        },
+        "longhornSettingReplicaFileSyncHttpClientTimeout": {
+          "dataType": "float"
+        },
+        "longhornSettingReplicaReplenishmentWaitInterval": {
+          "dataType": "float"
+        },
+        "longhornSettingRestoreConcurrentLimit": {
+          "dataType": "float"
+        },
+        "longhornSettingStorageMinimalAvailablePercentage": {
+          "dataType": "float"
+        },
+        "longhornSettingStorageOverProvisioningPercentage": {
+          "dataType": "float"
+        },
+        "longhornSettingStorageReservedPercentageForDefaultDisk": {
+          "dataType": "float"
+        },
+        "longhornSettingSupportBundleFailedHistoryLimit": {
+          "dataType": "float"
+        },
+        "longhornVolumeAccessModeRwoCount": {
+          "dataType": "float"
+        },
+        "longhornVolumeAccessModeRwxCount": {
+          "dataType": "float"
+        },
+        "longhornVolumeAccessModeUnknownCount": {
+          "dataType": "float"
+        },
+        "longhornVolumeAverageActualSizeBytes": {
+          "dataType": "float"
+        },
+        "longhornVolumeAverageNumberOfReplicas": {
+          "dataType": "float"
+        },
+        "longhornVolumeAverageSizeBytes": {
+          "dataType": "float"
+        },
+        "longhornVolumeAverageSnapshotCount": {
+          "dataType": "float"
+        },
+        "longhornVolumeDataLocalityBestEffortCount": {
+          "dataType": "float"
+        },
+        "longhornVolumeDataLocalityDisabledCount": {
+          "dataType": "float"
+        },
+        "longhornVolumeDataLocalityStrictLocalCount": {
+          "dataType": "float"
+        },
+        "longhornVolumeFrontendBlockdevCount": {
+          "dataType": "float"
+        },
+        "longhornVolumeFrontendIscsiCount": {
+          "dataType": "float"
+        },
+        "longhornVolumeOfflineReplicaRebuildingDisabledCount": {
+          "dataType": "float"
+        },
+        "longhornVolumeOfflineReplicaRebuildingEnabledCount": {
+          "dataType": "float"
+        },
+        "longhornVolumeReplicaAutoBalanceDisabledCount": {
+          "dataType": "float"
+        },
+        "longhornVolumeReplicaSoftAntiAffinityFalseCount": {
+          "dataType": "float"
+        },
+        "longhornVolumeReplicaZoneSoftAntiAffinityTrueCount": {
+          "dataType": "float"
+        },
+        "longhornVolumeRestoreVolumeRecurringJobFalseCount": {
+          "dataType": "float"
+        },
+        "longhornVolumeSnapshotDataIntegrityDisabledCount": {
+          "dataType": "float"
+        },
+        "longhornVolumeSnapshotDataIntegrityFastCheckCount": {
+          "dataType": "float"
+        },
+        "longhornVolumeUnmapMarkSnapChainRemovedFalseCount": {
+          "dataType": "float"
+        }
+      }
+    }
+```
+
  
 **When** Wait 1~2 hours for collection data to send to the influxDB database.  
 **Then** Collection data should exist the influxDB database.
@@ -136,214 +454,3 @@ longhorn_volume_snapshot_data_integrity_fast_check_count            float
 longhorn_volume_unmap_mark_snap_chain_removed_false_count           float
 value                                                               integer
 ```
-
-**When** Restart the upgrade responder pods.
-```bash
-app_name="longhorn"
-kubectl scale deployment ${app_name}-upgrade-responder --replicas=0
-kubectl scale deployment ${app_name}-upgrade-responder --replicas=3
-```  
-**Then** Upgrade responder should create continuous queries in influxDB.
-```bash
-kubectl exec -it ${influxdb_pod} -- influx -execute 'SHOW CONTINUOUS QUERIES' -database="${app_name}_upgrade_responder"
-```
-Sample output:
-```
-name: _internal
-name query
----- -----
-
-name: longhorn_upgrade_responder
-name                                                                                                 query
-----                                                                                                 -----
-cq_upgrade_request_down_sampling                                                                     CREATE CONTINUOUS QUERY cq_upgrade_request_down_sampling ON longhorn_upgrade_responder BEGIN SELECT count(value) AS total INTO longhorn_upgrade_responder.autogen.upgrade_request_down_sampling FROM longhorn_upgrade_responder.autogen.upgrade_request GROUP BY time(1h) END
-cq_by_app_version_down_sampling                                                                      CREATE CONTINUOUS QUERY cq_by_app_version_down_sampling ON longhorn_upgrade_responder BEGIN SELECT count(value) AS total INTO longhorn_upgrade_responder.autogen.by_app_version_down_sampling FROM longhorn_upgrade_responder.autogen.upgrade_request GROUP BY time(1h), app_version END
-cq_by_country_code_down_sampling                                                                     CREATE CONTINUOUS QUERY cq_by_country_code_down_sampling ON longhorn_upgrade_responder BEGIN SELECT count(value) AS total INTO longhorn_upgrade_responder.autogen.by_country_code_down_sampling FROM longhorn_upgrade_responder.autogen.upgrade_request GROUP BY time(1h), country_isocode END
-cq_by_longhorn_setting_replica_zone_soft_anti_affinity_down_sampling                                 CREATE CONTINUOUS QUERY cq_by_longhorn_setting_replica_zone_soft_anti_affinity_down_sampling ON longhorn_upgrade_responder BEGIN SELECT count(value) AS total INTO longhorn_upgrade_responder.autogen.by_longhorn_setting_replica_zone_soft_anti_affinity_count_down_sampling FROM longhorn_upgrade_responder.autogen.upgrade_request GROUP BY time(1h), longhorn_setting_replica_zone_soft_anti_affinity END
-cq_by_longhorn_setting_create_default_disk_labeled_nodes_down_sampling                               CREATE CONTINUOUS QUERY cq_by_longhorn_setting_create_default_disk_labeled_nodes_down_sampling ON longhorn_upgrade_responder BEGIN SELECT count(value) AS total INTO longhorn_upgrade_responder.autogen.by_longhorn_setting_create_default_disk_labeled_nodes_count_down_sampling FROM longhorn_upgrade_responder.autogen.upgrade_request GROUP BY time(1h), longhorn_setting_create_default_disk_labeled_nodes END
-cq_by_longhorn_setting_kubernetes_cluster_autoscaler_enabled_down_sampling                           CREATE CONTINUOUS QUERY cq_by_longhorn_setting_kubernetes_cluster_autoscaler_enabled_down_sampling ON longhorn_upgrade_responder BEGIN SELECT count(value) AS total INTO longhorn_upgrade_responder.autogen.by_longhorn_setting_kubernetes_cluster_autoscaler_enabled_count_down_sampling FROM longhorn_upgrade_responder.autogen.upgrade_request GROUP BY time(1h), longhorn_setting_kubernetes_cluster_autoscaler_enabled END
-cq_by_host_os_distro_down_sampling                                                                   CREATE CONTINUOUS QUERY cq_by_host_os_distro_down_sampling ON longhorn_upgrade_responder BEGIN SELECT count(value) AS total INTO longhorn_upgrade_responder.autogen.by_host_os_distro_count_down_sampling FROM longhorn_upgrade_responder.autogen.upgrade_request GROUP BY time(1h), host_os_distro END
-cq_by_longhorn_setting_recurring_successful_jobs_history_limit_down_sampling                         CREATE CONTINUOUS QUERY cq_by_longhorn_setting_recurring_successful_jobs_history_limit_down_sampling ON longhorn_upgrade_responder BEGIN SELECT mean(longhorn_setting_recurring_successful_jobs_history_limit) AS total INTO longhorn_upgrade_responder.autogen.by_longhorn_setting_recurring_successful_jobs_history_limit_mean_down_sampling FROM longhorn_upgrade_responder.autogen.upgrade_request GROUP BY time(1h) END
-cq_by_longhorn_setting_concurrent_automatic_engine_upgrade_per_node_limit_down_sampling              CREATE CONTINUOUS QUERY cq_by_longhorn_setting_concurrent_automatic_engine_upgrade_per_node_limit_down_sampling ON longhorn_upgrade_responder BEGIN SELECT mean(longhorn_setting_concurrent_automatic_engine_upgrade_per_node_limit) AS total INTO longhorn_upgrade_responder.autogen.by_longhorn_setting_concurrent_automatic_engine_upgrade_per_node_limit_mean_down_sampling FROM longhorn_upgrade_responder.autogen.upgrade_request GROUP BY time(1h) END
-cq_by_longhorn_namespace_uid_down_sampling                                                           CREATE CONTINUOUS QUERY cq_by_longhorn_namespace_uid_down_sampling ON longhorn_upgrade_responder BEGIN SELECT count(longhorn_namespace_uid) AS total INTO longhorn_upgrade_responder.autogen.by_longhorn_namespace_uid_count_down_sampling FROM longhorn_upgrade_responder.autogen.upgrade_request GROUP BY time(1h) END
-cq_by_longhorn_setting_backupstore_poll_interval_down_sampling                                       CREATE CONTINUOUS QUERY cq_by_longhorn_setting_backupstore_poll_interval_down_sampling ON longhorn_upgrade_responder BEGIN SELECT mean(longhorn_setting_backupstore_poll_interval) AS total INTO longhorn_upgrade_responder.autogen.by_longhorn_setting_backupstore_poll_interval_mean_down_sampling FROM longhorn_upgrade_responder.autogen.upgrade_request GROUP BY time(1h) END
-cq_by_longhorn_volume_snapshot_data_integrity_fast_check_count_down_sampling                         CREATE CONTINUOUS QUERY cq_by_longhorn_volume_snapshot_data_integrity_fast_check_count_down_sampling ON longhorn_upgrade_responder BEGIN SELECT mean(longhorn_volume_snapshot_data_integrity_fast_check_count) AS total INTO longhorn_upgrade_responder.autogen.by_longhorn_volume_snapshot_data_integrity_fast_check_count_mean_down_sampling FROM longhorn_upgrade_responder.autogen.upgrade_request GROUP BY time(1h) END
-cq_by_longhorn_node_disk_ssd_count_down_sampling                                                     CREATE CONTINUOUS QUERY cq_by_longhorn_node_disk_ssd_count_down_sampling ON longhorn_upgrade_responder BEGIN SELECT mean(longhorn_node_disk_ssd_count) AS total INTO longhorn_upgrade_responder.autogen.by_longhorn_node_disk_ssd_count_mean_down_sampling FROM longhorn_upgrade_responder.autogen.upgrade_request GROUP BY time(1h) END
-cq_by_longhorn_setting_support_bundle_failed_history_limit_down_sampling                             CREATE CONTINUOUS QUERY cq_by_longhorn_setting_support_bundle_failed_history_limit_down_sampling ON longhorn_upgrade_responder BEGIN SELECT mean(longhorn_setting_support_bundle_failed_history_limit) AS total INTO longhorn_upgrade_responder.autogen.by_longhorn_setting_support_bundle_failed_history_limit_mean_down_sampling FROM longhorn_upgrade_responder.autogen.upgrade_request GROUP BY time(1h) END
-cq_by_longhorn_setting_default_data_locality_down_sampling                                           CREATE CONTINUOUS QUERY cq_by_longhorn_setting_default_data_locality_down_sampling ON longhorn_upgrade_responder BEGIN SELECT count(value) AS total INTO longhorn_upgrade_responder.autogen.by_longhorn_setting_default_data_locality_count_down_sampling FROM longhorn_upgrade_responder.autogen.upgrade_request GROUP BY time(1h), longhorn_setting_default_data_locality END
-cq_by_longhorn_setting_remove_snapshots_during_filesystem_trim_down_sampling                         CREATE CONTINUOUS QUERY cq_by_longhorn_setting_remove_snapshots_during_filesystem_trim_down_sampling ON longhorn_upgrade_responder BEGIN SELECT count(value) AS total INTO longhorn_upgrade_responder.autogen.by_longhorn_setting_remove_snapshots_during_filesystem_trim_count_down_sampling FROM longhorn_upgrade_responder.autogen.upgrade_request GROUP BY time(1h), longhorn_setting_remove_snapshots_during_filesystem_trim END
-cq_by_longhorn_setting_allow_volume_creation_with_degraded_availability_down_sampling                CREATE CONTINUOUS QUERY cq_by_longhorn_setting_allow_volume_creation_with_degraded_availability_down_sampling ON longhorn_upgrade_responder BEGIN SELECT count(value) AS total INTO longhorn_upgrade_responder.autogen.by_longhorn_setting_allow_volume_creation_with_degraded_availability_count_down_sampling FROM longhorn_upgrade_responder.autogen.upgrade_request GROUP BY time(1h), longhorn_setting_allow_volume_creation_with_degraded_availability END
-cq_by_longhorn_setting_node_drain_policy_down_sampling                                               CREATE CONTINUOUS QUERY cq_by_longhorn_setting_node_drain_policy_down_sampling ON longhorn_upgrade_responder BEGIN SELECT count(value) AS total INTO longhorn_upgrade_responder.autogen.by_longhorn_setting_node_drain_policy_count_down_sampling FROM longhorn_upgrade_responder.autogen.upgrade_request GROUP BY time(1h), longhorn_setting_node_drain_policy END
-cq_by_longhorn_setting_fast_replica_rebuild_enabled_down_sampling                                    CREATE CONTINUOUS QUERY cq_by_longhorn_setting_fast_replica_rebuild_enabled_down_sampling ON longhorn_upgrade_responder BEGIN SELECT count(value) AS total INTO longhorn_upgrade_responder.autogen.by_longhorn_setting_fast_replica_rebuild_enabled_count_down_sampling FROM longhorn_upgrade_responder.autogen.upgrade_request GROUP BY time(1h), longhorn_setting_fast_replica_rebuild_enabled END
-cq_by_longhorn_volume_average_snapshot_count_down_sampling                                           CREATE CONTINUOUS QUERY cq_by_longhorn_volume_average_snapshot_count_down_sampling ON longhorn_upgrade_responder BEGIN SELECT mean(longhorn_volume_average_snapshot_count) AS total INTO longhorn_upgrade_responder.autogen.by_longhorn_volume_average_snapshot_count_mean_down_sampling FROM longhorn_upgrade_responder.autogen.upgrade_request GROUP BY time(1h) END
-cq_by_longhorn_setting_system_managed_pods_image_pull_policy_down_sampling                           CREATE CONTINUOUS QUERY cq_by_longhorn_setting_system_managed_pods_image_pull_policy_down_sampling ON longhorn_upgrade_responder BEGIN SELECT count(value) AS total INTO longhorn_upgrade_responder.autogen.by_longhorn_setting_system_managed_pods_image_pull_policy_count_down_sampling FROM longhorn_upgrade_responder.autogen.upgrade_request GROUP BY time(1h), longhorn_setting_system_managed_pods_image_pull_policy END
-cq_by_longhorn_volume_restore_volume_recurring_job_false_count_down_sampling                         CREATE CONTINUOUS QUERY cq_by_longhorn_volume_restore_volume_recurring_job_false_count_down_sampling ON longhorn_upgrade_responder BEGIN SELECT mean(longhorn_volume_restore_volume_recurring_job_false_count) AS total INTO longhorn_upgrade_responder.autogen.by_longhorn_volume_restore_volume_recurring_job_false_count_mean_down_sampling FROM longhorn_upgrade_responder.autogen.upgrade_request GROUP BY time(1h) END
-cq_by_longhorn_setting_storage_over_provisioning_percentage_down_sampling                            CREATE CONTINUOUS QUERY cq_by_longhorn_setting_storage_over_provisioning_percentage_down_sampling ON longhorn_upgrade_responder BEGIN SELECT mean(longhorn_setting_storage_over_provisioning_percentage) AS total INTO longhorn_upgrade_responder.autogen.by_longhorn_setting_storage_over_provisioning_percentage_mean_down_sampling FROM longhorn_upgrade_responder.autogen.upgrade_request GROUP BY time(1h) END
-cq_by_longhorn_manager_average_cpu_usage_milli_cores_down_sampling                                   CREATE CONTINUOUS QUERY cq_by_longhorn_manager_average_cpu_usage_milli_cores_down_sampling ON longhorn_upgrade_responder BEGIN SELECT mean(longhorn_manager_average_cpu_usage_milli_cores) AS total INTO longhorn_upgrade_responder.autogen.by_longhorn_manager_average_cpu_usage_milli_cores_mean_down_sampling FROM longhorn_upgrade_responder.autogen.upgrade_request GROUP BY time(1h) END
-cq_by_longhorn_volume_data_locality_strict_local_count_down_sampling                                 CREATE CONTINUOUS QUERY cq_by_longhorn_volume_data_locality_strict_local_count_down_sampling ON longhorn_upgrade_responder BEGIN SELECT mean(longhorn_volume_data_locality_strict_local_count) AS total INTO longhorn_upgrade_responder.autogen.by_longhorn_volume_data_locality_strict_local_count_mean_down_sampling FROM longhorn_upgrade_responder.autogen.upgrade_request GROUP BY time(1h) END
-cq_by_longhorn_setting_backing_image_cleanup_wait_interval_down_sampling                             CREATE CONTINUOUS QUERY cq_by_longhorn_setting_backing_image_cleanup_wait_interval_down_sampling ON longhorn_upgrade_responder BEGIN SELECT mean(longhorn_setting_backing_image_cleanup_wait_interval) AS total INTO longhorn_upgrade_responder.autogen.by_longhorn_setting_backing_image_cleanup_wait_interval_mean_down_sampling FROM longhorn_upgrade_responder.autogen.upgrade_request GROUP BY time(1h) END
-cq_by_longhorn_volume_unmap_mark_snap_chain_removed_false_count_down_sampling                        CREATE CONTINUOUS QUERY cq_by_longhorn_volume_unmap_mark_snap_chain_removed_false_count_down_sampling ON longhorn_upgrade_responder BEGIN SELECT mean(longhorn_volume_unmap_mark_snap_chain_removed_false_count) AS total INTO longhorn_upgrade_responder.autogen.by_longhorn_volume_unmap_mark_snap_chain_removed_false_count_mean_down_sampling FROM longhorn_upgrade_responder.autogen.upgrade_request GROUP BY time(1h) END
-cq_by_host_kernel_release_down_sampling                                                              CREATE CONTINUOUS QUERY cq_by_host_kernel_release_down_sampling ON longhorn_upgrade_responder BEGIN SELECT count(value) AS total INTO longhorn_upgrade_responder.autogen.by_host_kernel_release_count_down_sampling FROM longhorn_upgrade_responder.autogen.upgrade_request GROUP BY time(1h), host_kernel_release END
-cq_by_longhorn_setting_priority_class_down_sampling                                                  CREATE CONTINUOUS QUERY cq_by_longhorn_setting_priority_class_down_sampling ON longhorn_upgrade_responder BEGIN SELECT count(value) AS total INTO longhorn_upgrade_responder.autogen.by_longhorn_setting_priority_class_count_down_sampling FROM longhorn_upgrade_responder.autogen.upgrade_request GROUP BY time(1h), longhorn_setting_priority_class END
-cq_by_longhorn_setting_disable_scheduling_on_cordoned_node_down_sampling                             CREATE CONTINUOUS QUERY cq_by_longhorn_setting_disable_scheduling_on_cordoned_node_down_sampling ON longhorn_upgrade_responder BEGIN SELECT count(value) AS total INTO longhorn_upgrade_responder.autogen.by_longhorn_setting_disable_scheduling_on_cordoned_node_count_down_sampling FROM longhorn_upgrade_responder.autogen.upgrade_request GROUP BY time(1h), longhorn_setting_disable_scheduling_on_cordoned_node END
-cq_by_longhorn_setting_system_managed_components_node_selector_down_sampling                         CREATE CONTINUOUS QUERY cq_by_longhorn_setting_system_managed_components_node_selector_down_sampling ON longhorn_upgrade_responder BEGIN SELECT count(value) AS total INTO longhorn_upgrade_responder.autogen.by_longhorn_setting_system_managed_components_node_selector_count_down_sampling FROM longhorn_upgrade_responder.autogen.upgrade_request GROUP BY time(1h), longhorn_setting_system_managed_components_node_selector END
-cq_by_longhorn_setting_registry_secret_down_sampling                                                 CREATE CONTINUOUS QUERY cq_by_longhorn_setting_registry_secret_down_sampling ON longhorn_upgrade_responder BEGIN SELECT count(value) AS total INTO longhorn_upgrade_responder.autogen.by_longhorn_setting_registry_secret_count_down_sampling FROM longhorn_upgrade_responder.autogen.upgrade_request GROUP BY time(1h), longhorn_setting_registry_secret END
-cq_by_longhorn_setting_snapshot_data_integrity_immediate_check_after_snapshot_creation_down_sampling CREATE CONTINUOUS QUERY cq_by_longhorn_setting_snapshot_data_integrity_immediate_check_after_snapshot_creation_down_sampling ON longhorn_upgrade_responder BEGIN SELECT count(value) AS total INTO longhorn_upgrade_responder.autogen.by_longhorn_setting_snapshot_data_integrity_immediate_check_after_snapshot_creation_count_down_sampling FROM longhorn_upgrade_responder.autogen.upgrade_request GROUP BY time(1h), longhorn_setting_snapshot_data_integrity_immediate_check_after_snapshot_creation END
-cq_by_longhorn_volume_average_number_of_replicas_down_sampling                                       CREATE CONTINUOUS QUERY cq_by_longhorn_volume_average_number_of_replicas_down_sampling ON longhorn_upgrade_responder BEGIN SELECT mean(longhorn_volume_average_number_of_replicas) AS total INTO longhorn_upgrade_responder.autogen.by_longhorn_volume_average_number_of_replicas_mean_down_sampling FROM longhorn_upgrade_responder.autogen.upgrade_request GROUP BY time(1h) END
-cq_by_longhorn_manager_average_memory_usage_bytes_down_sampling                                      CREATE CONTINUOUS QUERY cq_by_longhorn_manager_average_memory_usage_bytes_down_sampling ON longhorn_upgrade_responder BEGIN SELECT mean(longhorn_manager_average_memory_usage_bytes) AS total INTO longhorn_upgrade_responder.autogen.by_longhorn_manager_average_memory_usage_bytes_mean_down_sampling FROM longhorn_upgrade_responder.autogen.upgrade_request GROUP BY time(1h) END
-cq_by_longhorn_setting_offline_replica_rebuilding_down_sampling                                      CREATE CONTINUOUS QUERY cq_by_longhorn_setting_offline_replica_rebuilding_down_sampling ON longhorn_upgrade_responder BEGIN SELECT count(value) AS total INTO longhorn_upgrade_responder.autogen.by_longhorn_setting_offline_replica_rebuilding_count_down_sampling FROM longhorn_upgrade_responder.autogen.upgrade_request GROUP BY time(1h), longhorn_setting_offline_replica_rebuilding END
-cq_by_longhorn_setting_auto_cleanup_system_generated_snapshot_down_sampling                          CREATE CONTINUOUS QUERY cq_by_longhorn_setting_auto_cleanup_system_generated_snapshot_down_sampling ON longhorn_upgrade_responder BEGIN SELECT count(value) AS total INTO longhorn_upgrade_responder.autogen.by_longhorn_setting_auto_cleanup_system_generated_snapshot_count_down_sampling FROM longhorn_upgrade_responder.autogen.upgrade_request GROUP BY time(1h), longhorn_setting_auto_cleanup_system_generated_snapshot END
-cq_by_longhorn_setting_backup_concurrent_limit_down_sampling                                         CREATE CONTINUOUS QUERY cq_by_longhorn_setting_backup_concurrent_limit_down_sampling ON longhorn_upgrade_responder BEGIN SELECT mean(longhorn_setting_backup_concurrent_limit) AS total INTO longhorn_upgrade_responder.autogen.by_longhorn_setting_backup_concurrent_limit_mean_down_sampling FROM longhorn_upgrade_responder.autogen.upgrade_request GROUP BY time(1h) END
-cq_by_longhorn_volume_average_size_bytes_down_sampling                                               CREATE CONTINUOUS QUERY cq_by_longhorn_volume_average_size_bytes_down_sampling ON longhorn_upgrade_responder BEGIN SELECT mean(longhorn_volume_average_size_bytes) AS total INTO longhorn_upgrade_responder.autogen.by_longhorn_volume_average_size_bytes_mean_down_sampling FROM longhorn_upgrade_responder.autogen.upgrade_request GROUP BY time(1h) END
-cq_by_longhorn_setting_failed_backup_ttl_down_sampling                                               CREATE CONTINUOUS QUERY cq_by_longhorn_setting_failed_backup_ttl_down_sampling ON longhorn_upgrade_responder BEGIN SELECT mean(longhorn_setting_failed_backup_ttl) AS total INTO longhorn_upgrade_responder.autogen.by_longhorn_setting_failed_backup_ttl_mean_down_sampling FROM longhorn_upgrade_responder.autogen.upgrade_request GROUP BY time(1h) END
-cq_by_longhorn_volume_access_mode_rwo_count_down_sampling                                            CREATE CONTINUOUS QUERY cq_by_longhorn_volume_access_mode_rwo_count_down_sampling ON longhorn_upgrade_responder BEGIN SELECT mean(longhorn_volume_access_mode_rwo_count) AS total INTO longhorn_upgrade_responder.autogen.by_longhorn_volume_access_mode_rwo_count_mean_down_sampling FROM longhorn_upgrade_responder.autogen.upgrade_request GROUP BY time(1h) END
-cq_by_value_down_sampling                                                                            CREATE CONTINUOUS QUERY cq_by_value_down_sampling ON longhorn_upgrade_responder BEGIN SELECT count(value) AS total INTO longhorn_upgrade_responder.autogen.by_value_count_down_sampling FROM longhorn_upgrade_responder.autogen.upgrade_request GROUP BY time(1h) END
-cq_by_longhorn_setting_recurring_failed_jobs_history_limit_down_sampling                             CREATE CONTINUOUS QUERY cq_by_longhorn_setting_recurring_failed_jobs_history_limit_down_sampling ON longhorn_upgrade_responder BEGIN SELECT mean(longhorn_setting_recurring_failed_jobs_history_limit) AS total INTO longhorn_upgrade_responder.autogen.by_longhorn_setting_recurring_failed_jobs_history_limit_mean_down_sampling FROM longhorn_upgrade_responder.autogen.upgrade_request GROUP BY time(1h) END
-cq_by_longhorn_setting_restore_volume_recurring_jobs_down_sampling                                   CREATE CONTINUOUS QUERY cq_by_longhorn_setting_restore_volume_recurring_jobs_down_sampling ON longhorn_upgrade_responder BEGIN SELECT count(value) AS total INTO longhorn_upgrade_responder.autogen.by_longhorn_setting_restore_volume_recurring_jobs_count_down_sampling FROM longhorn_upgrade_responder.autogen.upgrade_request GROUP BY time(1h), longhorn_setting_restore_volume_recurring_jobs END
-cq_by_longhorn_setting_auto_salvage_down_sampling                                                    CREATE CONTINUOUS QUERY cq_by_longhorn_setting_auto_salvage_down_sampling ON longhorn_upgrade_responder BEGIN SELECT count(value) AS total INTO longhorn_upgrade_responder.autogen.by_longhorn_setting_auto_salvage_count_down_sampling FROM longhorn_upgrade_responder.autogen.upgrade_request GROUP BY time(1h), longhorn_setting_auto_salvage END
-cq_by_longhorn_setting_backup_compression_method_down_sampling                                       CREATE CONTINUOUS QUERY cq_by_longhorn_setting_backup_compression_method_down_sampling ON longhorn_upgrade_responder BEGIN SELECT count(value) AS total INTO longhorn_upgrade_responder.autogen.by_longhorn_setting_backup_compression_method_count_down_sampling FROM longhorn_upgrade_responder.autogen.upgrade_request GROUP BY time(1h), longhorn_setting_backup_compression_method END
-cq_by_longhorn_setting_backup_target_down_sampling                                                   CREATE CONTINUOUS QUERY cq_by_longhorn_setting_backup_target_down_sampling ON longhorn_upgrade_responder BEGIN SELECT count(value) AS total INTO longhorn_upgrade_responder.autogen.by_longhorn_setting_backup_target_count_down_sampling FROM longhorn_upgrade_responder.autogen.upgrade_request GROUP BY time(1h), longhorn_setting_backup_target END
-cq_by_longhorn_setting_disable_revision_counter_down_sampling                                        CREATE CONTINUOUS QUERY cq_by_longhorn_setting_disable_revision_counter_down_sampling ON longhorn_upgrade_responder BEGIN SELECT count(value) AS total INTO longhorn_upgrade_responder.autogen.by_longhorn_setting_disable_revision_counter_count_down_sampling FROM longhorn_upgrade_responder.autogen.upgrade_request GROUP BY time(1h), longhorn_setting_disable_revision_counter END
-cq_by_longhorn_instance_manager_average_memory_usage_bytes_down_sampling                             CREATE CONTINUOUS QUERY cq_by_longhorn_instance_manager_average_memory_usage_bytes_down_sampling ON longhorn_upgrade_responder BEGIN SELECT mean(longhorn_instance_manager_average_memory_usage_bytes) AS total INTO longhorn_upgrade_responder.autogen.by_longhorn_instance_manager_average_memory_usage_bytes_mean_down_sampling FROM longhorn_upgrade_responder.autogen.upgrade_request GROUP BY time(1h) END
-cq_by_longhorn_setting_engine_replica_timeout_down_sampling                                          CREATE CONTINUOUS QUERY cq_by_longhorn_setting_engine_replica_timeout_down_sampling ON longhorn_upgrade_responder BEGIN SELECT mean(longhorn_setting_engine_replica_timeout) AS total INTO longhorn_upgrade_responder.autogen.by_longhorn_setting_engine_replica_timeout_mean_down_sampling FROM longhorn_upgrade_responder.autogen.upgrade_request GROUP BY time(1h) END
-cq_by_longhorn_setting_storage_reserved_percentage_for_default_disk_down_sampling                    CREATE CONTINUOUS QUERY cq_by_longhorn_setting_storage_reserved_percentage_for_default_disk_down_sampling ON longhorn_upgrade_responder BEGIN SELECT mean(longhorn_setting_storage_reserved_percentage_for_default_disk) AS total INTO longhorn_upgrade_responder.autogen.by_longhorn_setting_storage_reserved_percentage_for_default_disk_mean_down_sampling FROM longhorn_upgrade_responder.autogen.upgrade_request GROUP BY time(1h) END
-cq_by_longhorn_volume_replica_zone_soft_anti_affinity_true_count_down_sampling                       CREATE CONTINUOUS QUERY cq_by_longhorn_volume_replica_zone_soft_anti_affinity_true_count_down_sampling ON longhorn_upgrade_responder BEGIN SELECT mean(longhorn_volume_replica_zone_soft_anti_affinity_true_count) AS total INTO longhorn_upgrade_responder.autogen.by_longhorn_volume_replica_zone_soft_anti_affinity_true_count_mean_down_sampling FROM longhorn_upgrade_responder.autogen.upgrade_request GROUP BY time(1h) END
-cq_by_longhorn_setting_restore_concurrent_limit_down_sampling                                        CREATE CONTINUOUS QUERY cq_by_longhorn_setting_restore_concurrent_limit_down_sampling ON longhorn_upgrade_responder BEGIN SELECT mean(longhorn_setting_restore_concurrent_limit) AS total INTO longhorn_upgrade_responder.autogen.by_longhorn_setting_restore_concurrent_limit_mean_down_sampling FROM longhorn_upgrade_responder.autogen.upgrade_request GROUP BY time(1h) END
-cq_by_longhorn_volume_replica_soft_anti_affinity_false_count_down_sampling                           CREATE CONTINUOUS QUERY cq_by_longhorn_volume_replica_soft_anti_affinity_false_count_down_sampling ON longhorn_upgrade_responder BEGIN SELECT mean(longhorn_volume_replica_soft_anti_affinity_false_count) AS total INTO longhorn_upgrade_responder.autogen.by_longhorn_volume_replica_soft_anti_affinity_false_count_mean_down_sampling FROM longhorn_upgrade_responder.autogen.upgrade_request GROUP BY time(1h) END
-cq_by_longhorn_setting_snapshot_data_integrity_cronjob_down_sampling                                 CREATE CONTINUOUS QUERY cq_by_longhorn_setting_snapshot_data_integrity_cronjob_down_sampling ON longhorn_upgrade_responder BEGIN SELECT count(value) AS total INTO longhorn_upgrade_responder.autogen.by_longhorn_setting_snapshot_data_integrity_cronjob_count_down_sampling FROM longhorn_upgrade_responder.autogen.upgrade_request GROUP BY time(1h), longhorn_setting_snapshot_data_integrity_cronjob END
-cq_by_longhorn_setting_orphan_auto_deletion_down_sampling                                            CREATE CONTINUOUS QUERY cq_by_longhorn_setting_orphan_auto_deletion_down_sampling ON longhorn_upgrade_responder BEGIN SELECT count(value) AS total INTO longhorn_upgrade_responder.autogen.by_longhorn_setting_orphan_auto_deletion_count_down_sampling FROM longhorn_upgrade_responder.autogen.upgrade_request GROUP BY time(1h), longhorn_setting_orphan_auto_deletion END
-cq_by_longhorn_setting_guaranteed_instance_manager_cpu_down_sampling                                 CREATE CONTINUOUS QUERY cq_by_longhorn_setting_guaranteed_instance_manager_cpu_down_sampling ON longhorn_upgrade_responder BEGIN SELECT count(value) AS total INTO longhorn_upgrade_responder.autogen.by_longhorn_setting_guaranteed_instance_manager_cpu_count_down_sampling FROM longhorn_upgrade_responder.autogen.upgrade_request GROUP BY time(1h), longhorn_setting_guaranteed_instance_manager_cpu END
-cq_by_longhorn_volume_snapshot_data_integrity_disabled_count_down_sampling                           CREATE CONTINUOUS QUERY cq_by_longhorn_volume_snapshot_data_integrity_disabled_count_down_sampling ON longhorn_upgrade_responder BEGIN SELECT mean(longhorn_volume_snapshot_data_integrity_disabled_count) AS total INTO longhorn_upgrade_responder.autogen.by_longhorn_volume_snapshot_data_integrity_disabled_count_mean_down_sampling FROM longhorn_upgrade_responder.autogen.upgrade_request GROUP BY time(1h) END
-cq_by_longhorn_volume_offline_replica_rebuilding_enabled_count_down_sampling                         CREATE CONTINUOUS QUERY cq_by_longhorn_volume_offline_replica_rebuilding_enabled_count_down_sampling ON longhorn_upgrade_responder BEGIN SELECT mean(longhorn_volume_offline_replica_rebuilding_enabled_count) AS total INTO longhorn_upgrade_responder.autogen.by_longhorn_volume_offline_replica_rebuilding_enabled_count_mean_down_sampling FROM longhorn_upgrade_responder.autogen.upgrade_request GROUP BY time(1h) END
-cq_by_longhorn_setting_snapshot_data_integrity_down_sampling                                         CREATE CONTINUOUS QUERY cq_by_longhorn_setting_snapshot_data_integrity_down_sampling ON longhorn_upgrade_responder BEGIN SELECT count(value) AS total INTO longhorn_upgrade_responder.autogen.by_longhorn_setting_snapshot_data_integrity_count_down_sampling FROM longhorn_upgrade_responder.autogen.upgrade_request GROUP BY time(1h), longhorn_setting_snapshot_data_integrity END
-cq_by_longhorn_setting_replica_replenishment_wait_interval_down_sampling                             CREATE CONTINUOUS QUERY cq_by_longhorn_setting_replica_replenishment_wait_interval_down_sampling ON longhorn_upgrade_responder BEGIN SELECT mean(longhorn_setting_replica_replenishment_wait_interval) AS total INTO longhorn_upgrade_responder.autogen.by_longhorn_setting_replica_replenishment_wait_interval_mean_down_sampling FROM longhorn_upgrade_responder.autogen.upgrade_request GROUP BY time(1h) END
-cq_by_longhorn_setting_replica_file_sync_http_client_timeout_down_sampling                           CREATE CONTINUOUS QUERY cq_by_longhorn_setting_replica_file_sync_http_client_timeout_down_sampling ON longhorn_upgrade_responder BEGIN SELECT mean(longhorn_setting_replica_file_sync_http_client_timeout) AS total INTO longhorn_upgrade_responder.autogen.by_longhorn_setting_replica_file_sync_http_client_timeout_mean_down_sampling FROM longhorn_upgrade_responder.autogen.upgrade_request GROUP BY time(1h) END
-cq_by_longhorn_setting_v2_data_engine_down_sampling                                                  CREATE CONTINUOUS QUERY cq_by_longhorn_setting_v2_data_engine_down_sampling ON longhorn_upgrade_responder BEGIN SELECT count(value) AS total INTO longhorn_upgrade_responder.autogen.by_longhorn_setting_v2_data_engine_count_down_sampling FROM longhorn_upgrade_responder.autogen.upgrade_request GROUP BY time(1h), longhorn_setting_v2_data_engine END
-cq_by_longhorn_setting_auto_delete_pod_when_volume_detached_unexpectedly_down_sampling               CREATE CONTINUOUS QUERY cq_by_longhorn_setting_auto_delete_pod_when_volume_detached_unexpectedly_down_sampling ON longhorn_upgrade_responder BEGIN SELECT count(value) AS total INTO longhorn_upgrade_responder.autogen.by_longhorn_setting_auto_delete_pod_when_volume_detached_unexpectedly_count_down_sampling FROM longhorn_upgrade_responder.autogen.upgrade_request GROUP BY time(1h), longhorn_setting_auto_delete_pod_when_volume_detached_unexpectedly END
-cq_by_longhorn_volume_data_locality_disabled_count_down_sampling                                     CREATE CONTINUOUS QUERY cq_by_longhorn_volume_data_locality_disabled_count_down_sampling ON longhorn_upgrade_responder BEGIN SELECT mean(longhorn_volume_data_locality_disabled_count) AS total INTO longhorn_upgrade_responder.autogen.by_longhorn_volume_data_locality_disabled_count_mean_down_sampling FROM longhorn_upgrade_responder.autogen.upgrade_request GROUP BY time(1h) END
-cq_by_longhorn_setting_default_replica_count_down_sampling                                           CREATE CONTINUOUS QUERY cq_by_longhorn_setting_default_replica_count_down_sampling ON longhorn_upgrade_responder BEGIN SELECT mean(longhorn_setting_default_replica_count) AS total INTO longhorn_upgrade_responder.autogen.by_longhorn_setting_default_replica_count_mean_down_sampling FROM longhorn_upgrade_responder.autogen.upgrade_request GROUP BY time(1h) END
-cq_by_longhorn_setting_concurrent_volume_backup_restore_per_node_limit_down_sampling                 CREATE CONTINUOUS QUERY cq_by_longhorn_setting_concurrent_volume_backup_restore_per_node_limit_down_sampling ON longhorn_upgrade_responder BEGIN SELECT mean(longhorn_setting_concurrent_volume_backup_restore_per_node_limit) AS total INTO longhorn_upgrade_responder.autogen.by_longhorn_setting_concurrent_volume_backup_restore_per_node_limit_mean_down_sampling FROM longhorn_upgrade_responder.autogen.upgrade_request GROUP BY time(1h) END
-cq_by_longhorn_volume_data_locality_best_effort_count_down_sampling                                  CREATE CONTINUOUS QUERY cq_by_longhorn_volume_data_locality_best_effort_count_down_sampling ON longhorn_upgrade_responder BEGIN SELECT mean(longhorn_volume_data_locality_best_effort_count) AS total INTO longhorn_upgrade_responder.autogen.by_longhorn_volume_data_locality_best_effort_count_mean_down_sampling FROM longhorn_upgrade_responder.autogen.upgrade_request GROUP BY time(1h) END
-cq_by_longhorn_setting_concurrent_replica_rebuild_per_node_limit_down_sampling                       CREATE CONTINUOUS QUERY cq_by_longhorn_setting_concurrent_replica_rebuild_per_node_limit_down_sampling ON longhorn_upgrade_responder BEGIN SELECT mean(longhorn_setting_concurrent_replica_rebuild_per_node_limit) AS total INTO longhorn_upgrade_responder.autogen.by_longhorn_setting_concurrent_replica_rebuild_per_node_limit_mean_down_sampling FROM longhorn_upgrade_responder.autogen.upgrade_request GROUP BY time(1h) END
-cq_by_kubernetes_version_down_sampling                                                               CREATE CONTINUOUS QUERY cq_by_kubernetes_version_down_sampling ON longhorn_upgrade_responder BEGIN SELECT count(value) AS total INTO longhorn_upgrade_responder.autogen.by_kubernetes_version_count_down_sampling FROM longhorn_upgrade_responder.autogen.upgrade_request GROUP BY time(1h), kubernetes_version END
-cq_by_longhorn_setting_replica_auto_balance_down_sampling                                            CREATE CONTINUOUS QUERY cq_by_longhorn_setting_replica_auto_balance_down_sampling ON longhorn_upgrade_responder BEGIN SELECT count(value) AS total INTO longhorn_upgrade_responder.autogen.by_longhorn_setting_replica_auto_balance_count_down_sampling FROM longhorn_upgrade_responder.autogen.upgrade_request GROUP BY time(1h), longhorn_setting_replica_auto_balance END
-cq_by_longhorn_volume_replica_auto_balance_disabled_count_down_sampling                              CREATE CONTINUOUS QUERY cq_by_longhorn_volume_replica_auto_balance_disabled_count_down_sampling ON longhorn_upgrade_responder BEGIN SELECT mean(longhorn_volume_replica_auto_balance_disabled_count) AS total INTO longhorn_upgrade_responder.autogen.by_longhorn_volume_replica_auto_balance_disabled_count_mean_down_sampling FROM longhorn_upgrade_responder.autogen.upgrade_request GROUP BY time(1h) END
-cq_by_longhorn_volume_frontend_blockdev_count_down_sampling                                          CREATE CONTINUOUS QUERY cq_by_longhorn_volume_frontend_blockdev_count_down_sampling ON longhorn_upgrade_responder BEGIN SELECT mean(longhorn_volume_frontend_blockdev_count) AS total INTO longhorn_upgrade_responder.autogen.by_longhorn_volume_frontend_blockdev_count_mean_down_sampling FROM longhorn_upgrade_responder.autogen.upgrade_request GROUP BY time(1h) END
-cq_by_longhorn_setting_allow_recurring_job_while_volume_detached_down_sampling                       CREATE CONTINUOUS QUERY cq_by_longhorn_setting_allow_recurring_job_while_volume_detached_down_sampling ON longhorn_upgrade_responder BEGIN SELECT count(value) AS total INTO longhorn_upgrade_responder.autogen.by_longhorn_setting_allow_recurring_job_while_volume_detached_count_down_sampling FROM longhorn_upgrade_responder.autogen.upgrade_request GROUP BY time(1h), longhorn_setting_allow_recurring_job_while_volume_detached END
-cq_by_longhorn_node_count_down_sampling                                                              CREATE CONTINUOUS QUERY cq_by_longhorn_node_count_down_sampling ON longhorn_upgrade_responder BEGIN SELECT mean(longhorn_node_count) AS total INTO longhorn_upgrade_responder.autogen.by_longhorn_node_count_mean_down_sampling FROM longhorn_upgrade_responder.autogen.upgrade_request GROUP BY time(1h) END
-cq_by_longhorn_setting_storage_network_down_sampling                                                 CREATE CONTINUOUS QUERY cq_by_longhorn_setting_storage_network_down_sampling ON longhorn_upgrade_responder BEGIN SELECT count(value) AS total INTO longhorn_upgrade_responder.autogen.by_longhorn_setting_storage_network_count_down_sampling FROM longhorn_upgrade_responder.autogen.upgrade_request GROUP BY time(1h), longhorn_setting_storage_network END
-cq_by_longhorn_volume_average_actual_size_bytes_down_sampling                                        CREATE CONTINUOUS QUERY cq_by_longhorn_volume_average_actual_size_bytes_down_sampling ON longhorn_upgrade_responder BEGIN SELECT mean(longhorn_volume_average_actual_size_bytes) AS total INTO longhorn_upgrade_responder.autogen.by_longhorn_volume_average_actual_size_bytes_mean_down_sampling FROM longhorn_upgrade_responder.autogen.upgrade_request GROUP BY time(1h) END
-cq_by_longhorn_volume_offline_replica_rebuilding_disabled_count_down_sampling                        CREATE CONTINUOUS QUERY cq_by_longhorn_volume_offline_replica_rebuilding_disabled_count_down_sampling ON longhorn_upgrade_responder BEGIN SELECT mean(longhorn_volume_offline_replica_rebuilding_disabled_count) AS total INTO longhorn_upgrade_responder.autogen.by_longhorn_volume_offline_replica_rebuilding_disabled_count_mean_down_sampling FROM longhorn_upgrade_responder.autogen.upgrade_request GROUP BY time(1h) END
-cq_by_longhorn_setting_replica_soft_anti_affinity_down_sampling                                      CREATE CONTINUOUS QUERY cq_by_longhorn_setting_replica_soft_anti_affinity_down_sampling ON longhorn_upgrade_responder BEGIN SELECT count(value) AS total INTO longhorn_upgrade_responder.autogen.by_longhorn_setting_replica_soft_anti_affinity_count_down_sampling FROM longhorn_upgrade_responder.autogen.upgrade_request GROUP BY time(1h), longhorn_setting_replica_soft_anti_affinity END
-cq_by_kubernetes_node_provider_down_sampling                                                         CREATE CONTINUOUS QUERY cq_by_kubernetes_node_provider_down_sampling ON longhorn_upgrade_responder BEGIN SELECT count(value) AS total INTO longhorn_upgrade_responder.autogen.by_kubernetes_node_provider_count_down_sampling FROM longhorn_upgrade_responder.autogen.upgrade_request GROUP BY time(1h), kubernetes_node_provider END
-cq_by_longhorn_setting_backing_image_recovery_wait_interval_down_sampling                            CREATE CONTINUOUS QUERY cq_by_longhorn_setting_backing_image_recovery_wait_interval_down_sampling ON longhorn_upgrade_responder BEGIN SELECT mean(longhorn_setting_backing_image_recovery_wait_interval) AS total INTO longhorn_upgrade_responder.autogen.by_longhorn_setting_backing_image_recovery_wait_interval_mean_down_sampling FROM longhorn_upgrade_responder.autogen.upgrade_request GROUP BY time(1h) END
-cq_by_longhorn_setting_node_down_pod_deletion_policy_down_sampling                                   CREATE CONTINUOUS QUERY cq_by_longhorn_setting_node_down_pod_deletion_policy_down_sampling ON longhorn_upgrade_responder BEGIN SELECT count(value) AS total INTO longhorn_upgrade_responder.autogen.by_longhorn_setting_node_down_pod_deletion_policy_count_down_sampling FROM longhorn_upgrade_responder.autogen.upgrade_request GROUP BY time(1h), longhorn_setting_node_down_pod_deletion_policy END
-cq_by_longhorn_setting_storage_minimal_available_percentage_down_sampling                            CREATE CONTINUOUS QUERY cq_by_longhorn_setting_storage_minimal_available_percentage_down_sampling ON longhorn_upgrade_responder BEGIN SELECT mean(longhorn_setting_storage_minimal_available_percentage) AS total INTO longhorn_upgrade_responder.autogen.by_longhorn_setting_storage_minimal_available_percentage_mean_down_sampling FROM longhorn_upgrade_responder.autogen.upgrade_request GROUP BY time(1h) END
-cq_by_longhorn_setting_taint_toleration_down_sampling                                                CREATE CONTINUOUS QUERY cq_by_longhorn_setting_taint_toleration_down_sampling ON longhorn_upgrade_responder BEGIN SELECT count(value) AS total INTO longhorn_upgrade_responder.autogen.by_longhorn_setting_taint_toleration_count_down_sampling FROM longhorn_upgrade_responder.autogen.upgrade_request GROUP BY time(1h), longhorn_setting_taint_toleration END
-cq_by_longhorn_volume_access_mode_rwx_count_down_sampling                                            CREATE CONTINUOUS QUERY cq_by_longhorn_volume_access_mode_rwx_count_down_sampling ON longhorn_upgrade_responder BEGIN SELECT mean(longhorn_volume_access_mode_rwx_count) AS total INTO longhorn_upgrade_responder.autogen.by_longhorn_volume_access_mode_rwx_count_mean_down_sampling FROM longhorn_upgrade_responder.autogen.upgrade_request GROUP BY time(1h) END
-cq_by_longhorn_setting_crd_api_version_down_sampling                                                 CREATE CONTINUOUS QUERY cq_by_longhorn_setting_crd_api_version_down_sampling ON longhorn_upgrade_responder BEGIN SELECT count(value) AS total INTO longhorn_upgrade_responder.autogen.by_longhorn_setting_crd_api_version_count_down_sampling FROM longhorn_upgrade_responder.autogen.upgrade_request GROUP BY time(1h), longhorn_setting_crd_api_version END
-cq_by_longhorn_instance_manager_average_cpu_usage_milli_cores_down_sampling                          CREATE CONTINUOUS QUERY cq_by_longhorn_instance_manager_average_cpu_usage_milli_cores_down_sampling ON longhorn_upgrade_responder BEGIN SELECT mean(longhorn_instance_manager_average_cpu_usage_milli_cores) AS total INTO longhorn_upgrade_responder.autogen.by_longhorn_instance_manager_average_cpu_usage_milli_cores_mean_down_sampling FROM longhorn_upgrade_responder.autogen.upgrade_request GROUP BY time(1h) END
-```
-
-**And** Wait for couple hours.  
-**Then** Measurements created.
-```bash
-kubectl exec -it ${influxdb_pod} -- influx -execute 'SHOW MEASUREMENTS' -database="${app_name}_upgrade_responder"
-```
-Sample output:
-```
-name: measurements
-name
-----
-by_app_version_down_sampling
-by_country_code_down_sampling
-by_host_kernel_release_count_down_sampling
-by_host_os_distro_count_down_sampling
-by_kubernetes_node_provider_count_down_sampling
-by_kubernetes_version_count_down_sampling
-by_longhorn_instance_manager_average_cpu_usage_milli_cores_mean_down_sampling
-by_longhorn_instance_manager_average_memory_usage_bytes_mean_down_sampling
-by_longhorn_manager_average_cpu_usage_milli_cores_mean_down_sampling
-by_longhorn_manager_average_memory_usage_bytes_mean_down_sampling
-by_longhorn_namespace_uid_count_down_sampling
-by_longhorn_node_count_mean_down_sampling
-by_longhorn_node_disk_ssd_count_mean_down_sampling
-by_longhorn_setting_allow_recurring_job_while_volume_detached_count_down_sampling
-by_longhorn_setting_allow_volume_creation_with_degraded_availability_count_down_sampling
-by_longhorn_setting_auto_cleanup_system_generated_snapshot_count_down_sampling
-by_longhorn_setting_auto_delete_pod_when_volume_detached_unexpectedly_count_down_sampling
-by_longhorn_setting_auto_salvage_count_down_sampling
-by_longhorn_setting_backing_image_cleanup_wait_interval_mean_down_sampling
-by_longhorn_setting_backing_image_recovery_wait_interval_mean_down_sampling
-by_longhorn_setting_backup_compression_method_count_down_sampling
-by_longhorn_setting_backup_concurrent_limit_mean_down_sampling
-by_longhorn_setting_backup_target_count_down_sampling
-by_longhorn_setting_backupstore_poll_interval_mean_down_sampling
-by_longhorn_setting_concurrent_automatic_engine_upgrade_per_node_limit_mean_down_sampling
-by_longhorn_setting_concurrent_replica_rebuild_per_node_limit_mean_down_sampling
-by_longhorn_setting_concurrent_volume_backup_restore_per_node_limit_mean_down_sampling
-by_longhorn_setting_crd_api_version_count_down_sampling
-by_longhorn_setting_create_default_disk_labeled_nodes_count_down_sampling
-by_longhorn_setting_default_data_locality_count_down_sampling
-by_longhorn_setting_default_replica_count_mean_down_sampling
-by_longhorn_setting_disable_revision_counter_count_down_sampling
-by_longhorn_setting_disable_scheduling_on_cordoned_node_count_down_sampling
-by_longhorn_setting_engine_replica_timeout_mean_down_sampling
-by_longhorn_setting_failed_backup_ttl_mean_down_sampling
-by_longhorn_setting_fast_replica_rebuild_enabled_count_down_sampling
-by_longhorn_setting_guaranteed_instance_manager_cpu_count_down_sampling
-by_longhorn_setting_kubernetes_cluster_autoscaler_enabled_count_down_sampling
-by_longhorn_setting_node_down_pod_deletion_policy_count_down_sampling
-by_longhorn_setting_node_drain_policy_count_down_sampling
-by_longhorn_setting_offline_replica_rebuilding_count_down_sampling
-by_longhorn_setting_orphan_auto_deletion_count_down_sampling
-by_longhorn_setting_priority_class_count_down_sampling
-by_longhorn_setting_recurring_failed_jobs_history_limit_mean_down_sampling
-by_longhorn_setting_recurring_successful_jobs_history_limit_mean_down_sampling
-by_longhorn_setting_registry_secret_count_down_sampling
-by_longhorn_setting_remove_snapshots_during_filesystem_trim_count_down_sampling
-by_longhorn_setting_replica_auto_balance_count_down_sampling
-by_longhorn_setting_replica_file_sync_http_client_timeout_mean_down_sampling
-by_longhorn_setting_replica_replenishment_wait_interval_mean_down_sampling
-by_longhorn_setting_replica_soft_anti_affinity_count_down_sampling
-by_longhorn_setting_replica_zone_soft_anti_affinity_count_down_sampling
-by_longhorn_setting_restore_concurrent_limit_mean_down_sampling
-by_longhorn_setting_restore_volume_recurring_jobs_count_down_sampling
-by_longhorn_setting_snapshot_data_integrity_count_down_sampling
-by_longhorn_setting_snapshot_data_integrity_cronjob_count_down_sampling
-by_longhorn_setting_snapshot_data_integrity_immediate_check_after_snapshot_creation_count_down_sampling
-by_longhorn_setting_storage_minimal_available_percentage_mean_down_sampling
-by_longhorn_setting_storage_network_count_down_sampling
-by_longhorn_setting_storage_over_provisioning_percentage_mean_down_sampling
-by_longhorn_setting_storage_reserved_percentage_for_default_disk_mean_down_sampling
-by_longhorn_setting_support_bundle_failed_history_limit_mean_down_sampling
-by_longhorn_setting_system_managed_components_node_selector_count_down_sampling
-by_longhorn_setting_system_managed_pods_image_pull_policy_count_down_sampling
-by_longhorn_setting_taint_toleration_count_down_sampling
-by_longhorn_setting_v2_data_engine_count_down_sampling
-by_longhorn_volume_access_mode_rwo_count_mean_down_sampling
-by_longhorn_volume_access_mode_rwx_count_mean_down_sampling
-by_longhorn_volume_average_actual_size_bytes_mean_down_sampling
-by_longhorn_volume_average_number_of_replicas_mean_down_sampling
-by_longhorn_volume_average_size_bytes_mean_down_sampling
-by_longhorn_volume_average_snapshot_count_mean_down_sampling
-by_longhorn_volume_data_locality_best_effort_count_mean_down_sampling
-by_longhorn_volume_data_locality_disabled_count_mean_down_sampling
-by_longhorn_volume_data_locality_strict_local_count_mean_down_sampling
-by_longhorn_volume_frontend_blockdev_count_mean_down_sampling
-by_longhorn_volume_offline_replica_rebuilding_disabled_count_mean_down_sampling
-by_longhorn_volume_offline_replica_rebuilding_enabled_count_mean_down_sampling
-by_longhorn_volume_replica_auto_balance_disabled_count_mean_down_sampling
-by_longhorn_volume_replica_soft_anti_affinity_false_count_mean_down_sampling
-by_longhorn_volume_replica_zone_soft_anti_affinity_true_count_mean_down_sampling
-by_longhorn_volume_restore_volume_recurring_job_false_count_mean_down_sampling
-by_longhorn_volume_snapshot_data_integrity_disabled_count_mean_down_sampling
-by_longhorn_volume_snapshot_data_integrity_fast_check_count_mean_down_sampling
-by_longhorn_volume_unmap_mark_snap_chain_removed_false_count_mean_down_sampling
-by_value_count_down_sampling
-upgrade_request
-upgrade_request_down_sampling
-```
-
-**When** [Setup Grafana upgrade responder panels](https://github.com/longhorn/upgrade-responder#2-creating-grafana-dashboard).  
-**Then** Should see visualized data.
