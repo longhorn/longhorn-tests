@@ -16,7 +16,8 @@
 Test step Given Patch build and deploy Longhorn.
 diff --git a/controller/setting_controller.go b/controller/setting_controller.go index de77b7246..ac6263ac5 100644 --- a/controller/setting_controller.go +++ b/controller/setting_controller.go @@ -49,7 +49,7 @@ const ( var ( upgradeCheckInterval = time.Hour settingControllerResyncPeriod = time.Hour -	checkUpgradeURL = &amp;#34;https://longhorn-upgrade-responder.rancher.io/v1/checkupgrade&amp;#34; +	checkUpgradeURL = &amp;#34;http://longhorn-upgrade-responder.default.svc.cluster.local:8314/v1/checkupgrade&amp;#34; ) type SettingController struct { Match the checkUpgradeURL with the application name: http://&amp;lt;APP_NAME&amp;gt;-upgrade-responder.default.svc.cluster.local:8314/v1/checkupgrade
 And Deploy upgrade responder stack.
-When Wait 1~2 hours for collection data to send to the influxDB database.</description>
+And Update upgrade-responder-configmap-&amp;lt;app_name&amp;gt;-upgrade-responder ConfigMap request-schema.json:
+kubectl edit cm/`kubectl get cm | grep upgrade-responder-configmap | awk &amp;#39;{print $1}&amp;#39;` request-schema.</description>
     </item>
     
     <item>
