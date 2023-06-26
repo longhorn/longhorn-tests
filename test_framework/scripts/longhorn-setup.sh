@@ -56,6 +56,11 @@ create_admin_service_account(){
 }
 
 
+apply_selinux_workaround(){
+  kubectl apply -f "https://raw.githubusercontent.com/longhorn/longhorn/master/deploy/prerequisite/longhorn-iscsi-selinux-workaround.yaml"
+}
+
+
 install_iscsi(){
   kubectl apply -f "https://raw.githubusercontent.com/longhorn/longhorn/master/deploy/prerequisite/longhorn-iscsi-installation.yaml"
 }
@@ -417,6 +422,10 @@ run_longhorn_tests(){
 
 main(){
   set_kubeconfig_envvar ${TF_VAR_arch} ${TF_VAR_tf_workspace}
+
+  if [[ ${DISTRO} == "rhel" ]] || [[ ${DISTRO} == "rockylinux" ]] || [[ ${DISTRO} == "oracle" ]]; then
+    apply_selinux_workaround
+  fi
 
   # set debugging mode off to avoid leaking aws secrets to the logs.
   # DON'T REMOVE!
