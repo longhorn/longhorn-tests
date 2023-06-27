@@ -305,6 +305,11 @@ def test_upgrade(longhorn_upgrade_type,
         if v.name != vol_rebuild_name:
             volume = client.by_id_volume(v.name)
             volume.detach()
+            # when upgrading from v1.4.x to v1.5.x, attached volumes without
+            # any workload pod will be automatically added the volumeAttachment
+            # ticket with the ID "longhorn-ui". Therefore, we need to use that
+            # ticket ID for detach call here
+            volume.detach(attachmentID="longhorn-ui")
             wait_for_volume_detached(client, v.name)
 
     engineimages = client.list_engine_image()
