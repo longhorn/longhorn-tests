@@ -4745,7 +4745,7 @@ def prepare_pod_with_data_in_mb(
         data_size_in_mb=DATA_SIZE_IN_MB_1, add_liveness_probe=True):# NOQA:
 
     pod_name = volume_name + &#34;-pod&#34;
-    pv_name = volume_name + &#34;-pv&#34;
+    pv_name = volume_name
     pvc_name = volume_name + &#34;-pvc&#34;
 
     pod = pod_make(name=pod_name)
@@ -10310,7 +10310,7 @@ def pod_make(request):
         data_size_in_mb=DATA_SIZE_IN_MB_1, add_liveness_probe=True):# NOQA:
 
     pod_name = volume_name + &#34;-pod&#34;
-    pv_name = volume_name + &#34;-pv&#34;
+    pv_name = volume_name
     pvc_name = volume_name + &#34;-pvc&#34;
 
     pod = pod_make(name=pod_name)
