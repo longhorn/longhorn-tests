@@ -71,6 +71,7 @@ from common import wait_for_engine_image_ref_count
 from common import SETTING_CONCURRENT_AUTO_ENGINE_UPGRADE_NODE_LIMIT
 from common import update_setting
 from common import get_volume_endpoint, write_volume_dev_random_mb_data
+from common import wait_for_backup_volume_backing_image_synced
 
 from backupstore import set_random_backupstore # NOQA
 from backupstore import backupstore_cleanup
@@ -438,6 +439,11 @@ def ha_backup_deletion_recovery_test(client, volume_name, size, backing_image=""
 
     volume.snapshotBackup(name=snap2.name)
     wait_for_backup_completion(client, volume_name, snap2.name)
+    if backing_image != "":
+        wait_for_backup_volume_backing_image_synced(
+            client, volume_name, backing_image
+        )
+
     _, b = find_backup(client, volume_name, snap2.name)
 
     res_name = common.generate_volume_name()
