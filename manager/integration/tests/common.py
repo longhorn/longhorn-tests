@@ -2758,6 +2758,28 @@ def check_volume_endpoint(v):
     return endpoint
 
 
+def wait_for_backup_volume_backing_image_synced(
+        client, volume_name, backing_image, retry_count=RETRY_BACKUP_COUNTS):
+    def find_backup_volume():
+        bvs = client.list_backupVolume()
+        for bv in bvs:
+            if bv.name == volume_name:
+                return bv
+        return None
+    completed = False
+    for _ in range(retry_count):
+        bv = find_backup_volume()
+        assert bv is not None
+        if bv.backingImageName == backing_image:
+            completed = True
+            break
+        time.sleep(RETRY_BACKUP_INTERVAL)
+    assert completed is True, f" Backup Volume = {bv}," \
+                              f" Backing Image = {backing_image}," \
+                              f" Volume = {volume_name}"
+    return bv
+
+
 def wait_for_backup_completion(client, volume_name, snapshot_name=None,
                                retry_count=RETRY_BACKUP_COUNTS):
     completed = False
