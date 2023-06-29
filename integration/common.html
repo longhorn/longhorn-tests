@@ -2929,6 +2929,28 @@ def check_volume_endpoint(v):
     return endpoint
 
 
+def wait_for_backup_volume_backing_image_synced(
+        client, volume_name, backing_image, retry_count=RETRY_BACKUP_COUNTS):
+    def find_backup_volume():
+        bvs = client.list_backupVolume()
+        for bv in bvs:
+            if bv.name == volume_name:
+                return bv
+        return None
+    completed = False
+    for _ in range(retry_count):
+        bv = find_backup_volume()
+        assert bv is not None
+        if bv.backingImageName == backing_image:
+            completed = True
+            break
+        time.sleep(RETRY_BACKUP_INTERVAL)
+    assert completed is True, f&#34; Backup Volume = {bv},&#34; \
+                              f&#34; Backing Image = {backing_image},&#34; \
+                              f&#34; Volume = {volume_name}&#34;
+    return bv
+
+
 def wait_for_backup_completion(client, volume_name, snapshot_name=None,
                                retry_count=RETRY_BACKUP_COUNTS):
     completed = False
@@ -12235,6 +12257,37 @@ ref: <a href="https://github.com/longhorn/longhorn/issues/4814">https://github.c
     assert bv is not None, &#34;failed to find backup volume &#34; + vol_name</code></pre>
 </details>
 </dd>
+<dt id="tests.common.wait_for_backup_volume_backing_image_synced"><code class="name flex">
+<span>def <span class="ident">wait_for_backup_volume_backing_image_synced</span></span>(<span>client, volume_name, backing_image, retry_count=300)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def wait_for_backup_volume_backing_image_synced(
+        client, volume_name, backing_image, retry_count=RETRY_BACKUP_COUNTS):
+    def find_backup_volume():
+        bvs = client.list_backupVolume()
+        for bv in bvs:
+            if bv.name == volume_name:
+                return bv
+        return None
+    completed = False
+    for _ in range(retry_count):
+        bv = find_backup_volume()
+        assert bv is not None
+        if bv.backingImageName == backing_image:
+            completed = True
+            break
+        time.sleep(RETRY_BACKUP_INTERVAL)
+    assert completed is True, f&#34; Backup Volume = {bv},&#34; \
+                              f&#34; Backing Image = {backing_image},&#34; \
+                              f&#34; Volume = {volume_name}&#34;
+    return bv</code></pre>
+</details>
+</dd>
 <dt id="tests.common.wait_for_backup_volume_delete"><code class="name flex">
 <span>def <span class="ident">wait_for_backup_volume_delete</span></span>(<span>client, name)</span>
 </code></dt>
@@ -14843,6 +14896,7 @@ from the args and kwargs arguments, respectively.</p></div>
 <li><code><a title="tests.common.wait_for_backup_target_available" href="#tests.common.wait_for_backup_target_available">wait_for_backup_target_available</a></code></li>
 <li><code><a title="tests.common.wait_for_backup_to_start" href="#tests.common.wait_for_backup_to_start">wait_for_backup_to_start</a></code></li>
 <li><code><a title="tests.common.wait_for_backup_volume" href="#tests.common.wait_for_backup_volume">wait_for_backup_volume</a></code></li>
+<li><code><a title="tests.common.wait_for_backup_volume_backing_image_synced" href="#tests.common.wait_for_backup_volume_backing_image_synced">wait_for_backup_volume_backing_image_synced</a></code></li>
 <li><code><a title="tests.common.wait_for_backup_volume_delete" href="#tests.common.wait_for_backup_volume_delete">wait_for_backup_volume_delete</a></code></li>
 <li><code><a title="tests.common.wait_for_cron_job_count" href="#tests.common.wait_for_cron_job_count">wait_for_cron_job_count</a></code></li>
 <li><code><a title="tests.common.wait_for_cron_job_create" href="#tests.common.wait_for_cron_job_create">wait_for_cron_job_create</a></code></li>
