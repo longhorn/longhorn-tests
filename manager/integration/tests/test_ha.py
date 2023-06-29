@@ -77,6 +77,7 @@ from common import wait_for_engine_image_ref_count
 from common import SETTING_CONCURRENT_AUTO_ENGINE_UPGRADE_NODE_LIMIT
 from common import update_setting
 from common import wait_for_backup_volume_backing_image_synced
+from common import RETRY_COMMAND_COUNT
 
 from backupstore import set_random_backupstore # NOQA
 from backupstore import backupstore_cleanup
@@ -3384,8 +3385,16 @@ def test_recovery_from_im_deletion(client, core_api, volume_name, make_deploymen
     wait_pod(pod_names[0])
 
     command = 'cat /data/test'
-    to_be_verified_data = exec_command_in_pod(
-        core_api, command, pod_names[0], 'default')
+    for i in range(RETRY_COMMAND_COUNT):
+        try:
+            to_be_verified_data = exec_command_in_pod(
+                core_api, command, pod_names[0], 'default')
+            if test_data == to_be_verified_data:
+                break
+        except Exception as e:
+            print(e)
+        finally:
+            time.sleep(RETRY_INTERVAL)
 
     # Step8
     assert test_data == to_be_verified_data
