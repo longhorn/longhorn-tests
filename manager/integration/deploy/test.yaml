@@ -104,6 +104,8 @@ spec:
       mountPath: /tmp/test-report
   - name: longhorn-test-report
     image: busybox:1.34.0
+    securityContext:
+      privileged: true
     command: [ "tail", "-f", "/dev/null" ]
     volumeMounts:
     - name: test-report
