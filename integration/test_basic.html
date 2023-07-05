@@ -741,6 +741,70 @@ def test_backup_block_deletion(set_random_backupstore, client, core_api, volume_
     delete_backup_volume(client, volume_name)
 
 
+def test_dr_volume_activated_with_failed_replica(set_random_backupstore, client, core_api, volume_name):  # NOQA
+    &#34;&#34;&#34;
+    Test DR volume activated with a failed replica
+
+    Context:
+
+    Make sure that DR volume could be activated
+    as long as there is a ready replica.
+
+    Steps:
+
+    1.  Create a volume and attach to a node.
+    2.  Create a backup of the volume with writing some data.
+    3.  Create a DR volume from the backup.
+    4.  Disable the replica rebuilding.
+    5.  Enable the setting `allow-volume-creation-with-degraded-availability`
+    6.  Make a replica failed.
+    7.  Activate the DR volume.
+    8.  Enable the replica rebuilding.
+    9.  Attach the volume to a node.
+    10. Check if data is correct.
+    &#34;&#34;&#34;
+    backupstore_cleanup(client)
+
+    host_id = get_self_host_id()
+    vol = create_and_check_volume(client, volume_name, 2, SIZE)
+    vol.attach(hostId=host_id)
+    vol = common.wait_for_volume_healthy(client, volume_name)
+
+    data = {&#39;pos&#39;: 0, &#39;len&#39;: 2 * BACKUP_BLOCK_SIZE,
+            &#39;content&#39;: common.generate_random_data(2 * BACKUP_BLOCK_SIZE)}
+    _, backup, _, data = create_backup(client, volume_name, data)
+
+    dr_vol_name = &#34;dr-&#34; + volume_name
+    dr_vol = client.create_volume(name=dr_vol_name, size=SIZE,
+                                  numberOfReplicas=2, fromBackup=backup.url,
+                                  frontend=&#34;&#34;, standby=True)
+    check_volume_last_backup(client, dr_vol_name, backup.name)
+    wait_for_backup_restore_completed(client, dr_vol_name, backup.name)
+
+    common.update_setting(
+        client, common.SETTING_CONCURRENT_REPLICA_REBUILD_PER_NODE_LIMIT, &#34;0&#34;
+    )
+    common.update_setting(client, common.SETTING_DEGRADED_AVAILABILITY, &#34;true&#34;)
+
+    dr_vol = client.by_id_volume(dr_vol_name)
+    failed_replica = dr_vol.replicas[0]
+    crash_replica_processes(client, core_api, dr_vol_name,
+                            replicas=[failed_replica])
+    dr_vol = wait_for_volume_degraded(client, dr_vol_name)
+
+    activate_standby_volume(client, dr_vol_name)
+
+    common.update_setting(
+        client, common.SETTING_CONCURRENT_REPLICA_REBUILD_PER_NODE_LIMIT, &#34;5&#34;
+    )
+
+    dr_vol = client.by_id_volume(dr_vol_name)
+    dr_vol.attach(hostId=host_id)
+    dr_vol = common.wait_for_volume_healthy(client, dr_vol_name)
+
+    check_volume_data(dr_vol, data, False)
+
+
 def test_dr_volume_with_backup_block_deletion(set_random_backupstore, client, core_api, volume_name):  # NOQA
     &#34;&#34;&#34;
     Test DR volume last backup after block deletion.
@@ -8635,6 +8699,95 @@ And "reason" of volume restore condition should be "RestoreFailure"</li>
     cleanup_volume(client, volume)</code></pre>
 </details>
 </dd>
+<dt id="tests.test_basic.test_dr_volume_activated_with_failed_replica"><code class="name flex">
+<span>def <span class="ident">test_dr_volume_activated_with_failed_replica</span></span>(<span>set_random_backupstore, client, core_api, volume_name)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test DR volume activated with a failed replica</p>
+<p>Context:</p>
+<p>Make sure that DR volume could be activated
+as long as there is a ready replica.</p>
+<p>Steps:</p>
+<ol>
+<li>Create a volume and attach to a node.</li>
+<li>Create a backup of the volume with writing some data.</li>
+<li>Create a DR volume from the backup.</li>
+<li>Disable the replica rebuilding.</li>
+<li>Enable the setting <code>allow-volume-creation-with-degraded-availability</code></li>
+<li>Make a replica failed.</li>
+<li>Activate the DR volume.</li>
+<li>Enable the replica rebuilding.</li>
+<li>Attach the volume to a node.</li>
+<li>Check if data is correct.</li>
+</ol></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def test_dr_volume_activated_with_failed_replica(set_random_backupstore, client, core_api, volume_name):  # NOQA
+    &#34;&#34;&#34;
+    Test DR volume activated with a failed replica
+
+    Context:
+
+    Make sure that DR volume could be activated
+    as long as there is a ready replica.
+
+    Steps:
+
+    1.  Create a volume and attach to a node.
+    2.  Create a backup of the volume with writing some data.
+    3.  Create a DR volume from the backup.
+    4.  Disable the replica rebuilding.
+    5.  Enable the setting `allow-volume-creation-with-degraded-availability`
+    6.  Make a replica failed.
+    7.  Activate the DR volume.
+    8.  Enable the replica rebuilding.
+    9.  Attach the volume to a node.
+    10. Check if data is correct.
+    &#34;&#34;&#34;
+    backupstore_cleanup(client)
+
+    host_id = get_self_host_id()
+    vol = create_and_check_volume(client, volume_name, 2, SIZE)
+    vol.attach(hostId=host_id)
+    vol = common.wait_for_volume_healthy(client, volume_name)
+
+    data = {&#39;pos&#39;: 0, &#39;len&#39;: 2 * BACKUP_BLOCK_SIZE,
+            &#39;content&#39;: common.generate_random_data(2 * BACKUP_BLOCK_SIZE)}
+    _, backup, _, data = create_backup(client, volume_name, data)
+
+    dr_vol_name = &#34;dr-&#34; + volume_name
+    dr_vol = client.create_volume(name=dr_vol_name, size=SIZE,
+                                  numberOfReplicas=2, fromBackup=backup.url,
+                                  frontend=&#34;&#34;, standby=True)
+    check_volume_last_backup(client, dr_vol_name, backup.name)
+    wait_for_backup_restore_completed(client, dr_vol_name, backup.name)
+
+    common.update_setting(
+        client, common.SETTING_CONCURRENT_REPLICA_REBUILD_PER_NODE_LIMIT, &#34;0&#34;
+    )
+    common.update_setting(client, common.SETTING_DEGRADED_AVAILABILITY, &#34;true&#34;)
+
+    dr_vol = client.by_id_volume(dr_vol_name)
+    failed_replica = dr_vol.replicas[0]
+    crash_replica_processes(client, core_api, dr_vol_name,
+                            replicas=[failed_replica])
+    dr_vol = wait_for_volume_degraded(client, dr_vol_name)
+
+    activate_standby_volume(client, dr_vol_name)
+
+    common.update_setting(
+        client, common.SETTING_CONCURRENT_REPLICA_REBUILD_PER_NODE_LIMIT, &#34;5&#34;
+    )
+
+    dr_vol = client.by_id_volume(dr_vol_name)
+    dr_vol.attach(hostId=host_id)
+    dr_vol = common.wait_for_volume_healthy(client, dr_vol_name)
+
+    check_volume_data(dr_vol, data, False)</code></pre>
+</details>
+</dd>
 <dt id="tests.test_basic.test_dr_volume_with_all_backup_blocks_deleted"><code class="name flex">
 <span>def <span class="ident">test_dr_volume_with_all_backup_blocks_deleted</span></span>(<span>set_random_backupstore, client, core_api, volume_name)</span>
 </code></dt>
@@ -12313,6 +12466,7 @@ the format <strong><em>*rw</em></strong>*</li>
 <li><code><a title="tests.test_basic.test_default_storage_class_syncup" href="#tests.test_basic.test_default_storage_class_syncup">test_default_storage_class_syncup</a></code></li>
 <li><code><a title="tests.test_basic.test_delete_backup_during_restoring_volume" href="#tests.test_basic.test_delete_backup_during_restoring_volume">test_delete_backup_during_restoring_volume</a></code></li>
 <li><code><a title="tests.test_basic.test_deleting_backup_volume" href="#tests.test_basic.test_deleting_backup_volume">test_deleting_backup_volume</a></code></li>
+<li><code><a title="tests.test_basic.test_dr_volume_activated_with_failed_replica" href="#tests.test_basic.test_dr_volume_activated_with_failed_replica">test_dr_volume_activated_with_failed_replica</a></code></li>
 <li><code><a title="tests.test_basic.test_dr_volume_with_all_backup_blocks_deleted" href="#tests.test_basic.test_dr_volume_with_all_backup_blocks_deleted">test_dr_volume_with_all_backup_blocks_deleted</a></code></li>
 <li><code><a title="tests.test_basic.test_dr_volume_with_backup_block_deletion" href="#tests.test_basic.test_dr_volume_with_backup_block_deletion">test_dr_volume_with_backup_block_deletion</a></code></li>
 <li><code><a title="tests.test_basic.test_dr_volume_with_backup_block_deletion_abort_during_backup_in_progress" href="#tests.test_basic.test_dr_volume_with_backup_block_deletion_abort_during_backup_in_progress">test_dr_volume_with_backup_block_deletion_abort_during_backup_in_progress</a></code></li>
