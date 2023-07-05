@@ -1454,6 +1454,35 @@ def storage_class(request):
 
 
 @pytest.fixture
+def crypto_secret(request):
+    manifest = {
+        'apiVersion': 'v1',
+        'kind': 'Secret',
+        'metadata': {
+            'name': 'longhorn-crypto',
+            'namespace': 'longhorn-system',
+        },
+        'stringData': {
+            'CRYPTO_KEY_VALUE': 'simple',
+            'CRYPTO_KEY_PROVIDER': 'secret'
+        }
+    }
+
+    def finalizer():
+        api = get_core_api_client()
+        try:
+            api.delete_namespaced_secret(
+                name=manifest['metadata']['name'],
+                namespace=manifest['metadata']['namespace'])
+        except ApiException as e:
+            assert e.status == 404
+
+    request.addfinalizer(finalizer)
+
+    return manifest
+
+
+@pytest.fixture
 def priority_class(request):
     priority_class = {
         'apiVersion': 'scheduling.k8s.io/v1',
@@ -1608,6 +1637,7 @@ def cleanup_client():
     if backing_image_feature_supported(client):
         cleanup_all_backing_images(client)
 
+    cleanup_crypto_secret()
     cleanup_storage_class()
     if system_backup_feature_supported(client):
         system_restores_cleanup(client)
@@ -3713,6 +3743,43 @@ def wait_statefulset(statefulset_manifest):
             break
         time.sleep(DEFAULT_STATEFULSET_INTERVAL)
     assert s_set.status.ready_replicas == replicas
+
+
+def create_crypto_secret(secret_manifest):
+    api = get_core_api_client()
+    api.create_namespaced_secret(namespace=LONGHORN_NAMESPACE,
+                                 body=secret_manifest)
+
+
+def delete_crypto_secret(secret_manifest):
+    api = get_core_api_client()
+    try:
+        api.delete_namespaced_secret(secret_manifest,
+                                     body=k8sclient.V1DeleteOptions())
+    except ApiException as e:
+        assert e.status == 404
+
+
+def cleanup_crypto_secret():
+    secret_deletes = ["longhorn-crypto"]
+    api = get_core_api_client()
+    ret = api.list_namespaced_secret(namespace=LONGHORN_NAMESPACE)
+    for sc in ret.items:
+        if sc.metadata.name in secret_deletes:
+            delete_crypto_secret(sc.metadata.name)
+
+    ok = False
+    for _ in range(RETRY_COUNTS):
+        ok = True
+        ret = api.list_namespaced_secret(namespace=LONGHORN_NAMESPACE)
+        for s in ret.items:
+            if s.metadata.name in secret_deletes:
+                ok = False
+                break
+        if ok:
+            break
+        time.sleep(RETRY_INTERVAL)
+    assert ok
 
 
 def create_storage_class(sc_manifest):
