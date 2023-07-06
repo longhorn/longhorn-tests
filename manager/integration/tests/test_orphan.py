@@ -83,24 +83,24 @@ def create_orphaned_directories_on_host(volume, disk_paths, num_orphans):  # NOQ
     return paths
 
 
-def wait_for_orphan_delete(client, name):  # NOQA
-    for _ in range(RETRY_COUNTS):
-        orphans = client.list_orphan()
-        found = False
-        for orphan in orphans:
-            if orphan.name == name:
-                found = True
-                break
-        if not found:
-            break
-        time.sleep(RETRY_INTERVAL_LONG)
-    assert not found
-
-
 def delete_orphan(client, orphan_name):  # NOQA
-    orphan = client.by_id_orphan(orphan_name)
-    client.delete(orphan)
-    wait_for_orphan_delete(client, orphan_name)
+    for _ in range(RETRY_COUNTS):
+        found = False
+        try:
+            orphan = client.by_id_orphan(orphan_name)
+            client.delete(orphan)
+            time.sleep(RETRY_INTERVAL_LONG)
+            orphans = client.list_orphan()
+            for orphan in orphans:
+                if orphan.name == orphan_name:
+                    found = True
+                    break
+            if not found:
+                break
+        except Exception as e:
+            print(e)
+            break
+    assert not found
 
 
 def delete_orphans(client):  # NOQA
