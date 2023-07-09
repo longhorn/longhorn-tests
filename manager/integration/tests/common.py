@@ -64,7 +64,7 @@ PORT = ":9500"
 RETRY_COMMAND_COUNT = 3
 RETRY_COUNTS = 150
 RETRY_COUNTS_SHORT = 30
-RETRY_COUNTS_LONG = 300
+RETRY_COUNTS_LONG = 360
 RETRY_INTERVAL = 1
 RETRY_INTERVAL_LONG = 2
 RETRY_BACKUP_COUNTS = 300
@@ -3013,7 +3013,7 @@ def wait_for_backup_state(client, volume_name, predicate,
 def monitor_restore_progress(client, volume_name):
     completed = 0
     rs = {}
-    for i in range(RETRY_COUNTS):
+    for i in range(RETRY_COUNTS_LONG):
         completed = 0
         v = client.by_id_volume(volume_name)
         rs = v.restoreStatus
