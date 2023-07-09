@@ -1423,6 +1423,77 @@ def statefulset(request):
 
 
 @pytest.fixture
+def rwx_statefulset(request):
+    statefulset_manifest = {
+        'apiVersion': 'apps/v1',
+        'kind': 'StatefulSet',
+        'metadata': {
+            'name': 'rwx-test-statefulset',
+            'namespace': 'default',
+        },
+        'spec': {
+            'selector': {
+                'matchLabels': {
+                    'app': 'rwx-test-statefulset'
+                }
+            },
+            'serviceName': 'rwx-test-statefulset',
+            'replicas': 1,
+            'template': {
+                'metadata': {
+                    'labels': {
+                        'app': 'rwx-test-statefulset'
+                    }
+                },
+                'spec': {
+                    'terminationGracePeriodSeconds': 10,
+                    'containers': [{
+                        'image': 'busybox:1.34.0',
+                        'imagePullPolicy': 'IfNotPresent',
+                        'name': 'sleep',
+                        'args': [
+                            '/bin/sh',
+                            '-c',
+                            'while true;do date;sleep 5; done'
+                        ],
+                        'volumeMounts': [{
+                            'name': 'pod-data',
+                            'mountPath': '/data'
+                        }]
+                    }]
+                }
+            },
+            'volumeClaimTemplates': [{
+                'metadata': {
+                    'name': 'pod-data'
+                },
+                'spec': {
+                    'accessModes': [
+                        'ReadWriteMany'
+                    ],
+                    'storageClassName': 'longhorn',
+                    'resources': {
+                        'requests': {
+                            'storage': size_to_string(
+                                           DEFAULT_VOLUME_SIZE * Gi)
+                        }
+                    }
+                }
+            }]
+        }
+    }
+
+    def finalizer():
+        api = get_core_api_client()
+        client = get_longhorn_api_client()
+        delete_and_wait_statefulset(api, client, statefulset_manifest)
+
+    request.addfinalizer(finalizer)
+
+    return statefulset_manifest
+
+
+@pytest.fixture
 def storage_class(request):
     sc_manifest = {
         'apiVersion': 'storage.k8s.io/v1',
@@ -4361,6 +4432,7 @@ def wait_for_backup_restore_completed(client, name, backup_name):
     complete = False
     for i in range(RETRY_COUNTS):
         v = client.by_id_volume(name)
+        print(f"volume = {v}")
         if v.controllers and len(v.controllers) != 0 and \
                 v.controllers[0].lastRestoredBackup == backup_name:
             complete = True
