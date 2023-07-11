@@ -1451,6 +1451,77 @@ def statefulset(request):
 
 
 @pytest.fixture
+def rwx_statefulset(request):
+    statefulset_manifest = {
+        &#39;apiVersion&#39;: &#39;apps/v1&#39;,
+        &#39;kind&#39;: &#39;StatefulSet&#39;,
+        &#39;metadata&#39;: {
+            &#39;name&#39;: &#39;rwx-test-statefulset&#39;,
+            &#39;namespace&#39;: &#39;default&#39;,
+        },
+        &#39;spec&#39;: {
+            &#39;selector&#39;: {
+                &#39;matchLabels&#39;: {
+                    &#39;app&#39;: &#39;rwx-test-statefulset&#39;
+                }
+            },
+            &#39;serviceName&#39;: &#39;rwx-test-statefulset&#39;,
+            &#39;replicas&#39;: 1,
+            &#39;template&#39;: {
+                &#39;metadata&#39;: {
+                    &#39;labels&#39;: {
+                        &#39;app&#39;: &#39;rwx-test-statefulset&#39;
+                    }
+                },
+                &#39;spec&#39;: {
+                    &#39;terminationGracePeriodSeconds&#39;: 10,
+                    &#39;containers&#39;: [{
+                        &#39;image&#39;: &#39;busybox:1.34.0&#39;,
+                        &#39;imagePullPolicy&#39;: &#39;IfNotPresent&#39;,
+                        &#39;name&#39;: &#39;sleep&#39;,
+                        &#39;args&#39;: [
+                            &#39;/bin/sh&#39;,
+                            &#39;-c&#39;,
+                            &#39;while true;do date;sleep 5; done&#39;
+                        ],
+                        &#39;volumeMounts&#39;: [{
+                            &#39;name&#39;: &#39;pod-data&#39;,
+                            &#39;mountPath&#39;: &#39;/data&#39;
+                        }]
+                    }]
+                }
+            },
+            &#39;volumeClaimTemplates&#39;: [{
+                &#39;metadata&#39;: {
+                    &#39;name&#39;: &#39;pod-data&#39;
+                },
+                &#39;spec&#39;: {
+                    &#39;accessModes&#39;: [
+                        &#39;ReadWriteMany&#39;
+                    ],
+                    &#39;storageClassName&#39;: &#39;longhorn&#39;,
+                    &#39;resources&#39;: {
+                        &#39;requests&#39;: {
+                            &#39;storage&#39;: size_to_string(
+                                           DEFAULT_VOLUME_SIZE * Gi)
+                        }
+                    }
+                }
+            }]
+        }
+    }
+
+    def finalizer():
+        api = get_core_api_client()
+        client = get_longhorn_api_client()
+        delete_and_wait_statefulset(api, client, statefulset_manifest)
+
+    request.addfinalizer(finalizer)
+
+    return statefulset_manifest
+
+
+@pytest.fixture
 def storage_class(request):
     sc_manifest = {
         &#39;apiVersion&#39;: &#39;storage.k8s.io/v1&#39;,
@@ -4389,6 +4460,7 @@ def wait_for_backup_restore_completed(client, name, backup_name):
     complete = False
     for i in range(RETRY_COUNTS):
         v = client.by_id_volume(name)
+        print(f&#34;volume = {v}&#34;)
         if v.controllers and len(v.controllers) != 0 and \
                 v.controllers[0].lastRestoredBackup == backup_name:
             complete = True
@@ -10948,6 +11020,86 @@ output of the command executed in the pod.</p></div>
     return data_checksum, output, restore_pod_name</code></pre>
 </details>
 </dd>
+<dt id="tests.common.rwx_statefulset"><code class="name flex">
+<span>def <span class="ident">rwx_statefulset</span></span>(<span>request)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@pytest.fixture
+def rwx_statefulset(request):
+    statefulset_manifest = {
+        &#39;apiVersion&#39;: &#39;apps/v1&#39;,
+        &#39;kind&#39;: &#39;StatefulSet&#39;,
+        &#39;metadata&#39;: {
+            &#39;name&#39;: &#39;rwx-test-statefulset&#39;,
+            &#39;namespace&#39;: &#39;default&#39;,
+        },
+        &#39;spec&#39;: {
+            &#39;selector&#39;: {
+                &#39;matchLabels&#39;: {
+                    &#39;app&#39;: &#39;rwx-test-statefulset&#39;
+                }
+            },
+            &#39;serviceName&#39;: &#39;rwx-test-statefulset&#39;,
+            &#39;replicas&#39;: 1,
+            &#39;template&#39;: {
+                &#39;metadata&#39;: {
+                    &#39;labels&#39;: {
+                        &#39;app&#39;: &#39;rwx-test-statefulset&#39;
+                    }
+                },
+                &#39;spec&#39;: {
+                    &#39;terminationGracePeriodSeconds&#39;: 10,
+                    &#39;containers&#39;: [{
+                        &#39;image&#39;: &#39;busybox:1.34.0&#39;,
+                        &#39;imagePullPolicy&#39;: &#39;IfNotPresent&#39;,
+                        &#39;name&#39;: &#39;sleep&#39;,
+                        &#39;args&#39;: [
+                            &#39;/bin/sh&#39;,
+                            &#39;-c&#39;,
+                            &#39;while true;do date;sleep 5; done&#39;
+                        ],
+                        &#39;volumeMounts&#39;: [{
+                            &#39;name&#39;: &#39;pod-data&#39;,
+                            &#39;mountPath&#39;: &#39;/data&#39;
+                        }]
+                    }]
+                }
+            },
+            &#39;volumeClaimTemplates&#39;: [{
+                &#39;metadata&#39;: {
+                    &#39;name&#39;: &#39;pod-data&#39;
+                },
+                &#39;spec&#39;: {
+                    &#39;accessModes&#39;: [
+                        &#39;ReadWriteMany&#39;
+                    ],
+                    &#39;storageClassName&#39;: &#39;longhorn&#39;,
+                    &#39;resources&#39;: {
+                        &#39;requests&#39;: {
+                            &#39;storage&#39;: size_to_string(
+                                           DEFAULT_VOLUME_SIZE * Gi)
+                        }
+                    }
+                }
+            }]
+        }
+    }
+
+    def finalizer():
+        api = get_core_api_client()
+        client = get_longhorn_api_client()
+        delete_and_wait_statefulset(api, client, statefulset_manifest)
+
+    request.addfinalizer(finalizer)
+
+    return statefulset_manifest</code></pre>
+</details>
+</dd>
 <dt id="tests.common.scale_up_engine_image_daemonset"><code class="name flex">
 <span>def <span class="ident">scale_up_engine_image_daemonset</span></span>(<span>client)</span>
 </code></dt>
@@ -12150,6 +12302,7 @@ ref: <a href="https://github.com/longhorn/longhorn/issues/4814">https://github.c
     complete = False
     for i in range(RETRY_COUNTS):
         v = client.by_id_volume(name)
+        print(f&#34;volume = {v}&#34;)
         if v.controllers and len(v.controllers) != 0 and \
                 v.controllers[0].lastRestoredBackup == backup_name:
             complete = True
@@ -14848,6 +15001,7 @@ from the args and kwargs arguments, respectively.</p></div>
 <li><code><a title="tests.common.reset_settings" href="#tests.common.reset_settings">reset_settings</a></code></li>
 <li><code><a title="tests.common.restart_and_wait_ready_engine_count" href="#tests.common.restart_and_wait_ready_engine_count">restart_and_wait_ready_engine_count</a></code></li>
 <li><code><a title="tests.common.restore_backup_and_get_data_checksum" href="#tests.common.restore_backup_and_get_data_checksum">restore_backup_and_get_data_checksum</a></code></li>
+<li><code><a title="tests.common.rwx_statefulset" href="#tests.common.rwx_statefulset">rwx_statefulset</a></code></li>
 <li><code><a title="tests.common.scale_up_engine_image_daemonset" href="#tests.common.scale_up_engine_image_daemonset">scale_up_engine_image_daemonset</a></code></li>
 <li><code><a title="tests.common.scheduling_api" href="#tests.common.scheduling_api">scheduling_api</a></code></li>
 <li><code><a title="tests.common.set_k8s_node_label" href="#tests.common.set_k8s_node_label">set_k8s_node_label</a></code></li>
