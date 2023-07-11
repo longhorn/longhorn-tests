@@ -82,6 +82,7 @@ COMPATIBILTY_TEST_IMAGE_PREFIX = "longhornio/longhorn-test:version-test"
 UPGRADE_TEST_IMAGE_PREFIX = "longhornio/longhorn-test:upgrade-test"
 
 ISCSI_DEV_PATH = "/dev/disk/by-path"
+ISCSI_PROCESS = "iscsid"
 
 VOLUME_FIELD_STATE = "state"
 VOLUME_STATE_ATTACHED = "attached"
@@ -288,6 +289,8 @@ FS_TYPE_XFS = "xfs"
 ATTACHER_TYPE_CSI_ATTACHER = "csi-attacher"
 ATTACHER_TYPE_LONGHORN_API = "longhorn-api"
 ATTACHER_TYPE_LONGHORN_UPGRADER = "longhorn-upgrader"
+
+HOST_PROC_DIR = "/host/proc"
 
 # customize the timeout for HDD
 disktype = os.environ.get('LONGHORN_DISK_TYPE')
@@ -2656,11 +2659,17 @@ def get_iscsi_lun(iscsi):
     return iscsi_endpoint[2]
 
 
-def exec_nsenter(cmd):
-    dockerd_pid = find_dockerd_pid() or "1"
-    exec_cmd = ["nsenter", "--mount=/host/proc/{}/ns/mnt".format(dockerd_pid),
-                "--net=/host/proc/{}/ns/net".format(dockerd_pid),
-                "bash", "-c", cmd]
+def exec_nsenter(cmd, process_name=None):
+    if process_name:
+        proc_pid = find_process_pid(process_name)
+        cmd_parts = cmd.split()
+    else:
+        proc_pid = find_dockerd_pid() or "1"
+        cmd_parts = ["bash", "-c", cmd]
+
+    exec_cmd = ["nsenter", "--mount=/host/proc/{}/ns/mnt".format(proc_pid),
+                "--net=/host/proc/{}/ns/net".format(proc_pid)]
+    exec_cmd.extend(cmd_parts)
     return subprocess.check_output(exec_cmd)
 
 
@@ -2671,10 +2680,10 @@ def iscsi_login(iscsi_ep):
     lun = get_iscsi_lun(iscsi_ep)
     # discovery
     cmd_discovery = "iscsiadm -m discovery -t st -p " + ip
-    exec_nsenter(cmd_discovery)
+    exec_nsenter(cmd_discovery, ISCSI_PROCESS)
     # login
     cmd_login = "iscsiadm -m node -T " + target + " -p " + ip + " --login"
-    exec_nsenter(cmd_login)
+    exec_nsenter(cmd_login, ISCSI_PROCESS)
     blk_name = "ip-%s:%s-iscsi-%s-lun-%s" % (ip, port, target, lun)
     wait_for_device_login(ISCSI_DEV_PATH, blk_name)
     dev = os.path.realpath(ISCSI_DEV_PATH + "/" + blk_name)
@@ -2685,9 +2694,9 @@ def iscsi_logout(iscsi_ep):
     ip = get_iscsi_ip(iscsi_ep)
     target = get_iscsi_target(iscsi_ep)
     cmd_logout = "iscsiadm -m node -T " + target + " -p " + ip + " --logout"
-    exec_nsenter(cmd_logout)
+    exec_nsenter(cmd_logout, ISCSI_PROCESS)
     cmd_rm_discovery = "iscsiadm -m discovery -p " + ip + " -o delete"
-    exec_nsenter(cmd_rm_discovery)
+    exec_nsenter(cmd_rm_discovery, ISCSI_PROCESS)
 
 
 def get_process_info(p_path):
@@ -2722,6 +2731,40 @@ def find_ancestor_process_by_name(ancestor_name):
 
 def find_dockerd_pid():
     return find_ancestor_process_by_name("dockerd")
+
+
+def find_process_pid(process_name):
+    for file in os.listdir(HOST_PROC_DIR):
+        if not os.path.isdir(os.path.join(HOST_PROC_DIR, file)):
+            continue
+
+        # Check if file name is an integer
+        if not file.isdigit():
+            continue
+
+        with open(os.path.join(HOST_PROC_DIR, file, 'status'), 'r') as file:
+            status_content = file.readlines()
+
+        proc_status_content = None
+        name_pattern = re.compile(r'^Name:\s+(.+)$')
+
+        for line in status_content:
+            name_match = name_pattern.match(line)
+            if name_match and name_match.group(1) == process_name:
+                proc_status_content = status_content
+                break
+
+        if proc_status_content is None:
+            continue
+
+        pid_pattern = re.compile(r'^Pid:\s+(\d+)$')
+
+        for line in proc_status_content:
+            pid_match = pid_pattern.match(line)
+            if pid_match:
+                return int(pid_match.group(1))
+
+    raise Exception(f"Failed to find the {process_name} PID")
 
 
 def generate_random_pos(size, used={}):
