@@ -78,6 +78,7 @@ from common import SETTING_CONCURRENT_AUTO_ENGINE_UPGRADE_NODE_LIMIT
 from common import update_setting
 from common import wait_for_backup_volume_backing_image_synced
 from common import RETRY_COMMAND_COUNT
+from common import wait_for_snapshot_count
 
 from backupstore import set_random_backupstore # NOQA
 from backupstore import backupstore_cleanup
@@ -1121,8 +1122,8 @@ def test_inc_restoration_with_multiple_rebuild_and_expansion(set_random_backupst
     # Verify the snapshot info
     dr_volume = client.by_id_volume(dr_volume_name)
     assert dr_volume.size == str(expand_size1)
+    wait_for_snapshot_count(dr_volume, 2, count_removed=True)
     snapshots = dr_volume.snapshotList(volume=dr_volume_name)
-    assert len(snapshots) == 2
     for snap in snapshots:
         if snap["name"] != "volume-head":
             assert snap["name"] == "expand-" + str(expand_size1)
@@ -1156,8 +1157,8 @@ def test_inc_restoration_with_multiple_rebuild_and_expansion(set_random_backupst
     # Then re-verify the snapshot info
     dr_volume = client.by_id_volume(dr_volume_name)
     assert dr_volume.size == str(expand_size2)
+    wait_for_snapshot_count(dr_volume, 2, count_removed=True)
     snapshots = dr_volume.snapshotList(volume=dr_volume_name)
-    assert len(snapshots) == 2
     for snap in snapshots:
         if snap["name"] != "volume-head":
             assert snap["name"] == "expand-" + str(expand_size2)
