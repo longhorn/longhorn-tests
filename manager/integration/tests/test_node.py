@@ -27,7 +27,6 @@ from common import wait_for_disk_status, wait_for_disk_update, \
     wait_for_disk_conditions, wait_for_node_tag_update, \
     cleanup_node_disks, wait_for_disk_storage_available, \
     wait_for_disk_uuid, wait_for_node_schedulable_condition
-from common import exec_nsenter
 
 from common import SETTING_REPLICA_NODE_SOFT_ANTI_AFFINITY
 from common import volume_name # NOQA
@@ -1426,14 +1425,17 @@ def test_replica_datapath_cleanup(client):  # NOQA
 
     # data path should exist now
     for data_path in data_paths:
-        assert exec_nsenter("ls {}".format(data_path))
+        assert os.listdir(data_path)
 
     cleanup_volume_by_name(client, vol_name)
 
     # data path should be gone due to the cleanup of replica
     for data_path in data_paths:
-        with pytest.raises(subprocess.CalledProcessError):
-            exec_nsenter("ls {}".format(data_path))
+        try:
+            os.listdir(data_path)
+            raise AssertionError(f"data path {data_path} should be gone")
+        except FileNotFoundError:
+            pass
 
     node = client.by_id_node(lht_hostId)
     disks = node.disks
