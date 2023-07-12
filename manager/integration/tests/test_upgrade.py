@@ -25,7 +25,7 @@ from common import create_pvc_spec
 from common import create_and_wait_pod
 from common import get_pod_data_md5sum
 from common import pod_make, csi_pv, pvc # NOQA
-from common import statefulset # NOQA
+from common import statefulset, rwx_statefulset # NOQA
 from common import storage_class # NOQA
 from common import SETTING_AUTO_SALVAGE
 from common import generate_random_data
@@ -38,6 +38,23 @@ from common import SETTING_DISABLE_REVISION_COUNTER
 from common import update_setting
 from common import delete_replica_on_test_node
 from common import get_volume_engine
+from common import create_backup
+from common import BACKUP_BLOCK_SIZE, DEFAULT_VOLUME_SIZE, Gi
+from common import create_backing_image_with_matching_url
+from common import BACKING_IMAGE_NAME, BACKING_IMAGE_QCOW2_URL
+from common import create_recurring_jobs, check_recurring_jobs
+from common import create_and_check_volume
+from common import system_backup_wait_for_state
+from common import create_support_bundle
+from common import wait_for_support_bundle_state
+from common import get_backupstores
+from common import wait_for_volume_restoration_start
+from common import wait_for_volume_restoration_completed
+from common import wait_for_volume_recurring_job_update
+from common import get_volume_name
+from test_orphan import create_orphaned_directories_on_host
+from backupstore import set_backupstore_s3
+from backupstore import set_backupstore_nfs, mount_nfs_backupstore
 
 
 @pytest.fixture
@@ -124,7 +141,7 @@ def test_upgrade(longhorn_upgrade_type,
                  upgrade_longhorn_share_manager_image,
                  upgrade_longhorn_backing_image_manager_image,
                  client, core_api, volume_name, csi_pv, # NOQA
-                 pvc, pod_make, statefulset, storage_class): # NOQA
+                 pvc, pod_make, statefulset, rwx_statefulset, storage_class): # NOQA
     """
     Test Longhorn upgrade
 
@@ -145,19 +162,20 @@ def test_upgrade(longhorn_upgrade_type,
     4. Create a StatefulSet with 2 replicas
        generate and write data to their volumes
     5. Keep all volumes attached
-    6. Upgrade Longhorn system.
-    7. Check Pod and StatefulSet didn't restart after system upgrade
-    8. Check all volumes data
-    9. Write all volumes data after system upgrade
-    10. Check data written to all volumes after system upgrade
-    11. Detach the vol_revision_enabled & vol_revision_disabled,
+    6. Create custom resources
+    7. Upgrade Longhorn system.
+    8. Check Pod and StatefulSet didn't restart after system upgrade
+    9. Check all volumes data
+    10. Write all volumes data after system upgrade
+    11. Check data written to all volumes after system upgrade
+    12. Detach the vol_revision_enabled & vol_revision_disabled,
         and Delete Pod, and StatefulSet to detach theirvolumes
-    12. Upgrade all volumes engine images
-    13. Attach the volume, and recreate Pod, and StatefulSet
-    14. Verify the volume's engine image has been upgraded
-    15. Check All volumes data
-    16. Delete one replica for vol_rebuild to trigger the rebuilding
-    17. Verify the vol_rebuild is still healthy
+    13. Upgrade all volumes engine images
+    14. Attach the volume, and recreate Pod, and StatefulSet
+    15. Verify the volume's engine image has been upgraded
+    16. Check All volumes data
+    17. Delete one replica for vol_rebuild to trigger the rebuilding
+    18. Verify the vol_rebuild is still healthy
     """
     longhorn_repo_url = upgrade_longhorn_repo_url
     longhorn_repo_branch = upgrade_longhorn_repo_branch
@@ -216,6 +234,75 @@ def test_upgrade(longhorn_upgrade_type,
         write_pod_volume_data(core_api,
                               sspod_info['pod_name'],
                               sspod_info['data'])
+
+    # create custom resources
+    # orphan
+    create_orphaned_directories_on_host(
+        client.by_id_volume(pod_volume_name),
+        ["/var/lib/longhorn"],
+        1)
+    # snapshot and backup
+    backup_stores = get_backupstores()
+    if backup_stores[0] == "s3":
+        set_backupstore_s3(client)
+    elif backup_stores[0] == "nfs":
+        set_backupstore_nfs(client)
+        mount_nfs_backupstore(client)
+    backup_vol_name = "backup-vol"
+    backup_vol = create_and_check_volume(
+        client,
+        backup_vol_name,
+        2,
+        str(DEFAULT_VOLUME_SIZE * Gi))
+    backup_vol.attach(hostId=host_id)
+    backup_vol = wait_for_volume_healthy(client, backup_vol_name)
+    data0 = {'pos': 0, 'len': BACKUP_BLOCK_SIZE,
+             'content': generate_random_data(BACKUP_BLOCK_SIZE)}
+    _, backup, _, _ = create_backup(client, backup_vol_name, data0)
+    # system backup
+    system_backup_name = "test-system-backup"
+    client.create_system_backup(Name=system_backup_name)
+    system_backup_wait_for_state("Ready", system_backup_name, client)
+    # support bundle
+    resp = create_support_bundle(client)
+    node_id = resp['id']
+    name = resp['name']
+    wait_for_support_bundle_state("ReadyForDownload", node_id, name, client)
+    # backing image
+    create_backing_image_with_matching_url(
+        client,
+        BACKING_IMAGE_NAME,
+        BACKING_IMAGE_QCOW2_URL)
+    # recurring job
+    job_name = "snapshot1"
+    recurring_jobs = {
+        job_name: {
+            "task": "snapshot",
+            "groups": [],
+            "cron": "* * * * *",
+            "retain": 2,
+            "concurrency": 1,
+            "labels": {},
+        }
+    }
+    create_recurring_jobs(client, recurring_jobs)
+    check_recurring_jobs(client, recurring_jobs)
+    backup_vol.recurringJobAdd(name=job_name, isGroup=False)
+    wait_for_volume_recurring_job_update(backup_vol,
+                                         jobs=[job_name],
+                                         groups=["default"])
+    # share manager
+    rwx_statefulset_name = rwx_statefulset['metadata']['name']
+    create_and_wait_statefulset(rwx_statefulset)
+    rwx_statefulset_pod_name = rwx_statefulset_name + '-0'
+    rwx_pvc_name = \
+        rwx_statefulset['spec']['volumeClaimTemplates'][0]['metadata']['name']\
+        + '-' + rwx_statefulset_name + '-0'
+    rwx_pv_name = get_volume_name(core_api, rwx_pvc_name)
+    rwx_test_data = generate_random_data(VOLUME_RWTEST_SIZE)
+    write_pod_volume_data(core_api, rwx_statefulset_pod_name,
+                          rwx_test_data, filename='test1')
+
     # upgrade Longhorn manager
     assert longhorn_upgrade(longhorn_repo_url,
                             longhorn_repo_branch,
@@ -229,6 +316,20 @@ def test_upgrade(longhorn_upgrade_type,
 
     # wait for 1 minute before checking pod restarts
     time.sleep(60)
+
+    # restore backup after upgrade
+    restore_vol_name = "restore-vol"
+    client.create_volume(name=restore_vol_name,
+                         size=str(DEFAULT_VOLUME_SIZE * Gi),
+                         numberOfReplicas=2,
+                         fromBackup=backup.url)
+    wait_for_volume_restoration_start(client, restore_vol_name, backup.name)
+    wait_for_volume_restoration_completed(client, restore_vol_name)
+    wait_for_volume_detached(client, restore_vol_name)
+
+    # read rwx volume data
+    assert rwx_test_data == \
+        read_volume_data(core_api, rwx_statefulset_pod_name, filename='test1')
 
     # Check Pod and StatefulSet didn't restart after upgrade
     pod = core_api.read_namespaced_pod(name=pod_name,
@@ -302,7 +403,9 @@ def test_upgrade(longhorn_upgrade_type,
     # Upgrade all volumes engine images
     volumes = client.list_volume()
     for v in volumes:
-        if v.name != vol_rebuild_name:
+        if v.name != vol_rebuild_name and \
+           v.name != backup_vol_name and \
+           v.name != rwx_pv_name:
             volume = client.by_id_volume(v.name)
             volume.detach(hostId="")
             wait_for_volume_detached(client, v.name)
@@ -313,8 +416,9 @@ def test_upgrade(longhorn_upgrade_type,
             new_ei = ei
 
     for v in volumes:
-        volume = client.by_id_volume(v.name)
-        volume.engineUpgrade(image=new_ei.image)
+        if v.name != restore_vol_name:
+            volume = client.by_id_volume(v.name)
+            volume.engineUpgrade(image=new_ei.image)
 
     # Recreate Pod, and StatefulSet
     statefulset['spec']['replicas'] = replicas = 2
@@ -345,10 +449,11 @@ def test_upgrade(longhorn_upgrade_type,
 
     # Verify volume's engine image has been upgraded
     for v in volumes:
-        volume = client.by_id_volume(v.name)
-        engine = get_volume_engine(volume)
-        assert engine.engineImage == new_ei.image
-        assert engine.currentImage == new_ei.image
+        if v.name != restore_vol_name:
+            volume = client.by_id_volume(v.name)
+            engine = get_volume_engine(volume)
+            assert engine.engineImage == new_ei.image
+            assert engine.currentImage == new_ei.image
 
     # Check All volumes data
     for sspod_info in statefulset_pod_info:
