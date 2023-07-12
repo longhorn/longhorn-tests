@@ -27,8 +27,12 @@
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">import pytest
+
 import os
+import time
 import zipfile
+
+from kubernetes.stream import stream
 
 from tempfile import TemporaryDirectory
 
@@ -43,11 +47,16 @@ from common import create_support_bundle
 from common import delete_and_wait_deployment
 from common import download_support_bundle
 from common import get_all_support_bundle_manager_deployments
+from common import get_custom_object_api_client
+from common import timeout
 from common import set_k8s_node_label
 from common import update_setting
 from common import wait_for_support_bundle_cleanup
 from common import wait_for_support_bundle_state
 
+from common import LONGHORN_NAMESPACE
+from common import RETRY_COUNTS
+from common import RETRY_INTERVAL
 from common import SETTING_NODE_SELECTOR
 from common import SETTING_SUPPORT_BUNDLE_FAILED_LIMIT
 from common import SETTING_TAINT_TOLERATION
@@ -329,6 +338,95 @@ def test_support_bundle_should_replace_existing_ready_support_bundle(client):  #
 
     download_support_bundle(new_sb_node_id, new_sb_name, client)
 
+    wait_for_support_bundle_cleanup(client)
+    check_all_support_bundle_managers_deleted()
+
+
+@pytest.mark.support_bundle   # NOQA
+def test_support_bundle_should_not_timeout(client, core_api):  # NOQA
+    &#34;&#34;&#34;
+    Scenario: test support bundle should not timeout
+
+    Issue: https://github.com/longhorn/longhorn/issues/6256
+
+    Given support bundle created
+    And support bundle state is (ReadyForDownload)
+    And replace support bundle zip file with a large file (5GB)
+    And support bundle file size is updated to the size of the large file
+
+    When download support bundle
+
+    Then support bundle should be downloaded successfully
+    And support bundle should be deleted
+    And support bundle manager should be deleted
+    &#34;&#34;&#34;
+    resp = create_support_bundle(client)
+    node_id = resp[&#39;id&#39;]
+    support_bundle_name = resp[&#39;name&#39;]
+
+    wait_for_support_bundle_state(
+        &#34;ReadyForDownload&#34;, node_id, support_bundle_name, client
+    )
+
+    for _ in range(RETRY_COUNTS):
+        time.sleep(RETRY_INTERVAL)
+        label = f&#34;rancher/supportbundle={support_bundle_name}&#34;
+        pods = core_api.list_pod_for_all_namespaces(label_selector=label,
+                                                    watch=False)
+        if len(pods.items) == 1:
+            break
+    assert len(pods.items) == 1, \
+        f&#39;Expect 1 support bundle manager pod, got {len(pods.items)}&#39;
+
+    pod_name = pods.items[0].metadata.name
+
+    bundle = &#34;/tmp/mock-support-bundle&#34;
+    cmd = [
+        &#34;bash&#34;, &#34;-c&#34;,
+        f&#34;bundle=`ls /tmp/support-bundle-kit/ | grep zip` &amp;&amp;\
+        rm -f /tmp/support-bundle-kit/$bundle &amp;&amp;\
+        dd if=/dev/urandom of={bundle} bs=1G count=5 &gt; /dev/null 2&gt;&amp;1 &amp;&amp;\
+        zip /tmp/support-bundle-kit/$bundle {bundle} &gt; /dev/null 2&gt;&amp;1 &amp;&amp;\
+        rm -f {bundle} &amp;&amp;\
+        stat -c \&#34;%s\&#34; /tmp/support-bundle-kit/$bundle&#34;,
+    ]
+    with timeout(seconds=600, error_message=&#39;Timeout on executing command&#39;):
+        zip_size = stream(core_api.connect_get_namespaced_pod_exec,
+                          pod_name, LONGHORN_NAMESPACE,
+                          command=cmd, stderr=True, stdin=False, stdout=True,
+                          tty=False)
+    zip_size = zip_size.replace(&#39;\n&#39;, &#39;&#39;)
+
+    custom_obj_api = get_custom_object_api_client()
+
+    # Define the resource details
+    group = &#34;longhorn.io&#34;
+    version = &#34;v1beta2&#34;
+    plural = &#34;supportbundles&#34;
+
+    # Retrieve the current state of the SupportBundle
+    support_bundle = custom_obj_api.get_namespaced_custom_object(
+        group=group,
+        version=version,
+        namespace=LONGHORN_NAMESPACE,
+        plural=plural,
+        name=support_bundle_name
+    )
+
+    # Update the file size in the SupportBundle status
+    support_bundle[&#34;status&#34;][&#34;filesize&#34;] = int(zip_size)
+
+    # Update the SupportBundle with the modified status
+    custom_obj_api.replace_namespaced_custom_object_status(
+        group=group,
+        version=version,
+        namespace=LONGHORN_NAMESPACE,
+        plural=plural,
+        name=support_bundle_name,
+        body=support_bundle
+    )
+
+    download_support_bundle(node_id, support_bundle_name, client)
     wait_for_support_bundle_cleanup(client)
     check_all_support_bundle_managers_deleted()</code></pre>
 </details>
@@ -690,6 +788,113 @@ def test_support_bundle_should_error_when_failed(client, apps_api):  # NOQA
     create_failed_support_bundles(client, apps_api)</code></pre>
 </details>
 </dd>
+<dt id="tests.test_support_bundle.test_support_bundle_should_not_timeout"><code class="name flex">
+<span>def <span class="ident">test_support_bundle_should_not_timeout</span></span>(<span>client, core_api)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Scenario: test support bundle should not timeout</p>
+<p>Issue: <a href="https://github.com/longhorn/longhorn/issues/6256">https://github.com/longhorn/longhorn/issues/6256</a></p>
+<p>Given support bundle created
+And support bundle state is (ReadyForDownload)
+And replace support bundle zip file with a large file (5GB)
+And support bundle file size is updated to the size of the large file</p>
+<p>When download support bundle</p>
+<p>Then support bundle should be downloaded successfully
+And support bundle should be deleted
+And support bundle manager should be deleted</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@pytest.mark.support_bundle   # NOQA
+def test_support_bundle_should_not_timeout(client, core_api):  # NOQA
+    &#34;&#34;&#34;
+    Scenario: test support bundle should not timeout
+
+    Issue: https://github.com/longhorn/longhorn/issues/6256
+
+    Given support bundle created
+    And support bundle state is (ReadyForDownload)
+    And replace support bundle zip file with a large file (5GB)
+    And support bundle file size is updated to the size of the large file
+
+    When download support bundle
+
+    Then support bundle should be downloaded successfully
+    And support bundle should be deleted
+    And support bundle manager should be deleted
+    &#34;&#34;&#34;
+    resp = create_support_bundle(client)
+    node_id = resp[&#39;id&#39;]
+    support_bundle_name = resp[&#39;name&#39;]
+
+    wait_for_support_bundle_state(
+        &#34;ReadyForDownload&#34;, node_id, support_bundle_name, client
+    )
+
+    for _ in range(RETRY_COUNTS):
+        time.sleep(RETRY_INTERVAL)
+        label = f&#34;rancher/supportbundle={support_bundle_name}&#34;
+        pods = core_api.list_pod_for_all_namespaces(label_selector=label,
+                                                    watch=False)
+        if len(pods.items) == 1:
+            break
+    assert len(pods.items) == 1, \
+        f&#39;Expect 1 support bundle manager pod, got {len(pods.items)}&#39;
+
+    pod_name = pods.items[0].metadata.name
+
+    bundle = &#34;/tmp/mock-support-bundle&#34;
+    cmd = [
+        &#34;bash&#34;, &#34;-c&#34;,
+        f&#34;bundle=`ls /tmp/support-bundle-kit/ | grep zip` &amp;&amp;\
+        rm -f /tmp/support-bundle-kit/$bundle &amp;&amp;\
+        dd if=/dev/urandom of={bundle} bs=1G count=5 &gt; /dev/null 2&gt;&amp;1 &amp;&amp;\
+        zip /tmp/support-bundle-kit/$bundle {bundle} &gt; /dev/null 2&gt;&amp;1 &amp;&amp;\
+        rm -f {bundle} &amp;&amp;\
+        stat -c \&#34;%s\&#34; /tmp/support-bundle-kit/$bundle&#34;,
+    ]
+    with timeout(seconds=600, error_message=&#39;Timeout on executing command&#39;):
+        zip_size = stream(core_api.connect_get_namespaced_pod_exec,
+                          pod_name, LONGHORN_NAMESPACE,
+                          command=cmd, stderr=True, stdin=False, stdout=True,
+                          tty=False)
+    zip_size = zip_size.replace(&#39;\n&#39;, &#39;&#39;)
+
+    custom_obj_api = get_custom_object_api_client()
+
+    # Define the resource details
+    group = &#34;longhorn.io&#34;
+    version = &#34;v1beta2&#34;
+    plural = &#34;supportbundles&#34;
+
+    # Retrieve the current state of the SupportBundle
+    support_bundle = custom_obj_api.get_namespaced_custom_object(
+        group=group,
+        version=version,
+        namespace=LONGHORN_NAMESPACE,
+        plural=plural,
+        name=support_bundle_name
+    )
+
+    # Update the file size in the SupportBundle status
+    support_bundle[&#34;status&#34;][&#34;filesize&#34;] = int(zip_size)
+
+    # Update the SupportBundle with the modified status
+    custom_obj_api.replace_namespaced_custom_object_status(
+        group=group,
+        version=version,
+        namespace=LONGHORN_NAMESPACE,
+        plural=plural,
+        name=support_bundle_name,
+        body=support_bundle
+    )
+
+    download_support_bundle(node_id, support_bundle_name, client)
+    wait_for_support_bundle_cleanup(client)
+    check_all_support_bundle_managers_deleted()</code></pre>
+</details>
+</dd>
 <dt id="tests.test_support_bundle.test_support_bundle_should_replace_existing_ready_support_bundle"><code class="name flex">
 <span>def <span class="ident">test_support_bundle_should_replace_existing_ready_support_bundle</span></span>(<span>client)</span>
 </code></dt>
@@ -777,6 +982,7 @@ def test_support_bundle_should_replace_existing_ready_support_bundle(client):  #
 <li><code><a title="tests.test_support_bundle.test_support_bundle_purge" href="#tests.test_support_bundle.test_support_bundle_purge">test_support_bundle_purge</a></code></li>
 <li><code><a title="tests.test_support_bundle.test_support_bundle_should_delete_after_download" href="#tests.test_support_bundle.test_support_bundle_should_delete_after_download">test_support_bundle_should_delete_after_download</a></code></li>
 <li><code><a title="tests.test_support_bundle.test_support_bundle_should_error_when_failed" href="#tests.test_support_bundle.test_support_bundle_should_error_when_failed">test_support_bundle_should_error_when_failed</a></code></li>
+<li><code><a title="tests.test_support_bundle.test_support_bundle_should_not_timeout" href="#tests.test_support_bundle.test_support_bundle_should_not_timeout">test_support_bundle_should_not_timeout</a></code></li>
 <li><code><a title="tests.test_support_bundle.test_support_bundle_should_replace_existing_ready_support_bundle" href="#tests.test_support_bundle.test_support_bundle_should_replace_existing_ready_support_bundle">test_support_bundle_should_replace_existing_ready_support_bundle</a></code></li>
 </ul>
 </li>
