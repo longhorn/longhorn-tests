@@ -26,7 +26,7 @@ from common import create_pvc_spec
 from common import create_and_wait_pod
 from common import get_pod_data_md5sum
 from common import pod_make, csi_pv, pvc # NOQA
-from common import statefulset # NOQA
+from common import statefulset, rwx_statefulset # NOQA
 from common import storage_class # NOQA
 from common import SETTING_AUTO_SALVAGE
 from common import generate_random_data
@@ -39,8 +39,6 @@ from common import SETTING_DISABLE_REVISION_COUNTER
 from common import update_setting
 from common import delete_replica_on_test_node
 from common import get_volume_engine
-<<<<<<< HEAD
-=======
 from common import create_backup
 from common import BACKUP_BLOCK_SIZE, DEFAULT_VOLUME_SIZE, Gi
 from common import create_backing_image_with_matching_url
@@ -59,7 +57,6 @@ from test_orphan import create_orphaned_directories_on_host
 from test_orphan import delete_orphans
 from backupstore import set_backupstore_s3
 from backupstore import set_backupstore_nfs, mount_nfs_backupstore
->>>>>>> c94919ed (test: refine upgrade test for backward compatibility)
 
 
 @pytest.fixture
@@ -146,7 +143,7 @@ def test_upgrade(longhorn_upgrade_type,
                  upgrade_longhorn_share_manager_image,
                  upgrade_longhorn_backing_image_manager_image,
                  client, core_api, volume_name, csi_pv, # NOQA
-                 pvc, pod_make, statefulset, storage_class): # NOQA
+                 pvc, pod_make, statefulset, rwx_statefulset, storage_class): # NOQA
     """
     Test Longhorn upgrade
 
@@ -167,19 +164,20 @@ def test_upgrade(longhorn_upgrade_type,
     4. Create a StatefulSet with 2 replicas
        generate and write data to their volumes
     5. Keep all volumes attached
-    6. Upgrade Longhorn system.
-    7. Check Pod and StatefulSet didn't restart after system upgrade
-    8. Check all volumes data
-    9. Write all volumes data after system upgrade
-    10. Check data written to all volumes after system upgrade
-    11. Detach the vol_revision_enabled & vol_revision_disabled,
+    6. Create custom resources
+    7. Upgrade Longhorn system.
+    8. Check Pod and StatefulSet didn't restart after system upgrade
+    9. Check all volumes data
+    10. Write all volumes data after system upgrade
+    11. Check data written to all volumes after system upgrade
+    12. Detach the vol_revision_enabled & vol_revision_disabled,
         and Delete Pod, and StatefulSet to detach theirvolumes
-    12. Upgrade all volumes engine images
-    13. Attach the volume, and recreate Pod, and StatefulSet
-    14. Verify the volume's engine image has been upgraded
-    15. Check All volumes data
-    16. Delete one replica for vol_rebuild to trigger the rebuilding
-    17. Verify the vol_rebuild is still healthy
+    13. Upgrade all volumes engine images
+    14. Attach the volume, and recreate Pod, and StatefulSet
+    15. Verify the volume's engine image has been upgraded
+    16. Check All volumes data
+    17. Delete one replica for vol_rebuild to trigger the rebuilding
+    18. Verify the vol_rebuild is still healthy
     """
     longhorn_repo_url = upgrade_longhorn_repo_url
     longhorn_repo_branch = upgrade_longhorn_repo_branch
@@ -238,8 +236,6 @@ def test_upgrade(longhorn_upgrade_type,
         write_pod_volume_data(core_api,
                               sspod_info['pod_name'],
                               sspod_info['data'])
-<<<<<<< HEAD
-=======
 
     # create custom resources
     # orphan
@@ -310,7 +306,6 @@ def test_upgrade(longhorn_upgrade_type,
     write_pod_volume_data(core_api, rwx_statefulset_pod_name,
                           rwx_test_data, filename='test1')
 
->>>>>>> c94919ed (test: refine upgrade test for backward compatibility)
     # upgrade Longhorn manager
     assert longhorn_upgrade(longhorn_repo_url,
                             longhorn_repo_branch,
@@ -325,8 +320,6 @@ def test_upgrade(longhorn_upgrade_type,
     # wait for 1 minute before checking pod restarts
     time.sleep(60)
 
-<<<<<<< HEAD
-=======
     # restore backup after upgrade
     restore_vol_name = "restore-vol"
     client.create_volume(name=restore_vol_name,
@@ -344,7 +337,6 @@ def test_upgrade(longhorn_upgrade_type,
     # delete orphan
     delete_orphans(client)
 
->>>>>>> c94919ed (test: refine upgrade test for backward compatibility)
     # Check Pod and StatefulSet didn't restart after upgrade
     pod = core_api.read_namespaced_pod(name=pod_name,
                                        namespace='default')
@@ -417,7 +409,9 @@ def test_upgrade(longhorn_upgrade_type,
     # Upgrade all volumes engine images
     volumes = client.list_volume()
     for v in volumes:
-        if v.name != vol_rebuild_name:
+        if v.name != vol_rebuild_name and \
+           v.name != backup_vol_name and \
+           v.name != rwx_pv_name:
             volume = client.by_id_volume(v.name)
             volume.detach(hostId="")
             wait_for_volume_detached(client, v.name)
@@ -428,8 +422,9 @@ def test_upgrade(longhorn_upgrade_type,
             new_ei = ei
 
     for v in volumes:
-        volume = client.by_id_volume(v.name)
-        volume.engineUpgrade(image=new_ei.image)
+        if v.name != restore_vol_name:
+            volume = client.by_id_volume(v.name)
+            volume.engineUpgrade(image=new_ei.image)
 
     # Recreate Pod, and StatefulSet
     statefulset['spec']['replicas'] = replicas = 2
@@ -460,10 +455,11 @@ def test_upgrade(longhorn_upgrade_type,
 
     # Verify volume's engine image has been upgraded
     for v in volumes:
-        volume = client.by_id_volume(v.name)
-        engine = get_volume_engine(volume)
-        assert engine.engineImage == new_ei.image
-        assert engine.currentImage == new_ei.image
+        if v.name != restore_vol_name:
+            volume = client.by_id_volume(v.name)
+            engine = get_volume_engine(volume)
+            assert engine.engineImage == new_ei.image
+            assert engine.currentImage == new_ei.image
 
     # Check All volumes data
     for sspod_info in statefulset_pod_info:
