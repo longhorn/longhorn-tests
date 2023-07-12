@@ -6,6 +6,7 @@ import time
 from common import create_volume_and_write_data
 from common import volume_name  # NOQA
 from common import get_self_host_id
+from common import wait_for_volume_creation
 from common import wait_for_volume_detached
 from common import wait_for_volume_healthy
 from common import wait_for_volume_degraded
@@ -48,11 +49,12 @@ from common import system_backup_wait_for_state
 from common import create_support_bundle
 from common import wait_for_support_bundle_state
 from common import get_backupstores
-from common import wait_for_volume_restoration_start
-from common import wait_for_volume_restoration_completed
+from common import monitor_restore_progress
 from common import wait_for_volume_recurring_job_update
 from common import get_volume_name
+from common import system_backup_feature_supported
 from test_orphan import create_orphaned_directories_on_host
+from test_orphan import delete_orphans
 from backupstore import set_backupstore_s3
 from backupstore import set_backupstore_nfs, mount_nfs_backupstore
 
@@ -260,9 +262,10 @@ def test_upgrade(longhorn_upgrade_type,
              'content': generate_random_data(BACKUP_BLOCK_SIZE)}
     _, backup, _, _ = create_backup(client, backup_vol_name, data0)
     # system backup
-    system_backup_name = "test-system-backup"
-    client.create_system_backup(Name=system_backup_name)
-    system_backup_wait_for_state("Ready", system_backup_name, client)
+    if system_backup_feature_supported(client):
+        system_backup_name = "test-system-backup"
+        client.create_system_backup(Name=system_backup_name)
+        system_backup_wait_for_state("Ready", system_backup_name, client)
     # support bundle
     resp = create_support_bundle(client)
     node_id = resp['id']
@@ -323,13 +326,16 @@ def test_upgrade(longhorn_upgrade_type,
                          size=str(DEFAULT_VOLUME_SIZE * Gi),
                          numberOfReplicas=2,
                          fromBackup=backup.url)
-    wait_for_volume_restoration_start(client, restore_vol_name, backup.name)
-    wait_for_volume_restoration_completed(client, restore_vol_name)
+    wait_for_volume_creation(client, restore_vol_name)
+    monitor_restore_progress(client, restore_vol_name)
     wait_for_volume_detached(client, restore_vol_name)
 
     # read rwx volume data
     assert rwx_test_data == \
         read_volume_data(core_api, rwx_statefulset_pod_name, filename='test1')
+
+    # delete orphan
+    delete_orphans(client)
 
     # Check Pod and StatefulSet didn't restart after upgrade
     pod = core_api.read_namespaced_pod(name=pod_name,
