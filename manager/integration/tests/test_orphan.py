@@ -534,7 +534,7 @@ def test_orphaned_dirs_in_duplicated_disks(client, volume_name, request):  # NOQ
     disks = node.disks
     disk_path = os.path.join(disk_paths[0], disk_names[1])
     disk_paths.append(disk_path)
-    exec_nsenter("mkdir -p {}".format(disk_path))
+    os.makedirs(disk_path)
     disk2 = {"path": disk_path, "allowScheduling": True}
 
     update_disk = get_update_disks(disks)
