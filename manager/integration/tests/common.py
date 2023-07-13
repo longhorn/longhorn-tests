@@ -2687,6 +2687,11 @@ def exec_nsenter(cmd, process_name=None):
     return subprocess.check_output(exec_cmd)
 
 
+def exec_local(cmd):
+    exec_cmd = cmd.split()
+    return subprocess.check_output(exec_cmd)
+
+
 def iscsi_login(iscsi_ep):
     ip = get_iscsi_ip(iscsi_ep)
     port = get_iscsi_port(iscsi_ep)
