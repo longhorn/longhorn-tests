@@ -122,11 +122,10 @@ DEFAULT_DEPLOYMENT_INTERVAL = 1
 DEFAULT_DEPLOYMENT_TIMEOUT = 240
 WAIT_FOR_POD_STABLE_MAX_RETRY = 90
 
-
 DEFAULT_VOLUME_SIZE = 3  # In Gi
 EXPANDED_VOLUME_SIZE = 4  # In Gi
 
-DIRECTORY_PATH = '/tmp/longhorn-test/'
+DIRECTORY_PATH = '/var/lib/longhorn/longhorn-test/'
 
 VOLUME_CONDITION_SCHEDULED = "Scheduled"
 VOLUME_CONDITION_RESTORE = "Restore"
@@ -1684,6 +1683,14 @@ def client(request):
     assert len(hosts) == len(ips)
 
     request.addfinalizer(lambda: cleanup_client())
+
+    if not os.path.exists(DIRECTORY_PATH):
+        try:
+            os.makedirs(DIRECTORY_PATH)
+        except OSError as e:
+            raise Exception(
+                f"Failed to create directory {DIRECTORY_PATH}: {e}"
+            )
 
     cleanup_client()
 
@@ -3331,7 +3338,11 @@ def get_k8s_zone_label():
 
 
 def cleanup_test_disks(client):
-    del_dirs = os.listdir(DIRECTORY_PATH)
+    try:
+        del_dirs = os.listdir(DIRECTORY_PATH)
+    except FileNotFoundError:
+        del_dirs = []
+
     host_id = get_self_host_id()
     node = client.by_id_node(host_id)
     disks = node.disks
