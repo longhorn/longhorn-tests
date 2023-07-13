@@ -18,6 +18,7 @@ from common import create_host_disk, cleanup_host_disks
 from common import wait_for_node_update
 from common import wait_for_disk_status
 from common import update_node_disks
+from common import exec_local
 
 
 def generate_random_id(num_bytes):
@@ -78,7 +79,7 @@ def create_orphaned_directories_on_host(volume, disk_paths, num_orphans):  # NOQ
                 replica_dir_name = volume.name + "-" + generate_random_id(8)
                 path = os.path.join(disk_path, "replicas", replica_dir_name)
                 paths.append(path)
-                exec_nsenter("cp -a {} {}".format(replica.dataPath, path))
+                exec_local("cp -a {} {}".format(replica.dataPath, path))
 
     return paths
 
