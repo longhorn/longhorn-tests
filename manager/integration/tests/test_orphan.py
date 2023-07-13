@@ -130,7 +130,7 @@ def wait_for_file_count(path, number, retry_counts=120):
 
 def delete_orphaned_directory_on_host(directories):  # NOQA
     for path in directories:
-        exec_nsenter("rm -rf {}".format(path))
+        exec_local("rm -rf {}".format(path))
 
 
 def delete_extra_disks_on_host(client, disk_names):  # NOQA
