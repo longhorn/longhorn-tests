@@ -121,13 +121,11 @@ def wait_for_orphan_count(client, number, retry_counts=120):  # NOQA
 
 def wait_for_file_count(path, number, retry_counts=120):
     for _ in range(retry_counts):
-        count = exec_nsenter("ls {} | wc -l".format(path))
-        if int(count) == number:
+        if len(os.listdir(path)) == number:
             break
         time.sleep(RETRY_INTERVAL_LONG)
 
-    count = exec_nsenter("ls {} | wc -l".format(path))
-    return int(count)
+    return len(os.listdir(path))
 
 
 def delete_orphaned_directory_on_host(directories):  # NOQA
