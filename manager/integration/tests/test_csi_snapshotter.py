@@ -36,6 +36,7 @@ from common import BACKING_IMAGE_SOURCE_TYPE_DOWNLOAD, RETRY_COUNTS_SHORT
 from common import BACKING_IMAGE_STATE_READY, BACKING_IMAGE_NAME
 from common import wait_for_backing_image_status, exec_command_in_pod
 from common import delete_and_wait_pod, delete_and_wait_pvc
+from common import BACKING_IMAGE_SOURCE_TYPE_FROM_VOLUME
 
 
 @pytest.fixture
@@ -166,6 +167,7 @@ def volumesnapshot(request):
         namespace = manifest["metadata"]["namespace"]
         name = manifest["metadata"]["name"]
         plural = "volumesnapshots"
+
         try:
             api.delete_namespaced_custom_object(group=api_group,
                                                 version=api_version,
@@ -339,7 +341,7 @@ def wait_for_volumesnapshot_ready(volumesnapshot_name, namespace, ready_to_use=T
     return v
 
 
-def restore_csi_volume_snapshot(core_api, client, csivolsnap, pvc_name, pvc_request_storage_size): # NOQA
+def restore_csi_volume_snapshot(core_api, client, csivolsnap, pvc_name, pvc_request_storage_size, wait_for_restore=True): # NOQA
     restore_pvc = {
         'apiVersion': 'v1',
         'kind': 'PersistentVolumeClaim',
@@ -383,7 +385,8 @@ def restore_csi_volume_snapshot(core_api, client, csivolsnap, pvc_name, pvc_requ
 
     assert restore_volume_name is not None
 
-    wait_for_volume_restoration_completed(client, restore_volume_name)
+    if wait_for_restore is True:
+        wait_for_volume_restoration_completed(client, restore_volume_name)
     wait_for_volume_detached(client, restore_volume_name)
 
     return restore_pvc
@@ -1192,17 +1195,17 @@ def test_csi_snapshot_with_invalid_param(
     request.addfinalizer(finalizer)
 
 
-@pytest.mark.skip(reason="TODO")
-def test_csi_volumesnapshot_backing_image_basic():
+def test_csi_volumesnapshot_backing_image_basic(client, # NOQA
+                                                core_api, # NOQA
+                                                csi_pv, # NOQA
+                                                pod_make, # NOQA
+                                                pvc, # NOQA
+                                                request, # NOQA
+                                                volume_name, # NOQA
+                                                volumesnapshotclass, # NOQA
+                                                volumesnapshot): # NOQA
     """
     Test Create/Delete BackingImage using VolumeSnapshot with a given Volume
-
-    Note [Need to remove once done]:
-    While implementing this we can create a fixture module level to
-    create a volume and have some data.
-    We can use this fixture in other tests too and
-    that will be cleaned up once all the test cases related
-    to csi_snapshotter has run.
 
     Setup
     - Create a VolumeSnapshotClass with type `bi`
@@ -1282,7 +1285,73 @@ def test_csi_volumesnapshot_backing_image_basic():
     Then
     - The BackingImage is deleted as well
     """
-    pass
+    csi_snapshot_type = "bi"
+    storage_class_name = "longhorn-snapshot-vsc"
+    csisnapclass = \
+        volumesnapshotclass(name=storage_class_name,
+                            deletepolicy="Delete",
+                            snapshot_type=csi_snapshot_type)
+
+    pod_name, pv_name, pvc_name, md5sum = \
+        prepare_pod_with_data_in_mb(client, core_api,
+                                    csi_pv, pvc, pod_make,
+                                    volume_name,
+                                    data_path="/data/test")
+
+    csivolsnap_name = "test-snapshot-backing"
+    csivolsnap_namespace = "default"
+    csivolsnap = volumesnapshot(csivolsnap_name,
+                                csivolsnap_namespace,
+                                csisnapclass["metadata"]["name"],
+                                "persistentVolumeClaimName",
+                                pvc_name)
+
+    backing_images = client.list_backing_image()
+    assert len(backing_images) == 1
+    wait_for_backing_image_status(client, backing_images[0].name,
+                                  BACKING_IMAGE_STATE_READY)
+    assert backing_images[0].sourceType == BACKING_IMAGE_SOURCE_TYPE_FROM_VOLUME # NOQA
+    assert backing_images[0].parameters["volume-name"] == pv_name
+    assert not backing_images[0].deletionTimestamp
+    assert len(backing_images[0].diskFileStatusMap) == 1
+
+    restore_pvc_name = "test-restore-pvc"
+    restore_pvc_size = pvc["spec"]["resources"]["requests"]["storage"]
+    restore_csi_volume_snapshot(core_api,
+                                client,
+                                csivolsnap,
+                                restore_pvc_name,
+                                restore_pvc_size,
+                                wait_for_restore=False)
+
+    restore_pod = pod_make()
+    restore_pod_name = restore_pod["metadata"]["name"]
+    restore_pod['spec']['volumes'] = [create_pvc_spec(restore_pvc_name)]
+
+    create_and_wait_pod(core_api, restore_pod)
+    restore_md5sum = \
+        get_pod_data_md5sum(core_api, restore_pod_name, path="/data/test")
+    assert restore_md5sum == md5sum
+
+    """
+    Delete volumesnapshot will also delete correspond backing image.
+    The deletion will stuck if backing images in use.
+
+    Add finalizer make backing image not in use before delete volumesnapshot.
+
+    https://github.com/longhorn/longhorn/issues/6266#issuecomment-1628474916
+    """
+    def finalizer():
+        delete_and_wait_pod(core_api, pod_name)
+        delete_and_wait_pvc(core_api, pvc_name)
+        delete_and_wait_pod(core_api, restore_pod_name)
+        delete_and_wait_pvc(core_api, restore_pvc_name)
+        delete_volumesnapshot(csivolsnap_name, "default")
+        wait_volumesnapshot_deleted(csivolsnap_name,
+                                    "default",
+                                    retry_counts=RETRY_COUNTS_SHORT)
+
+    request.addfinalizer(finalizer)
 
 
 @pytest.mark.skip(reason="TODO")
@@ -1535,7 +1604,6 @@ def test_csi_volumesnapshot_restore_on_demand_backing_image(bi_url, # NOQA
     Add finalizer make backing image not in use before delete volumesnapshot.
 
     https://github.com/longhorn/longhorn/issues/6266#issuecomment-1628474916
-
     """
     def finalizer():
         delete_and_wait_pod(core_api, pod_name)
