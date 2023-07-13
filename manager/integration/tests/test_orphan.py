@@ -3,13 +3,13 @@ import os
 import time
 import random
 import string
+import shutil
 
 from common import core_api, client # NOQA
 from common import Gi, SIZE
 from common import volume_name # NOQA
 from common import SETTING_ORPHAN_AUTO_DELETION
 from common import RETRY_COUNTS, RETRY_INTERVAL_LONG
-from common import exec_nsenter
 from common import get_self_host_id
 from common import get_update_disks, wait_for_disk_update, cleanup_node_disks
 from common import create_and_check_volume, wait_for_volume_healthy
@@ -189,26 +189,24 @@ def test_orphaned_dirs_with_wrong_naming_format(client, volume_name, request):  
 
         # Create invalid orphaned directories.
         # 8-byte random id missing
-        exec_nsenter("mkdir -p {}".format(os.path.join(replica.diskPath,
-                                                       "replicas",
-                                                       volume_name)))
+        os.makedirs(os.path.join(replica.diskPath, "replicas", volume_name))
+
         # wrong random id length
-        exec_nsenter("mkdir -p {}".format(
-            os.path.join(replica.diskPath,
-                         "replicas",
-                         volume_name + "-" + generate_random_id(4))))
+        os.makedirs(os.path.join(replica.diskPath, "replicas",
+                                 volume_name + "-" + generate_random_id(4)))
+
         # volume.meta missing
-        path = os.path.join(replica.diskPath,
-                            "replicas",
+        path = os.path.join(replica.diskPath, "replicas",
                             volume_name + "-" + generate_random_id(8))
-        exec_nsenter("cp -a {} {}; rm -f {}".format(
-            replica.dataPath, path, os.path.join(path, "volume.meta")))
+        shutil.copytree(replica.dataPath, path)
+        os.remove(os.path.join(path, "volume.meta"))
+
         # corrupted volume.meta
-        path = os.path.join(replica.diskPath,
-                            "replicas",
+        path = os.path.join(replica.diskPath, "replicas",
                             volume_name + "-" + generate_random_id(8))
-        exec_nsenter("cp -a {} {}; echo xxx > {}".format(
-            replica.dataPath, path, os.path.join(path, "volume.meta")))
+        shutil.copytree(replica.dataPath, path)
+        with open(os.path.join(path, "volume.meta"), 'w') as file:
+            file.write("xxx")
 
     # Step 5
     cleanup_volume_by_name(client, volume_name)
