@@ -5531,8 +5531,9 @@ def get_support_bundle_url(client):  # NOQA
 
 def get_support_bundle(node_id, name, client):  # NOQA
     url = get_support_bundle_url(client)
-    support_bundle_url = '{}/{}/{}'.format(url, node_id, name)
-    return requests.get(support_bundle_url).json()
+    resp = requests.get('{}/{}/{}'.format(url, node_id, name))
+    assert resp.status_code == 200
+    return resp.json()
 
 
 def wait_for_support_bundle_cleanup(client):  # NOQA
