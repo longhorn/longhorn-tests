@@ -3,7 +3,11 @@ Documentation    Negative Test Cases
 
 Resource    ../keywords/volume.resource
 
-Test setup    set_test_name    ${TEST NAME}
+Resource          ../keywords/common.resource
+
+Suite Setup    set_test_suite_environment
+
+Test setup    set_test_environment    ${TEST NAME}
 
 Test Teardown    cleanup_resources
 
