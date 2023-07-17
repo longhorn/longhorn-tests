@@ -11,6 +11,8 @@ import json
 import time
 import operator
 from functools import reduce
+from urllib.parse import urlparse
+from utility import globalVars
 
 try:
     import argcomplete
@@ -342,10 +344,11 @@ class GdapiClient(object):
         if force or not schema_text:
             response = self._get_response(self._url)
             schema_url = response.headers.get('X-API-Schemas')
-            if schema_url is not None and self._url != schema_url:
+            if schema_url is not None and self._url != schema_url and response.text is None:
                 schema_text = self._get_raw(schema_url)
             else:
                 schema_text = response.text
+
             self._cache_schema(schema_text)
 
         obj = self._unmarshall(schema_text)
@@ -362,6 +365,11 @@ class GdapiClient(object):
     def by_id(self, type, id, **kw):
         id = str(id)
         url = self.schema.types[type].links.collection
+        urlParse = urlparse(url)
+        urlLoc = urlParse.scheme+"://"+urlParse.netloc
+        if urlLoc != self._url:
+            url = globalVars.variables["LONGHORN_CLIENT_URL"]+urlParse.path
+
         if url.endswith('/'):
             url += id
         else:
@@ -376,6 +384,11 @@ class GdapiClient(object):
 
     def update_by_id(self, type, id, *args, **kw):
         url = self.schema.types[type].links.collection
+        urlParse = urlparse(url)
+        urlLoc = urlParse.scheme+"://"+urlParse.netloc
+        if urlLoc != self._url:
+            url = globalVars.variables["LONGHORN_CLIENT_URL"]+urlParse.path
+
         if url.endswith('/'):
             url = url + id
         else:
@@ -438,6 +451,11 @@ class GdapiClient(object):
 
         self._validate_list(type, **kw)
         collection_url = self.schema.types[type].links.collection
+        urlParse = urlparse(collection_url)
+        urlLoc = urlParse.scheme+"://"+urlParse.netloc
+        if urlLoc != self._url:
+            collection_url = globalVars.variables["LONGHORN_CLIENT_URL"]+urlParse.path
+
         return self._get(collection_url, data=self._to_dict(**kw))
 
     def reload(self, obj):
@@ -445,6 +463,10 @@ class GdapiClient(object):
 
     def create(self, type, *args, **kw):
         collection_url = self.schema.types[type].links.collection
+        urlParse = urlparse(collection_url)
+        urlLoc = urlParse.scheme+"://"+urlParse.netloc
+        if urlLoc != self._url:
+            collection_url = globalVars.variables["LONGHORN_CLIENT_URL"]+urlParse.path
         return self._post(collection_url, data=self._to_dict(*args, **kw))
 
     def delete(self, *args):
