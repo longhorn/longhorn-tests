@@ -1,17 +1,20 @@
+import time
+import logging
+
 from kubernetes import client
 from kubernetes.stream import stream
-
-import time
+from kubernetes.client.rest import ApiException
 
 DEFAULT_POD_TIMEOUT = 180
 DEFAULT_POD_INTERVAL = 1
 
 class NodeExec:
 
-    def __init__(self, namespace):
-        self.namespace = namespace
+    def __init__(self, case_name):
+        self.namespace = case_name[0:62]
         self.core_api = client.CoreV1Api()
         self.node_exec_pod = {}
+        # maximum length of namespace is 63 characters
         namespace_manifest = {
             'apiVersion': 'v1',
             'kind': 'Namespace',
@@ -19,21 +22,35 @@ class NodeExec:
                 'name': self.namespace
             }
         }
+
         self.core_api.create_namespace(
             body=namespace_manifest
         )
 
     def cleanup(self):
+        logging.info("cleaning up node related resources")
+
+        api_client = client.CoreV1Api()
+
         for pod in self.node_exec_pod.values():
-            res = self.core_api.delete_namespaced_pod(
-                name=pod.metadata.name,
-                namespace=self.namespace,
-                body=client.V1DeleteOptions()
-            )
-            print(res)
-        self.core_api.delete_namespace(
-            name=self.namespace
-        )
+            try:
+                resp = api_client.delete_namespaced_pod(
+                                        name=pod.metadata.name,
+                                        namespace=self.namespace,
+                                        body=client.V1DeleteOptions()
+                                    )
+                logging.debug(f'delete pod {pod.metadata.name} result: {resp}')
+
+            except ApiException as e:
+                logging.error("delete pod {pod.metadata.name} exception: %s\n" % e)
+
+        try:
+            res_del_ns = api_client.delete_namespace(
+                                name=self.namespace
+                            )
+            logging.debug(f'delete namespace {self.namespace} result: {res_del_ns}')
+        except ApiException as e:
+            logging.error("delete namespace exception: %s\n" % e)
 
     def issue_cmd(self, node_name, cmd):
         pod = self.launch_pod(node_name)
