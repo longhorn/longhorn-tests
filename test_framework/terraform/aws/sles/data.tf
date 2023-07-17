@@ -37,6 +37,7 @@ data "template_file" "provision_rke2_server" {
     rke2_cluster_secret = random_password.cluster_secret.result
     rke2_server_public_ip = aws_eip.lh_aws_eip_controlplane[0].public_ip
     rke2_version =  var.k8s_distro_version
+    cis_hardening = var.cis_hardening
   }
 }
 
@@ -47,5 +48,6 @@ data "template_file" "provision_rke2_agent" {
     rke2_server_url = "https://${aws_eip.lh_aws_eip_controlplane[0].public_ip}:9345"
     rke2_cluster_secret = random_password.cluster_secret.result
     rke2_version =  var.k8s_distro_version
+    cis_hardening = var.cis_hardening
   }
 }
