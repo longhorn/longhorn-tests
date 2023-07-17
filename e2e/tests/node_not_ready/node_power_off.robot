@@ -36,6 +36,7 @@ Node power off with replica-VA
     @{list_of_fields}=    Create List    ${field1}    ${field2}    ${field3}
 
     Given Create Volume With Fields    ${list_of_fields}
+    And Wait for all replicas to be created
     And Attach volume to node 1
     And Write data into mount point
 
@@ -73,6 +74,7 @@ Node power off with replica
     @{list_of_fields}=    Create List    ${field1}    ${field2}    ${field3}
 
     Given Create Volume With Fields    ${list_of_fields}
+    And Wait for all replicas to be created
     And Attach volume to node 1
     And Write data into mount point
 
@@ -113,6 +115,7 @@ Node power off with VA
     @{list_of_fields}=    Create List    ${field1}    ${field2}    ${field3}
 
     Given Create Volume With Fields    ${list_of_fields}
+    And Wait for all replicas to be created
     And Attach volume to node 3
     And Write data into mount point
 
@@ -149,6 +152,7 @@ Node power off with replica and 1 node with VA no replica
     @{list_of_fields}=    Create List    ${field1}    ${field2}    ${field3}
 
     Given Create Volume With Fields    ${list_of_fields}
+    And Wait for all replicas to be created
     And Attach volume to node 3
     And Write data into mount point
 
@@ -187,6 +191,7 @@ Node power off with replica-VA and 1 node with no replica
     @{list_of_fields}=    Create List    ${field1}    ${field2}    ${field3}
 
     Given Create Volume With Fields    ${list_of_fields}
+    And Wait for all replicas to be created
     And Attach volume to node 1
     And Write data into mount point
 
@@ -224,6 +229,7 @@ Node power off with no replica-VA
     @{list_of_fields}=    Create List    ${field1}    ${field2}    ${field3}
 
     Given Create Volume With Fields    ${list_of_fields}
+    And Wait for all replicas to be created
     And Attach volume to node 1
     And Write data into mount point
 
@@ -260,6 +266,7 @@ Node power off with replica and 1 node with no replica-VA
     @{list_of_fields}=    Create List    ${field1}    ${field2}    ${field3}
 
     Given Create Volume With Fields    ${list_of_fields}
+    And Wait for all replicas to be created
     And Attach volume to node 1
     And Write data into mount point
 
@@ -300,6 +307,7 @@ Node power off timeout with replica-VA
     @{list_of_fields}=    Create List    ${field1}    ${field2}    ${field3}
 
     Given Create Volume With Fields    ${list_of_fields}
+    And Wait for all replicas to be created
     And Attach volume to node 1
     And Write data into mount point
 
@@ -337,6 +345,7 @@ Node power off timeout with replica
     @{list_of_fields}=    Create List    ${field1}    ${field2}    ${field3}
 
     Given Create Volume With Fields    ${list_of_fields}
+    And Wait for all replicas to be created
     And Attach volume to node 1
     And Write data into mount point
 
@@ -377,6 +386,7 @@ Node power off timeout with VA
     @{list_of_fields}=    Create List    ${field1}    ${field2}    ${field3}
 
     Given Create Volume With Fields    ${list_of_fields}
+    And Wait for all replicas to be created
     And Attach volume to node 3
     And Write data into mount point
 
@@ -413,6 +423,7 @@ Node power off timeout with replica and 1 node with VA no replica
     @{list_of_fields}=    Create List    ${field1}    ${field2}    ${field3}
 
     Given Create Volume With Fields    ${list_of_fields}
+    And Wait for all replicas to be created
     And Attach volume to node 3
     And Write data into mount point
 
@@ -452,6 +463,7 @@ Node power off timeout with replica-VA and 1 node no replica-VA
     @{list_of_fields}=    Create List    ${field1}    ${field2}    ${field3}
 
     Given Create Volume With Fields    ${list_of_fields}
+    And Wait for all replicas to be created
     And Attach volume to node 1
     And Write data into mount point
 
@@ -488,6 +500,7 @@ Node power off timeout with no replica-VA
     @{list_of_fields}=    Create List    ${field1}    ${field2}    ${field3}
 
     Given Create Volume With Fields    ${list_of_fields}
+    And Wait for all replicas to be created
     And Attach volume to node 1
     And Write data into mount point
 
@@ -525,6 +538,7 @@ Node power off timeout with replica and 1 node with no replica-VA
     @{list_of_fields}=    Create List    ${field1}    ${field2}    ${field3}
 
     Given Create Volume With Fields    ${list_of_fields}
+    And Wait for all replicas to be created
     And Attach volume to node 1
     And Write data into mount point
 
