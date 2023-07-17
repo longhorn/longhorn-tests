@@ -38,7 +38,6 @@ class replica_keywords:
 
         replicas = resp["items"]
         if len(replicas) == 0:
-            logging.warning(f"cannot get the volume {volume_name} replicas")
             return
 
         replicas_states = {}
@@ -49,6 +48,7 @@ class replica_keywords:
         return replicas_states
 
     def wait_for_replica_created(self, volume_name, expected_replica_count):
+        # wait for a period of time for the replica to be created
         current_replica_count = 0
         count = 1
         while expected_replica_count != current_replica_count and count <= 180:
