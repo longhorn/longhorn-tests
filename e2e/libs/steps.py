@@ -265,3 +265,11 @@ class steps:
 
         logging.info(f"rebooting the node {node_name}")
         self.node_operation.reboot_node(node_name)
+
+    def restart_kubelet(self, node_index, interval_time):
+        node_name = Nodes.get_name_by_index(int(node_index))
+        if node_name == "":
+            raise Exception(f"failed to get node name with index {node_index}")
+
+        logging.info(f'restart kubelet on the node {node_name}')
+        self.node_operation.restart_kubelet(node_name, interval_time)

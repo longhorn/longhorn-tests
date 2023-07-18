@@ -47,3 +47,11 @@ Check node ${node_index} replica count should be ${expected_replica_count}
 Reboot node ${node_index}
     ${target_node_index} =    Evaluate    ${node_index}-1
     reboot_node   ${cluster_node_index}[${target_node_index}]
+
+Restart Kubelet node ${node_index}
+    ${target_node_index} =    Evaluate    ${node_index}-1
+    restart_kubelet   ${cluster_node_index}[${target_node_index}]    0
+
+Restart Kubelet timeout on node ${node_index}
+    ${target_node_index} =    Evaluate    ${node_index}-1
+    restart_kubelet   ${cluster_node_index}[${target_node_index}]   ${POD_EVICTION_TIME_OUT}

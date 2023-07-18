@@ -126,3 +126,57 @@ class Utility:
         except Exception as e:
             warnings.warn("Error occured while downloading support bundle {}.zip\n\
                 The error was {}".format(case_name, e))
+
+    @classmethod
+    def ssh_and_exec_cmd(cls, host, cmd):
+        logging.info(f"ssh into {host} and execute commands {cmd}")
+
+        ssh = paramiko.SSHClient()
+        ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+
+        cls().ssh_connect_with_retry(ssh, host, 0)
+        chan = ssh.get_transport().open_session()
+        chan.exec_command(cmd)
+
+        isExecCommand = True
+        while isExecCommand:
+            if chan.recv_ready():
+                logging.debug(f'response of command: ', chan.recv(4096).decode('ascii'))
+
+            if chan.exit_status_ready():
+                if chan.recv_stderr_ready() and chan.recv_exit_status() != 0:
+                    raise Exception('fail to execute command:', chan.recv_stderr(4096).decode('ascii'))
+
+                isExecCommand = False
+                logging.debug(f'success of command execution: {chan.recv_exit_status()}')
+                ssh.close()
+
+    def ssh_connect_with_retry(cls, ssh, ip_address, retries):
+        while retries > 0:
+            try:
+                logging.info(f"connecting to {ip_address} with SSH")
+
+                config = paramiko.SSHConfig()
+                try:
+                    config.parse(open(os.path.expanduser(globalVars.variables["SSH_CONFIG_PATH"])))
+                except IOError:
+                    # No file found, so empty configuration
+                    pass
+
+                host_conf = config.lookup(ip_address)
+                cfg = {}
+                if host_conf:
+                    if 'user' in host_conf:
+                        cfg['username'] = host_conf['user']
+                    if 'identityfile' in host_conf:
+                        cfg['key_filename'] = host_conf['identityfile']
+                    if 'hostname' in host_conf:
+                        cfg['hostname'] = host_conf['hostname']
+
+                ssh.connect(**cfg)
+                return True
+            except Exception as e:
+                retries -= 1
+                logging.warning(f"exception occurs: {e}. Retrying and the number of retries remaining: {retries}")
+                time.sleep(float(globalVars.variables["RETRY_INTERVAL"]))
+                continue
