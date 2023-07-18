@@ -73,3 +73,25 @@ class Operations:
                 time.sleep(int(interval_time))
                 # start all nodes kubelet service
                 Utility.ssh_and_exec_cmd(ip_address, cmd_start)
+
+    @classmethod
+    def writing_data_interrupt_network_concurrent(cls, node_name, time_interval, volume_end_point):
+        logging.info(f"interrupt network on node {node_name} for {time_interval} seconds")
+        node_instances = cls._instance.get_node_instance(node_name)
+
+        for instance in node_instances:
+            ip_address = instance.public_ip_address
+            logging.debug(f'target instance: {instance}, ip address: {ip_address}')
+            with Pool(processes=2) as pool:
+                pool.map(partial(Utility.ssh_and_exec_cmd, ip_address), cls.commands(volume_end_point))
+
+    @classmethod
+    def commands(cls, volume_end_point):
+        yield f'sudo dd if=/dev/urandom of={volume_end_point} bs=1M count=1024'
+
+        execute_commands = []
+        execute_commands.extend(['sudo sleep 1'])
+        execute_commands.extend(cls.network_operate_commands('DROP'))
+        execute_commands.extend(['sudo sleep 100'])
+        execute_commands.extend(cls.network_operate_commands('ACCEPT'))
+        yield '\n'.join(execute_commands)

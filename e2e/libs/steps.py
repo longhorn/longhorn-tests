@@ -273,3 +273,28 @@ class steps:
 
         logging.info(f'restart kubelet on the node {node_name}')
         self.node_operation.restart_kubelet(node_name, interval_time)
+
+    def update_setting_custom_resource(self, setting_name, setting_value):
+        logging.info(f"update the setting {setting_name} value as {setting_value}")
+        client = globalVars.K8S_CR_API_CLIENT
+        try:
+            api_response = client.patch_namespaced_custom_object(
+                                group="longhorn.io",
+                                version="v1beta2",
+                                namespace="longhorn-system",
+                                plural="settings",
+                                name=setting_name,
+                                body={ "value": setting_value }
+                            )
+            logging.debug(f'update result: {api_response}')
+        except ApiException as e:
+            Exception("Exception: %s\n" % e)
+
+    def during_data_writing_interrupt_network(self, node_index, time_interval, volume_name):
+        node_name = Nodes.get_name_by_index(int(node_index))
+        if node_name == "":
+            raise Exception(f"failed to get node name with index {node_index}")
+
+        logging.info(f'interrupting the node {node_name} network for {time_interval} seconds')
+        volume_end_point = self.get_volume_end_point(volume_name)
+        self.node_operation.writing_data_interrupt_network_concurrent(node_name, time_interval, volume_end_point)

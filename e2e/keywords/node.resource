@@ -55,3 +55,7 @@ Restart Kubelet node ${node_index}
 Restart Kubelet timeout on node ${node_index}
     ${target_node_index} =    Evaluate    ${node_index}-1
     restart_kubelet   ${cluster_node_index}[${target_node_index}]   ${POD_EVICTION_TIME_OUT}
+
+During writing data into mount point interrupt node ${node_index} network for ${time_inerval} seconds
+    ${target_node_index} =    Evaluate    ${node_index}-1
+    during_data_writing_interrupt_network   ${cluster_node_index}[${target_node_index}]   ${time_inerval}   ${volume_name}
