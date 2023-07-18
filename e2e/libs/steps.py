@@ -257,3 +257,11 @@ class steps:
     def generate_support_bundle(self, case_name):
         logging.info(f"generating support bundle for {case_name}")
         Utility.generate_support_bundle(case_name)
+
+    def reboot_node(self, node_index):
+        node_name = Nodes.get_name_by_index(int(node_index))
+        if node_name == "":
+            raise Exception(f"failed to get node name with index {node_index}")
+
+        logging.info(f"rebooting the node {node_name}")
+        self.node_operation.reboot_node(node_name)

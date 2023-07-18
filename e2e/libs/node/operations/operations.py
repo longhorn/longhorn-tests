@@ -36,3 +36,7 @@ class Operations:
     @classmethod
     def power_on_node(cls, node_name):
         cls._instance.power_on_node_instance(node_name)
+
+    @classmethod
+    def reboot_node(cls, node_name):
+        cls._instance.reboot_node_instance(node_name)

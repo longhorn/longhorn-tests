@@ -71,3 +71,16 @@ class EC2(AbstractCloudProvider):
                     logging.debug(f'Starting EC2 instance:', {node_name})
                     instance.wait_until_running()
                     logging.debug(f'EC2 instance "{node_name}" is running')
+
+    def reboot_node_instance(self, node_name):
+        node_instances = self.get_node_instance(node_name)
+        if len(list(node_instances)) == 0:
+            logging.warn(f"cannot find node instance")
+            return
+
+        for instance in node_instances:
+            instance.reboot()
+            logging.debug(f'EC2 instance has beend rebooted:', {node_name})
+            instance.wait_until_running()
+            logging.debug(f'EC2 instance "{node_name}" is running')
+        logging.info("finished rebooting node instances")

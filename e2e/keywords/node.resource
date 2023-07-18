@@ -43,3 +43,7 @@ Check node ${node_index} replica count should be ${expected_replica_count}
     ${node_replica_count} =   get_node_replica_count   ${node_index}   ${volume_name}
     ${expected_replica_count_number} =   Convert To Integer  ${expected_replica_count}
     Should Be Equal    ${node_replica_count}    ${expected_replica_count_number}
+
+Reboot node ${node_index}
+    ${target_node_index} =    Evaluate    ${node_index}-1
+    reboot_node   ${cluster_node_index}[${target_node_index}]
