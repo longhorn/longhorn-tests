@@ -16,6 +16,7 @@ INCLUDE_STRESS_OPT = "--include-stress-test"
 INCLUDE_UPGRADE_OPT = "--include-upgrade-test"
 INCLUDE_CA_OPT = "--include-cluster-autoscaler-test"
 
+LH_INSTALL_METHOD = "--lh-install-method"
 UPGRADE_LH_REPO_URL = "--upgrade-lh-repo-url"
 UPGRADE_LH_REPO_BRANCH = "--upgrade-lh-repo-branch"
 UPGRADE_LH_MANAGER_IMAGE = "--upgrade-lh-manager-image"
@@ -49,6 +50,12 @@ def pytest_addoption(parser):
     parser.addoption(INCLUDE_CA_OPT, action="store_true",
                      default=False,
                      help="include cluster autoscaler tests (default: False)")
+
+    parser.addoption(LH_INSTALL_METHOD, action="store",
+                     default="manifest",
+                     help='''set longhorn install method, this will be used
+                     to determine how to upgrade longhorn for test_upgrade
+                     (default: manifest''')
 
     longhorn_repo_url =\
         "https://github.com/longhorn/longhorn.git"
