@@ -56,6 +56,11 @@ create_admin_service_account(){
 }
 
 
+apply_selinux_workaround(){
+  kubectl apply -f "https://raw.githubusercontent.com/longhorn/longhorn/master/deploy/prerequisite/longhorn-iscsi-selinux-workaround.yaml"
+}
+
+
 install_iscsi(){
   kubectl apply -f "https://raw.githubusercontent.com/longhorn/longhorn/master/deploy/prerequisite/longhorn-iscsi-installation.yaml"
 }
@@ -76,7 +81,7 @@ install_cluster_autoscaler(){
 
 install_csi_snapshotter_crds(){
     CSI_SNAPSHOTTER_REPO_URL="https://github.com/kubernetes-csi/external-snapshotter.git"
-    CSI_SNAPSHOTTER_REPO_BRANCH="v5.0.1"
+    CSI_SNAPSHOTTER_REPO_BRANCH="v6.2.1"
     CSI_SNAPSHOTTER_REPO_DIR="${TMPDIR}/k8s-csi-external-snapshotter"
 
     git clone --single-branch \
@@ -136,8 +141,11 @@ wait_longhorn_status_running(){
   local RETRY_COUNTS=10 # in minutes
   local RETRY_INTERVAL="1m"
 
+  # csi components are installed after longhorn components.
+  # it's possible that all longhorn components are running but csi components aren't created yet.
   RETRIES=0
-  while [[ -n `kubectl get pods -n ${LONGHORN_NAMESPACE} --no-headers 2>&1 | awk '{print $3}' | grep -v Running` ]]; do
+  while [[ -z `kubectl get pods -n ${LONGHORN_NAMESPACE} --no-headers 2>&1 | awk '{print $1}' | grep csi-` ]] || \
+    [[ -n `kubectl get pods -n ${LONGHORN_NAMESPACE} --no-headers 2>&1 | awk '{print $3}' | grep -v Running` ]]; do
     echo "Longhorn is still installing ... re-checking in 1m"
     sleep ${RETRY_INTERVAL}
     RETRIES=$((RETRIES+1))
@@ -265,6 +273,14 @@ install_longhorn_stable(){
 
 create_longhorn_namespace(){
   kubectl create ns ${LONGHORN_NAMESPACE}
+  if [[ "${TF_VAR_cis_hardening}" == true ]]; then
+    kubectl label ns default ${LONGHORN_NAMESPACE} pod-security.kubernetes.io/enforce=privileged
+    kubectl label ns default ${LONGHORN_NAMESPACE} pod-security.kubernetes.io/enforce-version=latest
+    kubectl label ns default ${LONGHORN_NAMESPACE} pod-security.kubernetes.io/audit=privileged
+    kubectl label ns default ${LONGHORN_NAMESPACE} pod-security.kubernetes.io/audit-version=latest
+    kubectl label ns default ${LONGHORN_NAMESPACE} pod-security.kubernetes.io/warn=privileged
+    kubectl label ns default ${LONGHORN_NAMESPACE} pod-security.kubernetes.io/warn-version=latest
+  fi
 }
 
 
@@ -414,6 +430,10 @@ run_longhorn_tests(){
 
 main(){
   set_kubeconfig_envvar ${TF_VAR_arch} ${TF_VAR_tf_workspace}
+
+  if [[ ${DISTRO} == "rhel" ]] || [[ ${DISTRO} == "rockylinux" ]] || [[ ${DISTRO} == "oracle" ]]; then
+    apply_selinux_workaround
+  fi
 
   # set debugging mode off to avoid leaking aws secrets to the logs.
   # DON'T REMOVE!

@@ -1,4 +1,5 @@
 import pytest
+import time
 
 from common import client  # NOQA
 from common import volume_name # NOQA
@@ -13,10 +14,13 @@ from common import system_backup_random_name
 from common import system_backup_wait_for_state
 from common import system_restore_random_name
 from common import system_restore_wait_for_state
+from common import update_setting
 from common import wait_for_backup_count
 from common import wait_for_volume_detached
 from common import wait_for_volume_healthy
 from common import wait_for_volume_restoration_completed
+
+from common import SETTING_BACKUPSTORE_POLL_INTERVAL
 
 from backupstore import set_random_backupstore  # NOQA
 
@@ -238,3 +242,40 @@ def test_system_backup_with_volume_backup_policy_disabled(client, volume_name, s
 
     backup_volume = client.by_id_backupVolume(volume_name)
     wait_for_backup_count(backup_volume, 0)
+
+
+@pytest.mark.system_backup_restore   # NOQA
+def test_system_backup_delete_when_other_system_backup_using_name_as_prefix(client, set_random_backupstore):  # NOQA
+    """
+    Scenario: test deleting system backup when there are other system backups
+              using the name as prefix
+
+    Issue: https://github.com/longhorn/longhorn/issues/6045
+
+    Given setup backup target.
+    And setting (backupstore-poll-interval) is (10 seconds).
+    When create 3 system backups (aa, aaa, aaaa)
+    Then system backups should be in state Ready
+
+    When delete system backup (aa)
+    And wait 60 seconds
+    Then system backups should exists (aaa, aaaa)
+    """
+    update_setting(client, SETTING_BACKUPSTORE_POLL_INTERVAL, "10")
+
+    system_backup_names = ["aa", "aaa", "aaaa"]
+    for name in system_backup_names:
+        client.create_system_backup(Name=name)
+
+    for name in system_backup_names:
+        system_backup_wait_for_state("Ready", name, client)
+
+    aa_system_backup = client.by_id_system_backup("aa")
+    client.delete(aa_system_backup)
+
+    time.sleep(60)
+    system_backups = client.list_system_backup()
+    assert len(system_backups) == 2
+
+    for system_backup in client.list_system_backup():
+        assert system_backup["name"] in ["aaa", "aaaa"]

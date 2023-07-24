@@ -41,7 +41,7 @@ def volumesnapshotclass(request):
         def create_volumesnapshotclass(name, deletepolicy, snapshot_type=None):
             manifest = {
                 'kind': 'VolumeSnapshotClass',
-                'apiVersion': 'snapshot.storage.k8s.io/v1beta1',
+                'apiVersion': 'snapshot.storage.k8s.io/v1',
                 'metadata': {
                   'name': name
                 },
@@ -103,7 +103,7 @@ def volumesnapshot(request):
                                   source_type,
                                   source_name):
             manifest = {
-                'apiVersion': 'snapshot.storage.k8s.io/v1beta1',
+                'apiVersion': 'snapshot.storage.k8s.io/v1',
                 'kind': 'VolumeSnapshot',
                 'metadata': {
                   'name': name,
@@ -184,7 +184,7 @@ def volumesnapshotcontent(request):
                                          volumesnapshot_ref_name,
                                          volumesnapshot_ref_namespace):
             manifest = {
-                "apiVersion": "snapshot.storage.k8s.io/v1beta1",
+                "apiVersion": "snapshot.storage.k8s.io/v1",
                 "kind": "VolumeSnapshotContent",
                 "metadata": {
                   "name": name,
@@ -255,7 +255,7 @@ def volumesnapshotcontent(request):
 def get_volumesnapshotcontent(volumesnapshot_uid):
     api = get_custom_object_api_client()
     api_group = "snapshot.storage.k8s.io"
-    api_version = "v1beta1"
+    api_version = "v1"
     plural = "volumesnapshotcontents"
 
     volumesnapshotcontents = \
@@ -276,7 +276,7 @@ def wait_volumesnapshot_deleted(name,
                                 can_be_deleted=True):
     api = get_custom_object_api_client()
     api_group = "snapshot.storage.k8s.io"
-    api_version = "v1beta1"
+    api_version = "v1"
     plural = "volumesnapshots"
 
     deleted = False
@@ -299,7 +299,7 @@ def wait_volumesnapshot_deleted(name,
 def delete_volumesnapshot(name, namespace):
     api = get_custom_object_api_client()
     api_group = "snapshot.storage.k8s.io"
-    api_version = "v1beta1"
+    api_version = "v1"
     plural = "volumesnapshots"
 
     try:
@@ -315,7 +315,7 @@ def delete_volumesnapshot(name, namespace):
 def wait_for_volumesnapshot_ready(volumesnapshot_name, namespace, ready_to_use=True): # NOQA
     api = get_custom_object_api_client()
     api_group = "snapshot.storage.k8s.io"
-    api_version = "v1beta1"
+    api_version = "v1"
     plural = "volumesnapshots"
 
     for i in range(RETRY_COUNTS):
@@ -1218,7 +1218,7 @@ def test_csi_volumesnapshot_backing_image_basic():
     When
     - Creating the VolumeSnapshot
         ```
-        apiVersion: snapshot.storage.k8s.io/v1beta1
+        apiVersion: snapshot.storage.k8s.io/v1
         kind: VolumeSnapshot
         metadata:
             name: test-snapshot-backing
@@ -1330,7 +1330,7 @@ def test_csi_volumesnapshot_restore_pre_provision_backing_image():
         ```
 
         ```
-        apiVersion: snapshot.storage.k8s.io/v1beta1
+        apiVersion: snapshot.storage.k8s.io/v1
         kind: VolumeSnapshot
         metadata:
             name: test-snapshot-existing-backing
@@ -1403,7 +1403,7 @@ def test_csi_volumesnapshot_restore_on_demand_backing_image():
         ```
 
         ```
-        apiVersion: snapshot.storage.k8s.io/v1beta1
+        apiVersion: snapshot.storage.k8s.io/v1
         kind: VolumeSnapshot
         metadata:
             name: test-snapshot-on-demand-backing

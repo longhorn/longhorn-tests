@@ -713,6 +713,70 @@ def test_backup_block_deletion(set_random_backupstore, client, core_api, volume_
     delete_backup_volume(client, volume_name)
 
 
+def test_dr_volume_activated_with_failed_replica(set_random_backupstore, client, core_api, volume_name):  # NOQA
+    """
+    Test DR volume activated with a failed replica
+
+    Context:
+
+    Make sure that DR volume could be activated
+    as long as there is a ready replica.
+
+    Steps:
+
+    1.  Create a volume and attach to a node.
+    2.  Create a backup of the volume with writing some data.
+    3.  Create a DR volume from the backup.
+    4.  Disable the replica rebuilding.
+    5.  Enable the setting `allow-volume-creation-with-degraded-availability`
+    6.  Make a replica failed.
+    7.  Activate the DR volume.
+    8.  Enable the replica rebuilding.
+    9.  Attach the volume to a node.
+    10. Check if data is correct.
+    """
+    backupstore_cleanup(client)
+
+    host_id = get_self_host_id()
+    vol = create_and_check_volume(client, volume_name, 2, SIZE)
+    vol.attach(hostId=host_id)
+    vol = common.wait_for_volume_healthy(client, volume_name)
+
+    data = {'pos': 0, 'len': 2 * BACKUP_BLOCK_SIZE,
+            'content': common.generate_random_data(2 * BACKUP_BLOCK_SIZE)}
+    _, backup, _, data = create_backup(client, volume_name, data)
+
+    dr_vol_name = "dr-" + volume_name
+    dr_vol = client.create_volume(name=dr_vol_name, size=SIZE,
+                                  numberOfReplicas=2, fromBackup=backup.url,
+                                  frontend="", standby=True)
+    check_volume_last_backup(client, dr_vol_name, backup.name)
+    wait_for_backup_restore_completed(client, dr_vol_name, backup.name)
+
+    common.update_setting(
+        client, common.SETTING_CONCURRENT_REPLICA_REBUILD_PER_NODE_LIMIT, "0"
+    )
+    common.update_setting(client, common.SETTING_DEGRADED_AVAILABILITY, "true")
+
+    dr_vol = client.by_id_volume(dr_vol_name)
+    failed_replica = dr_vol.replicas[0]
+    crash_replica_processes(client, core_api, dr_vol_name,
+                            replicas=[failed_replica])
+    dr_vol = wait_for_volume_degraded(client, dr_vol_name)
+
+    activate_standby_volume(client, dr_vol_name)
+
+    common.update_setting(
+        client, common.SETTING_CONCURRENT_REPLICA_REBUILD_PER_NODE_LIMIT, "5"
+    )
+
+    dr_vol = client.by_id_volume(dr_vol_name)
+    dr_vol.attach(hostId=host_id)
+    dr_vol = common.wait_for_volume_healthy(client, dr_vol_name)
+
+    check_volume_data(dr_vol, data, False)
+
+
 def test_dr_volume_with_backup_block_deletion(set_random_backupstore, client, core_api, volume_name):  # NOQA
     """
     Test DR volume last backup after block deletion.
@@ -2933,6 +2997,9 @@ def test_backup_lock_deletion_during_restoration(set_random_backupstore, client,
     10. Assert the data from the restored volume with md5sum.
     11. Assert the backup count in the backup store with 0.
     """
+    common.update_setting(client,
+                          common.SETTING_DEGRADED_AVAILABILITY, "false")
+
     backupstore_cleanup(client)
     std_volume_name = volume_name + "-std"
     restore_volume_name = volume_name + "-restore"
@@ -3001,6 +3068,9 @@ def test_backup_lock_deletion_during_backup(set_random_backupstore, client, core
     11. Restore the latest backup.
     12. Wait for the restoration to be completed. Assert md5sum from step 6.
     """
+    common.update_setting(client,
+                          common.SETTING_DEGRADED_AVAILABILITY, "false")
+
     backupstore_cleanup(client)
     std_volume_name = volume_name + "-std"
     restore_volume_name_1 = volume_name + "-restore-1"
@@ -4411,25 +4481,34 @@ def test_default_storage_class_syncup(core_api, request):  # NOQA
 
     # step 3
     for i in range(RETRY_COMMAND_COUNT):
-        longhorn_storage_class = storage_api.read_storage_class("longhorn")
-        storage_class_data = \
-            yaml.safe_load(longhorn_storage_class.
-                           metadata.
-                           annotations["longhorn.io/last-applied-configmap"])
-
-        if storage_class_data["reclaimPolicy"] == \
-                config_map_data["reclaimPolicy"]:
-            break
-
-        time.sleep(RETRY_INTERVAL)
+        try:
+            longhorn_storage_class = storage_api.read_storage_class("longhorn")
+            storage_class_data = \
+                yaml.safe_load(longhorn_storage_class.
+                               metadata.
+                               annotations["longhorn.io/last-applied-configmap"]) # NOQA
+            if storage_class_data["reclaimPolicy"] == \
+                    config_map_data["reclaimPolicy"]:
+                break
+        except Exception as e:
+            print(e)
+        finally:
+            time.sleep(RETRY_INTERVAL)
 
     assert storage_class_data["reclaimPolicy"] == \
         config_map_data["reclaimPolicy"]
 
     # step 4
-    storage_api.delete_storage_class("longhorn")
-    for item in storage_api.list_storage_class().items:
-        assert item.metadata.name != "longhorn"
+    for i in range(RETRY_COMMAND_COUNT):
+        try:
+            storage_api.delete_storage_class("longhorn")
+            for item in storage_api.list_storage_class().items:
+                assert item.metadata.name != "longhorn"
+            break
+        except Exception as e:
+            print(e)
+        finally:
+            time.sleep(RETRY_INTERVAL)
 
     # step 5
     storage_class_recreated = False

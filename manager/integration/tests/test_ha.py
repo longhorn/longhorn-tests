@@ -76,6 +76,9 @@ from common import wait_for_volume_current_image
 from common import wait_for_engine_image_ref_count
 from common import SETTING_CONCURRENT_AUTO_ENGINE_UPGRADE_NODE_LIMIT
 from common import update_setting
+from common import wait_for_backup_volume_backing_image_synced
+from common import RETRY_COMMAND_COUNT
+from common import wait_for_snapshot_count
 
 from backupstore import set_random_backupstore # NOQA
 from backupstore import backupstore_cleanup
@@ -443,6 +446,11 @@ def ha_backup_deletion_recovery_test(client, volume_name, size, backing_image=""
 
     volume.snapshotBackup(name=snap2.name)
     wait_for_backup_completion(client, volume_name, snap2.name)
+    if backing_image != "":
+        wait_for_backup_volume_backing_image_synced(
+            client, volume_name, backing_image
+        )
+
     _, b = find_backup(client, volume_name, snap2.name)
 
     res_name = common.generate_volume_name()
@@ -806,6 +814,8 @@ def test_rebuild_with_restoration(set_random_backupstore, client, core_api, volu
     11. Check md5sum of the data in the restored volume.
     12. Do cleanup.
     """
+    update_setting(client, common.SETTING_DEGRADED_AVAILABILITY, "false")
+
     original_volume_name = volume_name + "-origin"
     data_path = "/data/test"
     original_pod_name, original_pv_name, original_pvc_name, original_md5sum = \
@@ -897,6 +907,8 @@ def test_rebuild_with_inc_restoration(set_random_backupstore, client, core_api, 
     12. Check md5sum of the data in the activated volume.
     13. Do cleanup.
     """
+    update_setting(client, common.SETTING_DEGRADED_AVAILABILITY, "false")
+
     std_volume_name = volume_name + "-std"
     data_path1 = "/data/test1"
     std_pod_name, std_pv_name, std_pvc_name, std_md5sum1 = \
@@ -1011,6 +1023,7 @@ def test_inc_restoration_with_multiple_rebuild_and_expansion(set_random_backupst
         the activated volume.
     22. Do cleanup.
     """
+    update_setting(client, common.SETTING_DEGRADED_AVAILABILITY, "false")
     create_storage_class(storage_class)
 
     original_size = 1 * Gi
@@ -1114,8 +1127,8 @@ def test_inc_restoration_with_multiple_rebuild_and_expansion(set_random_backupst
     # Verify the snapshot info
     dr_volume = client.by_id_volume(dr_volume_name)
     assert dr_volume.size == str(expand_size1)
+    wait_for_snapshot_count(dr_volume, 2, count_removed=True)
     snapshots = dr_volume.snapshotList(volume=dr_volume_name)
-    assert len(snapshots) == 2
     for snap in snapshots:
         if snap["name"] != "volume-head":
             assert snap["name"] == "expand-" + str(expand_size1)
@@ -1149,8 +1162,8 @@ def test_inc_restoration_with_multiple_rebuild_and_expansion(set_random_backupst
     # Then re-verify the snapshot info
     dr_volume = client.by_id_volume(dr_volume_name)
     assert dr_volume.size == str(expand_size2)
+    wait_for_snapshot_count(dr_volume, 2, count_removed=True)
     snapshots = dr_volume.snapshotList(volume=dr_volume_name)
-    assert len(snapshots) == 2
     for snap in snapshots:
         if snap["name"] != "volume-head":
             assert snap["name"] == "expand-" + str(expand_size2)
@@ -1524,6 +1537,8 @@ def test_single_replica_restore_failure(set_random_backupstore, client, core_api
     assert auto_salvage_setting.name == SETTING_AUTO_SALVAGE
     assert auto_salvage_setting.value == "true"
 
+    update_setting(client, common.SETTING_DEGRADED_AVAILABILITY, "false")
+
     backupstore_cleanup(client)
 
     data_path = "/data/test"
@@ -1630,6 +1645,8 @@ def test_dr_volume_with_restore_command_error(set_random_backupstore, client, co
     13. Validate the volume content.
     14. Verify Writing data to the activated volume is fine.
     """
+    update_setting(client, common.SETTING_DEGRADED_AVAILABILITY, "false")
+
     std_volume_name = volume_name + "-std"
     data_path1 = "/data/test1"
     std_pod_name, std_pv_name, std_pvc_name, std_md5sum1 = \
@@ -3059,6 +3076,8 @@ def test_engine_image_not_fully_deployed_perform_dr_restoring_expanding_volume(c
     15. In a 2-min retry verify that Longhorn doesn't create new replica
        for vol-1 and doesn't reuse the failed replica on node-x
     """
+    update_setting(client, common.SETTING_DEGRADED_AVAILABILITY, "false")
+
     tainted_node_id = \
         prepare_engine_not_fully_deployed_environment(client, core_api)
 
@@ -3367,8 +3386,16 @@ def test_recovery_from_im_deletion(client, core_api, volume_name, make_deploymen
     wait_pod(pod_names[0])
 
     command = 'cat /data/test'
-    to_be_verified_data = exec_command_in_pod(
-        core_api, command, pod_names[0], 'default')
+    for i in range(RETRY_COMMAND_COUNT):
+        try:
+            to_be_verified_data = exec_command_in_pod(
+                core_api, command, pod_names[0], 'default')
+            if test_data == to_be_verified_data:
+                break
+        except Exception as e:
+            print(e)
+        finally:
+            time.sleep(RETRY_INTERVAL)
 
     # Step8
     assert test_data == to_be_verified_data

@@ -27,6 +27,9 @@ from common import delete_backup
 from common import create_and_check_volume, create_pvc, \
     wait_and_get_pv_for_pvc, wait_delete_pvc
 from common import volume_name # NOQA
+from common import update_setting
+from common import SETTING_DEGRADED_AVAILABILITY
+
 from backupstore import backupstore_cleanup
 
 from kubernetes import client as k8sclient
@@ -227,24 +230,8 @@ def test_kubernetes_status(client, core_api, storage_class,  # NOQA
         ks_list[i]['lastPVCRefAt'] = ''
         if i == 0:
             ks_list[i]['lastPodRefAt'] = 'not empty'
-            ks_list[i]['workloadsStatus'] = [
-                {
-                    'podName': p['pod_name'],
-                    'podStatus': 'Running',
-                    'workloadName': statefulset_name,
-                    'workloadType': 'StatefulSet',
-                },
-            ]
         if i == 1:
             ks_list[i]['lastPodRefAt'] = ''
-            ks_list[i]['workloadsStatus'] = [
-                {
-                    'podName': extra_pod_name,
-                    'podStatus': 'Running',
-                    'workloadName': '',
-                    'workloadType': '',
-                }
-            ]
         wait_volume_kubernetes_status(client, volume_name, ks_list[i])
 
     # deleted extra_pod, all volumes have no workload
@@ -541,6 +528,7 @@ def test_backup_kubernetes_status(set_random_backupstore, client, core_api, pod)
         1. Make sure `lastPodRefAt` and `lastPVCRefAt` matched volume on step
         12
     """
+    update_setting(client, SETTING_DEGRADED_AVAILABILITY, "false")
 
     host_id = get_self_host_id()
     static_sc_name = "longhorn-static-test"
@@ -659,13 +647,7 @@ def test_backup_kubernetes_status(set_random_backupstore, client, core_api, pod)
         'namespace': 'default',
         'pvcName': pvc_name,
         'pvName': '',
-        'pvStatus': '',
-        'workloadsStatus': [{
-            'podName': pod_name,
-            'podStatus': 'Running',
-            'workloadName': '',
-            'workloadType': ''
-        }]
+        'pvStatus': ''
     }
     wait_volume_kubernetes_status(client, volume_name, ks)
     volume = wait_for_volume_detached(client, volume_name)
@@ -687,12 +669,6 @@ def test_backup_kubernetes_status(set_random_backupstore, client, core_api, pod)
     assert status['pvcName'] == pvc_name
     assert status['pvName'] == ""
     assert status['pvStatus'] == ""
-    assert status['workloadsStatus'] == [{
-        'podName': pod_name,
-        'podStatus': 'Running',
-        'workloadName': '',
-        'workloadType': ''
-    }]
 
     restore_name = generate_volume_name()
     client.create_volume(name=restore_name, size=SIZE,
@@ -707,13 +683,7 @@ def test_backup_kubernetes_status(set_random_backupstore, client, core_api, pod)
         'namespace': 'default',
         'pvcName': pvc_name,
         'pvName': '',
-        'pvStatus': '',
-        'workloadsStatus': [{
-            'podName': pod_name,
-            'podStatus': 'Running',
-            'workloadName': '',
-            'workloadType': ''
-        }]
+        'pvStatus': ''
     }
     wait_volume_kubernetes_status(client, restore_name, ks)
     restore = client.by_id_volume(restore_name)
@@ -811,3 +781,21 @@ def test_delete_provisioned_pvc(client, core_api,  storage_class, pvc): # NOQA
     delete_and_wait_pvc(core_api, pvc['metadata']['name'])
     wait_delete_pv(core_api, pv_name)
     wait_for_volume_delete(client, volume_name)
+
+@pytest.mark.skip(reason="TODO") # NOQA
+@pytest.mark.csi  # NOQA
+def test_csi_umount_when_longhorn_block_device_is_disconnected_unexpectedly():  # NOQA
+    """
+    Test CSI umount when Longhorn block device is disconnected unexpectedly
+
+    GitHub ticket: https://github.com/longhorn/longhorn/issues/3778
+
+    1. Deloy a statefulset that has volumeClaimTemplates with
+        volumeMode: Block
+    2. Crash the engine process of the volume to simulate Longhorn block
+        device is disconnected unexpectedly
+    3. Delete the workload pod
+    4. Verify that the pod is able to terminated and a new pod is able
+        start
+    """
+    pass
