@@ -686,7 +686,20 @@ def wait_for_snapshot_checksums_generate(volume_name):   # NOQA
             time.sleep(RETRY_INTERVAL)
 
     assert snapshot_checksums_generate
-    return count</code></pre>
+    return count
+
+@pytest.mark.skip(reason=&#34;TODO&#34;) # NOQA
+def test_snapshot_cr():  # NOQA
+    &#34;&#34;&#34;
+    GitHub ticket: https://github.com/longhorn/longhorn/issues/6298
+
+    1. set auto-cleanup-system-generated-snapshots to true
+    2. Create and attach a volume with 3 replicas
+    3. Delete one of the volumes replicas.
+    4. Wait for the replica to rebuild and volume become healthy
+    5. Verify that there is one Longhorn snapshot CR of this volume
+    6. Repeat steps 3-5 about 10 times
+    &#34;&#34;&#34;</code></pre>
 </details>
 </section>
 <section>
@@ -1217,6 +1230,37 @@ with the values from the api</li>
                    fast_replica_rebuild)</code></pre>
 </details>
 </dd>
+<dt id="tests.test_snapshot.test_snapshot_cr"><code class="name flex">
+<span>def <span class="ident">test_snapshot_cr</span></span>(<span>)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>GitHub ticket: <a href="https://github.com/longhorn/longhorn/issues/6298">https://github.com/longhorn/longhorn/issues/6298</a></p>
+<ol>
+<li>set auto-cleanup-system-generated-snapshots to true</li>
+<li>Create and attach a volume with 3 replicas</li>
+<li>Delete one of the volumes replicas.</li>
+<li>Wait for the replica to rebuild and volume become healthy</li>
+<li>Verify that there is one Longhorn snapshot CR of this volume</li>
+<li>Repeat steps 3-5 about 10 times</li>
+</ol></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@pytest.mark.skip(reason=&#34;TODO&#34;) # NOQA
+def test_snapshot_cr():  # NOQA
+    &#34;&#34;&#34;
+    GitHub ticket: https://github.com/longhorn/longhorn/issues/6298
+
+    1. set auto-cleanup-system-generated-snapshots to true
+    2. Create and attach a volume with 3 replicas
+    3. Delete one of the volumes replicas.
+    4. Wait for the replica to rebuild and volume become healthy
+    5. Verify that there is one Longhorn snapshot CR of this volume
+    6. Repeat steps 3-5 about 10 times
+    &#34;&#34;&#34;</code></pre>
+</details>
+</dd>
 <dt id="tests.test_snapshot.test_snapshot_hash_detect_corruption_in_global_enabled_mode"><code class="name flex">
 <span>def <span class="ident">test_snapshot_hash_detect_corruption_in_global_enabled_mode</span></span>(<span>client, volume_name, settings_reset)</span>
 </code></dt>
@@ -1733,6 +1777,7 @@ are created
 <li><code><a title="tests.test_snapshot.get_ctime_in_checksum_file" href="#tests.test_snapshot.get_ctime_in_checksum_file">get_ctime_in_checksum_file</a></code></li>
 <li><code><a title="tests.test_snapshot.get_local_host_replica_data_path" href="#tests.test_snapshot.get_local_host_replica_data_path">get_local_host_replica_data_path</a></code></li>
 <li><code><a title="tests.test_snapshot.prepare_settings_for_snapshot_test" href="#tests.test_snapshot.prepare_settings_for_snapshot_test">prepare_settings_for_snapshot_test</a></code></li>
+<li><code><a title="tests.test_snapshot.test_snapshot_cr" href="#tests.test_snapshot.test_snapshot_cr">test_snapshot_cr</a></code></li>
 <li><code><a title="tests.test_snapshot.test_snapshot_hash_detect_corruption_in_global_enabled_mode" href="#tests.test_snapshot.test_snapshot_hash_detect_corruption_in_global_enabled_mode">test_snapshot_hash_detect_corruption_in_global_enabled_mode</a></code></li>
 <li><code><a title="tests.test_snapshot.test_snapshot_hash_detect_corruption_in_global_fast_check_mode" href="#tests.test_snapshot.test_snapshot_hash_detect_corruption_in_global_fast_check_mode">test_snapshot_hash_detect_corruption_in_global_fast_check_mode</a></code></li>
 <li><code><a title="tests.test_snapshot.test_snapshot_hash_global_disabled_and_per_volume_enabled_and_with_immediate_hash" href="#tests.test_snapshot.test_snapshot_hash_global_disabled_and_per_volume_enabled_and_with_immediate_hash">test_snapshot_hash_global_disabled_and_per_volume_enabled_and_with_immediate_hash</a></code></li>

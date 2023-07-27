@@ -62,8 +62,6 @@
   </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.1/besteffort-recurring-job/</loc>
   </url><url>
-    <loc>https://longhorn.github.io/longhorn-tests/categories/</loc>
-  </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.1/change-imagepullpolicy/</loc>
   </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/stability/checksum-enabled-large-volume/</loc>
@@ -185,8 +183,6 @@
     <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/stability/</loc>
   </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/kubelet_volume_metrics/</loc>
-  </url><url>
-    <loc>https://longhorn.github.io/longhorn-tests/tags/</loc>
   </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.1/test-s3-access-style/</loc>
   </url><url>
