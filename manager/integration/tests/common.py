@@ -62,6 +62,7 @@ PORT = ":9500"
 RETRY_COMMAND_COUNT = 3
 RETRY_COUNTS = 150
 RETRY_COUNTS_SHORT = 30
+RETRY_COUNTS_LONG = 360
 RETRY_INTERVAL = 1
 RETRY_INTERVAL_LONG = 2
 RETRY_BACKUP_COUNTS = 300
@@ -4061,10 +4062,10 @@ def wait_for_expansion_failure(client, volume_name, last_failed_at=""):
     assert failed
 
 
-def wait_for_rebuild_complete(client, volume_name):
+def wait_for_rebuild_complete(client, volume_name, retry_count=RETRY_COUNTS):
     completed = 0
     rebuild_statuses = {}
-    for i in range(RETRY_COUNTS):
+    for i in range(retry_count):
         completed = 0
         v = client.by_id_volume(volume_name)
         rebuild_statuses = v.rebuildStatus

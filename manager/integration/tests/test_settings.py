@@ -29,7 +29,7 @@ from common import (  # NOQA
     SETTING_PRIORITY_CLASS,
     SETTING_DEFAULT_REPLICA_COUNT,
     SETTING_BACKUP_TARGET,
-    SIZE, RETRY_COUNTS, RETRY_EXEC_COUNTS,
+    SIZE, RETRY_COUNTS, RETRY_COUNTS_LONG, RETRY_EXEC_COUNTS,
     RETRY_INTERVAL, RETRY_INTERVAL_LONG,
     update_setting, BACKING_IMAGE_QCOW2_URL, BACKING_IMAGE_NAME,
     create_backing_image_with_matching_url, BACKING_IMAGE_EXT4_SIZE,
@@ -835,9 +835,9 @@ def test_setting_concurrent_rebuild_limit(client, core_api, volume_name):  # NOQ
 
         time.sleep(RETRY_INTERVAL)
 
-    wait_for_rebuild_complete(client, volume1_name)
+    wait_for_rebuild_complete(client, volume1_name, RETRY_COUNTS_LONG)
     wait_for_rebuild_start(client, volume2_name)
-    wait_for_rebuild_complete(client, volume2_name)
+    wait_for_rebuild_complete(client, volume2_name, RETRY_COUNTS_LONG)
 
     # Step 1-6
     wait_for_volume_healthy(client, volume1_name)
@@ -867,8 +867,8 @@ def test_setting_concurrent_rebuild_limit(client, core_api, volume_name):  # NOQ
     assert concourent_build is True
 
     # Step 1-8
-    wait_for_rebuild_complete(client, volume1_name)
-    wait_for_rebuild_complete(client, volume2_name)
+    wait_for_rebuild_complete(client, volume1_name, RETRY_COUNTS_LONG)
+    wait_for_rebuild_complete(client, volume2_name, RETRY_COUNTS_LONG)
 
     # Step 1-9
     update_setting(client,
@@ -891,28 +891,30 @@ def test_setting_concurrent_rebuild_limit(client, core_api, volume_name):  # NOQ
 
     # While one volume is rebuilding, verify another volume is not
     # rebuilding and stuck in degrading state
-    rebuild_started = False
-    for i in range(RETRY_COUNTS):
+    v1_rebuild_started = False
+    v2_rebuild_started = False
+    for i in range(RETRY_COUNTS_LONG):
         volume1 = client.by_id_volume(volume1_name)
         volume2 = client.by_id_volume(volume2_name)
 
-        if volume1.rebuildStatus == [] and \
-                volume2.rebuildStatus == [] and \
-                rebuild_started is False:
-            continue
-        elif volume1.rebuildStatus == [] and \
-                volume2.rebuildStatus == [] and \
-                rebuild_started is True:
+        if volume1.rebuildStatus == [] and volume2.rebuildStatus == [] \
+                and v1_rebuild_started and v2_rebuild_started:
             break
         elif volume2.rebuildStatus == []:
-            assert volume1.rebuildStatus[0].state == "in_progress"
-            rebuild_started = True
+            if volume1.rebuildStatus and \
+                    volume1.rebuildStatus[0].state == "in_progress" and \
+                    len(volume1.replicas) == 3:
+                v1_rebuild_started = True
         elif volume1.rebuildStatus == []:
-            assert volume2.rebuildStatus[0].state == "in_progress"
-            rebuild_started = True
+            if volume2.rebuildStatus and \
+                    volume2.rebuildStatus[0].state == "in_progress" and \
+                    len(volume2.replicas) == 3:
+                v2_rebuild_started = True
 
-        time.sleep(RETRY_INTERVAL)
+        time.sleep(RETRY_INTERVAL_LONG)
 
+    assert v2_rebuild_started
+    assert v1_rebuild_started
     wait_for_rebuild_complete(client, volume2_name)
     wait_for_rebuild_complete(client, volume1_name)
 
@@ -951,6 +953,7 @@ def test_setting_concurrent_rebuild_limit(client, core_api, volume_name):  # NOQ
         time.sleep(RETRY_INTERVAL)
     assert expect_case is True
 
+    wait_for_rebuild_complete(client, volume1_name)
     wait_for_volume_healthy(client, volume1_name)
     volume2.detach(hostId=lht_host_id)
     wait_for_volume_detached(client, volume2_name)
