@@ -659,3 +659,16 @@ def wait_for_snapshot_checksums_generate(volume_name):   # NOQA
 
     assert snapshot_checksums_generate
     return count
+
+@pytest.mark.skip(reason="TODO") # NOQA
+def test_snapshot_cr():  # NOQA
+    """
+    GitHub ticket: https://github.com/longhorn/longhorn/issues/6298
+
+    1. set auto-cleanup-system-generated-snapshots to true
+    2. Create and attach a volume with 3 replicas
+    3. Delete one of the volumes replicas.
+    4. Wait for the replica to rebuild and volume become healthy
+    5. Verify that there is one Longhorn snapshot CR of this volume
+    6. Repeat steps 3-5 about 10 times
+    """
