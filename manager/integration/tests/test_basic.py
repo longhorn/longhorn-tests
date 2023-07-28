@@ -5439,3 +5439,27 @@ def test_filesystem_trim(client, fs_type):  # NOQA
 
     client.delete(volume)
     wait_for_volume_delete(client, test_volume_name)
+
+
+@pytest.mark.skip(reason="TODO")
+def test_backuptarget_invalid(): # NOQA
+    """
+    Related issue :
+    https://github.com/longhorn/longhorn/issues/1249
+
+    This test case does not cover the UI test mentioned in the related issue's
+    test steps."
+
+    Setup
+    - Give an incorrect value to Backup target.
+
+    Given
+    - Create a volume, attach it to a workload, write data into the volume.
+
+    When
+    - Create a backup by a manifest yaml file
+
+    Then
+    - Backup will be failed and the backup state is Error.
+    """
+    pass
