@@ -1,6 +1,10 @@
 import pytest
+
 import os
+import time
 import zipfile
+
+from kubernetes.stream import stream
 
 from tempfile import TemporaryDirectory
 
@@ -15,11 +19,16 @@ from common import create_support_bundle
 from common import delete_and_wait_deployment
 from common import download_support_bundle
 from common import get_all_support_bundle_manager_deployments
+from common import get_custom_object_api_client
+from common import timeout
 from common import set_k8s_node_label
 from common import update_setting
 from common import wait_for_support_bundle_cleanup
 from common import wait_for_support_bundle_state
 
+from common import LONGHORN_NAMESPACE
+from common import RETRY_COUNTS
+from common import RETRY_INTERVAL
 from common import SETTING_NODE_SELECTOR
 from common import SETTING_SUPPORT_BUNDLE_FAILED_LIMIT
 from common import SETTING_TAINT_TOLERATION
@@ -260,5 +269,135 @@ def test_support_bundle_agent_with_taint_toleration(client, taint_nodes_exclude_
             node_names = [node.name for node in nodes]
             check_bundled_nodes_matches(node_names, zip, temp_dir)
 
+    wait_for_support_bundle_cleanup(client)
+    check_all_support_bundle_managers_deleted()
+
+
+@pytest.mark.support_bundle   # NOQA
+def test_support_bundle_should_replace_existing_ready_support_bundle(client):  # NOQA
+    """
+    Scenario: test support bundle should replace existing ready support bundle
+
+    Issue: https://github.com/longhorn/longhorn/issues/5882
+
+    Given support bundle created
+    And support bundle is in ReadyToDownload state
+    And support bundle is not downloaded
+
+    When new support bundle created
+
+    Then download new support bundle
+    And new support bundle is downloaded
+    And new support bundle should be deleted
+    And old support bundle should be deleted
+    And new support bundle manager should be deleted
+    And old support bundle manager should be deleted
+    """
+    old_sb_resp = create_support_bundle(client)
+    old_sb_node_id = old_sb_resp['id']
+    old_sb_name = old_sb_resp['name']
+
+    wait_for_support_bundle_state("ReadyForDownload",
+                                  old_sb_node_id, old_sb_name, client)
+
+    new_sb_resp = create_support_bundle(client)
+    new_sb_node_id = new_sb_resp['id']
+    new_sb_name = new_sb_resp['name']
+    assert new_sb_name != old_sb_name
+
+    wait_for_support_bundle_state("ReadyForDownload",
+                                  new_sb_node_id, new_sb_name, client)
+
+    download_support_bundle(new_sb_node_id, new_sb_name, client)
+
+    wait_for_support_bundle_cleanup(client)
+    check_all_support_bundle_managers_deleted()
+
+
+@pytest.mark.support_bundle   # NOQA
+def test_support_bundle_should_not_timeout(client, core_api):  # NOQA
+    """
+    Scenario: test support bundle should not timeout
+
+    Issue: https://github.com/longhorn/longhorn/issues/6256
+
+    Given support bundle created
+    And support bundle state is (ReadyForDownload)
+    And replace support bundle zip file with a large file (5GB)
+    And support bundle file size is updated to the size of the large file
+
+    When download support bundle
+
+    Then support bundle should be downloaded successfully
+    And support bundle should be deleted
+    And support bundle manager should be deleted
+    """
+    resp = create_support_bundle(client)
+    node_id = resp['id']
+    support_bundle_name = resp['name']
+
+    wait_for_support_bundle_state(
+        "ReadyForDownload", node_id, support_bundle_name, client
+    )
+
+    for _ in range(RETRY_COUNTS):
+        time.sleep(RETRY_INTERVAL)
+        label = f"rancher/supportbundle={support_bundle_name}"
+        pods = core_api.list_pod_for_all_namespaces(label_selector=label,
+                                                    watch=False)
+        if len(pods.items) == 1:
+            break
+    assert len(pods.items) == 1, \
+        f'Expect 1 support bundle manager pod, got {len(pods.items)}'
+
+    pod_name = pods.items[0].metadata.name
+
+    bundle = "/tmp/mock-support-bundle"
+    cmd = [
+        "bash", "-c",
+        f"bundle=`ls /tmp/support-bundle-kit/ | grep zip` &&\
+        rm -f /tmp/support-bundle-kit/$bundle &&\
+        dd if=/dev/urandom of={bundle} bs=1G count=5 > /dev/null 2>&1 &&\
+        zip /tmp/support-bundle-kit/$bundle {bundle} > /dev/null 2>&1 &&\
+        rm -f {bundle} &&\
+        stat -c \"%s\" /tmp/support-bundle-kit/$bundle",
+    ]
+    with timeout(seconds=600, error_message='Timeout on executing command'):
+        zip_size = stream(core_api.connect_get_namespaced_pod_exec,
+                          pod_name, LONGHORN_NAMESPACE,
+                          command=cmd, stderr=True, stdin=False, stdout=True,
+                          tty=False)
+    zip_size = zip_size.replace('\n', '')
+
+    custom_obj_api = get_custom_object_api_client()
+
+    # Define the resource details
+    group = "longhorn.io"
+    version = "v1beta2"
+    plural = "supportbundles"
+
+    # Retrieve the current state of the SupportBundle
+    support_bundle = custom_obj_api.get_namespaced_custom_object(
+        group=group,
+        version=version,
+        namespace=LONGHORN_NAMESPACE,
+        plural=plural,
+        name=support_bundle_name
+    )
+
+    # Update the file size in the SupportBundle status
+    support_bundle["status"]["filesize"] = int(zip_size)
+
+    # Update the SupportBundle with the modified status
+    custom_obj_api.replace_namespaced_custom_object_status(
+        group=group,
+        version=version,
+        namespace=LONGHORN_NAMESPACE,
+        plural=plural,
+        name=support_bundle_name,
+        body=support_bundle
+    )
+
+    download_support_bundle(node_id, support_bundle_name, client)
     wait_for_support_bundle_cleanup(client)
     check_all_support_bundle_managers_deleted()

@@ -30,6 +30,7 @@ data "template_file" "provision_k3s_server" {
     k3s_server_public_ip = aws_eip.lh_aws_eip_controlplane[0].public_ip
     k3s_version =  var.k8s_distro_version
     selinux_mode = var.selinux_mode
+    enable_selinux = var.selinux_mode == "permissive" ? "false" : "true"
   }
 }
 
@@ -41,7 +42,7 @@ data "template_file" "provision_k3s_agent" {
     k3s_cluster_secret = random_password.cluster_secret.result
     k3s_version =  var.k8s_distro_version
     selinux_mode = var.selinux_mode
-
+    enable_selinux = var.selinux_mode == "permissive" ? "false" : "true"
   }
 }
 

@@ -25,23 +25,63 @@ set_kubeconfig_envvar(){
   ARCH=${1}
   BASEDIR=${2}
 
-    if [[ ${ARCH} == "amd64" ]] ; then
+  if [[ ${ARCH} == "amd64" ]] ; then
     if [[ ${TF_VAR_k8s_distro_name} == [rR][kK][eE] ]]; then
       export KUBECONFIG="${BASEDIR}/kube_config_rke.yml"
     elif [[ ${TF_VAR_k8s_distro_name} == [rR][kK][eE]2 ]]; then
-      export KUBECONFIG="${BASEDIR}/terraform/aws/${DISTRO}/rke2.yaml"
+      export KUBECONFIG="${BASEDIR}/terraform/${LONGHORN_TEST_CLOUDPROVIDER}/${DISTRO}/rke2.yaml"
+    elif [[ ${TF_VAR_k8s_distro_name} == "aks" ]]; then
+      export KUBECONFIG="${BASEDIR}/aks.yml"
+    elif [[ ${TF_VAR_k8s_distro_name} == "eks" ]]; then
+      export KUBECONFIG="${BASEDIR}/eks.yml"
     else
-      export KUBECONFIG="${BASEDIR}/terraform/aws/${DISTRO}/k3s.yaml"
+      export KUBECONFIG="${BASEDIR}/terraform/${LONGHORN_TEST_CLOUDPROVIDER}/${DISTRO}/k3s.yaml"
     fi
   elif [[ ${ARCH} == "arm64"  ]]; then
-    export KUBECONFIG="${BASEDIR}/terraform/aws/${DISTRO}/k3s.yaml"
+    if [[ ${TF_VAR_k8s_distro_name} == "aks" ]]; then
+      export KUBECONFIG="${BASEDIR}/aks.yml"
+    elif [[ ${TF_VAR_k8s_distro_name} == "eks" ]]; then
+      export KUBECONFIG="${BASEDIR}/eks.yml"
+    else
+      export KUBECONFIG="${BASEDIR}/terraform/${LONGHORN_TEST_CLOUDPROVIDER}/${DISTRO}/k3s.yaml"
+    fi
   fi
+}
+
+
+create_admin_service_account(){
+  kubectl apply -f "${TF_VAR_tf_workspace}/templates/kubeconfig_service_account.yaml"
+  TOKEN=$(kubectl -n kube-system get secret/kubeconfig-cluster-admin-token -o=go-template='{{.data.token}}' | base64 -d)
+  yq -i ".users[0].user.token=\"${TOKEN}\""  "${TF_VAR_tf_workspace}/eks.yml"
+}
+
+
+apply_selinux_workaround(){
+  kubectl apply -f "https://raw.githubusercontent.com/longhorn/longhorn/master/deploy/prerequisite/longhorn-iscsi-selinux-workaround.yaml"
+}
+
+
+install_iscsi(){
+  kubectl apply -f "https://raw.githubusercontent.com/longhorn/longhorn/master/deploy/prerequisite/longhorn-iscsi-installation.yaml"
+}
+
+
+install_cluster_autoscaler(){
+  curl -o "${TF_VAR_tf_workspace}/templates/cluster_autoscaler.yaml" "https://raw.githubusercontent.com/kubernetes/autoscaler/master/cluster-autoscaler/cloudprovider/aws/examples/cluster-autoscaler-autodiscover.yaml"
+  CLUSTER_NAME=$(kubectl config current-context)
+  sed -i "s/<YOUR CLUSTER NAME>/${CLUSTER_NAME}/g" "${TF_VAR_tf_workspace}/templates/cluster_autoscaler.yaml"
+  yq -i 'select(.kind == "Deployment").spec.template.spec.containers[0].env += [{"name": "AWS_ACCESS_KEY_ID", "valueFrom": {"secretKeyRef": {"name": "aws-cred-secret", "key": "AWS_ACCESS_KEY_ID"}}}]' "${TF_VAR_tf_workspace}/templates/cluster_autoscaler.yaml"
+  yq -i 'select(.kind == "Deployment").spec.template.spec.containers[0].env += [{"name": "AWS_SECRET_ACCESS_KEY", "valueFrom": {"secretKeyRef": {"name": "aws-cred-secret", "key": "AWS_SECRET_ACCESS_KEY"}}}]' "${TF_VAR_tf_workspace}/templates/cluster_autoscaler.yaml"
+  yq -i 'select(.kind == "Deployment").spec.template.spec.containers[0].env += [{"name": "AWS_REGION", "valueFrom": {"secretKeyRef": {"name": "aws-cred-secret", "key": "AWS_DEFAULT_REGION"}}}]' "${TF_VAR_tf_workspace}/templates/cluster_autoscaler.yaml"
+  yq -i 'select(.kind == "Deployment").spec.template.spec.containers[0].command += "--scale-down-unneeded-time=1m"' "${TF_VAR_tf_workspace}/templates/cluster_autoscaler.yaml"
+  yq -i 'select(.kind == "Deployment").spec.template.spec.containers[0].command += "--scale-down-delay-after-add=1m"' "${TF_VAR_tf_workspace}/templates/cluster_autoscaler.yaml"
+  kubectl apply -f "${TF_VAR_tf_workspace}/templates/cluster_autoscaler.yaml"
 }
 
 
 install_csi_snapshotter_crds(){
     CSI_SNAPSHOTTER_REPO_URL="https://github.com/kubernetes-csi/external-snapshotter.git"
-    CSI_SNAPSHOTTER_REPO_BRANCH="v5.0.1"
+    CSI_SNAPSHOTTER_REPO_BRANCH="v6.2.1"
     CSI_SNAPSHOTTER_REPO_DIR="${TMPDIR}/k8s-csi-external-snapshotter"
 
     git clone --single-branch \
@@ -101,14 +141,18 @@ wait_longhorn_status_running(){
   local RETRY_COUNTS=10 # in minutes
   local RETRY_INTERVAL="1m"
 
+  # csi components are installed after longhorn components.
+  # it's possible that all longhorn components are running but csi components aren't created yet.
   RETRIES=0
-  while [[ -n `kubectl get pods -n ${LONGHORN_NAMESPACE} --no-headers | awk '{print $3}' | grep -v Running` ]]; do
+  while [[ -z `kubectl get pods -n ${LONGHORN_NAMESPACE} --no-headers 2>&1 | awk '{print $1}' | grep csi-` ]] || \
+    [[ -n `kubectl get pods -n ${LONGHORN_NAMESPACE} --no-headers 2>&1 | awk '{print $3}' | grep -v Running` ]]; do
     echo "Longhorn is still installing ... re-checking in 1m"
     sleep ${RETRY_INTERVAL}
     RETRIES=$((RETRIES+1))
 
     if [[ ${RETRIES} -eq ${RETRY_COUNTS} ]]; then echo "Error: longhorn installation timeout"; exit 1 ; fi
   done
+
 }
 
 
@@ -229,6 +273,14 @@ install_longhorn_stable(){
 
 create_longhorn_namespace(){
   kubectl create ns ${LONGHORN_NAMESPACE}
+  if [[ "${TF_VAR_cis_hardening}" == true ]]; then
+    kubectl label ns default ${LONGHORN_NAMESPACE} pod-security.kubernetes.io/enforce=privileged
+    kubectl label ns default ${LONGHORN_NAMESPACE} pod-security.kubernetes.io/enforce-version=latest
+    kubectl label ns default ${LONGHORN_NAMESPACE} pod-security.kubernetes.io/audit=privileged
+    kubectl label ns default ${LONGHORN_NAMESPACE} pod-security.kubernetes.io/audit-version=latest
+    kubectl label ns default ${LONGHORN_NAMESPACE} pod-security.kubernetes.io/warn=privileged
+    kubectl label ns default ${LONGHORN_NAMESPACE} pod-security.kubernetes.io/warn-version=latest
+  fi
 }
 
 
@@ -250,6 +302,7 @@ create_aws_secret(){
   yq e -i '.data.AWS_DEFAULT_REGION |= "'${AWS_DEFAULT_REGION_BASE64}'"' "${TF_VAR_tf_workspace}/templates/aws_cred_secrets.yml"
 
   kubectl apply -f "${TF_VAR_tf_workspace}/templates/aws_cred_secrets.yml"
+  kubectl apply -f "${TF_VAR_tf_workspace}/templates/aws_cred_secrets.yml" -n kube-system
 }
 
 
@@ -339,6 +392,10 @@ run_longhorn_tests(){
     yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env[3].value="hdd"' ${LONGHORN_TESTS_MANIFEST_FILE_PATH}
   fi
 
+  if [[ "${TF_VAR_k8s_distro_name}" == "eks" ]] || [[ "${TF_VAR_k8s_distro_name}" == "aks" ]]; then
+    yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env[6].value="true"' ${LONGHORN_TESTS_MANIFEST_FILE_PATH}
+  fi
+
   set +x
   ## inject aws cloudprovider and credentials env variables from created secret
   yq e -i 'select(.spec.containers[0].env != null).spec.containers[0].env += {"name": "CLOUDPROVIDER", "value": "aws"}' "${LONGHORN_TESTS_MANIFEST_FILE_PATH}"
@@ -363,7 +420,7 @@ run_longhorn_tests(){
   done
 
   # wait longhorn tests to complete
-  while [[ -n "`kubectl get pod longhorn-test -o=jsonpath='{.status.containerStatuses[?(@.name=="longhorn-test")].state}' | grep \"running\"`"  ]]; do
+  while [[ "`kubectl get pod longhorn-test -o=jsonpath='{.status.containerStatuses[?(@.name=="longhorn-test")].state}' 2>&1 | grep -v \"terminated\"`"  ]]; do
     kubectl logs ${LONGHORN_TEST_POD_NAME} -c longhorn-test -f --since=10s
   done
 
@@ -373,13 +430,26 @@ run_longhorn_tests(){
 
 main(){
   set_kubeconfig_envvar ${TF_VAR_arch} ${TF_VAR_tf_workspace}
-  create_longhorn_namespace
-  install_backupstores
+
+  if [[ ${DISTRO} == "rhel" ]] || [[ ${DISTRO} == "rockylinux" ]] || [[ ${DISTRO} == "oracle" ]]; then
+    apply_selinux_workaround
+  fi
+
   # set debugging mode off to avoid leaking aws secrets to the logs.
   # DON'T REMOVE!
   set +x
   create_aws_secret
   set -x
+
+  if [[ ${TF_VAR_k8s_distro_name} == "eks" ]]; then
+    create_admin_service_account
+    install_iscsi
+    install_cluster_autoscaler
+  fi
+  create_longhorn_namespace
+  if [[ ${PYTEST_CUSTOM_OPTIONS} != *"--include-cluster-autoscaler-test"* ]]; then
+    install_backupstores
+  fi
   install_csi_snapshotter_crds
 
   if [[ "${AIR_GAP_INSTALLATION}" == true ]]; then

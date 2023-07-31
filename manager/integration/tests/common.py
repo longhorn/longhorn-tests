@@ -11,6 +11,7 @@ import hashlib
 import signal
 import types
 import threading
+import re
 
 import socket
 import pytest
@@ -63,7 +64,7 @@ PORT = ":9500"
 RETRY_COMMAND_COUNT = 3
 RETRY_COUNTS = 150
 RETRY_COUNTS_SHORT = 30
-RETRY_COUNTS_LONG = 300
+RETRY_COUNTS_LONG = 360
 RETRY_INTERVAL = 1
 RETRY_INTERVAL_LONG = 2
 RETRY_BACKUP_COUNTS = 300
@@ -116,8 +117,8 @@ DEFAULT_STATEFULSET_INTERVAL = 1
 DEFAULT_STATEFULSET_TIMEOUT = 180
 
 DEFAULT_DEPLOYMENT_INTERVAL = 1
-DEFAULT_DEPLOYMENT_TIMEOUT = 120
-WAIT_FOR_POD_STABLE_MAX_RETRY = 30
+DEFAULT_DEPLOYMENT_TIMEOUT = 240
+WAIT_FOR_POD_STABLE_MAX_RETRY = 90
 
 
 DEFAULT_VOLUME_SIZE = 3  # In Gi
@@ -140,7 +141,7 @@ VOLUME_FRONTEND_BLOCKDEV = "blockdev"
 VOLUME_FRONTEND_ISCSI = "iscsi"
 
 DEFAULT_DISK_PATH = "/var/lib/longhorn/"
-DEFAULT_STORAGE_OVER_PROVISIONING_PERCENTAGE = "200"
+DEFAULT_STORAGE_OVER_PROVISIONING_PERCENTAGE = "100"
 DEFAULT_STORAGE_MINIMAL_AVAILABLE_PERCENTAGE = "10"
 DEFAULT_LONGHORN_STATIC_STORAGECLASS_NAME = "longhorn-static"
 
@@ -166,9 +167,6 @@ SETTING_DEGRADED_AVAILABILITY = \
     "allow-volume-creation-with-degraded-availability"
 SETTING_DISABLE_SCHEDULING_ON_CORDONED_NODE = \
     "disable-scheduling-on-cordoned-node"
-SETTING_GUARANTEED_ENGINE_CPU = "guaranteed-engine-cpu"
-SETTING_GUARANTEED_ENGINE_MANAGER_CPU = "guaranteed-engine-manager-cpu"
-SETTING_GUARANTEED_REPLICA_MANAGER_CPU = "guaranteed-replica-manager-cpu"
 SETTING_GUARANTEED_INSTANCE_MANAGER_CPU = "guaranteed-instance-manager-cpu"
 SETTING_PRIORITY_CLASS = "priority-class"
 SETTING_RECURRING_JOB_WHILE_VOLUME_DETACHED = \
@@ -202,6 +200,8 @@ SETTING_CONCURRENT_VOLUME_BACKUP_RESTORE = \
 SETTING_NODE_SELECTOR = "system-managed-components-node-selector"
 SETTING_K8S_CLUSTER_AUTOSCALER_ENABLED = \
     "kubernetes-cluster-autoscaler-enabled"
+SETTING_CONCURRENT_REPLICA_REBUILD_PER_NODE_LIMIT = \
+    "concurrent-replica-rebuild-per-node-limit"
 
 SNAPSHOT_DATA_INTEGRITY_IGNORED = "ignored"
 SNAPSHOT_DATA_INTEGRITY_DISABLED = "disabled"
@@ -590,6 +590,27 @@ def delete_and_wait_pod(api, pod_name, namespace='default', wait=True):
 
     if wait:
         wait_delete_pod(api, target_pod.metadata.uid, namespace=namespace)
+
+
+def delete_statefulset(apps_api, statefulset):
+    ss_name = statefulset['metadata']['name']
+    ss_namespace = statefulset['metadata']['namespace']
+    apps_api.delete_namespaced_stateful_set(
+        name=ss_name, namespace=ss_namespace,
+        body=k8sclient.V1DeleteOptions()
+    )
+
+    for _ in range(DEFAULT_POD_TIMEOUT):
+        ret = apps_api.list_namespaced_stateful_set(namespace=ss_namespace)
+        found = False
+        for item in ret.items:
+            if item.metadata.name == ss_name:
+                found = True
+                break
+        if not found:
+            break
+        time.sleep(DEFAULT_POD_INTERVAL)
+    assert not found
 
 
 def delete_and_wait_statefulset(api, client, statefulset):
@@ -1402,6 +1423,77 @@ def statefulset(request):
 
 
 @pytest.fixture
+def rwx_statefulset(request):
+    statefulset_manifest = {
+        'apiVersion': 'apps/v1',
+        'kind': 'StatefulSet',
+        'metadata': {
+            'name': 'rwx-test-statefulset',
+            'namespace': 'default',
+        },
+        'spec': {
+            'selector': {
+                'matchLabels': {
+                    'app': 'rwx-test-statefulset'
+                }
+            },
+            'serviceName': 'rwx-test-statefulset',
+            'replicas': 1,
+            'template': {
+                'metadata': {
+                    'labels': {
+                        'app': 'rwx-test-statefulset'
+                    }
+                },
+                'spec': {
+                    'terminationGracePeriodSeconds': 10,
+                    'containers': [{
+                        'image': 'busybox:1.34.0',
+                        'imagePullPolicy': 'IfNotPresent',
+                        'name': 'sleep',
+                        'args': [
+                            '/bin/sh',
+                            '-c',
+                            'while true;do date;sleep 5; done'
+                        ],
+                        'volumeMounts': [{
+                            'name': 'pod-data',
+                            'mountPath': '/data'
+                        }]
+                    }]
+                }
+            },
+            'volumeClaimTemplates': [{
+                'metadata': {
+                    'name': 'pod-data'
+                },
+                'spec': {
+                    'accessModes': [
+                        'ReadWriteMany'
+                    ],
+                    'storageClassName': 'longhorn',
+                    'resources': {
+                        'requests': {
+                            'storage': size_to_string(
+                                           DEFAULT_VOLUME_SIZE * Gi)
+                        }
+                    }
+                }
+            }]
+        }
+    }
+
+    def finalizer():
+        api = get_core_api_client()
+        client = get_longhorn_api_client()
+        delete_and_wait_statefulset(api, client, statefulset_manifest)
+
+    request.addfinalizer(finalizer)
+
+    return statefulset_manifest
+
+
+@pytest.fixture
 def storage_class(request):
     sc_manifest = {
         'apiVersion': 'storage.k8s.io/v1',
@@ -2175,8 +2267,7 @@ def crash_replica_processes(client, api, volname, replicas=None,
 
     for r in replicas:
         assert r.instanceManagerName != ""
-        kill_command = "kill `ps aux | grep '" + r['dataPath'] +\
-                       "' | grep -v grep | awk '{print $2}'`"
+        kill_command = "kill `pgrep -f " + r['dataPath'] + "`"
         exec_instance_manager(api, r.instanceManagerName, kill_command)
 
         if wait_to_fail is True:
@@ -2883,6 +2974,28 @@ def check_volume_endpoint(v):
     return endpoint
 
 
+def wait_for_backup_volume_backing_image_synced(
+        client, volume_name, backing_image, retry_count=RETRY_BACKUP_COUNTS):
+    def find_backup_volume():
+        bvs = client.list_backupVolume()
+        for bv in bvs:
+            if bv.name == volume_name:
+                return bv
+        return None
+    completed = False
+    for _ in range(retry_count):
+        bv = find_backup_volume()
+        assert bv is not None
+        if bv.backingImageName == backing_image:
+            completed = True
+            break
+        time.sleep(RETRY_BACKUP_INTERVAL)
+    assert completed is True, f" Backup Volume = {bv}," \
+                              f" Backing Image = {backing_image}," \
+                              f" Volume = {volume_name}"
+    return bv
+
+
 def wait_for_backup_completion(client, volume_name, snapshot_name=None,
                                retry_count=RETRY_BACKUP_COUNTS):
     completed = False
@@ -2971,7 +3084,7 @@ def wait_for_backup_state(client, volume_name, predicate,
 def monitor_restore_progress(client, volume_name):
     completed = 0
     rs = {}
-    for i in range(RETRY_COUNTS):
+    for i in range(RETRY_COUNTS_LONG):
         completed = 0
         v = client.by_id_volume(volume_name)
         rs = v.restoreStatus
@@ -3105,7 +3218,9 @@ def get_k8s_zone_label():
 
     k8s_ver_minor = k8s_ver_data.minor
 
-    if int(k8s_ver_minor) >= 17:
+    # k8s_ver_minor no needs to be an int
+    # it could be "24+" in eks
+    if int(re.sub('\\D', '', k8s_ver_minor)) >= 17:
         k8s_zone_label = K8S_ZONE_LABEL
     else:
         k8s_zone_label = DEPRECATED_K8S_ZONE_LABEL
@@ -4317,6 +4432,7 @@ def wait_for_backup_restore_completed(client, name, backup_name):
     complete = False
     for i in range(RETRY_COUNTS):
         v = client.by_id_volume(name)
+        print(f"volume = {v}")
         if v.controllers and len(v.controllers) != 0 and \
                 v.controllers[0].lastRestoredBackup == backup_name:
             complete = True
@@ -4530,7 +4646,7 @@ def wait_and_get_any_deployment_pod(core_api, deployment_name,
         for pod in pods.items:
             if pod.status.phase == is_phase:
                 if stable_pod is None or \
-                        stable_pod.metadata.name != pod.metadata.name:
+                        stable_pod.status.start_time != pod.status.start_time:
                     stable_pod = pod
                     wait_for_stable_retry = 0
                     break
@@ -4697,7 +4813,7 @@ def prepare_pod_with_data_in_mb(
         data_size_in_mb=DATA_SIZE_IN_MB_1, add_liveness_probe=True):# NOQA:
 
     pod_name = volume_name + "-pod"
-    pv_name = volume_name + "-pv"
+    pv_name = volume_name
     pvc_name = volume_name + "-pvc"
 
     pod = pod_make(name=pod_name)
@@ -4751,8 +4867,7 @@ def crash_engine_process_with_sigkill(client, core_api, volume_name):
 
     kill_command = [
             '/bin/sh', '-c',
-            "kill -9 `ps aux | grep -i \"controller " +
-            volume_name + "\" | grep -v grep | awk '{print $2}'`"]
+            "kill `pgrep -f \"controller " + volume_name + "\"`",]
 
     with timeout(seconds=STREAM_EXEC_TIMEOUT,
                  error_message='Timeout on executing stream read'):
@@ -5416,8 +5531,9 @@ def get_support_bundle_url(client):  # NOQA
 
 def get_support_bundle(node_id, name, client):  # NOQA
     url = get_support_bundle_url(client)
-    support_bundle_url = '{}/{}/{}'.format(url, node_id, name)
-    return requests.get(support_bundle_url).json()
+    resp = requests.get('{}/{}/{}'.format(url, node_id, name))
+    assert resp.status_code == 200
+    return resp.json()
 
 
 def wait_for_support_bundle_cleanup(client):  # NOQA
@@ -5470,7 +5586,13 @@ def generate_support_bundle(case_name):  # NOQA
 
     url = client._url.replace('schemas', 'supportbundles')
     data = {'description': case_name, 'issueURL': case_name}
-    res = requests.post(url, json=data).json()
+    try:
+        res_raw = requests.post(url, json=data)
+        res_raw.raise_for_status()
+        res = res_raw.json()
+    except Exception as e:
+        warnings.warn(f"Error while generating support bundle: {e}")
+        return
     id = res['id']
     name = res['name']
 

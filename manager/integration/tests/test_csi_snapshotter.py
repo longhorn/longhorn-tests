@@ -41,7 +41,7 @@ def volumesnapshotclass(request):
         def create_volumesnapshotclass(name, deletepolicy, snapshot_type=None):
             manifest = {
                 'kind': 'VolumeSnapshotClass',
-                'apiVersion': 'snapshot.storage.k8s.io/v1beta1',
+                'apiVersion': 'snapshot.storage.k8s.io/v1',
                 'metadata': {
                   'name': name
                 },
@@ -103,7 +103,7 @@ def volumesnapshot(request):
                                   source_type,
                                   source_name):
             manifest = {
-                'apiVersion': 'snapshot.storage.k8s.io/v1beta1',
+                'apiVersion': 'snapshot.storage.k8s.io/v1',
                 'kind': 'VolumeSnapshot',
                 'metadata': {
                   'name': name,
@@ -184,7 +184,7 @@ def volumesnapshotcontent(request):
                                          volumesnapshot_ref_name,
                                          volumesnapshot_ref_namespace):
             manifest = {
-                "apiVersion": "snapshot.storage.k8s.io/v1beta1",
+                "apiVersion": "snapshot.storage.k8s.io/v1",
                 "kind": "VolumeSnapshotContent",
                 "metadata": {
                   "name": name,
@@ -255,7 +255,7 @@ def volumesnapshotcontent(request):
 def get_volumesnapshotcontent(volumesnapshot_uid):
     api = get_custom_object_api_client()
     api_group = "snapshot.storage.k8s.io"
-    api_version = "v1beta1"
+    api_version = "v1"
     plural = "volumesnapshotcontents"
 
     volumesnapshotcontents = \
@@ -276,7 +276,7 @@ def wait_volumesnapshot_deleted(name,
                                 can_be_deleted=True):
     api = get_custom_object_api_client()
     api_group = "snapshot.storage.k8s.io"
-    api_version = "v1beta1"
+    api_version = "v1"
     plural = "volumesnapshots"
 
     deleted = False
@@ -299,7 +299,7 @@ def wait_volumesnapshot_deleted(name,
 def delete_volumesnapshot(name, namespace):
     api = get_custom_object_api_client()
     api_group = "snapshot.storage.k8s.io"
-    api_version = "v1beta1"
+    api_version = "v1"
     plural = "volumesnapshots"
 
     try:
@@ -315,7 +315,7 @@ def delete_volumesnapshot(name, namespace):
 def wait_for_volumesnapshot_ready(volumesnapshot_name, namespace, ready_to_use=True): # NOQA
     api = get_custom_object_api_client()
     api_group = "snapshot.storage.k8s.io"
-    api_version = "v1beta1"
+    api_version = "v1"
     plural = "volumesnapshots"
 
     for i in range(RETRY_COUNTS):
@@ -745,7 +745,7 @@ def test_csi_snapshot_snap_create_csi_snapshot(apps_api, # NOQA
     Context:
 
     After deploy the CSI snapshot CRDs, Controller at
-    https://longhorn.io/docs/1.2.4/snapshots-and-backups/
+    https://longhorn.io/docs/1.4.2/snapshots-and-backups/
     csi-snapshot-support/enable-csi-snapshot-support/
 
     Create VolumeSnapshotClass with type=snap
@@ -764,7 +764,7 @@ def test_csi_snapshot_snap_create_csi_snapshot(apps_api, # NOQA
         - Volume is in detached state
             - Scale down the workload
             - Create VolumeSnapshot with class longhorn-snap
-            - Verify that the volumesnapshot object is not ready
+            - Verify that the volumesnapshot object is ready
         - Volume is in attached state
             - Scale up the workload
             - Verify the Longhorn snapshot generated
@@ -798,7 +798,7 @@ def test_csi_snapshot_snap_create_csi_snapshot(apps_api, # NOQA
     wait_for_volumesnapshot_ready(
                             volumesnapshot_name=csivolsnap["metadata"]["name"],
                             namespace='default',
-                            ready_to_use=False)
+                            ready_to_use=True)
 
     # Volume is in attached state
     deployment['spec']['replicas'] = 1
@@ -827,7 +827,7 @@ def test_csi_snapshot_snap_create_volume_from_snapshot(apps_api, # NOQA
     Context:
 
     After deploy the CSI snapshot CRDs, Controller at
-    https://longhorn.io/docs/1.2.4/snapshots-and-backups/
+    https://longhorn.io/docs/1.4.2/snapshots-and-backups/
     csi-snapshot-support/enable-csi-snapshot-support/
 
     Create VolumeSnapshotClass with type=snap
@@ -927,16 +927,6 @@ def test_csi_snapshot_snap_create_volume_from_snapshot(apps_api, # NOQA
     new_pvc1 = pvc
     new_pvc1['metadata']['name'] = pvc['metadata']['name'] + "new-pvc1"
     create_pvc(new_pvc1)
-    check_pvc_in_specific_status(core_api,
-                                 new_pvc1['metadata']['name'], "Pending")
-
-    deployment["spec"]["replicas"] = 1
-    apps_api.patch_namespaced_deployment(body=deployment,
-                                         namespace='default',
-                                         name=deployment_name)
-    common.wait_for_volume_status(client, vol.name,
-                                  common.VOLUME_FIELD_STATE,
-                                  common.VOLUME_STATE_ATTACHED)
 
     wait_for_pvc_phase(core_api, new_pvc1['metadata']['name'], "Bound")
     pv_name_2 = \
@@ -962,6 +952,13 @@ def test_csi_snapshot_snap_create_volume_from_snapshot(apps_api, # NOQA
     assert expected_md5sum == created_md5sum_2
 
     # Source volume is attached && Longhorn snapshot doesn’t exist
+    deployment["spec"]["replicas"] = 1
+    apps_api.patch_namespaced_deployment(body=deployment,
+                                         namespace='default',
+                                         name=deployment_name)
+    common.wait_for_volume_status(client, vol.name,
+                                  common.VOLUME_FIELD_STATE,
+                                  common.VOLUME_STATE_ATTACHED)
     vol = client.by_id_volume(vol.name)
     # create new snapshot to avoid the case the volume only has 1
     # snapshot so the snapshot can not deleted
@@ -1122,7 +1119,7 @@ def test_csi_snapshot_snap_delete_csi_snapshot_volume_detached(apps_api, # NOQA
 
     wait_volumesnapshot_deleted(csivolsnap["metadata"]["name"],
                                 "default",
-                                can_be_deleted=False)
+                                can_be_deleted=True)
 
 
 def test_csi_snapshot_with_invalid_param(
@@ -1221,7 +1218,7 @@ def test_csi_volumesnapshot_backing_image_basic():
     When
     - Creating the VolumeSnapshot
         ```
-        apiVersion: snapshot.storage.k8s.io/v1beta1
+        apiVersion: snapshot.storage.k8s.io/v1
         kind: VolumeSnapshot
         metadata:
             name: test-snapshot-backing
@@ -1333,7 +1330,7 @@ def test_csi_volumesnapshot_restore_pre_provision_backing_image():
         ```
 
         ```
-        apiVersion: snapshot.storage.k8s.io/v1beta1
+        apiVersion: snapshot.storage.k8s.io/v1
         kind: VolumeSnapshot
         metadata:
             name: test-snapshot-existing-backing
@@ -1406,7 +1403,7 @@ def test_csi_volumesnapshot_restore_on_demand_backing_image():
         ```
 
         ```
-        apiVersion: snapshot.storage.k8s.io/v1beta1
+        apiVersion: snapshot.storage.k8s.io/v1
         kind: VolumeSnapshot
         metadata:
             name: test-snapshot-on-demand-backing
