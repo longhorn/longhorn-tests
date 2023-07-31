@@ -21,7 +21,10 @@ RUN curl -sO https://storage.googleapis.com/kubernetes-release/release/$KUBECTL_
     wget -q https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/terraform_${TERRAFORM_VERSION}_linux_${ARCH}.zip && \
     unzip terraform_${TERRAFORM_VERSION}_linux_${ARCH}.zip && rm terraform_${TERRAFORM_VERSION}_linux_${ARCH}.zip && \
     mv terraform /usr/bin/terraform && \
-    chmod +x /usr/bin/terraform
+    chmod +x /usr/bin/terraform && \
+    curl -s -o flux_install.sh https://fluxcd.io/install.sh && \
+    chmod 700 flux_install.sh && \
+    ./flux_install.sh
 
 RUN curl -L https://github.com/jonelo/jacksum/releases/download/v3.4.0/jacksum-3.4.0.jar --output /jacksum.jar
 
@@ -34,5 +37,6 @@ WORKDIR /integration/tests
 ADD pipelines/utilities ./pipelines/utilities
 ADD pipelines/helm/scripts/upgrade-longhorn.sh ./pipelines/helm/scripts/upgrade-longhorn.sh
 ADD pipelines/rancher/scripts/upgrade-longhorn.sh ./pipelines/rancher/scripts/upgrade-longhorn.sh
+ADD pipelines/flux/scripts/upgrade-longhorn.sh ./pipelines/flux/scripts/upgrade-longhorn.sh
 
 ENTRYPOINT ["./run.sh"]
