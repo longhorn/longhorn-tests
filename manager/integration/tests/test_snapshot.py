@@ -13,6 +13,7 @@ from common import create_and_check_volume, wait_for_volume_healthy
 from common import wait_for_rebuild_start, wait_for_rebuild_complete
 from common import create_snapshot
 from common import settings_reset # NOQA
+from common import delete_replica_on_test_node, wait_for_volume_degraded
 
 from test_basic import get_volume_endpoint
 
@@ -28,6 +29,7 @@ from common import SNAPSHOT_DATA_INTEGRITY_IGNORED
 from common import SNAPSHOT_DATA_INTEGRITY_ENABLED
 from common import SNAPSHOT_DATA_INTEGRITY_FAST_CHECK
 from common import SNAPSHOT_DATA_INTEGRITY_DISABLED
+from common import SETTING_AUTO_CLEANUP_SYSTEM_GERERATED_SNAPSHOT, RETRY_COUNTS_SHORT # NOQA
 
 RETRY_WAIT_CHECKSUM_COUNTS = 600
 SNAPSHOT_CHECK_PERIOD = 300
@@ -352,6 +354,21 @@ def detect_and_repair_corrupted_replica(client, volume_name, data_integrity_mode
     assert check_snapshot_checksums_and_change_timestamps(volume)
 
 
+def get_available_snapshots(volume):
+    # return "all" snapshots without volume-head
+    data_path = get_local_host_replica_data_path(volume)
+    assert data_path != ""
+
+    available_snapshots = []
+    value = volume.snapshotList()
+    snapshots = value.data
+    for s in snapshots:
+        if s.name != "volume-head":
+            available_snapshots.append(s)
+
+    return available_snapshots
+
+
 def get_available_snapshot(volume):
     data_path = get_local_host_replica_data_path(volume)
     assert data_path != ""
@@ -660,15 +677,45 @@ def wait_for_snapshot_checksums_generate(volume_name):   # NOQA
     assert snapshot_checksums_generate
     return count
 
-@pytest.mark.skip(reason="TODO") # NOQA
-def test_snapshot_cr():  # NOQA
+
+def test_snapshot_cr(client, volume_name, settings_reset):  # NOQA
     """
     GitHub ticket: https://github.com/longhorn/longhorn/issues/6298
 
-    1. set auto-cleanup-system-generated-snapshots to true
+    1. set auto-cleanup-system-generated-snapshot to true
     2. Create and attach a volume with 3 replicas
     3. Delete one of the volumes replicas.
     4. Wait for the replica to rebuild and volume become healthy
     5. Verify that there is one Longhorn snapshot CR of this volume
     6. Repeat steps 3-5 about 10 times
     """
+    setting = client.by_id_setting(
+        SETTING_AUTO_CLEANUP_SYSTEM_GERERATED_SNAPSHOT)
+    client.update(setting, value="true")
+
+    lht_hostId = get_self_host_id()
+    volume = create_and_check_volume(client, volume_name, 3, size=str(1 * Gi))
+    volume = volume.attach(hostId=lht_hostId)
+    wait_for_volume_healthy(client, volume_name)
+    volume = client.by_id_volume(volume_name)
+
+    snapshots = volume.snapshotList()
+
+    repeat_time = 10
+    created_time = ""
+    for i in range(repeat_time):
+        delete_replica_on_test_node(client, volume_name)
+        wait_for_volume_degraded(client, volume_name)
+        wait_for_volume_healthy(client, volume_name)
+
+        # 2 snapshots, 1 is volume-head, the other 1 was system generated
+        for j in range(RETRY_COUNTS_SHORT):
+            volume = client.by_id_volume(volume_name)
+            snapshots = get_available_snapshots(volume)
+            if len(snapshots) == 1:
+                break
+            time.sleep(RETRY_INTERVAL)
+
+        assert len(snapshots) == 1
+        assert snapshots[0].created != created_time
+        created_time = snapshots[0].created

@@ -202,6 +202,8 @@ SETTING_K8S_CLUSTER_AUTOSCALER_ENABLED = \
     "kubernetes-cluster-autoscaler-enabled"
 SETTING_CONCURRENT_REPLICA_REBUILD_PER_NODE_LIMIT = \
     "concurrent-replica-rebuild-per-node-limit"
+SETTING_AUTO_CLEANUP_SYSTEM_GERERATED_SNAPSHOT = \
+    "auto-cleanup-system-generated-snapshot"
 
 SNAPSHOT_DATA_INTEGRITY_IGNORED = "ignored"
 SNAPSHOT_DATA_INTEGRITY_DISABLED = "disabled"
