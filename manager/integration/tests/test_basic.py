@@ -4411,25 +4411,34 @@ def test_default_storage_class_syncup(core_api, request):  # NOQA
 
     # step 3
     for i in range(RETRY_COMMAND_COUNT):
-        longhorn_storage_class = storage_api.read_storage_class("longhorn")
-        storage_class_data = \
-            yaml.safe_load(longhorn_storage_class.
-                           metadata.
-                           annotations["longhorn.io/last-applied-configmap"])
-
-        if storage_class_data["reclaimPolicy"] == \
-                config_map_data["reclaimPolicy"]:
-            break
-
-        time.sleep(RETRY_INTERVAL)
+        try:
+            longhorn_storage_class = storage_api.read_storage_class("longhorn")
+            storage_class_data = \
+                yaml.safe_load(longhorn_storage_class.
+                               metadata.
+                               annotations["longhorn.io/last-applied-configmap"]) # NOQA
+            if storage_class_data["reclaimPolicy"] == \
+                    config_map_data["reclaimPolicy"]:
+                break
+        except Exception as e:
+            print(e)
+        finally:
+            time.sleep(RETRY_INTERVAL)
 
     assert storage_class_data["reclaimPolicy"] == \
         config_map_data["reclaimPolicy"]
 
     # step 4
-    storage_api.delete_storage_class("longhorn")
-    for item in storage_api.list_storage_class().items:
-        assert item.metadata.name != "longhorn"
+    for i in range(RETRY_COMMAND_COUNT):
+        try:
+            storage_api.delete_storage_class("longhorn")
+            for item in storage_api.list_storage_class().items:
+                assert item.metadata.name != "longhorn"
+            break
+        except Exception as e:
+            print(e)
+        finally:
+            time.sleep(RETRY_INTERVAL)
 
     # step 5
     storage_class_recreated = False
