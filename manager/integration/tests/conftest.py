@@ -22,6 +22,8 @@ RANCHER_ACCESS_KEY = "--rancher-access-key"
 RANCHER_SECRET_KEY = "--rancher-secret-key"
 RANCHER_CHART_INSTALL_VERSION = "--rancher-chart-install-version"
 LONGHORN_REPO = "--longhorn-repo"
+FLUX_HELM_CHART_URL = "--flux-helm-chart-url"
+FLUX_HELM_CHART_VERSION = "--flux-helm-chart-version"
 UPGRADE_LH_REPO_URL = "--upgrade-lh-repo-url"
 UPGRADE_LH_REPO_BRANCH = "--upgrade-lh-repo-branch"
 UPGRADE_LH_MANAGER_IMAGE = "--upgrade-lh-manager-image"
@@ -90,6 +92,16 @@ def pytest_addoption(parser):
                      help='''if longhorn install method is rancher, specify
                      the longhorn dockerhub repo of longhorn components like
                      longhornio or rancher''')
+
+    parser.addoption(FLUX_HELM_CHART_URL, action="store",
+                     default="https://charts.longhorn.io",
+                     help='''if longhorn install method is flux, specify the
+                     url of flux helm repository resource''')
+
+    parser.addoption(FLUX_HELM_CHART_VERSION, action="store",
+                     default="",
+                     help='''if longhorn install method is flux, specify the
+                     chart version when create flux helm release resource''')
 
     longhorn_repo_url =\
         "https://github.com/longhorn/longhorn.git"

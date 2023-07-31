@@ -91,6 +91,16 @@ def longhorn_repo(request):
 
 
 @pytest.fixture
+def flux_helm_chart_url(request):
+    return request.config.getoption("--flux-helm-chart-url")
+
+
+@pytest.fixture
+def flux_helm_chart_version(request):
+    return request.config.getoption("--flux-helm-chart-version")
+
+
+@pytest.fixture
 def upgrade_longhorn_repo_url(request):
     return request.config.getoption("--upgrade-lh-repo-url")
 
@@ -142,6 +152,8 @@ def longhorn_upgrade(longhorn_install_method,
                      rancher_secret_key,
                      rancher_chart_install_version,
                      longhorn_repo,
+                     flux_helm_chart_url,
+                     flux_helm_chart_version,
                      longhorn_repo_url,
                      longhorn_repo_branch,
                      longhorn_manager_image,
@@ -152,12 +164,6 @@ def longhorn_upgrade(longhorn_install_method,
 
     if longhorn_install_method == "manifest":
         command = "../scripts/upgrade-longhorn.sh"
-    elif longhorn_install_method == "helm":
-        command = "./pipelines/helm/scripts/upgrade-longhorn.sh"
-    elif longhorn_install_method == "rancher":
-        command = "./pipelines/rancher/scripts/upgrade-longhorn.sh"
-
-    if longhorn_install_method != "rancher":
         process = subprocess.Popen([command,
                                     longhorn_repo_url,
                                     longhorn_repo_branch,
@@ -167,7 +173,19 @@ def longhorn_upgrade(longhorn_install_method,
                                     longhorn_share_manager_image,
                                     longhorn_backing_image_manager_image],
                                    shell=False)
-    else:
+    elif longhorn_install_method == "helm":
+        command = "./pipelines/helm/scripts/upgrade-longhorn.sh"
+        process = subprocess.Popen([command,
+                                    longhorn_repo_url,
+                                    longhorn_repo_branch,
+                                    longhorn_manager_image,
+                                    longhorn_engine_image,
+                                    longhorn_instance_manager_image,
+                                    longhorn_share_manager_image,
+                                    longhorn_backing_image_manager_image],
+                                   shell=False)
+    elif longhorn_install_method == "rancher":
+        command = "./pipelines/rancher/scripts/upgrade-longhorn.sh"
         process = subprocess.Popen([command,
                                     rancher_hostname,
                                     rancher_access_key,
@@ -175,6 +193,13 @@ def longhorn_upgrade(longhorn_install_method,
                                     rancher_chart_install_version,
                                     longhorn_repo],
                                    shell=False)
+    elif longhorn_install_method == "flux":
+        command = "./pipelines/flux/scripts/upgrade-longhorn.sh"
+        process = subprocess.Popen([command,
+                                    flux_helm_chart_url,
+                                    flux_helm_chart_version],
+                                   shell=False)
+
     process.wait()
     if process.returncode == 0:
         longhorn_upgraded = True
@@ -193,6 +218,8 @@ def test_upgrade(longhorn_upgrade_type,
                  rancher_secret_key,
                  rancher_chart_install_version,
                  longhorn_repo,
+                 flux_helm_chart_url,
+                 flux_helm_chart_version,
                  upgrade_longhorn_repo_url,
                  upgrade_longhorn_repo_branch,
                  upgrade_longhorn_manager_image,
@@ -377,6 +404,8 @@ def test_upgrade(longhorn_upgrade_type,
                             rancher_secret_key,
                             rancher_chart_install_version,
                             longhorn_repo,
+                            flux_helm_chart_url,
+                            flux_helm_chart_version,
                             longhorn_repo_url,
                             longhorn_repo_branch,
                             longhorn_manager_image,
