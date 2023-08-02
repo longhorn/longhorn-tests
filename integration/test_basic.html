@@ -5521,7 +5521,31 @@ def test_filesystem_trim(client, fs_type):  # NOQA
     subprocess.check_call([&#34;rm&#34;, &#34;-rf&#34;, mnt_path])
 
     client.delete(volume)
-    wait_for_volume_delete(client, test_volume_name)</code></pre>
+    wait_for_volume_delete(client, test_volume_name)
+
+
+@pytest.mark.skip(reason=&#34;TODO&#34;)
+def test_backuptarget_invalid(): # NOQA
+    &#34;&#34;&#34;
+    Related issue :
+    https://github.com/longhorn/longhorn/issues/1249
+
+    This test case does not cover the UI test mentioned in the related issue&#39;s
+    test steps.&#34;
+
+    Setup
+    - Give an incorrect value to Backup target.
+
+    Given
+    - Create a volume, attach it to a workload, write data into the volume.
+
+    When
+    - Create a backup by a manifest yaml file
+
+    Then
+    - Backup will be failed and the backup state is Error.
+    &#34;&#34;&#34;
+    pass</code></pre>
 </details>
 </section>
 <section>
@@ -8455,6 +8479,50 @@ def test_backup_volume_restore_with_access_mode(core_api, # NOQA
             # Reset backup store setting
             reset_backupstore_setting(client)
             common.wait_for_backup_target_available(client, False)</code></pre>
+</details>
+</dd>
+<dt id="tests.test_basic.test_backuptarget_invalid"><code class="name flex">
+<span>def <span class="ident">test_backuptarget_invalid</span></span>(<span>)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Related issue :
+<a href="https://github.com/longhorn/longhorn/issues/1249">https://github.com/longhorn/longhorn/issues/1249</a></p>
+<p>This test case does not cover the UI test mentioned in the related issue's
+test steps."</p>
+<p>Setup
+- Give an incorrect value to Backup target.</p>
+<p>Given
+- Create a volume, attach it to a workload, write data into the volume.</p>
+<p>When
+- Create a backup by a manifest yaml file</p>
+<p>Then
+- Backup will be failed and the backup state is Error.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@pytest.mark.skip(reason=&#34;TODO&#34;)
+def test_backuptarget_invalid(): # NOQA
+    &#34;&#34;&#34;
+    Related issue :
+    https://github.com/longhorn/longhorn/issues/1249
+
+    This test case does not cover the UI test mentioned in the related issue&#39;s
+    test steps.&#34;
+
+    Setup
+    - Give an incorrect value to Backup target.
+
+    Given
+    - Create a volume, attach it to a workload, write data into the volume.
+
+    When
+    - Create a backup by a manifest yaml file
+
+    Then
+    - Backup will be failed and the backup state is Error.
+    &#34;&#34;&#34;
+    pass</code></pre>
 </details>
 </dd>
 <dt id="tests.test_basic.test_cleanup_system_generated_snapshots"><code class="name flex">
@@ -12619,6 +12687,7 @@ the format <strong><em>*rw</em></strong>*</li>
 <li><code><a title="tests.test_basic.test_backup_volume_list" href="#tests.test_basic.test_backup_volume_list">test_backup_volume_list</a></code></li>
 <li><code><a title="tests.test_basic.test_backup_volume_restore_with_access_mode" href="#tests.test_basic.test_backup_volume_restore_with_access_mode">test_backup_volume_restore_with_access_mode</a></code></li>
 <li><code><a title="tests.test_basic.test_backuptarget_available_during_engine_image_not_ready" href="#tests.test_basic.test_backuptarget_available_during_engine_image_not_ready">test_backuptarget_available_during_engine_image_not_ready</a></code></li>
+<li><code><a title="tests.test_basic.test_backuptarget_invalid" href="#tests.test_basic.test_backuptarget_invalid">test_backuptarget_invalid</a></code></li>
 <li><code><a title="tests.test_basic.test_cleanup_system_generated_snapshots" href="#tests.test_basic.test_cleanup_system_generated_snapshots">test_cleanup_system_generated_snapshots</a></code></li>
 <li><code><a title="tests.test_basic.test_default_storage_class_syncup" href="#tests.test_basic.test_default_storage_class_syncup">test_default_storage_class_syncup</a></code></li>
 <li><code><a title="tests.test_basic.test_delete_backup_during_restoring_volume" href="#tests.test_basic.test_delete_backup_during_restoring_volume">test_delete_backup_during_restoring_volume</a></code></li>
