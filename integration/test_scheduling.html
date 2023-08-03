@@ -95,6 +95,9 @@ from common import SETTING_REPLICA_AUTO_BALANCE
 from common import SETTING_REPLICA_NODE_SOFT_ANTI_AFFINITY
 from common import VOLUME_FIELD_ROBUSTNESS
 from common import VOLUME_ROBUSTNESS_HEALTHY
+from common import update_setting, delete_replica_on_test_node
+from common import VOLUME_FRONTEND_BLOCKDEV, SNAPSHOT_DATA_INTEGRITY_IGNORED
+from common import VOLUME_ROBUSTNESS_DEGRADED, RETRY_COUNTS_SHORT
 
 from time import sleep
 
@@ -1559,8 +1562,7 @@ def test_replica_schedule_to_disk_with_most_usable_storage(client, volume_name, 
         assert replica.diskID == expect_scheduled_disk[hostId].diskUUID
 
 
-@pytest.mark.skip(reason=&#34;TODO&#34;)
-def test_soft_anti_affinity_scheduling_volume_enable(): # NOQA
+def test_soft_anti_affinity_scheduling_volume_enable(client, volume_name): # NOQA
     &#34;&#34;&#34;
     Test the global setting will be overwrite
     if the volume enable the Soft Anti-Affinity
@@ -1584,11 +1586,33 @@ def test_soft_anti_affinity_scheduling_volume_enable(): # NOQA
     - Wait for the volume to complete rebuild. Volume should have 3 replicas.
     - Verify `data`
     &#34;&#34;&#34;
-    pass
+    update_setting(client, SETTING_REPLICA_NODE_SOFT_ANTI_AFFINITY, &#34;false&#34;)
+    host_id = get_self_host_id()
+
+    client.create_volume(name=volume_name,
+                         size=str(1 * Gi),
+                         numberOfReplicas=3,
+                         backingImage=&#34;&#34;,
+                         frontend=VOLUME_FRONTEND_BLOCKDEV,
+                         snapshotDataIntegrity=SNAPSHOT_DATA_INTEGRITY_IGNORED,
+                         replicaSoftAntiAffinity=&#34;enabled&#34;)
+
+    volume = wait_for_volume_detached(client, volume_name)
+    volume.attach(hostId=host_id)
+    volume = wait_for_volume_healthy(client, volume_name)
+    data = write_volume_random_data(volume)
+
+    node = client.by_id_node(host_id)
+    node = set_node_scheduling(client, node, allowScheduling=False)
+
+    delete_replica_on_test_node(client, volume_name)
+    wait_for_volume_degraded(client, volume_name)
+    wait_for_volume_healthy(client, volume_name)
+
+    check_volume_data(volume, data)
 
 
-@pytest.mark.skip(reason=&#34;TODO&#34;)
-def test_soft_anti_affinity_scheduling_volume_disable(): # NOQA
+def test_soft_anti_affinity_scheduling_volume_disable(client, volume_name): # NOQA
     &#34;&#34;&#34;
     Test the global setting will be overwrite
     if the volume disable the Soft Anti-Affinity
@@ -1616,7 +1640,46 @@ def test_soft_anti_affinity_scheduling_volume_disable(): # NOQA
       meaning it&#39;s unscheduled
     - Check volume `data`
     &#34;&#34;&#34;
-    pass
+    update_setting(client, SETTING_REPLICA_NODE_SOFT_ANTI_AFFINITY, &#34;true&#34;)
+    host_id = get_self_host_id()
+
+    client.create_volume(name=volume_name,
+                         size=str(1 * Gi),
+                         numberOfReplicas=3,
+                         backingImage=&#34;&#34;,
+                         frontend=VOLUME_FRONTEND_BLOCKDEV,
+                         snapshotDataIntegrity=SNAPSHOT_DATA_INTEGRITY_IGNORED,
+                         replicaSoftAntiAffinity=&#34;disabled&#34;)
+
+    volume = wait_for_volume_detached(client, volume_name)
+    volume.attach(hostId=host_id)
+    volume = wait_for_volume_healthy(client, volume_name)
+    data = write_volume_random_data(volume)
+
+    node = client.by_id_node(host_id)
+    node = set_node_scheduling(client, node, allowScheduling=False)
+
+    delete_replica_on_test_node(client, volume_name)
+    wait_for_volume_degraded(client, volume_name)
+    wait_scheduling_failure(client, volume_name)
+
+    for i in range(RETRY_COUNTS_SHORT):
+        volume = client.by_id_volume(volume_name)
+        assert volume.robustness == VOLUME_ROBUSTNESS_DEGRADED
+        assert volume.conditions.scheduled.status == &#34;False&#34;
+
+        healthy_replica_count = 0
+        for replica in volume.replicas:
+            if replica.running is True:
+                healthy_replica_count = healthy_replica_count + 1
+            else:
+                unscheduled_replica = replica
+        assert unscheduled_replica.hostId == &#34;&#34;
+        assert healthy_replica_count == 2
+
+        time.sleep(RETRY_INTERVAL)
+
+    check_volume_data(volume, data)
 
 
 def test_data_locality_strict_local_node_affinity(client, core_api, apps_api, storage_class, statefulset, request):  # NOQA
@@ -3712,7 +3775,7 @@ redundancy.</p>
 </details>
 </dd>
 <dt id="tests.test_scheduling.test_soft_anti_affinity_scheduling_volume_disable"><code class="name flex">
-<span>def <span class="ident">test_soft_anti_affinity_scheduling_volume_disable</span></span>(<span>)</span>
+<span>def <span class="ident">test_soft_anti_affinity_scheduling_volume_disable</span></span>(<span>client, volume_name)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Test the global setting will be overwrite
@@ -3739,8 +3802,7 @@ meaning it's unscheduled
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">@pytest.mark.skip(reason=&#34;TODO&#34;)
-def test_soft_anti_affinity_scheduling_volume_disable(): # NOQA
+<pre><code class="python">def test_soft_anti_affinity_scheduling_volume_disable(client, volume_name): # NOQA
     &#34;&#34;&#34;
     Test the global setting will be overwrite
     if the volume disable the Soft Anti-Affinity
@@ -3768,11 +3830,50 @@ def test_soft_anti_affinity_scheduling_volume_disable(): # NOQA
       meaning it&#39;s unscheduled
     - Check volume `data`
     &#34;&#34;&#34;
-    pass</code></pre>
+    update_setting(client, SETTING_REPLICA_NODE_SOFT_ANTI_AFFINITY, &#34;true&#34;)
+    host_id = get_self_host_id()
+
+    client.create_volume(name=volume_name,
+                         size=str(1 * Gi),
+                         numberOfReplicas=3,
+                         backingImage=&#34;&#34;,
+                         frontend=VOLUME_FRONTEND_BLOCKDEV,
+                         snapshotDataIntegrity=SNAPSHOT_DATA_INTEGRITY_IGNORED,
+                         replicaSoftAntiAffinity=&#34;disabled&#34;)
+
+    volume = wait_for_volume_detached(client, volume_name)
+    volume.attach(hostId=host_id)
+    volume = wait_for_volume_healthy(client, volume_name)
+    data = write_volume_random_data(volume)
+
+    node = client.by_id_node(host_id)
+    node = set_node_scheduling(client, node, allowScheduling=False)
+
+    delete_replica_on_test_node(client, volume_name)
+    wait_for_volume_degraded(client, volume_name)
+    wait_scheduling_failure(client, volume_name)
+
+    for i in range(RETRY_COUNTS_SHORT):
+        volume = client.by_id_volume(volume_name)
+        assert volume.robustness == VOLUME_ROBUSTNESS_DEGRADED
+        assert volume.conditions.scheduled.status == &#34;False&#34;
+
+        healthy_replica_count = 0
+        for replica in volume.replicas:
+            if replica.running is True:
+                healthy_replica_count = healthy_replica_count + 1
+            else:
+                unscheduled_replica = replica
+        assert unscheduled_replica.hostId == &#34;&#34;
+        assert healthy_replica_count == 2
+
+        time.sleep(RETRY_INTERVAL)
+
+    check_volume_data(volume, data)</code></pre>
 </details>
 </dd>
 <dt id="tests.test_scheduling.test_soft_anti_affinity_scheduling_volume_enable"><code class="name flex">
-<span>def <span class="ident">test_soft_anti_affinity_scheduling_volume_enable</span></span>(<span>)</span>
+<span>def <span class="ident">test_soft_anti_affinity_scheduling_volume_enable</span></span>(<span>client, volume_name)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Test the global setting will be overwrite
@@ -3795,8 +3896,7 @@ redundancy.</p>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">@pytest.mark.skip(reason=&#34;TODO&#34;)
-def test_soft_anti_affinity_scheduling_volume_enable(): # NOQA
+<pre><code class="python">def test_soft_anti_affinity_scheduling_volume_enable(client, volume_name): # NOQA
     &#34;&#34;&#34;
     Test the global setting will be overwrite
     if the volume enable the Soft Anti-Affinity
@@ -3820,7 +3920,30 @@ def test_soft_anti_affinity_scheduling_volume_enable(): # NOQA
     - Wait for the volume to complete rebuild. Volume should have 3 replicas.
     - Verify `data`
     &#34;&#34;&#34;
-    pass</code></pre>
+    update_setting(client, SETTING_REPLICA_NODE_SOFT_ANTI_AFFINITY, &#34;false&#34;)
+    host_id = get_self_host_id()
+
+    client.create_volume(name=volume_name,
+                         size=str(1 * Gi),
+                         numberOfReplicas=3,
+                         backingImage=&#34;&#34;,
+                         frontend=VOLUME_FRONTEND_BLOCKDEV,
+                         snapshotDataIntegrity=SNAPSHOT_DATA_INTEGRITY_IGNORED,
+                         replicaSoftAntiAffinity=&#34;enabled&#34;)
+
+    volume = wait_for_volume_detached(client, volume_name)
+    volume.attach(hostId=host_id)
+    volume = wait_for_volume_healthy(client, volume_name)
+    data = write_volume_random_data(volume)
+
+    node = client.by_id_node(host_id)
+    node = set_node_scheduling(client, node, allowScheduling=False)
+
+    delete_replica_on_test_node(client, volume_name)
+    wait_for_volume_degraded(client, volume_name)
+    wait_for_volume_healthy(client, volume_name)
+
+    check_volume_data(volume, data)</code></pre>
 </details>
 </dd>
 <dt id="tests.test_scheduling.wait_new_replica_ready"><code class="name flex">
