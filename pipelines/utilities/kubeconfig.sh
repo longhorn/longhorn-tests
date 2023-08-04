@@ -13,3 +13,12 @@ set_kubeconfig(){
     export KUBECONFIG="${PWD}/test_framework/terraform/${LONGHORN_TEST_CLOUDPROVIDER}/${DISTRO}/k3s.yaml"
   fi
 }
+
+
+# construct kubeconfig content from an in-cluster config environment (a pod)
+construct_kubeconfig(){
+  kubectl config set-cluster in-cluster --server="https://${KUBERNETES_SERVICE_HOST}:${KUBERNETES_SERVICE_PORT}" --certificate-authority=/var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+  kubectl config set-credentials pod-token --token="$(cat /var/run/secrets/kubernetes.io/serviceaccount/token)"
+  kubectl config set-context default --cluster=in-cluster --user=pod-token
+  kubectl config use-context default
+}
