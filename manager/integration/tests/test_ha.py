@@ -79,6 +79,7 @@ from common import update_setting
 from common import wait_for_backup_volume_backing_image_synced
 from common import RETRY_COMMAND_COUNT
 from common import wait_for_snapshot_count
+from common import DEFAULT_BACKUP_COMPRESSION_METHOD
 
 from backupstore import set_random_backupstore # NOQA
 from backupstore import backupstore_cleanup
@@ -2755,7 +2756,8 @@ def test_engine_image_miss_scheduled_perform_volume_operations(core_api, client,
     assert snapMap[snap1.name].name == snap1.name
     assert snapMap[snap1.name].removed is False
 
-    backupstore_test(client, host_id, volume_name, size=str(3 * Gi))
+    backupstore_test(client, host_id, volume_name, size=str(3 * Gi),
+                     compression_method=DEFAULT_BACKUP_COMPRESSION_METHOD)
 
     volume = client.by_id_volume(volume_name)
     volume.attach(hostId=host_id, disableFrontend=False)
@@ -2843,7 +2845,8 @@ def test_engine_image_not_fully_deployed_perform_volume_operations(client, core_
     check_volume_data(volume1, snap2_data)
 
     backupstore_test(client, get_self_host_id(), volume1.name,
-                     size=str(3 * Gi))
+                     size=str(3 * Gi),
+                     compression_method=DEFAULT_BACKUP_COMPRESSION_METHOD)
 
     expand_size = str(4 * Gi)
     volume1.expand(size=expand_size)
