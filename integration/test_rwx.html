@@ -49,6 +49,7 @@ from backupstore import set_random_backupstore # NOQA
 from multiprocessing import Pool
 
 import time
+import pytest
 
 
 def write_data_into_pod(pod_name_and_data_path):
@@ -538,7 +539,68 @@ def test_restore_rwo_volume_to_rwx(set_random_backupstore, client, core_api, vol
     md5sum_pod1 = get_pod_data_md5sum(core_api, pod_name_1, data_path)
     md5sum_pod2 = get_pod_data_md5sum(core_api, pod_name_2, data_path)
 
-    assert md5sum == md5sum_pod1 == md5sum_pod2</code></pre>
+    assert md5sum == md5sum_pod1 == md5sum_pod2
+
+
+@pytest.mark.skip(reason=&#34;TODO&#34;)
+def test_rwx_onine_expansion(): # NOQA
+    &#34;&#34;&#34;
+    Related issue :
+    https://github.com/longhorn/longhorn/issues/2181
+    https://github.com/longhorn/longhorn/issues/2484
+
+    This test case does not cover the UI test mentioned in the related issue&#39;s
+    test steps.&#34;
+
+    Given
+    - Create a rwx pvc using longhorn storage class of size 1 Gi.
+
+    And
+    - Atach it to a workload (deployment) and write some data.
+
+    When
+    - Expand the volume to 5 Gi
+
+    Then
+    - Expansion of volume is completed.
+    - Share manager pod not restart
+
+    And
+    - 1.5 Gi of data is successfully written to the expanded volume.
+    &#34;&#34;&#34;
+    pass
+
+
+@pytest.mark.skip(reason=&#34;TODO&#34;)
+def test_rwx_offline_expansion(): # NOQA
+    &#34;&#34;&#34;
+    Related issue :
+    https://github.com/longhorn/longhorn/issues/2181
+    https://github.com/longhorn/longhorn/issues/2484
+
+    This test case does not cover the UI test mentioned in the related issue&#39;s
+    test steps.&#34;
+
+    Given
+    - Create a rwx pvc using longhorn storage class of size 1 Gi.
+
+    And
+    - Atach it to a workload (deployment) and write some data.
+    - Scale down the workload, wait volume detached
+    - Share manager pod will terminate automatically
+    - Expand the volume to 5 Gi, wait exoansion complete
+
+    When
+    - Scale up workload
+
+    Then
+    - Share manager pod created
+    - Volume healthy
+
+    And
+    - 1.5 Gi of data is successfully written to the expanded volume
+    &#34;&#34;&#34;
+    pass</code></pre>
 </details>
 </section>
 <section>
@@ -868,6 +930,118 @@ volume.</li>
         core_api, command1, share_manager_name, LONGHORN_NAMESPACE)
     assert test_data_2 == exec_command_in_pod(
         core_api, command2, share_manager_name, LONGHORN_NAMESPACE)</code></pre>
+</details>
+</dd>
+<dt id="tests.test_rwx.test_rwx_offline_expansion"><code class="name flex">
+<span>def <span class="ident">test_rwx_offline_expansion</span></span>(<span>)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Related issue :
+<a href="https://github.com/longhorn/longhorn/issues/2181">https://github.com/longhorn/longhorn/issues/2181</a>
+<a href="https://github.com/longhorn/longhorn/issues/2484">https://github.com/longhorn/longhorn/issues/2484</a></p>
+<p>This test case does not cover the UI test mentioned in the related issue's
+test steps."</p>
+<p>Given
+- Create a rwx pvc using longhorn storage class of size 1 Gi.</p>
+<p>And
+- Atach it to a workload (deployment) and write some data.
+- Scale down the workload, wait volume detached
+- Share manager pod will terminate automatically
+- Expand the volume to 5 Gi, wait exoansion complete</p>
+<p>When
+- Scale up workload</p>
+<p>Then
+- Share manager pod created
+- Volume healthy</p>
+<p>And
+- 1.5 Gi of data is successfully written to the expanded volume</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@pytest.mark.skip(reason=&#34;TODO&#34;)
+def test_rwx_offline_expansion(): # NOQA
+    &#34;&#34;&#34;
+    Related issue :
+    https://github.com/longhorn/longhorn/issues/2181
+    https://github.com/longhorn/longhorn/issues/2484
+
+    This test case does not cover the UI test mentioned in the related issue&#39;s
+    test steps.&#34;
+
+    Given
+    - Create a rwx pvc using longhorn storage class of size 1 Gi.
+
+    And
+    - Atach it to a workload (deployment) and write some data.
+    - Scale down the workload, wait volume detached
+    - Share manager pod will terminate automatically
+    - Expand the volume to 5 Gi, wait exoansion complete
+
+    When
+    - Scale up workload
+
+    Then
+    - Share manager pod created
+    - Volume healthy
+
+    And
+    - 1.5 Gi of data is successfully written to the expanded volume
+    &#34;&#34;&#34;
+    pass</code></pre>
+</details>
+</dd>
+<dt id="tests.test_rwx.test_rwx_onine_expansion"><code class="name flex">
+<span>def <span class="ident">test_rwx_onine_expansion</span></span>(<span>)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Related issue :
+<a href="https://github.com/longhorn/longhorn/issues/2181">https://github.com/longhorn/longhorn/issues/2181</a>
+<a href="https://github.com/longhorn/longhorn/issues/2484">https://github.com/longhorn/longhorn/issues/2484</a></p>
+<p>This test case does not cover the UI test mentioned in the related issue's
+test steps."</p>
+<p>Given
+- Create a rwx pvc using longhorn storage class of size 1 Gi.</p>
+<p>And
+- Atach it to a workload (deployment) and write some data.</p>
+<p>When
+- Expand the volume to 5 Gi</p>
+<p>Then
+- Expansion of volume is completed.
+- Share manager pod not restart</p>
+<p>And
+- 1.5 Gi of data is successfully written to the expanded volume.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@pytest.mark.skip(reason=&#34;TODO&#34;)
+def test_rwx_onine_expansion(): # NOQA
+    &#34;&#34;&#34;
+    Related issue :
+    https://github.com/longhorn/longhorn/issues/2181
+    https://github.com/longhorn/longhorn/issues/2484
+
+    This test case does not cover the UI test mentioned in the related issue&#39;s
+    test steps.&#34;
+
+    Given
+    - Create a rwx pvc using longhorn storage class of size 1 Gi.
+
+    And
+    - Atach it to a workload (deployment) and write some data.
+
+    When
+    - Expand the volume to 5 Gi
+
+    Then
+    - Expansion of volume is completed.
+    - Share manager pod not restart
+
+    And
+    - 1.5 Gi of data is successfully written to the expanded volume.
+    &#34;&#34;&#34;
+    pass</code></pre>
 </details>
 </dd>
 <dt id="tests.test_rwx.test_rwx_parallel_writing"><code class="name flex">
@@ -1208,6 +1382,8 @@ path <code>/export</code></li>
 <li><code><a title="tests.test_rwx.test_rwx_delete_share_manager_pod" href="#tests.test_rwx.test_rwx_delete_share_manager_pod">test_rwx_delete_share_manager_pod</a></code></li>
 <li><code><a title="tests.test_rwx.test_rwx_deployment_with_multi_pods" href="#tests.test_rwx.test_rwx_deployment_with_multi_pods">test_rwx_deployment_with_multi_pods</a></code></li>
 <li><code><a title="tests.test_rwx.test_rwx_multi_statefulset_with_same_pvc" href="#tests.test_rwx.test_rwx_multi_statefulset_with_same_pvc">test_rwx_multi_statefulset_with_same_pvc</a></code></li>
+<li><code><a title="tests.test_rwx.test_rwx_offline_expansion" href="#tests.test_rwx.test_rwx_offline_expansion">test_rwx_offline_expansion</a></code></li>
+<li><code><a title="tests.test_rwx.test_rwx_onine_expansion" href="#tests.test_rwx.test_rwx_onine_expansion">test_rwx_onine_expansion</a></code></li>
 <li><code><a title="tests.test_rwx.test_rwx_parallel_writing" href="#tests.test_rwx.test_rwx_parallel_writing">test_rwx_parallel_writing</a></code></li>
 <li><code><a title="tests.test_rwx.test_rwx_statefulset_scale_down_up" href="#tests.test_rwx.test_rwx_statefulset_scale_down_up">test_rwx_statefulset_scale_down_up</a></code></li>
 <li><code><a title="tests.test_rwx.test_rwx_with_statefulset_multi_pods" href="#tests.test_rwx.test_rwx_with_statefulset_multi_pods">test_rwx_with_statefulset_multi_pods</a></code></li>
