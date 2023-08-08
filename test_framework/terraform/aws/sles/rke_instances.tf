@@ -45,7 +45,7 @@ resource "null_resource" "wait_for_docker_start_controlplane" {
 
   provisioner "remote-exec" {
 
-    inline = ["until( systemctl is-active docker.service ); do echo \"waiting for docker to start \"; sleep 2; done"] 
+    inline = ["until( systemctl is-active docker.service ); do echo \"waiting for docker to start \"; sleep 2; done"]
 
     connection {
       type     = "ssh"

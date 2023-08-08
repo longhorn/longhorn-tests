@@ -113,7 +113,7 @@ resource "null_resource" "rsync_kubeconfig_file_rke2" {
   ]
 
   provisioner "remote-exec" {
-    inline = ["until([ -f /etc/rancher/rke2/rke2.yaml ] && [ `sudo KUBECONFIG=/etc/rancher/rke2/rke2.yaml /var/lib/rancher/rke2/bin/kubectl get node -o jsonpath='{.items[*].status.conditions}'  | jq '.[] | select(.type  == \"Ready\").status' | grep -ci true` -eq $((${var.lh_aws_instance_count_controlplane} + ${var.lh_aws_instance_count_worker})) ]); do echo \"waiting for rke2 cluster nodes to be running\"; sleep 2; done"]
+    inline = ["RETRY=0; MAX_RETRY=450; until([ -f /etc/rancher/rke2/rke2.yaml ] && [ `sudo KUBECONFIG=/etc/rancher/rke2/rke2.yaml /var/lib/rancher/rke2/bin/kubectl get node -o jsonpath='{.items[*].status.conditions}'  | jq '.[] | select(.type  == \"Ready\").status' | grep -ci true` -eq $((${var.lh_aws_instance_count_controlplane} + ${var.lh_aws_instance_count_worker})) ]); do echo \"waiting for rke2 cluster nodes to be running\"; sleep 2; if [ $RETRY -eq $MAX_RETRY ]; then break; fi; RETRY=$((RETRY+1)); done"]
 
 
     connection {
