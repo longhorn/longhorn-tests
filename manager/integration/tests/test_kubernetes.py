@@ -29,6 +29,7 @@ from common import create_and_check_volume, create_pvc, \
 from common import volume_name # NOQA
 from common import update_setting
 from common import SETTING_DEGRADED_AVAILABILITY
+from common import wait_statefulset, crash_engine_process_with_sigkill
 
 from backupstore import backupstore_cleanup
 
@@ -782,9 +783,9 @@ def test_delete_provisioned_pvc(client, core_api,  storage_class, pvc): # NOQA
     wait_delete_pv(core_api, pv_name)
     wait_for_volume_delete(client, volume_name)
 
-@pytest.mark.skip(reason="TODO") # NOQA
+
 @pytest.mark.csi  # NOQA
-def test_csi_umount_when_longhorn_block_device_is_disconnected_unexpectedly():  # NOQA
+def test_csi_umount_when_longhorn_block_device_is_disconnected_unexpectedly(client, core_api, statefulset, storage_class):  # NOQA
     """
     Test CSI umount when Longhorn block device is disconnected unexpectedly
 
@@ -798,4 +799,26 @@ def test_csi_umount_when_longhorn_block_device_is_disconnected_unexpectedly():  
     4. Verify that the pod is able to terminated and a new pod is able
         start
     """
-    pass
+    device_path = "/dev/longhorn/longhorn-test-blk"
+    statefulset['spec']['template']['spec']['containers'][0]['volumeMounts'] = [] # NOQA
+    statefulset['spec']['template']['spec']['containers'][0]['volumeDevices'] = [ # NOQA
+        {'name': 'pod-data', 'devicePath': device_path}
+    ]
+    statefulset['spec']['volumeClaimTemplates'][0]['spec']['volumeMode'] = 'Block' # NOQA
+    statefulset['spec']['replicas'] = 1
+    statefulset_name = 'block-device-disconnect-unexpectedly-test'
+    update_statefulset_manifests(statefulset,
+                                 storage_class,
+                                 statefulset_name)
+
+    create_storage_class(storage_class)
+    create_and_wait_statefulset(statefulset)
+    sspod_info = get_statefulset_pod_info(core_api, statefulset)[0]
+
+    crash_engine_process_with_sigkill(client, core_api,
+                                      sspod_info['pv_name'])
+    delete_and_wait_pod(core_api,
+                        pod_name=sspod_info['pod_name'],
+                        wait=False)
+
+    wait_statefulset(statefulset)
