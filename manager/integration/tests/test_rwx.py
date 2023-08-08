@@ -21,6 +21,7 @@ from backupstore import set_random_backupstore # NOQA
 from multiprocessing import Pool
 
 import time
+import pytest
 
 
 def write_data_into_pod(pod_name_and_data_path):
@@ -511,3 +512,64 @@ def test_restore_rwo_volume_to_rwx(set_random_backupstore, client, core_api, vol
     md5sum_pod2 = get_pod_data_md5sum(core_api, pod_name_2, data_path)
 
     assert md5sum == md5sum_pod1 == md5sum_pod2
+
+
+@pytest.mark.skip(reason="TODO")
+def test_rwx_onine_expansion(): # NOQA
+    """
+    Related issue :
+    https://github.com/longhorn/longhorn/issues/2181
+    https://github.com/longhorn/longhorn/issues/2484
+
+    This test case does not cover the UI test mentioned in the related issue's
+    test steps."
+
+    Given
+    - Create a rwx pvc using longhorn storage class of size 1 Gi.
+
+    And
+    - Atach it to a workload (deployment) and write some data.
+
+    When
+    - Expand the volume to 5 Gi
+
+    Then
+    - Expansion of volume is completed.
+    - Share manager pod not restart
+
+    And
+    - 1.5 Gi of data is successfully written to the expanded volume.
+    """
+    pass
+
+
+@pytest.mark.skip(reason="TODO")
+def test_rwx_offline_expansion(): # NOQA
+    """
+    Related issue :
+    https://github.com/longhorn/longhorn/issues/2181
+    https://github.com/longhorn/longhorn/issues/2484
+
+    This test case does not cover the UI test mentioned in the related issue's
+    test steps."
+
+    Given
+    - Create a rwx pvc using longhorn storage class of size 1 Gi.
+
+    And
+    - Atach it to a workload (deployment) and write some data.
+    - Scale down the workload, wait volume detached
+    - Share manager pod will terminate automatically
+    - Expand the volume to 5 Gi, wait exoansion complete
+
+    When
+    - Scale up workload
+
+    Then
+    - Share manager pod created
+    - Volume healthy
+
+    And
+    - 1.5 Gi of data is successfully written to the expanded volume
+    """
+    pass
