@@ -64,13 +64,13 @@ metadata:
 spec:
   containers:
   - name: longhorn-test
-    image: longhornio/longhorn-manager-test:master-head
-#    args: [
+    image: mrohrich/longhorn-manager-test:object-endpoint
+    args: [
 #           "-x", "-s",
 #           "-m", "coretest",
-#           "-k", "test_recurring_job",
+           "-k", "test_object_endpoint",
 #           "--skip-recurring-job-test",
-#           ]
+           ]
     #TEST_FRAMEWORK_ARGS_PLACEHOLDER
     imagePullPolicy: Always
     securityContext:
