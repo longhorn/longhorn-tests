@@ -17,9 +17,6 @@ from common import get_apps_api_client
 from common import get_custom_object_api_client
 from common import create_storage_class, delete_storage_class
 from common import LONGHORN_NAMESPACE
-from common import DEFAULT_OBJECT_ENDPOINT_NAME
-from common import DEFAULT_OBJECT_ENDPOINT_ACCESS_KEY
-from common import DEFAULT_OBJECT_ENDPOINT_SECRET_KEY
 
 LONGHORN_API_GROUP = "longhorn.io"
 LONGHORN_API_VERSION = "v1beta2"
@@ -29,14 +26,21 @@ OBJECT_ENDPOINT_NAME = "object-endpoint"
 OBJECT_ENDPOINT_SIZE = "2Gi"
 OBJECT_ENDPOINT_STORAGE_CLASS_NAME = "sc-test-object-endpoint"
 
-DEFAULT_INTERVAL = 1
-DEFAULT_TIMEOUT = 120  # 2 minutes
+DEFAULT_OBJECT_ENDPOINT_NAME = "test-object-endpoint"
+DEFAULT_OBJECT_ENDPOINT_ACCESS_KEY = "foobar"
+DEFAULT_OBJECT_ENDPOINT_SECRET_KEY = "barfoo"
+
+WAIT_INTERVAL = 1  # one second
+WAIT_TIMEOUT = 120  # two minutes
 
 
 @pytest.fixture
 def storage_class():
     """
     Storage Class pytest fixture
+    This fixture yields a storage class in the cluster and the manifest to the
+    callers location. When the calling test is finished (with or without
+    failure) the storage class is removed from the cluster
     """
     manifest = {
         'apiVersion': 'storage.k8s.io/v1',
@@ -58,9 +62,14 @@ def storage_class():
 
 
 @pytest.fixture
-def object_endpoint(storage_class):
+def object_endpoint(storage_class):  # pylint: disable=W0621
     """
     Object Endpoint pytest fixture
+    This fixture yields an object endpoint in the cluster and the manifest to
+    the callers location. When the calling test is finished (with or without
+    failure) the object endpoint is removed from the cluster.
+    It is not an error if the object endpoint is removed explicitly during the
+    calling test.
     """
     manifest = {
         'apiVersion': 'longhorn.io/v1beta2',
@@ -82,8 +91,8 @@ def object_endpoint(storage_class):
     delete_object_endpoint(manifest)
 
 
-@pytest.mark.object_endpoint  # NOQA
-def test_create_object_endpoint(object_endpoint):
+@pytest.mark.object_endpoint
+def test_create_object_endpoint(object_endpoint):  # pylint: disable=W0621
     """
     Scenario: test the creation of an object storage endpoint
 
@@ -113,8 +122,8 @@ def test_create_object_endpoint(object_endpoint):
     # TODO: assertions that resources are fully up and running
 
 
-@pytest.mark.object_endpoint  # NOQA
-def test_delete_object_endpoint(object_endpoint):
+@pytest.mark.object_endpoint
+def test_delete_object_endpoint(object_endpoint):  # pylint: disable=W0621
     """
     Scenario: test the deletion of an object storage endpoint
 
@@ -137,9 +146,10 @@ def test_delete_object_endpoint(object_endpoint):
 # - - -
 # Below here are utilities and helper functions for testing the object endpoint
 # controller.
-
-
+#
 # pylint: disable=missing-function-docstring
+
+
 def assert_object_endpoint_running(manifest):
     api = get_custom_object_api_client()
     name = manifest['metadata']['name']
@@ -154,7 +164,6 @@ def assert_object_endpoint_running(manifest):
     assert status['status']['state'] == "Running", f"{err_prefix} not running"
 
 
-# pylint: disable=missing-function-docstring
 def assert_deployment_ready(manifest):
     api = get_apps_api_client()
     name = manifest['metadata']['name']
@@ -177,25 +186,23 @@ def assert_deployment_ready(manifest):
         assert unavailable_replicas == 0
 
 
-# pylint: disable=missing-function-docstring
 def assert_deployment_removed(manifest):
     api = get_apps_api_client()
     name = manifest['metadata']['name']
 
-    for _ in range(DEFAULT_TIMEOUT):
+    for _ in range(WAIT_TIMEOUT):
         try:
             api.read_namespaced_deployment(name,  LONGHORN_NAMESPACE)
         except ApiException as exception:
             assert exception.status == 404, "API Error"
             return
 
-        time.sleep(DEFAULT_INTERVAL)
+        time.sleep(WAIT_INTERVAL)
 
     err_prefix = f"object endpoint {name}"
     assert False, f"{err_prefix} left orphaned deployment {name} after timeout"
 
 
-# pylint: disable=missing-function-docstring
 def assert_service_ready(manifest):
     api = get_core_api_client()
     name = manifest['metadata']['name']
@@ -207,7 +214,6 @@ def assert_service_ready(manifest):
     assert len(service.spec.ports) > 0
 
 
-# pylint: disable=missing-function-docstring
 def assert_secret_ready(manifest):
     api = get_core_api_client()
     name = manifest['metadata']['name']
@@ -219,48 +225,45 @@ def assert_secret_ready(manifest):
     assert len(secret.data.keys()) > 0
 
 
-# pylint: disable=missing-function-docstring
 def assert_service_removed(manifest):
     api = get_core_api_client()
     name = manifest['metadata']['name']
 
-    for _ in range(DEFAULT_TIMEOUT):
+    for _ in range(WAIT_TIMEOUT):
         try:
             api.read_namespaced_service(name, LONGHORN_NAMESPACE)
         except ApiException as exception:
             assert exception.status == 404, "API Error"
             return
 
-        time.sleep(DEFAULT_INTERVAL)
+        time.sleep(WAIT_INTERVAL)
 
     err_prefix = f"object endpoint {name}"
     assert False, f"{err_prefix} left orphaned service {name}"
 
 
-# pylint: disable=missing-function-docstring
 def assert_secret_removed(manifest):
     api = get_core_api_client()
     name = manifest['metadata']['name']
 
-    for _ in range(DEFAULT_TIMEOUT):
+    for _ in range(WAIT_TIMEOUT):
         try:
             api.read_namespaced_secret(name, LONGHORN_NAMESPACE)
         except ApiException as exception:
             assert exception.status == 404, "API Error"
             return
 
-        time.sleep(DEFAULT_INTERVAL)
+        time.sleep(WAIT_INTERVAL)
 
     err_prefix = f"object endpoint {name}"
     assert False, f"{err_prefix} left orphaned secret {name}"
 
 
-# pylint: disable=missing-function-docstring
 def wait_object_endpoint_running(manifest):
     api = get_custom_object_api_client()
     name = manifest['metadata']['name']
 
-    for _ in range(DEFAULT_TIMEOUT):
+    for _ in range(WAIT_TIMEOUT):
         status = api.get_cluster_custom_object_status(LONGHORN_API_GROUP,
                                                       LONGHORN_API_VERSION,
                                                       "objectendpoints",
@@ -270,7 +273,7 @@ def wait_object_endpoint_running(manifest):
                 status['status']['state'] == "Running":
             return
 
-        time.sleep(DEFAULT_INTERVAL)
+        time.sleep(WAIT_INTERVAL)
 
     assert False, "timed out waiting for object endpoint"
 
@@ -279,7 +282,7 @@ def wait_object_endpoint_removed(manifest):
     api = get_custom_object_api_client()
     name = manifest['metadata']['name']
 
-    for _ in range(DEFAULT_TIMEOUT):
+    for _ in range(WAIT_TIMEOUT):
         try:
             api.get_cluster_custom_object(LONGHORN_API_GROUP,
                                           LONGHORN_API_VERSION,
@@ -289,12 +292,11 @@ def wait_object_endpoint_removed(manifest):
             assert exception.status == 404, "API Error"
             return
 
-        time.sleep(DEFAULT_INTERVAL)
+        time.sleep(WAIT_INTERVAL)
 
     assert False, "timed out waiting for object endpoint to be removed"
 
 
-# pylint: disable=missing-function-docstring
 def create_object_endpoint(manifest):
     api = get_custom_object_api_client()
     api.create_cluster_custom_object(LONGHORN_API_GROUP,
@@ -303,7 +305,6 @@ def create_object_endpoint(manifest):
                                      manifest)
 
 
-# pylint: disable=missing-function-docstring
 def delete_object_endpoint(manifest):
     api = get_custom_object_api_client()
     try:
