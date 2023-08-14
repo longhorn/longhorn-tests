@@ -44,6 +44,7 @@ INCLUDE_STRESS_OPT = &#34;--include-stress-test&#34;
 INCLUDE_UPGRADE_OPT = &#34;--include-upgrade-test&#34;
 INCLUDE_CA_OPT = &#34;--include-cluster-autoscaler-test&#34;
 
+LH_INSTALL_METHOD = &#34;--lh-install-method&#34;
 UPGRADE_LH_REPO_URL = &#34;--upgrade-lh-repo-url&#34;
 UPGRADE_LH_REPO_BRANCH = &#34;--upgrade-lh-repo-branch&#34;
 UPGRADE_LH_MANAGER_IMAGE = &#34;--upgrade-lh-manager-image&#34;
@@ -77,6 +78,12 @@ def pytest_addoption(parser):
     parser.addoption(INCLUDE_CA_OPT, action=&#34;store_true&#34;,
                      default=False,
                      help=&#34;include cluster autoscaler tests (default: False)&#34;)
+
+    parser.addoption(LH_INSTALL_METHOD, action=&#34;store&#34;,
+                     default=&#34;manifest&#34;,
+                     help=&#39;&#39;&#39;set longhorn install method, this will be used
+                     to determine how to upgrade longhorn for test_upgrade
+                     (default: manifest&#39;&#39;&#39;)
 
     longhorn_repo_url =\
         &#34;https://github.com/longhorn/longhorn.git&#34;
@@ -269,6 +276,12 @@ def pytest_exception_interact(call, report):
     parser.addoption(INCLUDE_CA_OPT, action=&#34;store_true&#34;,
                      default=False,
                      help=&#34;include cluster autoscaler tests (default: False)&#34;)
+
+    parser.addoption(LH_INSTALL_METHOD, action=&#34;store&#34;,
+                     default=&#34;manifest&#34;,
+                     help=&#39;&#39;&#39;set longhorn install method, this will be used
+                     to determine how to upgrade longhorn for test_upgrade
+                     (default: manifest&#39;&#39;&#39;)
 
     longhorn_repo_url =\
         &#34;https://github.com/longhorn/longhorn.git&#34;
