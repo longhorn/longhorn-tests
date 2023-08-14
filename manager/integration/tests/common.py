@@ -2766,7 +2766,9 @@ def wait_for_disk_status(client, node_name, disk_name, key, value):
     assert disks[disk_name][key] == value, \
         f"Wrong disk({disk_name}) {key} status.\n" \
         f"Expect={value}\n" \
-        f"Got={disks[disk_name][key]}\n"
+        f"Got={disks[disk_name][key]}\n" \
+        f"node={client.by_id_node(node_name)}\n" \
+        f"volumes={client.list_volume()}\n"
     return node
 
 
