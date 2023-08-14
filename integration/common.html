@@ -2847,7 +2847,9 @@ def wait_for_disk_status(client, node_name, disk_name, key, value):
     assert disks[disk_name][key] == value, \
         f&#34;Wrong disk({disk_name}) {key} status.\n&#34; \
         f&#34;Expect={value}\n&#34; \
-        f&#34;Got={disks[disk_name][key]}\n&#34;
+        f&#34;Got={disks[disk_name][key]}\n&#34; \
+        f&#34;node={client.by_id_node(node_name)}\n&#34; \
+        f&#34;volumes={client.list_volume()}\n&#34;
     return node
 
 
@@ -12638,7 +12640,9 @@ ref: <a href="https://github.com/longhorn/longhorn/issues/4814">https://github.c
     assert disks[disk_name][key] == value, \
         f&#34;Wrong disk({disk_name}) {key} status.\n&#34; \
         f&#34;Expect={value}\n&#34; \
-        f&#34;Got={disks[disk_name][key]}\n&#34;
+        f&#34;Got={disks[disk_name][key]}\n&#34; \
+        f&#34;node={client.by_id_node(node_name)}\n&#34; \
+        f&#34;volumes={client.list_volume()}\n&#34;
     return node</code></pre>
 </details>
 </dd>
