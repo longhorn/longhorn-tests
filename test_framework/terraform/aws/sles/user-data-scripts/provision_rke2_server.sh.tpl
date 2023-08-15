@@ -1,6 +1,9 @@
 #!/bin/bash 
 
-sudo zypper ref -y
+set -e
+
+sudo systemctl restart guestregister # Sometimes registration fails on first boot.
+sudo zypper ref
 sudo zypper install -y -t pattern devel_basis 
 sudo zypper install -y open-iscsi nfs-client jq
 sudo systemctl -q enable iscsid
@@ -21,6 +24,9 @@ EOF
 
 systemctl enable rke2-server.service
 systemctl start rke2-server.service
+
+# TODO: It looks like "set -e" will break the intended functionality of the remaining code. Consider a refactor.
+set +e
 
 until (KUBECONFIG=/etc/rancher/rke2/rke2.yaml /var/lib/rancher/rke2/bin/kubectl get pods -A | grep 'Running'); do
   echo 'Waiting for rke2 startup'
