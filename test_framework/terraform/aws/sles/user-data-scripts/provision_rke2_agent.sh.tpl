@@ -1,6 +1,9 @@
 #!/bin/bash
 
-sudo zypper ref -y
+set -e
+
+sudo systemctl restart guestregister # Sometimes registration fails on first boot.
+sudo zypper ref
 sudo zypper install -y -t pattern devel_basis
 sudo zypper install -y open-iscsi nfs-client 
 sudo systemctl -q enable iscsid
