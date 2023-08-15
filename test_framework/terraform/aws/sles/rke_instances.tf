@@ -59,8 +59,7 @@ resource "null_resource" "wait_for_docker_start_controlplane" {
 # Create worker instances for rke
 resource "aws_instance" "lh_aws_instance_worker_rke" {
   depends_on = [
-    aws_internet_gateway.lh_aws_igw,
-    aws_subnet.lh_aws_private_subnet,
+    aws_route_table_association.lh_aws_private_subnet_rt_association,
     aws_instance.lh_aws_instance_controlplane_rke
   ]
 
