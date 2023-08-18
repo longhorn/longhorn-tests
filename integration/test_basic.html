@@ -122,6 +122,10 @@ from common import wait_for_snapshot_count
 from common import make_deployment_with_pvc # NOQA
 from common import wait_for_volume_option_trim_auto_removing_snapshots
 from common import FS_TYPE_EXT4, FS_TYPE_XFS
+from common import DEFAULT_BACKUP_COMPRESSION_METHOD
+from common import BACKUP_COMPRESSION_METHOD_LZ4
+from common import BACKUP_COMPRESSION_METHOD_GZIP
+from common import BACKUP_COMPRESSION_METHOD_NONE
 
 from backupstore import backupstore_delete_volume_cfg_file
 from backupstore import backupstore_cleanup
@@ -1341,18 +1345,19 @@ def test_backup(set_random_backupstore, client, volume_name):  # NOQA
     backup_test(client, volume_name, SIZE)
 
 
-def backup_test(client, volume_name, size, backing_image=&#34;&#34;):  # NOQA
+def backup_test(client, volume_name, size, backing_image=&#34;&#34;, compression_method=DEFAULT_BACKUP_COMPRESSION_METHOD):  # NOQA
     volume = create_and_check_volume(client, volume_name, 2, size,
                                      backing_image)
 
     lht_hostId = get_self_host_id()
     volume = volume.attach(hostId=lht_hostId)
     volume = common.wait_for_volume_healthy(client, volume_name)
+    assert volume.backupCompressionMethod == compression_method
 
-    backupstore_test(client, lht_hostId, volume_name, size)
+    backupstore_test(client, lht_hostId, volume_name, size, compression_method)
 
 
-def backupstore_test(client, host_id, volname, size):  # NOQA
+def backupstore_test(client, host_id, volname, size, compression_method):  # NOQA
     bv, b, snap2, data = create_backup(client, volname)
 
     # test restore
@@ -1368,6 +1373,7 @@ def backupstore_test(client, host_id, volname, size):  # NOQA
     assert volume.numberOfReplicas == 2
     assert volume.state == &#34;detached&#34;
     assert volume.restoreRequired is False
+    assert volume.backupCompressionMethod == compression_method
 
     volume = volume.attach(hostId=host_id)
     volume = common.wait_for_volume_healthy(client, restore_name)
@@ -5151,7 +5157,6 @@ def test_backup_volume_restore_with_access_mode(core_api, # NOQA
                                                 client, # NOQA
                                                 access_mode, # NOQA
                                        overridden_restored_access_mode): # NOQA
-
     &#34;&#34;&#34;
     Test the backup w/ the volume access mode, then restore a volume w/ the
      original access mode or being overridden.
@@ -5545,7 +5550,103 @@ def test_backuptarget_invalid(): # NOQA
     Then
     - Backup will be failed and the backup state is Error.
     &#34;&#34;&#34;
-    pass</code></pre>
+    pass
+
+
+@pytest.mark.volume_backup_restore   # NOQA
+def test_volume_backup_and_restore_with_lz4_compression_method(client, set_random_backupstore, volume_name):  # NOQA
+    &#34;&#34;&#34;
+    Scenario: test volume backup and restore with different compression methods
+
+    Issue: https://github.com/longhorn/longhorn/issues/5189
+
+    Given setup Backup Compression Method is &#34;lz4&#34;
+    And setup backup concurrent limit is &#34;4&#34;
+    And setup restore concurrent limit is &#34;4&#34;
+
+    When create a volume and attach to the current node
+    And get the volume&#39;s details
+    Then verify the volume&#39;s compression method is &#34;lz4&#34;
+
+    Then Create a backup of volume
+    And Write volume random data
+    Then restore the backup to a new volume
+    And Attach the new volume and verify the data integrity
+    Then Detach the volume and delete the backup
+    And Wait for the restored volume&#39;s `lastBackup` to be cleaned
+    (due to remove the backup)
+    And Delete the volume
+    &#34;&#34;&#34;
+    common.update_setting(client, common.SETTING_BACKUP_COMPRESSION_METHOD,
+                          BACKUP_COMPRESSION_METHOD_LZ4)
+    common.update_setting(client, common.SETTING_BACKUP_CONCURRENT_LIMIT, &#34;4&#34;)
+    common.update_setting(client, common.SETTING_RESTORE_CONCURRENT_LIMIT, &#34;4&#34;)
+    backup_test(client, volume_name, SIZE,
+                compression_method=BACKUP_COMPRESSION_METHOD_LZ4)
+
+
+@pytest.mark.volume_backup_restore   # NOQA
+def test_volume_backup_and_restore_with_gzip_compression_method(client, set_random_backupstore, volume_name):  # NOQA
+    &#34;&#34;&#34;
+    Scenario: test volume backup and restore with different compression methods
+
+    Issue: https://github.com/longhorn/longhorn/issues/5189
+
+    Given setup Backup Compression Method is &#34;gzip&#34;
+    And setup backup concurrent limit is &#34;4&#34;
+    And setup restore concurrent limit is &#34;4&#34;
+
+    When create a volume and attach to the current node
+    And get the volume&#39;s details
+    Then verify the volume&#39;s compression method is &#34;gzip&#34;
+
+    Then Create a backup of volume
+    And Write volume random data
+    Then restore the backup to a new volume
+    And Attach the new volume and verify the data integrity
+    And Detach the volume and delete the backup
+    And Wait for the restored volume&#39;s `lastBackup` to be cleaned
+    (due to remove the backup)
+    And Delete the volume
+    &#34;&#34;&#34;
+    common.update_setting(client, common.SETTING_BACKUP_COMPRESSION_METHOD,
+                          BACKUP_COMPRESSION_METHOD_GZIP)
+    common.update_setting(client, common.SETTING_BACKUP_CONCURRENT_LIMIT, &#34;4&#34;)
+    common.update_setting(client, common.SETTING_RESTORE_CONCURRENT_LIMIT, &#34;4&#34;)
+    backup_test(client, volume_name, SIZE,
+                compression_method=BACKUP_COMPRESSION_METHOD_GZIP)
+
+
+@pytest.mark.volume_backup_restore   # NOQA
+def test_volume_backup_and_restore_with_none_compression_method(client, set_random_backupstore, volume_name):  # NOQA
+    &#34;&#34;&#34;
+    Scenario: test volume backup and restore with different compression methods
+
+    Issue: https://github.com/longhorn/longhorn/issues/5189
+
+    Given setup Backup Compression Method is &#34;none&#34;
+    And setup backup concurrent limit is &#34;4&#34;
+    And setup restore concurrent limit is &#34;4&#34;
+
+    When create a volume and attach to the current node
+    And get the volume&#39;s details
+    Then verify the volume&#39;s compression method is &#34;none&#34;
+
+    Then Create a backup of volume
+    And Write volume random data
+    Then restore the backup to a new volume
+    And Attach the new volume and verify the data integrity
+    And Detach the volume and delete the backup
+    And Wait for the restored volume&#39;s `lastBackup` to be cleaned
+    (due to remove the backup)
+    And Delete the volume
+    &#34;&#34;&#34;
+    common.update_setting(client, common.SETTING_BACKUP_COMPRESSION_METHOD,
+                          BACKUP_COMPRESSION_METHOD_NONE)
+    common.update_setting(client, common.SETTING_BACKUP_CONCURRENT_LIMIT, &#34;4&#34;)
+    common.update_setting(client, common.SETTING_RESTORE_CONCURRENT_LIMIT, &#34;4&#34;)
+    backup_test(client, volume_name, SIZE,
+                compression_method=BACKUP_COMPRESSION_METHOD_NONE)</code></pre>
 </details>
 </section>
 <section>
@@ -5739,7 +5840,7 @@ def test_backuptarget_invalid(): # NOQA
 </details>
 </dd>
 <dt id="tests.test_basic.backup_test"><code class="name flex">
-<span>def <span class="ident">backup_test</span></span>(<span>client, volume_name, size, backing_image='')</span>
+<span>def <span class="ident">backup_test</span></span>(<span>client, volume_name, size, backing_image='', compression_method='lz4')</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -5747,19 +5848,20 @@ def test_backuptarget_invalid(): # NOQA
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def backup_test(client, volume_name, size, backing_image=&#34;&#34;):  # NOQA
+<pre><code class="python">def backup_test(client, volume_name, size, backing_image=&#34;&#34;, compression_method=DEFAULT_BACKUP_COMPRESSION_METHOD):  # NOQA
     volume = create_and_check_volume(client, volume_name, 2, size,
                                      backing_image)
 
     lht_hostId = get_self_host_id()
     volume = volume.attach(hostId=lht_hostId)
     volume = common.wait_for_volume_healthy(client, volume_name)
+    assert volume.backupCompressionMethod == compression_method
 
-    backupstore_test(client, lht_hostId, volume_name, size)</code></pre>
+    backupstore_test(client, lht_hostId, volume_name, size, compression_method)</code></pre>
 </details>
 </dd>
 <dt id="tests.test_basic.backupstore_test"><code class="name flex">
-<span>def <span class="ident">backupstore_test</span></span>(<span>client, host_id, volname, size)</span>
+<span>def <span class="ident">backupstore_test</span></span>(<span>client, host_id, volname, size, compression_method)</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -5767,7 +5869,7 @@ def test_backuptarget_invalid(): # NOQA
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def backupstore_test(client, host_id, volname, size):  # NOQA
+<pre><code class="python">def backupstore_test(client, host_id, volname, size, compression_method):  # NOQA
     bv, b, snap2, data = create_backup(client, volname)
 
     # test restore
@@ -5783,6 +5885,7 @@ def test_backuptarget_invalid(): # NOQA
     assert volume.numberOfReplicas == 2
     assert volume.state == &#34;detached&#34;
     assert volume.restoreRequired is False
+    assert volume.backupCompressionMethod == compression_method
 
     volume = volume.attach(hostId=host_id)
     volume = common.wait_for_volume_healthy(client, restore_name)
@@ -8336,7 +8439,6 @@ def test_backup_volume_restore_with_access_mode(core_api, # NOQA
                                                 client, # NOQA
                                                 access_mode, # NOQA
                                        overridden_restored_access_mode): # NOQA
-
     &#34;&#34;&#34;
     Test the backup w/ the volume access mode, then restore a volume w/ the
      original access mode or being overridden.
@@ -11912,6 +12014,174 @@ def test_storage_class_from_backup(set_random_backupstore, volume_name, pvc_name
     assert test_data == restored_data</code></pre>
 </details>
 </dd>
+<dt id="tests.test_basic.test_volume_backup_and_restore_with_gzip_compression_method"><code class="name flex">
+<span>def <span class="ident">test_volume_backup_and_restore_with_gzip_compression_method</span></span>(<span>client, set_random_backupstore, volume_name)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Scenario: test volume backup and restore with different compression methods</p>
+<p>Issue: <a href="https://github.com/longhorn/longhorn/issues/5189">https://github.com/longhorn/longhorn/issues/5189</a></p>
+<p>Given setup Backup Compression Method is "gzip"
+And setup backup concurrent limit is "4"
+And setup restore concurrent limit is "4"</p>
+<p>When create a volume and attach to the current node
+And get the volume's details
+Then verify the volume's compression method is "gzip"</p>
+<p>Then Create a backup of volume
+And Write volume random data
+Then restore the backup to a new volume
+And Attach the new volume and verify the data integrity
+And Detach the volume and delete the backup
+And Wait for the restored volume's <code>lastBackup</code> to be cleaned
+(due to remove the backup)
+And Delete the volume</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@pytest.mark.volume_backup_restore   # NOQA
+def test_volume_backup_and_restore_with_gzip_compression_method(client, set_random_backupstore, volume_name):  # NOQA
+    &#34;&#34;&#34;
+    Scenario: test volume backup and restore with different compression methods
+
+    Issue: https://github.com/longhorn/longhorn/issues/5189
+
+    Given setup Backup Compression Method is &#34;gzip&#34;
+    And setup backup concurrent limit is &#34;4&#34;
+    And setup restore concurrent limit is &#34;4&#34;
+
+    When create a volume and attach to the current node
+    And get the volume&#39;s details
+    Then verify the volume&#39;s compression method is &#34;gzip&#34;
+
+    Then Create a backup of volume
+    And Write volume random data
+    Then restore the backup to a new volume
+    And Attach the new volume and verify the data integrity
+    And Detach the volume and delete the backup
+    And Wait for the restored volume&#39;s `lastBackup` to be cleaned
+    (due to remove the backup)
+    And Delete the volume
+    &#34;&#34;&#34;
+    common.update_setting(client, common.SETTING_BACKUP_COMPRESSION_METHOD,
+                          BACKUP_COMPRESSION_METHOD_GZIP)
+    common.update_setting(client, common.SETTING_BACKUP_CONCURRENT_LIMIT, &#34;4&#34;)
+    common.update_setting(client, common.SETTING_RESTORE_CONCURRENT_LIMIT, &#34;4&#34;)
+    backup_test(client, volume_name, SIZE,
+                compression_method=BACKUP_COMPRESSION_METHOD_GZIP)</code></pre>
+</details>
+</dd>
+<dt id="tests.test_basic.test_volume_backup_and_restore_with_lz4_compression_method"><code class="name flex">
+<span>def <span class="ident">test_volume_backup_and_restore_with_lz4_compression_method</span></span>(<span>client, set_random_backupstore, volume_name)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Scenario: test volume backup and restore with different compression methods</p>
+<p>Issue: <a href="https://github.com/longhorn/longhorn/issues/5189">https://github.com/longhorn/longhorn/issues/5189</a></p>
+<p>Given setup Backup Compression Method is "lz4"
+And setup backup concurrent limit is "4"
+And setup restore concurrent limit is "4"</p>
+<p>When create a volume and attach to the current node
+And get the volume's details
+Then verify the volume's compression method is "lz4"</p>
+<p>Then Create a backup of volume
+And Write volume random data
+Then restore the backup to a new volume
+And Attach the new volume and verify the data integrity
+Then Detach the volume and delete the backup
+And Wait for the restored volume's <code>lastBackup</code> to be cleaned
+(due to remove the backup)
+And Delete the volume</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@pytest.mark.volume_backup_restore   # NOQA
+def test_volume_backup_and_restore_with_lz4_compression_method(client, set_random_backupstore, volume_name):  # NOQA
+    &#34;&#34;&#34;
+    Scenario: test volume backup and restore with different compression methods
+
+    Issue: https://github.com/longhorn/longhorn/issues/5189
+
+    Given setup Backup Compression Method is &#34;lz4&#34;
+    And setup backup concurrent limit is &#34;4&#34;
+    And setup restore concurrent limit is &#34;4&#34;
+
+    When create a volume and attach to the current node
+    And get the volume&#39;s details
+    Then verify the volume&#39;s compression method is &#34;lz4&#34;
+
+    Then Create a backup of volume
+    And Write volume random data
+    Then restore the backup to a new volume
+    And Attach the new volume and verify the data integrity
+    Then Detach the volume and delete the backup
+    And Wait for the restored volume&#39;s `lastBackup` to be cleaned
+    (due to remove the backup)
+    And Delete the volume
+    &#34;&#34;&#34;
+    common.update_setting(client, common.SETTING_BACKUP_COMPRESSION_METHOD,
+                          BACKUP_COMPRESSION_METHOD_LZ4)
+    common.update_setting(client, common.SETTING_BACKUP_CONCURRENT_LIMIT, &#34;4&#34;)
+    common.update_setting(client, common.SETTING_RESTORE_CONCURRENT_LIMIT, &#34;4&#34;)
+    backup_test(client, volume_name, SIZE,
+                compression_method=BACKUP_COMPRESSION_METHOD_LZ4)</code></pre>
+</details>
+</dd>
+<dt id="tests.test_basic.test_volume_backup_and_restore_with_none_compression_method"><code class="name flex">
+<span>def <span class="ident">test_volume_backup_and_restore_with_none_compression_method</span></span>(<span>client, set_random_backupstore, volume_name)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Scenario: test volume backup and restore with different compression methods</p>
+<p>Issue: <a href="https://github.com/longhorn/longhorn/issues/5189">https://github.com/longhorn/longhorn/issues/5189</a></p>
+<p>Given setup Backup Compression Method is "none"
+And setup backup concurrent limit is "4"
+And setup restore concurrent limit is "4"</p>
+<p>When create a volume and attach to the current node
+And get the volume's details
+Then verify the volume's compression method is "none"</p>
+<p>Then Create a backup of volume
+And Write volume random data
+Then restore the backup to a new volume
+And Attach the new volume and verify the data integrity
+And Detach the volume and delete the backup
+And Wait for the restored volume's <code>lastBackup</code> to be cleaned
+(due to remove the backup)
+And Delete the volume</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@pytest.mark.volume_backup_restore   # NOQA
+def test_volume_backup_and_restore_with_none_compression_method(client, set_random_backupstore, volume_name):  # NOQA
+    &#34;&#34;&#34;
+    Scenario: test volume backup and restore with different compression methods
+
+    Issue: https://github.com/longhorn/longhorn/issues/5189
+
+    Given setup Backup Compression Method is &#34;none&#34;
+    And setup backup concurrent limit is &#34;4&#34;
+    And setup restore concurrent limit is &#34;4&#34;
+
+    When create a volume and attach to the current node
+    And get the volume&#39;s details
+    Then verify the volume&#39;s compression method is &#34;none&#34;
+
+    Then Create a backup of volume
+    And Write volume random data
+    Then restore the backup to a new volume
+    And Attach the new volume and verify the data integrity
+    And Detach the volume and delete the backup
+    And Wait for the restored volume&#39;s `lastBackup` to be cleaned
+    (due to remove the backup)
+    And Delete the volume
+    &#34;&#34;&#34;
+    common.update_setting(client, common.SETTING_BACKUP_COMPRESSION_METHOD,
+                          BACKUP_COMPRESSION_METHOD_NONE)
+    common.update_setting(client, common.SETTING_BACKUP_CONCURRENT_LIMIT, &#34;4&#34;)
+    common.update_setting(client, common.SETTING_RESTORE_CONCURRENT_LIMIT, &#34;4&#34;)
+    backup_test(client, volume_name, SIZE,
+                compression_method=BACKUP_COMPRESSION_METHOD_NONE)</code></pre>
+</details>
+</dd>
 <dt id="tests.test_basic.test_volume_basic"><code class="name flex">
 <span>def <span class="ident">test_volume_basic</span></span>(<span>client, volume_name)</span>
 </code></dt>
@@ -12719,6 +12989,9 @@ the format <strong><em>*rw</em></strong>*</li>
 <li><code><a title="tests.test_basic.test_space_usage_for_rebuilding_only_volume" href="#tests.test_basic.test_space_usage_for_rebuilding_only_volume">test_space_usage_for_rebuilding_only_volume</a></code></li>
 <li><code><a title="tests.test_basic.test_space_usage_for_rebuilding_only_volume_worst_scenario" href="#tests.test_basic.test_space_usage_for_rebuilding_only_volume_worst_scenario">test_space_usage_for_rebuilding_only_volume_worst_scenario</a></code></li>
 <li><code><a title="tests.test_basic.test_storage_class_from_backup" href="#tests.test_basic.test_storage_class_from_backup">test_storage_class_from_backup</a></code></li>
+<li><code><a title="tests.test_basic.test_volume_backup_and_restore_with_gzip_compression_method" href="#tests.test_basic.test_volume_backup_and_restore_with_gzip_compression_method">test_volume_backup_and_restore_with_gzip_compression_method</a></code></li>
+<li><code><a title="tests.test_basic.test_volume_backup_and_restore_with_lz4_compression_method" href="#tests.test_basic.test_volume_backup_and_restore_with_lz4_compression_method">test_volume_backup_and_restore_with_lz4_compression_method</a></code></li>
+<li><code><a title="tests.test_basic.test_volume_backup_and_restore_with_none_compression_method" href="#tests.test_basic.test_volume_backup_and_restore_with_none_compression_method">test_volume_backup_and_restore_with_none_compression_method</a></code></li>
 <li><code><a title="tests.test_basic.test_volume_basic" href="#tests.test_basic.test_volume_basic">test_volume_basic</a></code></li>
 <li><code><a title="tests.test_basic.test_volume_iscsi_basic" href="#tests.test_basic.test_volume_iscsi_basic">test_volume_iscsi_basic</a></code></li>
 <li><code><a title="tests.test_basic.test_volume_metafile_deleted" href="#tests.test_basic.test_volume_metafile_deleted">test_volume_metafile_deleted</a></code></li>
