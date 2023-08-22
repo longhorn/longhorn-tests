@@ -1,6 +1,9 @@
 #!/bin/bash
 
-sudo zypper ref -y
+set -e
+
+sudo systemctl restart guestregister # Sometimes registration fails on first boot.
+sudo zypper ref
 sudo zypper install -y -t pattern devel_basis
 sudo zypper install -y open-iscsi nfs-client
 sudo systemctl -q enable iscsid
@@ -23,6 +26,9 @@ elif [ -b "/dev/xvdh" ]; then
   mkdir /var/lib/longhorn
   mount /dev/xvdh /var/lib/longhorn
 fi
+
+# TODO: It looks like "set -e" will break the intended functionality of the remaining code. Consider a refactor.
+set +e
 
 until (curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="agent --token ${k3s_cluster_secret}" K3S_URL="${k3s_server_url}" INSTALL_K3S_VERSION="${k3s_version}" sh -); do
   echo 'k3s agent did not install correctly'
