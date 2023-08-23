@@ -133,7 +133,6 @@ def longhorn_upgrade(longhorn_repo_url,
     return longhorn_upgraded
 
 
-@pytest.mark.upgrade  # NOQA
 def test_upgrade(longhorn_upgrade_type,
                  upgrade_longhorn_repo_url,
                  upgrade_longhorn_repo_branch,
@@ -305,6 +304,12 @@ def test_upgrade(longhorn_upgrade_type,
     rwx_test_data = generate_random_data(VOLUME_RWTEST_SIZE)
     write_pod_volume_data(core_api, rwx_statefulset_pod_name,
                           rwx_test_data, filename='test1')
+
+
+    input("Press Enter to continue...")
+
+
+
 
     # upgrade Longhorn manager
     assert longhorn_upgrade(longhorn_repo_url,
