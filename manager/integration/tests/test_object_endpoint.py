@@ -6,6 +6,8 @@ This module excercises the object endpoint controller, which is part of the
 longhorn manager and controls the deployment of S3 endpoints according to
 ObjectEndpoint CRDs.
 """
+import random
+import string
 import time
 import pytest
 
@@ -41,12 +43,15 @@ def storage_class():
     This fixture yields a storage class in the cluster and the manifest to the
     callers location. When the calling test is finished (with or without
     failure) the storage class is removed from the cluster
+    The fixture has a partly randomly generated name to avoid tests influencing
+    each other due to name clashes.
     """
+    uid = gen_id(6)
     manifest = {
         'apiVersion': 'storage.k8s.io/v1',
         'kind': 'StorageClass',
         'metadata': {
-            'name': OBJECT_ENDPOINT_STORAGE_CLASS_NAME,
+            'name': f"{OBJECT_ENDPOINT_STORAGE_CLASS_NAME}-{uid}",
         },
         'provisioner': 'driver.longhorn.io',
         'allowVolumeExpansion': True,
@@ -70,12 +75,15 @@ def object_endpoint(storage_class):  # pylint: disable=W0621
     failure) the object endpoint is removed from the cluster.
     It is not an error if the object endpoint is removed explicitly during the
     calling test.
+    The fixture has a partly randomly generated name to avoid tests influencing
+    each other due to name clashes.
     """
+    uid = gen_id(6)
     manifest = {
         'apiVersion': 'longhorn.io/v1beta2',
         'kind': 'ObjectEndpoint',
         'metadata': {
-            'name': DEFAULT_OBJECT_ENDPOINT_NAME,
+            'name': f"{DEFAULT_OBJECT_ENDPOINT_NAME}-{uid}",
         },
         'spec': {
             'storageClassName': storage_class['metadata']['name'],
@@ -89,6 +97,7 @@ def object_endpoint(storage_class):  # pylint: disable=W0621
     create_object_endpoint(manifest)
     yield manifest
     delete_object_endpoint(manifest)
+    wait_object_endpoint_removed(manifest)
 
 
 @pytest.mark.object_endpoint
@@ -119,7 +128,9 @@ def test_create_object_endpoint(object_endpoint):  # pylint: disable=W0621
     assert_deployment_ready(object_endpoint)
     assert_service_ready(object_endpoint)
     assert_secret_ready(object_endpoint)
-    # TODO: assertions that resources are fully up and running
+    assert_persistent_volume_claim_ready(object_endpoint)
+    assert_persistent_volume_ready(object_endpoint)
+    assert_longhorn_volume_ready(object_endpoint)
 
 
 @pytest.mark.object_endpoint
@@ -141,7 +152,9 @@ def test_delete_object_endpoint(object_endpoint):  # pylint: disable=W0621
     assert_deployment_removed(object_endpoint)
     assert_service_removed(object_endpoint)
     assert_secret_removed(object_endpoint)
-    # TODO: assertions that object endpoint and resources are cleaned up
+    assert_persistent_volume_claim_removed(object_endpoint)
+    assert_persistent_volume_removed(object_endpoint)
+    assert_longhorn_volume_removed(object_endpoint)
 
 # - - -
 # Below here are utilities and helper functions for testing the object endpoint
@@ -214,17 +227,6 @@ def assert_service_ready(manifest):
     assert len(service.spec.ports) > 0
 
 
-def assert_secret_ready(manifest):
-    api = get_core_api_client()
-    name = manifest['metadata']['name']
-    try:
-        secret = api.read_namespaced_secret(name, LONGHORN_NAMESPACE)
-    except ApiException:
-        assert False, "API Error while getting service"
-
-    assert len(secret.data.keys()) > 0
-
-
 def assert_service_removed(manifest):
     api = get_core_api_client()
     name = manifest['metadata']['name']
@@ -242,6 +244,17 @@ def assert_service_removed(manifest):
     assert False, f"{err_prefix} left orphaned service {name}"
 
 
+def assert_secret_ready(manifest):
+    api = get_core_api_client()
+    name = manifest['metadata']['name']
+    try:
+        secret = api.read_namespaced_secret(name, LONGHORN_NAMESPACE)
+    except ApiException:
+        assert False, "API Error while getting service"
+
+    assert len(secret.data.keys()) > 0
+
+
 def assert_secret_removed(manifest):
     api = get_core_api_client()
     name = manifest['metadata']['name']
@@ -257,6 +270,107 @@ def assert_secret_removed(manifest):
 
     err_prefix = f"object endpoint {name}"
     assert False, f"{err_prefix} left orphaned secret {name}"
+
+
+def assert_persistent_volume_claim_ready(manifest):
+    api = get_core_api_client()
+    endpoint = manifest['metadata']['name']
+    name = f"pvc-{endpoint}"
+
+    try:
+        pvc = api.read_namespaced_persistent_volume_claim(name,
+                                                          LONGHORN_NAMESPACE)
+    except ApiException:
+        assert False, "API Error while getting persistent volume claim"
+
+    assert pvc.status.phase == "Bound"
+
+
+def assert_persistent_volume_claim_removed(manifest):
+    api = get_core_api_client()
+    endpoint = manifest['metadata']['name']
+    name = f"pvc-{endpoint}"
+
+    for _ in range(WAIT_TIMEOUT):
+        try:
+            api.read_namespaced_persistent_volume_claim(name,
+                                                        LONGHORN_NAMESPACE)
+        except ApiException as exception:
+            assert exception.status == 404, "API Error"
+            return
+
+        time.sleep(WAIT_INTERVAL)
+
+    err_prefix = f"object endpoint {name}"
+    assert False, f"{err_prefix} left orphaned persistent volume claim {name}"
+
+
+def assert_persistent_volume_ready(manifest):
+    api = get_core_api_client()
+    endpoint = manifest['metadata']['name']
+    name = f"pv-{endpoint}"
+
+    try:
+        pv = api.read_persistent_volume(name)  # pylint: disable=invalid-name
+    except ApiException:
+        assert False, "API Error while getting persistent volume claim"
+
+    assert pv.status.phase == "Bound"
+
+
+def assert_persistent_volume_removed(manifest):
+    api = get_core_api_client()
+    endpoint = manifest['metadata']['name']
+    name = f"pv-{endpoint}"
+
+    for _ in range(WAIT_TIMEOUT):
+        try:
+            api.read_persistent_volume(name)
+        except ApiException as exception:
+            assert exception.status == 404, "API Error"
+            return
+
+        time.sleep(WAIT_INTERVAL)
+
+    err_prefix = f"object endpoint {name}"
+    assert False, f"{err_prefix} left orphaned persistent volume {name}"
+
+
+def assert_longhorn_volume_ready(manifest):
+    api = get_custom_object_api_client()
+    name = manifest['metadata']['name']
+
+    try:
+        vol = api.get_namespaced_custom_object(LONGHORN_API_GROUP,
+                                               LONGHORN_API_VERSION,
+                                               LONGHORN_NAMESPACE,
+                                               "volumes",
+                                               name)
+    except ApiException:
+        assert False, "API Error while getting longhorn volume"
+
+    assert vol['status']['state'] == "attached"
+
+
+def assert_longhorn_volume_removed(manifest):
+    api = get_custom_object_api_client()
+    name = manifest['metadata']['name']
+
+    for _ in range(WAIT_TIMEOUT):
+        try:
+            api.get_namespaced_custom_object(LONGHORN_API_GROUP,
+                                             LONGHORN_API_VERSION,
+                                             LONGHORN_NAMESPACE,
+                                             "volumes",
+                                             name)
+        except ApiException as exception:
+            assert exception.status == 404, "API Error"
+            return
+
+        time.sleep(WAIT_INTERVAL)
+
+    err_prefix = f"object endpoint {name}"
+    assert False, f"{err_prefix} left orphaned longhorn volume {name}"
 
 
 def wait_object_endpoint_running(manifest):
@@ -315,3 +429,8 @@ def delete_object_endpoint(manifest):
                                          body=k8sclient.V1DeleteOptions())
     except ApiException as exception:
         assert exception.status == 404
+
+
+def gen_id(length):
+    return ''.join(random.choice(string.ascii_lowercase + string.digits) for _
+                   in range(length))
