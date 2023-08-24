@@ -76,11 +76,14 @@
 
   
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/basic-operations-parallelism/">Basic operations parallelism</a></li>
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/basic-operations/">Basic operations</a></li>
   
     <ul>
 
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/basic-operations-parallelism/snapshot-while-writing-data/">Snapshot while writing data in the volume</a></li>
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/basic-operations/snapshot-while-writing-data/">Snapshot while writing data in the volume</a></li>
+  
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/basic-operations/storage-network/">Storage Network Test</a></li>
   
 
 </ul>
@@ -723,24 +726,18 @@
 
 
 <main style="padding: 1%; width: 70%;">
-  <h1 id="title">Snapshot while writing data in the volume</h1>
+  <h1 id="title">Storage Network Test</h1>
   <div>
     <article id="content">
        <h2 id="related-issue">Related issue:</h2>
-<p><a href="https://github.com/longhorn/longhorn/issues/2187">https://github.com/longhorn/longhorn/issues/2187</a></p>
-<h2 id="scenario">Scenario</h2>
-<ol>
-<li>Create a kubernetes pod + pvc that mounts a Longhorn volume.</li>
-<li>Write 5 Gib into the pod using <code>dd if=/dev/urandom of=/mnt/&lt;volume&gt; count=5000 bs=1M conv=fsync status=progress</code></li>
-<li>While running the above command initiate a snapshot.</li>
-<li>Verify the logs of the instance-manager using <code>kubetail instance-manager -n longhorn-system</code>. There should some logs related to freezing and unfreezing the filesystem. Like <code>Froze filesystem of volume mounted ...</code></li>
-<li>Verify snapshot succeeded and <code>dd</code> operation will complete.</li>
-<li>Create another snapshot/backup and verify the data.</li>
-</ol>
-<p>Note: The above issue is still open and the scenario will not work.</p>
+<p><a href="https://github.com/longhorn/longhorn/issues/2285">https://github.com/longhorn/longhorn/issues/2285</a></p>
+<h2 id="test-steps">Test Steps</h2>
+<p><strong>Given</strong> Set up the Longhorn environment as mentioned <a href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.3.0/test-storage-network/">here</a>
+<strong>When</strong> Run Longhorn core tests on the environment.
+<strong>Then</strong> All the tests should pass.</p>
 
     </article>
-  <a href="https://github.com/longhorn/longhorn-tests/edit/master/docs/content/manual/pre-release/basic-operations-parallelism/snapshot-while-writing-data.md" target="_blank" title="Edit on Github" style="font-size:smaller;float:right;padding-right:3%">[Edit]</a>
+  <a href="https://github.com/longhorn/longhorn-tests/edit/master/docs/content/manual/pre-release/basic-operations/storage-network.md" target="_blank" title="Edit on Github" style="font-size:smaller;float:right;padding-right:3%">[Edit]</a>
   </div>
 
     

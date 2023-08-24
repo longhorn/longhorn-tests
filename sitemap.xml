@@ -58,7 +58,7 @@
   </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/</loc>
   </url><url>
-    <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/basic-operations-parallelism/</loc>
+    <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/basic-operations/</loc>
   </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.1/besteffort-recurring-job/</loc>
   </url><url>
@@ -178,9 +178,11 @@
   </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/node-not-ready/node-down/single-replica-node-down/</loc>
   </url><url>
-    <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/basic-operations-parallelism/snapshot-while-writing-data/</loc>
+    <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/basic-operations/snapshot-while-writing-data/</loc>
   </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/stability/</loc>
+  </url><url>
+    <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/basic-operations/storage-network/</loc>
   </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/kubelet_volume_metrics/</loc>
   </url><url>
