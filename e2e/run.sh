@@ -53,7 +53,7 @@ fi
 
 # Start running the e2e test
 if [ -z "${test_case_name}" ] ; then
-    robot -P "${PWD}/libs" -L debug ${test_suite_paths}
+    robot -P "${PWD}/libs" -L debug -d /tmp/test-report ${test_suite_paths}
 else
-    robot -P "${PWD}/libs" -L debug  -t "${test_case_name}" ${test_suite_paths}
+    robot -P "${PWD}/libs" -L debug -d /tmp/test-report -t "${test_case_name}" ${test_suite_paths}
 fi
