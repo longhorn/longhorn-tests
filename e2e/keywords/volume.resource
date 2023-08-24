@@ -38,9 +38,11 @@ Attach volume to node ${node_index}
     Set Test Variable    ${volume_attached_node}
     Set Test Variable    ${non_volume_attached_node}
 
-Write data into mount point
-    ${volume_data_checksum} =    write_volume_random_data    ${volume_name}    512
+
+Write data into mount point ${size_in_gb}
+    ${volume_data_checksum} =    write_volume_random_data    ${volume_name}    ${size_in_gb}
     Set Test Variable    ${volume_data_checksum}
+
 
 Check data is intact
     check_data    ${volume_name}    ${volume_data_checksum}
@@ -58,3 +60,6 @@ Volume state should eventually be ${expected_volume_state}
 Volume state should be ${expected_volume_state}
     ${volume_current_state} =    get_volume_state    ${volume_name}
     Should Be Equal    ${volume_current_state}    ${expected_volume_state}
+
+Delete im engine and wait
+    delete_and_wait_pod    ${volume_name}

@@ -42,3 +42,7 @@ class Base(ABC):
     @abstractmethod
     def check_data(self, volume_name, checksum):
         return NotImplemented
+
+    @abstractmethod
+    def delete_and_wait_pod(self, volume_name):
+        return NotImplemented

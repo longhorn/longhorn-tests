@@ -2,6 +2,8 @@ import time
 import logging
 
 from utils.common_utils import k8s_cr_api
+from utils.common_utils import k8s_core_api
+from utils.common_utils import get_longhorn_client
 from volume.base import Base
 from volume.rest import Rest
 from kubernetes import client
@@ -13,6 +15,8 @@ Gi = 2**30
 
 retry_count = 200
 retry_interval = 1
+DEFAULT_POD_INTERVAL = 1
+DEFAULT_POD_TIMEOUT = 180
 
 
 class CRD(Base):
@@ -159,7 +163,6 @@ class CRD(Base):
 
         node_name = self.get(volume_name)["spec"]["nodeID"]
         endpoint = self.get_endpoint(volume_name)
-
         checksum = self.node_exec.issue_cmd(
             node_name,
             f"dd if=/dev/urandom of={endpoint} bs=2M count={size} status=none;\
@@ -174,3 +177,40 @@ class CRD(Base):
             f"md5sum {endpoint} | awk \'{{print $1}}\'")
         if _checksum != checksum:
             Exception(f"data was changed: {_checksum}/{checksum}")
+
+    def wait_delete_pod(self,api, pod_uid, namespace='default'):
+        for i in range(DEFAULT_POD_TIMEOUT):
+            ret = api.list_namespaced_pod(namespace=namespace)
+            found = False
+            for item in ret.items:
+                if item.metadata.uid == pod_uid:
+                    found = True
+                    break
+            if not found:
+                break
+            time.sleep(DEFAULT_POD_INTERVAL)
+        assert not found
+
+    def delete_and_wait_pod(self, volume_name):
+        vol_client = get_longhorn_client()
+        vol = vol_client.by_id_volume(volume_name)
+        eim_name = vol.controllers[0].instanceManagerName
+
+        target_pod = None
+        api = k8s_core_api()
+        namespace = 'longhorn-system'
+        try:
+            target_pod = api.read_namespaced_pod(name=eim_name,
+                                                namespace=namespace)
+        except ApiException as e:
+            assert e.status == 404
+            return
+
+        try:
+            api.delete_namespaced_pod(
+                name=eim_name, namespace=namespace,
+                body=client.V1DeleteOptions())
+        except ApiException as e:
+            assert e.status == 404
+            return
+        self.wait_delete_pod(api, target_pod.metadata.uid, namespace)

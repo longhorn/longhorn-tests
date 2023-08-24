@@ -75,3 +75,7 @@ class volume_keywords:
     def get_volume_state(self, volume_name):
         logging.info(f"getting the volume {volume_name} state")
         return self.volume.get_volume_state(volume_name)
+
+    def delete_and_wait_pod(self, volume_name):
+        logging.info(f"deleting volume {volume_name} ")
+        self.volume.delete_and_wait_pod(volume_name)

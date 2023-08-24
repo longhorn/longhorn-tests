@@ -18,9 +18,9 @@ class LocalCluster:
         raise Exception(f"can not find {node_name} instance")
 
     # Not supported
-    def power_off_node_instance(self, node_name):
-        raise Exception('NotImplemented')
+    def power_off_node_instance(self, node_name=""):
+        return NotImplemented
 
     # Not supported
-    def power_on_node_instance(self, node_name):
-        raise Exception('NotImplemented')
+    def power_on_node_instance(self, node_name=""):
+        return NotImplemented

@@ -18,11 +18,17 @@ RETRY_EXEC_COUNTS = 150
 RETRY_INTERVAL = 1
 RETRY_INTERVAL_LONG = 2
 
+def try_loading_config():
+    if os.getenv('LONGHORN_CLIENT_URL') or config_utils.Config.get("LONGHORN_CLIENT_URL"):
+        config.load_kube_config()
+    else:
+        config.load_incluster_config()
+
 def k8s_core_api():
     c = Configuration()
     c.assert_hostname = False
     Configuration.set_default(c)
-    config.load_incluster_config()
+    try_loading_config()
     core_api = client.CoreV1Api()
     return core_api
 
@@ -30,27 +36,32 @@ def k8s_cr_api():
     c = Configuration()
     c.assert_hostname = False
     Configuration.set_default(c)
-    config.load_incluster_config()
+    try_loading_config()
     cr_api = client.CustomObjectsApi()
     return cr_api
 
 def get_longhorn_api_client():
-    for i in range(RETRY_EXEC_COUNTS):
-        try:
-            config.load_incluster_config()
-            ips = get_mgr_ips()
+    if os.getenv('LONGHORN_CLIENT_URL'):
+        return os.getenv('LONGHORN_CLIENT_URL')
+    elif config_utils.Config.get("LONGHORN_CLIENT_URL"):
+        return config_utils.Config.get("LONGHORN_CLIENT_URL")
+    else:
+        for i in range(RETRY_EXEC_COUNTS):
+            try:
+                config.load_incluster_config()
+                ips = get_mgr_ips()
 
-            # check if longhorn manager port is open before calling get_client
-            for ip in ips:
-                sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                mgr_port_open = sock.connect_ex((ip, 9500))
+                # check if longhorn manager port is open before calling get_client
+                for ip in ips:
+                    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                    mgr_port_open = sock.connect_ex((ip, 9500))
 
-                if mgr_port_open == 0:
-                    client = 'http://' + ip + PORT + '/' #get_client(ip + PORT)
-                    break
-            return client
-        except Exception:
-            time.sleep(RETRY_INTERVAL)
+                    if mgr_port_open == 0:
+                        client = 'http://' + ip + PORT + '/' #get_client(ip + PORT)
+                        break
+                return client
+            except Exception:
+                time.sleep(RETRY_INTERVAL)
 
 def get_mgr_ips():
     ret = k8s_core_api().list_pod_for_all_namespaces(

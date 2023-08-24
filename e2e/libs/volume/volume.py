@@ -45,3 +45,6 @@ class Volume(Base):
 
     def check_data(self, volume_name, checksum):
         return self.volume.check_data(volume_name, checksum)
+
+    def delete_and_wait_pod(self, volume_name):
+        self.volume.delete_and_wait_pod(volume_name)

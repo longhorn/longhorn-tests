@@ -33,7 +33,7 @@ class common_keywords:
         cls.volume_instance = Volume(cls.node_exec_instance)
 
         cloud_provider = config_utils.Config.get("CLOUD_PROVIDER")
-        cls.node_operation_instance = Nodes(cloud_provider)._instance
+        cls.node_operation_instance = Nodes(cloud_provider,"",cloud_provider)._instance
 
     def generate_support_bundle(self, case_name):
         logging.info(f"generating support bundle for {case_name}")

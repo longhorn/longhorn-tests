@@ -69,3 +69,6 @@ class Rest(Base):
 
     def check_data(self, volume_name, checksum):
         return NotImplemented
+
+    def delete_and_wait_pod(self, volume_name):
+        return NotImplemented

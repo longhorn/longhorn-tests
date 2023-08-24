@@ -5,7 +5,7 @@ from botocore.exceptions import ClientError
 
 class EC2:
 
-    _ec2_instance = boto3.resource('ec2')
+    _ec2_instance = boto3.resource('ec2',region_name='us-west-1')
     _all_nodes = None
 
     def __init__(self, all_nodes) -> None:
