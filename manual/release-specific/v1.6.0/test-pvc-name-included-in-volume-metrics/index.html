@@ -740,31 +740,42 @@
 
 
 <main style="padding: 1%; width: 70%;">
-  <h1 id="title">Test CronJob For Volumes That Are Detached For A Long Time</h1>
+  <h1 id="title">Test PVC Name included in the volume metrics</h1>
   <div>
     <article id="content">
        <h2 id="related-issue">Related issue</h2>
-<p><a href="https://github.com/longhorn/longhorn/issues/2513">https://github.com/longhorn/longhorn/issues/2513</a></p>
-<h2 id="steps">Steps</h2>
-<ol>
-<li>Make sure the setting <code>Allow Recurring Job While Volume Is Detached</code> is <code>disabled</code></li>
-<li>Create a volume. Attach to a node. Create a recurring backup job that run every minute.</li>
-<li>Wait for the cronjob to be scheduled a few times.</li>
-<li>Detach the volume.</li>
-<li>Verify that the CronJob get deleted.</li>
-<li>Wait 2 hours (&gt; 100 mins).</li>
-<li>Attach the volume to a node.</li>
-<li>Verify that the CronJob get created.</li>
-<li>Verify that Kubernetes schedules a run for the CronJob at the beginning of the next minute.</li>
-<li>Make sure the setting <code>Allow Recurring Job While Volume Is Detached</code> is <code>enabled</code>.</li>
-<li>Detach the volume.</li>
-<li>Verify that the CronJob is not deleted.</li>
-<li>Wait for Kubernetes to schedule a run for the CronJob at the beginning of the next minute.
-Verify that the volume is attached, CronJob runs, then volume is detached.</li>
-</ol>
-
+<p><a href="https://github.com/longhorn/longhorn/issues/5297">https://github.com/longhorn/longhorn/issues/5297</a></p>
+<h2 id="test-step">Test step</h2>
+<p><strong>Given</strong> created 2 volumes (volume-1, volume-2)</p>
+<p><strong>When</strong> PVC created for volume (volume-1)<br>
+And attached volumes (volume-1, volume-2)</p>
+<p><strong>Then</strong> metrics with <code>longhorn_volume_</code> prefix should include <code>pvc=&quot;volume-1&quot;</code></p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>curl -sSL http://10.0.2.212:32744/metrics | grep longhorn_volume | grep ip-10-0-2-151 | grep volume-1
+</span></span><span style="display:flex;"><span>longhorn_volume_actual_size_bytes<span style="color:#f92672">{</span>node<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;ip-10-0-2-151&#34;</span>,pvc<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;volume-1&#34;</span>,volume<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;volume-1&#34;</span><span style="color:#f92672">}</span> <span style="color:#ae81ff">0</span>
+</span></span><span style="display:flex;"><span>longhorn_volume_capacity_bytes<span style="color:#f92672">{</span>node<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;ip-10-0-2-151&#34;</span>,pvc<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;volume-1&#34;</span>,volume<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;volume-1&#34;</span><span style="color:#f92672">}</span> 1.073741824e+09
+</span></span><span style="display:flex;"><span>longhorn_volume_read_iops<span style="color:#f92672">{</span>node<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;ip-10-0-2-151&#34;</span>,pvc<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;volume-1&#34;</span>,volume<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;volume-1&#34;</span><span style="color:#f92672">}</span> <span style="color:#ae81ff">0</span>
+</span></span><span style="display:flex;"><span>longhorn_volume_read_latency<span style="color:#f92672">{</span>node<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;ip-10-0-2-151&#34;</span>,pvc<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;volume-1&#34;</span>,volume<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;volume-1&#34;</span><span style="color:#f92672">}</span> <span style="color:#ae81ff">0</span>
+</span></span><span style="display:flex;"><span>longhorn_volume_read_throughput<span style="color:#f92672">{</span>node<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;ip-10-0-2-151&#34;</span>,pvc<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;volume-1&#34;</span>,volume<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;volume-1&#34;</span><span style="color:#f92672">}</span> <span style="color:#ae81ff">0</span>
+</span></span><span style="display:flex;"><span>longhorn_volume_robustness<span style="color:#f92672">{</span>node<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;ip-10-0-2-151&#34;</span>,pvc<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;volume-1&#34;</span>,volume<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;volume-1&#34;</span><span style="color:#f92672">}</span> <span style="color:#ae81ff">1</span>
+</span></span><span style="display:flex;"><span>longhorn_volume_state<span style="color:#f92672">{</span>node<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;ip-10-0-2-151&#34;</span>,pvc<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;volume-1&#34;</span>,volume<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;volume-1&#34;</span><span style="color:#f92672">}</span> <span style="color:#ae81ff">2</span>
+</span></span><span style="display:flex;"><span>longhorn_volume_write_iops<span style="color:#f92672">{</span>node<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;ip-10-0-2-151&#34;</span>,pvc<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;volume-1&#34;</span>,volume<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;volume-1&#34;</span><span style="color:#f92672">}</span> <span style="color:#ae81ff">0</span>
+</span></span><span style="display:flex;"><span>longhorn_volume_write_latency<span style="color:#f92672">{</span>node<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;ip-10-0-2-151&#34;</span>,pvc<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;volume-1&#34;</span>,volume<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;volume-1&#34;</span><span style="color:#f92672">}</span> <span style="color:#ae81ff">0</span>
+</span></span><span style="display:flex;"><span>longhorn_volume_write_throughput<span style="color:#f92672">{</span>node<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;ip-10-0-2-151&#34;</span>,pvc<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;volume-1&#34;</span>,volume<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;volume-1&#34;</span><span style="color:#f92672">}</span> <span style="color:#ae81ff">0</span>
+</span></span></code></pre></div><p>And metrics with <code>longhorn_volume_</code> prefix should include <code>pvc=&quot;&quot;</code> for (volume-2)</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>&gt; curl -sSL http://10.0.2.212:32744/metrics | grep longhorn_volume | grep ip-10-0-2-151 | grep volume-2
+</span></span><span style="display:flex;"><span>longhorn_volume_actual_size_bytes<span style="color:#f92672">{</span>node<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;ip-10-0-2-151&#34;</span>,pvc<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;&#34;</span>,volume<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;volume-2&#34;</span><span style="color:#f92672">}</span> <span style="color:#ae81ff">0</span>
+</span></span><span style="display:flex;"><span>longhorn_volume_capacity_bytes<span style="color:#f92672">{</span>node<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;ip-10-0-2-151&#34;</span>,pvc<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;&#34;</span>,volume<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;volume-2&#34;</span><span style="color:#f92672">}</span> 1.073741824e+09
+</span></span><span style="display:flex;"><span>longhorn_volume_read_iops<span style="color:#f92672">{</span>node<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;ip-10-0-2-151&#34;</span>,pvc<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;&#34;</span>,volume<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;volume-2&#34;</span><span style="color:#f92672">}</span> <span style="color:#ae81ff">0</span>
+</span></span><span style="display:flex;"><span>longhorn_volume_read_latency<span style="color:#f92672">{</span>node<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;ip-10-0-2-151&#34;</span>,pvc<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;&#34;</span>,volume<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;volume-2&#34;</span><span style="color:#f92672">}</span> <span style="color:#ae81ff">0</span>
+</span></span><span style="display:flex;"><span>longhorn_volume_read_throughput<span style="color:#f92672">{</span>node<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;ip-10-0-2-151&#34;</span>,pvc<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;&#34;</span>,volume<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;volume-2&#34;</span><span style="color:#f92672">}</span> <span style="color:#ae81ff">0</span>
+</span></span><span style="display:flex;"><span>longhorn_volume_robustness<span style="color:#f92672">{</span>node<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;ip-10-0-2-151&#34;</span>,pvc<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;&#34;</span>,volume<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;volume-2&#34;</span><span style="color:#f92672">}</span> <span style="color:#ae81ff">1</span>
+</span></span><span style="display:flex;"><span>longhorn_volume_state<span style="color:#f92672">{</span>node<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;ip-10-0-2-151&#34;</span>,pvc<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;&#34;</span>,volume<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;volume-2&#34;</span><span style="color:#f92672">}</span> <span style="color:#ae81ff">2</span>
+</span></span><span style="display:flex;"><span>longhorn_volume_write_iops<span style="color:#f92672">{</span>node<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;ip-10-0-2-151&#34;</span>,pvc<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;&#34;</span>,volume<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;volume-2&#34;</span><span style="color:#f92672">}</span> <span style="color:#ae81ff">0</span>
+</span></span><span style="display:flex;"><span>longhorn_volume_write_latency<span style="color:#f92672">{</span>node<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;ip-10-0-2-151&#34;</span>,pvc<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;&#34;</span>,volume<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;volume-2&#34;</span><span style="color:#f92672">}</span> <span style="color:#ae81ff">0</span>
+</span></span><span style="display:flex;"><span>longhorn_volume_write_throughput<span style="color:#f92672">{</span>node<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;ip-10-0-2-151&#34;</span>,pvc<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;&#34;</span>,volume<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;volume-2&#34;</span><span style="color:#f92672">}</span> <span style="color:#ae81ff">0</span>
+</span></span></code></pre></div>
     </article>
-  <a href="https://github.com/longhorn/longhorn-tests/edit/master/docs/content/manual/release-specific/v1.1.2/delete-cronjob-for-detached-volumes.md" target="_blank" title="Edit on Github" style="font-size:smaller;float:right;padding-right:3%">[Edit]</a>
+  <a href="https://github.com/longhorn/longhorn-tests/edit/master/docs/content/manual/release-specific/v1.6.0/test-pvc-name-included-in-volume-metrics.md" target="_blank" title="Edit on Github" style="font-size:smaller;float:right;padding-right:3%">[Edit]</a>
   </div>
 
     
