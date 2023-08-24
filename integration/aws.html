@@ -44,12 +44,12 @@ class aws(cloudprovider):
             assert False
 
         secret_access_key = os.getenv(&#34;AWS_SECRET_ACCESS_KEY&#34;)
-        if access_key_id is None:
+        if secret_access_key is None:
             print(&#34;AWS_SECRET_ACCESS_KEY env variable not defined&#34;)
             assert False
 
         default_region = os.getenv(&#34;AWS_DEFAULT_REGION&#34;)
-        if access_key_id is None:
+        if default_region is None:
             print(&#34;AWS_DEFAULT_REGION env variable not defined&#34;)
             assert False
 
@@ -158,12 +158,12 @@ class aws(cloudprovider):
             assert False
 
         secret_access_key = os.getenv(&#34;AWS_SECRET_ACCESS_KEY&#34;)
-        if access_key_id is None:
+        if secret_access_key is None:
             print(&#34;AWS_SECRET_ACCESS_KEY env variable not defined&#34;)
             assert False
 
         default_region = os.getenv(&#34;AWS_DEFAULT_REGION&#34;)
-        if access_key_id is None:
+        if default_region is None:
             print(&#34;AWS_DEFAULT_REGION env variable not defined&#34;)
             assert False
 
