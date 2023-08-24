@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>v1.6.0 on Longhorn Manual Test Cases</title>
+    <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.6.0/</link>
+    <description>Recent content in v1.6.0 on Longhorn Manual Test Cases</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en-us</language><atom:link href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.6.0/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Test Support Bundle Syslog Paths</title>
+      <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.6.0/test-support-bundle-syslog-paths/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.6.0/test-support-bundle-syslog-paths/</guid>
+      <description>Related issue https://github.com/longhorn/longhorn/issues/6544
+Test /var/log/messages Given Longhorn installed on SUSE Linux
+When generated support-bundle
+And syslog exists in the messages file
+Test /var/log/syslog Given Longhorn installed on Ubuntu Linux
+When generated support-bundle
+And syslog exists in the syslog file</description>
+    </item>
+    
+  </channel>
+</rss>
