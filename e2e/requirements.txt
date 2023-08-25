@@ -9,4 +9,4 @@ pytest-order==1.0.1
 requests==2.31.0
 six==1.12.0
 boto3==1.26.86
-pyyaml==5.4
+pyyaml==5.4.1

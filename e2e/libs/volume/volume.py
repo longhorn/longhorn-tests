@@ -3,7 +3,6 @@ from volume.crd import CRD
 from volume.rest import Rest
 from strategy import LonghornOperationStrategy
 
-
 class Volume(Base):
 
     _strategy = LonghornOperationStrategy.CRD

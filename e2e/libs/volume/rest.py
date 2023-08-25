@@ -1,5 +1,5 @@
 from volume.base import Base
-from utility import Utility
+from utility.utility import get_longhorn_client
 
 import time
 import os
@@ -10,12 +10,10 @@ RETRY_INTERVAL = 1
 VOLUME_FRONTEND_BLOCKDEV = "blockdev"
 VOLUME_FRONTEND_ISCSI = "iscsi"
 DEV_PATH = "/dev/longhorn/"
-
-
 class Rest(Base):
 
     def __init__(self, node_exec):
-        self.longhorn_client = Utility().get_longhorn_client()
+        self.longhorn_client = get_longhorn_client()
         self.node_exec = node_exec
 
     def get(self, volume_name):
@@ -54,7 +52,6 @@ class Rest(Base):
             assert endpoint == os.path.join(DEV_PATH, v.name)
         elif v.frontend == VOLUME_FRONTEND_ISCSI:
             assert endpoint.startswith("iscsi://")
-
         return endpoint
 
     def write_random_data(self, volume_name, size):
@@ -71,7 +68,6 @@ class Rest(Base):
             print(v.replicas)
             for replica in v.replicas:
                 if replica.hostId == node_name:
-                    print(f"{node_name}'s replica is {replica.name}")
                     rebuilding_replica_name = replica.name
                     break
             if rebuilding_replica_name:
@@ -85,14 +81,17 @@ class Rest(Base):
             v = self.longhorn_client.by_id_volume(volume_name)
             print(v.rebuildStatus)
             for status in v.rebuildStatus:
-                if status.replica == rebuilding_replica_name and\
-                   status.state == "in_progress":
-                    started = True
-                    break
+                for replica in v.replicas:
+                    if status.replica == replica.name and \
+                       replica.hostId == node_name and \
+                       status.state == "in_progress":
+                       print(f"{node_name}'s replica is {replica.name}")
+                       started = True
+                       break
             if started:
                 break
             time.sleep(RETRY_INTERVAL)
-        assert started
+        assert started, f"wait for replica on node {node_name} rebuilding timeout: {v}"
 
     def wait_for_replica_rebuilding_complete(self, volume_name, node_name):
         completed = False
