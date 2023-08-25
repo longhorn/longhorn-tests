@@ -3173,7 +3173,8 @@ def test_backup_lock_deletion_during_backup(set_random_backupstore, client, core
         b1 = None
     assert b1 is None
 
-    client.create_volume(name=restore_volume_name_1, fromBackup=b2.url)
+    client.create_volume(name=restore_volume_name_1, fromBackup=b2.url,
+                         numberOfReplicas=3)
 
     wait_for_volume_restoration_completed(client, restore_volume_name_1)
     restore_volume_1 = wait_for_volume_detached(client, restore_volume_name_1)
