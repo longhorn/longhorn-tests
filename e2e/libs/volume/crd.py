@@ -9,11 +9,8 @@ from kubernetes import client
 Ki = 2**10
 Mi = 2**20
 Gi = 2**30
-
 retry_count = 200
 retry_interval = 1
-
-
 class CRD(Base):
 
     def __init__(self, node_exec):
@@ -94,7 +91,6 @@ class CRD(Base):
             # https://github.com/longhorn/longhorn/issues/3715
             if e.reason != "Not Found":
                 Exception(f'exception for creating volumeattachments:', e)
-
         self.wait_for_volume_state(volume_name, "attached")
 
     def wait_for_volume_state(self, volume_name, desired_state):
