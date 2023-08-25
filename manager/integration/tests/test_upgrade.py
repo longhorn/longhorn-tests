@@ -66,6 +66,31 @@ def longhorn_install_method(request):
 
 
 @pytest.fixture
+def rancher_hostname(request):
+    return request.config.getoption("--rancher-hostname")
+
+
+@pytest.fixture
+def rancher_access_key(request):
+    return request.config.getoption("--rancher-access-key")
+
+
+@pytest.fixture
+def rancher_secret_key(request):
+    return request.config.getoption("--rancher-secret-key")
+
+
+@pytest.fixture
+def rancher_chart_install_version(request):
+    return request.config.getoption("--rancher-chart-install-version")
+
+
+@pytest.fixture
+def longhorn_repo(request):
+    return request.config.getoption("--longhorn-repo")
+
+
+@pytest.fixture
 def upgrade_longhorn_repo_url(request):
     return request.config.getoption("--upgrade-lh-repo-url")
 
@@ -112,6 +137,11 @@ def longhorn_upgrade_type():
 
 
 def longhorn_upgrade(longhorn_install_method,
+                     rancher_hostname,
+                     rancher_access_key,
+                     rancher_secret_key,
+                     rancher_chart_install_version,
+                     longhorn_repo,
                      longhorn_repo_url,
                      longhorn_repo_branch,
                      longhorn_manager_image,
@@ -124,15 +154,27 @@ def longhorn_upgrade(longhorn_install_method,
         command = "../scripts/upgrade-longhorn.sh"
     elif longhorn_install_method == "helm":
         command = "./pipelines/helm/scripts/upgrade-longhorn.sh"
-    process = subprocess.Popen([command,
-                                longhorn_repo_url,
-                                longhorn_repo_branch,
-                                longhorn_manager_image,
-                                longhorn_engine_image,
-                                longhorn_instance_manager_image,
-                                longhorn_share_manager_image,
-                                longhorn_backing_image_manager_image],
-                               shell=False)
+    elif longhorn_install_method == "rancher":
+        command = "./pipelines/rancher/scripts/upgrade-longhorn.sh"
+
+    if longhorn_install_method != "rancher":
+        process = subprocess.Popen([command,
+                                    longhorn_repo_url,
+                                    longhorn_repo_branch,
+                                    longhorn_manager_image,
+                                    longhorn_engine_image,
+                                    longhorn_instance_manager_image,
+                                    longhorn_share_manager_image,
+                                    longhorn_backing_image_manager_image],
+                                   shell=False)
+    else:
+        process = subprocess.Popen([command,
+                                    rancher_hostname,
+                                    rancher_access_key,
+                                    rancher_secret_key,
+                                    rancher_chart_install_version,
+                                    longhorn_repo],
+                                   shell=False)
     process.wait()
     if process.returncode == 0:
         longhorn_upgraded = True
@@ -146,6 +188,11 @@ def longhorn_upgrade(longhorn_install_method,
 @pytest.mark.upgrade  # NOQA
 def test_upgrade(longhorn_upgrade_type,
                  longhorn_install_method,
+                 rancher_hostname,
+                 rancher_access_key,
+                 rancher_secret_key,
+                 rancher_chart_install_version,
+                 longhorn_repo,
                  upgrade_longhorn_repo_url,
                  upgrade_longhorn_repo_branch,
                  upgrade_longhorn_manager_image,
@@ -191,6 +238,11 @@ def test_upgrade(longhorn_upgrade_type,
     18. Verify the vol_rebuild is still healthy
     """
     longhorn_install_method = longhorn_install_method
+    rancher_hostname = rancher_hostname
+    rancher_access_key = rancher_access_key
+    rancher_secret_key = rancher_secret_key
+    rancher_chart_install_version = rancher_chart_install_version
+    longhorn_repo = longhorn_repo
     longhorn_repo_url = upgrade_longhorn_repo_url
     longhorn_repo_branch = upgrade_longhorn_repo_branch
     longhorn_manager_image = upgrade_longhorn_manager_image
@@ -320,6 +372,11 @@ def test_upgrade(longhorn_upgrade_type,
 
     # upgrade Longhorn manager
     assert longhorn_upgrade(longhorn_install_method,
+                            rancher_hostname,
+                            rancher_access_key,
+                            rancher_secret_key,
+                            rancher_chart_install_version,
+                            longhorn_repo,
                             longhorn_repo_url,
                             longhorn_repo_branch,
                             longhorn_manager_image,
