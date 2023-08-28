@@ -3078,7 +3078,8 @@ def test_backup_lock_deletion_during_restoration(set_random_backupstore, client,
     wait_for_backup_completion(client, std_volume_name, snap1.name)
 
     _, b = common.find_backup(client, std_volume_name, snap1.name)
-    client.create_volume(name=restore_volume_name, fromBackup=b.url)
+    client.create_volume(name=restore_volume_name, fromBackup=b.url,
+                         numberOfReplicas=3)
     wait_for_volume_restoration_start(client, restore_volume_name, b.name)
 
     backup_volume = client.by_id_backupVolume(std_volume_name)
