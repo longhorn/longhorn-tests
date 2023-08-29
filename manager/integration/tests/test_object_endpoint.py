@@ -9,6 +9,8 @@ ObjectEndpoint CRDs.
 import random
 import string
 import time
+
+import boto3
 import pytest
 
 from kubernetes import client as k8sclient
@@ -112,25 +114,35 @@ def test_create_object_endpoint(object_endpoint):  # pylint: disable=W0621
     - Access Key, Secret Key
 
     When an ObjectEndpoint resource is created:
-    - Create a Deployment, PVC, Secret and Service
-    - The PVC is of the given storage class and size
+    - Create a Deployment, Secret, Service, PVC, PV and Longhorn volume
 
     Wait for the ObjectEndpoint to transition into "Running" state
 
     When the ObjectEndpoint is in "Runnin" state:
-    - The Deployment must be fully "Ready"
-    - The PVC must be bound and attached
-    - The Service must answer to HTTP requests according to S3 semantics
+    - The Longhorn volume must be in "attached" state
+    - The PV must be bound
+    - The PVC must be bound
+    - The secret's "data" dictionary must contain the expected keys
+    - The service must have a port
+    - The deployment must have exactly one expected, desired, actual and
+      available replica
+    - The object endpoint must be in "Running" state
+    - The object endpoint must have and addres containing its own name in
+      its `.status.endpoint` property
+    - The address from the object endpoints `.status.endpoint` must answer to
+      S3 requests.
     """
     wait_object_endpoint_running(object_endpoint)
 
-    assert_object_endpoint_running(object_endpoint)
-    assert_deployment_ready(object_endpoint)
-    assert_service_ready(object_endpoint)
-    assert_secret_ready(object_endpoint)
-    assert_persistent_volume_claim_ready(object_endpoint)
-    assert_persistent_volume_ready(object_endpoint)
     assert_longhorn_volume_ready(object_endpoint)
+    assert_persistent_volume_ready(object_endpoint)
+    assert_persistent_volume_claim_ready(object_endpoint)
+    assert_secret_ready(object_endpoint)
+    assert_service_ready(object_endpoint)
+    assert_deployment_ready(object_endpoint)
+    assert_object_endpoint_running(object_endpoint)
+    assert_object_endpoint_has_endpoint(object_endpoint)
+    assert_object_endpoint_smoke_s3(object_endpoint)
 
 
 @pytest.mark.object_endpoint
@@ -139,11 +151,16 @@ def test_delete_object_endpoint(object_endpoint):  # pylint: disable=W0621
     Scenario: test the deletion of an object storage endpoint
 
     Given:
-    - An ObjectEndpoint and its associated resources (Deployment, PVC, Secret,
-      Service)
+    - An ObjectEndpoint in "Running" state and its associated resources
+      (Deployment, PVC, Secret, Service, PV and Longhorn volume)
 
     When the object endpoint is deleted:
-    - Its resources are deleted as well
+    - The Deployment is removed
+    - The Service is removed
+    - The Secret is removed
+    - The PersistenVolumeClaim is removed
+    - The PersistenVolume is removed
+    - The Longhorn volume is removed
     """
     wait_object_endpoint_running(object_endpoint)
     delete_object_endpoint(object_endpoint)
@@ -164,17 +181,33 @@ def test_delete_object_endpoint(object_endpoint):  # pylint: disable=W0621
 
 
 def assert_object_endpoint_running(manifest):
-    api = get_custom_object_api_client()
-    name = manifest['metadata']['name']
-    status = api.get_cluster_custom_object_status(LONGHORN_API_GROUP,
-                                                  LONGHORN_API_VERSION,
-                                                  "objectendpoints",
-                                                  name)
+    endpoint = get_object_endpoint(manifest)
+    assert endpoint is not None
+    assert "status" in endpoint
+    assert endpoint['status']['state'] == "Running"
 
-    err_prefix = f"object endpoint {name}"
-    assert status is not None, f"{err_prefix} has no status"
-    assert "status" in status, f"{err_prefix} has no status"
-    assert status['status']['state'] == "Running", f"{err_prefix} not running"
+
+def assert_object_endpoint_has_endpoint(manifest):
+    endpoint = get_object_endpoint(manifest)
+    assert endpoint is not None
+    assert "status" in endpoint
+    assert endpoint['status']['endpoint'] is not None
+    assert endpoint['status']['endpoint'] != ""
+    assert endpoint['metadata']['name'] in endpoint['status']['endpoint']
+
+
+def assert_object_endpoint_smoke_s3(manifest):
+    endpoint = get_object_endpoint(manifest)
+
+    client = boto3.session.Session().client(
+        service_name='s3',
+        aws_access_key_id=endpoint['spec']['credentials']['accessKey'],
+        aws_secret_access_key=endpoint['spec']['credentials']['secretKey'],
+        endpoint_url=f"http://{endpoint['status']['endpoint']}",
+        use_ssl=False,
+    )
+
+    assert client.list_buckets() is not None
 
 
 def assert_deployment_ready(manifest):
@@ -253,6 +286,8 @@ def assert_secret_ready(manifest):
         assert False, "API Error while getting service"
 
     assert len(secret.data.keys()) > 0
+    assert "accessKey" in secret.data.keys()
+    assert "secretKey" in secret.data.keys()
 
 
 def assert_secret_removed(manifest):
@@ -429,6 +464,15 @@ def delete_object_endpoint(manifest):
                                          body=k8sclient.V1DeleteOptions())
     except ApiException as exception:
         assert exception.status == 404
+
+
+def get_object_endpoint(manifest):
+    api = get_custom_object_api_client()
+    name = manifest['metadata']['name']
+    return api.get_cluster_custom_object(LONGHORN_API_GROUP,
+                                         LONGHORN_API_VERSION,
+                                         "objectendpoints",
+                                         name)
 
 
 def gen_id(length):
