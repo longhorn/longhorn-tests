@@ -1722,3 +1722,69 @@ def test_data_locality_strict_local_node_affinity(client, core_api, apps_api, st
 
     create_and_wait_statefulset(statefulset)
     wait_for_statefulset_pods_healthy(statefulset)
+
+
+@pytest.mark.skip(reason="TODO")
+def test_allow_empty_node_selector_volume_setting(): # NOQA
+    """
+    Test the global setting allow-empty-node-selector-volume
+
+    If true, a replica of the volume without node selector
+    can be scheduled on node with tags.
+
+    If false, a replica of the volume without node selector
+    can not be scheduled on node with tags.
+
+    Setup
+    - Prepare 3 nodes
+    - Add `AVAIL` tag to nodes
+    - Set allow-empty-node-selector-volume to `false`
+
+    When
+    - Create a Volume with 3 replicas without tag
+
+    Then
+    - All replicas can not be scheduled to the nodes
+
+    When
+    - Remove `AVAIL` tag from one of the node
+    - Set allow-empty-node-selector-volume to `true`
+
+    Then
+    - Wait for a while for controller to resync the volume,
+      all replicas can be scheduled to the nodes
+    """
+    pass
+
+
+@pytest.mark.skip(reason="TODO")
+def test_allow_empty_disk_selector_volume_setting(): # NOQA
+    """
+    Test the global setting allow-empty-disk-selector-volume
+
+    If true, a replica of the volume without disk selector
+    can be scheduled on disk with tags.
+
+    If false, a replica of the volume without disk selector
+    can not be scheduled on disk with tags.
+
+    Setup
+    - Prepare 3 nodes each with one disk
+    - Add `AVAIL` tag to every disk
+    - Set allow-empty-disk-selector-volume to `false`
+
+    When
+    - Create a Volume with 3 replicas without tag
+
+    Then
+    - All replicas can not be scheduled to the disks on the nodes
+
+    When
+    - Remove `AVAIL` tag from one of the node
+    - Set allow-empty-disk-selector-volume to `true`
+
+    Then
+    - Wait for a while for controller to resync the volume,
+      all replicas can be scheduled to the disks on the nodes
+    """
+    pass
