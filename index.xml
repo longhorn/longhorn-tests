@@ -1172,6 +1172,18 @@ Test Node Delete Given pod with pvc created.</description>
     </item>
     
     <item>
+      <title>Test Node Drain Policy Setting</title>
+      <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/test-node-drain-policy/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/test-node-drain-policy/</guid>
+      <description>With node-drain-policy is block-if-contains-last-replica Note: Starting from v1.5.x, it is not necessary to check for the presence of longhorn-admission-webhook and longhorn-conversion-webhook. Please refer to the Longhorn issue #5590 for more details.
+Starting from v1.5.x, observe that the instance-manager-r and instance-manager-e are combined into instance-manager. Ref 5208
+1. Basic unit tests 1.1 Single worker node cluster with separate master node 1.1.1 RWO volumes
+Deploy Longhorn Verify that there is no PDB for csi-attacher, csi-provisioner, longhorn-admission-webhook, and longhorn-conversion-webhook Manually create a PVC (simulate the volume which has never been attached scenario) Verify that there is no PDB for csi-attacher, csi-provisioner, longhorn-admission-webhook, and longhorn-conversion-webhook because there is no attached volume Create a deployment that uses one RW0 Longhorn volume.</description>
+    </item>
+    
+    <item>
       <title>Test Node ID Change During Backing Image Creation</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.4.0/test-node-id-change-during-backing-image-creation/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>

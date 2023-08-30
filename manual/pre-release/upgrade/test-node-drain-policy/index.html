@@ -741,33 +741,154 @@
   
 </aside>
 
+
 <main style="padding: 1%; width: 70%;">
-  <header class="homepage-header">
-    <h1>Resiliency</h1>
-    
-  </header>
-  <div class="homepage-content">
-    
-  </div>
+  <h1 id="title">Test Node Drain Policy Setting</h1>
   <div>
-    <ul>
-
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/resiliency/simulated-slow-disk/">#2206 Fix the spinning disk on Longhorn</a></li>
-  
-
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/resiliency/pvc_provisioning_with_insufficient_storage/">PVC provisioning with insufficient storage</a></li>
-  
-
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/resiliency/test-longhorn-component-recovery/">Test Longhorn components recovery</a></li>
-  
-
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/resiliency/timeout/">Test timeout on loss of network connectivity</a></li>
-  
-
+    <article id="content">
+       <h2 id="with-node-drain-policy-is-block-if-contains-last-replica">With <code>node-drain-policy</code> is <code>block-if-contains-last-replica</code></h2>
+<blockquote>
+<p>Note:
+Starting from v1.5.x, it is not necessary to check for the presence of longhorn-admission-webhook and longhorn-conversion-webhook.
+Please refer to the Longhorn issue <a href="https://github.com/longhorn/longhorn/issues/5590">#5590</a> for more details.</p>
+<p>Starting from v1.5.x, observe that the instance-manager-r and instance-manager-e are combined into instance-manager.
+Ref <a href="https://github.com/longhorn/longhorn/issues/5208">5208</a></p>
+</blockquote>
+<h3 id="1-basic-unit-tests">1. Basic unit tests</h3>
+<h4 id="11-single-worker-node-cluster-with-separate-master-node">1.1 Single worker node cluster with separate master node</h4>
+<p>1.1.1 RWO volumes</p>
+<ul>
+<li>Deploy Longhorn</li>
+<li>Verify that there is no PDB for <code>csi-attacher</code>, <code>csi-provisioner</code>, <code>longhorn-admission-webhook</code>, and <code>longhorn-conversion-webhook</code></li>
+<li>Manually create a PVC (simulate the volume which has never been attached scenario)</li>
+<li>Verify that there is no PDB for <code>csi-attacher</code>, <code>csi-provisioner</code>, <code>longhorn-admission-webhook</code>, and <code>longhorn-conversion-webhook</code> because there is no attached volume</li>
+<li>Create a deployment that uses one RW0 Longhorn volume.</li>
+<li>Verify that there is PDB for <code>csi-attacher</code>, <code>csi-provisioner</code>, <code>longhorn-admission-webhook</code>, and <code>longhorn-conversion-webhook</code></li>
+<li>Create another deployment that uses one RWO Longhorn volume. Scale down this deployment so that the volume is detached</li>
+<li>Drain the node by <code>kubectl drain &lt;node-name&gt; --ignore-daemonsets --delete-emptydir-data --force</code></li>
+<li>Observe that the workload pods are evited first -&gt; PDB of <code>csi-attacher</code>, <code>csi-provisioner</code>, <code>longhorn-admission-webhook</code>, and <code>longhorn-conversion-webhook</code> are removed -&gt; <code>csi-attacher</code>, <code>csi-provisioner</code>, <code>longhorn-admission-webhook</code>, and <code>longhorn-conversion-webhook</code>, and instance-manager-e pods are evicted -&gt; all volumes are successfully detached</li>
+<li>Observe that instance-manager-r is NOT evicted.</li>
 </ul>
+<p>1.1.2 RWX volume</p>
+<ul>
+<li>Deploy Longhorn</li>
+<li>Verify that there is no PDB for <code>csi-attacher</code>, <code>csi-provisioner</code>, <code>longhorn-admission-webhook</code>, and <code>longhorn-conversion-webhook</code></li>
+<li>Create a deployment of 2 pods that uses one RWX Longhorn volume.</li>
+<li>Verify that there is PDB for <code>csi-attacher</code>, <code>csi-provisioner</code>, <code>longhorn-admission-webhook</code>, and <code>longhorn-conversion-webhook</code></li>
+<li>Drain the node by <code>kubectl drain &lt;node-name&gt; --ignore-daemonsets --delete-emptydir-data --force</code></li>
+<li>Observe that the workload pods are evited first -&gt; PDB of  <code>csi-attacher</code>, <code>csi-provisioner</code>, <code>longhorn-admission-webhook</code>, and <code>longhorn-conversion-webhook</code> are removed -&gt; <code>csi-attacher</code>, <code>csi-provisioner</code>, <code>longhorn-admission-webhook</code>, and <code>longhorn-conversion-webhook</code>, and instance-manager-e pods are evicted -&gt; all volumes are successfully detached</li>
+<li>Observe that instance-manager-r is NOT evicted.</li>
+</ul>
+<h4 id="12-multi-node-cluster">1.2 multi-node cluster</h4>
+<p>1.2.1 Multiple healthy replicas</p>
+<ul>
+<li>Deploy Longhorn</li>
+<li>Verify that there is no PDB for <code>csi-attacher</code>, <code>csi-provisioner</code>, <code>longhorn-admission-webhook</code>, and <code>longhorn-conversion-webhook</code></li>
+<li>Manually create a PVC (simulate the volume which has never been attached scenario)</li>
+<li>Verify that there is no PDB for <code>csi-attacher</code>, <code>csi-provisioner</code>, <code>longhorn-admission-webhook</code>, and <code>longhorn-conversion-webhook</code> because there is no attached volume</li>
+<li>Create a deployment that uses one RW0 Longhorn volume.</li>
+<li>Verify that there is PDB for <code>csi-attacher</code>, <code>csi-provisioner</code>, <code>longhorn-admission-webhook</code>, and <code>longhorn-conversion-webhook</code></li>
+<li>Create another deployment that uses one RWO Longhorn volume. Scale down this deployment so that the volume is detached</li>
+<li>Create a deployment of 2 pods that uses one RWX Longhorn volume.</li>
+<li>For each node one by one by <code>kubectl drain &lt;node-name&gt; --ignore-daemonsets --delete-emptydir-data --force</code></li>
+<li>Verify that the drain can finish successfully</li>
+<li>Uncordon the node and move to next node</li>
+</ul>
+<p>1.2.2 Single healthy replicas</p>
+<ul>
+<li>Given Longhorn with 2 nodes cluster: node-1, node-2</li>
+<li>Create a 5Gi volume with 1 replica. Let&rsquo;s say the replica is on node-2</li>
+<li>Attached the volume to node-1</li>
+<li>Set <code>node-drain-policy</code> to <code>block-if-contains-last-replica</code></li>
+<li>Attempts to drain node-2 that contains the only replica.</li>
+<li>The node-2 becomes cordoned.</li>
+<li>All pods on node-2 are evicted except the replica instance manager pod.</li>
+<li>The message like below keeps appearing.
+<pre tabindex="0"><code>evicting pod longhorn-system/instance-manager-r-xxxxxxxx
+error when evicting pods/&#34;instance-manager-r-xxxxxxxx&#34; -n &#34;longhorn-system&#34; (will retry after 5s): Cannot evict pod as it would violate the pod&#39;s disruption budget.
+</code></pre></li>
+</ul>
+<h3 id="2-upgrade-kubernetes-for-k3s-cluster-with-standalone-system-upgrade-controller-deployment">2. Upgrade Kubernetes for k3s cluster with standalone System Upgrade Controller deployment</h3>
+<ul>
+<li>Deploy a 3 nodes with each node has all roles (master + worker)</li>
+<li>Install the <a href="https://github.com/rancher/system-upgrade-controller#deploying">System Upgrade Controller</a></li>
+<li>Deploy Longhorn</li>
+<li>Manually create a PVC (simulate the volume which has never been attached scenario)</li>
+<li>Create a deployment that uses one RW0 Longhorn volume.</li>
+<li>Create another deployment that uses one RWO Longhorn volume. Scale down this deployment so that the volume is detached</li>
+<li>Create another deployment of 2 pods that uses one RWX Longhorn volume.</li>
+<li>Deploying the <code>plan</code> CR to upgrade Kubernetes similar to:</li>
+</ul>
+<pre tabindex="0"><code>  apiVersion: upgrade.cattle.io/v1
+  kind: Plan
+  metadata:
+    name: k3s-server
+    namespace: system-upgrade
+  spec:
+    concurrency: 1
+    cordon: true
+    nodeSelector:
+      matchExpressions:
+      - key: node-role.kubernetes.io/master
+        operator: In
+        values:
+        - &#34;true&#34;
+    serviceAccountName: system-upgrade
+    drain:
+      force: true
+      skipWaitForDeleteTimeout: 60 # 1.18+ (honor pod disruption budgets up to 60 seconds per pod then moves on)
+    upgrade:
+      image: rancher/k3s-upgrade
+    version: v1.21.11+k3s1
+</code></pre><p>Note that the <code>concurrency</code> should be 1 to upgrade node one by one. <code>version</code> should be a newer K3s version. And it should contains the <code>drain</code> stage</p>
+<ul>
+<li>Verify that the upgrade went smoothly</li>
+<li>Exec into workload pod and make sure that the data is still there</li>
+<li>Repeat the upgrading process above 5 times to make sure</li>
+</ul>
+<h3 id="3-upgrade-kubernetes-for-imported--k3s-cluster-in-rancher">3. Upgrade Kubernetes for imported  k3s cluster in Rancher</h3>
+<ul>
+<li>Creating a 3-node k3s cluster with each node is both master+worker role. K3s should be an old version such as <code>v1.21.9+k3s1</code> so that we can upgrade multiple times. Some instructions to create such cluster is here <a href="https://docs.k3s.io/datastore/ha-embedded">https://docs.k3s.io/datastore/ha-embedded</a></li>
+<li>Import the cluster into Rancher by: go to cluster management -&gt; create new cluster -&gt; generic cluster -&gt; follow the instruction over there</li>
+<li>Update the upgrade strategy in cluster management -&gt; click three dots menu on the imported cluster -&gt; edit config -&gt; K3s options -&gt; close drain for both control plane and worker node like below:
+<img src="https://user-images.githubusercontent.com/22139961/225175432-87f076ac-552c-464a-a466-42356f1ac8e2.png" alt="Screenshot from 2023-03-14 17-53-24"></li>
+<li>Install Longhorn</li>
+<li>Manually create a PVC (simulate the volume which has never been attached scenario)</li>
+<li>Create a deployment that uses one RW0 Longhorn volume.</li>
+<li>Create another deployment that uses one RWO Longhorn volume. Scale down this deployment so that the volume is detached</li>
+<li>Create another deployment of 2 pods that uses one RWX Longhorn volume.</li>
+<li>Using Rancher to upgrade the cluster to a newer Kubernetes version</li>
+<li>Verify that the upgrade went smoothly</li>
+<li>Exec into workload pod and make sure that the data is still there</li>
+</ul>
+<h3 id="4-upgrade-kubernetes-for-provisioned-k3s-cluster-in-rancher">4. Upgrade Kubernetes for provisioned k3s cluster in Rancher</h3>
+<ul>
+<li>Using Rancher to provision a k3s cluster with an old version. For example, <code>v1.22.11+k3s2</code>. The cluster has 3 nodes each node with both worker and master role. Set the upgrade strategy as below:
+<img src="https://user-images.githubusercontent.com/22139961/225163284-51c017ed-650c-4263-849c-054a0a0abf20.png" alt="Screenshot from 2023-03-14 15-44-34"></li>
+<li>Install Longhorn</li>
+<li>Manually create a PVC (simulate the volume which has never been attached scenario)</li>
+<li>Create a deployment that uses one RW0 Longhorn volume.</li>
+<li>Create another deployment that uses one RWO Longhorn volume. Scale down this deployment so that the volume is detached</li>
+<li>Create another deployment of 2 pods that uses one RWX Longhorn volume.</li>
+<li>Using Rancher to upgrade the cluster to a newer Kubernetes version</li>
+<li>Verify that the upgrade went smoothly</li>
+<li>Exec into workload pod and make sure that the data is still there</li>
+</ul>
+<h2 id="with-node-drain-policy-is-allow-if-replica-is-stopped">With <code>node-drain-policy</code> is <code>allow-if-replica-is-stopped</code></h2>
+<ol>
+<li>Repeat the test cases above.</li>
+<li>Verify that in the test <code>1.1.1</code>, <code>1.1.2</code>, <code>1.2.1</code>, <code>2</code>,<code>3</code>, and <code>4</code>, the drain is successfully.</li>
+<li>Verify that the test <code>1.2.2</code>, the drain is still failed</li>
+</ol>
+<h2 id="with-node-drain-policy-as-always-allow">With <code>node-drain-policy</code> as <code>always-allow</code></h2>
+<ol>
+<li>Repeat the test cases above.</li>
+<li>Verify that in the test <code>1.1.1</code>, <code>1.1.2</code>, <code>1.2.1</code>, <code>1.2.2</code>, <code>2</code>,<code>3</code>, and <code>4</code>, the drain is successfully.</li>
+</ol>
 
+    </article>
+  <a href="https://github.com/longhorn/longhorn-tests/edit/master/docs/content/manual/pre-release/upgrade/test-node-drain-policy.md" target="_blank" title="Edit on Github" style="font-size:smaller;float:right;padding-right:3%">[Edit]</a>
   </div>
-</main>
 
     
     
