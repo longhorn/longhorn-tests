@@ -6,6 +6,7 @@ import logging
 class node_keywords:
 
     def __init__(self):
+        logging.warn("initialize node_keywords class")
         self.node = Node()
 
     def reboot_volume_node(self, volume_name):

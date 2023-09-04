@@ -71,6 +71,14 @@ def get_cr(group, version, namespace, plural, name):
     except ApiException as e:
         print("Exception when calling CustomObjectsApi->get_namespaced_custom_object: %s\n" % e)
 
+def filter_cr(group, version, namespace, plural, field_selector="", label_selector=""):
+    api = client.CustomObjectsApi()
+    try:
+        resp = api.list_namespaced_custom_object(group, version, namespace, plural, field_selector=field_selector, label_selector=label_selector)
+        return resp
+    except ApiException as e:
+        print("Exception when calling CustomObjectsApi->list_namespaced_custom_object: %s\n" % e)
+
 def wait_delete_pod(pod_uid, namespace='default'):
     api = client.CoreV1Api()
     for i in range(RETRY_COUNTS):
@@ -78,6 +86,20 @@ def wait_delete_pod(pod_uid, namespace='default'):
         found = False
         for item in ret.items:
             if item.metadata.uid == pod_uid:
+                found = True
+                break
+        if not found:
+            break
+        time.sleep(RETRY_INTERVAL)
+    assert not found
+
+def wait_delete_ns(name):
+    api = client.CoreV1Api()
+    for i in range(RETRY_COUNTS):
+        ret = api.list_namespace()
+        found = False
+        for item in ret.items:
+            if item.metadata.name == name:
                 found = True
                 break
         if not found:
