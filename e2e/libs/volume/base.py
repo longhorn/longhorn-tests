@@ -15,6 +15,10 @@ class Base(ABC):
         return NotImplemented
 
     @abstractmethod
+    def delete(self, volume_name):
+        return NotImplemented
+
+    @abstractmethod
     def wait_for_volume_state(self, volume_name, desired_state):
         return NotImplemented
 
@@ -40,4 +44,8 @@ class Base(ABC):
 
     @abstractmethod
     def check_data(self, volume_name, checksum):
+        return NotImplemented
+
+    @abstractmethod
+    def cleanup(self, volume_names):
         return NotImplemented

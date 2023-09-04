@@ -2,17 +2,14 @@ from utility.utility import get_test_case_namespace, generate_volume_name
 from utility.utility import get_node, list_nodes
 from utility.utility import get_test_pod_running_node, get_test_pod_not_running_node
 from robot.libraries.BuiltIn import BuiltIn
-from node_exec import NodeExec
 from volume import Volume
 import logging
 
 class volume_keywords:
 
     def __init__(self):
-        #TODO
-        #test_name = BuiltIn().get_variable_value("${TEST NAME}")
-        self.node_exec = NodeExec("default")
-        self.volume = Volume(self.node_exec)
+        logging.warn("initialize volume_keywords class")
+        self.volume = Volume()
 
 
     def create_volume(self, size, replica_count):
@@ -49,6 +46,10 @@ class volume_keywords:
         return self.volume.write_random_data(volume_name, size_in_mb)
 
 
+    def keep_writing_data(self, volume_name):
+        self.volume.keep_writing_data(volume_name)
+
+
     def check_data(self, volume_name, checksum):
         print(f"check volume {volume_name} data with checksum {checksum}")
         self.volume.check_data(volume_name, checksum)
@@ -83,6 +84,9 @@ class volume_keywords:
             replica_node
         )
 
-    def cleanup_resources(self):
-        logging.info('cleaning up resources')
-        self.node_exec.cleanup()
+    def wait_for_volume_attached(self, volume_name):
+        self.volume.wait_for_volume_attached(volume_name)
+
+    def cleanup_volumes(self, volume_names):
+        logging.warn(f"cleanup volumes {volume_names}")
+        self.volume.cleanup(volume_names)

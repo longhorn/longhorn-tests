@@ -3,9 +3,8 @@ Documentation    Negative Test Cases
 Resource    ../keywords/volume.resource
 Resource    ../keywords/common.resource
 
-Test setup    set_test_environment
-
-Test Teardown    cleanup_resources
+Test setup    Set test environment
+Test Teardown    Cleanup resources
 
 *** Variables ***
 ${LOOP_COUNT}    1
