@@ -10,6 +10,7 @@ RETRY_INTERVAL = 1
 VOLUME_FRONTEND_BLOCKDEV = "blockdev"
 VOLUME_FRONTEND_ISCSI = "iscsi"
 DEV_PATH = "/dev/longhorn/"
+
 class Rest(Base):
 
     def __init__(self, node_exec):
@@ -23,6 +24,9 @@ class Rest(Base):
         return NotImplemented
 
     def attach(self, volume_name, node_name):
+        return NotImplemented
+
+    def delete(self, volume_name):
         return NotImplemented
 
     def wait_for_volume_state(self, volume_name, desired_state):
@@ -55,6 +59,9 @@ class Rest(Base):
         return endpoint
 
     def write_random_data(self, volume_name, size):
+        return NotImplemented
+
+    def keep_writing_data(self, volume_name, size):
         return NotImplemented
 
     def delete_replica(self, volume_name, node_name):
@@ -117,4 +124,7 @@ class Rest(Base):
         assert completed
 
     def check_data(self, volume_name, checksum):
+        return NotImplemented
+
+    def cleanup(self, volume_names):
         return NotImplemented
