@@ -204,6 +204,14 @@ SETTING_CONCURRENT_REPLICA_REBUILD_PER_NODE_LIMIT = \
     "concurrent-replica-rebuild-per-node-limit"
 SETTING_AUTO_CLEANUP_SYSTEM_GERERATED_SNAPSHOT = \
     "auto-cleanup-system-generated-snapshot"
+SETTING_BACKUP_COMPRESSION_METHOD = "backup-compression-method"
+SETTING_BACKUP_CONCURRENT_LIMIT = "backup-concurrent-limit"
+SETTING_RESTORE_CONCURRENT_LIMIT = "restore-concurrent-limit"
+
+DEFAULT_BACKUP_COMPRESSION_METHOD = "lz4"
+BACKUP_COMPRESSION_METHOD_LZ4 = "lz4"
+BACKUP_COMPRESSION_METHOD_GZIP = "gzip"
+BACKUP_COMPRESSION_METHOD_NONE = "none"
 
 SNAPSHOT_DATA_INTEGRITY_IGNORED = "ignored"
 SNAPSHOT_DATA_INTEGRITY_DISABLED = "disabled"
@@ -2821,7 +2829,9 @@ def wait_for_disk_status(client, node_name, disk_name, key, value):
     assert disks[disk_name][key] == value, \
         f"Wrong disk({disk_name}) {key} status.\n" \
         f"Expect={value}\n" \
-        f"Got={disks[disk_name][key]}\n"
+        f"Got={disks[disk_name][key]}\n" \
+        f"node={client.by_id_node(node_name)}\n" \
+        f"volumes={client.list_volume()}\n"
     return node
 
 
