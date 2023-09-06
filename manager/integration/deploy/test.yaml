@@ -39,7 +39,7 @@ rules:
   verbs: ["*"]
 - apiGroups: ["longhorn.io"]
   resources: ["supportbundles", "supportbundles/status",
-              "objectendpoints", "objectendpoints/status",
+              "objectstores", "objectstores/status",
               "volumes", "volumes/status"]
   verbs: ["*"]
 ---
@@ -68,10 +68,9 @@ spec:
   - name: longhorn-test
     image: mrohrich/longhorn-manager-test:object-endpoint
     args: [
-            "-s",
 #           "-x", "-s",
 #           "-m", "coretest",
-           "-k", "test_object_endpoint",
+#           "-k", "test_object_store",
 #           "--skip-recurring-job-test",
            ]
     #TEST_FRAMEWORK_ARGS_PLACEHOLDER
