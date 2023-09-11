@@ -27,13 +27,10 @@ metadata:
 spec:
   containers:
   - name: longhorn-test
-    image: longhornio/longhorn-manager-test:master-head
-#    args: [
-#           "-x", "-s",
-#           "-m", "coretest",
-#           "-k", "test_recurring_job",
-#           "--skip-recurring-job-test",
-#           ]
+    image: longhornio/longhorn-e2e-test:master-head
+    #args: [
+    #       "-t", "Replica Rebuilding While Replica Deletion",
+    #       ]
     #TEST_FRAMEWORK_ARGS_PLACEHOLDER
     imagePullPolicy: Always
     securityContext:
