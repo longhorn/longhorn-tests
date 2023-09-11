@@ -16,12 +16,12 @@ class aws(cloudprovider):
             assert False
 
         secret_access_key = os.getenv("AWS_SECRET_ACCESS_KEY")
-        if access_key_id is None:
+        if secret_access_key is None:
             print("AWS_SECRET_ACCESS_KEY env variable not defined")
             assert False
 
         default_region = os.getenv("AWS_DEFAULT_REGION")
-        if access_key_id is None:
+        if default_region is None:
             print("AWS_DEFAULT_REGION env variable not defined")
             assert False
 

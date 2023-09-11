@@ -1,0 +1,208 @@
+def imageName = "${JOB_BASE_NAME}-${env.BUILD_NUMBER}"
+def summary
+def WORKSPACE = "/src/longhorn-tests"
+def BUILD_TRIGGER_BY = "\n${currentBuild.getBuildCauses()[0].shortDescription}"
+
+// define optional parameters
+def SELINUX_MODE = params.SELINUX_MODE ? params.SELINUX_MODE : ""
+
+def CREDS_ID = JOB_BASE_NAME == "longhorn-tests-regression" ? "AWS_CREDS_RANCHER_QA" : "AWS_CREDS"
+def REGISTRATION_CODE_ID = params.ARCH == "amd64" ? "REGISTRATION_CODE" : "REGISTRATION_CODE_ARM64"
+
+// parameters for air gap installation
+def AIR_GAP_INSTALLATION = params.AIR_GAP_INSTALLATION ? params.AIR_GAP_INSTALLATION : false
+def CIS_HARDENING = params.CIS_HARDENING ? params.CIS_HARDENING : false
+def REGISTRY_URL
+def REGISTRY_USERNAME
+def REGISTRY_PASSWORD
+
+// parameter for hdd test
+def USE_HDD = params.USE_HDD ? params.USE_HDD : false
+
+node {
+
+    withCredentials([
+        usernamePassword(credentialsId: CREDS_ID, passwordVariable: 'AWS_SECRET_KEY', usernameVariable: 'AWS_ACCESS_KEY'),
+        string(credentialsId: 'DO_CREDS', variable: 'DO_TOKEN'),
+        string(credentialsId: REGISTRATION_CODE_ID, variable: 'REGISTRATION_CODE'),
+    ]) {
+
+        if (params.SEND_SLACK_NOTIFICATION) {
+            notifyBuild('STARTED', BUILD_TRIGGER_BY, params.NOTIFY_SLACK_CHANNEL)
+        }
+
+        checkout scm
+
+        try {
+
+            if (params.AIR_GAP_INSTALLATION) {
+
+                stage('airgap build') {
+                    sh "airgap/scripts/build.sh"
+                    sh """ docker run -itd --name airgap-${JOB_BASE_NAME}-${BUILD_NUMBER} \
+                                           --env TF_VAR_longhorn_version=${LONGHORN_INSTALL_VERSION} \
+                                           --env TF_VAR_do_token=${DO_TOKEN} \
+                                           --env TF_VAR_aws_access_key=${AWS_ACCESS_KEY} \
+                                           --env TF_VAR_aws_secret_key=${AWS_SECRET_KEY} \
+                                           airgap-${JOB_BASE_NAME}-${BUILD_NUMBER}
+                    """
+                }
+
+                stage ('airgap setup') {
+                    sh "docker exec airgap-${JOB_BASE_NAME}-${BUILD_NUMBER} ./airgap/scripts/terraform-setup.sh"
+                    REGISTRY_URL = sh (
+                        script: "docker exec airgap-${JOB_BASE_NAME}-${BUILD_NUMBER} terraform -chdir=./airgap/terraform output -raw registry_url",
+                        returnStdout: true
+                    )
+                    println REGISTRY_URL
+                    REGISTRY_USERNAME = sh (
+                        script: "docker exec airgap-${JOB_BASE_NAME}-${BUILD_NUMBER} terraform -chdir=./airgap/terraform output -raw registry_username",
+                        returnStdout: true
+                    )
+                    REGISTRY_PASSWORD = sh (
+                        script: "docker exec airgap-${JOB_BASE_NAME}-${BUILD_NUMBER} terraform -chdir=./airgap/terraform output -raw registry_password",
+                        returnStdout: true
+                    )
+                }
+
+            }
+
+            stage('build') {
+
+                echo "Using credentials: $CREDS_ID"
+                echo "Using registration coce: $REGISTRATION_CODE_ID"
+
+                sh "pipelines/rancher/scripts/build.sh"
+                sh """ docker run -itd --name ${JOB_BASE_NAME}-${BUILD_NUMBER} \
+                                       --env AIR_GAP_INSTALLATION=${AIR_GAP_INSTALLATION} \
+                                       --env REGISTRY_URL=${REGISTRY_URL} \
+                                       --env REGISTRY_USERNAME=${REGISTRY_USERNAME} \
+                                       --env REGISTRY_PASSWORD=${REGISTRY_PASSWORD} \
+                                       --env RANCHER_VERSION=${RANCHER_VERSION} \
+                                       --env RANCHER_CHART_REPO_URI=${RANCHER_CHART_REPO_URI} \
+                                       --env RANCHER_CHART_REPO_BRANCH=${RANCHER_CHART_REPO_BRANCH} \
+                                       --env LONGHORN_REPO=${LONGHORN_REPO} \
+                                       --env LONGHORN_TESTS_CUSTOM_IMAGE=${LONGHORN_TESTS_CUSTOM_IMAGE} \
+                                       --env DISTRO=${DISTRO} \
+                                       --env LONGHORN_INSTALL_VERSION=${LONGHORN_INSTALL_VERSION} \
+                                       --env LONGHORN_STABLE_VERSION=${LONGHORN_STABLE_VERSION} \
+                                       --env LONGHORN_TRANSIENT_VERSION=${LONGHORN_TRANSIENT_VERSION} \
+                                       --env LONGHORN_TEST_CLOUDPROVIDER=${LONGHORN_TEST_CLOUDPROVIDER} \
+                                       --env LONGHORN_UPGRADE_TEST=${LONGHORN_UPGRADE_TEST} \
+                                       --env PYTEST_CUSTOM_OPTIONS="${PYTEST_CUSTOM_OPTIONS}" \
+                                       --env BACKUP_STORE_TYPE="${BACKUP_STORE_TYPE}" \
+                                       --env TF_VAR_create_load_balancer=true \
+                                       --env TF_VAR_use_hdd=${USE_HDD} \
+                                       --env TF_VAR_arch=${ARCH} \
+                                       --env TF_VAR_k8s_distro_name=${K8S_DISTRO_NAME} \
+                                       --env TF_VAR_k8s_distro_version=${K8S_DISTRO_VERSION} \
+                                       --env TF_VAR_aws_availability_zone=${AWS_AVAILABILITY_ZONE} \
+                                       --env TF_VAR_aws_region=${AWS_REGION} \
+                                       --env TF_VAR_os_distro_version=${DISTRO_VERSION} \
+                                       --env TF_VAR_do_token=${env.TF_VAR_do_token} \
+                                       --env TF_VAR_lh_aws_access_key=${AWS_ACCESS_KEY} \
+                                       --env TF_VAR_lh_aws_instance_name_controlplane="${JOB_BASE_NAME}-ctrl" \
+                                       --env TF_VAR_lh_aws_instance_name_worker="${JOB_BASE_NAME}-wrk" \
+                                       --env TF_VAR_lh_aws_instance_type_controlplane=${CONTROLPLANE_INSTANCE_TYPE} \
+                                       --env TF_VAR_lh_aws_instance_type_worker=${WORKER_INSTANCE_TYPE}\
+                                       --env TF_VAR_lh_aws_secret_key=${AWS_SECRET_KEY} \
+                                       --env TF_VAR_selinux_mode=${SELINUX_MODE} \
+                                       --env TF_VAR_registration_code=${REGISTRATION_CODE} \
+                                       --env TF_VAR_cis_hardening=${CIS_HARDENING} \
+                                       ${imageName}
+                """
+            }
+
+            timeout(60) {
+                stage ('terraform') {
+                    sh "docker exec ${JOB_BASE_NAME}-${BUILD_NUMBER} pipelines/utilities/terraform_setup.sh"
+                }
+			}
+
+            stage ('longhorn setup & tests') {
+                sh "docker exec ${JOB_BASE_NAME}-${BUILD_NUMBER} pipelines/rancher/scripts/longhorn-setup.sh"
+            }
+
+            stage ('download support bundle') {
+                sh "docker exec ${JOB_BASE_NAME}-${BUILD_NUMBER} pipelines/utilities/download_support_bundle.sh  ${JOB_BASE_NAME}-${BUILD_NUMBER}-bundle.zip"
+                sh "docker cp ${JOB_BASE_NAME}-${BUILD_NUMBER}:${WORKSPACE}/${JOB_BASE_NAME}-${BUILD_NUMBER}-bundle.zip ."
+				archiveArtifacts allowEmptyArchive: true, artifacts: '**/*.zip', followSymlinks: false
+			}
+
+            stage ('report generation') {
+                sh "docker cp ${JOB_BASE_NAME}-${BUILD_NUMBER}:${WORKSPACE}/longhorn-test-junit-report.xml ."
+
+                if(params.LONGHORN_UPGRADE_TEST && params.LONGHORN_TRANSIENT_VERSION) {
+                    sh "docker cp ${JOB_BASE_NAME}-${BUILD_NUMBER}:${WORKSPACE}/longhorn-test-upgrade-from-stable-junit-report.xml ."
+                    sh "docker cp ${JOB_BASE_NAME}-${BUILD_NUMBER}:${WORKSPACE}/longhorn-test-upgrade-from-transient-junit-report.xml ."
+                    summary = junit 'longhorn-test-upgrade-from-stable-junit-report.xml, longhorn-test-upgrade-from-transient-junit-report.xml, longhorn-test-junit-report.xml'
+                }
+                else if(params.LONGHORN_UPGRADE_TEST) {
+                    sh "docker cp ${JOB_BASE_NAME}-${BUILD_NUMBER}:${WORKSPACE}/longhorn-test-upgrade-from-stable-junit-report.xml ."
+                    summary = junit 'longhorn-test-upgrade-from-stable-junit-report.xml, longhorn-test-junit-report.xml'
+                }
+                else {
+                    summary = junit 'longhorn-test-junit-report.xml'
+                }
+            }
+
+        } catch (e) {
+            currentBuild.result = "FAILED"
+            throw e
+        } finally {
+            stage ('releasing resources') {
+                if (sh (script: "docker container inspect airgap-${JOB_BASE_NAME}-${BUILD_NUMBER} > /dev/null 2>&1", returnStatus: true) == 0) {
+                    sh "docker exec airgap-${JOB_BASE_NAME}-${BUILD_NUMBER} ./airgap/scripts/cleanup.sh"
+                    sh "docker stop airgap-${JOB_BASE_NAME}-${BUILD_NUMBER}"
+                    sh "docker rm -v airgap-${JOB_BASE_NAME}-${BUILD_NUMBER}"
+                    sh "docker rmi airgap-${JOB_BASE_NAME}-${BUILD_NUMBER}"
+                }
+
+                if (sh (script: "docker container inspect ${JOB_BASE_NAME}-${BUILD_NUMBER} > /dev/null 2>&1", returnStatus: true) == 0) {
+                    sh "docker exec ${JOB_BASE_NAME}-${BUILD_NUMBER} pipelines/utilities/cleanup.sh"
+                    sh "docker stop ${JOB_BASE_NAME}-${BUILD_NUMBER}"
+                    sh "docker rm -v ${JOB_BASE_NAME}-${BUILD_NUMBER}"
+                    sh "docker rmi ${imageName}"
+                }
+
+                if (summary) {
+                    summary_msg = "\nTest Summary - Failures: ${summary.failCount}, Skipped: ${summary.skipCount}, Passed: ${summary.passCount}  -- Job completed in ${currentBuild.durationString.replace(' and counting', '')}"
+                } else {
+                    summary_msg = "\n Test Failed: No Junit report"
+                }
+
+                if(params.SEND_SLACK_NOTIFICATION){
+                    notifyBuild(currentBuild.result, summary_msg, params.NOTIFY_SLACK_CHANNEL)
+                }
+            }
+        }
+    }
+
+}
+
+
+def notifyBuild(String buildStatus = 'STARTED', String summary_msg, String slack_channel) {
+  // build status of null means successful
+  buildStatus =  buildStatus ?: 'SUCCESSFUL'
+
+  // Default values
+  def colorName = 'RED'
+  def colorCode = '#FF0000'
+  def subject = "${buildStatus}: Job '${env.JOB_BASE_NAME} [${env.BUILD_NUMBER}]'"
+  def summary = "${subject} (${env.BUILD_URL})" + summary_msg
+
+  // Override default values based on build status
+  if (buildStatus == 'STARTED') {
+    color = 'YELLOW'
+    colorCode = '#FFFF00'
+  } else if (buildStatus == 'SUCCESSFUL') {
+    color = 'GREEN'
+    colorCode = '#00FF00'
+  } else {
+    color = 'RED'
+    colorCode = '#FF0000'
+  }
+
+  // Send notifications
+  slackSend (color: colorCode, message: summary, channel: slack_channel,  tokenCredentialId: 'longhorn-tests-slack-token')
+}
