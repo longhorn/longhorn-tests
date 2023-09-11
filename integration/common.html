@@ -4472,7 +4472,6 @@ def wait_for_backup_restore_completed(client, name, backup_name):
     complete = False
     for i in range(RETRY_COUNTS):
         v = client.by_id_volume(name)
-        print(f&#34;volume = {v}&#34;)
         if v.controllers and len(v.controllers) != 0 and \
                 v.controllers[0].lastRestoredBackup == backup_name:
             complete = True
@@ -12316,7 +12315,6 @@ ref: <a href="https://github.com/longhorn/longhorn/issues/4814">https://github.c
     complete = False
     for i in range(RETRY_COUNTS):
         v = client.by_id_volume(name)
-        print(f&#34;volume = {v}&#34;)
         if v.controllers and len(v.controllers) != 0 and \
                 v.controllers[0].lastRestoredBackup == backup_name:
             complete = True

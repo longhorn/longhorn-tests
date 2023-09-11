@@ -119,6 +119,16 @@ def longhorn_repo(request):
 
 
 @pytest.fixture
+def flux_helm_chart_url(request):
+    return request.config.getoption(&#34;--flux-helm-chart-url&#34;)
+
+
+@pytest.fixture
+def flux_helm_chart_version(request):
+    return request.config.getoption(&#34;--flux-helm-chart-version&#34;)
+
+
+@pytest.fixture
 def upgrade_longhorn_repo_url(request):
     return request.config.getoption(&#34;--upgrade-lh-repo-url&#34;)
 
@@ -170,6 +180,8 @@ def longhorn_upgrade(longhorn_install_method,
                      rancher_secret_key,
                      rancher_chart_install_version,
                      longhorn_repo,
+                     flux_helm_chart_url,
+                     flux_helm_chart_version,
                      longhorn_repo_url,
                      longhorn_repo_branch,
                      longhorn_manager_image,
@@ -180,12 +192,6 @@ def longhorn_upgrade(longhorn_install_method,
 
     if longhorn_install_method == &#34;manifest&#34;:
         command = &#34;../scripts/upgrade-longhorn.sh&#34;
-    elif longhorn_install_method == &#34;helm&#34;:
-        command = &#34;./pipelines/helm/scripts/upgrade-longhorn.sh&#34;
-    elif longhorn_install_method == &#34;rancher&#34;:
-        command = &#34;./pipelines/rancher/scripts/upgrade-longhorn.sh&#34;
-
-    if longhorn_install_method != &#34;rancher&#34;:
         process = subprocess.Popen([command,
                                     longhorn_repo_url,
                                     longhorn_repo_branch,
@@ -195,7 +201,19 @@ def longhorn_upgrade(longhorn_install_method,
                                     longhorn_share_manager_image,
                                     longhorn_backing_image_manager_image],
                                    shell=False)
-    else:
+    elif longhorn_install_method == &#34;helm&#34;:
+        command = &#34;./pipelines/helm/scripts/upgrade-longhorn.sh&#34;
+        process = subprocess.Popen([command,
+                                    longhorn_repo_url,
+                                    longhorn_repo_branch,
+                                    longhorn_manager_image,
+                                    longhorn_engine_image,
+                                    longhorn_instance_manager_image,
+                                    longhorn_share_manager_image,
+                                    longhorn_backing_image_manager_image],
+                                   shell=False)
+    elif longhorn_install_method == &#34;rancher&#34;:
+        command = &#34;./pipelines/rancher/scripts/upgrade-longhorn.sh&#34;
         process = subprocess.Popen([command,
                                     rancher_hostname,
                                     rancher_access_key,
@@ -203,6 +221,13 @@ def longhorn_upgrade(longhorn_install_method,
                                     rancher_chart_install_version,
                                     longhorn_repo],
                                    shell=False)
+    elif longhorn_install_method == &#34;flux&#34;:
+        command = &#34;./pipelines/flux/scripts/upgrade-longhorn.sh&#34;
+        process = subprocess.Popen([command,
+                                    flux_helm_chart_url,
+                                    flux_helm_chart_version],
+                                   shell=False)
+
     process.wait()
     if process.returncode == 0:
         longhorn_upgraded = True
@@ -221,6 +246,8 @@ def test_upgrade(longhorn_upgrade_type,
                  rancher_secret_key,
                  rancher_chart_install_version,
                  longhorn_repo,
+                 flux_helm_chart_url,
+                 flux_helm_chart_version,
                  upgrade_longhorn_repo_url,
                  upgrade_longhorn_repo_branch,
                  upgrade_longhorn_manager_image,
@@ -405,6 +432,8 @@ def test_upgrade(longhorn_upgrade_type,
                             rancher_secret_key,
                             rancher_chart_install_version,
                             longhorn_repo,
+                            flux_helm_chart_url,
+                            flux_helm_chart_version,
                             longhorn_repo_url,
                             longhorn_repo_branch,
                             longhorn_manager_image,
@@ -623,6 +652,34 @@ def test_upgrade_with_auto_upgrade_latest_engine_enabled():
 <section>
 <h2 class="section-title" id="header-functions">Functions</h2>
 <dl>
+<dt id="tests.test_upgrade.flux_helm_chart_url"><code class="name flex">
+<span>def <span class="ident">flux_helm_chart_url</span></span>(<span>request)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@pytest.fixture
+def flux_helm_chart_url(request):
+    return request.config.getoption(&#34;--flux-helm-chart-url&#34;)</code></pre>
+</details>
+</dd>
+<dt id="tests.test_upgrade.flux_helm_chart_version"><code class="name flex">
+<span>def <span class="ident">flux_helm_chart_version</span></span>(<span>request)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@pytest.fixture
+def flux_helm_chart_version(request):
+    return request.config.getoption(&#34;--flux-helm-chart-version&#34;)</code></pre>
+</details>
+</dd>
 <dt id="tests.test_upgrade.get_longhorn_upgrade_type"><code class="name flex">
 <span>def <span class="ident">get_longhorn_upgrade_type</span></span>(<span>)</span>
 </code></dt>
@@ -665,7 +722,7 @@ def longhorn_repo(request):
 </details>
 </dd>
 <dt id="tests.test_upgrade.longhorn_upgrade"><code class="name flex">
-<span>def <span class="ident">longhorn_upgrade</span></span>(<span>longhorn_install_method, rancher_hostname, rancher_access_key, rancher_secret_key, rancher_chart_install_version, longhorn_repo, longhorn_repo_url, longhorn_repo_branch, longhorn_manager_image, longhorn_engine_image, longhorn_instance_manager_image, longhorn_share_manager_image, longhorn_backing_image_manager_image)</span>
+<span>def <span class="ident">longhorn_upgrade</span></span>(<span>longhorn_install_method, rancher_hostname, rancher_access_key, rancher_secret_key, rancher_chart_install_version, longhorn_repo, flux_helm_chart_url, flux_helm_chart_version, longhorn_repo_url, longhorn_repo_branch, longhorn_manager_image, longhorn_engine_image, longhorn_instance_manager_image, longhorn_share_manager_image, longhorn_backing_image_manager_image)</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -679,6 +736,8 @@ def longhorn_repo(request):
                      rancher_secret_key,
                      rancher_chart_install_version,
                      longhorn_repo,
+                     flux_helm_chart_url,
+                     flux_helm_chart_version,
                      longhorn_repo_url,
                      longhorn_repo_branch,
                      longhorn_manager_image,
@@ -689,12 +748,6 @@ def longhorn_repo(request):
 
     if longhorn_install_method == &#34;manifest&#34;:
         command = &#34;../scripts/upgrade-longhorn.sh&#34;
-    elif longhorn_install_method == &#34;helm&#34;:
-        command = &#34;./pipelines/helm/scripts/upgrade-longhorn.sh&#34;
-    elif longhorn_install_method == &#34;rancher&#34;:
-        command = &#34;./pipelines/rancher/scripts/upgrade-longhorn.sh&#34;
-
-    if longhorn_install_method != &#34;rancher&#34;:
         process = subprocess.Popen([command,
                                     longhorn_repo_url,
                                     longhorn_repo_branch,
@@ -704,7 +757,19 @@ def longhorn_repo(request):
                                     longhorn_share_manager_image,
                                     longhorn_backing_image_manager_image],
                                    shell=False)
-    else:
+    elif longhorn_install_method == &#34;helm&#34;:
+        command = &#34;./pipelines/helm/scripts/upgrade-longhorn.sh&#34;
+        process = subprocess.Popen([command,
+                                    longhorn_repo_url,
+                                    longhorn_repo_branch,
+                                    longhorn_manager_image,
+                                    longhorn_engine_image,
+                                    longhorn_instance_manager_image,
+                                    longhorn_share_manager_image,
+                                    longhorn_backing_image_manager_image],
+                                   shell=False)
+    elif longhorn_install_method == &#34;rancher&#34;:
+        command = &#34;./pipelines/rancher/scripts/upgrade-longhorn.sh&#34;
         process = subprocess.Popen([command,
                                     rancher_hostname,
                                     rancher_access_key,
@@ -712,6 +777,13 @@ def longhorn_repo(request):
                                     rancher_chart_install_version,
                                     longhorn_repo],
                                    shell=False)
+    elif longhorn_install_method == &#34;flux&#34;:
+        command = &#34;./pipelines/flux/scripts/upgrade-longhorn.sh&#34;
+        process = subprocess.Popen([command,
+                                    flux_helm_chart_url,
+                                    flux_helm_chart_version],
+                                   shell=False)
+
     process.wait()
     if process.returncode == 0:
         longhorn_upgraded = True
@@ -795,7 +867,7 @@ def rancher_secret_key(request):
 </details>
 </dd>
 <dt id="tests.test_upgrade.test_upgrade"><code class="name flex">
-<span>def <span class="ident">test_upgrade</span></span>(<span>longhorn_upgrade_type, longhorn_install_method, rancher_hostname, rancher_access_key, rancher_secret_key, rancher_chart_install_version, longhorn_repo, upgrade_longhorn_repo_url, upgrade_longhorn_repo_branch, upgrade_longhorn_manager_image, upgrade_longhorn_engine_image, upgrade_longhorn_instance_manager_image, upgrade_longhorn_share_manager_image, upgrade_longhorn_backing_image_manager_image, client, core_api, volume_name, csi_pv, pvc, pod_make, statefulset, rwx_statefulset, storage_class)</span>
+<span>def <span class="ident">test_upgrade</span></span>(<span>longhorn_upgrade_type, longhorn_install_method, rancher_hostname, rancher_access_key, rancher_secret_key, rancher_chart_install_version, longhorn_repo, flux_helm_chart_url, flux_helm_chart_version, upgrade_longhorn_repo_url, upgrade_longhorn_repo_branch, upgrade_longhorn_manager_image, upgrade_longhorn_engine_image, upgrade_longhorn_instance_manager_image, upgrade_longhorn_share_manager_image, upgrade_longhorn_backing_image_manager_image, client, core_api, volume_name, csi_pv, pvc, pod_make, statefulset, rwx_statefulset, storage_class)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Test Longhorn upgrade</p>
@@ -848,6 +920,8 @@ def test_upgrade(longhorn_upgrade_type,
                  rancher_secret_key,
                  rancher_chart_install_version,
                  longhorn_repo,
+                 flux_helm_chart_url,
+                 flux_helm_chart_version,
                  upgrade_longhorn_repo_url,
                  upgrade_longhorn_repo_branch,
                  upgrade_longhorn_manager_image,
@@ -1032,6 +1106,8 @@ def test_upgrade(longhorn_upgrade_type,
                             rancher_secret_key,
                             rancher_chart_install_version,
                             longhorn_repo,
+                            flux_helm_chart_url,
+                            flux_helm_chart_version,
                             longhorn_repo_url,
                             longhorn_repo_branch,
                             longhorn_manager_image,
@@ -1376,6 +1452,8 @@ def upgrade_longhorn_share_manager_image(request):
 </li>
 <li><h3><a href="#header-functions">Functions</a></h3>
 <ul class="">
+<li><code><a title="tests.test_upgrade.flux_helm_chart_url" href="#tests.test_upgrade.flux_helm_chart_url">flux_helm_chart_url</a></code></li>
+<li><code><a title="tests.test_upgrade.flux_helm_chart_version" href="#tests.test_upgrade.flux_helm_chart_version">flux_helm_chart_version</a></code></li>
 <li><code><a title="tests.test_upgrade.get_longhorn_upgrade_type" href="#tests.test_upgrade.get_longhorn_upgrade_type">get_longhorn_upgrade_type</a></code></li>
 <li><code><a title="tests.test_upgrade.longhorn_install_method" href="#tests.test_upgrade.longhorn_install_method">longhorn_install_method</a></code></li>
 <li><code><a title="tests.test_upgrade.longhorn_repo" href="#tests.test_upgrade.longhorn_repo">longhorn_repo</a></code></li>

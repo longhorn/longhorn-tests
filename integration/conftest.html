@@ -50,6 +50,8 @@ RANCHER_ACCESS_KEY = &#34;--rancher-access-key&#34;
 RANCHER_SECRET_KEY = &#34;--rancher-secret-key&#34;
 RANCHER_CHART_INSTALL_VERSION = &#34;--rancher-chart-install-version&#34;
 LONGHORN_REPO = &#34;--longhorn-repo&#34;
+FLUX_HELM_CHART_URL = &#34;--flux-helm-chart-url&#34;
+FLUX_HELM_CHART_VERSION = &#34;--flux-helm-chart-version&#34;
 UPGRADE_LH_REPO_URL = &#34;--upgrade-lh-repo-url&#34;
 UPGRADE_LH_REPO_BRANCH = &#34;--upgrade-lh-repo-branch&#34;
 UPGRADE_LH_MANAGER_IMAGE = &#34;--upgrade-lh-manager-image&#34;
@@ -118,6 +120,16 @@ def pytest_addoption(parser):
                      help=&#39;&#39;&#39;if longhorn install method is rancher, specify
                      the longhorn dockerhub repo of longhorn components like
                      longhornio or rancher&#39;&#39;&#39;)
+
+    parser.addoption(FLUX_HELM_CHART_URL, action=&#34;store&#34;,
+                     default=&#34;https://charts.longhorn.io&#34;,
+                     help=&#39;&#39;&#39;if longhorn install method is flux, specify the
+                     url of flux helm repository resource&#39;&#39;&#39;)
+
+    parser.addoption(FLUX_HELM_CHART_VERSION, action=&#34;store&#34;,
+                     default=&#34;&#34;,
+                     help=&#39;&#39;&#39;if longhorn install method is flux, specify the
+                     chart version when create flux helm release resource&#39;&#39;&#39;)
 
     longhorn_repo_url =\
         &#34;https://github.com/longhorn/longhorn.git&#34;
@@ -345,6 +357,16 @@ def pytest_exception_interact(call, report):
                      help=&#39;&#39;&#39;if longhorn install method is rancher, specify
                      the longhorn dockerhub repo of longhorn components like
                      longhornio or rancher&#39;&#39;&#39;)
+
+    parser.addoption(FLUX_HELM_CHART_URL, action=&#34;store&#34;,
+                     default=&#34;https://charts.longhorn.io&#34;,
+                     help=&#39;&#39;&#39;if longhorn install method is flux, specify the
+                     url of flux helm repository resource&#39;&#39;&#39;)
+
+    parser.addoption(FLUX_HELM_CHART_VERSION, action=&#34;store&#34;,
+                     default=&#34;&#34;,
+                     help=&#39;&#39;&#39;if longhorn install method is flux, specify the
+                     chart version when create flux helm release resource&#39;&#39;&#39;)
 
     longhorn_repo_url =\
         &#34;https://github.com/longhorn/longhorn.git&#34;
