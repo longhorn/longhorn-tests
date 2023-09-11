@@ -837,7 +837,7 @@
 <tr>
 <td>8</td>
 <td>StorageClass with <code>reclaimPolicy</code> parameter set to <code>Retain</code></td>
-<td>1.  Create a new StorageClass, set <code>reclaimPolicy</code> parameter to <code>Delete</code><br>2.  Create a PVC with using the new StorageClass<br>3.  Delete PVC<br>4.  Delete PV</td>
+<td>1.  Create a new StorageClass, set <code>reclaimPolicy</code> parameter to <code>Retain</code><br>2.  Create a PVC with using the new StorageClass<br>3.  Delete PVC<br>4.  Delete PV</td>
 <td>*   Volume should be dynamically provisioned, it’s PV/PVC should be <code>Bound</code><br>*   Deleting PVC and PV will not delete longhorn volume.</td>
 <td>test_kubernetes_status</td>
 </tr>
