@@ -2900,7 +2900,7 @@ def test_engine_image_not_fully_deployed_perform_engine_upgrade(client, core_api
     # expected refCount: 1 for volume + 1 for engine and number of replicas(2)
     expect_ref_count = 4
     new_img_name = new_img.name
-    original_engine_image = volume1.engineImage
+    original_engine_image = volume1.image
     volume1.engineUpgrade(image=engine_upgrade_image)
     volume1 = wait_for_volume_current_image(client, volume1.name,
                                             engine_upgrade_image)
@@ -3044,8 +3044,8 @@ def test_engine_image_not_fully_deployed_perform_auto_upgrade_engine(client, cor
 
     volume1 = client.by_id_volume(volume1.name)
     volume2 = client.by_id_volume(volume2.name)
-    assert volume1.engineImage == default_img.image
-    assert volume2.engineImage == default_img.image
+    assert volume1.image == default_img.image
+    assert volume2.image == default_img.image
 
 
 def test_engine_image_not_fully_deployed_perform_dr_restoring_expanding_volume(client, core_api, set_random_backupstore): # NOQA
