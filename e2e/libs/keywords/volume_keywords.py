@@ -87,6 +87,9 @@ class volume_keywords:
     def wait_for_volume_attached(self, volume_name):
         self.volume.wait_for_volume_attached(volume_name)
 
+    def wait_for_volume_healthy(self, volume_name):
+        self.volume.wait_for_volume_healthy(volume_name)
+
     def cleanup_volumes(self, volume_names):
         logging.warn(f"cleanup volumes {volume_names}")
         self.volume.cleanup(volume_names)

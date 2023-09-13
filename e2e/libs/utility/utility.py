@@ -1,5 +1,6 @@
 from kubernetes import config, client, dynamic
 from kubernetes.client.rest import ApiException
+from kubernetes.stream import stream
 from longhorn import from_env
 import string
 import random
@@ -36,6 +37,24 @@ def list_nodes():
                 'node-role.kubernetes.io/master' not in item.metadata.labels:
             nodes.append(item.metadata.name)
     return sorted(nodes)
+
+def wait_for_cluster_ready():
+    core_api = client.CoreV1Api()
+    for i in range(RETRY_COUNTS):
+        try:
+            resp = core_api.list_node()
+            ready = True
+            for item in resp.items:
+                for condition in item.status.conditions:
+                    if condition.type == 'Ready' and condition.status != 'True':
+                        ready = False
+                        break
+            if ready:
+                break
+        except Exception as e:
+            logging.warn(f"list node error: {e}")
+        time.sleep(RETRY_INTERVAL)
+    assert ready, f"expect cluster's ready but it isn't {resp}"
 
 def get_node(index):
     nodes = list_nodes()
@@ -123,8 +142,13 @@ def get_longhorn_client():
         # manually expose longhorn client
         # to access longhorn manager in local environment
         longhorn_client_url = os.getenv('LONGHORN_CLIENT_URL')
-        longhorn_client = from_env(url=f"{longhorn_client_url}/v1/schemas")
-        return longhorn_client
+        for i in range(RETRY_COUNTS):
+            try:
+                longhorn_client = from_env(url=f"{longhorn_client_url}/v1/schemas")
+                return longhorn_client
+            except Exception as e:
+                logging.info(f"get longhorn client error: {e}")
+                time.sleep(RETRY_INTERVAL)
     else:
         logging.info(f"initialize longhorn api client from longhorn manager")
         # for ci, run test in in-cluster environment
