@@ -34,6 +34,10 @@ class Volume(Base):
         self.volume.wait_for_volume_state(volume_name, "attached")
         self.volume.wait_for_volume_robustness_not(volume_name, "unknown")
 
+    def wait_for_volume_healthy(self, volume_name):
+        self.volume.wait_for_volume_state(volume_name, "attached")
+        self.volume.wait_for_volume_robustness(volume_name, "healthy")
+
     def get_endpoint(self, volume_name):
         return self.volume.get_endpoint(volume_name)
 

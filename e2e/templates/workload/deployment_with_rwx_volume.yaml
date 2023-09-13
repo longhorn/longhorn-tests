@@ -1,0 +1,29 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: test-deployment-rwx
+  labels:
+    app: test-deployment-rwx
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: test-deployment-rwx
+  template:
+    metadata:
+      labels:
+        app: test-deployment-rwx
+    spec:
+      containers:
+        - image: busybox
+          imagePullPolicy: IfNotPresent
+          name: sleep
+          args: ['/bin/sh', '-c', 'while true;do date;sleep 5; done']
+          volumeMounts:
+            - name: pod-data
+              mountPath: /data
+      volumes:
+        - name: pod-data
+          persistentVolumeClaim:
+            claimName: test-rwx-pvc

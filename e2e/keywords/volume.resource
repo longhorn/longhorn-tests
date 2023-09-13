@@ -12,7 +12,7 @@ Create a volume with ${size} GB and ${replica_count} replicas
     Set Test Variable    ${volume_name}
     Append To List    ${volume_list}    ${volume_name}
 
-Create volume ${idx} with size ${size} GB and ${replica_count} replicas
+Create volume ${idx} with ${size} GB and ${replica_count} replicas
     ${volume_name} =    create_volume   ${size}    ${replica_count}
     attach_volume    ${volume_name}
     Insert Into List    ${volume_list}    ${idx}    ${volume_name}
