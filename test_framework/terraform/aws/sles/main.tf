@@ -33,7 +33,7 @@ resource "aws_vpc" "lh_aws_vpc" {
 
   tags = {
     Name = "${var.lh_aws_vpc_name}-${random_string.random_suffix.id}"
-    Owner = "longhorn-infra"
+    Owner = var.resources_owner
   }
 }
 
@@ -43,7 +43,7 @@ resource "aws_internet_gateway" "lh_aws_igw" {
 
   tags = {
     Name = "lh_igw-${random_string.random_suffix.id}"
-    Owner = "longhorn-infra"
+    Owner = var.resources_owner
   }
 }
 
@@ -86,6 +86,14 @@ resource "aws_security_group" "lh_aws_secgrp_controlplane" {
   }
 
   ingress {
+    description = "Allow longhorn-ui nodeport"
+    from_port   = 30000
+    to_port     = 30000
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
     description = "Allow UDP connection for longhorn-webhooks"
     from_port   = 0
     to_port     = 65535
@@ -110,7 +118,7 @@ resource "aws_security_group" "lh_aws_secgrp_controlplane" {
 
   tags = {
     Name = "lh_aws_sec_grp_controlplane-${random_string.random_suffix.id}"
-    Owner = "longhorn-infra"
+    Owner = var.resources_owner
   }
 }
 
@@ -154,7 +162,7 @@ resource "aws_security_group" "lh_aws_secgrp_worker" {
 
   tags = {
     Name = "lh_aws_sec_grp_worker-${random_string.random_suffix.id}"
-    Owner = "longhorn-infra"
+    Owner = var.resources_owner
   }
 }
 
@@ -167,7 +175,7 @@ resource "aws_subnet" "lh_aws_public_subnet" {
 
   tags = {
     Name = "lh_public_subnet-${random_string.random_suffix.id}"
-    Owner = "longhorn-infra"
+    Owner = var.resources_owner
   }
 }
 
@@ -179,7 +187,7 @@ resource "aws_subnet" "lh_aws_private_subnet" {
 
   tags = {
     Name = "lh_private_subnet-${random_string.random_suffix.id}"
-    Owner = "longhorn-infra"
+    Owner = var.resources_owner
   }
 }
 
@@ -189,7 +197,7 @@ resource "aws_eip" "lh_aws_eip_nat_gw" {
 
   tags = {
     Name = "lh_eip_nat_gw-${random_string.random_suffix.id}"
-    Owner = "longhorn-infra"
+    Owner = var.resources_owner
   }
 }
 
@@ -207,7 +215,7 @@ resource "aws_nat_gateway" "lh_aws_nat_gw" {
 
   tags = {
     Name = "lh_eip_nat_gw-${random_string.random_suffix.id}"
-    Owner = "longhorn-infra"
+    Owner = var.resources_owner
   }
 }
 
@@ -227,7 +235,7 @@ resource "aws_route_table" "lh_aws_public_rt" {
 
   tags = {
     Name = "lh_aws_public_rt-${random_string.random_suffix.id}"
-    Owner = "longhorn-infra"
+    Owner = var.resources_owner
   }
 }
 
@@ -246,7 +254,7 @@ resource "aws_route_table" "lh_aws_private_rt" {
 
   tags = {
     Name = "lh_aws_private_rt-${random_string.random_suffix.id}"
-    Owner = "longhorn-infra"
+    Owner = var.resources_owner
   }
 }
 
@@ -279,7 +287,7 @@ resource "aws_key_pair" "lh_aws_pair_key" {
 
   tags = {
     Name = "lh_aws_key_pair-${random_string.random_suffix.id}"
-    Owner = "longhorn-infra"
+    Owner = var.resources_owner
   }
 }
 
@@ -289,7 +297,7 @@ resource "aws_eip" "lh_aws_eip_controlplane" {
 
   tags = {
     Name = "lh_aws_eip_controlplane-${count.index}-${random_string.random_suffix.id}"
-    Owner = "longhorn-infra"
+    Owner = var.resources_owner
   }
 }
 
@@ -303,7 +311,7 @@ resource "aws_ebs_volume" "lh_aws_hdd_volume" {
 
   tags = {
     Name = "lh-aws-hdd-volume-${count.index}-${random_string.random_suffix.id}"
-    Owner = "longhorn-infra"
+    Owner = var.resources_owner
   }
 }
 
@@ -326,7 +334,7 @@ resource "aws_lb_target_group" "lh_aws_lb_tg_443" {
 
   tags = {
     Name = "lh-aws-lb-tg-443-${random_string.random_suffix.id}"
-    Owner = "longhorn-infra"
+    Owner = var.resources_owner
   }
 }
 
@@ -347,7 +355,7 @@ resource "aws_lb" "lh_aws_lb" {
 
   tags = {
     Name = "lh-aws-lb-${random_string.random_suffix.id}"
-    Owner = "longhorn-infra"
+    Owner = var.resources_owner
   }
 }
 
@@ -371,7 +379,7 @@ resource "aws_lb_listener" "lh_aws_lb_listener_443" {
 
   tags = {
     Name = "lh-aws-lb-listener-443-${random_string.random_suffix.id}"
-    Owner = "longhorn-infra"
+    Owner = var.resources_owner
   }
 
 }
