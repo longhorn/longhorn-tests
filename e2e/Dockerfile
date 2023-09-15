@@ -24,6 +24,4 @@ WORKDIR /e2e
 
 RUN pip install -r requirements.txt
 
-ADD pipelines/utilities/litmus/ ./litmus
-
 ENTRYPOINT ["./run.sh"]
