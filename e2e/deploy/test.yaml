@@ -1,0 +1,103 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: longhorn-test-service-account
+  namespace: default
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: longhorn-test-bind
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: cluster-admin
+subjects:
+- kind: ServiceAccount
+  name: longhorn-test-service-account
+  namespace: default
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: longhorn-test
+  namespace: default
+  labels:
+    longhorn-test: test-job
+spec:
+  containers:
+  - name: longhorn-test
+    image: longhornio/longhorn-e2e-test:master-head
+#    args: [
+#           "-t", "Reboot Volume Node While Replica Rebuilding",
+#           ]
+    #TEST_FRAMEWORK_ARGS_PLACEHOLDER
+    imagePullPolicy: Always
+    securityContext:
+      privileged: true
+    env:
+    - name: LONGHORN_JUNIT_REPORT_PATH
+      value: /tmp/test-report/longhorn-test-junit-report.xml
+    - name: LONGHORN_BACKUPSTORES
+      value: "s3://backupbucket@us-east-1/backupstore$minio-secret, nfs://longhorn-test-nfs-svc.default:/opt/backupstore"
+    - name: LONGHORN_BACKUPSTORE_POLL_INTERVAL
+      value: "30"
+    - name: LONGHORN_DISK_TYPE
+      value: "ssd"
+    - name: LONGHORN_UPGRADE_TYPE
+      value: "from_stable"
+    - name: NODE_NAME
+      valueFrom:
+        fieldRef:
+          fieldPath: spec.nodeName
+    - name: MANAGED_K8S_CLUSTER
+      value: "false"
+    volumeMounts:
+    - name: dev
+      mountPath: /dev
+    - name: proc
+      mountPath: /host/proc
+    - name: disk-directory
+      mountPath: /tmp/longhorn-test
+      mountPropagation: Bidirectional
+    - name: longhorn
+      mountPath: /var/lib/longhorn/
+      mountPropagation: Bidirectional
+    - name: test-report
+      mountPath: /tmp/test-report
+    - name: instance-mapping
+      mountPath: /tmp/instance_mapping
+      subPath: instance_mapping
+  - name: longhorn-test-report
+    image: busybox:1.34.0
+    securityContext:
+      privileged: true
+    command: [ "tail", "-f", "/dev/null" ]
+    volumeMounts:
+    - name: test-report
+      mountPath: /tmp/test-report
+  dnsConfig:
+    nameservers:
+      - 8.8.8.8
+      - 1.1.1.1
+  volumes:
+  - name: dev
+    hostPath:
+      path: /dev/
+  - name: proc
+    hostPath:
+      path: /proc/
+  - name: disk-directory
+    hostPath:
+      path: /tmp/longhorn-test/
+  - name: longhorn
+    hostPath:
+      path: /var/lib/longhorn/
+  - name: test-report
+    hostPath:
+      path: /tmp/test-report/
+  - name: instance-mapping
+    configMap:
+      name: instance-mapping
+  restartPolicy: Never
+  serviceAccountName: longhorn-test-service-account

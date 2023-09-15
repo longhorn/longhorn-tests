@@ -4446,7 +4446,6 @@ def wait_for_backup_restore_completed(client, name, backup_name):
     complete = False
     for i in range(RETRY_COUNTS):
         v = client.by_id_volume(name)
-        print(f"volume = {v}")
         if v.controllers and len(v.controllers) != 0 and \
                 v.controllers[0].lastRestoredBackup == backup_name:
             complete = True
