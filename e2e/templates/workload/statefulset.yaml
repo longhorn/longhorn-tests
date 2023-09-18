@@ -33,7 +33,7 @@ spec:
     spec:
       accessModes:
       - ReadWriteOnce
-      storageClassName: longhorn
+      storageClassName: longhorn-test
       resources:
         requests:
           storage: 3Gi

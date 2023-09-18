@@ -56,6 +56,25 @@ def wait_for_cluster_ready():
         time.sleep(RETRY_INTERVAL)
     assert ready, f"expect cluster's ready but it isn't {resp}"
 
+def wait_for_all_instance_manager_running():
+    core_api = client.CoreV1Api()
+    longhorn_client = get_longhorn_client()
+    nodes = list_nodes()
+
+    for _ in range(RETRY_COUNTS):
+        instance_managers = longhorn_client.list_instance_manager()
+        instance_manager_map = {}
+        try:
+            for im in instance_managers:
+                if im.currentState == "running":
+                    instance_manager_map[im.nodeID] = im
+            if len(instance_manager_map) == len(nodes):
+                break
+            time.sleep(RETRY_INTERVAL)
+        except Exception as e:
+            print(f"exception when get instance manager state: {e}")
+    assert len(instance_manager_map) == len(nodes), f"expect all instance managers running: {instance_managers}"
+
 def get_node(index):
     nodes = list_nodes()
     return nodes[int(index)]

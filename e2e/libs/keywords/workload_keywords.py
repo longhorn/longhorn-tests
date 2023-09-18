@@ -6,16 +6,21 @@ class workload_keywords:
     def __init__(self):
         logging.warn("initialize workload_keywords class")
 
-    def create_deployment(self, volume_type="rwo"):
-        pvc_filepath = f"./templates/workload/{volume_type}_pvc.yaml"
-        deployment_filepath = f"./templates/workload/deployment_with_{volume_type}_volume.yaml"
-        pvc_name = create_pvc(pvc_filepath)
-        deployment_name = create_deployment(deployment_filepath)
+    def init_storageclasses(self):
+        create_storageclass('longhorn-test')
+        create_storageclass('strict-local')
+
+    def cleanup_storageclasses(self):
+        delete_storageclass('longhorn-test')
+        delete_storageclass('strict-local')
+
+    def create_deployment(self, volume_type="rwo", option=""):
+        pvc_name = create_pvc(volume_type, option)
+        deployment_name = create_deployment(volume_type, option)
         return deployment_name
 
-    def create_statefulset(self, volume_type="rwo"):
-        statefulset_filepath = f"./templates/workload/statefulset_with_{volume_type}_volume.yaml"
-        statefulset_name = create_statefulset(statefulset_filepath)
+    def create_statefulset(self, volume_type="rwo", option=""):
+        statefulset_name = create_statefulset(volume_type, option)
         return statefulset_name
 
     def get_workload_pod_name(self, workload_name):

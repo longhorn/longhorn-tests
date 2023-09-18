@@ -11,10 +11,48 @@ POD_WAIT_INTERVAL = 1
 POD_WAIT_TIMEOUT = 240
 WAIT_FOR_POD_STABLE_MAX_RETRY = 90
 
-def create_deployment(filepath):
+def get_name_suffix(*args):
+    suffix = ""
+    for arg in args:
+        if arg:
+            suffix += f"-{arg}"
+    return suffix
+
+def create_storageclass(name):
+    if name == 'strict-local':
+        filepath = "./templates/workload/strict_local_storageclass.yaml"
+    else:
+        filepath = "./templates/workload/storageclass.yaml"
+
     with open(filepath, 'r') as f:
         namespace = 'default'
         manifest_dict = yaml.safe_load(f)
+        api = client.StorageV1Api()
+        try:
+            api.create_storage_class(body=manifest_dict)
+        except Exception as e:
+            print(f"Exception when create storageclass: {e}")
+
+def delete_storageclass(name):
+    api = client.StorageV1Api()
+    try:
+        api.delete_storage_class(name, grace_period_seconds=0)
+    except ApiException as e:
+        assert e.status == 404
+
+def create_deployment(volume_type, option):
+    filepath = f"./templates/workload/deployment.yaml"
+    with open(filepath, 'r') as f:
+        namespace = 'default'
+        manifest_dict = yaml.safe_load(f)
+        suffix = get_name_suffix(volume_type, option)
+        # correct workload name
+        manifest_dict['metadata']['name'] += suffix
+        manifest_dict['metadata']['labels']['app'] += suffix
+        manifest_dict['spec']['selector']['matchLabels']['app'] += suffix
+        manifest_dict['spec']['template']['metadata']['labels']['app'] += suffix
+        # correct claim name
+        manifest_dict['spec']['template']['spec']['volumes'][0]['persistentVolumeClaim']['claimName'] += suffix
         api = client.AppsV1Api()
         try:
             deployment = api.create_namespaced_deployment(
@@ -64,10 +102,23 @@ def delete_deployment(name, namespace='default'):
         time.sleep(RETRY_INTERVAL)
     assert deleted
 
-def create_statefulset(filepath):
+def create_statefulset(volume_type, option):
+    filepath = "./templates/workload/statefulset.yaml"
     with open(filepath, 'r') as f:
         namespace = 'default'
         manifest_dict = yaml.safe_load(f)
+        suffix = get_name_suffix(volume_type, option)
+        # correct workload name
+        manifest_dict['metadata']['name'] += suffix
+        manifest_dict['spec']['selector']['matchLabels']['app'] += suffix
+        manifest_dict['spec']['serviceName'] += suffix
+        manifest_dict['spec']['template']['metadata']['labels']['app'] += suffix
+        # correct storageclass name
+        if option:
+            manifest_dict['spec']['volumeClaimTemplates'][0]['spec']['storageClassName'] += f"-{option}"
+        # correct access mode`
+        if volume_type == 'rwx':
+            manifest_dict['spec']['volumeClaimTemplates'][0]['spec']['accessModes'][0] = 'ReadWriteMany'
         api = client.AppsV1Api()
         try:
             statefulset = api.create_namespaced_stateful_set(
@@ -116,10 +167,20 @@ def delete_statefulset(name, namespace='default'):
         time.sleep(RETRY_INTERVAL)
     assert deleted
 
-def create_pvc(filepath):
+def create_pvc(volume_type, option):
+    filepath = "./templates/workload/pvc.yaml"
     with open(filepath, 'r') as f:
         namespace = 'default'
         manifest_dict = yaml.safe_load(f)
+        suffix = get_name_suffix(volume_type, option)
+        # correct pvc name
+        manifest_dict['metadata']['name'] += suffix
+        # correct storageclass name
+        if option:
+            manifest_dict['spec']['storageClassName'] += f"-{option}"
+        # correct access mode`
+        if volume_type == 'rwx':
+            manifest_dict['spec']['accessModes'][0] = 'ReadWriteMany'
         api = client.CoreV1Api()
         try:
             pvc = api.create_namespaced_persistent_volume_claim(
@@ -129,10 +190,8 @@ def create_pvc(filepath):
             print(f"Exception when create pvc: {e}")
     return pvc.metadata.name
 
-
 def delete_pvc(name, namespace='default'):
     api = client.CoreV1Api()
-
     try:
         api.delete_namespaced_persistent_volume_claim(
             name=name,

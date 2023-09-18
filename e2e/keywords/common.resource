@@ -14,6 +14,7 @@ Library             ../libs/keywords/workload_keywords.py
 Set test environment
     init_k8s_api_client
     init_node_exec    ${TEST NAME}
+    init_storageclasses
     @{volume_list} =    Create List
     Set Test Variable    ${volume_list}
     @{deployment_list} =    Create List
@@ -27,3 +28,4 @@ Cleanup test resources
     cleanup_volumes    ${volume_list}
     cleanup_deployments    ${deployment_list}
     cleanup_statefulsets    ${statefulset_list}
+    cleanup_storageclasses
