@@ -1,12 +1,12 @@
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: test-rwx-pvc
+  name: test-pvc
   namespace: default
 spec:
   accessModes:
-    - ReadWriteMany
-  storageClassName: longhorn
+    - ReadWriteOnce
+  storageClassName: longhorn-test
   resources:
     requests:
       storage: 3Gi

@@ -1,19 +1,19 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: test-deployment-rwo
+  name: test-deployment
   labels:
-    app: test-deployment-rwo
+    app: test-deployment
   namespace: default
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: test-deployment-rwo
+      app: test-deployment
   template:
     metadata:
       labels:
-        app: test-deployment-rwo
+        app: test-deployment
     spec:
       containers:
         - image: busybox
@@ -26,4 +26,4 @@ spec:
       volumes:
         - name: pod-data
           persistentVolumeClaim:
-            claimName: test-rwo-pvc
+            claimName: test-pvc

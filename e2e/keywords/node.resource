@@ -24,8 +24,30 @@ Reboot volume ${idx} replica node
         wait for volume_attached    ${item}
     END
 
+Reboot node ${idx}
+    power_off_node    ${idx}
+
+Reboot all worker nodes
+    power_off_all_worker_nodes
+
+Power off node ${idx} for ${power_off_time_in_min} mins
+    power_off_node    ${idx}    ${power_off_time_in_min}
+
+Power off all worker nodes for ${power_off_time_in_min} mins
+    power_off_all_worker_nodes    ${power_off_time_in_min}
+
+Wait for longhorn ready
+    wait_for_all_instance_manager_running
+    FOR    ${deployment}    IN    @{deployment_list}
+        wait_for_workload_pod_stable   ${deployment}
+    END
+    FOR    ${statefulset}    IN    @{statefulset_list}
+        wait_for_workload_pod_stable   ${statefulset}
+    END
+
 Restart cluster
-    restart_all_nodes
+    reboot_all_nodes
+    wait_for_all_instance_manager_running
     FOR    ${deployment}    IN    @{deployment_list}
         wait_for_workload_pod_stable   ${deployment}
     END
