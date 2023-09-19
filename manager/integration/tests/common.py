@@ -3996,17 +3996,17 @@ def create_pv_for_volume(client, core_api, volume, pv_name, fs_type="ext4"):
     wait_volume_kubernetes_status(client, volume.name, ks)
 
 
-def create_pvc_for_volume(client, core_api, volume, pvc_name):
-    volume.pvcCreate(namespace="default", pvcName=pvc_name)
+def create_pvc_for_volume(client, core_api, volume, pvc_name, pvc_namespace="default"): # NOQA
+    volume.pvcCreate(namespace=pvc_namespace, pvcName=pvc_name)
     for i in range(RETRY_COUNTS):
-        if check_pvc_existence(core_api, pvc_name):
+        if check_pvc_existence(core_api, pvc_name, pvc_namespace):
             break
         time.sleep(RETRY_INTERVAL)
-    assert check_pvc_existence(core_api, pvc_name)
+    assert check_pvc_existence(core_api, pvc_name, pvc_namespace)
 
     ks = {
         'pvStatus': 'Bound',
-        'namespace': 'default',
+        'namespace': pvc_namespace,
         'lastPVCRefAt': '',
     }
     wait_volume_kubernetes_status(client, volume.name, ks)
