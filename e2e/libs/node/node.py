@@ -1,7 +1,7 @@
 from kubernetes import client
 import yaml
 import time
-import logging
+from utility.utility import logging
 from utility.utility import apply_cr_from_yaml, get_cr
 from utility.utility import wait_for_cluster_ready
 from utility.utility import list_nodes
@@ -16,59 +16,55 @@ class Node:
         with open('/tmp/instance_mapping', 'r') as f:
             self.mapping = yaml.safe_load(f)
         self.aws_client = boto3.client('ec2')
-        #logging.warn(f"describe_instances = {self.aws_client.describe_instances()}")
 
     def reboot_all_nodes(self, shut_down_time_in_sec=60):
         instance_ids = [value for value in self.mapping.values()]
-        print(instance_ids)
 
         resp = self.aws_client.stop_instances(InstanceIds=instance_ids)
-        print(resp)
+        logging(f"Stopping instances {instance_ids} response: {resp}")
         waiter = self.aws_client.get_waiter('instance_stopped')
         waiter.wait(InstanceIds=instance_ids)
-        print(f"all instances stopped")
+        logging(f"Stopped instances")
 
         time.sleep(shut_down_time_in_sec)
 
         resp = self.aws_client.start_instances(InstanceIds=instance_ids)
-        print(resp)
+        logging(f"Starting instances {instance_ids} response: {resp}")
         waiter = self.aws_client.get_waiter('instance_running')
         waiter.wait(InstanceIds=instance_ids)
         wait_for_cluster_ready()
-        print(f"all instances running")
+        logging(f"Started instances")
 
     def reboot_node(self, reboot_node_name, shut_down_time_in_sec=60):
         instance_ids = [self.mapping[reboot_node_name]]
-        print(instance_ids)
 
         resp = self.aws_client.stop_instances(InstanceIds=instance_ids)
-        print(resp)
+        logging(f"Stopping instances {instance_ids} response: {resp}")
         waiter = self.aws_client.get_waiter('instance_stopped')
         waiter.wait(InstanceIds=instance_ids)
-        print(f"instances {instance_ids} stopped")
+        logging(f"Stopped instances")
 
         time.sleep(shut_down_time_in_sec)
 
         resp = self.aws_client.start_instances(InstanceIds=instance_ids)
-        print(resp)
+        logging(f"Starting instances {instance_ids} response: {resp}")
         waiter = self.aws_client.get_waiter('instance_running')
         waiter.wait(InstanceIds=instance_ids)
-        print(f"instances {instance_ids} running")
+        logging(f"Started instances")
 
     def reboot_all_worker_nodes(self, shut_down_time_in_sec=60):
         instance_ids = [self.mapping[value] for value in list_nodes()]
-        print(instance_ids)
 
         resp = self.aws_client.stop_instances(InstanceIds=instance_ids)
-        print(resp)
+        logging(f"Stopping instances {instance_ids} response: {resp}")
         waiter = self.aws_client.get_waiter('instance_stopped')
         waiter.wait(InstanceIds=instance_ids)
-        print(f"instances {instance_ids} stopped")
+        logging(f"Stopped instances")
 
         time.sleep(shut_down_time_in_sec)
 
         resp = self.aws_client.start_instances(InstanceIds=instance_ids)
-        print(resp)
+        logging(f"Starting instances {instance_ids} response: {resp}")
         waiter = self.aws_client.get_waiter('instance_running')
         waiter.wait(InstanceIds=instance_ids)
-        print(f"instances {instance_ids} running")
+        logging(f"Started instances")

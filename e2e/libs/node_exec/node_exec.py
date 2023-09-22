@@ -1,9 +1,9 @@
 from kubernetes import client
 from kubernetes.stream import stream
 import time
-import logging
 from utility.utility import wait_delete_pod
 from utility.utility import wait_delete_ns
+from utility.utility import logging
 
 DEFAULT_POD_TIMEOUT = 180
 DEFAULT_POD_INTERVAL = 1
@@ -39,10 +39,11 @@ class NodeExec:
         self.core_api.create_namespace(
             body=namespace_manifest
         )
+        logging(f"Created namespace {namespace}")
 
     def cleanup(self):
         for pod in self.node_exec_pod.values():
-            logging.warn(f"==> cleanup pod {pod.metadata.name} {pod.metadata.uid}")
+            logging(f"Cleaning up pod {pod.metadata.name} {pod.metadata.uid}")
             res = self.core_api.delete_namespaced_pod(
                 name=pod.metadata.name,
                 namespace=self.namespace,

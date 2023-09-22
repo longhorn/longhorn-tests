@@ -3,7 +3,7 @@ from kubernetes.client.rest import ApiException
 from kubernetes.stream import stream
 import time
 import yaml
-import logging
+from utility.utility import logging
 
 RETRY_COUNTS = 150
 RETRY_INTERVAL = 1
@@ -19,7 +19,7 @@ def get_name_suffix(*args):
     return suffix
 
 def create_storageclass(name):
-    if name == 'strict-local':
+    if name == 'longhorn-test-strict-local':
         filepath = "./templates/workload/strict_local_storageclass.yaml"
     else:
         filepath = "./templates/workload/storageclass.yaml"
@@ -28,10 +28,7 @@ def create_storageclass(name):
         namespace = 'default'
         manifest_dict = yaml.safe_load(f)
         api = client.StorageV1Api()
-        try:
-            api.create_storage_class(body=manifest_dict)
-        except Exception as e:
-            print(f"Exception when create storageclass: {e}")
+        api.create_storage_class(body=manifest_dict)
 
 def delete_storageclass(name):
     api = client.StorageV1Api()
@@ -54,29 +51,26 @@ def create_deployment(volume_type, option):
         # correct claim name
         manifest_dict['spec']['template']['spec']['volumes'][0]['persistentVolumeClaim']['claimName'] += suffix
         api = client.AppsV1Api()
-        try:
-            deployment = api.create_namespaced_deployment(
-                namespace=namespace,
-                body=manifest_dict)
-            print(deployment)
 
-            deployment_name = deployment.metadata.name
-            replicas = deployment.spec.replicas
+        deployment = api.create_namespaced_deployment(
+            namespace=namespace,
+            body=manifest_dict)
 
-            for i in range(RETRY_COUNTS):
-                deployment = api.read_namespaced_deployment(
-                    name=deployment_name,
-                    namespace=namespace)
-                # deployment is none if deployment is not yet created
-                if deployment is not None and \
-                    deployment.status.ready_replicas == replicas:
-                    break
-                time.sleep(RETRY_INTERVAL)
+        deployment_name = deployment.metadata.name
+        replicas = deployment.spec.replicas
 
-            assert deployment.status.ready_replicas == replicas
+        for i in range(RETRY_COUNTS):
+            deployment = api.read_namespaced_deployment(
+                name=deployment_name,
+                namespace=namespace)
+            # deployment is none if deployment is not yet created
+            if deployment is not None and \
+                deployment.status.ready_replicas == replicas:
+                break
+            time.sleep(RETRY_INTERVAL)
 
-        except Exception as e:
-            print(f"Exception when create deployment: {e}")
+        assert deployment.status.ready_replicas == replicas
+
     return deployment_name
 
 def delete_deployment(name, namespace='default'):
@@ -120,28 +114,26 @@ def create_statefulset(volume_type, option):
         if volume_type == 'rwx':
             manifest_dict['spec']['volumeClaimTemplates'][0]['spec']['accessModes'][0] = 'ReadWriteMany'
         api = client.AppsV1Api()
-        try:
-            statefulset = api.create_namespaced_stateful_set(
-                body=manifest_dict,
+
+        statefulset = api.create_namespaced_stateful_set(
+            body=manifest_dict,
+            namespace=namespace)
+
+        statefulset_name = statefulset.metadata.name
+        replicas = statefulset.spec.replicas
+
+        for i in range(RETRY_COUNTS):
+            statefulset = api.read_namespaced_stateful_set(
+                name=statefulset_name,
                 namespace=namespace)
+            # statefulset is none if statefulset is not yet created
+            if statefulset is not None and \
+                statefulset.status.ready_replicas == replicas:
+                break
+            time.sleep(RETRY_INTERVAL)
 
-            statefulset_name = statefulset.metadata.name
-            replicas = statefulset.spec.replicas
+        assert statefulset.status.ready_replicas == replicas
 
-            for i in range(RETRY_COUNTS):
-                statefulset = api.read_namespaced_stateful_set(
-                    name=statefulset_name,
-                    namespace=namespace)
-                # statefulset is none if statefulset is not yet created
-                if statefulset is not None and \
-                    statefulset.status.ready_replicas == replicas:
-                    break
-                time.sleep(RETRY_INTERVAL)
-
-            assert statefulset.status.ready_replicas == replicas
-
-        except Exception as e:
-            print(f"Exception when create statefulset: {e}")
     return statefulset_name
 
 def delete_statefulset(name, namespace='default'):
@@ -182,12 +174,11 @@ def create_pvc(volume_type, option):
         if volume_type == 'rwx':
             manifest_dict['spec']['accessModes'][0] = 'ReadWriteMany'
         api = client.CoreV1Api()
-        try:
-            pvc = api.create_namespaced_persistent_volume_claim(
-                body=manifest_dict,
-                namespace=namespace)
-        except Exception as e:
-            print(f"Exception when create pvc: {e}")
+
+        pvc = api.create_namespaced_persistent_volume_claim(
+            body=manifest_dict,
+            namespace=namespace)
+
     return pvc.metadata.name
 
 def delete_pvc(name, namespace='default'):
@@ -241,7 +232,7 @@ def get_workload_volume_name(workload_name):
 def get_workload_pvc_name(workload_name):
     api = client.CoreV1Api()
     pod = get_workload_pods(workload_name)[0]
-    print(f"pod = {pod}")
+    logging(f"Got pod {pod.metadata.name} for workload {workload_name}")
     for volume in pod.spec.volumes:
         if volume.name == 'pod-data':
             pvc_name = volume.persistent_volume_claim.claim_name
@@ -269,12 +260,12 @@ def keep_writing_pod_data(pod_name, size_in_mb=256, path="/data/overwritten-data
         '-c',
         f"while true; do dd if=/dev/urandom of={path} bs=1M count={size_in_mb} status=none; done > /dev/null 2> /dev/null &"
     ]
-    logging.warn("before keep_writing_pod_data")
+    logging(f"Keep writing pod {pod_name}")
     res = stream(
         api.connect_get_namespaced_pod_exec, pod_name, 'default',
         command=write_cmd, stderr=True, stdin=False, stdout=True,
         tty=False)
-    logging.warn("keep_writing_pod_data return")
+    logging(f"Created process to keep writing pod {pod_name}")
     return res
 
 def check_pod_data(pod_name, checksum, path="/data/random-data"):
@@ -288,7 +279,7 @@ def check_pod_data(pod_name, checksum, path="/data/random-data"):
         api.connect_get_namespaced_pod_exec, pod_name, 'default',
         command=cmd, stderr=True, stdin=False, stdout=True,
         tty=False)
-    print(f"get {path} checksum = {_checksum},\
+    logging(f"Got {path} checksum = {_checksum},\
                 expected checksum = {checksum}")
     assert _checksum == checksum
 
@@ -296,6 +287,7 @@ def wait_for_workload_pod_stable(workload_name):
     stable_pod = None
     wait_for_stable_retry = 0
     for _ in range(POD_WAIT_TIMEOUT):
+        logging(f"Waiting for {workload_name} pod stable ({_}) ...")
         pods = get_workload_pods(workload_name)
         for pod in pods:
             if pod.status.phase == "Running":

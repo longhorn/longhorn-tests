@@ -1,9 +1,9 @@
 import time
-import logging
 from kubernetes import client
 from recurring_job.base import Base
 from utility.utility import get_longhorn_client
 from utility.utility import filter_cr
+from utility.utility import logging
 from datetime import datetime
 
 RETRY_COUNTS = 180
@@ -103,7 +103,7 @@ class Rest(Base):
         jobs, _ = self.get_volume_recurring_jobs_and_groups(volume_name)
         for job_name in jobs:
             job = self.get(job_name)
-            logging.warn(f"get recurring job: {job}")
+            logging(f"Checking recurring job {job}")
             if job['task'] == 'snapshot' and job['cron'] == '* * * * *':
                 period_in_sec = 60
                 self._check_snapshot_created_in_time(volume_name, job_name, period_in_sec)
@@ -114,9 +114,8 @@ class Rest(Base):
     def _check_snapshot_created_in_time(self, volume_name, job_name, period_in_sec):
         # check snapshot can be created by the recurring job
         current_time = datetime.utcnow()
-        logging.warn(f"current_time = {current_time}")
         current_timestamp = current_time.timestamp()
-        logging.warn(f"current_timestamp = {current_timestamp}")
+        logging(f"Recorded current time = {current_time}, timestamp = {current_timestamp}")
         label_selector=f"longhornvolume={volume_name}"
         snapshot_timestamp = 0
         for _ in range(period_in_sec * 2):
@@ -129,18 +128,16 @@ class Rest(Base):
                         # and crd doesn't support field selector
                         # so need to filter by ourselves
                         if item['spec']['labels']['RecurringJob'] == job_name:
-                            logging.warn(f"item = {item}")
+                            logging(f"Got snapshot {item}")
                             snapshot_time = snapshot_list['items'][0]['metadata']['creationTimestamp']
-                            logging.warn(f"snapshot_time = {snapshot_time}")
                             snapshot_time = datetime.strptime(snapshot_time, '%Y-%m-%dT%H:%M:%SZ')
-                            logging.warn(f"snapshot_time = {snapshot_time}")
                             snapshot_timestamp = snapshot_time.timestamp()
-                            logging.warn(f"snapshot_timestamp = {snapshot_timestamp}")
+                            logging(f"Got snapshot time = {snapshot_time}, timestamp = {snapshot_timestamp}")
                             break
                     if snapshot_timestamp > current_timestamp:
                         return
             except Exception as e:
-                logging.warn(f"iterate snapshot list error: {e}")
+                logging(f"Iterating snapshot list error: {e}")
             time.sleep(1)
         assert False, f"since {current_time},\
                         there's no new snapshot created by recurring job \
@@ -149,9 +146,8 @@ class Rest(Base):
     def _check_backup_created_in_time(self, volume_name, period_in_sec):
         # check backup can be created by the recurring job
         current_time = datetime.utcnow()
-        logging.warn(f"current_time = {current_time}")
         current_timestamp = current_time.timestamp()
-        logging.warn(f"current_timestamp = {current_timestamp}")
+        logging(f"Recorded current time = {current_time}, timestamp = {current_timestamp}")
         label_selector=f"backup-volume={volume_name}"
         backup_timestamp = 0
         for _ in range(period_in_sec * 2):
@@ -159,15 +155,13 @@ class Rest(Base):
             try:
                 if len(backup_list['items']) > 0:
                     backup_time = backup_list['items'][0]['metadata']['creationTimestamp']
-                    logging.warn(f"backup_time = {backup_time}")
                     backup_time = datetime.strptime(backup_time, '%Y-%m-%dT%H:%M:%SZ')
-                    logging.warn(f"backup_time = {backup_time}")
                     backup_timestamp = backup_time.timestamp()
-                    logging.warn(f"backup_timestamp = {backup_timestamp}")
+                    logging(f"Got backup time = {backup_time}, timestamp = {backup_timestamp}")
                 if backup_timestamp > current_timestamp:
                     return
             except Exception as e:
-                logging.warn(f"iterate backup list error: {e}")
+                logging(f"Iterating backup list error: {e}")
             time.sleep(1)
         assert False, f"since {current_time},\
                         there's no new backup created by recurring job \
@@ -175,6 +169,8 @@ class Rest(Base):
 
     def cleanup(self, volume_names):
         for volume_name in volume_names:
+            logging(f"Cleaning up recurring jobs for volume {volume_name}")
             jobs, _ = self.get_volume_recurring_jobs_and_groups(volume_name)
             for job in jobs:
+                logging(f"Deleting recurring job {job}")
                 self.delete(job, volume_name)

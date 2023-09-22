@@ -1,12 +1,14 @@
-import logging
 import time
-
 from node import Nodes
 
 retry_count = 200
 retry_interval = 5
 
 class pod_keywords:
+
+    #TODO
+    # keywords layer can only call lower implementation layer to complete its work
+    # and should not have any business logic here
 
     def wait_all_pods_evicted(self, node_index):
         node_name = Nodes.get_name_by_index(int(node_index))

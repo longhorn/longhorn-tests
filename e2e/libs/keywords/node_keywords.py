@@ -3,12 +3,10 @@ from utility.utility import get_node
 from utility.utility import wait_for_all_instance_manager_running
 from robot.libraries.BuiltIn import BuiltIn
 from node import Node
-import logging
 
 class node_keywords:
 
     def __init__(self):
-        logging.warn("initialize node_keywords class")
         self.node = Node()
 
     def reboot_volume_node(self, volume_name):
