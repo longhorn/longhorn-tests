@@ -1,5 +1,4 @@
-import logging
-
+from utility.utility import logging
 from common_keywords import common_keywords
 
 class engine_keywords:
@@ -8,8 +7,7 @@ class engine_keywords:
         self.engine = common_keywords.engine_instance
 
     def get_engine_state(self, volume_name, node_name):
-        logging.info(
-            f"getting the volume {volume_name} engine on the node {node_name} state")
+        logging(f"Getting the volume {volume_name} engine on the node {node_name} state")
 
         resp = self.engine.get_engine(volume_name, node_name)
         if resp == "" or resp is None:

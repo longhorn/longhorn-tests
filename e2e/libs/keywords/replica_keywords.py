@@ -1,5 +1,4 @@
-import logging
-
+from utility.utility import logging
 from node import Nodes
 from common_keywords import common_keywords
 
@@ -11,27 +10,27 @@ class replica_keywords:
 
     def delete_replica(self, volume_name, node_index):
         node_name = Nodes.get_name_by_index(int(node_index))
-        logging.info(
-            f"deleting volume {volume_name}'s replica on the node {node_name}")
+        logging(f"Deleting volume {volume_name}'s replica on the node {node_name}")
         self.replica.delete_replica(volume_name, node_name)
 
     def wait_for_replica_rebuilding_start(self, volume_name, node_index):
         node_name = Nodes.get_name_by_index(int(node_index))
-        logging.info(
-            f"waiting the {volume_name} replica on node {node_name} rebuilding start")
+        logging(f"Waiting volume {volume_name}'s replica on node {node_name} rebuilding start")
         self.replica.wait_for_replica_rebuilding_start(volume_name, node_name)
 
     def wait_for_replica_rebuilding_complete(self, volume_name, node_index):
         node_name = Nodes.get_name_by_index(int(node_index))
-        logging.info(
-            f"waiting the {volume_name} replica on node {node_name} rebuilding complete")
+        logging(f"Waiting volume {volume_name}'s replica on node {node_name} rebuilding complete")
         self.replica.wait_for_replica_rebuilding_complete(
             volume_name, node_name)
 
+    #TODO
+    # keywords layer can only call lower implementation layer to complete its work
+    # and should not have any business logic here
+
     def get_replica_state(self, volume_name, node_index):
         node_name = Nodes.get_name_by_index(int(node_index))
-        logging.info(
-            f"getting the volume {volume_name} replica on the node {node_name} state")
+        logging(f"Getting volume {volume_name}'s replica on the node {node_name} state")
 
         resp = self.replica.get_replica(volume_name, node_name)
         assert resp != "", f"failed to get the volume {volume_name} replicas"
