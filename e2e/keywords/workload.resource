@@ -39,3 +39,5 @@ Check statefulset ${idx} works
     ${pod_data_checksum} =    write_pod_random_data    ${pod_name}    1024
     check_pod_data    ${pod_name}    ${pod_data_checksum}
 
+Wait for statefulset ${idx} stable
+    wait_for_workload_pod_stable   ${statefulset_list}[${idx}]

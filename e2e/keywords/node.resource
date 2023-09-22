@@ -25,16 +25,26 @@ Reboot volume ${idx} replica node
     END
 
 Reboot node ${idx}
-    power_off_node    ${idx}
+    reboot_node_by_index    ${idx}
 
-Reboot all worker nodes
-    power_off_all_worker_nodes
+Restart all worker nodes
+    reboot_all_worker_nodes
+
+Reboot volume node of statefulset ${idx}
+    ${volume_name} =    get_workload_volume_name    ${statefulset_list}[${idx}]
+    ${node_name} =    get_volume_node    ${volume_name}
+    reboot_node_by_name    ${node_name}
 
 Power off node ${idx} for ${power_off_time_in_min} mins
-    power_off_node    ${idx}    ${power_off_time_in_min}
+    reboot_node_by_index    ${idx}    ${power_off_time_in_min}
 
 Power off all worker nodes for ${power_off_time_in_min} mins
-    power_off_all_worker_nodes    ${power_off_time_in_min}
+    reboot_all_worker_nodes    ${power_off_time_in_min}
+
+Power off volume node of statefulset ${idx} for ${power_off_time_in_min} mins
+    ${volume_name} =    get_workload_volume_name    ${statefulset_list}[${idx}]
+    ${node_name} =    get_volume_node    ${volume_name}
+    reboot_node_by_name    ${node_name}    ${power_off_time_in_min}
 
 Wait for longhorn ready
     wait_for_all_instance_manager_running

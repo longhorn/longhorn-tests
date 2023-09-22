@@ -13,7 +13,7 @@ Library             ../libs/keywords/workload_keywords.py
 *** Keywords ***
 Set test environment
     init_k8s_api_client
-    init_node_exec    ${TEST NAME}
+    init_node_exec    ${SUITE NAME.rsplit('.')[1]}
     init_storageclasses
     @{volume_list} =    Create List
     Set Test Variable    ${volume_list}

@@ -3,6 +3,7 @@ Documentation    Volume Keywords
 
 Library    Collections
 Library    ../libs/keywords/volume_keywords.py
+Library    ../libs/keywords/workload_keywords.py
 Library    ../libs/keywords/common_keywords.py
 
 *** Keywords ***
@@ -73,3 +74,7 @@ Wait until replica on replica node rebuilt
     ${node_name} =    get_replica_node    ${volume_name}
     wait_for_replica_rebuilding_start    ${volume_name}    ${node_name}
     wait_for_replica_rebuilding_complete    ${volume_name}    ${node_name}
+
+Wait for volume of statefulset ${idx} healthy
+    ${volume_name} =    get_workload_volume_name    ${statefulset_list}[${idx}]
+    wait_for_volume_healthy    ${volume_name}

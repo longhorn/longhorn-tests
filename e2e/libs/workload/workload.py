@@ -232,7 +232,8 @@ def get_workload_pods(workload_name):
     return resp.items
 
 def get_workload_volume_name(workload_name):
-    get_workload_pvc_name(workload_name)
+    api = client.CoreV1Api()
+    pvc_name = get_workload_pvc_name(workload_name)
     pvc = api.read_namespaced_persistent_volume_claim(
         name=pvc_name, namespace='default')
     return pvc.spec.volume_name
