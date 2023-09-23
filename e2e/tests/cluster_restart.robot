@@ -9,6 +9,8 @@ Test Teardown    Cleanup test resources
 
 *** Variables ***
 ${LOOP_COUNT}    1
+${RETRY_COUNT}    300
+${RETRY_INTERVAL}    1
 
 *** Test Cases ***
 Restart Cluster While Workload Heavy Writing

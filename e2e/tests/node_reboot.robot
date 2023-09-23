@@ -10,6 +10,8 @@ Test Teardown    Cleanup test resources
 
 *** Variables ***
 ${LOOP_COUNT}    1
+${RETRY_COUNT}    300
+${RETRY_INTERVAL}    1
 
 *** Test Cases ***
 Reboot Node One By One While Workload Heavy Writing

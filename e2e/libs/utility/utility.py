@@ -9,12 +9,18 @@ import socket
 import time
 import yaml
 from robot.api import logger
+from robot.libraries.BuiltIn import BuiltIn
 
-RETRY_COUNTS = 150
-RETRY_INTERVAL = 1
+def logging(msg, also_report=False):
+    if also_report:
+        logger.info(msg, also_console=True)
+    else:
+        logger.console(msg)
 
-def logging(msg):
-    logger.info(msg, also_console=True)
+def get_retry_count_and_interval():
+    retry_count = int(BuiltIn().get_variable_value("${RETRY_COUNT}"))
+    retry_interval = int(BuiltIn().get_variable_value("${RETRY_INTERVAL}"))
+    return retry_count, retry_interval
 
 def generate_volume_name():
     return "vol-" + \
@@ -43,7 +49,8 @@ def list_nodes():
 
 def wait_for_cluster_ready():
     core_api = client.CoreV1Api()
-    for i in range(RETRY_COUNTS):
+    retry_count, retry_interval = get_retry_count_and_interval()
+    for i in range(retry_count):
         logging(f"Waiting for cluster ready ({i}) ...")
         try:
             resp = core_api.list_node()
@@ -57,7 +64,7 @@ def wait_for_cluster_ready():
                 break
         except Exception as e:
             logging(f"Listing nodes error: {e}")
-        time.sleep(RETRY_INTERVAL)
+        time.sleep(retry_interval)
     assert ready, f"expect cluster's ready but it isn't {resp}"
 
 def wait_for_all_instance_manager_running():
@@ -65,7 +72,8 @@ def wait_for_all_instance_manager_running():
     longhorn_client = get_longhorn_client()
     nodes = list_nodes()
 
-    for _ in range(RETRY_COUNTS):
+    retry_count, retry_interval = get_retry_count_and_interval()
+    for _ in range(retry_count):
         logging(f"Waiting for all instance manager running ({_}) ...")
         instance_managers = longhorn_client.list_instance_manager()
         instance_manager_map = {}
@@ -75,10 +83,10 @@ def wait_for_all_instance_manager_running():
                     instance_manager_map[im.nodeID] = im
             if len(instance_manager_map) == len(nodes):
                 break
-            time.sleep(RETRY_INTERVAL)
+            time.sleep(retry_interval)
         except Exception as e:
             logging(f"Getting instance manager state error: {e}")
-    assert len(instance_manager_map) == len(nodes), f"expect all instance managers running: {instance_managers}"
+    assert len(instance_manager_map) == len(nodes), f"expect all instance managers running, instance_managers = {instance_managers}, instance_manager_map = {instance_manager_map}"
 
 def get_node(index):
     nodes = list_nodes()
@@ -124,7 +132,8 @@ def filter_cr(group, version, namespace, plural, field_selector="", label_select
 
 def wait_delete_pod(pod_uid, namespace='default'):
     api = client.CoreV1Api()
-    for i in range(RETRY_COUNTS):
+    retry_count, retry_interval = get_retry_count_and_interval()
+    for i in range(retry_count):
         ret = api.list_namespaced_pod(namespace=namespace)
         found = False
         for item in ret.items:
@@ -133,12 +142,13 @@ def wait_delete_pod(pod_uid, namespace='default'):
                 break
         if not found:
             break
-        time.sleep(RETRY_INTERVAL)
+        time.sleep(retry_interval)
     assert not found
 
 def wait_delete_ns(name):
     api = client.CoreV1Api()
-    for i in range(RETRY_COUNTS):
+    retry_count, retry_interval = get_retry_count_and_interval()
+    for i in range(retry_count):
         ret = api.list_namespace()
         found = False
         for item in ret.items:
@@ -147,7 +157,7 @@ def wait_delete_ns(name):
                 break
         if not found:
             break
-        time.sleep(RETRY_INTERVAL)
+        time.sleep(retry_interval)
     assert not found
 
 def get_mgr_ips():
@@ -160,24 +170,25 @@ def get_mgr_ips():
     return mgr_ips
 
 def get_longhorn_client():
+    retry_count, retry_interval = get_retry_count_and_interval()
     if os.getenv('LONGHORN_CLIENT_URL'):
         logging(f"Initializing longhorn api client from LONGHORN_CLIENT_URL {os.getenv('LONGHORN_CLIENT_URL')}")
         # for develop or debug
         # manually expose longhorn client
         # to access longhorn manager in local environment
         longhorn_client_url = os.getenv('LONGHORN_CLIENT_URL')
-        for i in range(RETRY_COUNTS):
+        for i in range(retry_count):
             try:
                 longhorn_client = from_env(url=f"{longhorn_client_url}/v1/schemas")
                 return longhorn_client
             except Exception as e:
                 logging(f"Getting longhorn client error: {e}")
-                time.sleep(RETRY_INTERVAL)
+                time.sleep(retry_interval)
     else:
         logging(f"Initializing longhorn api client from longhorn manager")
         # for ci, run test in in-cluster environment
         # directly use longhorn manager cluster ip
-        for i in range(RETRY_COUNTS):
+        for i in range(retry_count):
             try:
                 config.load_incluster_config()
                 ips = get_mgr_ips()
@@ -190,7 +201,7 @@ def get_longhorn_client():
                         return longhorn_client
             except Exception as e:
                 logging(f"Getting longhorn client error: {e}")
-                time.sleep(RETRY_INTERVAL)
+                time.sleep(retry_interval)
 
 def get_test_pod_running_node():
     if "NODE_NAME" in os.environ:
