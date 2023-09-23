@@ -2,6 +2,7 @@ import os
 import time
 import warnings
 from utility.utility import logging
+from utility.utility import get_retry_count_and_interval
 from volume.base import Base
 from volume.rest import Rest
 from kubernetes import client
@@ -9,14 +10,13 @@ from kubernetes import client
 Ki = 2**10
 Mi = 2**20
 Gi = 2**30
-retry_count = 200
-retry_interval = 1
 
 class CRD(Base):
 
     def __init__(self, node_exec):
         self.obj_api = client.CustomObjectsApi()
         self.node_exec = node_exec
+        self.retry_count, self.retry_interval = get_retry_count_and_interval()
 
     def get(self, volume_name):
         volume = self.obj_api.get_namespaced_custom_object(
@@ -108,7 +108,7 @@ class CRD(Base):
             logging(f"Deleting volume error: {e}")
 
     def wait_for_volume_delete(self, volume_name):
-        for i in range(retry_count):
+        for i in range(self.retry_count):
             try:
                 resp = self.obj_api.get_namespaced_custom_object(
                     group="longhorn.io",
@@ -123,40 +123,40 @@ class CRD(Base):
                     return
                 else:
                     logging(f"Waiting for volume deleting error: {e}")
-            time.sleep(retry_interval)
+            time.sleep(self.retry_interval)
         assert False, f"expect volume {volume_name} deleted but it still exists"
 
     def wait_for_volume_state(self, volume_name, desired_state):
-        for i in range(retry_count):
+        for i in range(self.retry_count):
             logging(f"Waiting for {volume_name} {desired_state} ({i}) ...")
             try:
                 if self.get(volume_name)["status"]["state"] == desired_state:
                     break
             except Exception as e:
                 logging(f"Getting volume {self.get(volume_name)} status error: {e}")
-            time.sleep(retry_interval)
+            time.sleep(self.retry_interval)
         assert self.get(volume_name)["status"]["state"] == desired_state
 
     def wait_for_volume_robustness(self, volume_name, desired_state):
-        for i in range(retry_count):
+        for i in range(self.retry_count):
             logging(f"Waiting for {volume_name} {desired_state} ({i}) ...")
             try:
                 if self.get(volume_name)["status"]["robustness"] == desired_state:
                     break
             except Exception as e:
                 logging(f"Getting volume {self.get(volume_name)} robustness error: {e}")
-            time.sleep(retry_interval)
+            time.sleep(self.retry_interval)
         assert self.get(volume_name)["status"]["robustness"] == desired_state
 
     def wait_for_volume_robustness_not(self, volume_name, not_desired_state):
-        for i in range(retry_count):
+        for i in range(self.retry_count):
             logging(f"Waiting for {volume_name} not {not_desired_state} ({i}) ...")
             try:
                 if self.get(volume_name)["status"]["robustness"] != not_desired_state:
                     break
             except Exception as e:
                 logging(f"Getting volume {self.get(volume_name)} robustness error: {e}")
-            time.sleep(retry_interval)
+            time.sleep(self.retry_interval)
         assert self.get(volume_name)["status"]["robustness"] != not_desired_state
 
     def get_endpoint(self, volume_name):

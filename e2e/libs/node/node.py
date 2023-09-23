@@ -7,9 +7,6 @@ from utility.utility import wait_for_cluster_ready
 from utility.utility import list_nodes
 import boto3
 
-RETRY_COUNT = 180
-RETRY_INTERVAL = 1
-
 class Node:
 
     def __init__(self):

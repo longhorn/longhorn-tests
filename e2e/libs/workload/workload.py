@@ -4,11 +4,8 @@ from kubernetes.stream import stream
 import time
 import yaml
 from utility.utility import logging
+from utility.utility import get_retry_count_and_interval
 
-RETRY_COUNTS = 150
-RETRY_INTERVAL = 1
-POD_WAIT_INTERVAL = 1
-POD_WAIT_TIMEOUT = 240
 WAIT_FOR_POD_STABLE_MAX_RETRY = 90
 
 def get_name_suffix(*args):
@@ -59,7 +56,8 @@ def create_deployment(volume_type, option):
         deployment_name = deployment.metadata.name
         replicas = deployment.spec.replicas
 
-        for i in range(RETRY_COUNTS):
+        retry_count, retry_interval = get_retry_count_and_interval()
+        for i in range(retry_count):
             deployment = api.read_namespaced_deployment(
                 name=deployment_name,
                 namespace=namespace)
@@ -67,7 +65,7 @@ def create_deployment(volume_type, option):
             if deployment is not None and \
                 deployment.status.ready_replicas == replicas:
                 break
-            time.sleep(RETRY_INTERVAL)
+            time.sleep(retry_interval)
 
         assert deployment.status.ready_replicas == replicas
 
@@ -84,7 +82,8 @@ def delete_deployment(name, namespace='default'):
     except ApiException as e:
         assert e.status == 404
 
-    for i in range(RETRY_COUNTS):
+    retry_count, retry_interval = get_retry_count_and_interval()
+    for i in range(retry_count):
         resp = api.list_namespaced_deployment(namespace=namespace)
         deleted = True
         for item in resp.items:
@@ -93,7 +92,7 @@ def delete_deployment(name, namespace='default'):
                 break
         if deleted:
             break
-        time.sleep(RETRY_INTERVAL)
+        time.sleep(retry_interval)
     assert deleted
 
 def create_statefulset(volume_type, option):
@@ -122,7 +121,8 @@ def create_statefulset(volume_type, option):
         statefulset_name = statefulset.metadata.name
         replicas = statefulset.spec.replicas
 
-        for i in range(RETRY_COUNTS):
+        retry_count, retry_interval = get_retry_count_and_interval()
+        for i in range(retry_count):
             statefulset = api.read_namespaced_stateful_set(
                 name=statefulset_name,
                 namespace=namespace)
@@ -130,7 +130,7 @@ def create_statefulset(volume_type, option):
             if statefulset is not None and \
                 statefulset.status.ready_replicas == replicas:
                 break
-            time.sleep(RETRY_INTERVAL)
+            time.sleep(retry_interval)
 
         assert statefulset.status.ready_replicas == replicas
 
@@ -147,7 +147,8 @@ def delete_statefulset(name, namespace='default'):
     except ApiException as e:
         assert e.status == 404
 
-    for i in range(RETRY_COUNTS):
+    retry_count, retry_interval = get_retry_count_and_interval()
+    for i in range(retry_count):
         resp = api.list_namespaced_stateful_set(namespace=namespace)
         deleted = True
         for item in resp.items:
@@ -156,7 +157,7 @@ def delete_statefulset(name, namespace='default'):
                 break
         if deleted:
             break
-        time.sleep(RETRY_INTERVAL)
+        time.sleep(retry_interval)
     assert deleted
 
 def create_pvc(volume_type, option):
@@ -191,7 +192,8 @@ def delete_pvc(name, namespace='default'):
     except ApiException as e:
         assert e.status == 404
 
-    for i in range(RETRY_COUNTS):
+    retry_count, retry_interval = get_retry_count_and_interval()
+    for i in range(retry_count):
         resp = api.list_namespaced_persistent_volume_claim(namespace=namespace)
         deleted = True
         for item in resp.items:
@@ -200,7 +202,7 @@ def delete_pvc(name, namespace='default'):
                 break
         if deleted:
             break
-        time.sleep(RETRY_INTERVAL)
+        time.sleep(retry_interval)
     assert deleted
 
 def get_workload_pod_names(workload_name):
@@ -286,7 +288,8 @@ def check_pod_data(pod_name, checksum, path="/data/random-data"):
 def wait_for_workload_pod_stable(workload_name):
     stable_pod = None
     wait_for_stable_retry = 0
-    for _ in range(POD_WAIT_TIMEOUT):
+    retry_count, retry_interval = get_retry_count_and_interval()
+    for _ in range(retry_count):
         logging(f"Waiting for {workload_name} pod stable ({_}) ...")
         pods = get_workload_pods(workload_name)
         for pod in pods:
@@ -300,5 +303,5 @@ def wait_for_workload_pod_stable(workload_name):
                     wait_for_stable_retry += 1
                     if wait_for_stable_retry == WAIT_FOR_POD_STABLE_MAX_RETRY:
                         return stable_pod
-        time.sleep(POD_WAIT_INTERVAL)
+        time.sleep(retry_interval)
     assert False
