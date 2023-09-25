@@ -34,12 +34,39 @@ DEFAULT_OBJECT_STORE_NAME = "test-object-store"
 DEFAULT_OBJECT_STORE_ACCESS_KEY = "foobar"
 DEFAULT_OBJECT_STORE_SECRET_KEY = "barfoo"
 
+DEFAULT_SECRET_NAME = "test-credentials"
+
 WAIT_INTERVAL = 1  # one second
 WAIT_TIMEOUT = 120  # two minutes
 
 
 @pytest.fixture
-def object_store():  # pylint: disable=W0621
+def secret():
+    """
+    Secret pytest fixtue
+    This fixture is just a K8s secret that contains the access key and secret
+    key for seeding the s3gw.
+    """
+    uid = gen_id(6)
+    manifest = {
+        'apiVersion': 'v1',
+        'kind': 'Secret',
+        'metadata': {
+            'name': f"{DEFAULT_SECRET_NAME}-{uid}",
+            'namespace': LONGHORN_NAMESPACE,
+        },
+        'string_data': {
+            'RGW_DEFAULT_USER_ACCESS_KEY': DEFAULT_OBJECT_STORE_ACCESS_KEY,
+            'RGW_DEFAULT_UESR_SECRET_KEY': DEFAULT_OBJECT_STORE_SECRET_KEY,
+        }
+    }
+    create_secret(manifest)
+    yield manifest
+    delete_secret(manifest)
+
+
+@pytest.fixture
+def object_store(secret):  # pylint: disable=W0621
     """
     Object Store pytest fixture
     This fixture yields an object store in the cluster and the manifest to
@@ -56,14 +83,15 @@ def object_store():  # pylint: disable=W0621
         'kind': LONGHORN_API_KIND,
         'metadata': {
             'name': f"{DEFAULT_OBJECT_STORE_NAME}-{uid}",
+            'namespace': LONGHORN_NAMESPACE,
         },
         'spec': {
             'storage': {
                 'size': OBJECT_STORE_SIZE,
             },
             'credentials': {
-                'accessKey': DEFAULT_OBJECT_STORE_ACCESS_KEY,
-                'secretKey': DEFAULT_OBJECT_STORE_SECRET_KEY,
+                'name': secret['metadata']['name'],
+                'namespace': secret['metadata']['namespace'],
             },
         }
     }
@@ -81,10 +109,10 @@ def test_create_object_store(object_store):  # pylint: disable=W0621
     Given:
     - Size
     - Name
-    - Access Key, Secret Key
+    - Secret
 
     When an ObjectStore resource is created:
-    - Create a Deployment, Secret, Service, PVC, PV and Longhorn volume
+    - Create a Deployment, Service, PVC, PV and Longhorn volume
 
     Wait for the ObjectStore to transition into "Running" state
 
@@ -92,7 +120,6 @@ def test_create_object_store(object_store):  # pylint: disable=W0621
     - The Longhorn volume must be in "attached" state
     - The PV must be bound
     - The PVC must be bound
-    - The secret's "data" dictionary must contain the expected keys
     - The service must have a port
     - The deployment must have exactly one expected, desired, actual and
       available replica
@@ -107,7 +134,6 @@ def test_create_object_store(object_store):  # pylint: disable=W0621
     assert_longhorn_volume_ready(object_store)
     assert_persistent_volume_ready(object_store)
     assert_persistent_volume_claim_ready(object_store)
-    assert_secret_ready(object_store)
     assert_service_ready(object_store)
     assert_deployment_ready(object_store)
     assert_object_store_running(object_store)
@@ -138,7 +164,6 @@ def test_delete_object_store(object_store):  # pylint: disable=W0621
 
     assert_deployment_removed(object_store)
     assert_service_removed(object_store)
-    assert_secret_removed(object_store)
     assert_persistent_volume_claim_removed(object_store)
     assert_persistent_volume_removed(object_store)
     assert_longhorn_volume_removed(object_store)
@@ -259,36 +284,6 @@ def assert_service_removed(manifest):
     assert False, f"{err_prefix} left orphaned service {name}"
 
 
-def assert_secret_ready(manifest):
-    api = get_core_api_client()
-    name = manifest['metadata']['name']
-    try:
-        secret = api.read_namespaced_secret(name, LONGHORN_NAMESPACE)
-    except ApiException:
-        assert False, "API Error while getting service"
-
-    assert len(secret.data.keys()) > 0
-    assert "accessKey" in secret.data.keys()
-    assert "secretKey" in secret.data.keys()
-
-
-def assert_secret_removed(manifest):
-    api = get_core_api_client()
-    name = manifest['metadata']['name']
-
-    for _ in range(WAIT_TIMEOUT):
-        try:
-            api.read_namespaced_secret(name, LONGHORN_NAMESPACE)
-        except ApiException as exception:
-            assert exception.status == 404, "API Error"
-            return
-
-        time.sleep(WAIT_INTERVAL)
-
-    err_prefix = f"object store {name}"
-    assert False, f"{err_prefix} left orphaned secret {name}"
-
-
 def assert_persistent_volume_claim_ready(manifest):
     api = get_core_api_client()
     store = manifest['metadata']['name']
@@ -395,10 +390,12 @@ def wait_object_store_running(manifest):
     name = manifest['metadata']['name']
 
     for _ in range(WAIT_TIMEOUT):
-        status = api.get_cluster_custom_object_status(LONGHORN_API_GROUP,
-                                                      LONGHORN_API_VERSION,
-                                                      LONGHORN_API_KIND_PLURAL,
-                                                      name)
+        status = api.get_namespaced_custom_object_status(
+            LONGHORN_API_GROUP,
+            LONGHORN_API_VERSION,
+            LONGHORN_NAMESPACE,
+            LONGHORN_API_KIND_PLURAL,
+            name)
         if status is not None and \
                 "status" in status and \
                 status['status']['state'] == "Running":
@@ -415,10 +412,11 @@ def wait_object_store_removed(manifest):
 
     for _ in range(WAIT_TIMEOUT):
         try:
-            api.get_cluster_custom_object(LONGHORN_API_GROUP,
-                                          LONGHORN_API_VERSION,
-                                          LONGHORN_API_KIND_PLURAL,
-                                          name)
+            api.get_namespaced_custom_object(LONGHORN_API_GROUP,
+                                             LONGHORN_API_VERSION,
+                                             LONGHORN_NAMESPACE,
+                                             LONGHORN_API_KIND_PLURAL,
+                                             name)
         except ApiException as exception:
             assert exception.status == 404, "API Error"
             return
@@ -430,20 +428,36 @@ def wait_object_store_removed(manifest):
 
 def create_object_store(manifest):
     api = get_custom_object_api_client()
-    api.create_cluster_custom_object(LONGHORN_API_GROUP,
-                                     LONGHORN_API_VERSION,
-                                     LONGHORN_API_KIND_PLURAL,
-                                     manifest)
+    api.create_namespaced_custom_object(LONGHORN_API_GROUP,
+                                        LONGHORN_API_VERSION,
+                                        LONGHORN_NAMESPACE,
+                                        LONGHORN_API_KIND_PLURAL,
+                                        manifest)
 
 
 def delete_object_store(manifest):
     api = get_custom_object_api_client()
     try:
-        api.delete_cluster_custom_object(LONGHORN_API_GROUP,
-                                         LONGHORN_API_VERSION,
-                                         LONGHORN_API_KIND_PLURAL,
-                                         name=manifest['metadata']['name'],
-                                         body=k8sclient.V1DeleteOptions())
+        api.delete_namespaced_custom_object(LONGHORN_API_GROUP,
+                                            LONGHORN_API_VERSION,
+                                            LONGHORN_NAMESPACE,
+                                            LONGHORN_API_KIND_PLURAL,
+                                            name=manifest['metadata']['name'],
+                                            body=k8sclient.V1DeleteOptions())
+    except ApiException as exception:
+        assert exception.status == 404
+
+
+def create_secret(manifest):
+    api = get_core_api_client()
+    api.create_namespaced_secret(LONGHORN_NAMESPACE, manifest)
+
+
+def delete_secret(manifest):
+    api = get_core_api_client()
+    try:
+        api.delete_namespaced_secret(manifest['metadata']['name'],
+                                     LONGHORN_NAMESPACE)
     except ApiException as exception:
         assert exception.status == 404
 
@@ -451,10 +465,11 @@ def delete_object_store(manifest):
 def get_object_store(manifest):
     api = get_custom_object_api_client()
     name = manifest['metadata']['name']
-    return api.get_cluster_custom_object(LONGHORN_API_GROUP,
-                                         LONGHORN_API_VERSION,
-                                         LONGHORN_API_KIND_PLURAL,
-                                         name)
+    return api.get_namespaced_custom_object(LONGHORN_API_GROUP,
+                                            LONGHORN_API_VERSION,
+                                            LONGHORN_NAMESPACE,
+                                            LONGHORN_API_KIND_PLURAL,
+                                            name)
 
 
 def gen_id(length):
