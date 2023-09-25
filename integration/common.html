@@ -1563,6 +1563,35 @@ def storage_class(request):
 
 
 @pytest.fixture
+def crypto_secret(request):
+    manifest = {
+        &#39;apiVersion&#39;: &#39;v1&#39;,
+        &#39;kind&#39;: &#39;Secret&#39;,
+        &#39;metadata&#39;: {
+            &#39;name&#39;: &#39;longhorn-crypto&#39;,
+            &#39;namespace&#39;: &#39;longhorn-system&#39;,
+        },
+        &#39;stringData&#39;: {
+            &#39;CRYPTO_KEY_VALUE&#39;: &#39;simple&#39;,
+            &#39;CRYPTO_KEY_PROVIDER&#39;: &#39;secret&#39;
+        }
+    }
+
+    def finalizer():
+        api = get_core_api_client()
+        try:
+            api.delete_namespaced_secret(
+                name=manifest[&#39;metadata&#39;][&#39;name&#39;],
+                namespace=manifest[&#39;metadata&#39;][&#39;namespace&#39;])
+        except ApiException as e:
+            assert e.status == 404
+
+    request.addfinalizer(finalizer)
+
+    return manifest
+
+
+@pytest.fixture
 def priority_class(request):
     priority_class = {
         &#39;apiVersion&#39;: &#39;scheduling.k8s.io/v1&#39;,
@@ -1717,6 +1746,7 @@ def cleanup_client():
     if backing_image_feature_supported(client):
         cleanup_all_backing_images(client)
 
+    cleanup_crypto_secret()
     cleanup_storage_class()
     if system_backup_feature_supported(client):
         system_restores_cleanup(client)
@@ -3824,6 +3854,43 @@ def wait_statefulset(statefulset_manifest):
             break
         time.sleep(DEFAULT_STATEFULSET_INTERVAL)
     assert s_set.status.ready_replicas == replicas
+
+
+def create_crypto_secret(secret_manifest):
+    api = get_core_api_client()
+    api.create_namespaced_secret(namespace=LONGHORN_NAMESPACE,
+                                 body=secret_manifest)
+
+
+def delete_crypto_secret(secret_manifest):
+    api = get_core_api_client()
+    try:
+        api.delete_namespaced_secret(secret_manifest,
+                                     body=k8sclient.V1DeleteOptions())
+    except ApiException as e:
+        assert e.status == 404
+
+
+def cleanup_crypto_secret():
+    secret_deletes = [&#34;longhorn-crypto&#34;]
+    api = get_core_api_client()
+    ret = api.list_namespaced_secret(namespace=LONGHORN_NAMESPACE)
+    for sc in ret.items:
+        if sc.metadata.name in secret_deletes:
+            delete_crypto_secret(sc.metadata.name)
+
+    ok = False
+    for _ in range(RETRY_COUNTS):
+        ok = True
+        ret = api.list_namespaced_secret(namespace=LONGHORN_NAMESPACE)
+        for s in ret.items:
+            if s.metadata.name in secret_deletes:
+                ok = False
+                break
+        if ok:
+            break
+        time.sleep(RETRY_INTERVAL)
+    assert ok
 
 
 def create_storage_class(sc_manifest):
@@ -6734,6 +6801,7 @@ properly.
     if backing_image_feature_supported(client):
         cleanup_all_backing_images(client)
 
+    cleanup_crypto_secret()
     cleanup_storage_class()
     if system_backup_feature_supported(client):
         system_restores_cleanup(client)
@@ -6752,6 +6820,37 @@ properly.
     if not os.path.exists(DEFAULT_REPLICA_DIRECTORY):
         subprocess.check_call(
             [&#34;mkdir&#34;, &#34;-p&#34;, DEFAULT_REPLICA_DIRECTORY])</code></pre>
+</details>
+</dd>
+<dt id="tests.common.cleanup_crypto_secret"><code class="name flex">
+<span>def <span class="ident">cleanup_crypto_secret</span></span>(<span>)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def cleanup_crypto_secret():
+    secret_deletes = [&#34;longhorn-crypto&#34;]
+    api = get_core_api_client()
+    ret = api.list_namespaced_secret(namespace=LONGHORN_NAMESPACE)
+    for sc in ret.items:
+        if sc.metadata.name in secret_deletes:
+            delete_crypto_secret(sc.metadata.name)
+
+    ok = False
+    for _ in range(RETRY_COUNTS):
+        ok = True
+        ret = api.list_namespaced_secret(namespace=LONGHORN_NAMESPACE)
+        for s in ret.items:
+            if s.metadata.name in secret_deletes:
+                ok = False
+                break
+        if ok:
+            break
+        time.sleep(RETRY_INTERVAL)
+    assert ok</code></pre>
 </details>
 </dd>
 <dt id="tests.common.cleanup_host_disk"><code class="name flex">
@@ -7516,6 +7615,21 @@ backup</p></div>
     return backup_volume, backup, data_checksum</code></pre>
 </details>
 </dd>
+<dt id="tests.common.create_crypto_secret"><code class="name flex">
+<span>def <span class="ident">create_crypto_secret</span></span>(<span>secret_manifest)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def create_crypto_secret(secret_manifest):
+    api = get_core_api_client()
+    api.create_namespaced_secret(namespace=LONGHORN_NAMESPACE,
+                                 body=secret_manifest)</code></pre>
+</details>
+</dd>
 <dt id="tests.common.create_host_disk"><code class="name flex">
 <span>def <span class="ident">create_host_disk</span></span>(<span>client, vol_name, size, node_id)</span>
 </code></dt>
@@ -7872,6 +7986,44 @@ created using a storage class).</p></div>
     return volume, volume_data</code></pre>
 </details>
 </dd>
+<dt id="tests.common.crypto_secret"><code class="name flex">
+<span>def <span class="ident">crypto_secret</span></span>(<span>request)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@pytest.fixture
+def crypto_secret(request):
+    manifest = {
+        &#39;apiVersion&#39;: &#39;v1&#39;,
+        &#39;kind&#39;: &#39;Secret&#39;,
+        &#39;metadata&#39;: {
+            &#39;name&#39;: &#39;longhorn-crypto&#39;,
+            &#39;namespace&#39;: &#39;longhorn-system&#39;,
+        },
+        &#39;stringData&#39;: {
+            &#39;CRYPTO_KEY_VALUE&#39;: &#39;simple&#39;,
+            &#39;CRYPTO_KEY_PROVIDER&#39;: &#39;secret&#39;
+        }
+    }
+
+    def finalizer():
+        api = get_core_api_client()
+        try:
+            api.delete_namespaced_secret(
+                name=manifest[&#39;metadata&#39;][&#39;name&#39;],
+                namespace=manifest[&#39;metadata&#39;][&#39;namespace&#39;])
+        except ApiException as e:
+            assert e.status == 404
+
+    request.addfinalizer(finalizer)
+
+    return manifest</code></pre>
+</details>
+</dd>
 <dt id="tests.common.csi_pv"><code class="name flex">
 <span>def <span class="ident">csi_pv</span></span>(<span>request)</span>
 </code></dt>
@@ -8177,6 +8329,24 @@ if a nonexistent Pod is specified.</p>
     bv = client.by_id_backupVolume(volume_name)
     client.delete(bv)
     wait_for_backup_volume_delete(client, volume_name)</code></pre>
+</details>
+</dd>
+<dt id="tests.common.delete_crypto_secret"><code class="name flex">
+<span>def <span class="ident">delete_crypto_secret</span></span>(<span>secret_manifest)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def delete_crypto_secret(secret_manifest):
+    api = get_core_api_client()
+    try:
+        api.delete_namespaced_secret(secret_manifest,
+                                     body=k8sclient.V1DeleteOptions())
+    except ApiException as e:
+        assert e.status == 404</code></pre>
 </details>
 </dd>
 <dt id="tests.common.delete_replica_on_test_node"><code class="name flex">
@@ -14855,6 +15025,7 @@ from the args and kwargs arguments, respectively.</p></div>
 <li><code><a title="tests.common.cleanup_all_support_bundles" href="#tests.common.cleanup_all_support_bundles">cleanup_all_support_bundles</a></code></li>
 <li><code><a title="tests.common.cleanup_all_volumes" href="#tests.common.cleanup_all_volumes">cleanup_all_volumes</a></code></li>
 <li><code><a title="tests.common.cleanup_client" href="#tests.common.cleanup_client">cleanup_client</a></code></li>
+<li><code><a title="tests.common.cleanup_crypto_secret" href="#tests.common.cleanup_crypto_secret">cleanup_crypto_secret</a></code></li>
 <li><code><a title="tests.common.cleanup_host_disk" href="#tests.common.cleanup_host_disk">cleanup_host_disk</a></code></li>
 <li><code><a title="tests.common.cleanup_host_disks" href="#tests.common.cleanup_host_disks">cleanup_host_disks</a></code></li>
 <li><code><a title="tests.common.cleanup_node_disks" href="#tests.common.cleanup_node_disks">cleanup_node_disks</a></code></li>
@@ -14877,6 +15048,7 @@ from the args and kwargs arguments, respectively.</p></div>
 <li><code><a title="tests.common.create_backing_image_with_matching_url" href="#tests.common.create_backing_image_with_matching_url">create_backing_image_with_matching_url</a></code></li>
 <li><code><a title="tests.common.create_backup" href="#tests.common.create_backup">create_backup</a></code></li>
 <li><code><a title="tests.common.create_backup_from_volume_attached_to_pod" href="#tests.common.create_backup_from_volume_attached_to_pod">create_backup_from_volume_attached_to_pod</a></code></li>
+<li><code><a title="tests.common.create_crypto_secret" href="#tests.common.create_crypto_secret">create_crypto_secret</a></code></li>
 <li><code><a title="tests.common.create_host_disk" href="#tests.common.create_host_disk">create_host_disk</a></code></li>
 <li><code><a title="tests.common.create_pv_for_volume" href="#tests.common.create_pv_for_volume">create_pv_for_volume</a></code></li>
 <li><code><a title="tests.common.create_pvc" href="#tests.common.create_pvc">create_pvc</a></code></li>
@@ -14891,6 +15063,7 @@ from the args and kwargs arguments, respectively.</p></div>
 <li><code><a title="tests.common.create_volume" href="#tests.common.create_volume">create_volume</a></code></li>
 <li><code><a title="tests.common.create_volume_and_backup" href="#tests.common.create_volume_and_backup">create_volume_and_backup</a></code></li>
 <li><code><a title="tests.common.create_volume_and_write_data" href="#tests.common.create_volume_and_write_data">create_volume_and_write_data</a></code></li>
+<li><code><a title="tests.common.crypto_secret" href="#tests.common.crypto_secret">crypto_secret</a></code></li>
 <li><code><a title="tests.common.csi_pv" href="#tests.common.csi_pv">csi_pv</a></code></li>
 <li><code><a title="tests.common.csi_pv_backingimage" href="#tests.common.csi_pv_backingimage">csi_pv_backingimage</a></code></li>
 <li><code><a title="tests.common.csi_pvc_name" href="#tests.common.csi_pvc_name">csi_pvc_name</a></code></li>
@@ -14903,6 +15076,7 @@ from the args and kwargs arguments, respectively.</p></div>
 <li><code><a title="tests.common.delete_and_wait_volume_attachment" href="#tests.common.delete_and_wait_volume_attachment">delete_and_wait_volume_attachment</a></code></li>
 <li><code><a title="tests.common.delete_backup" href="#tests.common.delete_backup">delete_backup</a></code></li>
 <li><code><a title="tests.common.delete_backup_volume" href="#tests.common.delete_backup_volume">delete_backup_volume</a></code></li>
+<li><code><a title="tests.common.delete_crypto_secret" href="#tests.common.delete_crypto_secret">delete_crypto_secret</a></code></li>
 <li><code><a title="tests.common.delete_replica_on_test_node" href="#tests.common.delete_replica_on_test_node">delete_replica_on_test_node</a></code></li>
 <li><code><a title="tests.common.delete_replica_processes" href="#tests.common.delete_replica_processes">delete_replica_processes</a></code></li>
 <li><code><a title="tests.common.delete_statefulset" href="#tests.common.delete_statefulset">delete_statefulset</a></code></li>

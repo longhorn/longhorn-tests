@@ -35,6 +35,7 @@ import common
 import time
 from common import client, core_api, apps_api # NOQA
 from common import csi_pv, pod_make, pvc, storage_class  # NOQA
+from common import crypto_secret  # NOQA
 from common import make_deployment_with_pvc  # NOQA
 from common import pod as pod_manifest  # NOQA
 from common import Mi, Gi, DEFAULT_VOLUME_SIZE, EXPANDED_VOLUME_SIZE
@@ -42,8 +43,10 @@ from common import VOLUME_RWTEST_SIZE
 from common import VOLUME_CONDITION_SCHEDULED
 from common import SETTING_REPLICA_NODE_SOFT_ANTI_AFFINITY
 from common import SETTING_REPLICA_REPLENISHMENT_WAIT_INTERVAL
+from common import LONGHORN_NAMESPACE
 from common import create_and_wait_pod, create_pvc_spec, delete_and_wait_pod
 from common import size_to_string, create_storage_class, create_pvc
+from common import create_crypto_secret
 from common import delete_and_wait_pvc, delete_and_wait_pv
 from common import wait_and_get_pv_for_pvc
 from common import generate_random_data, read_volume_data
@@ -283,11 +286,48 @@ def test_csi_block_volume(client, core_api, storage_class, pvc, pod_manifest):  
     6. Delete the pod and create `pod2` to use the same volume
     7. Validate the data in `pod2` is consistent with `test_data`
     &#34;&#34;&#34;
+
+    storage_class[&#39;reclaimPolicy&#39;] = &#39;Retain&#39;
+    create_storage_class(storage_class)
+
+    create_and_verify_block_volume(client, core_api, storage_class, pvc,
+                                   pod_manifest)
+
+
+@pytest.mark.csi  # NOQA
+def test_csi_encrypted_block_volume(client, core_api, storage_class, crypto_secret, pvc, pod_manifest):  # NOQA
+    &#34;&#34;&#34;
+    Test CSI feature: encrypted block volume
+
+    1. Create a PVC with encrypted `volumeMode = Block`
+    2. Create a pod using the PVC to dynamic provision a volume
+    3. Verify the pod creation
+    4. Generate `test_data` and write to the block volume directly in the pod
+    5. Read the data back for validation
+    6. Delete the pod and create `pod2` to use the same volume
+    7. Validate the data in `pod2` is consistent with `test_data`
+    &#34;&#34;&#34;
+
+    create_crypto_secret(crypto_secret)
+
+    storage_class[&#39;reclaimPolicy&#39;] = &#39;Retain&#39;
+    storage_class[&#39;parameters&#39;][&#39;csi.storage.k8s.io/provisioner-secret-name&#39;] = &#39;longhorn-crypto&#39;  # NOQA
+    storage_class[&#39;parameters&#39;][&#39;csi.storage.k8s.io/provisioner-secret-namespace&#39;] = LONGHORN_NAMESPACE  # NOQA
+    storage_class[&#39;parameters&#39;][&#39;csi.storage.k8s.io/node-publish-secret-name&#39;] = &#39;longhorn-crypto&#39;  # NOQA
+    storage_class[&#39;parameters&#39;][&#39;csi.storage.k8s.io/node-publish-secret-namespace&#39;] = LONGHORN_NAMESPACE  # NOQA
+    storage_class[&#39;parameters&#39;][&#39;csi.storage.k8s.io/node-stage-secret-name&#39;] = &#39;longhorn-crypto&#39;  # NOQA
+    storage_class[&#39;parameters&#39;][&#39;csi.storage.k8s.io/node-stage-secret-namespace&#39;] = LONGHORN_NAMESPACE  # NOQA
+    create_storage_class(storage_class)
+
+    create_and_verify_block_volume(client, core_api, storage_class, pvc,
+                                   pod_manifest)
+
+
+def create_and_verify_block_volume(client, core_api, storage_class, pvc, pod_manifest):  # NOQA
     pod_name = &#39;csi-block-volume-test&#39;
     pvc_name = pod_name + &#34;-pvc&#34;
     device_path = &#34;/dev/longhorn/longhorn-test-blk&#34;
 
-    storage_class[&#39;reclaimPolicy&#39;] = &#39;Retain&#39;
     pvc[&#39;metadata&#39;][&#39;name&#39;] = pvc_name
     pvc[&#39;spec&#39;][&#39;volumeMode&#39;] = &#39;Block&#39;
     pvc[&#39;spec&#39;][&#39;storageClassName&#39;] = storage_class[&#39;metadata&#39;][&#39;name&#39;]
@@ -308,7 +348,6 @@ def test_csi_block_volume(client, core_api, storage_class, pvc, pod_manifest):  
         {&#39;name&#39;: &#39;longhorn-blk&#39;, &#39;devicePath&#39;: device_path}
     ]
 
-    create_storage_class(storage_class)
     create_pvc(pvc)
     pv_name = wait_and_get_pv_for_pvc(core_api, pvc_name).metadata.name
     create_and_wait_pod(core_api, pod_manifest)
@@ -960,6 +999,75 @@ def test_csi_minimal_volume_size(
     client.delete(volume2)</code></pre>
 </details>
 </dd>
+<dt id="tests.test_csi.create_and_verify_block_volume"><code class="name flex">
+<span>def <span class="ident">create_and_verify_block_volume</span></span>(<span>client, core_api, storage_class, pvc, pod_manifest)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def create_and_verify_block_volume(client, core_api, storage_class, pvc, pod_manifest):  # NOQA
+    pod_name = &#39;csi-block-volume-test&#39;
+    pvc_name = pod_name + &#34;-pvc&#34;
+    device_path = &#34;/dev/longhorn/longhorn-test-blk&#34;
+
+    pvc[&#39;metadata&#39;][&#39;name&#39;] = pvc_name
+    pvc[&#39;spec&#39;][&#39;volumeMode&#39;] = &#39;Block&#39;
+    pvc[&#39;spec&#39;][&#39;storageClassName&#39;] = storage_class[&#39;metadata&#39;][&#39;name&#39;]
+    pvc[&#39;spec&#39;][&#39;resources&#39;] = {
+        &#39;requests&#39;: {
+            &#39;storage&#39;: size_to_string(1 * Gi)
+        }
+    }
+    pod_manifest[&#39;metadata&#39;][&#39;name&#39;] = pod_name
+    pod_manifest[&#39;spec&#39;][&#39;volumes&#39;] = [{
+        &#39;name&#39;: &#39;longhorn-blk&#39;,
+        &#39;persistentVolumeClaim&#39;: {
+            &#39;claimName&#39;: pvc_name,
+        },
+    }]
+    pod_manifest[&#39;spec&#39;][&#39;containers&#39;][0][&#39;volumeMounts&#39;] = []
+    pod_manifest[&#39;spec&#39;][&#39;containers&#39;][0][&#39;volumeDevices&#39;] = [
+        {&#39;name&#39;: &#39;longhorn-blk&#39;, &#39;devicePath&#39;: device_path}
+    ]
+
+    create_pvc(pvc)
+    pv_name = wait_and_get_pv_for_pvc(core_api, pvc_name).metadata.name
+    create_and_wait_pod(core_api, pod_manifest)
+
+    test_data = generate_random_data(VOLUME_RWTEST_SIZE)
+    test_offset = random.randint(0, VOLUME_RWTEST_SIZE)
+    write_pod_block_volume_data(
+        core_api, pod_name, test_data, test_offset, device_path)
+    returned_data = read_pod_block_volume_data(
+        core_api, pod_name, len(test_data), test_offset, device_path
+    )
+    assert test_data == returned_data
+    md5_sum = get_pod_data_md5sum(
+        core_api, pod_name, device_path)
+
+    delete_and_wait_pod(core_api, pod_name)
+    common.wait_for_volume_detached(client, pv_name)
+
+    pod_name_2 = &#39;csi-block-volume-test-reuse&#39;
+    pod_manifest[&#39;metadata&#39;][&#39;name&#39;] = pod_name_2
+    create_and_wait_pod(core_api, pod_manifest)
+
+    returned_data = read_pod_block_volume_data(
+        core_api, pod_name_2, len(test_data), test_offset, device_path
+    )
+    assert test_data == returned_data
+    md5_sum_2 = get_pod_data_md5sum(
+        core_api, pod_name_2, device_path)
+    assert md5_sum == md5_sum_2
+
+    delete_and_wait_pod(core_api, pod_name_2)
+    delete_and_wait_pvc(core_api, pvc_name)
+    delete_and_wait_pv(core_api, pv_name)</code></pre>
+</details>
+</dd>
 <dt id="tests.test_csi.create_and_wait_csi_pod"><code class="name flex">
 <span>def <span class="ident">create_and_wait_csi_pod</span></span>(<span>pod_name, client, core_api, csi_pv, pvc, pod_make, backing_image, from_backup)</span>
 </code></dt>
@@ -1372,65 +1480,12 @@ def test_csi_block_volume(client, core_api, storage_class, pvc, pod_manifest):  
     6. Delete the pod and create `pod2` to use the same volume
     7. Validate the data in `pod2` is consistent with `test_data`
     &#34;&#34;&#34;
-    pod_name = &#39;csi-block-volume-test&#39;
-    pvc_name = pod_name + &#34;-pvc&#34;
-    device_path = &#34;/dev/longhorn/longhorn-test-blk&#34;
 
     storage_class[&#39;reclaimPolicy&#39;] = &#39;Retain&#39;
-    pvc[&#39;metadata&#39;][&#39;name&#39;] = pvc_name
-    pvc[&#39;spec&#39;][&#39;volumeMode&#39;] = &#39;Block&#39;
-    pvc[&#39;spec&#39;][&#39;storageClassName&#39;] = storage_class[&#39;metadata&#39;][&#39;name&#39;]
-    pvc[&#39;spec&#39;][&#39;resources&#39;] = {
-        &#39;requests&#39;: {
-            &#39;storage&#39;: size_to_string(1 * Gi)
-        }
-    }
-    pod_manifest[&#39;metadata&#39;][&#39;name&#39;] = pod_name
-    pod_manifest[&#39;spec&#39;][&#39;volumes&#39;] = [{
-        &#39;name&#39;: &#39;longhorn-blk&#39;,
-        &#39;persistentVolumeClaim&#39;: {
-            &#39;claimName&#39;: pvc_name,
-        },
-    }]
-    pod_manifest[&#39;spec&#39;][&#39;containers&#39;][0][&#39;volumeMounts&#39;] = []
-    pod_manifest[&#39;spec&#39;][&#39;containers&#39;][0][&#39;volumeDevices&#39;] = [
-        {&#39;name&#39;: &#39;longhorn-blk&#39;, &#39;devicePath&#39;: device_path}
-    ]
-
     create_storage_class(storage_class)
-    create_pvc(pvc)
-    pv_name = wait_and_get_pv_for_pvc(core_api, pvc_name).metadata.name
-    create_and_wait_pod(core_api, pod_manifest)
 
-    test_data = generate_random_data(VOLUME_RWTEST_SIZE)
-    test_offset = random.randint(0, VOLUME_RWTEST_SIZE)
-    write_pod_block_volume_data(
-        core_api, pod_name, test_data, test_offset, device_path)
-    returned_data = read_pod_block_volume_data(
-        core_api, pod_name, len(test_data), test_offset, device_path
-    )
-    assert test_data == returned_data
-    md5_sum = get_pod_data_md5sum(
-        core_api, pod_name, device_path)
-
-    delete_and_wait_pod(core_api, pod_name)
-    common.wait_for_volume_detached(client, pv_name)
-
-    pod_name_2 = &#39;csi-block-volume-test-reuse&#39;
-    pod_manifest[&#39;metadata&#39;][&#39;name&#39;] = pod_name_2
-    create_and_wait_pod(core_api, pod_manifest)
-
-    returned_data = read_pod_block_volume_data(
-        core_api, pod_name_2, len(test_data), test_offset, device_path
-    )
-    assert test_data == returned_data
-    md5_sum_2 = get_pod_data_md5sum(
-        core_api, pod_name_2, device_path)
-    assert md5_sum == md5_sum_2
-
-    delete_and_wait_pod(core_api, pod_name_2)
-    delete_and_wait_pvc(core_api, pvc_name)
-    delete_and_wait_pv(core_api, pv_name)</code></pre>
+    create_and_verify_block_volume(client, core_api, storage_class, pvc,
+                                   pod_manifest)</code></pre>
 </details>
 </dd>
 <dt id="tests.test_csi.test_csi_block_volume_online_expansion"><code class="name flex">
@@ -1536,6 +1591,53 @@ def test_csi_block_volume_online_expansion(client, core_api, storage_class, pvc,
                                .strip().decode(&#39;utf-8&#39;).split(&#34; &#34;)[0]
 
     assert pod_dev_md5 == volume_dev_md5</code></pre>
+</details>
+</dd>
+<dt id="tests.test_csi.test_csi_encrypted_block_volume"><code class="name flex">
+<span>def <span class="ident">test_csi_encrypted_block_volume</span></span>(<span>client, core_api, storage_class, crypto_secret, pvc, pod_manifest)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test CSI feature: encrypted block volume</p>
+<ol>
+<li>Create a PVC with encrypted <code>volumeMode = Block</code></li>
+<li>Create a pod using the PVC to dynamic provision a volume</li>
+<li>Verify the pod creation</li>
+<li>Generate <code>test_data</code> and write to the block volume directly in the pod</li>
+<li>Read the data back for validation</li>
+<li>Delete the pod and create <code>pod2</code> to use the same volume</li>
+<li>Validate the data in <code>pod2</code> is consistent with <code>test_data</code></li>
+</ol></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@pytest.mark.csi  # NOQA
+def test_csi_encrypted_block_volume(client, core_api, storage_class, crypto_secret, pvc, pod_manifest):  # NOQA
+    &#34;&#34;&#34;
+    Test CSI feature: encrypted block volume
+
+    1. Create a PVC with encrypted `volumeMode = Block`
+    2. Create a pod using the PVC to dynamic provision a volume
+    3. Verify the pod creation
+    4. Generate `test_data` and write to the block volume directly in the pod
+    5. Read the data back for validation
+    6. Delete the pod and create `pod2` to use the same volume
+    7. Validate the data in `pod2` is consistent with `test_data`
+    &#34;&#34;&#34;
+
+    create_crypto_secret(crypto_secret)
+
+    storage_class[&#39;reclaimPolicy&#39;] = &#39;Retain&#39;
+    storage_class[&#39;parameters&#39;][&#39;csi.storage.k8s.io/provisioner-secret-name&#39;] = &#39;longhorn-crypto&#39;  # NOQA
+    storage_class[&#39;parameters&#39;][&#39;csi.storage.k8s.io/provisioner-secret-namespace&#39;] = LONGHORN_NAMESPACE  # NOQA
+    storage_class[&#39;parameters&#39;][&#39;csi.storage.k8s.io/node-publish-secret-name&#39;] = &#39;longhorn-crypto&#39;  # NOQA
+    storage_class[&#39;parameters&#39;][&#39;csi.storage.k8s.io/node-publish-secret-namespace&#39;] = LONGHORN_NAMESPACE  # NOQA
+    storage_class[&#39;parameters&#39;][&#39;csi.storage.k8s.io/node-stage-secret-name&#39;] = &#39;longhorn-crypto&#39;  # NOQA
+    storage_class[&#39;parameters&#39;][&#39;csi.storage.k8s.io/node-stage-secret-namespace&#39;] = LONGHORN_NAMESPACE  # NOQA
+    create_storage_class(storage_class)
+
+    create_and_verify_block_volume(client, core_api, storage_class, pvc,
+                                   pod_manifest)</code></pre>
 </details>
 </dd>
 <dt id="tests.test_csi.test_csi_expansion_with_replica_failure"><code class="name flex">
@@ -2122,6 +2224,7 @@ sure the disk won't be reformatted</p></div>
 <li><h3><a href="#header-functions">Functions</a></h3>
 <ul class="">
 <li><code><a title="tests.test_csi.backupstore_test" href="#tests.test_csi.backupstore_test">backupstore_test</a></code></li>
+<li><code><a title="tests.test_csi.create_and_verify_block_volume" href="#tests.test_csi.create_and_verify_block_volume">create_and_verify_block_volume</a></code></li>
 <li><code><a title="tests.test_csi.create_and_wait_csi_pod" href="#tests.test_csi.create_and_wait_csi_pod">create_and_wait_csi_pod</a></code></li>
 <li><code><a title="tests.test_csi.create_and_wait_csi_pod_named_pv" href="#tests.test_csi.create_and_wait_csi_pod_named_pv">create_and_wait_csi_pod_named_pv</a></code></li>
 <li><code><a title="tests.test_csi.create_pv_storage" href="#tests.test_csi.create_pv_storage">create_pv_storage</a></code></li>
@@ -2133,6 +2236,7 @@ sure the disk won't be reformatted</p></div>
 <li><code><a title="tests.test_csi.test_csi_backup" href="#tests.test_csi.test_csi_backup">test_csi_backup</a></code></li>
 <li><code><a title="tests.test_csi.test_csi_block_volume" href="#tests.test_csi.test_csi_block_volume">test_csi_block_volume</a></code></li>
 <li><code><a title="tests.test_csi.test_csi_block_volume_online_expansion" href="#tests.test_csi.test_csi_block_volume_online_expansion">test_csi_block_volume_online_expansion</a></code></li>
+<li><code><a title="tests.test_csi.test_csi_encrypted_block_volume" href="#tests.test_csi.test_csi_encrypted_block_volume">test_csi_encrypted_block_volume</a></code></li>
 <li><code><a title="tests.test_csi.test_csi_expansion_with_replica_failure" href="#tests.test_csi.test_csi_expansion_with_replica_failure">test_csi_expansion_with_replica_failure</a></code></li>
 <li><code><a title="tests.test_csi.test_csi_io" href="#tests.test_csi.test_csi_io">test_csi_io</a></code></li>
 <li><code><a title="tests.test_csi.test_csi_minimal_volume_size" href="#tests.test_csi.test_csi_minimal_volume_size">test_csi_minimal_volume_size</a></code></li>
