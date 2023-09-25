@@ -64,7 +64,7 @@ PORT = ":9500"
 RETRY_COMMAND_COUNT = 3
 RETRY_COUNTS = 150
 RETRY_COUNTS_SHORT = 30
-RETRY_COUNTS_LONG = 300
+RETRY_COUNTS_LONG = 360
 RETRY_INTERVAL = 1
 RETRY_INTERVAL_LONG = 2
 RETRY_BACKUP_COUNTS = 300
@@ -202,6 +202,16 @@ SETTING_K8S_CLUSTER_AUTOSCALER_ENABLED = \
     "kubernetes-cluster-autoscaler-enabled"
 SETTING_CONCURRENT_REPLICA_REBUILD_PER_NODE_LIMIT = \
     "concurrent-replica-rebuild-per-node-limit"
+SETTING_AUTO_CLEANUP_SYSTEM_GERERATED_SNAPSHOT = \
+    "auto-cleanup-system-generated-snapshot"
+SETTING_BACKUP_COMPRESSION_METHOD = "backup-compression-method"
+SETTING_BACKUP_CONCURRENT_LIMIT = "backup-concurrent-limit"
+SETTING_RESTORE_CONCURRENT_LIMIT = "restore-concurrent-limit"
+
+DEFAULT_BACKUP_COMPRESSION_METHOD = "lz4"
+BACKUP_COMPRESSION_METHOD_LZ4 = "lz4"
+BACKUP_COMPRESSION_METHOD_GZIP = "gzip"
+BACKUP_COMPRESSION_METHOD_NONE = "none"
 
 SNAPSHOT_DATA_INTEGRITY_IGNORED = "ignored"
 SNAPSHOT_DATA_INTEGRITY_DISABLED = "disabled"
@@ -1401,6 +1411,77 @@ def statefulset(request):
                         'ReadWriteOnce'
                     ],
                     'storageClassName': DEFAULT_STORAGECLASS_NAME,
+                    'resources': {
+                        'requests': {
+                            'storage': size_to_string(
+                                           DEFAULT_VOLUME_SIZE * Gi)
+                        }
+                    }
+                }
+            }]
+        }
+    }
+
+    def finalizer():
+        api = get_core_api_client()
+        client = get_longhorn_api_client()
+        delete_and_wait_statefulset(api, client, statefulset_manifest)
+
+    request.addfinalizer(finalizer)
+
+    return statefulset_manifest
+
+
+@pytest.fixture
+def rwx_statefulset(request):
+    statefulset_manifest = {
+        'apiVersion': 'apps/v1',
+        'kind': 'StatefulSet',
+        'metadata': {
+            'name': 'rwx-test-statefulset',
+            'namespace': 'default',
+        },
+        'spec': {
+            'selector': {
+                'matchLabels': {
+                    'app': 'rwx-test-statefulset'
+                }
+            },
+            'serviceName': 'rwx-test-statefulset',
+            'replicas': 1,
+            'template': {
+                'metadata': {
+                    'labels': {
+                        'app': 'rwx-test-statefulset'
+                    }
+                },
+                'spec': {
+                    'terminationGracePeriodSeconds': 10,
+                    'containers': [{
+                        'image': 'busybox:1.34.0',
+                        'imagePullPolicy': 'IfNotPresent',
+                        'name': 'sleep',
+                        'args': [
+                            '/bin/sh',
+                            '-c',
+                            'while true;do date;sleep 5; done'
+                        ],
+                        'volumeMounts': [{
+                            'name': 'pod-data',
+                            'mountPath': '/data'
+                        }]
+                    }]
+                }
+            },
+            'volumeClaimTemplates': [{
+                'metadata': {
+                    'name': 'pod-data'
+                },
+                'spec': {
+                    'accessModes': [
+                        'ReadWriteMany'
+                    ],
+                    'storageClassName': 'longhorn',
                     'resources': {
                         'requests': {
                             'storage': size_to_string(
@@ -2776,7 +2857,9 @@ def wait_for_disk_status(client, node_name, disk_name, key, value):
     assert disks[disk_name][key] == value, \
         f"Wrong disk({disk_name}) {key} status.\n" \
         f"Expect={value}\n" \
-        f"Got={disks[disk_name][key]}\n"
+        f"Got={disks[disk_name][key]}\n" \
+        f"node={client.by_id_node(node_name)}\n" \
+        f"volumes={client.list_volume()}\n"
     return node
 
 
@@ -3043,7 +3126,7 @@ def wait_for_backup_state(client, volume_name, predicate,
 def monitor_restore_progress(client, volume_name):
     completed = 0
     rs = {}
-    for i in range(RETRY_COUNTS):
+    for i in range(RETRY_COUNTS_LONG):
         completed = 0
         v = client.by_id_volume(volume_name)
         rs = v.restoreStatus
@@ -5526,8 +5609,9 @@ def get_support_bundle_url(client):  # NOQA
 
 def get_support_bundle(node_id, name, client):  # NOQA
     url = get_support_bundle_url(client)
-    support_bundle_url = '{}/{}/{}'.format(url, node_id, name)
-    return requests.get(support_bundle_url).json()
+    resp = requests.get('{}/{}/{}'.format(url, node_id, name))
+    assert resp.status_code == 200
+    return resp.json()
 
 
 def wait_for_support_bundle_cleanup(client):  # NOQA

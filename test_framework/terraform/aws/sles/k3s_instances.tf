@@ -28,15 +28,14 @@ resource "aws_instance" "lh_aws_instance_controlplane_k3s" {
   tags = {
     Name = "${var.lh_aws_instance_name_controlplane}-${count.index}-${random_string.random_suffix.id}"
     DoNotDelete = "true"
-    Owner = "longhorn-infra"
+    Owner = var.resources_owner
   }
 }
 
 # Create worker instances for k3s
 resource "aws_instance" "lh_aws_instance_worker_k3s" {
   depends_on = [
-    aws_internet_gateway.lh_aws_igw,
-    aws_subnet.lh_aws_private_subnet,
+    aws_route_table_association.lh_aws_private_subnet_rt_association,
     aws_instance.lh_aws_instance_controlplane_k3s
   ]
 
@@ -64,7 +63,7 @@ resource "aws_instance" "lh_aws_instance_worker_k3s" {
   tags = {
     Name = "${var.lh_aws_instance_name_worker}-${count.index}-${random_string.random_suffix.id}"
     DoNotDelete = "true"
-    Owner = "longhorn-infra"
+    Owner = var.resources_owner
   }
 }
 
@@ -118,7 +117,7 @@ resource "null_resource" "rsync_kubeconfig_file" {
     inline = [
       "cloud-init status --wait",
       "if [ \"`cloud-init status | grep error`\" ]; then sudo cat /var/log/cloud-init-output.log; fi",
-      "until([ -f /etc/rancher/k3s/k3s.yaml ] && [ `sudo /usr/local/bin/kubectl get node -o jsonpath='{.items[*].status.conditions}'  | jq '.[] | select(.type  == \"Ready\").status' | grep -ci true` -eq $((${var.lh_aws_instance_count_controlplane} + ${var.lh_aws_instance_count_worker})) ]); do echo \"waiting for k3s cluster nodes to be running\"; sleep 2; done"
+      "RETRY=0; MAX_RETRY=450; until([ -f /etc/rancher/k3s/k3s.yaml ] && [ `sudo /usr/local/bin/kubectl get node -o jsonpath='{.items[*].status.conditions}'  | jq '.[] | select(.type  == \"Ready\").status' | grep -ci true` -eq $((${var.lh_aws_instance_count_controlplane} + ${var.lh_aws_instance_count_worker})) ]); do echo \"waiting for k3s cluster nodes to be running\"; sleep 2; if [ $RETRY -eq $MAX_RETRY ]; then break; fi; RETRY=$((RETRY+1)); done"
     ]
 
     connection {

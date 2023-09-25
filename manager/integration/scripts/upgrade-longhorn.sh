@@ -22,7 +22,7 @@ wait_longhorn_status_running(){
   local RETRY_INTERVAL="1m"
                                                                       
   RETRIES=0
-  while [[ -n `kubectl get pods -n ${LONGHORN_NAMESPACE} --no-headers | awk '{print $3}' | grep -v Running` ]]; do
+  while [[ -n `kubectl get pods -n ${LONGHORN_NAMESPACE} --no-headers | awk '{print $3}' | grep -v "Running\|Completed"` ]]; do
     echo "Longhorn is still installing ... re-checking in ${RETRY_INTERVAL}"
     sleep ${RETRY_INTERVAL}
     RETRIES=$((RETRIES+1))

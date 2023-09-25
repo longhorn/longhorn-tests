@@ -78,6 +78,8 @@ from common import SETTING_CONCURRENT_AUTO_ENGINE_UPGRADE_NODE_LIMIT
 from common import update_setting
 from common import wait_for_backup_volume_backing_image_synced
 from common import RETRY_COMMAND_COUNT
+from common import wait_for_snapshot_count
+from common import DEFAULT_BACKUP_COMPRESSION_METHOD
 
 from backupstore import set_random_backupstore # NOQA
 from backupstore import backupstore_cleanup
@@ -1126,8 +1128,8 @@ def test_inc_restoration_with_multiple_rebuild_and_expansion(set_random_backupst
     # Verify the snapshot info
     dr_volume = client.by_id_volume(dr_volume_name)
     assert dr_volume.size == str(expand_size1)
+    wait_for_snapshot_count(dr_volume, 2, count_removed=True)
     snapshots = dr_volume.snapshotList(volume=dr_volume_name)
-    assert len(snapshots) == 2
     for snap in snapshots:
         if snap["name"] != "volume-head":
             assert snap["name"] == "expand-" + str(expand_size1)
@@ -1161,8 +1163,8 @@ def test_inc_restoration_with_multiple_rebuild_and_expansion(set_random_backupst
     # Then re-verify the snapshot info
     dr_volume = client.by_id_volume(dr_volume_name)
     assert dr_volume.size == str(expand_size2)
+    wait_for_snapshot_count(dr_volume, 2, count_removed=True)
     snapshots = dr_volume.snapshotList(volume=dr_volume_name)
-    assert len(snapshots) == 2
     for snap in snapshots:
         if snap["name"] != "volume-head":
             assert snap["name"] == "expand-" + str(expand_size2)
@@ -2754,7 +2756,8 @@ def test_engine_image_miss_scheduled_perform_volume_operations(core_api, client,
     assert snapMap[snap1.name].name == snap1.name
     assert snapMap[snap1.name].removed is False
 
-    backupstore_test(client, host_id, volume_name, size=str(3 * Gi))
+    backupstore_test(client, host_id, volume_name, size=str(3 * Gi),
+                     compression_method=DEFAULT_BACKUP_COMPRESSION_METHOD)
 
     volume = client.by_id_volume(volume_name)
     volume.attach(hostId=host_id, disableFrontend=False)
@@ -2842,7 +2845,8 @@ def test_engine_image_not_fully_deployed_perform_volume_operations(client, core_
     check_volume_data(volume1, snap2_data)
 
     backupstore_test(client, get_self_host_id(), volume1.name,
-                     size=str(3 * Gi))
+                     size=str(3 * Gi),
+                     compression_method=DEFAULT_BACKUP_COMPRESSION_METHOD)
 
     expand_size = str(4 * Gi)
     volume1.expand(size=expand_size)
@@ -2896,7 +2900,7 @@ def test_engine_image_not_fully_deployed_perform_engine_upgrade(client, core_api
     # expected refCount: 1 for volume + 1 for engine and number of replicas(2)
     expect_ref_count = 4
     new_img_name = new_img.name
-    original_engine_image = volume1.engineImage
+    original_engine_image = volume1.image
     volume1.engineUpgrade(image=engine_upgrade_image)
     volume1 = wait_for_volume_current_image(client, volume1.name,
                                             engine_upgrade_image)
@@ -3040,8 +3044,8 @@ def test_engine_image_not_fully_deployed_perform_auto_upgrade_engine(client, cor
 
     volume1 = client.by_id_volume(volume1.name)
     volume2 = client.by_id_volume(volume2.name)
-    assert volume1.engineImage == default_img.image
-    assert volume2.engineImage == default_img.image
+    assert volume1.image == default_img.image
+    assert volume2.image == default_img.image
 
 
 def test_engine_image_not_fully_deployed_perform_dr_restoring_expanding_volume(client, core_api, set_random_backupstore): # NOQA

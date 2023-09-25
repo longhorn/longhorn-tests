@@ -17,10 +17,14 @@ from common import create_pvc_spec, make_deployment_with_pvc  # NOQA
 from common import wait_for_pod_phase
 from common import core_api, statefulset, pvc, pod, client  # NOQA
 from common import RETRY_COUNTS, RETRY_INTERVAL
+from common import EXPANDED_VOLUME_SIZE
+from common import expand_and_wait_for_pvc, wait_for_volume_expansion
+from common import wait_deployment_replica_ready, wait_for_volume_healthy
 from backupstore import set_random_backupstore # NOQA
 from multiprocessing import Pool
 
 import time
+import pytest
 
 
 def write_data_into_pod(pod_name_and_data_path):
@@ -511,3 +515,122 @@ def test_restore_rwo_volume_to_rwx(set_random_backupstore, client, core_api, vol
     md5sum_pod2 = get_pod_data_md5sum(core_api, pod_name_2, data_path)
 
     assert md5sum == md5sum_pod1 == md5sum_pod2
+
+
+@pytest.mark.skip(reason="TODO")
+def test_rwx_onine_expansion(): # NOQA
+    """
+    Related issue :
+    https://github.com/longhorn/longhorn/issues/2181
+    https://github.com/longhorn/longhorn/issues/2484
+
+    This test case does not cover the UI test mentioned in the related issue's
+    test steps."
+
+    Given
+    - Create a rwx pvc using longhorn storage class of size 1 Gi.
+
+    And
+    - Atach it to a workload (deployment) and write some data.
+
+    When
+    - Expand the volume to 5 Gi
+
+    Then
+    - Expansion of volume is completed.
+    - Share manager pod not restart
+
+    And
+    - 1.5 Gi of data is successfully written to the expanded volume.
+    """
+    pass
+
+
+def test_rwx_offline_expansion(client, core_api, pvc, make_deployment_with_pvc): # NOQA
+    """
+    Related issue :
+    https://github.com/longhorn/longhorn/issues/2181
+    https://github.com/longhorn/longhorn/issues/2484
+
+    This test case does not cover the UI test mentioned in the related issue's
+    test steps."
+
+    Given
+    - Create a rwx pvc using longhorn storage class of size 1 Gi.
+
+    And
+    - Atach it to a workload (deployment) and write some data.
+    - Scale down the workload, wait volume detached
+    - Share manager pod will terminate automatically
+    - Expand the volume to 4 Gi, wait exoansion complete
+
+    When
+    - Scale up workload
+
+    Then
+    - Share manager pod created
+    - Volume healthy
+
+    And
+    - 1.5 Gi of data is successfully written to the expanded volume
+    """
+    pvc_name = 'pvc-deployment-rwx-expand-test'
+    pvc['metadata']['name'] = pvc_name
+    pvc['spec']['storageClassName'] = 'longhorn'
+    pvc['spec']['accessModes'] = ['ReadWriteMany']
+    pvc['spec']['resources']['requests']['storage'] = str(1 * Gi)
+
+    core_api.create_namespaced_persistent_volume_claim(
+        body=pvc, namespace='default')
+
+    deployment = make_deployment_with_pvc(
+        'deployment-rwx-expand-test', pvc_name, replicas=1)
+    apps_api = get_apps_api_client()
+    create_and_wait_deployment(apps_api, deployment)
+
+    pv_name = get_volume_name(core_api, pvc_name)
+    deployment_label_selector = "name=" + \
+                                deployment["metadata"]["labels"]["name"]
+
+    deployment_pod_list = \
+        core_api.list_namespaced_pod(namespace="default",
+                                     label_selector=deployment_label_selector)
+
+    pod_name = deployment_pod_list.items[0].metadata.name
+    test_data = generate_random_data(VOLUME_RWTEST_SIZE)
+    write_pod_volume_data(core_api, pod_name, test_data, filename='test')
+
+    deployment['spec']['replicas'] = 0
+    apps_api.patch_namespaced_deployment(body=deployment,
+                                         namespace='default',
+                                         name=deployment["metadata"]["name"])
+
+    wait_for_volume_detached(client, pv_name)
+    expand_and_wait_for_pvc(core_api, pvc, EXPANDED_VOLUME_SIZE*Gi)
+    wait_for_volume_expansion(client, pv_name)
+    wait_for_volume_detached(client, pv_name)
+
+    deployment['spec']['replicas'] = 1
+    apps_api.patch_namespaced_deployment(body=deployment,
+                                         namespace='default',
+                                         name=deployment["metadata"]["name"])
+    wait_deployment_replica_ready(apps_api, deployment["metadata"]["name"], 1)
+    wait_for_volume_healthy(client, pv_name)
+
+    deployment_pod_list = \
+        core_api.list_namespaced_pod(namespace="default",
+                                     label_selector=deployment_label_selector)
+    pod_name = deployment_pod_list.items[0].metadata.name
+
+    # check data written before expansion
+    resp = read_volume_data(core_api, pod_name, "test")
+    assert resp == test_data
+
+    data_size_in_mb = 1536
+    write_pod_volume_random_data(core_api, pod_name, "/data/test2",
+                                 data_size_in_mb)
+    command = 'stat -c \"%s\" /data/test2'
+    data_size_in_pod = exec_command_in_pod(core_api, command,
+                                           pod_name,
+                                           'default')
+    assert int(data_size_in_pod)/1024/1024 == data_size_in_mb

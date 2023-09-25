@@ -1,16 +1,33 @@
 from kubernetes import client
 from kubernetes.stream import stream
-
 import time
+from utility.utility import wait_delete_pod
+from utility.utility import wait_delete_ns
+from utility.utility import logging
 
 DEFAULT_POD_TIMEOUT = 180
 DEFAULT_POD_INTERVAL = 1
 
 class NodeExec:
 
-    def __init__(self, namespace):
-        self.namespace = namespace
+    _instance = None
+
+    @staticmethod
+    def get_instance():
+        if NodeExec._instance is None:
+            NodeExec()
+        return NodeExec._instance
+
+    def __init__(self):
+        if NodeExec._instance is not None:
+            raise Exception('only one NodeExec instance can exist')
+        else:
+            self.node_exec_pod = {}
+            NodeExec._instance = self
+
+    def set_namespace(self, namespace):
         self.core_api = client.CoreV1Api()
+        self.namespace = namespace
         self.node_exec_pod = {}
         namespace_manifest = {
             'apiVersion': 'v1',
@@ -22,18 +39,23 @@ class NodeExec:
         self.core_api.create_namespace(
             body=namespace_manifest
         )
+        logging(f"Created namespace {namespace}")
 
     def cleanup(self):
         for pod in self.node_exec_pod.values():
+            logging(f"Cleaning up pod {pod.metadata.name} {pod.metadata.uid}")
             res = self.core_api.delete_namespaced_pod(
                 name=pod.metadata.name,
                 namespace=self.namespace,
                 body=client.V1DeleteOptions()
             )
-            print(res)
+            wait_delete_pod(pod.metadata.uid)
         self.core_api.delete_namespace(
             name=self.namespace
         )
+        wait_delete_ns(self.namespace)
+        self.node_exec_pod.clear()
+
 
     def issue_cmd(self, node_name, cmd):
         pod = self.launch_pod(node_name)

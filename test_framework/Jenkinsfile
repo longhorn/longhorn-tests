@@ -17,6 +17,7 @@ def RANCHER_CHART_GIT_REPO = params.RANCHER_CHART_GIT_REPO ? params.RANCHER_CHAR
 def RANCHER_CHART_GIT_BRANCH = params.RANCHER_CHART_GIT_BRANCH ? params.RANCHER_CHART_GIT_BRANCH : ""
 def RANCHER_CHART_INSTALL_VERSION = params.RANCHER_CHART_INSTALL_VERSION ? params.RANCHER_CHART_INSTALL_VERSION : ""
 def LONGHORN_TRANSIENT_VERSION = params.LONGHORN_TRANSIENT_VERSION ? params.LONGHORN_TRANSIENT_VERSION : ""
+def CIS_HARDENING = params.CIS_HARDENING ? params.CIS_HARDENING : false
 def REGISTRY_URL
 def REGISTRY_USERNAME
 def REGISTRY_PASSWORD
@@ -134,6 +135,7 @@ node {
                                        --env TF_VAR_azure_crt_password=${AZURE_CRT_PASSWORD} \
                                        --env TF_VAR_azure_tenant_id=${AZURE_TENANT_ID} \
                                        --env TF_VAR_azure_subscription_id=${AZURE_SUBSCRIPTION_ID} \
+                                       --env TF_VAR_cis_hardening=${CIS_HARDENING} \
                                        ${imageName}
                 """
 

@@ -2,6 +2,8 @@
 
 set -x
 
+source test_framework/scripts/kubeconfig.sh
+
 # create and clean tmpdir
 TMPDIR="/tmp/longhorn"
 mkdir -p ${TMPDIR}
@@ -20,33 +22,6 @@ LONGHORN_MANIFEST_URL="https://raw.githubusercontent.com/longhorn/longhorn/${LON
 # for install Longhorn by helm chart
 LONGHORN_REPO_URL="https://github.com/longhorn/longhorn"
 LONGHORN_REPO_DIR="${TMPDIR}/longhorn"
-
-set_kubeconfig_envvar(){
-  ARCH=${1}
-  BASEDIR=${2}
-
-  if [[ ${ARCH} == "amd64" ]] ; then
-    if [[ ${TF_VAR_k8s_distro_name} == [rR][kK][eE] ]]; then
-      export KUBECONFIG="${BASEDIR}/kube_config_rke.yml"
-    elif [[ ${TF_VAR_k8s_distro_name} == [rR][kK][eE]2 ]]; then
-      export KUBECONFIG="${BASEDIR}/terraform/${LONGHORN_TEST_CLOUDPROVIDER}/${DISTRO}/rke2.yaml"
-    elif [[ ${TF_VAR_k8s_distro_name} == "aks" ]]; then
-      export KUBECONFIG="${BASEDIR}/aks.yml"
-    elif [[ ${TF_VAR_k8s_distro_name} == "eks" ]]; then
-      export KUBECONFIG="${BASEDIR}/eks.yml"
-    else
-      export KUBECONFIG="${BASEDIR}/terraform/${LONGHORN_TEST_CLOUDPROVIDER}/${DISTRO}/k3s.yaml"
-    fi
-  elif [[ ${ARCH} == "arm64"  ]]; then
-    if [[ ${TF_VAR_k8s_distro_name} == "aks" ]]; then
-      export KUBECONFIG="${BASEDIR}/aks.yml"
-    elif [[ ${TF_VAR_k8s_distro_name} == "eks" ]]; then
-      export KUBECONFIG="${BASEDIR}/eks.yml"
-    else
-      export KUBECONFIG="${BASEDIR}/terraform/${LONGHORN_TEST_CLOUDPROVIDER}/${DISTRO}/k3s.yaml"
-    fi
-  fi
-}
 
 
 create_admin_service_account(){
@@ -81,7 +56,7 @@ install_cluster_autoscaler(){
 
 install_csi_snapshotter_crds(){
     CSI_SNAPSHOTTER_REPO_URL="https://github.com/kubernetes-csi/external-snapshotter.git"
-    CSI_SNAPSHOTTER_REPO_BRANCH="v5.0.1"
+    CSI_SNAPSHOTTER_REPO_BRANCH="v6.2.1"
     CSI_SNAPSHOTTER_REPO_DIR="${TMPDIR}/k8s-csi-external-snapshotter"
 
     git clone --single-branch \
@@ -273,6 +248,14 @@ install_longhorn_stable(){
 
 create_longhorn_namespace(){
   kubectl create ns ${LONGHORN_NAMESPACE}
+  if [[ "${TF_VAR_cis_hardening}" == true ]]; then
+    kubectl label ns default ${LONGHORN_NAMESPACE} pod-security.kubernetes.io/enforce=privileged
+    kubectl label ns default ${LONGHORN_NAMESPACE} pod-security.kubernetes.io/enforce-version=latest
+    kubectl label ns default ${LONGHORN_NAMESPACE} pod-security.kubernetes.io/audit=privileged
+    kubectl label ns default ${LONGHORN_NAMESPACE} pod-security.kubernetes.io/audit-version=latest
+    kubectl label ns default ${LONGHORN_NAMESPACE} pod-security.kubernetes.io/warn=privileged
+    kubectl label ns default ${LONGHORN_NAMESPACE} pod-security.kubernetes.io/warn-version=latest
+  fi
 }
 
 
@@ -421,7 +404,7 @@ run_longhorn_tests(){
 
 
 main(){
-  set_kubeconfig_envvar ${TF_VAR_arch} ${TF_VAR_tf_workspace}
+  set_kubeconfig
 
   if [[ ${DISTRO} == "rhel" ]] || [[ ${DISTRO} == "rockylinux" ]] || [[ ${DISTRO} == "oracle" ]]; then
     apply_selinux_workaround

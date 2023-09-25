@@ -16,6 +16,14 @@ INCLUDE_STRESS_OPT = "--include-stress-test"
 INCLUDE_UPGRADE_OPT = "--include-upgrade-test"
 INCLUDE_CA_OPT = "--include-cluster-autoscaler-test"
 
+LH_INSTALL_METHOD = "--lh-install-method"
+RANCHER_HOSTNAME = "--rancher-hostname"
+RANCHER_ACCESS_KEY = "--rancher-access-key"
+RANCHER_SECRET_KEY = "--rancher-secret-key"
+RANCHER_CHART_INSTALL_VERSION = "--rancher-chart-install-version"
+LONGHORN_REPO = "--longhorn-repo"
+FLUX_HELM_CHART_URL = "--flux-helm-chart-url"
+FLUX_HELM_CHART_VERSION = "--flux-helm-chart-version"
 UPGRADE_LH_REPO_URL = "--upgrade-lh-repo-url"
 UPGRADE_LH_REPO_BRANCH = "--upgrade-lh-repo-branch"
 UPGRADE_LH_MANAGER_IMAGE = "--upgrade-lh-manager-image"
@@ -49,6 +57,51 @@ def pytest_addoption(parser):
     parser.addoption(INCLUDE_CA_OPT, action="store_true",
                      default=False,
                      help="include cluster autoscaler tests (default: False)")
+
+    parser.addoption(LH_INSTALL_METHOD, action="store",
+                     default="manifest",
+                     help='''set longhorn install method, this will be used
+                     to determine how to upgrade longhorn for test_upgrade
+                     (default: manifest''')
+
+    parser.addoption(RANCHER_HOSTNAME, action="store",
+                     default="",
+                     help='''if longhorn install method is rancher, specify
+                     where rancher is hosted''')
+
+    parser.addoption(RANCHER_ACCESS_KEY, action="store",
+                     default="",
+                     help='''if longhorn install method is rancher, specify
+                     the access key and secret key to have the permission to
+                     operate it''')
+
+    parser.addoption(RANCHER_SECRET_KEY, action="store",
+                     default="",
+                     help='''if longhorn install method is rancher, specify
+                     the access key and secret key to have the permission to
+                     operate it''')
+
+    parser.addoption(RANCHER_CHART_INSTALL_VERSION, action="store",
+                     default="",
+                     help='''if longhorn install method is rancher, specify
+                     the longhorn chart version you would like to install like
+                     102.2.1+up1.4.2''')
+
+    parser.addoption(LONGHORN_REPO, action="store",
+                     default="",
+                     help='''if longhorn install method is rancher, specify
+                     the longhorn dockerhub repo of longhorn components like
+                     longhornio or rancher''')
+
+    parser.addoption(FLUX_HELM_CHART_URL, action="store",
+                     default="https://charts.longhorn.io",
+                     help='''if longhorn install method is flux, specify the
+                     url of flux helm repository resource''')
+
+    parser.addoption(FLUX_HELM_CHART_VERSION, action="store",
+                     default="",
+                     help='''if longhorn install method is flux, specify the
+                     chart version when create flux helm release resource''')
 
     longhorn_repo_url =\
         "https://github.com/longhorn/longhorn.git"

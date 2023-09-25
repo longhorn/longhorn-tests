@@ -99,12 +99,12 @@ variable "k8s_distro_name" {
 
 variable "k8s_distro_version" {
   type        = string
-  default     = "v1.25.3+k3s1"
+  default     = "v1.27.1+k3s1"
   description = <<-EOT
     kubernetes version that will be deployed
     rke: (default: v1.22.5-rancher1-1)
-    k3s: (default: v1.25.3+k3s1)
-    rke2: (default: v1.25.3+rke2r1)
+    k3s: (default: v1.27.1+k3s1)
+    rke2: (default: v1.27.2+rke2r1)
   EOT
 }
 
@@ -116,4 +116,14 @@ variable "use_hdd" {
 variable "create_load_balancer" {
   type    = bool
   default = false
+}
+
+variable "cis_hardening" {
+  type    = bool
+  default = false
+}
+
+variable "resources_owner" {
+  type        = string
+  default     = "longhorn-infra"
 }
