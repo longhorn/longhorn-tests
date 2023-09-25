@@ -114,16 +114,16 @@ def test_create_object_store(object_store):  # pylint: disable=W0621
     When an ObjectStore resource is created:
     - Create a Deployment, Service, PVC, PV and Longhorn volume
 
-    Wait for the ObjectStore to transition into "Running" state
+    Wait for the ObjectStore to transition into "running" state
 
-    When the ObjectStore is in "Runnin" state:
+    When the ObjectStore is in "running" state:
     - The Longhorn volume must be in "attached" state
     - The PV must be bound
     - The PVC must be bound
     - The service must have a port
     - The deployment must have exactly one expected, desired, actual and
       available replica
-    - The object store must be in "Running" state
+    - The object store must be in "running" state
     - The object store must have and addres containing its own name in
       its `.status.endpoints` property
     - The address from the object store's `.status.endpoints` must answer to
@@ -147,7 +147,7 @@ def test_delete_object_store(object_store):  # pylint: disable=W0621
     Scenario: test the deletion of an object store
 
     Given:
-    - An ObjectStore in "Running" state and its associated resources
+    - An ObjectStore in "running" state and its associated resources
       (Deployment, PVC, Secret, Service, PV and Longhorn volume)
 
     When the object store is deleted:
@@ -179,7 +179,7 @@ def assert_object_store_running(manifest):
     store = get_object_store(manifest)
     assert store is not None
     assert "status" in store
-    assert store['status']['state'] == "Running"
+    assert store['status']['state'] == "running"
 
 
 def assert_object_store_has_endpoints(manifest):
@@ -398,7 +398,7 @@ def wait_object_store_running(manifest):
             name)
         if status is not None and \
                 "status" in status and \
-                status['status']['state'] == "Running":
+                status['status']['state'] == "running":
             return
 
         time.sleep(WAIT_INTERVAL)

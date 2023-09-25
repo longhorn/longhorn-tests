@@ -68,9 +68,9 @@ spec:
   - name: longhorn-test
     image: mrohrich/longhorn-manager-test:object-endpoint
     args: [
-#           "-x", "-s",
+            "-x", "-s",
 #           "-m", "coretest",
-#           "-k", "test_object_store",
+            "-k", "test_object_store",
 #           "--skip-recurring-job-test",
            ]
     #TEST_FRAMEWORK_ARGS_PLACEHOLDER
