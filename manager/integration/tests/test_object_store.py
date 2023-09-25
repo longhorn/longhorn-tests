@@ -9,6 +9,7 @@ according to ObjectStore CRDs.
 import random
 import string
 import time
+import base64
 
 import boto3
 import pytest
@@ -55,9 +56,14 @@ def secret():
             'name': f"{DEFAULT_SECRET_NAME}-{uid}",
             'namespace': LONGHORN_NAMESPACE,
         },
-        'string_data': {
-            'RGW_DEFAULT_USER_ACCESS_KEY': DEFAULT_OBJECT_STORE_ACCESS_KEY,
-            'RGW_DEFAULT_UESR_SECRET_KEY': DEFAULT_OBJECT_STORE_SECRET_KEY,
+        'type': 'Opaque',
+        'data': {
+            'RGW_DEFAULT_USER_ACCESS_KEY': base64.b64encode(
+                DEFAULT_OBJECT_STORE_ACCESS_KEY.encode('utf-8')
+            ).decode("utf-8"),
+            'RGW_DEFAULT_USER_SECRET_KEY': base64.b64encode(
+                DEFAULT_OBJECT_STORE_SECRET_KEY.encode('utf-8')
+            ).decode("utf-8"),
         }
     }
     create_secret(manifest)
@@ -208,8 +214,8 @@ def assert_object_store_smoke_s3(manifest):
 
     client = boto3.session.Session().client(
         service_name='s3',
-        aws_access_key_id=store['spec']['credentials']['accessKey'],
-        aws_secret_access_key=store['spec']['credentials']['secretKey'],
+        aws_access_key_id=DEFAULT_OBJECT_STORE_ACCESS_KEY,
+        aws_secret_access_key=DEFAULT_OBJECT_STORE_SECRET_KEY,
         endpoint_url=f"http://{store['status']['endpoints'][0]}",
         use_ssl=False,
     )
@@ -350,7 +356,8 @@ def assert_persistent_volume_removed(manifest):
 
 def assert_longhorn_volume_ready(manifest):
     api = get_custom_object_api_client()
-    name = manifest['metadata']['name']
+    store = manifest['metadata']['name']
+    name = f"pv-{store}"
 
     try:
         vol = api.get_namespaced_custom_object(LONGHORN_API_GROUP,
@@ -366,7 +373,8 @@ def assert_longhorn_volume_ready(manifest):
 
 def assert_longhorn_volume_removed(manifest):
     api = get_custom_object_api_client()
-    name = manifest['metadata']['name']
+    store = manifest['metadata']['name']
+    name = f"pv-{store}"
 
     for _ in range(WAIT_TIMEOUT):
         try:
@@ -448,6 +456,16 @@ def delete_object_store(manifest):
         assert exception.status == 404
 
 
+def get_object_store(manifest):
+    api = get_custom_object_api_client()
+    name = manifest['metadata']['name']
+    return api.get_namespaced_custom_object(LONGHORN_API_GROUP,
+                                            LONGHORN_API_VERSION,
+                                            LONGHORN_NAMESPACE,
+                                            LONGHORN_API_KIND_PLURAL,
+                                            name)
+
+
 def create_secret(manifest):
     api = get_core_api_client()
     api.create_namespaced_secret(LONGHORN_NAMESPACE, manifest)
@@ -460,16 +478,6 @@ def delete_secret(manifest):
                                      LONGHORN_NAMESPACE)
     except ApiException as exception:
         assert exception.status == 404
-
-
-def get_object_store(manifest):
-    api = get_custom_object_api_client()
-    name = manifest['metadata']['name']
-    return api.get_namespaced_custom_object(LONGHORN_API_GROUP,
-                                            LONGHORN_API_VERSION,
-                                            LONGHORN_NAMESPACE,
-                                            LONGHORN_API_KIND_PLURAL,
-                                            name)
 
 
 def gen_id(length):
