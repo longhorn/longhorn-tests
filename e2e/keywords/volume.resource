@@ -47,10 +47,6 @@ Wait until replica ${replica_0} rebuilt, delete replica ${replica_2}
     wait_for_replica_rebuilding_complete    ${volume_name}    ${replica_0}
     delete_replica    ${volume_name}    ${replica_2}
 
-Wait until replica ${replica_0} rebuilt, delete replica ${replica_2}
-    wait_for_replica_rebuilding_complete    ${volume_name}    ${replica_0}
-    delete_replica    ${volume_name}    ${replica_2}
-
 Check data is intact
     check_data    ${volume_name}    ${volume_data_checksum}
 
