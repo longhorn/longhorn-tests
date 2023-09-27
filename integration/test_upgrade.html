@@ -595,7 +595,12 @@ def test_upgrade(longhorn_upgrade_type,
         if v.name != restore_vol_name:
             volume = client.by_id_volume(v.name)
             engine = get_volume_engine(volume)
-            assert engine.image == new_ei.image
+            if hasattr(engine, &#39;engineImage&#39;):
+                print(&#34;Checking engineImage...&#34;)
+                assert engine.engineImage == new_ei.image
+            else:
+                print(&#34;Checking image...&#34;)
+                assert engine.image == new_ei.image
             assert engine.currentImage == new_ei.image
 
     # Check All volumes data
@@ -1270,7 +1275,12 @@ def test_upgrade(longhorn_upgrade_type,
         if v.name != restore_vol_name:
             volume = client.by_id_volume(v.name)
             engine = get_volume_engine(volume)
-            assert engine.image == new_ei.image
+            if hasattr(engine, &#39;engineImage&#39;):
+                print(&#34;Checking engineImage...&#34;)
+                assert engine.engineImage == new_ei.image
+            else:
+                print(&#34;Checking image...&#34;)
+                assert engine.image == new_ei.image
             assert engine.currentImage == new_ei.image
 
     # Check All volumes data
