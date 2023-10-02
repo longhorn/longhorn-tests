@@ -4,6 +4,7 @@ Documentation       Physical Node Keywords
 Library             ../libs/keywords/volume_keywords.py
 Library             ../libs/keywords/node_keywords.py
 Library             ../libs/keywords/workload_keywords.py
+Library             ../libs/keywords/network_keywords.py
 
 *** Keywords ***
 During replica rebuilding, reboot volume node
@@ -57,6 +58,7 @@ Wait for longhorn ready
 
 Restart cluster
     reboot_all_nodes
+    setup_control_plane_network_latency
     wait_for_all_instance_manager_running
     FOR    ${deployment}    IN    @{deployment_list}
         wait_for_workload_pod_stable   ${deployment}

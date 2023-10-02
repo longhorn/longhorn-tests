@@ -13,6 +13,7 @@ ${LOOP_COUNT}    1
 ${RETRY_COUNT}    300
 ${RETRY_INTERVAL}    1
 ${VOLUME_TYPE}    rwo
+${CONTROL_PLANE_NODE_NETWORK_LATENCY_IN_MS}    0
 
 *** Test Cases ***
 Reboot Node One By One While Workload Heavy Writing

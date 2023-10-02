@@ -85,12 +85,20 @@ class NodeExec:
             stdout=True,
             tty=False
         )
-        logging(f"Issued command: {cmd} with result {res}")
+        logging(f"Issued command: {cmd} on {node_name} with result {res}")
         return res
 
     def launch_pod(self, node_name):
         if node_name in self.node_exec_pod:
-            return self.node_exec_pod[node_name]
+            for i in range(DEFAULT_POD_TIMEOUT):
+                pod = self.core_api.read_namespaced_pod(
+                        name=node_name,
+                        namespace=self.namespace
+                      )
+                if pod is not None and pod.status.phase == 'Running':
+                    break
+                time.sleep(DEFAULT_POD_INTERVAL)
+            return pod
         else:
             pod_manifest = {
                 'apiVersion': 'v1',
@@ -114,6 +122,30 @@ class NodeExec:
                             }
                         }
                     },
+                    "tolerations": [{
+                        "key": "node-role.kubernetes.io/master",
+                        "operator": "Equal",
+                        "value": "true",
+                        "effect": "NoSchedule"
+                    },
+                    {
+                        "key": "node-role.kubernetes.io/master",
+                        "operator": "Equal",
+                        "value": "true",
+                        "effect": "NoExecute"
+                    },
+                    {
+                        "key": "node-role.kubernetes.io/control-plane",
+                        "operator": "Equal",
+                        "value": "true",
+                        "effect": "NoSchedule"
+                    },
+                    {
+                        "key": "node-role.kubernetes.io/control-plane",
+                        "operator": "Equal",
+                        "value": "true",
+                        "effect": "NoExecute"
+                    }],
                     'containers': [{
                         'image': 'ubuntu:16.04',
                         'imagePullPolicy': 'IfNotPresent',
