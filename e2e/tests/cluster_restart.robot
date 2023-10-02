@@ -11,6 +11,7 @@ Test Teardown    Cleanup test resources
 ${LOOP_COUNT}    1
 ${RETRY_COUNT}    300
 ${RETRY_INTERVAL}    1
+${CONTROL_PLANE_NODE_NETWORK_LATENCY_IN_MS}    0
 
 *** Test Cases ***
 Restart Cluster While Workload Heavy Writing
