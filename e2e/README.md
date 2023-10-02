@@ -28,7 +28,7 @@ kubectl expose --type=NodePort deployment longhorn-ui -n longhorn-system --port 
 kubectl port-forward services/longhorn-frontend 8080:http -n longhorn-system
 ```
 
-3. export environment variable `KUBECONFIG`:
+3. Export environment variable `KUBECONFIG`:
 ```
 export KUBECONFIG=/path/to/your/kubeconfig.yaml
 ```
