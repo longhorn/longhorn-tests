@@ -33,7 +33,7 @@ kubectl port-forward services/longhorn-frontend 8080:http -n longhorn-system
 export KUBECONFIG=/path/to/your/kubeconfig.yaml
 ```
 
-4. export environment variable `LONGHORN_CLIENT_URL`:
+4. Export environment variable `LONGHORN_CLIENT_URL`:
 ```
 # for example, if it's exposed by nodeport:
 export LONGHORN_CLIENT_URL=http://node-public-ip:30000
