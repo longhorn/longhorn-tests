@@ -20,7 +20,7 @@ kubectl create -f https://raw.githubusercontent.com/longhorn/longhorn/master/dep
                -f https://raw.githubusercontent.com/longhorn/longhorn/master/deploy/backupstores/nfs-backupstore.yaml
 ```
 
-2. expose Longhorn API:
+2. Expose Longhorn API:
 ```
 # for example, using nodeport:
 kubectl expose --type=NodePort deployment longhorn-ui -n longhorn-system --port 8000 --name longhorn-ui-nodeport --overrides '{ "apiVersion": "v1","spec":{"ports": [{"port":8000,"protocol":"TCP","targetPort":8000,"nodePort":30000}]}}'
