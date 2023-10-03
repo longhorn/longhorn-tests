@@ -1259,6 +1259,21 @@ curl -sSL http://10.0.2.212:32744/metrics | grep longhorn_volume | grep ip-10-0-
     </item>
     
     <item>
+      <title>Test Replica Disk Soft Anti-Affinity</title>
+      <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.6.0/test-replica-disk-soft-anti-affinity/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.6.0/test-replica-disk-soft-anti-affinity/</guid>
+      <description>Related issue https://github.com/longhorn/longhorn/issues/3823
+Test initial behavior of global Replica Disk Soft Anti-Affinity setting Given A newly created Longhorn cluster
+Then Replica Zone Disk Anti-Affinity shows as false in the UI
+And the replica-soft-anti-affinity setting shows false with kubectl
+Test initial behavior of global Replica Disk Soft Anti-Affinity setting after upgrade Given A newly upgraded Longhorn cluster
+Then Replica Zone Disk Anti-Affinity shows as false in the UI
+And the replica-soft-anti-affinity shows false with kubectl</description>
+    </item>
+    
+    <item>
       <title>Test replica scale-down warning</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.4.0/test-replica-scale-down-warning/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
