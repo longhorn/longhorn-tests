@@ -206,37 +206,43 @@ class CRD(Base):
         assert False, f"expect volume {volume_name} deleted but it still exists"
 
     def wait_for_volume_state(self, volume_name, desired_state):
+        volume = None
         for i in range(self.retry_count):
             logging(f"Waiting for {volume_name} {desired_state} ({i}) ...")
             try:
-                if self.get(volume_name)["status"]["state"] == desired_state:
+                volume = self.get(volume_name)
+                if volume["status"]["state"] == desired_state:
                     break
             except Exception as e:
-                logging(f"Getting volume {self.get(volume_name)} status error: {e}")
+                logging(f"Getting volume {volume} status error: {e}")
             time.sleep(self.retry_interval)
-        assert self.get(volume_name)["status"]["state"] == desired_state
+        assert volume["status"]["state"] == desired_state
 
     def wait_for_volume_robustness(self, volume_name, desired_state):
+        volume = None
         for i in range(self.retry_count):
             logging(f"Waiting for {volume_name} {desired_state} ({i}) ...")
             try:
-                if self.get(volume_name)["status"]["robustness"] == desired_state:
+                volume = self.get(volume_name)
+                if volume["status"]["robustness"] == desired_state:
                     break
             except Exception as e:
-                logging(f"Getting volume {self.get(volume_name)} robustness error: {e}")
+                logging(f"Getting volume {volume} robustness error: {e}")
             time.sleep(self.retry_interval)
-        assert self.get(volume_name)["status"]["robustness"] == desired_state
+        assert volume["status"]["robustness"] == desired_state
 
     def wait_for_volume_robustness_not(self, volume_name, not_desired_state):
+        volume = None
         for i in range(self.retry_count):
             logging(f"Waiting for {volume_name} robustness not {not_desired_state} ({i}) ...")
             try:
-                if self.get(volume_name)["status"]["robustness"] != not_desired_state:
+                volume = self.get(volume_name)
+                if volume["status"]["robustness"] != not_desired_state:
                     break
             except Exception as e:
-                logging(f"Getting volume {self.get(volume_name)} robustness error: {e}")
+                logging(f"Getting volume {volume} robustness error: {e}")
             time.sleep(self.retry_interval)
-        assert self.get(volume_name)["status"]["robustness"] != not_desired_state
+        assert volume["status"]["robustness"] != not_desired_state
 
     def wait_for_volume_expand_to_size(self, volume_name, expected_size):
         engine = None
