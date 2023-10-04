@@ -1374,7 +1374,7 @@ def test_data_locality_basic(client, core_api, volume_name, pod, settings_reset)
             assert replica["running"] is False
             assert replica["mode"] == ""
 
-    assert volume4.conditions.scheduled.reason == \
+    assert volume4.conditions.Scheduled.reason == \
         "LocalReplicaSchedulingFailure"
 
     volume4 = volume4.updateReplicaCount(replicaCount=3)
@@ -1638,7 +1638,7 @@ def test_soft_anti_affinity_scheduling_volume_disable(client, volume_name): # NO
     for i in range(RETRY_COUNTS_SHORT):
         volume = client.by_id_volume(volume_name)
         assert volume.robustness == VOLUME_ROBUSTNESS_DEGRADED
-        assert volume.conditions.scheduled.status == "False"
+        assert volume.conditions.Scheduled.status == "False"
 
         healthy_replica_count = 0
         for replica in volume.replicas:

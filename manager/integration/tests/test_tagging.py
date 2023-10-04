@@ -254,7 +254,7 @@ def test_tag_scheduling_on_update(client, node_default_tags, volume_name):  # NO
     scheduled = False
     for i in range(RETRY_COUNTS):
         v = client.by_id_volume(volume_name)
-        if v.conditions.scheduled.status == "True":
+        if v.conditions.Scheduled.status == "True":
             scheduled = True
         if scheduled:
             break
