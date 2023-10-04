@@ -1466,12 +1466,12 @@ def test_all_replica_restore_failure(set_random_backupstore, client, core_api, v
     8. Restore a volume from the backup.
     9. Wait for the volume restore in progress by checking if:
        9.1. `volume.restoreStatus` shows the related restore info.
-       9.2. `volume.conditions[restore].status == True &amp;&amp;
-            volume.conditions[restore].reason == &#34;RestoreInProgress&#34;`.
+       9.2. `volume.conditions[Restore].status == True &amp;&amp;
+            volume.conditions[Restore].reason == &#34;RestoreInProgress&#34;`.
        9.3. `volume.ready == false`.
     10. Wait for the restore volume Faulted.
-    11. Check if `volume.conditions[restore].status == False &amp;&amp;
-        volume.conditions[restore].reason == &#34;RestoreFailure&#34;`.
+    11. Check if `volume.conditions[Restore].status == False &amp;&amp;
+        volume.conditions[Restore].reason == &#34;RestoreFailure&#34;`.
     12. Check if `volume.ready == false`.
     13. Make sure auto-salvage is not triggered even the feature is enabled.
     14. Verify if PV/PVC cannot be created from Longhorn.
@@ -1512,8 +1512,8 @@ def test_all_replica_restore_failure(set_random_backupstore, client, core_api, v
     wait_for_volume_detached(client, res_name)
 
     res_volume = client.by_id_volume(res_name)
-    assert res_volume.conditions[&#39;restore&#39;].status == &#34;False&#34;
-    assert res_volume.conditions[&#39;restore&#39;].reason == &#34;RestoreFailure&#34;
+    assert res_volume.conditions[&#39;Restore&#39;].status == &#34;False&#34;
+    assert res_volume.conditions[&#39;Restore&#39;].reason == &#34;RestoreFailure&#34;
     assert res_volume.ready is False
     assert res_volume.state == &#34;detached&#34;
     assert hasattr(res_volume, &#39;pvCreate&#39;) is False
@@ -1546,16 +1546,16 @@ def test_single_replica_restore_failure(set_random_backupstore, client, core_api
     7. Restore a volume from the backup.
     8. Wait for the volume restore start by checking if:
        8.1. `volume.restoreStatus` shows the related restore info.
-       8.2. `volume.conditions[restore].status == True &amp;&amp;
-            volume.conditions[restore].reason == &#34;RestoreInProgress&#34;`.
+       8.2. `volume.conditions[Restore].status == True &amp;&amp;
+            volume.conditions[Restore].reason == &#34;RestoreInProgress&#34;`.
        8.3. `volume.ready == false`.
     9. Find a way to fail just one replica restore.
        e.g. Use iptable to block the restore.
     10. Wait for the restore volume Degraded.
     11. Wait for the volume restore &amp; rebuild complete and check if:
         11.1. `volume.ready == true`
-        11.2. `volume.conditions[restore].status == False &amp;&amp;
-              volume.conditions[restore].reason == &#34;&#34;`.
+        11.2. `volume.conditions[Restore].status == False &amp;&amp;
+              volume.conditions[Restore].reason == &#34;&#34;`.
     12. Create PV/PVC/Pod for the restored volume and wait for the pod start.
     13. Check if the restored volume is state `Healthy`
         after the attachment.
@@ -1779,8 +1779,8 @@ def test_engine_crash_for_restore_volume(set_random_backupstore, client, core_ap
     8. Wait for the volume reattached.
     9. Verify if
       9.1. `volume.ready == false`.
-      9.2. `volume.conditions[restore].status == True &amp;&amp;
-            volume.conditions[restore].reason == &#34;RestoreInProgress&#34;`.
+      9.2. `volume.conditions[Restore].status == True &amp;&amp;
+            volume.conditions[Restore].reason == &#34;RestoreInProgress&#34;`.
     10. Wait for the volume restore complete and detached.
     11. Recreate a pod for the restored volume and wait for the pod start.
     12. Check the data md5sum for the restored data.
@@ -1884,8 +1884,8 @@ def test_engine_crash_for_dr_volume(set_random_backupstore, client, core_api, vo
     12. Wait for the DR volume reattached.
     13. Verify the DR volume:
       13.1. `volume.ready == false`.
-      13.2. `volume.conditions[restore].status == True &amp;&amp;
-            volume.conditions[restore].reason == &#34;RestoreInProgress&#34;`.
+      13.2. `volume.conditions[Restore].status == True &amp;&amp;
+            volume.conditions[Restore].reason == &#34;RestoreInProgress&#34;`.
       13.3. `volume.standby == true`
     14. Activate the DR volume and wait for detached.
     15. Create a pod for the restored volume and wait for the pod start.
@@ -2654,7 +2654,7 @@ def test_replica_failure_during_attaching(settings_reset, client, core_api, volu
     common.wait_for_volume_condition_scheduled(client, volume_name_2,
                                                &#34;status&#34;, &#34;False&#34;)
     volume_2 = client.by_id_volume(volume_name_2)
-    assert volume_2.conditions.scheduled.reason == &#34;ReplicaSchedulingFailure&#34;
+    assert volume_2.conditions.Scheduled.reason == &#34;ReplicaSchedulingFailure&#34;
 
     update_disks[default_disk_name].allowScheduling = True
     update_disks[&#34;extra-disk&#34;][&#34;allowScheduling&#34;] = False
@@ -3936,12 +3936,12 @@ all replica restore failures later.</li>
 <li>Restore a volume from the backup.</li>
 <li>Wait for the volume restore in progress by checking if:
 9.1. <code>volume.restoreStatus</code> shows the related restore info.
-9.2. <code>volume.conditions[restore].status == True &amp;&amp;
-volume.conditions[restore].reason == "RestoreInProgress"</code>.
+9.2. <code>volume.conditions[Restore].status == True &amp;&amp;
+volume.conditions[Restore].reason == "RestoreInProgress"</code>.
 9.3. <code>volume.ready == false</code>.</li>
 <li>Wait for the restore volume Faulted.</li>
-<li>Check if <code>volume.conditions[restore].status == False &amp;&amp;
-volume.conditions[restore].reason == "RestoreFailure"</code>.</li>
+<li>Check if <code>volume.conditions[Restore].status == False &amp;&amp;
+volume.conditions[Restore].reason == "RestoreFailure"</code>.</li>
 <li>Check if <code>volume.ready == false</code>.</li>
 <li>Make sure auto-salvage is not triggered even the feature is enabled.</li>
 <li>Verify if PV/PVC cannot be created from Longhorn.</li>
@@ -3969,12 +3969,12 @@ volume.conditions[restore].reason == "RestoreFailure"</code>.</li>
     8. Restore a volume from the backup.
     9. Wait for the volume restore in progress by checking if:
        9.1. `volume.restoreStatus` shows the related restore info.
-       9.2. `volume.conditions[restore].status == True &amp;&amp;
-            volume.conditions[restore].reason == &#34;RestoreInProgress&#34;`.
+       9.2. `volume.conditions[Restore].status == True &amp;&amp;
+            volume.conditions[Restore].reason == &#34;RestoreInProgress&#34;`.
        9.3. `volume.ready == false`.
     10. Wait for the restore volume Faulted.
-    11. Check if `volume.conditions[restore].status == False &amp;&amp;
-        volume.conditions[restore].reason == &#34;RestoreFailure&#34;`.
+    11. Check if `volume.conditions[Restore].status == False &amp;&amp;
+        volume.conditions[Restore].reason == &#34;RestoreFailure&#34;`.
     12. Check if `volume.ready == false`.
     13. Make sure auto-salvage is not triggered even the feature is enabled.
     14. Verify if PV/PVC cannot be created from Longhorn.
@@ -4015,8 +4015,8 @@ volume.conditions[restore].reason == "RestoreFailure"</code>.</li>
     wait_for_volume_detached(client, res_name)
 
     res_volume = client.by_id_volume(res_name)
-    assert res_volume.conditions[&#39;restore&#39;].status == &#34;False&#34;
-    assert res_volume.conditions[&#39;restore&#39;].reason == &#34;RestoreFailure&#34;
+    assert res_volume.conditions[&#39;Restore&#39;].status == &#34;False&#34;
+    assert res_volume.conditions[&#39;Restore&#39;].reason == &#34;RestoreFailure&#34;
     assert res_volume.ready is False
     assert res_volume.state == &#34;detached&#34;
     assert hasattr(res_volume, &#39;pvCreate&#39;) is False
@@ -4638,8 +4638,8 @@ after the 2nd backup creation.</li>
 <li>Wait for the DR volume reattached.</li>
 <li>Verify the DR volume:
 13.1. <code>volume.ready == false</code>.
-13.2. <code>volume.conditions[restore].status == True &amp;&amp;
-volume.conditions[restore].reason == "RestoreInProgress"</code>.
+13.2. <code>volume.conditions[Restore].status == True &amp;&amp;
+volume.conditions[Restore].reason == "RestoreInProgress"</code>.
 13.3. <code>volume.standby == true</code></li>
 <li>Activate the DR volume and wait for detached.</li>
 <li>Create a pod for the restored volume and wait for the pod start.</li>
@@ -4669,8 +4669,8 @@ volume.conditions[restore].reason == "RestoreInProgress"</code>.
     12. Wait for the DR volume reattached.
     13. Verify the DR volume:
       13.1. `volume.ready == false`.
-      13.2. `volume.conditions[restore].status == True &amp;&amp;
-            volume.conditions[restore].reason == &#34;RestoreInProgress&#34;`.
+      13.2. `volume.conditions[Restore].status == True &amp;&amp;
+            volume.conditions[Restore].reason == &#34;RestoreInProgress&#34;`.
       13.3. `volume.standby == true`
     14. Activate the DR volume and wait for detached.
     15. Create a pod for the restored volume and wait for the pod start.
@@ -4783,8 +4783,8 @@ the engine crashes unexpectedly.</p>
 <li>Wait for the volume reattached.</li>
 <li>Verify if
 9.1. <code>volume.ready == false</code>.
-9.2. <code>volume.conditions[restore].status == True &amp;&amp;
-volume.conditions[restore].reason == "RestoreInProgress"</code>.</li>
+9.2. <code>volume.conditions[Restore].status == True &amp;&amp;
+volume.conditions[Restore].reason == "RestoreInProgress"</code>.</li>
 <li>Wait for the volume restore complete and detached.</li>
 <li>Recreate a pod for the restored volume and wait for the pod start.</li>
 <li>Check the data md5sum for the restored data.</li>
@@ -4808,8 +4808,8 @@ volume.conditions[restore].reason == "RestoreInProgress"</code>.</li>
     8. Wait for the volume reattached.
     9. Verify if
       9.1. `volume.ready == false`.
-      9.2. `volume.conditions[restore].status == True &amp;&amp;
-            volume.conditions[restore].reason == &#34;RestoreInProgress&#34;`.
+      9.2. `volume.conditions[Restore].status == True &amp;&amp;
+            volume.conditions[Restore].reason == &#34;RestoreInProgress&#34;`.
     10. Wait for the volume restore complete and detached.
     11. Recreate a pod for the restored volume and wait for the pod start.
     12. Check the data md5sum for the restored data.
@@ -6887,7 +6887,7 @@ and make sure the extra disk is the only available disk on the node.
     common.wait_for_volume_condition_scheduled(client, volume_name_2,
                                                &#34;status&#34;, &#34;False&#34;)
     volume_2 = client.by_id_volume(volume_name_2)
-    assert volume_2.conditions.scheduled.reason == &#34;ReplicaSchedulingFailure&#34;
+    assert volume_2.conditions.Scheduled.reason == &#34;ReplicaSchedulingFailure&#34;
 
     update_disks[default_disk_name].allowScheduling = True
     update_disks[&#34;extra-disk&#34;][&#34;allowScheduling&#34;] = False
@@ -7542,16 +7542,16 @@ hence there is no error in the restore status.</p>
 <li>Restore a volume from the backup.</li>
 <li>Wait for the volume restore start by checking if:
 8.1. <code>volume.restoreStatus</code> shows the related restore info.
-8.2. <code>volume.conditions[restore].status == True &amp;&amp;
-volume.conditions[restore].reason == "RestoreInProgress"</code>.
+8.2. <code>volume.conditions[Restore].status == True &amp;&amp;
+volume.conditions[Restore].reason == "RestoreInProgress"</code>.
 8.3. <code>volume.ready == false</code>.</li>
 <li>Find a way to fail just one replica restore.
 e.g. Use iptable to block the restore.</li>
 <li>Wait for the restore volume Degraded.</li>
 <li>Wait for the volume restore &amp; rebuild complete and check if:
 11.1. <code>volume.ready == true</code>
-11.2. <code>volume.conditions[restore].status == False &amp;&amp;
-volume.conditions[restore].reason == ""</code>.</li>
+11.2. <code>volume.conditions[Restore].status == False &amp;&amp;
+volume.conditions[Restore].reason == ""</code>.</li>
 <li>Create PV/PVC/Pod for the restored volume and wait for the pod start.</li>
 <li>Check if the restored volume is state <code>Healthy</code>
 after the attachment.</li>
@@ -7582,16 +7582,16 @@ after the attachment.</li>
     7. Restore a volume from the backup.
     8. Wait for the volume restore start by checking if:
        8.1. `volume.restoreStatus` shows the related restore info.
-       8.2. `volume.conditions[restore].status == True &amp;&amp;
-            volume.conditions[restore].reason == &#34;RestoreInProgress&#34;`.
+       8.2. `volume.conditions[Restore].status == True &amp;&amp;
+            volume.conditions[Restore].reason == &#34;RestoreInProgress&#34;`.
        8.3. `volume.ready == false`.
     9. Find a way to fail just one replica restore.
        e.g. Use iptable to block the restore.
     10. Wait for the restore volume Degraded.
     11. Wait for the volume restore &amp; rebuild complete and check if:
         11.1. `volume.ready == true`
-        11.2. `volume.conditions[restore].status == False &amp;&amp;
-              volume.conditions[restore].reason == &#34;&#34;`.
+        11.2. `volume.conditions[Restore].status == False &amp;&amp;
+              volume.conditions[Restore].reason == &#34;&#34;`.
     12. Create PV/PVC/Pod for the restored volume and wait for the pod start.
     13. Check if the restored volume is state `Healthy`
         after the attachment.

@@ -154,10 +154,10 @@ EXPANDED_VOLUME_SIZE = 4  # In Gi
 
 DIRECTORY_PATH = &#39;/tmp/longhorn-test/&#39;
 
-VOLUME_CONDITION_SCHEDULED = &#34;scheduled&#34;
-VOLUME_CONDITION_RESTORE = &#34;restore&#34;
+VOLUME_CONDITION_SCHEDULED = &#34;Scheduled&#34;
+VOLUME_CONDITION_RESTORE = &#34;Restore&#34;
 VOLUME_CONDITION_STATUS = &#34;status&#34;
-VOLUME_CONDITION_TOOMANYSNAPSHOTS = &#34;toomanysnapshots&#34;
+VOLUME_CONDITION_TOOMANYSNAPSHOTS = &#34;TooManySnapshots&#34;
 
 CONDITION_STATUS_TRUE = &#34;True&#34;
 CONDITION_STATUS_FALSE = &#34;False&#34;
@@ -1850,16 +1850,16 @@ def wait_scheduling_failure(client, volume_name):
     scheduling_failure = False
     for i in range(RETRY_COUNTS):
         v = client.by_id_volume(volume_name)
-        if v.conditions.scheduled.status == &#34;False&#34; and \
-                v.conditions.scheduled.reason == \
+        if v.conditions.Scheduled.status == &#34;False&#34; and \
+                v.conditions.Scheduled.reason == \
                 &#34;ReplicaSchedulingFailure&#34;:
             scheduling_failure = True
         if scheduling_failure:
             break
         time.sleep(RETRY_INTERVAL)
     assert scheduling_failure, f&#34; Scheduled Status = &#34; \
-        f&#34;{v.conditions.scheduled.status}, Scheduled reason = &#34; \
-        f&#34;{v.conditions.scheduled.reason}, volume = {v}&#34;
+        f&#34;{v.conditions.Scheduled.status}, Scheduled reason = &#34; \
+        f&#34;{v.conditions.Scheduled.reason}, volume = {v}&#34;
 
 
 def wait_for_device_login(dest_path, name):
@@ -14574,16 +14574,16 @@ volume. Trigger a failed assertion of one is detected.
     scheduling_failure = False
     for i in range(RETRY_COUNTS):
         v = client.by_id_volume(volume_name)
-        if v.conditions.scheduled.status == &#34;False&#34; and \
-                v.conditions.scheduled.reason == \
+        if v.conditions.Scheduled.status == &#34;False&#34; and \
+                v.conditions.Scheduled.reason == \
                 &#34;ReplicaSchedulingFailure&#34;:
             scheduling_failure = True
         if scheduling_failure:
             break
         time.sleep(RETRY_INTERVAL)
     assert scheduling_failure, f&#34; Scheduled Status = &#34; \
-        f&#34;{v.conditions.scheduled.status}, Scheduled reason = &#34; \
-        f&#34;{v.conditions.scheduled.reason}, volume = {v}&#34;</code></pre>
+        f&#34;{v.conditions.Scheduled.status}, Scheduled reason = &#34; \
+        f&#34;{v.conditions.Scheduled.reason}, volume = {v}&#34;</code></pre>
 </details>
 </dd>
 <dt id="tests.common.wait_statefulset"><code class="name flex">

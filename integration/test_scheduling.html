@@ -1402,7 +1402,7 @@ def test_data_locality_basic(client, core_api, volume_name, pod, settings_reset)
             assert replica[&#34;running&#34;] is False
             assert replica[&#34;mode&#34;] == &#34;&#34;
 
-    assert volume4.conditions.scheduled.reason == \
+    assert volume4.conditions.Scheduled.reason == \
         &#34;LocalReplicaSchedulingFailure&#34;
 
     volume4 = volume4.updateReplicaCount(replicaCount=3)
@@ -1666,7 +1666,7 @@ def test_soft_anti_affinity_scheduling_volume_disable(client, volume_name): # NO
     for i in range(RETRY_COUNTS_SHORT):
         volume = client.by_id_volume(volume_name)
         assert volume.robustness == VOLUME_ROBUSTNESS_DEGRADED
-        assert volume.conditions.scheduled.status == &#34;False&#34;
+        assert volume.conditions.Scheduled.status == &#34;False&#34;
 
         healthy_replica_count = 0
         for replica in volume.replicas:
@@ -2495,7 +2495,7 @@ Verify that the replica set contains: one on node-1, one on node-2</p>
             assert replica[&#34;running&#34;] is False
             assert replica[&#34;mode&#34;] == &#34;&#34;
 
-    assert volume4.conditions.scheduled.reason == \
+    assert volume4.conditions.Scheduled.reason == \
         &#34;LocalReplicaSchedulingFailure&#34;
 
     volume4 = volume4.updateReplicaCount(replicaCount=3)
@@ -4051,7 +4051,7 @@ meaning it's unscheduled
     for i in range(RETRY_COUNTS_SHORT):
         volume = client.by_id_volume(volume_name)
         assert volume.robustness == VOLUME_ROBUSTNESS_DEGRADED
-        assert volume.conditions.scheduled.status == &#34;False&#34;
+        assert volume.conditions.Scheduled.status == &#34;False&#34;
 
         healthy_replica_count = 0
         for replica in volume.replicas:

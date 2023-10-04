@@ -3876,7 +3876,7 @@ def test_volume_toomanysnapshots_condition(client, core_api, volume_name):  # NO
 
         if count &lt; max_count:
             volume = client.by_id_volume(volume_name)
-            assert volume.conditions.toomanysnapshots.status == &#34;False&#34;
+            assert volume.conditions.TooManySnapshots.status == &#34;False&#34;
         else:
             wait_for_volume_condition_toomanysnapshots(client, volume_name,
                                                        &#34;status&#34;, &#34;True&#34;)
@@ -12614,7 +12614,7 @@ False.</li>
 
         if count &lt; max_count:
             volume = client.by_id_volume(volume_name)
-            assert volume.conditions.toomanysnapshots.status == &#34;False&#34;
+            assert volume.conditions.TooManySnapshots.status == &#34;False&#34;
         else:
             wait_for_volume_condition_toomanysnapshots(client, volume_name,
                                                        &#34;status&#34;, &#34;True&#34;)
