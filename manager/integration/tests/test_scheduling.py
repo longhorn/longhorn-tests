@@ -1371,7 +1371,7 @@ def test_data_locality_basic(client, core_api, volume_name, pod, settings_reset)
             assert replica["running"] is False
             assert replica["mode"] == ""
 
-    assert volume4.conditions.scheduled.reason == \
+    assert volume4.conditions.Scheduled.reason == \
         "LocalReplicaSchedulingFailure"
 
     volume4 = volume4.updateReplicaCount(replicaCount=3)
