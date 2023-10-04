@@ -126,10 +126,10 @@ EXPANDED_VOLUME_SIZE = 4  # In Gi
 
 DIRECTORY_PATH = '/tmp/longhorn-test/'
 
-VOLUME_CONDITION_SCHEDULED = "scheduled"
-VOLUME_CONDITION_RESTORE = "restore"
+VOLUME_CONDITION_SCHEDULED = "Scheduled"
+VOLUME_CONDITION_RESTORE = "Restore"
 VOLUME_CONDITION_STATUS = "status"
-VOLUME_CONDITION_TOOMANYSNAPSHOTS = "toomanysnapshots"
+VOLUME_CONDITION_TOOMANYSNAPSHOTS = "TooManySnapshots"
 
 CONDITION_STATUS_TRUE = "True"
 CONDITION_STATUS_FALSE = "False"
@@ -1822,16 +1822,16 @@ def wait_scheduling_failure(client, volume_name):
     scheduling_failure = False
     for i in range(RETRY_COUNTS):
         v = client.by_id_volume(volume_name)
-        if v.conditions.scheduled.status == "False" and \
-                v.conditions.scheduled.reason == \
+        if v.conditions.Scheduled.status == "False" and \
+                v.conditions.Scheduled.reason == \
                 "ReplicaSchedulingFailure":
             scheduling_failure = True
         if scheduling_failure:
             break
         time.sleep(RETRY_INTERVAL)
     assert scheduling_failure, f" Scheduled Status = " \
-        f"{v.conditions.scheduled.status}, Scheduled reason = " \
-        f"{v.conditions.scheduled.reason}, volume = {v}"
+        f"{v.conditions.Scheduled.status}, Scheduled reason = " \
+        f"{v.conditions.Scheduled.reason}, volume = {v}"
 
 
 def wait_for_device_login(dest_path, name):
