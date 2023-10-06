@@ -4,7 +4,7 @@ from kubernetes import client
 from kubernetes.stream import stream
 
 from utility.utility import logging
-from utility.utility import wait_delete_pod
+from workload.pod import wait_delete_pod
 from utility.utility import wait_delete_ns
 
 
@@ -52,7 +52,7 @@ class NodeExec:
                 namespace=self.namespace,
                 body=client.V1DeleteOptions()
             )
-            wait_delete_pod(pod.metadata.uid)
+            wait_delete_pod(pod.metadata.name)
         self.core_api.delete_namespace(
             name=self.namespace
         )
@@ -61,15 +61,20 @@ class NodeExec:
 
 
     def issue_cmd(self, node_name, cmd):
+        logging(f"Issuing command: {cmd} on {node_name}")
         pod = self.launch_pod(node_name)
-        exec_command = [
-            'nsenter',
-            '--mount=/rootfs/proc/1/ns/mnt',
-            '--',
-            'sh',
-            '-c',
-            cmd
-        ]
+        if isinstance(cmd, list):
+            exec_command = cmd
+        else:
+            exec_command = [
+                'nsenter',
+                '--mount=/rootfs/proc/1/ns/mnt',
+                '--net=/rootfs/proc/1/ns/net',
+                '--',
+                'sh',
+                '-c',
+                cmd
+            ]
         res = stream(
             self.core_api.connect_get_namespaced_pod_exec,
             pod.metadata.name,
@@ -80,6 +85,7 @@ class NodeExec:
             stdout=True,
             tty=False
         )
+        logging(f"Issued command: {cmd} with result {res}")
         return res
 
     def launch_pod(self, node_name):
@@ -109,7 +115,7 @@ class NodeExec:
                         }
                     },
                     'containers': [{
-                        'image': 'busybox:1.34.0',
+                        'image': 'ubuntu:16.04',
                         'imagePullPolicy': 'IfNotPresent',
                         'securityContext': {
                             'privileged': True
@@ -120,14 +126,29 @@ class NodeExec:
                         ],
                         "volumeMounts": [{
                             'name': 'rootfs',
-                            'mountPath': '/rootfs',
-                            'readOnly': True
+                            'mountPath': '/rootfs'
+                        }, {
+                            'name': 'bus',
+                            'mountPath': '/var/run'
+                        }, {
+                            'name': 'rancher',
+                            'mountPath': '/var/lib/rancher'
                         }],
                     }],
                     'volumes': [{
                         'name': 'rootfs',
                         'hostPath': {
                             'path': '/'
+                        }
+                    }, {
+                        'name': 'bus',
+                        'hostPath': {
+                            'path': '/var/run'
+                        }
+                    }, {
+                        'name': 'rancher',
+                        'hostPath': {
+                            'path': '/var/lib/rancher'
                         }
                     }]
                 }

@@ -136,21 +136,6 @@ def filter_cr(group, version, namespace, plural, field_selector="", label_select
     except ApiException as e:
         logging(f"Listing namespaced custom object: {e}")
 
-def wait_delete_pod(pod_uid, namespace='default'):
-    api = client.CoreV1Api()
-    retry_count, retry_interval = get_retry_count_and_interval()
-    for i in range(retry_count):
-        ret = api.list_namespaced_pod(namespace=namespace)
-        found = False
-        for item in ret.items:
-            if item.metadata.uid == pod_uid:
-                found = True
-                break
-        if not found:
-            break
-        time.sleep(retry_interval)
-    assert not found
-
 def wait_delete_ns(name):
     api = client.CoreV1Api()
     retry_count, retry_interval = get_retry_count_and_interval()
