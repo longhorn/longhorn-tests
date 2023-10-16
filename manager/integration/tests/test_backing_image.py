@@ -630,3 +630,23 @@ def test_backing_image_with_wrong_md5sum(bi_url, client): # NOQA
 
     wait_for_backing_image_status(client, BACKING_IMAGE_NAME,
                                   BACKING_IMAGE_STATE_FAILED_AND_CLEANUP)
+
+
+@pytest.mark.skip(reason="TODO")
+def test_volume_wait_for_backing_image_conditino(): # NOQA
+    """
+    Test the volume condition "WaitForBackingImage"
+
+    Given
+    - Create a BackingImage 
+
+    When
+    - 
+    - Creating the Volume with the BackingImage while it is still in progress
+
+    Then
+    - The condition "WaitForBackingImage" of the Volume
+      would be first True and then change to False when
+      the BackingImage is ready and all the replicas are in running state.
+    """
+    pass
