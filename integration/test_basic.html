@@ -4543,7 +4543,6 @@ def test_default_storage_class_syncup(core_api, request):  # NOQA
                 print(e)
             finally:
                 time.sleep(RETRY_INTERVAL)
-        longhorn_storage_class = storage_api.read_storage_class(&#34;longhorn&#34;)
         assert longhorn_storage_class.allow_volume_expansion is allow_exp
 
     def finalizer():
@@ -8816,7 +8815,6 @@ def test_default_storage_class_syncup(core_api, request):  # NOQA
                 print(e)
             finally:
                 time.sleep(RETRY_INTERVAL)
-        longhorn_storage_class = storage_api.read_storage_class(&#34;longhorn&#34;)
         assert longhorn_storage_class.allow_volume_expansion is allow_exp
 
     def finalizer():
