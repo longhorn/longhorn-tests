@@ -763,6 +763,17 @@ Test steps: Create a cluster and set up this monitoring system: https://github.c
     </item>
     
     <item>
+      <title>Test `Rebuild` in volume.meta blocks engine start</title>
+      <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.6.0/test-rebuild-in-meta-blocks-engine-start/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.6.0/test-rebuild-in-meta-blocks-engine-start/</guid>
+      <description>Related issue https://github.com/longhorn/longhorn/issues/6626
+Test with patched image Given a patched longhorn-engine image with the following code change.
+diff --git a/pkg/sync/sync.go b/pkg/sync/sync.go index b48ddd46..c4523f11 100644 --- a/pkg/sync/sync.go +++ b/pkg/sync/sync.go @@ -534,9 +534,9 @@ func (t *Task) reloadAndVerify(address, instanceName string, repClient *replicaC return err } - if err := repClient.SetRebuilding(false); err != nil { - return err - } + // if err := repClient.SetRebuilding(false); err != nil { + // return err + // } return nil } And a patched longhorn-instance-manager image with the longhorn-engine vendor updated.</description>
+    </item>
+    
+    <item>
       <title>Test access style for S3 compatible backupstore</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.1/test-s3-access-style/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
