@@ -199,6 +199,12 @@ def longhorn_upgrade(longhorn_install_method,
                                     flux_helm_chart_url,
                                     flux_helm_chart_version],
                                    shell=False)
+    elif longhorn_install_method == "argocd":
+        command = "./pipelines/argocd/scripts/upgrade-longhorn.sh"
+        process = subprocess.Popen([command,
+                                    longhorn_repo_url,
+                                    longhorn_repo_branch],
+                                   shell=False)
 
     process.wait()
     if process.returncode == 0:
@@ -264,11 +270,6 @@ def test_upgrade(longhorn_upgrade_type,
     18. Verify the vol_rebuild is still healthy
     """
     longhorn_install_method = longhorn_install_method
-    rancher_hostname = rancher_hostname
-    rancher_access_key = rancher_access_key
-    rancher_secret_key = rancher_secret_key
-    rancher_chart_install_version = rancher_chart_install_version
-    longhorn_repo = longhorn_repo
     longhorn_repo_url = upgrade_longhorn_repo_url
     longhorn_repo_branch = upgrade_longhorn_repo_branch
     longhorn_manager_image = upgrade_longhorn_manager_image
@@ -571,7 +572,12 @@ def test_upgrade(longhorn_upgrade_type,
         if v.name != restore_vol_name:
             volume = client.by_id_volume(v.name)
             engine = get_volume_engine(volume)
-            assert engine.image == new_ei.image
+            if hasattr(engine, 'engineImage'):
+                print("Checking engineImage...")
+                assert engine.engineImage == new_ei.image
+            else:
+                print("Checking image...")
+                assert engine.image == new_ei.image
             assert engine.currentImage == new_ei.image
 
     # Check All volumes data

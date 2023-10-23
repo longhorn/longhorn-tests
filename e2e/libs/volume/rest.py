@@ -1,6 +1,6 @@
 from volume.base import Base
 from utility.utility import get_longhorn_client
-
+from utility.utility import logging
 import time
 import os
 
@@ -50,7 +50,7 @@ class Rest(Base):
                     break
                 time.sleep(RETRY_INTERVAL)
 
-        print(f"get volume {volume_name} endpoint = {endpoint}")
+        logging(f"Got volume {volume_name} endpoint = {endpoint}")
 
         if v.frontend == VOLUME_FRONTEND_BLOCKDEV:
             assert endpoint == os.path.join(DEV_PATH, v.name)
@@ -68,11 +68,10 @@ class Rest(Base):
         return NotImplemented
 
     def wait_for_replica_rebuilding_start(self, volume_name, node_name):
-        print(node_name)
         rebuilding_replica_name = None
         for i in range(RETRY_COUNTS):
             v = self.longhorn_client.by_id_volume(volume_name)
-            print(v.replicas)
+            logging(f"Got volume {volume_name} replicas = {v.replicas}")
             for replica in v.replicas:
                 if replica.hostId == node_name:
                     rebuilding_replica_name = replica.name
@@ -81,18 +80,18 @@ class Rest(Base):
                 break
             time.sleep(RETRY_INTERVAL)
         assert rebuilding_replica_name != None
-        print(rebuilding_replica_name)
+        logging(f"Got rebuilding replica = {rebuilding_replica_name}")
 
         started = False
         for i in range(RETRY_COUNTS):
             v = self.longhorn_client.by_id_volume(volume_name)
-            print(v.rebuildStatus)
+            logging(f"Got volume rebuild status = {v.rebuildStatus}")
             for status in v.rebuildStatus:
                 for replica in v.replicas:
                     if status.replica == replica.name and \
                        replica.hostId == node_name and \
                        status.state == "in_progress":
-                       print(f"{node_name}'s replica is {replica.name}")
+                       logging(f"Started {node_name}'s replica {replica.name} rebuilding")
                        started = True
                        break
             if started:
@@ -104,7 +103,7 @@ class Rest(Base):
         completed = False
         for i in range(RETRY_COUNTS):
             v = self.longhorn_client.by_id_volume(volume_name)
-            print(f"replicas = {v.replicas}")
+            logging(f"Got volume {volume_name} replicas = {v.replicas}")
             for replica in v.replicas:
                 # use replica.mode is RW or RO to check if this replica
                 # has been rebuilt or not
@@ -115,7 +114,7 @@ class Rest(Base):
                 # so it's no way to distinguish "rebuilding not started yet"
                 # or "rebuilding already completed" using rebuildStatus
                 if replica.hostId == node_name and replica.mode == "RW":
-                    print(f"{node_name}'s replica {replica.name} becomes RW")
+                    logging(f"Completed {node_name}'s replica {replica.name} rebuilding")
                     completed = True
                     break
             if completed:

@@ -71,3 +71,10 @@ output "instance_mapping" {
     )
   )
 }
+
+output "controlplane_public_ip" {
+  depends_on = [
+    aws_eip.lh_aws_eip_controlplane
+  ]
+  value = aws_eip.lh_aws_eip_controlplane[0].public_ip
+}

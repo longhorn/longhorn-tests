@@ -3,6 +3,7 @@ Documentation    Volume Keywords
 
 Library    Collections
 Library    ../libs/keywords/volume_keywords.py
+Library    ../libs/keywords/workload_keywords.py
 Library    ../libs/keywords/common_keywords.py
 
 *** Keywords ***
@@ -12,7 +13,7 @@ Create a volume with ${size} GB and ${replica_count} replicas
     Set Test Variable    ${volume_name}
     Append To List    ${volume_list}    ${volume_name}
 
-Create volume ${idx} with size ${size} GB and ${replica_count} replicas
+Create volume ${idx} with ${size} GB and ${replica_count} replicas
     ${volume_name} =    create_volume   ${size}    ${replica_count}
     attach_volume    ${volume_name}
     Insert Into List    ${volume_list}    ${idx}    ${volume_name}
@@ -46,10 +47,6 @@ Wait until replica ${replica_0} rebuilt, delete replica ${replica_2}
     wait_for_replica_rebuilding_complete    ${volume_name}    ${replica_0}
     delete_replica    ${volume_name}    ${replica_2}
 
-Wait until replica ${replica_0} rebuilt, delete replica ${replica_2}
-    wait_for_replica_rebuilding_complete    ${volume_name}    ${replica_0}
-    delete_replica    ${volume_name}    ${replica_2}
-
 Check data is intact
     check_data    ${volume_name}    ${volume_data_checksum}
 
@@ -73,3 +70,7 @@ Wait until replica on replica node rebuilt
     ${node_name} =    get_replica_node    ${volume_name}
     wait_for_replica_rebuilding_start    ${volume_name}    ${node_name}
     wait_for_replica_rebuilding_complete    ${volume_name}    ${node_name}
+
+Wait for volume of statefulset ${idx} healthy
+    ${volume_name} =    get_workload_volume_name    ${statefulset_list}[${idx}]
+    wait_for_volume_healthy    ${volume_name}

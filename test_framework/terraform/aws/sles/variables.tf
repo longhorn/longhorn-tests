@@ -122,3 +122,8 @@ variable "cis_hardening" {
   type    = bool
   default = false
 }
+
+variable "resources_owner" {
+  type        = string
+  default     = "longhorn-infra"
+}

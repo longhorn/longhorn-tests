@@ -1,5 +1,3 @@
-import logging
-
 from replica.base import Base
 from replica.crd import CRD
 from strategy import LonghornOperationStrategy

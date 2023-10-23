@@ -102,14 +102,18 @@ node {
                                        --env TF_VAR_os_distro_version=${DISTRO_VERSION} \
                                        --env TF_VAR_do_token=${env.TF_VAR_do_token} \
                                        --env TF_VAR_lh_aws_access_key=${AWS_ACCESS_KEY} \
+                                       --env TF_VAR_lh_aws_secret_key=${AWS_SECRET_KEY} \
+                                       --env AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY} \
+                                       --env AWS_SECRET_ACCESS_KEY=${AWS_SECRET_KEY} \
+                                       --env AWS_DEFAULT_REGION=${AWS_REGION} \
                                        --env TF_VAR_lh_aws_instance_name_controlplane="${JOB_BASE_NAME}-ctrl" \
                                        --env TF_VAR_lh_aws_instance_name_worker="${JOB_BASE_NAME}-wrk" \
                                        --env TF_VAR_lh_aws_instance_type_controlplane=${CONTROLPLANE_INSTANCE_TYPE} \
                                        --env TF_VAR_lh_aws_instance_type_worker=${WORKER_INSTANCE_TYPE}\
-                                       --env TF_VAR_lh_aws_secret_key=${AWS_SECRET_KEY} \
                                        --env TF_VAR_selinux_mode=${SELINUX_MODE} \
                                        --env TF_VAR_registration_code=${REGISTRATION_CODE} \
                                        --env TF_VAR_cis_hardening=${CIS_HARDENING} \
+                                       --env TF_VAR_resources_owner=longhorn-long-running \
                                        ${imageName}
                 """
             }

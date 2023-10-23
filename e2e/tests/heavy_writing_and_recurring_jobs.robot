@@ -10,11 +10,13 @@ Test Teardown    Cleanup test resources
 
 *** Variables ***
 ${LOOP_COUNT}    1
+${RETRY_COUNT}    300
+${RETRY_INTERVAL}    1
 
 *** Test Cases ***
 Reboot Volume Node While Heavy Writing And Recurring Jobs Exist
-    Create volume 0 with size 2 GB and 1 replicas
-    Create volume 1 with size 2 GB and 3 replicas
+    Create volume 0 with 2 GB and 1 replicas
+    Create volume 1 with 2 GB and 3 replicas
     Keep writing data to volume 0
     Keep Writing data to volume 1
     Create snapshot and backup recurring job for volume 0
@@ -28,8 +30,8 @@ Reboot Volume Node While Heavy Writing And Recurring Jobs Exist
     END
 
 Reboot Replica Node While Heavy Writing And Recurring Jobs Exist
-    Create volume 0 with size 2 GB and 1 replicas
-    Create volume 1 with size 2 GB and 3 replicas
+    Create volume 0 with 2 GB and 1 replicas
+    Create volume 1 with 2 GB and 3 replicas
     Keep Writing data to volume 0
     Keep Writing data to volume 1
     Create snapshot and backup recurring job for volume 0

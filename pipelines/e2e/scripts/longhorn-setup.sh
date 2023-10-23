@@ -9,6 +9,7 @@ source pipelines/utilities/create_aws_secret.sh
 source pipelines/utilities/install_backupstores.sh
 source pipelines/utilities/create_longhorn_namespace.sh
 source pipelines/utilities/longhorn_manifest.sh
+source pipelines/utilities/longhorn_ui.sh
 source pipelines/utilities/install_litmus.sh
 source pipelines/utilities/run_longhorn_e2e_test.sh
 
@@ -48,7 +49,15 @@ main(){
 
   generate_longhorn_yaml_manifest
   install_longhorn_by_manifest
-  run_longhorn_e2e_test
+
+  setup_longhorn_ui_nodeport
+  export_longhorn_ui_url
+
+  if [[ -n "${LONGHORN_TESTS_CUSTOM_IMAGE}" ]]; then
+    run_longhorn_e2e_test
+  else
+    run_longhorn_e2e_test_out_of_cluster
+  fi
 }
 
 main
