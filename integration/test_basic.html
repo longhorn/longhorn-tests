@@ -126,6 +126,8 @@ from common import DEFAULT_BACKUP_COMPRESSION_METHOD
 from common import BACKUP_COMPRESSION_METHOD_LZ4
 from common import BACKUP_COMPRESSION_METHOD_GZIP
 from common import BACKUP_COMPRESSION_METHOD_NONE
+from common import create_and_wait_deployment
+from common import get_custom_object_api_client
 
 from backupstore import backupstore_delete_volume_cfg_file
 from backupstore import backupstore_cleanup
@@ -139,6 +141,7 @@ from backupstore import backupstore_get_backup_volume_prefix
 from backupstore import set_backupstore_url, set_backupstore_credential_secret, set_backupstore_poll_interval  # NOQA
 from backupstore import reset_backupstore_setting  # NOQA
 from backupstore import set_backupstore_s3, backupstore_get_secret  # NOQA
+from backupstore import backupstore_invalid # NOQA
 
 from kubernetes import client as k8sclient
 
@@ -5529,8 +5532,14 @@ def test_filesystem_trim(client, fs_type):  # NOQA
     wait_for_volume_delete(client, test_volume_name)
 
 
-@pytest.mark.skip(reason=&#34;TODO&#34;)
-def test_backuptarget_invalid(): # NOQA
+def test_backuptarget_invalid(apps_api, # NOQA
+                              client, # NOQA
+                              core_api, # NOQA
+                              backupstore_invalid, # NOQA
+                              make_deployment_with_pvc, # NOQA
+                              pvc_name, # NOQA
+                              request, # NOQA
+                              volume_name): # NOQA
     &#34;&#34;&#34;
     Related issue :
     https://github.com/longhorn/longhorn/issues/1249
@@ -5550,7 +5559,36 @@ def test_backuptarget_invalid(): # NOQA
     Then
     - Backup will be failed and the backup state is Error.
     &#34;&#34;&#34;
-    pass
+    volume = create_and_check_volume(client, volume_name)
+    pvc_name = volume_name + &#34;-pvc&#34;
+    create_pv_for_volume(client, core_api, volume, volume_name)
+    create_pvc_for_volume(client, core_api, volume, pvc_name)
+
+    deployment_name = volume_name + &#34;-dep&#34;
+    deployment = make_deployment_with_pvc(deployment_name, pvc_name)
+    create_and_wait_deployment(apps_api, deployment)
+
+    pod_names = common.get_deployment_pod_names(core_api, deployment)
+    write_pod_volume_random_data(core_api, pod_names[0], &#34;/data/test&#34;,
+                                 DATA_SIZE_IN_MB_1)
+
+    volume = client.by_id_volume(volume_name)
+    snap = create_snapshot(client, volume_name)
+    volume.snapshotBackup(name=snap.name)
+
+    for i in range(RETRY_COMMAND_COUNT):
+        api = get_custom_object_api_client()
+        backups = api.list_namespaced_custom_object(&#34;longhorn.io&#34;,
+                                                    &#34;v1beta2&#34;,
+                                                    &#34;longhorn-system&#34;,
+                                                    &#34;backups&#34;)
+
+        if backups[&#34;items&#34;][0][&#34;status&#34;][&#34;state&#34;] != &#34;&#34;:
+            break
+        time.sleep(RETRY_INTERVAL)
+
+    assert backups[&#34;items&#34;][0][&#34;spec&#34;][&#34;snapshotName&#34;] == snap.name
+    assert backups[&#34;items&#34;][0][&#34;status&#34;][&#34;state&#34;] == &#34;Error&#34;
 
 
 @pytest.mark.volume_backup_restore   # NOQA
@@ -8584,7 +8622,7 @@ def test_backup_volume_restore_with_access_mode(core_api, # NOQA
 </details>
 </dd>
 <dt id="tests.test_basic.test_backuptarget_invalid"><code class="name flex">
-<span>def <span class="ident">test_backuptarget_invalid</span></span>(<span>)</span>
+<span>def <span class="ident">test_backuptarget_invalid</span></span>(<span>apps_api, client, core_api, backupstore_invalid, make_deployment_with_pvc, pvc_name, request, volume_name)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Related issue :
@@ -8603,8 +8641,14 @@ test steps."</p>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">@pytest.mark.skip(reason=&#34;TODO&#34;)
-def test_backuptarget_invalid(): # NOQA
+<pre><code class="python">def test_backuptarget_invalid(apps_api, # NOQA
+                              client, # NOQA
+                              core_api, # NOQA
+                              backupstore_invalid, # NOQA
+                              make_deployment_with_pvc, # NOQA
+                              pvc_name, # NOQA
+                              request, # NOQA
+                              volume_name): # NOQA
     &#34;&#34;&#34;
     Related issue :
     https://github.com/longhorn/longhorn/issues/1249
@@ -8624,7 +8668,36 @@ def test_backuptarget_invalid(): # NOQA
     Then
     - Backup will be failed and the backup state is Error.
     &#34;&#34;&#34;
-    pass</code></pre>
+    volume = create_and_check_volume(client, volume_name)
+    pvc_name = volume_name + &#34;-pvc&#34;
+    create_pv_for_volume(client, core_api, volume, volume_name)
+    create_pvc_for_volume(client, core_api, volume, pvc_name)
+
+    deployment_name = volume_name + &#34;-dep&#34;
+    deployment = make_deployment_with_pvc(deployment_name, pvc_name)
+    create_and_wait_deployment(apps_api, deployment)
+
+    pod_names = common.get_deployment_pod_names(core_api, deployment)
+    write_pod_volume_random_data(core_api, pod_names[0], &#34;/data/test&#34;,
+                                 DATA_SIZE_IN_MB_1)
+
+    volume = client.by_id_volume(volume_name)
+    snap = create_snapshot(client, volume_name)
+    volume.snapshotBackup(name=snap.name)
+
+    for i in range(RETRY_COMMAND_COUNT):
+        api = get_custom_object_api_client()
+        backups = api.list_namespaced_custom_object(&#34;longhorn.io&#34;,
+                                                    &#34;v1beta2&#34;,
+                                                    &#34;longhorn-system&#34;,
+                                                    &#34;backups&#34;)
+
+        if backups[&#34;items&#34;][0][&#34;status&#34;][&#34;state&#34;] != &#34;&#34;:
+            break
+        time.sleep(RETRY_INTERVAL)
+
+    assert backups[&#34;items&#34;][0][&#34;spec&#34;][&#34;snapshotName&#34;] == snap.name
+    assert backups[&#34;items&#34;][0][&#34;status&#34;][&#34;state&#34;] == &#34;Error&#34;</code></pre>
 </details>
 </dd>
 <dt id="tests.test_basic.test_cleanup_system_generated_snapshots"><code class="name flex">

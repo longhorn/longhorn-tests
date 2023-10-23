@@ -51,6 +51,7 @@ from common import get_backupstore_url
 from common import get_backupstore_poll_interval
 from common import get_backupstores
 from common import system_backups_cleanup
+from common import get_custom_object_api_client
 
 BACKUPSTORE_BV_PREFIX = &#34;/backupstore/volumes/&#34;
 BACKUPSTORE_LOCK_DURATION = 150
@@ -58,6 +59,14 @@ BACKUPSTORE_LOCK_DURATION = 150
 TEMP_FILE_PATH = &#34;/tmp/temp_file&#34;
 
 BACKUPSTORE = get_backupstores()
+
+
+@pytest.fixture
+def backupstore_invalid(client):
+    set_backupstore_invalid(client)
+    yield
+    reset_backupstore_setting(client)
+    backup_cleanup()
 
 
 @pytest.fixture
@@ -101,6 +110,13 @@ def reset_backupstore_setting(client):
     backup_store_poll_interval = client.by_id_setting(
         SETTING_BACKUPSTORE_POLL_INTERVAL)
     client.update(backup_store_poll_interval, value=&#34;300&#34;)
+
+
+def set_backupstore_invalid(client):
+    poll_interval = get_backupstore_poll_interval()
+    set_backupstore_url(client, &#34;nfs://notexist:/opt/backupstore&#34;)
+    set_backupstore_credential_secret(client, &#34;&#34;)
+    set_backupstore_poll_interval(client, poll_interval)
 
 
 def set_backupstore_s3(client):
@@ -164,6 +180,22 @@ def umount_nfs_backupstore(client, mount_path=&#34;/mnt/nfs&#34;):
     subprocess.check_output(cmd)
     cmd = [&#34;rmdir&#34;, mount_path]
     subprocess.check_output(cmd)
+
+
+def backup_cleanup():
+    # Use k8s api to delete all backup especially backup in error state
+    # Because backup in error state does not have backup volume
+    api = get_custom_object_api_client()
+    backups = api.list_namespaced_custom_object(&#34;longhorn.io&#34;,
+                                                &#34;v1beta2&#34;,
+                                                &#34;longhorn-system&#34;,
+                                                &#34;backups&#34;)
+    for backup in backups[&#39;items&#39;]:
+        api.delete_namespaced_custom_object(&#34;longhorn.io&#34;,
+                                            &#34;v1beta2&#34;,
+                                            &#34;longhorn-system&#34;,
+                                            &#34;backups&#34;,
+                                            backup[&#39;metadata&#39;][&#39;name&#39;])
 
 
 def backupstore_cleanup(client):
@@ -711,6 +743,31 @@ def backupstore_wait_for_lock_expiration():
 <section>
 <h2 class="section-title" id="header-functions">Functions</h2>
 <dl>
+<dt id="tests.backupstore.backup_cleanup"><code class="name flex">
+<span>def <span class="ident">backup_cleanup</span></span>(<span>)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def backup_cleanup():
+    # Use k8s api to delete all backup especially backup in error state
+    # Because backup in error state does not have backup volume
+    api = get_custom_object_api_client()
+    backups = api.list_namespaced_custom_object(&#34;longhorn.io&#34;,
+                                                &#34;v1beta2&#34;,
+                                                &#34;longhorn-system&#34;,
+                                                &#34;backups&#34;)
+    for backup in backups[&#39;items&#39;]:
+        api.delete_namespaced_custom_object(&#34;longhorn.io&#34;,
+                                            &#34;v1beta2&#34;,
+                                            &#34;longhorn-system&#34;,
+                                            &#34;backups&#34;,
+                                            backup[&#39;metadata&#39;][&#39;name&#39;])</code></pre>
+</details>
+</dd>
 <dt id="tests.backupstore.backup_volume_path"><code class="name flex">
 <span>def <span class="ident">backup_volume_path</span></span>(<span>volume_name)</span>
 </code></dt>
@@ -1070,6 +1127,23 @@ def backupstore_wait_for_lock_expiration():
 
     else:
         raise NotImplementedError</code></pre>
+</details>
+</dd>
+<dt id="tests.backupstore.backupstore_invalid"><code class="name flex">
+<span>def <span class="ident">backupstore_invalid</span></span>(<span>client)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@pytest.fixture
+def backupstore_invalid(client):
+    set_backupstore_invalid(client)
+    yield
+    reset_backupstore_setting(client)
+    backup_cleanup()</code></pre>
 </details>
 </dd>
 <dt id="tests.backupstore.backupstore_nfs"><code class="name flex">
@@ -1745,6 +1819,22 @@ we can switch to removing the locks directly</p></div>
     assert backup_target_credential_setting.value == credential_secret</code></pre>
 </details>
 </dd>
+<dt id="tests.backupstore.set_backupstore_invalid"><code class="name flex">
+<span>def <span class="ident">set_backupstore_invalid</span></span>(<span>client)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def set_backupstore_invalid(client):
+    poll_interval = get_backupstore_poll_interval()
+    set_backupstore_url(client, &#34;nfs://notexist:/opt/backupstore&#34;)
+    set_backupstore_credential_secret(client, &#34;&#34;)
+    set_backupstore_poll_interval(client, poll_interval)</code></pre>
+</details>
+</dd>
 <dt id="tests.backupstore.set_backupstore_nfs"><code class="name flex">
 <span>def <span class="ident">set_backupstore_nfs</span></span>(<span>client)</span>
 </code></dt>
@@ -1880,6 +1970,7 @@ def set_random_backupstore(request, client):
 </li>
 <li><h3><a href="#header-functions">Functions</a></h3>
 <ul class="">
+<li><code><a title="tests.backupstore.backup_cleanup" href="#tests.backupstore.backup_cleanup">backup_cleanup</a></code></li>
 <li><code><a title="tests.backupstore.backup_volume_path" href="#tests.backupstore.backup_volume_path">backup_volume_path</a></code></li>
 <li><code><a title="tests.backupstore.backupstore_cleanup" href="#tests.backupstore.backupstore_cleanup">backupstore_cleanup</a></code></li>
 <li><code><a title="tests.backupstore.backupstore_corrupt_backup_cfg_file" href="#tests.backupstore.backupstore_corrupt_backup_cfg_file">backupstore_corrupt_backup_cfg_file</a></code></li>
@@ -1897,6 +1988,7 @@ def set_random_backupstore(request, client):
 <li><code><a title="tests.backupstore.backupstore_get_backup_volume_prefix" href="#tests.backupstore.backupstore_get_backup_volume_prefix">backupstore_get_backup_volume_prefix</a></code></li>
 <li><code><a title="tests.backupstore.backupstore_get_secret" href="#tests.backupstore.backupstore_get_secret">backupstore_get_secret</a></code></li>
 <li><code><a title="tests.backupstore.backupstore_get_volume_cfg_file_path" href="#tests.backupstore.backupstore_get_volume_cfg_file_path">backupstore_get_volume_cfg_file_path</a></code></li>
+<li><code><a title="tests.backupstore.backupstore_invalid" href="#tests.backupstore.backupstore_invalid">backupstore_invalid</a></code></li>
 <li><code><a title="tests.backupstore.backupstore_nfs" href="#tests.backupstore.backupstore_nfs">backupstore_nfs</a></code></li>
 <li><code><a title="tests.backupstore.backupstore_s3" href="#tests.backupstore.backupstore_s3">backupstore_s3</a></code></li>
 <li><code><a title="tests.backupstore.backupstore_wait_for_lock_expiration" href="#tests.backupstore.backupstore_wait_for_lock_expiration">backupstore_wait_for_lock_expiration</a></code></li>
@@ -1930,6 +2022,7 @@ def set_random_backupstore(request, client):
 <li><code><a title="tests.backupstore.nfs_write_backup_cfg_file" href="#tests.backupstore.nfs_write_backup_cfg_file">nfs_write_backup_cfg_file</a></code></li>
 <li><code><a title="tests.backupstore.reset_backupstore_setting" href="#tests.backupstore.reset_backupstore_setting">reset_backupstore_setting</a></code></li>
 <li><code><a title="tests.backupstore.set_backupstore_credential_secret" href="#tests.backupstore.set_backupstore_credential_secret">set_backupstore_credential_secret</a></code></li>
+<li><code><a title="tests.backupstore.set_backupstore_invalid" href="#tests.backupstore.set_backupstore_invalid">set_backupstore_invalid</a></code></li>
 <li><code><a title="tests.backupstore.set_backupstore_nfs" href="#tests.backupstore.set_backupstore_nfs">set_backupstore_nfs</a></code></li>
 <li><code><a title="tests.backupstore.set_backupstore_poll_interval" href="#tests.backupstore.set_backupstore_poll_interval">set_backupstore_poll_interval</a></code></li>
 <li><code><a title="tests.backupstore.set_backupstore_s3" href="#tests.backupstore.set_backupstore_s3">set_backupstore_s3</a></code></li>
