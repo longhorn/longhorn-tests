@@ -12,6 +12,8 @@ from workload.workload import get_workload_pods
 from workload.pod import IMAGE_LITMUX
 
 NODE_CPU_LOAD_PERCENTAGE = 100
+NODE_MEM_LOAD_PERCENTAGE = 100
+NODE_MEM_VM_WORKERS = 1
 NODE_STRESS_TIMEOUT_SECOND = 300
 
 LABEL_STRESS_HELPER = "longhorn-stress-helper"
@@ -36,4 +38,20 @@ class Stress:
 
             pod_name = manifest['metadata']['name']
             logging(f"Creating cpu stress pod {pod_name} on {node_name}")
+            create_pod(manifest, is_wait_for_pod_running=True)
+
+    def memory(self, node_names):
+        for node_name in node_names:
+            manifest = new_pod_manifest(
+                image=IMAGE_LITMUX,
+                command=["stress-ng"],
+                args=['--vm', str(NODE_MEM_VM_WORKERS),
+					  '--vm-bytes', f"{NODE_MEM_LOAD_PERCENTAGE}%",
+					  '--timeout', str(NODE_STRESS_TIMEOUT_SECOND)],
+                node_name=node_name,
+                labels={'app': LABEL_STRESS_HELPER}
+            )
+
+            pod_name = manifest['metadata']['name']
+            logging(f"Creating memory stress pod {pod_name} on {node_name}")
             create_pod(manifest, is_wait_for_pod_running=True)

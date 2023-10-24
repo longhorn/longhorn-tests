@@ -67,3 +67,6 @@ Restart cluster
 
 During replica rebuilding, stress volume node cpu
     stress_node_cpu_by_volume    ${volume_name}
+
+During replica rebuilding, stress volume node memory
+    stress_node_memory_by_volume    ${volume_name}

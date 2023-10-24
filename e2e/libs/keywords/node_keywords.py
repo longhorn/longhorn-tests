@@ -46,3 +46,8 @@ class node_keywords:
         volume_keywords = BuiltIn().get_library_instance('volume_keywords')
         volume_node = volume_keywords.get_volume_node(volume_name)
         self.stress.cpu([volume_node])
+
+    def stress_node_memory_by_volume(self, volume_name):
+        volume_keywords = BuiltIn().get_library_instance('volume_keywords')
+        volume_node = volume_keywords.get_volume_node(volume_name)
+        self.stress.memory([volume_node])
