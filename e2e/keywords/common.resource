@@ -2,6 +2,7 @@
 Documentation       Common keywords
 
 Library             ../libs/keywords/common_keywords.py
+Library             ../libs/keywords/node_keywords.py
 Library             ../libs/keywords/volume_keywords.py
 Library             ../libs/keywords/recurring_job_keywords.py
 Library             ../libs/keywords/workload_keywords.py
@@ -24,6 +25,7 @@ Set test environment
 
 Cleanup test resources
     cleanup_node_exec
+    cleanup_stress_helper
     cleanup_recurring_jobs    ${volume_list}
     cleanup_volumes    ${volume_list}
     cleanup_deployments    ${deployment_list}
