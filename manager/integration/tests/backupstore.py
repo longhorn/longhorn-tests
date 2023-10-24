@@ -23,6 +23,7 @@ from common import get_backupstore_url
 from common import get_backupstore_poll_interval
 from common import get_backupstores
 from common import system_backups_cleanup
+from common import get_custom_object_api_client
 
 BACKUPSTORE_BV_PREFIX = "/backupstore/volumes/"
 BACKUPSTORE_LOCK_DURATION = 150
@@ -30,6 +31,14 @@ BACKUPSTORE_LOCK_DURATION = 150
 TEMP_FILE_PATH = "/tmp/temp_file"
 
 BACKUPSTORE = get_backupstores()
+
+
+@pytest.fixture
+def backupstore_invalid(client):
+    set_backupstore_invalid(client)
+    yield
+    reset_backupstore_setting(client)
+    backup_cleanup()
 
 
 @pytest.fixture
@@ -73,6 +82,13 @@ def reset_backupstore_setting(client):
     backup_store_poll_interval = client.by_id_setting(
         SETTING_BACKUPSTORE_POLL_INTERVAL)
     client.update(backup_store_poll_interval, value="300")
+
+
+def set_backupstore_invalid(client):
+    poll_interval = get_backupstore_poll_interval()
+    set_backupstore_url(client, "nfs://notexist:/opt/backupstore")
+    set_backupstore_credential_secret(client, "")
+    set_backupstore_poll_interval(client, poll_interval)
 
 
 def set_backupstore_s3(client):
@@ -136,6 +152,22 @@ def umount_nfs_backupstore(client, mount_path="/mnt/nfs"):
     subprocess.check_output(cmd)
     cmd = ["rmdir", mount_path]
     subprocess.check_output(cmd)
+
+
+def backup_cleanup():
+    # Use k8s api to delete all backup especially backup in error state
+    # Because backup in error state does not have backup volume
+    api = get_custom_object_api_client()
+    backups = api.list_namespaced_custom_object("longhorn.io",
+                                                "v1beta2",
+                                                "longhorn-system",
+                                                "backups")
+    for backup in backups['items']:
+        api.delete_namespaced_custom_object("longhorn.io",
+                                            "v1beta2",
+                                            "longhorn-system",
+                                            "backups",
+                                            backup['metadata']['name'])
 
 
 def backupstore_cleanup(client):
