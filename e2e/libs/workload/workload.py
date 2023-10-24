@@ -1,10 +1,13 @@
+import time
+import yaml
+
 from kubernetes import client
 from kubernetes.client.rest import ApiException
 from kubernetes.stream import stream
-import time
-import yaml
-from utility.utility import logging
+
 from utility.utility import get_retry_count_and_interval
+from utility.utility import logging
+
 
 WAIT_FOR_POD_STABLE_MAX_RETRY = 90
 

@@ -1,11 +1,13 @@
-from kubernetes import client
-import yaml
-import time
-from utility.utility import logging
-from utility.utility import apply_cr_from_yaml, get_cr
-from utility.utility import wait_for_cluster_ready
-from utility.utility import list_nodes
 import boto3
+import time
+import yaml
+
+from kubernetes import client
+
+from utility.utility import list_nodes
+from utility.utility import logging
+from utility.utility import wait_for_cluster_ready
+
 
 class Node:
 

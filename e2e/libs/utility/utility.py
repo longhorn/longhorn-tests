@@ -8,8 +8,10 @@ import os
 import socket
 import time
 import yaml
+
 from robot.api import logger
 from robot.libraries.BuiltIn import BuiltIn
+
 
 def logging(msg, also_report=False):
     if also_report:
