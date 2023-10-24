@@ -24,10 +24,14 @@ def get_retry_count_and_interval():
     retry_interval = int(BuiltIn().get_variable_value("${RETRY_INTERVAL}"))
     return retry_count, retry_interval
 
-def generate_volume_name():
-    return "vol-" + \
+def generate_name(name_prefix="test-"):
+    return name_prefix + \
         ''.join(random.choice(string.ascii_lowercase + string.digits)
                 for _ in range(6))
+
+def generate_volume_name():
+    return generate_name("vol-")
+
 
 def init_k8s_api_client():
     if os.getenv('LONGHORN_CLIENT_URL'):

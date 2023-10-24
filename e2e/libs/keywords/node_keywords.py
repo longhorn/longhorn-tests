@@ -41,3 +41,8 @@ class node_keywords:
 
     def cleanup_stress_helper(self):
         self.stress.cleanup()
+
+    def stress_node_cpu_by_volume(self, volume_name):
+        volume_keywords = BuiltIn().get_library_instance('volume_keywords')
+        volume_node = volume_keywords.get_volume_node(volume_name)
+        self.stress.cpu([volume_node])
