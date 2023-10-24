@@ -206,6 +206,10 @@
   </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/stress/backup-listing/</loc>
   </url><url>
+    <loc>https://longhorn.github.io/longhorn-tests/manual/test-cases-to-reproduce-attach-detach-issues/attachment-detachment-issues-reproducibility/</loc>
+  </url><url>
+    <loc>https://longhorn.github.io/longhorn-tests/manual/test-cases-to-reproduce-attach-detach-issues/</loc>
+  </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.2/delete-cronjob-for-detached-volumes/</loc>
   </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.4.0/test-csi-plugin-liveness-probe/</loc>

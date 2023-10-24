@@ -758,52 +758,24 @@
   
 </aside>
 
-
 <main style="padding: 1%; width: 70%;">
-  <h1 id="title">Test <code>Rebuild</code> in volume.meta blocks engine start</h1>
-  <div>
-    <article id="content">
-       <h2 id="related-issue">Related issue</h2>
-<p><a href="https://github.com/longhorn/longhorn/issues/6626">https://github.com/longhorn/longhorn/issues/6626</a></p>
-<h2 id="test-with-patched-image">Test with patched image</h2>
-<p><strong>Given</strong> a patched longhorn-engine image with the following code change.</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-diff" data-lang="diff"><span style="display:flex;"><span>diff --git a/pkg/sync/sync.go b/pkg/sync/sync.go
-</span></span><span style="display:flex;"><span>index b48ddd46..c4523f11 100644
-</span></span><span style="display:flex;"><span><span style="color:#f92672">--- a/pkg/sync/sync.go
-</span></span></span><span style="display:flex;"><span><span style="color:#f92672"></span><span style="color:#a6e22e">+++ b/pkg/sync/sync.go
-</span></span></span><span style="display:flex;"><span><span style="color:#a6e22e"></span><span style="color:#75715e">@@ -534,9 +534,9 @@ func (t *Task) reloadAndVerify(address, instanceName string, repClient *replicaC
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>                return err
-</span></span><span style="display:flex;"><span>        }
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span><span style="color:#f92672">-       if err := repClient.SetRebuilding(false); err != nil {
-</span></span></span><span style="display:flex;"><span><span style="color:#f92672">-               return err
-</span></span></span><span style="display:flex;"><span><span style="color:#f92672">-       }
-</span></span></span><span style="display:flex;"><span><span style="color:#f92672"></span><span style="color:#a6e22e">+       // if err := repClient.SetRebuilding(false); err != nil {
-</span></span></span><span style="display:flex;"><span><span style="color:#a6e22e">+       //      return err
-</span></span></span><span style="display:flex;"><span><span style="color:#a6e22e">+       // }
-</span></span></span><span style="display:flex;"><span><span style="color:#a6e22e"></span>        return nil
-</span></span><span style="display:flex;"><span> }
-</span></span></code></pre></div><p><strong>And</strong> a patched longhorn-instance-manager image with the longhorn-engine vendor updated.<br>
-<strong>And</strong> Longhorn is installed with the patched images.<br>
-<strong>And</strong> the <code>data-locality</code> setting is set to <code>disabled</code>.<br>
-<strong>And</strong> the <code>auto-salvage</code> setting is set to <code>true</code>.<br>
-<strong>And</strong> a new StorageClass is created with <code>NumberOfReplica</code> set to <code>1</code>.<br>
-<strong>And</strong> a StatefulSet is created with <code>Replica</code> set to <code>1</code>.<br>
-<strong>And</strong> the node of the StatefulSet Pod and the node of its volume Replica are different. This is necessary to trigger the rebuilding in reponse to the data locality setting update later.<br>
-<strong>And</strong> Volume have 1 running Replica.<br>
-<strong>And</strong> data exists in the volume.</p>
-<p><strong>When</strong> the <code>data-locality</code> setting is set to <code>best-effort</code>.<br>
-<strong>And</strong> the replica rebuilding is completed.<br>
-<strong>And</strong> the <code>Rebuilding</code> in the replicas&rsquo;s <code>volume.meta</code> file is <code>true</code>.<br>
-<strong>And</strong> Delete the instance manager Pod of the Replica.</p>
-<p><strong>Then</strong> the Replica should be running.<br>
-<strong>And</strong> the StatefulSet Pod should restart.<br>
-<strong>And</strong> the <code>Rebuilding</code> in replicas&rsquo;s <code>volume.meta</code> file should be <code>false</code>.<br>
-<strong>And</strong> the data should remain intact.</p>
-
-    </article>
-  <a href="https://github.com/longhorn/longhorn-tests/edit/master/docs/content/manual/release-specific/v1.6.0/test-rebuild-in-meta-blocks-engine-start.md" target="_blank" title="Edit on Github" style="font-size:smaller;float:right;padding-right:3%">[Edit]</a>
+  <header class="homepage-header">
+    <h1>Test cases to reproduce issues related to attach detach</h1>
+    
+  </header>
+  <div class="homepage-content">
+    
   </div>
+  <div>
+    <ul>
+
+  <li><a href="https://longhorn.github.io/longhorn-tests/manual/test-cases-to-reproduce-attach-detach-issues/attachment-detachment-issues-reproducibility/">Test cases to reproduce attachment-detachment issues</a></li>
+  
+
+</ul>
+
+  </div>
+</main>
 
     
     
