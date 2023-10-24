@@ -1,15 +1,17 @@
 #!/usr/bin/env python
 
 from __future__ import print_function
-import six
-import re
-import requests
+
 import collections
 import hashlib
-import os
 import json
-import time
 import operator
+import os
+import re
+import requests
+import six
+import time
+
 from functools import reduce
 
 try:

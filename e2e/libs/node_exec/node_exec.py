@@ -1,9 +1,12 @@
+import time
+
 from kubernetes import client
 from kubernetes.stream import stream
-import time
+
+from utility.utility import logging
 from utility.utility import wait_delete_pod
 from utility.utility import wait_delete_ns
-from utility.utility import logging
+
 
 DEFAULT_POD_TIMEOUT = 180
 DEFAULT_POD_INTERVAL = 1

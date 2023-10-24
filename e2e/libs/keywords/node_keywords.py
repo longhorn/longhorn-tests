@@ -1,8 +1,10 @@
-from utility.utility import get_test_pod_running_node
+from robot.libraries.BuiltIn import BuiltIn
+
+from node import Node
+
 from utility.utility import get_node
 from utility.utility import wait_for_all_instance_manager_running
-from robot.libraries.BuiltIn import BuiltIn
-from node import Node
+
 
 class node_keywords:
 

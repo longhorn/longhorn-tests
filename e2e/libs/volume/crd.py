@@ -1,11 +1,13 @@
-import os
 import time
-import warnings
-from utility.utility import logging
+
+from kubernetes import client
+
 from utility.utility import get_retry_count_and_interval
+from utility.utility import logging
+
 from volume.base import Base
 from volume.rest import Rest
-from kubernetes import client
+
 
 Ki = 2**10
 Mi = 2**20

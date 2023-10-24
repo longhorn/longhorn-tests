@@ -1,7 +1,9 @@
 import time
 
 from replica.base import Base
+
 from utils import common_utils
+
 
 RETRY_COUNTS = 150
 RETRY_INTERVAL = 1
