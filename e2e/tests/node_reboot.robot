@@ -12,6 +12,7 @@ Test Teardown    Cleanup test resources
 ${LOOP_COUNT}    1
 ${RETRY_COUNT}    300
 ${RETRY_INTERVAL}    1
+${VOLUME_TYPE}    rwo
 
 *** Test Cases ***
 Reboot Node One By One While Workload Heavy Writing
@@ -127,8 +128,7 @@ Power Off All Worker Nodes For More Than Pod Eviction Timeout While Workload Hea
     END
 
 Reboot Volume Node While Workload Heavy Writing
-    Given Create statefulset 0 with rwo volume
-
+    Given Create statefulset 0 with ${VOLUME_TYPE} volume
     FOR    ${i}    IN RANGE    ${LOOP_COUNT}
         And Keep writing data to statefulset 0
 
