@@ -116,8 +116,13 @@ def wait_delete_pod(name, namespace='default'):
     assert not found
 
 def get_pod(name, namespace='default'):
-    core_api = client.CoreV1Api()
-    return core_api.read_namespaced_pod(name=name, namespace=namespace)
+    try:
+        core_api = client.CoreV1Api()
+        return core_api.read_namespaced_pod(name=name, namespace=namespace)
+    except Exception as e:
+        if e.reason == 'Not Found':
+            return None
+        raise e
 
 def wait_for_pod_status(name, status, namespace='default'):
     retry_count, retry_interval = get_retry_count_and_interval()

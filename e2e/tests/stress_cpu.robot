@@ -25,3 +25,17 @@ Stress Volume Node CPU When Replica Is Rebuilding
         Then Wait until replica on volume node rebuilt
         And Check data is intact
     END
+
+
+Stress Volume Node CPU When Volume Is Detaching and Attaching
+    Given Create a volume with 5 GB and 3 replicas
+    And Write data to the volume
+
+    FOR    ${i}    IN RANGE    ${LOOP_COUNT}
+        When Stress volume node cpu
+
+        And Detach volume from node
+        And Attach volume to node
+
+        And Check data is intact
+    END
