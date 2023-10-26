@@ -93,6 +93,41 @@ class CRD(Base):
                 Exception(f'exception for creating volumeattachments:', e)
         self.wait_for_volume_state(volume_name, "attached")
 
+    def detach(self, volume_name):
+        try:
+            self.obj_api.patch_namespaced_custom_object(
+                group="longhorn.io",
+                version="v1beta2",
+                namespace="longhorn-system",
+                plural="volumeattachments",
+                name=volume_name,
+                body={
+                    "spec": {
+                        "attachmentTickets": None,
+                    }
+                }
+            )
+        except Exception as e:
+            # new CRD: volumeattachments was added since from 1.5.0
+            # https://github.com/longhorn/longhorn/issues/3715
+            if e.reason != "Not Found":
+                Exception(f'exception for patching volumeattachments:', e)
+
+            self.obj_api.patch_namespaced_custom_object(
+                group="longhorn.io",
+                version="v1beta2",
+                namespace="longhorn-system",
+                plural="volumes",
+                name=volume_name,
+                body={
+                        "spec": {
+                            "nodeID": ""
+                        }
+                }
+            )
+
+        self.wait_for_volume_state(volume_name, "detached")
+
     def delete(self, volume_name):
         try:
             self.obj_api.delete_namespaced_custom_object(

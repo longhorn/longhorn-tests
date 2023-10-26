@@ -18,6 +18,12 @@ Create volume ${idx} with ${size} GB and ${replica_count} replicas
     attach_volume    ${volume_name}
     Insert Into List    ${volume_list}    ${idx}    ${volume_name}
 
+Attach volume to node
+    attach_volume    ${volume_name}
+
+Detach volume from node
+    detach_volume    ${volume_name}
+
 Write data to the volume
     ${volume_data_checksum} =     write_volume_random_data   ${volume_name}    2048
     Set Test Variable    ${volume_data_checksum}

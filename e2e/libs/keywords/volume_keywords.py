@@ -28,6 +28,11 @@ class volume_keywords:
         self.volume.attach(volume_name, attach_node)
 
 
+    def detach_volume(self, volume_name):
+        logging(f'Detaching volume {volume_name}')
+        self.volume.detach(volume_name)
+
+
     def get_volume_node(self, volume_name):
         volume = self.volume.get(volume_name)
         return volume['spec']['nodeID']
