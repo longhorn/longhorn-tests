@@ -67,8 +67,8 @@ Restart cluster
         wait_for_workload_pod_stable   ${statefulset}
     END
 
-During replica rebuilding, stress volume node cpu
+Stress volume node cpu
     stress_node_cpu_by_volume    ${volume_name}
 
-During replica rebuilding, stress volume node memory
+Stress volume node memory
     stress_node_memory_by_volume    ${volume_name}
