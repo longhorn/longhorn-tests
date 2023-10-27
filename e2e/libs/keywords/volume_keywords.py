@@ -1,7 +1,9 @@
-from utility.utility import logging
 from utility.utility import generate_volume_name
-from utility.utility import get_node, list_nodes
-from utility.utility import get_test_pod_running_node, get_test_pod_not_running_node
+from utility.utility import get_node
+from utility.utility import get_test_pod_not_running_node
+from utility.utility import get_test_pod_running_node
+from utility.utility import list_nodes
+from utility.utility import logging
 
 from volume import Volume
 
@@ -14,21 +16,20 @@ class volume_keywords:
 
     def create_volume(self, size, replica_count):
         volume_name = generate_volume_name()
+        logging(f'Creating volume {volume_name}')
         self.volume.create(volume_name, size, replica_count)
-        logging(f'Created volume {volume_name}')
         return volume_name
 
 
     def attach_volume(self, volume_name):
         attach_node = get_test_pod_not_running_node()
-        logging(f'Attached volume {volume_name} to {attach_node}')
+        logging(f'Attaching volume {volume_name} to {attach_node}')
         self.volume.attach(volume_name, attach_node)
 
 
     def get_volume_node(self, volume_name):
         volume = self.volume.get(volume_name)
         return volume['spec']['nodeID']
-        # return volume.controllers[0].hostId
 
 
     def get_replica_node(self, volume_name):

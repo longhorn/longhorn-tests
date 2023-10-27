@@ -14,7 +14,7 @@ class workload_keywords:
         delete_storageclass('longhorn-test-strict-local')
 
     def create_deployment(self, volume_type="rwo", option=""):
-        pvc_name = create_pvc(volume_type, option)
+        create_pvc(volume_type, option)
         deployment_name = create_deployment(volume_type, option)
         return deployment_name
 

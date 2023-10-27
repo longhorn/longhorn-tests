@@ -1,6 +1,9 @@
 from robot.libraries.BuiltIn import BuiltIn
+
 from utility.utility import get_control_plane_nodes
+
 from node_exec import NodeExec
+
 
 def get_control_plane_node_network_latency_in_ms():
     latency_in_ms = int(BuiltIn().get_variable_value("${CONTROL_PLANE_NODE_NETWORK_LATENCY_IN_MS}"))

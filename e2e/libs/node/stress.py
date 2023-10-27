@@ -1,5 +1,3 @@
-from kubernetes import client
-
 from node.utility import get_node_cpu_cores
 
 from utility.utility import logging
