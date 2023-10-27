@@ -16,14 +16,14 @@ class volume_keywords:
 
     def create_volume(self, size, replica_count):
         volume_name = generate_volume_name()
+        logging(f'Creating volume {volume_name}')
         self.volume.create(volume_name, size, replica_count)
-        logging(f'Created volume {volume_name}')
         return volume_name
 
 
     def attach_volume(self, volume_name):
         attach_node = get_test_pod_not_running_node()
-        logging(f'Attached volume {volume_name} to {attach_node}')
+        logging(f'Attaching volume {volume_name} to {attach_node}')
         self.volume.attach(volume_name, attach_node)
 
 
