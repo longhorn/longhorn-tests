@@ -1,13 +1,16 @@
-from kubernetes import config, client, dynamic
-from kubernetes.client.rest import ApiException
-from kubernetes.stream import stream
-from longhorn import from_env
-import string
-import random
 import os
 import socket
+import string
 import time
+import random
 import yaml
+
+from longhorn import from_env
+
+from kubernetes import client
+from kubernetes import config
+from kubernetes import dynamic
+from kubernetes.client.rest import ApiException
 
 from robot.api import logger
 from robot.libraries.BuiltIn import BuiltIn

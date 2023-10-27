@@ -1,7 +1,9 @@
-from utility.utility import logging
 from utility.utility import generate_volume_name
-from utility.utility import get_node, list_nodes
-from utility.utility import get_test_pod_running_node, get_test_pod_not_running_node
+from utility.utility import get_node
+from utility.utility import get_test_pod_not_running_node
+from utility.utility import get_test_pod_running_node
+from utility.utility import list_nodes
+from utility.utility import logging
 
 from volume import Volume
 
