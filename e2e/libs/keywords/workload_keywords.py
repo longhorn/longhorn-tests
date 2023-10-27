@@ -25,6 +25,9 @@ class workload_keywords:
     def get_workload_pod_name(self, workload_name):
         return get_workload_pod_names(workload_name)[0]
 
+    def get_workload_pvc_name(self, workload_name):
+        return get_workload_pvc_name(workload_name)
+
     def get_workload_volume_name(self, workload_name):
         return get_workload_volume_name(workload_name)
 

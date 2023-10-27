@@ -8,6 +8,8 @@ from utility.utility import logging
 
 from volume import Volume
 
+from volume.constant import MEBIBYTE
+
 
 class volume_keywords:
 
@@ -31,6 +33,11 @@ class volume_keywords:
     def detach_volume(self, volume_name):
         logging(f'Detaching volume {volume_name}')
         self.volume.detach(volume_name)
+
+
+    def wait_for_volume_expand_to_size(self, volume_name, size):
+        logging(f'Waiting for volume {volume_name} expand to {size}')
+        return self.volume.wait_for_volume_expand_to_size(volume_name, size)
 
 
     def get_volume_node(self, volume_name):

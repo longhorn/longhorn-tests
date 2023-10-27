@@ -17,6 +17,13 @@ class Engine(Base):
     def get_engine(self, volume_name, node_name):
         return self.engine.get_engine(volume_name, node_name)
 
+    def get_engine_by_volume(self, volume):
+        engines = self.engine.get_engine(volume["metadata"]["name"], "")
+        assert len(engines) == 1, \
+            f"Expected exactly one engine but found {len(engines)}"
+
+        return engines[0]
+
     # delete engines, if input parameters are empty then will delete all
     def delete_engine(self, volume_name="", node_name=""):
         return self.engine.delete_engine(volume_name, node_name)
