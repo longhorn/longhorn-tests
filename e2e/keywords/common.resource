@@ -23,6 +23,8 @@ Set test environment
     Set Test Variable    ${deployment_list}
     @{statefulset_list} =    Create List
     Set Test Variable    ${statefulset_list}
+    @{persistentvolumeclaim_list} =   Create List
+    Set Test Variable    ${persistentvolumeclaim_list}
     setup_control_plane_network_latency
 
 Cleanup test resources

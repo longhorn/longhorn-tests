@@ -1,3 +1,5 @@
+import time
+
 from node_exec import NodeExec
 
 from strategy import LonghornOperationStrategy
@@ -43,6 +45,9 @@ class Volume(Base):
     def wait_for_volume_healthy(self, volume_name):
         self.volume.wait_for_volume_state(volume_name, "attached")
         self.volume.wait_for_volume_robustness(volume_name, "healthy")
+
+    def wait_for_volume_expand_to_size(self, volume_name, size):
+        return self.volume.wait_for_volume_expand_to_size(volume_name, size)
 
     def get_endpoint(self, volume_name):
         return self.volume.get_endpoint(volume_name)
