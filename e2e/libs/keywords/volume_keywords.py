@@ -28,7 +28,6 @@ class volume_keywords:
     def get_volume_node(self, volume_name):
         volume = self.volume.get(volume_name)
         return volume['spec']['nodeID']
-        # return volume.controllers[0].hostId
 
 
     def get_replica_node(self, volume_name):
