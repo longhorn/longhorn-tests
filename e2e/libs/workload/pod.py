@@ -9,8 +9,11 @@ from utility.utility import get_retry_count_and_interval
 
 from workload.constant import IMAGE_BUSYBOX
 
-def new_pod_manifest(image="", command=[], args=[],
+def new_pod_manifest(pod_name="", image="", command=[], args=[],
                      claim_name="", node_name="", labels={}):
+    if pod_name == "":
+        pod_name = generate_name()
+
     # Set default image and args
     if image is None:
         image = IMAGE_BUSYBOX
@@ -23,7 +26,7 @@ def new_pod_manifest(image="", command=[], args=[],
         'apiVersion': 'v1',
         'kind': 'Pod',
         'metadata': {
-            'name': generate_name(),
+            'name': pod_name,
             'namespace': 'default',
             'labels': labels
         },
