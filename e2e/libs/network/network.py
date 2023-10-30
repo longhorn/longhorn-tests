@@ -6,7 +6,7 @@ from node_exec import NodeExec
 
 
 def get_control_plane_node_network_latency_in_ms():
-    latency_in_ms = int(BuiltIn().get_variable_value("${CONTROL_PLANE_NODE_NETWORK_LATENCY_IN_MS}"))
+    latency_in_ms = int(BuiltIn().get_variable_value("${CONTROL_PLANE_NODE_NETWORK_LATENCY_IN_MS}", default="0"))
     return latency_in_ms
 
 def setup_control_plane_network_latency():
