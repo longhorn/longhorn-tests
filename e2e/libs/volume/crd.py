@@ -95,7 +95,7 @@ class CRD(Base):
 
     def delete(self, volume_name):
         try:
-            resp = self.obj_api.delete_namespaced_custom_object(
+            self.obj_api.delete_namespaced_custom_object(
                 group="longhorn.io",
                 version="v1beta2",
                 namespace="longhorn-system",
@@ -109,7 +109,7 @@ class CRD(Base):
     def wait_for_volume_delete(self, volume_name):
         for i in range(self.retry_count):
             try:
-                resp = self.obj_api.get_namespaced_custom_object(
+                self.obj_api.get_namespaced_custom_object(
                     group="longhorn.io",
                     version="v1beta2",
                     namespace="longhorn-system",
