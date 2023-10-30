@@ -22,7 +22,7 @@ class CRD(Base):
         if node_name != "":
             label_selector.append(f"longhornnode={node_name}")
 
-        api_response = self.cr_api.list_namespaced_custom_object(
+        api_response = self.obj_api.list_namespaced_custom_object(
             group="longhorn.io",
             version="v1beta2",
             namespace="longhorn-system",
