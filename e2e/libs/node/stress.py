@@ -1,5 +1,11 @@
 from node.utility import get_node_cpu_cores
 
+from node.constant import LABEL_STRESS_HELPER
+from node.constant import NODE_STRESS_CPU_LOAD_PERCENTAGE
+from node.constant import NODE_STRESS_MEM_LOAD_PERCENTAGE
+from node.constant import NODE_STRESS_MEM_VM_WORKERS
+from node.constant import NODE_STRESS_TIMEOUT_SECOND
+
 from utility.utility import logging
 
 from workload.pod import create_pod
@@ -7,14 +13,8 @@ from workload.pod import delete_pod
 from workload.pod import new_pod_manifest
 from workload.workload import get_workload_pods
 
-from workload.pod import IMAGE_LITMUX
+from workload.constant import IMAGE_LITMUX
 
-NODE_CPU_LOAD_PERCENTAGE = 100
-NODE_MEM_LOAD_PERCENTAGE = 100
-NODE_MEM_VM_WORKERS = 1
-NODE_STRESS_TIMEOUT_SECOND = 300
-
-LABEL_STRESS_HELPER = "longhorn-stress-helper"
 
 class Stress:
     def cleanup(self):
@@ -28,7 +28,7 @@ class Stress:
                 image=IMAGE_LITMUX,
                 command=["stress-ng"],
                 args=['--cpu', str(get_node_cpu_cores(node_name)),
-                      '--cpu-load', str(NODE_CPU_LOAD_PERCENTAGE),
+                      '--cpu-load', str(NODE_STRESS_CPU_LOAD_PERCENTAGE),
                       '--timeout', str(NODE_STRESS_TIMEOUT_SECOND)],
                 node_name=node_name,
                 labels={'app': LABEL_STRESS_HELPER}
@@ -43,8 +43,8 @@ class Stress:
             manifest = new_pod_manifest(
                 image=IMAGE_LITMUX,
                 command=["stress-ng"],
-                args=['--vm', str(NODE_MEM_VM_WORKERS),
-					  '--vm-bytes', f"{NODE_MEM_LOAD_PERCENTAGE}%",
+                args=['--vm', str(NODE_STRESS_MEM_VM_WORKERS),
+					  '--vm-bytes', f"{NODE_STRESS_MEM_LOAD_PERCENTAGE}%",
 					  '--timeout', str(NODE_STRESS_TIMEOUT_SECOND)],
                 node_name=node_name,
                 labels={'app': LABEL_STRESS_HELPER}

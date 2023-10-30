@@ -6,13 +6,11 @@ from utility.utility import logging
 
 from volume.base import Base
 
-
-RETRY_COUNTS = 150
-RETRY_INTERVAL = 1
-
-VOLUME_FRONTEND_BLOCKDEV = "blockdev"
-VOLUME_FRONTEND_ISCSI = "iscsi"
-DEV_PATH = "/dev/longhorn/"
+from volume.constant import DEV_PATH
+from volume.constant import RETRY_COUNTS
+from volume.constant import RETRY_INTERVAL
+from volume.constant import VOLUME_FRONTEND_BLOCKDEV
+from volume.constant import VOLUME_FRONTEND_ISCSI
 
 class Rest(Base):
 
