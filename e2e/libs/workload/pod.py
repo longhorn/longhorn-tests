@@ -1,6 +1,7 @@
 import time
 
 from kubernetes import client
+from kubernetes.client import rest
 
 from utility.utility import logging
 from utility.utility import generate_name
@@ -93,7 +94,7 @@ def delete_pod(name, namespace='default'):
     try:
         core_api.delete_namespaced_pod(name=name, namespace=namespace)
         wait_delete_pod(name)
-    except ApiException as e:
+    except rest.ApiException as e:
         assert e.status == 404
 
 def wait_delete_pod(name, namespace='default'):
