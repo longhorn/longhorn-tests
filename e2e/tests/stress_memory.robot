@@ -2,6 +2,7 @@
 Documentation    Negative Test Cases
 Resource    ../keywords/node.resource
 Resource    ../keywords/volume.resource
+Resource    ../keywords/workload.resource
 Resource    ../keywords/common.resource
 
 Test Setup    Set test environment
@@ -37,4 +38,19 @@ Stress Volume Node Memory When Volume Is Detaching and Attaching
         And Attach volume to node
 
         And Check data is intact
+    END
+
+Stress Volume Node Memory When Volume Is Online Expanding
+    @{data_checksum_list} =    Create List
+    Set Test Variable    ${data_checksum_list}
+
+    Given Create statefulset 0 with rwo volume
+    And Write 1024 MB data to statefulset 0
+
+    FOR    ${i}    IN RANGE    ${LOOP_COUNT}
+        And Stress the memory of all volume nodes
+        When Expand statefulset 0 volume by 100 MiB
+
+        Then Wait for statefulset 0 volume size expanded
+        And Check statefulset 0 data is intact
     END
