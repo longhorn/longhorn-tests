@@ -84,6 +84,9 @@ class PersistentVolumeClaim():
     def get_annotation_value(self, claim_name, annotation_key):
         return self.claim.get_annotation_value(claim_name, annotation_key)
 
+    def get_volume_name(self, claim_name):
+        return self.claim.get_volume_name(claim_name)
+
     def expand(self, claim_name, size_in_byte):
         pvc = self.claim.get(claim_name)
         current_size = int(pvc.spec.resources.requests['storage'])
