@@ -1,15 +1,13 @@
 import time
 
 from kubernetes import client
+from kubernetes.client import rest
 
 from utility.utility import logging
 from utility.utility import generate_name
 from utility.utility import get_retry_count_and_interval
 
-
-IMAGE_BUSYBOX = 'busybox:1.34.0'
-IMAGE_LITMUX = 'litmuschaos/go-runner:latest'
-IMAGE_UBUNTU = 'ubuntu:16.04'
+from workload.constant import IMAGE_BUSYBOX
 
 def new_pod_manifest(image="", command=[], args=[],
                      claim_name="", node_name="", labels={}):
@@ -96,7 +94,7 @@ def delete_pod(name, namespace='default'):
     try:
         core_api.delete_namespaced_pod(name=name, namespace=namespace)
         wait_delete_pod(name)
-    except ApiException as e:
+    except rest.ApiException as e:
         assert e.status == 404
 
 def wait_delete_pod(name, namespace='default'):

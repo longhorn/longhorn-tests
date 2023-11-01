@@ -7,9 +7,9 @@ from utility.utility import logging
 from workload.pod import wait_delete_pod
 from utility.utility import wait_delete_ns
 
+from node_exec.constant import DEFAULT_POD_INTERVAL
+from node_exec.constant import DEFAULT_POD_TIMEOUT
 
-DEFAULT_POD_TIMEOUT = 180
-DEFAULT_POD_INTERVAL = 1
 
 class NodeExec:
 

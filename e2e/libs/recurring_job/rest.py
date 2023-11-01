@@ -10,9 +10,9 @@ from utility.utility import filter_cr
 from utility.utility import get_longhorn_client
 from utility.utility import logging
 
+from recurring_job.constant import RETRY_COUNTS
+from recurring_job.constant import RETRY_INTERVAL
 
-RETRY_COUNTS = 180
-RETRY_INTERVAL = 1
 
 class Rest(Base):
 

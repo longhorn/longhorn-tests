@@ -8,10 +8,7 @@ from utility.utility import logging
 from volume.base import Base
 from volume.rest import Rest
 
-
-Ki = 2**10
-Mi = 2**20
-Gi = 2**30
+from volume.constant import GIBIBYTE
 
 class CRD(Base):
 
@@ -38,7 +35,7 @@ class CRD(Base):
             "spec": {
                 "frontend": "blockdev",
                 "replicaAutoBalance": "ignored",
-                "size": str(int(size) * Gi),
+                "size": str(int(size) * GIBIBYTE),
                 "numberOfReplicas": int(replica_count)
             }
         }
@@ -98,7 +95,7 @@ class CRD(Base):
 
     def delete(self, volume_name):
         try:
-            resp = self.obj_api.delete_namespaced_custom_object(
+            self.obj_api.delete_namespaced_custom_object(
                 group="longhorn.io",
                 version="v1beta2",
                 namespace="longhorn-system",
@@ -112,7 +109,7 @@ class CRD(Base):
     def wait_for_volume_delete(self, volume_name):
         for i in range(self.retry_count):
             try:
-                resp = self.obj_api.get_namespaced_custom_object(
+                self.obj_api.get_namespaced_custom_object(
                     group="longhorn.io",
                     version="v1beta2",
                     namespace="longhorn-system",
