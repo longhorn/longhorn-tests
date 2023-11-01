@@ -196,6 +196,7 @@ class CRD(Base):
         assert self.get(volume_name)["status"]["robustness"] != not_desired_state
 
     def wait_for_volume_expand_to_size(self, volume_name, expected_size):
+        engine = None
         engine_operation = Engine()
         for i in range(self.retry_count):
             logging(f"Waiting for {volume_name} expand to {expected_size} ({i}) ...")
@@ -206,7 +207,7 @@ class CRD(Base):
 
             time.sleep(self.retry_interval)
 
-        engine = engine_operation.get_engine_by_volume(self.get(volume_name))
+        assert engine is not None
         assert int(engine['status']['currentSize']) == expected_size
 
     def get_endpoint(self, volume_name):
