@@ -117,7 +117,9 @@ class workload_keywords:
     def wait_for_workload_claim_size_expanded(self, workload_name, claim_index=0):
         claim_name = get_workload_persistent_volume_claim_name(workload_name, index=claim_index)
         expanded_size = self.persistentvolumeclaim.get_annotation_value(claim_name, ANNOT_EXPANDED_SIZE)
-        volume_name = get_workload_volume_name(workload_name)
+        volume_name = self.persistentvolumeclaim.get_volume_name(claim_name)
 
+        self.volume.wait_for_volume_attached(volume_name)
         logging(f'Waiting for {workload_name} volume {volume_name} to expand to {expanded_size}')
         self.volume.wait_for_volume_expand_to_size(volume_name, expanded_size)
+        self.volume.wait_for_volume_detached(volume_name)
