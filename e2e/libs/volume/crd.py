@@ -152,7 +152,7 @@ class CRD(Base):
 
     def wait_for_volume_robustness_not(self, volume_name, not_desired_state):
         for i in range(self.retry_count):
-            logging(f"Waiting for {volume_name} not {not_desired_state} ({i}) ...")
+            logging(f"Waiting for {volume_name} robustness not {not_desired_state} ({i}) ...")
             try:
                 if self.get(volume_name)["status"]["robustness"] != not_desired_state:
                     break
