@@ -49,9 +49,9 @@ class volume_keywords:
         self.volume.keep_writing_data(volume_name)
 
 
-    def check_data(self, volume_name, checksum):
+    def check_data_checksum(self, volume_name, checksum):
         logging(f"Checking volume {volume_name} data with checksum {checksum}")
-        self.volume.check_data(volume_name, checksum)
+        self.volume.check_data_checksum(volume_name, checksum)
 
 
     def delete_replica(self, volume_name, replica_node):

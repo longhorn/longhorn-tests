@@ -125,7 +125,7 @@ class Rest(Base):
             time.sleep(RETRY_INTERVAL)
         assert completed
 
-    def check_data(self, volume_name, checksum):
+    def check_data_checksum(self, volume_name, checksum):
         return NotImplemented
 
     def cleanup(self, volume_names):

@@ -212,7 +212,7 @@ class CRD(Base):
             node_name
         )
 
-    def check_data(self, volume_name, checksum):
+    def check_data_checksum(self, volume_name, checksum):
         node_name = self.get(volume_name)["spec"]["nodeID"]
         endpoint = self.get_endpoint(volume_name)
         _checksum = self.node_exec.issue_cmd(
