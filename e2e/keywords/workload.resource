@@ -32,12 +32,12 @@ Keep writing data to statefulset ${idx}
 Check deployment ${idx} works
     ${pod_name} =    get_workload_pod_name    ${deployment_list}[${idx}]
     ${pod_data_checksum} =    write_pod_random_data    ${pod_name}    1024
-    check_pod_data    ${pod_name}    ${pod_data_checksum}
+    check_pod_data_checksum    ${pod_name}    ${pod_data_checksum}
 
 Check statefulset ${idx} works
     ${pod_name} =    get_workload_pod_name    ${statefulset_list}[${idx}]
     ${pod_data_checksum} =    write_pod_random_data    ${pod_name}    1024
-    check_pod_data    ${pod_name}    ${pod_data_checksum}
+    check_pod_data_checksum    ${pod_name}    ${pod_data_checksum}
 
 Wait for statefulset ${idx} stable
     wait_for_workload_pod_stable   ${statefulset_list}[${idx}]

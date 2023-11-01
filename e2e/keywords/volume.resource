@@ -48,7 +48,7 @@ Wait until replica ${replica_0} rebuilt, delete replica ${replica_2}
     delete_replica    ${volume_name}    ${replica_2}
 
 Check data is intact
-    check_data    ${volume_name}    ${volume_data_checksum}
+    check_data_checksum    ${volume_name}    ${volume_data_checksum}
 
 Check volume ${idx} works
     ${volume_data_checksum} =     write_volume_random_data   ${volume_list}[${idx}]    1024
