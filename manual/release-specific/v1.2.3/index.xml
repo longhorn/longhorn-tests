@@ -5,37 +5,32 @@
     <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.2.3/</link>
     <description>Recent content in v1.2.3 on Longhorn Manual Test Cases</description>
     <generator>Hugo -- gohugo.io</generator>
-    <language>en-us</language><atom:link href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.2.3/index.xml" rel="self" type="application/rss+xml" />
+    <language>en-us</language>
+    <atom:link href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.2.3/index.xml" rel="self" type="application/rss+xml" />
     <item>
       <title>Test backing image checksum mismatching</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.2.3/test-backing-image-checksum-mismatching/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
       <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.2.3/test-backing-image-checksum-mismatching/</guid>
       <description>Test step Modify setting Backing Image Recovery Wait Interval to a shorter value so that the backing image will start auto recovery eariler. Create a backing image file with type Download From URL. Launch a volume using the backing image file so that there are 2 disk records for the backing image. Modify one disk file for the backing image and make sure the file size is not changed. This will lead to data inconsistency/corruption later.</description>
     </item>
-    
     <item>
       <title>Test backing image space usage with sparse files</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.2.3/test-backing-image-space-usage/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
       <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.2.3/test-backing-image-space-usage/</guid>
       <description>Prerequisite A sparse file should be prepared before test. e.g.:
 ~ touch empty-filesystem.raw ~ truncate -s 500M empty-filesystem.raw ~ mkfs.ext4 empty-filesystem.raw mke2fs 1.46.1 (9-Feb-2021) Creating filesystem with 512000 1k blocks and 128016 inodes Filesystem UUID: fe6cfb58-134a-42b3-afab-59474d9515e0 Superblock backups stored on blocks: 8193, 24577, 40961, 57345, 73729, 204801, 221185, 401409 Allocating group tables: done Writing inode tables: done Creating journal (8192 blocks): done Writing superblocks and filesystem accounting information: done ~ shasum -a 512 empty-filesystem.</description>
     </item>
-    
     <item>
       <title>Test scalability with backing image</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.2.3/test-scalability-with-backing-image/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
       <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.2.3/test-scalability-with-backing-image/</guid>
       <description>Test step Deploy a cluster with 3 worker nodes. The recommended nodes is 4v cores CPU + 8G memory at least.
 Deploy Longhorn.
 Launch 10 backing images with the following YAML:
 apiVersion: longhorn.io/v1beta1 kind: BackingImage metadata: name: bi-test1 namespace: longhorn-system spec: sourceType: download sourceParameters: url: https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2 --- apiVersion: longhorn.io/v1beta1 kind: BackingImage metadata: name: bi-test2 namespace: longhorn-system spec: sourceType: download sourceParameters: url: https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2 --- apiVersion: longhorn.io/v1beta1 kind: BackingImage metadata: name: bi-test3 namespace: longhorn-system spec: sourceType: download sourceParameters: url: https://longhorn-backing-image.</description>
     </item>
-    
   </channel>
 </rss>

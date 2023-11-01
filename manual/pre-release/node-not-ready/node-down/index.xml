@@ -5,12 +5,12 @@
     <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/node-not-ready/node-down/</link>
     <description>Recent content in Node Down on Longhorn Manual Test Cases</description>
     <generator>Hugo -- gohugo.io</generator>
-    <language>en-us</language><atom:link href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node-not-ready/node-down/index.xml" rel="self" type="application/rss+xml" />
+    <language>en-us</language>
+    <atom:link href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node-not-ready/node-down/index.xml" rel="self" type="application/rss+xml" />
     <item>
       <title>[#1355](https://github.com/longhorn/longhorn/issues/1355) The node the restore volume attached to is down</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/node-not-ready/node-down/restore-volume-node-down/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
       <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/node-not-ready/node-down/restore-volume-node-down/</guid>
       <description>Case 1: Create a backup.
 Restore the above backup.
@@ -20,31 +20,25 @@ Wait for the restore volume being reattached and starting restoring volume with 
 Wait for the restore complete.
 Note: During the restoration process, if the engine process fails to communicate with a replica, all replicas will be marked as ERR, and the volume&amp;rsquo;s RestoreRequired status cannot be set to false.</description>
     </item>
-    
     <item>
       <title>Backing Image on a down node</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/node-not-ready/node-down/backing-image-on-a-down-node/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
       <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/node-not-ready/node-down/backing-image-on-a-down-node/</guid>
       <description>Update the settings: Disable Node Soft Anti-affinity. Set Replica Replenishment Wait Interval to a relatively long value. Create a backing image. Wait for the backing image being ready in the 1st disk. Create 2 volumes with the backing image and attach them on different nodes. Verify: the disk state map of the backing image contains the disks of all replicas, and the state is running for all disks. the backing image content is correct.</description>
     </item>
-    
     <item>
       <title>Node drain and deletion test</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/node-not-ready/node-down/node-drain-deletion/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
       <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/node-not-ready/node-down/node-drain-deletion/</guid>
       <description>Drain with force Make sure the volumes on the drained/removed node can be detached or recovered correctly. The related issue: https://github.com/longhorn/longhorn/issues/1214
 Deploy a cluster contains 3 worker nodes N1, N2, N3. Deploy Longhorn. Create a 1-replica deployment with a 3-replica Longhorn volume. The volume is attached to N1. Write some data to the volume and get the md5sum. Force drain and remove N2, which contains one replica only. kubectl drain &amp;lt;Node name&amp;gt; --delete-emptydir-data=true --force=true --grace-period=-1 --ignore-daemonsets=true --timeout=&amp;lt;Desired timeout in secs&amp;gt; Wait for the volume Degraded.</description>
     </item>
-    
     <item>
       <title>Physical node down</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/node-not-ready/node-down/physical-node-down/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
       <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/node-not-ready/node-down/physical-node-down/</guid>
       <description>One physical node down should result in the state of that node change to Down.
 When using with CSI driver, one node with controller (StatefulSet/Deployment) and pod down should result in Kubernetes migrate the pod to another node, and Longhorn volume should be able to be used on that node as well. Test scenarios for this are documented here.
@@ -52,26 +46,21 @@ Note:
 In this case, RWX should be excluded.
 Ref: https://github.com/longhorn/longhorn/issues/5900#issuecomment-1541360552</description>
     </item>
-    
     <item>
       <title>Single replica node down</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/node-not-ready/node-down/single-replica-node-down/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
       <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/node-not-ready/node-down/single-replica-node-down/</guid>
       <description>Related Issues https://github.com/longhorn/longhorn/issues/2329 https://github.com/longhorn/longhorn/issues/2309 https://github.com/longhorn/longhorn/issues/3957
 Default Setting Automatic salvage is enabled.
 Node restart/down scenario with Pod Deletion Policy When Node is Down set to default value do-nothing. Create RWO|RWX volume with replica count = 1 &amp;amp; data locality = enabled|disabled|strict-local. For data locality = strict-local, use RWO volume to do test. Create deployment|statefulset for volume. Power down node of volume/replica. The workload pod will get stuck in the terminating state. Volume will fail to attach since volume is not ready (i.</description>
     </item>
-    
     <item>
       <title>Test node deletion</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/node-not-ready/node-down/node-deletion/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
       <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/node-not-ready/node-down/node-deletion/</guid>
       <description>Case 1: Delete multiple kinds of nodes: Deploy Longhorn. Shut down the VM for one node and wait for the node Down. Disable another node. Delete the above 2 nodes. Make sure the corresponding Kubernetes node object is deleted. &amp;ndash;&amp;gt; The related Longhorn node objects will be cleaned up immediately, too. Add new nodes with the same names for the cluster. &amp;ndash;&amp;gt; The new nodes are available. Case 2: Delete nodes when there are running volumes: Deploy Longhorn.</description>
     </item>
-    
   </channel>
 </rss>

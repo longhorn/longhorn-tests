@@ -5,42 +5,35 @@
     <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/</link>
     <description>Recent content in Backup &amp; Restore tests on Longhorn Manual Test Cases</description>
     <generator>Hugo -- gohugo.io</generator>
-    <language>en-us</language><atom:link href="https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/index.xml" rel="self" type="application/rss+xml" />
+    <language>en-us</language>
+    <atom:link href="https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/index.xml" rel="self" type="application/rss+xml" />
     <item>
       <title>[#1279](https://github.com/longhorn/longhorn/issues/1279) DR volume live upgrade and rebuild</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/dr-volume-live-upgrade-and-rebuild/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
       <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/dr-volume-live-upgrade-and-rebuild/</guid>
       <description>Launch Longhorn at the previous version. Launch a pod with Longhorn volume. Write data to the volume and take the 1st backup. Create 2 DR volumes from the 1st backup. Shutdown the pod and wait for the original volume detached. Expand the original volume and wait for the expansion complete. Write data to the original volume and take the 2nd backup. (Make sure the total data size is larger than the original volume size so that there is date written to the expanded part.</description>
     </item>
-    
     <item>
       <title>[#1341](https://github.com/longhorn/longhorn/issues/1341) concurrent backup test</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/concurrent-backup/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
       <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/concurrent-backup/</guid>
       <description> Take a manual backup of the volume bak while a recurring backup is running verify that backup got created verify that backup sticks around even when recurring backups are cleaned up </description>
     </item>
-    
     <item>
       <title>[#1404](https://github.com/longhorn/longhorn/issues/1404) test backup functionality on google cloud and other s3 interop providers.</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/google-cloud-s3-interop-backups/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
       <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/google-cloud-s3-interop-backups/</guid>
       <description> create vol s3-testand mount to a node on /mnt/s3-test via pvc write some data on vol s3-test take backup(1) write new data on vol s3-test take backup(2) restore backup(1) verify data is consistent with backup(1) restore backup(2) verify data is consistent with backup(2) delete backup(1) delete backup(2) delete backup volume s3-test verify volume path is removed </description>
     </item>
-    
     <item>
       <title>[#4637](https://github.com/longhorn/longhorn/issues/4637) pull backup created by another Longhorn system</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/pull-backup-created-by-another-longhorn/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
       <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/pull-backup-created-by-another-longhorn/</guid>
       <description>Prepare 2 k8s clusters: cluster A and cluster B. Install previous version of Longhorn which doesn&amp;rsquo;t include this fix e.g v1.3.1, v1.2.5 on cluster A. Install the release version of Longhorn on cluster B. Set the same backup target on both cluster A and cluster B. Create volume, write some data, and take backup on cluster A. Wait for backup target polling update on cluster B. Make sure the backup created by cluster A can be pulled on cluster B.</description>
     </item>
-    
   </channel>
 </rss>

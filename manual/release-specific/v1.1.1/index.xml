@@ -5,12 +5,12 @@
     <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/</link>
     <description>Recent content in v1.1.1 on Longhorn Manual Test Cases</description>
     <generator>Hugo -- gohugo.io</generator>
-    <language>en-us</language><atom:link href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/index.xml" rel="self" type="application/rss+xml" />
+    <language>en-us</language>
+    <atom:link href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/index.xml" rel="self" type="application/rss+xml" />
     <item>
       <title>CSI Sanity Check</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/csi-sanity-check/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
       <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/csi-sanity-check/</guid>
       <description>Related issue https://github.com/longhorn/longhorn/issues/2076
 Run csi-sanity Prepare Longhorn cluster and setup backup target.
@@ -18,55 +18,45 @@ Make csi-sanity binary from csi-test.
 On one of the cluster node, run csi-sanity binary.
 csi-sanity -csi.endpoint /var/lib/kubelet/obsoleted-longhorn-plugins/driver.longhorn.io/csi.sock -ginkgo.skip=&amp;#34;should create volume from an existing source snapshot|should return appropriate values|should succeed when creating snapshot with maximum-length name|should succeed when requesting to create a snapshot with already existing name and same source volume ID|should fail when requesting to create a snapshot with already existing name and different source volume ID&amp;#34; NOTE</description>
     </item>
-    
     <item>
       <title>Longhorn with engine is not deployed on all the nodes</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/partial-engine-deployment/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
       <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/partial-engine-deployment/</guid>
       <description>Related Issue https://github.com/longhorn/longhorn/issues/2081
 Scenarios: Case 1: Test volume operations when some of the engine image DaemonSet pods are miss scheduled Install Longhorn in a 3-node cluster: node-1, node-2, node-3 Create a volume, vol-1, of 3 replicas Create another volume, vol-2, of 3 replicas Taint node-1 with the taint: key=value:NoSchedule Check that all functions (attach, detach, snapshot, backup, expand, restore, creating DR volume, &amp;hellip; ) are working ok for vol-1 Case 2: Test volume operations when some of engine image DaemonSet pods are not fully deployed Continue from case 1 Attach vol-1 to node-1.</description>
     </item>
-    
     <item>
       <title>Set Tolerations/PriorityClass For System Components</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/tolerations_priorityclass_setting/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
       <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/tolerations_priorityclass_setting/</guid>
       <description>Related issue https://github.com/longhorn/longhorn/issues/2120
 Manual Tests:
 Case 1: Existing Longhorn installation Install Longhorn master. Change toleration in UI setting Verify that longhorn.io/last-applied-tolerations annotation and toleration of manager, drive deployer, UI are not changed. Verify that longhorn.io/last-applied-tolerations annotation and toleration for managed components (CSI components, IM pods, share manager pod, EI daemonset, backing-image-manager, cronjob) are updated correctly Case 2: New installation by Helm Install Longhorn master, set tolerations like: defaultSettings: taintToleration: &amp;#34;key=value:NoSchedule&amp;#34; longhornManager: priorityClass: ~ tolerations: - key: key operator: Equal value: value effect: NoSchedule longhornDriver: priorityClass: ~ tolerations: - key: key operator: Equal value: value effect: NoSchedule longhornUI: priorityClass: ~ tolerations: - key: key operator: Equal value: value effect: NoSchedule Verify that the toleration is added for: IM pods, Share Manager pods, CSI deployments, CSI daemonset, the backup jobs, manager, drive deployer, UI Uninstall the Helm release.</description>
     </item>
-    
     <item>
       <title>Test Disable IPv6</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/disable_ipv6/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
       <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/disable_ipv6/</guid>
       <description>Related issue https://github.com/longhorn/longhorn/issues/2136
 https://github.com/longhorn/longhorn/issues/2197
 Longhorn v1.1.1 should work with IPv6 disabled.
 Scenario Install Kubernetes Disable IPv6 on all the worker nodes using the following Go to the folder /etc/default In the grub file, edit the value GRUB_CMDLINE_LINUX_DEFAULT=&amp;#34;ipv6.disable=1&amp;#34; Once the file is saved update by the command update-grub Reboot the node and once the node becomes active, Use the command cat /proc/cmdline to verify &amp;#34;ipv6.disable=1&amp;#34; is reflected in the values Deploy Longhorn and test basic use cases.</description>
     </item>
-    
     <item>
       <title>Test File Sync Cancellation</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/test-file-sync-cancellation/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
       <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/test-file-sync-cancellation/</guid>
       <description>Related issue https://github.com/longhorn/longhorn/issues/2416
 Test step For test convenience, manually launch the backing image manager pods: apiVersion: apps/v1 kind: DaemonSet metadata: labels: app: backing-image-manager name: backing-image-manager namespace: longhorn-system spec: selector: matchLabels: app: backing-image-manager template: metadata: labels: app: backing-image-manager spec: containers: - name: backing-image-manager image: longhornio/backing-image-manager:master imagePullPolicy: Always securityContext: privileged: true command: - backing-image-manager - --debug - daemon - --listen - 0.0.0.0:8000 readinessProbe: tcpSocket: port: 8000 volumeMounts: - name: disk-path mountPath: /data volumes: - name: disk-path hostPath: path: /var/lib/longhorn/ serviceAccountName: longhorn-service-account Download a backing image in the first pod: # alias bm=&amp;#34;backing-image-manager backing-image&amp;#34; # bm pull --name bi-test --uuid uuid-bi-test --download-url https://cloud-images.</description>
     </item>
-    
     <item>
       <title>Test Frontend Traffic</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/ws-traffic-flood/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
       <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/ws-traffic-flood/</guid>
       <description>Related issue https://github.com/longhorn/longhorn/issues/2372
 Test Frontend Traffic Given 100 pvc created.
@@ -74,12 +64,10 @@ And all pvcs deployed and detached.
 When monitor traffic in frontend pod with nload.
 apk add nload nload Then should not see a continuing large amount of traffic when there is no operation happening. The smaller spikes are mostly coming from event resources which possibly could be enhanced later (https://github.com/longhorn/longhorn/issues/2433).</description>
     </item>
-    
     <item>
       <title>Test Node Delete</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/delete-node/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
       <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/delete-node/</guid>
       <description>Related issue https://github.com/longhorn/longhorn/issues/2186 https://github.com/longhorn/longhorn/issues/2462
 Delete Method Should verify with both of the delete methods.
@@ -88,58 +76,47 @@ When Try to delete any node.
 Then Should see button greyed out.
 Test Node Delete Given pod with pvc created.</description>
     </item>
-    
     <item>
       <title>Test Node Selector</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/test-node-selector/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
       <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/test-node-selector/</guid>
       <description>Prepare the cluster Using Rancher RKE to create a cluster of 2 Windows worker nodes and 3 Linux worker nodes. Rancher will add the taint cattle.io/os=linux:NoSchedule to Linux nodes Kubernetes will add label kubernetes.io/os:linux to Linux nodes Test steps Repeat the following steps for each type of Longhorn installation: Rancher, Helm, Kubectl:
 Follow the Longhorn document at the PR https://github.com/longhorn/website/pull/287 to install Longhorn with toleration cattle.io/os=linux:NoSchedule and node selector kubernetes.io/os:linux Verify that Longhorn get deployed successfully on the 3 Linux nodes Verify all volume basic functionalities is working ok Create a volume of 3 replica named vol-1 Add label longhorn.</description>
     </item>
-    
     <item>
       <title>Test RWX share-mount ownership reset</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/rwx-mount-ownership-reset/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
       <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/rwx-mount-ownership-reset/</guid>
       <description>Related issue https://github.com/longhorn/longhorn/issues/2357
 Test RWX share-mount ownership Given Setup one of cluster node to use host FQDN.
 root@ip-172-30-0-139:/home/ubuntu# cat /etc/hosts 127.0.0.1 localhost 54.255.224.72 ip-172-30-0-139.lan ip-172-30-0-139 root@ip-172-30-0-139:/home/ubuntu# hostname ip-172-30-0-139 root@ip-172-30-0-139:/home/ubuntu# hostname -f ip-172-30-0-139.lan And Domain = localdomain is commented out in /etc/idmapd.conf on cluster hosts. This is to ensure localdomain is not enforce to sync between server and client. Ref: https://github.com/longhorn/website/pull/279
 root@ip-172-30-0-139:~# cat /etc/idmapd.conf [General] Verbosity = 0 Pipefs-Directory = /run/rpc_pipefs # set your own domain here, if it differs from FQDN minus hostname # Domain = localdomain [Mapping] Nobody-User = nobody Nobody-Group = nogroup And pod with rwx pvc deployed to the node with host FQDN.</description>
     </item>
-    
     <item>
       <title>Test Service Account mount on host</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/test-service-account-mount/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
       <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/test-service-account-mount/</guid>
       <description>This test case should be tested on both yaml installation, chart installation (Helm and Rancher UI), as well as upgrade scenarios After install Longhorn using on of the above method, ssh into a worker node that has a longhorn-manager pod running check the mount point /run/secrets/kubernetes.io/serviceaccount by running: root@node-1:~# findmnt /run/secrets/kubernetes.io/serviceaccount Verify that there is no such mount point Kill the longhorn-manager pod on the above node and wait for it to be recreated and running check the mount point /run/secrets/kubernetes.</description>
     </item>
-    
     <item>
       <title>Test Snapshot Purge Error Handling</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/snapshot-purge-error-handling/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
       <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/snapshot-purge-error-handling/</guid>
       <description>Related issue https://github.com/longhorn/longhorn/issues/1895
 Longhorn v1.1.1 handles the error during snapshot purge better and reports to Longhorn-manager.
 Scenario-1 Create a volume with 3 replicas and attach to a pod. Write some data into the volume and take a snapshot. Delete a replica that will result in creating a system generated snapshot. Wait for replica to finish and take another snapshot. ssh into a node and resize the latest snapshot. (e.g dd if=/dev/urandom count=50 bs=1M of=&amp;lt;SNAPSHOT-NAME&amp;gt;.</description>
     </item>
-    
     <item>
       <title>Test system upgrade with the deprecated CPU setting</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/system-upgrade-with-deprecated-cpu-setting/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
       <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/system-upgrade-with-deprecated-cpu-setting/</guid>
       <description>Related issue https://github.com/longhorn/longhorn/issues/2207
 Test step Deploy a cluster that each node has different CPUs. Launch Longhorn v1.1.0. Deploy some workloads using Longhorn volumes. Upgrade to the latest Longhorn version. Validate: all workloads work fine and no instance manager pod crash during the upgrade. The fields node.Spec.EngineManagerCPURequest and node.Spec.ReplicaManagerCPURequest of each node are the same as the setting Guaranteed Engine CPU value in the old version * 1000. The old setting Guaranteed Engine CPU is deprecated with an empty value.</description>
     </item>
-    
   </channel>
 </rss>

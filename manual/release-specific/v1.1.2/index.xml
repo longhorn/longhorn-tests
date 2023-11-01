@@ -5,22 +5,20 @@
     <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.2/</link>
     <description>Recent content in v1.1.2 on Longhorn Manual Test Cases</description>
     <generator>Hugo -- gohugo.io</generator>
-    <language>en-us</language><atom:link href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.2/index.xml" rel="self" type="application/rss+xml" />
+    <language>en-us</language>
+    <atom:link href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.2/index.xml" rel="self" type="application/rss+xml" />
     <item>
       <title>Test CronJob For Volumes That Are Detached For A Long Time</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.2/delete-cronjob-for-detached-volumes/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
       <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.2/delete-cronjob-for-detached-volumes/</guid>
       <description>Related issue https://github.com/longhorn/longhorn/issues/2513
 Steps Make sure the setting Allow Recurring Job While Volume Is Detached is disabled Create a volume. Attach to a node. Create a recurring backup job that run every minute. Wait for the cronjob to be scheduled a few times. Detach the volume. Verify that the CronJob get deleted. Wait 2 hours (&amp;gt; 100 mins). Attach the volume to a node. Verify that the CronJob get created. Verify that Kubernetes schedules a run for the CronJob at the beginning of the next minute.</description>
     </item>
-    
     <item>
       <title>Test Frontend Web-socket Data Transfer When Resource Not Updated</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.2/full-ws-data-tranfer-when-no-updates/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
       <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.2/full-ws-data-tranfer-when-no-updates/</guid>
       <description>Related issue https://github.com/longhorn/longhorn-manager/pull/918 https://github.com/longhorn/longhorn/issues/2646 https://github.com/longhorn/longhorn/issues/2591
 Test Data Send Over Web-socket When No Resource Updated Given 1 PVC/Pod created. And the Pod is not writing to the mounted volume.
@@ -28,12 +26,10 @@ When monitor network traffic with browser inspect tool.
 Then wait for 3 mins And should not see data send over web-socket when there are no updates to the resources.
 Test Data Send Over Web-socket Resource Updated Given monitor network traffic with browser inspect tool.</description>
     </item>
-    
     <item>
       <title>Test Instance Manager Streaming Connection Recovery</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.2/instance-manager-streaming-connection-recovery/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
       <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.2/instance-manager-streaming-connection-recovery/</guid>
       <description>Related issue https://github.com/longhorn/longhorn/issues/2561
 Test Step Given A cluster with Longhorn
@@ -41,6 +37,5 @@ And create a volume and attach it to a pod.
 And exec into a longhorn manager pod and kill the connection with an engine or replica instance manager pod. The connections are instance manager pods&amp;rsquo; IP with port 8500.
 $ kl exec -it longhorn-manager-5z8zn -- bash root@longhorn-manager-5z8zn:/# ss Netid State Recv-Q Send-Q Local Address:Port Peer Address:Port tcp ESTAB 0 0 10.</description>
     </item>
-    
   </channel>
 </rss>

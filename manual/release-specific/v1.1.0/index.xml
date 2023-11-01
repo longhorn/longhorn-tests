@@ -5,107 +5,88 @@
     <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/</link>
     <description>Recent content in v1.1.0 on Longhorn Manual Test Cases</description>
     <generator>Hugo -- gohugo.io</generator>
-    <language>en-us</language><atom:link href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/index.xml" rel="self" type="application/rss+xml" />
+    <language>en-us</language>
+    <atom:link href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/index.xml" rel="self" type="application/rss+xml" />
     <item>
       <title>Prometheus Support</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/prometheus_support/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
       <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/prometheus_support/</guid>
       <description>Prometheus Support allows user to monitor the longhorn metrics. The details are available at https://longhorn.io/docs/1.1.0/monitoring/
 Monitor longhorn Deploy the Prometheus-operator, ServiceMonitor pointing to longhorn-backend and Prometheus as mentioned in the doc. Create an ingress pointing to Prometheus service. Access the Prometheus web UI using the ingress created in the step 2. Select the metrics from below to monitor the longhorn resources. longhorn_volume_actual_size_bytes longhorn_volume_capacity_bytes longhorn_volume_robustness longhorn_volume_state longhorn_instance_manager_cpu_requests_millicpu longhorn_instance_manager_cpu_usage_millicpu longhorn_instance_manager_memory_requests_bytes longhorn_instance_manager_memory_usage_bytes longhorn_manager_cpu_usage_millicpu longhorn_manager_memory_usage_bytes longhorn_node_count_total longhorn_node_status longhorn_node_cpu_capacity_millicpu longhorn_node_cpu_usage_millicpu longhorn_node_memory_capacity_bytes longhorn_node_memory_usage_bytes longhorn_node_storage_capacity_bytes longhorn_node_storage_reservation_bytes longhorn_node_storage_usage_bytes longhorn_disk_capacity_bytes longhorn_disk_reservation_bytes longhorn_disk_usage_bytes Deploy workloads which use Longhorn volumes into the cluster.</description>
     </item>
-    
     <item>
       <title>Recurring backup job interruptions</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/recurring-backup-job-interruptions/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
       <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/recurring-backup-job-interruptions/</guid>
       <description>Related Issue https://github.com/longhorn/longhorn/issues/1882
 Scenario 1- Allow Recurring Job While Volume Is Detached disabled, attached pod scaled down while the recurring backup was in progress. Create a volume, attach to a pod of a statefulSet, and write 800 Mi data into it. Set a recurring job. While the recurring job is in progress, scale down the pod to 0 of the statefulSet. Volume first detached and cron job gets finished saying unable to complete the backup.</description>
     </item>
-    
     <item>
       <title>Reusing failed replica for rebuilding</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/reusing-failed-replica-for-rebuilding/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
       <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/reusing-failed-replica-for-rebuilding/</guid>
       <description>Longhorn upgrade with node down and removal Launch Longhorn v1.0.x Create and attach a volume, then write data to the volume. Directly remove a Kubernetes node, and shut down a node. Wait for the related replicas failure. Then record replica.Spec.DiskID for the failed replicas. Upgrade to Longhorn master Verify the Longhorn node related to the removed node is gone. Verify replica.Spec.DiskID on the down node is updated and the field of the replica on the gone node is unchanged.</description>
     </item>
-    
     <item>
       <title>Support Kubelet Volume Metrics</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/kubelet_volume_metrics/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
       <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/kubelet_volume_metrics/</guid>
       <description>Intro Kubelet exposes kubelet_volume_stats_* metrics. Those metrics measure PVC&amp;rsquo;s filesystem related information inside a Longhorn block device.
 Test steps: Create a cluster and set up this monitoring system: https://github.com/prometheus-community/helm-charts/tree/main/charts/kube-prometheus-stack Install Longhorn. Deploy some workloads using Longhorn volumes. Make sure there are some workloads using Longhorn PVCs in volumeMode: Block and some workloads using Longhorn PVCs in volumeMode: Filesystem. See https://longhorn.io/docs/1.0.2/references/examples/ for examples. Create ingress to Prometheus server and Grafana. Navigate to Prometheus server, verify that all Longhorn PVCs in volumeMode: Filesystem show up in metrics: kubelet_volume_stats_capacity_bytes kubelet_volume_stats_available_bytes kubelet_volume_stats_used_bytes kubelet_volume_stats_inodes kubelet_volume_stats_inodes_free kubelet_volume_stats_inodes_used.</description>
     </item>
-    
     <item>
       <title>Test Additional Printer Columns</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/additional-printer-columns/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
       <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/additional-printer-columns/</guid>
       <description>For each of the case below:
 Fresh installation of Longhorn. (make sure to delete all Longhorn CRDs before installation) Upgrade from older version. Run:
 kubectl get &amp;lt;LONGHORN-CRD&amp;gt; -n longhorn-system Verify that the output contains information as specify in the additionalPrinerColumns at here</description>
     </item>
-    
     <item>
       <title>Test Instance Manager IP Sync</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/instance-manager-ip-sync/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
       <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/instance-manager-ip-sync/</guid>
       <description>Test step: Launch longhorn system Create and attach a volume Follow this doc to manually modify the IP of one instance-manager-r. e.g., curl -k -XPATCH -H &amp;#34;Accept: application/json&amp;#34; -H &amp;#34;Content-Type: application/merge-patch+json&amp;#34; -H &amp;#34;Authorization: Bearer kubeconfig-xxxxxx&amp;#34; --data &amp;#39;{&amp;#34;status&amp;#34;:{&amp;#34;ip&amp;#34;:&amp;#34;1.1.1.1&amp;#34;}}&amp;#39; https://172.104.72.64/k8s/clusters/c-znrxc/apis/longhorn.io/v1beta1/namespaces/longhorn-system/instancemanagers/instance-manager-r-63ece607/status Notice that the bearer token kubeconfig-xxx can be found in your kube config file Remember to add /status at the end of the URL Verify the IP of the instance manager still matches the pod IP Verify the volume can be detached.</description>
     </item>
-    
     <item>
       <title>Test ISCSI Installation on EKS</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/iscsi_installation/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
       <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/iscsi_installation/</guid>
       <description>This is for EKS or similar users who doesn&amp;rsquo;t need to log into each host to install &amp;lsquo;ISCSI&amp;rsquo; individually.
 Test steps:
 Create an EKS cluster with 3 nodes. Run the following command to install iscsi on every nodes. kubectl apply -f https://raw.githubusercontent.com/longhorn/longhorn/master/deploy/iscsi/longhorn-iscsi-installation.yaml In Longhorn Manager Repo Directory run: kubectl apply -Rf ./deploy/install/ Longhorn should be able installed successfully. Try to create a pod with a pvc: kubectl apply -f https://raw.githubusercontent.com/longhorn/longhorn/master/examples/simple_pvc.yaml kubectl apply -f https://raw.</description>
     </item>
-    
     <item>
       <title>Test Read Write Many Feature</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/rwx_feature/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
       <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/rwx_feature/</guid>
       <description>Prerequisite: Set up a Cluster of 4 nodes (1 etc/control plane and 3 workers) Deploy Latest Longhorn-master Create StatefulSet/Deployment with single pod with volume attached in RWX mode. Create a PVC with RWX mode using longhorn class by selecting the option read write many. Attach the PVC to a StatefulSet/Deployment with 1 pod. Verify that a PVC, ShareManger pod, CRD and volume in Longhorn get created. Verify share-manager pod come up healthy.</description>
     </item>
-    
     <item>
       <title>Test uninstallation</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/uninstallation/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
       <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/uninstallation/</guid>
       <description>Stability of uninstallation Launch Longhorn system.
 Use scripts to continuously create then delete multiple DaemonSets.
 e.g., putting the following python test into the manager integration test directory and run it: from common import get_apps_api_client # NOQA def test_uninstall_script(): apps_api = get_apps_api_client() while True: for i in range(10): name = &amp;#34;ds-&amp;#34; + str(i) try: ds = apps_api.read_namespaced_daemon_set(name, &amp;#34;default&amp;#34;) if ds.status.number_ready == ds.status.number_ready: apps_api.delete_namespaced_daemon_set(name, &amp;#34;default&amp;#34;) except Exception: apps_api.create_namespaced_daemon_set( &amp;#34;default&amp;#34;, ds_manifest(name)) def ds_manifest(name): return { &amp;#39;apiVersion&amp;#39;: &amp;#39;apps/v1&amp;#39;, &amp;#39;kind&amp;#39;: &amp;#39;DaemonSet&amp;#39;, &amp;#39;metadata&amp;#39;: { &amp;#39;name&amp;#39;: name }, &amp;#39;spec&amp;#39;: { &amp;#39;selector&amp;#39;: { &amp;#39;matchLabels&amp;#39;: { &amp;#39;app&amp;#39;: name } }, &amp;#39;template&amp;#39;: { &amp;#39;metadata&amp;#39;: { &amp;#39;labels&amp;#39;: { &amp;#39;app&amp;#39;: name } }, &amp;#39;spec&amp;#39;: { &amp;#39;terminationGracePeriodSeconds&amp;#39;: 10, &amp;#39;containers&amp;#39;: [{ &amp;#39;image&amp;#39;: &amp;#39;busybox&amp;#39;, &amp;#39;imagePullPolicy&amp;#39;: &amp;#39;IfNotPresent&amp;#39;, &amp;#39;name&amp;#39;: &amp;#39;sleep&amp;#39;, &amp;#39;args&amp;#39;: [ &amp;#39;/bin/sh&amp;#39;, &amp;#39;-c&amp;#39;, &amp;#39;while true;do date;sleep 5; done&amp;#39; ], }] } }, } } Start to uninstall longhorn.</description>
     </item>
-    
     <item>
       <title>Upgrade Longhorn with modified Storage Class</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/upgrade_with_modified_storageclass/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
       <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/upgrade_with_modified_storageclass/</guid>
       <description>Intro Longhorn can be upgraded with modified Storage Class.
 Related Issue https://github.com/longhorn/longhorn/issues/1527
 Test steps: Kubectl apply -f Install Longhorn v1.0.2 kubectl apply -f https://raw.githubusercontent.com/longhorn/longhorn/v1.0.2/deploy/longhorn.yaml Create a statefulset using longhorn storageclass for PVCs. Set the scale to 1. Observe that there is a workload pod (pod-1) is using 1 volume (vol-1) with 3 replicas. In Longhorn repo, on master branch. Modify numberOfReplicas: &amp;quot;1&amp;quot; in https://raw.githubusercontent.com/longhorn/longhorn/master/deploy/longhorn.yaml. Upgrade Longhorn to master by running kubectl apply -f https://raw.</description>
     </item>
-    
   </channel>
 </rss>

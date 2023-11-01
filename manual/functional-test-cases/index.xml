@@ -5,12 +5,12 @@
     <link>https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/</link>
     <description>Recent content in Functional test cases on Longhorn Manual Test Cases</description>
     <generator>Hugo -- gohugo.io</generator>
-    <language>en-us</language><atom:link href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/index.xml" rel="self" type="application/rss+xml" />
+    <language>en-us</language>
+    <atom:link href="https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/index.xml" rel="self" type="application/rss+xml" />
     <item>
       <title>1. Deployment of Longhorn</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/deployment/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
       <guid>https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/deployment/</guid>
       <description>Installation Longhorn v1.1.2 and above - Support Kubernetes 1.18+
 Longhorn v1.0.0 to v1.1.1 - Support Kubernetes 1.14+. Default 1.16+
@@ -21,12 +21,10 @@ Note: Longhorn UI can scale to multiple instances for HA purposes.
 Uninstallation Make sure all the CRDs and other resources are cleaned up, following the uninstallation instruction. https://longhorn.io/docs/1.2.2/deploy/uninstall/
 Customizable Default Settings https://longhorn.io/docs/1.2.2/references/settings/</description>
     </item>
-    
     <item>
       <title>2. UI</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/ui/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
       <guid>https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/ui/</guid>
       <description>Accessibility of Longhorn UI # Test Case Test Instructions 1. Access Longhorn UI using rancher proxy 1. Create a cluster (3 worker nodes and 1 etcd/control plane) in rancher, Go to the default project.
 2. Go to App, Click the launch app.
@@ -35,12 +33,10 @@ Customizable Default Settings https://longhorn.io/docs/1.2.2/references/settings
 5. Once the app is deployed successfully, click the /index.html link appears in App page.
 6. The page should redirect to longhorn UI - https://rancher/k8s/clusters/c-aaaa/api/v1/namespaces/longhorn-system/services/http:longhorn-frontend:80/proxy/#/dashboard</description>
     </item>
-    
     <item>
       <title>3. Volume</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/volume/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
       <guid>https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/volume/</guid>
       <description>Test cases for Volume # Test Case Test Instructions Expected Results 1 Check volume Details Prerequisite:
 * Longhorn Nodes has node tags
@@ -53,12 +49,10 @@ Customizable Default Settings https://longhorn.io/docs/1.2.2/references/settings
 * Health should be healthy
 * Frontend should be Block Device</description>
     </item>
-    
     <item>
       <title>5. Kubernetes</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/kubernetes/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
       <guid>https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/kubernetes/</guid>
       <description>Dynamic provisioning with StorageClass Can create and use volume using StorageClass
 Can create a new StorageClass use new parameters and it will take effect on the volume created by the storage class.
@@ -66,12 +60,10 @@ If the PV reclaim policy is delete, once PVC and PV are deleted, Longhorn volume
 Static provisioning using Longhorn created PV/PVC PVC can be used by the new workload
 Delete the PVC will not result in PV deletion</description>
     </item>
-    
     <item>
       <title>6. Backup</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/backup/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
       <guid>https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/backup/</guid>
       <description>Automation Tests # Test name Description tag 1 test_backup Test basic backup
 Setup:
@@ -83,24 +75,20 @@ Steps:
 3. Attach the new volume and make sure the data is the same as the old one
 4. Detach the volume and delete the backup.</description>
     </item>
-    
     <item>
       <title>7. Node</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/node/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
       <guid>https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/node/</guid>
       <description>UI specific test cases # Test Case Test Instructions Expected Results 1 Storage details * Prerequisites
 * Longhorn Installed
 1. Verify the allocated/used storage show the right data in node details page.
 2. Create a volume of 20 GB and attach to a pod and verify the storage allocated/used is shown correctly. Without any volume, allocated should be 0 and on creating new volume it should be updated as per volume present.</description>
     </item>
-    
     <item>
       <title>8. Scheduling</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/scheduling/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
       <guid>https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/scheduling/</guid>
       <description>Manual Test Test name Prerequisite Expectation EKS across zone scheduling Prerequisite:
 * EKS Cluster with 3 nodes across two AWS zones (zone#1, zone#2)
@@ -109,12 +97,10 @@ Steps:
 3. Scale volume replicas = 3
 4. Scale volume replicas to 4 * Volume replicas should be scheduled one per AWS zone</description>
     </item>
-    
     <item>
       <title>9. Upgrade</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/upgrade/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
       <guid>https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/upgrade/</guid>
       <description># Test name Description 1 Higher version of Longhorn engine and lower version of volume Test Longhorn upgrade
 1. Create a volume, generate and write data into the volume.
@@ -126,12 +112,10 @@ Steps:
 7. Revert to snapshot#1
 8. Restore the backup. 2 Restore the backup taken with older engine version 1.</description>
     </item>
-    
     <item>
       <title>Monitoring</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/monitoring/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
       <guid>https://longhorn.github.io/longhorn-tests/manual/functional-test-cases/monitoring/</guid>
       <description>Prometheus Support test cases Install the Prometheus Operator (include a role and service account for it). For example:apiVersion: rbac.authorization.k8s.io/v1 kind: ClusterRoleBinding metadata: name: prometheus-operator namespace: default roleRef: apiGroup: rbac.authorization.k8s.io kind: ClusterRole name: prometheus-operator subjects:
 - kind: ServiceAccount name: prometheus-operator namespace: default
@@ -143,6 +127,5 @@ Steps:
 - apiextensions.k8s.io resources:
 - customresourcedefinitions verbs: [&amp;quot;&amp;quot;]</description>
     </item>
-    
   </channel>
 </rss>

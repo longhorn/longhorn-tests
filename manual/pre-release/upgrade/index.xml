@@ -5,103 +5,84 @@
     <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/</link>
     <description>Recent content in Upgrade on Longhorn Manual Test Cases</description>
     <generator>Hugo -- gohugo.io</generator>
-    <language>en-us</language><atom:link href="https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/index.xml" rel="self" type="application/rss+xml" />
+    <language>en-us</language>
+    <atom:link href="https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/index.xml" rel="self" type="application/rss+xml" />
     <item>
       <title>Automatically Upgrading Longhorn Engine Test</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/auto-upgrade-engine/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
       <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/auto-upgrade-engine/</guid>
       <description>Longhorn version &gt;= 1.1.1 Reference ticket 2152
 Test basic upgrade Install old Longhorn version. E.g., &amp;lt;= v1.0.2 Create a volume, attach it to a pod, write some data. Create a DR volume and leave it in the detached state. Upgrade to Longhorn master Set setting concurrent automatic engine upgrade per node limit to 3 Verify that volumes&amp;rsquo; engines are upgraded automatically. Test concurrent upgrade Create a StatefulSet of scale 10 using 10 Longhorn volume.</description>
     </item>
-    
     <item>
       <title>Kubernetes upgrade test</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/kubernetes-upgrade-test/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
       <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/kubernetes-upgrade-test/</guid>
       <description>We also need to cover the Kubernetes upgrade process for supported Kubernetes version, make sure pod and volumes works after a major version upgrade.
 Related Issue https://github.com/longhorn/longhorn/issues/2566
 Test with K8s upgrade Create a K8s (Immediate prior version) cluster with 3 worker nodes and 1 control plane. Deploy Longhorn version (Immediate prior version) on the cluster. Create a volume and attach to a pod. Write data to the volume and compute the checksum.</description>
     </item>
-    
     <item>
       <title>Longhorn Upgrade test</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/longhorn-upgrade-test/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
       <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/longhorn-upgrade-test/</guid>
       <description>Setup 2 attached volumes with data. 2 detached volumes with data. 2 new volumes without data. 2 deployments of one pod. 1 statefulset of 10 pods. Auto Salvage set to disable. Test After upgrade:
 Make sure the existing instance managers didn&amp;rsquo;t restart. Make sure pods didn&amp;rsquo;t restart. Check the contents of the volumes. If the Engine API version is incompatible, manager cannot do anything about the attached volumes except detaching it.</description>
     </item>
-    
     <item>
       <title>Re-deploy CSI components when their images change</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/update_csi_components_when_images_change/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
       <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/update_csi_components_when_images_change/</guid>
       <description> Install Longhorn Change the longhorn-driver-deployer yaml at https://github.com/longhorn/longhorn-manager/blob/c2ceb9f3f991810f811601d8c41c09b67fb50746/deploy/install/02-components/04-driver.yaml#L50 to use the new images for some CSI components Kubectl apply -f the longhorn-driver-deployer yaml Verify that only CSI components with the new images are re-deployed and have new images Redeploy longhorn-driver-deployer without changing the images. Verify that no CSI component is re-deployed </description>
     </item>
-    
     <item>
       <title>Test Backing Image during Longhorn upgrade</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/backing-image-during-upgrade/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
       <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/backing-image-during-upgrade/</guid>
       <description>System upgrade with compatible backing image manager image Deploy Longhorn. Then set Concurrent Automatic Engine Upgrade Per Node Limit to a positive value to enable volume engine auto upgrade. Create 2 backing images: a large one and a small one. Longhorn will start preparing the 1st file for both backing image immediately via launching backing image data source pods. Wait for the small backing image being ready in the 1st disk.</description>
     </item>
-    
     <item>
       <title>Test Engine Crash During Live Upgrade</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/engine-crash-during-live-upgrade/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
       <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/engine-crash-during-live-upgrade/</guid>
       <description> Create and attach a volume. Deploy an extra engine image. Send live upgrade request then immediately delete the related engine manager pod/engine process (The new replicas are not in active in this case). Verify the volume will detach then reattach automatically. Verify the upgrade is done during the reattachment. (It actually becomes offline upgrade.) </description>
     </item>
-    
     <item>
       <title>Test Node Drain Policy Setting</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/test-node-drain-policy/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
       <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/test-node-drain-policy/</guid>
       <description>With node-drain-policy is block-if-contains-last-replica Note: Starting from v1.5.x, it is not necessary to check for the presence of longhorn-admission-webhook and longhorn-conversion-webhook. Please refer to the Longhorn issue #5590 for more details.
 Starting from v1.5.x, observe that the instance-manager-r and instance-manager-e are combined into instance-manager. Ref 5208
 1. Basic unit tests 1.1 Single worker node cluster with separate master node 1.1.1 RWO volumes
 Deploy Longhorn Verify that there is no PDB for csi-attacher, csi-provisioner, longhorn-admission-webhook, and longhorn-conversion-webhook Manually create a PVC (simulate the volume which has never been attached scenario) Verify that there is no PDB for csi-attacher, csi-provisioner, longhorn-admission-webhook, and longhorn-conversion-webhook because there is no attached volume Create a deployment that uses one RW0 Longhorn volume.</description>
     </item>
-    
     <item>
       <title>Test system upgrade with a new storage class being default</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/upgrade-with-customized-storage-class/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
       <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/upgrade-with-customized-storage-class/</guid>
       <description>Install a previous stable Longhorn on a K8s cluster. Create a storage class &amp;rsquo;longhorn-rep-2&amp;rsquo; with replica 2 and make it default. Create some volumes with the above created storage class and attach them to workloads. Upgrade Longhorn to latest version. Longhorn should be upgraded. Storage class &amp;rsquo;longhorn-rep-2&amp;rsquo; should be the default storage class. Create two volumes, one with &amp;rsquo;longhorn&amp;rsquo; storage class and other with &amp;rsquo;longhorn-rep-2&#39;. Verify the volumes are created as per their storage class.</description>
     </item>
-    
     <item>
       <title>Test System Upgrade with New Instance Manager</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/upgrade-with-new-instance-manager/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
       <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/upgrade-with-new-instance-manager/</guid>
       <description>Prepare 3 sets of longhorn-manager and longhorn-instance-manager images. Deploy Longhorn with the 1st set of images. Set Guaranteed Engine Manager CPU and Guaranteed Replica Manager CPU to 15 and 24, respectively. Then wait for the instance manager recreation. Create and attach a volume to a node (node1). Upgrade the Longhorn system with the 2nd set of images. Verify the CPU requests in the pods of both instance managers match the settings.</description>
     </item>
-    
     <item>
       <title>Upgrade Conflict Handling test</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/upgrade-conflict-handling/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
       <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/upgrade-conflict-handling/</guid>
       <description>New installation: Create a large cluster of many nodes (about 30 nodes) Install Longhorn master Create 100 volumes using volume template claim in statefulSet. Have the backup store configured and create some backups. Set some recurring jobs in the cluster every 1 minute. Observe the setup for 1/2 an hr. Do some operation like attaching detaching the volumes. Verify there is no error in the Longhorn manager. Upgrading from old version: Repeat the steps from above test case with Longhorn Prior version.</description>
     </item>
-    
   </channel>
 </rss>

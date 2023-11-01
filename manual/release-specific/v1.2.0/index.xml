@@ -5,42 +5,36 @@
     <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.2.0/</link>
     <description>Recent content in v1.2.0 on Longhorn Manual Test Cases</description>
     <generator>Hugo -- gohugo.io</generator>
-    <language>en-us</language><atom:link href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.2.0/index.xml" rel="self" type="application/rss+xml" />
+    <language>en-us</language>
+    <atom:link href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.2.0/index.xml" rel="self" type="application/rss+xml" />
     <item>
       <title>Test backing image</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.2.0/test-backing-image-upload/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
       <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.2.0/test-backing-image-upload/</guid>
       <description>Test upload Prepare a large backing image file (make sure the size is greater than 1Gi and the uploading time is longer than 1 minute) in local. Click the backing image creation button in UI, choose Upload From Local, select the file then start upload. Wait for the initialization complete. Then the upload progress will be shown. During the uploading, verify the corresponding backing image data source pod won&amp;rsquo;t use too many CPU (50 ~ 200m) and memory(50 ~ 200Mi) resources.</description>
     </item>
-    
     <item>
       <title>Test Backup Creation With Old Engine Image</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.2.0/backup-creation-with-old-engine-image/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
       <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.2.0/backup-creation-with-old-engine-image/</guid>
       <description>Related issue https://github.com/longhorn/longhorn/issues/2897
 Test Step Given with Longhorn v1.2.0-rc2 or above. And deploy engine image oldEI older than v1.2.0 (for example: longhornio/longhorn-engine:v1.1.2). And create volume vol-old-engine. And attach volume vol-old-engine to one of a node. And upgrade volume vol-old-engine to engine image oldEI.
 When create backup of volume vol-old-engine.
 Then watch kubectl kubectl get backups.longhorn.io -l backup-volume=vol-old-engine -w. And should see two backups temporarily (in transition state). And should see only one backup be left after a while.</description>
     </item>
-    
     <item>
       <title>Test instance manager cleanup during uninstall</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.2.0/test-instance-manager-cleanup-during-uninstall/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
       <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.2.0/test-instance-manager-cleanup-during-uninstall/</guid>
       <description>Deploy Longhorn v1.1.2 Launch some running volumes. Upgrade to v1.2.0. ==&amp;gt; All old unused engine managers should be cleaned up automatically. Make sure all running volumes keep state running. Upgrade all volumes. ==&amp;gt; All old replica managers should be cleaned up automatically. Detach all running volumes. ==&amp;gt; All old engine managers should be cleaned up automatically. do offline upgrade then reattach these volumes. Directly uninstall the Longhorn system. And use kubectl -n longhorn-system get lhim -w to verify that the system doesn&amp;rsquo;t loop in instance manager cleanup-recreation.</description>
     </item>
-    
     <item>
       <title>Test Label-driven Recurring Job</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.2.0/label-driven-recurring-job/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
       <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.2.0/label-driven-recurring-job/</guid>
       <description>Related issue https://github.com/longhorn/longhorn/issues/467
 Test Recurring Job Concurrency Given create snapshot recurring job with concurrency set to 2 and include snapshot recurring job default in groups.
@@ -54,16 +48,13 @@ And should see 2 jobs created concurrently.
 When update snapshot1 recurring job with concurrency set to 3.
 Then moniter the cron job pod log.</description>
     </item>
-    
     <item>
       <title>Test Version Bump of Kubernetes, API version group, CSI component&#39;s dependency version</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.2.0/test_version_bump/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
       <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.2.0/test_version_bump/</guid>
       <description>GitHub issue: https://github.com/longhorn/longhorn/issues/2757
 Test with specific Kubernetes version For each Kubernetes version (1.18, 1.19, 1.20, 1.21, 1.22), test basic functionalities of Longhorn v1.2.0 (create/attach/detach/delete volume/backup/snapshot using yaml/UI) Test Kubernetes and Longhorn upgrade Deploy K3s v1.21 Deploy Longhorn v1.1.2 Create some workload pods using Longhorn volumes Upgrade Longhorn to v1.2.0 Verify that everything is OK Upgrade K3s to v1.22 Verify that everything is OK Retest the Upgrade Lease Lock We remove the client-go patch https://github.</description>
     </item>
-    
   </channel>
 </rss>

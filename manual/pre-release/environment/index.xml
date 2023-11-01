@@ -5,44 +5,37 @@
     <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/environment/</link>
     <description>Recent content in Environment on Longhorn Manual Test Cases</description>
     <generator>Hugo -- gohugo.io</generator>
-    <language>en-us</language><atom:link href="https://longhorn.github.io/longhorn-tests/manual/pre-release/environment/index.xml" rel="self" type="application/rss+xml" />
+    <language>en-us</language>
+    <atom:link href="https://longhorn.github.io/longhorn-tests/manual/pre-release/environment/index.xml" rel="self" type="application/rss+xml" />
     <item>
       <title>Cluster using customize kubelet root directory</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/environment/cluster-using-customized-kubelet-root-directory/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
       <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/environment/cluster-using-customized-kubelet-root-directory/</guid>
       <description> Set up a cluster using a customized kubelet root directory. e.g., launching k3s k3s server --kubelet-arg &amp;quot;root-dir=/var/lib/longhorn-test&amp;quot; &amp;amp; Install Longhorn with env KUBELET_ROOT_DIR in longhorn-driver-deployer being set to the corresponding value. Launch a pod using Longhorn volumes via StorageClass. Everything should work fine. Delete the pod and the PVC. Everything should be cleaned up. </description>
     </item>
-    
     <item>
       <title>Compatibility with k3s and SELinux</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/environment/k3s-selinux-compatibility/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
       <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/environment/k3s-selinux-compatibility/</guid>
       <description>Set up a node with CentOS and make sure that the output of sestatus indicates that SELinux is enabled and set to Enforcing. Run the k3s installation script. Install Longhorn. The system should come up successfully. The logs of the Engine Image pod should only say installed, and the system should be able to deploy a Volume successfully from the UI. Note: There appears to be some problems with running k3s on CentOS, presumably due to the firewalld rules.</description>
     </item>
-    
     <item>
       <title>Test Longhorn deployment on RKE2 v1.24- with CIS-1.6 profile</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/environment/rke2-cis-1.6-profile/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
       <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/environment/rke2-cis-1.6-profile/</guid>
       <description>Related issue This test was created in response to 2292, which used CSI-1.5. However, RKE2 generally does not recommend or encourage using CIS-1.5 in favor of CIS1.6.
 Scenario Prepare 1 control plane node and 3 worker nodes. Install RKE2 v1.24 with CIS-1.6 profile on 1 control plane node. sudo su - systemctl disable firewalld # On a supporting OS. systemctl stop firewalld # On a supporting OS. yum install iscsi-initiator-utils # Or the OS equivalent.</description>
     </item>
-    
     <item>
       <title>Test Longhorn deployment on RKE2 v1.25&#43; with CIS-1.23 profile</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/environment/rke2-cis-1.23-profile/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
       <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/environment/rke2-cis-1.23-profile/</guid>
       <description>Related issue This is an expansion of Test Longhorn deployment on RKE2 v1.24- with CIS-1.6 profile, which was created in response to 2292. However, later versions of RKE2 only support CIS-1.23.
 Scenario Prepare 1 control plane node and 3 worker nodes. Install the latest RKE2 with CIS-1.23 profile on 1 control plane node. sudo su - systemctl disable firewalld # On a supporting OS. systemctl stop firewalld # On a supporting OS.</description>
     </item>
-    
   </channel>
 </rss>

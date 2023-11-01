@@ -5,16 +5,15 @@
     <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/node-not-ready/kubelet-restart/</link>
     <description>Recent content in Kubulete Restart on Longhorn Manual Test Cases</description>
     <generator>Hugo -- gohugo.io</generator>
-    <language>en-us</language><atom:link href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node-not-ready/kubelet-restart/index.xml" rel="self" type="application/rss+xml" />
+    <language>en-us</language>
+    <atom:link href="https://longhorn.github.io/longhorn-tests/manual/pre-release/node-not-ready/kubelet-restart/index.xml" rel="self" type="application/rss+xml" />
     <item>
       <title>Test kubelet restart on a node of the cluster</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/node-not-ready/kubelet-restart/kubelet-restart-on-a-node/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
       <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/node-not-ready/kubelet-restart/kubelet-restart-on-a-node/</guid>
       <description>Related issues: https://github.com/longhorn/longhorn/issues/2629
 Case 1: Kubelet restart on RKE1 multi node cluster: Create a RKE1 cluster with config of 1 etcd/control plane and 3 worker nodes. Deploy Longhorn on the cluster. Deploy prometheus monitoring app on the cluster which is using Longhorn storage class or deploy a statefulSet with Longhorn volume. Write some data into the mount point and compute the md5sum. Restart the kubelet on the node where the statefulSet or Prometheus pod is running using the command sudo docker restart kubelet Observe the volume.</description>
     </item>
-    
   </channel>
 </rss>

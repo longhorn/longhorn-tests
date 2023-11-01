@@ -5,22 +5,20 @@
     <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.3.0/</link>
     <description>Recent content in v1.3.0 on Longhorn Manual Test Cases</description>
     <generator>Hugo -- gohugo.io</generator>
-    <language>en-us</language><atom:link href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.3.0/index.xml" rel="self" type="application/rss+xml" />
+    <language>en-us</language>
+    <atom:link href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.3.0/index.xml" rel="self" type="application/rss+xml" />
     <item>
       <title>Extended CSI snapshot support to Longhorn snapshot</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.3.0/extend_csi_snapshot_support/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
       <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.3.0/extend_csi_snapshot_support/</guid>
       <description>Related issue https://github.com/longhorn/longhorn/issues/2534
 Test Setup Deploy the CSI snapshot CRDs, Controller as instructed at https://longhorn.io/docs/1.2.3/snapshots-and-backups/csi-snapshot-support/enable-csi-snapshot-support/ Deploy 4 VolumeSnapshotClass: kind: VolumeSnapshotClass apiVersion: snapshot.storage.k8s.io/v1beta1 metadata: name: longhorn-backup-1 driver: driver.longhorn.io deletionPolicy: Delete kind: VolumeSnapshotClass apiVersion: snapshot.storage.k8s.io/v1beta1 metadata: name: longhorn-backup-2 driver: driver.longhorn.io deletionPolicy: Delete parameters: type: bak kind: VolumeSnapshotClass apiVersion: snapshot.storage.k8s.io/v1beta1 metadata: name: longhorn-snapshot driver: driver.longhorn.io deletionPolicy: Delete parameters: type: snap kind: VolumeSnapshotClass apiVersion: snapshot.storage.k8s.io/v1beta1 metadata: name: invalid-class driver: driver.longhorn.io deletionPolicy: Delete parameters: type: invalid Create Longhorn volume test-vol of 5GB.</description>
     </item>
-    
     <item>
       <title>Setup and test storage network</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.3.0/test-storage-network/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
       <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.3.0/test-storage-network/</guid>
       <description>Related issue https://github.com/longhorn/longhorn/issues/2285
 Test storage network Create AWS instances Given Create VPC.
@@ -30,33 +28,27 @@ Destination 0.0.0.0/0 And Create 2 subnets in the VPC.
 Subnet-1: 10.0.1.0/24 Subnet-2: 10.0.2.0/24 And Launch 3 EC2 instances.
 Use the created VPC Use subnet-1 for network interface 1 Use subnet-2 for network interface 2 Disable Auto-assign public IP Add security group inbound rule to allow All traffic from Anywhere-IPv4 Stop Source/destination check And Create 3 elastic IPs.</description>
     </item>
-    
     <item>
       <title>Test backing image download to local</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.3.0/test-backing-image-download-to-local/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
       <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.3.0/test-backing-image-download-to-local/</guid>
       <description>Test step Create and attach a volume (recommended volume size &amp;gt; 1Gi). Write some data into the file then calculate the SHA512 checksum of the volume block device. Create a backing image from the above volume. And wait for the 1st backing image file ready. Download the backing image to local via UI (Clicking button Download in Operation list of the backing image). =&amp;gt; Verify the downloaded file checksum is the same as the volume checksum &amp;amp; the backing image current checksum (when Exported Backing Image Type is raw).</description>
     </item>
-    
     <item>
       <title>Test Helm uninstall Longhorn in different namespace</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.3.0/test-helm-uninstall-different-namespace/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
       <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.3.0/test-helm-uninstall-different-namespace/</guid>
       <description>Related issue https://github.com/longhorn/longhorn/issues/2034
 Test Given helm install Longhorn in different namespace
 When helm uninstall Longhorn
 Then Longhorn should complete uninstalling.</description>
     </item>
-    
     <item>
       <title>Test IM Proxy connection metrics</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.3.0/test-grpc-proxy/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
       <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.3.0/test-grpc-proxy/</guid>
       <description>Related issue https://github.com/longhorn/longhorn/issues/2821 https://github.com/longhorn/longhorn/issues/4038
 Test gRPC proxy Given Longhorn exist in the cluster.
@@ -67,54 +59,43 @@ When Monitor longhorn_instance_manager_proxy_grpc_connection in Grafana UI Panel
 And Run automation regression.
 Then Connections should return to 0 when tests complete.</description>
     </item>
-    
     <item>
       <title>Test instance manager NPE</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.3.0/test-instance-manager-npe/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
       <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.3.0/test-instance-manager-npe/</guid>
       <description>Test step Create and attach a 1-replica volume. Create 2 snapshots with large amount of data so that rebuilding each snapshot would take some time. Disable the scheduling for the nodes so that there is one node could accept new replicas of the volume. Update the replica count to 2 for the volume and wait for the rebuilding start. While syncing the 1st snapshot file, create a directory with the name of another snapshot meta file.</description>
     </item>
-    
     <item>
       <title>Test longhorn manager NPE caused by backup creation</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.3.0/test-longhorn-manager-npe/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
       <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.3.0/test-longhorn-manager-npe/</guid>
       <description>Test step Add the following rule to the ClusterRole longhorn-test-role: - apiGroups: [&amp;#34;longhorn.io&amp;#34;] resources: [&amp;#34;*&amp;#34;] verbs: [&amp;#34;*&amp;#34;] Put the below test case into the integration test work directory then run it. import random import string import time import common from common import client, volume_name # NOQA from backupstore import set_random_backupstore # NOQA Mi = (1024 * 1024) Gi = (1024 * Mi) LH_API_GROUP = &amp;#34;longhorn.io&amp;#34; LH_API_VERSION = &amp;#34;v1beta1&amp;#34; LH_NAMESPACE = &amp;#34;longhorn-system&amp;#34; LHE_PLURAL = &amp;#34;engines&amp;#34; LHB_PLURAL = &amp;#34;backups&amp;#34; def test_backup_npe(client, volume_name, set_random_backupstore): # NOQA host_id = common.</description>
     </item>
-    
     <item>
       <title>Test longhorn manager pod starting scalability</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.3.0/test-longhorn-manager-starting-scalability/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
       <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.3.0/test-longhorn-manager-starting-scalability/</guid>
       <description>Test step Deploy a cluster with multiple nodes. e.g., 20 worker nodes. Launch an old Longhorn version without the fix PR. e.g., Longhorn version v1.2.3. Create and attach multiple volumes on different nodes. e.g.,: apiVersion: longhorn.io/v1beta2 kind: BackingImage metadata: name: bi-test1 namespace: longhorn-system spec: sourceType: download sourceParameters: url: https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2 --- kind: StorageClass apiVersion: storage.k8s.io/v1 metadata: name: longhorn-test1 provisioner: driver.longhorn.io allowVolumeExpansion: true reclaimPolicy: Delete volumeBindingMode: Immediate parameters: numberOfReplicas: &amp;#34;3&amp;#34; staleReplicaTimeout: &amp;#34;2880&amp;#34; fromBackup: &amp;#34;&amp;#34; fsType: &amp;#34;ext4&amp;#34; backingImage: &amp;#34;bi-test1&amp;#34; --- apiVersion: v1 kind: Service metadata: name: nginx labels: app: nginx spec: ports: - port: 80 name: web selector: app: nginx type: NodePort --- apiVersion: apps/v1 kind: StatefulSet metadata: name: bi-scalability-test namespace: default spec: selector: matchLabels: app: nginx serviceName: &amp;#34;nginx&amp;#34; replicas: 20 podManagementPolicy: Parallel template: metadata: labels: app: nginx spec: restartPolicy: Always terminationGracePeriodSeconds: 10 containers: - name: nginx image: registry.</description>
     </item>
-    
     <item>
       <title>Test NPE when longhorn UI deployment CR not exist</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.3.0/test-npe-when-longhorn-ui-deployment-not-exist/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
       <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.3.0/test-npe-when-longhorn-ui-deployment-not-exist/</guid>
       <description>Related issue https://github.com/longhorn/longhorn/issues/4065
 Test Given helm install Longhorn
 When delete deployment/longhorn-ui And update setting/kubernetes-cluster-autoscaler-enabled to true or false
 Then longhorn-manager pods should still be Running.</description>
     </item>
-    
     <item>
       <title>Test snapshot purge retry</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.3.0/test-snapshot-purge-retry/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
       <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.3.0/test-snapshot-purge-retry/</guid>
       <description>Scenario Create and attach a Longhorn volumes. Write some data to the volume then create the 1st snapshot. e.g. dd if=/dev/urandom of=/dev/longhorn/&amp;lt;Longhorn volume name&amp;gt; bs=1M count=100 Try to delete the 1st snapshot. The snapshot will be marked as Removed then hidden on the volume detail page. Write some non-overlapping data to the volume then create the 2nd snapshot. e.g. dd if=/dev/urandom of=/dev/longhorn/&amp;lt;Longhorn volume name&amp;gt; bs=1M count=100 seek=100 Re-try deleting the 1st snapshot via UI.</description>
     </item>
-    
   </channel>
 </rss>

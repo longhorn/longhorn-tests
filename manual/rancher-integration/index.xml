@@ -5,12 +5,12 @@
     <link>https://longhorn.github.io/longhorn-tests/manual/rancher-integration/</link>
     <description>Recent content in Rancher integration test cases on Longhorn Manual Test Cases</description>
     <generator>Hugo -- gohugo.io</generator>
-    <language>en-us</language><atom:link href="https://longhorn.github.io/longhorn-tests/manual/rancher-integration/index.xml" rel="self" type="application/rss+xml" />
+    <language>en-us</language>
+    <atom:link href="https://longhorn.github.io/longhorn-tests/manual/rancher-integration/index.xml" rel="self" type="application/rss+xml" />
     <item>
       <title>Access Longhorn GUI using Rancher proxy</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/rancher-integration/access-lh-gui-using-rancher-ui/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
       <guid>https://longhorn.github.io/longhorn-tests/manual/rancher-integration/access-lh-gui-using-rancher-ui/</guid>
       <description>Given Downstream (RKE2/RKE1/K3s) cluster in Rancher
 AND Deploy Longhorn using either of Kubectl/helm/marketplace app
@@ -20,12 +20,10 @@ AND User should be to do all the operations available on the Longhorn GUI
 AND URL should be a suffix to the Rancher URL
 AND NO error in the console logs</description>
     </item>
-    
     <item>
       <title>Drain using Rancher UI</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/rancher-integration/drain-using-rancher-ui/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
       <guid>https://longhorn.github.io/longhorn-tests/manual/rancher-integration/drain-using-rancher-ui/</guid>
       <description>Note: Enabling Delete Empty Dir Data is mandatory to drain a node if a pod is associated with any storage.
 Test with Longhorn default setting of &amp;lsquo;Node Drain Policy&amp;rsquo;: block-if-contains-last-replica 1. Drain operation on single node using Rancher UI Given Single node (1 Worker) cluster with Longhorn installed
@@ -33,12 +31,10 @@ AND few RWO and RWX volumes attached with node/pod exists
 AND 1 RWO and 1 RWX volumes unattached
 When Drain the node with default values of Rancher UI</description>
     </item>
-    
     <item>
       <title>Longhorn in an hardened cluster</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/rancher-integration/lh-hardend-rancher/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
       <guid>https://longhorn.github.io/longhorn-tests/manual/rancher-integration/lh-hardend-rancher/</guid>
       <description>Given Hardened Downstream (RKE2/RKE1/K3s) cluster in Rancher v2.6.x with CIS 1.6 as per Hardening guide
 When Deploy Longhorn using Marketplace app
@@ -48,12 +44,10 @@ Given Hardened Downstream (RKE2/RKE1/K3s) cluster in Rancher v2.7.x with CIS 1.6
 When Deploy Longhorn using Marketplace app
 Then Longhorn should be deployed properly</description>
     </item>
-    
     <item>
       <title>Longhorn using fleet on multiple downstream clusters</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/rancher-integration/fleet-deploy/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
       <guid>https://longhorn.github.io/longhorn-tests/manual/rancher-integration/fleet-deploy/</guid>
       <description>reference: https://github.com/rancher/fleet
 Test Longhorn deployment using fleet: Given Downstream multiple (RKE2/RKE1/K3s) clusters in Rancher
@@ -65,12 +59,10 @@ AND Longhorn is deployed on all the clusters using fleet
 When Use fleet to uninstall Longhorn
 Then Longhorn should be uninstalled from all the cluster</description>
     </item>
-    
     <item>
       <title>Upgrade Kubernetes using Rancher UI</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/rancher-integration/upgrade-using-rancher-ui/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
       <guid>https://longhorn.github.io/longhorn-tests/manual/rancher-integration/upgrade-using-rancher-ui/</guid>
       <description>Note: Longhorn version v1.3.x doesn&amp;rsquo;t support Kubernetes v1.25 and onwards
 Test with Longhorn default setting of &amp;lsquo;Node Drain Policy&amp;rsquo;: block-if-contains-last-replica 1. Upgrade single node cluster using Rancher UI - RKE2 cluster Given Single node RKE2 cluster provisioned in Rancher with K8s prior version with Longhorn installed
@@ -78,12 +70,10 @@ AND few RWO and RWX volumes attached with node/pod exists
 AND 1 RWO and 1 RWX volumes unattached
 AND 1 RWO volume with 50 Gi data</description>
     </item>
-    
     <item>
       <title>Upgrade Kubernetes using SUC</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/rancher-integration/upgrade-using-suc/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
       <guid>https://longhorn.github.io/longhorn-tests/manual/rancher-integration/upgrade-using-suc/</guid>
       <description>Note: Longhorn version v1.3.x doesn&amp;rsquo;t support Kubernetes v1.25 and onwards
 Test with Longhorn default setting of &amp;lsquo;Node Drain Policy&amp;rsquo;: block-if-contains-last-replica 1. Upgrade multi node cluster using SUC - K3s cluster Given Multi node (1 master and 3 worker) K3s cluster (not provisioned by Rancher) with K3s prior version with Longhorn installed
@@ -91,6 +81,5 @@ AND System Upgrade Controller deployed
 AND few RWO and RWX volumes attached with node/pod exists
 AND 1 RWO and 1 RWX volumes unattached</description>
     </item>
-    
   </channel>
 </rss>

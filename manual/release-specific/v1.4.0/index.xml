@@ -5,12 +5,12 @@
     <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.4.0/</link>
     <description>Recent content in v1.4.0 on Longhorn Manual Test Cases</description>
     <generator>Hugo -- gohugo.io</generator>
-    <language>en-us</language><atom:link href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.4.0/index.xml" rel="self" type="application/rss+xml" />
+    <language>en-us</language>
+    <atom:link href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.4.0/index.xml" rel="self" type="application/rss+xml" />
     <item>
       <title>Test CSI plugin liveness probe</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.4.0/test-csi-plugin-liveness-probe/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
       <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.4.0/test-csi-plugin-liveness-probe/</guid>
       <description>Related discussion https://github.com/longhorn/longhorn/issues/3907
 Test CSI plugin liveness probe should recover CSI socket file Given healthy Longhorn cluster
@@ -21,24 +21,20 @@ And the csi-resizer-* pod on node-1 should be restarted.
 And the csi-snapshotter-* pod on node-1 should be restarted.
 And the csi-attacher-* pod on node-1 should be restarted.</description>
     </item>
-    
     <item>
       <title>Test engine binary recovery</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.4.0/test-engine-binary-recovery/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
       <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.4.0/test-engine-binary-recovery/</guid>
       <description>Related issue https://github.com/longhorn/longhorn/issues/4380
 Steps Test remove engine binary on host should recover Given EngineImage custom resource deployed
 &amp;gt; kubectl -n longhorn-system get engineimage NAME STATE IMAGE REFCOUNT BUILDDATE AGE ei-b907910b deployed longhornio/longhorn-engine:master-head 0 3d23h 2m25s And engine image pods Ready are 1/1.
 &amp;gt; kubectl -n longhorn-system get pod | grep engine-image engine-image-ei-b907910b-g4kpd 1/1 Running 0 2m43s engine-image-ei-b907910b-46k6t 1/1 Running 0 2m43s engine-image-ei-b907910b-t6wnd 1/1 Running 0 2m43s When Delete engine binary on host</description>
     </item>
-    
     <item>
       <title>Test filesystem trim</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.4.0/test-filesystem-trim/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
       <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.4.0/test-filesystem-trim/</guid>
       <description>Related issue https://github.com/longhorn/longhorn/issues/836
 Case 1: Test filesystem trim during writing Given A 10G volume created.
@@ -48,12 +44,10 @@ And Mount the filesystem on a mount point.
 Then Run the below shell script with the correct mount point specified:
 #!/usr/bin/env bash MOUNT_POINT=${1} dd if=/dev/urandom of=/mnt/data bs=1M count=8000 sync CKSUM=`md5sum /mnt/data | awk &amp;#39;{print $1}&amp;#39;` for INDEX in {1..10..1}; do rm -rf ${MOUNT_POINT}/data dd if=/mnt/data of=${MOUNT_POINT}/data &amp;amp; RAND_SLEEP_INTERVAL=$(($(($RANDOM%50))+10)) sleep ${RAND_SLEEP_INTERVAL} fstrim ${MOUNT_POINT} while [ `ps aux | grep &amp;#34;dd if&amp;#34; | grep -v grep | wc -l` -eq &amp;#34;1&amp;#34; ] do sleep 1 done CUR_CKSUM=`md5sum ${MOUNT_POINT}/data | awk &amp;#39;{print $1}&amp;#39;` if [ $CUR_CKSUM !</description>
     </item>
-    
     <item>
       <title>Test helm on Rancher deployed Windows Cluster</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.4.0/test-helm-install-on-rancher-deployed-windows-cluster/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
       <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.4.0/test-helm-install-on-rancher-deployed-windows-cluster/</guid>
       <description>Related issue https://github.com/longhorn/longhorn/issues/4246
 Test Install Given Rancher cluster.
@@ -65,12 +59,10 @@ Select Flannel for Network Provider Enable Windows Support
 And Added the 3 nodes to the Rancher Windows cluster.
 Add Linux Master Node</description>
     </item>
-    
     <item>
       <title>Test Longhorn system backup should sync from the remote backup target</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.4.0/test-system-backup/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
       <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.4.0/test-system-backup/</guid>
       <description>Steps Given Custom resource SystemBackup (foo) exist in AWS S3,
 And System backup (foo) downloaded from AWS S3.
@@ -81,12 +73,10 @@ This needs to be done before the system backup gets synced to the cluster.
 Then Should see the synced messages in the custom resource SystemBackup(foo).
 Events: Type Reason Age From Message ---- ------ ---- ---- ------- Normal Syncing 9m29s longhorn-system-backup-controller Syncing system backup from backup target Normal Synced 9m28s longhorn-system-backup-controller Synced system backup from backup target </description>
     </item>
-    
     <item>
       <title>Test Node ID Change During Backing Image Creation</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.4.0/test-node-id-change-during-backing-image-creation/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
       <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.4.0/test-node-id-change-during-backing-image-creation/</guid>
       <description>Related issue https://github.com/longhorn/longhorn/issues/4887
 Steps Given A relatively large file so that uploading it would take several minutes at least.
@@ -96,12 +86,10 @@ When Add new nodes for the cluster or new disks for the existing Longhorn nodes 
 Then Should see the upload success.
 And Should not see error messages like below in the longhorn manager pods.</description>
     </item>
-    
     <item>
       <title>Test Online Expansion</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.4.0/test-online-expansion/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
       <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.4.0/test-online-expansion/</guid>
       <description>Related issue https://github.com/longhorn/longhorn/issues/1674
 Test online expansion with continuous reading/writing Given Prepare a relatively large file (5Gi for example) with the checksum calculated.
@@ -111,12 +99,10 @@ When Use dd to copy data from the file to the Longhorn block device.
 dd if=/mnt/data of=/dev/longhorn/vol bs=1M And Do online expansion for the volume during the copying.
 Then The expansion should success. The corresponding block device on the attached node is expanded.</description>
     </item>
-    
     <item>
       <title>Test replica scale-down warning</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.4.0/test-replica-scale-down-warning/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
       <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.4.0/test-replica-scale-down-warning/</guid>
       <description>Related issue https://github.com/longhorn/longhorn/issues/4120
 Steps Given Replica Auto Balance set to least-effort or best-effort.
@@ -127,17 +113,14 @@ kubectl alpha events -n longhorn-system pod &amp;lt;node-1 manager pod&amp;gt; -
 Then Should see Normal replice delete event.
 Normal Delete Engine/t1-e-6a846a7a Removed unknown replica tcp://10.42.2.94:10000 from engine And Should not see Warning unknown replica detect event.</description>
     </item>
-    
     <item>
       <title>Test upgrade for migrated Longhorn on Rancher</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.4.0/test-upgrade-for-migrated-longhorn/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
       <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.4.0/test-upgrade-for-migrated-longhorn/</guid>
       <description>Related discussion https://github.com/longhorn/longhorn/discussions/4198
 Context: since few customers used our broken chart longhorn 100.2.1+up1.3.1 on Rancher (Now fixed) with the workaround. We would like to verify the future upgrade path for those customers.
 Steps Set up a cluster of Kubernetes 1.20. Adding this repo to the apps section in new rancher UI repo: https://github.com/PhanLe1010/charts.git branch: release-v2.6-longhorn-1.3.1. Access old rancher UI by navigating to &amp;lt;your-rancher-url&amp;gt;/g. Install Longhorn 1.0.2. Create/attach some volumes. Create a few recurring snapshot/backup job that run every minutes.</description>
     </item>
-    
   </channel>
 </rss>

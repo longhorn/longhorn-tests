@@ -5,24 +5,21 @@
     <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/stability/</link>
     <description>Recent content in Stability on Longhorn Manual Test Cases</description>
     <generator>Hugo -- gohugo.io</generator>
-    <language>en-us</language><atom:link href="https://longhorn.github.io/longhorn-tests/manual/pre-release/stability/index.xml" rel="self" type="application/rss+xml" />
+    <language>en-us</language>
+    <atom:link href="https://longhorn.github.io/longhorn-tests/manual/pre-release/stability/index.xml" rel="self" type="application/rss+xml" />
     <item>
       <title>Checksum enabled large volume with multiple rebuilding</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/stability/checksum-enabled-large-volume/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
       <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/stability/checksum-enabled-large-volume/</guid>
       <description>Create a 50 Gi volume. write around 30 Gi data into it. Enable the setting Snapshot Data Integrity. Keep writing in the volume continuously using dd command like while true; do dd if=/dev/urandom of=t1 bs=512 count=1000 conv=fsync status=progress &amp;amp;&amp;amp; rm t1; done. Create a recurring job of backup for every 15 min. Delete a replica and wait for the replica rebuilding. Compare the performance of replica rebuilding from previous Longhorn version without the setting Snapshot Data Integrity.</description>
     </item>
-    
     <item>
       <title>Longhorn installation multiple times</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/stability/multiple-installation/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
       <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/stability/multiple-installation/</guid>
       <description>Create a cluster(3 worker nodes and 1 etc/control plane). Deploy the longhorn app. Once longhorn deployed successfully, uninstall longhorn. Repeat the steps 2 and 3 multiple times. Run the below script to install and uninstall longhorn continuously for some time. installcount=0 while true; echo `date` do kubectl apply -f https://raw.githubusercontent.com/longhorn/longhorn/master/deploy/longhorn.yaml pod=`kubectl get pods -n longhorn-system | grep -i &amp;#39;longhorn-manager&amp;#39; | grep -i &amp;#39;running&amp;#39; | awk -F &amp;#39; &amp;#39; &amp;#39;{print $2}&amp;#39; | grep &amp;#39;1/1&amp;#39; | wc -l` count=0 while [ $pod !</description>
     </item>
-    
   </channel>
 </rss>

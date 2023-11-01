@@ -5,25 +5,22 @@
     <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/cluster-restore/</link>
     <description>Recent content in Cluster Restore on Longhorn Manual Test Cases</description>
     <generator>Hugo -- gohugo.io</generator>
-    <language>en-us</language><atom:link href="https://longhorn.github.io/longhorn-tests/manual/pre-release/cluster-restore/index.xml" rel="self" type="application/rss+xml" />
+    <language>en-us</language>
+    <atom:link href="https://longhorn.github.io/longhorn-tests/manual/pre-release/cluster-restore/index.xml" rel="self" type="application/rss+xml" />
     <item>
       <title>Restore to a new cluster</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/cluster-restore/restore-to-a-new-cluster/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
       <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/cluster-restore/restore-to-a-new-cluster/</guid>
       <description>Back up the old cluster Deploy the 1st cluster then install Longhorn system and Velero. Deploy some workloads using Longhorn volumes then write some data: A simple pod using multiple volumes. And some volumes are using backing images. A StatefulSet. A Deployment with a RWX volume. Config some recurring policies for the volumes. Create backups for all volumes. Create a cluster backup via Velero. velero backup create lh-cluster --exclude-resources persistentvolumes,persistentvolumeclaims,backuptargets.longhorn.io,backupvolumes.longhorn.io,backups.longhorn.io,nodes.longhorn.io,volumes.longhorn.io,engines.longhorn.io,replicas.longhorn.io,backingimagedatasources.longhorn.io,backingimagemanagers.longhorn.io,backingimages.longhorn.io,sharemanagers.longhorn.io,instancemanagers.longhorn.io,engineimages.longhorn.io Restore to a new cluster Deploy the 2nd cluster then install Velero only.</description>
     </item>
-    
     <item>
       <title>Restore to an old cluster</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/cluster-restore/restore-to-an-old-cluster/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
       <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/cluster-restore/restore-to-an-old-cluster/</guid>
       <description>Notice that the behaviors will be different if the cluster node roles are different. e.g., A cluster contains 1 dedicated master node + 3 worker node is different from a cluster contains 3 nodes which are both master and worker. This test may need to be validated for both kind of cluster.
 Node creation and deletion Deploy a 3-worker-node cluster then install Longhorn system. Deploy some workloads using Longhorn volumes then write some data.</description>
     </item>
-    
   </channel>
 </rss>
