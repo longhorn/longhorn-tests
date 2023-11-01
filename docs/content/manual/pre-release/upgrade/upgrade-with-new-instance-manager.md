@@ -4,7 +4,7 @@ title: Test System Upgrade with New Instance Manager
 
 1. Prepare 3 sets of longhorn-manager and longhorn-instance-manager images.
 2. Deploy Longhorn with the 1st set of images.
-3. Set `Guaranteed Engine Manager CPU` and `Guaranteed Replica Manager CPU` to 15 and 24, respectively. 
+3. Set `Guaranteed Instance Manager CPU` to 40, respectively.
    Then wait for the instance manager recreation.
 4. Create and attach a volume to a node (node1).
 5. Upgrade the Longhorn system with the 2nd set of images. 
