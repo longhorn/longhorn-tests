@@ -1,7 +1,13 @@
 import multiprocessing
 
 from deployment_keywords import deployment_keywords
-from kubelet_keywords import kubelet_keywords
+#TODO
+# remove other dependencies in workload_keywords
+from k8s_keywords import k8s_keywords
+#TODO
+# remove other dependencies in workload_keywords
+# workload_keywords should only deal with workload instead of k8s or physical nodes
+# these kinds of imports cause each module losing its cohesion and coupling with everything together
 from host_keywords import host_keywords
 from statefulset_keywords import statefulset_keywords
 from volume_keywords import volume_keywords
@@ -32,7 +38,7 @@ class workload_keywords:
 
     def __init__(self):
         self.deployment_keywords = deployment_keywords()
-        self.kubelet_keywords = kubelet_keywords()
+        self.k8s_keywords = k8s_keywords()
         self.host_keywords = host_keywords()
         self.statefulset_keywords = statefulset_keywords()
         self.volume_keywords = volume_keywords()
@@ -92,7 +98,7 @@ class workload_keywords:
     def restart_workload_kubelet(self, workload_name, downtime_in_sec):
         volume_name = get_workload_volume_name(workload_name)
         node_id = self.volume_keywords.get_node_id_by_replica_locality(volume_name, "volume node")
-        self.kubelet_keywords.restart_kubelet(node_id, downtime_in_sec)
+        self.k8s_keywords.restart_kubelet(node_id, downtime_in_sec)
 
     def wait_for_workload_pods_running(self, workload_name, namespace="default"):
         logging(f'Waiting for {namespace} workload {workload_name} pods running')
@@ -131,7 +137,9 @@ class workload_keywords:
     def wait_for_workload_claim_size_expanded(self, workload_name, claim_index=0):
         claim_name = get_workload_persistent_volume_claim_name(workload_name, index=claim_index)
         expanded_size = self.persistentvolumeclaim.get_annotation_value(claim_name, ANNOT_EXPANDED_SIZE)
-        volume_name = get_workload_volume_name(workload_name)
+        volume_name = self.persistentvolumeclaim.get_volume_name(claim_name)
 
+        self.volume.wait_for_volume_attached(volume_name)
         logging(f'Waiting for {workload_name} volume {volume_name} to expand to {expanded_size}')
         self.volume.wait_for_volume_expand_to_size(volume_name, expanded_size)
+        self.volume.wait_for_volume_detached(volume_name)

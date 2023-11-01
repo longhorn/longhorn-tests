@@ -50,6 +50,12 @@ class volume_keywords:
         node_ids.extend(self.get_node_ids_by_replica_locality(volume_name, "test pod node"))
         return node_ids
 
+    def get_replica_node(self, volume_name):
+        return self.get_node_id_by_replica_locality(volume_name, "replica node")
+
+    def get_volume_node(self, volume_name):
+        return self.get_node_id_by_replica_locality(volume_name, "volume node")
+
     def get_node_id_by_replica_locality(self, volume_name, replica_locality):
         return self.get_node_ids_by_replica_locality(volume_name, replica_locality)[0]
 
@@ -163,3 +169,9 @@ class volume_keywords:
     def wait_for_volume_healthy(self, volume_name):
         logging(f'Waiting for volume {volume_name} to be healthy')
         self.volume.wait_for_volume_healthy(volume_name)
+
+    def wait_for_volume_degraded(self, volume_name):
+        self.volume.wait_for_volume_degraded(volume_name)
+
+    def wait_for_volume_unknown(self, volume_name):
+        self.volume.wait_for_volume_unknown(volume_name)

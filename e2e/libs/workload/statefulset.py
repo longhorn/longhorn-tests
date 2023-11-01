@@ -58,6 +58,10 @@ def wait_for_statefulset_replicas_ready(statefulset_name, expected_ready_count, 
             break
         time.sleep(retry_interval)
 
+    #TODO
+    # all assertions should be removed
+    # because it fails the test case instead keeps the environment
+    # it stops us from investigation in the front line
     assert statefulset.status.ready_replicas == expected_ready_count, \
         f"Unexpected statefulset {statefulset_name} ready replicas:\n" \
         f"GOT: {statefulset.status.ready_replicas}\n" \

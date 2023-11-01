@@ -45,8 +45,6 @@ def create_deployment(name, claim_name):
                 break
             time.sleep(retry_interval)
 
-        assert deployment.status.ready_replicas == replicas
-
 
 def delete_deployment(name, namespace='default'):
     api = client.AppsV1Api()

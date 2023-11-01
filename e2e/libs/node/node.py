@@ -7,7 +7,9 @@ from robot.libraries.BuiltIn import BuiltIn
 
 from utility.utility import get_retry_count_and_interval
 
-
+#TODO
+# it seems that Node not need to be a class
+# it's just a collection of utility functions
 class Node:
 
     def __init__(self):
