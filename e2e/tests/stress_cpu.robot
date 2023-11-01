@@ -54,3 +54,21 @@ Stress Volume Node CPU When Volume Is Online Expanding
         Then Wait for statefulset 0 volume size expanded
         And Check statefulset 0 data is intact
     END
+
+Stress Volume Node CPU When Volume Is Offline Expanding
+    @{data_checksum_list} =    Create List
+    Set Test Variable    ${data_checksum_list}
+
+    Given Create statefulset 0 with rwo volume
+    And Write 1024 MB data to statefulset 0
+
+    FOR    ${i}    IN RANGE    ${LOOP_COUNT}
+        And Scale down statefulset 0 to detach volume
+        And Stress the CPU of all worker nodes
+
+        When Expand statefulset 0 volume by 100 MiB
+
+        Then Wait for statefulset 0 volume size expanded
+        And Scale up statefulset 0 to attach volume
+        And Check statefulset 0 data is intact
+    END

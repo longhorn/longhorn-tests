@@ -170,6 +170,24 @@ def delete_statefulset(name, namespace='default'):
         time.sleep(retry_interval)
     assert deleted
 
+def get_statefulset(name, namespace='default'):
+    api = client.AppsV1Api()
+    return api.read_namespaced_stateful_set(name=name, namespace=namespace)
+
+def scale_statefulset(name, replica_count, namespace='default'):
+    logging(f"Scaling statefulset {name} to {replica_count}")
+
+    apps_v1_api = client.AppsV1Api()
+
+    scale = client.V1Scale(
+        metadata=client.V1ObjectMeta(name=name, namespace=namespace),
+        spec=client.V1ScaleSpec(replicas=int(replica_count))
+    )
+    apps_v1_api.patch_namespaced_stateful_set_scale(name=name, namespace=namespace, body=scale)
+
+    statefulset = get_statefulset(name, namespace)
+    assert statefulset.spec.replicas == int(replica_count)
+
 def create_pvc(volume_type, option):
     filepath = "./templates/workload/pvc.yaml"
     with open(filepath, 'r') as f:

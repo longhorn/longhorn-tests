@@ -22,6 +22,12 @@ class workload_keywords:
         statefulset_name = create_statefulset(volume_type, option)
         return statefulset_name
 
+    def get_statefulset(self, statefulset_name):
+        return get_statefulset(statefulset_name)
+
+    def scale_statefulset(self, statefulset_name, replica_count):
+        return scale_statefulset(statefulset_name, replica_count)
+
     def get_workload_pod_name(self, workload_name):
         return get_workload_pod_names(workload_name)[0]
 
@@ -54,3 +60,6 @@ class workload_keywords:
 
     def wait_for_workload_pod_stable(self, workload_name):
         return wait_for_workload_pod_stable(workload_name)
+
+    def wait_for_statefulset_replicas_ready(self, statefulset_name, expected_ready_count):
+        return wait_for_statefulset_replicas_ready(statefulset_name, expected_ready_count)

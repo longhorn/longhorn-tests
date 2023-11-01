@@ -20,6 +20,19 @@ Create statefulset ${idx} with ${volume_type} volume
     ${pvc_name} =    get_workload_pvc_name    ${statefulset_name}
     Insert Into List    ${persistentvolumeclaim_list}    ${idx}    ${pvc_name}
 
+Scale down statefulset ${idx} to detach volume
+    ${statefulset} =    get_statefulset    ${statefulset_list}[${idx}]
+    ${scale_up_replica_count} =   Set Variable    ${statefulset.spec.replicas}
+    Set Test Variable   ${scale_up_replica_count}
+
+    scale_statefulset    ${statefulset_list}[${idx}]    0
+    wait_for_volume_detached    ${volume_list}[${idx}]
+
+Scale up statefulset ${idx} to attach volume
+    scale_statefulset    ${statefulset_list}[${idx}]    ${scale_up_replica_count}
+    wait_for_volume_healthy    ${volume_list}[${idx}]
+    wait_for_statefulset_replicas_ready    ${statefulset_list}[${idx}]    ${scale_up_replica_count}
+
 Create deployment ${idx} with ${volume_type} and ${option} volume
     ${deployment_name} =    create_deployment    ${volume_type}    ${option}
     Insert Into List    ${deployment_list}    ${idx}    ${deployment_name}
