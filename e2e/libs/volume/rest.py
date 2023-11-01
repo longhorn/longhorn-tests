@@ -1,15 +1,16 @@
-from volume.base import Base
+import os
+import time
+
 from utility.utility import get_longhorn_client
 from utility.utility import logging
-import time
-import os
 
-RETRY_COUNTS = 150
-RETRY_INTERVAL = 1
+from volume.base import Base
 
-VOLUME_FRONTEND_BLOCKDEV = "blockdev"
-VOLUME_FRONTEND_ISCSI = "iscsi"
-DEV_PATH = "/dev/longhorn/"
+from volume.constant import DEV_PATH
+from volume.constant import RETRY_COUNTS
+from volume.constant import RETRY_INTERVAL
+from volume.constant import VOLUME_FRONTEND_BLOCKDEV
+from volume.constant import VOLUME_FRONTEND_ISCSI
 
 class Rest(Base):
 

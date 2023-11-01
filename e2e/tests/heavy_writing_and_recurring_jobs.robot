@@ -15,31 +15,35 @@ ${RETRY_INTERVAL}    1
 
 *** Test Cases ***
 Reboot Volume Node While Heavy Writing And Recurring Jobs Exist
-    Create volume 0 with 2 GB and 1 replicas
-    Create volume 1 with 2 GB and 3 replicas
-    Keep writing data to volume 0
-    Keep Writing data to volume 1
-    Create snapshot and backup recurring job for volume 0
-    Create snapshot and backup recurring job for volume 1
+    Given Create volume 0 with 2 GB and 1 replicas
+    And Create volume 1 with 2 GB and 3 replicas
+    And Keep writing data to volume 0
+    And Keep Writing data to volume 1
+    And Create snapshot and backup recurring job for volume 0
+    And Create snapshot and backup recurring job for volume 1
+
     FOR    ${i}    IN RANGE    ${LOOP_COUNT}
-        Reboot volume 0 volume node
-        Check recurring jobs for volume 0 work
-        Check recurring jobs for volume 1 work
-        Check volume 0 works
-        Check volume 1 works
+        When Reboot volume 0 volume node
+
+        Then Check recurring jobs for volume 0 work
+        And Check recurring jobs for volume 1 work
+        And Check volume 0 works
+        And Check volume 1 works
     END
 
 Reboot Replica Node While Heavy Writing And Recurring Jobs Exist
-    Create volume 0 with 2 GB and 1 replicas
-    Create volume 1 with 2 GB and 3 replicas
-    Keep Writing data to volume 0
-    Keep Writing data to volume 1
-    Create snapshot and backup recurring job for volume 0
-    Create snapshot and backup recurring job for volume 1
+    Given Create volume 0 with 2 GB and 1 replicas
+    And Create volume 1 with 2 GB and 3 replicas
+    And Keep Writing data to volume 0
+    And Keep Writing data to volume 1
+    And Create snapshot and backup recurring job for volume 0
+    And Create snapshot and backup recurring job for volume 1
+
     FOR    ${i}    IN RANGE    ${LOOP_COUNT}
-        Reboot volume 1 replica node
-        Check recurring jobs for volume 0 work
-        Check recurring jobs for volume 1 work
-        Check volume 0 works
-        Check volume 1 works
+        When Reboot volume 1 replica node
+
+        Then Check recurring jobs for volume 0 work
+        And Check recurring jobs for volume 1 work
+        And Check volume 0 works
+        And Check volume 1 works
     END

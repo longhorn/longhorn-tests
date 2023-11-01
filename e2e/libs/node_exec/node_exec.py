@@ -1,12 +1,15 @@
+import time
+
 from kubernetes import client
 from kubernetes.stream import stream
-import time
-from utility.utility import wait_delete_pod
-from utility.utility import wait_delete_ns
-from utility.utility import logging
 
-DEFAULT_POD_TIMEOUT = 180
-DEFAULT_POD_INTERVAL = 1
+from utility.utility import logging
+from workload.pod import wait_delete_pod
+from utility.utility import wait_delete_ns
+
+from node_exec.constant import DEFAULT_POD_INTERVAL
+from node_exec.constant import DEFAULT_POD_TIMEOUT
+
 
 class NodeExec:
 
@@ -49,7 +52,7 @@ class NodeExec:
                 namespace=self.namespace,
                 body=client.V1DeleteOptions()
             )
-            wait_delete_pod(pod.metadata.uid)
+            wait_delete_pod(pod.metadata.name)
         self.core_api.delete_namespace(
             name=self.namespace
         )
@@ -58,15 +61,20 @@ class NodeExec:
 
 
     def issue_cmd(self, node_name, cmd):
+        logging(f"Issuing command: {cmd} on {node_name}")
         pod = self.launch_pod(node_name)
-        exec_command = [
-            'nsenter',
-            '--mount=/rootfs/proc/1/ns/mnt',
-            '--',
-            'sh',
-            '-c',
-            cmd
-        ]
+        if isinstance(cmd, list):
+            exec_command = cmd
+        else:
+            exec_command = [
+                'nsenter',
+                '--mount=/rootfs/proc/1/ns/mnt',
+                '--net=/rootfs/proc/1/ns/net',
+                '--',
+                'sh',
+                '-c',
+                cmd
+            ]
         res = stream(
             self.core_api.connect_get_namespaced_pod_exec,
             pod.metadata.name,
@@ -77,11 +85,20 @@ class NodeExec:
             stdout=True,
             tty=False
         )
+        logging(f"Issued command: {cmd} on {node_name} with result {res}")
         return res
 
     def launch_pod(self, node_name):
         if node_name in self.node_exec_pod:
-            return self.node_exec_pod[node_name]
+            for i in range(DEFAULT_POD_TIMEOUT):
+                pod = self.core_api.read_namespaced_pod(
+                        name=node_name,
+                        namespace=self.namespace
+                      )
+                if pod is not None and pod.status.phase == 'Running':
+                    break
+                time.sleep(DEFAULT_POD_INTERVAL)
+            return pod
         else:
             pod_manifest = {
                 'apiVersion': 'v1',
@@ -105,8 +122,32 @@ class NodeExec:
                             }
                         }
                     },
+                    "tolerations": [{
+                        "key": "node-role.kubernetes.io/master",
+                        "operator": "Equal",
+                        "value": "true",
+                        "effect": "NoSchedule"
+                    },
+                    {
+                        "key": "node-role.kubernetes.io/master",
+                        "operator": "Equal",
+                        "value": "true",
+                        "effect": "NoExecute"
+                    },
+                    {
+                        "key": "node-role.kubernetes.io/control-plane",
+                        "operator": "Equal",
+                        "value": "true",
+                        "effect": "NoSchedule"
+                    },
+                    {
+                        "key": "node-role.kubernetes.io/control-plane",
+                        "operator": "Equal",
+                        "value": "true",
+                        "effect": "NoExecute"
+                    }],
                     'containers': [{
-                        'image': 'busybox:1.34.0',
+                        'image': 'ubuntu:16.04',
                         'imagePullPolicy': 'IfNotPresent',
                         'securityContext': {
                             'privileged': True
@@ -117,14 +158,29 @@ class NodeExec:
                         ],
                         "volumeMounts": [{
                             'name': 'rootfs',
-                            'mountPath': '/rootfs',
-                            'readOnly': True
+                            'mountPath': '/rootfs'
+                        }, {
+                            'name': 'bus',
+                            'mountPath': '/var/run'
+                        }, {
+                            'name': 'rancher',
+                            'mountPath': '/var/lib/rancher'
                         }],
                     }],
                     'volumes': [{
                         'name': 'rootfs',
                         'hostPath': {
                             'path': '/'
+                        }
+                    }, {
+                        'name': 'bus',
+                        'hostPath': {
+                            'path': '/var/run'
+                        }
+                    }, {
+                        'name': 'rancher',
+                        'hostPath': {
+                            'path': '/var/lib/rancher'
                         }
                     }]
                 }

@@ -1,15 +1,20 @@
-from kubernetes import config, client, dynamic
-from kubernetes.client.rest import ApiException
-from kubernetes.stream import stream
-from longhorn import from_env
-import string
-import random
 import os
 import socket
+import string
 import time
+import random
 import yaml
+
+from longhorn import from_env
+
+from kubernetes import client
+from kubernetes import config
+from kubernetes import dynamic
+from kubernetes.client.rest import ApiException
+
 from robot.api import logger
 from robot.libraries.BuiltIn import BuiltIn
+
 
 def logging(msg, also_report=False):
     if also_report:
@@ -22,10 +27,14 @@ def get_retry_count_and_interval():
     retry_interval = int(BuiltIn().get_variable_value("${RETRY_INTERVAL}"))
     return retry_count, retry_interval
 
-def generate_volume_name():
-    return "vol-" + \
+def generate_name(name_prefix="test-"):
+    return name_prefix + \
         ''.join(random.choice(string.ascii_lowercase + string.digits)
                 for _ in range(6))
+
+def generate_volume_name():
+    return generate_name("vol-")
+
 
 def init_k8s_api_client():
     if os.getenv('LONGHORN_CLIENT_URL'):
@@ -44,6 +53,16 @@ def list_nodes():
     for item in obj.items:
         if 'node-role.kubernetes.io/control-plane' not in item.metadata.labels and \
                 'node-role.kubernetes.io/master' not in item.metadata.labels:
+            nodes.append(item.metadata.name)
+    return sorted(nodes)
+
+def get_control_plane_nodes():
+    core_api = client.CoreV1Api()
+    obj = core_api.list_node()
+    nodes = []
+    for item in obj.items:
+        if 'node-role.kubernetes.io/control-plane' in item.metadata.labels or \
+                'node-role.kubernetes.io/master' in item.metadata.labels:
             nodes.append(item.metadata.name)
     return sorted(nodes)
 
@@ -129,21 +148,6 @@ def filter_cr(group, version, namespace, plural, field_selector="", label_select
         return resp
     except ApiException as e:
         logging(f"Listing namespaced custom object: {e}")
-
-def wait_delete_pod(pod_uid, namespace='default'):
-    api = client.CoreV1Api()
-    retry_count, retry_interval = get_retry_count_and_interval()
-    for i in range(retry_count):
-        ret = api.list_namespaced_pod(namespace=namespace)
-        found = False
-        for item in ret.items:
-            if item.metadata.uid == pod_uid:
-                found = True
-                break
-        if not found:
-            break
-        time.sleep(retry_interval)
-    assert not found
 
 def wait_delete_ns(name):
     api = client.CoreV1Api()

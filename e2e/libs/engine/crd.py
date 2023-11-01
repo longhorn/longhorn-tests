@@ -1,11 +1,13 @@
 import logging
 
+from kubernetes import client
+
 from engine.base import Base
-from utils.common_utils import k8s_cr_api
+
 
 class CRD(Base):
     def __init__(self):
-        self.cr_api = k8s_cr_api()
+        self.obj_api = client.CustomObjectsApi()
 
     def get_engine(self, volume_name, node_name):
         if volume_name == "" or node_name == "":
@@ -20,7 +22,7 @@ class CRD(Base):
         if node_name != "":
             label_selector.append(f"longhornnode={node_name}")
 
-        api_response = self.cr_api.list_namespaced_custom_object(
+        api_response = self.obj_api.list_namespaced_custom_object(
             group="longhorn.io",
             version="v1beta2",
             namespace="longhorn-system",
@@ -46,7 +48,7 @@ class CRD(Base):
 
         for engine in engines:
             engine_name = engine['metadata']['name']
-            self.cr_api.delete_namespaced_custom_object(
+            self.obj_api.delete_namespaced_custom_object(
                 group="longhorn.io",
                 version="v1beta2",
                 namespace="longhorn-system",
