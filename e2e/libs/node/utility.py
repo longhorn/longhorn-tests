@@ -1,3 +1,5 @@
+from robot.libraries.BuiltIn import BuiltIn
+
 from kubernetes import client
 
 
@@ -35,3 +37,13 @@ def list_node_names_by_role(role="all"):
     if role == "worker":
         condition = lambda node: not any(label in node.metadata.labels for label in control_plane_labels)
         return sorted(filter_nodes(nodes, condition))
+
+def list_node_names_by_volumes(volume_names):
+    volume_nodes = {}
+    volume_keywords = BuiltIn().get_library_instance('volume_keywords')
+
+    for volume_name in volume_names:
+        volume_node = volume_keywords.get_volume_node(volume_name)
+        if volume_node not in volume_nodes:
+            volume_nodes[volume_node] = True
+    return list(volume_nodes.keys())

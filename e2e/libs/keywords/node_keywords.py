@@ -3,6 +3,7 @@ from robot.libraries.BuiltIn import BuiltIn
 from node import Node
 from node import Stress
 from node.utility import get_node_by_index
+from node.utility import list_node_names_by_volumes
 
 from utility.utility import wait_for_all_instance_manager_running
 
@@ -42,12 +43,8 @@ class node_keywords:
     def cleanup_stress_helper(self):
         self.stress.cleanup()
 
-    def stress_node_cpu_by_volume(self, volume_name):
-        volume_keywords = BuiltIn().get_library_instance('volume_keywords')
-        volume_node = volume_keywords.get_volume_node(volume_name)
-        self.stress.cpu([volume_node])
+    def stress_node_cpu_by_volumes(self, volume_names):
+        self.stress.cpu(list_node_names_by_volumes(volume_names))
 
-    def stress_node_memory_by_volume(self, volume_name):
-        volume_keywords = BuiltIn().get_library_instance('volume_keywords')
-        volume_node = volume_keywords.get_volume_node(volume_name)
-        self.stress.memory([volume_node])
+    def stress_node_memory_by_volumes(self, volume_names):
+        self.stress.memory(list_node_names_by_volumes(volume_names))

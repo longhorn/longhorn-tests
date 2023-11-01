@@ -67,8 +67,8 @@ Restart cluster
         wait_for_workload_pod_stable   ${statefulset}
     END
 
-Stress volume node cpu
-    stress_node_cpu_by_volume    ${volume_name}
+Stress the CPU of all volume nodes
+    stress_node_cpu_by_volumes    ${volume_list}
 
-Stress volume node memory
-    stress_node_memory_by_volume    ${volume_name}
+Stress the memory of all volume nodes
+    stress_node_memory_by_volumes    ${volume_list}

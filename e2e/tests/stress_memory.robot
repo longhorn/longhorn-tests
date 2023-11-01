@@ -20,7 +20,7 @@ Stress Volume Node Memory When Replica Is Rebuilding
 
     FOR    ${i}    IN RANGE    ${LOOP_COUNT}
         When Delete replica on volume node to trigger replica rebuilding
-        And Stress volume node memory
+        And Stress the memory of all volume nodes
 
         Then Wait until replica on volume node rebuilt
         And Check data is intact
