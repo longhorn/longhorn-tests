@@ -29,7 +29,15 @@ class CRD(Base):
             plural="engines",
             label_selector=",".join(label_selector)
         )
-        return api_response
+
+        if api_response == "" or api_response is None:
+            raise Exception(f"failed to get the volume {volume_name} engine")
+
+        engines = api_response["items"]
+        if len(engines) == 0:
+            logging.warning(f"cannot get the volume {volume_name} engines")
+
+        return engines
 
     def delete_engine(self, volume_name, node_name):
         if volume_name == "" or node_name == "":
@@ -38,15 +46,7 @@ class CRD(Base):
             logging.info(
                 f"delete the volume {volume_name} on node {node_name} engine")
 
-        resp = self.get_engine(volume_name, node_name)
-        assert resp != "", "failed to get engines"
-
-        engines = resp['items']
-        if len(engines) == 0:
-            logging.warning("cannot find engines")
-            return
-
-        for engine in engines:
+        for engine in self.get_engine(volume_name, node_name):
             engine_name = engine['metadata']['name']
             self.obj_api.delete_namespaced_custom_object(
                 group="longhorn.io",
