@@ -28,7 +28,7 @@ resource "aws_instance" "lh_aws_instance_controlplane_rke" {
   tags = {
     Name = "${var.lh_aws_instance_name_controlplane}-${count.index}-${random_string.random_suffix.id}"
     DoNotDelete = "true"
-    Owner = "longhorn-infra"
+    Owner = var.resources_owner
   }
 }
 
@@ -45,7 +45,7 @@ resource "null_resource" "wait_for_docker_start_controlplane" {
 
   provisioner "remote-exec" {
 
-    inline = ["until( systemctl is-active docker.service ); do echo \"waiting for docker to start \"; sleep 2; done"] 
+    inline = ["until( systemctl is-active docker.service ); do echo \"waiting for docker to start \"; sleep 2; done"]
 
     connection {
       type     = "ssh"
@@ -87,7 +87,7 @@ resource "aws_instance" "lh_aws_instance_worker_rke" {
   tags = {
     Name = "${var.lh_aws_instance_name_worker}-${count.index}-${random_string.random_suffix.id}"
     DoNotDelete = "true"
-    Owner = "longhorn-infra"
+    Owner = var.resources_owner
   }
 }
 

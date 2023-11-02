@@ -1,10 +1,12 @@
 import time
 
 from replica.base import Base
+
 from utils import common_utils
 
-RETRY_COUNTS = 150
-RETRY_INTERVAL = 1
+from replica.constant import RETRY_COUNTS
+from replica.constant import RETRY_INTERVAL
+
 
 class Rest(Base):
     def __init__(self, node_exec):

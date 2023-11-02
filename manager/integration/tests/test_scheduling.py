@@ -1374,7 +1374,7 @@ def test_data_locality_basic(client, core_api, volume_name, pod, settings_reset)
             assert replica["running"] is False
             assert replica["mode"] == ""
 
-    assert volume4.conditions.scheduled.reason == \
+    assert volume4.conditions.Scheduled.reason == \
         "LocalReplicaSchedulingFailure"
 
     volume4 = volume4.updateReplicaCount(replicaCount=3)
@@ -1638,7 +1638,7 @@ def test_soft_anti_affinity_scheduling_volume_disable(client, volume_name): # NO
     for i in range(RETRY_COUNTS_SHORT):
         volume = client.by_id_volume(volume_name)
         assert volume.robustness == VOLUME_ROBUSTNESS_DEGRADED
-        assert volume.conditions.scheduled.status == "False"
+        assert volume.conditions.Scheduled.status == "False"
 
         healthy_replica_count = 0
         for replica in volume.replicas:
@@ -1757,6 +1757,55 @@ def test_allow_empty_node_selector_volume_setting(): # NOQA
     pass
 
 
+def test_global_disk_soft_anti_affinity(): # NOQA
+    """
+    1. When Replica Disk Soft Anti-Affinity is false, it should be impossible
+       to schedule replicas to the same disk.
+    2. When Replica Disk Soft Anti-Affinity is true, it should be possible to
+       schedule replicas to the same disk.
+    3. Whether or not Replica Disk Soft Anti-Affinity is true or false, the
+       scheduler should prioritize scheduling replicas to different disks.
+
+    Given
+    - One node has three disks
+    - The three disks have very different sizes
+    - Only two disks are available for scheduling
+    - No other node is available for scheduling
+
+    When
+    - Global Replica Node Level Soft Anti-Affinity is true
+    - Global Replica Zone Level Soft Anti-Affinity is true
+    - Global Replica Disk Level Soft Anti-Affinity is false
+    - Create a volume with three replicas and a size such that all replicas
+      could fit on the largest disk and still leave it with the most available
+      space
+    - Attach the volume to the schedulable node
+
+    Then
+    - Verify the volume is in a degraded state
+    - Verify only two of the three replicas are healthy
+    - Verify the remaining replica doesn't have a spec.nodeID
+
+    When
+    - Change the global Replica Disk Level Soft Anti-Affinity to true
+
+    Then
+    - Verify the volume is in a healthy state
+    - Verify all three replicas are healthy (two replicas have the same
+      spec.diskID)
+
+    When
+    - Enable scheduling on the third disk
+    - Delete one of the two replicas with the same spec.diskID
+
+    Then
+    - Verify the volume is in a healthy state
+    - Verify all three replicas are healthy
+    - Verify all three replicas have a different spec.diskID
+    """
+    pass
+
+
 @pytest.mark.skip(reason="TODO")
 def test_allow_empty_disk_selector_volume_setting(): # NOQA
     """
@@ -1786,5 +1835,53 @@ def test_allow_empty_disk_selector_volume_setting(): # NOQA
     Then
     - Wait for a while for controller to resync the volume,
       all replicas can be scheduled to the disks on the nodes
+    """
+    pass
+
+
+def test_volume_disk_soft_anti_affinity(): # NOQA
+    """
+    1. When Replica Disk Soft Anti-Affinity is disabled, it should be
+       impossible to schedule replicas to the same disk.
+    2. When Replica Disk Soft Anti-Affinity is enabled, it should be possible
+       to schedule replicas to the same disk.
+    3. Whether or not Replica Disk Soft Anti-Affinity is enabled or disabled,
+       the scheduler should prioritize scheduling replicas to different disks.
+
+    Given
+    - One node has three disks
+    - The three disks have very different sizes
+    - Only two disks are available for scheduling
+    - No other node is available for scheduling
+
+    When
+    - Global Replica Node Level Soft Anti-Affinity is true
+    - Global Replica Zone Level Soft Anti-Affinity is true
+    - Create a volume with three replicas, a size such that all replicas could
+      fit on the largest disk and still leave it with the most available space,
+      and spec.replicaDiskSoftAntiAffinity = disabled
+    - Attach the volume to the schedulable node
+
+    Then
+    - Verify the volume is in a degraded state
+    - Verify only two of the three replicas are healthy
+    - Verify the remaining replica doesn't have a spec.nodeID
+
+    When
+    - Change the volume's spec.replicaDiskSoftAntiAffinity to enabled
+
+    Then
+    - Verify the volume is in a healthy state
+    - Verify all three replicas are healthy (two replicas have the same
+      spec.diskID)
+
+    When
+    - Enable scheduling on the third disk
+    - Delete one of the two replicas with the same spec.diskID
+
+    Then
+    - Verify the volume is in a healthy state
+    - Verify all three replicas are healthy
+    - Verify all three replicas have a different `replica.HostID`
     """
     pass

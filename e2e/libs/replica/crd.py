@@ -1,8 +1,10 @@
-import logging
+from utils.common_utils import k8s_cr_api
 
 from replica.base import Base
 from replica.rest import Rest
-from utils.common_utils import k8s_cr_api
+
+from utility.utility import logging
+
 
 class CRD(Base):
     def __init__(self, node_exec):
@@ -27,10 +29,10 @@ class CRD(Base):
 
     def delete_replica(self, volume_name, node_name):
         if volume_name == "" or node_name == "":
-            logging.info(f"deleting all replicas")
+            logging(f"Deleting all replicas")
         else:
-            logging.info(
-                f"deleting the volume {volume_name} on node {node_name} replicas")
+            logging(
+                f"Deleting volume {volume_name} on node {node_name} replicas")
 
         resp = self.get_replica(volume_name, node_name)
         assert resp != "", f"failed to get replicas"
@@ -48,7 +50,7 @@ class CRD(Base):
                 plural="replicas",
                 name=replica_name
             )
-        logging.info(f"finished replicas deletion")
+        logging(f"Finished replicas deletion")
 
     def wait_for_replica_rebuilding_start(self, volume_name, node_name):
         Rest(self.node_exec).wait_for_replica_rebuilding_start(volume_name, node_name)

@@ -79,6 +79,8 @@ run_longhorn_upgrade_test(){
                                  "--include-upgrade-test",
                                  "-k", "test_upgrade",
                                  "--lh-install-method", "'${LONGHORN_INSTALL_METHOD}'",
+                                 "--flux-helm-chart-url", "'${FLUX_HELM_CHART_URL}'",
+                                 "--flux-helm-chart-version", "'${FLUX_HELM_CHART_VERSION}'",
                                  "--rancher-hostname", "'${RANCHER_HOSTNAME}'",
                                  "--rancher-access-key", "'${RANCHER_ACCESS_KEY}'",
                                  "--rancher-secret-key", "'${RANCHER_SECRET_KEY}'",

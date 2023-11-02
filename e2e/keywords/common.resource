@@ -4,32 +4,33 @@ Documentation       Common keywords
 Library             ../libs/keywords/common_keywords.py
 Library             ../libs/keywords/node_keywords.py
 Library             ../libs/keywords/volume_keywords.py
-Resource            ../keywords/volume.resource
+Library             ../libs/keywords/recurring_job_keywords.py
+Library             ../libs/keywords/workload_keywords.py
+Library             ../libs/keywords/network_keywords.py
 
 
 *** Variables ***
-${retry_timeout_second}=    600
-${retry_interval}=          5
 
 
 *** Keywords ***
-Data should be intact
-    Run keyword And Continue On Failure    Volume ${volume_name} data checksum should be ${volume_data_checksum}
+Set test environment
+    init_k8s_api_client
+    init_node_exec    ${SUITE NAME.rsplit('.')[1]}
+    init_storageclasses
+    @{volume_list} =    Create List
+    Set Test Variable    ${volume_list}
+    @{deployment_list} =    Create List
+    Set Test Variable    ${deployment_list}
+    @{statefulset_list} =    Create List
+    Set Test Variable    ${statefulset_list}
+    setup_control_plane_network_latency
 
-Teardown
-    Cleanup resource and resume state
-    Run Keyword If Test Failed    generate_support_bundle    ${TEST NAME}
-
-Cleanup resource and resume state
-    Clean up resources executed on the node
-    Restore all nodes state
-    Clean up all Longhorn resources
-
-Clean up resources executed on the node
-    Run keyword And Continue On Failure    cleanup_resources_on_node
-
-Restore all nodes state
-    Run keyword And Continue On Failure    restore_node_state
-
-Clean up all Longhorn resources
-    Run keyword And Continue On Failure    cleanup_resources
+Cleanup test resources
+    cleanup_control_plane_network_latency
+    cleanup_node_exec
+    cleanup_stress_helper
+    cleanup_recurring_jobs    ${volume_list}
+    cleanup_volumes    ${volume_list}
+    cleanup_deployments    ${deployment_list}
+    cleanup_statefulsets    ${statefulset_list}
+    cleanup_storageclasses

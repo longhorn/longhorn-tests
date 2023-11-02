@@ -43,7 +43,13 @@ systemctl start rke2-server.service
 # TODO: It looks like "set -e" will break the intended functionality of the remaining code. Consider a refactor.
 set +e
 
+RETRY=0
+MAX_RETRY=180
 until (KUBECONFIG=/etc/rancher/rke2/rke2.yaml /var/lib/rancher/rke2/bin/kubectl get pods -A | grep 'Running'); do
   echo 'Waiting for rke2 startup'
   sleep 5
+  if [ $RETRY -eq $MAX_RETRY ]; then
+    break
+  fi
+  RETRY=$((RETRY+1))
 done
