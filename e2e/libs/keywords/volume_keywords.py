@@ -1,9 +1,12 @@
-from utility.utility import get_test_case_namespace, generate_volume_name
-from utility.utility import get_node, list_nodes
-from utility.utility import get_test_pod_running_node, get_test_pod_not_running_node
+from utility.utility import generate_volume_name
+from utility.utility import get_node
+from utility.utility import get_test_pod_not_running_node
+from utility.utility import get_test_pod_running_node
+from utility.utility import list_nodes
 from utility.utility import logging
-from robot.libraries.BuiltIn import BuiltIn
+
 from volume import Volume
+
 
 class volume_keywords:
 
@@ -13,21 +16,20 @@ class volume_keywords:
 
     def create_volume(self, size, replica_count):
         volume_name = generate_volume_name()
+        logging(f'Creating volume {volume_name}')
         self.volume.create(volume_name, size, replica_count)
-        logging(f'Created volume {volume_name}')
         return volume_name
 
 
     def attach_volume(self, volume_name):
         attach_node = get_test_pod_not_running_node()
-        logging(f'Attached volume {volume_name} to {attach_node}')
+        logging(f'Attaching volume {volume_name} to {attach_node}')
         self.volume.attach(volume_name, attach_node)
 
 
     def get_volume_node(self, volume_name):
         volume = self.volume.get(volume_name)
         return volume['spec']['nodeID']
-        # return volume.controllers[0].hostId
 
 
     def get_replica_node(self, volume_name):
@@ -47,9 +49,9 @@ class volume_keywords:
         self.volume.keep_writing_data(volume_name)
 
 
-    def check_data(self, volume_name, checksum):
+    def check_data_checksum(self, volume_name, checksum):
         logging(f"Checking volume {volume_name} data with checksum {checksum}")
-        self.volume.check_data(volume_name, checksum)
+        self.volume.check_data_checksum(volume_name, checksum)
 
 
     def delete_replica(self, volume_name, replica_node):

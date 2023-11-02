@@ -1,10 +1,13 @@
+import time
+import yaml
+
 from kubernetes import client
 from kubernetes.client.rest import ApiException
 from kubernetes.stream import stream
-import time
-import yaml
-from utility.utility import logging
+
 from utility.utility import get_retry_count_and_interval
+from utility.utility import logging
+
 
 WAIT_FOR_POD_STABLE_MAX_RETRY = 90
 
@@ -270,7 +273,8 @@ def keep_writing_pod_data(pod_name, size_in_mb=256, path="/data/overwritten-data
     logging(f"Created process to keep writing pod {pod_name}")
     return res
 
-def check_pod_data(pod_name, checksum, path="/data/random-data"):
+def check_pod_data_checksum(pod_name, checksum, path="/data/random-data"):
+    logging(f"Checking pod {pod_name} data checksum")
     api = client.CoreV1Api()
     cmd = [
         '/bin/sh',
@@ -281,9 +285,9 @@ def check_pod_data(pod_name, checksum, path="/data/random-data"):
         api.connect_get_namespaced_pod_exec, pod_name, 'default',
         command=cmd, stderr=True, stdin=False, stdout=True,
         tty=False)
-    logging(f"Got {path} checksum = {_checksum},\
-                expected checksum = {checksum}")
-    assert _checksum == checksum
+    assert _checksum == checksum, \
+        f"Got {path} checksum = {_checksum}\n" \
+        f"Expected checksum = {checksum}"
 
 def wait_for_workload_pod_stable(workload_name):
     stable_pod = None

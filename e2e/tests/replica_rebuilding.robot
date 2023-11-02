@@ -14,21 +14,49 @@ ${RETRY_INTERVAL}    1
 
 *** Test Cases ***
 Reboot Volume Node While Replica Rebuilding
-    Create a volume with 5 GB and 3 replicas
-    Write data to the volume
+    Given Create a volume with 5 GB and 3 replicas
+    And Write data to the volume
+
     FOR    ${i}    IN RANGE    ${LOOP_COUNT}
-        Delete replica on volume node to trigger replica rebuilding
-        During replica rebuilding, reboot volume node
-        Wait until replica on volume node rebuilt
-        Check data is intact
+        When Delete replica on volume node to trigger replica rebuilding
+        And During replica rebuilding, reboot volume node
+
+        Then Wait until replica on volume node rebuilt
+        And Check data is intact
     END
 
 Reboot Replica Node While Replica Rebuilding
-    Create a volume with 5 GB and 3 replicas
-    Write data to the volume
+    Given Create a volume with 5 GB and 3 replicas
+    And Write data to the volume
+
     FOR    ${i}    IN RANGE    ${LOOP_COUNT}
-        Delete replica on replica node to trigger replica rebuilding
-        During replica rebuilding, reboot replica node
-        Wait until replica on replica node rebuilt
-        Check data is intact
+        When Delete replica on replica node to trigger replica rebuilding
+        And During replica rebuilding, reboot replica node
+
+        Then Wait until replica on replica node rebuilt
+        And Check data is intact
+    END
+
+Stress Volume Node CPU While Replica Rebuilding
+    Given Create a volume with 5 GB and 3 replicas
+    And Write data to the volume
+
+    FOR    ${i}    IN RANGE    ${LOOP_COUNT}
+        When Delete replica on volume node to trigger replica rebuilding
+        And During replica rebuilding, stress volume node cpu
+
+        Then Wait until replica on volume node rebuilt
+        And Check data is intact
+    END
+
+Stress Volume Node Memory While Replica Rebuilding
+    Given Create a volume with 5 GB and 3 replicas
+    And Write data to the volume
+
+    FOR    ${i}    IN RANGE    ${LOOP_COUNT}
+        When Delete replica on volume node to trigger replica rebuilding
+        And During replica rebuilding, stress volume node memory
+
+        Then Wait until replica on volume node rebuilt
+        And Check data is intact
     END

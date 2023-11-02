@@ -43,7 +43,7 @@ class Base(ABC):
         return NotImplemented
 
     @abstractmethod
-    def check_data(self, volume_name, checksum):
+    def check_data_checksum(self, volume_name, checksum):
         return NotImplemented
 
     @abstractmethod

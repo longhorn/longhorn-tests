@@ -1,7 +1,10 @@
-from utility.utility import logging
+from utils.common_utils import k8s_cr_api
+
 from replica.base import Base
 from replica.rest import Rest
-from utils.common_utils import k8s_cr_api
+
+from utility.utility import logging
+
 
 class CRD(Base):
     def __init__(self, node_exec):

@@ -1,8 +1,11 @@
+from node_exec import NodeExec
+
+from strategy import LonghornOperationStrategy
+
 from volume.base import Base
 from volume.crd import CRD
 from volume.rest import Rest
-from node_exec import NodeExec
-from strategy import LonghornOperationStrategy
+
 
 class Volume(Base):
 
@@ -62,8 +65,8 @@ class Volume(Base):
             node_name
         )
 
-    def check_data(self, volume_name, checksum):
-        return self.volume.check_data(volume_name, checksum)
+    def check_data_checksum(self, volume_name, checksum):
+        return self.volume.check_data_checksum(volume_name, checksum)
 
     def cleanup(self, volume_names):
         return self.volume.cleanup(volume_names)

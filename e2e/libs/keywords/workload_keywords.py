@@ -14,7 +14,7 @@ class workload_keywords:
         delete_storageclass('longhorn-test-strict-local')
 
     def create_deployment(self, volume_type="rwo", option=""):
-        pvc_name = create_pvc(volume_type, option)
+        create_pvc(volume_type, option)
         deployment_name = create_deployment(volume_type, option)
         return deployment_name
 
@@ -34,8 +34,8 @@ class workload_keywords:
     def write_pod_random_data(self, pod, size_in_mb):
         return write_pod_random_data(pod, size_in_mb)
 
-    def check_pod_data(self, pod_name, checksum):
-        check_pod_data(pod_name, checksum)
+    def check_pod_data_checksum(self, pod_name, checksum):
+        check_pod_data_checksum(pod_name, checksum)
 
     def cleanup_deployments(self, deployment_names):
         for name in deployment_names:
