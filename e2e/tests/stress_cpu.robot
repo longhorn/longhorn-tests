@@ -27,7 +27,6 @@ Stress Volume Node CPU When Replica Is Rebuilding
         And Check data is intact
     END
 
-
 Stress Volume Node CPU When Volume Is Detaching and Attaching
     Given Create a volume with 5 GB and 3 replicas
     And Write data to the volume

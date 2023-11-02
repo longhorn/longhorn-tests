@@ -124,20 +124,27 @@ def create_statefulset(volume_type, option):
         statefulset_name = statefulset.metadata.name
         replicas = statefulset.spec.replicas
 
-        retry_count, retry_interval = get_retry_count_and_interval()
-        for i in range(retry_count):
-            statefulset = api.read_namespaced_stateful_set(
-                name=statefulset_name,
-                namespace=namespace)
-            # statefulset is none if statefulset is not yet created
-            if statefulset is not None and \
-                statefulset.status.ready_replicas == replicas:
-                break
-            time.sleep(retry_interval)
-
-        assert statefulset.status.ready_replicas == replicas
+        wait_for_statefulset_replicas_ready(statefulset_name, replicas)
 
     return statefulset_name
+
+def wait_for_statefulset_replicas_ready(statefulset_name, expected_ready_count, namespace='default'):
+    apps_v1_api = client.AppsV1Api()
+
+    retry_count, retry_interval = get_retry_count_and_interval()
+    for i in range(retry_count):
+        logging(f"Waiting for statefulset {statefulset_name} replica ready ({i}) ...")
+
+        statefulset = apps_v1_api.read_namespaced_stateful_set(
+            name=statefulset_name,
+            namespace=namespace)
+        # statefulset is none if statefulset is not yet created
+        if statefulset is not None and \
+            statefulset.status.ready_replicas == expected_ready_count:
+            break
+        time.sleep(retry_interval)
+
+    assert statefulset.status.ready_replicas == expected_ready_count
 
 def delete_statefulset(name, namespace='default'):
     api = client.AppsV1Api()
