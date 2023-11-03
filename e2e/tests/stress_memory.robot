@@ -32,7 +32,7 @@ Stress Volume Node Memory When Volume Is Detaching and Attaching
     And Write data to the volume
 
     FOR    ${i}    IN RANGE    ${LOOP_COUNT}
-        When Stress volume node memory
+        When Stress the memory of all volume nodes
 
         And Detach volume from node
         And Attach volume to node
