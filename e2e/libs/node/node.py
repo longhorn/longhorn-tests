@@ -4,7 +4,8 @@ import yaml
 
 from kubernetes import client
 
-from utility.utility import list_nodes
+from node.utility import list_node_names_by_role
+
 from utility.utility import logging
 from utility.utility import wait_for_cluster_ready
 
@@ -52,7 +53,7 @@ class Node:
         logging(f"Started instances")
 
     def reboot_all_worker_nodes(self, shut_down_time_in_sec=60):
-        instance_ids = [self.mapping[value] for value in list_nodes()]
+        instance_ids = [self.mapping[value] for value in list_node_names_by_role("worker")]
 
         resp = self.aws_client.stop_instances(InstanceIds=instance_ids)
         logging(f"Stopping instances {instance_ids} response: {resp}")
