@@ -15,6 +15,8 @@ from kubernetes.client.rest import ApiException
 from robot.api import logger
 from robot.libraries.BuiltIn import BuiltIn
 
+from node.utility import list_node_names_by_role
+
 
 def logging(msg, also_report=False):
     if also_report:
@@ -35,7 +37,6 @@ def generate_name(name_prefix="test-"):
 def generate_volume_name():
     return generate_name("vol-")
 
-
 def init_k8s_api_client():
     if os.getenv('LONGHORN_CLIENT_URL'):
         # for develop or debug, run test in local environment
@@ -45,26 +46,6 @@ def init_k8s_api_client():
         # for ci, run test in in-cluster environment
         config.load_incluster_config()
         logging("Initialized in-cluster k8s api client")
-
-def list_nodes():
-    core_api = client.CoreV1Api()
-    obj = core_api.list_node()
-    nodes = []
-    for item in obj.items:
-        if 'node-role.kubernetes.io/control-plane' not in item.metadata.labels and \
-                'node-role.kubernetes.io/master' not in item.metadata.labels:
-            nodes.append(item.metadata.name)
-    return sorted(nodes)
-
-def get_control_plane_nodes():
-    core_api = client.CoreV1Api()
-    obj = core_api.list_node()
-    nodes = []
-    for item in obj.items:
-        if 'node-role.kubernetes.io/control-plane' in item.metadata.labels or \
-                'node-role.kubernetes.io/master' in item.metadata.labels:
-            nodes.append(item.metadata.name)
-    return sorted(nodes)
 
 def wait_for_cluster_ready():
     core_api = client.CoreV1Api()
@@ -87,9 +68,8 @@ def wait_for_cluster_ready():
     assert ready, f"expect cluster's ready but it isn't {resp}"
 
 def wait_for_all_instance_manager_running():
-    core_api = client.CoreV1Api()
     longhorn_client = get_longhorn_client()
-    nodes = list_nodes()
+    worker_nodes = list_node_names_by_role("worker")
 
     retry_count, retry_interval = get_retry_count_and_interval()
     for _ in range(retry_count):
@@ -100,16 +80,16 @@ def wait_for_all_instance_manager_running():
             for im in instance_managers:
                 if im.currentState == "running":
                     instance_manager_map[im.nodeID] = im
-            if len(instance_manager_map) == len(nodes):
+            if len(instance_manager_map) == len(worker_nodes):
                 break
             time.sleep(retry_interval)
         except Exception as e:
             logging(f"Getting instance manager state error: {e}")
-    assert len(instance_manager_map) == len(nodes), f"expect all instance managers running, instance_managers = {instance_managers}, instance_manager_map = {instance_manager_map}"
+    assert len(instance_manager_map) == len(worker_nodes), f"expect all instance managers running, instance_managers = {instance_managers}, instance_manager_map = {instance_manager_map}"
 
 def get_node(index):
-    nodes = list_nodes()
-    return nodes[int(index)]
+    worker_nodes = list_node_names_by_role("worker")
+    return worker_nodes[int(index)]
 
 def apply_cr(manifest_dict):
     dynamic_client = dynamic.DynamicClient(client.api_client.ApiClient())
@@ -214,11 +194,11 @@ def get_test_pod_running_node():
         return get_node(0)
 
 def get_test_pod_not_running_node():
-    nodes = list_nodes()
+    worker_nodes = list_node_names_by_role("worker")
     test_pod_running_node = get_test_pod_running_node()
-    for node in nodes:
-        if node != test_pod_running_node:
-            return node
+    for worker_node in worker_nodes:
+        if worker_node != test_pod_running_node:
+            return worker_node
 
 def get_test_case_namespace(test_name):
     return test_name.lower().replace(' ', '-')

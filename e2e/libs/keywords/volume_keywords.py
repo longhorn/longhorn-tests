@@ -1,8 +1,9 @@
+from node.utility import list_node_names_by_role
+
 from utility.utility import generate_volume_name
 from utility.utility import get_node
 from utility.utility import get_test_pod_not_running_node
 from utility.utility import get_test_pod_running_node
-from utility.utility import list_nodes
 from utility.utility import logging
 
 from volume import Volume
@@ -33,12 +34,12 @@ class volume_keywords:
 
 
     def get_replica_node(self, volume_name):
-        nodes = list_nodes()
+        worker_nodes = list_node_names_by_role("worker")
         volume_node = self.get_volume_node(volume_name)
         test_pod_running_node = get_test_pod_running_node()
-        for node in nodes:
-            if node != volume_node and node != test_pod_running_node:
-                return node
+        for worker_node in worker_nodes:
+            if worker_node != volume_node and worker_node != test_pod_running_node:
+                return worker_node
 
 
     def write_volume_random_data(self, volume_name, size_in_mb):
