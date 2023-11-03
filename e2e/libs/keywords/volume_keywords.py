@@ -1,7 +1,7 @@
+from node.utility import get_node_by_index
 from node.utility import list_node_names_by_role
 
 from utility.utility import generate_volume_name
-from utility.utility import get_node
 from utility.utility import get_test_pod_not_running_node
 from utility.utility import get_test_pod_running_node
 from utility.utility import logging
@@ -57,14 +57,14 @@ class volume_keywords:
 
     def delete_replica(self, volume_name, replica_node):
         if str(replica_node).isdigit():
-            replica_node = get_node(replica_node)
+            replica_node = get_node_by_index(replica_node)
         logging(f"Deleting volume {volume_name}'s replica on node {replica_node}")
         self.volume.delete_replica(volume_name, replica_node)
 
 
     def wait_for_replica_rebuilding_start(self, volume_name, replica_node):
         if str(replica_node).isdigit():
-            replica_node = get_node(replica_node)
+            replica_node = get_node_by_index(replica_node)
         logging(f"Waiting for volume {volume_name}'s replica on node {replica_node} rebuilding started")
         self.volume.wait_for_replica_rebuilding_start(
             volume_name,
@@ -74,7 +74,7 @@ class volume_keywords:
 
     def wait_for_replica_rebuilding_complete(self, volume_name, replica_node):
         if str(replica_node).isdigit():
-            replica_node = get_node(replica_node)
+            replica_node = get_node_by_index(replica_node)
         logging(f"Waiting for volume {volume_name}'s replica on node {replica_node} rebuilding completed")
         self.volume.wait_for_replica_rebuilding_complete(
             volume_name,

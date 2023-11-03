@@ -15,6 +15,7 @@ from kubernetes.client.rest import ApiException
 from robot.api import logger
 from robot.libraries.BuiltIn import BuiltIn
 
+from node.utility import get_node_by_index
 from node.utility import list_node_names_by_role
 
 
@@ -86,10 +87,6 @@ def wait_for_all_instance_manager_running():
         except Exception as e:
             logging(f"Getting instance manager state error: {e}")
     assert len(instance_manager_map) == len(worker_nodes), f"expect all instance managers running, instance_managers = {instance_managers}, instance_manager_map = {instance_manager_map}"
-
-def get_node(index):
-    worker_nodes = list_node_names_by_role("worker")
-    return worker_nodes[int(index)]
 
 def apply_cr(manifest_dict):
     dynamic_client = dynamic.DynamicClient(client.api_client.ApiClient())
@@ -191,7 +188,7 @@ def get_test_pod_running_node():
     if "NODE_NAME" in os.environ:
         return os.environ["NODE_NAME"]
     else:
-        return get_node(0)
+        return get_node_by_index(0)
 
 def get_test_pod_not_running_node():
     worker_nodes = list_node_names_by_role("worker")

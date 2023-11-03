@@ -1,5 +1,10 @@
 from kubernetes import client
 
+
+def get_node_by_index(index, role="worker"):
+    nodes = list_node_names_by_role(role)
+    return nodes[int(index)]
+
 def get_node_by_name(node_name):
     core_api = client.CoreV1Api()
     return core_api.read_node(node_name)
