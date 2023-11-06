@@ -1536,31 +1536,33 @@ def storage_class(request):
 
 @pytest.fixture
 def crypto_secret(request):
-    manifest = {
-        'apiVersion': 'v1',
-        'kind': 'Secret',
-        'metadata': {
-            'name': 'longhorn-crypto',
-            'namespace': 'longhorn-system',
-        },
-        'stringData': {
-            'CRYPTO_KEY_VALUE': 'simple',
-            'CRYPTO_KEY_PROVIDER': 'secret'
+    def get_crypto_secret(namespace=LONGHORN_NAMESPACE):
+        crypto_secret.manifest = {
+            'apiVersion': 'v1',
+            'kind': 'Secret',
+            'metadata': {
+                'name': 'longhorn-crypto',
+                'namespace': namespace,
+            },
+            'stringData': {
+                'CRYPTO_KEY_VALUE': 'simple',
+                'CRYPTO_KEY_PROVIDER': 'secret'
+            }
         }
-    }
+        return crypto_secret.manifest
 
     def finalizer():
         api = get_core_api_client()
         try:
             api.delete_namespaced_secret(
-                name=manifest['metadata']['name'],
-                namespace=manifest['metadata']['namespace'])
+                name=crypto_secret.manifest['metadata']['name'],
+                namespace=crypto_secret.manifest['metadata']['namespace'])
         except ApiException as e:
             assert e.status == 404
 
     request.addfinalizer(finalizer)
 
-    return manifest
+    return get_crypto_secret
 
 
 @pytest.fixture
@@ -3828,9 +3830,9 @@ def wait_statefulset(statefulset_manifest):
     assert s_set.status.ready_replicas == replicas
 
 
-def create_crypto_secret(secret_manifest):
+def create_crypto_secret(secret_manifest, namespace=LONGHORN_NAMESPACE):
     api = get_core_api_client()
-    api.create_namespaced_secret(namespace=LONGHORN_NAMESPACE,
+    api.create_namespaced_secret(namespace,
                                  body=secret_manifest)
 
 
