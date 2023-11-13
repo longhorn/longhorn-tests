@@ -3,7 +3,6 @@ Documentation    Negative Test Cases
 
 Resource    ../keywords/common.resource
 Resource    ../keywords/host.resource
-Resource    ../keywords/persistentvolumeclaim.resource
 Resource    ../keywords/volume.resource
 
 Test Setup    Set test environment
