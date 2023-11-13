@@ -2,6 +2,9 @@ import asyncio
 from robot.libraries.BuiltIn import BuiltIn
 from k8s.k8s import restart_kubelet
 from k8s.k8s import delete_node
+from k8s.k8s import drain_node, force_drain_node
+from k8s.k8s import cordon_node, uncordon_node
+from k8s.k8s import wait_all_pods_evicted
 from utility.utility import logging
 
 
@@ -37,3 +40,15 @@ class k8s_keywords:
         replica_node = volume_keywords.get_replica_node(volume_name)
         delete_node(replica_node)
         return replica_node
+
+    def drain_node(self, node_name):
+        drain_node(node_name)
+
+    def force_drain_node(self, node_name):
+        force_drain_node(node_name)
+
+    def uncordon_node(self, node_name):
+        uncordon_node(node_name)
+
+    def wait_for_all_pods_evicted(self, node_name):
+        wait_all_pods_evicted(node_name)

@@ -7,6 +7,7 @@ import yaml
 import signal
 from robot.api import logger
 from robot.libraries.BuiltIn import BuiltIn
+import subprocess
 
 from longhorn import from_env
 
@@ -77,6 +78,12 @@ def init_k8s_api_client():
 
 def get_backupstore():
     return os.environ.get('LONGHORN_BACKUPSTORE', "")
+
+
+def subprocess_exec_cmd(cmd):
+    res = subprocess.check_output(cmd)
+    logging(f"Executed command {cmd} with result {res}")
+    return res
 
 
 def wait_for_cluster_ready():
