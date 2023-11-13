@@ -18,30 +18,30 @@ And attached volumes (volume-1, volume-2)
 
 ```bash
 curl -sSL http://10.0.2.212:32744/metrics | grep longhorn_volume | grep ip-10-0-2-151 | grep volume-1
-longhorn_volume_actual_size_bytes{namespace="default",node="ip-10-0-2-151",pvc="volume-1",volume="volume-1"} 0
-longhorn_volume_capacity_bytes{namespace="default",node="ip-10-0-2-151",pvc="volume-1",volume="volume-1"} 1.073741824e+09
-longhorn_volume_read_iops{namespace="default",node="ip-10-0-2-151",pvc="volume-1",volume="volume-1"} 0
-longhorn_volume_read_latency{namespace="default",node="ip-10-0-2-151",pvc="volume-1",volume="volume-1"} 0
-longhorn_volume_read_throughput{namespace="default",node="ip-10-0-2-151",pvc="volume-1",volume="volume-1"} 0
-longhorn_volume_robustness{namespace="default",node="ip-10-0-2-151",pvc="volume-1",volume="volume-1"} 1
-longhorn_volume_state{namespace="default",node="ip-10-0-2-151",pvc="volume-1",volume="volume-1"} 2
-longhorn_volume_write_iops{namespace="default",node="ip-10-0-2-151",pvc="volume-1",volume="volume-1"} 0
-longhorn_volume_write_latency{namespace="default",node="ip-10-0-2-151",pvc="volume-1",volume="volume-1"} 0
-longhorn_volume_write_throughput{namespace="default",node="ip-10-0-2-151",pvc="volume-1",volume="volume-1"} 0
+longhorn_volume_actual_size_bytes{pvc_namespace="default",node="ip-10-0-2-151",pvc="volume-1",volume="volume-1"} 0
+longhorn_volume_capacity_bytes{pvc_namespace="default",node="ip-10-0-2-151",pvc="volume-1",volume="volume-1"} 1.073741824e+09
+longhorn_volume_read_iops{pvc_namespace="default",node="ip-10-0-2-151",pvc="volume-1",volume="volume-1"} 0
+longhorn_volume_read_latency{pvc_namespace="default",node="ip-10-0-2-151",pvc="volume-1",volume="volume-1"} 0
+longhorn_volume_read_throughput{pvc_namespace="default",node="ip-10-0-2-151",pvc="volume-1",volume="volume-1"} 0
+longhorn_volume_robustness{pvc_namespace="default",node="ip-10-0-2-151",pvc="volume-1",volume="volume-1"} 1
+longhorn_volume_state{pvc_namespace="default",node="ip-10-0-2-151",pvc="volume-1",volume="volume-1"} 2
+longhorn_volume_write_iops{pvc_namespace="default",node="ip-10-0-2-151",pvc="volume-1",volume="volume-1"} 0
+longhorn_volume_write_latency{pvc_namespace="default",node="ip-10-0-2-151",pvc="volume-1",volume="volume-1"} 0
+longhorn_volume_write_throughput{pvc_namespace="default",node="ip-10-0-2-151",pvc="volume-1",volume="volume-1"} 0
 ```
 
 And metrics with `longhorn_volume_` prefix should include `pvc=""` for (volume-2)
 
 ```bash
 > curl -sSL http://10.0.2.212:32744/metrics | grep longhorn_volume | grep ip-10-0-2-151 | grep volume-2
-longhorn_volume_actual_size_bytes{namespace="",node="ip-10-0-2-151",pvc="",volume="volume-2"} 0
-longhorn_volume_capacity_bytes{namespace="",node="ip-10-0-2-151",pvc="",volume="volume-2"} 1.073741824e+09
-longhorn_volume_read_iops{namespace="",node="ip-10-0-2-151",pvc="",volume="volume-2"} 0
-longhorn_volume_read_latency{namespace="",node="ip-10-0-2-151",pvc="",volume="volume-2"} 0
-longhorn_volume_read_throughput{namespace="",node="ip-10-0-2-151",pvc="",volume="volume-2"} 0
-longhorn_volume_robustness{namespace="",node="ip-10-0-2-151",pvc="",volume="volume-2"} 1
-longhorn_volume_state{namespace="",node="ip-10-0-2-151",pvc="",volume="volume-2"} 2
-longhorn_volume_write_iops{namespace="",node="ip-10-0-2-151",pvc="",volume="volume-2"} 0
-longhorn_volume_write_latency{namespace="",node="ip-10-0-2-151",pvc="",volume="volume-2"} 0
-longhorn_volume_write_throughput{namespace="",node="ip-10-0-2-151",pvc="",volume="volume-2"} 0
+longhorn_volume_actual_size_bytes{pvc_namespace="",node="ip-10-0-2-151",pvc="",volume="volume-2"} 0
+longhorn_volume_capacity_bytes{pvc_namespace="",node="ip-10-0-2-151",pvc="",volume="volume-2"} 1.073741824e+09
+longhorn_volume_read_iops{pvc_namespace="",node="ip-10-0-2-151",pvc="",volume="volume-2"} 0
+longhorn_volume_read_latency{pvc_namespace="",node="ip-10-0-2-151",pvc="",volume="volume-2"} 0
+longhorn_volume_read_throughput{pvc_namespace="",node="ip-10-0-2-151",pvc="",volume="volume-2"} 0
+longhorn_volume_robustness{pvc_namespace="",node="ip-10-0-2-151",pvc="",volume="volume-2"} 1
+longhorn_volume_state{pvc_namespace="",node="ip-10-0-2-151",pvc="",volume="volume-2"} 2
+longhorn_volume_write_iops{pvc_namespace="",node="ip-10-0-2-151",pvc="",volume="volume-2"} 0
+longhorn_volume_write_latency{pvc_namespace="",node="ip-10-0-2-151",pvc="",volume="volume-2"} 0
+longhorn_volume_write_throughput{pvc_namespace="",node="ip-10-0-2-151",pvc="",volume="volume-2"} 0
 ```
