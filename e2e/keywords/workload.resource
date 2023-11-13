@@ -6,6 +6,30 @@ Library    ../libs/keywords/workload_keywords.py
 Library    ../libs/keywords/persistent_volume_claim_keywords.py
 
 *** Keywords ***
+Create deployment with ${volume_type} volume
+    ${deployment_name} =    create_deployment    ${volume_type}
+    Insert Into List    ${deployment_list}    0    ${deployment_name}
+    ${volume_name} =    get_workload_volume_name    ${deployment_name}
+    Set Test Variable    ${volume_name}
+
+Create statefulset with ${volume_type} volume
+    ${statefulset_name} =    create_statefulset    ${volume_type}
+    Insert Into List    ${statefulset_list}    0    ${statefulset_name}
+    ${volume_name} =    get_workload_volume_name    ${statefulset_name}
+    Set Test Variable    ${volume_name}
+
+Create deployment with ${volume_type} and ${option} volume
+    ${deployment_name} =    create_deployment    ${volume_type}    ${option}
+    Insert Into List    ${deployment_list}    0    ${deployment_name}
+    ${volume_name} =    get_workload_volume_name    ${deployment_name}
+    Set Test Variable    ${volume_name}
+
+Create statefulset with ${volume_type} and ${option} volume
+    ${statefulset_name} =    create_statefulset    ${volume_type}    ${option}
+    Insert Into List    ${statefulset_list}    0    ${statefulset_name}
+    ${volume_name} =    get_workload_volume_name    ${statefulset_name}
+    Set Test Variable    ${volume_name}
+
 Create deployment ${idx} with ${volume_type} volume
     ${deployment_name} =    create_deployment    ${volume_type}
     Insert Into List    ${deployment_list}    ${idx}    ${deployment_name}
@@ -50,6 +74,52 @@ Write ${size} MB data to statefulset ${idx}
     ${pod_data_checksum} =    write_pod_random_data    ${pod_name}    ${size}
     Insert Into List    ${data_checksum_list}    ${idx}    ${pod_data_checksum}
 
+Write ${data_size} MB data to deployment
+    ${pod_name} =    get_workload_pod_name    ${deployment_list}[0]
+    ${pod_data_checksum} =     write_pod_random_data   ${pod_name}    ${data_size}
+    Set Test Variable    ${pod_data_checksum}
+
+Write ${data_size} MB data to statefulset
+    ${pod_name} =    get_workload_pod_name    ${statefulset_list}[0]
+    ${pod_data_checksum} =     write_pod_random_data   ${pod_name}    ${data_size}
+    Set Test Variable    ${pod_data_checksum}
+
+Write data to deployment
+    ${pod_name} =    get_workload_pod_name    ${deployment_list}[0]
+    ${volume_data_checksum} =     write_pod_random_data   ${pod_name}    1024
+    Set Test Variable    ${pod_data_checksum}
+
+Write data to statefulset
+    ${pod_name} =    get_workload_pod_name    ${statefulset_list}[0]
+    ${pod_data_checksum} =     write_pod_random_data   ${pod_name}    1024
+    Set Test Variable    ${pod_data_checksum}
+
+Write data to deployment ${idx}
+    ${pod_name} =    get_workload_pod_name    ${deployment_list}[${idx}]
+    ${pod_data_checksum} =     write_pod_random_data   ${pod_name}    1024
+    Set Test Variable    ${pod_data_checksum}
+
+Write data to statefulset ${idx}
+    ${pod_name} =    get_workload_pod_name    ${statefulset_list}[${idx}]
+    ${pod_data_checksum} =     write_pod_random_data   ${pod_name}    1024
+    Set Test Variable    ${pod_data_checksum}
+
+Check deployment data is intact
+    ${pod_name} =    get_workload_pod_name    ${deployment_list}[0]
+    check_pod_data    ${pod_name}    ${pod_data_checksum}
+
+Check statefulset data is intact
+    ${pod_name} =    get_workload_pod_name    ${statefulset_list}[0]
+    check_pod_data    ${pod_name}    ${pod_data_checksum}
+
+Check deployment ${idx} data is intact
+    ${pod_name} =    get_workload_pod_name    ${deployment_list}[${idx}]
+    check_pod_data    ${pod_name}    ${pod_data_checksum}
+
+Check statefulset ${idx} data is intact
+    ${pod_name} =    get_workload_pod_name    ${statefulset_list}[${idx}]
+    check_pod_data    ${pod_name}    ${pod_data_checksum}
+
 Keep writing data to deployment ${idx}
     ${pod_name} =    get_workload_pod_name    ${deployment_list}[${idx}]
     keep_writing_pod_data    ${pod_name}
@@ -57,6 +127,16 @@ Keep writing data to deployment ${idx}
 Keep writing data to statefulset ${idx}
     ${pod_name} =    get_workload_pod_name    ${statefulset_list}[${idx}]
     keep_writing_pod_data    ${pod_name}
+
+Check deployment works
+    ${pod_name} =    get_workload_pod_name    ${deployment_list}[0]
+    ${pod_data_checksum} =    write_pod_random_data    ${pod_name}    1024
+    check_pod_data    ${pod_name}    ${pod_data_checksum}
+
+Check statefulset works
+    ${pod_name} =    get_workload_pod_name    ${statefulset_list}[0]
+    ${pod_data_checksum} =    write_pod_random_data    ${pod_name}    1024
+    check_pod_data    ${pod_name}    ${pod_data_checksum}
 
 Check deployment ${idx} works
     ${pod_name} =    get_workload_pod_name    ${deployment_list}[${idx}]
@@ -75,6 +155,15 @@ Check statefulset ${idx} data is intact
 
 Wait for statefulset ${idx} volume size expanded
     wait_for_volume_expand_to_size    ${volume_list}[${idx}]    ${expected_size}
+
+Wait for deployment stable
+    wait_for_workload_pod_stable   ${deployment_list}[0]
+
+Wait for statefulset stable
+    wait_for_workload_pod_stable   ${statefulset_list}[0]
+
+Wait for deployment ${idx} stable
+    wait_for_workload_pod_stable   ${deployment_list}[${idx}]
 
 Wait for statefulset ${idx} stable
     wait_for_workload_pod_stable   ${statefulset_list}[${idx}]
