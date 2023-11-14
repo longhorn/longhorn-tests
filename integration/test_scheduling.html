@@ -1753,6 +1753,38 @@ def test_data_locality_strict_local_node_affinity(client, core_api, apps_api, st
 
 
 @pytest.mark.skip(reason=&#34;TODO&#34;)
+def test_allow_empty_node_selector_volume_setting(): # NOQA
+    &#34;&#34;&#34;
+    Test the global setting allow-empty-node-selector-volume
+
+    If true, a replica of the volume without node selector
+    can be scheduled on node with tags.
+
+    If false, a replica of the volume without node selector
+    can not be scheduled on node with tags.
+
+    Setup
+    - Prepare 3 nodes
+    - Add `AVAIL` tag to nodes
+    - Set allow-empty-node-selector-volume to `false`
+
+    When
+    - Create a Volume with 3 replicas without tag
+
+    Then
+    - All replicas can not be scheduled to the nodes
+
+    When
+    - Remove `AVAIL` tag from one of the node
+    - Set allow-empty-node-selector-volume to `true`
+
+    Then
+    - Wait for a while for controller to resync the volume,
+      all replicas can be scheduled to the nodes
+    &#34;&#34;&#34;
+    pass
+
+
 def test_global_disk_soft_anti_affinity(): # NOQA
     &#34;&#34;&#34;
     1. When Replica Disk Soft Anti-Affinity is false, it should be impossible
@@ -1803,6 +1835,38 @@ def test_global_disk_soft_anti_affinity(): # NOQA
 
 
 @pytest.mark.skip(reason=&#34;TODO&#34;)
+def test_allow_empty_disk_selector_volume_setting(): # NOQA
+    &#34;&#34;&#34;
+    Test the global setting allow-empty-disk-selector-volume
+
+    If true, a replica of the volume without disk selector
+    can be scheduled on disk with tags.
+
+    If false, a replica of the volume without disk selector
+    can not be scheduled on disk with tags.
+
+    Setup
+    - Prepare 3 nodes each with one disk
+    - Add `AVAIL` tag to every disk
+    - Set allow-empty-disk-selector-volume to `false`
+
+    When
+    - Create a Volume with 3 replicas without tag
+
+    Then
+    - All replicas can not be scheduled to the disks on the nodes
+
+    When
+    - Remove `AVAIL` tag from one of the node
+    - Set allow-empty-disk-selector-volume to `true`
+
+    Then
+    - Wait for a while for controller to resync the volume,
+      all replicas can be scheduled to the disks on the nodes
+    &#34;&#34;&#34;
+    pass
+
+
 def test_volume_disk_soft_anti_affinity(): # NOQA
     &#34;&#34;&#34;
     1. When Replica Disk Soft Anti-Affinity is disabled, it should be
@@ -1973,6 +2037,126 @@ def reset_settings():
     node = set_node_scheduling(client, node, allowScheduling=True)
     setting = client.by_id_setting(SETTING_REPLICA_NODE_SOFT_ANTI_AFFINITY)
     client.update(setting, value=&#34;true&#34;)</code></pre>
+</details>
+</dd>
+<dt id="tests.test_scheduling.test_allow_empty_disk_selector_volume_setting"><code class="name flex">
+<span>def <span class="ident">test_allow_empty_disk_selector_volume_setting</span></span>(<span>)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test the global setting allow-empty-disk-selector-volume</p>
+<p>If true, a replica of the volume without disk selector
+can be scheduled on disk with tags.</p>
+<p>If false, a replica of the volume without disk selector
+can not be scheduled on disk with tags.</p>
+<p>Setup
+- Prepare 3 nodes each with one disk
+- Add <code>AVAIL</code> tag to every disk
+- Set allow-empty-disk-selector-volume to <code>false</code></p>
+<p>When
+- Create a Volume with 3 replicas without tag</p>
+<p>Then
+- All replicas can not be scheduled to the disks on the nodes</p>
+<p>When
+- Remove <code>AVAIL</code> tag from one of the node
+- Set allow-empty-disk-selector-volume to <code>true</code></p>
+<p>Then
+- Wait for a while for controller to resync the volume,
+all replicas can be scheduled to the disks on the nodes</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@pytest.mark.skip(reason=&#34;TODO&#34;)
+def test_allow_empty_disk_selector_volume_setting(): # NOQA
+    &#34;&#34;&#34;
+    Test the global setting allow-empty-disk-selector-volume
+
+    If true, a replica of the volume without disk selector
+    can be scheduled on disk with tags.
+
+    If false, a replica of the volume without disk selector
+    can not be scheduled on disk with tags.
+
+    Setup
+    - Prepare 3 nodes each with one disk
+    - Add `AVAIL` tag to every disk
+    - Set allow-empty-disk-selector-volume to `false`
+
+    When
+    - Create a Volume with 3 replicas without tag
+
+    Then
+    - All replicas can not be scheduled to the disks on the nodes
+
+    When
+    - Remove `AVAIL` tag from one of the node
+    - Set allow-empty-disk-selector-volume to `true`
+
+    Then
+    - Wait for a while for controller to resync the volume,
+      all replicas can be scheduled to the disks on the nodes
+    &#34;&#34;&#34;
+    pass</code></pre>
+</details>
+</dd>
+<dt id="tests.test_scheduling.test_allow_empty_node_selector_volume_setting"><code class="name flex">
+<span>def <span class="ident">test_allow_empty_node_selector_volume_setting</span></span>(<span>)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test the global setting allow-empty-node-selector-volume</p>
+<p>If true, a replica of the volume without node selector
+can be scheduled on node with tags.</p>
+<p>If false, a replica of the volume without node selector
+can not be scheduled on node with tags.</p>
+<p>Setup
+- Prepare 3 nodes
+- Add <code>AVAIL</code> tag to nodes
+- Set allow-empty-node-selector-volume to <code>false</code></p>
+<p>When
+- Create a Volume with 3 replicas without tag</p>
+<p>Then
+- All replicas can not be scheduled to the nodes</p>
+<p>When
+- Remove <code>AVAIL</code> tag from one of the node
+- Set allow-empty-node-selector-volume to <code>true</code></p>
+<p>Then
+- Wait for a while for controller to resync the volume,
+all replicas can be scheduled to the nodes</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@pytest.mark.skip(reason=&#34;TODO&#34;)
+def test_allow_empty_node_selector_volume_setting(): # NOQA
+    &#34;&#34;&#34;
+    Test the global setting allow-empty-node-selector-volume
+
+    If true, a replica of the volume without node selector
+    can be scheduled on node with tags.
+
+    If false, a replica of the volume without node selector
+    can not be scheduled on node with tags.
+
+    Setup
+    - Prepare 3 nodes
+    - Add `AVAIL` tag to nodes
+    - Set allow-empty-node-selector-volume to `false`
+
+    When
+    - Create a Volume with 3 replicas without tag
+
+    Then
+    - All replicas can not be scheduled to the nodes
+
+    When
+    - Remove `AVAIL` tag from one of the node
+    - Set allow-empty-node-selector-volume to `true`
+
+    Then
+    - Wait for a while for controller to resync the volume,
+      all replicas can be scheduled to the nodes
+    &#34;&#34;&#34;
+    pass</code></pre>
 </details>
 </dd>
 <dt id="tests.test_scheduling.test_data_locality_basic"><code class="name flex">
@@ -2729,8 +2913,7 @@ spec.diskID)</p>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">@pytest.mark.skip(reason=&#34;TODO&#34;)
-def test_global_disk_soft_anti_affinity(): # NOQA
+<pre><code class="python">def test_global_disk_soft_anti_affinity(): # NOQA
     &#34;&#34;&#34;
     1. When Replica Disk Soft Anti-Affinity is false, it should be impossible
        to schedule replicas to the same disk.
@@ -4186,8 +4369,7 @@ spec.diskID)</p>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">@pytest.mark.skip(reason=&#34;TODO&#34;)
-def test_volume_disk_soft_anti_affinity(): # NOQA
+<pre><code class="python">def test_volume_disk_soft_anti_affinity(): # NOQA
     &#34;&#34;&#34;
     1. When Replica Disk Soft Anti-Affinity is disabled, it should be
        impossible to schedule replicas to the same disk.
@@ -4292,6 +4474,8 @@ failed assertion if one can't be found.
 <li><code><a title="tests.test_scheduling.get_host_replica" href="#tests.test_scheduling.get_host_replica">get_host_replica</a></code></li>
 <li><code><a title="tests.test_scheduling.replica_auto_balance_with_data_locality_test" href="#tests.test_scheduling.replica_auto_balance_with_data_locality_test">replica_auto_balance_with_data_locality_test</a></code></li>
 <li><code><a title="tests.test_scheduling.reset_settings" href="#tests.test_scheduling.reset_settings">reset_settings</a></code></li>
+<li><code><a title="tests.test_scheduling.test_allow_empty_disk_selector_volume_setting" href="#tests.test_scheduling.test_allow_empty_disk_selector_volume_setting">test_allow_empty_disk_selector_volume_setting</a></code></li>
+<li><code><a title="tests.test_scheduling.test_allow_empty_node_selector_volume_setting" href="#tests.test_scheduling.test_allow_empty_node_selector_volume_setting">test_allow_empty_node_selector_volume_setting</a></code></li>
 <li><code><a title="tests.test_scheduling.test_data_locality_basic" href="#tests.test_scheduling.test_data_locality_basic">test_data_locality_basic</a></code></li>
 <li><code><a title="tests.test_scheduling.test_data_locality_strict_local_node_affinity" href="#tests.test_scheduling.test_data_locality_strict_local_node_affinity">test_data_locality_strict_local_node_affinity</a></code></li>
 <li><code><a title="tests.test_scheduling.test_global_disk_soft_anti_affinity" href="#tests.test_scheduling.test_global_disk_soft_anti_affinity">test_global_disk_soft_anti_affinity</a></code></li>
