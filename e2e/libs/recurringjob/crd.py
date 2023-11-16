@@ -3,11 +3,12 @@ import time
 from kubernetes import client
 
 from recurringjob.base import Base
-from recurringjob.rest import Rest
-
 from recurringjob.constant import RETRY_COUNTS
 from recurringjob.constant import RETRY_INTERVAL
+from recurringjob.rest import Rest
 
+from utility.constant import LABEL_TEST
+from utility.constant import LABEL_TEST_VALUE
 from utility.utility import logging
 
 
@@ -18,15 +19,16 @@ class CRD(Base):
         self.batch_v1_api = client.BatchV1Api()
         self.obj_api = client.CustomObjectsApi()
 
-    def cleanup(self, recurringjob_names):
-        for recurringjob_name in recurringjob_names:
-            self.delete(recurringjob_name)
-
     def create(self, name, task, groups, cron, retain, concurrency, label):
         body = {
             "apiVersion": "longhorn.io/v1beta2",
             "kind": "RecurringJob",
-            "metadata": {"name": name},
+            "metadata": {
+                "name": name,
+                "labels": {
+                    LABEL_TEST: LABEL_TEST_VALUE
+                }
+            },
             "spec": {
                 "name": name,
                 "groups": groups,
@@ -68,6 +70,15 @@ class CRD(Base):
             namespace="longhorn-system",
             plural="recurringjobs",
             name=name,
+        )
+
+    def list(self, label_selector=None):
+        return self.obj_api.list_namespaced_custom_object(
+            group="longhorn.io",
+            version="v1beta2",
+            namespace="longhorn-system",
+            plural="recurringjobs",
+            label_selector=label_selector
         )
 
     def add_to_volume(self, job_name, volume_name):

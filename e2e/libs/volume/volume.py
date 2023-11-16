@@ -18,11 +18,11 @@ class Volume(Base):
         else:
             self.volume = Rest(node_exec)
 
-    def get(self, volume_name):
-        return self.volume.get(volume_name)
-
     def create(self, volume_name, size, replica_count):
         return self.volume.create(volume_name, size, replica_count)
+
+    def delete(self, volume_name):
+        return self.volume.delete(volume_name)
 
     def attach(self, volume_name, node_name):
         return self.volume.attach(volume_name, node_name)
@@ -30,8 +30,20 @@ class Volume(Base):
     def detach(self, volume_name):
         return self.volume.detach(volume_name)
 
-    def delete(self, volume_name):
-        return self.volume.delete(volume_name)
+    def get(self, volume_name):
+        return self.volume.get(volume_name)
+
+    def list(self, label_selector=None):
+        return self.volume.list(label_selector=label_selector)
+
+    def list_names(self, label_selector=None):
+        return [item['metadata']['name'] for item in self.list(label_selector)['items']]
+
+    def set_annotation(self, volume_name, annotation_key, annotation_value):
+        return self.volume.set_annotation(volume_name, annotation_key, annotation_value)
+
+    def get_annotation_value(self, volume_name, annotation_key):
+        return self.volume.get_annotation_value(volume_name, annotation_key)
 
     def wait_for_volume_state(self, volume_name, desired_state):
         return self.volume.wait_for_volume_state(volume_name, desired_state)
@@ -77,5 +89,3 @@ class Volume(Base):
     def check_data_checksum(self, volume_name, checksum):
         return self.volume.check_data_checksum(volume_name, checksum)
 
-    def cleanup(self, volume_names):
-        return self.volume.cleanup(volume_names)

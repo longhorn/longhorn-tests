@@ -3,12 +3,13 @@ import time
 from kubernetes import client
 from kubernetes.stream import stream
 
-from utility.utility import logging
-from workload.pod import wait_delete_pod
-from utility.utility import wait_delete_ns
-
 from node_exec.constant import DEFAULT_POD_INTERVAL
 from node_exec.constant import DEFAULT_POD_TIMEOUT
+
+from utility.utility import logging
+from utility.utility import wait_delete_ns
+
+from workload.pod import wait_delete_pod
 
 
 class NodeExec:
