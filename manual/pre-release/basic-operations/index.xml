@@ -21,9 +21,13 @@ Scenario Create a kubernetes pod + pvc that mounts a Longhorn volume. Write 5 Gi
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/basic-operations/storage-network/</guid>
       <description>Related issue: https://github.com/longhorn/longhorn/issues/2285
-Test Multus version below v4.0.0 Given Set up the Longhorn environment as mentioned here When Run Longhorn core tests on the environment. Then All the tests should pass.
+Test Multus version below v4.0.0 Given Set up the Longhorn environment as mentioned here
+When Run Longhorn core tests on the environment.
+Then All the tests should pass.
 Related issue: https://github.com/longhorn/longhorn/issues/6953
-Test Multus version above v4.0.0 Given Set up the Longhorn environment as mentioned here When Run Longhorn core tests on the environment. Then All the tests should pass.</description>
+Test Multus version above v4.0.0 Given Set up the Longhorn environment as mentioned here
+When Run Longhorn core tests on the environment.
+Then All the tests should pass.</description>
     </item>
   </channel>
 </rss>
