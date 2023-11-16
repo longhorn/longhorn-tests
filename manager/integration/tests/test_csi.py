@@ -891,6 +891,7 @@ def test_csi_minimal_volume_size(
     csi_pv['metadata']['name'] = pv_name
     csi_pv['spec']['csi']['volumeHandle'] = vol_name
     csi_pv['spec']['capacity']['storage'] = min_storage
+    csi_pv['spec']['persistentVolumeReclaimPolicy'] = 'Retain'
     core_api.create_persistent_volume(csi_pv)
 
     pvc_name = vol_name + "-pvc"
