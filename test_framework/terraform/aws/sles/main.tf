@@ -130,6 +130,14 @@ resource "aws_security_group" "lh_aws_secgrp_worker" {
   vpc_id      = aws_vpc.lh_aws_vpc.id
 
   ingress {
+    description = "Allow SSH"
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
     description = "Allow HTTP"
     from_port   = 80
     to_port     = 80
@@ -191,35 +199,6 @@ resource "aws_subnet" "lh_aws_private_subnet" {
   }
 }
 
-# Create EIP for NATGW
-resource "aws_eip" "lh_aws_eip_nat_gw" {
-  vpc      = true
-
-  tags = {
-    Name = "lh_eip_nat_gw-${random_string.random_suffix.id}"
-    Owner = var.resources_owner
-  }
-}
-
-# Create nat gateway
-resource "aws_nat_gateway" "lh_aws_nat_gw" {
-  depends_on = [
-    aws_internet_gateway.lh_aws_igw,
-    aws_eip.lh_aws_eip_nat_gw,
-    aws_subnet.lh_aws_public_subnet,
-    aws_subnet.lh_aws_private_subnet
-  ]
-
-  allocation_id = aws_eip.lh_aws_eip_nat_gw.id
-  subnet_id     = aws_subnet.lh_aws_public_subnet.id
-
-  tags = {
-    Name = "lh_eip_nat_gw-${random_string.random_suffix.id}"
-    Owner = var.resources_owner
-  }
-}
-
-
 # Create route table for public subnets
 resource "aws_route_table" "lh_aws_public_rt" {
   depends_on = [
@@ -242,14 +221,14 @@ resource "aws_route_table" "lh_aws_public_rt" {
 # Create route table for private subnets
 resource "aws_route_table" "lh_aws_private_rt" {
   depends_on = [
-    aws_nat_gateway.lh_aws_nat_gw
+    aws_internet_gateway.lh_aws_igw,
   ]
 
   vpc_id = aws_vpc.lh_aws_vpc.id
 
   route {
     cidr_block = "0.0.0.0/0"
-    gateway_id = aws_nat_gateway.lh_aws_nat_gw.id
+    gateway_id = aws_internet_gateway.lh_aws_igw.id
   }
 
   tags = {

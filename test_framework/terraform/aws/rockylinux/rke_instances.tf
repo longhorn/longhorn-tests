@@ -66,6 +66,8 @@ resource "aws_instance" "lh_aws_instance_worker_rke" {
 
   count = var.k8s_distro_name == "rke" ? var.lh_aws_instance_count_worker : 0
 
+  associate_public_ip_address = true
+
   availability_zone = var.aws_availability_zone
 
   ami           = data.aws_ami.aws_ami_rockylinux.id

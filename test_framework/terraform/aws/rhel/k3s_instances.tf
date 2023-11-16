@@ -42,6 +42,8 @@ resource "aws_instance" "lh_aws_instance_worker_k3s" {
 
   count = var.k8s_distro_name == "k3s" ? var.lh_aws_instance_count_worker : 0
 
+  associate_public_ip_address = true
+
   availability_zone = var.aws_availability_zone
 
   ami           = data.aws_ami.aws_ami_rhel.id
