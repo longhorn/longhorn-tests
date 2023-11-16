@@ -766,26 +766,19 @@
 
 
 <main style="padding: 1%; width: 70%;">
-  <h1 id="title">Test Service Account mount on host</h1>
+  <h1 id="title">Test Support Bundle Metadata File</h1>
   <div>
     <article id="content">
-       <ol>
-<li>This test case should be tested on both yaml installation, chart installation (Helm and Rancher UI), as well as upgrade scenarios</li>
-<li>After install Longhorn using on of the above method, ssh into a worker node that has a longhorn-manager pod running</li>
-<li>check the mount point <code>/run/secrets/kubernetes.io/serviceaccount</code> by running:
-<pre tabindex="0"><code>root@node-1:~# findmnt  /run/secrets/kubernetes.io/serviceaccount
-</code></pre></li>
-<li>Verify that there is no such mount point</li>
-<li>Kill the longhorn-manager pod on the above node and wait for it to be recreated and running</li>
-<li>check the mount point <code>/run/secrets/kubernetes.io/serviceaccount</code> by running:
-<pre tabindex="0"><code>root@node-1:~# findmnt  /run/secrets/kubernetes.io/serviceaccount
-</code></pre></li>
-<li>Verify that there is no such mount point</li>
-<li>Repeat the step 5 to 7 a few times</li>
-</ol>
+       <h2 id="related-issue">Related issue</h2>
+<p><a href="https://github.com/longhorn/longhorn/issues/6997">https://github.com/longhorn/longhorn/issues/6997</a></p>
+<h2 id="test-varlogmessages">Test /var/log/messages</h2>
+<p><strong>Given</strong> Longhorn installed on SUSE Linux<br>
+<strong>When</strong> generated support-bundle with description and issue URL<br>
+<strong>And</strong> <code>issuedescription</code> has the description in the metadata.yaml<br>
+<strong>And</strong> <code>issueurl</code> has the issue URL in the metadata.yaml</p>
 
     </article>
-  <a href="https://github.com/longhorn/longhorn-tests/edit/master/docs/content/manual/release-specific/v1.1.1/test-service-account-mount.md" target="_blank" title="Edit on Github" style="font-size:smaller;float:right;padding-right:3%">[Edit]</a>
+  <a href="https://github.com/longhorn/longhorn-tests/edit/master/docs/content/manual/release-specific/v1.6.0/test-support-bundle-metadata-file.md" target="_blank" title="Edit on Github" style="font-size:smaller;float:right;padding-right:3%">[Edit]</a>
   </div>
 
     

@@ -55,6 +55,17 @@ Then Replica Zone Disk Anti-Affinity shows as false in the UI
 And the replica-soft-anti-affinity shows false with kubectl</description>
     </item>
     <item>
+      <title>Test Support Bundle Metadata File</title>
+      <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.6.0/test-support-bundle-metadata-file/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.6.0/test-support-bundle-metadata-file/</guid>
+      <description>Related issue https://github.com/longhorn/longhorn/issues/6997
+Test /var/log/messages Given Longhorn installed on SUSE Linux
+When generated support-bundle with description and issue URL
+And issuedescription has the description in the metadata.yaml
+And issueurl has the issue URL in the metadata.yaml</description>
+    </item>
+    <item>
       <title>Test Support Bundle Syslog Paths</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.6.0/test-support-bundle-syslog-paths/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
