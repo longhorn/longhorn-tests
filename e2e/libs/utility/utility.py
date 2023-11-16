@@ -5,6 +5,9 @@ import time
 import random
 import yaml
 
+from robot.api import logger
+from robot.libraries.BuiltIn import BuiltIn
+
 from longhorn import from_env
 
 from kubernetes import client
@@ -12,8 +15,7 @@ from kubernetes import config
 from kubernetes import dynamic
 from kubernetes.client.rest import ApiException
 
-from robot.api import logger
-from robot.libraries.BuiltIn import BuiltIn
+from utility.constant import NAME_PREFIX
 
 
 def logging(msg, also_report=False):
@@ -29,14 +31,14 @@ def get_retry_count_and_interval():
     return retry_count, retry_interval
 
 
-def generate_name(name_prefix="test-"):
+def generate_name_random(name_prefix="test-"):
     return name_prefix + \
         ''.join(random.choice(string.ascii_lowercase + string.digits)
                 for _ in range(6))
 
 
-def generate_volume_name():
-    return generate_name("vol-")
+def generate_name_with_suffix(kind, suffix):
+    return f"{NAME_PREFIX}-{kind}-{suffix}"
 
 
 def init_k8s_api_client():
@@ -54,7 +56,6 @@ def wait_for_cluster_ready():
     core_api = client.CoreV1Api()
     retry_count, retry_interval = get_retry_count_and_interval()
     for i in range(retry_count):
-        logging(f"Waiting for cluster ready ({i}) ...")
         try:
             resp = core_api.list_node()
             ready = True
@@ -67,6 +68,8 @@ def wait_for_cluster_ready():
                 break
         except Exception as e:
             logging(f"Listing nodes error: {e}")
+
+        logging(f"Waiting for cluster ready ({i}) ...")
         time.sleep(retry_interval)
     assert ready, f"expect cluster's ready but it isn't {resp}"
 
@@ -152,7 +155,7 @@ def get_longhorn_client():
                 longhorn_client = from_env(url=f"{longhorn_client_url}/v1/schemas")
                 return longhorn_client
             except Exception as e:
-                logging(f"Getting longhorn client error: {e}")
+                logging(f"Getting longhorn client error: {e}, retry ({i}) ...")
                 time.sleep(retry_interval)
     else:
         logging(f"Initializing longhorn api client from longhorn manager")
@@ -170,7 +173,7 @@ def get_longhorn_client():
                         longhorn_client = from_env(url=f"http://{ip}:9500/v1/schemas")
                         return longhorn_client
             except Exception as e:
-                logging(f"Getting longhorn client error: {e}")
+                logging(f"Getting longhorn client error: {e}, retry ({i}) ...")
                 time.sleep(retry_interval)
 
 

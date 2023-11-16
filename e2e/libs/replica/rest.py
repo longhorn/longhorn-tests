@@ -1,17 +1,16 @@
 import time
 
 from replica.base import Base
-
-from utils import common_utils
-from utility.utility import logging
-
 from replica.constant import RETRY_COUNTS
 from replica.constant import RETRY_INTERVAL
+
+from utility.utility import logging
+from utility.utility import get_longhorn_client
 
 
 class Rest(Base):
     def __init__(self, node_exec):
-        self.longhorn_client = common_utils.get_longhorn_client()
+        self.longhorn_client = get_longhorn_client()
         self.node_exec = node_exec
 
     def get_replica(self, volume_name, node_name):

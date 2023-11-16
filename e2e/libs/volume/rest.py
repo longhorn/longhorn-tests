@@ -1,16 +1,15 @@
 import os
 import time
 
-from utility.utility import get_longhorn_client
-from utility.utility import logging
-
 from volume.base import Base
-
 from volume.constant import DEV_PATH
 from volume.constant import RETRY_COUNTS
 from volume.constant import RETRY_INTERVAL
 from volume.constant import VOLUME_FRONTEND_BLOCKDEV
 from volume.constant import VOLUME_FRONTEND_ISCSI
+
+from utility.utility import get_longhorn_client
+from utility.utility import logging
 
 
 class Rest(Base):

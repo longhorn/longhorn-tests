@@ -16,19 +16,50 @@ class CRD():
             namespace=claim_namespace,
         )
 
+    def list(self, claim_namespace="default", label_selector=None):
+        return self.core_v1_api.list_namespaced_persistent_volume_claim(
+            namespace=claim_namespace,
+            label_selector=label_selector
+        )
+
+    def set_annotation(self, claim_name, annotation_key, annotation_value, claim_namespace="default"):
+        for _ in range(self.retry_count):
+            claim = self.get(claim_name, claim_namespace)
+
+            annotations = claim.metadata.annotations
+            if annotations is None:
+                annotations = {}
+
+            if annotation_key in annotations and annotations[annotation_key] == annotation_value:
+                return
+
+            annotations[annotation_key] = annotation_value
+            claim.metadata.annotations = annotations
+            self.core_v1_api.patch_namespaced_persistent_volume_claim(
+                name=claim_name,
+                namespace=claim_namespace,
+                body=claim
+            )
+
+        assert False, f"Failed to set annotation {annotation_key} to {annotation_value} for PVC {claim_name}"
+
+    def get_annotation_value(self, claim_name, annotation_key, claim_namespace="default"):
+        claim = self.get(claim_name, claim_namespace)
+        return claim.metadata.annotations[annotation_key]
+
     def expand(self, claim_name, size, namespace="default"):
         try:
             self.core_v1_api.patch_namespaced_persistent_volume_claim(
                 name=claim_name,
                 namespace=namespace,
                 body={
-                        'spec': {
-                            'resources': {
-                                'requests': {
-                                    'storage':  str(size)
-                                }
+                    'spec': {
+                        'resources': {
+                            'requests': {
+                                'storage': str(size)
                             }
                         }
+                    }
                 }
             )
             return size
