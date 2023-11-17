@@ -25,18 +25,22 @@ def logging(msg, also_report=False):
     else:
         logger.console(msg)
 
+
 def get_retry_count_and_interval():
     retry_count = int(BuiltIn().get_variable_value("${RETRY_COUNT}"))
     retry_interval = int(BuiltIn().get_variable_value("${RETRY_INTERVAL}"))
     return retry_count, retry_interval
+
 
 def generate_name(name_prefix="test-"):
     return name_prefix + \
         ''.join(random.choice(string.ascii_lowercase + string.digits)
                 for _ in range(6))
 
+
 def generate_volume_name():
     return generate_name("vol-")
+
 
 def init_k8s_api_client():
     if os.getenv('LONGHORN_CLIENT_URL'):
@@ -47,6 +51,7 @@ def init_k8s_api_client():
         # for ci, run test in in-cluster environment
         config.load_incluster_config()
         logging("Initialized in-cluster k8s api client")
+
 
 def wait_for_cluster_ready():
     core_api = client.CoreV1Api()
@@ -68,6 +73,7 @@ def wait_for_cluster_ready():
         time.sleep(retry_interval)
     assert ready, f"expect cluster's ready but it isn't {resp}"
 
+
 def wait_for_all_instance_manager_running():
     longhorn_client = get_longhorn_client()
     worker_nodes = list_node_names_by_role("worker")
@@ -88,6 +94,7 @@ def wait_for_all_instance_manager_running():
             logging(f"Getting instance manager state error: {e}")
     assert len(instance_manager_map) == len(worker_nodes), f"expect all instance managers running, instance_managers = {instance_managers}, instance_manager_map = {instance_manager_map}"
 
+
 def apply_cr(manifest_dict):
     dynamic_client = dynamic.DynamicClient(client.api_client.ApiClient())
     api_version = manifest_dict.get("apiVersion")
@@ -105,10 +112,12 @@ def apply_cr(manifest_dict):
         crd_api.create(body=manifest_dict, namespace=namespace)
         logging.info(f"{namespace}/{resource_name} created")
 
+
 def apply_cr_from_yaml(filepath):
     with open(filepath, 'r') as f:
         manifest_dict = yaml.safe_load(f)
         apply_cr(manifest_dict)
+
 
 def get_cr(group, version, namespace, plural, name):
     api = client.CustomObjectsApi()
@@ -118,6 +127,7 @@ def get_cr(group, version, namespace, plural, name):
     except ApiException as e:
         logging(f"Getting namespaced custom object error: {e}")
 
+
 def filter_cr(group, version, namespace, plural, field_selector="", label_selector=""):
     api = client.CustomObjectsApi()
     try:
@@ -125,6 +135,7 @@ def filter_cr(group, version, namespace, plural, field_selector="", label_select
         return resp
     except ApiException as e:
         logging(f"Listing namespaced custom object: {e}")
+
 
 def wait_delete_ns(name):
     api = client.CoreV1Api()
@@ -141,6 +152,7 @@ def wait_delete_ns(name):
         time.sleep(retry_interval)
     assert not found
 
+
 def get_mgr_ips():
     ret = client.CoreV1Api().list_pod_for_all_namespaces(
         label_selector="app=longhorn-manager",
@@ -149,6 +161,7 @@ def get_mgr_ips():
     for i in ret.items:
         mgr_ips.append(i.status.pod_ip)
     return mgr_ips
+
 
 def get_longhorn_client():
     retry_count, retry_interval = get_retry_count_and_interval()
@@ -184,11 +197,13 @@ def get_longhorn_client():
                 logging(f"Getting longhorn client error: {e}")
                 time.sleep(retry_interval)
 
+
 def get_test_pod_running_node():
     if "NODE_NAME" in os.environ:
         return os.environ["NODE_NAME"]
     else:
         return get_node_by_index(0)
+
 
 def get_test_pod_not_running_node():
     worker_nodes = list_node_names_by_role("worker")
@@ -196,6 +211,7 @@ def get_test_pod_not_running_node():
     for worker_node in worker_nodes:
         if worker_node != test_pod_running_node:
             return worker_node
+
 
 def get_test_case_namespace(test_name):
     return test_name.lower().replace(' ', '-')
