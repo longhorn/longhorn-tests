@@ -12,6 +12,7 @@ from volume.constant import RETRY_INTERVAL
 from volume.constant import VOLUME_FRONTEND_BLOCKDEV
 from volume.constant import VOLUME_FRONTEND_ISCSI
 
+
 class Rest(Base):
 
     def __init__(self, node_exec):
