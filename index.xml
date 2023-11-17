@@ -1159,9 +1159,9 @@ Scenario-1 Create a volume with 3 replicas and attach to a pod. Write some data 
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.6.0/test-support-bundle-metadata-file/</guid>
       <description>Related issue https://github.com/longhorn/longhorn/issues/6997
-Test /var/log/messages Given Longhorn installed on SUSE Linux
+Test Given Longhorn installed on SUSE Linux
 When generated support-bundle with description and issue URL
-And issuedescription has the description in the metadata.yaml
+Then issuedescription has the description in the metadata.yaml
 And issueurl has the issue URL in the metadata.yaml</description>
     </item>
     <item>
