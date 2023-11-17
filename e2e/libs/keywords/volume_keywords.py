@@ -8,8 +8,6 @@ from utility.utility import logging
 
 from volume import Volume
 
-from volume.constant import MEBIBYTE
-
 
 class volume_keywords:
 
