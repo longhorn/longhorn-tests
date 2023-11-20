@@ -1,12 +1,10 @@
 from kubernetes import client
 
-from persistent_volume_claim.base import Base
-
 from utility.utility import get_retry_count_and_interval
 from utility.utility import logging
 
 
-class CRD(Base):
+class CRD():
 
     def __init__(self):
         self.core_v1_api = client.CoreV1Api()

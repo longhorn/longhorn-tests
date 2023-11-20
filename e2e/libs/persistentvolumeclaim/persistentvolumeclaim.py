@@ -1,12 +1,11 @@
 from strategy import LonghornOperationStrategy
 
-from persistent_volume_claim.base import Base
-from persistent_volume_claim.crd import CRD
+from persistentvolumeclaim.crd import CRD
 
 from utility.utility import logging
 
 
-class PersistentVolumeClaim(Base):
+class PersistentVolumeClaim():
 
     _strategy = LonghornOperationStrategy.CRD
 

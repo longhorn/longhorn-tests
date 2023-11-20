@@ -33,7 +33,7 @@ Restart all worker nodes
 
 Reboot volume node of statefulset ${idx}
     ${volume_name} =    get_workload_volume_name    ${statefulset_list}[${idx}]
-    ${node_name} =    get_volume_node    ${volume_name}
+    ${node_name} =    get_replica_node_attached_to_volume    ${volume_name}
     reboot_node_by_name    ${node_name}
 
 Power off node ${idx} for ${power_off_time_in_min} mins
@@ -44,7 +44,7 @@ Power off all worker nodes for ${power_off_time_in_min} mins
 
 Power off volume node of statefulset ${idx} for ${power_off_time_in_min} mins
     ${volume_name} =    get_workload_volume_name    ${statefulset_list}[${idx}]
-    ${node_name} =    get_volume_node    ${volume_name}
+    ${node_name} =    get_replica_node_attached_to_volume    ${volume_name}
     reboot_node_by_name    ${node_name}    ${power_off_time_in_min}
 
 Wait for longhorn ready

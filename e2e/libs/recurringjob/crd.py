@@ -1,5 +1,5 @@
-from recurring_job.base import Base
-from recurring_job.rest import Rest
+from recurringjob.base import Base
+from recurringjob.rest import Rest
 
 from utility.utility import logging
 

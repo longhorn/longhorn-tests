@@ -1,9 +1,11 @@
 *** Settings ***
 Documentation    Negative Test Cases
+Resource    ../keywords/common.resource
+Resource    ../keywords/node.resource
+Resource    ../keywords/statefulset.resource
 Resource    ../keywords/stress.resource
 Resource    ../keywords/volume.resource
 Resource    ../keywords/workload.resource
-Resource    ../keywords/common.resource
 
 Test Setup    Set test environment
 Test Teardown    Cleanup test resources

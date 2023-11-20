@@ -47,7 +47,7 @@ def list_node_names_by_volumes(volume_names):
     volume_keywords = BuiltIn().get_library_instance('volume_keywords')
 
     for volume_name in volume_names:
-        volume_node = volume_keywords.get_volume_node(volume_name)
+        volume_node = volume_keywords.get_replica_node_attached_to_volume(volume_name)
         if volume_node not in volume_nodes:
             volume_nodes[volume_node] = True
     return list(volume_nodes.keys())

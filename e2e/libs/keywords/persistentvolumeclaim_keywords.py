@@ -1,11 +1,11 @@
-from persistent_volume_claim import PersistentVolumeClaim
+from persistentvolumeclaim import PersistentVolumeClaim
 
 from utility.utility import logging
 
 from volume.constant import MEBIBYTE
 
 
-class persistent_volume_claim_keywords:
+class persistentvolumeclaim_keywords:
 
     def __init__(self):
         self.pvc = PersistentVolumeClaim()

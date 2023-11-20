@@ -215,3 +215,11 @@ def get_test_pod_not_running_node():
 
 def get_test_case_namespace(test_name):
     return test_name.lower().replace(' ', '-')
+
+
+def get_name_suffix(*args):
+    suffix = ""
+    for arg in args:
+        if arg:
+            suffix += f"-{arg}"
+    return suffix

@@ -1,4 +1,16 @@
-from workload.workload import *
+from workload.deployment import create_deployment
+from workload.deployment import delete_deployment
+from workload.persistentvolumeclaim import create_persistentvolumeclaim
+from workload.persistentvolumeclaim import delete_persistentvolumeclaim
+from workload.workload import check_pod_data_checksum
+from workload.workload import create_storageclass
+from workload.workload import delete_storageclass
+from workload.workload import get_workload_pod_names
+from workload.workload import get_workload_pvc_name
+from workload.workload import get_workload_volume_name
+from workload.workload import keep_writing_pod_data
+from workload.workload import write_pod_random_data
+from workload.workload import wait_for_workload_pod_stable
 
 
 class workload_keywords:
@@ -15,19 +27,9 @@ class workload_keywords:
         delete_storageclass('longhorn-test-strict-local')
 
     def create_deployment(self, volume_type="rwo", option=""):
-        create_pvc(volume_type, option)
+        create_persistentvolumeclaim(volume_type, option)
         deployment_name = create_deployment(volume_type, option)
         return deployment_name
-
-    def create_statefulset(self, volume_type="rwo", option=""):
-        statefulset_name = create_statefulset(volume_type, option)
-        return statefulset_name
-
-    def get_statefulset(self, statefulset_name):
-        return get_statefulset(statefulset_name)
-
-    def scale_statefulset(self, statefulset_name, replica_count):
-        return scale_statefulset(statefulset_name, replica_count)
 
     def get_workload_pod_name(self, workload_name):
         return get_workload_pod_names(workload_name)[0]
@@ -51,16 +53,7 @@ class workload_keywords:
         for name in deployment_names:
             pvc_name = get_workload_pvc_name(name)
             delete_deployment(name)
-            delete_pvc(pvc_name)
-
-    def cleanup_statefulsets(self, statefulset_names):
-        for name in statefulset_names:
-            pvc_name = get_workload_pvc_name(name)
-            delete_statefulset(name)
-            delete_pvc(pvc_name)
+            delete_persistentvolumeclaim(pvc_name)
 
     def wait_for_workload_pod_stable(self, workload_name):
         return wait_for_workload_pod_stable(workload_name)
-
-    def wait_for_statefulset_replicas_ready(self, statefulset_name, expected_ready_count):
-        return wait_for_statefulset_replicas_ready(statefulset_name, expected_ready_count)
