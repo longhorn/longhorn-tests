@@ -13,12 +13,12 @@ class node_keywords:
 
     def reboot_volume_node(self, volume_name):
         volume_keywords = BuiltIn().get_library_instance('volume_keywords')
-        volume_node = volume_keywords.get_volume_node(volume_name)
+        volume_node = volume_keywords.get_replica_node_attached_to_volume(volume_name)
         self.node.reboot_node(volume_node)
 
     def reboot_replica_node(self, volume_name):
         volume_keywords = BuiltIn().get_library_instance('volume_keywords')
-        replica_node = volume_keywords.get_replica_node(volume_name)
+        replica_node = volume_keywords.get_replica_node_not_attached_to_volume(volume_name)
         self.node.reboot_node(replica_node)
 
     def reboot_node_by_index(self, idx, power_off_time_in_min=1):

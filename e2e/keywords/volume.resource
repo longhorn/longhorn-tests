@@ -3,7 +3,6 @@ Documentation    Volume Keywords
 
 Library    Collections
 Library    ../libs/keywords/volume_keywords.py
-Library    ../libs/keywords/workload_keywords.py
 Library    ../libs/keywords/common_keywords.py
 
 *** Keywords ***
@@ -37,7 +36,7 @@ Delete replica on replica node to trigger replica rebuilding
     wait_for_replica_rebuilding_start    ${volume_name}    ${replica_node}
 
 Delete replica on volume node to trigger replica rebuilding
-    ${volume_node} =    get_volume_node    ${volume_name}
+    ${volume_node} =    get_replica_node_attached_to_volume    ${volume_name}
     delete_replica    ${volume_name}    ${volume_node}
     wait_for_replica_rebuilding_start    ${volume_name}    ${volume_node}
 
@@ -68,7 +67,7 @@ Wait until all replicas rebuilt
     wait_for_replica_rebuilding_complete    ${volume_name}    2
 
 Wait until replica on volume node rebuilt
-    ${node_name} =    get_volume_node    ${volume_name}
+    ${node_name} =    get_replica_node_attached_to_volume    ${volume_name}
     wait_for_replica_rebuilding_start    ${volume_name}    ${node_name}
     wait_for_replica_rebuilding_complete    ${volume_name}    ${node_name}
 

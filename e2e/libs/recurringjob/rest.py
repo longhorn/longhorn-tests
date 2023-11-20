@@ -4,14 +4,14 @@ from datetime import datetime
 
 from kubernetes import client
 
-from recurring_job.base import Base
+from recurringjob.base import Base
 
 from utility.utility import filter_cr
 from utility.utility import get_longhorn_client
 from utility.utility import logging
 
-from recurring_job.constant import RETRY_COUNTS
-from recurring_job.constant import RETRY_INTERVAL
+from recurringjob.constant import RETRY_COUNTS
+from recurringjob.constant import RETRY_INTERVAL
 
 
 class Rest(Base):
@@ -34,7 +34,7 @@ class Rest(Base):
     def delete(self, job_name, volume_name):
         self.client.delete(self.get(job_name))
         self._wait_for_cron_job_delete(job_name)
-        self._wait_for_volume_recurring_job_delete(job_name, volume_name)
+        self._wait_for_volume_recurringjob_delete(job_name, volume_name)
 
     def get(self, name):
         return self.client.by_id_recurring_job(name)
@@ -42,29 +42,29 @@ class Rest(Base):
     def add_to_volume(self, job_name, volume_name):
         volume = self.client.by_id_volume(volume_name)
         volume.recurringJobAdd(name=job_name, isGroup=False)
-        self._wait_for_volume_recurring_job_update(job_name, volume_name)
+        self._wait_for_volume_recurringjob_update(job_name, volume_name)
 
-    def _wait_for_volume_recurring_job_update(self, job_name, volume_name):
+    def _wait_for_volume_recurringjob_update(self, job_name, volume_name):
         updated = False
         for _ in range(RETRY_COUNTS):
-            jobs, _ = self.get_volume_recurring_jobs_and_groups(volume_name)
+            jobs, _ = self.get_volume_recurringjobs_and_groups(volume_name)
             if job_name in jobs:
                 updated = True
                 break
             time.sleep(RETRY_INTERVAL)
         assert updated
 
-    def _wait_for_volume_recurring_job_delete(self, job_name, volume_name):
+    def _wait_for_volume_recurringjob_delete(self, job_name, volume_name):
         deleted = False
         for _ in range(RETRY_COUNTS):
-            jobs, _ = self.get_volume_recurring_jobs_and_groups(volume_name)
+            jobs, _ = self.get_volume_recurringjobs_and_groups(volume_name)
             if job_name not in jobs:
                 deleted = True
                 break
             time.sleep(RETRY_INTERVAL)
         assert deleted
 
-    def get_volume_recurring_jobs_and_groups(self, volume_name):
+    def get_volume_recurringjobs_and_groups(self, volume_name):
         volume = self.client.by_id_volume(volume_name)
         list = volume.recurringJobList()
         jobs = []
@@ -102,13 +102,13 @@ class Rest(Base):
 
     def check_jobs_work(self, volume_name):
         # check if snapshot/backup is really created by the
-        # recurring job following the cron schedule
+        # recurringjob following the cron schedule
         # currently only support checking normal snapshot/backup
-        # every 1 min recurring job
-        jobs, _ = self.get_volume_recurring_jobs_and_groups(volume_name)
+        # every 1 min recurringjob
+        jobs, _ = self.get_volume_recurringjobs_and_groups(volume_name)
         for job_name in jobs:
             job = self.get(job_name)
-            logging(f"Checking recurring job {job}")
+            logging(f"Checking recurringjob {job}")
             if job['task'] == 'snapshot' and job['cron'] == '* * * * *':
                 period_in_sec = 60
                 self._check_snapshot_created_in_time(volume_name, job_name, period_in_sec)
@@ -117,7 +117,7 @@ class Rest(Base):
                 self._check_backup_created_in_time(volume_name, period_in_sec)
 
     def _check_snapshot_created_in_time(self, volume_name, job_name, period_in_sec):
-        # check snapshot can be created by the recurring job
+        # check snapshot can be created by the recurringjob
         current_time = datetime.utcnow()
         current_timestamp = current_time.timestamp()
         logging(f"Recorded current time = {current_time}, timestamp = {current_timestamp}")
@@ -128,7 +128,7 @@ class Rest(Base):
             try:
                 if len(snapshot_list['items']) > 0:
                     for item in snapshot_list['items']:
-                        # this snapshot can be created by snapshot or backup recurring job
+                        # this snapshot can be created by snapshot or backup recurringjob
                         # but job_name is in spec.labels.RecurringJob
                         # and crd doesn't support field selector
                         # so need to filter by ourselves
@@ -145,11 +145,11 @@ class Rest(Base):
                 logging(f"Iterating snapshot list error: {e}")
             time.sleep(1)
         assert False, f"since {current_time},\
-                        there's no new snapshot created by recurring job \
+                        there's no new snapshot created by recurringjob \
                         {snapshot_list}"
 
     def _check_backup_created_in_time(self, volume_name, period_in_sec):
-        # check backup can be created by the recurring job
+        # check backup can be created by the recurringjob
         current_time = datetime.utcnow()
         current_timestamp = current_time.timestamp()
         logging(f"Recorded current time = {current_time}, timestamp = {current_timestamp}")
@@ -169,13 +169,13 @@ class Rest(Base):
                 logging(f"Iterating backup list error: {e}")
             time.sleep(1)
         assert False, f"since {current_time},\
-                        there's no new backup created by recurring job \
+                        there's no new backup created by recurringjob \
                         {backup_list}"
 
     def cleanup(self, volume_names):
         for volume_name in volume_names:
-            logging(f"Cleaning up recurring jobs for volume {volume_name}")
-            jobs, _ = self.get_volume_recurring_jobs_and_groups(volume_name)
+            logging(f"Cleaning up recurringjobs for volume {volume_name}")
+            jobs, _ = self.get_volume_recurringjobs_and_groups(volume_name)
             for job in jobs:
-                logging(f"Deleting recurring job {job}")
+                logging(f"Deleting recurringjob {job}")
                 self.delete(job, volume_name)

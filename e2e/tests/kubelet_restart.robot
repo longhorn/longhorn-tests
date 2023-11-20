@@ -1,10 +1,8 @@
 *** Settings ***
 Documentation    Negative Test Cases
-Resource    ../keywords/workload.resource
-Resource    ../keywords/volume.resource
-Resource    ../keywords/node.resource
 Resource    ../keywords/common.resource
-Resource    ../keywords/kubelet.resource
+Resource    ../keywords/statefulset.resource
+Resource    ../keywords/workload.resource
 
 Test Setup    Set test environment
 Test Teardown    Cleanup test resources

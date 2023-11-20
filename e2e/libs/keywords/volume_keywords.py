@@ -33,13 +33,13 @@ class volume_keywords:
         logging(f'Waiting for volume {volume_name} expand to {size}')
         return self.volume.wait_for_volume_expand_to_size(volume_name, size)
 
-    def get_volume_node(self, volume_name):
+    def get_replica_node_attached_to_volume(self, volume_name):
         volume = self.volume.get(volume_name)
         return volume['spec']['nodeID']
 
-    def get_replica_node(self, volume_name):
+    def get_replica_node_not_attached_to_volume(self, volume_name):
         worker_nodes = list_node_names_by_role("worker")
-        volume_node = self.get_volume_node(volume_name)
+        volume_node = self.get_replica_node_attached_to_volume(volume_name)
         test_pod_running_node = get_test_pod_running_node()
         for worker_node in worker_nodes:
             if worker_node != volume_node and worker_node != test_pod_running_node:
