@@ -21,14 +21,13 @@ class CRD(Base):
         self.retry_count, self.retry_interval = get_retry_count_and_interval()
 
     def get(self, volume_name):
-        volume = self.obj_api.get_namespaced_custom_object(
+        return self.obj_api.get_namespaced_custom_object(
             group="longhorn.io",
             version="v1beta2",
             namespace="longhorn-system",
             plural="volumes",
             name=volume_name
         )
-        return volume
 
     def create(self, volume_name, size, replica_count):
         body = {

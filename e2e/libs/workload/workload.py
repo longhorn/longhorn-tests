@@ -26,7 +26,6 @@ def create_storageclass(name):
         filepath = "./templates/workload/storageclass.yaml"
 
     with open(filepath, 'r') as f:
-        namespace = 'default'
         manifest_dict = yaml.safe_load(f)
         api = client.StorageV1Api()
         api.create_storage_class(body=manifest_dict)
@@ -63,7 +62,7 @@ def create_deployment(volume_type, option):
         replicas = deployment.spec.replicas
 
         retry_count, retry_interval = get_retry_count_and_interval()
-        for i in range(retry_count):
+        for _ in range(retry_count):
             deployment = api.read_namespaced_deployment(
                 name=deployment_name,
                 namespace=namespace)
@@ -90,7 +89,7 @@ def delete_deployment(name, namespace='default'):
         assert e.status == 404
 
     retry_count, retry_interval = get_retry_count_and_interval()
-    for i in range(retry_count):
+    for _ in range(retry_count):
         resp = api.list_namespaced_deployment(namespace=namespace)
         deleted = True
         for item in resp.items:
@@ -232,7 +231,7 @@ def delete_pvc(name, namespace='default'):
         assert e.status == 404
 
     retry_count, retry_interval = get_retry_count_and_interval()
-    for i in range(retry_count):
+    for _ in range(retry_count):
         resp = api.list_namespaced_persistent_volume_claim(namespace=namespace)
         deleted = True
         for item in resp.items:
@@ -275,7 +274,6 @@ def get_workload_volume_name(workload_name):
 
 
 def get_workload_pvc_name(workload_name):
-    api = client.CoreV1Api()
     pod = get_workload_pods(workload_name)[0]
     logging(f"Got pod {pod.metadata.name} for workload {workload_name}")
     for volume in pod.spec.volumes:
@@ -337,8 +335,8 @@ def wait_for_workload_pod_stable(workload_name):
     stable_pod = None
     wait_for_stable_retry = 0
     retry_count, retry_interval = get_retry_count_and_interval()
-    for _ in range(retry_count):
-        logging(f"Waiting for {workload_name} pod stable ({_}) ...")
+    for i in range(retry_count):
+        logging(f"Waiting for {workload_name} pod stable ({i}) ...")
         pods = get_workload_pods(workload_name)
         for pod in pods:
             if pod.status.phase == "Running":
