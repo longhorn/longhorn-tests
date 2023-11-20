@@ -769,34 +769,19 @@
 
 
 <main style="padding: 1%; width: 70%;">
-  <h1 id="title">Test Volume Replica Zone Soft Anti-Affinity Setting</h1>
+  <h1 id="title">Test Support Bundle Should Include Kubelet Log When On K3s Cluster</h1>
   <div>
     <article id="content">
        <h2 id="related-issue">Related issue</h2>
-<p><a href="https://github.com/longhorn/longhorn/issues/5358">https://github.com/longhorn/longhorn/issues/5358</a></p>
-<h2 id="test-step---enable-volume-replica-zone-soft-anti-affinity-setting">Test step - Enable Volume Replica Zone Soft Anti-Affinity Setting</h2>
-<p><strong>Given</strong> EKS Cluster with 3 nodes across 2 AWS zones (zone#1, zone#2)</p>
-<p><em>And</em> Deploy Longhorn v1.5.0</p>
-<p><em>And</em> Disable global replica zone anti-affinity</p>
-<p><em>And</em> Create a volume with 2 replicas, <code>replicaZoneSoftAntiAffinity=enabled</code> and attach it to a node.</p>
-<p><strong>When</strong> Scale volume replicas to 3</p>
-<p><strong>Then</strong> New replica should be scheduled</p>
-<p><em>And</em> No error messages in the longhorn manager pod logs.</p>
-<p><em>And</em> Volumes function correctly.</p>
-<h2 id="test-step---disable-volume-replica-zone-soft-anti-affinity-setting">Test step - Disable Volume Replica Zone Soft Anti-Affinity Setting</h2>
-<p><strong>Given</strong> EKS Cluster with 3 nodes across 2 AWS zones (zone#1, zone#2)</p>
-<p><em>And</em> Deploy Longhorn v1.5.0</p>
-<p><em>And</em> Enable global replica zone anti-affinity</p>
-<p><em>And</em> Create a volume with 2 replicas, <code>replicaZoneSoftAntiAffinity=disabled</code> and attach it to a node.</p>
-<p><strong>When</strong> Scale volume replicas to 3</p>
-<p><strong>Then</strong> New replica should not be scheduled</p>
-<p><strong>When</strong> Update the Volume to <code>replicaZoneSoftAntiAffinity=enabled</code></p>
-<p><strong>Then</strong> New replica should be scheduled</p>
-<p><em>And</em> No error messages in the longhorn manager pod logs.</p>
-<p><em>And</em> Volumes function correctly.</p>
+<p><a href="https://github.com/longhorn/longhorn/issues/7121">https://github.com/longhorn/longhorn/issues/7121</a></p>
+<h2 id="test">Test</h2>
+<p><strong>Given</strong> Longhorn installed on K3s cluster<br>
+<strong>When</strong> generated support-bundle<br>
+<strong>Then</strong> should have worker node kubelet logs in <code>k3s-agent-service.log</code><br>
+<strong>And</strong> should have control-plan node kubelet log in <code>k3s-service.log</code> (if Longhorn is deployed on control-plan node)</p>
 
     </article>
-  <a href="https://github.com/longhorn/longhorn-tests/edit/master/docs/content/manual/release-specific/v1.5.0/test-the-volume-replica-scheduling.md" target="_blank" title="Edit on Github" style="font-size:smaller;float:right;padding-right:3%">[Edit]</a>
+  <a href="https://github.com/longhorn/longhorn-tests/edit/master/docs/content/manual/release-specific/v1.6.0/test-support-bundle-kubelet-log-for-k3s.md" target="_blank" title="Edit on Github" style="font-size:smaller;float:right;padding-right:3%">[Edit]</a>
   </div>
 
     

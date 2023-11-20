@@ -66,6 +66,17 @@ Then issuedescription has the description in the metadata.yaml
 And issueurl has the issue URL in the metadata.yaml</description>
     </item>
     <item>
+      <title>Test Support Bundle Should Include Kubelet Log When On K3s Cluster</title>
+      <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.6.0/test-support-bundle-kubelet-log-for-k3s/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.6.0/test-support-bundle-kubelet-log-for-k3s/</guid>
+      <description>Related issue https://github.com/longhorn/longhorn/issues/7121
+Test Given Longhorn installed on K3s cluster
+When generated support-bundle
+Then should have worker node kubelet logs in k3s-agent-service.log
+And should have control-plan node kubelet log in k3s-service.log (if Longhorn is deployed on control-plan node)</description>
+    </item>
+    <item>
       <title>Test Support Bundle Syslog Paths</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.6.0/test-support-bundle-syslog-paths/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
