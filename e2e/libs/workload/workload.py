@@ -8,8 +8,7 @@ from kubernetes.stream import stream
 from utility.utility import get_retry_count_and_interval
 from utility.utility import logging
 
-
-WAIT_FOR_POD_STABLE_MAX_RETRY = 90
+from workload.constant import WAIT_FOR_POD_STABLE_MAX_RETRY
 
 
 def get_name_suffix(*args):
