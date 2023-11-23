@@ -15,7 +15,11 @@ class Node:
     def __init__(self):
         with open('/tmp/instance_mapping', 'r') as f:
             self.mapping = yaml.safe_load(f)
-        self.aws_client = boto3.client('ec2')
+        try:
+            self.aws_client = boto3.client('ec2')
+        except:
+            # specifying default region for local development setup
+            self.aws_client = boto3.client('ec2',region_name='us-east-1')
 
     def reboot_all_nodes(self, shut_down_time_in_sec=60):
         instance_ids = [value for value in self.mapping.values()]

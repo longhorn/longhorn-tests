@@ -78,3 +78,9 @@ Stress the memory of all ${role} nodes
 
 Stress the memory of all volume nodes
     stress_node_memory_by_volumes    ${volume_list}
+
+Stress the FS of all ${role} nodes
+    stress_node_fs_by_role    ${role}
+
+Stress the FS of all volume nodes
+    stress_node_fs_by_volumes    ${volume_list}

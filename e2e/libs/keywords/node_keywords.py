@@ -55,3 +55,9 @@ class node_keywords:
 
     def stress_node_memory_by_volumes(self, volume_names):
         self.stress.memory(list_node_names_by_volumes(volume_names))
+
+    def stress_node_fs_by_role(self, role):
+        self.stress.fs(list_node_names_by_role(role))
+
+    def stress_node_fs_by_volumes(self, volume_names):
+        self.stress.fs(list_node_names_by_volumes(volume_names))
