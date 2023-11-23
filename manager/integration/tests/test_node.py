@@ -2668,3 +2668,77 @@ def test_disk_eviction_with_node_level_soft_anti_affinity_disabled(client, # NOQ
         common.cleanup_all_volumes(client)
 
     request.addfinalizer(finalizer)
+
+@pytest.mark.skip(reason="TODO")  # NOQA
+def test_drain_with_block_for_eviction_success():
+    """
+    Test drain completes after evicting replica with node-drain-policy
+    block-for-eviction
+
+    1. Set `node-drain-policy` to `block-for-eviction`.
+    2. Create a volume.
+    3. Ensure (through soft anti-affinity, low replica count, and/or enough
+       disks) that an evicted replica of the volume can be scheduled elsewhere.
+    4. Write data to the volume.
+    5. Drain a node one of the volume's replicas is scheduled to.
+    6. While the drain is ongoing:
+       - Verify that the volume never becomes degraded.
+       - Verify that `node.status.autoEvicting == true`.
+       - Optionally verify that `replica.spec.evictionRequested == true`.
+    7. Verify the drain completes.
+    8. Uncordon the node.
+    9. Verify the replica on the drained node has moved to a different one.
+    10. Verify that `node.status.autoEvicting == false`.
+    11. Verify that `replica.spec.evictionRequested == false`.
+    12. Verify the volume's data.
+    """
+
+@pytest.mark.skip(reason="TODO")  # NOQA
+def test_drain_with_block_for_eviction_if_contains_last_replica_success():
+    """
+    Test drain completes after evicting replicas with node-drain-policy
+    block-for-eviction-if-contains-last-replica
+
+    1. Set `node-drain-policy` to
+       `block-for-eviction-if-contains-last-replica`.
+    2. Create one volume with a single replica and another volume with three
+       replicas.
+    3. Ensure (through soft anti-affinity, low replica count, and/or enough
+    disks) that evicted replicas of both volumes can be scheduled elsewhere.
+    4. Write data to the volumes.
+    5. Drain a node both volumes have a replica scheduled to.
+    6. While the drain is ongoing:
+       - Verify that the volume with one replica never becomes degraded.
+       - Verify that the volume with three replicas becomes degraded.
+       - Verify that `node.status.autoEvicting == true`.
+       - Optionally verify that `replica.spec.evictionRequested == true` on the
+         replica for the volume that only has one.
+       - Optionally verify that `replica.spec.evictionRequested == false` on
+         the replica for the volume that has three.
+    7. Verify the drain completes.
+    8. Uncordon the node.
+    9. Verify the replica for the volume with one replica has moved to a
+       different node.
+    10. Verify the replica for the volume with three replicas has not moved.
+    11. Verify that `node.status.autoEvicting == false`.
+    12. Verify that `replica.spec.evictionRequested == false` on all replicas.
+    13. Verify the the data in both volumes.
+    """
+
+@pytest.mark.skip(reason="TODO")  # NOQA
+def test_drain_with_block_for_eviction_failure():
+    """
+    Test drain never completes with node-drain-policy block-for-eviction
+
+    1. Set `node-drain-policy` to `block-for-eviction`.
+    2. Create a volume.
+    3. Ensure (through soft anti-affinity, high replica count, and/or not
+       enough disks) that an evicted replica of the volume cannot be scheduled
+       elsewhere.
+    4. Write data to the volume.
+    5. Drain a node one of the volume's replicas is scheduled to.
+    6. While the drain is ongoing:
+       - Verify that `node.status.autoEvicting == true`.
+       - Verify that `replica.spec.evictionRequested == true`.
+    7. Verify the drain never completes.
+    """
