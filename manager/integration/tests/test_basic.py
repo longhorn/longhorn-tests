@@ -94,6 +94,9 @@ from common import wait_for_snapshot_count
 from common import make_deployment_with_pvc # NOQA
 from common import wait_for_volume_option_trim_auto_removing_snapshots
 from common import FS_TYPE_EXT4, FS_TYPE_XFS
+from common import create_and_wait_deployment
+from common import get_custom_object_api_client
+from common import RETRY_COUNTS_SHORT
 
 from backupstore import backupstore_delete_volume_cfg_file
 from backupstore import backupstore_cleanup
@@ -107,6 +110,7 @@ from backupstore import backupstore_get_backup_volume_prefix
 from backupstore import set_backupstore_url, set_backupstore_credential_secret, set_backupstore_poll_interval  # NOQA
 from backupstore import reset_backupstore_setting  # NOQA
 from backupstore import set_backupstore_s3, backupstore_get_secret  # NOQA
+from backupstore import backupstore_invalid # NOQA
 
 from kubernetes import client as k8sclient
 
@@ -5370,8 +5374,14 @@ def test_filesystem_trim(client, fs_type):  # NOQA
     wait_for_volume_delete(client, test_volume_name)
 
 
-@pytest.mark.skip(reason="TODO")
-def test_backuptarget_invalid(): # NOQA
+def test_backuptarget_invalid(apps_api, # NOQA
+                              client, # NOQA
+                              core_api, # NOQA
+                              backupstore_invalid, # NOQA
+                              make_deployment_with_pvc, # NOQA
+                              pvc_name, # NOQA
+                              request, # NOQA
+                              volume_name): # NOQA
     """
     Related issue :
     https://github.com/longhorn/longhorn/issues/1249
@@ -5391,4 +5401,33 @@ def test_backuptarget_invalid(): # NOQA
     Then
     - Backup will be failed and the backup state is Error.
     """
-    pass
+    volume = create_and_check_volume(client, volume_name)
+    pvc_name = volume_name + "-pvc"
+    create_pv_for_volume(client, core_api, volume, volume_name)
+    create_pvc_for_volume(client, core_api, volume, pvc_name)
+
+    deployment_name = volume_name + "-dep"
+    deployment = make_deployment_with_pvc(deployment_name, pvc_name)
+    create_and_wait_deployment(apps_api, deployment)
+
+    pod_names = common.get_deployment_pod_names(core_api, deployment)
+    write_pod_volume_random_data(core_api, pod_names[0], "/data/test",
+                                 DATA_SIZE_IN_MB_1)
+
+    volume = client.by_id_volume(volume_name)
+    snap = create_snapshot(client, volume_name)
+    volume.snapshotBackup(name=snap.name)
+
+    for i in range(RETRY_COUNTS_SHORT):
+        api = get_custom_object_api_client()
+        backups = api.list_namespaced_custom_object("longhorn.io",
+                                                    "v1beta2",
+                                                    "longhorn-system",
+                                                    "backups")
+
+        if backups["items"][0]["status"]["state"] != "":
+            break
+        time.sleep(RETRY_INTERVAL)
+
+    assert backups["items"][0]["spec"]["snapshotName"] == snap.name
+    assert backups["items"][0]["status"]["state"] == "Error"
