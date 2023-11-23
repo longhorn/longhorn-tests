@@ -1,9 +1,9 @@
 from robot.libraries.BuiltIn import BuiltIn
 
+from instancemanager.utility import wait_for_all_instance_manager_running
+
 from node import Node
 from node.utility import get_node_by_index
-
-from utility.utility import wait_for_all_instance_manager_running
 
 
 class node_keywords:
