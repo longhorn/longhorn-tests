@@ -1,6 +1,23 @@
+import os
+
 from robot.libraries.BuiltIn import BuiltIn
 
 from kubernetes import client
+
+
+def get_test_pod_running_node():
+    if "NODE_NAME" in os.environ:
+        return os.environ["NODE_NAME"]
+    else:
+        return get_node_by_index(0)
+
+
+def get_test_pod_not_running_node():
+    worker_nodes = list_node_names_by_role("worker")
+    test_pod_running_node = get_test_pod_running_node()
+    for worker_node in worker_nodes:
+        if worker_node != test_pod_running_node:
+            return worker_node
 
 
 def get_node_by_index(index, role="worker"):

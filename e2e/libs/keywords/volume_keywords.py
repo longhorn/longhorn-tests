@@ -1,9 +1,9 @@
 from node.utility import get_node_by_index
+from node.utility import get_test_pod_running_node
+from node.utility import get_test_pod_not_running_node
 from node.utility import list_node_names_by_role
 
 from utility.utility import generate_volume_name
-from utility.utility import get_test_pod_not_running_node
-from utility.utility import get_test_pod_running_node
 from utility.utility import logging
 
 from volume import Volume
