@@ -809,6 +809,7 @@
 <li>Repeat for the other 2 EC2 instances with the remain elastic IPs.</li>
 </ul>
 <h3 id="setup-instances">Setup instances</h3>
+<h4 id="thin-plugin">Thin Plugin</h4>
 <p><strong>Given</strong> K3s K8s cluster installed on EC2 instances.</p>
 <p><em>And</em> Deploy Multus DaemonSet on the control-plane node.</p>
 <ul>
@@ -860,6 +861,119 @@ index ab626a66..a7228942 100644
 </code></pre></li>
 <li>Apply YAML to K8s cluster.
 <pre tabindex="0"><code>kubectl apply -f multus-daemonset.yml.new
+</code></pre></li>
+</ul>
+<p><em>And</em> Download <code>ipvlan</code> and put to K3s binaries path to all cluster nodes.</p>
+<pre tabindex="0"><code>curl -OL https://github.com/containernetworking/plugins/releases/download/v1.3.0/cni-plugins-linux-amd64-v1.3.0.tgz
+tar -zxvf cni-plugins-linux-amd64-v1.3.0.tgz
+cp ipvlan /var/lib/rancher/k3s/data/current/bin/
+</code></pre><p><em>And</em> Setup flannels on all cluster nodes.</p>
+<pre tabindex="0"><code># Update nodes eth1 IP to N1, N2, N3
+N1=&#34;10.0.2.95&#34;
+N2=&#34;10.0.2.139&#34;
+N3=&#34;10.0.2.158&#34;
+NODES=(${N1} ${N2} ${N3})
+
+STORAGE_NETWORK_PREFIX=&#34;192.168&#34;
+
+ETH1_IP=`ip a | grep eth1 | grep -Eo &#39;inet (addr:)?([0-9]*\.){3}[0-9]*&#39;  | awk &#39;{print $2}&#39;`
+
+count=1
+for n in &#34;${NODES[@]}&#34;; do
+    [[ ${ETH1_IP} != $n ]] &amp;&amp; ((count=count+1)) &amp;&amp; continue
+
+    NET=$count
+    break
+done
+
+cat &lt;&lt; EOF &gt; /run/flannel/multus-subnet-${STORAGE_NETWORK_PREFIX}.0.0.env
+FLANNEL_NETWORK=${STORAGE_NETWORK_PREFIX}.0.0/16
+FLANNEL_SUBNET=${STORAGE_NETWORK_PREFIX}.${NET}.0/24
+FLANNEL_MTU=1472
+FLANNEL_IPMASQ=true
+EOF
+</code></pre><p><em>And</em> Setup routes on all cluster nodes.</p>
+<pre tabindex="0"><code># Update nodes eth1 IP to N1, N2, N3
+N1=&#34;10.0.2.95&#34;
+N2=&#34;10.0.2.139&#34;
+N3=&#34;10.0.2.158&#34;
+
+STORAGE_NETWORK_PREFIX=&#34;192.168&#34;
+ACTION=&#34;add&#34;
+
+ETH1_IP=`ip a | grep eth1 | grep -Eo &#39;inet (addr:)?([0-9]*\.){3}[0-9]*&#39;  | awk &#39;{print $2}&#39;`
+
+[[ ${ETH1_IP} != ${N1} ]] &amp;&amp; ip r ${ACTION} ${STORAGE_NETWORK_PREFIX}.1.0/24 via ${N1} dev eth1
+[[ ${ETH1_IP} != ${N2} ]] &amp;&amp; ip r ${ACTION} ${STORAGE_NETWORK_PREFIX}.2.0/24 via ${N2} dev eth1
+[[ ${ETH1_IP} != ${N3} ]] &amp;&amp; ip r ${ACTION} ${STORAGE_NETWORK_PREFIX}.3.0/24 via ${N3} dev eth1
+</code></pre><p><em>And</em> Deploy <code>NetworkAttachmentDefinition</code>.</p>
+<pre tabindex="0"><code>cat &lt;&lt; EOF &gt; nad-192-168-0-0.yaml
+apiVersion: &#34;k8s.cni.cncf.io/v1&#34;
+kind: NetworkAttachmentDefinition
+metadata:
+  name: demo-192-168-0-0
+  namespace: kube-system
+  #namespace: longhorn-system
+spec:
+  config: &#39;{
+      &#34;cniVersion&#34;: &#34;0.3.1&#34;,
+      &#34;type&#34;: &#34;flannel&#34;,
+      &#34;subnetFile&#34;: &#34;/run/flannel/multus-subnet-192.168.0.0.env&#34;,
+      &#34;dataDir&#34;: &#34;/var/lib/cni/multus-subnet-192.168.0.0&#34;,
+      &#34;delegate&#34;: {
+        &#34;type&#34;: &#34;ipvlan&#34;,
+        &#34;master&#34;: &#34;eth1&#34;,
+        &#34;mode&#34;: &#34;l3&#34;,
+          &#34;capabilities&#34;: {
+            &#34;ips&#34;: true
+        }
+      },
+      &#34;kubernetes&#34;: {
+          &#34;kubeconfig&#34;: &#34;/etc/cni/net.d/multus.d/multus.kubeconfig&#34;
+      }
+    }&#39;
+EOF
+kubectl apply -f nad-192-168-0-0.yaml
+</code></pre><h4 id="thick-plugin">Thick Plugin</h4>
+<p><strong>Given</strong> K3s K8s cluster installed on EC2 instances.</p>
+<p><em>And</em> (For K3s) Establish symbolic links on all cluster nodes.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>ln -s /var/lib/rancher/k3s/agent/etc/cni/net.d /etc/cni
+</span></span><span style="display:flex;"><span>ln -s /var/lib/rancher/k3s/data/current/bin /opt/cni
+</span></span></code></pre></div><p><em>And</em> Deploy Multus DaemonSet on the control-plane node.</p>
+<ul>
+<li>Download YAML.
+<pre tabindex="0"><code>curl -O https://raw.githubusercontent.com/k8snetworkplumbingwg/multus-cni/v4.0.2/deployments/multus-daemonset-thick.yml
+</code></pre></li>
+<li>Edit YAML.
+<pre tabindex="0"><code>diff --git a/deployments/multus-daemonset-thick.yml b/deployments/multus-daemonset-thick.yml
+index eaa92ece..c895651b 100644
+--- a/deployments/multus-daemonset-thick.yml
++++ b/deployments/multus-daemonset-thick.yml
+@@ -152,7 +152,7 @@ spec:
+       serviceAccountName: multus
+       containers:
+         - name: kube-multus
+-          image: ghcr.io/k8snetworkplumbingwg/multus-cni:snapshot-thick
++          image: ghcr.io/k8snetworkplumbingwg/multus-cni:v4.0.2-thick
+           command: [ &#34;/usr/src/multus-cni/bin/multus-daemon&#34; ]
+           resources:
+             requests:
+@@ -183,9 +183,11 @@ spec:
+             - name: hostroot
+               mountPath: /hostroot
+               mountPropagation: HostToContainer
++            - name: cnibin
++              mountPath: /opt/cni/bin
+       initContainers:
+         - name: install-multus-binary
+-          image: ghcr.io/k8snetworkplumbingwg/multus-cni:snapshot-thick
++          image: ghcr.io/k8snetworkplumbingwg/multus-cni:v4.0.2-thick
+           command:
+             - &#34;cp&#34;
+             - &#34;/usr/src/multus-cni/bin/multus-shim&#34;
+</code></pre></li>
+<li>Apply YAML to K8s cluster.
+<pre tabindex="0"><code>kubectl apply -f multus-daemonset-thick.yml
 </code></pre></li>
 </ul>
 <p><em>And</em> Download <code>ipvlan</code> and put to K3s binaries path to all cluster nodes.</p>
