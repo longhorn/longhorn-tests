@@ -112,10 +112,7 @@ resource "null_resource" "registration_controlplane_rke2" {
 
     inline = [
       "sudo transactional-update register -r ${var.registration_code}",
-      "sudo shutdown -r now",
     ]
-
-    on_failure = continue
 
     connection {
       type     = "ssh"
@@ -139,10 +136,7 @@ resource "null_resource" "registration_worker_rke2" {
 
     inline = [
       "sudo transactional-update register -r ${var.registration_code}",
-      "sudo shutdown -r now",
     ]
-
-    on_failure = continue
 
     connection {
       type     = "ssh"
@@ -252,7 +246,32 @@ resource "null_resource" "cluster_setup_worker_rke2" {
 
 }
 
-# node initialization step 3: download KUBECONFIG file for rke2
+# node initialization step 4: make sure k8s components running
+resource "null_resource" "make_sure_k8s_components_running_controlplane_rke2" {
+  count = var.k8s_distro_name == "rke2" ? 1 : 0
+
+  depends_on = [
+    null_resource.cluster_setup_controlplane_rke2,
+    null_resource.cluster_setup_worker_rke2
+  ]
+
+  provisioner "remote-exec" {
+
+    inline = [
+      "until (KUBECONFIG=/etc/rancher/rke2/rke2.yaml kubectl get pods -A | grep 'Running'); do echo 'Waiting for rke2 startup'; sleep 5; done"
+    ]
+
+    connection {
+      type     = "ssh"
+      user     = "suse"
+      host     = aws_eip.lh_aws_eip_controlplane[0].public_ip
+      private_key = file(var.aws_ssh_private_key_file_path)
+    }
+  }
+
+}
+
+# node initialization step 5: download KUBECONFIG file for rke2
 resource "null_resource" "rsync_kubeconfig_file_rke2" {
   count = var.k8s_distro_name == "rke2" ? 1 : 0
 
@@ -260,8 +279,7 @@ resource "null_resource" "rsync_kubeconfig_file_rke2" {
     aws_instance.lh_aws_instance_controlplane_rke2,
     aws_eip.lh_aws_eip_controlplane,
     aws_eip_association.lh_aws_eip_assoc_rke2,
-    null_resource.cluster_setup_controlplane_rke2,
-    null_resource.cluster_setup_worker_rke2
+    null_resource.make_sure_k8s_components_running_controlplane_rke2
   ]
 
   provisioner "remote-exec" {
