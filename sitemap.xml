@@ -276,7 +276,7 @@
   </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.4.0/test-online-expansion/</loc>
   </url><url>
-    <loc>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.6.0/test-pvc-name-included-in-volume-metrics/</loc>
+    <loc>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.6.0/test-pvc-name-and-namespace-included-in-volume-metrics/</loc>
   </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/rwx_feature/</loc>
   </url><url>
