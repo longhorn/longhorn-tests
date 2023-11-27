@@ -152,25 +152,26 @@ class Rest(Base):
         # check backup can be created by the recurringjob
         current_time = datetime.utcnow()
         current_timestamp = current_time.timestamp()
-        logging(f"Recorded current time = {current_time}, timestamp = {current_timestamp}")
+
         label_selector=f"backup-volume={volume_name}"
-        backup_timestamp = 0
-        for _ in range(period_in_sec * 2):
+
+        max_iterations = period_in_sec * 2
+        for _ in range(max_iterations):
+            time.sleep(1)
+
             backup_list = filter_cr("longhorn.io", "v1beta2", "longhorn-system", "backups", label_selector=label_selector)
-            try:
-                if len(backup_list['items']) > 0:
-                    backup_time = backup_list['items'][0]['metadata']['creationTimestamp']
-                    backup_time = datetime.strptime(backup_time, '%Y-%m-%dT%H:%M:%SZ')
-                    backup_timestamp = backup_time.timestamp()
-                    logging(f"Got backup time = {backup_time}, timestamp = {backup_timestamp}")
+
+            if backup_list['items'] is None:
+                continue
+
+            for item in backup_list['items']:
+                backup_timestamp = datetime.strptime(item['metadata']['creationTimestamp'], '%Y-%m-%dT%H:%M:%SZ').timestamp()
+                logging(f"Got backup {item['metadata']['name']} timestamp = {backup_timestamp}")
+
                 if backup_timestamp > current_timestamp:
                     return
-            except Exception as e:
-                logging(f"Iterating backup list error: {e}")
-            time.sleep(1)
-        assert False, f"since {current_time},\
-                        there's no new backup created by recurringjob \
-                        {backup_list}"
+
+        assert False, f"No new backup created by recurringjob for {volume_name} since {current_time}"
 
     def cleanup(self, volume_names):
         for volume_name in volume_names:
