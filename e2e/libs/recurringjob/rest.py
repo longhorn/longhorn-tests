@@ -120,33 +120,35 @@ class Rest(Base):
         # check snapshot can be created by the recurringjob
         current_time = datetime.utcnow()
         current_timestamp = current_time.timestamp()
-        logging(f"Recorded current time = {current_time}, timestamp = {current_timestamp}")
+
         label_selector=f"longhornvolume={volume_name}"
-        snapshot_timestamp = 0
-        for _ in range(period_in_sec * 2):
-            snapshot_list = filter_cr("longhorn.io", "v1beta2", "longhorn-system", "snapshots", label_selector=label_selector)
-            try:
-                if len(snapshot_list['items']) > 0:
-                    for item in snapshot_list['items']:
-                        # this snapshot can be created by snapshot or backup recurringjob
-                        # but job_name is in spec.labels.RecurringJob
-                        # and crd doesn't support field selector
-                        # so need to filter by ourselves
-                        if item['spec']['labels']['RecurringJob'] == job_name:
-                            logging(f"Got snapshot {item}")
-                            snapshot_time = snapshot_list['items'][0]['metadata']['creationTimestamp']
-                            snapshot_time = datetime.strptime(snapshot_time, '%Y-%m-%dT%H:%M:%SZ')
-                            snapshot_timestamp = snapshot_time.timestamp()
-                            logging(f"Got snapshot time = {snapshot_time}, timestamp = {snapshot_timestamp}")
-                            break
-                    if snapshot_timestamp > current_timestamp:
-                        return
-            except Exception as e:
-                logging(f"Iterating snapshot list error: {e}")
+
+        max_iterations = period_in_sec * 2
+        for _ in range(max_iterations):
             time.sleep(1)
-        assert False, f"since {current_time},\
-                        there's no new snapshot created by recurringjob \
-                        {snapshot_list}"
+
+            snapshot_list = filter_cr("longhorn.io", "v1beta2", "longhorn-system", "snapshots", label_selector=label_selector)
+
+            if snapshot_list['items'] is None:
+                continue
+
+            for item in snapshot_list['items']:
+                # this snapshot can be created by snapshot or backup recurringjob
+                # but job_name is in spec.labels.RecurringJob
+                # and crd doesn't support field selector
+                # so need to filter by ourselves
+                try:
+                    assert item['spec']['labels']['RecurringJob'] == job_name
+                except Exception as e:
+                    continue
+
+                snapshot_timestamp = datetime.strptime(snapshot_list['items'][0]['metadata']['creationTimestamp'], '%Y-%m-%dT%H:%M:%SZ').timestamp()
+                logging(f"Got snapshot {item['metadata']['name']} timestamp = {snapshot_timestamp}")
+
+                if snapshot_timestamp > current_timestamp:
+                    return
+
+        assert False, f"No new snapshot created by recurringjob {job_name} for {volume_name} since {current_time}"
 
     def _check_backup_created_in_time(self, volume_name, period_in_sec):
         # check backup can be created by the recurringjob
