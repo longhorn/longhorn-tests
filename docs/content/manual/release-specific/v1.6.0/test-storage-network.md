@@ -185,8 +185,10 @@ kubectl apply -f nad-192-168-0-0.yaml
 
 *And* (For K3s) Establish symbolic links on all cluster nodes.
   ```bash
-  ln -s /var/lib/rancher/k3s/agent/etc/cni/net.d /etc/cni
-  ln -s /var/lib/rancher/k3s/data/current/bin /opt/cni
+  mkdir /etc/cni
+  mkdir /opt/cni
+  ln -s /var/lib/rancher/k3s/agent/etc/cni/net.d /etc/cni/
+  ln -s /var/lib/rancher/k3s/data/current/bin /opt/cni/
   ```
 
 *And* Deploy Multus DaemonSet on the control-plane node.
