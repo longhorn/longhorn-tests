@@ -937,8 +937,10 @@ kubectl apply -f nad-192-168-0-0.yaml
 </code></pre><h4 id="thick-plugin">Thick Plugin</h4>
 <p><strong>Given</strong> K3s K8s cluster installed on EC2 instances.</p>
 <p><em>And</em> (For K3s) Establish symbolic links on all cluster nodes.</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>ln -s /var/lib/rancher/k3s/agent/etc/cni/net.d /etc/cni
-</span></span><span style="display:flex;"><span>ln -s /var/lib/rancher/k3s/data/current/bin /opt/cni
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>mkdir /etc/cni
+</span></span><span style="display:flex;"><span>mkdir /opt/cni
+</span></span><span style="display:flex;"><span>ln -s /var/lib/rancher/k3s/agent/etc/cni/net.d /etc/cni/
+</span></span><span style="display:flex;"><span>ln -s /var/lib/rancher/k3s/data/current/bin /opt/cni/
 </span></span></code></pre></div><p><em>And</em> Deploy Multus DaemonSet on the control-plane node.</p>
 <ul>
 <li>Download YAML.
