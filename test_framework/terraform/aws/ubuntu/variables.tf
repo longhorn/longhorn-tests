@@ -115,3 +115,9 @@ variable "create_load_balancer" {
   type    = bool
   default = false
 }
+
+variable "custom_ssh_public_key" {
+  type = string
+  default = ""
+  sensitive = true
+}

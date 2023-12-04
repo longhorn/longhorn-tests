@@ -60,4 +60,9 @@ EOF
 fi
 
 systemctl start rke2-agent.service
+
+if [[ -n "${custom_ssh_public_key}" ]]; then
+  echo "${custom_ssh_public_key}" >> /home/ec2-user/.ssh/authorized_keys
+fi
+
 exit $?

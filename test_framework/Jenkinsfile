@@ -136,6 +136,7 @@ node {
                                        --env TF_VAR_azure_tenant_id=${AZURE_TENANT_ID} \
                                        --env TF_VAR_azure_subscription_id=${AZURE_SUBSCRIPTION_ID} \
                                        --env TF_VAR_cis_hardening=${CIS_HARDENING} \
+                                       --env TF_VAR_custom_ssh_public_key="${CUSTOM_SSH_PUBLIC_KEY}" \
                                        ${imageName}
                 """
 
