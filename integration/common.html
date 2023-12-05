@@ -4091,17 +4091,17 @@ def create_pv_for_volume(client, core_api, volume, pv_name, fs_type=&#34;ext4&#3
     wait_volume_kubernetes_status(client, volume.name, ks)
 
 
-def create_pvc_for_volume(client, core_api, volume, pvc_name):
-    volume.pvcCreate(namespace=&#34;default&#34;, pvcName=pvc_name)
+def create_pvc_for_volume(client, core_api, volume, pvc_name, pvc_namespace=&#34;default&#34;): # NOQA
+    volume.pvcCreate(namespace=pvc_namespace, pvcName=pvc_name)
     for i in range(RETRY_COUNTS):
-        if check_pvc_existence(core_api, pvc_name):
+        if check_pvc_existence(core_api, pvc_name, pvc_namespace):
             break
         time.sleep(RETRY_INTERVAL)
-    assert check_pvc_existence(core_api, pvc_name)
+    assert check_pvc_existence(core_api, pvc_name, pvc_namespace)
 
     ks = {
         &#39;pvStatus&#39;: &#39;Bound&#39;,
-        &#39;namespace&#39;: &#39;default&#39;,
+        &#39;namespace&#39;: pvc_namespace,
         &#39;lastPVCRefAt&#39;: &#39;&#39;,
     }
     wait_volume_kubernetes_status(client, volume.name, ks)
@@ -7691,7 +7691,7 @@ backup</p></div>
 </details>
 </dd>
 <dt id="tests.common.create_pvc_for_volume"><code class="name flex">
-<span>def <span class="ident">create_pvc_for_volume</span></span>(<span>client, core_api, volume, pvc_name)</span>
+<span>def <span class="ident">create_pvc_for_volume</span></span>(<span>client, core_api, volume, pvc_name, pvc_namespace='default')</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -7699,17 +7699,17 @@ backup</p></div>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def create_pvc_for_volume(client, core_api, volume, pvc_name):
-    volume.pvcCreate(namespace=&#34;default&#34;, pvcName=pvc_name)
+<pre><code class="python">def create_pvc_for_volume(client, core_api, volume, pvc_name, pvc_namespace=&#34;default&#34;): # NOQA
+    volume.pvcCreate(namespace=pvc_namespace, pvcName=pvc_name)
     for i in range(RETRY_COUNTS):
-        if check_pvc_existence(core_api, pvc_name):
+        if check_pvc_existence(core_api, pvc_name, pvc_namespace):
             break
         time.sleep(RETRY_INTERVAL)
-    assert check_pvc_existence(core_api, pvc_name)
+    assert check_pvc_existence(core_api, pvc_name, pvc_namespace)
 
     ks = {
         &#39;pvStatus&#39;: &#39;Bound&#39;,
-        &#39;namespace&#39;: &#39;default&#39;,
+        &#39;namespace&#39;: pvc_namespace,
         &#39;lastPVCRefAt&#39;: &#39;&#39;,
     }
     wait_volume_kubernetes_status(client, volume.name, ks)</code></pre>
