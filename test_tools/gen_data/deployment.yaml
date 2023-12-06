@@ -1,0 +1,42 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: test-deployment
+  namespace: default
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: longhorn
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: test-deployment
+  namespace: default
+  labels:
+    name: test-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      name: test-deployment
+  template:
+    metadata:
+      labels:
+        name: test-deployment
+    spec:
+      containers:
+        - name: test-deployment
+          image: nginx:stable-alpine
+          command: ["/bin/sh"]
+          args: [-c, 'dd if=/dev/urandom of=/mnt/data/data bs=1M count=500; trap : TERM INT; sleep infinity & wait']
+          volumeMounts:
+            - name: vol1
+              mountPath: /mnt/data
+      volumes:
+        - name: vol1
+          persistentVolumeClaim:
+            claimName: test-deployment
