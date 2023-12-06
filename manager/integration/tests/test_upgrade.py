@@ -205,6 +205,12 @@ def longhorn_upgrade(longhorn_install_method,
                                     longhorn_repo_url,
                                     longhorn_repo_branch],
                                    shell=False)
+    elif longhorn_install_method == "fleet":
+        command = "./pipelines/fleet/scripts/upgrade-longhorn.sh"
+        process = subprocess.Popen([command,
+                                    longhorn_repo_url,
+                                    longhorn_repo_branch],
+                                   shell=False)
 
     process.wait()
     if process.returncode == 0:
