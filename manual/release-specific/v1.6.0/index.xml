@@ -12,80 +12,49 @@
       <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.6.0/test-storage-network/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.6.0/test-storage-network/</guid>
-      <description>Related issue https://github.com/longhorn/longhorn/issues/6953
-Test storage network Create AWS instances Given Create VPC.
-VPC only IPv4 CIDR 10.0.0.0/16 And Create an internet gateway.
-Attach to VPC And Add the internet gateway to the VPC Main route table, Routes.
-Destination 0.0.0.0/0 And Create 2 subnets in the VPC.
-Subnet-1: 10.0.1.0/24 Subnet-2: 10.0.2.0/24 And Launch 3 EC2 instances.
-Use the created VPC Use subnet-1 for network interface 1 Use subnet-2 for network interface 2 Disable Auto-assign public IP Add security group inbound rule to allow All traffic from Anywhere-IPv4 Stop Source/destination check And Create 3 elastic IPs.</description>
+      <description>Related issue https://github.com/longhorn/longhorn/issues/6953&#xA;Test storage network Create AWS instances Given Create VPC.&#xA;VPC only IPv4 CIDR 10.0.0.0/16 And Create an internet gateway.&#xA;Attach to VPC And Add the internet gateway to the VPC Main route table, Routes.&#xA;Destination 0.0.0.0/0 And Create 2 subnets in the VPC.&#xA;Subnet-1: 10.0.1.0/24 Subnet-2: 10.0.2.0/24 And Launch 3 EC2 instances.&#xA;Use the created VPC Use subnet-1 for network interface 1 Use subnet-2 for network interface 2 Disable Auto-assign public IP Add security group inbound rule to allow All traffic from Anywhere-IPv4 Stop Source/destination check And Create 3 elastic IPs.</description>
     </item>
     <item>
       <title>Test `Rebuild` in volume.meta blocks engine start</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.6.0/test-rebuild-in-meta-blocks-engine-start/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.6.0/test-rebuild-in-meta-blocks-engine-start/</guid>
-      <description>Related issue https://github.com/longhorn/longhorn/issues/6626
-Test with patched image Given a patched longhorn-engine image with the following code change.
-diff --git a/pkg/sync/sync.go b/pkg/sync/sync.go index b48ddd46..c4523f11 100644 --- a/pkg/sync/sync.go +++ b/pkg/sync/sync.go @@ -534,9 +534,9 @@ func (t *Task) reloadAndVerify(address, instanceName string, repClient *replicaC return err } - if err := repClient.SetRebuilding(false); err != nil { - return err - } + // if err := repClient.SetRebuilding(false); err != nil { + // return err + // } return nil } And a patched longhorn-instance-manager image with the longhorn-engine vendor updated.</description>
+      <description>Related issue https://github.com/longhorn/longhorn/issues/6626&#xA;Test with patched image Given a patched longhorn-engine image with the following code change.&#xA;diff --git a/pkg/sync/sync.go b/pkg/sync/sync.go index b48ddd46..c4523f11 100644 --- a/pkg/sync/sync.go +++ b/pkg/sync/sync.go @@ -534,9 +534,9 @@ func (t *Task) reloadAndVerify(address, instanceName string, repClient *replicaC return err } - if err := repClient.SetRebuilding(false); err != nil { - return err - } + // if err := repClient.SetRebuilding(false); err != nil { + // return err + // } return nil } And a patched longhorn-instance-manager image with the longhorn-engine vendor updated.</description>
     </item>
     <item>
       <title>Test PVC Name and Namespace included in the volume metrics</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.6.0/test-pvc-name-and-namespace-included-in-volume-metrics/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.6.0/test-pvc-name-and-namespace-included-in-volume-metrics/</guid>
-      <description>Related issues https://github.com/longhorn/longhorn/issues/5297 https://github.com/longhorn/longhorn-manager/pull/2284 Test step Given created 2 volumes (volume-1, volume-2)
-When PVC created for volume (volume-1) And attached volumes (volume-1, volume-2)
-Then metrics with longhorn_volume_ prefix should include pvc=&amp;quot;volume-1&amp;quot;
-curl -sSL http://10.0.2.212:32744/metrics | grep longhorn_volume | grep ip-10-0-2-151 | grep volume-1 longhorn_volume_actual_size_bytes{pvc_namespace=&amp;#34;default&amp;#34;,node=&amp;#34;ip-10-0-2-151&amp;#34;,pvc=&amp;#34;volume-1&amp;#34;,volume=&amp;#34;volume-1&amp;#34;} 0 longhorn_volume_capacity_bytes{pvc_namespace=&amp;#34;default&amp;#34;,node=&amp;#34;ip-10-0-2-151&amp;#34;,pvc=&amp;#34;volume-1&amp;#34;,volume=&amp;#34;volume-1&amp;#34;} 1.073741824e+09 longhorn_volume_read_iops{pvc_namespace=&amp;#34;default&amp;#34;,node=&amp;#34;ip-10-0-2-151&amp;#34;,pvc=&amp;#34;volume-1&amp;#34;,volume=&amp;#34;volume-1&amp;#34;} 0 longhorn_volume_read_latency{pvc_namespace=&amp;#34;default&amp;#34;,node=&amp;#34;ip-10-0-2-151&amp;#34;,pvc=&amp;#34;volume-1&amp;#34;,volume=&amp;#34;volume-1&amp;#34;} 0 longhorn_volume_read_throughput{pvc_namespace=&amp;#34;default&amp;#34;,node=&amp;#34;ip-10-0-2-151&amp;#34;,pvc=&amp;#34;volume-1&amp;#34;,volume=&amp;#34;volume-1&amp;#34;} 0 longhorn_volume_robustness{pvc_namespace=&amp;#34;default&amp;#34;,node=&amp;#34;ip-10-0-2-151&amp;#34;,pvc=&amp;#34;volume-1&amp;#34;,volume=&amp;#34;volume-1&amp;#34;} 1 longhorn_volume_state{pvc_namespace=&amp;#34;default&amp;#34;,node=&amp;#34;ip-10-0-2-151&amp;#34;,pvc=&amp;#34;volume-1&amp;#34;,volume=&amp;#34;volume-1&amp;#34;} 2 longhorn_volume_write_iops{pvc_namespace=&amp;#34;default&amp;#34;,node=&amp;#34;ip-10-0-2-151&amp;#34;,pvc=&amp;#34;volume-1&amp;#34;,volume=&amp;#34;volume-1&amp;#34;} 0 longhorn_volume_write_latency{pvc_namespace=&amp;#34;default&amp;#34;,node=&amp;#34;ip-10-0-2-151&amp;#34;,pvc=&amp;#34;volume-1&amp;#34;,volume=&amp;#34;volume-1&amp;#34;} 0 longhorn_volume_write_throughput{pvc_namespace=&amp;#34;default&amp;#34;,node=&amp;#34;ip-10-0-2-151&amp;#34;,pvc=&amp;#34;volume-1&amp;#34;,volume=&amp;#34;volume-1&amp;#34;} 0 And metrics with longhorn_volume_ prefix should include pvc=&amp;quot;&amp;quot; for (volume-2)</description>
+      <description>Related issues https://github.com/longhorn/longhorn/issues/5297 https://github.com/longhorn/longhorn-manager/pull/2284 Test step Given created 2 volumes (volume-1, volume-2)&#xA;When PVC created for volume (volume-1) And attached volumes (volume-1, volume-2)&#xA;Then metrics with longhorn_volume_ prefix should include pvc=&amp;quot;volume-1&amp;quot;&#xA;curl -sSL http://10.0.2.212:32744/metrics | grep longhorn_volume | grep ip-10-0-2-151 | grep volume-1 longhorn_volume_actual_size_bytes{pvc_namespace=&amp;#34;default&amp;#34;,node=&amp;#34;ip-10-0-2-151&amp;#34;,pvc=&amp;#34;volume-1&amp;#34;,volume=&amp;#34;volume-1&amp;#34;} 0 longhorn_volume_capacity_bytes{pvc_namespace=&amp;#34;default&amp;#34;,node=&amp;#34;ip-10-0-2-151&amp;#34;,pvc=&amp;#34;volume-1&amp;#34;,volume=&amp;#34;volume-1&amp;#34;} 1.073741824e+09 longhorn_volume_read_iops{pvc_namespace=&amp;#34;default&amp;#34;,node=&amp;#34;ip-10-0-2-151&amp;#34;,pvc=&amp;#34;volume-1&amp;#34;,volume=&amp;#34;volume-1&amp;#34;} 0 longhorn_volume_read_latency{pvc_namespace=&amp;#34;default&amp;#34;,node=&amp;#34;ip-10-0-2-151&amp;#34;,pvc=&amp;#34;volume-1&amp;#34;,volume=&amp;#34;volume-1&amp;#34;} 0 longhorn_volume_read_throughput{pvc_namespace=&amp;#34;default&amp;#34;,node=&amp;#34;ip-10-0-2-151&amp;#34;,pvc=&amp;#34;volume-1&amp;#34;,volume=&amp;#34;volume-1&amp;#34;} 0 longhorn_volume_robustness{pvc_namespace=&amp;#34;default&amp;#34;,node=&amp;#34;ip-10-0-2-151&amp;#34;,pvc=&amp;#34;volume-1&amp;#34;,volume=&amp;#34;volume-1&amp;#34;} 1 longhorn_volume_state{pvc_namespace=&amp;#34;default&amp;#34;,node=&amp;#34;ip-10-0-2-151&amp;#34;,pvc=&amp;#34;volume-1&amp;#34;,volume=&amp;#34;volume-1&amp;#34;} 2 longhorn_volume_write_iops{pvc_namespace=&amp;#34;default&amp;#34;,node=&amp;#34;ip-10-0-2-151&amp;#34;,pvc=&amp;#34;volume-1&amp;#34;,volume=&amp;#34;volume-1&amp;#34;} 0 longhorn_volume_write_latency{pvc_namespace=&amp;#34;default&amp;#34;,node=&amp;#34;ip-10-0-2-151&amp;#34;,pvc=&amp;#34;volume-1&amp;#34;,volume=&amp;#34;volume-1&amp;#34;} 0 longhorn_volume_write_throughput{pvc_namespace=&amp;#34;default&amp;#34;,node=&amp;#34;ip-10-0-2-151&amp;#34;,pvc=&amp;#34;volume-1&amp;#34;,volume=&amp;#34;volume-1&amp;#34;} 0 And metrics with longhorn_volume_ prefix should include pvc=&amp;quot;&amp;quot; for (volume-2)</description>
     </item>
     <item>
       <title>Test Replica Disk Soft Anti-Affinity</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.6.0/test-replica-disk-soft-anti-affinity/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.6.0/test-replica-disk-soft-anti-affinity/</guid>
-      <description>Related issue https://github.com/longhorn/longhorn/issues/3823
-Test initial behavior of global Replica Disk Soft Anti-Affinity setting Given A newly created Longhorn cluster
-Then Replica Zone Disk Anti-Affinity shows as false in the UI
-And the replica-soft-anti-affinity setting shows false with kubectl
-Test initial behavior of global Replica Disk Soft Anti-Affinity setting after upgrade Given A newly upgraded Longhorn cluster
-Then Replica Zone Disk Anti-Affinity shows as false in the UI
-And the replica-soft-anti-affinity shows false with kubectl</description>
+      <description>Related issue https://github.com/longhorn/longhorn/issues/3823&#xA;Test initial behavior of global Replica Disk Soft Anti-Affinity setting Given A newly created Longhorn cluster&#xA;Then Replica Zone Disk Anti-Affinity shows as false in the UI&#xA;And the replica-soft-anti-affinity setting shows false with kubectl&#xA;Test initial behavior of global Replica Disk Soft Anti-Affinity setting after upgrade Given A newly upgraded Longhorn cluster&#xA;Then Replica Zone Disk Anti-Affinity shows as false in the UI&#xA;And the replica-soft-anti-affinity shows false with kubectl</description>
     </item>
     <item>
       <title>Test Support Bundle Metadata File</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.6.0/test-support-bundle-metadata-file/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.6.0/test-support-bundle-metadata-file/</guid>
-      <description>Related issue https://github.com/longhorn/longhorn/issues/6997
-Test Given Longhorn installed on SUSE Linux
-When generated support-bundle with description and issue URL
-Then issuedescription has the description in the metadata.yaml
-And issueurl has the issue URL in the metadata.yaml</description>
+      <description>Related issue https://github.com/longhorn/longhorn/issues/6997&#xA;Test Given Longhorn installed on SUSE Linux&#xA;When generated support-bundle with description and issue URL&#xA;Then issuedescription has the description in the metadata.yaml&#xA;And issueurl has the issue URL in the metadata.yaml</description>
     </item>
     <item>
       <title>Test Support Bundle Should Include Kubelet Log When On K3s Cluster</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.6.0/test-support-bundle-kubelet-log-for-k3s/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.6.0/test-support-bundle-kubelet-log-for-k3s/</guid>
-      <description>Related issue https://github.com/longhorn/longhorn/issues/7121
-Test Given Longhorn installed on K3s cluster
-When generated support-bundle
-Then should have worker node kubelet logs in k3s-agent-service.log
-And should have control-plan node kubelet log in k3s-service.log (if Longhorn is deployed on control-plan node)</description>
+      <description>Related issue https://github.com/longhorn/longhorn/issues/7121&#xA;Test Given Longhorn installed on K3s cluster&#xA;When generated support-bundle&#xA;Then should have worker node kubelet logs in k3s-agent-service.log&#xA;And should have control-plan node kubelet log in k3s-service.log (if Longhorn is deployed on control-plan node)</description>
     </item>
     <item>
       <title>Test Support Bundle Syslog Paths</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.6.0/test-support-bundle-syslog-paths/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.6.0/test-support-bundle-syslog-paths/</guid>
-      <description>Related issue https://github.com/longhorn/longhorn/issues/6544
-Test /var/log/messages Given Longhorn installed on SUSE Linux
-When generated support-bundle
-And syslog exists in the messages file
-Test /var/log/syslog Given Longhorn installed on Ubuntu Linux
-When generated support-bundle
-And syslog exists in the syslog file</description>
+      <description>Related issue https://github.com/longhorn/longhorn/issues/6544&#xA;Test /var/log/messages Given Longhorn installed on SUSE Linux&#xA;When generated support-bundle&#xA;And syslog exists in the messages file&#xA;Test /var/log/syslog Given Longhorn installed on Ubuntu Linux&#xA;When generated support-bundle&#xA;And syslog exists in the syslog file</description>
     </item>
   </channel>
 </rss>

@@ -12,13 +12,7 @@
       <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/node-not-ready/node-down/restore-volume-node-down/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/node-not-ready/node-down/restore-volume-node-down/</guid>
-      <description>Case 1: Create a backup.
-Restore the above backup.
-Power off the volume attached node during the restoring.
-Wait for the Longhorn node down.
-Wait for the restore volume being reattached and starting restoring volume with state Degraded.
-Wait for the restore complete.
-Note: During the restoration process, if the engine process fails to communicate with a replica, all replicas will be marked as ERR, and the volume&amp;rsquo;s RestoreRequired status cannot be set to false.</description>
+      <description>Case 1: Create a backup.&#xA;Restore the above backup.&#xA;Power off the volume attached node during the restoring.&#xA;Wait for the Longhorn node down.&#xA;Wait for the restore volume being reattached and starting restoring volume with state Degraded.&#xA;Wait for the restore complete.&#xA;Note: During the restoration process, if the engine process fails to communicate with a replica, all replicas will be marked as ERR, and the volume&amp;rsquo;s RestoreRequired status cannot be set to false.</description>
     </item>
     <item>
       <title>Backing Image on a down node</title>
@@ -32,28 +26,21 @@ Note: During the restoration process, if the engine process fails to communicate
       <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/node-not-ready/node-down/node-drain-deletion/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/node-not-ready/node-down/node-drain-deletion/</guid>
-      <description>Drain with force Make sure the volumes on the drained/removed node can be detached or recovered correctly. The related issue: https://github.com/longhorn/longhorn/issues/1214
-Deploy a cluster contains 3 worker nodes N1, N2, N3. Deploy Longhorn. Create a 1-replica deployment with a 3-replica Longhorn volume. The volume is attached to N1. Write some data to the volume and get the md5sum. Force drain and remove N2, which contains one replica only. kubectl drain &amp;lt;Node name&amp;gt; --delete-emptydir-data=true --force=true --grace-period=-1 --ignore-daemonsets=true --timeout=&amp;lt;Desired timeout in secs&amp;gt; Wait for the volume Degraded.</description>
+      <description>Drain with force Make sure the volumes on the drained/removed node can be detached or recovered correctly. The related issue: https://github.com/longhorn/longhorn/issues/1214&#xA;Deploy a cluster contains 3 worker nodes N1, N2, N3. Deploy Longhorn. Create a 1-replica deployment with a 3-replica Longhorn volume. The volume is attached to N1. Write some data to the volume and get the md5sum. Force drain and remove N2, which contains one replica only. kubectl drain &amp;lt;Node name&amp;gt; --delete-emptydir-data=true --force=true --grace-period=-1 --ignore-daemonsets=true --timeout=&amp;lt;Desired timeout in secs&amp;gt; Wait for the volume Degraded.</description>
     </item>
     <item>
       <title>Physical node down</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/node-not-ready/node-down/physical-node-down/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/node-not-ready/node-down/physical-node-down/</guid>
-      <description>One physical node down should result in the state of that node change to Down.
-When using with CSI driver, one node with controller (StatefulSet/Deployment) and pod down should result in Kubernetes migrate the pod to another node, and Longhorn volume should be able to be used on that node as well. Test scenarios for this are documented here.
-Note:
-In this case, RWX should be excluded.
-Ref: https://github.com/longhorn/longhorn/issues/5900#issuecomment-1541360552</description>
+      <description>One physical node down should result in the state of that node change to Down.&#xA;When using with CSI driver, one node with controller (StatefulSet/Deployment) and pod down should result in Kubernetes migrate the pod to another node, and Longhorn volume should be able to be used on that node as well. Test scenarios for this are documented here.&#xA;Note:&#xA;In this case, RWX should be excluded.&#xA;Ref: https://github.com/longhorn/longhorn/issues/5900#issuecomment-1541360552</description>
     </item>
     <item>
       <title>Single replica node down</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/node-not-ready/node-down/single-replica-node-down/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/node-not-ready/node-down/single-replica-node-down/</guid>
-      <description>Related Issues https://github.com/longhorn/longhorn/issues/2329 https://github.com/longhorn/longhorn/issues/2309 https://github.com/longhorn/longhorn/issues/3957
-Default Setting Automatic salvage is enabled.
-Node restart/down scenario with Pod Deletion Policy When Node is Down set to default value do-nothing. Create RWO|RWX volume with replica count = 1 &amp;amp; data locality = enabled|disabled|strict-local. For data locality = strict-local, use RWO volume to do test. Create deployment|statefulset for volume. Power down node of volume/replica. The workload pod will get stuck in the terminating state. Volume will fail to attach since volume is not ready (i.</description>
+      <description>Related Issues https://github.com/longhorn/longhorn/issues/2329 https://github.com/longhorn/longhorn/issues/2309 https://github.com/longhorn/longhorn/issues/3957&#xA;Default Setting Automatic salvage is enabled.&#xA;Node restart/down scenario with Pod Deletion Policy When Node is Down set to default value do-nothing. Create RWO|RWX volume with replica count = 1 &amp;amp; data locality = enabled|disabled|strict-local. For data locality = strict-local, use RWO volume to do test. Create deployment|statefulset for volume. Power down node of volume/replica. The workload pod will get stuck in the terminating state. Volume will fail to attach since volume is not ready (i.</description>
     </item>
     <item>
       <title>Test node deletion</title>

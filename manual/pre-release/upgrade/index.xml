@@ -12,25 +12,21 @@
       <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/auto-upgrade-engine/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/auto-upgrade-engine/</guid>
-      <description>Longhorn version &gt;= 1.1.1 Reference ticket 2152
-Test basic upgrade Install old Longhorn version. E.g., &amp;lt;= v1.0.2 Create a volume, attach it to a pod, write some data. Create a DR volume and leave it in the detached state. Upgrade to Longhorn master Set setting concurrent automatic engine upgrade per node limit to 3 Verify that volumes&amp;rsquo; engines are upgraded automatically. Test concurrent upgrade Create a StatefulSet of scale 10 using 10 Longhorn volume.</description>
+      <description>Longhorn version &gt;= 1.1.1 Reference ticket 2152&#xA;Test basic upgrade Install old Longhorn version. E.g., &amp;lt;= v1.0.2 Create a volume, attach it to a pod, write some data. Create a DR volume and leave it in the detached state. Upgrade to Longhorn master Set setting concurrent automatic engine upgrade per node limit to 3 Verify that volumes&amp;rsquo; engines are upgraded automatically. Test concurrent upgrade Create a StatefulSet of scale 10 using 10 Longhorn volume.</description>
     </item>
     <item>
       <title>Kubernetes upgrade test</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/kubernetes-upgrade-test/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/kubernetes-upgrade-test/</guid>
-      <description>We also need to cover the Kubernetes upgrade process for supported Kubernetes version, make sure pod and volumes works after a major version upgrade.
-Related Issue https://github.com/longhorn/longhorn/issues/2566
-Test with K8s upgrade Create a K8s (Immediate prior version) cluster with 3 worker nodes and 1 control plane. Deploy Longhorn version (Immediate prior version) on the cluster. Create a volume and attach to a pod. Write data to the volume and compute the checksum.</description>
+      <description>We also need to cover the Kubernetes upgrade process for supported Kubernetes version, make sure pod and volumes works after a major version upgrade.&#xA;Related Issue https://github.com/longhorn/longhorn/issues/2566&#xA;Test with K8s upgrade Create a K8s (Immediate prior version) cluster with 3 worker nodes and 1 control plane. Deploy Longhorn version (Immediate prior version) on the cluster. Create a volume and attach to a pod. Write data to the volume and compute the checksum.</description>
     </item>
     <item>
       <title>Longhorn Upgrade test</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/longhorn-upgrade-test/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/longhorn-upgrade-test/</guid>
-      <description>Setup 2 attached volumes with data. 2 detached volumes with data. 2 new volumes without data. 2 deployments of one pod. 1 statefulset of 10 pods. Auto Salvage set to disable. Test After upgrade:
-Make sure the existing instance managers didn&amp;rsquo;t restart. Make sure pods didn&amp;rsquo;t restart. Check the contents of the volumes. If the Engine API version is incompatible, manager cannot do anything about the attached volumes except detaching it.</description>
+      <description>Setup 2 attached volumes with data. 2 detached volumes with data. 2 new volumes without data. 2 deployments of one pod. 1 statefulset of 10 pods. Auto Salvage set to disable. Test After upgrade:&#xA;Make sure the existing instance managers didn&amp;rsquo;t restart. Make sure pods didn&amp;rsquo;t restart. Check the contents of the volumes. If the Engine API version is incompatible, manager cannot do anything about the attached volumes except detaching it.</description>
     </item>
     <item>
       <title>Re-deploy CSI components when their images change</title>
@@ -58,10 +54,7 @@ Make sure the existing instance managers didn&amp;rsquo;t restart. Make sure pod
       <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/test-node-drain-policy/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/upgrade/test-node-drain-policy/</guid>
-      <description>With node-drain-policy is block-if-contains-last-replica Note: Starting from v1.5.x, it is not necessary to check for the presence of longhorn-admission-webhook and longhorn-conversion-webhook. Please refer to the Longhorn issue #5590 for more details.
-Starting from v1.5.x, observe that the instance-manager-r and instance-manager-e are combined into instance-manager. Ref 5208
-1. Basic unit tests 1.1 Single worker node cluster with separate master node 1.1.1 RWO volumes
-Deploy Longhorn Verify that there is no PDB for csi-attacher, csi-provisioner, longhorn-admission-webhook, and longhorn-conversion-webhook Manually create a PVC (simulate the volume which has never been attached scenario) Verify that there is no PDB for csi-attacher, csi-provisioner, longhorn-admission-webhook, and longhorn-conversion-webhook because there is no attached volume Create a deployment that uses one RW0 Longhorn volume.</description>
+      <description>With node-drain-policy is block-if-contains-last-replica Note: Starting from v1.5.x, it is not necessary to check for the presence of longhorn-admission-webhook and longhorn-conversion-webhook. Please refer to the Longhorn issue #5590 for more details.&#xA;Starting from v1.5.x, observe that the instance-manager-r and instance-manager-e are combined into instance-manager. Ref 5208&#xA;1. Basic unit tests 1.1 Single worker node cluster with separate master node 1.1.1 RWO volumes&#xA;Deploy Longhorn Verify that there is no PDB for csi-attacher, csi-provisioner, longhorn-admission-webhook, and longhorn-conversion-webhook Manually create a PVC (simulate the volume which has never been attached scenario) Verify that there is no PDB for csi-attacher, csi-provisioner, longhorn-admission-webhook, and longhorn-conversion-webhook because there is no attached volume Create a deployment that uses one RW0 Longhorn volume.</description>
     </item>
     <item>
       <title>Test system upgrade with a new storage class being default</title>

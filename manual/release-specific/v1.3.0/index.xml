@@ -12,21 +12,14 @@
       <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.3.0/extend_csi_snapshot_support/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.3.0/extend_csi_snapshot_support/</guid>
-      <description>Related issue https://github.com/longhorn/longhorn/issues/2534
-Test Setup Deploy the CSI snapshot CRDs, Controller as instructed at https://longhorn.io/docs/1.2.3/snapshots-and-backups/csi-snapshot-support/enable-csi-snapshot-support/ Deploy 4 VolumeSnapshotClass: kind: VolumeSnapshotClass apiVersion: snapshot.storage.k8s.io/v1beta1 metadata: name: longhorn-backup-1 driver: driver.longhorn.io deletionPolicy: Delete kind: VolumeSnapshotClass apiVersion: snapshot.storage.k8s.io/v1beta1 metadata: name: longhorn-backup-2 driver: driver.longhorn.io deletionPolicy: Delete parameters: type: bak kind: VolumeSnapshotClass apiVersion: snapshot.storage.k8s.io/v1beta1 metadata: name: longhorn-snapshot driver: driver.longhorn.io deletionPolicy: Delete parameters: type: snap kind: VolumeSnapshotClass apiVersion: snapshot.storage.k8s.io/v1beta1 metadata: name: invalid-class driver: driver.longhorn.io deletionPolicy: Delete parameters: type: invalid Create Longhorn volume test-vol of 5GB.</description>
+      <description>Related issue https://github.com/longhorn/longhorn/issues/2534&#xA;Test Setup Deploy the CSI snapshot CRDs, Controller as instructed at https://longhorn.io/docs/1.2.3/snapshots-and-backups/csi-snapshot-support/enable-csi-snapshot-support/ Deploy 4 VolumeSnapshotClass: kind: VolumeSnapshotClass apiVersion: snapshot.storage.k8s.io/v1beta1 metadata: name: longhorn-backup-1 driver: driver.longhorn.io deletionPolicy: Delete kind: VolumeSnapshotClass apiVersion: snapshot.storage.k8s.io/v1beta1 metadata: name: longhorn-backup-2 driver: driver.longhorn.io deletionPolicy: Delete parameters: type: bak kind: VolumeSnapshotClass apiVersion: snapshot.storage.k8s.io/v1beta1 metadata: name: longhorn-snapshot driver: driver.longhorn.io deletionPolicy: Delete parameters: type: snap kind: VolumeSnapshotClass apiVersion: snapshot.storage.k8s.io/v1beta1 metadata: name: invalid-class driver: driver.longhorn.io deletionPolicy: Delete parameters: type: invalid Create Longhorn volume test-vol of 5GB.</description>
     </item>
     <item>
       <title>Setup and test storage network</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.3.0/test-storage-network/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.3.0/test-storage-network/</guid>
-      <description>Related issue https://github.com/longhorn/longhorn/issues/2285
-Test storage network Create AWS instances Given Create VPC.
-VPC only IPv4 CIDR 10.0.0.0/16 And Create an internet gateway.
-Attach to VPC And Add the internet gateway to the VPC Main route table, Routes.
-Destination 0.0.0.0/0 And Create 2 subnets in the VPC.
-Subnet-1: 10.0.1.0/24 Subnet-2: 10.0.2.0/24 And Launch 3 EC2 instances.
-Use the created VPC Use subnet-1 for network interface 1 Use subnet-2 for network interface 2 Disable Auto-assign public IP Add security group inbound rule to allow All traffic from Anywhere-IPv4 Stop Source/destination check And Create 3 elastic IPs.</description>
+      <description>Related issue https://github.com/longhorn/longhorn/issues/2285&#xA;Test storage network Create AWS instances Given Create VPC.&#xA;VPC only IPv4 CIDR 10.0.0.0/16 And Create an internet gateway.&#xA;Attach to VPC And Add the internet gateway to the VPC Main route table, Routes.&#xA;Destination 0.0.0.0/0 And Create 2 subnets in the VPC.&#xA;Subnet-1: 10.0.1.0/24 Subnet-2: 10.0.2.0/24 And Launch 3 EC2 instances.&#xA;Use the created VPC Use subnet-1 for network interface 1 Use subnet-2 for network interface 2 Disable Auto-assign public IP Add security group inbound rule to allow All traffic from Anywhere-IPv4 Stop Source/destination check And Create 3 elastic IPs.</description>
     </item>
     <item>
       <title>Test backing image download to local</title>
@@ -40,24 +33,14 @@ Use the created VPC Use subnet-1 for network interface 1 Use subnet-2 for networ
       <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.3.0/test-helm-uninstall-different-namespace/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.3.0/test-helm-uninstall-different-namespace/</guid>
-      <description>Related issue https://github.com/longhorn/longhorn/issues/2034
-Test Given helm install Longhorn in different namespace
-When helm uninstall Longhorn
-Then Longhorn should complete uninstalling.</description>
+      <description>Related issue https://github.com/longhorn/longhorn/issues/2034&#xA;Test Given helm install Longhorn in different namespace&#xA;When helm uninstall Longhorn&#xA;Then Longhorn should complete uninstalling.</description>
     </item>
     <item>
       <title>Test IM Proxy connection metrics</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.3.0/test-grpc-proxy/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.3.0/test-grpc-proxy/</guid>
-      <description>Related issue https://github.com/longhorn/longhorn/issues/2821 https://github.com/longhorn/longhorn/issues/4038
-Test gRPC proxy Given Longhorn exist in the cluster.
-And Monitoring stack exist in the cluster.
-When Execute longhorn_instance_manager_proxy_grpc_connection in Prometheus UI.
-Then Metric data shows in Prometheus UI.
-When Monitor longhorn_instance_manager_proxy_grpc_connection in Grafana UI Panel.
-And Run automation regression.
-Then Connections should return to 0 when tests complete.</description>
+      <description>Related issue https://github.com/longhorn/longhorn/issues/2821 https://github.com/longhorn/longhorn/issues/4038&#xA;Test gRPC proxy Given Longhorn exist in the cluster.&#xA;And Monitoring stack exist in the cluster.&#xA;When Execute longhorn_instance_manager_proxy_grpc_connection in Prometheus UI.&#xA;Then Metric data shows in Prometheus UI.&#xA;When Monitor longhorn_instance_manager_proxy_grpc_connection in Grafana UI Panel.&#xA;And Run automation regression.&#xA;Then Connections should return to 0 when tests complete.</description>
     </item>
     <item>
       <title>Test instance manager NPE</title>
@@ -85,10 +68,7 @@ Then Connections should return to 0 when tests complete.</description>
       <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.3.0/test-npe-when-longhorn-ui-deployment-not-exist/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.3.0/test-npe-when-longhorn-ui-deployment-not-exist/</guid>
-      <description>Related issue https://github.com/longhorn/longhorn/issues/4065
-Test Given helm install Longhorn
-When delete deployment/longhorn-ui And update setting/kubernetes-cluster-autoscaler-enabled to true or false
-Then longhorn-manager pods should still be Running.</description>
+      <description>Related issue https://github.com/longhorn/longhorn/issues/4065&#xA;Test Given helm install Longhorn&#xA;When delete deployment/longhorn-ui And update setting/kubernetes-cluster-autoscaler-enabled to true or false&#xA;Then longhorn-manager pods should still be Running.</description>
     </item>
     <item>
       <title>Test snapshot purge retry</title>
