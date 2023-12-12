@@ -1,15 +1,25 @@
 import pytest
 import requests
+
 from prometheus_client.parser import text_string_to_metric_families
+
+from backupstore import set_random_backupstore  # NOQA
 from common import client, core_api, volume_name  # NOQA
+
+from common import crash_replica_processes
+from common import create_pv_for_volume
+from common import create_pvc_for_volume
+from common import create_and_check_volume
 from common import get_self_host_id
-from common import create_pv_for_volume, create_pvc_for_volume
-from common import create_and_check_volume, wait_for_volume_healthy
-from common import write_volume_random_data
-from common import wait_for_volume_detached, wait_for_volume_degraded
-from common import wait_for_volume_faulted, crash_replica_processes
+from common import wait_for_volume_degraded
+from common import wait_for_volume_detached
 from common import wait_for_volume_detached_unknown
-from common import Mi, LONGHORN_NAMESPACE
+from common import wait_for_volume_faulted
+from common import wait_for_volume_healthy
+from common import write_volume_random_data
+
+from common import Mi
+from common import LONGHORN_NAMESPACE
 
 # The dictionaries use float type of value because the value obtained from
 # prometheus_client is in float type.
