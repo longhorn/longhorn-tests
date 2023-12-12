@@ -57,7 +57,7 @@ def get_metrics(core_api): # NOQA
     return result
 
 
-def check_volume_metric(core_api, metric_name, metric_labels, expect_value=None): # NOQA
+def check_metric(core_api, metric_name, metric_labels, expected_value=None): # NOQA
     metric_data = get_metrics(core_api)
     for family in metric_data:
         for sample in family.samples:
@@ -66,13 +66,14 @@ def check_volume_metric(core_api, metric_name, metric_labels, expect_value=None)
                 break
 
     assert item is not None
-    assert item.labels["node"] == metric_labels["node"]
-    assert item.labels["pvc"] == metric_labels["pvc"]
-    assert item.labels["volume"] == metric_labels["volume"]
-    assert item.labels["pvc_namespace"] == metric_labels["pvc_namespace"]
+
+    for key, value in metric_labels.items():
+        assert item.labels[key] == value
+
     assert type(item.value) is float
-    if expect_value is not None:
-        assert item.value == expect_value
+
+    if expected_value is not None:
+        assert item.value == expected_value
     else:
         assert item.value >= 0.0
 
@@ -106,7 +107,7 @@ def test_volume_metrics(client, core_api, volume_name, pvc_namespace): # NOQA
     write_volume_random_data(volume)
     volume = client.by_id_volume(volume_name)
     actual_size = float(volume.controllers[0].actualSize)
-    capacity_szie = float(volume.size)
+    capacity_size = float(volume.size)
 
     metric_labels = {
         "node": lht_hostId,
@@ -116,54 +117,54 @@ def test_volume_metrics(client, core_api, volume_name, pvc_namespace): # NOQA
     }
 
     # check volume metric basic
-    check_volume_metric(core_api, "longhorn_volume_actual_size_bytes",
-                        metric_labels, actual_size)
-    check_volume_metric(core_api, "longhorn_volume_capacity_bytes",
-                        metric_labels, capacity_szie)
-    check_volume_metric(core_api, "longhorn_volume_read_throughput",
-                        metric_labels)
-    check_volume_metric(core_api, "longhorn_volume_write_throughput",
-                        metric_labels)
-    check_volume_metric(core_api, "longhorn_volume_read_iops",
-                        metric_labels)
-    check_volume_metric(core_api, "longhorn_volume_write_iops",
-                        metric_labels)
-    check_volume_metric(core_api, "longhorn_volume_read_latency",
-                        metric_labels)
-    check_volume_metric(core_api, "longhorn_volume_write_latency",
-                        metric_labels)
+    check_metric(core_api, "longhorn_volume_actual_size_bytes",
+                 metric_labels, actual_size)
+    check_metric(core_api, "longhorn_volume_capacity_bytes",
+                 metric_labels, capacity_size)
+    check_metric(core_api, "longhorn_volume_read_throughput",
+                 metric_labels)
+    check_metric(core_api, "longhorn_volume_write_throughput",
+                 metric_labels)
+    check_metric(core_api, "longhorn_volume_read_iops",
+                 metric_labels)
+    check_metric(core_api, "longhorn_volume_write_iops",
+                 metric_labels)
+    check_metric(core_api, "longhorn_volume_read_latency",
+                 metric_labels)
+    check_metric(core_api, "longhorn_volume_write_latency",
+                 metric_labels)
 
     # verify longhorn_volume_robustness when volume is healthy,
     # degraded, faulted or unknown
     volume.detach()
     volume = wait_for_volume_detached_unknown(client, volume_name)
-    check_volume_metric(core_api, "longhorn_volume_robustness",
-                        metric_labels, longhorn_volume_robustness["unknown"])
+    check_metric(core_api, "longhorn_volume_robustness",
+                 metric_labels, longhorn_volume_robustness["unknown"])
 
     volume.attach(hostId=lht_hostId)
     volume = wait_for_volume_healthy(client, volume_name)
-    check_volume_metric(core_api, "longhorn_volume_robustness", metric_labels,
-                        longhorn_volume_robustness["healthy"])
+    check_metric(core_api, "longhorn_volume_robustness",
+                 metric_labels, longhorn_volume_robustness["healthy"])
 
     volume.updateReplicaCount(replicaCount=4)
     volume = wait_for_volume_degraded(client, volume_name)
-    check_volume_metric(core_api, "longhorn_volume_robustness",
-                        metric_labels, longhorn_volume_robustness["degraded"])
+    check_metric(core_api, "longhorn_volume_robustness",
+                 metric_labels, longhorn_volume_robustness["degraded"])
 
     volume.updateReplicaCount(replicaCount=3)
     volume = wait_for_volume_healthy(client, volume_name)
     crash_replica_processes(client, core_api, volume_name)
     volume = wait_for_volume_faulted(client, volume_name)
 
-    check_volume_metric(core_api, "longhorn_volume_robustness",
-                        metric_labels, longhorn_volume_robustness["faulted"])
+    check_metric(core_api, "longhorn_volume_robustness",
+                 metric_labels, longhorn_volume_robustness["faulted"])
 
     # verify longhorn_volume_state when volume is attached or detached
     volume = wait_for_volume_healthy(client, volume_name)
-    check_volume_metric(core_api, "longhorn_volume_state", metric_labels,
-                        longhorn_volume_state["attached"])
+    check_metric(core_api, "longhorn_volume_state",
+                 metric_labels, longhorn_volume_state["attached"])
 
     volume.detach()
     volume = wait_for_volume_detached(client, volume_name)
-    check_volume_metric(core_api, "longhorn_volume_state",
-                        metric_labels, longhorn_volume_state["detached"])
+    check_metric(core_api, "longhorn_volume_state",
+                 metric_labels, longhorn_volume_state["detached"])
