@@ -74,9 +74,10 @@ install_rancher() {
 
 
 get_rancher_api_key() {
-  python3 "${TF_VAR_tf_workspace}/scripts/rancher/webdriver/main.py" "${RANCHER_HOSTNAME}" "${RANCHER_BOOTSTRAP_PASSWORD}"
-  RANCHER_ACCESS_KEY=`cat "${PWD}/access_key"`
-  RANCHER_SECRET_KEY=`cat "${PWD}/secret_key"`
+  TOKEN=$(curl -X POST -s -k "https://${RANCHER_HOSTNAME}/v3-public/localproviders/local?action=login" -H 'Content-Type: application/json' -d "{\"username\":\"admin\", \"password\":\"${RANCHER_BOOTSTRAP_PASSWORD}\", \"responseType\": \"json\"}" | jq -r '.token' | tr -d '"')
+  ARR=(${TOKEN//:/ })
+  RANCHER_ACCESS_KEY=${ARR[0]}
+  RANCHER_SECRET_KEY=${ARR[1]}
 }
 
 
