@@ -28,16 +28,26 @@
 </summary>
 <pre><code class="python">import pytest
 import requests
+
 from prometheus_client.parser import text_string_to_metric_families
+
+from backupstore import set_random_backupstore  # NOQA
 from common import client, core_api, volume_name  # NOQA
+
+from common import crash_replica_processes
+from common import create_pv_for_volume
+from common import create_pvc_for_volume
+from common import create_and_check_volume
 from common import get_self_host_id
-from common import create_pv_for_volume, create_pvc_for_volume
-from common import create_and_check_volume, wait_for_volume_healthy
-from common import write_volume_random_data
-from common import wait_for_volume_detached, wait_for_volume_degraded
-from common import wait_for_volume_faulted, crash_replica_processes
+from common import wait_for_volume_degraded
+from common import wait_for_volume_detached
 from common import wait_for_volume_detached_unknown
-from common import Mi, LONGHORN_NAMESPACE
+from common import wait_for_volume_faulted
+from common import wait_for_volume_healthy
+from common import write_volume_random_data
+
+from common import Mi
+from common import LONGHORN_NAMESPACE
 
 # The dictionaries use float type of value because the value obtained from
 # prometheus_client is in float type.
@@ -75,7 +85,7 @@ def get_metrics(core_api): # NOQA
     return result
 
 
-def check_volume_metric(core_api, metric_name, metric_labels, expect_value=None): # NOQA
+def check_metric(core_api, metric_name, metric_labels, expected_value=None): # NOQA
     metric_data = get_metrics(core_api)
     for family in metric_data:
         for sample in family.samples:
@@ -84,13 +94,14 @@ def check_volume_metric(core_api, metric_name, metric_labels, expect_value=None)
                 break
 
     assert item is not None
-    assert item.labels[&#34;node&#34;] == metric_labels[&#34;node&#34;]
-    assert item.labels[&#34;pvc&#34;] == metric_labels[&#34;pvc&#34;]
-    assert item.labels[&#34;volume&#34;] == metric_labels[&#34;volume&#34;]
-    assert item.labels[&#34;pvc_namespace&#34;] == metric_labels[&#34;pvc_namespace&#34;]
+
+    for key, value in metric_labels.items():
+        assert item.labels[key] == value
+
     assert type(item.value) is float
-    if expect_value is not None:
-        assert item.value == expect_value
+
+    if expected_value is not None:
+        assert item.value == expected_value
     else:
         assert item.value &gt;= 0.0
 
@@ -124,7 +135,7 @@ def test_volume_metrics(client, core_api, volume_name, pvc_namespace): # NOQA
     write_volume_random_data(volume)
     volume = client.by_id_volume(volume_name)
     actual_size = float(volume.controllers[0].actualSize)
-    capacity_szie = float(volume.size)
+    capacity_size = float(volume.size)
 
     metric_labels = {
         &#34;node&#34;: lht_hostId,
@@ -134,57 +145,57 @@ def test_volume_metrics(client, core_api, volume_name, pvc_namespace): # NOQA
     }
 
     # check volume metric basic
-    check_volume_metric(core_api, &#34;longhorn_volume_actual_size_bytes&#34;,
-                        metric_labels, actual_size)
-    check_volume_metric(core_api, &#34;longhorn_volume_capacity_bytes&#34;,
-                        metric_labels, capacity_szie)
-    check_volume_metric(core_api, &#34;longhorn_volume_read_throughput&#34;,
-                        metric_labels)
-    check_volume_metric(core_api, &#34;longhorn_volume_write_throughput&#34;,
-                        metric_labels)
-    check_volume_metric(core_api, &#34;longhorn_volume_read_iops&#34;,
-                        metric_labels)
-    check_volume_metric(core_api, &#34;longhorn_volume_write_iops&#34;,
-                        metric_labels)
-    check_volume_metric(core_api, &#34;longhorn_volume_read_latency&#34;,
-                        metric_labels)
-    check_volume_metric(core_api, &#34;longhorn_volume_write_latency&#34;,
-                        metric_labels)
+    check_metric(core_api, &#34;longhorn_volume_actual_size_bytes&#34;,
+                 metric_labels, actual_size)
+    check_metric(core_api, &#34;longhorn_volume_capacity_bytes&#34;,
+                 metric_labels, capacity_size)
+    check_metric(core_api, &#34;longhorn_volume_read_throughput&#34;,
+                 metric_labels)
+    check_metric(core_api, &#34;longhorn_volume_write_throughput&#34;,
+                 metric_labels)
+    check_metric(core_api, &#34;longhorn_volume_read_iops&#34;,
+                 metric_labels)
+    check_metric(core_api, &#34;longhorn_volume_write_iops&#34;,
+                 metric_labels)
+    check_metric(core_api, &#34;longhorn_volume_read_latency&#34;,
+                 metric_labels)
+    check_metric(core_api, &#34;longhorn_volume_write_latency&#34;,
+                 metric_labels)
 
     # verify longhorn_volume_robustness when volume is healthy,
     # degraded, faulted or unknown
     volume.detach()
     volume = wait_for_volume_detached_unknown(client, volume_name)
-    check_volume_metric(core_api, &#34;longhorn_volume_robustness&#34;,
-                        metric_labels, longhorn_volume_robustness[&#34;unknown&#34;])
+    check_metric(core_api, &#34;longhorn_volume_robustness&#34;,
+                 metric_labels, longhorn_volume_robustness[&#34;unknown&#34;])
 
     volume.attach(hostId=lht_hostId)
     volume = wait_for_volume_healthy(client, volume_name)
-    check_volume_metric(core_api, &#34;longhorn_volume_robustness&#34;, metric_labels,
-                        longhorn_volume_robustness[&#34;healthy&#34;])
+    check_metric(core_api, &#34;longhorn_volume_robustness&#34;,
+                 metric_labels, longhorn_volume_robustness[&#34;healthy&#34;])
 
     volume.updateReplicaCount(replicaCount=4)
     volume = wait_for_volume_degraded(client, volume_name)
-    check_volume_metric(core_api, &#34;longhorn_volume_robustness&#34;,
-                        metric_labels, longhorn_volume_robustness[&#34;degraded&#34;])
+    check_metric(core_api, &#34;longhorn_volume_robustness&#34;,
+                 metric_labels, longhorn_volume_robustness[&#34;degraded&#34;])
 
     volume.updateReplicaCount(replicaCount=3)
     volume = wait_for_volume_healthy(client, volume_name)
     crash_replica_processes(client, core_api, volume_name)
     volume = wait_for_volume_faulted(client, volume_name)
 
-    check_volume_metric(core_api, &#34;longhorn_volume_robustness&#34;,
-                        metric_labels, longhorn_volume_robustness[&#34;faulted&#34;])
+    check_metric(core_api, &#34;longhorn_volume_robustness&#34;,
+                 metric_labels, longhorn_volume_robustness[&#34;faulted&#34;])
 
     # verify longhorn_volume_state when volume is attached or detached
     volume = wait_for_volume_healthy(client, volume_name)
-    check_volume_metric(core_api, &#34;longhorn_volume_state&#34;, metric_labels,
-                        longhorn_volume_state[&#34;attached&#34;])
+    check_metric(core_api, &#34;longhorn_volume_state&#34;,
+                 metric_labels, longhorn_volume_state[&#34;attached&#34;])
 
     volume.detach()
     volume = wait_for_volume_detached(client, volume_name)
-    check_volume_metric(core_api, &#34;longhorn_volume_state&#34;,
-                        metric_labels, longhorn_volume_state[&#34;detached&#34;])</code></pre>
+    check_metric(core_api, &#34;longhorn_volume_state&#34;,
+                 metric_labels, longhorn_volume_state[&#34;detached&#34;])</code></pre>
 </details>
 </section>
 <section>
@@ -194,8 +205,8 @@ def test_volume_metrics(client, core_api, volume_name, pvc_namespace): # NOQA
 <section>
 <h2 class="section-title" id="header-functions">Functions</h2>
 <dl>
-<dt id="tests.test_metric.check_volume_metric"><code class="name flex">
-<span>def <span class="ident">check_volume_metric</span></span>(<span>core_api, metric_name, metric_labels, expect_value=None)</span>
+<dt id="tests.test_metric.check_metric"><code class="name flex">
+<span>def <span class="ident">check_metric</span></span>(<span>core_api, metric_name, metric_labels, expected_value=None)</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -203,7 +214,7 @@ def test_volume_metrics(client, core_api, volume_name, pvc_namespace): # NOQA
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def check_volume_metric(core_api, metric_name, metric_labels, expect_value=None): # NOQA
+<pre><code class="python">def check_metric(core_api, metric_name, metric_labels, expected_value=None): # NOQA
     metric_data = get_metrics(core_api)
     for family in metric_data:
         for sample in family.samples:
@@ -212,13 +223,14 @@ def test_volume_metrics(client, core_api, volume_name, pvc_namespace): # NOQA
                 break
 
     assert item is not None
-    assert item.labels[&#34;node&#34;] == metric_labels[&#34;node&#34;]
-    assert item.labels[&#34;pvc&#34;] == metric_labels[&#34;pvc&#34;]
-    assert item.labels[&#34;volume&#34;] == metric_labels[&#34;volume&#34;]
-    assert item.labels[&#34;pvc_namespace&#34;] == metric_labels[&#34;pvc_namespace&#34;]
+
+    for key, value in metric_labels.items():
+        assert item.labels[key] == value
+
     assert type(item.value) is float
-    if expect_value is not None:
-        assert item.value == expect_value
+
+    if expected_value is not None:
+        assert item.value == expected_value
     else:
         assert item.value &gt;= 0.0</code></pre>
 </details>
@@ -290,7 +302,7 @@ def test_volume_metrics(client, core_api, volume_name, pvc_namespace): # NOQA
     write_volume_random_data(volume)
     volume = client.by_id_volume(volume_name)
     actual_size = float(volume.controllers[0].actualSize)
-    capacity_szie = float(volume.size)
+    capacity_size = float(volume.size)
 
     metric_labels = {
         &#34;node&#34;: lht_hostId,
@@ -300,57 +312,57 @@ def test_volume_metrics(client, core_api, volume_name, pvc_namespace): # NOQA
     }
 
     # check volume metric basic
-    check_volume_metric(core_api, &#34;longhorn_volume_actual_size_bytes&#34;,
-                        metric_labels, actual_size)
-    check_volume_metric(core_api, &#34;longhorn_volume_capacity_bytes&#34;,
-                        metric_labels, capacity_szie)
-    check_volume_metric(core_api, &#34;longhorn_volume_read_throughput&#34;,
-                        metric_labels)
-    check_volume_metric(core_api, &#34;longhorn_volume_write_throughput&#34;,
-                        metric_labels)
-    check_volume_metric(core_api, &#34;longhorn_volume_read_iops&#34;,
-                        metric_labels)
-    check_volume_metric(core_api, &#34;longhorn_volume_write_iops&#34;,
-                        metric_labels)
-    check_volume_metric(core_api, &#34;longhorn_volume_read_latency&#34;,
-                        metric_labels)
-    check_volume_metric(core_api, &#34;longhorn_volume_write_latency&#34;,
-                        metric_labels)
+    check_metric(core_api, &#34;longhorn_volume_actual_size_bytes&#34;,
+                 metric_labels, actual_size)
+    check_metric(core_api, &#34;longhorn_volume_capacity_bytes&#34;,
+                 metric_labels, capacity_size)
+    check_metric(core_api, &#34;longhorn_volume_read_throughput&#34;,
+                 metric_labels)
+    check_metric(core_api, &#34;longhorn_volume_write_throughput&#34;,
+                 metric_labels)
+    check_metric(core_api, &#34;longhorn_volume_read_iops&#34;,
+                 metric_labels)
+    check_metric(core_api, &#34;longhorn_volume_write_iops&#34;,
+                 metric_labels)
+    check_metric(core_api, &#34;longhorn_volume_read_latency&#34;,
+                 metric_labels)
+    check_metric(core_api, &#34;longhorn_volume_write_latency&#34;,
+                 metric_labels)
 
     # verify longhorn_volume_robustness when volume is healthy,
     # degraded, faulted or unknown
     volume.detach()
     volume = wait_for_volume_detached_unknown(client, volume_name)
-    check_volume_metric(core_api, &#34;longhorn_volume_robustness&#34;,
-                        metric_labels, longhorn_volume_robustness[&#34;unknown&#34;])
+    check_metric(core_api, &#34;longhorn_volume_robustness&#34;,
+                 metric_labels, longhorn_volume_robustness[&#34;unknown&#34;])
 
     volume.attach(hostId=lht_hostId)
     volume = wait_for_volume_healthy(client, volume_name)
-    check_volume_metric(core_api, &#34;longhorn_volume_robustness&#34;, metric_labels,
-                        longhorn_volume_robustness[&#34;healthy&#34;])
+    check_metric(core_api, &#34;longhorn_volume_robustness&#34;,
+                 metric_labels, longhorn_volume_robustness[&#34;healthy&#34;])
 
     volume.updateReplicaCount(replicaCount=4)
     volume = wait_for_volume_degraded(client, volume_name)
-    check_volume_metric(core_api, &#34;longhorn_volume_robustness&#34;,
-                        metric_labels, longhorn_volume_robustness[&#34;degraded&#34;])
+    check_metric(core_api, &#34;longhorn_volume_robustness&#34;,
+                 metric_labels, longhorn_volume_robustness[&#34;degraded&#34;])
 
     volume.updateReplicaCount(replicaCount=3)
     volume = wait_for_volume_healthy(client, volume_name)
     crash_replica_processes(client, core_api, volume_name)
     volume = wait_for_volume_faulted(client, volume_name)
 
-    check_volume_metric(core_api, &#34;longhorn_volume_robustness&#34;,
-                        metric_labels, longhorn_volume_robustness[&#34;faulted&#34;])
+    check_metric(core_api, &#34;longhorn_volume_robustness&#34;,
+                 metric_labels, longhorn_volume_robustness[&#34;faulted&#34;])
 
     # verify longhorn_volume_state when volume is attached or detached
     volume = wait_for_volume_healthy(client, volume_name)
-    check_volume_metric(core_api, &#34;longhorn_volume_state&#34;, metric_labels,
-                        longhorn_volume_state[&#34;attached&#34;])
+    check_metric(core_api, &#34;longhorn_volume_state&#34;,
+                 metric_labels, longhorn_volume_state[&#34;attached&#34;])
 
     volume.detach()
     volume = wait_for_volume_detached(client, volume_name)
-    check_volume_metric(core_api, &#34;longhorn_volume_state&#34;,
-                        metric_labels, longhorn_volume_state[&#34;detached&#34;])</code></pre>
+    check_metric(core_api, &#34;longhorn_volume_state&#34;,
+                 metric_labels, longhorn_volume_state[&#34;detached&#34;])</code></pre>
 </details>
 </dd>
 </dl>
@@ -371,7 +383,7 @@ def test_volume_metrics(client, core_api, volume_name, pvc_namespace): # NOQA
 </li>
 <li><h3><a href="#header-functions">Functions</a></h3>
 <ul class="">
-<li><code><a title="tests.test_metric.check_volume_metric" href="#tests.test_metric.check_volume_metric">check_volume_metric</a></code></li>
+<li><code><a title="tests.test_metric.check_metric" href="#tests.test_metric.check_metric">check_metric</a></code></li>
 <li><code><a title="tests.test_metric.get_metrics" href="#tests.test_metric.get_metrics">get_metrics</a></code></li>
 <li><code><a title="tests.test_metric.test_volume_metrics" href="#tests.test_metric.test_volume_metrics">test_volume_metrics</a></code></li>
 </ul>
