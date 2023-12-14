@@ -19,7 +19,8 @@ from common import SETTING_STORAGE_OVER_PROVISIONING_PERCENTAGE, \
     SETTING_DEFAULT_DATA_PATH, \
     SETTING_CREATE_DEFAULT_DISK_LABELED_NODES, \
     DEFAULT_STORAGE_OVER_PROVISIONING_PERCENTAGE, \
-    SETTING_DISABLE_SCHEDULING_ON_CORDONED_NODE
+    SETTING_DISABLE_SCHEDULING_ON_CORDONED_NODE, \
+    SETTING_DETACH_MANUALLY_ATTACHED_VOLUMES_WHEN_CORDONED
 from common import get_volume_endpoint
 from common import get_update_disks
 from common import wait_for_disk_status, wait_for_disk_update, \
@@ -2750,3 +2751,58 @@ def test_drain_with_block_for_eviction_failure():
        - Verify that `replica.spec.evictionRequested == true`.
     7. Verify the drain never completes.
     """
+
+@pytest.mark.node  # NOQA
+def test_auto_detach_volume_when_node_is_cordoned(client, core_api, volume_name):  # NOQA
+    """
+    Test auto detach volume when node is cordoned
+
+    1. Set `detach-manually-attached-volumes-when-cordoned` to `false`.
+    2. Create a volume and attached to the node through API (manually).
+    3. Cordon the node.
+    4. Set `detach-manually-attached-volumes-when-cordoned` to `true`.
+    5. Volume will be detached automatically.
+    """
+
+    # Set `Detach Manually Attached Volumes When Cordoned` to false
+    detach_manually_attached_volumes_when_cordoned = \
+        client.by_id_setting(
+            SETTING_DETACH_MANUALLY_ATTACHED_VOLUMES_WHEN_CORDONED)
+    client.update(detach_manually_attached_volumes_when_cordoned,
+                  value="false")
+
+    # Create a volume
+    volume = client.create_volume(name=volume_name,
+                                  size=SIZE,
+                                  numberOfReplicas=3)
+    volume = common.wait_for_volume_detached(client,
+                                             volume_name)
+    assert volume.restoreRequired is False
+
+    # Attach to the node
+    host_id = get_self_host_id()
+    volume.attach(hostId=host_id)
+    volume = common.wait_for_volume_healthy(client, volume_name)
+    assert volume.restoreRequired is False
+
+    # Cordon the node
+    set_node_cordon(core_api, host_id, True)
+
+    # Volume is still attached for a while
+    time.sleep(NODE_UPDATE_WAIT_INTERVAL)
+    volume = common.wait_for_volume_healthy(client, volume_name)
+    assert volume.restoreRequired is False
+
+    # Set `Detach Manually Attached Volumes When Cordoned` to true
+    client.update(detach_manually_attached_volumes_when_cordoned, value="true")
+
+    # Volume should be detached
+    volume = common.wait_for_volume_detached(client, volume_name)
+    assert volume.restoreRequired is False
+
+    # Delete the Volume
+    client.delete(volume)
+    common.wait_for_volume_delete(client, volume_name)
+
+    volumes = client.list_volume().data
+    assert len(volumes) == 0
