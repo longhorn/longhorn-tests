@@ -638,10 +638,9 @@ def test_volume_wait_for_backing_image_conditino(): # NOQA
     Test the volume condition "WaitForBackingImage"
 
     Given
-    - Create a BackingImage 
+    - Create a BackingImage
 
     When
-    - 
     - Creating the Volume with the BackingImage while it is still in progress
 
     Then
