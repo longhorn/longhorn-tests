@@ -167,6 +167,8 @@ SETTING_DEGRADED_AVAILABILITY = \
     "allow-volume-creation-with-degraded-availability"
 SETTING_DISABLE_SCHEDULING_ON_CORDONED_NODE = \
     "disable-scheduling-on-cordoned-node"
+SETTING_DETACH_MANUALLY_ATTACHED_VOLUMES_WHEN_CORDONED = \
+    "detach-manually-attached-volumes-when-cordoned"
 SETTING_GUARANTEED_INSTANCE_MANAGER_CPU = "guaranteed-instance-manager-cpu"
 SETTING_PRIORITY_CLASS = "priority-class"
 SETTING_RECURRING_JOB_WHILE_VOLUME_DETACHED = \
