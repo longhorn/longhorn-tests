@@ -2626,6 +2626,14 @@ def test_disk_eviction_with_node_level_soft_anti_affinity_disabled(client, # NOQ
     replica_path = test_disk_path + '/replicas'
     assert os.path.isdir(replica_path)
 
+    # Since https://github.com/longhorn/longhorn-manager/pull/2449, the node
+    # controller is responsible for triggering replica eviction. If the timing
+    # of the node controller and node monitor are off, the node controller
+    # may take extra time to do so. Wait for evidence eviction is in progress
+    # before proceeding.
+    wait_for_volume_replica_count(client, volume.name,
+                                  volume.numberOfReplicas + 1)
+
     for i in range(common.RETRY_COMMAND_COUNT):
         if len(os.listdir(replica_path)) > 0:
             break
