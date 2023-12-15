@@ -16,6 +16,7 @@ from common import VOLUME_CONDITION_SCHEDULED
 from common import SETTING_REPLICA_NODE_SOFT_ANTI_AFFINITY
 from common import SETTING_REPLICA_REPLENISHMENT_WAIT_INTERVAL
 from common import LONGHORN_NAMESPACE
+from common import DEFAULT_BACKUPSTORE_NAME
 from common import create_and_wait_pod, create_pvc_spec, delete_and_wait_pod
 from common import size_to_string, create_storage_class, create_pvc
 from common import create_crypto_secret
@@ -226,7 +227,8 @@ def backupstore_test(client, core_api, csi_pv, pvc, pod_make, pod_name, vol_name
 
     volume = client.by_id_volume(vol_name)
     snap = create_snapshot(client, vol_name)
-    volume.snapshotBackup(name=snap.name)
+    volume.snapshotBackup(name=snap.name,
+                          backupTargetName=DEFAULT_BACKUPSTORE_NAME)
 
     common.wait_for_backup_completion(client, vol_name, snap.name)
     bv, b = common.find_backup(client, vol_name, snap.name)
@@ -240,7 +242,7 @@ def backupstore_test(client, core_api, csi_pv, pvc, pod_make, pod_name, vol_name
     resp = read_volume_data(core_api, pod2_name)
     assert resp == test_data
 
-    delete_backup(client, bv.name, b.name)
+    delete_backup(client, bv.volumeName, b.name)
     delete_and_wait_pod(core_api, pod2_name)
     client.delete(volume2)
 

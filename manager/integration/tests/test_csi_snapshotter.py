@@ -38,6 +38,7 @@ from common import wait_for_backing_image_status, exec_command_in_pod
 from common import delete_and_wait_pod, delete_and_wait_pvc
 from common import BACKING_IMAGE_SOURCE_TYPE_FROM_VOLUME
 from common import create_backing_image_with_matching_url
+from common import DEFAULT_BACKUPSTORE_NAME
 
 
 @pytest.fixture
@@ -582,7 +583,8 @@ def test_csi_volumesnapshot_restore_existing_backup(set_random_backupstore, # NO
 
     volume = client.by_id_volume(volume_name)
     snap = create_snapshot(client, volume_name)
-    volume.snapshotBackup(name=snap.name)
+    volume.snapshotBackup(name=snap.name,
+                          backupTargetName=DEFAULT_BACKUPSTORE_NAME)
     wait_for_backup_completion(client, volume_name, snap.name)
     bv, b = find_backup(client, volume_name, snap.name)
 

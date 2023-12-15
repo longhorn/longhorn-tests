@@ -30,7 +30,6 @@ from common import (  # NOQA
     SETTING_GUARANTEED_INSTANCE_MANAGER_CPU,
     SETTING_PRIORITY_CLASS,
     SETTING_DEFAULT_REPLICA_COUNT,
-    SETTING_BACKUP_TARGET,
     SETTING_CONCURRENT_VOLUME_BACKUP_RESTORE,
     RETRY_COUNTS, RETRY_INTERVAL, RETRY_INTERVAL_LONG,
     update_setting, BACKING_IMAGE_QCOW2_URL, BACKING_IMAGE_NAME,
@@ -1110,10 +1109,8 @@ def update_settings_via_configmap(core_api, client, setting_names, setting_value
     def reset_default_settings():
         configmap_body = config_map_with_value("longhorn-default-setting",
                                                [SETTING_DEFAULT_REPLICA_COUNT,
-                                                SETTING_BACKUP_TARGET,
                                                 SETTING_TAINT_TOLERATION],
                                                ["3",
-                                                "",
                                                 ""])
         core_api.patch_namespaced_config_map(name="longhorn-default-setting",
                                              namespace='longhorn-system',
@@ -1171,33 +1168,6 @@ def test_setting_replica_count_update_via_configmap(core_api, request):  # NOQA
                          old_setting.definition.default)
 
 
-def test_setting_backup_target_update_via_configmap(core_api, request):  # NOQA
-    """
-    Test the backup target setting via configmap
-    1. Initialize longhorn-default-setting configmap
-    2. Update longhorn-default-setting configmap with a new backup-target
-       value
-    3. Verify the updated settings
-    """
-
-    # Step 1
-    client = get_longhorn_api_client()  # NOQA
-    init_longhorn_default_setting_configmap(core_api, client)
-
-    # Step 2
-    target = "s3://backupbucket-invalid@us-east-1/backupstore"
-    update_settings_via_configmap(core_api,
-                                  client,
-                                  [SETTING_BACKUP_TARGET],
-                                  [target],
-                                  request)
-    # Step 3
-    validate_settings(core_api,
-                      client,
-                      [SETTING_BACKUP_TARGET],
-                      [target])
-
-
 def test_setting_update_with_invalid_value_via_configmap(core_api, request):  # NOQA
     """
     Test the default settings update with invalid value via configmap
@@ -1224,20 +1194,15 @@ def test_setting_update_with_invalid_value_via_configmap(core_api, request):  # 
     init_longhorn_default_setting_configmap(core_api, client)
 
     # Step 3
-    target = "s3://backupbucket-invalid@us-east-1/backupstore"
     update_settings_via_configmap(core_api,
                                   client,
-                                  [SETTING_BACKUP_TARGET,
-                                   SETTING_TAINT_TOLERATION],
-                                  [target,
-                                   "key1=value1:NoSchedule"],
+                                  [SETTING_TAINT_TOLERATION],
+                                  ["key1=value1:NoSchedule"],
                                   request)
     # Step 4
     validate_settings(core_api,
                       client,
-                      [SETTING_BACKUP_TARGET,
-                       SETTING_TAINT_TOLERATION],
-                      [target,
-                       ""])
+                      [SETTING_TAINT_TOLERATION],
+                      [""])
 
     cleanup_volume_by_name(client, vol_name)

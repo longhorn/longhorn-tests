@@ -98,9 +98,11 @@ from common import DEFAULT_BACKUP_COMPRESSION_METHOD
 from common import BACKUP_COMPRESSION_METHOD_LZ4
 from common import BACKUP_COMPRESSION_METHOD_GZIP
 from common import BACKUP_COMPRESSION_METHOD_NONE
+from common import DEFAULT_BACKUPSTORE_NAME
 from common import create_and_wait_deployment
 from common import get_custom_object_api_client
 from common import RETRY_COUNTS_SHORT
+from common import get_backup_volume_name
 
 from backupstore import backupstore_delete_volume_cfg_file
 from backupstore import backupstore_cleanup
@@ -115,6 +117,7 @@ from backupstore import set_backupstore_url, set_backupstore_credential_secret, 
 from backupstore import reset_backupstore_setting  # NOQA
 from backupstore import set_backupstore_s3, backupstore_get_secret  # NOQA
 from backupstore import backupstore_invalid # NOQA
+from backupstore import backupstore_get_backup_target
 
 from kubernetes import client as k8sclient
 
@@ -152,9 +155,7 @@ def test_settings(client):  # NOQA
     Check input for settings
     """
 
-    setting_names = [common.SETTING_BACKUP_TARGET,
-                     common.SETTING_BACKUP_TARGET_CREDENTIAL_SECRET,
-                     common.SETTING_STORAGE_OVER_PROVISIONING_PERCENTAGE,
+    setting_names = [common.SETTING_STORAGE_OVER_PROVISIONING_PERCENTAGE,
                      common.SETTING_STORAGE_MINIMAL_AVAILABLE_PERCENTAGE,
                      common.SETTING_DEFAULT_REPLICA_COUNT]
     settings = client.list_setting()
@@ -203,20 +204,6 @@ def test_settings(client):  # NOQA
             assert setting.value == "30"
             setting = client.by_id_setting(name)
             assert setting.value == "30"
-        elif name == common.SETTING_BACKUP_TARGET:
-            with pytest.raises(Exception) as e:
-                client.update(setting, value="testvalue$test")
-            assert name+" with invalid value " in \
-                   str(e.value)
-            setting = client.update(setting, value="nfs://test")
-            assert setting.value == "nfs://test"
-            setting = client.by_id_setting(name)
-            assert setting.value == "nfs://test"
-        elif name == common.SETTING_BACKUP_TARGET_CREDENTIAL_SECRET:
-            setting = client.update(setting, value="testvalue")
-            assert setting.value == "testvalue"
-            setting = client.by_id_setting(name)
-            assert setting.value == "testvalue"
         elif name == common.SETTING_DEFAULT_REPLICA_COUNT:
             with pytest.raises(Exception) as e:
                 client.update(setting, value="-1")
@@ -576,8 +563,9 @@ def backup_status_for_unavailable_replicas_test(client, volume_name,  # NOQA
 
     # create a snapshot and backup
     snap = create_snapshot(client, volume_name)
-    volume.snapshotBackup(name=snap.name)
-    bv, b = find_backup(client, volume_name, snap.name)
+    volume.snapshotBackup(name=snap.name,
+                          backupTargetName=DEFAULT_BACKUPSTORE_NAME)
+    _, b = find_backup(client, volume_name, snap.name)
     backup_id = b.id
 
     # find the replica for this backup
@@ -610,16 +598,15 @@ def backup_status_for_unavailable_replicas_test(client, volume_name,  # NOQA
                                 "allowScheduling", True)
 
     # delete the old backup
-    delete_backup(client, bv.name, b.name)
-    volume = wait_for_volume_status(client, volume_name,
-                                    "lastBackup", "")
+    delete_backup(client, volume_name, b.name)
+    volume = wait_for_volume_status(client, volume_name, "lastBackup", "")
     assert volume.lastBackupAt == ""
 
     # check that we can create another successful backup
-    bv, b, _, _ = create_backup(client, volume_name)
+    _, b, _, _ = create_backup(client, volume_name)
 
     # delete the new backup
-    delete_backup(client, bv.name, b.name)
+    delete_backup(client, volume_name, b.name)
     volume = wait_for_volume_status(client, volume_name, "lastBackup", "")
     assert volume.lastBackupAt == ""
 
@@ -674,19 +661,19 @@ def test_backup_block_deletion(set_random_backupstore, client, core_api, volume_
              'len': 2 * BACKUP_BLOCK_SIZE,
              'content': common.generate_random_data(2 * BACKUP_BLOCK_SIZE)}
 
-    bv0, backup0, _, _ = create_backup(client, volume_name, data0)
+    _, backup0, _, _ = create_backup(client, volume_name, data0)
 
     data1 = {'pos': 0,
              'len': BACKUP_BLOCK_SIZE,
              'content': common.generate_random_data(BACKUP_BLOCK_SIZE)}
 
-    bv1, backup1, _, _ = create_backup(client, volume_name, data1)
+    _, backup1, _, _ = create_backup(client, volume_name, data1)
 
     data2 = {'pos': 0,
              'len': BACKUP_BLOCK_SIZE,
              'content': common.generate_random_data(BACKUP_BLOCK_SIZE)}
 
-    bv2, backup2, _, _ = create_backup(client, volume_name, data2)
+    _, backup2, _, _ = create_backup(client, volume_name, data2)
 
     backup_blocks_count = backupstore_count_backup_block_files(client,
                                                                core_api,
@@ -695,8 +682,9 @@ def test_backup_block_deletion(set_random_backupstore, client, core_api, volume_
 
     bvs = client.list_backupVolume()
 
+    bv_name = get_backup_volume_name(volume_name)
     for bv in bvs:
-        if bv['name'] == volume_name:
+        if bv['name'] == bv_name:
             assert bv['dataStored'] == \
                 str(backup_blocks_count * BACKUP_BLOCK_SIZE)
 
@@ -1082,12 +1070,12 @@ def test_backup_volume_list(set_random_backupstore, client, core_api):  # NOQA
             verified_bvs = set()
             backup_volume_list = client.list_backupVolume()
             for bv in backup_volume_list:
-                if bv.name in (volume1_name, volume2_name):
+                if bv.volumeName in (volume1_name, volume2_name):
                     assert not bv['messages']
                     for b in bv.backupList().data:
-                        if bv.name == volume1_name \
+                        if bv.volumeName == volume1_name \
                                 and b.name == backup1.name \
-                                or bv.name == volume2_name \
+                                or bv.volumeName == volume2_name \
                                 and b.name == backup2.name:
                             verified_bvs.add(bv.name)
             if len(verified_bvs) == 2:
@@ -1232,7 +1220,7 @@ def test_backup_metadata_deletion(set_random_backupstore, client, core_api, volu
     delete_backup(client, volume2_name, v2b2.name)
     assert len(v2bv.backupList()) == 0
 
-    delete_backup_volume(client, v2bv.name)
+    delete_backup_volume(client, volume2_name)
     for i in range(RETRY_COUNTS):
         if backupstore_count_backup_block_files(client,
                                                 core_api,
@@ -1357,7 +1345,7 @@ def backupstore_test(client, host_id, volname, size, compression_method):  # NOQ
     volume = volume.detach()
     volume = common.wait_for_volume_detached(client, restore_name)
 
-    delete_backup(client, bv.name, b.name)
+    delete_backup(client, volname, b.name)
     volume = wait_for_volume_status(client, volume.name,
                                     "lastBackup", "")
     assert volume.lastBackupAt == ""
@@ -1525,7 +1513,8 @@ def restore_inc_test(client, core_api, volume_name, pod):  # NOQA
         sb_volume0.snapshotDelete(name=sb0_snap.name)
         assert "cannot delete snapshot for standby volume" in str(e.value)
     with pytest.raises(Exception) as e:
-        sb_volume0.snapshotBackup(name=sb0_snap.name)
+        sb_volume0.snapshotBackup(name=sb0_snap.name,
+                                  backupTargetName=DEFAULT_BACKUPSTORE_NAME)
         assert "cannot create backup for standby volume" in str(e.value)
     with pytest.raises(Exception) as e:
         sb_volume0.pvCreate(pvName=sb_volume0_name)
@@ -1533,9 +1522,8 @@ def restore_inc_test(client, core_api, volume_name, pod):  # NOQA
     with pytest.raises(Exception) as e:
         sb_volume0.pvcCreate(pvcName=sb_volume0_name)
         assert "cannot create PVC for standby volume" in str(e.value)
-    setting = client.by_id_setting(common.SETTING_BACKUP_TARGET)
     with pytest.raises(Exception) as e:
-        client.update(setting, value="random.backup.target")
+        set_backupstore_url(client, "random.backup.target")
         assert "cannot modify BackupTarget " \
                "since there are existing standby volumes" in str(e.value)
     with pytest.raises(Exception) as e:
@@ -1690,17 +1678,16 @@ def test_listing_backup_volume(client, backing_image=""):   # NOQA
 
     # we only test NFS here.
     # Since it is difficult to directly remove volume.cfg from s3 buckets
-    setting = client.by_id_setting(common.SETTING_BACKUP_TARGET)
     backupstores = common.get_backupstore_url()
     for backupstore in backupstores:
         if common.is_backupTarget_nfs(backupstore):
             updated = False
             for i in range(RETRY_COMMAND_COUNT):
                 nfs_url = backupstore.strip("nfs://")
-                setting = client.update(setting, value=backupstore)
-                assert setting.value == backupstore
-                setting = client.by_id_setting(common.SETTING_BACKUP_TARGET)
-                if "nfs" in setting.value:
+                set_backupstore_url(client, backupstore)
+                backupstore_url = backupstore_get_backup_target(client)
+                assert backupstore_url == backupstore
+                if "nfs" in backupstore_url:
                     updated = True
                     break
             assert updated
@@ -1814,6 +1801,9 @@ def test_listing_backup_volume(client, backing_image=""):   # NOQA
 
     volumes = client.list_volume()
     assert len(volumes) == 0
+
+    backupstore_cleanup(client)
+    reset_backupstore_setting(client)
 
 
 @pytest.mark.coretest   # NOQA
@@ -2131,7 +2121,8 @@ def test_storage_class_from_backup(set_random_backupstore, volume_name, pvc_name
     volume_id = client.by_id_volume(volume_name)
     snapshot = volume_id.snapshotCreate()
 
-    volume_id.snapshotBackup(name=snapshot.name)
+    volume_id.snapshotBackup(name=snapshot.name,
+                             backupTargetName=DEFAULT_BACKUPSTORE_NAME)
     wait_for_backup_completion(client, volume_name, snapshot.name)
     bv, b = find_backup(client, volume_name, snapshot.name)
 
@@ -3074,14 +3065,15 @@ def test_backup_lock_deletion_during_restoration(set_random_backupstore, client,
             data_size_in_mb=DATA_SIZE_IN_MB_2)
     std_volume = client.by_id_volume(std_volume_name)
     snap1 = create_snapshot(client, std_volume_name)
-    std_volume.snapshotBackup(name=snap1.name)
+    std_volume.snapshotBackup(name=snap1.name,
+                              backupTargetName=DEFAULT_BACKUPSTORE_NAME)
     wait_for_backup_completion(client, std_volume_name, snap1.name)
 
-    _, b = common.find_backup(client, std_volume_name, snap1.name)
+    bv, b = common.find_backup(client, std_volume_name, snap1.name)
     client.create_volume(name=restore_volume_name, fromBackup=b.url)
     wait_for_volume_restoration_start(client, restore_volume_name, b.name)
 
-    backup_volume = client.by_id_backupVolume(std_volume_name)
+    backup_volume = client.by_id_backupVolume(bv.name)
     backup_volume.backupDelete(name=b.name)
 
     wait_for_volume_restoration_completed(client, restore_volume_name)
@@ -3145,20 +3137,21 @@ def test_backup_lock_deletion_during_backup(set_random_backupstore, client, core
             client, core_api, csi_pv, pvc, pod_make, std_volume_name)
     std_volume = client.by_id_volume(std_volume_name)
     snap1 = create_snapshot(client, std_volume_name)
-    std_volume.snapshotBackup(name=snap1.name)
+    std_volume.snapshotBackup(name=snap1.name,
+                              backupTargetName=DEFAULT_BACKUPSTORE_NAME)
     wait_for_backup_completion(client, std_volume_name, snap1.name)
-    _, b1 = common.find_backup(client, std_volume_name, snap1.name)
+    bv, b1 = common.find_backup(client, std_volume_name, snap1.name)
 
     write_pod_volume_random_data(core_api, std_pod_name, "/data/test",
                                  DATA_SIZE_IN_MB_3)
 
     std_md5sum2 = get_pod_data_md5sum(core_api, std_pod_name, "/data/test")
     snap2 = create_snapshot(client, std_volume_name)
-    std_volume.snapshotBackup(name=snap2.name)
+    std_volume.snapshotBackup(name=snap2.name,
+                              backupTargetName=DEFAULT_BACKUPSTORE_NAME)
     wait_for_backup_to_start(client, std_volume_name, snapshot_name=snap2.name)
 
-    backup_volume = client.by_id_backupVolume(std_volume_name)
-    backup_volume.backupDelete(name=b1.name)
+    bv.backupDelete(name=b1.name)
 
     wait_for_backup_completion(client, std_volume_name, snap2.name,
                                retry_count=600)
@@ -3223,18 +3216,19 @@ def test_backup_lock_creation_during_deletion(set_random_backupstore, client, co
             data_size_in_mb=DATA_SIZE_IN_MB_1)
     std_volume = client.by_id_volume(std_volume_name)
     snap1 = create_snapshot(client, std_volume_name)
-    std_volume.snapshotBackup(name=snap1.name)
+    std_volume.snapshotBackup(name=snap1.name,
+                              backupTargetName=DEFAULT_BACKUPSTORE_NAME)
     wait_for_backup_completion(client, std_volume_name, snap1.name)
-    _, b1 = common.find_backup(client, std_volume_name, snap1.name)
+    bv, b1 = common.find_backup(client, std_volume_name, snap1.name)
 
     write_pod_volume_random_data(core_api, std_pod_name,
                                  "/data/test2", DATA_SIZE_IN_MB_1)
 
-    backup_volume = client.by_id_backupVolume(std_volume_name)
-    backup_volume.backupDelete(name=b1.name)
+    bv.backupDelete(name=b1.name)
 
     snap2 = create_snapshot(client, std_volume_name)
-    std_volume.snapshotBackup(name=snap2.name)
+    std_volume.snapshotBackup(name=snap2.name,
+                              backupTargetName=DEFAULT_BACKUPSTORE_NAME)
 
     wait_for_backup_delete(client, volume_name, b1.name)
     wait_for_backup_completion(client, std_volume_name, snap2.name)
@@ -3280,21 +3274,23 @@ def test_backup_lock_restoration_during_deletion(set_random_backupstore, client,
             volume_size=str(3*Gi), data_size_in_mb=DATA_SIZE_IN_MB_1)
     std_volume = client.by_id_volume(std_volume_name)
     snap1 = create_snapshot(client, std_volume_name)
-    std_volume.snapshotBackup(name=snap1.name)
+    std_volume.snapshotBackup(name=snap1.name,
+                              backupTargetName=DEFAULT_BACKUPSTORE_NAME)
     wait_for_backup_completion(client, std_volume_name, snap1.name)
-    std_volume.snapshotBackup(name=snap1.name)
-    backup_volume = client.by_id_backupVolume(std_volume_name)
+    std_volume.snapshotBackup(name=snap1.name,
+                              backupTargetName=DEFAULT_BACKUPSTORE_NAME)
     _, b1 = common.find_backup(client, std_volume_name, snap1.name)
 
     write_pod_volume_random_data(core_api, std_pod_name,
                                  "/data/test2", 1500)
     snap2 = create_snapshot(client, std_volume_name)
-    std_volume.snapshotBackup(name=snap2.name)
+    std_volume.snapshotBackup(name=snap2.name,
+                              backupTargetName=DEFAULT_BACKUPSTORE_NAME)
     wait_for_backup_completion(client, std_volume_name, snap2.name,
                                retry_count=1200)
-    _, b2 = common.find_backup(client, std_volume_name, snap2.name)
+    bv, b2 = common.find_backup(client, std_volume_name, snap2.name)
 
-    backup_volume.backupDelete(name=b2.name)
+    bv.backupDelete(name=b2.name)
 
     client.create_volume(name=restore_volume_name, fromBackup=b1.url)
     wait_for_volume_detached(client, restore_volume_name)
@@ -3609,7 +3605,8 @@ def test_allow_volume_creation_with_degraded_availability_restore(set_random_bac
 
     src_vol = client.by_id_volume(src_vol_name)
     src_snap = create_snapshot(client, src_vol_name)
-    src_vol.snapshotBackup(name=src_snap.name)
+    src_vol.snapshotBackup(name=src_snap.name,
+                           backupTargetName=DEFAULT_BACKUPSTORE_NAME)
     wait_for_backup_completion(client, src_vol_name, src_snap.name,
                                retry_count=600)
     _, backup = find_backup(client, src_vol_name, src_snap.name)
@@ -3719,7 +3716,8 @@ def test_allow_volume_creation_with_degraded_availability_dr(set_random_backupst
 
     src_vol = client.by_id_volume(src_vol_name)
     src_snap = create_snapshot(client, src_vol_name)
-    src_vol.snapshotBackup(name=src_snap.name)
+    src_vol.snapshotBackup(name=src_snap.name,
+                           backupTargetName=DEFAULT_BACKUPSTORE_NAME)
     wait_for_backup_completion(client, src_vol_name, src_snap.name,
                                retry_count=600)
     _, backup = find_backup(client, src_vol_name, src_snap.name)
@@ -4462,7 +4460,7 @@ def test_restore_basic(set_random_backupstore, client, core_api, volume_name, po
     delete_and_wait_pod(core_api, restore_pod_name)
 
     # Delete the 2nd backup
-    delete_backup(client, backup_volume.name, backup2.name)
+    delete_backup(client, backup_volume.volumeName, backup2.name)
 
     # restore 3rd backup again
     restored_data_checksum3, output, restore_pod_name = \
@@ -5029,7 +5027,8 @@ def backup_failed_cleanup(client, core_api, volume_name, volume_size,  # NOQA
     # create a snapshot and
     # a successful backup to make sure the backup volume created
     snap = create_snapshot(client, volume_name)
-    vol.snapshotBackup(name=snap.name)
+    vol.snapshotBackup(name=snap.name,
+                       backupTargetName=DEFAULT_BACKUPSTORE_NAME)
 
     # write some data to the volume
     volume_endpoint = get_volume_endpoint(vol)
@@ -5041,7 +5040,8 @@ def backup_failed_cleanup(client, core_api, volume_name, volume_size,  # NOQA
 
     # create a snapshot and a backup
     snap = create_snapshot(client, volume_name)
-    vol.snapshotBackup(name=snap.name)
+    vol.snapshotBackup(name=snap.name,
+                       backupTargetName=DEFAULT_BACKUPSTORE_NAME)
 
     # check backup status is in an InProgress state
     _, backup = find_backup(client, volume_name, snap.name)
@@ -5215,7 +5215,7 @@ def test_delete_backup_during_restoring_volume(set_random_backupstore, client): 
                          numberOfReplicas=3,
                          fromBackup=b.url)
 
-    delete_backup(client, bv.name, b.name)
+    delete_backup(client, bv.volumeName, b.name)
     volume = wait_for_volume_status(client, vol_v1_name,
                                     "lastBackup", "")
     assert volume.lastBackupAt == ""
@@ -5546,7 +5546,8 @@ def test_backuptarget_invalid(apps_api, # NOQA
 
     volume = client.by_id_volume(volume_name)
     snap = create_snapshot(client, volume_name)
-    volume.snapshotBackup(name=snap.name)
+    volume.snapshotBackup(name=snap.name,
+                          backupTargetName=DEFAULT_BACKUPSTORE_NAME)
 
     for i in range(RETRY_COUNTS_SHORT):
         api = get_custom_object_api_client()

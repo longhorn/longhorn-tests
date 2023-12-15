@@ -8,21 +8,21 @@ from common import check_volume_data
 from common import cleanup_volume
 from common import create_and_check_volume
 from common import create_backup
+from common import get_backup_volume_name
 from common import get_self_host_id
 from common import system_backups_cleanup
 from common import system_backup_random_name
 from common import system_backup_wait_for_state
 from common import system_restore_random_name
 from common import system_restore_wait_for_state
-from common import update_setting
 from common import wait_for_backup_count
 from common import wait_for_volume_detached
 from common import wait_for_volume_healthy
+from common import wait_for_volume_last_backup
 from common import wait_for_volume_restoration_completed
 
-from common import SETTING_BACKUPSTORE_POLL_INTERVAL
-
 from backupstore import set_random_backupstore  # NOQA
+from backupstore import set_backupstore_poll_interval
 
 
 ALWAYS = "always"
@@ -150,8 +150,12 @@ def test_system_backup_with_volume_backup_policy_if_not_present(client, volume_n
 
     system_backup_wait_for_state("Ready", system_backup_name_1, client)
 
-    backup_volume = client.by_id_backupVolume(volume_name)
+    bv_name = get_backup_volume_name(volume_name)
+    backup_volume = client.by_id_backupVolume(bv_name)
     wait_for_backup_count(backup_volume, 1)
+
+    backup_name = backup_volume.backupList()[0].name
+    wait_for_volume_last_backup(client, volume_name, backup_name)
 
     system_backup_name_2 = system_backup_random_name()
     client.create_system_backup(Name=system_backup_name_2,
@@ -159,7 +163,7 @@ def test_system_backup_with_volume_backup_policy_if_not_present(client, volume_n
 
     system_backup_wait_for_state("Ready", system_backup_name_2, client)
 
-    backup_volume = client.by_id_backupVolume(volume_name)
+    backup_volume = client.by_id_backupVolume(bv_name)
     wait_for_backup_count(backup_volume, 1)
 
 
@@ -199,7 +203,8 @@ def test_system_backup_with_volume_backup_policy_always(client, volume_name, set
 
     system_backup_wait_for_state("Ready", system_backup_name, client)
 
-    backup_volume = client.by_id_backupVolume(volume_name)
+    bv_name = get_backup_volume_name(volume_name)
+    backup_volume = client.by_id_backupVolume(bv_name)
     wait_for_backup_count(backup_volume, 2)
 
     system_backups_cleanup(client)
@@ -209,7 +214,7 @@ def test_system_backup_with_volume_backup_policy_always(client, volume_name, set
 
     system_backup_wait_for_state("Ready", system_backup_name, client)
 
-    backup_volume = client.by_id_backupVolume(volume_name)
+    backup_volume = client.by_id_backupVolume(bv_name)
     wait_for_backup_count(backup_volume, 3)
 
 
@@ -240,7 +245,8 @@ def test_system_backup_with_volume_backup_policy_disabled(client, volume_name, s
 
     system_backup_wait_for_state("Ready", system_backup_name, client)
 
-    backup_volume = client.by_id_backupVolume(volume_name)
+    bv_name = get_backup_volume_name(volume_name)
+    backup_volume = client.by_id_backupVolume(bv_name)
     wait_for_backup_count(backup_volume, 0)
 
 
@@ -261,7 +267,7 @@ def test_system_backup_delete_when_other_system_backup_using_name_as_prefix(clie
     And wait 60 seconds
     Then system backups should exists (aaa, aaaa)
     """
-    update_setting(client, SETTING_BACKUPSTORE_POLL_INTERVAL, "10")
+    set_backupstore_poll_interval(client, "10")
 
     system_backup_names = ["aa", "aaa", "aaaa"]
     for name in system_backup_names:

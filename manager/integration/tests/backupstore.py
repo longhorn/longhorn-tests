@@ -10,10 +10,9 @@ from minio import Minio
 from minio.error import ResponseError
 from urllib.parse import urlparse
 
-from common import SETTING_BACKUP_TARGET
-from common import SETTING_BACKUP_TARGET_CREDENTIAL_SECRET
-from common import SETTING_BACKUPSTORE_POLL_INTERVAL
 from common import LONGHORN_NAMESPACE
+from common import DEFAULT_BACKUPSTORE_NAME
+from common import DEFAULT_BACKUPSTORE_POLL_INTERVAL
 from common import cleanup_all_volumes
 from common import is_backupTarget_s3
 from common import is_backupTarget_nfs
@@ -24,6 +23,7 @@ from common import get_backupstore_poll_interval
 from common import get_backupstores
 from common import system_backups_cleanup
 from common import get_custom_object_api_client
+from common import golang_duration_str_to_seconds
 
 BACKUPSTORE_BV_PREFIX = "/backupstore/volumes/"
 BACKUPSTORE_LOCK_DURATION = 150
@@ -57,6 +57,10 @@ def backupstore_nfs(client):
 
 @pytest.fixture(params=BACKUPSTORE)
 def set_random_backupstore(request, client):
+    bts = client.list_backup_target()
+    if len(bts) == 0:
+        create_a_default_backup_target(client)
+
     if request.param == "s3":
         set_backupstore_s3(client)
     elif request.param == "nfs":
@@ -73,15 +77,22 @@ def set_random_backupstore(request, client):
         umount_nfs_backupstore(client)
 
 
+def create_a_default_backup_target(client):
+    client.create_backupTarget(
+        Name=DEFAULT_BACKUPSTORE_NAME,
+        BackupTargetURL="",
+        CredentialSecret="",
+        PollInterval=str(DEFAULT_BACKUPSTORE_POLL_INTERVAL),
+        Default=True,
+        ReadOnly=False
+    )
+    return
+
+
 def reset_backupstore_setting(client):
-    backup_target_setting = client.by_id_setting(SETTING_BACKUP_TARGET)
-    client.update(backup_target_setting, value="")
-    backup_target_credential_setting = client.by_id_setting(
-        SETTING_BACKUP_TARGET_CREDENTIAL_SECRET)
-    client.update(backup_target_credential_setting, value="")
-    backup_store_poll_interval = client.by_id_setting(
-        SETTING_BACKUPSTORE_POLL_INTERVAL)
-    client.update(backup_store_poll_interval, value="300")
+    set_backupstore_poll_interval(client, DEFAULT_BACKUPSTORE_POLL_INTERVAL)
+    set_backupstore_credential_secret(client, "")
+    set_backupstore_url(client, "")
 
 
 def set_backupstore_invalid(client):
@@ -115,32 +126,48 @@ def set_backupstore_nfs(client):
 
 
 def set_backupstore_url(client, url):
-    backup_target_setting = client.by_id_setting(SETTING_BACKUP_TARGET)
-    backup_target_setting = client.update(backup_target_setting,
-                                          value=url)
-    assert backup_target_setting.value == url
+    bt = client.by_id_backup_target(DEFAULT_BACKUPSTORE_NAME)
+    bt_poll_interval = golang_duration_str_to_seconds(bt.pollInterval)
+    bt = client.update(bt,
+                       name=DEFAULT_BACKUPSTORE_NAME,
+                       backupTargetURL=url,
+                       credentialSecret=bt.credentialSecret,
+                       default=bt.default,
+                       pollInterval=str(bt_poll_interval),
+                       readOnly=bt.readOnly)
+    assert bt.backupTargetURL == url
 
 
 def set_backupstore_credential_secret(client, credential_secret):
-    backup_target_credential_setting = client.by_id_setting(
-        SETTING_BACKUP_TARGET_CREDENTIAL_SECRET)
-    backup_target_credential_setting = client.update(
-        backup_target_credential_setting, value=credential_secret)
-    assert backup_target_credential_setting.value == credential_secret
+    bt = client.by_id_backup_target(DEFAULT_BACKUPSTORE_NAME)
+    bt_poll_interval = golang_duration_str_to_seconds(bt.pollInterval)
+    bt = client.update(bt,
+                       name=DEFAULT_BACKUPSTORE_NAME,
+                       credentialSecret=credential_secret,
+                       backupTargetURL=bt.backupTargetURL,
+                       default=bt.default,
+                       pollInterval=str(bt_poll_interval),
+                       readOnly=bt.readOnly)
+    assert bt.credentialSecret == credential_secret
 
 
 def set_backupstore_poll_interval(client, poll_interval):
-    backup_store_poll_interval_setting = client.by_id_setting(
-        SETTING_BACKUPSTORE_POLL_INTERVAL)
-    backup_target_poll_interal_setting = client.update(
-        backup_store_poll_interval_setting, value=poll_interval)
-    assert backup_target_poll_interal_setting.value == poll_interval
+    bt = client.by_id_backup_target(DEFAULT_BACKUPSTORE_NAME)
+    bt = client.update(bt,
+                       name=DEFAULT_BACKUPSTORE_NAME,
+                       pollInterval=str(poll_interval),
+                       backupTargetURL=bt.backupTargetURL,
+                       credentialSecret=bt.credentialSecret,
+                       default=bt.default,
+                       readOnly=bt.readOnly)
+    new_poll_interval = golang_duration_str_to_seconds(bt.pollInterval)
+    assert str(new_poll_interval) == str(poll_interval)
 
 
 def mount_nfs_backupstore(client, mount_path="/mnt/nfs"):
     cmd = ["mkdir", "-p", mount_path]
     subprocess.check_output(cmd)
-    nfs_backuptarget = client.by_id_setting(SETTING_BACKUP_TARGET).value
+    nfs_backuptarget = backupstore_get_backup_target(client)
     nfs_url = urlparse(nfs_backuptarget).netloc + \
         urlparse(nfs_backuptarget).path
     cmd = ["mount", "-t", "nfs", "-o", "nfsvers=4.2", nfs_url, mount_path]
@@ -175,7 +202,7 @@ def backupstore_cleanup(client):
 
     # we delete the whole backup volume, which skips block gc
     for backup_volume in backup_volumes:
-        delete_backup_volume(client, backup_volume.name)
+        delete_backup_volume(client, backup_volume.volumeName)
 
     backup_volumes = client.list_backup_volume()
     assert backup_volumes.data == []
@@ -229,7 +256,7 @@ def minio_get_backupstore_path(client):
 
 
 def get_nfs_mount_point(client):
-    nfs_backuptarget = client.by_id_setting(SETTING_BACKUP_TARGET).value
+    nfs_backuptarget = backupstore_get_backup_target(client)
     nfs_url = urlparse(nfs_backuptarget).netloc + \
         urlparse(nfs_backuptarget).path
 
@@ -282,15 +309,13 @@ def nfs_get_backup_volume_prefix(client, volume_name):
 
 
 def backupstore_get_backup_target(client):
-    backup_target_setting = client.by_id_setting(SETTING_BACKUP_TARGET)
-    return backup_target_setting.value
+    backup_target = client.by_id_backup_target(DEFAULT_BACKUPSTORE_NAME)
+    return backup_target.backupTargetURL
 
 
 def backupstore_get_secret(client):
-    backup_target_credential_setting = client.by_id_setting(
-        SETTING_BACKUP_TARGET_CREDENTIAL_SECRET)
-
-    return backup_target_credential_setting.value
+    backup_target = client.by_id_backup_target(DEFAULT_BACKUPSTORE_NAME)
+    return backup_target.credentialSecret
 
 
 def backupstore_get_backup_cfg_file_path(client, volume_name, backup_name):
@@ -363,8 +388,7 @@ def nfs_get_backup_blocks_dir(client, volume_name):
 
 
 def backupstore_create_file(client, core_api, file_path, data={}):
-    backup_target_setting = client.by_id_setting(SETTING_BACKUP_TARGET)
-    backupstore = backup_target_setting.value
+    backupstore = backupstore_get_backup_target(client)
 
     if is_backupTarget_s3(backupstore):
         return mino_create_file_in_backupstore(client,
@@ -379,10 +403,8 @@ def backupstore_create_file(client, core_api, file_path, data={}):
 
 
 def mino_create_file_in_backupstore(client, core_api, file_path, data={}): # NOQA
-    backup_target_credential_setting = client.by_id_setting(
-        SETTING_BACKUP_TARGET_CREDENTIAL_SECRET)
-
-    secret_name = backup_target_credential_setting.value
+    secret_name = backupstore_get_secret(client)
+    assert secret_name != ''
 
     minio_api = minio_get_api_client(client, core_api, secret_name)
     bucket_name = minio_get_backupstore_bucket_name(client)
@@ -407,6 +429,7 @@ def mino_create_file_in_backupstore(client, core_api, file_path, data={}): # NOQ
 def nfs_create_file_in_backupstore(file_path, data={}):
     with open(file_path, 'w') as cfg_file:
         cfg_file.write(str(data))
+
 
 def backupstore_write_backup_cfg_file(client, core_api, volume_name, backup_name, data): # NOQA
     backupstore = backupstore_get_backup_target(client)
@@ -461,8 +484,7 @@ def minio_write_backup_cfg_file(client, core_api, volume_name, backup_name, back
 
 
 def backupstore_delete_file(client, core_api, file_path):
-    backup_target_setting = client.by_id_setting(SETTING_BACKUP_TARGET)
-    backupstore = backup_target_setting.value
+    backupstore = backupstore_get_backup_target(client)
 
     if is_backupTarget_s3(backupstore):
         return mino_delete_file_in_backupstore(client,
@@ -477,10 +499,8 @@ def backupstore_delete_file(client, core_api, file_path):
 
 
 def mino_delete_file_in_backupstore(client, core_api, file_path):
-    backup_target_credential_setting = client.by_id_setting(
-        SETTING_BACKUP_TARGET_CREDENTIAL_SECRET)
-
-    secret_name = backup_target_credential_setting.value
+    secret_name = backupstore_get_secret(client)
+    assert secret_name != ''
 
     minio_api = minio_get_api_client(client, core_api, secret_name)
     bucket_name = minio_get_backupstore_bucket_name(client)
