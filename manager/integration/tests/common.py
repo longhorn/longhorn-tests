@@ -212,6 +212,8 @@ SETTING_BACKUP_COMPRESSION_METHOD = "backup-compression-method"
 SETTING_BACKUP_CONCURRENT_LIMIT = "backup-concurrent-limit"
 SETTING_RESTORE_CONCURRENT_LIMIT = "restore-concurrent-limit"
 SETTING_V1_DATA_ENGINE = "v1-data-engine"
+SETTING_ALLOW_EMPTY_NODE_SELECTOR_VOLUME = \
+    "allow-empty-node-selector-volume"
 
 DEFAULT_BACKUP_COMPRESSION_METHOD = "lz4"
 BACKUP_COMPRESSION_METHOD_LZ4 = "lz4"
