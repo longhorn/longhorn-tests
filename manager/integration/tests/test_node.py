@@ -2806,3 +2806,17 @@ def test_auto_detach_volume_when_node_is_cordoned(client, core_api, volume_name)
 
     volumes = client.list_volume().data
     assert len(volumes) == 0
+
+@pytest.mark.skip(reason="TODO")  # NOQA
+def test_do_not_react_to_brief_kubelet_restart():
+    """
+    Test the node controller ignores Ready == False due to KubeletNotReady for
+    ten seconds before reacting.
+
+    Repeat the following five times:
+    1. Verify status.conditions[type == Ready] == True for the Longhorn node we
+       are running on.
+    2. Kill the kubelet process (e.g. `pkill kubelet`).
+    3. Verify status.conditions[type == Ready] != False for the Longhorn node
+       we are running on at any point for at least ten seconds.
+    """
