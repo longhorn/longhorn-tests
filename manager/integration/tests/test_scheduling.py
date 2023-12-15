@@ -55,6 +55,9 @@ from common import wait_for_rebuild_start
 from common import wait_for_replica_running
 
 from common import crash_engine_process_with_sigkill
+from common import set_node_tags
+from common import wait_for_node_tag_update
+from common import wait_for_volume_condition_scheduled
 
 from common import Mi, Gi
 from common import DATA_SIZE_IN_MB_2
@@ -70,6 +73,8 @@ from common import VOLUME_ROBUSTNESS_HEALTHY
 from common import update_setting, delete_replica_on_test_node
 from common import VOLUME_FRONTEND_BLOCKDEV, SNAPSHOT_DATA_INTEGRITY_IGNORED
 from common import VOLUME_ROBUSTNESS_DEGRADED, RETRY_COUNTS_SHORT
+from common import SETTING_ALLOW_EMPTY_NODE_SELECTOR_VOLUME
+from common import SIZE, CONDITION_STATUS_FALSE, CONDITION_STATUS_TRUE
 
 from time import sleep
 
@@ -1724,8 +1729,7 @@ def test_data_locality_strict_local_node_affinity(client, core_api, apps_api, st
     wait_for_statefulset_pods_healthy(statefulset)
 
 
-@pytest.mark.skip(reason="TODO")
-def test_allow_empty_node_selector_volume_setting(): # NOQA
+def test_allow_empty_node_selector_volume_setting(client, volume_name): # NOQA
     """
     Test the global setting allow-empty-node-selector-volume
 
@@ -1754,7 +1758,37 @@ def test_allow_empty_node_selector_volume_setting(): # NOQA
     - Wait for a while for controller to resync the volume,
       all replicas can be scheduled to the nodes
     """
-    pass
+    # Setup
+    node_tag = ["AVAIL"]
+    for node in client.list_node():
+        set_node_tags(client, node, tags=node_tag, retry=True)
+        wait_for_node_tag_update(client, node.name, node_tag)
+
+    update_setting(client, SETTING_ALLOW_EMPTY_NODE_SELECTOR_VOLUME, "false")
+
+    # Check volume can not be scehduled
+    client.create_volume(name=volume_name, size=SIZE)
+    volume = wait_for_volume_detached(client, volume_name)
+
+    volume = client.by_id_volume(volume.name)
+    volume = wait_for_volume_condition_scheduled(client, volume_name,
+                                                 "status",
+                                                 CONDITION_STATUS_FALSE)
+
+    # Rremove tag from 1 node and set setting allow-empty-node-selector-volume
+    # to true
+    node = client.by_id_node(get_self_host_id())
+    set_node_tags(client, node, tags=[], retry=True)
+    update_setting(client, SETTING_ALLOW_EMPTY_NODE_SELECTOR_VOLUME, "true")
+
+    # Volume can be schedule
+    volume = wait_for_volume_condition_scheduled(client, volume_name, "status",
+                                                 CONDITION_STATUS_TRUE)
+    assert volume.ready
+
+    # All replicas schedule to nodes
+    volume.attach(hostId=get_self_host_id())
+    volume = wait_for_volume_healthy(client, volume_name)
 
 
 def test_global_disk_soft_anti_affinity(): # NOQA
