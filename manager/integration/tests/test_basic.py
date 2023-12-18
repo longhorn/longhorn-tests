@@ -67,7 +67,7 @@ from common import SETTING_REPLICA_NODE_SOFT_ANTI_AFFINITY
 from common import SETTING_REPLICA_REPLENISHMENT_WAIT_INTERVAL
 from common import CONDITION_REASON_SCHEDULING_FAILURE
 from common import delete_backup, get_backupstores
-from common import delete_backup_volume
+from common import delete_backup_volume, delete_backup_target
 from common import BACKUP_BLOCK_SIZE
 from common import assert_backup_state
 from common import wait_for_backup_delete
@@ -102,7 +102,7 @@ from common import DEFAULT_BACKUPSTORE_NAME
 from common import create_and_wait_deployment
 from common import get_custom_object_api_client
 from common import RETRY_COUNTS_SHORT
-from common import get_backup_volume_name
+from common import get_backup_volume_name, wait_for_backup_target_status
 
 from backupstore import backupstore_delete_volume_cfg_file
 from backupstore import backupstore_cleanup
@@ -113,9 +113,9 @@ from backupstore import backupstore_create_file
 from backupstore import backupstore_delete_file
 from backupstore import set_random_backupstore  # NOQA
 from backupstore import backupstore_get_backup_volume_prefix
-from backupstore import set_backupstore_url, set_backupstore_credential_secret, set_backupstore_poll_interval  # NOQA
+from backupstore import set_backupstore_url, set_backupstore_credential_secret, set_backupstore_poll_interval, set_backupstore_default  # NOQA
 from backupstore import reset_backupstore_setting  # NOQA
-from backupstore import set_backupstore_s3, backupstore_get_secret  # NOQA
+from backupstore import create_backup_target, set_backupstore_s3, backupstore_get_secret, set_backupstore_nfs  # NOQA
 from backupstore import backupstore_invalid # NOQA
 from backupstore import backupstore_get_backup_target
 
@@ -5658,3 +5658,139 @@ def test_volume_backup_and_restore_with_none_compression_method(client, set_rand
     common.update_setting(client, common.SETTING_RESTORE_CONCURRENT_LIMIT, "4")
     backup_test(client, volume_name, SIZE,
                 compression_method=BACKUP_COMPRESSION_METHOD_NONE)
+
+
+def test_multiple_backuptarget(client, volume_name): # NOQA
+    """
+    Test the multiple backup targets created and deleted.
+
+    1.    Create a backup target A with the default value true
+    2.    The backup target A is the default backup target.
+    3.    Can not disable the default value of the backup target A directly.
+    4.    Can not delete the default backup target A directly.
+    5.    Do a backup and restore the backup on the backup target A, and they
+          should succeed.
+    6.    Create another backup target B with the default value true.
+    7.    The backup target B is the default backup target.
+    8.    The backup target B becomes the default backup target.s
+    9.    Do a backup and restore the backup on the backup target B, and they
+          should succeed.
+    10.   Can not delete the default backup target B directly.
+    11.   Delete the backup target A, and it should succeed.
+    """
+    vol_size = str(1 * Gi)
+    backup_target_a_name = "backup-target-a"
+    backup_target_b_name = "backup-target-b"
+
+    create_backup_target(client, backup_target_a_name)
+    wait_for_backup_target_status(client,
+                                  backup_target_a_name,
+                                  "default",
+                                  True)
+    set_backupstore_s3(client, backup_target_a_name)
+
+    with pytest.raises(Exception) as e:
+        set_backupstore_default(client, False, backup_target_a_name)
+    assert "prohibit disabling a default backup target" in str(e.value)
+    with pytest.raises(Exception) as e:
+        delete_backup_target(client, backup_target_a_name)
+    assert "prohibit deleting a default backup target" in str(e.value)
+
+    volume = create_and_check_volume(client, volume_name, 2, vol_size)
+    lht_hostId = get_self_host_id()
+    volume = volume.attach(hostId=lht_hostId)
+    volume = common.wait_for_volume_healthy(client, volume_name)
+
+    bv1, b1, snap1, data1 = create_backup(
+                                client,
+                                volume_name,
+                                backup_target_name=backup_target_a_name)
+    bv1_name = bv1.name
+    snap1_name = snap1.name
+    b1_name = b1.name
+    restore1_name = generate_volume_name()
+    volume = client.create_volume(name=restore1_name,
+                                  size=vol_size,
+                                  numberOfReplicas=2,
+                                  fromBackup=b1.url)
+    common.wait_for_volume_restoration_completed(client, restore1_name)
+    volume = common.wait_for_volume_detached(client, restore1_name)
+    assert volume.name == restore1_name
+    assert volume.size == vol_size
+    assert volume.numberOfReplicas == 2
+    assert volume.state == "detached"
+    assert volume.restoreRequired is False
+    volume = volume.attach(hostId=lht_hostId)
+    volume = common.wait_for_volume_healthy(client, restore1_name)
+    check_volume_data(volume, data1)
+
+    create_backup_target(client, backup_target_b_name)
+    wait_for_backup_target_status(client,
+                                  backup_target_b_name,
+                                  "default",
+                                  True)
+    set_backupstore_nfs(client, backup_target_b_name)
+
+    _, b2, _, data2 = create_backup(
+                                client,
+                                volume_name,
+                                backup_target_name=backup_target_b_name)
+    restore2_name = generate_volume_name()
+    volume = client.create_volume(name=restore2_name,
+                                  size=vol_size,
+                                  numberOfReplicas=2,
+                                  fromBackup=b2.url)
+    common.wait_for_volume_restoration_completed(client, restore2_name)
+    volume = common.wait_for_volume_detached(client, restore2_name)
+    assert volume.name == restore2_name
+    assert volume.size == vol_size
+    assert volume.numberOfReplicas == 2
+    assert volume.state == "detached"
+    assert volume.restoreRequired is False
+    volume = volume.attach(hostId=lht_hostId)
+    volume = common.wait_for_volume_healthy(client, restore2_name)
+    check_volume_data(volume, data2)
+
+    delete_backup_target(client, backup_target_a_name)
+
+    def find_backup_volume(backup_volume_name):
+        for _ in range(RETRY_COUNTS_SHORT):
+            bvs = client.list_backupVolume()
+            for bv in bvs:
+                if bv.name == backup_volume_name:
+                    return bv
+            time.sleep(RETRY_INTERVAL)
+        return None
+
+    bv = find_backup_volume(bv1_name)
+    assert bv is None
+    found_backup = False
+    with pytest.raises(Exception) as e:
+        find_backup(client,
+                    volume_name,
+                    snap1_name,
+                    backup_target_name=backup_target_a_name)
+        found_backup = True
+    assert found_backup is False
+
+    create_backup_target(client, backup_target_a_name)
+    wait_for_backup_target_status(client,
+                                  backup_target_a_name,
+                                  "default",
+                                  True)
+    set_backupstore_s3(client, backup_target_a_name)
+
+    bv = find_backup_volume(bv1_name)
+    assert bv is not None
+    _, b = find_backup(client,
+                       volume_name,
+                       snap1_name,
+                       backup_target_name=backup_target_a_name)
+    assert b.name == b1_name
+
+    backupstore_cleanup(client, backup_target_a_name)
+    backupstore_cleanup(client, backup_target_b_name)
+
+    set_backupstore_default(client, True, DEFAULT_BACKUPSTORE_NAME)
+    delete_backup_target(client, backup_target_a_name)
+    delete_backup_target(client, backup_target_b_name)

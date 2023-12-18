@@ -393,8 +393,11 @@ def cleanup_all_volumes(client):
     assert len(volumes) == 0
 
 
-def get_backup_volume_name(volume_name):
-    return volume_name+"-"+DEFAULT_BACKUPSTORE_NAME
+def get_backup_volume_name(volume_name, backup_target_name=""):
+    bt_name = DEFAULT_BACKUPSTORE_NAME
+    if backup_target_name != "":
+        bt_name = backup_target_name
+    return volume_name+"-"+bt_name
 
 
 def create_volume_and_backup(client, vol_name, vol_size, backup_data_size):
@@ -414,7 +417,7 @@ def create_volume_and_backup(client, vol_name, vol_size, backup_data_size):
     return backup_volume, backup
 
 
-def create_backup(client, volname, data={}, labels={}):
+def create_backup(client, volname, data={}, labels={}, backup_target_name=""):
     volume = client.by_id_volume(volname)
     create_snapshot(client, volname)
     if not data:
@@ -427,14 +430,17 @@ def create_backup(client, volname, data={}, labels={}):
     # after backup request we need to wait for completion of the backup
     # since the backup.cfg will only be available once the backup operation
     # has been completed
+    bt_name = DEFAULT_BACKUPSTORE_NAME
+    if backup_target_name != "":
+        bt_name = backup_target_name
     volume.snapshotBackup(name=snap.name,
                           labels=labels,
-                          backupTargetName=DEFAULT_BACKUPSTORE_NAME)
+                          backupTargetName=bt_name)
     wait_for_backup_completion(client, volname, snap.name)
 
     verified = False
     for i in range(RETRY_COMMAND_COUNT):
-        bv, b = find_backup(client, volname, snap.name)
+        bv, b = find_backup(client, volname, snap.name, backup_target_name)
         new_b = bv.backupGet(name=b.name)
         if new_b.name == b.name and \
            new_b.url == b.url and \
@@ -486,11 +492,17 @@ def delete_backup(client, volume_name, backup_name):
     wait_for_backup_delete(client, volume_name, backup_name)
 
 
-def delete_backup_volume(client, volume_name):
-    bv_name = get_backup_volume_name(volume_name)
+def delete_backup_volume(client, volume_name, backup_target_name=""):
+    bv_name = get_backup_volume_name(volume_name, backup_target_name)
     bv = client.by_id_backupVolume(bv_name)
     client.delete(bv)
-    wait_for_backup_volume_delete(client, volume_name)
+    wait_for_backup_volume_delete(client, volume_name, backup_target_name)
+
+
+def delete_backup_target(client, backup_target_name):
+    bt = client.by_id_backup_target(backup_target_name)
+    client.delete(bt)
+    wait_for_backup_target_delete(client, backup_target_name)
 
 
 def create_and_check_volume(client, volume_name,
@@ -1991,11 +2003,11 @@ def wait_for_volume_delete(client, name):
     assert not found
 
 
-def wait_for_backup_volume_delete(client, name):
+def wait_for_backup_volume_delete(client, name, backup_target_name=""):
     for _ in range(RETRY_BACKUP_COUNTS):
         bvs = client.list_backupVolume()
         found = False
-        bv_name = get_backup_volume_name(name)
+        bv_name = get_backup_volume_name(name, backup_target_name)
         for bv in bvs:
             if bv.name == bv_name:
                 found = True
@@ -2006,13 +2018,23 @@ def wait_for_backup_volume_delete(client, name):
     assert not found
 
 
+def wait_for_backup_target_creation(client, name):
+    for i in range(RETRY_COUNTS):
+        bts = client.list_backup_target()
+        found = False
+        for bt in bts:
+            if bt.name == name:
+                found = True
+                break
+        if found:
+            break
+        time.sleep(RETRY_INTERVAL)
+    assert found
+
+
 def wait_for_backup_target_delete(client, name):
     for _ in range(RETRY_BACKUP_COUNTS):
-        try:
-            bts = client.list_backup_target()
-        except requests.exceptions.ConnectionError:
-            client = get_longhorn_api_client()
-            continue
+        bts = client.list_backup_target()
         found = False
         for bt in bts:
             if bt.name == name:
@@ -2022,6 +2044,18 @@ def wait_for_backup_target_delete(client, name):
             break
         time.sleep(RETRY_BACKUP_INTERVAL)
     assert not found
+
+
+def wait_for_backup_target_status(client, name, key, value):
+    wait_for_backup_target_creation(client, name)
+    for _ in range(RETRY_COUNTS):
+        bt = client.by_id_backup_target(name)
+        if bt[key] == value:
+            break
+        time.sleep(RETRY_INTERVAL)
+    assert bt[key] == value, f" value={value}\n. \
+            bt[key]={bt[key]}\n. bt={bt}"
+    return bt
 
 
 def cleanup_all_backup_targets(client):
@@ -3698,14 +3732,14 @@ def wait_for_backup_target_available(client, available):
             'BackupTarget status.available should be {}'.format(available))
 
 
-def find_backup(client, vol_name, snap_name):
+def find_backup(client, vol_name, snap_name, backup_target_name=""):
     """
     find_backup will look for a backup on the backupstore
     it's important to note, that this can only be used for completed backups
     since the backup.cfg will only be written once a backup operation has
     been completed successfully
     """
-    bv_name = get_backup_volume_name(vol_name)
+    bv_name = get_backup_volume_name(vol_name, backup_target_name)
 
     def find_backup_volume():
         bvs = client.list_backupVolume()
