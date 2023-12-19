@@ -399,9 +399,9 @@ def create_volume_and_backup(client, vol_name, vol_size, backup_data_size):
     client.create_volume(name=vol_name,
                          numberOfReplicas=1,
                          size=str(vol_size))
-    backup_volume = wait_for_volume_detached(client, vol_name)
-    backup_volume.attach(hostId=get_self_host_id())
-    backup_volume = wait_for_volume_healthy(client, vol_name)
+    volume = wait_for_volume_detached(client, vol_name)
+    volume.attach(hostId=get_self_host_id())
+    volume = wait_for_volume_healthy(client, vol_name)
 
     data = {'pos': 0,
             'len': backup_data_size,
@@ -409,7 +409,7 @@ def create_volume_and_backup(client, vol_name, vol_size, backup_data_size):
 
     _, backup, _, _ = create_backup(client, vol_name, data)
 
-    return backup_volume, backup
+    return volume, backup
 
 
 def create_backup(client, volname, data={}, labels={}):
