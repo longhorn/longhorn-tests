@@ -213,6 +213,7 @@ SETTING_RESTORE_CONCURRENT_LIMIT = "restore-concurrent-limit"
 SETTING_V1_DATA_ENGINE = "v1-data-engine"
 SETTING_ALLOW_EMPTY_NODE_SELECTOR_VOLUME = \
     "allow-empty-node-selector-volume"
+SETTING_REPLICA_DISK_SOFT_ANTI_AFFINITY = "replica-disk-soft-anti-affinity"
 
 DEFAULT_BACKUP_COMPRESSION_METHOD = "lz4"
 BACKUP_COMPRESSION_METHOD_LZ4 = "lz4"
