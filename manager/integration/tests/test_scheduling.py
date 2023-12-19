@@ -58,6 +58,9 @@ from common import crash_engine_process_with_sigkill
 from common import set_node_tags
 from common import wait_for_node_tag_update
 from common import wait_for_volume_condition_scheduled
+from common import cleanup_host_disks
+from common import wait_for_volume_delete
+from common import wait_for_disk_update
 
 from common import Mi, Gi
 from common import DATA_SIZE_IN_MB_2
@@ -75,6 +78,8 @@ from common import VOLUME_FRONTEND_BLOCKDEV, SNAPSHOT_DATA_INTEGRITY_IGNORED
 from common import VOLUME_ROBUSTNESS_DEGRADED, RETRY_COUNTS_SHORT
 from common import SETTING_ALLOW_EMPTY_NODE_SELECTOR_VOLUME
 from common import SIZE, CONDITION_STATUS_FALSE, CONDITION_STATUS_TRUE
+from common import SETTING_REPLICA_ZONE_SOFT_ANTI_AFFINITY
+from common import SETTING_REPLICA_DISK_SOFT_ANTI_AFFINITY
 
 from time import sleep
 
@@ -1791,7 +1796,7 @@ def test_allow_empty_node_selector_volume_setting(client, volume_name): # NOQA
     volume = wait_for_volume_healthy(client, volume_name)
 
 
-def test_global_disk_soft_anti_affinity(): # NOQA
+def test_global_disk_soft_anti_affinity(client, volume_name): # NOQA
     """
     1. When Replica Disk Soft Anti-Affinity is false, it should be impossible
        to schedule replicas to the same disk.
@@ -1837,7 +1842,91 @@ def test_global_disk_soft_anti_affinity(): # NOQA
     - Verify all three replicas are healthy
     - Verify all three replicas have a different spec.diskID
     """
-    pass
+    # Preparation
+    lht_hostId = get_self_host_id()
+    node = client.by_id_node(lht_hostId)
+    disks = node.disks
+    disk_path1 = create_host_disk(client, 'vol-disk-1',
+                                  str(2 * Gi), lht_hostId)
+    disk1 = {"path": disk_path1, "allowScheduling": True}
+    disk_path2 = create_host_disk(client, 'vol-disk-2',
+                                  str(4 * Gi), lht_hostId)
+    disk2 = {"path": disk_path2, "allowScheduling": False}
+
+    update_disk = get_update_disks(disks)
+    update_disk["disk1"] = disk1
+    update_disk["disk2"] = disk2
+
+    node = update_node_disks(client, node.name, disks=update_disk, retry=True)
+    node = wait_for_disk_update(client, lht_hostId, len(update_disk))
+    assert len(node.disks) == len(update_disk)
+
+    # Make only current node schedulable
+    nodes = client.list_node()
+    for node in nodes:
+        if node.id != lht_hostId:
+            set_node_scheduling(client, node, allowScheduling=False)
+
+    # Test start
+    update_setting(client, SETTING_REPLICA_NODE_SOFT_ANTI_AFFINITY, "true")
+    update_setting(client, SETTING_REPLICA_ZONE_SOFT_ANTI_AFFINITY, "true")
+    update_setting(client, SETTING_REPLICA_DISK_SOFT_ANTI_AFFINITY, "false")
+
+    client.create_volume(name=volume_name, size=str(500*Mi))
+    volume = wait_for_volume_detached(client, volume_name)
+    volume.attach(hostId=lht_hostId)
+    volume = wait_for_volume_degraded(client, volume_name)
+
+    num_running = 0
+    for replica in volume.replicas:
+        if replica.running:
+            num_running += 1
+        else:
+            assert replica.hostId == ""
+
+    assert num_running == 2
+
+    # After enable SETTING_REPLICA_DISK_SOFT_ANTI_AFFINITY to true,
+    # replicas can schedule on the same disk, threrefore volume become healthy
+    update_setting(client, SETTING_REPLICA_DISK_SOFT_ANTI_AFFINITY, "true")
+
+    volume = wait_for_volume_healthy(client, volume_name)
+
+    node = client.by_id_node(lht_hostId)
+    disks = node.disks
+    for fsid, disk in iter(disks.items()):
+        if disk.path == disk_path2:
+            disk.allowScheduling = True
+
+    # Enable disk2
+    update_disks = get_update_disks(disks)
+    update_node_disks(client, node.name, disks=update_disks, retry=True)
+
+    # Delete one of the two replicas with the same diskID
+    disk_id = []
+    for replica in volume.replicas:
+        if replica.diskID not in disk_id:
+            disk_id.append(replica.diskID)
+        else:
+            volume.replicaRemove(name=replica.name)
+
+    volume = wait_for_volume_degraded(client, volume_name)
+    volume = wait_for_volume_healthy(client, volume_name)
+
+    # Replcas should located on 3 different disks on current node
+    disk_id.clear()
+    for replica in volume.replicas:
+        if replica.diskID not in disk_id:
+            disk_id.append(replica.diskID)
+        else:
+            assert replica.diskID not in disk_id
+
+    # Cleanup disks
+    volume.detach(hostId=lht_hostId)
+    wait_for_volume_detached(client, volume_name)
+    client.delete(volume)
+    wait_for_volume_delete(client, volume.name)
+    cleanup_host_disks(client, 'vol-disk-1', 'vol-disk-2')
 
 
 @pytest.mark.skip(reason="TODO")
