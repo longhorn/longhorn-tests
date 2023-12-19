@@ -39,6 +39,7 @@ data "template_file" "provision_k3s_agent" {
     k3s_cluster_secret = random_password.cluster_secret.result
     k3s_version =  var.k8s_distro_version
     custom_ssh_public_key = var.custom_ssh_public_key
+    extra_block_device = var.extra_block_device
   }
 }
 
@@ -61,5 +62,6 @@ data "template_file" "provision_rke2_agent" {
     rke2_cluster_secret = random_password.cluster_secret.result
     rke2_version =  var.k8s_distro_version
     custom_ssh_public_key = var.custom_ssh_public_key
+    extra_block_device = var.extra_block_device
   }
 }

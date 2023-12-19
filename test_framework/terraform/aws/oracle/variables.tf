@@ -123,3 +123,8 @@ variable "custom_ssh_public_key" {
   default = ""
   sensitive = true
 }
+
+variable "extra_block_device" {
+  type = bool
+  default = false
+}
