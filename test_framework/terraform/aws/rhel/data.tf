@@ -45,6 +45,7 @@ data "template_file" "provision_k3s_agent" {
     selinux_mode = var.selinux_mode
     enable_selinux = var.selinux_mode == "permissive" ? "false" : "true"
     custom_ssh_public_key = var.custom_ssh_public_key
+    extra_block_device = var.extra_block_device
   }
 }
 
@@ -69,5 +70,6 @@ data "template_file" "provision_rke2_agent" {
     rke2_version =  var.k8s_distro_version
     selinux_mode = var.selinux_mode
     custom_ssh_public_key = var.custom_ssh_public_key
+    extra_block_device = var.extra_block_device
   }
 }
