@@ -56,8 +56,12 @@ install_cluster_autoscaler(){
 
 install_csi_snapshotter_crds(){
     CSI_SNAPSHOTTER_REPO_URL="https://github.com/kubernetes-csi/external-snapshotter.git"
-    CSI_SNAPSHOTTER_REPO_BRANCH="v6.2.1"
     CSI_SNAPSHOTTER_REPO_DIR="${TMPDIR}/k8s-csi-external-snapshotter"
+
+    [[ "${LONGHORN_REPO_URL}" =~ https://([^/]+)/([^/]+)/([^/.]+)(.git)? ]]
+    wget "https://raw.githubusercontent.com/${BASH_REMATCH[2]}/${BASH_REMATCH[3]}/${LONGHORN_REPO_BRANCH}/deploy/longhorn-images.txt" -O "/tmp/longhorn-images.txt"
+    IFS=: read -ra IMAGE_TAG_PAIR <<< $(grep csi-snapshotter /tmp/longhorn-images.txt)
+    CSI_SNAPSHOTTER_REPO_BRANCH="${IMAGE_TAG_PAIR[1]}"
 
     git clone --single-branch \
               --branch "${CSI_SNAPSHOTTER_REPO_BRANCH}" \
