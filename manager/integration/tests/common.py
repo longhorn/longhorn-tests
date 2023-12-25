@@ -66,6 +66,7 @@ RETRY_COUNTS = 150
 RETRY_COUNTS_SHORT = 30
 RETRY_COUNTS_LONG = 360
 RETRY_INTERVAL = 1
+RETRY_INTERVAL_SHORT = 0.5
 RETRY_INTERVAL_LONG = 2
 RETRY_BACKUP_COUNTS = 300
 RETRY_BACKUP_INTERVAL = 1
@@ -2133,7 +2134,7 @@ def wait_for_engine_image_creation(client, image_name):
                 break
         if found:
             break
-        time.sleep(RETRY_INTERVAL)
+        time.sleep(RETRY_INTERVAL_SHORT)
     assert found
 
 
@@ -2157,7 +2158,7 @@ def wait_for_engine_image_condition(client, image_name, state):
         image = client.by_id_engine_image(image_name)
         if image['conditions'][0]['status'] == state:
             break
-        time.sleep(RETRY_INTERVAL_LONG)
+        time.sleep(RETRY_INTERVAL_SHORT)
     assert image['conditions'][0]['status'] == state
     return image
 
