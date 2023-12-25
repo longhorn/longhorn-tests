@@ -94,6 +94,7 @@ RETRY_COUNTS = 150
 RETRY_COUNTS_SHORT = 30
 RETRY_COUNTS_LONG = 360
 RETRY_INTERVAL = 1
+RETRY_INTERVAL_SHORT = 0.5
 RETRY_INTERVAL_LONG = 2
 RETRY_BACKUP_COUNTS = 300
 RETRY_BACKUP_INTERVAL = 1
@@ -2195,7 +2196,7 @@ def wait_for_engine_image_creation(client, image_name):
                 break
         if found:
             break
-        time.sleep(RETRY_INTERVAL)
+        time.sleep(RETRY_INTERVAL_SHORT)
     assert found
 
 
@@ -2219,7 +2220,7 @@ def wait_for_engine_image_condition(client, image_name, state):
         image = client.by_id_engine_image(image_name)
         if image[&#39;conditions&#39;][0][&#39;status&#39;] == state:
             break
-        time.sleep(RETRY_INTERVAL_LONG)
+        time.sleep(RETRY_INTERVAL_SHORT)
     assert image[&#39;conditions&#39;][0][&#39;status&#39;] == state
     return image
 
@@ -12943,7 +12944,7 @@ ref: <a href="https://github.com/longhorn/longhorn/issues/4814">https://github.c
         image = client.by_id_engine_image(image_name)
         if image[&#39;conditions&#39;][0][&#39;status&#39;] == state:
             break
-        time.sleep(RETRY_INTERVAL_LONG)
+        time.sleep(RETRY_INTERVAL_SHORT)
     assert image[&#39;conditions&#39;][0][&#39;status&#39;] == state
     return image</code></pre>
 </details>
@@ -12967,7 +12968,7 @@ ref: <a href="https://github.com/longhorn/longhorn/issues/4814">https://github.c
                 break
         if found:
             break
-        time.sleep(RETRY_INTERVAL)
+        time.sleep(RETRY_INTERVAL_SHORT)
     assert found</code></pre>
 </details>
 </dd>
