@@ -47,7 +47,8 @@ from common import SETTING_STORAGE_OVER_PROVISIONING_PERCENTAGE, \
     SETTING_DEFAULT_DATA_PATH, \
     SETTING_CREATE_DEFAULT_DISK_LABELED_NODES, \
     DEFAULT_STORAGE_OVER_PROVISIONING_PERCENTAGE, \
-    SETTING_DISABLE_SCHEDULING_ON_CORDONED_NODE
+    SETTING_DISABLE_SCHEDULING_ON_CORDONED_NODE, \
+    SETTING_DETACH_MANUALLY_ATTACHED_VOLUMES_WHEN_CORDONED
 from common import get_volume_endpoint
 from common import get_update_disks
 from common import wait_for_disk_status, wait_for_disk_update, \
@@ -2654,6 +2655,14 @@ def test_disk_eviction_with_node_level_soft_anti_affinity_disabled(client, # NOQ
     replica_path = test_disk_path + &#39;/replicas&#39;
     assert os.path.isdir(replica_path)
 
+    # Since https://github.com/longhorn/longhorn-manager/pull/2138, the node
+    # controller is responsible for triggering replica eviction. If the timing
+    # of the node controller and node monitor are off, the node controller
+    # may take extra time to do so. Wait for evidence eviction is in progress
+    # before proceeding.
+    wait_for_volume_replica_count(client, volume.name,
+                                  volume.numberOfReplicas + 1)
+
     for i in range(common.RETRY_COMMAND_COUNT):
         if len(os.listdir(replica_path)) &gt; 0:
             break
@@ -2769,7 +2778,62 @@ def test_drain_with_block_for_eviction_failure():
        - Verify that `node.status.autoEvicting == true`.
        - Verify that `replica.spec.evictionRequested == true`.
     7. Verify the drain never completes.
-    &#34;&#34;&#34;</code></pre>
+    &#34;&#34;&#34;
+
+@pytest.mark.node  # NOQA
+def test_auto_detach_volume_when_node_is_cordoned(client, core_api, volume_name):  # NOQA
+    &#34;&#34;&#34;
+    Test auto detach volume when node is cordoned
+
+    1. Set `detach-manually-attached-volumes-when-cordoned` to `false`.
+    2. Create a volume and attached to the node through API (manually).
+    3. Cordon the node.
+    4. Set `detach-manually-attached-volumes-when-cordoned` to `true`.
+    5. Volume will be detached automatically.
+    &#34;&#34;&#34;
+
+    # Set `Detach Manually Attached Volumes When Cordoned` to false
+    detach_manually_attached_volumes_when_cordoned = \
+        client.by_id_setting(
+            SETTING_DETACH_MANUALLY_ATTACHED_VOLUMES_WHEN_CORDONED)
+    client.update(detach_manually_attached_volumes_when_cordoned,
+                  value=&#34;false&#34;)
+
+    # Create a volume
+    volume = client.create_volume(name=volume_name,
+                                  size=SIZE,
+                                  numberOfReplicas=3)
+    volume = common.wait_for_volume_detached(client,
+                                             volume_name)
+    assert volume.restoreRequired is False
+
+    # Attach to the node
+    host_id = get_self_host_id()
+    volume.attach(hostId=host_id)
+    volume = common.wait_for_volume_healthy(client, volume_name)
+    assert volume.restoreRequired is False
+
+    # Cordon the node
+    set_node_cordon(core_api, host_id, True)
+
+    # Volume is still attached for a while
+    time.sleep(NODE_UPDATE_WAIT_INTERVAL)
+    volume = common.wait_for_volume_healthy(client, volume_name)
+    assert volume.restoreRequired is False
+
+    # Set `Detach Manually Attached Volumes When Cordoned` to true
+    client.update(detach_manually_attached_volumes_when_cordoned, value=&#34;true&#34;)
+
+    # Volume should be detached
+    volume = common.wait_for_volume_detached(client, volume_name)
+    assert volume.restoreRequired is False
+
+    # Delete the Volume
+    client.delete(volume)
+    common.wait_for_volume_delete(client, volume_name)
+
+    volumes = client.list_volume().data
+    assert len(volumes) == 0</code></pre>
 </details>
 </section>
 <section>
@@ -2896,6 +2960,78 @@ def reset_disk_settings():
     api.update(setting, value=&#34;false&#34;)
     setting = api.by_id_setting(SETTING_DEFAULT_DATA_PATH)
     api.update(setting, value=DEFAULT_DISK_PATH)</code></pre>
+</details>
+</dd>
+<dt id="tests.test_node.test_auto_detach_volume_when_node_is_cordoned"><code class="name flex">
+<span>def <span class="ident">test_auto_detach_volume_when_node_is_cordoned</span></span>(<span>client, core_api, volume_name)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test auto detach volume when node is cordoned</p>
+<ol>
+<li>Set <code>detach-manually-attached-volumes-when-cordoned</code> to <code>false</code>.</li>
+<li>Create a volume and attached to the node through API (manually).</li>
+<li>Cordon the node.</li>
+<li>Set <code>detach-manually-attached-volumes-when-cordoned</code> to <code>true</code>.</li>
+<li>Volume will be detached automatically.</li>
+</ol></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@pytest.mark.node  # NOQA
+def test_auto_detach_volume_when_node_is_cordoned(client, core_api, volume_name):  # NOQA
+    &#34;&#34;&#34;
+    Test auto detach volume when node is cordoned
+
+    1. Set `detach-manually-attached-volumes-when-cordoned` to `false`.
+    2. Create a volume and attached to the node through API (manually).
+    3. Cordon the node.
+    4. Set `detach-manually-attached-volumes-when-cordoned` to `true`.
+    5. Volume will be detached automatically.
+    &#34;&#34;&#34;
+
+    # Set `Detach Manually Attached Volumes When Cordoned` to false
+    detach_manually_attached_volumes_when_cordoned = \
+        client.by_id_setting(
+            SETTING_DETACH_MANUALLY_ATTACHED_VOLUMES_WHEN_CORDONED)
+    client.update(detach_manually_attached_volumes_when_cordoned,
+                  value=&#34;false&#34;)
+
+    # Create a volume
+    volume = client.create_volume(name=volume_name,
+                                  size=SIZE,
+                                  numberOfReplicas=3)
+    volume = common.wait_for_volume_detached(client,
+                                             volume_name)
+    assert volume.restoreRequired is False
+
+    # Attach to the node
+    host_id = get_self_host_id()
+    volume.attach(hostId=host_id)
+    volume = common.wait_for_volume_healthy(client, volume_name)
+    assert volume.restoreRequired is False
+
+    # Cordon the node
+    set_node_cordon(core_api, host_id, True)
+
+    # Volume is still attached for a while
+    time.sleep(NODE_UPDATE_WAIT_INTERVAL)
+    volume = common.wait_for_volume_healthy(client, volume_name)
+    assert volume.restoreRequired is False
+
+    # Set `Detach Manually Attached Volumes When Cordoned` to true
+    client.update(detach_manually_attached_volumes_when_cordoned, value=&#34;true&#34;)
+
+    # Volume should be detached
+    volume = common.wait_for_volume_detached(client, volume_name)
+    assert volume.restoreRequired is False
+
+    # Delete the Volume
+    client.delete(volume)
+    common.wait_for_volume_delete(client, volume_name)
+
+    volumes = client.list_volume().data
+    assert len(volumes) == 0</code></pre>
 </details>
 </dd>
 <dt id="tests.test_node.test_disable_scheduling_on_cordoned_node"><code class="name flex">
@@ -3079,6 +3215,14 @@ Verify the data from the volume.</li>
     # Step 6
     replica_path = test_disk_path + &#39;/replicas&#39;
     assert os.path.isdir(replica_path)
+
+    # Since https://github.com/longhorn/longhorn-manager/pull/2138, the node
+    # controller is responsible for triggering replica eviction. If the timing
+    # of the node controller and node monitor are off, the node controller
+    # may take extra time to do so. Wait for evidence eviction is in progress
+    # before proceeding.
+    wait_for_volume_replica_count(client, volume.name,
+                                  volume.numberOfReplicas + 1)
 
     for i in range(common.RETRY_COMMAND_COUNT):
         if len(os.listdir(replica_path)) &gt; 0:
@@ -6184,6 +6328,7 @@ def test_update_node(client):  # NOQA
 <li><code><a title="tests.test_node.reset_default_disk_label" href="#tests.test_node.reset_default_disk_label">reset_default_disk_label</a></code></li>
 <li><code><a title="tests.test_node.reset_disk_and_tag_annotations" href="#tests.test_node.reset_disk_and_tag_annotations">reset_disk_and_tag_annotations</a></code></li>
 <li><code><a title="tests.test_node.reset_disk_settings" href="#tests.test_node.reset_disk_settings">reset_disk_settings</a></code></li>
+<li><code><a title="tests.test_node.test_auto_detach_volume_when_node_is_cordoned" href="#tests.test_node.test_auto_detach_volume_when_node_is_cordoned">test_auto_detach_volume_when_node_is_cordoned</a></code></li>
 <li><code><a title="tests.test_node.test_disable_scheduling_on_cordoned_node" href="#tests.test_node.test_disable_scheduling_on_cordoned_node">test_disable_scheduling_on_cordoned_node</a></code></li>
 <li><code><a title="tests.test_node.test_disk_eviction_with_node_level_soft_anti_affinity_disabled" href="#tests.test_node.test_disk_eviction_with_node_level_soft_anti_affinity_disabled">test_disk_eviction_with_node_level_soft_anti_affinity_disabled</a></code></li>
 <li><code><a title="tests.test_node.test_disk_migration" href="#tests.test_node.test_disk_migration">test_disk_migration</a></code></li>

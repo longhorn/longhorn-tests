@@ -657,7 +657,26 @@ def test_backing_image_with_wrong_md5sum(bi_url, client): # NOQA
                                 expectedChecksum=backing_image_wrong_checksum)
 
     wait_for_backing_image_status(client, BACKING_IMAGE_NAME,
-                                  BACKING_IMAGE_STATE_FAILED_AND_CLEANUP)</code></pre>
+                                  BACKING_IMAGE_STATE_FAILED_AND_CLEANUP)
+
+
+@pytest.mark.skip(reason=&#34;TODO&#34;)
+def test_volume_wait_for_backing_image_conditino(): # NOQA
+    &#34;&#34;&#34;
+    Test the volume condition &#34;WaitForBackingImage&#34;
+
+    Given
+    - Create a BackingImage
+
+    When
+    - Creating the Volume with the BackingImage while it is still in progress
+
+    Then
+    - The condition &#34;WaitForBackingImage&#34; of the Volume
+      would be first True and then change to False when
+      the BackingImage is ready and all the replicas are in running state.
+    &#34;&#34;&#34;
+    pass</code></pre>
 </details>
 </section>
 <section>
@@ -1592,6 +1611,42 @@ def test_volume_iscsi_basic_with_backing_image(client, volume_name):  # NOQA
         cleanup_all_backing_images(client)</code></pre>
 </details>
 </dd>
+<dt id="tests.test_backing_image.test_volume_wait_for_backing_image_conditino"><code class="name flex">
+<span>def <span class="ident">test_volume_wait_for_backing_image_conditino</span></span>(<span>)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test the volume condition "WaitForBackingImage"</p>
+<p>Given
+- Create a BackingImage</p>
+<p>When
+- Creating the Volume with the BackingImage while it is still in progress</p>
+<p>Then
+- The condition "WaitForBackingImage" of the Volume
+would be first True and then change to False when
+the BackingImage is ready and all the replicas are in running state.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@pytest.mark.skip(reason=&#34;TODO&#34;)
+def test_volume_wait_for_backing_image_conditino(): # NOQA
+    &#34;&#34;&#34;
+    Test the volume condition &#34;WaitForBackingImage&#34;
+
+    Given
+    - Create a BackingImage
+
+    When
+    - Creating the Volume with the BackingImage while it is still in progress
+
+    Then
+    - The condition &#34;WaitForBackingImage&#34; of the Volume
+      would be first True and then change to False when
+      the BackingImage is ready and all the replicas are in running state.
+    &#34;&#34;&#34;
+    pass</code></pre>
+</details>
+</dd>
 </dl>
 </section>
 <section>
@@ -1637,6 +1692,7 @@ def test_volume_iscsi_basic_with_backing_image(client, volume_name):  # NOQA
 <li><code><a title="tests.test_backing_image.test_snapshot_with_backing_image" href="#tests.test_backing_image.test_snapshot_with_backing_image">test_snapshot_with_backing_image</a></code></li>
 <li><code><a title="tests.test_backing_image.test_volume_basic_with_backing_image" href="#tests.test_backing_image.test_volume_basic_with_backing_image">test_volume_basic_with_backing_image</a></code></li>
 <li><code><a title="tests.test_backing_image.test_volume_iscsi_basic_with_backing_image" href="#tests.test_backing_image.test_volume_iscsi_basic_with_backing_image">test_volume_iscsi_basic_with_backing_image</a></code></li>
+<li><code><a title="tests.test_backing_image.test_volume_wait_for_backing_image_conditino" href="#tests.test_backing_image.test_volume_wait_for_backing_image_conditino">test_volume_wait_for_backing_image_conditino</a></code></li>
 </ul>
 </li>
 </ul>

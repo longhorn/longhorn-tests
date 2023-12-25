@@ -8,6 +8,13 @@
     <language>en-us</language>
     <atom:link href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.6.0/index.xml" rel="self" type="application/rss+xml" />
     <item>
+      <title></title>
+      <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.6.0/test-upgrade-responder-collectiing-average-sizes-for-v1-volumes-only/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.6.0/test-upgrade-responder-collectiing-average-sizes-for-v1-volumes-only/</guid>
+      <description>Related issues https://github.com/longhorn/longhorn/issues/7380 Test step Given Patch build and deploy Longhorn.&#xA;diff --git a/controller/setting_controller.go b/controller/setting_controller.go index de77b7246..ac6263ac5 100644 --- a/controller/setting_controller.go +++ b/controller/setting_controller.go @@ -49,7 +49,7 @@ const ( var ( upgradeCheckInterval = time.Hour settingControllerResyncPeriod = time.Hour -&#x9;checkUpgradeURL = &amp;#34;https://longhorn-upgrade-responder.rancher.io/v1/checkupgrade&amp;#34; +&#x9;checkUpgradeURL = &amp;#34;http://longhorn-upgrade-responder.default.svc.cluster.local:8314/v1/checkupgrade&amp;#34; ) type SettingController struct { Match the checkUpgradeURL with the application name: http://&amp;lt;APP_NAME&amp;gt;-upgrade-responder.default.svc.cluster.local:8314/v1/checkupgrade&#xA;And setting v2-data-engine value is true.&#xA;And add a block disk to cluster nodes.</description>
+    </item>
+    <item>
       <title>Setup and test storage network when Multus version is above v4.0.0</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.6.0/test-storage-network/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
@@ -55,6 +62,13 @@
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.6.0/test-support-bundle-syslog-paths/</guid>
       <description>Related issue https://github.com/longhorn/longhorn/issues/6544&#xA;Test /var/log/messages Given Longhorn installed on SUSE Linux&#xA;When generated support-bundle&#xA;And syslog exists in the messages file&#xA;Test /var/log/syslog Given Longhorn installed on Ubuntu Linux&#xA;When generated support-bundle&#xA;And syslog exists in the syslog file</description>
+    </item>
+    <item>
+      <title>Test upgrade responder should collect SPDK related info</title>
+      <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.6.0/test-upgrade-responder-collect-spdk-related-info/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.6.0/test-upgrade-responder-collect-spdk-related-info/</guid>
+      <description>Related issue https://github.com/longhorn/longhorn/issues/6033&#xA;Test step Prerequisite Given Patch build and deploy Longhorn.&#xA;diff --git a/controller/setting_controller.go b/controller/setting_controller.go index de77b7246..ac6263ac5 100644 --- a/controller/setting_controller.go +++ b/controller/setting_controller.go @@ -49,7 +49,7 @@ const ( var ( upgradeCheckInterval = time.Hour settingControllerResyncPeriod = time.Hour -&#x9;checkUpgradeURL = &amp;#34;https://longhorn-upgrade-responder.rancher.io/v1/checkupgrade&amp;#34; +&#x9;checkUpgradeURL = &amp;#34;http://longhorn-upgrade-responder.default.svc.cluster.local:8314/v1/checkupgrade&amp;#34; ) type SettingController struct { Match the checkUpgradeURL with the application name: http://&amp;lt;APP_NAME&amp;gt;-upgrade-responder.default.svc.cluster.local:8314/v1/checkupgrade&#xA;And Set setting v2-data-engine to true.&#xA;And Add two block-type Disks in Longhorn Nodes.</description>
     </item>
   </channel>
 </rss>

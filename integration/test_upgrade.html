@@ -233,6 +233,12 @@ def longhorn_upgrade(longhorn_install_method,
                                     longhorn_repo_url,
                                     longhorn_repo_branch],
                                    shell=False)
+    elif longhorn_install_method == &#34;fleet&#34;:
+        command = &#34;./pipelines/fleet/scripts/upgrade-longhorn.sh&#34;
+        process = subprocess.Popen([command,
+                                    longhorn_repo_url,
+                                    longhorn_repo_branch],
+                                   shell=False)
 
     process.wait()
     if process.returncode == 0:
@@ -791,6 +797,12 @@ def longhorn_repo(request):
                                    shell=False)
     elif longhorn_install_method == &#34;argocd&#34;:
         command = &#34;./pipelines/argocd/scripts/upgrade-longhorn.sh&#34;
+        process = subprocess.Popen([command,
+                                    longhorn_repo_url,
+                                    longhorn_repo_branch],
+                                   shell=False)
+    elif longhorn_install_method == &#34;fleet&#34;:
+        command = &#34;./pipelines/fleet/scripts/upgrade-longhorn.sh&#34;
         process = subprocess.Popen([command,
                                     longhorn_repo_url,
                                     longhorn_repo_branch],

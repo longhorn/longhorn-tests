@@ -773,27 +773,85 @@
   
 </aside>
 
+
 <main style="padding: 1%; width: 70%;">
-  <header class="homepage-header">
-    <h1>AKS</h1>
-    
-  </header>
-  <div class="homepage-content">
-    
-  </div>
+  <h1 id="title"></h1>
   <div>
-    <ul>
-
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/managed-kubernetes-clusters/aks/expand-volume/">Expand Volume</a></li>
-  
-
-  <li><a href="https://longhorn.github.io/longhorn-tests/manual/pre-release/managed-kubernetes-clusters/aks/upgrade-k8s/">Upgrade K8s</a></li>
-  
-
+    <article id="content">
+       <h2 id="related-issues">Related issues</h2>
+<ul>
+<li><a href="https://github.com/longhorn/longhorn/issues/7380">https://github.com/longhorn/longhorn/issues/7380</a></li>
 </ul>
+<h2 id="test-step">Test step</h2>
+<p><strong>Given</strong> Patch build and deploy Longhorn.</p>
+<pre tabindex="0"><code>diff --git a/controller/setting_controller.go b/controller/setting_controller.go
+index de77b7246..ac6263ac5 100644
+--- a/controller/setting_controller.go
++++ b/controller/setting_controller.go
+@@ -49,7 +49,7 @@ const (
+ var (
+ 	upgradeCheckInterval          = time.Hour
+ 	settingControllerResyncPeriod = time.Hour
+-	checkUpgradeURL               = &#34;https://longhorn-upgrade-responder.rancher.io/v1/checkupgrade&#34;
++	checkUpgradeURL               = &#34;http://longhorn-upgrade-responder.default.svc.cluster.local:8314/v1/checkupgrade&#34;
+ )
 
+ type SettingController struct {
+</code></pre><blockquote>
+<p>Match the checkUpgradeURL with the application name: <code>http://&lt;APP_NAME&gt;-upgrade-responder.default.svc.cluster.local:8314/v1/checkupgrade</code></p>
+</blockquote>
+<p><strong>And</strong> setting <code>v2-data-engine</code> value is <code>true</code>.<br>
+<strong>And</strong> add a block disk to cluster nodes.<br>
+<strong>And</strong> <a href="https://github.com/longhorn/longhorn/tree/master/dev/upgrade-responder">deploy upgrade responder stack</a>.</p>
+<p><strong>When</strong> create 50 mi volume <code>lhv-v1</code> using v1 data engine.<br>
+<strong>And</strong> create 50 mi volume <code>lhv-v2</code> using v2 data engine.<br>
+<strong>And</strong> attach volume <code>lhv-v1</code> and write some data.<br>
+<strong>And</strong> attach volume <code>lhv-v2</code> and write some data.<br>
+<strong>And</strong> Wait 1~2 hours for collection data to send to the influxDB database.</p>
+<p><strong>Then</strong> the value of field <code>longhorn_volume_average_size_bytes</code> in the influxdb should equal to the average size of all v1 volumes (excluding v2 volumes).<br>
+<strong>And</strong> the value of field <code>longhorn_volume_average_actual_size_bytes</code> in the influxdb should be equal or simular to the average actual size of all v1 volumes (excluding v2 volumes).</p>
+<blockquote>
+<p>It&rsquo;s OK for the actual size to be slightly off due to ongoing workload activities, such as data writing by the upgrade-responder.</p>
+</blockquote>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span><span style="color:#75715e"># Get the sizes in the influxdb.</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">#</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># Sample:</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># &gt; name: upgrade_request</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">#   time                longhorn_volume_average_actual_size_bytes longhorn_volume_average_size_bytes</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">#   ----                ----------------------------------------- ----------------------------------</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">#   1703045996398941914 73269248                                  1449132032</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">#   1703046063248379696 73284266                                  1449132032</span>
+</span></span><span style="display:flex;"><span>app_name<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;longhorn&#34;</span>
+</span></span><span style="display:flex;"><span>influxdb_pod<span style="color:#f92672">=</span><span style="color:#66d9ef">$(</span>kubectl get pod | grep influxdb | awk <span style="color:#e6db74">&#39;{print $1}&#39;</span> | head -n 1<span style="color:#66d9ef">)</span>
+</span></span><span style="display:flex;"><span>kubectl exec -it <span style="color:#e6db74">${</span>influxdb_pod<span style="color:#e6db74">}</span> -- influx -execute <span style="color:#e6db74">&#39;SELECT &#34;longhorn_volume_average_actual_size_bytes&#34;, &#34;longhorn_volume_average_size_bytes&#34; FROM &#34;upgrade_request&#34;&#39;</span> -database<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;</span><span style="color:#e6db74">${</span>app_name<span style="color:#e6db74">}</span><span style="color:#e6db74">_upgrade_responder&#34;</span>
+</span></span></code></pre></div><div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span><span style="color:#75715e"># Get the sizes from Longhorn volumes.</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>v1_volume_count<span style="color:#f92672">=</span><span style="color:#66d9ef">$(</span>kubectl get volumes -n longhorn-system -o<span style="color:#f92672">=</span>jsonpath<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;{range .items[*]}{.spec.backendStoreDriver}{&#34;\n&#34;}{end}&#39;</span> | grep -c <span style="color:#e6db74">&#39;v1&#39;</span><span style="color:#66d9ef">)</span>
+</span></span><span style="display:flex;"><span>echo <span style="color:#e6db74">&#34;Number of V1 volumes: </span>$v1_volume_count<span style="color:#e6db74">&#34;</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># Get the expected average size.</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># &gt; Total size: 4347396096</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># &gt; Average size: 1449132032</span>
+</span></span><span style="display:flex;"><span>total_size<span style="color:#f92672">=</span><span style="color:#66d9ef">$(</span>kubectl get volumes -n longhorn-system -o<span style="color:#f92672">=</span>json | jq -r <span style="color:#e6db74">&#39;[.items[] | select(.spec.backendStoreDriver != &#34;v2&#34;) | .spec.size | tonumber] | add&#39;</span><span style="color:#66d9ef">)</span>
+</span></span><span style="display:flex;"><span>echo <span style="color:#e6db74">&#34;Total size: </span>$total_size<span style="color:#e6db74">&#34;</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>average_size<span style="color:#f92672">=</span><span style="color:#66d9ef">$(</span>echo <span style="color:#e6db74">&#34;scale=0; </span>$total_size<span style="color:#e6db74"> / </span>$v1_volume_count<span style="color:#e6db74">&#34;</span> | bc<span style="color:#66d9ef">)</span>
+</span></span><span style="display:flex;"><span>echo <span style="color:#e6db74">&#34;Average size: </span>$average_size<span style="color:#e6db74">&#34;</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># Get the expected average actual size.</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">#</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># Sample:</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># &gt; Total actualSize: 220368896</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># &gt; Average actual size: 73456298</span>
+</span></span><span style="display:flex;"><span>total_actual_size<span style="color:#f92672">=</span><span style="color:#66d9ef">$(</span>kubectl get volumes -n longhorn-system -o<span style="color:#f92672">=</span>json | jq -r <span style="color:#e6db74">&#39;[.items[] | select(.spec.backendStoreDriver != &#34;v2&#34;) | .status.actualSize | tonumber] | add&#39;</span><span style="color:#66d9ef">)</span>
+</span></span><span style="display:flex;"><span>echo <span style="color:#e6db74">&#34;Total actualSize: </span>$total_actual_size<span style="color:#e6db74">&#34;</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>average_total_actual_size<span style="color:#f92672">=</span><span style="color:#66d9ef">$(</span>echo <span style="color:#e6db74">&#34;scale=0; </span>$total_actual_size<span style="color:#e6db74"> / </span>$v1_volume_count<span style="color:#e6db74">&#34;</span> | bc<span style="color:#66d9ef">)</span>
+</span></span><span style="display:flex;"><span>echo <span style="color:#e6db74">&#34;Average actual size: </span>$average_total_actual_size<span style="color:#e6db74">&#34;</span>
+</span></span></code></pre></div>
+    </article>
+  <a href="https://github.com/longhorn/longhorn-tests/edit/master/docs/content/manual/release-specific/v1.6.0/test-upgrade-responder-collectiing-average-sizes-for-v1-volumes-only.md" target="_blank" title="Edit on Github" style="font-size:smaller;float:right;padding-right:3%">[Edit]</a>
   </div>
-</main>
 
     
     

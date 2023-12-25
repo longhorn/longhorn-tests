@@ -34,6 +34,8 @@ from common import exec_command_in_pod, get_pod_data_md5sum
 from common import create_and_wait_pod, read_volume_data
 from common import get_apps_api_client, wait_statefulset
 from common import create_and_wait_deployment, delete_and_wait_pod
+from common import delete_and_wait_deployment
+from common import delete_and_wait_pvc
 from common import prepare_pod_with_data_in_mb, DATA_SIZE_IN_MB_1
 from common import create_snapshot, wait_for_backup_completion
 from common import find_backup, Gi, volume_name, csi_pv, pod_make  # NOQA
@@ -48,6 +50,8 @@ from common import RETRY_COUNTS, RETRY_INTERVAL
 from common import EXPANDED_VOLUME_SIZE
 from common import expand_and_wait_for_pvc, wait_for_volume_expansion
 from common import wait_deployment_replica_ready, wait_for_volume_healthy
+from common import crypto_secret, storage_class  # NOQA
+from common import create_crypto_secret, create_storage_class
 from backupstore import set_random_backupstore # NOQA
 from multiprocessing import Pool
 
@@ -664,7 +668,52 @@ def test_rwx_offline_expansion(client, core_api, pvc, make_deployment_with_pvc):
     data_size_in_pod = exec_command_in_pod(core_api, command,
                                            pod_name,
                                            &#39;default&#39;)
-    assert int(data_size_in_pod)/1024/1024 == data_size_in_mb</code></pre>
+    assert int(data_size_in_pod)/1024/1024 == data_size_in_mb
+
+
+def test_encrypted_rwx_volume(core_api, statefulset, storage_class, crypto_secret, pvc, make_deployment_with_pvc):  # NOQA
+    &#34;&#34;&#34;
+    Test creating encrypted rwx volume and use the secret in
+    non longhorn-system namespace.
+
+    1. Create crypto secret in non longhorn-system namespace.
+    2. Create a storage class.
+    3. Create a deployment with a PVC and the pods should be able to running.
+    &#34;&#34;&#34;
+
+    namespace = &#39;default&#39;
+    # Create crypto secret
+    secret = crypto_secret(namespace)
+    create_crypto_secret(secret, namespace)
+
+    # Create storage class
+    storage_class[&#39;reclaimPolicy&#39;] = &#39;Delete&#39;
+    storage_class[&#39;parameters&#39;][&#39;csi.storage.k8s.io/provisioner-secret-name&#39;] = &#39;longhorn-crypto&#39;  # NOQA
+    storage_class[&#39;parameters&#39;][&#39;csi.storage.k8s.io/provisioner-secret-namespace&#39;] = namespace  # NOQA
+    storage_class[&#39;parameters&#39;][&#39;csi.storage.k8s.io/node-publish-secret-name&#39;] = &#39;longhorn-crypto&#39;  # NOQA
+    storage_class[&#39;parameters&#39;][&#39;csi.storage.k8s.io/node-publish-secret-namespace&#39;] = namespace  # NOQA
+    storage_class[&#39;parameters&#39;][&#39;csi.storage.k8s.io/node-stage-secret-name&#39;] = &#39;longhorn-crypto&#39;  # NOQA
+    storage_class[&#39;parameters&#39;][&#39;csi.storage.k8s.io/node-stage-secret-namespace&#39;] = namespace  # NOQA
+    create_storage_class(storage_class)
+
+    # Create deployment with PVC
+    pvc_name = &#39;pvc-deployment-with-encrypted-rwx-volume&#39;
+    pvc[&#39;metadata&#39;][&#39;name&#39;] = pvc_name
+    pvc[&#39;spec&#39;][&#39;storageClassName&#39;] = storage_class[&#39;metadata&#39;][&#39;name&#39;]
+    pvc[&#39;spec&#39;][&#39;accessModes&#39;] = [&#39;ReadWriteMany&#39;]
+
+    core_api.create_namespaced_persistent_volume_claim(
+        body=pvc, namespace=&#39;default&#39;)
+
+    deployment = make_deployment_with_pvc(
+        &#39;pvc-deployment-with-encrypted-rwx-volume&#39;, pvc_name, replicas=3)
+
+    apps_api = get_apps_api_client()
+    create_and_wait_deployment(apps_api, deployment)
+
+    # Clean up deployment and volume
+    delete_and_wait_deployment(apps_api, deployment[&#34;metadata&#34;][&#34;name&#34;])
+    delete_and_wait_pvc(core_api, pvc_name)</code></pre>
 </details>
 </section>
 <section>
@@ -674,6 +723,66 @@ def test_rwx_offline_expansion(client, core_api, pvc, make_deployment_with_pvc):
 <section>
 <h2 class="section-title" id="header-functions">Functions</h2>
 <dl>
+<dt id="tests.test_rwx.test_encrypted_rwx_volume"><code class="name flex">
+<span>def <span class="ident">test_encrypted_rwx_volume</span></span>(<span>core_api, statefulset, storage_class, crypto_secret, pvc, make_deployment_with_pvc)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test creating encrypted rwx volume and use the secret in
+non longhorn-system namespace.</p>
+<ol>
+<li>Create crypto secret in non longhorn-system namespace.</li>
+<li>Create a storage class.</li>
+<li>Create a deployment with a PVC and the pods should be able to running.</li>
+</ol></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def test_encrypted_rwx_volume(core_api, statefulset, storage_class, crypto_secret, pvc, make_deployment_with_pvc):  # NOQA
+    &#34;&#34;&#34;
+    Test creating encrypted rwx volume and use the secret in
+    non longhorn-system namespace.
+
+    1. Create crypto secret in non longhorn-system namespace.
+    2. Create a storage class.
+    3. Create a deployment with a PVC and the pods should be able to running.
+    &#34;&#34;&#34;
+
+    namespace = &#39;default&#39;
+    # Create crypto secret
+    secret = crypto_secret(namespace)
+    create_crypto_secret(secret, namespace)
+
+    # Create storage class
+    storage_class[&#39;reclaimPolicy&#39;] = &#39;Delete&#39;
+    storage_class[&#39;parameters&#39;][&#39;csi.storage.k8s.io/provisioner-secret-name&#39;] = &#39;longhorn-crypto&#39;  # NOQA
+    storage_class[&#39;parameters&#39;][&#39;csi.storage.k8s.io/provisioner-secret-namespace&#39;] = namespace  # NOQA
+    storage_class[&#39;parameters&#39;][&#39;csi.storage.k8s.io/node-publish-secret-name&#39;] = &#39;longhorn-crypto&#39;  # NOQA
+    storage_class[&#39;parameters&#39;][&#39;csi.storage.k8s.io/node-publish-secret-namespace&#39;] = namespace  # NOQA
+    storage_class[&#39;parameters&#39;][&#39;csi.storage.k8s.io/node-stage-secret-name&#39;] = &#39;longhorn-crypto&#39;  # NOQA
+    storage_class[&#39;parameters&#39;][&#39;csi.storage.k8s.io/node-stage-secret-namespace&#39;] = namespace  # NOQA
+    create_storage_class(storage_class)
+
+    # Create deployment with PVC
+    pvc_name = &#39;pvc-deployment-with-encrypted-rwx-volume&#39;
+    pvc[&#39;metadata&#39;][&#39;name&#39;] = pvc_name
+    pvc[&#39;spec&#39;][&#39;storageClassName&#39;] = storage_class[&#39;metadata&#39;][&#39;name&#39;]
+    pvc[&#39;spec&#39;][&#39;accessModes&#39;] = [&#39;ReadWriteMany&#39;]
+
+    core_api.create_namespaced_persistent_volume_claim(
+        body=pvc, namespace=&#39;default&#39;)
+
+    deployment = make_deployment_with_pvc(
+        &#39;pvc-deployment-with-encrypted-rwx-volume&#39;, pvc_name, replicas=3)
+
+    apps_api = get_apps_api_client()
+    create_and_wait_deployment(apps_api, deployment)
+
+    # Clean up deployment and volume
+    delete_and_wait_deployment(apps_api, deployment[&#34;metadata&#34;][&#34;name&#34;])
+    delete_and_wait_pvc(core_api, pvc_name)</code></pre>
+</details>
+</dd>
 <dt id="tests.test_rwx.test_restore_rwo_volume_to_rwx"><code class="name flex">
 <span>def <span class="ident">test_restore_rwo_volume_to_rwx</span></span>(<span>set_random_backupstore, client, core_api, volume_name, pvc, csi_pv, pod_make, make_deployment_with_pvc)</span>
 </code></dt>
@@ -1504,6 +1613,7 @@ path <code>/export</code></li>
 </li>
 <li><h3><a href="#header-functions">Functions</a></h3>
 <ul class="">
+<li><code><a title="tests.test_rwx.test_encrypted_rwx_volume" href="#tests.test_rwx.test_encrypted_rwx_volume">test_encrypted_rwx_volume</a></code></li>
 <li><code><a title="tests.test_rwx.test_restore_rwo_volume_to_rwx" href="#tests.test_rwx.test_restore_rwo_volume_to_rwx">test_restore_rwo_volume_to_rwx</a></code></li>
 <li><code><a title="tests.test_rwx.test_rwx_delete_share_manager_pod" href="#tests.test_rwx.test_rwx_delete_share_manager_pod">test_rwx_delete_share_manager_pod</a></code></li>
 <li><code><a title="tests.test_rwx.test_rwx_deployment_with_multi_pods" href="#tests.test_rwx.test_rwx_deployment_with_multi_pods">test_rwx_deployment_with_multi_pods</a></code></li>
