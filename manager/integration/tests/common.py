@@ -210,6 +210,7 @@ SETTING_AUTO_CLEANUP_SYSTEM_GERERATED_SNAPSHOT = \
 SETTING_BACKUP_COMPRESSION_METHOD = "backup-compression-method"
 SETTING_BACKUP_CONCURRENT_LIMIT = "backup-concurrent-limit"
 SETTING_RESTORE_CONCURRENT_LIMIT = "restore-concurrent-limit"
+SETTING_V1_DATA_ENGINE = "v1-data-engine"
 
 DEFAULT_BACKUP_COMPRESSION_METHOD = "lz4"
 BACKUP_COMPRESSION_METHOD_LZ4 = "lz4"
@@ -6004,3 +6005,13 @@ def create_volume_and_write_data(client, volume_name, volume_size=SIZE):
     volume_data = write_volume_random_data(volume)
 
     return volume, volume_data
+
+
+def wait_for_instance_manager_count(client, number, retry_counts=120):
+    for _ in range(retry_counts):
+        ims = client.list_instance_manager()
+        if len(ims) == number:
+            break
+        time.sleep(RETRY_INTERVAL_LONG)
+
+    return len(ims)

@@ -22,7 +22,7 @@ from common import (  # NOQA
     get_engine_image_status_value,
     create_volume, create_volume_and_backup, cleanup_volume_by_name,
     wait_for_volume_restoration_completed, wait_for_backup_restore_completed,
-    get_engine_host_id,
+    get_engine_host_id, wait_for_instance_manager_count,
     Gi, Mi,
 
     LONGHORN_NAMESPACE,
@@ -32,6 +32,7 @@ from common import (  # NOQA
     SETTING_DEFAULT_REPLICA_COUNT,
     SETTING_BACKUP_TARGET,
     SETTING_CONCURRENT_VOLUME_BACKUP_RESTORE,
+    SETTING_V1_DATA_ENGINE,
     RETRY_COUNTS, RETRY_INTERVAL, RETRY_INTERVAL_LONG,
     update_setting, BACKING_IMAGE_QCOW2_URL, BACKING_IMAGE_NAME,
     create_backing_image_with_matching_url, BACKING_IMAGE_EXT4_SIZE,
@@ -1241,3 +1242,63 @@ def test_setting_update_with_invalid_value_via_configmap(core_api, request):  # 
                        ""])
 
     cleanup_volume_by_name(client, vol_name)
+
+
+def test_setting_v1_data_engine(client, request): # NOQA
+    """
+    Test that the v1 data engine setting works correctly.
+    1. Create a volume and attach it.
+    2. Set v1 data engine setting to false. The setting should be rejected.
+    3. Detach the volume.
+    4. Set v1 data engine setting to false again. The setting should be
+       accepted. Then, attach the volume. The volume is unable to attach.
+    5. set v1 data engine setting to true. The setting should be accepted.
+    6. Attach the volume.
+    """
+
+    setting = client.by_id_setting(SETTING_V1_DATA_ENGINE)
+
+    # Step 1
+    volume_name = "test-v1-vol"  # NOQA
+    volume = create_and_check_volume(client, volume_name)
+
+    def finalizer():
+        cleanup_volume(client, volume)
+        client.update(setting, value="true")
+
+    request.addfinalizer(finalizer)
+
+    volume.attach(hostId=get_self_host_id())
+    volume = wait_for_volume_healthy(client, volume_name)
+
+    # Step 2
+    with pytest.raises(Exception) as e:
+        client.update(setting, value="false")
+    assert 'cannot apply v1-data-engine setting to Longhorn workloads when ' \
+        'there are attached v1 volumes' in str(e.value)
+
+    # Step 3
+    volume.detach()
+    wait_for_volume_detached(client, volume_name)
+
+    # Step 4
+    setting = client.by_id_setting(SETTING_V1_DATA_ENGINE)
+    client.update(setting, value="false")
+
+    count = wait_for_instance_manager_count(client, 0)
+    assert count == 0
+
+    volume.attach(hostId=get_self_host_id())
+    with pytest.raises(Exception) as e:
+        wait_for_volume_healthy(client, volume_name)
+    assert 'volume[key]=detached' in str(e.value)
+
+    # Step 5
+    client.update(setting, value="true")
+    nodes = client.list_node()
+    count = wait_for_instance_manager_count(client, len(nodes))
+    assert count == len(nodes)
+
+    # Step 6
+    volume.attach(hostId=get_self_host_id())
+    volume = wait_for_volume_healthy(client, volume_name)
