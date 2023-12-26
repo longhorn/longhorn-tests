@@ -127,3 +127,9 @@ variable "resources_owner" {
   type        = string
   default     = "longhorn-infra"
 }
+
+variable "custom_ssh_public_key" {
+  type = string
+  default = ""
+  sensitive = true
+}

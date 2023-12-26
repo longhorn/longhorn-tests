@@ -26,3 +26,6 @@ until (KUBECONFIG=/etc/rancher/rke2/rke2.yaml /var/lib/rancher/rke2/bin/kubectl 
   sleep 5
 done
 
+if [[ -n "${custom_ssh_public_key}" ]]; then
+  echo "${custom_ssh_public_key}" >> /home/ubuntu/.ssh/authorized_keys
+fi

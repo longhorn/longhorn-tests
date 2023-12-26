@@ -12,124 +12,143 @@ Test Teardown    Cleanup test resources
 ${LOOP_COUNT}    1
 ${RETRY_COUNT}    300
 ${RETRY_INTERVAL}    1
+${VOLUME_TYPE}    rwo
+${CONTROL_PLANE_NODE_NETWORK_LATENCY_IN_MS}    0
 
 *** Test Cases ***
 Reboot Node One By One While Workload Heavy Writing
-    Create deployment 0 with rwo volume
-    Create deployment 1 with rwx volume
-    Create deployment 2 with rwo and strict-local volume
-    Create statefulset 0 with rwo volume
-    Create statefulset 1 with rwx volume
-    Create statefulset 2 with rwo and strict-local volume
+    Given Create deployment 0 with rwo volume
+    And Create deployment 1 with rwx volume
+    And Create deployment 2 with rwo and strict-local volume
+    And Create statefulset 0 with rwo volume
+    And Create statefulset 1 with rwx volume
+    And Create statefulset 2 with rwo and strict-local volume
+
     FOR    ${i}    IN RANGE    ${LOOP_COUNT}
-        Keep writing data to deployment 0
-        Keep writing data to deployment 1
-        Keep writing data to deployment 2
-        Keep writing data to statefulset 0
-        Keep writing data to statefulset 1
-        Keep writing data to statefulset 2
-        Reboot node 0
-        Reboot node 1
-        Reboot node 2
-        Wait for longhorn ready
-        Check deployment 0 works
-        Check deployment 1 works
-        Check deployment 2 works
-        Check statefulset 0 works
-        Check statefulset 1 works
-        Check statefulset 2 works
+        And Keep writing data to deployment 0
+        And Keep writing data to deployment 1
+        And Keep writing data to deployment 2
+        And Keep writing data to statefulset 0
+        And Keep writing data to statefulset 1
+        And Keep writing data to statefulset 2
+
+        When Reboot node 0
+        And Reboot node 1
+        And Reboot node 2
+        And Wait for longhorn ready
+
+        Then Check deployment 0 works
+        And Check deployment 1 works
+        And Check deployment 2 works
+        And Check statefulset 0 works
+        And Check statefulset 1 works
+        And Check statefulset 2 works
     END
 
 Power Off Node One By Once For More Than Pod Eviction Timeout While Workload Heavy Writing
-    Create deployment 0 with rwo volume
-    Create deployment 1 with rwx volume
-    Create deployment 2 with rwo and strict-local volume
-    Create statefulset 0 with rwo volume
-    Create statefulset 1 with rwx volume
-    Create statefulset 2 with rwo and strict-local volume
+    Given Create deployment 0 with rwo volume
+    And Create deployment 1 with rwx volume
+    And Create deployment 2 with rwo and strict-local volume
+    And Create statefulset 0 with rwo volume
+    And Create statefulset 1 with rwx volume
+    And Create statefulset 2 with rwo and strict-local volume
+
     FOR    ${i}    IN RANGE    ${LOOP_COUNT}
-        Keep writing data to deployment 0
-        Keep writing data to deployment 1
-        Keep writing data to deployment 2
-        Keep writing data to statefulset 0
-        Keep writing data to statefulset 1
-        Keep writing data to statefulset 2
-        Power off node 0 for 6 mins
-        Power off node 1 for 6 mins
-        Power off node 2 for 6 mins
-        Wait for longhorn ready
-        Check deployment 0 works
-        Check deployment 1 works
-        Check deployment 2 works
-        Check statefulset 0 works
-        Check statefulset 1 works
-        Check statefulset 2 works
+        And Keep writing data to deployment 0
+        And Keep writing data to deployment 1
+        And Keep writing data to deployment 2
+        And Keep writing data to statefulset 0
+        And Keep writing data to statefulset 1
+        And Keep writing data to statefulset 2
+
+        When Power off node 0 for 6 mins
+        And Power off node 1 for 6 mins
+        And Power off node 2 for 6 mins
+        And Wait for longhorn ready
+
+        Then Check deployment 0 works
+        And Check deployment 1 works
+        And Check deployment 2 works
+        And Check statefulset 0 works
+        And Check statefulset 1 works
+        And Check statefulset 2 works
     END
 
 Reboot All Worker Nodes While Workload Heavy Writing
-    Create deployment 0 with rwo volume
-    Create deployment 1 with rwx volume
-    Create deployment 2 with rwo and strict-local volume
-    Create statefulset 0 with rwo volume
-    Create statefulset 1 with rwx volume
-    Create statefulset 2 with rwo and strict-local volume
+    Given Create deployment 0 with rwo volume
+    And Create deployment 1 with rwx volume
+    And Create deployment 2 with rwo and strict-local volume
+    And Create statefulset 0 with rwo volume
+    And Create statefulset 1 with rwx volume
+    And Create statefulset 2 with rwo and strict-local volume
+
     FOR    ${i}    IN RANGE    ${LOOP_COUNT}
-        Keep writing data to deployment 0
-        Keep writing data to deployment 1
-        Keep writing data to deployment 2
-        Keep writing data to statefulset 0
-        Keep writing data to statefulset 1
-        Keep writing data to statefulset 2
-        Restart all worker nodes
-        Wait for longhorn ready
-        Check deployment 0 works
-        Check deployment 1 works
-        Check deployment 2 works
-        Check statefulset 0 works
-        Check statefulset 1 works
-        Check statefulset 2 works
+        And Keep writing data to deployment 0
+        And Keep writing data to deployment 1
+        And Keep writing data to deployment 2
+        And Keep writing data to statefulset 0
+        And Keep writing data to statefulset 1
+        And Keep writing data to statefulset 2
+
+        When Restart all worker nodes
+        And Wait for longhorn ready
+
+        Then Check deployment 0 works
+        And Check deployment 1 works
+        And Check deployment 2 works
+        And Check statefulset 0 works
+        And Check statefulset 1 works
+        And Check statefulset 2 works
     END
 
 Power Off All Worker Nodes For More Than Pod Eviction Timeout While Workload Heavy Writing
-    Create deployment 0 with rwo volume
-    Create deployment 1 with rwx volume
-    Create deployment 2 with rwo and strict-local volume
-    Create statefulset 0 with rwo volume
-    Create statefulset 1 with rwx volume
-    Create statefulset 2 with rwo and strict-local volume
+    Given Create deployment 0 with rwo volume
+    And Create deployment 1 with rwx volume
+    And Create deployment 2 with rwo and strict-local volume
+    And Create statefulset 0 with rwo volume
+    And Create statefulset 1 with rwx volume
+    And Create statefulset 2 with rwo and strict-local volume
+
     FOR    ${i}    IN RANGE    ${LOOP_COUNT}
-        Keep writing data to deployment 0
-        Keep writing data to deployment 1
-        Keep writing data to deployment 2
-        Keep writing data to statefulset 0
-        Keep writing data to statefulset 1
-        Keep writing data to statefulset 2
-        Power off all worker nodes for 6 mins
-        Wait for longhorn ready
-        Check deployment 0 works
-        Check deployment 1 works
-        Check deployment 2 works
-        Check statefulset 0 works
-        Check statefulset 1 works
-        Check statefulset 2 works
+        And Keep writing data to deployment 0
+        And Keep writing data to deployment 1
+        And Keep writing data to deployment 2
+        And Keep writing data to statefulset 0
+        And Keep writing data to statefulset 1
+        And Keep writing data to statefulset 2
+
+        When Power off all worker nodes for 6 mins
+        And Wait for longhorn ready
+
+        Then Check deployment 0 works
+        And Check deployment 1 works
+        And Check deployment 2 works
+        And Check statefulset 0 works
+        And Check statefulset 1 works
+        And Check statefulset 2 works
     END
 
 Reboot Volume Node While Workload Heavy Writing
-    Create statefulset 0 with rwo volume
+    Given Create statefulset 0 with ${VOLUME_TYPE} volume
     FOR    ${i}    IN RANGE    ${LOOP_COUNT}
-        Keep writing data to statefulset 0
-        Reboot volume node of statefulset 0
-        Wait for volume of statefulset 0 healthy
-        Wait for statefulset 0 stable
-        Check statefulset 0 works
+        And Keep writing data to statefulset 0
+
+        When Reboot volume node of statefulset 0
+        And Wait for volume of statefulset 0 healthy
+        And Wait for statefulset 0 stable
+
+        Then Check statefulset 0 works
     END
 
 Power Off Volume Node For More Than Pod Eviction Timeout While Workload Heavy Writing
-    Create statefulset 0 with rwo volume
+    Given Create statefulset 0 with rwo volume
+
     FOR    ${i}    IN RANGE    ${LOOP_COUNT}
-        Keep writing data to statefulset 0
-        Power off volume node of statefulset 0 for 6 mins
-        Wait for volume of statefulset 0 healthy
-        Wait for statefulset 0 stable
-        Check statefulset 0 works
+        And Keep writing data to statefulset 0
+
+        When Power off volume node of statefulset 0 for 6 mins
+        And Wait for volume of statefulset 0 healthy
+        And Wait for statefulset 0 stable
+
+        Then Check statefulset 0 works
     END

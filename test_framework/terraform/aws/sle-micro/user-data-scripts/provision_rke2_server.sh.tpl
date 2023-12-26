@@ -16,3 +16,7 @@ EOF
 sudo systemctl enable rke2-server.service
 sudo systemctl start rke2-server.service
 sudo ln -s /var/lib/rancher/rke2/bin/kubectl /usr/local/bin/kubectl
+
+if [[ -n "${custom_ssh_public_key}" ]]; then
+  echo "${custom_ssh_public_key}" >> /home/suse/.ssh/authorized_keys
+fi

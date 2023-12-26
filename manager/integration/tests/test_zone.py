@@ -8,7 +8,11 @@ from common import core_api  # NOQA
 from common import pvc, pod  # NOQA
 from common import volume_name # NOQA
 
+from common import cleanup_node_disks
 from common import get_self_host_id
+
+from common import get_update_disks
+from common import update_node_disks
 
 from common import create_and_wait_pod
 from common import create_pv_for_volume
@@ -501,6 +505,166 @@ def test_replica_auto_balance_zone_best_effort(client, core_api, volume_name):  
     assert z1_r_count == 2
     assert z2_r_count == 2
     assert z3_r_count == 2
+
+
+def test_replica_auto_balance_when_disabled_disk_scheduling_in_zone(client, core_api, volume_name):  # NOQA
+    """
+    Scenario: replica auto-balance when disk scheduling is disabled on nodes
+              in a zone.
+
+    Issue: https://github.com/longhorn/longhorn/issues/6508
+
+    Given `replica-soft-anti-affinity` setting is `true`.
+    And node-1 is in zone-1.
+        node-2 is in zone-2.
+        node-3 is in zone-3.
+    And disk scheduling is disabled on node-3.
+    And create a volume with 3 replicas.
+    And attach the volume to test pod node.
+    And 3 replicas running in zone-1 and zone-2.
+        0 replicas running in zone-3.
+
+    When set `replica-auto-balance` to `best-effort`.
+
+    Then 3 replicas running in zone-1 and zone-2.
+         0 replicas running in zone-3.
+    And replica count remains stable across zones and nodes.
+    """
+    # Set `replica-soft-anti-affinity` to `true`.
+    update_setting(client, SETTING_REPLICA_NODE_SOFT_ANTI_AFFINITY, "true")
+
+    # Assign nodes to respective zones
+    node1, node2, node3 = client.list_node()
+    set_k8s_node_zone_label(core_api, node1.name, ZONE1)
+    set_k8s_node_zone_label(core_api, node2.name, ZONE2)
+    set_k8s_node_zone_label(core_api, node3.name, ZONE3)
+    wait_longhorn_node_zone_updated(client)
+
+    # Disable disk scheduling on node 3
+    cleanup_node_disks(client, node3.name)
+
+    # Create a volume with 3 replicas
+    num_of_replicas = 3
+    volume = client.create_volume(name=volume_name,
+                                  numberOfReplicas=num_of_replicas)
+
+    # Wait for the volume to detach and attach it to the test pod node
+    volume = wait_for_volume_detached(client, volume_name)
+    volume.attach(hostId=get_self_host_id())
+
+    # Define a function to assert replica count
+    def assert_replica_count(is_stable=False):
+        for _ in range(RETRY_COUNTS):
+            time.sleep(RETRY_INTERVAL)
+
+            zone3_replica_count = get_zone_replica_count(
+                client, volume_name, ZONE3, chk_running=True)
+            assert zone3_replica_count == 0
+
+            total_replica_count = \
+                get_zone_replica_count(
+                    client, volume_name, ZONE1, chk_running=True) + \
+                get_zone_replica_count(
+                    client, volume_name, ZONE2, chk_running=True)
+
+            if is_stable:
+                assert total_replica_count == num_of_replicas
+            elif total_replica_count == num_of_replicas:
+                break
+
+        assert total_replica_count == 3
+
+    # Perform the initial assertion to ensure the replica count is as expected
+    assert_replica_count()
+
+    # Update the replica-auto-balance setting to `best-effort`
+    update_setting(client, SETTING_REPLICA_AUTO_BALANCE, "best-effort")
+
+    # Perform the final assertion to ensure the replica count is as expected,
+    # and stable after the setting update
+    assert_replica_count(is_stable=True)
+
+
+def test_replica_auto_balance_when_no_storage_available_in_zone(client, core_api, volume_name):  # NOQA
+    """
+    Scenario: replica auto-balance when there is no storage available on nodes
+              in a zone.
+
+    Issue: https://github.com/longhorn/longhorn/issues/6671
+
+    Given `replica-soft-anti-affinity` setting is `true`.
+    And node-1 is in zone-1.
+        node-2 is in zone-2.
+        node-3 is in zone-3.
+    And fill up the storage on node-3.
+    And create a volume with 3 replicas.
+    And attach the volume to test pod node.
+    And 3 replicas running in zone-1 and zone-2.
+        0 replicas running in zone-3.
+
+    When set `replica-auto-balance` to `best-effort`.
+
+    Then 3 replicas running in zone-1 and zone-2.
+         0 replicas running in zone-3.
+    And replica count remains stable across zones and nodes.
+    """
+    # Set `replica-soft-anti-affinity` to `true`.
+    update_setting(client, SETTING_REPLICA_NODE_SOFT_ANTI_AFFINITY, "true")
+
+    # Assign nodes to respective zones
+    node1, node2, node3 = client.list_node()
+    set_k8s_node_zone_label(core_api, node1.name, ZONE1)
+    set_k8s_node_zone_label(core_api, node2.name, ZONE2)
+    set_k8s_node_zone_label(core_api, node3.name, ZONE3)
+    wait_longhorn_node_zone_updated(client)
+
+    # Fill up the storage on node 3
+    for _, disk in node3.disks.items():
+        disk.storageReserved = disk.storageMaximum
+
+    update_disks = get_update_disks(node3.disks)
+    update_node_disks(client, node3.name, disks=update_disks, retry=True)
+
+    # Create a volume with 3 replicas
+    num_of_replicas = 3
+    volume = client.create_volume(name=volume_name,
+                                  numberOfReplicas=num_of_replicas)
+
+    # Wait for ht evolume to detach and attache it to the test pod node
+    volume = wait_for_volume_detached(client, volume_name)
+    volume.attach(hostId=get_self_host_id())
+
+    # Define a function to assert replica count
+    def assert_replica_count(is_stable=False):
+        for _ in range(RETRY_COUNTS):
+            time.sleep(RETRY_INTERVAL)
+
+            zone3_replica_count = get_zone_replica_count(
+                client, volume_name, ZONE3, chk_running=True)
+            assert zone3_replica_count == 0
+
+            total_replica_count = \
+                get_zone_replica_count(
+                    client, volume_name, ZONE1, chk_running=True) + \
+                get_zone_replica_count(
+                    client, volume_name, ZONE2, chk_running=True)
+
+            if is_stable:
+                assert total_replica_count == num_of_replicas
+            elif total_replica_count == num_of_replicas:
+                break
+
+        assert total_replica_count == 3
+
+    # Perform the initial assertion to ensure the replica count is as expected
+    assert_replica_count()
+
+    # Update the replica-auto-balance setting to `best-effort`
+    update_setting(client, SETTING_REPLICA_AUTO_BALANCE, "best-effort")
+
+    # Perform the final assertion to ensure the replica count is as expected,
+    # and stable after the setting update
+    assert_replica_count(is_stable=True)
 
 
 def test_replica_auto_balance_when_replica_on_unschedulable_node(client, core_api, volume_name, request):  # NOQA

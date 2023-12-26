@@ -1,11 +1,14 @@
-from kubernetes import client
-import yaml
-import time
-from utility.utility import logging
-from utility.utility import apply_cr_from_yaml, get_cr
-from utility.utility import wait_for_cluster_ready
-from utility.utility import list_nodes
 import boto3
+import time
+import yaml
+
+from kubernetes import client
+
+from node.utility import list_node_names_by_role
+
+from utility.utility import logging
+from utility.utility import wait_for_cluster_ready
+
 
 class Node:
 
@@ -17,7 +20,7 @@ class Node:
     def reboot_all_nodes(self, shut_down_time_in_sec=60):
         instance_ids = [value for value in self.mapping.values()]
 
-        resp = self.aws_client.stop_instances(InstanceIds=instance_ids)
+        resp = self.aws_client.stop_instances(InstanceIds=instance_ids, Force=True)
         logging(f"Stopping instances {instance_ids} response: {resp}")
         waiter = self.aws_client.get_waiter('instance_stopped')
         waiter.wait(InstanceIds=instance_ids)
@@ -35,7 +38,7 @@ class Node:
     def reboot_node(self, reboot_node_name, shut_down_time_in_sec=60):
         instance_ids = [self.mapping[reboot_node_name]]
 
-        resp = self.aws_client.stop_instances(InstanceIds=instance_ids)
+        resp = self.aws_client.stop_instances(InstanceIds=instance_ids, Force=True)
         logging(f"Stopping instances {instance_ids} response: {resp}")
         waiter = self.aws_client.get_waiter('instance_stopped')
         waiter.wait(InstanceIds=instance_ids)
@@ -50,9 +53,9 @@ class Node:
         logging(f"Started instances")
 
     def reboot_all_worker_nodes(self, shut_down_time_in_sec=60):
-        instance_ids = [self.mapping[value] for value in list_nodes()]
+        instance_ids = [self.mapping[value] for value in list_node_names_by_role("worker")]
 
-        resp = self.aws_client.stop_instances(InstanceIds=instance_ids)
+        resp = self.aws_client.stop_instances(InstanceIds=instance_ids, Force=True)
         logging(f"Stopping instances {instance_ids} response: {resp}")
         waiter = self.aws_client.get_waiter('instance_stopped')
         waiter.wait(InstanceIds=instance_ids)

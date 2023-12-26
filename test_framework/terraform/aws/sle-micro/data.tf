@@ -20,6 +20,7 @@ data "template_file" "provision_k3s_server" {
     k3s_cluster_secret = random_password.cluster_secret.result
     k3s_server_public_ip = aws_eip.lh_aws_eip_controlplane[0].public_ip
     k3s_version =  var.k8s_distro_version
+    custom_ssh_public_key = var.custom_ssh_public_key
   }
 }
 
@@ -30,6 +31,7 @@ data "template_file" "provision_k3s_agent" {
     k3s_server_url = "https://${aws_eip.lh_aws_eip_controlplane[0].public_ip}:6443"
     k3s_cluster_secret = random_password.cluster_secret.result
     k3s_version =  var.k8s_distro_version
+    custom_ssh_public_key = var.custom_ssh_public_key
   }
 }
 
@@ -40,6 +42,7 @@ data "template_file" "provision_rke2_server" {
     rke2_cluster_secret = random_password.cluster_secret.result
     rke2_server_public_ip = aws_eip.lh_aws_eip_controlplane[0].public_ip
     rke2_version =  var.k8s_distro_version
+    custom_ssh_public_key = var.custom_ssh_public_key
   }
 }
 
@@ -50,5 +53,6 @@ data "template_file" "provision_rke2_agent" {
     rke2_server_url = "https://${aws_eip.lh_aws_eip_controlplane[0].public_ip}:9345"
     rke2_cluster_secret = random_password.cluster_secret.result
     rke2_version =  var.k8s_distro_version
+    custom_ssh_public_key = var.custom_ssh_public_key
   }
 }

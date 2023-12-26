@@ -1,15 +1,17 @@
-import os
 import time
-import warnings
-from utility.utility import logging
-from utility.utility import get_retry_count_and_interval
-from volume.base import Base
-from volume.rest import Rest
+
 from kubernetes import client
 
-Ki = 2**10
-Mi = 2**20
-Gi = 2**30
+from utility.utility import get_retry_count_and_interval
+from utility.utility import logging
+
+from engine.engine import Engine
+
+from volume.base import Base
+from volume.rest import Rest
+
+from volume.constant import GIBIBYTE
+
 
 class CRD(Base):
 
@@ -36,7 +38,7 @@ class CRD(Base):
             "spec": {
                 "frontend": "blockdev",
                 "replicaAutoBalance": "ignored",
-                "size": str(int(size) * Gi),
+                "size": str(int(size) * GIBIBYTE),
                 "numberOfReplicas": int(replica_count)
             }
         }
@@ -94,9 +96,44 @@ class CRD(Base):
                 Exception(f'exception for creating volumeattachments:', e)
         self.wait_for_volume_state(volume_name, "attached")
 
+    def detach(self, volume_name):
+        try:
+            self.obj_api.patch_namespaced_custom_object(
+                group="longhorn.io",
+                version="v1beta2",
+                namespace="longhorn-system",
+                plural="volumeattachments",
+                name=volume_name,
+                body={
+                    "spec": {
+                        "attachmentTickets": None,
+                    }
+                }
+            )
+        except Exception as e:
+            # new CRD: volumeattachments was added since from 1.5.0
+            # https://github.com/longhorn/longhorn/issues/3715
+            if e.reason != "Not Found":
+                Exception(f'exception for patching volumeattachments:', e)
+
+            self.obj_api.patch_namespaced_custom_object(
+                group="longhorn.io",
+                version="v1beta2",
+                namespace="longhorn-system",
+                plural="volumes",
+                name=volume_name,
+                body={
+                        "spec": {
+                            "nodeID": ""
+                        }
+                }
+            )
+
+        self.wait_for_volume_state(volume_name, "detached")
+
     def delete(self, volume_name):
         try:
-            resp = self.obj_api.delete_namespaced_custom_object(
+            self.obj_api.delete_namespaced_custom_object(
                 group="longhorn.io",
                 version="v1beta2",
                 namespace="longhorn-system",
@@ -110,7 +147,7 @@ class CRD(Base):
     def wait_for_volume_delete(self, volume_name):
         for i in range(self.retry_count):
             try:
-                resp = self.obj_api.get_namespaced_custom_object(
+                self.obj_api.get_namespaced_custom_object(
                     group="longhorn.io",
                     version="v1beta2",
                     namespace="longhorn-system",
@@ -150,7 +187,7 @@ class CRD(Base):
 
     def wait_for_volume_robustness_not(self, volume_name, not_desired_state):
         for i in range(self.retry_count):
-            logging(f"Waiting for {volume_name} not {not_desired_state} ({i}) ...")
+            logging(f"Waiting for {volume_name} robustness not {not_desired_state} ({i}) ...")
             try:
                 if self.get(volume_name)["status"]["robustness"] != not_desired_state:
                     break
@@ -158,6 +195,21 @@ class CRD(Base):
                 logging(f"Getting volume {self.get(volume_name)} robustness error: {e}")
             time.sleep(self.retry_interval)
         assert self.get(volume_name)["status"]["robustness"] != not_desired_state
+
+    def wait_for_volume_expand_to_size(self, volume_name, expected_size):
+        engine = None
+        engine_operation = Engine()
+        for i in range(self.retry_count):
+            logging(f"Waiting for {volume_name} expand to {expected_size} ({i}) ...")
+
+            engine = engine_operation.get_engine_by_volume(self.get(volume_name))
+            if int(engine['status']['currentSize']) == expected_size:
+                break
+
+            time.sleep(self.retry_interval)
+
+        assert engine is not None
+        assert int(engine['status']['currentSize']) == expected_size
 
     def get_endpoint(self, volume_name):
         logging("Delegating the get_endpoint call to API because there is no CRD implementation")
@@ -210,7 +262,7 @@ class CRD(Base):
             node_name
         )
 
-    def check_data(self, volume_name, checksum):
+    def check_data_checksum(self, volume_name, checksum):
         node_name = self.get(volume_name)["spec"]["nodeID"]
         endpoint = self.get_endpoint(volume_name)
         _checksum = self.node_exec.issue_cmd(

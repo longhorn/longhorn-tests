@@ -1,6 +1,7 @@
 from recurring_job.base import Base
 from recurring_job.crd import CRD
 from recurring_job.rest import Rest
+
 from strategy import LonghornOperationStrategy
 
 

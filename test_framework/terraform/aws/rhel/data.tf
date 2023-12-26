@@ -31,6 +31,7 @@ data "template_file" "provision_k3s_server" {
     k3s_version =  var.k8s_distro_version
     selinux_mode = var.selinux_mode
     enable_selinux = var.selinux_mode == "permissive" ? "false" : "true"
+    custom_ssh_public_key = var.custom_ssh_public_key
   }
 }
 
@@ -43,6 +44,7 @@ data "template_file" "provision_k3s_agent" {
     k3s_version =  var.k8s_distro_version
     selinux_mode = var.selinux_mode
     enable_selinux = var.selinux_mode == "permissive" ? "false" : "true"
+    custom_ssh_public_key = var.custom_ssh_public_key
   }
 }
 
@@ -54,6 +56,7 @@ data "template_file" "provision_rke2_server" {
     rke2_server_public_ip = aws_eip.lh_aws_eip_controlplane[0].public_ip
     rke2_version =  var.k8s_distro_version
     selinux_mode = var.selinux_mode
+    custom_ssh_public_key = var.custom_ssh_public_key
   }
 }
 
@@ -65,5 +68,6 @@ data "template_file" "provision_rke2_agent" {
     rke2_cluster_secret = random_password.cluster_secret.result
     rke2_version =  var.k8s_distro_version
     selinux_mode = var.selinux_mode
+    custom_ssh_public_key = var.custom_ssh_public_key
   }
 }

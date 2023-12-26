@@ -35,3 +35,7 @@ until (KUBECONFIG=/etc/rancher/rke2/rke2.yaml sudo /var/lib/rancher/rke2/bin/kub
   echo 'Waiting for rke2 startup'
   sleep 5
 done
+
+if [[ -n "${custom_ssh_public_key}" ]]; then
+  echo "${custom_ssh_public_key}" >> /home/ec2-user/.ssh/authorized_keys
+fi

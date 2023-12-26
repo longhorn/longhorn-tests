@@ -19,7 +19,8 @@ from common import SETTING_STORAGE_OVER_PROVISIONING_PERCENTAGE, \
     SETTING_DEFAULT_DATA_PATH, \
     SETTING_CREATE_DEFAULT_DISK_LABELED_NODES, \
     DEFAULT_STORAGE_OVER_PROVISIONING_PERCENTAGE, \
-    SETTING_DISABLE_SCHEDULING_ON_CORDONED_NODE
+    SETTING_DISABLE_SCHEDULING_ON_CORDONED_NODE, \
+    SETTING_DETACH_MANUALLY_ATTACHED_VOLUMES_WHEN_CORDONED
 from common import get_volume_endpoint
 from common import get_update_disks
 from common import wait_for_disk_status, wait_for_disk_update, \
@@ -2626,6 +2627,14 @@ def test_disk_eviction_with_node_level_soft_anti_affinity_disabled(client, # NOQ
     replica_path = test_disk_path + '/replicas'
     assert os.path.isdir(replica_path)
 
+    # Since https://github.com/longhorn/longhorn-manager/pull/2138, the node
+    # controller is responsible for triggering replica eviction. If the timing
+    # of the node controller and node monitor are off, the node controller
+    # may take extra time to do so. Wait for evidence eviction is in progress
+    # before proceeding.
+    wait_for_volume_replica_count(client, volume.name,
+                                  volume.numberOfReplicas + 1)
+
     for i in range(common.RETRY_COMMAND_COUNT):
         if len(os.listdir(replica_path)) > 0:
             break
@@ -2668,3 +2677,132 @@ def test_disk_eviction_with_node_level_soft_anti_affinity_disabled(client, # NOQ
         common.cleanup_all_volumes(client)
 
     request.addfinalizer(finalizer)
+
+@pytest.mark.skip(reason="TODO")  # NOQA
+def test_drain_with_block_for_eviction_success():
+    """
+    Test drain completes after evicting replica with node-drain-policy
+    block-for-eviction
+
+    1. Set `node-drain-policy` to `block-for-eviction`.
+    2. Create a volume.
+    3. Ensure (through soft anti-affinity, low replica count, and/or enough
+       disks) that an evicted replica of the volume can be scheduled elsewhere.
+    4. Write data to the volume.
+    5. Drain a node one of the volume's replicas is scheduled to.
+    6. While the drain is ongoing:
+       - Verify that the volume never becomes degraded.
+       - Verify that `node.status.autoEvicting == true`.
+       - Optionally verify that `replica.spec.evictionRequested == true`.
+    7. Verify the drain completes.
+    8. Uncordon the node.
+    9. Verify the replica on the drained node has moved to a different one.
+    10. Verify that `node.status.autoEvicting == false`.
+    11. Verify that `replica.spec.evictionRequested == false`.
+    12. Verify the volume's data.
+    """
+
+@pytest.mark.skip(reason="TODO")  # NOQA
+def test_drain_with_block_for_eviction_if_contains_last_replica_success():
+    """
+    Test drain completes after evicting replicas with node-drain-policy
+    block-for-eviction-if-contains-last-replica
+
+    1. Set `node-drain-policy` to
+       `block-for-eviction-if-contains-last-replica`.
+    2. Create one volume with a single replica and another volume with three
+       replicas.
+    3. Ensure (through soft anti-affinity, low replica count, and/or enough
+    disks) that evicted replicas of both volumes can be scheduled elsewhere.
+    4. Write data to the volumes.
+    5. Drain a node both volumes have a replica scheduled to.
+    6. While the drain is ongoing:
+       - Verify that the volume with one replica never becomes degraded.
+       - Verify that the volume with three replicas becomes degraded.
+       - Verify that `node.status.autoEvicting == true`.
+       - Optionally verify that `replica.spec.evictionRequested == true` on the
+         replica for the volume that only has one.
+       - Optionally verify that `replica.spec.evictionRequested == false` on
+         the replica for the volume that has three.
+    7. Verify the drain completes.
+    8. Uncordon the node.
+    9. Verify the replica for the volume with one replica has moved to a
+       different node.
+    10. Verify the replica for the volume with three replicas has not moved.
+    11. Verify that `node.status.autoEvicting == false`.
+    12. Verify that `replica.spec.evictionRequested == false` on all replicas.
+    13. Verify the the data in both volumes.
+    """
+
+@pytest.mark.skip(reason="TODO")  # NOQA
+def test_drain_with_block_for_eviction_failure():
+    """
+    Test drain never completes with node-drain-policy block-for-eviction
+
+    1. Set `node-drain-policy` to `block-for-eviction`.
+    2. Create a volume.
+    3. Ensure (through soft anti-affinity, high replica count, and/or not
+       enough disks) that an evicted replica of the volume cannot be scheduled
+       elsewhere.
+    4. Write data to the volume.
+    5. Drain a node one of the volume's replicas is scheduled to.
+    6. While the drain is ongoing:
+       - Verify that `node.status.autoEvicting == true`.
+       - Verify that `replica.spec.evictionRequested == true`.
+    7. Verify the drain never completes.
+    """
+
+@pytest.mark.node  # NOQA
+def test_auto_detach_volume_when_node_is_cordoned(client, core_api, volume_name):  # NOQA
+    """
+    Test auto detach volume when node is cordoned
+
+    1. Set `detach-manually-attached-volumes-when-cordoned` to `false`.
+    2. Create a volume and attached to the node through API (manually).
+    3. Cordon the node.
+    4. Set `detach-manually-attached-volumes-when-cordoned` to `true`.
+    5. Volume will be detached automatically.
+    """
+
+    # Set `Detach Manually Attached Volumes When Cordoned` to false
+    detach_manually_attached_volumes_when_cordoned = \
+        client.by_id_setting(
+            SETTING_DETACH_MANUALLY_ATTACHED_VOLUMES_WHEN_CORDONED)
+    client.update(detach_manually_attached_volumes_when_cordoned,
+                  value="false")
+
+    # Create a volume
+    volume = client.create_volume(name=volume_name,
+                                  size=SIZE,
+                                  numberOfReplicas=3)
+    volume = common.wait_for_volume_detached(client,
+                                             volume_name)
+    assert volume.restoreRequired is False
+
+    # Attach to the node
+    host_id = get_self_host_id()
+    volume.attach(hostId=host_id)
+    volume = common.wait_for_volume_healthy(client, volume_name)
+    assert volume.restoreRequired is False
+
+    # Cordon the node
+    set_node_cordon(core_api, host_id, True)
+
+    # Volume is still attached for a while
+    time.sleep(NODE_UPDATE_WAIT_INTERVAL)
+    volume = common.wait_for_volume_healthy(client, volume_name)
+    assert volume.restoreRequired is False
+
+    # Set `Detach Manually Attached Volumes When Cordoned` to true
+    client.update(detach_manually_attached_volumes_when_cordoned, value="true")
+
+    # Volume should be detached
+    volume = common.wait_for_volume_detached(client, volume_name)
+    assert volume.restoreRequired is False
+
+    # Delete the Volume
+    client.delete(volume)
+    common.wait_for_volume_delete(client, volume_name)
+
+    volumes = client.list_volume().data
+    assert len(volumes) == 0

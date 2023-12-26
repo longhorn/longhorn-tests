@@ -1,13 +1,18 @@
 import time
-from kubernetes import client
-from recurring_job.base import Base
-from utility.utility import get_longhorn_client
-from utility.utility import filter_cr
-from utility.utility import logging
+
 from datetime import datetime
 
-RETRY_COUNTS = 180
-RETRY_INTERVAL = 1
+from kubernetes import client
+
+from recurring_job.base import Base
+
+from utility.utility import filter_cr
+from utility.utility import get_longhorn_client
+from utility.utility import logging
+
+from recurring_job.constant import RETRY_COUNTS
+from recurring_job.constant import RETRY_INTERVAL
+
 
 class Rest(Base):
 

@@ -66,6 +66,7 @@ RETRY_COUNTS = 150
 RETRY_COUNTS_SHORT = 30
 RETRY_COUNTS_LONG = 360
 RETRY_INTERVAL = 1
+RETRY_INTERVAL_SHORT = 0.5
 RETRY_INTERVAL_LONG = 2
 RETRY_BACKUP_COUNTS = 300
 RETRY_BACKUP_INTERVAL = 1
@@ -167,6 +168,8 @@ SETTING_DEGRADED_AVAILABILITY = \
     "allow-volume-creation-with-degraded-availability"
 SETTING_DISABLE_SCHEDULING_ON_CORDONED_NODE = \
     "disable-scheduling-on-cordoned-node"
+SETTING_DETACH_MANUALLY_ATTACHED_VOLUMES_WHEN_CORDONED = \
+    "detach-manually-attached-volumes-when-cordoned"
 SETTING_GUARANTEED_INSTANCE_MANAGER_CPU = "guaranteed-instance-manager-cpu"
 SETTING_PRIORITY_CLASS = "priority-class"
 SETTING_RECURRING_JOB_WHILE_VOLUME_DETACHED = \
@@ -1536,31 +1539,33 @@ def storage_class(request):
 
 @pytest.fixture
 def crypto_secret(request):
-    manifest = {
-        'apiVersion': 'v1',
-        'kind': 'Secret',
-        'metadata': {
-            'name': 'longhorn-crypto',
-            'namespace': 'longhorn-system',
-        },
-        'stringData': {
-            'CRYPTO_KEY_VALUE': 'simple',
-            'CRYPTO_KEY_PROVIDER': 'secret'
+    def get_crypto_secret(namespace=LONGHORN_NAMESPACE):
+        crypto_secret.manifest = {
+            'apiVersion': 'v1',
+            'kind': 'Secret',
+            'metadata': {
+                'name': 'longhorn-crypto',
+                'namespace': namespace,
+            },
+            'stringData': {
+                'CRYPTO_KEY_VALUE': 'simple',
+                'CRYPTO_KEY_PROVIDER': 'secret'
+            }
         }
-    }
+        return crypto_secret.manifest
 
     def finalizer():
         api = get_core_api_client()
         try:
             api.delete_namespaced_secret(
-                name=manifest['metadata']['name'],
-                namespace=manifest['metadata']['namespace'])
+                name=crypto_secret.manifest['metadata']['name'],
+                namespace=crypto_secret.manifest['metadata']['namespace'])
         except ApiException as e:
             assert e.status == 404
 
     request.addfinalizer(finalizer)
 
-    return manifest
+    return get_crypto_secret
 
 
 @pytest.fixture
@@ -2165,7 +2170,7 @@ def wait_for_engine_image_creation(client, image_name):
                 break
         if found:
             break
-        time.sleep(RETRY_INTERVAL)
+        time.sleep(RETRY_INTERVAL_SHORT)
     assert found
 
 
@@ -2189,7 +2194,7 @@ def wait_for_engine_image_condition(client, image_name, state):
         image = client.by_id_engine_image(image_name)
         if image['conditions'][0]['status'] == state:
             break
-        time.sleep(RETRY_INTERVAL_LONG)
+        time.sleep(RETRY_INTERVAL_SHORT)
     assert image['conditions'][0]['status'] == state
     return image
 
@@ -3830,9 +3835,9 @@ def wait_statefulset(statefulset_manifest):
     assert s_set.status.ready_replicas == replicas
 
 
-def create_crypto_secret(secret_manifest):
+def create_crypto_secret(secret_manifest, namespace=LONGHORN_NAMESPACE):
     api = get_core_api_client()
-    api.create_namespaced_secret(namespace=LONGHORN_NAMESPACE,
+    api.create_namespaced_secret(namespace,
                                  body=secret_manifest)
 
 
@@ -4065,17 +4070,17 @@ def create_pv_for_volume(client, core_api, volume, pv_name, fs_type="ext4"):
     wait_volume_kubernetes_status(client, volume.name, ks)
 
 
-def create_pvc_for_volume(client, core_api, volume, pvc_name):
-    volume.pvcCreate(namespace="default", pvcName=pvc_name)
+def create_pvc_for_volume(client, core_api, volume, pvc_name, pvc_namespace="default"): # NOQA
+    volume.pvcCreate(namespace=pvc_namespace, pvcName=pvc_name)
     for i in range(RETRY_COUNTS):
-        if check_pvc_existence(core_api, pvc_name):
+        if check_pvc_existence(core_api, pvc_name, pvc_namespace):
             break
         time.sleep(RETRY_INTERVAL)
-    assert check_pvc_existence(core_api, pvc_name)
+    assert check_pvc_existence(core_api, pvc_name, pvc_namespace)
 
     ks = {
         'pvStatus': 'Bound',
-        'namespace': 'default',
+        'namespace': pvc_namespace,
         'lastPVCRefAt': '',
     }
     wait_volume_kubernetes_status(client, volume.name, ks)

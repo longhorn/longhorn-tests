@@ -1,7 +1,8 @@
-from utility.utility import logging
 from recurring_job.base import Base
 from recurring_job.rest import Rest
-from kubernetes import client
+
+from utility.utility import logging
+
 
 class CRD(Base):
 

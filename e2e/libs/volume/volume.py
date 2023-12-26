@@ -1,8 +1,11 @@
+from node_exec import NodeExec
+
+from strategy import LonghornOperationStrategy
+
 from volume.base import Base
 from volume.crd import CRD
 from volume.rest import Rest
-from node_exec import NodeExec
-from strategy import LonghornOperationStrategy
+
 
 class Volume(Base):
 
@@ -24,6 +27,9 @@ class Volume(Base):
     def attach(self, volume_name, node_name):
         return self.volume.attach(volume_name, node_name)
 
+    def detach(self, volume_name):
+        return self.volume.detach(volume_name)
+
     def delete(self, volume_name):
         return self.volume.delete(volume_name)
 
@@ -34,9 +40,15 @@ class Volume(Base):
         self.volume.wait_for_volume_state(volume_name, "attached")
         self.volume.wait_for_volume_robustness_not(volume_name, "unknown")
 
+    def wait_for_volume_detached(self, volume_name):
+        self.volume.wait_for_volume_state(volume_name, "detached")
+
     def wait_for_volume_healthy(self, volume_name):
         self.volume.wait_for_volume_state(volume_name, "attached")
         self.volume.wait_for_volume_robustness(volume_name, "healthy")
+
+    def wait_for_volume_expand_to_size(self, volume_name, size):
+        return self.volume.wait_for_volume_expand_to_size(volume_name, size)
 
     def get_endpoint(self, volume_name):
         return self.volume.get_endpoint(volume_name)
@@ -62,8 +74,8 @@ class Volume(Base):
             node_name
         )
 
-    def check_data(self, volume_name, checksum):
-        return self.volume.check_data(volume_name, checksum)
+    def check_data_checksum(self, volume_name, checksum):
+        return self.volume.check_data_checksum(volume_name, checksum)
 
     def cleanup(self, volume_names):
         return self.volume.cleanup(volume_names)

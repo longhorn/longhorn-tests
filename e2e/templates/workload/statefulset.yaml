@@ -36,4 +36,4 @@ spec:
       storageClassName: longhorn-test
       resources:
         requests:
-          storage: 3Gi
+          storage: 3221225472  #3Gi

@@ -122,3 +122,9 @@ variable "registration_code" {
   type    = string
   sensitive   = true
 }
+
+variable "custom_ssh_public_key" {
+  type = string
+  default = ""
+  sensitive = true
+}

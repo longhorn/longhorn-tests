@@ -1,13 +1,19 @@
-from utility.utility import get_test_pod_running_node
-from utility.utility import get_node
-from utility.utility import wait_for_all_instance_manager_running
 from robot.libraries.BuiltIn import BuiltIn
+
 from node import Node
+from node import Stress
+from node.utility import get_node_by_index
+from node.utility import list_node_names_by_role
+from node.utility import list_node_names_by_volumes
+
+from utility.utility import wait_for_all_instance_manager_running
+
 
 class node_keywords:
 
     def __init__(self):
         self.node = Node()
+        self.stress = Stress()
 
     def reboot_volume_node(self, volume_name):
         volume_keywords = BuiltIn().get_library_instance('volume_keywords')
@@ -20,7 +26,7 @@ class node_keywords:
         self.node.reboot_node(replica_node)
 
     def reboot_node_by_index(self, idx, power_off_time_in_min=1):
-        node_name = get_node(idx)
+        node_name = get_node_by_index(idx)
         self.node.reboot_node(node_name, int(power_off_time_in_min) * 60)
 
     def reboot_all_worker_nodes(self, power_off_time_in_min=1):
@@ -34,3 +40,18 @@ class node_keywords:
 
     def wait_for_all_instance_manager_running(self):
         wait_for_all_instance_manager_running()
+
+    def cleanup_stress_helper(self):
+        self.stress.cleanup()
+
+    def stress_node_cpu_by_role(self, role):
+        self.stress.cpu(list_node_names_by_role(role))
+
+    def stress_node_cpu_by_volumes(self, volume_names):
+        self.stress.cpu(list_node_names_by_volumes(volume_names))
+
+    def stress_node_memory_by_role(self, role):
+        self.stress.memory(list_node_names_by_role(role))
+
+    def stress_node_memory_by_volumes(self, volume_names):
+        self.stress.memory(list_node_names_by_volumes(volume_names))

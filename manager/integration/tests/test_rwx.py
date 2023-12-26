@@ -6,20 +6,24 @@ from common import exec_command_in_pod, get_pod_data_md5sum
 from common import create_and_wait_pod, read_volume_data
 from common import get_apps_api_client, wait_statefulset
 from common import create_and_wait_deployment, delete_and_wait_pod
+from common import delete_and_wait_deployment
+from common import delete_and_wait_pvc
 from common import prepare_pod_with_data_in_mb, DATA_SIZE_IN_MB_1
 from common import create_snapshot, wait_for_backup_completion
 from common import find_backup, Gi, volume_name, csi_pv, pod_make  # NOQA
 from common import wait_for_volume_creation, DATA_SIZE_IN_MB_3
 from common import create_pv_for_volume, create_pvc_for_volume
 from common import DEFAULT_STATEFULSET_TIMEOUT, DEFAULT_STATEFULSET_INTERVAL
+from common import wait_delete_pod, wait_for_pod_remount
 from common import get_core_api_client, write_pod_volume_random_data
 from common import create_pvc_spec, make_deployment_with_pvc  # NOQA
-from common import wait_for_pod_phase
 from common import core_api, statefulset, pvc, pod, client  # NOQA
 from common import RETRY_COUNTS, RETRY_INTERVAL
 from common import EXPANDED_VOLUME_SIZE
 from common import expand_and_wait_for_pvc, wait_for_volume_expansion
 from common import wait_deployment_replica_ready, wait_for_volume_healthy
+from common import crypto_secret, storage_class  # NOQA
+from common import create_crypto_secret, create_storage_class
 from backupstore import set_random_backupstore # NOQA
 from multiprocessing import Pool
 
@@ -344,9 +348,10 @@ def test_rwx_delete_share_manager_pod(core_api, statefulset):  # NOQA
     2. Wait for StatefulSet to come up healthy.
     3. Write data and compute md5sum.
     4. Delete the share manager pod.
-    5. Check the data md5sum in statefulSet.
-    6. Write more data to it and compute md5sum.
-    7. Check the data md5sum in share manager volume.
+    5. Wait for a new pod to be created and volume getting attached.
+    6. Check the data md5sum in statefulSet.
+    7. Write more data to it and compute md5sum.
+    8. Check the data md5sum in share manager volume.
     """
 
     statefulset_name = 'statefulset-delete-share-manager-pods-test'
@@ -377,8 +382,10 @@ def test_rwx_delete_share_manager_pod(core_api, statefulset):  # NOQA
     delete_and_wait_pod(core_api, share_manager_name,
                         namespace=LONGHORN_NAMESPACE)
 
-    wait_for_pod_phase(core_api, share_manager_name,
-                       namespace=LONGHORN_NAMESPACE, pod_phase="Running")
+    target_pod = core_api.read_namespaced_pod(name=pod_name,
+                                              namespace='default')
+    wait_delete_pod(core_api, target_pod.metadata.uid)
+    wait_for_pod_remount(core_api, pod_name)
 
     test_data_2 = generate_random_data(VOLUME_RWTEST_SIZE)
     write_pod_volume_data(core_api, pod_name, test_data_2, filename='test2')
@@ -634,3 +641,48 @@ def test_rwx_offline_expansion(client, core_api, pvc, make_deployment_with_pvc):
                                            pod_name,
                                            'default')
     assert int(data_size_in_pod)/1024/1024 == data_size_in_mb
+
+
+def test_encrypted_rwx_volume(core_api, statefulset, storage_class, crypto_secret, pvc, make_deployment_with_pvc):  # NOQA
+    """
+    Test creating encrypted rwx volume and use the secret in
+    non longhorn-system namespace.
+
+    1. Create crypto secret in non longhorn-system namespace.
+    2. Create a storage class.
+    3. Create a deployment with a PVC and the pods should be able to running.
+    """
+
+    namespace = 'default'
+    # Create crypto secret
+    secret = crypto_secret(namespace)
+    create_crypto_secret(secret, namespace)
+
+    # Create storage class
+    storage_class['reclaimPolicy'] = 'Delete'
+    storage_class['parameters']['csi.storage.k8s.io/provisioner-secret-name'] = 'longhorn-crypto'  # NOQA
+    storage_class['parameters']['csi.storage.k8s.io/provisioner-secret-namespace'] = namespace  # NOQA
+    storage_class['parameters']['csi.storage.k8s.io/node-publish-secret-name'] = 'longhorn-crypto'  # NOQA
+    storage_class['parameters']['csi.storage.k8s.io/node-publish-secret-namespace'] = namespace  # NOQA
+    storage_class['parameters']['csi.storage.k8s.io/node-stage-secret-name'] = 'longhorn-crypto'  # NOQA
+    storage_class['parameters']['csi.storage.k8s.io/node-stage-secret-namespace'] = namespace  # NOQA
+    create_storage_class(storage_class)
+
+    # Create deployment with PVC
+    pvc_name = 'pvc-deployment-with-encrypted-rwx-volume'
+    pvc['metadata']['name'] = pvc_name
+    pvc['spec']['storageClassName'] = storage_class['metadata']['name']
+    pvc['spec']['accessModes'] = ['ReadWriteMany']
+
+    core_api.create_namespaced_persistent_volume_claim(
+        body=pvc, namespace='default')
+
+    deployment = make_deployment_with_pvc(
+        'pvc-deployment-with-encrypted-rwx-volume', pvc_name, replicas=3)
+
+    apps_api = get_apps_api_client()
+    create_and_wait_deployment(apps_api, deployment)
+
+    # Clean up deployment and volume
+    delete_and_wait_deployment(apps_api, deployment["metadata"]["name"])
+    delete_and_wait_pvc(core_api, pvc_name)

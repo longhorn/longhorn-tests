@@ -100,6 +100,7 @@ from common import BACKUP_COMPRESSION_METHOD_GZIP
 from common import BACKUP_COMPRESSION_METHOD_NONE
 from common import create_and_wait_deployment
 from common import get_custom_object_api_client
+from common import RETRY_COUNTS_SHORT
 
 from backupstore import backupstore_delete_volume_cfg_file
 from backupstore import backupstore_cleanup
@@ -4515,7 +4516,6 @@ def test_default_storage_class_syncup(core_api, request):  # NOQA
                 print(e)
             finally:
                 time.sleep(RETRY_INTERVAL)
-        longhorn_storage_class = storage_api.read_storage_class("longhorn")
         assert longhorn_storage_class.allow_volume_expansion is allow_exp
 
     def finalizer():
@@ -5548,7 +5548,7 @@ def test_backuptarget_invalid(apps_api, # NOQA
     snap = create_snapshot(client, volume_name)
     volume.snapshotBackup(name=snap.name)
 
-    for i in range(RETRY_COMMAND_COUNT):
+    for i in range(RETRY_COUNTS_SHORT):
         api = get_custom_object_api_client()
         backups = api.list_namespaced_custom_object("longhorn.io",
                                                     "v1beta2",

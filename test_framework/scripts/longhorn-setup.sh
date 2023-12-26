@@ -56,8 +56,12 @@ install_cluster_autoscaler(){
 
 install_csi_snapshotter_crds(){
     CSI_SNAPSHOTTER_REPO_URL="https://github.com/kubernetes-csi/external-snapshotter.git"
-    CSI_SNAPSHOTTER_REPO_BRANCH="v6.2.1"
     CSI_SNAPSHOTTER_REPO_DIR="${TMPDIR}/k8s-csi-external-snapshotter"
+
+    [[ "${LONGHORN_REPO_URI}" =~ https://([^/]+)/([^/]+)/([^/.]+)(.git)? ]]
+    wget "https://raw.githubusercontent.com/${BASH_REMATCH[2]}/${BASH_REMATCH[3]}/${LONGHORN_REPO_BRANCH}/deploy/longhorn-images.txt" -O "/tmp/longhorn-images.txt"
+    IFS=: read -ra IMAGE_TAG_PAIR <<< $(grep csi-snapshotter /tmp/longhorn-images.txt)
+    CSI_SNAPSHOTTER_REPO_BRANCH="${IMAGE_TAG_PAIR[1]}"
 
     git clone --single-branch \
               --branch "${CSI_SNAPSHOTTER_REPO_BRANCH}" \
@@ -89,9 +93,10 @@ install_rancher() {
 
 
 get_rancher_api_key() {
-  python3 "${TF_VAR_tf_workspace}/scripts/rancher/webdriver/main.py" "${RANCHER_HOSTNAME}" "${RANCHER_BOOTSTRAP_PASSWORD}"
-  RANCHER_ACCESS_KEY=`cat "${PWD}/access_key"`
-  RANCHER_SECRET_KEY=`cat "${PWD}/secret_key"`
+  TOKEN=$(curl -X POST -s -k "https://${RANCHER_HOSTNAME}/v3-public/localproviders/local?action=login" -H 'Content-Type: application/json' -d "{\"username\":\"admin\", \"password\":\"${RANCHER_BOOTSTRAP_PASSWORD}\", \"responseType\": \"json\"}" | jq -r '.token' | tr -d '"')
+  ARR=(${TOKEN//:/ })
+  RANCHER_ACCESS_KEY=${ARR[0]}
+  RANCHER_SECRET_KEY=${ARR[1]}
 }
 
 

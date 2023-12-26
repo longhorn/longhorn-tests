@@ -25,3 +25,7 @@ until (curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="agent --token ${k3s_clus
   echo 'k3s agent did not install correctly'
   sleep 2
 done
+
+if [[ -n "${custom_ssh_public_key}" ]]; then
+  echo "${custom_ssh_public_key}" >> /home/ec2-user/.ssh/authorized_keys
+fi
