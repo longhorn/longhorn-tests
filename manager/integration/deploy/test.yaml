@@ -55,6 +55,8 @@ spec:
           fieldPath: spec.nodeName
     - name: MANAGED_K8S_CLUSTER
       value: "false"
+    - name: RESOURCE_SUFFIX
+      value: ""
     volumeMounts:
     - name: dev
       mountPath: /dev

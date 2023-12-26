@@ -32,6 +32,8 @@ terraform_setup(){
   if [[ "${TF_VAR_create_load_balancer}" == true ]]; then
     terraform -chdir=${TF_VAR_tf_workspace}/terraform/${LONGHORN_TEST_CLOUDPROVIDER}/${DISTRO} output -raw load_balancer_url > ${TF_VAR_tf_workspace}/load_balancer_url
   fi
+
+  export RESOURCE_SUFFIX=$(terraform -chdir=${TF_VAR_tf_workspace}/terraform/${LONGHORN_TEST_CLOUDPROVIDER}/${DISTRO} output -raw resource_suffix)
 }
 
 
