@@ -260,12 +260,12 @@ def test_setting_toleration_extra(core_api, apps_api):  # NOQA
                 },
             ],
         },
-        # Skip the this special toleration for now because it makes
-        # Longhorn deploy manager pods on control/etcd nodes
-        # and the control/etcd nodes become "down" after the test
-        # clear this toleration.
-        # We will enable this test once we implement logic for
-        # deleting failed nodes.
+        # Skip the this special toleration because it makes
+        # Longhorn deploy some pods such as csi-plugin on control/etcd nodes
+        # If we were to enable this test, we would have to distinguish
+        # between those namespaced daemonsets that would match the count
+        # of nodes returned by longhorn_api_client (nodes.longhorn.io)
+        # and by core_api_client (nodes.k8s.io).  See issue #2026.
         # {
         #     "value": ":",
         #     "expect": [
