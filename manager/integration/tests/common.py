@@ -2278,13 +2278,18 @@ def crash_replica_processes(client, api, volname, replicas=None,
 
     for r in replicas:
         assert r.instanceManagerName != ""
-        kill_command = "kill `pgrep -f " + r['dataPath'] + "`"
+
+        pgrep_command = f"pgrep -f {r['dataPath']}"
+        pid = exec_instance_manager(api, r.instanceManagerName, pgrep_command)
+        assert pid != ""
+
+        kill_command = f"kill {pid}"
         exec_instance_manager(api, r.instanceManagerName, kill_command)
 
         if wait_to_fail is True:
             thread = create_assert_error_check_thread(
                 wait_for_replica_failed,
-                client, volname, r['name'], RETRY_COUNTS*2, RETRY_INTERVAL/2
+                client, volname, r['name'], RETRY_COUNTS, RETRY_INTERVAL_SHORT
             )
             threads.append(thread)
 
@@ -2297,10 +2302,11 @@ def exec_instance_manager(api, im_name, cmd):
 
     with timeout(seconds=STREAM_EXEC_TIMEOUT,
                  error_message='Timeout on executing stream read'):
-        stream(api.connect_get_namespaced_pod_exec,
-               im_name,
-               LONGHORN_NAMESPACE, command=exec_cmd,
-               stderr=True, stdin=False, stdout=True, tty=False)
+        output = stream(api.connect_get_namespaced_pod_exec,
+                        im_name,
+                        LONGHORN_NAMESPACE, command=exec_cmd,
+                        stderr=True, stdin=False, stdout=True, tty=False)
+        return output
 
 
 def wait_for_replica_failed(client, volname, replica_name,
