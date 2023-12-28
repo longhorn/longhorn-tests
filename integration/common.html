@@ -2215,11 +2215,23 @@ def wait_for_engine_image_condition(client, image_name, state):
     &#34;&#34;&#34;
     state: &#34;True&#34;, &#34;False&#34;
     &#34;&#34;&#34;
+    # Indicate many times we want to see the ENGINE_NAME in the STATE.
+    # This helps to prevent the flaky test case in which the ENGINE_NAME
+    # is flapping between ready and not ready a few times before settling
+    # down to the ready state
+    # https://github.com/longhorn/longhorn-tests/pull/1638
+    state_count = 1
+    if state == &#34;True&#34;:
+        state_count = 5
+
+    c = 0
     for i in range(RETRY_COUNTS):
         wait_for_engine_image_creation(client, image_name)
         image = client.by_id_engine_image(image_name)
         if image[&#39;conditions&#39;][0][&#39;status&#39;] == state:
-            break
+            c += 1
+            if c &gt;= state_count:
+                break
         time.sleep(RETRY_INTERVAL_SHORT)
     assert image[&#39;conditions&#39;][0][&#39;status&#39;] == state
     return image
@@ -12939,11 +12951,23 @@ ref: <a href="https://github.com/longhorn/longhorn/issues/4814">https://github.c
     &#34;&#34;&#34;
     state: &#34;True&#34;, &#34;False&#34;
     &#34;&#34;&#34;
+    # Indicate many times we want to see the ENGINE_NAME in the STATE.
+    # This helps to prevent the flaky test case in which the ENGINE_NAME
+    # is flapping between ready and not ready a few times before settling
+    # down to the ready state
+    # https://github.com/longhorn/longhorn-tests/pull/1638
+    state_count = 1
+    if state == &#34;True&#34;:
+        state_count = 5
+
+    c = 0
     for i in range(RETRY_COUNTS):
         wait_for_engine_image_creation(client, image_name)
         image = client.by_id_engine_image(image_name)
         if image[&#39;conditions&#39;][0][&#39;status&#39;] == state:
-            break
+            c += 1
+            if c &gt;= state_count:
+                break
         time.sleep(RETRY_INTERVAL_SHORT)
     assert image[&#39;conditions&#39;][0][&#39;status&#39;] == state
     return image</code></pre>
