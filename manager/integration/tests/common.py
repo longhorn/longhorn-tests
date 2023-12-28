@@ -2117,11 +2117,23 @@ def wait_for_engine_image_condition(client, image_name, state):
     """
     state: "True", "False"
     """
+    # Indicate many times we want to see the ENGINE_NAME in the STATE.
+    # This helps to prevent the flaky test case in which the ENGINE_NAME
+    # is flapping between ready and not ready a few times before settling
+    # down to the ready state
+    # https://github.com/longhorn/longhorn-tests/pull/1638
+    state_count = 1
+    if state == "True":
+        state_count = 5
+
+    c = 0
     for i in range(RETRY_COUNTS):
         wait_for_engine_image_creation(client, image_name)
         image = client.by_id_engine_image(image_name)
         if image['conditions'][0]['status'] == state:
-            break
+            c += 1
+            if c >= state_count:
+                break
         time.sleep(RETRY_INTERVAL_SHORT)
     assert image['conditions'][0]['status'] == state
     return image
