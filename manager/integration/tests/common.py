@@ -3538,7 +3538,7 @@ def wait_for_all_instance_manager_running(client):
         node_to_instance_manager_map = {}
         try:
             for im in instance_managers:
-                if im.managerType == "aio" and im.currentState == "running":
+                if im.managerType == "aio":
                     node_to_instance_manager_map[im.nodeID] = im
                 else:
                     print("\nFound unknown instance manager:", im)
