@@ -610,6 +610,13 @@
       <description> Create and attach a volume. Deploy an extra engine image. Send live upgrade request then immediately delete the related engine manager pod/engine process (The new replicas are not in active in this case). Verify the volume will detach then reattach automatically. Verify the upgrade is done during the reattachment. (It actually becomes offline upgrade.) </description>
     </item>
     <item>
+      <title>Test engine version enforcement</title>
+      <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.6.0/test-engine-version-enforcement/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.6.0/test-engine-version-enforcement/</guid>
+      <description>Related issue https://github.com/longhorn/longhorn/issues/5842&#xA;Test step Given Longhorn v1.4.x cluster running&#xA;And create and attach a volume (volume-1)&#xA;And upgraded Longhorn to v1.5.x&#xA;And create and attach a volume (volume-2)&#xA;When upgraded Longhorn to v1.6.0&#xA;Then v1.6.0 longhorn-manager Pods should be in crashloop&#xA;longhorn-manager-zrf8r 0/1 CrashLoopBackOff 2 (10s ago) 52s longhorn-manager-zsph2 0/1 CrashLoopBackOff 2 (8s ago) 52s longhorn-manager-grhsf 0/1 CrashLoopBackOff 2 (8s ago) 51s And should see incompatible version error in longhorn-manager Pod logs</description>
+    </item>
+    <item>
       <title>Test File Sync Cancellation</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.1/test-file-sync-cancellation/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
