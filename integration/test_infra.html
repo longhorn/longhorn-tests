@@ -169,7 +169,6 @@ def is_infra_k3s():
 @pytest.fixture
 def reset_cluster_ready_status(request):
     yield
-    node_worker_label = &#39;node-role.kubernetes.io/worker&#39;
     node_controlplane_label = &#39;node-role.kubernetes.io/control-plane&#39;
     node_ip_annotation = &#34;flannel.alpha.coreos.com/public-ip&#34;
 
@@ -177,27 +176,16 @@ def reset_cluster_ready_status(request):
     longhorn_api_client = get_longhorn_api_client()
     cloudprovider = detect_cloudprovider()
 
-    k3s = is_infra_k3s()
-
     print(&#39;==&gt; test completed! reset cluster ready status ...&#39;)
 
     for node_item in k8s_api_client.list_node().items:
 
-        if k3s is True:
-            if node_controlplane_label not in node_item.metadata.labels:
-                node_name = node_item.metadata.name
-                node_ip = node_item.metadata.annotations[node_ip_annotation]
-                node = cloudprovider.instance_id_by_ip(node_ip)
-            else:
-                continue
-
+        if node_controlplane_label not in node_item.metadata.labels:
+            node_name = node_item.metadata.name
+            node_ip = node_item.metadata.annotations[node_ip_annotation]
+            node = cloudprovider.instance_id_by_ip(node_ip)
         else:
-            if node_worker_label in node_item.metadata.labels and \
-                    node_item.metadata.labels[node_worker_label] == &#39;true&#39;:
-                node_name = node_item.metadata.name
-                node = cloudprovider.instance_id(node_name)
-            else:
-                continue
+            continue
 
         if is_node_ready_k8s(node_name, k8s_api_client) is False:
 
@@ -227,7 +215,6 @@ def test_offline_node(reset_cluster_ready_status):
     1. Bring down one of the nodes in Kuberntes cluster (avoid current node)
     2. Make sure the Longhorn node state become `down`
     &#34;&#34;&#34;
-    node_worker_label = &#39;node-role.kubernetes.io/worker&#39;
     pod_lable_selector = &#34;longhorn-test=test-job&#34;
     node_controlplane_label = &#39;node-role.kubernetes.io/control-plane&#39;
     node_ip_annotation = &#34;flannel.alpha.coreos.com/public-ip&#34;
@@ -242,27 +229,15 @@ def test_offline_node(reset_cluster_ready_status):
         if pod.metadata.name == &#34;longhorn-test&#34;:
             longhorn_test_node_name = pod.spec.node_name
 
-    k3s = is_infra_k3s()
-
     for node_item in k8s_api_client.list_node().items:
-        if k3s is True:
-            if node_controlplane_label not in node_item.metadata.labels:
-                node_name = node_item.metadata.name
-                node_ip = node_item.metadata.annotations[node_ip_annotation]
-                if node_name == longhorn_test_node_name:
-                    continue
-                else:
-                    node = cloudprovider.instance_id_by_ip(node_ip)
-                    break
-        else:
-            if node_worker_label in node_item.metadata.labels and \
-                    node_item.metadata.labels[node_worker_label] == &#39;true&#39;:
-                node_name = node_item.metadata.name
-                if node_name == longhorn_test_node_name:
-                    continue
-                else:
-                    node = cloudprovider.instance_id(node_name)
-                    break
+        if node_controlplane_label not in node_item.metadata.labels:
+            node_name = node_item.metadata.name
+            node_ip = node_item.metadata.annotations[node_ip_annotation]
+            if node_name == longhorn_test_node_name:
+                continue
+            else:
+                node = cloudprovider.instance_id_by_ip(node_ip)
+                break
 
     print(f&#39;==&gt; stop node: {node_name}&#39;)
 
@@ -383,7 +358,6 @@ def test_offline_node(reset_cluster_ready_status):
 <pre><code class="python">@pytest.fixture
 def reset_cluster_ready_status(request):
     yield
-    node_worker_label = &#39;node-role.kubernetes.io/worker&#39;
     node_controlplane_label = &#39;node-role.kubernetes.io/control-plane&#39;
     node_ip_annotation = &#34;flannel.alpha.coreos.com/public-ip&#34;
 
@@ -391,27 +365,16 @@ def reset_cluster_ready_status(request):
     longhorn_api_client = get_longhorn_api_client()
     cloudprovider = detect_cloudprovider()
 
-    k3s = is_infra_k3s()
-
     print(&#39;==&gt; test completed! reset cluster ready status ...&#39;)
 
     for node_item in k8s_api_client.list_node().items:
 
-        if k3s is True:
-            if node_controlplane_label not in node_item.metadata.labels:
-                node_name = node_item.metadata.name
-                node_ip = node_item.metadata.annotations[node_ip_annotation]
-                node = cloudprovider.instance_id_by_ip(node_ip)
-            else:
-                continue
-
+        if node_controlplane_label not in node_item.metadata.labels:
+            node_name = node_item.metadata.name
+            node_ip = node_item.metadata.annotations[node_ip_annotation]
+            node = cloudprovider.instance_id_by_ip(node_ip)
         else:
-            if node_worker_label in node_item.metadata.labels and \
-                    node_item.metadata.labels[node_worker_label] == &#39;true&#39;:
-                node_name = node_item.metadata.name
-                node = cloudprovider.instance_id(node_name)
-            else:
-                continue
+            continue
 
         if is_node_ready_k8s(node_name, k8s_api_client) is False:
 
@@ -454,7 +417,6 @@ def test_offline_node(reset_cluster_ready_status):
     1. Bring down one of the nodes in Kuberntes cluster (avoid current node)
     2. Make sure the Longhorn node state become `down`
     &#34;&#34;&#34;
-    node_worker_label = &#39;node-role.kubernetes.io/worker&#39;
     pod_lable_selector = &#34;longhorn-test=test-job&#34;
     node_controlplane_label = &#39;node-role.kubernetes.io/control-plane&#39;
     node_ip_annotation = &#34;flannel.alpha.coreos.com/public-ip&#34;
@@ -469,27 +431,15 @@ def test_offline_node(reset_cluster_ready_status):
         if pod.metadata.name == &#34;longhorn-test&#34;:
             longhorn_test_node_name = pod.spec.node_name
 
-    k3s = is_infra_k3s()
-
     for node_item in k8s_api_client.list_node().items:
-        if k3s is True:
-            if node_controlplane_label not in node_item.metadata.labels:
-                node_name = node_item.metadata.name
-                node_ip = node_item.metadata.annotations[node_ip_annotation]
-                if node_name == longhorn_test_node_name:
-                    continue
-                else:
-                    node = cloudprovider.instance_id_by_ip(node_ip)
-                    break
-        else:
-            if node_worker_label in node_item.metadata.labels and \
-                    node_item.metadata.labels[node_worker_label] == &#39;true&#39;:
-                node_name = node_item.metadata.name
-                if node_name == longhorn_test_node_name:
-                    continue
-                else:
-                    node = cloudprovider.instance_id(node_name)
-                    break
+        if node_controlplane_label not in node_item.metadata.labels:
+            node_name = node_item.metadata.name
+            node_ip = node_item.metadata.annotations[node_ip_annotation]
+            if node_name == longhorn_test_node_name:
+                continue
+            else:
+                node = cloudprovider.instance_id_by_ip(node_ip)
+                break
 
     print(f&#39;==&gt; stop node: {node_name}&#39;)
 

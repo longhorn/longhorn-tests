@@ -60,12 +60,17 @@ class aws(cloudprovider):
             region_name=default_region)
 
     def instance_id_by_ip(self, instance_ip):
+        resource_suffix = os.getenv(&#34;RESOURCE_SUFFIX&#34;)
         response = aws.ec2_client.describe_instances(
             Filters=[
                 {
                     &#39;Name&#39;: &#39;private-ip-address&#39;,
                     &#39;Values&#39;: [instance_ip]
                 },
+                {
+                    &#39;Name&#39;: &#39;tag:Name&#39;,
+                    &#39;Values&#39;: [f&#34;*{resource_suffix}*&#34;]
+                }
             ],
         )
 
@@ -174,12 +179,17 @@ class aws(cloudprovider):
             region_name=default_region)
 
     def instance_id_by_ip(self, instance_ip):
+        resource_suffix = os.getenv(&#34;RESOURCE_SUFFIX&#34;)
         response = aws.ec2_client.describe_instances(
             Filters=[
                 {
                     &#39;Name&#39;: &#39;private-ip-address&#39;,
                     &#39;Values&#39;: [instance_ip]
                 },
+                {
+                    &#39;Name&#39;: &#39;tag:Name&#39;,
+                    &#39;Values&#39;: [f&#34;*{resource_suffix}*&#34;]
+                }
             ],
         )
 
@@ -327,12 +337,17 @@ class aws(cloudprovider):
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def instance_id_by_ip(self, instance_ip):
+    resource_suffix = os.getenv(&#34;RESOURCE_SUFFIX&#34;)
     response = aws.ec2_client.describe_instances(
         Filters=[
             {
                 &#39;Name&#39;: &#39;private-ip-address&#39;,
                 &#39;Values&#39;: [instance_ip]
             },
+            {
+                &#39;Name&#39;: &#39;tag:Name&#39;,
+                &#39;Values&#39;: [f&#34;*{resource_suffix}*&#34;]
+            }
         ],
     )
 
