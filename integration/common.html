@@ -3584,7 +3584,7 @@ def wait_for_all_instance_manager_running(client):
         node_to_instance_manager_map = {}
         try:
             for im in instance_managers:
-                if im.managerType == &#34;aio&#34; and im.currentState == &#34;running&#34;:
+                if im.managerType == &#34;aio&#34;:
                     node_to_instance_manager_map[im.nodeID] = im
                 else:
                     print(&#34;\nFound unknown instance manager:&#34;, im)
@@ -12292,7 +12292,7 @@ ref: <a href="https://github.com/longhorn/longhorn/issues/4814">https://github.c
         node_to_instance_manager_map = {}
         try:
             for im in instance_managers:
-                if im.managerType == &#34;aio&#34; and im.currentState == &#34;running&#34;:
+                if im.managerType == &#34;aio&#34;:
                     node_to_instance_manager_map[im.nodeID] = im
                 else:
                     print(&#34;\nFound unknown instance manager:&#34;, im)
