@@ -238,6 +238,7 @@ SETTING_AUTO_CLEANUP_SYSTEM_GERERATED_SNAPSHOT = \
 SETTING_BACKUP_COMPRESSION_METHOD = &#34;backup-compression-method&#34;
 SETTING_BACKUP_CONCURRENT_LIMIT = &#34;backup-concurrent-limit&#34;
 SETTING_RESTORE_CONCURRENT_LIMIT = &#34;restore-concurrent-limit&#34;
+SETTING_V1_DATA_ENGINE = &#34;v1-data-engine&#34;
 
 DEFAULT_BACKUP_COMPRESSION_METHOD = &#34;lz4&#34;
 BACKUP_COMPRESSION_METHOD_LZ4 = &#34;lz4&#34;
@@ -6049,7 +6050,17 @@ def create_volume_and_write_data(client, volume_name, volume_size=SIZE):
     # Step 2
     volume_data = write_volume_random_data(volume)
 
-    return volume, volume_data</code></pre>
+    return volume, volume_data
+
+
+def wait_for_instance_manager_count(client, number, retry_counts=120):
+    for _ in range(retry_counts):
+        ims = client.list_instance_manager()
+        if len(ims) == number:
+            break
+        time.sleep(RETRY_INTERVAL_LONG)
+
+    return len(ims)</code></pre>
 </details>
 </section>
 <section>
@@ -13130,6 +13141,25 @@ ref: <a href="https://github.com/longhorn/longhorn/issues/4814">https://github.c
     assert failed</code></pre>
 </details>
 </dd>
+<dt id="tests.common.wait_for_instance_manager_count"><code class="name flex">
+<span>def <span class="ident">wait_for_instance_manager_count</span></span>(<span>client, number, retry_counts=120)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def wait_for_instance_manager_count(client, number, retry_counts=120):
+    for _ in range(retry_counts):
+        ims = client.list_instance_manager()
+        if len(ims) == number:
+            break
+        time.sleep(RETRY_INTERVAL_LONG)
+
+    return len(ims)</code></pre>
+</details>
+</dd>
 <dt id="tests.common.wait_for_instance_manager_desire_state"><code class="name flex">
 <span>def <span class="ident">wait_for_instance_manager_desire_state</span></span>(<span>client, core_api, im_name, state, desire=True)</span>
 </code></dt>
@@ -15303,6 +15333,7 @@ from the args and kwargs arguments, respectively.</p></div>
 <li><code><a title="tests.common.wait_for_engine_image_state" href="#tests.common.wait_for_engine_image_state">wait_for_engine_image_state</a></code></li>
 <li><code><a title="tests.common.wait_for_expansion_error_clear" href="#tests.common.wait_for_expansion_error_clear">wait_for_expansion_error_clear</a></code></li>
 <li><code><a title="tests.common.wait_for_expansion_failure" href="#tests.common.wait_for_expansion_failure">wait_for_expansion_failure</a></code></li>
+<li><code><a title="tests.common.wait_for_instance_manager_count" href="#tests.common.wait_for_instance_manager_count">wait_for_instance_manager_count</a></code></li>
 <li><code><a title="tests.common.wait_for_instance_manager_desire_state" href="#tests.common.wait_for_instance_manager_desire_state">wait_for_instance_manager_desire_state</a></code></li>
 <li><code><a title="tests.common.wait_for_node_mountpropagation_condition" href="#tests.common.wait_for_node_mountpropagation_condition">wait_for_node_mountpropagation_condition</a></code></li>
 <li><code><a title="tests.common.wait_for_node_schedulable_condition" href="#tests.common.wait_for_node_schedulable_condition">wait_for_node_schedulable_condition</a></code></li>

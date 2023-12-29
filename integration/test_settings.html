@@ -50,7 +50,7 @@ from common import (  # NOQA
     get_engine_image_status_value,
     create_volume, create_volume_and_backup, cleanup_volume_by_name,
     wait_for_volume_restoration_completed, wait_for_backup_restore_completed,
-    get_engine_host_id,
+    get_engine_host_id, wait_for_instance_manager_count,
     Gi, Mi,
 
     LONGHORN_NAMESPACE,
@@ -60,6 +60,7 @@ from common import (  # NOQA
     SETTING_DEFAULT_REPLICA_COUNT,
     SETTING_BACKUP_TARGET,
     SETTING_CONCURRENT_VOLUME_BACKUP_RESTORE,
+    SETTING_V1_DATA_ENGINE,
     RETRY_COUNTS, RETRY_INTERVAL, RETRY_INTERVAL_LONG,
     update_setting, BACKING_IMAGE_QCOW2_URL, BACKING_IMAGE_NAME,
     create_backing_image_with_matching_url, BACKING_IMAGE_EXT4_SIZE,
@@ -1268,7 +1269,67 @@ def test_setting_update_with_invalid_value_via_configmap(core_api, request):  # 
                       [target,
                        &#34;&#34;])
 
-    cleanup_volume_by_name(client, vol_name)</code></pre>
+    cleanup_volume_by_name(client, vol_name)
+
+
+def test_setting_v1_data_engine(client, request): # NOQA
+    &#34;&#34;&#34;
+    Test that the v1 data engine setting works correctly.
+    1. Create a volume and attach it.
+    2. Set v1 data engine setting to false. The setting should be rejected.
+    3. Detach the volume.
+    4. Set v1 data engine setting to false again. The setting should be
+       accepted. Then, attach the volume. The volume is unable to attach.
+    5. set v1 data engine setting to true. The setting should be accepted.
+    6. Attach the volume.
+    &#34;&#34;&#34;
+
+    setting = client.by_id_setting(SETTING_V1_DATA_ENGINE)
+
+    # Step 1
+    volume_name = &#34;test-v1-vol&#34;  # NOQA
+    volume = create_and_check_volume(client, volume_name)
+
+    def finalizer():
+        cleanup_volume(client, volume)
+        client.update(setting, value=&#34;true&#34;)
+
+    request.addfinalizer(finalizer)
+
+    volume.attach(hostId=get_self_host_id())
+    volume = wait_for_volume_healthy(client, volume_name)
+
+    # Step 2
+    with pytest.raises(Exception) as e:
+        client.update(setting, value=&#34;false&#34;)
+    assert &#39;cannot apply v1-data-engine setting to Longhorn workloads when &#39; \
+        &#39;there are attached v1 volumes&#39; in str(e.value)
+
+    # Step 3
+    volume.detach()
+    wait_for_volume_detached(client, volume_name)
+
+    # Step 4
+    setting = client.by_id_setting(SETTING_V1_DATA_ENGINE)
+    client.update(setting, value=&#34;false&#34;)
+
+    count = wait_for_instance_manager_count(client, 0)
+    assert count == 0
+
+    volume.attach(hostId=get_self_host_id())
+    with pytest.raises(Exception) as e:
+        wait_for_volume_healthy(client, volume_name)
+    assert &#39;volume[key]=detached&#39; in str(e.value)
+
+    # Step 5
+    client.update(setting, value=&#34;true&#34;)
+    nodes = client.list_node()
+    count = wait_for_instance_manager_count(client, len(nodes))
+    assert count == len(nodes)
+
+    # Step 6
+    volume.attach(hostId=get_self_host_id())
+    volume = wait_for_volume_healthy(client, volume_name)</code></pre>
 </details>
 </section>
 <section>
@@ -2715,6 +2776,82 @@ when there is an attached volume.
     cleanup_volume_by_name(client, vol_name)</code></pre>
 </details>
 </dd>
+<dt id="tests.test_settings.test_setting_v1_data_engine"><code class="name flex">
+<span>def <span class="ident">test_setting_v1_data_engine</span></span>(<span>client, request)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test that the v1 data engine setting works correctly.
+1. Create a volume and attach it.
+2. Set v1 data engine setting to false. The setting should be rejected.
+3. Detach the volume.
+4. Set v1 data engine setting to false again. The setting should be
+accepted. Then, attach the volume. The volume is unable to attach.
+5. set v1 data engine setting to true. The setting should be accepted.
+6. Attach the volume.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def test_setting_v1_data_engine(client, request): # NOQA
+    &#34;&#34;&#34;
+    Test that the v1 data engine setting works correctly.
+    1. Create a volume and attach it.
+    2. Set v1 data engine setting to false. The setting should be rejected.
+    3. Detach the volume.
+    4. Set v1 data engine setting to false again. The setting should be
+       accepted. Then, attach the volume. The volume is unable to attach.
+    5. set v1 data engine setting to true. The setting should be accepted.
+    6. Attach the volume.
+    &#34;&#34;&#34;
+
+    setting = client.by_id_setting(SETTING_V1_DATA_ENGINE)
+
+    # Step 1
+    volume_name = &#34;test-v1-vol&#34;  # NOQA
+    volume = create_and_check_volume(client, volume_name)
+
+    def finalizer():
+        cleanup_volume(client, volume)
+        client.update(setting, value=&#34;true&#34;)
+
+    request.addfinalizer(finalizer)
+
+    volume.attach(hostId=get_self_host_id())
+    volume = wait_for_volume_healthy(client, volume_name)
+
+    # Step 2
+    with pytest.raises(Exception) as e:
+        client.update(setting, value=&#34;false&#34;)
+    assert &#39;cannot apply v1-data-engine setting to Longhorn workloads when &#39; \
+        &#39;there are attached v1 volumes&#39; in str(e.value)
+
+    # Step 3
+    volume.detach()
+    wait_for_volume_detached(client, volume_name)
+
+    # Step 4
+    setting = client.by_id_setting(SETTING_V1_DATA_ENGINE)
+    client.update(setting, value=&#34;false&#34;)
+
+    count = wait_for_instance_manager_count(client, 0)
+    assert count == 0
+
+    volume.attach(hostId=get_self_host_id())
+    with pytest.raises(Exception) as e:
+        wait_for_volume_healthy(client, volume_name)
+    assert &#39;volume[key]=detached&#39; in str(e.value)
+
+    # Step 5
+    client.update(setting, value=&#34;true&#34;)
+    nodes = client.list_node()
+    count = wait_for_instance_manager_count(client, len(nodes))
+    assert count == len(nodes)
+
+    # Step 6
+    volume.attach(hostId=get_self_host_id())
+    volume = wait_for_volume_healthy(client, volume_name)</code></pre>
+</details>
+</dd>
 <dt id="tests.test_settings.update_settings_via_configmap"><code class="name flex">
 <span>def <span class="ident">update_settings_via_configmap</span></span>(<span>core_api, client, setting_names, setting_values, request)</span>
 </code></dt>
@@ -2927,6 +3064,7 @@ when there is an attached volume.
 <li><code><a title="tests.test_settings.test_setting_toleration" href="#tests.test_settings.test_setting_toleration">test_setting_toleration</a></code></li>
 <li><code><a title="tests.test_settings.test_setting_toleration_extra" href="#tests.test_settings.test_setting_toleration_extra">test_setting_toleration_extra</a></code></li>
 <li><code><a title="tests.test_settings.test_setting_update_with_invalid_value_via_configmap" href="#tests.test_settings.test_setting_update_with_invalid_value_via_configmap">test_setting_update_with_invalid_value_via_configmap</a></code></li>
+<li><code><a title="tests.test_settings.test_setting_v1_data_engine" href="#tests.test_settings.test_setting_v1_data_engine">test_setting_v1_data_engine</a></code></li>
 <li><code><a title="tests.test_settings.update_settings_via_configmap" href="#tests.test_settings.update_settings_via_configmap">update_settings_via_configmap</a></code></li>
 <li><code><a title="tests.test_settings.validate_settings" href="#tests.test_settings.validate_settings">validate_settings</a></code></li>
 <li><code><a title="tests.test_settings.wait_for_longhorn_node_ready" href="#tests.test_settings.wait_for_longhorn_node_ready">wait_for_longhorn_node_ready</a></code></li>
