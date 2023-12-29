@@ -32,7 +32,6 @@ from common import mount_disk
 from common import read_volume_data
 from common import RETRY_COUNTS
 from common import RETRY_INTERVAL
-from common import SETTING_BACKUP_TARGET
 from common import umount_disk
 from common import wait_for_backup_completion
 from common import wait_for_snapshot_purge
@@ -44,11 +43,13 @@ from common import wait_for_volume_restoration_completed
 from common import write_pod_volume_data
 from common import wait_for_volume_degraded
 from common import VOLUME_ROBUSTNESS_HEALTHY
+from common import DEFAULT_BACKUPSTORE_NAME
 from kubernetes.stream import stream
 from random import randrange
 from test_scheduling import wait_new_replica_ready
 
 from backupstore import set_random_backupstore
+from backupstore import backupstore_get_backup_target
 
 # Configuration options
 N_RANDOM_ACTIONS = 10
@@ -111,9 +112,8 @@ def time_now():
 
 # set random backupstore if not defined
 def check_and_set_backupstore(client):
-    setting = client.by_id_setting(SETTING_BACKUP_TARGET)
-
-    if setting["value"] == "":
+    url = backupstore_get_backup_target(client)
+    if url == "":
         set_random_backupstore(client)
 
 
@@ -278,7 +278,8 @@ def backup_create_and_record_md5sum(client, core_api, volume_name, pod_name, sna
 
     snapshots_md5sum[snap_name] = snap
 
-    volume.snapshotBackup(name=snap_name)
+    volume.snapshotBackup(name=snap_name,
+                          backupTargetName=DEFAULT_BACKUPSTORE_NAME)
 
     global WAIT_BACKUP_COMPLETE
     if WAIT_BACKUP_COMPLETE is None:

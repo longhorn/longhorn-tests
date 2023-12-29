@@ -6,6 +6,7 @@ from random import randrange
 from common import client, core_api, statefulset, storage_class  # NOQA
 from common import DEFAULT_BACKUP_TIMEOUT, DEFAULT_POD_INTERVAL
 from common import DEFAULT_POD_TIMEOUT, VOLUME_RWTEST_SIZE
+from common import DEFAULT_BACKUPSTORE_NAME
 from common import delete_and_wait_statefulset, generate_random_data
 from common import get_apps_api_client, get_statefulset_pod_info
 from common import read_volume_data, size_to_string
@@ -50,14 +51,15 @@ def create_and_test_backups(api, cli, pod_info):
         write_pod_volume_data(api, pod['pod_name'], pod['data'])
         pod['backup_snapshot'] = create_snapshot(cli, volume_name)
         create_snapshot(cli, volume_name)
-        volume.snapshotBackup(name=pod['backup_snapshot']['name'])
+        volume.snapshotBackup(name=pod['backup_snapshot']['name'],
+                              backupTargetName=DEFAULT_BACKUPSTORE_NAME)
 
         # Wait for backup to appear.
         found = False
         for i in range(DEFAULT_BACKUP_TIMEOUT):
             backup_volumes = cli.list_backupVolume()
             for bv in backup_volumes:
-                if bv.name == pod['pv_name']:
+                if bv.volumeName == pod['pv_name']:
                     found = True
                     break
             if found:
@@ -295,6 +297,7 @@ def test_statefulset_recurring_backup(set_random_backupstore, client, core_api, 
             "retain": 2,
             "concurrency": 2,
             "labels": {},
+            "backupTargetName": DEFAULT_BACKUPSTORE_NAME,
         },
     }
     create_recurring_jobs(client, recurring_jobs)

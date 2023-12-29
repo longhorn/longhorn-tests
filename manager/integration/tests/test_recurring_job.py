@@ -51,6 +51,7 @@ from common import prepare_pod_with_data_in_mb
 from common import crash_engine_process_with_sigkill
 
 from common import find_backup
+from common import get_backup_volume_name
 from common import wait_for_backup_volume
 from common import wait_for_backup_completion
 from common import wait_for_backup_count
@@ -70,6 +71,7 @@ from common import wait_for_cron_job_delete
 
 from common import JOB_LABEL
 from common import KUBERNETES_STATUS_LABEL
+from common import DEFAULT_BACKUPSTORE_NAME
 from common import LONGHORN_NAMESPACE
 from common import RETRY_BACKUP_COUNTS
 from common import RETRY_BACKUP_INTERVAL
@@ -92,6 +94,7 @@ SNAPSHOT = "snapshot"
 SNAPSHOT_DELETE = "snapshot-delete"
 SNAPSHOT_CLEANUP = "snapshot-cleanup"
 BACKUP = "backup"
+BACKUPTARGETNAME = "backupTargetName"
 FILESYSTEM_TRIM = "filesystem-trim"
 CONCURRENCY = "concurrency"
 LABELS = "labels"
@@ -212,6 +215,7 @@ def test_recurring_job(set_random_backupstore, client, volume_name):  # NOQA
             RETAIN: 1,
             CONCURRENCY: 1,
             LABELS: {},
+            BACKUPTARGETNAME: DEFAULT_BACKUPSTORE_NAME,
         },
         back2: {
             TASK: BACKUP,
@@ -220,6 +224,7 @@ def test_recurring_job(set_random_backupstore, client, volume_name):  # NOQA
             RETAIN: 2,
             CONCURRENCY: 1,
             LABELS: {},
+            BACKUPTARGETNAME: DEFAULT_BACKUPSTORE_NAME,
         },
     }
     create_recurring_jobs(client, recurring_jobs)
@@ -310,6 +315,7 @@ def test_recurring_job_in_volume_creation(client, volume_name):  # NOQA
             RETAIN: 1,
             CONCURRENCY: 1,
             LABELS: {},
+            BACKUPTARGETNAME: DEFAULT_BACKUPSTORE_NAME,
         },
     }
     create_recurring_jobs(client, recurring_jobs)
@@ -357,6 +363,7 @@ def test_recurring_job_duplicated(client):  # NOQA
             RETAIN: 1,
             CONCURRENCY: 2,
             LABELS: {},
+            BACKUPTARGETNAME: DEFAULT_BACKUPSTORE_NAME,
         },
     }
     create_recurring_jobs(client, recurring_jobs)
@@ -392,6 +399,7 @@ def test_recurring_job_in_storageclass(set_random_backupstore, client, core_api,
             RETAIN: 1,
             CONCURRENCY: 1,
             LABELS: {},
+            BACKUPTARGETNAME: DEFAULT_BACKUPSTORE_NAME,
         },
     }
     create_recurring_jobs(client, recurring_jobs)
@@ -471,6 +479,7 @@ def recurring_job_labels_test(client, labels, volume_name, size=SIZE, backing_im
             RETAIN: 1,
             CONCURRENCY: 2,
             LABELS: labels,
+            BACKUPTARGETNAME: DEFAULT_BACKUPSTORE_NAME,
         },
     }
     create_recurring_jobs(client, recurring_jobs)
@@ -496,7 +505,8 @@ def recurring_job_labels_test(client, labels, volume_name, size=SIZE, backing_im
     wait_for_snapshot_count(volume, 2)
 
     # Verify the Labels on the actual Backup.
-    bv = client.by_id_backupVolume(volume_name)
+    bv_name = get_backup_volume_name(volume_name)
+    bv = client.by_id_backupVolume(bv_name)
     wait_for_backup_count(bv, 1)
 
     backups = bv.backupList().data
@@ -552,6 +562,7 @@ def test_recurring_job_kubernetes_status(set_random_backupstore, client, core_ap
             RETAIN: 1,
             CONCURRENCY: 1,
             LABELS: {},
+            BACKUPTARGETNAME: DEFAULT_BACKUPSTORE_NAME,
         },
     }
     create_recurring_jobs(client, recurring_jobs)
@@ -567,7 +578,8 @@ def test_recurring_job_kubernetes_status(set_random_backupstore, client, core_ap
     wait_for_snapshot_count(volume, 2)
 
     # Verify the Labels on the actual Backup.
-    bv = client.by_id_backupVolume(volume_name)
+    bv_name = get_backup_volume_name(volume_name)
+    bv = client.by_id_backupVolume(bv_name)
     backups = bv.backupList().data
     wait_for_backup_count(bv, 1)
 
@@ -614,6 +626,7 @@ def test_recurring_jobs_maximum_retain(client, core_api, volume_name): # NOQA
             RETAIN: 101,
             CONCURRENCY: 1,
             LABELS: {},
+            BACKUPTARGETNAME: DEFAULT_BACKUPSTORE_NAME,
         },
     }
 
@@ -672,6 +685,7 @@ def test_recurring_job_detached_volume(client, batch_v1_api, volume_name):  # NO
             RETAIN: 2,
             CONCURRENCY: 1,
             LABELS: {},
+            BACKUPTARGETNAME: DEFAULT_BACKUPSTORE_NAME,
         },
     }
     create_recurring_jobs(client, recurring_jobs)
@@ -753,14 +767,16 @@ def test_recurring_jobs_allow_detached_volume(set_random_backupstore, client, co
             RETAIN: 1,
             CONCURRENCY: 1,
             LABELS: {},
+            BACKUPTARGETNAME: DEFAULT_BACKUPSTORE_NAME,
         },
     }
     create_recurring_jobs(client, recurring_jobs)
     check_recurring_jobs(client, recurring_jobs)
 
     wait_for_backup_completion(client, volume.name)
+    bv_name = get_backup_volume_name(volume_name)
     for _ in range(4):
-        bv = client.by_id_backupVolume(volume.name)
+        bv = client.by_id_backupVolume(bv_name)
         wait_for_backup_count(bv, 1)
         time.sleep(30)
 
@@ -796,6 +812,7 @@ def test_recurring_jobs_allow_detached_volume(set_random_backupstore, client, co
             RETAIN: 1,
             CONCURRENCY: 1,
             LABELS: {},
+            BACKUPTARGETNAME: DEFAULT_BACKUPSTORE_NAME,
         },
     }
     create_recurring_jobs(client, recurring_jobs)
@@ -884,6 +901,7 @@ def test_recurring_jobs_when_volume_detached_unexpectedly(set_random_backupstore
             RETAIN: 1,
             CONCURRENCY: 1,
             LABELS: {},
+            BACKUPTARGETNAME: DEFAULT_BACKUPSTORE_NAME,
         },
     }
     create_recurring_jobs(client, recurring_jobs)
@@ -1026,6 +1044,7 @@ def test_recurring_job_groups(set_random_backupstore, client, batch_v1_api):  # 
             RETAIN: 1,
             CONCURRENCY: 2,
             LABELS: {},
+            BACKUPTARGETNAME: DEFAULT_BACKUPSTORE_NAME,
         },
     }
     create_recurring_jobs(client, recurring_jobs)
@@ -1045,10 +1064,12 @@ def test_recurring_job_groups(set_random_backupstore, client, batch_v1_api):  # 
     wait_for_snapshot_count(volume1, 3)  # volume-head,snapshot,backup-snapshot
     wait_for_snapshot_count(volume2, 2)  # volume-head,snapshot
 
-    wait_for_backup_count(client.by_id_backupVolume(volume1_name), 1)
+    bv1_name = get_backup_volume_name(volume1_name)
+    wait_for_backup_count(client.by_id_backupVolume(bv1_name), 1)
     backup_created = True
     try:
-        wait_for_backup_count(client.by_id_backupVolume(volume2_name), 1,
+        bv2_name = get_backup_volume_name(volume2_name)
+        wait_for_backup_count(client.by_id_backupVolume(bv2_name), 1,
                               retry_counts=60)
     except AssertionError:
         backup_created = False
@@ -1182,6 +1203,7 @@ def test_recurring_job_delete(client, batch_v1_api, volume_name):  # NOQA
             RETAIN: 1,
             CONCURRENCY: 2,
             LABELS: {},
+            BACKUPTARGETNAME: DEFAULT_BACKUPSTORE_NAME,
         },
         back2: {
             TASK: BACKUP,
@@ -1190,6 +1212,7 @@ def test_recurring_job_delete(client, batch_v1_api, volume_name):  # NOQA
             RETAIN: 1,
             CONCURRENCY: 2,
             LABELS: {},
+            BACKUPTARGETNAME: DEFAULT_BACKUPSTORE_NAME,
         },
         back3: {
             TASK: BACKUP,
@@ -1198,6 +1221,7 @@ def test_recurring_job_delete(client, batch_v1_api, volume_name):  # NOQA
             RETAIN: 1,
             CONCURRENCY: 2,
             LABELS: {},
+            BACKUPTARGETNAME: DEFAULT_BACKUPSTORE_NAME,
         },
     }
     create_recurring_jobs(client, recurring_jobs)
@@ -1313,6 +1337,7 @@ def test_recurring_job_delete_should_remove_volume_label(client, batch_v1_api, v
         RETAIN: 1,
         CONCURRENCY: 2,
         LABELS: {},
+        BACKUPTARGETNAME: DEFAULT_BACKUPSTORE_NAME,
     }
     recurring_jobs = {
         snap1: snap_job,
@@ -1349,6 +1374,7 @@ def test_recurring_job_delete_should_remove_volume_label(client, batch_v1_api, v
             RETAIN: 1,
             CONCURRENCY: 2,
             LABELS: {},
+            BACKUPTARGETNAME: DEFAULT_BACKUPSTORE_NAME,
         },
     }
     create_recurring_jobs(client, recurring_jobs)
@@ -1519,6 +1545,7 @@ def test_recurring_job_multiple_volumes(set_random_backupstore, client, batch_v1
             RETAIN: 1,
             CONCURRENCY: 2,
             LABELS: {},
+            BACKUPTARGETNAME: DEFAULT_BACKUPSTORE_NAME,
         },
         back2: {
             TASK: BACKUP,
@@ -1527,6 +1554,7 @@ def test_recurring_job_multiple_volumes(set_random_backupstore, client, batch_v1
             RETAIN: 1,
             CONCURRENCY: 2,
             LABELS: {},
+            BACKUPTARGETNAME: DEFAULT_BACKUPSTORE_NAME,
         },
     }
     create_recurring_jobs(client, recurring_jobs)
@@ -1538,7 +1566,8 @@ def test_recurring_job_multiple_volumes(set_random_backupstore, client, batch_v1
 
     write_volume_random_data(volume1)
     wait_for_snapshot_count(volume1, 2)
-    wait_for_backup_count(client.by_id_backupVolume(volume1_name), 1)
+    bv1_name = get_backup_volume_name(volume1_name)
+    wait_for_backup_count(client.by_id_backupVolume(bv1_name), 1)
 
     volume2_name = "test-job-2"
     client.create_volume(name=volume2_name, size=SIZE)
@@ -1549,7 +1578,8 @@ def test_recurring_job_multiple_volumes(set_random_backupstore, client, batch_v1
 
     write_volume_random_data(volume2)
     wait_for_snapshot_count(volume2, 2)
-    wait_for_backup_count(client.by_id_backupVolume(volume2_name), 1)
+    bv2_name = get_backup_volume_name(volume2_name)
+    wait_for_backup_count(client.by_id_backupVolume(bv2_name), 1)
 
     volume2.recurringJobAdd(name=back2, isGroup=False)
     wait_for_volume_recurring_job_update(volume1,
@@ -1560,8 +1590,8 @@ def test_recurring_job_multiple_volumes(set_random_backupstore, client, batch_v1
     write_volume_random_data(volume1)
     write_volume_random_data(volume2)
     time.sleep(70 - WRITE_DATA_INTERVAL)
-    wait_for_backup_count(client.by_id_backupVolume(volume2_name), 2)
-    wait_for_backup_count(client.by_id_backupVolume(volume1_name), 1)
+    wait_for_backup_count(client.by_id_backupVolume(bv2_name), 2)
+    wait_for_backup_count(client.by_id_backupVolume(bv1_name), 1)
 
 
 @pytest.mark.recurring_job  # NOQA
@@ -1939,6 +1969,7 @@ def test_recurring_job_backup(set_random_backupstore, client, batch_v1_api):  # 
             RETAIN: 2,
             CONCURRENCY: 2,
             LABELS: {},
+            BACKUPTARGETNAME: DEFAULT_BACKUPSTORE_NAME,
         },
     }
     create_recurring_jobs(client, recurring_jobs)
@@ -1949,15 +1980,17 @@ def test_recurring_job_backup(set_random_backupstore, client, batch_v1_api):  # 
     write_volume_random_data(volume1)
     write_volume_random_data(volume2)
     time.sleep(60 - WRITE_DATA_INTERVAL)
-    wait_for_backup_count(client.by_id_backupVolume(volume1_name), 1)
-    wait_for_backup_count(client.by_id_backupVolume(volume2_name), 1)
+    bv1_name = get_backup_volume_name(volume1_name)
+    bv2_name = get_backup_volume_name(volume2_name)
+    wait_for_backup_count(client.by_id_backupVolume(bv1_name), 1)
+    wait_for_backup_count(client.by_id_backupVolume(bv2_name), 1)
 
     # 2nd job
     write_volume_random_data(volume1)
     write_volume_random_data(volume2)
     time.sleep(60 - WRITE_DATA_INTERVAL)
-    wait_for_backup_count(client.by_id_backupVolume(volume1_name), 2)
-    wait_for_backup_count(client.by_id_backupVolume(volume2_name), 2)
+    wait_for_backup_count(client.by_id_backupVolume(bv1_name), 2)
+    wait_for_backup_count(client.by_id_backupVolume(bv2_name), 2)
 
 
 @pytest.mark.recurring_job  # NOQA
@@ -2003,6 +2036,7 @@ def test_recurring_job_restored_from_backup_target(set_random_backupstore, clien
             RETAIN: 1,
             CONCURRENCY: 1,
             LABELS: {},
+            BACKUPTARGETNAME: DEFAULT_BACKUPSTORE_NAME,
         },
         snap1: {
             TASK: SNAPSHOT,
@@ -2019,6 +2053,7 @@ def test_recurring_job_restored_from_backup_target(set_random_backupstore, clien
             RETAIN: 3,
             CONCURRENCY: 3,
             LABELS: {},
+            BACKUPTARGETNAME: DEFAULT_BACKUPSTORE_NAME,
         },
     }
 

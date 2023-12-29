@@ -24,6 +24,8 @@ from common import expand_and_wait_for_pvc, wait_for_volume_expansion
 from common import wait_deployment_replica_ready, wait_for_volume_healthy
 from common import crypto_secret, storage_class  # NOQA
 from common import create_crypto_secret, create_storage_class
+from common import DEFAULT_BACKUPSTORE_NAME
+
 from backupstore import set_random_backupstore # NOQA
 from multiprocessing import Pool
 
@@ -488,7 +490,8 @@ def test_restore_rwo_volume_to_rwx(set_random_backupstore, client, core_api, vol
 
     snap = create_snapshot(client, volume_name)
     volume = client.by_id_volume(volume_name)
-    volume.snapshotBackup(name=snap.name)
+    volume.snapshotBackup(name=snap.name,
+                          backupTargetName=DEFAULT_BACKUPSTORE_NAME)
     wait_for_backup_completion(client, volume_name, snap.name)
     bv, b1 = find_backup(client, volume_name, snap.name)
 

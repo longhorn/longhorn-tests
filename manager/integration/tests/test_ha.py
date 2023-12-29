@@ -40,7 +40,6 @@ from common import create_backup, get_backupstores
 from common import wait_for_volume_faulted
 from common import wait_for_volume_delete
 from common import SETTING_AUTO_SALVAGE
-from common import SETTING_BACKUP_TARGET
 from common import wait_for_volume_condition_restore
 from common import crash_engine_process_with_sigkill
 from common import wait_for_volume_healthy_no_frontend
@@ -80,12 +79,15 @@ from common import wait_for_backup_volume_backing_image_synced
 from common import RETRY_COMMAND_COUNT
 from common import wait_for_snapshot_count
 from common import DEFAULT_BACKUP_COMPRESSION_METHOD
+from common import DEFAULT_BACKUPSTORE_NAME
 
 from backupstore import set_random_backupstore # NOQA
 from backupstore import backupstore_cleanup
 from backupstore import backupstore_delete_random_backup_block
 from backupstore import backupstore_wait_for_lock_expiration
 from backupstore import backupstore_s3  # NOQA
+from backupstore import set_backupstore_url
+from backupstore import backupstore_get_backup_target
 
 from test_node import create_host_disk
 from test_scheduling import get_host_replica
@@ -447,7 +449,8 @@ def ha_backup_deletion_recovery_test(client, volume_name, size, backing_image=""
     snap2 = create_snapshot(client, volume_name)
     create_snapshot(client, volume_name)
 
-    volume.snapshotBackup(name=snap2.name)
+    volume.snapshotBackup(name=snap2.name,
+                          backupTargetName=DEFAULT_BACKUPSTORE_NAME)
     wait_for_backup_completion(client, volume_name, snap2.name)
     if backing_image != "":
         wait_for_backup_volume_backing_image_synced(
@@ -861,7 +864,8 @@ def test_rebuild_with_inc_restoration(set_random_backupstore, client, core_api, 
 
     std_volume = client.by_id_volume(std_volume_name)
     snap1 = create_snapshot(client, std_volume_name)
-    std_volume.snapshotBackup(name=snap1.name)
+    std_volume.snapshotBackup(name=snap1.name,
+                              backupTargetName=DEFAULT_BACKUPSTORE_NAME)
     wait_for_backup_completion(client, std_volume_name, snap1.name)
     bv, b1 = find_backup(client, std_volume_name, snap1.name)
 
@@ -877,7 +881,8 @@ def test_rebuild_with_inc_restoration(set_random_backupstore, client, core_api, 
                                  data_path2, DATA_SIZE_IN_MB_2)
     std_md5sum2 = get_pod_data_md5sum(core_api, std_pod_name, data_path2)
     snap2 = create_snapshot(client, std_volume_name)
-    std_volume.snapshotBackup(name=snap2.name)
+    std_volume.snapshotBackup(name=snap2.name,
+                              backupTargetName=DEFAULT_BACKUPSTORE_NAME)
     wait_for_backup_completion(client, std_volume_name, snap2.name)
     bv, b2 = find_backup(client, std_volume_name, snap2.name)
 
@@ -994,7 +999,8 @@ def test_inc_restoration_with_multiple_rebuild_and_expansion(set_random_backupst
     std_md5sum1 = get_pod_data_md5sum(core_api, std_pod_name, data_path1)
 
     snap1 = create_snapshot(client, std_volume_name)
-    std_volume.snapshotBackup(name=snap1.name)
+    std_volume.snapshotBackup(name=snap1.name,
+                              backupTargetName=DEFAULT_BACKUPSTORE_NAME)
     wait_for_backup_completion(client,
                                std_volume_name,
                                snap1.name,
@@ -1032,7 +1038,8 @@ def test_inc_restoration_with_multiple_rebuild_and_expansion(set_random_backupst
     std_md5sum2 = get_pod_data_md5sum(core_api, std_pod_name, data_path2)
     snap2 = create_snapshot(client, std_volume_name)
     std_volume = client.by_id_volume(std_volume_name)
-    std_volume.snapshotBackup(name=snap2.name)
+    std_volume.snapshotBackup(name=snap2.name,
+                              backupTargetName=DEFAULT_BACKUPSTORE_NAME)
     wait_for_backup_completion(client, std_volume_name, snap2.name,
                                retry_count=600)
     bv, b2 = find_backup(client, std_volume_name, snap2.name)
@@ -1093,7 +1100,8 @@ def test_inc_restoration_with_multiple_rebuild_and_expansion(set_random_backupst
     # Then create the 3rd backup for the std volume
     snap3 = create_snapshot(client, std_volume_name)
     std_volume = client.by_id_volume(std_volume_name)
-    std_volume.snapshotBackup(name=snap3.name)
+    std_volume.snapshotBackup(name=snap3.name,
+                              backupTargetName=DEFAULT_BACKUPSTORE_NAME)
     wait_for_backup_completion(client, std_volume_name, snap3.name)
     bv, b3 = find_backup(client, std_volume_name, snap3.name)
 
@@ -1347,9 +1355,8 @@ def test_restore_volume_with_invalid_backupstore(client, volume_name, backupstor
     invalid_backup_target_url = \
         "s3://backupbucket-invalid@us-east-1/backupstore-invalid"
 
-    backup_target_setting = client.by_id_setting(SETTING_BACKUP_TARGET)
-    backup_target_setting = client.update(backup_target_setting,
-                                          value=invalid_backup_target_url)
+    original_backup_target_url = backupstore_get_backup_target(client)
+    set_backupstore_url(client, invalid_backup_target_url)
 
     # make fromBackup URL consistent to the the invalid target URL
     url = invalid_backup_target_url + b.url.split("?")[1]
@@ -1361,6 +1368,9 @@ def test_restore_volume_with_invalid_backupstore(client, volume_name, backupstor
     volumes = client.list_volume()
     for v in volumes:
         assert v.name != res_name
+
+    set_backupstore_url(client, original_backup_target_url)
+    backupstore_cleanup(client)
 
 
 def test_all_replica_restore_failure(set_random_backupstore, client, core_api, volume_name, csi_pv, pvc, pod_make):  # NOQA
@@ -1404,7 +1414,8 @@ def test_all_replica_restore_failure(set_random_backupstore, client, core_api, v
     snap = create_snapshot(client, volume_name)
 
     volume = client.by_id_volume(volume_name)
-    volume.snapshotBackup(name=snap.name)
+    volume.snapshotBackup(name=snap.name,
+                          backupTargetName=DEFAULT_BACKUPSTORE_NAME)
     wait_for_backup_completion(client, volume_name, snap.name)
     _, b = find_backup(client, volume_name, snap.name)
 
@@ -1543,7 +1554,8 @@ def test_dr_volume_with_restore_command_error(set_random_backupstore, client, co
 
     std_volume = client.by_id_volume(std_volume_name)
     snap1 = create_snapshot(client, std_volume_name)
-    std_volume.snapshotBackup(name=snap1.name)
+    std_volume.snapshotBackup(name=snap1.name,
+                              backupTargetName=DEFAULT_BACKUPSTORE_NAME)
     wait_for_backup_completion(client, std_volume_name, snap1.name)
     bv, b1 = find_backup(client, std_volume_name, snap1.name)
 
@@ -1570,7 +1582,8 @@ def test_dr_volume_with_restore_command_error(set_random_backupstore, client, co
                                  data_path2, DATA_SIZE_IN_MB_1)
     std_md5sum2 = get_pod_data_md5sum(core_api, std_pod_name, data_path2)
     snap2 = create_snapshot(client, std_volume_name)
-    std_volume.snapshotBackup(name=snap2.name)
+    std_volume.snapshotBackup(name=snap2.name,
+                              backupTargetName=DEFAULT_BACKUPSTORE_NAME)
     wait_for_backup_completion(client, std_volume_name, snap2.name)
     bv, b2 = find_backup(client, std_volume_name, snap2.name)
 
@@ -1660,7 +1673,8 @@ def test_engine_crash_for_restore_volume(set_random_backupstore, client, core_ap
 
     volume = client.by_id_volume(volume_name)
     snap = create_snapshot(client, volume_name)
-    volume.snapshotBackup(name=snap.name)
+    volume.snapshotBackup(name=snap.name,
+                          backupTargetName=DEFAULT_BACKUPSTORE_NAME)
     wait_for_backup_completion(client, volume_name, snap.name,
                                retry_count=600)
     bv, b = find_backup(client, volume_name, snap.name)
@@ -1764,7 +1778,8 @@ def test_engine_crash_for_dr_volume(set_random_backupstore, client, core_api, vo
                                     data_path=data_path)
     snap1 = create_snapshot(client, volume_name)
     volume = client.by_id_volume(volume_name)
-    volume.snapshotBackup(name=snap1.name)
+    volume.snapshotBackup(name=snap1.name,
+                          backupTargetName=DEFAULT_BACKUPSTORE_NAME)
     wait_for_backup_completion(client, volume_name, snap1.name)
     bv, b1 = find_backup(client, volume_name, snap1.name)
 
@@ -1782,7 +1797,8 @@ def test_engine_crash_for_dr_volume(set_random_backupstore, client, core_api, vo
     md5sum2 = get_pod_data_md5sum(core_api, pod_name, data_path2)
     snap2 = create_snapshot(client, volume_name)
     volume = client.by_id_volume(volume_name)
-    volume.snapshotBackup(name=snap2.name)
+    volume.snapshotBackup(name=snap2.name,
+                          backupTargetName=DEFAULT_BACKUPSTORE_NAME)
     wait_for_backup_completion(client,
                                volume_name,
                                snap2.name,
@@ -2993,7 +3009,8 @@ def test_engine_image_not_fully_deployed_perform_dr_restoring_expanding_volume(c
                                     snap1_offset, snap_data_size_in_mb)
 
     snap = create_snapshot(client, volume1.name)
-    volume1.snapshotBackup(name=snap.name)
+    volume1.snapshotBackup(name=snap.name,
+                           backupTargetName=DEFAULT_BACKUPSTORE_NAME)
     wait_for_backup_completion(client,
                                volume1.name,
                                snap.name,
@@ -3318,7 +3335,8 @@ def restore_with_replica_failure(client, core_api, volume_name, csi_pv, # NOQA
 
     volume = client.by_id_volume(volume_name)
     snap = create_snapshot(client, volume_name)
-    volume.snapshotBackup(name=snap.name)
+    volume.snapshotBackup(name=snap.name,
+                          backupTargetName=DEFAULT_BACKUPSTORE_NAME)
     wait_for_backup_completion(client, volume_name, snap.name, retry_count=600)
     _, b = find_backup(client, volume_name, snap.name)
 

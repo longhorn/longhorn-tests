@@ -30,6 +30,8 @@ from common import volume_name # NOQA
 from common import update_setting
 from common import SETTING_DEGRADED_AVAILABILITY
 from common import wait_statefulset, crash_engine_process_with_sigkill
+from common import DEFAULT_BACKUPSTORE_NAME
+from common import get_backup_volume_name
 
 from backupstore import backupstore_cleanup
 
@@ -586,15 +588,17 @@ def test_backup_kubernetes_status(set_random_backupstore, client, core_api, pod)
     # Create Backup manually instead of calling create_backup since Kubernetes
     # is not guaranteed to mount our Volume to the test host.
     snap = create_snapshot(client, volume_name)
-    volume.snapshotBackup(name=snap.name)
+    volume.snapshotBackup(name=snap.name,
+                          backupTargetName=DEFAULT_BACKUPSTORE_NAME)
     wait_for_backup_completion(client, volume_name, snap.name)
     _, b = find_backup(client, volume_name, snap.name)
     # Check backup label
     status = loads(b.labels.get(KUBERNETES_STATUS_LABEL))
     assert status == ks
     # Check backup volume label
+    bv_name = get_backup_volume_name(volume_name)
     for _ in range(RETRY_COUNTS):
-        bv = client.by_id_backupVolume(volume_name)
+        bv = client.by_id_backupVolume(bv_name)
         if bv is not None and bv.labels is not None:
             break
         time.sleep(RETRY_INTERVAL)
@@ -657,7 +661,8 @@ def test_backup_kubernetes_status(set_random_backupstore, client, core_api, pod)
     volume = wait_for_volume_healthy(client, volume_name)
 
     snap = create_snapshot(client, volume_name)
-    volume.snapshotBackup(name=snap.name)
+    volume.snapshotBackup(name=snap.name,
+                          backupTargetName=DEFAULT_BACKUPSTORE_NAME)
     volume = wait_for_backup_completion(client, volume_name, snap.name)
     bv, b = find_backup(client, volume_name, snap.name)
     new_b = bv.backupGet(name=b.name)
