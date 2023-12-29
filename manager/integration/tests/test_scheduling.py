@@ -17,20 +17,28 @@ from common import volume_name  # NOQA
 
 from common import get_longhorn_api_client
 from common import get_self_host_id
+from common import update_setting
+from common import size_to_string
 
+from common import cleanup_disks_on_node
 from common import cleanup_node_disks
 from common import create_host_disk
 from common import get_update_disks
 from common import set_node_scheduling
 from common import update_node_disks
 from common import wait_for_disk_status
+from common import wait_for_disk_update
+from common import wait_for_node_update
 
 from common import check_volume_data
 from common import cleanup_volume
+from common import cleanup_volume_by_name
 from common import create_and_check_volume
+from common import delete_replica_on_test_node
 from common import wait_for_volume_degraded
 from common import wait_for_volume_detached
 from common import wait_for_volume_healthy
+from common import wait_for_volume_replica_rebuilt_on_same_node_different_disk
 from common import wait_for_volume_replica_count
 from common import write_volume_random_data
 
@@ -44,6 +52,7 @@ from common import delete_and_wait_pod
 from common import wait_delete_pod
 from common import wait_for_pods_volume_state
 from common import write_pod_volume_random_data
+from common import get_pod_data_md5sum
 
 from common import create_pv_for_volume
 from common import create_pvc_for_volume
@@ -60,7 +69,6 @@ from common import wait_for_node_tag_update
 from common import wait_for_volume_condition_scheduled
 from common import cleanup_host_disks
 from common import wait_for_volume_delete
-from common import wait_for_disk_update
 
 from common import Mi, Gi
 from common import DATA_SIZE_IN_MB_2
@@ -70,10 +78,10 @@ from common import RETRY_INTERVAL
 from common import RETRY_INTERVAL_LONG
 from common import SETTING_DEFAULT_DATA_LOCALITY
 from common import SETTING_REPLICA_AUTO_BALANCE
+from common import SETTING_REPLICA_AUTO_BALANCE_DISK_PRESSURE_PERCENTAGE
 from common import SETTING_REPLICA_NODE_SOFT_ANTI_AFFINITY
 from common import VOLUME_FIELD_ROBUSTNESS
 from common import VOLUME_ROBUSTNESS_HEALTHY
-from common import update_setting, delete_replica_on_test_node
 from common import VOLUME_FRONTEND_BLOCKDEV, SNAPSHOT_DATA_INTEGRITY_IGNORED
 from common import VOLUME_ROBUSTNESS_DEGRADED, RETRY_COUNTS_SHORT
 from common import SETTING_ALLOW_EMPTY_NODE_SELECTOR_VOLUME
@@ -731,6 +739,312 @@ def test_replica_auto_balance_node_best_effort(client, volume_name):  # NOQA
 
     volume = client.by_id_volume(volume_name)
     check_volume_data(volume, data)
+
+
+def test_replica_auto_balance_disk_in_pressure(client, core_api, apps_api, volume_name, statefulset, storage_class):  # NOQA
+    """
+    Scenario: Test replica auto balance disk in pressure
+
+    Description: This test simulates a scenario where a disk reaches a certain
+                 pressure threshold (80%), triggering the replica auto balance
+                 to rebuild the replicas to another disk with enough available
+                 space. Replicas should not be rebuilted at the same time.
+
+    Issue: https://github.com/longhorn/longhorn/issues/4105
+
+    Given setting "replica-soft-anti-affinity" is "false"
+    And setting "replica-auto-balance-disk-pressure-percentage" is "80"
+    And new 1Gi disk 1 is created on self node
+        new 1Gi disk 2 is created on self node
+    And disk scheduling is disabled for disk 1 on self node
+        disk scheduling is disabled for default disk on self node
+    And node scheduling is disabled for all nodes except self node
+    And new storageclass is created with `numberOfReplicas: 1`
+    And statefulset 0 is created with 1 replicaset
+        statefulset 1 is created with 1 replicaset
+        statefulset 2 is created with 1 replicaset
+    And all statefulset volume replicas are scheduled on disk 1
+    And data is written to all statefulset volumes until disk 1 is pressured
+    And disk 1 pressure is exceeded threshold (80%)
+
+    When enable disk scheduling for disk 1 on self node
+    And update setting "replica-auto-balance" to "best-effort"
+
+    Then at least 1 replicas should be rebuilt on disk 2
+    And at least 1 replica should not be rebuilt on disk 2
+    And disk 1 should be below disk pressure threshold (80%)
+    And all statefulset volume data should be intact
+    """
+    # Set the "replica-soft-anti-affinity" to "true".
+    update_setting(client, SETTING_REPLICA_NODE_SOFT_ANTI_AFFINITY, "false")
+
+    # Set the "replica-auto-balance-disk-pressure-percentage" to 80%.
+    disk_pressure_percentage = 80
+    update_setting(client,
+                   SETTING_REPLICA_AUTO_BALANCE_DISK_PRESSURE_PERCENTAGE,
+                   str(disk_pressure_percentage))
+
+    self_host_id = get_self_host_id()
+    disk_size = Gi
+    disk1_name = "test-disk1"
+    disk2_name = "test-disk2"
+
+    def _create_disk_on_self_host(client, disk_name, allow_scheduling):
+        node = client.by_id_node(self_host_id)
+        update_disks = get_update_disks(node.disks)
+        disk_path = create_host_disk(client, disk_name,
+                                     str(disk_size), self_host_id)
+        update_disks[disk_name] = {"path": disk_path,
+                                   "allowScheduling": allow_scheduling}
+        update_node_disks(client, node.name, disks=update_disks, retry=True)
+        node = wait_for_disk_update(client, self_host_id, len(update_disks))
+        assert len(node.disks) == len(update_disks)
+
+    def _set_host_disk_allow_scheduling(client, disk_name):
+        node = client.by_id_node(self_host_id)
+        update_disks = get_update_disks(node.disks)
+
+        for name, disk in update_disks.items():
+            if name == disk_name:
+                disk.allowScheduling = True
+
+        update_node_disks(client, node.name, disks=update_disks, retry=True)
+        node = wait_for_disk_update(client, self_host_id, len(update_disks))
+        assert len(node.disks) == len(update_disks)
+
+    def _disable_default_disk_on_self_host(client):
+        node = client.by_id_node(self_host_id)
+        update_disks = get_update_disks(node.disks)
+
+        for _, disk in update_disks.items():
+            if disk.path == DEFAULT_DISK_PATH:
+                disk.allowScheduling = False
+
+        update_node_disks(client, node.name, disks=update_disks, retry=True)
+        node = wait_for_disk_update(client, self_host_id, len(update_disks))
+        assert len(node.disks) == len(update_disks)
+
+    def _disable_node_scheduling_except_self_host(client):
+        nodes = client.list_node()
+        for node in nodes:
+            if node.name != self_host_id:
+                client.update(node, allowScheduling=False)
+                wait_for_node_update(client, node.id, "allowScheduling", False)
+
+    def _get_disk_storage_available(client, disk_name):
+        node = client.by_id_node(self_host_id)
+        for name, disk in node.disks.items():
+            if name == disk_name:
+                return disk.storageAvailable
+        assert False, f"Cannot find disk {disk_name} on node {self_host_id}."
+
+    def _create_statefulset(statefulset, statefulset_name,
+                            storage_class, volume_size, replicas):
+        statefulset['metadata']['name']\
+            = statefulset['spec']['selector']['matchLabels']['app']\
+            = statefulset['spec']['serviceName']\
+            = statefulset['spec']['template']['metadata']['labels']['app']\
+            = statefulset_name
+
+        statefulset['spec']['replicas'] = replicas
+
+        volume_claim_template = statefulset['spec']['volumeClaimTemplates'][0]
+        volume_claim_template['spec']['storageClassName']\
+            = storage_class['metadata']['name']
+        volume_claim_template['spec']['resources']['requests']['storage']\
+            = size_to_string(volume_size)
+
+        create_and_wait_statefulset(statefulset)
+
+    def _wait_for_storage_usage_reach_disk_pressured_percentage(
+            client, node_id, disk_name, disk_pressure_percentage,
+            is_freed=False):
+        node = client.by_id_node(node_id)
+
+        expected_avaiable_percentage = 100 - disk_pressure_percentage
+
+        for _ in range(RETRY_COUNTS):
+            time.sleep(RETRY_INTERVAL)
+
+            node = client.by_id_node(node_id)
+
+            check_disk = None
+            for name, disk in node.disks.items():
+                if name == disk_name:
+                    check_disk = disk
+                    break
+
+            assert check_disk is not None, \
+                f"Cannot find disk {disk_name} on node {node_id}."
+
+            if check_disk.storageAvailable == check_disk.storageScheduled:
+                continue
+
+            actual_avaiable_percentage = \
+                check_disk.storageAvailable / check_disk.storageMaximum * 100
+            actual_avaiable_percentage = int(actual_avaiable_percentage)
+
+            if not is_freed:
+                if actual_avaiable_percentage < expected_avaiable_percentage:
+                    print(f"{disk_name} in pressure: "
+                          f"{actual_avaiable_percentage}% available")
+                    return
+            else:
+                if actual_avaiable_percentage > expected_avaiable_percentage:
+                    print(f"{disk_name} not in pressure: "
+                          f"{actual_avaiable_percentage}% available")
+                    return
+
+        condition = "is not" if not is_freed else "is"
+        assert False, \
+            f"Disk {disk_name} {condition} in pressure." \
+            f"Expected below {expected_avaiable_percentage}%." \
+            f"Actually used {actual_avaiable_percentage}%."
+
+    def _cleanup(client, volume_names, statefulset_names):
+        for _volume_name in volume_names:
+            cleanup_volume_by_name(client, _volume_name)
+
+        for _statefulset_name in statefulset_names:
+            _statefulset = {
+                'metadata': {
+                    'name': _statefulset_name,
+                    'namespace': 'default'
+                }
+            }
+            delete_statefulset(apps_api, _statefulset)
+
+        for _volume_name in volume_names:
+            wait_for_volume_delete(client, _volume_name)
+
+        cleanup_disks_on_node(client, self_host_id, disk1_name, disk2_name)
+
+    # Create new disks and disable scheduling on disk 2.
+    _create_disk_on_self_host(client, disk1_name, allow_scheduling=True)
+    _create_disk_on_self_host(client, disk2_name, allow_scheduling=False)
+
+    # Disable scheduling on default disk of self host and other nodes.
+    _disable_default_disk_on_self_host(client)
+    _disable_node_scheduling_except_self_host(client)
+
+    # Create new storage class with "numberOfReplicas" set to 1.
+    storage_class['parameters']['numberOfReplicas'] = "1"
+    create_storage_class(storage_class)
+
+    # Expect 3 volumes to be created later, each with 1 replica.
+    expected_replica_count = 3
+
+    # Calculate the size of each volume based on the available storage of
+    # disk 1.
+    disk_storage_available = _get_disk_storage_available(client, disk1_name)
+    volume_size = int(disk_storage_available/expected_replica_count)
+
+    # Create 3 statefulsets with 1 replica each.
+    statefulset_names = [f'sts-{i}' for i in range(expected_replica_count)]
+    for _statefulset_name in statefulset_names:
+        _create_statefulset(statefulset, _statefulset_name,
+                            storage_class, volume_size,
+                            replicas=1)
+
+    # Verify that all volumes are created with 1 replica.
+    claims = core_api.list_namespaced_persistent_volume_claim(
+        namespace='default')
+    volume_names = [claim.spec.volume_name for claim in claims.items]
+    assert len(volume_names) == expected_replica_count, \
+        f"Expected {expected_replica_count} volumes."
+
+    # Verify that all replicas are scheduled on disk 1.
+    node = client.by_id_node(self_host_id)
+    disks = node.disks
+    scheduled_disk_name = ""
+    for _volume_name in volume_names:
+        for name, disk in disks.items():
+            for scheduled_replica, _ in disk.scheduledReplica.items():
+                if scheduled_replica.startswith(_volume_name):
+                    scheduled_disk_name = name
+                    break
+        assert scheduled_disk_name == disk1_name, \
+            f"Replica scheduled on wrong disk {scheduled_disk_name}."
+
+    # Get the node disk of disk 1.
+    scheduled_disk = None
+    for name, disk in node.disks.items():
+        if name == scheduled_disk_name:
+            scheduled_disk = disk
+            break
+    assert scheduled_disk is not None, \
+        f"Failed to get node disk {scheduled_disk_name}."
+
+    storage_maximum = scheduled_disk.storageMaximum
+    storage_available = scheduled_disk.storageAvailable
+
+    # Calculate the total data size to add to simulate disk pressure.
+    target_disk_size_usage = storage_maximum * disk_pressure_percentage / 100
+    current_useage = storage_maximum - storage_available
+    target_data_size = target_disk_size_usage - current_useage
+
+    # Calculate the data size to write to each volume.
+    data_size = int(target_data_size / len(volume_names))
+    assert data_size != 0, \
+        f"Failed to get data size for disk {scheduled_disk_name}."
+
+    data_size_mb = int(data_size / 1024 / 1024)
+    pod_md5sums = {}
+
+    # Write data to each volume and get the MD5 checksum..
+    for _statefulset_name in statefulset_names:
+        pod_name = _statefulset_name + '-0'
+        write_pod_volume_random_data(core_api, pod_name, "/data/test",
+                                     data_size_mb)
+
+        md5sum = get_pod_data_md5sum(core_api, pod_name, "/data/test")
+
+        pod_md5sums[pod_name] = md5sum
+
+    # Wait for storage usage to reach the disk pressure percentage.
+    _wait_for_storage_usage_reach_disk_pressured_percentage(
+        client, self_host_id, disk1_name, disk_pressure_percentage)
+
+    # Allow scheduling on disk2.
+    _set_host_disk_allow_scheduling(client, disk2_name)
+
+    # Set "replica-auto-balance" to "best-effort" to trigger rebuild.
+    update_setting(client, SETTING_REPLICA_AUTO_BALANCE, "best-effort")
+
+    # Wait for the volume to be rebuilt.
+    actual_rebuilt, actual_not_rebuilt = 0, 0
+    for _volume_name in volume_names:
+        try:
+            wait_for_volume_replica_rebuilt_on_same_node_different_disk(
+                client, self_host_id, _volume_name, scheduled_disk_name
+            )
+            actual_rebuilt += 1
+        except AssertionError:
+            print(f"Volume {_volume_name} not rebuilt")
+            actual_not_rebuilt += 1
+    # There can be a delay up to 30 seconds for the disk storage usage to
+    # reflect after a replica is removed from disk 1. This can cause an
+    # additional replica to be rebuilt on disk 2 before the node controller's
+    # disk monitor detects the space change on disk 1.
+    assert actual_rebuilt >= 1, \
+        f"Expected at least 1 volume replica rebuilt.\n"\
+        f"Actual {actual_rebuilt} volume replica rebuilt."
+    assert actual_not_rebuilt >= 1, \
+        f"Expected at least 1 volume replica not rebuilt.\n"\
+        f"Actual {actual_not_rebuilt} volume replica not rebuilt."
+
+    _wait_for_storage_usage_reach_disk_pressured_percentage(
+        client, self_host_id, disk1_name, disk_pressure_percentage,
+        is_freed=True
+    )
+
+    # Verify data integrity by checking MD5 checksum.
+    for pod_name, md5sum in pod_md5sums.items():
+        current_md5sum = get_pod_data_md5sum(core_api, pod_name, "/data/test")
+        assert md5sum == current_md5sum, \
+            f"Data in pod {pod_name} doesn't match."
+
+    _cleanup(client, volume_names, statefulset_names)
 
 
 @pytest.mark.skip(reason="corner case") # NOQA
