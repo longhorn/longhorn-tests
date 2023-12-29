@@ -2352,13 +2352,18 @@ def crash_replica_processes(client, api, volname, replicas=None,
 
     for r in replicas:
         assert r.instanceManagerName != &#34;&#34;
-        kill_command = &#34;kill `pgrep -f &#34; + r[&#39;dataPath&#39;] + &#34;`&#34;
+
+        pgrep_command = f&#34;pgrep -f {r[&#39;dataPath&#39;]}&#34;
+        pid = exec_instance_manager(api, r.instanceManagerName, pgrep_command)
+        assert pid != &#34;&#34;
+
+        kill_command = f&#34;kill {pid}&#34;
         exec_instance_manager(api, r.instanceManagerName, kill_command)
 
         if wait_to_fail is True:
             thread = create_assert_error_check_thread(
                 wait_for_replica_failed,
-                client, volname, r[&#39;name&#39;], RETRY_COUNTS*2, RETRY_INTERVAL/2
+                client, volname, r[&#39;name&#39;], RETRY_COUNTS, RETRY_INTERVAL_SHORT
             )
             threads.append(thread)
 
@@ -2371,10 +2376,11 @@ def exec_instance_manager(api, im_name, cmd):
 
     with timeout(seconds=STREAM_EXEC_TIMEOUT,
                  error_message=&#39;Timeout on executing stream read&#39;):
-        stream(api.connect_get_namespaced_pod_exec,
-               im_name,
-               LONGHORN_NAMESPACE, command=exec_cmd,
-               stderr=True, stdin=False, stdout=True, tty=False)
+        output = stream(api.connect_get_namespaced_pod_exec,
+                        im_name,
+                        LONGHORN_NAMESPACE, command=exec_cmd,
+                        stderr=True, stdin=False, stdout=True, tty=False)
+        return output
 
 
 def wait_for_replica_failed(client, volname, replica_name,
@@ -7282,13 +7288,18 @@ def core_api(request):
 
     for r in replicas:
         assert r.instanceManagerName != &#34;&#34;
-        kill_command = &#34;kill `pgrep -f &#34; + r[&#39;dataPath&#39;] + &#34;`&#34;
+
+        pgrep_command = f&#34;pgrep -f {r[&#39;dataPath&#39;]}&#34;
+        pid = exec_instance_manager(api, r.instanceManagerName, pgrep_command)
+        assert pid != &#34;&#34;
+
+        kill_command = f&#34;kill {pid}&#34;
         exec_instance_manager(api, r.instanceManagerName, kill_command)
 
         if wait_to_fail is True:
             thread = create_assert_error_check_thread(
                 wait_for_replica_failed,
-                client, volname, r[&#39;name&#39;], RETRY_COUNTS*2, RETRY_INTERVAL/2
+                client, volname, r[&#39;name&#39;], RETRY_COUNTS, RETRY_INTERVAL_SHORT
             )
             threads.append(thread)
 
@@ -8640,10 +8651,11 @@ def disable_auto_salvage(client):
 
     with timeout(seconds=STREAM_EXEC_TIMEOUT,
                  error_message=&#39;Timeout on executing stream read&#39;):
-        stream(api.connect_get_namespaced_pod_exec,
-               im_name,
-               LONGHORN_NAMESPACE, command=exec_cmd,
-               stderr=True, stdin=False, stdout=True, tty=False)</code></pre>
+        output = stream(api.connect_get_namespaced_pod_exec,
+                        im_name,
+                        LONGHORN_NAMESPACE, command=exec_cmd,
+                        stderr=True, stdin=False, stdout=True, tty=False)
+        return output</code></pre>
 </details>
 </dd>
 <dt id="tests.common.exec_nsenter"><code class="name flex">
