@@ -177,6 +177,8 @@ SETTING_RECURRING_JOB_WHILE_VOLUME_DETACHED = \
     "allow-recurring-job-while-volume-detached"
 SETTING_REPLICA_NODE_SOFT_ANTI_AFFINITY = "replica-soft-anti-affinity"
 SETTING_REPLICA_AUTO_BALANCE = "replica-auto-balance"
+SETTING_REPLICA_AUTO_BALANCE_DISK_PRESSURE_PERCENTAGE = \
+    "replica-auto-balance-disk-pressure-percentage"
 SETTING_REPLICA_REPLENISHMENT_WAIT_INTERVAL = \
     "replica-replenishment-wait-interval"
 SETTING_REPLICA_ZONE_SOFT_ANTI_AFFINITY = "replica-zone-soft-anti-affinity"
@@ -1776,6 +1778,34 @@ def reset_nodes_taint(client):
         core_api.patch_node(node.id, {
             "spec": {"taints": []}
         })
+
+
+def cleanup_disks_on_node(client, node_id, disks):  # NOQA
+    # Disable scheduling for the new disks on self node
+    node = client.by_id_node(node_id)
+    for name, disk in node.disks.items():
+        if disk.path != DEFAULT_DISK_PATH:
+            disk.allowScheduling = False
+
+    # Update disks of self node
+    update_disks = get_update_disks(node.disks)
+    update_node_disks(client, node.name, disks=update_disks, retry=True)
+    node = wait_for_disk_update(client, node_id, len(update_disks))
+
+    # Remove new disks on self node and enable scheduling for the default disk
+    default_disks = {}
+    for name, disk in iter(node.disks.items()):
+        if disk.path == DEFAULT_DISK_PATH:
+            disk.allowScheduling = True
+            default_disks[name] = disk
+
+    # Update disks of self node
+    update_disks = get_update_disks(node.disks)
+    update_node_disks(client, node.name, disks=default_disks, retry=True)
+    wait_for_disk_update(client, node_id, len(default_disks))
+
+    # Cleanup host disks
+    cleanup_host_disks(client, *disks.keys())
 
 
 def get_client(address):
@@ -6122,3 +6152,29 @@ def wait_for_instance_manager_count(client, number, retry_counts=120):
         time.sleep(RETRY_INTERVAL_LONG)
 
     return len(ims)
+
+
+def wait_for_volume_replica_rebuilt_on_same_node_different_disk(client, node_name, volume_name, old_disk_name):  # NOQA
+    new_disk_name = ""
+    for _ in range(RETRY_COUNTS):
+        time.sleep(RETRY_INTERVAL)
+
+        volume = client.by_id_volume(volume_name)
+        if len(volume.replicas) != 1:
+            print(f"Waiting for volume {volume_name} to rebuild replica")
+            continue
+
+        node = client.by_id_node(node_name)
+        disks = node.disks
+        new_disk_name = ""
+        for name, disk in disks.items():
+            # if scheduledReplica has prefix of volume-name
+            for scheduledReplica, _ in disk.scheduledReplica.items():
+                if scheduledReplica.startswith(volume_name):
+                    new_disk_name = name
+                    break
+        if new_disk_name != old_disk_name:
+            break
+        print(f"Waiting for volume {volume_name} to rebuild replica disk {old_disk_name} to another disk")  # NOQA
+    assert new_disk_name != old_disk_name, \
+        "Failed to rebuild replica disk to another disk"
