@@ -2833,7 +2833,21 @@ def test_auto_detach_volume_when_node_is_cordoned(client, core_api, volume_name)
     common.wait_for_volume_delete(client, volume_name)
 
     volumes = client.list_volume().data
-    assert len(volumes) == 0</code></pre>
+    assert len(volumes) == 0
+
+@pytest.mark.skip(reason=&#34;TODO&#34;)  # NOQA
+def test_do_not_react_to_brief_kubelet_restart():
+    &#34;&#34;&#34;
+    Test the node controller ignores Ready == False due to KubeletNotReady for
+    ten seconds before reacting.
+
+    Repeat the following five times:
+    1. Verify status.conditions[type == Ready] == True for the Longhorn node we
+       are running on.
+    2. Kill the kubelet process (e.g. `pkill kubelet`).
+    3. Verify status.conditions[type == Ready] != False for the Longhorn node
+       we are running on at any point for at least ten seconds.
+    &#34;&#34;&#34;</code></pre>
 </details>
 </section>
 <section>
@@ -3410,6 +3424,37 @@ def test_disk_migration(client):  # NOQA
     common.check_volume_data(volume, data)
 
     cleanup_volume_by_name(client, vol_name)</code></pre>
+</details>
+</dd>
+<dt id="tests.test_node.test_do_not_react_to_brief_kubelet_restart"><code class="name flex">
+<span>def <span class="ident">test_do_not_react_to_brief_kubelet_restart</span></span>(<span>)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test the node controller ignores Ready == False due to KubeletNotReady for
+ten seconds before reacting.</p>
+<p>Repeat the following five times:
+1. Verify status.conditions[type == Ready] == True for the Longhorn node we
+are running on.
+2. Kill the kubelet process (e.g. <code>pkill kubelet</code>).
+3. Verify status.conditions[type == Ready] != False for the Longhorn node
+we are running on at any point for at least ten seconds.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@pytest.mark.skip(reason=&#34;TODO&#34;)  # NOQA
+def test_do_not_react_to_brief_kubelet_restart():
+    &#34;&#34;&#34;
+    Test the node controller ignores Ready == False due to KubeletNotReady for
+    ten seconds before reacting.
+
+    Repeat the following five times:
+    1. Verify status.conditions[type == Ready] == True for the Longhorn node we
+       are running on.
+    2. Kill the kubelet process (e.g. `pkill kubelet`).
+    3. Verify status.conditions[type == Ready] != False for the Longhorn node
+       we are running on at any point for at least ten seconds.
+    &#34;&#34;&#34;</code></pre>
 </details>
 </dd>
 <dt id="tests.test_node.test_drain_with_block_for_eviction_failure"><code class="name flex">
@@ -6332,6 +6377,7 @@ def test_update_node(client):  # NOQA
 <li><code><a title="tests.test_node.test_disable_scheduling_on_cordoned_node" href="#tests.test_node.test_disable_scheduling_on_cordoned_node">test_disable_scheduling_on_cordoned_node</a></code></li>
 <li><code><a title="tests.test_node.test_disk_eviction_with_node_level_soft_anti_affinity_disabled" href="#tests.test_node.test_disk_eviction_with_node_level_soft_anti_affinity_disabled">test_disk_eviction_with_node_level_soft_anti_affinity_disabled</a></code></li>
 <li><code><a title="tests.test_node.test_disk_migration" href="#tests.test_node.test_disk_migration">test_disk_migration</a></code></li>
+<li><code><a title="tests.test_node.test_do_not_react_to_brief_kubelet_restart" href="#tests.test_node.test_do_not_react_to_brief_kubelet_restart">test_do_not_react_to_brief_kubelet_restart</a></code></li>
 <li><code><a title="tests.test_node.test_drain_with_block_for_eviction_failure" href="#tests.test_node.test_drain_with_block_for_eviction_failure">test_drain_with_block_for_eviction_failure</a></code></li>
 <li><code><a title="tests.test_node.test_drain_with_block_for_eviction_if_contains_last_replica_success" href="#tests.test_node.test_drain_with_block_for_eviction_if_contains_last_replica_success">test_drain_with_block_for_eviction_if_contains_last_replica_success</a></code></li>
 <li><code><a title="tests.test_node.test_drain_with_block_for_eviction_success" href="#tests.test_node.test_drain_with_block_for_eviction_success">test_drain_with_block_for_eviction_success</a></code></li>
