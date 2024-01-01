@@ -1,0 +1,13 @@
+machine:
+  type: init
+  kubelet:
+    extraMounts:
+      - destination: /var/lib/longhorn
+        type: bind
+        source: /var/lib/longhorn
+        options:
+          - bind
+          - rshared
+          - rw
+cluster:
+  allowSchedulingOnControlPlanes: false
