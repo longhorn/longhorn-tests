@@ -4920,11 +4920,14 @@ def wait_for_pod_restart(core_api, pod_name, namespace="default"):
 def wait_for_pod_phase(core_api, pod_name, pod_phase, namespace="default"):
     is_phase = False
     for _ in range(RETRY_COUNTS):
-        pod = core_api.read_namespaced_pod(name=pod_name,
-                                           namespace=namespace)
-        if pod.status.phase == pod_phase:
-            is_phase = True
-            break
+        try:
+            pod = core_api.read_namespaced_pod(name=pod_name,
+                                               namespace=namespace)
+            if pod.status.phase == pod_phase:
+                is_phase = True
+                break
+        except Exception as e:
+            print(f"Waiting for pod {pod_name} {pod_phase} failed: {e}")
 
         time.sleep(RETRY_INTERVAL_LONG)
     assert is_phase
