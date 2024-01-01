@@ -1,0 +1,9 @@
+# create custom ami following
+# https://www.talos.dev/v1.6/talos-guides/install/cloud-platforms/aws/#create-your-own-amis
+# and
+# https://www.talos.dev/v1.7/talos-guides/install/boot-assets/#example-aws-with-image-factory
+customization:
+  systemExtensions:
+    officialExtensions:
+      - siderolabs/iscsi-tools
+      - siderolabs/util-linux-tools

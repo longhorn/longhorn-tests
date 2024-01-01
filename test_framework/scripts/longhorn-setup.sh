@@ -318,7 +318,7 @@ install_longhorn_stable(){
 
 create_longhorn_namespace(){
   kubectl create ns ${LONGHORN_NAMESPACE}
-  if [[ "${TF_VAR_cis_hardening}" == true ]]; then
+  if [[ "${TF_VAR_cis_hardening}" == true ]] || [[ "${DISTRO}" == "talos" ]]; then
     kubectl label ns default ${LONGHORN_NAMESPACE} pod-security.kubernetes.io/enforce=privileged
     kubectl label ns default ${LONGHORN_NAMESPACE} pod-security.kubernetes.io/enforce-version=latest
     kubectl label ns default ${LONGHORN_NAMESPACE} pod-security.kubernetes.io/audit=privileged
@@ -352,7 +352,7 @@ create_aws_secret(){
 
 
 longhornctl_check(){
-  curl -L https://github.com/longhorn/cli/releases/download/v1.7.0-rc2/longhornctl-linux-amd64 -o longhornctl
+  curl -L https://github.com/longhorn/cli/releases/download/v1.7.1-rc2/longhornctl-linux-amd64 -o longhornctl
   chmod +x longhornctl
   ./longhornctl install preflight
   ./longhornctl check preflight
@@ -523,7 +523,7 @@ main(){
 
   # msg="failed to get package manager" error="operating systems (amzn, sl-micro) are not supported"
   if [[ "${TF_VAR_k8s_distro_name}" != "eks" ]] && \
-    [[ "${DISTRO}" != "sle-micro" ]]; then
+    [[ "${DISTRO}" != "sle-micro" ]] && [[ "${DISTRO}" != "talos" ]]; then
     longhornctl_check
   fi
 
