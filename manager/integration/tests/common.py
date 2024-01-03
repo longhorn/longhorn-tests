@@ -1785,12 +1785,11 @@ def get_mgr_ips():
 
 
 def get_self_host_id():
-    envs = os.environ
-    return envs["NODE_NAME"]
+    return os.environ.get("NODE_NAME")
 
 
 def get_backupstore_url():
-    backupstore = os.environ['LONGHORN_BACKUPSTORES']
+    backupstore = os.environ.get("LONGHORN_BACKUPSTORES", "")
     backupstore = backupstore.replace(" ", "")
     backupstores = backupstore.split(",")
 
@@ -1799,18 +1798,13 @@ def get_backupstore_url():
 
 
 def get_backupstore_poll_interval():
-    poll_interval = os.environ['LONGHORN_BACKUPSTORE_POLL_INTERVAL']
+    poll_interval = os.environ.get("LONGHORN_BACKUPSTORE_POLL_INTERVAL", "")
     assert len(poll_interval) != 0
     return poll_interval
 
 
 def get_backupstores():
-    # The try is added to avoid the pdoc3 error while publishing this on
-    # https://longhorn.github.io/longhorn-tests
-    try:
-        backupstore = os.environ['LONGHORN_BACKUPSTORES']
-    except KeyError:
-        return []
+    backupstore = os.environ.get("LONGHORN_BACKUPSTORES", "")
 
     try:
         backupstore = backupstore.replace(" ", "")
