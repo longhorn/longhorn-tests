@@ -38,10 +38,13 @@ from common import wait_for_volume_detached
 from common import wait_for_backing_image_status
 from common import wait_for_backing_image_in_disk_fail
 from common import get_disk_uuid
+from common import write_volume_dev_random_mb_data, get_device_checksum
+from common import check_backing_image_disk_map_status
 from common import LONGHORN_NAMESPACE, RETRY_EXEC_COUNTS, RETRY_INTERVAL
 from common import BACKING_IMAGE_QCOW2_CHECKSUM
 from common import BACKING_IMAGE_STATE_READY
 from common import BACKING_IMAGE_STATE_FAILED_AND_CLEANUP
+from common import BACKING_IMAGE_STATE_IN_PROGRESS
 import time
 
 
@@ -632,8 +635,7 @@ def test_backing_image_with_wrong_md5sum(bi_url, client): # NOQA
                                   BACKING_IMAGE_STATE_FAILED_AND_CLEANUP)
 
 
-@pytest.mark.skip(reason="TODO")
-def test_volume_wait_for_backing_image_conditino(): # NOQA
+def test_volume_wait_for_backing_image_condition(client): # NOQA
     """
     Test the volume condition "WaitForBackingImage"
 
@@ -648,4 +650,46 @@ def test_volume_wait_for_backing_image_conditino(): # NOQA
       would be first True and then change to False when
       the BackingImage is ready and all the replicas are in running state.
     """
-    pass
+    # Create a large volume and export as backingimage
+    lht_host_id = get_self_host_id()
+
+    volume1_name = "vol1"
+    volume1 = create_and_check_volume(
+        client, volume1_name, 3,
+        str(2 * Gi))
+    volume1.attach(hostId=lht_host_id)
+    volume1 = wait_for_volume_healthy(client, volume1_name)
+    volume_endpoint = get_volume_endpoint(volume1)
+    write_volume_dev_random_mb_data(volume_endpoint, 1, 1000)
+    vol1_cksum = get_device_checksum(volume_endpoint)
+
+    backing_img_name = 'bi-test'
+    backing_img = client.create_backing_image(
+            name=backing_img_name,
+            sourceType=BACKING_IMAGE_SOURCE_TYPE_FROM_VOLUME,
+            parameters={"export-type": "qcow2", "volume-name": volume1_name},
+            expectedChecksum="")
+
+    # Create volume with that backing image
+    volume2_name = "vol2"
+    volume2 = create_and_check_volume(
+        client, volume_name=volume2_name, size=str(2 * Gi),
+        backing_image=backing_img["name"])
+
+    volume2.attach(hostId=lht_host_id)
+
+    if check_backing_image_disk_map_status(client,
+                                           backing_img_name,
+                                           1,
+                                           BACKING_IMAGE_STATE_IN_PROGRESS):
+        volume2 = client.by_id_volume(volume2_name)
+        assert volume2.conditions.WaitForBackingImage.status == "True"
+
+    # Check volume healthy, and backing image ready
+    volume2 = wait_for_volume_healthy(client, volume2_name)
+    assert volume2.conditions.WaitForBackingImage.status == "False"
+    check_backing_image_disk_map_status(client, backing_img_name, 3, "ready")
+
+    volume_endpoint = get_volume_endpoint(volume2)
+    vol2_cksum = get_device_checksum(volume_endpoint)
+    assert vol1_cksum == vol2_cksum
