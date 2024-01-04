@@ -1,5 +1,6 @@
 import pytest
 import requests
+import time
 
 from collections import defaultdict
 from prometheus_client.parser import text_string_to_metric_families
@@ -24,6 +25,8 @@ from common import write_volume_random_data
 
 from common import Mi
 from common import LONGHORN_NAMESPACE
+from common import RETRY_COUNTS
+from common import RETRY_INTERVAL
 
 # The dictionaries use float type of value because the value obtained from
 # prometheus_client is in float type.
@@ -156,6 +159,21 @@ def check_metric_sum_on_all_nodes(client, core_api, metric_name, expected_labels
         assert total_metrics["value"] == expected_value
     else:
         assert total_metrics["value"] >= 0.0
+
+
+def wait_for_metric_count_all_nodes(client, core_api, metric_name, metric_labels, expected_count): # NOQA
+    for _ in range(RETRY_COUNTS):
+        time.sleep(RETRY_INTERVAL)
+
+        try:
+            check_metric_count_all_nodes(client, core_api, metric_name,
+                                         metric_labels, expected_count)
+            return
+        except AssertionError:
+            continue
+
+    check_metric_count_all_nodes(client, core_api, metric_name,
+                                 metric_labels, expected_count)
 
 
 def check_metric_count_all_nodes(client, core_api, metric_name, metric_labels, expected_count): # NOQA
@@ -385,9 +403,9 @@ def test_metric_longhorn_snapshot_actual_size_bytes(client, core_api, volume_nam
     create_snapshot(client, volume_name)
     create_snapshot(client, volume_name)
 
-    check_metric_count_all_nodes(client, core_api,
-                                 "longhorn_snapshot_actual_size_bytes",
-                                 user_snapshot_metric_labels, 4)
-    check_metric_count_all_nodes(client, core_api,
-                                 "longhorn_snapshot_actual_size_bytes",
-                                 system_snapshot_metric_labels, 1)
+    wait_for_metric_count_all_nodes(client, core_api,
+                                    "longhorn_snapshot_actual_size_bytes",
+                                    user_snapshot_metric_labels, 4)
+    wait_for_metric_count_all_nodes(client, core_api,
+                                    "longhorn_snapshot_actual_size_bytes",
+                                    system_snapshot_metric_labels, 1)
