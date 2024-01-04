@@ -31,13 +31,13 @@ import os
 import time
 import random
 import string
+import shutil
 
 from common import core_api, client # NOQA
 from common import Gi, SIZE
 from common import volume_name # NOQA
 from common import SETTING_ORPHAN_AUTO_DELETION
 from common import RETRY_COUNTS, RETRY_INTERVAL_LONG
-from common import exec_nsenter
 from common import get_self_host_id
 from common import get_update_disks, wait_for_disk_update, cleanup_node_disks
 from common import create_and_check_volume, wait_for_volume_healthy
@@ -46,6 +46,7 @@ from common import create_host_disk, cleanup_host_disks
 from common import wait_for_node_update
 from common import wait_for_disk_status
 from common import update_node_disks
+from common import exec_local
 
 
 def generate_random_id(num_bytes):
@@ -106,7 +107,7 @@ def create_orphaned_directories_on_host(volume, disk_paths, num_orphans):  # NOQ
                 replica_dir_name = volume.name + &#34;-&#34; + generate_random_id(8)
                 path = os.path.join(disk_path, &#34;replicas&#34;, replica_dir_name)
                 paths.append(path)
-                exec_nsenter(&#34;cp -a {} {}&#34;.format(replica.dataPath, path))
+                exec_local(&#34;cp -a {} {}&#34;.format(replica.dataPath, path))
 
     return paths
 
@@ -148,18 +149,16 @@ def wait_for_orphan_count(client, number, retry_counts=120):  # NOQA
 
 def wait_for_file_count(path, number, retry_counts=120):
     for _ in range(retry_counts):
-        count = exec_nsenter(&#34;ls {} | wc -l&#34;.format(path))
-        if int(count) == number:
+        if len(os.listdir(path)) == number:
             break
         time.sleep(RETRY_INTERVAL_LONG)
 
-    count = exec_nsenter(&#34;ls {} | wc -l&#34;.format(path))
-    return int(count)
+    return len(os.listdir(path))
 
 
 def delete_orphaned_directory_on_host(directories):  # NOQA
     for path in directories:
-        exec_nsenter(&#34;rm -rf {}&#34;.format(path))
+        exec_local(&#34;rm -rf {}&#34;.format(path))
 
 
 def delete_extra_disks_on_host(client, disk_names):  # NOQA
@@ -218,26 +217,24 @@ def test_orphaned_dirs_with_wrong_naming_format(client, volume_name, request):  
 
         # Create invalid orphaned directories.
         # 8-byte random id missing
-        exec_nsenter(&#34;mkdir -p {}&#34;.format(os.path.join(replica.diskPath,
-                                                       &#34;replicas&#34;,
-                                                       volume_name)))
+        os.makedirs(os.path.join(replica.diskPath, &#34;replicas&#34;, volume_name))
+
         # wrong random id length
-        exec_nsenter(&#34;mkdir -p {}&#34;.format(
-            os.path.join(replica.diskPath,
-                         &#34;replicas&#34;,
-                         volume_name + &#34;-&#34; + generate_random_id(4))))
+        os.makedirs(os.path.join(replica.diskPath, &#34;replicas&#34;,
+                                 volume_name + &#34;-&#34; + generate_random_id(4)))
+
         # volume.meta missing
-        path = os.path.join(replica.diskPath,
-                            &#34;replicas&#34;,
+        path = os.path.join(replica.diskPath, &#34;replicas&#34;,
                             volume_name + &#34;-&#34; + generate_random_id(8))
-        exec_nsenter(&#34;cp -a {} {}; rm -f {}&#34;.format(
-            replica.dataPath, path, os.path.join(path, &#34;volume.meta&#34;)))
+        shutil.copytree(replica.dataPath, path)
+        os.remove(os.path.join(path, &#34;volume.meta&#34;))
+
         # corrupted volume.meta
-        path = os.path.join(replica.diskPath,
-                            &#34;replicas&#34;,
+        path = os.path.join(replica.diskPath, &#34;replicas&#34;,
                             volume_name + &#34;-&#34; + generate_random_id(8))
-        exec_nsenter(&#34;cp -a {} {}; echo xxx &gt; {}&#34;.format(
-            replica.dataPath, path, os.path.join(path, &#34;volume.meta&#34;)))
+        shutil.copytree(replica.dataPath, path)
+        with open(os.path.join(path, &#34;volume.meta&#34;), &#39;w&#39;) as file:
+            file.write(&#34;xxx&#34;)
 
     # Step 5
     cleanup_volume_by_name(client, volume_name)
@@ -563,7 +560,7 @@ def test_orphaned_dirs_in_duplicated_disks(client, volume_name, request):  # NOQ
     disks = node.disks
     disk_path = os.path.join(disk_paths[0], disk_names[1])
     disk_paths.append(disk_path)
-    exec_nsenter(&#34;mkdir -p {}&#34;.format(disk_path))
+    os.makedirs(disk_path)
     disk2 = {&#34;path&#34;: disk_path, &#34;allowScheduling&#34;: True}
 
     update_disk = get_update_disks(disks)
@@ -858,7 +855,7 @@ def test_orphan_auto_deletion(client, volume_name, request):  # NOQA
                 replica_dir_name = volume.name + &#34;-&#34; + generate_random_id(8)
                 path = os.path.join(disk_path, &#34;replicas&#34;, replica_dir_name)
                 paths.append(path)
-                exec_nsenter(&#34;cp -a {} {}&#34;.format(replica.dataPath, path))
+                exec_local(&#34;cp -a {} {}&#34;.format(replica.dataPath, path))
 
     return paths</code></pre>
 </details>
@@ -951,7 +948,7 @@ def test_orphan_auto_deletion(client, volume_name, request):  # NOQA
 </summary>
 <pre><code class="python">def delete_orphaned_directory_on_host(directories):  # NOQA
     for path in directories:
-        exec_nsenter(&#34;rm -rf {}&#34;.format(path))</code></pre>
+        exec_local(&#34;rm -rf {}&#34;.format(path))</code></pre>
 </details>
 </dd>
 <dt id="tests.test_orphan.delete_orphans"><code class="name flex">
@@ -1629,7 +1626,7 @@ def test_orphaned_dirs_in_duplicated_disks(client, volume_name, request):  # NOQ
     disks = node.disks
     disk_path = os.path.join(disk_paths[0], disk_names[1])
     disk_paths.append(disk_path)
-    exec_nsenter(&#34;mkdir -p {}&#34;.format(disk_path))
+    os.makedirs(disk_path)
     disk2 = {&#34;path&#34;: disk_path, &#34;allowScheduling&#34;: True}
 
     update_disk = get_update_disks(disks)
@@ -1728,26 +1725,24 @@ def test_orphaned_dirs_with_wrong_naming_format(client, volume_name, request):  
 
         # Create invalid orphaned directories.
         # 8-byte random id missing
-        exec_nsenter(&#34;mkdir -p {}&#34;.format(os.path.join(replica.diskPath,
-                                                       &#34;replicas&#34;,
-                                                       volume_name)))
+        os.makedirs(os.path.join(replica.diskPath, &#34;replicas&#34;, volume_name))
+
         # wrong random id length
-        exec_nsenter(&#34;mkdir -p {}&#34;.format(
-            os.path.join(replica.diskPath,
-                         &#34;replicas&#34;,
-                         volume_name + &#34;-&#34; + generate_random_id(4))))
+        os.makedirs(os.path.join(replica.diskPath, &#34;replicas&#34;,
+                                 volume_name + &#34;-&#34; + generate_random_id(4)))
+
         # volume.meta missing
-        path = os.path.join(replica.diskPath,
-                            &#34;replicas&#34;,
+        path = os.path.join(replica.diskPath, &#34;replicas&#34;,
                             volume_name + &#34;-&#34; + generate_random_id(8))
-        exec_nsenter(&#34;cp -a {} {}; rm -f {}&#34;.format(
-            replica.dataPath, path, os.path.join(path, &#34;volume.meta&#34;)))
+        shutil.copytree(replica.dataPath, path)
+        os.remove(os.path.join(path, &#34;volume.meta&#34;))
+
         # corrupted volume.meta
-        path = os.path.join(replica.diskPath,
-                            &#34;replicas&#34;,
+        path = os.path.join(replica.diskPath, &#34;replicas&#34;,
                             volume_name + &#34;-&#34; + generate_random_id(8))
-        exec_nsenter(&#34;cp -a {} {}; echo xxx &gt; {}&#34;.format(
-            replica.dataPath, path, os.path.join(path, &#34;volume.meta&#34;)))
+        shutil.copytree(replica.dataPath, path)
+        with open(os.path.join(path, &#34;volume.meta&#34;), &#39;w&#39;) as file:
+            file.write(&#34;xxx&#34;)
 
     # Step 5
     cleanup_volume_by_name(client, volume_name)
@@ -1834,13 +1829,11 @@ def test_orphaned_replica_dir_missing(client, volume_name, request):  # NOQA
 </summary>
 <pre><code class="python">def wait_for_file_count(path, number, retry_counts=120):
     for _ in range(retry_counts):
-        count = exec_nsenter(&#34;ls {} | wc -l&#34;.format(path))
-        if int(count) == number:
+        if len(os.listdir(path)) == number:
             break
         time.sleep(RETRY_INTERVAL_LONG)
 
-    count = exec_nsenter(&#34;ls {} | wc -l&#34;.format(path))
-    return int(count)</code></pre>
+    return len(os.listdir(path))</code></pre>
 </details>
 </dd>
 <dt id="tests.test_orphan.wait_for_orphan_count"><code class="name flex">

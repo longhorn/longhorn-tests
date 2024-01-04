@@ -28,26 +28,33 @@
 </summary>
 <pre><code class="python">import pytest
 import requests
+import time
 
+from collections import defaultdict
 from prometheus_client.parser import text_string_to_metric_families
 
-from backupstore import set_random_backupstore  # NOQA
 from common import client, core_api, volume_name  # NOQA
 
 from common import crash_replica_processes
 from common import create_pv_for_volume
 from common import create_pvc_for_volume
+from common import create_snapshot
 from common import create_and_check_volume
+from common import generate_random_data
 from common import get_self_host_id
 from common import wait_for_volume_degraded
 from common import wait_for_volume_detached
 from common import wait_for_volume_detached_unknown
+from common import wait_for_volume_expansion
 from common import wait_for_volume_faulted
 from common import wait_for_volume_healthy
+from common import write_volume_data
 from common import write_volume_random_data
 
 from common import Mi
 from common import LONGHORN_NAMESPACE
+from common import RETRY_COUNTS
+from common import RETRY_INTERVAL
 
 # The dictionaries use float type of value because the value obtained from
 # prometheus_client is in float type.
@@ -69,13 +76,11 @@ longhorn_volume_robustness = {
 }
 
 
-def get_metrics(core_api): # NOQA
-    lht_hostId = get_self_host_id()
-
+def get_metrics(core_api, metric_node_id): # NOQA
     pods = core_api.list_namespaced_pod(namespace=LONGHORN_NAMESPACE,
                                         label_selector=&#34;app=longhorn-manager&#34;)
     for pod in pods.items:
-        if pod.spec.node_name == lht_hostId:
+        if pod.spec.node_name == metric_node_id:
             manager_ip = pod.status.pod_ip
             break
 
@@ -85,25 +90,154 @@ def get_metrics(core_api): # NOQA
     return result
 
 
-def check_metric(core_api, metric_name, metric_labels, expected_value=None): # NOQA
-    metric_data = get_metrics(core_api)
+def find_metric(metric_data, metric_name):
+    return find_metrics(metric_data, metric_name)[0]
+
+
+def find_metrics(metric_data, metric_name):
+    metrics = []
+
+    # Find the metric with the given name in the provided metric data
     for family in metric_data:
         for sample in family.samples:
             if sample.name == metric_name:
-                item = sample
-                break
+                metrics.append(sample)
 
-    assert item is not None
+    return metrics
+
+
+def check_metric(core_api, metric_name, metric_labels, expected_value=None, metric_node_id=get_self_host_id()): # NOQA
+    metric_data = get_metrics(core_api, metric_node_id)
+
+    found_metric = None
+    for family in metric_data:
+        found_metric = next((sample for sample in family.samples if sample.name == metric_name), None) # NOQA
+        if found_metric:
+            break
+
+    assert found_metric is not None
 
     for key, value in metric_labels.items():
-        assert item.labels[key] == value
+        assert found_metric.labels[key] == value
 
-    assert type(item.value) is float
+    assert isinstance(found_metric.value, float)
 
     if expected_value is not None:
-        assert item.value == expected_value
+        assert found_metric.value == expected_value
     else:
-        assert item.value &gt;= 0.0
+        assert found_metric.value &gt;= 0.0
+
+
+def check_metric_sum_on_all_nodes(client, core_api, metric_name, expected_labels, expected_value=None): # NOQA
+    # Initialize total_metrics to store the sum of the metric values.
+    total_metrics = {&#34;labels&#34;: defaultdict(None), &#34;value&#34;: 0.0}
+
+    # Initialize the total_metric_values to store the sum of the
+    # metric label values.
+    total_metric_values = total_metrics[&#34;labels&#34;]
+
+    # Find the metric based on the given labels.
+    def filter_metric_by_labels(metrics, labels):
+        for metric in metrics:
+            is_matched = True
+            for key, value in labels.items():
+                if type(value) in (float, int):
+                    continue
+
+                if metric.labels[key] != value:
+                    is_matched = False
+                    break
+
+            if is_matched:
+                return metric
+
+        raise AssertionError(&#34;Cannot find the metric matching the labels&#34;)
+
+    for node in client.list_node():
+        metric_data = get_metrics(core_api, node.name)
+
+        metrics = find_metrics(metric_data, metric_name)
+        if len(metrics) == 0:
+            continue
+
+        filtered_metric = filter_metric_by_labels(metrics, expected_labels)
+
+        assert isinstance(filtered_metric.value, float)
+
+        for key, value in expected_labels.items():
+            value_type = type(value)
+
+            if key not in total_metric_values:
+                total_metric_values[key] = value_type(
+                    filtered_metric.labels[key]
+                )
+            # Accumulate the metric label values.
+            elif isinstance(value, (float, int)):
+                total_metric_values[key] += value_type(
+                    filtered_metric.labels[key]
+                )
+
+        # Accumulate the metric values.
+        total_metrics[&#34;value&#34;] += filtered_metric.value
+
+    for key, value in expected_labels.items():
+        assert total_metric_values[key] == value
+
+    if expected_value is not None:
+        assert total_metrics[&#34;value&#34;] == expected_value
+    else:
+        assert total_metrics[&#34;value&#34;] &gt;= 0.0
+
+
+def wait_for_metric_count_all_nodes(client, core_api, metric_name, metric_labels, expected_count): # NOQA
+    for _ in range(RETRY_COUNTS):
+        time.sleep(RETRY_INTERVAL)
+
+        try:
+            check_metric_count_all_nodes(client, core_api, metric_name,
+                                         metric_labels, expected_count)
+            return
+        except AssertionError:
+            continue
+
+    check_metric_count_all_nodes(client, core_api, metric_name,
+                                 metric_labels, expected_count)
+
+
+def check_metric_count_all_nodes(client, core_api, metric_name, metric_labels, expected_count): # NOQA
+    # Find the metrics based on the given labels.
+    def filter_metrics_by_labels(metrics, labels):
+        filtered_metrics = []
+        for metric in metrics:
+            is_matched = True
+            for key, value in labels.items():
+                if type(value) in (float, int):
+                    continue
+
+                if metric.labels[key] != value:
+                    is_matched = False
+                    break
+
+            if is_matched:
+                filtered_metrics.append(metric)
+
+        print(filtered_metrics)
+        return filtered_metrics
+
+    filtered_metrics = []
+    for node in client.list_node():
+        metric_data = get_metrics(core_api, node.name)
+
+        metrics = find_metrics(metric_data, metric_name)
+        if len(metrics) == 0:
+            continue
+
+        filtered_metrics.extend(
+            filter_metrics_by_labels(metrics, metric_labels)
+        )
+
+    assert len(filtered_metrics) == expected_count
+
 
 
 @pytest.mark.parametrize(&#34;pvc_namespace&#34;, [LONGHORN_NAMESPACE, &#34;default&#34;])  # NOQA
@@ -195,7 +329,114 @@ def test_volume_metrics(client, core_api, volume_name, pvc_namespace): # NOQA
     volume.detach()
     volume = wait_for_volume_detached(client, volume_name)
     check_metric(core_api, &#34;longhorn_volume_state&#34;,
-                 metric_labels, longhorn_volume_state[&#34;detached&#34;])</code></pre>
+                 metric_labels, longhorn_volume_state[&#34;detached&#34;])
+
+
+def test_metric_longhorn_snapshot_actual_size_bytes(client, core_api, volume_name): # NOQA
+    &#34;&#34;&#34;
+    Scenario: test metric longhorn_snapshot_actual_size_bytes
+
+    Issue: https://github.com/longhorn/longhorn/issues/5869
+
+    Given a volume
+
+    When 1 snapshot is created by user
+    And 1 snapshot is created by system
+    Then has a metric longhorn_snapshot_actual_size_bytes value equals to the
+         size of the user created snapshot,
+         and volume label is the volume name
+         and user_created label is true
+    And has a metric longhorn_snapshot_actual_size_bytes value equals to the
+        size of the system created snapshot,
+        and volume label is the volume name
+        and user_created label is false
+
+    When 3 snapshot is created by user
+    Then has 4 metrics longhorn_snapshot_actual_size_bytes with
+         volume label is the volume name
+         and user_created label is true
+    And has 1 metrics longhorn_snapshot_actual_size_bytes with
+        volume label is the volume name
+        and user_created label is false
+    &#34;&#34;&#34;
+    self_hostId = get_self_host_id()
+
+    # create a volume and attach it to a node.
+    volume_size = 50 * Mi
+    client.create_volume(name=volume_name,
+                         numberOfReplicas=1,
+                         size=str(volume_size))
+    volume = wait_for_volume_detached(client, volume_name)
+    volume.attach(hostId=self_hostId)
+    volume = wait_for_volume_healthy(client, volume_name)
+
+    # create the user snapshot.
+    data_size = 10 * Mi
+    user_snapshot_data_0 = {&#39;pos&#39;: 0,
+                            &#39;len&#39;: data_size,
+                            &#39;content&#39;: generate_random_data(data_size)}
+    write_volume_data(volume, user_snapshot_data_0)
+
+    create_snapshot(client, volume_name)
+
+    # create the system snapshot by expanding the volume.
+    system_snapshot_data_0 = {&#39;pos&#39;: 0,
+                              &#39;len&#39;: data_size,
+                              &#39;content&#39;: generate_random_data(data_size)}
+    write_volume_data(volume, system_snapshot_data_0)
+
+    volume_size_expanded_0 = str(volume_size * 2)
+    volume.expand(size=volume_size_expanded_0)
+    wait_for_volume_expansion(client, volume_name)
+    volume = client.by_id_volume(volume_name)
+    assert volume.size == volume_size_expanded_0
+
+    # get the snapshot sizes.
+    user_snapshot_size = 0
+    system_snapshot_size = 0
+    snapshots = volume.snapshotList()
+    for snapshot in snapshots:
+        if snapshot.name == &#34;volume-head&#34;:
+            continue
+
+        if snapshot.usercreated:
+            user_snapshot_size = int(snapshot.size)
+        else:
+            system_snapshot_size = int(snapshot.size)
+    assert user_snapshot_size &gt; 0
+    assert system_snapshot_size &gt; 0
+
+    # assert the metric values for the user snapshot.
+    user_snapshot_metric_labels = {
+        &#34;volume&#34;: volume_name,
+        &#34;user_created&#34;: &#34;true&#34;,
+    }
+    check_metric_sum_on_all_nodes(client, core_api,
+                                  &#34;longhorn_snapshot_actual_size_bytes&#34;,
+                                  user_snapshot_metric_labels,
+                                  user_snapshot_size)
+
+    # assert the metric values for the system snapshot.
+    system_snapshot_metric_labels = {
+        &#34;volume&#34;: volume_name,
+        &#34;user_created&#34;: &#34;false&#34;,
+    }
+    check_metric_sum_on_all_nodes(client, core_api,
+                                  &#34;longhorn_snapshot_actual_size_bytes&#34;,
+                                  system_snapshot_metric_labels,
+                                  system_snapshot_size)
+
+    # create 3 more user snapshots.
+    create_snapshot(client, volume_name)
+    create_snapshot(client, volume_name)
+    create_snapshot(client, volume_name)
+
+    wait_for_metric_count_all_nodes(client, core_api,
+                                    &#34;longhorn_snapshot_actual_size_bytes&#34;,
+                                    user_snapshot_metric_labels, 4)
+    wait_for_metric_count_all_nodes(client, core_api,
+                                    &#34;longhorn_snapshot_actual_size_bytes&#34;,
+                                    system_snapshot_metric_labels, 1)</code></pre>
 </details>
 </section>
 <section>
@@ -206,7 +447,7 @@ def test_volume_metrics(client, core_api, volume_name, pvc_namespace): # NOQA
 <h2 class="section-title" id="header-functions">Functions</h2>
 <dl>
 <dt id="tests.test_metric.check_metric"><code class="name flex">
-<span>def <span class="ident">check_metric</span></span>(<span>core_api, metric_name, metric_labels, expected_value=None)</span>
+<span>def <span class="ident">check_metric</span></span>(<span>core_api, metric_name, metric_labels, expected_value=None, metric_node_id=None)</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -214,29 +455,178 @@ def test_volume_metrics(client, core_api, volume_name, pvc_namespace): # NOQA
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def check_metric(core_api, metric_name, metric_labels, expected_value=None): # NOQA
-    metric_data = get_metrics(core_api)
+<pre><code class="python">def check_metric(core_api, metric_name, metric_labels, expected_value=None, metric_node_id=get_self_host_id()): # NOQA
+    metric_data = get_metrics(core_api, metric_node_id)
+
+    found_metric = None
+    for family in metric_data:
+        found_metric = next((sample for sample in family.samples if sample.name == metric_name), None) # NOQA
+        if found_metric:
+            break
+
+    assert found_metric is not None
+
+    for key, value in metric_labels.items():
+        assert found_metric.labels[key] == value
+
+    assert isinstance(found_metric.value, float)
+
+    if expected_value is not None:
+        assert found_metric.value == expected_value
+    else:
+        assert found_metric.value &gt;= 0.0</code></pre>
+</details>
+</dd>
+<dt id="tests.test_metric.check_metric_count_all_nodes"><code class="name flex">
+<span>def <span class="ident">check_metric_count_all_nodes</span></span>(<span>client, core_api, metric_name, metric_labels, expected_count)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def check_metric_count_all_nodes(client, core_api, metric_name, metric_labels, expected_count): # NOQA
+    # Find the metrics based on the given labels.
+    def filter_metrics_by_labels(metrics, labels):
+        filtered_metrics = []
+        for metric in metrics:
+            is_matched = True
+            for key, value in labels.items():
+                if type(value) in (float, int):
+                    continue
+
+                if metric.labels[key] != value:
+                    is_matched = False
+                    break
+
+            if is_matched:
+                filtered_metrics.append(metric)
+
+        print(filtered_metrics)
+        return filtered_metrics
+
+    filtered_metrics = []
+    for node in client.list_node():
+        metric_data = get_metrics(core_api, node.name)
+
+        metrics = find_metrics(metric_data, metric_name)
+        if len(metrics) == 0:
+            continue
+
+        filtered_metrics.extend(
+            filter_metrics_by_labels(metrics, metric_labels)
+        )
+
+    assert len(filtered_metrics) == expected_count</code></pre>
+</details>
+</dd>
+<dt id="tests.test_metric.check_metric_sum_on_all_nodes"><code class="name flex">
+<span>def <span class="ident">check_metric_sum_on_all_nodes</span></span>(<span>client, core_api, metric_name, expected_labels, expected_value=None)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def check_metric_sum_on_all_nodes(client, core_api, metric_name, expected_labels, expected_value=None): # NOQA
+    # Initialize total_metrics to store the sum of the metric values.
+    total_metrics = {&#34;labels&#34;: defaultdict(None), &#34;value&#34;: 0.0}
+
+    # Initialize the total_metric_values to store the sum of the
+    # metric label values.
+    total_metric_values = total_metrics[&#34;labels&#34;]
+
+    # Find the metric based on the given labels.
+    def filter_metric_by_labels(metrics, labels):
+        for metric in metrics:
+            is_matched = True
+            for key, value in labels.items():
+                if type(value) in (float, int):
+                    continue
+
+                if metric.labels[key] != value:
+                    is_matched = False
+                    break
+
+            if is_matched:
+                return metric
+
+        raise AssertionError(&#34;Cannot find the metric matching the labels&#34;)
+
+    for node in client.list_node():
+        metric_data = get_metrics(core_api, node.name)
+
+        metrics = find_metrics(metric_data, metric_name)
+        if len(metrics) == 0:
+            continue
+
+        filtered_metric = filter_metric_by_labels(metrics, expected_labels)
+
+        assert isinstance(filtered_metric.value, float)
+
+        for key, value in expected_labels.items():
+            value_type = type(value)
+
+            if key not in total_metric_values:
+                total_metric_values[key] = value_type(
+                    filtered_metric.labels[key]
+                )
+            # Accumulate the metric label values.
+            elif isinstance(value, (float, int)):
+                total_metric_values[key] += value_type(
+                    filtered_metric.labels[key]
+                )
+
+        # Accumulate the metric values.
+        total_metrics[&#34;value&#34;] += filtered_metric.value
+
+    for key, value in expected_labels.items():
+        assert total_metric_values[key] == value
+
+    if expected_value is not None:
+        assert total_metrics[&#34;value&#34;] == expected_value
+    else:
+        assert total_metrics[&#34;value&#34;] &gt;= 0.0</code></pre>
+</details>
+</dd>
+<dt id="tests.test_metric.find_metric"><code class="name flex">
+<span>def <span class="ident">find_metric</span></span>(<span>metric_data, metric_name)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def find_metric(metric_data, metric_name):
+    return find_metrics(metric_data, metric_name)[0]</code></pre>
+</details>
+</dd>
+<dt id="tests.test_metric.find_metrics"><code class="name flex">
+<span>def <span class="ident">find_metrics</span></span>(<span>metric_data, metric_name)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def find_metrics(metric_data, metric_name):
+    metrics = []
+
+    # Find the metric with the given name in the provided metric data
     for family in metric_data:
         for sample in family.samples:
             if sample.name == metric_name:
-                item = sample
-                break
+                metrics.append(sample)
 
-    assert item is not None
-
-    for key, value in metric_labels.items():
-        assert item.labels[key] == value
-
-    assert type(item.value) is float
-
-    if expected_value is not None:
-        assert item.value == expected_value
-    else:
-        assert item.value &gt;= 0.0</code></pre>
+    return metrics</code></pre>
 </details>
 </dd>
 <dt id="tests.test_metric.get_metrics"><code class="name flex">
-<span>def <span class="ident">get_metrics</span></span>(<span>core_api)</span>
+<span>def <span class="ident">get_metrics</span></span>(<span>core_api, metric_node_id)</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -244,13 +634,11 @@ def test_volume_metrics(client, core_api, volume_name, pvc_namespace): # NOQA
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def get_metrics(core_api): # NOQA
-    lht_hostId = get_self_host_id()
-
+<pre><code class="python">def get_metrics(core_api, metric_node_id): # NOQA
     pods = core_api.list_namespaced_pod(namespace=LONGHORN_NAMESPACE,
                                         label_selector=&#34;app=longhorn-manager&#34;)
     for pod in pods.items:
-        if pod.spec.node_name == lht_hostId:
+        if pod.spec.node_name == metric_node_id:
             manager_ip = pod.status.pod_ip
             break
 
@@ -258,6 +646,141 @@ def test_volume_metrics(client, core_api, volume_name, pvc_namespace): # NOQA
     string_data = metrics.decode(&#39;utf-8&#39;)
     result = text_string_to_metric_families(string_data)
     return result</code></pre>
+</details>
+</dd>
+<dt id="tests.test_metric.test_metric_longhorn_snapshot_actual_size_bytes"><code class="name flex">
+<span>def <span class="ident">test_metric_longhorn_snapshot_actual_size_bytes</span></span>(<span>client, core_api, volume_name)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Scenario: test metric longhorn_snapshot_actual_size_bytes</p>
+<p>Issue: <a href="https://github.com/longhorn/longhorn/issues/5869">https://github.com/longhorn/longhorn/issues/5869</a></p>
+<p>Given a volume</p>
+<p>When 1 snapshot is created by user
+And 1 snapshot is created by system
+Then has a metric longhorn_snapshot_actual_size_bytes value equals to the
+size of the user created snapshot,
+and volume label is the volume name
+and user_created label is true
+And has a metric longhorn_snapshot_actual_size_bytes value equals to the
+size of the system created snapshot,
+and volume label is the volume name
+and user_created label is false</p>
+<p>When 3 snapshot is created by user
+Then has 4 metrics longhorn_snapshot_actual_size_bytes with
+volume label is the volume name
+and user_created label is true
+And has 1 metrics longhorn_snapshot_actual_size_bytes with
+volume label is the volume name
+and user_created label is false</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def test_metric_longhorn_snapshot_actual_size_bytes(client, core_api, volume_name): # NOQA
+    &#34;&#34;&#34;
+    Scenario: test metric longhorn_snapshot_actual_size_bytes
+
+    Issue: https://github.com/longhorn/longhorn/issues/5869
+
+    Given a volume
+
+    When 1 snapshot is created by user
+    And 1 snapshot is created by system
+    Then has a metric longhorn_snapshot_actual_size_bytes value equals to the
+         size of the user created snapshot,
+         and volume label is the volume name
+         and user_created label is true
+    And has a metric longhorn_snapshot_actual_size_bytes value equals to the
+        size of the system created snapshot,
+        and volume label is the volume name
+        and user_created label is false
+
+    When 3 snapshot is created by user
+    Then has 4 metrics longhorn_snapshot_actual_size_bytes with
+         volume label is the volume name
+         and user_created label is true
+    And has 1 metrics longhorn_snapshot_actual_size_bytes with
+        volume label is the volume name
+        and user_created label is false
+    &#34;&#34;&#34;
+    self_hostId = get_self_host_id()
+
+    # create a volume and attach it to a node.
+    volume_size = 50 * Mi
+    client.create_volume(name=volume_name,
+                         numberOfReplicas=1,
+                         size=str(volume_size))
+    volume = wait_for_volume_detached(client, volume_name)
+    volume.attach(hostId=self_hostId)
+    volume = wait_for_volume_healthy(client, volume_name)
+
+    # create the user snapshot.
+    data_size = 10 * Mi
+    user_snapshot_data_0 = {&#39;pos&#39;: 0,
+                            &#39;len&#39;: data_size,
+                            &#39;content&#39;: generate_random_data(data_size)}
+    write_volume_data(volume, user_snapshot_data_0)
+
+    create_snapshot(client, volume_name)
+
+    # create the system snapshot by expanding the volume.
+    system_snapshot_data_0 = {&#39;pos&#39;: 0,
+                              &#39;len&#39;: data_size,
+                              &#39;content&#39;: generate_random_data(data_size)}
+    write_volume_data(volume, system_snapshot_data_0)
+
+    volume_size_expanded_0 = str(volume_size * 2)
+    volume.expand(size=volume_size_expanded_0)
+    wait_for_volume_expansion(client, volume_name)
+    volume = client.by_id_volume(volume_name)
+    assert volume.size == volume_size_expanded_0
+
+    # get the snapshot sizes.
+    user_snapshot_size = 0
+    system_snapshot_size = 0
+    snapshots = volume.snapshotList()
+    for snapshot in snapshots:
+        if snapshot.name == &#34;volume-head&#34;:
+            continue
+
+        if snapshot.usercreated:
+            user_snapshot_size = int(snapshot.size)
+        else:
+            system_snapshot_size = int(snapshot.size)
+    assert user_snapshot_size &gt; 0
+    assert system_snapshot_size &gt; 0
+
+    # assert the metric values for the user snapshot.
+    user_snapshot_metric_labels = {
+        &#34;volume&#34;: volume_name,
+        &#34;user_created&#34;: &#34;true&#34;,
+    }
+    check_metric_sum_on_all_nodes(client, core_api,
+                                  &#34;longhorn_snapshot_actual_size_bytes&#34;,
+                                  user_snapshot_metric_labels,
+                                  user_snapshot_size)
+
+    # assert the metric values for the system snapshot.
+    system_snapshot_metric_labels = {
+        &#34;volume&#34;: volume_name,
+        &#34;user_created&#34;: &#34;false&#34;,
+    }
+    check_metric_sum_on_all_nodes(client, core_api,
+                                  &#34;longhorn_snapshot_actual_size_bytes&#34;,
+                                  system_snapshot_metric_labels,
+                                  system_snapshot_size)
+
+    # create 3 more user snapshots.
+    create_snapshot(client, volume_name)
+    create_snapshot(client, volume_name)
+    create_snapshot(client, volume_name)
+
+    wait_for_metric_count_all_nodes(client, core_api,
+                                    &#34;longhorn_snapshot_actual_size_bytes&#34;,
+                                    user_snapshot_metric_labels, 4)
+    wait_for_metric_count_all_nodes(client, core_api,
+                                    &#34;longhorn_snapshot_actual_size_bytes&#34;,
+                                    system_snapshot_metric_labels, 1)</code></pre>
 </details>
 </dd>
 <dt id="tests.test_metric.test_volume_metrics"><code class="name flex">
@@ -365,6 +888,30 @@ def test_volume_metrics(client, core_api, volume_name, pvc_namespace): # NOQA
                  metric_labels, longhorn_volume_state[&#34;detached&#34;])</code></pre>
 </details>
 </dd>
+<dt id="tests.test_metric.wait_for_metric_count_all_nodes"><code class="name flex">
+<span>def <span class="ident">wait_for_metric_count_all_nodes</span></span>(<span>client, core_api, metric_name, metric_labels, expected_count)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def wait_for_metric_count_all_nodes(client, core_api, metric_name, metric_labels, expected_count): # NOQA
+    for _ in range(RETRY_COUNTS):
+        time.sleep(RETRY_INTERVAL)
+
+        try:
+            check_metric_count_all_nodes(client, core_api, metric_name,
+                                         metric_labels, expected_count)
+            return
+        except AssertionError:
+            continue
+
+    check_metric_count_all_nodes(client, core_api, metric_name,
+                                 metric_labels, expected_count)</code></pre>
+</details>
+</dd>
 </dl>
 </section>
 <section>
@@ -384,8 +931,14 @@ def test_volume_metrics(client, core_api, volume_name, pvc_namespace): # NOQA
 <li><h3><a href="#header-functions">Functions</a></h3>
 <ul class="">
 <li><code><a title="tests.test_metric.check_metric" href="#tests.test_metric.check_metric">check_metric</a></code></li>
+<li><code><a title="tests.test_metric.check_metric_count_all_nodes" href="#tests.test_metric.check_metric_count_all_nodes">check_metric_count_all_nodes</a></code></li>
+<li><code><a title="tests.test_metric.check_metric_sum_on_all_nodes" href="#tests.test_metric.check_metric_sum_on_all_nodes">check_metric_sum_on_all_nodes</a></code></li>
+<li><code><a title="tests.test_metric.find_metric" href="#tests.test_metric.find_metric">find_metric</a></code></li>
+<li><code><a title="tests.test_metric.find_metrics" href="#tests.test_metric.find_metrics">find_metrics</a></code></li>
 <li><code><a title="tests.test_metric.get_metrics" href="#tests.test_metric.get_metrics">get_metrics</a></code></li>
+<li><code><a title="tests.test_metric.test_metric_longhorn_snapshot_actual_size_bytes" href="#tests.test_metric.test_metric_longhorn_snapshot_actual_size_bytes">test_metric_longhorn_snapshot_actual_size_bytes</a></code></li>
 <li><code><a title="tests.test_metric.test_volume_metrics" href="#tests.test_metric.test_volume_metrics">test_volume_metrics</a></code></li>
+<li><code><a title="tests.test_metric.wait_for_metric_count_all_nodes" href="#tests.test_metric.wait_for_metric_count_all_nodes">wait_for_metric_count_all_nodes</a></code></li>
 </ul>
 </li>
 </ul>

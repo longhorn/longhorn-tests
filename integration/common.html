@@ -110,6 +110,7 @@ COMPATIBILTY_TEST_IMAGE_PREFIX = &#34;longhornio/longhorn-test:version-test&#34;
 UPGRADE_TEST_IMAGE_PREFIX = &#34;longhornio/longhorn-test:upgrade-test&#34;
 
 ISCSI_DEV_PATH = &#34;/dev/disk/by-path&#34;
+ISCSI_PROCESS = &#34;iscsid&#34;
 
 VOLUME_FIELD_STATE = &#34;state&#34;
 VOLUME_STATE_ATTACHED = &#34;attached&#34;
@@ -149,11 +150,10 @@ DEFAULT_DEPLOYMENT_INTERVAL = 1
 DEFAULT_DEPLOYMENT_TIMEOUT = 240
 WAIT_FOR_POD_STABLE_MAX_RETRY = 90
 
-
 DEFAULT_VOLUME_SIZE = 3  # In Gi
 EXPANDED_VOLUME_SIZE = 4  # In Gi
 
-DIRECTORY_PATH = &#39;/tmp/longhorn-test/&#39;
+DIRECTORY_PATH = &#39;/var/lib/longhorn/longhorn-test/&#39;
 
 VOLUME_CONDITION_SCHEDULED = &#34;Scheduled&#34;
 VOLUME_CONDITION_RESTORE = &#34;Restore&#34;
@@ -318,6 +318,8 @@ ATTACHER_TYPE_CSI_ATTACHER = &#34;csi-attacher&#34;
 ATTACHER_TYPE_LONGHORN_API = &#34;longhorn-api&#34;
 ATTACHER_TYPE_LONGHORN_UPGRADER = &#34;longhorn-upgrader&#34;
 
+HOST_PROC_DIR = &#34;/host/proc&#34;
+
 # customize the timeout for HDD
 disktype = os.environ.get(&#39;LONGHORN_DISK_TYPE&#39;)
 if disktype == &#34;hdd&#34;:
@@ -427,9 +429,9 @@ def create_volume_and_backup(client, vol_name, vol_size, backup_data_size):
     client.create_volume(name=vol_name,
                          numberOfReplicas=1,
                          size=str(vol_size))
-    backup_volume = wait_for_volume_detached(client, vol_name)
-    backup_volume.attach(hostId=get_self_host_id())
-    backup_volume = wait_for_volume_healthy(client, vol_name)
+    volume = wait_for_volume_detached(client, vol_name)
+    volume.attach(hostId=get_self_host_id())
+    volume = wait_for_volume_healthy(client, vol_name)
 
     data = {&#39;pos&#39;: 0,
             &#39;len&#39;: backup_data_size,
@@ -437,7 +439,7 @@ def create_volume_and_backup(client, vol_name, vol_size, backup_data_size):
 
     _, backup, _, _ = create_backup(client, vol_name, data)
 
-    return backup_volume, backup
+    return volume, backup
 
 
 def create_backup(client, volname, data={}, labels={}):
@@ -555,11 +557,14 @@ def wait_pod(pod_name):
 
     pod = None
     for i in range(DEFAULT_POD_TIMEOUT):
-        pod = api.read_namespaced_pod(
-            name=pod_name,
-            namespace=&#39;default&#39;)
-        if pod is not None and pod.status.phase != &#39;Pending&#39;:
-            break
+        try:
+            pod = api.read_namespaced_pod(
+                name=pod_name,
+                namespace=&#39;default&#39;)
+            if pod is not None and pod.status.phase != &#39;Pending&#39;:
+                break
+        except Exception as e:
+            print(f&#34;Waiting for pod {pod_name} failed: {e}&#34;)
         time.sleep(DEFAULT_POD_INTERVAL)
     assert pod is not None and pod.status.phase == &#39;Running&#39;
 
@@ -1711,6 +1716,14 @@ def client(request):
 
     request.addfinalizer(lambda: cleanup_client())
 
+    if not os.path.exists(DIRECTORY_PATH):
+        try:
+            os.makedirs(DIRECTORY_PATH)
+        except OSError as e:
+            raise Exception(
+                f&#34;Failed to create directory {DIRECTORY_PATH}: {e}&#34;
+            )
+
     cleanup_client()
 
     return client
@@ -1800,12 +1813,11 @@ def get_mgr_ips():
 
 
 def get_self_host_id():
-    envs = os.environ
-    return envs[&#34;NODE_NAME&#34;]
+    return os.environ.get(&#34;NODE_NAME&#34;)
 
 
 def get_backupstore_url():
-    backupstore = os.environ[&#39;LONGHORN_BACKUPSTORES&#39;]
+    backupstore = os.environ.get(&#34;LONGHORN_BACKUPSTORES&#34;, &#34;&#34;)
     backupstore = backupstore.replace(&#34; &#34;, &#34;&#34;)
     backupstores = backupstore.split(&#34;,&#34;)
 
@@ -1814,18 +1826,13 @@ def get_backupstore_url():
 
 
 def get_backupstore_poll_interval():
-    poll_interval = os.environ[&#39;LONGHORN_BACKUPSTORE_POLL_INTERVAL&#39;]
+    poll_interval = os.environ.get(&#34;LONGHORN_BACKUPSTORE_POLL_INTERVAL&#34;, &#34;&#34;)
     assert len(poll_interval) != 0
     return poll_interval
 
 
 def get_backupstores():
-    # The try is added to avoid the pdoc3 error while publishing this on
-    # https://longhorn.github.io/longhorn-tests
-    try:
-        backupstore = os.environ[&#39;LONGHORN_BACKUPSTORES&#39;]
-    except KeyError:
-        return []
+    backupstore = os.environ.get(&#34;LONGHORN_BACKUPSTORES&#34;, &#34;&#34;)
 
     try:
         backupstore = backupstore.replace(&#34; &#34;, &#34;&#34;)
@@ -2691,11 +2698,22 @@ def get_iscsi_lun(iscsi):
     return iscsi_endpoint[2]
 
 
-def exec_nsenter(cmd):
-    dockerd_pid = find_dockerd_pid() or &#34;1&#34;
-    exec_cmd = [&#34;nsenter&#34;, &#34;--mount=/host/proc/{}/ns/mnt&#34;.format(dockerd_pid),
-                &#34;--net=/host/proc/{}/ns/net&#34;.format(dockerd_pid),
-                &#34;bash&#34;, &#34;-c&#34;, cmd]
+def exec_nsenter(cmd, process_name=None):
+    if process_name:
+        proc_pid = find_process_pid(process_name)
+        cmd_parts = cmd.split()
+    else:
+        proc_pid = find_dockerd_pid() or &#34;1&#34;
+        cmd_parts = [&#34;bash&#34;, &#34;-c&#34;, cmd]
+
+    exec_cmd = [&#34;nsenter&#34;, &#34;--mount=/host/proc/{}/ns/mnt&#34;.format(proc_pid),
+                &#34;--net=/host/proc/{}/ns/net&#34;.format(proc_pid)]
+    exec_cmd.extend(cmd_parts)
+    return subprocess.check_output(exec_cmd)
+
+
+def exec_local(cmd):
+    exec_cmd = cmd.split()
     return subprocess.check_output(exec_cmd)
 
 
@@ -2706,10 +2724,10 @@ def iscsi_login(iscsi_ep):
     lun = get_iscsi_lun(iscsi_ep)
     # discovery
     cmd_discovery = &#34;iscsiadm -m discovery -t st -p &#34; + ip
-    exec_nsenter(cmd_discovery)
+    exec_nsenter(cmd_discovery, ISCSI_PROCESS)
     # login
     cmd_login = &#34;iscsiadm -m node -T &#34; + target + &#34; -p &#34; + ip + &#34; --login&#34;
-    exec_nsenter(cmd_login)
+    exec_nsenter(cmd_login, ISCSI_PROCESS)
     blk_name = &#34;ip-%s:%s-iscsi-%s-lun-%s&#34; % (ip, port, target, lun)
     wait_for_device_login(ISCSI_DEV_PATH, blk_name)
     dev = os.path.realpath(ISCSI_DEV_PATH + &#34;/&#34; + blk_name)
@@ -2720,9 +2738,9 @@ def iscsi_logout(iscsi_ep):
     ip = get_iscsi_ip(iscsi_ep)
     target = get_iscsi_target(iscsi_ep)
     cmd_logout = &#34;iscsiadm -m node -T &#34; + target + &#34; -p &#34; + ip + &#34; --logout&#34;
-    exec_nsenter(cmd_logout)
+    exec_nsenter(cmd_logout, ISCSI_PROCESS)
     cmd_rm_discovery = &#34;iscsiadm -m discovery -p &#34; + ip + &#34; -o delete&#34;
-    exec_nsenter(cmd_rm_discovery)
+    exec_nsenter(cmd_rm_discovery, ISCSI_PROCESS)
 
 
 def get_process_info(p_path):
@@ -2757,6 +2775,40 @@ def find_ancestor_process_by_name(ancestor_name):
 
 def find_dockerd_pid():
     return find_ancestor_process_by_name(&#34;dockerd&#34;)
+
+
+def find_process_pid(process_name):
+    for file in os.listdir(HOST_PROC_DIR):
+        if not os.path.isdir(os.path.join(HOST_PROC_DIR, file)):
+            continue
+
+        # Check if file name is an integer
+        if not file.isdigit():
+            continue
+
+        with open(os.path.join(HOST_PROC_DIR, file, &#39;status&#39;), &#39;r&#39;) as file:
+            status_content = file.readlines()
+
+        proc_status_content = None
+        name_pattern = re.compile(r&#39;^Name:\s+(.+)$&#39;)
+
+        for line in status_content:
+            name_match = name_pattern.match(line)
+            if name_match and name_match.group(1) == process_name:
+                proc_status_content = status_content
+                break
+
+        if proc_status_content is None:
+            continue
+
+        pid_pattern = re.compile(r&#39;^Pid:\s+(\d+)$&#39;)
+
+        for line in proc_status_content:
+            pid_match = pid_pattern.match(line)
+            if pid_match:
+                return int(pid_match.group(1))
+
+    raise Exception(f&#34;Failed to find the {process_name} PID&#34;)
 
 
 def generate_random_pos(size, used={}):
@@ -3323,7 +3375,11 @@ def get_k8s_zone_label():
 
 
 def cleanup_test_disks(client):
-    del_dirs = os.listdir(DIRECTORY_PATH)
+    try:
+        del_dirs = os.listdir(DIRECTORY_PATH)
+    except FileNotFoundError:
+        del_dirs = []
+
     host_id = get_self_host_id()
     node = client.by_id_node(host_id)
     disks = node.disks
@@ -5028,11 +5084,14 @@ def wait_for_pod_restart(core_api, pod_name, namespace=&#34;default&#34;):
 def wait_for_pod_phase(core_api, pod_name, pod_phase, namespace=&#34;default&#34;):
     is_phase = False
     for _ in range(RETRY_COUNTS):
-        pod = core_api.read_namespaced_pod(name=pod_name,
-                                           namespace=namespace)
-        if pod.status.phase == pod_phase:
-            is_phase = True
-            break
+        try:
+            pod = core_api.read_namespaced_pod(name=pod_name,
+                                               namespace=namespace)
+            if pod.status.phase == pod_phase:
+                is_phase = True
+                break
+        except Exception as e:
+            print(f&#34;Waiting for pod {pod_name} {pod_phase} failed: {e}&#34;)
 
         time.sleep(RETRY_INTERVAL_LONG)
     assert is_phase
@@ -7016,7 +7075,11 @@ properly.
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def cleanup_test_disks(client):
-    del_dirs = os.listdir(DIRECTORY_PATH)
+    try:
+        del_dirs = os.listdir(DIRECTORY_PATH)
+    except FileNotFoundError:
+        del_dirs = []
+
     host_id = get_self_host_id()
     node = client.by_id_node(host_id)
     disks = node.disks
@@ -7150,6 +7213,14 @@ def client(request):
     assert len(hosts) == len(ips)
 
     request.addfinalizer(lambda: cleanup_client())
+
+    if not os.path.exists(DIRECTORY_PATH):
+        try:
+            os.makedirs(DIRECTORY_PATH)
+        except OSError as e:
+            raise Exception(
+                f&#34;Failed to create directory {DIRECTORY_PATH}: {e}&#34;
+            )
 
     cleanup_client()
 
@@ -7982,9 +8053,9 @@ created using a storage class).</p></div>
     client.create_volume(name=vol_name,
                          numberOfReplicas=1,
                          size=str(vol_size))
-    backup_volume = wait_for_volume_detached(client, vol_name)
-    backup_volume.attach(hostId=get_self_host_id())
-    backup_volume = wait_for_volume_healthy(client, vol_name)
+    volume = wait_for_volume_detached(client, vol_name)
+    volume.attach(hostId=get_self_host_id())
+    volume = wait_for_volume_healthy(client, vol_name)
 
     data = {&#39;pos&#39;: 0,
             &#39;len&#39;: backup_data_size,
@@ -7992,7 +8063,7 @@ created using a storage class).</p></div>
 
     _, backup, _, _ = create_backup(client, vol_name, data)
 
-    return backup_volume, backup</code></pre>
+    return volume, backup</code></pre>
 </details>
 </dd>
 <dt id="tests.common.create_volume_and_write_data"><code class="name flex">
@@ -8669,8 +8740,8 @@ def disable_auto_salvage(client):
         return output</code></pre>
 </details>
 </dd>
-<dt id="tests.common.exec_nsenter"><code class="name flex">
-<span>def <span class="ident">exec_nsenter</span></span>(<span>cmd)</span>
+<dt id="tests.common.exec_local"><code class="name flex">
+<span>def <span class="ident">exec_local</span></span>(<span>cmd)</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -8678,11 +8749,31 @@ def disable_auto_salvage(client):
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def exec_nsenter(cmd):
-    dockerd_pid = find_dockerd_pid() or &#34;1&#34;
-    exec_cmd = [&#34;nsenter&#34;, &#34;--mount=/host/proc/{}/ns/mnt&#34;.format(dockerd_pid),
-                &#34;--net=/host/proc/{}/ns/net&#34;.format(dockerd_pid),
-                &#34;bash&#34;, &#34;-c&#34;, cmd]
+<pre><code class="python">def exec_local(cmd):
+    exec_cmd = cmd.split()
+    return subprocess.check_output(exec_cmd)</code></pre>
+</details>
+</dd>
+<dt id="tests.common.exec_nsenter"><code class="name flex">
+<span>def <span class="ident">exec_nsenter</span></span>(<span>cmd, process_name=None)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def exec_nsenter(cmd, process_name=None):
+    if process_name:
+        proc_pid = find_process_pid(process_name)
+        cmd_parts = cmd.split()
+    else:
+        proc_pid = find_dockerd_pid() or &#34;1&#34;
+        cmd_parts = [&#34;bash&#34;, &#34;-c&#34;, cmd]
+
+    exec_cmd = [&#34;nsenter&#34;, &#34;--mount=/host/proc/{}/ns/mnt&#34;.format(proc_pid),
+                &#34;--net=/host/proc/{}/ns/net&#34;.format(proc_pid)]
+    exec_cmd.extend(cmd_parts)
     return subprocess.check_output(exec_cmd)</code></pre>
 </details>
 </dd>
@@ -8824,6 +8915,49 @@ been completed successfully</p></div>
 </summary>
 <pre><code class="python">def find_dockerd_pid():
     return find_ancestor_process_by_name(&#34;dockerd&#34;)</code></pre>
+</details>
+</dd>
+<dt id="tests.common.find_process_pid"><code class="name flex">
+<span>def <span class="ident">find_process_pid</span></span>(<span>process_name)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def find_process_pid(process_name):
+    for file in os.listdir(HOST_PROC_DIR):
+        if not os.path.isdir(os.path.join(HOST_PROC_DIR, file)):
+            continue
+
+        # Check if file name is an integer
+        if not file.isdigit():
+            continue
+
+        with open(os.path.join(HOST_PROC_DIR, file, &#39;status&#39;), &#39;r&#39;) as file:
+            status_content = file.readlines()
+
+        proc_status_content = None
+        name_pattern = re.compile(r&#39;^Name:\s+(.+)$&#39;)
+
+        for line in status_content:
+            name_match = name_pattern.match(line)
+            if name_match and name_match.group(1) == process_name:
+                proc_status_content = status_content
+                break
+
+        if proc_status_content is None:
+            continue
+
+        pid_pattern = re.compile(r&#39;^Pid:\s+(\d+)$&#39;)
+
+        for line in proc_status_content:
+            pid_match = pid_pattern.match(line)
+            if pid_match:
+                return int(pid_match.group(1))
+
+    raise Exception(f&#34;Failed to find the {process_name} PID&#34;)</code></pre>
 </details>
 </dd>
 <dt id="tests.common.find_replica_for_backup"><code class="name flex">
@@ -9182,7 +9316,7 @@ greate than MAX_SUPPORT_BINDLE_NUMBER.</p>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def get_backupstore_poll_interval():
-    poll_interval = os.environ[&#39;LONGHORN_BACKUPSTORE_POLL_INTERVAL&#39;]
+    poll_interval = os.environ.get(&#34;LONGHORN_BACKUPSTORE_POLL_INTERVAL&#34;, &#34;&#34;)
     assert len(poll_interval) != 0
     return poll_interval</code></pre>
 </details>
@@ -9197,7 +9331,7 @@ greate than MAX_SUPPORT_BINDLE_NUMBER.</p>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def get_backupstore_url():
-    backupstore = os.environ[&#39;LONGHORN_BACKUPSTORES&#39;]
+    backupstore = os.environ.get(&#34;LONGHORN_BACKUPSTORES&#34;, &#34;&#34;)
     backupstore = backupstore.replace(&#34; &#34;, &#34;&#34;)
     backupstores = backupstore.split(&#34;,&#34;)
 
@@ -9215,12 +9349,7 @@ greate than MAX_SUPPORT_BINDLE_NUMBER.</p>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def get_backupstores():
-    # The try is added to avoid the pdoc3 error while publishing this on
-    # https://longhorn.github.io/longhorn-tests
-    try:
-        backupstore = os.environ[&#39;LONGHORN_BACKUPSTORES&#39;]
-    except KeyError:
-        return []
+    backupstore = os.environ.get(&#34;LONGHORN_BACKUPSTORES&#34;, &#34;&#34;)
 
     try:
         backupstore = backupstore.replace(&#34; &#34;, &#34;&#34;)
@@ -9833,8 +9962,7 @@ greate than MAX_SUPPORT_BINDLE_NUMBER.</p>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def get_self_host_id():
-    envs = os.environ
-    return envs[&#34;NODE_NAME&#34;]</code></pre>
+    return os.environ.get(&#34;NODE_NAME&#34;)</code></pre>
 </details>
 </dd>
 <dt id="tests.common.get_statefulset_pod_info"><code class="name flex">
@@ -10121,10 +10249,10 @@ greate than MAX_SUPPORT_BINDLE_NUMBER.</p>
     lun = get_iscsi_lun(iscsi_ep)
     # discovery
     cmd_discovery = &#34;iscsiadm -m discovery -t st -p &#34; + ip
-    exec_nsenter(cmd_discovery)
+    exec_nsenter(cmd_discovery, ISCSI_PROCESS)
     # login
     cmd_login = &#34;iscsiadm -m node -T &#34; + target + &#34; -p &#34; + ip + &#34; --login&#34;
-    exec_nsenter(cmd_login)
+    exec_nsenter(cmd_login, ISCSI_PROCESS)
     blk_name = &#34;ip-%s:%s-iscsi-%s-lun-%s&#34; % (ip, port, target, lun)
     wait_for_device_login(ISCSI_DEV_PATH, blk_name)
     dev = os.path.realpath(ISCSI_DEV_PATH + &#34;/&#34; + blk_name)
@@ -10144,9 +10272,9 @@ greate than MAX_SUPPORT_BINDLE_NUMBER.</p>
     ip = get_iscsi_ip(iscsi_ep)
     target = get_iscsi_target(iscsi_ep)
     cmd_logout = &#34;iscsiadm -m node -T &#34; + target + &#34; -p &#34; + ip + &#34; --logout&#34;
-    exec_nsenter(cmd_logout)
+    exec_nsenter(cmd_logout, ISCSI_PROCESS)
     cmd_rm_discovery = &#34;iscsiadm -m discovery -p &#34; + ip + &#34; -o delete&#34;
-    exec_nsenter(cmd_rm_discovery)</code></pre>
+    exec_nsenter(cmd_rm_discovery, ISCSI_PROCESS)</code></pre>
 </details>
 </dd>
 <dt id="tests.common.json_string_go_to_python"><code class="name flex">
@@ -13340,11 +13468,14 @@ ref: <a href="https://github.com/longhorn/longhorn/issues/4814">https://github.c
 <pre><code class="python">def wait_for_pod_phase(core_api, pod_name, pod_phase, namespace=&#34;default&#34;):
     is_phase = False
     for _ in range(RETRY_COUNTS):
-        pod = core_api.read_namespaced_pod(name=pod_name,
-                                           namespace=namespace)
-        if pod.status.phase == pod_phase:
-            is_phase = True
-            break
+        try:
+            pod = core_api.read_namespaced_pod(name=pod_name,
+                                               namespace=namespace)
+            if pod.status.phase == pod_phase:
+                is_phase = True
+                break
+        except Exception as e:
+            print(f&#34;Waiting for pod {pod_name} {pod_phase} failed: {e}&#34;)
 
         time.sleep(RETRY_INTERVAL_LONG)
     assert is_phase</code></pre>
@@ -14579,11 +14710,14 @@ ref: <a href="https://github.com/longhorn/longhorn/issues/4814">https://github.c
 
     pod = None
     for i in range(DEFAULT_POD_TIMEOUT):
-        pod = api.read_namespaced_pod(
-            name=pod_name,
-            namespace=&#39;default&#39;)
-        if pod is not None and pod.status.phase != &#39;Pending&#39;:
-            break
+        try:
+            pod = api.read_namespaced_pod(
+                name=pod_name,
+                namespace=&#39;default&#39;)
+            if pod is not None and pod.status.phase != &#39;Pending&#39;:
+                break
+        except Exception as e:
+            print(f&#34;Waiting for pod {pod_name} failed: {e}&#34;)
         time.sleep(DEFAULT_POD_INTERVAL)
     assert pod is not None and pod.status.phase == &#39;Running&#39;</code></pre>
 </details>
@@ -15162,12 +15296,14 @@ from the args and kwargs arguments, respectively.</p></div>
 <li><code><a title="tests.common.enable_default_disk" href="#tests.common.enable_default_disk">enable_default_disk</a></code></li>
 <li><code><a title="tests.common.exec_command_in_pod" href="#tests.common.exec_command_in_pod">exec_command_in_pod</a></code></li>
 <li><code><a title="tests.common.exec_instance_manager" href="#tests.common.exec_instance_manager">exec_instance_manager</a></code></li>
+<li><code><a title="tests.common.exec_local" href="#tests.common.exec_local">exec_local</a></code></li>
 <li><code><a title="tests.common.exec_nsenter" href="#tests.common.exec_nsenter">exec_nsenter</a></code></li>
 <li><code><a title="tests.common.expand_and_wait_for_pvc" href="#tests.common.expand_and_wait_for_pvc">expand_and_wait_for_pvc</a></code></li>
 <li><code><a title="tests.common.fail_replica_expansion" href="#tests.common.fail_replica_expansion">fail_replica_expansion</a></code></li>
 <li><code><a title="tests.common.find_ancestor_process_by_name" href="#tests.common.find_ancestor_process_by_name">find_ancestor_process_by_name</a></code></li>
 <li><code><a title="tests.common.find_backup" href="#tests.common.find_backup">find_backup</a></code></li>
 <li><code><a title="tests.common.find_dockerd_pid" href="#tests.common.find_dockerd_pid">find_dockerd_pid</a></code></li>
+<li><code><a title="tests.common.find_process_pid" href="#tests.common.find_process_pid">find_process_pid</a></code></li>
 <li><code><a title="tests.common.find_replica_for_backup" href="#tests.common.find_replica_for_backup">find_replica_for_backup</a></code></li>
 <li><code><a title="tests.common.find_self" href="#tests.common.find_self">find_self</a></code></li>
 <li><code><a title="tests.common.fix_replica_expansion_failure" href="#tests.common.fix_replica_expansion_failure">fix_replica_expansion_failure</a></code></li>
