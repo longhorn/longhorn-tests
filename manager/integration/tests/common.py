@@ -499,11 +499,14 @@ def wait_pod(pod_name):
 
     pod = None
     for i in range(DEFAULT_POD_TIMEOUT):
-        pod = api.read_namespaced_pod(
-            name=pod_name,
-            namespace='default')
-        if pod is not None and pod.status.phase != 'Pending':
-            break
+        try:
+            pod = api.read_namespaced_pod(
+                name=pod_name,
+                namespace='default')
+            if pod is not None and pod.status.phase != 'Pending':
+                break
+        except Exception as e:
+            print(f"Waiting for pod {pod_name} failed: {e}")
         time.sleep(DEFAULT_POD_INTERVAL)
     assert pod is not None and pod.status.phase == 'Running'
 
