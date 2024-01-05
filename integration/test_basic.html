@@ -1877,8 +1877,10 @@ def test_volume_multinode(client, volume_name):  # NOQA
     assert len(volumes) == 0
 
 
-@pytest.mark.skip(reason=&#34;TODO&#34;)
-def test_pvc_storage_class_name_from_backup_volume(): # NOQA
+def test_pvc_storage_class_name_from_backup_volume(set_random_backupstore, # NOQA
+                                                   core_api, client, volume_name, # NOQA
+                                                   pvc_name, pvc, pod_make, # NOQA
+                                                   storage_class): # NOQA
     &#34;&#34;&#34;
     Test the storageClasName of the restored volume&#39;s PV/PVC
     should be from the backup volume
@@ -1889,14 +1891,13 @@ def test_pvc_storage_class_name_from_backup_volume(): # NOQA
       kind: StorageClass
       apiVersion: storage.k8s.io/v1
       metadata:
-        name: longhorn-sc-name-recorded
+        name: longhorn-test
       provisioner: driver.longhorn.io
       allowVolumeExpansion: true
       reclaimPolicy: Delete
       volumeBindingMode: Immediate
       parameters:
         numberOfReplicas: &#34;3&#34;
-        staleReplicaTimeout: &#34;2880&#34;
       ```
     - Create a PVC to use this SC
       ```
@@ -1907,10 +1908,10 @@ def test_pvc_storage_class_name_from_backup_volume(): # NOQA
       spec:
         accessModes:
           - ReadWriteOnce
-        storageClassName: longhorn-sc-name-recorded
+        storageClassName: longhorn-test
         resources:
           requests:
-            storage: 5Gi
+            storage: 300Mi
       ```
     - Attach the Volume and write some data
 
@@ -1919,17 +1920,89 @@ def test_pvc_storage_class_name_from_backup_volume(): # NOQA
 
     Then
     - the backupvolume&#39;s status.storageClassName should be
-      longhorn-sc-name-recorded
+      longhorn-test
 
     When
     - Restore the backup to a new volume
     - Create PV/PVC from the new volume with create new PVC option
 
     Then
-    - The new PVC&#39;s storageClassName should still be longhorn-sc-name-recorded
+    - The new PVC&#39;s storageClassName should still be longhorn-test
     - Verify the restored data is the same as original one
     &#34;&#34;&#34;
-    pass
+    volume_size = str(300 * Mi)
+    create_storage_class(storage_class)
+
+    pod_name = &#34;pod-&#34; + pvc_name
+    pvc[&#39;metadata&#39;][&#39;name&#39;] = pvc_name
+    pvc[&#39;spec&#39;][&#39;storageClassName&#39;] = storage_class[&#39;metadata&#39;][&#39;name&#39;]
+    pvc[&#39;spec&#39;][&#39;resources&#39;][&#39;requests&#39;][&#39;storage&#39;] = volume_size
+    common.create_pvc(pvc)
+
+    pv = common.wait_and_get_pv_for_pvc(core_api, pvc_name)
+    assert pv.status.phase == &#34;Bound&#34;
+
+    test_pod = pod_make(pod_name)
+    test_pod[&#39;metadata&#39;][&#39;name&#39;] = pod_name
+    test_pod[&#39;spec&#39;][&#39;volumes&#39;] = [{
+        &#39;name&#39;: test_pod[&#39;spec&#39;][&#39;containers&#39;][0][&#39;volumeMounts&#39;][0][&#39;name&#39;],
+        &#39;persistentVolumeClaim&#39;: {&#39;claimName&#39;: pvc_name},
+    }]
+    create_and_wait_pod(core_api, test_pod)
+
+    test_data = generate_random_data(VOLUME_RWTEST_SIZE)
+    write_pod_volume_data(core_api, pod_name, test_data)
+
+    volume_name = pv.spec.csi.volume_handle
+    volume_id = client.by_id_volume(volume_name)
+    snapshot = volume_id.snapshotCreate()
+
+    volume_id.snapshotBackup(name=snapshot.name)
+    wait_for_backup_completion(client, volume_name, snapshot.name)
+
+    # in nfs backupstore, bv.storageClassName sometimes were empty
+    # due to timing issue
+    for i in range(RETRY_COMMAND_COUNT):
+        bv, b = find_backup(client, volume_name, snapshot.name)
+        if bv.storageClassName != &#34;&#34;:
+            break
+        time.sleep(RETRY_INTERVAL)
+    assert bv.storageClassName == storage_class[&#39;metadata&#39;][&#39;name&#39;]
+
+    restore_name = generate_volume_name()
+    volume = client.create_volume(name=restore_name, size=volume_size,
+                                  numberOfReplicas=3,
+                                  fromBackup=b.url)
+
+    volume = common.wait_for_volume_restoration_completed(client, restore_name)
+    volume = common.wait_for_volume_detached(client, restore_name)
+    assert volume.name == restore_name
+    assert volume.size == volume_size
+    assert volume.numberOfReplicas == 3
+    assert volume.state == &#34;detached&#34;
+
+    create_pv_for_volume(client, core_api, volume, restore_name)
+    create_pvc_for_volume(client, core_api, volume, restore_name)
+
+    claim = core_api.\
+        read_namespaced_persistent_volume_claim(name=restore_name,
+                                                namespace=&#39;default&#39;)
+
+    assert claim.spec.storage_class_name == storage_class[&#39;metadata&#39;][&#39;name&#39;]
+
+    backup_pod = pod_make(name=&#34;backup-pod&#34;)
+    restore_volume_pod_name = &#34;pod-&#34; + restore_name
+    backup_pod[&#39;metadata&#39;][&#39;name&#39;] = restore_volume_pod_name
+    backup_pod[&#39;spec&#39;][&#39;volumes&#39;] = [{
+        &#39;name&#39;: backup_pod[&#39;spec&#39;][&#39;containers&#39;][0][&#39;volumeMounts&#39;][0][&#39;name&#39;], # NOQA
+        &#39;persistentVolumeClaim&#39;: {
+            &#39;claimName&#39;: restore_name,
+        },
+    }]
+    create_and_wait_pod(core_api, backup_pod)
+
+    resp = read_volume_data(core_api, restore_volume_pod_name)
+    assert resp == test_data
 
 
 @pytest.mark.coretest  # NOQA
@@ -10780,7 +10853,7 @@ Then all 10 volumes are deleted in 1 minute.</p></div>
 </details>
 </dd>
 <dt id="tests.test_basic.test_pvc_storage_class_name_from_backup_volume"><code class="name flex">
-<span>def <span class="ident">test_pvc_storage_class_name_from_backup_volume</span></span>(<span>)</span>
+<span>def <span class="ident">test_pvc_storage_class_name_from_backup_volume</span></span>(<span>set_random_backupstore, core_api, client, volume_name, pvc_name, pvc, pod_make, storage_class)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Test the storageClasName of the restored volume's PV/PVC
@@ -10790,14 +10863,13 @@ should be from the backup volume</p>
 <code>kind: StorageClass
 apiVersion: storage.k8s.io/v1
 metadata:
-name: longhorn-sc-name-recorded
+name: longhorn-test
 provisioner: driver.longhorn.io
 allowVolumeExpansion: true
 reclaimPolicy: Delete
 volumeBindingMode: Immediate
 parameters:
-numberOfReplicas: "3"
-staleReplicaTimeout: "2880"</code>
+numberOfReplicas: "3"</code>
 - Create a PVC to use this SC
 <code>apiVersion: v1
 kind: PersistentVolumeClaim
@@ -10806,28 +10878,30 @@ name: test-pvc
 spec:
 accessModes:
 - ReadWriteOnce
-storageClassName: longhorn-sc-name-recorded
+storageClassName: longhorn-test
 resources:
 requests:
-storage: 5Gi</code>
+storage: 300Mi</code>
 - Attach the Volume and write some data</p>
 <p>When
 - Backup the Volume</p>
 <p>Then
 - the backupvolume's status.storageClassName should be
-longhorn-sc-name-recorded</p>
+longhorn-test</p>
 <p>When
 - Restore the backup to a new volume
 - Create PV/PVC from the new volume with create new PVC option</p>
 <p>Then
-- The new PVC's storageClassName should still be longhorn-sc-name-recorded
+- The new PVC's storageClassName should still be longhorn-test
 - Verify the restored data is the same as original one</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">@pytest.mark.skip(reason=&#34;TODO&#34;)
-def test_pvc_storage_class_name_from_backup_volume(): # NOQA
+<pre><code class="python">def test_pvc_storage_class_name_from_backup_volume(set_random_backupstore, # NOQA
+                                                   core_api, client, volume_name, # NOQA
+                                                   pvc_name, pvc, pod_make, # NOQA
+                                                   storage_class): # NOQA
     &#34;&#34;&#34;
     Test the storageClasName of the restored volume&#39;s PV/PVC
     should be from the backup volume
@@ -10838,14 +10912,13 @@ def test_pvc_storage_class_name_from_backup_volume(): # NOQA
       kind: StorageClass
       apiVersion: storage.k8s.io/v1
       metadata:
-        name: longhorn-sc-name-recorded
+        name: longhorn-test
       provisioner: driver.longhorn.io
       allowVolumeExpansion: true
       reclaimPolicy: Delete
       volumeBindingMode: Immediate
       parameters:
         numberOfReplicas: &#34;3&#34;
-        staleReplicaTimeout: &#34;2880&#34;
       ```
     - Create a PVC to use this SC
       ```
@@ -10856,10 +10929,10 @@ def test_pvc_storage_class_name_from_backup_volume(): # NOQA
       spec:
         accessModes:
           - ReadWriteOnce
-        storageClassName: longhorn-sc-name-recorded
+        storageClassName: longhorn-test
         resources:
           requests:
-            storage: 5Gi
+            storage: 300Mi
       ```
     - Attach the Volume and write some data
 
@@ -10868,17 +10941,89 @@ def test_pvc_storage_class_name_from_backup_volume(): # NOQA
 
     Then
     - the backupvolume&#39;s status.storageClassName should be
-      longhorn-sc-name-recorded
+      longhorn-test
 
     When
     - Restore the backup to a new volume
     - Create PV/PVC from the new volume with create new PVC option
 
     Then
-    - The new PVC&#39;s storageClassName should still be longhorn-sc-name-recorded
+    - The new PVC&#39;s storageClassName should still be longhorn-test
     - Verify the restored data is the same as original one
     &#34;&#34;&#34;
-    pass</code></pre>
+    volume_size = str(300 * Mi)
+    create_storage_class(storage_class)
+
+    pod_name = &#34;pod-&#34; + pvc_name
+    pvc[&#39;metadata&#39;][&#39;name&#39;] = pvc_name
+    pvc[&#39;spec&#39;][&#39;storageClassName&#39;] = storage_class[&#39;metadata&#39;][&#39;name&#39;]
+    pvc[&#39;spec&#39;][&#39;resources&#39;][&#39;requests&#39;][&#39;storage&#39;] = volume_size
+    common.create_pvc(pvc)
+
+    pv = common.wait_and_get_pv_for_pvc(core_api, pvc_name)
+    assert pv.status.phase == &#34;Bound&#34;
+
+    test_pod = pod_make(pod_name)
+    test_pod[&#39;metadata&#39;][&#39;name&#39;] = pod_name
+    test_pod[&#39;spec&#39;][&#39;volumes&#39;] = [{
+        &#39;name&#39;: test_pod[&#39;spec&#39;][&#39;containers&#39;][0][&#39;volumeMounts&#39;][0][&#39;name&#39;],
+        &#39;persistentVolumeClaim&#39;: {&#39;claimName&#39;: pvc_name},
+    }]
+    create_and_wait_pod(core_api, test_pod)
+
+    test_data = generate_random_data(VOLUME_RWTEST_SIZE)
+    write_pod_volume_data(core_api, pod_name, test_data)
+
+    volume_name = pv.spec.csi.volume_handle
+    volume_id = client.by_id_volume(volume_name)
+    snapshot = volume_id.snapshotCreate()
+
+    volume_id.snapshotBackup(name=snapshot.name)
+    wait_for_backup_completion(client, volume_name, snapshot.name)
+
+    # in nfs backupstore, bv.storageClassName sometimes were empty
+    # due to timing issue
+    for i in range(RETRY_COMMAND_COUNT):
+        bv, b = find_backup(client, volume_name, snapshot.name)
+        if bv.storageClassName != &#34;&#34;:
+            break
+        time.sleep(RETRY_INTERVAL)
+    assert bv.storageClassName == storage_class[&#39;metadata&#39;][&#39;name&#39;]
+
+    restore_name = generate_volume_name()
+    volume = client.create_volume(name=restore_name, size=volume_size,
+                                  numberOfReplicas=3,
+                                  fromBackup=b.url)
+
+    volume = common.wait_for_volume_restoration_completed(client, restore_name)
+    volume = common.wait_for_volume_detached(client, restore_name)
+    assert volume.name == restore_name
+    assert volume.size == volume_size
+    assert volume.numberOfReplicas == 3
+    assert volume.state == &#34;detached&#34;
+
+    create_pv_for_volume(client, core_api, volume, restore_name)
+    create_pvc_for_volume(client, core_api, volume, restore_name)
+
+    claim = core_api.\
+        read_namespaced_persistent_volume_claim(name=restore_name,
+                                                namespace=&#39;default&#39;)
+
+    assert claim.spec.storage_class_name == storage_class[&#39;metadata&#39;][&#39;name&#39;]
+
+    backup_pod = pod_make(name=&#34;backup-pod&#34;)
+    restore_volume_pod_name = &#34;pod-&#34; + restore_name
+    backup_pod[&#39;metadata&#39;][&#39;name&#39;] = restore_volume_pod_name
+    backup_pod[&#39;spec&#39;][&#39;volumes&#39;] = [{
+        &#39;name&#39;: backup_pod[&#39;spec&#39;][&#39;containers&#39;][0][&#39;volumeMounts&#39;][0][&#39;name&#39;], # NOQA
+        &#39;persistentVolumeClaim&#39;: {
+            &#39;claimName&#39;: restore_name,
+        },
+    }]
+    create_and_wait_pod(core_api, backup_pod)
+
+    resp = read_volume_data(core_api, restore_volume_pod_name)
+    assert resp == test_data</code></pre>
 </details>
 </dd>
 <dt id="tests.test_basic.test_restore_basic"><code class="name flex">
