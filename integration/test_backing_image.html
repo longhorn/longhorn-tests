@@ -66,10 +66,13 @@ from common import wait_for_volume_detached
 from common import wait_for_backing_image_status
 from common import wait_for_backing_image_in_disk_fail
 from common import get_disk_uuid
+from common import write_volume_dev_random_mb_data, get_device_checksum
+from common import check_backing_image_disk_map_status
 from common import LONGHORN_NAMESPACE, RETRY_EXEC_COUNTS, RETRY_INTERVAL
 from common import BACKING_IMAGE_QCOW2_CHECKSUM
 from common import BACKING_IMAGE_STATE_READY
 from common import BACKING_IMAGE_STATE_FAILED_AND_CLEANUP
+from common import BACKING_IMAGE_STATE_IN_PROGRESS
 import time
 
 
@@ -660,8 +663,7 @@ def test_backing_image_with_wrong_md5sum(bi_url, client): # NOQA
                                   BACKING_IMAGE_STATE_FAILED_AND_CLEANUP)
 
 
-@pytest.mark.skip(reason=&#34;TODO&#34;)
-def test_volume_wait_for_backing_image_conditino(): # NOQA
+def test_volume_wait_for_backing_image_condition(client): # NOQA
     &#34;&#34;&#34;
     Test the volume condition &#34;WaitForBackingImage&#34;
 
@@ -676,7 +678,49 @@ def test_volume_wait_for_backing_image_conditino(): # NOQA
       would be first True and then change to False when
       the BackingImage is ready and all the replicas are in running state.
     &#34;&#34;&#34;
-    pass</code></pre>
+    # Create a large volume and export as backingimage
+    lht_host_id = get_self_host_id()
+
+    volume1_name = &#34;vol1&#34;
+    volume1 = create_and_check_volume(
+        client, volume1_name, 3,
+        str(2 * Gi))
+    volume1.attach(hostId=lht_host_id)
+    volume1 = wait_for_volume_healthy(client, volume1_name)
+    volume_endpoint = get_volume_endpoint(volume1)
+    write_volume_dev_random_mb_data(volume_endpoint, 1, 1000)
+    vol1_cksum = get_device_checksum(volume_endpoint)
+
+    backing_img_name = &#39;bi-test&#39;
+    backing_img = client.create_backing_image(
+            name=backing_img_name,
+            sourceType=BACKING_IMAGE_SOURCE_TYPE_FROM_VOLUME,
+            parameters={&#34;export-type&#34;: &#34;qcow2&#34;, &#34;volume-name&#34;: volume1_name},
+            expectedChecksum=&#34;&#34;)
+
+    # Create volume with that backing image
+    volume2_name = &#34;vol2&#34;
+    volume2 = create_and_check_volume(
+        client, volume_name=volume2_name, size=str(2 * Gi),
+        backing_image=backing_img[&#34;name&#34;])
+
+    volume2.attach(hostId=lht_host_id)
+
+    if check_backing_image_disk_map_status(client,
+                                           backing_img_name,
+                                           1,
+                                           BACKING_IMAGE_STATE_IN_PROGRESS):
+        volume2 = client.by_id_volume(volume2_name)
+        assert volume2.conditions.WaitForBackingImage.status == &#34;True&#34;
+
+    # Check volume healthy, and backing image ready
+    volume2 = wait_for_volume_healthy(client, volume2_name)
+    assert volume2.conditions.WaitForBackingImage.status == &#34;False&#34;
+    check_backing_image_disk_map_status(client, backing_img_name, 3, &#34;ready&#34;)
+
+    volume_endpoint = get_volume_endpoint(volume2)
+    vol2_cksum = get_device_checksum(volume_endpoint)
+    assert vol1_cksum == vol2_cksum</code></pre>
 </details>
 </section>
 <section>
@@ -1611,8 +1655,8 @@ def test_volume_iscsi_basic_with_backing_image(client, volume_name):  # NOQA
         cleanup_all_backing_images(client)</code></pre>
 </details>
 </dd>
-<dt id="tests.test_backing_image.test_volume_wait_for_backing_image_conditino"><code class="name flex">
-<span>def <span class="ident">test_volume_wait_for_backing_image_conditino</span></span>(<span>)</span>
+<dt id="tests.test_backing_image.test_volume_wait_for_backing_image_condition"><code class="name flex">
+<span>def <span class="ident">test_volume_wait_for_backing_image_condition</span></span>(<span>client)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Test the volume condition "WaitForBackingImage"</p>
@@ -1628,8 +1672,7 @@ the BackingImage is ready and all the replicas are in running state.</p></div>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">@pytest.mark.skip(reason=&#34;TODO&#34;)
-def test_volume_wait_for_backing_image_conditino(): # NOQA
+<pre><code class="python">def test_volume_wait_for_backing_image_condition(client): # NOQA
     &#34;&#34;&#34;
     Test the volume condition &#34;WaitForBackingImage&#34;
 
@@ -1644,7 +1687,49 @@ def test_volume_wait_for_backing_image_conditino(): # NOQA
       would be first True and then change to False when
       the BackingImage is ready and all the replicas are in running state.
     &#34;&#34;&#34;
-    pass</code></pre>
+    # Create a large volume and export as backingimage
+    lht_host_id = get_self_host_id()
+
+    volume1_name = &#34;vol1&#34;
+    volume1 = create_and_check_volume(
+        client, volume1_name, 3,
+        str(2 * Gi))
+    volume1.attach(hostId=lht_host_id)
+    volume1 = wait_for_volume_healthy(client, volume1_name)
+    volume_endpoint = get_volume_endpoint(volume1)
+    write_volume_dev_random_mb_data(volume_endpoint, 1, 1000)
+    vol1_cksum = get_device_checksum(volume_endpoint)
+
+    backing_img_name = &#39;bi-test&#39;
+    backing_img = client.create_backing_image(
+            name=backing_img_name,
+            sourceType=BACKING_IMAGE_SOURCE_TYPE_FROM_VOLUME,
+            parameters={&#34;export-type&#34;: &#34;qcow2&#34;, &#34;volume-name&#34;: volume1_name},
+            expectedChecksum=&#34;&#34;)
+
+    # Create volume with that backing image
+    volume2_name = &#34;vol2&#34;
+    volume2 = create_and_check_volume(
+        client, volume_name=volume2_name, size=str(2 * Gi),
+        backing_image=backing_img[&#34;name&#34;])
+
+    volume2.attach(hostId=lht_host_id)
+
+    if check_backing_image_disk_map_status(client,
+                                           backing_img_name,
+                                           1,
+                                           BACKING_IMAGE_STATE_IN_PROGRESS):
+        volume2 = client.by_id_volume(volume2_name)
+        assert volume2.conditions.WaitForBackingImage.status == &#34;True&#34;
+
+    # Check volume healthy, and backing image ready
+    volume2 = wait_for_volume_healthy(client, volume2_name)
+    assert volume2.conditions.WaitForBackingImage.status == &#34;False&#34;
+    check_backing_image_disk_map_status(client, backing_img_name, 3, &#34;ready&#34;)
+
+    volume_endpoint = get_volume_endpoint(volume2)
+    vol2_cksum = get_device_checksum(volume_endpoint)
+    assert vol1_cksum == vol2_cksum</code></pre>
 </details>
 </dd>
 </dl>
@@ -1692,7 +1777,7 @@ def test_volume_wait_for_backing_image_conditino(): # NOQA
 <li><code><a title="tests.test_backing_image.test_snapshot_with_backing_image" href="#tests.test_backing_image.test_snapshot_with_backing_image">test_snapshot_with_backing_image</a></code></li>
 <li><code><a title="tests.test_backing_image.test_volume_basic_with_backing_image" href="#tests.test_backing_image.test_volume_basic_with_backing_image">test_volume_basic_with_backing_image</a></code></li>
 <li><code><a title="tests.test_backing_image.test_volume_iscsi_basic_with_backing_image" href="#tests.test_backing_image.test_volume_iscsi_basic_with_backing_image">test_volume_iscsi_basic_with_backing_image</a></code></li>
-<li><code><a title="tests.test_backing_image.test_volume_wait_for_backing_image_conditino" href="#tests.test_backing_image.test_volume_wait_for_backing_image_conditino">test_volume_wait_for_backing_image_conditino</a></code></li>
+<li><code><a title="tests.test_backing_image.test_volume_wait_for_backing_image_condition" href="#tests.test_backing_image.test_volume_wait_for_backing_image_condition">test_volume_wait_for_backing_image_condition</a></code></li>
 </ul>
 </li>
 </ul>
