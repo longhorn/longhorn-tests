@@ -3479,6 +3479,13 @@ def reset_settings(client):
         # resetting this to an empty default value.
         if setting_name == "storage-network":
             continue
+        # The test CI deploys Longhorn with the setting value longhorn-critical
+        # for the setting priority-class. Don't reset it to empty (which is
+        # the default value defined in longhorn-manager code) because this will
+        # restart Longhorn managed components and fail the test cases.
+        # https://github.com/longhorn/longhorn/issues/7413#issuecomment-1881707958
+        if setting.name == SETTING_PRIORITY_CLASS:
+            continue
 
         # The version of the support bundle kit will be specified by a command
         # option when starting the manager. And setting requires a value.
