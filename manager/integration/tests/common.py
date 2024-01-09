@@ -3632,7 +3632,7 @@ def find_backup(client, vol_name, snap_name):
     def find_backup_volume():
         bvs = client.list_backupVolume()
         for bv in bvs:
-            if bv.name == vol_name:
+            if bv.name == vol_name and bv.created != "":
                 return bv
         return None
 
