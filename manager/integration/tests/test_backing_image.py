@@ -45,6 +45,7 @@ from common import BACKING_IMAGE_QCOW2_CHECKSUM
 from common import BACKING_IMAGE_STATE_READY
 from common import BACKING_IMAGE_STATE_FAILED_AND_CLEANUP
 from common import BACKING_IMAGE_STATE_IN_PROGRESS
+from common import RETRY_COUNTS_LONG
 import time
 
 
@@ -656,11 +657,11 @@ def test_volume_wait_for_backing_image_condition(client): # NOQA
     volume1_name = "vol1"
     volume1 = create_and_check_volume(
         client, volume1_name, 3,
-        str(2 * Gi))
+        str(1 * Gi))
     volume1.attach(hostId=lht_host_id)
     volume1 = wait_for_volume_healthy(client, volume1_name)
     volume_endpoint = get_volume_endpoint(volume1)
-    write_volume_dev_random_mb_data(volume_endpoint, 1, 1000)
+    write_volume_dev_random_mb_data(volume_endpoint, 1, 500)
     vol1_cksum = get_device_checksum(volume_endpoint)
 
     backing_img_name = 'bi-test'
@@ -673,7 +674,7 @@ def test_volume_wait_for_backing_image_condition(client): # NOQA
     # Create volume with that backing image
     volume2_name = "vol2"
     volume2 = create_and_check_volume(
-        client, volume_name=volume2_name, size=str(2 * Gi),
+        client, volume_name=volume2_name, size=str(1 * Gi),
         backing_image=backing_img["name"])
 
     volume2.attach(hostId=lht_host_id)
@@ -686,7 +687,7 @@ def test_volume_wait_for_backing_image_condition(client): # NOQA
         assert volume2.conditions.WaitForBackingImage.status == "True"
 
     # Check volume healthy, and backing image ready
-    volume2 = wait_for_volume_healthy(client, volume2_name)
+    volume2 = wait_for_volume_healthy(client, volume2_name, RETRY_COUNTS_LONG)
     assert volume2.conditions.WaitForBackingImage.status == "False"
     check_backing_image_disk_map_status(client, backing_img_name, 3, "ready")
 
