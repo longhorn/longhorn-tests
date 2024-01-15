@@ -2219,6 +2219,17 @@ def wait_for_engine_image_state(client, image_name, state):
     return image
 
 
+def wait_for_engine_image_incompatible(client, image_name):
+    wait_for_engine_image_creation(client, image_name)
+    for i in range(RETRY_COUNTS):
+        image = client.by_id_engine_image(image_name)
+        if image.incompatible:
+            break
+        time.sleep(RETRY_INTERVAL)
+    assert image.incompatible
+    return image
+
+
 def wait_for_engine_image_condition(client, image_name, state):
     &#34;&#34;&#34;
     state: &#34;True&#34;, &#34;False&#34;
@@ -13198,6 +13209,26 @@ ref: <a href="https://github.com/longhorn/longhorn/issues/4814">https://github.c
     assert deleted</code></pre>
 </details>
 </dd>
+<dt id="tests.common.wait_for_engine_image_incompatible"><code class="name flex">
+<span>def <span class="ident">wait_for_engine_image_incompatible</span></span>(<span>client, image_name)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def wait_for_engine_image_incompatible(client, image_name):
+    wait_for_engine_image_creation(client, image_name)
+    for i in range(RETRY_COUNTS):
+        image = client.by_id_engine_image(image_name)
+        if image.incompatible:
+            break
+        time.sleep(RETRY_INTERVAL)
+    assert image.incompatible
+    return image</code></pre>
+</details>
+</dd>
 <dt id="tests.common.wait_for_engine_image_ref_count"><code class="name flex">
 <span>def <span class="ident">wait_for_engine_image_ref_count</span></span>(<span>client, image_name, count)</span>
 </code></dt>
@@ -15479,6 +15510,7 @@ from the args and kwargs arguments, respectively.</p></div>
 <li><code><a title="tests.common.wait_for_engine_image_condition" href="#tests.common.wait_for_engine_image_condition">wait_for_engine_image_condition</a></code></li>
 <li><code><a title="tests.common.wait_for_engine_image_creation" href="#tests.common.wait_for_engine_image_creation">wait_for_engine_image_creation</a></code></li>
 <li><code><a title="tests.common.wait_for_engine_image_deletion" href="#tests.common.wait_for_engine_image_deletion">wait_for_engine_image_deletion</a></code></li>
+<li><code><a title="tests.common.wait_for_engine_image_incompatible" href="#tests.common.wait_for_engine_image_incompatible">wait_for_engine_image_incompatible</a></code></li>
 <li><code><a title="tests.common.wait_for_engine_image_ref_count" href="#tests.common.wait_for_engine_image_ref_count">wait_for_engine_image_ref_count</a></code></li>
 <li><code><a title="tests.common.wait_for_engine_image_state" href="#tests.common.wait_for_engine_image_state">wait_for_engine_image_state</a></code></li>
 <li><code><a title="tests.common.wait_for_expansion_error_clear" href="#tests.common.wait_for_expansion_error_clear">wait_for_expansion_error_clear</a></code></li>
