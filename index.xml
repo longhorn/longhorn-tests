@@ -715,6 +715,13 @@
       <description>Related issue https://github.com/longhorn/longhorn/issues/467&#xA;Test Recurring Job Concurrency Given create snapshot recurring job with concurrency set to 2 and include snapshot recurring job default in groups.&#xA;When create volume test-job-1.&#xA;And create volume test-job-2.&#xA;And create volume test-job-3.&#xA;And create volume test-job-4.&#xA;And create volume test-job-5.&#xA;Then moniter the cron job pod log.&#xA;And should see 2 jobs created concurrently.&#xA;When update snapshot1 recurring job with concurrency set to 3.&#xA;Then moniter the cron job pod log.</description>
     </item>
     <item>
+      <title>Test list backup when cluster has node cordoned before Longhorn installation</title>
+      <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.6.0/test-list-backup-when-cluster-has-node-cordoned-before-longhorn-installation/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.6.0/test-list-backup-when-cluster-has-node-cordoned-before-longhorn-installation/</guid>
+      <description>Related issue https://github.com/longhorn/longhorn/issues/7619&#xA;Test step Given a cluster has 3 worker nodes.&#xA;And 2 worker nodes are cordoned.&#xA;And Longhorn is installed.&#xA;When Setting up a backup target.&#xA;Then no error is observed on the UI Backup page.&#xA;And Backup custom resources are created if the backup target has existing backups.</description>
+    </item>
+    <item>
       <title>Test Longhorn components recovery</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/resiliency/test-longhorn-component-recovery/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
