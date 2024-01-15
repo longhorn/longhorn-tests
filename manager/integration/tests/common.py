@@ -2191,6 +2191,17 @@ def wait_for_engine_image_state(client, image_name, state):
     return image
 
 
+def wait_for_engine_image_incompatible(client, image_name):
+    wait_for_engine_image_creation(client, image_name)
+    for i in range(RETRY_COUNTS):
+        image = client.by_id_engine_image(image_name)
+        if image.incompatible:
+            break
+        time.sleep(RETRY_INTERVAL)
+    assert image.incompatible
+    return image
+
+
 def wait_for_engine_image_condition(client, image_name, state):
     """
     state: "True", "False"
