@@ -106,8 +106,7 @@ def test_setting_toleration():
     2.  Verify the request fails.
     3.  Create a volume and attach it.
     4.  Set `taint-toleration` to "key1=value1:NoSchedule; key2:NoExecute".
-    5.  Verify that cannot update toleration setting when any volume is
-        attached.
+    5.  Verify that can update toleration setting when any volume is attached.
     6.  Generate and write `data1` into the volume.
     7.  Detach the volume.
     8.  Set `taint-toleration` to "key1=value1:NoSchedule; key2:NoExecute".
@@ -156,10 +155,8 @@ def test_setting_toleration():
             "effect": "NoExecute"
         },
     ]
-    with pytest.raises(Exception) as e:
-        client.update(setting, value=setting_value_str)
-    assert 'cannot modify toleration setting before all volumes are detached' \
-           in str(e.value)
+    setting = client.update(setting, value=setting_value_str)
+    assert setting.value == setting_value_str
 
     data1 = write_volume_random_data(volume)
     check_volume_data(volume, data1)
@@ -167,8 +164,6 @@ def test_setting_toleration():
     volume.detach()
     wait_for_volume_detached(client, volume_name)
 
-    setting = client.update(setting, value=setting_value_str)
-    assert setting.value == setting_value_str
     wait_for_toleration_update(core_api, apps_api, count, setting_value_dicts)
 
     client, node = wait_for_longhorn_node_ready()
@@ -494,8 +489,8 @@ def test_setting_priority_class(core_api, apps_api, scheduling_api, priority_cla
     for the Setting.
     2. Create a new Priority Class in Kubernetes.
     3. Create and attach a Volume.
-    4. Verify that the Priority Class Setting cannot be updated with an
-    attached Volume.
+    4. Verify that the Priority Class Setting can be updated with an attached
+       volume.
     5. Generate and write `data1`.
     6. Detach the Volume.
     7. Update the Priority Class Setting to the new Priority Class.
@@ -529,19 +524,14 @@ def test_setting_priority_class(core_api, apps_api, scheduling_api, priority_cla
     volume.attach(hostId=get_self_host_id())
     volume = wait_for_volume_healthy(client, volume_name)
 
-    with pytest.raises(Exception) as e:
-        client.update(setting, value=name)
-    assert 'cannot modify priority class setting before all volumes are ' \
-           'detached' in str(e.value)
+    setting = client.update(setting, value=name)
+    assert setting.value == name
 
     data1 = write_volume_random_data(volume)
     check_volume_data(volume, data1)
 
     volume.detach()
     wait_for_volume_detached(client, volume_name)
-
-    setting = client.update(setting, value=name)
-    assert setting.value == name
 
     wait_for_priority_class_update(core_api, apps_api, count, priority_class)
 
@@ -1239,7 +1229,7 @@ def test_setting_update_with_invalid_value_via_configmap(core_api, request):  # 
                       [SETTING_BACKUP_TARGET,
                        SETTING_TAINT_TOLERATION],
                       [target,
-                       ""])
+                       "key1=value1:NoSchedule"])
 
     cleanup_volume_by_name(client, vol_name)
 
