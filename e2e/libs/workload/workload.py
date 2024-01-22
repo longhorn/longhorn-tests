@@ -23,6 +23,8 @@ def get_name_suffix(*args):
 def create_storageclass(name):
     if name == 'longhorn-test-strict-local':
         filepath = "./templates/workload/strict_local_storageclass.yaml"
+    elif name == 'longhorn-test-nfs-options':
+        filepath = "./templates/workload/storageclass-nfs-options.yaml"
     else:
         filepath = "./templates/workload/storageclass.yaml"
 
