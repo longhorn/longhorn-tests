@@ -108,6 +108,7 @@ DEFAULT_BACKUP_TIMEOUT = 100
 
 DEFAULT_POD_INTERVAL = 1
 DEFAULT_POD_TIMEOUT = 180
+POD_DELETION_TIMEOUT = 600
 
 DEFAULT_STATEFULSET_INTERVAL = 1
 DEFAULT_STATEFULSET_TIMEOUT = 180
@@ -906,7 +907,7 @@ def size_to_string(volume_size):
 
 
 def wait_delete_pod(api, pod_uid, namespace='default'):
-    for i in range(DEFAULT_POD_TIMEOUT):
+    for i in range(POD_DELETION_TIMEOUT):
         ret = api.list_namespaced_pod(namespace=namespace)
         found = False
         for item in ret.items:
