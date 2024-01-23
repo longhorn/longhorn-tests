@@ -17,6 +17,7 @@ from common import pvc  # NOQA
 from common import random_labels, volume_name  # NOQA
 from common import storage_class, statefulset, pvc  # NOQA
 from common import make_deployment_with_pvc  # NOQA
+from common import generate_volume_name
 
 from common import get_self_host_id
 
@@ -1991,9 +1992,9 @@ def test_recurring_job_restored_from_backup_target(set_random_backupstore, clien
     back1 = BACKUP + "1"
     back2 = BACKUP + "2"
     group1 = "group01"
-    volume_name1 = "record-recurring-job"
-    rvolume_name1 = "restore-record-recurring-job-01"
-    rvolume_name2 = "restore-record-recurring-job-02"
+    volume_name1 = "record-recur" + "-" + generate_volume_name()
+    rvolume_name1 = "restore-01" + "-" + generate_volume_name()
+    rvolume_name2 = "restore-02" + "-" + generate_volume_name()
 
     recurring_jobs = {
         back1: {
@@ -2048,8 +2049,8 @@ def test_recurring_job_restored_from_backup_target(set_random_backupstore, clien
 
     complete_backup_1_count = 0
     restore_snapshot_name = ""
-    volume = client.by_id_volume(volume_name1)
     wait_for_backup_completion(client, volume_name1)
+    volume = client.by_id_volume(volume_name1)
     for b in volume.backupStatus:
         if back1+"-" in b.snapshot:
             complete_backup_1_count += 1
