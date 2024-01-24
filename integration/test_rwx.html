@@ -553,7 +553,7 @@ def test_restore_rwo_volume_to_rwx(set_random_backupstore, client, core_api, vol
 
 
 @pytest.mark.skip(reason=&#34;TODO&#34;)
-def test_rwx_onine_expansion(): # NOQA
+def test_rwx_online_expansion(): # NOQA
     &#34;&#34;&#34;
     Related issue :
     https://github.com/longhorn/longhorn/issues/2181
@@ -710,6 +710,68 @@ def test_encrypted_rwx_volume(core_api, statefulset, storage_class, crypto_secre
 
     apps_api = get_apps_api_client()
     create_and_wait_deployment(apps_api, deployment)
+
+    # Clean up deployment and volume
+    delete_and_wait_deployment(apps_api, deployment[&#34;metadata&#34;][&#34;name&#34;])
+    delete_and_wait_pvc(core_api, pvc_name)
+
+
+def test_rwx_volume_mount_options(core_api, storage_class, pvc, make_deployment_with_pvc):  # NOQA
+    &#34;&#34;&#34;
+    Test creating rwx volume with custom mount options
+    non longhorn-system namespace.
+
+    1. Create a storage class with nfsOptions parameter.
+    2. Create a deployment with a PVC and the pods should be able to run.
+    3. Check the mounts on the deployment pods.
+    &#34;&#34;&#34;
+
+    # Create storage class
+    storage_class[&#39;reclaimPolicy&#39;] = &#39;Delete&#39;
+    storage_class[&#39;parameters&#39;][&#39;nfsOptions&#39;] = &#39;vers=4.2,soft,noresvport,timeo=600,retrans=4&#39;  # NOQA
+    create_storage_class(storage_class)
+
+    # Create deployment with PVC
+    pvc_name = &#39;pvc-deployment-with-custom-mount-options-volume&#39;
+    pvc[&#39;metadata&#39;][&#39;name&#39;] = pvc_name
+    pvc[&#39;spec&#39;][&#39;storageClassName&#39;] = storage_class[&#39;metadata&#39;][&#39;name&#39;]
+    pvc[&#39;spec&#39;][&#39;accessModes&#39;] = [&#39;ReadWriteMany&#39;]
+
+    core_api.create_namespaced_persistent_volume_claim(
+        body=pvc, namespace=&#39;default&#39;)
+
+    deployment = make_deployment_with_pvc(
+        &#39;deployment-with-custom-mount-options-volume&#39;, pvc_name, replicas=2)
+
+    apps_api = get_apps_api_client()
+    create_and_wait_deployment(apps_api, deployment)
+
+    # Check mount options on deployment pods
+    deployment_label_selector = &#34;name=&#34; + \
+                                deployment[&#34;metadata&#34;][&#34;labels&#34;][&#34;name&#34;]
+
+    deployment_pod_list = \
+        core_api.list_namespaced_pod(namespace=&#34;default&#34;,
+                                     label_selector=deployment_label_selector)
+
+    assert deployment_pod_list.items.__len__() == 2
+
+    pod_name_1 = deployment_pod_list.items[0].metadata.name
+    pod_name_2 = deployment_pod_list.items[1].metadata.name
+
+    command = &#34;cat /proc/mounts | grep &#39;nfs&#39;&#34;
+    mount_options_1 = exec_command_in_pod(core_api, command,
+                                          pod_name_1,
+                                          &#39;default&#39;)
+    mount_options_2 = exec_command_in_pod(core_api, command,
+                                          pod_name_2,
+                                          &#39;default&#39;)
+
+    # print(f&#39;mount_options_1={mount_options_1}&#39;)
+    # print(f&#39;mount_options_2={mount_options_2}&#39;)
+
+    assert &#34;vers=4.2&#34; in mount_options_1
+    assert &#34;vers=4.2&#34; in mount_options_2
 
     # Clean up deployment and volume
     delete_and_wait_deployment(apps_api, deployment[&#34;metadata&#34;][&#34;name&#34;])
@@ -1226,8 +1288,8 @@ test steps."</p>
     assert int(data_size_in_pod)/1024/1024 == data_size_in_mb</code></pre>
 </details>
 </dd>
-<dt id="tests.test_rwx.test_rwx_onine_expansion"><code class="name flex">
-<span>def <span class="ident">test_rwx_onine_expansion</span></span>(<span>)</span>
+<dt id="tests.test_rwx.test_rwx_online_expansion"><code class="name flex">
+<span>def <span class="ident">test_rwx_online_expansion</span></span>(<span>)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Related issue :
@@ -1251,7 +1313,7 @@ test steps."</p>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">@pytest.mark.skip(reason=&#34;TODO&#34;)
-def test_rwx_onine_expansion(): # NOQA
+def test_rwx_online_expansion(): # NOQA
     &#34;&#34;&#34;
     Related issue :
     https://github.com/longhorn/longhorn/issues/2181
@@ -1494,6 +1556,83 @@ detached.</li>
         assert pod_data == md5sum_pod[i]</code></pre>
 </details>
 </dd>
+<dt id="tests.test_rwx.test_rwx_volume_mount_options"><code class="name flex">
+<span>def <span class="ident">test_rwx_volume_mount_options</span></span>(<span>core_api, storage_class, pvc, make_deployment_with_pvc)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Test creating rwx volume with custom mount options
+non longhorn-system namespace.</p>
+<ol>
+<li>Create a storage class with nfsOptions parameter.</li>
+<li>Create a deployment with a PVC and the pods should be able to run.</li>
+<li>Check the mounts on the deployment pods.</li>
+</ol></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def test_rwx_volume_mount_options(core_api, storage_class, pvc, make_deployment_with_pvc):  # NOQA
+    &#34;&#34;&#34;
+    Test creating rwx volume with custom mount options
+    non longhorn-system namespace.
+
+    1. Create a storage class with nfsOptions parameter.
+    2. Create a deployment with a PVC and the pods should be able to run.
+    3. Check the mounts on the deployment pods.
+    &#34;&#34;&#34;
+
+    # Create storage class
+    storage_class[&#39;reclaimPolicy&#39;] = &#39;Delete&#39;
+    storage_class[&#39;parameters&#39;][&#39;nfsOptions&#39;] = &#39;vers=4.2,soft,noresvport,timeo=600,retrans=4&#39;  # NOQA
+    create_storage_class(storage_class)
+
+    # Create deployment with PVC
+    pvc_name = &#39;pvc-deployment-with-custom-mount-options-volume&#39;
+    pvc[&#39;metadata&#39;][&#39;name&#39;] = pvc_name
+    pvc[&#39;spec&#39;][&#39;storageClassName&#39;] = storage_class[&#39;metadata&#39;][&#39;name&#39;]
+    pvc[&#39;spec&#39;][&#39;accessModes&#39;] = [&#39;ReadWriteMany&#39;]
+
+    core_api.create_namespaced_persistent_volume_claim(
+        body=pvc, namespace=&#39;default&#39;)
+
+    deployment = make_deployment_with_pvc(
+        &#39;deployment-with-custom-mount-options-volume&#39;, pvc_name, replicas=2)
+
+    apps_api = get_apps_api_client()
+    create_and_wait_deployment(apps_api, deployment)
+
+    # Check mount options on deployment pods
+    deployment_label_selector = &#34;name=&#34; + \
+                                deployment[&#34;metadata&#34;][&#34;labels&#34;][&#34;name&#34;]
+
+    deployment_pod_list = \
+        core_api.list_namespaced_pod(namespace=&#34;default&#34;,
+                                     label_selector=deployment_label_selector)
+
+    assert deployment_pod_list.items.__len__() == 2
+
+    pod_name_1 = deployment_pod_list.items[0].metadata.name
+    pod_name_2 = deployment_pod_list.items[1].metadata.name
+
+    command = &#34;cat /proc/mounts | grep &#39;nfs&#39;&#34;
+    mount_options_1 = exec_command_in_pod(core_api, command,
+                                          pod_name_1,
+                                          &#39;default&#39;)
+    mount_options_2 = exec_command_in_pod(core_api, command,
+                                          pod_name_2,
+                                          &#39;default&#39;)
+
+    # print(f&#39;mount_options_1={mount_options_1}&#39;)
+    # print(f&#39;mount_options_2={mount_options_2}&#39;)
+
+    assert &#34;vers=4.2&#34; in mount_options_1
+    assert &#34;vers=4.2&#34; in mount_options_2
+
+    # Clean up deployment and volume
+    delete_and_wait_deployment(apps_api, deployment[&#34;metadata&#34;][&#34;name&#34;])
+    delete_and_wait_pvc(core_api, pvc_name)</code></pre>
+</details>
+</dd>
 <dt id="tests.test_rwx.test_rwx_with_statefulset_multi_pods"><code class="name flex">
 <span>def <span class="ident">test_rwx_with_statefulset_multi_pods</span></span>(<span>core_api, statefulset)</span>
 </code></dt>
@@ -1619,9 +1758,10 @@ path <code>/export</code></li>
 <li><code><a title="tests.test_rwx.test_rwx_deployment_with_multi_pods" href="#tests.test_rwx.test_rwx_deployment_with_multi_pods">test_rwx_deployment_with_multi_pods</a></code></li>
 <li><code><a title="tests.test_rwx.test_rwx_multi_statefulset_with_same_pvc" href="#tests.test_rwx.test_rwx_multi_statefulset_with_same_pvc">test_rwx_multi_statefulset_with_same_pvc</a></code></li>
 <li><code><a title="tests.test_rwx.test_rwx_offline_expansion" href="#tests.test_rwx.test_rwx_offline_expansion">test_rwx_offline_expansion</a></code></li>
-<li><code><a title="tests.test_rwx.test_rwx_onine_expansion" href="#tests.test_rwx.test_rwx_onine_expansion">test_rwx_onine_expansion</a></code></li>
+<li><code><a title="tests.test_rwx.test_rwx_online_expansion" href="#tests.test_rwx.test_rwx_online_expansion">test_rwx_online_expansion</a></code></li>
 <li><code><a title="tests.test_rwx.test_rwx_parallel_writing" href="#tests.test_rwx.test_rwx_parallel_writing">test_rwx_parallel_writing</a></code></li>
 <li><code><a title="tests.test_rwx.test_rwx_statefulset_scale_down_up" href="#tests.test_rwx.test_rwx_statefulset_scale_down_up">test_rwx_statefulset_scale_down_up</a></code></li>
+<li><code><a title="tests.test_rwx.test_rwx_volume_mount_options" href="#tests.test_rwx.test_rwx_volume_mount_options">test_rwx_volume_mount_options</a></code></li>
 <li><code><a title="tests.test_rwx.test_rwx_with_statefulset_multi_pods" href="#tests.test_rwx.test_rwx_with_statefulset_multi_pods">test_rwx_with_statefulset_multi_pods</a></code></li>
 <li><code><a title="tests.test_rwx.write_data_into_pod" href="#tests.test_rwx.write_data_into_pod">write_data_into_pod</a></code></li>
 </ul>
