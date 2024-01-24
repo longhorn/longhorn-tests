@@ -1,6 +1,6 @@
 *** Settings ***
 Documentation    Negative Test Cases
-Resource    ../keywords/node.resource
+Resource    ../keywords/stress.resource
 Resource    ../keywords/volume.resource
 Resource    ../keywords/workload.resource
 Resource    ../keywords/common.resource
