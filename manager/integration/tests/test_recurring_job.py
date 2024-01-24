@@ -69,6 +69,8 @@ from common import wait_for_cron_job_count
 from common import wait_for_cron_job_create
 from common import wait_for_cron_job_delete
 
+from common import ACCESS_MODE_RWO
+from common import ACCESS_MODE_RWX
 from common import JOB_LABEL
 from common import KUBERNETES_STATUS_LABEL
 from common import LONGHORN_NAMESPACE
@@ -2082,7 +2084,8 @@ def test_recurring_job_restored_from_backup_target(set_random_backupstore, clien
 
 
 @pytest.mark.recurring_job  # NOQA
-def test_recurring_job_filesystem_trim(client, core_api, batch_v1_api, volume_name, csi_pv, pvc, pod_make):  # NOQA
+@pytest.mark.parametrize("access_mode", [ACCESS_MODE_RWO, ACCESS_MODE_RWX])  # NOQA
+def test_recurring_job_filesystem_trim(client, core_api, batch_v1_api, volume_name, csi_pv, pvc, pod_make, access_mode):  # NOQA
     """
     Scenario: test recurring job filesystem-trim
 
@@ -2103,7 +2106,8 @@ def test_recurring_job_filesystem_trim(client, core_api, batch_v1_api, volume_na
     """
     pod_name, _, _, _ = \
         prepare_pod_with_data_in_mb(client, core_api, csi_pv, pvc, pod_make,
-                                    volume_name, data_size_in_mb=10)
+                                    volume_name, data_size_in_mb=10,
+                                    access_mode=access_mode)
 
     volume = client.by_id_volume(volume_name)
 
