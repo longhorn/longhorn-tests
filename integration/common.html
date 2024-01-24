@@ -142,6 +142,7 @@ DEFAULT_BACKUP_TIMEOUT = 100
 
 DEFAULT_POD_INTERVAL = 1
 DEFAULT_POD_TIMEOUT = 180
+POD_DELETION_TIMEOUT = 600
 
 DEFAULT_STATEFULSET_INTERVAL = 1
 DEFAULT_STATEFULSET_TIMEOUT = 180
@@ -964,7 +965,7 @@ def size_to_string(volume_size):
 
 
 def wait_delete_pod(api, pod_uid, namespace=&#39;default&#39;):
-    for i in range(DEFAULT_POD_TIMEOUT):
+    for i in range(POD_DELETION_TIMEOUT):
         ret = api.list_namespaced_pod(namespace=namespace)
         found = False
         for item in ret.items:
@@ -12324,7 +12325,7 @@ ref: <a href="https://github.com/longhorn/longhorn/issues/4814">https://github.c
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def wait_delete_pod(api, pod_uid, namespace=&#39;default&#39;):
-    for i in range(DEFAULT_POD_TIMEOUT):
+    for i in range(POD_DELETION_TIMEOUT):
         ret = api.list_namespaced_pod(namespace=namespace)
         found = False
         for item in ret.items:
