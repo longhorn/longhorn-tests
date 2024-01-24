@@ -941,7 +941,7 @@ def setting_concurrent_volume_backup_restore_limit_concurrent_restoring_test(cli
                    str(concurrent_limit))
 
     _, backup = create_volume_and_backup(client, volname + "-with-backup",
-                                         500 * Mi, 300 * Mi)
+                                         1000 * Mi, 600 * Mi)
 
     nodes = client.list_node()
     restore_volume_names = []
