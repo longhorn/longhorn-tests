@@ -3341,7 +3341,7 @@ def restore_with_replica_failure(client, core_api, volume_name, csi_pv, # NOQA
                                     pod_make,
                                     volume_name,
                                     volume_size=str(2 * Gi),
-                                    data_size_in_mb=DATA_SIZE_IN_MB_2,
+                                    data_size_in_mb=DATA_SIZE_IN_MB_4,
                                     data_path=data_path)
 
     volume = client.by_id_volume(volume_name)
@@ -3923,7 +3923,7 @@ parameters.</p></div>
                                     pod_make,
                                     volume_name,
                                     volume_size=str(2 * Gi),
-                                    data_size_in_mb=DATA_SIZE_IN_MB_2,
+                                    data_size_in_mb=DATA_SIZE_IN_MB_4,
                                     data_path=data_path)
 
     volume = client.by_id_volume(volume_name)
