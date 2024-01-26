@@ -792,34 +792,24 @@
 
 
 <main style="padding: 1%; width: 70%;">
-  <h1 id="title">Test Version Bump of Kubernetes, API version group, CSI component&rsquo;s dependency version</h1>
+  <h1 id="title">v2 volume sanity check</h1>
   <div>
     <article id="content">
-       <p>GitHub issue: <a href="https://github.com/longhorn/longhorn/issues/2757">https://github.com/longhorn/longhorn/issues/2757</a></p>
-<h1 id="test-with-specific-kubernetes-version">Test with specific Kubernetes version</h1>
-<ol>
-<li>For each Kubernetes version (1.18, 1.19, 1.20, 1.21, 1.22), test basic functionalities of Longhorn v1.2.0
-(create/attach/detach/delete volume/backup/snapshot using yaml/UI)</li>
-</ol>
-<h1 id="test-kubernetes-and-longhorn-upgrade">Test Kubernetes and Longhorn upgrade</h1>
-<ol>
-<li>Deploy K3s v1.21</li>
-<li>Deploy Longhorn v1.1.2</li>
-<li>Create some workload pods using Longhorn volumes</li>
-<li>Upgrade Longhorn to v1.2.0</li>
-<li>Verify that everything is OK</li>
-<li>Upgrade K3s to v1.22</li>
-<li>Verify that everything is OK</li>
-</ol>
-<h1 id="retest-the-upgrade-lease-lock">Retest the Upgrade Lease Lock</h1>
-<p>We remove the client-go patch <a href="https://github.com/longhorn/longhorn-manager/pull/639#issuecomment-905030885">https://github.com/longhorn/longhorn-manager/pull/639#issuecomment-905030885</a>,
-so we need to retest the test ../v1.0.2/upgrade-lease-lock.md</p>
-<blockquote>
-<p>Note: Longhorn versions prior to v1.2.0 will not work on k8s/k3s v1.22</p>
-</blockquote>
+       <h2 id="related-doc">Related doc:</h2>
+<p><a href="https://longhorn.io/docs/1.6.0/v2-data-engine/features/">https://longhorn.io/docs/1.6.0/v2-data-engine/features/</a></p>
+<ul>
+<li>Support both amd64 and arm64</li>
+<li>Volume creation, attachment, detachment and deletion</li>
+<li>Automatic offline replica rebuilding</li>
+<li><a href="https://github.com/longhorn/longhorn/issues/5827">Orphaned replica management</a></li>
+<li>Snapshot creation, deletion and reversion</li>
+<li>Volume backup and restoration</li>
+<li><a href="https://github.com/longhorn/longhorn/issues/7015">Selective v2 Data Engine activation</a></li>
+<li>Upgrade Longhorn from previous version with v2 volume</li>
+</ul>
 
     </article>
-  <a href="https://github.com/longhorn/longhorn-tests/edit/master/docs/content/manual/release-specific/v1.2.0/test_version_bump.md" target="_blank" title="Edit on Github" style="font-size:smaller;float:right;padding-right:3%">[Edit]</a>
+  <a href="https://github.com/longhorn/longhorn-tests/edit/master/docs/content/manual/pre-release/v2-volume/sanity-check.md" target="_blank" title="Edit on Github" style="font-size:smaller;float:right;padding-right:3%">[Edit]</a>
   </div>
 
     

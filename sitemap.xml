@@ -382,6 +382,10 @@
   </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.6.0/</loc>
   </url><url>
+    <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/v2-volume/</loc>
+  </url><url>
+    <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/v2-volume/sanity-check/</loc>
+  </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.1/ui-volume-deletion/</loc>
   </url>
 </urlset>
