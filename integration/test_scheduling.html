@@ -1110,8 +1110,7 @@ def test_data_locality_basic(client, core_api, volume_name, pod, settings_reset)
 
     pod1[&#39;metadata&#39;][&#39;name&#39;] = pod1_name
 
-    volume1 = create_and_check_volume(client,
-                                      volume1_name,
+    volume1 = create_and_check_volume(client, volume1_name,
                                       num_of_replicas=1,
                                       size=volume1_size)
 
@@ -2387,8 +2386,7 @@ Verify that the replica set contains: one on node-1, one on node-2</p>
 
     pod1[&#39;metadata&#39;][&#39;name&#39;] = pod1_name
 
-    volume1 = create_and_check_volume(client,
-                                      volume1_name,
+    volume1 = create_and_check_volume(client, volume1_name,
                                       num_of_replicas=1,
                                       size=volume1_size)
 

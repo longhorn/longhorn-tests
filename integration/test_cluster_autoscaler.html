@@ -175,9 +175,8 @@ def test_cluster_autoscaler_all_nodes_with_volume_replicas(client, core_api, app
     nodes = client.list_node()
     scale_size = len(nodes)-1
 
-    volume = create_and_check_volume(
-        client, volume_name, num_of_replicas=scale_size
-    )
+    volume = create_and_check_volume(client, volume_name,
+                                     num_of_replicas=scale_size)
     create_pv_for_volume(client, core_api, volume, volume.name)
     create_pvc_for_volume(client, core_api, volume, volume.name)
 
@@ -656,9 +655,8 @@ def test_cluster_autoscaler_all_nodes_with_volume_replicas(client, core_api, app
     nodes = client.list_node()
     scale_size = len(nodes)-1
 
-    volume = create_and_check_volume(
-        client, volume_name, num_of_replicas=scale_size
-    )
+    volume = create_and_check_volume(client, volume_name,
+                                     num_of_replicas=scale_size)
     create_pv_for_volume(client, core_api, volume, volume.name)
     create_pvc_for_volume(client, core_api, volume, volume.name)
 

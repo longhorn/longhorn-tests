@@ -315,6 +315,9 @@ disk_being_syncing = &#34;being syncing and please retry later&#34;
 FS_TYPE_EXT4 = &#34;ext4&#34;
 FS_TYPE_XFS = &#34;xfs&#34;
 
+ACCESS_MODE_RWO = &#34;rwo&#34;
+ACCESS_MODE_RWX = &#34;rwx&#34;
+
 ATTACHER_TYPE_CSI_ATTACHER = &#34;csi-attacher&#34;
 ATTACHER_TYPE_LONGHORN_API = &#34;longhorn-api&#34;
 ATTACHER_TYPE_LONGHORN_UPGRADER = &#34;longhorn-upgrader&#34;
@@ -521,7 +524,8 @@ def delete_backup_volume(client, volume_name):
 def create_and_check_volume(client, volume_name,
                             num_of_replicas=3, size=SIZE, backing_image=&#34;&#34;,
                             frontend=VOLUME_FRONTEND_BLOCKDEV,
-                            snapshot_data_integrity=SNAPSHOT_DATA_INTEGRITY_IGNORED): # NOQA
+                            snapshot_data_integrity=SNAPSHOT_DATA_INTEGRITY_IGNORED,  # NOQA
+                            access_mode=ACCESS_MODE_RWO):
     &#34;&#34;&#34;
     Create a new volume with the specified parameters. Assert that the new
     volume is detached and that all of the requested parameters match.
@@ -540,7 +544,8 @@ def create_and_check_volume(client, volume_name,
     client.create_volume(name=volume_name, size=size,
                          numberOfReplicas=num_of_replicas,
                          backingImage=backing_image, frontend=frontend,
-                         snapshotDataIntegrity=snapshot_data_integrity)
+                         snapshotDataIntegrity=snapshot_data_integrity,
+                         accessMode=access_mode)
     volume = wait_for_volume_detached(client, volume_name)
     assert volume.name == volume_name
     assert volume.size == size
@@ -5015,7 +5020,8 @@ def prepare_statefulset_with_data_in_mb(
 def prepare_pod_with_data_in_mb(
         client, core_api, csi_pv, pvc, pod_make, volume_name,
         volume_size=str(1*Gi), num_of_replicas=3, data_path=&#34;/data/test&#34;,
-        data_size_in_mb=DATA_SIZE_IN_MB_1, add_liveness_probe=True):# NOQA:
+        data_size_in_mb=DATA_SIZE_IN_MB_1, add_liveness_probe=True,
+        access_mode=ACCESS_MODE_RWO):# NOQA:
 
     pod_name = volume_name + &#34;-pod&#34;
     pv_name = volume_name
@@ -5040,7 +5046,8 @@ def prepare_pod_with_data_in_mb(
 
     create_and_check_volume(client, volume_name,
                             num_of_replicas=num_of_replicas,
-                            size=volume_size)
+                            size=volume_size,
+                            access_mode=access_mode)
     core_api.create_persistent_volume(csi_pv)
     core_api.create_namespaced_persistent_volume_claim(
         body=pvc, namespace=&#39;default&#39;)
@@ -7409,7 +7416,7 @@ def core_api(request):
 </details>
 </dd>
 <dt id="tests.common.create_and_check_volume"><code class="name flex">
-<span>def <span class="ident">create_and_check_volume</span></span>(<span>client, volume_name, num_of_replicas=3, size='16777216', backing_image='', frontend='blockdev', snapshot_data_integrity='ignored')</span>
+<span>def <span class="ident">create_and_check_volume</span></span>(<span>client, volume_name, num_of_replicas=3, size='16777216', backing_image='', frontend='blockdev', snapshot_data_integrity='ignored', access_mode='rwo')</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Create a new volume with the specified parameters. Assert that the new
@@ -7429,7 +7436,8 @@ of bytes.
 <pre><code class="python">def create_and_check_volume(client, volume_name,
                             num_of_replicas=3, size=SIZE, backing_image=&#34;&#34;,
                             frontend=VOLUME_FRONTEND_BLOCKDEV,
-                            snapshot_data_integrity=SNAPSHOT_DATA_INTEGRITY_IGNORED): # NOQA
+                            snapshot_data_integrity=SNAPSHOT_DATA_INTEGRITY_IGNORED,  # NOQA
+                            access_mode=ACCESS_MODE_RWO):
     &#34;&#34;&#34;
     Create a new volume with the specified parameters. Assert that the new
     volume is detached and that all of the requested parameters match.
@@ -7448,7 +7456,8 @@ of bytes.
     client.create_volume(name=volume_name, size=size,
                          numberOfReplicas=num_of_replicas,
                          backingImage=backing_image, frontend=frontend,
-                         snapshotDataIntegrity=snapshot_data_integrity)
+                         snapshotDataIntegrity=snapshot_data_integrity,
+                         accessMode=access_mode)
     volume = wait_for_volume_detached(client, volume_name)
     assert volume.name == volume_name
     assert volume.size == size
@@ -10764,7 +10773,7 @@ def pod_make(request):
 </details>
 </dd>
 <dt id="tests.common.prepare_pod_with_data_in_mb"><code class="name flex">
-<span>def <span class="ident">prepare_pod_with_data_in_mb</span></span>(<span>client, core_api, csi_pv, pvc, pod_make, volume_name, volume_size='1073741824', num_of_replicas=3, data_path='/data/test', data_size_in_mb=100, add_liveness_probe=True)</span>
+<span>def <span class="ident">prepare_pod_with_data_in_mb</span></span>(<span>client, core_api, csi_pv, pvc, pod_make, volume_name, volume_size='1073741824', num_of_replicas=3, data_path='/data/test', data_size_in_mb=100, add_liveness_probe=True, access_mode='rwo')</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -10775,7 +10784,8 @@ def pod_make(request):
 <pre><code class="python">def prepare_pod_with_data_in_mb(
         client, core_api, csi_pv, pvc, pod_make, volume_name,
         volume_size=str(1*Gi), num_of_replicas=3, data_path=&#34;/data/test&#34;,
-        data_size_in_mb=DATA_SIZE_IN_MB_1, add_liveness_probe=True):# NOQA:
+        data_size_in_mb=DATA_SIZE_IN_MB_1, add_liveness_probe=True,
+        access_mode=ACCESS_MODE_RWO):# NOQA:
 
     pod_name = volume_name + &#34;-pod&#34;
     pv_name = volume_name
@@ -10800,7 +10810,8 @@ def pod_make(request):
 
     create_and_check_volume(client, volume_name,
                             num_of_replicas=num_of_replicas,
-                            size=volume_size)
+                            size=volume_size,
+                            access_mode=access_mode)
     core_api.create_persistent_volume(csi_pv)
     core_api.create_namespaced_persistent_volume_claim(
         body=pvc, namespace=&#39;default&#39;)
