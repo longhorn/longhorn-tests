@@ -4,6 +4,7 @@ import string
 import time
 import random
 import yaml
+import subprocess
 
 from longhorn import from_env
 
@@ -52,6 +53,11 @@ def init_k8s_api_client():
         config.load_incluster_config()
         logging("Initialized in-cluster k8s api client")
 
+
+def subprocess_exec_cmd(cmd):
+    res = subprocess.check_output(cmd)
+    logging(f"Executed command {cmd} with result {res}")
+    return res
 
 def wait_for_cluster_ready():
     core_api = client.CoreV1Api()

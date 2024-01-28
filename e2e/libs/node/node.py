@@ -8,6 +8,7 @@ from node.utility import list_node_names_by_role
 
 from utility.utility import logging
 from utility.utility import wait_for_cluster_ready
+from utility.utility import get_retry_count_and_interval
 
 
 class Node:
@@ -76,7 +77,8 @@ class Node:
         return user_pods
 
     def wait_all_pods_evicted(self, node_name):
-        for i in range(RETRY_COUNT):
+        retry_count, retry_interval = get_retry_count_and_interval()
+        for i in range(retry_count):
             pods = self.get_all_pods_on_node(node_name)
             evicted = True
             for pod in pods:
@@ -91,6 +93,6 @@ class Node:
             if evicted:
                 break
 
-            time.sleep(RETRY_INTERVAL)
+            time.sleep(retry_interval)
 
         assert evicted, 'failed to evict pods'

@@ -41,6 +41,9 @@ class node_keywords:
     def wait_for_all_instance_manager_running(self):
         wait_for_all_instance_manager_running()
 
+    def wait_for_all_pods_evicted(self, node_name):
+        self.node.wait_all_pods_evicted(node_name)
+
     def cleanup_stress_helper(self):
         self.stress.cleanup()
 
