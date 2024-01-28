@@ -1082,8 +1082,7 @@ def test_data_locality_basic(client, core_api, volume_name, pod, settings_reset)
 
     pod1['metadata']['name'] = pod1_name
 
-    volume1 = create_and_check_volume(client,
-                                      volume1_name,
+    volume1 = create_and_check_volume(client, volume1_name,
                                       num_of_replicas=1,
                                       size=volume1_size)
 

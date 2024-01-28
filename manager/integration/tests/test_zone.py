@@ -145,7 +145,8 @@ def test_zone_tags(client, core_api, volume_name, k8s_node_zone_tags):  # NOQA
 
     wait_longhorn_node_zone_updated(client)
 
-    volume = create_and_check_volume(client, volume_name, num_of_replicas=2)
+    volume = create_and_check_volume(client, volume_name,
+                                     num_of_replicas=2)
 
     host_id = get_self_host_id()
 

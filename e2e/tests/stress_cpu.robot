@@ -69,6 +69,8 @@ Stress Volume Node CPU When Volume Is Offline Expanding
         When Expand statefulset 0 volume by 100 MiB
 
         Then Wait for statefulset 0 volume size expanded
+        And Wait for statefulset 0 volume detached
+
         And Scale up statefulset 0 to attach volume
         And Check statefulset 0 data is intact
     END

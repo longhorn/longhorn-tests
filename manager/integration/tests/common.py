@@ -114,6 +114,7 @@ DEFAULT_BACKUP_TIMEOUT = 100
 
 DEFAULT_POD_INTERVAL = 1
 DEFAULT_POD_TIMEOUT = 180
+POD_DELETION_TIMEOUT = 600
 
 DEFAULT_STATEFULSET_INTERVAL = 1
 DEFAULT_STATEFULSET_TIMEOUT = 180
@@ -285,6 +286,9 @@ disk_being_syncing = "being syncing and please retry later"
 
 FS_TYPE_EXT4 = "ext4"
 FS_TYPE_XFS = "xfs"
+
+ACCESS_MODE_RWO = "rwo"
+ACCESS_MODE_RWX = "rwx"
 
 ATTACHER_TYPE_CSI_ATTACHER = "csi-attacher"
 ATTACHER_TYPE_LONGHORN_API = "longhorn-api"
@@ -492,7 +496,8 @@ def delete_backup_volume(client, volume_name):
 def create_and_check_volume(client, volume_name,
                             num_of_replicas=3, size=SIZE, backing_image="",
                             frontend=VOLUME_FRONTEND_BLOCKDEV,
-                            snapshot_data_integrity=SNAPSHOT_DATA_INTEGRITY_IGNORED): # NOQA
+                            snapshot_data_integrity=SNAPSHOT_DATA_INTEGRITY_IGNORED,  # NOQA
+                            access_mode=ACCESS_MODE_RWO):
     """
     Create a new volume with the specified parameters. Assert that the new
     volume is detached and that all of the requested parameters match.
@@ -511,7 +516,8 @@ def create_and_check_volume(client, volume_name,
     client.create_volume(name=volume_name, size=size,
                          numberOfReplicas=num_of_replicas,
                          backingImage=backing_image, frontend=frontend,
-                         snapshotDataIntegrity=snapshot_data_integrity)
+                         snapshotDataIntegrity=snapshot_data_integrity,
+                         accessMode=access_mode)
     volume = wait_for_volume_detached(client, volume_name)
     assert volume.name == volume_name
     assert volume.size == size
@@ -936,7 +942,7 @@ def size_to_string(volume_size):
 
 
 def wait_delete_pod(api, pod_uid, namespace='default'):
-    for i in range(DEFAULT_POD_TIMEOUT):
+    for i in range(POD_DELETION_TIMEOUT):
         ret = api.list_namespaced_pod(namespace=namespace)
         found = False
         for item in ret.items:
@@ -4986,7 +4992,8 @@ def prepare_statefulset_with_data_in_mb(
 def prepare_pod_with_data_in_mb(
         client, core_api, csi_pv, pvc, pod_make, volume_name,
         volume_size=str(1*Gi), num_of_replicas=3, data_path="/data/test",
-        data_size_in_mb=DATA_SIZE_IN_MB_1, add_liveness_probe=True):# NOQA:
+        data_size_in_mb=DATA_SIZE_IN_MB_1, add_liveness_probe=True,
+        access_mode=ACCESS_MODE_RWO):# NOQA:
 
     pod_name = volume_name + "-pod"
     pv_name = volume_name
@@ -5011,7 +5018,8 @@ def prepare_pod_with_data_in_mb(
 
     create_and_check_volume(client, volume_name,
                             num_of_replicas=num_of_replicas,
-                            size=volume_size)
+                            size=volume_size,
+                            access_mode=access_mode)
     core_api.create_persistent_volume(csi_pv)
     core_api.create_namespaced_persistent_volume_claim(
         body=pvc, namespace='default')
