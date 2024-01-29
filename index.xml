@@ -1016,6 +1016,13 @@
       <description> create a volume + pv + pvc with filesystem xfs named xfs-ignores create a deployment that uses xfs-ignores verify that the pod enters running state and the volume is accessible </description>
     </item>
     <item>
+      <title>ui sanity check</title>
+      <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/ui/ui-sanity-check/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/ui/ui-sanity-check/</guid>
+      <description>Access Longhorn UI on Chrome, Firefox and Safari latest/stable version. Check the pages. All the text, form, tables should be proper. Verify all the links at the bottom, they shouldn&amp;rsquo;t be broken and redirects to right pages. Check the setting page, all the settings&amp;rsquo;s text, values should be proper. Create Backing Image, volume, pv, pvc and recurring jobs using UI. Take volume snapshot, create volume backup, and system backup using UI.</description>
+    </item>
+    <item>
       <title>Uninstallation Checks</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/uninstallation/uninstallation-checks/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
