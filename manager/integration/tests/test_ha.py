@@ -3306,6 +3306,34 @@ def test_recovery_from_im_deletion(client, core_api, volume_name, make_deploymen
     assert test_data == to_be_verified_data
 
 
+@pytest.mark.skip(reason="TODO")  # NOQA
+def test_retain_potentially_useful_replicas_in_autosalvage_loop():
+    """
+    Related issue:
+    https://github.com/longhorn/longhorn/issues/7425
+
+    Related manual test steps:
+    https://github.com/longhorn/longhorn-manager/pull/2432#issuecomment-1894675916
+
+    Steps:
+    1. Create a volume with numberOfReplicas=2 and staleReplicaTimeout=1.
+       Consider its two replicas ReplicaA and ReplicaB.
+    2. Attach the volume to a node.
+    3. Write data to the volume.
+    4. Exec into the instance-manager for ReplicaB and delete all .img.meta
+       files. This makes it impossible to restart ReplicaB successfully.
+    5. Cordon the node for Replica A. This makes it unavailable for
+       autosalvage.
+    6. Crash the instance-managers for both ReplicaA and ReplicaB.
+    7. Wait one minute and fifteen seconds. This is longer than
+       staleReplicaTimeout.
+    8. Confirm the volume is not healthy.
+    9. Confirm ReplicaA was not deleted.
+    10. Delete ReplicaB.
+    11. Wait for the volume to become healthy.
+    12. Verify the data.
+    """
+
 def restore_with_replica_failure(client, core_api, volume_name, csi_pv, # NOQA
                                  pvc, pod_make, # NOQA
                                  allow_degraded_availability,
