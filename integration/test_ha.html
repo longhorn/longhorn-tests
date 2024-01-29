@@ -3334,6 +3334,34 @@ def test_recovery_from_im_deletion(client, core_api, volume_name, make_deploymen
     assert test_data == to_be_verified_data
 
 
+@pytest.mark.skip(reason=&#34;TODO&#34;)  # NOQA
+def test_retain_potentially_useful_replicas_in_autosalvage_loop():
+    &#34;&#34;&#34;
+    Related issue:
+    https://github.com/longhorn/longhorn/issues/7425
+
+    Related manual test steps:
+    https://github.com/longhorn/longhorn-manager/pull/2432#issuecomment-1894675916
+
+    Steps:
+    1. Create a volume with numberOfReplicas=2 and staleReplicaTimeout=1.
+       Consider its two replicas ReplicaA and ReplicaB.
+    2. Attach the volume to a node.
+    3. Write data to the volume.
+    4. Exec into the instance-manager for ReplicaB and delete all .img.meta
+       files. This makes it impossible to restart ReplicaB successfully.
+    5. Cordon the node for Replica A. This makes it unavailable for
+       autosalvage.
+    6. Crash the instance-managers for both ReplicaA and ReplicaB.
+    7. Wait one minute and fifteen seconds. This is longer than
+       staleReplicaTimeout.
+    8. Confirm the volume is not healthy.
+    9. Confirm ReplicaA was not deleted.
+    10. Delete ReplicaB.
+    11. Wait for the volume to become healthy.
+    12. Verify the data.
+    &#34;&#34;&#34;
+
 def restore_with_replica_failure(client, core_api, volume_name, csi_pv, # NOQA
                                  pvc, pod_make, # NOQA
                                  allow_degraded_availability,
@@ -7074,6 +7102,64 @@ def test_restore_volume_with_invalid_backupstore(client, volume_name, backupstor
         assert v.name != res_name</code></pre>
 </details>
 </dd>
+<dt id="tests.test_ha.test_retain_potentially_useful_replicas_in_autosalvage_loop"><code class="name flex">
+<span>def <span class="ident">test_retain_potentially_useful_replicas_in_autosalvage_loop</span></span>(<span>)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Related issue:
+<a href="https://github.com/longhorn/longhorn/issues/7425">https://github.com/longhorn/longhorn/issues/7425</a></p>
+<p>Related manual test steps:
+<a href="https://github.com/longhorn/longhorn-manager/pull/2432#issuecomment-1894675916">https://github.com/longhorn/longhorn-manager/pull/2432#issuecomment-1894675916</a></p>
+<p>Steps:
+1. Create a volume with numberOfReplicas=2 and staleReplicaTimeout=1.
+Consider its two replicas ReplicaA and ReplicaB.
+2. Attach the volume to a node.
+3. Write data to the volume.
+4. Exec into the instance-manager for ReplicaB and delete all .img.meta
+files. This makes it impossible to restart ReplicaB successfully.
+5. Cordon the node for Replica A. This makes it unavailable for
+autosalvage.
+6. Crash the instance-managers for both ReplicaA and ReplicaB.
+7. Wait one minute and fifteen seconds. This is longer than
+staleReplicaTimeout.
+8. Confirm the volume is not healthy.
+9. Confirm ReplicaA was not deleted.
+10. Delete ReplicaB.
+11. Wait for the volume to become healthy.
+12. Verify the data.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@pytest.mark.skip(reason=&#34;TODO&#34;)  # NOQA
+def test_retain_potentially_useful_replicas_in_autosalvage_loop():
+    &#34;&#34;&#34;
+    Related issue:
+    https://github.com/longhorn/longhorn/issues/7425
+
+    Related manual test steps:
+    https://github.com/longhorn/longhorn-manager/pull/2432#issuecomment-1894675916
+
+    Steps:
+    1. Create a volume with numberOfReplicas=2 and staleReplicaTimeout=1.
+       Consider its two replicas ReplicaA and ReplicaB.
+    2. Attach the volume to a node.
+    3. Write data to the volume.
+    4. Exec into the instance-manager for ReplicaB and delete all .img.meta
+       files. This makes it impossible to restart ReplicaB successfully.
+    5. Cordon the node for Replica A. This makes it unavailable for
+       autosalvage.
+    6. Crash the instance-managers for both ReplicaA and ReplicaB.
+    7. Wait one minute and fifteen seconds. This is longer than
+       staleReplicaTimeout.
+    8. Confirm the volume is not healthy.
+    9. Confirm ReplicaA was not deleted.
+    10. Delete ReplicaB.
+    11. Wait for the volume to become healthy.
+    12. Verify the data.
+    &#34;&#34;&#34;</code></pre>
+</details>
+</dd>
 <dt id="tests.test_ha.test_reuse_failed_replica"><code class="name flex">
 <span>def <span class="ident">test_reuse_failed_replica</span></span>(<span>client, core_api, volume_name)</span>
 </code></dt>
@@ -7894,6 +7980,7 @@ to crash the engine process</p>
 <li><code><a title="tests.test_ha.test_recovery_from_im_deletion" href="#tests.test_ha.test_recovery_from_im_deletion">test_recovery_from_im_deletion</a></code></li>
 <li><code><a title="tests.test_ha.test_replica_failure_during_attaching" href="#tests.test_ha.test_replica_failure_during_attaching">test_replica_failure_during_attaching</a></code></li>
 <li><code><a title="tests.test_ha.test_restore_volume_with_invalid_backupstore" href="#tests.test_ha.test_restore_volume_with_invalid_backupstore">test_restore_volume_with_invalid_backupstore</a></code></li>
+<li><code><a title="tests.test_ha.test_retain_potentially_useful_replicas_in_autosalvage_loop" href="#tests.test_ha.test_retain_potentially_useful_replicas_in_autosalvage_loop">test_retain_potentially_useful_replicas_in_autosalvage_loop</a></code></li>
 <li><code><a title="tests.test_ha.test_reuse_failed_replica" href="#tests.test_ha.test_reuse_failed_replica">test_reuse_failed_replica</a></code></li>
 <li><code><a title="tests.test_ha.test_reuse_failed_replica_with_scheduling_check" href="#tests.test_ha.test_reuse_failed_replica_with_scheduling_check">test_reuse_failed_replica_with_scheduling_check</a></code></li>
 <li><code><a title="tests.test_ha.test_salvage_auto_crash_all_replicas" href="#tests.test_ha.test_salvage_auto_crash_all_replicas">test_salvage_auto_crash_all_replicas</a></code></li>
