@@ -35,7 +35,7 @@ from prometheus_client.parser import text_string_to_metric_families
 
 from common import client, core_api, volume_name  # NOQA
 
-from common import crash_replica_processes
+from common import delete_replica_processes
 from common import create_pv_for_volume
 from common import create_pvc_for_volume
 from common import create_snapshot
@@ -315,7 +315,7 @@ def test_volume_metrics(client, core_api, volume_name, pvc_namespace): # NOQA
 
     volume.updateReplicaCount(replicaCount=3)
     volume = wait_for_volume_healthy(client, volume_name)
-    crash_replica_processes(client, core_api, volume_name)
+    delete_replica_processes(client, core_api, volume_name)
     volume = wait_for_volume_faulted(client, volume_name)
 
     check_metric(core_api, &#34;longhorn_volume_robustness&#34;,
@@ -871,7 +871,7 @@ def test_volume_metrics(client, core_api, volume_name, pvc_namespace): # NOQA
 
     volume.updateReplicaCount(replicaCount=3)
     volume = wait_for_volume_healthy(client, volume_name)
-    crash_replica_processes(client, core_api, volume_name)
+    delete_replica_processes(client, core_api, volume_name)
     volume = wait_for_volume_faulted(client, volume_name)
 
     check_metric(core_api, &#34;longhorn_volume_robustness&#34;,
