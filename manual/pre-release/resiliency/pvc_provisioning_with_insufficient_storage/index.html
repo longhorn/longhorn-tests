@@ -810,6 +810,7 @@
 <ul>
 <li><a href="https://github.com/longhorn/longhorn/issues/4654">https://github.com/longhorn/longhorn/issues/4654</a></li>
 <li><a href="https://github.com/longhorn/longhorn/issues/3529">https://github.com/longhorn/longhorn/issues/3529</a></li>
+<li><a href="https://github.com/longhorn/longhorn/issues/6461">https://github.com/longhorn/longhorn/issues/6461</a></li>
 </ul>
 <h4 id="root-cause-analysis">Root Cause Analysis</h4>
 <ul>
@@ -817,14 +818,21 @@
 </ul>
 <p>This case need to be tested on both RWO/RWX volumes</p>
 <ol>
-<li>Create a PVC with size larger than 8589934591 GiB.
+<li>Create a PVC with size larger than <code>8589934591</code> GiB.
 <ul>
 <li>Deployment keep in pending status, RWO/RWX volume will keep in a create -&gt; delete loop.</li>
 </ul>
 </li>
-<li>Create a PVC with size &lt;= 8589934591 GiB, but greater than the actual available space size.
+<li>Create a PVC with size &lt;= <code>8589934591</code> GiB, but greater than the actual available space size.
 <ul>
-<li>RWO/RWX volume will be created, and volume will have annotation &ldquo;longhorn.io/volume-scheduling-error&rdquo;: &ldquo;insufficient storage volume scheduling failure&rdquo; in it.</li>
+<li>RWO/RWX volume will be created, and the associated PV for this volume will have annotation &ldquo;<strong>longhorn.io/volume-scheduling-error</strong>&rdquo;: &ldquo;<strong>insufficient storage</strong>&rdquo; in it.</li>
+<li>We can observe &ldquo;<strong>Scheduling Failure</strong>&rdquo; and &ldquo;<strong>Replica Scheduling Failure</strong>&rdquo; error messages on the Longhorn UI with the following details
+<ul>
+<li><strong>Scheduling Failure</strong></li>
+<li>Replica Scheduling Failure</li>
+<li>Error Message: insufficient storage</li>
+</ul>
+</li>
 </ul>
 </li>
 <li>Create a PVC with size &lt; the actual available space size，Resize the PVC to a not schedulable size
