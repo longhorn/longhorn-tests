@@ -2,7 +2,7 @@
 Documentation       Common keywords
 
 Library             ../libs/keywords/common_keywords.py
-Library             ../libs/keywords/node_keywords.py
+Library             ../libs/keywords/stress_keywords.py
 Library             ../libs/keywords/volume_keywords.py
 Library             ../libs/keywords/recurring_job_keywords.py
 Library             ../libs/keywords/workload_keywords.py

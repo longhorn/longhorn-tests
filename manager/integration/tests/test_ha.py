@@ -113,8 +113,10 @@ def test_ha_simple_recovery(client, volume_name):  # NOQA
 
 
 def ha_simple_recovery_test(client, volume_name, size, backing_image=""):  # NOQA
-    volume = create_and_check_volume(client, volume_name, 2, size,
-                                     backing_image)
+    volume = create_and_check_volume(client, volume_name,
+                                     num_of_replicas=2,
+                                     size=size,
+                                     backing_image=backing_image)
 
     host_id = get_self_host_id()
     volume = volume.attach(hostId=host_id)
@@ -248,7 +250,8 @@ def ha_salvage_test(client, core_api, # NOQA
     assert setting.name == SETTING_AUTO_SALVAGE
     assert setting.value == "false"
 
-    volume = create_and_check_volume(client, volume_name, 2,
+    volume = create_and_check_volume(client, volume_name,
+                                     num_of_replicas=2,
                                      backing_image=backing_image)
 
     host_id = get_self_host_id()
@@ -291,7 +294,8 @@ def ha_salvage_test(client, core_api, # NOQA
     assert setting.name == SETTING_AUTO_SALVAGE
     assert setting.value == "false"
 
-    volume = create_and_check_volume(client, volume_name, 2,
+    volume = create_and_check_volume(client, volume_name,
+                                     num_of_replicas=2,
                                      backing_image=backing_image)
     volume.attach(hostId=host_id)
     volume = wait_for_volume_healthy(client, volume_name)
@@ -339,7 +343,8 @@ def ha_salvage_test(client, core_api, # NOQA
     assert setting.name == SETTING_DISABLE_REVISION_COUNTER
     assert setting.value == "true"
 
-    volume = create_and_check_volume(client, volume_name, 3,
+    volume = create_and_check_volume(client, volume_name,
+                                     num_of_replicas=3,
                                      backing_image=backing_image)
 
     host_id = get_self_host_id()
@@ -383,7 +388,8 @@ def ha_salvage_test(client, core_api, # NOQA
     assert setting.name == "disable-revision-counter"
     assert setting.value == "false"
 
-    volume = create_and_check_volume(client, volume_name, 3,
+    volume = create_and_check_volume(client, volume_name,
+                                     num_of_replicas=3,
                                      backing_image=backing_image)
 
     host_id = get_self_host_id()
@@ -507,7 +513,8 @@ def test_ha_prohibit_deleting_last_replica(client, volume_name):  # NOQA
 
     FIXME: Move out of test_ha.py
     """
-    volume = create_and_check_volume(client, volume_name, 1)
+    volume = create_and_check_volume(client, volume_name,
+                                     num_of_replicas=1)
 
     host_id = get_self_host_id()
     volume = volume.attach(hostId=host_id)
@@ -539,7 +546,9 @@ def test_ha_recovery_with_expansion(client, volume_name, request):   # NOQA
     """
     original_size = str(3 * Gi)
     expand_size = str(4 * Gi)
-    volume = create_and_check_volume(client, volume_name, 2, original_size)
+    volume = create_and_check_volume(client, volume_name,
+                                     num_of_replicas=2,
+                                     size=original_size)
 
     host_id = get_self_host_id()
     volume.attach(hostId=host_id)
@@ -1881,7 +1890,8 @@ def test_rebuild_after_replica_file_crash(client, volume_name): # NOQA
     6. Read the data from the volume and verify the md5sum.
     """
     replica_count = 3
-    volume = create_and_check_volume(client, volume_name, replica_count)
+    volume = create_and_check_volume(client, volume_name,
+                                     num_of_replicas=replica_count)
     host_id = get_self_host_id()
     volume = volume.attach(hostId=host_id)
     volume = wait_for_volume_healthy(client, volume_name)
@@ -2488,7 +2498,9 @@ def test_replica_failure_during_attaching(settings_reset, client, core_api, volu
     node = common.wait_for_disk_update(client, node.name, len(update_disks))
 
     volume_name_2 = volume_name + '-2'
-    volume_2 = create_and_check_volume(client, volume_name_2, 3, str(1 * Gi))
+    volume_2 = create_and_check_volume(client, volume_name_2,
+                                       num_of_replicas=3,
+                                       size=str(1 * Gi))
     volume_2.attach(hostId=host_id)
     volume_2 = wait_for_volume_healthy(client, volume_name_2)
     write_volume_random_data(volume_2)
@@ -2847,7 +2859,8 @@ def test_engine_image_not_fully_deployed_perform_replica_scheduling(client, core
     node2 = common.wait_for_node_update(client, node2.id, "allowScheduling",
                                         False)
 
-    volume1 = create_and_check_volume(client, "vol-1", num_of_replicas=2,
+    volume1 = create_and_check_volume(client, "vol-1",
+                                      num_of_replicas=2,
                                       size=str(3 * Gi))
 
     volume1.attach(hostId=node3.id)
@@ -2894,10 +2907,12 @@ def test_engine_image_not_fully_deployed_perform_auto_upgrade_engine(client, cor
     """
     prepare_engine_not_fully_deployed_environment(client, core_api)
 
-    volume1 = create_and_check_volume(client, "vol-1", num_of_replicas=2,
+    volume1 = create_and_check_volume(client, "vol-1",
+                                      num_of_replicas=2,
                                       size=str(3 * Gi))
 
-    volume2 = create_and_check_volume(client, "vol-2", num_of_replicas=2,
+    volume2 = create_and_check_volume(client, "vol-2",
+                                      num_of_replicas=2,
                                       size=str(3 * Gi))
 
     default_img = common.get_default_engine_image(client)
@@ -2971,7 +2986,8 @@ def test_engine_image_not_fully_deployed_perform_dr_restoring_expanding_volume(c
         prepare_engine_not_fully_deployed_environment(client, core_api)
 
     # step 1
-    volume1 = create_and_check_volume(client, "vol-1", num_of_replicas=2,
+    volume1 = create_and_check_volume(client, "vol-1",
+                                      num_of_replicas=2,
                                       size=str(1 * Gi))
 
     # node1: tainted node, node2: self host node, node3: the last one
@@ -3290,6 +3306,34 @@ def test_recovery_from_im_deletion(client, core_api, volume_name, make_deploymen
     assert test_data == to_be_verified_data
 
 
+@pytest.mark.skip(reason="TODO")  # NOQA
+def test_retain_potentially_useful_replicas_in_autosalvage_loop():
+    """
+    Related issue:
+    https://github.com/longhorn/longhorn/issues/7425
+
+    Related manual test steps:
+    https://github.com/longhorn/longhorn-manager/pull/2432#issuecomment-1894675916
+
+    Steps:
+    1. Create a volume with numberOfReplicas=2 and staleReplicaTimeout=1.
+       Consider its two replicas ReplicaA and ReplicaB.
+    2. Attach the volume to a node.
+    3. Write data to the volume.
+    4. Exec into the instance-manager for ReplicaB and delete all .img.meta
+       files. This makes it impossible to restart ReplicaB successfully.
+    5. Cordon the node for Replica A. This makes it unavailable for
+       autosalvage.
+    6. Crash the instance-managers for both ReplicaA and ReplicaB.
+    7. Wait one minute and fifteen seconds. This is longer than
+       staleReplicaTimeout.
+    8. Confirm the volume is not healthy.
+    9. Confirm ReplicaA was not deleted.
+    10. Delete ReplicaB.
+    11. Wait for the volume to become healthy.
+    12. Verify the data.
+    """
+
 def restore_with_replica_failure(client, core_api, volume_name, csi_pv, # NOQA
                                  pvc, pod_make, # NOQA
                                  allow_degraded_availability,
@@ -3313,7 +3357,7 @@ def restore_with_replica_failure(client, core_api, volume_name, csi_pv, # NOQA
                                     pod_make,
                                     volume_name,
                                     volume_size=str(2 * Gi),
-                                    data_size_in_mb=DATA_SIZE_IN_MB_2,
+                                    data_size_in_mb=DATA_SIZE_IN_MB_4,
                                     data_path=data_path)
 
     volume = client.by_id_volume(volume_name)
