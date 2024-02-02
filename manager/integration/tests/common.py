@@ -113,6 +113,7 @@ DEFAULT_BACKUP_TIMEOUT = 100
 
 DEFAULT_POD_INTERVAL = 1
 DEFAULT_POD_TIMEOUT = 180
+POD_DELETION_TIMEOUT = 600
 
 DEFAULT_STATEFULSET_INTERVAL = 1
 DEFAULT_STATEFULSET_TIMEOUT = 180
@@ -524,11 +525,14 @@ def wait_pod(pod_name):
 
     pod = None
     for i in range(DEFAULT_POD_TIMEOUT):
-        pod = api.read_namespaced_pod(
-            name=pod_name,
-            namespace='default')
-        if pod is not None and pod.status.phase != 'Pending':
-            break
+        try:
+            pod = api.read_namespaced_pod(
+                name=pod_name,
+                namespace='default')
+            if pod is not None and pod.status.phase != 'Pending':
+                break
+        except Exception as e:
+            print(f"Waiting for pod {pod_name} failed: {e}")
         time.sleep(DEFAULT_POD_INTERVAL)
     assert pod is not None and pod.status.phase == 'Running'
 
@@ -928,7 +932,7 @@ def size_to_string(volume_size):
 
 
 def wait_delete_pod(api, pod_uid, namespace='default'):
-    for i in range(DEFAULT_POD_TIMEOUT):
+    for i in range(POD_DELETION_TIMEOUT):
         ret = api.list_namespaced_pod(namespace=namespace)
         found = False
         for item in ret.items:
@@ -4917,11 +4921,14 @@ def wait_for_pod_restart(core_api, pod_name, namespace="default"):
 def wait_for_pod_phase(core_api, pod_name, pod_phase, namespace="default"):
     is_phase = False
     for _ in range(RETRY_COUNTS):
-        pod = core_api.read_namespaced_pod(name=pod_name,
-                                           namespace=namespace)
-        if pod.status.phase == pod_phase:
-            is_phase = True
-            break
+        try:
+            pod = core_api.read_namespaced_pod(name=pod_name,
+                                               namespace=namespace)
+            if pod.status.phase == pod_phase:
+                is_phase = True
+                break
+        except Exception as e:
+            print(f"Waiting for pod {pod_name} {pod_phase} failed: {e}")
 
         time.sleep(RETRY_INTERVAL_LONG)
     assert is_phase
