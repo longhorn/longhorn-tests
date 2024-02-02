@@ -404,10 +404,9 @@ def test_migration_with_restore_volume(core_api, # NOQA
     """
     # Step 1
     lht_host_id = get_self_host_id()
-    volume = create_and_check_volume(client,
-                                     volume_name,
-                                     REPLICA_COUNT,
-                                     SIZE)
+    volume = create_and_check_volume(client, volume_name,
+                                     num_of_replicas=REPLICA_COUNT,
+                                     size=SIZE)
 
     attachment_id = common.generate_attachment_ticket_id()
     volume.attach(attachmentID=attachment_id, hostId=lht_host_id)

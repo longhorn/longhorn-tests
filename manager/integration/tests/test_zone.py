@@ -145,7 +145,8 @@ def test_zone_tags(client, core_api, volume_name, k8s_node_zone_tags):  # NOQA
 
     wait_longhorn_node_zone_updated(client)
 
-    volume = create_and_check_volume(client, volume_name, num_of_replicas=2)
+    volume = create_and_check_volume(client, volume_name,
+                                     num_of_replicas=2)
 
     host_id = get_self_host_id()
 
@@ -630,7 +631,7 @@ def test_replica_auto_balance_when_no_storage_available_in_zone(client, core_api
     volume = client.create_volume(name=volume_name,
                                   numberOfReplicas=num_of_replicas)
 
-    # Wait for ht evolume to detach and attache it to the test pod node
+    # Wait for the volume to detach and attach it to the test pod node
     volume = wait_for_volume_detached(client, volume_name)
     volume.attach(hostId=get_self_host_id())
 

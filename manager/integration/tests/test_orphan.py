@@ -61,7 +61,9 @@ def create_volume_with_replica_on_host(client, volume_name):  # NOQA
 
     nodes = client.list_node()
 
-    volume = create_and_check_volume(client, volume_name, len(nodes), SIZE)
+    volume = create_and_check_volume(client, volume_name,
+                                     num_of_replicas=len(nodes),
+                                     size=SIZE)
     volume.attach(hostId=lht_hostId, disableFrontend=False)
     wait_for_volume_healthy(client, volume_name)
 
