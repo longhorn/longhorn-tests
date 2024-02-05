@@ -53,6 +53,7 @@ from common import monitor_restore_progress
 from common import wait_for_volume_recurring_job_update
 from common import get_volume_name
 from common import system_backup_feature_supported
+from common import system_backups_cleanup
 from test_orphan import create_orphaned_directories_on_host
 from test_orphan import delete_orphans
 from backupstore import set_backupstore_s3
@@ -336,6 +337,10 @@ def test_upgrade(longhorn_upgrade_type,
 
     # delete orphan
     delete_orphans(client)
+
+    # delete system backup
+    if system_backup_feature_supported(client):
+        system_backups_cleanup(client)
 
     # Check Pod and StatefulSet didn't restart after upgrade
     pod = core_api.read_namespaced_pod(name=pod_name,
