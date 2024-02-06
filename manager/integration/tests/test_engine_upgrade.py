@@ -1196,3 +1196,19 @@ def test_engine_live_upgrade_while_replica_concurrent_rebuild(client, # NOQA
     for replica in volume2.replicas:
         assert replica.image == engine_upgrade_image
         assert replica.currentImage == engine_upgrade_image
+
+@pytest.mark.skip(reason="TODO")  # NOQA
+def test_engine_crash_during_live_upgrade():
+    """
+    1. Create and attach a volume to a workload, then write data into the
+       volume.
+    2. Deploy an extra engine image.
+    3. Send live upgrade request then immediately delete the related engine
+       manager pod/engine process (The new replicas are not in active in this
+       case).
+    4. Verify the workload will be restarted and the volume will be reattached
+       automatically.
+    5. Verify the upgrade is done during the reattachment.
+       (It actually becomes offline upgrade.)
+    6. Verify volume healthy and the data is correct.
+    """
