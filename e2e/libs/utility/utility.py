@@ -81,9 +81,9 @@ def wait_for_all_instance_manager_running():
     retry_count, retry_interval = get_retry_count_and_interval()
     for _ in range(retry_count):
         logging(f"Waiting for all instance manager running ({_}) ...")
-        instance_managers = longhorn_client.list_instance_manager()
-        instance_manager_map = {}
         try:
+            instance_managers = longhorn_client.list_instance_manager()
+            instance_manager_map = {}
             for im in instance_managers:
                 if im.currentState == "running":
                     instance_manager_map[im.nodeID] = im
