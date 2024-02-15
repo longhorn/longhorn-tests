@@ -3113,17 +3113,20 @@ def check_volume_endpoint(v):
     return endpoint
 
 
+def find_backup_volume(client, volume_name):
+    bvs = client.list_backupVolume()
+    for bv in bvs:
+        if bv.name == volume_name and bv.created != "":
+            return bv
+    return None
+
+
 def wait_for_backup_volume_backing_image_synced(
         client, volume_name, backing_image, retry_count=RETRY_BACKUP_COUNTS):
-    def find_backup_volume():
-        bvs = client.list_backupVolume()
-        for bv in bvs:
-            if bv.name == volume_name:
-                return bv
-        return None
+
     completed = False
     for _ in range(retry_count):
-        bv = find_backup_volume()
+        bv = find_backup_volume(client, volume_name)
         assert bv is not None
         if bv.backingImageName == backing_image:
             completed = True
@@ -3756,17 +3759,10 @@ def find_backup(client, vol_name, snap_name):
     been completed successfully
     """
 
-    def find_backup_volume():
-        bvs = client.list_backupVolume()
-        for bv in bvs:
-            if bv.name == vol_name and bv.created != "":
-                return bv
-        return None
-
     bv = None
     for i in range(120):
         if bv is None:
-            bv = find_backup_volume()
+            bv = find_backup_volume(client, vol_name)
         if bv is not None:
             backups = bv.backupList().data
             for b in backups:
@@ -5161,15 +5157,8 @@ def wait_for_instance_manager_desire_state(client, core_api, im_name,
 
 def wait_for_backup_delete(client, volume_name, backup_name):
 
-    def find_backup_volume():
-        bvs = client.list_backupVolume()
-        for bv in bvs:
-            if bv.name == volume_name:
-                return bv
-        return None
-
     def backup_exists():
-        bv = find_backup_volume()
+        bv = find_backup_volume(client, volume_name)
         if bv is not None:
             backups = bv.backupList()
             for b in backups:
