@@ -17,20 +17,28 @@ from common import volume_name  # NOQA
 
 from common import get_longhorn_api_client
 from common import get_self_host_id
+from common import update_setting
 
+from common import cleanup_disks_on_node
 from common import cleanup_node_disks
 from common import create_host_disk
 from common import get_update_disks
+from common import reset_node
 from common import set_node_scheduling
 from common import update_node_disks
 from common import wait_for_disk_status
+from common import wait_for_disk_update
+from common import wait_for_node_update
 
 from common import check_volume_data
 from common import cleanup_volume
+from common import cleanup_volume_by_name
 from common import create_and_check_volume
+from common import delete_replica_on_test_node
 from common import wait_for_volume_degraded
 from common import wait_for_volume_detached
 from common import wait_for_volume_healthy
+from common import wait_for_volume_replica_rebuilt_on_same_node_different_disk
 from common import wait_for_volume_replica_count
 from common import write_volume_random_data
 
@@ -60,7 +68,6 @@ from common import wait_for_node_tag_update
 from common import wait_for_volume_condition_scheduled
 from common import cleanup_host_disks
 from common import wait_for_volume_delete
-from common import wait_for_disk_update
 
 from common import Mi, Gi
 from common import DATA_SIZE_IN_MB_2
@@ -70,10 +77,10 @@ from common import RETRY_INTERVAL
 from common import RETRY_INTERVAL_LONG
 from common import SETTING_DEFAULT_DATA_LOCALITY
 from common import SETTING_REPLICA_AUTO_BALANCE
+from common import SETTING_REPLICA_AUTO_BALANCE_DISK_PRESSURE_PERCENTAGE
 from common import SETTING_REPLICA_NODE_SOFT_ANTI_AFFINITY
 from common import VOLUME_FIELD_ROBUSTNESS
 from common import VOLUME_ROBUSTNESS_HEALTHY
-from common import update_setting, delete_replica_on_test_node
 from common import VOLUME_FRONTEND_BLOCKDEV, SNAPSHOT_DATA_INTEGRITY_IGNORED
 from common import VOLUME_ROBUSTNESS_DEGRADED, RETRY_COUNTS_SHORT
 from common import SETTING_ALLOW_EMPTY_NODE_SELECTOR_VOLUME
@@ -738,6 +745,131 @@ def test_replica_auto_balance_node_best_effort(client, volume_name):  # NOQA
 
     volume = client.by_id_volume(volume_name)
     check_volume_data(volume, data)
+
+
+def test_replica_auto_balance_disk_in_pressure(client, core_api, volume_name):  # NOQA
+    """
+    Scenario: Test replica auto balance disk in pressure
+
+    Issue: https://github.com/longhorn/longhorn/issues/4105
+
+    Given the "replica-auto-balance-disk-pressure-percentage" is set to 80%
+    And create new disk (test-disk-1) on the self node with 1Gi
+        create new disk (test-disk-2) on the self node with 2Gi
+    And disable scheduling for the default disk on the self node
+    And create a volume with 1 replica
+    And attach the volume to self-node
+    And write some data to the volume
+
+    When simulate disk pressure of test-disk-1 to 80% by increasing the
+        "storageReserved" of the disk
+    And set "replica-auto-balance" to "best-effort"
+
+    Then the volume replica should be rebuilt to another disk
+    And the volume data should be the same as written
+    """
+    disk_pressure_percentage = 80
+    update_setting(client,
+                   SETTING_REPLICA_AUTO_BALANCE_DISK_PRESSURE_PERCENTAGE,
+                   str(disk_pressure_percentage))
+
+    # Get disks of self node
+    self_host_id = get_self_host_id()
+
+    # Create 2 new disks on self node
+    new_disks = {
+        "test-disk1": Gi,
+        "test-disk2": 2*Gi,
+    }
+    node = client.by_id_node(self_host_id)
+    update_disks = get_update_disks(node.disks)
+
+    for disk_name, disk_size in new_disks.items():
+        disk_path = create_host_disk(client, disk_name,
+                                     str(disk_size), self_host_id)
+        disk = {"path": disk_path, "allowScheduling": True}
+        update_disks[disk_name] = disk
+
+    # Update disks of self node
+    update_node_disks(client, node.name, disks=update_disks, retry=True)
+    node = wait_for_disk_update(client, self_host_id, len(update_disks))
+    assert len(node.disks) == len(update_disks)
+
+    # Disable scheduling for the default disk on self node
+    for name, disk in node.disks.items():
+        if disk.path == DEFAULT_DISK_PATH:
+            disk.allowScheduling = False
+    update_disks = get_update_disks(node.disks)
+
+    update_node_disks(client, node.name, disks=update_disks, retry=True)
+    node = wait_for_disk_update(client, self_host_id, len(update_disks))
+    assert len(node.disks) == len(update_disks)
+
+    # Disable scheduling for all nodes except self node
+    nodes = client.list_node()
+    for node in nodes:
+        if node.name != self_host_id:
+            client.update(node, allowScheduling=False)
+            wait_for_node_update(client, node.id, "allowScheduling", False)
+
+    # Create a volume with 1 replica
+    num_of_replicas = 1
+    volume = client.create_volume(name=volume_name, size=SIZE,
+                                  numberOfReplicas=num_of_replicas)
+
+    # Attach the volume to self-node
+    volume = wait_for_volume_detached(client, volume_name)
+    volume.attach(hostId=get_self_host_id())
+    volume = wait_for_volume_healthy(client, volume_name)
+
+    # Write some data to the volume
+    data = write_volume_random_data(volume)
+    check_volume_data(volume, data)
+
+    # Simulate disk pressure of test-disk-1 to 80%
+    node = client.by_id_node(self_host_id)
+    disks = node.disks
+    scheduled_disk_name = ""
+    for name, disk in disks.items():
+        # if scheduledReplica has prefix of volume-name
+        for scheduled_replica, _ in disk.scheduledReplica.items():
+            if scheduled_replica.startswith(volume_name):
+                scheduled_disk_name = name
+                break
+    assert scheduled_disk_name != "", \
+        f"Fails to find scheduled disk for volume {volume_name}."
+
+    for name, disk in node.disks.items():
+        if name == scheduled_disk_name:
+            # Add (+1) to deal with number rounding
+            disk.storageReserved = int(
+                (disk.storageMaximum * disk_pressure_percentage / 100) + 1
+            )
+    update_disks = get_update_disks(node.disks)
+
+    node = update_node_disks(client, node.name, disks=update_disks, retry=True)
+    node = wait_for_disk_update(client, self_host_id, len(update_disks))
+
+    # Set "replica-auto-balance" to "best-effort"
+    update_setting(client, SETTING_REPLICA_AUTO_BALANCE, "best-effort")
+
+    # Wait for the volume to be rebuilt
+    wait_for_volume_replica_rebuilt_on_same_node_different_disk(
+        client, self_host_id, volume_name, scheduled_disk_name
+    )
+
+    # Check the volume data
+    volume = client.by_id_volume(volume_name)
+    check_volume_data(volume, data)
+
+    # Enable scheduling for disabled nodes
+    reset_node(client, core_api)
+
+    # Cleanup the volume to allow cleanup of the disks
+    cleanup_volume_by_name(client, volume_name)
+
+    # Cleanup host disks
+    cleanup_disks_on_node(client, self_host_id, new_disks)
 
 
 @pytest.mark.skip(reason="corner case") # NOQA
