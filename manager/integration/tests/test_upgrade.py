@@ -348,11 +348,9 @@ def test_upgrade(longhorn_upgrade_type,
         set_backupstore_nfs(client)
         mount_nfs_backupstore(client)
     backup_vol_name = "backup-vol"
-    backup_vol = create_and_check_volume(
-        client,
-        backup_vol_name,
-        2,
-        str(DEFAULT_VOLUME_SIZE * Gi))
+    backup_vol = create_and_check_volume(client, backup_vol_name,
+                                         num_of_replicas=2,
+                                         size=str(DEFAULT_VOLUME_SIZE * Gi))
     backup_vol.attach(hostId=host_id)
     backup_vol = wait_for_volume_healthy(client, backup_vol_name)
     data0 = {'pos': 0, 'len': BACKUP_BLOCK_SIZE,

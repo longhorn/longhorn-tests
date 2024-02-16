@@ -76,6 +76,9 @@ Check statefulset ${idx} data is intact
 Wait for statefulset ${idx} volume size expanded
     wait_for_volume_expand_to_size    ${volume_list}[${idx}]    ${expected_size}
 
+Wait for statefulset ${idx} volume detached
+    wait_for_volume_detached    ${volume_list}[${idx}]
+
 Wait for statefulset ${idx} stable
     wait_for_workload_pod_stable   ${statefulset_list}[${idx}]
 

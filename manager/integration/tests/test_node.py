@@ -27,7 +27,6 @@ from common import wait_for_disk_status, wait_for_disk_update, \
     wait_for_disk_conditions, wait_for_node_tag_update, \
     cleanup_node_disks, wait_for_disk_storage_available, \
     wait_for_disk_uuid, wait_for_node_schedulable_condition
-from common import exec_nsenter
 
 from common import SETTING_REPLICA_NODE_SOFT_ANTI_AFFINITY
 from common import volume_name # NOQA
@@ -1426,14 +1425,17 @@ def test_replica_datapath_cleanup(client):  # NOQA
 
     # data path should exist now
     for data_path in data_paths:
-        assert exec_nsenter("ls {}".format(data_path))
+        assert os.listdir(data_path)
 
     cleanup_volume_by_name(client, vol_name)
 
     # data path should be gone due to the cleanup of replica
     for data_path in data_paths:
-        with pytest.raises(subprocess.CalledProcessError):
-            exec_nsenter("ls {}".format(data_path))
+        try:
+            os.listdir(data_path)
+            raise AssertionError(f"data path {data_path} should be gone")
+        except FileNotFoundError:
+            pass
 
     node = client.by_id_node(lht_hostId)
     disks = node.disks
@@ -2806,3 +2808,17 @@ def test_auto_detach_volume_when_node_is_cordoned(client, core_api, volume_name)
 
     volumes = client.list_volume().data
     assert len(volumes) == 0
+
+@pytest.mark.skip(reason="TODO")  # NOQA
+def test_do_not_react_to_brief_kubelet_restart():
+    """
+    Test the node controller ignores Ready == False due to KubeletNotReady for
+    ten seconds before reacting.
+
+    Repeat the following five times:
+    1. Verify status.conditions[type == Ready] == True for the Longhorn node we
+       are running on.
+    2. Kill the kubelet process (e.g. `pkill kubelet`).
+    3. Verify status.conditions[type == Ready] != False for the Longhorn node
+       we are running on at any point for at least ten seconds.
+    """

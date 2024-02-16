@@ -82,6 +82,7 @@ COMPATIBILTY_TEST_IMAGE_PREFIX = "longhornio/longhorn-test:version-test"
 UPGRADE_TEST_IMAGE_PREFIX = "longhornio/longhorn-test:upgrade-test"
 
 ISCSI_DEV_PATH = "/dev/disk/by-path"
+ISCSI_PROCESS = "iscsid"
 
 VOLUME_FIELD_STATE = "state"
 VOLUME_STATE_ATTACHED = "attached"
@@ -113,6 +114,7 @@ DEFAULT_BACKUP_TIMEOUT = 100
 
 DEFAULT_POD_INTERVAL = 1
 DEFAULT_POD_TIMEOUT = 180
+POD_DELETION_TIMEOUT = 600
 
 DEFAULT_STATEFULSET_INTERVAL = 1
 DEFAULT_STATEFULSET_TIMEOUT = 180
@@ -121,11 +123,10 @@ DEFAULT_DEPLOYMENT_INTERVAL = 1
 DEFAULT_DEPLOYMENT_TIMEOUT = 240
 WAIT_FOR_POD_STABLE_MAX_RETRY = 90
 
-
 DEFAULT_VOLUME_SIZE = 3  # In Gi
 EXPANDED_VOLUME_SIZE = 4  # In Gi
 
-DIRECTORY_PATH = '/tmp/longhorn-test/'
+DIRECTORY_PATH = '/var/lib/longhorn/longhorn-test/'
 
 VOLUME_CONDITION_SCHEDULED = "Scheduled"
 VOLUME_CONDITION_RESTORE = "Restore"
@@ -210,6 +211,11 @@ SETTING_AUTO_CLEANUP_SYSTEM_GERERATED_SNAPSHOT = \
 SETTING_BACKUP_COMPRESSION_METHOD = "backup-compression-method"
 SETTING_BACKUP_CONCURRENT_LIMIT = "backup-concurrent-limit"
 SETTING_RESTORE_CONCURRENT_LIMIT = "restore-concurrent-limit"
+SETTING_V1_DATA_ENGINE = "v1-data-engine"
+SETTING_ALLOW_EMPTY_NODE_SELECTOR_VOLUME = \
+    "allow-empty-node-selector-volume"
+SETTING_REPLICA_DISK_SOFT_ANTI_AFFINITY = "replica-disk-soft-anti-affinity"
+SETTING_ALLOW_EMPTY_DISK_SELECTOR_VOLUME = "allow-empty-disk-selector-volume"
 
 DEFAULT_BACKUP_COMPRESSION_METHOD = "lz4"
 BACKUP_COMPRESSION_METHOD_LZ4 = "lz4"
@@ -285,9 +291,14 @@ disk_being_syncing = "being syncing and please retry later"
 FS_TYPE_EXT4 = "ext4"
 FS_TYPE_XFS = "xfs"
 
+ACCESS_MODE_RWO = "rwo"
+ACCESS_MODE_RWX = "rwx"
+
 ATTACHER_TYPE_CSI_ATTACHER = "csi-attacher"
 ATTACHER_TYPE_LONGHORN_API = "longhorn-api"
 ATTACHER_TYPE_LONGHORN_UPGRADER = "longhorn-upgrader"
+
+HOST_PROC_DIR = "/host/proc"
 
 # customize the timeout for HDD
 disktype = os.environ.get('LONGHORN_DISK_TYPE')
@@ -398,9 +409,9 @@ def create_volume_and_backup(client, vol_name, vol_size, backup_data_size):
     client.create_volume(name=vol_name,
                          numberOfReplicas=1,
                          size=str(vol_size))
-    backup_volume = wait_for_volume_detached(client, vol_name)
-    backup_volume.attach(hostId=get_self_host_id())
-    backup_volume = wait_for_volume_healthy(client, vol_name)
+    volume = wait_for_volume_detached(client, vol_name)
+    volume.attach(hostId=get_self_host_id())
+    volume = wait_for_volume_healthy(client, vol_name)
 
     data = {'pos': 0,
             'len': backup_data_size,
@@ -408,7 +419,7 @@ def create_volume_and_backup(client, vol_name, vol_size, backup_data_size):
 
     _, backup, _, _ = create_backup(client, vol_name, data)
 
-    return backup_volume, backup
+    return volume, backup
 
 
 def create_backup(client, volname, data={}, labels={}):
@@ -489,7 +500,8 @@ def delete_backup_volume(client, volume_name):
 def create_and_check_volume(client, volume_name,
                             num_of_replicas=3, size=SIZE, backing_image="",
                             frontend=VOLUME_FRONTEND_BLOCKDEV,
-                            snapshot_data_integrity=SNAPSHOT_DATA_INTEGRITY_IGNORED): # NOQA
+                            snapshot_data_integrity=SNAPSHOT_DATA_INTEGRITY_IGNORED,  # NOQA
+                            access_mode=ACCESS_MODE_RWO):
     """
     Create a new volume with the specified parameters. Assert that the new
     volume is detached and that all of the requested parameters match.
@@ -508,7 +520,8 @@ def create_and_check_volume(client, volume_name,
     client.create_volume(name=volume_name, size=size,
                          numberOfReplicas=num_of_replicas,
                          backingImage=backing_image, frontend=frontend,
-                         snapshotDataIntegrity=snapshot_data_integrity)
+                         snapshotDataIntegrity=snapshot_data_integrity,
+                         accessMode=access_mode)
     volume = wait_for_volume_detached(client, volume_name)
     assert volume.name == volume_name
     assert volume.size == size
@@ -526,11 +539,14 @@ def wait_pod(pod_name):
 
     pod = None
     for i in range(DEFAULT_POD_TIMEOUT):
-        pod = api.read_namespaced_pod(
-            name=pod_name,
-            namespace='default')
-        if pod is not None and pod.status.phase != 'Pending':
-            break
+        try:
+            pod = api.read_namespaced_pod(
+                name=pod_name,
+                namespace='default')
+            if pod is not None and pod.status.phase != 'Pending':
+                break
+        except Exception as e:
+            print(f"Waiting for pod {pod_name} failed: {e}")
         time.sleep(DEFAULT_POD_INTERVAL)
     assert pod is not None and pod.status.phase == 'Running'
 
@@ -930,7 +946,7 @@ def size_to_string(volume_size):
 
 
 def wait_delete_pod(api, pod_uid, namespace='default'):
-    for i in range(DEFAULT_POD_TIMEOUT):
+    for i in range(POD_DELETION_TIMEOUT):
         ret = api.list_namespaced_pod(namespace=namespace)
         found = False
         for item in ret.items:
@@ -1682,6 +1698,14 @@ def client(request):
 
     request.addfinalizer(lambda: cleanup_client())
 
+    if not os.path.exists(DIRECTORY_PATH):
+        try:
+            os.makedirs(DIRECTORY_PATH)
+        except OSError as e:
+            raise Exception(
+                f"Failed to create directory {DIRECTORY_PATH}: {e}"
+            )
+
     cleanup_client()
 
     return client
@@ -1771,12 +1795,11 @@ def get_mgr_ips():
 
 
 def get_self_host_id():
-    envs = os.environ
-    return envs["NODE_NAME"]
+    return os.environ.get("NODE_NAME")
 
 
 def get_backupstore_url():
-    backupstore = os.environ['LONGHORN_BACKUPSTORES']
+    backupstore = os.environ.get("LONGHORN_BACKUPSTORES", "")
     backupstore = backupstore.replace(" ", "")
     backupstores = backupstore.split(",")
 
@@ -1785,18 +1808,13 @@ def get_backupstore_url():
 
 
 def get_backupstore_poll_interval():
-    poll_interval = os.environ['LONGHORN_BACKUPSTORE_POLL_INTERVAL']
+    poll_interval = os.environ.get("LONGHORN_BACKUPSTORE_POLL_INTERVAL", "")
     assert len(poll_interval) != 0
     return poll_interval
 
 
 def get_backupstores():
-    # The try is added to avoid the pdoc3 error while publishing this on
-    # https://longhorn.github.io/longhorn-tests
-    try:
-        backupstore = os.environ['LONGHORN_BACKUPSTORES']
-    except KeyError:
-        return []
+    backupstore = os.environ.get("LONGHORN_BACKUPSTORES", "")
 
     try:
         backupstore = backupstore.replace(" ", "")
@@ -2185,15 +2203,38 @@ def wait_for_engine_image_state(client, image_name, state):
     return image
 
 
+def wait_for_engine_image_incompatible(client, image_name):
+    wait_for_engine_image_creation(client, image_name)
+    for i in range(RETRY_COUNTS):
+        image = client.by_id_engine_image(image_name)
+        if image.incompatible:
+            break
+        time.sleep(RETRY_INTERVAL)
+    assert image.incompatible
+    return image
+
+
 def wait_for_engine_image_condition(client, image_name, state):
     """
     state: "True", "False"
     """
+    # Indicate many times we want to see the ENGINE_NAME in the STATE.
+    # This helps to prevent the flaky test case in which the ENGINE_NAME
+    # is flapping between ready and not ready a few times before settling
+    # down to the ready state
+    # https://github.com/longhorn/longhorn-tests/pull/1638
+    state_count = 1
+    if state == "True":
+        state_count = 5
+
+    c = 0
     for i in range(RETRY_COUNTS):
         wait_for_engine_image_creation(client, image_name)
         image = client.by_id_engine_image(image_name)
         if image['conditions'][0]['status'] == state:
-            break
+            c += 1
+            if c >= state_count:
+                break
         time.sleep(RETRY_INTERVAL_SHORT)
     assert image['conditions'][0]['status'] == state
     return image
@@ -2314,13 +2355,18 @@ def crash_replica_processes(client, api, volname, replicas=None,
 
     for r in replicas:
         assert r.instanceManagerName != ""
-        kill_command = "kill `pgrep -f " + r['dataPath'] + "`"
+
+        pgrep_command = f"pgrep -f {r['dataPath']}"
+        pid = exec_instance_manager(api, r.instanceManagerName, pgrep_command)
+        assert pid != ""
+
+        kill_command = f"kill {pid}"
         exec_instance_manager(api, r.instanceManagerName, kill_command)
 
         if wait_to_fail is True:
             thread = create_assert_error_check_thread(
                 wait_for_replica_failed,
-                client, volname, r['name'], RETRY_COUNTS*2, RETRY_INTERVAL/2
+                client, volname, r['name'], RETRY_COUNTS, RETRY_INTERVAL_SHORT
             )
             threads.append(thread)
 
@@ -2333,10 +2379,11 @@ def exec_instance_manager(api, im_name, cmd):
 
     with timeout(seconds=STREAM_EXEC_TIMEOUT,
                  error_message='Timeout on executing stream read'):
-        stream(api.connect_get_namespaced_pod_exec,
-               im_name,
-               LONGHORN_NAMESPACE, command=exec_cmd,
-               stderr=True, stdin=False, stdout=True, tty=False)
+        output = stream(api.connect_get_namespaced_pod_exec,
+                        im_name,
+                        LONGHORN_NAMESPACE, command=exec_cmd,
+                        stderr=True, stdin=False, stdout=True, tty=False)
+        return output
 
 
 def wait_for_replica_failed(client, volname, replica_name,
@@ -2646,11 +2693,22 @@ def get_iscsi_lun(iscsi):
     return iscsi_endpoint[2]
 
 
-def exec_nsenter(cmd):
-    dockerd_pid = find_dockerd_pid() or "1"
-    exec_cmd = ["nsenter", "--mount=/host/proc/{}/ns/mnt".format(dockerd_pid),
-                "--net=/host/proc/{}/ns/net".format(dockerd_pid),
-                "bash", "-c", cmd]
+def exec_nsenter(cmd, process_name=None):
+    if process_name:
+        proc_pid = find_process_pid(process_name)
+        cmd_parts = cmd.split()
+    else:
+        proc_pid = find_dockerd_pid() or "1"
+        cmd_parts = ["bash", "-c", cmd]
+
+    exec_cmd = ["nsenter", "--mount=/host/proc/{}/ns/mnt".format(proc_pid),
+                "--net=/host/proc/{}/ns/net".format(proc_pid)]
+    exec_cmd.extend(cmd_parts)
+    return subprocess.check_output(exec_cmd)
+
+
+def exec_local(cmd):
+    exec_cmd = cmd.split()
     return subprocess.check_output(exec_cmd)
 
 
@@ -2661,10 +2719,10 @@ def iscsi_login(iscsi_ep):
     lun = get_iscsi_lun(iscsi_ep)
     # discovery
     cmd_discovery = "iscsiadm -m discovery -t st -p " + ip
-    exec_nsenter(cmd_discovery)
+    exec_nsenter(cmd_discovery, ISCSI_PROCESS)
     # login
     cmd_login = "iscsiadm -m node -T " + target + " -p " + ip + " --login"
-    exec_nsenter(cmd_login)
+    exec_nsenter(cmd_login, ISCSI_PROCESS)
     blk_name = "ip-%s:%s-iscsi-%s-lun-%s" % (ip, port, target, lun)
     wait_for_device_login(ISCSI_DEV_PATH, blk_name)
     dev = os.path.realpath(ISCSI_DEV_PATH + "/" + blk_name)
@@ -2675,9 +2733,9 @@ def iscsi_logout(iscsi_ep):
     ip = get_iscsi_ip(iscsi_ep)
     target = get_iscsi_target(iscsi_ep)
     cmd_logout = "iscsiadm -m node -T " + target + " -p " + ip + " --logout"
-    exec_nsenter(cmd_logout)
+    exec_nsenter(cmd_logout, ISCSI_PROCESS)
     cmd_rm_discovery = "iscsiadm -m discovery -p " + ip + " -o delete"
-    exec_nsenter(cmd_rm_discovery)
+    exec_nsenter(cmd_rm_discovery, ISCSI_PROCESS)
 
 
 def get_process_info(p_path):
@@ -2712,6 +2770,40 @@ def find_ancestor_process_by_name(ancestor_name):
 
 def find_dockerd_pid():
     return find_ancestor_process_by_name("dockerd")
+
+
+def find_process_pid(process_name):
+    for file in os.listdir(HOST_PROC_DIR):
+        if not os.path.isdir(os.path.join(HOST_PROC_DIR, file)):
+            continue
+
+        # Check if file name is an integer
+        if not file.isdigit():
+            continue
+
+        with open(os.path.join(HOST_PROC_DIR, file, 'status'), 'r') as file:
+            status_content = file.readlines()
+
+        proc_status_content = None
+        name_pattern = re.compile(r'^Name:\s+(.+)$')
+
+        for line in status_content:
+            name_match = name_pattern.match(line)
+            if name_match and name_match.group(1) == process_name:
+                proc_status_content = status_content
+                break
+
+        if proc_status_content is None:
+            continue
+
+        pid_pattern = re.compile(r'^Pid:\s+(\d+)$')
+
+        for line in proc_status_content:
+            pid_match = pid_pattern.match(line)
+            if pid_match:
+                return int(pid_match.group(1))
+
+    raise Exception(f"Failed to find the {process_name} PID")
 
 
 def generate_random_pos(size, used={}):
@@ -3278,7 +3370,11 @@ def get_k8s_zone_label():
 
 
 def cleanup_test_disks(client):
-    del_dirs = os.listdir(DIRECTORY_PATH)
+    try:
+        del_dirs = os.listdir(DIRECTORY_PATH)
+    except FileNotFoundError:
+        del_dirs = []
+
     host_id = get_self_host_id()
     node = client.by_id_node(host_id)
     disks = node.disks
@@ -3405,6 +3501,13 @@ def reset_settings(client):
         # default value. We need to skip here to avoid test failure when
         # resetting this to an empty default value.
         if setting_name == "storage-network":
+            continue
+        # The test CI deploys Longhorn with the setting value longhorn-critical
+        # for the setting priority-class. Don't reset it to empty (which is
+        # the default value defined in longhorn-manager code) because this will
+        # restart Longhorn managed components and fail the test cases.
+        # https://github.com/longhorn/longhorn/issues/7413#issuecomment-1881707958
+        if setting.name == SETTING_PRIORITY_CLASS:
             continue
 
         # The version of the support bundle kit will be specified by a command
@@ -3540,7 +3643,7 @@ def wait_for_all_instance_manager_running(client):
         node_to_instance_manager_map = {}
         try:
             for im in instance_managers:
-                if im.managerType == "aio" and im.currentState == "running":
+                if im.managerType == "aio":
                     node_to_instance_manager_map[im.nodeID] = im
                 else:
                     print("\nFound unknown instance manager:", im)
@@ -3658,7 +3761,7 @@ def find_backup(client, vol_name, snap_name):
     def find_backup_volume():
         bvs = client.list_backupVolume()
         for bv in bvs:
-            if bv.name == vol_name:
+            if bv.name == vol_name and bv.created != "":
                 return bv
         return None
 
@@ -4895,7 +4998,8 @@ def prepare_statefulset_with_data_in_mb(
 def prepare_pod_with_data_in_mb(
         client, core_api, csi_pv, pvc, pod_make, volume_name,
         volume_size=str(1*Gi), num_of_replicas=3, data_path="/data/test",
-        data_size_in_mb=DATA_SIZE_IN_MB_1, add_liveness_probe=True):# NOQA:
+        data_size_in_mb=DATA_SIZE_IN_MB_1, add_liveness_probe=True,
+        access_mode=ACCESS_MODE_RWO):# NOQA:
 
     pod_name = volume_name + "-pod"
     pv_name = volume_name
@@ -4920,7 +5024,8 @@ def prepare_pod_with_data_in_mb(
 
     create_and_check_volume(client, volume_name,
                             num_of_replicas=num_of_replicas,
-                            size=volume_size)
+                            size=volume_size,
+                            access_mode=access_mode)
     core_api.create_persistent_volume(csi_pv)
     core_api.create_namespaced_persistent_volume_claim(
         body=pvc, namespace='default')
@@ -4983,11 +5088,14 @@ def wait_for_pod_restart(core_api, pod_name, namespace="default"):
 def wait_for_pod_phase(core_api, pod_name, pod_phase, namespace="default"):
     is_phase = False
     for _ in range(RETRY_COUNTS):
-        pod = core_api.read_namespaced_pod(name=pod_name,
-                                           namespace=namespace)
-        if pod.status.phase == pod_phase:
-            is_phase = True
-            break
+        try:
+            pod = core_api.read_namespaced_pod(name=pod_name,
+                                               namespace=namespace)
+            if pod.status.phase == pod_phase:
+                is_phase = True
+                break
+        except Exception as e:
+            print(f"Waiting for pod {pod_name} {pod_phase} failed: {e}")
 
         time.sleep(RETRY_INTERVAL_LONG)
     assert is_phase
@@ -6006,3 +6114,13 @@ def create_volume_and_write_data(client, volume_name, volume_size=SIZE):
     volume_data = write_volume_random_data(volume)
 
     return volume, volume_data
+
+
+def wait_for_instance_manager_count(client, number, retry_counts=120):
+    for _ in range(retry_counts):
+        ims = client.list_instance_manager()
+        if len(ims) == number:
+            break
+        time.sleep(RETRY_INTERVAL_LONG)
+
+    return len(ims)

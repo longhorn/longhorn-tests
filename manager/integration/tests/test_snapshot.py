@@ -321,7 +321,9 @@ def detect_and_repair_corrupted_replica(client, volume_name, data_integrity_mode
     """
 
     # Step 1
-    volume = create_and_check_volume(client, volume_name, 3, size=str(2 * Gi))
+    volume = create_and_check_volume(client, volume_name,
+                                     num_of_replicas=3,
+                                     size=str(2 * Gi))
 
     lht_hostId = get_self_host_id()
     volume = volume.attach(hostId=lht_hostId)
@@ -572,7 +574,8 @@ def check_hashed_and_with_immediate_hash(client, volume_name, snapshot_data_inte
     """
 
     # Step 1
-    volume = create_and_check_volume(client, volume_name, 3,
+    volume = create_and_check_volume(client, volume_name,
+                                     num_of_replicas=3,
                                      size=str(volume_size * Mi),
                                      snapshot_data_integrity=snapshot_data_integrity) # NOQA
 
@@ -604,7 +607,8 @@ def check_hashed_and_without_immediate_hash(client, volume_name, snapshot_data_i
     """
 
     # Step 1
-    volume = create_and_check_volume(client, volume_name, 3,
+    volume = create_and_check_volume(client, volume_name,
+                                     num_of_replicas=3,
                                      size=str(16 * Mi),
                                      snapshot_data_integrity=snapshot_data_integrity) # NOQA
 
@@ -644,7 +648,8 @@ def check_per_volume_hash_disable(client, volume_name, snapshot_data_integrity):
     """
 
     # Step 1
-    volume = create_and_check_volume(client, volume_name, 3,
+    volume = create_and_check_volume(client, volume_name,
+                                     num_of_replicas=3,
                                      size=str(16 * Mi),
                                      snapshot_data_integrity=snapshot_data_integrity)  # NOQA
 
@@ -694,7 +699,9 @@ def test_snapshot_cr(client, volume_name, settings_reset):  # NOQA
     client.update(setting, value="true")
 
     lht_hostId = get_self_host_id()
-    volume = create_and_check_volume(client, volume_name, 3, size=str(1 * Gi))
+    volume = create_and_check_volume(client, volume_name,
+                                     num_of_replicas=3,
+                                     size=str(1 * Gi))
     volume = volume.attach(hostId=lht_hostId)
     wait_for_volume_healthy(client, volume_name)
     volume = client.by_id_volume(volume_name)
