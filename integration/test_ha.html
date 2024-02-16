@@ -2012,7 +2012,7 @@ def test_extra_replica_cleanup(client, volume_name, settings_reset): # NOQA
     wait_for_volume_replica_count(client, volume_name, 3)
 
     volume = client.by_id_volume(volume_name)
-    assert volume.robustness == &#34;healthy&#34;
+    wait_for_volume_healthy(client, volume_name)
 
     check_volume_data(volume, data)
 
@@ -5777,7 +5777,7 @@ should be removed.</li>
     wait_for_volume_replica_count(client, volume_name, 3)
 
     volume = client.by_id_volume(volume_name)
-    assert volume.robustness == &#34;healthy&#34;
+    wait_for_volume_healthy(client, volume_name)
 
     check_volume_data(volume, data)</code></pre>
 </details>
