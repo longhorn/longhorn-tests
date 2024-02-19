@@ -216,6 +216,7 @@ SETTING_ALLOW_EMPTY_NODE_SELECTOR_VOLUME = \
     "allow-empty-node-selector-volume"
 SETTING_REPLICA_DISK_SOFT_ANTI_AFFINITY = "replica-disk-soft-anti-affinity"
 SETTING_ALLOW_EMPTY_DISK_SELECTOR_VOLUME = "allow-empty-disk-selector-volume"
+SETTING_NODE_DRAIN_POLICY = "node-drain-policy"
 
 DEFAULT_BACKUP_COMPRESSION_METHOD = "lz4"
 BACKUP_COMPRESSION_METHOD_LZ4 = "lz4"
