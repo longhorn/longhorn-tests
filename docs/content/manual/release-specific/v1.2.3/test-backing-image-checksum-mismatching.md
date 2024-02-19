@@ -3,7 +3,7 @@ title: Test backing image checksum mismatching
 ---
 
 ### Test step
-1. Modify setting `Backing Image Recovery Wait Interval` to a shorter value so that the backing image will start auto recovery eariler.
+1. Modify setting `Backing Image Recovery Wait Interval` to a shorter value so that the backing image will start auto recovery earlier.
 2. Create a backing image file with type `Download From URL`.
 3. Launch a volume using the backing image file so that there are 2 disk records for the backing image.
 4. Modify one disk file for the backing image and make sure the file size is not changed. This will lead to data inconsistency/corruption later. e.g.,

@@ -35,15 +35,15 @@ This test may need to be validated for both kind of cluster.
     4. Deploy a StatefulSet with volume D. Write some data and do some snapshot operations. (Validate 2 cases: <1> volume can be recovered automatically if some replicas are removed and some new replicas are replenished; <2> snapshot info will be resynced;)
     5. Deploy a Deployment with volume E. Write some data and do some snapshot operations. (Validate 4 cases: <1> engine upgrade; <2> offline expansion)
 3. Create a cluster snapshot via Rancher.
-4. Do the followings before the restore:
+4. Do the following before the restore:
     1. Delete volume A.
     2. Write more data to volume B and create more backups.
     3. Remove all current replicas one by one for volume C. Then all replicas of volume C are new replicas.
     4. Remove some replicas for volume D. Do snapshot creation, deletion, and revert.
     5. Scale down the workload. Upgrade volume E from the default image to another engine image. And do expansion.
-    6. Create and attach volume F via UI. Write some data and do some snapshot operations. (Validate 1 case: Users need to manuall recover the volume if it's created after the cluster snapshot)
+    6. Create and attach volume F via UI. Write some data and do some snapshot operations. (Validate 1 case: Users need to manually recover the volume if it's created after the cluster snapshot)
 5. Restore the cluster.
-6. Check the followings according to the doc:
+6. Check the following according to the doc:
     1. Volume A is back. But there is no data in it. And users can re-delete it.
     2. Volume B can be reattached or keep attached with correct data. The backup info of volume B is resynced when the volume is reattahed. The pod can use the volume after restart.
     3. All old removed replicas are back and all newly rebuilt replicas in step4-3 disappear for volume C. There is no data in volume C. The data directories of the disappeared replicas are still on the node. Hence the data are be recovered by exporting a single replica volume.
