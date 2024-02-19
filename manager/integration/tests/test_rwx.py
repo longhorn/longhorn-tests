@@ -538,7 +538,7 @@ def test_rwx_online_expansion(): # NOQA
     - Create a rwx pvc using longhorn storage class of size 1 Gi.
 
     And
-    - Atach it to a workload (deployment) and write some data.
+    - Attach it to a workload (deployment) and write some data.
 
     When
     - Expand the volume to 5 Gi
@@ -566,7 +566,7 @@ def test_rwx_offline_expansion(client, core_api, pvc, make_deployment_with_pvc):
     - Create a rwx pvc using longhorn storage class of size 1 Gi.
 
     And
-    - Atach it to a workload (deployment) and write some data.
+    - Attach it to a workload (deployment) and write some data.
     - Scale down the workload, wait volume detached
     - Share manager pod will terminate automatically
     - Expand the volume to 4 Gi, wait exoansion complete

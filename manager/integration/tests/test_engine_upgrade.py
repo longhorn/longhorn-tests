@@ -43,7 +43,7 @@ def test_engine_image(client, core_api, volume_name):  # NOQA
     """
     Test Engine Image deployment
 
-    1. List Engine Images and validate basic properities.
+    1. List Engine Images and validate basic properties.
     2. Try deleting default engine image and it should fail.
     3. Try creating a duplicate engine image as default and it should fail
     4. Get upgrade test image for the same versions

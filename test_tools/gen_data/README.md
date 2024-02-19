@@ -7,7 +7,7 @@ Modify config.yaml
 storage: 1Gi # Each volume size
 storageClass: longhorn-test # Need to prepare your own storage class first
 dataSizeInMb: 500
-namespace: default # Nees to prepare first before run script
+namespace: default # Needs to prepare first before run script
 statefulSet: # Single RWO/RWX statefulset and its replica counts
   rwo:
     replicas: 1 
