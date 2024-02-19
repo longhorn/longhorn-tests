@@ -82,7 +82,7 @@ def find_metrics(metric_data, metric_name):
 
 def check_metric_with_condition(core_api, metric_name, metric_labels, expected_value=None, metric_node_id=get_self_host_id()): # NOQA)
     """
-    Some metric have multiple conditions, for exameple metric
+    Some metric have multiple conditions, for example metric
     longhorn_node_status have condition
     - allowScheduling
     - mountpropagation

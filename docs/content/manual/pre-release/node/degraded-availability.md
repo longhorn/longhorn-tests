@@ -15,8 +15,8 @@ title: Degraded availability with added nodes
 ##### Steps:
 1. Create a Deployment Pod with a volume and three replicas.
     1. After the volume is attached, on Volume page it should be displayed as `Degraded`
-    1. Hover the crusor to the red circle exclamation mark, the tooltip will says, "The volume cannot be scheduled".
-    1. Click into the volume detail page it will display `Scheduling Failure` but the volume remain fuctional as expected.
+    1. Hover the cursor to the red circle exclamation mark, the tooltip will says, "The volume cannot be scheduled".
+    1. Click into the volume detail page it will display `Scheduling Failure` but the volume remain functional as expected.
 1. Write data to the Pod.
 1. Scale down the deployment to 0 to detach the volume.
     1. Volume return to `Detached` state.

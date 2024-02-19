@@ -435,7 +435,7 @@ def test_csi_volumesnapshot_basic(set_random_backupstore, # NOQA
     4. check creation of a new longhorn snapshot named `snapshot-uuid`
     5. check for `VolumeSnapshotContent` named `snapcontent-uuid`
     6. wait for `VolumeSnapshotContent.readyToUse` flag to be set to **true**
-    7. check for backup existance on the backupstore
+    7. check for backup existence on the backupstore
 
     # the csi snapshot restore sets the fromBackup field same as
     # the StorageClass based restore approach.
@@ -860,16 +860,16 @@ def test_csi_snapshot_snap_create_volume_from_snapshot(apps_api, # NOQA
                 - Attach the PVC and verify data
             - Source volume is detached
                 - Scale down the workload
-                - Create PVC from VolumeSnapshot generated from step beggining
+                - Create PVC from VolumeSnapshot generated from step beginning
                 - Verify PVC provision failed
                 - Scale up the workload
                 - Wait for PVC to finish provisioning and be bounded
                 - Attach the PVC test-restore-pvc and verify the data
             - Source volume is attached && Longhorn snapshot doesn’t exist
                 - Use VolumeSnapshotContent.snapshotHandle to
-                  specify Longhorn snapshot generated in step beggining
+                  specify Longhorn snapshot generated in step beginning
                 - Delete the Longhorn snapshot
-                - Create PVC from VolumeSnapshot generated from step beggining
+                - Create PVC from VolumeSnapshot generated from step beginning
                 - PVC should be stuck in provisioning state
     """
     vol, deployment, csisnapclass, expected_md5sum = \

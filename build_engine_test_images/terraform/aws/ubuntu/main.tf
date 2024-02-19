@@ -99,7 +99,7 @@ resource "aws_route_table" "build_engine_aws_public_rt" {
   }
 }
 
-# Assciate public subnet to public route table
+# Associate public subnet to public route table
 resource "aws_route_table_association" "build_engine_aws_public_subnet_rt_association" {
   depends_on = [
     aws_subnet.build_engine_aws_public_subnet,

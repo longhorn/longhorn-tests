@@ -2287,7 +2287,7 @@ class AssertErrorCheckThread(threading.Thread):
 
         Parameters:
             target  :       The threading function.
-            args    :       Arguments of the target fucntion.
+            args    :       Arguments of the target function.
     """
     def __init__(self, target, args):
         threading.Thread.__init__(self)
@@ -5747,7 +5747,7 @@ def generate_support_bundle(case_name):  # NOQA
         Generate support bundle into folder ./support_bundle/case_name.zip
 
         Won't generate support bundle if current support bundle count
-        greate than MAX_SUPPORT_BINDLE_NUMBER.
+        greater than MAX_SUPPORT_BINDLE_NUMBER.
         Args:
             case_name: support bundle will named case_name.zip
     """
@@ -5797,7 +5797,7 @@ def generate_support_bundle(case_name):  # NOQA
         with open('./support_bundle/{0}.zip'.format(case_name), 'wb') as f:
             f.write(r.content)
     except Exception as e:
-        warnings.warn("Error occured while downloading support bundle {}.zip\n\
+        warnings.warn("Error occurred when downloading support bundle {}.zip\n\
             The error was {}".format(case_name, e))
 
 

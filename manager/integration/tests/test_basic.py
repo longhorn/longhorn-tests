@@ -342,7 +342,7 @@ def test_volume_iscsi_basic(client, volume_name):  # NOQA
 
     1. Create and attach a volume with iscsi frontend
     2. Check the volume endpoint and connect it using the iscsi
-    initator on the node.
+    initiator on the node.
     3. Write then read back volume data for validation
 
     """
@@ -3421,7 +3421,7 @@ def test_allow_volume_creation_with_degraded_availability(client, volume_name): 
     2. `node-level-soft-anti-affinity` to false.
 
     Steps:
-    (degraded availablity)
+    (degraded availability)
     1. Disable scheduling for node 2 and 3.
     2. Create a volume with three replicas.
         1. Volume should be `ready` after creation and `Scheduled` is true.

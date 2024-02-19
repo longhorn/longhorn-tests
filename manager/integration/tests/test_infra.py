@@ -184,7 +184,7 @@ def test_offline_node(reset_cluster_ready_status):
     """
     Test offline node
 
-    1. Bring down one of the nodes in Kuberntes cluster (avoid current node)
+    1. Bring down one of the nodes in Kubernetes cluster (avoid current node)
     2. Make sure the Longhorn node state become `down`
     """
     pod_lable_selector = "longhorn-test=test-job"
