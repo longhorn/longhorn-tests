@@ -3,6 +3,7 @@ import pytest
 import os
 import subprocess
 import time
+import yaml
 
 from random import choice
 from string import ascii_lowercase, digits
@@ -47,8 +48,14 @@ from common import set_node_tags, set_node_scheduling
 from common import set_node_scheduling_eviction
 from common import update_node_disks
 from common import update_setting
+from common import SETTING_NODE_DRAIN_POLICY, DATA_SIZE_IN_MB_3
+from common import make_deployment_with_pvc # NOQA
+from common import create_pv_for_volume
+from common import create_pvc_for_volume, create_and_wait_deployment
+from common import get_apps_api_client, write_pod_volume_random_data
 
 from backupstore import set_random_backupstore # NOQA
+from concurrent.futures import ThreadPoolExecutor, TimeoutError
 
 
 CREATE_DEFAULT_DISK_LABEL = "node.longhorn.io/create-default-disk"
@@ -2680,8 +2687,31 @@ def test_disk_eviction_with_node_level_soft_anti_affinity_disabled(client, # NOQ
 
     request.addfinalizer(finalizer)
 
-@pytest.mark.skip(reason="TODO")  # NOQA
-def test_drain_with_block_for_eviction_success():
+
+def drain_node(core_api, node): # NOQA    
+    set_node_cordon(core_api, node.id, True)
+
+    command = ["kubectl", "drain", node.id, "--ignore-daemonsets"]
+    subprocess.run(command, check=True)
+
+
+def get_replica_detail(replica_name):
+    """
+    Get allreplica information by this function
+    """
+    command = ["kubectl", "get",
+               "replicas.longhorn.io",
+               "-n",
+               "longhorn-system",
+               replica_name,
+               "-o",
+               "yaml"]
+    output = subprocess.check_output(command, text=True)
+    replica_info = yaml.safe_load(output)
+    return replica_info
+
+
+def test_drain_with_block_for_eviction_success(client, core_api, volume_name, make_deployment_with_pvc): # NOQA
     """
     Test drain completes after evicting replica with node-drain-policy
     block-for-eviction
@@ -2693,7 +2723,6 @@ def test_drain_with_block_for_eviction_success():
     4. Write data to the volume.
     5. Drain a node one of the volume's replicas is scheduled to.
     6. While the drain is ongoing:
-       - Verify that the volume never becomes degraded.
        - Verify that `node.status.autoEvicting == true`.
        - Optionally verify that `replica.spec.evictionRequested == true`.
     7. Verify the drain completes.
@@ -2703,6 +2732,122 @@ def test_drain_with_block_for_eviction_success():
     11. Verify that `replica.spec.evictionRequested == false`.
     12. Verify the volume's data.
     """
+    host_id = get_self_host_id()
+    nodes = client.list_node()
+    evict_nodes = [node for node in nodes if node.id != host_id][:2]
+    evict_source_node = evict_nodes[0]
+    evict_target_node = evict_nodes[1]
+
+    # Step 1
+    setting = client.by_id_setting(
+        SETTING_NODE_DRAIN_POLICY)
+    client.update(setting, value="block-for-eviction")
+
+    # Step 2, 3, 4
+    volume = client.create_volume(name=volume_name,
+                                  size=str(1 * Gi),
+                                  numberOfReplicas=3)
+    volume = common.wait_for_volume_detached(client, volume_name)
+
+    pvc_name = volume_name + "-pvc"
+    create_pv_for_volume(client, core_api, volume, volume_name)
+    create_pvc_for_volume(client, core_api, volume, pvc_name)
+    deployment_name = volume_name + "-dep"
+    deployment = make_deployment_with_pvc(deployment_name, pvc_name)
+    deployment["spec"]["template"]["spec"]["nodeSelector"] \
+        = {"kubernetes.io/hostname": host_id}
+
+    apps_api = get_apps_api_client()
+    create_and_wait_deployment(apps_api, deployment)
+
+    pod_names = common.get_deployment_pod_names(core_api, deployment)
+    data_path = '/data/test'
+    write_pod_volume_random_data(core_api,
+                                 pod_names[0],
+                                 data_path,
+                                 DATA_SIZE_IN_MB_3)
+    expected_test_data_checksum = get_pod_data_md5sum(core_api,
+                                                      pod_names[0],
+                                                      data_path)
+
+    volume = wait_for_volume_healthy(client, volume_name)
+
+    # Make replica not locate on eviction target node
+    volume.updateReplicaCount(replicaCount=2)
+    for replica in volume.replicas:
+        if replica.hostId == evict_target_node.id:
+            volume.replicaRemove(name=replica.name)
+            break
+
+    wait_for_volume_replica_count(client, volume_name, 2)
+
+    # Step 5
+    # drain eviction source node
+    executor = ThreadPoolExecutor(max_workers=5)
+    future = executor.submit(drain_node, core_api, evict_source_node)
+
+    # Step 6
+    volume = client.by_id_volume(volume_name)
+    for replica in volume.replicas:
+        if replica.hostId == evict_source_node.id:
+            replica_name = replica.name
+            break
+
+    replica_info = get_replica_detail(replica_name)
+    eviction_requested = replica_info["spec"]["evictionRequested"]
+    assert eviction_requested is True
+
+    nodes = client.list_node()
+    for node in nodes:
+        if node.id == evict_source_node.id:
+            assert node.autoEvicting is True
+
+    # Step 7
+    thread_timeout = 60
+    try:
+        future.result(timeout=thread_timeout)
+        drain_complete = True
+    except TimeoutError:
+        print("drain node thread exceed timeout ({})s".format(thread_timeout))
+        drain_complete = False
+        future.cancel()
+    finally:
+        assert drain_complete is True
+
+    wait_for_volume_replica_count(client, volume_name, 2)
+
+    # Step 8
+    set_node_cordon(core_api, evict_source_node.id, False)
+
+    # Step 9
+    volume = wait_for_volume_healthy(client, volume_name)
+    assert len(volume.replicas) == 2
+    for replica in volume.replicas:
+        assert replica.hostId != evict_source_node.id
+
+    # Stpe 10
+    nodes = client.list_node()
+    for node in nodes:
+        assert node.autoEvicting is False
+
+    # Step 11
+    volume = client.by_id_volume(volume_name)
+    for replica in volume.replicas:
+        if replica.hostId == evict_target_node.id:
+            replica_name = replica.name
+            break
+
+    replica_info = get_replica_detail(replica_name)
+    eviction_requested = replica_info["spec"]["evictionRequested"]
+    assert eviction_requested is False
+
+    # Step 12
+    test_data_checksum = get_pod_data_md5sum(core_api,
+                                             pod_names[0],
+                                             data_path)
+
+    assert expected_test_data_checksum == test_data_checksum
+
 
 @pytest.mark.skip(reason="TODO")  # NOQA
 def test_drain_with_block_for_eviction_if_contains_last_replica_success():
