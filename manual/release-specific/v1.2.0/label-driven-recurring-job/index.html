@@ -815,10 +815,10 @@
 <em>And</em> create volume <code>test-job-3</code>.<br>
 <em>And</em> create volume <code>test-job-4</code>.<br>
 <em>And</em> create volume <code>test-job-5</code>.</p>
-<p><strong>Then</strong> moniter the cron job pod log.<br>
+<p><strong>Then</strong> monitor the cron job pod log.<br>
 <em>And</em> should see 2 jobs created concurrently.</p>
 <p><strong>When</strong> update <code>snapshot1</code> recurring job with <code>concurrency</code> set to <code>3</code>.<br>
-<strong>Then</strong> moniter the cron job pod log.
+<strong>Then</strong> monitor the cron job pod log.
 <em>And</em> should see 3 jobs created concurrently.</p>
 <h2 id="test-upgrade-migration-for-recurring-job">Test Upgrade Migration For Recurring Job</h2>
 <p><strong>Given</strong> cluster with Longhorn version prior to v1.2.0.<br>

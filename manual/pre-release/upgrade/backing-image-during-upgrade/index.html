@@ -860,7 +860,7 @@
 <li>Deploy Longhorn.</li>
 <li>Create a backing images. Wait for the backing image being ready in the 1st disk.</li>
 <li>Create and attach volumes with the backing image. Wait for all disk files of the backing image being ready.</li>
-<li>Run <code>kubectl -n longhorn system get pod -w</code> in a seperate session.</li>
+<li>Run <code>kubectl -n longhorn system get pod -w</code> in a separate session.</li>
 <li>Upgrade Longhorn manager but with the backing image manager image unchanged. (Actually we can mock this upgrade by removing all longhorn manager pods simultaneously.)</li>
 <li>Check if all disk file status of the backing image becomes <code>unknown</code> then <code>ready</code> during the longhorn manager pods termination and restart. (May need to refresh the UI page after restart.)</li>
 <li>After the longhorn manager pods restart, Verify there is no backing image data source pod launched for the backing image in the output of step4.</li>

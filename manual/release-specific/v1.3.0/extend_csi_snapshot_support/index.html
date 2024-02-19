@@ -952,7 +952,7 @@ Make sure data persist to the volume by running <code>sync</code></li>
 <li>Scale down the workload to detach the <code>test-vol</code></li>
 <li>Create the same PVC <code>test-restore-pvc</code> as in the <code>Source volume is attached &amp;&amp; Longhorn snapshot exist</code> section</li>
 <li>Verify that PVC provisioning failed because the source volume is detached so Longhorn cannot verify the existence of the Longhorn snapshot in the source volume.</li>
-<li>Scale up the workload to attache <code>test-vol</code></li>
+<li>Scale up the workload to attach <code>test-vol</code></li>
 <li>Wait for PVC to finish provisioning and be bounded</li>
 <li>Attach the PVC <code>test-restore-pvc</code> and verify the data</li>
 <li>Delete the PVC</li>

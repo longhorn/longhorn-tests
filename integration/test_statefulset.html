@@ -128,7 +128,7 @@ def test_statefulset_mount(client, core_api, storage_class, statefulset):  # NOQ
 
     1. Create a StatefulSet using dynamic provisioned Longhorn volume.
     2. Wait for pods to become running
-    3. Check volume properites are consistent with the StorageClass
+    3. Check volume properties are consistent with the StorageClass
     &#34;&#34;&#34;
 
     statefulset_name = &#39;statefulset-mount-test&#39;
@@ -166,7 +166,7 @@ def test_statefulset_scaling(client, core_api, storage_class, statefulset):  # N
 
     1. Create a StatefulSet with VolumeClaimTemplate and Longhorn.
     2. Wait for pods to run.
-    3. Verify the properities of volumes.
+    3. Verify the properties of volumes.
     4. Scale the StatefulSet to 3 replicas
     5. Wait for the new pod to become ready.
     6. Verify the new volume properties.
@@ -287,7 +287,7 @@ def test_statefulset_backup(set_random_backupstore, client, core_api, storage_cl
     4. Create a third snapshot
     5. Backup the snapshot `backup_snapshot`
     6. Wait for backup to show up.
-        1 Verify the backup informations
+        1 Verify the backup information
     &#34;&#34;&#34;
 
     statefulset_name = &#39;statefulset-backup-test&#39;
@@ -592,7 +592,7 @@ located in common.py.</dd>
 <li>Create a third snapshot</li>
 <li>Backup the snapshot <code>backup_snapshot</code></li>
 <li>Wait for backup to show up.
-1 Verify the backup informations</li>
+1 Verify the backup information</li>
 </ol></div>
 <details class="source">
 <summary>
@@ -613,7 +613,7 @@ located in common.py.</dd>
     4. Create a third snapshot
     5. Backup the snapshot `backup_snapshot`
     6. Wait for backup to show up.
-        1 Verify the backup informations
+        1 Verify the backup information
     &#34;&#34;&#34;
 
     statefulset_name = &#39;statefulset-backup-test&#39;
@@ -635,7 +635,7 @@ mounted, unmounted, and deleted on the Kubernetes cluster.</p>
 <ol>
 <li>Create a StatefulSet using dynamic provisioned Longhorn volume.</li>
 <li>Wait for pods to become running</li>
-<li>Check volume properites are consistent with the StorageClass</li>
+<li>Check volume properties are consistent with the StorageClass</li>
 </ol></div>
 <details class="source">
 <summary>
@@ -648,7 +648,7 @@ mounted, unmounted, and deleted on the Kubernetes cluster.</p>
 
     1. Create a StatefulSet using dynamic provisioned Longhorn volume.
     2. Wait for pods to become running
-    3. Check volume properites are consistent with the StorageClass
+    3. Check volume properties are consistent with the StorageClass
     &#34;&#34;&#34;
 
     statefulset_name = &#39;statefulset-mount-test&#39;
@@ -959,7 +959,7 @@ has a naming policy for what should be PVC name for them.</li>
 <ol>
 <li>Create a StatefulSet with VolumeClaimTemplate and Longhorn.</li>
 <li>Wait for pods to run.</li>
-<li>Verify the properities of volumes.</li>
+<li>Verify the properties of volumes.</li>
 <li>Scale the StatefulSet to 3 replicas</li>
 <li>Wait for the new pod to become ready.</li>
 <li>Verify the new volume properties.</li>
@@ -975,7 +975,7 @@ def test_statefulset_scaling(client, core_api, storage_class, statefulset):  # N
 
     1. Create a StatefulSet with VolumeClaimTemplate and Longhorn.
     2. Wait for pods to run.
-    3. Verify the properities of volumes.
+    3. Verify the properties of volumes.
     4. Scale the StatefulSet to 3 replicas
     5. Wait for the new pod to become ready.
     6. Verify the new volume properties.

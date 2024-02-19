@@ -927,7 +927,7 @@
 <td>3</td>
 <td>Create volume backup used by Kubernetes workload</td>
 <td><strong>Prerequisite:</strong><br><br>*   Backup target is set to NFS server, or S3 compatible target.<br><br>1.  Create a deployment workload with <code>nReplicas = 1</code> using Longhorn volume<br>2.  Write data to volume, compute it’s checksum (checksum#1)<br>3.  Create a backup<br>4.  Check backup labels<br>5.  Scale down deployment <code>nReplicas = 0</code><br>6.  Delete Longhorn volume<br>7.  Restore backup to a volume with the same deleted volume name<br>8.  Scale back deployment <code>nReplicas = 1</code><br>9.  Check volume data checksum</td>
-<td>*   Backup labels should contain the following informations about workload that was using the volume at time of backup.<br>    *   Namespace<br>        <br>    *   PV Name<br>        <br>    *   PVC Name<br>        <br>    *   PV Status<br>        <br>    *   Workloads Status<br>        <br>        *   Pod Name  <br>            Workload Name  <br>            Workload Type  <br>            Pod Status<br>            <br>*   After volume restore, data checksum should match (checksum#1)</td>
+<td>*   Backup labels should contain the following information about workload that was using the volume at time of backup.<br>    *   Namespace<br>        <br>    *   PV Name<br>        <br>    *   PVC Name<br>        <br>    *   PV Status<br>        <br>    *   Workloads Status<br>        <br>        *   Pod Name  <br>            Workload Name  <br>            Workload Type  <br>            Pod Status<br>            <br>*   After volume restore, data checksum should match (checksum#1)</td>
 </tr>
 <tr>
 <td>4</td>
@@ -1210,7 +1210,7 @@
 </tr>
 <tr>
 <td>DR volume across the cluster #8</td>
-<td>Cluster A<br><br>*   Create volume Z<br>*   Attach the volume Z<br>*   Create a backup of Z<br><br>Cluster B<br><br>*   Backup Volume list page, click `Create Disaster Recovery Volume` from volume dropdown<br>*   Create DR volumes Zdr1, Zdr2 and Zdr3<br>*   Attach the volume Zdr1, Zdr2 and Zdr3 to any node<br>*   Change setting.BackupPollInterval to approriate interval for multiple backups e.g. 15min<br>*   Make sure LastBackup of Zdr is consistent with that of Z<br><br>Cluster A<br><br>*   Create multiple backups for volume Z before Zdr&rsquo;s last backup updated. For each backup, write or modify at least one file then record the cheksum.<br><br>Cluster B<br><br>*   Wait for restoration of volume Zdr1 to complete<br>*   Activate Zdr1<br>*   Attach it to one node and verify the content</td>
+<td>Cluster A<br><br>*   Create volume Z<br>*   Attach the volume Z<br>*   Create a backup of Z<br><br>Cluster B<br><br>*   Backup Volume list page, click `Create Disaster Recovery Volume` from volume dropdown<br>*   Create DR volumes Zdr1, Zdr2 and Zdr3<br>*   Attach the volume Zdr1, Zdr2 and Zdr3 to any node<br>*   Change setting.BackupPollInterval to appropriate interval for multiple backups e.g. 15min<br>*   Make sure LastBackup of Zdr is consistent with that of Z<br><br>Cluster A<br><br>*   Create multiple backups for volume Z before Zdr&rsquo;s last backup updated. For each backup, write or modify at least one file then record the checksum.<br><br>Cluster B<br><br>*   Wait for restoration of volume Zdr1 to complete<br>*   Activate Zdr1<br>*   Attach it to one node and verify the content</td>
 <td>*   Zdr1&rsquo;s last backup should be updated after settings.BackupPollInterval passed.<br>*   Zdr1 should have the same files with the the same checksums of volume Z</td>
 </tr>
 <tr>
@@ -1421,7 +1421,7 @@
 <td>7</td>
 <td>Delete the <code>csi plugin</code> while a backup is in progress.</td>
 <td>1.  Create a volume and write into it.  <br>    Compute the md5sum of the data.<br>2.  Create the below <code>VolumeSnapshot</code> object<br><pre>apiVersion: snapshot.storage.k8s.io/v1beta1<br>kind: VolumeSnapshot<br>metadata:<br> <br>name: test-snapshot-pvc<br>spec:<br>  volumeSnapshotClassName: longhorn<br>  source:<br>    persistentVolumeClaimName: test-vol</pre>3.  While the backup is in progress, delete the <code>csi plugin</code></td>
-<td>On deleting <code>csi plugin</code> , a new pod of <code>csi plugin</code> should get created and the bacup should continue to complete.</td>
+<td>On deleting <code>csi plugin</code> , a new pod of <code>csi plugin</code> should get created and the backup should continue to complete.</td>
 </tr>
 <tr>
 <td>8</td>

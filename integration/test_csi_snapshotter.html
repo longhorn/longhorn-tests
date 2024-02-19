@@ -463,7 +463,7 @@ def test_csi_volumesnapshot_basic(set_random_backupstore, # NOQA
     4. check creation of a new longhorn snapshot named `snapshot-uuid`
     5. check for `VolumeSnapshotContent` named `snapcontent-uuid`
     6. wait for `VolumeSnapshotContent.readyToUse` flag to be set to **true**
-    7. check for backup existance on the backupstore
+    7. check for backup existence on the backupstore
 
     # the csi snapshot restore sets the fromBackup field same as
     # the StorageClass based restore approach.
@@ -888,16 +888,16 @@ def test_csi_snapshot_snap_create_volume_from_snapshot(apps_api, # NOQA
                 - Attach the PVC and verify data
             - Source volume is detached
                 - Scale down the workload
-                - Create PVC from VolumeSnapshot generated from step beggining
+                - Create PVC from VolumeSnapshot generated from step beginning
                 - Verify PVC provision failed
                 - Scale up the workload
                 - Wait for PVC to finish provisioning and be bounded
                 - Attach the PVC test-restore-pvc and verify the data
             - Source volume is attached &amp;&amp; Longhorn snapshot doesn’t exist
                 - Use VolumeSnapshotContent.snapshotHandle to
-                  specify Longhorn snapshot generated in step beggining
+                  specify Longhorn snapshot generated in step beginning
                 - Delete the Longhorn snapshot
-                - Create PVC from VolumeSnapshot generated from step beggining
+                - Create PVC from VolumeSnapshot generated from step beginning
                 - PVC should be stuck in provisioning state
     &#34;&#34;&#34;
     vol, deployment, csisnapclass, expected_md5sum = \
@@ -2124,7 +2124,7 @@ csi-snapshot-support/enable-csi-snapshot-support/</p>
 </li>
 <li>Source volume is detached<ul>
 <li>Scale down the workload</li>
-<li>Create PVC from VolumeSnapshot generated from step beggining</li>
+<li>Create PVC from VolumeSnapshot generated from step beginning</li>
 <li>Verify PVC provision failed</li>
 <li>Scale up the workload</li>
 <li>Wait for PVC to finish provisioning and be bounded</li>
@@ -2133,9 +2133,9 @@ csi-snapshot-support/enable-csi-snapshot-support/</p>
 </li>
 <li>Source volume is attached &amp;&amp; Longhorn snapshot doesn’t exist<ul>
 <li>Use VolumeSnapshotContent.snapshotHandle to
-specify Longhorn snapshot generated in step beggining</li>
+specify Longhorn snapshot generated in step beginning</li>
 <li>Delete the Longhorn snapshot</li>
-<li>Create PVC from VolumeSnapshot generated from step beggining</li>
+<li>Create PVC from VolumeSnapshot generated from step beginning</li>
 <li>PVC should be stuck in provisioning state</li>
 </ul>
 </li>
@@ -2186,16 +2186,16 @@ specify Longhorn snapshot generated in step beggining</li>
                 - Attach the PVC and verify data
             - Source volume is detached
                 - Scale down the workload
-                - Create PVC from VolumeSnapshot generated from step beggining
+                - Create PVC from VolumeSnapshot generated from step beginning
                 - Verify PVC provision failed
                 - Scale up the workload
                 - Wait for PVC to finish provisioning and be bounded
                 - Attach the PVC test-restore-pvc and verify the data
             - Source volume is attached &amp;&amp; Longhorn snapshot doesn’t exist
                 - Use VolumeSnapshotContent.snapshotHandle to
-                  specify Longhorn snapshot generated in step beggining
+                  specify Longhorn snapshot generated in step beginning
                 - Delete the Longhorn snapshot
-                - Create PVC from VolumeSnapshot generated from step beggining
+                - Create PVC from VolumeSnapshot generated from step beginning
                 - PVC should be stuck in provisioning state
     &#34;&#34;&#34;
     vol, deployment, csisnapclass, expected_md5sum = \
@@ -2987,7 +2987,7 @@ the <code>VolumeSnapshot.uuid</code> will be used to identify a
 4. check creation of a new longhorn snapshot named <code>snapshot-uuid</code>
 5. check for <code>VolumeSnapshotContent</code> named <code>snapcontent-uuid</code>
 6. wait for <code>VolumeSnapshotContent.readyToUse</code> flag to be set to <strong>true</strong>
-7. check for backup existance on the backupstore</p>
+7. check for backup existence on the backupstore</p>
 <h1 id="the-csi-snapshot-restore-sets-the-frombackup-field-same-as">the csi snapshot restore sets the fromBackup field same as</h1>
 <h1 id="the-storageclass-based-restore-approach">the StorageClass based restore approach.</h1>
 <p>def csi_volumesnapshot_restore_test():
@@ -3058,7 +3058,7 @@ def test_csi_volumesnapshot_basic(set_random_backupstore, # NOQA
     4. check creation of a new longhorn snapshot named `snapshot-uuid`
     5. check for `VolumeSnapshotContent` named `snapcontent-uuid`
     6. wait for `VolumeSnapshotContent.readyToUse` flag to be set to **true**
-    7. check for backup existance on the backupstore
+    7. check for backup existence on the backupstore
 
     # the csi snapshot restore sets the fromBackup field same as
     # the StorageClass based restore approach.

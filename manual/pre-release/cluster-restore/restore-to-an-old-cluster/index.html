@@ -847,18 +847,18 @@ This test may need to be validated for both kind of cluster.</p>
 </ol>
 </li>
 <li>Create a cluster snapshot via Rancher.</li>
-<li>Do the followings before the restore:
+<li>Do the following before the restore:
 <ol>
 <li>Delete volume A.</li>
 <li>Write more data to volume B and create more backups.</li>
 <li>Remove all current replicas one by one for volume C. Then all replicas of volume C are new replicas.</li>
 <li>Remove some replicas for volume D. Do snapshot creation, deletion, and revert.</li>
 <li>Scale down the workload. Upgrade volume E from the default image to another engine image. And do expansion.</li>
-<li>Create and attach volume F via UI. Write some data and do some snapshot operations. (Validate 1 case: Users need to manuall recover the volume if it&rsquo;s created after the cluster snapshot)</li>
+<li>Create and attach volume F via UI. Write some data and do some snapshot operations. (Validate 1 case: Users need to manually recover the volume if it&rsquo;s created after the cluster snapshot)</li>
 </ol>
 </li>
 <li>Restore the cluster.</li>
-<li>Check the followings according to the doc:
+<li>Check the following according to the doc:
 <ol>
 <li>Volume A is back. But there is no data in it. And users can re-delete it.</li>
 <li>Volume B can be reattached or keep attached with correct data. The backup info of volume B is resynced when the volume is reattahed. The pod can use the volume after restart.</li>

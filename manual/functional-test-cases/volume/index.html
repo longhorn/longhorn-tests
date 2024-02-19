@@ -865,8 +865,8 @@
 <tr>
 <td>8</td>
 <td>Create PV/PVC for multiple volumes</td>
-<td><strong>Prerequisite:</strong><br><br>*   Create multiple volumes<br><br>1.  Select multiple volumes<br>2.  Create a PV, specify filesysem<br>3.  Check PV in Lonhgorn UI and in Kubernetes<br>4.  Create PVC<br>5.  Check PVC in Lonhgorn UI and in Kubernetes<br>6.  Delete PVC<br>7.  Check PV in Lonhgorn UI and in Kubernetes</td>
-<td>*   For all selected volumes<br>    *   PV should created<br>    *   PV/PVC status in UI should be <code>Available</code><br>    *   PV <code>spec.csi.fsType</code> should match filesystem specified in PV creation request<br>    *   PV <code>spec.storageClassName</code> should match the setting in <code>Default Longhorn Static StorageClass Name</code><br>    *   PV <code>spec.csi.volumeHandle</code> should be the volume name<br>    *   PV/PVC status in UI should be <code>Bound</code> in Longhorn UI<br>    *   PVC namespace should match namespace specified in PVC creation request<br>    *   After Deleting PVC, PV/PVC status should be <code>Relased</code> in Longhorn UI.</td>
+<td><strong>Prerequisite:</strong><br><br>*   Create multiple volumes<br><br>1.  Select multiple volumes<br>2.  Create a PV, specify filesystem<br>3.  Check PV in Lonhgorn UI and in Kubernetes<br>4.  Create PVC<br>5.  Check PVC in Lonhgorn UI and in Kubernetes<br>6.  Delete PVC<br>7.  Check PV in Lonhgorn UI and in Kubernetes</td>
+<td>*   For all selected volumes<br>    *   PV should created<br>    *   PV/PVC status in UI should be <code>Available</code><br>    *   PV <code>spec.csi.fsType</code> should match filesystem specified in PV creation request<br>    *   PV <code>spec.storageClassName</code> should match the setting in <code>Default Longhorn Static StorageClass Name</code><br>    *   PV <code>spec.csi.volumeHandle</code> should be the volume name<br>    *   PV/PVC status in UI should be <code>Bound</code> in Longhorn UI<br>    *   PVC namespace should match namespace specified in PVC creation request<br>    *   After Deleting PVC, PV/PVC status should be <code>Released</code> in Longhorn UI.</td>
 </tr>
 <tr>
 <td>9</td>

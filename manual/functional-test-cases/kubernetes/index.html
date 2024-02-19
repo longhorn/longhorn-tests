@@ -947,9 +947,9 @@
 </tr>
 <tr>
 <td>5</td>
-<td>Create Storage class - by using different values for the input list of paramters</td>
+<td>Create Storage class - by using different values for the input list of parameters</td>
 <td><strong>Pre condition:</strong><br><br>*   Longhorn is deployed in the cluster<br><br><strong>Steps:</strong><br><br>1.  Go to cluster → Storage → Storage Classes<br>2.  Click on Add class<br>3.  Select Provisioner <strong>Longhorn</strong><br>4.  Give in other required parameters.<br>5.  Click on <strong>Save</strong>.<br>6.  Use this storage class to create a PVC and deploy in a workload.<br>7.  Verify the parameters of the volume created.</td>
-<td>Volume parameters should match the storage class paramaters.</td>
+<td>Volume parameters should match the storage class parameters.</td>
 </tr>
 <tr>
 <td>6</td>
@@ -979,13 +979,13 @@
 <td>10</td>
 <td>Power down node</td>
 <td>1.  Power down<br>2.  Replica migrates<br>3.  Power back on<br>4.  Verify if the replicas in the node have been deleted</td>
-<td>*   When a node is powered down, the replica is rebuilt on the 4th wrker node.<br>*   When the node is powered back on, and the replica on the powered down node is not available in Longhorn UI anymore, there is no data in <code>/var/lib/longhorn/replicas</code> folder in the powered on node.</td>
+<td>*   When a node is powered down, the replica is rebuilt on the 4th worker node.<br>*   When the node is powered back on, and the replica on the powered down node is not available in Longhorn UI anymore, there is no data in <code>/var/lib/longhorn/replicas</code> folder in the powered on node.</td>
 </tr>
 <tr>
 <td>11</td>
 <td>Power down node with. Node tag/disk tag</td>
 <td>1.  Add a node tag/disk tag<br>2.  Power down<br>3.  Replica cannot migrate<br>4.  Power back on<br>5.  Replica should get rebuilt on this node</td>
-<td>*   When a node is powered down, the replica is rebuilt on the 4th wrker node.<br>*   When the node is powered back on, and the replica on the powered down node is not available in Longhorn UI anymore, there is no data in <code>/var/lib/longhorn/replicas</code> folder in the powered on node.<br>*   The new replica is rebuilt on a node which has a tag.</td>
+<td>*   When a node is powered down, the replica is rebuilt on the 4th worker node.<br>*   When the node is powered back on, and the replica on the powered down node is not available in Longhorn UI anymore, there is no data in <code>/var/lib/longhorn/replicas</code> folder in the powered on node.<br>*   The new replica is rebuilt on a node which has a tag.</td>
 </tr>
 <tr>
 <td>12</td>

@@ -33,7 +33,7 @@
       <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.2.0/label-driven-recurring-job/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.2.0/label-driven-recurring-job/</guid>
-      <description>Related issue https://github.com/longhorn/longhorn/issues/467&#xA;Test Recurring Job Concurrency Given create snapshot recurring job with concurrency set to 2 and include snapshot recurring job default in groups.&#xA;When create volume test-job-1.&#xA;And create volume test-job-2.&#xA;And create volume test-job-3.&#xA;And create volume test-job-4.&#xA;And create volume test-job-5.&#xA;Then moniter the cron job pod log.&#xA;And should see 2 jobs created concurrently.&#xA;When update snapshot1 recurring job with concurrency set to 3.&#xA;Then moniter the cron job pod log.</description>
+      <description>Related issue https://github.com/longhorn/longhorn/issues/467&#xA;Test Recurring Job Concurrency Given create snapshot recurring job with concurrency set to 2 and include snapshot recurring job default in groups.&#xA;When create volume test-job-1.&#xA;And create volume test-job-2.&#xA;And create volume test-job-3.&#xA;And create volume test-job-4.&#xA;And create volume test-job-5.&#xA;Then monitor the cron job pod log.&#xA;And should see 2 jobs created concurrently.&#xA;When update snapshot1 recurring job with concurrency set to 3.&#xA;Then monitor the cron job pod log.</description>
     </item>
     <item>
       <title>Test Version Bump of Kubernetes, API version group, CSI component&#39;s dependency version</title>

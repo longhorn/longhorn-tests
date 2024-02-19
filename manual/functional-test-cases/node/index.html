@@ -892,7 +892,7 @@
 <td>2</td>
 <td>Disk Scheduling</td>
 <td>*   <strong>Prerequisites:</strong><br>    *   Longhorn Deployed with 3 nodes<br>        <br>    *   Add additional disk (Disk#1) ,attach it and mounted to Node-01.<br>        <br><br>1.  Create a New Disk, Keep Disk Scheduling disabled<br>2.  Create a volume (vol#1), set replica count to <code>4</code> and attach it to a node<br>3.  Check (vol#1) replica paths<br>4.  Enable Scheduling on (disk#1)<br>5.  Create a volume (vol#2), set replica count to <code>4</code> and attach it to a node<br>6.  Check (vol#2) replica paths</td>
-<td>*   (vol#1) replicas should be scheduled only to Disks withe Scheduling enabled, no replicas should be scheduled to (disk#1)<br>*   One of (vol#2) replica paths will be scheduled to (disk#1)</td>
+<td>*   (vol#1) replicas should be scheduled only to Disks with Scheduling enabled, no replicas should be scheduled to (disk#1)<br>*   One of (vol#2) replica paths will be scheduled to (disk#1)</td>
 </tr>
 <tr>
 <td>3</td>

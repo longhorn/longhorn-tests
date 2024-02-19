@@ -243,7 +243,7 @@
       <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/node/degraded-availability/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/node/degraded-availability/</guid>
-      <description>Volume creation using UI with degraded availability and added node Related Issue: https://github.com/longhorn/longhorn/issues/1701 Prerequisites: Start with 1 node cluster. Double check if &amp;ldquo;Allow Volume Creation with Degraded Availability&amp;rdquo; is ticked or return true with following command: kubectl get settings.longhorn.io/allow-volume-creation-with-degraded-availability -n longhorn-system Steps: Create a Deployment Pod with a volume and three replicas. After the volume is attached, on Volume page it should be displayed as Degraded Hover the crusor to the red circle exclamation mark, the tooltip will says, &amp;ldquo;The volume cannot be scheduled&amp;rdquo;.</description>
+      <description>Volume creation using UI with degraded availability and added node Related Issue: https://github.com/longhorn/longhorn/issues/1701 Prerequisites: Start with 1 node cluster. Double check if &amp;ldquo;Allow Volume Creation with Degraded Availability&amp;rdquo; is ticked or return true with following command: kubectl get settings.longhorn.io/allow-volume-creation-with-degraded-availability -n longhorn-system Steps: Create a Deployment Pod with a volume and three replicas. After the volume is attached, on Volume page it should be displayed as Degraded Hover the cursor to the red circle exclamation mark, the tooltip will says, &amp;ldquo;The volume cannot be scheduled&amp;rdquo;.</description>
     </item>
     <item>
       <title>Disk migration in AWS ASG</title>
@@ -530,7 +530,7 @@
       <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.2.3/test-backing-image-checksum-mismatching/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.2.3/test-backing-image-checksum-mismatching/</guid>
-      <description>Test step Modify setting Backing Image Recovery Wait Interval to a shorter value so that the backing image will start auto recovery eariler. Create a backing image file with type Download From URL. Launch a volume using the backing image file so that there are 2 disk records for the backing image. Modify one disk file for the backing image and make sure the file size is not changed. This will lead to data inconsistency/corruption later.</description>
+      <description>Test step Modify setting Backing Image Recovery Wait Interval to a shorter value so that the backing image will start auto recovery earlier. Create a backing image file with type Download From URL. Launch a volume using the backing image file so that there are 2 disk records for the backing image. Modify one disk file for the backing image and make sure the file size is not changed. This will lead to data inconsistency/corruption later.</description>
     </item>
     <item>
       <title>Test backing image download to local</title>
@@ -712,7 +712,7 @@
       <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.2.0/label-driven-recurring-job/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.2.0/label-driven-recurring-job/</guid>
-      <description>Related issue https://github.com/longhorn/longhorn/issues/467&#xA;Test Recurring Job Concurrency Given create snapshot recurring job with concurrency set to 2 and include snapshot recurring job default in groups.&#xA;When create volume test-job-1.&#xA;And create volume test-job-2.&#xA;And create volume test-job-3.&#xA;And create volume test-job-4.&#xA;And create volume test-job-5.&#xA;Then moniter the cron job pod log.&#xA;And should see 2 jobs created concurrently.&#xA;When update snapshot1 recurring job with concurrency set to 3.&#xA;Then moniter the cron job pod log.</description>
+      <description>Related issue https://github.com/longhorn/longhorn/issues/467&#xA;Test Recurring Job Concurrency Given create snapshot recurring job with concurrency set to 2 and include snapshot recurring job default in groups.&#xA;When create volume test-job-1.&#xA;And create volume test-job-2.&#xA;And create volume test-job-3.&#xA;And create volume test-job-4.&#xA;And create volume test-job-5.&#xA;Then monitor the cron job pod log.&#xA;And should see 2 jobs created concurrently.&#xA;When update snapshot1 recurring job with concurrency set to 3.&#xA;Then monitor the cron job pod log.</description>
     </item>
     <item>
       <title>Test list backup when cluster has node cordoned before Longhorn installation</title>

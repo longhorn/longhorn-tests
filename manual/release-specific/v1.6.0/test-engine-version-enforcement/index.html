@@ -820,7 +820,7 @@ And create and attach a volume (volume-2)</p>
 longhorn-manager-zsph2                                0/1     CrashLoopBackOff   2 (8s ago)    52s
 longhorn-manager-grhsf                                0/1     CrashLoopBackOff   2 (8s ago)    51s
 </code></pre><p>And should see incompatible version error in longhorn-manager Pod logs</p>
-<pre tabindex="0"><code>time=&#34;2023-08-17T03:03:20Z&#34; level=fatal msg=&#34;Error starting manager: failed checking Engine upgarde path: incompatible Engine ei-7fa7c208 client API version: found version 7 is below required minimal version 8&#34;
+<pre tabindex="0"><code>time=&#34;2023-08-17T03:03:20Z&#34; level=fatal msg=&#34;Error starting manager: failed checking Engine upgrade path: incompatible Engine ei-7fa7c208 client API version: found version 7 is below required minimal version 8&#34;
 </code></pre><p><strong>When</strong> downgraded Longhorn to v1.5.x<br>
 <strong>Then</strong> Longhorn components should be running</p>
 <p><strong>When</strong> upgraded v1.4.1 volume (volume-1) engine<br>
@@ -831,7 +831,7 @@ And v1.4.x EngineImage state should be deployed and incompatible should be true.
 ei-74783864   false          deployed   longhornio/longhorn-engine:v1.5.1   10         28d         12m
 ei-7fa7c208   true           deployed   longhornio/longhorn-engine:v1.4.1   0          157d        13m
 ei-ad420081   false          deployed   c3y1huang/research:2017-lh-ei       0          44h         24s
-</code></pre><p><strong>When</strong> update existing volume/engine/replica custom resourcs <code>spec.image</code> with <code>longhornio/longhorn-engine:v1.4.x</code><br>
+</code></pre><p><strong>When</strong> update existing volume/engine/replica custom resources <code>spec.image</code> with <code>longhornio/longhorn-engine:v1.4.x</code><br>
 <strong>Then</strong> should be blocked</p>
 
     </article>

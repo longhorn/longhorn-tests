@@ -2315,7 +2315,7 @@ class AssertErrorCheckThread(threading.Thread):
 
         Parameters:
             target  :       The threading function.
-            args    :       Arguments of the target fucntion.
+            args    :       Arguments of the target function.
     &#34;&#34;&#34;
     def __init__(self, target, args):
         threading.Thread.__init__(self)
@@ -5786,7 +5786,7 @@ def generate_support_bundle(case_name):  # NOQA
         Generate support bundle into folder ./support_bundle/case_name.zip
 
         Won&#39;t generate support bundle if current support bundle count
-        greate than MAX_SUPPORT_BINDLE_NUMBER.
+        greater than MAX_SUPPORT_BINDLE_NUMBER.
         Args:
             case_name: support bundle will named case_name.zip
     &#34;&#34;&#34;
@@ -5836,7 +5836,7 @@ def generate_support_bundle(case_name):  # NOQA
         with open(&#39;./support_bundle/{0}.zip&#39;.format(case_name), &#39;wb&#39;) as f:
             f.write(r.content)
     except Exception as e:
-        warnings.warn(&#34;Error occured while downloading support bundle {}.zip\n\
+        warnings.warn(&#34;Error occurred when downloading support bundle {}.zip\n\
             The error was {}&#34;.format(case_name, e))
 
 
@@ -9219,7 +9219,7 @@ been completed successfully</p></div>
 <dd>
 <div class="desc"><p>Generate support bundle into folder ./support_bundle/case_name.zip</p>
 <p>Won't generate support bundle if current support bundle count
-greate than MAX_SUPPORT_BINDLE_NUMBER.</p>
+greater than MAX_SUPPORT_BINDLE_NUMBER.</p>
 <h2 id="args">Args</h2>
 <dl>
 <dt><strong><code>case_name</code></strong></dt>
@@ -9234,7 +9234,7 @@ greate than MAX_SUPPORT_BINDLE_NUMBER.</p>
         Generate support bundle into folder ./support_bundle/case_name.zip
 
         Won&#39;t generate support bundle if current support bundle count
-        greate than MAX_SUPPORT_BINDLE_NUMBER.
+        greater than MAX_SUPPORT_BINDLE_NUMBER.
         Args:
             case_name: support bundle will named case_name.zip
     &#34;&#34;&#34;
@@ -9284,7 +9284,7 @@ greate than MAX_SUPPORT_BINDLE_NUMBER.</p>
         with open(&#39;./support_bundle/{0}.zip&#39;.format(case_name), &#39;wb&#39;) as f:
             f.write(r.content)
     except Exception as e:
-        warnings.warn(&#34;Error occured while downloading support bundle {}.zip\n\
+        warnings.warn(&#34;Error occurred when downloading support bundle {}.zip\n\
             The error was {}&#34;.format(case_name, e))</code></pre>
 </details>
 </dd>
@@ -15103,7 +15103,7 @@ especially for AssertionError now.</p>
 The threading function.
 args
 :
-Arguments of the target fucntion.</p>
+Arguments of the target function.</p>
 <p>This constructor should always be called with keyword arguments. Arguments are:</p>
 <p><em>group</em> should be None; reserved for future extension when a ThreadGroup
 class is implemented.</p>
@@ -15128,7 +15128,7 @@ else to the thread.</p></div>
 
         Parameters:
             target  :       The threading function.
-            args    :       Arguments of the target fucntion.
+            args    :       Arguments of the target function.
     &#34;&#34;&#34;
     def __init__(self, target, args):
         threading.Thread.__init__(self)
