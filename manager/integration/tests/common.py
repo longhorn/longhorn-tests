@@ -6116,3 +6116,42 @@ def wait_for_instance_manager_count(client, number, retry_counts=120):
         time.sleep(RETRY_INTERVAL_LONG)
 
     return len(ims)
+
+
+def create_deployment_and_write_data(client, # NOQA
+                                     core_api, # NOQA
+                                     make_deployment_with_pvc, # NOQA
+                                     volume_name, # NOQA
+                                     size, # NOQA
+                                     replica_count, # NOQA
+                                     data_size, # NOQA
+                                     attach_node_id=None): # NOQA
+    apps_api = get_apps_api_client()
+    volume = client.create_volume(name=volume_name,
+                                  size=size,
+                                  numberOfReplicas=replica_count)
+    volume = wait_for_volume_detached(client, volume_name)
+
+    pvc_name = volume_name + "-pvc"
+    create_pv_for_volume(client, core_api, volume, volume_name)
+    create_pvc_for_volume(client, core_api, volume, pvc_name)
+    deployment_name = volume_name + "-dep"
+    deployment = make_deployment_with_pvc(deployment_name, pvc_name)
+    if attach_node_id:
+        deployment["spec"]["template"]["spec"]["nodeSelector"] \
+            = {"kubernetes.io/hostname": attach_node_id}
+
+    create_and_wait_deployment(apps_api, deployment)
+
+    data_path = '/data/test'
+    deployment_pod_names = get_deployment_pod_names(core_api,
+                                                    deployment)
+    write_pod_volume_random_data(core_api,
+                                 deployment_pod_names[0],
+                                 data_path,
+                                 data_size)
+    checksum = get_pod_data_md5sum(core_api,
+                                   deployment_pod_names[0],
+                                   data_path)
+
+    return client.by_id_volume(volume_name), deployment_pod_names[0], checksum
