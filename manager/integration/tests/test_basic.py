@@ -5022,7 +5022,7 @@ def test_space_usage_for_rebuilding_only_volume(client, volume_name, request):  
     snap_offset = 1
     volume_endpoint = get_volume_endpoint(volume)
     write_volume_dev_random_mb_data(volume_endpoint,
-                                    snap_offset, 3000, 5)
+                                    snap_offset, 3000, 10)
 
     snap2 = create_snapshot(client, volume_name)
     volume.snapshotDelete(name=snap2.name)
@@ -5030,7 +5030,7 @@ def test_space_usage_for_rebuilding_only_volume(client, volume_name, request):  
     wait_for_snapshot_purge(client, volume_name, snap2.name)
 
     write_volume_dev_random_mb_data(volume_endpoint,
-                                    snap_offset, 3000, 5)
+                                    snap_offset, 3000, 10)
 
     for r in volume.replicas:
         if r.hostId != lht_hostId:
@@ -5073,14 +5073,14 @@ def test_space_usage_for_rebuilding_only_volume_worst_scenario(client, volume_na
     snap_offset = 1
     volume_endpoint = get_volume_endpoint(volume)
     write_volume_dev_random_mb_data(volume_endpoint,
-                                    snap_offset, 2000)
+                                    snap_offset, 2000, 10)
     snap1 = create_snapshot(client, volume_name)
     volume.snapshotDelete(name=snap1.name)
     volume.snapshotPurge()
     wait_for_snapshot_purge(client, volume_name, snap1.name)
 
     write_volume_dev_random_mb_data(volume_endpoint,
-                                    snap_offset, 2000)
+                                    snap_offset, 2000, 10)
 
     for r in volume.replicas:
         if r.hostId != lht_hostId:
@@ -5090,7 +5090,7 @@ def test_space_usage_for_rebuilding_only_volume_worst_scenario(client, volume_na
     wait_for_volume_degraded(client, volume_name)
     wait_for_rebuild_start(client, volume_name)
     write_volume_dev_random_mb_data(volume_endpoint,
-                                    snap_offset, 2000)
+                                    snap_offset, 2000, 10)
 
     wait_for_rebuild_complete(client, volume_name)
     volume = client.by_id_volume(volume_name)
