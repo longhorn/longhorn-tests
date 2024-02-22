@@ -1922,7 +1922,7 @@ def wait_for_volume_faulted(client, name):
 
 
 def wait_for_volume_status(client, name, key, value,
-                           retry_count=RETRY_COUNTS):
+                           retry_count=RETRY_COUNTS_LONG):
     wait_for_volume_creation(client, name)
     for i in range(retry_count):
         volume = client.by_id_volume(name)
