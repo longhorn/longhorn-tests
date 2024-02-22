@@ -31,7 +31,7 @@ variable "arch" {
 
 variable "os_distro_version" {
   type        = string
-  default     = "9.1.0"
+  default     = "9.3.0"
 }
 
 variable "aws_ami_rhel_account_number" {
