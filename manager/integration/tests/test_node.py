@@ -2745,10 +2745,19 @@ def check_replica_evict_state(client, volume_name, node, expect_state): # NOQA
     assert eviction_requested is expect_state
 
 
-def wait_drain_complete(future, timeout):
+def wait_drain_complete(future, timeout, copmpleted=True):
     """
     Wait concurrent.futures object complete in a duration
     """
+    def stop_drain_process():
+        """
+        Both future.cancel() and executer.shutdown(wait=False) can not really
+        stop the drain process.
+        Use this function to stop drain process
+        """
+        command = ["pkill", "-f", "kubectl drain"]
+        subprocess.check_output(command, text=True)
+
     thread_timeout = timeout
     try:
         future.result(timeout=thread_timeout)
@@ -2756,9 +2765,9 @@ def wait_drain_complete(future, timeout):
     except TimeoutError:
         print("drain node thread exceed timeout ({})s".format(thread_timeout))
         drain_complete = False
-        future.cancel()
+        stop_drain_process()
     finally:
-        assert drain_complete is True
+        assert drain_complete is copmpleted
 
 
 def make_replica_on_specific_node(client, volume_name, node): # NOQA
@@ -2787,15 +2796,11 @@ def check_all_replicas_evict_state(client, volume_name, expect_state): # NOQA
         assert eviction_requested is expect_state
 
 
-@pytest.mark.skip(reason="Can not run when in-cluster backup store pod exist")  # NOQA
-def test_drain_with_block_for_eviction_success(client, core_api, volume_name, make_deployment_with_pvc): # NOQA
+def test_drain_with_block_for_eviction_success(client, # NOQA
+                                               core_api, # NOQA
+                                               volume_name, # NOQA
+                                               make_deployment_with_pvc): # NOQA
     """
-    Test case has the potential to drain node where backup store pods are
-    located.
-    In that case, test case will fail because backup store pods can only be
-    forcibly drained.
-    ---
-
     Test drain completes after evicting replica with node-drain-policy
     block-for-eviction
 
@@ -2880,16 +2885,10 @@ def test_drain_with_block_for_eviction_success(client, core_api, volume_name, ma
     assert checksum == test_data_checksum
 
 
-@pytest.mark.skip(reason="Can not run when in-cluster backup store pod exist")  # NOQA
 def test_drain_with_block_for_eviction_if_contains_last_replica_success(client, # NOQA
                                                                         core_api, # NOQA
                                                                         make_deployment_with_pvc): # NOQA
     """
-    Test case has the potential to drain node where backup store pods are
-    located.
-    In that case, test case will fail because backup store pods can only be
-    forcibly drained.
-    ---
     Test drain completes after evicting replicas with node-drain-policy
     block-for-eviction-if-contains-last-replica
 
@@ -2921,7 +2920,6 @@ def test_drain_with_block_for_eviction_if_contains_last_replica_success(client, 
     nodes = client.list_node()
     evict_nodes = [node for node in nodes if node.id != host_id][:2]
     evict_source_node = evict_nodes[0]
-
     # Create extra disk on current node
     node = client.by_id_node(host_id)
     disks = node.disks
@@ -2993,7 +2991,7 @@ def test_drain_with_block_for_eviction_if_contains_last_replica_success(client, 
 
     # Step 9
     volume1 = client.by_id_volume(volume1_name)
-    assert len(volume1.replicas) == 1
+    wait_for_volume_replica_count(client, volume1_name, 1)
     for replica in volume1.replicas:
         assert replica.hostId != evict_source_node.id
 
@@ -3024,8 +3022,10 @@ def test_drain_with_block_for_eviction_if_contains_last_replica_success(client, 
     assert checksum2 == test_data_checksum2
 
 
-@pytest.mark.skip(reason="TODO")  # NOQA
-def test_drain_with_block_for_eviction_failure():
+def test_drain_with_block_for_eviction_failure(client, # NOQA
+                                               core_api, # NOQA
+                                               volume_name, # NOQA
+                                               make_deployment_with_pvc): # NOQA
     """
     Test drain never completes with node-drain-policy block-for-eviction
 
@@ -3040,7 +3040,47 @@ def test_drain_with_block_for_eviction_failure():
        - Verify that `node.status.autoEvicting == true`.
        - Verify that `replica.spec.evictionRequested == true`.
     7. Verify the drain never completes.
+    8. Stop the drain, check volume is healthy and data correct
     """
+    host_id = get_self_host_id()
+    nodes = client.list_node()
+    evict_nodes = [node for node in nodes if node.id != host_id][:2]
+    evict_source_node = evict_nodes[0]
+
+    # Step 1
+    setting = client.by_id_setting(
+        SETTING_NODE_DRAIN_POLICY)
+    client.update(setting, value="block-for-eviction")
+
+    # Step 2, 3, 4
+    volume, pod, checksum = create_deployment_and_write_data(client,
+                                                             core_api,
+                                                             make_deployment_with_pvc, # NOQA
+                                                             volume_name,
+                                                             str(1 * Gi),
+                                                             3,
+                                                             DATA_SIZE_IN_MB_3, host_id) # NOQA
+
+    # Step 5
+    executor = ThreadPoolExecutor(max_workers=5)
+    future = executor.submit(drain_node, core_api, evict_source_node)
+
+    # Step 6
+    check_replica_evict_state(client, volume_name, evict_source_node, True)
+    check_node_auto_evict_state(client, evict_source_node, True)
+
+    # Step 7
+    wait_drain_complete(future, 90, False)
+
+    # Step 8
+    set_node_cordon(core_api, evict_source_node.id, False)
+    wait_for_volume_healthy(client, volume_name)
+    data_path = '/data/test'
+    test_data_checksum = get_pod_data_md5sum(core_api,
+                                             pod,
+                                             data_path)
+    assert checksum == test_data_checksum
+
 
 @pytest.mark.node  # NOQA
 def test_auto_detach_volume_when_node_is_cordoned(client, core_api, volume_name):  # NOQA
