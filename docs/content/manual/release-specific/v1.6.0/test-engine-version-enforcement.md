@@ -22,7 +22,7 @@ longhorn-manager-grhsf                                0/1     CrashLoopBackOff  
 ```
 And should see incompatible version error in longhorn-manager Pod logs
 ```
-time="2023-08-17T03:03:20Z" level=fatal msg="Error starting manager: failed checking Engine upgarde path: incompatible Engine ei-7fa7c208 client API version: found version 7 is below required minimal version 8"
+time="2023-08-17T03:03:20Z" level=fatal msg="Error starting manager: failed checking Engine upgrade path: incompatible Engine ei-7fa7c208 client API version: found version 7 is below required minimal version 8"
 ```
 
 **When** downgraded Longhorn to v1.5.x  
@@ -39,5 +39,5 @@ ei-7fa7c208   true           deployed   longhornio/longhorn-engine:v1.4.1   0   
 ei-ad420081   false          deployed   c3y1huang/research:2017-lh-ei       0          44h         24s
 ```
 
-**When** update existing volume/engine/replica custom resourcs `spec.image` with `longhornio/longhorn-engine:v1.4.x`  
+**When** update existing volume/engine/replica custom resources `spec.image` with `longhornio/longhorn-engine:v1.4.x`  
 **Then** should be blocked  
