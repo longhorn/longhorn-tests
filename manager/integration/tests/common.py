@@ -1301,7 +1301,7 @@ def check_pvc_in_specific_status(api, pvc_name, status):
         claim = \
             api.read_namespaced_persistent_volume_claim(name=pvc_name,
                                                         namespace='default')
-        if claim.status.phase == "bound":
+        if claim.status.phase == status:
             break
         time.sleep(RETRY_INTERVAL)
 
