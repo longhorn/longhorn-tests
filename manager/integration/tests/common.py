@@ -1306,7 +1306,7 @@ def check_pvc_in_specific_status(api, pvc_name, status):
         claim = \
             api.read_namespaced_persistent_volume_claim(name=pvc_name,
                                                         namespace='default')
-        if claim.status.phase == "bound":
+        if claim.status.phase == status:
             break
         time.sleep(RETRY_INTERVAL)
 
@@ -2211,10 +2211,10 @@ def wait_for_engine_image_condition(client, image_name, state):
     # This helps to prevent the flaky test case in which the ENGINE_NAME
     # is flapping between ready and not ready a few times before settling
     # down to the ready state
-    # https://github.com/longhorn/longhorn-tests/pull/1638
+    # https://github.com/longhorn/longhorn/issues/7438
     state_count = 1
     if state == "True":
-        state_count = 5
+        state_count = 60
 
     c = 0
     for i in range(RETRY_COUNTS):
