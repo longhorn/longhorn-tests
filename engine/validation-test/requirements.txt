@@ -1,4 +1,4 @@
-flake8==2.5.1
+flake8==7.0.0
 paramiko
 pytest==2.9.2
 pytest-xdist
