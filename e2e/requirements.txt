@@ -2,7 +2,7 @@ robotframework==6.1.1
 argcomplete==1.10.0
 directio==1.2
 flake8
-kubernetes==27.2.0
+kubernetes==29.0.0
 requests==2.31.0
 boto3==1.26.86
 pyyaml==6.0.1
