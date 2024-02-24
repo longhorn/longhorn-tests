@@ -11,12 +11,14 @@ from utility.utility import logging
 
 WAIT_FOR_POD_STABLE_MAX_RETRY = 90
 
+
 def get_name_suffix(*args):
     suffix = ""
     for arg in args:
         if arg:
             suffix += f"-{arg}"
     return suffix
+
 
 def create_storageclass(name):
     if name == 'longhorn-test-strict-local':
@@ -30,12 +32,14 @@ def create_storageclass(name):
         api = client.StorageV1Api()
         api.create_storage_class(body=manifest_dict)
 
+
 def delete_storageclass(name):
     api = client.StorageV1Api()
     try:
         api.delete_storage_class(name, grace_period_seconds=0)
     except ApiException as e:
         assert e.status == 404
+
 
 def create_deployment(volume_type, option):
     filepath = f"./templates/workload/deployment.yaml"
@@ -74,6 +78,7 @@ def create_deployment(volume_type, option):
 
     return deployment_name
 
+
 def delete_deployment(name, namespace='default'):
     api = client.AppsV1Api()
 
@@ -97,6 +102,7 @@ def delete_deployment(name, namespace='default'):
             break
         time.sleep(retry_interval)
     assert deleted
+
 
 def create_statefulset(volume_type, option):
     filepath = "./templates/workload/statefulset.yaml"
@@ -128,6 +134,7 @@ def create_statefulset(volume_type, option):
 
     return statefulset_name
 
+
 def wait_for_statefulset_replicas_ready(statefulset_name, expected_ready_count, namespace='default'):
     apps_v1_api = client.AppsV1Api()
 
@@ -145,6 +152,7 @@ def wait_for_statefulset_replicas_ready(statefulset_name, expected_ready_count, 
         time.sleep(retry_interval)
 
     assert statefulset.status.ready_replicas == expected_ready_count
+
 
 def delete_statefulset(name, namespace='default'):
     api = client.AppsV1Api()
@@ -170,9 +178,11 @@ def delete_statefulset(name, namespace='default'):
         time.sleep(retry_interval)
     assert deleted
 
+
 def get_statefulset(name, namespace='default'):
     api = client.AppsV1Api()
     return api.read_namespaced_stateful_set(name=name, namespace=namespace)
+
 
 def scale_statefulset(name, replica_count, namespace='default'):
     logging(f"Scaling statefulset {name} to {replica_count}")
@@ -187,6 +197,7 @@ def scale_statefulset(name, replica_count, namespace='default'):
 
     statefulset = get_statefulset(name, namespace)
     assert statefulset.spec.replicas == int(replica_count)
+
 
 def create_pvc(volume_type, option):
     filepath = "./templates/workload/pvc.yaml"
@@ -209,6 +220,7 @@ def create_pvc(volume_type, option):
             namespace=namespace)
 
     return pvc.metadata.name
+
 
 def delete_pvc(name, namespace='default'):
     api = client.CoreV1Api()
@@ -233,6 +245,7 @@ def delete_pvc(name, namespace='default'):
         time.sleep(retry_interval)
     assert deleted
 
+
 def get_workload_pod_names(workload_name):
     api = client.CoreV1Api()
     label_selector = f"app={workload_name}"
@@ -244,6 +257,7 @@ def get_workload_pod_names(workload_name):
         pod_names.append(pod.metadata.name)
     return pod_names
 
+
 def get_workload_pods(workload_name):
     api = client.CoreV1Api()
     label_selector = f"app={workload_name}"
@@ -252,12 +266,14 @@ def get_workload_pods(workload_name):
         label_selector=label_selector)
     return resp.items
 
+
 def get_workload_volume_name(workload_name):
     api = client.CoreV1Api()
     pvc_name = get_workload_pvc_name(workload_name)
     pvc = api.read_namespaced_persistent_volume_claim(
         name=pvc_name, namespace='default')
     return pvc.spec.volume_name
+
 
 def get_workload_pvc_name(workload_name):
     api = client.CoreV1Api()
@@ -269,6 +285,7 @@ def get_workload_pvc_name(workload_name):
             break
     assert pvc_name
     return pvc_name
+
 
 def write_pod_random_data(pod_name, size_in_mb, path="/data/random-data"):
     api = client.CoreV1Api()
@@ -282,6 +299,7 @@ def write_pod_random_data(pod_name, size_in_mb, path="/data/random-data"):
         api.connect_get_namespaced_pod_exec, pod_name, 'default',
         command=write_cmd, stderr=True, stdin=False, stdout=True,
         tty=False)
+
 
 def keep_writing_pod_data(pod_name, size_in_mb=256, path="/data/overwritten-data"):
     api = client.CoreV1Api()
@@ -298,6 +316,7 @@ def keep_writing_pod_data(pod_name, size_in_mb=256, path="/data/overwritten-data
     logging(f"Created process to keep writing pod {pod_name}")
     return res
 
+
 def check_pod_data_checksum(pod_name, checksum, path="/data/random-data"):
     logging(f"Checking pod {pod_name} data checksum")
     api = client.CoreV1Api()
@@ -313,6 +332,7 @@ def check_pod_data_checksum(pod_name, checksum, path="/data/random-data"):
     assert _checksum == checksum, \
         f"Got {path} checksum = {_checksum}\n" \
         f"Expected checksum = {checksum}"
+
 
 def wait_for_workload_pod_stable(workload_name):
     stable_pod = None

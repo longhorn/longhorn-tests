@@ -9,6 +9,7 @@ from common import wait_for_volume_current_image, wait_for_volume_delete
 from common import wait_for_volume_detached
 from common import wait_for_engine_image_deletion
 from common import wait_for_engine_image_ref_count, wait_for_engine_image_state
+from common import wait_for_engine_image_incompatible
 from common import get_volume_engine, write_volume_random_data
 from common import check_volume_endpoint
 from common import wait_for_volume_replicas_mode
@@ -42,7 +43,7 @@ def test_engine_image(client, core_api, volume_name):  # NOQA
     """
     Test Engine Image deployment
 
-    1. List Engine Images and validate basic properities.
+    1. List Engine Images and validate basic properties.
     2. Try deleting default engine image and it should fail.
     3. Try creating a duplicate engine image as default and it should fail
     4. Get upgrade test image for the same versions
@@ -450,8 +451,8 @@ def test_engine_image_incompatible(client, core_api, volume_name):  # NOQA
         ctl_v, ctl_minv,
         data_v, data_minv)
     img = client.create_engine_image(image=fail_cli_v_image)
-    img = wait_for_engine_image_state(client, img.name, "incompatible")
-    assert img.state == "incompatible"
+    img = wait_for_engine_image_incompatible(client, img.name)
+    assert img.incompatible
     assert img.cliAPIVersion == cli_minv - 1
     assert img.cliAPIMinVersion == cli_minv - 1
     client.delete(img)
@@ -462,8 +463,8 @@ def test_engine_image_incompatible(client, core_api, volume_name):  # NOQA
             ctl_v, ctl_minv,
             data_v, data_minv)
     img = client.create_engine_image(image=fail_cli_minv_image)
-    img = wait_for_engine_image_state(client, img.name, "incompatible")
-    assert img.state == "incompatible"
+    img = wait_for_engine_image_incompatible(client, img.name)
+    assert img.incompatible
     assert img.cliAPIVersion == cli_v + 1
     assert img.cliAPIMinVersion == cli_v + 1
     client.delete(img)

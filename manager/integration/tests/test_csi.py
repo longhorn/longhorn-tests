@@ -280,7 +280,8 @@ def test_csi_encrypted_block_volume(client, core_api, storage_class, crypto_secr
     7. Validate the data in `pod2` is consistent with `test_data`
     """
 
-    create_crypto_secret(crypto_secret)
+    secret = crypto_secret(LONGHORN_NAMESPACE)
+    create_crypto_secret(secret)
 
     storage_class['reclaimPolicy'] = 'Retain'
     storage_class['parameters']['csi.storage.k8s.io/provisioner-secret-name'] = 'longhorn-crypto'  # NOQA
@@ -891,6 +892,7 @@ def test_csi_minimal_volume_size(
     csi_pv['metadata']['name'] = pv_name
     csi_pv['spec']['csi']['volumeHandle'] = vol_name
     csi_pv['spec']['capacity']['storage'] = min_storage
+    csi_pv['spec']['persistentVolumeReclaimPolicy'] = 'Retain'
     core_api.create_persistent_volume(csi_pv)
 
     pvc_name = vol_name + "-pvc"

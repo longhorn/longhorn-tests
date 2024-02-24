@@ -17,6 +17,7 @@ from common import pvc  # NOQA
 from common import random_labels, volume_name  # NOQA
 from common import storage_class, statefulset, pvc  # NOQA
 from common import make_deployment_with_pvc  # NOQA
+from common import generate_volume_name
 
 from common import get_self_host_id
 
@@ -68,6 +69,8 @@ from common import wait_for_cron_job_count
 from common import wait_for_cron_job_create
 from common import wait_for_cron_job_delete
 
+from common import ACCESS_MODE_RWO
+from common import ACCESS_MODE_RWX
 from common import JOB_LABEL
 from common import KUBERNETES_STATUS_LABEL
 from common import LONGHORN_NAMESPACE
@@ -1991,9 +1994,9 @@ def test_recurring_job_restored_from_backup_target(set_random_backupstore, clien
     back1 = BACKUP + "1"
     back2 = BACKUP + "2"
     group1 = "group01"
-    volume_name1 = "record-recurring-job"
-    rvolume_name1 = "restore-record-recurring-job-01"
-    rvolume_name2 = "restore-record-recurring-job-02"
+    volume_name1 = "record-recur" + "-" + generate_volume_name()
+    rvolume_name1 = "restore-01" + "-" + generate_volume_name()
+    rvolume_name2 = "restore-02" + "-" + generate_volume_name()
 
     recurring_jobs = {
         back1: {
@@ -2048,8 +2051,8 @@ def test_recurring_job_restored_from_backup_target(set_random_backupstore, clien
 
     complete_backup_1_count = 0
     restore_snapshot_name = ""
-    volume = client.by_id_volume(volume_name1)
     wait_for_backup_completion(client, volume_name1)
+    volume = client.by_id_volume(volume_name1)
     for b in volume.backupStatus:
         if back1+"-" in b.snapshot:
             complete_backup_1_count += 1
@@ -2081,7 +2084,8 @@ def test_recurring_job_restored_from_backup_target(set_random_backupstore, clien
 
 
 @pytest.mark.recurring_job  # NOQA
-def test_recurring_job_filesystem_trim(client, core_api, batch_v1_api, volume_name, csi_pv, pvc, pod_make):  # NOQA
+@pytest.mark.parametrize("access_mode", [ACCESS_MODE_RWO, ACCESS_MODE_RWX])  # NOQA
+def test_recurring_job_filesystem_trim(client, core_api, batch_v1_api, volume_name, csi_pv, pvc, pod_make, access_mode):  # NOQA
     """
     Scenario: test recurring job filesystem-trim
 
@@ -2102,7 +2106,8 @@ def test_recurring_job_filesystem_trim(client, core_api, batch_v1_api, volume_na
     """
     pod_name, _, _, _ = \
         prepare_pod_with_data_in_mb(client, core_api, csi_pv, pvc, pod_make,
-                                    volume_name, data_size_in_mb=10)
+                                    volume_name, data_size_in_mb=10,
+                                    access_mode=access_mode)
 
     volume = client.by_id_volume(volume_name)
 

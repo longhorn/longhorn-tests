@@ -32,12 +32,17 @@ class aws(cloudprovider):
             region_name=default_region)
 
     def instance_id_by_ip(self, instance_ip):
+        resource_suffix = os.getenv("RESOURCE_SUFFIX")
         response = aws.ec2_client.describe_instances(
             Filters=[
                 {
                     'Name': 'private-ip-address',
                     'Values': [instance_ip]
                 },
+                {
+                    'Name': 'tag:Name',
+                    'Values': [f"*{resource_suffix}*"]
+                }
             ],
         )
 

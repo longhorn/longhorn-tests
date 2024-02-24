@@ -24,3 +24,6 @@ until (kubectl get pods -A | grep 'Running'); do
   sleep 5
 done
 
+if [[ -n "${custom_ssh_public_key}" ]]; then
+  echo "${custom_ssh_public_key}" >> /home/rocky/.ssh/authorized_keys
+fi

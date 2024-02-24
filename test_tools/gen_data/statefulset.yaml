@@ -1,0 +1,34 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: test-statefulset
+  namespace: default
+spec:
+  selector:
+    matchLabels:
+      app: test-statefulset
+  serviceName: test-statefulset
+  replicas: 2
+  template:
+    metadata:
+      labels:
+        app: test-statefulset
+    spec:
+      containers:
+        - name: test-statefulset
+          image: nginx:stable-alpine
+          command: ["/bin/sh"]
+          args: [-c, 'dd if=/dev/urandom of=/mnt/data/data bs=1M count=500; trap : TERM INT; sleep infinity & wait']
+          volumeMounts:
+            - name: pvc
+              mountPath: /mnt/data
+  volumeClaimTemplates:
+  - metadata:
+      name: pvc
+    spec:
+      accessModes:
+      - ReadWriteOnce
+      storageClassName: longhorn
+      resources:
+        requests:
+          storage: 1Gi

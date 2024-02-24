@@ -42,5 +42,6 @@ ADD pipelines/helm/scripts/upgrade-longhorn.sh ./pipelines/helm/scripts/upgrade-
 ADD pipelines/rancher/scripts/upgrade-longhorn.sh ./pipelines/rancher/scripts/upgrade-longhorn.sh
 ADD pipelines/flux/scripts/upgrade-longhorn.sh ./pipelines/flux/scripts/upgrade-longhorn.sh
 ADD pipelines/argocd/scripts/upgrade-longhorn.sh ./pipelines/argocd/scripts/upgrade-longhorn.sh
+ADD pipelines/fleet/scripts/upgrade-longhorn.sh ./pipelines/fleet/scripts/upgrade-longhorn.sh
 
 ENTRYPOINT ["./run.sh"]
