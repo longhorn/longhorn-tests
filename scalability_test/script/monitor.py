@@ -50,7 +50,7 @@ class Monitor:
         node_list = []
         try:
             pod_list = self.core_api_v1.list_namespaced_pod("default")
-        # TODO: change to catch any exeption and count the number of api exceptions 
+        # TODO: change to catch any exception and count the number of api exceptions
         except client.ApiException as e:
             print("Exception when calling CoreV1Api->list_namespaced_pod: %s\n" % e)
             print("Skipping this update")
@@ -58,7 +58,7 @@ class Monitor:
 
         try:
             node_list = self.custom_objects_api.list_cluster_custom_object("metrics.k8s.io", "v1beta1", "nodes")
-        # TODO: change to catch any exeption and count the number of api exceptions
+        # TODO: change to catch any exception and count the number of api exceptions
         except client.ApiException as e:
             print("Exception when calling custom_objects_api->list_cluster_custom_object: %s\n" % e)
             print("Will set node metrics to 0")
@@ -76,12 +76,12 @@ class Monitor:
         if pod_with_valid_starting_time_count < running_pod_count and MAX_POD_STARTING_TIME_POINT not in self.annotating_points:
             self.annotating_points[MAX_POD_STARTING_TIME_POINT] = {
                 "xy": (diff.total_seconds(), 
-                pod_with_valid_starting_time_count), "desciption": "(1) "+str(pod_with_valid_starting_time_count)+" pods",
+                pod_with_valid_starting_time_count), "description": "(1) "+str(pod_with_valid_starting_time_count)+" pods",
                 "color": "tab:orange"}
         if crashing_pod_count > self.max_pod_crashing_count and MAX_POD_CRASHING_POINT not in self.annotating_points:
             self.annotating_points[MAX_POD_CRASHING_POINT] = {
                 "xy": (diff.total_seconds(), 
-                pod_with_valid_starting_time_count), "desciption": "(2) "+str(pod_with_valid_starting_time_count)+" pods",
+                pod_with_valid_starting_time_count), "description": "(2) "+str(pod_with_valid_starting_time_count)+" pods",
                 "color": "tab:red"}
 
         for node in node_list['items']:
@@ -101,7 +101,7 @@ class Monitor:
             self.cpu_metrics[node_name] = cpu_metric
             self.ram_metrics[node_name] = ram_metric
 
-        # update node metrics with value 0 if the infomation is missing in the above update    
+        # update node metrics with value 0 if the information is missing in the above update
         for metric in self.cpu_metrics.values():
             if len(metric) < len(self.time_diffs):
                 cpu_metric.extend([0]*(len(self.time_diffs)-len(metric)))
@@ -192,10 +192,10 @@ class Monitor:
         ax1, ax2, ax3 = self.axes
 
         ax1.plot(self.time_diffs, self.running_pod_metric) 
-        ax1.set_ylabel('Number of running pods')
+        informationsinformationsax1.set_ylabel('Number of running pods')
 
         for point in self.annotating_points.values():
-            ax1.annotate(point["desciption"],
+            ax1.annotate(point["description"],
                 xy= point["xy"], xycoords='data',
                 xytext=(0, 20), textcoords='offset points',
                 arrowprops=dict(facecolor=point["color"], shrink=0.05),

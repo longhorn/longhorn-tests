@@ -78,3 +78,11 @@ output "controlplane_public_ip" {
   ]
   value = aws_eip.lh_aws_eip_controlplane[0].public_ip
 }
+
+output "resource_suffix" {
+  depends_on = [
+    random_string.random_suffix
+  ]
+
+  value = random_string.random_suffix.id
+}

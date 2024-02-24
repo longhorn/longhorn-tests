@@ -20,7 +20,7 @@ class Node:
     def reboot_all_nodes(self, shut_down_time_in_sec=60):
         instance_ids = [value for value in self.mapping.values()]
 
-        resp = self.aws_client.stop_instances(InstanceIds=instance_ids)
+        resp = self.aws_client.stop_instances(InstanceIds=instance_ids, Force=True)
         logging(f"Stopping instances {instance_ids} response: {resp}")
         waiter = self.aws_client.get_waiter('instance_stopped')
         waiter.wait(InstanceIds=instance_ids)
@@ -38,7 +38,7 @@ class Node:
     def reboot_node(self, reboot_node_name, shut_down_time_in_sec=60):
         instance_ids = [self.mapping[reboot_node_name]]
 
-        resp = self.aws_client.stop_instances(InstanceIds=instance_ids)
+        resp = self.aws_client.stop_instances(InstanceIds=instance_ids, Force=True)
         logging(f"Stopping instances {instance_ids} response: {resp}")
         waiter = self.aws_client.get_waiter('instance_stopped')
         waiter.wait(InstanceIds=instance_ids)
@@ -55,7 +55,7 @@ class Node:
     def reboot_all_worker_nodes(self, shut_down_time_in_sec=60):
         instance_ids = [self.mapping[value] for value in list_node_names_by_role("worker")]
 
-        resp = self.aws_client.stop_instances(InstanceIds=instance_ids)
+        resp = self.aws_client.stop_instances(InstanceIds=instance_ids, Force=True)
         logging(f"Stopping instances {instance_ids} response: {resp}")
         waiter = self.aws_client.get_waiter('instance_stopped')
         waiter.wait(InstanceIds=instance_ids)

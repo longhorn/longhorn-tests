@@ -12,6 +12,7 @@ from volume.constant import RETRY_INTERVAL
 from volume.constant import VOLUME_FRONTEND_BLOCKDEV
 from volume.constant import VOLUME_FRONTEND_ISCSI
 
+
 class Rest(Base):
 
     def __init__(self, node_exec):
@@ -19,7 +20,12 @@ class Rest(Base):
         self.node_exec = node_exec
 
     def get(self, volume_name):
-        return self.longhorn_client.by_id_volume(volume_name)
+        for i in range(RETRY_COUNTS):
+            try:
+                return self.longhorn_client.by_id_volume(volume_name)
+            except Exception as e:
+                logging(f"Failed to get volume {e}")
+            time.sleep(RETRY_INTERVAL)
 
     def create(self, volume_name, size, replica_count):
         return NotImplemented
@@ -35,7 +41,7 @@ class Rest(Base):
 
     def get_endpoint(self, volume_name):
         endpoint = ""
-        v = self.longhorn_client.by_id_volume(volume_name)
+        v = self.get(volume_name)
         if v.disableFrontend:
             assert endpoint == ""
             return endpoint
@@ -43,12 +49,15 @@ class Rest(Base):
             assert v.frontend == VOLUME_FRONTEND_BLOCKDEV or\
                    v.frontend == VOLUME_FRONTEND_ISCSI
             for i in range(RETRY_COUNTS):
-                v = self.longhorn_client.by_id_volume(volume_name)
-                engines = v.controllers
-                assert len(engines) != 0
-                endpoint = engines[0].endpoint
-                if endpoint != "":
-                    break
+                try:
+                    v = self.longhorn_client.by_id_volume(volume_name)
+                    engines = v.controllers
+                    assert len(engines) != 0
+                    endpoint = engines[0].endpoint
+                    if endpoint != "":
+                        break
+                except Exception as e:
+                    logging(f"Failed to get volume {e}")
                 time.sleep(RETRY_INTERVAL)
 
         logging(f"Got volume {volume_name} endpoint = {endpoint}")
@@ -71,55 +80,64 @@ class Rest(Base):
     def wait_for_replica_rebuilding_start(self, volume_name, node_name):
         rebuilding_replica_name = None
         for i in range(RETRY_COUNTS):
-            v = self.longhorn_client.by_id_volume(volume_name)
-            logging(f"Got volume {volume_name} replicas = {v.replicas}")
-            for replica in v.replicas:
-                if replica.hostId == node_name:
-                    rebuilding_replica_name = replica.name
+            try:
+                v = self.longhorn_client.by_id_volume(volume_name)
+                logging(f"Got volume {volume_name} replicas = {v.replicas}")
+                for replica in v.replicas:
+                    if replica.hostId == node_name:
+                        rebuilding_replica_name = replica.name
+                        break
+                if rebuilding_replica_name:
                     break
-            if rebuilding_replica_name:
-                break
+            except Exception as e:
+                logging(f"Failed to get volume {e}")
             time.sleep(RETRY_INTERVAL)
         assert rebuilding_replica_name != None
         logging(f"Got rebuilding replica = {rebuilding_replica_name}")
 
         started = False
         for i in range(RETRY_COUNTS):
-            v = self.longhorn_client.by_id_volume(volume_name)
-            logging(f"Got volume rebuild status = {v.rebuildStatus}")
-            for status in v.rebuildStatus:
-                for replica in v.replicas:
-                    if status.replica == replica.name and \
-                       replica.hostId == node_name and \
-                       status.state == "in_progress":
-                       logging(f"Started {node_name}'s replica {replica.name} rebuilding")
-                       started = True
-                       break
-            if started:
-                break
+            try:
+                v = self.longhorn_client.by_id_volume(volume_name)
+                logging(f"Got volume rebuild status = {v.rebuildStatus}")
+                for status in v.rebuildStatus:
+                    for replica in v.replicas:
+                        if status.replica == replica.name and \
+                           replica.hostId == node_name and \
+                           status.state == "in_progress":
+                            logging(f"Started {node_name}'s replica {replica.name} rebuilding")
+                            started = True
+                            break
+                if started:
+                    break
+            except Exception as e:
+                logging(f"Failed to get volume {e}")
             time.sleep(RETRY_INTERVAL)
         assert started, f"wait for replica on node {node_name} rebuilding timeout: {v}"
 
     def wait_for_replica_rebuilding_complete(self, volume_name, node_name):
         completed = False
         for i in range(RETRY_COUNTS):
-            v = self.longhorn_client.by_id_volume(volume_name)
-            logging(f"Got volume {volume_name} replicas = {v.replicas}")
-            for replica in v.replicas:
-                # use replica.mode is RW or RO to check if this replica
-                # has been rebuilt or not
-                # because rebuildStatus is not reliable
-                # when the rebuild progress reaches 100%
-                # it will be removed from rebuildStatus immediately
-                # and you will just get an empty rebuildStatus []
-                # so it's no way to distinguish "rebuilding not started yet"
-                # or "rebuilding already completed" using rebuildStatus
-                if replica.hostId == node_name and replica.mode == "RW":
-                    logging(f"Completed {node_name}'s replica {replica.name} rebuilding")
-                    completed = True
+            try:
+                v = self.longhorn_client.by_id_volume(volume_name)
+                logging(f"Got volume {volume_name} replicas = {v.replicas}")
+                for replica in v.replicas:
+                    # use replica.mode is RW or RO to check if this replica
+                    # has been rebuilt or not
+                    # because rebuildStatus is not reliable
+                    # when the rebuild progress reaches 100%
+                    # it will be removed from rebuildStatus immediately
+                    # and you will just get an empty rebuildStatus []
+                    # so it's no way to distinguish "rebuilding not started yet"
+                    # or "rebuilding already completed" using rebuildStatus
+                    if replica.hostId == node_name and replica.mode == "RW":
+                        logging(f"Completed {node_name}'s replica {replica.name} rebuilding")
+                        completed = True
+                        break
+                if completed:
                     break
-            if completed:
-                break
+            except Exception as e:
+                logging(f"Failed to get volume {e}")
             time.sleep(RETRY_INTERVAL)
         assert completed
 

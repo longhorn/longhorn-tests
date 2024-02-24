@@ -28,4 +28,9 @@ EOF
 
 systemctl enable rke2-agent.service
 systemctl start rke2-agent.service
+
+if [[ -n "${custom_ssh_public_key}" ]]; then
+  echo "${custom_ssh_public_key}" >> /home/ubuntu/.ssh/authorized_keys
+fi
+
 exit $?

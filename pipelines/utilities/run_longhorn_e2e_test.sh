@@ -66,6 +66,8 @@ run_longhorn_e2e_test(){
 
 run_longhorn_e2e_test_out_of_cluster(){
   cd e2e
+  python3 -m venv .
+  source bin/activate
   pip install -r requirements.txt
 
   eval "ROBOT_COMMAND_ARGS=($PYTEST_CUSTOM_OPTIONS)"

@@ -1,5 +1,6 @@
 from workload.workload import *
 
+
 class workload_keywords:
 
     def __init__(self):

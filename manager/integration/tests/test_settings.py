@@ -22,7 +22,7 @@ from common import (  # NOQA
     get_engine_image_status_value,
     create_volume, create_volume_and_backup, cleanup_volume_by_name,
     wait_for_volume_restoration_completed, wait_for_backup_restore_completed,
-    get_engine_host_id,
+    get_engine_host_id, wait_for_instance_manager_count,
     Gi, Mi,
 
     LONGHORN_NAMESPACE,
@@ -32,6 +32,7 @@ from common import (  # NOQA
     SETTING_DEFAULT_REPLICA_COUNT,
     SETTING_BACKUP_TARGET,
     SETTING_CONCURRENT_VOLUME_BACKUP_RESTORE,
+    SETTING_V1_DATA_ENGINE,
     RETRY_COUNTS, RETRY_INTERVAL, RETRY_INTERVAL_LONG,
     update_setting, BACKING_IMAGE_QCOW2_URL, BACKING_IMAGE_NAME,
     create_backing_image_with_matching_url, BACKING_IMAGE_EXT4_SIZE,
@@ -105,8 +106,7 @@ def test_setting_toleration():
     2.  Verify the request fails.
     3.  Create a volume and attach it.
     4.  Set `taint-toleration` to "key1=value1:NoSchedule; key2:NoExecute".
-    5.  Verify that cannot update toleration setting when any volume is
-        attached.
+    5.  Verify that can update toleration setting when any volume is attached.
     6.  Generate and write `data1` into the volume.
     7.  Detach the volume.
     8.  Set `taint-toleration` to "key1=value1:NoSchedule; key2:NoExecute".
@@ -155,10 +155,8 @@ def test_setting_toleration():
             "effect": "NoExecute"
         },
     ]
-    with pytest.raises(Exception) as e:
-        client.update(setting, value=setting_value_str)
-    assert 'cannot modify toleration setting before all volumes are detached' \
-           in str(e.value)
+    setting = client.update(setting, value=setting_value_str)
+    assert setting.value == setting_value_str
 
     data1 = write_volume_random_data(volume)
     check_volume_data(volume, data1)
@@ -166,8 +164,6 @@ def test_setting_toleration():
     volume.detach()
     wait_for_volume_detached(client, volume_name)
 
-    setting = client.update(setting, value=setting_value_str)
-    assert setting.value == setting_value_str
     wait_for_toleration_update(core_api, apps_api, count, setting_value_dicts)
 
     client, node = wait_for_longhorn_node_ready()
@@ -493,8 +489,8 @@ def test_setting_priority_class(core_api, apps_api, scheduling_api, priority_cla
     for the Setting.
     2. Create a new Priority Class in Kubernetes.
     3. Create and attach a Volume.
-    4. Verify that the Priority Class Setting cannot be updated with an
-    attached Volume.
+    4. Verify that the Priority Class Setting can be updated with an attached
+       volume.
     5. Generate and write `data1`.
     6. Detach the Volume.
     7. Update the Priority Class Setting to the new Priority Class.
@@ -528,19 +524,14 @@ def test_setting_priority_class(core_api, apps_api, scheduling_api, priority_cla
     volume.attach(hostId=get_self_host_id())
     volume = wait_for_volume_healthy(client, volume_name)
 
-    with pytest.raises(Exception) as e:
-        client.update(setting, value=name)
-    assert 'cannot modify priority class setting before all volumes are ' \
-           'detached' in str(e.value)
+    setting = client.update(setting, value=name)
+    assert setting.value == name
 
     data1 = write_volume_random_data(volume)
     check_volume_data(volume, data1)
 
     volume.detach()
     wait_for_volume_detached(client, volume_name)
-
-    setting = client.update(setting, value=name)
-    assert setting.value == name
 
     wait_for_priority_class_update(core_api, apps_api, count, priority_class)
 
@@ -657,9 +648,10 @@ def test_setting_backing_image_auto_cleanup(client, core_api, volume_name):  # N
     ]
 
     for volume_name in volume_names:
-        create_and_check_volume(
-            client, volume_name, 3, str(BACKING_IMAGE_EXT4_SIZE),
-            BACKING_IMAGE_NAME)
+        create_and_check_volume(client, volume_name,
+                                num_of_replicas=3,
+                                size=str(BACKING_IMAGE_EXT4_SIZE),
+                                backing_image=BACKING_IMAGE_NAME)
 
     # Step 4
     lht_host_id = get_self_host_id()
@@ -941,7 +933,7 @@ def setting_concurrent_volume_backup_restore_limit_concurrent_restoring_test(cli
                    str(concurrent_limit))
 
     _, backup = create_volume_and_backup(client, volname + "-with-backup",
-                                         500 * Mi, 300 * Mi)
+                                         1000 * Mi, 600 * Mi)
 
     nodes = client.list_node()
     restore_volume_names = []
@@ -1003,7 +995,7 @@ def setting_concurrent_volume_backup_restore_limit_concurrent_restoring_test(cli
                     break
 
     assert is_case_tested, \
-        f"Unexpected cocurrent count: {concurrent_count}\n"
+        f"Unexpected concurrent count: {concurrent_count}\n"
 
     for restore_volume_name in restore_volume_names:
         if is_DR_volumes:
@@ -1205,7 +1197,7 @@ def test_setting_update_with_invalid_value_via_configmap(core_api, request):  # 
     2. Initialize longhorn-default-setting configmap containing
        valid and invalid settings
     3. Update longhorn-default-setting configmap with invalid settings.
-       The invalid settings SETTING_TAINT_TOLERATION will be ingored
+       The invalid settings SETTING_TAINT_TOLERATION will be ignored
        when there is an attached volume.
     4. Validate the default settings values.
     """
@@ -1238,6 +1230,66 @@ def test_setting_update_with_invalid_value_via_configmap(core_api, request):  # 
                       [SETTING_BACKUP_TARGET,
                        SETTING_TAINT_TOLERATION],
                       [target,
-                       ""])
+                       "key1=value1:NoSchedule"])
 
     cleanup_volume_by_name(client, vol_name)
+
+
+def test_setting_v1_data_engine(client, request): # NOQA
+    """
+    Test that the v1 data engine setting works correctly.
+    1. Create a volume and attach it.
+    2. Set v1 data engine setting to false. The setting should be rejected.
+    3. Detach the volume.
+    4. Set v1 data engine setting to false again. The setting should be
+       accepted. Then, attach the volume. The volume is unable to attach.
+    5. set v1 data engine setting to true. The setting should be accepted.
+    6. Attach the volume.
+    """
+
+    setting = client.by_id_setting(SETTING_V1_DATA_ENGINE)
+
+    # Step 1
+    volume_name = "test-v1-vol"  # NOQA
+    volume = create_and_check_volume(client, volume_name)
+
+    def finalizer():
+        cleanup_volume(client, volume)
+        client.update(setting, value="true")
+
+    request.addfinalizer(finalizer)
+
+    volume.attach(hostId=get_self_host_id())
+    volume = wait_for_volume_healthy(client, volume_name)
+
+    # Step 2
+    with pytest.raises(Exception) as e:
+        client.update(setting, value="false")
+    assert 'cannot apply v1-data-engine setting to Longhorn workloads when ' \
+        'there are attached v1 volumes' in str(e.value)
+
+    # Step 3
+    volume.detach()
+    wait_for_volume_detached(client, volume_name)
+
+    # Step 4
+    setting = client.by_id_setting(SETTING_V1_DATA_ENGINE)
+    client.update(setting, value="false")
+
+    count = wait_for_instance_manager_count(client, 0)
+    assert count == 0
+
+    volume.attach(hostId=get_self_host_id())
+    with pytest.raises(Exception) as e:
+        wait_for_volume_healthy(client, volume_name)
+    assert 'volume[key]=detached' in str(e.value)
+
+    # Step 5
+    client.update(setting, value="true")
+    nodes = client.list_node()
+    count = wait_for_instance_manager_count(client, len(nodes))
+    assert count == len(nodes)
+
+    # Step 6
+    volume.attach(hostId=get_self_host_id())
+    volume = wait_for_volume_healthy(client, volume_name)

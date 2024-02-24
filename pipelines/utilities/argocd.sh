@@ -34,7 +34,27 @@ init_argocd(){
 
 create_argocd_app(){
   REVISION="${1:-${LONGHORN_INSTALL_VERSION}}"
-  argocd app create longhorn --repo "${LONGHORN_REPO_URI}" --revision "${REVISION}" --path chart --dest-server https://kubernetes.default.svc --dest-namespace "${LONGHORN_NAMESPACE}"
+  cat > longhorn-application.yaml <<EOF
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: longhorn
+  namespace: argocd
+spec:
+  project: default
+  sources:
+    - chart: longhorn
+      repoURL: ${LONGHORN_REPO_URI}
+      targetRevision: ${REVISION}
+      helm:
+        values: |
+          preUpgradeChecker:
+            jobEnabled: false
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: ${LONGHORN_NAMESPACE}
+EOF
+  kubectl apply -f longhorn-application.yaml
 }
 
 

@@ -100,7 +100,7 @@ def test_statefulset_mount(client, core_api, storage_class, statefulset):  # NOQ
 
     1. Create a StatefulSet using dynamic provisioned Longhorn volume.
     2. Wait for pods to become running
-    3. Check volume properites are consistent with the StorageClass
+    3. Check volume properties are consistent with the StorageClass
     """
 
     statefulset_name = 'statefulset-mount-test'
@@ -138,7 +138,7 @@ def test_statefulset_scaling(client, core_api, storage_class, statefulset):  # N
 
     1. Create a StatefulSet with VolumeClaimTemplate and Longhorn.
     2. Wait for pods to run.
-    3. Verify the properities of volumes.
+    3. Verify the properties of volumes.
     4. Scale the StatefulSet to 3 replicas
     5. Wait for the new pod to become ready.
     6. Verify the new volume properties.
@@ -259,7 +259,7 @@ def test_statefulset_backup(set_random_backupstore, client, core_api, storage_cl
     4. Create a third snapshot
     5. Backup the snapshot `backup_snapshot`
     6. Wait for backup to show up.
-        1 Verify the backup informations
+        1 Verify the backup information
     """
 
     statefulset_name = 'statefulset-backup-test'

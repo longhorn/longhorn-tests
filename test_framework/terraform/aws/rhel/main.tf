@@ -237,7 +237,7 @@ resource "aws_route_table" "lh_aws_private_rt" {
   }
 }
 
-# Assciate public subnet to public route table
+# Associate public subnet to public route table
 resource "aws_route_table_association" "lh_aws_public_subnet_rt_association" {
   depends_on = [
     aws_subnet.lh_aws_public_subnet,
@@ -248,7 +248,7 @@ resource "aws_route_table_association" "lh_aws_public_subnet_rt_association" {
   route_table_id = aws_route_table.lh_aws_public_rt.id
 }
 
-# Assciate private subnet to private route table
+# Associate private subnet to private route table
 resource "aws_route_table_association" "lh_aws_private_subnet_rt_association" {
   depends_on = [
     aws_subnet.lh_aws_private_subnet,

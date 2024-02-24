@@ -26,3 +26,7 @@ until (sudo /usr/local/bin/kubectl get pods -A | grep 'Running'); do
   echo 'Waiting for k3s startup'
   sleep 5
 done
+
+if [[ -n "${custom_ssh_public_key}" ]]; then
+  echo "${custom_ssh_public_key}" >> /home/ec2-user/.ssh/authorized_keys
+fi

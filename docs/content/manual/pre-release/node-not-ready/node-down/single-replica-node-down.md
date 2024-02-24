@@ -20,7 +20,7 @@ https://github.com/longhorn/longhorn/issues/3957
 6. Power up node or delete the workload pod so that kubernetes will recreate pod on another node.
 7. Verify auto salvage finishes (i.e pod completes start).
 8. Verify volume attached & accessible by pod (i.e test data is available).
-   - For data locality = strict-local volume, volume wiil keep in detaching, attaching status for about 10 minutes, after volume attached to node which replica located, check volume healthy and pod status.
+   - For data locality = strict-local volume, volume will keep in detaching, attaching status for about 10 minutes, after volume attached to node which replica located, check volume healthy and pod status.
 
 ## Node restart/down scenario with `Pod Deletion Policy When Node is Down` set to `delete-both-statefulset-and-deployment-pod`
 1. Create RWO|RWX volume with replica count = 1 & data locality = enabled|disabled|strict-local.
