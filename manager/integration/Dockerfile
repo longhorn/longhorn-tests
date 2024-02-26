@@ -1,4 +1,4 @@
-FROM registry.suse.com/bci/python:3.9
+FROM registry.suse.com/bci/python:3.11
 
 ARG KUBECTL_VERSION=v1.28.4
 ARG YQ_VERSION=v4.24.2
