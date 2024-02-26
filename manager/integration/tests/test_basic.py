@@ -985,26 +985,32 @@ def test_dr_volume_with_backup_block_deletion_abort_during_backup_in_progress(se
     check_volume_data(dr_vol, final_data, False)
 
 
-def test_dr_volume_with_all_backup_blocks_deleted(set_random_backupstore, client, core_api, volume_name):  # NOQA
+def test_dr_volume_with_backup_and_backup_volume_deleted(set_random_backupstore, client, core_api, volume_name):  # NOQA
     """
-    Test DR volume can be activate after delete all backups.
+    Test DR volume can be activated after delete all backups.
 
     Context:
 
-    We want to make sure that DR volume can activate after delete all backups.
+    We want to make sure that DR volume can activate after deleting
+    some/all backups or the backup volume.
 
     Steps:
 
     1.  Create a volume and attach to the current node.
     2.  Write 4 MB to the beginning of the volume (2 x 2MB backup blocks).
-    3.  Create backup(0) of the volume.
-    6.  Verify backup block count == 2.
-    7.  Create DR volume from backup(0).
-    8.  Verify DR volume last backup is backup(0).
-    9.  Delete backup(0).
-    10. Verify backup block count == 0.
-    11. Verify DR volume last backup is empty.
-    15. Activate and verify DR volume data is data(0).
+    3.  Create backup(0) then backup(1) for the volume.
+    6.  Verify backup block count == 4.
+    7.  Create DR volume(1) and DR volume(2) from backup(1).
+    8.  Verify DR volumes last backup is backup(1).
+    9.  Delete backup(1).
+    10. Verify backup block count == 2.
+    11. Verify DR volumes last backup becomes backup(0).
+    12. Activate and verify DR volume(1) data is data(0).
+    13. Delete backup(0).
+    14. Verify backup block count == 0.
+    15. Verify DR volume last backup is empty.
+    16. Delete the backup volume.
+    17. Activate and verify DR volume data is data(0).
     """
     backupstore_cleanup(client)
 
@@ -1020,30 +1026,57 @@ def test_dr_volume_with_all_backup_blocks_deleted(set_random_backupstore, client
              'content': common.generate_random_data(2 * BACKUP_BLOCK_SIZE)}
     _, backup0, _, data0 = create_backup(
         client, volume_name, data0)
+    data1 = {'pos': 0, 'len': 2 * BACKUP_BLOCK_SIZE,
+             'content': common.generate_random_data(2 * BACKUP_BLOCK_SIZE)}
+    _, backup1, _, data1 = create_backup(
+        client, volume_name, data1)
 
     backup_blocks_count = backupstore_count_backup_block_files(client,
                                                                core_api,
                                                                volume_name)
-    assert backup_blocks_count == 2
+    assert backup_blocks_count == 4
 
-    dr_vol_name = "dr-" + volume_name
-    client.create_volume(name=dr_vol_name, size=SIZE,
-                         numberOfReplicas=2, fromBackup=backup0.url,
+    dr_vol_name1 = "dr-" + volume_name + "1"
+    dr_vol_name2 = "dr-" + volume_name + "2"
+    client.create_volume(name=dr_vol_name1, size=SIZE,
+                         numberOfReplicas=2, fromBackup=backup1.url,
                          frontend="", standby=True)
-    check_volume_last_backup(client, dr_vol_name, backup0.name)
-    wait_for_backup_restore_completed(client, dr_vol_name, backup0.name)
+    client.create_volume(name=dr_vol_name2, size=SIZE,
+                         numberOfReplicas=2, fromBackup=backup1.url,
+                         frontend="", standby=True)
+    check_volume_last_backup(client, dr_vol_name1, backup1.name)
+    wait_for_backup_restore_completed(client, dr_vol_name1, backup1.name)
+    check_volume_last_backup(client, dr_vol_name2, backup1.name)
+    wait_for_backup_restore_completed(client, dr_vol_name2, backup1.name)
+
+    delete_backup(client, volume_name, backup1.name)
+    assert backupstore_count_backup_block_files(client,
+                                                core_api,
+                                                volume_name) == 2
+    check_volume_last_backup(client, dr_vol_name1, backup0.name)
+    wait_for_backup_restore_completed(client, dr_vol_name1, backup0.name)
+    check_volume_last_backup(client, dr_vol_name2, backup0.name)
+    wait_for_backup_restore_completed(client, dr_vol_name2, backup0.name)
+
+    activate_standby_volume(client, dr_vol_name1)
+    dr_vol1 = client.by_id_volume(dr_vol_name1)
+    dr_vol1.attach(hostId=host_id)
+    dr_vol1 = common.wait_for_volume_healthy(client, dr_vol_name1)
+    check_volume_data(dr_vol1, data0, False)
 
     delete_backup(client, volume_name, backup0.name)
     assert backupstore_count_backup_block_files(client,
                                                 core_api,
                                                 volume_name) == 0
-    check_volume_last_backup(client, dr_vol_name, "")
+    check_volume_last_backup(client, dr_vol_name2, "")
 
-    activate_standby_volume(client, dr_vol_name)
-    dr_vol = client.by_id_volume(dr_vol_name)
-    dr_vol.attach(hostId=host_id)
-    dr_vol = common.wait_for_volume_healthy(client, dr_vol_name)
-    check_volume_data(dr_vol, data0, False)
+    delete_backup_volume(client, volume_name)
+
+    activate_standby_volume(client, dr_vol_name2)
+    dr_vol2 = client.by_id_volume(dr_vol_name2)
+    dr_vol2.attach(hostId=host_id)
+    dr_vol2 = common.wait_for_volume_healthy(client, dr_vol_name2)
+    check_volume_data(dr_vol2, data0, False)
 
 
 def test_backup_volume_list(set_random_backupstore, client, core_api):  # NOQA
@@ -5022,7 +5055,7 @@ def test_space_usage_for_rebuilding_only_volume(client, volume_name, request):  
     snap_offset = 1
     volume_endpoint = get_volume_endpoint(volume)
     write_volume_dev_random_mb_data(volume_endpoint,
-                                    snap_offset, 3000, 5)
+                                    snap_offset, 3000, 10)
 
     snap2 = create_snapshot(client, volume_name)
     volume.snapshotDelete(name=snap2.name)
@@ -5030,7 +5063,7 @@ def test_space_usage_for_rebuilding_only_volume(client, volume_name, request):  
     wait_for_snapshot_purge(client, volume_name, snap2.name)
 
     write_volume_dev_random_mb_data(volume_endpoint,
-                                    snap_offset, 3000, 5)
+                                    snap_offset, 3000, 10)
 
     for r in volume.replicas:
         if r.hostId != lht_hostId:
@@ -5073,14 +5106,14 @@ def test_space_usage_for_rebuilding_only_volume_worst_scenario(client, volume_na
     snap_offset = 1
     volume_endpoint = get_volume_endpoint(volume)
     write_volume_dev_random_mb_data(volume_endpoint,
-                                    snap_offset, 2000)
+                                    snap_offset, 2000, 10)
     snap1 = create_snapshot(client, volume_name)
     volume.snapshotDelete(name=snap1.name)
     volume.snapshotPurge()
     wait_for_snapshot_purge(client, volume_name, snap1.name)
 
     write_volume_dev_random_mb_data(volume_endpoint,
-                                    snap_offset, 2000)
+                                    snap_offset, 2000, 10)
 
     for r in volume.replicas:
         if r.hostId != lht_hostId:
@@ -5090,7 +5123,7 @@ def test_space_usage_for_rebuilding_only_volume_worst_scenario(client, volume_na
     wait_for_volume_degraded(client, volume_name)
     wait_for_rebuild_start(client, volume_name)
     write_volume_dev_random_mb_data(volume_endpoint,
-                                    snap_offset, 2000)
+                                    snap_offset, 2000, 10)
 
     wait_for_rebuild_complete(client, volume_name)
     volume = client.by_id_volume(volume_name)
