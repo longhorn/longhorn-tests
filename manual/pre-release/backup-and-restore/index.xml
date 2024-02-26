@@ -35,5 +35,12 @@
       <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/pull-backup-created-by-another-longhorn/</guid>
       <description>Prepare 2 k8s clusters: cluster A and cluster B. Install previous version of Longhorn which doesn&amp;rsquo;t include this fix e.g v1.3.1, v1.2.5 on cluster A. Install the release version of Longhorn on cluster B. Set the same backup target on both cluster A and cluster B. Create volume, write some data, and take backup on cluster A. Wait for backup target polling update on cluster B. Make sure the backup created by cluster A can be pulled on cluster B.</description>
     </item>
+    <item>
+      <title>Sync up with backup target during DR volume activation</title>
+      <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/sync-up-with-backup-target-during-dr-volume-activation/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/sync-up-with-backup-target-during-dr-volume-activation/</guid>
+      <description>Related Issue: https://github.com/longhorn/longhorn/issues/5292 https://github.com/longhorn/longhorn/issues/7945 Launch 2 clusters and both have Longhorn installed Set up a backup target. Create a volume and write data in the 1st cluster. Then create 1st backup. Restore the backup as a DR volume in the 2nd cluster. Modify the backup poll interval to a large value. Write more data for the volume in the 1st cluster, and create the 2nd backup. Activate the DR volume in the 2nd cluster.</description>
+    </item>
   </channel>
 </rss>

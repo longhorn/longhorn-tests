@@ -505,6 +505,13 @@
       <description>Intro Kubelet exposes kubelet_volume_stats_* metrics. Those metrics measure PVC&amp;rsquo;s filesystem related information inside a Longhorn block device.&#xA;Test steps: Create a cluster and set up this monitoring system: https://github.com/prometheus-community/helm-charts/tree/main/charts/kube-prometheus-stack Install Longhorn. Deploy some workloads using Longhorn volumes. Make sure there are some workloads using Longhorn PVCs in volumeMode: Block and some workloads using Longhorn PVCs in volumeMode: Filesystem. See https://longhorn.io/docs/1.0.2/references/examples/ for examples. Create ingress to Prometheus server and Grafana. Navigate to Prometheus server, verify that all Longhorn PVCs in volumeMode: Filesystem show up in metrics: kubelet_volume_stats_capacity_bytes kubelet_volume_stats_available_bytes kubelet_volume_stats_used_bytes kubelet_volume_stats_inodes kubelet_volume_stats_inodes_free kubelet_volume_stats_inodes_used.</description>
     </item>
     <item>
+      <title>Sync up with backup target during DR volume activation</title>
+      <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/sync-up-with-backup-target-during-dr-volume-activation/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/backup-and-restore/sync-up-with-backup-target-during-dr-volume-activation/</guid>
+      <description>Related Issue: https://github.com/longhorn/longhorn/issues/5292 https://github.com/longhorn/longhorn/issues/7945 Launch 2 clusters and both have Longhorn installed Set up a backup target. Create a volume and write data in the 1st cluster. Then create 1st backup. Restore the backup as a DR volume in the 2nd cluster. Modify the backup poll interval to a large value. Write more data for the volume in the 1st cluster, and create the 2nd backup. Activate the DR volume in the 2nd cluster.</description>
+    </item>
+    <item>
       <title>Test `Rebuild` in volume.meta blocks engine start</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.6.0/test-rebuild-in-meta-blocks-engine-start/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
