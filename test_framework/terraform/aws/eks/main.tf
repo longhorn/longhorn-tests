@@ -120,7 +120,7 @@ resource "aws_eks_node_group" "node_group" {
   subnet_ids      = module.vpc.public_subnets
   ami_type       = var.arch == "amd64" ? "AL2_x86_64" : "AL2_ARM_64"
   capacity_type  = "ON_DEMAND"
-  instance_types = [var.arch == "amd64" ? "t2.xlarge" : "a1.xlarge"]
+  instance_types = [var.arch == "amd64" ? "t3.xlarge" : "t4g.xlarge"]
   disk_size      = 40
   scaling_config {
     desired_size = 3

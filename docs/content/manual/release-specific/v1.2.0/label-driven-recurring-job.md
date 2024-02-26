@@ -15,11 +15,11 @@ https://github.com/longhorn/longhorn/issues/467
 *And* create volume `test-job-4`.  
 *And* create volume `test-job-5`.
 
-**Then** moniter the cron job pod log.  
+**Then** monitor the cron job pod log.  
 *And* should see 2 jobs created concurrently.
 
 **When** update `snapshot1` recurring job with `concurrency` set to `3`.  
-**Then** moniter the cron job pod log.
+**Then** monitor the cron job pod log.
 *And* should see 3 jobs created concurrently.
 
 

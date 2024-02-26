@@ -37,7 +37,7 @@ title: Test backing image
 1. Create a valid backing image
 2. Create a StorageClass, which use the same backing image name but different data source type/parameters.
 3. Create a PVC with the StorageClass. 
-   ==> The corresponding creation should fail. The longhorn-csi-plugin will repeatly print out error logs like this `existing backing image %v data source is different from the parameters in the creation request or StorageClass`.
+   ==> The corresponding creation should fail. The longhorn-csi-plugin will repeatedly print out error logs like this `existing backing image %v data source is different from the parameters in the creation request or StorageClass`.
 4. Delete the PVC and the StorageClass.
 5. Recreate a StorageClass in which the backing image fields match the existing backing image.
 6. Create a PVC with the StorageClass.

@@ -196,7 +196,7 @@ def test_node_disk_update(client):  # NOQA
     3. Create two disks `disk1` and `disk2`, attach them to the current node.
     4. Add two disks to the current node.
     5. Verify two extra disks have been added to the node
-    6. Disbale the two disks' scheduling, and set StorageReserved
+    6. Disable the two disks' scheduling, and set StorageReserved
     7. Update the two disks.
     8. Validate all the disks properties.
     9. Delete other two disks. Validate deletion works.
@@ -1925,7 +1925,7 @@ def test_node_config_annotation_missing(client, core_api, reset_default_disk_lab
     3. Verify disk update works.
     4. Verify tag update works
     5. Verify using tag annotation for configuration works.
-    6. After remove the tag annotaion, verify unset tag node works fine.
+    6. After remove the tag annotation, verify unset tag node works fine.
     7. Set tag annotation again. Verify node updated for the tag.
     """
     setting = client.by_id_setting(SETTING_CREATE_DEFAULT_DISK_LABELED_NODES)
@@ -2018,7 +2018,7 @@ def test_replica_scheduler_rebuild_restore_is_too_big(set_random_backupstore, cl
         data cannot fit in the small disk
     6. Delete a replica of volume.
         1. Verify the volume reports `scheduled = false` due to unable to find
-        a suitable disk for rebuliding replica, since the replica with the
+        a suitable disk for rebuilding replica, since the replica with the
         existing data cannot fit in the small disk
     6. Enable the scheduling for other disks, disable scheduling for small disk
     7. Verify the volume reports `scheduled = true`. And verify the data.

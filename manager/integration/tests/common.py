@@ -1316,7 +1316,7 @@ def check_pvc_in_specific_status(api, pvc_name, status):
         claim = \
             api.read_namespaced_persistent_volume_claim(name=pvc_name,
                                                         namespace='default')
-        if claim.status.phase == "bound":
+        if claim.status.phase == status:
             break
         time.sleep(RETRY_INTERVAL)
 
@@ -1971,7 +1971,7 @@ def wait_for_volume_faulted(client, name):
 
 
 def wait_for_volume_status(client, name, key, value,
-                           retry_count=RETRY_COUNTS):
+                           retry_count=RETRY_COUNTS_LONG):
     wait_for_volume_creation(client, name)
     for i in range(retry_count):
         volume = client.by_id_volume(name)
@@ -2221,10 +2221,10 @@ def wait_for_engine_image_condition(client, image_name, state):
     # This helps to prevent the flaky test case in which the ENGINE_NAME
     # is flapping between ready and not ready a few times before settling
     # down to the ready state
-    # https://github.com/longhorn/longhorn-tests/pull/1638
+    # https://github.com/longhorn/longhorn/issues/7438
     state_count = 1
     if state == "True":
-        state_count = 5
+        state_count = 60
 
     c = 0
     for i in range(RETRY_COUNTS):
@@ -2288,7 +2288,7 @@ class AssertErrorCheckThread(threading.Thread):
 
         Parameters:
             target  :       The threading function.
-            args    :       Arguments of the target fucntion.
+            args    :       Arguments of the target function.
     """
     def __init__(self, target, args):
         threading.Thread.__init__(self)
@@ -5759,7 +5759,7 @@ def generate_support_bundle(case_name):  # NOQA
         Generate support bundle into folder ./support_bundle/case_name.zip
 
         Won't generate support bundle if current support bundle count
-        greate than MAX_SUPPORT_BINDLE_NUMBER.
+        greater than MAX_SUPPORT_BINDLE_NUMBER.
         Args:
             case_name: support bundle will named case_name.zip
     """
@@ -5809,7 +5809,7 @@ def generate_support_bundle(case_name):  # NOQA
         with open('./support_bundle/{0}.zip'.format(case_name), 'wb') as f:
             f.write(r.content)
     except Exception as e:
-        warnings.warn("Error occured while downloading support bundle {}.zip\n\
+        warnings.warn("Error occurred when downloading support bundle {}.zip\n\
             The error was {}".format(case_name, e))
 
 
