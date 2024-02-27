@@ -4,5 +4,5 @@ directio==1.3
 flake8
 kubernetes==27.2.0
 requests==2.31.0
-boto3==1.34.49
+boto3==1.34.50
 pyyaml==6.0.1
