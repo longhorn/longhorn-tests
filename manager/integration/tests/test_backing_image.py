@@ -431,7 +431,7 @@ def test_backing_image_with_disk_migration():  # NOQA
           `<Backing image name>-<First 8 characters of disk UUID>` is removed.
     9. Remount the host disk to another path. Then create another Longhorn disk
        based on the migrated path (disk migration).
-    10. Verify the followings.
+    10. Verify the following.
         1. The disk added in step3 (before the migration) should
            be "unschedulable".
         2. The disk added in step9 (after the migration) should

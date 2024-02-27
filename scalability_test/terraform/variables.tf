@@ -45,12 +45,12 @@ variable "lh_aws_instance_name_controlplane" {
 
 variable "lh_aws_instance_type_controlplane" {
   type    = string
-  default = "t2.xlarge"
+  default = "t3.xlarge"
 }
 
 variable "lh_aws_instance_type_worker" {
   type    = string
-  default = "t2.xlarge"
+  default = "t3.xlarge"
 }
 
 variable "lh_aws_instance_root_block_device_size_controlplane" {
