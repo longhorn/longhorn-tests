@@ -27,6 +27,18 @@ steps:
   - name: socket
     path: /var/run/docker.sock
 
+- name: "build image"
+  image: plugins/docker
+  settings:
+    dry_run: true
+    build_args:
+    - ARCH=amd64
+    dockerfile: manager/integration/Dockerfile
+    repo: longhornio/longhorn-manager-test
+  when:
+    event:
+    - pull_request
+
 - name: "publish longhorn-manager-test image"
   image: plugins/docker
   settings:
@@ -94,6 +106,18 @@ steps:
   volumes:
   - name: socket
     path: /var/run/docker.sock
+
+- name: "build image"
+  image: plugins/docker
+  settings:
+    dry_run: true
+    build_args:
+    - ARCH=arm64
+    dockerfile: manager/integration/Dockerfile
+    repo: longhornio/longhorn-manager-test
+  when:
+    event:
+    - pull_request
 
 - name: "publish longhorn-manager-test image"
   image: plugins/docker
