@@ -80,6 +80,7 @@ from common import wait_for_backup_volume_backing_image_synced
 from common import RETRY_COMMAND_COUNT
 from common import wait_for_snapshot_count
 from common import DEFAULT_BACKUP_COMPRESSION_METHOD
+from common import SETTING_REPLICA_DISK_SOFT_ANTI_AFFINITY
 
 from backupstore import set_random_backupstore # NOQA
 from backupstore import backupstore_cleanup
@@ -1186,6 +1187,12 @@ def test_single_replica_failed_during_engine_start(client, core_api, volume_name
     replenish_wait_setting = \
         client.by_id_setting(SETTING_REPLICA_REPLENISHMENT_WAIT_INTERVAL)
     client.update(replenish_wait_setting, value="0")
+
+    # replica-node-soft-anti-affinity must be true to allow a new replica to
+    # immediately schedule to the node with a failed replica.
+    replica_node_soft_anti_affinity_setting = \
+        client.by_id_setting(SETTING_REPLICA_NODE_SOFT_ANTI_AFFINITY)
+    client.update(replica_node_soft_anti_affinity_setting, value="true")
 
     pv_name = "pv-" + volume_name
     pvc_name = "pvc-" + volume_name
@@ -2455,22 +2462,25 @@ def test_replica_failure_during_attaching(settings_reset, client, core_api, volu
     """
     Steps:
     1. Set a short interval for setting replica-replenishment-wait-interval.
-    2. Disable the setting soft-node-anti-affinity.
-    3. Create volume1 with 1 replica. and attach it to the host node.
-    4. Mount volume1 to a new mount point. then use it as an extra node disk.
-    5. Disable the scheduling for the default disk of the host node,
+    2. Enable the setting replica-node-soft-anti-affinity to allow scheduling
+       of a new replica to a node containing a failed replica.
+    3. Disable the setting replica-disk-soft-anti-affinity to disallow
+       scheduling of a new replica to a disk containing a failed replica.
+    4. Create volume1 with 1 replica. and attach it to the host node.
+    5. Mount volume1 to a new mount point. then use it as an extra node disk.
+    6. Disable the scheduling for the default disk of the host node,
        and make sure the extra disk is the only available disk on the node.
-    6. Create and attach volume2, then write data to volume2.
-    7. Detach volume2.
-    8. Directly unmount volume1 and remove the related mount point directory.
+    7. Create and attach volume2, then write data to volume2.
+    8. Detach volume2.
+    9. Directly unmount volume1 and remove the related mount point directory.
        --> Verify the extra disk becomes unavailable.
-    9. Attach volume2.
+    10. Attach volume2.
        --> Verify volume will be attached with state Degraded.
-    10. Wait for the replenishment interval.
+    11. Wait for the replenishment interval.
         --> Verify a new replica will be created but it cannot be scheduled.
-    11. Enable the default disk for the host node.
-    12. Wait for volume2 becoming Healthy.
-    13. Verify data content and r/w capability for volume2.
+    12. Enable the default disk for the host node.
+    13. Wait for volume2 becoming Healthy.
+    14. Verify data content and r/w capability for volume2.
     """
 
     replenish_wait_setting = \
@@ -2479,7 +2489,11 @@ def test_replica_failure_during_attaching(settings_reset, client, core_api, volu
 
     replica_node_soft_anti_affinity_setting = \
         client.by_id_setting(SETTING_REPLICA_NODE_SOFT_ANTI_AFFINITY)
-    client.update(replica_node_soft_anti_affinity_setting, value="false")
+    client.update(replica_node_soft_anti_affinity_setting, value="true")
+
+    replica_disk_soft_anti_affinity_setting = \
+        client.by_id_setting(SETTING_REPLICA_DISK_SOFT_ANTI_AFFINITY)
+    client.update(replica_disk_soft_anti_affinity_setting, value="false")
 
     volume_name_1 = volume_name
     host_id = get_self_host_id()
