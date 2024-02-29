@@ -2,62 +2,55 @@
 Documentation    StatefulSet Keywords
 
 Library    Collections
+Library    ../libs/keywords/common_keywords.py
 Library    ../libs/keywords/statefulset_keywords.py
 
 *** Keywords ***
-Create statefulset ${idx} with ${volume_type} volume
-    ${statefulset_name} =    create_statefulset    ${volume_type}
-    Insert Into List    ${statefulset_list}    ${idx}    ${statefulset_name}
+Create statefulset ${statefulset_id} using ${volume_type} volume
+    ${statefulset_name} =    generate_name_with_suffix    statefulset    ${statefulset_id}
+    create_statefulset    ${statefulset_name}    ${volume_type}
 
-    ${volume_name} =    get_workload_volume_name    ${statefulset_name}
-    Insert Into List    ${volume_list}    ${idx}    ${volume_name}
+Create statefulset ${statefulset_id} using ${volume_type} volume with ${option} storageclass
+    ${statefulset_name} =    generate_name_with_suffix    statefulset    ${statefulset_id}
+    create_statefulset    ${statefulset_name}    ${volume_type}    ${option}
 
-    ${pvc_name} =    get_workload_pvc_name    ${statefulset_name}
-    Insert Into List    ${persistentvolumeclaim_list}    ${idx}    ${pvc_name}
+Scale statefulset ${statefulset_id} to ${replicaset_size}
+    ${statefulset_name} =    generate_name_with_suffix    statefulset    ${statefulset_id}
+    scale_statefulset    ${statefulset_name}    ${replicaset_size}
 
-Create statefulset ${idx} with ${volume_type} and ${option} volume
-    ${statefulset_name} =    create_statefulset    ${volume_type}    ${option}
-    Insert Into List    ${statefulset_list}    ${idx}    ${statefulset_name}
+Scale down statefulset ${statefulset_id} to detach volume
+    ${statefulset_name} =    generate_name_with_suffix    statefulset    ${statefulset_id}
+    scale_statefulset_down    ${statefulset_name}
 
-Scale down statefulset ${idx} to detach volume
-    ${statefulset} =    get_statefulset    ${statefulset_list}[${idx}]
-    ${scale_up_replica_count} =   Set Variable    ${statefulset.spec.replicas}
-    Set Test Variable   ${scale_up_replica_count}
+Scale up statefulset ${statefulset_id} to attach volume
+    ${statefulset_name} =    generate_name_with_suffix    statefulset    ${statefulset_id}
+    scale_statefulset_up    ${statefulset_name}
 
-    scale_statefulset    ${statefulset_list}[${idx}]    0
-    wait_for_volume_detached    ${volume_list}[${idx}]
+Expand statefulset ${statefulset_id} volume by ${size} MiB
+    ${statefulset_name} =    generate_name_with_suffix    statefulset    ${statefulset_id}
+    expand_workload_claim_size_by_mib    ${statefulset_name}    ${size}
 
-Scale up statefulset ${idx} to attach volume
-    scale_statefulset    ${statefulset_list}[${idx}]    ${scale_up_replica_count}
-    wait_for_volume_healthy    ${volume_list}[${idx}]
-    wait_for_statefulset_replicas_ready    ${statefulset_list}[${idx}]    ${scale_up_replica_count}
+Write ${size} MB data to file ${file_name} in statefulset ${statefulset_id}
+    ${statefulset_name} =    generate_name_with_suffix    statefulset    ${statefulset_id}
+    write_workload_pod_random_data    ${statefulset_name}    ${size}    ${file_name}
 
-Expand statefulset ${idx} volume by ${size} MiB
-    ${expected_size} =     expand_pvc_size_by_mib    ${persistentvolumeclaim_list}[${idx}]    ${size}
-    Set Test Variable    ${expected_size}
+Check statefulset ${statefulset_id} works
+    ${statefulset_name} =    generate_name_with_suffix    statefulset    ${statefulset_id}
+    write_workload_pod_random_data    ${statefulset_name}    1024    random-data
+    check_workload_pod_data_checksum    ${statefulset_name}    random-data
 
-Write ${size} MB data to statefulset ${idx}
-    ${pod_name} =    get_workload_pod_name    ${statefulset_list}[${idx}]
-    ${pod_data_checksum} =    write_pod_random_data    ${pod_name}    ${size}
-    Insert Into List    ${data_checksum_list}    ${idx}    ${pod_data_checksum}
+Check statefulset ${statefulset_id} data in file ${file_name} is intact
+    ${statefulset_name} =    generate_name_with_suffix    statefulset    ${statefulset_id}
+    check_workload_pod_data_checksum    ${statefulset_name}    ${file_name}
 
-Keep writing data to statefulset ${idx}
-    ${pod_name} =    get_workload_pod_name    ${statefulset_list}[${idx}]
-    keep_writing_pod_data    ${pod_name}
+Wait for statefulset ${statefulset_id} volume size expanded
+    ${statefulset_name} =    generate_name_with_suffix    statefulset    ${statefulset_id}
+    wait_for_workload_claim_size_expanded    ${statefulset_name}
 
-Check statefulset ${idx} works
-    ${pod_name} =    get_workload_pod_name    ${statefulset_list}[${idx}]
-    ${pod_data_checksum} =    write_pod_random_data    ${pod_name}    1024
-    check_pod_data_checksum    ${pod_name}    ${pod_data_checksum}
+Wait for statefulset ${statefulset_id} volume detached
+    ${statefulset_name} =    generate_name_with_suffix    statefulset    ${statefulset_id}
+    wait_for_workload_volume_detached    ${statefulset_name}
 
-Check statefulset ${idx} data is intact
-    ${pod_name} =    get_workload_pod_name    ${statefulset_list}[${idx}]
-    ${expected_data_checksum} =     Get From List    ${data_checksum_list}    ${idx}
-    check_pod_data_checksum    ${pod_name}    ${expected_data_checksum}
-
-Wait for statefulset ${idx} volume size expanded
-    wait_for_volume_expand_to_size    ${volume_list}[${idx}]    ${expected_size}
-
-Wait for statefulset ${idx} stable
-    wait_for_workload_pod_stable   ${statefulset_list}[${idx}]
-
+Wait for statefulset ${statefulset_id} pods stable
+    ${statefulset_name} =    generate_name_with_suffix    statefulset    ${statefulset_id}
+    wait_for_workload_pods_stable   ${statefulset_name}

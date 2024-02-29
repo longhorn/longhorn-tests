@@ -2,22 +2,20 @@
 Documentation    Deployment Keywords
 
 Library    Collections
+Library    ../libs/keywords/common_keywords.py
 Library    ../libs/keywords/deployment_keywords.py
 
 *** Keywords ***
-Create deployment ${idx} with ${volume_type} volume
-    ${deployment_name} =    create_deployment    ${volume_type}
-    Insert Into List    ${deployment_list}    ${idx}    ${deployment_name}
+Create deployment ${deployment_id} with persistentvolumeclaim ${claim_id}
+    ${deployment_name} =    generate_name_with_suffix    deployment    ${deployment_id}
+    ${claim_name} =    generate_name_with_suffix    claim    ${claim_id}
+    create_deployment    ${deployment_name}    ${claim_name}
 
-Create deployment ${idx} with ${volume_type} and ${option} volume
-    ${deployment_name} =    create_deployment    ${volume_type}    ${option}
-    Insert Into List    ${deployment_list}    ${idx}    ${deployment_name}
+Check deployment ${deployment_id} works
+    ${deployment_name} =    generate_name_with_suffix    deployment    ${deployment_id}
+    write_workload_pod_random_data    ${deployment_name}    1024    random-data
+    check_workload_pod_data_checksum    ${deployment_name}    random-data
 
-Keep writing data to deployment ${idx}
-    ${pod_name} =    get_workload_pod_name    ${deployment_list}[${idx}]
-    keep_writing_pod_data    ${pod_name}
-
-Check deployment ${idx} works
-    ${pod_name} =    get_workload_pod_name    ${deployment_list}[${idx}]
-    ${pod_data_checksum} =    write_pod_random_data    ${pod_name}    1024
-    check_pod_data_checksum    ${pod_name}    ${pod_data_checksum}
+Wait for deployment ${deployment_id} pods stable
+    ${deployment_name} =    generate_name_with_suffix    deployment    ${deployment_id}
+    wait_for_workload_pods_stable   ${deployment_name}
