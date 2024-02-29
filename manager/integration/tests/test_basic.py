@@ -101,6 +101,7 @@ from common import BACKUP_COMPRESSION_METHOD_NONE
 from common import create_and_wait_deployment
 from common import get_custom_object_api_client
 from common import RETRY_COUNTS_SHORT
+from common import scale_up_engine_image_daemonset
 
 from backupstore import backupstore_delete_volume_cfg_file
 from backupstore import backupstore_cleanup
@@ -4426,10 +4427,7 @@ def test_backuptarget_available_during_engine_image_not_ready(client, apps_api):
             common.wait_for_backup_target_available(client, False)
 
             # Scale up the engine image DaemonSet
-            body = [{"op": "remove",
-                     "path": "/spec/template/spec/nodeSelector/foo"}]
-            apps_api.patch_namespaced_daemon_set(
-                name=ds_name, namespace='longhorn-system', body=body)
+            scale_up_engine_image_daemonset(client)
             common.wait_for_backup_target_available(client, True)
 
             # Sleep 1 second to prevent the same time
