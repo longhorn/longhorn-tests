@@ -341,6 +341,9 @@ run_longhorn_upgrade_test(){
 
   # get upgrade test junit xml report
   kubectl cp ${LONGHORN_UPGRADE_TEST_POD_NAME}:${LONGHORN_JUNIT_REPORT_PATH} "${TF_VAR_tf_workspace}/${LONGHORN_UPGRADE_TEST_POD_NAME}-junit-report.xml" -c longhorn-test-report
+
+  # delete upgrade test pod
+  kubectl delete -f ${LONGHORN_UPGRADE_TESTS_MANIFEST_FILE_PATH}
 }
 
 
