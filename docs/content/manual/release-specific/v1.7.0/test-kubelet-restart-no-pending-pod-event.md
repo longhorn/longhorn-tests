@@ -1,5 +1,5 @@
 ---
-Test: restarting Kubelet should not result in repeated "no Pending workload pods ..." event for the workload pod.
+title: restarting Kubelet should not result in repeated "no Pending workload pods ..." event for the workload pod.
 ---
 
 ## Related issues
