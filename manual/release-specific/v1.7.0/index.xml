@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>v1.7.0 on Longhorn Manual Test Cases</title>
+    <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.7.0/</link>
+    <description>Recent content in v1.7.0 on Longhorn Manual Test Cases</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en-us</language>
+    <atom:link href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.7.0/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>restarting Kubelet should not result in repeated &#34;no Pending workload pods ...&#34; event for the workload pod.</title>
+      <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.7.0/test-kubelet-restart-no-pending-pod-event/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.7.0/test-kubelet-restart-no-pending-pod-event/</guid>
+      <description>Related issues https://github.com/longhorn/longhorn/issues/8072 Test step Given A deployment is created.&#xA;When Kubelet on the node with attached volume of the deployment is restarted.&#xA;systemctl restart k3s-agent.service Then Observe the events of the deployment pod.&#xA;kubectl get events --field-selector involvedObject.name=${POD_NAME} -w And There are no recurring no Pending workload pods for volume xxx to be mounted events.</description>
+    </item>
+  </channel>
+</rss>

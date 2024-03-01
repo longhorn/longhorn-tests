@@ -168,6 +168,8 @@
   </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/resiliency/</loc>
   </url><url>
+    <loc>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.7.0/test-kubelet-restart-no-pending-pod-event/</loc>
+  </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/cluster-restore/restore-to-a-new-cluster/</loc>
   </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/cluster-restore/restore-to-an-old-cluster/</loc>
@@ -389,6 +391,8 @@
     <loc>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.5.0/</loc>
   </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.6.0/</loc>
+  </url><url>
+    <loc>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.7.0/</loc>
   </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/v2-volume/</loc>
   </url><url>
