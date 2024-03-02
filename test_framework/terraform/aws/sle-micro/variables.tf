@@ -31,7 +31,7 @@ variable "arch" {
 
 variable "os_distro_version" {
   type        = string
-  default     = "5.3"
+  default     = "5.5"
 }
 
 variable "aws_ami_sles_account_number" {
@@ -56,14 +56,14 @@ variable "lh_aws_instance_name_controlplane" {
 
 variable "lh_aws_instance_type_controlplane" {
   type        = string
-  description = "Recommended instance types t2.xlarge for amd64 & a1.xlarge  for arm64"
-  default     = "t2.xlarge"
+  description = "Recommended instance types t3.xlarge for amd64 & t4g.xlarge for arm64"
+  default     = "t3.xlarge"
 }
 
 variable "lh_aws_instance_type_worker" {
   type        = string
-  description = "Recommended instance types t2.xlarge for amd64 & a1.xlarge  for arm64"
-  default     = "t2.xlarge"
+  description = "Recommended instance types t3.xlarge for amd64 & t4g.xlarge for arm64"
+  default     = "t3.xlarge"
 }
 
 variable "lh_aws_instance_root_block_device_size_controlplane" {
@@ -99,12 +99,12 @@ variable "k8s_distro_name" {
 
 variable "k8s_distro_version" {
   type        = string
-  default     = "v1.25.3+k3s1"
+  default     = "v1.28.4+k3s1"
   description = <<-EOT
     kubernetes version that will be deployed
     rke: (default: v1.22.5-rancher1-1)
-    k3s: (default: v1.25.3+k3s1)
-    rke2: (default: v1.25.3+rke2r1)
+    k3s: (default: v1.28.4+k3s1)
+    rke2: (default: v1.28.4+rke2r1)
   EOT
 }
 
@@ -121,4 +121,10 @@ variable "create_load_balancer" {
 variable "registration_code" {
   type    = string
   sensitive   = true
+}
+
+variable "custom_ssh_public_key" {
+  type = string
+  default = ""
+  sensitive = true
 }

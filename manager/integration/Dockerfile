@@ -1,12 +1,12 @@
-FROM registry.suse.com/bci/python:3.9
+FROM registry.suse.com/bci/python:3.11
 
-ARG KUBECTL_VERSION=v1.17.0
+ARG KUBECTL_VERSION=v1.28.4
 ARG YQ_VERSION=v4.24.2
 ARG TERRAFORM_VERSION=1.3.5
 ARG ARCH=amd64
 
 RUN zypper ref -f
-RUN zypper in -y vim-small nfs-client xfsprogs e2fsprogs util-linux-systemd gcc python39-devel gawk java-11-openjdk tar awk gzip wget unzip && \
+RUN zypper in -y vim-small nfs-client xfsprogs e2fsprogs util-linux-systemd gcc python311-devel gawk java-11-openjdk tar awk gzip wget unzip && \
     rm -rf /var/cache/zypp/*
 
 RUN curl -sO https://storage.googleapis.com/kubernetes-release/release/$KUBECTL_VERSION/bin/linux/${ARCH}/kubectl && \
@@ -42,5 +42,6 @@ ADD pipelines/helm/scripts/upgrade-longhorn.sh ./pipelines/helm/scripts/upgrade-
 ADD pipelines/rancher/scripts/upgrade-longhorn.sh ./pipelines/rancher/scripts/upgrade-longhorn.sh
 ADD pipelines/flux/scripts/upgrade-longhorn.sh ./pipelines/flux/scripts/upgrade-longhorn.sh
 ADD pipelines/argocd/scripts/upgrade-longhorn.sh ./pipelines/argocd/scripts/upgrade-longhorn.sh
+ADD pipelines/fleet/scripts/upgrade-longhorn.sh ./pipelines/fleet/scripts/upgrade-longhorn.sh
 
 ENTRYPOINT ["./run.sh"]

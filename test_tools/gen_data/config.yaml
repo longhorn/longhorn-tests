@@ -1,0 +1,15 @@
+storage: 500Mi
+storageClass: longhorn
+dataSizeInMb: 50
+namespace: default
+statefulSet:
+  rwo:
+    replicas: 0
+  rwx:
+    replicas: 0
+deployment:
+  rwo:
+    pvCounts: 0
+  rwx:
+    pvCounts: 0
+    deploymentReplicas: 0

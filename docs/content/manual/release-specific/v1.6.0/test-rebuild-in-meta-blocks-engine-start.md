@@ -32,7 +32,7 @@ index b48ddd46..c4523f11 100644
 **And** the `auto-salvage` setting is set to `true`.  
 **And** a new StorageClass is created with `NumberOfReplica` set to `1`.  
 **And** a StatefulSet is created with `Replica` set to `1`.  
-**And** the node of the StatefulSet Pod and the node of its volume Replica are different. This is necessary to trigger the rebuilding in reponse to the data locality setting update later.  
+**And** the node of the StatefulSet Pod and the node of its volume Replica are different. This is necessary to trigger the rebuilding in response to the data locality setting update later.  
 **And** Volume have 1 running Replica.  
 **And** data exists in the volume.  
 

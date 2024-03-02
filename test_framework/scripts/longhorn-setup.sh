@@ -57,8 +57,12 @@ install_cluster_autoscaler(){
 
 install_csi_snapshotter_crds(){
     CSI_SNAPSHOTTER_REPO_URL="https://github.com/kubernetes-csi/external-snapshotter.git"
-    CSI_SNAPSHOTTER_REPO_BRANCH="v6.2.1"
     CSI_SNAPSHOTTER_REPO_DIR="${TMPDIR}/k8s-csi-external-snapshotter"
+
+    [[ "${LONGHORN_REPO_URI}" =~ https://([^/]+)/([^/]+)/([^/.]+)(.git)? ]]
+    wget "https://raw.githubusercontent.com/${BASH_REMATCH[2]}/${BASH_REMATCH[3]}/${LONGHORN_REPO_BRANCH}/deploy/longhorn-images.txt" -O "/tmp/longhorn-images.txt"
+    IFS=: read -ra IMAGE_TAG_PAIR <<< $(grep csi-snapshotter /tmp/longhorn-images.txt)
+    CSI_SNAPSHOTTER_REPO_BRANCH="${IMAGE_TAG_PAIR[1]}"
 
     git clone --single-branch \
               --branch "${CSI_SNAPSHOTTER_REPO_BRANCH}" \
@@ -118,10 +122,11 @@ wait_longhorn_status_running(){
   local RETRY_COUNTS=10 # in minutes
   local RETRY_INTERVAL="1m"
 
-  # csi components are installed after longhorn components.
+  # csi and engine image components are installed after longhorn components.
   # it's possible that all longhorn components are running but csi components aren't created yet.
   RETRIES=0
   while [[ -z `kubectl get pods -n ${LONGHORN_NAMESPACE} --no-headers 2>&1 | awk '{print $1}' | grep csi-` ]] || \
+    [[ -z `kubectl get pods -n ${LONGHORN_NAMESPACE} --no-headers 2>&1 | awk '{print $1}' | grep engine-image-` ]] || \
     [[ -n `kubectl get pods -n ${LONGHORN_NAMESPACE} --no-headers 2>&1 | awk '{print $3}' | grep -v Running` ]]; do
     echo "Longhorn is still installing ... re-checking in 1m"
     sleep ${RETRY_INTERVAL}
@@ -317,8 +322,8 @@ create_longhorn_namespace(){
 
 
 install_backupstores(){
-  MINIO_BACKUPSTORE_URL="https://raw.githubusercontent.com/longhorn/longhorn-tests/master/manager/integration/deploy/backupstores/minio-backupstore.yaml"
-  NFS_BACKUPSTORE_URL="https://raw.githubusercontent.com/longhorn/longhorn-tests/master/manager/integration/deploy/backupstores/nfs-backupstore.yaml"
+  MINIO_BACKUPSTORE_URL="https://raw.githubusercontent.com/longhorn/longhorn/master/deploy/backupstores/minio-backupstore.yaml"
+  NFS_BACKUPSTORE_URL="https://raw.githubusercontent.com/longhorn/longhorn/master/deploy/backupstores/nfs-backupstore.yaml"
   kubectl create -f ${MINIO_BACKUPSTORE_URL} \
                -f ${NFS_BACKUPSTORE_URL}
 }
@@ -374,6 +379,9 @@ run_longhorn_upgrade_test(){
 
   yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env[4].value="'${LONGHORN_UPGRADE_TYPE}'"' ${LONGHORN_UPGRADE_TESTS_MANIFEST_FILE_PATH}
 
+  RESOURCE_SUFFIX=$(terraform -chdir=${TF_VAR_tf_workspace}/terraform/${LONGHORN_TEST_CLOUDPROVIDER}/${DISTRO} output -raw resource_suffix)
+  yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env[7].value="'${RESOURCE_SUFFIX}'"' ${LONGHORN_UPGRADE_TESTS_MANIFEST_FILE_PATH}
+
   kubectl apply -f ${LONGHORN_UPGRADE_TESTS_MANIFEST_FILE_PATH}
 
   # wait upgrade test pod to start running
@@ -389,6 +397,9 @@ run_longhorn_upgrade_test(){
 
   # get upgrade test junit xml report
   kubectl cp ${LONGHORN_UPGRADE_TEST_POD_NAME}:${LONGHORN_JUNIT_REPORT_PATH} "${TF_VAR_tf_workspace}/${LONGHORN_UPGRADE_TEST_POD_NAME}-junit-report.xml" -c longhorn-test-report
+
+  # delete upgrade test pod
+  kubectl delete -f ${LONGHORN_UPGRADE_TESTS_MANIFEST_FILE_PATH}
 }
 
 
@@ -437,6 +448,9 @@ run_longhorn_tests(){
   set -x
 
   LONGHORN_TEST_POD_NAME=`yq e 'select(.spec.containers[0] != null).metadata.name' ${LONGHORN_TESTS_MANIFEST_FILE_PATH}`
+
+  RESOURCE_SUFFIX=$(terraform -chdir=${TF_VAR_tf_workspace}/terraform/${LONGHORN_TEST_CLOUDPROVIDER}/${DISTRO} output -raw resource_suffix)
+  yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env[7].value="'${RESOURCE_SUFFIX}'"' ${LONGHORN_TESTS_MANIFEST_FILE_PATH}
 
   kubectl apply -f ${LONGHORN_TESTS_MANIFEST_FILE_PATH}
 

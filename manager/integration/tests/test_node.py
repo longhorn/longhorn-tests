@@ -3,6 +3,7 @@ import pytest
 import os
 import subprocess
 import time
+import yaml
 
 from random import choice
 from string import ascii_lowercase, digits
@@ -19,14 +20,14 @@ from common import SETTING_STORAGE_OVER_PROVISIONING_PERCENTAGE, \
     SETTING_DEFAULT_DATA_PATH, \
     SETTING_CREATE_DEFAULT_DISK_LABELED_NODES, \
     DEFAULT_STORAGE_OVER_PROVISIONING_PERCENTAGE, \
-    SETTING_DISABLE_SCHEDULING_ON_CORDONED_NODE
+    SETTING_DISABLE_SCHEDULING_ON_CORDONED_NODE, \
+    SETTING_DETACH_MANUALLY_ATTACHED_VOLUMES_WHEN_CORDONED
 from common import get_volume_endpoint
 from common import get_update_disks
 from common import wait_for_disk_status, wait_for_disk_update, \
     wait_for_disk_conditions, wait_for_node_tag_update, \
     cleanup_node_disks, wait_for_disk_storage_available, \
     wait_for_disk_uuid, wait_for_node_schedulable_condition
-from common import exec_nsenter
 
 from common import SETTING_REPLICA_NODE_SOFT_ANTI_AFFINITY
 from common import volume_name # NOQA
@@ -47,8 +48,13 @@ from common import set_node_tags, set_node_scheduling
 from common import set_node_scheduling_eviction
 from common import update_node_disks
 from common import update_setting
+from common import SETTING_NODE_DRAIN_POLICY, DATA_SIZE_IN_MB_3
+from common import make_deployment_with_pvc # NOQA
+from common import prepare_host_disk, wait_for_volume_degraded
+from common import create_deployment_and_write_data
 
 from backupstore import set_random_backupstore # NOQA
+from concurrent.futures import ThreadPoolExecutor, TimeoutError
 
 
 CREATE_DEFAULT_DISK_LABEL = "node.longhorn.io/create-default-disk"
@@ -190,7 +196,7 @@ def test_node_disk_update(client):  # NOQA
     3. Create two disks `disk1` and `disk2`, attach them to the current node.
     4. Add two disks to the current node.
     5. Verify two extra disks have been added to the node
-    6. Disbale the two disks' scheduling, and set StorageReserved
+    6. Disable the two disks' scheduling, and set StorageReserved
     7. Update the two disks.
     8. Validate all the disks properties.
     9. Delete other two disks. Validate deletion works.
@@ -1425,14 +1431,17 @@ def test_replica_datapath_cleanup(client):  # NOQA
 
     # data path should exist now
     for data_path in data_paths:
-        assert exec_nsenter("ls {}".format(data_path))
+        assert os.listdir(data_path)
 
     cleanup_volume_by_name(client, vol_name)
 
     # data path should be gone due to the cleanup of replica
     for data_path in data_paths:
-        with pytest.raises(subprocess.CalledProcessError):
-            exec_nsenter("ls {}".format(data_path))
+        try:
+            os.listdir(data_path)
+            raise AssertionError(f"data path {data_path} should be gone")
+        except FileNotFoundError:
+            pass
 
     node = client.by_id_node(lht_hostId)
     disks = node.disks
@@ -1916,7 +1925,7 @@ def test_node_config_annotation_missing(client, core_api, reset_default_disk_lab
     3. Verify disk update works.
     4. Verify tag update works
     5. Verify using tag annotation for configuration works.
-    6. After remove the tag annotaion, verify unset tag node works fine.
+    6. After remove the tag annotation, verify unset tag node works fine.
     7. Set tag annotation again. Verify node updated for the tag.
     """
     setting = client.by_id_setting(SETTING_CREATE_DEFAULT_DISK_LABELED_NODES)
@@ -2009,7 +2018,7 @@ def test_replica_scheduler_rebuild_restore_is_too_big(set_random_backupstore, cl
         data cannot fit in the small disk
     6. Delete a replica of volume.
         1. Verify the volume reports `scheduled = false` due to unable to find
-        a suitable disk for rebuliding replica, since the replica with the
+        a suitable disk for rebuilding replica, since the replica with the
         existing data cannot fit in the small disk
     6. Enable the scheduling for other disks, disable scheduling for small disk
     7. Verify the volume reports `scheduled = true`. And verify the data.
@@ -2677,8 +2686,120 @@ def test_disk_eviction_with_node_level_soft_anti_affinity_disabled(client, # NOQ
 
     request.addfinalizer(finalizer)
 
-@pytest.mark.skip(reason="TODO")  # NOQA
-def test_drain_with_block_for_eviction_success():
+
+def drain_node(core_api, node): # NOQA    
+    set_node_cordon(core_api, node.id, True)
+
+    command = [
+        "kubectl",
+        "drain",
+        node.id,
+        "--ignore-daemonsets",
+        "--delete-emptydir-data",
+        "--grace-period=-1"
+    ]
+
+    subprocess.run(command, check=True)
+
+
+def get_replica_detail(replica_name):
+    """
+    Get allreplica information by this function
+    """
+    command = ["kubectl", "get",
+               "replicas.longhorn.io",
+               "-n",
+               "longhorn-system",
+               replica_name,
+               "-o",
+               "yaml"]
+    output = subprocess.check_output(command, text=True)
+    replica_info = yaml.safe_load(output)
+    return replica_info
+
+
+def check_node_auto_evict_state(client, target_node, expect_state): # NOQA
+    def get_specific_node(client, target_node):
+        nodes = client.list_node()
+        for node in nodes:
+            if node.id == target_node.id:
+                return node
+
+    for i in range(RETRY_COUNTS):
+        node = get_specific_node(client, target_node)
+        if node.autoEvicting is expect_state:
+            break
+        time.sleep(RETRY_INTERVAL)
+    assert node.autoEvicting is expect_state
+
+
+def check_replica_evict_state(client, volume_name, node, expect_state): # NOQA
+    volume = client.by_id_volume(volume_name)
+    for replica in volume.replicas:
+        if replica.hostId == node.id:
+            replica_name = replica.name
+            break
+
+    replica_info = get_replica_detail(replica_name)
+    eviction_requested = replica_info["spec"]["evictionRequested"]
+    assert eviction_requested is expect_state
+
+
+def wait_drain_complete(future, timeout, copmpleted=True):
+    """
+    Wait concurrent.futures object complete in a duration
+    """
+    def stop_drain_process():
+        """
+        Both future.cancel() and executer.shutdown(wait=False) can not really
+        stop the drain process.
+        Use this function to stop drain process
+        """
+        command = ["pkill", "-f", "kubectl drain"]
+        subprocess.check_output(command, text=True)
+
+    thread_timeout = timeout
+    try:
+        future.result(timeout=thread_timeout)
+        drain_complete = True
+    except TimeoutError:
+        print("drain node thread exceed timeout ({})s".format(thread_timeout))
+        drain_complete = False
+        stop_drain_process()
+    finally:
+        assert drain_complete is copmpleted
+
+
+def make_replica_on_specific_node(client, volume_name, node): # NOQA
+    volume = client.by_id_volume(volume_name)
+    volume.updateReplicaCount(replicaCount=1)
+    for replica in volume.replicas:
+        if replica.hostId != node.id:
+            volume.replicaRemove(name=replica.name)
+    wait_for_volume_replica_count(client, volume_name, 1)
+
+
+def get_all_replica_name(client, volume_name): # NOQA
+    volume_replicas = []
+    volume = client.by_id_volume(volume_name)
+    for replica in volume.replicas:
+        volume_replicas.append(replica.name)
+
+    return volume_replicas
+
+
+def check_all_replicas_evict_state(client, volume_name, expect_state): # NOQA
+    volume = client.by_id_volume(volume_name)
+    for replica in volume.replicas:
+        replica_info = get_replica_detail(replica.name)
+        eviction_requested = replica_info["spec"]["evictionRequested"]
+        assert eviction_requested is expect_state
+
+
+def test_drain_with_block_for_eviction_success(client, # NOQA
+                                               core_api, # NOQA
+                                               volume_name, # NOQA
+                                               make_deployment_with_pvc): # NOQA
     """
     Test drain completes after evicting replica with node-drain-policy
     block-for-eviction
@@ -2690,7 +2811,6 @@ def test_drain_with_block_for_eviction_success():
     4. Write data to the volume.
     5. Drain a node one of the volume's replicas is scheduled to.
     6. While the drain is ongoing:
-       - Verify that the volume never becomes degraded.
        - Verify that `node.status.autoEvicting == true`.
        - Optionally verify that `replica.spec.evictionRequested == true`.
     7. Verify the drain completes.
@@ -2700,9 +2820,74 @@ def test_drain_with_block_for_eviction_success():
     11. Verify that `replica.spec.evictionRequested == false`.
     12. Verify the volume's data.
     """
+    host_id = get_self_host_id()
+    nodes = client.list_node()
+    evict_nodes = [node for node in nodes if node.id != host_id][:2]
+    evict_source_node = evict_nodes[0]
+    evict_target_node = evict_nodes[1]
 
-@pytest.mark.skip(reason="TODO")  # NOQA
-def test_drain_with_block_for_eviction_if_contains_last_replica_success():
+    # Step 1
+    setting = client.by_id_setting(
+        SETTING_NODE_DRAIN_POLICY)
+    client.update(setting, value="block-for-eviction")
+
+    # Step 2, 3, 4
+    volume, pod, checksum = create_deployment_and_write_data(client,
+                                                             core_api,
+                                                             make_deployment_with_pvc, # NOQA
+                                                             volume_name,
+                                                             str(1 * Gi),
+                                                             3,
+                                                             DATA_SIZE_IN_MB_3, host_id) # NOQA
+
+    # Make replica not locate on eviction target node
+    volume.updateReplicaCount(replicaCount=2)
+    for replica in volume.replicas:
+        if replica.hostId == evict_target_node.id:
+            volume.replicaRemove(name=replica.name)
+            break
+
+    wait_for_volume_replica_count(client, volume_name, 2)
+
+    # Step 5
+    # drain eviction source node
+    executor = ThreadPoolExecutor(max_workers=5)
+    future = executor.submit(drain_node, core_api, evict_source_node)
+
+    # Step 6
+    check_replica_evict_state(client, volume_name, evict_source_node, True)
+    check_node_auto_evict_state(client, evict_source_node, True)
+
+    # Step 7
+    wait_drain_complete(future, 60)
+    wait_for_volume_replica_count(client, volume_name, 2)
+
+    # Step 8
+    set_node_cordon(core_api, evict_source_node.id, False)
+
+    # Step 9
+    volume = wait_for_volume_healthy(client, volume_name)
+    assert len(volume.replicas) == 2
+    for replica in volume.replicas:
+        assert replica.hostId != evict_source_node.id
+
+    # Stpe 10
+    check_node_auto_evict_state(client, evict_source_node, False)
+
+    # Step 11
+    check_replica_evict_state(client, volume_name, evict_target_node, False)
+
+    # Step 12
+    data_path = data_path = '/data/test'
+    test_data_checksum = get_pod_data_md5sum(core_api,
+                                             pod,
+                                             data_path)
+    assert checksum == test_data_checksum
+
+
+def test_drain_with_block_for_eviction_if_contains_last_replica_success(client, # NOQA
+                                                                        core_api, # NOQA
+                                                                        make_deployment_with_pvc): # NOQA
     """
     Test drain completes after evicting replicas with node-drain-policy
     block-for-eviction-if-contains-last-replica
@@ -2716,7 +2901,6 @@ def test_drain_with_block_for_eviction_if_contains_last_replica_success():
     4. Write data to the volumes.
     5. Drain a node both volumes have a replica scheduled to.
     6. While the drain is ongoing:
-       - Verify that the volume with one replica never becomes degraded.
        - Verify that the volume with three replicas becomes degraded.
        - Verify that `node.status.autoEvicting == true`.
        - Optionally verify that `replica.spec.evictionRequested == true` on the
@@ -2732,9 +2916,116 @@ def test_drain_with_block_for_eviction_if_contains_last_replica_success():
     12. Verify that `replica.spec.evictionRequested == false` on all replicas.
     13. Verify the the data in both volumes.
     """
+    host_id = get_self_host_id()
+    nodes = client.list_node()
+    evict_nodes = [node for node in nodes if node.id != host_id][:2]
+    evict_source_node = evict_nodes[0]
+    # Create extra disk on current node
+    node = client.by_id_node(host_id)
+    disks = node.disks
 
-@pytest.mark.skip(reason="TODO")  # NOQA
-def test_drain_with_block_for_eviction_failure():
+    disk_volume_name = 'vol-disk'
+    disk_volume = client.create_volume(name=disk_volume_name,
+                                       size=str(2 * Gi),
+                                       numberOfReplicas=1,
+                                       dataLocality="strict-local")
+    disk_volume = wait_for_volume_detached(client, disk_volume_name)
+
+    disk_volume.attach(hostId=host_id)
+    disk_volume = wait_for_volume_healthy(client, disk_volume_name)
+    disk_path = prepare_host_disk(get_volume_endpoint(disk_volume),
+                                  disk_volume_name)
+    disk = {"path": disk_path, "allowScheduling": True}
+
+    update_disk = get_update_disks(disks)
+    update_disk["disk1"] = disk
+
+    node = update_node_disks(client, node.name, disks=update_disk, retry=True)
+    node = wait_for_disk_update(client, host_id, len(update_disk))
+    assert len(node.disks) == len(update_disk)
+
+    # Step 1
+    setting = client.by_id_setting(
+        SETTING_NODE_DRAIN_POLICY)
+    client.update(setting, value="block-for-eviction-if-contains-last-replica")
+
+    # Step 2, 3
+    volume1_name = "vol-1"
+    volume2_name = "vol-2"
+    volume1, pod1, checksum1 = create_deployment_and_write_data(client,
+                                                                core_api,
+                                                                make_deployment_with_pvc, # NOQA
+                                                                volume1_name,
+                                                                str(1 * Gi),
+                                                                3,
+                                                                DATA_SIZE_IN_MB_3, # NOQA
+                                                                host_id) # NOQA
+    volume2, pod2, checksum2 = create_deployment_and_write_data(client,
+                                                                core_api,
+                                                                make_deployment_with_pvc,  # NOQA
+                                                                volume2_name,
+                                                                str(1 * Gi),
+                                                                3,
+                                                                DATA_SIZE_IN_MB_3, # NOQA
+                                                                host_id) # NOQA
+    # Make volume 1 replica only located on evict_source_node
+    make_replica_on_specific_node(client, volume1_name, evict_source_node)
+    volume2_replicas = get_all_replica_name(client, volume2_name)
+
+    # Step 5
+    executor = ThreadPoolExecutor(max_workers=5)
+    future = executor.submit(drain_node, core_api, evict_source_node)
+
+    # Step 6
+    check_replica_evict_state(client, volume1_name, evict_source_node, True)
+    check_node_auto_evict_state(client, evict_source_node, True)
+
+    volume2 = wait_for_volume_degraded(client, volume2_name)
+    check_all_replicas_evict_state(client, volume2_name, False)
+
+    # Step 7
+    wait_drain_complete(future, 60)
+
+    # Step 8
+    set_node_cordon(core_api, evict_source_node.id, False)
+
+    # Step 9
+    volume1 = client.by_id_volume(volume1_name)
+    wait_for_volume_replica_count(client, volume1_name, 1)
+    for replica in volume1.replicas:
+        assert replica.hostId != evict_source_node.id
+
+    # Step 10
+    # Verify volume2 replicas not moved by check replica name
+    # stored before the node drain
+    volume2 = wait_for_volume_healthy(client, volume2_name)
+    for replica in volume2.replicas:
+        assert replica.name in volume2_replicas
+
+    # Step 11
+    check_node_auto_evict_state(client, evict_source_node, False)
+
+    # Step 12
+    check_all_replicas_evict_state(client, volume1_name, False)
+    check_all_replicas_evict_state(client, volume2_name, False)
+
+    # Step 13
+    data_path = '/data/test'
+    test_data_checksum1 = get_pod_data_md5sum(core_api,
+                                              pod1,
+                                              data_path)
+    assert checksum1 == test_data_checksum1
+
+    test_data_checksum2 = get_pod_data_md5sum(core_api,
+                                              pod2,
+                                              data_path)
+    assert checksum2 == test_data_checksum2
+
+
+def test_drain_with_block_for_eviction_failure(client, # NOQA
+                                               core_api, # NOQA
+                                               volume_name, # NOQA
+                                               make_deployment_with_pvc): # NOQA
     """
     Test drain never completes with node-drain-policy block-for-eviction
 
@@ -2749,4 +3040,113 @@ def test_drain_with_block_for_eviction_failure():
        - Verify that `node.status.autoEvicting == true`.
        - Verify that `replica.spec.evictionRequested == true`.
     7. Verify the drain never completes.
+    8. Stop the drain, check volume is healthy and data correct
+    """
+    host_id = get_self_host_id()
+    nodes = client.list_node()
+    evict_nodes = [node for node in nodes if node.id != host_id][:2]
+    evict_source_node = evict_nodes[0]
+
+    # Step 1
+    setting = client.by_id_setting(
+        SETTING_NODE_DRAIN_POLICY)
+    client.update(setting, value="block-for-eviction")
+
+    # Step 2, 3, 4
+    volume, pod, checksum = create_deployment_and_write_data(client,
+                                                             core_api,
+                                                             make_deployment_with_pvc, # NOQA
+                                                             volume_name,
+                                                             str(1 * Gi),
+                                                             3,
+                                                             DATA_SIZE_IN_MB_3, host_id) # NOQA
+
+    # Step 5
+    executor = ThreadPoolExecutor(max_workers=5)
+    future = executor.submit(drain_node, core_api, evict_source_node)
+
+    # Step 6
+    check_replica_evict_state(client, volume_name, evict_source_node, True)
+    check_node_auto_evict_state(client, evict_source_node, True)
+
+    # Step 7
+    wait_drain_complete(future, 90, False)
+
+    # Step 8
+    set_node_cordon(core_api, evict_source_node.id, False)
+    wait_for_volume_healthy(client, volume_name)
+    data_path = '/data/test'
+    test_data_checksum = get_pod_data_md5sum(core_api,
+                                             pod,
+                                             data_path)
+    assert checksum == test_data_checksum
+
+
+@pytest.mark.node  # NOQA
+def test_auto_detach_volume_when_node_is_cordoned(client, core_api, volume_name):  # NOQA
+    """
+    Test auto detach volume when node is cordoned
+
+    1. Set `detach-manually-attached-volumes-when-cordoned` to `false`.
+    2. Create a volume and attached to the node through API (manually).
+    3. Cordon the node.
+    4. Set `detach-manually-attached-volumes-when-cordoned` to `true`.
+    5. Volume will be detached automatically.
+    """
+
+    # Set `Detach Manually Attached Volumes When Cordoned` to false
+    detach_manually_attached_volumes_when_cordoned = \
+        client.by_id_setting(
+            SETTING_DETACH_MANUALLY_ATTACHED_VOLUMES_WHEN_CORDONED)
+    client.update(detach_manually_attached_volumes_when_cordoned,
+                  value="false")
+
+    # Create a volume
+    volume = client.create_volume(name=volume_name,
+                                  size=SIZE,
+                                  numberOfReplicas=3)
+    volume = common.wait_for_volume_detached(client,
+                                             volume_name)
+    assert volume.restoreRequired is False
+
+    # Attach to the node
+    host_id = get_self_host_id()
+    volume.attach(hostId=host_id)
+    volume = common.wait_for_volume_healthy(client, volume_name)
+    assert volume.restoreRequired is False
+
+    # Cordon the node
+    set_node_cordon(core_api, host_id, True)
+
+    # Volume is still attached for a while
+    time.sleep(NODE_UPDATE_WAIT_INTERVAL)
+    volume = common.wait_for_volume_healthy(client, volume_name)
+    assert volume.restoreRequired is False
+
+    # Set `Detach Manually Attached Volumes When Cordoned` to true
+    client.update(detach_manually_attached_volumes_when_cordoned, value="true")
+
+    # Volume should be detached
+    volume = common.wait_for_volume_detached(client, volume_name)
+    assert volume.restoreRequired is False
+
+    # Delete the Volume
+    client.delete(volume)
+    common.wait_for_volume_delete(client, volume_name)
+
+    volumes = client.list_volume().data
+    assert len(volumes) == 0
+
+@pytest.mark.skip(reason="TODO")  # NOQA
+def test_do_not_react_to_brief_kubelet_restart():
+    """
+    Test the node controller ignores Ready == False due to KubeletNotReady for
+    ten seconds before reacting.
+
+    Repeat the following five times:
+    1. Verify status.conditions[type == Ready] == True for the Longhorn node we
+       are running on.
+    2. Kill the kubelet process (e.g. `pkill kubelet`).
+    3. Verify status.conditions[type == Ready] != False for the Longhorn node
+       we are running on at any point for at least ten seconds.
     """
