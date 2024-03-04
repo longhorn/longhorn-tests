@@ -931,3 +931,25 @@ def test_csi_minimal_volume_size(
     write_pod_volume_data(core_api, pod_name, test_data, test_file)
     read_data = read_volume_data(core_api, pod_name, test_file)
     assert read_data == test_data
+
+
+@pytest.mark.csi
+@pytest.mark.skip(reason="TODO")
+def test_restage_volume_if_node_stage_volume_not_called():
+    """
+    Test restage volume if NodeStageVolume not called (CSI)
+
+    1. Create a PVC with spec.volumeMode == Block.
+    2. Create a Deployment with spec.replicas == 1 that uses the PVC. Set a
+       spec.selector on the Deployment so it can only run Pods on one node.
+    3. Hard reboot the node running the Deployment's single Pod.
+    4. Before the node comes back, force delete the "running" Pod.
+    5. Before the node comes back, verify there is now one pending Pod and one
+       terminating Pod.
+    6. After the node comes back, verify that a Pod becomes running and remains
+       running. It is fine if that Pod is different not the pending one from
+       above. The automatic remount mechanism may cause some churn.
+    7. Force delete the running Pod again.
+    8. Verify that a Pod becomes running and remains running.
+    """
+    pass
