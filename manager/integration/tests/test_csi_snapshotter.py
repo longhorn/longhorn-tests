@@ -29,7 +29,6 @@ from common import generate_volume_name, Mi, wait_and_get_pv_for_pvc, create_pvc
 from common import make_deployment_with_pvc, apps_api # NOQA
 from common import check_pvc_in_specific_status # NOQA
 from common import wait_for_pvc_phase
-from common import RETRY_COMMAND_COUNT
 from common import BACKING_IMAGE_QCOW2_URL, BACKING_IMAGE_QCOW2_CHECKSUM
 from common import BACKING_IMAGE_RAW_URL, BACKING_IMAGE_RAW_CHECKSUM
 from common import BACKING_IMAGE_SOURCE_TYPE_DOWNLOAD, RETRY_COUNTS_SHORT
@@ -280,7 +279,7 @@ def get_volumesnapshotcontent(volumesnapshot_uid):
 
 def wait_volumesnapshot_deleted(name,
                                 namespace,
-                                retry_counts=RETRY_COMMAND_COUNT,
+                                retry_counts=RETRY_COUNTS,
                                 can_be_deleted=True):
     api = get_custom_object_api_client()
     api_group = "snapshot.storage.k8s.io"
@@ -1349,8 +1348,7 @@ def test_csi_volumesnapshot_backing_image_basic(client, # NOQA
         delete_and_wait_pvc(core_api, restore_pvc_name)
         delete_volumesnapshot(csivolsnap_name, "default")
         wait_volumesnapshot_deleted(csivolsnap_name,
-                                    "default",
-                                    retry_counts=RETRY_COUNTS_SHORT)
+                                    "default")
 
     request.addfinalizer(finalizer)
 
@@ -1661,7 +1659,6 @@ def create_pod_from_bi_type_volumesnapshot_pvc_and_check_data(core_api, csivolsn
         delete_and_wait_pvc(core_api, pvc['metadata']['name'])
         delete_volumesnapshot(csivolsnap_name, "default")
         wait_volumesnapshot_deleted(csivolsnap_name,
-                                    "default",
-                                    retry_counts=RETRY_COUNTS_SHORT)
+                                    "default")
 
     request.addfinalizer(finalizer)
