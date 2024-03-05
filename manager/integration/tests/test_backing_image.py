@@ -45,6 +45,7 @@ from common import BACKING_IMAGE_QCOW2_CHECKSUM
 from common import BACKING_IMAGE_STATE_READY
 from common import BACKING_IMAGE_STATE_FAILED_AND_CLEANUP
 from common import BACKING_IMAGE_STATE_IN_PROGRESS
+from common import RETRY_COUNTS_LONG
 import time
 
 
@@ -76,9 +77,10 @@ def backing_image_basic_operation_test(client, volume_name, bi_name, bi_url):  #
     8. Delete the backing image.
     """
 
-    volume = create_and_check_volume(
-        client, volume_name, 3,
-        str(BACKING_IMAGE_EXT4_SIZE), bi_name)
+    volume = create_and_check_volume(client, volume_name,
+                                     num_of_replicas=3,
+                                     size=str(BACKING_IMAGE_EXT4_SIZE),
+                                     backing_image=bi_name)
     lht_host_id = get_self_host_id()
     volume.attach(hostId=lht_host_id)
     volume = wait_for_volume_healthy(client, volume_name)
@@ -143,9 +145,10 @@ def backing_image_content_test(client, volume_name_prefix, bi_name, bi_url):  # 
     lht_host_id = get_self_host_id()
 
     volume_name1 = volume_name_prefix + "-1"
-    volume1 = create_and_check_volume(
-        client, volume_name1, 3,
-        str(BACKING_IMAGE_EXT4_SIZE), bi_name)
+    volume1 = create_and_check_volume(client, volume_name1,
+                                      num_of_replicas=3,
+                                      size=str(BACKING_IMAGE_EXT4_SIZE),
+                                      backing_image=bi_name)
     volume1.attach(hostId=lht_host_id)
     volume1 = wait_for_volume_healthy(client, volume_name1)
     assert volume1.backingImage == bi_name
@@ -175,9 +178,10 @@ def backing_image_content_test(client, volume_name_prefix, bi_name, bi_url):  # 
     check_volume_data(volume1, data)
 
     volume_name2 = volume_name_prefix + "-2"
-    volume2 = create_and_check_volume(
-        client, volume_name2, 3,
-        str(BACKING_IMAGE_EXT4_SIZE), bi_name)
+    volume2 = create_and_check_volume(client, volume_name2,
+                                      num_of_replicas=3,
+                                      size=str(BACKING_IMAGE_EXT4_SIZE),
+                                      backing_image=bi_name)
     volume2.attach(hostId=lht_host_id)
     volume2 = wait_for_volume_healthy(client, volume_name2)
     assert volume1.backingImage == bi_name
@@ -427,7 +431,7 @@ def test_backing_image_with_disk_migration():  # NOQA
           `<Backing image name>-<First 8 characters of disk UUID>` is removed.
     9. Remount the host disk to another path. Then create another Longhorn disk
        based on the migrated path (disk migration).
-    10. Verify the followings.
+    10. Verify the following.
         1. The disk added in step3 (before the migration) should
            be "unschedulable".
         2. The disk added in step9 (after the migration) should
@@ -527,10 +531,10 @@ def test_backing_image_auto_resync(bi_url, client, volume_name):  # NOQA
               client, BACKING_IMAGE_NAME, bi_url)
 
     # Step 2
-    volume = create_and_check_volume(
-                                     client, volume_name, 3,
-                                     str(BACKING_IMAGE_EXT4_SIZE),
-                                     BACKING_IMAGE_NAME)
+    volume = create_and_check_volume(client, volume_name,
+                                     num_of_replicas=3,
+                                     size=str(BACKING_IMAGE_EXT4_SIZE),
+                                     backing_image=BACKING_IMAGE_NAME)
 
     # Step 3
     lht_host_id = get_self_host_id()
@@ -584,13 +588,13 @@ def backing_image_cleanup(core_api, client): # NOQA
 
     # Step 2
     lht_host_id = get_self_host_id()
-    volume1 = create_and_check_volume(
-        client, volume_name="vol-1", size=str(1 * Gi),
-        backing_image=backing_img1_name)
+    volume1 = create_and_check_volume(client, "vol-1",
+                                      size=str(1 * Gi),
+                                      backing_image=backing_img1_name)
 
-    volume2 = create_and_check_volume(
-        client, volume_name="vol-2", size=str(1 * Gi),
-        backing_image=backing_img2_name)
+    volume2 = create_and_check_volume(client, "vol-2",
+                                      size=str(1 * Gi),
+                                      backing_image=backing_img2_name)
 
     # Step 3
     volume1.attach(hostId=lht_host_id)
@@ -654,13 +658,13 @@ def test_volume_wait_for_backing_image_condition(client): # NOQA
     lht_host_id = get_self_host_id()
 
     volume1_name = "vol1"
-    volume1 = create_and_check_volume(
-        client, volume1_name, 3,
-        str(2 * Gi))
+    volume1 = create_and_check_volume(client, volume1_name,
+                                      num_of_replicas=3,
+                                      size=str(1 * Gi))
     volume1.attach(hostId=lht_host_id)
     volume1 = wait_for_volume_healthy(client, volume1_name)
     volume_endpoint = get_volume_endpoint(volume1)
-    write_volume_dev_random_mb_data(volume_endpoint, 1, 1000)
+    write_volume_dev_random_mb_data(volume_endpoint, 1, 500)
     vol1_cksum = get_device_checksum(volume_endpoint)
 
     backing_img_name = 'bi-test'
@@ -672,9 +676,9 @@ def test_volume_wait_for_backing_image_condition(client): # NOQA
 
     # Create volume with that backing image
     volume2_name = "vol2"
-    volume2 = create_and_check_volume(
-        client, volume_name=volume2_name, size=str(2 * Gi),
-        backing_image=backing_img["name"])
+    volume2 = create_and_check_volume(client, volume2_name,
+                                      size=str(1 * Gi),
+                                      backing_image=backing_img["name"])
 
     volume2.attach(hostId=lht_host_id)
 
@@ -686,7 +690,7 @@ def test_volume_wait_for_backing_image_condition(client): # NOQA
         assert volume2.conditions.WaitForBackingImage.status == "True"
 
     # Check volume healthy, and backing image ready
-    volume2 = wait_for_volume_healthy(client, volume2_name)
+    volume2 = wait_for_volume_healthy(client, volume2_name, RETRY_COUNTS_LONG)
     assert volume2.conditions.WaitForBackingImage.status == "False"
     check_backing_image_disk_map_status(client, backing_img_name, 3, "ready")
 

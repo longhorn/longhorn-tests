@@ -101,6 +101,7 @@ from common import BACKUP_COMPRESSION_METHOD_NONE
 from common import create_and_wait_deployment
 from common import get_custom_object_api_client
 from common import RETRY_COUNTS_SHORT
+from common import scale_up_engine_image_daemonset
 
 from backupstore import backupstore_delete_volume_cfg_file
 from backupstore import backupstore_cleanup
@@ -271,8 +272,10 @@ def volume_basic_test(client, volume_name, backing_image=""):  # NOQA
                                       numberOfReplicas=2,
                                       frontend="invalid_frontend")
 
-    volume = create_and_check_volume(client, volume_name, num_replicas, SIZE,
-                                     backing_image)
+    volume = create_and_check_volume(client, volume_name,
+                                     num_of_replicas=num_replicas,
+                                     size=SIZE,
+                                     backing_image=backing_image)
     assert volume.restoreRequired is False
 
     def validate_volume_basic(expected, actual):
@@ -340,7 +343,7 @@ def test_volume_iscsi_basic(client, volume_name):  # NOQA
 
     1. Create and attach a volume with iscsi frontend
     2. Check the volume endpoint and connect it using the iscsi
-    initator on the node.
+    initiator on the node.
     3. Write then read back volume data for validation
 
     """
@@ -349,8 +352,11 @@ def test_volume_iscsi_basic(client, volume_name):  # NOQA
 
 def volume_iscsi_basic_test(client, volume_name, backing_image=""):  # NOQA
     host_id = get_self_host_id()
-    volume = create_and_check_volume(client, volume_name, 3, SIZE,
-                                     backing_image, VOLUME_FRONTEND_ISCSI)
+    volume = create_and_check_volume(client, volume_name,
+                                     num_of_replicas=3,
+                                     size=SIZE,
+                                     backing_image=backing_image,
+                                     frontend=VOLUME_FRONTEND_ISCSI)
     volume.attach(hostId=host_id)
     volume = common.wait_for_volume_healthy(client, volume_name)
 
@@ -559,8 +565,10 @@ def test_backup_status_for_unavailable_replicas(set_random_backupstore, client, 
 
 def backup_status_for_unavailable_replicas_test(client, volume_name,  # NOQA
                                                 size, backing_image=""):  # NOQA
-    volume = create_and_check_volume(client, volume_name, 2, str(size),
-                                     backing_image)
+    volume = create_and_check_volume(client, volume_name,
+                                     num_of_replicas=2,
+                                     size=str(size),
+                                     backing_image=backing_image)
 
     lht_hostId = get_self_host_id()
     volume = volume.attach(hostId=lht_hostId)
@@ -746,7 +754,9 @@ def test_dr_volume_activated_with_failed_replica(set_random_backupstore, client,
     backupstore_cleanup(client)
 
     host_id = get_self_host_id()
-    vol = create_and_check_volume(client, volume_name, 2, SIZE)
+    vol = create_and_check_volume(client, volume_name,
+                                  num_of_replicas=2,
+                                  size=SIZE)
     vol.attach(hostId=host_id)
     vol = common.wait_for_volume_healthy(client, volume_name)
 
@@ -821,7 +831,9 @@ def test_dr_volume_with_backup_block_deletion(set_random_backupstore, client, co
 
     host_id = get_self_host_id()
 
-    vol = create_and_check_volume(client, volume_name, 2, SIZE)
+    vol = create_and_check_volume(client, volume_name,
+                                  num_of_replicas=2,
+                                  size=SIZE)
     vol.attach(hostId=host_id)
     vol = common.wait_for_volume_healthy(client, volume_name)
 
@@ -918,7 +930,9 @@ def test_dr_volume_with_backup_block_deletion_abort_during_backup_in_progress(se
 
     host_id = get_self_host_id()
 
-    vol = create_and_check_volume(client, volume_name, 2, SIZE)
+    vol = create_and_check_volume(client, volume_name,
+                                  num_of_replicas=2,
+                                  size=SIZE)
     vol.attach(hostId=host_id)
     vol = common.wait_for_volume_healthy(client, volume_name)
 
@@ -972,32 +986,40 @@ def test_dr_volume_with_backup_block_deletion_abort_during_backup_in_progress(se
     check_volume_data(dr_vol, final_data, False)
 
 
-def test_dr_volume_with_all_backup_blocks_deleted(set_random_backupstore, client, core_api, volume_name):  # NOQA
+def test_dr_volume_with_backup_and_backup_volume_deleted(set_random_backupstore, client, core_api, volume_name):  # NOQA
     """
-    Test DR volume can be activate after delete all backups.
+    Test DR volume can be activated after delete all backups.
 
     Context:
 
-    We want to make sure that DR volume can activate after delete all backups.
+    We want to make sure that DR volume can activate after deleting
+    some/all backups or the backup volume.
 
     Steps:
 
     1.  Create a volume and attach to the current node.
     2.  Write 4 MB to the beginning of the volume (2 x 2MB backup blocks).
-    3.  Create backup(0) of the volume.
-    6.  Verify backup block count == 2.
-    7.  Create DR volume from backup(0).
-    8.  Verify DR volume last backup is backup(0).
-    9.  Delete backup(0).
-    10. Verify backup block count == 0.
-    11. Verify DR volume last backup is empty.
-    15. Activate and verify DR volume data is data(0).
+    3.  Create backup(0) then backup(1) for the volume.
+    6.  Verify backup block count == 4.
+    7.  Create DR volume(1) and DR volume(2) from backup(1).
+    8.  Verify DR volumes last backup is backup(1).
+    9.  Delete backup(1).
+    10. Verify backup block count == 2.
+    11. Verify DR volumes last backup becomes backup(0).
+    12. Activate and verify DR volume(1) data is data(0).
+    13. Delete backup(0).
+    14. Verify backup block count == 0.
+    15. Verify DR volume last backup is empty.
+    16. Delete the backup volume.
+    17. Activate and verify DR volume data is data(0).
     """
     backupstore_cleanup(client)
 
     host_id = get_self_host_id()
 
-    vol = create_and_check_volume(client, volume_name, 2, SIZE)
+    vol = create_and_check_volume(client, volume_name,
+                                  num_of_replicas=2,
+                                  size=SIZE)
     vol.attach(hostId=host_id)
     vol = common.wait_for_volume_healthy(client, volume_name)
 
@@ -1005,30 +1027,57 @@ def test_dr_volume_with_all_backup_blocks_deleted(set_random_backupstore, client
              'content': common.generate_random_data(2 * BACKUP_BLOCK_SIZE)}
     _, backup0, _, data0 = create_backup(
         client, volume_name, data0)
+    data1 = {'pos': 0, 'len': 2 * BACKUP_BLOCK_SIZE,
+             'content': common.generate_random_data(2 * BACKUP_BLOCK_SIZE)}
+    _, backup1, _, data1 = create_backup(
+        client, volume_name, data1)
 
     backup_blocks_count = backupstore_count_backup_block_files(client,
                                                                core_api,
                                                                volume_name)
-    assert backup_blocks_count == 2
+    assert backup_blocks_count == 4
 
-    dr_vol_name = "dr-" + volume_name
-    client.create_volume(name=dr_vol_name, size=SIZE,
-                         numberOfReplicas=2, fromBackup=backup0.url,
+    dr_vol_name1 = "dr-" + volume_name + "1"
+    dr_vol_name2 = "dr-" + volume_name + "2"
+    client.create_volume(name=dr_vol_name1, size=SIZE,
+                         numberOfReplicas=2, fromBackup=backup1.url,
                          frontend="", standby=True)
-    check_volume_last_backup(client, dr_vol_name, backup0.name)
-    wait_for_backup_restore_completed(client, dr_vol_name, backup0.name)
+    client.create_volume(name=dr_vol_name2, size=SIZE,
+                         numberOfReplicas=2, fromBackup=backup1.url,
+                         frontend="", standby=True)
+    check_volume_last_backup(client, dr_vol_name1, backup1.name)
+    wait_for_backup_restore_completed(client, dr_vol_name1, backup1.name)
+    check_volume_last_backup(client, dr_vol_name2, backup1.name)
+    wait_for_backup_restore_completed(client, dr_vol_name2, backup1.name)
+
+    delete_backup(client, volume_name, backup1.name)
+    assert backupstore_count_backup_block_files(client,
+                                                core_api,
+                                                volume_name) == 2
+    check_volume_last_backup(client, dr_vol_name1, backup0.name)
+    wait_for_backup_restore_completed(client, dr_vol_name1, backup0.name)
+    check_volume_last_backup(client, dr_vol_name2, backup0.name)
+    wait_for_backup_restore_completed(client, dr_vol_name2, backup0.name)
+
+    activate_standby_volume(client, dr_vol_name1)
+    dr_vol1 = client.by_id_volume(dr_vol_name1)
+    dr_vol1.attach(hostId=host_id)
+    dr_vol1 = common.wait_for_volume_healthy(client, dr_vol_name1)
+    check_volume_data(dr_vol1, data0, False)
 
     delete_backup(client, volume_name, backup0.name)
     assert backupstore_count_backup_block_files(client,
                                                 core_api,
                                                 volume_name) == 0
-    check_volume_last_backup(client, dr_vol_name, "")
+    check_volume_last_backup(client, dr_vol_name2, "")
 
-    activate_standby_volume(client, dr_vol_name)
-    dr_vol = client.by_id_volume(dr_vol_name)
-    dr_vol.attach(hostId=host_id)
-    dr_vol = common.wait_for_volume_healthy(client, dr_vol_name)
-    check_volume_data(dr_vol, data0, False)
+    delete_backup_volume(client, volume_name)
+
+    activate_standby_volume(client, dr_vol_name2)
+    dr_vol2 = client.by_id_volume(dr_vol_name2)
+    dr_vol2.attach(hostId=host_id)
+    dr_vol2 = common.wait_for_volume_healthy(client, dr_vol_name2)
+    check_volume_data(dr_vol2, data0, False)
 
 
 def test_backup_volume_list(set_random_backupstore, client, core_api):  # NOQA
@@ -1322,8 +1371,10 @@ def test_backup(set_random_backupstore, client, volume_name):  # NOQA
 
 
 def backup_test(client, volume_name, size, backing_image="", compression_method=DEFAULT_BACKUP_COMPRESSION_METHOD):  # NOQA
-    volume = create_and_check_volume(client, volume_name, 2, size,
-                                     backing_image)
+    volume = create_and_check_volume(client, volume_name,
+                                     num_of_replicas=2,
+                                     size=size,
+                                     backing_image=backing_image)
 
     lht_hostId = get_self_host_id()
     volume = volume.attach(hostId=lht_hostId)
@@ -1382,8 +1433,10 @@ def test_backup_labels(set_random_backupstore, client, random_labels, volume_nam
 def backup_labels_test(client, random_labels, volume_name, size=SIZE, backing_image=""):  # NOQA
     host_id = get_self_host_id()
 
-    volume = create_and_check_volume(client, volume_name, 2, size,
-                                     backing_image)
+    volume = create_and_check_volume(client, volume_name,
+                                     num_of_replicas=2,
+                                     size=size,
+                                     backing_image=backing_image)
 
     volume.attach(hostId=host_id)
     volume = common.wait_for_volume_healthy(client, volume_name)
@@ -1433,7 +1486,9 @@ def test_restore_inc(set_random_backupstore, client, core_api, volume_name, pod)
 
 
 def restore_inc_test(client, core_api, volume_name, pod):  # NOQA
-    std_volume = create_and_check_volume(client, volume_name, 2, SIZE)
+    std_volume = create_and_check_volume(client, volume_name,
+                                         num_of_replicas=2,
+                                         size=SIZE)
     lht_host_id = get_self_host_id()
     std_volume.attach(hostId=lht_host_id)
     std_volume = common.wait_for_volume_healthy(client, volume_name)
@@ -2077,7 +2132,8 @@ def test_volume_update_replica_count(client, volume_name):  # NOQA
     host_id = get_self_host_id()
 
     replica_count = 2
-    volume = create_and_check_volume(client, volume_name, replica_count)
+    volume = create_and_check_volume(client, volume_name,
+                                     num_of_replicas=replica_count)
 
     volume.attach(hostId=host_id)
     volume = common.wait_for_volume_healthy(client, volume_name)
@@ -2182,11 +2238,8 @@ def test_storage_class_from_backup(set_random_backupstore, volume_name, pvc_name
 
     pv_name = pvc_name
 
-    volume = create_and_check_volume(
-        client,
-        volume_name,
-        size=VOLUME_SIZE
-    )
+    volume = create_and_check_volume(client, volume_name,
+                                     size=VOLUME_SIZE)
 
     wait_for_volume_detached(client, volume_name)
 
@@ -2404,7 +2457,9 @@ def test_expansion_with_size_round_up(client, core_api, volume_name):  # NOQA
     5. Check if size round up '2147483648' and the written data.
     """
 
-    volume = create_and_check_volume(client, volume_name, 2, str(1 * Gi))
+    volume = create_and_check_volume(client, volume_name,
+                                     num_of_replicas=2,
+                                     size=str(1 * Gi))
 
     self_hostId = get_self_host_id()
     volume.attach(hostId=self_hostId, disableFrontend=False)
@@ -2466,7 +2521,9 @@ def test_restore_inc_with_offline_expansion(set_random_backupstore, client, core
     """
     lht_host_id = get_self_host_id()
 
-    std_volume = create_and_check_volume(client, volume_name, 2, SIZE)
+    std_volume = create_and_check_volume(client, volume_name,
+                                         num_of_replicas=2,
+                                         size=SIZE)
     std_volume.attach(hostId=lht_host_id)
     std_volume = common.wait_for_volume_healthy(client, volume_name)
 
@@ -3398,7 +3455,7 @@ def test_allow_volume_creation_with_degraded_availability(client, volume_name): 
     2. `node-level-soft-anti-affinity` to false.
 
     Steps:
-    (degraded availablity)
+    (degraded availability)
     1. Disable scheduling for node 2 and 3.
     2. Create a volume with three replicas.
         1. Volume should be `ready` after creation and `Scheduled` is true.
@@ -4194,7 +4251,9 @@ def test_expand_pvc_with_size_round_up(client, core_api, volume_name):  # NOQA
     setting = client.update(setting, value=static_sc_name)
     assert setting.value == static_sc_name
 
-    volume = create_and_check_volume(client, volume_name, 2, str(1 * Gi))
+    volume = create_and_check_volume(client, volume_name,
+                                     num_of_replicas=2,
+                                     size=str(1 * Gi))
     create_pv_for_volume(client, core_api, volume, volume_name)
     create_pvc_for_volume(client, core_api, volume, volume_name)
 
@@ -4368,10 +4427,7 @@ def test_backuptarget_available_during_engine_image_not_ready(client, apps_api):
             common.wait_for_backup_target_available(client, False)
 
             # Scale up the engine image DaemonSet
-            body = [{"op": "remove",
-                     "path": "/spec/template/spec/nodeSelector/foo"}]
-            apps_api.patch_namespaced_daemon_set(
-                name=ds_name, namespace='longhorn-system', body=body)
+            scale_up_engine_image_daemonset(client)
             common.wait_for_backup_target_available(client, True)
 
             # Sleep 1 second to prevent the same time
@@ -4997,7 +5053,7 @@ def test_space_usage_for_rebuilding_only_volume(client, volume_name, request):  
     snap_offset = 1
     volume_endpoint = get_volume_endpoint(volume)
     write_volume_dev_random_mb_data(volume_endpoint,
-                                    snap_offset, 3000, 5)
+                                    snap_offset, 3000, 10)
 
     snap2 = create_snapshot(client, volume_name)
     volume.snapshotDelete(name=snap2.name)
@@ -5005,7 +5061,7 @@ def test_space_usage_for_rebuilding_only_volume(client, volume_name, request):  
     wait_for_snapshot_purge(client, volume_name, snap2.name)
 
     write_volume_dev_random_mb_data(volume_endpoint,
-                                    snap_offset, 3000, 5)
+                                    snap_offset, 3000, 10)
 
     for r in volume.replicas:
         if r.hostId != lht_hostId:
@@ -5048,14 +5104,14 @@ def test_space_usage_for_rebuilding_only_volume_worst_scenario(client, volume_na
     snap_offset = 1
     volume_endpoint = get_volume_endpoint(volume)
     write_volume_dev_random_mb_data(volume_endpoint,
-                                    snap_offset, 2000)
+                                    snap_offset, 2000, 10)
     snap1 = create_snapshot(client, volume_name)
     volume.snapshotDelete(name=snap1.name)
     volume.snapshotPurge()
     wait_for_snapshot_purge(client, volume_name, snap1.name)
 
     write_volume_dev_random_mb_data(volume_endpoint,
-                                    snap_offset, 2000)
+                                    snap_offset, 2000, 10)
 
     for r in volume.replicas:
         if r.hostId != lht_hostId:
@@ -5065,7 +5121,7 @@ def test_space_usage_for_rebuilding_only_volume_worst_scenario(client, volume_na
     wait_for_volume_degraded(client, volume_name)
     wait_for_rebuild_start(client, volume_name)
     write_volume_dev_random_mb_data(volume_endpoint,
-                                    snap_offset, 2000)
+                                    snap_offset, 2000, 10)
 
     wait_for_rebuild_complete(client, volume_name)
     volume = client.by_id_volume(volume_name)

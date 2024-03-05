@@ -648,9 +648,10 @@ def test_setting_backing_image_auto_cleanup(client, core_api, volume_name):  # N
     ]
 
     for volume_name in volume_names:
-        create_and_check_volume(
-            client, volume_name, 3, str(BACKING_IMAGE_EXT4_SIZE),
-            BACKING_IMAGE_NAME)
+        create_and_check_volume(client, volume_name,
+                                num_of_replicas=3,
+                                size=str(BACKING_IMAGE_EXT4_SIZE),
+                                backing_image=BACKING_IMAGE_NAME)
 
     # Step 4
     lht_host_id = get_self_host_id()
@@ -932,7 +933,7 @@ def setting_concurrent_volume_backup_restore_limit_concurrent_restoring_test(cli
                    str(concurrent_limit))
 
     _, backup = create_volume_and_backup(client, volname + "-with-backup",
-                                         500 * Mi, 300 * Mi)
+                                         1000 * Mi, 600 * Mi)
 
     nodes = client.list_node()
     restore_volume_names = []
@@ -994,7 +995,7 @@ def setting_concurrent_volume_backup_restore_limit_concurrent_restoring_test(cli
                     break
 
     assert is_case_tested, \
-        f"Unexpected cocurrent count: {concurrent_count}\n"
+        f"Unexpected concurrent count: {concurrent_count}\n"
 
     for restore_volume_name in restore_volume_names:
         if is_DR_volumes:
@@ -1196,7 +1197,7 @@ def test_setting_update_with_invalid_value_via_configmap(core_api, request):  # 
     2. Initialize longhorn-default-setting configmap containing
        valid and invalid settings
     3. Update longhorn-default-setting configmap with invalid settings.
-       The invalid settings SETTING_TAINT_TOLERATION will be ingored
+       The invalid settings SETTING_TAINT_TOLERATION will be ignored
        when there is an attached volume.
     4. Validate the default settings values.
     """

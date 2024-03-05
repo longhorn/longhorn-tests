@@ -90,7 +90,7 @@ resource "aws_route_table" "lh-secscan_aws_public_rt" {
   }
 }
 
-# Assciate public subnet to public route table
+# Associate public subnet to public route table
 resource "aws_route_table_association" "lh-secscan_aws_public_subnet_rt_association" {
   depends_on = [
     aws_subnet.lh-secscan_aws_public_subnet,

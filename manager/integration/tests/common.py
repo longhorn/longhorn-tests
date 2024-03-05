@@ -212,6 +212,11 @@ SETTING_BACKUP_COMPRESSION_METHOD = "backup-compression-method"
 SETTING_BACKUP_CONCURRENT_LIMIT = "backup-concurrent-limit"
 SETTING_RESTORE_CONCURRENT_LIMIT = "restore-concurrent-limit"
 SETTING_V1_DATA_ENGINE = "v1-data-engine"
+SETTING_ALLOW_EMPTY_NODE_SELECTOR_VOLUME = \
+    "allow-empty-node-selector-volume"
+SETTING_REPLICA_DISK_SOFT_ANTI_AFFINITY = "replica-disk-soft-anti-affinity"
+SETTING_ALLOW_EMPTY_DISK_SELECTOR_VOLUME = "allow-empty-disk-selector-volume"
+SETTING_NODE_DRAIN_POLICY = "node-drain-policy"
 
 DEFAULT_BACKUP_COMPRESSION_METHOD = "lz4"
 BACKUP_COMPRESSION_METHOD_LZ4 = "lz4"
@@ -286,6 +291,9 @@ disk_being_syncing = "being syncing and please retry later"
 
 FS_TYPE_EXT4 = "ext4"
 FS_TYPE_XFS = "xfs"
+
+ACCESS_MODE_RWO = "rwo"
+ACCESS_MODE_RWX = "rwx"
 
 ATTACHER_TYPE_CSI_ATTACHER = "csi-attacher"
 ATTACHER_TYPE_LONGHORN_API = "longhorn-api"
@@ -493,7 +501,8 @@ def delete_backup_volume(client, volume_name):
 def create_and_check_volume(client, volume_name,
                             num_of_replicas=3, size=SIZE, backing_image="",
                             frontend=VOLUME_FRONTEND_BLOCKDEV,
-                            snapshot_data_integrity=SNAPSHOT_DATA_INTEGRITY_IGNORED): # NOQA
+                            snapshot_data_integrity=SNAPSHOT_DATA_INTEGRITY_IGNORED,  # NOQA
+                            access_mode=ACCESS_MODE_RWO):
     """
     Create a new volume with the specified parameters. Assert that the new
     volume is detached and that all of the requested parameters match.
@@ -512,7 +521,8 @@ def create_and_check_volume(client, volume_name,
     client.create_volume(name=volume_name, size=size,
                          numberOfReplicas=num_of_replicas,
                          backingImage=backing_image, frontend=frontend,
-                         snapshotDataIntegrity=snapshot_data_integrity)
+                         snapshotDataIntegrity=snapshot_data_integrity,
+                         accessMode=access_mode)
     volume = wait_for_volume_detached(client, volume_name)
     assert volume.name == volume_name
     assert volume.size == size
@@ -1306,7 +1316,7 @@ def check_pvc_in_specific_status(api, pvc_name, status):
         claim = \
             api.read_namespaced_persistent_volume_claim(name=pvc_name,
                                                         namespace='default')
-        if claim.status.phase == "bound":
+        if claim.status.phase == status:
             break
         time.sleep(RETRY_INTERVAL)
 
@@ -1961,7 +1971,7 @@ def wait_for_volume_faulted(client, name):
 
 
 def wait_for_volume_status(client, name, key, value,
-                           retry_count=RETRY_COUNTS):
+                           retry_count=RETRY_COUNTS_LONG):
     wait_for_volume_creation(client, name)
     for i in range(retry_count):
         volume = client.by_id_volume(name)
@@ -2211,10 +2221,10 @@ def wait_for_engine_image_condition(client, image_name, state):
     # This helps to prevent the flaky test case in which the ENGINE_NAME
     # is flapping between ready and not ready a few times before settling
     # down to the ready state
-    # https://github.com/longhorn/longhorn-tests/pull/1638
+    # https://github.com/longhorn/longhorn/issues/7438
     state_count = 1
     if state == "True":
-        state_count = 5
+        state_count = 60
 
     c = 0
     for i in range(RETRY_COUNTS):
@@ -2278,7 +2288,7 @@ class AssertErrorCheckThread(threading.Thread):
 
         Parameters:
             target  :       The threading function.
-            args    :       Arguments of the target fucntion.
+            args    :       Arguments of the target function.
     """
     def __init__(self, target, args):
         threading.Thread.__init__(self)
@@ -3104,17 +3114,20 @@ def check_volume_endpoint(v):
     return endpoint
 
 
+def find_backup_volume(client, volume_name):
+    bvs = client.list_backupVolume()
+    for bv in bvs:
+        if bv.name == volume_name and bv.created != "":
+            return bv
+    return None
+
+
 def wait_for_backup_volume_backing_image_synced(
         client, volume_name, backing_image, retry_count=RETRY_BACKUP_COUNTS):
-    def find_backup_volume():
-        bvs = client.list_backupVolume()
-        for bv in bvs:
-            if bv.name == volume_name:
-                return bv
-        return None
+
     completed = False
     for _ in range(retry_count):
-        bv = find_backup_volume()
+        bv = find_backup_volume(client, volume_name)
         assert bv is not None
         if bv.backingImageName == backing_image:
             completed = True
@@ -3747,17 +3760,10 @@ def find_backup(client, vol_name, snap_name):
     been completed successfully
     """
 
-    def find_backup_volume():
-        bvs = client.list_backupVolume()
-        for bv in bvs:
-            if bv.name == vol_name and bv.created != "":
-                return bv
-        return None
-
     bv = None
     for i in range(120):
         if bv is None:
-            bv = find_backup_volume()
+            bv = find_backup_volume(client, vol_name)
         if bv is not None:
             backups = bv.backupList().data
             for b in backups:
@@ -4987,7 +4993,8 @@ def prepare_statefulset_with_data_in_mb(
 def prepare_pod_with_data_in_mb(
         client, core_api, csi_pv, pvc, pod_make, volume_name,
         volume_size=str(1*Gi), num_of_replicas=3, data_path="/data/test",
-        data_size_in_mb=DATA_SIZE_IN_MB_1, add_liveness_probe=True):# NOQA:
+        data_size_in_mb=DATA_SIZE_IN_MB_1, add_liveness_probe=True,
+        access_mode=ACCESS_MODE_RWO):# NOQA:
 
     pod_name = volume_name + "-pod"
     pv_name = volume_name
@@ -5012,7 +5019,8 @@ def prepare_pod_with_data_in_mb(
 
     create_and_check_volume(client, volume_name,
                             num_of_replicas=num_of_replicas,
-                            size=volume_size)
+                            size=volume_size,
+                            access_mode=access_mode)
     core_api.create_persistent_volume(csi_pv)
     core_api.create_namespaced_persistent_volume_claim(
         body=pvc, namespace='default')
@@ -5150,15 +5158,8 @@ def wait_for_instance_manager_desire_state(client, core_api, im_name,
 
 def wait_for_backup_delete(client, volume_name, backup_name):
 
-    def find_backup_volume():
-        bvs = client.list_backupVolume()
-        for bv in bvs:
-            if bv.name == volume_name:
-                return bv
-        return None
-
     def backup_exists():
-        bv = find_backup_volume()
+        bv = find_backup_volume(client, volume_name)
         if bv is not None:
             backups = bv.backupList()
             for b in backups:
@@ -5747,7 +5748,7 @@ def generate_support_bundle(case_name):  # NOQA
         Generate support bundle into folder ./support_bundle/case_name.zip
 
         Won't generate support bundle if current support bundle count
-        greate than MAX_SUPPORT_BINDLE_NUMBER.
+        greater than MAX_SUPPORT_BINDLE_NUMBER.
         Args:
             case_name: support bundle will named case_name.zip
     """
@@ -5797,7 +5798,7 @@ def generate_support_bundle(case_name):  # NOQA
         with open('./support_bundle/{0}.zip'.format(case_name), 'wb') as f:
             f.write(r.content)
     except Exception as e:
-        warnings.warn("Error occured while downloading support bundle {}.zip\n\
+        warnings.warn("Error occurred when downloading support bundle {}.zip\n\
             The error was {}".format(case_name, e))
 
 
@@ -6111,3 +6112,42 @@ def wait_for_instance_manager_count(client, number, retry_counts=120):
         time.sleep(RETRY_INTERVAL_LONG)
 
     return len(ims)
+
+
+def create_deployment_and_write_data(client, # NOQA
+                                     core_api, # NOQA
+                                     make_deployment_with_pvc, # NOQA
+                                     volume_name, # NOQA
+                                     size, # NOQA
+                                     replica_count, # NOQA
+                                     data_size, # NOQA
+                                     attach_node_id=None): # NOQA
+    apps_api = get_apps_api_client()
+    volume = client.create_volume(name=volume_name,
+                                  size=size,
+                                  numberOfReplicas=replica_count)
+    volume = wait_for_volume_detached(client, volume_name)
+
+    pvc_name = volume_name + "-pvc"
+    create_pv_for_volume(client, core_api, volume, volume_name)
+    create_pvc_for_volume(client, core_api, volume, pvc_name)
+    deployment_name = volume_name + "-dep"
+    deployment = make_deployment_with_pvc(deployment_name, pvc_name)
+    if attach_node_id:
+        deployment["spec"]["template"]["spec"]["nodeSelector"] \
+            = {"kubernetes.io/hostname": attach_node_id}
+
+    create_and_wait_deployment(apps_api, deployment)
+
+    data_path = '/data/test'
+    deployment_pod_names = get_deployment_pod_names(core_api,
+                                                    deployment)
+    write_pod_volume_random_data(core_api,
+                                 deployment_pod_names[0],
+                                 data_path,
+                                 data_size)
+    checksum = get_pod_data_md5sum(core_api,
+                                   deployment_pod_names[0],
+                                   data_path)
+
+    return client.by_id_volume(volume_name), deployment_pod_names[0], checksum

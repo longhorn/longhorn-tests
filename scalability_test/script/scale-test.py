@@ -33,7 +33,7 @@ def get_node_capacities():
         #     hugepages-2Mi: '0'
         #     memory: 32412804Ki
         #     pods: '110'
-        cpu = int(i.status.capacity["cpu"])*1000**3 # conver to nano cpu
+        cpu = int(i.status.capacity["cpu"])*1000**3 # convert to nano cpu
         ram = int(i.status.capacity["memory"][:-2]) 
         node_capacities[i.metadata.name] = {"cpu": cpu, "ram": ram}
 
