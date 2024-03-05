@@ -995,7 +995,7 @@ def setting_concurrent_volume_backup_restore_limit_concurrent_restoring_test(cli
                     break
 
     assert is_case_tested, \
-        f"Unexpected cocurrent count: {concurrent_count}\n"
+        f"Unexpected concurrent count: {concurrent_count}\n"
 
     for restore_volume_name in restore_volume_names:
         if is_DR_volumes:
@@ -1197,7 +1197,7 @@ def test_setting_update_with_invalid_value_via_configmap(core_api, request):  # 
     2. Initialize longhorn-default-setting configmap containing
        valid and invalid settings
     3. Update longhorn-default-setting configmap with invalid settings.
-       The invalid settings SETTING_TAINT_TOLERATION will be ingored
+       The invalid settings SETTING_TAINT_TOLERATION will be ignored
        when there is an attached volume.
     4. Validate the default settings values.
     """

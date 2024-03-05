@@ -120,7 +120,7 @@ check_config_input() {
     DEPLOYMENT_RWX_REPLICAS=$(yq eval '.deployment.rwx.deploymentReplicas' config.yaml)
 
     msg="$CONFIG_FILE is not correct, please check"
-    # varialbe = "null" when yq not find yaml field
+    # variable = "null" when yq not find yaml field
     [ "$STORAGE_SIZE" = "null" -o ${#STORAGE_SIZE} -eq 0 ] && error "$msg" && exit 2
     [ "$NAMESPACE" = "null" -o ${#NAMESPACE} -eq 0 ] && error "$msg" && exit 2
     [ "$STORAGE_CLASS_NAME" = "null" -o ${#STORAGE_CLASS_NAME} -eq 0 ] && error "$msg" && exit 2

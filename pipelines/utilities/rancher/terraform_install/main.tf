@@ -21,7 +21,19 @@ resource "rancher2_catalog_v2" "longhorn_repo" {
   git_branch = var.rancher_chart_git_branch
 }
 
+resource "time_sleep" "wait_60_seconds" {
+  depends_on = [
+    rancher2_catalog_v2.longhorn_repo
+  ]
+
+  create_duration = "60s"
+}
+
 resource "rancher2_app_v2" "longhorn_app" {
+  depends_on = [
+    time_sleep.wait_60_seconds
+  ]
+
   cluster_id = "local"
   name = "longhorn-app"
   namespace = "longhorn-system"
@@ -41,6 +53,8 @@ image:
       repository: ${var.longhorn_repo == "rancher" ? "${var.longhorn_repo}/mirrored-longhornio-" : "${var.longhorn_repo}/"}csi-resizer
     snapshotter:
       repository: ${var.longhorn_repo == "rancher" ? "${var.longhorn_repo}/mirrored-longhornio-" : "${var.longhorn_repo}/"}csi-snapshotter
+    livenessProbe:
+      repository: ${var.longhorn_repo == "rancher" ? "${var.longhorn_repo}/mirrored-longhornio-" : "${var.longhorn_repo}/"}livenessprobe
   longhorn:
     backingImageManager:
       repository: ${var.longhorn_repo == "rancher" ? "${var.longhorn_repo}/mirrored-longhornio-" : "${var.longhorn_repo}/"}backing-image-manager

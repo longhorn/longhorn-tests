@@ -48,8 +48,8 @@ spec:
       targetRevision: ${REVISION}
       helm:
         values: |
-          helmPreUpgradeCheckerJob:
-            enabled: false
+          preUpgradeChecker:
+            jobEnabled: false
   destination:
     server: https://kubernetes.default.svc
     namespace: ${LONGHORN_NAMESPACE}

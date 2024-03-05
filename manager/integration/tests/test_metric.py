@@ -8,6 +8,7 @@ from prometheus_client.parser import text_string_to_metric_families
 from common import client, core_api, volume_name  # NOQA
 
 from common import delete_replica_processes
+from common import check_volume_data
 from common import create_pv_for_volume
 from common import create_pvc_for_volume
 from common import create_snapshot
@@ -82,7 +83,7 @@ def find_metrics(metric_data, metric_name):
 
 def check_metric_with_condition(core_api, metric_name, metric_labels, expected_value=None, metric_node_id=get_self_host_id()): # NOQA)
     """
-    Some metric have multiple conditions, for exameple metric
+    Some metric have multiple conditions, for example metric
     longhorn_node_status have condition
     - allowScheduling
     - mountpropagation
@@ -194,6 +195,21 @@ def check_metric_sum_on_all_nodes(client, core_api, metric_name, expected_labels
         assert total_metrics["value"] >= 0.0
 
 
+def wait_for_metric_volume_actual_size(core_api, metric_name, metric_labels, actual_size): # NOQA
+    for _ in range(RETRY_COUNTS):
+        time.sleep(RETRY_INTERVAL)
+
+        try:
+            check_metric(core_api, metric_name,
+                         metric_labels, actual_size)
+            return
+        except AssertionError:
+            continue
+
+    check_metric(core_api, metric_name,
+                 metric_labels, actual_size)
+
+
 def wait_for_metric_count_all_nodes(client, core_api, metric_name, metric_labels, expected_count): # NOQA
     for _ in range(RETRY_COUNTS):
         time.sleep(RETRY_INTERVAL)
@@ -271,7 +287,8 @@ def test_volume_metrics(client, core_api, volume_name, pvc_namespace): # NOQA
     volume = client.by_id_volume(volume_name)
     volume.attach(hostId=lht_hostId)
     volume = wait_for_volume_healthy(client, volume_name)
-    write_volume_random_data(volume)
+    data = write_volume_random_data(volume)
+    check_volume_data(volume, data)
     volume = client.by_id_volume(volume_name)
     actual_size = float(volume.controllers[0].actualSize)
     capacity_size = float(volume.size)
@@ -284,8 +301,9 @@ def test_volume_metrics(client, core_api, volume_name, pvc_namespace): # NOQA
     }
 
     # check volume metric basic
-    check_metric(core_api, "longhorn_volume_actual_size_bytes",
-                 metric_labels, actual_size)
+    wait_for_metric_volume_actual_size(core_api,
+                                       "longhorn_volume_actual_size_bytes",
+                                       metric_labels, actual_size)
     check_metric(core_api, "longhorn_volume_capacity_bytes",
                  metric_labels, capacity_size)
     check_metric(core_api, "longhorn_volume_read_throughput",

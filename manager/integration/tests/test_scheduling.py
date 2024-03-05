@@ -463,6 +463,7 @@ def test_replica_rebuild_per_volume_limit(client, core_api, storage_class, sts_n
 
     vol = common.wait_for_volume_replicas_mode(client, vol_name, 'RW',
                                                replica_count=r_count)
+    wait_for_volume_healthy(client, vol_name)
 
     # Delete 4 volume replicas
     del vol.replicas[0]
@@ -1917,7 +1918,7 @@ def test_global_disk_soft_anti_affinity(client, volume_name, request): # NOQA
     assert num_running == 2
 
     # After enable SETTING_REPLICA_DISK_SOFT_ANTI_AFFINITY to true,
-    # replicas can schedule on the same disk, threrefore volume become healthy
+    # replicas can schedule on the same disk, therefore volume become healthy
     update_setting(client, SETTING_REPLICA_DISK_SOFT_ANTI_AFFINITY, "true")
 
     volume = wait_for_volume_healthy(client, volume_name)
@@ -2088,7 +2089,7 @@ def test_volume_disk_soft_anti_affinity(client, volume_name, request): # NOQA
     assert num_running == 2
 
     # After set update volume.updateReplicaDiskSoftAntiAffinity to enabled,
-    # replicas can schedule on the same disk, threrefore volume become healthy
+    # replicas can schedule on the same disk, therefore volume become healthy
     volume = volume.updateReplicaDiskSoftAntiAffinity(
              replicaDiskSoftAntiAffinity="enabled")
     assert volume.replicaDiskSoftAntiAffinity == "enabled"

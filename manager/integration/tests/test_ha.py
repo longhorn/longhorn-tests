@@ -1033,7 +1033,7 @@ def test_inc_restoration_with_multiple_rebuild_and_expansion(set_random_backupst
     wait_for_volume_healthy(client, std_volume_name)
 
     # Step 9:
-    # When the total writen data size is more than 1Gi, there must be data in
+    # When the total written data size is more than 1Gi, there must be data in
     # the expanded part.
     data_path2 = "/data/test2"
     write_pod_volume_random_data(core_api, std_pod_name,
@@ -1093,7 +1093,7 @@ def test_inc_restoration_with_multiple_rebuild_and_expansion(set_random_backupst
     wait_for_volume_expansion(client, std_volume_name)
 
     # Step 15:
-    # When the total writen data size is more than 2Gi, there must be data in
+    # When the total written data size is more than 2Gi, there must be data in
     # the 2nd expanded part.
     data_path3 = "/data/test3"
     write_pod_volume_random_data(core_api, std_pod_name,
@@ -1689,7 +1689,7 @@ def test_engine_crash_for_restore_volume(set_random_backupstore, client, core_ap
     # The complete state transition would be like:
     # detaching -> detached -> attaching -> attached -> restore -> detached .
     # Now the state change too fast, script eventually caught final detach
-    # So temporaly comment out below line of code
+    # So temporarily comment out below line of code
     # wait_for_volume_detached(client, res_name)
 
     res_volume = wait_for_volume_healthy_no_frontend(client, res_name)
@@ -1806,7 +1806,7 @@ def test_engine_crash_for_dr_volume(set_random_backupstore, client, core_api, vo
     # The complete state transition would be like:
     # detaching -> detached -> attaching -> attached -> restore -> detached .
     # Now the state change too fast, script eventually caught final detach
-    # So temporaly comment out below line of code
+    # So temporarily comment out below line of code
     # wait_for_volume_detached(client, dr_volume_name)
 
     # Check if the DR volume is auto reattached then continue
@@ -1943,10 +1943,10 @@ def test_extra_replica_cleanup(client, volume_name, settings_reset): # NOQA
     save the checksum.
     4. Increase the volume replica number to 4.
     5. Volume should show failed to schedule and an extra stop replica.
-    6. Decrease the volume replica nubmer to 3.
+    6. Decrease the volume replica number to 3.
     7. Volume should show healthy and the extra failed to scheduled replica
     should be removed.
-    8. Check the data in the volume and make sure it's same as the chechsum.
+    8. Check the data in the volume and make sure it's same as the checksum.
     """
     replica_node_soft_anti_affinity_setting = \
         client.by_id_setting(SETTING_REPLICA_NODE_SOFT_ANTI_AFFINITY)
@@ -1984,7 +1984,7 @@ def test_extra_replica_cleanup(client, volume_name, settings_reset): # NOQA
     wait_for_volume_replica_count(client, volume_name, 3)
 
     volume = client.by_id_volume(volume_name)
-    assert volume.robustness == "healthy"
+    wait_for_volume_healthy(client, volume_name)
 
     check_volume_data(volume, data)
 
