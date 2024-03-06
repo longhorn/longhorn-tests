@@ -53,11 +53,7 @@ main(){
   setup_longhorn_ui_nodeport
   export_longhorn_ui_url
 
-  if [[ -n "${LONGHORN_TESTS_CUSTOM_IMAGE}" ]]; then
-    run_longhorn_e2e_test
-  else
-    run_longhorn_e2e_test_out_of_cluster
-  fi
+  run_longhorn_e2e_test_out_of_cluster
 }
 
 main
