@@ -8,7 +8,6 @@ from prometheus_client.parser import text_string_to_metric_families
 from common import client, core_api, volume_name  # NOQA
 
 from common import delete_replica_processes
-from common import check_volume_data
 from common import create_pv_for_volume
 from common import create_pvc_for_volume
 from common import create_snapshot
@@ -22,7 +21,6 @@ from common import wait_for_volume_expansion
 from common import wait_for_volume_faulted
 from common import wait_for_volume_healthy
 from common import write_volume_data
-from common import write_volume_random_data
 from common import set_node_scheduling
 from common import set_node_cordon
 from common import Mi
@@ -287,10 +285,12 @@ def test_volume_metrics(client, core_api, volume_name, pvc_namespace): # NOQA
     volume = client.by_id_volume(volume_name)
     volume.attach(hostId=lht_hostId)
     volume = wait_for_volume_healthy(client, volume_name)
-    data = write_volume_random_data(volume)
-    check_volume_data(volume, data)
+    data_size = 1 * Mi
+    data = {'pos': 0,
+            'len': data_size,
+            'content': generate_random_data(data_size)}
+    write_volume_data(volume, data)
     volume = client.by_id_volume(volume_name)
-    actual_size = float(volume.controllers[0].actualSize)
     capacity_size = float(volume.size)
 
     metric_labels = {
@@ -303,7 +303,7 @@ def test_volume_metrics(client, core_api, volume_name, pvc_namespace): # NOQA
     # check volume metric basic
     wait_for_metric_volume_actual_size(core_api,
                                        "longhorn_volume_actual_size_bytes",
-                                       metric_labels, actual_size)
+                                       metric_labels, data_size)
     check_metric(core_api, "longhorn_volume_capacity_bytes",
                  metric_labels, capacity_size)
     check_metric(core_api, "longhorn_volume_read_throughput",
