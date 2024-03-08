@@ -55,12 +55,12 @@ variable "lh_aws_instance_name_controlplane" {
 
 variable "lh_aws_instance_type_controlplane" {
   type        = string
-  description = "Recommended instance types t3.xlarge for amd64 & t4g.xlarge  for arm64"
+  description = "Recommended instance types t2.xlarge for amd64 & a1.2xlarge for arm64"
 }
 
 variable "lh_aws_instance_type_worker" {
   type        = string
-  description = "Recommended instance types t3.xlarge for amd64 & t4g.xlarge  for arm64"
+  description = "Recommended instance types t2.xlarge for amd64 & a1.2xlarge for arm64"
 }
 
 variable "lh_aws_instance_root_block_device_size_controlplane" {
