@@ -18,24 +18,30 @@ Restart Cluster While Workload Heavy Writing
     Given Create deployment 0 with rwo volume
     And Create deployment 1 with rwx volume
     And Create deployment 2 with rwo and strict-local volume
+    And Create deployment 3 with rwx and nfs-options volume
     And Create statefulset 0 with rwo volume
     And Create statefulset 1 with rwx volume
     And Create statefulset 2 with rwo and strict-local volume
+    And Create statefulset 3 with rwx and nfs-options volume
 
     FOR    ${i}    IN RANGE    ${LOOP_COUNT}
         And Keep writing data to deployment 0
         And Keep writing data to deployment 1
         And Keep writing data to deployment 2
+        And Keep writing data to deployment 3
         And Keep writing data to statefulset 0
         And Keep writing data to statefulset 1
         And Keep writing data to statefulset 2
+        And Keep writing data to statefulset 3
 
         When Restart cluster
 
         Then Check deployment 0 works
         And Check deployment 1 works
         And Check deployment 2 works
+        And Check deployment 3 works
         And Check statefulset 0 works
         And Check statefulset 1 works
         And Check statefulset 2 works
+        And Check statefulset 3 works
     END

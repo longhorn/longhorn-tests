@@ -9,10 +9,12 @@ class workload_keywords:
     def init_storageclasses(self):
         create_storageclass('longhorn-test')
         create_storageclass('longhorn-test-strict-local')
+        create_storageclass('longhorn-test-nfs-options')
 
     def cleanup_storageclasses(self):
         delete_storageclass('longhorn-test')
         delete_storageclass('longhorn-test-strict-local')
+        delete_storageclass('longhorn-test-nfs-options')
 
     def create_deployment(self, volume_type="rwo", option=""):
         create_pvc(volume_type, option)
