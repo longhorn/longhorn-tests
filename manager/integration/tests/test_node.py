@@ -2832,13 +2832,13 @@ def test_drain_with_block_for_eviction_success(client, # NOQA
     client.update(setting, value="block-for-eviction")
 
     # Step 2, 3, 4
-    volume, pod, checksum = create_deployment_and_write_data(client,
-                                                             core_api,
-                                                             make_deployment_with_pvc, # NOQA
-                                                             volume_name,
-                                                             str(1 * Gi),
-                                                             3,
-                                                             DATA_SIZE_IN_MB_3, host_id) # NOQA
+    volume, pod, checksum, _ = create_deployment_and_write_data(client,
+                                                                core_api,
+                                                                make_deployment_with_pvc, # NOQA
+                                                                volume_name,
+                                                                str(1 * Gi),
+                                                                3,
+                                                                DATA_SIZE_IN_MB_3, host_id) # NOQA
 
     # Make replica not locate on eviction target node
     volume.updateReplicaCount(replicaCount=2)
@@ -2952,7 +2952,8 @@ def test_drain_with_block_for_eviction_if_contains_last_replica_success(client, 
     # Step 2, 3
     volume1_name = "vol-1"
     volume2_name = "vol-2"
-    volume1, pod1, checksum1 = create_deployment_and_write_data(client,
+    volume1, pod1, checksum1, _ = create_deployment_and_write_data(
+                                                                client,
                                                                 core_api,
                                                                 make_deployment_with_pvc, # NOQA
                                                                 volume1_name,
@@ -2960,7 +2961,8 @@ def test_drain_with_block_for_eviction_if_contains_last_replica_success(client, 
                                                                 3,
                                                                 DATA_SIZE_IN_MB_3, # NOQA
                                                                 host_id) # NOQA
-    volume2, pod2, checksum2 = create_deployment_and_write_data(client,
+    volume2, pod2, checksum2, _ = create_deployment_and_write_data(
+                                                                client,
                                                                 core_api,
                                                                 make_deployment_with_pvc,  # NOQA
                                                                 volume2_name,
@@ -3053,13 +3055,13 @@ def test_drain_with_block_for_eviction_failure(client, # NOQA
     client.update(setting, value="block-for-eviction")
 
     # Step 2, 3, 4
-    volume, pod, checksum = create_deployment_and_write_data(client,
-                                                             core_api,
-                                                             make_deployment_with_pvc, # NOQA
-                                                             volume_name,
-                                                             str(1 * Gi),
-                                                             3,
-                                                             DATA_SIZE_IN_MB_3, host_id) # NOQA
+    volume, pod, checksum, _ = create_deployment_and_write_data(client,
+                                                                core_api,
+                                                                make_deployment_with_pvc, # NOQA
+                                                                volume_name,
+                                                                str(1 * Gi),
+                                                                3,
+                                                                DATA_SIZE_IN_MB_3, host_id) # NOQA
 
     # Step 5
     executor = ThreadPoolExecutor(max_workers=5)
