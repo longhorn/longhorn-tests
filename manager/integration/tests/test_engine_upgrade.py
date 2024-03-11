@@ -28,6 +28,12 @@ from common import wait_for_rebuild_complete, RETRY_COUNTS, RETRY_INTERVAL
 from common import wait_for_rebuild_start
 from common import create_backup, wait_for_backup_restore_completed
 from common import SETTING_CONCURRENT_AUTO_ENGINE_UPGRADE_NODE_LIMIT
+from common import create_deployment_and_write_data
+from common import crash_engine_process_with_sigkill
+from common import get_deployment_pod_names
+from common import wait_pod
+from common import make_deployment_with_pvc # NOQA
+from common import DATA_SIZE_IN_MB_2
 from test_settings import delete_replica_on_test_node
 from backupstore import set_random_backupstore # NOQA
 
@@ -1196,3 +1202,66 @@ def test_engine_live_upgrade_while_replica_concurrent_rebuild(client, # NOQA
     for replica in volume2.replicas:
         assert replica.image == engine_upgrade_image
         assert replica.currentImage == engine_upgrade_image
+
+
+def test_engine_crash_during_live_upgrade(client, core_api, # NOQA
+                                          make_deployment_with_pvc, # NOQA
+                                          volume_name): # NOQA
+    """
+    1. Deploy an extra engine image.
+    2. Create and attach a volume to a workload, then write data into the
+       volume.
+    3. Send live upgrade request then immediately delete the related engine
+       manager pod/engine process (The new replicas are not in active in this
+       case).
+    4. Verify the workload will be restarted and the volume will be reattached
+       automatically.
+    5. Verify the upgrade is done.
+       (It actually becomes offline upgrade.)
+    6. Verify volume healthy and the data is correct.
+    """
+    # Step 1
+    _, default_img_name, engine_upgrade_image, compatible_img, _ = \
+        prepare_auto_upgrade_engine_to_default_version(client)
+
+    # Step 2
+    host_id = get_self_host_id()
+    volume, pod_name, checksum, deployment = \
+        create_deployment_and_write_data(client, core_api,
+                                         make_deployment_with_pvc, # NOQA
+                                         volume_name, str(1 * Gi),
+                                         3,
+                                         DATA_SIZE_IN_MB_2,
+                                         host_id) # NOQA
+
+    # Step 3
+    volume.engineUpgrade(image=engine_upgrade_image)
+    crash_engine_process_with_sigkill(client, core_api, volume_name)
+
+    # Step 4, 5
+    volume = wait_for_volume_detached(client, volume_name)
+    volume = wait_for_volume_current_image(client, volume_name,
+                                           engine_upgrade_image)
+    wait_for_engine_image_ref_count(client, default_img_name, 0)
+    # Total ei.refCount of one volumes is equal to
+    # 1 volume + 1 engine + all replicas(3)
+    wait_for_engine_image_ref_count(client, compatible_img.name, 5)
+    volume = wait_for_volume_healthy(client, volume_name)
+
+    # make sure pod restarted
+    for i in range(RETRY_COUNTS):
+        time.sleep(RETRY_INTERVAL)
+        deployment_pod_names = get_deployment_pod_names(core_api,
+                                                        deployment)
+        if deployment_pod_names[0] != pod_name:
+            new_pod_name = deployment_pod_names[0]
+            break
+
+    wait_pod(new_pod_name)
+
+    # Step 6
+    data_path = '/data/test'
+    test_data_checksum = get_pod_data_md5sum(core_api,
+                                             new_pod_name,
+                                             data_path)
+    assert test_data_checksum == checksum
