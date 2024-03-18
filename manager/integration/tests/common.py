@@ -273,6 +273,9 @@ DEPRECATED_K8S_ZONE_LABEL = "failure-domain.beta.kubernetes.io/zone"
 
 K8S_ZONE_LABEL = "topology.kubernetes.io/zone"
 
+K8S_GKE_OS_DISTRO_LABEL = "cloud.google.com/gke-os-distribution"
+K8S_GKE_OS_DISTRO_COS = "cos"
+
 K8S_CLUSTER_AUTOSCALER_EVICT_KEY = \
     "cluster-autoscaler.kubernetes.io/safe-to-evict"
 K8S_CLUSTER_AUTOSCALER_SCALE_DOWN_DISABLED_KEY = \
@@ -3369,10 +3372,54 @@ def set_k8s_node_label(core_api, node_name, key, value):
     core_api.patch_node(node_name, body=payload)
 
 
+def is_k8s_node_label(core_api, label_key, label_value, node_name):
+    node = core_api.read_node(node_name)
+
+    if label_key in node.metadata.labels:
+        if node.metadata.labels[label_key] == label_value:
+            return True
+    return False
+
+
 def set_k8s_node_zone_label(core_api, node_name, zone_name):
+    if is_k8s_node_label(core_api, K8S_ZONE_LABEL, zone_name, node_name):
+        return
+
     k8s_zone_label = get_k8s_zone_label()
 
     set_k8s_node_label(core_api, node_name, k8s_zone_label, zone_name)
+
+
+def set_and_wait_k8s_nodes_zone_label(core_api, node_zone_map):
+    k8s_zone_label = get_k8s_zone_label()
+
+    for _ in range(RETRY_COUNTS):
+        for node_name, zone_name in node_zone_map.items():
+            set_k8s_node_label(core_api, node_name, k8s_zone_label, zone_name)
+
+        is_updated = False
+        for node_name, zone_name in node_zone_map.items():
+            is_updated = \
+                is_k8s_node_label(core_api,
+                                  k8s_zone_label, zone_name, node_name)
+            if not is_updated:
+                break
+
+        if is_updated:
+            break
+
+        time.sleep(RETRY_INTERVAL)
+
+    assert is_updated, \
+        f"Timeout while waiting for nodes zone label to be updated\n" \
+        f"Expected: {node_zone_map}"
+
+
+def is_k8s_node_gke_cos(core_api):
+    return is_k8s_node_label(core_api,
+                             K8S_GKE_OS_DISTRO_LABEL,
+                             K8S_GKE_OS_DISTRO_COS,
+                             get_self_host_id())
 
 
 def get_k8s_zone_label():
