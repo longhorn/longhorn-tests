@@ -174,7 +174,7 @@ def wait_for_workload_pods_stable(workload_name, namespace="default"):
                 continue
 
             pod_name = pod.metadata.name
-            if wait_for_stable_retry[pod_name] != WAIT_FOR_POD_STABLE_MAX_RETRY:
+            if wait_for_stable_retry[pod_name] < WAIT_FOR_POD_STABLE_MAX_RETRY:
                 wait_for_stable_pod.append(pod_name)
 
         if len(wait_for_stable_pod) == 0:
