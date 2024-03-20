@@ -2,81 +2,60 @@
 Documentation    Volume Keywords
 
 Library    Collections
-Library    ../libs/keywords/volume_keywords.py
-Library    ../libs/keywords/workload_keywords.py
 Library    ../libs/keywords/common_keywords.py
+Library    ../libs/keywords/volume_keywords.py
 
 *** Keywords ***
-Create a volume with ${size} GB and ${replica_count} replicas
-    ${volume_name} =    create_volume   ${size}    ${replica_count}
-    attach_volume    ${volume_name}
-    Set Test Variable    ${volume_name}
-    Append To List    ${volume_list}    ${volume_name}
+Create volume ${volume_id} with ${size} GB and ${replica_count} replicas
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    create_volume   ${volume_name}    ${size}    ${replica_count}
 
-Create volume ${idx} with ${size} GB and ${replica_count} replicas
-    ${volume_name} =    create_volume   ${size}    ${replica_count}
-    attach_volume    ${volume_name}
-    Insert Into List    ${volume_list}    ${idx}    ${volume_name}
+Update volume ${volume_name} replica count to ${replica_count}
+    update_volume_spec   ${volume_name}    numberOfReplicas    3
 
-Attach volume to node
+Attach volume ${volume_id}
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     attach_volume    ${volume_name}
 
-Detach volume from node
+Detach volume ${volume_id}
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     detach_volume    ${volume_name}
 
-Write data to the volume
-    ${volume_data_checksum} =     write_volume_random_data   ${volume_name}    2048
-    Set Test Variable    ${volume_data_checksum}
+Write data to volume ${volume_id}
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    write_volume_random_data   ${volume_name}    2048
 
-Keep writing data to volume ${idx}
-    keep_writing_data    ${volume_list}[${idx}]
+Keep writing data to volume ${volume_id}
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    keep_writing_data    ${volume_name}
 
-Delete replica on replica node to trigger replica rebuilding
-    ${replica_node} =    get_replica_node    ${volume_name}
-    delete_replica    ${volume_name}    ${replica_node}
-    wait_for_replica_rebuilding_start    ${volume_name}    ${replica_node}
+Delete volume ${volume_id} replica on ${replica_locality}
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    delete_replica_on_node    ${volume_name}    ${replica_locality}
 
-Delete replica on volume node to trigger replica rebuilding
-    ${volume_node} =    get_volume_node    ${volume_name}
-    delete_replica    ${volume_name}    ${volume_node}
-    wait_for_replica_rebuilding_start    ${volume_name}    ${volume_node}
+Wait for volume ${volume_id} healthy
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    wait_for_volume_healthy    ${volume_name}
 
-Delete replica ${replica_0} to trigger replica ${replica_0} rebuilding
-    delete_replica    ${volume_name}    ${replica_0}
-    wait_for_replica_rebuilding_start    ${volume_name}    ${replica_0}
+Wait until volume ${volume_id} replica rebuilding started on ${replica_locality}
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    wait_for_replica_rebuilding_to_start_on_node    ${volume_name}    ${replica_locality}
 
-During replica ${replica_0} rebuilding, delete replica ${replica_1}
-    wait_for_replica_rebuilding_start    ${volume_name}    ${replica_0}
-    delete_replica    ${volume_name}    ${replica_1}
+Wait until volume ${volume_id} replica rebuilding completed on ${replica_locality}
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    wait_for_replica_rebuilding_to_complete_on_node    ${volume_name}    ${replica_locality}
 
-Wait until replica ${replica_0} rebuilt, delete replica ${replica_2}
-    wait_for_replica_rebuilding_complete    ${volume_name}    ${replica_0}
-    delete_replica    ${volume_name}    ${replica_2}
+Wait until volume ${volume_id} replicas rebuilding completed
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    wait_for_replica_rebuilding_to_complete   ${volume_name}
 
-Check data is intact
-    check_data_checksum    ${volume_name}    ${volume_data_checksum}
+Check volume ${volume_id} data is intact
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    check_data_checksum    ${volume_name}
 
-Check volume ${idx} works
-    ${volume_data_checksum} =     write_volume_random_data   ${volume_list}[${idx}]    1024
+Check volume ${volume_id} works
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    ${volume_data_checksum} =     write_volume_random_data   ${volume_name}    1024
     #TODO
     # write data to a file in the volume instead of writing /dev/longhorn/vol-name
     # so the data won't be overwritten and we can compare the checksum
-
-Wait until all replicas rebuilt
-    wait_for_replica_rebuilding_complete    ${volume_name}    0
-    wait_for_replica_rebuilding_complete    ${volume_name}    1
-    wait_for_replica_rebuilding_complete    ${volume_name}    2
-
-Wait until replica on volume node rebuilt
-    ${node_name} =    get_volume_node    ${volume_name}
-    wait_for_replica_rebuilding_start    ${volume_name}    ${node_name}
-    wait_for_replica_rebuilding_complete    ${volume_name}    ${node_name}
-
-Wait until replica on replica node rebuilt
-    ${node_name} =    get_replica_node    ${volume_name}
-    wait_for_replica_rebuilding_start    ${volume_name}    ${node_name}
-    wait_for_replica_rebuilding_complete    ${volume_name}    ${node_name}
-
-Wait for volume of statefulset ${idx} healthy
-    ${volume_name} =    get_workload_volume_name    ${statefulset_list}[${idx}]
-    wait_for_volume_healthy    ${volume_name}

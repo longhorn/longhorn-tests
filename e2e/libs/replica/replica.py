@@ -13,7 +13,7 @@ class Replica(Base):
             self.replica = CRD(node_exec)
 
     # delete replicas, if input parameters are empty then will delete all
-    def delete_replica(self, volume_name="", node_name=""):
+    def delete(self, volume_name="", node_name=""):
         return self.replica.delete_replica(volume_name, node_name)
 
     def get_replica(self, volume_name, node_name):

@@ -2,15 +2,16 @@ import time
 
 from kubernetes import client
 
+from engine import Engine
+
+from utility.constant import LABEL_TEST
+from utility.constant import LABEL_TEST_VALUE
 from utility.utility import get_retry_count_and_interval
 from utility.utility import logging
 
-from engine.engine import Engine
-
 from volume.base import Base
-from volume.rest import Rest
-
 from volume.constant import GIBIBYTE
+from volume.rest import Rest
 
 
 class CRD(Base):
@@ -20,21 +21,16 @@ class CRD(Base):
         self.node_exec = node_exec
         self.retry_count, self.retry_interval = get_retry_count_and_interval()
 
-    def get(self, volume_name):
-        volume = self.obj_api.get_namespaced_custom_object(
-            group="longhorn.io",
-            version="v1beta2",
-            namespace="longhorn-system",
-            plural="volumes",
-            name=volume_name
-        )
-        return volume
-
     def create(self, volume_name, size, replica_count):
         body = {
             "apiVersion": "longhorn.io/v1beta2",
             "kind": "Volume",
-            "metadata": {"name": volume_name},
+            "metadata": {
+                "name": volume_name,
+                "labels": {
+                    LABEL_TEST: LABEL_TEST_VALUE
+                }
+            },
             "spec": {
                 "frontend": "blockdev",
                 "replicaAutoBalance": "ignored",
@@ -50,6 +46,19 @@ class CRD(Base):
             body=body
         )
         self.wait_for_volume_state(volume_name, "detached")
+
+    def delete(self, volume_name):
+        try:
+            self.obj_api.delete_namespaced_custom_object(
+                group="longhorn.io",
+                version="v1beta2",
+                namespace="longhorn-system",
+                plural="volumes",
+                name=volume_name
+            )
+            self.wait_for_volume_delete(volume_name)
+        except Exception as e:
+            logging(f"Deleting volume error: {e}")
 
     def attach(self, volume_name, node_name):
         self.obj_api.patch_namespaced_custom_object(
@@ -131,18 +140,51 @@ class CRD(Base):
 
         self.wait_for_volume_state(volume_name, "detached")
 
-    def delete(self, volume_name):
-        try:
-            self.obj_api.delete_namespaced_custom_object(
-                group="longhorn.io",
-                version="v1beta2",
-                namespace="longhorn-system",
-                plural="volumes",
-                name=volume_name
-            )
-            self.wait_for_volume_delete(volume_name)
-        except Exception as e:
-            logging(f"Deleting volume error: {e}")
+    def get(self, volume_name):
+        return self.obj_api.get_namespaced_custom_object(
+            group="longhorn.io",
+            version="v1beta2",
+            namespace="longhorn-system",
+            plural="volumes",
+            name=volume_name
+        )
+
+    def list(self, label_selector=None):
+        return self.obj_api.list_namespaced_custom_object(
+            group="longhorn.io",
+            version="v1beta2",
+            namespace="longhorn-system",
+            plural="volumes",
+            label_selector=label_selector
+        )
+
+    def set_annotation(self, volume_name, annotation_key, annotation_value):
+        # retry conflict error
+        for i in range(self.retry_count):
+            try:
+                volume = self.get(volume_name)
+                annotations = volume['metadata'].get('annotations', {})
+                annotations[annotation_key] = annotation_value
+                volume['metadata']['annotations'] = annotations
+                self.obj_api.replace_namespaced_custom_object(
+                    group="longhorn.io",
+                    version="v1beta2",
+                    namespace="longhorn-system",
+                    plural="volumes",
+                    name=volume_name,
+                    body=volume
+                )
+                break
+            except Exception as e:
+                if e.status == 409:
+                    logging(f"Conflict error: {e.body}, retry ({i}) ...")
+                else:
+                    raise e
+            time.sleep(self.retry_interval)
+
+    def get_annotation_value(self, volume_name, annotation_key):
+        volume = self.get(volume_name)
+        return volume['metadata']['annotations'].get(annotation_key)
 
     def wait_for_volume_delete(self, volume_name):
         for i in range(self.retry_count):
@@ -198,18 +240,21 @@ class CRD(Base):
 
     def wait_for_volume_expand_to_size(self, volume_name, expected_size):
         engine = None
+        engine_current_size = 0
+        engine_expected_size = int(expected_size)
         engine_operation = Engine()
         for i in range(self.retry_count):
-            logging(f"Waiting for {volume_name} expand to {expected_size} ({i}) ...")
-
             engine = engine_operation.get_engine_by_volume(self.get(volume_name))
-            if int(engine['status']['currentSize']) == expected_size:
+            engine_current_size = int(engine['status']['currentSize'])
+            if engine_current_size == engine_expected_size:
                 break
+
+            logging(f"Waiting for volume engine expand from {engine_current_size} to {expected_size} ({i}) ...")
 
             time.sleep(self.retry_interval)
 
         assert engine is not None
-        assert int(engine['status']['currentSize']) == expected_size
+        assert engine_current_size == engine_expected_size
 
     def get_endpoint(self, volume_name):
         logging("Delegating the get_endpoint call to API because there is no CRD implementation")
@@ -220,8 +265,7 @@ class CRD(Base):
         endpoint = self.get_endpoint(volume_name)
         checksum = self.node_exec.issue_cmd(
             node_name,
-            f"dd if=/dev/urandom of={endpoint} bs=1M count={size} status=none;\
-              md5sum {endpoint} | awk \'{{print $1}}\'")
+            f"dd if=/dev/urandom of={endpoint} bs=1M count={size} status=none; md5sum {endpoint} | awk \'{{print $1}}\'")
         return checksum
 
     def keep_writing_data(self, volume_name, size):
@@ -265,14 +309,7 @@ class CRD(Base):
     def check_data_checksum(self, volume_name, checksum):
         node_name = self.get(volume_name)["spec"]["nodeID"]
         endpoint = self.get_endpoint(volume_name)
-        _checksum = self.node_exec.issue_cmd(
+        actual_checksum = self.node_exec.issue_cmd(
             node_name,
             f"md5sum {endpoint} | awk \'{{print $1}}\'")
-        logging(f"Got {endpoint} checksum = {_checksum},\
-                expected checksum = {checksum}")
-        assert _checksum == checksum
-
-    def cleanup(self, volume_names):
-        for volume_name in volume_names:
-            logging(f"Deleting volume {volume_name}")
-            self.delete(volume_name)
+        assert actual_checksum == checksum

@@ -426,9 +426,7 @@ def test_backing_image_with_disk_migration():  # NOQA
     7. Write random data to the mount point then verify the data.
     8. Unmount the host disk. Then verify:
        1. The replica in the host disk will be failed.
-       2. The disk state in the backing image will become failed.
-       3. The related download pod named
-          `<Backing image name>-<First 8 characters of disk UUID>` is removed.
+       2. The disk state in the backing image will become `unknown`.
     9. Remount the host disk to another path. Then create another Longhorn disk
        based on the migrated path (disk migration).
     10. Verify the following.
@@ -439,8 +437,7 @@ def test_backing_image_with_disk_migration():  # NOQA
         3. The failed replica will be reused. And the replica DiskID as well as
            the disk path is updated.
         4. The 2-replica volume r/w works fine.
-        5. The download state in the backing image will become `downloaded`.
-        6. The related download pod will be recreated.
+        5. The disk state in the backing image will become `ready` again.
     11. Do cleanup.
     """
 

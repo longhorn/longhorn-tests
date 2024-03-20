@@ -1,7 +1,6 @@
 from kubernetes.client.rest import ApiException
 
-from node.utility import get_node_cpu_cores
-
+from node import Node
 from node.constant import NODE_STRESS_CPU_LOAD_PERCENTAGE
 from node.constant import NODE_STRESS_MEM_LOAD_PERCENTAGE
 from node.constant import NODE_STRESS_MEM_VM_WORKERS
@@ -11,19 +10,22 @@ from node.constant import STRESS_HELPER_POD_NAME_PREFIX
 
 from utility.utility import logging
 
+from workload.constant import IMAGE_LITMUX
 from workload.pod import create_pod
 from workload.pod import delete_pod
 from workload.pod import get_pod
 from workload.pod import new_pod_manifest
 from workload.workload import get_workload_pods
 
-from workload.constant import IMAGE_LITMUX
-
 
 class Stress:
+
+    def __init__(self) -> None:
+        self.node = Node()
+
     def cleanup(self):
         for pod in get_workload_pods(STRESS_HELPER_LABEL):
-            logging(f"Cleaning up stress pod {pod.metadata.name}")
+            logging(f"Deleting stress pod {pod.metadata.name}")
             delete_pod(pod.metadata.name, pod.metadata.namespace)
 
     def cpu(self, node_names):
@@ -47,7 +49,7 @@ class Stress:
                 pod_name=pod_name,
                 image=IMAGE_LITMUX,
                 command=["stress-ng"],
-                args=['--cpu', str(get_node_cpu_cores(node_name)),
+                args=['--cpu', str(self.node.get_node_cpu_cores(node_name)),
                       '--cpu-load', str(NODE_STRESS_CPU_LOAD_PERCENTAGE),
                       '--timeout', str(NODE_STRESS_TIMEOUT_SECOND)],
                 node_name=node_name,

@@ -4,6 +4,8 @@ kind: StatefulSet
 metadata:
   name: test-statefulset
   namespace: default
+  labels:
+    test.longhorn.io: e2e
 spec:
   selector:
     matchLabels:

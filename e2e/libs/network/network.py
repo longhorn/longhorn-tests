@@ -1,9 +1,7 @@
 from robot.libraries.BuiltIn import BuiltIn
 
-from node.utility import list_node_names_by_role
-
+from node import Node
 from node_exec import NodeExec
-
 
 
 def get_control_plane_node_network_latency_in_ms():
@@ -14,7 +12,7 @@ def get_control_plane_node_network_latency_in_ms():
 def setup_control_plane_network_latency():
     latency_in_ms = get_control_plane_node_network_latency_in_ms()
     if latency_in_ms != 0:
-        control_plane_nodes = list_node_names_by_role("control-plane")
+        control_plane_nodes = Node.list_node_names_by_role("control-plane")
         for control_plane_node in control_plane_nodes:
             cmd = f"tc qdisc replace dev eth0 root netem delay {latency_in_ms}ms"
             res = NodeExec.get_instance().issue_cmd(control_plane_node, cmd)
@@ -26,7 +24,7 @@ def setup_control_plane_network_latency():
 def cleanup_control_plane_network_latency():
     latency_in_ms = get_control_plane_node_network_latency_in_ms()
     if latency_in_ms != 0:
-        control_plane_nodes = list_node_names_by_role("control-plane")
+        control_plane_nodes = Node.list_node_names_by_role("control-plane")
         for control_plane_node in control_plane_nodes:
             cmd = "tc qdisc del dev eth0 root"
             res = NodeExec.get_instance().issue_cmd(control_plane_node, cmd)

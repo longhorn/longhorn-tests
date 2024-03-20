@@ -3,6 +3,8 @@ kind: PersistentVolumeClaim
 metadata:
   name: test-pvc
   namespace: default
+  labels:
+    test.longhorn.io: e2e
 spec:
   accessModes:
     - ReadWriteOnce
