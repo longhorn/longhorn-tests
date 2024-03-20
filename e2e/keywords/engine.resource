@@ -4,7 +4,6 @@ Documentation       Longhorn engine related keywords
 Library             ../libs/keywords/common_keywords.py
 Library             ../libs/keywords/engine_keywords.py
 
-
 *** Keywords ***
 Engine state should eventually be ${expected_engine_state}
     Run keyword And Continue On Failure
