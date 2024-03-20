@@ -3939,11 +3939,10 @@ def create_crypto_secret(secret_manifest, namespace=LONGHORN_NAMESPACE):
                                  body=secret_manifest)
 
 
-def delete_crypto_secret(secret_manifest):
+def delete_crypto_secret(namespace, name):
     api = get_core_api_client()
     try:
-        api.delete_namespaced_secret(secret_manifest,
-                                     body=k8sclient.V1DeleteOptions())
+        api.delete_namespaced_secret(namespace=namespace, name=name)
     except ApiException as e:
         assert e.status == 404
 
@@ -3954,7 +3953,8 @@ def cleanup_crypto_secret():
     ret = api.list_namespaced_secret(namespace=LONGHORN_NAMESPACE)
     for sc in ret.items:
         if sc.metadata.name in secret_deletes:
-            delete_crypto_secret(sc.metadata.name)
+            delete_crypto_secret(name=sc.metadata.name,
+                                 namespace=LONGHORN_NAMESPACE)
 
     ok = False
     for _ in range(RETRY_COUNTS):
@@ -6151,3 +6151,13 @@ def create_deployment_and_write_data(client, # NOQA
                                    data_path)
 
     return client.by_id_volume(volume_name), deployment_pod_names[0], checksum
+
+
+def wait_delete_dm_device(api, name):
+    path = os.path.join("/dev/mapper", name)
+    for i in range(RETRY_COUNTS):
+        found = os.path.exists(path)
+        if not found:
+            break
+        time.sleep(RETRY_INTERVAL)
+    assert not found
