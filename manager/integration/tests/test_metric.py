@@ -21,7 +21,6 @@ from common import wait_for_volume_expansion
 from common import wait_for_volume_faulted
 from common import wait_for_volume_healthy
 from common import write_volume_data
-from common import write_volume_random_data
 from common import set_node_scheduling
 from common import set_node_cordon
 from common import Mi
@@ -194,6 +193,21 @@ def check_metric_sum_on_all_nodes(client, core_api, metric_name, expected_labels
         assert total_metrics["value"] >= 0.0
 
 
+def wait_for_metric_volume_actual_size(core_api, metric_name, metric_labels, actual_size): # NOQA
+    for _ in range(RETRY_COUNTS):
+        time.sleep(RETRY_INTERVAL)
+
+        try:
+            check_metric(core_api, metric_name,
+                         metric_labels, actual_size)
+            return
+        except AssertionError:
+            continue
+
+    check_metric(core_api, metric_name,
+                 metric_labels, actual_size)
+
+
 def wait_for_metric_count_all_nodes(client, core_api, metric_name, metric_labels, expected_count): # NOQA
     for _ in range(RETRY_COUNTS):
         time.sleep(RETRY_INTERVAL)
@@ -271,9 +285,12 @@ def test_volume_metrics(client, core_api, volume_name, pvc_namespace): # NOQA
     volume = client.by_id_volume(volume_name)
     volume.attach(hostId=lht_hostId)
     volume = wait_for_volume_healthy(client, volume_name)
-    write_volume_random_data(volume)
+    data_size = 1 * Mi
+    data = {'pos': 0,
+            'len': data_size,
+            'content': generate_random_data(data_size)}
+    write_volume_data(volume, data)
     volume = client.by_id_volume(volume_name)
-    actual_size = float(volume.controllers[0].actualSize)
     capacity_size = float(volume.size)
 
     metric_labels = {
@@ -284,8 +301,9 @@ def test_volume_metrics(client, core_api, volume_name, pvc_namespace): # NOQA
     }
 
     # check volume metric basic
-    check_metric(core_api, "longhorn_volume_actual_size_bytes",
-                 metric_labels, actual_size)
+    wait_for_metric_volume_actual_size(core_api,
+                                       "longhorn_volume_actual_size_bytes",
+                                       metric_labels, data_size)
     check_metric(core_api, "longhorn_volume_capacity_bytes",
                  metric_labels, capacity_size)
     check_metric(core_api, "longhorn_volume_read_throughput",

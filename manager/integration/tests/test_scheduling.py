@@ -463,6 +463,7 @@ def test_replica_rebuild_per_volume_limit(client, core_api, storage_class, sts_n
 
     vol = common.wait_for_volume_replicas_mode(client, vol_name, 'RW',
                                                replica_count=r_count)
+    wait_for_volume_healthy(client, vol_name)
 
     # Delete 4 volume replicas
     del vol.replicas[0]

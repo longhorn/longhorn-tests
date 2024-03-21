@@ -54,6 +54,11 @@ install_cluster_autoscaler(){
 }
 
 
+enable_mtls(){
+  kubectl apply -f "${TF_VAR_tf_workspace}/templates/longhorn-grpc-tls.yml" -n ${LONGHORN_NAMESPACE} 
+}
+
+
 install_csi_snapshotter_crds(){
     CSI_SNAPSHOTTER_REPO_URL="https://github.com/kubernetes-csi/external-snapshotter.git"
     CSI_SNAPSHOTTER_REPO_DIR="${TMPDIR}/k8s-csi-external-snapshotter"
@@ -341,6 +346,9 @@ run_longhorn_upgrade_test(){
 
   # get upgrade test junit xml report
   kubectl cp ${LONGHORN_UPGRADE_TEST_POD_NAME}:${LONGHORN_JUNIT_REPORT_PATH} "${TF_VAR_tf_workspace}/${LONGHORN_UPGRADE_TEST_POD_NAME}-junit-report.xml" -c longhorn-test-report
+
+  # delete upgrade test pod
+  kubectl delete -f ${LONGHORN_UPGRADE_TESTS_MANIFEST_FILE_PATH}
 }
 
 
@@ -438,7 +446,9 @@ main(){
     install_backupstores
   fi
   install_csi_snapshotter_crds
-
+  if [[ "${TF_VAR_enable_mtls}" == true ]]; then
+    enable_mtls
+  fi
   if [[ "${AIR_GAP_INSTALLATION}" == true ]]; then
     if [[ "${LONGHORN_INSTALL_METHOD}" == "manifest-file" ]]; then
       create_registry_secret

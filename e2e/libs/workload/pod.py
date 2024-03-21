@@ -4,7 +4,7 @@ from kubernetes import client
 from kubernetes.client import rest
 
 from utility.utility import logging
-from utility.utility import generate_name
+from utility.utility import generate_name_random
 from utility.utility import get_retry_count_and_interval
 
 from workload.constant import IMAGE_BUSYBOX
@@ -13,7 +13,7 @@ from workload.constant import IMAGE_BUSYBOX
 def new_pod_manifest(pod_name="", image="", command=[], args=[],
                      claim_name="", node_name="", labels={}):
     if pod_name == "":
-        pod_name = generate_name()
+        pod_name = generate_name_random()
 
     # Set default image and args
     if image is None:
@@ -144,3 +144,17 @@ def wait_for_pod_status(name, status, namespace='default'):
         time.sleep(retry_interval)
 
     assert is_running
+
+
+def get_volume_name_by_pod(name, namespace='default'):
+    pod = get_pod(name, namespace)
+    claim_name = ""
+    for volume in pod.spec.volumes:
+        if volume.name == 'pod-data':
+            claim_name = volume.persistent_volume_claim.claim_name
+            break
+    assert claim_name, f"Failed to get claim name for pod {pod.metadata.name}"
+
+    api = client.CoreV1Api()
+    claim = api.read_namespaced_persistent_volume_claim(name=claim_name, namespace='default')
+    return claim.spec.volume_name

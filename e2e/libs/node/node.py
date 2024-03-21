@@ -1,73 +1,17 @@
-import boto3
+import os
 import time
-import yaml
 
 from kubernetes import client
 
-from node.utility import list_node_names_by_role
+from robot.libraries.BuiltIn import BuiltIn
 
-from utility.utility import logging
-from utility.utility import wait_for_cluster_ready
+from utility.utility import get_retry_count_and_interval
 
 
 class Node:
 
     def __init__(self):
-        with open('/tmp/instance_mapping', 'r') as f:
-            self.mapping = yaml.safe_load(f)
-        self.aws_client = boto3.client('ec2')
-
-    def reboot_all_nodes(self, shut_down_time_in_sec=60):
-        instance_ids = [value for value in self.mapping.values()]
-
-        resp = self.aws_client.stop_instances(InstanceIds=instance_ids, Force=True)
-        logging(f"Stopping instances {instance_ids} response: {resp}")
-        waiter = self.aws_client.get_waiter('instance_stopped')
-        waiter.wait(InstanceIds=instance_ids)
-        logging(f"Stopped instances")
-
-        time.sleep(shut_down_time_in_sec)
-
-        resp = self.aws_client.start_instances(InstanceIds=instance_ids)
-        logging(f"Starting instances {instance_ids} response: {resp}")
-        waiter = self.aws_client.get_waiter('instance_running')
-        waiter.wait(InstanceIds=instance_ids)
-        wait_for_cluster_ready()
-        logging(f"Started instances")
-
-    def reboot_node(self, reboot_node_name, shut_down_time_in_sec=60):
-        instance_ids = [self.mapping[reboot_node_name]]
-
-        resp = self.aws_client.stop_instances(InstanceIds=instance_ids, Force=True)
-        logging(f"Stopping instances {instance_ids} response: {resp}")
-        waiter = self.aws_client.get_waiter('instance_stopped')
-        waiter.wait(InstanceIds=instance_ids)
-        logging(f"Stopped instances")
-
-        time.sleep(shut_down_time_in_sec)
-
-        resp = self.aws_client.start_instances(InstanceIds=instance_ids)
-        logging(f"Starting instances {instance_ids} response: {resp}")
-        waiter = self.aws_client.get_waiter('instance_running')
-        waiter.wait(InstanceIds=instance_ids)
-        logging(f"Started instances")
-
-    def reboot_all_worker_nodes(self, shut_down_time_in_sec=60):
-        instance_ids = [self.mapping[value] for value in list_node_names_by_role("worker")]
-
-        resp = self.aws_client.stop_instances(InstanceIds=instance_ids, Force=True)
-        logging(f"Stopping instances {instance_ids} response: {resp}")
-        waiter = self.aws_client.get_waiter('instance_stopped')
-        waiter.wait(InstanceIds=instance_ids)
-        logging(f"Stopped instances")
-
-        time.sleep(shut_down_time_in_sec)
-
-        resp = self.aws_client.start_instances(InstanceIds=instance_ids)
-        logging(f"Starting instances {instance_ids} response: {resp}")
-        waiter = self.aws_client.get_waiter('instance_running')
-        waiter.wait(InstanceIds=instance_ids)
-        logging(f"Started instances")
+        pass
 
     def get_all_pods_on_node(self, node_name):
         api = client.CoreV1Api()
@@ -76,7 +20,8 @@ class Node:
         return user_pods
 
     def wait_all_pods_evicted(self, node_name):
-        for i in range(RETRY_COUNT):
+        retry_count, retry_interval = get_retry_count_and_interval()
+        for _ in range(retry_count):
             pods = self.get_all_pods_on_node(node_name)
             evicted = True
             for pod in pods:
@@ -91,6 +36,63 @@ class Node:
             if evicted:
                 break
 
-            time.sleep(RETRY_INTERVAL)
+            time.sleep(retry_interval)
 
         assert evicted, 'failed to evict pods'
+
+    def get_node_by_index(self, index, role="worker"):
+        nodes = self.list_node_names_by_role(role)
+        return nodes[int(index)]
+
+    def get_node_by_name(self, node_name):
+        core_api = client.CoreV1Api()
+        return core_api.read_node(node_name)
+
+    def get_test_pod_running_node(self):
+        if "NODE_NAME" in os.environ:
+            return os.environ["NODE_NAME"]
+        else:
+            return self.get_node_by_index(0)
+
+    def get_test_pod_not_running_node(self):
+        worker_nodes = self.list_node_names_by_role("worker")
+        test_pod_running_node = self.get_test_pod_running_node()
+        for worker_node in worker_nodes:
+            if worker_node != test_pod_running_node:
+                return worker_node
+
+    def get_node_cpu_cores(self, node_name):
+        node = self.get_node_by_name(node_name)
+        return node.status.capacity['cpu']
+
+    def list_node_names_by_volumes(self, volume_names):
+        volume_keywords = BuiltIn().get_library_instance('volume_keywords')
+        volume_nodes = {}
+        for volume_name in volume_names:
+            volume_node = volume_keywords.get_node_id_by_replica_locality(volume_name, "volume node")
+            if volume_node not in volume_nodes:
+                volume_nodes[volume_node] = True
+        return list(volume_nodes.keys())
+
+    def list_node_names_by_role(self, role="all"):
+        if role not in ["all", "control-plane", "worker"]:
+            raise ValueError("Role must be one of 'all', 'master' or 'worker'")
+
+        def filter_nodes(nodes, condition):
+            return [node.metadata.name for node in nodes if condition(node)]
+
+        core_api = client.CoreV1Api()
+        nodes = core_api.list_node().items
+
+        control_plane_labels = ['node-role.kubernetes.io/master', 'node-role.kubernetes.io/control-plane']
+
+        if role == "all":
+            return sorted(filter_nodes(nodes, lambda node: True))
+
+        if role == "control-plane":
+            condition = lambda node: all(label in node.metadata.labels for label in control_plane_labels)
+            return sorted(filter_nodes(nodes, condition))
+
+        if role == "worker":
+            condition = lambda node: not any(label in node.metadata.labels for label in control_plane_labels)
+            return sorted(filter_nodes(nodes, condition))

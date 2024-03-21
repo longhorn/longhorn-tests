@@ -22,7 +22,3 @@ class Base(ABC):
     @abstractmethod
     def check_jobs_work(self, volume_name):
         return NotImplemented
-
-    @abstractmethod
-    def cleanup(self, volume_names):
-        return NotImplemented

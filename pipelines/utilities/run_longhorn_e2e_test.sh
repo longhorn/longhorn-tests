@@ -65,14 +65,31 @@ run_longhorn_e2e_test(){
 }
 
 run_longhorn_e2e_test_out_of_cluster(){
-  cd e2e
-  python3 -m venv .
-  source bin/activate
-  pip install -r requirements.txt
 
   eval "ROBOT_COMMAND_ARGS=($PYTEST_CUSTOM_OPTIONS)"
 
-  ./run.sh "${ROBOT_COMMAND_ARGS[@]}"
+  if [[ -n ${LONGHORN_TESTS_CUSTOM_IMAGE} ]]; then
+    cat /tmp/instance_mapping
+    cp "${KUBECONFIG}" /tmp/kubeconfig
+    CONTAINER_NAME="e2e-container-${IMAGE_NAME}"
+    docker run --pull=always \
+               --name "${CONTAINER_NAME}" \
+               -e AWS_ACCESS_KEY_ID="${TF_VAR_lh_aws_access_key}" \
+               -e AWS_SECRET_ACCESS_KEY="${TF_VAR_lh_aws_secret_key}" \
+               -e AWS_DEFAULT_REGION="${TF_VAR_aws_region}" \
+               -e LONGHORN_CLIENT_URL="${LONGHORN_CLIENT_URL}" \
+               -e KUBECONFIG="/tmp/kubeconfig" \
+               --mount source="vol-${IMAGE_NAME}",target=/tmp \
+               "${LONGHORN_TESTS_CUSTOM_IMAGE}" "${ROBOT_COMMAND_ARGS[@]}"
+    docker stop "${CONTAINER_NAME}"
+    docker rm "${CONTAINER_NAME}"
+  else
+    cd e2e
+    python3 -m venv .
+    source bin/activate
+    pip install -r requirements.txt
+    ./run.sh "${ROBOT_COMMAND_ARGS[@]}"
+  fi
 
   cp /tmp/test-report/log.html "${WORKSPACE}/log.html"
   cp /tmp/test-report/output.xml "${WORKSPACE}/output.xml"

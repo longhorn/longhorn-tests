@@ -868,7 +868,8 @@ def write_pod_volume_random_data(api, pod_name, path, size_in_mb):
         '/bin/sh',
         '-c',
         'dd if=/dev/urandom of=' + path +
-        ' bs=1M' + ' count=' + str(size_in_mb)
+        ' bs=1M' + ' count=' + str(size_in_mb) +
+        '; sync'
     ]
     return stream(
         api.connect_get_namespaced_pod_exec, pod_name, 'default',
@@ -6148,8 +6149,10 @@ def create_deployment_and_write_data(client, # NOQA
                                  deployment_pod_names[0],
                                  data_path,
                                  data_size)
+
     checksum = get_pod_data_md5sum(core_api,
                                    deployment_pod_names[0],
                                    data_path)
 
-    return client.by_id_volume(volume_name), deployment_pod_names[0], checksum
+    volume = client.by_id_volume(volume_name)
+    return volume, deployment_pod_names[0], checksum, deployment

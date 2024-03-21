@@ -9,14 +9,9 @@ def SELINUX_MODE = params.SELINUX_MODE ? params.SELINUX_MODE : ""
 def CREDS_ID = JOB_BASE_NAME == "longhorn-tests-regression" ? "AWS_CREDS_RANCHER_QA" : "AWS_CREDS"
 def REGISTRATION_CODE_ID = params.ARCH == "amd64" ? "REGISTRATION_CODE" : "REGISTRATION_CODE_ARM64"
 
-// parameters for air gap installation
-def AIR_GAP_INSTALLATION = params.AIR_GAP_INSTALLATION ? params.AIR_GAP_INSTALLATION : false
 def LONGHORN_INSTALL_VERSION = params.LONGHORN_INSTALL_VERSION ? params.LONGHORN_INSTALL_VERSION : "master"
 def LONGHORN_TRANSIENT_VERSION = params.LONGHORN_TRANSIENT_VERSION ? params.LONGHORN_TRANSIENT_VERSION : ""
 def CIS_HARDENING = params.CIS_HARDENING ? params.CIS_HARDENING : false
-def REGISTRY_URL
-def REGISTRY_USERNAME
-def REGISTRY_PASSWORD
 
 // parameter for hdd test
 def USE_HDD = params.USE_HDD ? params.USE_HDD : false
@@ -25,7 +20,6 @@ node {
 
     withCredentials([
         usernamePassword(credentialsId: CREDS_ID, passwordVariable: 'AWS_SECRET_KEY', usernameVariable: 'AWS_ACCESS_KEY'),
-        string(credentialsId: 'DO_CREDS', variable: 'DO_TOKEN'),
         string(credentialsId: REGISTRATION_CODE_ID, variable: 'REGISTRATION_CODE'),
     ]) {
 
@@ -37,38 +31,6 @@ node {
 
         try {
 
-            if (params.AIR_GAP_INSTALLATION) {
-
-                stage('airgap build') {
-                    sh "airgap/scripts/build.sh"
-                    sh """ docker run -itd --name airgap-${JOB_BASE_NAME}-${BUILD_NUMBER} \
-                                           --env TF_VAR_longhorn_version=${LONGHORN_INSTALL_VERSION} \
-                                           --env TF_VAR_do_token=${DO_TOKEN} \
-                                           --env TF_VAR_aws_access_key=${AWS_ACCESS_KEY} \
-                                           --env TF_VAR_aws_secret_key=${AWS_SECRET_KEY} \
-                                           airgap-${JOB_BASE_NAME}-${BUILD_NUMBER}
-                    """
-                }
-
-                stage ('airgap setup') {
-                    sh "docker exec airgap-${JOB_BASE_NAME}-${BUILD_NUMBER} ./airgap/scripts/terraform-setup.sh"
-                    REGISTRY_URL = sh (
-                        script: "docker exec airgap-${JOB_BASE_NAME}-${BUILD_NUMBER} terraform -chdir=./airgap/terraform output -raw registry_url",
-                        returnStdout: true
-                    )
-                    println REGISTRY_URL
-                    REGISTRY_USERNAME = sh (
-                        script: "docker exec airgap-${JOB_BASE_NAME}-${BUILD_NUMBER} terraform -chdir=./airgap/terraform output -raw registry_username",
-                        returnStdout: true
-                    )
-                    REGISTRY_PASSWORD = sh (
-                        script: "docker exec airgap-${JOB_BASE_NAME}-${BUILD_NUMBER} terraform -chdir=./airgap/terraform output -raw registry_password",
-                        returnStdout: true
-                    )
-                }
-
-            }
-
             stage('build') {
 
                 echo "Using credentials: $CREDS_ID"
@@ -76,10 +38,6 @@ node {
 
                 sh "pipelines/storage_network/scripts/build.sh"
                 sh """ docker run -itd --name ${JOB_BASE_NAME}-${BUILD_NUMBER} \
-                                       --env AIR_GAP_INSTALLATION=${AIR_GAP_INSTALLATION} \
-                                       --env REGISTRY_URL=${REGISTRY_URL} \
-                                       --env REGISTRY_USERNAME=${REGISTRY_USERNAME} \
-                                       --env REGISTRY_PASSWORD=${REGISTRY_PASSWORD} \
                                        --env LONGHORN_INSTALL_VERSION=${LONGHORN_INSTALL_VERSION} \
                                        --env CUSTOM_LONGHORN_ENGINE_IMAGE=${CUSTOM_LONGHORN_ENGINE_IMAGE} \
                                        --env CUSTOM_LONGHORN_INSTANCE_MANAGER_IMAGE=${CUSTOM_LONGHORN_INSTANCE_MANAGER_IMAGE} \
@@ -103,7 +61,6 @@ node {
                                        --env TF_VAR_aws_availability_zone=${AWS_AVAILABILITY_ZONE} \
                                        --env TF_VAR_aws_region=${AWS_REGION} \
                                        --env TF_VAR_os_distro_version=${DISTRO_VERSION} \
-                                       --env TF_VAR_do_token=${env.TF_VAR_do_token} \
                                        --env TF_VAR_aws_access_key=${AWS_ACCESS_KEY} \
                                        --env TF_VAR_lh_aws_instance_name_controlplane="${JOB_BASE_NAME}-ctrl" \
                                        --env TF_VAR_lh_aws_instance_name_worker="${JOB_BASE_NAME}-wrk" \
@@ -161,13 +118,6 @@ node {
             throw e
         } finally {
             stage ('releasing resources') {
-                if (sh (script: "docker container inspect airgap-${JOB_BASE_NAME}-${BUILD_NUMBER} > /dev/null 2>&1", returnStatus: true) == 0) {
-                    sh "docker exec airgap-${JOB_BASE_NAME}-${BUILD_NUMBER} ./airgap/scripts/cleanup.sh"
-                    sh "docker stop airgap-${JOB_BASE_NAME}-${BUILD_NUMBER}"
-                    sh "docker rm -v airgap-${JOB_BASE_NAME}-${BUILD_NUMBER}"
-                    sh "docker rmi airgap-${JOB_BASE_NAME}-${BUILD_NUMBER}"
-                }
-
                 if (sh (script: "docker container inspect ${JOB_BASE_NAME}-${BUILD_NUMBER} > /dev/null 2>&1", returnStatus: true) == 0) {
                     sh "docker exec ${JOB_BASE_NAME}-${BUILD_NUMBER} pipelines/storage_network/scripts/cleanup.sh"
                     sh "docker stop ${JOB_BASE_NAME}-${BUILD_NUMBER}"

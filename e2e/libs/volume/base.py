@@ -47,6 +47,6 @@ class Base(ABC):
     def check_data_checksum(self, volume_name, checksum):
         return NotImplemented
 
-    @abstractmethod
-    def cleanup(self, volume_names):
-        return NotImplemented
+    # @abstractmethod
+    # def cleanup(self, volume_names):
+    #     return NotImplemented
