@@ -2952,24 +2952,22 @@ def test_drain_with_block_for_eviction_if_contains_last_replica_success(client, 
     # Step 2, 3
     volume1_name = "vol-1"
     volume2_name = "vol-2"
-    volume1, pod1, checksum1, _ = create_deployment_and_write_data(
-                                                                client,
-                                                                core_api,
-                                                                make_deployment_with_pvc, # NOQA
-                                                                volume1_name,
-                                                                str(1 * Gi),
-                                                                3,
-                                                                DATA_SIZE_IN_MB_3, # NOQA
-                                                                host_id) # NOQA
-    volume2, pod2, checksum2, _ = create_deployment_and_write_data(
-                                                                client,
-                                                                core_api,
-                                                                make_deployment_with_pvc,  # NOQA
-                                                                volume2_name,
-                                                                str(1 * Gi),
-                                                                3,
-                                                                DATA_SIZE_IN_MB_3, # NOQA
-                                                                host_id) # NOQA
+    volume1, pod1, checksum1, _ = create_deployment_and_write_data(client,
+                                                                   core_api,
+                                                                   make_deployment_with_pvc, # NOQA
+                                                                   volume1_name, # NOQA
+                                                                   str(1 * Gi),
+                                                                   3,
+                                                                   DATA_SIZE_IN_MB_3, # NOQA
+                                                                   host_id) # NOQA
+    volume2, pod2, checksum2, _ = create_deployment_and_write_data(client,
+                                                                   core_api,
+                                                                   make_deployment_with_pvc,  # NOQA
+                                                                   volume2_name, # NOQA
+                                                                   str(1 * Gi),
+                                                                   3,
+                                                                   DATA_SIZE_IN_MB_3, # NOQA
+                                                                   host_id) # NOQA
     # Make volume 1 replica only located on evict_source_node
     make_replica_on_specific_node(client, volume1_name, evict_source_node)
     volume2_replicas = get_all_replica_name(client, volume2_name)
