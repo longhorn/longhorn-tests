@@ -3124,10 +3124,10 @@ def wait_for_backup_volume_backing_image_synced(
     completed = False
     for _ in range(retry_count):
         bv = find_backup_volume(client, volume_name)
-        assert bv is not None
-        if bv.backingImageName == backing_image:
-            completed = True
-            break
+        if bv is not None:
+            if bv.backingImageName == backing_image:
+                completed = True
+                break
         time.sleep(RETRY_BACKUP_INTERVAL)
     assert completed is True, f" Backup Volume = {bv}," \
                               f" Backing Image = {backing_image}," \
