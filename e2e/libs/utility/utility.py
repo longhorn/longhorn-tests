@@ -187,3 +187,12 @@ def get_name_suffix(*args):
         if arg:
             suffix += f"-{arg}"
     return suffix
+
+
+def get_backupstores():
+    backupstore = os.environ['LONGHORN_BACKUPSTORES']
+    backupstore = backupstore.replace(" ", "")
+    backupstores = backupstore.split(",")
+    for i in range(len(backupstores)):
+        backupstores[i] = backupstores[i].split(":")[0]
+    return backupstores

@@ -66,6 +66,13 @@ run_longhorn_e2e_test(){
 
 run_longhorn_e2e_test_out_of_cluster(){
 
+  if [[ ${BACKUP_STORE_TYPE} == "s3" ]]; then
+    LONGHORN_BACKUPSTORES='s3://backupbucket@us-east-1/backupstore$minio-secret'
+  elif [[ $BACKUP_STORE_TYPE = "nfs" ]]; then
+    LONGHORN_BACKUPSTORES='nfs://longhorn-test-nfs-svc.default:/opt/backupstore'
+  fi
+  LONGHORN_BACKUPSTORE_POLL_INTERVAL="30"
+
   eval "ROBOT_COMMAND_ARGS=($PYTEST_CUSTOM_OPTIONS)"
 
   if [[ -n ${LONGHORN_TESTS_CUSTOM_IMAGE} ]]; then
@@ -74,6 +81,8 @@ run_longhorn_e2e_test_out_of_cluster(){
     CONTAINER_NAME="e2e-container-${IMAGE_NAME}"
     docker run --pull=always \
                --name "${CONTAINER_NAME}" \
+               -e LONGHORN_BACKUPSTORES="${LONGHORN_BACKUPSTORES}" \
+               -e LONGHORN_BACKUPSTORE_POLL_INTERVAL="${LONGHORN_BACKUPSTORE_POLL_INTERVAL}" \
                -e AWS_ACCESS_KEY_ID="${TF_VAR_lh_aws_access_key}" \
                -e AWS_SECRET_ACCESS_KEY="${TF_VAR_lh_aws_secret_key}" \
                -e AWS_DEFAULT_REGION="${TF_VAR_aws_region}" \
@@ -84,6 +93,8 @@ run_longhorn_e2e_test_out_of_cluster(){
     docker stop "${CONTAINER_NAME}"
     docker rm "${CONTAINER_NAME}"
   else
+    export LONGHORN_BACKUPSTORES=${LONGHORN_BACKUPSTORES}
+    export LONGHORN_BACKUPSTORE_POLL_INTERVAL=${LONGHORN_BACKUPSTORE_POLL_INTERVAL}
     cd e2e
     python3 -m venv .
     source bin/activate

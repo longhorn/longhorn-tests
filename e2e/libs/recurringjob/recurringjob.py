@@ -19,7 +19,7 @@ class RecurringJob(Base):
                job_name,
                task="snapshot",
                groups=[],
-               cron="* * * * *",
+               cron="*/2 * * * *",
                retain=1,
                concurrency=1,
                labels={}):
