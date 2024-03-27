@@ -30,7 +30,8 @@ from common import wait_for_volume_replica_count
 from common import get_host_replica_count
 
 from common import get_k8s_zone_label
-from common import set_k8s_node_zone_label
+from common import is_k8s_node_gke_cos
+from common import set_and_wait_k8s_nodes_zone_label
 from common import set_node_cordon
 from common import set_node_tags
 from common import wait_for_node_tag_update
@@ -97,7 +98,7 @@ def k8s_node_zone_tags(client, core_api):  # NOQA
         core_api.patch_node(node_name, body=payload)
 
 
-def wait_longhorn_node_zone_updated(client): # NOQA
+def wait_longhorn_nodes_zone_not_empty(client): # NOQA
 
     lh_nodes = client.list_node()
     node_names = map(lambda node: node.name, lh_nodes)
@@ -143,7 +144,7 @@ def test_zone_tags(client, core_api, volume_name, k8s_node_zone_tags):  # NOQA
     10. Repeat step 8-9 a few times
     """
 
-    wait_longhorn_node_zone_updated(client)
+    wait_longhorn_nodes_zone_not_empty(client)
 
     volume = create_and_check_volume(client, volume_name,
                                      num_of_replicas=2)
@@ -257,7 +258,7 @@ def test_replica_zone_anti_affinity(client, core_api, volume_name, k8s_node_zone
     12. Clean up the replica count, the zone labels and the volume.
     """
 
-    wait_longhorn_node_zone_updated(client)
+    wait_longhorn_nodes_zone_not_empty(client)
 
     replica_node_soft_anti_affinity_setting = \
         client.by_id_setting(SETTING_REPLICA_NODE_SOFT_ANTI_AFFINITY)
@@ -272,11 +273,12 @@ def test_replica_zone_anti_affinity(client, core_api, volume_name, k8s_node_zone
     lh_nodes = client.list_node()
 
     count = 0
+    node_zone_map = {}
     for node in lh_nodes:
         count += 1
-        set_k8s_node_zone_label(core_api, node.name, "lh-zone" + str(count))
+        node_zone_map[node.name] = "lh-zone" + str(count)
 
-    wait_longhorn_node_zone_updated(client)
+    set_and_wait_k8s_nodes_zone_label(core_api, node_zone_map)
 
     wait_for_volume_condition_scheduled(client, volume_name,
                                         "status",
@@ -290,10 +292,11 @@ def test_replica_zone_anti_affinity(client, core_api, volume_name, k8s_node_zone
     client.delete(volume)
     wait_for_volume_delete(client, volume_name)
 
+    node_zone_map = {}
     for node in lh_nodes:
-        set_k8s_node_zone_label(core_api, node.name, "lh-zone1")
+        node_zone_map[node.name] = "lh-zone1"
 
-    wait_longhorn_node_zone_updated(client)
+    set_and_wait_k8s_nodes_zone_label(core_api, node_zone_map)
 
     volume = create_and_check_volume(client, volume_name)
     wait_for_volume_condition_scheduled(client, volume_name,
@@ -337,10 +340,18 @@ def test_replica_auto_balance_zone_least_effort(client, core_api, volume_name): 
 
     n1, n2, n3 = client.list_node()
 
-    set_k8s_node_zone_label(core_api, n1.name, ZONE1)
-    set_k8s_node_zone_label(core_api, n2.name, ZONE2)
-    set_k8s_node_zone_label(core_api, n3.name, ZONE3)
-    wait_longhorn_node_zone_updated(client)
+    # The GKE zone label is periodically updated with the actual zone.
+    # Invoke _set_k8s_node_zone_label to refresh the zone label with each
+    # retry iteration to maintain the expected zone label.
+    def _set_and_wait_k8s_node_zone_label():
+        node_zone_map = {
+            n1.name: ZONE1,
+            n2.name: ZONE2,
+            n3.name: ZONE3
+        }
+        set_and_wait_k8s_nodes_zone_label(core_api, node_zone_map)
+
+    _set_and_wait_k8s_node_zone_label()
 
     client.update(n2, allowScheduling=False)
     client.update(n3, allowScheduling=False)
@@ -361,6 +372,9 @@ def test_replica_auto_balance_zone_least_effort(client, core_api, volume_name): 
         if z1_r_count == 6 and z2_r_count == z3_r_count == 0:
             break
 
+        if is_k8s_node_gke_cos(core_api):
+            _set_and_wait_k8s_node_zone_label()
+
         time.sleep(RETRY_INTERVAL)
     assert z1_r_count == 6
     assert z2_r_count == 0
@@ -380,6 +394,9 @@ def test_replica_auto_balance_zone_least_effort(client, core_api, volume_name): 
         if z2_r_count != 0 and all_r_count == n_replicas:
             break
 
+        if is_k8s_node_gke_cos(core_api):
+            _set_and_wait_k8s_node_zone_label()
+
         time.sleep(RETRY_INTERVAL)
     assert z1_r_count != z2_r_count
     assert z2_r_count != 0
@@ -398,6 +415,9 @@ def test_replica_auto_balance_zone_least_effort(client, core_api, volume_name): 
         all_r_count = z1_r_count + z2_r_count + z3_r_count
         if z3_r_count != 0 and all_r_count == n_replicas:
             break
+
+        if is_k8s_node_gke_cos(core_api):
+            _set_and_wait_k8s_node_zone_label()
 
         time.sleep(RETRY_INTERVAL)
     assert z1_r_count != z3_r_count
@@ -442,10 +462,18 @@ def test_replica_auto_balance_zone_best_effort(client, core_api, volume_name):  
 
     n1, n2, n3 = client.list_node()
 
-    set_k8s_node_zone_label(core_api, n1.name, ZONE1)
-    set_k8s_node_zone_label(core_api, n2.name, ZONE2)
-    set_k8s_node_zone_label(core_api, n3.name, ZONE3)
-    wait_longhorn_node_zone_updated(client)
+    # The GKE zone label is periodically updated with the actual zone.
+    # Invoke _set_k8s_node_zone_label to refresh the zone label with each
+    # retry iteration to maintain the expected zone label.
+    def _set_and_wait_k8s_node_zone_label():
+        node_zone_map = {
+            n1.name: ZONE1,
+            n2.name: ZONE2,
+            n3.name: ZONE3
+        }
+        set_and_wait_k8s_nodes_zone_label(core_api, node_zone_map)
+
+    _set_and_wait_k8s_node_zone_label()
 
     client.update(n2, allowScheduling=False)
     client.update(n3, allowScheduling=False)
@@ -466,6 +494,9 @@ def test_replica_auto_balance_zone_best_effort(client, core_api, volume_name):  
         if z1_r_count == 6 and z2_r_count == z3_r_count == 0:
             break
 
+        if is_k8s_node_gke_cos(core_api):
+            _set_and_wait_k8s_node_zone_label()
+
         time.sleep(RETRY_INTERVAL)
     assert z1_r_count == 6
     assert z2_r_count == 0
@@ -484,6 +515,9 @@ def test_replica_auto_balance_zone_best_effort(client, core_api, volume_name):  
         if z1_r_count == z2_r_count == 3 and z3_r_count == 0:
             break
 
+        if is_k8s_node_gke_cos(core_api):
+            _set_and_wait_k8s_node_zone_label()
+
         time.sleep(RETRY_INTERVAL_LONG)
     assert z1_r_count == 3
     assert z2_r_count == 3
@@ -501,6 +535,9 @@ def test_replica_auto_balance_zone_best_effort(client, core_api, volume_name):  
 
         if z1_r_count == z2_r_count == z3_r_count == 2:
             break
+
+        if is_k8s_node_gke_cos(core_api):
+            _set_and_wait_k8s_node_zone_label()
 
         time.sleep(RETRY_INTERVAL_LONG)
     assert z1_r_count == 2
@@ -536,10 +573,19 @@ def test_replica_auto_balance_when_disabled_disk_scheduling_in_zone(client, core
 
     # Assign nodes to respective zones
     node1, node2, node3 = client.list_node()
-    set_k8s_node_zone_label(core_api, node1.name, ZONE1)
-    set_k8s_node_zone_label(core_api, node2.name, ZONE2)
-    set_k8s_node_zone_label(core_api, node3.name, ZONE3)
-    wait_longhorn_node_zone_updated(client)
+
+    # The GKE zone label is periodically updated with the actual zone.
+    # Invoke _set_k8s_node_zone_label to refresh the zone label with each
+    # retry iteration to maintain the expected zone label.
+    def _set_and_wait_k8s_node_zone_label():
+        node_zone_map = {
+            node1.name: ZONE1,
+            node2.name: ZONE2,
+            node3.name: ZONE3
+        }
+        set_and_wait_k8s_nodes_zone_label(core_api, node_zone_map)
+
+    _set_and_wait_k8s_node_zone_label()
 
     # Disable disk scheduling on node 3
     cleanup_node_disks(client, node3.name)
@@ -555,7 +601,11 @@ def test_replica_auto_balance_when_disabled_disk_scheduling_in_zone(client, core
 
     # Define a function to assert replica count
     def assert_replica_count(is_stable=False):
+        assert_tolerated = 0
         for _ in range(RETRY_COUNTS):
+            if is_k8s_node_gke_cos(core_api):
+                _set_and_wait_k8s_node_zone_label()
+
             time.sleep(RETRY_INTERVAL)
 
             zone3_replica_count = get_zone_replica_count(
@@ -569,7 +619,18 @@ def test_replica_auto_balance_when_disabled_disk_scheduling_in_zone(client, core
                     client, volume_name, ZONE2, chk_running=True)
 
             if is_stable:
-                assert total_replica_count == num_of_replicas
+                try:
+                    assert total_replica_count == num_of_replicas
+                except AssertionError as e:
+                    # The GKE zone label undergoes periodic updates to reflect
+                    # the current zone. Consequently, we cannot guarantee the
+                    # exact zone of the replica node. Therefore, we'll allow
+                    # for one assertion error to accommodate GKE's update
+                    # process.
+                    if is_k8s_node_gke_cos(core_api) and assert_tolerated < 1:
+                        assert_tolerated += 1
+                    else:
+                        raise AssertionError(e)
             elif total_replica_count == num_of_replicas:
                 break
 
@@ -614,10 +675,19 @@ def test_replica_auto_balance_when_no_storage_available_in_zone(client, core_api
 
     # Assign nodes to respective zones
     node1, node2, node3 = client.list_node()
-    set_k8s_node_zone_label(core_api, node1.name, ZONE1)
-    set_k8s_node_zone_label(core_api, node2.name, ZONE2)
-    set_k8s_node_zone_label(core_api, node3.name, ZONE3)
-    wait_longhorn_node_zone_updated(client)
+
+    # The GKE zone label is periodically updated with the actual zone.
+    # Invoke _set_k8s_node_zone_label to refresh the zone label with each
+    # retry iteration to maintain the expected zone label.
+    def _set_and_wait_k8s_node_zone_label():
+        node_zone_map = {
+            node1.name: ZONE1,
+            node2.name: ZONE2,
+            node3.name: ZONE3
+        }
+        set_and_wait_k8s_nodes_zone_label(core_api, node_zone_map)
+
+    _set_and_wait_k8s_node_zone_label()
 
     # Fill up the storage on node 3
     for _, disk in node3.disks.items():
@@ -637,7 +707,11 @@ def test_replica_auto_balance_when_no_storage_available_in_zone(client, core_api
 
     # Define a function to assert replica count
     def assert_replica_count(is_stable=False):
+        assert_tolerated = 0
         for _ in range(RETRY_COUNTS):
+            if is_k8s_node_gke_cos(core_api):
+                _set_and_wait_k8s_node_zone_label()
+
             time.sleep(RETRY_INTERVAL)
 
             zone3_replica_count = get_zone_replica_count(
@@ -651,7 +725,18 @@ def test_replica_auto_balance_when_no_storage_available_in_zone(client, core_api
                     client, volume_name, ZONE2, chk_running=True)
 
             if is_stable:
-                assert total_replica_count == num_of_replicas
+                try:
+                    assert total_replica_count == num_of_replicas
+                except AssertionError as e:
+                    # The GKE zone label undergoes periodic updates to reflect
+                    # the current zone. Consequently, we cannot guarantee the
+                    # exact zone of the replica node. Therefore, we'll allow
+                    # for one assertion error to accommodate GKE's update
+                    # process.
+                    if is_k8s_node_gke_cos(core_api) and assert_tolerated < 1:
+                        assert_tolerated += 1
+                    else:
+                        raise AssertionError(e)
             elif total_replica_count == num_of_replicas:
                 break
 
@@ -701,10 +786,18 @@ def test_replica_auto_balance_when_replica_on_unschedulable_node(client, core_ap
 
     n1, n2, n3 = client.list_node()
 
-    set_k8s_node_zone_label(core_api, n1.name, ZONE1)
-    set_k8s_node_zone_label(core_api, n2.name, ZONE2)
-    set_k8s_node_zone_label(core_api, n3.name, ZONE3)
-    wait_longhorn_node_zone_updated(client)
+    # The GKE zone label is periodically updated with the actual zone.
+    # Invoke _set_k8s_node_zone_label to refresh the zone label with each
+    # retry iteration to maintain the expected zone label.
+    def _set_and_wait_k8s_node_zone_label():
+        node_zone_map = {
+            n1.name: ZONE1,
+            n2.name: ZONE2,
+            n3.name: ZONE3
+        }
+        set_and_wait_k8s_nodes_zone_label(core_api, node_zone_map)
+
+    _set_and_wait_k8s_node_zone_label()
 
     client.update(n2, allowScheduling=True, tags=["AVAIL"])
     client.update(n3, allowScheduling=True, tags=["AVAIL"])
@@ -719,6 +812,9 @@ def test_replica_auto_balance_when_replica_on_unschedulable_node(client, core_ap
     volume.attach(hostId=get_self_host_id())
 
     for _ in range(RETRY_COUNTS):
+        if is_k8s_node_gke_cos(core_api):
+            _set_and_wait_k8s_node_zone_label()
+
         z1_r_count = get_zone_replica_count(
             client, volume_name, ZONE1, chk_running=True)
         z2_r_count = get_zone_replica_count(
@@ -729,6 +825,7 @@ def test_replica_auto_balance_when_replica_on_unschedulable_node(client, core_ap
         if z1_r_count == 0 and (z2_r_count and z3_r_count == 1):
             break
         time.sleep(RETRY_INTERVAL)
+
     assert z1_r_count == 0 and (z2_r_count and z3_r_count == 1)
 
     # Set cordon on node
@@ -738,14 +835,28 @@ def test_replica_auto_balance_when_replica_on_unschedulable_node(client, core_ap
 
     set_node_cordon(core_api, n2.name, True)
 
+    assert_tolerated = 0
     for _ in range(RETRY_COUNTS):
+        if is_k8s_node_gke_cos(core_api):
+            _set_and_wait_k8s_node_zone_label()
+
         z1_r_count = get_zone_replica_count(
             client, volume_name, ZONE1, chk_running=True)
         z2_r_count = get_zone_replica_count(
             client, volume_name, ZONE2, chk_running=True)
         z3_r_count = get_zone_replica_count(
             client, volume_name, ZONE3, chk_running=True)
-        assert z1_r_count == 0 and (z2_r_count and z3_r_count == 1)
+        try:
+            assert z1_r_count == 0 and (z2_r_count and z3_r_count == 1)
+        except AssertionError as e:
+            # The GKE zone label undergoes periodic updates to reflect
+            # the current zone. Consequently, we cannot guarantee the
+            # exact zone of the replica node. Therefore, we'll allow
+            # for one assertion error to accommodate GKE's update process.
+            if is_k8s_node_gke_cos(core_api) and assert_tolerated < 1:
+                assert_tolerated += 1
+            else:
+                raise AssertionError(e)
 
         volume = client.by_id_volume(volume_name)
         for status in volume.rebuildStatus:
@@ -809,10 +920,18 @@ def test_replica_auto_balance_zone_best_effort_with_data_locality(client, core_a
 
     n1, n2, n3 = client.list_node()
 
-    set_k8s_node_zone_label(core_api, n1.name, ZONE1)
-    set_k8s_node_zone_label(core_api, n2.name, ZONE1)
-    set_k8s_node_zone_label(core_api, n3.name, ZONE2)
-    wait_longhorn_node_zone_updated(client)
+    # The GKE zone label is periodically updated with the actual zone.
+    # Invoke _set_k8s_node_zone_label to refresh the zone label with each
+    # retry iteration to maintain the expected zone label.
+    def _set_and_wait_k8s_node_zone_label():
+        node_zone_map = {
+            n1.name: ZONE1,
+            n2.name: ZONE1,
+            n3.name: ZONE2
+        }
+        set_and_wait_k8s_nodes_zone_label(core_api, node_zone_map)
+
+    _set_and_wait_k8s_node_zone_label()
 
     n_replicas = 2
     volume = create_and_check_volume(client, volume_name,
@@ -838,6 +957,9 @@ def test_replica_auto_balance_zone_best_effort_with_data_locality(client, core_a
         duplicate_node = [n1.name, n2.name]
         duplicate_node.remove(pod_node_name)
         for _ in range(RETRY_COUNTS):
+            if is_k8s_node_gke_cos(core_api):
+                _set_and_wait_k8s_node_zone_label()
+
             pod_node_r_count = get_host_replica_count(
                 client, volume_name, pod_node_name, chk_running=True)
             duplicate_node_r_count = get_host_replica_count(
@@ -857,6 +979,9 @@ def test_replica_auto_balance_zone_best_effort_with_data_locality(client, core_a
         client.update(n3, allowScheduling=True)
 
         for _ in range(RETRY_COUNTS):
+            if is_k8s_node_gke_cos(core_api):
+                _set_and_wait_k8s_node_zone_label()
+
             pod_node_r_count = get_host_replica_count(
                 client, volume_name, pod_node_name, chk_running=True)
             duplicate_node_r_count = get_host_replica_count(
@@ -882,6 +1007,9 @@ def test_replica_auto_balance_zone_best_effort_with_data_locality(client, core_a
         # loop 3 times and each to wait 5 seconds to ensure there is no
         # re-scheduling happening.
         for _ in range(3):
+            if is_k8s_node_gke_cos(core_api):
+                _set_and_wait_k8s_node_zone_label()
+
             time.sleep(5)
             assert pod_node_r_count == get_host_replica_count(
                 client, volume_name, pod_node_name, chk_running=True)
@@ -924,10 +1052,12 @@ def test_replica_auto_balance_node_duplicates_in_multiple_zones(client, core_api
 
     n1, n2, n3 = client.list_node()
 
-    set_k8s_node_zone_label(core_api, n1.name, ZONE1)
-    set_k8s_node_zone_label(core_api, n2.name, ZONE2)
-    set_k8s_node_zone_label(core_api, n3.name, "temp")
-    wait_longhorn_node_zone_updated(client)
+    node_zone_map = {
+        n1.name: ZONE1,
+        n2.name: ZONE2,
+        n3.name: "temp"
+    }
+    set_and_wait_k8s_nodes_zone_label(core_api, node_zone_map)
 
     client.update(n3, allowScheduling=False)
 
@@ -939,14 +1069,31 @@ def test_replica_auto_balance_node_duplicates_in_multiple_zones(client, core_api
     z2_r_count = get_zone_replica_count(client, volume_name, ZONE2)
     assert z1_r_count + z2_r_count == n_replicas
 
-    if z1_r_count == 2:
-        set_k8s_node_zone_label(core_api, n3.name, ZONE1)
-    else:
-        set_k8s_node_zone_label(core_api, n3.name, ZONE2)
+    # The GKE zone label is periodically updated with the actual zone.
+    # Invoke _set_k8s_node_zone_label to refresh the zone label with each
+    # retry iteration to maintain the expected zone label.
+    def _set_and_wait_k8s_node_zone_label():
+        node_zone_map = {}
+        if z1_r_count == 2:
+            node_zone_map = {
+                n1.name: ZONE1,
+                n2.name: ZONE2,
+                n3.name: ZONE1
+            }
+        else:
+            node_zone_map = {
+                n1.name: ZONE1,
+                n2.name: ZONE2,
+                n3.name: ZONE2
+            }
+        set_and_wait_k8s_nodes_zone_label(core_api, node_zone_map)
 
     client.update(n3, allowScheduling=True)
 
     for _ in range(RETRY_COUNTS):
+        if is_k8s_node_gke_cos(core_api):
+            _set_and_wait_k8s_node_zone_label()
+
         n1_r_count = get_host_replica_count(
             client, volume_name, n1.name, chk_running=True)
         n2_r_count = get_host_replica_count(
@@ -954,17 +1101,20 @@ def test_replica_auto_balance_node_duplicates_in_multiple_zones(client, core_api
         n3_r_count = get_host_replica_count(
             client, volume_name, n3.name, chk_running=True)
 
-        if n1_r_count == n2_r_count == n3_r_count == 1:
+        z1_r_count = get_zone_replica_count(
+            client, volume_name, ZONE1, chk_running=True)
+        z2_r_count = get_zone_replica_count(
+            client, volume_name, ZONE2, chk_running=True)
+
+        if n1_r_count == n2_r_count == n3_r_count == 1 and \
+                z1_r_count + z2_r_count == n_replicas:
             break
         time.sleep(RETRY_INTERVAL)
+
     assert n1_r_count == 1
     assert n2_r_count == 1
     assert n3_r_count == 1
 
-    z1_r_count = get_zone_replica_count(
-        client, volume_name, ZONE1, chk_running=True)
-    z2_r_count = get_zone_replica_count(
-        client, volume_name, ZONE2, chk_running=True)
     assert z1_r_count + z2_r_count == n_replicas
 
 
@@ -1022,12 +1172,20 @@ def test_replica_auto_balance_zone_best_effort_with_uneven_node_in_zones(client,
 
     n1, n2, n3, n4, n5 = client.list_node()
 
-    set_k8s_node_zone_label(core_api, n1.name, ZONE1)
-    set_k8s_node_zone_label(core_api, n2.name, ZONE1)
-    set_k8s_node_zone_label(core_api, n3.name, ZONE1)
-    set_k8s_node_zone_label(core_api, n4.name, ZONE2)
-    set_k8s_node_zone_label(core_api, n5.name, ZONE2)
-    wait_longhorn_node_zone_updated(client)
+    # The GKE zone label is periodically updated with the actual zone.
+    # Invoke _set_k8s_node_zone_label to refresh the zone label with each
+    # retry iteration to maintain the expected zone label.
+    def _set_and_wait_k8s_node_zone_label():
+        node_zone_map = {
+            n1.name: ZONE1,
+            n2.name: ZONE1,
+            n3.name: ZONE1,
+            n4.name: ZONE2,
+            n5.name: ZONE2
+        }
+        set_and_wait_k8s_nodes_zone_label(core_api, node_zone_map)
+
+    _set_and_wait_k8s_node_zone_label()
 
     client.update(n2, allowScheduling=False)
     client.update(n3, allowScheduling=False)
@@ -1055,6 +1213,9 @@ def test_replica_auto_balance_zone_best_effort_with_uneven_node_in_zones(client,
                 n2_r_count == n3_r_count == n4_r_count == n5_r_count == 0:
             break
 
+        if is_k8s_node_gke_cos(core_api):
+            _set_and_wait_k8s_node_zone_label()
+
         time.sleep(RETRY_INTERVAL)
     assert n1_r_count == 4
     assert n2_r_count == 0
@@ -1072,6 +1233,9 @@ def test_replica_auto_balance_zone_best_effort_with_uneven_node_in_zones(client,
 
         if z1_r_count == z2_r_count == 2:
             break
+
+        if is_k8s_node_gke_cos(core_api):
+            _set_and_wait_k8s_node_zone_label()
 
         time.sleep(RETRY_INTERVAL)
 
@@ -1097,6 +1261,9 @@ def test_replica_auto_balance_zone_best_effort_with_uneven_node_in_zones(client,
                 n5_r_count == 0:
             break
 
+        if is_k8s_node_gke_cos(core_api):
+            _set_and_wait_k8s_node_zone_label()
+
         time.sleep(RETRY_INTERVAL)
     assert n1_r_count == 1
     assert n2_r_count == 1
@@ -1114,6 +1281,9 @@ def test_replica_auto_balance_zone_best_effort_with_uneven_node_in_zones(client,
 
         if z1_r_count == z2_r_count == 2:
             break
+
+        if is_k8s_node_gke_cos(core_api):
+            _set_and_wait_k8s_node_zone_label()
 
         time.sleep(RETRY_INTERVAL)
 
@@ -1158,10 +1328,18 @@ def test_replica_auto_balance_should_respect_node_selector(client, core_api, vol
         set_node_tags(client, node, tags=[node_tag])
         wait_for_node_tag_update(client, node.name, [node_tag])
 
-    set_k8s_node_zone_label(core_api, n1.name, ZONE1)
-    set_k8s_node_zone_label(core_api, n2.name, ZONE2)
-    set_k8s_node_zone_label(core_api, n3.name, "should-not-schedule")
-    wait_longhorn_node_zone_updated(client)
+    # The GKE zone label is periodically updated with the actual zone.
+    # Invoke _set_k8s_node_zone_label to refresh the zone label with each
+    # retry iteration to maintain the expected zone label.
+    def _set_and_wait_k8s_node_zone_label():
+        node_zone_map = {
+            n1.name: ZONE1,
+            n2.name: ZONE2,
+            n3.name: "should-not-schedule"
+        }
+        set_and_wait_k8s_nodes_zone_label(core_api, node_zone_map)
+
+    _set_and_wait_k8s_node_zone_label()
 
     n_replicas = 3
     client.create_volume(name=volume_name,
@@ -1169,6 +1347,7 @@ def test_replica_auto_balance_should_respect_node_selector(client, core_api, vol
                          nodeSelector=[node_tag])
     volume = wait_for_volume_detached(client, volume_name)
     volume.attach(hostId=selected_nodes[0].name)
+
     z1_r_count = get_zone_replica_count(client, volume_name, ZONE1)
     z2_r_count = get_zone_replica_count(client, volume_name, ZONE2)
     assert z1_r_count + z2_r_count == n_replicas
@@ -1177,6 +1356,9 @@ def test_replica_auto_balance_should_respect_node_selector(client, core_api, vol
 
     # Check over 10 seconds to check for unexpected re-scheduling.
     for _ in range(10):
+        if is_k8s_node_gke_cos(core_api):
+            _set_and_wait_k8s_node_zone_label()
+
         time.sleep(1)
 
         check_z1_r_count = get_zone_replica_count(client, volume_name, ZONE1)
