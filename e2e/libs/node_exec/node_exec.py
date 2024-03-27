@@ -49,12 +49,15 @@ class NodeExec:
     def cleanup(self):
         for pod in self.node_exec_pod.values():
             logging(f"Cleaning up pod {pod.metadata.name} {pod.metadata.uid}")
-            res = self.core_api.delete_namespaced_pod(
-                name=pod.metadata.name,
-                namespace=self.namespace,
-                body=client.V1DeleteOptions()
-            )
-            wait_delete_pod(pod.metadata.name)
+            try:
+                res = self.core_api.delete_namespaced_pod(
+                    name=pod.metadata.name,
+                    namespace=self.namespace,
+                    body=client.V1DeleteOptions()
+                )
+                wait_delete_pod(pod.metadata.uid)
+            except Exception as e:
+                assert e.status == 404
         self.core_api.delete_namespace(
             name=self.namespace
         )
