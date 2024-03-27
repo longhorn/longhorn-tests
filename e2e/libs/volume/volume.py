@@ -62,6 +62,14 @@ class Volume(Base):
     def wait_for_volume_expand_to_size(self, volume_name, size):
         return self.volume.wait_for_volume_expand_to_size(volume_name, size)
 
+    def wait_for_volume_degraded(self, volume_name):
+        self.volume.wait_for_volume_state(volume_name, "attached")
+        self.volume.wait_for_volume_robustness(volume_name, "degraded")
+
+    def wait_for_volume_unknown(self, volume_name):
+        self.volume.wait_for_volume_state(volume_name, "attached")
+        self.volume.wait_for_volume_robustness(volume_name, "unknown")
+
     def get_endpoint(self, volume_name):
         return self.volume.get_endpoint(volume_name)
 

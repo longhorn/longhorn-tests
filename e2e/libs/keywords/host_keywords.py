@@ -11,6 +11,10 @@ from utility.utility import logging
 class host_keywords:
 
     def __init__(self):
+        #TODO
+        # call BuiltIn().get_library_instance() in keyword init function
+        # could fail because the keyword instance could not be created yet
+        # whether it will fail or not will depend on import orders.
         self.volume_keywords = BuiltIn().get_library_instance('volume_keywords')
 
         self.host = Host()

@@ -9,6 +9,9 @@ class common_keywords:
     def __init__(self):
         pass
 
+    def change_setting(self, setting_name, setting_value):
+        return NotImplemented
+
     def init_k8s_api_client(self):
         init_k8s_api_client()
 

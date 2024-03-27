@@ -3,7 +3,11 @@ from kubernetes import client
 from utility.utility import get_retry_count_and_interval
 from utility.utility import logging
 
-
+#TODO
+# remove redundant CRD class
+# since the only way to manipulate pvc is using CRD
+# CRD implementation is the only implementation for pvc
+# no need to over-design with class extending or strategy pattern
 class CRD():
 
     def __init__(self):
@@ -46,6 +50,10 @@ class CRD():
     def get_annotation_value(self, claim_name, annotation_key, claim_namespace="default"):
         claim = self.get(claim_name, claim_namespace)
         return claim.metadata.annotations[annotation_key]
+
+    def get_volume_name(self, claim_name, claim_namespace="default"):
+        claim = self.get(claim_name, claim_namespace)
+        return claim.spec.volume_name
 
     def expand(self, claim_name, size, namespace="default"):
         try:

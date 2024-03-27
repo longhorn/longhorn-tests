@@ -6,6 +6,8 @@ Library    ../libs/keywords/common_keywords.py
 Library    ../libs/keywords/statefulset_keywords.py
 
 *** Keywords ***
+#TODO
+# these functions can be merged into workload.resource
 Create statefulset ${statefulset_id} using ${volume_type} volume
     ${statefulset_name} =    generate_name_with_suffix    statefulset    ${statefulset_id}
     create_statefulset    ${statefulset_name}    ${volume_type}

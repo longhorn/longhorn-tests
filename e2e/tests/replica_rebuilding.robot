@@ -3,6 +3,10 @@ Documentation    Negative Test Cases
 
 Resource    ../keywords/common.resource
 Resource    ../keywords/host.resource
+#TODO
+# test cases in this file don't use pvc related keywords
+# but it needs to import persistentvolumeclaim.resource
+# just because of the cleanup function
 Resource    ../keywords/persistentvolumeclaim.resource
 Resource    ../keywords/volume.resource
 

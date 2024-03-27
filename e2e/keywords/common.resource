@@ -28,3 +28,6 @@ Cleanup test resources
     cleanup_persistentvolumeclaims
     cleanup_volumes
     cleanup_storageclasses
+
+Set ${setting_name} to ${setting_value}
+    change_setting    ${setting_name}    ${setting_value}
