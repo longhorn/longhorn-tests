@@ -1,4 +1,4 @@
-From alpine:latest
+FROM golang:1.21-alpine3.19
 
 ARG KUBECTL_VERSION=v1.20.2
 
