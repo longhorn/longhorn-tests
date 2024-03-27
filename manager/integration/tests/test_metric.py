@@ -23,6 +23,7 @@ from common import wait_for_volume_healthy
 from common import write_volume_data
 from common import set_node_scheduling
 from common import set_node_cordon
+from common import wait_for_node_update
 from common import Mi
 from common import LONGHORN_NAMESPACE
 from common import RETRY_COUNTS
@@ -537,5 +538,6 @@ def test_node_metrics(client, core_api): # NOQA
         "node": lht_hostId
     }
     set_node_cordon(core_api, lht_hostId, True)
+    wait_for_node_update(client, lht_hostId, "allowScheduling", False)
     check_metric_with_condition(core_api, "longhorn_node_status",
                                 metric_labels, 0.0)
