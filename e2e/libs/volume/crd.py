@@ -263,10 +263,25 @@ class CRD(Base):
     def write_random_data(self, volume_name, size):
         node_name = self.get(volume_name)["spec"]["nodeID"]
         endpoint = self.get_endpoint(volume_name)
-        checksum = self.node_exec.issue_cmd(
-            node_name,
-            f"dd if=/dev/urandom of={endpoint} bs=1M count={size} status=none; md5sum {endpoint} | awk \'{{print $1}}\'")
-        return checksum
+
+        dd_command = f"dd if=/dev/urandom of={endpoint} bs=1M count={size} status=none"
+        dd_command_output = self.node_exec.issue_cmd(node_name, dd_command).strip()
+
+        try:
+            assert dd_command_output == ""
+        except AssertionError:
+            logging(f"Failed to write random data to volume {volume_name}. \n"
+                    f"Command: {dd_command}\n"
+                    f"Output: {dd_command_output}")
+
+            logging(f"Pausing the test for {self.retry_count} seconds ...")
+            time.sleep(self.retry_count)
+
+        assert dd_command_output == "", \
+            f"Failed to write random data to volume {volume_name}.\n" \
+            f"Command: {dd_command}\n" \
+            f"Output: {dd_command_output}"
+        return self.node_exec.issue_cmd(node_name, f"md5sum {endpoint} | awk \'{{print $1}}\'")
 
     def keep_writing_data(self, volume_name, size):
         node_name = self.get(volume_name)["spec"]["nodeID"]

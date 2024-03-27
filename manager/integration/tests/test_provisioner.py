@@ -63,6 +63,24 @@ def test_provisioner_mount(client, core_api, storage_class, pvc, pod):  # NOQA
     assert volumes.data[0].state == "attached"
 
 
+@pytest.mark.skip(reason="TODO")
+def test_provisioner_generic_ephemeral():
+    """
+    Test that a Longhorn generic ephemeral volume can be created, mounted,
+    unmounted, and deleted properly on the Kubernetes cluster.
+
+    1. Create a StorageClass and Pod with a generic ephemeral volume spec:
+       https://kubernetes.io/docs/concepts/storage/ephemeral-volumes
+    2. Verify:
+       - The Pod is running.
+       - The volume parameters match the StorageClass parameters.
+       - The volume.status.kubernetesStatus.workloadStatus reflects the
+         running Pod.
+    3. Write data to the volume using the Pod, read it back, and verify it.
+    """
+    pass
+
+
 def test_provisioner_params(client, core_api, storage_class, pvc, pod):  # NOQA
     """
     Test that substituting different StorageClass parameters is reflected in
