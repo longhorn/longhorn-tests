@@ -1,5 +1,5 @@
 import time
-
+from kubernetes.client.rest import ApiException
 from kubernetes import client
 
 from engine import Engine
@@ -21,7 +21,8 @@ class CRD(Base):
         self.node_exec = node_exec
         self.retry_count, self.retry_interval = get_retry_count_and_interval()
 
-    def create(self, volume_name, size, replica_count):
+    def create(self, volume_name, size, replica_count, frontend="blockdev"):
+        size = str(int(size) * GIBIBYTE)
         body = {
             "apiVersion": "longhorn.io/v1beta2",
             "kind": "Volume",
@@ -32,20 +33,30 @@ class CRD(Base):
                 }
             },
             "spec": {
-                "frontend": "blockdev",
+                "frontend": frontend,
                 "replicaAutoBalance": "ignored",
-                "size": str(int(size) * GIBIBYTE),
+                "size": size,
                 "numberOfReplicas": int(replica_count)
             }
         }
-        self.obj_api.create_namespaced_custom_object(
-            group="longhorn.io",
-            version="v1beta2",
-            namespace="longhorn-system",
-            plural="volumes",
-            body=body
-        )
-        self.wait_for_volume_state(volume_name, "detached")
+        try:
+            self.obj_api.create_namespaced_custom_object(
+                group="longhorn.io",
+                version="v1beta2",
+                namespace="longhorn-system",
+                plural="volumes",
+                body=body
+            )
+            self.wait_for_volume_state(volume_name, "detached")
+            volume = self.get(volume_name)
+            assert volume['metadata']['name'] == volume_name, f"expect volume name is {volume_name}, but it's {volume['metadata']['name']}"
+            assert volume['spec']['size'] == size, f"expect volume size is {size}, but it's {volume['spec']['size']}"
+            assert volume['spec']['numberOfReplicas'] == int(replica_count), f"expect volume numberOfReplicas is {replica_count}, but it's {volume['spec']['numberOfReplicas']}"
+            assert volume['spec']['frontend'] == frontend, f"expect volume frontend is {frontend}, but it's {volume['spec']['frontend']}"
+            assert volume['status']['restoreRequired'] is False, f"expect volume restoreRequired is False, but it's {volume['status']['restoreRequired']}"
+            #assert volume['backingImage'] == backing_image, f"expect volume backingImage is {backing_image}, but it's {volume['backingImage']}"
+        except ApiException as e:
+            logging(e)
 
     def delete(self, volume_name):
         try:
@@ -334,3 +345,16 @@ class CRD(Base):
             node_name,
             f"md5sum {endpoint} | awk \'{{print $1}}\'")
         assert actual_checksum == checksum
+
+    def validate_volume_replicas_anti_affinity(self, volume_name):
+        replica_list = self.obj_api.list_namespaced_custom_object(
+            group="longhorn.io",
+            version="v1beta2",
+            namespace="longhorn-system",
+            plural="replicas",
+            label_selector=f"longhornvolume={volume_name}"
+        )['items']
+        node_set = set()
+        for replica in replica_list:
+            node_set.add(replica['status']['ownerID'])
+        assert len(replica_list) == len(node_set), f"unexpected replicas on the same node: {replica_list}"
