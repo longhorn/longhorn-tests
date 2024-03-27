@@ -1,8 +1,6 @@
 import multiprocessing
 
 from deployment_keywords import deployment_keywords
-from kubelet_keywords import kubelet_keywords
-from host_keywords import host_keywords
 from statefulset_keywords import statefulset_keywords
 from volume_keywords import volume_keywords
 
@@ -32,8 +30,6 @@ class workload_keywords:
 
     def __init__(self):
         self.deployment_keywords = deployment_keywords()
-        self.kubelet_keywords = kubelet_keywords()
-        self.host_keywords = host_keywords()
         self.statefulset_keywords = statefulset_keywords()
         self.volume_keywords = volume_keywords()
 
@@ -83,16 +79,6 @@ class workload_keywords:
 
         logging(f'Keep writing data to pod {pod_name}')
         keep_writing_pod_data(pod_name)
-
-    def reboot_workload_volume_node(self, workload_name, downtime_in_min=1):
-        volume_name = get_workload_volume_name(workload_name)
-        node_id = self.volume_keywords.get_node_id_by_replica_locality(volume_name, "volume node")
-        self.host_keywords.reboot_node_by_name(node_id, downtime_in_min=downtime_in_min)
-
-    def restart_workload_kubelet(self, workload_name, downtime_in_sec):
-        volume_name = get_workload_volume_name(workload_name)
-        node_id = self.volume_keywords.get_node_id_by_replica_locality(volume_name, "volume node")
-        self.kubelet_keywords.restart_kubelet(node_id, downtime_in_sec)
 
     def wait_for_workload_pods_running(self, workload_name, namespace="default"):
         logging(f'Waiting for {namespace} workload {workload_name} pods running')
