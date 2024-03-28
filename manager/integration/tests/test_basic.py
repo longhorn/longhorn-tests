@@ -36,7 +36,7 @@ from common import generate_random_data, write_volume_data
 from common import VOLUME_RWTEST_SIZE
 from common import write_pod_volume_data
 from common import find_backup, find_replica_for_backup
-from common import wait_for_backup_completion
+from common import wait_for_backup_completion, wait_for_backup_failed
 from common import create_storage_class
 from common import wait_for_backup_restore_completed
 from common import wait_for_volume_restoration_completed
@@ -3314,14 +3314,15 @@ def test_backup_lock_creation_during_deletion(set_random_backupstore, client, co
     steps:
     1. Create a volume, then create the corresponding PV, PVC and Pod.
     2. Wait for the pod running and the volume healthy.
-    3. Write data (DATA_SIZE_IN_MB_2) to the pod volume and get the md5sum.
+    3. Write data (DATA_SIZE_IN_MB_4) to the pod volume and get the md5sum.
     4. Take a backup.
     5. Wait for the backup to be completed.
     6. Delete the backup.
     7. Create another backup of the same volume.
-    8. Wait for the delete backup to be completed.
-    8. Wait for the backup to be completed.
-    9. Assert there is 1 backup in the backup store.
+    8. The newly created backup should failed because there is a deletion lock.
+    9. Wait for the first backup to be Deleted
+    10. Create another backup of the same volume.
+    11. Wait for the backup to be completed.
     """
     backupstore_cleanup(client)
     std_volume_name = volume_name + "-std"
@@ -3329,31 +3330,35 @@ def test_backup_lock_creation_during_deletion(set_random_backupstore, client, co
     std_pod_name, _, _, std_md5sum1 = \
         prepare_pod_with_data_in_mb(
             client, core_api, csi_pv, pvc, pod_make, std_volume_name,
-            data_size_in_mb=DATA_SIZE_IN_MB_1)
+            data_size_in_mb=common.DATA_SIZE_IN_MB_4)
     std_volume = client.by_id_volume(std_volume_name)
+
+    # create first snapshot and backup
     snap1 = create_snapshot(client, std_volume_name)
     std_volume.snapshotBackup(name=snap1.name)
     wait_for_backup_completion(client, std_volume_name, snap1.name)
     _, b1 = common.find_backup(client, std_volume_name, snap1.name)
 
-    write_pod_volume_random_data(core_api, std_pod_name,
-                                 "/data/test2", DATA_SIZE_IN_MB_1)
+    # create second snapshot
+    snap2 = create_snapshot(client, std_volume_name)
 
+    # delete first backup
     backup_volume = client.by_id_backupVolume(std_volume_name)
     backup_volume.backupDelete(name=b1.name)
 
-    snap2 = create_snapshot(client, std_volume_name)
+    # create second backup immediately
     std_volume.snapshotBackup(name=snap2.name)
+    # the second backup should be failed because of the lock
+    wait_for_backup_failed(client, std_volume_name, snap2.name)
 
-    wait_for_backup_delete(client, volume_name, b1.name)
-    wait_for_backup_completion(client, std_volume_name, snap2.name)
+    # wait for first backup to be deleted
+    wait_for_backup_delete(client, std_volume_name, b1.name)
 
-    try:
-        _, b1 = common.find_backup(client, std_volume_name, snap1.name)
-    except AssertionError:
-        b1 = None
-    assert b1 is None
-    _, b2 = common.find_backup(client, std_volume_name, snap2.name)
+    # create third snapshot and do the backup
+    snap3 = create_snapshot(client, std_volume_name)
+    std_volume.snapshotBackup(name=snap3.name)
+    # the third backup should be completed
+    wait_for_backup_completion(client, std_volume_name, snap3.name)
 
 
 @pytest.mark.skip(reason="This test takes more than 20 mins to run")  # NOQA
