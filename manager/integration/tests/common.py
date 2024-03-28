@@ -3056,6 +3056,24 @@ def wait_for_backup_completion(client, volume_name, snapshot_name=None,
     return v
 
 
+def wait_for_backup_failed(client, volume_name, snapshot_name=None,
+                           retry_count=RETRY_BACKUP_COUNTS):
+    failed = False
+    for _ in range(retry_count):
+        v = client.by_id_volume(volume_name)
+        for b in v.backupStatus:
+            if b.state == "Error":
+                assert b.progress == 0
+                assert b.error != ""
+                failed = True
+                break
+        if failed:
+            break
+        time.sleep(RETRY_BACKUP_INTERVAL)
+    assert failed is True
+    return v
+
+
 def wait_pod_attach_after_first_backup_completion(
         client, core_api, volume_name, label_name):
     completed = False
