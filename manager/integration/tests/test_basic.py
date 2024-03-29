@@ -102,6 +102,8 @@ from common import create_and_wait_deployment
 from common import get_custom_object_api_client
 from common import RETRY_COUNTS_SHORT
 from common import scale_up_engine_image_daemonset
+from common import BACKUP_TARGET_MESSAGE_EMPTY_URL
+from common import BACKUP_TARGET_MESSAGES_INVALID
 
 from backupstore import backupstore_delete_volume_cfg_file
 from backupstore import backupstore_cleanup
@@ -5666,6 +5668,7 @@ def test_backuptarget_invalid(apps_api, # NOQA
 
     Then
     - Backup will be failed and the backup state is Error.
+    - Backup target will be unavailable with an explanatory condition.
     """
     volume = create_and_check_volume(client, volume_name)
     pvc_name = volume_name + "-pvc"
@@ -5698,6 +5701,18 @@ def test_backuptarget_invalid(apps_api, # NOQA
     assert backups["items"][0]["spec"]["snapshotName"] == snap.name
     assert backups["items"][0]["status"]["state"] == "Error"
 
+    # In https://github.com/longhorn/longhorn/issues/8210, the backup target
+    # could not properly reconcile when the URL or secret were "broken", and
+    # the condition/message was not updated. Verify the condition/message is
+    # correct under these conditions.
+    backup_targets = client.list_backup_target()
+    assert not backup_targets[0]["available"]
+    # If the condition/message was not updated, it is likely still this one.
+    assert backup_targets[0]["message"] != BACKUP_TARGET_MESSAGE_EMPTY_URL
+    # Depending on the exact nature of the failure, we expect one of these
+    # strings to be in the condition/message.
+    assert any(message in backup_targets[0]["message"] for message in
+               BACKUP_TARGET_MESSAGES_INVALID)
 
 @pytest.mark.volume_backup_restore   # NOQA
 def test_volume_backup_and_restore_with_lz4_compression_method(client, set_random_backupstore, volume_name):  # NOQA
