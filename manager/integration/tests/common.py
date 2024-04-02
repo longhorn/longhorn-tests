@@ -301,6 +301,10 @@ ATTACHER_TYPE_LONGHORN_UPGRADER = "longhorn-upgrader"
 
 HOST_PROC_DIR = "/host/proc"
 
+BACKUP_TARGET_MESSAGE_EMPTY_URL = "backup target URL is empty"
+BACKUP_TARGET_MESSAGES_INVALID = ["failed to init backup target clients",
+                                  "failed to list backup volumes in"]
+
 # customize the timeout for HDD
 disktype = os.environ.get('LONGHORN_DISK_TYPE')
 if disktype == "hdd":
@@ -3129,10 +3133,10 @@ def wait_for_backup_volume_backing_image_synced(
     completed = False
     for _ in range(retry_count):
         bv = find_backup_volume(client, volume_name)
-        assert bv is not None
-        if bv.backingImageName == backing_image:
-            completed = True
-            break
+        if bv is not None:
+            if bv.backingImageName == backing_image:
+                completed = True
+                break
         time.sleep(RETRY_BACKUP_INTERVAL)
     assert completed is True, f" Backup Volume = {bv}," \
                               f" Backing Image = {backing_image}," \
@@ -3158,6 +3162,24 @@ def wait_for_backup_completion(client, volume_name, snapshot_name=None,
         time.sleep(RETRY_BACKUP_INTERVAL)
     assert completed is True, f" Backup status = {b.state}," \
                               f" Backup Progress = {b.progress}, Volume = {v}"
+    return v
+
+
+def wait_for_backup_failed(client, volume_name, snapshot_name=None,
+                           retry_count=RETRY_BACKUP_COUNTS):
+    failed = False
+    for _ in range(retry_count):
+        v = client.by_id_volume(volume_name)
+        for b in v.backupStatus:
+            if b.state == "Error":
+                assert b.progress == 0
+                assert b.error != ""
+                failed = True
+                break
+        if failed:
+            break
+        time.sleep(RETRY_BACKUP_INTERVAL)
+    assert failed is True
     return v
 
 
