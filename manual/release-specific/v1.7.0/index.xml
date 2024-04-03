@@ -8,6 +8,13 @@
     <language>en-us</language>
     <atom:link href="https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.7.0/index.xml" rel="self" type="application/rss+xml" />
     <item>
+      <title>Dependency setup for GKE cluster using Container-Optimized OS as base image</title>
+      <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.7.0/test-gke-container-optimized-os-dependency-setup/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.7.0/test-gke-container-optimized-os-dependency-setup/</guid>
+      <description>Related issues https://github.com/longhorn/longhorn/issues/6165 Test step Given GKE cluster using Continer-Optimized OS (COS_CONTAINER) as the base image.&#xA;When Follow instruction to deploy the Longhorn GKE COS node agent.&#xA;Then Follow the instruction to verify dependency configuration/setup.&#xA;And Integration tests should pass.</description>
+    </item>
+    <item>
       <title>restarting Kubelet should not result in repeated &#34;no Pending workload pods ...&#34; event for the workload pod.</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.7.0/test-kubelet-restart-no-pending-pod-event/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
