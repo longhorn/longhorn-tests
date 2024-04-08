@@ -273,6 +273,9 @@ DEPRECATED_K8S_ZONE_LABEL = "failure-domain.beta.kubernetes.io/zone"
 
 K8S_ZONE_LABEL = "topology.kubernetes.io/zone"
 
+K8S_GKE_OS_DISTRO_LABEL = "cloud.google.com/gke-os-distribution"
+K8S_GKE_OS_DISTRO_COS = "cos"
+
 K8S_CLUSTER_AUTOSCALER_EVICT_KEY = \
     "cluster-autoscaler.kubernetes.io/safe-to-evict"
 K8S_CLUSTER_AUTOSCALER_SCALE_DOWN_DISABLED_KEY = \
@@ -300,6 +303,10 @@ ATTACHER_TYPE_LONGHORN_API = "longhorn-api"
 ATTACHER_TYPE_LONGHORN_UPGRADER = "longhorn-upgrader"
 
 HOST_PROC_DIR = "/host/proc"
+
+BACKUP_TARGET_MESSAGE_EMPTY_URL = "backup target URL is empty"
+BACKUP_TARGET_MESSAGES_INVALID = ["failed to init backup target clients",
+                                  "failed to list backup volumes in"]
 
 # customize the timeout for HDD
 disktype = os.environ.get('LONGHORN_DISK_TYPE')
@@ -868,7 +875,8 @@ def write_pod_volume_random_data(api, pod_name, path, size_in_mb):
         '/bin/sh',
         '-c',
         'dd if=/dev/urandom of=' + path +
-        ' bs=1M' + ' count=' + str(size_in_mb)
+        ' bs=1M' + ' count=' + str(size_in_mb) +
+        '; sync'
     ]
     return stream(
         api.connect_get_namespaced_pod_exec, pod_name, 'default',
@@ -3128,10 +3136,10 @@ def wait_for_backup_volume_backing_image_synced(
     completed = False
     for _ in range(retry_count):
         bv = find_backup_volume(client, volume_name)
-        assert bv is not None
-        if bv.backingImageName == backing_image:
-            completed = True
-            break
+        if bv is not None:
+            if bv.backingImageName == backing_image:
+                completed = True
+                break
         time.sleep(RETRY_BACKUP_INTERVAL)
     assert completed is True, f" Backup Volume = {bv}," \
                               f" Backing Image = {backing_image}," \
@@ -3157,6 +3165,24 @@ def wait_for_backup_completion(client, volume_name, snapshot_name=None,
         time.sleep(RETRY_BACKUP_INTERVAL)
     assert completed is True, f" Backup status = {b.state}," \
                               f" Backup Progress = {b.progress}, Volume = {v}"
+    return v
+
+
+def wait_for_backup_failed(client, volume_name, snapshot_name=None,
+                           retry_count=RETRY_BACKUP_COUNTS):
+    failed = False
+    for _ in range(retry_count):
+        v = client.by_id_volume(volume_name)
+        for b in v.backupStatus:
+            if b.state == "Error":
+                assert b.progress == 0
+                assert b.error != ""
+                failed = True
+                break
+        if failed:
+            break
+        time.sleep(RETRY_BACKUP_INTERVAL)
+    assert failed is True
     return v
 
 
@@ -3346,10 +3372,54 @@ def set_k8s_node_label(core_api, node_name, key, value):
     core_api.patch_node(node_name, body=payload)
 
 
+def is_k8s_node_label(core_api, label_key, label_value, node_name):
+    node = core_api.read_node(node_name)
+
+    if label_key in node.metadata.labels:
+        if node.metadata.labels[label_key] == label_value:
+            return True
+    return False
+
+
 def set_k8s_node_zone_label(core_api, node_name, zone_name):
+    if is_k8s_node_label(core_api, K8S_ZONE_LABEL, zone_name, node_name):
+        return
+
     k8s_zone_label = get_k8s_zone_label()
 
     set_k8s_node_label(core_api, node_name, k8s_zone_label, zone_name)
+
+
+def set_and_wait_k8s_nodes_zone_label(core_api, node_zone_map):
+    k8s_zone_label = get_k8s_zone_label()
+
+    for _ in range(RETRY_COUNTS):
+        for node_name, zone_name in node_zone_map.items():
+            set_k8s_node_label(core_api, node_name, k8s_zone_label, zone_name)
+
+        is_updated = False
+        for node_name, zone_name in node_zone_map.items():
+            is_updated = \
+                is_k8s_node_label(core_api,
+                                  k8s_zone_label, zone_name, node_name)
+            if not is_updated:
+                break
+
+        if is_updated:
+            break
+
+        time.sleep(RETRY_INTERVAL)
+
+    assert is_updated, \
+        f"Timeout while waiting for nodes zone label to be updated\n" \
+        f"Expected: {node_zone_map}"
+
+
+def is_k8s_node_gke_cos(core_api):
+    return is_k8s_node_label(core_api,
+                             K8S_GKE_OS_DISTRO_LABEL,
+                             K8S_GKE_OS_DISTRO_COS,
+                             get_self_host_id())
 
 
 def get_k8s_zone_label():
@@ -4782,6 +4852,7 @@ def make_deployment_cpu_request(request):
 
 def wait_deployment_replica_ready(apps_api, deployment_name,
                                   desired_replica_count, namespace='default'):  # NOQA
+    ok = False
     for i in range(DEFAULT_DEPLOYMENT_TIMEOUT):
         deployment = apps_api.read_namespaced_deployment(
             name=deployment_name,
@@ -4790,9 +4861,11 @@ def wait_deployment_replica_ready(apps_api, deployment_name,
         # deployment is none if deployment is not yet created
         if deployment is not None and \
            deployment.status.ready_replicas == desired_replica_count:
+            ok = True
             break
 
         time.sleep(DEFAULT_DEPLOYMENT_INTERVAL)
+    assert ok
 
 
 def create_and_wait_deployment(apps_api, deployment_manifest):
@@ -6146,8 +6219,10 @@ def create_deployment_and_write_data(client, # NOQA
                                  deployment_pod_names[0],
                                  data_path,
                                  data_size)
+
     checksum = get_pod_data_md5sum(core_api,
                                    deployment_pod_names[0],
                                    data_path)
 
-    return client.by_id_volume(volume_name), deployment_pod_names[0], checksum
+    volume = client.by_id_volume(volume_name)
+    return volume, deployment_pod_names[0], checksum, deployment

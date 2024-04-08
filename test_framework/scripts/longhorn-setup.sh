@@ -55,6 +55,11 @@ install_cluster_autoscaler(){
 }
 
 
+enable_mtls(){
+  kubectl apply -f "${TF_VAR_tf_workspace}/templates/longhorn-grpc-tls.yml" -n ${LONGHORN_NAMESPACE} 
+}
+
+
 install_csi_snapshotter_crds(){
     CSI_SNAPSHOTTER_REPO_URL="https://github.com/kubernetes-csi/external-snapshotter.git"
     CSI_SNAPSHOTTER_REPO_DIR="${TMPDIR}/k8s-csi-external-snapshotter"
@@ -94,10 +99,13 @@ install_rancher() {
 
 
 get_rancher_api_key() {
-  TOKEN=$(curl -X POST -s -k "https://${RANCHER_HOSTNAME}/v3-public/localproviders/local?action=login" -H 'Content-Type: application/json' -d "{\"username\":\"admin\", \"password\":\"${RANCHER_BOOTSTRAP_PASSWORD}\", \"responseType\": \"json\"}" | jq -r '.token' | tr -d '"')
-  ARR=(${TOKEN//:/ })
-  RANCHER_ACCESS_KEY=${ARR[0]}
-  RANCHER_SECRET_KEY=${ARR[1]}
+  while [[ -z "${TOKEN}" ]]; do
+    TOKEN=$(curl -X POST -s -k "https://${RANCHER_HOSTNAME}/v3-public/localproviders/local?action=login" -H 'Content-Type: application/json' -d "{\"username\":\"admin\", \"password\":\"${RANCHER_BOOTSTRAP_PASSWORD}\", \"responseType\": \"json\"}" | jq -r '.token' | tr -d '"')
+    ARR=(${TOKEN//:/ })
+    RANCHER_ACCESS_KEY=${ARR[0]}
+    RANCHER_SECRET_KEY=${ARR[1]}
+    sleep 3s
+  done
 }
 
 
@@ -497,7 +505,9 @@ main(){
     install_backupstores
   fi
   install_csi_snapshotter_crds
-
+  if [[ "${TF_VAR_enable_mtls}" == true ]]; then
+    enable_mtls
+  fi
   if [[ "${AIR_GAP_INSTALLATION}" == true ]]; then
     if [[ "${LONGHORN_INSTALL_METHOD}" == "manifest-file" ]]; then
       create_registry_secret
