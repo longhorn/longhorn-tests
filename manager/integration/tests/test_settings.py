@@ -439,7 +439,7 @@ def test_instance_manager_cpu_reservation(client, core_api):  # NOQA
 
     with pytest.raises(Exception) as e:
         client.update(im_setting, value="41")
-    assert "should be between 0 to 40" in \
+    assert "should be less than 40" in \
            str(e.value)
 
     # Create a volume to test
