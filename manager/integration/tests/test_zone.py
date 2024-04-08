@@ -1088,6 +1088,8 @@ def test_replica_auto_balance_node_duplicates_in_multiple_zones(client, core_api
             }
         set_and_wait_k8s_nodes_zone_label(core_api, node_zone_map)
 
+    _set_and_wait_k8s_node_zone_label()
+
     client.update(n3, allowScheduling=True)
 
     for _ in range(RETRY_COUNTS):
