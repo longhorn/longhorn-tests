@@ -76,6 +76,7 @@ def get_workload_persistent_volume_claim_names(workload_name, namespace="default
 
     for item in claim.items:
         claim_names.append(item.metadata.name)
+    claim_names.sort()
 
     assert len(claim_names) > 0, f"Failed to get PVC names for workload {workload_name}"
     return claim_names
