@@ -54,6 +54,9 @@ class volume_keywords:
         node_ids.extend(self.get_node_ids_by_replica_locality(volume_name, "test pod node"))
         return node_ids
 
+    def get_volume_node(self, volume_name):
+        return self.get_node_id_by_replica_locality(volume_name, "volume node")
+
     def get_node_id_by_replica_locality(self, volume_name, replica_locality):
         return self.get_node_ids_by_replica_locality(volume_name, replica_locality)[0]
 

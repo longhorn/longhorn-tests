@@ -49,8 +49,8 @@ class Volume(Base):
         return self.volume.wait_for_volume_state(volume_name, desired_state)
 
     def wait_for_volume_attached(self, volume_name):
-        self.volume.wait_for_volume_state(volume_name, "attached")
         self.volume.wait_for_volume_robustness_not(volume_name, "unknown")
+        self.volume.wait_for_volume_state(volume_name, "attached")
 
     def wait_for_volume_detached(self, volume_name):
         self.volume.wait_for_volume_state(volume_name, "detached")
