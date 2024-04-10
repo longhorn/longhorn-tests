@@ -18,8 +18,8 @@ class Volume(Base):
         else:
             self.volume = Rest(node_exec)
 
-    def create(self, volume_name, size, replica_count):
-        return self.volume.create(volume_name, size, replica_count)
+    def create(self, volume_name, size, replica_count, frontend="blockdev"):
+        return self.volume.create(volume_name, size, replica_count, frontend)
 
     def delete(self, volume_name):
         return self.volume.delete(volume_name)
@@ -88,4 +88,7 @@ class Volume(Base):
 
     def check_data_checksum(self, volume_name, checksum):
         return self.volume.check_data_checksum(volume_name, checksum)
+
+    def validate_volume_replicas_anti_affinity(self, volume_name):
+        return self.volume.validate_volume_replicas_anti_affinity(volume_name)
 
