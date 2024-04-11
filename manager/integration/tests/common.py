@@ -290,7 +290,8 @@ ATTACHER_TYPE_LONGHORN_UPGRADER = "longhorn-upgrader"
 
 BACKUP_TARGET_MESSAGE_EMPTY_URL = "backup target URL is empty"
 BACKUP_TARGET_MESSAGES_INVALID = ["failed to init backup target clients",
-                                  "failed to list backup volumes in"]
+                                  "failed to list backup volumes in",
+                                  "error listing backup volume names"]
 
 # customize the timeout for HDD
 disktype = os.environ.get('LONGHORN_DISK_TYPE')
