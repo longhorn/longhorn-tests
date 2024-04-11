@@ -77,7 +77,7 @@ class CRD(Base):
         except Exception as e:
             logging(f"Deleting volume error: {e}")
 
-    def attach(self, volume_name, node_name):
+    def attach(self, volume_name, node_name, disable_frontend):
 
         migratable = self.get(volume_name)['spec']['migratable']
         type = "longhorn-api" if not migratable else "csi-attacher"
@@ -94,7 +94,7 @@ class CRD(Base):
                 "id": node_name,
                 "nodeID": node_name,
                 "parameters": {
-                    "disableFrontend": "false",
+                    "disableFrontend": "true" if disable_frontend else "false",
                     "lastAttachedBy": ""
                 },
                     "type": type
@@ -114,6 +114,8 @@ class CRD(Base):
             if e.reason != "Not Found":
                 Exception(f'exception for creating volumeattachments:', e)
         self.wait_for_volume_state(volume_name, "attached")
+        volume = self.get(volume_name)
+        assert volume['status']['frontendDisabled'] == disable_frontend, f"expect volume frontendDisabled is {disable_frontend}, but it's {volume['status']['frontendDisabled']}"
 
     def detach(self, volume_name, node_name):
         try:
@@ -297,7 +299,7 @@ class CRD(Base):
     def get_endpoint(self, volume_name):
         return Rest(self.node_exec).get_endpoint(volume_name)
 
-    def write_random_data(self, volume_name, size):
+    def write_random_data(self, volume_name, size, data_id):
         node_name = self.get(volume_name)["spec"]["nodeID"]
         endpoint = self.get_endpoint(volume_name)
 
@@ -306,7 +308,8 @@ class CRD(Base):
             f"dd if=/dev/urandom of={endpoint} bs=1M count={size} status=none;\
               sync;\
               md5sum {endpoint} | awk \'{{print $1}}\'")
-        return checksum
+        logging(f"Storing volume {volume_name} data {data_id} checksum = {checksum}")
+        self.set_data_checksum(volume_name, data_id, checksum)
 
     def keep_writing_data(self, volume_name, size):
         node_name = self.get(volume_name)["spec"]["nodeID"]
@@ -347,13 +350,15 @@ class CRD(Base):
     def wait_for_replica_rebuilding_complete(self, volume_name, node_name):
         return Rest(self.node_exec).wait_for_replica_rebuilding_complete(volume_name, node_name)
 
-    def check_data_checksum(self, volume_name, checksum):
+    def check_data_checksum(self, volume_name, data_id):
+        expected_checksum = self.get_data_checksum(volume_name, data_id)
         node_name = self.get(volume_name)["spec"]["nodeID"]
         endpoint = self.get_endpoint(volume_name)
         actual_checksum = self.node_exec.issue_cmd(
             node_name,
             f"md5sum {endpoint} | awk \'{{print $1}}\'")
-        assert actual_checksum == checksum
+        logging(f"Checked volume {volume_name} data {data_id}. Expected checksum = {expected_checksum}. Actual checksum = {actual_checksum}")
+        assert actual_checksum == expected_checksum
 
     def validate_volume_replicas_anti_affinity(self, volume_name):
         replica_list = self.obj_api.list_namespaced_custom_object(

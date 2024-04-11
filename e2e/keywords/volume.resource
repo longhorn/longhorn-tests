@@ -8,7 +8,7 @@ Library    ../libs/keywords/volume_keywords.py
 *** Keywords ***
 Create volume ${volume_id}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
-    create_volume   ${volume_name}    2    3
+    create_volume   ${volume_name}
 
 Create volume ${volume_id} with
     [Arguments]    &{config}
@@ -39,6 +39,10 @@ Attach volume ${volume_id}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     attach_volume    ${volume_name}
 
+Attach volume ${volume_id} in maintenance mode
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    attach_volume_in_maintenance_mode    ${volume_name}
+
 Detach volume ${volume_id}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     detach_volume    ${volume_name}
@@ -59,6 +63,10 @@ Write data to volume ${volume_id}
 Write ${size} GB data to volume ${volume_id}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     write_volume_random_data   ${volume_name}    ${${size} * 1024}
+
+Write data ${data_id} to volume ${volume_id}
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    write_volume_random_data   ${volume_name}    2048    ${data_id}
 
 Keep writing data to volume ${volume_id}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
@@ -114,6 +122,10 @@ Crash volume ${volume_id} replica processes
 Check volume ${volume_id} data is intact
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     check_data_checksum    ${volume_name}
+
+Check volume ${volume_id} data is data ${data_id}
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    check_data_checksum    ${volume_name}    ${data_id}
 
 Check volume ${volume_id} works
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}

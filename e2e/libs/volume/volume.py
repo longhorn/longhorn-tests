@@ -24,8 +24,8 @@ class Volume(Base):
     def delete(self, volume_name):
         return self.volume.delete(volume_name)
 
-    def attach(self, volume_name, node_name):
-        return self.volume.attach(volume_name, node_name)
+    def attach(self, volume_name, node_name, disable_frontend):
+        return self.volume.attach(volume_name, node_name, disable_frontend)
 
     def detach(self, volume_name, node_name):
         return self.volume.detach(volume_name, node_name)
@@ -79,8 +79,8 @@ class Volume(Base):
     def get_endpoint(self, volume_name):
         return self.volume.get_endpoint(volume_name)
 
-    def write_random_data(self, volume_name, size):
-        return self.volume.write_random_data(volume_name, size)
+    def write_random_data(self, volume_name, size, data_id):
+        return self.volume.write_random_data(volume_name, size, data_id)
 
     def keep_writing_data(self, volume_name):
         return self.volume.keep_writing_data(volume_name, 256)
@@ -100,8 +100,8 @@ class Volume(Base):
     def wait_for_replica_rebuilding_complete(self, volume_name, node_name):
         return self.volume.wait_for_replica_rebuilding_complete(volume_name, node_name)
 
-    def check_data_checksum(self, volume_name, checksum):
-        return self.volume.check_data_checksum(volume_name, checksum)
+    def check_data_checksum(self, volume_name, data_id):
+        return self.volume.check_data_checksum(volume_name, data_id)
 
     def validate_volume_replicas_anti_affinity(self, volume_name):
         return self.volume.validate_volume_replicas_anti_affinity(volume_name)

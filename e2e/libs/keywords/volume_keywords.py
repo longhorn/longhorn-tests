@@ -24,7 +24,7 @@ class volume_keywords:
         for volume in volumes['items']:
             self.delete_volume(volume['metadata']['name'])
 
-    def create_volume(self, volume_name, size, replica_count, frontend="blockdev", migratable=False, access_mode="RWO", data_engine="v1"):
+    def create_volume(self, volume_name, size=2, replica_count=3, frontend="blockdev", migratable=False, access_mode="RWO", data_engine="v1"):
         logging(f'Creating volume {volume_name}')
         self.volume.create(volume_name, size, replica_count, frontend, migratable, access_mode, data_engine)
 
@@ -36,7 +36,13 @@ class volume_keywords:
         if not node_name:
             node_name = self.node.get_node_by_index(0)
         logging(f'Attaching volume {volume_name} to node {node_name}')
-        self.volume.attach(volume_name, node_name)
+        self.volume.attach(volume_name, node_name, disable_frontend=False)
+
+    def attach_volume_in_maintenance_mode(self, volume_name, node_name=None):
+        if not node_name:
+            node_name = self.node.get_node_by_index(0)
+        logging(f'Attaching volume {volume_name} to node {node_name} in maintenance mode')
+        self.volume.attach(volume_name, node_name, disable_frontend=True)
 
     def detach_volume(self, volume_name, node_name=None):
         if not node_name:
@@ -92,21 +98,17 @@ class volume_keywords:
 
         raise Exception(f"Failed to get node ID of the replica on {replica_locality}")
 
-    def write_volume_random_data(self, volume_name, size_in_mb):
+    def write_volume_random_data(self, volume_name, size_in_mb, data_id=0):
         logging(f'Writing {size_in_mb} MB random data to volume {volume_name}')
-        checksum = self.volume.write_random_data(volume_name, size_in_mb)
-
-        self.volume.set_annotation(volume_name, ANNOT_CHECKSUM, checksum)
+        checksum = self.volume.write_random_data(volume_name, size_in_mb, data_id)
 
     def keep_writing_data(self, volume_name):
         logging(f'Keep writing data to volume {volume_name}')
         self.volume.keep_writing_data(volume_name)
 
-    def check_data_checksum(self, volume_name):
-        checksum = self.volume.get_annotation_value(volume_name, ANNOT_CHECKSUM)
-
-        logging(f"Checking volume {volume_name} data checksum is {checksum}")
-        self.volume.check_data_checksum(volume_name, checksum)
+    def check_data_checksum(self, volume_name, data_id=0):
+        logging(f"Checking volume {volume_name} data {data_id} checksum")
+        self.volume.check_data_checksum(volume_name, data_id)
 
     def delete_replica(self, volume_name, replica_node):
         if str(replica_node).isdigit():
