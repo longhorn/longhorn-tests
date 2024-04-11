@@ -61,10 +61,8 @@ class Minio(Base):
         return prefix + "/blocks"
 
     def create_file_in_backupstore(self, client, core_api, file_path, data={}): # NOQA
-        backup_target_credential_setting = client.by_id_setting(
-            SETTING_BACKUP_TARGET_CREDENTIAL_SECRET)
 
-        secret_name = backup_target_credential_setting.value
+        secret_name = self.get_secret()
 
         minio_api = self.get_api_client(client, core_api, secret_name)
         bucket_name = self.get_backupstore_bucket_name(client)
@@ -107,10 +105,8 @@ class Minio(Base):
                 print(err)
 
     def delete_file_in_backupstore(self, client, core_api, file_path):
-        backup_target_credential_setting = client.by_id_setting(
-            SETTING_BACKUP_TARGET_CREDENTIAL_SECRET)
 
-        secret_name = backup_target_credential_setting.value
+        secret_name = self.get_secret()
 
         minio_api = self.get_api_client(client, core_api, secret_name)
         bucket_name = self.get_backupstore_bucket_name(client)

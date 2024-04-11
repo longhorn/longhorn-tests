@@ -8,7 +8,7 @@ class Nfs(Base):
     def mount_nfs_backupstore(self, client, mount_path="/mnt/nfs"):
         cmd = ["mkdir", "-p", mount_path]
         subprocess.check_output(cmd)
-        nfs_backuptarget = client.by_id_setting(SETTING_BACKUP_TARGET).value
+        nfs_backuptarget = self.get_backup_target()
         nfs_url = urlparse(nfs_backuptarget).netloc + \
             urlparse(nfs_backuptarget).path
         cmd = ["mount", "-t", "nfs", "-o", "nfsvers=4.2", nfs_url, mount_path]
@@ -21,7 +21,7 @@ class Nfs(Base):
         subprocess.check_output(cmd)
 
     def get_nfs_mount_point(self, client):
-        nfs_backuptarget = client.by_id_setting(SETTING_BACKUP_TARGET).value
+        nfs_backuptarget = self.get_backup_target()
         nfs_url = urlparse(nfs_backuptarget).netloc + \
             urlparse(nfs_backuptarget).path
 
