@@ -17,6 +17,10 @@ if [[ -n "${LONGHORN_IMAGES_FILE_URL}" ]]; then
       SUPPORT_BUNDLE_KIT_IMAGE=$(echo "${LINE}" | sed -e "s/longhornio\///g")
       IFS=: read -ra IMAGE_TAG_PAIR <<< "${SUPPORT_BUNDLE_KIT_IMAGE}"
       echo "rancher/${IMAGE_TAG_PAIR[0]}" "longhornio/${IMAGE_TAG_PAIR[0]}" "${IMAGE_TAG_PAIR[1]}" >> "${INFILE}"
+    elif [[ "${LINE}" =~ "openshift-origin-oauth-proxy" ]]; then
+      OPENSHIFT_OAUTH_PROXY=$(echo "${LINE}" | sed -e "s/longhornio\/openshift-//g")
+      IFS=: read -ra IMAGE_TAG_PAIR <<< "${OPENSHIFT_OAUTH_PROXY}"
+      echo "quay.io/openshift/${IMAGE_TAG_PAIR[0]}" "longhornio/openshift-${IMAGE_TAG_PAIR[0]}" "${IMAGE_TAG_PAIR[1]}" >> "${INFILE}"
     fi
   done < "${LONGHORN_IMAGES_FILE}"
 else
@@ -27,6 +31,8 @@ else
       echo "registry.k8s.io/sig-storage/${IMAGE_TAG_PAIR[0]}" "longhornio/${IMAGE_TAG_PAIR[0]}" "${IMAGE_TAG_PAIR[1]}" >> "${INFILE}"
     elif [[ "${CSI_IMAGE}" =~ "support-bundle-kit" ]]; then
       echo "rancher/${IMAGE_TAG_PAIR[0]}" "longhornio/${IMAGE_TAG_PAIR[0]}" "${IMAGE_TAG_PAIR[1]}" >> "${INFILE}"
+    elif [[ "${CSI_IMAGE}" =~ "openshift-origin-oauth-proxy" ]]; then
+      echo "quay.io/openshift/origin-oauth-proxy" "longhornio/openshift-origin-oauth-proxy" "${IMAGE_TAG_PAIR[1]}" >> "${INFILE}"
     fi
   done
 fi

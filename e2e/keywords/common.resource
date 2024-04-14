@@ -9,6 +9,7 @@ Library             ../libs/keywords/statefulset_keywords.py
 Library             ../libs/keywords/stress_keywords.py
 Library             ../libs/keywords/volume_keywords.py
 Library             ../libs/keywords/workload_keywords.py
+Library             ../libs/keywords/persistentvolumeclaim_keywords.py
 
 *** Keywords ***
 Set test environment

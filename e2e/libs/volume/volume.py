@@ -18,8 +18,8 @@ class Volume(Base):
         else:
             self.volume = Rest(node_exec)
 
-    def create(self, volume_name, size, replica_count):
-        return self.volume.create(volume_name, size, replica_count)
+    def create(self, volume_name, size, replica_count, frontend="blockdev"):
+        return self.volume.create(volume_name, size, replica_count, frontend)
 
     def delete(self, volume_name):
         return self.volume.delete(volume_name)
@@ -49,8 +49,8 @@ class Volume(Base):
         return self.volume.wait_for_volume_state(volume_name, desired_state)
 
     def wait_for_volume_attached(self, volume_name):
-        self.volume.wait_for_volume_state(volume_name, "attached")
         self.volume.wait_for_volume_robustness_not(volume_name, "unknown")
+        self.volume.wait_for_volume_state(volume_name, "attached")
 
     def wait_for_volume_detached(self, volume_name):
         self.volume.wait_for_volume_state(volume_name, "detached")
@@ -88,4 +88,7 @@ class Volume(Base):
 
     def check_data_checksum(self, volume_name, checksum):
         return self.volume.check_data_checksum(volume_name, checksum)
+
+    def validate_volume_replicas_anti_affinity(self, volume_name):
+        return self.volume.validate_volume_replicas_anti_affinity(volume_name)
 

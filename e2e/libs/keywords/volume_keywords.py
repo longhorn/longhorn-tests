@@ -22,9 +22,9 @@ class volume_keywords:
         for volume in volumes['items']:
             self.delete_volume(volume['metadata']['name'])
 
-    def create_volume(self, volume_name, size, replica_count):
+    def create_volume(self, volume_name, size, replica_count, frontend="blockdev"):
         logging(f'Creating volume {volume_name}')
-        self.volume.create(volume_name, size, replica_count)
+        self.volume.create(volume_name, size, replica_count, frontend)
 
     def delete_volume(self, volume_name):
         logging(f'Deleting volume {volume_name}')
@@ -39,6 +39,10 @@ class volume_keywords:
         logging(f'Detaching volume {volume_name}')
         self.volume.detach(volume_name)
 
+    def list_volumes(self):
+        logging(f'Listing volumes')
+        return self.volume.list_names()
+
     def wait_for_volume_expand_to_size(self, volume_name, size):
         logging(f'Waiting for volume {volume_name} expand to {size}')
         return self.volume.wait_for_volume_expand_to_size(volume_name, size)
@@ -49,6 +53,9 @@ class volume_keywords:
         node_ids.extend(self.get_node_ids_by_replica_locality(volume_name, "replica node"))
         node_ids.extend(self.get_node_ids_by_replica_locality(volume_name, "test pod node"))
         return node_ids
+
+    def get_volume_node(self, volume_name):
+        return self.get_node_id_by_replica_locality(volume_name, "volume node")
 
     def get_node_id_by_replica_locality(self, volume_name, replica_locality):
         return self.get_node_ids_by_replica_locality(volume_name, replica_locality)[0]
@@ -163,3 +170,6 @@ class volume_keywords:
     def wait_for_volume_healthy(self, volume_name):
         logging(f'Waiting for volume {volume_name} to be healthy')
         self.volume.wait_for_volume_healthy(volume_name)
+
+    def validate_volume_replicas_anti_affinity(self, volume_name):
+        self.volume.validate_volume_replicas_anti_affinity(volume_name)
