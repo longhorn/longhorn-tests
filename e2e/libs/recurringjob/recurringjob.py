@@ -15,11 +15,14 @@ class RecurringJob(Base):
         else:
             self.recurringjob = Rest()
 
+    # Pushing a backup and a purge once a minute may be a little aggressive
+    # Changed to every 2 minutes
+    # ref: https://github.com/longhorn/longhorn/issues/7854
     def create(self,
                job_name,
                task="snapshot",
                groups=[],
-               cron="* * * * *",
+               cron="*/2 * * * *",
                retain=1,
                concurrency=1,
                labels={}):
