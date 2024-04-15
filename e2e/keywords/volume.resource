@@ -45,6 +45,10 @@ Write data to volume ${volume_id}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     write_volume_random_data   ${volume_name}    2048
 
+Write ${size} GB data to volume ${volume_id}
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    write_volume_random_data   ${volume_name}    ${${size} * 1024}
+
 Keep writing data to volume ${volume_id}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     keep_writing_data    ${volume_name}
@@ -68,6 +72,24 @@ Wait until volume ${volume_id} replica rebuilding completed on ${replica_localit
 Wait until volume ${volume_id} replicas rebuilding completed
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     wait_for_replica_rebuilding_to_complete   ${volume_name}
+
+Wait until volume ${volume_id} replica rebuilding stopped on ${replica_locality}
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    wait_for_replica_rebuilding_to_stop_on_node    ${volume_name}    ${replica_locality}
+
+Only one replica rebuilding on ${replica_locality} will start at a time, either for volume ${volume_id_0} or volume ${volume_id_1}
+    ${volume_name_0} =    generate_name_with_suffix    volume    ${volume_id_0}
+    ${volume_name_1} =    generate_name_with_suffix    volume    ${volume_id_1}
+    only_one_replica_rebuilding_will_start_at_a_time_on_node    ${volume_name_0}    ${volume_name_1}    ${replica_locality}
+
+Both volume ${volume_id_0} and volume ${volume_id_1} replica rebuilding on ${replica_locality} will start at the same time
+    ${volume_name_0} =    generate_name_with_suffix    volume    ${volume_id_0}
+    ${volume_name_1} =    generate_name_with_suffix    volume    ${volume_id_1}
+    both_replica_rebuildings_will_start_at_the_same_time_on_node    ${volume_name_0}    ${volume_name_1}    ${replica_locality}
+
+Crash volume ${volume_id} replica processes
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    crash_replica_processes    ${volume_name}
 
 Check volume ${volume_id} data is intact
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}

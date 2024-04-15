@@ -4,7 +4,7 @@ import string
 import time
 import random
 import yaml
-
+import signal
 from robot.api import logger
 from robot.libraries.BuiltIn import BuiltIn
 
@@ -13,9 +13,28 @@ from longhorn import from_env
 from kubernetes import client
 from kubernetes import config
 from kubernetes import dynamic
+from kubernetes.stream import stream
 from kubernetes.client.rest import ApiException
 
 from utility.constant import NAME_PREFIX
+from utility.constant import STREAM_EXEC_TIMEOUT
+
+
+class timeout:
+
+    def __init__(self, seconds=1, error_message='Timeout'):
+        self.seconds = seconds
+        self.error_message = error_message
+
+    def handle_timeout(self, signum, frame):
+        raise Exception(self.error_message)
+
+    def __enter__(self):
+        signal.signal(signal.SIGALRM, self.handle_timeout)
+        signal.alarm(self.seconds)
+
+    def __exit__(self, type, value, traceback):
+        signal.alarm(0)
 
 
 def logging(msg, also_report=False):
@@ -52,6 +71,10 @@ def init_k8s_api_client():
         logging("Initialized in-cluster k8s api client")
 
 
+def get_backupstore():
+    return os.environ.get('LONGHORN_BACKUPSTORE')
+
+
 def wait_for_cluster_ready():
     core_api = client.CoreV1Api()
     retry_count, retry_interval = get_retry_count_and_interval()
@@ -72,6 +95,22 @@ def wait_for_cluster_ready():
         logging(f"Waiting for cluster ready ({i}) ...")
         time.sleep(retry_interval)
     assert ready, f"expect cluster's ready but it isn't {resp}"
+
+
+def pod_exec(pod_name, namespace, cmd):
+
+    core_api = client.CoreV1Api()
+    exec_cmd = ['/bin/sh', '-c', cmd]
+    logging(f"Issued command: {cmd} on {pod_name}")
+
+    with timeout(seconds=STREAM_EXEC_TIMEOUT,
+                 error_message=f'Timeout on executing stream {pod_name} {cmd}'):
+        output = stream(core_api.connect_get_namespaced_pod_exec,
+                        pod_name,
+                        namespace, command=exec_cmd,
+                        stderr=True, stdin=False, stdout=True, tty=False)
+        logging(f"Issued command: {cmd} on {pod_name} with result {output}")
+        return output
 
 
 def apply_cr(manifest_dict):
@@ -145,7 +184,6 @@ def get_mgr_ips():
 def get_longhorn_client():
     retry_count, retry_interval = get_retry_count_and_interval()
     if os.getenv('LONGHORN_CLIENT_URL'):
-        logging(f"Initializing longhorn api client from LONGHORN_CLIENT_URL {os.getenv('LONGHORN_CLIENT_URL')}")
         # for develop or debug
         # manually expose longhorn client
         # to access longhorn manager in local environment

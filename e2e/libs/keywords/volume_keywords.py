@@ -1,3 +1,5 @@
+import asyncio
+import time
 from node import Node
 from node.utility import check_replica_locality
 
@@ -5,7 +7,7 @@ from utility.constant import ANNOT_CHECKSUM
 from utility.constant import LABEL_TEST
 from utility.constant import LABEL_TEST_VALUE
 from utility.utility import logging
-
+from utility.utility import get_retry_count_and_interval
 from volume import Volume
 
 
@@ -118,23 +120,23 @@ class volume_keywords:
     def set_annotation(self, volume_name, annotation_key, annotation_value):
         self.volume.set_annotation(volume_name, annotation_key, annotation_value)
 
-    def wait_for_replica_rebuilding_start(self, volume_name, replica_node):
+    async def wait_for_replica_rebuilding_start(self, volume_name, replica_node):
         if str(replica_node).isdigit():
             replica_node = self.node.get_node_by_index(replica_node)
 
         logging(f"Waiting for volume {volume_name}'s replica on node {replica_node} rebuilding started")
-        self.volume.wait_for_replica_rebuilding_start(
+        await self.volume.wait_for_replica_rebuilding_start(
             volume_name,
             replica_node
         )
 
-    def wait_for_replica_rebuilding_to_start_on_node(self, volume_name, replica_locality):
+    async def wait_for_replica_rebuilding_to_start_on_node(self, volume_name, replica_locality):
         check_replica_locality(replica_locality)
 
         node_id = self.get_node_id_by_replica_locality(volume_name, replica_locality)
 
         logging(f"Waiting for volume {volume_name}'s replica on node {node_id} rebuilding started")
-        self.volume.wait_for_replica_rebuilding_start(volume_name, node_id)
+        await self.volume.wait_for_replica_rebuilding_start(volume_name, node_id)
 
     def wait_for_replica_rebuilding_complete(self, volume_name, replica_node):
         if str(replica_node).isdigit():
@@ -158,6 +160,62 @@ class volume_keywords:
         for node_id in self.get_replica_node_ids(volume_name):
             logging(f"Waiting for volume {volume_name}'s replica on node {node_id} rebuilding completed")
             self.volume.wait_for_replica_rebuilding_complete(volume_name, node_id)
+
+    async def only_one_replica_rebuilding_will_start_at_a_time_on_node(self, volume_name_0, volume_name_1, replica_locality):
+
+        node_id = self.get_node_id_by_replica_locality(volume_name_0, replica_locality)
+
+        first_replica_rebuilding = None
+        not_start_replica_rebuilding = None
+
+        async def find_first_replica_rebuilding():
+            tasks = [
+                asyncio.create_task(self.volume.wait_for_replica_rebuilding_start(volume_name_0, node_id), name=volume_name_0),
+                asyncio.create_task(self.volume.wait_for_replica_rebuilding_start(volume_name_1, node_id), name=volume_name_1)
+            ]
+
+            done, pending = await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
+            for pending_task in pending:
+                pending_task.cancel()
+            return done.pop().get_name(), pending.pop().get_name()
+
+        first_replica_rebuilding, not_start_replica_rebuilding = await find_first_replica_rebuilding()
+        logging(f"Observed {first_replica_rebuilding} started replica rebuilding first")
+
+        while self.volume.is_replica_rebuilding_in_progress(first_replica_rebuilding, node_id):
+            logging(f"Checking volume {not_start_replica_rebuilding} replica rebuilding won't start \
+                if volume {first_replica_rebuilding} replica rebuilding is still in progress")
+            assert not self.volume.is_replica_rebuilding_in_progress(not_start_replica_rebuilding, node_id)
+            time.sleep(1)
+
+    async def both_replica_rebuildings_will_start_at_the_same_time_on_node(self, volume_name_0, volume_name_1, replica_locality):
+
+        node_id = self.get_node_id_by_replica_locality(volume_name_0, replica_locality)
+
+        async def wait_for_both_replica_rebuildings():
+            tasks = [
+                asyncio.create_task(self.volume.wait_for_replica_rebuilding_start(volume_name_0, node_id), name=volume_name_0),
+                asyncio.create_task(self.volume.wait_for_replica_rebuilding_start(volume_name_1, node_id), name=volume_name_1)
+            ]
+
+            done, pending = await asyncio.wait(tasks, return_when=asyncio.ALL_COMPLETED)
+            logging(f"Observed {done.pop().get_name()} and {done.pop().get_name()} started replica rebuilding first")
+
+        await wait_for_both_replica_rebuildings()
+
+        assert self.volume.is_replica_rebuilding_in_progress(volume_name_0, node_id) and self.volume.is_replica_rebuilding_in_progress(volume_name_1, node_id), \
+            f"Expect {volume_name_0} and {volume_name_1} replica rebuilding at the same time"
+
+    def crash_replica_processes(self, volume_name):
+        self.volume.crash_replica_processes(volume_name)
+
+    def wait_for_replica_rebuilding_to_stop_on_node(self, volume_name, replica_locality):
+        node_id = self.get_node_id_by_replica_locality(volume_name, replica_locality)
+        retry_count, retry_interval = get_retry_count_and_interval()
+        for i in range(retry_count):
+            if not self.volume.is_replica_rebuilding_in_progress(volume_name, node_id):
+                break
+            time.sleep(retry_interval)
 
     def wait_for_volume_attached(self, volume_name):
         logging(f'Waiting for volume {volume_name} to be attached')

@@ -8,3 +8,7 @@ ANNOT_CHECKSUM = f'{LABEL_TEST}/last-recorded-checksum'
 ANNOT_EXPANDED_SIZE = f'{LABEL_TEST}/last-recorded-expanded-size'
 
 NAME_PREFIX = 'e2e-test'
+
+STREAM_EXEC_TIMEOUT = 300
+
+LONGHORN_NAMESPACE = 'longhorn-system'
