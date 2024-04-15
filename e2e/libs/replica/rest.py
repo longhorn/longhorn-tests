@@ -31,7 +31,7 @@ class Rest(Base):
                 if rebuilding_replica_name:
                     break
             except Exception as e:
-                logging(f"Failed to get volume {e}")
+                logging(f"Failed to get volume {volume_name} with error: {e}")
             time.sleep(RETRY_INTERVAL)
         assert rebuilding_replica_name != None, f'failed to get rebuilding replica name'
 
@@ -47,7 +47,7 @@ class Rest(Base):
                 if started:
                     break
             except Exception as e:
-                logging(f"Failed to get volume {e}")
+                logging(f"Failed to get volume {volume_name} with error: {e}")
             time.sleep(RETRY_INTERVAL)
         assert started, f'replica {rebuilding_replica_name} rebuilding starting failed'
 
@@ -69,7 +69,7 @@ class Rest(Base):
                         completed = True
                         break
             except Exception as e:
-                logging(f"Failed to get volume {e}")
+                logging(f"Failed to get volume {volume_name} with error: {e}")
             if completed:
                 break
             time.sleep(RETRY_INTERVAL)

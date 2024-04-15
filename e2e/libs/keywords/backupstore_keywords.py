@@ -1,5 +1,6 @@
 from backupstore import Nfs, Minio
 from utility.utility import get_longhorn_client
+from utility.utility import get_backupstore
 from kubernetes import client
 from setting import Setting
 
@@ -7,10 +8,10 @@ from setting import Setting
 class backupstore_keywords:
 
     def __init__(self):
-        backupstores = Minio.get_backupstores()
-        if backupstores[0] == "s3":
+        backupstore = get_backupstore()
+        if backupstore == "s3":
             self.backupstore = Minio()
-        else:
+        elif backupstore == "nfs":
             self.backupstore = Nfs()
         self.setting = Setting()
 
@@ -18,10 +19,11 @@ class backupstore_keywords:
         self.setting.set_backupstore()
 
     def cleanup_backupstore(self):
-        client = get_longhorn_client()
-        self.backupstore.cleanup_system_backups(client)
-        self.backupstore.cleanup_backup_volumes(client)
-        self.setting.reset_backupstore_setting()
+        if get_backupstore():
+            client = get_longhorn_client()
+            self.backupstore.cleanup_system_backups(client)
+            self.backupstore.cleanup_backup_volumes(client)
+            self.setting.reset_backupstore_setting()
 
     def create_dummy_in_progress_backup(self, volume_name):
         client = get_longhorn_client()
