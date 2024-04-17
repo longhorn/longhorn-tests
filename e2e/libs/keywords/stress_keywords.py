@@ -54,3 +54,9 @@ class stress_keywords:
 
         logging(f'Stressing node memory for all volumes {volume_names}')
         self.stress_node_memory_by_volumes(volume_names)
+
+    def stress_nodes_filesystem(self, nodes):
+        logging(f'Stressing {nodes} nodes filesystem')
+        if isinstance(nodes, str):
+            nodes = [nodes]
+        self.stress.filesystem(nodes)

@@ -10,6 +10,8 @@ Library             ../libs/keywords/stress_keywords.py
 Library             ../libs/keywords/volume_keywords.py
 Library             ../libs/keywords/workload_keywords.py
 Library             ../libs/keywords/persistentvolumeclaim_keywords.py
+Library             ../libs/keywords/network_keywords.py
+Library             ../libs/keywords/backupstore_keywords.py
 
 *** Keywords ***
 Set test environment
@@ -18,6 +20,7 @@ Set test environment
     init_storageclasses
 
     setup_control_plane_network_latency
+    set_backupstore
 
 Cleanup test resources
     cleanup_control_plane_network_latency
@@ -29,3 +32,4 @@ Cleanup test resources
     cleanup_persistentvolumeclaims
     cleanup_volumes
     cleanup_storageclasses
+    cleanup_backupstore
