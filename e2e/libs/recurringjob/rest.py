@@ -11,6 +11,7 @@ from recurringjob.constant import RETRY_INTERVAL
 from utility.utility import filter_cr
 from utility.utility import get_longhorn_client
 from utility.utility import logging
+from utility.utility import get_retry_count_and_interval
 
 
 class Rest(Base):
@@ -18,6 +19,7 @@ class Rest(Base):
     def __init__(self):
         self.longhorn_client = get_longhorn_client()
         self.batch_v1_api = client.BatchV1Api()
+        self.retry_count, self.retry_interval = get_retry_count_and_interval()
 
     def create(self, name, task, groups, cron, retain, concurrency, labels):
         self.longhorn_client.create_recurring_job(
@@ -45,139 +47,135 @@ class Rest(Base):
 
     def _wait_for_volume_recurringjob_update(self, job_name, volume_name):
         updated = False
-        for _ in range(RETRY_COUNTS):
+        for _ in range(self.retry_count):
             jobs, _ = self.get_volume_recurringjobs_and_groups(volume_name)
             if job_name in jobs:
                 updated = True
                 break
-            time.sleep(RETRY_INTERVAL)
+            time.sleep(self.retry_interval)
         assert updated
 
     def _wait_for_volume_recurringjob_delete(self, job_name, volume_name):
         deleted = False
-        for _ in range(RETRY_COUNTS):
+        for _ in range(self.retry_count):
             jobs, _ = self.get_volume_recurringjobs_and_groups(volume_name)
             if job_name not in jobs:
                 deleted = True
                 break
-            time.sleep(RETRY_INTERVAL)
+            time.sleep(self.retry_interval)
         assert deleted
 
     def get_volume_recurringjobs_and_groups(self, volume_name):
-        volume = self.longhorn_client.by_id_volume(volume_name)
-        list = volume.recurringJobList()
-        jobs = []
-        groups = []
-        for item in list:
-            if item['isGroup']:
-                groups.append(item['name'])
-            else:
-                jobs.append(item['name'])
-        return jobs, groups
+        for _ in range(self.retry_count):
+            volume = None
+            try:
+                volume = self.longhorn_client.by_id_volume(volume_name)
+                list = volume.recurringJobList()
+                jobs = []
+                groups = []
+                for item in list:
+                    if item['isGroup']:
+                        groups.append(item['name'])
+                    else:
+                        jobs.append(item['name'])
+                return jobs, groups
+            except Exception as e:
+                logging(f"Getting volume {volume} recurringjob list error: {e}")
+                time.sleep(self.retry_interval)
 
     def _wait_for_cron_job_create(self, job_name):
         created = False
-        for _ in range(RETRY_COUNTS):
+        for _ in range(self.retry_count):
             job = self.batch_v1_api.list_namespaced_cron_job(
                 'longhorn-system',
                 label_selector=f"recurring-job.longhorn.io={job_name}")
             if len(job.items) != 0:
                 created = True
                 break
-            time.sleep(RETRY_INTERVAL)
+            time.sleep(self.retry_interval)
         assert created
 
     def _wait_for_cron_job_delete(self, job_name):
         deleted = False
-        for _ in range(RETRY_COUNTS):
+        for _ in range(self.retry_count):
             job = self.batch_v1_api.list_namespaced_cron_job(
                 'longhorn-system',
                 label_selector=f"recurring-job.longhorn.io={job_name}")
             if len(job.items) == 0:
                 deleted = True
                 break
-            time.sleep(RETRY_INTERVAL)
+            time.sleep(self.retry_interval)
         assert deleted
 
     def check_jobs_work(self, volume_name):
-        # check if snapshot/backup is really created by the
-        # recurringjob following the cron schedule
-        # currently only support checking normal snapshot/backup
-        # every 1 min recurringjob
         jobs, _ = self.get_volume_recurringjobs_and_groups(volume_name)
         for job_name in jobs:
             job = self.get(job_name)
             logging(f"Checking recurringjob {job}")
-            if job['task'] == 'snapshot' and job['cron'] == '* * * * *':
-                period_in_sec = 60
-                self._check_snapshot_created_in_time(volume_name, job_name, period_in_sec)
-            elif job['task'] == 'backup' and job['cron'] == '* * * * *':
-                period_in_sec = 60
-                self._check_backup_created_in_time(volume_name, period_in_sec)
+            if job['task'] == 'snapshot':
+                self._check_snapshot_created(volume_name, job_name)
+            elif job['task'] == 'backup':
+                self._check_backup_created(volume_name)
 
-    def _check_snapshot_created_in_time(self, volume_name, job_name, period_in_sec):
+    def _check_snapshot_created(self, volume_name, job_name):
         # check snapshot can be created by the recurringjob
         current_time = datetime.utcnow()
         current_timestamp = current_time.timestamp()
-
         label_selector=f"longhornvolume={volume_name}"
-
-        max_iterations = period_in_sec * 10
-        for _ in range(max_iterations):
-            time.sleep(1)
-
+        snapshot_timestamp = 0
+        for i in range(self.retry_count):
+            logging(f"Waiting for {volume_name} new snapshot created ({i}) ...")
             snapshot_list = filter_cr("longhorn.io", "v1beta2", "longhorn-system", "snapshots", label_selector=label_selector)
+            try:
+                if len(snapshot_list['items']) > 0:
+                    for item in snapshot_list['items']:
+                        # this snapshot can be created by snapshot or backup recurringjob
+                        # but job_name is in spec.labels.RecurringJob
+                        # and crd doesn't support field selector
+                        # so need to filter by ourselves
+                        if 'RecurringJob' in item['status']['labels'] and \
+                            item['status']['labels']['RecurringJob'] == job_name and \
+                            item['status']['readyToUse'] == True:
+                            snapshot_time = item['metadata']['creationTimestamp']
+                            snapshot_time = datetime.strptime(snapshot_time, '%Y-%m-%dT%H:%M:%SZ')
+                            snapshot_timestamp = snapshot_time.timestamp()
+                        if snapshot_timestamp > current_timestamp:
+                            logging(f"Got snapshot {item}, create time = {snapshot_time}, timestamp = {snapshot_timestamp}")
+                            return
+            except Exception as e:
+                logging(f"Iterating snapshot list error: {e}")
+            time.sleep(self.retry_interval)
+        assert False, f"since {current_time},\
+                        there's no new snapshot created by recurringjob \
+                        {snapshot_list}"
 
-            if snapshot_list['items'] is None:
-                continue
-
-            for item in snapshot_list['items']:
-                # this snapshot can be created by snapshot or backup recurringjob
-                # but job_name is in spec.labels.RecurringJob
-                # and crd doesn't support field selector
-                # so need to filter by ourselves
-                if item['spec']['labels'] is None:
-                    continue
-
-                try:
-                    assert item['spec']['labels']['RecurringJob'] == job_name
-                except AssertionError:
-                    continue
-
-                snapshot_timestamp = datetime.strptime(snapshot_list['items'][0]['metadata']['creationTimestamp'], '%Y-%m-%dT%H:%M:%SZ').timestamp()
-
-                if snapshot_timestamp > current_timestamp:
-                    return
-
-                logging(f"Snapshot {item['metadata']['name']} timestamp = {snapshot_timestamp} is not greater than {current_timestamp}")
-
-        assert False, f"No new snapshot created by recurringjob {job_name} for {volume_name} since {current_time}"
-
-    def _check_backup_created_in_time(self, volume_name, period_in_sec):
+    def _check_backup_created(self, volume_name):
         # check backup can be created by the recurringjob
         current_time = datetime.utcnow()
         current_timestamp = current_time.timestamp()
-
         label_selector=f"backup-volume={volume_name}"
-
-        max_iterations = period_in_sec * 10
-        for _ in range(max_iterations):
-            time.sleep(1)
-
+        backup_timestamp = 0
+        for i in range(self.retry_count):
+            logging(f"Waiting for {volume_name} new backup created ({i}) ...")
             backup_list = filter_cr("longhorn.io", "v1beta2", "longhorn-system", "backups", label_selector=label_selector)
-
-            if backup_list['items'] is None:
-                continue
-
-            for item in backup_list['items']:
-                backup_timestamp = datetime.strptime(item['metadata']['creationTimestamp'], '%Y-%m-%dT%H:%M:%SZ').timestamp()
-
-                if backup_timestamp > current_timestamp:
-                    return
-
-                logging(f"Backup {item['metadata']['name']} timestamp = {backup_timestamp} is not greater than {current_timestamp}")
-
-        assert False, f"No new backup created by recurringjob for {volume_name} since {current_time}"
+            try:
+                if len(backup_list['items']) > 0:
+                    for item in backup_list['items']:
+                        state = item['status']['state']
+                        if state != "Completed":
+                            continue
+                        backup_time = item['metadata']['creationTimestamp']
+                        backup_time = datetime.strptime(backup_time, '%Y-%m-%dT%H:%M:%SZ')
+                        backup_timestamp = backup_time.timestamp()
+                        if backup_timestamp > current_timestamp:
+                            logging(f"Got backup {item}, create time = {backup_time}, timestamp = {backup_timestamp}")
+                            return
+            except Exception as e:
+                logging(f"Iterating backup list error: {e}")
+            time.sleep(self.retry_interval)
+        assert False, f"since {current_time},\
+                        there's no new backup created by recurringjob \
+                        {backup_list}"
 
     def cleanup(self, volume_names):
         for volume_name in volume_names:

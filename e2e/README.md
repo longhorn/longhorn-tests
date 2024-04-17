@@ -60,6 +60,9 @@ pip install -r requirements.txt
 # to specify which test suite you'd like to run, use "-s" option:
 ./run.sh -s "replica_rebuilding"
 
+# to run test cases with a specific tag, use "-i" option:
+./run.sh -i "coretest"
+
 # to modify debug level, use "-L" option:
 ./run.sh -L DEBUG
 ```

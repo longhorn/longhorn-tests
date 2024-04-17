@@ -20,6 +20,13 @@ ${RETRY_INTERVAL}    1
 
 *** Test Cases ***
 Volume Basic Test
+    [Tags]  coretest
+    [Documentation]    Test basic volume operations
+    ...
+    ...                1. Check volume name and parameter
+    ...                2. Create a volume and attach to the current node, then check volume states
+    ...                3. Check soft anti-affinity rule
+    ...                4. Write then read back to check volume data
     When Create volume wrong_volume-name-1.0
     Then No volume created
 

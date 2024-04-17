@@ -152,34 +152,34 @@ def wait_for_workload_pods_running(workload_name, namespace="default"):
 def wait_for_workload_pods_stable(workload_name, namespace="default"):
     stable_pods = {}
     wait_for_stable_retry = {}
+    wait_for_stable_pod = []
 
     retry_count, retry_interval = get_retry_count_and_interval()
     for i in range(retry_count):
         pods = get_workload_pods(workload_name, namespace=namespace)
-        assert len(pods) > 0
+        if len(pods) > 0:
+            for pod in pods:
+                pod_name = pod.metadata.name
+                if pod.status.phase == "Running":
+                    if pod_name not in stable_pods or \
+                            stable_pods[pod_name].status.start_time != pod.status.start_time:
+                        stable_pods[pod_name] = pod
+                        wait_for_stable_retry[pod_name] = 0
+                    else:
+                        wait_for_stable_retry[pod_name] += 1
 
-        for pod in pods:
-            pod_name = pod.metadata.name
-            if pod.status.phase == "Running":
-                if pod_name not in stable_pods or \
-                        stable_pods[pod_name].status.start_time != pod.status.start_time:
-                    stable_pods[pod_name] = pod
-                    wait_for_stable_retry[pod_name] = 0
-                else:
-                    wait_for_stable_retry[pod_name] += 1
+            wait_for_stable_pod = []
+            for pod in pods:
+                if pod.status.phase != "Running":
+                    wait_for_stable_pod.append(pod.metadata.name)
+                    continue
 
-        wait_for_stable_pod = []
-        for pod in pods:
-            if pod.status.phase != "Running":
-                wait_for_stable_pod.append(pod.metadata.name)
-                continue
+                pod_name = pod.metadata.name
+                if wait_for_stable_retry[pod_name] < WAIT_FOR_POD_STABLE_MAX_RETRY:
+                    wait_for_stable_pod.append(pod_name)
 
-            pod_name = pod.metadata.name
-            if wait_for_stable_retry[pod_name] < WAIT_FOR_POD_STABLE_MAX_RETRY:
-                wait_for_stable_pod.append(pod_name)
-
-        if len(wait_for_stable_pod) == 0:
-            return
+            if len(wait_for_stable_pod) == 0:
+                return
 
         logging(f"Waiting for {workload_name} pods {wait_for_stable_pod} stable, retry ({i}) ...")
         time.sleep(retry_interval)
