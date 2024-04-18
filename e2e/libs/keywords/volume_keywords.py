@@ -22,22 +22,25 @@ class volume_keywords:
         for volume in volumes['items']:
             self.delete_volume(volume['metadata']['name'])
 
-    def create_volume(self, volume_name, size, replica_count, frontend="blockdev"):
+    def create_volume(self, volume_name, size, replica_count, frontend="blockdev", migratable=False, access_mode="RWO"):
         logging(f'Creating volume {volume_name}')
-        self.volume.create(volume_name, size, replica_count, frontend)
+        self.volume.create(volume_name, size, replica_count, frontend, migratable, access_mode)
 
     def delete_volume(self, volume_name):
         logging(f'Deleting volume {volume_name}')
         self.volume.delete(volume_name)
 
-    def attach_volume(self, volume_name):
-        attach_node = self.node.get_test_pod_not_running_node()
-        logging(f'Attaching volume {volume_name} to {attach_node}')
-        self.volume.attach(volume_name, attach_node)
+    def attach_volume(self, volume_name, node_name=None):
+        if not node_name:
+            node_name = self.node.get_node_by_index(0)
+        logging(f'Attaching volume {volume_name} to node {node_name}')
+        self.volume.attach(volume_name, node_name)
 
-    def detach_volume(self, volume_name):
-        logging(f'Detaching volume {volume_name}')
-        self.volume.detach(volume_name)
+    def detach_volume(self, volume_name, node_name=None):
+        if not node_name:
+            node_name = self.node.get_node_by_index(0)
+        logging(f'Detaching volume {volume_name} from node {node_name}')
+        self.volume.detach(volume_name, node_name)
 
     def list_volumes(self):
         logging(f'Listing volumes')
@@ -170,6 +173,14 @@ class volume_keywords:
     def wait_for_volume_healthy(self, volume_name):
         logging(f'Waiting for volume {volume_name} to be healthy')
         self.volume.wait_for_volume_healthy(volume_name)
+
+    def wait_for_volume_migration_ready(self, volume_name):
+        logging(f'Waiting for volume {volume_name} migration to be ready')
+        self.volume.wait_for_volume_migration_ready(volume_name)
+
+    def wait_for_volume_migration_completed(self, volume_name, node_name):
+        logging(f'Waiting for volume {volume_name} migration to node {node_name} completed')
+        self.volume.wait_for_volume_migration_completed(volume_name, node_name)
 
     def validate_volume_replicas_anti_affinity(self, volume_name):
         self.volume.validate_volume_replicas_anti_affinity(volume_name)

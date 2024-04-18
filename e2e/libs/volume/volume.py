@@ -18,8 +18,8 @@ class Volume(Base):
         else:
             self.volume = Rest(node_exec)
 
-    def create(self, volume_name, size, replica_count, frontend="blockdev"):
-        return self.volume.create(volume_name, size, replica_count, frontend)
+    def create(self, volume_name, size, replica_count, frontend, migratable, access_mode):
+        return self.volume.create(volume_name, size, replica_count, frontend, migratable, access_mode)
 
     def delete(self, volume_name):
         return self.volume.delete(volume_name)
@@ -27,8 +27,8 @@ class Volume(Base):
     def attach(self, volume_name, node_name):
         return self.volume.attach(volume_name, node_name)
 
-    def detach(self, volume_name):
-        return self.volume.detach(volume_name)
+    def detach(self, volume_name, node_name):
+        return self.volume.detach(volume_name, node_name)
 
     def get(self, volume_name):
         return self.volume.get(volume_name)
@@ -58,6 +58,12 @@ class Volume(Base):
     def wait_for_volume_healthy(self, volume_name):
         self.volume.wait_for_volume_state(volume_name, "attached")
         self.volume.wait_for_volume_robustness(volume_name, "healthy")
+
+    def wait_for_volume_migration_ready(self, volume_name):
+        self.volume.wait_for_volume_migration_ready(volume_name)
+
+    def wait_for_volume_migration_completed(self, volume_name, node_name):
+        self.volume.wait_for_volume_migration_completed(volume_name, node_name)
 
     def wait_for_volume_expand_to_size(self, volume_name, size):
         return self.volume.wait_for_volume_expand_to_size(volume_name, size)

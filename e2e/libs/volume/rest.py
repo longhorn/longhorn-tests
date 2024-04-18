@@ -32,10 +32,19 @@ class Rest(Base):
     def attach(self, volume_name, node_name):
         return NotImplemented
 
+    def detach(self, volume_name, node_name):
+        return NotImplemented
+
     def delete(self, volume_name):
         return NotImplemented
 
     def wait_for_volume_state(self, volume_name, desired_state):
+        return NotImplemented
+
+    def wait_for_volume_migration_ready(self, volume_name):
+        return NotImplemented
+
+    def wait_for_volume_migration_completed(self, volume_name, node_name):
         return NotImplemented
 
     def get_endpoint(self, volume_name):
