@@ -4,7 +4,7 @@ from abc import ABC, abstractmethod
 class Base(ABC):
 
     @abstractmethod
-    def get_engine(self, volume_name, node_name):
+    def get_engines(self, volume_name, node_name):
         return NotImplemented
 
     @abstractmethod
