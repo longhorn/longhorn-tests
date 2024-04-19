@@ -18,8 +18,8 @@ class Volume(Base):
         else:
             self.volume = Rest(node_exec)
 
-    def create(self, volume_name, size, replica_count, frontend, migratable, access_mode):
-        return self.volume.create(volume_name, size, replica_count, frontend, migratable, access_mode)
+    def create(self, volume_name, size, replica_count, frontend, migratable, access_mode, data_engine):
+        return self.volume.create(volume_name, size, replica_count, frontend, migratable, access_mode, data_engine)
 
     def delete(self, volume_name):
         return self.volume.delete(volume_name)
