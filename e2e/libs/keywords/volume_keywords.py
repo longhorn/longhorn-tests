@@ -24,9 +24,9 @@ class volume_keywords:
         for volume in volumes['items']:
             self.delete_volume(volume['metadata']['name'])
 
-    def create_volume(self, volume_name, size, replica_count, frontend="blockdev", migratable=False, access_mode="RWO"):
+    def create_volume(self, volume_name, size, replica_count, frontend="blockdev", migratable=False, access_mode="RWO", data_engine="v1"):
         logging(f'Creating volume {volume_name}')
-        self.volume.create(volume_name, size, replica_count, frontend, migratable, access_mode)
+        self.volume.create(volume_name, size, replica_count, frontend, migratable, access_mode, data_engine)
 
     def delete_volume(self, volume_name):
         logging(f'Deleting volume {volume_name}')
