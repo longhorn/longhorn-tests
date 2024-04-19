@@ -143,11 +143,13 @@ def wait_for_pod_status(name, status, namespace='default'):
     for i in range(retry_count):
         pod = get_pod(name, namespace)
 
-        logging(f"Waiting for pod {name} status {status}, current status {pod.status.phase} ({i}) ...")
-
-        if pod.status.phase == status:
-            is_running = True
-            break
+        try:
+            logging(f"Waiting for pod {name} status {status}, current status {pod.status.phase} ({i}) ...")
+            if pod.status.phase == status:
+                is_running = True
+                break
+        except Exception as e:
+            logging(e)
 
         time.sleep(retry_interval)
 
