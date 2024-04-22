@@ -4,10 +4,6 @@ def BUILD_TRIGGER_BY = "\n${currentBuild.getBuildCauses()[0].shortDescription}"
 
 node {
 
-  if (params.SEND_SLACK_NOTIFICATION) {
-    notifyBuild('STARTED', BUILD_TRIGGER_BY, params.NOTIFY_SLACK_CHANNEL)
-  }
-
   checkout scm
 
   withCredentials([usernamePassword(credentialsId: 'AWS_CREDS_RANCHER_QA', passwordVariable: 'AWS_SECRET_KEY', usernameVariable: 'AWS_ACCESS_KEY')]) {
@@ -25,6 +21,7 @@ node {
     try {
       stage('cleanup') {
         sh "docker exec ${JOB_BASE_NAME}-${BUILD_NUMBER} ${TF_VAR_tf_workspace}/scripts/cleanup.sh"
+        summary = sh script: "docker exec ${JOB_BASE_NAME}-${BUILD_NUMBER} cat /tmp/long-running-instances || true", returnStdout: true
       }
     } catch (e) {
         currentBuild.result = "FAILED"
@@ -36,8 +33,8 @@ node {
         sh "docker rm -v ${JOB_BASE_NAME}-${BUILD_NUMBER}"
         sh "docker rmi ${imageName}"
 
-        if (params.SEND_SLACK_NOTIFICATION) {
-          notifyBuild(currentBuild.result, "", params.NOTIFY_SLACK_CHANNEL)
+        if (params.SEND_SLACK_NOTIFICATION || summary) {
+          notifyBuild(currentBuild.result, summary, params.NOTIFY_SLACK_CHANNEL)
         }
       }
     }
