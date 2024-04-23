@@ -1,8 +1,5 @@
 import multiprocessing
-
-from deployment_keywords import deployment_keywords
-from statefulset_keywords import statefulset_keywords
-from volume_keywords import volume_keywords
+import asyncio
 
 from persistentvolumeclaim import PersistentVolumeClaim
 
@@ -27,10 +24,6 @@ from volume.constant import MEBIBYTE
 class workload_keywords:
 
     def __init__(self):
-        self.deployment_keywords = deployment_keywords()
-        self.statefulset_keywords = statefulset_keywords()
-        self.volume_keywords = volume_keywords()
-
         self.persistentvolumeclaim = PersistentVolumeClaim()
         self.volume = Volume()
 
@@ -53,13 +46,13 @@ class workload_keywords:
         logging(f'Writing {size_in_mb} MB random data to pod {pod_name}')
         checksum = write_pod_random_data(pod_name, size_in_mb, file_name)
 
-        volume = get_volume_name_by_pod(pod_name)
-        self.volume_keywords.set_annotation(volume, ANNOT_CHECKSUM, checksum)
+        volume_name = get_volume_name_by_pod(pod_name)
+        self.volume.set_annotation(volume_name, ANNOT_CHECKSUM, checksum)
 
     def check_workload_pod_data_checksum(self, workload_name, file_name):
         pod_name = get_workload_pod_names(workload_name)[0]
-        volume = get_volume_name_by_pod(pod_name)
-        expected_checksum = self.volume.get_annotation_value(volume, ANNOT_CHECKSUM)
+        volume_name = get_volume_name_by_pod(pod_name)
+        expected_checksum = self.volume.get_annotation_value(volume_name, ANNOT_CHECKSUM)
 
         logging(f'Checking checksum for file {file_name} in pod {pod_name}')
         check_pod_data_checksum(expected_checksum, pod_name, file_name)
@@ -81,15 +74,30 @@ class workload_keywords:
 
         pool.join()
 
-    def wait_for_workload_pods_stable(self, workload_name, namespace="default"):
+    async def wait_for_workloads_pods_stably_running(self, workloads):
+        logging(f'Waiting for workloads {workloads} pods stable')
+
+        async def wait_for_workloads_tasks():
+            tasks = []
+            for workload_name in workloads:
+                tasks.append(
+                    asyncio.create_task(wait_for_workload_pods_stable(workload_name, namespace="default"), name=workload_name)
+                )
+
+            done, pending = await asyncio.wait(tasks, return_when=asyncio.ALL_COMPLETED)
+            logging(f"All workloads {workloads} pods are stably running now")
+
+        await wait_for_workloads_tasks()
+
+    async def wait_for_workload_pods_stable(self, workload_name, namespace="default"):
         logging(f'Waiting for {namespace} workload {workload_name} pod stable')
-        wait_for_workload_pods_stable(workload_name, namespace=namespace)
+        await wait_for_workload_pods_stable(workload_name, namespace=namespace)
 
     def wait_for_workload_volume_healthy(self, workload_name):
         volume_name = get_workload_volume_name(workload_name)
 
         logging(f'Waiting for workload {workload_name} volume {volume_name} to be healthy')
-        self.volume_keywords.wait_for_volume_healthy(volume_name)
+        self.volume.wait_for_volume_healthy(volume_name)
 
     def wait_for_workload_volume_detached(self, workload_name):
         volume_name = get_workload_volume_name(workload_name)
