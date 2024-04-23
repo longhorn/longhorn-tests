@@ -1,5 +1,5 @@
 import time
-
+import asyncio
 from kubernetes import client
 from kubernetes.stream import stream
 
@@ -146,7 +146,7 @@ def wait_for_workload_pods_running(workload_name, namespace="default"):
     assert False, f"Timeout waiting for {workload_name} pods running"
 
 
-def wait_for_workload_pods_stable(workload_name, namespace="default"):
+async def wait_for_workload_pods_stable(workload_name, namespace="default"):
     stable_pods = {}
     wait_for_stable_retry = {}
     wait_for_stable_pod = []
@@ -179,6 +179,6 @@ def wait_for_workload_pods_stable(workload_name, namespace="default"):
                 return
 
         logging(f"Waiting for {workload_name} pods {wait_for_stable_pod} stable, retry ({i}) ...")
-        time.sleep(retry_interval)
+        await asyncio.sleep(retry_interval)
 
     assert False, f"Timeout waiting for {workload_name} pods {wait_for_stable_pod} stable)"

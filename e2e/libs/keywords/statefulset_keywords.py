@@ -14,6 +14,7 @@ from workload.statefulset import get_statefulset
 from workload.statefulset import list_statefulsets
 from workload.statefulset import scale_statefulset
 from workload.statefulset import wait_for_statefulset_replicas_ready
+from workload.workload import get_workload_volume_name
 
 
 
@@ -49,15 +50,15 @@ class statefulset_keywords:
         logging(f'Scaling statefulset {statefulset_name} down')
         scale_statefulset(statefulset_name, 0)
 
-        workload_keywords = BuiltIn().get_library_instance('workload_keywords')
-        workload_keywords.wait_for_workload_volume_detached(statefulset_name)
+        volume_name = get_workload_volume_name(statefulset_name)
+        self.volume.wait_for_volume_detached(volume_name)
 
     def scale_statefulset_up(self, statefulset_name, replicaset_count=3):
         logging(f'Scaling statefulset {statefulset_name} up to {replicaset_count}')
         scale_statefulset(statefulset_name, replicaset_count)
 
-        workload_keywords = BuiltIn().get_library_instance('workload_keywords')
-        workload_keywords.wait_for_workload_volume_healthy(statefulset_name)
+        volume_name = get_workload_volume_name(statefulset_name)
+        self.volume.wait_for_volume_healthy(volume_name)
 
         self.wait_for_statefulset_replicas_ready(statefulset_name, replicaset_count)
 
