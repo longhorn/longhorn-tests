@@ -72,7 +72,7 @@ def init_k8s_api_client():
 
 
 def get_backupstore():
-    return os.environ.get('LONGHORN_BACKUPSTORE')
+    return os.environ.get('LONGHORN_BACKUPSTORE', "")
 
 
 def wait_for_cluster_ready():
