@@ -9,9 +9,9 @@ class backupstore_keywords:
 
     def __init__(self):
         backupstore = get_backupstore()
-        if backupstore == "s3":
+        if backupstore.startswith("s3"):
             self.backupstore = Minio()
-        elif backupstore == "nfs":
+        elif backupstore.startswith("nfs"):
             self.backupstore = Nfs()
         self.setting = Setting()
 
@@ -23,7 +23,7 @@ class backupstore_keywords:
             client = get_longhorn_client()
             self.backupstore.cleanup_system_backups(client)
             self.backupstore.cleanup_backup_volumes(client)
-            self.setting.reset_backupstore_setting()
+            self.setting.reset_backupstore()
 
     def create_dummy_in_progress_backup(self, volume_name):
         client = get_longhorn_client()
