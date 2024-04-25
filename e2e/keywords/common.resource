@@ -37,3 +37,7 @@ Cleanup test resources
     cleanup_backupstore
     cleanup_disks
     cleanup_backing_images
+
+Cleanup test resources include off nodes
+    Power on off node
+    Cleanup test resources
