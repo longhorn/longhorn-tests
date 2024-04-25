@@ -20,6 +20,15 @@ Power off volume node of ${workload_kind} ${workload_id} for ${duration} minutes
     ${node_name} =    get_volume_node    ${volume_name}
     reboot_node_by_name    ${node_name}    ${duration}
 
+Power off volume node of ${workload_kind} ${workload_id}
+    ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
+    ${volume_name} =    get_workload_volume_name    ${workload_name}
+    ${powered_off_node} =    get_volume_node    ${volume_name}
+    ${last_volume_node} =    get_volume_node    ${volume_name}
+    power_off_volume_node    ${volume_name}
+    Set Test Variable    ${powered_off_node}
+    Set Test Variable    ${last_volume_node}
+
 Reboot volume node of ${workload_kind} ${workload_id}
     ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
     ${volume_name} =    get_workload_volume_name    ${workload_name}
@@ -57,6 +66,21 @@ Wait for volume of ${workload_kind} ${workload_id} attached and unknown
     ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
     ${volume_name} =    get_workload_volume_name    ${workload_name}
     wait_for_volume_unknown    ${volume_name}
+
+Wait for volume of ${workload_kind} ${workload_id} faulted
+    ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
+    ${volume_name} =    get_workload_volume_name    ${workload_name}
+    wait_for_volume_faulted    ${volume_name}
+
+Wait for volume of ${workload_kind} ${workload_id} attaching
+    ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
+    ${volume_name} =    get_workload_volume_name    ${workload_name}
+    wait_for_volume_attaching    ${volume_name}
+
+Wait for volume of ${workload_kind} ${workload_id} stuck in state attaching
+    ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
+    ${volume_name} =    get_workload_volume_name    ${workload_name}
+    wait_for_volume_stuck_attaching    ${volume_name}
 
 Wait for volume of ${workload_kind} ${workload_id} attached and degraded
     ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
@@ -96,3 +120,37 @@ Wait for workloads pods stable
         Append To List    ${workload_list}    ${workload_name}
     END
     wait_for_workloads_pods_stably_running    ${workload_list}
+
+Delete replica of ${workload_kind} ${workload_id} volume on all ${replica_locality}
+    ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
+    ${volume_name} =    get_workload_volume_name    ${workload_name}
+    delete_replica_on_nodes    ${volume_name}    ${replica_locality}
+
+Update volume of ${workload_kind} ${workload_id} replica count to ${replica_count}
+    ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
+    ${volume_name} =    get_workload_volume_name    ${workload_name}
+    update_volume_spec    ${volume_name}    numberOfReplicas    ${replica_count}
+
+Wait for ${workload_kind} ${workload_id} pod stuck in ${expect_state} on the original node
+    ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
+    ${pod} =     wait_for_pod_kept_in_state    ${workload_name}    ${expect_state}
+    ${node_name} =    get_pod_node    ${pod}
+    Should Be Equal    ${node_name}    ${last_volume_node}
+
+Wait for ${workload_kind} ${workload_id} pod stuck in ${expect_state} on another node
+    ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
+    ${pod} =     wait_for_pod_kept_in_state    ${workload_name}    ${expect_state}
+    ${node_name} =    get_pod_node    ${pod}
+    Should Not Be Equal    ${node_name}    ${last_volume_node}
+
+Check ${workload_kind} ${workload_id} pod is ${expect_state} on the original node
+    ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
+    ${pod} =     wait_for_pod_kept_in_state    ${workload_name}    ${expect_state}
+    ${node_name} =    get_pod_node    ${pod}
+    Should Be Equal    ${node_name}    ${last_volume_node}
+
+Check ${workload_kind} ${workload_id} pod is ${expect_state} on another node
+    ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
+    ${pod} =     wait_for_pod_kept_in_state    ${workload_name}    ${expect_state}
+    ${node_name} =    get_pod_node    ${pod}
+    Should Not Be Equal    ${node_name}    ${last_volume_node}

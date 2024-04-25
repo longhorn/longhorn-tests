@@ -4,6 +4,7 @@ Documentation    StatefulSet Keywords
 Library    Collections
 Library    ../libs/keywords/common_keywords.py
 Library    ../libs/keywords/statefulset_keywords.py
+Library    ../libs/keywords/volume_keywords.py
 
 *** Keywords ***
 Create statefulset ${statefulset_id} using ${volume_type} volume

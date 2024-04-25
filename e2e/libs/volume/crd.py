@@ -224,6 +224,16 @@ class CRD(Base):
             time.sleep(self.retry_interval)
         assert volume["status"]["state"] == desired_state
 
+    def wait_for_volume_keep_in_state(self, volume_name, desired_state):
+        self.wait_for_volume_state(volume_name, desired_state)
+
+        keep_state_desire_time = 20
+        for i in range(keep_state_desire_time):
+            volume = self.get(volume_name)
+            logging(f"Checking volume {volume} kept in status {desired_state}")
+            assert volume["status"]["state"] == desired_state
+            time.sleep(self.retry_interval)
+
     def wait_for_volume_robustness(self, volume_name, desired_state):
         volume = None
         for i in range(self.retry_count):
@@ -374,3 +384,29 @@ class CRD(Base):
         for replica in replica_list:
             node_set.add(replica['status']['ownerID'])
         assert len(replica_list) == len(node_set), f"unexpected replicas on the same node: {replica_list}"
+
+    def update_volume_spec(self, volume_name, key, value):
+        # retry conflict error
+        for i in range(self.retry_count):
+            try:
+                volume = self.get(volume_name)
+                spec = volume['spec']
+                if key == "numberOfReplicas":
+                    spec[key] = int(value)
+                else:
+                    spec[key] = value
+                self.obj_api.replace_namespaced_custom_object(
+                    group="longhorn.io",
+                    version="v1beta2",
+                    namespace="longhorn-system",
+                    plural="volumes",
+                    name=volume_name,
+                    body=volume
+                )
+                break
+            except Exception as e:
+                if e.status == 409:
+                    logging(f"Conflict error: {e.body}, retry ({i}) ...")
+                else:
+                    raise e
+            time.sleep(self.retry_interval)

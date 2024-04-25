@@ -94,3 +94,6 @@ class PersistentVolumeClaim():
         logging(f"Expanding PVC {claim_name} from {current_size} to {target_size}")
         expanded_size = self.claim.expand(claim_name, target_size)
         self.set_annotation(claim_name, ANNOT_EXPANDED_SIZE, str(expanded_size))
+
+    def get_volume_name(self, claim_name, claim_namespace):
+        return self.claim.get_volume_name(claim_name, claim_namespace)

@@ -12,10 +12,14 @@ from workload.workload import keep_writing_pod_data
 from workload.workload import write_pod_random_data
 from workload.workload import wait_for_workload_pods_running
 from workload.workload import wait_for_workload_pods_stable
+from workload.workload import wait_for_workload_pod_kept_in_state
+from workload.workload import get_pod_node
 
 from utility.constant import ANNOT_CHECKSUM
 from utility.constant import ANNOT_EXPANDED_SIZE
 from utility.utility import logging
+from node.utility import check_replica_locality
+from node.node import Node
 
 from volume import Volume
 from volume.constant import MEBIBYTE
@@ -121,3 +125,10 @@ class workload_keywords:
         logging(f'Waiting for {workload_name} volume {volume_name} to expand to {expanded_size}')
         self.volume.wait_for_volume_expand_to_size(volume_name, expanded_size)
         self.volume.wait_for_volume_detached(volume_name)
+
+    def wait_for_pod_kept_in_state(self, workload_name, expect_state, namespace="default"):
+        assert expect_state in ["Terminating", "ContainerCreating", "Running"], f"Unknown expected pod state: {expect_state}: "
+        return wait_for_workload_pod_kept_in_state(workload_name, expect_state, namespace=namespace)
+
+    def get_pod_node(self, pod):
+        return get_pod_node(pod)

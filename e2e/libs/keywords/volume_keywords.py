@@ -108,6 +108,14 @@ class volume_keywords:
         logging(f"Deleting volume {volume_name}'s replica on node {node_name}")
         self.volume.delete_replica(volume_name, node_name)
 
+    def delete_replica_on_nodes(self, volume_name, replica_locality):
+        check_replica_locality(replica_locality)
+
+        node_ids = self.get_node_ids_by_replica_locality(volume_name, replica_locality)        
+        for node_id in node_ids:
+            logging(f"Deleting volume {volume_name}'s replica on node {node_id}")
+            self.volume.delete_replica(volume_name, node_id)
+
     def set_annotation(self, volume_name, annotation_key, annotation_value):
         self.volume.set_annotation(volume_name, annotation_key, annotation_value)
 
@@ -204,6 +212,18 @@ class volume_keywords:
         logging(f'Waiting for volume {volume_name} to be healthy')
         self.volume.wait_for_volume_healthy(volume_name)
 
+    def wait_for_volume_attaching(self, volume_name):
+        logging(f'Waiting for volume {volume_name} to be in attaching')
+        self.volume.wait_for_volume_attaching(volume_name)
+
+    def wait_for_volume_stuck_attaching(self, volume_name):
+        logging(f'Waiting for volume {volume_name} to be stuck at attaching')
+        self.volume.wait_for_volume_stuck_attaching(volume_name)
+
+    def wait_for_volume_faulted(self, volume_name):
+        logging(f'Waiting for volume {volume_name} to be in faulted')
+        self.volume.wait_for_volume_faulted(volume_name)
+
     def wait_for_volume_migration_ready(self, volume_name):
         logging(f'Waiting for volume {volume_name} migration to be ready')
         self.volume.wait_for_volume_migration_ready(volume_name)
@@ -220,3 +240,6 @@ class volume_keywords:
 
     def wait_for_volume_unknown(self, volume_name):
         self.volume.wait_for_volume_unknown(volume_name)
+
+    def update_volume_spec(self, volume_name, key, value):
+        self.volume.update_volume_spec(volume_name, key, value)

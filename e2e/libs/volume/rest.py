@@ -185,3 +185,6 @@ class Rest(Base):
 
     def cleanup(self, volume_names):
         return NotImplemented
+
+    def update_volume_spec(self, volume_name, key, value):
+        return NotImplemented

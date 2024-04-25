@@ -33,3 +33,7 @@ Power off all worker nodes for ${power_off_time_in_min} mins
 Restart cluster
     reboot_all_nodes
     setup_control_plane_network_latency
+
+Power on off node
+    Run keyword And Continue On Failure
+    ...    power_on_node_by_name    ${powered_off_node}

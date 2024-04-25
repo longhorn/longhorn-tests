@@ -71,3 +71,7 @@ class CRD():
             logging(f"Exception when expanding PVC: {e}")
 
         return size
+
+    def get_volume_name(self, claim_name, claim_namespace):
+        claim = self.get(claim_name, claim_namespace)        
+        return claim.spec.volume_name
