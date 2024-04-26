@@ -1,34 +1,12 @@
 import time
-import yaml
 
 from kubernetes import client
-from kubernetes.client.rest import ApiException
 from kubernetes.stream import stream
 
 from utility.utility import get_retry_count_and_interval
 from utility.utility import logging
 
 from workload.constant import WAIT_FOR_POD_STABLE_MAX_RETRY
-
-
-def create_storageclass(name):
-    if name == 'longhorn-test-strict-local':
-        filepath = "./templates/workload/strict_local_storageclass.yaml"
-    else:
-        filepath = "./templates/workload/storageclass.yaml"
-
-    with open(filepath, 'r') as f:
-        manifest_dict = yaml.safe_load(f)
-        api = client.StorageV1Api()
-        api.create_storage_class(body=manifest_dict)
-
-
-def delete_storageclass(name):
-    api = client.StorageV1Api()
-    try:
-        api.delete_storage_class(name, grace_period_seconds=0)
-    except ApiException as e:
-        assert e.status == 404
 
 
 def get_workload_pod_names(workload_name):

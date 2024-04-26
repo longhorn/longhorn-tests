@@ -8,6 +8,7 @@ ANNOT_CHECKSUM = f'{LABEL_TEST}/last-recorded-checksum'
 ANNOT_EXPANDED_SIZE = f'{LABEL_TEST}/last-recorded-expanded-size'
 
 NAME_PREFIX = 'e2e-test'
+STORAGECLASS_NAME_PREFIX = 'longhorn-test'
 
 STREAM_EXEC_TIMEOUT = 300
 

@@ -8,8 +8,6 @@ from persistentvolumeclaim import PersistentVolumeClaim
 
 from workload.pod import get_volume_name_by_pod
 from workload.workload import check_pod_data_checksum
-from workload.workload import create_storageclass
-from workload.workload import delete_storageclass
 from workload.workload import get_workload_pod_names
 from workload.workload import get_workload_persistent_volume_claim_name
 from workload.workload import get_workload_volume_name
@@ -35,14 +33,6 @@ class workload_keywords:
 
         self.persistentvolumeclaim = PersistentVolumeClaim()
         self.volume = Volume()
-
-    def init_storageclasses(self):
-        create_storageclass('longhorn-test')
-        create_storageclass('longhorn-test-strict-local')
-
-    def cleanup_storageclasses(self):
-        delete_storageclass('longhorn-test')
-        delete_storageclass('longhorn-test-strict-local')
 
     def check_pod_data_checksum(self, expected_checksum, pod_name, file_name):
         logging(f'Checking checksum for file {file_name} in pod {pod_name}')
