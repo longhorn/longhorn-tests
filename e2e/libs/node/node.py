@@ -1,6 +1,6 @@
 import os
 import time
-
+import re
 from kubernetes import client
 
 from robot.libraries.BuiltIn import BuiltIn
@@ -40,6 +40,13 @@ class Node:
 
         assert evicted, 'failed to evict pods'
 
+    def is_accessing_node_by_index(self, node):
+        p = re.compile('node (\d)')
+        if m := p.match(node):
+            return m.group(1)
+        else:
+            return None
+
     def get_node_by_index(self, index, role="worker"):
         nodes = self.list_node_names_by_role(role)
         return nodes[int(index)]
@@ -47,19 +54,6 @@ class Node:
     def get_node_by_name(self, node_name):
         core_api = client.CoreV1Api()
         return core_api.read_node(node_name)
-
-    def get_test_pod_running_node(self):
-        if "NODE_NAME" in os.environ:
-            return os.environ["NODE_NAME"]
-        else:
-            return self.get_node_by_index(0)
-
-    def get_test_pod_not_running_node(self):
-        worker_nodes = self.list_node_names_by_role("worker")
-        test_pod_running_node = self.get_test_pod_running_node()
-        for worker_node in worker_nodes:
-            if worker_node != test_pod_running_node:
-                return worker_node
 
     def get_node_cpu_cores(self, node_name):
         node = self.get_node_by_name(node_name)
