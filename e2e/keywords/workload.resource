@@ -6,7 +6,7 @@ Library    ../libs/keywords/common_keywords.py
 Library    ../libs/keywords/volume_keywords.py
 Library    ../libs/keywords/workload_keywords.py
 Library    ../libs/keywords/host_keywords.py
-Library    ../libs/keywords/kubelet_keywords.py
+Library    ../libs/keywords/k8s_keywords.py
 
 *** Keywords ***
 Keep writing data to pod of ${workload_kind} ${workload_id}
