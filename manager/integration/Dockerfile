@@ -1,7 +1,13 @@
 FROM registry.suse.com/bci/python:3.9
 
+ARG TARGETPLATFORM
+RUN if [ "$TARGETPLATFORM" != "linux/amd64" ] && [ "$TARGETPLATFORM" != "linux/arm64" ]; then \
+    echo "Error: Unsupported TARGETPLATFORM: $TARGETPLATFORM" && \
+    exit 1; \
+    fi
+ENV ARCH ${TARGETPLATFORM#linux/}
+
 ARG KUBECTL_VERSION=v1.17.0
-ARG ARCH=amd64
 
 RUN zypper ref -f
 RUN zypper in -y vim-small nfs-client xfsprogs e2fsprogs util-linux-systemd gcc python39-devel gawk java-11-openjdk && \
