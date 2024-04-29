@@ -5265,7 +5265,9 @@ def assert_backup_state(b_actual, b_expected):
     assert b_expected.messages == b_actual.messages is None
 
 
-def create_backing_image_with_matching_url(client, name, url):
+def create_backing_image_with_matching_url(client, name, url,
+                                           minNumberOfCopies=1,
+                                           nodeSelector=[], diskSelector=[]):
     backing_images = client.list_backing_image()
     found = False
     for bi in backing_images:
@@ -5290,7 +5292,9 @@ def create_backing_image_with_matching_url(client, name, url):
             expected_checksum = BACKING_IMAGE_QCOW2_CHECKSUM
         bi = client.create_backing_image(
             name=name, sourceType=BACKING_IMAGE_SOURCE_TYPE_DOWNLOAD,
-            parameters={"url": url}, expectedChecksum=expected_checksum)
+            parameters={"url": url}, expectedChecksum=expected_checksum,
+            minNumberOfCopies=minNumberOfCopies,
+            nodeSelector=nodeSelector, diskSelector=diskSelector)
     assert bi
 
     is_ready = False
@@ -6249,3 +6253,58 @@ def wait_delete_dm_device(api, name):
             break
         time.sleep(RETRY_INTERVAL)
     assert not found
+
+
+def set_tags_for_node_and_its_disks(client, node, tags): # NOQA
+    if len(tags) == 0:
+        expected_tags = []
+    else:
+        expected_tags = list(tags)
+
+    for disk_name in node.disks.keys():
+        node.disks[disk_name].tags = tags
+    node = update_node_disks(client, node.name, disks=node.disks)
+    for disk_name in node.disks.keys():
+        assert node.disks[disk_name].tags == expected_tags
+
+    node = set_node_tags(client, node, tags)
+    assert node.tags == expected_tags
+
+    return node
+
+
+def get_node_by_disk_id(client, disk_id): # NOQA
+    nodes = client.list_node()
+
+    for node in nodes:
+        disks = node.disks
+        for name, disk in iter(disks.items()):
+            if disk.diskUUID == disk_id:
+                return node
+    # should handle empty result in caller
+    return ""
+
+
+def check_backing_image_single_copy_disk_eviction(client, bi_name, old_disk_id): # NOQA
+    for i in range(RETRY_COUNTS):
+        backing_image = client.by_id_backing_image(bi_name)
+        current_disk_id = next(iter(backing_image.diskFileStatusMap))
+        if current_disk_id != old_disk_id:
+            break
+
+        time.sleep(RETRY_INTERVAL)
+
+    assert current_disk_id != old_disk_id
+
+
+def check_backing_image_single_copy_node_eviction(client, bi_name, old_node): # NOQA
+    for i in range(RETRY_COUNTS):
+        backing_image = client.by_id_backing_image(bi_name)
+        current_disk_id = next(iter(backing_image.diskFileStatusMap))
+        current_node = get_node_by_disk_id(client, current_disk_id)
+        if current_node.name != old_node.name:
+            break
+
+        time.sleep(RETRY_INTERVAL)
+
+    assert current_node.name != old_node.name
