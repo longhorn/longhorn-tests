@@ -47,6 +47,10 @@ class CRD():
         claim = self.get(claim_name, claim_namespace)
         return claim.metadata.annotations[annotation_key]
 
+    def get_volume_name(self, claim_name, claim_namespace="default"):
+        claim = self.get(claim_name, claim_namespace)
+        return claim.spec.volume_name
+
     def expand(self, claim_name, size, namespace="default"):
         try:
             self.core_v1_api.patch_namespaced_persistent_volume_claim(
