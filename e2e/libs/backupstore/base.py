@@ -13,15 +13,6 @@ class Base(ABC):
     def is_backupTarget_nfs(self, s):
         return s.startswith("nfs://")
 
-    @classmethod
-    def get_backupstores(cls):
-        backupstore = os.environ['LONGHORN_BACKUPSTORES']
-        backupstore = backupstore.replace(" ", "")
-        backupstores = backupstore.split(",")
-        for i in range(len(backupstores)):
-            backupstores[i] = backupstores[i].split(":")[0]
-        return backupstores
-
     def backup_volume_path(self, volume_name):
         volume_name_sha512 = \
             hashlib.sha512(volume_name.encode('utf-8')).hexdigest()

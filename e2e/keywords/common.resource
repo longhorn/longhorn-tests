@@ -12,6 +12,7 @@ Library             ../libs/keywords/workload_keywords.py
 Library             ../libs/keywords/persistentvolumeclaim_keywords.py
 Library             ../libs/keywords/network_keywords.py
 Library             ../libs/keywords/backupstore_keywords.py
+Library             ../libs/keywords/storageclass_keywords.py
 
 *** Keywords ***
 Set test environment

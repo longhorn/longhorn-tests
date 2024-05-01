@@ -1,73 +1,57 @@
 import os
+import time
+from utility.utility import logging
 from utility.utility import get_longhorn_client
-from setting.constant import SETTING_BACKUP_TARGET
-from setting.constant import SETTING_BACKUP_TARGET_CREDENTIAL_SECRET
-from setting.constant import SETTING_BACKUPSTORE_POLL_INTERVAL
+from utility.utility import get_retry_count_and_interval
 
 class Setting:
 
+    SETTING_BACKUP_TARGET = "backup-target"
+    SETTING_BACKUP_TARGET_CREDENTIAL_SECRET = "backup-target-credential-secret"
+    SETTING_BACKUPSTORE_POLL_INTERVAL = "backupstore-poll-interval"
+
     def __init__(self):
         self.longhorn_client = get_longhorn_client()
+        self.retry_count, self.retry_interval = get_retry_count_and_interval()
+
+    def update_setting(self, key, value):
+        for i in range(self.retry_count):
+            try:
+                logging(f"Trying to update setting {key} to {value} ... ({i})")
+                setting = self.longhorn_client.by_id_setting(key)
+                self.longhorn_client.update(setting, value=value)
+                break
+            except Exception as e:
+                logging(e)
+            time.sleep(self.retry_interval)
+
+    def get_setting(self, key):
+        return self.longhorn_client.by_id_setting(key).value
 
     def get_backupstore_url(self):
-        backupstore = os.environ['LONGHORN_BACKUPSTORES']
-        backupstore = backupstore.replace(" ", "")
-        backupstores = backupstore.split(",")
-        assert len(backupstores) != 0
-        return backupstores
+        return os.environ.get('LONGHORN_BACKUPSTORE')
 
     def get_backupstore_poll_interval(self):
-        poll_interval = os.environ['LONGHORN_BACKUPSTORE_POLL_INTERVAL']
-        assert len(poll_interval) != 0
-        return poll_interval
+        return os.environ.get('LONGHORN_BACKUPSTORE_POLL_INTERVAL')
 
     def set_backupstore(self):
-        backupstores = self.get_backupstore_url()
-        poll_interval = self.get_backupstore_poll_interval()
-        for backupstore in backupstores:
+        backupstore = self.get_backupstore_url()
+        if backupstore:
             backupsettings = backupstore.split("$")
-            self.set_backupstore_url(backupsettings[0])
-            self.set_backupstore_credential_secret(backupsettings[1])
-            self.set_backupstore_poll_interval(poll_interval)
-            break
+            self.update_setting(self.SETTING_BACKUP_TARGET, backupsettings[0])
+            if len(backupsettings) > 1:
+                self.update_setting(self.SETTING_BACKUP_TARGET_CREDENTIAL_SECRET, backupsettings[1])
 
-    def reset_backupstore_setting(self):
-        backup_target_setting = self.longhorn_client.by_id_setting(SETTING_BACKUP_TARGET)
-        self.longhorn_client.update(backup_target_setting, value="")
+            poll_interval = self.get_backupstore_poll_interval()
+            self.update_setting(self.SETTING_BACKUPSTORE_POLL_INTERVAL, poll_interval)
 
-        backup_target_credential_setting = self.longhorn_client.by_id_setting(
-            SETTING_BACKUP_TARGET_CREDENTIAL_SECRET)
-        self.longhorn_client.update(backup_target_credential_setting, value="")
-
-        backup_store_poll_interval = self.longhorn_client.by_id_setting(
-            SETTING_BACKUPSTORE_POLL_INTERVAL)
-        self.longhorn_client.update(backup_store_poll_interval, value="300")
-
-    def set_backupstore_url(self, url):
-        backup_target_setting = self.longhorn_client.by_id_setting(SETTING_BACKUP_TARGET)
-        backup_target_setting = self.longhorn_client.update(backup_target_setting,
-                                                            value=url)
-        assert backup_target_setting.value == url
-
-    def set_backupstore_credential_secret(self, credential_secret):
-        backup_target_credential_setting = self.longhorn_client.by_id_setting(
-            SETTING_BACKUP_TARGET_CREDENTIAL_SECRET)
-        backup_target_credential_setting = self.longhorn_client.update(
-            backup_target_credential_setting, value=credential_secret)
-        assert backup_target_credential_setting.value == credential_secret
-
-    def set_backupstore_poll_interval(self, poll_interval):
-        backup_store_poll_interval_setting = self.longhorn_client.by_id_setting(
-            SETTING_BACKUPSTORE_POLL_INTERVAL)
-        backup_target_poll_interal_setting = self.longhorn_client.update(
-            backup_store_poll_interval_setting, value=poll_interval)
-        assert backup_target_poll_interal_setting.value == poll_interval
+    def reset_backupstore(self):
+        self.update_setting(self.SETTING_BACKUP_TARGET, "")
+        self.update_setting(self.SETTING_BACKUP_TARGET_CREDENTIAL_SECRET, "")
+        self.update_setting(self.SETTING_BACKUPSTORE_POLL_INTERVAL, "300")
 
     def get_backup_target(self):
-        backup_target_setting = self.longhorn_client.by_id_setting(SETTING_BACKUP_TARGET)
-        return backup_target_setting.value
+        return self.get_setting(self.SETTING_BACKUP_TARGET)
 
     def get_secret(self):
-        backup_target_credential_setting = self.longhorn_client.by_id_setting(
-            SETTING_BACKUP_TARGET_CREDENTIAL_SECRET)
-        return backup_target_credential_setting.value
+        return self.get_setting(self.SETTING_BACKUP_TARGET_CREDENTIAL_SECRET)

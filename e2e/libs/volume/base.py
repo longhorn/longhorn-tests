@@ -52,6 +52,10 @@ class Base(ABC):
         return NotImplemented
 
     @abstractmethod
+    def is_replica_rebuilding_in_progress(self, volume_name, node_name):
+        return NotImplemented
+
+    @abstractmethod
     def wait_for_replica_rebuilding_complete(self, volume_name, node_name):
         return NotImplemented
 

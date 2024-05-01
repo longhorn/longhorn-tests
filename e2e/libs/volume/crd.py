@@ -1,7 +1,6 @@
 import time
 from kubernetes.client.rest import ApiException
 from kubernetes import client
-
 from engine import Engine
 
 from utility.constant import LABEL_TEST
@@ -295,31 +294,18 @@ class CRD(Base):
         assert engine_current_size == engine_expected_size
 
     def get_endpoint(self, volume_name):
-        logging("Delegating the get_endpoint call to API because there is no CRD implementation")
         return Rest(self.node_exec).get_endpoint(volume_name)
 
     def write_random_data(self, volume_name, size):
         node_name = self.get(volume_name)["spec"]["nodeID"]
         endpoint = self.get_endpoint(volume_name)
 
-        dd_command = f"dd if=/dev/urandom of={endpoint} bs=1M count={size} status=none"
-        dd_command_output = self.node_exec.issue_cmd(node_name, dd_command).strip()
-
-        try:
-            assert dd_command_output == ""
-        except AssertionError:
-            logging(f"Failed to write random data to volume {volume_name}. \n"
-                    f"Command: {dd_command}\n"
-                    f"Output: {dd_command_output}")
-
-            logging(f"Pausing the test for {self.retry_count} seconds ...")
-            time.sleep(self.retry_count)
-
-        assert dd_command_output == "", \
-            f"Failed to write random data to volume {volume_name}.\n" \
-            f"Command: {dd_command}\n" \
-            f"Output: {dd_command_output}"
-        return self.node_exec.issue_cmd(node_name, f"md5sum {endpoint} | awk \'{{print $1}}\'")
+        checksum = self.node_exec.issue_cmd(
+            node_name,
+            f"dd if=/dev/urandom of={endpoint} bs=1M count={size} status=none;\
+              sync;\
+              md5sum {endpoint} | awk \'{{print $1}}\'")
+        return checksum
 
     def keep_writing_data(self, volume_name, size):
         node_name = self.get(volume_name)["spec"]["nodeID"]
@@ -349,15 +335,16 @@ class CRD(Base):
         )
 
     def wait_for_replica_rebuilding_start(self, volume_name, node_name):
-        logging("Delegating the wait_for_replica_rebuilding_start call to API because there is no CRD implementation")
-        Rest(self.node_exec).wait_for_replica_rebuilding_start(volume_name, node_name)
+        return Rest(self.node_exec).wait_for_replica_rebuilding_start(volume_name, node_name)
+
+    def is_replica_rebuilding_in_progress(self, volume_name, node_name):
+        return Rest(self.node_exec).is_replica_rebuilding_in_progress(volume_name, node_name)
+
+    def crash_replica_processes(self, volume_name):
+        return Rest(self.node_exec).crash_replica_processes(volume_name)
 
     def wait_for_replica_rebuilding_complete(self, volume_name, node_name):
-        logging("Delegating the wait_for_replica_rebuilding_complete call to API because there is no CRD implementation")
-        Rest(self.node_exec).wait_for_replica_rebuilding_complete(
-            volume_name,
-            node_name
-        )
+        return Rest(self.node_exec).wait_for_replica_rebuilding_complete(volume_name, node_name)
 
     def check_data_checksum(self, volume_name, checksum):
         node_name = self.get(volume_name)["spec"]["nodeID"]

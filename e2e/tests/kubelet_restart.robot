@@ -5,6 +5,7 @@ Resource    ../keywords/common.resource
 Resource    ../keywords/persistentvolumeclaim.resource
 Resource    ../keywords/statefulset.resource
 Resource    ../keywords/workload.resource
+Resource    ../keywords/k8s.resource
 
 Test Setup    Set test environment
 Test Teardown    Cleanup test resources
