@@ -18,6 +18,7 @@ from kubernetes.client.rest import ApiException
 
 from utility.constant import NAME_PREFIX
 from utility.constant import STREAM_EXEC_TIMEOUT
+from utility.constant import STORAGECLASS_NAME_PREFIX
 
 
 class timeout:
@@ -57,7 +58,10 @@ def generate_name_random(name_prefix="test-"):
 
 
 def generate_name_with_suffix(kind, suffix):
-    return f"{NAME_PREFIX}-{kind}-{suffix}"
+    if kind == "storageclass":
+        return f"{STORAGECLASS_NAME_PREFIX}-{suffix}"
+    else:
+        return f"{NAME_PREFIX}-{kind}-{suffix}"
 
 
 def init_k8s_api_client():

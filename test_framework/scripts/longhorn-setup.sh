@@ -155,7 +155,7 @@ get_longhorn_manifest(){
 get_longhorn_chart(){
   git clone --single-branch \
             --branch "${LONGHORN_REPO_BRANCH}" \
-            "${LONGHORN_REPO_URL}" \
+            "${LONGHORN_REPO_URI}" \
             "${LONGHORN_REPO_DIR}"
 }
 
