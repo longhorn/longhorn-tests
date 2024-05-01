@@ -1,6 +1,7 @@
 def imageName = "${JOB_BASE_NAME}-${env.BUILD_NUMBER}"
 def summary
 def BUILD_TRIGGER_BY = "\n${currentBuild.getBuildCauses()[0].shortDescription}"
+def DELETE_RESOURCES_WITH_OWNERS = params.DELETE_RESOURCES_WITH_OWNERS ? params.DELETE_RESOURCES_WITH_OWNERS : false
 
 node {
 
@@ -14,6 +15,7 @@ node {
                              --env AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY} \
                              --env AWS_SECRET_ACCESS_KEY=${AWS_SECRET_KEY} \
                              --env AWS_DEFAULT_REGION=us-east-1 \
+                             --env DELETE_RESOURCES_WITH_OWNERS=${DELETE_RESOURCES_WITH_OWNERS} \
                              ${imageName}
          """
     }
