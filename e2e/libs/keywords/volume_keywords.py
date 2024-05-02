@@ -76,7 +76,7 @@ class volume_keywords:
             return [volume['spec']['nodeID']]
 
         worker_nodes = self.node.list_node_names_by_role("worker")
-        volume_node = self.get_node_ids_by_replica_locality(volume_name, "volume node")
+        volume_node = self.get_node_id_by_replica_locality(volume_name, "volume node")
         replica_nodes = [node for node in worker_nodes if node != volume_node]
         test_pod_node = self.node.get_test_pod_running_node()
 
