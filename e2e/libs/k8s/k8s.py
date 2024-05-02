@@ -1,10 +1,11 @@
 import time
-
-from workload.constant import IMAGE_UBUNTU
+import subprocess
 from workload.pod import create_pod
 from workload.pod import delete_pod
 from workload.pod import new_pod_manifest
+from workload.constant import IMAGE_UBUNTU
 
+from utility.utility import logging
 
 def restart_kubelet(node_name, downtime_in_sec=10):
     manifest = new_pod_manifest(
@@ -19,3 +20,8 @@ def restart_kubelet(node_name, downtime_in_sec=10):
     time.sleep(downtime_in_sec)
 
     delete_pod(pod_name)
+
+def delete_node(node_name):
+    exec_cmd = ["kubectl", "delete", "node", node_name]
+    res = subprocess.check_output(exec_cmd)
+    logging(f"Executed command {exec_cmd} with result {res}")

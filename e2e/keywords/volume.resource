@@ -10,9 +10,10 @@ Create volume ${volume_id}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     create_volume   ${volume_name}    2    3
 
-Create volume ${volume_id} with frontend ${frontend_name}
+Create volume ${volume_id} with
+    [Arguments]    &{config}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
-    create_volume   ${volume_name}    2    3    ${frontend_name}
+    create_volume   ${volume_name}    2    3    &{config}
 
 No volume created
     ${volumes} =    list_volumes
@@ -29,6 +30,11 @@ Create volume ${volume_id} with ${size} GB and ${replica_count} replicas
 Update volume ${volume_name} replica count to ${replica_count}
     update_volume_spec   ${volume_name}    numberOfReplicas    3
 
+Attach volume ${volume_id} to node ${node_id}
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    ${node_name} =    get_node_by_index    ${node_id}
+    attach_volume    ${volume_name}    ${node_name}
+
 Attach volume ${volume_id}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     attach_volume    ${volume_name}
@@ -37,6 +43,11 @@ Detach volume ${volume_id}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     detach_volume    ${volume_name}
 
+Detach volume ${volume_id} from node ${node_id}
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    ${node_name} =    get_node_by_index    ${node_id}
+    detach_volume    ${volume_name}    ${node_name}
+
 Delete volume ${volume_id}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     delete_volume    ${volume_name}
@@ -44,6 +55,10 @@ Delete volume ${volume_id}
 Write data to volume ${volume_id}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     write_volume_random_data   ${volume_name}    2048
+
+Write ${size} GB data to volume ${volume_id}
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    write_volume_random_data   ${volume_name}    ${${size} * 1024}
 
 Keep writing data to volume ${volume_id}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
@@ -57,6 +72,15 @@ Wait for volume ${volume_id} healthy
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     wait_for_volume_healthy    ${volume_name}
 
+Wait for volume ${volume_id} migration ready
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    wait_for_volume_migration_ready    ${volume_name}
+
+Wait for volume ${volume_id} migrated to node ${node_id}
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    ${node_name} =    get_node_by_index    ${node_id}
+    wait_for_volume_migration_completed    ${volume_name}    ${node_name}
+
 Wait until volume ${volume_id} replica rebuilding started on ${replica_locality}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     wait_for_replica_rebuilding_to_start_on_node    ${volume_name}    ${replica_locality}
@@ -68,6 +92,24 @@ Wait until volume ${volume_id} replica rebuilding completed on ${replica_localit
 Wait until volume ${volume_id} replicas rebuilding completed
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     wait_for_replica_rebuilding_to_complete   ${volume_name}
+
+Wait until volume ${volume_id} replica rebuilding stopped on ${replica_locality}
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    wait_for_replica_rebuilding_to_stop_on_node    ${volume_name}    ${replica_locality}
+
+Only one replica rebuilding on ${replica_locality} will start at a time, either for volume ${volume_id_0} or volume ${volume_id_1}
+    ${volume_name_0} =    generate_name_with_suffix    volume    ${volume_id_0}
+    ${volume_name_1} =    generate_name_with_suffix    volume    ${volume_id_1}
+    only_one_replica_rebuilding_will_start_at_a_time_on_node    ${volume_name_0}    ${volume_name_1}    ${replica_locality}
+
+Both volume ${volume_id_0} and volume ${volume_id_1} replica rebuilding on ${replica_locality} will start at the same time
+    ${volume_name_0} =    generate_name_with_suffix    volume    ${volume_id_0}
+    ${volume_name_1} =    generate_name_with_suffix    volume    ${volume_id_1}
+    both_replica_rebuildings_will_start_at_the_same_time_on_node    ${volume_name_0}    ${volume_name_1}    ${replica_locality}
+
+Crash volume ${volume_id} replica processes
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    crash_replica_processes    ${volume_name}
 
 Check volume ${volume_id} data is intact
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}

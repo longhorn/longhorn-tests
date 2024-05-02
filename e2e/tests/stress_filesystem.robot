@@ -18,59 +18,57 @@ ${RETRY_INTERVAL}    1
 
 *** Test Cases ***
 
-Stress Volume Node Memory When Replica Is Rebuilding
+Stress Volume Node Filesystem When Replica Is Rebuilding
     Given Create volume 0 with 5 GB and 3 replicas
     And Attach volume 0
     And Write data to volume 0
+    And Stress filesystem of volume 0 volume node
 
     FOR    ${i}    IN RANGE    ${LOOP_COUNT}
         When Delete volume 0 replica on volume node
         And Wait until volume 0 replica rebuilding started on volume node
-        And Stress memory of node with volume 0
 
         Then Wait until volume 0 replica rebuilding completed on volume node
         And Check volume 0 data is intact
     END
 
-Stress Volume Node Memory When Volume Is Detaching and Attaching
+Stress Volume Node Filesystem When Volume Is Detaching and Attaching
     Given Create volume 0 with 5 GB and 3 replicas
     And Attach volume 0
     And Write data to volume 0
+    And Stress filesystem of volume 0 volume node
 
     FOR    ${i}    IN RANGE    ${LOOP_COUNT}
-        When Stress memory of node with volume 0
-
         And Detach volume 0
         And Attach volume 0
         And Wait for volume 0 healthy
-        Then Check volume 0 data is intact
+        And Check volume 0 data is intact
     END
 
-Stress Volume Node Memory When Volume Is Online Expanding
+Stress Volume Node Filesystem When Volume Is Online Expanding
     Given Create statefulset 0 using RWO volume
-    And Write 1024 MB data to file 0.txt in statefulset 0
+    And Write 1024 MB data to file data.txt in statefulset 0
+    And Stress filesystem of statefulset 0 volume node
 
     FOR    ${i}    IN RANGE    ${LOOP_COUNT}
-        And Stress memory of volume nodes
-
         When Expand statefulset 0 volume by 100 MiB
-
         Then Wait for statefulset 0 volume size expanded
-        And Check statefulset 0 data in file 0.txt is intact
+
+        And Check statefulset 0 data in file data.txt is intact
     END
 
-Stress Volume Node Memory When Volume Is Offline Expanding
+Stress Volume Node Filesystem When Volume Is Offline Expanding
     Given Create statefulset 0 using RWO volume
-    And Write 1024 MB data to file 0.txt in statefulset 0
+    And Write 1024 MB data to file data.txt in statefulset 0
+    And Stress filesystem of all worker nodes
 
     FOR    ${i}    IN RANGE    ${LOOP_COUNT}
         And Scale down statefulset 0 to detach volume
-        And Stress memory of all worker nodes
 
         When Expand statefulset 0 volume by 100 MiB
-
         Then Wait for statefulset 0 volume size expanded
+
         And Scale up statefulset 0 to attach volume
         And Wait for volume of statefulset 0 healthy
-        And Check statefulset 0 data in file 0.txt is intact
+        And Check statefulset 0 data in file data.txt is intact
     END

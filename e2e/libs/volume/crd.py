@@ -1,14 +1,13 @@
 import time
 from kubernetes.client.rest import ApiException
 from kubernetes import client
-
 from engine import Engine
 
 from utility.constant import LABEL_TEST
 from utility.constant import LABEL_TEST_VALUE
 from utility.utility import get_retry_count_and_interval
 from utility.utility import logging
-
+from utility.utility import get_cr
 from volume.base import Base
 from volume.constant import GIBIBYTE
 from volume.rest import Rest
@@ -20,9 +19,11 @@ class CRD(Base):
         self.obj_api = client.CustomObjectsApi()
         self.node_exec = node_exec
         self.retry_count, self.retry_interval = get_retry_count_and_interval()
+        self.engine = Engine()
 
-    def create(self, volume_name, size, replica_count, frontend="blockdev"):
+    def create(self, volume_name, size, replica_count, frontend, migratable, access_mode, data_engine):
         size = str(int(size) * GIBIBYTE)
+        access_mode = access_mode.lower()
         body = {
             "apiVersion": "longhorn.io/v1beta2",
             "kind": "Volume",
@@ -36,7 +37,10 @@ class CRD(Base):
                 "frontend": frontend,
                 "replicaAutoBalance": "ignored",
                 "size": size,
-                "numberOfReplicas": int(replica_count)
+                "numberOfReplicas": int(replica_count),
+                "migratable": migratable,
+                "accessMode": access_mode,
+                "dataEngine": data_engine
             }
         }
         try:
@@ -53,6 +57,8 @@ class CRD(Base):
             assert volume['spec']['size'] == size, f"expect volume size is {size}, but it's {volume['spec']['size']}"
             assert volume['spec']['numberOfReplicas'] == int(replica_count), f"expect volume numberOfReplicas is {replica_count}, but it's {volume['spec']['numberOfReplicas']}"
             assert volume['spec']['frontend'] == frontend, f"expect volume frontend is {frontend}, but it's {volume['spec']['frontend']}"
+            assert volume['spec']['migratable'] == migratable, f"expect volume migratable is {migratable}, but it's {volume['spec']['migratable']}"
+            assert volume['spec']['accessMode'] == access_mode, f"expect volume accessMode is {access_mode}, but it's {volume['spec']['accessMode']}"
             assert volume['status']['restoreRequired'] is False, f"expect volume restoreRequired is False, but it's {volume['status']['restoreRequired']}"
             #assert volume['backingImage'] == backing_image, f"expect volume backingImage is {backing_image}, but it's {volume['backingImage']}"
         except ApiException as e:
@@ -72,42 +78,35 @@ class CRD(Base):
             logging(f"Deleting volume error: {e}")
 
     def attach(self, volume_name, node_name):
-        self.obj_api.patch_namespaced_custom_object(
-            group="longhorn.io",
-            version="v1beta2",
-            namespace="longhorn-system",
-            plural="volumes",
-            name=volume_name,
-            body={
-                    "spec": {
-                        "nodeID": node_name
-                    }
-            }
-        )
+
+        migratable = self.get(volume_name)['spec']['migratable']
+        type = "longhorn-api" if not migratable else "csi-attacher"
 
         try:
+            body = get_cr(
+                group="longhorn.io",
+                version="v1beta2",
+                namespace="longhorn-system",
+                plural="volumeattachments",
+                name=volume_name
+            )
+            body['spec']['attachmentTickets'][node_name] = {
+                "id": node_name,
+                "nodeID": node_name,
+                "parameters": {
+                    "disableFrontend": "false",
+                    "lastAttachedBy": ""
+                },
+                    "type": type
+            }
+
             self.obj_api.patch_namespaced_custom_object(
                 group="longhorn.io",
                 version="v1beta2",
                 namespace="longhorn-system",
                 plural="volumeattachments",
                 name=volume_name,
-                body={
-                        "spec": {
-                            "attachmentTickets": {
-                                "": {
-                                    "generation": 0,
-                                    "id": "",
-                                    "nodeID": node_name,
-                                    "parameters": {
-                                        "disableFrontend": "false",
-                                        "lastAttachedBy": ""
-                                    },
-                                    "type": "longhorn-api"
-                                }
-                            }
-                        }
-                }
+                body=body
             )
         except Exception as e:
             # new CRD: volumeattachments was added since from 1.5.0
@@ -116,40 +115,32 @@ class CRD(Base):
                 Exception(f'exception for creating volumeattachments:', e)
         self.wait_for_volume_state(volume_name, "attached")
 
-    def detach(self, volume_name):
+    def detach(self, volume_name, node_name):
         try:
-            self.obj_api.patch_namespaced_custom_object(
+            body = get_cr(
+                group="longhorn.io",
+                version="v1beta2",
+                namespace="longhorn-system",
+                plural="volumeattachments",
+                name=volume_name
+            )
+            del body['spec']['attachmentTickets'][node_name]
+
+            self.obj_api.replace_namespaced_custom_object(
                 group="longhorn.io",
                 version="v1beta2",
                 namespace="longhorn-system",
                 plural="volumeattachments",
                 name=volume_name,
-                body={
-                    "spec": {
-                        "attachmentTickets": None,
-                    }
-                }
+                body=body
             )
         except Exception as e:
             # new CRD: volumeattachments was added since from 1.5.0
             # https://github.com/longhorn/longhorn/issues/3715
             if e.reason != "Not Found":
                 Exception(f'exception for patching volumeattachments:', e)
-
-            self.obj_api.patch_namespaced_custom_object(
-                group="longhorn.io",
-                version="v1beta2",
-                namespace="longhorn-system",
-                plural="volumes",
-                name=volume_name,
-                body={
-                        "spec": {
-                            "nodeID": ""
-                        }
-                }
-            )
-
-        self.wait_for_volume_state(volume_name, "detached")
+        if len(body['spec']['attachmentTickets']) == 0:
+            self.wait_for_volume_state(volume_name, "detached")
 
     def get(self, volume_name):
         return self.obj_api.get_namespaced_custom_object(
@@ -255,6 +246,36 @@ class CRD(Base):
             time.sleep(self.retry_interval)
         assert volume["status"]["robustness"] != not_desired_state
 
+    def wait_for_volume_migration_ready(self, volume_name):
+        ready = False
+        for i in range(self.retry_count):
+            logging(f"Waiting for volume {volume_name} migration ready ({i}) ...")
+            try:
+                engines = self.engine.get_engines(volume_name)
+                ready = len(engines) == 2
+                for engine in engines:
+                    ready = ready and engine['status']['endpoint']
+                if ready:
+                    break
+            except Exception as e:
+                logging(f"Getting volume {volume_name} engines error: {e}")
+            time.sleep(self.retry_interval)
+        assert ready
+
+    def wait_for_volume_migration_completed(self, volume_name, node_name):
+        completed = False
+        for i in range(self.retry_count):
+            logging(f"Waiting for volume {volume_name} migration to node {node_name} completed ({i}) ...")
+            try:
+                engines = self.engine.get_engines(volume_name, node_name)
+                completed = len(engines) == 1 and engines[0]['status']['endpoint']
+                if completed:
+                    break
+            except Exception as e:
+                logging(f"Getting volume {volume_name} engines error: {e}")
+            time.sleep(self.retry_interval)
+        assert completed
+
     def wait_for_volume_expand_to_size(self, volume_name, expected_size):
         engine = None
         engine_current_size = 0
@@ -274,31 +295,18 @@ class CRD(Base):
         assert engine_current_size == engine_expected_size
 
     def get_endpoint(self, volume_name):
-        logging("Delegating the get_endpoint call to API because there is no CRD implementation")
         return Rest(self.node_exec).get_endpoint(volume_name)
 
     def write_random_data(self, volume_name, size):
         node_name = self.get(volume_name)["spec"]["nodeID"]
         endpoint = self.get_endpoint(volume_name)
 
-        dd_command = f"dd if=/dev/urandom of={endpoint} bs=1M count={size} status=none"
-        dd_command_output = self.node_exec.issue_cmd(node_name, dd_command).strip()
-
-        try:
-            assert dd_command_output == ""
-        except AssertionError:
-            logging(f"Failed to write random data to volume {volume_name}. \n"
-                    f"Command: {dd_command}\n"
-                    f"Output: {dd_command_output}")
-
-            logging(f"Pausing the test for {self.retry_count} seconds ...")
-            time.sleep(self.retry_count)
-
-        assert dd_command_output == "", \
-            f"Failed to write random data to volume {volume_name}.\n" \
-            f"Command: {dd_command}\n" \
-            f"Output: {dd_command_output}"
-        return self.node_exec.issue_cmd(node_name, f"md5sum {endpoint} | awk \'{{print $1}}\'")
+        checksum = self.node_exec.issue_cmd(
+            node_name,
+            f"dd if=/dev/urandom of={endpoint} bs=1M count={size} status=none;\
+              sync;\
+              md5sum {endpoint} | awk \'{{print $1}}\'")
+        return checksum
 
     def keep_writing_data(self, volume_name, size):
         node_name = self.get(volume_name)["spec"]["nodeID"]
@@ -328,15 +336,16 @@ class CRD(Base):
         )
 
     def wait_for_replica_rebuilding_start(self, volume_name, node_name):
-        logging("Delegating the wait_for_replica_rebuilding_start call to API because there is no CRD implementation")
-        Rest(self.node_exec).wait_for_replica_rebuilding_start(volume_name, node_name)
+        return Rest(self.node_exec).wait_for_replica_rebuilding_start(volume_name, node_name)
+
+    def is_replica_rebuilding_in_progress(self, volume_name, node_name):
+        return Rest(self.node_exec).is_replica_rebuilding_in_progress(volume_name, node_name)
+
+    def crash_replica_processes(self, volume_name):
+        return Rest(self.node_exec).crash_replica_processes(volume_name)
 
     def wait_for_replica_rebuilding_complete(self, volume_name, node_name):
-        logging("Delegating the wait_for_replica_rebuilding_complete call to API because there is no CRD implementation")
-        Rest(self.node_exec).wait_for_replica_rebuilding_complete(
-            volume_name,
-            node_name
-        )
+        return Rest(self.node_exec).wait_for_replica_rebuilding_complete(volume_name, node_name)
 
     def check_data_checksum(self, volume_name, checksum):
         node_name = self.get(volume_name)["spec"]["nodeID"]

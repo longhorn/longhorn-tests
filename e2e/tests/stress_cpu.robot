@@ -40,7 +40,7 @@ Stress Volume Node CPU When Volume Is Detaching and Attaching
         When Stress CPU of node with volume 0
         And Detach volume 0
         And Attach volume 0
-
+        And Wait for volume 0 healthy
         Then Check volume 0 data is intact
     END
 
@@ -52,8 +52,8 @@ Stress Volume Node CPU When Volume Is Online Expanding
         And Stress CPU of volume nodes
 
         When Expand statefulset 0 volume by 100 MiB
-
         Then Wait for statefulset 0 volume size expanded
+
         And Check statefulset 0 data in file 0.txt is intact
     END
 
@@ -68,7 +68,7 @@ Stress Volume Node CPU When Volume Is Offline Expanding
         When Expand statefulset 0 volume by 100 MiB
 
         Then Wait for statefulset 0 volume size expanded
-        And Wait for statefulset 0 volume detached
         And Scale up statefulset 0 to attach volume
+        And Wait for volume of statefulset 0 healthy
         And Check statefulset 0 data in file 0.txt is intact
     END
