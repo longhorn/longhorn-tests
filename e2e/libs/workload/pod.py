@@ -14,7 +14,7 @@ def new_pod_manifest(pod_name="", image="", command=[], args=[],
                      claim_name="", node_name="", labels={}):
     if pod_name == "":
         pod_name = generate_name_random()
-
+    logging(f"Creating pod for {command} {args} on {node_name}")
     # Set default image and args
     if image is None:
         image = IMAGE_BUSYBOX
@@ -49,6 +49,9 @@ def new_pod_manifest(pod_name="", image="", command=[], args=[],
                 }, {
                     'name': 'rancher',
                     'mountPath': '/var/lib/rancher'
+                }, {
+                    'name': 'rootfs',
+                    'mountPath': '/rootfs'
                 }]
             }],
             'volumes': [{
@@ -60,6 +63,11 @@ def new_pod_manifest(pod_name="", image="", command=[], args=[],
                 'name': 'rancher',
                 'hostPath': {
                     'path': '/var/lib/rancher'
+                }
+            }, {
+                'name': 'rootfs',
+                'hostPath': {
+                    'path': '/'
                 }
             }]
         }
@@ -135,11 +143,13 @@ def wait_for_pod_status(name, status, namespace='default'):
     for i in range(retry_count):
         pod = get_pod(name, namespace)
 
-        logging(f"Waiting for pod {name} status {status}, current status {pod.status.phase} ({i}) ...")
-
-        if pod.status.phase == status:
-            is_running = True
-            break
+        try:
+            logging(f"Waiting for pod {name} status {status}, current status {pod.status.phase} ({i}) ...")
+            if pod.status.phase == status:
+                is_running = True
+                break
+        except Exception as e:
+            logging(e)
 
         time.sleep(retry_interval)
 

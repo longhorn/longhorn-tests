@@ -1,8 +1,6 @@
 import multiprocessing
 
 from deployment_keywords import deployment_keywords
-from kubelet_keywords import kubelet_keywords
-from host_keywords import host_keywords
 from statefulset_keywords import statefulset_keywords
 from volume_keywords import volume_keywords
 
@@ -10,8 +8,6 @@ from persistentvolumeclaim import PersistentVolumeClaim
 
 from workload.pod import get_volume_name_by_pod
 from workload.workload import check_pod_data_checksum
-from workload.workload import create_storageclass
-from workload.workload import delete_storageclass
 from workload.workload import get_workload_pod_names
 from workload.workload import get_workload_persistent_volume_claim_name
 from workload.workload import get_workload_volume_name
@@ -32,21 +28,11 @@ class workload_keywords:
 
     def __init__(self):
         self.deployment_keywords = deployment_keywords()
-        self.kubelet_keywords = kubelet_keywords()
-        self.host_keywords = host_keywords()
         self.statefulset_keywords = statefulset_keywords()
         self.volume_keywords = volume_keywords()
 
         self.persistentvolumeclaim = PersistentVolumeClaim()
         self.volume = Volume()
-
-    def init_storageclasses(self):
-        create_storageclass('longhorn-test')
-        create_storageclass('longhorn-test-strict-local')
-
-    def cleanup_storageclasses(self):
-        delete_storageclass('longhorn-test')
-        delete_storageclass('longhorn-test-strict-local')
 
     def check_pod_data_checksum(self, expected_checksum, pod_name, file_name):
         logging(f'Checking checksum for file {file_name} in pod {pod_name}')
@@ -83,16 +69,6 @@ class workload_keywords:
 
         logging(f'Keep writing data to pod {pod_name}')
         keep_writing_pod_data(pod_name)
-
-    def reboot_workload_volume_node(self, workload_name, downtime_in_min=1):
-        volume_name = get_workload_volume_name(workload_name)
-        node_id = self.volume_keywords.get_node_id_by_replica_locality(volume_name, "volume node")
-        self.host_keywords.reboot_node_by_name(node_id, downtime_in_min=downtime_in_min)
-
-    def restart_workload_kubelet(self, workload_name, downtime_in_sec):
-        volume_name = get_workload_volume_name(workload_name)
-        node_id = self.volume_keywords.get_node_id_by_replica_locality(volume_name, "volume node")
-        self.kubelet_keywords.restart_kubelet(node_id, downtime_in_sec)
 
     def wait_for_workload_pods_running(self, workload_name, namespace="default"):
         logging(f'Waiting for {namespace} workload {workload_name} pods running')
@@ -131,7 +107,9 @@ class workload_keywords:
     def wait_for_workload_claim_size_expanded(self, workload_name, claim_index=0):
         claim_name = get_workload_persistent_volume_claim_name(workload_name, index=claim_index)
         expanded_size = self.persistentvolumeclaim.get_annotation_value(claim_name, ANNOT_EXPANDED_SIZE)
-        volume_name = get_workload_volume_name(workload_name)
+        volume_name = self.persistentvolumeclaim.get_volume_name(claim_name)
 
+        self.volume.wait_for_volume_attached(volume_name)
         logging(f'Waiting for {workload_name} volume {volume_name} to expand to {expanded_size}')
         self.volume.wait_for_volume_expand_to_size(volume_name, expanded_size)
+        self.volume.wait_for_volume_detached(volume_name)

@@ -270,6 +270,8 @@ class GdapiClient(object):
 
             return result
 
+        if type(obj) == str and '/v1/' in obj:
+            obj = self._url.replace("/v1/schemas", "") + obj[obj.find("/v1/"):]
         return obj
 
     def object_pairs_hook(self, pairs):

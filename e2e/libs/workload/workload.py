@@ -1,35 +1,12 @@
 import time
-import yaml
 
 from kubernetes import client
-from kubernetes.client.rest import ApiException
 from kubernetes.stream import stream
 
 from utility.utility import get_retry_count_and_interval
 from utility.utility import logging
 
 from workload.constant import WAIT_FOR_POD_STABLE_MAX_RETRY
-
-
-
-def create_storageclass(name):
-    if name == 'longhorn-test-strict-local':
-        filepath = "./templates/workload/strict_local_storageclass.yaml"
-    else:
-        filepath = "./templates/workload/storageclass.yaml"
-
-    with open(filepath, 'r') as f:
-        manifest_dict = yaml.safe_load(f)
-        api = client.StorageV1Api()
-        api.create_storage_class(body=manifest_dict)
-
-
-def delete_storageclass(name):
-    api = client.StorageV1Api()
-    try:
-        api.delete_storage_class(name, grace_period_seconds=0)
-    except ApiException as e:
-        assert e.status == 404
 
 
 def get_workload_pod_names(workload_name):
@@ -55,10 +32,22 @@ def get_workload_pods(workload_name, namespace="default"):
 
 def get_workload_volume_name(workload_name):
     api = client.CoreV1Api()
-    claim_name = get_workload_persistent_volume_claim_name(workload_name)
-    claim = api.read_namespaced_persistent_volume_claim(
-        name=claim_name, namespace='default')
-    return claim.spec.volume_name
+    pvc_name = get_workload_pvc_name(workload_name)
+    pvc = api.read_namespaced_persistent_volume_claim(
+        name=pvc_name, namespace='default')
+    return pvc.spec.volume_name
+
+
+def get_workload_pvc_name(workload_name):
+    api = client.CoreV1Api()
+    pod = get_workload_pods(workload_name)[0]
+    logging(f"Got pod {pod.metadata.name} for workload {workload_name}")
+    for volume in pod.spec.volumes:
+        if volume.name == 'pod-data':
+            pvc_name = volume.persistent_volume_claim.claim_name
+            break
+    assert pvc_name
+    return pvc_name
 
 
 def get_workload_persistent_volume_claim_name(workload_name, index=0):
@@ -76,7 +65,11 @@ def get_workload_persistent_volume_claim_names(workload_name, namespace="default
 
     for item in claim.items:
         claim_names.append(item.metadata.name)
+    claim_names.sort()
 
+    #TODO
+    # assertion fails when the workload is a deployment
+    # because the pvc doesn't have app=workload_name label
     assert len(claim_names) > 0, f"Failed to get PVC names for workload {workload_name}"
     return claim_names
 
@@ -88,7 +81,9 @@ def write_pod_random_data(pod_name, size_in_mb, file_name,
     write_data_cmd = [
         '/bin/sh',
         '-c',
-        f"dd if=/dev/urandom of={data_path} bs=1M count={size_in_mb} status=none; echo `md5sum {data_path} | awk \'{{print $1}}\'`"
+        f"dd if=/dev/urandom of={data_path} bs=1M count={size_in_mb} status=none;\
+          sync;\
+          md5sum {data_path} | awk \'{{print $1}}\'"
     ]
     return stream(
         api.connect_get_namespaced_pod_exec, pod_name, 'default',
@@ -125,9 +120,12 @@ def check_pod_data_checksum(expected_checksum, pod_name, file_name, data_directo
         command=cmd_get_file_checksum, stderr=True, stdin=False, stdout=True,
         tty=False)
 
-    assert actual_checksum == expected_checksum, \
-        f"Got {file_path} checksum = {actual_checksum}\n" \
-        f"Expected checksum = {expected_checksum}"
+    if actual_checksum != expected_checksum:
+        message = f"Got {file_path} checksum = {actual_checksum} \
+            Expected checksum = {expected_checksum}"
+        logging(message)
+        time.sleep(self.retry_count)
+        assert False, message
 
 
 def wait_for_workload_pods_running(workload_name, namespace="default"):
@@ -151,34 +149,34 @@ def wait_for_workload_pods_running(workload_name, namespace="default"):
 def wait_for_workload_pods_stable(workload_name, namespace="default"):
     stable_pods = {}
     wait_for_stable_retry = {}
+    wait_for_stable_pod = []
 
     retry_count, retry_interval = get_retry_count_and_interval()
     for i in range(retry_count):
         pods = get_workload_pods(workload_name, namespace=namespace)
-        assert len(pods) > 0
+        if len(pods) > 0:
+            for pod in pods:
+                pod_name = pod.metadata.name
+                if pod.status.phase == "Running":
+                    if pod_name not in stable_pods or \
+                            stable_pods[pod_name].status.start_time != pod.status.start_time:
+                        stable_pods[pod_name] = pod
+                        wait_for_stable_retry[pod_name] = 0
+                    else:
+                        wait_for_stable_retry[pod_name] += 1
 
-        for pod in pods:
-            pod_name = pod.metadata.name
-            if pod.status.phase == "Running":
-                if pod_name not in stable_pods or \
-                        stable_pods[pod_name].status.start_time != pod.status.start_time:
-                    stable_pods[pod_name] = pod
-                    wait_for_stable_retry[pod_name] = 0
-                else:
-                    wait_for_stable_retry[pod_name] += 1
+            wait_for_stable_pod = []
+            for pod in pods:
+                if pod.status.phase != "Running":
+                    wait_for_stable_pod.append(pod.metadata.name)
+                    continue
 
-        wait_for_stable_pod = []
-        for pod in pods:
-            if pod.status.phase != "Running":
-                wait_for_stable_pod.append(pod.metadata.name)
-                continue
+                pod_name = pod.metadata.name
+                if wait_for_stable_retry[pod_name] < WAIT_FOR_POD_STABLE_MAX_RETRY:
+                    wait_for_stable_pod.append(pod_name)
 
-            pod_name = pod.metadata.name
-            if wait_for_stable_retry[pod_name] < WAIT_FOR_POD_STABLE_MAX_RETRY:
-                wait_for_stable_pod.append(pod_name)
-
-        if len(wait_for_stable_pod) == 0:
-            return
+            if len(wait_for_stable_pod) == 0:
+                return
 
         logging(f"Waiting for {workload_name} pods {wait_for_stable_pod} stable, retry ({i}) ...")
         time.sleep(retry_interval)

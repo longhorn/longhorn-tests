@@ -18,8 +18,8 @@ class Volume(Base):
         else:
             self.volume = Rest(node_exec)
 
-    def create(self, volume_name, size, replica_count):
-        return self.volume.create(volume_name, size, replica_count)
+    def create(self, volume_name, size, replica_count, frontend, migratable, access_mode, data_engine):
+        return self.volume.create(volume_name, size, replica_count, frontend, migratable, access_mode, data_engine)
 
     def delete(self, volume_name):
         return self.volume.delete(volume_name)
@@ -27,8 +27,8 @@ class Volume(Base):
     def attach(self, volume_name, node_name):
         return self.volume.attach(volume_name, node_name)
 
-    def detach(self, volume_name):
-        return self.volume.detach(volume_name)
+    def detach(self, volume_name, node_name):
+        return self.volume.detach(volume_name, node_name)
 
     def get(self, volume_name):
         return self.volume.get(volume_name)
@@ -49,8 +49,8 @@ class Volume(Base):
         return self.volume.wait_for_volume_state(volume_name, desired_state)
 
     def wait_for_volume_attached(self, volume_name):
-        self.volume.wait_for_volume_state(volume_name, "attached")
         self.volume.wait_for_volume_robustness_not(volume_name, "unknown")
+        self.volume.wait_for_volume_state(volume_name, "attached")
 
     def wait_for_volume_detached(self, volume_name):
         self.volume.wait_for_volume_state(volume_name, "detached")
@@ -59,8 +59,22 @@ class Volume(Base):
         self.volume.wait_for_volume_state(volume_name, "attached")
         self.volume.wait_for_volume_robustness(volume_name, "healthy")
 
+    def wait_for_volume_migration_ready(self, volume_name):
+        self.volume.wait_for_volume_migration_ready(volume_name)
+
+    def wait_for_volume_migration_completed(self, volume_name, node_name):
+        self.volume.wait_for_volume_migration_completed(volume_name, node_name)
+
     def wait_for_volume_expand_to_size(self, volume_name, size):
         return self.volume.wait_for_volume_expand_to_size(volume_name, size)
+
+    def wait_for_volume_degraded(self, volume_name):
+        self.volume.wait_for_volume_state(volume_name, "attached")
+        self.volume.wait_for_volume_robustness(volume_name, "degraded")
+
+    def wait_for_volume_unknown(self, volume_name):
+        self.volume.wait_for_volume_state(volume_name, "attached")
+        self.volume.wait_for_volume_robustness(volume_name, "unknown")
 
     def get_endpoint(self, volume_name):
         return self.volume.get_endpoint(volume_name)
@@ -75,17 +89,20 @@ class Volume(Base):
         return self.volume.delete_replica(volume_name, node_name)
 
     def wait_for_replica_rebuilding_start(self, volume_name, node_name):
-        return self.volume.wait_for_replica_rebuilding_start(
-            volume_name,
-            node_name
-        )
+        return self.volume.wait_for_replica_rebuilding_start(volume_name, node_name)
+
+    def is_replica_rebuilding_in_progress(self, volume_name, node_name):
+        return self.volume.is_replica_rebuilding_in_progress(volume_name, node_name)
+
+    def crash_replica_processes(self, volume_name):
+        return self.volume.crash_replica_processes(volume_name)
 
     def wait_for_replica_rebuilding_complete(self, volume_name, node_name):
-        return self.volume.wait_for_replica_rebuilding_complete(
-            volume_name,
-            node_name
-        )
+        return self.volume.wait_for_replica_rebuilding_complete(volume_name, node_name)
 
     def check_data_checksum(self, volume_name, checksum):
         return self.volume.check_data_checksum(volume_name, checksum)
+
+    def validate_volume_replicas_anti_affinity(self, volume_name):
+        return self.volume.validate_volume_replicas_anti_affinity(volume_name)
 
