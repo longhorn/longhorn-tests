@@ -33,7 +33,7 @@ Volume Basic Test
     When Create volume wrong_volume-name
     Then No volume created
 
-    When Create volume 0 with frontend invalid_frontend
+    When Create volume 0 with    frontend=invalid_frontend
     Then No volume created
 
     When Create volume 0 with 2 GB and 3 replicas
