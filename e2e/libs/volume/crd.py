@@ -21,7 +21,7 @@ class CRD(Base):
         self.retry_count, self.retry_interval = get_retry_count_and_interval()
         self.engine = Engine()
 
-    def create(self, volume_name, size, replica_count, frontend, migratable, access_mode):
+    def create(self, volume_name, size, replica_count, frontend, migratable, access_mode, data_engine):
         size = str(int(size) * GIBIBYTE)
         access_mode = access_mode.lower()
         body = {
@@ -39,7 +39,8 @@ class CRD(Base):
                 "size": size,
                 "numberOfReplicas": int(replica_count),
                 "migratable": migratable,
-                "accessMode": access_mode
+                "accessMode": access_mode,
+                "dataEngine": data_engine
             }
         }
         try:

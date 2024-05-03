@@ -4,14 +4,50 @@ import re
 from kubernetes import client
 
 from robot.libraries.BuiltIn import BuiltIn
-
+from utility.utility import get_longhorn_client
 from utility.utility import get_retry_count_and_interval
+from utility.utility import logging
 
 
 class Node:
 
+    DEFAULT_DISK_PATH = "/var/lib/longhorn/"
+
     def __init__(self):
-        pass
+        self.longhorn_client = get_longhorn_client()
+        self.retry_count, self.retry_interval = get_retry_count_and_interval()
+
+    def update_disks(self, node_name, disks):
+        node = self.longhorn_client.by_id_node(node_name)
+        for _ in range(self.retry_count):
+            try:
+                node.diskUpdate(disks=disks)
+                break
+            except Exception as e:
+                logging(f"Updating node {node_name} disk error: {e}")
+            time.sleep(self.retry_interval)
+
+    def add_disk(self, node_name, disk):
+        node = self.longhorn_client.by_id_node(node_name)
+        disks = node.disks
+        disks.update(disk)
+        self.update_disks(node_name, disks)
+
+    def reset_disks(self, node_name):
+        node = self.longhorn_client.by_id_node(node_name)
+
+        for disk_name, disk in iter(node.disks.items()):
+            if disk.path != self.DEFAULT_DISK_PATH:
+                disk.allowScheduling = False
+        self.update_disks(node_name, node.disks)
+
+        disks = {}
+        for disk_name, disk in iter(node.disks.items()):
+            if disk.path == self.DEFAULT_DISK_PATH:
+                disks[disk_name] = disk
+            else:
+                logging(f"Try to remove disk {disk_name} from node {node_name}")
+        self.update_disks(node_name, disks)
 
     def get_all_pods_on_node(self, node_name):
         api = client.CoreV1Api()

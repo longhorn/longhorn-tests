@@ -19,6 +19,11 @@ from common import wait_for_backup_count
 from common import wait_for_volume_detached
 from common import wait_for_volume_healthy
 from common import wait_for_volume_restoration_completed
+from common import cleanup_all_backing_images
+from common import create_backing_image_with_matching_url
+from common import BACKING_IMAGE_NAME
+from common import BACKING_IMAGE_RAW_URL
+from common import BACKING_IMAGE_SOURCE_TYPE_RESTORE
 
 from common import SETTING_BACKUPSTORE_POLL_INTERVAL
 
@@ -111,6 +116,70 @@ def test_system_backup_and_restore_volume_with_data(client, volume_name, set_ran
     restored_volume = wait_for_volume_healthy(client, volume_name)
 
     check_volume_data(restored_volume, data)
+
+@pytest.mark.system_backup_restore   # NOQA
+def test_system_backup_and_restore_volume_with_backingimage(client, volume_name, set_random_backupstore):  # NOQA
+    """
+    Scenario: test system backup and restore volume with backingimage
+
+    Noted that for volume data integrity check, we have
+    "test_system_backup_and_restore_volume_with_data" to cover it.
+    BackingImage uses checksum to verified the data during backup/restore.
+    If it is inconsistent, BackingImage will be failed and so is the test.
+    Thus, we don't need to do data integrity check in this test.
+
+    Issue: https://github.com/longhorn/longhorn/issues/5085
+
+    Given a backingimage
+    And a volume created with the backingimage
+    When system backup created
+    Then system backup in state Ready
+
+    When volume deleted
+    And backingimage deleted
+    And restore system backup
+    Then system restore should be in state Completed
+    And wait for backingimage restoration to complete
+    And wait for volume restoration to complete
+    And volume should be detached
+
+    When attach volume
+    Then volume should be healthy
+    """
+
+    host_id = get_self_host_id()
+
+    create_backing_image_with_matching_url(
+        client, BACKING_IMAGE_NAME, BACKING_IMAGE_RAW_URL)
+
+    volume = create_and_check_volume(
+        client, volume_name, backing_image=BACKING_IMAGE_NAME)
+    volume.attach(hostId=host_id)
+    volume = wait_for_volume_healthy(client, volume_name)
+
+    system_backup_name = system_backup_random_name()
+    client.create_system_backup(Name=system_backup_name)
+
+    system_backup_wait_for_state("Ready", system_backup_name, client)
+
+    cleanup_volume(client, volume)
+    cleanup_all_backing_images(client)
+
+    system_restore_name = system_restore_random_name()
+    client.create_system_restore(Name=system_restore_name,
+                                 SystemBackup=system_backup_name)
+
+    system_restore_wait_for_state("Completed", system_restore_name, client)
+
+    backing_image = client.by_id_backing_image(BACKING_IMAGE_NAME)
+    assert backing_image.sourceType == BACKING_IMAGE_SOURCE_TYPE_RESTORE
+
+    restored_volume = client.by_id_volume(volume_name)
+    wait_for_volume_restoration_completed(client, volume_name)
+    wait_for_volume_detached(client, volume_name)
+
+    restored_volume.attach(hostId=host_id)
+    restored_volume = wait_for_volume_healthy(client, volume_name)
 
 
 @pytest.mark.system_backup_restore   # NOQA
