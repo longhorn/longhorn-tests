@@ -8,11 +8,12 @@ Library    ../libs/keywords/volume_keywords.py
 *** Keywords ***
 Create volume ${volume_id}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
-    create_volume   ${volume_name}    2    3
+    create_volume   ${volume_name}
 
-Create volume ${volume_id} with frontend ${frontend_name}
+Create volume ${volume_id} with
+    [Arguments]    &{config}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
-    create_volume   ${volume_name}    2    3    ${frontend_name}
+    create_volume   ${volume_name}    2    3    &{config}
 
 No volume created
     ${volumes} =    list_volumes
@@ -29,13 +30,27 @@ Create volume ${volume_id} with ${size} GB and ${replica_count} replicas
 Update volume ${volume_name} replica count to ${replica_count}
     update_volume_spec   ${volume_name}    numberOfReplicas    3
 
+Attach volume ${volume_id} to node ${node_id}
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    ${node_name} =    get_node_by_index    ${node_id}
+    attach_volume    ${volume_name}    ${node_name}
+
 Attach volume ${volume_id}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     attach_volume    ${volume_name}
 
+Attach volume ${volume_id} in maintenance mode
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    attach_volume_in_maintenance_mode    ${volume_name}
+
 Detach volume ${volume_id}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     detach_volume    ${volume_name}
+
+Detach volume ${volume_id} from node ${node_id}
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    ${node_name} =    get_node_by_index    ${node_id}
+    detach_volume    ${volume_name}    ${node_name}
 
 Delete volume ${volume_id}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
@@ -49,6 +64,10 @@ Write ${size} GB data to volume ${volume_id}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     write_volume_random_data   ${volume_name}    ${${size} * 1024}
 
+Write data ${data_id} to volume ${volume_id}
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    write_volume_random_data   ${volume_name}    2048    ${data_id}
+
 Keep writing data to volume ${volume_id}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     keep_writing_data    ${volume_name}
@@ -60,6 +79,15 @@ Delete volume ${volume_id} replica on ${replica_locality}
 Wait for volume ${volume_id} healthy
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     wait_for_volume_healthy    ${volume_name}
+
+Wait for volume ${volume_id} migration ready
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    wait_for_volume_migration_ready    ${volume_name}
+
+Wait for volume ${volume_id} migrated to node ${node_id}
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    ${node_name} =    get_node_by_index    ${node_id}
+    wait_for_volume_migration_completed    ${volume_name}    ${node_name}
 
 Wait until volume ${volume_id} replica rebuilding started on ${replica_locality}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
@@ -94,6 +122,10 @@ Crash volume ${volume_id} replica processes
 Check volume ${volume_id} data is intact
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     check_data_checksum    ${volume_name}
+
+Check volume ${volume_id} data is data ${data_id}
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    check_data_checksum    ${volume_name}    ${data_id}
 
 Check volume ${volume_id} works
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}

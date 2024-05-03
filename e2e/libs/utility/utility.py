@@ -143,11 +143,14 @@ def apply_cr_from_yaml(filepath):
 
 def get_cr(group, version, namespace, plural, name):
     api = client.CustomObjectsApi()
-    try:
-        resp = api.get_namespaced_custom_object(group, version, namespace, plural, name)
-        return resp
-    except ApiException as e:
-        logging(f"Getting namespaced custom object error: {e}")
+    retry_count, retry_interval = get_retry_count_and_interval()
+    for _ in range(retry_count):
+        try:
+            resp = api.get_namespaced_custom_object(group, version, namespace, plural, name)
+            return resp
+        except ApiException as e:
+            logging(f"Getting namespaced custom object error: {e}")
+        time.sleep(retry_interval)
 
 
 def filter_cr(group, version, namespace, plural, field_selector="", label_selector=""):
@@ -157,6 +160,39 @@ def filter_cr(group, version, namespace, plural, field_selector="", label_select
         return resp
     except ApiException as e:
         logging(f"Listing namespaced custom object: {e}")
+
+
+def set_annotation(group, version, namespace, plural, name, annotation_key, annotation_value):
+    api = client.CustomObjectsApi()
+    # retry conflict error
+    retry_count, retry_interval = get_retry_count_and_interval()
+    for i in range(retry_count):
+        logging(f"Try to set custom resource {plural} {name} annotation {annotation_key}={annotation_value} ... ({i})")
+        try:
+            cr = get_cr(group, version, namespace, plural, name)
+            annotations = cr['metadata'].get('annotations', {})
+            annotations[annotation_key] = annotation_value
+            cr['metadata']['annotations'] = annotations
+            api.replace_namespaced_custom_object(
+                group=group,
+                version=version,
+                namespace=namespace,
+                plural=plural,
+                name=name,
+                body=cr
+            )
+            break
+        except Exception as e:
+            if e.status == 409:
+                logging(f"Conflict error: {e.body}, retry ({i}) ...")
+            else:
+                raise e
+        time.sleep(retry_interval)
+
+
+def get_annotation_value(group, version, namespace, plural, name, annotation_key):
+    cr = get_cr(group, version, namespace, plural, name)
+    return cr['metadata']['annotations'].get(annotation_key)
 
 
 def wait_delete_ns(name):

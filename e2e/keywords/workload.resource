@@ -49,7 +49,7 @@ Wait for volume of ${workload_kind} ${workload_id} healthy
 Wait until volume of ${workload_kind} ${workload_id} replica rebuidling started on ${replica_locality}
     ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
     ${volume_name} =    get_workload_volume_name    ${workload_name}
-    wait_for_replica_rebuilding_to_complete_on_node    ${volume_name}    ${replica_locality}
+    wait_for_replica_rebuilding_to_start_on_node    ${volume_name}    ${replica_locality}
 
 Wait for volume of ${workload_kind} ${workload_id} attached and unknown
     ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}

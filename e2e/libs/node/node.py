@@ -1,17 +1,53 @@
 import os
 import time
-
+import re
 from kubernetes import client
 
 from robot.libraries.BuiltIn import BuiltIn
-
+from utility.utility import get_longhorn_client
 from utility.utility import get_retry_count_and_interval
+from utility.utility import logging
 
 
 class Node:
 
+    DEFAULT_DISK_PATH = "/var/lib/longhorn/"
+
     def __init__(self):
-        pass
+        self.longhorn_client = get_longhorn_client()
+        self.retry_count, self.retry_interval = get_retry_count_and_interval()
+
+    def update_disks(self, node_name, disks):
+        node = self.longhorn_client.by_id_node(node_name)
+        for _ in range(self.retry_count):
+            try:
+                node.diskUpdate(disks=disks)
+                break
+            except Exception as e:
+                logging(f"Updating node {node_name} disk error: {e}")
+            time.sleep(self.retry_interval)
+
+    def add_disk(self, node_name, disk):
+        node = self.longhorn_client.by_id_node(node_name)
+        disks = node.disks
+        disks.update(disk)
+        self.update_disks(node_name, disks)
+
+    def reset_disks(self, node_name):
+        node = self.longhorn_client.by_id_node(node_name)
+
+        for disk_name, disk in iter(node.disks.items()):
+            if disk.path != self.DEFAULT_DISK_PATH:
+                disk.allowScheduling = False
+        self.update_disks(node_name, node.disks)
+
+        disks = {}
+        for disk_name, disk in iter(node.disks.items()):
+            if disk.path == self.DEFAULT_DISK_PATH:
+                disks[disk_name] = disk
+            else:
+                logging(f"Try to remove disk {disk_name} from node {node_name}")
+        self.update_disks(node_name, disks)
 
     def get_all_pods_on_node(self, node_name):
         api = client.CoreV1Api()
@@ -40,6 +76,13 @@ class Node:
 
         assert evicted, 'failed to evict pods'
 
+    def is_accessing_node_by_index(self, node):
+        p = re.compile('node (\d)')
+        if m := p.match(node):
+            return m.group(1)
+        else:
+            return None
+
     def get_node_by_index(self, index, role="worker"):
         nodes = self.list_node_names_by_role(role)
         return nodes[int(index)]
@@ -47,19 +90,6 @@ class Node:
     def get_node_by_name(self, node_name):
         core_api = client.CoreV1Api()
         return core_api.read_node(node_name)
-
-    def get_test_pod_running_node(self):
-        if "NODE_NAME" in os.environ:
-            return os.environ["NODE_NAME"]
-        else:
-            return self.get_node_by_index(0)
-
-    def get_test_pod_not_running_node(self):
-        worker_nodes = self.list_node_names_by_role("worker")
-        test_pod_running_node = self.get_test_pod_running_node()
-        for worker_node in worker_nodes:
-            if worker_node != test_pod_running_node:
-                return worker_node
 
     def get_node_cpu_cores(self, node_name):
         node = self.get_node_by_name(node_name)
