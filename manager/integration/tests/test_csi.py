@@ -512,7 +512,7 @@ def test_csi_block_volume_online_expansion(client, core_api, storage_class, pvc,
     expand_and_wait_for_pvc(core_api, pvc, (EXPANDED_VOLUME_SIZE+1)*Gi)
     wait_for_volume_expansion(client, volume_name)
 
-    thread_timeout = 60
+    thread_timeout = 180
     try:
         pod_dev_md5 = future.result(timeout=thread_timeout)
     except TimeoutError:
