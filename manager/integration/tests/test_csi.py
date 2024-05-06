@@ -14,6 +14,7 @@ from common import VOLUME_RWTEST_SIZE
 from common import VOLUME_CONDITION_SCHEDULED
 from common import SETTING_REPLICA_NODE_SOFT_ANTI_AFFINITY
 from common import SETTING_REPLICA_REPLENISHMENT_WAIT_INTERVAL
+from common import XFS_MIN_SIZE
 from common import create_and_wait_pod, create_pvc_spec, delete_and_wait_pod
 from common import size_to_string, create_storage_class, create_pvc
 from common import delete_and_wait_pvc, delete_and_wait_pv
@@ -570,7 +571,7 @@ def test_xfs_pv(client, core_api, pod_manifest):  # NOQA
     """
     volume_name = generate_volume_name()
 
-    volume = create_and_check_volume(client, volume_name)
+    volume = create_and_check_volume(client, volume_name, size=XFS_MIN_SIZE)
 
     create_pv_for_volume(client, core_api, volume, volume_name, "xfs")
 
@@ -608,7 +609,7 @@ def test_xfs_pv_existing_volume(client, core_api, pod_manifest):  # NOQA
     """
     volume_name = generate_volume_name()
 
-    volume = create_and_check_volume(client, volume_name)
+    volume = create_and_check_volume(client, volume_name, size=XFS_MIN_SIZE)
 
     create_pv_for_volume(client, core_api, volume, volume_name, "xfs")
 

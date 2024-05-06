@@ -32,6 +32,8 @@ Mi = (1024 * 1024)
 Gi = (1024 * Mi)
 
 SIZE = str(16 * Mi)
+# See https://github.com/longhorn/longhorn/issues/8488.
+XFS_MIN_SIZE = str(300 * Mi)
 EXPAND_SIZE = str(32 * Mi)
 VOLUME_NAME = "longhorn-testvol"
 ATTACHMENT_TICKET_ID_PREFIX = "test-attachment-ticket"
@@ -4929,7 +4931,7 @@ def crash_engine_process_with_sigkill(client, core_api, volume_name):
 
     kill_command = [
             '/bin/sh', '-c',
-            "kill `pgrep -f \"controller " + volume_name + "\"`",]
+            "kill `pgrep -f \"controller " + volume_name + "\"`"]
 
     with timeout(seconds=STREAM_EXEC_TIMEOUT,
                  error_message='Timeout on executing stream read'):
