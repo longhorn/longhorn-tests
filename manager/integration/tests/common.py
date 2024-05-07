@@ -745,8 +745,8 @@ def delete_and_wait_longhorn(client, name):
         assert ex.status == 404
     except longhorn.ApiError as err:
         # for deleting a non-existing volume,
-        # the status_code is 500 Server Error.
-        assert err.error.code == 500
+        # the status_code is 404.
+        assert err.error.code == 404
 
     wait_for_volume_delete(client, name)
 
