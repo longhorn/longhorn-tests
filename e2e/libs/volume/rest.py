@@ -30,7 +30,7 @@ class Rest(Base):
     def create(self, volume_name, size, replica_count):
         return NotImplemented
 
-    def attach(self, volume_name, node_name):
+    def attach(self, volume_name, node_name, disable_frontend):
         return NotImplemented
 
     def detach(self, volume_name, node_name):
@@ -77,7 +77,7 @@ class Rest(Base):
             assert endpoint.startswith("iscsi://")
         return endpoint
 
-    def write_random_data(self, volume_name, size):
+    def write_random_data(self, volume_name, size, data_id):
         return NotImplemented
 
     def keep_writing_data(self, volume_name, size):
@@ -180,7 +180,7 @@ class Rest(Base):
         logging(f"Completed volume {volume_name} replica rebuilding on {node_name}")
         assert completed, f"Expect volume {volume_name} replica rebuilding completed"
 
-    def check_data_checksum(self, volume_name, checksum):
+    def check_data_checksum(self, volume_name, data_id):
         return NotImplemented
 
     def cleanup(self, volume_names):

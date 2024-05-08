@@ -14,6 +14,7 @@ Library             ../libs/keywords/network_keywords.py
 Library             ../libs/keywords/backupstore_keywords.py
 Library             ../libs/keywords/storageclass_keywords.py
 Library             ../libs/keywords/node_keywords.py
+Library             ../libs/keywords/backing_image_keywords.py
 
 *** Keywords ***
 Set test environment
@@ -36,3 +37,4 @@ Cleanup test resources
     cleanup_storageclasses
     cleanup_backupstore
     cleanup_disks
+    cleanup_backing_images
