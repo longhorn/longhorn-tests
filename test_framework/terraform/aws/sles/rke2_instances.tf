@@ -77,6 +77,16 @@ resource "aws_volume_attachment" "lh_aws_hdd_volume_att_rke2" {
   force_detach = true
 }
 
+resource "aws_volume_attachment" "lh_aws_ssd_volume_att_rke2" {
+
+  count = var.extra_block_device && var.k8s_distro_name == "rke2" ? var.lh_aws_instance_count_worker : 0
+
+  device_name  = "/dev/xvdh"
+  volume_id    = aws_ebs_volume.lh_aws_ssd_volume[count.index].id
+  instance_id  = aws_instance.lh_aws_instance_worker_rke2[count.index].id
+  force_detach = true
+}
+
 resource "aws_lb_target_group_attachment" "lh_aws_lb_tg_443_attachment_rke2" {
 
   depends_on = [
