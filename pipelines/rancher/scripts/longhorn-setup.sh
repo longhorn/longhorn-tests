@@ -40,7 +40,6 @@ main(){
   install_rancher
   get_rancher_api_key
 
-
   if [[ "${LONGHORN_UPGRADE_TEST}" == true ]]; then
     install_longhorn_rancher_chart "${LONGHORN_STABLE_VERSION}"
     LONGHORN_UPGRADE_TYPE="from_stable"

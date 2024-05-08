@@ -19,12 +19,15 @@ def REGISTRY_PASSWORD
 // parameter for hdd test
 def USE_HDD = params.USE_HDD ? params.USE_HDD : false
 
+def RANCHER_PRIME = params.RANCHER_PRIME ? params.RANCHER_PRIME : false
+
 node {
 
     withCredentials([
         usernamePassword(credentialsId: CREDS_ID, passwordVariable: 'AWS_SECRET_KEY', usernameVariable: 'AWS_ACCESS_KEY'),
         string(credentialsId: 'DO_CREDS', variable: 'DO_TOKEN'),
         string(credentialsId: REGISTRATION_CODE_ID, variable: 'REGISTRATION_CODE'),
+        string(credentialsId: 'RANCHER_PRIME_CHART_URL', variable: 'RANCHER_PRIME_CHART_URL'),
     ]) {
 
         if (params.SEND_SLACK_NOTIFICATION) {
@@ -109,6 +112,8 @@ node {
                                        --env TF_VAR_selinux_mode=${SELINUX_MODE} \
                                        --env TF_VAR_registration_code=${REGISTRATION_CODE} \
                                        --env TF_VAR_cis_hardening=${CIS_HARDENING} \
+                                       --env RANCHER_PRIME=${RANCHER_PRIME} \
+                                       --env RANCHER_PRIME_CHART_URL=${RANCHER_PRIME_CHART_URL} \
                                        ${imageName}
                 """
             }
