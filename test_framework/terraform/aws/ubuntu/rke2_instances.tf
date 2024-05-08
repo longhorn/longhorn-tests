@@ -41,12 +41,12 @@ resource "aws_instance" "lh_aws_instance_worker_rke2" {
   ]
 
   count = var.k8s_distro_name == "rke2" ? var.lh_aws_instance_count_worker : 0
-  
+
   availability_zone = var.aws_availability_zone
-  
+
   ami           = data.aws_ami.aws_ami_ubuntu.id
   instance_type = var.lh_aws_instance_type_worker
-    
+
   subnet_id = aws_subnet.lh_aws_private_subnet.id
   vpc_security_group_ids = [
     aws_security_group.lh_aws_secgrp_worker.id
@@ -74,6 +74,16 @@ resource "aws_volume_attachment" "lh_aws_hdd_volume_att_rke2" {
 
   device_name  = "/dev/xvdh"
   volume_id    = aws_ebs_volume.lh_aws_hdd_volume[count.index].id
+  instance_id  = aws_instance.lh_aws_instance_worker_rke2[count.index].id
+  force_detach = true
+}
+
+resource "aws_volume_attachment" "lh_aws_ssd_volume_att_rke2" {
+
+  count = var.extra_block_device && var.k8s_distro_name == "rke2" ? var.lh_aws_instance_count_worker : 0
+
+  device_name  = "/dev/xvdh"
+  volume_id    = aws_ebs_volume.lh_aws_ssd_volume[count.index].id
   instance_id  = aws_instance.lh_aws_instance_worker_rke2[count.index].id
   force_detach = true
 }
@@ -114,7 +124,7 @@ resource "null_resource" "rsync_kubeconfig_file_rke2" {
   ]
 
   provisioner "remote-exec" {
-    inline = ["until([ -f /etc/rancher/rke2/rke2.yaml ] && [ `sudo KUBECONFIG=/etc/rancher/rke2/rke2.yaml /var/lib/rancher/rke2/bin/kubectl get node -o jsonpath='{.items[*].status.conditions}'  | jq '.[] | select(.type  == \"Ready\").status' | grep -ci true` -eq $((${var.lh_aws_instance_count_controlplane} + ${var.lh_aws_instance_count_worker})) ]); do echo \"waiting for rke2 cluster nodes to be running\"; sleep 2; done"]
+    inline = ["until([ -f /etc/rancher/rke2/rke2.yaml ] && [ `KUBECONFIG=/etc/rancher/rke2/rke2.yaml /var/lib/rancher/rke2/bin/kubectl get node -o jsonpath='{.items[*].status.conditions}'  | jq '.[] | select(.type  == \"Ready\").status' | grep -ci true` -eq $((${var.lh_aws_instance_count_controlplane} + ${var.lh_aws_instance_count_worker})) ]); do echo \"waiting for rke2 cluster nodes to be running\"; sleep 2; done"]
 
 
     connection {

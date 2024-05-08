@@ -41,12 +41,12 @@ resource "aws_instance" "lh_aws_instance_worker_k3s" {
   ]
 
   count = var.k8s_distro_name == "k3s" ? var.lh_aws_instance_count_worker : 0
-  
+
   availability_zone = var.aws_availability_zone
-  
+
   ami           = data.aws_ami.aws_ami_ubuntu.id
   instance_type = var.lh_aws_instance_type_worker
-    
+
   subnet_id = aws_subnet.lh_aws_private_subnet.id
   vpc_security_group_ids = [
     aws_security_group.lh_aws_secgrp_worker.id
@@ -74,6 +74,16 @@ resource "aws_volume_attachment" "lh_aws_hdd_volume_att_k3s" {
 
   device_name  = "/dev/xvdh"
   volume_id    = aws_ebs_volume.lh_aws_hdd_volume[count.index].id
+  instance_id  = aws_instance.lh_aws_instance_worker_k3s[count.index].id
+  force_detach = true
+}
+
+resource "aws_volume_attachment" "lh_aws_ssd_volume_att_k3s" {
+
+  count = var.extra_block_device && var.k8s_distro_name == "k3s" ? var.lh_aws_instance_count_worker : 0
+
+  device_name  = "/dev/xvdh"
+  volume_id    = aws_ebs_volume.lh_aws_ssd_volume[count.index].id
   instance_id  = aws_instance.lh_aws_instance_worker_k3s[count.index].id
   force_detach = true
 }
