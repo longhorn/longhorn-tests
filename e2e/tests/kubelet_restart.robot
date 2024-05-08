@@ -18,26 +18,34 @@ ${RETRY_INTERVAL}    1
 *** Test Cases ***
 Restart Volume Node Kubelet While Workload Heavy Writing
     Given Create statefulset 0 using RWO volume
+    And Create statefulset 1 using RWX volume
 
     FOR    ${i}    IN RANGE    ${LOOP_COUNT}
         And Keep writing data to pod of statefulset 0
+        And Keep writing data to pod of statefulset 1
 
-        When Stop volume node kubelet of statefulset 0 for 10 seconds
+        When Stop volume nodes kubelet for 10 seconds    statefulset 0    statefulset 1
         And Wait for volume of statefulset 0 healthy
-        And Wait for statefulset 0 pods stable
+        And Wait for volume of statefulset 1 healthy
+        And Wait for workloads pods stable    statefulset 0    statefulset 1
 
         Then Check statefulset 0 works
+        And Check statefulset 1 works
     END
 
 Stop Volume Node Kubelet For More Than Pod Eviction Timeout While Workload Heavy Writing
     Given Create statefulset 0 using RWO volume
+    And Create statefulset 1 using RWX volume
 
     FOR    ${i}    IN RANGE    ${LOOP_COUNT}
         And Keep writing data to pod of statefulset 0
+        And Keep writing data to pod of statefulset 1
 
-        When Stop volume node kubelet of statefulset 0 for 360 seconds
+        When Stop volume nodes kubelet for 360 seconds    statefulset 0    statefulset 1
         And Wait for volume of statefulset 0 healthy
-        And Wait for statefulset 0 pods stable
+        And Wait for volume of statefulset 1 healthy
+        And Wait for workloads pods stable    statefulset 0    statefulset 1
 
         Then Check statefulset 0 works
+        And Check statefulset 1 works
     END

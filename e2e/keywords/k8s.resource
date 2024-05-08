@@ -30,3 +30,26 @@ Delete volume of ${workload_kind} ${workload_id} replica node
 
 Add deleted node back
     reboot_node_by_name    ${deleted_node}
+
+Force drain volume of ${workload_kind} ${workload_id} volume node
+    ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
+    ${volume_name} =    get_workload_volume_name    ${workload_name}
+    ${drained_node} =    get_volume_node    ${volume_name}
+    ${last_volume_node} =    get_volume_node    ${volume_name}
+    force_drain_node    ${drained_node}
+    wait_for_all_pods_evicted    ${drained_node}
+    Set Test Variable    ${drained_node}
+    Set Test Variable    ${last_volume_node}
+
+Force drain volume of ${workload_kind} ${workload_id} replica node
+    ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
+    ${volume_name} =    get_workload_volume_name    ${workload_name}
+    ${drained_node} =    get_replica_node    ${volume_name}
+    ${last_volume_node} =    get_volume_node    ${volume_name}
+    force_drain_node    ${drained_node}
+    wait_for_all_pods_evicted    ${drained_node}
+    Set Test Variable    ${drained_node}
+    Set Test Variable    ${last_volume_node}
+
+Uncordon the drained node
+    uncordon_node    ${drained_node}

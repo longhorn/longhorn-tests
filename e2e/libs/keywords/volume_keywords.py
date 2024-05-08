@@ -24,9 +24,9 @@ class volume_keywords:
         for volume in volumes['items']:
             self.delete_volume(volume['metadata']['name'])
 
-    def create_volume(self, volume_name, size, replica_count, frontend="blockdev", migratable=False, access_mode="RWO", data_engine="v1"):
+    def create_volume(self, volume_name, size=2, replica_count=3, frontend="blockdev", migratable=False, access_mode="RWO", data_engine="v1", backing_image=""):
         logging(f'Creating volume {volume_name}')
-        self.volume.create(volume_name, size, replica_count, frontend, migratable, access_mode, data_engine)
+        self.volume.create(volume_name, size, replica_count, frontend, migratable, access_mode, data_engine, backing_image)
 
     def delete_volume(self, volume_name):
         logging(f'Deleting volume {volume_name}')
@@ -36,7 +36,13 @@ class volume_keywords:
         if not node_name:
             node_name = self.node.get_node_by_index(0)
         logging(f'Attaching volume {volume_name} to node {node_name}')
-        self.volume.attach(volume_name, node_name)
+        self.volume.attach(volume_name, node_name, disable_frontend=False)
+
+    def attach_volume_in_maintenance_mode(self, volume_name, node_name=None):
+        if not node_name:
+            node_name = self.node.get_node_by_index(0)
+        logging(f'Attaching volume {volume_name} to node {node_name} in maintenance mode')
+        self.volume.attach(volume_name, node_name, disable_frontend=True)
 
     def detach_volume(self, volume_name, node_name=None):
         if not node_name:
@@ -51,13 +57,6 @@ class volume_keywords:
     def wait_for_volume_expand_to_size(self, volume_name, size):
         logging(f'Waiting for volume {volume_name} expand to {size}')
         return self.volume.wait_for_volume_expand_to_size(volume_name, size)
-
-    def get_replica_node_ids(self, volume_name):
-        node_ids = []
-        node_ids.extend(self.get_node_ids_by_replica_locality(volume_name, "volume node"))
-        node_ids.extend(self.get_node_ids_by_replica_locality(volume_name, "replica node"))
-        node_ids.extend(self.get_node_ids_by_replica_locality(volume_name, "test pod node"))
-        return node_ids
 
     def get_replica_node(self, volume_name):
         return self.get_node_id_by_replica_locality(volume_name, "replica node")
@@ -78,94 +77,64 @@ class volume_keywords:
         worker_nodes = self.node.list_node_names_by_role("worker")
         volume_node = self.get_node_id_by_replica_locality(volume_name, "volume node")
         replica_nodes = [node for node in worker_nodes if node != volume_node]
-        test_pod_node = self.node.get_test_pod_running_node()
 
-        if replica_locality == "test pod node":
-            if test_pod_node in replica_nodes:
-                return [test_pod_node]
-
-        elif replica_locality == "replica node":
-            return [node for node in replica_nodes if node != test_pod_node]
+        if replica_locality == "replica node":
+            return replica_nodes
 
         else:
             raise ValueError(f"Unknown replica locality {replica_locality}")
 
         raise Exception(f"Failed to get node ID of the replica on {replica_locality}")
 
-    def write_volume_random_data(self, volume_name, size_in_mb):
+    def write_volume_random_data(self, volume_name, size_in_mb, data_id=0):
         logging(f'Writing {size_in_mb} MB random data to volume {volume_name}')
-        checksum = self.volume.write_random_data(volume_name, size_in_mb)
-
-        self.volume.set_annotation(volume_name, ANNOT_CHECKSUM, checksum)
+        checksum = self.volume.write_random_data(volume_name, size_in_mb, data_id)
 
     def keep_writing_data(self, volume_name):
         logging(f'Keep writing data to volume {volume_name}')
         self.volume.keep_writing_data(volume_name)
 
-    def check_data_checksum(self, volume_name):
-        checksum = self.volume.get_annotation_value(volume_name, ANNOT_CHECKSUM)
-
-        logging(f"Checking volume {volume_name} data checksum is {checksum}")
-        self.volume.check_data_checksum(volume_name, checksum)
-
-    def delete_replica(self, volume_name, replica_node):
-        if str(replica_node).isdigit():
-            replica_node = self.node.get_node_by_index(replica_node)
-
-        logging(f"Deleting volume {volume_name}'s replica on node {replica_node}")
-        self.volume.delete_replica(volume_name, replica_node)
+    def check_data_checksum(self, volume_name, data_id=0):
+        logging(f"Checking volume {volume_name} data {data_id} checksum")
+        self.volume.check_data_checksum(volume_name, data_id)
 
     def delete_replica_on_node(self, volume_name, replica_locality):
-        check_replica_locality(replica_locality)
+        node_name = None
+        if index := self.node.is_accessing_node_by_index(replica_locality):
+            node_name = self.node.get_node_by_index(index)
+        else:
+            node_name = self.get_node_id_by_replica_locality(volume_name, replica_locality)
 
-        node_id = self.get_node_id_by_replica_locality(volume_name, replica_locality)
-
-        logging(f"Deleting volume {volume_name}'s replica on node {node_id}")
-        self.volume.delete_replica(volume_name, node_id)
+        logging(f"Deleting volume {volume_name}'s replica on node {node_name}")
+        self.volume.delete_replica(volume_name, node_name)
 
     def set_annotation(self, volume_name, annotation_key, annotation_value):
         self.volume.set_annotation(volume_name, annotation_key, annotation_value)
 
-    async def wait_for_replica_rebuilding_start(self, volume_name, replica_node):
-        if str(replica_node).isdigit():
-            replica_node = self.node.get_node_by_index(replica_node)
-
-        logging(f"Waiting for volume {volume_name}'s replica on node {replica_node} rebuilding started")
-        await self.volume.wait_for_replica_rebuilding_start(
-            volume_name,
-            replica_node
-        )
-
     async def wait_for_replica_rebuilding_to_start_on_node(self, volume_name, replica_locality):
-        check_replica_locality(replica_locality)
+        node_name = None
+        if index := self.node.is_accessing_node_by_index(replica_locality):
+            node_name = self.node.get_node_by_index(index)
+        else:
+            node_name = self.get_node_id_by_replica_locality(volume_name, replica_locality)
 
-        node_id = self.get_node_id_by_replica_locality(volume_name, replica_locality)
-
-        logging(f"Waiting for volume {volume_name}'s replica on node {node_id} rebuilding started")
-        await self.volume.wait_for_replica_rebuilding_start(volume_name, node_id)
-
-    def wait_for_replica_rebuilding_complete(self, volume_name, replica_node):
-        if str(replica_node).isdigit():
-            replica_node = self.node.get_node_by_index(replica_node)
-
-        logging(f"Waiting for volume {volume_name}'s replica on node {replica_node} rebuilding completed")
-        self.volume.wait_for_replica_rebuilding_complete(
-            volume_name,
-            replica_node
-        )
+        logging(f"Waiting for volume {volume_name}'s replica on node {node_name} rebuilding started")
+        await self.volume.wait_for_replica_rebuilding_start(volume_name, node_name)
 
     def wait_for_replica_rebuilding_to_complete_on_node(self, volume_name, replica_locality):
-        check_replica_locality(replica_locality)
+        node_name = None
+        if index := self.node.is_accessing_node_by_index(replica_locality):
+            node_name = self.node.get_node_by_index(index)
+        else:
+            node_name = self.get_node_id_by_replica_locality(volume_name, replica_locality)
 
-        node_id = self.get_node_id_by_replica_locality(volume_name, replica_locality)
-
-        logging(f"Waiting for volume {volume_name}'s replica on node {node_id} rebuilding completed")
-        self.volume.wait_for_replica_rebuilding_complete(volume_name, node_id)
+        logging(f"Waiting for volume {volume_name}'s replica on node {node_name} rebuilding completed")
+        self.volume.wait_for_replica_rebuilding_complete(volume_name, node_name)
 
     def wait_for_replica_rebuilding_to_complete(self, volume_name):
-        for node_id in self.get_replica_node_ids(volume_name):
-            logging(f"Waiting for volume {volume_name}'s replica on node {node_id} rebuilding completed")
-            self.volume.wait_for_replica_rebuilding_complete(volume_name, node_id)
+        for node_name in self.node.list_node_names_by_role("worker"):
+            logging(f"Waiting for volume {volume_name}'s replica on node {node_name} rebuilding completed")
+            self.volume.wait_for_replica_rebuilding_complete(volume_name, node_name)
 
     async def only_one_replica_rebuilding_will_start_at_a_time_on_node(self, volume_name_0, volume_name_1, replica_locality):
 

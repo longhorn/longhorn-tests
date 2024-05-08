@@ -32,13 +32,13 @@ class host_keywords:
         node_name = self.node.get_node_by_index(idx)
         reboot_down_time_sec = int(power_off_time_in_min) * 60
 
-        logging(f'Rebooting node {node_name} with downtime {power_off_time_in_min} minutes')
+        logging(f'Rebooting node {node_name} with downtime {reboot_down_time_sec} seconds')
         self.host.reboot_node(node_name, reboot_down_time_sec)
 
     def reboot_all_worker_nodes(self, power_off_time_in_min=1):
         reboot_down_time_sec = int(power_off_time_in_min) * 60
 
-        logging(f'Rebooting all worker nodes with downtime {power_off_time_in_min} minutes')
+        logging(f'Rebooting all worker nodes with downtime {reboot_down_time_sec} seconds')
         self.host.reboot_all_worker_nodes(reboot_down_time_sec)
 
     def reboot_all_nodes(self):
@@ -48,5 +48,5 @@ class host_keywords:
     def reboot_node_by_name(self, node_name, downtime_in_min=1):
         reboot_down_time_sec = int(downtime_in_min) * 60
 
-        logging(f'Rebooting node {node_name} with downtime {downtime_in_min} minutes')
+        logging(f'Rebooting node {node_name} with downtime {reboot_down_time_sec} seconds')
         self.host.reboot_node(node_name, reboot_down_time_sec)
