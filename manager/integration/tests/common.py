@@ -32,6 +32,8 @@ Mi = (1024 * 1024)
 Gi = (1024 * Mi)
 
 SIZE = str(16 * Mi)
+# See https://github.com/longhorn/longhorn/issues/8488.
+XFS_MIN_SIZE = str(300 * Mi)
 EXPAND_SIZE = str(32 * Mi)
 VOLUME_NAME = "longhorn-testvol"
 ATTACHMENT_TICKET_ID_PREFIX = "test-attachment-ticket"
@@ -745,8 +747,8 @@ def delete_and_wait_longhorn(client, name):
         assert ex.status == 404
     except longhorn.ApiError as err:
         # for deleting a non-existing volume,
-        # the status_code is 500 Server Error.
-        assert err.error.code == 500
+        # the status_code is 404.
+        assert err.error.code == 404
 
     wait_for_volume_delete(client, name)
 
@@ -4631,7 +4633,7 @@ def wait_for_rebuild_complete(client, volume_name, retry_count=RETRY_COUNTS):
         rebuild_statuses = v.rebuildStatus
         for status in rebuild_statuses:
             if status.state == "complete":
-                assert status.progress == 100
+                assert status.progress == 100, f"status = {status}"
                 assert not status.error
                 assert not status.isRebuilding
                 completed += 1
@@ -5127,7 +5129,7 @@ def crash_engine_process_with_sigkill(client, core_api, volume_name):
 
     kill_command = [
             '/bin/sh', '-c',
-            "kill `pgrep -f \"controller " + volume_name + "\"`",]
+            "kill `pgrep -f \"controller " + volume_name + "\"`"]
 
     with timeout(seconds=STREAM_EXEC_TIMEOUT,
                  error_message='Timeout on executing stream read'):
