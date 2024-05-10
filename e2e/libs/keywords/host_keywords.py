@@ -16,18 +16,6 @@ class host_keywords:
         self.host = Host()
         self.node = Node()
 
-    def reboot_volume_node(self, volume_name):
-        node_id = self.volume_keywords.get_node_id_by_replica_locality(volume_name, "volume node")
-
-        logging(f'Rebooting volume {volume_name} node {node_id} with downtime {NODE_REBOOT_DOWN_TIME_SECOND} seconds')
-        self.host.reboot_node(node_id)
-
-    def reboot_replica_node(self, volume_name):
-        node_id = self.volume_keywords.get_node_id_by_replica_locality(volume_name, "replica node")
-
-        logging(f'Rebooting volume {volume_name} node {node_id} with downtime {NODE_REBOOT_DOWN_TIME_SECOND} seconds')
-        self.host.reboot_node(node_id)
-
     def reboot_node_by_index(self, idx, power_off_time_in_min=1):
         node_name = self.node.get_node_by_index(idx)
         reboot_down_time_sec = int(power_off_time_in_min) * 60
