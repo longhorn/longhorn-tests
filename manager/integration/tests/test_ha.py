@@ -2579,6 +2579,8 @@ def prepare_engine_not_fully_deployed_environment(client, core_api): # NOQA
     taint_node_id = taint_non_current_node(client, core_api)
 
     restart_and_wait_ready_engine_count(client, 2)
+    default_img = common.get_default_engine_image(client)
+    wait_for_deployed_engine_image_count(client, default_img.name, 2)
 
     return taint_node_id
 
@@ -3098,10 +3100,9 @@ def test_engine_image_not_fully_deployed_perform_dr_restoring_expanding_volume(c
                                     wait_to_fail=True)
 
     # step 15
-    volume1 = wait_for_volume_degraded(client, volume1.name)
     for i in range(RETRY_COUNTS_SHORT * 2):
         volume1 = client.by_id_volume(volume1.name)
-        assert len(volume1.replicas) == 2
+        assert len(volume1.replicas) == 2, f"volume1 = {volume1}"
         for replica in volume1.replicas:
             if replica.hostId == node_x:
                 assert replica.running is False
