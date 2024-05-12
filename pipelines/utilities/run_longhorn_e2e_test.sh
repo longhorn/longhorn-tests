@@ -81,7 +81,7 @@ run_longhorn_e2e_test_out_of_cluster(){
     CONTAINER_NAME="e2e-container-${IMAGE_NAME}"
     docker run --pull=always \
                --name "${CONTAINER_NAME}" \
-               -e LONGHORN_BACKUPSTORES="${LONGHORN_BACKUPSTORES}" \
+               -e LONGHORN_BACKUPSTORE="${LONGHORN_BACKUPSTORES}" \
                -e LONGHORN_BACKUPSTORE_POLL_INTERVAL="${LONGHORN_BACKUPSTORE_POLL_INTERVAL}" \
                -e AWS_ACCESS_KEY_ID="${TF_VAR_lh_aws_access_key}" \
                -e AWS_SECRET_ACCESS_KEY="${TF_VAR_lh_aws_secret_key}" \
