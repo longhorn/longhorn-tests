@@ -228,7 +228,7 @@ main(){
     kubectl uncordon "$(kubectl get nodes | awk 'NR!=1 && $3!~/control-plane/ {print $1}' | sort | awk 'NR==1')"
 
     kubectl create -f "https://raw.githubusercontent.com/longhorn/longhorn/${LONGHORN_PREVIOUS_VERSION}/uninstall/uninstall.yaml"
-    kubectl wait --for=condition=complete --timeout=5m job/longhorn-uninstall
+    kubectl wait --for=condition=complete --timeout=5m job/longhorn-uninstall -n longhorn-system
     kubectl delete -f "https://raw.githubusercontent.com/longhorn/longhorn/${LONGHORN_PREVIOUS_VERSION}/deploy/longhorn.yaml" || true
     kubectl delete -f "https://raw.githubusercontent.com/longhorn/longhorn/${LONGHORN_PREVIOUS_VERSION}/uninstall/uninstall.yaml" || true
     wait_longhorn_resources_deleted
