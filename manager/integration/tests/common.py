@@ -32,6 +32,8 @@ Mi = (1024 * 1024)
 Gi = (1024 * Mi)
 
 SIZE = str(16 * Mi)
+# See https://github.com/longhorn/longhorn/issues/8488.
+XFS_MIN_SIZE = str(300 * Mi)
 EXPAND_SIZE = str(32 * Mi)
 VOLUME_NAME = "longhorn-testvol"
 ATTACHMENT_TICKET_ID_PREFIX = "test-attachment-ticket"
@@ -114,6 +116,7 @@ DEFAULT_BACKUP_TIMEOUT = 100
 
 DEFAULT_POD_INTERVAL = 1
 DEFAULT_POD_TIMEOUT = 180
+POD_DELETION_TIMEOUT = 600
 
 DEFAULT_STATEFULSET_INTERVAL = 1
 DEFAULT_STATEFULSET_TIMEOUT = 180
@@ -211,6 +214,11 @@ SETTING_BACKUP_COMPRESSION_METHOD = "backup-compression-method"
 SETTING_BACKUP_CONCURRENT_LIMIT = "backup-concurrent-limit"
 SETTING_RESTORE_CONCURRENT_LIMIT = "restore-concurrent-limit"
 SETTING_V1_DATA_ENGINE = "v1-data-engine"
+SETTING_ALLOW_EMPTY_NODE_SELECTOR_VOLUME = \
+    "allow-empty-node-selector-volume"
+SETTING_REPLICA_DISK_SOFT_ANTI_AFFINITY = "replica-disk-soft-anti-affinity"
+SETTING_ALLOW_EMPTY_DISK_SELECTOR_VOLUME = "allow-empty-disk-selector-volume"
+SETTING_NODE_DRAIN_POLICY = "node-drain-policy"
 
 DEFAULT_BACKUP_COMPRESSION_METHOD = "lz4"
 BACKUP_COMPRESSION_METHOD_LZ4 = "lz4"
@@ -267,6 +275,9 @@ DEPRECATED_K8S_ZONE_LABEL = "failure-domain.beta.kubernetes.io/zone"
 
 K8S_ZONE_LABEL = "topology.kubernetes.io/zone"
 
+K8S_GKE_OS_DISTRO_LABEL = "cloud.google.com/gke-os-distribution"
+K8S_GKE_OS_DISTRO_COS = "cos"
+
 K8S_CLUSTER_AUTOSCALER_EVICT_KEY = \
     "cluster-autoscaler.kubernetes.io/safe-to-evict"
 K8S_CLUSTER_AUTOSCALER_SCALE_DOWN_DISABLED_KEY = \
@@ -274,6 +285,7 @@ K8S_CLUSTER_AUTOSCALER_SCALE_DOWN_DISABLED_KEY = \
 
 BACKING_IMAGE_SOURCE_TYPE_DOWNLOAD = "download"
 BACKING_IMAGE_SOURCE_TYPE_FROM_VOLUME = "export-from-volume"
+BACKING_IMAGE_SOURCE_TYPE_RESTORE = "restore"
 
 JOB_LABEL = "recurring-job.longhorn.io"
 
@@ -286,11 +298,19 @@ disk_being_syncing = "being syncing and please retry later"
 FS_TYPE_EXT4 = "ext4"
 FS_TYPE_XFS = "xfs"
 
+ACCESS_MODE_RWO = "rwo"
+ACCESS_MODE_RWX = "rwx"
+
 ATTACHER_TYPE_CSI_ATTACHER = "csi-attacher"
 ATTACHER_TYPE_LONGHORN_API = "longhorn-api"
 ATTACHER_TYPE_LONGHORN_UPGRADER = "longhorn-upgrader"
 
 HOST_PROC_DIR = "/host/proc"
+
+BACKUP_TARGET_MESSAGE_EMPTY_URL = "backup target URL is empty"
+BACKUP_TARGET_MESSAGES_INVALID = ["failed to init backup target clients",
+                                  "failed to list backup volumes in",
+                                  "error listing backup volume names"]
 
 # customize the timeout for HDD
 disktype = os.environ.get('LONGHORN_DISK_TYPE')
@@ -492,7 +512,8 @@ def delete_backup_volume(client, volume_name):
 def create_and_check_volume(client, volume_name,
                             num_of_replicas=3, size=SIZE, backing_image="",
                             frontend=VOLUME_FRONTEND_BLOCKDEV,
-                            snapshot_data_integrity=SNAPSHOT_DATA_INTEGRITY_IGNORED): # NOQA
+                            snapshot_data_integrity=SNAPSHOT_DATA_INTEGRITY_IGNORED,  # NOQA
+                            access_mode=ACCESS_MODE_RWO):
     """
     Create a new volume with the specified parameters. Assert that the new
     volume is detached and that all of the requested parameters match.
@@ -511,7 +532,8 @@ def create_and_check_volume(client, volume_name,
     client.create_volume(name=volume_name, size=size,
                          numberOfReplicas=num_of_replicas,
                          backingImage=backing_image, frontend=frontend,
-                         snapshotDataIntegrity=snapshot_data_integrity)
+                         snapshotDataIntegrity=snapshot_data_integrity,
+                         accessMode=access_mode)
     volume = wait_for_volume_detached(client, volume_name)
     assert volume.name == volume_name
     assert volume.size == size
@@ -725,8 +747,8 @@ def delete_and_wait_longhorn(client, name):
         assert ex.status == 404
     except longhorn.ApiError as err:
         # for deleting a non-existing volume,
-        # the status_code is 500 Server Error.
-        assert err.error.code == 500
+        # the status_code is 404.
+        assert err.error.code == 404
 
     wait_for_volume_delete(client, name)
 
@@ -857,7 +879,8 @@ def write_pod_volume_random_data(api, pod_name, path, size_in_mb):
         '/bin/sh',
         '-c',
         'dd if=/dev/urandom of=' + path +
-        ' bs=1M' + ' count=' + str(size_in_mb)
+        ' bs=1M' + ' count=' + str(size_in_mb) +
+        '; sync'
     ]
     return stream(
         api.connect_get_namespaced_pod_exec, pod_name, 'default',
@@ -936,7 +959,7 @@ def size_to_string(volume_size):
 
 
 def wait_delete_pod(api, pod_uid, namespace='default'):
-    for i in range(DEFAULT_POD_TIMEOUT):
+    for i in range(POD_DELETION_TIMEOUT):
         ret = api.list_namespaced_pod(namespace=namespace)
         found = False
         for item in ret.items:
@@ -1305,7 +1328,7 @@ def check_pvc_in_specific_status(api, pvc_name, status):
         claim = \
             api.read_namespaced_persistent_volume_claim(name=pvc_name,
                                                         namespace='default')
-        if claim.status.phase == "bound":
+        if claim.status.phase == status:
             break
         time.sleep(RETRY_INTERVAL)
 
@@ -1960,7 +1983,7 @@ def wait_for_volume_faulted(client, name):
 
 
 def wait_for_volume_status(client, name, key, value,
-                           retry_count=RETRY_COUNTS):
+                           retry_count=RETRY_COUNTS_LONG):
     wait_for_volume_creation(client, name)
     for i in range(retry_count):
         volume = client.by_id_volume(name)
@@ -2191,6 +2214,17 @@ def wait_for_engine_image_state(client, image_name, state):
     return image
 
 
+def wait_for_engine_image_incompatible(client, image_name):
+    wait_for_engine_image_creation(client, image_name)
+    for i in range(RETRY_COUNTS):
+        image = client.by_id_engine_image(image_name)
+        if image.incompatible:
+            break
+        time.sleep(RETRY_INTERVAL)
+    assert image.incompatible
+    return image
+
+
 def wait_for_engine_image_condition(client, image_name, state):
     """
     state: "True", "False"
@@ -2199,10 +2233,10 @@ def wait_for_engine_image_condition(client, image_name, state):
     # This helps to prevent the flaky test case in which the ENGINE_NAME
     # is flapping between ready and not ready a few times before settling
     # down to the ready state
-    # https://github.com/longhorn/longhorn-tests/pull/1638
+    # https://github.com/longhorn/longhorn/issues/7438
     state_count = 1
     if state == "True":
-        state_count = 5
+        state_count = 60
 
     c = 0
     for i in range(RETRY_COUNTS):
@@ -2266,7 +2300,7 @@ class AssertErrorCheckThread(threading.Thread):
 
         Parameters:
             target  :       The threading function.
-            args    :       Arguments of the target fucntion.
+            args    :       Arguments of the target function.
     """
     def __init__(self, target, args):
         threading.Thread.__init__(self)
@@ -3092,21 +3126,24 @@ def check_volume_endpoint(v):
     return endpoint
 
 
+def find_backup_volume(client, volume_name):
+    bvs = client.list_backupVolume()
+    for bv in bvs:
+        if bv.name == volume_name and bv.created != "":
+            return bv
+    return None
+
+
 def wait_for_backup_volume_backing_image_synced(
         client, volume_name, backing_image, retry_count=RETRY_BACKUP_COUNTS):
-    def find_backup_volume():
-        bvs = client.list_backupVolume()
-        for bv in bvs:
-            if bv.name == volume_name:
-                return bv
-        return None
+
     completed = False
     for _ in range(retry_count):
-        bv = find_backup_volume()
-        assert bv is not None
-        if bv.backingImageName == backing_image:
-            completed = True
-            break
+        bv = find_backup_volume(client, volume_name)
+        if bv is not None:
+            if bv.backingImageName == backing_image:
+                completed = True
+                break
         time.sleep(RETRY_BACKUP_INTERVAL)
     assert completed is True, f" Backup Volume = {bv}," \
                               f" Backing Image = {backing_image}," \
@@ -3132,6 +3169,24 @@ def wait_for_backup_completion(client, volume_name, snapshot_name=None,
         time.sleep(RETRY_BACKUP_INTERVAL)
     assert completed is True, f" Backup status = {b.state}," \
                               f" Backup Progress = {b.progress}, Volume = {v}"
+    return v
+
+
+def wait_for_backup_failed(client, volume_name, snapshot_name=None,
+                           retry_count=RETRY_BACKUP_COUNTS):
+    failed = False
+    for _ in range(retry_count):
+        v = client.by_id_volume(volume_name)
+        for b in v.backupStatus:
+            if b.state == "Error":
+                assert b.progress == 0
+                assert b.error != ""
+                failed = True
+                break
+        if failed:
+            break
+        time.sleep(RETRY_BACKUP_INTERVAL)
+    assert failed is True
     return v
 
 
@@ -3321,10 +3376,54 @@ def set_k8s_node_label(core_api, node_name, key, value):
     core_api.patch_node(node_name, body=payload)
 
 
+def is_k8s_node_label(core_api, label_key, label_value, node_name):
+    node = core_api.read_node(node_name)
+
+    if label_key in node.metadata.labels:
+        if node.metadata.labels[label_key] == label_value:
+            return True
+    return False
+
+
 def set_k8s_node_zone_label(core_api, node_name, zone_name):
+    if is_k8s_node_label(core_api, K8S_ZONE_LABEL, zone_name, node_name):
+        return
+
     k8s_zone_label = get_k8s_zone_label()
 
     set_k8s_node_label(core_api, node_name, k8s_zone_label, zone_name)
+
+
+def set_and_wait_k8s_nodes_zone_label(core_api, node_zone_map):
+    k8s_zone_label = get_k8s_zone_label()
+
+    for _ in range(RETRY_COUNTS):
+        for node_name, zone_name in node_zone_map.items():
+            set_k8s_node_label(core_api, node_name, k8s_zone_label, zone_name)
+
+        is_updated = False
+        for node_name, zone_name in node_zone_map.items():
+            is_updated = \
+                is_k8s_node_label(core_api,
+                                  k8s_zone_label, zone_name, node_name)
+            if not is_updated:
+                break
+
+        if is_updated:
+            break
+
+        time.sleep(RETRY_INTERVAL)
+
+    assert is_updated, \
+        f"Timeout while waiting for nodes zone label to be updated\n" \
+        f"Expected: {node_zone_map}"
+
+
+def is_k8s_node_gke_cos(core_api):
+    return is_k8s_node_label(core_api,
+                             K8S_GKE_OS_DISTRO_LABEL,
+                             K8S_GKE_OS_DISTRO_COS,
+                             get_self_host_id())
 
 
 def get_k8s_zone_label():
@@ -3735,17 +3834,10 @@ def find_backup(client, vol_name, snap_name):
     been completed successfully
     """
 
-    def find_backup_volume():
-        bvs = client.list_backupVolume()
-        for bv in bvs:
-            if bv.name == vol_name and bv.created != "":
-                return bv
-        return None
-
     bv = None
     for i in range(120):
         if bv is None:
-            bv = find_backup_volume()
+            bv = find_backup_volume(client, vol_name)
         if bv is not None:
             backups = bv.backupList().data
             for b in backups:
@@ -4541,7 +4633,7 @@ def wait_for_rebuild_complete(client, volume_name, retry_count=RETRY_COUNTS):
         rebuild_statuses = v.rebuildStatus
         for status in rebuild_statuses:
             if status.state == "complete":
-                assert status.progress == 100
+                assert status.progress == 100, f"status = {status}"
                 assert not status.error
                 assert not status.isRebuilding
                 completed += 1
@@ -4764,6 +4856,7 @@ def make_deployment_cpu_request(request):
 
 def wait_deployment_replica_ready(apps_api, deployment_name,
                                   desired_replica_count, namespace='default'):  # NOQA
+    ok = False
     for i in range(DEFAULT_DEPLOYMENT_TIMEOUT):
         deployment = apps_api.read_namespaced_deployment(
             name=deployment_name,
@@ -4772,9 +4865,11 @@ def wait_deployment_replica_ready(apps_api, deployment_name,
         # deployment is none if deployment is not yet created
         if deployment is not None and \
            deployment.status.ready_replicas == desired_replica_count:
+            ok = True
             break
 
         time.sleep(DEFAULT_DEPLOYMENT_INTERVAL)
+    assert ok
 
 
 def create_and_wait_deployment(apps_api, deployment_manifest):
@@ -4975,7 +5070,8 @@ def prepare_statefulset_with_data_in_mb(
 def prepare_pod_with_data_in_mb(
         client, core_api, csi_pv, pvc, pod_make, volume_name,
         volume_size=str(1*Gi), num_of_replicas=3, data_path="/data/test",
-        data_size_in_mb=DATA_SIZE_IN_MB_1, add_liveness_probe=True):# NOQA:
+        data_size_in_mb=DATA_SIZE_IN_MB_1, add_liveness_probe=True,
+        access_mode=ACCESS_MODE_RWO):# NOQA:
 
     pod_name = volume_name + "-pod"
     pv_name = volume_name
@@ -5000,7 +5096,8 @@ def prepare_pod_with_data_in_mb(
 
     create_and_check_volume(client, volume_name,
                             num_of_replicas=num_of_replicas,
-                            size=volume_size)
+                            size=volume_size,
+                            access_mode=access_mode)
     core_api.create_persistent_volume(csi_pv)
     core_api.create_namespaced_persistent_volume_claim(
         body=pvc, namespace='default')
@@ -5032,7 +5129,7 @@ def crash_engine_process_with_sigkill(client, core_api, volume_name):
 
     kill_command = [
             '/bin/sh', '-c',
-            "kill `pgrep -f \"controller " + volume_name + "\"`",]
+            "kill `pgrep -f \"controller " + volume_name + "\"`"]
 
     with timeout(seconds=STREAM_EXEC_TIMEOUT,
                  error_message='Timeout on executing stream read'):
@@ -5138,15 +5235,8 @@ def wait_for_instance_manager_desire_state(client, core_api, im_name,
 
 def wait_for_backup_delete(client, volume_name, backup_name):
 
-    def find_backup_volume():
-        bvs = client.list_backupVolume()
-        for bv in bvs:
-            if bv.name == volume_name:
-                return bv
-        return None
-
     def backup_exists():
-        bv = find_backup_volume()
+        bv = find_backup_volume(client, volume_name)
         if bv is not None:
             backups = bv.backupList()
             for b in backups:
@@ -5735,7 +5825,7 @@ def generate_support_bundle(case_name):  # NOQA
         Generate support bundle into folder ./support_bundle/case_name.zip
 
         Won't generate support bundle if current support bundle count
-        greate than MAX_SUPPORT_BINDLE_NUMBER.
+        greater than MAX_SUPPORT_BINDLE_NUMBER.
         Args:
             case_name: support bundle will named case_name.zip
     """
@@ -5785,7 +5875,7 @@ def generate_support_bundle(case_name):  # NOQA
         with open('./support_bundle/{0}.zip'.format(case_name), 'wb') as f:
             f.write(r.content)
     except Exception as e:
-        warnings.warn("Error occured while downloading support bundle {}.zip\n\
+        warnings.warn("Error occurred when downloading support bundle {}.zip\n\
             The error was {}".format(case_name, e))
 
 
@@ -6099,3 +6189,44 @@ def wait_for_instance_manager_count(client, number, retry_counts=120):
         time.sleep(RETRY_INTERVAL_LONG)
 
     return len(ims)
+
+
+def create_deployment_and_write_data(client, # NOQA
+                                     core_api, # NOQA
+                                     make_deployment_with_pvc, # NOQA
+                                     volume_name, # NOQA
+                                     size, # NOQA
+                                     replica_count, # NOQA
+                                     data_size, # NOQA
+                                     attach_node_id=None): # NOQA
+    apps_api = get_apps_api_client()
+    volume = client.create_volume(name=volume_name,
+                                  size=size,
+                                  numberOfReplicas=replica_count)
+    volume = wait_for_volume_detached(client, volume_name)
+
+    pvc_name = volume_name + "-pvc"
+    create_pv_for_volume(client, core_api, volume, volume_name)
+    create_pvc_for_volume(client, core_api, volume, pvc_name)
+    deployment_name = volume_name + "-dep"
+    deployment = make_deployment_with_pvc(deployment_name, pvc_name)
+    if attach_node_id:
+        deployment["spec"]["template"]["spec"]["nodeSelector"] \
+            = {"kubernetes.io/hostname": attach_node_id}
+
+    create_and_wait_deployment(apps_api, deployment)
+
+    data_path = '/data/test'
+    deployment_pod_names = get_deployment_pod_names(core_api,
+                                                    deployment)
+    write_pod_volume_random_data(core_api,
+                                 deployment_pod_names[0],
+                                 data_path,
+                                 data_size)
+
+    checksum = get_pod_data_md5sum(core_api,
+                                   deployment_pod_names[0],
+                                   data_path)
+
+    volume = client.by_id_volume(volume_name)
+    return volume, deployment_pod_names[0], checksum, deployment

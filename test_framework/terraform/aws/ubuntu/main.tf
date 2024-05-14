@@ -252,7 +252,7 @@ resource "aws_route_table" "lh_aws_private_rt" {
   }
 }
 
-# Assciate public subnet to public route table
+# Associate public subnet to public route table
 resource "aws_route_table_association" "lh_aws_public_subnet_rt_association" {
   depends_on = [
     aws_subnet.lh_aws_public_subnet,
@@ -263,7 +263,7 @@ resource "aws_route_table_association" "lh_aws_public_subnet_rt_association" {
   route_table_id = aws_route_table.lh_aws_public_rt.id
 }
 
-# Assciate private subnet to private route table
+# Associate private subnet to private route table
 resource "aws_route_table_association" "lh_aws_private_subnet_rt_association" {
   depends_on = [
     aws_subnet.lh_aws_private_subnet,
@@ -305,6 +305,20 @@ resource "aws_ebs_volume" "lh_aws_hdd_volume" {
 
   tags = {
     Name = "lh-aws-hdd-volume-${count.index}-${random_string.random_suffix.id}"
+    Owner = "longhorn-infra"
+  }
+}
+
+resource "aws_ebs_volume" "lh_aws_ssd_volume" {
+
+  count = var.extra_block_device ? var.lh_aws_instance_count_worker : 0
+
+  availability_zone = var.aws_availability_zone
+  size              = var.lh_aws_instance_root_block_device_size_worker
+  type              = "gp2"
+
+  tags = {
+    Name = "lh-aws-ssd-volume-${count.index}-${random_string.random_suffix.id}"
     Owner = "longhorn-infra"
   }
 }

@@ -9,7 +9,7 @@ class CRD(Base):
     def __init__(self):
         self.obj_api = client.CustomObjectsApi()
 
-    def get_engine(self, volume_name, node_name):
+    def get_engines(self, volume_name, node_name):
         if volume_name == "" or node_name == "":
             logging.info("getting all engines")
         else:
@@ -19,7 +19,7 @@ class CRD(Base):
         label_selector = []
         if volume_name != "":
             label_selector.append(f"longhornvolume={volume_name}")
-        if node_name != "":
+        if node_name:
             label_selector.append(f"longhornnode={node_name}")
 
         api_response = self.obj_api.list_namespaced_custom_object(

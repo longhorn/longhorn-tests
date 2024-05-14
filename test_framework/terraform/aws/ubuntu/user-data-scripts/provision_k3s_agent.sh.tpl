@@ -1,9 +1,22 @@
 #!/bin/bash
 
 apt-get update
-apt-get install -y nfs-common
+apt-get install -y nfs-common linux-modules-extra-`uname -r`
 
-if [ -b "/dev/xvdh" ]; then
+modprobe uio
+modprobe uio_pci_generic
+modprobe nvme-tcp
+touch /etc/modules-load.d/modules.conf
+cat > /etc/modules-load.d/modules.conf <<EOF
+uio
+uio_pci_generic
+nvme-tcp
+EOF
+
+echo 1024 > /sys/kernel/mm/hugepages/hugepages-2048kB/nr_hugepages
+echo "vm.nr_hugepages=1024" >> /etc/sysctl.conf
+
+if [[ "${extra_block_device}" != true ]] && [[ -b "/dev/xvdh" ]]; then
   mkfs.ext4 -E nodiscard /dev/xvdh
   mkdir /var/lib/longhorn
   mount /dev/xvdh /var/lib/longhorn

@@ -1,0 +1,31 @@
+From alpine:latest
+
+ARG KUBECTL_VERSION=v1.20.2
+
+ARG RKE_VERSION=v1.3.4
+
+ARG TERRAFORM_VERSION=1.3.5
+
+ARG YQ_VERSION=v4.24.2
+
+ENV WORKSPACE /src/longhorn-tests
+
+WORKDIR $WORKSPACE
+
+RUN wget -q https://storage.googleapis.com/kubernetes-release/release/$KUBECTL_VERSION/bin/linux/amd64/kubectl && \
+    mv kubectl /usr/local/bin/kubectl && \
+    chmod +x /usr/local/bin/kubectl && \
+    wget -q https://github.com/rancher/rke/releases/download/$RKE_VERSION/rke_linux-amd64 && \
+    mv rke_linux-amd64 /usr/bin/rke && \
+    chmod +x /usr/bin/rke && \
+    wget -q https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/terraform_${TERRAFORM_VERSION}_linux_amd64.zip && \
+    unzip terraform_${TERRAFORM_VERSION}_linux_amd64.zip && rm terraform_${TERRAFORM_VERSION}_linux_amd64.zip && \
+    mv terraform /usr/bin/terraform && \
+    chmod +x /usr/bin/terraform && \
+    wget -q "https://github.com/mikefarah/yq/releases/download/${YQ_VERSION}/yq_linux_amd64" && \
+    mv yq_linux_amd64 /usr/local/bin/yq && \
+    chmod +x /usr/local/bin/yq && \
+    apk add openssl openssh-client ca-certificates git rsync bash curl jq python3 py3-pip aws-cli && \
+    ssh-keygen -t rsa -b 4096 -N "" -f ~/.ssh/id_rsa
+
+COPY [".", "$WORKSPACE"]

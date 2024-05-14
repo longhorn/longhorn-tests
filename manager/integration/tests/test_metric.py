@@ -7,7 +7,7 @@ from prometheus_client.parser import text_string_to_metric_families
 
 from common import client, core_api, volume_name  # NOQA
 
-from common import crash_replica_processes
+from common import delete_replica_processes
 from common import create_pv_for_volume
 from common import create_pvc_for_volume
 from common import create_snapshot
@@ -21,12 +21,15 @@ from common import wait_for_volume_expansion
 from common import wait_for_volume_faulted
 from common import wait_for_volume_healthy
 from common import write_volume_data
-from common import write_volume_random_data
-
+from common import set_node_scheduling
+from common import set_node_cordon
+from common import wait_for_node_update
 from common import Mi
 from common import LONGHORN_NAMESPACE
 from common import RETRY_COUNTS
 from common import RETRY_INTERVAL
+from common import DEFAULT_DISK_PATH
+from common import Gi
 
 # The dictionaries use float type of value because the value obtained from
 # prometheus_client is in float type.
@@ -78,6 +81,33 @@ def find_metrics(metric_data, metric_name):
     return metrics
 
 
+def check_metric_with_condition(core_api, metric_name, metric_labels, expected_value=None, metric_node_id=get_self_host_id()): # NOQA)
+    """
+    Some metric have multiple conditions, for example metric
+    longhorn_node_status have condition
+    - allowScheduling
+    - mountpropagation
+    - ready
+    - schedulable
+    metric longhorn_disk_status have conditions
+    - ready
+    - schedulable
+    Use this function to get specific condition of a mertic
+    """
+    metric_data = get_metrics(core_api, metric_node_id)
+
+    found_metric = next(
+        (sample for family in metric_data for sample in family.samples
+            if sample.name == metric_name and
+            sample.labels.get("condition") == metric_labels.get("condition")),
+        None
+        )
+
+    assert found_metric is not None
+
+    examine_metric_value(found_metric, metric_labels, expected_value)
+
+
 def check_metric(core_api, metric_name, metric_labels, expected_value=None, metric_node_id=get_self_host_id()): # NOQA
     metric_data = get_metrics(core_api, metric_node_id)
 
@@ -89,6 +119,10 @@ def check_metric(core_api, metric_name, metric_labels, expected_value=None, metr
 
     assert found_metric is not None
 
+    examine_metric_value(found_metric, metric_labels, expected_value)
+
+
+def examine_metric_value(found_metric, metric_labels, expected_value=None):
     for key, value in metric_labels.items():
         assert found_metric.labels[key] == value
 
@@ -161,6 +195,23 @@ def check_metric_sum_on_all_nodes(client, core_api, metric_name, expected_labels
         assert total_metrics["value"] >= 0.0
 
 
+def wait_for_metric_volume_actual_size(client, core_api, metric_name, metric_labels, volume_name): # NOQA
+    for _ in range(RETRY_COUNTS):
+        time.sleep(RETRY_INTERVAL)
+        volume = client.by_id_volume(volume_name)
+        actual_size = int(volume.controllers[0].actualSize)
+
+        try:
+            check_metric(core_api, metric_name,
+                         metric_labels, actual_size)
+            return
+        except AssertionError:
+            continue
+
+    check_metric(core_api, metric_name,
+                 metric_labels, actual_size)
+
+
 def wait_for_metric_count_all_nodes(client, core_api, metric_name, metric_labels, expected_count): # NOQA
     for _ in range(RETRY_COUNTS):
         time.sleep(RETRY_INTERVAL)
@@ -225,7 +276,7 @@ def test_volume_metrics(client, core_api, volume_name, pvc_namespace): # NOQA
     lht_hostId = get_self_host_id()
     pv_name = volume_name + "-pv"
     pvc_name = volume_name + "-pvc"
-    volume_size = str(500 * Mi)
+    volume_size = str(1 * Gi)
     volume = create_and_check_volume(client,
                                      volume_name,
                                      num_of_replicas=3,
@@ -238,9 +289,12 @@ def test_volume_metrics(client, core_api, volume_name, pvc_namespace): # NOQA
     volume = client.by_id_volume(volume_name)
     volume.attach(hostId=lht_hostId)
     volume = wait_for_volume_healthy(client, volume_name)
-    write_volume_random_data(volume)
+    data_size = 100 * Mi
+    data = {'pos': 0,
+            'len': data_size,
+            'content': generate_random_data(data_size)}
+    write_volume_data(volume, data)
     volume = client.by_id_volume(volume_name)
-    actual_size = float(volume.controllers[0].actualSize)
     capacity_size = float(volume.size)
 
     metric_labels = {
@@ -251,8 +305,9 @@ def test_volume_metrics(client, core_api, volume_name, pvc_namespace): # NOQA
     }
 
     # check volume metric basic
-    check_metric(core_api, "longhorn_volume_actual_size_bytes",
-                 metric_labels, actual_size)
+    wait_for_metric_volume_actual_size(client, core_api,
+                                       "longhorn_volume_actual_size_bytes",
+                                       metric_labels, volume_name)
     check_metric(core_api, "longhorn_volume_capacity_bytes",
                  metric_labels, capacity_size)
     check_metric(core_api, "longhorn_volume_read_throughput",
@@ -287,7 +342,7 @@ def test_volume_metrics(client, core_api, volume_name, pvc_namespace): # NOQA
 
     volume.updateReplicaCount(replicaCount=3)
     volume = wait_for_volume_healthy(client, volume_name)
-    crash_replica_processes(client, core_api, volume_name)
+    delete_replica_processes(client, core_api, volume_name)
     volume = wait_for_volume_faulted(client, volume_name)
 
     check_metric(core_api, "longhorn_volume_robustness",
@@ -409,3 +464,83 @@ def test_metric_longhorn_snapshot_actual_size_bytes(client, core_api, volume_nam
     wait_for_metric_count_all_nodes(client, core_api,
                                     "longhorn_snapshot_actual_size_bytes",
                                     system_snapshot_metric_labels, 1)
+
+
+def test_node_metrics(client, core_api): # NOQA
+    lht_hostId = get_self_host_id()
+    node = client.by_id_node(lht_hostId)
+    disks = node.disks
+    for _, disk in iter(disks.items()):
+        if disk.path == DEFAULT_DISK_PATH:
+            default_disk = disk
+            break
+    assert default_disk is not None
+
+    metric_labels = {}
+    check_metric(core_api, "longhorn_node_count_total",
+                 metric_labels, expected_value=3.0)
+
+    metric_labels = {
+        "node": lht_hostId,
+    }
+    check_metric(core_api, "longhorn_node_cpu_capacity_millicpu",
+                 metric_labels)
+    check_metric(core_api, "longhorn_node_cpu_usage_millicpu",
+                 metric_labels)
+    check_metric(core_api, "longhorn_node_memory_capacity_bytes",
+                 metric_labels)
+    check_metric(core_api, "longhorn_node_memory_usage_bytes",
+                 metric_labels)
+    check_metric(core_api, "longhorn_node_storage_capacity_bytes",
+                 metric_labels, default_disk.storageMaximum)
+    check_metric(core_api, "longhorn_node_storage_usage_bytes",
+                 metric_labels)
+    check_metric(core_api, "longhorn_node_storage_reservation_bytes",
+                 metric_labels, default_disk.storageReserved)
+
+    # check longhorn_node_status by 4 different conditions
+    metric_labels = {
+        "condition": "mountpropagation",
+        "condition_reason": "",
+        "node": lht_hostId
+    }
+    check_metric_with_condition(core_api, "longhorn_node_status",
+                                metric_labels, 1.0)
+
+    metric_labels = {
+        "condition": "ready",
+        "condition_reason": "",
+        "node": lht_hostId
+    }
+    check_metric_with_condition(core_api, "longhorn_node_status",
+                                metric_labels, 1.0)
+
+    metric_labels = {
+        "condition": "allowScheduling",
+        "condition_reason": "",
+        "node": lht_hostId,
+    }
+    check_metric_with_condition(core_api, "longhorn_node_status",
+                                metric_labels, 1.0)
+    node = client.by_id_node(lht_hostId)
+    set_node_scheduling(client, node, allowScheduling=False, retry=True)
+    check_metric_with_condition(core_api, "longhorn_node_status",
+                                metric_labels, 0.0)
+
+    metric_labels = {
+        "condition": "schedulable",
+        "condition_reason": "",
+        "node": lht_hostId
+    }
+    check_metric_with_condition(core_api, "longhorn_node_status",
+                                metric_labels, 1.0)
+
+    metric_labels = {
+        "condition": "schedulable",
+        "condition_reason": "KubernetesNodeCordoned",
+        "node": lht_hostId
+    }
+    set_node_cordon(core_api, lht_hostId, True)
+    wait_for_node_update(client, lht_hostId, "allowScheduling", False)
+    check_metric_with_condition(core_api, "longhorn_node_status",
+                                metric_labels, 0.0)

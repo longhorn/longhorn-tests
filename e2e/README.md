@@ -41,7 +41,16 @@ export LONGHORN_CLIENT_URL=http://node-public-ip:30000
 export LONGHORN_CLIENT_URL=http://localhost:8080
 ```
 
-5. Prepare test environment and run the test
+4. For running backup related test cases, export the related environment variable:
+
+(Currently only s3 backup target is supported)
+
+```
+export LONGHORN_BACKUPSTORE='s3://backupbucket@us-east-1/backupstore$minio-secret'
+export LONGHORN_BACKUPSTORE_POLL_INTERVAL=30
+```
+
+5. Prepare test environment and run the test:
 ```
 cd e2e
 python -m venv .
@@ -59,6 +68,9 @@ pip install -r requirements.txt
 
 # to specify which test suite you'd like to run, use "-s" option:
 ./run.sh -s "replica_rebuilding"
+
+# to run test cases with a specific tag, use "-i" option:
+./run.sh -i "coretest"
 
 # to modify debug level, use "-L" option:
 ./run.sh -L DEBUG

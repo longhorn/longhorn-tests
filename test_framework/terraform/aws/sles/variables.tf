@@ -31,7 +31,7 @@ variable "arch" {
 
 variable "os_distro_version" {
   type        = string
-  default     = "15-sp4"
+  default     = "15-sp5"
 }
 
 variable "aws_ami_sles_account_number" {
@@ -56,13 +56,13 @@ variable "lh_aws_instance_name_controlplane" {
 
 variable "lh_aws_instance_type_controlplane" {
   type        = string
-  description = "Recommended instance types t2.xlarge for amd64 & a1.xlarge  for arm64"
+  description = "Recommended instance types t2.xlarge for amd64 & a1.2xlarge for arm64"
   default     = "t2.xlarge"
 }
 
 variable "lh_aws_instance_type_worker" {
   type        = string
-  description = "Recommended instance types t2.xlarge for amd64 & a1.xlarge  for arm64"
+  description = "Recommended instance types t2.xlarge for amd64 & a1.2xlarge for arm64"
   default     = "t2.xlarge"
 }
 
@@ -99,7 +99,7 @@ variable "k8s_distro_name" {
 
 variable "k8s_distro_version" {
   type        = string
-  default     = "v1.27.1+k3s1"
+  default     = "v1.28.4+k3s1"
   description = <<-EOT
     kubernetes version that will be deployed
     rke: (default: v1.22.5-rancher1-1)
@@ -129,7 +129,12 @@ variable "resources_owner" {
 }
 
 variable "custom_ssh_public_key" {
-  type = string
-  default = ""
+  type      = string
+  default   = ""
   sensitive = true
+}
+
+variable "extra_block_device" {
+  type = bool
+  default = false
 }

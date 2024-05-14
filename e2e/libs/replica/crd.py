@@ -1,4 +1,4 @@
-from utils.common_utils import k8s_cr_api
+from kubernetes import client
 
 from replica.base import Base
 from replica.rest import Rest
@@ -8,7 +8,7 @@ from utility.utility import logging
 
 class CRD(Base):
     def __init__(self, node_exec):
-        self.cr_api = k8s_cr_api()
+        self.obj_api = client.CustomObjectsApi()
         self.node_exec = node_exec
 
     def get_replica(self, volume_name, node_name):
@@ -43,7 +43,7 @@ class CRD(Base):
 
         for replica in replicas:
             replica_name = replica['metadata']['name']
-            k8s_cr_api().delete_namespaced_custom_object(
+            self.obj_api.delete_namespaced_custom_object(
                 group="longhorn.io",
                 version="v1beta2",
                 namespace="longhorn-system",

@@ -1,9 +1,12 @@
 *** Settings ***
 Documentation    Negative Test Cases
-Resource    ../keywords/node.resource
+
+Resource    ../keywords/common.resource
+Resource    ../keywords/persistentvolumeclaim.resource
+Resource    ../keywords/statefulset.resource
+Resource    ../keywords/stress.resource
 Resource    ../keywords/volume.resource
 Resource    ../keywords/workload.resource
-Resource    ../keywords/common.resource
 
 Test Setup    Set test environment
 Test Teardown    Cleanup test resources
@@ -12,63 +15,60 @@ Test Teardown    Cleanup test resources
 ${LOOP_COUNT}    1
 ${RETRY_COUNT}    300
 ${RETRY_INTERVAL}    1
-
 *** Test Cases ***
 
 Stress Volume Node CPU When Replica Is Rebuilding
-    Given Create a volume with 5 GB and 3 replicas
-    And Write data to the volume
+    Given Create volume 0 with 5 GB and 3 replicas
+    And Attach volume 0
+    And Write data to volume 0
 
     FOR    ${i}    IN RANGE    ${LOOP_COUNT}
-        When Delete replica on volume node to trigger replica rebuilding
-        And Stress the CPU of all volume nodes
+        When Delete volume 0 replica on volume node
+        And Wait until volume 0 replica rebuilding started on volume node
+        And Stress CPU of node with volume 0
 
-        Then Wait until replica on volume node rebuilt
-        And Check data is intact
+        Then Wait until volume 0 replica rebuilding completed on volume node
+        And Check volume 0 data is intact
     END
 
 Stress Volume Node CPU When Volume Is Detaching and Attaching
-    Given Create a volume with 5 GB and 3 replicas
-    And Write data to the volume
+    Given Create volume 0 with 5 GB and 3 replicas
+    And Attach volume 0
+    And Write data to volume 0
 
     FOR    ${i}    IN RANGE    ${LOOP_COUNT}
-        When Stress the CPU of all volume nodes
-
-        And Detach volume from node
-        And Attach volume to node
-
-        And Check data is intact
+        When Stress CPU of node with volume 0
+        And Detach volume 0
+        And Attach volume 0
+        And Wait for volume 0 healthy
+        Then Check volume 0 data is intact
     END
 
 Stress Volume Node CPU When Volume Is Online Expanding
-    @{data_checksum_list} =    Create List
-    Set Test Variable    ${data_checksum_list}
-
-    Given Create statefulset 0 with rwo volume
-    And Write 1024 MB data to statefulset 0
+    Given Create statefulset 0 using RWO volume
+    And Write 1024 MB data to file 0.txt in statefulset 0
 
     FOR    ${i}    IN RANGE    ${LOOP_COUNT}
-        And Stress the CPU of all volume nodes
-        When Expand statefulset 0 volume by 100 MiB
+        And Stress CPU of volume nodes
 
+        When Expand statefulset 0 volume by 100 MiB
         Then Wait for statefulset 0 volume size expanded
-        And Check statefulset 0 data is intact
+
+        And Check statefulset 0 data in file 0.txt is intact
     END
 
 Stress Volume Node CPU When Volume Is Offline Expanding
-    @{data_checksum_list} =    Create List
-    Set Test Variable    ${data_checksum_list}
-
-    Given Create statefulset 0 with rwo volume
-    And Write 1024 MB data to statefulset 0
+    Given Create statefulset 0 using RWO volume
+    And Write 1024 MB data to file 0.txt in statefulset 0
 
     FOR    ${i}    IN RANGE    ${LOOP_COUNT}
         And Scale down statefulset 0 to detach volume
-        And Stress the CPU of all worker nodes
+        And Stress CPU of all worker nodes
 
         When Expand statefulset 0 volume by 100 MiB
 
         Then Wait for statefulset 0 volume size expanded
         And Scale up statefulset 0 to attach volume
-        And Check statefulset 0 data is intact
+        And Wait for volume of statefulset 0 healthy
+        And Check statefulset 0 data in file 0.txt is intact
     END

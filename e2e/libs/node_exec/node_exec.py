@@ -1,14 +1,16 @@
 import time
 
 from kubernetes import client
+from kubernetes.client.rest import ApiException
 from kubernetes.stream import stream
-
-from utility.utility import logging
-from workload.pod import wait_delete_pod
-from utility.utility import wait_delete_ns
 
 from node_exec.constant import DEFAULT_POD_INTERVAL
 from node_exec.constant import DEFAULT_POD_TIMEOUT
+
+from utility.utility import logging
+from utility.utility import wait_delete_ns
+
+from workload.pod import wait_delete_pod
 
 
 class NodeExec:
@@ -47,12 +49,15 @@ class NodeExec:
     def cleanup(self):
         for pod in self.node_exec_pod.values():
             logging(f"Cleaning up pod {pod.metadata.name} {pod.metadata.uid}")
-            res = self.core_api.delete_namespaced_pod(
-                name=pod.metadata.name,
-                namespace=self.namespace,
-                body=client.V1DeleteOptions()
-            )
-            wait_delete_pod(pod.metadata.name)
+            try:
+                res = self.core_api.delete_namespaced_pod(
+                    name=pod.metadata.name,
+                    namespace=self.namespace,
+                    body=client.V1DeleteOptions()
+                )
+                wait_delete_pod(pod.metadata.uid)
+            except Exception as e:
+                assert e.status == 404
         self.core_api.delete_namespace(
             name=self.namespace
         )
@@ -90,13 +95,17 @@ class NodeExec:
 
     def launch_pod(self, node_name):
         if node_name in self.node_exec_pod:
-            for i in range(DEFAULT_POD_TIMEOUT):
-                pod = self.core_api.read_namespaced_pod(
-                        name=node_name,
-                        namespace=self.namespace
-                      )
-                if pod is not None and pod.status.phase == 'Running':
-                    break
+            for _ in range(DEFAULT_POD_TIMEOUT):
+                try:
+                    pod = self.core_api.read_namespaced_pod(
+                            name=node_name,
+                            namespace=self.namespace
+                          )
+                    if pod is not None and pod.status.phase == 'Running':
+                        break
+                except ApiException as e:
+                    assert e.status == 404
+
                 time.sleep(DEFAULT_POD_INTERVAL)
             return pod
         else:

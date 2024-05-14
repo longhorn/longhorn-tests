@@ -56,7 +56,7 @@ variable "build_engine_aws_instance_name" {
 
 variable "build_engine_aws_instance_type" {
   type        = string
-  description = "Recommended instance types t2.xlarge for amd64 & a1.xlarge  for arm64"
+  description = "Recommended instance types t2.xlarge for amd64 & a1.2xlarge for arm64"
   default     = ""
 }
 

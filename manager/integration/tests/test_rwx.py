@@ -525,7 +525,7 @@ def test_restore_rwo_volume_to_rwx(set_random_backupstore, client, core_api, vol
 
 
 @pytest.mark.skip(reason="TODO")
-def test_rwx_onine_expansion(): # NOQA
+def test_rwx_online_expansion(): # NOQA
     """
     Related issue :
     https://github.com/longhorn/longhorn/issues/2181
@@ -538,7 +538,7 @@ def test_rwx_onine_expansion(): # NOQA
     - Create a rwx pvc using longhorn storage class of size 1 Gi.
 
     And
-    - Atach it to a workload (deployment) and write some data.
+    - Attach it to a workload (deployment) and write some data.
 
     When
     - Expand the volume to 5 Gi
@@ -566,7 +566,7 @@ def test_rwx_offline_expansion(client, core_api, pvc, make_deployment_with_pvc):
     - Create a rwx pvc using longhorn storage class of size 1 Gi.
 
     And
-    - Atach it to a workload (deployment) and write some data.
+    - Attach it to a workload (deployment) and write some data.
     - Scale down the workload, wait volume detached
     - Share manager pod will terminate automatically
     - Expand the volume to 4 Gi, wait exoansion complete
@@ -682,6 +682,68 @@ def test_encrypted_rwx_volume(core_api, statefulset, storage_class, crypto_secre
 
     apps_api = get_apps_api_client()
     create_and_wait_deployment(apps_api, deployment)
+
+    # Clean up deployment and volume
+    delete_and_wait_deployment(apps_api, deployment["metadata"]["name"])
+    delete_and_wait_pvc(core_api, pvc_name)
+
+
+def test_rwx_volume_mount_options(core_api, storage_class, pvc, make_deployment_with_pvc):  # NOQA
+    """
+    Test creating rwx volume with custom mount options
+    non longhorn-system namespace.
+
+    1. Create a storage class with nfsOptions parameter.
+    2. Create a deployment with a PVC and the pods should be able to run.
+    3. Check the mounts on the deployment pods.
+    """
+
+    # Create storage class
+    storage_class['reclaimPolicy'] = 'Delete'
+    storage_class['parameters']['nfsOptions'] = 'vers=4.2,soft,noresvport,timeo=600,retrans=4'  # NOQA
+    create_storage_class(storage_class)
+
+    # Create deployment with PVC
+    pvc_name = 'pvc-deployment-with-custom-mount-options-volume'
+    pvc['metadata']['name'] = pvc_name
+    pvc['spec']['storageClassName'] = storage_class['metadata']['name']
+    pvc['spec']['accessModes'] = ['ReadWriteMany']
+
+    core_api.create_namespaced_persistent_volume_claim(
+        body=pvc, namespace='default')
+
+    deployment = make_deployment_with_pvc(
+        'deployment-with-custom-mount-options-volume', pvc_name, replicas=2)
+
+    apps_api = get_apps_api_client()
+    create_and_wait_deployment(apps_api, deployment)
+
+    # Check mount options on deployment pods
+    deployment_label_selector = "name=" + \
+                                deployment["metadata"]["labels"]["name"]
+
+    deployment_pod_list = \
+        core_api.list_namespaced_pod(namespace="default",
+                                     label_selector=deployment_label_selector)
+
+    assert deployment_pod_list.items.__len__() == 2
+
+    pod_name_1 = deployment_pod_list.items[0].metadata.name
+    pod_name_2 = deployment_pod_list.items[1].metadata.name
+
+    command = "cat /proc/mounts | grep 'nfs'"
+    mount_options_1 = exec_command_in_pod(core_api, command,
+                                          pod_name_1,
+                                          'default')
+    mount_options_2 = exec_command_in_pod(core_api, command,
+                                          pod_name_2,
+                                          'default')
+
+    # print(f'mount_options_1={mount_options_1}')
+    # print(f'mount_options_2={mount_options_2}')
+
+    assert "vers=4.2" in mount_options_1
+    assert "vers=4.2" in mount_options_2
 
     # Clean up deployment and volume
     delete_and_wait_deployment(apps_api, deployment["metadata"]["name"])

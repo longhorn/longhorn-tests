@@ -3,6 +3,7 @@
 set -x
 
 source test_framework/scripts/kubeconfig.sh
+source pipelines/utilities/longhorn_manifest.sh
 
 # create and clean tmpdir
 TMPDIR="/tmp/longhorn"
@@ -54,6 +55,11 @@ install_cluster_autoscaler(){
 }
 
 
+enable_mtls(){
+  kubectl apply -f "${TF_VAR_tf_workspace}/templates/longhorn-grpc-tls.yml" -n ${LONGHORN_NAMESPACE} 
+}
+
+
 install_csi_snapshotter_crds(){
     CSI_SNAPSHOTTER_REPO_URL="https://github.com/kubernetes-csi/external-snapshotter.git"
     CSI_SNAPSHOTTER_REPO_DIR="${TMPDIR}/k8s-csi-external-snapshotter"
@@ -93,10 +99,13 @@ install_rancher() {
 
 
 get_rancher_api_key() {
-  TOKEN=$(curl -X POST -s -k "https://${RANCHER_HOSTNAME}/v3-public/localproviders/local?action=login" -H 'Content-Type: application/json' -d "{\"username\":\"admin\", \"password\":\"${RANCHER_BOOTSTRAP_PASSWORD}\", \"responseType\": \"json\"}" | jq -r '.token' | tr -d '"')
-  ARR=(${TOKEN//:/ })
-  RANCHER_ACCESS_KEY=${ARR[0]}
-  RANCHER_SECRET_KEY=${ARR[1]}
+  while [[ -z "${TOKEN}" ]]; do
+    TOKEN=$(curl -X POST -s -k "https://${RANCHER_HOSTNAME}/v3-public/localproviders/local?action=login" -H 'Content-Type: application/json' -d "{\"username\":\"admin\", \"password\":\"${RANCHER_BOOTSTRAP_PASSWORD}\", \"responseType\": \"json\"}" | jq -r '.token' | tr -d '"')
+    ARR=(${TOKEN//:/ })
+    RANCHER_ACCESS_KEY=${ARR[0]}
+    RANCHER_SECRET_KEY=${ARR[1]}
+    sleep 3s
+  done
 }
 
 
@@ -145,8 +154,8 @@ get_longhorn_manifest(){
 
 get_longhorn_chart(){
   git clone --single-branch \
-            --branch "${LONGHORN_INSTALL_VERSION}" \
-            "${LONGHORN_REPO_URL}" \
+            --branch "${LONGHORN_REPO_BRANCH}" \
+            "${LONGHORN_REPO_URI}" \
             "${LONGHORN_REPO_DIR}"
 }
 
@@ -242,10 +251,65 @@ install_longhorn_by_manifest(){
 
 
 install_longhorn_by_chart(){
-  helm install longhorn "${LONGHORN_REPO_DIR}/chart/" --namespace longhorn-system
+  CUSTOM_LONGHORN_MANAGER_IMAGE=${CUSTOM_LONGHORN_MANAGER_IMAGE:-"longhornio/longhorn-manager:master-head"}
+  CUSTOM_LONGHORN_ENGINE_IMAGE=${CUSTOM_LONGHORN_ENGINE_IMAGE:-"longhornio/longhorn-engine:master-head"}
+
+  CUSTOM_LONGHORN_INSTANCE_MANAGER_IMAGE=${CUSTOM_LONGHORN_INSTANCE_MANAGER_IMAGE:-""}
+  CUSTOM_LONGHORN_SHARE_MANAGER_IMAGE=${CUSTOM_LONGHORN_SHARE_MANAGER_IMAGE:-""}
+  CUSTOM_LONGHORN_BACKING_IMAGE_MANAGER_IMAGE=${CUSTOM_LONGHORN_BACKING_IMAGE_MANAGER_IMAGE:-""}
+
+  HELM_VARIABLES=("--set enableGoCoverDir=true")
+  CUSTOM_LONGHORN_MANAGER_IMAGE_REPO=$(echo $CUSTOM_LONGHORN_MANAGER_IMAGE | cut -d ":" -f 1)
+  CUSTOM_LONGHORN_MANAGER_IMAGE_TAG=$(echo $CUSTOM_LONGHORN_MANAGER_IMAGE | cut -d ":" -f 2)
+  HELM_VARIABLES+=("--set image.longhorn.manager.repository=${CUSTOM_LONGHORN_MANAGER_IMAGE_REPO}")
+  HELM_VARIABLES+=("--set image.longhorn.manager.tag=${CUSTOM_LONGHORN_MANAGER_IMAGE_TAG}")
+
+  CUSTOM_LONGHORN_ENGINE_IMAGE_REPO=$(echo $CUSTOM_LONGHORN_ENGINE_IMAGE | cut -d ":" -f 1)
+  CUSTOM_LONGHORN_ENGINE_IMAGE_TAG=$(echo $CUSTOM_LONGHORN_ENGINE_IMAGE | cut -d ":" -f 2)
+  HELM_VARIABLES+=("--set image.longhorn.engine.repository=${CUSTOM_LONGHORN_ENGINE_IMAGE_REPO}")
+  HELM_VARIABLES+=("--set image.longhorn.engine.tag=${CUSTOM_LONGHORN_ENGINE_IMAGE_TAG}")
+
+  # replace images if custom image is specified.
+  if [[ ! -z ${CUSTOM_LONGHORN_INSTANCE_MANAGER_IMAGE} ]]; then
+    CUSTOM_LONGHORN_INSTANCE_MANAGER_IMAGE_REPO=$(echo $CUSTOM_LONGHORN_INSTANCE_MANAGER_IMAGE | cut -d ":" -f 1)
+    CUSTOM_LONGHORN_INSTANCE_MANAGER_IMAGE_TAG=$(echo $CUSTOM_LONGHORN_INSTANCE_MANAGER_IMAGE | cut -d ":" -f 2)
+    HELM_VARIABLES+=("--set image.longhorn.instanceManager.repository=${CUSTOM_LONGHORN_INSTANCE_MANAGER_IMAGE_REPO}")
+    HELM_VARIABLES+=("--set image.longhorn.instanceManager.tag=${CUSTOM_LONGHORN_INSTANCE_MANAGER_IMAGE_TAG}")
+  fi
+
+  if [[ ! -z ${CUSTOM_LONGHORN_SHARE_MANAGER_IMAGE} ]]; then
+    CUSTOM_LONGHORN_SHARE_MANAGER_IMAGE_REPO=$(echo $CUSTOM_LONGHORN_SHARE_MANAGER_IMAGE | cut -d ":" -f 1)
+    CUSTOM_LONGHORN_SHARE_MANAGER_IMAGE_TAG=$(echo $CUSTOM_LONGHORN_SHARE_MANAGER_IMAGE | cut -d ":" -f 2)
+    HELM_VARIABLES+=("--set image.longhorn.shareManager.repository=${CUSTOM_LONGHORN_SHARE_MANAGER_IMAGE_REPO}")
+    HELM_VARIABLES+=("--set image.longhorn.shareManager.tag=${CUSTOM_LONGHORN_SHARE_MANAGER_IMAGE_TAG}")
+  fi
+
+  if [[ ! -z ${CUSTOM_LONGHORN_BACKING_IMAGE_MANAGER_IMAGE} ]]; then
+    CUSTOM_LONGHORN_BACKING_IMAGE_MANAGER_IMAGE_REPO=$(echo $CUSTOM_LONGHORN_BACKING_IMAGE_MANAGER_IMAGE | cut -d ":" -f 1)
+    CUSTOM_LONGHORN_BACKING_IMAGE_MANAGER_IMAGE_TAG=$(echo $CUSTOM_LONGHORN_BACKING_IMAGE_MANAGER_IMAGE | cut -d ":" -f 2)
+    HELM_VARIABLES+=("--set image.longhorn.backingImageManager.repository=${CUSTOM_LONGHORN_BACKING_IMAGE_MANAGER_IMAGE_REPO}")
+    HELM_VARIABLES+=("--set image.longhorn.backingImageManager.tag=${CUSTOM_LONGHORN_BACKING_IMAGE_MANAGER_IMAGE_TAG}")
+  fi
+
+  HELM_VARIABLE_STR=$( printf " %s" "${HELM_VARIABLES[@]}" )
+  echo ${HELM_VARIABLE_STR}
+
+  helm install longhorn "${LONGHORN_REPO_DIR}/chart/" --namespace longhorn-system --create-namespace $HELM_VARIABLE_STR
   wait_longhorn_status_running
 }
 
+uninstall_longhorn_by_chart() {
+  kubectl patch lhs -n longhorn-system deleting-confirmation-flag --type=json --patch-file=/dev/stdin <<-EOF
+[
+  {
+    "op": "replace",
+    "path": "/value",
+    "value": "true"
+  }
+]
+EOF
+  helm uninstall longhorn --namespace longhorn-system
+}
 
 install_longhorn_stable(){
   install_longhorn_by_manifest "${LONGHORN_STABLE_MANIFEST_URL}"
@@ -266,8 +330,8 @@ create_longhorn_namespace(){
 
 
 install_backupstores(){
-  MINIO_BACKUPSTORE_URL="https://raw.githubusercontent.com/longhorn/longhorn-tests/master/manager/integration/deploy/backupstores/minio-backupstore.yaml"
-  NFS_BACKUPSTORE_URL="https://raw.githubusercontent.com/longhorn/longhorn-tests/master/manager/integration/deploy/backupstores/nfs-backupstore.yaml"
+  MINIO_BACKUPSTORE_URL="https://raw.githubusercontent.com/longhorn/longhorn/master/deploy/backupstores/minio-backupstore.yaml"
+  NFS_BACKUPSTORE_URL="https://raw.githubusercontent.com/longhorn/longhorn/master/deploy/backupstores/nfs-backupstore.yaml"
   kubectl create -f ${MINIO_BACKUPSTORE_URL} \
                -f ${NFS_BACKUPSTORE_URL}
 }
@@ -323,6 +387,7 @@ run_longhorn_upgrade_test(){
 
   yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env[4].value="'${LONGHORN_UPGRADE_TYPE}'"' ${LONGHORN_UPGRADE_TESTS_MANIFEST_FILE_PATH}
 
+  RESOURCE_SUFFIX=$(terraform -chdir=${TF_VAR_tf_workspace}/terraform/${LONGHORN_TEST_CLOUDPROVIDER}/${DISTRO} output -raw resource_suffix)
   yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env[7].value="'${RESOURCE_SUFFIX}'"' ${LONGHORN_UPGRADE_TESTS_MANIFEST_FILE_PATH}
 
   kubectl apply -f ${LONGHORN_UPGRADE_TESTS_MANIFEST_FILE_PATH}
@@ -340,6 +405,9 @@ run_longhorn_upgrade_test(){
 
   # get upgrade test junit xml report
   kubectl cp ${LONGHORN_UPGRADE_TEST_POD_NAME}:${LONGHORN_JUNIT_REPORT_PATH} "${TF_VAR_tf_workspace}/${LONGHORN_UPGRADE_TEST_POD_NAME}-junit-report.xml" -c longhorn-test-report
+
+  # delete upgrade test pod
+  kubectl delete -f ${LONGHORN_UPGRADE_TESTS_MANIFEST_FILE_PATH}
 }
 
 
@@ -389,6 +457,9 @@ run_longhorn_tests(){
 
   LONGHORN_TEST_POD_NAME=`yq e 'select(.spec.containers[0] != null).metadata.name' ${LONGHORN_TESTS_MANIFEST_FILE_PATH}`
 
+  RESOURCE_SUFFIX=$(terraform -chdir=${TF_VAR_tf_workspace}/terraform/${LONGHORN_TEST_CLOUDPROVIDER}/${DISTRO} output -raw resource_suffix)
+  yq e -i 'select(.spec.containers[0] != null).spec.containers[0].env[7].value="'${RESOURCE_SUFFIX}'"' ${LONGHORN_TESTS_MANIFEST_FILE_PATH}
+
   kubectl apply -f ${LONGHORN_TESTS_MANIFEST_FILE_PATH}
 
   local RETRY_COUNTS=60
@@ -434,7 +505,9 @@ main(){
     install_backupstores
   fi
   install_csi_snapshotter_crds
-
+  if [[ "${TF_VAR_enable_mtls}" == true ]]; then
+    enable_mtls
+  fi
   if [[ "${AIR_GAP_INSTALLATION}" == true ]]; then
     if [[ "${LONGHORN_INSTALL_METHOD}" == "manifest-file" ]]; then
       create_registry_secret
@@ -474,8 +547,8 @@ main(){
     run_longhorn_upgrade_test
     run_longhorn_tests
   else
-    generate_longhorn_yaml_manifest "${TF_VAR_tf_workspace}"
-    install_longhorn_by_manifest "${TF_VAR_tf_workspace}/longhorn.yaml"
+    get_longhorn_chart
+    install_longhorn_by_chart
     run_longhorn_tests
   fi
 }

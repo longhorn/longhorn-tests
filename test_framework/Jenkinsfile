@@ -23,6 +23,9 @@ def REGISTRY_URL
 def REGISTRY_USERNAME
 def REGISTRY_PASSWORD
 
+// parameter for mTls
+def ENABLE_MTLS = params.ENABLE_MTLS ? params.ENABLE_MTLS : false
+
 // parameter for hdd test
 def USE_HDD = params.USE_HDD ? params.USE_HDD : false
 
@@ -115,6 +118,7 @@ node {
                                        --env PYTEST_CUSTOM_OPTIONS="${PYTEST_CUSTOM_OPTIONS}" \
                                        --env BACKUP_STORE_TYPE="${BACKUP_STORE_TYPE}" \
                                        --env TF_VAR_use_hdd=${USE_HDD} \
+                                       --env TF_VAR_enable_mtls=${ENABLE_MTLS} \
                                        --env TF_VAR_arch=${ARCH} \
                                        --env TF_VAR_k8s_distro_name=${K8S_DISTRO_NAME} \
                                        --env TF_VAR_k8s_distro_version=${K8S_DISTRO_VERSION} \
@@ -191,6 +195,73 @@ node {
                 }
             }
 
+            stage ('longhorn coverage') {
+                if(!params.LONGHORN_UPGRADE_TEST && !params.AIR_GAP_INSTALLATION) {
+                    sh "docker exec ${JOB_BASE_NAME}-${BUILD_NUMBER} test_framework/scripts/longhorn-coverage.sh"
+
+                    sh "docker cp ${JOB_BASE_NAME}-${BUILD_NUMBER}:/src/longhorn-tests/longhorn-manager-profile.html ."
+                    sh "docker cp ${JOB_BASE_NAME}-${BUILD_NUMBER}:/src/longhorn-tests/longhorn-engine-profile.html ."
+                    // sh "docker cp ${JOB_BASE_NAME}-${BUILD_NUMBER}:/src/longhorn-tests/longhorn-spdk-engine-profile.html ."
+                    sh "docker cp ${JOB_BASE_NAME}-${BUILD_NUMBER}:/src/longhorn-tests/longhorn-instance-manager-profile.html ."
+                    sh "docker cp ${JOB_BASE_NAME}-${BUILD_NUMBER}:/src/longhorn-tests/longhorn-share-manager-profile.html ."
+                    sh "docker cp ${JOB_BASE_NAME}-${BUILD_NUMBER}:/src/longhorn-tests/backing-image-manager-profile.html ."
+
+                    publishHTML (target: [
+                        allowMissing: false,
+                        alwaysLinkToLastBuild: false,
+                        keepAll: true,
+                        reportDir: '.',
+                        reportFiles: 'longhorn-manager-profile.html',
+                        reportName: "longhorn-manager coverage profile"
+                    ])
+
+                    publishHTML (target: [
+                        allowMissing: false,
+                        alwaysLinkToLastBuild: false,
+                        keepAll: true,
+                        reportDir: '.',
+                        reportFiles: 'longhorn-engine-profile.html',
+                        reportName: "longhorn-engine coverage profile"
+                    ])
+
+                    // publishHTML (target: [
+                    //     allowMissing: false,
+                    //     alwaysLinkToLastBuild: false,
+                    //     keepAll: true,
+                    //     reportDir: '.',
+                    //     reportFiles: 'longhorn-spdk-engine-profile.html',
+                    //     reportName: "longhorn-spdk-engine coverage profile"
+                    // ])
+
+                    publishHTML (target: [
+                        allowMissing: false,
+                        alwaysLinkToLastBuild: false,
+                        keepAll: true,
+                        reportDir: '.',
+                        reportFiles: 'longhorn-instance-manager-profile.html',
+                        reportName: "longhorn-instance-manager coverage profile"
+                    ])
+
+
+                    publishHTML (target: [
+                        allowMissing: false,
+                        alwaysLinkToLastBuild: false,
+                        keepAll: true,
+                        reportDir: '.',
+                        reportFiles: 'longhorn-share-manager-profile.html',
+                        reportName: "longhorn-share-manager coverage profile"
+                    ])
+
+                    publishHTML (target: [
+                        allowMissing: false,
+                        alwaysLinkToLastBuild: false,
+                        keepAll: true,
+                        reportDir: '.',
+                        reportFiles: 'backing-image-manager-profile.html',
+                        reportName: "backing-image-manager coverage profile"
+                    ])
+                }
+            }
         } catch (e) {
             currentBuild.result = "FAILED"
             throw e

@@ -1,0 +1,1 @@
+from recurringjob.recurringjob import RecurringJob

@@ -4,19 +4,39 @@ import string
 import time
 import random
 import yaml
+import signal
+from robot.api import logger
+from robot.libraries.BuiltIn import BuiltIn
+import subprocess
 
 from longhorn import from_env
 
 from kubernetes import client
 from kubernetes import config
 from kubernetes import dynamic
+from kubernetes.stream import stream
 from kubernetes.client.rest import ApiException
 
-from robot.api import logger
-from robot.libraries.BuiltIn import BuiltIn
+from utility.constant import NAME_PREFIX
+from utility.constant import STREAM_EXEC_TIMEOUT
+from utility.constant import STORAGECLASS_NAME_PREFIX
 
-from node.utility import get_node_by_index
-from node.utility import list_node_names_by_role
+
+class timeout:
+
+    def __init__(self, seconds=1, error_message='Timeout'):
+        self.seconds = seconds
+        self.error_message = error_message
+
+    def handle_timeout(self, signum, frame):
+        raise Exception(self.error_message)
+
+    def __enter__(self):
+        signal.signal(signal.SIGALRM, self.handle_timeout)
+        signal.alarm(self.seconds)
+
+    def __exit__(self, type, value, traceback):
+        signal.alarm(0)
 
 
 def logging(msg, also_report=False):
@@ -32,14 +52,17 @@ def get_retry_count_and_interval():
     return retry_count, retry_interval
 
 
-def generate_name(name_prefix="test-"):
+def generate_name_random(name_prefix="test-"):
     return name_prefix + \
         ''.join(random.choice(string.ascii_lowercase + string.digits)
                 for _ in range(6))
 
 
-def generate_volume_name():
-    return generate_name("vol-")
+def generate_name_with_suffix(kind, suffix):
+    if kind == "storageclass":
+        return f"{STORAGECLASS_NAME_PREFIX}-{suffix}"
+    else:
+        return f"{NAME_PREFIX}-{kind}-{suffix}"
 
 
 def init_k8s_api_client():
@@ -53,11 +76,20 @@ def init_k8s_api_client():
         logging("Initialized in-cluster k8s api client")
 
 
+def get_backupstore():
+    return os.environ.get('LONGHORN_BACKUPSTORE', "")
+
+
+def subprocess_exec_cmd(cmd):
+    res = subprocess.check_output(cmd)
+    logging(f"Executed command {cmd} with result {res}")
+    return res
+
+
 def wait_for_cluster_ready():
     core_api = client.CoreV1Api()
     retry_count, retry_interval = get_retry_count_and_interval()
     for i in range(retry_count):
-        logging(f"Waiting for cluster ready ({i}) ...")
         try:
             resp = core_api.list_node()
             ready = True
@@ -70,29 +102,26 @@ def wait_for_cluster_ready():
                 break
         except Exception as e:
             logging(f"Listing nodes error: {e}")
+
+        logging(f"Waiting for cluster ready ({i}) ...")
         time.sleep(retry_interval)
     assert ready, f"expect cluster's ready but it isn't {resp}"
 
 
-def wait_for_all_instance_manager_running():
-    longhorn_client = get_longhorn_client()
-    worker_nodes = list_node_names_by_role("worker")
+def pod_exec(pod_name, namespace, cmd):
 
-    retry_count, retry_interval = get_retry_count_and_interval()
-    for _ in range(retry_count):
-        logging(f"Waiting for all instance manager running ({_}) ...")
-        instance_managers = longhorn_client.list_instance_manager()
-        instance_manager_map = {}
-        try:
-            for im in instance_managers:
-                if im.currentState == "running":
-                    instance_manager_map[im.nodeID] = im
-            if len(instance_manager_map) == len(worker_nodes):
-                break
-            time.sleep(retry_interval)
-        except Exception as e:
-            logging(f"Getting instance manager state error: {e}")
-    assert len(instance_manager_map) == len(worker_nodes), f"expect all instance managers running, instance_managers = {instance_managers}, instance_manager_map = {instance_manager_map}"
+    core_api = client.CoreV1Api()
+    exec_cmd = ['/bin/sh', '-c', cmd]
+    logging(f"Issued command: {cmd} on {pod_name}")
+
+    with timeout(seconds=STREAM_EXEC_TIMEOUT,
+                 error_message=f'Timeout on executing stream {pod_name} {cmd}'):
+        output = stream(core_api.connect_get_namespaced_pod_exec,
+                        pod_name,
+                        namespace, command=exec_cmd,
+                        stderr=True, stdin=False, stdout=True, tty=False)
+        logging(f"Issued command: {cmd} on {pod_name} with result {output}")
+        return output
 
 
 def apply_cr(manifest_dict):
@@ -121,11 +150,14 @@ def apply_cr_from_yaml(filepath):
 
 def get_cr(group, version, namespace, plural, name):
     api = client.CustomObjectsApi()
-    try:
-        resp = api.get_namespaced_custom_object(group, version, namespace, plural, name)
-        return resp
-    except ApiException as e:
-        logging(f"Getting namespaced custom object error: {e}")
+    retry_count, retry_interval = get_retry_count_and_interval()
+    for _ in range(retry_count):
+        try:
+            resp = api.get_namespaced_custom_object(group, version, namespace, plural, name)
+            return resp
+        except ApiException as e:
+            logging(f"Getting namespaced custom object error: {e}")
+        time.sleep(retry_interval)
 
 
 def filter_cr(group, version, namespace, plural, field_selector="", label_selector=""):
@@ -135,6 +167,39 @@ def filter_cr(group, version, namespace, plural, field_selector="", label_select
         return resp
     except ApiException as e:
         logging(f"Listing namespaced custom object: {e}")
+
+
+def set_annotation(group, version, namespace, plural, name, annotation_key, annotation_value):
+    api = client.CustomObjectsApi()
+    # retry conflict error
+    retry_count, retry_interval = get_retry_count_and_interval()
+    for i in range(retry_count):
+        logging(f"Try to set custom resource {plural} {name} annotation {annotation_key}={annotation_value} ... ({i})")
+        try:
+            cr = get_cr(group, version, namespace, plural, name)
+            annotations = cr['metadata'].get('annotations', {})
+            annotations[annotation_key] = annotation_value
+            cr['metadata']['annotations'] = annotations
+            api.replace_namespaced_custom_object(
+                group=group,
+                version=version,
+                namespace=namespace,
+                plural=plural,
+                name=name,
+                body=cr
+            )
+            break
+        except Exception as e:
+            if e.status == 409:
+                logging(f"Conflict error: {e.body}, retry ({i}) ...")
+            else:
+                raise e
+        time.sleep(retry_interval)
+
+
+def get_annotation_value(group, version, namespace, plural, name, annotation_key):
+    cr = get_cr(group, version, namespace, plural, name)
+    return cr['metadata']['annotations'].get(annotation_key)
 
 
 def wait_delete_ns(name):
@@ -166,7 +231,6 @@ def get_mgr_ips():
 def get_longhorn_client():
     retry_count, retry_interval = get_retry_count_and_interval()
     if os.getenv('LONGHORN_CLIENT_URL'):
-        logging(f"Initializing longhorn api client from LONGHORN_CLIENT_URL {os.getenv('LONGHORN_CLIENT_URL')}")
         # for develop or debug
         # manually expose longhorn client
         # to access longhorn manager in local environment
@@ -176,7 +240,7 @@ def get_longhorn_client():
                 longhorn_client = from_env(url=f"{longhorn_client_url}/v1/schemas")
                 return longhorn_client
             except Exception as e:
-                logging(f"Getting longhorn client error: {e}")
+                logging(f"Getting longhorn client error: {e}, retry ({i}) ...")
                 time.sleep(retry_interval)
     else:
         logging(f"Initializing longhorn api client from longhorn manager")
@@ -194,24 +258,17 @@ def get_longhorn_client():
                         longhorn_client = from_env(url=f"http://{ip}:9500/v1/schemas")
                         return longhorn_client
             except Exception as e:
-                logging(f"Getting longhorn client error: {e}")
+                logging(f"Getting longhorn client error: {e}, retry ({i}) ...")
                 time.sleep(retry_interval)
-
-
-def get_test_pod_running_node():
-    if "NODE_NAME" in os.environ:
-        return os.environ["NODE_NAME"]
-    else:
-        return get_node_by_index(0)
-
-
-def get_test_pod_not_running_node():
-    worker_nodes = list_node_names_by_role("worker")
-    test_pod_running_node = get_test_pod_running_node()
-    for worker_node in worker_nodes:
-        if worker_node != test_pod_running_node:
-            return worker_node
 
 
 def get_test_case_namespace(test_name):
     return test_name.lower().replace(' ', '-')
+
+
+def get_name_suffix(*args):
+    suffix = ""
+    for arg in args:
+        if arg:
+            suffix += f"-{arg}"
+    return suffix

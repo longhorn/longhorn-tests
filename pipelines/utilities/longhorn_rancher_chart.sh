@@ -15,21 +15,30 @@ install_rancher() {
   kubectl get pods --namespace cert-manager
 
   helm repo add rancher-latest https://releases.rancher.com/server-charts/latest
+  helm repo add rancher-prime "${RANCHER_PRIME_CHART_URL}"
   helm repo update
   kubectl create namespace cattle-system
-  if [[ -z "${RANCHER_VERSION}" ]]; then
-    RANCHER_VERSION=$(helm search repo rancher-latest/rancher -o yaml | yq .[0].version)
+  if [[ "${RANCHER_PRIME}" == true ]]; then
+    RANCHER_TYPE="prime"
+  else
+    RANCHER_TYPE="latest"
   fi
-  helm install rancher rancher-latest/rancher --version "${RANCHER_VERSION}" --namespace cattle-system --set bootstrapPassword="${RANCHER_BOOTSTRAP_PASSWORD}" --set hostname="${RANCHER_HOSTNAME}" --set replicas=3 --set ingress.tls.source=letsEncrypt --set letsEncrypt.email=yang.chiu@suse.com
+  if [[ -z "${RANCHER_VERSION}" ]]; then
+    RANCHER_VERSION=$(helm search repo "rancher-${RANCHER_TYPE}/rancher" -o yaml | yq .[0].version)
+  fi
+  helm install rancher "rancher-${RANCHER_TYPE}/rancher" --version "${RANCHER_VERSION}" --namespace cattle-system --set bootstrapPassword="${RANCHER_BOOTSTRAP_PASSWORD}" --set hostname="${RANCHER_HOSTNAME}" --set replicas=3 --set ingress.tls.source=letsEncrypt --set letsEncrypt.email=yang.chiu@suse.com
   kubectl -n cattle-system rollout status deploy/rancher
 }
 
 
 get_rancher_api_key() {
-  TOKEN=$(curl -X POST -s -k "https://${RANCHER_HOSTNAME}/v3-public/localproviders/local?action=login" -H 'Content-Type: application/json' -d "{\"username\":\"admin\", \"password\":\"${RANCHER_BOOTSTRAP_PASSWORD}\", \"responseType\": \"json\"}" | jq -r '.token' | tr -d '"')
-  ARR=(${TOKEN//:/ })
-  RANCHER_ACCESS_KEY=${ARR[0]}
-  RANCHER_SECRET_KEY=${ARR[1]}
+  while [[ -z "${TOKEN}" ]]; do
+    TOKEN=$(curl -X POST -s -k "https://${RANCHER_HOSTNAME}/v3-public/localproviders/local?action=login" -H 'Content-Type: application/json' -d "{\"username\":\"admin\", \"password\":\"${RANCHER_BOOTSTRAP_PASSWORD}\", \"responseType\": \"json\"}" | jq -r '.token' | tr -d '"')
+    ARR=(${TOKEN//:/ })
+    RANCHER_ACCESS_KEY=${ARR[0]}
+    RANCHER_SECRET_KEY=${ARR[1]}
+    sleep 3s
+  done
 }
 
 

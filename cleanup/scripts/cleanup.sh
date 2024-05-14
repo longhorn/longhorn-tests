@@ -44,7 +44,15 @@ for SUFFIX in ${SUFFIX_ARR[@]}; do
   done
 
   echo "   (2) delete volumes:"
+  echo "       delete volumes associated with instances:"
   VOLUME_IDS=$(aws ec2 describe-volumes --filters Name=tag:Name,Values=*"${SUFFIX}"* | jq '.Volumes[].VolumeId' | tr -d '"')
+  for VOLUME_ID in ${VOLUME_IDS}
+  do
+    aws ec2 delete-volume --volume-id "${VOLUME_ID}"
+    echo "   volume ${VOLUME_ID} deleted"
+  done
+  echo "       delete idle volumes:"
+  VOLUME_IDS=$(aws ec2 describe-volumes | jq '.Volumes[] | select(.State != "in-use") | .VolumeId' | tr -d '"')
   for VOLUME_ID in ${VOLUME_IDS}
   do
     aws ec2 delete-volume --volume-id "${VOLUME_ID}"
@@ -141,3 +149,69 @@ for SUFFIX in ${SUFFIX_ARR[@]}; do
   done
 
 done
+
+echo "[Step 4] Prepare to delete long-running resources without owner:"
+ALL_INSTANCES=$(aws ec2 describe-instances --query 'Reservations[].Instances[?!not_null(Tags[?Key == `Owner`].Value)] | []' | jq '.[] | select(.State.Name != "terminated") | {LaunchTime: .LaunchTime, InstanceId: .InstanceId, Tags: .Tags}' | jq -c)
+INSTANCE_IDS=()
+for INSTANCE in ${ALL_INSTANCES[@]}; do
+  INSTANCE_ID=$(echo "${INSTANCE}" | jq '.InstanceId' | tr -d '"')
+  echo " * Instance ${INSTANCE_ID} ==>"
+  LAUNCH_TIME=$(echo "${INSTANCE}" | jq '.LaunchTime' | tr -d '"')
+  TIMESTAMP=$(date -D "%Y-%m-%dT%H:%M:%S+00:00" -d "${LAUNCH_TIME}" +%s)
+  TIME_DIFF=$((CURRENT_TIMESTAMP-TIMESTAMP))
+  echo "   Launch Time: ${LAUNCH_TIME} (${TIMESTAMP}), Diff: ${TIME_DIFF}"
+  if [[ $TIME_DIFF -gt $THRESHOLD_IN_SEC ]]; then INSTANCE_IDS+=("$INSTANCE_ID"); fi
+done
+if [[ -n "${INSTANCE_IDS}" ]]; then
+  aws ec2 terminate-instances --instance-ids "${INSTANCE_IDS[@]}"
+  echo "   instances ${INSTANCE_IDS[*]} shutting-down"
+  while [[ -n $(aws ec2 describe-instances --instance-ids "${INSTANCE_IDS[@]}" | jq '.Reservations[].Instances[].State.Name' | grep -v "terminated") ]]; do
+    echo "Wait for instances terminated ..."
+    sleep 5s
+  done
+fi
+
+echo "[Step 5] List long-running resources with owner:"
+THRESHOLD_IN_SEC=$((86400 * 3))
+LONG_RUNNING_INSTANCES="/tmp/long-running-instances"
+ALL_INSTANCES=$(aws ec2 describe-instances --query 'Reservations[].Instances[?not_null(Tags[?Key == `Owner`].Value)] | []' | jq '.[] | select(.State.Name != "terminated") | {LaunchTime: .LaunchTime, InstanceId: .InstanceId, Tags: .Tags}' | jq -c)
+for INSTANCE in ${ALL_INSTANCES[@]}; do
+  INSTANCE_ID=$(echo "${INSTANCE}" | jq '.InstanceId' | tr -d '"')
+  echo " * Instance ${INSTANCE_ID} ==>"
+  LAUNCH_TIME=$(echo "${INSTANCE}" | jq '.LaunchTime' | tr -d '"')
+  TIMESTAMP=$(date -D "%Y-%m-%dT%H:%M:%S+00:00" -d "${LAUNCH_TIME}" +%s)
+  TIME_DIFF=$((CURRENT_TIMESTAMP-TIMESTAMP))
+  echo "   Launch Time: ${LAUNCH_TIME} (${TIMESTAMP}), Diff: ${TIME_DIFF}"
+  if [[ $TIME_DIFF -gt $THRESHOLD_IN_SEC ]]; then
+    NAME=$(echo "${INSTANCE}" | jq '.Tags | map(select(.Key=="Name"))[] | .Value' | tr -d '"')
+    OWNER=$(echo "${INSTANCE}" | jq '.Tags | map(select(.Key=="Owner"))[] | .Value' | tr -d '"')
+    echo -e "${NAME} (${INSTANCE_ID}) owned by ${OWNER}\n" >> "${LONG_RUNNING_INSTANCES}"
+  fi
+done
+if [[ -e "${LONG_RUNNING_INSTANCES}" ]]; then
+  echo -e "\nEC2 instances running for more than 3 days:\n$(cat ${LONG_RUNNING_INSTANCES})" > "${LONG_RUNNING_INSTANCES}"
+fi
+
+if [[ "${DELETE_RESOURCES_WITH_OWNERS}" == true ]]; then
+  echo "[Step 6] Prepare to delete long-running resources with owner:"
+  THRESHOLD_IN_SEC=$((86400 * 7))
+  ALL_INSTANCES=$(aws ec2 describe-instances --query 'Reservations[].Instances[?not_null(Tags[?Key == `Owner`].Value)] | []' | jq '.[] | select(.State.Name != "terminated") | {LaunchTime: .LaunchTime, InstanceId: .InstanceId, Tags: .Tags}' | jq -c)
+  INSTANCE_IDS=()
+  for INSTANCE in ${ALL_INSTANCES[@]}; do
+    INSTANCE_ID=$(echo "${INSTANCE}" | jq '.InstanceId' | tr -d '"')
+    echo " * Instance ${INSTANCE_ID} ==>"
+    LAUNCH_TIME=$(echo "${INSTANCE}" | jq '.LaunchTime' | tr -d '"')
+    TIMESTAMP=$(date -D "%Y-%m-%dT%H:%M:%S+00:00" -d "${LAUNCH_TIME}" +%s)
+    TIME_DIFF=$((CURRENT_TIMESTAMP-TIMESTAMP))
+    echo "   Launch Time: ${LAUNCH_TIME} (${TIMESTAMP}), Diff: ${TIME_DIFF}"
+    if [[ $TIME_DIFF -gt $THRESHOLD_IN_SEC ]]; then INSTANCE_IDS+=("$INSTANCE_ID"); fi
+  done
+  if [[ -n "${INSTANCE_IDS}" ]]; then
+    aws ec2 terminate-instances --instance-ids "${INSTANCE_IDS[@]}"
+    echo "   instance ${INSTANCE_IDS[*]} shutting-down"
+    while [[ -n $(aws ec2 describe-instances --instance-ids "${INSTANCE_IDS[@]}" | jq '.Reservations[].Instances[].State.Name' | grep -v "terminated") ]]; do
+      echo "Wait for instances terminated ..."
+      sleep 5s
+    done
+  fi
+fi

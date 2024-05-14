@@ -1,8 +1,9 @@
 *** Settings ***
 Documentation    Negative Test Cases
-Resource    ../keywords/volume.resource
-Resource    ../keywords/node.resource
+
 Resource    ../keywords/common.resource
+Resource    ../keywords/host.resource
+Resource    ../keywords/volume.resource
 
 Test Setup    Set test environment
 Test Teardown    Cleanup test resources
@@ -13,26 +14,49 @@ ${RETRY_COUNT}    300
 ${RETRY_INTERVAL}    1
 
 *** Test Cases ***
-Reboot Volume Node While Replica Rebuilding
-    Given Create a volume with 5 GB and 3 replicas
-    And Write data to the volume
+Delete Replica While Replica Rebuilding
+    Given Create volume 0 with 2 GB and 3 replicas
+    And Attach volume 0
+    And Wait for volume 0 healthy
+    And Write data to volume 0
 
     FOR    ${i}    IN RANGE    ${LOOP_COUNT}
-        When Delete replica on volume node to trigger replica rebuilding
-        And During replica rebuilding, reboot volume node
+        When Delete volume 0 replica on node 0
+        And Wait until volume 0 replica rebuilding started on node 0
+        And Delete volume 0 replica on node 1
+        And Wait until volume 0 replica rebuilding completed on node 0
+        And Delete volume 0 replica on node 2
 
-        Then Wait until replica on volume node rebuilt
-        And Check data is intact
+        Then Check volume 0 data is intact
+        And Wait until volume 0 replicas rebuilding completed
+    END
+
+Reboot Volume Node While Replica Rebuilding
+    Given Create volume 0 with 5 GB and 3 replicas
+    And Attach volume 0
+    And Write data to volume 0
+
+    FOR    ${i}    IN RANGE    ${LOOP_COUNT}
+        When Delete volume 0 replica on volume node
+        And Wait until volume 0 replica rebuilding started on volume node
+        And Reboot volume 0 volume node
+        And Wait for volume 0 healthy
+
+        Then Wait until volume 0 replica rebuilding completed on volume node
+        And Check volume 0 data is intact
     END
 
 Reboot Replica Node While Replica Rebuilding
-    Given Create a volume with 5 GB and 3 replicas
-    And Write data to the volume
+    Given Create volume 0 with 5 GB and 3 replicas
+    And Attach volume 0
+    And Write data to volume 0
 
     FOR    ${i}    IN RANGE    ${LOOP_COUNT}
-        When Delete replica on replica node to trigger replica rebuilding
-        And During replica rebuilding, reboot replica node
+        When Delete volume 0 replica on replica node
+        And Wait until volume 0 replica rebuilding started on replica node
+        And Reboot volume 0 replica node
+        And Wait for volume 0 healthy
 
-        Then Wait until replica on replica node rebuilt
-        And Check data is intact
+        Then Wait until volume 0 replica rebuilding completed on replica node
+        And Check volume 0 data is intact
     END

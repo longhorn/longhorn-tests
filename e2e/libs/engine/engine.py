@@ -14,11 +14,11 @@ class Engine(Base):
         if self._strategy == LonghornOperationStrategy.CRD:
             self.engine = CRD()
 
-    def get_engine(self, volume_name, node_name):
-        return self.engine.get_engine(volume_name, node_name)
+    def get_engines(self, volume_name, node_name=None):
+        return self.engine.get_engines(volume_name, node_name)
 
     def get_engine_by_volume(self, volume):
-        engines = self.engine.get_engine(volume["metadata"]["name"], "")
+        engines = self.engine.get_engines(volume["metadata"]["name"])
         assert len(engines) == 1, \
             f"Expected exactly one engine but found {len(engines)}"
 
