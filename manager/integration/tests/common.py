@@ -747,8 +747,8 @@ def delete_and_wait_longhorn(client, name):
         assert ex.status == 404
     except longhorn.ApiError as err:
         # for deleting a non-existing volume,
-        # the status_code is 500 Server Error.
-        assert err.error.code == 500
+        # the status_code is 404.
+        assert err.error.code == 404
 
     wait_for_volume_delete(client, name)
 
@@ -4633,7 +4633,7 @@ def wait_for_rebuild_complete(client, volume_name, retry_count=RETRY_COUNTS):
         rebuild_statuses = v.rebuildStatus
         for status in rebuild_statuses:
             if status.state == "complete":
-                assert status.progress == 100
+                assert status.progress == 100, f"status = {status}"
                 assert not status.error
                 assert not status.isRebuilding
                 completed += 1
