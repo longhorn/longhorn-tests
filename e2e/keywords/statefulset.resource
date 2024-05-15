@@ -10,9 +10,9 @@ Create statefulset ${statefulset_id} using ${volume_type} volume
     ${statefulset_name} =    generate_name_with_suffix    statefulset    ${statefulset_id}
     create_statefulset    ${statefulset_name}    ${volume_type}
 
-Create statefulset ${statefulset_id} using ${volume_type} volume with ${option} storageclass
+Create statefulset ${statefulset_id} using ${volume_type} volume with ${sc_name} storageclass
     ${statefulset_name} =    generate_name_with_suffix    statefulset    ${statefulset_id}
-    create_statefulset    ${statefulset_name}    ${volume_type}    ${option}
+    create_statefulset    ${statefulset_name}    ${volume_type}    ${sc_name}
 
 Scale statefulset ${statefulset_id} to ${replicaset_size}
     ${statefulset_name} =    generate_name_with_suffix    statefulset    ${statefulset_id}

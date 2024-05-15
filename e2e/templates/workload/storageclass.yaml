@@ -3,6 +3,8 @@ apiVersion: storage.k8s.io/v1
 kind: StorageClass
 metadata:
   name: longhorn-test
+  labels:
+    test.longhorn.io: e2e
 provisioner: driver.longhorn.io
 allowVolumeExpansion: true
 parameters:

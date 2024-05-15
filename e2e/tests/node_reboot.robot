@@ -5,6 +5,7 @@ Resource    ../keywords/common.resource
 Resource    ../keywords/deployment.resource
 Resource    ../keywords/longhorn.resource
 Resource    ../keywords/host.resource
+Resource    ../keywords/storageclass.resource
 Resource    ../keywords/persistentvolumeclaim.resource
 Resource    ../keywords/recurringjob.resource
 Resource    ../keywords/statefulset.resource
@@ -23,7 +24,8 @@ ${CONTROL_PLANE_NODE_NETWORK_LATENCY_IN_MS}    0
 
 *** Test Cases ***
 Reboot Node One By One While Workload Heavy Writing
-    Given Create persistentvolumeclaim 0 using RWO volume
+    Given Create storageclass strict-local with    numberOfReplicas=1    dataLocality=strict-local
+    And Create persistentvolumeclaim 0 using RWO volume
     And Create persistentvolumeclaim 1 using RWX volume
     And Create persistentvolumeclaim 2 using RWO volume with strict-local storageclass
 
@@ -47,12 +49,9 @@ Reboot Node One By One While Workload Heavy Writing
         And Reboot node 1
         And Reboot node 2
         And Wait for longhorn ready
-        And Wait for deployment 0 pods stable
-        And Wait for deployment 1 pods stable
-        And Wait for deployment 2 pods stable
-        And Wait for statefulset 0 pods stable
-        And Wait for statefulset 1 pods stable
-        And Wait for statefulset 2 pods stable
+        And Wait for workloads pods stable
+        ...    deployment 0    deployment 1    deployment 2
+        ...    statefulset 0    statefulset 1    statefulset 2
 
         Then Check deployment 0 works
         And Check deployment 1 works
@@ -63,7 +62,8 @@ Reboot Node One By One While Workload Heavy Writing
     END
 
 Power Off Node One By Once For More Than Pod Eviction Timeout While Workload Heavy Writing
-    Given Create persistentvolumeclaim 0 using RWO volume
+    Given Create storageclass strict-local with    numberOfReplicas=1    dataLocality=strict-local
+    And Create persistentvolumeclaim 0 using RWO volume
     And Create persistentvolumeclaim 1 using RWX volume
     And Create persistentvolumeclaim 2 using RWO volume with strict-local storageclass
 
@@ -87,12 +87,9 @@ Power Off Node One By Once For More Than Pod Eviction Timeout While Workload Hea
         And Power off node 1 for 6 mins
         And Power off node 2 for 6 mins
         And Wait for longhorn ready
-        And Wait for deployment 0 pods stable
-        And Wait for deployment 1 pods stable
-        And Wait for deployment 2 pods stable
-        And Wait for statefulset 0 pods stable
-        And Wait for statefulset 1 pods stable
-        And Wait for statefulset 2 pods stable
+        And Wait for workloads pods stable
+        ...    deployment 0    deployment 1    deployment 2
+        ...    statefulset 0    statefulset 1    statefulset 2
 
         Then Check deployment 0 works
         And Check deployment 1 works
@@ -103,7 +100,8 @@ Power Off Node One By Once For More Than Pod Eviction Timeout While Workload Hea
     END
 
 Reboot All Worker Nodes While Workload Heavy Writing
-    Given Create persistentvolumeclaim 0 using RWO volume
+    Given Create storageclass strict-local with    numberOfReplicas=1    dataLocality=strict-local
+    And Create persistentvolumeclaim 0 using RWO volume
     And Create persistentvolumeclaim 1 using RWX volume
     And Create persistentvolumeclaim 2 using RWO volume with strict-local storageclass
 
@@ -125,12 +123,9 @@ Reboot All Worker Nodes While Workload Heavy Writing
 
         When Restart all worker nodes
         And Wait for longhorn ready
-        And Wait for deployment 0 pods stable
-        And Wait for deployment 1 pods stable
-        And Wait for deployment 2 pods stable
-        And Wait for statefulset 0 pods stable
-        And Wait for statefulset 1 pods stable
-        And Wait for statefulset 2 pods stable
+        And Wait for workloads pods stable
+        ...    deployment 0    deployment 1    deployment 2
+        ...    statefulset 0    statefulset 1    statefulset 2
 
         Then Check deployment 0 works
         And Check deployment 1 works
@@ -141,7 +136,8 @@ Reboot All Worker Nodes While Workload Heavy Writing
     END
 
 Power Off All Worker Nodes For More Than Pod Eviction Timeout While Workload Heavy Writing
-    Given Create persistentvolumeclaim 0 using RWO volume
+    Given Create storageclass strict-local with    numberOfReplicas=1    dataLocality=strict-local
+    And Create persistentvolumeclaim 0 using RWO volume
     And Create persistentvolumeclaim 1 using RWX volume
     And Create persistentvolumeclaim 2 using RWO volume with strict-local storageclass
 
@@ -163,12 +159,9 @@ Power Off All Worker Nodes For More Than Pod Eviction Timeout While Workload Hea
 
         When Power off all worker nodes for 6 mins
         And Wait for longhorn ready
-        And Wait for deployment 0 pods stable
-        And Wait for deployment 1 pods stable
-        And Wait for deployment 2 pods stable
-        And Wait for statefulset 0 pods stable
-        And Wait for statefulset 1 pods stable
-        And Wait for statefulset 2 pods stable
+        And Wait for workloads pods stable
+        ...    deployment 0    deployment 1    deployment 2
+        ...    statefulset 0    statefulset 1    statefulset 2
 
         Then Check deployment 0 works
         And Check deployment 1 works
