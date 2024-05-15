@@ -20,9 +20,9 @@ class persistentvolumeclaim_keywords:
         for claim in claims.items:
             self.delete_persistentvolumeclaim(claim.metadata.name)
 
-    def create_persistentvolumeclaim(self, name, volume_type="RWO", option=""):
-        logging(f'Creating persistentvolumeclaim {name}')
-        return self.claim.create(name, volume_type, option)
+    def create_persistentvolumeclaim(self, name, volume_type="RWO", sc_name="longhorn"):
+        logging(f'Creating {volume_type} persistentvolumeclaim {name} with {sc_name} storageclass')
+        return self.claim.create(name, volume_type, sc_name)
 
     def delete_persistentvolumeclaim(self, name):
         logging(f'Deleting persistentvolumeclaim {name}')

@@ -23,7 +23,7 @@ class PersistentVolumeClaim():
         if self._strategy == LonghornOperationStrategy.CRD:
             self.claim = CRD()
 
-    def create(self, name, volume_type="RWO", option=""):
+    def create(self, name, volume_type, sc_name):
         filepath = "./templates/workload/pvc.yaml"
         with open(filepath, 'r') as f:
             namespace = 'default'
@@ -36,8 +36,7 @@ class PersistentVolumeClaim():
             manifest_dict['metadata']['labels'][LABEL_TEST] = LABEL_TEST_VALUE
 
             # correct storageclass name
-            if option:
-                manifest_dict['spec']['storageClassName'] += f"-{option}"
+            manifest_dict['spec']['storageClassName'] = sc_name
 
             # correct access mode`
             if volume_type == 'RWX':

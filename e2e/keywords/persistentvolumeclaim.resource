@@ -10,6 +10,6 @@ Create persistentvolumeclaim ${claim_id} using ${volume_type} volume
     ${claim_name} =    generate_name_with_suffix    claim    ${claim_id}
     create_persistentvolumeclaim    ${claim_name}    ${volume_type}
 
-Create persistentvolumeclaim ${claim_id} using ${volume_type} volume with ${option} storageclass
+Create persistentvolumeclaim ${claim_id} using ${volume_type} volume with ${sc_name} storageclass
     ${claim_name} =    generate_name_with_suffix    claim    ${claim_id}
-    create_persistentvolumeclaim    ${claim_name}    ${volume_type}    ${option}
+    create_persistentvolumeclaim    ${claim_name}    ${volume_type}    ${sc_name}

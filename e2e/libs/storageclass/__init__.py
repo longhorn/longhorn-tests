@@ -1,1 +1,1 @@
-from storageclass import storageclass
+from storageclass.storageclass import StorageClass
