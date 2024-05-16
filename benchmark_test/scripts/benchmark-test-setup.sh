@@ -227,8 +227,9 @@ main(){
     kubectl uncordon "$(kubectl get nodes | awk 'NR!=1 && $3!~/control-plane/ {print $1}' | sort | awk 'NR==2')"
     kubectl uncordon "$(kubectl get nodes | awk 'NR!=1 && $3!~/control-plane/ {print $1}' | sort | awk 'NR==1')"
 
+    kubectl -n longhorn-system patch -p '{"value": "true"}' --type=merge lhs deleting-confirmation-flag
     kubectl create -f "https://raw.githubusercontent.com/longhorn/longhorn/${LONGHORN_PREVIOUS_VERSION}/uninstall/uninstall.yaml"
-    kubectl wait --for=condition=complete --timeout=5m job/longhorn-uninstall
+    kubectl wait --for=condition=complete --timeout=5m job/longhorn-uninstall -n longhorn-system
     kubectl delete -f "https://raw.githubusercontent.com/longhorn/longhorn/${LONGHORN_PREVIOUS_VERSION}/deploy/longhorn.yaml" || true
     kubectl delete -f "https://raw.githubusercontent.com/longhorn/longhorn/${LONGHORN_PREVIOUS_VERSION}/uninstall/uninstall.yaml" || true
     wait_longhorn_resources_deleted
@@ -241,11 +242,11 @@ main(){
   run_fio_longhorn_test 3
 
   adjust_replica_count 2
-  kubectl cordon "$(kubectl get nodes | awk 'NR!=1 && $3!~/control-plane/ {print $1}' | awk 'NR==3')"
+  kubectl cordon "$(kubectl get nodes | awk 'NR!=1 && $3!~/control-plane/ {print $1}' | sort | awk 'NR==3')"
   run_fio_longhorn_test 2
 
   adjust_replica_count 1
-  kubectl cordon "$(kubectl get nodes | awk 'NR!=1 && $3!~/control-plane/ {print $1}' | awk 'NR==2')"
+  kubectl cordon "$(kubectl get nodes | awk 'NR!=1 && $3!~/control-plane/ {print $1}' | sort | awk 'NR==2')"
   run_fio_longhorn_test 1
 
 }

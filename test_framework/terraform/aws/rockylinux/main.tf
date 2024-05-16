@@ -308,6 +308,20 @@ resource "aws_ebs_volume" "lh_aws_hdd_volume" {
   }
 }
 
+resource "aws_ebs_volume" "lh_aws_ssd_volume" {
+
+  count = var.extra_block_device ? var.lh_aws_instance_count_worker : 0
+
+  availability_zone = var.aws_availability_zone
+  size              = var.lh_aws_instance_root_block_device_size_worker
+  type              = "gp2"
+
+  tags = {
+    Name = "lh-aws-ssd-volume-${count.index}-${random_string.random_suffix.id}"
+    Owner = "longhorn-infra"
+  }
+}
+
 # Create load balancer for rancher
 resource "aws_lb_target_group" "lh_aws_lb_tg_443" {
 
