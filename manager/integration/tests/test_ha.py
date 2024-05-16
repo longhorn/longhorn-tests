@@ -3095,7 +3095,7 @@ def test_engine_image_not_fully_deployed_perform_dr_restoring_expanding_volume(c
     volume1 = client.by_id_volume(volume1.name)
     for replica in volume1.replicas:
         if replica.hostId == node_x:
-            crash_replica_processes(client, core_api, res_volume.name,
+            crash_replica_processes(client, core_api, volume1.name,
                                     replicas=[replica],
                                     wait_to_fail=True)
 
