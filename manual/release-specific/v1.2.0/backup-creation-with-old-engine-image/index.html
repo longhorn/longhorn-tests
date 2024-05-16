@@ -827,13 +827,12 @@
 <p><a href="https://github.com/longhorn/longhorn/issues/2897">https://github.com/longhorn/longhorn/issues/2897</a></p>
 <h2 id="test-step">Test Step</h2>
 <p><strong>Given</strong> with Longhorn v1.2.0-rc2 or above.
-<em>And</em> deploy engine image <code>oldEI</code> older than v1.2.0 (for example: <code>longhornio/longhorn-engine:v1.1.2</code>).
+<em>And</em> deploy compatible engine image <code>oldEI</code> older than test version (for example: <code>longhornio/longhorn-engine:&lt;previous feature/patch release version&gt;</code>).
 <em>And</em> create volume <code>vol-old-engine</code>.
 <em>And</em> attach volume <code>vol-old-engine</code> to one of a node.
 <em>And</em> upgrade volume <code>vol-old-engine</code> to engine image <code>oldEI</code>.</p>
 <p><strong>When</strong> create backup of volume <code>vol-old-engine</code>.</p>
-<p><strong>Then</strong> watch kubectl <code>kubectl get backups.longhorn.io -l backup-volume=vol-old-engine -w</code>.
-<em>And</em> should see two backups temporarily (in transition state).
+<p><strong>Then</strong> watch kubectl <code>kubectl -n longhorn-system get backups.longhorn.io -l backup-volume=vol-old-engine -w</code>.
 <em>And</em> should see only one backup be left after a while.</p>
 
     </article>
