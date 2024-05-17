@@ -6,17 +6,14 @@ from kubernetes.stream import stream
 from utility.utility import get_retry_count_and_interval
 from utility.utility import logging
 
+from workload.pod import is_pod_terminated_by_kubelet
 from workload.constant import WAIT_FOR_POD_STABLE_MAX_RETRY
 
 
 def get_workload_pod_names(workload_name):
-    api = client.CoreV1Api()
-    label_selector = f"app={workload_name}"
-    pod_list = api.list_namespaced_pod(
-        namespace="default",
-        label_selector=label_selector)
+    pod_list = get_workload_pods(workload_name)
     pod_names = []
-    for pod in pod_list.items:
+    for pod in pod_list:
         pod_names.append(pod.metadata.name)
     return pod_names
 
@@ -27,7 +24,21 @@ def get_workload_pods(workload_name, namespace="default"):
     resp = api.list_namespaced_pod(
         namespace=namespace,
         label_selector=label_selector)
-    return resp.items
+
+    if not resp.items:
+        logging(f"No pods found for workload {workload_name} in namespace {namespace}")
+        return []
+
+    filtered_pods = []
+    for pod in resp.items:
+        # https://github.com/longhorn/longhorn/issues/8550#issuecomment-2109276522
+        if is_pod_terminated_by_kubelet(pod):
+            logging(f"Skipping pod {pod.metadata.name} because it is terminated by kubelet")
+            continue
+
+        filtered_pods.append(pod)
+
+    return filtered_pods
 
 
 def get_workload_volume_name(workload_name):

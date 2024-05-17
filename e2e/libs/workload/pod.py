@@ -168,3 +168,15 @@ def get_volume_name_by_pod(name, namespace='default'):
     api = client.CoreV1Api()
     claim = api.read_namespaced_persistent_volume_claim(name=claim_name, namespace='default')
     return claim.spec.volume_name
+
+
+def is_pod_terminated_by_kubelet(pod):
+    if not pod.status.conditions:
+        return False
+
+    for condition in pod.status.conditions:
+        if condition.type == "DisruptionTarget" and \
+            condition.reason == "TerminationByKubelet" and \
+            condition.status == "True":
+            return True
+    return False
