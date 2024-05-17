@@ -196,7 +196,7 @@ node {
             }
 
             stage ('longhorn coverage') {
-                if(!params.LONGHORN_UPGRADE_TEST && !params.AIR_GAP_INSTALLATION) {
+                if(!params.LONGHORN_UPGRADE_TEST && !params.AIR_GAP_INSTALLATION && JOB_BASE_NAME != "longhorn-tests-regression") {
                     sh "docker exec ${JOB_BASE_NAME}-${BUILD_NUMBER} test_framework/scripts/longhorn-coverage.sh"
 
                     sh "docker cp ${JOB_BASE_NAME}-${BUILD_NUMBER}:/src/longhorn-tests/longhorn-manager-profile.html ."
@@ -207,36 +207,36 @@ node {
                     sh "docker cp ${JOB_BASE_NAME}-${BUILD_NUMBER}:/src/longhorn-tests/backing-image-manager-profile.html ."
 
                     publishHTML (target: [
-                        allowMissing: false,
-                        alwaysLinkToLastBuild: false,
-                        keepAll: true,
+                        allowMissing: true,
+                        alwaysLinkToLastBuild: true,
+                        keepAll: false,
                         reportDir: '.',
                         reportFiles: 'longhorn-manager-profile.html',
                         reportName: "longhorn-manager coverage profile"
                     ])
 
                     publishHTML (target: [
-                        allowMissing: false,
-                        alwaysLinkToLastBuild: false,
-                        keepAll: true,
+                        allowMissing: true,
+                        alwaysLinkToLastBuild: true,
+                        keepAll: false,
                         reportDir: '.',
                         reportFiles: 'longhorn-engine-profile.html',
                         reportName: "longhorn-engine coverage profile"
                     ])
 
                     // publishHTML (target: [
-                    //     allowMissing: false,
-                    //     alwaysLinkToLastBuild: false,
-                    //     keepAll: true,
+                    //    allowMissing: true,
+                    //    alwaysLinkToLastBuild: true,
+                    //    keepAll: false,
                     //     reportDir: '.',
                     //     reportFiles: 'longhorn-spdk-engine-profile.html',
                     //     reportName: "longhorn-spdk-engine coverage profile"
                     // ])
 
                     publishHTML (target: [
-                        allowMissing: false,
-                        alwaysLinkToLastBuild: false,
-                        keepAll: true,
+                        allowMissing: true,
+                        alwaysLinkToLastBuild: true,
+                        keepAll: false,
                         reportDir: '.',
                         reportFiles: 'longhorn-instance-manager-profile.html',
                         reportName: "longhorn-instance-manager coverage profile"
@@ -244,18 +244,18 @@ node {
 
 
                     publishHTML (target: [
-                        allowMissing: false,
-                        alwaysLinkToLastBuild: false,
-                        keepAll: true,
+                        allowMissing: true,
+                        alwaysLinkToLastBuild: true,
+                        keepAll: false,
                         reportDir: '.',
                         reportFiles: 'longhorn-share-manager-profile.html',
                         reportName: "longhorn-share-manager coverage profile"
                     ])
 
                     publishHTML (target: [
-                        allowMissing: false,
-                        alwaysLinkToLastBuild: false,
-                        keepAll: true,
+                        allowMissing: true,
+                        alwaysLinkToLastBuild: true,
+                        keepAll: false,
                         reportDir: '.',
                         reportFiles: 'backing-image-manager-profile.html',
                         reportName: "backing-image-manager coverage profile"
