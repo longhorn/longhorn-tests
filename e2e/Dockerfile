@@ -7,7 +7,7 @@ RUN if [ "$TARGETPLATFORM" != "linux/amd64" ] && [ "$TARGETPLATFORM" != "linux/a
     fi
 ENV ARCH ${TARGETPLATFORM#linux/}
 
-ARG KUBECTL_VERSION=v1.17.0
+ARG KUBECTL_VERSION=v1.30.0
 ARG YQ_VERSION=v4.24.2
 
 RUN zypper ref -f
