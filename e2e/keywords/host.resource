@@ -10,11 +10,13 @@ Library             ../libs/keywords/workload_keywords.py
 *** Keywords ***
 Reboot volume ${volume_id} volume node
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
-    reboot_volume_node    ${volume_name}
+    ${node_name} =    get_volume_node    ${volume_name}
+    reboot_node_by_name    ${node_name}
 
 Reboot volume ${volume_id} replica node
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
-    reboot_replica_node    ${volume_name}
+    ${node_name} =    get_replica_node    ${volume_name}
+    reboot_node_by_name    ${node_name}
 
 Reboot node ${idx}
     reboot_node_by_index    ${idx}
