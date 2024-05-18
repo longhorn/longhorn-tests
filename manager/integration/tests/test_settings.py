@@ -155,8 +155,7 @@ def test_setting_toleration():
             "effect": "NoExecute"
         },
     ]
-    setting = client.update(setting, value=setting_value_str)
-    assert setting.value == setting_value_str
+    update_setting(client, SETTING_TAINT_TOLERATION, setting_value_str)
 
     data1 = write_volume_random_data(volume)
     check_volume_data(volume, data1)
@@ -180,9 +179,7 @@ def test_setting_toleration():
     # cleanup
     setting_value_str = ""
     setting_value_dicts = []
-    setting = client.by_id_setting(SETTING_TAINT_TOLERATION)
-    setting = client.update(setting, value=setting_value_str)
-    assert setting.value == setting_value_str
+    update_setting(client, SETTING_TAINT_TOLERATION, setting_value_str)
     wait_for_toleration_update(core_api, apps_api, count, setting_value_dicts)
 
     client, node = wait_for_longhorn_node_ready()
@@ -281,13 +278,11 @@ def test_setting_toleration_extra(core_api, apps_api):  # NOQA
 
     chk_removed_tolerations = []
     for setting in settings:
-        client = get_longhorn_api_client()  # NOQA
-        taint_toleration = client.by_id_setting(SETTING_TAINT_TOLERATION)
-        updated = client.update(taint_toleration,
-                                value=setting["value"])
-        assert updated.value == setting["value"]
+        update_setting(get_longhorn_api_client(),
+                       SETTING_TAINT_TOLERATION,
+                       setting["value"])
 
-        node_count = len(client.list_node())
+        node_count = len(get_longhorn_api_client().list_node())
         wait_for_toleration_update(core_api, apps_api, node_count,
                                    setting["expect"], chk_removed_tolerations)
         chk_removed_tolerations = setting["expect"]
@@ -408,15 +403,13 @@ def test_instance_manager_cpu_reservation(client, core_api):  # NOQA
     guaranteed_instance_manager_cpu_setting_check(
         client, core_api, [im_on_host], "Running", True, "150m")
 
-    im_setting = client.by_id_setting(SETTING_GUARANTEED_INSTANCE_MANAGER_CPU)
-    client.update(im_setting, value="10")
+    update_setting(client, SETTING_GUARANTEED_INSTANCE_MANAGER_CPU, "10")
     time.sleep(5)
     guaranteed_instance_manager_cpu_setting_check(
         client, core_api, other_ims, "Running", True,
         str(int(allocatable_millicpu*10/100)) + "m")
 
-    im_setting = client.by_id_setting(SETTING_GUARANTEED_INSTANCE_MANAGER_CPU)
-    client.update(im_setting, value="0")
+    update_setting(client, SETTING_GUARANTEED_INSTANCE_MANAGER_CPU, "0")
     time.sleep(5)
     guaranteed_instance_manager_cpu_setting_check(
         client, core_api, other_ims, "Running", True, "")
@@ -431,14 +424,15 @@ def test_instance_manager_cpu_reservation(client, core_api):  # NOQA
     guaranteed_instance_manager_cpu_setting_check(
         client, core_api, ims, "Running", True, "")
 
-    client.update(im_setting, value="20")
+    update_setting(client, SETTING_GUARANTEED_INSTANCE_MANAGER_CPU, "20")
     time.sleep(5)
     guaranteed_instance_manager_cpu_setting_check(
         client, core_api, ims, "Running", True,
         str(int(allocatable_millicpu*20/100)) + "m")
 
     with pytest.raises(Exception) as e:
-        client.update(im_setting, value="41")
+        setting = client.by_id_setting(SETTING_GUARANTEED_INSTANCE_MANAGER_CPU)
+        client.update(setting, value="41")
     assert "should be less than 40" in \
            str(e.value)
 
@@ -524,8 +518,7 @@ def test_setting_priority_class(core_api, apps_api, scheduling_api, priority_cla
     volume.attach(hostId=get_self_host_id())
     volume = wait_for_volume_healthy(client, volume_name)
 
-    setting = client.update(setting, value=name)
-    assert setting.value == name
+    update_setting(client, SETTING_PRIORITY_CLASS, name)
 
     data1 = write_volume_random_data(volume)
     check_volume_data(volume, data1)
@@ -546,9 +539,7 @@ def test_setting_priority_class(core_api, apps_api, scheduling_api, priority_cla
     volume.detach()
     wait_for_volume_detached(client, volume_name)
 
-    setting = client.by_id_setting(SETTING_PRIORITY_CLASS)
-    setting = client.update(setting, value='')
-    assert setting.value == ''
+    update_setting(client, SETTING_PRIORITY_CLASS, '')
     wait_for_priority_class_update(core_api, apps_api, count)
 
     client, node = wait_for_longhorn_node_ready()
@@ -1255,7 +1246,7 @@ def test_setting_v1_data_engine(client, request): # NOQA
 
     def finalizer():
         cleanup_volume(client, volume)
-        client.update(setting, value="true")
+        update_setting(client, SETTING_V1_DATA_ENGINE, "true")
 
     request.addfinalizer(finalizer)
 
@@ -1273,8 +1264,7 @@ def test_setting_v1_data_engine(client, request): # NOQA
     wait_for_volume_detached(client, volume_name)
 
     # Step 4
-    setting = client.by_id_setting(SETTING_V1_DATA_ENGINE)
-    client.update(setting, value="false")
+    update_setting(client, SETTING_V1_DATA_ENGINE, "false")
 
     count = wait_for_instance_manager_count(client, 0)
     assert count == 0
@@ -1285,7 +1275,7 @@ def test_setting_v1_data_engine(client, request): # NOQA
     assert 'volume[key]=detached' in str(e.value)
 
     # Step 5
-    client.update(setting, value="true")
+    update_setting(client, SETTING_V1_DATA_ENGINE, "true")
     nodes = client.list_node()
     count = wait_for_instance_manager_count(client, len(nodes))
     assert count == len(nodes)

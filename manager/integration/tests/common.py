@@ -5432,8 +5432,17 @@ def get_engine_image_status_value(client, ei_name):
 
 
 def update_setting(client, name, value):
-    setting = client.by_id_setting(name)
-    client.update(setting, value=value)
+    for _ in range(RETRY_COUNTS):
+        try:
+            setting = client.by_id_setting(name)
+            setting = client.update(setting, value=value)
+            break
+        except Exception as e:
+            print(e)
+            time.sleep(RETRY_INTERVAL)
+    value = "" if value is None else value
+    assert setting.value == value, \
+        f"expect update setting {name} to be {value}, but it's {setting.value}"
 
 
 def create_recurring_jobs(client, recurring_jobs):
