@@ -37,7 +37,7 @@ index de77b7246..ac6263ac5 100644
 **And** Wait 1~2 hours for collection data to send to the influxDB database.  
 
 **Then** the value of field `longhorn_volume_average_size_bytes` in the influxdb should equal to the average size of all v1 volumes (excluding v2 volumes).  
-**And** the value of field `longhorn_volume_average_actual_size_bytes` in the influxdb should be equal or simular to the average actual size of all v1 volumes (excluding v2 volumes).  
+**And** the value of field `longhorn_volume_average_actual_size_bytes` in the influxdb should be equal or similar to the average actual size of all v1 volumes (excluding v2 volumes).  
 > It's OK for the actual size to be slightly off due to ongoing workload activities, such as data writing by the upgrade-responder.  
 ```bash
 # Get the sizes in the influxdb.

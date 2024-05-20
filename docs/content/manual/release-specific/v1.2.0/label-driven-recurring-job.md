@@ -37,7 +37,7 @@ https://github.com/longhorn/longhorn/issues/467
 *And* storageClass in `longhorn-storageclass` configMap should not have `recurringJobs`.  
 *And* storageClass in `longhorn-storageclass` configMap should     have `recurringJobSelector`.
 ```
-recurringJobSelector:{"name":"snapshot-1-97893a05-77074ba4","isGroup":fals{"name":"backup-1-954b3c8c-59467025","isGroup":false}]'
+recurringJobSelector:{"name":"snapshot-1-97893a05-77074ba4","isGroup":false{"name":"backup-1-954b3c8c-59467025","isGroup":false}]'
 ```
 
 When create new PVC.  
