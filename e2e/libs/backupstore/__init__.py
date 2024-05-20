@@ -1,2 +1,2 @@
 from backupstore.nfs import Nfs
-from backupstore.minio import Minio
+from backupstore.s3 import S3
