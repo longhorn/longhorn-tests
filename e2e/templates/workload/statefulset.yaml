@@ -29,13 +29,15 @@ spec:
         volumeMounts:
         - name: pod-data
           mountPath: "/data"
+  persistentVolumeClaimRetentionPolicy:
+    whenDeleted: Delete
   volumeClaimTemplates:
   - metadata:
       name: pod-data
     spec:
       accessModes:
       - ReadWriteOnce
-      storageClassName: longhorn-test
+      storageClassName: longhorn
       resources:
         requests:
           storage: 3221225472  #3Gi

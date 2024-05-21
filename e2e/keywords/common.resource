@@ -20,7 +20,6 @@ Library             ../libs/keywords/backing_image_keywords.py
 Set test environment
     init_k8s_api_client
     init_node_exec    ${SUITE NAME.rsplit('.')[1]}
-    init_storageclasses
 
     setup_control_plane_network_latency
     set_backupstore
