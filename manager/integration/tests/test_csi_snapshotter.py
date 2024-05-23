@@ -38,6 +38,9 @@ from common import delete_and_wait_pod, delete_and_wait_pvc
 from common import BACKING_IMAGE_SOURCE_TYPE_FROM_VOLUME
 from common import create_backing_image_with_matching_url
 
+CSI_SNAPSHOT_TYPE_SNAP = "snap"
+CSI_SNAPSHOT_TYPE_BAK = "bak"
+
 
 @pytest.fixture
 def volumesnapshotclass(request):
@@ -690,7 +693,7 @@ def prepare_test_csi_snapshot(apps_api, # NOQA
                               make_deployment_with_pvc, # NOQA
                               volumesnapshotclass, # NOQA
                               core_api, # NOQA
-                              ): # NOQA
+                              csi_snapshot_type="snap"): # NOQA
     """
     Context:
 
@@ -706,9 +709,8 @@ def prepare_test_csi_snapshot(apps_api, # NOQA
       - Write data into volume
       - Setup backup store
     """
-    csi_snapshot_type = "snap"
     csisnapclass = \
-        volumesnapshotclass(name="snapshotclass-snap",
+        volumesnapshotclass(name=f"snapshotclass-{csi_snapshot_type}",
                             deletepolicy="Delete",
                             snapshot_type=csi_snapshot_type)
 
@@ -739,16 +741,19 @@ def prepare_test_csi_snapshot(apps_api, # NOQA
     return vol, deployment, csisnapclass, expected_md5sum
 
 
-def test_csi_snapshot_snap_create_csi_snapshot(apps_api, # NOQA
-                                      client, # NOQA
-                                      make_deployment_with_pvc, # NOQA
-                                      volume_name, # NOQA
-                                      volumesnapshotclass, # NOQA
-                                      volumesnapshot, # NOQA
-                                      csi_pv, # NOQA
-                                      pvc, # NOQA
-                                      core_api, # NOQA
-                                      pod_make): # NOQA
+@pytest.mark.parametrize("csi_snapshot_type", [CSI_SNAPSHOT_TYPE_SNAP, CSI_SNAPSHOT_TYPE_BAK]) # NOQA
+def test_csi_snapshot_create_csi_snapshot(set_random_backupstore, # NOQA
+                                          apps_api, # NOQA
+                                          client, # NOQA
+                                          make_deployment_with_pvc, # NOQA
+                                          volume_name, # NOQA
+                                          volumesnapshotclass, # NOQA
+                                          volumesnapshot, # NOQA
+                                          csi_pv, # NOQA
+                                          pvc, # NOQA
+                                          core_api, # NOQA
+                                          pod_make, # NOQA
+                                          csi_snapshot_type): # NOQA
     """
     Context:
 
@@ -756,10 +761,11 @@ def test_csi_snapshot_snap_create_csi_snapshot(apps_api, # NOQA
     https://longhorn.io/docs/1.4.2/snapshots-and-backups/
     csi-snapshot-support/enable-csi-snapshot-support/
 
-    Create VolumeSnapshotClass with type=snap
-      - longhorn-snapshot (type=snap)
+    Create VolumeSnapshotClass with type=snap|bak
+      - longhorn-snapshot (type=snap|bak)
 
-    Test the extend CSI snapshot type=snap support to Longhorn snapshot
+    Test the extend CSI snapshot type=snap|bak support
+    to Longhorn snapshot|backup
 
     Steps:
 
@@ -771,7 +777,7 @@ def test_csi_snapshot_snap_create_csi_snapshot(apps_api, # NOQA
     1. Test create CSI snapshot
         - Volume is in detached state
             - Scale down the workload
-            - Create VolumeSnapshot with class longhorn-snap
+            - Create VolumeSnapshot with class longhorn-snap|bak
             - Verify that the volumesnapshot object is ready
         - Volume is in attached state
             - Scale up the workload
@@ -784,7 +790,8 @@ def test_csi_snapshot_snap_create_csi_snapshot(apps_api, # NOQA
                                   client, # NOQA
                                   make_deployment_with_pvc, # NOQA
                                   volumesnapshotclass, # NOQA
-                                  core_api # NOQA
+                                  core_api, # NOQA
+                                  csi_snapshot_type # NOQA
                                 )
 
     # Step 1 Test create CSI snapshot
@@ -819,7 +826,6 @@ def test_csi_snapshot_snap_create_csi_snapshot(apps_api, # NOQA
                             volumesnapshot_name=csivolsnap["metadata"]["name"],
                             namespace='default',
                             ready_to_use=True)
-
 
 def test_csi_snapshot_snap_create_volume_from_snapshot(apps_api, # NOQA
                                       client, # NOQA
@@ -1083,31 +1089,35 @@ def test_csi_snapshot_snap_delete_csi_snapshot_snapshot_not_exist(apps_api, # NO
     wait_volumesnapshot_deleted(csivolsnap["metadata"]["name"], "default")
 
 
-def test_csi_snapshot_snap_delete_csi_snapshot_volume_detached(apps_api, # NOQA
-                                                               client, # NOQA
-                                                               make_deployment_with_pvc, # NOQA
-                                                               volumesnapshotclass, # NOQA
-                                                               volumesnapshot, # NOQA
-                                                               core_api): # NOQA
+@pytest.mark.parametrize("csi_snapshot_type", [CSI_SNAPSHOT_TYPE_SNAP, CSI_SNAPSHOT_TYPE_BAK]) # NOQA
+def test_csi_snapshot_delete_csi_snapshot_volume_detached(set_random_backupstore, # NOQA
+                                                          apps_api, # NOQA
+                                                          client, # NOQA
+                                                          make_deployment_with_pvc, # NOQA
+                                                          volumesnapshotclass, # NOQA
+                                                          volumesnapshot, # NOQA
+                                                          core_api, # NOQA
+                                                          csi_snapshot_type): # NOQA
     """
-    1. Create volumesnapshotclass with type=snap
+    1. Create volumesnapshotclass with type=snap|bak
     2. Create Longhorn volume test-vol
         - Size 5GB
         - Create PV/PVC/Workload for the Longhorn volume
         - Write data into volume
         - Setup backup store
         - Create volumeSnapshot by volumesnapshotclass in step 1
-    3. Test delete CSI snapshot : Type is snap
+    3. Test delete CSI snapshot : Type is snap|bak
         - volume is detached
             - Delete the VolumeSnapshot
-            - Verify that VolumeSnapshot is stuck in deleting
+            - Verify that VolumeSnapshot is not stuck in deleting
     """
     vol, deployment, csisnapclass, expected_md5sum = \
         prepare_test_csi_snapshot(apps_api, # NOQA
                                   client, # NOQA
                                   make_deployment_with_pvc, # NOQA
                                   volumesnapshotclass, # NOQA
-                                  core_api) # NOQA
+                                  core_api,
+                                  csi_snapshot_type) # NOQA
 
     pvc_name = vol.name + "-pvc"
     deployment_name = deployment['metadata']['name']
@@ -1116,6 +1126,9 @@ def test_csi_snapshot_snap_delete_csi_snapshot_volume_detached(apps_api, # NOQA
                                 csisnapclass["metadata"]["name"],
                                 "persistentVolumeClaimName",
                                 pvc_name)
+
+    wait_for_volumesnapshot_ready(csivolsnap["metadata"]["name"],
+                                  csivolsnap["metadata"]["namespace"])
 
     deployment['spec']['replicas'] = 0
     apps_api.patch_namespaced_deployment(body=deployment,
