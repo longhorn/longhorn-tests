@@ -3,3 +3,4 @@ IMAGE_LITMUX = 'litmuschaos/go-runner:latest'
 IMAGE_UBUNTU = 'ubuntu:16.04'
 
 WAIT_FOR_POD_STABLE_MAX_RETRY = 120
+WAIT_FOR_POD_KEPT_IN_STATE_TIME = 30

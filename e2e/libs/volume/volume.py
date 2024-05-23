@@ -55,6 +55,16 @@ class Volume(Base):
     def wait_for_volume_detached(self, volume_name):
         self.volume.wait_for_volume_state(volume_name, "detached")
 
+    def wait_for_volume_attaching(self, volume_name):
+        self.volume.wait_for_volume_state(volume_name, "attaching")
+
+    def wait_for_volume_stuck_attaching(self, volume_name):
+        self.volume.wait_for_volume_keep_in_state(volume_name, "attaching")
+
+    def wait_for_volume_faulted(self, volume_name):
+        self.volume.wait_for_volume_state(volume_name, "detached")
+        self.volume.wait_for_volume_robustness(volume_name, "faulted")
+
     def wait_for_volume_healthy(self, volume_name):
         self.volume.wait_for_volume_state(volume_name, "attached")
         self.volume.wait_for_volume_robustness(volume_name, "healthy")
@@ -106,3 +116,5 @@ class Volume(Base):
     def validate_volume_replicas_anti_affinity(self, volume_name):
         return self.volume.validate_volume_replicas_anti_affinity(volume_name)
 
+    def update_volume_spec(self, volume_name, key, value):
+        return self.volume.update_volume_spec(volume_name, key, value)
