@@ -168,6 +168,19 @@ def filter_cr(group, version, namespace, plural, field_selector="", label_select
     except ApiException as e:
         logging(f"Listing namespaced custom object: {e}")
 
+def list_namespaced_pod(namespace, label_selector=""):
+    api = client.CoreV1Api()
+    retry_count, retry_interval = get_retry_count_and_interval()
+    for i in range(retry_count):
+        try:
+            resp = api.list_namespaced_pod(
+                namespace=namespace,
+                label_selector=label_selector)
+            return resp.items
+        except Exception as e:
+            logging(f"Failed to list namespaced {namespace} pods with error: {e}")
+        time.sleep(retry_interval)
+    assert False, f"Failed to list namespaced {namespace} pods"
 
 def set_annotation(group, version, namespace, plural, name, annotation_key, annotation_value):
     api = client.CustomObjectsApi()
