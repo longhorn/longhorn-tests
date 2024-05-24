@@ -293,7 +293,7 @@ class GdapiClient(object):
 
     def _get_response(self, url, data=None):
         r = self._session.get(url, auth=self._auth, params=data,
-                              headers=self._headers)
+                              headers=self._headers, timeout=DEFAULT_TIMEOUT)
         if r.status_code < 200 or r.status_code >= 300:
             self._error(r.text, r.status_code)
 
@@ -302,7 +302,7 @@ class GdapiClient(object):
     @timed_url
     def _post(self, url, data=None):
         r = self._session.post(url, auth=self._auth, data=self._marshall(data),
-                               headers=self._headers)
+                               headers=self._headers, timeout=DEFAULT_TIMEOUT)
         if r.status_code < 200 or r.status_code >= 300:
             self._error(r.text, r.status_code)
 
@@ -311,7 +311,7 @@ class GdapiClient(object):
     @timed_url
     def _put(self, url, data=None):
         r = self._session.put(url, auth=self._auth, data=self._marshall(data),
-                              headers=self._headers)
+                              headers=self._headers, timeout=DEFAULT_TIMEOUT)
         if r.status_code < 200 or r.status_code >= 300:
             self._error(r.text, r.status_code)
 
@@ -319,7 +319,8 @@ class GdapiClient(object):
 
     @timed_url
     def _delete(self, url):
-        r = self._session.delete(url, auth=self._auth, headers=self._headers)
+        r = self._session.delete(url, auth=self._auth, headers=self._headers,
+                                 timeout=DEFAULT_TIMEOUT)
         if r.status_code < 200 or r.status_code >= 300:
             self._error(r.text, r.status_code)
 
