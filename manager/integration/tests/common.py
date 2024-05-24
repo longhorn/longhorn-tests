@@ -2258,7 +2258,7 @@ def wait_for_engine_image_ref_count(client, image_name, count):
         if image.refCount == count:
             break
         time.sleep(RETRY_INTERVAL)
-    assert image.refCount == count
+    assert image.refCount == count, f"image = {image}"
     if count == 0:
         assert image.noRefSince != ""
     return image
@@ -3675,7 +3675,7 @@ def wait_for_deployed_engine_image_count(client, image_name, expected_cnt):
             break
         time.sleep(RETRY_INTERVAL)
 
-    assert deployed_cnt == expected_cnt
+    assert deployed_cnt == expected_cnt, f"image = {image}"
 
 
 def wait_for_running_engine_image_count(image_name, engine_cnt):
