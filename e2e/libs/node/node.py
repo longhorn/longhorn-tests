@@ -87,15 +87,19 @@ class Node:
         core_api = client.CoreV1Api()
         nodes = core_api.list_node().items
 
-        control_plane_labels = ['node-role.kubernetes.io/master', 'node-role.kubernetes.io/control-plane']
+        control_plane_labels = [
+            {'key': 'node-role.kubernetes.io/master', 'value': 'true'},
+            {'key': 'node-role.kubernetes.io/control-plane', 'value': 'true'},
+            {'key': 'talos.dev/owned-labels', 'value': '["node-role.kubernetes.io/control-plane"]'}
+        ]
 
         if role == "all":
             return sorted(filter_nodes(nodes, lambda node: True))
 
         if role == "control-plane":
-            condition = lambda node: all(label in node.metadata.labels for label in control_plane_labels)
+            condition = lambda node: any(label in node.metadata.labels.items() and node.metadata.labels[label] == value for label, value in control_plane_labels)
             return sorted(filter_nodes(nodes, condition))
 
         if role == "worker":
-            condition = lambda node: not any(label in node.metadata.labels for label in control_plane_labels)
+            condition = lambda node: not any(label in node.metadata.labels.items() and node.metadata.labels[label] == value for label, value in control_plane_labels)
             return sorted(filter_nodes(nodes, condition))
