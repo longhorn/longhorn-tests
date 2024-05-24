@@ -4,12 +4,20 @@ Documentation    Deployment Keywords
 Library    Collections
 Library    ../libs/keywords/common_keywords.py
 Library    ../libs/keywords/deployment_keywords.py
+Library    ../libs/keywords/node_keywords.py
 
 *** Keywords ***
 Create deployment ${deployment_id} with persistentvolumeclaim ${claim_id}
     ${deployment_name} =    generate_name_with_suffix    deployment    ${deployment_id}
     ${claim_name} =    generate_name_with_suffix    claim    ${claim_id}
     create_deployment    ${deployment_name}    ${claim_name}
+
+Create deployment ${deployment_id} with persistentvolumeclaim ${claim_id} with max replicaset
+    ${deployment_name} =    generate_name_with_suffix    deployment    ${deployment_id}
+    ${claim_name} =    generate_name_with_suffix    claim    ${claim_id}
+    ${node_names} =    list_node_names_by_role    worker
+    ${node_count} =    Get length  ${node_names}
+    create_deployment    ${deployment_name}    ${claim_name}   ${node_count}
 
 Write ${size} MB data to file ${file_name} in deployment ${deployment_id}
     ${deployment_name} =    generate_name_with_suffix    deployment    ${deployment_id}
