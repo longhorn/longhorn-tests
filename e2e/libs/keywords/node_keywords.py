@@ -6,6 +6,9 @@ class node_keywords:
     def __init__(self):
         self.node = Node()
 
+    def list_node_names_by_role(self, role):
+        return self.node.list_node_names_by_role(role)
+
     def add_disk(self, node_name, type, path):
         logging(f"Adding {type} type disk {path} to node {node_name}")
         disk = {
