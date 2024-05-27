@@ -864,7 +864,7 @@
 <tr>
 <td>6.</td>
 <td>Access Longhorn UI with reverse proxy</td>
-<td>1.  Create a cluster (3 worker nodes and 1 etcd/control plane) in rancher, Go to the default project.<br>2.  Go to App, Click the launch app.<br>3.  Select longhorn.<br>4.  Select <code>NodePort</code> under the Longhorn UI service.<br>5.  Install nginx in local system.<br>6.  Set the <code>proxy_pass</code> of <a href="http://104.131.80.163:32059/#/dashboard">http://node-ip:32059</a> in ngnix.conf file as per below example.<br>7.  Start nginx<br>8.  Access the port given in <code>listen</code> parameter from nginx.conf. ex - //localhost:822<br>9.  The page should redirect to longhorn UI<br>10.  Verify all the pages, refresh each page and verify. Create a volume and check the volume detail page also.</td>
+<td>1.  Create a cluster (3 worker nodes and 1 etcd/control plane) in rancher, Go to the default project.<br>2.  Go to App, Click the launch app.<br>3.  Select longhorn.<br>4.  Select <code>NodePort</code> under the Longhorn UI service.<br>5.  Install nginx in local system.<br>6.  Set the <code>proxy_pass</code> of <a href="http://104.131.80.163:32059/#/dashboard">http://node-ip:32059</a> in nginx.conf file as per below example.<br>7.  Start nginx<br>8.  Access the port given in <code>listen</code> parameter from nginx.conf. ex - //localhost:822<br>9.  The page should redirect to longhorn UI<br>10.  Verify all the pages, refresh each page and verify. Create a volume and check the volume detail page also.</td>
 </tr>
 </tbody>
 </table>

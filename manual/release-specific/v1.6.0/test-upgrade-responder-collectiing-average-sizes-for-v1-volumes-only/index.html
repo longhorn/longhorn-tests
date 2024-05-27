@@ -854,7 +854,7 @@ index de77b7246..ac6263ac5 100644
 <strong>And</strong> attach volume <code>lhv-v2</code> and write some data.<br>
 <strong>And</strong> Wait 1~2 hours for collection data to send to the influxDB database.</p>
 <p><strong>Then</strong> the value of field <code>longhorn_volume_average_size_bytes</code> in the influxdb should equal to the average size of all v1 volumes (excluding v2 volumes).<br>
-<strong>And</strong> the value of field <code>longhorn_volume_average_actual_size_bytes</code> in the influxdb should be equal or simular to the average actual size of all v1 volumes (excluding v2 volumes).</p>
+<strong>And</strong> the value of field <code>longhorn_volume_average_actual_size_bytes</code> in the influxdb should be equal or similar to the average actual size of all v1 volumes (excluding v2 volumes).</p>
 <blockquote>
 <p>It&rsquo;s OK for the actual size to be slightly off due to ongoing workload activities, such as data writing by the upgrade-responder.</p>
 </blockquote>
