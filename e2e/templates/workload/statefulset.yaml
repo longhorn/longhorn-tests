@@ -34,6 +34,8 @@ spec:
   volumeClaimTemplates:
   - metadata:
       name: pod-data
+      labels:
+        test.longhorn.io: e2e
     spec:
       accessModes:
       - ReadWriteOnce

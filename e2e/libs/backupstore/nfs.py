@@ -5,7 +5,7 @@ from urllib.parse import urlparse
 
 class Nfs(Base):
 
-    def mount_nfs_backupstore(self, client, mount_path="/mnt/nfs"):
+    def mount_nfs_backupstore(self, mount_path="/mnt/nfs"):
         cmd = ["mkdir", "-p", mount_path]
         subprocess.check_output(cmd)
         nfs_backuptarget = self.get_backup_target()
@@ -14,13 +14,13 @@ class Nfs(Base):
         cmd = ["mount", "-t", "nfs", "-o", "nfsvers=4.2", nfs_url, mount_path]
         subprocess.check_output(cmd)
 
-    def umount_nfs_backupstore(self, client, mount_path="/mnt/nfs"):
+    def umount_nfs_backupstore(self, mount_path="/mnt/nfs"):
         cmd = ["umount", mount_path]
         subprocess.check_output(cmd)
         cmd = ["rmdir", mount_path]
         subprocess.check_output(cmd)
 
-    def get_nfs_mount_point(self, client):
+    def get_nfs_mount_point(self):
         nfs_backuptarget = self.get_backup_target()
         nfs_url = urlparse(nfs_backuptarget).netloc + \
             urlparse(nfs_backuptarget).path
@@ -32,29 +32,28 @@ class Nfs(Base):
         assert mount_info[0] == nfs_url
         return mount_info[1]
 
-    def get_backup_volume_prefix(self, client, volume_name):
-        mount_point = self.get_nfs_mount_point(client)
+    def get_backup_volume_prefix(self, volume_name):
+        mount_point = self.get_nfs_mount_point()
         return mount_point + self.backup_volume_path(volume_name)
 
-    def get_backup_cfg_file_path(self, client, volume_name, backup_name):
-        prefix = self.get_backup_volume_prefix(client, volume_name)
+    def get_backup_cfg_file_path(self, volume_name, backup_name):
+        prefix = self.get_backup_volume_prefix(volume_name)
         return prefix + "/backups/backup_" + backup_name + ".cfg"
 
-    def get_volume_cfg_file_path(self, client, volume_name):
-        prefix = self.get_backup_volume_prefix(client, volume_name)
+    def get_volume_cfg_file_path(self, volume_name):
+        prefix = self.get_backup_volume_prefix(volume_name)
         return prefix + "/volume.cfg"
 
-    def get_backup_blocks_dir(self, client, volume_name):
-        prefix = self.get_backup_volume_prefix(client, volume_name)
+    def get_backup_blocks_dir(self, volume_name):
+        prefix = self.get_backup_volume_prefix(volume_name)
         return prefix + "/blocks"
 
     def create_file_in_backupstore(self, file_path, data={}):
         with open(file_path, 'w') as cfg_file:
             cfg_file.write(str(data))
 
-    def write_backup_cfg_file(self, client, volume_name, backup_name, data):
-        nfs_backup_cfg_file_path = self.get_backup_cfg_file_path(client,
-                                                                 volume_name,
+    def write_backup_cfg_file(self, volume_name, backup_name, data):
+        nfs_backup_cfg_file_path = self.get_backup_cfg_file_path(volume_name,
                                                                  backup_name)
         with open(nfs_backup_cfg_file_path, 'w') as cfg_file:
             cfg_file.write(str(data))
@@ -67,9 +66,8 @@ class Nfs(Base):
                   file_path)
             print(ex)
 
-    def delete_backup_cfg_file(self, client, volume_name, backup_name):
-        nfs_backup_cfg_file_path = self.get_backup_cfg_file_path(client,
-                                                                 volume_name,
+    def delete_backup_cfg_file(self, volume_name, backup_name):
+        nfs_backup_cfg_file_path = self.get_backup_cfg_file_path(volume_name,
                                                                  backup_name)
         try:
             os.remove(nfs_backup_cfg_file_path)
@@ -78,16 +76,16 @@ class Nfs(Base):
                   nfs_backup_cfg_file_path)
             print(ex)
 
-    def delete_volume_cfg_file(self, client, volume_name):
-        nfs_volume_cfg_path = self.get_volume_cfg_file_path(client, volume_name)
+    def delete_volume_cfg_file(self, volume_name):
+        nfs_volume_cfg_path = self.get_volume_cfg_file_path(volume_name)
         try:
             os.remove(nfs_volume_cfg_path)
         except Exception as ex:
             print("error while deleting backup cfg file:", nfs_volume_cfg_path)
             print(ex)
 
-    def delete_random_backup_block(self, client, volume_name):
-        backup_blocks_dir = self.get_backup_blocks_dir(client, volume_name)
+    def delete_random_backup_block(self, volume_name):
+        backup_blocks_dir = self.get_backup_blocks_dir(volume_name)
         cmd = ["find", backup_blocks_dir, "-type", "f"]
         find_cmd = subprocess.Popen(cmd, stdout=subprocess.PIPE)
         head_cmd = subprocess.check_output(["/usr/bin/head", "-1"], stdin=find_cmd.stdout)
@@ -100,8 +98,8 @@ class Nfs(Base):
                   backup_block_file_path)
             print(ex)
 
-    def count_backup_block_files(self, client, volume_name):
-        backup_blocks_dir = self.get_backup_blocks_dir(client, volume_name)
+    def count_backup_block_files(self, volume_name):
+        backup_blocks_dir = self.get_backup_blocks_dir(volume_name)
         cmd = ["find", backup_blocks_dir, "-type", "f"]
         find_cmd = subprocess.Popen(cmd, stdout=subprocess.PIPE)
         wc_cmd = subprocess.check_output(["/usr/bin/wc", "-l"], stdin=find_cmd.stdout)
@@ -109,6 +107,6 @@ class Nfs(Base):
 
         return backup_blocks_count
 
-    def cleanup_backup_volumes(self, client):
-        super().cleanup_backup_volumes(client)
-        self.umount_nfs_backupstore(client)
+    def cleanup_backup_volumes(self):
+        super().cleanup_backup_volumes()
+        self.umount_nfs_backupstore()

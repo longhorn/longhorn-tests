@@ -4,6 +4,7 @@ Documentation    PersistentVolumeClaim Keywords
 Library    Collections
 Library    ../libs/keywords/common_keywords.py
 Library    ../libs/keywords/persistentvolumeclaim_keywords.py
+Library    ../libs/keywords/volume_keywords.py
 
 *** Keywords ***
 Create persistentvolumeclaim ${claim_id} using ${volume_type} volume
