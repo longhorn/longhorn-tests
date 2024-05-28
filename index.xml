@@ -512,6 +512,13 @@
       <description>Related issue: https://github.com/longhorn/longhorn/issues/2285&#xA;Test Multus version below v4.0.0 Given Set up the Longhorn environment as mentioned here&#xA;When Run Longhorn core tests on the environment.&#xA;Then All the tests should pass.&#xA;Related issue: https://github.com/longhorn/longhorn/issues/6953&#xA;Test Multus version above v4.0.0 Given Set up the Longhorn environment as mentioned here&#xA;When Run Longhorn core tests on the environment.&#xA;Then All the tests should pass.</description>
     </item>
     <item>
+      <title>Support bundle node collection timeout</title>
+      <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.7.0/test-support-bundle-node-collection-timeout/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.7.0/test-support-bundle-node-collection-timeout/</guid>
+      <description>When the timeout expires, the support bundle generation will proceed without requiring the collection of node bundles.&#xA;Related issues https://github.com/longhorn/longhorn/issues/8623 Test support bundle image supports node collection timeout Given Run the support bundle manager image (version 0.0.38 or later) using Docker.&#xA;&amp;gt; docker run -it longhornio/support-bundle-kit:v0.0.38 bash When Execute support-bundle-kit manager --help.&#xA;Then The help menu displays the --node-timeout option.&#xA;&amp;gt; support-bundle-kit manager --help | grep node-timeout --node-timeout duration The support bundle node collection time out Test support-bundle-node-collection-timeout setting Given Simulate the node bundle blockage by patching the rancher/support-bundle-kit code base and create an image.</description>
+    </item>
+    <item>
       <title>Support Kubelet Volume Metrics</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.1.0/kubelet_volume_metrics/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
