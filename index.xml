@@ -491,13 +491,6 @@
       <description>Related issue https://github.com/longhorn/longhorn/issues/6953&#xA;Test storage network Create AWS instances Given Create VPC.&#xA;VPC only IPv4 CIDR 10.0.0.0/16 And Create an internet gateway.&#xA;Attach to VPC And Add the internet gateway to the VPC Main route table, Routes.&#xA;Destination 0.0.0.0/0 And Create 2 subnets in the VPC.&#xA;Subnet-1: 10.0.1.0/24 Subnet-2: 10.0.2.0/24 And Launch 3 EC2 instances.&#xA;Use the created VPC Use subnet-1 for network interface 1 Use subnet-2 for network interface 2 Disable Auto-assign public IP Add security group inbound rule to allow All traffic from Anywhere-IPv4 Stop Source/destination check And Create 3 elastic IPs.</description>
     </item>
     <item>
-      <title>Single replica node down</title>
-      <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/node-not-ready/node-down/single-replica-node-down/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/node-not-ready/node-down/single-replica-node-down/</guid>
-      <description>Related Issues https://github.com/longhorn/longhorn/issues/2329 https://github.com/longhorn/longhorn/issues/2309 https://github.com/longhorn/longhorn/issues/3957&#xA;Default Setting Automatic salvage is enabled.&#xA;Node restart/down scenario with Pod Deletion Policy When Node is Down set to default value do-nothing. Create RWO|RWX volume with replica count = 1 &amp;amp; data locality = enabled|disabled|strict-local. For data locality = strict-local, use RWO volume to do test. Create deployment|statefulset for volume. Power down node of volume/replica. The workload pod will get stuck in the terminating state. Volume will fail to attach since volume is not ready (i.</description>
-    </item>
-    <item>
       <title>Snapshot while writing data in the volume</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/basic-operations/snapshot-while-writing-data/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>

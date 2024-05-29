@@ -36,13 +36,6 @@
       <description>One physical node down should result in the state of that node change to Down.&#xA;When using with CSI driver, one node with controller (StatefulSet/Deployment) and pod down should result in Kubernetes migrate the pod to another node, and Longhorn volume should be able to be used on that node as well. Test scenarios for this are documented here.&#xA;Note:&#xA;In this case, RWX should be excluded.&#xA;Ref: https://github.com/longhorn/longhorn/issues/5900#issuecomment-1541360552</description>
     </item>
     <item>
-      <title>Single replica node down</title>
-      <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/node-not-ready/node-down/single-replica-node-down/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/node-not-ready/node-down/single-replica-node-down/</guid>
-      <description>Related Issues https://github.com/longhorn/longhorn/issues/2329 https://github.com/longhorn/longhorn/issues/2309 https://github.com/longhorn/longhorn/issues/3957&#xA;Default Setting Automatic salvage is enabled.&#xA;Node restart/down scenario with Pod Deletion Policy When Node is Down set to default value do-nothing. Create RWO|RWX volume with replica count = 1 &amp;amp; data locality = enabled|disabled|strict-local. For data locality = strict-local, use RWO volume to do test. Create deployment|statefulset for volume. Power down node of volume/replica. The workload pod will get stuck in the terminating state. Volume will fail to attach since volume is not ready (i.</description>
-    </item>
-    <item>
       <title>Test node deletion</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/node-not-ready/node-down/node-deletion/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
