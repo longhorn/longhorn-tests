@@ -1,6 +1,5 @@
 *** Settings ***
 Documentation    Single replica node down
-...              https://longhorn.github.io/longhorn-tests/manual/pre-release/node-not-ready/node-down/single-replica-node-down/
 
 Test Tags    manual_test_case
 
