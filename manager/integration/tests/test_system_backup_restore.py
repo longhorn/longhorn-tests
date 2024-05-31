@@ -3,6 +3,7 @@ import time
 
 from common import client  # NOQA
 from common import volume_name # NOQA
+from common import core_api # NOQA
 
 from common import check_volume_data
 from common import cleanup_volume
@@ -24,6 +25,11 @@ from common import create_backing_image_with_matching_url
 from common import BACKING_IMAGE_NAME
 from common import BACKING_IMAGE_RAW_URL
 from common import BACKING_IMAGE_SOURCE_TYPE_RESTORE
+from common import create_pv_for_volume
+from common import create_pvc_for_volume
+from common import check_pvc_existence
+from common import check_pv_existence
+from common import check_backing_image_disk_map_status
 
 from common import SETTING_BACKUPSTORE_POLL_INTERVAL
 
@@ -118,7 +124,7 @@ def test_system_backup_and_restore_volume_with_data(client, volume_name, set_ran
     check_volume_data(restored_volume, data)
 
 @pytest.mark.system_backup_restore   # NOQA
-def test_system_backup_and_restore_volume_with_backingimage(client, volume_name, set_random_backupstore):  # NOQA
+def test_system_backup_and_restore_volume_with_backingimage(client, core_api, volume_name, set_random_backupstore):  # NOQA
     """
     Scenario: test system backup and restore volume with backingimage
 
@@ -132,6 +138,8 @@ def test_system_backup_and_restore_volume_with_backingimage(client, volume_name,
 
     Given a backingimage
     And a volume created with the backingimage
+    And a PVC for the volume
+    And a PV for the volume
     When system backup created
     Then system backup in state Ready
 
@@ -141,6 +149,8 @@ def test_system_backup_and_restore_volume_with_backingimage(client, volume_name,
     Then system restore should be in state Completed
     And wait for backingimage restoration to complete
     And wait for volume restoration to complete
+    And wait for PVC restoration to complete
+    And wait for PV restoration to complete
     And volume should be detached
 
     When attach volume
@@ -154,6 +164,11 @@ def test_system_backup_and_restore_volume_with_backingimage(client, volume_name,
 
     volume = create_and_check_volume(
         client, volume_name, backing_image=BACKING_IMAGE_NAME)
+    pvc_name = volume_name + "-pvc"
+    pv_name = volume_name + "-pv"
+    create_pv_for_volume(client, core_api, volume, pv_name)
+    create_pvc_for_volume(client, core_api, volume, pvc_name)
+
     volume.attach(hostId=host_id)
     volume = wait_for_volume_healthy(client, volume_name)
 
@@ -173,10 +188,13 @@ def test_system_backup_and_restore_volume_with_backingimage(client, volume_name,
 
     backing_image = client.by_id_backing_image(BACKING_IMAGE_NAME)
     assert backing_image.sourceType == BACKING_IMAGE_SOURCE_TYPE_RESTORE
+    check_backing_image_disk_map_status(client, BACKING_IMAGE_NAME, 3, "ready")
 
     restored_volume = client.by_id_volume(volume_name)
     wait_for_volume_restoration_completed(client, volume_name)
     wait_for_volume_detached(client, volume_name)
+    assert check_pvc_existence(core_api, pvc_name)
+    assert check_pv_existence(core_api, pv_name)
 
     restored_volume.attach(hostId=host_id)
     restored_volume = wait_for_volume_healthy(client, volume_name)
