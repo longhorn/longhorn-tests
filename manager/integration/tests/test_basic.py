@@ -2361,7 +2361,7 @@ def test_expansion_basic(client, volume_name):  # NOQA
     10. Detach and reattach the volume.
     11. Verify the volume is still expanded, and `snap3_data` remain valid
     12. Detach the volume.
-    13. Reattach the volume in maintence mode
+    13. Reattach the volume in maintenance mode
     14. Revert to `snap2` and detach.
     15. Attach the volume and check data `snap2_data`
     16. Generate `snap4_data` and write it after the original size

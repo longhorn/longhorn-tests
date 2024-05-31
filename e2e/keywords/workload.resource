@@ -154,3 +154,7 @@ Check ${workload_kind} ${workload_id} pod is ${expect_state} on another node
     ${pod} =     wait_for_pod_kept_in_state    ${workload_name}    ${expect_state}
     ${node_name} =    get_pod_node    ${pod}
     Should Not Be Equal    ${node_name}    ${last_volume_node}
+
+Delete Longhorn ${workload_kind} ${workload_name} pod on node ${node_id}
+    ${node_name} =    get_node_by_index    ${node_id}
+    delete_workload_pod_on_node    ${workload_name}    ${node_name}    longhorn-system

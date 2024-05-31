@@ -11,7 +11,6 @@ Resource    ../keywords/recurringjob.resource
 Resource    ../keywords/statefulset.resource
 Resource    ../keywords/volume.resource
 Resource    ../keywords/setting.resource
-Resource    ../keywords/setting.resource
 Resource    ../keywords/workload.resource
 Resource    ../keywords/host.resource
 

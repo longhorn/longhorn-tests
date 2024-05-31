@@ -2258,7 +2258,7 @@ def wait_for_engine_image_ref_count(client, image_name, count):
         if image.refCount == count:
             break
         time.sleep(RETRY_INTERVAL)
-    assert image.refCount == count
+    assert image.refCount == count, f"image = {image}"
     if count == 0:
         assert image.noRefSince != ""
     return image
@@ -3675,7 +3675,7 @@ def wait_for_deployed_engine_image_count(client, image_name, expected_cnt):
             break
         time.sleep(RETRY_INTERVAL)
 
-    assert deployed_cnt == expected_cnt
+    assert deployed_cnt == expected_cnt, f"image = {image}"
 
 
 def wait_for_running_engine_image_count(image_name, engine_cnt):
@@ -4013,11 +4013,10 @@ def create_crypto_secret(secret_manifest, namespace=LONGHORN_NAMESPACE):
                                  body=secret_manifest)
 
 
-def delete_crypto_secret(secret_manifest):
+def delete_crypto_secret(namespace, name):
     api = get_core_api_client()
     try:
-        api.delete_namespaced_secret(secret_manifest,
-                                     body=k8sclient.V1DeleteOptions())
+        api.delete_namespaced_secret(namespace=namespace, name=name)
     except ApiException as e:
         assert e.status == 404
 
@@ -4028,7 +4027,8 @@ def cleanup_crypto_secret():
     ret = api.list_namespaced_secret(namespace=LONGHORN_NAMESPACE)
     for sc in ret.items:
         if sc.metadata.name in secret_deletes:
-            delete_crypto_secret(sc.metadata.name)
+            delete_crypto_secret(name=sc.metadata.name,
+                                 namespace=LONGHORN_NAMESPACE)
 
     ok = False
     for _ in range(RETRY_COUNTS):
@@ -6239,3 +6239,13 @@ def create_deployment_and_write_data(client, # NOQA
 
     volume = client.by_id_volume(volume_name)
     return volume, deployment_pod_names[0], checksum, deployment
+
+
+def wait_delete_dm_device(api, name):
+    path = os.path.join("/dev/mapper", name)
+    for i in range(RETRY_COUNTS):
+        found = os.path.exists(path)
+        if not found:
+            break
+        time.sleep(RETRY_INTERVAL)
+    assert not found

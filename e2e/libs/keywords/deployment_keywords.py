@@ -23,9 +23,9 @@ class deployment_keywords:
         for deployment in deployments.items:
             self.delete_deployment(deployment.metadata.name)
 
-    def create_deployment(self, name, claim_name):
+    def create_deployment(self, name, claim_name, replicaset=1):
         logging(f'Creating deployment {name}')
-        create_deployment(name, claim_name)
+        create_deployment(name, claim_name, replicaset=replicaset)
 
     def delete_deployment(self, name):
         logging(f'Deleting deployment {name}')

@@ -9,7 +9,7 @@ from utility.constant import LABEL_TEST_VALUE
 from utility.utility import get_retry_count_and_interval
 
 
-def create_deployment(name, claim_name):
+def create_deployment(name, claim_name, replicaset=1):
     filepath = f"./templates/workload/deployment.yaml"
     with open(filepath, 'r') as f:
         namespace = 'default'
@@ -19,6 +19,7 @@ def create_deployment(name, claim_name):
         manifest_dict['metadata']['name'] = name
         manifest_dict['metadata']['labels']['app'] = name
         manifest_dict['metadata']['labels'][LABEL_TEST] = LABEL_TEST_VALUE
+        manifest_dict['spec']['replicas'] = replicaset
         manifest_dict['spec']['selector']['matchLabels']['app'] = name
         manifest_dict['spec']['template']['metadata']['labels']['app'] = name
         manifest_dict['spec']['template']['metadata']['labels'][LABEL_TEST] = LABEL_TEST_VALUE
