@@ -21,6 +21,7 @@ from common import create_and_wait_pod, create_pvc_spec, delete_and_wait_pod
 from common import size_to_string, create_storage_class, create_pvc
 from common import create_crypto_secret
 from common import delete_and_wait_pvc, delete_and_wait_pv
+from common import wait_delete_dm_device
 from common import wait_and_get_pv_for_pvc
 from common import generate_random_data, read_volume_data
 from common import write_pod_volume_data
@@ -264,7 +265,7 @@ def test_csi_block_volume(client, core_api, storage_class, pvc, pod_manifest):  
     create_storage_class(storage_class)
 
     create_and_verify_block_volume(client, core_api, storage_class, pvc,
-                                   pod_manifest)
+                                   pod_manifest, False)
 
 
 @pytest.mark.csi  # NOQA
@@ -291,13 +292,48 @@ def test_csi_encrypted_block_volume(client, core_api, storage_class, crypto_secr
     storage_class['parameters']['csi.storage.k8s.io/node-publish-secret-namespace'] = LONGHORN_NAMESPACE  # NOQA
     storage_class['parameters']['csi.storage.k8s.io/node-stage-secret-name'] = 'longhorn-crypto'  # NOQA
     storage_class['parameters']['csi.storage.k8s.io/node-stage-secret-namespace'] = LONGHORN_NAMESPACE  # NOQA
+    storage_class['parameters']['encrypted'] = 'true'
     create_storage_class(storage_class)
 
     create_and_verify_block_volume(client, core_api, storage_class, pvc,
-                                   pod_manifest)
+                                   pod_manifest, False)
 
 
-def create_and_verify_block_volume(client, core_api, storage_class, pvc, pod_manifest):  # NOQA
+@pytest.mark.csi  # NOQA
+def test_csi_encrypted_migratable_block_volume(client, core_api, storage_class, crypto_secret, pvc, pod_manifest):  # NOQA
+    """
+    Test CSI feature: encrypted migratable block volume
+
+    Issue: https://github.com/longhorn/longhorn/issues/7678
+
+    1. Create a PVC with encrypted `volumeMode = Block` and `migratable = true`
+    2. Create a pod using the PVC to dynamic provision a volume
+    3. Verify the pod creation
+    4. Generate `test_data` and write to the block volume directly in the pod
+    5. Read the data back for validation
+    6. Delete the pod and create `pod2` to use the same volume
+    7. Validate the data in `pod2` is consistent with `test_data`
+    """
+
+    secret = crypto_secret(LONGHORN_NAMESPACE)
+    create_crypto_secret(secret)
+
+    storage_class['reclaimPolicy'] = 'Retain'
+    storage_class['parameters']['csi.storage.k8s.io/provisioner-secret-name'] = 'longhorn-crypto'  # NOQA
+    storage_class['parameters']['csi.storage.k8s.io/provisioner-secret-namespace'] = LONGHORN_NAMESPACE  # NOQA
+    storage_class['parameters']['csi.storage.k8s.io/node-publish-secret-name'] = 'longhorn-crypto'  # NOQA
+    storage_class['parameters']['csi.storage.k8s.io/node-publish-secret-namespace'] = LONGHORN_NAMESPACE  # NOQA
+    storage_class['parameters']['csi.storage.k8s.io/node-stage-secret-name'] = 'longhorn-crypto'  # NOQA
+    storage_class['parameters']['csi.storage.k8s.io/node-stage-secret-namespace'] = LONGHORN_NAMESPACE  # NOQA
+    storage_class['parameters']['migratable'] = 'true'
+    storage_class['parameters']['encrypted'] = 'true'
+    create_storage_class(storage_class)
+
+    create_and_verify_block_volume(client, core_api, storage_class, pvc,
+                                   pod_manifest, True)
+
+
+def create_and_verify_block_volume(client, core_api, storage_class, pvc, pod_manifest, is_rwx):  # NOQA
     pod_name = 'csi-block-volume-test'
     pvc_name = pod_name + "-pvc"
     device_path = "/dev/longhorn/longhorn-test-blk"
@@ -305,6 +341,8 @@ def create_and_verify_block_volume(client, core_api, storage_class, pvc, pod_man
     pvc['metadata']['name'] = pvc_name
     pvc['spec']['volumeMode'] = 'Block'
     pvc['spec']['storageClassName'] = storage_class['metadata']['name']
+    if is_rwx:
+        pvc['spec']['accessModes'] = ['ReadWriteMany']
     pvc['spec']['resources'] = {
         'requests': {
             'storage': size_to_string(1 * Gi)
@@ -355,6 +393,7 @@ def create_and_verify_block_volume(client, core_api, storage_class, pvc, pod_man
     delete_and_wait_pod(core_api, pod_name_2)
     delete_and_wait_pvc(core_api, pvc_name)
     delete_and_wait_pv(core_api, pv_name)
+    wait_delete_dm_device(core_api, pv_name)
 
 
 @pytest.mark.coretest   # NOQA
