@@ -33,7 +33,7 @@ Test Migration Confirm
     ...                8. Detach volume from node 1
     ...                9. Observe volume migrated to node 2 (single active engine)
     ...                10. Validate initially written test data
-    Given Create volume 0 with    migratable=True    access_mode=RWX
+    Given Create volume 0 with    migratable=True    accessMode=RWX
     When Attach volume 0 to node 0
     And Wait for volume 0 healthy
     And Write data to volume 0

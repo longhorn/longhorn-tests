@@ -33,6 +33,7 @@ Cleanup test resources
     cleanup_recurringjobs
     cleanup_deployments
     cleanup_statefulsets
+    cleanup_pods
     cleanup_persistentvolumeclaims
     cleanup_volumes
     cleanup_storageclasses
