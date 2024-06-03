@@ -14,16 +14,21 @@ class Setting:
         self.longhorn_client = get_longhorn_client()
         self.retry_count, self.retry_interval = get_retry_count_and_interval()
 
-    def update_setting(self, key, value):
-        for i in range(self.retry_count):
-            try:
-                logging(f"Trying to update setting {key} to {value} ... ({i})")
-                setting = self.longhorn_client.by_id_setting(key)
-                self.longhorn_client.update(setting, value=value)
-                break
-            except Exception as e:
-                logging(e)
-            time.sleep(self.retry_interval)
+    def update_setting(self, key, value, retry=True):
+        if retry:
+            for i in range(self.retry_count):
+                try:
+                    logging(f"Trying to update setting {key} to {value} ... ({i})")
+                    setting = self.longhorn_client.by_id_setting(key)
+                    self.longhorn_client.update(setting, value=value)
+                    break
+                except Exception as e:
+                    logging(e)
+                time.sleep(self.retry_interval)
+        else:
+            logging(f"Trying to update setting {key} to {value} ...")
+            setting = self.longhorn_client.by_id_setting(key)
+            self.longhorn_client.update(setting, value=value)
 
     def get_setting(self, key):
         return self.longhorn_client.by_id_setting(key).value

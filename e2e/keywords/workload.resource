@@ -10,6 +10,19 @@ Library    ../libs/keywords/host_keywords.py
 Library    ../libs/keywords/k8s_keywords.py
 
 *** Keywords ***
+Create pod ${pod_id} using volume ${volume_id}
+    ${pod_name} =    generate_name_with_suffix    pod    ${pod_id}
+    ${claim_name} =    generate_name_with_suffix    volume    ${volume_id}
+    create_pod    ${pod_name}    ${claim_name}
+
+Wait for pod ${pod_id} running
+    ${pod_name} =    generate_name_with_suffix    pod    ${pod_id}
+    wait_for_workload_pods_running    ${pod_name}
+
+Delete pod ${pod_id}
+    ${pod_name} =    generate_name_with_suffix    pod    ${pod_id}
+    delete_pod    ${pod_name}
+
 Keep writing data to pod of ${workload_kind} ${workload_id}
     ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
     keep_writing_workload_pod_data    ${workload_name}

@@ -4,6 +4,7 @@ Documentation    Volume Keywords
 Library    Collections
 Library    ../libs/keywords/common_keywords.py
 Library    ../libs/keywords/volume_keywords.py
+Library    ../libs/keywords/backup_keywords.py
 
 *** Keywords ***
 Create volume ${volume_id}
@@ -14,6 +15,11 @@ Create volume ${volume_id} with
     [Arguments]    &{config}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     create_volume   ${volume_name}    2    3    &{config}
+
+Create DR volume ${volume_id} from backup ${backup_id}
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    ${backup_url} =    get_backup_url    ${backup_id}
+    create_volume   ${volume_name}    2    3    frontend=    Standby=True    fromBackup=${backup_url}
 
 No volume created
     ${volumes} =    list_volumes
@@ -89,6 +95,11 @@ Wait for volume ${volume_id} migrated to node ${node_id}
     ${node_name} =    get_node_by_index    ${node_id}
     wait_for_volume_migration_completed    ${volume_name}    ${node_name}
 
+Wait for volume ${volume_id} restoration from backup ${backup_id} completed
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    ${backup_name} =    get_backup_name    ${backup_id}
+    wait_for_volume_restoration_completed    ${volume_name}    ${backup_name}
+
 Wait until volume ${volume_id} replica rebuilding started on ${replica_locality}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     wait_for_replica_rebuilding_to_start_on_node    ${volume_name}    ${replica_locality}
@@ -133,3 +144,23 @@ Check volume ${volume_id} works
     #TODO
     # write data to a file in the volume instead of writing /dev/longhorn/vol-name
     # so the data won't be overwritten and we can compare the checksum
+
+Activate DR volume ${volume_id}
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    activate_dr_volume    ${volume_name}
+
+Create persistentvolume for volume ${volume_id}
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    create_persistentvolume_for_volume    ${volume_name}
+
+Create persistentvolumeclaim for volume ${volume_id}
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    create_persistentvolumeclaim_for_volume    ${volume_name}
+
+Create persistentvolume for volume ${volume_id} will fail
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    Run Keyword And Expect Error    *    create_persistentvolume_for_volume    ${volume_name}    retry=False
+
+Create persistentvolumeclaim for volume ${volume_id} will fail
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    Run Keyword And Expect Error    *    create_persistentvolumeclaim_for_volume    ${volume_name}    retry=False

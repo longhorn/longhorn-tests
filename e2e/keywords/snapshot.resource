@@ -40,3 +40,7 @@ Validate snapshot ${snapshot_id} is not in volume ${volume_id} snapshot list
 Validate snapshot ${snapshot_id} is in volume ${volume_id} snapshot list
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     is_existing    ${volume_name}    ${snapshot_id}
+
+Create snapshot ${snapshot_id} of volume ${volume_id} will fail
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    Run Keyword And Expect Error    *    create_snapshot    ${volume_name}    ${snapshot_id}    waiting=False

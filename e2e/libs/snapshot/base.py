@@ -7,7 +7,7 @@ class Base(ABC):
     ANNOT_ID = "test.longhorn.io/snapshot-id"
 
     @abstractmethod
-    def create(self, volume_name, snapshot_id):
+    def create(self, volume_name, snapshot_id, waiting):
         return NotImplemented
 
     def set_snapshot_id(self, snapshot_name, snapshot_id):
