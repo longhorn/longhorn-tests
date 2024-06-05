@@ -3968,7 +3968,7 @@ def test_volume_toomanysnapshots_condition(client, core_api, volume_name):  # NO
 
     1. Create a volume and attach it to a node.
     2. Check the 'TooManySnapshots' condition is False.
-    3. Writing data to this volume and meanwhile taking 100 snapshots.
+    3. Writing data to this volume and meanwhile taking 101 snapshots.
     4. Check the 'TooManySnapshots' condition is True.
     5. Take one more snapshot to make sure snapshots works fine.
     6. Delete 2 snapshots, and check the 'TooManySnapshots' condition is
@@ -3980,7 +3980,7 @@ def test_volume_toomanysnapshots_condition(client, core_api, volume_name):  # NO
     volume = common.wait_for_volume_healthy(client, volume_name)
 
     snap = {}
-    max_count = 100
+    max_count = 101
     for i in range(max_count):
         write_volume_random_data(volume, {})
 
@@ -3991,20 +3991,26 @@ def test_volume_toomanysnapshots_condition(client, core_api, volume_name):  # NO
             volume = client.by_id_volume(volume_name)
             assert volume.conditions.TooManySnapshots.status == "False"
         else:
+            expected_message = \
+                f"Snapshots count is {count} over the warning threshold 100"
             wait_for_volume_condition_toomanysnapshots(client, volume_name,
-                                                       "status", "True")
+                                                       "status", "True",
+                                                       expected_message)
 
     snap[max_count + 1] = create_snapshot(client, volume_name)
+    expected_message = \
+        f"Snapshots count is {max_count + 1} over the warning threshold 100"
     wait_for_volume_condition_toomanysnapshots(client, volume_name,
-                                               "status", "True")
+                                               "status", "True",
+                                               expected_message)
 
     volume = client.by_id_volume(volume_name)
+    volume.snapshotDelete(name=snap[101].name)
     volume.snapshotDelete(name=snap[100].name)
-    volume.snapshotDelete(name=snap[99].name)
 
     volume.snapshotPurge()
     volume = wait_for_snapshot_purge(client, volume_name,
-                                     snap[100].name, snap[99].name)
+                                     snap[101].name, snap[100].name)
 
     wait_for_volume_condition_toomanysnapshots(client, volume_name,
                                                "status", "False")

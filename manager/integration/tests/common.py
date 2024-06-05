@@ -2813,7 +2813,8 @@ def wait_for_volume_condition_restore(client, name, key, value):
     return volume
 
 
-def wait_for_volume_condition_toomanysnapshots(client, name, key, value):
+def wait_for_volume_condition_toomanysnapshots(client, name, key, value,
+                                               expected_message=None):
     wait_for_volume_creation(client, name)
     for _ in range(RETRY_COUNTS):
         volume = client.by_id_volume(name)
@@ -2823,10 +2824,22 @@ def wait_for_volume_condition_toomanysnapshots(client, name, key, value):
                 VOLUME_CONDITION_TOOMANYSNAPSHOTS in conditions and \
                 conditions[VOLUME_CONDITION_TOOMANYSNAPSHOTS][key] and \
                 conditions[VOLUME_CONDITION_TOOMANYSNAPSHOTS][key] == value:
-            break
+            if expected_message is not None:
+                current_message = \
+                    conditions[VOLUME_CONDITION_TOOMANYSNAPSHOTS]['message']
+                if current_message == expected_message:
+                    break
+            else:
+                break
         time.sleep(RETRY_INTERVAL)
     conditions = volume.conditions
     assert conditions[VOLUME_CONDITION_TOOMANYSNAPSHOTS][key] == value
+    if expected_message is not None:
+        current_message = \
+            conditions[VOLUME_CONDITION_TOOMANYSNAPSHOTS]['message']
+        assert current_message == expected_message, \
+            f"Expected message = {expected_message},\n" \
+            f"but get '{current_message}'\n"
     return volume
 
 
