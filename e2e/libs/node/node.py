@@ -108,18 +108,18 @@ class Node:
             return worker_nodes
 
     def set_node_scheduling(self, node_name, allowScheduling=True, retry=False):
-        node = self.longhorn_client.by_id_node(node_name)
+        node = get_longhorn_client().by_id_node(node_name)
 
         if node.tags is None:
            node.tags = []
 
         if not retry:
-            self.longhorn_client.update(node, allowScheduling=allowScheduling)
+            get_longhorn_client().update(node, allowScheduling=allowScheduling)
 
         # Retry if "too many retries error" happened.
         for _ in range(self.retry_count):
             try:
-                node = self.longhorn_client.update(node, allowScheduling=allowScheduling,
+                node = get_longhorn_client().update(node, allowScheduling=allowScheduling,
                                  tags=node.tags)
             except Exception as e:
                 if DISK_BEING_SYNCING in str(e.error.message):
@@ -133,7 +133,7 @@ class Node:
         return node
 
     def set_default_disk_scheduling(self, node_name, allowScheduling):
-        node = self.longhorn_client.by_id_node(node_name)
+        node = get_longhorn_client().by_id_node(node_name)
 
         for disk_name, disk in iter(node.disks.items()):
             if disk.path == self.DEFAULT_DISK_PATH:

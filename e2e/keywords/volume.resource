@@ -33,8 +33,9 @@ Create volume ${volume_id} with ${size} GB and ${replica_count} replicas
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     create_volume   ${volume_name}    ${size}    ${replica_count}
 
-Update volume ${volume_name} replica count to ${replica_count}
-    update_volume_spec   ${volume_name}    numberOfReplicas    3
+Update volume ${volume_id} replica count to ${replica_count}
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    update_volume_spec   ${volume_name}    numberOfReplicas    ${replica_count}
 
 Attach volume ${volume_id} to node ${node_id}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
@@ -44,6 +45,13 @@ Attach volume ${volume_id} to node ${node_id}
 Attach volume ${volume_id}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     attach_volume    ${volume_name}
+
+Attach volume ${volume_id} to ${workload_kind} ${workload_id} node
+    ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
+    ${workload_volume_name} =    get_workload_volume_name    ${workload_name}
+    ${node_name} =    get_volume_node    ${workload_volume_name}
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    attach_volume    ${volume_name}    ${node_name}
 
 Attach volume ${volume_id} in maintenance mode
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
@@ -56,6 +64,11 @@ Detach volume ${volume_id}
 Detach volume ${volume_id} from node ${node_id}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     ${node_name} =    get_node_by_index    ${node_id}
+    detach_volume    ${volume_name}    ${node_name}
+
+Detach volume ${volume_id} from attached node
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    ${node_name} =    get_volume_node    ${volume_name}
     detach_volume    ${volume_name}    ${node_name}
 
 Delete volume ${volume_id}
@@ -86,6 +99,22 @@ Wait for volume ${volume_id} healthy
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     wait_for_volume_healthy    ${volume_name}
 
+Wait for volume ${volume_id} attached
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    wait_for_volume_attached    ${volume_name}
+
+Wait for volume ${volume_id} attached and unknown
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    wait_for_volume_unknown    ${volume_name}
+
+Wait for volume ${volume_id} detached
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    wait_for_volume_detached    ${volume_name}
+
+Wait for volume ${volume_id} faulted
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    wait_for_volume_faulted    ${volume_name}
+
 Wait for volume ${volume_id} degraded
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     wait_for_volume_degraded    ${volume_name}
@@ -102,6 +131,20 @@ Check for volume ${volume_id} kept in degraded
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     FOR    ${i}    IN RANGE    ${LOOP_COUNT}
         wait_for_volume_degraded    ${volume_name}
+        Sleep    ${RETRY_INTERVAL}
+    END
+
+Check volume ${volume_id} kept in detached
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    FOR    ${i}    IN RANGE    ${LOOP_COUNT}
+        wait_for_volume_detached    ${volume_name}
+        Sleep    ${RETRY_INTERVAL}
+    END
+
+Check all replicas of volume ${volume_id} kept in error
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    FOR    ${i}    IN RANGE    ${LOOP_COUNT}
+        wait_for_volume_faulted    ${volume_name}
         Sleep    ${RETRY_INTERVAL}
     END
 
@@ -200,3 +243,10 @@ Create persistentvolume for volume ${volume_id} will fail
 Create persistentvolumeclaim for volume ${volume_id} will fail
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     Run Keyword And Expect Error    *    create_persistentvolumeclaim_for_volume    ${volume_name}    retry=False
+
+Create volume ${volume_id} with ${size} GB and no replicas on the attached node
+    Create volume ${volume_id} with ${size} GB and 3 replicas
+    Attach volume ${volume_id} to node 1
+    Wait for volume ${volume_id} healthy
+    Update volume ${volume_id} replica count to 2
+    Delete volume ${volume_id} replica on volume node
