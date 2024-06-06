@@ -1,3 +1,5 @@
+# syntax=docker/dockerfile:1.7.0
+
 FROM registry.suse.com/bci/python:3.11
 
 ARG TARGETPLATFORM
