@@ -17,6 +17,7 @@ Library             ../libs/keywords/backing_image_keywords.py
 Library             ../libs/keywords/setting_keywords.py
 Library             ../libs/keywords/backupstore_keywords.py
 Library             ../libs/keywords/backup_keywords.py
+Library             ../libs/keywords/sharemanager_keywords.py
 
 *** Keywords ***
 Set test environment

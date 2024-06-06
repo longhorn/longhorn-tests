@@ -19,8 +19,10 @@ def get_workload_pod_names(workload_name):
     return pod_names
 
 
-def get_workload_pods(workload_name, namespace="default"):
-    label_selector = f"app={workload_name}"
+def get_workload_pods(workload_name, namespace="default", label_selector=""):
+    if label_selector == "":
+        label_selector = f"app={workload_name}"
+
     pods = list_namespaced_pod(
         namespace=namespace,
         label_selector=label_selector)
@@ -225,3 +227,11 @@ def wait_for_workload_pod_kept_in_state(workload_name, expect_state, namespace="
 
 def get_pod_node(pod):
     return pod.spec.node_name
+
+
+def is_workload_pods_has_annotations(workload_name, annotation_key, namespace="default", label_selector=""):
+    pods = get_workload_pods(workload_name, namespace=namespace, label_selector=label_selector)
+    for pod in pods:
+        if not (pod.metadata.annotations and annotation_key in pod.metadata.annotations):
+            return False
+    return True
