@@ -19,6 +19,10 @@ Create deployment ${deployment_id} with persistentvolumeclaim ${claim_id} with m
     ${node_count} =    Get length  ${node_names}
     create_deployment    ${deployment_name}    ${claim_name}   ${node_count}
 
+Delete deployment ${deployment_id}
+    ${deployment_name} =    generate_name_with_suffix    deployment    ${deployment_id}
+    delete_deployment    ${deployment_name}
+
 Write ${size} MB data to file ${file_name} in deployment ${deployment_id}
     ${deployment_name} =    generate_name_with_suffix    deployment    ${deployment_id}
     write_workload_pod_random_data    ${deployment_name}    ${size}    ${file_name}
