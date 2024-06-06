@@ -15,6 +15,7 @@ from workload.workload import get_workload_pods
 from workload.workload import get_workload_pod_names
 from workload.workload import get_workload_persistent_volume_claim_name
 from workload.workload import get_workload_volume_name
+from workload.workload import is_workload_pods_has_annotations
 from workload.workload import keep_writing_pod_data
 from workload.workload import write_pod_random_data
 from workload.workload import wait_for_workload_pods_running
@@ -25,6 +26,7 @@ from workload.pod import list_pods
 
 from utility.constant import ANNOT_CHECKSUM
 from utility.constant import ANNOT_EXPANDED_SIZE
+from utility.constant import LABEL_LONGHORN_COMPONENT
 from utility.constant import LABEL_TEST
 from utility.constant import LABEL_TEST_VALUE
 from utility.utility import logging
@@ -161,3 +163,14 @@ class workload_keywords:
 
     def get_pod_node(self, pod):
         return get_pod_node(pod)
+
+    def is_workloads_pods_has_annotations(self, workload_names, annotation_key, namespace="longhorn-system"):
+        for workload_name in workload_names:
+
+            label_selector = ""
+            if workload_name == "longhorn-share-manager":
+                label_selector = f"{LABEL_LONGHORN_COMPONENT}=share-manager"
+
+            if not is_workload_pods_has_annotations(workload_name, annotation_key, namespace=namespace, label_selector=label_selector):
+                return False
+        return True

@@ -1,6 +1,7 @@
 KIND_DEPLOYMENT = 'deployment'
 KIND_STATEFULSET = 'statefulset'
 
+LABEL_LONGHORN_COMPONENT = "longhorn.io/component"
 LABEL_TEST = 'test.longhorn.io'
 LABEL_TEST_VALUE = 'e2e'
 
