@@ -1,23 +1,15 @@
 import boto3
 import time
-import yaml
-
 from host.constant import NODE_REBOOT_DOWN_TIME_SECOND
-
-from node.node import Node
-
 from utility.utility import logging
 from utility.utility import wait_for_cluster_ready
+from host.base import Base
 
-
-class Host:
+class Aws(Base):
 
     def __init__(self):
-        with open('/tmp/instance_mapping', 'r') as f:
-            self.mapping = yaml.safe_load(f)
+        super().__init__()
         self.aws_client = boto3.client('ec2')
-
-        self.node = Node()
 
     def reboot_all_nodes(self, shut_down_time_in_sec=NODE_REBOOT_DOWN_TIME_SECOND):
         instance_ids = [value for value in self.mapping.values()]
@@ -93,4 +85,3 @@ class Host:
         waiter = self.aws_client.get_waiter('instance_running')
         waiter.wait(InstanceIds=instance_ids)
         logging(f"Started instances")
-

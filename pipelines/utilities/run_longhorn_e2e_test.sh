@@ -80,6 +80,7 @@ run_longhorn_e2e_test_out_of_cluster(){
     cp "${KUBECONFIG}" /tmp/kubeconfig
     CONTAINER_NAME="e2e-container-${IMAGE_NAME}"
     docker run --pull=always \
+               --network=container:"${IMAGE_NAME}" \
                --name "${CONTAINER_NAME}" \
                -e LONGHORN_BACKUPSTORE="${LONGHORN_BACKUPSTORES}" \
                -e LONGHORN_BACKUPSTORE_POLL_INTERVAL="${LONGHORN_BACKUPSTORE_POLL_INTERVAL}" \
@@ -88,6 +89,11 @@ run_longhorn_e2e_test_out_of_cluster(){
                -e AWS_DEFAULT_REGION="${TF_VAR_aws_region}" \
                -e LONGHORN_CLIENT_URL="${LONGHORN_CLIENT_URL}" \
                -e KUBECONFIG="/tmp/kubeconfig" \
+               -e HOST_PROVIDER="${LONGHORN_TEST_CLOUDPROVIDER}" \
+               -e LAB_URL="${TF_VAR_lab_url}" \
+               -e LAB_ACCESS_KEY="${TF_VAR_lab_access_key}" \
+               -e LAB_SECRET_KEY="${TF_VAR_lab_secret_key}" \
+               -e LAB_CLUSTER_ID="$(cat /tmp/cluster_id)" \
                --mount source="vol-${IMAGE_NAME}",target=/tmp \
                "${LONGHORN_TESTS_CUSTOM_IMAGE}" "${ROBOT_COMMAND_ARGS[@]}"
     docker stop "${CONTAINER_NAME}"
