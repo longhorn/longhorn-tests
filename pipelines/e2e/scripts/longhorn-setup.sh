@@ -53,7 +53,7 @@ main(){
   setup_longhorn_ui_nodeport
   export_longhorn_ui_url
 
-  run_longhorn_e2e_test_out_of_cluster
+  run_longhorn_e2e_test
 }
 
 main

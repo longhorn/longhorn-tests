@@ -10,7 +10,6 @@ from utility.utility import get_longhorn_client
 
 class Rest(Base):
     def __init__(self, node_exec):
-        self.longhorn_client = get_longhorn_client()
         self.node_exec = node_exec
 
     def get_replica(self, volume_name, node_name):
@@ -23,7 +22,7 @@ class Rest(Base):
         rebuilding_replica_name = None
         for i in range(RETRY_COUNTS):
             try:
-                v = self.longhorn_client.by_id_volume(volume_name)
+                v = get_longhorn_client().by_id_volume(volume_name)
                 for replica in v.replicas:
                     if replica.hostId == node_name:
                         rebuilding_replica_name = replica.name
@@ -38,7 +37,7 @@ class Rest(Base):
         started = False
         for i in range(RETRY_COUNTS):
             try:
-                v = self.longhorn_client.by_id_volume(volume_name)
+                v = get_longhorn_client().by_id_volume(volume_name)
                 for status in v.rebuildStatus:
                     if status.replica == rebuilding_replica_name and\
                        status.state == "in_progress":
@@ -55,7 +54,7 @@ class Rest(Base):
         completed = False
         for i in range(RETRY_COUNTS):
             try:
-                v = self.longhorn_client.by_id_volume(volume_name)
+                v = get_longhorn_client().by_id_volume(volume_name)
                 for replica in v.replicas:
                     # use replica.mode is RW or RO to check if this replica
                     # has been rebuilt or not

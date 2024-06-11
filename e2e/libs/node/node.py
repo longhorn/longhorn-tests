@@ -14,11 +14,10 @@ class Node:
     DEFAULT_DISK_PATH = "/var/lib/longhorn/"
 
     def __init__(self):
-        self.longhorn_client = get_longhorn_client()
         self.retry_count, self.retry_interval = get_retry_count_and_interval()
 
     def update_disks(self, node_name, disks):
-        node = self.longhorn_client.by_id_node(node_name)
+        node = get_longhorn_client().by_id_node(node_name)
         for _ in range(self.retry_count):
             try:
                 node.diskUpdate(disks=disks)
@@ -28,13 +27,13 @@ class Node:
             time.sleep(self.retry_interval)
 
     def add_disk(self, node_name, disk):
-        node = self.longhorn_client.by_id_node(node_name)
+        node = get_longhorn_client().by_id_node(node_name)
         disks = node.disks
         disks.update(disk)
         self.update_disks(node_name, disks)
 
     def reset_disks(self, node_name):
-        node = self.longhorn_client.by_id_node(node_name)
+        node = get_longhorn_client().by_id_node(node_name)
 
         for disk_name, disk in iter(node.disks.items()):
             if disk.path != self.DEFAULT_DISK_PATH:

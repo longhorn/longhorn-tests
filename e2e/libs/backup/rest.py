@@ -11,7 +11,6 @@ import time
 class Rest(Base):
 
     def __init__(self):
-        self.longhorn_client = get_longhorn_client()
         self.volume = RestVolume(NodeExec.get_instance())
         self.snapshot = RestSnapshot()
         self.retry_count, self.retry_interval = get_retry_count_and_interval()
@@ -74,7 +73,7 @@ class Rest(Base):
 
     def get_backup_volume(self, volume_name):
         logging(f"Trying to get backup volume {volume_name} ...")
-        backup_volumes = self.longhorn_client.list_backupVolume().data
+        backup_volumes = get_longhorn_client().list_backupVolume().data
         for backup_volume in backup_volumes:
             if backup_volume.name == volume_name and backup_volume.created != "":
                 return backup_volume
@@ -114,14 +113,14 @@ class Rest(Base):
         return NotImplemented
 
     def delete_backup_volume(self, volume_name):
-        bv = self.longhorn_client.by_id_backupVolume(volume_name)
-        self.longhorn_client.delete(bv)
+        bv = get_longhorn_client().by_id_backupVolume(volume_name)
+        get_longhorn_client().delete(bv)
         self.wait_for_backup_volume_delete(volume_name)
 
     def wait_for_backup_volume_delete(self, name):
         retry_count, retry_interval = get_retry_count_and_interval()
         for _ in range(retry_count):
-            bvs = self.longhorn_client.list_backupVolume()
+            bvs = get_longhorn_client().list_backupVolume()
             found = False
             for bv in bvs:
                 if bv.name == name:
@@ -142,22 +141,22 @@ class Rest(Base):
         assert actual_checksum == expected_checksum
 
     def cleanup_backup_volumes(self):
-        backup_volumes = self.longhorn_client.list_backup_volume()
+        backup_volumes = get_longhorn_client().list_backup_volume()
 
         # we delete the whole backup volume, which skips block gc
         for backup_volume in backup_volumes:
             self.delete_backup_volume(backup_volume.name)
 
-        backup_volumes = self.longhorn_client.list_backup_volume()
+        backup_volumes = get_longhorn_client().list_backup_volume()
         assert backup_volumes.data == []
 
     def cleanup_system_backups(self):
 
-        system_backups = self.longhorn_client.list_system_backup()
+        system_backups = get_longhorn_client().list_system_backup()
         for system_backup in system_backups:
             # ignore the error when clean up
             try:
-                self.longhorn_client.delete(system_backup)
+                get_longhorn_client().delete(system_backup)
             except Exception as e:
                 name = system_backup['name']
                 print("\nException when cleanup system backup ", name)
@@ -166,7 +165,7 @@ class Rest(Base):
         ok = False
         retry_count, retry_interval = get_retry_count_and_interval()
         for _ in range(retry_count):
-            system_backups = self.longhorn_client.list_system_backup()
+            system_backups = get_longhorn_client().list_system_backup()
             if len(system_backups) == 0:
                 ok = True
                 break

@@ -5,13 +5,15 @@ import hashlib
 from kubernetes import client
 from utility.utility import get_retry_count_and_interval
 from utility.utility import get_longhorn_client
-from setting import Setting
 
 class Base(ABC):
 
     def __init__(self):
-        self.client = get_longhorn_client()
         self.core_api = client.CoreV1Api()
+        backupstore = os.environ.get('LONGHORN_BACKUPSTORE')
+        backupsettings = backupstore.split("$")
+        self.backup_target = backupsettings[0]
+        self.secret = backupsettings[1] if len(backupsettings) > 1 else ""
 
     def is_backupTarget_s3(self, s):
         return s.startswith("s3://")
@@ -36,12 +38,6 @@ class Base(ABC):
     @abstractmethod
     def get_backup_volume_prefix(self, volume_name):
         return NotImplemented
-
-    def get_backup_target(self):
-        return Setting().get_backup_target()
-
-    def get_secret(self):
-        return Setting().get_secret()
 
     @abstractmethod
     def get_backup_cfg_file_path(self, volume_name, backup_name):
