@@ -28,5 +28,12 @@
       <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.7.0/test-support-bundle-node-collection-timeout/</guid>
       <description>When the timeout expires, the support bundle generation will proceed without requiring the collection of node bundles.&#xA;Related issues https://github.com/longhorn/longhorn/issues/8623 Test support bundle image supports node collection timeout Given Run the support bundle manager image (version 0.0.38 or later) using Docker.&#xA;&amp;gt; docker run -it longhornio/support-bundle-kit:v0.0.38 bash When Execute support-bundle-kit manager --help.&#xA;Then The help menu displays the --node-timeout option.&#xA;&amp;gt; support-bundle-kit manager --help | grep node-timeout --node-timeout duration The support bundle node collection time out Test support-bundle-node-collection-timeout setting Given Simulate the node bundle blockage by patching the rancher/support-bundle-kit code base and create an image.</description>
     </item>
+    <item>
+      <title>System Packages Are Up-to-date During Image Build</title>
+      <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.7.0/test-build-image-package-up-to-date/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.7.0/test-build-image-package-up-to-date/</guid>
+      <description>Related issues https://github.com/longhorn/longhorn/issues/8721 Test step Given Build Longhorn component images manually.&#xA;longhorn-cli longhorn-engine longhorn-instance-manager longhorn-share-manager longhorn-ui When Run a shell within Longhorn component images using Docker.&#xA;docker run --entrypoint bash --user root -it &amp;lt;IMAGE&amp;gt; And Execute zypper ref &amp;amp;&amp;amp; zypper update command inside the container.&#xA;Then Verify that the command outputs Nothing to do.&#xA;&amp;gt; zypper ref &amp;amp;&amp;amp; zypper update Refreshing service &amp;#39;container-suseconnect-zypp&amp;#39;. Retrieving repository &amp;#39;SLE_BCI&amp;#39; metadata ...............................................................................................................[done] Building repository &amp;#39;SLE_BCI&amp;#39; cache .</description>
+    </item>
   </channel>
 </rss>
