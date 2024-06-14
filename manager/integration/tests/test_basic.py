@@ -5700,7 +5700,7 @@ def test_backuptarget_invalid(apps_api, # NOQA
                                                     "longhorn-system",
                                                     "backups")
 
-        if backups["items"][0]["status"]["state"] != "":
+        if backups["items"][0]["status"]["state"] == "Error":
             break
         time.sleep(RETRY_INTERVAL)
 
