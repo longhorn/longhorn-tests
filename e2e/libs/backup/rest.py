@@ -18,6 +18,7 @@ class Rest(Base):
 
     def create(self, volume_name, backup_id):
         # create snapshot
+        logging(f"volume is {volume_name} bckupid is {backup_id}")
         snapshot = self.snapshot.create(volume_name, backup_id)
 
         volume = self.volume.get(volume_name)
@@ -140,6 +141,11 @@ class Rest(Base):
         actual_checksum = self.volume.get_checksum(volume_name)
         logging(f"Checked volume {volume_name}. Expected checksum = {expected_checksum}. Actual checksum = {actual_checksum}")
         assert actual_checksum == expected_checksum
+
+    def get_restored_checksum(self, backup_name):
+        expected_checksum = self.get_data_checksum(backup_name)
+        logging(f"Expected checksum = {expected_checksum}")
+        return expected_checksum
 
     def cleanup_backup_volumes(self):
         backup_volumes = self.longhorn_client.list_backup_volume()
