@@ -10,6 +10,7 @@ from workload.pod import new_busybox_manifest
 from workload.pod import create_pod
 from workload.pod import delete_pod
 from workload.pod import cleanup_pods
+from workload.workload import get_pod_data_checksum
 from workload.workload import check_pod_data_checksum
 from workload.workload import get_workload_pods
 from workload.workload import get_workload_pod_names
@@ -51,6 +52,10 @@ class workload_keywords:
     def cleanup_pods(self):
         cleanup_pods()
 
+    def get_pod_data_checksum(self, pod_name, file_name):
+        logging(f'Checksum for file {file_name} in pod {pod_name}')
+        return get_pod_data_checksum(pod_name, file_name)
+
     def check_pod_data_checksum(self, expected_checksum, pod_name, file_name):
         logging(f'Checking checksum for file {file_name} in pod {pod_name}')
         check_pod_data_checksum(expected_checksum, pod_name, file_name)
@@ -76,10 +81,15 @@ class workload_keywords:
 
         logging(f'Writing {size_in_mb} MB random data to pod {pod_name} file {file_name}')
         checksum = write_pod_random_data(pod_name, size_in_mb, file_name)
+
         logging(f"Storing pod {pod_name} file {file_name} checksum = {checksum}")
 
         volume_name = get_volume_name_by_pod(pod_name)
         self.volume.set_annotation(volume_name, ANNOT_CHECKSUM, checksum)
+
+    def get_workload_pod_data_checksum(self, workload_name, file_name):
+        pod_name = get_workload_pod_names(workload_name)[0]
+        return get_pod_data_checksum(pod_name, file_name)
 
     def check_workload_pod_data_checksum(self, workload_name, file_name):
         pod_name = get_workload_pod_names(workload_name)[0]

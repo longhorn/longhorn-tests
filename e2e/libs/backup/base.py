@@ -88,6 +88,10 @@ class Base(ABC):
         return NotImplemented
 
     @abstractmethod
+    def get_restored_checksum(self, backup_name):
+        return NotImplemented
+
+    @abstractmethod
     def cleanup_backup_volumes(self):
         return NotImplemented
 
