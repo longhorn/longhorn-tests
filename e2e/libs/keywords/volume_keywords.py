@@ -192,6 +192,18 @@ class volume_keywords:
     def crash_replica_processes(self, volume_name):
         self.volume.crash_replica_processes(volume_name)
 
+    def crash_node_replica_process(self, volume_name, node_name):
+        return self.volume.crash_node_replica_process(volume_name, node_name)
+
+    def wait_for_replica_stopped(self, volume_name, node_name):
+        self.volume.wait_for_replica_stopped(volume_name, node_name)
+
+    def wait_for_replica_running(self, volume_name, node_name):
+        self.volume.wait_for_replica_running(volume_name, node_name)
+
+    def get_replica_name_on_node(self, volume_name, node_name):
+        return self.volume.get_replica_name_on_node(volume_name, node_name)
+
     def wait_for_replica_rebuilding_to_stop_on_node(self, volume_name, replica_locality):
         node_id = self.get_node_id_by_replica_locality(volume_name, replica_locality)
         retry_count, retry_interval = get_retry_count_and_interval()
