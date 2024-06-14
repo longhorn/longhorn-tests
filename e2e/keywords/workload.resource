@@ -27,6 +27,14 @@ Keep writing data to pod of ${workload_kind} ${workload_id}
     ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
     keep_writing_workload_pod_data    ${workload_name}
 
+Write ${size} MB data to file ${file_name} in pod ${pod_id}
+    ${pod_name} =    generate_name_with_suffix    pod    ${pod_id}
+    write_workload_pod_random_data    ${pod_name}    ${size}    ${file_name}
+
+Write ${size} GB data to file ${file_name} in pod ${pod_id}
+    ${size_in_mb} =    Convert GB to MB    ${size}
+    Write ${size_in_mb} MB data to file ${file_name} in pod ${pod_id}
+
 Power off volume node of ${workload_kind} ${workload_id} for ${duration} minutes
     ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
     ${volume_name} =    get_workload_volume_name    ${workload_name}

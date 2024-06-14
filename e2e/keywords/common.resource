@@ -52,3 +52,8 @@ Cleanup test resources
     cleanup_backing_images
     cleanup_engine_images
     reset_backupstore
+
+Convert GB to MB
+    [Arguments]    ${size_in_gb}
+    ${size_in_mb}=    Evaluate    ${size_in_gb} * 1024
+    [Return]    ${size_in_mb}

@@ -13,6 +13,12 @@ Delete snapshot ${snapshot_id} of volume ${volume_id}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     delete_snapshot    ${volume_name}    ${snapshot_id}
 
+Delete snapshot ${snapshot_id} of ${workload_kind} ${workload_id} volume
+    ${snapshot_id}=  Convert To String  ${snapshot_id}
+    ${workload_name}=   generate_name_with_suffix    ${workload_kind}    ${workload_id}
+    ${volume_name}=    get_workload_volume_name    ${workload_name}
+    delete_snapshot    ${volume_name}    ${snapshot_id}
+
 Revert volume ${volume_id} to snapshot ${snapshot_id}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     revert_snapshot    ${volume_name}    ${snapshot_id}
