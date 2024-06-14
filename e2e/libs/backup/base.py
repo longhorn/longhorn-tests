@@ -8,7 +8,7 @@ class Base(ABC):
     ANNOT_DATA_CHECKSUM = "test.longhorn.io/data-checksum"
 
     @abstractmethod
-    def create(self, volume_name, backup_id):
+    def create(self, volume_name, backup_id, timeout):
         return NotImplemented
 
     def set_backup_id(self, backup_name, backup_id):
@@ -64,7 +64,7 @@ class Base(ABC):
     def get_backup_volume(self, volume_name):
         return NotImplemented
 
-    def wait_for_backup_completed(self, volume_name, snapshot_name):
+    def wait_for_backup_completed(self, volume_name, snapshot_name, timeout):
         return NotImplemented
 
     @abstractmethod

@@ -8,11 +8,14 @@ class backup_keywords:
     def __init__(self):
         self.backup = Backup()
 
-    def create_backup(self, volume_name, backup_id):
-        self.backup.create(volume_name, backup_id)
+    def create_backup(self, volume_name, backup_id, timeout=None):
+        self.backup.create(volume_name, backup_id, timeout)
 
     def verify_no_error(self, volume_name):
         self.backup.verify_no_error(volume_name)
+
+    def verify_backup_count(self, volume_name, expected_backup_count):
+        self.backup.verify_backup_count(volume_name, expected_backup_count)
 
     def get_backup_name(self, backup_id, volume_name=None):
         return self.backup.get(backup_id, volume_name).name

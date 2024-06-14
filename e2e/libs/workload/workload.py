@@ -117,6 +117,19 @@ def keep_writing_pod_data(pod_name, size_in_mb=256, path="/data/overwritten-data
         tty=False)
     assert res == "", f"Failed to create process to keep writing data to pod {pod_name}"
 
+def get_pod_data_checksum(pod_name, file_name, data_directory="/data"):
+    file_path = f"{data_directory}/{file_name}"
+    api = client.CoreV1Api()
+    cmd_get_file_checksum = [
+        '/bin/sh',
+        '-c',
+        f"md5sum {file_path} | awk '{{print $1}}'"
+    ]
+    actual_checksum = stream(
+        api.connect_get_namespaced_pod_exec, pod_name, 'default',
+        command=cmd_get_file_checksum, stderr=True, stdin=False, stdout=True,
+        tty=False)
+    return actual_checksum
 
 def check_pod_data_checksum(expected_checksum, pod_name, file_name, data_directory="/data"):
     file_path = f"{data_directory}/{file_name}"

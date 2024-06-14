@@ -65,6 +65,9 @@ class Rest(Base):
             time.sleep(self.retry_interval)
         assert volume['state'] == desired_state
 
+    def wait_for_restore_required_status(self, volume_name, restore_required_state):
+        return NotImplemented
+
     def wait_for_volume_migration_ready(self, volume_name):
         return NotImplemented
 
