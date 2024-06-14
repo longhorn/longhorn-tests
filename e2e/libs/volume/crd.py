@@ -232,6 +232,12 @@ class CRD(Base):
             time.sleep(self.retry_interval)
         assert volume["status"]["state"] == desired_state
 
+    def is_replica_running(self, volume_name, node_name, is_running):
+        return Rest(self.node_exec).is_replica_running(volume_name, node_name, is_running)
+
+    def get_replica_name_on_node(self, volume_name, node_name):
+        return Rest(self.node_exec).get_replica_name_on_node(volume_name, node_name)
+
     def wait_for_volume_keep_in_state(self, volume_name, desired_state):
         self.wait_for_volume_state(volume_name, desired_state)
 
@@ -394,6 +400,9 @@ class CRD(Base):
 
     def crash_replica_processes(self, volume_name):
         return Rest(self.node_exec).crash_replica_processes(volume_name)
+
+    def crash_node_replica_process(self, volume_name, node_name):
+        return Rest(self.node_exec).crash_node_replica_process(volume_name, node_name)
 
     def wait_for_replica_rebuilding_complete(self, volume_name, node_name):
         return Rest(self.node_exec).wait_for_replica_rebuilding_complete(volume_name, node_name)
