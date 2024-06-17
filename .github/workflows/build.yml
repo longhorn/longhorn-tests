@@ -39,7 +39,7 @@ jobs:
     - name: Build longhorn-manager-test image
       uses: docker/build-push-action@v5
       with:
-        context: ./
+        context: manager/integration
         push: false
         platforms: linux/amd64,linux/arm64
         tags: longhornio/longhorn-manager-test:dry-run
@@ -75,7 +75,7 @@ jobs:
       if: ${{ startsWith(github.ref, 'refs/heads/') }}
       uses: docker/build-push-action@v5
       with:
-        context: ./
+        context: manager/integration
         push: true
         platforms: linux/amd64,linux/arm64
         tags: longhornio/longhorn-manager-test:${{ env.branch }}-head
@@ -85,7 +85,7 @@ jobs:
       if: ${{ startsWith(github.ref, 'refs/tags/') }}
       uses: docker/build-push-action@v5
       with:
-        context: ./
+        context: manager/integration
         push: true
         platforms: linux/amd64,linux/arm64
         tags: longhornio/longhorn-manager-test:${{ github.ref_name }}
