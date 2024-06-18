@@ -17,7 +17,6 @@ from persistentvolume.persistentvolume import PersistentVolume
 class Rest(Base):
 
     def __init__(self, node_exec):
-        self.longhorn_client = get_longhorn_client()
         self.node_exec = node_exec
         self.retry_count, self.retry_interval = get_retry_count_and_interval()
         self.pv = PersistentVolume()
@@ -26,7 +25,7 @@ class Rest(Base):
     def get(self, volume_name):
         for i in range(self.retry_count):
             try:
-                return self.longhorn_client.by_id_volume(volume_name)
+                return get_longhorn_client().by_id_volume(volume_name)
             except Exception as e:
                 logging(f"Failed to get volume {volume_name} with error: {e}")
             time.sleep(self.retry_interval)
@@ -36,7 +35,7 @@ class Rest(Base):
         for i in range(self.retry_count):
             logging(f"Try to list volumes ... ({i})")
             try:
-                volumes = self.longhorn_client.list_volume()
+                volumes = get_longhorn_client().list_volume()
                 for volume in volumes:
                     vol_list.append(volume.name)
                 break
@@ -85,7 +84,7 @@ class Rest(Base):
                    v.frontend == VOLUME_FRONTEND_ISCSI
             for i in range(self.retry_count):
                 try:
-                    v = self.longhorn_client.by_id_volume(volume_name)
+                    v = get_longhorn_client().by_id_volume(volume_name)
                     engines = v.controllers
                     assert len(engines) != 0
                     endpoint = engines[0].endpoint
@@ -116,7 +115,7 @@ class Rest(Base):
         rebuilding_replica_name = None
         for i in range(self.retry_count):
             try:
-                v = self.longhorn_client.by_id_volume(volume_name)
+                v = get_longhorn_client().by_id_volume(volume_name)
                 logging(f"Trying to get volume {volume_name} rebuilding replicas ... ({i})")
                 for replica in v.replicas:
                     if replica.hostId == node_name:
@@ -133,7 +132,7 @@ class Rest(Base):
         started = False
         for i in range(self.retry_count):
             try:
-                v = self.longhorn_client.by_id_volume(volume_name)
+                v = get_longhorn_client().by_id_volume(volume_name)
                 logging(f"Got volume {volume_name} rebuild status = {v.rebuildStatus}")
                 for status in v.rebuildStatus:
                     for replica in v.replicas:
@@ -154,7 +153,7 @@ class Rest(Base):
         in_progress = False
         for i in range(self.retry_count):
             try:
-                v = self.longhorn_client.by_id_volume(volume_name)
+                v = get_longhorn_client().by_id_volume(volume_name)
                 logging(f"Got volume {volume_name} rebuild status = {v.rebuildStatus}")
                 for status in v.rebuildStatus:
                     for replica in v.replicas:
@@ -172,7 +171,7 @@ class Rest(Base):
     def crash_replica_processes(self, volume_name):
         logging(f"Crashing volume {volume_name} replica processes")
         replica_map = {}
-        volume = self.longhorn_client.by_id_volume(volume_name)
+        volume = get_longhorn_client().by_id_volume(volume_name)
         for r in volume.replicas:
             replica_map[r.instanceManagerName] = r.name
 
@@ -181,11 +180,41 @@ class Rest(Base):
                          '--name ' + r_name
             pod_exec(rm_name, LONGHORN_NAMESPACE, delete_command)
 
+    def crash_node_replica_process(self, volume_name, node_name):
+        logging(f"Crashing volume {volume_name} replica process on node {node_name}")
+        volume = self.longhorn_client.by_id_volume(volume_name)
+        r_name = None
+        for r in volume.replicas:
+            if r.hostId == node_name:
+                rm_name = r.instanceManagerName
+                r_name = r.name
+                delete_command = 'longhorn-instance-manager process delete ' + \
+                             '--name ' + r_name
+                pod_exec(rm_name, LONGHORN_NAMESPACE, delete_command)
+
+        return r_name
+
+    def is_replica_running(self, volume_name, node_name, is_running):
+        for i in range(self.retry_count):
+            volume = self.longhorn_client.by_id_volume(volume_name)
+            for r in volume.replicas:
+                if r.hostId == node_name and r.running == is_running:
+                    return
+
+        assert False, f"Volume {volume_name} replica on node {node_name} running state is not {is_running}"
+
+    def get_replica_name_on_node(self, volume_name, node_name):
+        for i in range(self.retry_count):
+            volume = self.longhorn_client.by_id_volume(volume_name)
+            for r in volume.replicas:
+                if r.hostId == node_name:
+                    return r.name
+
     def wait_for_replica_rebuilding_complete(self, volume_name, node_name):
         completed = False
         for i in range(self.retry_count):
             try:
-                v = self.longhorn_client.by_id_volume(volume_name)
+                v = get_longhorn_client().by_id_volume(volume_name)
                 for replica in v.replicas:
                     # use replica.mode is RW or RO to check if this replica
                     # has been rebuilt or not

@@ -7,18 +7,18 @@ from robot.libraries.BuiltIn import BuiltIn
 from utility.utility import get_longhorn_client
 from utility.utility import get_retry_count_and_interval
 from utility.utility import logging
-
+from utility.constant import DISK_BEING_SYNCING
+from utility.constant import NODE_UPDATE_RETRY_INTERVAL
 
 class Node:
 
     DEFAULT_DISK_PATH = "/var/lib/longhorn/"
 
     def __init__(self):
-        self.longhorn_client = get_longhorn_client()
         self.retry_count, self.retry_interval = get_retry_count_and_interval()
 
     def update_disks(self, node_name, disks):
-        node = self.longhorn_client.by_id_node(node_name)
+        node = get_longhorn_client().by_id_node(node_name)
         for _ in range(self.retry_count):
             try:
                 node.diskUpdate(disks=disks)
@@ -28,13 +28,13 @@ class Node:
             time.sleep(self.retry_interval)
 
     def add_disk(self, node_name, disk):
-        node = self.longhorn_client.by_id_node(node_name)
+        node = get_longhorn_client().by_id_node(node_name)
         disks = node.disks
         disks.update(disk)
         self.update_disks(node_name, disks)
 
     def reset_disks(self, node_name):
-        node = self.longhorn_client.by_id_node(node_name)
+        node = get_longhorn_client().by_id_node(node_name)
 
         for disk_name, disk in iter(node.disks.items()):
             if disk.path != self.DEFAULT_DISK_PATH:
@@ -45,6 +45,7 @@ class Node:
         for disk_name, disk in iter(node.disks.items()):
             if disk.path == self.DEFAULT_DISK_PATH:
                 disks[disk_name] = disk
+                disk.allowScheduling = True
             else:
                 logging(f"Try to remove disk {disk_name} from node {node_name}")
         self.update_disks(node_name, disks)
@@ -105,3 +106,36 @@ class Node:
             return control_plane_nodes
         elif role == "worker":
             return worker_nodes
+
+    def set_node_scheduling(self, node_name, allowScheduling=True, retry=False):
+        node = self.longhorn_client.by_id_node(node_name)
+
+        if node.tags is None:
+           node.tags = []
+
+        if not retry:
+            self.longhorn_client.update(node, allowScheduling=allowScheduling)
+
+        # Retry if "too many retries error" happened.
+        for _ in range(self.retry_count):
+            try:
+                node = self.longhorn_client.update(node, allowScheduling=allowScheduling,
+                                 tags=node.tags)
+            except Exception as e:
+                if DISK_BEING_SYNCING in str(e.error.message):
+                    time.sleep(NODE_UPDATE_RETRY_INTERVAL)
+                    continue
+                print(e)
+                raise
+            else:
+                break
+
+        return node
+
+    def set_default_disk_scheduling(self, node_name, allowScheduling):
+        node = self.longhorn_client.by_id_node(node_name)
+
+        for disk_name, disk in iter(node.disks.items()):
+            if disk.path == self.DEFAULT_DISK_PATH:
+                disk.allowScheduling = allowScheduling
+        self.update_disks(node_name, node.disks)

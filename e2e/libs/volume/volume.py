@@ -110,6 +110,18 @@ class Volume(Base):
     def crash_replica_processes(self, volume_name):
         return self.volume.crash_replica_processes(volume_name)
 
+    def crash_node_replica_process(self, volume_name, node_name):
+        return self.volume.crash_node_replica_process(volume_name, node_name)
+
+    def wait_for_replica_stopped(self, volume_name, node_name):
+        return self.volume.is_replica_running(volume_name, node_name, is_running=False)
+
+    def wait_for_replica_running(self, volume_name, node_name):
+        return self.volume.is_replica_running(volume_name, node_name, is_running=True)
+
+    def get_replica_name_on_node(self, volume_name, node_name):
+        return self.volume.get_replica_name_on_node(volume_name, node_name)
+
     def wait_for_replica_rebuilding_complete(self, volume_name, node_name):
         return self.volume.wait_for_replica_rebuilding_complete(volume_name, node_name)
 

@@ -256,7 +256,6 @@ def get_longhorn_client():
                 logging(f"Getting longhorn client error: {e}, retry ({i}) ...")
                 time.sleep(retry_interval)
     else:
-        logging(f"Initializing longhorn api client from longhorn manager")
         # for ci, run test in in-cluster environment
         # directly use longhorn manager cluster ip
         for i in range(retry_count):
