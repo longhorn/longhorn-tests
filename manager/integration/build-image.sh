@@ -18,11 +18,11 @@ case $(uname -m) in
 esac
 
 echo "Building for ${ARCH}"
-# update base image to get latest changes                                       
-BASE_IMAGE=`grep FROM package/Dockerfile  | awk '{print $2}'`                   
+# update base image to get latest changes
+BASE_IMAGE=`grep FROM package/Dockerfile  | awk '{print $2}'`
 docker pull ${BASE_IMAGE}
 
-docker build --build-arg ARCH=${ARCH} -t ${image} .
+docker build --build-arg TARGETPLATFORM="linux/${ARCH}" -t ${image} .
 mkdir -p bin
 echo ${image} > bin/latest_image
 echo Built image ${image}
