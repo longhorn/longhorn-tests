@@ -86,6 +86,25 @@ Wait for volume ${volume_id} healthy
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     wait_for_volume_healthy    ${volume_name}
 
+Wait for volume ${volume_id} degraded
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    wait_for_volume_degraded    ${volume_name}
+
+Check volume ${volume_id} replica on node ${node_id} kept in stopped
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    ${node_name} =    get_node_by_index    ${node_id}
+    FOR    ${i}    IN RANGE    ${LOOP_COUNT}
+        wait_for_replica_stopped    ${volume_name}    ${node_name}
+        Sleep    ${RETRY_INTERVAL}
+    END
+
+Check for volume ${volume_id} kept in degraded
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    FOR    ${i}    IN RANGE    ${LOOP_COUNT}
+        wait_for_volume_degraded    ${volume_name}
+        Sleep    ${RETRY_INTERVAL}
+    END
+
 Wait for volume ${volume_id} migration ready
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     wait_for_volume_migration_ready    ${volume_name}
@@ -129,6 +148,23 @@ Both volume ${volume_id_0} and volume ${volume_id_1} replica rebuilding on ${rep
 Crash volume ${volume_id} replica processes
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     crash_replica_processes    ${volume_name}
+
+Crash volume ${volume_id} replica process on node ${node_id}
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    ${node_name} =    get_node_by_index    ${node_id}
+    ${crashed_replica_name} =     crash_node_replica_process    ${volume_name}    ${node_name}
+    Set Test Variable    ${crashed_replica_name}
+
+Check volume ${volume_id} crashed replica reused on node ${node_id}
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    ${node_name} =    get_node_by_index    ${node_id}
+    ${current_replica_name} =     get_replica_name_on_node    ${volume_name}    ${node_name}
+    Should Be Equal    ${crashed_replica_name}    ${current_replica_name}
+
+Wait volume ${volume_id} replica on node ${node_id} stopped
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    ${node_name} =    get_node_by_index    ${node_id}
+    wait_for_replica_stopped    ${volume_name}    ${node_name}
 
 Check volume ${volume_id} data is intact
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}

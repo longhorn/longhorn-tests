@@ -180,6 +180,36 @@ class Rest(Base):
                          '--name ' + r_name
             pod_exec(rm_name, LONGHORN_NAMESPACE, delete_command)
 
+    def crash_node_replica_process(self, volume_name, node_name):
+        logging(f"Crashing volume {volume_name} replica process on node {node_name}")
+        volume = self.longhorn_client.by_id_volume(volume_name)
+        r_name = None
+        for r in volume.replicas:
+            if r.hostId == node_name:
+                rm_name = r.instanceManagerName
+                r_name = r.name
+                delete_command = 'longhorn-instance-manager process delete ' + \
+                             '--name ' + r_name
+                pod_exec(rm_name, LONGHORN_NAMESPACE, delete_command)
+
+        return r_name
+
+    def is_replica_running(self, volume_name, node_name, is_running):
+        for i in range(self.retry_count):
+            volume = self.longhorn_client.by_id_volume(volume_name)
+            for r in volume.replicas:
+                if r.hostId == node_name and r.running == is_running:
+                    return
+
+        assert False, f"Volume {volume_name} replica on node {node_name} running state is not {is_running}"
+
+    def get_replica_name_on_node(self, volume_name, node_name):
+        for i in range(self.retry_count):
+            volume = self.longhorn_client.by_id_volume(volume_name)
+            for r in volume.replicas:
+                if r.hostId == node_name:
+                    return r.name
+
     def wait_for_replica_rebuilding_complete(self, volume_name, node_name):
         completed = False
         for i in range(self.retry_count):
