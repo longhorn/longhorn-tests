@@ -1,5 +1,5 @@
 *** Settings ***
-Documentation    Recurring Job Keywords
+Documentation    RecurringJob Keywords
 
 Library    Collections
 Library    ../libs/keywords/common_keywords.py
