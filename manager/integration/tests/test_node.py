@@ -2927,8 +2927,7 @@ def test_drain_with_block_for_eviction_if_contains_last_replica_success(client, 
     disk_volume_name = 'vol-disk'
     disk_volume = client.create_volume(name=disk_volume_name,
                                        size=str(2 * Gi),
-                                       numberOfReplicas=1,
-                                       dataLocality="strict-local")
+                                       numberOfReplicas=3)
     disk_volume = wait_for_volume_detached(client, disk_volume_name)
 
     disk_volume.attach(hostId=host_id)
