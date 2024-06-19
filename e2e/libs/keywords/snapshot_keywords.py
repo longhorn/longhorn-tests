@@ -7,8 +7,8 @@ class snapshot_keywords:
     def __init__(self):
         self.snapshot = Snapshot()
 
-    def create_snapshot(self, volume_name, snapshot_id):
-        self.snapshot.create(volume_name, snapshot_id)
+    def create_snapshot(self, volume_name, snapshot_id, waiting=True):
+        self.snapshot.create(volume_name, snapshot_id, waiting)
 
     def delete_snapshot(self, volume_name, snapshot_id):
         self.snapshot.delete(volume_name, snapshot_id)

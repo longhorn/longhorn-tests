@@ -18,8 +18,8 @@ class Backup(Base):
     def create(self, volume_name, backup_id):
         return self.backup.create(volume_name, backup_id)
 
-    def get(self, volume_name, backup_id):
-        return NotImplemented
+    def get(self, backup_id, volume_name):
+        return self.backup.get(backup_id, volume_name)
 
     def get_backup_volume(self, volume_name):
         return self.backup.get_backup_volume(volume_name)
@@ -40,6 +40,9 @@ class Backup(Base):
 
     def restore(self, volume_name, backup_id):
         return NotImplemented
+
+    def check_restored_volume_checksum(self, volume_name, backup_name):
+        return self.backup.check_restored_volume_checksum(volume_name, backup_name)
 
     def cleanup_backup_volumes(self):
         return self.backup.cleanup_backup_volumes()

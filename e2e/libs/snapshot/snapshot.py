@@ -15,8 +15,8 @@ class Snapshot(Base):
         else:
             self.snapshot = Rest()
 
-    def create(self, volume_name, snapshot_id):
-        return self.snapshot.create(volume_name, snapshot_id)
+    def create(self, volume_name, snapshot_id, waiting=True):
+        return self.snapshot.create(volume_name, snapshot_id, waiting)
 
     def get(self, volume_name, snapshot_id):
         return self.snapshot.get(volume_name, snapshot_id)

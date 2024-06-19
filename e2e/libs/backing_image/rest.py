@@ -9,12 +9,11 @@ from utility.utility import get_retry_count_and_interval
 class Rest(Base):
 
     def __init__(self):
-        self.longhorn_client = get_longhorn_client()
         self.retry_count, self.retry_interval = get_retry_count_and_interval()
 
     def create(self, bi_name, source_type, url, expected_checksum):
         logging(f"Creating backing image {bi_name}")
-        self.longhorn_client.create_backing_image(
+        get_longhorn_client().create_backing_image(
             name=bi_name,
             sourceType=source_type,
             parameters={
@@ -26,7 +25,7 @@ class Rest(Base):
         ready = False
         bi = None
         for i in range(self.retry_count):
-            bi = self.longhorn_client.by_id_backing_image(bi_name)
+            bi = get_longhorn_client().by_id_backing_image(bi_name)
             if len(bi.diskFileStatusMap) > 0 and bi.currentChecksum != "":
                 for disk, status in iter(bi.diskFileStatusMap.items()):
                     if status.state == self.BACKING_IMAGE_STATE_READY:
@@ -46,7 +45,7 @@ class Rest(Base):
         return bi
 
     def get(self, bi_name):
-        return self.longhorn_client.by_id_backing_image(bi_name)
+        return get_longhorn_client().by_id_backing_image(bi_name)
 
     def all_disk_file_status_are_ready(self, bi_name):
         bi = self.get(bi_name)
@@ -62,14 +61,14 @@ class Rest(Base):
 
     def delete(self, bi_name):
         logging(f"Deleting backing image {bi_name}")
-        self.longhorn_client.delete(self.get(bi_name))
+        get_longhorn_client().delete(self.get(bi_name))
 
     def wait_for_backing_image_disk_cleanup(self, bi_name, disk_id):
         found = False
         for i in range(self.retry_count):
             logging(f"Waiting for backing image {bi_name} cleaned up from disk {disk_id} ... ({i})")
             found = False
-            bi = self.longhorn_client.by_id_backing_image(bi_name)
+            bi = get_longhorn_client().by_id_backing_image(bi_name)
             for disk, status in bi.diskFileStatusMap.items():
                 if disk == disk_id:
                     found = True
@@ -83,7 +82,7 @@ class Rest(Base):
         found = False
         for i in range(self.retry_count):
             logging(f"Waiting for backing image {bi_name} deleted ... ({i})")
-            bi_list = self.longhorn_client.list_backing_image()
+            bi_list = get_longhorn_client().list_backing_image()
             found = False
             for bi in bi_list:
                 if bi.name == bi_name:
@@ -95,7 +94,7 @@ class Rest(Base):
         assert not found
 
     def cleanup_backing_images(self):
-        backing_images = self.longhorn_client.list_backing_image()
+        backing_images = get_longhorn_client().list_backing_image()
         for bi in backing_images:
             try:
                 self.delete(bi.name)
@@ -104,9 +103,9 @@ class Rest(Base):
                 logging(f"Cleaning up backing image {bi.name} failed with error {e}")
 
         for i in range(self.retry_count):
-            backing_images = self.longhorn_client.list_backing_image()
+            backing_images = get_longhorn_client().list_backing_image()
             logging(f"Waiting for all backing images {backing_images} cleaned up ... ({i})")
             if len(backing_images) == 0:
                 break
             time.sleep(self.retry_interval)
-        assert len(self.longhorn_client.list_backing_image()) == 0
+        assert len(get_longhorn_client().list_backing_image()) == 0

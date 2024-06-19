@@ -1,7 +1,7 @@
 #!/bin/bash
 
 apt-get update
-apt-get install -y nfs-common linux-modules-extra-`uname -r`
+apt-get install -y nfs-common cryptsetup linux-modules-extra-`uname -r`
 
 modprobe uio
 modprobe uio_pci_generic

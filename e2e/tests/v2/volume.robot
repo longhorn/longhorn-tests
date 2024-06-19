@@ -22,7 +22,7 @@ Test V2 Volume Basic
     [Documentation]    Test basic v2 volume operations
     Given Set setting v2-data-engine to true
     And Add block type disk /dev/xvdh for all worker nodes
-    When Create volume 0 with    data_engine=v2
+    When Create volume 0 with    dataEngine=v2
     And Attach volume 0
     And Wait for volume 0 healthy
     And Write data to volume 0

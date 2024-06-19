@@ -20,7 +20,7 @@ Test Backing Image Basic Operation
     [Tags]    coretest
     [Documentation]    Test Backing Image APIs.
     Given Create backing image bi with    url=https://longhorn-backing-image.s3-us-west-1.amazonaws.com/parrot.qcow2
-    When Create volume 0 with    backing_image=bi
+    When Create volume 0 with    backingImage=bi
     And Attach volume 0
     And Wait for volume 0 healthy
     And Write data to volume 0

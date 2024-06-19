@@ -14,11 +14,18 @@ class backup_keywords:
     def verify_no_error(self, volume_name):
         self.backup.verify_no_error(volume_name)
 
-    def get_backup(self, volume_name, backup_id):
-        return self.backup.get(volume_name, backup_id)
+    def get_backup_name(self, backup_id, volume_name=None):
+        return self.backup.get(backup_id, volume_name).name
+
+    def get_backup_url(self, backup_id, volume_name=None):
+        return self.backup.get(backup_id, volume_name).url
 
     def delete_backup_volume(self, volume_name):
         return self.backup.delete_backup_volume(volume_name)
+
+    def check_restored_volume_checksum(self, volume_name, backup_name):
+        logging(f"Checking restored volume {volume_name} data is backup {backup_name}")
+        self.backup.check_restored_volume_checksum(volume_name, backup_name)
 
     def cleanup_backups(self):
         if get_backupstore():

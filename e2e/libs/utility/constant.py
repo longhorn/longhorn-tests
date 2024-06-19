@@ -13,3 +13,6 @@ STORAGECLASS_NAME_PREFIX = 'longhorn-test'
 STREAM_EXEC_TIMEOUT = 300
 
 LONGHORN_NAMESPACE = 'longhorn-system'
+
+DISK_BEING_SYNCING = "being syncing and please retry later"
+NODE_UPDATE_RETRY_INTERVAL = 6

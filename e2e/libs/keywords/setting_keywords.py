@@ -5,8 +5,8 @@ class setting_keywords:
     def __init__(self):
         self.setting = Setting()
 
-    def update_setting(self, key, value):
-        self.setting.update_setting(key, value)
+    def update_setting(self, key, value, retry=True):
+        self.setting.update_setting(key, value, retry)
 
     def set_backupstore(self):
         self.setting.set_backupstore()

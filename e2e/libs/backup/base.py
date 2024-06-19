@@ -5,6 +5,7 @@ from utility.utility import get_annotation_value
 class Base(ABC):
 
     ANNOT_ID = "test.longhorn.io/backup-id"
+    ANNOT_DATA_CHECKSUM = "test.longhorn.io/data-checksum"
 
     @abstractmethod
     def create(self, volume_name, backup_id):
@@ -31,8 +32,29 @@ class Base(ABC):
             annotation_key=self.ANNOT_ID
         )
 
+    def set_data_checksum(self, backup_name, checksum):
+        set_annotation(
+            group="longhorn.io",
+            version="v1beta2",
+            namespace="longhorn-system",
+            plural="backups",
+            name=backup_name,
+            annotation_key=self.ANNOT_DATA_CHECKSUM,
+            annotation_value=checksum
+        )
+
+    def get_data_checksum(self, backup_name):
+        return get_annotation_value(
+            group="longhorn.io",
+            version="v1beta2",
+            namespace="longhorn-system",
+            plural="backups",
+            name=backup_name,
+            annotation_key=self.ANNOT_DATA_CHECKSUM,
+        )
+
     @abstractmethod
-    def get(self, volume_name, backup_id):
+    def get(self, backup_id, volume_name):
         return NotImplemented
 
     def get_by_snapshot(self, volume_name, snapshot_name):
@@ -59,6 +81,10 @@ class Base(ABC):
 
     @abstractmethod
     def restore(self, volume_name, backup_id):
+        return NotImplemented
+
+    @abstractmethod
+    def check_restored_volume_checksum(self, volume_name, backup_name):
         return NotImplemented
 
     @abstractmethod

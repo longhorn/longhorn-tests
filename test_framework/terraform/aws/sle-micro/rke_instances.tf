@@ -164,7 +164,7 @@ resource "null_resource" "package_install_controlplane_rke" {
   provisioner "remote-exec" {
 
     inline = [
-      "sudo transactional-update pkg install -y open-iscsi nfs-client jq docker apparmor-parser",
+      "sudo transactional-update pkg install -y open-iscsi nfs-client cryptsetup jq docker apparmor-parser",
       "sudo shutdown -r now",
     ]
 
