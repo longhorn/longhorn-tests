@@ -12,7 +12,7 @@
       <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/node-not-ready/node-disconnection/node-disconnection/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/node-not-ready/node-disconnection/node-disconnection/</guid>
-      <description>https://github.com/longhorn/longhorn/issues/1545 For disconnect node : https://github.com/longhorn/longhorn/files/4864127/network_down.sh.zip&#xA;If auto-salvage is disabled, the auto-reattachment behavior after the node disconnection depends on all replicas are in ERROR state or not.&#xA;(1) If all replicas are in ERROR state, the volume would remain in detached/faulted state if auto-salvage is disabled.&#xA;(2) If there is any healthy replica, the volume would be auto-reattached even though auto-salvage is disabled.&#xA;What makes all replicas in ERROR state? When there is data writing during the disconnection:</description>
+      <description>https://github.com/longhorn/longhorn/issues/1545 For disconnect node : https://github.com/longhorn/longhorn/files/4864127/network_down.sh.zip&#xA;If auto-salvage is disabled, the behavior after the node disconnection depends on all replicas are in ERROR state or not.&#xA;(1) If all replicas are in ERROR state, the volume would remain in detached/faulted state if auto-salvage is disabled.&#xA;(2) If there is any healthy replica, the volume would start the replica rebuild process(if necessary) after node back.&#xA;What makes all replicas in ERROR state?</description>
     </item>
   </channel>
 </rss>
