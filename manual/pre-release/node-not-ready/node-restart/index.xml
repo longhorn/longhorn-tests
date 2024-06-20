@@ -19,7 +19,7 @@
       <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/node-not-ready/node-restart/physical-node-reboot/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/node-not-ready/node-restart/physical-node-reboot/</guid>
-      <description> Reboot the node that the controller (StatefulSet/Deployment) attached to. After reboot complete, the volume should be reattached to the node. </description>
+      <description> Create StatefulSet/Deployment with 3 a replicas volume. Reboot the volume node that the controller (StatefulSet/Deployment) attached to. After the reboot is complete, the volume should be healthy and the data should be correct. </description>
     </item>
   </channel>
 </rss>
