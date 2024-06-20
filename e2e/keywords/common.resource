@@ -28,11 +28,13 @@ Set test environment
 
 Cleanup test resources
     cleanup_control_plane_network_latency
+    reset_node_schedule
     cleanup_node_exec
     cleanup_stress_helper
     cleanup_recurringjobs
     cleanup_deployments
     cleanup_statefulsets
+    cleanup_pods
     cleanup_persistentvolumeclaims
     cleanup_volumes
     cleanup_storageclasses

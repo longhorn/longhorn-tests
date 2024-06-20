@@ -24,9 +24,9 @@ class volume_keywords:
         for volume in volumes['items']:
             self.delete_volume(volume['metadata']['name'])
 
-    def create_volume(self, volume_name, size=2, replica_count=3, frontend="blockdev", migratable=False, access_mode="RWO", data_engine="v1", backing_image=""):
+    def create_volume(self, volume_name, size=2, numberOfReplicas=3, frontend="blockdev", migratable=False, accessMode="RWO", dataEngine="v1", backingImage="", Standby=False, fromBackup=""):
         logging(f'Creating volume {volume_name}')
-        self.volume.create(volume_name, size, replica_count, frontend, migratable, access_mode, data_engine, backing_image)
+        self.volume.create(volume_name, size, numberOfReplicas, frontend, migratable, accessMode, dataEngine, backingImage, Standby, fromBackup)
 
     def delete_volume(self, volume_name):
         logging(f'Deleting volume {volume_name}')
@@ -192,6 +192,18 @@ class volume_keywords:
     def crash_replica_processes(self, volume_name):
         self.volume.crash_replica_processes(volume_name)
 
+    def crash_node_replica_process(self, volume_name, node_name):
+        return self.volume.crash_node_replica_process(volume_name, node_name)
+
+    def wait_for_replica_stopped(self, volume_name, node_name):
+        self.volume.wait_for_replica_stopped(volume_name, node_name)
+
+    def wait_for_replica_running(self, volume_name, node_name):
+        self.volume.wait_for_replica_running(volume_name, node_name)
+
+    def get_replica_name_on_node(self, volume_name, node_name):
+        return self.volume.get_replica_name_on_node(volume_name, node_name)
+
     def wait_for_replica_rebuilding_to_stop_on_node(self, volume_name, replica_locality):
         node_id = self.get_node_id_by_replica_locality(volume_name, replica_locality)
         retry_count, retry_interval = get_retry_count_and_interval()
@@ -232,6 +244,10 @@ class volume_keywords:
         logging(f'Waiting for volume {volume_name} migration to node {node_name} completed')
         self.volume.wait_for_volume_migration_completed(volume_name, node_name)
 
+    def wait_for_volume_restoration_completed(self, volume_name, backup_name):
+        logging(f'Waiting for volume {volume_name} restoration from {backup_name} completed')
+        self.volume.wait_for_volume_restoration_completed(volume_name, backup_name)
+
     def validate_volume_replicas_anti_affinity(self, volume_name):
         self.volume.validate_volume_replicas_anti_affinity(volume_name)
 
@@ -243,3 +259,12 @@ class volume_keywords:
 
     def update_volume_spec(self, volume_name, key, value):
         self.volume.update_volume_spec(volume_name, key, value)
+
+    def activate_dr_volume(self, volume_name):
+        self.volume.activate(volume_name)
+
+    def create_persistentvolume_for_volume(self, volume_name, retry=True):
+        self.volume.create_persistentvolume(volume_name, retry)
+
+    def create_persistentvolumeclaim_for_volume(self, volume_name, retry=True):
+        self.volume.create_persistentvolumeclaim(volume_name, retry)

@@ -13,7 +13,7 @@ fi
 sudo dnf config-manager --add-repo=https://download.docker.com/linux/centos/docker-ce.repo
 sudo dnf update -y
 sudo dnf group install -y "Development Tools"
-sudo dnf install -y iscsi-initiator-utils nfs-utils nfs4-acl-tools docker-ce docker-ce-cli containerd.io
+sudo dnf install -y iscsi-initiator-utils nfs-utils nfs4-acl-tools cryptsetup docker-ce docker-ce-cli containerd.io
 
 sudo systemctl start iscsid
 sudo systemctl enable iscsid

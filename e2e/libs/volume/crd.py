@@ -2,7 +2,6 @@ import time
 from kubernetes.client.rest import ApiException
 from kubernetes import client
 from engine import Engine
-
 from utility.constant import LABEL_TEST
 from utility.constant import LABEL_TEST_VALUE
 from utility.utility import get_retry_count_and_interval
@@ -21,9 +20,9 @@ class CRD(Base):
         self.retry_count, self.retry_interval = get_retry_count_and_interval()
         self.engine = Engine()
 
-    def create(self, volume_name, size, replica_count, frontend, migratable, access_mode, data_engine, backing_image):
+    def create(self, volume_name, size, numberOfReplicas, frontend, migratable, accessMode, dataEngine, backingImage, Standby, fromBackup):
         size = str(int(size) * GIBIBYTE)
-        access_mode = access_mode.lower()
+        accessMode = accessMode.lower()
         body = {
             "apiVersion": "longhorn.io/v1beta2",
             "kind": "Volume",
@@ -37,11 +36,13 @@ class CRD(Base):
                 "frontend": frontend,
                 "replicaAutoBalance": "ignored",
                 "size": size,
-                "numberOfReplicas": int(replica_count),
+                "numberOfReplicas": int(numberOfReplicas),
                 "migratable": migratable,
-                "accessMode": access_mode,
-                "dataEngine": data_engine,
-                "backingImage": backing_image
+                "accessMode": accessMode,
+                "dataEngine": dataEngine,
+                "backingImage": backingImage,
+                "Standby": Standby,
+                "fromBackup": fromBackup
             }
         }
         try:
@@ -52,17 +53,24 @@ class CRD(Base):
                 plural="volumes",
                 body=body
             )
-            self.wait_for_volume_state(volume_name, "detached")
+            if not Standby:
+                self.wait_for_volume_state(volume_name, "detached")
+            else:
+                self.wait_for_volume_state(volume_name, "attached")
             volume = self.get(volume_name)
             assert volume['metadata']['name'] == volume_name, f"expect volume name is {volume_name}, but it's {volume['metadata']['name']}"
             assert volume['spec']['size'] == size, f"expect volume size is {size}, but it's {volume['spec']['size']}"
-            assert volume['spec']['numberOfReplicas'] == int(replica_count), f"expect volume numberOfReplicas is {replica_count}, but it's {volume['spec']['numberOfReplicas']}"
+            assert volume['spec']['numberOfReplicas'] == int(numberOfReplicas), f"expect volume numberOfReplicas is {numberOfReplicas}, but it's {volume['spec']['numberOfReplicas']}"
             assert volume['spec']['frontend'] == frontend, f"expect volume frontend is {frontend}, but it's {volume['spec']['frontend']}"
             assert volume['spec']['migratable'] == migratable, f"expect volume migratable is {migratable}, but it's {volume['spec']['migratable']}"
-            assert volume['spec']['accessMode'] == access_mode, f"expect volume accessMode is {access_mode}, but it's {volume['spec']['accessMode']}"
-            assert volume['spec']['backingImage'] == backing_image, f"expect volume backingImage is {backing_image}, but it's {volume['spec']['backingImage']}"
-            assert volume['status']['restoreRequired'] is False, f"expect volume restoreRequired is False, but it's {volume['status']['restoreRequired']}"
-            #assert volume['backingImage'] == backing_image, f"expect volume backingImage is {backing_image}, but it's {volume['backingImage']}"
+            assert volume['spec']['accessMode'] == accessMode, f"expect volume accessMode is {accessMode}, but it's {volume['spec']['accessMode']}"
+            assert volume['spec']['backingImage'] == backingImage, f"expect volume backingImage is {backingImage}, but it's {volume['spec']['backingImage']}"
+            assert volume['spec']['Standby'] == Standby, f"expect volume Standby is {Standby}, but it's {volume['spec']['Standby']}"
+            assert volume['spec']['fromBackup'] == fromBackup, f"expect volume fromBackup is {fromBackup}, but it's {volume['spec']['fromBackup']}"
+            if not Standby:
+                assert volume['status']['restoreRequired'] is False, f"expect volume restoreRequired is False, but it's {volume['status']['restoreRequired']}"
+            else:
+                assert volume['status']['restoreRequired'] is True, f"expect volume restoreRequired is True, but it's {volume['status']['restoreRequired']}"
         except ApiException as e:
             logging(e)
 
@@ -224,6 +232,12 @@ class CRD(Base):
             time.sleep(self.retry_interval)
         assert volume["status"]["state"] == desired_state
 
+    def is_replica_running(self, volume_name, node_name, is_running):
+        return Rest(self.node_exec).is_replica_running(volume_name, node_name, is_running)
+
+    def get_replica_name_on_node(self, volume_name, node_name):
+        return Rest(self.node_exec).get_replica_name_on_node(volume_name, node_name)
+
     def wait_for_volume_keep_in_state(self, volume_name, desired_state):
         self.wait_for_volume_state(volume_name, desired_state)
 
@@ -290,6 +304,33 @@ class CRD(Base):
             time.sleep(self.retry_interval)
         assert completed
 
+    def wait_for_volume_restoration_completed(self, volume_name, backup_name):
+        completed = False
+        for i in range(self.retry_count):
+            logging(f"Waiting for volume {volume_name} restoration from backup {backup_name} completed ({i}) ...")
+            try:
+                engines = self.engine.get_engines(volume_name)
+                completed = len(engines) == 1 and engines[0]['status']['lastRestoredBackup'] == backup_name
+                if completed:
+                    break
+            except Exception as e:
+                logging(f"Getting volume {volume_name} engines error: {e}")
+            time.sleep(self.retry_interval)
+        assert completed
+
+        updated = False
+        for i in range(self.retry_count):
+            logging(f"Waiting for volume {volume_name} lastBackup updated to {backup_name} ({i}) ...")
+            try:
+                volume = self.get(volume_name)
+                if volume['status']['lastBackup'] == backup_name:
+                    updated = True
+                    break
+            except Exception as e:
+                logging(f"Getting volume {volume_name} error: {e}")
+            time.sleep(self.retry_interval)
+        assert updated
+
     def wait_for_volume_expand_to_size(self, volume_name, expected_size):
         engine = None
         engine_current_size = 0
@@ -322,6 +363,7 @@ class CRD(Base):
               md5sum {endpoint} | awk \'{{print $1}}\'")
         logging(f"Storing volume {volume_name} data {data_id} checksum = {checksum}")
         self.set_data_checksum(volume_name, data_id, checksum)
+        self.set_last_data_checksum(volume_name, checksum)
 
     def keep_writing_data(self, volume_name, size):
         node_name = self.get(volume_name)["spec"]["nodeID"]
@@ -359,18 +401,26 @@ class CRD(Base):
     def crash_replica_processes(self, volume_name):
         return Rest(self.node_exec).crash_replica_processes(volume_name)
 
+    def crash_node_replica_process(self, volume_name, node_name):
+        return Rest(self.node_exec).crash_node_replica_process(volume_name, node_name)
+
     def wait_for_replica_rebuilding_complete(self, volume_name, node_name):
         return Rest(self.node_exec).wait_for_replica_rebuilding_complete(volume_name, node_name)
 
     def check_data_checksum(self, volume_name, data_id):
         expected_checksum = self.get_data_checksum(volume_name, data_id)
-        node_name = self.get(volume_name)["spec"]["nodeID"]
-        endpoint = self.get_endpoint(volume_name)
-        actual_checksum = self.node_exec.issue_cmd(
-            node_name,
-            f"md5sum {endpoint} | awk \'{{print $1}}\'")
+        actual_checksum = self.get_checksum(volume_name)
         logging(f"Checked volume {volume_name} data {data_id}. Expected checksum = {expected_checksum}. Actual checksum = {actual_checksum}")
         assert actual_checksum == expected_checksum
+
+    def get_checksum(self, volume_name):
+        node_name = self.get(volume_name)["spec"]["nodeID"]
+        endpoint = self.get_endpoint(volume_name)
+        checksum = self.node_exec.issue_cmd(
+            node_name,
+            f"md5sum {endpoint} | awk \'{{print $1}}\'")
+        logging(f"Calculated volume {volume_name} checksum {checksum}")
+        return checksum
 
     def validate_volume_replicas_anti_affinity(self, volume_name):
         replica_list = self.obj_api.list_namespaced_custom_object(
@@ -410,3 +460,12 @@ class CRD(Base):
                 else:
                     raise e
             time.sleep(self.retry_interval)
+
+    def activate(self, volume_name):
+        return Rest(self.node_exec).activate(volume_name)
+
+    def create_persistentvolume(self, volume_name, retry):
+        return Rest(self.node_exec).create_persistentvolume(volume_name, retry)
+
+    def create_persistentvolumeclaim(self, volume_name, retry):
+        return Rest(self.node_exec).create_persistentvolumeclaim(volume_name, retry)

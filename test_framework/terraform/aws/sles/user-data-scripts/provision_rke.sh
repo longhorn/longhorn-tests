@@ -5,7 +5,7 @@ set -e
 sudo systemctl restart guestregister # Sometimes registration fails on first boot.
 sudo zypper ref
 sudo zypper install -y -t pattern devel_basis
-sudo zypper install -y open-iscsi docker nfs-client
+sudo zypper install -y open-iscsi docker nfs-client cryptsetup
 sudo usermod -aG docker ec2-user
 sudo systemctl enable docker
 sudo systemctl start docker

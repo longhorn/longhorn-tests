@@ -50,13 +50,13 @@ class S3(Base):
                      secure=True)
 
     def get_backupstore_bucket_name(self):
-        backupstore = self.get_backup_target()
+        backupstore = self.backup_target
         assert self.is_backupTarget_s3(backupstore)
         bucket_name = urlparse(backupstore).netloc.split('@')[0]
         return bucket_name
 
     def get_backupstore_path(self):
-        backupstore = self.get_backup_target()
+        backupstore = self.backup_target
         assert self.is_backupTarget_s3(backupstore)
         backupstore_path = urlparse(backupstore).path.split('$')[0].strip("/")
         return backupstore_path
@@ -82,7 +82,7 @@ class S3(Base):
 
         process = self.port_forward()
 
-        secret_name = self.get_secret()
+        secret_name = self.secret
 
         minio_api = self.get_api_client(secret_name)
         bucket_name = self.get_backupstore_bucket_name()
@@ -110,7 +110,7 @@ class S3(Base):
         process.kill()
 
     def write_backup_cfg_file(self, volume_name, backup_name, backup_cfg_data): # NOQA
-        secret_name = self.get_secret()
+        secret_name = self.secret
         assert secret_name != ''
 
         minio_api = self.get_api_client(secret_name)
@@ -135,7 +135,7 @@ class S3(Base):
 
         process = self.port_forward()
 
-        secret_name = self.get_secret()
+        secret_name = self.secret
 
         minio_api = self.get_api_client(secret_name)
         bucket_name = self.get_backupstore_bucket_name()
@@ -149,7 +149,7 @@ class S3(Base):
         process.kill()
 
     def delete_backup_cfg_file(self, volume_name, backup_name):
-        secret_name = self.get_secret()
+        secret_name = self.secret
         assert secret_name != ''
 
         minio_api = self.get_api_client(secret_name)
@@ -163,7 +163,7 @@ class S3(Base):
             print(err)
 
     def delete_volume_cfg_file(self, volume_name):
-        secret_name = self.get_secret()
+        secret_name = self.secret
         assert secret_name != ''
 
         minio_api = self.get_api_client(secret_name)
@@ -176,7 +176,7 @@ class S3(Base):
             print(err)
 
     def delete_random_backup_block(self, volume_name):
-        secret_name = self.get_secret()
+        secret_name = self.secret
         assert secret_name != ''
 
         minio_api = self.get_api_client(secret_name)
@@ -196,7 +196,7 @@ class S3(Base):
             print(err)
 
     def count_backup_block_files(self, volume_name):
-        secret_name = self.get_secret()
+        secret_name = self.secret
         assert secret_name != ''
 
         minio_api = self.get_api_client(secret_name)

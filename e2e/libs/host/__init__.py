@@ -1,1 +1,2 @@
-from host.host import Host
+from host.aws import Aws
+from host.harvester import Harvester

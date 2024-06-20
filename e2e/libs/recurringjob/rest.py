@@ -17,12 +17,11 @@ from utility.utility import get_retry_count_and_interval
 class Rest(Base):
 
     def __init__(self):
-        self.longhorn_client = get_longhorn_client()
         self.batch_v1_api = client.BatchV1Api()
         self.retry_count, self.retry_interval = get_retry_count_and_interval()
 
     def create(self, name, task, groups, cron, retain, concurrency, labels):
-        self.longhorn_client.create_recurring_job(
+        get_longhorn_client().create_recurring_job(
             Name=name,
             Task=task,
             Groups=groups,
@@ -33,15 +32,15 @@ class Rest(Base):
         self._wait_for_cron_job_create(name)
 
     def delete(self, job_name, volume_name):
-        self.longhorn_client.delete(self.get(job_name))
+        get_longhorn_client().delete(self.get(job_name))
         self._wait_for_cron_job_delete(job_name)
         self._wait_for_volume_recurringjob_delete(job_name, volume_name)
 
     def get(self, name):
-        return self.longhorn_client.by_id_recurring_job(name)
+        return get_longhorn_client().by_id_recurring_job(name)
 
     def add_to_volume(self, job_name, volume_name):
-        volume = self.longhorn_client.by_id_volume(volume_name)
+        volume = get_longhorn_client().by_id_volume(volume_name)
         volume.recurringJobAdd(name=job_name, isGroup=False)
         self._wait_for_volume_recurringjob_update(job_name, volume_name)
 
@@ -69,7 +68,7 @@ class Rest(Base):
         for _ in range(self.retry_count):
             volume = None
             try:
-                volume = self.longhorn_client.by_id_volume(volume_name)
+                volume = get_longhorn_client().by_id_volume(volume_name)
                 list = volume.recurringJobList()
                 jobs = []
                 groups = []

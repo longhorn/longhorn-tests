@@ -10,3 +10,19 @@ Add ${disk_type} type disk ${disk_path} for all worker nodes
     FOR    ${worker_node}    IN    @{worker_nodes}
         add_disk    ${worker_node}    ${disk_type}    ${disk_path}
     END
+
+Disable node ${node_id} scheduling
+    ${node_name} =    get_node_by_index    ${node_id}
+    disable_node_scheduling    ${node_name}
+
+Enable node ${node_id} scheduling
+    ${node_name} =    get_node_by_index    ${node_id}
+    enable_node_scheduling    ${node_name}
+
+Disable node ${node_id} default disk
+    ${node_name} =    get_node_by_index    ${node_id}
+    disable_default_disk    ${node_name}
+
+Enable node ${node_id} default disk
+    ${node_name} =    get_node_by_index    ${node_id}
+    enable_default_disk    ${node_name}

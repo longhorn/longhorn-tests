@@ -1,10 +1,17 @@
 import multiprocessing
 import asyncio
 
+from node import Node
+
 from persistentvolumeclaim import PersistentVolumeClaim
 
 from workload.pod import get_volume_name_by_pod
+from workload.pod import new_busybox_manifest
+from workload.pod import create_pod
+from workload.pod import delete_pod
+from workload.pod import cleanup_pods
 from workload.workload import check_pod_data_checksum
+from workload.workload import get_workload_pods
 from workload.workload import get_workload_pod_names
 from workload.workload import get_workload_persistent_volume_claim_name
 from workload.workload import get_workload_volume_name
@@ -28,12 +35,31 @@ from volume.constant import MEBIBYTE
 class workload_keywords:
 
     def __init__(self):
+        self.node = Node()
         self.persistentvolumeclaim = PersistentVolumeClaim()
         self.volume = Volume()
+
+    def create_pod(self, pod_name, claim_name):
+        logging(f'Creating pod {pod_name} using pvc {claim_name}')
+        create_pod(new_busybox_manifest(pod_name, claim_name))
+
+    def delete_pod(self, pod_name):
+        logging(f'Deleting pod {pod_name}')
+        delete_pod(pod_name)
+
+    def cleanup_pods(self):
+        cleanup_pods()
 
     def check_pod_data_checksum(self, expected_checksum, pod_name, file_name):
         logging(f'Checking checksum for file {file_name} in pod {pod_name}')
         check_pod_data_checksum(expected_checksum, pod_name, file_name)
+
+    def delete_workload_pod_on_node(self, workload_name, node_name, namespace="default"):
+        pods = get_workload_pods(workload_name, namespace=namespace)
+        for pod in pods:
+            if pod.spec.node_name == node_name:
+                logging(f'Deleting pod {pod.metadata.name} on node {node_name}')
+                delete_pod(pod.metadata.name, namespace=namespace)
 
     def get_workload_pod_name(self, workload_name):
         return get_workload_pod_names(workload_name)[0]
@@ -78,14 +104,14 @@ class workload_keywords:
 
         pool.join()
 
-    async def wait_for_workloads_pods_stably_running(self, workloads):
+    async def wait_for_workloads_pods_stably_running(self, workloads, namespace="default"):
         logging(f'Waiting for workloads {workloads} pods stable')
 
         async def wait_for_workloads_tasks():
             tasks = []
             for workload_name in workloads:
                 tasks.append(
-                    asyncio.create_task(wait_for_workload_pods_stable(workload_name, namespace="default"), name=workload_name)
+                    asyncio.create_task(wait_for_workload_pods_stable(workload_name, namespace=namespace), name=workload_name)
                 )
 
             done, pending = await asyncio.wait(tasks, return_when=asyncio.ALL_COMPLETED)
