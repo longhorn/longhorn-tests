@@ -3,7 +3,7 @@
 DOCKER_VERSION=20.10
 
 sudo apt-get update 
-sudo apt-get install -y build-essential git nfs-common
+sudo apt-get install -y build-essential git nfs-common cryptsetup
 
 if [ -b "/dev/xvdh" ]; then
   mkfs.ext4 -E nodiscard /dev/xvdh

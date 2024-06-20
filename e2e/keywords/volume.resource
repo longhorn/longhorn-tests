@@ -4,6 +4,7 @@ Documentation    Volume Keywords
 Library    Collections
 Library    ../libs/keywords/common_keywords.py
 Library    ../libs/keywords/volume_keywords.py
+Library    ../libs/keywords/backup_keywords.py
 
 *** Keywords ***
 Create volume ${volume_id}
@@ -14,6 +15,11 @@ Create volume ${volume_id} with
     [Arguments]    &{config}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     create_volume   ${volume_name}    2    3    &{config}
+
+Create DR volume ${volume_id} from backup ${backup_id}
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    ${backup_url} =    get_backup_url    ${backup_id}
+    create_volume   ${volume_name}    2    3    frontend=    Standby=True    fromBackup=${backup_url}
 
 No volume created
     ${volumes} =    list_volumes
@@ -27,8 +33,9 @@ Create volume ${volume_id} with ${size} GB and ${replica_count} replicas
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     create_volume   ${volume_name}    ${size}    ${replica_count}
 
-Update volume ${volume_name} replica count to ${replica_count}
-    update_volume_spec   ${volume_name}    numberOfReplicas    3
+Update volume ${volume_id} replica count to ${replica_count}
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    update_volume_spec   ${volume_name}    numberOfReplicas    ${replica_count}
 
 Attach volume ${volume_id} to node ${node_id}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
@@ -38,6 +45,13 @@ Attach volume ${volume_id} to node ${node_id}
 Attach volume ${volume_id}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     attach_volume    ${volume_name}
+
+Attach volume ${volume_id} to ${workload_kind} ${workload_id} node
+    ${workload_name} =   generate_name_with_suffix    ${workload_kind}    ${workload_id}
+    ${workload_volume_name} =    get_workload_volume_name    ${workload_name}
+    ${node_name} =    get_volume_node    ${workload_volume_name}
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    attach_volume    ${volume_name}    ${node_name}
 
 Attach volume ${volume_id} in maintenance mode
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
@@ -50,6 +64,11 @@ Detach volume ${volume_id}
 Detach volume ${volume_id} from node ${node_id}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     ${node_name} =    get_node_by_index    ${node_id}
+    detach_volume    ${volume_name}    ${node_name}
+
+Detach volume ${volume_id} from attached node
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    ${node_name} =    get_volume_node    ${volume_name}
     detach_volume    ${volume_name}    ${node_name}
 
 Delete volume ${volume_id}
@@ -80,6 +99,55 @@ Wait for volume ${volume_id} healthy
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     wait_for_volume_healthy    ${volume_name}
 
+Wait for volume ${volume_id} attached
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    wait_for_volume_attached    ${volume_name}
+
+Wait for volume ${volume_id} attached and unknown
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    wait_for_volume_unknown    ${volume_name}
+
+Wait for volume ${volume_id} detached
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    wait_for_volume_detached    ${volume_name}
+
+Wait for volume ${volume_id} faulted
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    wait_for_volume_faulted    ${volume_name}
+
+Wait for volume ${volume_id} degraded
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    wait_for_volume_degraded    ${volume_name}
+
+Check volume ${volume_id} replica on node ${node_id} kept in stopped
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    ${node_name} =    get_node_by_index    ${node_id}
+    FOR    ${i}    IN RANGE    ${LOOP_COUNT}
+        wait_for_replica_stopped    ${volume_name}    ${node_name}
+        Sleep    ${RETRY_INTERVAL}
+    END
+
+Check for volume ${volume_id} kept in degraded
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    FOR    ${i}    IN RANGE    ${LOOP_COUNT}
+        wait_for_volume_degraded    ${volume_name}
+        Sleep    ${RETRY_INTERVAL}
+    END
+
+Check volume ${volume_id} kept in detached
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    FOR    ${i}    IN RANGE    ${LOOP_COUNT}
+        wait_for_volume_detached    ${volume_name}
+        Sleep    ${RETRY_INTERVAL}
+    END
+
+Check all replicas of volume ${volume_id} kept in error
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    FOR    ${i}    IN RANGE    ${LOOP_COUNT}
+        wait_for_volume_faulted    ${volume_name}
+        Sleep    ${RETRY_INTERVAL}
+    END
+
 Wait for volume ${volume_id} migration ready
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     wait_for_volume_migration_ready    ${volume_name}
@@ -88,6 +156,11 @@ Wait for volume ${volume_id} migrated to node ${node_id}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     ${node_name} =    get_node_by_index    ${node_id}
     wait_for_volume_migration_completed    ${volume_name}    ${node_name}
+
+Wait for volume ${volume_id} restoration from backup ${backup_id} completed
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    ${backup_name} =    get_backup_name    ${backup_id}
+    wait_for_volume_restoration_completed    ${volume_name}    ${backup_name}
 
 Wait until volume ${volume_id} replica rebuilding started on ${replica_locality}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
@@ -119,6 +192,23 @@ Crash volume ${volume_id} replica processes
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     crash_replica_processes    ${volume_name}
 
+Crash volume ${volume_id} replica process on node ${node_id}
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    ${node_name} =    get_node_by_index    ${node_id}
+    ${crashed_replica_name} =     crash_node_replica_process    ${volume_name}    ${node_name}
+    Set Test Variable    ${crashed_replica_name}
+
+Check volume ${volume_id} crashed replica reused on node ${node_id}
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    ${node_name} =    get_node_by_index    ${node_id}
+    ${current_replica_name} =     get_replica_name_on_node    ${volume_name}    ${node_name}
+    Should Be Equal    ${crashed_replica_name}    ${current_replica_name}
+
+Wait volume ${volume_id} replica on node ${node_id} stopped
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    ${node_name} =    get_node_by_index    ${node_id}
+    wait_for_replica_stopped    ${volume_name}    ${node_name}
+
 Check volume ${volume_id} data is intact
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     check_data_checksum    ${volume_name}
@@ -133,3 +223,30 @@ Check volume ${volume_id} works
     #TODO
     # write data to a file in the volume instead of writing /dev/longhorn/vol-name
     # so the data won't be overwritten and we can compare the checksum
+
+Activate DR volume ${volume_id}
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    activate_dr_volume    ${volume_name}
+
+Create persistentvolume for volume ${volume_id}
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    create_persistentvolume_for_volume    ${volume_name}
+
+Create persistentvolumeclaim for volume ${volume_id}
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    create_persistentvolumeclaim_for_volume    ${volume_name}
+
+Create persistentvolume for volume ${volume_id} will fail
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    Run Keyword And Expect Error    *    create_persistentvolume_for_volume    ${volume_name}    retry=False
+
+Create persistentvolumeclaim for volume ${volume_id} will fail
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    Run Keyword And Expect Error    *    create_persistentvolumeclaim_for_volume    ${volume_name}    retry=False
+
+Create volume ${volume_id} with ${size} GB and no replicas on the attached node
+    Create volume ${volume_id} with ${size} GB and 3 replicas
+    Attach volume ${volume_id} to node 1
+    Wait for volume ${volume_id} healthy
+    Update volume ${volume_id} replica count to 2
+    Delete volume ${volume_id} replica on volume node

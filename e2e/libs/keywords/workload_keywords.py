@@ -6,7 +6,10 @@ from node import Node
 from persistentvolumeclaim import PersistentVolumeClaim
 
 from workload.pod import get_volume_name_by_pod
+from workload.pod import new_busybox_manifest
+from workload.pod import create_pod
 from workload.pod import delete_pod
+from workload.pod import cleanup_pods
 from workload.workload import check_pod_data_checksum
 from workload.workload import get_workload_pods
 from workload.workload import get_workload_pod_names
@@ -18,9 +21,12 @@ from workload.workload import wait_for_workload_pods_running
 from workload.workload import wait_for_workload_pods_stable
 from workload.workload import wait_for_workload_pod_kept_in_state
 from workload.workload import get_pod_node
+from workload.pod import list_pods
 
 from utility.constant import ANNOT_CHECKSUM
 from utility.constant import ANNOT_EXPANDED_SIZE
+from utility.constant import LABEL_TEST
+from utility.constant import LABEL_TEST_VALUE
 from utility.utility import logging
 from node.utility import check_replica_locality
 from node.node import Node
@@ -35,6 +41,17 @@ class workload_keywords:
         self.node = Node()
         self.persistentvolumeclaim = PersistentVolumeClaim()
         self.volume = Volume()
+
+    def create_pod(self, pod_name, claim_name):
+        logging(f'Creating pod {pod_name} using pvc {claim_name}')
+        create_pod(new_busybox_manifest(pod_name, claim_name))
+
+    def delete_pod(self, pod_name):
+        logging(f'Deleting pod {pod_name}')
+        delete_pod(pod_name)
+
+    def cleanup_pods(self):
+        cleanup_pods()
 
     def check_pod_data_checksum(self, expected_checksum, pod_name, file_name):
         logging(f'Checking checksum for file {file_name} in pod {pod_name}')

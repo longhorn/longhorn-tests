@@ -5,6 +5,10 @@ from workload.pod import create_pod
 from workload.pod import delete_pod
 from workload.pod import new_pod_manifest
 from workload.pod import IMAGE_BUSYBOX
+
+from utility.constant import LABEL_TEST
+from utility.constant import LABEL_TEST_VALUE
+
 import time
 
 
@@ -49,3 +53,16 @@ def disconnect_node_network(node_name, disconnection_time_in_sec=10):
     time.sleep(disconnection_time_in_sec)
 
     delete_pod(pod_name)
+
+def disconnect_node_network_without_waiting_completion(node_name, disconnection_time_in_sec=10):
+    manifest = new_pod_manifest(
+        image=IMAGE_BUSYBOX,
+        command=["nsenter", "--mount=/rootfs/proc/1/ns/mnt", "--net=/rootfs/proc/1/ns/net", "--", "sh"],
+        args=["-c", f"sleep 10 && tc qdisc replace dev eth0 root netem loss 100% && sleep {disconnection_time_in_sec} && tc qdisc del dev eth0 root"],
+        node_name=node_name,
+        labels = {LABEL_TEST: LABEL_TEST_VALUE}
+    )
+    pod_name = manifest['metadata']['name']
+    create_pod(manifest, is_wait_for_pod_running=True)
+
+    return pod_name

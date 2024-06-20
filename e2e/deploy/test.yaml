@@ -25,6 +25,26 @@ metadata:
   labels:
     longhorn-test: test-job
 spec:
+  nodeName: control-plane-node-name
+  tolerations:
+    - key: "node-role.kubernetes.io/master"
+      operator: "Exists"
+      effect: "NoSchedule"
+    - key: "node-role.kubernetes.io/master"
+      operator: "Exists"
+      effect: "NoExecute"
+    - key: "node-role.kubernetes.io/control-plane"
+      operator: "Exists"
+      effect: "NoSchedule"
+    - key: "node-role.kubernetes.io/control-plane"
+      operator: "Exists"
+      effect: "NoExecute"
+    - key: "node-role.kubernetes.io/etcd"
+      operator: "Exists"
+      effect: "NoSchedule"
+    - key: "node-role.kubernetes.io/etcd"
+      operator: "Exists"
+      effect: "NoExecute"
   containers:
   - name: longhorn-test
     image: longhornio/longhorn-e2e-test:master-head
@@ -38,7 +58,7 @@ spec:
     env:
     - name: LONGHORN_JUNIT_REPORT_PATH
       value: /tmp/test-report/longhorn-test-junit-report.xml
-    - name: LONGHORN_BACKUPSTORES
+    - name: LONGHORN_BACKUPSTORE
       value: "s3://backupbucket@us-east-1/backupstore$minio-secret, nfs://longhorn-test-nfs-svc.default:/opt/backupstore"
     - name: LONGHORN_BACKUPSTORE_POLL_INTERVAL
       value: "30"

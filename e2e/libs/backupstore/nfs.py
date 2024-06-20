@@ -5,10 +5,14 @@ from urllib.parse import urlparse
 
 class Nfs(Base):
 
+    def __init__(self):
+        super().__init__()
+        self.mount_nfs_backupstore()
+
     def mount_nfs_backupstore(self, mount_path="/mnt/nfs"):
         cmd = ["mkdir", "-p", mount_path]
         subprocess.check_output(cmd)
-        nfs_backuptarget = self.get_backup_target()
+        nfs_backuptarget = self.backup_target
         nfs_url = urlparse(nfs_backuptarget).netloc + \
             urlparse(nfs_backuptarget).path
         cmd = ["mount", "-t", "nfs", "-o", "nfsvers=4.2", nfs_url, mount_path]
@@ -21,7 +25,7 @@ class Nfs(Base):
         subprocess.check_output(cmd)
 
     def get_nfs_mount_point(self):
-        nfs_backuptarget = self.get_backup_target()
+        nfs_backuptarget = self.backup_target
         nfs_url = urlparse(nfs_backuptarget).netloc + \
             urlparse(nfs_backuptarget).path
 
