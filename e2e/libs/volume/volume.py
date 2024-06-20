@@ -18,8 +18,8 @@ class Volume(Base):
         else:
             self.volume = Rest(node_exec)
 
-    def create(self, volume_name, size, replica_count, frontend, migratable, access_mode, data_engine, backing_image):
-        return self.volume.create(volume_name, size, replica_count, frontend, migratable, access_mode, data_engine, backing_image)
+    def create(self, volume_name, size, numberOfReplicas, frontend, migratable, accessMode, dataEngine, backingImage, Standby, fromBackup):
+        return self.volume.create(volume_name, size, numberOfReplicas, frontend, migratable, accessMode, dataEngine, backingImage, Standby, fromBackup)
 
     def delete(self, volume_name):
         return self.volume.delete(volume_name)
@@ -75,6 +75,9 @@ class Volume(Base):
     def wait_for_volume_migration_completed(self, volume_name, node_name):
         self.volume.wait_for_volume_migration_completed(volume_name, node_name)
 
+    def wait_for_volume_restoration_completed(self, volume_name, backup_name):
+        self.volume.wait_for_volume_restoration_completed(volume_name, backup_name)
+
     def wait_for_volume_expand_to_size(self, volume_name, size):
         return self.volume.wait_for_volume_expand_to_size(volume_name, size)
 
@@ -107,14 +110,38 @@ class Volume(Base):
     def crash_replica_processes(self, volume_name):
         return self.volume.crash_replica_processes(volume_name)
 
+    def crash_node_replica_process(self, volume_name, node_name):
+        return self.volume.crash_node_replica_process(volume_name, node_name)
+
+    def wait_for_replica_stopped(self, volume_name, node_name):
+        return self.volume.is_replica_running(volume_name, node_name, is_running=False)
+
+    def wait_for_replica_running(self, volume_name, node_name):
+        return self.volume.is_replica_running(volume_name, node_name, is_running=True)
+
+    def get_replica_name_on_node(self, volume_name, node_name):
+        return self.volume.get_replica_name_on_node(volume_name, node_name)
+
     def wait_for_replica_rebuilding_complete(self, volume_name, node_name):
         return self.volume.wait_for_replica_rebuilding_complete(volume_name, node_name)
 
     def check_data_checksum(self, volume_name, data_id):
         return self.volume.check_data_checksum(volume_name, data_id)
 
+    def get_checksum(self, volume_name):
+        return self.volume.get_checksum(volume_name)
+
     def validate_volume_replicas_anti_affinity(self, volume_name):
         return self.volume.validate_volume_replicas_anti_affinity(volume_name)
 
     def update_volume_spec(self, volume_name, key, value):
         return self.volume.update_volume_spec(volume_name, key, value)
+
+    def activate(self, volume_name):
+        return self.volume.activate(volume_name)
+
+    def create_persistentvolume(self, volume_name, retry):
+        return self.volume.create_persistentvolume(volume_name, retry)
+
+    def create_persistentvolumeclaim(self, volume_name, retry):
+        return self.volume.create_persistentvolumeclaim(volume_name, retry)

@@ -58,17 +58,23 @@ class PersistentVolumeClaim():
             assert e.status == 404
 
         retry_count, retry_interval = get_retry_count_and_interval()
+        deleted = False
         for _ in range(retry_count):
-            resp = api.list_namespaced_persistent_volume_claim(namespace=namespace)
-            deleted = True
-            for item in resp.items:
-                if item.metadata.name == name:
-                    deleted = False
-                    break
-            if deleted:
+            if not self.is_exist(name, namespace):
+                deleted = True
                 break
             time.sleep(retry_interval)
         assert deleted
+
+    def is_exist(self, name, namespace='default'):
+        exist = False
+        api = client.CoreV1Api()
+        resp = api.list_namespaced_persistent_volume_claim(namespace=namespace)
+        for item in resp.items:
+            if item.metadata.name == name:
+                exist = True
+                break
+        return exist
 
     def get(self, claim_name):
         return self.claim.get(claim_name)

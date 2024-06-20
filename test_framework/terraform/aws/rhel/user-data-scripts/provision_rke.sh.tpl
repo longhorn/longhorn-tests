@@ -12,7 +12,7 @@ fi
 
 sudo yum update -y
 sudo yum group install -y "Development Tools"
-sudo yum install -y iscsi-initiator-utils nfs-utils nfs4-acl-tools
+sudo yum install -y iscsi-initiator-utils nfs-utils nfs4-acl-tools cryptsetup
 sudo systemctl -q enable iscsid
 sudo systemctl start iscsid
 sudo systemctl disable nm-cloud-setup.service nm-cloud-setup.timer

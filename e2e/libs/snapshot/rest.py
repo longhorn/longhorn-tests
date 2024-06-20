@@ -13,11 +13,14 @@ class Rest(Base):
         self.volume = RestVolume(NodeExec.get_instance())
         self.retry_count, self.retry_interval = get_retry_count_and_interval()
 
-    def create(self, volume_name, snapshot_id):
+    def create(self, volume_name, snapshot_id, waiting):
         logging(f"Creating volume {volume_name} snapshot {snapshot_id}")
         volume = self.volume.get(volume_name)
         snapshot = volume.snapshotCreate()
         snap_name = snapshot.name
+
+        if not waiting:
+            return snapshot
 
         snapshot_created = False
         for i in range(self.retry_count):
