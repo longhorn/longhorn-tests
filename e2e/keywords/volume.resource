@@ -250,3 +250,11 @@ Create volume ${volume_id} with ${size} GB and no replicas on the attached node
     Wait for volume ${volume_id} healthy
     Update volume ${volume_id} replica count to 2
     Delete volume ${volume_id} replica on volume node
+
+Record volume ${volume_id} replica names
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    record_volume_replica_names    ${volume_name}
+
+Check volume ${volume_id} replica names are as recorded
+    ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
+    check_volume_replica_names_recorded    ${volume_name}

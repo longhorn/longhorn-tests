@@ -11,6 +11,7 @@ Resource    ../keywords/recurringjob.resource
 Resource    ../keywords/statefulset.resource
 Resource    ../keywords/volume.resource
 Resource    ../keywords/workload.resource
+Resource    ../keywords/setting.resource
 
 Test Setup    Set test environment
 Test Teardown    Cleanup test resources
@@ -234,4 +235,27 @@ Reboot Replica Node While Heavy Writing And Recurring Jobs Exist
         And Check recurringjobs for volume 1 work
         And Check volume 0 works
         And Check volume 1 works
+    END
+
+Power Off Replica Node Should Not Rebuild New Replica On Same Node
+    [Tags]    replica   reboot
+    [Documentation]    Ensures that no new replica is created and rebuilt on the
+    ...                same node if the node is powered off for a duration longer
+    ...                than the replica-replenishment-wait-interval. When the node
+    ...                is powered on, the existing replica should be reused.
+    ...
+    ...                Issue: https://github.com/longhorn/longhorn/issues/1992
+
+    Given Set setting replica-replenishment-wait-interval to 30
+    And Set setting replica-soft-anti-affinity to false
+    And Create volume 0 with 1 GB and 3 replicas
+    And Attach volume 0 to node 0
+    And Record volume 0 replica names
+
+    FOR    ${i}    IN RANGE    ${LOOP_COUNT}
+        When Power off node 1 for 1 mins
+        And Wait for longhorn ready
+        And Wait for volume 0 healthy
+
+        Then Check volume 0 replica names are as recorded
     END
