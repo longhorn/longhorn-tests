@@ -9,16 +9,16 @@ from utility.utility import get_longhorn_client
 
 
 class Rest(Base):
-    def __init__(self, node_exec):
-        self.node_exec = node_exec
+    def __init__(self):
+        pass
 
-    def get_replica(self, volume_name, node_name):
+    def get(self, volume_name, node_name):
         return NotImplemented
 
-    def delete_replica(self, volume_name, node_name):
+    def delete(self, volume_name, node_name):
         return NotImplemented
 
-    def wait_for_replica_rebuilding_start(self, volume_name, node_name):
+    def wait_for_rebuilding_start(self, volume_name, node_name):
         rebuilding_replica_name = None
         for i in range(RETRY_COUNTS):
             try:
@@ -50,7 +50,7 @@ class Rest(Base):
             time.sleep(RETRY_INTERVAL)
         assert started, f'replica {rebuilding_replica_name} rebuilding starting failed'
 
-    def wait_for_replica_rebuilding_complete(self, volume_name, node_name):
+    def wait_for_rebuilding_complete(self, volume_name, node_name):
         completed = False
         for i in range(RETRY_COUNTS):
             try:
