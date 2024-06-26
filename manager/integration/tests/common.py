@@ -6182,7 +6182,9 @@ def system_restore_wait_for_state(state, name, client):  # NOQA
         except Exception:
             time.sleep(RETRY_INTERVAL_LONG)
 
-    assert ok
+    assert ok, \
+        f" Expected state {state}, " \
+        f" but got {system_restore.state} after {RETRY_COUNTS} attempts"
 
 
 def create_volume_and_write_data(client, volume_name, volume_size=SIZE):
