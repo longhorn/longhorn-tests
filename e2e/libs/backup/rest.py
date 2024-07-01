@@ -15,8 +15,9 @@ class Rest(Base):
         self.snapshot = RestSnapshot()
         self.retry_count, self.retry_interval = get_retry_count_and_interval()
 
-    def create(self, volume_name, backup_id):
+    def create(self, volume_name, backup_id, timeout):
         # create snapshot
+        logging(f"volume is {volume_name} bckupid is {backup_id}")
         snapshot = self.snapshot.create(volume_name, backup_id)
 
         volume = self.volume.get(volume_name)
@@ -24,7 +25,7 @@ class Rest(Base):
         # after backup request we need to wait for completion of the backup
         # since the backup.cfg will only be available once the backup operation
         # has been completed
-        self.wait_for_backup_completed(volume_name, snapshot.name)
+        self.wait_for_backup_completed(volume_name, snapshot.name, timeout)
 
         backup = self.get_by_snapshot(volume_name, snapshot.name)
 
@@ -79,9 +80,11 @@ class Rest(Base):
                 return backup_volume
         return None
 
-    def wait_for_backup_completed(self, volume_name, snapshot_name):
+    def wait_for_backup_completed(self, volume_name, snapshot_name, timeout):
+        if timeout is None:
+            timeout = self.retry_count
         completed = False
-        for i in range(self.retry_count):
+        for i in range(timeout):
             logging(f"Waiting for backup from volume {volume_name} snapshot {snapshot_name} completed ... ({i})")
             volume = self.volume.get(volume_name)
             for backup in volume.backupStatus:

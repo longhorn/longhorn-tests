@@ -21,7 +21,9 @@ Create deployment ${deployment_id} with persistentvolumeclaim ${claim_id} with m
 
 Write ${size} MB data to file ${file_name} in deployment ${deployment_id}
     ${deployment_name} =    generate_name_with_suffix    deployment    ${deployment_id}
-    write_workload_pod_random_data    ${deployment_name}    ${size}    ${file_name}
+    ${file_checksum} =    write_workload_pod_random_data    ${deployment_name}    ${size}    ${file_name}
+    Should Not Be Empty  ${file_checksum}
+    [Return]  ${file_checksum}
 
 Check deployment ${deployment_id} data in file ${file_name} is intact
     ${deployment_name} =    generate_name_with_suffix    deployment    ${deployment_id}

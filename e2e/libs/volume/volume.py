@@ -48,6 +48,9 @@ class Volume(Base):
     def wait_for_volume_state(self, volume_name, desired_state):
         return self.volume.wait_for_volume_state(volume_name, desired_state)
 
+    def wait_for_restore_required_status(self, volume_name, restore_required_state):
+        return self.volume.wait_for_restore_required_status(volume_name, restore_required_state)
+
     def wait_for_volume_attached(self, volume_name):
         self.volume.wait_for_volume_robustness_not(volume_name, "unknown")
         self.volume.wait_for_volume_state(volume_name, "attached")

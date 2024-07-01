@@ -21,6 +21,13 @@ Create DR volume ${volume_id} from backup ${backup_id}
     ${backup_url} =    get_backup_url    ${backup_id}
     create_volume   ${volume_name}    2    3    frontend=    Standby=True    fromBackup=${backup_url}
 
+Create volume ${volume_id} from ${workload_kind} ${workload_id} volume backup ${backup_id}
+    ${workload_name}=   generate_name_with_suffix    ${workload_kind}    ${workload_id}
+    ${workload_volume_name}=    get_workload_volume_name    ${workload_name}
+    ${volume_name}=    generate_name_with_suffix    volume    ${volume_id}
+    ${backup_url}=    get_backup_url    ${backup_id}    ${workload_volume_name}
+    create_volume   ${volume_name}    3    3    fromBackup=${backup_url}
+
 No volume created
     ${volumes} =    list_volumes
     Should Be True    len(${volumes}) == 0
@@ -229,10 +236,12 @@ Activate DR volume ${volume_id}
     activate_dr_volume    ${volume_name}
 
 Create persistentvolume for volume ${volume_id}
+    ${volume_id}=  Convert To String  ${volume_id}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     create_persistentvolume_for_volume    ${volume_name}
 
 Create persistentvolumeclaim for volume ${volume_id}
+    ${volume_id}=  Convert To String  ${volume_id}
     ${volume_name} =    generate_name_with_suffix    volume    ${volume_id}
     create_persistentvolumeclaim_for_volume    ${volume_name}
 

@@ -15,8 +15,8 @@ class Backup(Base):
         else:
             self.backup = Rest()
 
-    def create(self, volume_name, backup_id):
-        return self.backup.create(volume_name, backup_id)
+    def create(self, volume_name, backup_id, timeout):
+        return self.backup.create(volume_name, backup_id, timeout)
 
     def get(self, backup_id, volume_name):
         return self.backup.get(backup_id, volume_name)
@@ -31,6 +31,11 @@ class Backup(Base):
         backup_volume = self.get_backup_volume(volume_name)
         assert not backup_volume['messages'], \
             f"expect backup volume {volume_name} has no error, but it's {backup_volume['messages']}"
+
+    def verify_backup_count(self, volume_name, expected_backup_count):
+        volume_backup_count= len(self.list(volume_name))
+        assert volume_backup_count == expected_backup_count, \
+            f"Expected {expected_backup_count} backups, but found {volume_backup_count} backups for volume {volume_name}"
 
     def delete(self, volume_name, backup_id):
         return NotImplemented
