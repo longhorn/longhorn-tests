@@ -726,3 +726,22 @@ def test_snapshot_cr(client, volume_name, settings_reset):  # NOQA
         assert len(snapshots) == 1
         assert snapshots[0].created != created_time
         created_time = snapshots[0].created
+
+@pytest.mark.skip(reason="TODO") # NOQA
+def test_freeze_file_system_for_snapshot(): # NOQA
+    """
+    1. Record the test start time.
+    2. Set freeze-filesystem-for-snapshot to true.
+    3. Create a Longhorn volume 6 GiB with a replica on every Longhorn node.
+    4. Create a workload pod that mounts the volume and runs
+       "dd if=/dev/random of=/path/to/file/under/mount/point bs=1M count=5000".
+       (Add "status=progress" if running manually to see the progress freeze.)
+    5. After the workload is running, take a snapshot.
+    6. Verify the snapshot succeeded.
+    7. Verify the pod completed successfully.
+    8. Verify the following logs appeared in the instance-manager running the
+       volume engine after the test began. (Checking logs this way isn't ideal,
+       but there isn't really a better way to confirm the freeze.)
+       - "Freezing filesystem mounted at"
+       - "Unfreezing filesystem mounted at"
+    """
