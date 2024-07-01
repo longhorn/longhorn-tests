@@ -6,6 +6,7 @@ LABEL_TEST_VALUE = 'e2e'
 
 ANNOT_CHECKSUM = f'{LABEL_TEST}/last-recorded-checksum'
 ANNOT_EXPANDED_SIZE = f'{LABEL_TEST}/last-recorded-expanded-size'
+ANNOT_REPLICA_NAMES = f'{LABEL_TEST}/replica-names'
 
 NAME_PREFIX = 'e2e-test'
 STORAGECLASS_NAME_PREFIX = 'longhorn-test'
