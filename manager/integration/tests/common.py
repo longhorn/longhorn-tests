@@ -838,7 +838,7 @@ def read_pod_block_volume_data(api, pod_name, data_size, offset, device_path):
             tty=False)
 
 
-def exec_command_in_pod(api, command, pod_name, namespace):
+def exec_command_in_pod(api, command, pod_name, namespace, container=None):
     """
     Execute command in the pod.
     Args:
@@ -859,7 +859,7 @@ def exec_command_in_pod(api, command, pod_name, namespace):
         return stream(
             api.connect_get_namespaced_pod_exec, pod_name, namespace,
             command=exec_command, stderr=True, stdin=False, stdout=True,
-            tty=False)
+            container=container, tty=False)
 
 
 def get_pod_data_md5sum(api, pod_name, path):
