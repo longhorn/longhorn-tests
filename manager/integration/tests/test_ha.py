@@ -1932,21 +1932,20 @@ def test_rebuild_after_replica_file_crash(client, volume_name): # NOQA
     check_volume_data(volume, data)
 
 
-def test_extra_replica_cleanup(client, volume_name, settings_reset): # NOQA
+def test_replica_should_not_be_created_when_no_suitable_node_found(client, volume_name, settings_reset): # NOQA
     """
-    Test extra failed to scheduled replica cleanup
-    when no eviction requested
+    Test replica should not be created when no suitable node is found.
 
     1. Make sure 'Replica Node Level Soft Anti-Affinity' is disabled.
     2. Create a volume with 3 replicas.
     3. Attach the volume to a node and write some data to it and
     save the checksum.
     4. Increase the volume replica number to 4.
-    5. Volume should show failed to schedule and an extra stop replica.
-    6. Decrease the volume replica number to 3.
-    7. Volume should show healthy and the extra failed to scheduled replica
-    should be removed.
-    8. Check the data in the volume and make sure it's same as the checksum.
+    5. No Replica should be created.
+    6. Volume should show failed to schedule.
+    7. Decrease the volume replica number to 3.
+    8. Volume should be healthy.
+    9. Check the data in the volume and make sure it's same as the checksum.
     """
     replica_node_soft_anti_affinity_setting = \
         client.by_id_setting(SETTING_REPLICA_NODE_SOFT_ANTI_AFFINITY)
@@ -1966,19 +1965,16 @@ def test_extra_replica_cleanup(client, volume_name, settings_reset): # NOQA
     volume = wait_for_volume_healthy(client, volume_name)
     data = write_volume_random_data(volume)
     volume = volume.updateReplicaCount(replicaCount=4)
-    wait_for_volume_replica_count(client, volume_name, 4)
+    try:
+        wait_for_volume_replica_count(client, volume_name, 4)
+        raise AssertionError("Replica should not be created")
+    except AssertionError:
+        pass
 
-    volume = client.by_id_volume(volume_name)
+    volume = wait_for_volume_degraded(client, volume_name)
 
-    err_replica = None
-    for replica in volume.replicas:
-        if replica.running is False:
-            err_replica = replica
-            break
-
-    assert err_replica is not None
-    assert err_replica.running is False
-    assert err_replica.mode == ""
+    assert volume.conditions.Scheduled.status == "False"
+    assert volume.conditions.Scheduled.reason == "ReplicaSchedulingFailure"
 
     volume = volume.updateReplicaCount(replicaCount=3)
     wait_for_volume_replica_count(client, volume_name, 3)
