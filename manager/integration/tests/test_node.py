@@ -52,6 +52,7 @@ from common import SETTING_NODE_DRAIN_POLICY, DATA_SIZE_IN_MB_3
 from common import make_deployment_with_pvc # NOQA
 from common import prepare_host_disk, wait_for_volume_degraded
 from common import create_deployment_and_write_data
+from common import wait_scheduling_failure
 
 from backupstore import set_random_backupstore # NOQA
 from concurrent.futures import ThreadPoolExecutor, TimeoutError
@@ -2342,27 +2343,19 @@ def test_node_eviction_no_schedulable_node(client, core_api, csi_pv, pvc, pod_ma
                                  allowScheduling=False,
                                  evictionRequested=True,
                                  retry=True)
-    wait_for_volume_replica_count(client, volume_name, 3)
+    try:
+        wait_for_volume_replica_count(client, volume_name, 3)
+        raise AssertionError("no new replica should be created")
+    except AssertionError:
+        pass
 
-    volume = client.by_id_volume(volume_name)
-    volume_err_replica = None
-    for r in volume.replicas:
-        if r.name in created_replicas:
-            assert r.running is True
-            assert r.mode == "RW"
-        else:
-            volume_err_replica = r
-            break
-    assert volume_err_replica is not None
-    assert volume_err_replica.running is False
-    assert volume_err_replica.mode == ''
+    wait_scheduling_failure(client, volume_name)
 
     set_node_scheduling_eviction(client,
                                  node1,
                                  allowScheduling=False,
                                  evictionRequested=False,
                                  retry=True)
-    wait_for_volume_replica_count(client, volume_name, 2)
 
     volume = client.by_id_volume(volume_name)
     for r in volume.replicas:

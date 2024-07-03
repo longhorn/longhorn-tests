@@ -3301,13 +3301,19 @@ def wait_for_volume_migration_ready(client, volume_name):
     return v
 
 
-def wait_for_volume_migration_node(client, volume_name, node_id):
+def wait_for_volume_migration_node(client, volume_name, node_id,
+                                   expected_replica_count=-1):
     ready = False
     for i in range(RETRY_COUNTS):
         v = client.by_id_volume(volume_name)
+
+        if expected_replica_count == -1:
+            expected_replica_count = v.numberOfReplicas
+        assert expected_replica_count >= 0
+
         engines = v.controllers
         replicas = v.replicas
-        if len(engines) == 1 and len(replicas) == v.numberOfReplicas:
+        if len(engines) == 1 and len(replicas) == expected_replica_count:
             e = engines[0]
             if e.endpoint != "":
                 assert e.hostId == node_id
@@ -6182,7 +6188,9 @@ def system_restore_wait_for_state(state, name, client):  # NOQA
         except Exception:
             time.sleep(RETRY_INTERVAL_LONG)
 
-    assert ok
+    assert ok, \
+        f" Expected state {state}, " \
+        f" but got {system_restore.state} after {RETRY_COUNTS} attempts"
 
 
 def create_volume_and_write_data(client, volume_name, volume_size=SIZE):
