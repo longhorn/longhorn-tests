@@ -80,6 +80,7 @@ from common import wait_for_backup_volume_backing_image_synced
 from common import RETRY_COMMAND_COUNT
 from common import wait_for_snapshot_count
 from common import DEFAULT_BACKUP_COMPRESSION_METHOD
+from common import wait_scheduling_failure
 
 from backupstore import set_random_backupstore # NOQA
 from backupstore import backupstore_cleanup
@@ -2463,7 +2464,7 @@ def test_replica_failure_during_attaching(settings_reset, client, core_api, volu
     9. Attach volume2.
        --> Verify volume will be attached with state Degraded.
     10. Wait for the replenishment interval.
-        --> Verify a new replica will be created but it cannot be scheduled.
+        --> Verify a new replica cannot be scheduled.
     11. Enable the default disk for the host node.
     12. Wait for volume2 becoming Healthy.
     13. Verify data content and r/w capability for volume2.
@@ -2516,11 +2517,13 @@ def test_replica_failure_during_attaching(settings_reset, client, core_api, volu
                                   VOLUME_ROBUSTNESS_DEGRADED)
 
     time.sleep(10)
-    wait_for_volume_replica_count(client, volume_name_2, 4)
-    common.wait_for_volume_condition_scheduled(client, volume_name_2,
-                                               "status", "False")
-    volume_2 = client.by_id_volume(volume_name_2)
-    assert volume_2.conditions.Scheduled.reason == "ReplicaSchedulingFailure"
+    try:
+        wait_for_volume_replica_count(client, volume_name_2, 4)
+        raise AssertionError("No new replica should be created")
+    except AssertionError:
+        pass
+
+    wait_scheduling_failure(client, volume_name_2)
 
     update_disks[default_disk_name].allowScheduling = True
     update_disks["extra-disk"]["allowScheduling"] = False
