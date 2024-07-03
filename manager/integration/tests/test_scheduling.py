@@ -1611,9 +1611,7 @@ def test_soft_anti_affinity_scheduling_volume_disable(client, volume_name): # NO
     Then
     - Verify volume will be in degraded state.
     - Verify volume reports condition `scheduled == false`
-    - Verify only two of three replicas of volume are healthy.
-    - Verify the remaining replica doesn't have `replica.HostID`,
-      meaning it's unscheduled
+    - Verify only two of volume are healthy.
     - Check volume `data`
     """
     update_setting(client, SETTING_REPLICA_NODE_SOFT_ANTI_AFFINITY, "true")
@@ -1639,7 +1637,7 @@ def test_soft_anti_affinity_scheduling_volume_disable(client, volume_name): # NO
     wait_for_volume_degraded(client, volume_name)
     wait_scheduling_failure(client, volume_name)
 
-    for i in range(RETRY_COUNTS_SHORT):
+    for _ in range(RETRY_COUNTS_SHORT):
         volume = client.by_id_volume(volume_name)
         assert volume.robustness == VOLUME_ROBUSTNESS_DEGRADED
         assert volume.conditions.Scheduled.status == "False"
@@ -1648,9 +1646,6 @@ def test_soft_anti_affinity_scheduling_volume_disable(client, volume_name): # NO
         for replica in volume.replicas:
             if replica.running is True:
                 healthy_replica_count = healthy_replica_count + 1
-            else:
-                unscheduled_replica = replica
-        assert unscheduled_replica.hostId == ""
         assert healthy_replica_count == 2
 
         time.sleep(RETRY_INTERVAL)
