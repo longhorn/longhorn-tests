@@ -135,7 +135,6 @@ def test_migration_with_unscheduled_replica(clients, volume_name):  # NOQA
     8. Wait for migration ready (engine running on node 2).
        The newly created migration replica count should be the same as
        that of the current replicas.
-       And there is one migration replica not scheduled, either.
     9. Detach volume from node 1.
     10. Observe volume migrated to node 2 (single active engine)
     11. Enable the scheduling for the node and wait for rebuilding complete.
@@ -167,15 +166,16 @@ def test_migration_with_unscheduled_replica(clients, volume_name):  # NOQA
     data = common.write_volume_random_data(volume)
     common.check_volume_data(volume, data)
 
-    # collect replicas name before detaching,
     # unscheduled replica would be deleted.
+    volume.detach(attachmentID=attachment_id)
+    volume = common.wait_for_volume_detached(client, volume_name)
+
+    # collect replicas names
     old_replicas = []
     v = client.by_id_volume(volume_name)
     replicas = v.replicas
     for r in replicas:
         old_replicas.append(r.name)
-    volume.detach(attachmentID=attachment_id)
-    volume = common.wait_for_volume_detached(client, volume_name)
 
     # Step 6
     attachment_id_1 = common.generate_attachment_ticket_id()
@@ -205,9 +205,10 @@ def test_migration_with_unscheduled_replica(clients, volume_name):  # NOQA
     volume.detach(attachmentID=attachment_id_1)
 
     # Step 10
-    volume = common.wait_for_volume_migration_node(client,
-                                                   volume_name,
-                                                   local_node)
+    volume = common.wait_for_volume_migration_node(
+        client, volume_name, local_node,
+        expected_replica_count=len(new_replicas)
+    )
 
     # Step 11
     set_node_scheduling(client, schedule_node,
