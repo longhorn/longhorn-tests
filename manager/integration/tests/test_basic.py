@@ -104,6 +104,7 @@ from common import RETRY_COUNTS_SHORT
 from common import scale_up_engine_image_daemonset
 from common import BACKUP_TARGET_MESSAGE_EMPTY_URL
 from common import BACKUP_TARGET_MESSAGES_INVALID
+from common import wait_scheduling_failure
 
 from backupstore import backupstore_delete_volume_cfg_file
 from backupstore import backupstore_cleanup
@@ -3694,8 +3695,8 @@ def test_allow_volume_creation_with_degraded_availability_restore(set_random_bac
     4. Wait for the restore to complete and volume detach automatically.
        Then check the scheduled condition still true.
     5. Attach and wait for the volume.
-        1. Replicas scheduling to node 1 and 2 success.
-           Replica scheduling to node 3 fail.
+        1. 2 Replicas successfully scheduled to node 1 and 2.
+           1 Replica cannot be created due to node 3 is unscheduled.
         2. The scheduled condition becomes false.
         3. Verify the data.
     """
@@ -3781,11 +3782,11 @@ def test_allow_volume_creation_with_degraded_availability_restore(set_random_bac
                                                 to_nodes=[node1.name,
                                                           node2.name],
                                                 expect_success=2,
-                                                expect_fail=1,
+                                                expect_fail=0,
                                                 chk_vol_healthy=False,
                                                 chk_replica_running=False)
-    wait_for_volume_condition_scheduled(client, dst_vol_name,
-                                        "status", "False")
+
+    wait_scheduling_failure(client, dst_vol_name)
 
     # verify the data
     dst_md5sum = get_pod_data_md5sum(core_api, dst_pod_name, data_path)
