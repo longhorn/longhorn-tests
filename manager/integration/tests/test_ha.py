@@ -2218,13 +2218,9 @@ def test_reuse_failed_replica(client, core_api, volume_name): # NOQA
            for the volume.
     6. Update setting `replica-replenishment-wait-interval` to
        a small value.
-    7. Verify Longhorn starts to create a new replica for the volume.
-       Notice that the new replica scheduling will fail.
-    8. Update setting `replica-replenishment-wait-interval` to
-       a large value.
-    9. Delete the newly created replica.
-       --> Verify Longhorn won't create a new replica on the node
-           for the volume.
+    7. Verify no new replica will be created.
+    8. Verify volume replica scheduling should fail.
+    9. Update setting `replica-replenishment-wait-interval` to a large value.
     10. Enable the scheduling for the node.
     11. Verify the failed replica (in step 5) will be reused.
     12. Verify the volume r/w still works fine.
@@ -2285,34 +2281,18 @@ def test_reuse_failed_replica(client, core_api, volume_name): # NOQA
         client.by_id_setting(SETTING_REPLICA_REPLENISHMENT_WAIT_INTERVAL)
     client.update(replenish_wait_setting, value=str(short_wait))
 
-    new_replica = None
-    for i in range(RETRY_COUNTS):
-        vol = client.by_id_volume(volume_name)
-        for r in vol.replicas:
-            if r.name not in {replica_1.name, replica_2.name, replica_3.name}:
-                new_replica = r
-        if new_replica is not None:
-            break
-        time.sleep(RETRY_INTERVAL)
-    assert new_replica is not None
-    assert new_replica.hostId == ""
+    try:
+        common.wait_for_volume_replica_count(client, volume_name,
+                                             len(vol.replicas)+1)
+        raise Exception("No new replica should be created")
+    except AssertionError:
+        pass
+
+    wait_scheduling_failure(client, volume_name)
 
     replenish_wait_setting = \
         client.by_id_setting(SETTING_REPLICA_REPLENISHMENT_WAIT_INTERVAL)
     client.update(replenish_wait_setting, value=str(long_wait))
-
-    vol = client.by_id_volume(volume_name)
-    vol.replicaRemove(name=new_replica.name)
-    # Removing replica doesn't take effect immediately
-    # Wait for Longhorn to finish removing it before process
-    for i in range(RETRY_COUNTS):
-        vol = client.by_id_volume(volume_name)
-        if len(vol.replicas) == 3:
-            break
-        time.sleep(RETRY_INTERVAL)
-    current_replica_names = set([r.name for r in vol.replicas])
-    assert current_replica_names == \
-           {replica_1.name, replica_2.name, replica_3.name}
 
     current_host = client.by_id_node(id=host_id)
     client.update(current_host, allowScheduling=True)
