@@ -100,7 +100,6 @@ from common import BACKUP_COMPRESSION_METHOD_GZIP
 from common import BACKUP_COMPRESSION_METHOD_NONE
 from common import create_and_wait_deployment
 from common import get_custom_object_api_client
-from common import RETRY_COUNTS_SHORT
 from common import scale_up_engine_image_daemonset
 from common import BACKUP_TARGET_MESSAGE_EMPTY_URL
 from common import BACKUP_TARGET_MESSAGES_INVALID
@@ -5670,7 +5669,7 @@ def test_backuptarget_invalid(apps_api, # NOQA
     snap = create_snapshot(client, volume_name)
     volume.snapshotBackup(name=snap.name)
 
-    for i in range(RETRY_COUNTS_SHORT):
+    for i in range(RETRY_COUNTS):
         api = get_custom_object_api_client()
         backups = api.list_namespaced_custom_object("longhorn.io",
                                                     "v1beta2",
