@@ -35,7 +35,7 @@ The test cases are in https://github.com/longhorn/longhorn-tests/tree/master/man
 See [here](https://ci.longhorn.io/) for daily automation test results.
 
 # Preview the website
-To preview the website changes, you will need to [install Hugo](http://localhost:1313/).
+To preview the website changes, you will need to [install Hugo](https://github.com/gohugoio/hugo/releases/tag/v0.92.2).
 Once Hugo is installed, run the following:
 ```shell
 hugo server --buildDrafts --buildFuture
