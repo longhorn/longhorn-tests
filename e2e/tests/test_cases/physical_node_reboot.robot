@@ -1,6 +1,5 @@
 *** Settings ***
 Documentation    Physical node reboot
-...              https://longhorn.github.io/longhorn-tests/manual/pre-release/node-not-ready/node-restart/physical-node-reboot/
 
 Test Tags    manual_test_case
 
