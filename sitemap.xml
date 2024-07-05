@@ -132,10 +132,6 @@
   </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/node/</loc>
   </url><url>
-    <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/node-not-ready/node-disconnection/</loc>
-  </url><url>
-    <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/node-not-ready/node-disconnection/node-disconnection/</loc>
-  </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.7.0/test-node-disk-support/</loc>
   </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/node-not-ready/node-down/</loc>
@@ -149,8 +145,6 @@
     <loc>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.0.0/suse-sles12sp3/</loc>
   </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/node-not-ready/node-down/physical-node-down/</loc>
-  </url><url>
-    <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/node-not-ready/node-restart/physical-node-reboot/</loc>
   </url><url>
     <loc>https://longhorn.github.io/longhorn-tests/manual/pre-release/</loc>
   </url><url>

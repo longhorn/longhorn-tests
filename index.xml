@@ -365,13 +365,6 @@
       <description>Since the client falling back to NFSv3 usually results in a failure to mount the NFS share, the way we can check for NFSv3 fallback is to check the error message returned and see if it mentions rpc.statd, since dependencies on rpc.statd and other services are no longer needed for NFSv4, but are needed for NFSv3. The NFS mount should not fall back to NFSv3 and instead only give the user a warning that the server may be NFSv3:</description>
     </item>
     <item>
-      <title>Node disconnection test</title>
-      <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/node-not-ready/node-disconnection/node-disconnection/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/node-not-ready/node-disconnection/node-disconnection/</guid>
-      <description>https://github.com/longhorn/longhorn/issues/1545 For disconnect node : https://github.com/longhorn/longhorn/files/4864127/network_down.sh.zip&#xA;If auto-salvage is disabled, the behavior after the node disconnection depends on all replicas are in ERROR state or not.&#xA;(1) If all replicas are in ERROR state, the volume would remain in detached/faulted state if auto-salvage is disabled.&#xA;(2) If there is any healthy replica, the volume would start the replica rebuild process(if necessary) after node back.&#xA;What makes all replicas in ERROR state?</description>
-    </item>
-    <item>
       <title>Node Disk Support</title>
       <link>https://longhorn.github.io/longhorn-tests/manual/release-specific/v1.7.0/test-node-disk-support/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
@@ -391,13 +384,6 @@
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/node-not-ready/node-down/physical-node-down/</guid>
       <description>One physical node down should result in the state of that node change to Down.&#xA;When using with CSI driver, one node with controller (StatefulSet/Deployment) and pod down should result in Kubernetes migrate the pod to another node, and Longhorn volume should be able to be used on that node as well. Test scenarios for this are documented here.&#xA;Note:&#xA;In this case, RWX should be excluded.&#xA;Ref: https://github.com/longhorn/longhorn/issues/5900#issuecomment-1541360552</description>
-    </item>
-    <item>
-      <title>Physical node reboot</title>
-      <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/node-not-ready/node-restart/physical-node-reboot/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/node-not-ready/node-restart/physical-node-reboot/</guid>
-      <description> Create StatefulSet/Deployment with 3 a replicas volume. Reboot the volume node that the controller (StatefulSet/Deployment) attached to. After the reboot is complete, the volume should be healthy and the data should be correct. </description>
     </item>
     <item>
       <title>Priority Class Default Setting</title>

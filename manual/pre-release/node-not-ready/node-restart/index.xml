@@ -14,12 +14,5 @@
       <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/node-not-ready/node-restart/dr-volume-node-rebooted/</guid>
       <description>Scenario 1 Create a pod with Longhorn volume. Write data to the volume and get the md5sum. Create the 1st backup for the volume. Create a DR volume from the backup. Wait for the DR volume starting the initial restore. Then reboot the DR volume attached node immediately. Wait for the DR volume detached then reattached. Wait for the DR volume restore complete after the reattachment. Activate the DR volume and check the data md5sum.</description>
     </item>
-    <item>
-      <title>Physical node reboot</title>
-      <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/node-not-ready/node-restart/physical-node-reboot/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/node-not-ready/node-restart/physical-node-reboot/</guid>
-      <description> Create StatefulSet/Deployment with 3 a replicas volume. Reboot the volume node that the controller (StatefulSet/Deployment) attached to. After the reboot is complete, the volume should be healthy and the data should be correct. </description>
-    </item>
   </channel>
 </rss>
