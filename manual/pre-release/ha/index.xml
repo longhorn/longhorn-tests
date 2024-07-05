@@ -28,12 +28,5 @@
       <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/ha/ha-volume-migration/</guid>
       <description>Create a migratable volume:&#xA;Deploy a migratable StorageClass. e.g., https://github.com/longhorn/longhorn/blob/master/examples/rwx/storageclass-migratable.yaml Create a PVC with access mode ReadWriteMany via this StorageClass. Attach a volume to a node and wait for volume running. Then write some data into the volume. Here I would recommend directly restoring a volume (set fromBackup in the StorageClass) and attach it instead.&#xA;Start the migration by request attaching to another node for the volume.&#xA;Trigger the following scenarios then confirm or rollback the migration:</description>
     </item>
-    <item>
-      <title>Replica Rebuilding</title>
-      <link>https://longhorn.github.io/longhorn-tests/manual/pre-release/ha/replica-rebuilding/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>https://longhorn.github.io/longhorn-tests/manual/pre-release/ha/replica-rebuilding/</guid>
-      <description>Create and attach a volume. Write a large amount of data to the volume. Disable disk scheduling and the node scheduling for one replica. Crash the replica progress. Verify the corresponding replica will become ERROR. the volume will keep robustness Degraded. Enable the disk scheduling. Verify nothing changes. Enable the node scheduling. Verify. the failed replica is reused by Longhorn. the rebuilding progress in UI page looks good. the data content is correct after rebuilding.</description>
-    </item>
   </channel>
 </rss>
